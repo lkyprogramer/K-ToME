@@ -37,7 +37,7 @@ tasks.named<JacocoCoverageVerification>("jacocoTestCoverageVerification") {
             limit {
                 counter = "LINE"
                 value = "COVEREDRATIO"
-                minimum = BigDecimal("0.70")
+                minimum = BigDecimal("0.75")
             }
         }
 
@@ -49,6 +49,9 @@ tasks.named<JacocoCoverageVerification>("jacocoTestCoverageVerification") {
             "com.ktome.core.combat.*",
             "com.ktome.core.pathfinding.*",
             "com.ktome.core.ai.*",
+            "com.ktome.core.stats.*",
+            "com.ktome.core.item.*",
+            "com.ktome.core.talent.*",
         ).forEach { packagePattern ->
             rule {
                 element = "PACKAGE"

@@ -1,0 +1,131 @@
+materials:
+  - id: IRON
+    name: 铁制
+    minFloor: 1
+    stats: { attack: 0, defense: 0 }
+  - id: STEEL
+    name: 钢制
+    minFloor: 2
+    stats: { attack: 2, defense: 1 }
+  - id: MITHRIL
+    name: 秘银
+    minFloor: 3
+    stats: { attack: 4, defense: 2, speed: 5 }
+  - id: ADAMANTITE
+    name: 精金
+    minFloor: 4
+    stats: { attack: 6, defense: 4 }
+
+affixes:
+  - id: sharp
+    name: 锐利的
+    type: PREFIX
+    minFloor: 1
+    stats: { attack: 3 }
+  - id: sturdy
+    name: 坚固的
+    type: PREFIX
+    minFloor: 1
+    stats: { defense: 2 }
+  - id: swift
+    name: 迅捷的
+    type: PREFIX
+    minFloor: 2
+    stats: { speed: 10 }
+  - id: of_strength
+    name: 力量之
+    type: SUFFIX
+    minFloor: 1
+    stats: { str: 1, attack: 2 }
+  - id: of_life
+    name: 生命之
+    type: SUFFIX
+    minFloor: 1
+    stats: { maxHp: 15 }
+  - id: of_fortitude
+    name: 坚韧之
+    type: SUFFIX
+    minFloor: 2
+    stats: { defense: 3 }
+  - id: of_speed
+    name: 速度之
+    type: SUFFIX
+    minFloor: 2
+    stats: { speed: 15 }
+
+weapons:
+  - id: short_sword
+    name: 短剑
+    glyph: ")"
+    color: "#C0C0C0"
+    slot: WEAPON
+    baseAttack: 5
+    materials: [IRON, STEEL, MITHRIL, ADAMANTITE]
+    dropFloors: [1, 2, 3, 4, 5]
+    dropWeight: 10
+
+  - id: long_sword
+    name: 长剑
+    glyph: ")"
+    color: "#C0C0C0"
+    slot: WEAPON
+    baseAttack: 8
+    materials: [IRON, STEEL, MITHRIL, ADAMANTITE]
+    dropFloors: [2, 3, 4, 5]
+    dropWeight: 7
+
+  - id: battle_axe
+    name: 战斧
+    glyph: ")"
+    color: "#C0C0C0"
+    slot: WEAPON
+    baseAttack: 11
+    materials: [STEEL, MITHRIL, ADAMANTITE]
+    dropFloors: [3, 4, 5]
+    dropWeight: 4
+
+armors:
+  - id: leather_armor
+    name: 皮甲
+    glyph: "["
+    color: "#8B4513"
+    slot: ARMOR
+    baseDefense: 3
+    dropFloors: [1, 2, 3]
+    dropWeight: 8
+
+  - id: chain_mail
+    name: 锁甲
+    glyph: "["
+    color: "#808080"
+    slot: ARMOR
+    baseDefense: 6
+    dropFloors: [2, 3, 4]
+    dropWeight: 5
+
+  - id: plate_armor
+    name: 板甲
+    glyph: "["
+    color: "#C0C0C0"
+    slot: ARMOR
+    baseDefense: 10
+    dropFloors: [4, 5]
+    dropWeight: 3
+
+consumables:
+  - id: healing_potion
+    name: 治疗药水
+    glyph: "!"
+    color: "#FF0000"
+    effect: HEAL
+    magnitude: 30
+    dropFloors: [1, 2, 3, 4, 5]
+    dropWeight: 15
+
+  - id: scroll_teleport
+    name: 传送卷轴
+    glyph: "?"
+    color: "#00FFFF"
+    effect: TELEPORT
+    dropFloors: [1, 2, 3, 4, 5]
+    dropWeight: 8
