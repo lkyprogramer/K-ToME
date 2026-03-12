@@ -1,0 +1,33 @@
+# macOS
+.DS_Store
+
+# Gradle / Kotlin
+.gradle/
+build/
+out/
+bin/
+*.class
+
+# IDE
+.idea/
+*.iml
+.project
+.classpath
+.settings/
+
+# Logs
+*.log
+logs/
+
+# Runtime saves and local mod sandbox
+saves/
+save/
+mods-local/
+
+# Native and packaged artifacts
+*.dylib
+*.so
+*.dll
+*.exe
+*.jar
+*.zip
