@@ -212,6 +212,12 @@ Phase 1 内默认遵守以下限制，除非对应阶段文档明确开放：
 
 该脚本会在 `.bootstrap/m2` 下生成本地仓库，构建会优先使用该仓库。`.bootstrap/` 是本地生成物，不应提交。
 
+GitHub CI 的默认自动化入口与本地验证保持一致：
+
+1. `.github/workflows/ci.yml` 在 PR 和 `main` 分支推送上执行 `./gradlew --no-daemon check`
+2. `.github/workflows/bootstrap-verify.yml` 仅在构建脚本、依赖声明、wrapper 或 bootstrap 脚本变化时执行 `./scripts/verify-bootstrap.sh --clean`
+3. `.github/workflows/dependency-submission.yml` 在 `main` 分支推送时提交依赖图，供 GitHub 依赖分析使用
+
 如果本次改动涉及以下任一内容，必须额外执行一次 bootstrap 离线烟雾验证：
 
 1. `gradle.properties`
