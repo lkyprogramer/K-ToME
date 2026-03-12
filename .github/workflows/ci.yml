@@ -63,7 +63,7 @@ jobs:
 
       - name: Upload Gradle reports
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ci-reports-${{ github.run_id }}
           path: |
@@ -103,7 +103,7 @@ jobs:
 
       - name: Upload bootstrap verification reports
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: bootstrap-reports-${{ github.run_id }}
           path: |
