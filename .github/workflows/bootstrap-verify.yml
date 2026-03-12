@@ -1,0 +1,63 @@
+name: Bootstrap Verify
+
+on:
+  pull_request:
+    paths:
+      - "**/build.gradle.kts"
+      - "settings.gradle.kts"
+      - "gradle.properties"
+      - "gradle/**"
+      - "scripts/bootstrap-deps.sh"
+      - "scripts/verify-bootstrap.sh"
+  push:
+    branches:
+      - main
+    paths:
+      - "**/build.gradle.kts"
+      - "settings.gradle.kts"
+      - "gradle.properties"
+      - "gradle/**"
+      - "scripts/bootstrap-deps.sh"
+      - "scripts/verify-bootstrap.sh"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  bootstrap-verify:
+    name: Bootstrap Offline Verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Set up Temurin JDK 21
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v5
+
+      - name: Run bootstrap offline verification
+        run: ./scripts/verify-bootstrap.sh --clean
+
+      - name: Upload bootstrap verification reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bootstrap-reports-${{ github.run_id }}
+          path: |
+            **/build/reports/tests/**
+            **/build/reports/jacoco/**
+            **/build/test-results/**
+          if-no-files-found: ignore
+          retention-days: 7

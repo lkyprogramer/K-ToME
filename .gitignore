@@ -23,6 +23,8 @@ logs/
 saves/
 save/
 mods-local/
+.bootstrap/
+third_party/
 
 # Native and packaged artifacts
 *.dylib
