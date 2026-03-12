@@ -30,4 +30,5 @@ mods-local/
 *.dll
 *.exe
 *.jar
+!gradle/wrapper/gradle-wrapper.jar
 *.zip

@@ -35,6 +35,18 @@
 | 构建 | **Gradle (Kotlin DSL)** | 多模块构建 |
 | 测试 | **JUnit 5 + kotest** | 核心逻辑全覆盖，`gradle test` 一行验证 |
 
+**推荐版本基线（2026-03）**：
+
+- JDK: `21`（Temurin `21.0.10`）
+- Kotlin: `2.2.21`
+- Gradle Wrapper: `8.14.3`
+- libGDX: `1.14.0`
+- JUnit: `5.14.2`
+- Kotest: `6.0.2`
+- Jackson: `2.20.1`
+
+这组版本的取舍是：libGDX 官方仍建议使用 `JDK 17 or 21`；Kotlin `2.2.21` 对 Gradle `7.6.3-8.14` 完全兼容；Gradle 在 Java 21 上运行要求 `8.5+`，因此将 Wrapper 固定在 `8.14.3`。
+
 ### 为什么选这个栈
 
 **AI 适配度调研结论**：

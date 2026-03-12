@@ -39,14 +39,17 @@ K-ToME/
 ### 1.2 gradle.properties
 
 ```properties
-kotlinVersion=1.9.22
-libgdxVersion=1.12.1
-junitVersion=5.10.1
-kotestVersion=5.8.0
-jacksonVersion=2.16.1
+javaVersion=21
+kotlinVersion=2.2.21
+libgdxVersion=1.14.0
+junitVersion=5.14.2
+kotestVersion=6.0.2
+jacksonVersion=2.20.1
 group=com.ktome
 version=0.1.0-SNAPSHOT
 ```
+
+**Gradle Wrapper 建议固定为 `8.14.3`**：Java 21 运行 Gradle 需要 `8.5+`，而 Kotlin `2.2.21` 对 Gradle `7.6.3-8.14` 提供完全支持，因此 `8.14.3` 是当前更稳妥的兼容上界。JDK 基线同步提升到 `21`。
 
 ### 1.3 settings.gradle.kts
 
@@ -85,7 +88,7 @@ subprojects {
     }
 
     kotlin {
-        jvmToolchain(17)
+        jvmToolchain((rootProject.properties["javaVersion"] as String).toInt())
     }
 }
 ```
@@ -1811,6 +1814,10 @@ fun gameLoop() {
 ## 5. 阶段实现计划
 
 Phase 1 整体拆分为 5 个子阶段，每个子阶段有明确的里程碑和出口标准。前一阶段的出口标准必须全部满足后，方可进入下一阶段。
+
+> **详细执行文档入口**: `docs/phase1/roadmap.md`
+>
+> `docs/phase1/` 下已按 `1-1.0 ~ 1-5.0` 拆分为可执行的阶段开发文档。后续实现应以这些阶段文档中的测试门禁、自证命令和白盒验收步骤为准，而不是只依赖本节的摘要表格。
 
 ### Phase 1-1.0: 引擎基础 + 可验证
 
