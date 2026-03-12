@@ -210,7 +210,7 @@ Phase 1 内默认遵守以下限制，除非对应阶段文档明确开放：
 ./scripts/bootstrap-deps.sh
 ```
 
-该脚本会在 `.bootstrap/m2` 下生成本地仓库，构建会优先使用该仓库。`.bootstrap/` 是本地生成物，不应提交。
+该脚本会在 `.bootstrap/m2` 下生成本地仓库，并同步准备与 wrapper 匹配的本地 Gradle 发行版。构建会优先使用该仓库。`.bootstrap/` 是本地生成物，不应提交。
 
 GitHub CI 的默认自动化入口与本地验证保持一致：
 
@@ -230,6 +230,8 @@ GitHub CI 的默认自动化入口与本地验证保持一致：
 ```bash
 ./scripts/verify-bootstrap.sh
 ```
+
+该验证必须使用 bootstrapped Gradle binary 和隔离的 `.bootstrap/gradle-user-home`，避免因为 runner 或本机已有 `~/.gradle` 缓存而产生假阳性。
 
 ### 6.2 白盒验证
 

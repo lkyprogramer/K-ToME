@@ -25,6 +25,10 @@ group = providers.gradleProperty("group").get()
 version = providers.gradleProperty("version").get()
 val bootstrapRepo = rootProject.layout.projectDirectory.dir(".bootstrap/m2").asFile
 
+extensions.configure<JacocoPluginExtension> {
+    toolVersion = providers.gradleProperty("jacocoVersion").get()
+}
+
 allprojects {
     group = rootProject.group
     version = rootProject.version

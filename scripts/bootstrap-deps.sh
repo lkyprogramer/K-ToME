@@ -3,8 +3,14 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
-BOOTSTRAP_REPO="$ROOT_DIR/.bootstrap/m2"
+BOOTSTRAP_ROOT="$ROOT_DIR/.bootstrap"
+BOOTSTRAP_REPO="$BOOTSTRAP_ROOT/m2"
+BOOTSTRAP_GRADLE_DIR="$BOOTSTRAP_ROOT/gradle-dist"
+BOOTSTRAP_GRADLE_DOWNLOAD_DIR="$BOOTSTRAP_GRADLE_DIR/downloads"
+BOOTSTRAP_GRADLE_BIN_FILE="$BOOTSTRAP_ROOT/gradle-bin.path"
+BOOTSTRAP_GRADLE_USER_HOME="$BOOTSTRAP_ROOT/gradle-user-home"
 GRADLE_PROPERTIES="$ROOT_DIR/gradle.properties"
+GRADLE_WRAPPER_PROPERTIES="$ROOT_DIR/gradle/wrapper/gradle-wrapper.properties"
 
 usage() {
   cat <<'EOF'
@@ -45,24 +51,50 @@ if [[ ! -f "$GRADLE_PROPERTIES" ]]; then
   exit 1
 fi
 
+if [[ ! -f "$GRADLE_WRAPPER_PROPERTIES" ]]; then
+  echo "Gradle wrapper properties not found: $GRADLE_WRAPPER_PROPERTIES" >&2
+  exit 1
+fi
+
 if [[ "$clean" -eq 1 ]]; then
-  rm -rf "$BOOTSTRAP_REPO"
+  rm -rf "$BOOTSTRAP_REPO" "$BOOTSTRAP_GRADLE_DIR" "$BOOTSTRAP_GRADLE_USER_HOME"
+  rm -f "$BOOTSTRAP_GRADLE_BIN_FILE"
 fi
 
 mkdir -p "$BOOTSTRAP_REPO"
+mkdir -p "$BOOTSTRAP_GRADLE_DOWNLOAD_DIR"
 
 downloaded=0
 reused=0
 
-property() {
-  local key="$1"
+property_from_file() {
+  local file="$1"
+  local key="$2"
   local value
-  value="$(awk -F= -v lookup="$key" '$1 == lookup {print substr($0, index($0, "=") + 1)}' "$GRADLE_PROPERTIES" | tail -n 1)"
+  value="$(awk -F= -v lookup="$key" '$1 == lookup {print substr($0, index($0, "=") + 1)}' "$file" | tail -n 1)"
   if [[ -z "$value" ]]; then
     echo "Missing required property: $key" >&2
     exit 1
   fi
   printf '%s' "$value"
+}
+
+optional_property_from_file() {
+  local file="$1"
+  local key="$2"
+  awk -F= -v lookup="$key" '$1 == lookup {print substr($0, index($0, "=") + 1)}' "$file" | tail -n 1
+}
+
+property() {
+  property_from_file "$GRADLE_PROPERTIES" "$1"
+}
+
+wrapper_property() {
+  property_from_file "$GRADLE_WRAPPER_PROPERTIES" "$1"
+}
+
+optional_wrapper_property() {
+  optional_property_from_file "$GRADLE_WRAPPER_PROPERTIES" "$1"
 }
 
 KOTLIN_VERSION="$(property kotlinVersion)"
@@ -78,6 +110,13 @@ JORBIS_VERSION="$(property jorbisVersion)"
 ASM_VERSION="$(property asmVersion)"
 OPENTEST4J_VERSION="$(property opentest4jVersion)"
 APIGUARDIAN_VERSION="$(property apiguardianVersion)"
+GSON_VERSION="$(property gsonVersion)"
+KOTLINX_COROUTINES_VERSION="$(property kotlinxCoroutinesVersion)"
+ERROR_PRONE_ANNOTATIONS_VERSION="$(property errorProneAnnotationsVersion)"
+JETBRAINS_ANNOTATIONS_VERSION="$(property jetbrainsAnnotationsVersion)"
+KOTLINX_COROUTINES_KOTLIN_STDLIB_VERSION="$(property kotlinxCoroutinesKotlinStdlibVersion)"
+KOTLIN_STDLIB_ANNOTATIONS_VERSION="$(property kotlinStdlibAnnotationsVersion)"
+KOTLIN_REFLECT_VERSION="$(property kotlinReflectVersion)"
 
 resolve_base_url() {
   case "$1" in
@@ -94,15 +133,10 @@ resolve_base_url() {
   esac
 }
 
-download_path() {
-  local repo_key="$1"
-  local relative_path="$2"
-  local base_url
-  local target_path
+download_url() {
+  local url="$1"
+  local target_path="$2"
   local tmp_path
-
-  base_url="$(resolve_base_url "$repo_key")"
-  target_path="$BOOTSTRAP_REPO/$relative_path"
 
   if [[ "$force" -eq 0 && -f "$target_path" ]]; then
     reused=$((reused + 1))
@@ -119,11 +153,22 @@ download_path() {
     --retry-delay 1 \
     --silent \
     --show-error \
-    "$base_url/$relative_path" \
+    "$url" \
     -o "$tmp_path"
 
   mv "$tmp_path" "$target_path"
   downloaded=$((downloaded + 1))
+}
+
+download_path() {
+  local repo_key="$1"
+  local relative_path="$2"
+  local base_url
+  local target_path
+
+  base_url="$(resolve_base_url "$repo_key")"
+  target_path="$BOOTSTRAP_REPO/$relative_path"
+  download_url "$base_url/$relative_path" "$target_path"
 }
 
 download_maven_file() {
@@ -191,6 +236,56 @@ download_classifier_bundle() {
   done
 }
 
+bootstrap_gradle_distribution() {
+  local distribution_url
+  local distribution_file_name
+  local distribution_zip_path
+  local distribution_root_name
+  local distribution_home
+  local distribution_bin
+  local distribution_sha256
+
+  distribution_url="$(wrapper_property distributionUrl)"
+  distribution_url="${distribution_url//\\:/:}"
+
+  distribution_file_name="${distribution_url##*/}"
+  distribution_zip_path="$BOOTSTRAP_GRADLE_DOWNLOAD_DIR/$distribution_file_name"
+  distribution_root_name="${distribution_file_name%.zip}"
+  distribution_root_name="${distribution_root_name%-all}"
+  distribution_root_name="${distribution_root_name%-bin}"
+  distribution_home="$BOOTSTRAP_GRADLE_DIR/$distribution_root_name"
+  distribution_bin="$distribution_home/bin/gradle"
+  distribution_sha256="$(optional_wrapper_property distributionSha256Sum)"
+
+  download_url "$distribution_url" "$distribution_zip_path"
+
+  if [[ -n "$distribution_sha256" ]]; then
+    if command -v shasum >/dev/null 2>&1; then
+      if [[ "$(shasum -a 256 "$distribution_zip_path" | awk '{print $1}')" != "$distribution_sha256" ]]; then
+        echo "Gradle distribution checksum mismatch: $distribution_zip_path" >&2
+        exit 1
+      fi
+    elif command -v sha256sum >/dev/null 2>&1; then
+      if [[ "$(sha256sum "$distribution_zip_path" | awk '{print $1}')" != "$distribution_sha256" ]]; then
+        echo "Gradle distribution checksum mismatch: $distribution_zip_path" >&2
+        exit 1
+      fi
+    fi
+  fi
+
+  if [[ "$force" -eq 1 || ! -x "$distribution_bin" ]]; then
+    rm -rf "$distribution_home"
+    unzip -q "$distribution_zip_path" -d "$BOOTSTRAP_GRADLE_DIR"
+  fi
+
+  if [[ ! -x "$distribution_bin" ]]; then
+    echo "Bootstrapped Gradle binary not found: $distribution_bin" >&2
+    exit 1
+  fi
+
+  printf '%s\n' "$distribution_bin" > "$BOOTSTRAP_GRADLE_BIN_FILE"
+}
+
 download_path \
   pluginPortal \
   "org/jetbrains/kotlin/jvm/org.jetbrains.kotlin.jvm.gradle.plugin/$KOTLIN_VERSION/org.jetbrains.kotlin.jvm.gradle.plugin-$KOTLIN_VERSION.pom"
@@ -231,12 +326,26 @@ download_main_artifact "mavenCentral" "org.jetbrains.kotlin" "kotlin-tooling-cor
 download_main_artifact "mavenCentral" "org.jetbrains.kotlin" "kotlin-util-io" "$KOTLIN_VERSION"
 download_main_artifact "mavenCentral" "org.jetbrains.kotlin" "kotlin-util-klib-metadata" "$KOTLIN_VERSION"
 download_main_artifact "mavenCentral" "org.jetbrains.kotlin" "kotlin-util-klib" "$KOTLIN_VERSION"
+download_pom_only "mavenCentral" "com.google.code.gson" "gson-parent" "$GSON_VERSION"
+download_main_artifact "mavenCentral" "com.google.code.gson" "gson" "$GSON_VERSION"
+download_pom_only "mavenCentral" "com.google.errorprone" "error_prone_parent" "$ERROR_PRONE_ANNOTATIONS_VERSION"
+download_main_artifact "mavenCentral" "com.google.errorprone" "error_prone_annotations" "$ERROR_PRONE_ANNOTATIONS_VERSION"
+download_pom_only "mavenCentral" "org.jetbrains.kotlinx" "kotlinx-coroutines-bom" "$KOTLINX_COROUTINES_VERSION"
+download_main_artifact "mavenCentral" "org.jetbrains.kotlinx" "kotlinx-coroutines-core-jvm" "$KOTLINX_COROUTINES_VERSION"
+download_main_artifact "mavenCentral" "org.jetbrains" "annotations" "$JETBRAINS_ANNOTATIONS_VERSION"
+download_main_artifact "mavenCentral" "org.jetbrains" "annotations" "$KOTLIN_STDLIB_ANNOTATIONS_VERSION"
+download_main_artifact "mavenCentral" "org.jetbrains.kotlin" "kotlin-stdlib" "$KOTLINX_COROUTINES_KOTLIN_STDLIB_VERSION"
+download_main_artifact "mavenCentral" "org.jetbrains.kotlin" "kotlin-stdlib-common" "$KOTLINX_COROUTINES_KOTLIN_STDLIB_VERSION"
+download_main_artifact "mavenCentral" "org.jetbrains.kotlin" "kotlin-reflect" "$KOTLIN_REFLECT_VERSION"
+download_main_artifact "mavenCentral" "org.jetbrains.kotlin" "kotlin-stdlib" "$KOTLIN_REFLECT_VERSION"
+download_main_artifact "mavenCentral" "org.jetbrains.kotlin" "kotlin-stdlib-common" "$KOTLIN_REFLECT_VERSION"
 
 download_main_artifact "mavenCentral" "org.jacoco" "org.jacoco.agent" "$JACOCO_VERSION"
 download_main_artifact "mavenCentral" "org.jacoco" "org.jacoco.ant" "$JACOCO_VERSION"
 download_pom_only "mavenCentral" "org.jacoco" "org.jacoco.build" "$JACOCO_VERSION"
 download_main_artifact "mavenCentral" "org.jacoco" "org.jacoco.core" "$JACOCO_VERSION"
 download_main_artifact "mavenCentral" "org.jacoco" "org.jacoco.report" "$JACOCO_VERSION"
+download_pom_only "mavenCentral" "org.ow2" "ow2" "1.5.1"
 download_pom_only "mavenCentral" "org.ow2.asm" "asm-bom" "$ASM_VERSION"
 download_main_artifact "mavenCentral" "org.ow2.asm" "asm" "$ASM_VERSION"
 download_main_artifact "mavenCentral" "org.ow2.asm" "asm-commons" "$ASM_VERSION"
@@ -246,6 +355,7 @@ download_main_artifact_with_module "mavenCentral" "org.junit.jupiter" "junit-jup
 download_main_artifact_with_module "mavenCentral" "org.junit.jupiter" "junit-jupiter-api" "$JUNIT_VERSION"
 download_main_artifact_with_module "mavenCentral" "org.junit.jupiter" "junit-jupiter-engine" "$JUNIT_VERSION"
 download_main_artifact_with_module "mavenCentral" "org.junit.jupiter" "junit-jupiter-params" "$JUNIT_VERSION"
+download_pom_only "mavenCentral" "org.junit" "junit-bom" "$JUNIT_VERSION"
 download_main_artifact_with_module "mavenCentral" "org.junit.platform" "junit-platform-commons" "$JUNIT_PLATFORM_VERSION"
 download_main_artifact_with_module "mavenCentral" "org.junit.platform" "junit-platform-engine" "$JUNIT_PLATFORM_VERSION"
 download_main_artifact_with_module "mavenCentral" "org.junit.platform" "junit-platform-launcher" "$JUNIT_PLATFORM_VERSION"
@@ -257,6 +367,7 @@ download_main_artifact_with_module "mavenCentral" "com.badlogicgames.gdx" "gdx-b
 download_classifier_jar "mavenCentral" "com.badlogicgames.gdx" "gdx-platform" "$LIBGDX_VERSION" "natives-desktop"
 download_pom_only "mavenCentral" "com.badlogicgames.gdx" "gdx-platform" "$LIBGDX_VERSION"
 download_main_artifact "mavenCentral" "com.badlogicgames.gdx" "gdx-jnigen-loader" "$GDX_JNIGEN_LOADER_VERSION"
+download_pom_only "mavenCentral" "org.sonatype.oss" "oss-parent" "7"
 download_main_artifact "mavenCentral" "com.badlogicgames.jlayer" "jlayer" "$JLAYER_VERSION"
 download_main_artifact "mavenCentral" "org.jcraft" "jorbis" "$JORBIS_VERSION"
 
@@ -283,6 +394,10 @@ download_classifier_bundle "mavenCentral" "org.lwjgl" "lwjgl-opengl" "$LWJGL_VER
 download_main_artifact "mavenCentral" "org.lwjgl" "lwjgl-stb" "$LWJGL_VERSION"
 download_classifier_bundle "mavenCentral" "org.lwjgl" "lwjgl-stb" "$LWJGL_VERSION" "${LWJGL_NATIVE_CLASSIFIERS[@]}"
 
+bootstrap_gradle_distribution
+
 echo "Bootstrap repository ready: $BOOTSTRAP_REPO"
+echo "Bootstrap Gradle ready: $(cat "$BOOTSTRAP_GRADLE_BIN_FILE")"
+echo "Bootstrap Gradle user home: $BOOTSTRAP_GRADLE_USER_HOME"
 echo "Downloaded: $downloaded"
 echo "Reused: $reused"
