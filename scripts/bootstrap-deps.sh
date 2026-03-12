@@ -5,6 +5,7 @@ set -euo pipefail
 ROOT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 BOOTSTRAP_ROOT="$ROOT_DIR/.bootstrap"
 BOOTSTRAP_REPO="$BOOTSTRAP_ROOT/m2"
+BOOTSTRAP_DOWNLOAD_CACHE="$BOOTSTRAP_ROOT/download-cache"
 BOOTSTRAP_GRADLE_DIR="$BOOTSTRAP_ROOT/gradle-dist"
 BOOTSTRAP_GRADLE_DOWNLOAD_DIR="$BOOTSTRAP_GRADLE_DIR/downloads"
 BOOTSTRAP_GRADLE_BIN_FILE="$BOOTSTRAP_ROOT/gradle-bin.path"
@@ -18,7 +19,7 @@ Usage:
   ./scripts/bootstrap-deps.sh [--clean] [--force]
 
 Options:
-  --clean   Remove the generated local Maven repository before bootstrapping.
+  --clean   Remove generated local Maven / Gradle work directories before bootstrapping.
   --force   Re-download every listed artifact even if it already exists locally.
 EOF
 }
@@ -62,6 +63,7 @@ if [[ "$clean" -eq 1 ]]; then
 fi
 
 mkdir -p "$BOOTSTRAP_REPO"
+mkdir -p "$BOOTSTRAP_DOWNLOAD_CACHE"
 mkdir -p "$BOOTSTRAP_GRADLE_DOWNLOAD_DIR"
 
 downloaded=0
@@ -117,6 +119,7 @@ JETBRAINS_ANNOTATIONS_VERSION="$(property jetbrainsAnnotationsVersion)"
 KOTLINX_COROUTINES_KOTLIN_STDLIB_VERSION="$(property kotlinxCoroutinesKotlinStdlibVersion)"
 KOTLIN_STDLIB_ANNOTATIONS_VERSION="$(property kotlinStdlibAnnotationsVersion)"
 KOTLIN_REFLECT_VERSION="$(property kotlinReflectVersion)"
+SNAKEYAML_VERSION="$(property snakeyamlVersion)"
 
 resolve_base_url() {
   case "$1" in
@@ -135,7 +138,8 @@ resolve_base_url() {
 
 download_url() {
   local url="$1"
-  local target_path="$2"
+  local cache_path="$2"
+  local target_path="$3"
   local tmp_path
 
   if [[ "$force" -eq 0 && -f "$target_path" ]]; then
@@ -144,19 +148,29 @@ download_url() {
   fi
 
   mkdir -p "$(dirname "$target_path")"
-  tmp_path="${target_path}.tmp"
+  mkdir -p "$(dirname "$cache_path")"
+
+  if [[ "$force" -eq 0 && -f "$cache_path" ]]; then
+    cp "$cache_path" "$target_path"
+    reused=$((reused + 1))
+    return
+  fi
+
+  tmp_path="${cache_path}.tmp"
 
   curl \
     --fail \
     --location \
     --retry 3 \
+    --retry-all-errors \
     --retry-delay 1 \
     --silent \
     --show-error \
     "$url" \
     -o "$tmp_path"
 
-  mv "$tmp_path" "$target_path"
+  mv "$tmp_path" "$cache_path"
+  cp "$cache_path" "$target_path"
   downloaded=$((downloaded + 1))
 }
 
@@ -164,11 +178,13 @@ download_path() {
   local repo_key="$1"
   local relative_path="$2"
   local base_url
+  local cache_path
   local target_path
 
   base_url="$(resolve_base_url "$repo_key")"
+  cache_path="$BOOTSTRAP_DOWNLOAD_CACHE/$repo_key/$relative_path"
   target_path="$BOOTSTRAP_REPO/$relative_path"
-  download_url "$base_url/$relative_path" "$target_path"
+  download_url "$base_url/$relative_path" "$cache_path" "$target_path"
 }
 
 download_maven_file() {
@@ -244,12 +260,14 @@ bootstrap_gradle_distribution() {
   local distribution_home
   local distribution_bin
   local distribution_sha256
+  local distribution_cache_path
 
   distribution_url="$(wrapper_property distributionUrl)"
   distribution_url="${distribution_url//\\:/:}"
 
   distribution_file_name="${distribution_url##*/}"
   distribution_zip_path="$BOOTSTRAP_GRADLE_DOWNLOAD_DIR/$distribution_file_name"
+  distribution_cache_path="$BOOTSTRAP_DOWNLOAD_CACHE/gradle-distributions/$distribution_file_name"
   distribution_root_name="${distribution_file_name%.zip}"
   distribution_root_name="${distribution_root_name%-all}"
   distribution_root_name="${distribution_root_name%-bin}"
@@ -257,7 +275,7 @@ bootstrap_gradle_distribution() {
   distribution_bin="$distribution_home/bin/gradle"
   distribution_sha256="$(optional_wrapper_property distributionSha256Sum)"
 
-  download_url "$distribution_url" "$distribution_zip_path"
+  download_url "$distribution_url" "$distribution_cache_path" "$distribution_zip_path"
 
   if [[ -n "$distribution_sha256" ]]; then
     if command -v shasum >/dev/null 2>&1; then
@@ -393,6 +411,7 @@ download_main_artifact "mavenCentral" "org.lwjgl" "lwjgl-opengl" "$LWJGL_VERSION
 download_classifier_bundle "mavenCentral" "org.lwjgl" "lwjgl-opengl" "$LWJGL_VERSION" "${LWJGL_NATIVE_CLASSIFIERS[@]}"
 download_main_artifact "mavenCentral" "org.lwjgl" "lwjgl-stb" "$LWJGL_VERSION"
 download_classifier_bundle "mavenCentral" "org.lwjgl" "lwjgl-stb" "$LWJGL_VERSION" "${LWJGL_NATIVE_CLASSIFIERS[@]}"
+download_main_artifact "mavenCentral" "org.yaml" "snakeyaml" "$SNAKEYAML_VERSION"
 
 bootstrap_gradle_distribution
 

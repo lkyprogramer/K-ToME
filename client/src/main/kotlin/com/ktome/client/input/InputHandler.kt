@@ -3,6 +3,7 @@ package com.ktome.client.input
 import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.Input.Keys
 import com.ktome.core.map.Point
+import com.ktome.game.PlayerCommand
 
 class InputHandler {
     private val movementBindings = linkedMapOf(
@@ -32,6 +33,23 @@ class InputHandler {
         Keys.NUMPAD_3 to Point(1, 1),
     )
 
-    fun pollMovement(): Point? =
-        movementBindings.entries.firstOrNull { (key, _) -> Gdx.input.isKeyJustPressed(key) }?.value
+    private val waitBindings = listOf(
+        Keys.S,
+        Keys.PERIOD,
+        Keys.SPACE,
+        Keys.NUMPAD_5,
+    )
+
+    fun pollCommand(): PlayerCommand? {
+        val movement = movementBindings.entries.firstOrNull { (key, _) -> Gdx.input.isKeyJustPressed(key) }?.value
+        if (movement != null) {
+            return PlayerCommand.Move(movement)
+        }
+
+        if (waitBindings.any(Gdx.input::isKeyJustPressed)) {
+            return PlayerCommand.Wait
+        }
+
+        return null
+    }
 }

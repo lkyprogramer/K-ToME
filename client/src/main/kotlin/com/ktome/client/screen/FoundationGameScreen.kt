@@ -23,7 +23,7 @@ class FoundationGameScreen(
     private val inputHandler = InputHandler()
     private val viewport = FitViewport(
         session.map.width * cellWidth,
-        session.map.height * cellHeight,
+        (session.map.height + AsciiRenderer.uiRows) * cellHeight,
     )
 
     override fun show() {
@@ -31,7 +31,7 @@ class FoundationGameScreen(
     }
 
     override fun render(delta: Float) {
-        inputHandler.pollMovement()?.let(session::movePlayer)
+        inputHandler.pollCommand()?.let(session::perform)
 
         ScreenUtils.clear(0.03f, 0.03f, 0.05f, 1f)
         viewport.apply()
