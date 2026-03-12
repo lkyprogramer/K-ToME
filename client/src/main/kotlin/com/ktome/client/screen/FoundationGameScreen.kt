@@ -22,7 +22,7 @@ class FoundationGameScreen(
     private val renderer = AsciiRenderer(cellWidth = cellWidth, cellHeight = cellHeight)
     private val inputHandler = InputHandler()
     private val viewport = FitViewport(
-        session.map.width * cellWidth,
+        (session.map.width + AsciiRenderer.sidebarColumns) * cellWidth,
         (session.map.height + AsciiRenderer.uiRows) * cellHeight,
     )
 
@@ -31,14 +31,17 @@ class FoundationGameScreen(
     }
 
     override fun render(delta: Float) {
-        inputHandler.pollCommand()?.let(session::perform)
+        inputHandler.pollCommand(session)?.let { command ->
+            val consumed = session.perform(command)
+            inputHandler.onCommandResult(command, consumed)
+        }
 
         ScreenUtils.clear(0.03f, 0.03f, 0.05f, 1f)
         viewport.apply()
         batch.projectionMatrix = viewport.camera.combined
 
         batch.begin()
-        renderer.render(batch, session)
+        renderer.render(batch, session, inputHandler.overlayState())
         batch.end()
     }
 

@@ -1,6 +1,7 @@
 package com.ktome.game
 
 import com.ktome.core.ecs.AIType
+import com.ktome.core.item.ItemType
 import com.ktome.game.data.DataLoader
 import java.io.ByteArrayInputStream
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -43,5 +44,24 @@ class DataLoaderTest {
 
         assertEquals("scout", catalog.monsters.single().id)
         assertEquals(105, catalog.monsters.single().speed)
+    }
+
+    @Test
+    fun `loads bundled item data`() {
+        val bundle = loader.loadItemBundle()
+
+        assertTrue(bundle.baseItems.any { it.type == ItemType.WEAPON })
+        assertTrue(bundle.baseItems.any { it.type == ItemType.CONSUMABLE })
+        assertTrue(bundle.materials.any { it.id == "STEEL" })
+        assertTrue(bundle.affixes.any { it.id == "sharp" })
+    }
+
+    @Test
+    fun `loads bundled talent definitions`() {
+        val talents = loader.loadTalentDefinitions()
+
+        assertEquals(4, talents.size)
+        assertTrue(talents.any { it.id == "power_strike" })
+        assertTrue(talents.any { it.id == "war_cry" && it.range == 0 })
     }
 }

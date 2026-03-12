@@ -19,6 +19,7 @@ class CombatResolver(
         targetDefense: Int,
         targetEvasion: Int,
         targetCurrentHp: Int,
+        damageMultiplier: Double = 1.0,
     ): CombatResult {
         val hitChance = (0.85 + (attackerAccuracy - targetEvasion) * 0.01).coerceIn(0.05, 0.95)
         if (random.nextDouble() > hitChance) {
@@ -33,6 +34,7 @@ class CombatResolver(
         if (crit) {
             finalDamage = maxOf(1, (finalDamage * 1.5).toInt())
         }
+        finalDamage = maxOf(1, (finalDamage * damageMultiplier).toInt())
 
         return CombatResult(
             hit = true,
@@ -50,15 +52,13 @@ class CombatResolver(
         world: World,
         attacker: EntityId,
         target: EntityId,
+        damageMultiplier: Double = 1.0,
     ): CombatResult {
         val attackerStats = requireNotNull(world.get<Stats>(attacker)) { "Missing Stats for $attacker" }
-        val attackerProfile = requireNotNull(world.get<CombatProfile>(attacker)) { "Missing CombatProfile for $attacker" }
-        val targetStats = requireNotNull(world.get<Stats>(target)) { "Missing Stats for $target" }
-        val targetProfile = requireNotNull(world.get<CombatProfile>(target)) { "Missing CombatProfile for $target" }
         val targetHealth = requireNotNull(world.get<Health>(target)) { "Missing Health for $target" }
 
-        val attackerDerived = StatsCalculator.calculate(attackerStats, attackerProfile)
-        val targetDerived = StatsCalculator.calculate(targetStats, targetProfile)
+        val attackerDerived = StatsCalculator.calculate(world, attacker)
+        val targetDerived = StatsCalculator.calculate(world, target)
 
         return resolveMelee(
             attackerAttack = attackerDerived.attack,
@@ -67,6 +67,7 @@ class CombatResolver(
             targetDefense = targetDerived.defense,
             targetEvasion = targetDerived.evasion,
             targetCurrentHp = targetHealth.current,
+            damageMultiplier = damageMultiplier,
         )
     }
 }

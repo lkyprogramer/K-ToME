@@ -18,16 +18,24 @@ import com.ktome.core.ecs.PatrolRoute
 import com.ktome.core.ecs.PlayerControlled
 import com.ktome.core.ecs.Position
 import com.ktome.core.ecs.Stats
+import com.ktome.core.ecs.Stamina
 import com.ktome.core.ecs.World
 import com.ktome.core.ecs.add
+import com.ktome.core.item.Equipment
+import com.ktome.core.item.Inventory
 import com.ktome.core.map.Point
 import com.ktome.core.stats.StatsCalculator
+import com.ktome.core.talent.CooldownState
+import com.ktome.core.talent.EffectTracker
+import com.ktome.core.talent.TalentDef
+import com.ktome.core.talent.TalentLoadout
 import com.ktome.game.model.MonsterTemplate
 
 class EntityFactory {
     fun createPlayer(
         world: World,
         position: Point,
+        talents: List<TalentDef>,
     ): com.ktome.core.ecs.EntityId {
         val playerId = world.createEntity()
         val profile = CombatProfile(
@@ -52,8 +60,20 @@ class EntityFactory {
         world.add(playerId, profile)
         world.add(playerId, derivedStats)
         world.add(playerId, Health(current = derivedStats.maxHp, max = derivedStats.maxHp))
+        world.add(playerId, Stamina(current = derivedStats.maxStamina, max = derivedStats.maxStamina))
         world.add(playerId, Energy())
         world.add(playerId, Experience())
+        world.add(playerId, Inventory())
+        world.add(playerId, Equipment())
+        world.add(playerId, CooldownState())
+        world.add(playerId, EffectTracker())
+        world.add(
+            playerId,
+            TalentLoadout(
+                slotToTalentId = talents.take(4).mapIndexed { index, talent -> (index + 1) to talent.id }.toMap(linkedMapOf()).toMutableMap(),
+                talentLevels = talents.associate { talent -> talent.id to 1 }.toMutableMap(),
+            ),
+        )
 
         return playerId
     }
@@ -88,6 +108,7 @@ class EntityFactory {
         world.add(monsterId, Health(current = derivedStats.maxHp, max = derivedStats.maxHp))
         world.add(monsterId, Energy())
         world.add(monsterId, ExperienceReward(template.expReward))
+        world.add(monsterId, EffectTracker())
         world.add(
             monsterId,
             when (template.ai) {

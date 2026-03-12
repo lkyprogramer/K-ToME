@@ -2,6 +2,7 @@ package com.ktome.game
 
 import com.ktome.core.ecs.AIBehavior
 import com.ktome.core.ecs.DisplayColor
+import com.ktome.core.ecs.DerivedStats
 import com.ktome.core.ecs.Experience
 import com.ktome.core.ecs.ExperienceReward
 import com.ktome.core.ecs.Faction
@@ -10,8 +11,14 @@ import com.ktome.core.ecs.Health
 import com.ktome.core.ecs.Name
 import com.ktome.core.ecs.PatrolRoute
 import com.ktome.core.ecs.Position
+import com.ktome.core.ecs.Stamina
 import com.ktome.core.ecs.World
 import com.ktome.core.ecs.get
+import com.ktome.core.item.Equipment
+import com.ktome.core.item.Inventory
+import com.ktome.core.talent.CooldownState
+import com.ktome.core.talent.TalentLoadout
+import com.ktome.game.data.DataLoader
 import com.ktome.core.map.Point
 import com.ktome.game.factory.EntityFactory
 import com.ktome.game.model.MonsterTemplate
@@ -21,18 +28,25 @@ import org.junit.jupiter.api.Test
 
 class EntityFactoryTest {
     private val factory = EntityFactory()
+    private val talents = DataLoader().loadTalentDefinitions()
 
     @Test
     fun `createPlayer installs expected player components`() {
         val world = World()
 
-        val playerId = factory.createPlayer(world, Point(4, 5))
+        val playerId = factory.createPlayer(world, Point(4, 5), talents)
 
         assertEquals(Point(4, 5), requireNotNull(world.get<Position>(playerId)).toPoint())
         assertEquals(Faction.PLAYER, requireNotNull(world.get<FactionTag>(playerId)).value)
         assertEquals("Hero", requireNotNull(world.get<Name>(playerId)).value)
         assertNotNull(world.get<Health>(playerId))
         assertNotNull(world.get<Experience>(playerId))
+        assertNotNull(world.get<Stamina>(playerId))
+        assertNotNull(world.get<Inventory>(playerId))
+        assertNotNull(world.get<Equipment>(playerId))
+        assertNotNull(world.get<CooldownState>(playerId))
+        assertEquals(4, requireNotNull(world.get<TalentLoadout>(playerId)).slotToTalentId.size)
+        assertNotNull(world.get<DerivedStats>(playerId))
         assertEquals("#FFD700", requireNotNull(world.get<DisplayColor>(playerId)).hex)
     }
 
