@@ -75,6 +75,8 @@ class TalentResolver(
     private val registry: TalentRegistry,
     private val combatResolver: CombatResolver,
 ) {
+    private val supportedTalentIds = setOf("power_strike", "charge", "shield_bash", "war_cry")
+
     private data class DamageResolution(
         val hit: Boolean,
         val finalDamage: Int = 0,
@@ -89,6 +91,9 @@ class TalentResolver(
         target: Point?,
     ): String? {
         val definition = registry.get(talentId) ?: return "Unknown talent."
+        if (talentId !in supportedTalentIds) {
+            return "Talent is not supported yet."
+        }
         val stamina = requireNotNull(world.get<Stamina>(user)) { "Missing Stamina for $user" }
         val cooldowns = requireNotNull(world.get<CooldownState>(user)) { "Missing CooldownState for $user" }
 
@@ -137,6 +142,10 @@ class TalentResolver(
         val effect = requireNotNull(definition.levelEffects[level]) { "Missing level effect for $talentId level $level" }
         val effects = mutableListOf<TalentEffectResult>()
         val targets = linkedSetOf<EntityId>()
+
+        if (talentId !in supportedTalentIds) {
+            return TalentUseResult.Failure("Unsupported talent: $talentId")
+        }
 
         stamina.current -= definition.staminaCost
         cooldowns.remainingByTalentId[talentId] = definition.cooldown
@@ -229,6 +238,7 @@ class TalentResolver(
                             type = StatusEffectType.WAR_CRY_BUFF,
                             remainingTurns = effect.buffDuration,
                             statModifiers = StatModifier(attackMultiplierBonus = effect.buffMagnitude),
+                            skipNextDecay = true,
                         ),
                 )
                 effects += TalentEffectResult.Buff(user, StatusEffectType.WAR_CRY_BUFF, effect.buffDuration, effect.buffMagnitude)

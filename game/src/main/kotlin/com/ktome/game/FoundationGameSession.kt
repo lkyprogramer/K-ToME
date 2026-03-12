@@ -291,6 +291,10 @@ class FoundationGameSession internal constructor(
         val iterator = tracker.effects.iterator()
         while (iterator.hasNext()) {
             val effect = iterator.next()
+            if (effect.skipNextDecay) {
+                effect.skipNextDecay = false
+                continue
+            }
             effect.remainingTurns -= 1
             if (effect.remainingTurns <= 0) {
                 iterator.remove()

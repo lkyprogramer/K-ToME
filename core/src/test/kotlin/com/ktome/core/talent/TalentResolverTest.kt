@@ -197,6 +197,33 @@ class TalentResolverTest {
         assertTrue(requireNotNull(world.get<DerivedStats>(player)).attack > 25)
     }
 
+    @Test
+    fun `unsupported talent fails without spending stamina or cooldown`() {
+        val world = baseWorld()
+        val player = createPlayer(world, cooldown = 0)
+        registry.register(
+            TalentDef(
+                id = "unsupported",
+                name = "未实现技能",
+                description = "",
+                staminaCost = 9,
+                cooldown = 4,
+                range = 0,
+                levelEffects = mapOf(1 to TalentLevelEffect()),
+            ),
+        )
+        requireNotNull(world.get<TalentLoadout>(player)).talentLevels["unsupported"] = 1
+
+        val beforeStamina = requireNotNull(world.get<Stamina>(player)).current
+        val beforeCooldowns = requireNotNull(world.get<CooldownState>(player)).remainingByTalentId.toMap()
+
+        val result = resolver().resolve(world, map, player, "unsupported", null)
+
+        assertTrue(result is TalentUseResult.Failure)
+        assertEquals(beforeStamina, requireNotNull(world.get<Stamina>(player)).current)
+        assertEquals(beforeCooldowns, requireNotNull(world.get<CooldownState>(player)).remainingByTalentId)
+    }
+
     private fun baseWorld(): World = World()
 
     private fun resolver(

@@ -18,6 +18,7 @@ import com.ktome.core.map.Point
 import com.ktome.core.random.RandomSource
 import com.ktome.core.talent.TalentRegistry
 import com.ktome.core.talent.TalentResolver
+import com.ktome.core.talent.StatusEffectType
 import com.ktome.game.data.DataLoader
 import com.ktome.game.factory.EntityFactory
 import com.ktome.game.factory.ItemFactory
@@ -241,6 +242,24 @@ class FoundationGameSessionTest {
         assertTrue(consumed)
         assertTrue(session.playerStatus().currentStamina < session.playerStatus().maxStamina)
         assertEquals(2, session.talentSlots().first { it.slot == 1 }.currentCooldown)
+    }
+
+    @Test
+    fun `self applied war cry keeps full duration after player turn ends`() {
+        val map = GameMap.fromAscii(rows = listOf(".....", ".....", "....."), playerStart = Point(1, 1))
+        val world = World()
+        val factory = EntityFactory()
+        val playerId = factory.createPlayer(world, Point(1, 1), talents)
+        val session = session(world, map, playerId)
+
+        val consumed = session.perform(PlayerCommand.UseTalent(slot = 4))
+
+        assertTrue(consumed)
+        val effect =
+            requireNotNull(world.get<com.ktome.core.talent.EffectTracker>(playerId))
+                .effects
+                .single { it.type == StatusEffectType.WAR_CRY_BUFF }
+        assertEquals(5, effect.remainingTurns)
     }
 
     private fun fixedRandom(

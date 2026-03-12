@@ -52,6 +52,7 @@ data class ActiveEffect(
     val type: StatusEffectType,
     var remainingTurns: Int,
     val statModifiers: StatModifier = StatModifier(),
+    var skipNextDecay: Boolean = false,
 )
 
 data class EffectTracker(
@@ -59,4 +60,3 @@ data class EffectTracker(
 ) {
     fun has(type: StatusEffectType): Boolean = effects.any { it.type == type && it.remainingTurns > 0 }
 }
-
