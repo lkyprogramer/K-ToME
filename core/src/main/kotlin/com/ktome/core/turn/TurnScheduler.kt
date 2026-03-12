@@ -40,6 +40,8 @@ class TurnScheduler(
     }
 
     fun tick(): EntityId {
+        require(entries.isNotEmpty()) { "Cannot tick scheduler with no entities." }
+
         while (true) {
             val ready = tickAll()
             if (ready.isNotEmpty()) {

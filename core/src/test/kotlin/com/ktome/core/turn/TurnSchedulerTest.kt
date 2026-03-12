@@ -2,6 +2,7 @@ package com.ktome.core.turn
 
 import com.ktome.core.ecs.EntityId
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Test
 
 class TurnSchedulerTest {
@@ -60,6 +61,15 @@ class TurnSchedulerTest {
         val second = TurnScheduler.tick(listOf(actorState(actor, speed = 130, energy = 40)))
 
         assertEquals(first, second)
+    }
+
+    @Test
+    fun tickWithoutEntitiesFailsFast() {
+        val scheduler = TurnScheduler()
+
+        assertThrows(IllegalArgumentException::class.java) {
+            scheduler.tick()
+        }
     }
 
     private fun actorState(
