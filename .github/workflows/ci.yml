@@ -24,6 +24,7 @@ jobs:
 
     steps:
       - name: Checkout repository
+        if: github.event_name != 'pull_request'
         uses: actions/checkout@v5
 
       - name: Detect bootstrap-related changes
@@ -61,7 +62,7 @@ jobs:
         run: ./gradlew --no-daemon check
 
       - name: Upload Gradle reports
-        if: always()
+        if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: ci-reports-${{ github.run_id }}
@@ -89,14 +90,11 @@ jobs:
           distribution: temurin
           java-version: "21"
 
-      - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v5
-
       - name: Run bootstrap offline verification
         run: ./scripts/verify-bootstrap.sh --clean
 
       - name: Upload bootstrap verification reports
-        if: always()
+        if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: bootstrap-reports-${{ github.run_id }}
