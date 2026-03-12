@@ -90,6 +90,14 @@ jobs:
           distribution: temurin
           java-version: "21"
 
+      - name: Restore bootstrap download cache
+        uses: actions/cache@v4
+        with:
+          path: .bootstrap/download-cache
+          key: bootstrap-downloads-${{ runner.os }}-${{ hashFiles('build.gradle.kts', '**/build.gradle.kts', 'settings.gradle.kts', 'gradle.properties', 'gradle/wrapper/gradle-wrapper.properties', 'scripts/bootstrap-deps.sh') }}
+          restore-keys: |
+            bootstrap-downloads-${{ runner.os }}-
+
       - name: Run bootstrap offline verification
         run: ./scripts/verify-bootstrap.sh --clean
 
