@@ -5,4 +5,6 @@ data class FoundationGameConfig(
     val height: Int = 50,
     val seed: Long = 20260312L,
     val fovRadius: Int = 8,
+    val floor: Int = 1,
+    val messageLogSize: Int = 8,
 )

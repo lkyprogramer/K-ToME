@@ -4,8 +4,10 @@ import com.badlogic.gdx.graphics.Color
 import com.badlogic.gdx.graphics.g2d.BitmapFont
 import com.badlogic.gdx.graphics.g2d.SpriteBatch
 import com.badlogic.gdx.utils.Disposable
+import com.ktome.client.ui.MessageLog
 import com.ktome.core.map.Point
 import com.ktome.core.map.TileType
+import com.ktome.game.ActorView
 import com.ktome.game.FoundationGameSession
 
 class AsciiRenderer(
@@ -16,21 +18,21 @@ class AsciiRenderer(
         setUseIntegerPositions(true)
         color = Color.WHITE
     }
+    private val messageLog = MessageLog(maxLines = messageRows)
 
     fun render(
         batch: SpriteBatch,
         session: FoundationGameSession,
     ) {
         val map = session.map
-        val playerPosition = session.playerPosition()
         val visible = session.visibleTiles()
         val explored = session.exploredTiles()
+        val mapOffsetY = uiRows * cellHeight
 
         for (y in 0 until map.height) {
             for (x in 0 until map.width) {
                 val point = Point(x, y)
                 val glyphState = when {
-                    point == playerPosition && point in visible -> GlyphState(session.playerGlyph(), Color.GOLD)
                     point in visible -> {
                         val tile = map[point]
                         GlyphState(tile.glyph, visibleColor(tile))
@@ -43,10 +45,19 @@ class AsciiRenderer(
                 }
 
                 glyphState?.let { state ->
-                    drawGlyph(batch, x, y, map.height, state)
+                    drawGlyph(batch, x, y, map.height, mapOffsetY, state)
                 }
             }
         }
+
+        session.actorViews()
+            .sortedBy { if (it.isPlayer) 1 else 0 }
+            .forEach { actor ->
+                drawActor(batch, actor, map.height, mapOffsetY)
+            }
+
+        drawStatus(batch, session)
+        drawMessages(batch, session)
     }
 
     override fun dispose() {
@@ -65,11 +76,57 @@ class AsciiRenderer(
             TileType.FLOOR -> Color.GRAY
         }
 
+    private fun drawActor(
+        batch: SpriteBatch,
+        actor: ActorView,
+        mapHeight: Int,
+        mapOffsetY: Float,
+    ) {
+        drawGlyph(
+            batch = batch,
+            x = actor.position.x,
+            y = actor.position.y,
+            mapHeight = mapHeight,
+            mapOffsetY = mapOffsetY,
+            glyphState = GlyphState(actor.glyph, Color.valueOf(actor.colorHex.removePrefix("#"))),
+        )
+    }
+
+    private fun drawStatus(
+        batch: SpriteBatch,
+        session: FoundationGameSession,
+    ) {
+        val status = session.playerStatus()
+        font.color = if (session.isGameOver()) Color.SCARLET else Color.GOLD
+        font.draw(
+            batch,
+            "HP ${status.currentHp}/${status.maxHp}  LV ${status.level}  XP ${status.currentExperience}/${status.nextLevelRequirement}  STAT ${status.statPoints}  TAL ${status.talentPoints}",
+            4f,
+            messageRows * cellHeight + cellHeight - 4f,
+        )
+    }
+
+    private fun drawMessages(
+        batch: SpriteBatch,
+        session: FoundationGameSession,
+    ) {
+        font.color = Color.WHITE
+        messageLog.render(
+            batch = batch,
+            font = font,
+            messages = session.messageLog(),
+            x = 4f,
+            baselineY = 12f,
+            lineHeight = cellHeight,
+        )
+    }
+
     private fun drawGlyph(
         batch: SpriteBatch,
         x: Int,
         y: Int,
         mapHeight: Int,
+        mapOffsetY: Float,
         glyphState: GlyphState,
     ) {
         font.color = glyphState.color
@@ -77,7 +134,7 @@ class AsciiRenderer(
             batch,
             glyphState.glyph.toString(),
             x * cellWidth + 2f,
-            (mapHeight - y) * cellHeight - 4f,
+            mapOffsetY + (mapHeight - y) * cellHeight - 4f,
         )
     }
 
@@ -85,4 +142,9 @@ class AsciiRenderer(
         val glyph: Char,
         val color: Color,
     )
+
+    companion object {
+        const val messageRows: Int = 6
+        const val uiRows: Int = messageRows + 1
+    }
 }

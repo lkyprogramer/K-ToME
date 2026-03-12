@@ -117,6 +117,7 @@ JETBRAINS_ANNOTATIONS_VERSION="$(property jetbrainsAnnotationsVersion)"
 KOTLINX_COROUTINES_KOTLIN_STDLIB_VERSION="$(property kotlinxCoroutinesKotlinStdlibVersion)"
 KOTLIN_STDLIB_ANNOTATIONS_VERSION="$(property kotlinStdlibAnnotationsVersion)"
 KOTLIN_REFLECT_VERSION="$(property kotlinReflectVersion)"
+SNAKEYAML_VERSION="$(property snakeyamlVersion)"
 
 resolve_base_url() {
   case "$1" in
@@ -393,6 +394,7 @@ download_main_artifact "mavenCentral" "org.lwjgl" "lwjgl-opengl" "$LWJGL_VERSION
 download_classifier_bundle "mavenCentral" "org.lwjgl" "lwjgl-opengl" "$LWJGL_VERSION" "${LWJGL_NATIVE_CLASSIFIERS[@]}"
 download_main_artifact "mavenCentral" "org.lwjgl" "lwjgl-stb" "$LWJGL_VERSION"
 download_classifier_bundle "mavenCentral" "org.lwjgl" "lwjgl-stb" "$LWJGL_VERSION" "${LWJGL_NATIVE_CLASSIFIERS[@]}"
+download_main_artifact "mavenCentral" "org.yaml" "snakeyaml" "$SNAKEYAML_VERSION"
 
 bootstrap_gradle_distribution
 

@@ -92,6 +92,7 @@ tasks.register<JacocoReport>("jacocoTestReport") {
     group = LifecycleBasePlugin.VERIFICATION_GROUP
     description = "Generates an aggregate JaCoCo coverage report for all subprojects."
     dependsOn(test)
+    dependsOn(subprojects.map { it.tasks.named("jacocoTestReport") })
 
     val mainSourceSets = subprojects.mapNotNull { project ->
         project.extensions.findByType<SourceSetContainer>()?.findByName("main")
@@ -101,8 +102,10 @@ tasks.register<JacocoReport>("jacocoTestReport") {
     sourceDirectories.from(mainSourceSets.map { it.allSource.srcDirs })
     classDirectories.from(mainSourceSets.map { it.output })
     executionData.from(
-        fileTree(rootDir) {
-            include("**/build/jacoco/*.exec")
+        subprojects.map { project ->
+            project.fileTree(project.layout.buildDirectory) {
+                include("jacoco/*.exec")
+            }
         },
     )
 
