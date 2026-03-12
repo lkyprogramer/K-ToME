@@ -91,7 +91,7 @@ jobs:
           java-version: "21"
 
       - name: Restore bootstrap download cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: .bootstrap/download-cache
           key: bootstrap-downloads-${{ runner.os }}-${{ hashFiles('build.gradle.kts', '**/build.gradle.kts', 'settings.gradle.kts', 'gradle.properties', 'gradle/wrapper/gradle-wrapper.properties', 'scripts/bootstrap-deps.sh') }}
