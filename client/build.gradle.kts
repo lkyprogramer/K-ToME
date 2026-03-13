@@ -25,5 +25,5 @@ tasks.named<JavaExec>("run") {
 }
 
 tasks.named<Test>("test") {
-    enabled = false
+    enabled = true
 }

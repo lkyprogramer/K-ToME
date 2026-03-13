@@ -4,6 +4,7 @@ import com.ktome.core.ecs.EntityId
 import com.ktome.core.item.EquipSlot
 import com.ktome.core.item.ItemType
 import com.ktome.core.map.Point
+import com.ktome.core.run.RunOutcome
 
 sealed interface PlayerCommand {
     data class Move(val delta: Point) : PlayerCommand
@@ -12,9 +13,26 @@ sealed interface PlayerCommand {
 
     data object PickUp : PlayerCommand
 
+    data object Ascend : PlayerCommand
+
+    data object Descend : PlayerCommand
+
+    data object SaveGame : PlayerCommand
+
     data class ActivateInventoryItem(val index: Int) : PlayerCommand
 
     data class UseTalent(val slot: Int, val target: Point? = null) : PlayerCommand
+
+    data class AssignStat(val stat: PrimaryStat) : PlayerCommand
+
+    data class AssignTalent(val slot: Int) : PlayerCommand
+}
+
+enum class PrimaryStat {
+    STR,
+    DEX,
+    CON,
+    WIL,
 }
 
 data class ActorView(
@@ -59,8 +77,18 @@ data class TalentSlotView(
     val slot: Int,
     val talentId: String,
     val name: String,
+    val level: Int,
+    val maxLevel: Int,
     val staminaCost: Int,
     val currentCooldown: Int,
     val maxCooldown: Int,
     val requiresTarget: Boolean,
+)
+
+data class RunSummary(
+    val outcome: RunOutcome,
+    val floorReached: Int,
+    val maxFloor: Int,
+    val turns: Int,
+    val playerLevel: Int,
 )

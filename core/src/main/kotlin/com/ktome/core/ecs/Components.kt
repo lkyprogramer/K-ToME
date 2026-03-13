@@ -1,5 +1,6 @@
 package com.ktome.core.ecs
 
+import com.ktome.core.dungeon.StairDirection
 import com.ktome.core.map.Point
 
 data class Position(var x: Int, var y: Int) {
@@ -114,3 +115,5 @@ data class PatrolRoute(
         require(nextWaypointIndex in waypoints.indices) { "Patrol index must point to an existing waypoint." }
     }
 }
+
+data class Stair(val direction: StairDirection)

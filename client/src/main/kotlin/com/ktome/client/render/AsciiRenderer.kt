@@ -103,10 +103,15 @@ class AsciiRenderer(
         session: FoundationGameSession,
     ) {
         val status = session.playerStatus()
-        font.color = if (session.isGameOver()) Color.SCARLET else Color.GOLD
+        font.color =
+            when {
+                session.isVictory() -> Color.FOREST
+                session.isGameOver() -> Color.SCARLET
+                else -> Color.GOLD
+            }
         font.draw(
             batch,
-            "HP ${status.currentHp}/${status.maxHp}  STA ${status.currentStamina}/${status.maxStamina}  ATK ${status.attack}  DEF ${status.defense}  LV ${status.level}  XP ${status.currentExperience}/${status.nextLevelRequirement}  STAT ${status.statPoints}  TAL ${status.talentPoints}",
+            "FL ${session.currentFloor()}/${session.maxFloor()}  HP ${status.currentHp}/${status.maxHp}  STA ${status.currentStamina}/${status.maxStamina}  ATK ${status.attack}  DEF ${status.defense}  LV ${status.level}  XP ${status.currentExperience}/${status.nextLevelRequirement}  STAT ${status.statPoints}  TAL ${status.talentPoints}",
             4f,
             messageRows * cellHeight + cellHeight - 4f,
         )
@@ -180,7 +185,9 @@ class AsciiRenderer(
                 } else {
                     "Ready"
                 }
-            font.draw(batch, "${talent.slot}.${talent.name} [$state] ${talent.staminaCost} STA", sidebarX, line)
+            font.draw(batch, "${talent.slot}.${talent.name} L${talent.level}/${talent.maxLevel} [$state]", sidebarX, line)
+            line -= cellHeight
+            font.draw(batch, "   ${talent.staminaCost} STA", sidebarX, line)
             line -= cellHeight
         }
 
@@ -207,6 +214,24 @@ class AsciiRenderer(
                 font.draw(batch, "g pick up", sidebarX, line)
                 line -= cellHeight
                 font.draw(batch, "i inventory", sidebarX, line)
+                line -= cellHeight
+                font.draw(batch, "Ctrl+S save", sidebarX, line)
+                line -= cellHeight
+                if (session.canDescend()) {
+                    font.draw(batch, "> descend", sidebarX, line)
+                    line -= cellHeight
+                }
+                if (session.canAscend()) {
+                    font.draw(batch, "< ascend", sidebarX, line)
+                    line -= cellHeight
+                }
+                if (session.hasPendingTalentAllocation()) {
+                    font.draw(batch, "T spend talent point", sidebarX, line)
+                    line -= cellHeight
+                }
+                if (session.hasPendingStatAllocation()) {
+                    font.draw(batch, "1-4 spend stat point", sidebarX, line)
+                }
             }
 
             UiMode.INVENTORY -> {
@@ -242,6 +267,39 @@ class AsciiRenderer(
                 line -= cellHeight
                 font.color = Color.LIGHT_GRAY
                 font.draw(batch, "Move cursor  Enter confirm  Esc cancel", sidebarX, line)
+            }
+
+            UiMode.STAT_ASSIGN -> {
+                line -= cellHeight / 2f
+                font.color = Color.GOLD
+                font.draw(batch, "Assign Stats", sidebarX, line)
+                line -= cellHeight
+                font.color = Color.WHITE
+                font.draw(batch, "Points: ${session.playerStatus().statPoints}", sidebarX, line)
+                line -= cellHeight
+                font.draw(batch, "1. STR", sidebarX, line)
+                line -= cellHeight
+                font.draw(batch, "2. DEX", sidebarX, line)
+                line -= cellHeight
+                font.draw(batch, "3. CON", sidebarX, line)
+                line -= cellHeight
+                font.draw(batch, "4. WIL", sidebarX, line)
+            }
+
+            UiMode.TALENT_ASSIGN -> {
+                line -= cellHeight / 2f
+                font.color = Color.GOLD
+                font.draw(batch, "Improve Talents", sidebarX, line)
+                line -= cellHeight
+                font.color = Color.WHITE
+                font.draw(batch, "Points: ${session.playerStatus().talentPoints}", sidebarX, line)
+                line -= cellHeight
+                session.talentSlots().forEach { talent ->
+                    font.draw(batch, "${talent.slot}. ${talent.name} L${talent.level}/${talent.maxLevel}", sidebarX, line)
+                    line -= cellHeight
+                }
+                font.color = Color.LIGHT_GRAY
+                font.draw(batch, "1-4 improve  T/Esc close", sidebarX, line)
             }
         }
     }
