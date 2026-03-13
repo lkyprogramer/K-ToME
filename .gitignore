@@ -22,6 +22,10 @@ logs/
 # Runtime saves and local mod sandbox
 saves/
 save/
+!core/src/main/kotlin/com/ktome/core/save/
+!core/src/main/kotlin/com/ktome/core/save/**
+!core/src/test/kotlin/com/ktome/core/save/
+!core/src/test/kotlin/com/ktome/core/save/**
 mods-local/
 .bootstrap/
 third_party/

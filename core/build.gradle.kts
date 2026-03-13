@@ -7,6 +7,10 @@ plugins {
     `java-library`
 }
 
+dependencies {
+    implementation("com.google.code.gson:gson:${rootProject.providers.gradleProperty("gsonVersion").get()}")
+}
+
 tasks.register("verifyNoGdxDependencies") {
     group = "verification"
     description = "Fails if the core module accidentally pulls any libGDX dependency."
@@ -37,7 +41,7 @@ tasks.named<JacocoCoverageVerification>("jacocoTestCoverageVerification") {
             limit {
                 counter = "LINE"
                 value = "COVEREDRATIO"
-                minimum = BigDecimal("0.75")
+                minimum = BigDecimal("0.80")
             }
         }
 
@@ -52,6 +56,9 @@ tasks.named<JacocoCoverageVerification>("jacocoTestCoverageVerification") {
             "com.ktome.core.stats.*",
             "com.ktome.core.item.*",
             "com.ktome.core.talent.*",
+            "com.ktome.core.dungeon.*",
+            "com.ktome.core.run.*",
+            "com.ktome.core.save.*",
         ).forEach { packagePattern ->
             rule {
                 element = "PACKAGE"

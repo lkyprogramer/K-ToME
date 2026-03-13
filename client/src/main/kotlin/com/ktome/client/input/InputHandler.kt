@@ -1,8 +1,8 @@
 package com.ktome.client.input
 
-import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.Input.Keys
 import com.ktome.core.map.Point
+import com.ktome.game.PrimaryStat
 import com.ktome.game.FoundationGameSession
 import com.ktome.game.PlayerCommand
 
@@ -10,6 +10,8 @@ enum class UiMode {
     MAP,
     INVENTORY,
     TARGETING,
+    STAT_ASSIGN,
+    TALENT_ASSIGN,
 }
 
 data class OverlayState(
@@ -19,7 +21,9 @@ data class OverlayState(
     val targetingCursor: Point? = null,
 )
 
-class InputHandler {
+class InputHandler(
+    private val input: InputSource = GdxInputSource,
+) {
     private val movementBindings =
         linkedMapOf(
             Keys.Q to Point(-1, -1),
@@ -54,6 +58,8 @@ class InputHandler {
     private var targetingSlot: Int? = null
     private var targetingCursor: Point? = null
 
+    fun isMapMode(): Boolean = mode == UiMode.MAP
+
     fun overlayState(): OverlayState =
         OverlayState(
             mode = mode,
@@ -62,20 +68,26 @@ class InputHandler {
             targetingCursor = targetingCursor,
         )
 
-    fun pollCommand(session: FoundationGameSession): PlayerCommand? =
-        when (mode) {
+    fun pollCommand(session: FoundationGameSession): PlayerCommand? {
+        reconcileMode(session)
+        return when (mode) {
             UiMode.MAP -> pollMapCommand(session)
             UiMode.INVENTORY -> pollInventoryCommand(session)
             UiMode.TARGETING -> pollTargetingCommand(session)
+            UiMode.STAT_ASSIGN -> pollStatAssignCommand(session)
+            UiMode.TALENT_ASSIGN -> pollTalentAssignCommand(session)
         }
+    }
 
     fun onCommandResult(
+        session: FoundationGameSession,
         command: PlayerCommand,
         consumed: Boolean,
     ) {
         when (command) {
             is PlayerCommand.UseTalent -> {
                 if (command.target == null) {
+                    reconcileMode(session)
                     return
                 }
 
@@ -88,27 +100,74 @@ class InputHandler {
                 }
             }
 
+            is PlayerCommand.AssignStat,
+            is PlayerCommand.AssignTalent,
+            PlayerCommand.SaveGame,
+            PlayerCommand.Ascend,
+            PlayerCommand.Descend,
+            -> reconcileMode(session)
+
             else -> Unit
+        }
+        reconcileMode(session)
+    }
+
+    private fun reconcileMode(session: FoundationGameSession) {
+        when (mode) {
+            UiMode.STAT_ASSIGN -> {
+                if (!session.hasPendingStatAllocation()) {
+                    mode = UiMode.MAP
+                }
+            }
+
+            UiMode.TALENT_ASSIGN -> {
+                if (!session.hasPendingTalentAllocation()) {
+                    mode = UiMode.MAP
+                }
+            }
+
+            else -> Unit
+        }
+
+        if (session.hasPendingStatAllocation()) {
+            mode = UiMode.STAT_ASSIGN
         }
     }
 
     private fun pollMapCommand(session: FoundationGameSession): PlayerCommand? {
-        val movement = movementBindings.entries.firstOrNull { (key, _) -> Gdx.input.isKeyJustPressed(key) }?.value
+        if (isSaveBinding()) {
+            return PlayerCommand.SaveGame
+        }
+
+        if (isDescendBinding()) {
+            return PlayerCommand.Descend
+        }
+
+        if (isAscendBinding()) {
+            return PlayerCommand.Ascend
+        }
+
+        val movement = movementBindings.entries.firstOrNull { (key, _) -> input.isKeyJustPressed(key) }?.value
         if (movement != null) {
             return PlayerCommand.Move(movement)
         }
 
-        if (waitBindings.any(Gdx.input::isKeyJustPressed)) {
+        if (waitBindings.any(input::isKeyJustPressed)) {
             return PlayerCommand.Wait
         }
 
-        if (Gdx.input.isKeyJustPressed(Keys.G)) {
+        if (input.isKeyJustPressed(Keys.G)) {
             return PlayerCommand.PickUp
         }
 
-        if (Gdx.input.isKeyJustPressed(Keys.I)) {
+        if (input.isKeyJustPressed(Keys.I)) {
             mode = UiMode.INVENTORY
             inventorySelection = inventorySelection.coerceAtMost((session.inventoryItems().size - 1).coerceAtLeast(0))
+            return null
+        }
+
+        if (input.isKeyJustPressed(Keys.T) && session.hasPendingTalentAllocation()) {
+            mode = UiMode.TALENT_ASSIGN
             return null
         }
 
@@ -128,7 +187,7 @@ class InputHandler {
 
     private fun pollInventoryCommand(session: FoundationGameSession): PlayerCommand? {
         val inventorySize = session.inventoryItems().size
-        if (Gdx.input.isKeyJustPressed(Keys.ESCAPE) || Gdx.input.isKeyJustPressed(Keys.I)) {
+        if (input.isKeyJustPressed(Keys.ESCAPE) || input.isKeyJustPressed(Keys.I)) {
             mode = UiMode.MAP
             return null
         }
@@ -137,20 +196,20 @@ class InputHandler {
             return null
         }
 
-        if (Gdx.input.isKeyJustPressed(Keys.UP) || Gdx.input.isKeyJustPressed(Keys.W)) {
+        if (input.isKeyJustPressed(Keys.UP) || input.isKeyJustPressed(Keys.W)) {
             inventorySelection = (inventorySelection - 1).coerceAtLeast(0)
             return null
         }
 
-        if (Gdx.input.isKeyJustPressed(Keys.DOWN) || Gdx.input.isKeyJustPressed(Keys.X)) {
+        if (input.isKeyJustPressed(Keys.DOWN) || input.isKeyJustPressed(Keys.X)) {
             inventorySelection = (inventorySelection + 1).coerceAtMost(inventorySize - 1)
             return null
         }
 
         if (
-            Gdx.input.isKeyJustPressed(Keys.ENTER) ||
-            Gdx.input.isKeyJustPressed(Keys.SPACE) ||
-            Gdx.input.isKeyJustPressed(Keys.E)
+            input.isKeyJustPressed(Keys.ENTER) ||
+            input.isKeyJustPressed(Keys.SPACE) ||
+            input.isKeyJustPressed(Keys.E)
         ) {
             return PlayerCommand.ActivateInventoryItem(inventorySelection)
         }
@@ -159,13 +218,13 @@ class InputHandler {
     }
 
     private fun pollTargetingCommand(session: FoundationGameSession): PlayerCommand? {
-        if (Gdx.input.isKeyJustPressed(Keys.ESCAPE)) {
+        if (input.isKeyJustPressed(Keys.ESCAPE)) {
             clearTargeting()
             return null
         }
 
         val cursor = targetingCursor ?: session.playerPosition()
-        val movement = movementBindings.entries.firstOrNull { (key, _) -> Gdx.input.isKeyJustPressed(key) }?.value
+        val movement = movementBindings.entries.firstOrNull { (key, _) -> input.isKeyJustPressed(key) }?.value
         if (movement != null) {
             targetingCursor =
                 Point(
@@ -175,19 +234,47 @@ class InputHandler {
             return null
         }
 
-        if (Gdx.input.isKeyJustPressed(Keys.ENTER) || Gdx.input.isKeyJustPressed(Keys.SPACE)) {
+        if (input.isKeyJustPressed(Keys.ENTER) || input.isKeyJustPressed(Keys.SPACE)) {
             return PlayerCommand.UseTalent(requireNotNull(targetingSlot), targetingCursor ?: session.playerPosition())
         }
 
         return null
     }
 
+    private fun pollStatAssignCommand(session: FoundationGameSession): PlayerCommand? {
+        if (!session.hasPendingStatAllocation()) {
+            mode = UiMode.MAP
+            return null
+        }
+
+        return when {
+            input.isKeyJustPressed(Keys.NUM_1) -> PlayerCommand.AssignStat(PrimaryStat.STR)
+            input.isKeyJustPressed(Keys.NUM_2) -> PlayerCommand.AssignStat(PrimaryStat.DEX)
+            input.isKeyJustPressed(Keys.NUM_3) -> PlayerCommand.AssignStat(PrimaryStat.CON)
+            input.isKeyJustPressed(Keys.NUM_4) -> PlayerCommand.AssignStat(PrimaryStat.WIL)
+            else -> null
+        }
+    }
+
+    private fun pollTalentAssignCommand(session: FoundationGameSession): PlayerCommand? {
+        if (input.isKeyJustPressed(Keys.ESCAPE) || input.isKeyJustPressed(Keys.T)) {
+            mode = UiMode.MAP
+            return null
+        }
+        if (!session.hasPendingTalentAllocation()) {
+            mode = UiMode.MAP
+            return null
+        }
+
+        return hotkeySlot()?.let(PlayerCommand::AssignTalent)
+    }
+
     private fun hotkeySlot(): Int? =
         when {
-            Gdx.input.isKeyJustPressed(Keys.NUM_1) -> 1
-            Gdx.input.isKeyJustPressed(Keys.NUM_2) -> 2
-            Gdx.input.isKeyJustPressed(Keys.NUM_3) -> 3
-            Gdx.input.isKeyJustPressed(Keys.NUM_4) -> 4
+            input.isKeyJustPressed(Keys.NUM_1) -> 1
+            input.isKeyJustPressed(Keys.NUM_2) -> 2
+            input.isKeyJustPressed(Keys.NUM_3) -> 3
+            input.isKeyJustPressed(Keys.NUM_4) -> 4
             else -> null
         }
 
@@ -201,4 +288,14 @@ class InputHandler {
         targetingSlot = null
         targetingCursor = null
     }
+
+    private fun isSaveBinding(): Boolean = controlPressed() && input.isKeyJustPressed(Keys.S)
+
+    private fun isDescendBinding(): Boolean = shiftPressed() && input.isKeyJustPressed(Keys.PERIOD)
+
+    private fun isAscendBinding(): Boolean = shiftPressed() && input.isKeyJustPressed(Keys.COMMA)
+
+    private fun controlPressed(): Boolean = input.isKeyPressed(Keys.CONTROL_LEFT) || input.isKeyPressed(Keys.CONTROL_RIGHT)
+
+    private fun shiftPressed(): Boolean = input.isKeyPressed(Keys.SHIFT_LEFT) || input.isKeyPressed(Keys.SHIFT_RIGHT)
 }

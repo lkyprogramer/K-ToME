@@ -15,6 +15,14 @@ class World {
         return entityId
     }
 
+    fun createEntity(id: EntityId): EntityId {
+        require(id.value > 0) { "Entity ids must be positive: $id" }
+        require(id !in entities) { "Entity $id already exists." }
+        entities += id
+        nextEntityValue = maxOf(nextEntityValue, id.value + 1)
+        return id
+    }
+
     fun destroyEntity(id: EntityId) {
         if (!entities.remove(id)) {
             return

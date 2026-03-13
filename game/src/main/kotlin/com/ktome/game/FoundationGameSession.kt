@@ -6,6 +6,9 @@ import com.ktome.core.ai.AIDecision
 import com.ktome.core.ai.AIDecisionContext
 import com.ktome.core.ai.AITargetSnapshot
 import com.ktome.core.combat.CombatResolver
+import com.ktome.core.dungeon.DungeonManager
+import com.ktome.core.dungeon.FloorState
+import com.ktome.core.dungeon.StairDirection
 import com.ktome.core.ecs.AIBehavior
 import com.ktome.core.ecs.BlocksMovement
 import com.ktome.core.ecs.DerivedStats
@@ -17,9 +20,11 @@ import com.ktome.core.ecs.ExperienceReward
 import com.ktome.core.ecs.FactionTag
 import com.ktome.core.ecs.Glyph
 import com.ktome.core.ecs.Health
+import com.ktome.core.ecs.MonsterTemplateId
 import com.ktome.core.ecs.Name
 import com.ktome.core.ecs.PatrolRoute
 import com.ktome.core.ecs.Position
+import com.ktome.core.ecs.Stats
 import com.ktome.core.ecs.Stamina
 import com.ktome.core.ecs.World
 import com.ktome.core.ecs.get
@@ -30,6 +35,7 @@ import com.ktome.core.event.LevelUpEvent
 import com.ktome.core.event.MissEvent
 import com.ktome.core.fov.Shadowcasting
 import com.ktome.core.item.EquipSlot
+import com.ktome.core.item.ItemDataBundle
 import com.ktome.core.item.Inventory
 import com.ktome.core.item.InventoryManager
 import com.ktome.core.item.InventoryOperationResult
@@ -40,38 +46,88 @@ import com.ktome.core.map.Point
 import com.ktome.core.movement.MovementRules
 import com.ktome.core.progression.ExperienceSystem
 import com.ktome.core.random.RandomSource
+import com.ktome.core.random.SplitMix64RandomSource
+import com.ktome.core.random.StatefulRandomSource
+import com.ktome.core.run.RunOutcome
+import com.ktome.core.save.PlayerSnapshot
+import com.ktome.core.save.SaveManager
 import com.ktome.core.stats.StatsCalculator
 import com.ktome.core.talent.CooldownState
 import com.ktome.core.talent.EffectTracker
 import com.ktome.core.talent.StatusEffectType
+import com.ktome.core.talent.TalentLoadout
 import com.ktome.core.talent.TalentRegistry
 import com.ktome.core.talent.TalentResolver
 import com.ktome.core.talent.TalentUseResult
 import com.ktome.core.turn.TurnActorState
 import com.ktome.core.turn.TurnScheduler
+import com.ktome.game.model.BossDefinition
+import com.ktome.game.model.MonsterTemplate
+import java.nio.file.Files
 
 class FoundationGameSession internal constructor(
     val config: FoundationGameConfig,
-    val map: GameMap,
-    private val world: World,
-    val playerId: EntityId,
-    private val combatResolver: CombatResolver,
-    private val talentRegistry: TalentRegistry,
-    private val talentResolver: TalentResolver,
-    private val sessionRandom: RandomSource,
+    private val content: GameContent,
+    private val saveManager: SaveManager,
+    private val dungeonManager: DungeonManager<FloorRuntimeState>,
+    private var playerSnapshot: PlayerSnapshot,
+    initialMessageLog: List<String> = emptyList(),
+    private var turnCount: Int = 0,
     private val inventoryManager: InventoryManager = InventoryManager(),
+    private val combatRandomSource: RandomSource = defaultCombatRandomSource(config, turnCount),
+    private val combatResolver: CombatResolver = CombatResolver(combatRandomSource),
+    private val talentRegistry: TalentRegistry = content.talentRegistry,
+    private val talentResolver: TalentResolver = TalentResolver(talentRegistry, combatResolver),
+    private val sessionRandom: RandomSource = defaultSessionRandomSource(config, turnCount),
 ) {
-    private var visibleTiles: Set<Point> = emptySet()
-    private val exploredTiles = linkedSetOf<Point>()
     private val messageLog = ArrayDeque<String>()
     private val pendingActions = ArrayDeque<EntityId>()
     private var activeTurnActor: EntityId? = null
-    private var gameOver = false
+    private var runOutcome: RunOutcome = RunOutcome.InProgress
+    private var activeFloorState: FloorRuntimeState = dungeonManager.currentState().payload
+    private var world: World = SessionSnapshotMapper.restoreWorld(playerSnapshot, activeFloorState)
+    private var visibleTiles: Set<Point> = emptySet()
+    private var exploredTiles: LinkedHashSet<Point> = activeFloorState.exploredTiles
 
     init {
-        addMessage("You enter the dungeon.")
+        initialMessageLog.forEach(::addMessage)
         refreshFov()
     }
+
+    internal constructor(
+        config: FoundationGameConfig,
+        map: GameMap,
+        world: World,
+        playerId: EntityId,
+        combatResolver: CombatResolver,
+        talentRegistry: TalentRegistry,
+        talentResolver: TalentResolver,
+        sessionRandom: RandomSource,
+        inventoryManager: InventoryManager = InventoryManager(),
+    ) : this(
+        config = config,
+        content = compatibilityContent(talentRegistry),
+        saveManager = SaveManager(Files.createTempDirectory("ktome-session-save")),
+        dungeonManager = compatibilityDungeonManager(config, map, world, playerId),
+        playerSnapshot = SessionSnapshotMapper.capturePlayer(world, playerId),
+        initialMessageLog = listOf("You enter the dungeon."),
+        inventoryManager = inventoryManager,
+        combatRandomSource = UntrackedRandomSource,
+        combatResolver = combatResolver,
+        talentRegistry = talentRegistry,
+        talentResolver = talentResolver,
+        sessionRandom = sessionRandom,
+    )
+
+    val map: GameMap
+        get() = activeFloorState.map
+
+    val playerId: EntityId
+        get() = EntityId(playerSnapshot.entity.id)
+
+    fun currentFloor(): Int = dungeonManager.currentFloor
+
+    fun maxFloor(): Int = config.maxFloor
 
     fun playerPosition(): Point = requireNotNull(world.get<Position>(playerId)).toPoint()
 
@@ -101,7 +157,56 @@ class FoundationGameSession internal constructor(
 
     fun messageLog(): List<String> = messageLog.toList()
 
-    fun isGameOver(): Boolean = gameOver
+    fun isGameOver(): Boolean = runOutcome is RunOutcome.Defeat
+
+    fun isVictory(): Boolean = runOutcome is RunOutcome.Victory
+
+    fun runOutcome(): RunOutcome = runOutcome
+
+    fun runSummary(): RunSummary? =
+        if (!runOutcome.isTerminal) {
+            null
+        } else {
+            RunSummary(
+                outcome = runOutcome,
+                floorReached = currentFloor(),
+                maxFloor = config.maxFloor,
+                turns = turnCount,
+                playerLevel = playerStatus().level,
+            )
+        }
+
+    fun canAscend(): Boolean = activeFloorState.stairsUp != null && playerPosition() == activeFloorState.stairsUp
+
+    fun canDescend(): Boolean = activeFloorState.stairsDown != null && playerPosition() == activeFloorState.stairsDown
+
+    fun hasPendingStatAllocation(): Boolean = playerStatus().statPoints > 0
+
+    fun hasPendingTalentAllocation(): Boolean = playerStatus().talentPoints > 0
+
+    fun saveOnExit(): Boolean = if (runOutcome.isTerminal) false else persistRun()
+
+    internal fun automationWorld(): World = world
+
+    internal fun automationMovePlayerTo(point: Point) {
+        require(map.isInBounds(point.x, point.y)) { "Point $point is outside the current map." }
+        requireNotNull(world.get<Position>(playerId)).moveTo(point)
+        refreshFov()
+    }
+
+    internal fun automationStairPoint(direction: StairDirection): Point? =
+        when (direction) {
+            StairDirection.UP -> activeFloorState.stairsUp
+            StairDirection.DOWN -> activeFloorState.stairsDown
+        }
+
+    internal fun automationEntityByTemplateId(templateId: String): EntityId? =
+        world.entitiesWith(MonsterTemplateId::class)
+            .firstOrNull { entityId -> world.get<MonsterTemplateId>(entityId)?.value == templateId }
+
+    internal fun automationForceDefeatPlayer() {
+        handleDeath(playerId, null)
+    }
 
     fun playerStatus(): PlayerStatus {
         val health = requireNotNull(world.get<Health>(playerId))
@@ -151,7 +256,7 @@ class FoundationGameSession internal constructor(
         }
 
     fun talentSlots(): List<TalentSlotView> {
-        val loadout = world.get<com.ktome.core.talent.TalentLoadout>(playerId) ?: return emptyList()
+        val loadout = world.get<TalentLoadout>(playerId) ?: return emptyList()
         val cooldowns = world.get<CooldownState>(playerId)?.remainingByTalentId.orEmpty()
         return loadout.slotToTalentId.entries.sortedBy { it.key }.mapNotNull { (slot, talentId) ->
             val definition = talentRegistry.get(talentId) ?: return@mapNotNull null
@@ -159,6 +264,8 @@ class FoundationGameSession internal constructor(
                 slot = slot,
                 talentId = talentId,
                 name = definition.name,
+                level = loadout.levelOf(talentId),
+                maxLevel = definition.maxLevel,
                 staminaCost = definition.staminaCost,
                 currentCooldown = cooldowns[talentId] ?: 0,
                 maxCooldown = definition.cooldown,
@@ -184,27 +291,32 @@ class FoundationGameSession internal constructor(
     }
 
     fun perform(command: PlayerCommand): Boolean {
-        if (gameOver || !world.isAlive(playerId)) {
+        if (runOutcome.isTerminal || !world.isAlive(playerId)) {
             return false
         }
 
         advanceUntilPlayerTurn()
-        if (gameOver || !world.isAlive(playerId) || pendingActions.firstOrNull() != playerId) {
+        if (runOutcome.isTerminal || !world.isAlive(playerId) || pendingActions.firstOrNull() != playerId) {
             refreshFov()
             return false
         }
 
         prepareActorTurn(playerId)
-        val consumed = executePlayerCommand(command)
-        if (!consumed) {
+        val resolution = executePlayerCommand(command)
+        if (!resolution.accepted) {
             refreshFov()
             return false
         }
 
-        finishActorTurn(playerId)
-        pendingActions.removeFirstOrNull()
-        activeTurnActor = null
-        advanceUntilPlayerTurn()
+        if (resolution.consumesTurn) {
+            finishActorTurn(playerId)
+            pendingActions.removeFirstOrNull()
+            activeTurnActor = null
+            turnCount += 1
+            advanceUntilPlayerTurn()
+            maybePersistCheckpoint(resolution)
+        }
+
         refreshFov()
         return true
     }
@@ -227,7 +339,7 @@ class FoundationGameSession internal constructor(
     }
 
     private fun scheduleNextActions() {
-        if (gameOver || !world.isAlive(playerId)) {
+        if (runOutcome.isTerminal || !world.isAlive(playerId)) {
             return
         }
 
@@ -237,7 +349,7 @@ class FoundationGameSession internal constructor(
     }
 
     private fun advanceUntilPlayerTurn() {
-        while (!gameOver && world.isAlive(playerId)) {
+        while (!runOutcome.isTerminal && world.isAlive(playerId)) {
             if (pendingActions.isEmpty()) {
                 scheduleNextActions()
             }
@@ -307,22 +419,77 @@ class FoundationGameSession internal constructor(
         }
     }
 
-    private fun executePlayerCommand(command: PlayerCommand): Boolean =
+    private fun executePlayerCommand(command: PlayerCommand): CommandResolution =
         when (command) {
             PlayerCommand.Wait -> {
                 addMessage("You wait.")
-                true
+                CommandResolution.accepted()
             }
 
             PlayerCommand.PickUp -> {
                 val item = itemsOnGroundAt(playerPosition()).firstOrNull()
                 if (item == null) {
                     addMessage("There is nothing here to pick up.")
-                    false
+                    CommandResolution.rejected()
                 } else {
                     val result = inventoryManager.pickUp(world, playerId, item)
                     addInventoryMessage(result)
-                    result.success
+                    CommandResolution(result.success, consumesTurn = result.success)
+                }
+            }
+
+            PlayerCommand.Ascend -> CommandResolution(transitionFloor(StairDirection.UP), consumesTurn = true, persistCheckpointAfterTurn = true)
+
+            PlayerCommand.Descend -> CommandResolution(transitionFloor(StairDirection.DOWN), consumesTurn = true, persistCheckpointAfterTurn = true)
+
+            PlayerCommand.SaveGame -> {
+                val saved = persistRun()
+                addMessage(if (saved) "Game saved." else "Failed to save game.")
+                CommandResolution(accepted = true, consumesTurn = false)
+            }
+
+            is PlayerCommand.AssignStat -> {
+                val experience = requireNotNull(world.get<Experience>(playerId))
+                val stats = requireNotNull(world.get<Stats>(playerId))
+                if (experience.unspentStatPoints <= 0) {
+                    addMessage("No unspent stat points remain.")
+                    CommandResolution.rejected()
+                } else {
+                    when (command.stat) {
+                        PrimaryStat.STR -> stats.str += 1
+                        PrimaryStat.DEX -> stats.dex += 1
+                        PrimaryStat.CON -> stats.con += 1
+                        PrimaryStat.WIL -> stats.wil += 1
+                    }
+                    experience.unspentStatPoints -= 1
+                    StatsCalculator.recalculateAndStore(world, playerId)
+                    addMessage("You invest a point into ${command.stat.name}.")
+                    CommandResolution(accepted = true, consumesTurn = false)
+                }
+            }
+
+            is PlayerCommand.AssignTalent -> {
+                val experience = requireNotNull(world.get<Experience>(playerId))
+                val loadout = requireNotNull(world.get<TalentLoadout>(playerId))
+                val talentId = loadout.talentIdAt(command.slot)
+                if (experience.unspentTalentPoints <= 0) {
+                    addMessage("No unspent talent points remain.")
+                    CommandResolution.rejected()
+                } else if (talentId == null) {
+                    addMessage("No talent is assigned to slot ${command.slot}.")
+                    CommandResolution.rejected()
+                } else {
+                    val definition = requireNotNull(talentRegistry.get(talentId))
+                    val currentLevel = loadout.levelOf(talentId)
+                    if (currentLevel >= definition.maxLevel) {
+                        addMessage("${definition.name} is already at maximum level.")
+                        CommandResolution.rejected()
+                    } else {
+                        loadout.talentLevels[talentId] = currentLevel + 1
+                        experience.unspentTalentPoints -= 1
+                        addMessage("${definition.name} advances to level ${currentLevel + 1}.")
+                        CommandResolution(accepted = true, consumesTurn = false)
+                    }
                 }
             }
 
@@ -330,7 +497,7 @@ class FoundationGameSession internal constructor(
                 val itemView = inventoryItems().getOrNull(command.index)
                 if (itemView == null) {
                     addMessage("That inventory slot is empty.")
-                    false
+                    CommandResolution.rejected()
                 } else {
                     when (itemView.type) {
                         ItemType.CONSUMABLE -> {
@@ -344,7 +511,7 @@ class FoundationGameSession internal constructor(
                                 }
                             val result = inventoryManager.useConsumable(world, playerId, command.index, teleportDestination)
                             addInventoryMessage(result)
-                            result.success
+                            CommandResolution(result.success, consumesTurn = result.success)
                         }
 
                         ItemType.WEAPON,
@@ -360,7 +527,7 @@ class FoundationGameSession internal constructor(
                                 StatsCalculator.recalculateAndStore(world, playerId)
                             }
                             addInventoryMessage(result)
-                            result.success
+                            CommandResolution(result.success, consumesTurn = false)
                         }
                     }
                 }
@@ -370,51 +537,43 @@ class FoundationGameSession internal constructor(
                 val from = playerPosition()
                 if (!command.delta.isAdjacentTo(Point.ZERO)) {
                     addMessage("You can only move one tile at a time.")
-                    false
+                    CommandResolution.rejected()
                 } else {
                     val destination = from + command.delta
                     val blocker = blockerAt(destination)
                     if (blocker != null) {
                         resolveAttack(playerId, blocker)
-                        true
+                        CommandResolution.accepted()
                     } else {
                         val result = MovementRules.attemptMove(map, from, command.delta)
                         if (result.moved) {
                             requireNotNull(world.get<Position>(playerId)).moveTo(result.destination)
-                            true
+                            CommandResolution.accepted()
                         } else {
                             addMessage("You cannot move there.")
-                            false
+                            CommandResolution.rejected()
                         }
                     }
                 }
             }
 
             is PlayerCommand.UseTalent -> {
-                val loadout = requireNotNull(world.get<com.ktome.core.talent.TalentLoadout>(playerId))
+                val loadout = requireNotNull(world.get<TalentLoadout>(playerId))
                 val talentId = loadout.talentIdAt(command.slot)
                 if (talentId == null) {
                     addMessage("No talent is assigned to slot ${command.slot}.")
-                    false
+                    CommandResolution.rejected()
                 } else {
                     when (val result = talentResolver.resolve(world, map, playerId, talentId, command.target)) {
                         is TalentUseResult.Failure -> {
                             addMessage(result.reason)
-                            false
+                            CommandResolution.rejected()
                         }
 
                         is TalentUseResult.Success -> {
                             logTalentResult(result.result)
-                            result.result.targets
-                                .distinct()
-                                .filter { target -> target != playerId && world.isAlive(target) }
-                                .forEach { target ->
-                                    val health = world.get<Health>(target)
-                                    if (health != null && health.current <= 0) {
-                                        handleDeath(target, playerId)
-                                    }
-                                }
-                            true
+                            handleTalentDeaths(result.result.targets, playerId)
+                            CommandResolution.accepted()
                         }
                     }
                 }
@@ -426,6 +585,9 @@ class FoundationGameSession internal constructor(
             return
         }
         if (world.get<EffectTracker>(monsterId)?.has(StatusEffectType.STUNNED) == true) {
+            return
+        }
+        if (tryUseMonsterTalent(monsterId)) {
             return
         }
 
@@ -456,6 +618,39 @@ class FoundationGameSession internal constructor(
 
             AIAction.Wait -> Unit
         }
+    }
+
+    private fun tryUseMonsterTalent(monsterId: EntityId): Boolean {
+        val loadout = world.get<TalentLoadout>(monsterId) ?: return false
+        val actorPosition = requireNotNull(world.get<Position>(monsterId)).toPoint()
+        val targetPosition = playerPosition()
+        val prioritizedTalentIds =
+            listOfNotNull(
+                loadout.slotToTalentId.values.firstOrNull { it == "war_cry" },
+                loadout.slotToTalentId.values.firstOrNull { it == "power_strike" },
+            )
+
+        prioritizedTalentIds.forEach { talentId ->
+            val definition = talentRegistry.get(talentId) ?: return@forEach
+            if (talentId == "war_cry" && world.get<EffectTracker>(monsterId)?.has(StatusEffectType.WAR_CRY_BUFF) == true) {
+                return@forEach
+            }
+            val distance = actorPosition.chebyshevDistanceTo(targetPosition)
+            if (distance !in definition.minRange..definition.range.coerceAtLeast(definition.minRange)) {
+                return@forEach
+            }
+            val target = if (definition.range > 0) targetPosition else null
+            when (val result = talentResolver.resolve(world, map, monsterId, talentId, target)) {
+                is TalentUseResult.Failure -> return@forEach
+                is TalentUseResult.Success -> {
+                    logTalentResult(result.result)
+                    handleTalentDeaths(result.result.targets, monsterId)
+                    return true
+                }
+            }
+        }
+
+        return false
     }
 
     private fun resolveAttack(
@@ -495,18 +690,31 @@ class FoundationGameSession internal constructor(
         logEvent(EntityDeathEvent(target, killer))
 
         if (target == playerId) {
-            gameOver = true
+            runOutcome = RunOutcome.Defeat(currentFloor())
+            pendingActions.clear()
+            activeTurnActor = null
+            saveManager.deleteSave()
             addMessage("You die. Game over.")
             return
         }
 
         val targetName = requireNotNull(world.get<Name>(target)).value
-        addMessage("$targetName dies.")
+        val isBoss =
+            currentFloor() == config.maxFloor &&
+                world.get<MonsterTemplateId>(target)?.value == content.bossDefinition.template.id
 
+        addMessage("$targetName dies.")
         val reward = world.get<ExperienceReward>(target)?.value ?: 0
         world.destroyEntity(target)
         if (killer == playerId && reward > 0) {
             gainExperience(reward)
+        }
+        if (isBoss) {
+            runOutcome = RunOutcome.Victory(currentFloor())
+            pendingActions.clear()
+            activeTurnActor = null
+            saveManager.deleteSave()
+            addMessage("You defeat $targetName. Victory!")
         }
     }
 
@@ -530,6 +738,116 @@ class FoundationGameSession internal constructor(
             )
             addMessage("You advance to level ${experience.level}.")
         }
+    }
+
+    private fun transitionFloor(direction: StairDirection): Boolean {
+        val requiredStair =
+            when (direction) {
+                StairDirection.UP -> activeFloorState.stairsUp
+                StairDirection.DOWN -> activeFloorState.stairsDown
+            }
+        if (requiredStair == null || playerPosition() != requiredStair) {
+            addMessage(
+                when (direction) {
+                    StairDirection.UP -> "There are no stairs leading up here."
+                    StairDirection.DOWN -> "There are no stairs leading down here."
+                },
+            )
+            return false
+        }
+
+        syncActiveFloorState()
+        val transition = dungeonManager.transition(direction)
+        activeFloorState = transition.state.payload
+        exploredTiles = activeFloorState.exploredTiles
+        playerSnapshot = playerSnapshot.copy(entity = playerSnapshot.entity.copy(position = transition.entryPoint))
+        world = SessionSnapshotMapper.restoreWorld(playerSnapshot, activeFloorState)
+        pendingActions.clear()
+        activeTurnActor = null
+        refreshFov()
+
+        addMessage(
+            when (direction) {
+                StairDirection.UP -> "You ascend to floor ${transition.toFloor}."
+                StairDirection.DOWN -> "You descend to floor ${transition.toFloor}."
+            },
+        )
+        return true
+    }
+
+    private fun persistRun(): Boolean {
+        if (runOutcome.isTerminal) {
+            return false
+        }
+
+        syncActiveFloorState()
+        val floors =
+            dungeonManager.knownFloors()
+                .sorted()
+                .mapNotNull { floor -> dungeonManager.stateOf(floor) }
+        return saveManager.save(
+            SessionSnapshotMapper.toSaveSnapshot(
+                config = config,
+                currentFloor = currentFloor(),
+                turnCount = turnCount,
+                messageLog = messageLog(),
+                player = playerSnapshot,
+                floors = floors,
+                combatRandomState = (combatRandomSource as? StatefulRandomSource)?.snapshotState(),
+                sessionRandomState = (sessionRandom as? StatefulRandomSource)?.snapshotState(),
+            ),
+        )
+    }
+
+    private fun maybePersistCheckpoint(resolution: CommandResolution) {
+        if (!resolution.persistCheckpointAfterTurn || runOutcome.isTerminal) {
+            return
+        }
+
+        if (persistRun()) {
+            addMessage("Checkpoint saved.")
+        }
+    }
+
+    private fun syncActiveFloorState() {
+        playerSnapshot = SessionSnapshotMapper.capturePlayer(world, playerId)
+        val excludedEntities =
+            linkedSetOf<EntityId>().apply {
+                add(playerId)
+                playerSnapshot.carriedEntities.mapTo(this) { snapshot -> EntityId(snapshot.id) }
+            }
+        activeFloorState =
+            SessionSnapshotMapper.captureFloor(
+                map = map,
+                stairsUp = activeFloorState.stairsUp,
+                stairsDown = activeFloorState.stairsDown,
+                exploredTiles = exploredTiles,
+                world = world,
+                excludedEntities = excludedEntities,
+            )
+        dungeonManager.replaceCurrentState(
+            FloorState(
+                floor = currentFloor(),
+                stairsUp = activeFloorState.stairsUp,
+                stairsDown = activeFloorState.stairsDown,
+                payload = activeFloorState,
+            ),
+        )
+    }
+
+    private fun handleTalentDeaths(
+        targets: List<EntityId>,
+        killer: EntityId,
+    ) {
+        targets
+            .distinct()
+            .filter { target -> world.isAlive(target) }
+            .forEach { target ->
+                val health = world.get<Health>(target)
+                if (health != null && health.current <= 0) {
+                    handleDeath(target, killer)
+                }
+            }
     }
 
     private fun itemsOnGroundAt(point: Point): List<EntityId> =
@@ -635,5 +953,108 @@ class FoundationGameSession internal constructor(
     private fun logEvent(event: Any) {
         @Suppress("UNUSED_VARIABLE")
         val ignored = event
+    }
+
+    private data class CommandResolution(
+        val accepted: Boolean,
+        val consumesTurn: Boolean,
+        val persistCheckpointAfterTurn: Boolean = false,
+    ) {
+        companion object {
+            fun accepted(): CommandResolution = CommandResolution(accepted = true, consumesTurn = true)
+
+            fun rejected(): CommandResolution = CommandResolution(accepted = false, consumesTurn = false)
+        }
+    }
+
+    companion object {
+        private const val COMBAT_RANDOM_SALT: Long = 0xC0FFEE
+        private const val SESSION_RANDOM_SALT: Long = 0x51A17A
+
+        private fun compatibilityContent(talentRegistry: TalentRegistry): GameContent =
+            GameContent(
+                talents = emptyList(),
+                talentRegistry = talentRegistry,
+                monsterCatalog = emptyList(),
+                itemBundle = ItemDataBundle(emptyList(), emptyList(), emptyList()),
+                bossDefinition =
+                    BossDefinition(
+                        template =
+                            MonsterTemplate(
+                                id = "compatibility_boss",
+                                name = "Compatibility Boss",
+                                glyph = 'B',
+                                colorHex = "#FFFFFF",
+                                stats = Stats(str = 1, dex = 1, con = 1, wil = 1),
+                                baseHp = 1,
+                                baseAttack = 1,
+                                baseDefense = 0,
+                                speed = 100,
+                                ai = com.ktome.core.ecs.AIType.CHASE,
+                                expReward = 0,
+                                spawnFloors = listOf(1),
+                                spawnWeight = 1,
+                            ),
+                        talentLevels = emptyMap(),
+                    ),
+            )
+
+        private fun compatibilityDungeonManager(
+            config: FoundationGameConfig,
+            map: GameMap,
+            world: World,
+            playerId: EntityId,
+        ): DungeonManager<FloorRuntimeState> {
+            val playerSnapshot = SessionSnapshotMapper.capturePlayer(world, playerId)
+            val excludedEntities =
+                linkedSetOf<EntityId>().apply {
+                    add(playerId)
+                    playerSnapshot.carriedEntities.mapTo(this) { snapshot -> EntityId(snapshot.id) }
+                }
+            val floorState =
+                FloorState(
+                    floor = config.floor,
+                    payload =
+                        SessionSnapshotMapper.captureFloor(
+                            map = map,
+                            stairsUp = null,
+                            stairsDown = null,
+                            exploredTiles = emptySet(),
+                            world = world,
+                            excludedEntities = excludedEntities,
+                        ),
+                )
+            return DungeonManager(
+                maxFloor = config.maxFloor,
+                startFloor = config.floor,
+                floorLoader = { requestedFloor ->
+                    require(requestedFloor == config.floor) {
+                        "Compatibility session only supports the initial floor."
+                    }
+                    floorState
+                },
+            ).apply {
+                putState(floorState)
+            }
+        }
+
+        internal fun defaultCombatRandomSource(
+            config: FoundationGameConfig,
+            turnCount: Int,
+        ): StatefulRandomSource = SplitMix64RandomSource.fromSeed(config.seed xor turnCount.toLong() xor COMBAT_RANDOM_SALT)
+
+        internal fun defaultSessionRandomSource(
+            config: FoundationGameConfig,
+            turnCount: Int,
+        ): StatefulRandomSource = SplitMix64RandomSource.fromSeed(config.seed xor turnCount.toLong() xor SESSION_RANDOM_SALT)
+
+        private data object UntrackedRandomSource : RandomSource {
+            override fun nextDouble(): Double = 0.0
+
+            override fun nextInt(
+                fromInclusive: Int,
+                untilExclusive: Int,
+            ): Int = fromInclusive
+        }
     }
 }

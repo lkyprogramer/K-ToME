@@ -14,6 +14,7 @@ import com.ktome.core.item.StatModifier
 import com.ktome.core.talent.TalentDef
 import com.ktome.core.talent.TalentLevelEffect
 import com.ktome.game.model.MonsterCatalog
+import com.ktome.game.model.BossDefinition
 import com.ktome.game.model.MonsterTemplate
 import java.io.InputStream
 import org.yaml.snakeyaml.Yaml
@@ -35,6 +36,12 @@ class DataLoader {
         val stream = javaClass.getResourceAsStream(resourcePath)
             ?: error("Talent definition resource not found: $resourcePath")
         return stream.use(::loadTalentDefinitions)
+    }
+
+    fun loadBossDefinition(resourcePath: String = "/data/boss.yaml"): BossDefinition {
+        val stream = javaClass.getResourceAsStream(resourcePath)
+            ?: error("Boss definition resource not found: $resourcePath")
+        return stream.use(::loadBossDefinition)
     }
 
     fun loadMonsterCatalog(input: InputStream): MonsterCatalog {
@@ -78,6 +85,18 @@ class DataLoader {
         return entries.map { entry ->
             parseTalent(entry as? Map<*, *> ?: error("Talent entries must be maps"))
         }
+    }
+
+    fun loadBossDefinition(input: InputStream): BossDefinition {
+        val yaml = Yaml()
+        val root = yaml.load<Map<String, Any?>>(input)
+        val entry = root["boss"] as? Map<*, *> ?: error("boss.yaml must contain a top-level 'boss' map")
+        val template = parseBossTemplate(entry)
+        val talentLevels =
+            entry.requiredMap("talents").entries.associate { (key, value) ->
+                key.toString() to value.toString().toInt()
+            }
+        return BossDefinition(template = template, talentLevels = talentLevels)
     }
 
     private fun parseMonster(entry: Map<*, *>): MonsterTemplate {
@@ -186,6 +205,30 @@ class DataLoader {
             debuffMagnitude = entry.optionalDouble("debuffMagnitude", 0.0),
             debuffDuration = entry.optionalInt("debuffDuration"),
         )
+
+    private fun parseBossTemplate(entry: Map<*, *>): MonsterTemplate {
+        val statsMap = entry.requiredMap("stats")
+        return MonsterTemplate(
+            id = entry.requiredString("id"),
+            name = entry.requiredString("name"),
+            glyph = entry.requiredString("glyph").single(),
+            colorHex = entry.requiredString("color"),
+            stats = Stats(
+                str = statsMap.requiredInt("str"),
+                dex = statsMap.requiredInt("dex"),
+                con = statsMap.requiredInt("con"),
+                wil = statsMap.requiredInt("wil"),
+            ),
+            baseHp = entry.requiredInt("baseHp"),
+            baseAttack = entry.requiredInt("baseAttack"),
+            baseDefense = entry.requiredInt("baseDefense"),
+            speed = entry.requiredInt("speed"),
+            ai = AIType.valueOf(entry.requiredString("ai")),
+            expReward = entry.requiredInt("expReward"),
+            spawnFloors = listOf(entry.optionalInt("spawnFloor").takeIf { it > 0 } ?: 5),
+            spawnWeight = 1,
+        )
+    }
 
     private fun parseStatModifier(entry: Map<*, *>?): StatModifier {
         if (entry == null) {

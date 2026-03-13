@@ -64,4 +64,13 @@ class DataLoaderTest {
         assertTrue(talents.any { it.id == "power_strike" })
         assertTrue(talents.any { it.id == "war_cry" && it.range == 0 })
     }
+
+    @Test
+    fun `loads bundled boss definition`() {
+        val boss = loader.loadBossDefinition()
+
+        assertEquals("dungeon_lord", boss.template.id)
+        assertEquals(4, boss.talentLevels["power_strike"])
+        assertEquals(3, boss.talentLevels["war_cry"])
+    }
 }
