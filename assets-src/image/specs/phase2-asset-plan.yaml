@@ -1,0 +1,541 @@
+styleTag: ktome-middle-fantasy-painterly-tile-v1
+artStyleBible: docs/2026-03-13-art-style-bible.md
+stylePrompt: >
+  Classical high fantasy in a Middle-earth inspired mode: weathered stone, iron, leather,
+  worn wood, muted natural pigments, sacred light and restrained arcane glow. Painterly,
+  grounded, readable at small size, never anime, never sci-fi, never glossy mobile-game UI.
+defaults:
+  imageAspectRatio: "1:1"
+  imageSize: "1K"
+  negativeConstraints:
+    - no modern clothing
+    - no firearms
+    - no sci-fi materials
+    - no cyberpunk lighting
+    - no anime proportions
+    - no floating text, watermark or logo
+    - no busy background
+phase2AssetGates:
+  P2-B:
+    description: Minimal official slice image bootstrap for Vanguard, Arcanist and Shattered Outpost.
+    assets:
+      - id: phase2_p2b_tileset_ruins_ground_01
+        category: tile_ground
+        visualKey: tileset.ruins.ground_01
+        outputName: phase2/p2-b/tileset_ruins_ground_01.png
+        subject: weathered ruined stone floor tile for a frontier outpost
+        biome: RUINS
+        materialTags: [stone, dust, moss]
+        moodTags: [grim, grounded]
+        constraints:
+          - top-down readable tile with clear edge definition
+          - transparent background outside tile silhouette
+          - readable at 48x48 after scaling
+        geminiKeyRequired: true
+      - id: phase2_p2b_tileset_ruins_wall_01
+        category: tile_wall
+        visualKey: tileset.ruins.wall_01
+        outputName: phase2/p2-b/tileset_ruins_wall_01.png
+        subject: broken frontier outpost wall tile with weathered stone blocks
+        biome: RUINS
+        materialTags: [stone, moss, dust]
+        moodTags: [worn, defensive]
+        constraints:
+          - top-down readable wall tile with clear upper edge
+          - readable at 48x48 after scaling
+        geminiKeyRequired: true
+      - id: phase2_p2b_prop_armory_gate
+        category: prop_interactable
+        visualKey: prop.armory_gate
+        outputName: phase2/p2-b/prop_armory_gate.png
+        subject: heavy ruined armory gate with iron bands and lock plate
+        biome: RUINS
+        materialTags: [wood, iron]
+        moodTags: [fortified, old]
+        constraints:
+          - clear hotspot and base footprint
+          - readable at 48x48
+        geminiKeyRequired: true
+      - id: phase2_p2b_prop_supply_crate
+        category: prop_interactable
+        visualKey: prop.supply_crate
+        outputName: phase2/p2-b/prop_supply_crate.png
+        subject: frontier supply crate with iron braces and worn travel markings
+        biome: RUINS
+        materialTags: [wood, rope, iron]
+        moodTags: [practical, worn]
+        constraints:
+          - clear hotspot and base footprint
+          - readable at 48x48
+        geminiKeyRequired: true
+      - id: phase2_p2b_prop_alarm_bonfire
+        category: prop_interactable
+        visualKey: prop.alarm_bonfire
+        outputName: phase2/p2-b/prop_alarm_bonfire.png
+        subject: raised alarm bonfire brazier for outpost warning beacon
+        biome: RUINS
+        materialTags: [iron, ash, charred wood]
+        moodTags: [ominous, military]
+        constraints:
+          - clear hotspot and base footprint
+          - readable at 48x48
+        geminiKeyRequired: true
+      - id: phase2_p2b_actor_vanguard
+        category: actor_sprite
+        visualKey: actor.vanguard
+        outputName: phase2/p2-b/actor_vanguard.png
+        subject: disciplined shield-bearing vanguard in worn steel and tabard
+        profession: vanguard
+        materialTags: [steel, leather, cloth]
+        moodTags: [steadfast, martial]
+        constraints:
+          - full-body isolated sprite
+          - clear silhouette with shield and one-handed weapon
+          - readable at 48x48
+        geminiKeyRequired: true
+      - id: phase2_p2b_actor_arcanist
+        category: actor_sprite
+        visualKey: actor.arcanist
+        outputName: phase2/p2-b/actor_arcanist.png
+        subject: battle arcanist in layered robes with restrained elemental focus
+        profession: arcanist
+        materialTags: [cloth, leather, runed metal]
+        moodTags: [scholarly, dangerous]
+        constraints:
+          - full-body isolated sprite
+          - no exaggerated staff larger than body
+          - readable at 48x48
+        geminiKeyRequired: true
+      - id: phase2_p2b_actor_bandit_raider
+        category: actor_sprite
+        visualKey: actor.bandit.raider
+        outputName: phase2/p2-b/actor_bandit_raider.png
+        subject: rough frontier bandit raider with axe and scavenged armor
+        faction: bandit
+        materialTags: [leather, rusted iron, cloth]
+        moodTags: [hostile, desperate]
+        constraints:
+          - full-body isolated sprite
+          - readable at 48x48
+        geminiKeyRequired: true
+      - id: phase2_p2b_actor_bandit_archer
+        category: actor_sprite
+        visualKey: actor.bandit.archer
+        outputName: phase2/p2-b/actor_bandit_archer.png
+        subject: lean bandit archer in patched frontier leathers
+        faction: bandit
+        materialTags: [wood, leather, cloth]
+        moodTags: [watchful, hostile]
+        constraints:
+          - full-body isolated sprite
+          - bow silhouette must remain readable at 48x48
+        geminiKeyRequired: true
+      - id: phase2_p2b_actor_restless_skeleton
+        category: actor_sprite
+        visualKey: actor.undead.restless_skeleton
+        outputName: phase2/p2-b/actor_restless_skeleton.png
+        subject: restless skeleton warrior with cracked bones and burial scraps
+        faction: undead
+        materialTags: [bone, cloth, rusted iron]
+        moodTags: [haunted, ancient]
+        constraints:
+          - full-body isolated sprite
+          - readable at 48x48
+        geminiKeyRequired: true
+      - id: phase2_p2b_actor_bandit_captain
+        category: actor_sprite
+        visualKey: actor.bandit.captain
+        outputName: phase2/p2-b/actor_bandit_captain.png
+        subject: hardened bandit captain with command cloak and brutal weapon
+        faction: bandit
+        materialTags: [steel, leather, cloth]
+        moodTags: [commanding, dangerous]
+        constraints:
+          - full-body isolated sprite
+          - clear elite silhouette readable at 48x48
+        geminiKeyRequired: true
+      - id: phase2_p2b_portrait_vanguard
+        category: portrait
+        visualKey: portrait.vanguard
+        outputName: phase2/p2-b/portrait_vanguard.png
+        subject: portrait of the Vanguard hero, stern and battle-worn
+        profession: vanguard
+        materialTags: [steel, leather]
+        moodTags: [resolute]
+        constraints:
+          - chest-up portrait
+          - readable face and armor silhouette
+        geminiKeyRequired: true
+      - id: phase2_p2b_portrait_arcanist
+        category: portrait
+        visualKey: portrait.arcanist
+        outputName: phase2/p2-b/portrait_arcanist.png
+        subject: portrait of the Arcanist hero with restrained arcane glow
+        profession: arcanist
+        materialTags: [cloth, runed metal]
+        moodTags: [focused, scholarly]
+        constraints:
+          - chest-up portrait
+          - readable face and robe silhouette
+        geminiKeyRequired: true
+      - id: phase2_p2b_icon_power_strike
+        category: icon_skill
+        visualKey: icon.skill.vanguard.power_strike
+        outputName: phase2/p2-b/icon_skill_vanguard_power_strike.png
+        subject: heavy downward sword strike icon
+        profession: vanguard
+        moodTags: [forceful]
+        constraints:
+          - centered icon silhouette occupying 60 to 75 percent of frame
+          - transparent background
+        geminiKeyRequired: true
+      - id: phase2_p2b_icon_guard_stance
+        category: icon_skill
+        visualKey: icon.skill.vanguard.guard_stance
+        outputName: phase2/p2-b/icon_skill_vanguard_guard_stance.png
+        subject: defensive shield stance icon
+        profession: vanguard
+        moodTags: [protective]
+        constraints:
+          - centered icon silhouette occupying 60 to 75 percent of frame
+          - transparent background
+        geminiKeyRequired: true
+      - id: phase2_p2b_icon_fire_bolt
+        category: icon_skill
+        visualKey: icon.skill.arcanist.fire_bolt
+        outputName: phase2/p2-b/icon_skill_arcanist_fire_bolt.png
+        subject: concentrated ember bolt icon
+        profession: arcanist
+        moodTags: [arcane, focused]
+        constraints:
+          - centered icon silhouette occupying 60 to 75 percent of frame
+          - transparent background
+        geminiKeyRequired: true
+      - id: phase2_p2b_icon_blink
+        category: icon_skill
+        visualKey: icon.skill.arcanist.blink
+        outputName: phase2/p2-b/icon_skill_arcanist_blink.png
+        subject: arcane blink sigil icon
+        profession: arcanist
+        moodTags: [swift, arcane]
+        constraints:
+          - centered icon silhouette occupying 60 to 75 percent of frame
+          - transparent background
+        geminiKeyRequired: true
+      - id: phase2_p2b_icon_status_burn
+        category: icon_status
+        visualKey: icon.status.burn
+        outputName: phase2/p2-b/icon_status_burn.png
+        subject: burning status icon with controlled flame shape
+        moodTags: [burning, dangerous]
+        constraints:
+          - centered icon silhouette occupying 60 to 75 percent of frame
+          - transparent background
+        geminiKeyRequired: true
+      - id: phase2_p2b_icon_status_armor_break
+        category: icon_status
+        visualKey: icon.status.armor_break
+        outputName: phase2/p2-b/icon_status_armor_break.png
+        subject: broken armor plate status icon
+        moodTags: [sundered, martial]
+        constraints:
+          - centered icon silhouette occupying 60 to 75 percent of frame
+          - transparent background
+        geminiKeyRequired: true
+      - id: phase2_p2b_icon_item_minor_healing_potion
+        category: icon_item
+        visualKey: icon.item.minor_healing_potion
+        outputName: phase2/p2-b/icon_item_minor_healing_potion.png
+        subject: small healing potion icon in worn fantasy glass vial
+        moodTags: [restorative]
+        constraints:
+          - centered icon silhouette occupying 60 to 75 percent of frame
+          - transparent background
+        geminiKeyRequired: true
+      - id: phase2_p2b_icon_quest_armory_key
+        category: icon_quest
+        visualKey: icon.quest.armory_key
+        outputName: phase2/p2-b/icon_quest_armory_key.png
+        subject: iron armory key icon with outpost insignia
+        moodTags: [quest, utilitarian]
+        constraints:
+          - centered icon silhouette occupying 60 to 75 percent of frame
+          - transparent background
+        geminiKeyRequired: true
+      - id: phase2_p2b_boss_warning_sigil
+        category: vfx_plate
+        visualKey: vfx.boss.warning.sigil_01
+        outputName: phase2/p2-b/vfx_boss_warning_sigil_01.png
+        subject: sacred warning sigil for boss telegraph overlay
+        moodTags: [ominous, sacred]
+        constraints:
+          - overlay plate with clean readable geometry
+          - transparent background
+        geminiKeyRequired: true
+  P2-C:
+    description: Full Phase 2 short-run expansion assets for four professions and four zones.
+    assets:
+      - id: phase2_p2c_actor_rogue
+        category: actor_sprite
+        visualKey: actor.rogue
+        outputName: phase2/p2-c/actor_rogue.png
+        subject: agile rogue with twin blades and shadowed cloak
+        profession: rogue
+        materialTags: [leather, cloth, steel]
+        moodTags: [stealthy, predatory]
+        constraints:
+          - full-body isolated sprite
+          - readable at 48x48
+        geminiKeyRequired: true
+      - id: phase2_p2c_actor_templar
+        category: actor_sprite
+        visualKey: actor.templar
+        outputName: phase2/p2-c/actor_templar.png
+        subject: holy warrior templar with light-touched armor and seal iconography
+        profession: templar
+        materialTags: [steel, cloth, sacred bronze]
+        moodTags: [holy, resolute]
+        constraints:
+          - full-body isolated sprite
+          - readable at 48x48
+        geminiKeyRequired: true
+      - id: phase2_p2c_actor_orc_miner
+        category: actor_sprite
+        visualKey: actor.orc.miner
+        outputName: phase2/p2-c/actor_orc_miner.png
+        subject: brutal orc miner with pickaxe and furnace soot
+        faction: orc
+        materialTags: [iron, leather, soot]
+        moodTags: [harsh, industrial]
+        constraints:
+          - full-body isolated sprite
+          - readable at 48x48
+        geminiKeyRequired: true
+      - id: phase2_p2c_actor_cultist_shadow_priest
+        category: actor_sprite
+        visualKey: actor.cultist.shadow_priest
+        outputName: phase2/p2-c/actor_cultist_shadow_priest.png
+        subject: shadow cult priest in ritual vestments with pale fire
+        faction: cultist
+        materialTags: [cloth, bone, ash]
+        moodTags: [shadowed, ritual]
+        constraints:
+          - full-body isolated sprite
+          - readable at 48x48
+        geminiKeyRequired: true
+      - id: phase2_p2c_actor_ashgate_boss
+        category: actor_sprite
+        visualKey: actor.boss.ashgate_warden
+        outputName: phase2/p2-c/actor_boss_ashgate_warden.png
+        subject: ashgate warden boss with sacred chains and shadowed armor
+        faction: boss
+        materialTags: [iron, ash, sacred bronze]
+        moodTags: [imposing, holy, shadowed]
+        constraints:
+          - full-body isolated sprite
+          - readable elite silhouette at 48x48
+        geminiKeyRequired: true
+      - id: phase2_p2c_portrait_rogue
+        category: portrait
+        visualKey: portrait.rogue
+        outputName: phase2/p2-c/portrait_rogue.png
+        subject: portrait of the Rogue hero in a shadowed hood
+        profession: rogue
+        materialTags: [cloth, leather]
+        moodTags: [stealthy, sharp]
+        constraints:
+          - chest-up portrait
+          - readable face and hood silhouette
+        geminiKeyRequired: true
+      - id: phase2_p2c_portrait_templar
+        category: portrait
+        visualKey: portrait.templar
+        outputName: phase2/p2-c/portrait_templar.png
+        subject: portrait of the Templar hero in radiant warplate
+        profession: templar
+        materialTags: [steel, cloth, sacred bronze]
+        moodTags: [holy, steadfast]
+        constraints:
+          - chest-up portrait
+          - readable face and armor silhouette
+        geminiKeyRequired: true
+      - id: phase2_p2c_tileset_forest_edge_ground_01
+        category: tile_ground
+        visualKey: tileset.forest_edge.ground_01
+        outputName: phase2/p2-c/tileset_forest_edge_ground_01.png
+        subject: damp forest edge ground tile with roots and leaf scatter
+        biome: FOREST_EDGE
+        materialTags: [soil, roots, leaves]
+        moodTags: [wild, cold]
+        constraints:
+          - top-down readable tile with clear edge definition
+          - readable at 48x48 after scaling
+        geminiKeyRequired: true
+      - id: phase2_p2c_tileset_forest_edge_wall_01
+        category: tile_wall
+        visualKey: tileset.forest_edge.wall_01
+        outputName: phase2/p2-c/tileset_forest_edge_wall_01.png
+        subject: dense treeline wall tile for a forest fringe battlefield
+        biome: FOREST_EDGE
+        materialTags: [wood, bark, leaves]
+        moodTags: [wild, enclosing]
+        constraints:
+          - top-down readable wall tile with clear upper edge
+          - readable at 48x48 after scaling
+        geminiKeyRequired: true
+      - id: phase2_p2c_tileset_mine_ground_01
+        category: tile_ground
+        visualKey: tileset.mine.ground_01
+        outputName: phase2/p2-c/tileset_mine_ground_01.png
+        subject: iron mine floor tile with soot and rail wear
+        biome: MINE
+        materialTags: [stone, iron, soot]
+        moodTags: [industrial, harsh]
+        constraints:
+          - top-down readable tile with clear edge definition
+          - readable at 48x48 after scaling
+        geminiKeyRequired: true
+      - id: phase2_p2c_tileset_mine_wall_01
+        category: tile_wall
+        visualKey: tileset.mine.wall_01
+        outputName: phase2/p2-c/tileset_mine_wall_01.png
+        subject: mine tunnel wall tile with iron braces and soot
+        biome: MINE
+        materialTags: [stone, timber, iron]
+        moodTags: [claustrophobic, industrial]
+        constraints:
+          - top-down readable wall tile with clear upper edge
+          - readable at 48x48 after scaling
+        geminiKeyRequired: true
+      - id: phase2_p2c_tileset_shadow_depths_ground_01
+        category: tile_ground
+        visualKey: tileset.shadow_depths.ground_01
+        outputName: phase2/p2-c/tileset_shadow_depths_ground_01.png
+        subject: shadow-haunted ritual floor tile with cracked runes
+        biome: SHADOW_DEPTHS
+        materialTags: [stone, ash, ritual pigment]
+        moodTags: [shadowed, sacred]
+        constraints:
+          - top-down readable tile with clear edge definition
+          - readable at 48x48 after scaling
+        geminiKeyRequired: true
+      - id: phase2_p2c_tileset_shadow_depths_wall_01
+        category: tile_wall
+        visualKey: tileset.shadow_depths.wall_01
+        outputName: phase2/p2-c/tileset_shadow_depths_wall_01.png
+        subject: ritual crypt wall tile with broken seals and ash stains
+        biome: SHADOW_DEPTHS
+        materialTags: [stone, ash, bronze]
+        moodTags: [ominous, sacred]
+        constraints:
+          - top-down readable wall tile with clear upper edge
+          - readable at 48x48 after scaling
+        geminiKeyRequired: true
+      - id: phase2_p2c_prop_mine_furnace
+        category: prop_environment
+        visualKey: prop.mine_furnace
+        outputName: phase2/p2-c/prop_mine_furnace.png
+        subject: mine furnace prop with embers and iron mouth
+        biome: MINE
+        materialTags: [iron, stone, ember]
+        moodTags: [industrial, hot]
+        constraints:
+          - clear silhouette and base footprint
+          - readable at 48x48
+        geminiKeyRequired: true
+      - id: phase2_p2c_prop_ritual_altar
+        category: prop_interactable
+        visualKey: prop.ritual_altar
+        outputName: phase2/p2-c/prop_ritual_altar.png
+        subject: ritual altar for ashgate depths with cracked holy and shadow sigils
+        biome: SHADOW_DEPTHS
+        materialTags: [stone, ash, sacred bronze]
+        moodTags: [ritual, ominous]
+        constraints:
+          - clear hotspot and base footprint
+          - readable at 48x48
+        geminiKeyRequired: true
+      - id: phase2_p2c_icon_divine_intervention
+        category: icon_skill
+        visualKey: icon.skill.templar.divine_intervention
+        outputName: phase2/p2-c/icon_skill_templar_divine_intervention.png
+        subject: radiant intervention sigil icon
+        profession: templar
+        moodTags: [holy, protective]
+        constraints:
+          - centered icon silhouette occupying 60 to 75 percent of frame
+          - transparent background
+        geminiKeyRequired: true
+      - id: phase2_p2c_icon_shadowstep
+        category: icon_skill
+        visualKey: icon.skill.rogue.shadowstep
+        outputName: phase2/p2-c/icon_skill_rogue_shadowstep.png
+        subject: shadowstep mobility icon with blade and dark arc
+        profession: rogue
+        moodTags: [swift, shadowed]
+        constraints:
+          - centered icon silhouette occupying 60 to 75 percent of frame
+          - transparent background
+        geminiKeyRequired: true
+      - id: phase2_p2c_icon_mark_prey
+        category: icon_skill
+        visualKey: icon.skill.rogue.mark_prey
+        outputName: phase2/p2-c/icon_skill_rogue_mark_prey.png
+        subject: hunter mark icon over a prey silhouette
+        profession: rogue
+        moodTags: [predatory, tactical]
+        constraints:
+          - centered icon silhouette occupying 60 to 75 percent of frame
+          - transparent background
+        geminiKeyRequired: true
+      - id: phase2_p2c_icon_smite
+        category: icon_skill
+        visualKey: icon.skill.templar.smite
+        outputName: phase2/p2-c/icon_skill_templar_smite.png
+        subject: holy smite icon with descending radiant blade
+        profession: templar
+        moodTags: [holy, punishing]
+        constraints:
+          - centered icon silhouette occupying 60 to 75 percent of frame
+          - transparent background
+        geminiKeyRequired: true
+      - id: phase2_p2c_icon_status_cursed
+        category: icon_status
+        visualKey: icon.status.cursed
+        outputName: phase2/p2-c/icon_status_cursed.png
+        subject: cursed status icon with cracked sigil and shadow burn
+        moodTags: [cursed, ominous]
+        constraints:
+          - centered icon silhouette occupying 60 to 75 percent of frame
+          - transparent background
+        geminiKeyRequired: true
+      - id: phase2_p2c_icon_status_consecration
+        category: icon_status
+        visualKey: icon.status.consecration
+        outputName: phase2/p2-c/icon_status_consecration.png
+        subject: consecration status icon with radiant ward circle
+        moodTags: [holy, protective]
+        constraints:
+          - centered icon silhouette occupying 60 to 75 percent of frame
+          - transparent background
+        geminiKeyRequired: true
+      - id: phase2_p2c_icon_item_mana_potion
+        category: icon_item
+        visualKey: icon.item.mana_potion
+        outputName: phase2/p2-c/icon_item_mana_potion.png
+        subject: mana potion icon in arcane blue glass vial
+        moodTags: [arcane, restorative]
+        constraints:
+          - centered icon silhouette occupying 60 to 75 percent of frame
+          - transparent background
+        geminiKeyRequired: true
+      - id: phase2_p2c_icon_quest_seal_key
+        category: icon_quest
+        visualKey: icon.quest.seal_key
+        outputName: phase2/p2-c/icon_quest_seal_key.png
+        subject: ritual seal key icon with holy and shadow motifs
+        moodTags: [quest, ritual]
+        constraints:
+          - centered icon silhouette occupying 60 to 75 percent of frame
+          - transparent background
+        geminiKeyRequired: true
