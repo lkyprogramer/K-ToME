@@ -1,6 +1,9 @@
 import org.gradle.api.tasks.JavaExec
+import org.gradle.api.tasks.Copy
 import org.gradle.api.tasks.testing.Test
+import org.gradle.api.tasks.bundling.Zip
 import org.gradle.kotlin.dsl.named
+import org.gradle.jvm.application.tasks.CreateStartScripts
 
 plugins {
     application
@@ -18,10 +21,56 @@ application {
     mainClass.set("com.ktome.client.DesktopLauncherKt")
 }
 
+distributions {
+    main {
+        contents {
+            from(rootProject.file("README.md")) {
+                into("docs")
+            }
+            from(rootProject.file("docs/phase1/2026-03-12-phase1-5.0-regression-checklist.md")) {
+                into("docs")
+            }
+            from(rootProject.file("docs/releases/v0.1.0-known-limitations.md")) {
+                into("docs")
+            }
+        }
+    }
+}
+
 tasks.named<JavaExec>("run") {
     if (System.getProperty("os.name").contains("Mac", ignoreCase = true)) {
         jvmArgs("-XstartOnFirstThread")
     }
+}
+
+tasks.named<CreateStartScripts>("startScripts") {
+    doLast {
+        val darwinAwareJvmOpts =
+            """
+            if [ "${'$'}darwin" = true ] ; then
+                DEFAULT_JVM_OPTS='"-XstartOnFirstThread"'
+            else
+                DEFAULT_JVM_OPTS=""
+            fi
+            """.trimIndent()
+
+        unixScript.writeText(
+            unixScript.readText().replace(
+                """DEFAULT_JVM_OPTS=""",
+                darwinAwareJvmOpts,
+            ),
+        )
+    }
+}
+
+tasks.register<Copy>("releaseDesktopDist") {
+    group = "distribution"
+    description = "Copies the packaged desktop distribution zip into build/release."
+    val distZip = tasks.named<Zip>("distZip")
+    dependsOn(distZip)
+    from(distZip.flatMap { it.archiveFile })
+    into(layout.buildDirectory.dir("release"))
+    rename { "ktome-v${project.version}-desktop.zip" }
 }
 
 tasks.named<Test>("test") {

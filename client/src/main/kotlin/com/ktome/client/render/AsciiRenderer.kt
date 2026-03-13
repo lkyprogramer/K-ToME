@@ -61,6 +61,7 @@ class AsciiRenderer(
             }
 
         drawTargetCursor(batch, overlayState, map.height, mapOffsetY)
+        drawInspectCursor(batch, overlayState, map.height, mapOffsetY)
         drawStatus(batch, session)
         drawMessages(batch, session)
         drawSidebar(batch, session, overlayState, map.height, mapOffsetY)
@@ -269,6 +270,90 @@ class AsciiRenderer(
                 font.draw(batch, "Move cursor  Enter confirm  Esc cancel", sidebarX, line)
             }
 
+            UiMode.INSPECT -> {
+                line -= cellHeight / 2f
+                val cursor = overlayState.inspectCursor ?: session.playerPosition()
+                val inspect = session.inspectAt(cursor)
+
+                font.color = Color.GOLD
+                font.draw(batch, "Inspect", sidebarX, line)
+                line -= cellHeight
+                font.color = Color.WHITE
+                font.draw(batch, "Cursor ${cursor.x},${cursor.y}", sidebarX, line)
+                line -= cellHeight
+                font.draw(batch, "${inspect.visibility.name} ${inspect.terrainName}", sidebarX, line)
+                line -= cellHeight
+
+                inspect.actor?.let { actor ->
+                    font.color = Color.GOLD
+                    font.draw(batch, actor.name, sidebarX, line)
+                    line -= cellHeight
+                    font.color = Color.WHITE
+                    font.draw(batch, actor.role, sidebarX, line)
+                    line -= cellHeight
+                    font.draw(batch, "HP ${actor.currentHp}/${actor.maxHp}", sidebarX, line)
+                    line -= cellHeight
+                    font.draw(batch, "ATK ${actor.attack}  DEF ${actor.defense}", sidebarX, line)
+                    line -= cellHeight
+                    font.draw(batch, "ACC ${actor.accuracy}  EVA ${actor.evasion}", sidebarX, line)
+                    line -= cellHeight
+                    font.draw(batch, "STR ${actor.strength}  DEX ${actor.dexterity}", sidebarX, line)
+                    line -= cellHeight
+                    font.draw(batch, "CON ${actor.constitution}  WIL ${actor.willpower}", sidebarX, line)
+                    line -= cellHeight
+                    font.draw(batch, "SPD ${actor.speed}", sidebarX, line)
+                    line -= cellHeight
+                    if (actor.statusEffects.isNotEmpty()) {
+                        font.color = Color.LIGHT_GRAY
+                        actor.statusEffects.forEach { effect ->
+                            font.draw(batch, effect, sidebarX, line)
+                            line -= cellHeight
+                        }
+                    }
+                }
+
+                if (inspect.items.isNotEmpty()) {
+                    line -= cellHeight / 2f
+                    font.color = Color.GOLD
+                    font.draw(batch, "Items", sidebarX, line)
+                    line -= cellHeight
+                    inspect.items.forEach { item ->
+                        font.color = Color.WHITE
+                        font.draw(batch, item.name, sidebarX, line)
+                        line -= cellHeight
+                        font.color = Color.LIGHT_GRAY
+                        font.draw(batch, item.typeLabel, sidebarX, line)
+                        line -= cellHeight
+                        item.details.forEach { detail ->
+                            font.draw(batch, detail, sidebarX, line)
+                            line -= cellHeight
+                        }
+                    }
+                }
+
+                inspect.stairLabel?.let { stairLabel ->
+                    line -= cellHeight / 2f
+                    font.color = Color.GOLD
+                    font.draw(batch, stairLabel, sidebarX, line)
+                    line -= cellHeight
+                }
+
+                if (inspect.actor == null && inspect.items.isEmpty() && inspect.stairLabel == null) {
+                    font.color = Color.GRAY
+                    val message =
+                        when (inspect.visibility) {
+                            com.ktome.game.TileVisibility.VISIBLE -> "No actor or item here"
+                            com.ktome.game.TileVisibility.EXPLORED -> "Explored, but not in sight"
+                            com.ktome.game.TileVisibility.HIDDEN -> "Unknown tile"
+                        }
+                    font.draw(batch, message, sidebarX, line)
+                    line -= cellHeight
+                }
+
+                font.color = Color.LIGHT_GRAY
+                font.draw(batch, "Move cursor  X/Esc close", sidebarX, line)
+            }
+
             UiMode.STAT_ASSIGN -> {
                 line -= cellHeight / 2f
                 font.color = Color.GOLD
@@ -319,6 +404,26 @@ class AsciiRenderer(
         font.draw(
             batch,
             "X",
+            cursor.x * cellWidth + 2f,
+            mapOffsetY + (mapHeight - cursor.y) * cellHeight - 4f,
+        )
+    }
+
+    private fun drawInspectCursor(
+        batch: SpriteBatch,
+        overlayState: OverlayState,
+        mapHeight: Int,
+        mapOffsetY: Float,
+    ) {
+        val cursor = overlayState.inspectCursor ?: return
+        if (overlayState.mode != UiMode.INSPECT) {
+            return
+        }
+
+        font.color = Color.CYAN
+        font.draw(
+            batch,
+            "+",
             cursor.x * cellWidth + 2f,
             mapOffsetY + (mapHeight - cursor.y) * cellHeight - 4f,
         )

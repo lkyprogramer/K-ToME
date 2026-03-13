@@ -4,13 +4,13 @@ import com.badlogic.gdx.Game
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Application
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3ApplicationConfiguration
 
-private const val windowTitle = "K-ToME Phase 1"
+private const val windowTitle = "K-ToME v0.1.0"
 private const val windowWidth = 1280
 private const val windowHeight = 800
 
 fun main() {
     val configuration = Lwjgl3ApplicationConfiguration().apply {
-        setTitle("$windowTitle | QWEASDZC move, </> stairs, Ctrl+S save, T talents")
+        setTitle("$windowTitle | arrows/numpad move, x inspect, </> stairs, Ctrl+S save")
         setWindowedMode(windowWidth, windowHeight)
         useVsync(true)
         setForegroundFPS(60)

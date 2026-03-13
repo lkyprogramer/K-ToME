@@ -92,3 +92,41 @@ data class RunSummary(
     val turns: Int,
     val playerLevel: Int,
 )
+
+enum class TileVisibility {
+    VISIBLE,
+    EXPLORED,
+    HIDDEN,
+}
+
+data class InspectView(
+    val point: Point,
+    val visibility: TileVisibility,
+    val terrainName: String,
+    val actor: InspectActorView? = null,
+    val items: List<InspectItemView> = emptyList(),
+    val stairLabel: String? = null,
+)
+
+data class InspectActorView(
+    val name: String,
+    val role: String,
+    val currentHp: Int,
+    val maxHp: Int,
+    val attack: Int,
+    val defense: Int,
+    val accuracy: Int,
+    val evasion: Int,
+    val speed: Int,
+    val strength: Int,
+    val dexterity: Int,
+    val constitution: Int,
+    val willpower: Int,
+    val statusEffects: List<String> = emptyList(),
+)
+
+data class InspectItemView(
+    val name: String,
+    val typeLabel: String,
+    val details: List<String>,
+)

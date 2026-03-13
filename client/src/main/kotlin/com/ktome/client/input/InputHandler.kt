@@ -10,6 +10,7 @@ enum class UiMode {
     MAP,
     INVENTORY,
     TARGETING,
+    INSPECT,
     STAT_ASSIGN,
     TALENT_ASSIGN,
 }
@@ -19,6 +20,7 @@ data class OverlayState(
     val inventorySelection: Int = 0,
     val targetingSlot: Int? = null,
     val targetingCursor: Point? = null,
+    val inspectCursor: Point? = null,
 )
 
 class InputHandler(
@@ -30,9 +32,9 @@ class InputHandler(
             Keys.W to Point(0, -1),
             Keys.E to Point(1, -1),
             Keys.A to Point(-1, 0),
+            Keys.S to Point(0, 1),
             Keys.D to Point(1, 0),
             Keys.Z to Point(-1, 1),
-            Keys.X to Point(0, 1),
             Keys.C to Point(1, 1),
             Keys.UP to Point(0, -1),
             Keys.DOWN to Point(0, 1),
@@ -52,11 +54,12 @@ class InputHandler(
             Keys.NUMPAD_3 to Point(1, 1),
         )
 
-    private val waitBindings = listOf(Keys.S, Keys.PERIOD, Keys.SPACE, Keys.NUMPAD_5)
+    private val waitBindings = listOf(Keys.PERIOD, Keys.SPACE, Keys.NUMPAD_5)
     private var mode: UiMode = UiMode.MAP
     private var inventorySelection: Int = 0
     private var targetingSlot: Int? = null
     private var targetingCursor: Point? = null
+    private var inspectCursor: Point? = null
 
     fun isMapMode(): Boolean = mode == UiMode.MAP
 
@@ -66,14 +69,22 @@ class InputHandler(
             inventorySelection = inventorySelection,
             targetingSlot = targetingSlot,
             targetingCursor = targetingCursor,
+            inspectCursor = inspectCursor,
         )
 
     fun pollCommand(session: FoundationGameSession): PlayerCommand? {
+        if (mode == UiMode.MAP && input.isKeyJustPressed(Keys.X)) {
+            mode = UiMode.INSPECT
+            inspectCursor = defaultInspectCursor(session)
+            return null
+        }
+
         reconcileMode(session)
         return when (mode) {
             UiMode.MAP -> pollMapCommand(session)
             UiMode.INVENTORY -> pollInventoryCommand(session)
             UiMode.TARGETING -> pollTargetingCommand(session)
+            UiMode.INSPECT -> pollInspectCommand(session)
             UiMode.STAT_ASSIGN -> pollStatAssignCommand(session)
             UiMode.TALENT_ASSIGN -> pollTalentAssignCommand(session)
         }
@@ -129,7 +140,7 @@ class InputHandler(
             else -> Unit
         }
 
-        if (session.hasPendingStatAllocation()) {
+        if (session.hasPendingStatAllocation() && mode == UiMode.MAP) {
             mode = UiMode.STAT_ASSIGN
         }
     }
@@ -182,6 +193,24 @@ class InputHandler(
             targetingCursor = defaultTargetCursor(session)
         }
 
+        return null
+    }
+
+    private fun pollInspectCommand(session: FoundationGameSession): PlayerCommand? {
+        if (input.isKeyJustPressed(Keys.ESCAPE) || input.isKeyJustPressed(Keys.X)) {
+            clearInspect()
+            return null
+        }
+
+        val cursor = inspectCursor ?: defaultInspectCursor(session)
+        val movement = movementBindings.entries.firstOrNull { (key, _) -> input.isKeyJustPressed(key) }?.value
+        if (movement != null) {
+            inspectCursor =
+                Point(
+                    x = (cursor.x + movement.x).coerceIn(0, session.map.width - 1),
+                    y = (cursor.y + movement.y).coerceIn(0, session.map.height - 1),
+                )
+        }
         return null
     }
 
@@ -283,10 +312,17 @@ class InputHandler(
             .firstOrNull()
             ?: session.playerPosition()
 
+    private fun defaultInspectCursor(session: FoundationGameSession): Point = session.playerPosition()
+
     private fun clearTargeting() {
         mode = UiMode.MAP
         targetingSlot = null
         targetingCursor = null
+    }
+
+    private fun clearInspect() {
+        mode = UiMode.MAP
+        inspectCursor = null
     }
 
     private fun isSaveBinding(): Boolean = controlPressed() && input.isKeyJustPressed(Keys.S)
