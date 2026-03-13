@@ -61,6 +61,8 @@ internal data class RestoredRunState(
     val floors: List<FloorState<FloorRuntimeState>>,
     val combatRandomState: Long? = null,
     val sessionRandomState: Long? = null,
+    val pendingActionIds: List<Int> = emptyList(),
+    val activeTurnActorId: Int? = null,
 )
 
 internal object SessionSnapshotMapper {
@@ -133,6 +135,8 @@ internal object SessionSnapshotMapper {
         floors: List<FloorState<FloorRuntimeState>>,
         combatRandomState: Long?,
         sessionRandomState: Long?,
+        pendingActionIds: List<Int>,
+        activeTurnActorId: Int?,
     ): SaveSnapshot =
         SaveSnapshot(
             timestampEpochMillis = System.currentTimeMillis(),
@@ -148,6 +152,8 @@ internal object SessionSnapshotMapper {
             player = copyPlayerSnapshot(player),
             combatRandomState = combatRandomState,
             sessionRandomState = sessionRandomState,
+            pendingActionIds = pendingActionIds,
+            activeTurnActorId = activeTurnActorId,
             floors =
                 floors.sortedBy(FloorState<FloorRuntimeState>::floor).map { floorState ->
                     FloorSnapshot(
@@ -179,6 +185,8 @@ internal object SessionSnapshotMapper {
             player = copyPlayerSnapshot(snapshot.player),
             combatRandomState = snapshot.combatRandomState,
             sessionRandomState = snapshot.sessionRandomState,
+            pendingActionIds = snapshot.pendingActionIds.toList(),
+            activeTurnActorId = snapshot.activeTurnActorId,
             floors =
                 snapshot.floors.map { floor ->
                     FloorState(

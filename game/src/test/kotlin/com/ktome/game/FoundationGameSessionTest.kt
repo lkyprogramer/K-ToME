@@ -325,6 +325,26 @@ class FoundationGameSessionTest {
     }
 
     @Test
+    fun `manual save preserves prepared player turn state across load`() {
+        val saveManager = SaveManager(tempDir.resolve("prepared-turn-save"))
+        val baseline = GameModule.newFoundationSession(saveManager = SaveManager(tempDir.resolve("prepared-turn-baseline")))
+        val persisted = GameModule.newFoundationSession(saveManager = saveManager)
+        clearMonsters(baseline)
+        clearMonsters(persisted)
+        primePlayerTurnState(baseline)
+        primePlayerTurnState(persisted)
+
+        assertTrue(persisted.perform(PlayerCommand.SaveGame))
+        val loaded = requireNotNull(GameModule.loadFoundationSession(saveManager))
+
+        assertTrue(baseline.perform(PlayerCommand.Wait))
+        assertTrue(loaded.perform(PlayerCommand.Wait))
+
+        assertEquals(baseline.playerStatus().currentStamina, loaded.playerStatus().currentStamina)
+        assertEquals(playerCooldown(baseline, "power_strike"), playerCooldown(loaded, "power_strike"))
+    }
+
+    @Test
     fun `descending auto save captures post turn state instead of pre commit snapshot`() {
         val saveManager = SaveManager(tempDir.resolve("checkpoint-save"))
         val session = GameModule.newFoundationSession(saveManager = saveManager)
@@ -562,6 +582,22 @@ class FoundationGameSessionTest {
             )
         }
     }
+
+    private fun clearMonsters(session: FoundationGameSession) {
+        val world = runtimeWorld(session)
+        world.entitiesWith(MonsterTemplateId::class).forEach(world::destroyEntity)
+    }
+
+    private fun primePlayerTurnState(session: FoundationGameSession) {
+        val world = runtimeWorld(session)
+        requireNotNull(world.get<Stamina>(session.playerId)).current = 0
+        requireNotNull(world.get<com.ktome.core.talent.CooldownState>(session.playerId)).remainingByTalentId["power_strike"] = 3
+    }
+
+    private fun playerCooldown(
+        session: FoundationGameSession,
+        talentId: String,
+    ): Int = requireNotNull(runtimeWorld(session).get<com.ktome.core.talent.CooldownState>(session.playerId)).remainingByTalentId[talentId] ?: 0
 
     private fun installCombatDummy(session: FoundationGameSession): com.ktome.core.ecs.EntityId {
         val world = runtimeWorld(session)

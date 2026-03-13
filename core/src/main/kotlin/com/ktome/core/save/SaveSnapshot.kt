@@ -8,6 +8,7 @@ import com.ktome.core.ecs.Faction
 import com.ktome.core.ecs.Stats
 import com.ktome.core.item.EquipSlot
 import com.ktome.core.item.ItemInstance
+import com.ktome.core.map.GameMap
 import com.ktome.core.map.Point
 import com.ktome.core.talent.ActiveEffect
 
@@ -27,13 +28,15 @@ data class SaveSnapshot(
     val floors: List<FloorSnapshot>,
     val combatRandomState: Long? = null,
     val sessionRandomState: Long? = null,
+    val pendingActionIds: List<Int> = emptyList(),
+    val activeTurnActorId: Int? = null,
 ) {
     init {
         validateOrThrow()
     }
 
     companion object {
-        const val CURRENT_VERSION: Int = 1
+        const val CURRENT_VERSION: Int = 2
 
         fun isSupportedVersion(version: Int): Boolean = version == CURRENT_VERSION
     }
@@ -53,6 +56,15 @@ data class SaveSnapshot(
         }
         require(floors.any { floor -> floor.floor == currentFloor }) {
             "Current floor $currentFloor must exist in the snapshot."
+        }
+        require(pendingActionIds.all { pendingId -> pendingId > 0 }) {
+            "Pending action entity ids must be positive."
+        }
+        require(activeTurnActorId == null || activeTurnActorId > 0) {
+            "Active turn actor id must be positive when present."
+        }
+        require(activeTurnActorId == null || activeTurnActorId in pendingActionIds) {
+            "Active turn actor must exist in the pending action queue."
         }
         floors.forEach(FloorSnapshot::validateOrThrow)
         player.validateOrThrow()
@@ -83,6 +95,7 @@ data class FloorSnapshot(
 
     fun validateOrThrow() {
         require(floor > 0) { "Floor numbers must be positive." }
+        map.validateOrThrow()
         entities.forEach(EntitySnapshot::validateOrThrow)
     }
 }
@@ -90,7 +103,11 @@ data class FloorSnapshot(
 data class MapSnapshot(
     val rows: List<String>,
     val playerStart: Point,
-)
+) {
+    fun validateOrThrow() {
+        GameMap.fromAscii(rows = rows, playerStart = playerStart)
+    }
+}
 
 data class EntitySnapshot(
     val id: Int,

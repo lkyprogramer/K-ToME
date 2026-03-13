@@ -86,6 +86,43 @@ class SaveManagerTest {
         assertNull(manager.load())
     }
 
+    @Test
+    fun `invalid map payload does not count as a save`() {
+        val manager = SaveManager(tempDir)
+        tempDir.createDirectories()
+        manager.savePath().writeText(
+            """
+            {
+              "version": ${SaveSnapshot.CURRENT_VERSION},
+              "timestampEpochMillis": 1,
+              "seed": 42,
+              "mapWidth": 80,
+              "mapHeight": 50,
+              "fovRadius": 8,
+              "messageLogSize": 8,
+              "currentFloor": 1,
+              "maxFloor": 5,
+              "turnCount": 7,
+              "messageLog": [],
+              "player": { "entity": { "id": 1 } },
+              "floors": [
+                {
+                  "floor": 1,
+                  "map": {
+                    "rows": [],
+                    "playerStart": { "x": 0, "y": 0 }
+                  }
+                }
+              ]
+            }
+            """.trimIndent(),
+        )
+
+        assertFalse(manager.hasSave())
+        assertTrue(manager.hasSaveFile())
+        assertNull(manager.load())
+    }
+
     private fun sampleSnapshot(): SaveSnapshot =
         SaveSnapshot(
             timestampEpochMillis = 123L,

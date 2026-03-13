@@ -91,6 +91,8 @@ object GameModule {
             sessionRandom =
                 restored.sessionRandomState?.let(SplitMix64RandomSource::fromState)
                     ?: FoundationGameSession.defaultSessionRandomSource(restored.config, restored.turnCount),
+            restoredPendingActionIds = restored.pendingActionIds,
+            restoredActiveTurnActorId = restored.activeTurnActorId,
         )
     }
 

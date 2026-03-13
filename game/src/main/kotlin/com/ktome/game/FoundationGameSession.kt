@@ -79,6 +79,8 @@ class FoundationGameSession internal constructor(
     private val talentRegistry: TalentRegistry = content.talentRegistry,
     private val talentResolver: TalentResolver = TalentResolver(talentRegistry, combatResolver),
     private val sessionRandom: RandomSource = defaultSessionRandomSource(config, turnCount),
+    private val restoredPendingActionIds: List<Int> = emptyList(),
+    private val restoredActiveTurnActorId: Int? = null,
 ) {
     private val messageLog = ArrayDeque<String>()
     private val pendingActions = ArrayDeque<EntityId>()
@@ -91,6 +93,7 @@ class FoundationGameSession internal constructor(
 
     init {
         initialMessageLog.forEach(::addMessage)
+        restorePendingTurnState()
         refreshFov()
     }
 
@@ -117,6 +120,8 @@ class FoundationGameSession internal constructor(
         talentRegistry = talentRegistry,
         talentResolver = talentResolver,
         sessionRandom = sessionRandom,
+        restoredPendingActionIds = emptyList(),
+        restoredActiveTurnActorId = null,
     )
 
     val map: GameMap
@@ -795,6 +800,8 @@ class FoundationGameSession internal constructor(
                 floors = floors,
                 combatRandomState = (combatRandomSource as? StatefulRandomSource)?.snapshotState(),
                 sessionRandomState = (sessionRandom as? StatefulRandomSource)?.snapshotState(),
+                pendingActionIds = pendingActions.map(EntityId::value),
+                activeTurnActorId = activeTurnActor?.value,
             ),
         )
     }
@@ -807,6 +814,19 @@ class FoundationGameSession internal constructor(
         if (persistRun()) {
             addMessage("Checkpoint saved.")
         }
+    }
+
+    private fun restorePendingTurnState() {
+        pendingActions.clear()
+        restoredPendingActionIds
+            .map(::EntityId)
+            .filter(world::isAlive)
+            .forEach(pendingActions::addLast)
+        activeTurnActor =
+            restoredActiveTurnActorId
+                ?.let(::EntityId)
+                ?.takeIf(world::isAlive)
+                ?.takeIf { actorId -> actorId in pendingActions }
     }
 
     private fun syncActiveFloorState() {
@@ -1057,4 +1077,5 @@ class FoundationGameSession internal constructor(
             ): Int = fromInclusive
         }
     }
+
 }
