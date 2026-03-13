@@ -302,12 +302,12 @@ class FoundationGameSessionTest {
             world = world,
             item =
                 ItemInstance(
-                    baseId = "test_blade",
-                    name = "Test Blade",
+                    baseId = "short_sword",
+                    name = "短剑",
                     type = ItemType.WEAPON,
                     slot = EquipSlot.WEAPON,
                     glyph = ')',
-                    colorHex = "#E0E0E0",
+                    colorHex = "#C0C0C0",
                     stats = StatModifier(attack = 3),
                 ),
             position = session.playerPosition(),
@@ -322,7 +322,7 @@ class FoundationGameSessionTest {
 
         assertNotNull(loaded)
         assertEquals(2, loaded?.currentFloor())
-        assertTrue(loaded?.inventoryItems()?.any { it.name == "Test Blade" } == true)
+        assertTrue(loaded?.inventoryItems()?.any { it.name == "短剑" } == true)
     }
 
     @Test
@@ -419,7 +419,7 @@ class FoundationGameSessionTest {
 
         assertTrue(persisted.perform(PlayerCommand.SaveGame))
         val loaded = requireNotNull(GameModule.loadFoundationSession(persistedSaveManager))
-        val loadedDummy = requireNotNull(entityByTemplateId(loaded, "rng_dummy"))
+        val loadedDummy = requireNotNull(entityByTemplateId(loaded, "orc"))
         val loadedAttackDelta = requireNotNull(runtimeWorld(loaded).get<Position>(loadedDummy)).toPoint() - loaded.playerPosition()
 
         assertTrue(baseline.perform(PlayerCommand.Move(attackDelta)))
@@ -681,11 +681,11 @@ class FoundationGameSessionTest {
                 world = world,
                 item =
                     ItemInstance(
-                        baseId = "teleport_scroll_$index",
-                        name = "Teleport Scroll $index",
+                        baseId = "scroll_teleport",
+                        name = "传送卷轴",
                         type = ItemType.CONSUMABLE,
                         glyph = '?',
-                        colorHex = "#89CFF0",
+                        colorHex = "#00FFFF",
                         effect = ConsumableEffect.TELEPORT,
                     ),
                 position = session.playerPosition(),
@@ -718,10 +718,10 @@ class FoundationGameSessionTest {
                 world = world,
                 template =
                     MonsterTemplate(
-                        id = "rng_dummy",
-                        name = "RNG Dummy",
-                        glyph = 'd',
-                        colorHex = "#AAAAAA",
+                        id = "orc",
+                        name = "Orc",
+                        glyph = 'o',
+                        colorHex = "#3AAE4B",
                         stats = com.ktome.core.ecs.Stats(str = 1, dex = 1, con = 1, wil = 1),
                         baseHp = 200,
                         baseAttack = 1,

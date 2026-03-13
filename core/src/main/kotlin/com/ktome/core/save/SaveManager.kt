@@ -1,16 +1,16 @@
 package com.ktome.core.save
 
-import com.google.gson.GsonBuilder
 import java.nio.file.AtomicMoveNotSupportedException
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardCopyOption.ATOMIC_MOVE
 import java.nio.file.StandardCopyOption.REPLACE_EXISTING
-import kotlin.io.path.readText
 import kotlin.io.path.writeText
 
-class SaveManager(private val saveDir: Path) {
-    private val gson = GsonBuilder().setPrettyPrinting().create()
+class SaveManager(
+    private val saveDir: Path,
+    private val saveCodec: SaveCodec = SaveCodec(),
+) {
     private val saveFile = saveDir.resolve(DEFAULT_FILE_NAME)
 
     fun save(snapshot: SaveSnapshot): Boolean =
@@ -19,7 +19,7 @@ class SaveManager(private val saveDir: Path) {
             Files.createDirectories(saveDir)
             val temporaryFile = Files.createTempFile(saveDir, "${DEFAULT_FILE_NAME}.", ".tmp")
             try {
-                temporaryFile.writeText(gson.toJson(snapshot))
+                temporaryFile.writeText(saveCodec.encode(snapshot))
                 try {
                     Files.move(temporaryFile, saveFile, ATOMIC_MOVE, REPLACE_EXISTING)
                 } catch (_: AtomicMoveNotSupportedException) {
@@ -35,14 +35,15 @@ class SaveManager(private val saveDir: Path) {
             return null
         }
 
-        return runCatching {
-            gson.fromJson(saveFile.readText(), SaveSnapshot::class.java)
-        }.getOrNull()
-            ?.takeIf { snapshot -> SaveSnapshot.isSupportedVersion(snapshot.version) }
-            ?.takeIf { snapshot -> runCatching { snapshot.validateOrThrow() }.isSuccess }
+        return saveCodec.decode(Files.readString(saveFile))
     }
 
-    fun hasSave(): Boolean = load() != null
+    fun hasSave(): Boolean =
+        try {
+            load() != null
+        } catch (_: SaveLoadException) {
+            false
+        }
 
     fun hasSaveFile(): Boolean = Files.isRegularFile(saveFile)
 

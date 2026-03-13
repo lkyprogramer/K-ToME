@@ -5,10 +5,11 @@ import org.gradle.testing.jacoco.tasks.JacocoCoverageVerification
 
 plugins {
     `java-library`
+    id("org.jetbrains.kotlin.plugin.serialization")
 }
 
 dependencies {
-    implementation("com.google.code.gson:gson:${rootProject.providers.gradleProperty("gsonVersion").get()}")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json-jvm:${rootProject.providers.gradleProperty("kotlinxSerializationVersion").get()}")
 }
 
 tasks.register("verifyNoGdxDependencies") {

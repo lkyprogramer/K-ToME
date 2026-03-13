@@ -17,6 +17,7 @@ internal const val menuHeight = 540f
 class MainMenuScreen(
     private val app: GameApp,
     private val continueEnabled: Boolean,
+    private val notice: String? = null,
 ) : ScreenAdapter() {
     private var batch: SpriteBatch? = null
     private var font: BitmapFont? = null
@@ -73,6 +74,10 @@ class MainMenuScreen(
 
         font.color = Color.GRAY
         font.draw(batch, "Up/Down select  Enter confirm", 120f, 140f)
+        notice?.takeIf(String::isNotBlank)?.let { message ->
+            font.color = Color.SALMON
+            font.draw(batch, message, 120f, 100f)
+        }
         batch.end()
     }
 

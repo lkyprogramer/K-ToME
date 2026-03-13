@@ -1,16 +1,18 @@
 package com.ktome.client
 
 import com.ktome.core.dungeon.StairDirection
-import com.ktome.core.map.Point
 import com.ktome.core.save.EntitySnapshot
 import com.ktome.core.save.FloorSnapshot
 import com.ktome.core.save.MapSnapshot
 import com.ktome.core.save.PlayerSnapshot
+import com.ktome.core.save.PointSnapshot
 import com.ktome.core.save.SaveManager
 import com.ktome.core.save.SaveSnapshot
 import com.ktome.core.save.StairSnapshot
+import java.nio.file.Files
 import java.nio.file.Path
 import kotlin.io.path.exists
+import kotlin.io.path.writeText
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertThrows
@@ -59,51 +61,62 @@ class GameAppLifecycleTest {
         assertNull(session)
         assertFalse(coordinator.cachedContinueAvailability())
     }
+
+    @Test
+    fun `legacy save surfaces an explicit notice`() {
+        val saveManager = SaveManager(tempDir.resolve("legacy-save"))
+        Files.createDirectories(saveManager.savePath().parent)
+        saveManager.savePath().writeText("""{"version":2,"timestampEpochMillis":123}""")
+        val coordinator = LifecycleCoordinator(saveManager)
+
+        assertFalse(coordinator.refreshContinueAvailability())
+        assertTrue(coordinator.consumeNotice()?.contains("Legacy saves") == true)
+    }
 }
 
 private fun sampleSnapshot(): SaveSnapshot =
     SaveSnapshot(
         timestampEpochMillis = 123L,
-        seed = 20260312L,
+        worldSeed = 20260312L,
+        currentZoneId = "foundation_dungeon",
+        floorIndex = 2,
         mapWidth = 80,
         mapHeight = 50,
         fovRadius = 8,
         messageLogSize = 8,
-        currentFloor = 2,
+        playerProfessionId = "foundation_hero",
         maxFloor = 5,
         turnCount = 18,
-        messageLog = listOf("You descend the stairs."),
         player =
             PlayerSnapshot(
                 entity =
                     EntitySnapshot(
                         id = 1,
-                        position = Point(4, 5),
-                        name = "Hero",
+                        position = PointSnapshot(4, 5),
+                        blocksMovement = true,
+                        faction = "PLAYER",
                         isPlayerControlled = true,
                     ),
             ),
         floors =
             listOf(
                 FloorSnapshot(
-                    floor = 1,
-                    map = MapSnapshot(rows = listOf("....."), playerStart = Point(0, 0)),
-                    stairsDown = Point(4, 0),
+                    floorIndex = 1,
+                    map = MapSnapshot(rows = listOf("....."), playerStart = PointSnapshot(0, 0)),
+                    stairsDown = PointSnapshot(4, 0),
                 ),
                 FloorSnapshot(
-                    floor = 2,
-                    map = MapSnapshot(rows = listOf("....."), playerStart = Point(1, 0)),
-                    stairsUp = Point(0, 0),
-                    stairsDown = Point(4, 0),
-                    exploredTiles = listOf(Point(0, 0), Point(1, 0)),
+                    floorIndex = 2,
+                    map = MapSnapshot(rows = listOf("....."), playerStart = PointSnapshot(1, 0)),
+                    stairsUp = PointSnapshot(0, 0),
+                    stairsDown = PointSnapshot(4, 0),
+                    exploredTiles = listOf(PointSnapshot(0, 0), PointSnapshot(1, 0)),
                     entities =
                         listOf(
                             EntitySnapshot(
                                 id = 9,
-                                position = Point(4, 0),
-                                glyph = '>',
-                                name = "Downstairs",
-                                stair = StairSnapshot(StairDirection.DOWN),
+                                position = PointSnapshot(4, 0),
+                                stair = StairSnapshot(StairDirection.DOWN.name),
                             ),
                         ),
                 ),

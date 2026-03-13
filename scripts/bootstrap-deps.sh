@@ -113,6 +113,7 @@ ASM_VERSION="$(property asmVersion)"
 OPENTEST4J_VERSION="$(property opentest4jVersion)"
 APIGUARDIAN_VERSION="$(property apiguardianVersion)"
 GSON_VERSION="$(property gsonVersion)"
+KOTLINX_SERIALIZATION_VERSION="$(property kotlinxSerializationVersion)"
 KOTLINX_COROUTINES_VERSION="$(property kotlinxCoroutinesVersion)"
 ERROR_PRONE_ANNOTATIONS_VERSION="$(property errorProneAnnotationsVersion)"
 JETBRAINS_ANNOTATIONS_VERSION="$(property jetbrainsAnnotationsVersion)"
@@ -307,6 +308,9 @@ bootstrap_gradle_distribution() {
 download_path \
   pluginPortal \
   "org/jetbrains/kotlin/jvm/org.jetbrains.kotlin.jvm.gradle.plugin/$KOTLIN_VERSION/org.jetbrains.kotlin.jvm.gradle.plugin-$KOTLIN_VERSION.pom"
+download_path \
+  pluginPortal \
+  "org/jetbrains/kotlin/plugin/serialization/org.jetbrains.kotlin.plugin.serialization.gradle.plugin/$KOTLIN_VERSION/org.jetbrains.kotlin.plugin.serialization.gradle.plugin-$KOTLIN_VERSION.pom"
 
 download_main_artifact "mavenCentral" "org.jetbrains.kotlin" "abi-tools-api" "$KOTLIN_VERSION"
 download_maven_file "mavenCentral" "org.jetbrains.kotlin" "fus-statistics-gradle-plugin" "$KOTLIN_VERSION" "fus-statistics-gradle-plugin-$KOTLIN_VERSION-$KOTLIN_GRADLE_PLUGIN_VARIANT.jar"
@@ -328,6 +332,9 @@ download_main_artifact_with_module "mavenCentral" "org.jetbrains.kotlin" "kotlin
 download_maven_file "mavenCentral" "org.jetbrains.kotlin" "kotlin-gradle-plugin" "$KOTLIN_VERSION" "kotlin-gradle-plugin-$KOTLIN_VERSION-$KOTLIN_GRADLE_PLUGIN_VARIANT.jar"
 download_maven_file "mavenCentral" "org.jetbrains.kotlin" "kotlin-gradle-plugin" "$KOTLIN_VERSION" "kotlin-gradle-plugin-$KOTLIN_VERSION.module"
 download_pom_only "mavenCentral" "org.jetbrains.kotlin" "kotlin-gradle-plugin" "$KOTLIN_VERSION"
+download_maven_file "mavenCentral" "org.jetbrains.kotlin" "kotlin-serialization" "$KOTLIN_VERSION" "kotlin-serialization-$KOTLIN_VERSION-$KOTLIN_GRADLE_PLUGIN_VARIANT.jar"
+download_maven_file "mavenCentral" "org.jetbrains.kotlin" "kotlin-serialization" "$KOTLIN_VERSION" "kotlin-serialization-$KOTLIN_VERSION.module"
+download_pom_only "mavenCentral" "org.jetbrains.kotlin" "kotlin-serialization" "$KOTLIN_VERSION"
 download_maven_file "mavenCentral" "org.jetbrains.kotlin" "kotlin-gradle-plugins-bom" "$KOTLIN_VERSION" "kotlin-gradle-plugins-bom-$KOTLIN_VERSION.module"
 download_pom_only "mavenCentral" "org.jetbrains.kotlin" "kotlin-gradle-plugins-bom" "$KOTLIN_VERSION"
 download_main_artifact "mavenCentral" "org.jetbrains.kotlin" "kotlin-klib-commonizer-api" "$KOTLIN_VERSION"
@@ -337,6 +344,7 @@ download_main_artifact "mavenCentral" "org.jetbrains.kotlin" "kotlin-scripting-c
 download_main_artifact "mavenCentral" "org.jetbrains.kotlin" "kotlin-scripting-compiler-embeddable" "$KOTLIN_VERSION"
 download_main_artifact "mavenCentral" "org.jetbrains.kotlin" "kotlin-scripting-compiler-impl-embeddable" "$KOTLIN_VERSION"
 download_main_artifact "mavenCentral" "org.jetbrains.kotlin" "kotlin-scripting-jvm" "$KOTLIN_VERSION"
+download_main_artifact "mavenCentral" "org.jetbrains.kotlin" "kotlin-serialization-compiler-plugin-embeddable" "$KOTLIN_VERSION"
 download_maven_file "mavenCentral" "org.jetbrains.kotlin" "kotlin-stdlib-common" "$KOTLIN_VERSION" "kotlin-stdlib-common-$KOTLIN_VERSION.module"
 download_pom_only "mavenCentral" "org.jetbrains.kotlin" "kotlin-stdlib-common" "$KOTLIN_VERSION"
 download_main_artifact_with_module "mavenCentral" "org.jetbrains.kotlin" "kotlin-stdlib" "$KOTLIN_VERSION"
@@ -348,6 +356,11 @@ download_pom_only "mavenCentral" "com.google.code.gson" "gson-parent" "$GSON_VER
 download_main_artifact "mavenCentral" "com.google.code.gson" "gson" "$GSON_VERSION"
 download_pom_only "mavenCentral" "com.google.errorprone" "error_prone_parent" "$ERROR_PRONE_ANNOTATIONS_VERSION"
 download_main_artifact "mavenCentral" "com.google.errorprone" "error_prone_annotations" "$ERROR_PRONE_ANNOTATIONS_VERSION"
+download_pom_only "mavenCentral" "org.jetbrains.kotlinx" "kotlinx-serialization-bom" "$KOTLINX_SERIALIZATION_VERSION"
+download_main_artifact_with_module "mavenCentral" "org.jetbrains.kotlinx" "kotlinx-serialization-core" "$KOTLINX_SERIALIZATION_VERSION"
+download_main_artifact_with_module "mavenCentral" "org.jetbrains.kotlinx" "kotlinx-serialization-core-jvm" "$KOTLINX_SERIALIZATION_VERSION"
+download_main_artifact_with_module "mavenCentral" "org.jetbrains.kotlinx" "kotlinx-serialization-json" "$KOTLINX_SERIALIZATION_VERSION"
+download_main_artifact_with_module "mavenCentral" "org.jetbrains.kotlinx" "kotlinx-serialization-json-jvm" "$KOTLINX_SERIALIZATION_VERSION"
 download_pom_only "mavenCentral" "org.jetbrains.kotlinx" "kotlinx-coroutines-bom" "$KOTLINX_COROUTINES_VERSION"
 download_main_artifact "mavenCentral" "org.jetbrains.kotlinx" "kotlinx-coroutines-core-jvm" "$KOTLINX_COROUTINES_VERSION"
 download_main_artifact "mavenCentral" "org.jetbrains" "annotations" "$JETBRAINS_ANNOTATIONS_VERSION"
