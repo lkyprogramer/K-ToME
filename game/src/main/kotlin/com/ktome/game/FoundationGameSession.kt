@@ -25,6 +25,7 @@ import com.ktome.core.ecs.Name
 import com.ktome.core.ecs.PatrolRoute
 import com.ktome.core.ecs.Position
 import com.ktome.core.ecs.Stats
+import com.ktome.core.ecs.Stair
 import com.ktome.core.ecs.Stamina
 import com.ktome.core.ecs.World
 import com.ktome.core.ecs.get
@@ -41,6 +42,7 @@ import com.ktome.core.item.InventoryManager
 import com.ktome.core.item.InventoryOperationResult
 import com.ktome.core.item.ItemInstance
 import com.ktome.core.item.ItemType
+import com.ktome.core.item.StatModifier
 import com.ktome.core.map.GameMap
 import com.ktome.core.map.Point
 import com.ktome.core.movement.MovementRules
@@ -293,6 +295,40 @@ class FoundationGameSession internal constructor(
             .map { entityId -> requireNotNull(world.get<Position>(entityId)).toPoint() }
             .filter { point -> point in visibleTiles }
             .sortedWith(compareBy<Point> { it.chebyshevDistanceTo(playerPosition()) }.thenBy(Point::y).thenBy(Point::x))
+    }
+
+    fun inspectAt(point: Point): InspectView {
+        require(map.isInBounds(point.x, point.y)) { "Point $point is outside the current map." }
+
+        val visibility =
+            when {
+                point in visibleTiles -> TileVisibility.VISIBLE
+                point in exploredTiles -> TileVisibility.EXPLORED
+                else -> TileVisibility.HIDDEN
+            }
+
+        if (visibility == TileVisibility.HIDDEN) {
+            return InspectView(point = point, visibility = visibility, terrainName = "Unknown")
+        }
+
+        return InspectView(
+            point = point,
+            visibility = visibility,
+            terrainName = tileName(map[point]),
+            actor =
+                if (visibility == TileVisibility.VISIBLE) {
+                    actorAt(point)?.let(::inspectActorView)
+                } else {
+                    null
+                },
+            items =
+                if (visibility == TileVisibility.VISIBLE) {
+                    itemsOnGroundAt(point).mapNotNull { itemId -> world.get<ItemInstance>(itemId)?.let(::inspectItemView) }
+                } else {
+                    emptyList()
+                },
+            stairLabel = stairLabelAt(point),
+        )
     }
 
     fun perform(command: PlayerCommand): Boolean {
@@ -624,6 +660,155 @@ class FoundationGameSession internal constructor(
             AIAction.Wait -> Unit
         }
     }
+
+    private fun inspectActorView(entityId: EntityId): InspectActorView {
+        val stats = requireNotNull(world.get<Stats>(entityId))
+        val health = requireNotNull(world.get<Health>(entityId))
+        val derived = requireNotNull(world.get<DerivedStats>(entityId))
+        val behavior = world.get<AIBehavior>(entityId)
+        val role =
+            when {
+                entityId == playerId -> "Player"
+                world.get<MonsterTemplateId>(entityId)?.value == "dungeon_lord" -> "Boss"
+                behavior != null -> "Monster ${behavior.type.name}"
+                else -> "Actor"
+            }
+
+        return InspectActorView(
+            name = requireNotNull(world.get<Name>(entityId)).value,
+            role = role,
+            currentHp = health.current,
+            maxHp = health.max,
+            attack = derived.attack,
+            defense = derived.defense,
+            accuracy = derived.accuracy,
+            evasion = derived.evasion,
+            speed = derived.speed,
+            strength = stats.str,
+            dexterity = stats.dex,
+            constitution = stats.con,
+            willpower = stats.wil,
+            statusEffects = activeStatusEffects(entityId),
+        )
+    }
+
+    private fun inspectItemView(item: ItemInstance): InspectItemView {
+        val typeLabel =
+            when (item.type) {
+                ItemType.WEAPON -> "Weapon"
+                ItemType.ARMOR -> "Armor"
+                ItemType.CONSUMABLE -> "Consumable"
+            }
+
+        return InspectItemView(
+            name = item.name,
+            typeLabel = typeLabel,
+            details = itemDetailLines(item),
+        )
+    }
+
+    private fun itemDetailLines(item: ItemInstance): List<String> =
+        buildList {
+            item.slot?.let { add("Slot ${it.name}") }
+            addAll(statModifierLines(item.stats))
+            when (item.effect) {
+                com.ktome.core.item.ConsumableEffect.HEAL -> add("Restore ${item.magnitude} HP")
+                com.ktome.core.item.ConsumableEffect.TELEPORT -> add("Teleport to a random tile")
+                null -> Unit
+            }
+            if (isEmpty()) {
+                add("No special effect")
+            }
+        }
+
+    private fun statModifierLines(modifier: StatModifier): List<String> =
+        buildList {
+            addModifier("STR", modifier.str)
+            addModifier("DEX", modifier.dex)
+            addModifier("CON", modifier.con)
+            addModifier("WIL", modifier.wil)
+            addModifier("ATK", modifier.attack)
+            addModifier("DEF", modifier.defense)
+            addModifier("ACC", modifier.accuracy)
+            addModifier("EVA", modifier.evasion)
+            addModifier("SPD", modifier.speed)
+            addModifier("HP", modifier.maxHp)
+            addModifier("STA", modifier.maxStamina)
+            addDecimalModifier("HP Regen", modifier.hpRegen)
+            addDecimalModifier("STA Regen", modifier.staminaRegen)
+            addPercentModifier("Crit", modifier.critChance)
+            addPercentModifier("Talent", modifier.talentPower)
+        }
+
+    private fun MutableList<String>.addModifier(
+        label: String,
+        value: Int,
+    ) {
+        if (value != 0) {
+            add("$label ${signed(value)}")
+        }
+    }
+
+    private fun MutableList<String>.addDecimalModifier(
+        label: String,
+        value: Double,
+    ) {
+        if (value != 0.0) {
+            add("$label ${signedDecimal(value)}")
+        }
+    }
+
+    private fun MutableList<String>.addPercentModifier(
+        label: String,
+        value: Double,
+    ) {
+        if (value != 0.0) {
+            val percent = (value * 100).toInt()
+            add("$label ${signed(percent)}%")
+        }
+    }
+
+    private fun signed(value: Int): String = if (value > 0) "+$value" else value.toString()
+
+    private fun signedDecimal(value: Double): String {
+        val normalized =
+            if (value % 1.0 == 0.0) {
+                value.toInt().toString()
+            } else {
+                "%.1f".format(value)
+            }
+        return if (value > 0) "+$normalized" else normalized
+    }
+
+    private fun activeStatusEffects(entityId: EntityId): List<String> =
+        world.get<EffectTracker>(entityId)
+            ?.effects
+            ?.filter { effect -> effect.remainingTurns > 0 }
+            ?.map { effect -> "${effect.name} ${effect.remainingTurns}t" }
+            .orEmpty()
+
+    private fun tileName(tile: com.ktome.core.map.TileType): String =
+        when (tile) {
+            com.ktome.core.map.TileType.FLOOR -> "Floor"
+            com.ktome.core.map.TileType.WALL -> "Wall"
+        }
+
+    private fun actorAt(point: Point): EntityId? =
+        world.entitiesWith(Position::class, Health::class, Name::class)
+            .firstOrNull { entityId ->
+                requireNotNull(world.get<Position>(entityId)).toPoint() == point &&
+                    requireNotNull(world.get<Health>(entityId)).current > 0
+            }
+
+    private fun stairLabelAt(point: Point): String? =
+        world.entitiesWith(Position::class, Stair::class)
+            .firstOrNull { entityId -> requireNotNull(world.get<Position>(entityId)).toPoint() == point }
+            ?.let { entityId ->
+                when (requireNotNull(world.get<Stair>(entityId)).direction) {
+                    StairDirection.UP -> "Upstairs"
+                    StairDirection.DOWN -> "Downstairs"
+                }
+            }
 
     private fun tryUseMonsterTalent(monsterId: EntityId): Boolean {
         val loadout = world.get<TalentLoadout>(monsterId) ?: return false

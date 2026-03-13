@@ -36,6 +36,7 @@ import java.nio.file.Path
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotNull
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
@@ -499,6 +500,115 @@ class FoundationGameSessionTest {
         }
         assertTrue(session.isGameOver())
         assertFalse(sessionSaveManager.hasSave())
+    }
+
+    @Test
+    fun `inspect view exposes visible actor stats status and item details`() {
+        val map = GameMap.fromAscii(rows = listOf(".........", ".........", "........."), playerStart = Point(1, 1))
+        val world = World()
+        val factory = EntityFactory()
+        val itemFactory = ItemFactory()
+        val playerId = factory.createPlayer(world, Point(1, 1), talents)
+        val monsterId =
+            factory.createMonster(
+                world = world,
+                template =
+                    MonsterTemplate(
+                        id = "inspect_dummy",
+                        name = "Inspect Dummy",
+                        glyph = 'd',
+                        colorHex = "#AAAAAA",
+                        stats = com.ktome.core.ecs.Stats(str = 4, dex = 3, con = 2, wil = 1),
+                        baseHp = 12,
+                        baseAttack = 4,
+                        baseDefense = 2,
+                        speed = 90,
+                        ai = AIType.CHASE,
+                        expReward = 10,
+                        spawnFloors = listOf(1),
+                        spawnWeight = 1,
+                    ),
+                position = Point(2, 1),
+            )
+        requireNotNull(world.get<EffectTracker>(monsterId)).effects +=
+            ActiveEffect(
+                id = "inspect_stun",
+                name = "Stunned",
+                type = StatusEffectType.STUNNED,
+                remainingTurns = 2,
+            )
+        itemFactory.createGroundItem(
+            world = world,
+            item =
+                ItemInstance(
+                    baseId = "inspect_blade",
+                    name = "Inspect Blade",
+                    type = ItemType.WEAPON,
+                    slot = EquipSlot.WEAPON,
+                    glyph = ')',
+                    colorHex = "#E0E0E0",
+                    stats = StatModifier(attack = 5, speed = 1),
+                ),
+            position = Point(1, 1),
+        )
+        val session = session(world, map, playerId)
+
+        val monsterInspect = session.inspectAt(Point(2, 1))
+        val playerTileInspect = session.inspectAt(Point(1, 1))
+
+        assertEquals(TileVisibility.VISIBLE, monsterInspect.visibility)
+        assertEquals("Floor", monsterInspect.terrainName)
+        assertEquals("Inspect Dummy", monsterInspect.actor?.name)
+        assertEquals("Monster CHASE", monsterInspect.actor?.role)
+        assertEquals(requireNotNull(world.get<Health>(monsterId)).max, monsterInspect.actor?.maxHp)
+        assertTrue(monsterInspect.actor?.statusEffects?.contains("Stunned 2t") == true)
+
+        val itemInspect = playerTileInspect.items.single()
+        assertEquals("Inspect Blade", itemInspect.name)
+        assertEquals("Weapon", itemInspect.typeLabel)
+        assertTrue(itemInspect.details.contains("Slot WEAPON"))
+        assertTrue(itemInspect.details.contains("ATK +5"))
+        assertTrue(itemInspect.details.contains("SPD +1"))
+    }
+
+    @Test
+    fun `inspect view does not leak actors on hidden tiles`() {
+        val map =
+            GameMap.fromAscii(
+                rows = listOf(".........................", ".........................", "........................."),
+                playerStart = Point(1, 1),
+            )
+        val world = World()
+        val factory = EntityFactory()
+        val playerId = factory.createPlayer(world, Point(1, 1), talents)
+        factory.createMonster(
+            world = world,
+            template =
+                MonsterTemplate(
+                    id = "hidden_dummy",
+                    name = "Hidden Dummy",
+                    glyph = 'h',
+                    colorHex = "#777777",
+                    stats = com.ktome.core.ecs.Stats(str = 1, dex = 1, con = 1, wil = 1),
+                    baseHp = 8,
+                    baseAttack = 2,
+                    baseDefense = 1,
+                    speed = 90,
+                    ai = AIType.CHASE,
+                    expReward = 0,
+                    spawnFloors = listOf(1),
+                    spawnWeight = 1,
+                ),
+            position = Point(20, 1),
+        )
+        val session = session(world, map, playerId)
+
+        val inspect = session.inspectAt(Point(20, 1))
+
+        assertEquals(TileVisibility.HIDDEN, inspect.visibility)
+        assertEquals("Unknown", inspect.terrainName)
+        assertNull(inspect.actor)
+        assertTrue(inspect.items.isEmpty())
     }
 
     private fun fixedRandom(
