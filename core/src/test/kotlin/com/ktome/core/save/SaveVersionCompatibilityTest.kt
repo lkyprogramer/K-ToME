@@ -32,6 +32,20 @@ class SaveVersionCompatibilityTest {
     }
 
     @Test
+    fun `invalid save contract payload is normalized to invalid save exception`() {
+        val encoded =
+            codec.encode(SaveFixtures.emptyScene())
+                .replace("\"major\": 2", "\"major\": 0")
+
+        val exception =
+            assertThrows(InvalidSaveException::class.java) {
+                codec.decode(encoded)
+            }
+
+        assertTrue(exception.message!!.contains("saveContractVersion"))
+    }
+
+    @Test
     fun `semantically invalid current contract save is normalized to invalid save exception`() {
         val invalidCurrentContractSave =
             """

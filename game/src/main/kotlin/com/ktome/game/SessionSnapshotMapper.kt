@@ -3,6 +3,7 @@ package com.ktome.game
 import com.ktome.core.dungeon.FloorState
 import com.ktome.core.dungeon.StairDirection
 import com.ktome.core.ecs.AIBehavior
+import com.ktome.core.ecs.AIType
 import com.ktome.core.ecs.BlocksMovement
 import com.ktome.core.ecs.CombatProfile
 import com.ktome.core.ecs.DisplayColor
@@ -301,7 +302,9 @@ internal object SessionSnapshotMapper {
         if (snapshot.blocksMovement) {
             world.add(entityId, BlocksMovement())
         }
-        snapshot.faction?.let { faction -> world.add(entityId, FactionTag(Faction.valueOf(faction))) }
+        snapshot.faction?.let { faction ->
+            world.add(entityId, FactionTag(parseEnumFromSave<Faction>(value = faction, label = "faction")))
+        }
         snapshot.stats?.let { stats -> world.add(entityId, toStats(stats)) }
         snapshot.combatProfile?.let { profile -> world.add(entityId, toCombatProfile(profile)) }
         snapshot.healthCurrent?.let { current -> world.add(entityId, Health(current = current, max = current)) }
@@ -327,7 +330,7 @@ internal object SessionSnapshotMapper {
             val restoredSlots =
                 linkedMapOf<EquipSlot, EntityId>().apply {
                     equipment.slots.forEach { (slotName, itemId) ->
-                        put(EquipSlot.valueOf(slotName), EntityId(itemId))
+                        put(parseEnumFromSave<EquipSlot>(value = slotName, label = "equipment slot"), EntityId(itemId))
                     }
                 }
             world.add(
@@ -363,7 +366,7 @@ internal object SessionSnapshotMapper {
             applyPlayerPresentation(world, entityId)
         }
         snapshot.stair?.let { stair ->
-            val direction = StairDirection.valueOf(stair.direction)
+            val direction = parseEnumFromSave<StairDirection>(value = stair.direction, label = "stair direction")
             world.add(entityId, Stair(direction))
             applyStairPresentation(world, entityId, direction)
         }
@@ -497,7 +500,7 @@ internal object SessionSnapshotMapper {
 
     private fun toAIBehavior(snapshot: AIBehaviorSnapshot): AIBehavior =
         AIBehavior(
-            type = com.ktome.core.ecs.AIType.valueOf(snapshot.type),
+            type = parseEnumFromSave<AIType>(value = snapshot.type, label = "AI behavior type"),
             sightRadius = snapshot.sightRadius,
             preferredRangeStart = snapshot.preferredRangeStart,
             preferredRangeEnd = snapshot.preferredRangeEnd,
@@ -513,7 +516,7 @@ internal object SessionSnapshotMapper {
         )
 
     private fun restoreActiveEffect(snapshot: ActiveEffectSnapshot): ActiveEffect {
-        val type = StatusEffectType.valueOf(snapshot.type)
+        val type = parseEnumFromSave<StatusEffectType>(value = snapshot.type, label = "status effect type")
         return ActiveEffect(
             id = snapshot.id,
             name = effectDisplayName(type),
@@ -556,16 +559,19 @@ internal object SessionSnapshotMapper {
         return ItemInstance(
             baseId = snapshot.baseId,
             name = buildItemName(base, material, affixes),
-            type = ItemType.valueOf(snapshot.type),
-            slot = snapshot.slot?.let(EquipSlot::valueOf) ?: base.slot,
+            type = parseEnumFromSave<ItemType>(value = snapshot.type, label = "item type"),
+            slot = snapshot.slot?.let { slot -> parseEnumFromSave<EquipSlot>(value = slot, label = "item slot") } ?: base.slot,
             glyph = base.glyph,
             colorHex = base.colorHex,
-            quality = ItemQuality.valueOf(snapshot.quality),
+            quality = parseEnumFromSave<ItemQuality>(value = snapshot.quality, label = "item quality"),
             materialId = snapshot.materialId,
             materialName = material?.name,
             affixes = affixes,
             stats = toStatModifier(snapshot.stats),
-            effect = snapshot.effect?.let(ConsumableEffect::valueOf) ?: base.effect,
+            effect =
+                snapshot.effect?.let { effect ->
+                    parseEnumFromSave<ConsumableEffect>(value = effect, label = "consumable effect")
+                } ?: base.effect,
             magnitude = snapshot.magnitude,
         )
     }
@@ -705,5 +711,15 @@ internal object SessionSnapshotMapper {
     ): MonsterTemplate =
         requireNotNull((content.monsterCatalog + content.bossDefinition.template).firstOrNull { template -> template.id == templateId }) {
             throw SaveRestoreException("Save references unknown monster template '$templateId'.")
+        }
+
+    private inline fun <reified T : Enum<T>> parseEnumFromSave(
+        value: String,
+        label: String,
+    ): T =
+        try {
+            enumValueOf<T>(value)
+        } catch (exception: IllegalArgumentException) {
+            throw SaveRestoreException("Save references unknown $label '$value'.", exception)
         }
 }

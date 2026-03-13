@@ -66,6 +66,8 @@ class SaveCodec(
                 json.decodeFromJsonElement<SaveContractVersion>(contractElement)
             } catch (exception: SerializationException) {
                 throw InvalidSaveException("Save file is missing a valid saveContractVersion.", exception)
+            } catch (exception: IllegalArgumentException) {
+                throw InvalidSaveException("Save file is missing a valid saveContractVersion.", exception)
             }
         if (!contract.isSupported()) {
             throw UnsupportedSaveContractVersionException(found = contract)

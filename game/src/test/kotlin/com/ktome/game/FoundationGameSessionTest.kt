@@ -23,16 +23,19 @@ import com.ktome.core.map.GameMap
 import com.ktome.core.map.Point
 import com.ktome.core.random.RandomSource
 import com.ktome.core.save.SaveManager
+import com.ktome.core.save.SaveRestoreException
 import com.ktome.core.talent.ActiveEffect
 import com.ktome.core.talent.EffectTracker
-import com.ktome.core.talent.TalentRegistry
 import com.ktome.core.talent.TalentResolver
 import com.ktome.core.talent.StatusEffectType
+import com.ktome.core.talent.TalentRegistry
+import java.nio.file.Files
 import com.ktome.game.data.DataLoader
 import com.ktome.game.factory.EntityFactory
 import com.ktome.game.factory.ItemFactory
 import com.ktome.game.model.MonsterTemplate
 import java.nio.file.Path
+import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -343,6 +346,25 @@ class FoundationGameSessionTest {
 
         assertEquals(baseline.playerStatus().currentStamina, loaded.playerStatus().currentStamina)
         assertEquals(playerCooldown(baseline, "power_strike"), playerCooldown(loaded, "power_strike"))
+    }
+
+    @Test
+    fun `load normalizes invalid enum tokens to save restore exception`() {
+        val saveManager = SaveManager(tempDir.resolve("invalid-enum-save"))
+        val session = GameModule.newFoundationSession(saveManager = saveManager)
+
+        assertTrue(session.perform(PlayerCommand.SaveGame))
+        Files.writeString(
+            saveManager.savePath(),
+            Files.readString(saveManager.savePath()).replace("\"PLAYER\"", "\"NOT_A_FACTION\""),
+        )
+
+        val exception =
+            assertThrows(SaveRestoreException::class.java) {
+                GameModule.loadFoundationSession(saveManager)
+            }
+
+        assertTrue(exception.message!!.contains("faction"))
     }
 
     @Test
