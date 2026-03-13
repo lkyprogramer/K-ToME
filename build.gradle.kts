@@ -17,7 +17,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     base
-    kotlin("jvm") version "2.2.21" apply false
+    kotlin("jvm") version "2.3.10" apply false
     jacoco
 }
 
