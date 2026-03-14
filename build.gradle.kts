@@ -18,6 +18,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 plugins {
     base
     kotlin("jvm") version "2.2.21" apply false
+    kotlin("plugin.serialization") version "2.2.21" apply false
     jacoco
 }
 
@@ -86,6 +87,12 @@ val test = tasks.register("test") {
     group = LifecycleBasePlugin.VERIFICATION_GROUP
     description = "Runs tests for all subprojects."
     dependsOn(subprojects.map { it.tasks.named("test") })
+}
+
+tasks.register("saveSmoke") {
+    group = LifecycleBasePlugin.VERIFICATION_GROUP
+    description = "Runs save/load smoke coverage across the core, game, and client modules."
+    dependsOn(":core:test", ":game:test", ":client:test")
 }
 
 tasks.register<JacocoReport>("jacocoTestReport") {

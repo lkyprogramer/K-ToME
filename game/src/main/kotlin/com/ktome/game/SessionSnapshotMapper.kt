@@ -1,7 +1,9 @@
 package com.ktome.game
 
 import com.ktome.core.dungeon.FloorState
+import com.ktome.core.dungeon.StairDirection
 import com.ktome.core.ecs.AIBehavior
+import com.ktome.core.ecs.AIType
 import com.ktome.core.ecs.BlocksMovement
 import com.ktome.core.ecs.CombatProfile
 import com.ktome.core.ecs.DisplayColor
@@ -9,6 +11,7 @@ import com.ktome.core.ecs.Energy
 import com.ktome.core.ecs.EntityId
 import com.ktome.core.ecs.Experience
 import com.ktome.core.ecs.ExperienceReward
+import com.ktome.core.ecs.Faction
 import com.ktome.core.ecs.FactionTag
 import com.ktome.core.ecs.Glyph
 import com.ktome.core.ecs.Health
@@ -17,32 +20,63 @@ import com.ktome.core.ecs.Name
 import com.ktome.core.ecs.PatrolRoute
 import com.ktome.core.ecs.PlayerControlled
 import com.ktome.core.ecs.Position
-import com.ktome.core.ecs.Stair
 import com.ktome.core.ecs.Stats
+import com.ktome.core.ecs.Stair
 import com.ktome.core.ecs.Stamina
 import com.ktome.core.ecs.World
 import com.ktome.core.ecs.add
 import com.ktome.core.ecs.get
+import com.ktome.core.item.AffixType
+import com.ktome.core.item.ConsumableEffect
 import com.ktome.core.item.Equipment
+import com.ktome.core.item.EquipSlot
 import com.ktome.core.item.GroundItem
 import com.ktome.core.item.Inventory
+import com.ktome.core.item.ItemBaseDef
+import com.ktome.core.item.ItemDataBundle
 import com.ktome.core.item.ItemInstance
+import com.ktome.core.item.ItemQuality
+import com.ktome.core.item.ItemType
+import com.ktome.core.item.MaterialDef
+import com.ktome.core.item.StatModifier
 import com.ktome.core.map.GameMap
 import com.ktome.core.map.Point
+import com.ktome.core.save.AIBehaviorSnapshot
+import com.ktome.core.save.ActiveEffectSnapshot
+import com.ktome.core.save.CombatProfileSnapshot
 import com.ktome.core.save.EntitySnapshot
 import com.ktome.core.save.EquipmentSnapshot
+import com.ktome.core.save.ExperienceSnapshot
 import com.ktome.core.save.FloorSnapshot
 import com.ktome.core.save.InventorySnapshot
+import com.ktome.core.save.InvalidSaveException
+import com.ktome.core.save.ItemSnapshot
 import com.ktome.core.save.MapSnapshot
 import com.ktome.core.save.PatrolRouteSnapshot
 import com.ktome.core.save.PlayerSnapshot
+import com.ktome.core.save.PointSnapshot
 import com.ktome.core.save.SaveSnapshot
+import com.ktome.core.save.SaveRestoreException
 import com.ktome.core.save.StairSnapshot
+import com.ktome.core.save.StatModifierSnapshot
+import com.ktome.core.save.StatsSnapshot
 import com.ktome.core.save.TalentLoadoutSnapshot
 import com.ktome.core.stats.StatsCalculator
 import com.ktome.core.talent.ActiveEffect
+import com.ktome.core.talent.CooldownState
 import com.ktome.core.talent.EffectTracker
+import com.ktome.core.talent.StatusEffectType
 import com.ktome.core.talent.TalentLoadout
+import com.ktome.game.model.MonsterTemplate
+
+private const val HERO_GLYPH: Char = '@'
+private const val HERO_COLOR_HEX: String = "#FFD700"
+private const val HERO_NAME: String = "Hero"
+private const val FOUNDATION_ZONE_ID: String = "foundation_dungeon"
+private const val FOUNDATION_PROFESSION_ID: String = "foundation_hero"
+private const val DOWNSTAIRS_NAME: String = "Downstairs"
+private const val UPSTAIRS_NAME: String = "Upstairs"
+private const val STAIR_COLOR_HEX: String = "#D7E7FF"
 
 internal data class FloorRuntimeState(
     val map: GameMap,
@@ -56,7 +90,6 @@ internal data class RestoredRunState(
     val config: FoundationGameConfig,
     val currentFloor: Int,
     val turnCount: Int,
-    val messageLog: List<String>,
     val player: PlayerSnapshot,
     val floors: List<FloorState<FloorRuntimeState>>,
     val combatRandomState: Long? = null,
@@ -98,6 +131,7 @@ internal object SessionSnapshotMapper {
         )
 
     fun restoreWorld(
+        content: GameContent,
         player: PlayerSnapshot,
         floor: FloorRuntimeState,
     ): World {
@@ -109,7 +143,7 @@ internal object SessionSnapshotMapper {
             world.createEntity(EntityId(snapshot.id))
         }
         snapshots.forEach { snapshot ->
-            restoreEntity(world, snapshot)
+            restoreEntity(world, snapshot, content)
         }
         snapshotById.forEach { (entityId, snapshot) ->
             val entity = EntityId(entityId)
@@ -130,7 +164,6 @@ internal object SessionSnapshotMapper {
         config: FoundationGameConfig,
         currentFloor: Int,
         turnCount: Int,
-        messageLog: List<String>,
         player: PlayerSnapshot,
         floors: List<FloorState<FloorRuntimeState>>,
         combatRandomState: Long?,
@@ -140,15 +173,16 @@ internal object SessionSnapshotMapper {
     ): SaveSnapshot =
         SaveSnapshot(
             timestampEpochMillis = System.currentTimeMillis(),
-            seed = config.seed,
+            worldSeed = config.seed,
+            currentZoneId = FOUNDATION_ZONE_ID,
+            floorIndex = currentFloor,
             mapWidth = config.width,
             mapHeight = config.height,
             fovRadius = config.fovRadius,
             messageLogSize = config.messageLogSize,
-            currentFloor = currentFloor,
+            playerProfessionId = FOUNDATION_PROFESSION_ID,
             maxFloor = config.maxFloor,
             turnCount = turnCount,
-            messageLog = messageLog,
             player = copyPlayerSnapshot(player),
             combatRandomState = combatRandomState,
             sessionRandomState = sessionRandomState,
@@ -157,11 +191,15 @@ internal object SessionSnapshotMapper {
             floors =
                 floors.sortedBy(FloorState<FloorRuntimeState>::floor).map { floorState ->
                     FloorSnapshot(
-                        floor = floorState.floor,
-                        map = MapSnapshot(rows = floorState.payload.map.asGlyphRows(), playerStart = floorState.payload.map.playerStart),
-                        stairsUp = floorState.stairsUp,
-                        stairsDown = floorState.stairsDown,
-                        exploredTiles = floorState.payload.exploredTiles.toList(),
+                        floorIndex = floorState.floor,
+                        map =
+                            MapSnapshot(
+                                rows = floorState.payload.map.asGlyphRows(),
+                                playerStart = PointSnapshot.from(floorState.payload.map.playerStart),
+                            ),
+                        stairsUp = floorState.stairsUp?.let(PointSnapshot::from),
+                        stairsDown = floorState.stairsDown?.let(PointSnapshot::from),
+                        exploredTiles = floorState.payload.exploredTiles.map(PointSnapshot::from),
                         entities = floorState.payload.entities.map(::copyEntitySnapshot),
                     )
                 },
@@ -173,15 +211,14 @@ internal object SessionSnapshotMapper {
                 FoundationGameConfig(
                     width = snapshot.mapWidth,
                     height = snapshot.mapHeight,
-                    seed = snapshot.seed,
+                    seed = snapshot.worldSeed,
                     fovRadius = snapshot.fovRadius,
-                    floor = snapshot.currentFloor,
+                    floor = snapshot.floorIndex,
                     maxFloor = snapshot.maxFloor,
                     messageLogSize = snapshot.messageLogSize,
                 ),
-            currentFloor = snapshot.currentFloor,
+            currentFloor = snapshot.floorIndex,
             turnCount = snapshot.turnCount,
-            messageLog = snapshot.messageLog.toList(),
             player = copyPlayerSnapshot(snapshot.player),
             combatRandomState = snapshot.combatRandomState,
             sessionRandomState = snapshot.sessionRandomState,
@@ -190,15 +227,15 @@ internal object SessionSnapshotMapper {
             floors =
                 snapshot.floors.map { floor ->
                     FloorState(
-                        floor = floor.floor,
-                        stairsUp = floor.stairsUp,
-                        stairsDown = floor.stairsDown,
+                        floor = floor.floorIndex,
+                        stairsUp = floor.stairsUp?.toPoint(),
+                        stairsDown = floor.stairsDown?.toPoint(),
                         payload =
                             FloorRuntimeState(
-                                map = GameMap.fromAscii(rows = floor.map.rows, playerStart = floor.map.playerStart),
-                                stairsUp = floor.stairsUp,
-                                stairsDown = floor.stairsDown,
-                                exploredTiles = linkedSetOf<Point>().apply { addAll(floor.exploredTiles) },
+                                map = GameMap.fromAscii(rows = floor.map.rows, playerStart = floor.map.playerStart.toPoint()),
+                                stairsUp = floor.stairsUp?.toPoint(),
+                                stairsDown = floor.stairsDown?.toPoint(),
+                                exploredTiles = linkedSetOf<Point>().apply { addAll(floor.exploredTiles.map(PointSnapshot::toPoint)) },
                                 entities = floor.entities.map(::copyEntitySnapshot).toMutableList(),
                             ),
                     )
@@ -211,24 +248,24 @@ internal object SessionSnapshotMapper {
     ): EntitySnapshot =
         EntitySnapshot(
             id = entityId.value,
-            position = world.get<Position>(entityId)?.toPoint(),
-            glyph = world.get<Glyph>(entityId)?.value,
-            colorHex = world.get<DisplayColor>(entityId)?.hex,
-            name = world.get<Name>(entityId)?.value,
+            position = world.get<Position>(entityId)?.toPoint()?.let(PointSnapshot::from),
             blocksMovement = world.get<BlocksMovement>(entityId)?.value == true,
-            faction = world.get<FactionTag>(entityId)?.value,
-            stats = world.get<Stats>(entityId)?.copy(),
-            combatProfile = world.get<CombatProfile>(entityId)?.copy(),
+            faction = world.get<FactionTag>(entityId)?.value?.name,
+            stats = world.get<Stats>(entityId)?.let(::toStatsSnapshot),
+            combatProfile = world.get<CombatProfile>(entityId)?.let(::toCombatProfileSnapshot),
             healthCurrent = world.get<Health>(entityId)?.current,
             staminaCurrent = world.get<Stamina>(entityId)?.current,
             energyCurrent = world.get<Energy>(entityId)?.current,
-            experience = world.get<Experience>(entityId)?.copy(),
+            experience = world.get<Experience>(entityId)?.let(::toExperienceSnapshot),
             experienceReward = world.get<ExperienceReward>(entityId)?.value,
-            aiBehavior = world.get<AIBehavior>(entityId)?.copy(),
+            aiBehavior = world.get<AIBehavior>(entityId)?.let(::toAIBehaviorSnapshot),
             monsterTemplateId = world.get<MonsterTemplateId>(entityId)?.value,
             patrolRoute =
                 world.get<PatrolRoute>(entityId)?.let { route ->
-                    PatrolRouteSnapshot(waypoints = route.waypoints.toList(), nextWaypointIndex = route.nextWaypointIndex)
+                    PatrolRouteSnapshot(
+                        waypoints = route.waypoints.map(PointSnapshot::from),
+                        nextWaypointIndex = route.nextWaypointIndex,
+                    )
                 },
             inventory =
                 world.get<Inventory>(entityId)?.let { inventory ->
@@ -236,10 +273,12 @@ internal object SessionSnapshotMapper {
                 },
             equipment =
                 world.get<Equipment>(entityId)?.let { equipment ->
-                    EquipmentSnapshot(slots = equipment.slots.mapValues { (_, itemId) -> itemId.value })
+                    EquipmentSnapshot(
+                        slots = equipment.slots.mapKeys { (slot, _) -> slot.name }.mapValues { (_, itemId) -> itemId.value },
+                    )
                 },
-            cooldowns = world.get<com.ktome.core.talent.CooldownState>(entityId)?.remainingByTalentId?.toMap(),
-            effects = world.get<EffectTracker>(entityId)?.effects?.map(::copyActiveEffect),
+            cooldowns = world.get<CooldownState>(entityId)?.remainingByTalentId?.toMap(),
+            effects = world.get<EffectTracker>(entityId)?.effects?.map(::toActiveEffectSnapshot),
             talentLoadout =
                 world.get<TalentLoadout>(entityId)?.let { loadout ->
                     TalentLoadoutSnapshot(
@@ -247,36 +286,36 @@ internal object SessionSnapshotMapper {
                         talentLevels = loadout.talentLevels.toMap(),
                     )
                 },
-            itemInstance = world.get<ItemInstance>(entityId)?.let(::copyItemInstance),
+            itemState = world.get<ItemInstance>(entityId)?.let(::toItemSnapshot),
             isGroundItem = world.get<GroundItem>(entityId) != null,
             isPlayerControlled = world.get<PlayerControlled>(entityId) != null,
-            stair = world.get<Stair>(entityId)?.let { StairSnapshot(it.direction) },
+            stair = world.get<Stair>(entityId)?.let { StairSnapshot(direction = it.direction.name) },
         )
 
     private fun restoreEntity(
         world: World,
         snapshot: EntitySnapshot,
+        content: GameContent,
     ) {
         val entityId = EntityId(snapshot.id)
         snapshot.position?.let { point -> world.add(entityId, Position(point.x, point.y)) }
-        snapshot.glyph?.let { glyph -> world.add(entityId, Glyph(glyph)) }
-        snapshot.colorHex?.let { colorHex -> world.add(entityId, DisplayColor(colorHex)) }
-        snapshot.name?.let { name -> world.add(entityId, Name(name)) }
         if (snapshot.blocksMovement) {
             world.add(entityId, BlocksMovement())
         }
-        snapshot.faction?.let { faction -> world.add(entityId, FactionTag(faction)) }
-        snapshot.stats?.let { stats -> world.add(entityId, stats.copy()) }
-        snapshot.combatProfile?.let { profile -> world.add(entityId, profile.copy()) }
+        snapshot.faction?.let { faction ->
+            world.add(entityId, FactionTag(parseEnumFromSave<Faction>(value = faction, label = "faction")))
+        }
+        snapshot.stats?.let { stats -> world.add(entityId, toStats(stats)) }
+        snapshot.combatProfile?.let { profile -> world.add(entityId, toCombatProfile(profile)) }
         snapshot.healthCurrent?.let { current -> world.add(entityId, Health(current = current, max = current)) }
         snapshot.staminaCurrent?.let { current -> world.add(entityId, Stamina(current = current, max = current)) }
         snapshot.energyCurrent?.let { current -> world.add(entityId, Energy(current)) }
-        snapshot.experience?.let { experience -> world.add(entityId, experience.copy()) }
+        snapshot.experience?.let { experience -> world.add(entityId, toExperience(experience)) }
         snapshot.experienceReward?.let { reward -> world.add(entityId, ExperienceReward(reward)) }
-        snapshot.aiBehavior?.let { behavior -> world.add(entityId, behavior.copy()) }
+        snapshot.aiBehavior?.let { behavior -> world.add(entityId, toAIBehavior(behavior)) }
         snapshot.monsterTemplateId?.let { templateId -> world.add(entityId, MonsterTemplateId(templateId)) }
         snapshot.patrolRoute?.let { route ->
-            world.add(entityId, PatrolRoute(route.waypoints.toList(), route.nextWaypointIndex))
+            world.add(entityId, PatrolRoute(route.waypoints.map(PointSnapshot::toPoint), route.nextWaypointIndex))
         }
         snapshot.inventory?.let { inventory ->
             world.add(
@@ -288,18 +327,22 @@ internal object SessionSnapshotMapper {
             )
         }
         snapshot.equipment?.let { equipment ->
+            val restoredSlots =
+                linkedMapOf<EquipSlot, EntityId>().apply {
+                    equipment.slots.forEach { (slotName, itemId) ->
+                        put(parseEnumFromSave<EquipSlot>(value = slotName, label = "equipment slot"), EntityId(itemId))
+                    }
+                }
             world.add(
                 entityId,
-                Equipment(
-                    slots = equipment.slots.mapValuesTo(linkedMapOf()) { (_, itemId) -> EntityId(itemId) },
-                ),
+                Equipment(slots = restoredSlots),
             )
         }
         snapshot.cooldowns?.let { cooldowns ->
-            world.add(entityId, com.ktome.core.talent.CooldownState(cooldowns.toMutableMap()))
+            world.add(entityId, CooldownState(cooldowns.toMutableMap()))
         }
         snapshot.effects?.let { effects ->
-            world.add(entityId, EffectTracker(effects.map(::copyActiveEffect).toMutableList()))
+            world.add(entityId, EffectTracker(effects.map(::restoreActiveEffect).toMutableList()))
         }
         snapshot.talentLoadout?.let { loadout ->
             world.add(
@@ -310,14 +353,26 @@ internal object SessionSnapshotMapper {
                 ),
             )
         }
-        snapshot.itemInstance?.let { item -> world.add(entityId, copyItemInstance(item)) }
+        snapshot.itemState?.let { itemSnapshot ->
+            val item = restoreItemInstance(itemSnapshot, content.itemBundle)
+            world.add(entityId, item)
+            applyItemPresentation(world, entityId, item)
+        }
         if (snapshot.isGroundItem) {
             world.add(entityId, GroundItem)
         }
         if (snapshot.isPlayerControlled) {
             world.add(entityId, PlayerControlled)
+            applyPlayerPresentation(world, entityId)
         }
-        snapshot.stair?.let { stair -> world.add(entityId, Stair(stair.direction)) }
+        snapshot.stair?.let { stair ->
+            val direction = parseEnumFromSave<StairDirection>(value = stair.direction, label = "stair direction")
+            world.add(entityId, Stair(direction))
+            applyStairPresentation(world, entityId, direction)
+        }
+        snapshot.monsterTemplateId?.let { templateId ->
+            applyMonsterPresentation(world, entityId, resolveMonsterTemplate(content, templateId))
+        }
     }
 
     private fun carriedEntityIds(
@@ -347,28 +402,324 @@ internal object SessionSnapshotMapper {
             combatProfile = snapshot.combatProfile?.copy(),
             experience = snapshot.experience?.copy(),
             aiBehavior = snapshot.aiBehavior?.copy(),
-            patrolRoute = patrolRoute?.copy(waypoints = patrolRoute.waypoints.map(Point::copy)),
+            patrolRoute =
+                patrolRoute?.copy(
+                    waypoints = patrolRoute.waypoints.map { point -> point.copy() },
+                ),
             inventory = inventory?.copy(itemIds = inventory.itemIds.toList()),
-            equipment = equipment?.copy(slots = linkedMapOf<com.ktome.core.item.EquipSlot, Int>().apply { putAll(equipment.slots) }),
+            equipment =
+                equipment?.copy(
+                    slots = linkedMapOf<String, Int>().apply { putAll(equipment.slots) },
+                ),
             cooldowns = snapshot.cooldowns?.let { linkedMapOf<String, Int>().apply { putAll(it) } },
-            effects = snapshot.effects?.map(::copyActiveEffect),
+            effects = snapshot.effects?.map(::copyActiveEffectSnapshot),
             talentLoadout =
                 talentLoadout?.copy(
                     slotToTalentId = linkedMapOf<Int, String>().apply { putAll(talentLoadout.slotToTalentId) },
                     talentLevels = linkedMapOf<String, Int>().apply { putAll(talentLoadout.talentLevels) },
                 ),
-            itemInstance = snapshot.itemInstance?.let(::copyItemInstance),
+            itemState = snapshot.itemState?.let(::copyItemSnapshot),
+            stair = snapshot.stair?.copy(),
         )
     }
 
-    private fun copyItemInstance(item: ItemInstance): ItemInstance =
-        item.copy(
-            affixes = item.affixes.map { affix -> affix.copy(statModifiers = affix.statModifiers.copy()) },
-            stats = item.stats.copy(),
+    private fun copyItemSnapshot(snapshot: ItemSnapshot): ItemSnapshot =
+        snapshot.copy(
+            affixIds = snapshot.affixIds.toList(),
+            stats = snapshot.stats.copy(),
         )
 
-    private fun copyActiveEffect(effect: ActiveEffect): ActiveEffect =
-        effect.copy(
-            statModifiers = effect.statModifiers.copy(),
+    private fun copyActiveEffectSnapshot(snapshot: ActiveEffectSnapshot): ActiveEffectSnapshot =
+        snapshot.copy(
+            statModifiers = snapshot.statModifiers.copy(),
         )
+
+    private fun toStatsSnapshot(stats: Stats): StatsSnapshot =
+        StatsSnapshot(
+            str = stats.str,
+            dex = stats.dex,
+            con = stats.con,
+            wil = stats.wil,
+        )
+
+    private fun toStats(snapshot: StatsSnapshot): Stats =
+        Stats(
+            str = snapshot.str,
+            dex = snapshot.dex,
+            con = snapshot.con,
+            wil = snapshot.wil,
+        )
+
+    private fun toCombatProfileSnapshot(profile: CombatProfile): CombatProfileSnapshot =
+        CombatProfileSnapshot(
+            baseAttack = profile.baseAttack,
+            baseDefense = profile.baseDefense,
+            baseAccuracy = profile.baseAccuracy,
+            baseEvasion = profile.baseEvasion,
+            baseSpeed = profile.baseSpeed,
+            baseHp = profile.baseHp,
+            baseStamina = profile.baseStamina,
+            baseHpRegen = profile.baseHpRegen,
+        )
+
+    private fun toCombatProfile(snapshot: CombatProfileSnapshot): CombatProfile =
+        CombatProfile(
+            baseAttack = snapshot.baseAttack,
+            baseDefense = snapshot.baseDefense,
+            baseAccuracy = snapshot.baseAccuracy,
+            baseEvasion = snapshot.baseEvasion,
+            baseSpeed = snapshot.baseSpeed,
+            baseHp = snapshot.baseHp,
+            baseStamina = snapshot.baseStamina,
+            baseHpRegen = snapshot.baseHpRegen,
+        )
+
+    private fun toExperienceSnapshot(experience: Experience): ExperienceSnapshot =
+        ExperienceSnapshot(
+            current = experience.current,
+            level = experience.level,
+            unspentStatPoints = experience.unspentStatPoints,
+            unspentTalentPoints = experience.unspentTalentPoints,
+        )
+
+    private fun toExperience(snapshot: ExperienceSnapshot): Experience =
+        Experience(
+            current = snapshot.current,
+            level = snapshot.level,
+            unspentStatPoints = snapshot.unspentStatPoints,
+            unspentTalentPoints = snapshot.unspentTalentPoints,
+        )
+
+    private fun toAIBehaviorSnapshot(behavior: AIBehavior): AIBehaviorSnapshot =
+        AIBehaviorSnapshot(
+            type = behavior.type.name,
+            sightRadius = behavior.sightRadius,
+            preferredRangeStart = behavior.preferredRangeStart,
+            preferredRangeEnd = behavior.preferredRangeEnd,
+        )
+
+    private fun toAIBehavior(snapshot: AIBehaviorSnapshot): AIBehavior =
+        AIBehavior(
+            type = parseEnumFromSave<AIType>(value = snapshot.type, label = "AI behavior type"),
+            sightRadius = snapshot.sightRadius,
+            preferredRangeStart = snapshot.preferredRangeStart,
+            preferredRangeEnd = snapshot.preferredRangeEnd,
+        )
+
+    private fun toActiveEffectSnapshot(effect: ActiveEffect): ActiveEffectSnapshot =
+        ActiveEffectSnapshot(
+            id = effect.id,
+            type = effect.type.name,
+            remainingTurns = effect.remainingTurns,
+            statModifiers = toStatModifierSnapshot(effect.statModifiers),
+            skipNextDecay = effect.skipNextDecay,
+        )
+
+    private fun restoreActiveEffect(snapshot: ActiveEffectSnapshot): ActiveEffect {
+        val type = parseEnumFromSave<StatusEffectType>(value = snapshot.type, label = "status effect type")
+        return ActiveEffect(
+            id = snapshot.id,
+            name = effectDisplayName(type),
+            type = type,
+            remainingTurns = snapshot.remainingTurns,
+            statModifiers = toStatModifier(snapshot.statModifiers),
+            skipNextDecay = snapshot.skipNextDecay,
+        )
+    }
+
+    private fun effectDisplayName(type: StatusEffectType): String =
+        when (type) {
+            StatusEffectType.STUNNED -> "Stunned"
+            StatusEffectType.ARMOR_BREAK -> "Armor Break"
+            StatusEffectType.WAR_CRY_BUFF -> "War Cry"
+            StatusEffectType.WAR_CRY_DEBUFF -> "Shaken"
+        }
+
+    private fun toItemSnapshot(item: ItemInstance): ItemSnapshot =
+        ItemSnapshot(
+            baseId = item.baseId,
+            type = item.type.name,
+            slot = item.slot?.name,
+            quality = item.quality.name,
+            materialId = item.materialId,
+            affixIds = item.affixes.map { affix -> affix.id },
+            stats = toStatModifierSnapshot(item.stats),
+            effect = item.effect?.name,
+            magnitude = item.magnitude,
+        )
+
+    private fun restoreItemInstance(
+        snapshot: ItemSnapshot,
+        bundle: ItemDataBundle,
+    ): ItemInstance {
+        val base = resolveBaseItem(bundle, snapshot.baseId)
+        val material = snapshot.materialId?.let { materialId -> resolveMaterial(bundle, materialId) }
+        val affixes = snapshot.affixIds.map { affixId -> resolveAffix(bundle, affixId) }
+
+        return ItemInstance(
+            baseId = snapshot.baseId,
+            name = buildItemName(base, material, affixes),
+            type = parseEnumFromSave<ItemType>(value = snapshot.type, label = "item type"),
+            slot = snapshot.slot?.let { slot -> parseEnumFromSave<EquipSlot>(value = slot, label = "item slot") } ?: base.slot,
+            glyph = base.glyph,
+            colorHex = base.colorHex,
+            quality = parseEnumFromSave<ItemQuality>(value = snapshot.quality, label = "item quality"),
+            materialId = snapshot.materialId,
+            materialName = material?.name,
+            affixes = affixes,
+            stats = toStatModifier(snapshot.stats),
+            effect =
+                snapshot.effect?.let { effect ->
+                    parseEnumFromSave<ConsumableEffect>(value = effect, label = "consumable effect")
+                } ?: base.effect,
+            magnitude = snapshot.magnitude,
+        )
+    }
+
+    private fun resolveBaseItem(
+        bundle: ItemDataBundle,
+        baseId: String,
+    ): ItemBaseDef =
+        requireNotNull(bundle.baseItems.firstOrNull { item -> item.id == baseId }) {
+            throw SaveRestoreException("Save references unknown item base '$baseId'.")
+        }
+
+    private fun resolveMaterial(
+        bundle: ItemDataBundle,
+        materialId: String,
+    ): MaterialDef =
+        requireNotNull(bundle.materials.firstOrNull { material -> material.id == materialId }) {
+            throw SaveRestoreException("Save references unknown item material '$materialId'.")
+        }
+
+    private fun resolveAffix(
+        bundle: ItemDataBundle,
+        affixId: String,
+    ): com.ktome.core.item.AffixDef =
+        requireNotNull(bundle.affixes.firstOrNull { affix -> affix.id == affixId }) {
+            throw SaveRestoreException("Save references unknown item affix '$affixId'.")
+        }
+
+    private fun buildItemName(
+        base: ItemBaseDef,
+        material: MaterialDef?,
+        affixes: List<com.ktome.core.item.AffixDef>,
+    ): String {
+        val prefixes = affixes.filter { affix -> affix.type == AffixType.PREFIX }.joinToString(" ") { affix -> affix.name }.trim()
+        val suffixes = affixes.filter { affix -> affix.type == AffixType.SUFFIX }.joinToString(" ") { affix -> affix.name }.trim()
+        return buildString {
+            if (prefixes.isNotBlank()) {
+                append(prefixes)
+                append(' ')
+            }
+            material?.name?.let {
+                append(it)
+                append(' ')
+            }
+            append(base.name)
+            if (suffixes.isNotBlank()) {
+                append(' ')
+                append(suffixes)
+            }
+        }
+    }
+
+    private fun toStatModifierSnapshot(modifier: StatModifier): StatModifierSnapshot =
+        StatModifierSnapshot(
+            str = modifier.str,
+            dex = modifier.dex,
+            con = modifier.con,
+            wil = modifier.wil,
+            attack = modifier.attack,
+            defense = modifier.defense,
+            accuracy = modifier.accuracy,
+            evasion = modifier.evasion,
+            speed = modifier.speed,
+            maxHp = modifier.maxHp,
+            maxStamina = modifier.maxStamina,
+            hpRegen = modifier.hpRegen,
+            staminaRegen = modifier.staminaRegen,
+            critChance = modifier.critChance,
+            talentPower = modifier.talentPower,
+            attackMultiplierBonus = modifier.attackMultiplierBonus,
+            defenseMultiplierBonus = modifier.defenseMultiplierBonus,
+        )
+
+    private fun toStatModifier(snapshot: StatModifierSnapshot): StatModifier =
+        StatModifier(
+            str = snapshot.str,
+            dex = snapshot.dex,
+            con = snapshot.con,
+            wil = snapshot.wil,
+            attack = snapshot.attack,
+            defense = snapshot.defense,
+            accuracy = snapshot.accuracy,
+            evasion = snapshot.evasion,
+            speed = snapshot.speed,
+            maxHp = snapshot.maxHp,
+            maxStamina = snapshot.maxStamina,
+            hpRegen = snapshot.hpRegen,
+            staminaRegen = snapshot.staminaRegen,
+            critChance = snapshot.critChance,
+            talentPower = snapshot.talentPower,
+            attackMultiplierBonus = snapshot.attackMultiplierBonus,
+            defenseMultiplierBonus = snapshot.defenseMultiplierBonus,
+        )
+
+    private fun applyPlayerPresentation(
+        world: World,
+        entityId: EntityId,
+    ) {
+        world.add(entityId, Glyph(HERO_GLYPH))
+        world.add(entityId, DisplayColor(HERO_COLOR_HEX))
+        world.add(entityId, Name(HERO_NAME))
+    }
+
+    private fun applyMonsterPresentation(
+        world: World,
+        entityId: EntityId,
+        template: MonsterTemplate,
+    ) {
+        world.add(entityId, Glyph(template.glyph))
+        world.add(entityId, DisplayColor(template.colorHex))
+        world.add(entityId, Name(template.name))
+    }
+
+    private fun applyItemPresentation(
+        world: World,
+        entityId: EntityId,
+        item: ItemInstance,
+    ) {
+        world.add(entityId, Glyph(item.glyph))
+        world.add(entityId, DisplayColor(item.colorHex))
+        world.add(entityId, Name(item.name))
+    }
+
+    private fun applyStairPresentation(
+        world: World,
+        entityId: EntityId,
+        direction: StairDirection,
+    ) {
+        world.add(entityId, Glyph(if (direction == StairDirection.DOWN) '>' else '<'))
+        world.add(entityId, DisplayColor(STAIR_COLOR_HEX))
+        world.add(entityId, Name(if (direction == StairDirection.DOWN) DOWNSTAIRS_NAME else UPSTAIRS_NAME))
+    }
+
+    private fun resolveMonsterTemplate(
+        content: GameContent,
+        templateId: String,
+    ): MonsterTemplate =
+        requireNotNull((content.monsterCatalog + content.bossDefinition.template).firstOrNull { template -> template.id == templateId }) {
+            throw SaveRestoreException("Save references unknown monster template '$templateId'.")
+        }
+
+    private inline fun <reified T : Enum<T>> parseEnumFromSave(
+        value: String,
+        label: String,
+    ): T =
+        try {
+            enumValueOf<T>(value)
+        } catch (exception: IllegalArgumentException) {
+            throw SaveRestoreException("Save references unknown $label '$value'.", exception)
+        }
 }

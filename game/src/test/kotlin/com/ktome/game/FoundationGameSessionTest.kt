@@ -23,16 +23,19 @@ import com.ktome.core.map.GameMap
 import com.ktome.core.map.Point
 import com.ktome.core.random.RandomSource
 import com.ktome.core.save.SaveManager
+import com.ktome.core.save.SaveRestoreException
 import com.ktome.core.talent.ActiveEffect
 import com.ktome.core.talent.EffectTracker
-import com.ktome.core.talent.TalentRegistry
 import com.ktome.core.talent.TalentResolver
 import com.ktome.core.talent.StatusEffectType
+import com.ktome.core.talent.TalentRegistry
+import java.nio.file.Files
 import com.ktome.game.data.DataLoader
 import com.ktome.game.factory.EntityFactory
 import com.ktome.game.factory.ItemFactory
 import com.ktome.game.model.MonsterTemplate
 import java.nio.file.Path
+import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -302,12 +305,12 @@ class FoundationGameSessionTest {
             world = world,
             item =
                 ItemInstance(
-                    baseId = "test_blade",
-                    name = "Test Blade",
+                    baseId = "short_sword",
+                    name = "短剑",
                     type = ItemType.WEAPON,
                     slot = EquipSlot.WEAPON,
                     glyph = ')',
-                    colorHex = "#E0E0E0",
+                    colorHex = "#C0C0C0",
                     stats = StatModifier(attack = 3),
                 ),
             position = session.playerPosition(),
@@ -322,7 +325,7 @@ class FoundationGameSessionTest {
 
         assertNotNull(loaded)
         assertEquals(2, loaded?.currentFloor())
-        assertTrue(loaded?.inventoryItems()?.any { it.name == "Test Blade" } == true)
+        assertTrue(loaded?.inventoryItems()?.any { it.name == "短剑" } == true)
     }
 
     @Test
@@ -343,6 +346,25 @@ class FoundationGameSessionTest {
 
         assertEquals(baseline.playerStatus().currentStamina, loaded.playerStatus().currentStamina)
         assertEquals(playerCooldown(baseline, "power_strike"), playerCooldown(loaded, "power_strike"))
+    }
+
+    @Test
+    fun `load normalizes invalid enum tokens to save restore exception`() {
+        val saveManager = SaveManager(tempDir.resolve("invalid-enum-save"))
+        val session = GameModule.newFoundationSession(saveManager = saveManager)
+
+        assertTrue(session.perform(PlayerCommand.SaveGame))
+        Files.writeString(
+            saveManager.savePath(),
+            Files.readString(saveManager.savePath()).replace("\"PLAYER\"", "\"NOT_A_FACTION\""),
+        )
+
+        val exception =
+            assertThrows(SaveRestoreException::class.java) {
+                GameModule.loadFoundationSession(saveManager)
+            }
+
+        assertTrue(exception.message!!.contains("faction"))
     }
 
     @Test
@@ -419,7 +441,7 @@ class FoundationGameSessionTest {
 
         assertTrue(persisted.perform(PlayerCommand.SaveGame))
         val loaded = requireNotNull(GameModule.loadFoundationSession(persistedSaveManager))
-        val loadedDummy = requireNotNull(entityByTemplateId(loaded, "rng_dummy"))
+        val loadedDummy = requireNotNull(entityByTemplateId(loaded, "orc"))
         val loadedAttackDelta = requireNotNull(runtimeWorld(loaded).get<Position>(loadedDummy)).toPoint() - loaded.playerPosition()
 
         assertTrue(baseline.perform(PlayerCommand.Move(attackDelta)))
@@ -681,11 +703,11 @@ class FoundationGameSessionTest {
                 world = world,
                 item =
                     ItemInstance(
-                        baseId = "teleport_scroll_$index",
-                        name = "Teleport Scroll $index",
+                        baseId = "scroll_teleport",
+                        name = "传送卷轴",
                         type = ItemType.CONSUMABLE,
                         glyph = '?',
-                        colorHex = "#89CFF0",
+                        colorHex = "#00FFFF",
                         effect = ConsumableEffect.TELEPORT,
                     ),
                 position = session.playerPosition(),
@@ -718,10 +740,10 @@ class FoundationGameSessionTest {
                 world = world,
                 template =
                     MonsterTemplate(
-                        id = "rng_dummy",
-                        name = "RNG Dummy",
-                        glyph = 'd',
-                        colorHex = "#AAAAAA",
+                        id = "orc",
+                        name = "Orc",
+                        glyph = 'o',
+                        colorHex = "#3AAE4B",
                         stats = com.ktome.core.ecs.Stats(str = 1, dex = 1, con = 1, wil = 1),
                         baseHp = 200,
                         baseAttack = 1,

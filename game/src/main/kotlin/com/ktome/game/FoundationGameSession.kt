@@ -36,12 +36,14 @@ import com.ktome.core.event.LevelUpEvent
 import com.ktome.core.event.MissEvent
 import com.ktome.core.fov.Shadowcasting
 import com.ktome.core.item.EquipSlot
+import com.ktome.core.item.ItemBaseDef
 import com.ktome.core.item.ItemDataBundle
 import com.ktome.core.item.Inventory
 import com.ktome.core.item.InventoryManager
 import com.ktome.core.item.InventoryOperationResult
 import com.ktome.core.item.ItemInstance
 import com.ktome.core.item.ItemType
+import com.ktome.core.item.MaterialDef
 import com.ktome.core.item.StatModifier
 import com.ktome.core.map.GameMap
 import com.ktome.core.map.Point
@@ -52,6 +54,7 @@ import com.ktome.core.random.SplitMix64RandomSource
 import com.ktome.core.random.StatefulRandomSource
 import com.ktome.core.run.RunOutcome
 import com.ktome.core.save.PlayerSnapshot
+import com.ktome.core.save.PointSnapshot
 import com.ktome.core.save.SaveManager
 import com.ktome.core.stats.StatsCalculator
 import com.ktome.core.talent.CooldownState
@@ -89,7 +92,7 @@ class FoundationGameSession internal constructor(
     private var activeTurnActor: EntityId? = null
     private var runOutcome: RunOutcome = RunOutcome.InProgress
     private var activeFloorState: FloorRuntimeState = dungeonManager.currentState().payload
-    private var world: World = SessionSnapshotMapper.restoreWorld(playerSnapshot, activeFloorState)
+    private var world: World = SessionSnapshotMapper.restoreWorld(content, playerSnapshot, activeFloorState)
     private var visibleTiles: Set<Point> = emptySet()
     private var exploredTiles: LinkedHashSet<Point> = activeFloorState.exploredTiles
 
@@ -111,7 +114,7 @@ class FoundationGameSession internal constructor(
         inventoryManager: InventoryManager = InventoryManager(),
     ) : this(
         config = config,
-        content = compatibilityContent(talentRegistry),
+        content = compatibilityContent(talentRegistry = talentRegistry, world = world, currentFloor = config.floor),
         saveManager = SaveManager(Files.createTempDirectory("ktome-session-save")),
         dungeonManager = compatibilityDungeonManager(config, map, world, playerId),
         playerSnapshot = SessionSnapshotMapper.capturePlayer(world, playerId),
@@ -950,8 +953,8 @@ class FoundationGameSession internal constructor(
         val transition = dungeonManager.transition(direction)
         activeFloorState = transition.state.payload
         exploredTiles = activeFloorState.exploredTiles
-        playerSnapshot = playerSnapshot.copy(entity = playerSnapshot.entity.copy(position = transition.entryPoint))
-        world = SessionSnapshotMapper.restoreWorld(playerSnapshot, activeFloorState)
+        playerSnapshot = playerSnapshot.copy(entity = playerSnapshot.entity.copy(position = PointSnapshot.from(transition.entryPoint)))
+        world = SessionSnapshotMapper.restoreWorld(content, playerSnapshot, activeFloorState)
         pendingActions.clear()
         activeTurnActor = null
         refreshFov()
@@ -980,7 +983,6 @@ class FoundationGameSession internal constructor(
                 config = config,
                 currentFloor = currentFloor(),
                 turnCount = turnCount,
-                messageLog = messageLog(),
                 player = playerSnapshot,
                 floors = floors,
                 combatRandomState = (combatRandomSource as? StatefulRandomSource)?.snapshotState(),
@@ -1176,12 +1178,16 @@ class FoundationGameSession internal constructor(
         private const val COMBAT_RANDOM_SALT: Long = 0xC0FFEE
         private const val SESSION_RANDOM_SALT: Long = 0x51A17A
 
-        private fun compatibilityContent(talentRegistry: TalentRegistry): GameContent =
+        private fun compatibilityContent(
+            talentRegistry: TalentRegistry,
+            world: World,
+            currentFloor: Int,
+        ): GameContent =
             GameContent(
                 talents = emptyList(),
                 talentRegistry = talentRegistry,
-                monsterCatalog = emptyList(),
-                itemBundle = ItemDataBundle(emptyList(), emptyList(), emptyList()),
+                monsterCatalog = compatibilityMonsterCatalog(world, currentFloor),
+                itemBundle = compatibilityItemBundle(world, currentFloor),
                 bossDefinition =
                     BossDefinition(
                         template =
@@ -1203,6 +1209,93 @@ class FoundationGameSession internal constructor(
                         talentLevels = emptyMap(),
                     ),
             )
+
+        private fun compatibilityMonsterCatalog(
+            world: World,
+            currentFloor: Int,
+        ): List<MonsterTemplate> =
+            world.entitiesWith(MonsterTemplateId::class)
+                .mapNotNull { entityId ->
+                    val templateId = world.get<MonsterTemplateId>(entityId)?.value ?: return@mapNotNull null
+                    val profile = world.get<com.ktome.core.ecs.CombatProfile>(entityId)
+                    MonsterTemplate(
+                        id = templateId,
+                        name = world.get<Name>(entityId)?.value ?: templateId,
+                        glyph = world.get<Glyph>(entityId)?.value ?: 'M',
+                        colorHex = world.get<DisplayColor>(entityId)?.hex ?: "#AAAAAA",
+                        stats = world.get<Stats>(entityId)?.copy() ?: Stats(str = 1, dex = 1, con = 1, wil = 1),
+                        baseHp = profile?.baseHp ?: world.get<Health>(entityId)?.max ?: 1,
+                        baseAttack = profile?.baseAttack ?: 1,
+                        baseDefense = profile?.baseDefense ?: 0,
+                        speed = profile?.baseSpeed ?: 100,
+                        ai = world.get<AIBehavior>(entityId)?.type ?: com.ktome.core.ecs.AIType.CHASE,
+                        expReward = world.get<ExperienceReward>(entityId)?.value ?: 0,
+                        spawnFloors = listOf(currentFloor),
+                        spawnWeight = 1,
+                    )
+                }.distinctBy(MonsterTemplate::id)
+
+        private fun compatibilityItemBundle(
+            world: World,
+            currentFloor: Int,
+        ): ItemDataBundle {
+            val items =
+                world.entitiesWith(ItemInstance::class)
+                    .mapNotNull { entityId -> world.get<ItemInstance>(entityId) }
+
+            val baseItems =
+                items.distinctBy(ItemInstance::baseId).map { item ->
+                    ItemBaseDef(
+                        id = item.baseId,
+                        name = item.name,
+                        type = item.type,
+                        slot = item.slot,
+                        glyph = item.glyph,
+                        colorHex = item.colorHex,
+                        baseStats = item.stats.copy(),
+                        allowedMaterials = item.materialId?.let(::listOf).orEmpty(),
+                        dropFloors = listOf(currentFloor),
+                        dropWeight = 1,
+                        effect = item.effect,
+                        magnitude = item.magnitude,
+                    )
+                }
+
+            val materials =
+                items.mapNotNull { item ->
+                    item.materialId?.let { materialId ->
+                        MaterialDef(
+                            id = materialId,
+                            name = item.materialName ?: compatibilityLabel(materialId),
+                            minFloor = 1,
+                        )
+                    }
+                }.distinctBy(MaterialDef::id)
+
+            val affixes =
+                items.flatMap(ItemInstance::affixes)
+                    .map { affix -> affix.copy(statModifiers = affix.statModifiers.copy()) }
+                    .distinctBy { affix -> affix.id }
+
+            return ItemDataBundle(
+                baseItems = baseItems,
+                materials = materials,
+                affixes = affixes,
+            )
+        }
+
+        private fun compatibilityLabel(id: String): String =
+            id.split('_', '-')
+                .filter(String::isNotBlank)
+                .joinToString(" ") { segment ->
+                    segment.lowercase().replaceFirstChar { char ->
+                        if (char.isLowerCase()) {
+                            char.titlecase()
+                        } else {
+                            char.toString()
+                        }
+                    }
+                }
 
         private fun compatibilityDungeonManager(
             config: FoundationGameConfig,

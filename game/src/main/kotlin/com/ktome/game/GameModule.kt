@@ -18,6 +18,7 @@ import com.ktome.core.map.Point
 import com.ktome.core.map.Room
 import com.ktome.core.random.SplitMix64RandomSource
 import com.ktome.core.save.SaveManager
+import com.ktome.core.save.PointSnapshot
 import com.ktome.game.data.DataLoader
 import com.ktome.game.factory.BossFactory
 import com.ktome.game.factory.EntityFactory
@@ -41,7 +42,10 @@ object GameModule {
                 floorLoader = { floor -> generateFloor(content, config, floor) },
             )
         val startFloor = dungeonManager.currentState()
-        val startingPlayer = playerSnapshot.copy(entity = playerSnapshot.entity.copy(position = startFloor.payload.map.playerStart))
+        val startingPlayer =
+            playerSnapshot.copy(
+                entity = playerSnapshot.entity.copy(position = PointSnapshot.from(startFloor.payload.map.playerStart)),
+            )
         return FoundationGameSession(
             config = config,
             content = content,
@@ -83,7 +87,7 @@ object GameModule {
             saveManager = saveManager,
             dungeonManager = dungeonManager,
             playerSnapshot = restored.player,
-            initialMessageLog = restored.messageLog + "Game loaded.",
+            initialMessageLog = listOf("Game loaded."),
             turnCount = restored.turnCount,
             combatRandomSource =
                 restored.combatRandomState?.let(SplitMix64RandomSource::fromState)
