@@ -31,6 +31,8 @@
    - 拓扑摘要
    - 可达性结果
    - 关键房间/秘密入口分布
+   - 环路数量
+   - key-gate DAG 证明项
 
 ### 2.2 Loot Balance Batch
 
@@ -39,8 +41,18 @@
    - affix 分布
    - unique/artifact 出现率
    - 预算偏离
+   - `sourceLevel/sourceTier/zone/playerLevel/magicFind` 分层统计
 
-### 2.3 Content Pack Batch
+### 2.3 Terrain Interaction Batch
+
+1. 固定一组带地形标签的战斗 seed。
+2. 记录：
+   - `LIGHTNING + WATER`
+   - `FIRE + OIL`
+   - `COLD + WATER / ICE`
+   - 元素交互是否正确进入战斗回调
+
+### 2.4 Content Pack Batch
 
 1. 装载 base game + 示例 pack。
 2. 记录：
@@ -60,5 +72,6 @@
 2. 失败时必须保留：
    - 失败 seed
    - map topology 摘要
+   - key-gate DAG 证明项
    - loot rollout 摘要
    - content pack 加载日志

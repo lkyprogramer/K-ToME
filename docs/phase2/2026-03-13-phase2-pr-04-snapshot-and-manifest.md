@@ -1,12 +1,12 @@
 > 执行前必须先完整阅读并接受：
 > `docs/phase2/2026-03-13-phase2-pr-03-locale-and-schema-v2.md`
-> `docs/2026-03-13-phase2-to-phase5-detailed-systems-design.md`
+> `docs/2026-03-13-core-systems-design-and-phase-supplements.md`
 
 # Phase 2 - PR-04 Snapshot & Manifest
 
 **阶段**: `Phase 2 / P2-W4`  
 **优先级**: `P0`  
-**前置条件**: `PR-02`、`PR-03` 完成  
+**前置条件**: `P2-W2`、`P2-W3` 完成  
 **对应问题**: 没有 `RenderSnapshot` 与 manifest 之前，client 仍会倾向直接读规则态或直接按文件路径找资源，这会立即破坏 Phase 2 之后的客户端边界。
 
 ---
@@ -79,6 +79,12 @@ client/src/main/kotlin/com/ktome/client/render/*
    - `overlays`
    - `uiState`
    - `logEvents`
+5. `overlays` 在 Phase 2 就必须预留最小 telegraph / Boss warning 语义，至少包含：
+   - `previewTurns`
+   - `dangerLevel`
+   - `shape`
+   - `sourceAbilityId`
+6. Phase 2 的 `overlay` 只服务最小 Boss warning 与 Layer 2 simple scripted AI 的 `TELEGRAPH` 动作，不在本 PR 预实现 Phase 3 的完整 telegraph 系统、伤害预估和复杂多阶段预警。
 
 ### 4.2 VisualManifest / AudioManifest
 
@@ -212,6 +218,7 @@ assets-src/
 2. 4 基础职业的主体 sprite 或 portrait
 3. 核心 skill/status/item icon
 4. `ui / footstep / melee / spell / monster / interactable / ambience / music` 基础 cue 家族
+5. 六通道伤害与首批状态的 icon family，避免 `P2-W5` 再回头补 manifest 结构
 
 ## 5. 推荐改动面
 

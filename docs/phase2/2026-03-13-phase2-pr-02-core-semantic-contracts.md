@@ -1,12 +1,12 @@
 > 执行前必须先完整阅读并接受：
 > `docs/phase2/2026-03-13-phase2-pr-01-serialization-and-version-discipline.md`
-> `docs/2026-03-13-phase2-to-phase5-detailed-systems-design.md`
+> `docs/2026-03-13-core-systems-design-and-phase-supplements.md`
 
 # Phase 2 - PR-02 Core Semantic Contracts
 
 **阶段**: `Phase 2 / P2-W2`  
 **优先级**: `P0`  
-**前置条件**: `PR-01` 完成  
+**前置条件**: `P2-W1` 完成  
 **对应问题**: 当前 `100` 能量制、硬编码状态/资源、薄弱事件模型和过厚的 `FoundationGameSession` 仍然让规则核心处于临时态，无法稳定支撑后续 UI、i18n 和内容扩展。
 
 ---
@@ -77,6 +77,17 @@ core/src/test/kotlin/com/ktome/core/turn/*
 3. 同一实体在相同输入下行动顺序稳定。
 4. `MOVE / BASIC_ATTACK / TALENT / INTERACT / WAIT` 的默认成本必须在本 PR 固定第一版常量，不允许继续散落在调用点。
 
+首轮固定参数：
+
+| 项 | 固定值 | 说明 |
+| --- | --- | --- |
+| 行动阈值 | `1000` | 取代 Phase 1 的 `100` |
+| 标准速度 | `1000` | 旧 `speed` 统一乘 `10` 迁移 |
+| 快速动作 | `750` | 轻量 instant/quick action 的第一版口径 |
+| 标准动作 | `1000` | `MOVE / BASIC_ATTACK / INTERACT / WAIT` 默认落点 |
+| 慢速动作 | `1250` | 重击、长施法或重交互的第一版口径 |
+| 排序键 | `energy desc -> entityId asc` | 确保同能量下的稳定性 |
+
 ### 4.2 ResourcePool 落地
 
 建议文件：
@@ -89,9 +100,28 @@ core/src/test/kotlin/com/ktome/core/resource/*
 冻结口径：
 
 1. `Stamina` 迁入 `ResourcePoolState(STAMINA)`。
-2. 先启用 `HEALTH / STAMINA / MANA / POSITIVE` 的结构。
+2. 先启用 `HEALTH / STAMINA / MANA / POSITIVE_ENERGY / ENERGY` 的结构。
 3. 资源变化必须可事件化。
-4. `RAGE / MOMENTUM / ARCANE_CHARGE / SHADOW / FOCUS` 先占位 enum，不在本 PR 接入玩法主线。
+4. `HATE / ARCANE_CHARGE / SHADOW / FOCUS / EQUILIBRIUM` 先占位 enum，不在本 PR 接入玩法主线。
+
+首轮必须冻结的回复策略类型：
+
+1. `PerTurn`
+2. `OnKill`
+3. `OnDamageTaken`
+4. `OnHit`
+5. `DecayPerTurn`
+6. `Composite`
+7. `None`
+
+四基础职业的默认资源合同：
+
+| profession | 主资源 | 初始上限 | 回复策略 |
+| --- | --- | --- | --- |
+| `vanguard` | `STAMINA` | `40 + WIL * 5` | `PerTurn(3)` |
+| `arcanist` | `MANA` | `50 + WIL * 6` | `PerTurn(2)` |
+| `rogue` | `ENERGY` | `100` | `Composite([PerTurn(5), OnHit(8)])` |
+| `templar` | `POSITIVE_ENERGY` | `100` | `Composite([OnDamageTaken(0.15), OnHit(3), DecayPerTurn(5)])` |
 
 ### 4.3 DamageType 与基础状态骨架
 
@@ -104,14 +134,41 @@ core/src/main/kotlin/com/ktome/core/status/*
 
 冻结口径：
 
-1. 现有攻击先全部走 `PHYSICAL`。
-2. `StatusEffectDef/StatusInstance` 进入主链。
-3. 现有 `STUNNED / ARMOR_BREAK / WAR_CRY_BUFF / WAR_CRY_DEBUFF` 必须迁入新模型。
-4. `STUN / ARMOR_BREAK / GUARD / BLEED / BURN / MARKED` 必须作为首批固定 id 进入注册表，后续职业和怪物围绕这些 seed 扩展。
+1. `DamageType` 统一冻结为 `PHYSICAL / FIRE / COLD / LIGHTNING / HOLY / SHADOW` 六通道。
+2. 现有近战和旧技能先全部走统一 `DamageType` 主链，不再保留“无通道伤害”。
+3. Phase 2 的抗性/穿透先用简化模型：`effectiveResistance = clamp(targetResistance - penetration, -25, 75)`，不提前引入 Phase 3 的收益递减体系。
+4. `HOLY` 对亡灵/恶魔在 Phase 2 就允许挂接额外增伤语义，避免圣堂武士切片退化成纯换色物理伤害。
+5. `StatusEffectDef/StatusInstance` 进入主链。
+6. 现有 `STUN / ARMOR_BREAK / WAR_CRY_BUFF / WAR_CRY_DEBUFF` 必须迁入新模型；其中 Phase 1 的 `STUNNED` 在 Phase 2 统一并名为 `STUN`。
+7. `WAR_CRY_BUFF / WAR_CRY_DEBUFF` 在 Phase 2 必须迁成通用 buff/debuff + `statModifiers`，不要再保留专用临时枚举。
+8. 首批固定状态 seed 至少覆盖：
+   - `STUN`
+   - `ARMOR_BREAK`
+   - `GUARD`
+   - `BLEED`
+   - `BURN`
+   - `MARKED`
+   - `ROOT`
+   - `SILENCE`
+   - `BLIND`
+   - `CONFUSE`
+   - `SLOW`
+   - `FEAR`
+   - `KNOCKBACK`
+   - `POISON`
+   - `FREEZE`
+   - `SHIELD`
+   - `REGEN`
+   - `HASTE`
+9. 最小叠加/互斥规则也必须在本 PR 定第一版：
+   - `STUN / SLOW / FREEZE / SILENCE`：不叠加，只刷新持续时间
+   - `BLEED / BURN / POISON`：独立叠层
+   - `ARMOR_BREAK`：上限 `3` 层
+   - `SHIELD / REGEN`：取较强值
 
 ### 4.4 Combat DTO 壳与 Trace Schema
 
-虽然 Phase 2 不冻结最终战斗公式，但必须先冻结统一战斗入口与 DTO：
+虽然 Phase 2 不冻结最终战斗公式，但必须先冻结统一战斗入口与 DTO。这里的口径与补充设计文档一致：`DamageInstance` 是单条已解析伤害载荷；`DamageRequest / DamagePacket / DamageOutcome` 是其前后包装层。
 
 ```text
 DamageRequest -> DamagePacket -> DamageOutcome -> CombatTrace
@@ -120,7 +177,7 @@ DamageRequest -> DamagePacket -> DamageOutcome -> CombatTrace
 本 PR 至少需要建立：
 
 1. `DamageRequest`
-2. `DamagePacket`
+2. `DamagePacket`（内部承载 `DamageInstance`）
 3. `DamageOutcome`
 4. `CombatTrace`
 5. `CombatTraceStage`
@@ -176,22 +233,27 @@ core/src/main/kotlin/com/ktome/core/log/*
    - `status`
    - `monster`
    - `interactable`
+5. 资源变化也必须进入正式事件主线，至少包含：
+   - `ResourceSpent`
+   - `ResourceRestored`
+   - `ResourceDepleted`
 
 ### 4.7 Session 拆厚第一轮
 
 建议拆分：
 
-1. `TurnDriver`
-2. `CombatFacade`
-3. `ResourceController`
-4. `StatusController`
-3. `SaveFacade`
-4. `EventCollector`
+1. `TurnSystem`
+2. `CombatSystem`
+3. `TalentSystem`
+4. `InventorySystem`
+5. `ProgressionSystem`
+6. `GameSession`
 
 冻结口径：
 
-1. `FoundationGameSession` 仍可作为编排入口。
-2. 但不再独占所有子逻辑。
+1. `FoundationGameSession` / `GameSession` 仍可作为编排入口。
+2. `SaveFacade`、`EventCollector` 若存在，只能作为辅助适配层，不得替代上述权威拆分边界。
+3. 不再允许会话入口独占所有子逻辑。
 
 ### 4.8 Phase 2 初始固定词汇与注册表
 
@@ -205,8 +267,8 @@ core/src/main/kotlin/com/ktome/core/log/*
 2. zone:
    - `shattered_outpost`
    - `greenwood_fringe`
-   - `deep_iron_mine`
-   - `ashgate_depths`
+   - `deep_iron_pit`
+   - `grey_gate_depths`
 3. damage:
    - `PHYSICAL`
    - `FIRE`

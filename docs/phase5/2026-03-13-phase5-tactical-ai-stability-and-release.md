@@ -69,6 +69,10 @@ core/src/test/kotlin/com/ktome/core/ai/tactical/*
 1. tactical scoring 必须建立在 Phase 3/4 已有 action catalog 与 perception model 上。
 2. 不另起一套并行怪物系统。
 3. 重点提升对象是精英/Boss，不是把所有小怪都做成复杂 planner。
+4. 集成边界固定为：
+   - 普通怪：继续使用 Layer 1 / Layer 2
+   - 精英怪：Layer 2 脚本 + 可选 Utility 评分
+   - Boss：Utility AI 决定宏观策略，既有动作目录执行具体动作序列
 
 ### 4.2 感知、仇恨与潜行
 
@@ -84,6 +88,21 @@ core/src/test/kotlin/com/ktome/core/perception/*
 1. AI 只能基于可见信息、声音/事件提示和最后已知位置行动。
 2. 潜行、脱战、重新索敌、仇恨焦点都必须有可解释状态。
 3. `AIDecisionTrace` 必须能说明“为什么此刻追、退、换目标、保留技能”。
+
+感知状态机第一版固定为：
+
+1. `UNAWARE`
+2. `SUSPICIOUS`
+3. `ALERT`
+4. `SEARCHING`
+
+`HateFocus` 至少必须记录：
+
+1. `targetId`
+2. `lastKnownPosition`
+3. `confidence`
+4. `source`
+5. `updatedTurn`
 
 ### 4.3 Replay、Run History 与 Death Analysis
 
@@ -104,6 +123,19 @@ tools/src/main/kotlin/com/ktome/tools/replay/*
    - 最近几回合伤害轨迹
 3. run history 必须支持本地回看和 QA 取证。
 
+`DeathAnalysis` 的必备字段固定为：
+
+1. `killerEntityId`
+2. `killerName`
+3. `killingAbilityId`
+4. `damageType`
+5. `finalDamage`
+6. `playerHpBefore`
+7. `combatTrace`
+8. `last5Turns`
+9. `activeEffectsAtDeath`
+10. `suggestions`
+
 ### 4.4 Perf / Soak / Profiling
 
 建议文件与模块：
@@ -122,6 +154,18 @@ tools/src/main/kotlin/com/ktome/tools/perf/*
    - atlas/audio 句柄
 2. soak 必须覆盖 `8~10` 小时 run。
 3. perf smoke 失败不能被当成可忽略噪音。
+
+最低性能基线固定为：
+
+| 指标 | 目标值 |
+| --- | --- |
+| 帧率 | 桌面端稳定 `60 FPS` |
+| Draw Calls / frame | `< 50` |
+| Texture Bindings / frame | `< 10` |
+| FOV 耗时 | `< 2 ms`（`80 x 50`） |
+| A* 耗时 | `< 1 ms`（`80 x 50`） |
+| 内存占用 | `< 512 MB` |
+| Soak 稳定性 | `8h` 无 OOM、无 `> 50 ms` GC 停顿 |
 
 ### 4.5 QA 与发布收口
 

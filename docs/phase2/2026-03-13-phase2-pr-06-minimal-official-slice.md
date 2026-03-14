@@ -1,12 +1,12 @@
 > 执行前必须先完整阅读并接受：
 > `docs/phase2/2026-03-13-phase2-pr-05-minimal-tile-shell.md`
-> `docs/2026-03-13-phase2-to-phase5-detailed-systems-design.md`
+> `docs/2026-03-13-core-systems-design-and-phase-supplements.md`
 
 # Phase 2 - PR-06 Minimal Official Slice
 
 **阶段**: `Phase 2 / P2-W6`  
 **优先级**: `P1`  
-**前置条件**: `PR-05` 完成  
+**前置条件**: `P2-W5` 完成  
 **对应问题**: 只有合同和 UI 壳层还不够，必须尽快建立一条最小正式内容切片，才能验证 `Tile + i18n + manifest + schema + core contracts` 是否真的能协同工作。
 
 ---
@@ -73,7 +73,8 @@
 #### Vanguard
 
 1. 主资源：`STAMINA`
-2. 最小 talent 包：
+2. 回复策略：`PerTurn(3)`
+3. 最小 talent 包：
    - `power_strike`
    - `sundering_blow`
    - `shield_bash`
@@ -82,20 +83,25 @@
    - `challenge`
    - `charge`
    - `last_bastion`
-3. 起始套装：
+4. 起始套装：
    - 单手武器
    - 基础盾
    - 中甲
    - 恢复药剂
-4. 视觉/音频 key 最低要求：
+5. 视觉/音频 key 最低要求：
    - `actor.vanguard`
    - `portrait.vanguard`
    - `audio.profession.vanguard`
+6. 最小 build contract：
+   - 1 条主输出树
+   - 1 条防御/控场树
+   - 1 条 Panic Answer（`last_bastion` 或等价）
 
 #### Arcanist
 
 1. 主资源：`MANA`
-2. 最小 talent 包：
+2. 回复策略：`PerTurn(2)`
+3. 最小 talent 包：
    - `fire_bolt`
    - `flame_burst`
    - `frost_lance`
@@ -104,14 +110,18 @@
    - `blink`
    - `mirror_ward`
    - `arcane_recovery`
-3. 起始套装：
+4. 起始套装：
    - 法杖或法器
    - 轻袍
    - 法力药剂
-4. 视觉/音频 key 最低要求：
+5. 视觉/音频 key 最低要求：
    - `actor.arcanist`
    - `portrait.arcanist`
    - `audio.profession.arcanist`
+6. 最小 build contract：
+   - 1 条火系或冰系主输出树
+   - 1 条防护/位移树
+   - 1 条 Boss answer（`mana_shield` / `blink` / 等价组合）
 
 ### 4.2 Zone 与 Boss 切片
 
@@ -124,6 +134,7 @@
 
 1. zone 目标是验证切片闭环，不是铺量。
 2. Boss 必须能触发基础资源、状态、日志、掉落、结算。
+3. 首个 elite/Boss 至少使用 Layer 2 simple scripted AI，不允许仍然完全依赖 `CHASE`。
 
 推荐首批切片：
 
@@ -135,13 +146,25 @@
    - `alarm_bonfire`
 3. monster pool:
    - `beast.rat_scavenger`
+   - `goblin.scout`
    - `bandit.raider`
    - `bandit.archer`
    - `undead.restless_skeleton`
    - `undead.bone_guard`
-   - `cultist.cinder_adept`
 4. elite / boss:
    - `bandit.captain`
+
+`shattered_outpost` 切片规格在本 PR 必须固定为：
+
+| 字段 | 口径 |
+| --- | --- |
+| floorCount | `2` |
+| mapSize | `60 x 40` |
+| recommendedLevel | `1~4` |
+| environmentTheme | 废墟 / 石材 / 杂草 |
+| specialMechanics | 教程区、简单陷阱、少量巡逻压力 |
+| normalPool | 鼠、哥布林、骷髅、强盗 |
+| elitePool | 强盗头目 |
 
 ### 4.3 地图、人物与交互物初始化基线
 

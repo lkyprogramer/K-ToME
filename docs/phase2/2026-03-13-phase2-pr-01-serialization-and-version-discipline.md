@@ -1,19 +1,19 @@
 > 执行前必须先完整阅读并接受：
 > `docs/phase2/2026-03-13-phase2-semantic-contracts-tile-and-i18n.md`
-> `docs/2026-03-13-phase2-to-phase5-detailed-systems-design.md`
+> `docs/2026-03-13-core-systems-design-and-phase-supplements.md`
 
 # Phase 2 - PR-01 Serialization & Version Discipline
 
 **阶段**: `Phase 2 / P2-W1`  
 **优先级**: `P0`  
 **前置条件**: `Phase 1` 全部完成  
-**对应问题**: 现有 `Gson + SaveSnapshot + 裸字符串日志` 仍是 Phase 1 的临时结构。如果不先重建序列化和版本纪律，后续 schema、日志、i18n、Tile manifest 都没有稳定承载体。
+**对应问题**: 当前存档虽已切到 `kotlinx.serialization`，但 `Save Schema V2`、版本纪律和资源边界仍是过渡态。如果不先收口，后续 schema、日志、i18n、Tile manifest 都没有稳定承载体。
 
 ---
 
 ## 1. 阶段目标
 
-把存档主链从 `Gson` 迁移到 `kotlinx.serialization`，同时建立 Phase 2 的破坏式版本纪律。
+在既有 `kotlinx.serialization` 主链之上冻结 `Save Schema V2`，同时建立 Phase 2 的破坏式版本纪律。
 
 完成标准：
 
@@ -26,7 +26,7 @@
 
 ## 2. 当前问题
 
-1. `Gson` 不适合后续明确 schema 演进与跨模块语义稳定。
+1. 当前存档 schema 仍缺少稳定冻结口径，后续若继续边开发边改结构，会直接放大跨模块语义漂移。
 2. 当前 snapshot 混入了表现层字段，破坏 `core -> client` 边界。
 3. 没有明确版本纪律时，Phase 2 以后每次结构变更都会制造脏状态。
 4. 如果 save version、manifest version、style version 从一开始不分离，后续 Tile 和音频资源导入会直接污染存档协议。
@@ -58,7 +58,7 @@
 
 ## 4. 技术方案
 
-### 4.1 序列化主链迁移
+### 4.1 Save Schema V2 主链冻结
 
 建议文件：
 
@@ -74,7 +74,19 @@ game/src/main/kotlin/com/ktome/game/session/FoundationGameSession.kt
 
 1. `SaveSnapshot` 只表达世界规则状态。
 2. `SaveCodec` 必须显式声明序列化配置，不允许隐式默认。
-3. `FoundationGameSession` 只能通过 `SaveCodec` 读写，不允许直接 new `Gson`。
+3. `core.save` 参与主存档的所有数据类统一使用 `@Serializable`。
+4. 多态子类型统一用 `sealed class` + `@SerialName`，禁止隐式运行时反射序列化。
+5. 如存在多态结构，`Json` 配置统一使用 `classDiscriminator = "type"`。
+6. `FoundationGameSession` 只能通过 `SaveCodec` 读写，不允许绕过 codec 直接序列化底层对象。
+
+说明：
+
+1. 如果仓库基线已经完成 `kotlinx.serialization` 主链切换，则本工作包的剩余范围收敛为：
+   - `Save Schema V2`
+   - `saveContractVersion`
+   - fail-fast 版本纪律
+   - save 与资源合同边界
+2. 不允许为了“补文档口径”而重复重做已经稳定的 codec 主链。
 
 ### 4.2 版本纪律
 
@@ -159,13 +171,14 @@ data class AssetVersionContract(
 1. 空场景
 2. 正在战斗的场景
 3. 带资源、状态、物品、目标点的场景
+4. 编码前必须把 `Map` / `Set` / 多实体集合收敛到稳定顺序，禁止把容器迭代顺序当成存档协议的一部分。
 
 ## 5. 推荐改动面
 
 ### 5.1 `core`
 
 1. 新建 `SaveContractVersion`
-2. 替换存档 codec
+2. 收口并冻结存档 codec
 3. 为 snapshot 去掉表现层字段
 
 ### 5.2 `game`
@@ -216,7 +229,7 @@ data class AssetVersionContract(
 
 ## 7. 出口门禁
 
-1. `Gson` 退出正式 save/load 主路径。
+1. `Save Schema V2` 与 `SaveContractVersion` 冻结完成。
 2. 当前阶段存档 round-trip 全绿。
 3. 非法版本加载明确失败。
 4. 存档不再混入 glyph、颜色、裸字符串日志。
@@ -227,6 +240,7 @@ data class AssetVersionContract(
 1. 如果 session 仍直接依赖具体 codec，优先抽象接口再继续改格式。
 2. 如果 round-trip 发现 snapshot 仍有 client 字段，必须继续清理，不能先兼容。
 3. 如果版本策略开始滑向“隐式修补”，必须立即收回到 fail-fast。
+4. 如果 round-trip 结果依赖 `HashMap` 等容器顺序，必须先做稳定排序再继续扩 schema。
 
 ## 9. 当前状态
 

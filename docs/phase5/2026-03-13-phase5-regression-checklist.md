@@ -33,6 +33,9 @@
    - 技能时机
    - 仇恨切换
    - telegraph 响应
+   - `SUSPICIOUS / SEARCHING` 转换
+   - `HateFocus` 来源与置信度衰减
+   - Utility 评分为何选择该动作
 
 ### 2.2 Replay / Death Report Run
 
@@ -40,6 +43,7 @@
 2. 检查：
    - replay 可重放
    - death analysis 能解释最近关键致死链
+   - killer / ability / damageType / hpBefore / combatTrace / last5Turns / activeEffects 字段完整
 
 ### 2.3 Soak Baseline Run
 
@@ -48,6 +52,11 @@
    - 内存曲线
    - atlas/audio 句柄
    - 异常与卡死
+   - FPS
+   - draw calls
+   - texture bindings
+   - FOV / A* 耗时
+   - GC 停顿
 
 ## 3. Manual White-Box Steps
 
@@ -68,3 +77,4 @@
 6. perf/soak 结果
 7. localization/accessibility 结果
 8. 安装包验收结果
+9. replay 语义哈希 / trace hash

@@ -1,7 +1,7 @@
-# K-ToME 核心系统详细设计与阶段补充文档（Part 1：第 1~4 节）
+# K-ToME 核心系统详细设计与阶段补充文档
 
 > 日期：2026-03-13
-> 状态：Draft — 权威设计参考
+> 状态：Draft v2 — 2026-03-14 revised
 > 适用范围：Phase 2 ~ Phase 5 所有涉及战斗、元素、公式、追踪的核心系统
 > 文档定位：补充 `2026-03-13-phase2-to-phase5-final-roadmap.md` 中未充分定义的核心系统设计细节
 
@@ -33,10 +33,15 @@
 
 ### 1.3 覆盖规则
 
-1. 本文档 **不覆盖** 路线图的阶段划分、工作包切分和出口标准——那些仍以路线图为权威。
+1. 本文档 **不覆盖** 路线图的阶段划分、工作包切分和出口标准——那些仍以路线图为权威，执行编号统一使用 `W1 ~ Wn`。
 2. 本文档 **覆盖** 路线图中未充分定义的系统内部设计（公式、数据结构、结算顺序、交互规则）。
 3. 若本文档与原始技术白皮书在同一系统上的设计存在冲突，以本文档为准。
 4. 本文档中的所有 Kotlin 代码骨架是 **设计锚点**，实际实现可在不违背语义合同的前提下调整命名和内部结构。
+
+### 1.4 修订记录
+
+1. `2026-03-13`：初版，建立战斗、元素、状态、职业与阶段补充骨架。
+2. `2026-03-14`：补入事件总线、`SaveDataV2`、`RenderSnapshot` 协议、经济/难度/输入合同、Layer 2 AI 运行时与 Phase 2 预算/编号澄清。
 
 ### 1.4 当前代码基线
 
@@ -88,8 +93,8 @@
 | GAP-01 | 无伤害类型通道：当前只有物理伤害，但 Phase 2 的奥术师/圣堂武士需要元素伤害 | P0 | P2~P5 | P2-A | Phase 2 的 4 职业天赋全部退化为"不同颜色的物理伤害"，Phase 3 引入通道时大规模返工 |
 | GAP-02 | 无多资源系统：当前只有 `Stamina`，但 Phase 2 需要 Mana、正能量等 | P0 | P2~P5 | P2-A | 4 职业无法有差异化的资源管理体验 |
 | GAP-03 | AI 真空期：Phase 1 的 CHASE/KITE/PATROL 与 Phase 5 的 Utility AI 之间无中间层 | P0 | P2~P4 | P2-A（骨架）, P3-A（脚本化行为） | Phase 2~4 的精英/Boss 行为过于简陋，不具备游戏性 |
-| GAP-04 | 序列化引擎未决策：GSON vs `kotlinx.serialization`，影响全局数据类注解方式 | P0 | P2~P5 | P2-A（P2-W1） | 所有数据类的序列化方式不统一，Phase 4 mod 数据兼容性无从设计 |
-| GAP-05 | 状态效果系统过于简陋：仅 `STUNNED`/`ARMOR_BREAK`/`WAR_CRY_BUFF`/`WAR_CRY_DEBUFF` 四种 | P0 | P2~P5 | P2-A | Phase 2 的 32 个天赋无法表达燃烧、冰冻、流血、护盾等核心效果 |
+| GAP-04 | 存档主链虽已落到 `kotlinx.serialization`，但 `Save Schema V2`、版本纪律与资产边界尚未完全冻结 | P0 | P2~P5 | P2-A（P2-W1） | Phase 2 之后的数据类虽可序列化，但 schema 演进、fail-fast 策略和 mod/内容边界仍会漂移 |
+| GAP-05 | 状态效果系统过于简陋：仅 `STUN`/`ARMOR_BREAK`/`WAR_CRY_BUFF`/`WAR_CRY_DEBUFF` 四种 | P0 | P2~P5 | P2-A | Phase 2 的 32 个天赋无法表达燃烧、冰冻、流血、护盾等核心效果 |
 | GAP-06 | 无战斗公式体系：防御线性减免（`rawDamage - defense`），无收益递减 | P1 | P3~P5 | P3-A（P3-W1） | 高属性下数值膨胀失控，防御堆叠无限收益 |
 | GAP-07 | 无 Boss/精英 telegraph 系统：高危技能无预警机制 | P1 | P3~P5 | P3-A（P3-W4） | Boss 战退化为"数值碾压或被碾压"，无战术深度 |
 | GAP-08 | 无资源回复策略框架：`staminaRegen` 硬编码为 `3.0 + modifiers` | P1 | P2~P5 | P2-A | 无法实现"击杀回复"/"受击回复"/"条件回复"等职业差异化资源循环 |
@@ -204,7 +209,7 @@ K-ToME 定义 **六大伤害通道**，覆盖物理和五种元素维度：
 **HOLY（神圣）**
 
 - **主题身份**：圣堂武士（Templar）的核心通道。神圣天赋倾向于净化、治疗增强、对亡灵/恶魔特效。神圣类怪物（堕落天使、光明构装体）使用此通道。
-- **关联状态效果**：净化（`PURIFY`，移除目标身上的一个负面状态）、驱邪标记（`BANE`，对亡灵/恶魔额外增伤 50%）。
+- **关联状态效果**：净化动作（`CLEANSE` / `PURIFY`，移除目标身上的一个负面状态或驱散一个增益）、驱邪标记（`BANE`，对亡灵/恶魔额外增伤 50%）。
 - **抗性机制**：`holyResistance`，百分比减免，取值范围 `[0, 75]`。亡灵/恶魔类怪物默认 `holyResistance = -25`（负抗性 = 增伤）。
 - **穿透机制**：`holyPenetration`，穿透后抗性可为负。
 
@@ -276,7 +281,41 @@ data class DamageTypeConfig(
 )
 ```
 
-#### 3.1.4 伤害通道配置示例（YAML）
+#### 3.1.4 Damage DTO 流与 `DamageInstance` 的关系
+
+`DamageInstance` 不是对 `DamageRequest / DamagePacket / DamageOutcome` 的替代，而是其中的核心载荷。统一关系如下：
+
+```kotlin
+data class DamageRequest(
+    val sourceId: EntityId,
+    val targetId: EntityId?,
+    val abilityId: String,
+    val damageType: DamageType,
+    val baseAmount: Int,
+    val tags: Set<String>,
+)
+
+data class DamagePacket(
+    val request: DamageRequest,
+    val instance: DamageInstance,
+    val hitConfirmed: Boolean,
+)
+
+data class DamageOutcome(
+    val packet: DamagePacket,
+    val finalDamage: Int,
+    val appliedEffects: List<String>,
+)
+```
+
+冻结口径：
+
+1. `DamageRequest` 表达“攻击意图”。
+2. `DamagePacket` 表达“命中/暴击/穿透等已解析、但尚未完成最终结算的中间态”，其中承载单条 `DamageInstance`。
+3. `DamageOutcome` 表达“减伤、状态施加、死亡判定后”的最终结果。
+4. `CombatTrace` 审计整个过程；`DamageInstance` 只负责记录单条伤害语义，不承担完整流水线外壳。
+
+#### 3.1.5 伤害通道配置示例（YAML）
 
 ```yaml
 # data/damage_types.yaml
@@ -324,7 +363,7 @@ damage_types:
     resistanceStatKey: "holyResistance"
     penetrationStatKey: "holyPenetration"
     resistanceCap: 75
-    defaultAssociatedEffects: ["PURIFY", "BANE"]
+    defaultAssociatedEffects: ["CLEANSE", "BANE"]
 
   - type: SHADOW
     nameKey: "damage_type.shadow"
@@ -927,14 +966,14 @@ Physical Save  = 10 + CON * 1.5 + level * 0.5 + equipment/talent bonus
 Mental Power   = 10 + WIL * 1.5 + level * 0.5 + equipment/talent bonus
 Mental Save    = 10 + WIL * 1.0 + CON * 0.5 + level * 0.5 + equipment/talent bonus
 
-Spell Power    = 10 + WIL * 1.5 + level * 0.5 + equipment/talent bonus
-Spell Save     = 10 + WIL * 1.0 + CON * 0.5 + level * 0.5 + equipment/talent bonus
+Spell Power    = 10 + WIL * 1.0 + DEX * 0.5 + level * 0.5 + equipment/talent bonus
+Spell Save     = 10 + WIL * 0.5 + CON * 1.0 + level * 0.5 + equipment/talent bonus
 ```
 
 说明：
 - `level` 指角色等级，提供随等级的自然增长。
-- Save 通常同时受 CON（体质/韧性）和 WIL（意志）影响，体现韧性角色的天然抗性。
-- Power 主要受对应攻击属性影响（STR 用于物理控制，WIL 用于法术/精神控制）。
+- Save 通常同时受 CON（体质/韧性）和 WIL（意志）影响，但法术抗性更偏向体质，精神抗性更偏向意志。
+- Power 主要受对应攻击属性影响：STR 用于物理控制，WIL 用于精神控制，Spell 额外吃到部分 DEX 以体现施法精准度与引导控制。
 - 怪物的 Power/Save 在怪物模板中直接定义，不通过属性公式计算。
 
 #### 3.4.3 状态施加判定公式
@@ -1059,12 +1098,12 @@ object PowerSaveFormula {
         return 10 + (wil * 1.0).toInt() + (con * 0.5).toInt() + (level * 0.5).toInt() + bonus
     }
 
-    fun calculateSpellPower(wil: Int, level: Int, bonus: Int = 0): Int {
-        return 10 + (wil * 1.5).toInt() + (level * 0.5).toInt() + bonus
+    fun calculateSpellPower(wil: Int, dex: Int, level: Int, bonus: Int = 0): Int {
+        return 10 + (wil * 1.0).toInt() + (dex * 0.5).toInt() + (level * 0.5).toInt() + bonus
     }
 
     fun calculateSpellSave(wil: Int, con: Int, level: Int, bonus: Int = 0): Int {
-        return 10 + (wil * 1.0).toInt() + (con * 0.5).toInt() + (level * 0.5).toInt() + bonus
+        return 10 + (wil * 0.5).toInt() + (con * 1.0).toInt() + (level * 0.5).toInt() + bonus
     }
 }
 ```
@@ -1205,6 +1244,122 @@ object DiminishingReturns {
 
 5. **生命回复（回合间结算）**：回复值在实际执行回复之前，经过 `DiminishingReturns.effectiveHpRegen()` 转换。
 
+### 3.6 事件总线与回调注册表
+
+Phase 2 的事件系统承担三类职责：规则层通知、日志/i18n 输入、表现层拉取 snapshot 的同步锚点。此前这些定义散落在 `ResourceEvent`、`CombatTrace`、路线图工作包和 PR 草案中；本节统一冻结最小合同。
+
+#### 3.6.1 事件层次
+
+```kotlin
+sealed interface GameEvent {
+    val turn: Int
+}
+
+sealed interface CombatEvent : GameEvent {
+    val sourceId: EntityId
+    val targetId: EntityId?
+}
+
+sealed interface MovementEvent : GameEvent {
+    val entityId: EntityId
+}
+
+sealed interface ResourceEvent : GameEvent {
+    val entityId: EntityId
+    val resourceType: ResourceType
+}
+
+sealed interface StatusEvent : GameEvent {
+    val entityId: EntityId
+    val statusType: StatusEffectType
+}
+
+sealed interface QuestEvent : GameEvent {
+    val questId: String
+}
+
+sealed interface LogEvent : GameEvent {
+    val logKey: String
+    val args: Map<String, String>
+}
+
+data class WorldStateChangedEvent(
+    override val turn: Int,
+    val reason: WorldStateChangeReason,
+) : GameEvent
+```
+
+#### 3.6.2 EventBus 与回调接口
+
+```kotlin
+fun interface EventListener<in E : GameEvent> {
+    fun onEvent(event: E, context: EventContext)
+}
+
+interface EventBus {
+    fun <E : GameEvent> subscribe(
+        eventType: KClass<E>,
+        priority: Int = 500,
+        listener: EventListener<E>,
+    )
+
+    fun publish(event: GameEvent)
+
+    fun drainPendingEvents(context: EventContext)
+}
+
+data class EventContext(
+    val world: WorldView,
+    val random: RandomSource,
+    val recorder: CombatTraceRecorder?,
+)
+
+enum class CallbackPhase {
+    ON_ACT,
+    ON_MOVE,
+    ON_HIT,
+    ON_DAMAGE_TAKEN,
+    ON_KILL,
+    ON_TURN_START,
+    ON_TURN_END,
+}
+
+fun interface CombatCallback {
+    fun invoke(context: CallbackContext): CallbackResult
+}
+
+data class CallbackRegistration(
+    val ownerId: String,
+    val phase: CallbackPhase,
+    val priority: Int,
+    val callback: CombatCallback,
+)
+
+enum class CallbackResult {
+    CONTINUE,
+    CONSUMED,
+    CANCEL_ACTION,
+}
+
+interface CallbackRegistry {
+    fun register(registration: CallbackRegistration)
+    fun callbacksFor(phase: CallbackPhase): List<CallbackRegistration>
+}
+```
+
+#### 3.6.3 优先级与可重入约束
+
+1. 优先级区间固定为：
+   - `0 ~ 99`：系统内核（资源衰减、死亡处理、回合推进）
+   - `100 ~ 199`：天赋/职业回调
+   - `200 ~ 299`：装备、铭文、词缀回调
+   - `300 ~ 399`：状态效果与临时 aura
+   - `900+`：调试、审计、开发工具
+2. 同一相位内始终按 `priority asc -> ownerId asc` 执行，确保可哈希、可重放。
+3. 回调中允许 `publish()` 新事件，但新事件只能追加到当前 turn 的 pending queue，不能立刻递归重入同一战斗步骤。
+4. 若确需生成子过程（例如连锁闪电或反击），必须通过 `childTrace` 记录并在当前步骤结束后入队执行。
+5. `WorldStateChangedEvent` 是 client 拉取 `RenderSnapshot` 的唯一同步锚点；表现层不直接订阅内部中间态。
+
 ---
 
 ## 4. 元素系统详细设计
@@ -1237,7 +1392,7 @@ object DiminishingReturns {
 | `COLD` | 冰冻 | `FREEZE` | 目标无法行动，受攻击时解除并承受碎冰伤害 | 2 | Spell |
 | `LIGHTNING` | 眩晕 | `STUN` | 短时间无法行动 | 1 | Spell |
 | `LIGHTNING` | 过载 | `OVERCHARGE` | 下次受到闪电伤害 +25% | 2 | Spell |
-| `HOLY` | 净化 | `PURIFY` | 移除目标 1 个负面状态（对友方）或驱散 1 个增益（对敌方） | 瞬时 | Spell |
+| `HOLY` | 净化动作 | `PURIFY` | 瞬时效果：移除目标 1 个负面状态（对友方）或驱散 1 个增益（对敌方），不作为持久状态入档 | 瞬时 | Spell |
 | `HOLY` | 驱邪标记 | `BANE` | 对亡灵/恶魔额外增伤 50% | 4 | Spell |
 | `SHADOW` | 中毒 | `POISON` | 每回合损失原始伤害的 10%，并降低治疗效果 30% | 5 | Spell |
 | `SHADOW` | 诅咒 | `CURSE` | 降低目标所有主属性 10% | 4 | Spell |
@@ -1436,7 +1591,7 @@ ignoredResistance = min(上限裁切后抗性 - 抗性下限, 元素穿透)
 
 | 攻击元素 | 交互条件 | 效果 | 引入阶段 |
 | --- | --- | --- | --- |
-| `FIRE` | 目标处于 `FREEZE` 状态 | 立即解除 `FREEZE`，触发"蒸发"效果：两种伤害的 **较大者** 额外增伤 30% | P3-A |
+| `FIRE` | 目标处于 `FREEZE` 状态 | 立即解除 `FREEZE`，触发"蒸发"效果：本次火焰攻击伤害额外 +30% | P3-A |
 | `COLD` | 目标处于 `BURN` 状态 | 立即解除 `BURN`，触发"淬灭"效果：目标减速 50% 持续 2 回合 | P3-A |
 | `LIGHTNING` | 目标站在水地形上 | 闪电伤害 +25%，且传导到相邻水地形上的所有实体（半伤） | P4-A |
 | `FIRE` | 目标站在油地形上 | 油地形燃烧 3 回合，每回合对站立者造成火焰伤害 | P4-A |
@@ -1653,10 +1808,12 @@ enum class StatusEffectType(
     val introducedPhase: String = "P2",
 ) {
     // ── Phase 1 遗留（保持兼容） ──
-    STUNNED(EffectCategory.DEBUFF, introducedPhase = "P1"),
+    STUN(EffectCategory.DEBUFF, introducedPhase = "P1"),
     ARMOR_BREAK(EffectCategory.DEBUFF, introducedPhase = "P1"),
 
     // ── Phase 2 新增：基础控制与伤害 ──
+    GUARD(EffectCategory.BUFF),
+    MARKED(EffectCategory.DEBUFF),
     ROOT(EffectCategory.DEBUFF),
     SILENCE(EffectCategory.DEBUFF),
     BLIND(EffectCategory.DEBUFF),
@@ -1678,7 +1835,6 @@ enum class StatusEffectType(
 
     // ── Phase 3 新增：高级效果 ──
     OVERCHARGE(EffectCategory.DEBUFF, introducedPhase = "P3"),
-    PURIFY(EffectCategory.BUFF, dispellable = false, introducedPhase = "P3"),
     BANE(EffectCategory.DEBUFF, introducedPhase = "P3"),
     CURSE(EffectCategory.DEBUFF, introducedPhase = "P3"),
     WEAKEN(EffectCategory.DEBUFF, introducedPhase = "P3"),
@@ -1694,8 +1850,1473 @@ enum class EffectCategory {
 }
 ```
 
-> **Phase 1 兼容说明**：Phase 1 的 `WAR_CRY_BUFF` 和 `WAR_CRY_DEBUFF` 应在 Phase 2 迁移时重构为通用的 `BUFF`/`DEBUFF` 效果，通过 `ActiveEffect.id` 和 `statModifiers` 来区分具体效果，而不是为每个天赋创建专用的 `StatusEffectType`。
+> **Phase 1 兼容说明**：Phase 1 的 `STUNNED` 在 Phase 2 统一并名为 `STUN`；`WAR_CRY_BUFF` 和 `WAR_CRY_DEBUFF` 应迁移为通用的 `BUFF`/`DEBUFF` 效果，通过 `ActiveEffect.id` 和 `statModifiers` 来区分具体效果，而不是为每个天赋创建专用的 `StatusEffectType`。
 
 ---
 
-> **本文档为 Part 1，涵盖第 1~4 节。后续 Part 2 将涵盖第 5 节（资源系统设计）、第 6 节（AI 过渡层设计）、第 7 节（铭文/符文系统设计）、第 8 节（关键词注册表与 Tooltip）等内容。**
+## 5. 职业与资源系统详细设计
+
+本节定义 K-ToME 的职业框架、资源模型、以及每个基础/进阶职业的设计骨架。这是路线图中 GAP-02（无多资源系统）和 GAP-10（无详细职业设计）的完整补充。
+
+### 5.1 通用资源系统
+
+#### 5.1.1 设计动机
+
+Phase 1 仅有 `Stamina` 一种资源，所有天赋共享同一资源池。这在 4 职业差异化时不可持续：
+
+- 战卫应使用 **耐力（Stamina）**，通过体力管理节奏战斗
+- 奥术师应使用 **法力（Mana）**，代表魔法储备
+- 游荡者应使用 **能量（Energy）**，快速回复、快速消耗的爆发节奏
+- 圣堂武士应使用 **正能量（Positive Energy）**，通过战斗行为积攒资源
+
+#### 5.1.2 Kotlin 数据结构
+
+```kotlin
+package com.ktome.core.resource
+
+import com.ktome.core.ecs.EntityId
+
+/**
+ * 资源类型枚举。每种资源有不同的回复策略和 UI 表现。
+ * defaultMax 只是枚举级默认值，职业或怪物配置可以覆盖它。
+ */
+enum class ResourceType(
+    val nameKey: String,
+    val colorHint: String,
+    val defaultMax: Int,
+) {
+    STAMINA("resource.stamina", "#DAA520", 40),
+    MANA("resource.mana", "#4169E1", 50),
+    ENERGY("resource.energy", "#32CD32", 100),
+    POSITIVE_ENERGY("resource.positive_energy", "#FFD700", 0),
+    HATE("resource.hate", "#8B0000", 0),
+    EQUILIBRIUM("resource.equilibrium", "#9370DB", 0),
+}
+
+/**
+ * 资源池实例，挂载在实体上作为组件。
+ */
+data class ResourcePool(
+    val type: ResourceType,
+    var current: Int,
+    var max: Int,
+    val regenPolicy: RegenPolicy,
+) {
+    fun canSpend(amount: Int): Boolean = current >= amount
+    fun spend(amount: Int): Boolean {
+        if (current < amount) return false
+        current -= amount
+        return true
+    }
+    fun restore(amount: Int) {
+        current = (current + amount).coerceIn(0, max)
+    }
+    fun isFull(): Boolean = current >= max
+    fun isEmpty(): Boolean = current <= 0
+    fun percent(): Float = if (max > 0) current.toFloat() / max else 0f
+}
+
+/**
+ * 资源回复策略。每种职业有不同的回复机制。
+ */
+sealed interface RegenPolicy {
+    /** 每回合固定回复 */
+    data class PerTurn(val amount: Int) : RegenPolicy
+
+    /** 击杀敌人时回复 */
+    data class OnKill(val amount: Int) : RegenPolicy
+
+    /** 受到伤害时回复（如圣堂武士正能量） */
+    data class OnDamageTaken(val percent: Float) : RegenPolicy
+
+    /** 命中敌人时回复（如游荡者能量） */
+    data class OnHit(val amount: Int) : RegenPolicy
+
+    /** 每回合衰减（用于正能量/仇恨等脱战后归零的资源） */
+    data class DecayPerTurn(val amount: Int, val outOfCombatOnly: Boolean = true) : RegenPolicy
+
+    /** 组合策略：多种回复机制同时生效 */
+    data class Composite(val policies: List<RegenPolicy>) : RegenPolicy
+
+    /** 无自然回复 */
+    data object None : RegenPolicy
+}
+```
+
+#### 5.1.3 各职业资源配置
+
+| 职业 | 资源类型 | 初始上限 | 回复策略 | 设计意图 |
+| --- | --- | --- | --- | --- |
+| 战卫 Vanguard | `STAMINA` | 40 + WIL×5 | `PerTurn(3)` | 稳定节奏，需要管理消耗避免在关键时刻无力 |
+| 奥术师 Arcanist | `MANA` | 50 + WIL×6 | `PerTurn(2)` | 储量大但回复慢，鼓励预判和精确释放 |
+| 游荡者 Rogue | `ENERGY` | 100 | `Composite([PerTurn(5), OnHit(8)])` | 快攻快回，鼓励持续输出而非观望 |
+| 圣堂武士 Templar | `POSITIVE_ENERGY` | 100 | `Composite([OnDamageTaken(0.15), OnHit(3), DecayPerTurn(5)])` | 需要通过战斗积攒资源，强力技能消耗正能量 |
+| 狂战士 Berserker（P3） | `HATE` | 100 | `Composite([OnHit(5), OnKill(20), DecayPerTurn(8)])` | 越战越怒，脱战快速冷却 |
+| 咒剑士 Spellblade（P3） | `EQUILIBRIUM` | 100（起始 50） | 根据最近使用的技能流派向物理端或法术端每回合偏移 `3` 点 | 平衡值范围 `[0,100]`，`50` 为中线，偏向两端时强化对应流派并削弱另一端 |
+
+#### 5.1.4 资源系统与事件总线的集成
+
+资源变化通过以下事件通知：
+
+```kotlin
+sealed interface ResourceEvent : GameEvent {
+    val entityId: EntityId
+    val resourceType: ResourceType
+
+    data class Spent(
+        override val entityId: EntityId,
+        override val resourceType: ResourceType,
+        val amount: Int,
+        val abilityId: String,
+        override val turn: Int,
+    ) : ResourceEvent
+
+    data class Restored(
+        override val entityId: EntityId,
+        override val resourceType: ResourceType,
+        val amount: Int,
+        val source: String, // "regen", "on_kill", "on_hit", "potion"
+        override val turn: Int,
+    ) : ResourceEvent
+
+    data class Depleted(
+        override val entityId: EntityId,
+        override val resourceType: ResourceType,
+        override val turn: Int,
+    ) : ResourceEvent
+}
+```
+
+### 5.2 职业框架设计
+
+#### 5.2.1 职业定义数据结构
+
+```kotlin
+/**
+ * 职业定义，从 YAML 加载。
+ */
+data class ClassDef(
+    val id: String,
+    val nameKey: String,
+    val descKey: String,
+    val iconKey: String,
+    val portraitKey: String,
+    val tier: ClassTier,
+    val resourceType: ResourceType,
+    val baseStats: BaseStatBlock,
+    val statGrowth: StatGrowthBlock,
+    val talentTrees: List<TalentTreeRef>,
+    val startingTalents: List<String>,
+    val startingEquipment: List<String>,
+    val unlockCondition: UnlockCondition?,
+    val tags: Set<String>,
+)
+
+enum class ClassTier { BASE, ADVANCED }
+
+data class BaseStatBlock(
+    val str: Int, val dex: Int, val con: Int, val wil: Int,
+    val baseHp: Int, val baseResource: Int,
+    val baseAttack: Int, val baseDefense: Int,
+    val baseAccuracy: Int, val baseEvasion: Int,
+    val baseSpeed: Int,
+)
+
+data class StatGrowthBlock(
+    val hpPerLevel: Int,
+    val resourcePerLevel: Int,
+    val statPointsPerLevel: Int = 2,
+    val talentPointsPerLevel: Float = 0.5f, // 每 2 级 1 点
+)
+
+data class TalentTreeRef(
+    val treeId: String,
+    val unlockLevel: Int = 1,
+)
+
+sealed interface UnlockCondition {
+    data object AlwaysUnlocked : UnlockCondition
+    data class RequireClassCleared(val classId: String) : UnlockCondition
+    data class RequireLevel(val level: Int) : UnlockCondition
+    data class RequireBossKilled(val bossId: String) : UnlockCondition
+}
+```
+
+#### 5.2.1.1 数值锚点与消耗/冷却分级
+
+职业和天赋的具体数值必须依附统一锚点，避免不同树各自漂移：
+
+| 锚点参数 | Lv1 | Lv5 | Lv10 | Lv15 |
+| --- | --- | --- | --- | --- |
+| 玩家 HP | 40~60 | 100~150 | 200~300 | 350~500 |
+| 单次普攻伤害 | 5~10 | 15~25 | 30~50 | 60~100 |
+| 普通怪 HP | 15~30 | 40~70 | 80~150 | 150~250 |
+| 精英怪 HP | - | 120~200 | 250~400 | 500~800 |
+| Boss HP | - | - | 500~800 | 1000~1500 |
+
+Phase 2~3 的主动能力按以下分级设计，不允许每个职业单独发明一套成本体系：
+
+| 级别 | 资源消耗 | 基础冷却 | 典型用途 |
+| --- | --- | --- | --- |
+| Basic | `0 ~ 8` | `0 ~ 2` | 普攻强化、短位移、轻控 |
+| Core | `8 ~ 18` | `3 ~ 5` | 主力输出、稳定群攻、标准控制 |
+| Heavy | `18 ~ 35` | `6 ~ 10` | 爆发、强控制、强护盾 |
+| Ultimate | `35+` 或特殊资源条件 | `10+` / 分阶段限制 | Boss answer、保命大招、终结技 |
+
+`SUSTAINED` 技能不走上表冷却，但必须定义：
+
+1. 开启成本
+2. 每回合维持成本或机会成本
+3. 关闭后是否有锁定回合
+
+`BaseStatBlock.baseSpeed` 从 Phase 2 起统一使用 `1000` 能量制口径，标准角色为 `1000`，快职为 `1100`，慢职为 `950` 等。
+
+#### 5.2.2 四大基础职业详细设计
+
+以下四套树形是长期目标集，每个基础职业完整形态仍按 `3 树 × 4 节点 = 12` 设计。但 `Phase 2` 的执行预算以后续路线图为准，只落每职业 `8` 个已冻结节点：
+
+1. 优先实现每棵树前 `2` 个节点。
+2. 第 `3` 个节点只允许在该职业的签名玩法缺少关键 answer 时提前进入 `Phase 2`。
+3. 第 `4` 个节点默认进入 `Phase 3`，除非路线图显式上调预算。
+
+##### 5.2.2.1 战卫（Vanguard）
+
+**设计理念**：前排肉盾与控场专家。以物理伤害为核心，通过护甲、格挡和状态控制在前线创造安全空间。
+
+**资源**：耐力（Stamina），每回合自然回复 3 点。
+
+**基础属性**：`str=14, dex=8, con=12, wil=6, baseHp=60, baseStamina=40, baseAttack=7, baseDefense=4, baseAccuracy=10, baseEvasion=3, baseSpeed=1000`
+
+**天赋树（长期目标 12 天赋；Phase 2 先落 8 个冻结节点）**：
+
+| 天赋树 | 定位 | 天赋 1（Lv1 解锁） | 天赋 2（Lv3 解锁） | 天赋 3（Lv5 解锁） | 天赋 4（Lv7 解锁） |
+| --- | --- | --- | --- | --- | --- |
+| 武技（Arms） | 主输出 | **猛力打击** — 150% 物理单体，3 级破甲，5 级穿透 +15 | **横扫** — 100% 物理锥形 3 格，3 级击退 1 格 | **碎甲** — 120% 物理，目标破甲 4 回合，被动提供 armorPen +5 | **斩杀** — 200% 物理单体，目标 HP<30% 时伤害翻倍 |
+| 防御（Shield） | 自保+控制 | **盾击** — 80% 物理+眩晕 1 回合，3 级击退 2 格 | **格挡姿态**（持续） — +20% 护甲，受到近战攻击时 30% 概率格挡（减伤 50%） | **嘲讽** — 强制周围 3 格敌人攻击自己 2 回合 | **铁壁**（持续） — +40% 护甲，-20% 移动速度 |
+| 战吼（Warcry） | 群控+增益 | **战吼** — 自身攻击 +20%，周围敌人防御 -15%，3 回合 | **威压** — 周围 4 格敌人恐惧 2 回合（Mental Save 对抗） | **坚毅** — 被动，HP<30% 时自动获得护盾（每局 1 次） | **不屈** — 下次致死伤害改为 HP 保留 1 点，8 回合 CD |
+
+**Solo-Clear 验证路径**：
+- 主输出：Arms 树 → 猛力打击 + 碎甲 + 斩杀
+- 自保：Shield 树 → 格挡姿态 + 铁壁
+- 群处理：横扫 + 战吼
+- Boss answer：碎甲持续破甲 + 斩杀斩杀线
+- Panic answer：不屈 + 盾击眩晕脱身
+
+##### 5.2.2.2 奥术师（Arcanist）
+
+**设计理念**：远程法术输出与区域控制专家。在三种元素之间切换以应对不同局面。
+
+**资源**：法力（Mana），每回合回复 2 点，最大值较高但消耗也高。
+
+**基础属性**：`str=4, dex=8, con=8, wil=14, baseHp=40, baseMana=60, baseAttack=3, baseDefense=1, baseAccuracy=8, baseEvasion=5, baseSpeed=1000`
+
+**天赋树（长期目标 12 天赋；Phase 2 先落 8 个冻结节点）**：
+
+| 天赋树 | 定位 | 天赋 1 | 天赋 2 | 天赋 3 | 天赋 4 |
+| --- | --- | --- | --- | --- | --- |
+| 火焰（Flame） | 持续伤害+AoE | **火球** — 120% 火焰 AoE 半径 2，燃烧 3 回合 | **烈焰之墙** — 在目标线上创建火墙 3 回合，经过者受火焰伤害 | **焚身** — 180% 火焰单体，燃烧中目标额外 +50% 伤害 | **陨石术** — 250% 火焰 AoE 半径 3，2 回合延迟，telegraph 明显 |
+| 寒冰（Frost） | 控制+减速 | **冰箭** — 100% 寒冰单体，减速 30%×3 回合 | **霜冻新星** — 80% 寒冰自身周围 3 格，减速所有敌人 | **冰封** — 对减速中的目标冻结 2 回合 | **暴风雪** — 60% 寒冰 AoE 半径 4×4 回合，每回合 60% 寒冰伤害+减速 |
+| 奥术（Arcane） | 护盾+位移 | **奥术护盾**（持续） — 吸收等于最大 Mana 20% 的伤害 | **闪现** — 瞬移到视野内 6 格位置 | **法力涌动** — 恢复 30% 最大 Mana | **奥术超载** — 下 3 回合所有法术伤害 +30%，结束后眩晕自己 1 回合 |
+
+**Solo-Clear 验证路径**：
+- 主输出：火焰树（火球+焚身）或寒冰树（冰箭+暴风雪）
+- 自保：奥术护盾 + 闪现
+- 群处理：火球 AoE + 霜冻新星 + 暴风雪
+- Boss answer：焚身（单体爆发）+ 奥术超载
+- Panic answer：闪现 + 冰封（冻住近身威胁后拉开距离）
+
+##### 5.2.2.3 游荡者（Rogue）
+
+**设计理念**：高机动性的近战爆发手。依赖位移和隐匿创造有利战斗条件，精准打击高价值目标。
+
+**资源**：能量（Energy），快速自然回复（每回合 5）+ 命中回复（每次 8），鼓励持续进攻。
+
+**基础属性**：`str=8, dex=14, con=8, wil=6, baseHp=42, baseEnergy=100, baseAttack=5, baseDefense=1, baseAccuracy=12, baseEvasion=8, baseSpeed=1100`
+
+**天赋树（长期目标 12 天赋；Phase 2 先落 8 个冻结节点）**：
+
+| 天赋树 | 定位 | 天赋 1 | 天赋 2 | 天赋 3 | 天赋 4 |
+| --- | --- | --- | --- | --- | --- |
+| 暗杀（Assassination） | 单体爆发 | **背刺** — 180% 物理，从隐身发动时额外 +100% 伤害 | **毒刃** — 普攻附加暗影 DoT（中毒 3 回合） | **致命一击** — 200% 物理，暴击率 +20%，暴击伤害 +50% | **处刑** — 250% 物理+暗影混合，目标 HP<25% 时自动暴击 |
+| 诡术（Subtlety） | 隐匿+控制 | **隐匿** — 进入隐身 3 回合，被攻击或攻击时解除 | **烟雾弹** — AoE 致盲 2 回合，自身进入隐身 | **绊脚索** — 定身目标 2 回合 | **暗影步** — 瞬移到目标身后并进入隐身 1 回合 |
+| 敏捷（Agility） | 机动+被动 | **翻滚** — 移动 3 格，移动过程免疫机会攻击 | **刀刃乱舞** — 120% 物理攻击周围所有敌人 | **要害嗅觉**（被动） — 暴击率 +5%，暴击伤害 +20% | **影遁** — 受到致命伤害时自动进入隐身并恢复 20% HP，每局 1 次 |
+
+##### 5.2.2.4 圣堂武士（Templar）
+
+**设计理念**：神圣战士，兼具惩击输出和自我维持。通过战斗积攒正能量来释放强力技能。
+
+**资源**：正能量（Positive Energy），通过受击（受伤时回复 15% 伤害值的正能量）和命中（每次 3 点）积攒，脱战衰减。
+
+**基础属性**：`str=12, dex=6, con=10, wil=12, baseHp=55, basePositiveEnergy=100, baseAttack=6, baseDefense=3, baseAccuracy=8, baseEvasion=3, baseSpeed=950`
+
+**天赋树（长期目标 12 天赋；Phase 2 先落 8 个冻结节点）**：
+
+| 天赋树 | 定位 | 天赋 1 | 天赋 2 | 天赋 3 | 天赋 4 |
+| --- | --- | --- | --- | --- | --- |
+| 惩击（Smite） | 神圣输出 | **神圣打击** — 130% 神圣伤害，对亡灵 +50% | **审判之锤** — 150% 神圣 AoE 十字形（1+4 格），驱邪标记 3 回合 | **圣火** — 120% 神圣+火焰，燃烧 3 回合（神圣火焰不受火抗影响，走神圣抗性） | **天罚** — 300% 神圣伤害，消耗 80 正能量，对驱邪标记目标额外 +100% |
+| 神佑（Grace） | 自保+增益 | **圣光** — 治疗自身 HP 20%+WIL×2 | **圣盾**（持续） — 吸收伤害等于 CON×3，每 10 回合刷新 | **净化** — 移除自身 2 个负面状态 | **神圣庇护** — 3 回合内受到致死伤害改为不低于 1 HP，每局 1 次 |
+| 信仰（Faith） | 被动+光环 | **虔诚**（被动） — 正能量回复效率 +20% | **神圣光环**（持续） — 周围 2 格敌方亡灵/恶魔每回合受神圣伤害 | **坚定信念**（被动） — Mental Save +15，不可被恐惧 | **神罚回响**（被动） — 造成神圣伤害时，10% 概率对目标施加沉默 2 回合 |
+
+#### 5.2.3 四大进阶职业设计骨架（Phase 3）
+
+进阶职业在 Phase 3 引入，每个进阶职业有 4 棵天赋树（4×4=16 天赋），加上从基础职业继承的部分天赋树。
+
+| 进阶职业 | 基础来源 | 资源 | 核心机制 | 天赋树方向 |
+| --- | --- | --- | --- | --- |
+| 狂战士 Berserker | 战卫 | 仇恨 | 越战越强，HP 越低伤害越高，有失控风险 | 狂怒、毁灭、血战、蛮力 |
+| 咒剑士 Spellblade | 奥术师 | 平衡值 | 近战+魔法混合，在物理和法术之间动态切换 | 附魔之刃、元素涌动、战斗法术、奥术武技 |
+| 影刃客 Shadowblade | 游荡者 | 能量 | 暗影元素融入刺杀，持续控制+暗影DoT | 暗杀术、暗影步法、毒术、夜行者 |
+| 守林者 Warden | 圣堂武士 | 正能量 | 自然系防御+治疗强化，区域控制+护盾 | 自然之力、生命守护、大地之盾、森林之怒 |
+
+### 5.3 种族系统设计骨架（Phase 3）
+
+| 种族 | `nameKey` | 核心被动 | 天赋树 1 | 天赋树 2 | 种族特殊规则 |
+| --- | --- | --- | --- | --- | --- |
+| 人类 | `race.human` | 每级额外 +1 属性点 | 适应力 | 领悟 | 无特殊弱点，全能型 |
+| 精灵 | `race.elf` | 视野 +2，闪避 +5% | 敏锐感知 | 自然亲和 | 负重上限降低 15% |
+| 矮人 | `race.dwarf` | 物理抗性 +10%，中毒持续时间 -50% | 韧性 | 锻造亲和 | 移动速度 -5% |
+| 兽人 | `race.orc` | 攻击 +10%，HP<20% 时攻速 +20% | 蛮力 | 战意 | Mental Save -5 |
+| 亡者 | `race.undead` | 免疫中毒/流血，治疗效果 -30% | 亡者意志 | 不死之躯 | 受神圣伤害 +25% |
+
+---
+
+## 6. 技能/天赋系统详细设计
+
+### 6.1 天赋定义 Schema（V2）
+
+Phase 1 的天赋定义过于简陋，仅支持伤害倍率和少量状态效果。Phase 2 起需要支持完整的数据驱动天赋系统。
+
+#### 6.1.1 完整天赋 YAML Schema
+
+```yaml
+# 示例：战卫 - 猛力打击
+talent:
+  id: "power_strike"
+  nameKey: "talent.power_strike"
+  descKey: "talent.power_strike.desc"
+  iconKey: "icon_talent_power_strike"
+  visualKey: "vfx_power_strike"
+  audioProfile: "sfx_melee_heavy"
+
+  # 基础属性
+  tier: 1                    # 天赋阶级（1=初始可学，2=需要前置，3=高级）
+  maxPoints: 5               # 最大可投入点数
+  category: ACTIVE           # ACTIVE / PASSIVE / SUSTAINED
+  damageType: PHYSICAL       # 伤害通道
+  resourceCost: 8            # 基础资源消耗
+  cooldown: 3                # 基础冷却回合数
+  castTime: 1000             # 施法能量消耗（1000=标准行动，750=快速，1250=慢速）
+
+  # 目标选择
+  targeting:
+    type: SINGLE_TARGET       # SINGLE_TARGET / LINE / CONE / RADIUS / SELF / GROUND_TARGET
+    range: 1                  # 最大距离
+    minRange: 0               # 最小距离
+    requiresLineOfSight: true
+    friendlyFire: false
+
+  # Telegraph（预警）
+  telegraph:
+    shape: SINGLE_CELL        # SINGLE_CELL / LINE / CONE / CIRCLE / CROSS
+    previewTurns: 0           # 预览回合数（0=即时，1+=延迟释放）
+    dangerLevel: MODERATE     # LOW / MODERATE / HIGH / LETHAL
+    colorHint: "#FF4500"
+
+  # 前置条件
+  requirements:
+    level: 1
+    stats: {}                 # 例如 { str: 16 } 表示需要 16 力量
+    talentPrereqs: []         # 例如 ["basic_attack:2"] 表示需要基础攻击 2 级
+
+  # 每级效果（断点成长）
+  levelEffects:
+    1:
+      damageMultiplier: 1.5
+      description: "造成 {damage_mult}% 武器伤害"
+    2:
+      damageMultiplier: 1.7
+    3:
+      damageMultiplier: 1.9
+      additionalEffect: "ARMOR_BREAK"
+      effectDuration: 3
+      breakpointDescription: "新增：命中时施加破甲 {duration} 回合"
+    4:
+      damageMultiplier: 2.1
+    5:
+      damageMultiplier: 2.5
+      armorPenetration: 15
+      breakpointDescription: "新增：无视目标 {pen} 点护甲"
+
+  # 关键词标签
+  keywords: ["melee", "physical", "single_target", "armor_break"]
+
+  # 回调挂载
+  callbacks:
+    onHit:
+      - type: APPLY_STATUS
+        statusId: "ARMOR_BREAK"
+        duration: "{effectDuration}"
+        saveDimension: PHYSICAL
+        minLevel: 3
+```
+
+#### 6.1.2 天赋目标类型定义
+
+```kotlin
+enum class TargetingType {
+    /** 单体目标 */
+    SINGLE_TARGET,
+    /** 直线（如冲锋、射线） */
+    LINE,
+    /** 锥形范围 */
+    CONE,
+    /** 以自身为中心的圆形 */
+    RADIUS_SELF,
+    /** 以目标点为中心的圆形 */
+    RADIUS_TARGET,
+    /** 仅对自身 */
+    SELF,
+    /** 地面目标（如陷阱、火墙） */
+    GROUND_TARGET,
+    /** 十字形 */
+    CROSS,
+}
+
+/**
+ * 目标选择结果。
+ */
+data class TargetingResult(
+    val primaryTarget: EntityId?,
+    val affectedCells: Set<Point>,
+    val affectedEntities: Set<EntityId>,
+)
+```
+
+#### 6.1.3 Telegraph 系统
+
+Telegraph（预警）系统用于在 Boss 或精英使用高危技能时给玩家反应时间：
+
+```kotlin
+/**
+ * 技能预警定义。
+ */
+data class TelegraphDef(
+    /** 预警形状 */
+    val shape: TelegraphShape,
+    /** 预警覆盖的格子（相对于施法者或目标点） */
+    val cells: Set<Point>,
+    /** 预警回合数（0=即时，1=下回合生效，2=再下回合） */
+    val previewTurns: Int,
+    /** 危险等级 */
+    val dangerLevel: DangerLevel,
+    /** 预警 UI 颜色 */
+    val colorHint: String,
+    /** 是否显示伤害预估 */
+    val showDamageEstimate: Boolean = false,
+)
+
+enum class TelegraphShape {
+    SINGLE_CELL,
+    LINE,
+    CONE,
+    CIRCLE,
+    CROSS,
+    RING,
+    CUSTOM,
+}
+
+enum class DangerLevel {
+    /** 低威胁，可以忽略 */
+    LOW,
+    /** 中等威胁，建议躲避 */
+    MODERATE,
+    /** 高威胁，必须躲避 */
+    HIGH,
+    /** 致命，站在里面几乎必死 */
+    LETHAL,
+}
+```
+
+**Boss Telegraph 设计规则**：
+
+1. 所有 Boss 技能中伤害超过玩家最大 HP 30% 的，必须有至少 1 回合的 telegraph
+2. 伤害超过 50% 的技能必须有 2 回合 telegraph
+3. Telegraph 必须同时通过视觉（地面高亮）、日志（文字警告）、音频（预警音效）三通道传达
+4. 玩家站在 telegraph 区域内时 HUD 应有额外闪烁提示
+
+### 6.2 天赋树结构
+
+#### 6.2.1 树结构定义
+
+```yaml
+# 示例：战卫 - 武技树
+talent_tree:
+  id: "vanguard_arms"
+  nameKey: "talent_tree.vanguard_arms"
+  iconKey: "icon_tree_arms"
+  classId: "vanguard"
+  layout:
+    rows: 4
+    columns: 1
+  nodes:
+    - talentId: "power_strike"
+      row: 0
+      col: 0
+      prerequisites: []
+    - talentId: "sweeping_strike"
+      row: 1
+      col: 0
+      prerequisites: ["power_strike:1"]
+    - talentId: "sunder_armor"
+      row: 2
+      col: 0
+      prerequisites: ["power_strike:2"]
+    - talentId: "execute"
+      row: 3
+      col: 0
+      prerequisites: ["sunder_armor:1", "sweeping_strike:1"]
+```
+
+#### 6.2.2 天赋点获取与分配
+
+| 属性 | 值 | 说明 |
+| --- | --- | --- |
+| 天赋点获取 | 每 2 级 1 点 | 1,3,5,7,9...级获得 |
+| 每棵树最大投入 | 无硬限，受天赋 `maxPoints` 约束 | 但前置条件自然限制了投入顺序 |
+| 洗点 | 每局免费 1 次，之后需要消耗稀有道具 | 洗点时触发所有天赋的 `on_unlearn` |
+| 前置检查时机 | 仅在分配瞬间检查 | 分配后属性下降不影响已分配天赋 |
+
+### 6.3 关键词注册表（Keyword Registry）
+
+```kotlin
+/**
+ * 关键词注册表，用于在天赋描述和战斗日志中提供统一的术语解释。
+ */
+data class KeywordDef(
+    val id: String,
+    val nameKey: String,      // 如 "keyword.armor_break"
+    val tooltipKey: String,   // 如 "keyword.armor_break.tooltip"
+    val iconKey: String,
+    val colorHint: String,
+    val relatedKeywords: List<String> = emptyList(),
+)
+```
+
+**Phase 3 必须注册的关键词清单**：
+
+| 关键词 ID | 中文名 | 说明 |
+| --- | --- | --- |
+| `armor_break` | 破甲 | 降低目标护甲值 |
+| `bleed` | 流血 | 每回合物理持续伤害 |
+| `burn` | 燃烧 | 每回合火焰持续伤害 |
+| `freeze` | 冰冻 | 无法行动，受攻击解除 |
+| `stun` | 眩晕 | 无法行动 |
+| `shield` | 护盾 | 吸收一定量伤害 |
+| `penetration` | 穿透 | 无视部分护甲/抗性 |
+| `diminishing_returns` | 收益递减 | 属性越高边际收益越低 |
+| `power_save` | 强度/豁免 | 状态施加的攻防对抗 |
+| `telegraph` | 预警 | Boss 技能的提前警告 |
+| `crit` | 暴击 | 命中时有概率造成额外伤害 |
+| `dot` | 持续伤害 | 每回合造成伤害的效果 |
+| `sustain` | 持续技能 | 开关式天赋，激活时持续生效 |
+| `cleanse` | 净化 | 移除负面状态 |
+| `dispel` | 驱散 | 移除正面状态 |
+
+---
+
+## 7. 怪物 AI 系统详细设计
+
+### 7.1 AI 分层架构
+
+当前 Phase 1 仅有 `CHASE`/`KITE`/`PATROL` 三种硬编码行为。路线图中 Phase 5 才引入 Utility AI + 行为树。为填补 Phase 2~4 的 AI 真空，设计以下三层架构：
+
+```
+┌─────────────────────────────────────────────┐
+│  Layer 3: Utility AI + 行为树（Phase 5）      │
+│  用于：精英/Boss 的战术级智能决策              │
+├─────────────────────────────────────────────┤
+│  Layer 2: 脚本化行为配置（Phase 3）            │
+│  用于：精英怪、Boss 的数据驱动行为             │
+├─────────────────────────────────────────────┤
+│  Layer 1: 基础行为模板（Phase 1，继续使用）    │
+│  用于：普通杂兵的简单行为                      │
+└─────────────────────────────────────────────┘
+```
+
+每一层向下兼容：Layer 2 可以在行为脚本中引用 Layer 1 的基础行为作为默认 fallback；Layer 3 可以在行为树叶节点中调用 Layer 2 的脚本行为。
+
+### 7.2 Layer 1：基础行为模板（继承 Phase 1）
+
+保持当前实现不变，作为普通怪物的默认行为：
+
+| 行为类型 | 触发条件 | 行为逻辑 |
+| --- | --- | --- |
+| `CHASE` | 目标可见 | A* 寻路到目标相邻格，然后攻击 |
+| `KITE` | 目标可见 | 维持优选距离，过近后退，过远追击，距离合适时攻击 |
+| `PATROL` | 默认/无目标 | 按路点巡逻，发现目标后切换到 CHASE |
+
+### 7.3 Layer 2：脚本化行为配置（Phase 2~3 引入）
+
+#### 7.3.1 设计原则
+
+脚本化行为不是完整的脚本语言（不引入 Lua），而是 **YAML 驱动的优先级行为列表**。每个行为条目有条件、动作和优先级，AI 每回合从上到下检查条件，执行第一个满足条件的行为。
+
+#### 7.3.2 行为脚本 Schema
+
+```yaml
+# 示例：兽人萨满（远程施法+自保）
+monster:
+  id: "orc_shaman"
+  ai:
+    type: SCRIPTED
+    sightRadius: 8
+    defaultBehavior: KITE
+    preferredRange: [3, 5]
+
+    behaviors:
+      # 最高优先级：低血量自保
+      - id: "heal_self"
+        priority: 100
+        condition:
+          type: SELF_HP_BELOW
+          threshold: 0.30
+        action:
+          type: USE_TALENT
+          talentId: "heal"
+        cooldownOverride: 8
+
+      # 被近身时后退
+      - id: "retreat"
+        priority: 90
+        condition:
+          type: TARGET_DISTANCE_LESS_THAN
+          distance: 2
+        action:
+          type: MOVE_AWAY
+          distance: 3
+
+      # 有火球可用且目标在范围内
+      - id: "cast_fireball"
+        priority: 80
+        condition:
+          type: AND
+          conditions:
+            - type: TALENT_READY
+              talentId: "fireball"
+            - type: TARGET_DISTANCE_BETWEEN
+              min: 2
+              max: 6
+        action:
+          type: USE_TALENT
+          talentId: "fireball"
+
+      # 目标可见但不在法术范围
+      - id: "approach"
+        priority: 50
+        condition:
+          type: TARGET_VISIBLE
+        action:
+          type: KITE
+          preferredRange: [3, 5]
+
+      # 默认：巡逻
+      - id: "idle_patrol"
+        priority: 0
+        condition:
+          type: ALWAYS
+        action:
+          type: PATROL
+```
+
+#### 7.3.3 条件类型定义
+
+```kotlin
+enum class AIConditionType {
+    ALWAYS,                       // 永远为真
+    SELF_HP_BELOW,                // 自身 HP 百分比低于阈值
+    SELF_HP_ABOVE,                // 自身 HP 百分比高于阈值
+    SELF_RESOURCE_BELOW,          // 自身资源百分比低于阈值
+    SELF_RESOURCE_ABOVE,          // 自身资源百分比高于阈值
+    SELF_HAS_STATUS,              // 自身有指定状态
+    SELF_NOT_HAS_STATUS,          // 自身没有指定状态
+    TARGET_VISIBLE,               // 目标可见
+    TARGET_DISTANCE_LESS_THAN,    // 目标距离小于
+    TARGET_DISTANCE_GREATER_THAN, // 目标距离大于
+    TARGET_DISTANCE_BETWEEN,      // 目标距离在区间内
+    TARGET_HP_BELOW,              // 目标 HP 百分比低于
+    TARGET_HAS_STATUS,            // 目标有指定状态
+    TALENT_READY,                 // 指定天赋可用（未冷却+资源足够）
+    ALLIES_IN_RADIUS,             // 指定范围内友军数量
+    ENEMIES_IN_RADIUS,            // 指定范围内敌军数量
+    AND,                          // 多条件与
+    OR,                           // 多条件或
+    NOT,                          // 条件取反
+    TURN_COUNT_MODULO,            // 回合数取模（用于周期性行为）
+}
+```
+
+#### 7.3.4 动作类型定义
+
+```kotlin
+enum class AIActionType {
+    MOVE_TOWARD,         // A* 寻路向目标移动
+    MOVE_AWAY,           // 远离目标移动指定距离
+    MOVE_TO_FLANKING,    // 移动到目标侧翼
+    ATTACK_MELEE,        // 近战攻击
+    ATTACK_RANGED,       // 远程攻击
+    USE_TALENT,          // 使用指定天赋
+    CHASE,               // Layer 1 追击行为
+    KITE,                // Layer 1 风筝行为
+    PATROL,              // Layer 1 巡逻行为
+    WAIT,                // 原地等待
+    FLEE,                // 逃跑到最远可达点
+    SUMMON,              // 召唤援军
+    TELEGRAPH,           // 放出技能预警（不立即释放）
+}
+```
+
+#### 7.3.5 脚本化 AI 的运行时骨架
+
+Layer 2 脚本化 AI 只在实体真正轮到行动时评估，不在每个全局 turn 对所有怪物做全量扫描。
+
+```kotlin
+interface AIResolver {
+    fun decide(entityId: EntityId, world: WorldView): AIAction
+}
+
+class ScriptedAIResolver(
+    private val entries: List<BehaviorEntry>,
+    private val fallback: AIAction,
+) : AIResolver {
+    override fun decide(entityId: EntityId, world: WorldView): AIAction {
+        for (entry in entries.sortedWith(compareByDescending<BehaviorEntry> { it.priority }.thenBy { it.id })) {
+            if (ConditionEvaluator.evaluate(entry.condition, entityId, world)) {
+                return entry.action
+            }
+        }
+        return fallback
+    }
+}
+```
+
+运行时约束：
+
+1. 条件表达式允许 `AND/OR/NOT` 递归嵌套，但深度上限固定为 `3`。
+2. 精英/Boss 单次 `decide()` 的目标预算是 `< 0.1ms`；超预算的脚本必须回退为预计算标签或更粗粒度条件。
+3. `TARGET_VISIBLE`、`TARGET_DISTANCE_*`、`HP_*` 等高频条件必须基于当前 `WorldView` 快照读取，不能在脚本层重复跑昂贵搜索。
+4. 脚本默认在加载关卡或启动游戏时解析；Phase 3 不承诺热加载，修改 YAML 后允许重启或重新载入会话。
+5. `defaultBehavior` 必须始终存在，防止所有条件都 miss 时出现空决策。
+
+### 7.4 Boss 阶段状态机
+
+Boss 战是 Roguelike 的核心体验之一。每个 Boss 有多个阶段（Phase），各阶段有不同的行为脚本和技能组。
+
+#### 7.4.1 Boss 定义 Schema
+
+```yaml
+boss:
+  id: "dungeon_lord"
+  nameKey: "boss.dungeon_lord"
+  templateId: "dungeon_lord_template"
+
+  phases:
+    - id: "phase_1"
+      nameKey: "boss.dungeon_lord.phase1"
+      hpThreshold: 1.0        # HP > 70% 时处于此阶段
+      hpEnd: 0.70
+      behaviorScript: "dungeon_lord_phase1"
+      onEnter:
+        - type: LOG_MESSAGE
+          logKey: "boss.dungeon_lord.phase1.enter"
+        - type: PLAY_AUDIO
+          cueId: "sfx_boss_roar"
+
+    - id: "phase_2"
+      nameKey: "boss.dungeon_lord.phase2"
+      hpThreshold: 0.70       # 70% > HP > 30%
+      hpEnd: 0.30
+      behaviorScript: "dungeon_lord_phase2"
+      onEnter:
+        - type: LOG_MESSAGE
+          logKey: "boss.dungeon_lord.phase2.enter"
+        - type: APPLY_BUFF
+          statusId: "ENRAGE"
+          duration: -1          # 永久
+        - type: PLAY_AUDIO
+          cueId: "sfx_boss_enrage"
+        - type: TELEGRAPH
+          talentId: "ground_slam"
+          delay: 1
+
+    - id: "phase_3"
+      nameKey: "boss.dungeon_lord.phase3"
+      hpThreshold: 0.30       # HP < 30%
+      hpEnd: 0.0
+      behaviorScript: "dungeon_lord_phase3"
+      onEnter:
+        - type: LOG_MESSAGE
+          logKey: "boss.dungeon_lord.phase3.enter"
+        - type: SUMMON
+          monsterId: "skeleton_guard"
+          count: 2
+          positions: FLANKING
+```
+
+#### 7.4.2 Boss 行为脚本示例
+
+```yaml
+# dungeon_lord_phase2.yaml - 狂暴阶段
+ai:
+  type: SCRIPTED
+  sightRadius: 12
+  defaultBehavior: CHASE
+
+  behaviors:
+    # 周期性地面冲击（每 4 回合）
+    - id: "ground_slam"
+      priority: 100
+      condition:
+        type: TURN_COUNT_MODULO
+        divisor: 4
+        remainder: 0
+      action:
+        type: TELEGRAPH
+        talentId: "ground_slam"
+        telegraphTurns: 1
+        shape: CIRCLE
+        radius: 3
+        dangerLevel: HIGH
+
+    # 目标低血量时斩杀
+    - id: "execute_strike"
+      priority: 95
+      condition:
+        type: AND
+        conditions:
+          - type: TARGET_HP_BELOW
+            threshold: 0.25
+          - type: TALENT_READY
+            talentId: "execute_strike"
+      action:
+        type: USE_TALENT
+        talentId: "execute_strike"
+
+    # 近战范围内普通攻击
+    - id: "melee"
+      priority: 50
+      condition:
+        type: TARGET_DISTANCE_LESS_THAN
+        distance: 2
+      action:
+        type: ATTACK_MELEE
+
+    # 追击
+    - id: "chase"
+      priority: 10
+      condition:
+        type: TARGET_VISIBLE
+      action:
+        type: CHASE
+```
+
+### 7.5 怪物感知系统（Phase 3~5 渐进引入）
+
+#### 7.5.1 感知状态机
+
+```
+UNAWARE ──目标进入感知范围──> SUSPICIOUS ──确认目标──> ALERT ──失去目标──> SEARCHING ──超时──> UNAWARE
+                                                         │
+                                                         └──目标在视野内──> ALERT（保持）
+```
+
+| 状态 | 行为 | 引入阶段 |
+| --- | --- | --- |
+| `UNAWARE` | 执行默认行为（巡逻/待机），不关注玩家 | P1 |
+| `SUSPICIOUS` | 向最后已知位置移动，视野搜索范围 +50% | P3 |
+| `ALERT` | 全力追击/攻击，使用全部技能 | P1 |
+| `SEARCHING` | 向仇恨焦点移动，到达后搜索周围 3 回合 | P3 |
+
+#### 7.5.2 仇恨焦点系统
+
+```kotlin
+/**
+ * 仇恨焦点：记录 AI 对玩家位置的最后已知信息。
+ * AI 不直接获取玩家当前坐标，而是基于推断行动。
+ */
+data class HateFocus(
+    val position: Point,
+    val confidence: Float,     // 0.0~1.0，随时间衰减
+    val lastUpdateTurn: Int,
+    val source: FocusSource,
+)
+
+enum class FocusSource {
+    DIRECT_SIGHT,       // 直接看到
+    HEARD_COMBAT,       // 听到战斗声
+    TOOK_DAMAGE,        // 受到伤害
+    ALLY_REPORTED,      // 友军通报
+    LAST_KNOWN,         // 最后已知位置
+}
+```
+
+**Phase 5 完整实现**：精英/Boss 使用 Utility AI 评估仇恨焦点的可信度，决定是继续追踪还是放弃搜索。
+
+### 7.6 各阶段怪物模板预算
+
+| 阶段 | 普通怪 | 精英怪 | Boss | AI 层级 |
+| --- | --- | --- | --- | --- |
+| Phase 2 | 18 种 | 4 种 | 2 个 | Layer 1（普通）+ Layer 2 简单脚本（精英/Boss） |
+| Phase 3 | 40 种 | 12 种 | 4 个 | Layer 2 完整脚本 + Boss 阶段状态机 |
+| Phase 4 | 60 种 | 18 种 + 突变 | 6 个 + 变体 | Layer 2 + 精英突变行为变体 |
+| Phase 5 | 80 种 | 24 种 | 8 个 | Layer 3（Utility AI + 行为树） |
+
+---
+
+## 8. 状态效果与铭文系统详细设计
+
+### 8.1 状态效果完整分类
+
+第 4 节已定义了 `StatusEffectType` 枚举。本节补充完整的生命周期、交互规则和优先级体系。
+
+#### 8.1.1 效果生命周期
+
+```kotlin
+/**
+ * 状态效果的完整生命周期定义。
+ */
+data class ActiveEffectV2(
+    val id: String,               // 唯一实例 ID
+    val effectType: StatusEffectType,
+    val sourceId: EntityId,       // 施加来源
+    val sourceAbilityId: String,  // 施加的天赋 ID
+    var remainingTurns: Int,      // 剩余回合（-1=永久，直到手动移除）
+    val magnitude: Double,        // 效果强度（伤害/减速百分比/护盾量等）
+    val statModifiers: StatModifier?, // 对属性的修正
+    val tickDamage: Int?,         // DoT 每回合伤害
+    val tickDamageType: DamageType?, // DoT 伤害通道
+    val stackCount: Int = 1,     // 叠加层数
+    val maxStacks: Int = 1,      // 最大叠加层数
+    val saveDimension: SaveDimension?, // 施加时使用的对抗维度
+
+    // 生命周期回调
+    val onApplyCallbackId: String? = null,
+    val onTickCallbackId: String? = null,
+    val onExpireCallbackId: String? = null,
+    val onRemoveCallbackId: String? = null,
+)
+```
+
+Phase 2 首批非伤害 seed 中，`GUARD` 与 `MARKED` 的语义固定为：
+
+| 状态 | 类别 | 最小效果 | 默认持续 | 引入阶段 |
+| --- | --- | --- | --- | --- |
+| `GUARD` | BUFF | 提升护甲/格挡效率，或为下次近战命中提供减伤窗口 | 1~3 回合或持续姿态 | P2 |
+| `MARKED` | DEBUFF | 使目标更容易被聚焦，承受额外定向伤害或命中修正 | 2~4 回合 | P2 |
+
+#### 8.1.2 效果叠加规则
+
+| 叠加类型 | 规则 | 适用效果 |
+| --- | --- | --- |
+| **不可叠加，刷新持续时间** | 新的同类效果替换旧的，取较长持续时间 | STUN, SLOW, FREEZE, SILENCE |
+| **可叠加，独立计时** | 每层独立倒计时，效果按层数线性增强 | BLEED, BURN, POISON |
+| **可叠加，上限封顶** | 最多 N 层，超过后刷新全部层的持续时间 | ARMOR_BREAK（最多 3 层） |
+| **不可叠加，取较强** | 同类效果取较高强度的那个 | SHIELD, REGEN, GUARD |
+| **不可叠加，刷新持续时间** | 同一目标只保留一个标记窗口 | MARKED |
+| **唯一效果** | 同一来源只能存在一个，不同来源可共存 | WAR_CRY_BUFF（每个施法者独立） |
+
+#### 8.1.3 效果互斥与优先级
+
+某些效果之间存在互斥关系：
+
+| 效果 A | 效果 B | 交互规则 |
+| --- | --- | --- |
+| `FREEZE` | `BURN` | 新的覆盖旧的并触发元素交互（见 4.4 节） |
+| `HASTE` | `SLOW` | 互相抵消，取 `|较大效果| - |较小效果|` |
+| `STUN` | `STUN` | 不叠加，取较长持续时间 |
+| `STEALTH` | 任何 AoE 伤害 | 立即解除隐身 |
+| `INVULNERABLE` | 任何伤害 | 伤害为 0，但状态效果仍可施加 |
+
+#### 8.1.4 净化与驱散
+
+```kotlin
+/**
+ * 净化规则：移除负面状态。
+ */
+data class CleanseAction(
+    val maxEffectsRemoved: Int = 1,       // 一次净化移除的效果数
+    val priorityOrder: CleanseOrder = CleanseOrder.MOST_RECENT,
+    val canCleanseTypes: Set<StatusEffectType>? = null,  // null=移除任意
+    val excludeTypes: Set<StatusEffectType> = emptySet(), // 无法被净化的类型
+)
+
+enum class CleanseOrder {
+    MOST_RECENT,     // 最近施加的优先移除
+    LONGEST_REMAINING, // 剩余时间最长的优先
+    HIGHEST_MAGNITUDE, // 强度最高的优先
+}
+```
+
+`PURIFY/CLEANSE` 是瞬时操作，不进入 `ActiveEffectV2`、不参与叠层，也不写入正式存档。
+
+**不可被净化的效果**：`KNOCKBACK`（瞬时效果）、`INVULNERABLE`、`STEALTH`。
+
+### 8.2 铭文系统设计（Phase 3 引入）
+
+铭文（Inscription）是 ToME 风格的核心构筑维度之一。玩家可以在角色上激活有限数量的铭文，提供额外的主动能力。
+
+#### 8.2.1 铭文定义
+
+```kotlin
+/**
+ * 铭文定义。铭文独立于天赋系统，提供额外的主动技能栏位。
+ */
+data class InscriptionDef(
+    val id: String,
+    val nameKey: String,
+    val descKey: String,
+    val iconKey: String,
+    val category: InscriptionCategory,
+    val cooldown: Int,
+    val effect: InscriptionEffect,
+    val tier: Int,               // 1~3，高阶铭文效果更强但更稀有
+)
+
+enum class InscriptionCategory {
+    /** 治疗铭文：恢复 HP */
+    HEALING,
+    /** 位移铭文：传送/冲刺 */
+    MOVEMENT,
+    /** 防护铭文：临时护盾/减伤 */
+    PROTECTION,
+    /** 净化铭文：移除负面状态 */
+    CLEANSING,
+    /** 攻击铭文：额外伤害/增益 */
+    OFFENSE,
+}
+
+sealed interface InscriptionEffect {
+    data class Heal(val amount: Int, val percentMax: Float = 0f) : InscriptionEffect
+    data class Teleport(val range: Int) : InscriptionEffect
+    data class Shield(val amount: Int, val duration: Int) : InscriptionEffect
+    data class Cleanse(val count: Int, val alsoHeal: Int = 0) : InscriptionEffect
+    data class DamageBoost(val multiplier: Float, val duration: Int, val damageType: DamageType?) : InscriptionEffect
+}
+```
+
+#### 8.2.2 铭文栏位规则
+
+| 规则 | 值 | 说明 |
+| --- | --- | --- |
+| 最大铭文数 | 4 | 角色最多同时装备 4 个铭文 |
+| 同类限制 | 每类最多 2 个 | 不允许装 3 个治疗铭文 |
+| 铭文来源 | 掉落 / 任务 / Boss 奖励 | `Phase 3` 以前不依赖商店/制作；若后续引入经济系统，再单独扩展来源 |
+| 铭文消耗 | 有冷却无资源消耗 | 铭文不消耗 Stamina/Mana 等 |
+| 铭文热键 | 5~8 键 | 与天赋热键 1~4 分开 |
+
+#### 8.2.3 基础铭文清单（Phase 3 交付）
+
+| 铭文 ID | 类别 | 阶 | 冷却 | 效果 |
+| --- | --- | --- | --- | --- |
+| `healing_light` | HEALING | 1 | 15 | 恢复最大 HP 的 20% |
+| `healing_surge` | HEALING | 2 | 12 | 恢复最大 HP 的 35% |
+| `healing_miracle` | HEALING | 3 | 20 | 恢复最大 HP 的 50% + 净化 1 个负面 |
+| `phase_door` | MOVEMENT | 1 | 20 | 随机传送到 10 格范围内 |
+| `controlled_phase` | MOVEMENT | 2 | 15 | 传送到视野内指定位置（8 格） |
+| `iron_shield` | PROTECTION | 1 | 18 | 获得等于 CON×4 的护盾，持续 5 回合 |
+| `diamond_shield` | PROTECTION | 3 | 25 | 获得等于 CON×8 的护盾 + 3 回合免疫控制 |
+| `purge` | CLEANSING | 1 | 12 | 移除 1 个负面状态 |
+| `greater_purge` | CLEANSING | 2 | 15 | 移除 2 个负面状态 + 3 回合免疫同类状态 |
+
+---
+
+## 9. 各阶段细节补充
+
+### 9.1 Phase 2 细节补充
+
+#### 9.1.1 P2-A（合同与迁移基线）补充
+
+**序列化合同决策**：`main` 基线已经使用 `kotlinx.serialization`，因此 `P2-W1` 不再讨论引擎迁移，而是继续冻结 `Save Schema V2`、版本纪律与资产边界。执行要点：
+
+1. 所有进入正式存档路径的数据类必须带 `@Serializable`
+2. 多态模型统一使用 `sealed class` + `@SerialName`
+3. `classDiscriminator` 固定为 `"type"`
+4. 不再兼容旧 Phase 1 临时存档；版本不匹配直接 fail-fast
+5. `saveContractVersion` 与 `asset/style/manifest` 版本不得混用
+
+**1000 能量制迁移**：
+
+| 参数 | Phase 1 值 | Phase 2 值 | 迁移方式 |
+| --- | --- | --- | --- |
+| 行动阈值 | 100 | 1000 | 常量替换 |
+| 标准速度 | 100 | 1000 | `speed` 值 ×10 |
+| 快速行动消耗 | 不支持 | 750 | 新增 `castTime` 字段 |
+| 慢速行动消耗 | 不支持 | 1250 | 新增 |
+| 排序键 | `entityId asc` | `energy desc → entityId asc` | 修改 `TurnScheduler` |
+
+**DamageType 在 Phase 2 的最小引入**：
+
+- 定义完整的 6 种 `DamageType` 枚举
+- Phase 2 中实际使用：`PHYSICAL`（战卫/游荡者所有天赋）、`FIRE`/`COLD`/`LIGHTNING`（奥术师天赋各用 1 种）、`HOLY`（圣堂武士天赋）、`SHADOW`（游荡者毒刃天赋）
+- 抗性/穿透系统在 Phase 2 使用简化版：`effectiveResistance = targetResistance - penetration`，不做收益递减
+- Phase 3 升级为完整的非线性模型
+
+**会话编排边界**：
+
+`Phase 2` 引入事件总线、资源池和新状态后，不允许继续把规则堆进单一会话巨类。推荐最小拆分为：
+
+1. `TurnSystem`：行动队列、能量推进、回合边界事件
+2. `CombatSystem`：命中、伤害、状态施加、CombatTrace
+3. `TalentSystem`：主动/持续技能、冷却、资源消耗
+4. `InventorySystem`：物品、装备、掉落、使用
+5. `ProgressionSystem`：经验、升级、奖励
+6. `GameSession`：只做编排、查询入口和 snapshot 提供者
+
+#### 9.1.1.1 Save Schema V2 最小模型
+
+```kotlin
+@Serializable
+data class SaveDataV2(
+    val saveVersion: Int,
+    val saveContractVersion: Int,
+    val seed: Long,
+    val turn: Int,
+    val zoneId: String,
+    val floorIndex: Int,
+    val difficultyId: String = "normal",
+    val localeId: String? = null,
+    val nextEntityId: Long,
+    val player: SerializedEntity,
+    val monsters: List<SerializedEntity>,
+    val items: List<SerializedItem>,
+    val mapState: SerializedMapState,
+    val questState: QuestSnapshot,
+    val aiState: List<SerializedAiState>,
+    val logHistory: List<LogTokenEvent>,
+)
+
+@Serializable
+data class SerializedMapState(
+    val width: Int,
+    val height: Int,
+    val exploredCells: Set<Point>,
+    val openedDoors: Set<Point>,
+    val terrainOverrides: Map<Point, TerrainOverride>,
+    val groundItems: Map<Point, List<String>>,
+)
+```
+
+保存范围冻结为：
+
+1. 存规则态，不存渲染态；禁止把 `glyph/color/displayName/messageString` 直接写入正式存档。
+2. `EntityId` 使用本局局部稳定 ID 持久化；恢复后继续从 `nextEntityId` 递增。
+3. AI 只保存最小必要状态，如 `perceptionState`、`hateFocus`、脚本阶段、冷却和 patrol index；不保存 path cache。
+4. 地图必须保存已探索格、门开关、地形覆盖、地面掉落、Boss 房状态等会影响规则的内容。
+5. 任务、战斗日志、资源池、持续状态都以结构化 schema 保存；坏档或缺字段按 fail-fast 处理。
+
+#### 9.1.1.2 RenderSnapshot 更新协议
+
+`RenderSnapshot` 只承担逻辑可视化快照，不承担动画编排。协议固定为：
+
+1. `core/game` 在每次**已提交的世界状态变化**后发布 `WorldStateChangedEvent`。
+2. client 收到该事件后拉取最新 `RenderSnapshot`；不订阅内部半成品中间态。
+3. 最低刷新时机包括：`session load`、玩家行动提交、AI 整轮提交、切层/切区、存档恢复完成。
+4. `RenderSnapshot` 只包含 tile、actor、overlay、HUD、telegraph 等逻辑表现字段；浮字、震屏、Tween、过渡动画由 client 根据事件自行驱动。
+5. 伤害数字、miss、暴击提示、阶段切换 warning 通过 `CombatEvent/StatusEvent/LogEvent` 传递，不作为 snapshot 历史缓存的一部分。
+
+#### 9.1.1.3 Phase 2 经济、难度与输入最小合同
+
+为避免短局阶段继续扩 scope，Phase 2 直接冻结：
+
+1. 不做商店、货币和制作系统。
+2. 装备与消耗品只来自初始套装、掉落、任务奖励和 Boss 奖励。
+3. 难度仅交付 `Normal` 一个正式档位，但数据结构上必须预留 `DifficultyDef`。
+4. 难度只能在新开局选择，进行中的 session 不允许切换。
+5. 输入范围固定为键盘 + 鼠标，不做手柄和触屏。
+
+```kotlin
+data class DifficultyDef(
+    val id: String,
+    val nameKey: String,
+    val monsterHpMultiplier: Float = 1.0f,
+    val monsterDamageMultiplier: Float = 1.0f,
+    val xpMultiplier: Float = 1.0f,
+    val lootRarityBonus: Float = 0.0f,
+)
+```
+
+推荐最小输入映射：
+
+| 输入 | 行为 |
+| --- | --- |
+| `WASD / 方向键` | 移动 |
+| `1 ~ 4` | 职业主动技能 |
+| `5 ~ 8` | 铭文/额外主动栏 |
+| `I` | 背包 |
+| `C` | 角色面板 |
+| `Tab` | 检视 / 目标切换 |
+| 鼠标左键 | 移动 / 攻击 / 交互 |
+| 鼠标右键 | 检视 / tooltip |
+
+#### 9.1.2 P2-B（最小 Tile 可玩切片）补充
+
+**Zone 设计规格**：
+
+| Zone ID | 中文名 | 英文名 | 层数 | 地图尺寸 | 推荐等级 | 环境主题 | 特殊机制 |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `shattered_outpost` | 破碎前哨 | Shattered Outpost | 2 | 60×40 | 1~4 | 废墟/石材/杂草 | 教程区域，简单陷阱 |
+| `greenwood_fringe` | 绿林边缘 | Greenwood Fringe | 2 | 70×45 | 3~6 | 森林/小溪/苔藓 | 视野遮挡（树木），巡逻怪 |
+| `deep_iron_pit` | 深铁矿坑 | Deep Iron Pit | 2 | 80×50 | 5~8 | 矿洞/铁轨/熔炉 | 熔岩地形（持续火焰伤害），矿车机关 |
+| `grey_gate_depths` | 灰门深窟 | Grey Gate Depths | 2 | 80×50 | 7~10 | 古城地下/石柱/暗河 | Boss 区域，最终 Boss 战 |
+
+**每个 Zone 的怪物池**：
+
+| Zone | 普通怪（4~5 种） | 精英怪（1 种） | Boss |
+| --- | --- | --- | --- |
+| 破碎前哨 | 鼠, 哥布林, 骷髅, 强盗 | 强盗头目 | 无 |
+| 绿林边缘 | 狼, 蜘蛛, 林地精, 毒蛇, 树人幼体 | 蛛后 | 无 |
+| 深铁矿坑 | 矿工亡灵, 火蜥蜴, 铁傀儡, 蝠群 | 锻炉守卫 | 熔岩巨人（中间 Boss） |
+| 灰门深窟 | 暗影行者, 骨弓手, 深渊爬行者, 堕落骑士, 召灵师 | 暗影领主 | 地牢主宰（最终 Boss） |
+
+#### 9.1.3 P2-C（短局扩展）补充
+
+**SoloClearLab V1 设计**：
+
+每个职业必须在以下三种标准化场景中验证通过：
+
+| 场景 | 配置 | 通过标准 |
+| --- | --- | --- |
+| 杂兵包 | 6 只普通怪在 10×10 封闭房间 | 清光所有怪物，HP 剩余 >30% |
+| 精英战 | 1 只精英 + 2 只普通怪在 15×15 房间 | 击杀精英，HP 剩余 >0 |
+| Boss 战 | 地牢主宰在 20×20 Boss 房 | 击杀 Boss |
+
+测试参数：固定 seed（3 个黄金 seed）、标定等级（杂兵=5，精英=7，Boss=10）、标定装备预算（阶段对应的蓝色品质装备全套）。
+
+### 9.2 Phase 3 细节补充
+
+#### 9.2.1 P3-A（战斗深度核心）补充
+
+**战斗公式升级清单**：
+
+1. 命中判定从线性模型切换到 Sigmoid 模型（3.2.1 节）
+2. 引入 Power/Save 对抗体系（3.4 节）
+3. 引入收益递减模型（3.5 节）
+4. 引入 CombatTrace 记录系统（3.3 节）
+5. 元素抗性/穿透从简化版升级为完整百分比模型
+6. 引入暴击抗性和暴击伤害属性
+
+**Golden Seed 基线变更声明**：由于战斗公式从线性切换为非线性，Phase 2 的所有 Golden Seed 基线在 Phase 3 开始时需要全量重新录制。这是预期内的破坏性变更。
+
+#### 9.2.2 P3-B（构筑与角色扩展）补充
+
+**进阶职业解锁条件**：
+
+| 进阶职业 | 解锁条件 | 说明 |
+| --- | --- | --- |
+| 狂战士 | 战卫通关任意难度 | 基于战卫的进阶 |
+| 咒剑士 | 奥术师通关任意难度 | 基于奥术师的进阶 |
+| 影刃客 | 游荡者通关任意难度 | 基于游荡者的进阶 |
+| 守林者 | 圣堂武士通关任意难度 | 基于圣堂武士的进阶 |
+
+**种族天赋点分配**：种族天赋点独立于职业天赋点。每 4 级获得 1 点种族天赋点，用于投资种族天赋树。
+
+#### 9.2.3 P3-C（长局结构）补充
+
+**世界分支结构**：
+
+```
+破碎前哨 (Lv1-4)
+    ├── 绿林边缘 (Lv3-6)
+    │       ├── 精灵遗迹 [可选] (Lv5-7)
+    │       └── 深铁矿坑 (Lv5-8)
+    │               ├── 熔岩核心 [可选] (Lv7-9)
+    │               └── 灰门深窟 (Lv7-10)
+    │                       └── 灰门王座 [Boss] (Lv10)
+    └── 盗贼营地 [可选] (Lv3-5)
+
+Phase 3 扩展：
+    灰门深窟 ──> 地下河 (Lv10-12)
+                     ├── 水晶洞穴 [可选] (Lv11-13)
+                     └── 深渊神殿 (Lv12-15)
+                             └── 深渊之心 [最终 Boss] (Lv15)
+```
+
+**Affix V1 设计**（Phase 3 引入前缀/后缀词缀的基础版）：
+
+| 词缀类型 | Phase 3 数量 | 示例 |
+| --- | --- | --- |
+| 武器前缀 | 12 种 | 锋利的(+攻击)、燃烧的(+火伤)、冰霜的(+冰伤)、雷击的(+雷伤) |
+| 武器后缀 | 10 种 | 力量之(+STR)、速度之(+攻速)、吸血之(命中回血)、穿甲之(+护甲穿透) |
+| 防具前缀 | 10 种 | 坚固的(+护甲)、抗火的(+火抗)、镇定的(+Mental Save) |
+| 防具后缀 | 8 种 | 生命之(+HP)、再生之(+HP回复)、抗性之(+全元素抗) |
+
+### 9.3 Phase 4 细节补充
+
+#### 9.3.1 ProcGen 深化目标
+
+**混合地图生成器需求**：
+
+| 特性 | BSP（Phase 1） | 混合生成器（Phase 4） |
+| --- | --- | --- |
+| 房间形状 | 矩形 | 矩形 + L 形 + 圆形 + 不规则 |
+| 走廊 | L 型连接 | 弯曲走廊 + 隐藏通道 |
+| 拓扑 | 树形（每两点仅 1 条路径） | 含环路（多条路径可选） |
+| 特殊房间 | 无 | Vault（高风险高回报）、陷阱房、宝藏房 |
+| 锁钥匙 | 无 | 钥匙/开关/Boss 门的拓扑验证 |
+| biome 变体 | 单一 | 同层内可有 2 种 biome 混合 |
+
+**可解性验证算法**：在抽象的 DAG 层面验证以下约束：
+
+1. 从入口到出口存在至少一条可达路径
+2. 所有钥匙/开关在被需要之前都可获取
+3. 所有可选区域都有至少一条通往主路径的路径
+4. Boss 门后不存在必须物品/钥匙
+
+#### 9.3.2 掉落生态 V2
+
+**掉落生成参数总览**：
+
+```kotlin
+data class LootGenerationContext(
+    val sourceLevel: Int,         // 掉落来源等级（怪物等级或宝箱等级）
+    val sourceTier: SourceTier,   // NORMAL / ELITE / BOSS / CHEST
+    val zoneId: String,           // 当前区域（影响 biome 限定掉落）
+    val playerLevel: Int,         // 玩家等级
+    val magicFindBonus: Float,    // 稀有度加成
+    val seed: Long,               // 确定性 seed
+)
+
+enum class SourceTier(val rarityBonus: Float) {
+    NORMAL(0.0f),
+    ELITE(0.15f),     // 精英怪稀有度 +15%
+    BOSS(0.40f),      // Boss 稀有度 +40%
+    CHEST(0.10f),     // 宝箱稀有度 +10%
+}
+```
+
+### 9.4 Phase 5 细节补充
+
+#### 9.4.1 Utility AI 评分层
+
+Phase 5 的 Utility AI 不是从零开始，而是在 Layer 2 脚本化行为之上增加一个 **评分层**：
+
+```kotlin
+/**
+ * Utility AI 考量项。每个考量项对应一种可能的行动。
+ */
+data class Consideration(
+    val actionId: String,            // 对应的动作 ID
+    val evaluator: UtilityEvaluator, // 评分函数
+    val weight: Float = 1.0f,        // 权重系数
+)
+
+/**
+ * 评分函数接口。输入 AI 上下文，输出 0.0~1.0 的效用分数。
+ */
+fun interface UtilityEvaluator {
+    fun evaluate(context: AIContext): Float
+}
+
+/**
+ * AI 决策上下文。
+ */
+data class AIContext(
+    val self: EntitySnapshot,
+    val target: EntitySnapshot?,
+    val alliesInRadius: List<EntitySnapshot>,
+    val enemiesInRadius: List<EntitySnapshot>,
+    val distanceToTarget: Int,
+    val selfHpPercent: Float,
+    val targetHpPercent: Float?,
+    val availableTalents: List<String>,
+    val currentTurn: Int,
+    val terrainAtSelf: TileType,
+    val terrainAroundSelf: Map<Point, TileType>,
+)
+```
+
+**Utility AI 与 Layer 2 的集成**：
+
+- 普通怪：继续使用 Layer 1/Layer 2
+- 精英怪：使用 Layer 2 脚本，但可选择性地对某些决策使用 Utility 评分
+- Boss：使用 Utility AI 决定宏观策略，行为树执行具体动作序列
+
+#### 9.4.2 性能基线
+
+| 指标 | 目标值 | 测量方式 |
+| --- | --- | --- |
+| 帧率 | 桌面端稳定 60 FPS | GLProfiler + 帧间时间统计 |
+| Draw Calls/帧 | < 50 | GLProfiler |
+| Texture Bindings/帧 | < 10 | GLProfiler |
+| FOV 计算耗时 | < 2ms（80×50 地图） | Benchmark 测试 |
+| A* 寻路耗时 | < 1ms（单次，80×50 地图） | Benchmark 测试 |
+| 内存占用 | < 512MB | JVM 监控 |
+| 长局稳定性 | 8 小时无 OOM/无 GC 停顿 >50ms | Soak 测试 |
+
+#### 9.4.3 死因分析系统
+
+```kotlin
+/**
+ * 死因分析记录，在角色死亡时生成。
+ */
+data class DeathAnalysis(
+    val turn: Int,
+    val killerEntityId: EntityId,
+    val killerName: String,
+    val killingAbilityId: String,
+    val damageType: DamageType,
+    val finalDamage: Int,
+    val playerHpBefore: Int,
+    val combatTrace: CombatTrace,
+    val last5Turns: List<TurnSummary>,
+    val activeEffectsAtDeath: List<ActiveEffectV2>,
+    val suggestions: List<String>,  // 如 "你的火焰抗性仅有 5%，考虑装备抗火装备"
+)
+```
+
+---
+
+## 10. 附录
+
+### 10.1 关键常量汇总表
+
+| 常量 | 值 | 用途 | 所在节 |
+| --- | --- | --- | --- |
+| `ACTION_THRESHOLD` | 1000 | 行动能量阈值 | 9.1.1 |
+| `K_ARMOR` | 100 | 护甲减免半收益常数 | 3.2.2.3 |
+| `RESISTANCE_CAP` | 75 | 元素抗性上限 | 3.2.2.4 |
+| `RESISTANCE_FLOOR` | -25 | 穿透后抗性下限 | 3.2.2.4 |
+| `BASE_CRIT_MULTIPLIER` | 1.5 | 暴击基础倍率 | 3.2.2.2 |
+| `CRIT_CHANCE_CAP` | 0.50 | 暴击率上限 | 3.2.2.2 |
+| `HIT_SIGMOID_K` | 0.04 | 命中 Sigmoid 斜率 | 3.2.1 |
+| `HIT_SIGMOID_M` | -10 | 命中 Sigmoid 中点偏移 | 3.2.1 |
+| `SAVE_SIGMOID_K` | 0.05 | Power/Save Sigmoid 斜率 | 3.4.3 |
+| `MIN_HIT_CHANCE` | 0.05 | 最低命中率 | 3.2.1 |
+| `MAX_HIT_CHANCE` | 0.95 | 最高命中率 | 3.2.1 |
+| `MIN_APPLY_CHANCE` | 0.10 | 状态最低施加率 | 3.4.3 |
+| `MAX_APPLY_CHANCE` | 0.90 | 状态最高施加率 | 3.4.3 |
+| `DR_EVASION_C` | 150 | 闪避收益递减常数 | 3.5.3 |
+| `DR_CRIT_C` | 200 | 暴击评级收益递减常数 | 3.5.3 |
+| `DR_CAST_SPEED_C` | 100 | 施法速度收益递减常数 | 3.5.3 |
+| `DR_HP_REGEN_C` | 80 | 生命回复收益递减常数 | 3.5.3 |
+| `MAX_INSCRIPTION_SLOTS` | 4 | 铭文栏位上限 | 8.2.2 |
+| `ELEMENT_INTERACTION_DEPTH` | 2 | 元素交互链最大深度 | 4.4.2 |
+
+### 10.2 术语表
+
+| 术语 | 中文 | 英文 | 定义 |
+| --- | --- | --- | --- |
+| Solo-Clear Contract | 单通合同 | Solo-Clear Contract | 职业独立通关的六条能力线检验标准 |
+| DamageType | 伤害通道 | Damage Channel | 六大伤害类型之一 |
+| CombatTrace | 战斗追踪 | Combat Trace | 记录完整战斗结算过程的审计数据 |
+| Power/Save | 强度/豁免 | Power vs Save | 状态效果施加的三维对抗体系 |
+| Diminishing Returns | 收益递减 | Diminishing Returns | 高属性区间边际收益下降的数学模型 |
+| Telegraph | 预警 | Telegraph | Boss/精英技能释放前的视觉警告 |
+| Inscription | 铭文 | Inscription | 独立于天赋的额外主动技能栏位 |
+| ResourcePool | 资源池 | Resource Pool | 职业差异化的能力消耗资源 |
+| Layer 1/2/3 AI | AI 分层 | AI Layers | 从基础模板到 Utility AI 的三层递进架构 |
+| Golden Seed | 黄金种子 | Golden Seed | 用于确定性回归测试的固定随机种子 |
+| Keyword Registry | 关键词注册表 | Keyword Registry | 统一术语定义和 tooltip 的注册系统 |
+
+---
+
+> 本文档构成 K-ToME 核心系统的权威设计参考。所有后续阶段的开发应以本文档中的数据结构、公式和规则为锚点。

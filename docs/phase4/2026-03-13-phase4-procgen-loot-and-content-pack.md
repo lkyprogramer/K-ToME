@@ -72,6 +72,16 @@ core/src/test/kotlin/com/ktome/core/mapgen/*
 2. 差异来自拓扑与 content seed，而不是只换贴图。
 3. 生成器必须可注入固定 seed，且关键不变量可断言。
 
+混合生成器最低能力表：
+
+| 维度 | Phase 1 BSP | Phase 4 混合生成器 |
+| --- | --- | --- |
+| 房间形状 | 矩形 | 矩形 + L 形 + 圆形 + 不规则 |
+| 走廊 | L 型连接 | 弯曲走廊 + 隐藏通道 |
+| 拓扑 | 树形单路径 | 含环路的多路径 |
+| 特殊房间 | 无 | vault / 陷阱房 / 宝藏房 |
+| biome | 单一 | 同层允许双 biome 混合 |
+
 ### 4.2 Lock-Key 与可解性验证
 
 建议文件与模块：
@@ -86,6 +96,13 @@ tools/src/main/kotlin/com/ktome/tools/solvability/*
 1. 锁钥匙和任务拓扑必须显式表达成 DAG 或等价图结构。
 2. 隐藏内容允许需要发现，但不允许形成不可解主线死局。
 3. `SolvabilityHarness` 必须能在批量 seed 下跑可达性验证。
+
+最小可解性约束固定为：
+
+1. 从入口到出口至少存在一条可达主路径。
+2. 所有钥匙 / 开关都必须在被需求之前可获取。
+3. 所有可选区域都必须至少有一条能回主线的路径。
+4. Boss 门后不允许藏任何主线必需物品或必需钥匙。
 
 ### 4.3 Loot 生态 V2
 
@@ -102,6 +119,32 @@ tools/src/main/kotlin/com/ktome/tools/balance/*
 1. 掉落质量必须由预算驱动，而不是手写散点数值。
 2. `affix`、`unique`、`artifact` 必须共用一套预算词汇，不允许各写一套。
 3. 允许极端强力物品，但必须有明确 rarity/cost/phase 约束。
+
+`LootBalanceLab` 的输入上下文至少固定为：
+
+1. `sourceLevel`
+2. `sourceTier`
+3. `zoneId`
+4. `playerLevel`
+5. `magicFindBonus`
+6. `seed`
+
+`SourceTier` 第一版稀有度加成固定为：
+
+| tier | rarity bonus |
+| --- | --- |
+| `NORMAL` | `0.00` |
+| `ELITE` | `0.15` |
+| `BOSS` | `0.40` |
+| `CHEST` | `0.10` |
+
+Phase 4 与元素系统的连接也必须写死：
+
+1. `LIGHTNING + WATER`
+2. `FIRE + OIL`
+3. `COLD + WATER / ICE`
+
+这些交互必须进入 batch/harness，而不是只留白盒观察。
 
 ### 4.4 精英突变与隐藏内容
 

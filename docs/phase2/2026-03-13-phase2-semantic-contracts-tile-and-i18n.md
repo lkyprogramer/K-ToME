@@ -1,6 +1,6 @@
 > 执行前必须先完整阅读并接受：
 > `docs/2026-03-13-phase2-to-phase5-final-roadmap.md`
-> `docs/2026-03-13-phase2-to-phase5-detailed-systems-design.md`
+> `docs/2026-03-13-core-systems-design-and-phase-supplements.md`
 
 # Phase 2 - Semantic Contracts, Tile & i18n Short Run
 
@@ -28,9 +28,19 @@
    - `golden screenshot`
    - `SoloClearLab v1`
 
+`SoloClearLab v1` 从 Phase 2 起就是硬门禁，而不是“实验性脚本”：
+
+| 场景 | 配置 | 标定等级 | 装备预算 | 通过标准 |
+| --- | --- | --- | --- | --- |
+| 杂兵包 | `10 x 10` 封闭房间、`6` 普通怪 | `5` | 阶段蓝装全套 | 清场且 `HP > 30%` |
+| 精英战 | `15 x 15` 房间、`1` 精英 + `2` 普通怪 | `7` | 阶段蓝装全套 | 击杀精英且角色存活 |
+| Boss 战 | `20 x 20` Boss 房 | `10` | 阶段蓝装全套 | 击杀 Boss |
+
+固定黄金 seed：`20260313`、`20260314`、`20260315`。
+
 ## 2. 当前问题
 
-1. `Gson + SaveSnapshot + 裸字符串日志` 无法支撑长期 schema 演进。
+1. 当前 `SaveSnapshot + 裸字符串日志` 仍残留 Phase 1 过渡结构，无法支撑长期 schema 演进。
 2. `TalentResolver`、状态、战斗和日志语义仍是 Phase 1 的局部硬编码。
 3. 资源、Tile、音频、i18n 还没有“规则层 key -> 表现层解析”的正式边界。
 4. 现有可玩路径仍依赖 ASCII/glyph 表现，无法进入正式内容生产节奏。
@@ -122,6 +132,11 @@ tools/src/main/kotlin/com/ktome/tools/lint/*
    - schema 字段完整性
    - `visualKey/audioProfile` 可解析性
    - id 与 key 唯一性
+5. 当前阶段的稳定命名空间统一对齐为：
+   - `shattered_outpost`
+   - `greenwood_fringe`
+   - `deep_iron_pit`
+   - `grey_gate_depths`
 
 ### 4.4 RenderSnapshot 与 Tile 路径
 
@@ -160,7 +175,25 @@ client/src/test/kotlin/com/ktome/client/golden/*
 原因：
 
 1. 这四个职业刚好覆盖 `PHYSICAL / FIRE / COLD / HOLY / SHADOW / MENTAL` 的基础语义。
-2. 适合验证 `Stamina / Mana / Positive / Momentum` 的资源差异。
+2. 适合验证 `Stamina / Mana / Positive / Energy` 的资源差异。
+
+四基础职业的资源合同在 Phase 2 直接冻结为：
+
+| profession | 主资源 | 回复策略 |
+| --- | --- | --- |
+| `vanguard` | `STAMINA` | `PerTurn(3)` |
+| `arcanist` | `MANA` | `PerTurn(2)` |
+| `rogue` | `ENERGY` | `Composite([PerTurn(5), OnHit(8)])` |
+| `templar` | `POSITIVE_ENERGY` | `Composite([OnDamageTaken(0.15), OnHit(3), DecayPerTurn(5)])` |
+
+四个 zone 的最低规格也必须提前冻结，避免 `P2-W6/W7` 期间再次漂移：
+
+| zoneId | floorCount | mapSize | 推荐等级 | 特殊机制 |
+| --- | --- | --- | --- | --- |
+| `shattered_outpost` | `2` | `60 x 40` | `1~4` | 教程区、简单陷阱 |
+| `greenwood_fringe` | `2` | `70 x 45` | `3~6` | 视野遮挡、巡逻怪 |
+| `deep_iron_pit` | `2` | `80 x 50` | `5~8` | 熔岩地形、矿车机关 |
+| `grey_gate_depths` | `2` | `80 x 50` | `7~10` | 最终 Boss、封印门 |
 
 ### 4.6 资源生产管线的 Phase 2 最低要求
 
@@ -186,13 +219,36 @@ python3 scripts/manifest-lint.py \
   --manifest assets-src/image/manifests/phase2-visual-manifest.json
 ```
 
+### 4.7 Phase 2 最小玩法合同
+
+为避免 Phase 2 在经济、难度和输入上继续漂移，本阶段直接固定：
+
+1. 不做商店、货币和制作系统。
+2. `starter kit`、掉落、任务奖励和 Boss 奖励是 Phase 2 的全部获取路径。
+3. 只做 `Normal` 一个默认难度，但必须预留 `DifficultyDef` 结构，不允许把倍率散落到怪物或掉落代码里。
+4. 难度只允许在新开局时选择，当前 session 内不可变更。
+5. 输入范围固定为键盘 + 鼠标，不做手柄和触屏。
+
+推荐最小输入方案：
+
+| 输入 | 行为 |
+| --- | --- |
+| `WASD / 方向键` | 移动 |
+| `1~4` | 天赋 |
+| `5~8` | 预留给铭文或额外主动位 |
+| `I` | 背包 |
+| `C` | 角色面板 |
+| `Tab` | 检视 / 目标切换 |
+| 鼠标左键 | 移动 / 攻击 / 交互 |
+| 鼠标右键 | 检视 |
+
 ## 5. 推荐 PR / 工作包拆分
 
 ### P2-W1 Serialization & Version Discipline
 
-1. 切 `kotlinx.serialization`
+1. 在 `kotlinx.serialization` 基线上冻结 `Save Schema V2`
 2. 建 `SaveContractVersion`
-3. 主路径移除 GSON 依赖
+3. 收口 fail-fast 版本纪律与资产边界
 4. 新存档读写单测
 
 ### P2-W2 Core Semantic Contracts
@@ -257,7 +313,7 @@ python3 scripts/manifest-lint.py \
 3. log token 能按 locale 正确重渲染。
 4. `visualKey/audioProfile` 缺失时 lint 失败。
 5. 首页切语言后，开局和读当前阶段存档都能正确显示。
-6. 4 职业至少各完成一次默认短局。
+6. `SoloClearLab v1` 必须按三场景硬门禁通过，而不是只跑“一次默认短局”。
 
 ### 6.3 自动化命令
 
@@ -271,6 +327,10 @@ Phase 2 必须建立或补齐以下入口：
 ./gradlew contractLint
 ./gradlew goldenScreenshot
 ./gradlew soloClearLab
+./gradlew assetLint
+./gradlew styleLint
+./gradlew audioLint
+./gradlew manifestLint
 ./gradlew jacocoTestReport
 ./gradlew :core:jacocoTestCoverageVerification
 ```
@@ -283,7 +343,7 @@ Phase 2 必须建立或补齐以下入口：
 2. 首页切到中文，新开一局，确认菜单、HUD、日志、背包标题都走 key 渲染。
 3. 用默认 seed 跑通 `P2-B` 切片，确认 Tile、交互、Boss、结算成立。
 4. 切到英文，重新进入同阶段存档，确认文本重渲染且不依赖旧字符串。
-5. 用四个职业各跑一次 `SoloClearLab` 默认脚本，确认都能完成短局。
+5. 用四个职业在 `20260313 / 20260314 / 20260315` 三个黄金 seed 上依次覆盖 `杂兵包 / 精英战 / Boss 战`，确认都满足门禁。
 
 ## 7. 出口门禁
 

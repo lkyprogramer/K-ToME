@@ -86,6 +86,26 @@ tools/src/main/kotlin/com/ktome/tools/golden/CombatTraceGolden.kt
    - 状态施加成功/失败
    - 元素交互触发
 
+必须补齐的正式公式合同：
+
+1. 命中从 Phase 2 的线性模型升级到 Sigmoid：
+   - `hitChance = clamp(0.05 + 0.90 * sigmoid(0.04 * (accuracy - evasion + 10)), 0.05, 0.95)`
+2. 暴击固定第一版口径：
+   - 基础暴击率 `5%`
+   - 暴击率上限 `50%`
+   - 基础暴击倍率 `1.5`
+   - `critResistance` 直接抵扣有效暴击率
+3. 物理减免固定为 `armor / (armor + 100)`，元素抗性固定为 `clamp(resistance - penetration, -25, 75)`。
+4. `Power/Save` 固定为：
+   - `applyChance = clamp(0.10 + 0.80 * sigmoid(0.05 * (power - save)), 0.10, 0.90)`
+5. 收益递减只作用于二级属性，不作用于 `STR/DEX/CON/WIL` 本身；首批常量固定为：
+   - `evasion C=150`
+   - `critRating C=200`
+   - `castSpeed C=100`
+   - `hpRegen C=80`
+6. `CombatPipeline` 固定为 `12` 步有序管线，child trace、callback 优先级和 miss/cleanse/elemental interaction 的挂点必须保持可追踪。
+7. Phase 3 切换到上述正式公式后，Phase 2 的 `CombatTrace` / Golden Seed 基线必须全量重录，这是预期内破坏性变更。
+
 ### 4.2 状态、持续与回调生命周期
 
 建议文件与模块：
@@ -101,6 +121,28 @@ game/src/main/resources/data/statuses/*.yaml
 1. `STUN / ROOT / SILENCE / BLEED / BURN / CURSED / GUARD / STEALTH / BANE` 进入正式主线。
 2. sustain、mark、ward、zone effect 都必须走统一生命周期，不允许再写技能私有特判。
 3. 清理、驱散、免疫和持续 tick 时机必须能在 trace 里定位。
+
+状态矩阵还必须明确以下第一版规则：
+
+1. 不叠加、只刷新持续时间：
+   - `STUN`
+   - `SLOW`
+   - `FREEZE`
+   - `SILENCE`
+2. 独立叠层：
+   - `BLEED`
+   - `BURN`
+   - `POISON`
+3. 上限封顶：
+   - `ARMOR_BREAK` 最多 `3` 层
+4. 取较强值：
+   - `SHIELD`
+   - `REGEN`
+5. 互斥/覆盖：
+   - `FREEZE` 与 `BURN` 互斥，并触发元素交互
+   - `HASTE` 与 `SLOW` 互相抵消
+   - `STEALTH` 被任意 AoE 伤害打破
+6. 净化优先级必须可配置，并明确不可被净化的效果集合。
 
 ### 4.3 Talent Tree V2 与动态说明
 
@@ -141,6 +183,17 @@ client/src/main/kotlin/com/ktome/client/ui/talent/*
    - 1 条输出支线
    - 1 条控制或机动支线
 3. 所有职业必须有清晰的 panic answer、位移方案和 boss answer。
+4. 进阶职业解锁条件固定第一版：
+   - `Berserker`：`Vanguard` 通关任意难度
+   - `Spellblade`：`Arcanist` 通关任意难度
+   - `Shadowblade`：`Rogue` 通关任意难度
+   - `Warden`：`Templar` 通关任意难度
+5. 种族天赋点独立于职业天赋点，每 `4` 级获得 `1` 点。
+6. 铭文系统在 Phase 3 进入 build 轴，最小合同固定为：
+   - 最大铭文数 `4`
+   - 同类最多 `2`
+   - 热键 `5~8`
+   - 不消耗主资源，只受冷却控制
 
 ### 4.5 AIProfile DSL 与 BossEncounter
 
@@ -175,6 +228,19 @@ core/src/main/kotlin/com/ktome/core/world/*
 1. 长局必须有主支线、分支 zone、经济循环和至少一层 affix 驱动。
 2. `4~6` 小时 run 必须能稳定结束，而不是无限拖长。
 3. 掉落与构筑要形成正反馈，但不追求最终生态复杂度。
+
+长局主分支的第一版示意必须固定，至少覆盖：
+
+1. `shattered_outpost -> greenwood_fringe -> deep_iron_pit -> grey_gate_depths`
+2. `精灵遗迹 / 熔岩核心 / 盗贼营地` 等可选支线
+3. `地下河 -> 水晶洞穴 -> 深渊神殿 -> 深渊之心` 的 Phase 3 扩展终线
+
+`affix v1` 的最低预算也必须冻结：
+
+1. 武器前缀 `12`
+2. 武器后缀 `10`
+3. 防具前缀 `10`
+4. 防具后缀 `8`
 
 ## 5. 推荐 PR / 工作包拆分
 

@@ -19,6 +19,7 @@
 2. Boss telegraph / phase harness 稳定。
 3. 四基础职业与两进阶职业通过核心实验室。
 4. 长局实验室可稳定跑到终局。
+5. Phase 3 启动时已完成对 Phase 2 `CombatTrace` / Golden Seed 的全量重录。
 
 ## 2. Fixed-Seed Harness Verification
 
@@ -28,9 +29,12 @@
 2. 检查：
    - 命中
    - 暴击
+   - 暴击抗性
    - 抗性/穿透
+   - `Power/Save` 成功 / 失败两侧
    - 状态施加
    - 元素交互
+   - child trace 触发
 
 ### 2.2 Boss Harness
 
@@ -46,6 +50,18 @@
 2. 检查：
    - 4~6 小时 run 可结束
    - 无卡死、无不可达主线
+   - 长局主支线和可选支线都可达
+
+### 2.4 Status Matrix
+
+1. 固定同一组状态组合与 seed。
+2. 检查：
+   - 刷新持续时间
+   - 独立叠层
+   - 上限封顶
+   - `FREEZE / BURN` 覆盖
+   - `HASTE / SLOW` 抵消
+   - 净化 / 驱散优先级
 
 ## 3. Manual White-Box Verification
 
