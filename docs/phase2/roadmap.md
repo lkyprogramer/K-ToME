@@ -20,4 +20,12 @@ Phase 2 的主题不是继续堆内容，而是先把 Phase 1 的最小可玩主
 8. [2026-03-13-phase2-pr-06-minimal-official-slice.md](./2026-03-13-phase2-pr-06-minimal-official-slice.md)
 9. [2026-03-13-phase2-pr-07-short-run-expansion.md](./2026-03-13-phase2-pr-07-short-run-expansion.md)
 10. [../2026-03-13-phase2-to-phase5-final-roadmap.md](../2026-03-13-phase2-to-phase5-final-roadmap.md)
-11. [../2026-03-13-phase2-to-phase5-detailed-systems-design.md](../2026-03-13-phase2-to-phase5-detailed-systems-design.md)
+11. [../2026-03-13-core-systems-design-and-phase-supplements.md](../2026-03-13-core-systems-design-and-phase-supplements.md)
+
+## 3. 执行权威
+
+1. `P2-W1 ~ P2-W7` 是 Phase 2 的唯一执行编号。
+2. [最终路线图](/Users/luo/Documents/github/K-ToME/docs/2026-03-13-phase2-to-phase5-final-roadmap.md) 负责阶段切分、工作包、预算和出口门禁。
+3. [核心系统详细设计与阶段补充文档](/Users/luo/Documents/github/K-ToME/docs/2026-03-13-core-systems-design-and-phase-supplements.md) 负责公式、数据结构和系统内部合同。
+4. 旧 `PR01 ~ PR12` 编号只作历史参考，若与 `W1 ~ W7` 冲突，一律以 `W1 ~ W7` 为准。
+5. 详细覆盖关系见 [docs/INDEX.md](/Users/luo/Documents/github/K-ToME/docs/INDEX.md)。

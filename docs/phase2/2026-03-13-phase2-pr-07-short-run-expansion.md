@@ -1,12 +1,12 @@
 > 执行前必须先完整阅读并接受：
 > `docs/phase2/2026-03-13-phase2-pr-06-minimal-official-slice.md`
-> `docs/2026-03-13-phase2-to-phase5-detailed-systems-design.md`
+> `docs/2026-03-13-core-systems-design-and-phase-supplements.md`
 
 # Phase 2 - PR-07 Short Run Expansion
 
 **阶段**: `Phase 2 / P2-W7`  
 **优先级**: `P1`  
-**前置条件**: `PR-06` 完成  
+**前置条件**: `P2-W6` 完成  
 **对应问题**: 最小正式切片只证明“路径成立”，还不足以证明 Phase 2 出口。必须扩成 4 职业、4 zone 和完整短局实验室，Phase 2 才能真正结束。
 
 ---
@@ -35,7 +35,7 @@
 2. 只做短局，不做长局世界分支。
 3. `SoloClearLab v1` 必须成为正式门禁，不只是脚本草案。
 4. 每个职业至少 8 个正式 talent、每个 zone 至少 1 套完整 tileset family、每个 zone 至少 1 组 ambience/cue。
-5. `Rogue` 在 Phase 2 不启用第二资源轴，避免与详细设计中的 Phase 3 资源扩展点冲突。
+5. `Rogue` 在 Phase 2 直接使用 `ENERGY` 主资源，不再写成 `STAMINA + MOMENTUM reserve` 的过渡方案。
 
 ## 3. 范围与非目标
 
@@ -67,15 +67,15 @@
 
 冻结口径：
 
-1. 重点验证 `Momentum`、`Positive` 等第二批资源语义。
+1. 重点验证 `ENERGY`、`POSITIVE_ENERGY` 等第二批资源语义。
 2. 职业都必须具备最小通关 build，而不是先追求大量支线。
 
 职业最小正式包：
 
 #### Rogue
 
-1. 主资源：`STAMINA`
-2. `MOMENTUM` 只做 schema 预留，不在 `Phase 2` 正式玩法主线启用
+1. 主资源：`ENERGY`
+2. 回复策略：`Composite([PerTurn(5), OnHit(8)])`
 3. 最小 talent 包：
    - `quick_slash`
    - `hemorrhage`
@@ -89,11 +89,16 @@
    - `actor.rogue`
    - `portrait.rogue`
    - `audio.profession.rogue`
+5. 最小 build contract：
+   - 机动清杂
+   - 单体爆发
+   - 最低限度的脱战/逃生 answer
 
 #### Templar
 
-1. 主资源：`POSITIVE`
-2. 最小 talent 包：
+1. 主资源：`POSITIVE_ENERGY`
+2. 回复策略：`Composite([OnDamageTaken(0.15), OnHit(3), DecayPerTurn(5)])`
+3. 最小 talent 包：
    - `smite`
    - `holy_lash`
    - `consecrate`
@@ -102,10 +107,14 @@
    - `aegis_of_faith`
    - `chain_of_oath`
    - `divine_intervention`
-3. 视觉/音频 key：
+4. 视觉/音频 key：
    - `actor.templar`
    - `portrait.templar`
    - `audio.profession.templar`
+5. 最小 build contract：
+   - `HOLY` 主输出
+   - 净化/护盾
+   - 对亡灵/恶魔的 Boss answer
 
 Phase 2 最终 4 职业 talent 目标：
 
@@ -132,10 +141,19 @@ Phase 2 四个 zone 最低规格：
 
 | zone | 推荐等级 | 主要敌群 | 主要通道 | 主要任务物件 |
 | --- | --- | --- | --- | --- |
-| `shattered_outpost` | 1~2 | 鼠群、盗匪、骷髅 | `PHYSICAL / SHADOW` | 武库门、补给箱、警报篝火 |
-| `greenwood_fringe` | 2~3 | 狼、巡林守卫、弓手 | `PHYSICAL / COLD / LIGHTNING` | 狩猎印记、路障、祭树 |
-| `deep_iron_mine` | 3~4 | 兽人矿工、铸炉守卫、元素工匠 | `PHYSICAL / FIRE` | 升降机、熔炉、钥匙架 |
-| `ashgate_depths` | 4~5 | 暗影祭司、亡骸、Boss | `SHADOW / HOLY` | 封印门、祭坛、Boss arena |
+| `shattered_outpost` | 1~4 | 鼠群、盗匪、骷髅 | `PHYSICAL / SHADOW` | 武库门、补给箱、警报篝火 |
+| `greenwood_fringe` | 3~6 | 狼、巡林守卫、弓手 | `PHYSICAL / COLD / LIGHTNING` | 狩猎印记、路障、祭树 |
+| `deep_iron_pit` | 5~8 | 兽人矿工、铸炉守卫、元素工匠 | `PHYSICAL / FIRE` | 升降机、熔炉、钥匙架 |
+| `grey_gate_depths` | 7~10 | 暗影祭司、亡骸、Boss | `SHADOW / HOLY` | 封印门、祭坛、Boss arena |
+
+四个 zone 的最低规格也必须一并冻结：
+
+| zoneId | floorCount | mapSize | 环境主题 | 特殊机制 |
+| --- | --- | --- | --- | --- |
+| `shattered_outpost` | `2` | `60 x 40` | 废墟 / 石材 / 杂草 | 教程区、简单陷阱 |
+| `greenwood_fringe` | `2` | `70 x 45` | 森林 / 小溪 / 苔藓 | 视野遮挡、巡逻怪 |
+| `deep_iron_pit` | `2` | `80 x 50` | 矿洞 / 铁轨 / 熔炉 | 熔岩地形、矿车机关 |
+| `grey_gate_depths` | `2` | `80 x 50` | 古城地下 / 石柱 / 暗河 | 最终 Boss、封印门 |
 
 ### 4.3 Monster 与 Item 配额矩阵
 
@@ -145,10 +163,17 @@ Phase 2 四个 zone 最低规格：
    - 6 个
 2. `greenwood_fringe`
    - 6 个
-3. `deep_iron_mine`
+3. `deep_iron_pit`
    - 6 个
-4. `ashgate_depths`
+4. `grey_gate_depths`
    - 6 个
+
+结构预算进一步固定为：
+
+1. `18` 个普通怪
+2. `4` 个精英
+3. `2` 个 Boss
+4. 所有精英/Boss 至少使用 Layer 2 simple scripted AI
 
 每个 zone 至少包含：
 
@@ -220,6 +245,20 @@ Phase 2 图片生成入口约束：
    - 杂兵包
    - 精英战
    - Boss 战
+
+`SoloClearLab v1` 从本 PR 起升级为硬门禁，固定如下：
+
+| 场景 | 配置 | 标定等级 | 装备预算 | 通过标准 |
+| --- | --- | --- | --- | --- |
+| 杂兵包 | `10 x 10` 封闭房间，`6` 只普通怪 | `5` | 阶段蓝装全套 | 清光敌人且 `HP > 30%` |
+| 精英战 | `15 x 15` 房间，`1` 精英 + `2` 普通怪 | `7` | 阶段蓝装全套 | 击杀精英且角色存活 |
+| Boss 战 | `20 x 20` Boss 房 | `10` | 阶段蓝装全套 | 击杀 Boss |
+
+固定黄金 seed：
+
+1. `20260313`
+2. `20260314`
+3. `20260315`
 
 四职业最低覆盖矩阵：
 

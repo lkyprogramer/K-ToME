@@ -1,0 +1,38 @@
+# K-ToME Docs Index
+
+## 1. 文档优先级
+
+从高到低：
+
+1. [2026-03-13-phase2-to-phase5-final-roadmap.md](/Users/luo/Documents/github/K-ToME/docs/2026-03-13-phase2-to-phase5-final-roadmap.md)
+   - 阶段划分、工作包、预算、出口门禁的执行权威
+2. [2026-03-13-core-systems-design-and-phase-supplements.md](/Users/luo/Documents/github/K-ToME/docs/2026-03-13-core-systems-design-and-phase-supplements.md)
+   - 公式、数据结构、系统内部规则与阶段补充的设计权威
+3. `docs/phase2/*` `docs/phase3/*` `docs/phase4/*` `docs/phase5/*`
+   - 各阶段的执行说明、PR/工作包文档与 checklist
+4. [2026-03-13-phase2-5-review-and-recommendations.md](/Users/luo/Documents/github/K-ToME/docs/2026-03-13-phase2-5-review-and-recommendations.md)
+   - 审阅参考与缺口说明，不直接覆盖路线图
+5. [K-ToME_Phase2_to_Phase5_PR_Development_Guide_v2_SinglePlayer_Tile_i18n.md](/Users/luo/Documents/github/K-ToME/docs/K-ToME_Phase2_to_Phase5_PR_Development_Guide_v2_SinglePlayer_Tile_i18n.md)
+   - 历史参考，旧 `PR01 ~ PR12` 编号只作背景材料
+6. [Roguelike 游戏开发指导文档.md](/Users/luo/Documents/github/K-ToME/docs/Roguelike%20游戏开发指导文档.md)
+   - 技术参考和算法思路来源
+
+## 2. 执行编号
+
+1. Phase 2 统一使用 `P2-W1 ~ P2-W7`
+2. Phase 3 统一使用 `P3-W1 ~ P3-W6`
+3. Phase 4 统一使用 `P4-W1 ~ P4-W5`
+4. Phase 5 统一使用 `P5-W1 ~ P5-W5`
+5. 旧 `PR01 ~ PR12` 不再作为执行编号
+
+## 3. 常见查找路径
+
+1. 想看当前应该做什么：
+   - 先看路线图
+2. 想看某个系统的公式和结构：
+   - 看补充设计文档
+3. 想看某个阶段怎么拆任务：
+   - 先看对应 `phaseN/roadmap.md` 和该阶段主文档
+   - Phase 2 入口： [phase2/roadmap.md](/Users/luo/Documents/github/K-ToME/docs/phase2/roadmap.md)
+4. 想看某个工作包如何验收：
+   - 看对应阶段 checklist

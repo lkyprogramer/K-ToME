@@ -4,7 +4,7 @@
 > 状态：Draft for execution  
 > 适用范围：Phase 2 ~ Phase 5  
 > 文档定位：后续阶段执行权威；若与此前的 Phase 2~5 draft 冲突，以本文为准
-> 详细系统设计补充：见 [2026-03-13-phase2-to-phase5-detailed-systems-design.md](./2026-03-13-phase2-to-phase5-detailed-systems-design.md)
+> 详细系统设计补充：见 [2026-03-13-core-systems-design-and-phase-supplements.md](./2026-03-13-core-systems-design-and-phase-supplements.md)
 
 ## 1. 直接结论
 
@@ -40,6 +40,7 @@
 2. 原 Phase 2~5 draft 中的长期目标、术语、资源与回归思想可继续参考，但不再作为直接执行顺序。
 3. review 文档中的阻塞项、迁移断层和粒度问题，已视为必须吸收的修订意见。
 4. 技术白皮书中的有效内容只以“契约、抽象、验证方式”进入主线；过度具体的算法拍板和过大的内容预算不作为硬承诺。
+5. 旧 `PR01 ~ PR12` 编号体系只保留为历史参考；从本路线图开始，执行编号统一以 `P2-W1 ~ P2-W7`、`P3-W1 ~ ...` 为准。
 
 ---
 
@@ -65,7 +66,7 @@
 | 当前实现 | 当前位置 | 后续目标 | 首次落地阶段 |
 | --- | --- | --- | --- |
 | `TurnScheduler` 仍是 `100` 阈值，按 `EntityId` 排序 | `core/turn` | 升级为 `1000` 能量制，固定确定性排序合同 | `P2-A` |
-| 存档仍使用 `GsonBuilder` | `core/save` | 切到 `kotlinx.serialization`，按新 schema 直接读写 | `P2-A` |
+| 存档主链已使用 `kotlinx.serialization`，但 Schema V2/版本纪律仍需继续收口 | `core/save` | 固化 `Save Schema V2`、fail-fast 版本策略与资产边界 | `P2-A` |
 | 日志仍是 `ArrayDeque<String>`，大量裸文案 | `game/FoundationGameSession` | 切到 `LogTokenEvent + args`，文案只在 client 渲染 | `P2-A` |
 | 天赋定义仍直接带 `name/description`，状态类型只有少数基础项 | `core/talent` | 切到 key 驱动 schema，扩展状态类型与生命周期模型 | `P2-A` / `P3-A` |
 | 当前正式表现依赖 glyph / ASCII | `client/render`、`game/ActorView` | 切到 `RenderSnapshot + VisualKey/AudioKey` | `P2-B` |
@@ -150,6 +151,13 @@
 3. `P2-B` 前只需要能支撑最小可玩切片的资源集，不把大规模资产预算绑成主路径阻塞项。
 4. `P4` 只做到内容包与 Overlay 级扩展；Lua runtime / 完整 Mod SDK 进入 `Post-v1` backlog。
 
+音频来源策略：
+
+1. `SFX` 首选开源音效库（如 `freesound.org` 的可商用许可资源），不足部分可用 AI 合成补齐。
+2. `BGM` 与环境循环允许使用 AI 音乐生成，但必须经过人工审核、裁切与授权归档。
+3. 所有音频条目都必须显式记录 `license/source/provider`，进入 `AudioSpec`。
+4. 运行时只消费 `AudioCueManifest`，不直接引用原始音频来源路径。
+
 ### 4.6 性能与可观测性合同
 
 1. 性能基线从 `P2-B` 就建立，不等到 `Phase 5` 才开始度量。
@@ -189,7 +197,7 @@
 
 ### 5.3 固定回归套件
 
-后续阶段统一保留六套长期回归：
+后续阶段统一保留八套长期回归：
 
 | 套件 | 目标 | 首次建立 |
 | --- | --- | --- |
@@ -198,28 +206,30 @@
 | `ContractLint` | content/manifest/schema 完整性 | `P2-A` |
 | `SoloClearLab` | 职业单通与关键遭遇自证 | `P2-C` |
 | `HeadlessSmoke` | save/load、snapshot、地图、任务、客户端最小烟雾 | `P2-B` |
+| `BossHarness` | Boss warning、AI、阶段切换与 scripted 行为自证 | `P2-B` |
+| `SaveCurrentVersion` | 当前阶段主线格式是否可靠存读 | `P2-A` |
 | `Perf/Soak` | 长局稳定性、性能回归、资源泄漏 | `P5-A` |
 
 ### 5.4 统一验证入口
 
-从 Phase 2 起，路线图默认以以下命令族为门禁目标：
+从 Phase 2 起，路线图默认以以下 root alias 命令族为门禁目标；若实现上落在子模块任务，也应对外暴露同名聚合入口：
 
 ```bash
 ./gradlew test
 ./gradlew :core:test
 ./gradlew jacocoTestReport
 ./gradlew :core:jacocoTestCoverageVerification
-./gradlew :tools:contract-lint
-./gradlew :tools:locale-lint
-./gradlew :tools:smoke:headless
-./gradlew :client:goldenScreens
+./gradlew contractLint
+./gradlew localeLint
+./gradlew headlessSmoke
+./gradlew goldenScreenshot
 ```
 
 在后续阶段逐步补齐：
 
 ```bash
-./gradlew :tools:solo-clear-lab
-./gradlew :tools:perf-smoke
+./gradlew soloClearLab
+./gradlew perfSmoke
 ./gradlew :tools:soak
 ```
 
@@ -266,13 +276,30 @@
 
 | ID | 所属检查点 | 目标 | 主要模块 | 依赖 | 完成定义 |
 | --- | --- | --- | --- | --- | --- |
-| `P2-W1` | `P2-A` | 序列化与版本纪律重建：切 `kotlinx.serialization`，建立破坏式升级策略 | `core`, `game` | 无 | GSON 退出主存档路径；当前格式可存读；版本不匹配有明确提示 |
+| `P2-W1` | `P2-A` | 在已采用 `kotlinx.serialization` 的基线之上，冻结 `Save Schema V2`、版本纪律与资产边界 | `core`, `game` | 无 | 当前格式可存读；版本不匹配有明确提示；save 与 manifest/style 版本边界清晰 |
 | `P2-W2` | `P2-A` | 1000 能量调度、`DamageType`、`ResourcePool`、基础状态扩展、事件总线与回调注册表 | `core` | 无 | 战斗/行动事件可稳定哈希；资源与伤害通道通过单测 |
 | `P2-W3` | `P2-A` | i18n key、日志 token、首页 locale 选择、`locale-lint` 骨架 | `game`, `client`, `tools` | `P2-W1`, `P2-W2` | 正式文本不再新增裸字符串；日志可按 locale 重渲染 |
 | `P2-W4` | `P2-A` | `RenderSnapshot`、`VisualManifest`、`AudioManifest`、`contract-lint` | `core`, `client`, `tools` | `P2-W2`, `P2-W3` | 相同 world state 的 snapshot 哈希稳定；manifest key 能校验 |
 | `P2-W5` | `P2-B` | 最小 TileRenderer、最小 HUD/背包/检视、golden screenshot 基线 | `client`, `tools` | `P2-W4` | 1 个 seed 下的截图可回归；局内界面可中英双语显示 |
 | `P2-W6` | `P2-B` | 最小正式内容切片：2 职业、1 条 zone 链、1 个 Boss、基础音画资源集 | `game`, `client` | `P2-W5` | Tile 模式下可完整跑通一条 30~60 分钟切片 |
 | `P2-W7` | `P2-C` | 短局扩展：4 职业、4 zone、24 怪、24 物品、`SoloClearLab` v1、locale/content 覆盖清盘 | `core`, `game`, `client`, `tools` | `P2-W6` | Phase 2 出口全部满足，ASCII 退出正式路径 |
+
+执行映射说明：
+
+1. `P2-W1 ~ P2-W7` 是唯一执行编号。
+2. 若需要追溯原始 PR 指南，可按以下近似映射理解：
+
+| 执行工作包 | 历史 PR 参考 |
+| --- | --- |
+| `P2-W1` | `PR01/PR11` 的存档与版本纪律部分 |
+| `P2-W2` | `PR01/PR09` 的规则合同部分 |
+| `P2-W3` | `PR02/PR10` 的 i18n 与日志部分 |
+| `P2-W4` | `PR03` |
+| `P2-W5` | `PR04/PR07` |
+| `P2-W6` | `PR05/PR06/PR08` |
+| `P2-W7` | `PR09/PR10/PR11/PR12` |
+
+3. `P2-W2` 允许在实现上拆成 `W2a（1000 能量 + 事件总线）` 与 `W2b（DamageType + ResourcePool + 状态扩展）` 两个提交序列，但验收仍按一个工作包结算。
 
 ### 7.5 最小可发布集
 
@@ -455,6 +482,7 @@ Phase 2 起，以下矩阵长期保留，后续阶段只能扩展，不能删除
 | `Locale` | key 完整性、占位符一致性、UI 截图是否稳定 |
 | `ContractLint` | schema、manifest、content key 是否完整 |
 | `SoloClearLab` | 职业是否仍满足单通合同 |
+| `HeadlessSmoke` | save/load、snapshot、地图、任务、最小 client 闭环是否还稳定 |
 | `BossHarness` | telegraph、AI、阶段切换是否仍可解释 |
 | `Perf/Soak` | 长局性能、句柄、内存、atlas/audio 是否稳定 |
 | `SaveCurrentVersion` | 当前阶段主线格式是否可靠存读 |

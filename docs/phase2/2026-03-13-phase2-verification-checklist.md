@@ -19,6 +19,10 @@
 ./gradlew contractLint
 ./gradlew goldenScreenshot
 ./gradlew soloClearLab
+./gradlew assetLint
+./gradlew styleLint
+./gradlew audioLint
+./gradlew manifestLint
 ```
 
 ### 1.3 必须检查的结果
@@ -28,6 +32,7 @@
 3. manifest 可完整解析。
 4. screenshot golden 无非预期漂移。
 5. 四职业短局实验室全部通过。
+6. 正式资源的 spec / manifest / style / audio 追溯链完整。
 
 ## 2. Manual White-Box Verification
 
@@ -54,13 +59,32 @@
    - 都能完成从开局到 Boss 或失败结算的闭环。
    - 不出现裸字符串、ASCII 正式路径回退、存档损坏。
 
+### 2.4 SoloClearLab v1 硬门禁
+
+1. 固定黄金 seed：`20260313`、`20260314`、`20260315`。
+2. 固定三个标准化场景：
+   - 杂兵包：`10 x 10` 封闭房间、`6` 只普通怪、等级 `5`
+   - 精英战：`15 x 15` 房间、`1` 精英 + `2` 普通怪、等级 `7`
+   - Boss 战：`20 x 20` Boss 房、等级 `10`
+3. 固定装备预算：阶段蓝装全套。
+4. 通过标准：
+   - 杂兵包：清光所有怪物且 `HP > 30%`
+   - 精英战：击杀精英且角色存活
+   - Boss 战：击杀 Boss
+5. spot-check：
+   - `Rogue` 的 `ENERGY` 命中回复正确触发
+   - `Templar` 的 `POSITIVE_ENERGY` 在命中/受击时积攒，并在脱战后衰减
+   - elite/Boss 至少一场使用 simple scripted AI，并出现最小 warning/overlay 提示
+
 ## 3. Reproducibility Contract
 
-1. 所有白盒验证都必须记录 seed、职业、locale、zone 链。
-2. `golden screenshot` 必须固定分辨率、UI scale、字体包和 locale。
-3. `SoloClearLab` 必须固定 scenario、输入脚本和胜负口径。
-4. 验证失败时必须保留：
+1. 同一 seed + 同一输入序列 = 同一输出。
+2. 所有白盒验证都必须记录 seed、职业、locale、zone 链和输入脚本版本。
+3. `golden screenshot` 必须固定分辨率、UI scale、字体包和 locale。
+4. `SoloClearLab` 必须固定 scenario、输入脚本和胜负口径。
+5. 验证失败时必须保留：
    - failing seed
+   - input script
    - snapshot/hash
    - 日志 token 输出
    - screenshot 差异

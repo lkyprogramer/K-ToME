@@ -1,12 +1,12 @@
 > 执行前必须先完整阅读并接受：
 > `docs/phase2/2026-03-13-phase2-pr-02-core-semantic-contracts.md`
-> `docs/2026-03-13-phase2-to-phase5-detailed-systems-design.md`
+> `docs/2026-03-13-core-systems-design-and-phase-supplements.md`
 
 # Phase 2 - PR-03 Locale & Schema V2
 
 **阶段**: `Phase 2 / P2-W3`  
 **优先级**: `P0`  
-**前置条件**: `PR-01`、`PR-02` 完成  
+**前置条件**: `P2-W1`、`P2-W2` 完成  
 **对应问题**: 现有内容仍大量依赖 `name/glyph/color` 等 Phase 1 字段，正式内容对象还没有统一 schema 版本与 i18n key。继续堆内容会直接放大后续返工。
 
 ---
@@ -89,6 +89,7 @@ game/src/test/kotlin/com/ktome/game/data/*
 6. `item`
 7. `lootProfile`
 8. `tileset`
+9. `difficulty`
 
 ### 4.2 内容目录与 Registry 布局
 
@@ -104,6 +105,7 @@ game/src/main/resources/data/
   items/
   loot/
   tilesets/
+  difficulties/
 game/src/main/resources/i18n/
   zh-CN.json
   en-US.json
@@ -113,6 +115,7 @@ game/src/main/resources/i18n/
 
 1. 一个对象族一个目录，不混在“巨大 yaml 大杂烩”里。
 2. 同一对象的规则字段、显示 key、资源 key 必须在同一 schema 中出现，不允许跨 2~3 份手写表拼接。
+3. `profession`、`talent`、`zone`、`monster`、`bossEncounter` 的 cross-reference 必须都能被 schema 和 lint 校验。
 
 ### 4.3 Phase 2 首批正式对象创建基线
 
@@ -126,9 +129,11 @@ game/src/main/resources/i18n/
 2. zone:
    - `shattered_outpost`
    - `greenwood_fringe`
-   - `deep_iron_mine`
-   - `ashgate_depths`
-3. starter talent tree namespace:
+   - `deep_iron_pit`
+   - `grey_gate_depths`
+3. difficulty:
+   - `normal`
+4. starter talent tree namespace:
    - `vanguard.steel_discipline`
    - `vanguard.bulwark`
    - `arcanist.pyromancy`
@@ -137,7 +142,7 @@ game/src/main/resources/i18n/
    - `rogue.shadow_arts`
    - `templar.judgement`
    - `templar.sanctuary`
-4. monster family namespace:
+5. monster family namespace:
    - `beast.*`
    - `bandit.*`
    - `undead.*`
@@ -146,45 +151,77 @@ game/src/main/resources/i18n/
 
 约束：
 
-1. Phase 2 先建稳定 id 和 schema 外壳，再在 `PR-06`、`PR-07` 填可玩内容。
+1. Phase 2 先建稳定 id 和 schema 外壳，再在 `P2-W6`、`P2-W7` 填可玩内容。
 2. 任何新增职业、技能、怪物、zone 都必须先走这一套 schema，而不是在代码里直接硬编码。
 
 最小对象壳必须覆盖：
 
 1. `ProfessionDef`
+   - `resourceType`
+   - `baseStats`
+   - `statGrowth`
    - `startingResources`
+   - `startingTalents`
    - `startingKit`
    - `talentTrees`
+   - `unlockCondition`
+   - `tags`
    - `soloContract`
 2. `TalentDef`
+   - `maxPoints`
+   - `category`
+   - `damageType`
    - `kind`
    - `iconKey`
    - `visualKey`
    - `audioProfile`
    - `cooldown`
+   - `castTime`
+   - `requirements`
+   - `levelEffects`
+   - `keywords`
+   - `callbacks`
+   - `telegraph`
    - `resourceCosts`
    - `targeting`
-3. `MonsterTemplateV2`
+3. `TalentTreeDef`
+   - `layout`
+   - `nodes`
+4. `DifficultyDef`
+   - `id`
+   - `nameKey`
+   - `monsterHpMultiplier`
+   - `monsterDamageMultiplier`
+   - `xpMultiplier`
+   - `lootRarityBonus`
+   - `prerequisites`
+4. `MonsterTemplateV2`
    - `archetype`
    - `visualKey`
    - `audioProfile`
    - `aiProfileId`
    - `lootProfileId`
    - `talents`
-4. `BossEncounterDef`
+5. `BossEncounterDef`
    - `bossTemplateId`
    - `arenaId`
    - `phases`
    - `rewards`
-5. `ZoneSpec V1`
+6. `ZoneSpec V1`
    - `biome`
+   - `floorCount`
+   - `mapSize`
    - `recommendedLevel`
+   - `environmentTheme`
+   - `specialMechanics`
    - `tilesetKey`
    - `ambientProfile`
    - `monsterPools`
    - `elitePools`
    - `bossEncounterId`
    - `objectiveSetId`
+
+elite / Boss 的 `aiProfileId` 在 Phase 2 就必须升级成可校验 schema，而不只是“保留一个裸字符串字段”。原因是 `P2-W6`、`P2-W7` 需要接入最小 scripted AI，而不是继续把首批精英/Boss 绑死在 `CHASE`。
 
 ### 4.4 Key 命名空间规则
 

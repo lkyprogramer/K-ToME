@@ -1,12 +1,12 @@
 > 执行前必须先完整阅读并接受：
 > `docs/phase2/2026-03-13-phase2-pr-04-snapshot-and-manifest.md`
-> `docs/2026-03-13-phase2-to-phase5-detailed-systems-design.md`
+> `docs/2026-03-13-core-systems-design-and-phase-supplements.md`
 
 # Phase 2 - PR-05 Minimal Tile Shell
 
 **阶段**: `Phase 2 / P2-W5`  
 **优先级**: `P1`  
-**前置条件**: `PR-04` 完成  
+**前置条件**: `P2-W4` 完成  
 **对应问题**: 在 snapshot 和 manifest 都落地前，Tile 不该上；但一旦这两项稳定，就必须尽快建立最小正式 UI/Tile 壳层，让 Phase 2 不再停留在抽象合同阶段。
 
 ---
@@ -87,6 +87,7 @@ client/src/main/kotlin/com/ktome/client/render/TileLayerComposer.kt
 6. `icon_skill`
 7. `icon_status`
 8. `icon_item`
+9. `icon_damage_type`
 
 ### 4.2 最小 HUD
 
@@ -104,6 +105,7 @@ client/src/main/kotlin/com/ktome/client/render/TileLayerComposer.kt
 1. HUD 只展示当前最小必要语义。
 2. 先不做最终布局复杂化。
 3. 状态和技能都必须优先走 iconKey / visualKey，不依赖纯文本。
+4. 主资源展示必须绑定 `ResourceType` 的语义名称、颜色和百分比，不允许把 `MANA / POSITIVE_ENERGY / ENERGY` 都退化成同一条无语义蓝条。
 
 ### 4.3 背包 / 检视最小壳层
 
@@ -154,6 +156,10 @@ client/src/main/kotlin/com/ktome/client/render/TileLayerComposer.kt
 4. `icon.skill.*`
 5. `icon.status.*`
 6. `icon.item.*`
+7. overlay/Boss warning 的最小三通道反馈：
+   - 地面高亮
+   - 日志 warning
+   - 音频 cue
 
 ## 5. 推荐改动面
 
