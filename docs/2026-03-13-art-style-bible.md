@@ -4,7 +4,7 @@
 > 状态：Draft for production  
 > 适用范围：所有角色、怪物、Tile、Props、Icons、UI 装饰、宣传图、概念图  
 > 使用规则：后续所有图片生成、手工绘制、二次处理都必须以本文为基准  
-> 参考来源：参考 [Blodex art-style-bible.md](/Users/luo/Documents/github/Blodex/docs/art-style-bible.md) 的结构思路，但已按 K-ToME 的世界观、玩法可读性与 Tile 资产需求重写
+> 参考来源：参考 `../../Blodex/docs/art-style-bible.md` 的结构思路，但已按 K-ToME 的世界观、玩法可读性与 Tile 资产需求重写
 
 ---
 

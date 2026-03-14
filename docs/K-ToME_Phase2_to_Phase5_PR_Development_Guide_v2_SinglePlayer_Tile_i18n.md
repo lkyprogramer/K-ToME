@@ -8,7 +8,7 @@
 
 > 2026-03-14 注记：
 > 本文档保留为历史参考与需求来源，不再作为执行顺序权威。
-> 当前执行编号统一以 [2026-03-13-phase2-to-phase5-final-roadmap.md](/Users/luo/Documents/github/K-ToME/docs/2026-03-13-phase2-to-phase5-final-roadmap.md) 中的 `W1 ~ W7` / `W1 ~ W5` 为准。
+> 当前执行编号统一以 [2026-03-13-phase2-to-phase5-final-roadmap.md](./2026-03-13-phase2-to-phase5-final-roadmap.md) 中的 `W1 ~ W7` / `W1 ~ W5` 为准。
 > 本文内的旧 `PR01 ~ PR12` 编号、较大内容预算和个别阶段顺序，如与最终路线图或补充设计文档冲突，均以后两者为准。
 
 ## 0. 本版修订摘要
