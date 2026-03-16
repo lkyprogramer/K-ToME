@@ -460,7 +460,7 @@
 | `P5-W1` | `P5-A` | 战术 AI 评分层与执行节点：面向精英/Boss，而不是做全功能通用平台 | `core` | `Phase 4` | 精英/Boss 会做更合理的走位、技能时机和目标选择 |
 | `P5-W2` | `P5-A` | 感知、仇恨焦点、潜行、战术 telegraph polish | `core`, `client` | `P5-W1` | AI 基于最后已知信息行动，不依赖作弊式全图透视 |
 | `P5-W3` | `P5-B` | FOV/渲染/音频/资源装载性能收口，建立 perf smoke 与 soak 基线 | `client`, `tools` | `Phase 4` | 性能预算可测，长局不出现明显句柄泄漏和内存异常 |
-| `P5-W4` | `P5-B` | Run history、死因分析、本地 replay、Localization QA、Accessibility QA | `core`, `client`, `tools` | `P5-W2`, `P5-W3` | 死亡可解释、关键 run 可回放、语言与可读性完成专项清盘 |
+| `P5-W4` | `P5-B` | Run history、死因分析、本地 replay、Localization QA、Accessibility QA | `core`, `client`, `tools` | `P5-W1`, `P5-W2` | 死亡可解释、关键 run 可回放、语言与可读性完成专项清盘 |
 | `P5-W5` | `P5-C` | 打包、安装验证、BalanceLab、已知问题清单、发布文档与 Gold Master 封板 | `client`, `tools`, `docs` | `P5-W4` | `v1.0.0` 门禁全部满足，进入发布态 |
 
 ### 10.5 Phase 5 出口标准

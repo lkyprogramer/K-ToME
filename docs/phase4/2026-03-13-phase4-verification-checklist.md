@@ -16,11 +16,33 @@
 
 ### 必须检查的结果
 
-1. mapgen smoke 无崩溃、无空图、无主线死局。
-2. solvability harness 批量 seed 通过。
-3. loot budget 无明显越界。
-4. hidden content 可被触发并可被验证。
-5. 示例 content pack 通过全部 lint/harness。
+1. `mapgenSmoke`
+   - 至少覆盖 `500` 个 seed
+   - `0` 崩溃
+   - `0` 空图
+   - `0` 主线不可达
+   - 单层生成 `P95 < 2s`
+2. `solvabilityHarness`
+   - 至少覆盖 `1000` 个 seed
+   - `CRITICAL_PATH` 可达率 `100%`
+   - `OPTIONAL / SECRET` 失败不计入主线失败，但必须保留 proof
+3. `lootBalanceLab`
+   - 每组上下文至少 `10000` 次 roll
+   - `MAGIC / RARE` 分布偏离公式预期不超过 `±5%`
+   - `UNIQUE / ARTIFACT` 分布偏离不超过 `±25%` 相对误差
+   - `affixBudget` 平均偏离不超过 `±5%`，`P95` 不超过 `±12%`
+4. `hiddenContentHarness`
+   - 至少覆盖 `100` 个 seed
+   - 至少 `30%` 的 run 触发 `1` 个 hidden event
+   - 至少 `10%` 的 run 发现 `1` 个 secret zone
+   - 设计理据：
+     - `30%` 保证平均每 `3~4` 局至少出现一次显式隐藏发现
+     - `10%` 保持 secret zone 的稀缺感，但不会在长期游玩中完全不可见
+5. `contentPackHarness`
+   - 示例 pack `0` schema error
+   - `0` unresolved i18n key
+   - `0` unresolved visual/audio key
+   - 固定 seed headless run 全通过
 
 ## 2. Fixed-Seed / Batch Verification
 
@@ -33,45 +55,123 @@
    - 关键房间/秘密入口分布
    - 环路数量
    - key-gate DAG 证明项
+   - biome family 组合
+   - `TerrainTag` 分布
+3. 检查：
+   - 每层至少存在 `1` 条主路径
+   - 环路数量在 `0 ~ 2`
+   - 若 `optionalLoopCount > 0`，则环路边 / 总连通边比例在 `0.15 ~ 0.35`
+   - `vault` 只出现在 `OPTIONAL / SECRET` 路径
 
-### 2.2 Loot Balance Batch
+### 2.2 Solvability Batch
 
-1. 固定 zone/level/rarity 组合。
+1. 固定 `1000` 个 seed 跑 `SolvabilityGraph` 验证。
 2. 记录：
+   - `CRITICAL_PATH` 访问顺序
+   - 获取到的 key / switch / quest flag
+   - 未满足依赖
+   - `OPTIONAL / SECRET` 的返回主线桥接
+3. 检查：
+   - Boss 门后不存在主线必需钥匙
+   - `PERCEPTION_REVEAL` 失败不会阻断主线
+   - secret zone 从不承载主线硬门槛
+
+### 2.3 Loot Balance Batch
+
+1. 固定 `zone / sourceLevel / sourceTier / playerLevel / magicFind` 组合。
+2. 建议至少覆盖：
+   - `NORMAL + magicFind=0.00`
+   - `ELITE + magicFind=0.15`
+   - `BOSS + magicFind=0.25`
+   - `CHEST + magicFind=0.10`
+   - `BOSS + magicFind=1.00`
+   - `BOSS + magicFind=1.50`（验证 clamp 到 `1.0`）
+3. 记录：
+   - `iLvl / qLvl / rarityScore`
    - affix 分布
    - unique/artifact 出现率
    - 预算偏离
-   - `sourceLevel/sourceTier/zone/playerLevel/magicFind` 分层统计
+   - `sourceLevel / sourceTier / zone / playerLevel / magicFind` 分层统计
+4. 检查：
+   - `magicFind` 提高时，高 rarity 权重单调不减
+   - `magicFind > 1.0` 时被 clamp 到 `1.0`
+   - `UNIQUE / ARTIFACT` 只出现在允许来源
+   - `castSpeed` affix 经过收益递减，不出现原始线性叠加越界
 
-### 2.3 Terrain Interaction Batch
+### 2.4 Terrain Interaction Isolated Batch
 
-1. 固定一组带地形标签的战斗 seed。
+1. 使用固定地图、固定 `TerrainTag` 和固定战斗 seed。
 2. 记录：
-   - `LIGHTNING + WATER`
-   - `FIRE + OIL`
-   - `COLD + WATER / ICE`
-   - 元素交互是否正确进入战斗回调
+   - `terrain_lightning_water_chain`
+   - `terrain_fire_oil_ignite`
+   - `terrain_cold_water_freeze`
+   - 元素交互进入 `CombatPipeline step 9` 的 trace
+3. 检查：
+   - 不依赖 mapgen 也能稳定复现三种交互
+   - `LIGHTNING + WATER` 会产生传导目标列表
+   - `FIRE + OIL` 会创建持续燃烧地形
+   - `COLD + WATER` 会生成 `ICE`，并带持续时间
 
-### 2.4 Content Pack Batch
+### 2.5 Terrain Interaction In-MapGen Batch
+
+1. 固定一组带 `WATER / OIL / ICE` 的 zone seed。
+2. 记录：
+   - 交互发生时的 `zoneId`
+   - 对应 `TerrainTag`
+   - 触发的 `ElementInteractionRule` ID
+3. 检查：
+   - mapgen 生成的地形标签能被战斗回调正确消费
+   - `elite mutation` 或 `artifact proc` 引用交互规则时，仍走正式 registry
+
+### 2.6 Hidden Content Batch
+
+1. 固定 `100` 个 seed 跑 `hiddenContentHarness`。
+2. 记录：
+   - 触发的 hidden event
+   - 发现的 secret zone
+   - discovery rule
+   - 奖励 profile
+3. 检查：
+   - hidden event 默认只出现在 `OPTIONAL / SECRET`
+   - secret zone 至少包含 `1` 个正式奖励节点
+   - hidden event / secret zone 不承担主线必需钥匙
+
+### 2.7 Content Pack Batch
 
 1. 装载 base game + 示例 pack。
 2. 记录：
+   - manifest 解析
    - schema/lint
-   - key 解析
+   - overlay 冲突
+   - i18n / visual / audio key 解析
    - headless run 结果
+3. 检查：
+   - pack namespace 唯一
+   - 未声明 `REPLACE` 的重复 ID 会被 lint 拒绝
+   - 禁用示例 pack 后能回落到 base manifest
 
 ## 3. Manual White-Box Verification
 
-1. 连续开 3 个不同 seed 的 run，人工确认地图差异明显。
+1. 连续开 `3` 个不同 seed 的 run，人工确认地图差异明显。
 2. 至少触发一次隐藏入口或 secret event，并确认发现逻辑清楚。
-3. 用装有示例 content pack 的客户端进入一局，确认新增内容真实可见。
+3. 在至少两个不同 zone 中观察 `WATER / OIL / ICE` 的表现与规则一致。
+4. 用装有示例 content pack 的客户端进入一局，确认新增内容真实可见。
+5. 至少观察一次 elite mutation 的命名、图标、日志和 inspect 信息，确认来源可读。
+6. 至少击败一次带 Boss 变体的 encounter，确认 phase 结构未被破坏，仅 mutation / loot / 表现发生变化。
 
 ## 4. Reproducibility Contract
 
-1. 所有 batch/harness 都必须固定 seed 列表和版本号。
+1. 所有 batch/harness 都必须固定：
+   - seed 列表
+   - build id
+   - `phase: P4`
+   - `contentSchemaVersion`
+   - pack manifest version（若装载 pack）
 2. 失败时必须保留：
    - 失败 seed
    - map topology 摘要
    - key-gate DAG 证明项
    - loot rollout 摘要
+   - terrain interaction trace
+   - hidden content 触发日志
    - content pack 加载日志

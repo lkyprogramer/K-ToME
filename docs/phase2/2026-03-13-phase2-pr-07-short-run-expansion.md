@@ -72,19 +72,21 @@
 
 职业最小正式包：
 
+以下 `talent id` 同样直接对齐核心设计文档 `5.2.2` 的长期树定义；Phase 2 只裁剪冻结子集，不再扩出额外旁支。
+
 #### Rogue
 
 1. 主资源：`ENERGY`
 2. 回复策略：`Composite([PerTurn(5), OnHit(8)])`
 3. 最小 talent 包：
-   - `quick_slash`
-   - `hemorrhage`
-   - `vanish`
-   - `shadowstep`
-   - `sand_throw`
-   - `caltrops`
-   - `mark_prey`
-   - `escape_plan`
+   - `backstab`（背刺）
+   - `poison_blade`（毒刃）
+   - `stealth`（隐匿）
+   - `smoke_bomb`（烟雾弹）
+   - `roll`（翻滚）
+   - `blade_flurry`（刀刃乱舞）
+   - `shadowstep`（暗影步）
+   - `deathblow`（致命一击）
 4. 视觉/音频 key：
    - `actor.rogue`
    - `portrait.rogue`
@@ -93,20 +95,21 @@
    - 机动清杂
    - 单体爆发
    - 最低限度的脱战/逃生 answer
+6. `shadowstep` 虽然是 Subtlety 树 `T4`，但它承担 Rogue 的关键 Mobility Answer；若不前置，Phase 2 的 Solo-Clear Contract 会缺口。
 
 #### Templar
 
 1. 主资源：`POSITIVE_ENERGY`
 2. 回复策略：`Composite([OnDamageTaken(0.15), OnHit(3), DecayPerTurn(5)])`
 3. 最小 talent 包：
-   - `smite`
-   - `holy_lash`
-   - `consecrate`
-   - `purifying_light`
-   - `rebuke`
-   - `aegis_of_faith`
-   - `chain_of_oath`
-   - `divine_intervention`
+   - `holy_strike`（神圣打击）
+   - `judgment_hammer`（审判之锤）
+   - `holy_light`（圣光）
+   - `holy_shield`（圣盾）
+   - `devotion`（虔诚）
+   - `holy_aura`（神圣光环）
+   - `purify`（净化）
+   - `divine_intervention`（神圣庇护）
 4. 视觉/音频 key：
    - `actor.templar`
    - `portrait.templar`
@@ -115,6 +118,7 @@
    - `HOLY` 主输出
    - 净化/护盾
    - 对亡灵/恶魔的 Boss answer
+6. Grace 树在 Phase 2 有意完整选入 `holy_light / holy_shield / purify / divine_intervention`：其中 `divine_intervention` 是 T4，但承担唯一稳定的 Panic Answer。Phase 3 的成长空间默认放在 Smite / Faith 树，而不是继续扩 Grace 树。
 
 Phase 2 最终 4 职业 talent 目标：
 

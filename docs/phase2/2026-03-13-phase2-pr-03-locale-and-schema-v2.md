@@ -134,14 +134,18 @@ game/src/main/resources/i18n/
 3. difficulty:
    - `normal`
 4. starter talent tree namespace:
-   - `vanguard.steel_discipline`
-   - `vanguard.bulwark`
-   - `arcanist.pyromancy`
-   - `arcanist.aegis`
-   - `rogue.cutthroat`
-   - `rogue.shadow_arts`
-   - `templar.judgement`
-   - `templar.sanctuary`
+   - `vanguard_arms`
+   - `vanguard_shield`
+   - `vanguard_warcry`
+   - `arcanist_flame`
+   - `arcanist_frost`
+   - `arcanist_arcane`
+   - `rogue_assassination`
+   - `rogue_subtlety`
+   - `rogue_agility`
+   - `templar_smite`
+   - `templar_grace`
+   - `templar_faith`
 5. monster family namespace:
    - `beast.*`
    - `bandit.*`
@@ -195,19 +199,19 @@ game/src/main/resources/i18n/
    - `xpMultiplier`
    - `lootRarityBonus`
    - `prerequisites`
-4. `MonsterTemplateV2`
+5. `MonsterTemplateV2`
    - `archetype`
    - `visualKey`
    - `audioProfile`
    - `aiProfileId`
    - `lootProfileId`
    - `talents`
-5. `BossEncounterDef`
+6. `BossEncounterDef`
    - `bossTemplateId`
    - `arenaId`
    - `phases`
    - `rewards`
-6. `ZoneSpec V1`
+7. `ZoneSpec V1`
    - `biome`
    - `floorCount`
    - `mapSize`

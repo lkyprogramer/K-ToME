@@ -70,19 +70,21 @@
 
 职业最小正式包必须包括：
 
+以下 `talent id` 直接对齐核心设计文档 `5.2.2` 的长期树定义；Phase 2 只是从长期树里裁剪冻结子集，不再额外发明平行天赋名。
+
 #### Vanguard
 
 1. 主资源：`STAMINA`
 2. 回复策略：`PerTurn(3)`
 3. 最小 talent 包：
-   - `power_strike`
-   - `sundering_blow`
-   - `shield_bash`
-   - `guard_stance`
-   - `war_cry`
-   - `challenge`
-   - `charge`
-   - `last_bastion`
+   - `power_strike`（猛力打击）
+   - `sweeping_strike`（横扫）
+   - `shield_bash`（盾击）
+   - `guard_stance`（格挡姿态）
+   - `war_cry`（战吼）
+   - `intimidation`（威压）
+   - `sunder_armor`（碎甲）
+   - `unyielding`（不屈）
 4. 起始套装：
    - 单手武器
    - 基础盾
@@ -95,21 +97,22 @@
 6. 最小 build contract：
    - 1 条主输出树
    - 1 条防御/控场树
-   - 1 条 Panic Answer（`last_bastion` 或等价）
+   - 1 条 Panic Answer（`unyielding` 或等价）
+7. `unyielding` 虽然是 Warcry 树 `T4`，但它是 Vanguard 在 Phase 2 最小切片里唯一稳定的 Panic Answer，因此按 Solo-Clear Contract 例外前置到本阶段。
 
 #### Arcanist
 
 1. 主资源：`MANA`
 2. 回复策略：`PerTurn(2)`
 3. 最小 talent 包：
-   - `fire_bolt`
-   - `flame_burst`
-   - `frost_lance`
-   - `spark_jolt`
-   - `mana_shield`
-   - `blink`
-   - `mirror_ward`
-   - `arcane_recovery`
+   - `fireball`（火球）
+   - `flame_wall`（烈焰之墙）
+   - `ice_bolt`（冰箭）
+   - `frost_nova`（霜冻新星）
+   - `arcane_shield`（奥术护盾）
+   - `blink`（闪现）
+   - `mana_surge`（法力涌动）
+   - `ice_prison`（冰封）
 4. 起始套装：
    - 法杖或法器
    - 轻袍
@@ -121,7 +124,7 @@
 6. 最小 build contract：
    - 1 条火系或冰系主输出树
    - 1 条防护/位移树
-   - 1 条 Boss answer（`mana_shield` / `blink` / 等价组合）
+   - 1 条 Boss answer（`arcane_shield` / `blink` / 等价组合）
 
 ### 4.2 Zone 与 Boss 切片
 

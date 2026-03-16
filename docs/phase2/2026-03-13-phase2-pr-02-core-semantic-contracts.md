@@ -100,9 +100,10 @@ core/src/test/kotlin/com/ktome/core/resource/*
 冻结口径：
 
 1. `Stamina` 迁入 `ResourcePoolState(STAMINA)`。
-2. 先启用 `HEALTH / STAMINA / MANA / POSITIVE_ENERGY / ENERGY` 的结构。
-3. 资源变化必须可事件化。
-4. `HATE / ARCANE_CHARGE / SHADOW / FOCUS / EQUILIBRIUM` 先占位 enum，不在本 PR 接入玩法主线。
+2. `HEALTH` 继续作为独立生命系统处理，不并入 `ResourceType`。
+3. 先启用 `STAMINA / MANA / POSITIVE_ENERGY / ENERGY` 四类主资源结构。
+4. `HATE / EQUILIBRIUM` 先占位 enum，不在本 PR 接入玩法主线。
+5. 资源变化必须可事件化。
 
 首轮必须冻结的回复策略类型：
 
@@ -136,7 +137,7 @@ core/src/main/kotlin/com/ktome/core/status/*
 
 1. `DamageType` 统一冻结为 `PHYSICAL / FIRE / COLD / LIGHTNING / HOLY / SHADOW` 六通道。
 2. 现有近战和旧技能先全部走统一 `DamageType` 主链，不再保留“无通道伤害”。
-3. Phase 2 的抗性/穿透先用简化模型：`effectiveResistance = clamp(targetResistance - penetration, -25, 75)`，不提前引入 Phase 3 的收益递减体系。
+3. Phase 2 的抗性/穿透先用简化模型模板：`effectiveResistance = clamp(targetResistance - penetration, -25, 75)`，不提前引入 Phase 3 的收益递减体系。
 4. `HOLY` 对亡灵/恶魔在 Phase 2 就允许挂接额外增伤语义，避免圣堂武士切片退化成纯换色物理伤害。
 5. `StatusEffectDef/StatusInstance` 进入主链。
 6. 现有 `STUN / ARMOR_BREAK / WAR_CRY_BUFF / WAR_CRY_DEBUFF` 必须迁入新模型；其中 Phase 1 的 `STUNNED` 在 Phase 2 统一并名为 `STUN`。
@@ -165,6 +166,7 @@ core/src/main/kotlin/com/ktome/core/status/*
    - `BLEED / BURN / POISON`：独立叠层
    - `ARMOR_BREAK`：上限 `3` 层
    - `SHIELD / REGEN`：取较强值
+10. 虽然公式模板允许 `-25` 下限，但 Phase 2 实际运行时默认所有穿透值为 `0`、怪物元素抗性默认为 `0`；因此该模板在 Phase 2 不依赖负抗性增伤。`HOLY` 对亡灵/恶魔的 `+50%` 额外增伤走标签检查，而不是负抗性路径。
 
 ### 4.4 Combat DTO 壳与 Trace Schema
 
@@ -358,7 +360,7 @@ core/src/main/kotlin/com/ktome/core/log/*
 3. 现有近战、4 技能、怪物都能跑在新语义上。
 4. `FoundationGameSession` 首轮拆厚完成。
 5. Phase 2 首批内容对象命名空间冻结完成。
-6. `DamageRequest -> DamageOutcome -> CombatTrace` 与 `TalentDef V2` runtime 骨架成立。
+6. `DamageRequest -> DamagePacket -> DamageOutcome -> CombatTrace` 与 `TalentDef V2` runtime 骨架成立。
 
 ## 8. 风险与止损
 
