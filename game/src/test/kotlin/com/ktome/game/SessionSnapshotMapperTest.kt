@@ -75,7 +75,7 @@ class SessionSnapshotMapperTest {
                     stairsDown = Point(4, 4),
                     payload =
                         FloorRuntimeState(
-                            map = GameMap.fromAscii(rows = listOf("....."), playerStart = Point(1, 1)),
+                            map = GameMap.fromAscii(rows = List(5) { "....." }, playerStart = Point(1, 1)),
                             stairsDown = Point(4, 4),
                             exploredTiles = linkedSetOf(Point(3, 1), Point(1, 0), Point(1, 1)),
                             entities =
@@ -136,7 +136,7 @@ class SessionSnapshotMapperTest {
                     listOf(
                         com.ktome.core.save.FloorSnapshot(
                             floorIndex = 2,
-                            map = com.ktome.core.save.MapSnapshot(rows = listOf("....."), playerStart = PointSnapshot(1, 1)),
+                            map = com.ktome.core.save.MapSnapshot(rows = List(5) { "....." }, playerStart = PointSnapshot(1, 1)),
                         ),
                     ),
             )
