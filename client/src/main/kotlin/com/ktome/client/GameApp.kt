@@ -23,6 +23,7 @@ class GameApp(
     private val assetVersionGate: AssetVersionGate = AssetVersionGate(),
 ) : Game() {
     private val lifecycle = LifecycleCoordinator(saveManager)
+    private val assetContracts = AssetContractCoordinator(assetVersionProvider, assetVersionGate)
     private var activeSession: FoundationGameSession? = null
 
     override fun create() {
@@ -92,14 +93,7 @@ class GameApp(
     }
 
     private fun assetContractNotice(): String? =
-        try {
-            assetVersionGate.requireCompatible(assetVersionProvider())
-            null
-        } catch (exception: AssetVersionMismatchException) {
-            exception.message
-        } catch (exception: AssetVersionLoadException) {
-            exception.message
-        }
+        assetContracts.noticeOrNull()
 
     private fun ensureAssetContracts(): Boolean =
         assetContractNotice()?.let { notice ->
@@ -110,6 +104,21 @@ class GameApp(
     companion object {
         private fun defaultSaveDir(): Path = Path.of(System.getProperty("user.home"), ".ktome")
     }
+}
+
+internal class AssetContractCoordinator(
+    private val assetVersionProvider: () -> AssetVersionContract,
+    private val assetVersionGate: AssetVersionGate = AssetVersionGate(),
+) {
+    fun noticeOrNull(): String? =
+        try {
+            assetVersionGate.requireCompatible(assetVersionProvider())
+            null
+        } catch (exception: AssetVersionMismatchException) {
+            exception.message
+        } catch (exception: AssetVersionLoadException) {
+            exception.message
+        }
 }
 
 internal class LifecycleCoordinator(

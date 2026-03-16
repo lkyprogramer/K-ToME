@@ -4,9 +4,6 @@ import com.ktome.core.map.GameMap
 import com.ktome.core.map.Point
 import kotlinx.serialization.Serializable
 
-private const val FOUNDATION_ZONE_ID: String = "foundation_dungeon"
-private const val FOUNDATION_PROFESSION_ID: String = "foundation_hero"
-
 @Serializable
 data class SaveSnapshot(
     val schemaVersion: Int = CURRENT_SCHEMA_VERSION,
@@ -14,13 +11,13 @@ data class SaveSnapshot(
     val buildMetadata: String = DEFAULT_BUILD_METADATA,
     val timestampEpochMillis: Long,
     val worldSeed: Long,
-    val currentZoneId: String = FOUNDATION_ZONE_ID,
+    val currentZoneId: String,
     val floorIndex: Int,
     val mapWidth: Int,
     val mapHeight: Int,
     val fovRadius: Int,
     val messageLogSize: Int,
-    val playerProfessionId: String = FOUNDATION_PROFESSION_ID,
+    val playerProfessionId: String,
     val maxFloor: Int,
     val turnCount: Int,
     val player: PlayerSnapshot,
