@@ -43,7 +43,7 @@
 1. `2026-03-13`：初版，建立战斗、元素、状态、职业与阶段补充骨架。
 2. `2026-03-14`：补入事件总线、`SaveDataV2`、`RenderSnapshot` 协议、经济/难度/输入合同、Layer 2 AI 运行时与 Phase 2 预算/编号澄清。
 
-### 1.4 当前代码基线
+### 1.5 当前代码基线
 
 截至 Phase 1 完成（`v0.1.x`），以下是本文档涉及的核心系统的当前状态：
 
@@ -1336,9 +1336,12 @@ data class CallbackRegistration(
 )
 
 enum class CallbackResult {
+    /** 继续执行当前步骤后续回调与后续管线 */
     CONTINUE,
-    CONSUMED,
-    CANCEL_ACTION,
+    /** 中止当前步骤剩余回调，但不跳过后续步骤 */
+    CANCEL,
+    /** 完全吸收并终止当前管线 */
+    ABSORB,
 }
 
 interface CallbackRegistry {
@@ -1879,6 +1882,7 @@ import com.ktome.core.ecs.EntityId
 /**
  * 资源类型枚举。每种资源有不同的回复策略和 UI 表现。
  * defaultMax 只是枚举级默认值，职业或怪物配置可以覆盖它。
+ * HP/Health 继续作为独立生命系统处理，不纳入 ResourceType。
  */
 enum class ResourceType(
     val nameKey: String,
@@ -1995,24 +1999,24 @@ sealed interface ResourceEvent : GameEvent {
 /**
  * 职业定义，从 YAML 加载。
  */
-data class ClassDef(
+data class ProfessionDef(
     val id: String,
     val nameKey: String,
     val descKey: String,
     val iconKey: String,
     val portraitKey: String,
-    val tier: ClassTier,
+    val tier: ProfessionTier,
     val resourceType: ResourceType,
     val baseStats: BaseStatBlock,
     val statGrowth: StatGrowthBlock,
     val talentTrees: List<TalentTreeRef>,
     val startingTalents: List<String>,
-    val startingEquipment: List<String>,
+    val startingKit: List<String>,
     val unlockCondition: UnlockCondition?,
     val tags: Set<String>,
 )
 
-enum class ClassTier { BASE, ADVANCED }
+enum class ProfessionTier { BASE, ADVANCED }
 
 data class BaseStatBlock(
     val str: Int, val dex: Int, val con: Int, val wil: Int,
@@ -2036,7 +2040,7 @@ data class TalentTreeRef(
 
 sealed interface UnlockCondition {
     data object AlwaysUnlocked : UnlockCondition
-    data class RequireClassCleared(val classId: String) : UnlockCondition
+    data class RequireProfessionCleared(val professionId: String) : UnlockCondition
     data class RequireLevel(val level: Int) : UnlockCondition
     data class RequireBossKilled(val bossId: String) : UnlockCondition
 }
@@ -2339,8 +2343,8 @@ enum class DangerLevel {
 
 **Boss Telegraph 设计规则**：
 
-1. 所有 Boss 技能中伤害超过玩家最大 HP 30% 的，必须有至少 1 回合的 telegraph
-2. 伤害超过 50% 的技能必须有 2 回合 telegraph
+1. 所有 Boss 技能中伤害大于等于玩家最大 HP 30% 的，必须有至少 1 回合的 telegraph
+2. 伤害大于等于 50% 的技能必须有 2 回合 telegraph
 3. Telegraph 必须同时通过视觉（地面高亮）、日志（文字警告）、音频（预警音效）三通道传达
 4. 玩家站在 telegraph 区域内时 HUD 应有额外闪烁提示
 
@@ -2354,7 +2358,7 @@ talent_tree:
   id: "vanguard_arms"
   nameKey: "talent_tree.vanguard_arms"
   iconKey: "icon_tree_arms"
-  classId: "vanguard"
+  professionId: "vanguard"
   layout:
     rows: 4
     columns: 1
@@ -2383,8 +2387,10 @@ talent_tree:
 | --- | --- | --- |
 | 天赋点获取 | 每 2 级 1 点 | 1,3,5,7,9...级获得 |
 | 每棵树最大投入 | 无硬限，受天赋 `maxPoints` 约束 | 但前置条件自然限制了投入顺序 |
-| 洗点 | 每局免费 1 次，之后需要消耗稀有道具 | 洗点时触发所有天赋的 `on_unlearn` |
+| 洗点 | `Phase 3` 默认免费；`Phase 4+` 可再引入限次或道具成本 | 洗点时触发所有天赋的 `on_unlearn`；执行口径与 `docs/phase3/*` 保持一致 |
 | 前置检查时机 | 仅在分配瞬间检查 | 分配后属性下降不影响已分配天赋 |
+
+Phase 2 的执行文档（`P2-W6/P2-W7`）只允许从上述长期树中裁剪冻结子集，不允许额外发明独立于 `Flame/Frost/Arcane`、`Assassination/Subtlety/Agility` 等长期树之外的新天赋方向。
 
 ### 6.3 关键词注册表（Keyword Registry）
 
@@ -2606,10 +2612,11 @@ class ScriptedAIResolver(
 3. `TARGET_VISIBLE`、`TARGET_DISTANCE_*`、`HP_*` 等高频条件必须基于当前 `WorldView` 快照读取，不能在脚本层重复跑昂贵搜索。
 4. 脚本默认在加载关卡或启动游戏时解析；Phase 3 不承诺热加载，修改 YAML 后允许重启或重新载入会话。
 5. `defaultBehavior` 必须始终存在，防止所有条件都 miss 时出现空决策。
+6. 普通怪与精英怪的一般行为选择固定使用 `priority + condition` 的确定性模型；若 Boss 需要在激活 phase 内增加不确定性，只允许在**已通过条件筛选**的候选动作集合上做加权选择，并且必须把权重、随机种子与最终选中动作写入 trace。
 
 ### 7.4 Boss 阶段状态机
 
-Boss 战是 Roguelike 的核心体验之一。每个 Boss 有多个阶段（Phase），各阶段有不同的行为脚本和技能组。
+Boss 战是 Roguelike 的核心体验之一。每个 Boss 有多个阶段（Phase），各阶段有不同的行为脚本和技能组。`Phase 3` 起，Boss 行为采用两层结构：`BossEncounter` 负责 phase 边界与进入事件，`AIProfile` 负责 phase 内动作选择；若本节示例与 `docs/phase3/*` 的冻结 schema 存在细节差异，一律以 `Phase 3` 执行文档 `4.5` 为权威。
 
 #### 7.4.1 Boss 定义 Schema
 
@@ -2622,9 +2629,9 @@ boss:
   phases:
     - id: "phase_1"
       nameKey: "boss.dungeon_lord.phase1"
-      hpThreshold: 1.0        # HP > 70% 时处于此阶段
+      hpThreshold: 1.0
       hpEnd: 0.70
-      behaviorScript: "dungeon_lord_phase1"
+      aiProfileId: "dungeon_lord_phase1"
       onEnter:
         - type: LOG_MESSAGE
           logKey: "boss.dungeon_lord.phase1.enter"
@@ -2633,26 +2640,26 @@ boss:
 
     - id: "phase_2"
       nameKey: "boss.dungeon_lord.phase2"
-      hpThreshold: 0.70       # 70% > HP > 30%
+      hpThreshold: 0.70
       hpEnd: 0.30
-      behaviorScript: "dungeon_lord_phase2"
+      aiProfileId: "dungeon_lord_phase2"
       onEnter:
         - type: LOG_MESSAGE
           logKey: "boss.dungeon_lord.phase2.enter"
         - type: APPLY_BUFF
           statusId: "ENRAGE"
-          duration: -1          # 永久
+          duration: -1
         - type: PLAY_AUDIO
           cueId: "sfx_boss_enrage"
         - type: TELEGRAPH
           talentId: "ground_slam"
-          delay: 1
+          previewTurns: 1
 
     - id: "phase_3"
       nameKey: "boss.dungeon_lord.phase3"
-      hpThreshold: 0.30       # HP < 30%
+      hpThreshold: 0.30
       hpEnd: 0.0
-      behaviorScript: "dungeon_lord_phase3"
+      aiProfileId: "dungeon_lord_phase3"
       onEnter:
         - type: LOG_MESSAGE
           logKey: "boss.dungeon_lord.phase3.enter"
@@ -2665,59 +2672,50 @@ boss:
 #### 7.4.2 Boss 行为脚本示例
 
 ```yaml
-# dungeon_lord_phase2.yaml - 狂暴阶段
-ai:
-  type: SCRIPTED
-  sightRadius: 12
-  defaultBehavior: CHASE
+# dungeon_lord_phase2.yaml - 狂暴阶段，对应 BossEncounter 中 phase_2 引用的 AIProfile
+ai_profile:
+  id: "dungeon_lord_phase2"
+  perceptionRange: 12
+  useLastKnownPosition: true
+  defaultBehavior: "CHASE"
 
-  behaviors:
-    # 周期性地面冲击（每 4 回合）
+  actions:
     - id: "ground_slam"
-      priority: 100
+      type: "USE_ABILITY"
+      abilityId: "ground_slam"
       condition:
-        type: TURN_COUNT_MODULO
+        type: "TURN_COUNT_MODULO"
         divisor: 4
         remainder: 0
-      action:
-        type: TELEGRAPH
-        talentId: "ground_slam"
-        telegraphTurns: 1
-        shape: CIRCLE
-        radius: 3
-        dangerLevel: HIGH
+      weight: 50
 
-    # 目标低血量时斩杀
     - id: "execute_strike"
-      priority: 95
+      type: "USE_ABILITY"
+      abilityId: "execute_strike"
       condition:
-        type: AND
+        type: "AND"
         conditions:
-          - type: TARGET_HP_BELOW
+          - type: "TARGET_HP_BELOW"
             threshold: 0.25
-          - type: TALENT_READY
+          - type: "TALENT_READY"
             talentId: "execute_strike"
-      action:
-        type: USE_TALENT
-        talentId: "execute_strike"
+      weight: 30
 
-    # 近战范围内普通攻击
     - id: "melee"
-      priority: 50
+      type: "ATTACK_MELEE"
       condition:
-        type: TARGET_DISTANCE_LESS_THAN
+        type: "TARGET_DISTANCE_LESS_THAN"
         distance: 2
-      action:
-        type: ATTACK_MELEE
+      weight: 15
 
-    # 追击
     - id: "chase"
-      priority: 10
+      type: "CHASE"
       condition:
-        type: TARGET_VISIBLE
-      action:
-        type: CHASE
+        type: "TARGET_VISIBLE"
+      weight: 5
 ```
+
+说明：`weight` 是相对权重，不要求预先归一化；运行时对通过条件过滤后的候选动作集合重新求和归一化。
 
 ### 7.5 怪物感知系统（Phase 3~5 渐进引入）
 
@@ -2759,6 +2757,14 @@ enum class FocusSource {
 }
 ```
 
+**`STEALTH / TAUNT` 与 AI 的交互合同**：
+
+1. 目标进入 `STEALTH` 后，AI 当前目标引用立即失效。
+2. 若启用了 `useLastKnownPosition`，AI 必须先移动到最后已知位置；到达后仍未重新发现目标，则回退到 `defaultBehavior`。
+3. Boss 在 `STEALTH` 场景下不切换 phase，只能在当前 phase 内执行无目标 fallback 或范围扫描行为，不得锁定隐身目标。
+4. AI 被 `TAUNT` 命中后，持续期间必须强制把攻击目标设为嘲讽源；若目标不在攻击范围内，优先移动靠近，不得攻击其他目标。
+5. `TAUNT` 结束后，AI 恢复原有目标选择逻辑。
+
 **Phase 5 完整实现**：精英/Boss 使用 Utility AI 评估仇恨焦点的可信度，决定是继续追踪还是放弃搜索。
 
 ### 7.6 各阶段怪物模板预算
@@ -2766,7 +2772,7 @@ enum class FocusSource {
 | 阶段 | 普通怪 | 精英怪 | Boss | AI 层级 |
 | --- | --- | --- | --- | --- |
 | Phase 2 | 18 种 | 4 种 | 2 个 | Layer 1（普通）+ Layer 2 简单脚本（精英/Boss） |
-| Phase 3 | 40 种 | 12 种 | 4 个 | Layer 2 完整脚本 + Boss 阶段状态机 |
+| Phase 3 | 40 种 | 12 种 | 3~4 个 | Layer 2 完整脚本 + Boss 阶段状态机 |
 | Phase 4 | 60 种 | 18 种 + 突变 | 6 个 + 变体 | Layer 2 + 精英突变行为变体 |
 | Phase 5 | 80 种 | 24 种 | 8 个 | Layer 3（Utility AI + 行为树） |
 
@@ -2806,6 +2812,12 @@ data class ActiveEffectV2(
 )
 ```
 
+第一版 DoT 时序固定为：
+
+1. `BLEED / BURN / POISON` 在**受影响实体的回合开始、行动前**结算。
+2. 若目标处于 `STUN / FREEZE`，DoT 依然正常 tick。
+3. DoT 的 tick、致死与后续移除都必须可在 `CombatTrace` 中定位。
+
 Phase 2 首批非伤害 seed 中，`GUARD` 与 `MARKED` 的语义固定为：
 
 | 状态 | 类别 | 最小效果 | 默认持续 | 引入阶段 |
@@ -2817,11 +2829,11 @@ Phase 2 首批非伤害 seed 中，`GUARD` 与 `MARKED` 的语义固定为：
 
 | 叠加类型 | 规则 | 适用效果 |
 | --- | --- | --- |
-| **不可叠加，刷新持续时间** | 新的同类效果替换旧的，取较长持续时间 | STUN, SLOW, FREEZE, SILENCE |
+| **不可叠加，刷新持续时间** | 新的同类效果替换旧的，取较长持续时间 | STUN, ROOT, HASTE, SLOW, FREEZE, SILENCE, MARKED, BANE, CURSE, WEAKEN, OVERCHARGE, STEALTH |
 | **可叠加，独立计时** | 每层独立倒计时，效果按层数线性增强 | BLEED, BURN, POISON |
-| **可叠加，上限封顶** | 最多 N 层，超过后刷新全部层的持续时间 | ARMOR_BREAK（最多 3 层） |
-| **不可叠加，取较强** | 同类效果取较高强度的那个 | SHIELD, REGEN, GUARD |
-| **不可叠加，刷新持续时间** | 同一目标只保留一个标记窗口 | MARKED |
+| **可叠加，上限封顶** | 最多 N 层，超过后刷新全部层的持续时间；`ARMOR_BREAK` 为跨来源全局上限 | ARMOR_BREAK（最多 3 层） |
+| **不可叠加，取较强** | 同类效果按 `magnitude` 优先、`remainingTurns` 次级比较；较弱者丢弃 | SHIELD, REGEN, GUARD, INVULNERABLE |
+| **后来者覆盖** | 同时只保留一个来源，新效果覆盖旧效果 | TAUNT |
 | **唯一效果** | 同一来源只能存在一个，不同来源可共存 | WAR_CRY_BUFF（每个施法者独立） |
 
 #### 8.1.3 效果互斥与优先级
@@ -2831,10 +2843,16 @@ Phase 2 首批非伤害 seed 中，`GUARD` 与 `MARKED` 的语义固定为：
 | 效果 A | 效果 B | 交互规则 |
 | --- | --- | --- |
 | `FREEZE` | `BURN` | 新的覆盖旧的并触发元素交互（见 4.4 节） |
-| `HASTE` | `SLOW` | 互相抵消，取 `|较大效果| - |较小效果|` |
+| `HASTE` | `SLOW` | 本阶段都不叠加，只保留单个当前值；统一折算为 `speedModifier` 净值：`effectiveSpeed = baseSpeed + hasteModifier - slowModifier` |
 | `STUN` | `STUN` | 不叠加，取较长持续时间 |
-| `STEALTH` | 任何 AoE 伤害 | 立即解除隐身 |
+| `STEALTH` | 任何 AoE 伤害 | 仅在实际受到伤害时解除隐身 |
 | `INVULNERABLE` | 任何伤害 | 伤害为 0，但状态效果仍可施加 |
+
+补充冻结：
+
+1. `CURSE` 与 `WEAKEN` 独立生效，由最终属性自然下限兜底，不额外定义负值奖励。
+2. `OVERCHARGE` 在下一次成功承受 `LIGHTNING` 伤害后被消耗；若期间再次施加，只刷新持续时间。
+3. `TAUNT` 同时只能有一个有效嘲讽源，后来者覆盖前一个来源。
 
 #### 8.1.4 净化与驱散
 
@@ -2844,7 +2862,7 @@ Phase 2 首批非伤害 seed 中，`GUARD` 与 `MARKED` 的语义固定为：
  */
 data class CleanseAction(
     val maxEffectsRemoved: Int = 1,       // 一次净化移除的效果数
-    val priorityOrder: CleanseOrder = CleanseOrder.MOST_RECENT,
+    val priorityOrder: CleanseOrder = CleanseOrder.LONGEST_REMAINING,
     val canCleanseTypes: Set<StatusEffectType>? = null,  // null=移除任意
     val excludeTypes: Set<StatusEffectType> = emptySet(), // 无法被净化的类型
 )
@@ -2858,7 +2876,12 @@ enum class CleanseOrder {
 
 `PURIFY/CLEANSE` 是瞬时操作，不进入 `ActiveEffectV2`、不参与叠层，也不写入正式存档。
 
-**不可被净化的效果**：`KNOCKBACK`（瞬时效果）、`INVULNERABLE`、`STEALTH`。
+第一版推荐净化配置：
+
+1. 若存在 `STUN / ROOT`，优先清除这两类硬控。
+2. 否则按 `LONGEST_REMAINING` 处理。
+
+**不可被净化的效果**：`KNOCKBACK`（瞬时效果）、`INVULNERABLE`、`STEALTH`、Boss phase 锁定状态。
 
 ### 8.2 铭文系统设计（Phase 3 引入）
 
@@ -2956,7 +2979,7 @@ sealed interface InscriptionEffect {
 **DamageType 在 Phase 2 的最小引入**：
 
 - 定义完整的 6 种 `DamageType` 枚举
-- Phase 2 中实际使用：`PHYSICAL`（战卫/游荡者所有天赋）、`FIRE`/`COLD`/`LIGHTNING`（奥术师天赋各用 1 种）、`HOLY`（圣堂武士天赋）、`SHADOW`（游荡者毒刃天赋）
+- Phase 2 中实际使用：`PHYSICAL`（战卫/游荡者主链）、`FIRE`/`COLD`（奥术师主链）、`HOLY`（圣堂武士主链）、`SHADOW`（游荡者毒刃/处刑系语义）
 - 抗性/穿透系统在 Phase 2 使用简化版：`effectiveResistance = targetResistance - penetration`，不做收益递减
 - Phase 3 升级为完整的非线性模型
 
@@ -3112,12 +3135,41 @@ data class DifficultyDef(
 
 | 进阶职业 | 解锁条件 | 说明 |
 | --- | --- | --- |
-| 狂战士 | 战卫通关任意难度 | 基于战卫的进阶 |
-| 咒剑士 | 奥术师通关任意难度 | 基于奥术师的进阶 |
-| 影刃客 | 游荡者通关任意难度 | 基于游荡者的进阶 |
-| 守林者 | 圣堂武士通关任意难度 | 基于圣堂武士的进阶 |
+| 狂战士 | 战卫通关 | 基于战卫的进阶 |
+| 咒剑士 | 奥术师通关 | 基于奥术师的进阶 |
+| 影刃客 | 游荡者通关 | 基于游荡者的进阶 |
+| 守林者 | 圣堂武士通关 | 基于圣堂武士的进阶 |
+
+说明：`Phase 3` 只有 `Normal` 难度，因此“通关”即击败 `深渊之心` 并生成 run summary；若后续阶段引入更多难度选项，任意难度通关均满足解锁条件。
 
 **种族天赋点分配**：种族天赋点独立于职业天赋点。每 4 级获得 1 点种族天赋点，用于投资种族天赋树。
+
+**局间持久化最小 schema**：
+
+```kotlin
+@Serializable
+data class ProfileData(
+    val profileVersion: Int,
+    val unlockedClasses: Set<String>,
+    val runHistory: List<RunSummary>,
+)
+
+@Serializable
+data class RunSummary(
+    val seed: Long,
+    val finishedAtEpochMillis: Long,
+    val winningClassId: String?,
+    val winningRaceId: String?,
+    val finalZoneId: String,
+    val victory: Boolean,
+)
+```
+
+冻结边界：
+
+1. `ProfileData` 与 `SaveDataV2` 分文件、分版本号管理，不允许混存。
+2. 当前 run 内的装备、货币、临时状态和地图探索信息不得进入 `ProfileData`。
+3. 进阶职业解锁只写入 `unlockedClasses`，run 结束摘要只写结构化 `RunSummary`。
 
 #### 9.2.3 P3-C（长局结构）补充
 
@@ -3127,11 +3179,10 @@ data class DifficultyDef(
 破碎前哨 (Lv1-4)
     ├── 绿林边缘 (Lv3-6)
     │       ├── 精灵遗迹 [可选] (Lv5-7)
+    │       ├── 盗贼营地 [可选] (Lv3-5)
     │       └── 深铁矿坑 (Lv5-8)
     │               ├── 熔岩核心 [可选] (Lv7-9)
-    │               └── 灰门深窟 (Lv7-10)
-    │                       └── 灰门王座 [Boss] (Lv10)
-    └── 盗贼营地 [可选] (Lv3-5)
+    │               └── 灰门深窟 (Lv7-10，含灰门王座 Boss 房)
 
 Phase 3 扩展：
     灰门深窟 ──> 地下河 (Lv10-12)
@@ -3139,6 +3190,8 @@ Phase 3 扩展：
                      └── 深渊神殿 (Lv12-15)
                              └── 深渊之心 [最终 Boss] (Lv15)
 ```
+
+说明：`灰门王座` 在 `Phase 3` 继续作为 `grey_gate_depths` 内部的区域 Boss 房存在，不单独作为 world graph 的独立 zone 节点。
 
 **Affix V1 设计**（Phase 3 引入前缀/后缀词缀的基础版）：
 
@@ -3164,61 +3217,173 @@ Phase 3 扩展：
 | 锁钥匙 | 无 | 钥匙/开关/Boss 门的拓扑验证 |
 | biome 变体 | 单一 | 同层内可有 2 种 biome 混合 |
 
-**可解性验证算法**：在抽象的 DAG 层面验证以下约束：
+Phase 4 的 mapgen 不采用通用脚本或 WFC 深水区；执行口径固定为：
 
-1. 从入口到出口存在至少一条可达路径
-2. 所有钥匙/开关在被需要之前都可获取
-3. 所有可选区域都有至少一条通往主路径的路径
-4. Boss 门后不存在必须物品/钥匙
+1. `MapgenRequest -> TopologyGraph -> RoomInstance -> Corridor/Loop -> TerrainTag paint -> validation`
+2. 地图生成与可解性验证共用一份抽象词汇：`TopologyGraph / SolvabilityGraph / PathClass`
+3. `Phase 4` 不新增 world node，只升级 `Phase 3` 已冻结 zone 的 biome mix、vault 与 secret 逻辑
+
+说明：本节只保留锚点级骨架；完整字段集、YAML 示例和验证门槛以 `docs/phase4/2026-03-13-phase4-procgen-loot-and-content-pack.md` 为执行权威。同时，本节的类型名与 `phase4` 执行文档保持一致；若字段细节不同，以 `phase4` 执行文档为权威。
+
+```kotlin
+enum class TerrainTag {
+    WATER,
+    OIL,
+    ICE,
+}
+
+data class MapgenRequest(
+    val zoneId: String,
+    val floorIndex: Int,
+    val seed: Long,
+    val targetWidth: Int,
+    val targetHeight: Int,
+)
+
+data class ZoneMapgenProfile(
+    val zoneId: String,
+    val allowedBiomeFamilies: Set<String>,
+    val loopCountRange: IntRange,
+    val vaultPool: Set<String>,
+)
+
+data class TopologyNode(
+    val id: String,
+    val roomDefId: String,
+)
+
+data class TopologyEdge(
+    val from: String,
+    val to: String,
+)
+
+data class TopologyGraph(
+    val nodes: List<TopologyNode>,
+    val edges: List<TopologyEdge>,
+)
+
+data class GeneratedFloor(
+    val zoneId: String,
+    val floorIndex: Int,
+    val seed: Long,
+    val topology: TopologyGraph,
+)
+
+interface MapgenPipeline {
+    fun run(request: MapgenRequest): GeneratedFloor
+}
+
+data class SolvabilityNode(
+    val id: String,
+    val pathClass: PathClass,
+)
+
+data class SolvabilityEdge(
+    val from: String,
+    val to: String,
+)
+
+data class SolvabilityGraph(
+    val entryNodeId: String,
+    val exitNodeId: String,
+    val nodes: List<SolvabilityNode>,
+    val edges: List<SolvabilityEdge>,
+)
+```
+
+补充约束：
+
+1. 地形标签第一版固定为 `WATER / OIL / ICE`，并由 `CombatPipeline` 的步骤 `9` 接入元素交互检查。
+2. 环路数量每层 `0 ~ 2`，`vault` 只允许落在 `OPTIONAL / SECRET` 路径。
+3. `PERCEPTION_REVEAL` 可以用于 hidden entrance，但 discovery 失败不应阻断主线。
 
 #### 9.3.2 掉落生态 V2
 
 **掉落生成参数总览**：
 
 ```kotlin
-data class LootGenerationContext(
-    val sourceLevel: Int,         // 掉落来源等级（怪物等级或宝箱等级）
-    val sourceTier: SourceTier,   // NORMAL / ELITE / BOSS / CHEST
-    val zoneId: String,           // 当前区域（影响 biome 限定掉落）
-    val playerLevel: Int,         // 玩家等级
-    val magicFindBonus: Float,    // 稀有度加成
-    val seed: Long,               // 确定性 seed
+data class LootRollContext(
+    val sourceLevel: Int,
+    val sourceTier: SourceTier,
+    val zoneId: String,
+    val playerLevel: Int,
+    val magicFindBonus: Float,
+    val seed: Long,
 )
 
-enum class SourceTier(val rarityBonus: Float) {
-    NORMAL(0.0f),
-    ELITE(0.15f),     // 精英怪稀有度 +15%
-    BOSS(0.40f),      // Boss 稀有度 +40%
-    CHEST(0.10f),     // 宝箱稀有度 +10%
+enum class SourceTier(
+    val itemLevelBonus: Int,
+    val rarityBonus: Float,
+    val affixBudgetBonus: Int,
+) {
+    NORMAL(0, 0.00f, 0),
+    ELITE(1, 0.15f, 2),
+    BOSS(2, 0.40f, 4),
+    CHEST(1, 0.10f, 1),
+}
+
+data class LootBudget(
+    val iLvl: Int,
+    val qLvl: Int,
+    val rarityScore: Float,
+    val affixBudget: Int,
+)
+```
+
+补充约束：
+
+1. `MagicFind` 只修正 rarity roll，不直接提高 `iLvl`；允许来源为装备 affix、临时 buff、区域 modifier，最终 clamp 到 `1.0`。
+2. `iLvl / qLvl / affixBudget` 的正式计算以 `docs/phase4/2026-03-13-phase4-procgen-loot-and-content-pack.md` 为执行权威。
+3. `Unique / Artifact` 必须是预定义模板，不允许退化成随机 affix 伪稀有。
+4. 任何来自 affix、elite mutation、artifact proc 的元素伤害，都必须复用 `ElementInteractionRule` 与 `CombatPipeline` 正式路径。
+5. `castSpeed` 的收益递减在 `Phase 4` 正式启用；任何掉落词条都不能绕过 `DR_CAST_SPEED_C`。
+6. 元素亲和度系统只保留为 optional lab，不进入 `Phase 4` 主线出口。
+
+#### 9.3.3 Content Pack Overlay 最小边界
+
+```kotlin
+data class ContentPackManifest(
+    val id: String,
+    val version: String,
+    val schemaVersion: Int,
+    val gameVersionRange: String,
+    val namespace: String,
+)
+
+enum class OverlayOp {
+    ADD,
+    REPLACE,
+    APPEND,
+    DENY,
 }
 ```
 
+冻结口径：
+
+1. pack 只能扩内容定义与表现资源声明，不能注入新的规则解释器、存档格式或运行时脚本宿主。
+2. `Phase 4` 只保证 `schemaVersion` 匹配且 `gameVersionRange` 覆盖当前 base game 的 pack 兼容；schema bump 不提供自动迁移。
+3. manifest、i18n、visual/audio key 与 headless harness 结果都必须进入 pack lint。
+4. pack 不允许新增职业或修改 `core` 规则常量，只能通过 registry overlay 扩展 `game` 内容层。
+
 ### 9.4 Phase 5 细节补充
+
+说明：本节只保留锚点级骨架；完整字段集、YAML/JSON 示例、量化门槛与工作包依赖以 `docs/phase5/2026-03-13-phase5-tactical-ai-stability-and-release.md` 为执行权威。同时，本节的类型名与 `phase5` 执行文档保持一致；若字段细节不同，以 `phase5` 执行文档为权威。
 
 #### 9.4.1 Utility AI 评分层
 
-Phase 5 的 Utility AI 不是从零开始，而是在 Layer 2 脚本化行为之上增加一个 **评分层**：
+`Phase 5` 的 Utility AI 不是从零开始，而是在 Layer 2 脚本化行为之上增加一个评分层：
 
 ```kotlin
-/**
- * Utility AI 考量项。每个考量项对应一种可能的行动。
- */
 data class Consideration(
-    val actionId: String,            // 对应的动作 ID
-    val evaluator: UtilityEvaluator, // 评分函数
-    val weight: Float = 1.0f,        // 权重系数
+    val evaluatorId: String,
+    val evaluator: UtilityEvaluator,
+    val weight: Float = 1.0f,
 )
 
-/**
- * 评分函数接口。输入 AI 上下文，输出 0.0~1.0 的效用分数。
- */
 fun interface UtilityEvaluator {
     fun evaluate(context: AIContext): Float
 }
 
-/**
- * AI 决策上下文。
- */
 data class AIContext(
     val self: EntitySnapshot,
     val target: EntitySnapshot?,
@@ -3231,33 +3396,118 @@ data class AIContext(
     val currentTurn: Int,
     val terrainAtSelf: TileType,
     val terrainAroundSelf: Map<Point, TileType>,
+    val terrainTagsAtSelf: Set<TerrainTag>,
+    val nearbyTerrainInteractionIds: List<String>,
+    val activeMutationIds: List<String>,
+    val bossPhaseId: String?,
+)
+
+enum class TacticalSelectionReason {
+    UTILITY_BEST,
+    DSL_OVERRIDE,
+    FALLBACK,
+}
+
+data class ScoredCandidate(
+    val actionId: String,
+    val score: Float,
+    val evaluatorId: String,
+)
+
+data class TacticalAIDecisionTrace(
+    val turnId: Long,
+    val actorId: Int,
+    val profileId: String,
+    val perceivedTargetId: Int?,
+    val matchedRuleIds: List<String>,
+    val selectedAction: String,
+    val candidates: List<ScoredCandidate>,
+    val finalScore: Float,
+    val selectionReason: TacticalSelectionReason,
 )
 ```
 
-**Utility AI 与 Layer 2 的集成**：
+冻结口径：
 
-- 普通怪：继续使用 Layer 1/Layer 2
-- 精英怪：使用 Layer 2 脚本，但可选择性地对某些决策使用 Utility 评分
-- Boss：使用 Utility AI 决定宏观策略，行为树执行具体动作序列
+1. `DSL` 规则先做硬约束与 veto，`Utility` 评分只在通过约束的候选集中排序。
+2. 普通怪继续使用 Layer 1/Layer 2；精英怪可选择性叠加 Utility；Boss 由 Utility 决定高层意图，再回到既有 action catalog 执行。
+3. YAML 定义层 `*Def` 类型与 loader 解析规则以 `phase5` 执行文档为权威；本节不重复展开。
 
-#### 9.4.2 性能基线
+#### 9.4.2 感知、仇恨与性能锚点
+
+```kotlin
+enum class PerceptionState {
+    UNAWARE,
+    SUSPICIOUS,
+    ALERT,
+    SEARCHING,
+}
+
+enum class HateSource {
+    VISUAL,
+    SOUND,
+    DAMAGE_RECEIVED,
+    ALLY_REPORT,
+    TAUNT,
+}
+
+data class HateFocus(
+    val targetId: EntityId,
+    val lastKnownPosition: Point?,
+    val confidence: Float,
+    val source: HateSource,
+    val updatedTurn: Int,
+)
+
+data class SoakReport(
+    val buildId: String,
+    val durationMinutes: Int,
+    val runsCompleted: Int,
+    val crashes: Int,
+    val peakHeapMb: Int,
+    val postWarmupHeapDriftMb: Int,
+    val maxGcPauseMs: Int,
+    val p1Fps: Float,
+)
+```
 
 | 指标 | 目标值 | 测量方式 |
 | --- | --- | --- |
-| 帧率 | 桌面端稳定 60 FPS | GLProfiler + 帧间时间统计 |
-| Draw Calls/帧 | < 50 | GLProfiler |
-| Texture Bindings/帧 | < 10 | GLProfiler |
-| FOV 计算耗时 | < 2ms（80×50 地图） | Benchmark 测试 |
-| A* 寻路耗时 | < 1ms（单次，80×50 地图） | Benchmark 测试 |
-| 内存占用 | < 512MB | JVM 监控 |
-| 长局稳定性 | 8 小时无 OOM/无 GC 停顿 >50ms | Soak 测试 |
+| 帧率 | 桌面端稳定 `60 FPS` | GLProfiler + 帧间时间统计 |
+| Draw Calls / 帧 | `< 50` | GLProfiler |
+| Texture Bindings / 帧 | `< 10` | GLProfiler |
+| FOV 计算耗时 | `< 2 ms`（`80×50`） | Benchmark 测试 |
+| A* 寻路耗时 | `< 1 ms`（`80×50`） | Benchmark 测试 |
+| 内存占用 | `< 512 MB` | JVM 监控 |
+| 长局稳定性 | `8h` 无 OOM / 无 GC 停顿 `> 50 ms` | Soak 测试 |
 
-#### 9.4.3 死因分析系统
+#### 9.4.3 回放、run history 与死因分析
 
 ```kotlin
-/**
- * 死因分析记录，在角色死亡时生成。
- */
+data class TurnSummary(
+    val turn: Int,
+    val playerActionId: String?,
+    val damageTaken: Int,
+    val healingReceived: Int,
+    val appliedEffectIds: List<String>,
+    val removedEffectIds: List<String>,
+    val startPosition: Point,
+    val endPosition: Point,
+)
+
+enum class DeathSuggestionKey {
+    LOW_RESISTANCE,
+    LOW_ARMOR,
+    NO_ESCAPE_TOOL,
+    STACKED_DOT,
+    MISPLAY_TELEGRAPH,
+}
+
+data class DeathSuggestion(
+    val key: DeathSuggestionKey,
+    val args: Map<String, String>,
+)
+
 data class DeathAnalysis(
     val turn: Int,
     val killerEntityId: EntityId,
@@ -3269,7 +3519,31 @@ data class DeathAnalysis(
     val combatTrace: CombatTrace,
     val last5Turns: List<TurnSummary>,
     val activeEffectsAtDeath: List<ActiveEffectV2>,
-    val suggestions: List<String>,  // 如 "你的火焰抗性仅有 5%，考虑装备抗火装备"
+    val suggestions: List<DeathSuggestion>,
+)
+
+data class ReplayHeader(
+    val schemaVersion: Int,
+    val phaseId: String,
+    val buildId: String,
+    val seed: Long,
+    val professionId: String,
+    val raceId: String,
+    val difficultyId: String,
+    val zoneRoute: List<String>,
+)
+
+data class RunHistoryEntry(
+    val runId: String,
+    val buildId: String,
+    val seed: Long,
+    val professionId: String,
+    val raceId: String,
+    val difficultyId: String,
+    val result: String,
+    val zoneReachedId: String,
+    val turnsPlayed: Int,
+    val durationSeconds: Long,
 )
 ```
 

@@ -16,6 +16,8 @@
    - 历史参考，旧 `PR01 ~ PR12` 编号只作背景材料
 6. [Roguelike 游戏开发指导文档.md](./Roguelike%20游戏开发指导文档.md)
    - 技术参考和算法思路来源
+7. [2026-03-13-art-style-bible.md](./2026-03-13-art-style-bible.md)
+   - 美术风格、style tag 和图片生成约束的权威参考
 
 ## 2. 执行编号
 
