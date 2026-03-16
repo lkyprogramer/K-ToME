@@ -6,6 +6,8 @@ import com.ktome.core.save.FloorSnapshot
 import com.ktome.core.save.MapSnapshot
 import com.ktome.core.save.PlayerSnapshot
 import com.ktome.core.save.PointSnapshot
+import com.ktome.core.save.AssetVersionContract
+import com.ktome.core.save.AssetVersionGate
 import com.ktome.core.save.SaveManager
 import com.ktome.core.save.SaveSnapshot
 import com.ktome.core.save.StairSnapshot
@@ -17,6 +19,7 @@ import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 
@@ -71,6 +74,33 @@ class GameAppLifecycleTest {
 
         assertFalse(coordinator.refreshContinueAvailability())
         assertTrue(coordinator.consumeNotice()?.contains("Legacy saves") == true)
+    }
+
+    @Test
+    fun `asset contract coordinator surfaces mismatch notice`() {
+        val coordinator =
+            AssetContractCoordinator(
+                assetVersionProvider = {
+                    AssetVersionContract.CURRENT.copy(visualManifestVersion = AssetVersionContract.CURRENT.visualManifestVersion + 1)
+                },
+                assetVersionGate = AssetVersionGate(),
+            )
+
+        val notice = coordinator.noticeOrNull()
+
+        assertTrue(notice?.contains("Asset contract mismatch") == true)
+    }
+
+    @Test
+    fun `asset contract coordinator surfaces load failure notice`() {
+        val coordinator =
+            AssetContractCoordinator(
+                assetVersionProvider = {
+                    throw AssetVersionLoadException("manifest missing")
+                },
+            )
+
+        assertEquals("manifest missing", coordinator.noticeOrNull())
     }
 }
 
