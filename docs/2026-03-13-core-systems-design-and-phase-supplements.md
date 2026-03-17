@@ -50,7 +50,7 @@
 | 系统 | 当前文件 | 当前状态 | 本文档补充的内容 |
 | --- | --- | --- | --- |
 | 战斗结算 | `core/combat/CombatResolver.kt` | 仅物理近战，无伤害通道，线性防御减免 | 伤害通道、非线性公式、结算管线、追踪系统 |
-| 伤害结果 | `core/combat/DamageResult.kt` | 3 字段（raw/reduced/final） | 扩展为完整 `CombatTrace` |
+| 伤害结果 | `core/combat/DamageResult.kt` | 3 字段（raw/reduced/final） | 扩展为 `CombatResolutionTrace + TraceEnvelope` |
 | 事件系统 | `core/event/GameEvent.kt` | 6 种事件，无中央调度 | 回调注册表、Power/Save 对抗 |
 | 属性系统 | `core/ecs/Components.kt` + `core/stats/StatsCalculator.kt` | 4 主属性 + 线性派生 | 收益递减、抗性/穿透属性 |
 | 状态效果 | `core/talent/TalentModels.kt` | 4 种 `StatusEffectType` | 扩展至 20+ 种，支持元素关联 |
@@ -134,7 +134,7 @@
 
 > **`core` 只输出语义数据，`client` 负责渲染表现。**
 
-- `CombatTrace` 记录每一步的数值变化和原因标签，但不包含任何显示文本或动画指令。
+- `CombatResolutionTrace` 记录每一步的数值变化和原因标签，但不包含任何显示文本或动画指令。
 - 伤害通道定义颜色代码只是 `client` 的 UI 提示，`core` 中以 `colorHint` 字段存在但不参与逻辑计算。
 - 元素交互的视觉效果（蒸汽、传导特效）完全由 `client` 根据事件语义自行编排。
 
@@ -151,7 +151,7 @@
 > **系统从简单版本开始，跨阶段逐步增加深度。**
 
 - Phase 2：引入 `DamageType` 枚举和 `DamageInstance`，但抗性/穿透暂用线性模型。
-- Phase 3：升级为完整的非线性公式、Power/Save 对抗、`CombatTrace`。
+- Phase 3：升级为完整的非线性公式、Power/Save 对抗、`CombatResolutionTrace + TraceEnvelope`。
 - Phase 4：在 loot 系统中利用元素 affix，在地形中引入元素交互。
 - 每次升级不应破坏已有的 Golden Seed 测试（或显式声明 seed 基线变更）。
 
@@ -210,7 +210,7 @@ K-ToME 定义 **六大伤害通道**，覆盖物理和五种元素维度：
 
 - **主题身份**：圣堂武士（Templar）的核心通道。神圣天赋倾向于净化、治疗增强、对亡灵/恶魔特效。神圣类怪物（堕落天使、光明构装体）使用此通道。
 - **关联状态效果**：净化动作（`CLEANSE` / `PURIFY`，移除目标身上的一个负面状态或驱散一个增益）、驱邪标记（`BANE`，对亡灵/恶魔额外增伤 50%）。
-- **抗性机制**：`holyResistance`，百分比减免，取值范围 `[0, 75]`。亡灵/恶魔类怪物默认 `holyResistance = -25`（负抗性 = 增伤）。
+- **抗性机制**：`holyResistance`，百分比减免，取值范围 `[0, 75]`。亡灵/恶魔的通用正式口径是**标签增伤路径**，不是默认负神圣抗性；若未来存在少数负 `holyResistance` 个体，必须在怪物模板或 affix 中显式声明。
 - **穿透机制**：`holyPenetration`，穿透后抗性可为负。
 
 **SHADOW（暗影）**
@@ -313,7 +313,7 @@ data class DamageOutcome(
 1. `DamageRequest` 表达“攻击意图”。
 2. `DamagePacket` 表达“命中/暴击/穿透等已解析、但尚未完成最终结算的中间态”，其中承载单条 `DamageInstance`。
 3. `DamageOutcome` 表达“减伤、状态施加、死亡判定后”的最终结果。
-4. `CombatTrace` 审计整个过程；`DamageInstance` 只负责记录单条伤害语义，不承担完整流水线外壳。
+4. `CombatResolutionTrace` 审计整个过程；`DamageInstance` 只负责记录单条伤害语义，不承担完整流水线外壳。
 
 #### 3.1.5 伤害通道配置示例（YAML）
 
@@ -398,7 +398,6 @@ hitChance = clamp(0.85 + (accuracy - evasion) * 0.01, 0.05, 0.95)
 令 d = accuracy - evasion
 令 k = 0.04          （斜率系数，控制曲线陡度）
 令 m = 0.0           （中点偏移，d = m 时命中率为 50%）
-令 baseHitRate = 0.85 （基础命中率偏移）
 
 rawHitChance = 1 / (1 + e^(-k * (d - m)))
 
@@ -415,7 +414,7 @@ hitChance = clamp(hitChance, minHit, maxHit)
 最终公式：
   d = accuracy - evasion
   k = 0.04
-  m = -10  （中点向左偏移，使 d=0 时命中率约 85%）
+  m = -10  （中点向左偏移，使 d=0 时命中率约 59%，d=10 时约 67%）
 
   sigmoid(d) = 1 / (1 + e^(-k * (d - m)))
   hitChance = 0.05 + 0.90 * sigmoid(d)
@@ -426,15 +425,15 @@ hitChance = clamp(hitChance, minHit, maxHit)
 
 | `accuracy - evasion` | Phase 1 线性 | Phase 3 Sigmoid | 说明 |
 | --- | --- | --- | --- |
-| -30 | 0.55 | 0.19 | 大劣势时命中率急剧下降 |
-| -20 | 0.65 | 0.35 | 明显劣势 |
+| -30 | 0.55 | 0.33 | 大劣势时命中率显著下降 |
+| -20 | 0.65 | 0.41 | 明显劣势 |
 | -10 | 0.75 | 0.50 | 中点（m=-10 使此处为 50%） |
-| -5 | 0.80 | 0.63 | 轻微劣势 |
-| 0 | 0.85 | 0.74 | 属性相等时仍有不错命中率 |
-| 5 | 0.90 | 0.83 | 轻微优势 |
-| 10 | 0.95 | 0.89 | 明确优势 |
-| 20 | 0.95 | 0.95 | 上限封顶 |
-| 30 | 0.95 | 0.95 | 远超对手时自然封顶 |
+| -5 | 0.80 | 0.54 | 轻微劣势 |
+| 0 | 0.85 | 0.59 | 属性相等时保留基本命中保障 |
+| 5 | 0.90 | 0.63 | 轻微优势 |
+| 10 | 0.95 | 0.67 | 明确优势 |
+| 20 | 0.95 | 0.74 | 大幅优势 |
+| 30 | 0.95 | 0.80 | 极大优势，继续向上限逼近 |
 
 > 注意：Phase 2 阶段可继续使用 Phase 1 的线性模型，因为低等级数值范围内两者差异不大。Phase 3 正式切换时，Golden Seed 基线需要显式更新。
 
@@ -683,7 +682,7 @@ object DamageFormula {
 │
 步骤 6  ─  穿透应用（Penetration Application）
 │   说明：穿透已在步骤 5 中作为减免计算的输入使用。
-│   此步骤记录穿透的具体贡献值到 CombatTrace。
+│   此步骤记录穿透的具体贡献值到 `CombatResolutionTrace`。
 │   计算：ignoredArmor = min(targetArmor, attackerArmorPen)
 │        或 ignoredResistance = min(targetResistance, attackerElementPen)
 │
@@ -734,19 +733,21 @@ object DamageFormula {
 **管线的设计约束：**
 
 1. 管线是 **同步执行** 的，不存在异步步骤。
-2. 次生伤害（如荆棘反伤）会创建一个 **新的 Pipeline 实例**，但共享同一回合的 `CombatTrace` 上下文。
+2. 次生伤害（如荆棘反伤）会创建一个 **新的 Pipeline 实例**，但共享同一回合的 `CombatResolutionTrace` 上下文。
 3. 回调的优先级由 `CallbackPriority`（`Int`）决定，数值越小越先执行。同优先级按 `entityId` 升序排列。
 4. 回调返回 `CANCEL` 会中止当前步骤的后续回调执行，但不会跳过管线的下一步。只有 `ABSORB` 会完全终止管线（例如护盾完全吸收了伤害）。
 
-### 3.3 战斗追踪系统（CombatTrace）
+### 3.3 战斗追踪系统（CombatResolutionTrace / TraceEnvelope）
 
-`CombatTrace` 记录一次战斗结算管线的每一步计算过程，用于：
+> Phase 3 同步说明：`P3-W1` 冻结的是**公式级** `CombatResolutionTrace + TraceEnvelope + Golden Corpus` 基线；遭遇级 `BossTrace / AIDecisionTrace / LongRunTrace` 由后续工作包分别维护，不再把所有追踪语义强行塞进单一 trace 类型。
+
+`CombatResolutionTrace` 记录一次战斗结算管线的每一步计算过程，`TraceEnvelope` 负责版本和 corpus 边界。两者组合后的用途是：
 
 1. **调试**：开发时追踪伤害计算是否正确。
 2. **死因分析**：Phase 5 的死因回溯功能依赖此数据。
 3. **Tooltip 展示**：鼠标悬停在战斗日志上时，展示详细的伤害分解。
 4. **平衡调优**：统计分析 DPS、减免率、穿透贡献等指标。
-5. **Golden Seed 回归**：固定 seed 下比对 Trace 的关键数值是否变化。
+5. **Golden Seed 回归**：固定 seed 下比对 trace 的关键数值是否变化。
 
 #### 3.3.1 数据结构
 
@@ -755,191 +756,105 @@ package com.ktome.core.combat
 
 import com.ktome.core.ecs.EntityId
 
-/**
- * 一次完整战斗结算的追踪记录。
- * 从 Pipeline 入口到最终伤害应用的每一步都被记录。
- */
-data class CombatTrace(
-    /** 唯一追踪 ID，用于关联次生伤害 */
+enum class CombatCorpusId {
+    FORMULA,
+    STATUS,
+    INTEGRATION,
+    LONG_RUN,
+}
+
+data class TraceEnvelope(
+    val phaseId: String,
+    val rulesetVersion: String,
+    val traceSchemaVersion: String,
+    val corpusId: CombatCorpusId,
+)
+
+data class CombatResolutionTrace(
     val traceId: String,
-    /** 所属回合号 */
     val turn: Int,
-    /** 攻击者实体 ID */
     val attackerId: EntityId,
-    /** 目标实体 ID */
     val targetId: EntityId,
-    /** 触发此次结算的能力 ID */
     val abilityId: String,
-    /** 伤害通道 */
     val damageType: DamageType,
-    /** 管线各步骤的记录 */
-    val steps: List<TraceStep>,
-    /** 最终结果摘要 */
-    val result: TraceResult,
-    /** 如果此次结算触发了次生伤害，记录子 Trace 的 ID */
+    val steps: List<ResolutionStep>,
+    val result: ResolutionResult,
     val childTraceIds: List<String> = emptyList(),
 )
 
-/**
- * 管线中一步的记录。
- */
-data class TraceStep(
-    /** 步骤编号（1~12） */
+data class ResolutionStep(
     val stepIndex: Int,
-    /** 步骤名称（如 "HIT_CHECK", "CRIT_CHECK" 等） */
     val stepName: String,
-    /** 该步骤的输入参数快照 */
     val inputs: Map<String, String>,
-    /** 该步骤的输出结果 */
     val outputs: Map<String, String>,
-    /** 该步骤中触发的回调及其效果 */
+    val flags: Set<String> = emptySet(),
     val callbacks: List<CallbackRecord> = emptyList(),
 )
 
-/**
- * 回调执行的记录。
- */
 data class CallbackRecord(
-    /** 回调所有者实体 ID */
     val ownerId: EntityId,
-    /** 回调名称（如天赋 ID、装备 ID） */
     val callbackName: String,
-    /** 回调优先级 */
     val priority: Int,
-    /** 回调返回值 */
-    val result: String, // "CONTINUE", "CANCEL", "ABSORB"
-    /** 回调产生的数值变更描述 */
-    val effect: String?, // 如 "shield absorbed 15 damage"
+    val result: String,
+    val effect: String?,
 )
 
-/**
- * 结算结果摘要。
- */
-data class TraceResult(
-    /** 是否命中 */
+data class ResolutionResult(
     val hit: Boolean,
-    /** 是否暴击 */
     val critical: Boolean = false,
-    /** 暴击倍率（非暴击时为 1.0） */
     val critMultiplier: Double = 1.0,
-    /** 原始伤害（步骤 3 输出） */
     val rawDamage: Int = 0,
-    /** 护盾/前减免吸收量（步骤 4） */
     val preReductionAbsorbed: Int = 0,
-    /** 护甲/抗性减免量（步骤 5~6） */
     val armorResistanceReduced: Int = 0,
-    /** 穿透贡献量（因穿透而多造成的伤害） */
     val penetrationContribution: Int = 0,
-    /** 后减免修正量（步骤 7，正值为减伤，负值为增伤） */
     val postReductionModifier: Int = 0,
-    /** 最终实际造成的伤害 */
     val finalDamage: Int = 0,
-    /** 目标是否死亡 */
     val targetKilled: Boolean = false,
-    /** 死亡是否被拦截（如不死鸟天赋） */
     val deathPrevented: Boolean = false,
 )
 ```
 
 #### 3.3.2 Trace 输出示例
 
-以下是一个典型的 `CombatTrace` 序列化输出示例（JSON 格式，用于调试日志）：
+以下是一个典型的 `TraceEnvelope + CombatResolutionTrace` 序列化输出示例（JSON 格式，用于调试日志）：
 
 ```json
 {
-  "traceId": "t-0042",
-  "turn": 15,
-  "attackerId": 1,
-  "targetId": 7,
-  "abilityId": "fireball",
-  "damageType": "FIRE",
-  "steps": [
-    {
-      "stepIndex": 1,
-      "stepName": "HIT_CHECK",
-      "inputs": {"accuracy": "22", "evasion": "10", "hitFormula": "SIGMOID"},
-      "outputs": {"hitChance": "0.91", "roll": "0.34", "hit": "true"}
-    },
-    {
-      "stepIndex": 2,
-      "stepName": "CRIT_CHECK",
-      "inputs": {"critChance": "0.12", "critResistance": "0.02"},
-      "outputs": {"effectiveCritChance": "0.10", "roll": "0.65", "isCrit": "false"}
-    },
-    {
-      "stepIndex": 3,
-      "stepName": "RAW_DAMAGE",
-      "inputs": {"baseDamage": "35", "variance": "2", "critMultiplier": "1.0"},
-      "outputs": {"varianceRoll": "-1", "rawDamage": "34"}
-    },
-    {
-      "stepIndex": 4,
-      "stepName": "PRE_REDUCTION_CALLBACKS",
-      "inputs": {"rawDamage": "34"},
-      "outputs": {"modifiedDamage": "34"},
-      "callbacks": []
-    },
-    {
-      "stepIndex": 5,
-      "stepName": "RESISTANCE_REDUCTION",
-      "inputs": {"targetFireRes": "20", "attackerFirePen": "8"},
-      "outputs": {"effectiveResistance": "12", "reductionRate": "0.12", "reducedDamage": "30"}
-    },
-    {
-      "stepIndex": 6,
-      "stepName": "PENETRATION_RECORD",
-      "inputs": {"rawResistance": "20", "penetration": "8"},
-      "outputs": {"ignoredResistance": "8", "penContribution": "3"}
-    },
-    {
-      "stepIndex": 7,
-      "stepName": "POST_REDUCTION_CALLBACKS",
-      "inputs": {"reducedDamage": "30"},
-      "outputs": {"finalDamage": "30"},
-      "callbacks": []
-    },
-    {
-      "stepIndex": 8,
-      "stepName": "DAMAGE_APPLICATION",
-      "inputs": {"finalDamage": "30", "targetHpBefore": "65"},
-      "outputs": {"targetHpAfter": "35"}
-    },
-    {
-      "stepIndex": 9,
-      "stepName": "ON_DAMAGE_TAKEN_CALLBACKS",
-      "inputs": {"damageType": "FIRE", "finalDamage": "30"},
-      "outputs": {},
-      "callbacks": [
-        {
-          "ownerId": 7,
-          "callbackName": "burn_application",
-          "priority": 100,
-          "result": "CONTINUE",
-          "effect": "BURN applied for 3 turns, 10 damage/turn"
-        }
-      ]
-    },
-    {
-      "stepIndex": 10,
-      "stepName": "DEATH_CHECK",
-      "inputs": {"targetHp": "35"},
-      "outputs": {"isDead": "false"}
-    }
-  ],
-  "result": {
-    "hit": true,
-    "critical": false,
-    "critMultiplier": 1.0,
-    "rawDamage": 34,
-    "preReductionAbsorbed": 0,
-    "armorResistanceReduced": 4,
-    "penetrationContribution": 3,
-    "postReductionModifier": 0,
-    "finalDamage": 30,
-    "targetKilled": false,
-    "deathPrevented": false
+  "envelope": {
+    "phaseId": "P3",
+    "rulesetVersion": "3.0.0",
+    "traceSchemaVersion": "1",
+    "corpusId": "FORMULA"
   },
-  "childTraceIds": []
+  "trace": {
+    "traceId": "t-0042",
+    "turn": 15,
+    "attackerId": 1,
+    "targetId": 7,
+    "abilityId": "fireball",
+    "damageType": "FIRE",
+    "steps": [
+      {
+        "stepIndex": 1,
+        "stepName": "HIT_CHECK",
+        "inputs": {"accuracy": "22", "evasion": "10", "hitFormula": "SIGMOID"},
+        "outputs": {"hitChance": "0.91", "roll": "0.34", "hit": "true"}
+      },
+      {
+        "stepIndex": 2,
+        "stepName": "CRIT_CHECK",
+        "inputs": {"critChance": "0.12", "critResistance": "0.02"},
+        "outputs": {"effectiveCritChance": "0.10", "roll": "0.65", "isCrit": "false"}
+      }
+    ],
+    "result": {
+      "hit": true,
+      "critical": false,
+      "finalDamage": 30,
+      "targetKilled": false
+    },
+    "childTraceIds": []
+  }
 }
 ```
 
@@ -1016,12 +931,12 @@ else:
 | 20 | 0.78 | 明显优势 |
 | 40 | 0.88 | 大幅优势，接近上限 |
 
-#### 3.4.4 每种状态效果的对抗维度映射
+#### 3.4.4 每种状态/效果的对抗维度映射
 
-| 状态效果 | 对抗维度 | 来源示例 |
+| 状态/效果 | 对抗维度 | 来源示例 |
 | --- | --- | --- |
 | `STUN`（眩晕） | Physical | 战卫重击、闪电术 |
-| `KNOCKBACK`（击退） | Physical | 战卫盾击 |
+| `KNOCKBACK`（击退，瞬时位移） | Physical | 战卫盾击 |
 | `ARMOR_BREAK`（破甲） | Physical | 战卫撕裂、游荡者弱点打击 |
 | `BLEED`（流血） | Physical | 战卫撕裂、游荡者割喉 |
 | `ROOT`（定身） | Physical / Spell | 冰系定身（Spell）、藤蔓缠绕（Spell） |
@@ -1246,7 +1161,7 @@ object DiminishingReturns {
 
 ### 3.6 事件总线与回调注册表
 
-Phase 2 的事件系统承担三类职责：规则层通知、日志/i18n 输入、表现层拉取 snapshot 的同步锚点。此前这些定义散落在 `ResourceEvent`、`CombatTrace`、路线图工作包和 PR 草案中；本节统一冻结最小合同。
+Phase 2 的事件系统承担三类职责：规则层通知、日志/i18n 输入、表现层拉取 snapshot 的同步锚点。此前这些定义散落在 `ResourceEvent`、`CombatResolutionTrace`、路线图工作包和 PR 草案中；本节统一冻结最小合同。
 
 #### 3.6.1 事件层次
 
@@ -1311,7 +1226,7 @@ interface EventBus {
 data class EventContext(
     val world: WorldView,
     val random: RandomSource,
-    val recorder: CombatTraceRecorder?,
+    val recorder: CombatResolutionTraceRecorder?,
 )
 
 enum class CallbackPhase {
@@ -1460,7 +1375,7 @@ K-ToME 的抗性系统采用 **百分比减免模型**，而非扁平值减免�
 | 默认抗性 | 0 | 角色出生时各元素抗性均为 0 |
 | 抗性上限 | 75 | 任何角色的单项元素抗性不得超过 75%（穿透扣除前） |
 | 抗性下限（穿透后） | -25 | 穿透可以把有效抗性打到负值，但下限为 -25%（增伤 25%） |
-| 抗性下限（自然） | 无下限 | 某些怪物可以有负的自然抗性（如亡灵 `holyResistance = -25`） |
+| 抗性下限（自然） | 无下限 | 某些怪物可以有显式声明的负自然抗性，但不再把亡灵/恶魔的负神圣抗性作为通用基线 |
 
 #### 4.2.3 抗性来源
 
@@ -1501,7 +1416,7 @@ K-ToME 的抗性系统采用 **百分比减免模型**，而非扁平值减免�
 最终伤害 = max(1, floor(50 * (1 - 0.30))) = max(1, 35) = 35
 ```
 
-**场景 2**：亡灵（`holyResistance = -25`）被神圣打击命中，原始神圣伤害 40，攻击者有 `holyPenetration = 10`。
+**场景 2**：带有亡灵标签的目标被神圣打击命中，原始神圣伤害 40，攻击者有 `holyPenetration = 10`，并触发标签增伤路径。
 
 ```
 总抗性 = -25
@@ -1561,7 +1476,7 @@ K-ToME 的抗性系统采用 **百分比减免模型**，而非扁平值减免�
 
 #### 4.3.4 穿透贡献计算
 
-在 `CombatTrace` 中，穿透贡献量的计算方式：
+在 `CombatResolutionTrace` 中，穿透贡献量的计算方式：
 
 ```
 // 对于物理穿透
@@ -1607,7 +1522,7 @@ ignoredResistance = min(上限裁切后抗性 - 抗性下限, 元素穿透)
 
 1. **元素交互在战斗管线的步骤 9（受伤后回调）中触发**，作为 `onDamageTaken` 回调的一部分。
 2. 交互效果是 **确定性的**——不需要额外的随机判定，只要条件满足就触发。
-3. 交互产生的次生伤害走 **新的 CombatPipeline 实例**，有独立的 `CombatTrace`。
+3. 交互产生的次生伤害走 **新的 CombatPipeline 实例**，有独立的 `CombatResolutionTrace`。
 4. 交互链的深度限制为 **2 层**，防止无限递归（例如火 → 蒸发 → 产生的蒸汽伤害不再触发新的元素交互）。
 
 #### 4.4.3 Kotlin 接口骨架
@@ -1760,7 +1675,7 @@ interactions:
 - 护甲模型升级为收益递减（`armor / (armor + 100)`）
 - 负抗性的增伤效果（下限 -25%）
 - 元素交互规则（火+冰蒸发、冰+火淬灭、神圣 vs 亡灵/恶魔）
-- `CombatTrace` 完整实现
+- `CombatResolutionTrace / TraceEnvelope` 完整实现
 - Power/Save 对抗体系
 - 怪物模板添加元素抗性数据
 - 装备 affix 添加抗性/穿透词条
@@ -1823,8 +1738,6 @@ enum class StatusEffectType(
     CONFUSE(EffectCategory.DEBUFF),
     SLOW(EffectCategory.DEBUFF),
     FEAR(EffectCategory.DEBUFF),
-    KNOCKBACK(EffectCategory.DEBUFF, dispellable = false),
-
     // ── Phase 2 新增：持续伤害（DoT） ──
     BLEED(EffectCategory.DEBUFF, stackable = true),
     BURN(EffectCategory.DEBUFF, stackable = true),
@@ -1949,14 +1862,20 @@ sealed interface RegenPolicy {
 
 #### 5.1.3 各职业资源配置
 
-| 职业 | 资源类型 | 初始上限 | 回复策略 | 设计意图 |
-| --- | --- | --- | --- | --- |
-| 战卫 Vanguard | `STAMINA` | 40 + WIL×5 | `PerTurn(3)` | 稳定节奏，需要管理消耗避免在关键时刻无力 |
-| 奥术师 Arcanist | `MANA` | 50 + WIL×6 | `PerTurn(2)` | 储量大但回复慢，鼓励预判和精确释放 |
-| 游荡者 Rogue | `ENERGY` | 100 | `Composite([PerTurn(5), OnHit(8)])` | 快攻快回，鼓励持续输出而非观望 |
-| 圣堂武士 Templar | `POSITIVE_ENERGY` | 100 | `Composite([OnDamageTaken(0.15), OnHit(3), DecayPerTurn(5)])` | 需要通过战斗积攒资源，强力技能消耗正能量 |
-| 狂战士 Berserker（P3） | `HATE` | 100 | `Composite([OnHit(5), OnKill(20), DecayPerTurn(8)])` | 越战越怒，脱战快速冷却 |
-| 咒剑士 Spellblade（P3） | `EQUILIBRIUM` | 100（起始 50） | 根据最近使用的技能流派向物理端或法术端每回合偏移 `3` 点 | 平衡值范围 `[0,100]`，`50` 为中线，偏向两端时强化对应流派并削弱另一端 |
+| 职业 | 主资源轴 | 状态轴 | 初始上限 | 回复策略 | 设计意图 |
+| --- | --- | --- | --- | --- | --- |
+| 战卫 Vanguard | `STAMINA` | `-` | 40 + WIL×5 | `PerTurn(3)` | 稳定节奏，需要管理消耗避免在关键时刻无力 |
+| 奥术师 Arcanist | `MANA` | `-` | 50 + WIL×6 | `PerTurn(2)` | 储量大但回复慢，鼓励预判和精确释放 |
+| 游荡者 Rogue | `ENERGY` | `-` | 100 | `Composite([PerTurn(5), OnHit(8)])` | 快攻快回，鼓励持续输出而非观望 |
+| 圣堂武士 Templar | `POSITIVE_ENERGY` | `-` | 100 | `Composite([OnDamageTaken(0.15), OnHit(3), DecayPerTurn(5)])` | 需要通过战斗积攒资源，强力技能消耗正能量 |
+| 狂战士 Berserker（P3） | `HATE` | `HATE` | 100 | `Composite([OnDamageTaken(x), OnHit(y), OnKill(z), DecayPerTurn(n)])` | 越战越怒，高张力段强化输出，但存在失控风险 |
+| 咒剑士 Spellblade（P3） | `MANA` | `EQUILIBRIUM` | `MANA` 常规上限；`EQUILIBRIUM` 100（起始 50） | `MANA` 常规恢复；`EQUILIBRIUM` 按最近成功且 `affinity != NEUTRAL` 的主动技能每回合偏移 | 近战+魔法混合，在物理和法术之间动态切换 |
+
+`Spellblade` 的 `EQUILIBRIUM` 还必须冻结以下最小动作归类合同：
+
+1. `EquilibriumAffinity = PHYSICAL / ARCANE / NEUTRAL`。
+2. 普攻与近战武技默认 `PHYSICAL`；法术主动技能默认 `ARCANE`；混合技能必须显式声明 affinity，缺失时按 `NEUTRAL`。
+3. 铭文、被动触发、free action、sustain toggle 默认 `NEUTRAL`，不改变平衡值。
 
 #### 5.1.4 资源系统与事件总线的集成
 
@@ -2006,7 +1925,9 @@ data class ProfessionDef(
     val iconKey: String,
     val portraitKey: String,
     val tier: ProfessionTier,
-    val resourceType: ResourceType,
+    val resourceProfiles: List<ResourceProfileRef>,
+    val primarySpendAxis: ResourceAxis?,
+    val stateAxis: ResourceAxis?,
     val baseStats: BaseStatBlock,
     val statGrowth: StatGrowthBlock,
     val talentTrees: List<TalentTreeRef>,
@@ -2015,6 +1936,16 @@ data class ProfessionDef(
     val unlockCondition: UnlockCondition?,
     val tags: Set<String>,
 )
+
+enum class ResourceAxis {
+    HP,
+    STAMINA,
+    MANA,
+    ENERGY,
+    POSITIVE_ENERGY,
+    HATE,
+    EQUILIBRIUM,
+}
 
 enum class ProfessionTier { BASE, ADVANCED }
 
@@ -2207,9 +2138,11 @@ talent:
   maxPoints: 5               # 最大可投入点数
   category: ACTIVE           # ACTIVE / PASSIVE / SUSTAINED
   damageType: PHYSICAL       # 伤害通道
-  resourceCost: 8            # 基础资源消耗
+  resourceCosts:
+    - axis: STAMINA
+      amount: 8              # 基础资源消耗
   cooldown: 3                # 基础冷却回合数
-  castTime: 1000             # 施法能量消耗（1000=标准行动，750=快速，1250=慢速）
+  castTime: STANDARD         # `ActionCost` 的 YAML 输入别名
 
   # 目标选择
   targeting:
@@ -2220,36 +2153,39 @@ talent:
     friendlyFire: false
 
   # Telegraph（预警）
-  telegraph:
-    shape: SINGLE_CELL        # SINGLE_CELL / LINE / CONE / CIRCLE / CROSS
-    previewTurns: 0           # 预览回合数（0=即时，1+=延迟释放）
-    dangerLevel: MODERATE     # LOW / MODERATE / HIGH / LETHAL
-    colorHint: "#FF4500"
+  telegraphRef: "power_strike_warning"   # 引用统一 TelegraphSpec；shape / preview / danger 不在 talent YAML 内联重复维护
+
+  aiHints:
+    role: OFFENSE
+    preferredRange: [1, 1]
+    isSustainToggle: false
 
   # 前置条件
   requirements:
     level: 1
     stats: {}                 # 例如 { str: 16 } 表示需要 16 力量
-    talentPrereqs: []         # 例如 ["basic_attack:2"] 表示需要基础攻击 2 级
+    talentPrereqs:
+      - talentId: "basic_attack"
+        minRank: 2
 
   # 每级效果（断点成长）
   levelEffects:
     1:
       damageMultiplier: 1.5
-      description: "造成 {damage_mult}% 武器伤害"
+      unlockTags: []
     2:
       damageMultiplier: 1.7
     3:
       damageMultiplier: 1.9
       additionalEffect: "ARMOR_BREAK"
       effectDuration: 3
-      breakpointDescription: "新增：命中时施加破甲 {duration} 回合"
+      unlockTags: ["armor_break_on_hit"]
     4:
       damageMultiplier: 2.1
     5:
       damageMultiplier: 2.5
       armorPenetration: 15
-      breakpointDescription: "新增：无视目标 {pen} 点护甲"
+      unlockTags: ["armor_penetration"]
 
   # 关键词标签
   keywords: ["melee", "physical", "single_target", "armor_break"]
@@ -2296,27 +2232,29 @@ data class TargetingResult(
 )
 ```
 
+补充冻结：
+
+1. `Phase 3` 的正式 targeting 枚举固定为上述 8 类。
+2. 旧命名 `ACTOR / TILE / RADIUS` 在 `Phase 3` 分别收口为 `SINGLE_TARGET / GROUND_TARGET / RADIUS_SELF|RADIUS_TARGET`。
+3. `WALL / SUMMON_SLOT` 只作为 `Phase 4+` 的扩展保留概念，不进入 `Phase 3` runtime targeting 枚举。
+
 #### 6.1.3 Telegraph 系统
 
 Telegraph（预警）系统用于在 Boss 或精英使用高危技能时给玩家反应时间：
 
 ```kotlin
-/**
- * 技能预警定义。
- */
-data class TelegraphDef(
-    /** 预警形状 */
+data class TelegraphSpec(
     val shape: TelegraphShape,
-    /** 预警覆盖的格子（相对于施法者或目标点） */
-    val cells: Set<Point>,
-    /** 预警回合数（0=即时，1=下回合生效，2=再下回合） */
     val previewTurns: Int,
-    /** 危险等级 */
     val dangerLevel: DangerLevel,
-    /** 预警 UI 颜色 */
-    val colorHint: String,
-    /** 是否显示伤害预估 */
-    val showDamageEstimate: Boolean = false,
+    val threatProfileId: String,
+    val counterplayTags: List<String>,
+    val stages: List<TelegraphStage> = emptyList(),
+)
+
+data class TelegraphStage(
+    val type: TelegraphStageType,
+    val durationTurns: Int,
 )
 
 enum class TelegraphShape {
@@ -2330,14 +2268,17 @@ enum class TelegraphShape {
 }
 
 enum class DangerLevel {
-    /** 低威胁，可以忽略 */
     LOW,
-    /** 中等威胁，建议躲避 */
     MODERATE,
-    /** 高威胁，必须躲避 */
     HIGH,
-    /** 致命，站在里面几乎必死 */
     LETHAL,
+}
+
+enum class TelegraphStageType {
+    WARNING,
+    WINDUP,
+    IMPACT,
+    RESIDUAL,
 }
 ```
 
@@ -2345,8 +2286,10 @@ enum class DangerLevel {
 
 1. 所有 Boss 技能中伤害大于等于玩家最大 HP 30% 的，必须有至少 1 回合的 telegraph
 2. 伤害大于等于 50% 的技能必须有 2 回合 telegraph
-3. Telegraph 必须同时通过视觉（地面高亮）、日志（文字警告）、音频（预警音效）三通道传达
-4. 玩家站在 telegraph 区域内时 HUD 应有额外闪烁提示
+3. `counterplayTags` 是正式字段，用于表达 `DODGE / INTERRUPT / BLOCK` 等可应对手段。
+4. `Phase 3` 只冻结 `preview + trigger` 的最小模型；`stages` 作为 `Phase 5` 四段式 telegraph 的预留字段，当前默认空列表。
+5. Telegraph 必须同时通过视觉（地面高亮）、日志（文字警告）、音频（预警音效）三通道传达。
+6. 玩家站在 telegraph 区域内时 HUD 应有额外闪烁提示。
 
 ### 6.2 天赋树结构
 
@@ -2613,6 +2556,7 @@ class ScriptedAIResolver(
 4. 脚本默认在加载关卡或启动游戏时解析；Phase 3 不承诺热加载，修改 YAML 后允许重启或重新载入会话。
 5. `defaultBehavior` 必须始终存在，防止所有条件都 miss 时出现空决策。
 6. 普通怪与精英怪的一般行为选择固定使用 `priority + condition` 的确定性模型；若 Boss 需要在激活 phase 内增加不确定性，只允许在**已通过条件筛选**的候选动作集合上做加权选择，并且必须把权重、随机种子与最终选中动作写入 trace。
+7. `AIProfile` 进入 `selectionPolicy` 时代后，候选动作排序固定为 `orderKey asc(null=Int.MAX_VALUE) -> actionId asc`；不允许依赖 YAML 加载顺序。
 
 ### 7.4 Boss 阶段状态机
 
@@ -2652,8 +2596,7 @@ boss:
         - type: PLAY_AUDIO
           cueId: "sfx_boss_enrage"
         - type: TELEGRAPH
-          talentId: "ground_slam"
-          previewTurns: 1
+          telegraphSpecId: "ground_slam_phase_warning"
 
     - id: "phase_3"
       nameKey: "boss.dungeon_lord.phase3"
@@ -2678,10 +2621,12 @@ ai_profile:
   perceptionRange: 12
   useLastKnownPosition: true
   defaultBehavior: "CHASE"
+  selectionPolicy: "WEIGHTED_RANDOM"
 
   actions:
     - id: "ground_slam"
       type: "USE_ABILITY"
+      orderKey: 10
       abilityId: "ground_slam"
       condition:
         type: "TURN_COUNT_MODULO"
@@ -2691,6 +2636,7 @@ ai_profile:
 
     - id: "execute_strike"
       type: "USE_ABILITY"
+      orderKey: 20
       abilityId: "execute_strike"
       condition:
         type: "AND"
@@ -2703,6 +2649,7 @@ ai_profile:
 
     - id: "melee"
       type: "ATTACK_MELEE"
+      orderKey: 30
       condition:
         type: "TARGET_DISTANCE_LESS_THAN"
         distance: 2
@@ -2710,12 +2657,18 @@ ai_profile:
 
     - id: "chase"
       type: "CHASE"
+      orderKey: 40
       condition:
         type: "TARGET_VISIBLE"
       weight: 5
 ```
 
-说明：`weight` 是相对权重，不要求预先归一化；运行时对通过条件过滤后的候选动作集合重新求和归一化。
+说明：
+
+1. `weight` 是相对权重，不要求预先归一化；运行时对通过条件过滤后的候选动作集合重新求和归一化。
+2. `WEIGHTED_RANDOM` 采样前固定按 `orderKey asc -> actionId asc` 排序；`orderKey` 缺失按 `Int.MAX_VALUE`。
+3. 未声明 `weight` 的候选动作默认按 `1.0` 处理；若候选集合总权重 `<= 0`，回退到排序后的首个候选动作并写 trace reason。
+4. telegraph 的 defender baseline 只允许经由 `ThreatProfileDef` 注册表（如 `game/src/main/resources/data/telegraph/threat_profiles/*.yaml`）引用，不允许在 Boss / talent YAML 内联一套新的 baseline。
 
 ### 7.5 怪物感知系统（Phase 3~5 渐进引入）
 
@@ -2816,7 +2769,8 @@ data class ActiveEffectV2(
 
 1. `BLEED / BURN / POISON` 在**受影响实体的回合开始、行动前**结算。
 2. 若目标处于 `STUN / FREEZE`，DoT 依然正常 tick。
-3. DoT 的 tick、致死与后续移除都必须可在 `CombatTrace` 中定位。
+3. DoT 的 tick、致死与后续移除都必须可在 `CombatResolutionTrace` 中定位。
+4. 同一 actor 调度点的跨 carrier 总顺序固定为 `ActorEffect -> AreaEffectEmitter -> WorldEffect`；每层内部必须有稳定 tie-break，并在层结束后执行一次死亡检查。
 
 Phase 2 首批非伤害 seed 中，`GUARD` 与 `MARKED` 的语义固定为：
 
@@ -2834,7 +2788,7 @@ Phase 2 首批非伤害 seed 中，`GUARD` 与 `MARKED` 的语义固定为：
 | **可叠加，上限封顶** | 最多 N 层，超过后刷新全部层的持续时间；`ARMOR_BREAK` 为跨来源全局上限 | ARMOR_BREAK（最多 3 层） |
 | **不可叠加，取较强** | 同类效果按 `magnitude` 优先、`remainingTurns` 次级比较；较弱者丢弃 | SHIELD, REGEN, GUARD, INVULNERABLE |
 | **后来者覆盖** | 同时只保留一个来源，新效果覆盖旧效果 | TAUNT |
-| **唯一效果** | 同一来源只能存在一个，不同来源可共存 | WAR_CRY_BUFF（每个施法者独立） |
+| **唯一效果** | 通过 `uniquenessKey / exclusiveGroup / sourceScopedUnique / replacePolicy` 表达，同一来源只能存在一个，不同来源可共存 | 例如某些战吼、姿态、光环类效果 |
 
 #### 8.1.3 效果互斥与优先级
 
@@ -2851,8 +2805,10 @@ Phase 2 首批非伤害 seed 中，`GUARD` 与 `MARKED` 的语义固定为：
 补充冻结：
 
 1. `CURSE` 与 `WEAKEN` 独立生效，由最终属性自然下限兜底，不额外定义负值奖励。
-2. `OVERCHARGE` 在下一次成功承受 `LIGHTNING` 伤害后被消耗；若期间再次施加，只刷新持续时间。
+2. `OVERCHARGE` 在下一次成功承受 `LIGHTNING` 伤害时使该次伤害 `+25%` 并被消耗；若期间再次施加，只刷新持续时间。
 3. `TAUNT` 同时只能有一个有效嘲讽源，后来者覆盖前一个来源。
+4. `zone effect`、arena aura、world modifier 不再视为 actor status；它们与 actor effect 共用生命周期引擎，但宿主和净化语义不同。
+5. `AreaEffectEmitter / WorldEffect` 默认不受 actor 级 `cleanse` 影响；若设计要求可被技能移除，必须单独声明 `remoteRemovalPolicy`，不复用 `dispel` 术语。
 
 #### 8.1.4 净化与驱散
 
@@ -2881,7 +2837,7 @@ enum class CleanseOrder {
 1. 若存在 `STUN / ROOT`，优先清除这两类硬控。
 2. 否则按 `LONGEST_REMAINING` 处理。
 
-**不可被净化的效果**：`KNOCKBACK`（瞬时效果）、`INVULNERABLE`、`STEALTH`、Boss phase 锁定状态。
+**不可被净化的效果**：`INVULNERABLE`、`STEALTH`、Boss phase 锁定状态。`KNOCKBACK` 作为瞬时位移效果处理，不进入持久状态矩阵，也不属于净化目标。
 
 ### 8.2 铭文系统设计（Phase 3 引入）
 
@@ -2988,7 +2944,7 @@ sealed interface InscriptionEffect {
 `Phase 2` 引入事件总线、资源池和新状态后，不允许继续把规则堆进单一会话巨类。推荐最小拆分为：
 
 1. `TurnSystem`：行动队列、能量推进、回合边界事件
-2. `CombatSystem`：命中、伤害、状态施加、CombatTrace
+2. `CombatSystem`：命中、伤害、状态施加、`CombatResolutionTrace`
 3. `TalentSystem`：主动/持续技能、冷却、资源消耗
 4. `InventorySystem`：物品、装备、掉落、使用
 5. `ProgressionSystem`：经验、升级、奖励
@@ -3012,7 +2968,7 @@ data class SaveDataV2(
     val monsters: List<SerializedEntity>,
     val items: List<SerializedItem>,
     val mapState: SerializedMapState,
-    val questState: QuestSnapshot,
+    val worldProgress: WorldProgressSnapshot,
     val aiState: List<SerializedAiState>,
     val logHistory: List<LogTokenEvent>,
 )
@@ -3026,6 +2982,15 @@ data class SerializedMapState(
     val terrainOverrides: Map<Point, TerrainOverride>,
     val groundItems: Map<Point, List<String>>,
 )
+
+@Serializable
+data class WorldProgressSnapshot(
+    val questStates: Map<String, ObjectiveStateSnapshot>,
+    val worldFlags: Set<String>,
+    val unlockedRoutes: Set<String>,
+    val defeatedBossIds: Set<String>,
+    val claimedRouteRewards: Set<String>,
+)
 ```
 
 保存范围冻结为：
@@ -3034,7 +2999,7 @@ data class SerializedMapState(
 2. `EntityId` 使用本局局部稳定 ID 持久化；恢复后继续从 `nextEntityId` 递增。
 3. AI 只保存最小必要状态，如 `perceptionState`、`hateFocus`、脚本阶段、冷却和 patrol index；不保存 path cache。
 4. 地图必须保存已探索格、门开关、地形覆盖、地面掉落、Boss 房状态等会影响规则的内容。
-5. 任务、战斗日志、资源池、持续状态都以结构化 schema 保存；坏档或缺字段按 fail-fast 处理。
+5. `WorldProgressSnapshot` 必须能无损 round-trip `questStates / worldFlags / unlockedRoutes / defeatedBossIds / claimedRouteRewards`；坏档或缺字段按 fail-fast 处理。
 
 #### 9.1.1.2 RenderSnapshot 更新协议
 
@@ -3045,6 +3010,7 @@ data class SerializedMapState(
 3. 最低刷新时机包括：`session load`、玩家行动提交、AI 整轮提交、切层/切区、存档恢复完成。
 4. `RenderSnapshot` 只包含 tile、actor、overlay、HUD、telegraph 等逻辑表现字段；浮字、震屏、Tween、过渡动画由 client 根据事件自行驱动。
 5. 伤害数字、miss、暴击提示、阶段切换 warning 通过 `CombatEvent/StatusEvent/LogEvent` 传递，不作为 snapshot 历史缓存的一部分。
+6. `Status HUD` 的 steady-state（icon / 层数 / 剩余回合）必须来自 `RenderSnapshot`；`StatusEvent` 只负责覆盖、净化、隐匿打破等瞬时反馈。
 
 #### 9.1.1.3 Phase 2 经济、难度与输入最小合同
 
@@ -3089,7 +3055,7 @@ data class DifficultyDef(
 | `shattered_outpost` | 破碎前哨 | Shattered Outpost | 2 | 60×40 | 1~4 | 废墟/石材/杂草 | 教程区域，简单陷阱 |
 | `greenwood_fringe` | 绿林边缘 | Greenwood Fringe | 2 | 70×45 | 3~6 | 森林/小溪/苔藓 | 视野遮挡（树木），巡逻怪 |
 | `deep_iron_pit` | 深铁矿坑 | Deep Iron Pit | 2 | 80×50 | 5~8 | 矿洞/铁轨/熔炉 | 熔岩地形（持续火焰伤害），矿车机关 |
-| `grey_gate_depths` | 灰门深窟 | Grey Gate Depths | 2 | 80×50 | 7~10 | 古城地下/石柱/暗河 | Boss 区域，最终 Boss 战 |
+| `grey_gate_depths` | 灰门深窟 | Grey Gate Depths | 2 | 80×50 | 7~10 | 古城地下/石柱/暗河 | Boss 区域，含灰门王座区域 Boss 房 |
 
 **每个 Zone 的怪物池**：
 
@@ -3123,11 +3089,11 @@ data class DifficultyDef(
 1. 命中判定从线性模型切换到 Sigmoid 模型（3.2.1 节）
 2. 引入 Power/Save 对抗体系（3.4 节）
 3. 引入收益递减模型（3.5 节）
-4. 引入 CombatTrace 记录系统（3.3 节）
+4. 引入 `CombatResolutionTrace / TraceEnvelope` 记录系统（3.3 节）
 5. 元素抗性/穿透从简化版升级为完整百分比模型
 6. 引入暴击抗性和暴击伤害属性
 
-**Golden Seed 基线变更声明**：由于战斗公式从线性切换为非线性，Phase 2 的所有 Golden Seed 基线在 Phase 3 开始时需要全量重新录制。这是预期内的破坏性变更。
+**Golden Seed 基线变更声明**：由于战斗公式从线性切换为非线性，Phase 2 的 `FORMULA` corpus / Golden Seed 基线在 Phase 3 开始时需要全量重新录制。这是预期内的破坏性变更。自 Phase 3 起，golden 产物至少携带 `phaseId / rulesetVersion / traceSchemaVersion / corpusId`。
 
 #### 9.2.2 P3-B（构筑与角色扩展）补充
 
@@ -3142,6 +3108,38 @@ data class DifficultyDef(
 
 说明：`Phase 3` 只有 `Normal` 难度，因此“通关”即击败 `深渊之心` 并生成 run summary；若后续阶段引入更多难度选项，任意难度通关均满足解锁条件。
 
+**开发态可用性与正式解锁分离**：
+
+```kotlin
+enum class ClassUnlockState {
+    LOCKED,
+    DEV_UNLOCKED,
+    RELEASE_UNLOCKED,
+}
+
+enum class AvailabilityContext {
+    PLAYER_CREATION,
+    DEV_LAB,
+    WHITE_BOX,
+}
+
+enum class ClassPlayabilityState {
+    LOCKED,
+    UNLOCKED_BUT_UNAVAILABLE,
+    PLAYABLE,
+}
+```
+
+说明：
+
+1. `DEV_UNLOCKED` 仅用于实验室、白盒验证和开发调试，不代表正式玩家已解锁。
+2. `P3-W5` 可以让 `Berserker / Spellblade` 以 `DEV_UNLOCKED` 进入可玩验证。
+3. 只有正式通关条件满足后，才写入 `RELEASE_UNLOCKED` 局间数据。
+4. `ClassAvailabilityResolver` 是唯一的映射出口：
+   - `PLAYER_CREATION`：`LOCKED -> LOCKED`，`DEV_UNLOCKED -> UNLOCKED_BUT_UNAVAILABLE`，`RELEASE_UNLOCKED -> PLAYABLE`
+   - `DEV_LAB / WHITE_BOX`：`LOCKED -> LOCKED`，`DEV_UNLOCKED -> PLAYABLE`，`RELEASE_UNLOCKED -> PLAYABLE`
+5. UI 不得绕过 resolver 自己猜测职业卡片状态。
+
 **种族天赋点分配**：种族天赋点独立于职业天赋点。每 4 级获得 1 点种族天赋点，用于投资种族天赋树。
 
 **局间持久化最小 schema**：
@@ -3150,7 +3148,7 @@ data class DifficultyDef(
 @Serializable
 data class ProfileData(
     val profileVersion: Int,
-    val unlockedClasses: Set<String>,
+    val releaseUnlockedClasses: Set<String>,
     val runHistory: List<RunSummary>,
 )
 
@@ -3158,10 +3156,16 @@ data class ProfileData(
 data class RunSummary(
     val seed: Long,
     val finishedAtEpochMillis: Long,
-    val winningClassId: String?,
-    val winningRaceId: String?,
+    val classId: String,
+    val raceId: String,
     val finalZoneId: String,
+    val turnCount: Int,
+    val headlessTurnEquivalent: Int,
+    val zoneRouteHash: String,
+    val buildHash: String,
+    val rulesetVersion: String,
     val victory: Boolean,
+    val defeatReason: String? = null,
 )
 ```
 
@@ -3169,7 +3173,8 @@ data class RunSummary(
 
 1. `ProfileData` 与 `SaveDataV2` 分文件、分版本号管理，不允许混存。
 2. 当前 run 内的装备、货币、临时状态和地图探索信息不得进入 `ProfileData`。
-3. 进阶职业解锁只写入 `unlockedClasses`，run 结束摘要只写结构化 `RunSummary`。
+3. 正式进阶职业解锁只写入 `releaseUnlockedClasses`；`DEV_UNLOCKED` 不进入局间档。
+4. run 结束摘要必须写结构化 `RunSummary`，以支撑实验室复现、玩家 run history 与回归分析。
 
 #### 9.2.3 P3-C（长局结构）补充
 
@@ -3193,6 +3198,44 @@ Phase 3 扩展：
 
 说明：`灰门王座` 在 `Phase 3` 继续作为 `grey_gate_depths` 内部的区域 Boss 房存在，不单独作为 world graph 的独立 zone 节点。
 
+**WorldProgress 最小合同**：
+
+```kotlin
+data class WorldProgressDef(
+    val questStates: Map<String, ObjectiveState>,
+    val worldFlags: Set<String>,
+    val unlockedRoutes: Set<String>,
+    val defeatedBossIds: Set<String>,
+    val claimedRouteRewards: Set<String>,
+)
+
+enum class RewardClaimPolicy {
+    ON_ROUTE_UNLOCK,
+    ON_FIRST_ROUTE_CLEAR,
+}
+
+data class GateCondition(
+    val requiredQuestId: String? = null,
+    val requiredWorldFlag: String? = null,
+    val requiredBossKill: String? = null,
+)
+
+data class RouteReward(
+    val routeId: String,
+    val claimPolicy: RewardClaimPolicy = RewardClaimPolicy.ON_FIRST_ROUTE_CLEAR,
+    val shardReward: Int,
+    val guaranteedDropIds: List<String>,
+    val rescueTags: Set<String>,
+)
+```
+
+说明：
+
+1. `world graph` 只表达连接关系；主支线推进必须由 `WorldProgress / Quest / GateCondition / RouteReward` 表达。
+2. `SaveDataV2` 的 `worldProgress` 必须无损保留 `worldFlags / unlockedRoutes / defeatedBossIds / claimedRouteRewards`，否则读档后 gate / reward 语义会漂移。
+3. `RouteReward.claimPolicy` 必须显式声明是“首次解锁发”还是“首次通关发”，不允许靠 `worldFlags` 侧推。
+4. 商店与路线奖励必须能为 build 提供最小救火路径，不允许完全依赖随机掉落。
+
 **Affix V1 设计**（Phase 3 引入前缀/后缀词缀的基础版）：
 
 | 词缀类型 | Phase 3 数量 | 示例 |
@@ -3201,6 +3244,13 @@ Phase 3 扩展：
 | 武器后缀 | 10 种 | 力量之(+STR)、速度之(+攻速)、吸血之(命中回血)、穿甲之(+护甲穿透) |
 | 防具前缀 | 10 种 | 坚固的(+护甲)、抗火的(+火抗)、镇定的(+Mental Save) |
 | 防具后缀 | 8 种 | 生命之(+HP)、再生之(+HP回复)、抗性之(+全元素抗) |
+
+补充冻结：
+
+1. `AffixTagWeighting` 用于把 affix 与职业、伤害通道、资源轴建立相关性。
+2. `AffixBlacklist` 用于避免明显无效或误导组合。
+3. `RescueInventoryPolicy` 用于约束固定商店节点必须提供位移 / 净化 / 护盾等保底工具。
+4. `AffordableRescueSlotPolicy` 还必须冻结每个 checkpoint 的 `expectedShardBudgetByCheckpoint / mandatoryAffordableItemCount / requiredAffordableTags`，确保关键救火工具不只是“货架上有”，而且“预算内买得起”。
 
 ### 9.3 Phase 4 细节补充
 
@@ -3516,7 +3566,7 @@ data class DeathAnalysis(
     val damageType: DamageType,
     val finalDamage: Int,
     val playerHpBefore: Int,
-    val combatTrace: CombatTrace,
+    val combatTrace: CombatResolutionTrace,
     val last5Turns: List<TurnSummary>,
     val activeEffectsAtDeath: List<ActiveEffectV2>,
     val suggestions: List<DeathSuggestion>,
@@ -3581,7 +3631,7 @@ data class RunHistoryEntry(
 | --- | --- | --- | --- |
 | Solo-Clear Contract | 单通合同 | Solo-Clear Contract | 职业独立通关的六条能力线检验标准 |
 | DamageType | 伤害通道 | Damage Channel | 六大伤害类型之一 |
-| CombatTrace | 战斗追踪 | Combat Trace | 记录完整战斗结算过程的审计数据 |
+| CombatResolutionTrace | 战斗追踪 | Combat Resolution Trace | 记录完整战斗结算过程的审计数据 |
 | Power/Save | 强度/豁免 | Power vs Save | 状态效果施加的三维对抗体系 |
 | Diminishing Returns | 收益递减 | Diminishing Returns | 高属性区间边际收益下降的数学模型 |
 | Telegraph | 预警 | Telegraph | Boss/精英技能释放前的视觉警告 |

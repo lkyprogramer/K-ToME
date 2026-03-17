@@ -501,28 +501,27 @@ maxMana       = baseMana + WIL * 6 + bonuses
 说明：
 
 1. `Attack` 字段在 `Phase 2` 迁移阶段等价映射为 `meleePower`。
-2. `Evasion` 在 `Phase 2` 迁移阶段等价并入 `defense`。
+2. `Evasion` 在 `Phase 2` 迁移阶段等价并入 `defense`；自 `Phase 3` 起恢复为命中系统的独立对抗属性，详见补充设计文档 §3.2。
 3. `talentPower` 废弃为统一的 `spellPower`/`mindPower`/树系系数。
 
 ### 7.4 命中公式
 
-固定采用“有边际递减的差值函数”，避免后期完全堆满。
+`Phase 2` 迁移阶段曾使用“有边际递减的差值函数”作为临时命中模型；自 `Phase 3` 起，正式口径统一切换为补充设计文档 §3.2 的 Sigmoid 模型。
 
 ```text
-normalizedDelta(delta, scale) = delta / (abs(delta) + scale)
-
 hitChance =
   clamp(
-    0.10,
+    0.05,
     0.95,
-    0.55 + normalizedDelta(accuracy - defense, 35) * 0.35
+    0.05 + 0.90 * sigmoid(0.04 * (accuracy - evasion + 10))
   )
 ```
 
 说明：
 
-1. `ACCURACY_VS_DEFENSE` 用于近战、投射物和部分可闪避技能。
-2. `POWER_VS_SAVE` 不决定命中本体，而决定附加状态或特殊效果是否成立。
+1. `accuracy - evasion` 是 `Phase 3` 命中系统的正式输入；`defense` 不再承担命中对抗属性的权威语义。
+2. 本节旧的 `normalizedDelta(accuracy - defense, 35)` 方案仅视为 `Phase 2` 迁移历史说明，不再作为 `Phase 3` 实施依据。
+3. `POWER_VS_SAVE` 不决定命中本体，而决定附加状态或特殊效果是否成立。
 
 ### 7.5 暴击公式
 
@@ -595,7 +594,7 @@ applyChance =
 
 | 状态/效果 | 维度 | 说明 |
 | --- | --- | --- |
-| `STUN` `KNOCKBACK` `BLEED` `ARMOR_BREAK` | `PHYSICAL` | 武器、盾击、冲锋、物理控制 |
+| `STUN` `KNOCKBACK(瞬时位移)` `BLEED` `ARMOR_BREAK` | `PHYSICAL` | 武器、盾击、冲锋、物理控制 |
 | `SILENCE` `CONFUSE` `FEAR` `WEAKEN` | `MENTAL` | 精神冲击、暗影恐惧、心智扰乱 |
 | `BURN` `SLOW` `FREEZE` `CURSE` `BANE` | `SPELL` | 元素、神圣、暗影法术效果 |
 | `ROOT` `BLIND` | 由技能显式声明 | 物理来源走 `PHYSICAL`，法术来源走 `SPELL` |
@@ -1287,13 +1286,13 @@ enum class TalentKind {
 
 enum class TargetMode {
     SELF,
-    ACTOR,
-    TILE,
+    SINGLE_TARGET,
+    GROUND_TARGET,
     LINE,
     CONE,
-    RADIUS,
-    WALL,
-    SUMMON_SLOT,
+    RADIUS_SELF,
+    RADIUS_TARGET,
+    CROSS,
 }
 
 data class TalentDef(
@@ -1301,16 +1300,16 @@ data class TalentDef(
     val treeId: String,
     val kind: TalentKind,
     val nameKey: String,
-    val descKey: String,
-    val iconKey: String,
-    val visualKey: String,
-    val audioProfile: String,
-    val maxLevel: Int,
+    val descriptionTemplateKey: String,
+    val iconKey: String?,
+    val visualKey: String?,
+    val audioProfile: String?,
+    val maxRank: Int,
     val actionCost: ActionCost,
     val cooldown: CooldownDef,
     val resourceCosts: List<ResourceCost>,
     val targeting: TalentTargeting,
-    val telegraph: TelegraphDef?,
+    val telegraphRef: String?,
     val keywords: List<String>,
     val aiHints: TalentAiHints,
     val ranks: Map<Int, TalentRankDef>,
@@ -1321,6 +1320,49 @@ data class TalentRankDef(
     val effects: List<TalentEffectOp>,
     val breakpoints: List<TalentBreakpoint> = emptyList(),
 )
+
+enum class ResourceAxis {
+    HP,
+    STAMINA,
+    MANA,
+    ENERGY,
+    POSITIVE_ENERGY,
+    HATE,
+    EQUILIBRIUM,
+}
+
+data class ResourceCost(
+    val axis: ResourceAxis,
+    val amount: Int,
+)
+
+enum class TalentRole {
+    OFFENSE,
+    DEFENSE,
+    HEAL,
+    CONTROL,
+    MOBILITY,
+    UTILITY,
+}
+
+enum class DisplacementType {
+    PUSH,
+    PULL,
+    DASH,
+    TELEPORT,
+}
+
+data class TalentAiHints(
+    val role: TalentRole,
+    val preferredRange: IntRange?,
+    val isSustainToggle: Boolean = false,
+)
+
+data class TalentBreakpoint(
+    val atRank: Int,
+    val unlockedEffects: List<TalentEffectOp>,
+    val descriptionAddendumKey: String?,
+)
 ```
 
 ### 11.3 目标选择模型
@@ -1330,52 +1372,61 @@ data class TalentRankDef(
 | 类型 | 用途 |
 | --- | --- |
 | `SELF` | 自身姿态、护盾、恢复 |
-| `ACTOR` | 单体敌人或盟友目标 |
-| `TILE` | 指定地块 |
+| `SINGLE_TARGET` | 单体敌人或盟友目标 |
+| `GROUND_TARGET` | 指定地块 |
 | `LINE` | 光束、冲锋、投射轨迹 |
 | `CONE` | 扇形战技 |
-| `RADIUS` | 爆炸、地面区域 |
-| `WALL` | 召唤墙、障碍 |
-| `SUMMON_SLOT` | 召唤类 |
+| `RADIUS_SELF` | 以自身为中心的范围 |
+| `RADIUS_TARGET` | 以目标点为中心的范围 |
+| `CROSS` | 十字形范围 |
 
 冻结规则：
 
 1. Phase 2~5 不支持任意自由形状。
 2. 所有 targeting 都必须能映射到 Tile telegraph。
 3. 所有 targeting 都必须能被 AI 推理和测试。
+4. 旧命名 `ACTOR / TILE / RADIUS` 在 `Phase 3` 分别收口为 `SINGLE_TARGET / GROUND_TARGET / RADIUS_SELF|RADIUS_TARGET`。
+5. `WALL / SUMMON_SLOT` 保留为 `Phase 4+` 的扩展保留概念，不进入 `Phase 3` 的正式 runtime targeting 枚举。
 
 ### 11.4 Telegraph 语法
 
 ```kotlin
-enum class TelegraphSeverity {
-    INFO,
-    WARNING,
-    DANGER,
+enum class DangerLevel {
+    LOW,
+    MODERATE,
+    HIGH,
+    LETHAL,
 }
 
-data class TelegraphDef(
+enum class TelegraphStageType {
+    WARNING,
+    WINDUP,
+    IMPACT,
+    RESIDUAL,
+}
+
+data class TelegraphStage(
+    val type: TelegraphStageType,
+    val durationTurns: Int,
+)
+
+data class TelegraphSpec(
     val shape: TargetMode,
-    val leadTurns: Int,
-    val severity: TelegraphSeverity,
-    val indicatorKey: String,
-    val logKey: String,
-    val audioCue: String?,
+    val previewTurns: Int,
+    val dangerLevel: DangerLevel,
+    val threatProfileId: String,
     val counterplayTags: List<String>,
+    val stages: List<TelegraphStage> = emptyList(),
 )
 ```
 
 冻结规则：
 
 1. 大伤害技能必须有 telegraph。
-2. telegraph 至少包含：
-   - 图形提示
-   - 日志提示
-   - 可选音频提示
-3. `Phase 3` 起 Boss 大技能必须使用四段式：
-   - 预警
-   - 起手
-   - 爆发
-   - 残留
+2. 自 `Phase 3` 起，PR 文档与补充设计文档统一使用 `TelegraphSpec` 命名；本节旧的 `TelegraphDef` 视为已被替换。
+3. `counterplayTags` 作为正式字段保留，用于表达 `DODGE / INTERRUPT / BLOCK` 等可应对手段。
+4. `Phase 3` 只冻结 `preview + trigger` 的最小模型；`stages` 作为 `Phase 5` 四段式 telegraph 的预留字段，当前默认空列表。
+5. 危险级枚举统一使用 `LOW / MODERATE / HIGH / LETHAL`。
 
 ### 11.5 技能效果操作集
 
@@ -1397,6 +1448,45 @@ Phase 2~5 只允许在 typed executor 中实现以下 effect op：
 14. `CHAIN_TO_TARGETS`
 
 不允许在 `Phase 2 ~ Phase 5` 内引入“任意表达式脚本”作为技能效果源。
+
+最小 typed 结构如下：
+
+```kotlin
+sealed interface TalentEffectOp {
+    data class DealDamage(
+        val damageType: DamageType,
+        val baseAmount: IntRange,
+        val scaling: ScalingDef,
+    ) : TalentEffectOp
+
+    data class ApplyStatus(
+        val statusId: String,
+        val duration: Int,
+        val applicationPolicy: ApplicationPolicy,
+    ) : TalentEffectOp
+
+    data class RemoveStatus(
+        val statusIds: List<String>,
+        val mode: RemovalMode,
+    ) : TalentEffectOp
+
+    data class GainResource(
+        val axis: ResourceAxis,
+        val amount: Int,
+    ) : TalentEffectOp
+
+    data class Displacement(
+        val type: DisplacementType,
+        val distance: Int,
+    ) : TalentEffectOp
+
+    data class StatModifier(
+        val statId: String,
+        val amount: Int,
+        val duration: Int,
+    ) : TalentEffectOp
+}
+```
 
 ### 11.6 技能描述模板
 

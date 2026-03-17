@@ -345,7 +345,7 @@
 
 | 检查点 | 目标 | 结果要求 |
 | --- | --- | --- |
-| `P3-A` | 战斗深度核心 | 公式、状态、天赋 schema、CombatTrace、脚本化 AI 可自证 |
+| `P3-A` | 战斗深度核心 | 公式、状态、天赋 schema、Resolution Trace / Golden Corpus、脚本化 AI 可自证 |
 | `P3-B` | 构筑与角色扩展 | 基础职业正式化，种族/Profile 进入主线 |
 | `P3-C` | 长局结构成型 | 世界分支、Boss telegraph、affix v1、完整长局 |
 
@@ -353,12 +353,18 @@
 
 | ID | 所属检查点 | 目标 | 主要模块 | 依赖 | 完成定义 |
 | --- | --- | --- | --- | --- | --- |
-| `P3-W1` | `P3-A` | 战斗公式 V2：命中、防御、Power/Save、暴击、护甲/抗性、`CombatTrace` | `core` | `Phase 2` | 所有关键对抗都有金样本回归，描述与 trace 对齐 |
+| `P3-W1` | `P3-A` | 战斗公式 V2：命中、防御、Power/Save、暴击、护甲/抗性、`ApplicationPolicy`、`CombatResolutionTrace / TraceEnvelope` | `core`, `tools` | `Phase 2` | `FORMULA` corpus 可回归，描述与 resolution trace 对齐 |
 | `P3-W2` | `P3-A` | 状态/持续/铭文骨架，扩展回调生命周期与 UI 状态语义 | `core`, `client` | `P3-W1` | buff/debuff/sustain/zone effect 生命周期可自证 |
 | `P3-W3` | `P3-A` | 天赋树 schema V2、动态说明、关键词注册表、断点成长 | `core`, `game`, `client` | `P3-W1`, `P3-W2` | 天赋解析、升级预览、回滚和洗点都可测试 |
-| `P3-W4` | `P3-B` | 脚本化 AI、Boss telegraph 语法、精英/Boss 状态机 v1 | `core`, `client` | `P3-W2`, `P3-W3` | 高伤技能都有预警；AI 不依赖全知全能 |
-| `P3-W5` | `P3-B` | 4 个基础职业正式化，新增 2 个进阶职业，接入 3 个种族与本地 Profile | `game`, `client`, `tools` | `P3-W3` | 至少 2 条可通关 build；职业/种族组合可进局 |
-| `P3-W6` | `P3-C` | 世界分支、zone 入口、主支线任务、affix v1、经济循环、长局回归 | `core`, `game`, `client`, `tools` | `P3-W4`, `P3-W5` | 4~6 小时长局闭环成立，掉落能驱动构筑差异 |
+| `P3-W4` | `P3-B` | 脚本化 AI、`TelegraphSpec`、精英/Boss 状态机 v1 | `core`, `client`, `tools` | `P3-W2`, `P3-W3` | 高伤技能都有预警；AI 不依赖全知全能；2 Boss 工具基线可回放 |
+| `P3-W5` | `P3-B` | 职业资源合同、多基础职业正式化、2 个可玩进阶职业、3 个种族与本地 Profile | `core`, `game`, `client`, `tools` | `P3-W3`, `P3-W4` | 至少 2 个可玩进阶职业以开发态进入实验室；职业/种族组合可进局 |
+| `P3-W6` | `P3-C` | 世界分支、`WorldProgress / Quest / Gate`、affix v1、固定经济循环、长局回归 | `core`, `game`, `client`, `tools` | `P3-W4`, `P3-W5` | 4~6 小时长局闭环成立，掉落能驱动构筑差异，3 Boss 通过 harness |
+
+补充执行说明：
+
+1. `P3-W5` 默认内部拆成 `W5a Rules/Core / W5b Content/Game / W5c Client+QA`。
+2. `P3-W6` 默认内部拆成 `W6a World / W6b Economy+Affix / W6c LongRunLab`。
+3. `P3-W3` 的 schema/说明建模可在 `P3-W1` 后并行启动，但依赖状态语义的最终验收必须在 `P3-W2` 冻结后收口。
 
 ### 8.5 最小可发布集
 
@@ -367,7 +373,7 @@
 | 基础职业正式树 | `4 x 16 = 64` 天赋 |
 | 进阶职业 | 2 个 |
 | 种族 | 3 个 |
-| 世界 Zone | 8 个左右 |
+| 世界 Zone | 11 个基线（7 mandatory + 4 optional） |
 | 怪物模板 | 60 个左右 |
 | 新装备/掉落条目 | 60 个左右 |
 | 新图标 / VFX | 120 个左右 |
@@ -376,7 +382,7 @@
 ### 8.6 Phase 3 出口标准
 
 1. 形成稳定的 4~6 小时单人长局。
-2. 4 个基础职业和 2 个进阶职业都通过 `SoloClearLab` 与关键 Boss 回归。
+2. 4 个基础职业和 2 个可玩进阶职业都通过 `SoloClearLab` 与关键 Boss 回归。
 3. 种族、Profile、世界分支、Boss telegraph、掉落 affix v1 全部可白盒验证。
 4. 双语言在完整长局中无明显术语漂移、无大面积 UI 爆版。
 
