@@ -72,8 +72,6 @@ import com.ktome.game.model.MonsterTemplate
 private const val HERO_GLYPH: Char = '@'
 private const val HERO_COLOR_HEX: String = "#FFD700"
 private const val HERO_NAME: String = "Hero"
-private const val FOUNDATION_ZONE_ID: String = "foundation_dungeon"
-private const val FOUNDATION_PROFESSION_ID: String = "foundation_hero"
 private const val DOWNSTAIRS_NAME: String = "Downstairs"
 private const val UPSTAIRS_NAME: String = "Upstairs"
 private const val STAIR_COLOR_HEX: String = "#D7E7FF"
@@ -174,16 +172,16 @@ internal object SessionSnapshotMapper {
         SaveSnapshot(
             timestampEpochMillis = System.currentTimeMillis(),
             worldSeed = config.seed,
-            currentZoneId = FOUNDATION_ZONE_ID,
+            currentZoneId = config.zoneId,
             floorIndex = currentFloor,
             mapWidth = config.width,
             mapHeight = config.height,
             fovRadius = config.fovRadius,
             messageLogSize = config.messageLogSize,
-            playerProfessionId = FOUNDATION_PROFESSION_ID,
+            playerProfessionId = config.playerProfessionId,
             maxFloor = config.maxFloor,
             turnCount = turnCount,
-            player = copyPlayerSnapshot(player),
+            player = canonicalizePlayerSnapshot(player),
             combatRandomState = combatRandomState,
             sessionRandomState = sessionRandomState,
             pendingActionIds = pendingActionIds,
@@ -199,8 +197,8 @@ internal object SessionSnapshotMapper {
                             ),
                         stairsUp = floorState.stairsUp?.let(PointSnapshot::from),
                         stairsDown = floorState.stairsDown?.let(PointSnapshot::from),
-                        exploredTiles = floorState.payload.exploredTiles.map(PointSnapshot::from),
-                        entities = floorState.payload.entities.map(::copyEntitySnapshot),
+                        exploredTiles = floorState.payload.exploredTiles.sortedCanonicalPoints().map(PointSnapshot::from),
+                        entities = floorState.payload.entities.map(::canonicalizeEntitySnapshot).sortedBy(EntitySnapshot::id),
                     )
                 },
         )
@@ -216,10 +214,12 @@ internal object SessionSnapshotMapper {
                     floor = snapshot.floorIndex,
                     maxFloor = snapshot.maxFloor,
                     messageLogSize = snapshot.messageLogSize,
+                    zoneId = snapshot.currentZoneId,
+                    playerProfessionId = snapshot.playerProfessionId,
                 ),
             currentFloor = snapshot.floorIndex,
             turnCount = snapshot.turnCount,
-            player = copyPlayerSnapshot(snapshot.player),
+            player = canonicalizePlayerSnapshot(snapshot.player),
             combatRandomState = snapshot.combatRandomState,
             sessionRandomState = snapshot.sessionRandomState,
             pendingActionIds = snapshot.pendingActionIds.toList(),
@@ -236,7 +236,7 @@ internal object SessionSnapshotMapper {
                                 stairsUp = floor.stairsUp?.toPoint(),
                                 stairsDown = floor.stairsDown?.toPoint(),
                                 exploredTiles = linkedSetOf<Point>().apply { addAll(floor.exploredTiles.map(PointSnapshot::toPoint)) },
-                                entities = floor.entities.map(::copyEntitySnapshot).toMutableList(),
+                                entities = floor.entities.map(::canonicalizeEntitySnapshot).sortedBy(EntitySnapshot::id).toMutableList(),
                             ),
                     )
                 },
@@ -381,16 +381,16 @@ internal object SessionSnapshotMapper {
     ): List<EntityId> {
         val inventoryIds = world.get<Inventory>(playerId)?.itemIds.orEmpty()
         val equippedIds = world.get<Equipment>(playerId)?.slots?.values.orEmpty()
-        return (inventoryIds + equippedIds).distinctBy(EntityId::value)
+        return (inventoryIds + equippedIds).distinctBy(EntityId::value).sortedBy(EntityId::value)
     }
 
-    private fun copyPlayerSnapshot(snapshot: PlayerSnapshot): PlayerSnapshot =
+    private fun canonicalizePlayerSnapshot(snapshot: PlayerSnapshot): PlayerSnapshot =
         PlayerSnapshot(
-            entity = copyEntitySnapshot(snapshot.entity),
-            carriedEntities = snapshot.carriedEntities.map(::copyEntitySnapshot),
+            entity = canonicalizeEntitySnapshot(snapshot.entity),
+            carriedEntities = snapshot.carriedEntities.map(::canonicalizeEntitySnapshot).sortedBy(EntitySnapshot::id),
         )
 
-    private fun copyEntitySnapshot(snapshot: EntitySnapshot): EntitySnapshot {
+    private fun canonicalizeEntitySnapshot(snapshot: EntitySnapshot): EntitySnapshot {
         val patrolRoute = snapshot.patrolRoute
         val inventory = snapshot.inventory
         val equipment = snapshot.equipment
@@ -409,23 +409,29 @@ internal object SessionSnapshotMapper {
             inventory = inventory?.copy(itemIds = inventory.itemIds.toList()),
             equipment =
                 equipment?.copy(
-                    slots = linkedMapOf<String, Int>().apply { putAll(equipment.slots) },
+                    slots = equipment.slots.entries.sortedBy { (slot, _) -> slot }.associateTo(linkedMapOf()) { (slot, itemId) -> slot to itemId },
                 ),
-            cooldowns = snapshot.cooldowns?.let { linkedMapOf<String, Int>().apply { putAll(it) } },
-            effects = snapshot.effects?.map(::copyActiveEffectSnapshot),
+            cooldowns = snapshot.cooldowns?.entries?.sortedBy { (talentId, _) -> talentId }?.associateTo(linkedMapOf()) { (talentId, turns) -> talentId to turns },
+            effects = snapshot.effects?.map(::copyActiveEffectSnapshot)?.sortedBy(ActiveEffectSnapshot::id),
             talentLoadout =
                 talentLoadout?.copy(
-                    slotToTalentId = linkedMapOf<Int, String>().apply { putAll(talentLoadout.slotToTalentId) },
-                    talentLevels = linkedMapOf<String, Int>().apply { putAll(talentLoadout.talentLevels) },
+                    slotToTalentId =
+                        talentLoadout.slotToTalentId.entries
+                            .sortedBy { (slot, _) -> slot }
+                            .associateTo(linkedMapOf()) { (slot, talentId) -> slot to talentId },
+                    talentLevels =
+                        talentLoadout.talentLevels.entries
+                            .sortedBy { (talentId, _) -> talentId }
+                            .associateTo(linkedMapOf()) { (talentId, level) -> talentId to level },
                 ),
-            itemState = snapshot.itemState?.let(::copyItemSnapshot),
+            itemState = snapshot.itemState?.let(::canonicalizeItemSnapshot),
             stair = snapshot.stair?.copy(),
         )
     }
 
-    private fun copyItemSnapshot(snapshot: ItemSnapshot): ItemSnapshot =
+    private fun canonicalizeItemSnapshot(snapshot: ItemSnapshot): ItemSnapshot =
         snapshot.copy(
-            affixIds = snapshot.affixIds.toList(),
+            affixIds = snapshot.affixIds.sorted(),
             stats = snapshot.stats.copy(),
         )
 
@@ -722,4 +728,7 @@ internal object SessionSnapshotMapper {
         } catch (exception: IllegalArgumentException) {
             throw SaveRestoreException("Save references unknown $label '$value'.", exception)
         }
+
+    private fun Iterable<Point>.sortedCanonicalPoints(): List<Point> =
+        sortedWith(compareBy<Point> { it.y }.thenBy { it.x })
 }
