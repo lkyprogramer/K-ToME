@@ -10,6 +10,7 @@ bin/
 
 # IDE
 .idea/
+.claude/
 *.iml
 .project
 .classpath
