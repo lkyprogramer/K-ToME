@@ -1,5 +1,6 @@
 package com.ktome.game.harness
 
+import com.ktome.core.run.RunOutcome
 import com.ktome.game.FOUNDATION_PROFESSION_ID
 import java.nio.file.Path
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -35,8 +36,8 @@ class LongRunLabTest {
                 )
             }
 
-        val floor3OrBetter = reports.count { it.floorReached >= 3 || it.outcome.isTerminal }
-        val crashedOrStalled = reports.filter { !it.success && (it.failureReason != "Turn budget exhausted." || it.stuckReason != null) }
+        val floor3OrBetter = reports.count { it.floorReached >= 3 || (it.outcome.isTerminal && it.outcome !is RunOutcome.Defeat) }
+        val crashedOrStalled = reports.filter { it.crashedOrStalled() }
         val summary =
             buildJsonObject {
                 put("professionId", FOUNDATION_PROFESSION_ID)
