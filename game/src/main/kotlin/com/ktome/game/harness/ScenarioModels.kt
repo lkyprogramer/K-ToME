@@ -35,7 +35,8 @@ sealed interface ScenarioGoal {
         val floor: Int,
     ) : ScenarioGoal {
         override fun isSatisfied(observation: RunObservation): Boolean =
-            observation.floor >= floor || observation.runOutcome.isTerminal
+            observation.floor >= floor ||
+                (observation.runOutcome.isTerminal && observation.runOutcome !is RunOutcome.Defeat)
     }
 
     data class SurviveTurns(
