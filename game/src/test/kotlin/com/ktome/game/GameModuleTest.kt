@@ -271,6 +271,54 @@ class GameModuleTest {
         }
     }
 
+    @Test
+    fun `load foundation session rejects cached pre routing final floor for non boss zone`() {
+        val saveManager = SaveManager(tempDir.resolve("stale-final-floor-save"))
+        saveManager.save(
+            SaveSnapshot(
+                timestampEpochMillis = 1L,
+                worldSeed = 20260318L,
+                currentZoneId = "greenwood_fringe",
+                floorIndex = 1,
+                mapWidth = 70,
+                mapHeight = 45,
+                fovRadius = 8,
+                messageLogSize = 8,
+                playerProfessionId = "vanguard",
+                maxFloor = 2,
+                turnCount = 0,
+                player =
+                    PlayerSnapshot(
+                        entity = EntitySnapshot(id = 1, position = PointSnapshot(1, 1), isPlayerControlled = true),
+                    ),
+                floors =
+                    listOf(
+                        FloorSnapshot(
+                            floorIndex = 1,
+                            map = zoneSizedMap(width = 70, height = 45, playerStart = PointSnapshot(1, 1)),
+                            stairsDown = PointSnapshot(10, 10),
+                        ),
+                        FloorSnapshot(
+                            floorIndex = 2,
+                            map = zoneSizedMap(width = 70, height = 45, playerStart = PointSnapshot(2, 2)),
+                            entities =
+                                listOf(
+                                    EntitySnapshot(
+                                        id = 99,
+                                        position = PointSnapshot(20, 20),
+                                        monsterTemplateId = FOUNDATION_BOSS_TEMPLATE_ID,
+                                    ),
+                                ),
+                        ),
+                    ),
+            ),
+        )
+
+        assertThrows(InvalidSaveException::class.java) {
+            GameModule.loadFoundationSession(saveManager)
+        }
+    }
+
     private fun extractWorld(session: FoundationGameSession): World {
         val field = FoundationGameSession::class.java.getDeclaredField("world")
         field.isAccessible = true

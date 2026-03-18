@@ -107,6 +107,12 @@ object GameModule {
                 height = zone.mapSize.height,
                 maxFloor = zone.floorCount,
             )
+        validateLoadedFloorContracts(
+            floors = restored.floors,
+            content = content,
+            zone = zone,
+            maxFloor = sessionConfig.maxFloor,
+        )
         val dungeonManager =
             DungeonManager(
                 maxFloor = sessionConfig.maxFloor,
@@ -511,6 +517,51 @@ object GameModule {
             )
         }
     }
+
+    private fun validateLoadedFloorContracts(
+        floors: List<FloorState<FloorRuntimeState>>,
+        content: GameContent,
+        zone: ZoneSchemaV2,
+        maxFloor: Int,
+    ) {
+        val finalFloor = floors.firstOrNull { floorState -> floorState.floor == maxFloor } ?: return
+        val cachedBossTemplateIds =
+            finalFloor.payload.entities.mapNotNull { snapshot ->
+                snapshot.monsterTemplateId?.let(::normalizeLoadedMonsterTemplateId)
+            }.toSet()
+        val activeBossTemplateId = content.bossDefinitionForZone(zone.id)?.template?.id
+
+        if (activeBossTemplateId == null) {
+            if (finalFloor.stairsDown == null) {
+                throw InvalidSaveException(
+                    "Save final floor for zone '${zone.id}' is missing the routed exit stair. This save predates the ZoneSpec floor routing contract.",
+                )
+            }
+            if (cachedBossTemplateIds.any(content.bossTemplateIds()::contains)) {
+                throw InvalidSaveException(
+                    "Save final floor for zone '${zone.id}' still contains a boss from the pre-routing contract. Start a new run.",
+                )
+            }
+            return
+        }
+
+        if (finalFloor.stairsDown != null) {
+            throw InvalidSaveException(
+                "Save final floor for zone '${zone.id}' incorrectly contains an exit stair despite bossEncounterId '$activeBossTemplateId'.",
+            )
+        }
+        if (activeBossTemplateId !in cachedBossTemplateIds) {
+            throw InvalidSaveException(
+                "Save final floor for zone '${zone.id}' is missing boss template '$activeBossTemplateId'. This save no longer matches the routed boss contract.",
+            )
+        }
+    }
+
+    private fun normalizeLoadedMonsterTemplateId(templateId: String): String =
+        when (templateId) {
+            "dungeon_lord" -> FOUNDATION_BOSS_TEMPLATE_ID
+            else -> templateId
+        }
 
     private fun resolveAiType(template: MonsterTemplate): AIType =
         when (template.aiProfileId) {
