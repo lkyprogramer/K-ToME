@@ -17,6 +17,30 @@ import org.junit.jupiter.api.Test
 
 class ItemFactoryTest {
     @Test
+    fun `createCarriedItem installs item view components without ground marker`() {
+        val world = World()
+        val factory = ItemFactory()
+
+        val itemId =
+            factory.createCarriedItem(
+                world = world,
+                item =
+                    ItemInstance(
+                        baseId = "healing_potion",
+                        name = "Healing Potion",
+                        type = ItemType.CONSUMABLE,
+                        glyph = '!',
+                        colorHex = "#FF3366",
+                    ),
+            )
+
+        assertEquals("Healing Potion", requireNotNull(world.get<Name>(itemId)).value)
+        assertEquals("#FF3366", requireNotNull(world.get<DisplayColor>(itemId)).hex)
+        assertTrue(!world.has<GroundItem>(itemId))
+        assertTrue(world.get<Position>(itemId) == null)
+    }
+
+    @Test
     fun `createGroundItem installs view and pickup components`() {
         val world = World()
         val factory = ItemFactory()

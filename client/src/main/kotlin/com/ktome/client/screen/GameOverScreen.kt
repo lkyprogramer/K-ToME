@@ -11,6 +11,7 @@ import com.badlogic.gdx.utils.viewport.FitViewport
 import com.ktome.client.GameApp
 import com.ktome.client.input.GdxInputSource
 import com.ktome.client.input.InputSource
+import com.ktome.client.render.KtomeFonts
 import com.ktome.game.RunSummary
 
 class GameOverScreen(
@@ -77,10 +78,7 @@ class GameOverScreen(
             batch = SpriteBatch()
         }
         if (font == null) {
-            font =
-                BitmapFont().apply {
-                    setUseIntegerPositions(true)
-                }
+            font = KtomeFonts.createUiFont(size = 24)
         }
     }
 }

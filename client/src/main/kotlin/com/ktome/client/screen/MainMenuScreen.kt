@@ -11,6 +11,7 @@ import com.badlogic.gdx.utils.viewport.FitViewport
 import com.ktome.client.GameApp
 import com.ktome.client.input.InputSource
 import com.ktome.client.input.GdxInputSource
+import com.ktome.client.render.KtomeFonts
 
 internal const val menuWidth = 960f
 internal const val menuHeight = 540f
@@ -120,10 +121,7 @@ class MainMenuScreen(
             batch = SpriteBatch()
         }
         if (font == null) {
-            font =
-                BitmapFont().apply {
-                    setUseIntegerPositions(true)
-                }
+            font = KtomeFonts.createUiFont(size = 24)
         }
     }
 

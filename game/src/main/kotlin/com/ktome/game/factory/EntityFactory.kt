@@ -37,6 +37,7 @@ class EntityFactory {
         position: Point,
         talents: List<TalentDef>,
         playerName: String = "Hero",
+        stats: Stats = Stats(str = 10, dex = 10, con = 10, wil = 10),
     ): com.ktome.core.ecs.EntityId {
         val playerId = world.createEntity()
         val profile = CombatProfile(
@@ -47,7 +48,6 @@ class EntityFactory {
             baseSpeed = 100,
             baseHp = 50,
         )
-        val stats = Stats(str = 10, dex = 10, con = 10, wil = 10)
         val derivedStats = StatsCalculator.calculate(stats, profile)
 
         world.add(playerId, Position(position.x, position.y))
@@ -57,7 +57,7 @@ class EntityFactory {
         world.add(playerId, PlayerControlled)
         world.add(playerId, FactionTag(Faction.PLAYER))
         world.add(playerId, BlocksMovement())
-        world.add(playerId, stats)
+        world.add(playerId, stats.copy())
         world.add(playerId, profile)
         world.add(playerId, derivedStats)
         world.add(playerId, Health(current = derivedStats.maxHp, max = derivedStats.maxHp))

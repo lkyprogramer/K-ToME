@@ -4,6 +4,7 @@ import com.ktome.core.ecs.MonsterTemplateId
 import com.ktome.core.ecs.Position
 import com.ktome.core.ecs.World
 import com.ktome.core.ecs.get
+import com.ktome.core.item.EquipSlot
 import com.ktome.core.item.ItemInstance
 import com.ktome.core.save.InvalidSaveException
 import com.ktome.core.save.PlayerSnapshot
@@ -13,6 +14,7 @@ import com.ktome.core.save.SaveSnapshot
 import com.ktome.core.save.EntitySnapshot
 import com.ktome.core.save.FloorSnapshot
 import com.ktome.core.save.MapSnapshot
+import org.junit.jupiter.api.Assertions.assertEquals
 import java.nio.file.Path
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -89,6 +91,50 @@ class GameModuleTest {
         assertThrows(InvalidSaveException::class.java) {
             GameModule.loadFoundationSession(saveManager)
         }
+    }
+
+    @Test
+    fun `new foundation session derives starter talents stats and kit from profession schema`() {
+        val vanguardSession =
+            GameModule.newFoundationSession(
+                FoundationGameConfig(playerProfessionId = "vanguard"),
+                SaveManager(tempDir.resolve("vanguard-save")),
+            )
+        val arcanistSession =
+            GameModule.newFoundationSession(
+                FoundationGameConfig(playerProfessionId = "arcanist"),
+                SaveManager(tempDir.resolve("arcanist-save")),
+            )
+
+        assertEquals(listOf("Power Strike", "Shield Bash", "War Cry"), vanguardSession.talentSlots().map { slot -> slot.name })
+        assertTrue(arcanistSession.talentSlots().isEmpty())
+        assertEquals(listOf("Short Sword", "Leather Armor", "Healing Potion"), vanguardSession.inventoryItems().map { item -> item.name })
+        assertEquals(listOf("Healing Potion"), arcanistSession.inventoryItems().map { item -> item.name })
+        assertEquals("Short Sword", vanguardSession.equipmentSlots().first { slot -> slot.slot == EquipSlot.WEAPON }.itemName)
+        assertEquals("Leather Armor", vanguardSession.equipmentSlots().first { slot -> slot.slot == EquipSlot.ARMOR }.itemName)
+        assertTrue(vanguardSession.playerStatus().maxHp > arcanistSession.playerStatus().maxHp)
+    }
+
+    @Test
+    fun `new foundation session uses selected zone schema for map size and encounter pool`() {
+        val session =
+            GameModule.newFoundationSession(
+                FoundationGameConfig(zoneId = "greenwood_fringe"),
+                SaveManager(tempDir.resolve("greenwood-save")),
+            )
+        val world = extractWorld(session)
+        val monsterIds =
+            world.entitiesWith(MonsterTemplateId::class)
+                .map { entityId -> requireNotNull(world.get<MonsterTemplateId>(entityId)).value }
+                .toSet()
+
+        assertEquals(70, session.config.width)
+        assertEquals(45, session.config.height)
+        assertEquals(70, session.map.width)
+        assertEquals(45, session.map.height)
+        assertTrue(monsterIds.isNotEmpty())
+        assertTrue(monsterIds.all { monsterId -> monsterId in setOf("beast.rat", "undead.bone_archer", "bandit.sentry") })
+        assertTrue("undead.bone_archer" in monsterIds)
     }
 
     private fun extractWorld(session: FoundationGameSession): World {

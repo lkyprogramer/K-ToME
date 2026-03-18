@@ -20,10 +20,11 @@ class AsciiRenderer(
     private val cellWidth: Float = 16f,
     private val cellHeight: Float = 16f,
 ) : Disposable {
-    private val font = BitmapFont().apply {
+    private val mapFont = BitmapFont().apply {
         setUseIntegerPositions(true)
         color = Color.WHITE
     }
+    private val uiFont = KtomeFonts.createUiFont(size = 18)
     private val messageLog = MessageLog(maxLines = messageRows)
 
     fun render(
@@ -71,7 +72,8 @@ class AsciiRenderer(
     }
 
     override fun dispose() {
-        font.dispose()
+        mapFont.dispose()
+        uiFont.dispose()
     }
 
     private fun visibleColor(tile: TileType): Color =
@@ -107,13 +109,13 @@ class AsciiRenderer(
         session: FoundationGameSession,
     ) {
         val status = session.playerStatus()
-        font.color =
+        uiFont.color =
             when {
                 session.isVictory() -> Color.FOREST
                 session.isGameOver() -> Color.SCARLET
                 else -> Color.GOLD
             }
-        font.draw(
+        uiFont.draw(
             batch,
             hudText(localizer, session),
             4f,
@@ -125,10 +127,10 @@ class AsciiRenderer(
         batch: SpriteBatch,
         session: FoundationGameSession,
     ) {
-        font.color = Color.WHITE
+        uiFont.color = Color.WHITE
         messageLog.render(
             batch = batch,
-            font = font,
+            font = uiFont,
             messages = session.messageLog(),
             x = 4f,
             baselineY = 12f,
@@ -144,8 +146,8 @@ class AsciiRenderer(
         mapOffsetY: Float,
         glyphState: GlyphState,
     ) {
-        font.color = glyphState.color
-        font.draw(
+        mapFont.color = glyphState.color
+        mapFont.draw(
             batch,
             glyphState.glyph.toString(),
             x * cellWidth + 2f,
@@ -163,21 +165,21 @@ class AsciiRenderer(
         val sidebarX = (session.map.width + 1) * cellWidth
         var line = mapOffsetY + mapHeight * cellHeight - 4f
 
-        font.color = Color.GOLD
-        font.draw(batch, tr("ui.sidebar.equipment"), sidebarX, line)
+        uiFont.color = Color.GOLD
+        uiFont.draw(batch, tr("ui.sidebar.equipment"), sidebarX, line)
         line -= cellHeight
-        font.color = Color.WHITE
+        uiFont.color = Color.WHITE
         session.equipmentSlots().forEach { equipment ->
             val label = slotLabel(equipment.slot)
-            font.draw(batch, "$label: ${equipment.itemName ?: "-"}", sidebarX, line)
+            uiFont.draw(batch, "$label: ${equipment.itemName ?: "-"}", sidebarX, line)
             line -= cellHeight
         }
 
         line -= cellHeight / 2f
-        font.color = Color.GOLD
-        font.draw(batch, tr("ui.sidebar.talents"), sidebarX, line)
+        uiFont.color = Color.GOLD
+        uiFont.draw(batch, tr("ui.sidebar.talents"), sidebarX, line)
         line -= cellHeight
-        font.color = Color.WHITE
+        uiFont.color = Color.WHITE
         session.talentSlots().forEach { talent ->
             val state =
                 if (talent.currentCooldown > 0) {
@@ -185,24 +187,24 @@ class AsciiRenderer(
                 } else {
                     tr("ui.sidebar.ready")
                 }
-            font.draw(batch, "${talent.slot}.${talent.name} L${talent.level}/${talent.maxLevel} [$state]", sidebarX, line)
+            uiFont.draw(batch, "${talent.slot}.${talent.name} L${talent.level}/${talent.maxLevel} [$state]", sidebarX, line)
             line -= cellHeight
-            font.draw(batch, "   ${talent.staminaCost} ${tr("ui.hud.stamina.short")}", sidebarX, line)
+            uiFont.draw(batch, "   ${talent.staminaCost} ${tr("ui.hud.stamina.short")}", sidebarX, line)
             line -= cellHeight
         }
 
         line -= cellHeight / 2f
-        font.color = Color.GOLD
-        font.draw(batch, tr("ui.sidebar.ground"), sidebarX, line)
+        uiFont.color = Color.GOLD
+        uiFont.draw(batch, tr("ui.sidebar.ground"), sidebarX, line)
         line -= cellHeight
-        font.color = Color.WHITE
+        uiFont.color = Color.WHITE
         val groundItems = session.itemNamesAtPlayerPosition()
         if (groundItems.isEmpty()) {
-            font.draw(batch, "-", sidebarX, line)
+            uiFont.draw(batch, "-", sidebarX, line)
             line -= cellHeight
         } else {
             groundItems.forEach { name ->
-                font.draw(batch, name, sidebarX, line)
+                uiFont.draw(batch, name, sidebarX, line)
                 line -= cellHeight
             }
         }
@@ -210,68 +212,68 @@ class AsciiRenderer(
         when (overlayState.mode) {
             UiMode.MAP -> {
                 line -= cellHeight / 2f
-                font.color = Color.LIGHT_GRAY
-                font.draw(batch, tr("ui.controls.map.pick_up"), sidebarX, line)
+                uiFont.color = Color.LIGHT_GRAY
+                uiFont.draw(batch, tr("ui.controls.map.pick_up"), sidebarX, line)
                 line -= cellHeight
-                font.draw(batch, tr("ui.controls.map.inventory"), sidebarX, line)
+                uiFont.draw(batch, tr("ui.controls.map.inventory"), sidebarX, line)
                 line -= cellHeight
-                font.draw(batch, tr("ui.controls.map.save"), sidebarX, line)
+                uiFont.draw(batch, tr("ui.controls.map.save"), sidebarX, line)
                 line -= cellHeight
                 if (session.canDescend()) {
-                    font.draw(batch, tr("ui.controls.map.descend"), sidebarX, line)
+                    uiFont.draw(batch, tr("ui.controls.map.descend"), sidebarX, line)
                     line -= cellHeight
                 }
                 if (session.canAscend()) {
-                    font.draw(batch, tr("ui.controls.map.ascend"), sidebarX, line)
+                    uiFont.draw(batch, tr("ui.controls.map.ascend"), sidebarX, line)
                     line -= cellHeight
                 }
                 if (session.hasPendingTalentAllocation()) {
-                    font.draw(batch, tr("ui.controls.map.spend_talent"), sidebarX, line)
+                    uiFont.draw(batch, tr("ui.controls.map.spend_talent"), sidebarX, line)
                     line -= cellHeight
                 }
                 if (session.hasPendingStatAllocation()) {
-                    font.draw(batch, tr("ui.controls.map.spend_stat"), sidebarX, line)
+                    uiFont.draw(batch, tr("ui.controls.map.spend_stat"), sidebarX, line)
                 }
             }
 
             UiMode.INVENTORY -> {
                 line -= cellHeight / 2f
-                font.color = Color.GOLD
-                font.draw(batch, sidebarTitle(localizer, UiMode.INVENTORY), sidebarX, line)
+                uiFont.color = Color.GOLD
+                uiFont.draw(batch, sidebarTitle(localizer, UiMode.INVENTORY), sidebarX, line)
                 line -= cellHeight
                 session.inventoryItems().forEach { item ->
-                    font.color = if (item.index == overlayState.inventorySelection) Color.CYAN else Color.WHITE
+                    uiFont.color = if (item.index == overlayState.inventorySelection) Color.CYAN else Color.WHITE
                     val equipped = item.equippedSlot?.let { slot -> " [${slotLabel(slot)}]" } ?: ""
-                    font.draw(batch, "${item.index + 1}. ${item.name}$equipped", sidebarX, line)
+                    uiFont.draw(batch, "${item.index + 1}. ${item.name}$equipped", sidebarX, line)
                     line -= cellHeight
                 }
                 if (session.inventoryItems().isEmpty()) {
-                    font.color = Color.GRAY
-                    font.draw(batch, tr("ui.sidebar.empty"), sidebarX, line)
+                    uiFont.color = Color.GRAY
+                    uiFont.draw(batch, tr("ui.sidebar.empty"), sidebarX, line)
                     line -= cellHeight
                 }
-                font.color = Color.LIGHT_GRAY
-                font.draw(batch, tr("ui.controls.inventory"), sidebarX, line)
+                uiFont.color = Color.LIGHT_GRAY
+                uiFont.draw(batch, tr("ui.controls.inventory"), sidebarX, line)
             }
 
             UiMode.TARGETING -> {
                 line -= cellHeight / 2f
-                font.color = Color.GOLD
-                font.draw(batch, sidebarTitle(localizer, UiMode.TARGETING), sidebarX, line)
+                uiFont.color = Color.GOLD
+                uiFont.draw(batch, sidebarTitle(localizer, UiMode.TARGETING), sidebarX, line)
                 line -= cellHeight
-                font.color = Color.WHITE
-                font.draw(batch, tr("ui.targeting.slot", "slot" to overlayState.targetingSlot), sidebarX, line)
+                uiFont.color = Color.WHITE
+                uiFont.draw(batch, tr("ui.targeting.slot", "slot" to overlayState.targetingSlot), sidebarX, line)
                 line -= cellHeight
                 val cursor = overlayState.targetingCursor
-                font.draw(
+                uiFont.draw(
                     batch,
                     tr("ui.targeting.cursor", "x" to (cursor?.x ?: "-"), "y" to (cursor?.y ?: "-")),
                     sidebarX,
                     line,
                 )
                 line -= cellHeight
-                font.color = Color.LIGHT_GRAY
-                font.draw(batch, tr("ui.controls.targeting"), sidebarX, line)
+                uiFont.color = Color.LIGHT_GRAY
+                uiFont.draw(batch, tr("ui.controls.targeting"), sidebarX, line)
             }
 
             UiMode.INSPECT -> {
@@ -279,38 +281,38 @@ class AsciiRenderer(
                 val cursor = overlayState.inspectCursor ?: session.playerPosition()
                 val inspect = session.inspectAt(cursor)
 
-                font.color = Color.GOLD
-                font.draw(batch, sidebarTitle(localizer, UiMode.INSPECT), sidebarX, line)
+                uiFont.color = Color.GOLD
+                uiFont.draw(batch, sidebarTitle(localizer, UiMode.INSPECT), sidebarX, line)
                 line -= cellHeight
-                font.color = Color.WHITE
-                font.draw(batch, tr("ui.inspect.cursor", "x" to cursor.x, "y" to cursor.y), sidebarX, line)
+                uiFont.color = Color.WHITE
+                uiFont.draw(batch, tr("ui.inspect.cursor", "x" to cursor.x, "y" to cursor.y), sidebarX, line)
                 line -= cellHeight
-                font.draw(batch, "${visibilityLabel(inspect.visibility)} ${inspect.terrainName}", sidebarX, line)
+                uiFont.draw(batch, "${visibilityLabel(inspect.visibility)} ${inspect.terrainName}", sidebarX, line)
                 line -= cellHeight
 
                 inspect.actor?.let { actor ->
-                    font.color = Color.GOLD
-                    font.draw(batch, actor.name, sidebarX, line)
+                    uiFont.color = Color.GOLD
+                    uiFont.draw(batch, actor.name, sidebarX, line)
                     line -= cellHeight
-                    font.color = Color.WHITE
-                    font.draw(batch, actor.role, sidebarX, line)
+                    uiFont.color = Color.WHITE
+                    uiFont.draw(batch, actor.role, sidebarX, line)
                     line -= cellHeight
-                    font.draw(batch, "${tr("ui.hud.hp.short")} ${actor.currentHp}/${actor.maxHp}", sidebarX, line)
+                    uiFont.draw(batch, "${tr("ui.hud.hp.short")} ${actor.currentHp}/${actor.maxHp}", sidebarX, line)
                     line -= cellHeight
-                    font.draw(batch, "${tr("ui.hud.attack.short")} ${actor.attack}  ${tr("ui.hud.defense.short")} ${actor.defense}", sidebarX, line)
+                    uiFont.draw(batch, "${tr("ui.hud.attack.short")} ${actor.attack}  ${tr("ui.hud.defense.short")} ${actor.defense}", sidebarX, line)
                     line -= cellHeight
-                    font.draw(batch, "${tr("ui.hud.accuracy.short")} ${actor.accuracy}  ${tr("ui.hud.evasion.short")} ${actor.evasion}", sidebarX, line)
+                    uiFont.draw(batch, "${tr("ui.hud.accuracy.short")} ${actor.accuracy}  ${tr("ui.hud.evasion.short")} ${actor.evasion}", sidebarX, line)
                     line -= cellHeight
-                    font.draw(batch, "${tr("ui.stat.str")} ${actor.strength}  ${tr("ui.stat.dex")} ${actor.dexterity}", sidebarX, line)
+                    uiFont.draw(batch, "${tr("ui.stat.str")} ${actor.strength}  ${tr("ui.stat.dex")} ${actor.dexterity}", sidebarX, line)
                     line -= cellHeight
-                    font.draw(batch, "${tr("ui.stat.con")} ${actor.constitution}  ${tr("ui.stat.wil")} ${actor.willpower}", sidebarX, line)
+                    uiFont.draw(batch, "${tr("ui.stat.con")} ${actor.constitution}  ${tr("ui.stat.wil")} ${actor.willpower}", sidebarX, line)
                     line -= cellHeight
-                    font.draw(batch, "${tr("ui.hud.speed.short")} ${actor.speed}", sidebarX, line)
+                    uiFont.draw(batch, "${tr("ui.hud.speed.short")} ${actor.speed}", sidebarX, line)
                     line -= cellHeight
                     if (actor.statusEffects.isNotEmpty()) {
-                        font.color = Color.LIGHT_GRAY
+                        uiFont.color = Color.LIGHT_GRAY
                         actor.statusEffects.forEach { effect ->
-                            font.draw(batch, effect, sidebarX, line)
+                            uiFont.draw(batch, effect, sidebarX, line)
                             line -= cellHeight
                         }
                     }
@@ -318,18 +320,18 @@ class AsciiRenderer(
 
                 if (inspect.items.isNotEmpty()) {
                     line -= cellHeight / 2f
-                    font.color = Color.GOLD
-                    font.draw(batch, tr("ui.sidebar.items"), sidebarX, line)
+                    uiFont.color = Color.GOLD
+                    uiFont.draw(batch, tr("ui.sidebar.items"), sidebarX, line)
                     line -= cellHeight
                     inspect.items.forEach { item ->
-                        font.color = Color.WHITE
-                        font.draw(batch, item.name, sidebarX, line)
+                        uiFont.color = Color.WHITE
+                        uiFont.draw(batch, item.name, sidebarX, line)
                         line -= cellHeight
-                        font.color = Color.LIGHT_GRAY
-                        font.draw(batch, item.typeLabel, sidebarX, line)
+                        uiFont.color = Color.LIGHT_GRAY
+                        uiFont.draw(batch, item.typeLabel, sidebarX, line)
                         line -= cellHeight
                         item.details.forEach { detail ->
-                            font.draw(batch, detail, sidebarX, line)
+                            uiFont.draw(batch, detail, sidebarX, line)
                             line -= cellHeight
                         }
                     }
@@ -337,58 +339,58 @@ class AsciiRenderer(
 
                 inspect.stairLabel?.let { stairLabel ->
                     line -= cellHeight / 2f
-                    font.color = Color.GOLD
-                    font.draw(batch, stairLabel, sidebarX, line)
+                    uiFont.color = Color.GOLD
+                    uiFont.draw(batch, stairLabel, sidebarX, line)
                     line -= cellHeight
                 }
 
                 if (inspect.actor == null && inspect.items.isEmpty() && inspect.stairLabel == null) {
-                    font.color = Color.GRAY
+                    uiFont.color = Color.GRAY
                     val message =
                         when (inspect.visibility) {
                             TileVisibility.VISIBLE -> tr("ui.inspect.no_visible_target")
                             TileVisibility.EXPLORED -> tr("ui.inspect.explored_not_visible")
                             TileVisibility.HIDDEN -> tr("ui.inspect.unknown_tile")
                         }
-                    font.draw(batch, message, sidebarX, line)
+                    uiFont.draw(batch, message, sidebarX, line)
                     line -= cellHeight
                 }
 
-                font.color = Color.LIGHT_GRAY
-                font.draw(batch, tr("ui.controls.inspect"), sidebarX, line)
+                uiFont.color = Color.LIGHT_GRAY
+                uiFont.draw(batch, tr("ui.controls.inspect"), sidebarX, line)
             }
 
             UiMode.STAT_ASSIGN -> {
                 line -= cellHeight / 2f
-                font.color = Color.GOLD
-                font.draw(batch, sidebarTitle(localizer, UiMode.STAT_ASSIGN), sidebarX, line)
+                uiFont.color = Color.GOLD
+                uiFont.draw(batch, sidebarTitle(localizer, UiMode.STAT_ASSIGN), sidebarX, line)
                 line -= cellHeight
-                font.color = Color.WHITE
-                font.draw(batch, tr("ui.sidebar.points", "value" to session.playerStatus().statPoints), sidebarX, line)
+                uiFont.color = Color.WHITE
+                uiFont.draw(batch, tr("ui.sidebar.points", "value" to session.playerStatus().statPoints), sidebarX, line)
                 line -= cellHeight
-                font.draw(batch, "1. ${tr("ui.stat.str")}", sidebarX, line)
+                uiFont.draw(batch, "1. ${tr("ui.stat.str")}", sidebarX, line)
                 line -= cellHeight
-                font.draw(batch, "2. ${tr("ui.stat.dex")}", sidebarX, line)
+                uiFont.draw(batch, "2. ${tr("ui.stat.dex")}", sidebarX, line)
                 line -= cellHeight
-                font.draw(batch, "3. ${tr("ui.stat.con")}", sidebarX, line)
+                uiFont.draw(batch, "3. ${tr("ui.stat.con")}", sidebarX, line)
                 line -= cellHeight
-                font.draw(batch, "4. ${tr("ui.stat.wil")}", sidebarX, line)
+                uiFont.draw(batch, "4. ${tr("ui.stat.wil")}", sidebarX, line)
             }
 
             UiMode.TALENT_ASSIGN -> {
                 line -= cellHeight / 2f
-                font.color = Color.GOLD
-                font.draw(batch, sidebarTitle(localizer, UiMode.TALENT_ASSIGN), sidebarX, line)
+                uiFont.color = Color.GOLD
+                uiFont.draw(batch, sidebarTitle(localizer, UiMode.TALENT_ASSIGN), sidebarX, line)
                 line -= cellHeight
-                font.color = Color.WHITE
-                font.draw(batch, tr("ui.sidebar.points", "value" to session.playerStatus().talentPoints), sidebarX, line)
+                uiFont.color = Color.WHITE
+                uiFont.draw(batch, tr("ui.sidebar.points", "value" to session.playerStatus().talentPoints), sidebarX, line)
                 line -= cellHeight
                 session.talentSlots().forEach { talent ->
-                    font.draw(batch, "${talent.slot}. ${talent.name} L${talent.level}/${talent.maxLevel}", sidebarX, line)
+                    uiFont.draw(batch, "${talent.slot}. ${talent.name} L${talent.level}/${talent.maxLevel}", sidebarX, line)
                     line -= cellHeight
                 }
-                font.color = Color.LIGHT_GRAY
-                font.draw(batch, tr("ui.controls.talent_assign"), sidebarX, line)
+                uiFont.color = Color.LIGHT_GRAY
+                uiFont.draw(batch, tr("ui.controls.talent_assign"), sidebarX, line)
             }
         }
     }
@@ -404,8 +406,8 @@ class AsciiRenderer(
             return
         }
 
-        font.color = Color.SCARLET
-        font.draw(
+        mapFont.color = Color.SCARLET
+        mapFont.draw(
             batch,
             "X",
             cursor.x * cellWidth + 2f,
@@ -424,8 +426,8 @@ class AsciiRenderer(
             return
         }
 
-        font.color = Color.CYAN
-        font.draw(
+        mapFont.color = Color.CYAN
+        mapFont.draw(
             batch,
             "+",
             cursor.x * cellWidth + 2f,

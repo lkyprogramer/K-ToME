@@ -16,8 +16,10 @@ dependencies {
     implementation(project(":game"))
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json-jvm:${rootProject.providers.gradleProperty("kotlinxSerializationVersion").get()}")
     implementation("com.badlogicgames.gdx:gdx:${rootProject.providers.gradleProperty("libgdxVersion").get()}")
+    implementation("com.badlogicgames.gdx:gdx-freetype:${rootProject.providers.gradleProperty("libgdxVersion").get()}")
     implementation("com.badlogicgames.gdx:gdx-backend-lwjgl3:${rootProject.providers.gradleProperty("libgdxVersion").get()}")
     runtimeOnly("com.badlogicgames.gdx:gdx-platform:${rootProject.providers.gradleProperty("libgdxVersion").get()}:natives-desktop")
+    runtimeOnly("com.badlogicgames.gdx:gdx-freetype-platform:${rootProject.providers.gradleProperty("libgdxVersion").get()}:natives-desktop")
     testImplementation("com.badlogicgames.gdx:gdx-backend-headless:${rootProject.providers.gradleProperty("libgdxVersion").get()}")
 }
 
