@@ -80,6 +80,8 @@ data class TalentSlotView(
     val level: Int,
     val maxLevel: Int,
     val staminaCost: Int,
+    val range: Int,
+    val minRange: Int,
     val currentCooldown: Int,
     val maxCooldown: Int,
     val requiresTarget: Boolean,

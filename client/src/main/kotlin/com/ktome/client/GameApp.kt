@@ -2,6 +2,10 @@ package com.ktome.client
 
 import com.badlogic.gdx.Game
 import com.badlogic.gdx.Screen
+import com.ktome.client.input.CommandSource
+import com.ktome.client.input.GdxInputSource
+import com.ktome.client.input.InputHandlerCommandSource
+import com.ktome.client.input.InputSource
 import com.ktome.client.screen.FoundationGameScreen
 import com.ktome.client.screen.GameOverScreen
 import com.ktome.client.screen.MainMenuScreen
@@ -19,6 +23,10 @@ import java.nio.file.Path
 class GameApp(
     private val saveManager: SaveManager = SaveManager(defaultSaveDir()),
     private val defaultConfig: FoundationGameConfig = FoundationGameConfig(),
+    private val menuInputSourceFactory: () -> InputSource = { GdxInputSource },
+    private val gameCommandSourceFactory: () -> CommandSource = { InputHandlerCommandSource() },
+    private val outcomeInputSourceFactory: () -> InputSource = { GdxInputSource },
+    private val renderEnabled: Boolean = true,
     private val assetVersionProvider: () -> AssetVersionContract = AssetVersionResourceLoader::load,
     private val assetVersionGate: AssetVersionGate = AssetVersionGate(),
 ) : Game() {
@@ -39,7 +47,7 @@ class GameApp(
                 GameModule.newFoundationSession(config = defaultConfig, saveManager = saveManager)
             }
         activeSession = session
-        replaceScreen(FoundationGameScreen(this, session))
+        replaceScreen(FoundationGameScreen(this, session, gameCommandSourceFactory(), renderEnabled))
     }
 
     fun continueGame() {
@@ -54,7 +62,7 @@ class GameApp(
                 return
             }
         activeSession = session
-        replaceScreen(FoundationGameScreen(this, session))
+        replaceScreen(FoundationGameScreen(this, session, gameCommandSourceFactory(), renderEnabled))
     }
 
     fun showOutcome(session: FoundationGameSession) {
@@ -62,9 +70,9 @@ class GameApp(
         activeSession = null
         replaceScreen(
             if (session.isVictory()) {
-                VictoryScreen(this, summary)
+                VictoryScreen(this, summary, outcomeInputSourceFactory(), renderEnabled)
             } else {
-                GameOverScreen(this, summary)
+                GameOverScreen(this, summary, outcomeInputSourceFactory(), renderEnabled)
             },
         )
     }
@@ -78,7 +86,7 @@ class GameApp(
         }
         activeSession = null
         val continueEnabled = lifecycle.refreshContinueAvailability()
-        replaceScreen(MainMenuScreen(this, continueEnabled, notice ?: lifecycle.consumeNotice()))
+        replaceScreen(MainMenuScreen(this, continueEnabled, notice ?: lifecycle.consumeNotice(), menuInputSourceFactory(), renderEnabled))
     }
 
     override fun dispose() {
@@ -94,6 +102,8 @@ class GameApp(
 
     private fun assetContractNotice(): String? =
         assetContracts.noticeOrNull()
+
+    internal fun activeSessionOrNull(): FoundationGameSession? = activeSession
 
     private fun ensureAssetContracts(): Boolean =
         assetContractNotice()?.let { notice ->

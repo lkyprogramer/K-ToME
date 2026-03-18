@@ -284,6 +284,8 @@
 3. `SliceGoldenFlowTest`
 4. `ProfessionStarterKitTest`
 5. `ZoneSpecSliceTest`
+6. `OfficialSliceHeadlessSmokeTest`
+7. `OfficialSliceClientSmokeTest`
 
 ### 6.2 必测行为
 
@@ -291,6 +293,10 @@
 2. 切片从开局到 Boss/结算成立。
 3. 掉落、日志、资源、状态都能在正式路径显示。
 4. 交互物、怪物 archetype、职业 starter kit 都能被 loader 和 runtime 正确消费。
+5. `headlessSmoke` 必须至少补进 `Vanguard` / `Arcanist` 两条正式切片场景。
+6. `clientSmoke` 必须进入默认正式切片，而不是继续停留在旧 foundation 壳层。
+7. `preReleaseAcceptance` 和 `longRunLab` 在正式切片接入后保持绿色。
+8. PR 新增职业、zone、Boss、interactable 内容必须进入 smoke 或实验室，不允许只留在 data test。
 
 ### 6.3 自动化命令
 
@@ -302,6 +308,10 @@
 ./gradlew manifestLint
 ./gradlew goldenScreenshot
 ./gradlew contractLint
+./gradlew headlessSmoke
+./gradlew clientSmoke
+./gradlew longRunLab
+./gradlew preReleaseAcceptance
 ```
 
 当前离线资源自检入口：
@@ -331,6 +341,7 @@ GEMINI_API_KEY=your_key ./scripts/generate_assets.sh \
    - 开局 -> 探索 -> Boss -> 结算闭环
    - Tile、音频、日志、掉落都在正式路径
    - 交互物、Boss 警报、职业技能图标和职业主体资源都真实生效
+4. 对照 `headlessSmoke` / `clientSmoke` 报告，确认两职业默认切片与桌面白盒一致。
 
 ## 7. 出口门禁
 
@@ -340,6 +351,8 @@ GEMINI_API_KEY=your_key ./scripts/generate_assets.sh \
 4. 两职业的 starter talent、starter kit、职业主体资源、monster/zone/interactable 基线全部真实落地。
 5. 切片内正式资源全部通过 `asset/style/audio/manifest` lint。
 6. `P2-B` 资产计划、视觉 manifest 与 Gemini 生成入口三者保持一一对应，不允许手填漂移。
+7. 正式切片已进入 `headlessSmoke`、`clientSmoke`、`preReleaseAcceptance` 主验证链。
+8. 任何新增正式内容都必须补至少一条 smoke / lab / golden 证据，不允许只加 isolated unit test。
 
 ## 8. 风险与止损
 

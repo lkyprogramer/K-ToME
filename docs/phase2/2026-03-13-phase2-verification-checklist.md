@@ -8,8 +8,11 @@
 ./gradlew test
 ./gradlew :core:test
 ./gradlew :game:test
+./gradlew headlessSmoke
+./gradlew clientSmoke
 ./gradlew jacocoTestReport
 ./gradlew :core:jacocoTestCoverageVerification
+./gradlew preReleaseAcceptance
 ```
 
 ### 1.2 Contract & Content
@@ -19,6 +22,7 @@
 ./gradlew contractLint
 ./gradlew goldenScreenshot
 ./gradlew soloClearLab
+./gradlew longRunLab
 ./gradlew assetLint
 ./gradlew styleLint
 ./gradlew audioLint
@@ -33,6 +37,8 @@
 4. screenshot golden 无非预期漂移。
 5. 四职业短局实验室全部通过。
 6. 正式资源的 spec / manifest / style / audio 追溯链完整。
+7. `build/reports/harness/headless-smoke.json`、`client-smoke.json`、`long-run-summary.json` 都可追溯。
+8. `preReleaseAcceptance` 仍然通过，且 Phase 2 新增内容没有绕过既有发布前验收链。
 
 ## 2. Manual White-Box Verification
 
@@ -43,6 +49,7 @@
 3. 预期：
    - 菜单即时切换语言。
    - 新开局和读当前阶段存档都使用所选语言。
+   - 与 `clientSmoke` 的 locale/continue 场景一致。
 
 ### 2.2 Tile 正式路径
 
@@ -51,6 +58,7 @@
    - 地图、角色、交互物全部按 Tile 渲染。
    - HUD、背包、检视和日志与当前 locale 一致。
    - 缺图/缺音时出现 fallback 和明确错误。
+   - 不破坏 `clientSmoke` 默认主路径。
 
 ### 2.3 短局闭环
 
@@ -58,6 +66,7 @@
 2. 预期：
    - 都能完成从开局到 Boss 或失败结算的闭环。
    - 不出现裸字符串、ASCII 正式路径回退、存档损坏。
+   - 与 `headlessSmoke` / `SoloClearLab` 的默认路径结论一致。
 
 ### 2.4 SoloClearLab v1 硬门禁
 
@@ -88,3 +97,4 @@
    - snapshot/hash
    - 日志 token 输出
    - screenshot 差异
+   - 对应的 `headlessSmoke` / `clientSmoke` / `longRunLab` 报告片段

@@ -184,6 +184,8 @@ client/src/main/kotlin/com/ktome/client/render/TileLayerComposer.kt
 2. `HudSnapshotRenderTest`
 3. `InventoryScreenGoldenTest`
 4. `AudioRouterUiCueTest`
+5. `TileClientSmokeTest`
+6. `InspectOverlayClientSmokeTest`
 
 ### 6.2 必测行为
 
@@ -192,6 +194,9 @@ client/src/main/kotlin/com/ktome/client/render/TileLayerComposer.kt
 3. 背包和检视可用且支持双语。
 4. screenshot golden 无非预期漂移。
 5. UI/输入反馈能正确触发最小 cue。
+6. `clientSmoke` 必须覆盖 Tile 主路径、最小 HUD、背包入口和检视入口。
+7. `headlessSmoke` 与 `preReleaseAcceptance` 保持绿色，证明 Tile 壳层没有回流污染规则层。
+8. PR 新增的 Tile/HUD/overlay 功能必须进入 `clientSmoke` 或 golden，不允许只靠局部 render test。
 
 ### 6.3 自动化命令
 
@@ -199,7 +204,10 @@ client/src/main/kotlin/com/ktome/client/render/TileLayerComposer.kt
 ./gradlew goldenScreenshot
 ./gradlew audioLint
 ./gradlew manifestLint
+./gradlew headlessSmoke
 ./gradlew :client:test
+./gradlew clientSmoke
+./gradlew preReleaseAcceptance
 ```
 
 ### 6.4 白盒验证
@@ -213,6 +221,7 @@ client/src/main/kotlin/com/ktome/client/render/TileLayerComposer.kt
    - 双语布局无明显爆版
 5. 触发移动、交互、确认等输入，确认 UI/操作音频出现且不过载。
 6. 触发一个 overlay 场景，确认 overlay 来源于 snapshot 而不是直接读 world。
+7. 对照 `clientSmoke` 报告，确认默认 UI 主路径与桌面白盒一致。
 
 ## 7. 出口门禁
 
@@ -221,6 +230,8 @@ client/src/main/kotlin/com/ktome/client/render/TileLayerComposer.kt
 3. 首轮双语 UI 走查通过。
 4. 主要界面 golden 建立。
 5. zone -> tileset 与最小 UI 音频链路成立。
+6. Tile/UI 改动不得破坏 `headlessSmoke`、`clientSmoke`、`preReleaseAcceptance`。
+7. 新增 HUD/背包/检视/overlay 内容必须补进 smoke 或 golden 主路径。
 
 ## 8. 风险与止损
 

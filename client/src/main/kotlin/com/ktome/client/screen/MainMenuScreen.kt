@@ -9,6 +9,7 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch
 import com.badlogic.gdx.utils.ScreenUtils
 import com.badlogic.gdx.utils.viewport.FitViewport
 import com.ktome.client.GameApp
+import com.ktome.client.input.InputSource
 import com.ktome.client.input.GdxInputSource
 
 internal const val menuWidth = 960f
@@ -18,13 +19,18 @@ class MainMenuScreen(
     private val app: GameApp,
     private val continueEnabled: Boolean,
     private val notice: String? = null,
+    inputSource: InputSource = GdxInputSource,
+    private val renderEnabled: Boolean = true,
 ) : ScreenAdapter() {
     private var batch: SpriteBatch? = null
     private var font: BitmapFont? = null
     private val viewport = FitViewport(menuWidth, menuHeight)
-    private val controller = MainMenuController(GdxInputSource)
+    private val controller = MainMenuController(inputSource)
 
     override fun show() {
+        if (!renderEnabled) {
+            return
+        }
         ensureResources()
         viewport.update(Gdx.graphics.width, Gdx.graphics.height, true)
     }
@@ -44,6 +50,9 @@ class MainMenuScreen(
                 return
             }
             null -> Unit
+        }
+        if (!renderEnabled) {
+            return
         }
         ensureResources()
         val batch = requireNotNull(batch)
@@ -82,7 +91,9 @@ class MainMenuScreen(
     }
 
     override fun resize(width: Int, height: Int) {
-        viewport.update(width, height, true)
+        if (renderEnabled) {
+            viewport.update(width, height, true)
+        }
     }
 
     override fun dispose() {

@@ -9,6 +9,8 @@ plugins {
     application
 }
 
+val harnessReportDir = rootProject.layout.buildDirectory.dir("reports/harness")
+
 dependencies {
     implementation(project(":core"))
     implementation(project(":game"))
@@ -16,6 +18,7 @@ dependencies {
     implementation("com.badlogicgames.gdx:gdx:${rootProject.providers.gradleProperty("libgdxVersion").get()}")
     implementation("com.badlogicgames.gdx:gdx-backend-lwjgl3:${rootProject.providers.gradleProperty("libgdxVersion").get()}")
     runtimeOnly("com.badlogicgames.gdx:gdx-platform:${rootProject.providers.gradleProperty("libgdxVersion").get()}:natives-desktop")
+    testImplementation("com.badlogicgames.gdx:gdx-backend-headless:${rootProject.providers.gradleProperty("libgdxVersion").get()}")
 }
 
 application {
@@ -29,6 +32,9 @@ distributions {
                 into("docs")
             }
             from(rootProject.file("docs/phase1/2026-03-12-phase1-5.0-regression-checklist.md")) {
+                into("docs")
+            }
+            from(rootProject.file("docs/releases/v0.1.0-pre-release-acceptance.md")) {
                 into("docs")
             }
             from(rootProject.file("docs/releases/v0.1.0-known-limitations.md")) {
@@ -76,4 +82,16 @@ tasks.register<Copy>("releaseDesktopDist") {
 
 tasks.named<Test>("test") {
     enabled = true
+}
+
+tasks.register<Test>("clientSmoke") {
+    group = "verification"
+    description = "Runs headless client smoke coverage."
+    testClassesDirs = sourceSets.test.get().output.classesDirs
+    classpath = sourceSets.test.get().runtimeClasspath
+    useJUnitPlatform {
+        includeTags("clientSmoke")
+    }
+    systemProperty("ktome.harness.reportDir", harnessReportDir.get().asFile.absolutePath)
+    outputs.dir(harnessReportDir)
 }

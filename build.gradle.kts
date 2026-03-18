@@ -69,6 +69,11 @@ subprojects {
 
     tasks.withType<Test>().configureEach {
         useJUnitPlatform()
+        if (name == "test") {
+            useJUnitPlatform {
+                excludeTags("headlessSmoke", "clientSmoke", "longRunLab")
+            }
+        }
         testLogging {
             events("failed", "skipped")
             exceptionFormat = TestExceptionFormat.FULL
@@ -95,10 +100,42 @@ tasks.register("saveSmoke") {
     dependsOn(":core:test", ":game:test", ":client:test")
 }
 
+tasks.register("headlessSmoke") {
+    group = LifecycleBasePlugin.VERIFICATION_GROUP
+    description = "Runs the game-layer AI smoke harness."
+    dependsOn(":game:headlessSmoke")
+}
+
+tasks.register("clientSmoke") {
+    group = LifecycleBasePlugin.VERIFICATION_GROUP
+    description = "Runs headless client lifecycle smoke coverage."
+    dependsOn(":client:clientSmoke")
+}
+
+tasks.register("longRunLab") {
+    group = LifecycleBasePlugin.VERIFICATION_GROUP
+    description = "Runs the nightly long-run AI matrix."
+    dependsOn(":game:longRunLab")
+}
+
+tasks.register("preReleaseAcceptance") {
+    group = LifecycleBasePlugin.VERIFICATION_GROUP
+    description = "Runs the full pre-release acceptance gate, including smoke coverage, coverage reports, and desktop packaging."
+    dependsOn("clean")
+    dependsOn(test)
+    dependsOn("headlessSmoke")
+    dependsOn("clientSmoke")
+    dependsOn("jacocoTestReport")
+    dependsOn(":core:jacocoTestCoverageVerification")
+    dependsOn(":client:releaseDesktopDist")
+}
+
 tasks.register<JacocoReport>("jacocoTestReport") {
     group = LifecycleBasePlugin.VERIFICATION_GROUP
     description = "Generates an aggregate JaCoCo coverage report for all subprojects."
     dependsOn(test)
+    dependsOn("headlessSmoke")
+    dependsOn("clientSmoke")
     dependsOn(subprojects.map { it.tasks.named("jacocoTestReport") })
 
     val mainSourceSets = subprojects.mapNotNull { project ->
@@ -124,6 +161,8 @@ tasks.register<JacocoReport>("jacocoTestReport") {
 
 tasks.named("check") {
     dependsOn(test)
+    dependsOn("headlessSmoke")
+    dependsOn("clientSmoke")
     dependsOn("jacocoTestReport")
     dependsOn(":core:jacocoTestCoverageVerification")
 }

@@ -88,6 +88,7 @@ class FoundationGameSession internal constructor(
     private val restoredActiveTurnActorId: Int? = null,
 ) {
     private val messageLog = ArrayDeque<String>()
+    private val recentEvents = ArrayDeque<String>()
     private val pendingActions = ArrayDeque<EntityId>()
     private var activeTurnActor: EntityId? = null
     private var runOutcome: RunOutcome = RunOutcome.InProgress
@@ -166,6 +167,10 @@ class FoundationGameSession internal constructor(
             }
 
     fun messageLog(): List<String> = messageLog.toList()
+
+    fun currentTurnCount(): Int = turnCount
+
+    fun recentEventLog(limit: Int = 20): List<String> = recentEvents.takeLast(limit)
 
     fun isGameOver(): Boolean = runOutcome is RunOutcome.Defeat
 
@@ -277,6 +282,8 @@ class FoundationGameSession internal constructor(
                 level = loadout.levelOf(talentId),
                 maxLevel = definition.maxLevel,
                 staminaCost = definition.staminaCost,
+                range = definition.range,
+                minRange = definition.minRange,
                 currentCooldown = cooldowns[talentId] ?: 0,
                 maxCooldown = definition.cooldown,
                 requiresTarget = definition.range > 0,
@@ -1158,9 +1165,21 @@ class FoundationGameSession internal constructor(
     }
 
     private fun logEvent(event: Any) {
-        @Suppress("UNUSED_VARIABLE")
-        val ignored = event
+        if (recentEvents.size == 20) {
+            recentEvents.removeFirst()
+        }
+        recentEvents += summarizeEvent(event)
     }
+
+    private fun summarizeEvent(event: Any): String =
+        when (event) {
+            is DamageDealtEvent -> "damage:${event.attacker.value}->${event.target.value}:${event.damage}${if (event.crit) ":crit" else ""}"
+            is MissEvent -> "miss:${event.attacker.value}->${event.target.value}"
+            is EntityDeathEvent -> "death:${event.entity.value}:${event.killer?.value ?: "none"}"
+            is ExperienceGainedEvent -> "xp:${event.entity.value}:${event.amount}"
+            is LevelUpEvent -> "level:${event.entity.value}:${event.newLevel}"
+            else -> event::class.simpleName ?: "UnknownEvent"
+        }
 
     private data class CommandResolution(
         val accepted: Boolean,

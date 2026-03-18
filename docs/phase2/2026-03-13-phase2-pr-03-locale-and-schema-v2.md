@@ -322,6 +322,8 @@ game/src/main/resources/i18n/*.json
 6. `TalentSchemaTest`
 7. `MonsterSchemaTest`
 8. `ZoneSchemaTest`
+9. `LocaleClientSmokeTest`
+10. `LocaleSaveReloadSmokeTest`
 
 ### 6.2 必测行为
 
@@ -331,6 +333,9 @@ game/src/main/resources/i18n/*.json
 4. 缺 key 或错误 key 时 lint 失败。
 5. 首批 profession/talent/monster/zone skeleton 都可被 loader 正常识别。
 6. cross-reference 缺失或悬挂时 lint 明确失败。
+7. `headlessSmoke`、`clientSmoke` 在 `zh-CN` / `en-US` 下都保持绿色，不允许 locale 改造只停留在 isolated unit test。
+8. `preReleaseAcceptance` 保持通过，locale 切换不会破坏现有发布前验收链。
+9. 新增 schema 或 key 命名必须至少进入一条 client 或 save/load smoke，而不是只在 loader test 里出现。
 
 ### 6.3 自动化命令
 
@@ -338,6 +343,9 @@ game/src/main/resources/i18n/*.json
 ./gradlew :game:test
 ./gradlew localeLint
 ./gradlew contractLint
+./gradlew headlessSmoke
+./gradlew clientSmoke
+./gradlew preReleaseAcceptance
 ./gradlew test
 ```
 
@@ -346,9 +354,11 @@ game/src/main/resources/i18n/*.json
 1. 启动首页，切中文。
 2. 新开局检查菜单、日志、背包、HUD 标题。
 3. 切英文，再读存档。
-4. 预期：
+4. 至少做一次 `新开局 -> Ctrl+S -> 返回菜单 -> Continue` 的双语切换验证。
+5. 预期：
    - 文本按当前语言显示
    - 不依赖存档内旧字符串
+   - `clientSmoke` 报告中的 locale 场景与桌面白盒结论一致
 
 ## 7. 出口门禁
 
@@ -358,6 +368,8 @@ game/src/main/resources/i18n/*.json
 4. 正式内容不再新增裸文本。
 5. Phase 2 首批正式对象族都有稳定 schema 和 key 命名基线。
 6. profession/talent/monster/boss/zone 的 cross-reference 校验进入 `contract-lint`。
+7. locale 相关改动不得破坏 `headlessSmoke`、`clientSmoke`、`preReleaseAcceptance`。
+8. PR 新增的 locale/schema 内容必须补入至少一条 smoke 或 save/load 回归路径。
 
 ## 8. 风险与止损
 
