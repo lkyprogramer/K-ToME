@@ -87,17 +87,20 @@ class DataLoader(
         return catalog.talents.map { schema -> schema.toRuntimeTalent(localizer) }
     }
 
-    fun loadBossDefinition(): BossDefinition {
+    fun loadBossDefinitions(): Map<String, BossDefinition> {
         val catalog = loadSchemaCatalog()
-        val encounter = catalog.bossEncounters.single()
-        val template =
-            requireNotNull(catalog.monsters.firstOrNull { monster -> monster.id == encounter.bossTemplateId }) {
-                "Boss encounter '${encounter.id}' references unknown monster '${encounter.bossTemplateId}'."
-            }
-        return BossDefinition(
-            template = template.toRuntimeMonster(localizer),
-            talentLevels = template.talents,
-        )
+        return catalog.bossEncounters.associate { encounter ->
+            val template =
+                requireNotNull(catalog.monsters.firstOrNull { monster -> monster.id == encounter.bossTemplateId }) {
+                    "Boss encounter '${encounter.id}' references unknown monster '${encounter.bossTemplateId}'."
+                }
+            encounter.id to
+                BossDefinition(
+                    encounterId = encounter.id,
+                    template = template.toRuntimeMonster(localizer),
+                    talentLevels = template.talents,
+                )
+        }
     }
 
     private fun loadYamlMap(resourcePath: String): Map<String, Any?> {

@@ -89,6 +89,8 @@ class ContractLintTest {
             assertEquals(2, zone.schemaVersion)
             assertEquals("zone.${zone.id}.name", zone.nameKey)
             assertEquals("zone.${zone.id}.desc", zone.descKey)
+            assertTrue(zone.floorCount > 0, "Zone floorCount must stay positive for ${zone.id}")
+            assertTrue(zone.mapSize.width > 0 && zone.mapSize.height > 0, "Zone mapSize must stay positive for ${zone.id}")
             assertTrue(catalog.visualKeys.contains(zone.visualKey), "Unknown visual key ${zone.visualKey}")
             assertTrue(catalog.visualKeys.contains(zone.iconKey), "Unknown icon key ${zone.iconKey}")
             assertTrue(catalog.audioProfiles.contains(zone.audioProfile), "Unknown audio profile ${zone.audioProfile}")
@@ -141,6 +143,24 @@ class ContractLintTest {
 
         assertEquals(setOf("vanguard", "arcanist", "rogue", "templar"), catalog.professions.map { it.id }.toSet())
         assertEquals(setOf("shattered_outpost", "greenwood_fringe", "deep_iron_pit", "grey_gate_depths"), catalog.zones.map { it.id }.toSet())
+        assertEquals(
+            mapOf(
+                "shattered_outpost" to 2,
+                "greenwood_fringe" to 2,
+                "deep_iron_pit" to 2,
+                "grey_gate_depths" to 2,
+            ),
+            catalog.zones.associate { zone -> zone.id to zone.floorCount },
+        )
+        assertEquals(
+            mapOf(
+                "shattered_outpost" to null,
+                "greenwood_fringe" to null,
+                "deep_iron_pit" to null,
+                "grey_gate_depths" to "dungeon_lord_encounter",
+            ),
+            catalog.zones.associate { zone -> zone.id to zone.bossEncounterId },
+        )
         assertEquals(setOf("normal"), catalog.difficulties.map { it.id }.toSet())
         assertEquals(
             setOf("beast.rat", "undead.bone_archer", "bandit.sentry", "orc.raider", "cultist.dungeon_lord"),

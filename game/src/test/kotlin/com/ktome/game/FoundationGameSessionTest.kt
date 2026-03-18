@@ -450,11 +450,15 @@ class FoundationGameSessionTest {
     }
 
     @Test
-    fun `killing floor five boss ends run in victory and clears save`() {
+    fun `killing final floor boss in grey gate depths ends run in victory and clears save`() {
         val saveManager = SaveManager(tempDir.resolve("boss-save"))
-        val session = GameModule.newFoundationSession(saveManager = saveManager)
+        val session =
+            GameModule.newFoundationSession(
+                config = FoundationGameConfig(zoneId = "grey_gate_depths"),
+                saveManager = saveManager,
+            )
 
-        repeat(4) {
+        repeat(1) {
             movePlayerTo(session, stairPoint(session, com.ktome.core.dungeon.StairDirection.DOWN))
             assertTrue(session.perform(PlayerCommand.Descend))
         }

@@ -46,6 +46,28 @@ class ClientSmokeHarnessTest {
                     name = "new-game-en",
                     saveManager = saveManager,
                     botSource = newGameSource,
+                    defaultConfig = FoundationGameConfig(seed = 20260312L),
+                    menuInput = ScriptedInputSource(Keys.ENTER),
+                    expectedLocale = GameLocale.EN_US,
+                    expectedMenuSubtitle = "Main Menu",
+                    expectedMenuLanguage = "Language: English",
+                    expectedPlayerName = "Hero",
+                    expectedPlayerRole = "Player",
+                    expectedHudToken = "FL",
+                    expectedInventoryTitle = "Inventory",
+                    expectedInspectTitle = "Inspect",
+                    expectedLogLine = "You enter the dungeon.",
+                ),
+                runNewGameSmoke(
+                    name = "new-game-arcanist-greenwood-en",
+                    saveManager = saveManager,
+                    botSource = BotCommandSource(),
+                    defaultConfig =
+                        FoundationGameConfig(
+                            seed = 20260318L,
+                            zoneId = "greenwood_fringe",
+                            playerProfessionId = "arcanist",
+                        ),
                     menuInput = ScriptedInputSource(Keys.ENTER),
                     expectedLocale = GameLocale.EN_US,
                     expectedMenuSubtitle = "Main Menu",
@@ -61,6 +83,7 @@ class ClientSmokeHarnessTest {
                     name = "new-game-zh",
                     saveManager = saveManager,
                     botSource = BotCommandSource(),
+                    defaultConfig = FoundationGameConfig(seed = 20260312L),
                     menuInput = ScriptedInputSource(Keys.L, Keys.ENTER),
                     expectedLocale = GameLocale.ZH_CN,
                     expectedMenuSubtitle = "主菜单",
@@ -101,7 +124,7 @@ class ClientSmokeHarnessTest {
                 buildString {
                     appendLine("# Client Smoke")
                     reports.forEach { report ->
-                        appendLine("- ${report.name}: success=${report.success}, screen=${report.screenName}, floor=${report.floorReached}, turns=${report.turns}, consumed=${report.consumedCommands}")
+                        appendLine("- ${report.name}: success=${report.success}, zone=${report.zoneId}, profession=${report.professionId}, screen=${report.screenName}, floor=${report.floorReached}, turns=${report.turns}, consumed=${report.consumedCommands}")
                     }
                 },
         )
@@ -113,6 +136,7 @@ class ClientSmokeHarnessTest {
         name: String,
         saveManager: SaveManager,
         botSource: BotCommandSource,
+        defaultConfig: FoundationGameConfig,
         menuInput: ScriptedInputSource,
         expectedLocale: GameLocale,
         expectedMenuSubtitle: String,
@@ -128,7 +152,7 @@ class ClientSmokeHarnessTest {
             val app =
                 GameApp(
                     saveManager = saveManager,
-                    defaultConfig = FoundationGameConfig(seed = 20260312L),
+                    defaultConfig = defaultConfig,
                     menuInputSourceFactory = { menuInput },
                     gameCommandSourceFactory = { botSource },
                     outcomeInputSourceFactory = { ScriptedInputSource() },
@@ -147,10 +171,14 @@ class ClientSmokeHarnessTest {
             val playerName = session?.actorViews()?.singleOrNull { it.isPlayer }?.name
             val localeId = session?.localizer()?.locale?.id
             val playerRole = session?.inspectAt(session.playerPosition())?.actor?.role
+            val zoneId = session?.config?.zoneId
+            val professionId = session?.config?.playerProfessionId
             ClientSmokeReport(
                 name = name,
                 success =
                     session != null &&
+                        zoneId == defaultConfig.zoneId &&
+                        professionId == defaultConfig.playerProfessionId &&
                         localeId == expectedLocale.id &&
                         menuSnapshot.subtitle == expectedMenuSubtitle &&
                         menuSnapshot.language == expectedMenuLanguage &&
@@ -164,6 +192,8 @@ class ClientSmokeHarnessTest {
                         (session.currentTurnCount() > 0 || session.currentFloor() > 1),
                 screenName = app.screen?.javaClass?.simpleName ?: "None",
                 localeId = localeId,
+                zoneId = zoneId,
+                professionId = professionId,
                 floorReached = session?.currentFloor(),
                 turns = session?.currentTurnCount(),
                 menuSubtitle = menuSnapshot.subtitle,
@@ -179,6 +209,10 @@ class ClientSmokeHarnessTest {
                 failureReason =
                     if (session == null) {
                         "Session was not created from main menu."
+                    } else if (zoneId != defaultConfig.zoneId) {
+                        "Expected zone ${defaultConfig.zoneId}, got $zoneId."
+                    } else if (professionId != defaultConfig.playerProfessionId) {
+                        "Expected profession ${defaultConfig.playerProfessionId}, got $professionId."
                     } else if (localeId != expectedLocale.id) {
                         "Expected locale ${expectedLocale.id}, got $localeId."
                     } else if (menuSnapshot.subtitle != expectedMenuSubtitle) {
@@ -251,6 +285,8 @@ class ClientSmokeHarnessTest {
             val localeId = loaded?.localizer()?.locale?.id
             val playerName = loaded?.actorViews()?.singleOrNull { it.isPlayer }?.name
             val playerRole = loaded?.inspectAt(loaded.playerPosition())?.actor?.role
+            val zoneId = loaded?.config?.zoneId
+            val professionId = loaded?.config?.playerProfessionId
             ClientSmokeReport(
                 name = name,
                 success =
@@ -268,6 +304,8 @@ class ClientSmokeHarnessTest {
                         loaded.currentTurnCount() >= session.currentTurnCount(),
                 screenName = app.screen?.javaClass?.simpleName ?: "None",
                 localeId = localeId,
+                zoneId = zoneId,
+                professionId = professionId,
                 floorReached = loaded?.currentFloor(),
                 turns = loaded?.currentTurnCount(),
                 menuSubtitle = menuSnapshot.subtitle,
@@ -326,6 +364,8 @@ class ClientSmokeHarnessTest {
         val success: Boolean,
         val screenName: String,
         val localeId: String?,
+        val zoneId: String? = null,
+        val professionId: String? = null,
         val floorReached: Int?,
         val turns: Int?,
         val menuSubtitle: String? = null,
@@ -373,6 +413,8 @@ private fun ClientSmokeHarnessTest.ClientSmokeReport.toJson() =
         put("success", success)
         put("screenName", screenName)
         localeId?.let { put("localeId", it) }
+        zoneId?.let { put("zoneId", it) }
+        professionId?.let { put("professionId", it) }
         floorReached?.let { put("floorReached", it) }
         turns?.let { put("turns", it) }
         menuSubtitle?.let { put("menuSubtitle", it) }

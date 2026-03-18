@@ -49,10 +49,10 @@ class InputReplayFullGameLoopTest {
         val newGameAction = pressMenu(menu, menuInput, hasSave = false, justPressed = setOf(Keys.ENTER))
         assertEquals(MainMenuAction.StartNewGame, newGameAction)
 
-        val session = GameModule.newFoundationSession(FoundationGameConfig(), saveManager)
+        val session = GameModule.newFoundationSession(FoundationGameConfig(zoneId = "grey_gate_depths"), saveManager)
         val inputHandler = InputHandler(ReplayInputSource())
-        descendToFloor(session, inputHandler, targetFloor = 5)
-        assertEquals(5, session.currentFloor())
+        descendToFloor(session, inputHandler, targetFloor = 2)
+        assertEquals(2, session.currentFloor())
 
         assertTrue(runCommand(session, inputHandler, justPressed = setOf(Keys.S), pressed = setOf(Keys.CONTROL_LEFT, Keys.S)))
         assertTrue(saveManager.hasSave())
@@ -66,7 +66,7 @@ class InputReplayFullGameLoopTest {
         assertNotNull(continued)
         val continuedSession = requireNotNull(continued)
         val continuedInput = InputHandler(ReplayInputSource())
-        assertEquals(5, continuedSession.currentFloor())
+        assertEquals(2, continuedSession.currentFloor())
 
         killBossByReplay(continuedSession, continuedInput)
         assertTrue(continuedSession.runOutcome() is RunOutcome.Victory)

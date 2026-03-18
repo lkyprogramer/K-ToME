@@ -10,7 +10,7 @@ data class FoundationGameConfig(
     val seed: Long = 20260312L,
     val fovRadius: Int = 8,
     val floor: Int = 1,
-    val maxFloor: Int = 5,
+    val maxFloor: Int = 2,
     val messageLogSize: Int = 8,
     val zoneId: String = FOUNDATION_ZONE_ID,
     val playerProfessionId: String = FOUNDATION_PROFESSION_ID,

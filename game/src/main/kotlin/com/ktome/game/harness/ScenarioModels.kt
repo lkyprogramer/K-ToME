@@ -3,6 +3,7 @@ package com.ktome.game.harness
 import com.ktome.core.map.GameMap
 import com.ktome.core.map.Point
 import com.ktome.core.run.RunOutcome
+import com.ktome.game.FOUNDATION_ZONE_ID
 import com.ktome.game.FOUNDATION_PROFESSION_ID
 import com.ktome.game.InventoryItemView
 import com.ktome.game.PlayerStatus
@@ -11,6 +12,7 @@ import com.ktome.game.TalentSlotView
 data class ScenarioSpec(
     val name: String,
     val seed: Long,
+    val zoneId: String = FOUNDATION_ZONE_ID,
     val professionId: String = FOUNDATION_PROFESSION_ID,
     val maxTurns: Int,
     val goal: ScenarioGoal,
@@ -55,6 +57,7 @@ data class SaveLoadCheckpoint(
 data class ScenarioReport(
     val name: String,
     val seed: Long,
+    val zoneId: String = FOUNDATION_ZONE_ID,
     val professionId: String,
     val success: Boolean,
     val outcome: RunOutcome,

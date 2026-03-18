@@ -1,6 +1,7 @@
 package com.ktome.tools.lint
 
 import com.ktome.game.i18n.GameLocale
+import com.ktome.game.i18n.UiGlyphCatalog
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -86,6 +87,14 @@ internal object LintFixtures {
 
     fun formalObjectMaps(): List<Map<*, *>> =
         schemaResources.flatMap { resource -> extractFormalObjects(loadYaml(resource)) }
+
+    fun requiredUiGlyphs(): Set<Char> = UiGlyphCatalog.requiredGlyphs(::loadText)
+
+    fun bundledUiFontPath(): Path = repoRoot.resolve("client/src/main/resources/fonts/ktome-ui-subset.otf")
+
+    fun bundledUiFontNoticePath(): Path = repoRoot.resolve("client/src/main/resources/fonts/OFL.txt")
+
+    fun legacyUiGlyphCatalogPath(): Path = repoRoot.resolve("client/src/main/resources/fonts/ktome-ui-glyphs.txt")
 
     private fun loadText(resource: String): String =
         requireNotNull(LintFixtures::class.java.getResource(resource)) { "Missing resource $resource" }.readText()

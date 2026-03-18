@@ -148,6 +148,7 @@
   "log.player.death": "你死了。游戏结束。",
   "log.entity.death": "{target} 死亡。",
   "log.victory": "你击败了 {target}。胜利！",
+  "log.victory.escape": "你控制了这里。胜利！",
   "log.xp.gain": "你获得了 {amount} 点经验。",
   "log.level_up": "你提升到了 {level} 级。",
   "log.stairs.missing_up": "这里没有向上的楼梯。",

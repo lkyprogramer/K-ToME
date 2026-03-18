@@ -11,15 +11,18 @@ import java.lang.reflect.Proxy
 
 class KtomeFontsTest {
     @Test
-    fun `ui font bundle exists and includes required zh cn glyphs`() {
+    fun `ui font bundle covers every glyph referenced by locale bundles`() {
         withHeadlessGdx {
             assertTrue(KtomeFonts.bundledUiFontExists())
 
+            val requiredGlyphs = KtomeFonts.requiredUiGlyphs()
             val font = KtomeFonts.createUiFont(size = 18)
             try {
-                listOf('H', '层', '你', '装', '语', '简').forEach { glyph ->
-                    assertTrue(font.data.hasGlyph(glyph), "Missing glyph '$glyph' in bundled UI font.")
-                }
+                val missingGlyphs = requiredGlyphs.filterNot(font.data::hasGlyph)
+                assertTrue(
+                    missingGlyphs.isEmpty(),
+                    "Bundled UI font is missing ${missingGlyphs.size} required glyph(s): ${missingGlyphs.take(20).joinToString(separator = "")}",
+                )
             } finally {
                 font.dispose()
             }

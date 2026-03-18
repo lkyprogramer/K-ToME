@@ -13,7 +13,17 @@ internal data class GameContent(
     val talentRegistry: TalentRegistry,
     val monsterCatalog: List<MonsterTemplate>,
     val itemBundle: ItemDataBundle,
-    val bossDefinition: BossDefinition,
+    val bossDefinitions: Map<String, BossDefinition>,
     val schemaCatalog: SchemaCatalog,
     val localizer: Localizer,
-)
+) {
+    fun bossDefinitionForZone(zoneId: String): BossDefinition? =
+        schemaCatalog.zones.firstOrNull { zone -> zone.id == zoneId }
+            ?.bossEncounterId
+            ?.let { encounterId -> bossDefinitions[encounterId] }
+
+    fun bossTemplateIds(): Set<String> = bossDefinitions.values.map { definition -> definition.template.id }.toSet()
+
+    fun allMonsterTemplates(): List<MonsterTemplate> =
+        (monsterCatalog + bossDefinitions.values.map(BossDefinition::template)).distinctBy(MonsterTemplate::id)
+}

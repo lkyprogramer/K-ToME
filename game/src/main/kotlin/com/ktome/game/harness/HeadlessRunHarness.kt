@@ -84,6 +84,7 @@ class HeadlessRunHarness(
             ScenarioReport(
                 name = spec.name,
                 seed = spec.seed,
+                zoneId = spec.zoneId,
                 professionId = spec.professionId,
                 success = false,
                 outcome = session.runOutcome(),
@@ -129,6 +130,7 @@ class HeadlessRunHarness(
             config =
                 FoundationGameConfig(
                     seed = spec.seed,
+                    zoneId = spec.zoneId,
                     playerProfessionId = spec.professionId,
                 ),
             saveManager = saveManager,
