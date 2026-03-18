@@ -51,12 +51,12 @@ class HeadlessSmokeSuiteTest {
                 ),
                 harness.run(
                     ScenarioSpec(
-                        name = "reach-floor-5-or-terminal",
+                        name = "reach-floor-3",
                         seed = 20260316L,
                         professionId = FOUNDATION_PROFESSION_ID,
                         maxTurns = 1200,
-                        goal = ScenarioGoal.ReachFloorOrTerminal(5),
-                        assertions = listOf(ScenarioAssertion.NoFailure, ScenarioAssertion.NoStall),
+                        goal = ScenarioGoal.ReachFloor(3),
+                        assertions = listOf(ScenarioAssertion.ReachedFloorAtLeast(3), ScenarioAssertion.NoFailure, ScenarioAssertion.NoStall),
                     ),
                 ),
             )
