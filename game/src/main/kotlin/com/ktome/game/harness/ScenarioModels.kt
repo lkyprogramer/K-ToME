@@ -69,7 +69,13 @@ data class ScenarioReport(
     val lastCommands: List<String> = emptyList(),
     val lastMessages: List<String> = emptyList(),
     val eventTail: List<String> = emptyList(),
-)
+) {
+    /**
+     * Normal defeats should not be treated as harness crashes/stalls by acceptance labs that
+     * separately track progression thresholds.
+     */
+    fun crashedOrStalled(): Boolean = failureReason != null || stuckReason != null
+}
 
 sealed interface ScenarioAssertion {
     fun verify(report: ScenarioReport): String?

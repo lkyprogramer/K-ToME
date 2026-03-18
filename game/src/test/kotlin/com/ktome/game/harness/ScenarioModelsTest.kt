@@ -30,6 +30,31 @@ class ScenarioModelsTest {
         assertTrue(goal.isSatisfied(observation(floor = 5, runOutcome = RunOutcome.InProgress)))
     }
 
+    @Test
+    fun `scenario report does not treat normal defeat without harness errors as crash or stall`() {
+        val report =
+            report(
+                success = false,
+                goalReached = false,
+                outcome = RunOutcome.Defeat(floor = 2),
+            )
+
+        assertFalse(report.crashedOrStalled())
+    }
+
+    @Test
+    fun `scenario report treats harness failure as crash or stall`() {
+        val report =
+            report(
+                success = false,
+                goalReached = false,
+                outcome = RunOutcome.Defeat(floor = 2),
+                failureReason = "Turn budget exhausted.",
+            )
+
+        assertTrue(report.crashedOrStalled())
+    }
+
     private fun observation(
         floor: Int,
         runOutcome: RunOutcome,
@@ -69,5 +94,25 @@ class ScenarioModelsTest {
             runOutcome = runOutcome,
             messageLogTail = emptyList(),
             eventTail = emptyList(),
+        )
+
+    private fun report(
+        success: Boolean,
+        goalReached: Boolean,
+        outcome: RunOutcome,
+        failureReason: String? = null,
+        stuckReason: String? = null,
+    ): ScenarioReport =
+        ScenarioReport(
+            name = "scenario",
+            seed = 1L,
+            professionId = "profession",
+            success = success,
+            outcome = outcome,
+            floorReached = 2,
+            turns = 42,
+            goalReached = goalReached,
+            failureReason = failureReason,
+            stuckReason = stuckReason,
         )
 }

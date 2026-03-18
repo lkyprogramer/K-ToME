@@ -37,7 +37,7 @@ class LongRunLabTest {
             }
 
         val floor3OrBetter = reports.count { it.floorReached >= 3 || (it.outcome.isTerminal && it.outcome !is RunOutcome.Defeat) }
-        val crashedOrStalled = reports.filter { !it.success && (it.failureReason != "Turn budget exhausted." || it.stuckReason != null) }
+        val crashedOrStalled = reports.filter { it.crashedOrStalled() }
         val summary =
             buildJsonObject {
                 put("professionId", FOUNDATION_PROFESSION_ID)
