@@ -395,6 +395,7 @@ download_main_artifact_with_module "mavenCentral" "org.apiguardian" "apiguardian
 
 download_main_artifact_with_module "mavenCentral" "com.badlogicgames.gdx" "gdx" "$LIBGDX_VERSION"
 download_main_artifact_with_module "mavenCentral" "com.badlogicgames.gdx" "gdx-backend-lwjgl3" "$LIBGDX_VERSION"
+download_main_artifact_with_module "mavenCentral" "com.badlogicgames.gdx" "gdx-backend-headless" "$LIBGDX_VERSION"
 download_classifier_jar "mavenCentral" "com.badlogicgames.gdx" "gdx-platform" "$LIBGDX_VERSION" "natives-desktop"
 download_pom_only "mavenCentral" "com.badlogicgames.gdx" "gdx-platform" "$LIBGDX_VERSION"
 download_main_artifact "mavenCentral" "com.badlogicgames.gdx" "gdx-jnigen-loader" "$GDX_JNIGEN_LOADER_VERSION"
