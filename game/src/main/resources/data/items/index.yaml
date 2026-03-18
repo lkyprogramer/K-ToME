@@ -1,0 +1,245 @@
+materials:
+  - id: IRON
+    nameKey: material.iron.name
+    descKey: material.iron.desc
+    visualKey: material.iron.visual
+    iconKey: material.iron.icon
+    audioProfile: audio.material.iron
+    schemaVersion: 2
+    tags: [material]
+    minFloor: 1
+    stats: { attack: 0, defense: 0 }
+  - id: STEEL
+    nameKey: material.steel.name
+    descKey: material.steel.desc
+    visualKey: material.steel.visual
+    iconKey: material.steel.icon
+    audioProfile: audio.material.steel
+    schemaVersion: 2
+    tags: [material]
+    minFloor: 2
+    stats: { attack: 2, defense: 1 }
+  - id: MITHRIL
+    nameKey: material.mithril.name
+    descKey: material.mithril.desc
+    visualKey: material.mithril.visual
+    iconKey: material.mithril.icon
+    audioProfile: audio.material.mithril
+    schemaVersion: 2
+    tags: [material]
+    minFloor: 3
+    stats: { attack: 4, defense: 2, speed: 5 }
+  - id: ADAMANTITE
+    nameKey: material.adamantite.name
+    descKey: material.adamantite.desc
+    visualKey: material.adamantite.visual
+    iconKey: material.adamantite.icon
+    audioProfile: audio.material.adamantite
+    schemaVersion: 2
+    tags: [material]
+    minFloor: 4
+    stats: { attack: 6, defense: 4 }
+
+affixes:
+  - id: sharp
+    nameKey: affix.sharp.name
+    descKey: affix.sharp.desc
+    visualKey: affix.sharp.visual
+    iconKey: affix.sharp.icon
+    audioProfile: audio.affix.sharp
+    schemaVersion: 2
+    tags: [affix]
+    type: PREFIX
+    minFloor: 1
+    stats: { attack: 3 }
+  - id: sturdy
+    nameKey: affix.sturdy.name
+    descKey: affix.sturdy.desc
+    visualKey: affix.sturdy.visual
+    iconKey: affix.sturdy.icon
+    audioProfile: audio.affix.sturdy
+    schemaVersion: 2
+    tags: [affix]
+    type: PREFIX
+    minFloor: 1
+    stats: { defense: 2 }
+  - id: swift
+    nameKey: affix.swift.name
+    descKey: affix.swift.desc
+    visualKey: affix.swift.visual
+    iconKey: affix.swift.icon
+    audioProfile: audio.affix.swift
+    schemaVersion: 2
+    tags: [affix]
+    type: PREFIX
+    minFloor: 2
+    stats: { speed: 10 }
+  - id: of_strength
+    nameKey: affix.of_strength.name
+    descKey: affix.of_strength.desc
+    visualKey: affix.of_strength.visual
+    iconKey: affix.of_strength.icon
+    audioProfile: audio.affix.of_strength
+    schemaVersion: 2
+    tags: [affix]
+    type: SUFFIX
+    minFloor: 1
+    stats: { str: 1, attack: 2 }
+  - id: of_life
+    nameKey: affix.of_life.name
+    descKey: affix.of_life.desc
+    visualKey: affix.of_life.visual
+    iconKey: affix.of_life.icon
+    audioProfile: audio.affix.of_life
+    schemaVersion: 2
+    tags: [affix]
+    type: SUFFIX
+    minFloor: 1
+    stats: { maxHp: 15 }
+  - id: of_fortitude
+    nameKey: affix.of_fortitude.name
+    descKey: affix.of_fortitude.desc
+    visualKey: affix.of_fortitude.visual
+    iconKey: affix.of_fortitude.icon
+    audioProfile: audio.affix.of_fortitude
+    schemaVersion: 2
+    tags: [affix]
+    type: SUFFIX
+    minFloor: 2
+    stats: { defense: 3 }
+  - id: of_speed
+    nameKey: affix.of_speed.name
+    descKey: affix.of_speed.desc
+    visualKey: affix.of_speed.visual
+    iconKey: affix.of_speed.icon
+    audioProfile: audio.affix.of_speed
+    schemaVersion: 2
+    tags: [affix]
+    type: SUFFIX
+    minFloor: 2
+    stats: { speed: 15 }
+
+items:
+  - id: short_sword
+    nameKey: item.short_sword.name
+    descKey: item.short_sword.desc
+    visualKey: item.short_sword.visual
+    iconKey: item.short_sword.icon
+    audioProfile: audio.item.short_sword
+    schemaVersion: 2
+    tags: [item, weapon]
+    type: WEAPON
+    slot: WEAPON
+    glyph: ")"
+    color: "#C0C0C0"
+    baseAttack: 5
+    dropFloors: [1, 2, 3, 4, 5]
+    dropWeight: 10
+    materials: [IRON, STEEL, MITHRIL, ADAMANTITE]
+  - id: long_sword
+    nameKey: item.long_sword.name
+    descKey: item.long_sword.desc
+    visualKey: item.long_sword.visual
+    iconKey: item.long_sword.icon
+    audioProfile: audio.item.long_sword
+    schemaVersion: 2
+    tags: [item, weapon]
+    type: WEAPON
+    slot: WEAPON
+    glyph: ")"
+    color: "#C0C0C0"
+    baseAttack: 8
+    dropFloors: [2, 3, 4, 5]
+    dropWeight: 7
+    materials: [IRON, STEEL, MITHRIL, ADAMANTITE]
+  - id: battle_axe
+    nameKey: item.battle_axe.name
+    descKey: item.battle_axe.desc
+    visualKey: item.battle_axe.visual
+    iconKey: item.battle_axe.icon
+    audioProfile: audio.item.battle_axe
+    schemaVersion: 2
+    tags: [item, weapon]
+    type: WEAPON
+    slot: WEAPON
+    glyph: ")"
+    color: "#C0C0C0"
+    baseAttack: 11
+    dropFloors: [3, 4, 5]
+    dropWeight: 4
+    materials: [STEEL, MITHRIL, ADAMANTITE]
+  - id: leather_armor
+    nameKey: item.leather_armor.name
+    descKey: item.leather_armor.desc
+    visualKey: item.leather_armor.visual
+    iconKey: item.leather_armor.icon
+    audioProfile: audio.item.leather_armor
+    schemaVersion: 2
+    tags: [item, armor]
+    type: ARMOR
+    slot: ARMOR
+    glyph: "["
+    color: "#8B4513"
+    baseDefense: 3
+    dropFloors: [1, 2, 3]
+    dropWeight: 8
+  - id: chain_mail
+    nameKey: item.chain_mail.name
+    descKey: item.chain_mail.desc
+    visualKey: item.chain_mail.visual
+    iconKey: item.chain_mail.icon
+    audioProfile: audio.item.chain_mail
+    schemaVersion: 2
+    tags: [item, armor]
+    type: ARMOR
+    slot: ARMOR
+    glyph: "["
+    color: "#808080"
+    baseDefense: 6
+    dropFloors: [2, 3, 4]
+    dropWeight: 5
+  - id: plate_armor
+    nameKey: item.plate_armor.name
+    descKey: item.plate_armor.desc
+    visualKey: item.plate_armor.visual
+    iconKey: item.plate_armor.icon
+    audioProfile: audio.item.plate_armor
+    schemaVersion: 2
+    tags: [item, armor]
+    type: ARMOR
+    slot: ARMOR
+    glyph: "["
+    color: "#C0C0C0"
+    baseDefense: 10
+    dropFloors: [4, 5]
+    dropWeight: 3
+  - id: healing_potion
+    nameKey: item.healing_potion.name
+    descKey: item.healing_potion.desc
+    visualKey: item.healing_potion.visual
+    iconKey: item.healing_potion.icon
+    audioProfile: audio.item.healing_potion
+    schemaVersion: 2
+    tags: [item, consumable]
+    type: CONSUMABLE
+    glyph: "!"
+    color: "#FF0000"
+    effect: HEAL
+    magnitude: 30
+    dropFloors: [1, 2, 3, 4, 5]
+    dropWeight: 15
+  - id: scroll_teleport
+    nameKey: item.scroll_teleport.name
+    descKey: item.scroll_teleport.desc
+    visualKey: item.scroll_teleport.visual
+    iconKey: item.scroll_teleport.icon
+    audioProfile: audio.item.scroll_teleport
+    schemaVersion: 2
+    tags: [item, consumable]
+    type: CONSUMABLE
+    glyph: "?"
+    color: "#00FFFF"
+    effect: TELEPORT
+    magnitude: 0
+    dropFloors: [1, 2, 3, 4, 5]
+    dropWeight: 8

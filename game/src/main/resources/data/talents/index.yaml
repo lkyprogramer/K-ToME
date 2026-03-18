@@ -1,0 +1,250 @@
+talentTrees:
+  - id: vanguard_arms
+    professionId: vanguard
+    nameKey: talent_tree.vanguard_arms.name
+    descKey: talent_tree.vanguard_arms.desc
+    visualKey: tree.vanguard_arms
+    iconKey: icon.tree.vanguard_arms
+    audioProfile: audio.tree.vanguard_arms
+    schemaVersion: 2
+    tags: [tree, vanguard]
+    layout: foundation_grid
+    nodes: [power_strike, charge]
+  - id: vanguard_shield
+    professionId: vanguard
+    nameKey: talent_tree.vanguard_shield.name
+    descKey: talent_tree.vanguard_shield.desc
+    visualKey: tree.vanguard_shield
+    iconKey: icon.tree.vanguard_shield
+    audioProfile: audio.tree.vanguard_shield
+    schemaVersion: 2
+    tags: [tree, vanguard]
+    layout: foundation_grid
+    nodes: [shield_bash]
+  - id: vanguard_warcry
+    professionId: vanguard
+    nameKey: talent_tree.vanguard_warcry.name
+    descKey: talent_tree.vanguard_warcry.desc
+    visualKey: tree.vanguard_warcry
+    iconKey: icon.tree.vanguard_warcry
+    audioProfile: audio.tree.vanguard_warcry
+    schemaVersion: 2
+    tags: [tree, vanguard]
+    layout: foundation_grid
+    nodes: [war_cry]
+  - id: arcanist_flame
+    professionId: arcanist
+    nameKey: talent_tree.arcanist_flame.name
+    descKey: talent_tree.arcanist_flame.desc
+    visualKey: tree.arcanist_flame
+    iconKey: icon.tree.arcanist_flame
+    audioProfile: audio.tree.arcanist_flame
+    schemaVersion: 2
+    tags: [tree, arcanist]
+    layout: foundation_grid
+    nodes: []
+  - id: arcanist_frost
+    professionId: arcanist
+    nameKey: talent_tree.arcanist_frost.name
+    descKey: talent_tree.arcanist_frost.desc
+    visualKey: tree.arcanist_frost
+    iconKey: icon.tree.arcanist_frost
+    audioProfile: audio.tree.arcanist_frost
+    schemaVersion: 2
+    tags: [tree, arcanist]
+    layout: foundation_grid
+    nodes: []
+  - id: arcanist_arcane
+    professionId: arcanist
+    nameKey: talent_tree.arcanist_arcane.name
+    descKey: talent_tree.arcanist_arcane.desc
+    visualKey: tree.arcanist_arcane
+    iconKey: icon.tree.arcanist_arcane
+    audioProfile: audio.tree.arcanist_arcane
+    schemaVersion: 2
+    tags: [tree, arcanist]
+    layout: foundation_grid
+    nodes: []
+  - id: rogue_assassination
+    professionId: rogue
+    nameKey: talent_tree.rogue_assassination.name
+    descKey: talent_tree.rogue_assassination.desc
+    visualKey: tree.rogue_assassination
+    iconKey: icon.tree.rogue_assassination
+    audioProfile: audio.tree.rogue_assassination
+    schemaVersion: 2
+    tags: [tree, rogue]
+    layout: foundation_grid
+    nodes: []
+  - id: rogue_subtlety
+    professionId: rogue
+    nameKey: talent_tree.rogue_subtlety.name
+    descKey: talent_tree.rogue_subtlety.desc
+    visualKey: tree.rogue_subtlety
+    iconKey: icon.tree.rogue_subtlety
+    audioProfile: audio.tree.rogue_subtlety
+    schemaVersion: 2
+    tags: [tree, rogue]
+    layout: foundation_grid
+    nodes: []
+  - id: rogue_agility
+    professionId: rogue
+    nameKey: talent_tree.rogue_agility.name
+    descKey: talent_tree.rogue_agility.desc
+    visualKey: tree.rogue_agility
+    iconKey: icon.tree.rogue_agility
+    audioProfile: audio.tree.rogue_agility
+    schemaVersion: 2
+    tags: [tree, rogue]
+    layout: foundation_grid
+    nodes: []
+  - id: templar_smite
+    professionId: templar
+    nameKey: talent_tree.templar_smite.name
+    descKey: talent_tree.templar_smite.desc
+    visualKey: tree.templar_smite
+    iconKey: icon.tree.templar_smite
+    audioProfile: audio.tree.templar_smite
+    schemaVersion: 2
+    tags: [tree, templar]
+    layout: foundation_grid
+    nodes: []
+  - id: templar_grace
+    professionId: templar
+    nameKey: talent_tree.templar_grace.name
+    descKey: talent_tree.templar_grace.desc
+    visualKey: tree.templar_grace
+    iconKey: icon.tree.templar_grace
+    audioProfile: audio.tree.templar_grace
+    schemaVersion: 2
+    tags: [tree, templar]
+    layout: foundation_grid
+    nodes: []
+  - id: templar_faith
+    professionId: templar
+    nameKey: talent_tree.templar_faith.name
+    descKey: talent_tree.templar_faith.desc
+    visualKey: tree.templar_faith
+    iconKey: icon.tree.templar_faith
+    audioProfile: audio.tree.templar_faith
+    schemaVersion: 2
+    tags: [tree, templar]
+    layout: foundation_grid
+    nodes: []
+
+talents:
+  - id: power_strike
+    nameKey: talent.vanguard.power_strike.name
+    descKey: talent.vanguard.power_strike.desc
+    visualKey: talent.vanguard.power_strike.visual
+    iconKey: talent.vanguard.power_strike.icon
+    audioProfile: audio.talent.power_strike
+    schemaVersion: 2
+    tags: [talent, vanguard, melee]
+    maxPoints: 5
+    category: ACTIVE
+    damageType: PHYSICAL
+    kind: ACTIVE
+    cooldown: 3
+    castTime: 1000
+    range: 1
+    minRange: 0
+    areaRadius: 0
+    resourceCosts: { STAMINA: 8 }
+    targeting: SINGLE_TARGET
+    callbacks: []
+    telegraph: melee_single
+    treeId: vanguard_arms
+    keywords: [damage, knockback, armor_break]
+    levelEffects:
+      1: { damageMultiplier: 1.5 }
+      2: { damageMultiplier: 1.7 }
+      3: { damageMultiplier: 1.9 }
+      4: { damageMultiplier: 2.2 }
+      5: { damageMultiplier: 2.5, knockback: 1, armorBreakDuration: 3 }
+  - id: charge
+    nameKey: talent.vanguard.charge.name
+    descKey: talent.vanguard.charge.desc
+    visualKey: talent.vanguard.charge.visual
+    iconKey: talent.vanguard.charge.icon
+    audioProfile: audio.talent.charge
+    schemaVersion: 2
+    tags: [talent, vanguard, mobility]
+    maxPoints: 5
+    category: ACTIVE
+    damageType: PHYSICAL
+    kind: ACTIVE
+    cooldown: 6
+    castTime: 1000
+    range: 5
+    minRange: 3
+    areaRadius: 0
+    resourceCosts: { STAMINA: 12 }
+    targeting: SINGLE_TARGET
+    callbacks: []
+    telegraph: charge_lane
+    treeId: vanguard_arms
+    keywords: [damage, movement, stun]
+    levelEffects:
+      1: { damageMultiplier: 1.2 }
+      2: { damageMultiplier: 1.3 }
+      3: { damageMultiplier: 1.5 }
+      4: { damageMultiplier: 1.6 }
+      5: { damageMultiplier: 1.8, stunDuration: 2 }
+  - id: shield_bash
+    nameKey: talent.vanguard.shield_bash.name
+    descKey: talent.vanguard.shield_bash.desc
+    visualKey: talent.vanguard.shield_bash.visual
+    iconKey: talent.vanguard.shield_bash.icon
+    audioProfile: audio.talent.shield_bash
+    schemaVersion: 2
+    tags: [talent, vanguard, control]
+    maxPoints: 5
+    category: ACTIVE
+    damageType: PHYSICAL
+    kind: ACTIVE
+    cooldown: 5
+    castTime: 1000
+    range: 1
+    minRange: 0
+    areaRadius: 0
+    resourceCosts: { STAMINA: 10 }
+    targeting: SINGLE_TARGET
+    callbacks: []
+    telegraph: melee_single
+    treeId: vanguard_shield
+    keywords: [damage, stun, knockback]
+    levelEffects:
+      1: { damageMultiplier: 1.2, stunDuration: 2 }
+      2: { damageMultiplier: 1.3, stunDuration: 2 }
+      3: { damageMultiplier: 1.4, stunDuration: 2 }
+      4: { damageMultiplier: 1.5, stunDuration: 3 }
+      5: { damageMultiplier: 1.6, stunDuration: 3, knockback: 2 }
+  - id: war_cry
+    nameKey: talent.vanguard.war_cry.name
+    descKey: talent.vanguard.war_cry.desc
+    visualKey: talent.vanguard.war_cry.visual
+    iconKey: talent.vanguard.war_cry.icon
+    audioProfile: audio.talent.war_cry
+    schemaVersion: 2
+    tags: [talent, vanguard, support]
+    maxPoints: 5
+    category: ACTIVE
+    kind: ACTIVE
+    cooldown: 10
+    castTime: 1000
+    range: 0
+    minRange: 0
+    areaRadius: 3
+    resourceCosts: { STAMINA: 15 }
+    targeting: RADIUS_SELF
+    callbacks: []
+    telegraph: self_buff_aura
+    treeId: vanguard_warcry
+    keywords: [buff, debuff]
+    levelEffects:
+      1: { buffDuration: 5, buffMagnitude: 0.20 }
+      2: { buffDuration: 5, buffMagnitude: 0.25 }
+      3: { buffDuration: 6, buffMagnitude: 0.28 }
+      4: { buffDuration: 7, buffMagnitude: 0.32 }
+      5: { buffDuration: 8, buffMagnitude: 0.35, debuffMagnitude: 0.20, debuffDuration: 5 }

@@ -15,6 +15,15 @@ import com.ktome.client.input.GdxInputSource
 internal const val menuWidth = 960f
 internal const val menuHeight = 540f
 
+internal data class MainMenuTextSnapshot(
+    val title: String,
+    val subtitle: String,
+    val entries: List<String>,
+    val language: String,
+    val controls: String,
+    val notice: String?,
+)
+
 class MainMenuScreen(
     private val app: GameApp,
     private val continueEnabled: Boolean,
@@ -49,6 +58,7 @@ class MainMenuScreen(
                 Gdx.app.exit()
                 return
             }
+            MainMenuAction.ToggleLocale -> Unit.also { app.cycleLocale() }
             null -> Unit
         }
         if (!renderEnabled) {
@@ -57,33 +67,35 @@ class MainMenuScreen(
         ensureResources()
         val batch = requireNotNull(batch)
         val font = requireNotNull(font)
+        val text = textSnapshot()
 
         ScreenUtils.clear(0.04f, 0.04f, 0.06f, 1f)
         viewport.apply()
         batch.projectionMatrix = viewport.camera.combined
 
-        val entries = controller.entries(continueEnabled)
         val selectedIndex = controller.selectedIndex()
 
         batch.begin()
         font.color = Color.GOLD
-        font.draw(batch, "K-ToME", 120f, 420f)
+        font.draw(batch, text.title, 120f, 420f)
         font.color = Color.LIGHT_GRAY
-        font.draw(batch, "Main Menu", 120f, 392f)
+        font.draw(batch, text.subtitle, 120f, 392f)
 
-        entries.forEachIndexed { index, entry ->
+        controller.entries(continueEnabled).forEachIndexed { index, entry ->
             font.color =
                 when {
                     !entry.enabled -> Color.DARK_GRAY
                     index == selectedIndex -> Color.CYAN
                     else -> Color.WHITE
                 }
-            font.draw(batch, entry.label, 120f, 320f - index * 32f)
+            font.draw(batch, text.entries[index], 120f, 320f - index * 32f)
         }
 
+        font.color = Color.GOLD
+        font.draw(batch, text.language, 120f, 188f)
         font.color = Color.GRAY
-        font.draw(batch, "Up/Down select  Enter confirm", 120f, 140f)
-        notice?.takeIf(String::isNotBlank)?.let { message ->
+        font.draw(batch, text.controls, 120f, 140f)
+        text.notice?.let { message ->
             font.color = Color.SALMON
             font.draw(batch, message, 120f, 100f)
         }
@@ -114,4 +126,14 @@ class MainMenuScreen(
                 }
         }
     }
+
+    internal fun textSnapshot(): MainMenuTextSnapshot =
+        MainMenuTextSnapshot(
+            title = app.text("ui.menu.title"),
+            subtitle = app.text("ui.menu.subtitle"),
+            entries = controller.entries(continueEnabled).map { entry -> app.text(entry.labelKey) },
+            language = app.text("ui.menu.language", "value" to app.localizer().localeLabel()),
+            controls = app.text("ui.menu.controls"),
+            notice = notice?.takeIf(String::isNotBlank),
+        )
 }

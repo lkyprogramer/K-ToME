@@ -17,9 +17,12 @@ import com.ktome.core.map.BspGenerator
 import com.ktome.core.map.Point
 import com.ktome.core.map.Room
 import com.ktome.core.random.SplitMix64RandomSource
+import com.ktome.core.save.InvalidSaveException
 import com.ktome.core.save.SaveManager
 import com.ktome.core.save.PointSnapshot
 import com.ktome.game.data.DataLoader
+import com.ktome.game.data.schema.SchemaCatalog
+import com.ktome.game.i18n.GameLocale
 import com.ktome.game.factory.BossFactory
 import com.ktome.game.factory.EntityFactory
 import com.ktome.game.factory.ItemFactory
@@ -32,8 +35,10 @@ object GameModule {
     fun newFoundationSession(
         config: FoundationGameConfig = FoundationGameConfig(),
         saveManager: SaveManager = SaveManager(defaultSaveDir()),
+        locale: GameLocale = GameLocale.EN_US,
     ): FoundationGameSession {
-        val content = loadContent()
+        val content = loadContent(locale)
+        validateNewSessionConfig(config, content.schemaCatalog)
         val playerSnapshot = createInitialPlayerSnapshot(content, Point.ZERO)
         val dungeonManager =
             DungeonManager(
@@ -52,13 +57,17 @@ object GameModule {
             saveManager = saveManager,
             dungeonManager = dungeonManager,
             playerSnapshot = startingPlayer,
-            initialMessageLog = listOf("You enter the dungeon."),
+            initialMessageLog = listOf(content.localizer.text("log.session.enter_dungeon")),
         )
     }
 
-    fun loadFoundationSession(saveManager: SaveManager): FoundationGameSession? {
+    fun loadFoundationSession(
+        saveManager: SaveManager,
+        locale: GameLocale = GameLocale.EN_US,
+    ): FoundationGameSession? {
         val snapshot = saveManager.load() ?: return null
-        val loader = DataLoader()
+        val loader = DataLoader(locale)
+        val schemaCatalog = loader.loadSchemaCatalog()
         val talents = loader.loadTalentDefinitions()
         val restored = SessionSnapshotMapper.fromSaveSnapshot(snapshot)
         val content =
@@ -68,7 +77,10 @@ object GameModule {
                 monsterCatalog = loader.loadMonsterCatalog().monsters,
                 itemBundle = loader.loadItemBundle(),
                 bossDefinition = loader.loadBossDefinition(),
+                schemaCatalog = schemaCatalog,
+                localizer = loader.localizer,
             )
+        validateLoadedSessionConfig(restored.config, schemaCatalog)
         val dungeonManager =
             DungeonManager(
                 maxFloor = restored.config.maxFloor,
@@ -87,7 +99,7 @@ object GameModule {
             saveManager = saveManager,
             dungeonManager = dungeonManager,
             playerSnapshot = restored.player,
-            initialMessageLog = listOf("Game loaded."),
+            initialMessageLog = listOf(content.localizer.text("log.session.loaded")),
             turnCount = restored.turnCount,
             combatRandomSource =
                 restored.combatRandomState?.let(SplitMix64RandomSource::fromState)
@@ -100,8 +112,9 @@ object GameModule {
         )
     }
 
-    private fun loadContent(): GameContent {
-        val loader = DataLoader()
+    private fun loadContent(locale: GameLocale): GameContent {
+        val loader = DataLoader(locale)
+        val schemaCatalog = loader.loadSchemaCatalog()
         val talents = loader.loadTalentDefinitions()
         return GameContent(
             talents = talents,
@@ -109,6 +122,8 @@ object GameModule {
             monsterCatalog = loader.loadMonsterCatalog().monsters,
             itemBundle = loader.loadItemBundle(),
             bossDefinition = loader.loadBossDefinition(),
+            schemaCatalog = schemaCatalog,
+            localizer = loader.localizer,
         )
     }
 
@@ -117,7 +132,7 @@ object GameModule {
         position: Point,
     ): com.ktome.core.save.PlayerSnapshot {
         val world = World()
-        val playerId = EntityFactory().createPlayer(world, position, content.talents)
+        val playerId = EntityFactory().createPlayer(world, position, content.talents, content.localizer.text("actor.player.name"))
         return SessionSnapshotMapper.capturePlayer(world, playerId)
     }
 
@@ -145,8 +160,8 @@ object GameModule {
                 stairsDown?.let(::add)
             }
 
-        stairsUp?.let { point -> createStair(world, point, StairDirection.UP) }
-        stairsDown?.let { point -> createStair(world, point, StairDirection.DOWN) }
+        stairsUp?.let { point -> createStair(world, point, StairDirection.UP, content.localizer) }
+        stairsDown?.let { point -> createStair(world, point, StairDirection.DOWN, content.localizer) }
 
         if (floor == config.maxFloor) {
             val bossPosition = chooseBossPosition(map, occupiedPoints)
@@ -198,7 +213,7 @@ object GameModule {
         val availableTemplates = catalog.filter { floor in it.spawnFloors }
         val behaviorPriority = listOf(AIType.CHASE, AIType.KITE, AIType.PATROL)
         val selectedTemplates = behaviorPriority.mapNotNull { behavior ->
-            availableTemplates.firstOrNull { it.ai == behavior }
+            availableTemplates.firstOrNull { resolveAiType(it) == behavior }
         }
 
         map.rooms.drop(1).zip(selectedTemplates).forEach { (room, template) ->
@@ -207,7 +222,7 @@ object GameModule {
                 world = world,
                 template = template,
                 position = spawnPoint,
-                patrolRoute = if (template.ai == AIType.PATROL) buildPatrolRoute(room) else null,
+                patrolRoute = if (resolveAiType(template) == AIType.PATROL) buildPatrolRoute(room) else null,
             )
             occupiedPoints += spawnPoint
         }
@@ -274,12 +289,21 @@ object GameModule {
         world: World,
         position: Point,
         direction: StairDirection,
+        localizer: com.ktome.game.i18n.Localizer,
     ) {
         val stairId = world.createEntity()
         world.add(stairId, Position(position.x, position.y))
         world.add(stairId, Glyph(if (direction == StairDirection.DOWN) '>' else '<'))
         world.add(stairId, DisplayColor("#D7E7FF"))
-        world.add(stairId, Name(if (direction == StairDirection.DOWN) "Downstairs" else "Upstairs"))
+        world.add(
+            stairId,
+            Name(
+                when (direction) {
+                    StairDirection.DOWN -> localizer.text("stairs.down.name")
+                    StairDirection.UP -> localizer.text("stairs.up.name")
+                },
+            ),
+        )
         world.add(stairId, Stair(direction))
     }
 
@@ -288,6 +312,38 @@ object GameModule {
         floor: Int,
         salt: Int,
     ): Long = seed xor (floor.toLong() shl 32) xor salt.toLong()
+
+    private fun validateNewSessionConfig(
+        config: FoundationGameConfig,
+        schemaCatalog: SchemaCatalog,
+    ) {
+        require(schemaCatalog.zones.any { it.id == config.zoneId }) {
+            "Unknown zone id '${config.zoneId}'. Update FoundationGameConfig to use a formal ZoneSpec id."
+        }
+        require(schemaCatalog.professions.any { it.id == config.playerProfessionId }) {
+            "Unknown profession id '${config.playerProfessionId}'. Update FoundationGameConfig to use a formal ProfessionDef id."
+        }
+    }
+
+    private fun validateLoadedSessionConfig(
+        config: FoundationGameConfig,
+        schemaCatalog: SchemaCatalog,
+    ) {
+        if (schemaCatalog.zones.none { it.id == config.zoneId }) {
+            throw InvalidSaveException("Save references unknown zone id '${config.zoneId}'.")
+        }
+        if (schemaCatalog.professions.none { it.id == config.playerProfessionId }) {
+            throw InvalidSaveException("Save references unknown profession id '${config.playerProfessionId}'.")
+        }
+    }
+
+    private fun resolveAiType(template: MonsterTemplate): AIType =
+        when (template.aiProfileId) {
+            "ai.kite.basic" -> AIType.KITE
+            "ai.patrol.basic" -> AIType.PATROL
+            "ai.chase.basic", "ai.boss.dungeon_lord" -> AIType.CHASE
+            else -> template.ai
+        }
 
     private fun reserveEntityRange(
         world: World,

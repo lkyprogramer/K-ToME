@@ -40,6 +40,7 @@ import com.ktome.core.item.ItemBaseDef
 import com.ktome.core.item.ItemDataBundle
 import com.ktome.core.item.Inventory
 import com.ktome.core.item.InventoryManager
+import com.ktome.core.item.InventoryOperationCode
 import com.ktome.core.item.InventoryOperationResult
 import com.ktome.core.item.ItemInstance
 import com.ktome.core.item.ItemType
@@ -61,11 +62,17 @@ import com.ktome.core.talent.CooldownState
 import com.ktome.core.talent.EffectTracker
 import com.ktome.core.talent.StatusEffectType
 import com.ktome.core.talent.TalentLoadout
+import com.ktome.core.talent.TalentFailureCode
 import com.ktome.core.talent.TalentRegistry
 import com.ktome.core.talent.TalentResolver
 import com.ktome.core.talent.TalentUseResult
 import com.ktome.core.turn.TurnActorState
 import com.ktome.core.turn.TurnScheduler
+import com.ktome.game.data.schema.ItemBundleSchemaV2
+import com.ktome.game.data.schema.SchemaCatalog
+import com.ktome.game.i18n.GameLocale
+import com.ktome.game.i18n.LocalizationBundle
+import com.ktome.game.i18n.Localizer
 import com.ktome.game.model.BossDefinition
 import com.ktome.game.model.MonsterTemplate
 import java.nio.file.Files
@@ -139,6 +146,8 @@ class FoundationGameSession internal constructor(
     fun currentFloor(): Int = dungeonManager.currentFloor
 
     fun maxFloor(): Int = config.maxFloor
+
+    fun localizer(): Localizer = content.localizer
 
     fun playerPosition(): Point = requireNotNull(world.get<Position>(playerId)).toPoint()
 
@@ -318,7 +327,7 @@ class FoundationGameSession internal constructor(
             }
 
         if (visibility == TileVisibility.HIDDEN) {
-            return InspectView(point = point, visibility = visibility, terrainName = "Unknown")
+            return InspectView(point = point, visibility = visibility, terrainName = tr("tile.unknown.name"))
         }
 
         return InspectView(
@@ -473,14 +482,14 @@ class FoundationGameSession internal constructor(
     private fun executePlayerCommand(command: PlayerCommand): CommandResolution =
         when (command) {
             PlayerCommand.Wait -> {
-                addMessage("You wait.")
+                addMessage(tr("log.wait"))
                 CommandResolution.accepted()
             }
 
             PlayerCommand.PickUp -> {
                 val item = itemsOnGroundAt(playerPosition()).firstOrNull()
                 if (item == null) {
-                    addMessage("There is nothing here to pick up.")
+                    addMessage(tr("log.nothing_to_pick_up"))
                     CommandResolution.rejected()
                 } else {
                     val result = inventoryManager.pickUp(world, playerId, item)
@@ -495,7 +504,7 @@ class FoundationGameSession internal constructor(
 
             PlayerCommand.SaveGame -> {
                 val saved = persistRun()
-                addMessage(if (saved) "Game saved." else "Failed to save game.")
+                addMessage(if (saved) tr("log.save.success") else tr("log.save.failure"))
                 CommandResolution(accepted = true, consumesTurn = false)
             }
 
@@ -503,7 +512,7 @@ class FoundationGameSession internal constructor(
                 val experience = requireNotNull(world.get<Experience>(playerId))
                 val stats = requireNotNull(world.get<Stats>(playerId))
                 if (experience.unspentStatPoints <= 0) {
-                    addMessage("No unspent stat points remain.")
+                    addMessage(tr("log.stat.none"))
                     CommandResolution.rejected()
                 } else {
                     when (command.stat) {
@@ -514,7 +523,7 @@ class FoundationGameSession internal constructor(
                     }
                     experience.unspentStatPoints -= 1
                     StatsCalculator.recalculateAndStore(world, playerId)
-                    addMessage("You invest a point into ${command.stat.name}.")
+                    addMessage(tr("log.stat.invest", "stat" to primaryStatLabel(command.stat)))
                     CommandResolution(accepted = true, consumesTurn = false)
                 }
             }
@@ -524,21 +533,21 @@ class FoundationGameSession internal constructor(
                 val loadout = requireNotNull(world.get<TalentLoadout>(playerId))
                 val talentId = loadout.talentIdAt(command.slot)
                 if (experience.unspentTalentPoints <= 0) {
-                    addMessage("No unspent talent points remain.")
+                    addMessage(tr("log.talent.none"))
                     CommandResolution.rejected()
                 } else if (talentId == null) {
-                    addMessage("No talent is assigned to slot ${command.slot}.")
+                    addMessage(tr("log.talent.slot_empty", "slot" to command.slot))
                     CommandResolution.rejected()
                 } else {
                     val definition = requireNotNull(talentRegistry.get(talentId))
                     val currentLevel = loadout.levelOf(talentId)
                     if (currentLevel >= definition.maxLevel) {
-                        addMessage("${definition.name} is already at maximum level.")
+                        addMessage(tr("log.talent.max_level", "talent" to definition.name))
                         CommandResolution.rejected()
                     } else {
                         loadout.talentLevels[talentId] = currentLevel + 1
                         experience.unspentTalentPoints -= 1
-                        addMessage("${definition.name} advances to level ${currentLevel + 1}.")
+                        addMessage(tr("log.talent.advance", "talent" to definition.name, "level" to (currentLevel + 1)))
                         CommandResolution(accepted = true, consumesTurn = false)
                     }
                 }
@@ -547,7 +556,7 @@ class FoundationGameSession internal constructor(
             is PlayerCommand.ActivateInventoryItem -> {
                 val itemView = inventoryItems().getOrNull(command.index)
                 if (itemView == null) {
-                    addMessage("That inventory slot is empty.")
+                    addMessage(tr("log.inventory.slot_empty"))
                     CommandResolution.rejected()
                 } else {
                     when (itemView.type) {
@@ -587,7 +596,7 @@ class FoundationGameSession internal constructor(
             is PlayerCommand.Move -> {
                 val from = playerPosition()
                 if (!command.delta.isAdjacentTo(Point.ZERO)) {
-                    addMessage("You can only move one tile at a time.")
+                    addMessage(tr("log.move.single_step_only"))
                     CommandResolution.rejected()
                 } else {
                     val destination = from + command.delta
@@ -601,7 +610,7 @@ class FoundationGameSession internal constructor(
                             requireNotNull(world.get<Position>(playerId)).moveTo(result.destination)
                             CommandResolution.accepted()
                         } else {
-                            addMessage("You cannot move there.")
+                            addMessage(tr("log.move.cannot_move"))
                             CommandResolution.rejected()
                         }
                     }
@@ -612,12 +621,12 @@ class FoundationGameSession internal constructor(
                 val loadout = requireNotNull(world.get<TalentLoadout>(playerId))
                 val talentId = loadout.talentIdAt(command.slot)
                 if (talentId == null) {
-                    addMessage("No talent is assigned to slot ${command.slot}.")
+                    addMessage(tr("log.talent.slot_empty", "slot" to command.slot))
                     CommandResolution.rejected()
                 } else {
                     when (val result = talentResolver.resolve(world, map, playerId, talentId, command.target)) {
                         is TalentUseResult.Failure -> {
-                            addMessage(result.reason)
+                            addMessage(localizeTalentFailure(result))
                             CommandResolution.rejected()
                         }
 
@@ -678,10 +687,10 @@ class FoundationGameSession internal constructor(
         val behavior = world.get<AIBehavior>(entityId)
         val role =
             when {
-                entityId == playerId -> "Player"
-                world.get<MonsterTemplateId>(entityId)?.value == "dungeon_lord" -> "Boss"
-                behavior != null -> "Monster ${behavior.type.name}"
-                else -> "Actor"
+                entityId == playerId -> tr("actor.player.role")
+                world.get<MonsterTemplateId>(entityId)?.value == FOUNDATION_BOSS_TEMPLATE_ID -> tr("actor.boss.role")
+                behavior != null -> tr("actor.monster.role", "ai" to aiLabel(behavior.type))
+                else -> tr("actor.generic.role")
             }
 
         return InspectActorView(
@@ -703,51 +712,44 @@ class FoundationGameSession internal constructor(
     }
 
     private fun inspectItemView(item: ItemInstance): InspectItemView {
-        val typeLabel =
-            when (item.type) {
-                ItemType.WEAPON -> "Weapon"
-                ItemType.ARMOR -> "Armor"
-                ItemType.CONSUMABLE -> "Consumable"
-            }
-
         return InspectItemView(
             name = item.name,
-            typeLabel = typeLabel,
+            typeLabel = itemTypeLabel(item.type),
             details = itemDetailLines(item),
         )
     }
 
     private fun itemDetailLines(item: ItemInstance): List<String> =
         buildList {
-            item.slot?.let { add("Slot ${it.name}") }
+            item.slot?.let { add(tr("ui.inspect.slot", "slot" to equipSlotLabel(it))) }
             addAll(statModifierLines(item.stats))
             when (item.effect) {
-                com.ktome.core.item.ConsumableEffect.HEAL -> add("Restore ${item.magnitude} HP")
-                com.ktome.core.item.ConsumableEffect.TELEPORT -> add("Teleport to a random tile")
+                com.ktome.core.item.ConsumableEffect.HEAL -> add(tr("ui.inspect.restore_hp", "amount" to item.magnitude))
+                com.ktome.core.item.ConsumableEffect.TELEPORT -> add(tr("ui.inspect.teleport_random"))
                 null -> Unit
             }
             if (isEmpty()) {
-                add("No special effect")
+                add(tr("ui.inspect.no_special_effect"))
             }
         }
 
     private fun statModifierLines(modifier: StatModifier): List<String> =
         buildList {
-            addModifier("STR", modifier.str)
-            addModifier("DEX", modifier.dex)
-            addModifier("CON", modifier.con)
-            addModifier("WIL", modifier.wil)
-            addModifier("ATK", modifier.attack)
-            addModifier("DEF", modifier.defense)
-            addModifier("ACC", modifier.accuracy)
-            addModifier("EVA", modifier.evasion)
-            addModifier("SPD", modifier.speed)
-            addModifier("HP", modifier.maxHp)
-            addModifier("STA", modifier.maxStamina)
-            addDecimalModifier("HP Regen", modifier.hpRegen)
-            addDecimalModifier("STA Regen", modifier.staminaRegen)
-            addPercentModifier("Crit", modifier.critChance)
-            addPercentModifier("Talent", modifier.talentPower)
+            addModifier(tr("ui.stat.str"), modifier.str)
+            addModifier(tr("ui.stat.dex"), modifier.dex)
+            addModifier(tr("ui.stat.con"), modifier.con)
+            addModifier(tr("ui.stat.wil"), modifier.wil)
+            addModifier(tr("ui.hud.attack.short"), modifier.attack)
+            addModifier(tr("ui.hud.defense.short"), modifier.defense)
+            addModifier(tr("ui.hud.accuracy.short"), modifier.accuracy)
+            addModifier(tr("ui.hud.evasion.short"), modifier.evasion)
+            addModifier(tr("ui.hud.speed.short"), modifier.speed)
+            addModifier(tr("ui.hud.hp.short"), modifier.maxHp)
+            addModifier(tr("ui.hud.stamina.short"), modifier.maxStamina)
+            addDecimalModifier(tr("ui.inspect.mod.hp_regen"), modifier.hpRegen)
+            addDecimalModifier(tr("ui.inspect.mod.stamina_regen"), modifier.staminaRegen)
+            addPercentModifier(tr("ui.inspect.mod.crit"), modifier.critChance)
+            addPercentModifier(tr("ui.inspect.mod.talent"), modifier.talentPower)
         }
 
     private fun MutableList<String>.addModifier(
@@ -794,13 +796,13 @@ class FoundationGameSession internal constructor(
         world.get<EffectTracker>(entityId)
             ?.effects
             ?.filter { effect -> effect.remainingTurns > 0 }
-            ?.map { effect -> "${effect.name} ${effect.remainingTurns}t" }
+            ?.map { effect -> tr("ui.inspect.effect.turns", "name" to statusEffectName(effect.type), "turns" to effect.remainingTurns) }
             .orEmpty()
 
     private fun tileName(tile: com.ktome.core.map.TileType): String =
         when (tile) {
-            com.ktome.core.map.TileType.FLOOR -> "Floor"
-            com.ktome.core.map.TileType.WALL -> "Wall"
+            com.ktome.core.map.TileType.FLOOR -> tr("tile.floor.name")
+            com.ktome.core.map.TileType.WALL -> tr("tile.wall.name")
         }
 
     private fun actorAt(point: Point): EntityId? =
@@ -813,12 +815,7 @@ class FoundationGameSession internal constructor(
     private fun stairLabelAt(point: Point): String? =
         world.entitiesWith(Position::class, Stair::class)
             .firstOrNull { entityId -> requireNotNull(world.get<Position>(entityId)).toPoint() == point }
-            ?.let { entityId ->
-                when (requireNotNull(world.get<Stair>(entityId)).direction) {
-                    StairDirection.UP -> "Upstairs"
-                    StairDirection.DOWN -> "Downstairs"
-                }
-            }
+            ?.let { entityId -> stairName(requireNotNull(world.get<Stair>(entityId)).direction) }
 
     private fun tryUseMonsterTalent(monsterId: EntityId): Boolean {
         val loadout = world.get<TalentLoadout>(monsterId) ?: return false
@@ -864,7 +861,7 @@ class FoundationGameSession internal constructor(
 
         if (!result.hit) {
             logEvent(MissEvent(attacker, target))
-            addMessage("$attackerName misses $targetName.")
+            addMessage(tr("log.attack.miss", "attacker" to attackerName, "target" to targetName))
             return
         }
 
@@ -872,9 +869,9 @@ class FoundationGameSession internal constructor(
         logEvent(DamageDealtEvent(attacker, target, result.finalDamage, result.critical))
         addMessage(
             if (result.critical) {
-                "$attackerName critically hits $targetName for ${result.finalDamage} damage."
+                tr("log.attack.crit", "attacker" to attackerName, "target" to targetName, "damage" to result.finalDamage)
             } else {
-                "$attackerName hits $targetName for ${result.finalDamage} damage."
+                tr("log.attack.hit", "attacker" to attackerName, "target" to targetName, "damage" to result.finalDamage)
             },
         )
 
@@ -894,7 +891,7 @@ class FoundationGameSession internal constructor(
             pendingActions.clear()
             activeTurnActor = null
             saveManager.deleteSave()
-            addMessage("You die. Game over.")
+            addMessage(tr("log.player.death"))
             return
         }
 
@@ -903,7 +900,7 @@ class FoundationGameSession internal constructor(
             currentFloor() == config.maxFloor &&
                 world.get<MonsterTemplateId>(target)?.value == content.bossDefinition.template.id
 
-        addMessage("$targetName dies.")
+        addMessage(tr("log.entity.death", "target" to targetName))
         val reward = world.get<ExperienceReward>(target)?.value ?: 0
         world.destroyEntity(target)
         if (killer == playerId && reward > 0) {
@@ -914,7 +911,7 @@ class FoundationGameSession internal constructor(
             pendingActions.clear()
             activeTurnActor = null
             saveManager.deleteSave()
-            addMessage("You defeat $targetName. Victory!")
+            addMessage(tr("log.victory", "target" to targetName))
         }
     }
 
@@ -925,7 +922,7 @@ class FoundationGameSession internal constructor(
         val result = ExperienceSystem.applyReward(experience = experience, health = health, stamina = stamina, reward = amount)
 
         logEvent(ExperienceGainedEvent(playerId, amount))
-        addMessage("You gain $amount experience.")
+        addMessage(tr("log.xp.gain", "amount" to amount))
 
         if (result.levelsGained > 0) {
             logEvent(
@@ -936,7 +933,7 @@ class FoundationGameSession internal constructor(
                     unspentTalentPoints = experience.unspentTalentPoints,
                 ),
             )
-            addMessage("You advance to level ${experience.level}.")
+            addMessage(tr("log.level_up", "level" to experience.level))
         }
     }
 
@@ -949,8 +946,8 @@ class FoundationGameSession internal constructor(
         if (requiredStair == null || playerPosition() != requiredStair) {
             addMessage(
                 when (direction) {
-                    StairDirection.UP -> "There are no stairs leading up here."
-                    StairDirection.DOWN -> "There are no stairs leading down here."
+                    StairDirection.UP -> tr("log.stairs.missing_up")
+                    StairDirection.DOWN -> tr("log.stairs.missing_down")
                 },
             )
             return false
@@ -968,8 +965,8 @@ class FoundationGameSession internal constructor(
 
         addMessage(
             when (direction) {
-                StairDirection.UP -> "You ascend to floor ${transition.toFloor}."
-                StairDirection.DOWN -> "You descend to floor ${transition.toFloor}."
+                StairDirection.UP -> tr("log.stairs.ascend", "floor" to transition.toFloor)
+                StairDirection.DOWN -> tr("log.stairs.descend", "floor" to transition.toFloor)
             },
         )
         return true
@@ -1006,7 +1003,7 @@ class FoundationGameSession internal constructor(
         }
 
         if (persistRun()) {
-            addMessage("Checkpoint saved.")
+            addMessage(tr("log.checkpoint.saved"))
         }
     }
 
@@ -1069,21 +1066,21 @@ class FoundationGameSession internal constructor(
             .filter { entityId -> requireNotNull(world.get<Position>(entityId)).toPoint() == point }
 
     private fun addInventoryMessage(result: InventoryOperationResult) {
-        addMessage(result.message)
+        addMessage(localizeInventoryMessage(result))
     }
 
     private fun logTalentResult(result: com.ktome.core.talent.TalentResult) {
         val userName = requireNotNull(world.get<Name>(result.user)).value
-        addMessage("$userName uses ${result.talentName}.")
+        addMessage(tr("log.talent.use", "user" to userName, "talent" to result.talentName))
         result.effects.forEach { effect ->
             when (effect) {
                 is com.ktome.core.talent.TalentEffectResult.Buff -> {
                     val targetName = requireNotNull(world.get<Name>(effect.target)).value
                     addMessage(
                         when (effect.type) {
-                            StatusEffectType.WAR_CRY_BUFF -> "$targetName is empowered for ${effect.duration} turns."
-                            StatusEffectType.WAR_CRY_DEBUFF -> "$targetName is shaken for ${effect.duration} turns."
-                            else -> "$targetName is affected."
+                            StatusEffectType.WAR_CRY_BUFF -> tr("log.talent.target_empowered", "target" to targetName, "turns" to effect.duration)
+                            StatusEffectType.WAR_CRY_DEBUFF -> tr("log.talent.target_shaken", "target" to targetName, "turns" to effect.duration)
+                            else -> tr("log.talent.target_affected", "target" to targetName)
                         },
                     )
                 }
@@ -1092,21 +1089,21 @@ class FoundationGameSession internal constructor(
                     val targetName = requireNotNull(world.get<Name>(effect.target)).value
                     addMessage(
                         if (effect.crit) {
-                            "${result.talentName} critically hits $targetName for ${effect.amount} damage."
+                            tr("log.talent.damage_crit", "talent" to result.talentName, "target" to targetName, "damage" to effect.amount)
                         } else {
-                            "${result.talentName} hits $targetName for ${effect.amount} damage."
+                            tr("log.talent.damage", "talent" to result.talentName, "target" to targetName, "damage" to effect.amount)
                         },
                     )
                 }
 
                 is com.ktome.core.talent.TalentEffectResult.Knockback -> {
                     val targetName = requireNotNull(world.get<Name>(effect.target)).value
-                    addMessage("$targetName is knocked back.")
+                    addMessage(tr("log.talent.knockback", "target" to targetName))
                 }
 
                 is com.ktome.core.talent.TalentEffectResult.Miss -> {
                     val targetName = requireNotNull(world.get<Name>(effect.target)).value
-                    addMessage("${result.talentName} misses $targetName.")
+                    addMessage(tr("log.talent.miss", "talent" to result.talentName, "target" to targetName))
                 }
 
                 is com.ktome.core.talent.TalentEffectResult.Movement -> Unit
@@ -1115,9 +1112,9 @@ class FoundationGameSession internal constructor(
                     val targetName = requireNotNull(world.get<Name>(effect.target)).value
                     addMessage(
                         when (effect.type) {
-                            StatusEffectType.STUNNED -> "$targetName is stunned for ${effect.duration} turns."
-                            StatusEffectType.ARMOR_BREAK -> "$targetName's armor is broken for ${effect.duration} turns."
-                            else -> "$targetName is affected."
+                            StatusEffectType.STUNNED -> tr("log.talent.target_stunned", "target" to targetName, "turns" to effect.duration)
+                            StatusEffectType.ARMOR_BREAK -> tr("log.talent.target_armor_broken", "target" to targetName, "turns" to effect.duration)
+                            else -> tr("log.talent.target_affected", "target" to targetName)
                         },
                     )
                 }
@@ -1163,6 +1160,97 @@ class FoundationGameSession internal constructor(
         }
         messageLog += message
     }
+
+    private fun tr(
+        key: String,
+        vararg args: Pair<String, Any?>,
+    ): String = content.localizer.text(key, *args)
+
+    private fun primaryStatLabel(stat: PrimaryStat): String =
+        when (stat) {
+            PrimaryStat.STR -> tr("ui.stat.str")
+            PrimaryStat.DEX -> tr("ui.stat.dex")
+            PrimaryStat.CON -> tr("ui.stat.con")
+            PrimaryStat.WIL -> tr("ui.stat.wil")
+        }
+
+    private fun itemTypeLabel(type: ItemType): String =
+        when (type) {
+            ItemType.WEAPON -> tr("ui.item.type.weapon")
+            ItemType.ARMOR -> tr("ui.item.type.armor")
+            ItemType.CONSUMABLE -> tr("ui.item.type.consumable")
+        }
+
+    private fun equipSlotLabel(slot: EquipSlot): String =
+        when (slot) {
+            EquipSlot.WEAPON -> tr("ui.sidebar.weapon")
+            EquipSlot.ARMOR -> tr("ui.sidebar.armor")
+        }
+
+    private fun stairName(direction: StairDirection): String =
+        when (direction) {
+            StairDirection.UP -> tr("stairs.up.name")
+            StairDirection.DOWN -> tr("stairs.down.name")
+        }
+
+    private fun aiLabel(type: com.ktome.core.ecs.AIType): String =
+        when (type) {
+            com.ktome.core.ecs.AIType.CHASE -> tr("ai.chase")
+            com.ktome.core.ecs.AIType.KITE -> tr("ai.kite")
+            com.ktome.core.ecs.AIType.PATROL -> tr("ai.patrol")
+        }
+
+    private fun statusEffectName(type: StatusEffectType): String =
+        when (type) {
+            StatusEffectType.STUNNED -> tr("status.stunned")
+            StatusEffectType.ARMOR_BREAK -> tr("status.armor_break")
+            StatusEffectType.WAR_CRY_BUFF -> tr("status.war_cry_buff")
+            StatusEffectType.WAR_CRY_DEBUFF -> tr("status.war_cry_debuff")
+        }
+
+    private fun localizeTalentFailure(result: TalentUseResult.Failure): String =
+        when (result.code) {
+            TalentFailureCode.UNKNOWN_TALENT -> tr("log.talent.failure.unknown")
+            TalentFailureCode.UNSUPPORTED_TALENT -> tr("log.talent.failure.unsupported")
+            TalentFailureCode.COOLDOWN ->
+                tr(
+                    "log.talent.failure.cooldown",
+                    "talent" to (result.talentName ?: tr("log.talent.failure.unknown")),
+                )
+            TalentFailureCode.NO_STAMINA -> tr("log.talent.failure.no_stamina")
+            TalentFailureCode.TARGET_REQUIRED -> tr("log.talent.failure.target_required")
+            TalentFailureCode.OUT_OF_RANGE -> tr("log.talent.failure.out_of_range")
+            TalentFailureCode.NO_TARGET -> tr("log.talent.failure.no_target")
+            TalentFailureCode.NO_CHARGE_PATH -> tr("log.talent.failure.no_charge_path")
+        }
+
+    private fun localizeInventoryMessage(result: InventoryOperationResult): String =
+        when (result) {
+            is InventoryOperationResult.Success ->
+                when (result.code) {
+                    InventoryOperationCode.PICK_UP -> tr("log.inventory.pick_up", "item" to result.itemName)
+                    InventoryOperationCode.EQUIP -> tr("log.inventory.equip", "item" to result.itemName)
+                    InventoryOperationCode.REMOVE -> tr("log.inventory.remove", "item" to result.itemName)
+                    InventoryOperationCode.CONSUME_USE -> tr("log.inventory.consume.use", "item" to result.itemName)
+                    InventoryOperationCode.CONSUME_READ -> tr("log.inventory.consume.read", "item" to result.itemName)
+                    InventoryOperationCode.DROP -> tr("log.inventory.drop", "item" to result.itemName)
+                    else -> result.message
+                }
+
+            is InventoryOperationResult.Failure ->
+                when (result.code) {
+                    InventoryOperationCode.NOT_ITEM -> tr("log.inventory.not_item")
+                    InventoryOperationCode.NOT_ON_GROUND -> tr("log.inventory.not_on_ground", "item" to result.itemName)
+                    InventoryOperationCode.PACK_FULL -> tr("log.inventory.pack_full")
+                    InventoryOperationCode.PACK_SLOT_EMPTY -> tr("log.inventory.pack_slot_empty")
+                    InventoryOperationCode.CANNOT_EQUIP -> tr("log.inventory.cannot_equip", "item" to result.itemName)
+                    InventoryOperationCode.NOTHING_EQUIPPED ->
+                        tr("log.inventory.slot_nothing_equipped", "slot" to (result.slot?.let(::equipSlotLabel) ?: "-"))
+                    InventoryOperationCode.NOT_CONSUMABLE -> tr("log.inventory.not_consumable", "item" to result.itemName)
+                    InventoryOperationCode.NO_TELEPORT_DESTINATION -> tr("log.inventory.no_teleport_destination")
+                    else -> result.message
+                }
+        }
 
     private fun logEvent(event: Any) {
         if (recentEvents.size == 20) {
@@ -1227,6 +1315,25 @@ class FoundationGameSession internal constructor(
                             ),
                         talentLevels = emptyMap(),
                     ),
+                schemaCatalog =
+                    SchemaCatalog(
+                        professions = emptyList(),
+                        talents = emptyList(),
+                        talentTrees = emptyList(),
+                        monsters = emptyList(),
+                        bossEncounters = emptyList(),
+                        zones = emptyList(),
+                        difficulties = emptyList(),
+                        itemBundle = ItemBundleSchemaV2(materials = emptyList(), affixes = emptyList(), items = emptyList()),
+                        lootProfiles = emptyList(),
+                        tilesets = emptyList(),
+                        aiProfiles = emptyList(),
+                        arenas = emptyList(),
+                        ambientProfiles = emptyList(),
+                        visualKeys = emptySet(),
+                        audioProfiles = emptySet(),
+                    ),
+                localizer = LocalizationBundle.load().translator(GameLocale.EN_US),
             )
 
         private fun compatibilityMonsterCatalog(

@@ -1,0 +1,13 @@
+bossEncounters:
+  - id: dungeon_lord_encounter
+    nameKey: boss.cultist.dungeon_lord.name
+    descKey: boss.cultist.dungeon_lord.desc
+    visualKey: boss.cultist.dungeon_lord.visual
+    iconKey: boss.cultist.dungeon_lord.icon
+    audioProfile: audio.boss.cultist.dungeon_lord
+    schemaVersion: 2
+    tags: [boss, foundation]
+    bossTemplateId: cultist.dungeon_lord
+    arenaId: arena.grey_gate_depths.boss
+    phases: [phase_foundation]
+    rewards: [loot.foundation.boss]

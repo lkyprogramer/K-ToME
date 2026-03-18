@@ -49,13 +49,13 @@ class VictoryScreen(
 
         batch.begin()
         font.color = Color.FOREST
-        font.draw(batch, "Victory", 120f, 420f)
+        font.draw(batch, app.text("ui.victory.title"), 120f, 420f)
         font.color = Color.WHITE
-        font.draw(batch, "Floors cleared: ${summary.floorReached}/${summary.maxFloor}", 120f, 340f)
-        font.draw(batch, "Turns taken: ${summary.turns}", 120f, 308f)
-        font.draw(batch, "Final level: ${summary.playerLevel}", 120f, 276f)
+        font.draw(batch, app.text("ui.victory.floors_cleared", "current" to summary.floorReached, "max" to summary.maxFloor), 120f, 340f)
+        font.draw(batch, app.text("ui.summary.turns_taken", "turns" to summary.turns), 120f, 308f)
+        font.draw(batch, app.text("ui.summary.final_level", "level" to summary.playerLevel), 120f, 276f)
         font.color = Color.LIGHT_GRAY
-        font.draw(batch, "Enter or Esc to return to main menu", 120f, 140f)
+        font.draw(batch, app.text("ui.screen.return_to_menu"), 120f, 140f)
         batch.end()
     }
 

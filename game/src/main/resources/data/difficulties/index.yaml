@@ -1,0 +1,14 @@
+difficulties:
+  - id: normal
+    nameKey: difficulty.normal.name
+    descKey: difficulty.normal.desc
+    visualKey: difficulty.normal.visual
+    iconKey: difficulty.normal.icon
+    audioProfile: audio.difficulty.normal
+    schemaVersion: 2
+    tags: [difficulty]
+    monsterHpMultiplier: 1.0
+    monsterDamageMultiplier: 1.0
+    xpMultiplier: 1.0
+    lootRarityBonus: 0.0
+    prerequisites: []

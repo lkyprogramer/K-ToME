@@ -53,7 +53,7 @@ internal class FullGameLoopAutomationDriver(
         val bossId =
             world.entitiesWith(MonsterTemplateId::class, Position::class, Health::class)
                 .single { entityId ->
-                    requireNotNull(world.get<MonsterTemplateId>(entityId)).value == "dungeon_lord"
+                    requireNotNull(world.get<MonsterTemplateId>(entityId)).value == FOUNDATION_BOSS_TEMPLATE_ID
                 }
         requireNotNull(world.get<Health>(bossId)).current = 1
         val bossPosition = requireNotNull(world.get<Position>(bossId)).toPoint()

@@ -12,8 +12,11 @@ import com.ktome.core.map.Point
 import com.ktome.core.map.TileType
 import com.ktome.game.ActorView
 import com.ktome.game.FoundationGameSession
+import com.ktome.game.TileVisibility
+import com.ktome.game.i18n.Localizer
 
 class AsciiRenderer(
+    private val localizer: Localizer,
     private val cellWidth: Float = 16f,
     private val cellHeight: Float = 16f,
 ) : Disposable {
@@ -112,7 +115,7 @@ class AsciiRenderer(
             }
         font.draw(
             batch,
-            "FL ${session.currentFloor()}/${session.maxFloor()}  HP ${status.currentHp}/${status.maxHp}  STA ${status.currentStamina}/${status.maxStamina}  ATK ${status.attack}  DEF ${status.defense}  LV ${status.level}  XP ${status.currentExperience}/${status.nextLevelRequirement}  STAT ${status.statPoints}  TAL ${status.talentPoints}",
+            hudText(localizer, session),
             4f,
             messageRows * cellHeight + cellHeight - 4f,
         )
@@ -161,40 +164,36 @@ class AsciiRenderer(
         var line = mapOffsetY + mapHeight * cellHeight - 4f
 
         font.color = Color.GOLD
-        font.draw(batch, "Equipment", sidebarX, line)
+        font.draw(batch, tr("ui.sidebar.equipment"), sidebarX, line)
         line -= cellHeight
         font.color = Color.WHITE
         session.equipmentSlots().forEach { equipment ->
-            val label =
-                when (equipment.slot) {
-                    EquipSlot.WEAPON -> "Weapon"
-                    EquipSlot.ARMOR -> "Armor"
-                }
+            val label = slotLabel(equipment.slot)
             font.draw(batch, "$label: ${equipment.itemName ?: "-"}", sidebarX, line)
             line -= cellHeight
         }
 
         line -= cellHeight / 2f
         font.color = Color.GOLD
-        font.draw(batch, "Talents", sidebarX, line)
+        font.draw(batch, tr("ui.sidebar.talents"), sidebarX, line)
         line -= cellHeight
         font.color = Color.WHITE
         session.talentSlots().forEach { talent ->
             val state =
                 if (talent.currentCooldown > 0) {
-                    "CD:${talent.currentCooldown}"
+                    "${tr("ui.sidebar.cooldown.short")}:${talent.currentCooldown}"
                 } else {
-                    "Ready"
+                    tr("ui.sidebar.ready")
                 }
             font.draw(batch, "${talent.slot}.${talent.name} L${talent.level}/${talent.maxLevel} [$state]", sidebarX, line)
             line -= cellHeight
-            font.draw(batch, "   ${talent.staminaCost} STA", sidebarX, line)
+            font.draw(batch, "   ${talent.staminaCost} ${tr("ui.hud.stamina.short")}", sidebarX, line)
             line -= cellHeight
         }
 
         line -= cellHeight / 2f
         font.color = Color.GOLD
-        font.draw(batch, "Ground", sidebarX, line)
+        font.draw(batch, tr("ui.sidebar.ground"), sidebarX, line)
         line -= cellHeight
         font.color = Color.WHITE
         val groundItems = session.itemNamesAtPlayerPosition()
@@ -212,62 +211,67 @@ class AsciiRenderer(
             UiMode.MAP -> {
                 line -= cellHeight / 2f
                 font.color = Color.LIGHT_GRAY
-                font.draw(batch, "g pick up", sidebarX, line)
+                font.draw(batch, tr("ui.controls.map.pick_up"), sidebarX, line)
                 line -= cellHeight
-                font.draw(batch, "i inventory", sidebarX, line)
+                font.draw(batch, tr("ui.controls.map.inventory"), sidebarX, line)
                 line -= cellHeight
-                font.draw(batch, "Ctrl+S save", sidebarX, line)
+                font.draw(batch, tr("ui.controls.map.save"), sidebarX, line)
                 line -= cellHeight
                 if (session.canDescend()) {
-                    font.draw(batch, "> descend", sidebarX, line)
+                    font.draw(batch, tr("ui.controls.map.descend"), sidebarX, line)
                     line -= cellHeight
                 }
                 if (session.canAscend()) {
-                    font.draw(batch, "< ascend", sidebarX, line)
+                    font.draw(batch, tr("ui.controls.map.ascend"), sidebarX, line)
                     line -= cellHeight
                 }
                 if (session.hasPendingTalentAllocation()) {
-                    font.draw(batch, "T spend talent point", sidebarX, line)
+                    font.draw(batch, tr("ui.controls.map.spend_talent"), sidebarX, line)
                     line -= cellHeight
                 }
                 if (session.hasPendingStatAllocation()) {
-                    font.draw(batch, "1-4 spend stat point", sidebarX, line)
+                    font.draw(batch, tr("ui.controls.map.spend_stat"), sidebarX, line)
                 }
             }
 
             UiMode.INVENTORY -> {
                 line -= cellHeight / 2f
                 font.color = Color.GOLD
-                font.draw(batch, "Inventory", sidebarX, line)
+                font.draw(batch, sidebarTitle(localizer, UiMode.INVENTORY), sidebarX, line)
                 line -= cellHeight
                 session.inventoryItems().forEach { item ->
                     font.color = if (item.index == overlayState.inventorySelection) Color.CYAN else Color.WHITE
-                    val equipped = item.equippedSlot?.let { slot -> " [$slot]" } ?: ""
+                    val equipped = item.equippedSlot?.let { slot -> " [${slotLabel(slot)}]" } ?: ""
                     font.draw(batch, "${item.index + 1}. ${item.name}$equipped", sidebarX, line)
                     line -= cellHeight
                 }
                 if (session.inventoryItems().isEmpty()) {
                     font.color = Color.GRAY
-                    font.draw(batch, "(empty)", sidebarX, line)
+                    font.draw(batch, tr("ui.sidebar.empty"), sidebarX, line)
                     line -= cellHeight
                 }
                 font.color = Color.LIGHT_GRAY
-                font.draw(batch, "W/X move  E use/equip  Esc close", sidebarX, line)
+                font.draw(batch, tr("ui.controls.inventory"), sidebarX, line)
             }
 
             UiMode.TARGETING -> {
                 line -= cellHeight / 2f
                 font.color = Color.GOLD
-                font.draw(batch, "Targeting", sidebarX, line)
+                font.draw(batch, sidebarTitle(localizer, UiMode.TARGETING), sidebarX, line)
                 line -= cellHeight
                 font.color = Color.WHITE
-                font.draw(batch, "Slot ${overlayState.targetingSlot}", sidebarX, line)
+                font.draw(batch, tr("ui.targeting.slot", "slot" to overlayState.targetingSlot), sidebarX, line)
                 line -= cellHeight
                 val cursor = overlayState.targetingCursor
-                font.draw(batch, "Cursor ${cursor?.x ?: "-"},${cursor?.y ?: "-"}", sidebarX, line)
+                font.draw(
+                    batch,
+                    tr("ui.targeting.cursor", "x" to (cursor?.x ?: "-"), "y" to (cursor?.y ?: "-")),
+                    sidebarX,
+                    line,
+                )
                 line -= cellHeight
                 font.color = Color.LIGHT_GRAY
-                font.draw(batch, "Move cursor  Enter confirm  Esc cancel", sidebarX, line)
+                font.draw(batch, tr("ui.controls.targeting"), sidebarX, line)
             }
 
             UiMode.INSPECT -> {
@@ -276,12 +280,12 @@ class AsciiRenderer(
                 val inspect = session.inspectAt(cursor)
 
                 font.color = Color.GOLD
-                font.draw(batch, "Inspect", sidebarX, line)
+                font.draw(batch, sidebarTitle(localizer, UiMode.INSPECT), sidebarX, line)
                 line -= cellHeight
                 font.color = Color.WHITE
-                font.draw(batch, "Cursor ${cursor.x},${cursor.y}", sidebarX, line)
+                font.draw(batch, tr("ui.inspect.cursor", "x" to cursor.x, "y" to cursor.y), sidebarX, line)
                 line -= cellHeight
-                font.draw(batch, "${inspect.visibility.name} ${inspect.terrainName}", sidebarX, line)
+                font.draw(batch, "${visibilityLabel(inspect.visibility)} ${inspect.terrainName}", sidebarX, line)
                 line -= cellHeight
 
                 inspect.actor?.let { actor ->
@@ -291,17 +295,17 @@ class AsciiRenderer(
                     font.color = Color.WHITE
                     font.draw(batch, actor.role, sidebarX, line)
                     line -= cellHeight
-                    font.draw(batch, "HP ${actor.currentHp}/${actor.maxHp}", sidebarX, line)
+                    font.draw(batch, "${tr("ui.hud.hp.short")} ${actor.currentHp}/${actor.maxHp}", sidebarX, line)
                     line -= cellHeight
-                    font.draw(batch, "ATK ${actor.attack}  DEF ${actor.defense}", sidebarX, line)
+                    font.draw(batch, "${tr("ui.hud.attack.short")} ${actor.attack}  ${tr("ui.hud.defense.short")} ${actor.defense}", sidebarX, line)
                     line -= cellHeight
-                    font.draw(batch, "ACC ${actor.accuracy}  EVA ${actor.evasion}", sidebarX, line)
+                    font.draw(batch, "${tr("ui.hud.accuracy.short")} ${actor.accuracy}  ${tr("ui.hud.evasion.short")} ${actor.evasion}", sidebarX, line)
                     line -= cellHeight
-                    font.draw(batch, "STR ${actor.strength}  DEX ${actor.dexterity}", sidebarX, line)
+                    font.draw(batch, "${tr("ui.stat.str")} ${actor.strength}  ${tr("ui.stat.dex")} ${actor.dexterity}", sidebarX, line)
                     line -= cellHeight
-                    font.draw(batch, "CON ${actor.constitution}  WIL ${actor.willpower}", sidebarX, line)
+                    font.draw(batch, "${tr("ui.stat.con")} ${actor.constitution}  ${tr("ui.stat.wil")} ${actor.willpower}", sidebarX, line)
                     line -= cellHeight
-                    font.draw(batch, "SPD ${actor.speed}", sidebarX, line)
+                    font.draw(batch, "${tr("ui.hud.speed.short")} ${actor.speed}", sidebarX, line)
                     line -= cellHeight
                     if (actor.statusEffects.isNotEmpty()) {
                         font.color = Color.LIGHT_GRAY
@@ -315,7 +319,7 @@ class AsciiRenderer(
                 if (inspect.items.isNotEmpty()) {
                     line -= cellHeight / 2f
                     font.color = Color.GOLD
-                    font.draw(batch, "Items", sidebarX, line)
+                    font.draw(batch, tr("ui.sidebar.items"), sidebarX, line)
                     line -= cellHeight
                     inspect.items.forEach { item ->
                         font.color = Color.WHITE
@@ -342,49 +346,49 @@ class AsciiRenderer(
                     font.color = Color.GRAY
                     val message =
                         when (inspect.visibility) {
-                            com.ktome.game.TileVisibility.VISIBLE -> "No actor or item here"
-                            com.ktome.game.TileVisibility.EXPLORED -> "Explored, but not in sight"
-                            com.ktome.game.TileVisibility.HIDDEN -> "Unknown tile"
+                            TileVisibility.VISIBLE -> tr("ui.inspect.no_visible_target")
+                            TileVisibility.EXPLORED -> tr("ui.inspect.explored_not_visible")
+                            TileVisibility.HIDDEN -> tr("ui.inspect.unknown_tile")
                         }
                     font.draw(batch, message, sidebarX, line)
                     line -= cellHeight
                 }
 
                 font.color = Color.LIGHT_GRAY
-                font.draw(batch, "Move cursor  X/Esc close", sidebarX, line)
+                font.draw(batch, tr("ui.controls.inspect"), sidebarX, line)
             }
 
             UiMode.STAT_ASSIGN -> {
                 line -= cellHeight / 2f
                 font.color = Color.GOLD
-                font.draw(batch, "Assign Stats", sidebarX, line)
+                font.draw(batch, sidebarTitle(localizer, UiMode.STAT_ASSIGN), sidebarX, line)
                 line -= cellHeight
                 font.color = Color.WHITE
-                font.draw(batch, "Points: ${session.playerStatus().statPoints}", sidebarX, line)
+                font.draw(batch, tr("ui.sidebar.points", "value" to session.playerStatus().statPoints), sidebarX, line)
                 line -= cellHeight
-                font.draw(batch, "1. STR", sidebarX, line)
+                font.draw(batch, "1. ${tr("ui.stat.str")}", sidebarX, line)
                 line -= cellHeight
-                font.draw(batch, "2. DEX", sidebarX, line)
+                font.draw(batch, "2. ${tr("ui.stat.dex")}", sidebarX, line)
                 line -= cellHeight
-                font.draw(batch, "3. CON", sidebarX, line)
+                font.draw(batch, "3. ${tr("ui.stat.con")}", sidebarX, line)
                 line -= cellHeight
-                font.draw(batch, "4. WIL", sidebarX, line)
+                font.draw(batch, "4. ${tr("ui.stat.wil")}", sidebarX, line)
             }
 
             UiMode.TALENT_ASSIGN -> {
                 line -= cellHeight / 2f
                 font.color = Color.GOLD
-                font.draw(batch, "Improve Talents", sidebarX, line)
+                font.draw(batch, sidebarTitle(localizer, UiMode.TALENT_ASSIGN), sidebarX, line)
                 line -= cellHeight
                 font.color = Color.WHITE
-                font.draw(batch, "Points: ${session.playerStatus().talentPoints}", sidebarX, line)
+                font.draw(batch, tr("ui.sidebar.points", "value" to session.playerStatus().talentPoints), sidebarX, line)
                 line -= cellHeight
                 session.talentSlots().forEach { talent ->
                     font.draw(batch, "${talent.slot}. ${talent.name} L${talent.level}/${talent.maxLevel}", sidebarX, line)
                     line -= cellHeight
                 }
                 font.color = Color.LIGHT_GRAY
-                font.draw(batch, "1-4 improve  T/Esc close", sidebarX, line)
+                font.draw(batch, tr("ui.controls.talent_assign"), sidebarX, line)
             }
         }
     }
@@ -434,9 +438,61 @@ class AsciiRenderer(
         val color: Color,
     )
 
+    private fun tr(
+        key: String,
+        vararg args: Pair<String, Any?>,
+    ): String = localizer.text(key, *args)
+
+    private fun slotLabel(slot: EquipSlot): String =
+        when (slot) {
+            EquipSlot.WEAPON -> tr("ui.sidebar.weapon")
+            EquipSlot.ARMOR -> tr("ui.sidebar.armor")
+        }
+
+    private fun visibilityLabel(visibility: TileVisibility): String =
+        when (visibility) {
+            TileVisibility.VISIBLE -> tr("ui.inspect.visible")
+            TileVisibility.EXPLORED -> tr("ui.inspect.explored")
+            TileVisibility.HIDDEN -> tr("ui.inspect.hidden")
+        }
+
     companion object {
         const val messageRows: Int = 6
         const val uiRows: Int = messageRows + 1
         const val sidebarColumns: Int = 28
+
+        internal fun hudText(
+            localizer: Localizer,
+            session: FoundationGameSession,
+        ): String {
+            val status = session.playerStatus()
+            fun tr(
+                key: String,
+                vararg args: Pair<String, Any?>,
+            ): String = localizer.text(key, *args)
+
+            return "${tr("ui.hud.floor.short")} ${session.currentFloor()}/${session.maxFloor()}  " +
+                "${tr("ui.hud.hp.short")} ${status.currentHp}/${status.maxHp}  " +
+                "${tr("ui.hud.stamina.short")} ${status.currentStamina}/${status.maxStamina}  " +
+                "${tr("ui.hud.attack.short")} ${status.attack}  " +
+                "${tr("ui.hud.defense.short")} ${status.defense}  " +
+                "${tr("ui.hud.level.short")} ${status.level}  " +
+                "${tr("ui.hud.xp.short")} ${status.currentExperience}/${status.nextLevelRequirement}  " +
+                "${tr("ui.hud.stat.short")} ${status.statPoints}  " +
+                "${tr("ui.hud.talent.short")} ${status.talentPoints}"
+        }
+
+        internal fun sidebarTitle(
+            localizer: Localizer,
+            mode: UiMode,
+        ): String =
+            when (mode) {
+                UiMode.MAP -> localizer.text("ui.sidebar.ground")
+                UiMode.INVENTORY -> localizer.text("ui.sidebar.inventory")
+                UiMode.TARGETING -> localizer.text("ui.sidebar.targeting")
+                UiMode.INSPECT -> localizer.text("ui.sidebar.inspect")
+                UiMode.STAT_ASSIGN -> localizer.text("ui.sidebar.assign_stats")
+                UiMode.TALENT_ASSIGN -> localizer.text("ui.sidebar.improve_talents")
+            }
     }
 }

@@ -118,11 +118,25 @@ tasks.register("longRunLab") {
     dependsOn(":game:longRunLab")
 }
 
+tasks.register("localeLint") {
+    group = LifecycleBasePlugin.VERIFICATION_GROUP
+    description = "Validates i18n resource completeness, placeholders, and schema text discipline."
+    dependsOn(":tools:localeLint")
+}
+
+tasks.register("contractLint") {
+    group = LifecycleBasePlugin.VERIFICATION_GROUP
+    description = "Validates schema V2 structure, cross-references, and key namespaces."
+    dependsOn(":tools:contractLint")
+}
+
 tasks.register("preReleaseAcceptance") {
     group = LifecycleBasePlugin.VERIFICATION_GROUP
     description = "Runs the full pre-release acceptance gate, including smoke coverage, coverage reports, and desktop packaging."
     dependsOn("clean")
     dependsOn(test)
+    dependsOn("localeLint")
+    dependsOn("contractLint")
     dependsOn("headlessSmoke")
     dependsOn("clientSmoke")
     dependsOn("jacocoTestReport")
@@ -134,6 +148,8 @@ tasks.register<JacocoReport>("jacocoTestReport") {
     group = LifecycleBasePlugin.VERIFICATION_GROUP
     description = "Generates an aggregate JaCoCo coverage report for all subprojects."
     dependsOn(test)
+    dependsOn("localeLint")
+    dependsOn("contractLint")
     dependsOn("headlessSmoke")
     dependsOn("clientSmoke")
     dependsOn(subprojects.map { it.tasks.named("jacocoTestReport") })
@@ -161,6 +177,8 @@ tasks.register<JacocoReport>("jacocoTestReport") {
 
 tasks.named("check") {
     dependsOn(test)
+    dependsOn("localeLint")
+    dependsOn("contractLint")
     dependsOn("headlessSmoke")
     dependsOn("clientSmoke")
     dependsOn("jacocoTestReport")

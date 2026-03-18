@@ -15,3 +15,4 @@ pluginManagement {
 rootProject.name = "K-ToME"
 
 include("core", "game", "client")
+include("tools")

@@ -10,6 +10,8 @@ internal sealed interface MainMenuAction {
     data object ContinueGame : MainMenuAction
 
     data object ExitGame : MainMenuAction
+
+    data object ToggleLocale : MainMenuAction
 }
 
 internal class MainMenuController(
@@ -21,13 +23,16 @@ internal class MainMenuController(
 
     fun entries(hasSave: Boolean): List<MenuEntry> =
         listOf(
-            MenuEntry("New Game", enabled = true),
-            MenuEntry("Continue", enabled = hasSave),
-            MenuEntry("Exit", enabled = true),
+            MenuEntry("ui.menu.new_game", enabled = true),
+            MenuEntry("ui.menu.continue", enabled = hasSave),
+            MenuEntry("ui.menu.exit", enabled = true),
         )
 
     fun pollAction(hasSave: Boolean): MainMenuAction? {
         val entries = entries(hasSave)
+        if (input.isKeyJustPressed(Keys.L)) {
+            return MainMenuAction.ToggleLocale
+        }
         if (input.isKeyJustPressed(Keys.UP) || input.isKeyJustPressed(Keys.W)) {
             selectedIndex = (selectedIndex - 1).floorMod(entries.size)
         }
@@ -49,7 +54,7 @@ internal class MainMenuController(
     }
 
     internal data class MenuEntry(
-        val label: String,
+        val labelKey: String,
         val enabled: Boolean,
     )
 }

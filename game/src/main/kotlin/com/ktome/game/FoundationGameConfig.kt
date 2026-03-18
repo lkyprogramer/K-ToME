@@ -1,7 +1,8 @@
 package com.ktome.game
 
-const val FOUNDATION_ZONE_ID: String = "foundation_dungeon"
-const val FOUNDATION_PROFESSION_ID: String = "foundation_hero"
+const val FOUNDATION_ZONE_ID: String = "shattered_outpost"
+const val FOUNDATION_PROFESSION_ID: String = "vanguard"
+const val FOUNDATION_BOSS_TEMPLATE_ID: String = "cultist.dungeon_lord"
 
 data class FoundationGameConfig(
     val width: Int = 80,
