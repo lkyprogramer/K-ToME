@@ -56,6 +56,16 @@ data class SaveSnapshot(
         require(floors.any { floor -> floor.floorIndex == floorIndex }) {
             "Current floor $floorIndex must exist in the snapshot."
         }
+        require(floors.all { floor -> floor.map.rows.size == mapHeight }) {
+            "All floor snapshots must match top-level mapHeight $mapHeight."
+        }
+        require(
+            floors.all { floor ->
+                floor.map.rows.all { row -> row.length == mapWidth }
+            },
+        ) {
+            "All floor snapshots must match top-level mapWidth $mapWidth."
+        }
         require(pendingActionIds.all { pendingId -> pendingId > 0 }) {
             "Pending action entity ids must be positive."
         }

@@ -110,12 +110,12 @@ private fun sampleSnapshot(): SaveSnapshot =
         worldSeed = 20260312L,
         currentZoneId = "shattered_outpost",
         floorIndex = 2,
-        mapWidth = 80,
-        mapHeight = 50,
+        mapWidth = 60,
+        mapHeight = 40,
         fovRadius = 8,
         messageLogSize = 8,
         playerProfessionId = "vanguard",
-        maxFloor = 5,
+        maxFloor = 2,
         turnCount = 18,
         player =
             PlayerSnapshot(
@@ -132,12 +132,12 @@ private fun sampleSnapshot(): SaveSnapshot =
             listOf(
                 FloorSnapshot(
                     floorIndex = 1,
-                    map = MapSnapshot(rows = listOf("....."), playerStart = PointSnapshot(0, 0)),
+                    map = sizedMap(width = 60, height = 40, playerStart = PointSnapshot(0, 0)),
                     stairsDown = PointSnapshot(4, 0),
                 ),
                 FloorSnapshot(
                     floorIndex = 2,
-                    map = MapSnapshot(rows = listOf("....."), playerStart = PointSnapshot(1, 0)),
+                    map = sizedMap(width = 60, height = 40, playerStart = PointSnapshot(1, 0)),
                     stairsUp = PointSnapshot(0, 0),
                     stairsDown = PointSnapshot(4, 0),
                     exploredTiles = listOf(PointSnapshot(0, 0), PointSnapshot(1, 0)),
@@ -151,4 +151,14 @@ private fun sampleSnapshot(): SaveSnapshot =
                         ),
                 ),
             ),
+    )
+
+private fun sizedMap(
+    width: Int,
+    height: Int,
+    playerStart: PointSnapshot,
+): MapSnapshot =
+    MapSnapshot(
+        rows = List(height) { ".".repeat(width) },
+        playerStart = playerStart,
     )

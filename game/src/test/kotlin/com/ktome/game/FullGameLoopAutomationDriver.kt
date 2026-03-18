@@ -18,7 +18,7 @@ import org.junit.jupiter.api.Assertions.assertTrue
 
 internal class FullGameLoopAutomationDriver(
     private val saveManager: SaveManager,
-    private val config: FoundationGameConfig = FoundationGameConfig(),
+    private val config: FoundationGameConfig = FoundationGameConfig(zoneId = "grey_gate_depths"),
 ) {
     fun canContinue(): Boolean = saveManager.hasSave()
 

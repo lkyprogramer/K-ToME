@@ -89,7 +89,7 @@ class SessionSnapshotMapperTest {
 
         val snapshot =
             SessionSnapshotMapper.toSaveSnapshot(
-                config = FoundationGameConfig(zoneId = "shattered_outpost", playerProfessionId = "vanguard"),
+                config = FoundationGameConfig(width = 5, height = 5, zoneId = "shattered_outpost", playerProfessionId = "vanguard"),
                 currentFloor = 1,
                 turnCount = 12,
                 player = player,
@@ -121,12 +121,12 @@ class SessionSnapshotMapperTest {
                 worldSeed = 20260316L,
                 currentZoneId = "greenwood_fringe",
                 floorIndex = 2,
-                mapWidth = 80,
-                mapHeight = 50,
+                mapWidth = 70,
+                mapHeight = 45,
                 fovRadius = 8,
                 messageLogSize = 8,
                 playerProfessionId = "rogue",
-                maxFloor = 5,
+                maxFloor = 2,
                 turnCount = 10,
                 player =
                     PlayerSnapshot(
@@ -136,7 +136,11 @@ class SessionSnapshotMapperTest {
                     listOf(
                         com.ktome.core.save.FloorSnapshot(
                             floorIndex = 2,
-                            map = com.ktome.core.save.MapSnapshot(rows = List(5) { "....." }, playerStart = PointSnapshot(1, 1)),
+                            map =
+                                com.ktome.core.save.MapSnapshot(
+                                    rows = List(45) { ".".repeat(70) },
+                                    playerStart = PointSnapshot(1, 1),
+                                ),
                         ),
                     ),
             )

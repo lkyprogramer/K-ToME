@@ -148,6 +148,7 @@
   "log.player.death": "You die. Game over.",
   "log.entity.death": "{target} dies.",
   "log.victory": "You defeat {target}. Victory!",
+  "log.victory.escape": "You secure the exit. Victory!",
   "log.xp.gain": "You gain {amount} experience.",
   "log.level_up": "You advance to level {level}.",
   "log.stairs.missing_up": "There are no stairs leading up here.",

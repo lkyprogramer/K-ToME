@@ -21,12 +21,12 @@ class FullGameLoopAutomationTest {
         val newGame = driver.newGame()
         assertEquals(1, newGame.currentFloor())
 
-        driver.descendToFloor(newGame, 5)
-        assertEquals(5, newGame.currentFloor())
+        driver.descendToFloor(newGame, 2)
+        assertEquals(2, newGame.currentFloor())
         assertTrue(saveManager.hasSave(), "Floor transitions should create an auto-save before the restart step.")
 
         val continued = driver.saveAndRestart(newGame)
-        assertEquals(5, continued.currentFloor())
+        assertEquals(2, continued.currentFloor())
 
         driver.killBossForVictory(continued)
         assertTrue(continued.isVictory())

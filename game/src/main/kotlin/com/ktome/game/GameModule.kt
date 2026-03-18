@@ -27,6 +27,7 @@ import com.ktome.game.i18n.GameLocale
 import com.ktome.game.factory.BossFactory
 import com.ktome.game.factory.EntityFactory
 import com.ktome.game.factory.ItemFactory
+import com.ktome.game.model.BossDefinition
 import com.ktome.game.model.MonsterTemplate
 import com.ktome.core.item.ItemGenerator
 import com.ktome.core.item.ItemBaseDef
@@ -48,7 +49,15 @@ object GameModule {
         validateNewSessionConfig(config, content.schemaCatalog)
         val profession = resolveProfession(content.schemaCatalog, config.playerProfessionId)
         val zone = resolveZone(content.schemaCatalog, config.zoneId)
-        val sessionConfig = config.copy(width = zone.mapSize.width, height = zone.mapSize.height)
+        require(config.floor in 1..zone.floorCount) {
+            "Start floor ${config.floor} is outside zone '${zone.id}' range 1..${zone.floorCount}."
+        }
+        val sessionConfig =
+            config.copy(
+                width = zone.mapSize.width,
+                height = zone.mapSize.height,
+                maxFloor = zone.floorCount,
+            )
         val playerSnapshot = createInitialPlayerSnapshot(content, profession, Point.ZERO)
         val dungeonManager =
             DungeonManager(
@@ -86,26 +95,32 @@ object GameModule {
                 talentRegistry = com.ktome.core.talent.TalentRegistry().apply { registerAll(talents) },
                 monsterCatalog = loader.loadMonsterCatalog().monsters,
                 itemBundle = loader.loadItemBundle(),
-                bossDefinition = loader.loadBossDefinition(),
+                bossDefinitions = loader.loadBossDefinitions(),
                 schemaCatalog = schemaCatalog,
                 localizer = loader.localizer,
             )
         validateLoadedSessionConfig(restored.config, schemaCatalog)
         val zone = resolveZone(schemaCatalog, restored.config.zoneId)
+        val sessionConfig =
+            restored.config.copy(
+                width = zone.mapSize.width,
+                height = zone.mapSize.height,
+                maxFloor = zone.floorCount,
+            )
         val dungeonManager =
             DungeonManager(
-                maxFloor = restored.config.maxFloor,
+                maxFloor = sessionConfig.maxFloor,
                 startFloor = restored.currentFloor,
                 floorLoader = { floor ->
                     restored.floors.firstOrNull { it.floor == floor }
-                        ?: generateFloor(content, restored.config, zone, floor)
+                        ?: generateFloor(content, sessionConfig, zone, floor)
                 },
             )
         restored.floors.forEach { floorState ->
             dungeonManager.putState(floorState)
         }
         return FoundationGameSession(
-            config = restored.config,
+            config = sessionConfig,
             content = content,
             saveManager = saveManager,
             dungeonManager = dungeonManager,
@@ -114,10 +129,10 @@ object GameModule {
             turnCount = restored.turnCount,
             combatRandomSource =
                 restored.combatRandomState?.let(SplitMix64RandomSource::fromState)
-                    ?: FoundationGameSession.defaultCombatRandomSource(restored.config, restored.turnCount),
+                    ?: FoundationGameSession.defaultCombatRandomSource(sessionConfig, restored.turnCount),
             sessionRandom =
                 restored.sessionRandomState?.let(SplitMix64RandomSource::fromState)
-                    ?: FoundationGameSession.defaultSessionRandomSource(restored.config, restored.turnCount),
+                    ?: FoundationGameSession.defaultSessionRandomSource(sessionConfig, restored.turnCount),
             restoredPendingActionIds = restored.pendingActionIds,
             restoredActiveTurnActorId = restored.activeTurnActorId,
         )
@@ -132,7 +147,7 @@ object GameModule {
             talentRegistry = com.ktome.core.talent.TalentRegistry().apply { registerAll(talents) },
             monsterCatalog = loader.loadMonsterCatalog().monsters,
             itemBundle = loader.loadItemBundle(),
-            bossDefinition = loader.loadBossDefinition(),
+            bossDefinitions = loader.loadBossDefinitions(),
             schemaCatalog = schemaCatalog,
             localizer = loader.localizer,
         )
@@ -173,8 +188,14 @@ object GameModule {
         val itemFactory = ItemFactory()
         val bossFactory = BossFactory(factory)
         val itemGenerator = ItemGenerator(content.itemBundle, com.ktome.core.random.RandomSource.from(Random(floorSeed(config.seed, floor, 0x91F3))))
+        val bossDefinition = if (floor == config.maxFloor) resolveBossDefinition(content, zone) else null
         val stairsUp = if (floor > 1) map.playerStart else null
-        val stairsDown = if (floor < config.maxFloor) chooseDownstairs(map, stairsUp) else null
+        val stairsDown =
+            when {
+                floor < config.maxFloor -> chooseDownstairs(map, stairsUp)
+                bossDefinition == null -> chooseDownstairs(map, stairsUp)
+                else -> null
+            }
         val occupiedPoints =
             linkedSetOf<Point>().apply {
                 stairsUp?.let(::add)
@@ -184,9 +205,9 @@ object GameModule {
         stairsUp?.let { point -> createStair(world, point, StairDirection.UP, content.localizer) }
         stairsDown?.let { point -> createStair(world, point, StairDirection.DOWN, content.localizer) }
 
-        if (floor == config.maxFloor) {
+        if (bossDefinition != null) {
             val bossPosition = chooseBossPosition(map, occupiedPoints)
-            bossFactory.createBoss(world, content.bossDefinition, bossPosition)
+            bossFactory.createBoss(world, bossDefinition, bossPosition)
             occupiedPoints += bossPosition
         } else {
             spawnMonsters(
@@ -344,6 +365,16 @@ object GameModule {
             "Unknown zone id '$zoneId'."
         }
 
+    private fun resolveBossDefinition(
+        content: GameContent,
+        zone: ZoneSchemaV2,
+    ): BossDefinition? {
+        val bossEncounterId = zone.bossEncounterId ?: return null
+        return requireNotNull(content.bossDefinitions[bossEncounterId]) {
+            "Zone '${zone.id}' references unknown boss encounter '$bossEncounterId'."
+        }
+    }
+
     private fun resolveStartingTalents(
         content: GameContent,
         profession: ProfessionSchemaV2,
@@ -462,6 +493,22 @@ object GameModule {
         }
         if (schemaCatalog.professions.none { it.id == config.playerProfessionId }) {
             throw InvalidSaveException("Save references unknown profession id '${config.playerProfessionId}'.")
+        }
+        val zone = resolveZone(schemaCatalog, config.zoneId)
+        if (config.width != zone.mapSize.width || config.height != zone.mapSize.height) {
+            throw InvalidSaveException(
+                "Save map size ${config.width}x${config.height} does not match zone '${zone.id}' schema ${zone.mapSize.width}x${zone.mapSize.height}.",
+            )
+        }
+        if (config.maxFloor != zone.floorCount) {
+            throw InvalidSaveException(
+                "Save maxFloor ${config.maxFloor} does not match zone '${zone.id}' floorCount ${zone.floorCount}.",
+            )
+        }
+        if (config.floor !in 1..zone.floorCount) {
+            throw InvalidSaveException(
+                "Save current floor ${config.floor} is outside zone '${zone.id}' range 1..${zone.floorCount}.",
+            )
         }
     }
 

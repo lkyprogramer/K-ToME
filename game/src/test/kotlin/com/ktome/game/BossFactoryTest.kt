@@ -17,7 +17,7 @@ class BossFactoryTest {
     @Test
     fun `createBoss installs stamina cooldowns and talents`() {
         val world = World()
-        val definition = DataLoader().loadBossDefinition()
+        val definition = requireNotNull(DataLoader().loadBossDefinitions()["dungeon_lord_encounter"])
 
         val bossId = BossFactory().createBoss(world, definition, Point(7, 8))
 

@@ -1,6 +1,9 @@
 package com.ktome.tools.lint
 
 import com.ktome.game.i18n.GameLocale
+import java.awt.Font
+import kotlin.io.path.exists
+import kotlin.io.path.readText
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -60,6 +63,29 @@ class LocaleLintTest {
             assertFalse(entry.containsKey("name"), "Formal schema cannot contain bare 'name': $entry")
             assertFalse(entry.containsKey("desc"), "Formal schema cannot contain bare 'desc': $entry")
             assertFalse(entry.containsKey("description"), "Formal schema cannot contain bare 'description': $entry")
+        }
+    }
+
+    @Test
+    fun `locale lint owns ui font glyph coverage and forbids manual glyph catalogs`() {
+        val legacyGlyphCatalog = LintFixtures.legacyUiGlyphCatalogPath()
+        assertFalse(legacyGlyphCatalog.exists(), "Manual UI glyph catalog must not be checked in: $legacyGlyphCatalog")
+
+        val fontPath = LintFixtures.bundledUiFontPath()
+        assertTrue(fontPath.exists(), "Bundled UI font is missing: $fontPath")
+
+        val noticeText = LintFixtures.bundledUiFontNoticePath().readText()
+        assertTrue(noticeText.contains("subset"), "Bundled font notice must describe the subset contract.")
+        assertTrue(noticeText.contains("Original font file"), "Bundled font notice must preserve upstream source provenance.")
+
+        val requiredGlyphs = LintFixtures.requiredUiGlyphs()
+        fontPath.toFile().inputStream().use { input ->
+            val font = Font.createFont(Font.TRUETYPE_FONT, input)
+            val missingGlyphs = requiredGlyphs.filterNot(font::canDisplay)
+            assertTrue(
+                missingGlyphs.isEmpty(),
+                "Bundled UI font is missing ${missingGlyphs.size} locale glyph(s): ${missingGlyphs.take(20).joinToString(separator = "")}",
+            )
         }
     }
 

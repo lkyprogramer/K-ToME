@@ -740,7 +740,7 @@ internal object SessionSnapshotMapper {
         templateId: String,
     ): MonsterTemplate =
         requireNotNull(
-            (content.monsterCatalog + content.bossDefinition.template).firstOrNull { template ->
+            content.allMonsterTemplates().firstOrNull { template ->
                 template.id == normalizeMonsterTemplateId(templateId)
             },
         ) {

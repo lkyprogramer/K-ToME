@@ -1,6 +1,7 @@
 package com.ktome.game.harness
 
 import com.ktome.game.FOUNDATION_PROFESSION_ID
+import com.ktome.game.FOUNDATION_ZONE_ID
 import java.nio.file.Path
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Tag
@@ -24,8 +25,9 @@ class HeadlessSmokeSuiteTest {
             listOf(
                 harness.run(
                     ScenarioSpec(
-                        name = "reach-floor-2",
+                        name = "vanguard-shattered-outpost",
                         seed = 20260312L,
+                        zoneId = FOUNDATION_ZONE_ID,
                         professionId = FOUNDATION_PROFESSION_ID,
                         maxTurns = 300,
                         goal = ScenarioGoal.ReachFloor(2),
@@ -34,12 +36,13 @@ class HeadlessSmokeSuiteTest {
                 ),
                 harness.run(
                     ScenarioSpec(
-                        name = "save-load-round-trip",
+                        name = "arcanist-greenwood-save-load",
                         seed = 20260313L,
-                        professionId = FOUNDATION_PROFESSION_ID,
+                        zoneId = "greenwood_fringe",
+                        professionId = "arcanist",
                         maxTurns = 450,
                         goal = ScenarioGoal.ReachFloor(2),
-                        saveLoadCheckpoint = SaveLoadCheckpoint(floor = 2, continueTurns = 100, verifyRoundTrip = true),
+                        saveLoadCheckpoint = SaveLoadCheckpoint(floor = 1, continueTurns = 10, verifyRoundTrip = true),
                         assertions =
                             listOf(
                                 ScenarioAssertion.ReachedFloorAtLeast(2),
@@ -51,12 +54,24 @@ class HeadlessSmokeSuiteTest {
                 ),
                 harness.run(
                     ScenarioSpec(
-                        name = "reach-floor-3",
+                        name = "rogue-deep-iron-pit",
                         seed = 20260316L,
-                        professionId = FOUNDATION_PROFESSION_ID,
-                        maxTurns = 1200,
-                        goal = ScenarioGoal.ReachFloor(3),
-                        assertions = listOf(ScenarioAssertion.ReachedFloorAtLeast(3), ScenarioAssertion.NoFailure, ScenarioAssertion.NoStall),
+                        zoneId = "deep_iron_pit",
+                        professionId = "rogue",
+                        maxTurns = 600,
+                        goal = ScenarioGoal.ReachFloor(2),
+                        assertions = listOf(ScenarioAssertion.ReachedFloorAtLeast(2), ScenarioAssertion.NoFailure, ScenarioAssertion.NoStall),
+                    ),
+                ),
+                harness.run(
+                    ScenarioSpec(
+                        name = "templar-grey-gate-depths",
+                        seed = 20260317L,
+                        zoneId = "grey_gate_depths",
+                        professionId = "templar",
+                        maxTurns = 600,
+                        goal = ScenarioGoal.ReachFloor(2),
+                        assertions = listOf(ScenarioAssertion.ReachedFloorAtLeast(2), ScenarioAssertion.NoFailure, ScenarioAssertion.NoStall),
                     ),
                 ),
             )
@@ -73,7 +88,7 @@ class HeadlessSmokeSuiteTest {
                 buildString {
                     appendLine("# Headless Smoke")
                     reports.forEach { report ->
-                        appendLine("- ${report.name}: success=${report.success}, floor=${report.floorReached}, turns=${report.turns}, outcome=${report.outcome}")
+                        appendLine("- ${report.name}: success=${report.success}, zone=${report.zoneId}, profession=${report.professionId}, floor=${report.floorReached}, turns=${report.turns}, outcome=${report.outcome}")
                     }
                 },
         )
@@ -86,6 +101,7 @@ internal fun ScenarioReport.toJson() =
     buildJsonObject {
         put("name", name)
         put("seed", seed)
+        put("zoneId", zoneId)
         put("professionId", professionId)
         put("success", success)
         put("outcome", outcome.toString())

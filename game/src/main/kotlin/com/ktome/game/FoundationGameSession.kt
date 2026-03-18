@@ -688,7 +688,7 @@ class FoundationGameSession internal constructor(
         val role =
             when {
                 entityId == playerId -> tr("actor.player.role")
-                world.get<MonsterTemplateId>(entityId)?.value == FOUNDATION_BOSS_TEMPLATE_ID -> tr("actor.boss.role")
+                world.get<MonsterTemplateId>(entityId)?.value in content.bossTemplateIds() -> tr("actor.boss.role")
                 behavior != null -> tr("actor.monster.role", "ai" to aiLabel(behavior.type))
                 else -> tr("actor.generic.role")
             }
@@ -896,9 +896,11 @@ class FoundationGameSession internal constructor(
         }
 
         val targetName = requireNotNull(world.get<Name>(target)).value
+        val activeBossTemplateId = activeBossDefinition()?.template?.id
         val isBoss =
             currentFloor() == config.maxFloor &&
-                world.get<MonsterTemplateId>(target)?.value == content.bossDefinition.template.id
+                activeBossTemplateId != null &&
+                world.get<MonsterTemplateId>(target)?.value == activeBossTemplateId
 
         addMessage(tr("log.entity.death", "target" to targetName))
         val reward = world.get<ExperienceReward>(target)?.value ?: 0
@@ -951,6 +953,15 @@ class FoundationGameSession internal constructor(
                 },
             )
             return false
+        }
+
+        if (direction == StairDirection.DOWN && currentFloor() == config.maxFloor && activeBossDefinition() == null) {
+            runOutcome = RunOutcome.Victory(currentFloor())
+            pendingActions.clear()
+            activeTurnActor = null
+            saveManager.deleteSave()
+            addMessage(tr("log.victory.escape"))
+            return true
         }
 
         syncActiveFloorState()
@@ -1269,6 +1280,8 @@ class FoundationGameSession internal constructor(
             else -> event::class.simpleName ?: "UnknownEvent"
         }
 
+    private fun activeBossDefinition(): BossDefinition? = content.bossDefinitionForZone(config.zoneId)
+
     private data class CommandResolution(
         val accepted: Boolean,
         val consumesTurn: Boolean,
@@ -1295,25 +1308,29 @@ class FoundationGameSession internal constructor(
                 talentRegistry = talentRegistry,
                 monsterCatalog = compatibilityMonsterCatalog(world, currentFloor),
                 itemBundle = compatibilityItemBundle(world, currentFloor),
-                bossDefinition =
-                    BossDefinition(
-                        template =
-                            MonsterTemplate(
-                                id = "compatibility_boss",
-                                name = "Compatibility Boss",
-                                glyph = 'B',
-                                colorHex = "#FFFFFF",
-                                stats = Stats(str = 1, dex = 1, con = 1, wil = 1),
-                                baseHp = 1,
-                                baseAttack = 1,
-                                baseDefense = 0,
-                                speed = 100,
-                                ai = com.ktome.core.ecs.AIType.CHASE,
-                                expReward = 0,
-                                spawnFloors = listOf(1),
-                                spawnWeight = 1,
+                bossDefinitions =
+                    mapOf(
+                        "compatibility_boss_encounter" to
+                            BossDefinition(
+                                encounterId = "compatibility_boss_encounter",
+                                template =
+                                    MonsterTemplate(
+                                        id = "compatibility_boss",
+                                        name = "Compatibility Boss",
+                                        glyph = 'B',
+                                        colorHex = "#FFFFFF",
+                                        stats = Stats(str = 1, dex = 1, con = 1, wil = 1),
+                                        baseHp = 1,
+                                        baseAttack = 1,
+                                        baseDefense = 0,
+                                        speed = 100,
+                                        ai = com.ktome.core.ecs.AIType.CHASE,
+                                        expReward = 0,
+                                        spawnFloors = listOf(1),
+                                        spawnWeight = 1,
+                                    ),
+                                talentLevels = emptyMap(),
                             ),
-                        talentLevels = emptyMap(),
                     ),
                 schemaCatalog =
                     SchemaCatalog(
