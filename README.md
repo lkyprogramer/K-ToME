@@ -39,8 +39,16 @@ K-ToME 是一个使用 `Kotlin + libGDX` 开发的 ASCII Roguelike 项目。Phas
 
 ```bash
 ./gradlew test
+./gradlew headlessSmoke
+./gradlew clientSmoke
 ./gradlew jacocoTestReport
 ./gradlew :core:jacocoTestCoverageVerification
+```
+
+如果要走发布前整体验收，直接运行：
+
+```bash
+./gradlew preReleaseAcceptance
 ```
 
 启动桌面客户端：
@@ -151,6 +159,9 @@ K-ToME 是一个使用 `Kotlin + libGDX` 开发的 ASCII Roguelike 项目。Phas
 
 ```bash
 ./gradlew test
+./gradlew headlessSmoke
+./gradlew clientSmoke
+./gradlew longRunLab
 ./gradlew :core:test
 ./gradlew :game:test
 ./gradlew :client:test
@@ -158,6 +169,7 @@ K-ToME 是一个使用 `Kotlin + libGDX` 开发的 ASCII Roguelike 项目。Phas
 ./gradlew :core:jacocoTestCoverageVerification
 ./gradlew :client:run
 ./gradlew :client:releaseDesktopDist
+./gradlew preReleaseAcceptance
 ```
 
 如果改动涉及依赖、Gradle 配置或 bootstrap 逻辑，再额外执行：
@@ -169,6 +181,7 @@ K-ToME 是一个使用 `Kotlin + libGDX` 开发的 ASCII Roguelike 项目。Phas
 Phase 5 的回归与白盒模板见：
 
 1. [docs/phase1/2026-03-12-phase1-5.0-regression-checklist.md](docs/phase1/2026-03-12-phase1-5.0-regression-checklist.md)
+2. [docs/releases/v0.1.0-pre-release-acceptance.md](docs/releases/v0.1.0-pre-release-acceptance.md)
 
 ## 发布产物
 
@@ -192,3 +205,7 @@ Phase 5 的回归与白盒模板见：
 已知限制见：
 
 1. [docs/releases/v0.1.0-known-limitations.md](docs/releases/v0.1.0-known-limitations.md)
+
+发布前验收口径见：
+
+1. [docs/releases/v0.1.0-pre-release-acceptance.md](docs/releases/v0.1.0-pre-release-acceptance.md)

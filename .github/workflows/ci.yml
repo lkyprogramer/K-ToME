@@ -69,6 +69,7 @@ jobs:
           path: |
             **/build/reports/tests/**
             **/build/reports/jacoco/**
+            **/build/reports/harness/**
             **/build/test-results/**
           if-no-files-found: ignore
           retention-days: 7
@@ -109,6 +110,7 @@ jobs:
           path: |
             **/build/reports/tests/**
             **/build/reports/jacoco/**
+            **/build/reports/harness/**
             **/build/test-results/**
           if-no-files-found: ignore
           retention-days: 7

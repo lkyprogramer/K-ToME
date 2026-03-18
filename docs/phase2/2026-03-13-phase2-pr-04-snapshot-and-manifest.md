@@ -249,6 +249,8 @@ assets-src/
 4. `AssetSpecSchemaTest`
 5. `AudioCueManifestTest`
 6. `RenderSnapshotContractTest`
+7. `SnapshotClientSmokeTest`
+8. `ManifestFallbackClientSmokeTest`
 
 ### 6.2 必测行为
 
@@ -258,6 +260,9 @@ assets-src/
 4. screenshot golden 在无改动时稳定。
 5. style/asset/audio/manifest lint 能对非法输入失败。
 6. snapshot 至少能完整表达 map/actor/ui/log 这五类 client 所需信息。
+7. `clientSmoke` 必须走 snapshot-only client 主路径，不允许 client 回退读取 mutable world。
+8. `headlessSmoke` 与 `preReleaseAcceptance` 在 manifest/fallback 改造后保持绿色。
+9. 新增 `visualKey/audioProfile` 必须进入至少一条 smoke 或 golden，而不是只加 manifest resolve unit test。
 
 ### 6.3 自动化命令
 
@@ -269,6 +274,9 @@ assets-src/
 ./gradlew manifestLint
 ./gradlew goldenScreenshot
 ./gradlew contractLint
+./gradlew headlessSmoke
+./gradlew clientSmoke
+./gradlew preReleaseAcceptance
 ```
 
 当前离线脚本入口：
@@ -288,6 +296,7 @@ python3 scripts/manifest-lint.py \
 3. 人为打断一个 `visualKey`，确认 fallback 与错误提示出现。
 4. 人为放入一个未标 style tag 的正式图片 spec，确认 `style-lint` 失败。
 5. 切换到带 `ambientProfile` 和 Boss 预警的场景，确认 snapshot 和 manifest 都能解析对应资源。
+6. 对照 `clientSmoke` 与 golden 结果，确认 snapshot 主路径与桌面表现一致。
 
 ## 7. 出口门禁
 
@@ -298,6 +307,8 @@ python3 scripts/manifest-lint.py \
 5. 最小图像/音频 pipeline bootstrap 已建立，可承载后续职业、怪物、地图资源创建。
 6. `RenderSnapshot` 合同字段和生成时机冻结完成。
 7. `scripts/asset-lint.py`、`scripts/style-lint.py`、`scripts/manifest-lint.py` 已成为正式离线门禁入口。
+8. snapshot/manifest 改动不得破坏 `clientSmoke`、`headlessSmoke`、`preReleaseAcceptance`。
+9. 新增 manifest key、fallback 或 snapshot 字段必须进入 smoke 或 golden 主路径。
 
 ## 8. 风险与止损
 

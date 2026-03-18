@@ -311,6 +311,8 @@ Phase 2 图片生成入口约束：
 3. `SoloClearLabTest`
 4. `Phase2ContentCoverageTest`
 5. `Phase2AssetCoverageTest`
+6. `Phase2HeadlessMatrixSmokeTest`
+7. `Phase2ClientSmokeTest`
 
 ### 6.2 必测行为
 
@@ -319,6 +321,10 @@ Phase 2 图片生成入口约束：
 3. `24 怪 + 24 物品` 数据完整且可进局。
 4. `SoloClearLab v1` 能稳定覆盖四职业的关键场景。
 5. 4 zone、4 职业、核心 icon/cue/tileset 资源都能在 manifest 中解析。
+6. `headlessSmoke` 必须扩成四职业 / 多 zone 的最小矩阵，而不是继续停留在单职业 smoke。
+7. `clientSmoke` 必须覆盖默认正式短局主路径。
+8. `preReleaseAcceptance`、`longRunLab`、`soloClearLab` 三者都必须保持绿色。
+9. PR 新增职业、zone、怪物、物品、资源系统必须进入 smoke 或 lab，不允许只出现在 schema/data test 中。
 
 ### 6.3 自动化命令
 
@@ -330,6 +336,10 @@ Phase 2 图片生成入口约束：
 ./gradlew assetLint
 ./gradlew audioLint
 ./gradlew goldenScreenshot
+./gradlew headlessSmoke
+./gradlew clientSmoke
+./gradlew longRunLab
+./gradlew preReleaseAcceptance
 ./gradlew test
 ```
 
@@ -351,6 +361,7 @@ python3 scripts/manifest-lint.py \
    - 杂兵包、精英战、Boss 战都能覆盖
    - locale、Tile、日志、资源路径稳定
    - 4 职业主体资源、4 zone ambience、核心 icon/cue 都真实生效
+3. 对照 `headlessSmoke`、`clientSmoke`、`SoloClearLab` 报告，确认默认正式短局与桌面白盒一致。
 
 ## 7. 出口门禁
 
@@ -361,6 +372,8 @@ python3 scripts/manifest-lint.py \
 5. Phase 2 资源最低 DoD 达标，后续进入 Phase 3 时不再补回“最基础的职业/zone/资源骨架”。
 6. `style-lint`、`asset-lint`、`audio-lint`、`manifest-lint` 一并成为 Phase 2 出口门禁。
 7. `P2-B/P2-C` 资产计划最小集合冻结，职业、地图、怪物、UI 图标基础位不允许在实现期临时改名或缺项。
+8. `headlessSmoke`、`clientSmoke`、`soloClearLab`、`preReleaseAcceptance` 已成为 Phase 2 正式内容出口门禁。
+9. Phase 2 新增内容必须补进 smoke、lab 或 golden 主路径，不允许只留 isolated unit test。
 
 ## 8. 风险与止损
 

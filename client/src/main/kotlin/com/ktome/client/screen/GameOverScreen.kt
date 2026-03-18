@@ -9,24 +9,34 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch
 import com.badlogic.gdx.utils.ScreenUtils
 import com.badlogic.gdx.utils.viewport.FitViewport
 import com.ktome.client.GameApp
+import com.ktome.client.input.GdxInputSource
+import com.ktome.client.input.InputSource
 import com.ktome.game.RunSummary
 
 class GameOverScreen(
     private val app: GameApp,
     private val summary: RunSummary,
+    private val inputSource: InputSource = GdxInputSource,
+    private val renderEnabled: Boolean = true,
 ) : ScreenAdapter() {
     private var batch: SpriteBatch? = null
     private var font: BitmapFont? = null
     private val viewport = FitViewport(menuWidth, menuHeight)
 
     override fun show() {
+        if (!renderEnabled) {
+            return
+        }
         ensureResources()
         viewport.update(Gdx.graphics.width, Gdx.graphics.height, true)
     }
 
     override fun render(delta: Float) {
-        if (Gdx.input.isKeyJustPressed(Keys.ENTER) || Gdx.input.isKeyJustPressed(Keys.ESCAPE)) {
+        if (inputSource.isKeyJustPressed(Keys.ENTER) || inputSource.isKeyJustPressed(Keys.ESCAPE)) {
             app.showMainMenu(saveCurrent = false)
+            return
+        }
+        if (!renderEnabled) {
             return
         }
         ensureResources()
@@ -50,7 +60,9 @@ class GameOverScreen(
     }
 
     override fun resize(width: Int, height: Int) {
-        viewport.update(width, height, true)
+        if (renderEnabled) {
+            viewport.update(width, height, true)
+        }
     }
 
     override fun dispose() {
