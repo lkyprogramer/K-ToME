@@ -92,7 +92,7 @@ class FoundationGameScreen(
             batch = SpriteBatch()
         }
         if (renderer == null) {
-            renderer = AsciiRenderer(cellWidth = cellWidth, cellHeight = cellHeight)
+            renderer = AsciiRenderer(localizer = session.localizer(), cellWidth = cellWidth, cellHeight = cellHeight)
         }
     }
 }

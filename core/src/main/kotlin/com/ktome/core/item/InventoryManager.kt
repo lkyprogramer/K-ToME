@@ -14,8 +14,10 @@ import com.ktome.core.map.Point
 sealed interface InventoryOperationResult {
     val success: Boolean
     val message: String
+    val code: InventoryOperationCode
 
     data class Success(
+        override val code: InventoryOperationCode,
         override val message: String,
         val itemId: EntityId,
         val itemName: String,
@@ -25,10 +27,30 @@ sealed interface InventoryOperationResult {
     }
 
     data class Failure(
+        override val code: InventoryOperationCode,
         override val message: String,
+        val itemName: String? = null,
+        val slot: EquipSlot? = null,
     ) : InventoryOperationResult {
         override val success: Boolean = false
     }
+}
+
+enum class InventoryOperationCode {
+    PICK_UP,
+    DROP,
+    EQUIP,
+    REMOVE,
+    CONSUME_USE,
+    CONSUME_READ,
+    NOT_ITEM,
+    NOT_ON_GROUND,
+    PACK_FULL,
+    PACK_SLOT_EMPTY,
+    CANNOT_EQUIP,
+    NOTHING_EQUIPPED,
+    NOT_CONSUMABLE,
+    NO_TELEPORT_DESTINATION,
 }
 
 class InventoryManager {
@@ -39,19 +61,30 @@ class InventoryManager {
     ): InventoryOperationResult {
         val inventory = inventoryOf(world, entity)
         val itemInstance = world.get<ItemInstance>(item)
-            ?: return InventoryOperationResult.Failure("That is not an item.")
+            ?: return InventoryOperationResult.Failure(
+                code = InventoryOperationCode.NOT_ITEM,
+                message = "That is not an item.",
+            )
 
         if (!world.has<GroundItem>(item)) {
-            return InventoryOperationResult.Failure("${itemInstance.name} is not on the ground.")
+            return InventoryOperationResult.Failure(
+                code = InventoryOperationCode.NOT_ON_GROUND,
+                message = "${itemInstance.name} is not on the ground.",
+                itemName = itemInstance.name,
+            )
         }
         if (inventory.itemIds.size >= inventory.capacity) {
-            return InventoryOperationResult.Failure("Your pack is full.")
+            return InventoryOperationResult.Failure(
+                code = InventoryOperationCode.PACK_FULL,
+                message = "Your pack is full.",
+            )
         }
 
         inventory.itemIds += item
         world.remove<GroundItem>(item)
         world.remove<Position>(item)
         return InventoryOperationResult.Success(
+            code = InventoryOperationCode.PICK_UP,
             message = "You pick up ${itemInstance.name}.",
             itemId = item,
             itemName = itemInstance.name,
@@ -66,7 +99,10 @@ class InventoryManager {
     ): InventoryOperationResult {
         val inventory = inventoryOf(world, entity)
         val itemId = inventory.itemIds.getOrNull(itemIndex)
-            ?: return InventoryOperationResult.Failure("That pack slot is empty.")
+            ?: return InventoryOperationResult.Failure(
+                code = InventoryOperationCode.PACK_SLOT_EMPTY,
+                message = "That pack slot is empty.",
+            )
         val item = requireNotNull(world.get<ItemInstance>(itemId))
 
         equippedSlotOf(world, entity, itemId)?.let { slot ->
@@ -77,6 +113,7 @@ class InventoryManager {
         world.add(itemId, Position(dropPosition.x, dropPosition.y))
         world.add(itemId, GroundItem)
         return InventoryOperationResult.Success(
+            code = InventoryOperationCode.DROP,
             message = "You drop ${item.name}.",
             itemId = itemId,
             itemName = item.name,
@@ -90,12 +127,22 @@ class InventoryManager {
     ): InventoryOperationResult {
         val inventory = inventoryOf(world, entity)
         val itemId = inventory.itemIds.getOrNull(itemIndex)
-            ?: return InventoryOperationResult.Failure("That pack slot is empty.")
+            ?: return InventoryOperationResult.Failure(
+                code = InventoryOperationCode.PACK_SLOT_EMPTY,
+                message = "That pack slot is empty.",
+            )
         val item = requireNotNull(world.get<ItemInstance>(itemId))
-        val slot = item.slot ?: return InventoryOperationResult.Failure("${item.name} cannot be equipped.")
+        val slot =
+            item.slot
+                ?: return InventoryOperationResult.Failure(
+                    code = InventoryOperationCode.CANNOT_EQUIP,
+                    message = "${item.name} cannot be equipped.",
+                    itemName = item.name,
+                )
 
         equipmentOf(world, entity).slots[slot] = itemId
         return InventoryOperationResult.Success(
+            code = InventoryOperationCode.EQUIP,
             message = "You equip ${item.name}.",
             itemId = itemId,
             itemName = item.name,
@@ -109,9 +156,14 @@ class InventoryManager {
         slot: EquipSlot,
     ): InventoryOperationResult {
         val itemId = equipmentOf(world, entity).slots.remove(slot)
-            ?: return InventoryOperationResult.Failure("Nothing is equipped in $slot.")
+            ?: return InventoryOperationResult.Failure(
+                code = InventoryOperationCode.NOTHING_EQUIPPED,
+                message = "Nothing is equipped in $slot.",
+                slot = slot,
+            )
         val item = requireNotNull(world.get<ItemInstance>(itemId))
         return InventoryOperationResult.Success(
+            code = InventoryOperationCode.REMOVE,
             message = "You remove ${item.name}.",
             itemId = itemId,
             itemName = item.name,
@@ -127,9 +179,18 @@ class InventoryManager {
     ): InventoryOperationResult {
         val inventory = inventoryOf(world, entity)
         val itemId = inventory.itemIds.getOrNull(itemIndex)
-            ?: return InventoryOperationResult.Failure("That pack slot is empty.")
+            ?: return InventoryOperationResult.Failure(
+                code = InventoryOperationCode.PACK_SLOT_EMPTY,
+                message = "That pack slot is empty.",
+            )
         val item = requireNotNull(world.get<ItemInstance>(itemId))
-        val effect = item.effect ?: return InventoryOperationResult.Failure("${item.name} is not consumable.")
+        val effect =
+            item.effect
+                ?: return InventoryOperationResult.Failure(
+                    code = InventoryOperationCode.NOT_CONSUMABLE,
+                    message = "${item.name} is not consumable.",
+                    itemName = item.name,
+                )
 
         when (effect) {
             ConsumableEffect.HEAL -> {
@@ -138,7 +199,12 @@ class InventoryManager {
             }
 
             ConsumableEffect.TELEPORT -> {
-                val destination = teleportDestination ?: return InventoryOperationResult.Failure("No teleport destination is available.")
+                val destination =
+                    teleportDestination
+                        ?: return InventoryOperationResult.Failure(
+                            code = InventoryOperationCode.NO_TELEPORT_DESTINATION,
+                            message = "No teleport destination is available.",
+                        )
                 val position = requireNotNull(world.get<Position>(entity)) { "Missing Position for $entity" }
                 position.moveTo(destination)
             }
@@ -150,6 +216,11 @@ class InventoryManager {
         inventory.itemIds.removeAt(itemIndex)
         world.destroyEntity(itemId)
         return InventoryOperationResult.Success(
+            code =
+                when (effect) {
+                    ConsumableEffect.HEAL -> InventoryOperationCode.CONSUME_USE
+                    ConsumableEffect.TELEPORT -> InventoryOperationCode.CONSUME_READ
+                },
             message =
                 when (effect) {
                     ConsumableEffect.HEAL -> "You use ${item.name}."
@@ -177,4 +248,3 @@ class InventoryManager {
         entity: EntityId,
     ): Equipment = requireNotNull(world.get<Equipment>(entity)) { "Missing Equipment for $entity" }
 }
-

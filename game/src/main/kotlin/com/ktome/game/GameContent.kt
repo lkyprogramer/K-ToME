@@ -3,6 +3,8 @@ package com.ktome.game
 import com.ktome.core.talent.TalentDef
 import com.ktome.core.talent.TalentRegistry
 import com.ktome.core.item.ItemDataBundle
+import com.ktome.game.data.schema.SchemaCatalog
+import com.ktome.game.i18n.Localizer
 import com.ktome.game.model.BossDefinition
 import com.ktome.game.model.MonsterTemplate
 
@@ -12,4 +14,6 @@ internal data class GameContent(
     val monsterCatalog: List<MonsterTemplate>,
     val itemBundle: ItemDataBundle,
     val bossDefinition: BossDefinition,
+    val schemaCatalog: SchemaCatalog,
+    val localizer: Localizer,
 )

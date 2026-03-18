@@ -1,0 +1,9 @@
+ambientProfiles:
+  - id: ambient.shattered_outpost
+    schemaVersion: 2
+  - id: ambient.greenwood_fringe
+    schemaVersion: 2
+  - id: ambient.deep_iron_pit
+    schemaVersion: 2
+  - id: ambient.grey_gate_depths
+    schemaVersion: 2

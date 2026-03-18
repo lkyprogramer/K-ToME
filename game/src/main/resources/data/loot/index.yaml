@@ -1,0 +1,7 @@
+lootProfiles:
+  - id: loot.foundation.common
+    schemaVersion: 2
+  - id: loot.foundation.elite
+    schemaVersion: 2
+  - id: loot.foundation.boss
+    schemaVersion: 2

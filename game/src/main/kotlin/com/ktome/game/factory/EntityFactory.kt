@@ -36,6 +36,8 @@ class EntityFactory {
         world: World,
         position: Point,
         talents: List<TalentDef>,
+        playerName: String = "Hero",
+        stats: Stats = Stats(str = 10, dex = 10, con = 10, wil = 10),
     ): com.ktome.core.ecs.EntityId {
         val playerId = world.createEntity()
         val profile = CombatProfile(
@@ -46,17 +48,16 @@ class EntityFactory {
             baseSpeed = 100,
             baseHp = 50,
         )
-        val stats = Stats(str = 10, dex = 10, con = 10, wil = 10)
         val derivedStats = StatsCalculator.calculate(stats, profile)
 
         world.add(playerId, Position(position.x, position.y))
         world.add(playerId, Glyph('@'))
         world.add(playerId, DisplayColor("#FFD700"))
-        world.add(playerId, Name("Hero"))
+        world.add(playerId, Name(playerName))
         world.add(playerId, PlayerControlled)
         world.add(playerId, FactionTag(Faction.PLAYER))
         world.add(playerId, BlocksMovement())
-        world.add(playerId, stats)
+        world.add(playerId, stats.copy())
         world.add(playerId, profile)
         world.add(playerId, derivedStats)
         world.add(playerId, Health(current = derivedStats.maxHp, max = derivedStats.maxHp))
@@ -111,7 +112,7 @@ class EntityFactory {
         world.add(monsterId, EffectTracker())
         world.add(
             monsterId,
-            when (template.ai) {
+            when (resolveAiType(template)) {
                 AIType.KITE -> AIBehavior(AIType.KITE, sightRadius = 8, preferredRangeStart = 2, preferredRangeEnd = 3)
                 AIType.CHASE -> AIBehavior(AIType.CHASE, sightRadius = 8)
                 AIType.PATROL -> AIBehavior(AIType.PATROL, sightRadius = 8)
@@ -121,4 +122,12 @@ class EntityFactory {
 
         return monsterId
     }
+
+    private fun resolveAiType(template: MonsterTemplate): AIType =
+        when (template.aiProfileId) {
+            "ai.kite.basic" -> AIType.KITE
+            "ai.patrol.basic" -> AIType.PATROL
+            "ai.chase.basic", "ai.boss.dungeon_lord" -> AIType.CHASE
+            else -> template.ai
+        }
 }

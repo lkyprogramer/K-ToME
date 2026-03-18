@@ -1,0 +1,116 @@
+monsters:
+  - id: beast.rat
+    nameKey: monster.beast.rat.name
+    descKey: monster.beast.rat.desc
+    visualKey: actor.beast.rat
+    iconKey: icon.monster.beast.rat
+    audioProfile: audio.monster.beast.rat
+    schemaVersion: 2
+    tags: [monster, beast]
+    archetype: skirmisher
+    glyph: "r"
+    color: "#8B6B3F"
+    stats: { str: 3, dex: 8, con: 4, wil: 1 }
+    baseHp: 12
+    baseAttack: 3
+    baseDefense: 0
+    speed: 110
+    ai: CHASE
+    aiProfileId: ai.chase.basic
+    lootProfileId: loot.foundation.common
+    talents: {}
+    expReward: 15
+    spawnFloors: [1, 2]
+    spawnWeight: 10
+  - id: undead.bone_archer
+    nameKey: monster.undead.bone_archer.name
+    descKey: monster.undead.bone_archer.desc
+    visualKey: actor.undead.bone_archer
+    iconKey: icon.monster.undead.bone_archer
+    audioProfile: audio.monster.undead.bone_archer
+    schemaVersion: 2
+    tags: [monster, undead]
+    archetype: artillery
+    glyph: "a"
+    color: "#C8C8C8"
+    stats: { str: 5, dex: 10, con: 5, wil: 2 }
+    baseHp: 18
+    baseAttack: 7
+    baseDefense: 1
+    speed: 100
+    ai: KITE
+    aiProfileId: ai.kite.basic
+    lootProfileId: loot.foundation.common
+    talents: {}
+    expReward: 35
+    spawnFloors: [1, 2, 3]
+    spawnWeight: 7
+  - id: bandit.sentry
+    nameKey: monster.bandit.sentry.name
+    descKey: monster.bandit.sentry.desc
+    visualKey: actor.bandit.sentry
+    iconKey: icon.monster.bandit.sentry
+    audioProfile: audio.monster.bandit.sentry
+    schemaVersion: 2
+    tags: [monster, bandit]
+    archetype: sentinel
+    glyph: "g"
+    color: "#4FA36F"
+    stats: { str: 7, dex: 6, con: 7, wil: 2 }
+    baseHp: 24
+    baseAttack: 6
+    baseDefense: 2
+    speed: 95
+    ai: PATROL
+    aiProfileId: ai.patrol.basic
+    lootProfileId: loot.foundation.common
+    talents: {}
+    expReward: 28
+    spawnFloors: [1, 2]
+    spawnWeight: 8
+  - id: orc.raider
+    nameKey: monster.orc.raider.name
+    descKey: monster.orc.raider.desc
+    visualKey: actor.orc.raider
+    iconKey: icon.monster.orc.raider
+    audioProfile: audio.monster.orc.raider
+    schemaVersion: 2
+    tags: [monster, orc]
+    archetype: brute
+    glyph: "o"
+    color: "#3AAE4B"
+    stats: { str: 12, dex: 6, con: 10, wil: 3 }
+    baseHp: 45
+    baseAttack: 10
+    baseDefense: 5
+    speed: 90
+    ai: CHASE
+    aiProfileId: ai.chase.basic
+    lootProfileId: loot.foundation.elite
+    talents: {}
+    expReward: 60
+    spawnFloors: [2, 3, 4]
+    spawnWeight: 5
+  - id: cultist.dungeon_lord
+    nameKey: monster.cultist.dungeon_lord.name
+    descKey: monster.cultist.dungeon_lord.desc
+    visualKey: actor.cultist.dungeon_lord
+    iconKey: icon.monster.cultist.dungeon_lord
+    audioProfile: audio.monster.cultist.dungeon_lord
+    schemaVersion: 2
+    tags: [monster, boss, cultist]
+    archetype: boss
+    glyph: "B"
+    color: "#D94C3D"
+    stats: { str: 16, dex: 11, con: 15, wil: 12 }
+    baseHp: 125
+    baseAttack: 14
+    baseDefense: 7
+    speed: 95
+    ai: CHASE
+    aiProfileId: ai.boss.dungeon_lord
+    lootProfileId: loot.foundation.boss
+    talents: { war_cry: 3, power_strike: 4 }
+    expReward: 300
+    spawnFloors: [5]
+    spawnWeight: 1

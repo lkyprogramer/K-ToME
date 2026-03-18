@@ -22,8 +22,21 @@ sealed interface TalentUseResult {
     ) : TalentUseResult
 
     data class Failure(
+        val code: TalentFailureCode,
         val reason: String,
+        val talentName: String? = null,
     ) : TalentUseResult
+}
+
+enum class TalentFailureCode {
+    UNKNOWN_TALENT,
+    UNSUPPORTED_TALENT,
+    COOLDOWN,
+    NO_STAMINA,
+    TARGET_REQUIRED,
+    OUT_OF_RANGE,
+    NO_TARGET,
+    NO_CHARGE_PATH,
 }
 
 data class TalentResult(
@@ -89,34 +102,79 @@ class TalentResolver(
         user: EntityId,
         talentId: String,
         target: Point?,
-    ): String? {
-        val definition = registry.get(talentId) ?: return "Unknown talent."
+    ): String? = canUseFailure(world, map, user, talentId, target)?.reason
+
+    private fun canUseFailure(
+        world: World,
+        map: GameMap,
+        user: EntityId,
+        talentId: String,
+        target: Point?,
+    ): TalentUseResult.Failure? {
+        val definition =
+            registry.get(talentId)
+                ?: return TalentUseResult.Failure(
+                    code = TalentFailureCode.UNKNOWN_TALENT,
+                    reason = "Unknown talent.",
+                )
         if (talentId !in supportedTalentIds) {
-            return "Talent is not supported yet."
+            return TalentUseResult.Failure(
+                code = TalentFailureCode.UNSUPPORTED_TALENT,
+                reason = "Talent is not supported yet.",
+                talentName = definition.name,
+            )
         }
         val stamina = requireNotNull(world.get<Stamina>(user)) { "Missing Stamina for $user" }
         val cooldowns = requireNotNull(world.get<CooldownState>(user)) { "Missing CooldownState for $user" }
 
         if (cooldowns.remainingByTalentId[talentId]?.let { it > 0 } == true) {
-            return "${definition.name} is still cooling down."
+            return TalentUseResult.Failure(
+                code = TalentFailureCode.COOLDOWN,
+                reason = "${definition.name} is still cooling down.",
+                talentName = definition.name,
+            )
         }
         if (stamina.current < definition.staminaCost) {
-            return "Not enough stamina."
+            return TalentUseResult.Failure(
+                code = TalentFailureCode.NO_STAMINA,
+                reason = "Not enough stamina.",
+                talentName = definition.name,
+            )
         }
         if (definition.range == 0) {
             return null
         }
 
         val userPosition = requireNotNull(world.get<Position>(user)).toPoint()
-        val targetPoint = target ?: return "A target is required."
+        val targetPoint =
+            target
+                ?: return TalentUseResult.Failure(
+                    code = TalentFailureCode.TARGET_REQUIRED,
+                    reason = "A target is required.",
+                    talentName = definition.name,
+                )
         val distance = userPosition.chebyshevDistanceTo(targetPoint)
         if (distance > definition.range || distance < definition.minRange) {
-            return "Target is out of range."
+            return TalentUseResult.Failure(
+                code = TalentFailureCode.OUT_OF_RANGE,
+                reason = "Target is out of range.",
+                talentName = definition.name,
+            )
         }
 
-        val targetEntity = hostileTargetAt(world, user, targetPoint) ?: return "No valid target."
+        val targetEntity =
+            hostileTargetAt(world, user, targetPoint)
+                ?: return TalentUseResult.Failure(
+                    code = TalentFailureCode.NO_TARGET,
+                    reason = "No valid target.",
+                    talentName = definition.name,
+                )
         if (definition.id == "charge" && chargeDestination(world, map, userPosition, targetPoint, targetEntity) == null) {
-            return "No path to charge target."
+            return TalentUseResult.Failure(
+                code = TalentFailureCode.NO_CHARGE_PATH,
+                reason = "No path to charge target.",
+                talentName = definition.name,
+            )
         }
 
         return null
@@ -129,9 +187,9 @@ class TalentResolver(
         talentId: String,
         target: Point?,
     ): TalentUseResult {
-        val failureReason = canUse(world, map, user, talentId, target)
-        if (failureReason != null) {
-            return TalentUseResult.Failure(failureReason)
+        val failure = canUseFailure(world, map, user, talentId, target)
+        if (failure != null) {
+            return failure
         }
 
         val definition = requireNotNull(registry.get(talentId))
@@ -144,7 +202,11 @@ class TalentResolver(
         val targets = linkedSetOf<EntityId>()
 
         if (talentId !in supportedTalentIds) {
-            return TalentUseResult.Failure("Unsupported talent: $talentId")
+            return TalentUseResult.Failure(
+                code = TalentFailureCode.UNSUPPORTED_TALENT,
+                reason = "Talent is not supported yet.",
+                talentName = definition.name,
+            )
         }
 
         stamina.current -= definition.staminaCost
@@ -265,7 +327,12 @@ class TalentResolver(
                 }
             }
 
-            else -> return TalentUseResult.Failure("Unsupported talent: $talentId")
+            else ->
+                return TalentUseResult.Failure(
+                    code = TalentFailureCode.UNSUPPORTED_TALENT,
+                    reason = "Talent is not supported yet.",
+                    talentName = definition.name,
+                )
         }
 
         StatsCalculator.recalculateAndStore(world, user)

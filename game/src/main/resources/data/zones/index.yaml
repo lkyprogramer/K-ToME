@@ -1,0 +1,81 @@
+zones:
+  - id: shattered_outpost
+    nameKey: zone.shattered_outpost.name
+    descKey: zone.shattered_outpost.desc
+    visualKey: zone.shattered_outpost.visual
+    iconKey: zone.shattered_outpost.icon
+    audioProfile: audio.zone.shattered_outpost
+    schemaVersion: 2
+    tags: [zone, foundation]
+    biome: ruins
+    floorCount: 2
+    mapSize: { width: 60, height: 40 }
+    recommendedLevel: { min: 1, max: 4 }
+    environmentTheme: tutorial_ruins
+    specialMechanics: [simple_traps]
+    tilesetKey: tileset.foundation.ascii
+    ambientProfile: ambient.shattered_outpost
+    monsterPools: [beast.rat, bandit.sentry]
+    elitePools: [orc.raider]
+    bossEncounterId:
+    objectiveSetId:
+  - id: greenwood_fringe
+    nameKey: zone.greenwood_fringe.name
+    descKey: zone.greenwood_fringe.desc
+    visualKey: zone.greenwood_fringe.visual
+    iconKey: zone.greenwood_fringe.icon
+    audioProfile: audio.zone.greenwood_fringe
+    schemaVersion: 2
+    tags: [zone, foundation]
+    biome: forest
+    floorCount: 2
+    mapSize: { width: 70, height: 45 }
+    recommendedLevel: { min: 3, max: 6 }
+    environmentTheme: forest_patrol
+    specialMechanics: [line_of_sight]
+    tilesetKey: tileset.foundation.ascii
+    ambientProfile: ambient.greenwood_fringe
+    monsterPools: [beast.rat, undead.bone_archer]
+    elitePools: [bandit.sentry]
+    bossEncounterId:
+    objectiveSetId:
+  - id: deep_iron_pit
+    nameKey: zone.deep_iron_pit.name
+    descKey: zone.deep_iron_pit.desc
+    visualKey: zone.deep_iron_pit.visual
+    iconKey: zone.deep_iron_pit.icon
+    audioProfile: audio.zone.deep_iron_pit
+    schemaVersion: 2
+    tags: [zone, foundation]
+    biome: mine
+    floorCount: 2
+    mapSize: { width: 80, height: 50 }
+    recommendedLevel: { min: 5, max: 8 }
+    environmentTheme: mine_forge
+    specialMechanics: [ore_cart]
+    tilesetKey: tileset.foundation.ascii
+    ambientProfile: ambient.deep_iron_pit
+    monsterPools: [undead.bone_archer, orc.raider]
+    elitePools: [orc.raider]
+    bossEncounterId:
+    objectiveSetId:
+  - id: grey_gate_depths
+    nameKey: zone.grey_gate_depths.name
+    descKey: zone.grey_gate_depths.desc
+    visualKey: zone.grey_gate_depths.visual
+    iconKey: zone.grey_gate_depths.icon
+    audioProfile: audio.zone.grey_gate_depths
+    schemaVersion: 2
+    tags: [zone, foundation]
+    biome: depths
+    floorCount: 2
+    mapSize: { width: 80, height: 50 }
+    recommendedLevel: { min: 7, max: 10 }
+    environmentTheme: sealed_depths
+    specialMechanics: [sealed_gate]
+    tilesetKey: tileset.foundation.ascii
+    ambientProfile: ambient.grey_gate_depths
+    monsterPools: [orc.raider, undead.bone_archer]
+    elitePools: [orc.raider]
+    bossEncounterId: dungeon_lord_encounter
+    objectiveSetId:

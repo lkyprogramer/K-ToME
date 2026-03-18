@@ -13,302 +13,625 @@ import com.ktome.core.item.MaterialDef
 import com.ktome.core.item.StatModifier
 import com.ktome.core.talent.TalentDef
 import com.ktome.core.talent.TalentLevelEffect
-import com.ktome.game.model.MonsterCatalog
+import com.ktome.game.data.schema.AffixSchemaV2
+import com.ktome.game.data.schema.BossEncounterSchemaV2
+import com.ktome.game.data.schema.DifficultySchemaV2
+import com.ktome.game.data.schema.ItemBundleSchemaV2
+import com.ktome.game.data.schema.ItemSchemaV2
+import com.ktome.game.data.schema.MaterialSchemaV2
+import com.ktome.game.data.schema.MonsterSchemaV2
+import com.ktome.game.data.schema.NamedSchemaRef
+import com.ktome.game.data.schema.ProfessionSchemaV2
+import com.ktome.game.data.schema.SchemaCatalog
+import com.ktome.game.data.schema.SchemaLevelRange
+import com.ktome.game.data.schema.SchemaMapSize
+import com.ktome.game.data.schema.SchemaStatModifier
+import com.ktome.game.data.schema.SchemaStats
+import com.ktome.game.data.schema.TalentLevelEffectSchemaV2
+import com.ktome.game.data.schema.TalentPrerequisiteSchemaV2
+import com.ktome.game.data.schema.TalentRequirementsSchemaV2
+import com.ktome.game.data.schema.TalentSchemaV2
+import com.ktome.game.data.schema.TalentTreeSchemaV2
+import com.ktome.game.data.schema.ZoneSchemaV2
+import com.ktome.game.i18n.GameLocale
+import com.ktome.game.i18n.LocalizationBundle
+import com.ktome.game.i18n.Localizer
 import com.ktome.game.model.BossDefinition
+import com.ktome.game.model.MonsterCatalog
 import com.ktome.game.model.MonsterTemplate
-import java.io.InputStream
 import org.yaml.snakeyaml.Yaml
 
-class DataLoader {
-    fun loadMonsterCatalog(resourcePath: String = "/data/monsters.yaml"): MonsterCatalog {
-        val stream = javaClass.getResourceAsStream(resourcePath)
-            ?: error("Monster catalog resource not found: $resourcePath")
-        return stream.use(::loadMonsterCatalog)
-    }
+class DataLoader(
+    private val locale: GameLocale = GameLocale.EN_US,
+    private val localizationBundle: LocalizationBundle = LocalizationBundle.load(),
+) {
+    val localizer: Localizer = localizationBundle.translator(locale)
 
-    fun loadItemBundle(resourcePath: String = "/data/items.yaml"): ItemDataBundle {
-        val stream = javaClass.getResourceAsStream(resourcePath)
-            ?: error("Item bundle resource not found: $resourcePath")
-        return stream.use(::loadItemBundle)
-    }
+    fun loadSchemaCatalog(): SchemaCatalog =
+        SchemaCatalog(
+            professions = parseProfessionSchemas(loadYamlMap("/data/professions/index.yaml")),
+            talents = parseTalentSchemas(loadYamlMap("/data/talents/index.yaml")),
+            talentTrees = parseTalentTreeSchemas(loadYamlMap("/data/talents/index.yaml")),
+            monsters = parseMonsterSchemas(loadYamlMap("/data/monsters/index.yaml")),
+            bossEncounters = parseBossSchemas(loadYamlMap("/data/bosses/index.yaml")),
+            zones = parseZoneSchemas(loadYamlMap("/data/zones/index.yaml")),
+            difficulties = parseDifficultySchemas(loadYamlMap("/data/difficulties/index.yaml")),
+            itemBundle = parseItemBundleSchemas(loadYamlMap("/data/items/index.yaml")),
+            lootProfiles = parseNamedSchemaRefs(loadYamlMap("/data/loot/index.yaml"), "lootProfiles"),
+            tilesets = parseNamedSchemaRefs(loadYamlMap("/data/tilesets/index.yaml"), "tilesets"),
+            aiProfiles = parseNamedSchemaRefs(loadYamlMap("/data/ai/index.yaml"), "aiProfiles"),
+            arenas = parseNamedSchemaRefs(loadYamlMap("/data/arenas/index.yaml"), "arenas"),
+            ambientProfiles = parseNamedSchemaRefs(loadYamlMap("/data/ambient/index.yaml"), "ambientProfiles"),
+            visualKeys = parseStringIdSet(loadYamlMap("/data/visuals/index.yaml"), "visuals"),
+            audioProfiles = parseStringIdSet(loadYamlMap("/data/audio/index.yaml"), "audioProfiles"),
+        )
 
-    fun loadTalentDefinitions(resourcePath: String = "/data/talents.yaml"): List<TalentDef> {
-        val stream = javaClass.getResourceAsStream(resourcePath)
-            ?: error("Talent definition resource not found: $resourcePath")
-        return stream.use(::loadTalentDefinitions)
-    }
-
-    fun loadBossDefinition(resourcePath: String = "/data/boss.yaml"): BossDefinition {
-        val stream = javaClass.getResourceAsStream(resourcePath)
-            ?: error("Boss definition resource not found: $resourcePath")
-        return stream.use(::loadBossDefinition)
-    }
-
-    fun loadMonsterCatalog(input: InputStream): MonsterCatalog {
-        val yaml = Yaml()
-        val root = yaml.load<Map<String, Any?>>(input)
-        val monsterEntries = root["monsters"] as? List<*> ?: error("monsters.yaml must contain a top-level 'monsters' list")
-
+    fun loadMonsterCatalog(): MonsterCatalog {
+        val catalog = loadSchemaCatalog()
         return MonsterCatalog(
-            monsters = monsterEntries.map { entry ->
-                parseMonster(entry as? Map<*, *> ?: error("Monster entries must be maps"))
-            },
+            monsters = catalog.monsters.map { schema -> schema.toRuntimeMonster(localizer) },
         )
     }
 
-    fun loadItemBundle(input: InputStream): ItemDataBundle {
-        val yaml = Yaml()
-        val root = yaml.load<Map<String, Any?>>(input)
+    fun loadItemBundle(): ItemDataBundle {
+        val catalog = loadSchemaCatalog()
+        return ItemDataBundle(
+            baseItems = catalog.itemBundle.items.map { schema -> schema.toRuntimeItem(localizer) },
+            materials = catalog.itemBundle.materials.map { schema -> schema.toRuntimeMaterial(localizer) },
+            affixes = catalog.itemBundle.affixes.map { schema -> schema.toRuntimeAffix(localizer) },
+        )
+    }
 
-        val materials =
-            (root["materials"] as? List<*>).orEmpty().map { entry ->
-                parseMaterial(entry as? Map<*, *> ?: error("Material entries must be maps"))
+    fun loadTalentDefinitions(): List<TalentDef> {
+        val catalog = loadSchemaCatalog()
+        return catalog.talents.map { schema -> schema.toRuntimeTalent(localizer) }
+    }
+
+    fun loadBossDefinition(): BossDefinition {
+        val catalog = loadSchemaCatalog()
+        val encounter = catalog.bossEncounters.single()
+        val template =
+            requireNotNull(catalog.monsters.firstOrNull { monster -> monster.id == encounter.bossTemplateId }) {
+                "Boss encounter '${encounter.id}' references unknown monster '${encounter.bossTemplateId}'."
             }
-        val affixes =
-            (root["affixes"] as? List<*>).orEmpty().map { entry ->
-                parseAffix(entry as? Map<*, *> ?: error("Affix entries must be maps"))
-            }
-        val baseItems =
-            listOf(
-                parseItemSection(root, "weapons", ItemType.WEAPON),
-                parseItemSection(root, "armors", ItemType.ARMOR),
-                parseItemSection(root, "consumables", ItemType.CONSUMABLE),
-            ).flatten()
-
-        return ItemDataBundle(baseItems = baseItems, materials = materials, affixes = affixes)
-    }
-
-    fun loadTalentDefinitions(input: InputStream): List<TalentDef> {
-        val yaml = Yaml()
-        val root = yaml.load<Map<String, Any?>>(input)
-        val entries = root["talents"] as? List<*> ?: error("talents.yaml must contain a top-level 'talents' list")
-        return entries.map { entry ->
-            parseTalent(entry as? Map<*, *> ?: error("Talent entries must be maps"))
-        }
-    }
-
-    fun loadBossDefinition(input: InputStream): BossDefinition {
-        val yaml = Yaml()
-        val root = yaml.load<Map<String, Any?>>(input)
-        val entry = root["boss"] as? Map<*, *> ?: error("boss.yaml must contain a top-level 'boss' map")
-        val template = parseBossTemplate(entry)
-        val talentLevels =
-            entry.requiredMap("talents").entries.associate { (key, value) ->
-                key.toString() to value.toString().toInt()
-            }
-        return BossDefinition(template = template, talentLevels = talentLevels)
-    }
-
-    private fun parseMonster(entry: Map<*, *>): MonsterTemplate {
-        val statsMap = entry.requiredMap("stats")
-        return MonsterTemplate(
-            id = entry.requiredString("id"),
-            name = entry.requiredString("name"),
-            glyph = entry.requiredString("glyph").single(),
-            colorHex = entry.requiredString("color"),
-            stats = Stats(
-                str = statsMap.requiredInt("str"),
-                dex = statsMap.requiredInt("dex"),
-                con = statsMap.requiredInt("con"),
-                wil = statsMap.requiredInt("wil"),
-            ),
-            baseHp = entry.requiredInt("baseHp"),
-            baseAttack = entry.requiredInt("baseAttack"),
-            baseDefense = entry.requiredInt("baseDefense"),
-            speed = entry.requiredInt("speed"),
-            ai = AIType.valueOf(entry.requiredString("ai")),
-            expReward = entry.requiredInt("expReward"),
-            spawnFloors = entry.requiredIntList("spawnFloors"),
-            spawnWeight = entry.requiredInt("spawnWeight"),
+        return BossDefinition(
+            template = template.toRuntimeMonster(localizer),
+            talentLevels = template.talents,
         )
     }
 
-    private fun parseMaterial(entry: Map<*, *>): MaterialDef =
-        MaterialDef(
-            id = entry.requiredString("id"),
-            name = entry.requiredString("name"),
-            minFloor = entry.requiredInt("minFloor"),
-            statModifiers = parseStatModifier(entry.optionalMap("stats")),
-        )
+    private fun loadYamlMap(resourcePath: String): Map<String, Any?> {
+        val stream = javaClass.getResourceAsStream(resourcePath)
+            ?: error("YAML resource not found: $resourcePath")
+        val root = stream.use { input -> Yaml().load<Map<String, Any?>>(input) }
+        return root ?: error("YAML root must not be null: $resourcePath")
+    }
 
-    private fun parseAffix(entry: Map<*, *>): AffixDef =
-        AffixDef(
-            id = entry.requiredString("id"),
-            name = entry.requiredString("name"),
-            type = AffixType.valueOf(entry.requiredString("type")),
-            statModifiers = parseStatModifier(entry.requiredMap("stats")),
-            minFloor = entry.requiredInt("minFloor"),
-        )
-
-    private fun parseItemSection(
-        root: Map<String, Any?>,
-        key: String,
-        type: ItemType,
-    ): List<ItemBaseDef> =
-        (root[key] as? List<*>).orEmpty().map { rawEntry ->
-            val entry = rawEntry as? Map<*, *> ?: error("$key entries must be maps")
-            val baseStats =
-                when (type) {
-                    ItemType.WEAPON -> StatModifier(attack = entry.optionalInt("baseAttack"))
-                    ItemType.ARMOR -> StatModifier(defense = entry.optionalInt("baseDefense"))
-                    ItemType.CONSUMABLE -> StatModifier()
-                }
-
-            ItemBaseDef(
-                id = entry.requiredString("id"),
-                name = entry.requiredString("name"),
-                type = type,
-                slot =
-                    entry["slot"]?.toString()?.let { slotValue ->
-                        EquipSlot.valueOf(slotValue)
-                    },
-                glyph = entry.requiredString("glyph").single(),
-                colorHex = entry.requiredString("color"),
-                baseStats = baseStats + parseStatModifier(entry.optionalMap("stats")),
-                allowedMaterials = entry.optionalStringList("materials"),
-                dropFloors = entry.requiredIntList("dropFloors"),
-                dropWeight = entry.requiredInt("dropWeight"),
-                effect = entry["effect"]?.toString()?.let { ConsumableEffect.valueOf(it) },
-                magnitude = entry.optionalInt("magnitude"),
+    private fun parseProfessionSchemas(root: Map<String, Any?>): List<ProfessionSchemaV2> =
+        root.requiredList("professions").map { entry ->
+            val profession = entry.requiredMap()
+            ProfessionSchemaV2(
+                id = profession.requiredString("id"),
+                nameKey = profession.requiredString("nameKey"),
+                descKey = profession.requiredString("descKey"),
+                visualKey = profession.requiredString("visualKey"),
+                iconKey = profession.requiredString("iconKey"),
+                audioProfile = profession.requiredString("audioProfile"),
+                schemaVersion = profession.requiredInt("schemaVersion"),
+                tags = profession.optionalStringList("tags"),
+                resourceType = profession.requiredString("resourceType"),
+                baseStats = profession.requiredMap("baseStats").toSchemaStats(),
+                statGrowth = profession.requiredMap("statGrowth").toSchemaStats(),
+                startingResources = profession.optionalIntMap("startingResources"),
+                talentTrees = profession.optionalStringList("talentTrees"),
+                startingTalents = profession.optionalStringList("startingTalents"),
+                startingKit = profession.optionalStringList("startingKit"),
+                unlockCondition = profession.requiredString("unlockCondition"),
+                soloContract = profession.requiredString("soloContract"),
             )
         }
 
-    private fun parseTalent(entry: Map<*, *>): TalentDef {
-        val levelsMap = entry.requiredMap("levels")
-        val levelEffects =
-            levelsMap.entries.associate { (rawKey, rawValue) ->
-                rawKey.toString().toInt() to parseTalentLevelEffect(rawValue as? Map<*, *> ?: error("Talent levels must be maps"))
-            }
+    private fun parseTalentSchemas(root: Map<String, Any?>): List<TalentSchemaV2> =
+        root.requiredList("talents").map { entry ->
+            val talent = entry.requiredMap()
+            val requirements =
+                talent.optionalMap("requirements")?.let { map ->
+                    TalentRequirementsSchemaV2(
+                        talentPrereqs =
+                            map.optionalList("talentPrereqs").map { prereq ->
+                                val parsed = prereq.requiredMap()
+                                TalentPrerequisiteSchemaV2(
+                                    talentId = parsed.requiredString("talentId"),
+                                    minRank = parsed.requiredInt("minRank"),
+                                )
+                            },
+                    )
+                } ?: TalentRequirementsSchemaV2()
+            val levelEffects =
+                talent.requiredMap("levelEffects").entries.associate { (rawLevel, rawEffect) ->
+                    rawLevel.toString().toInt() to parseTalentLevelEffect(rawEffect.requiredMap())
+                }
 
-        return TalentDef(
-            id = entry.requiredString("id"),
-            name = entry.requiredString("name"),
-            description = entry.requiredString("description"),
-            maxLevel = entry.requiredInt("maxLevel"),
-            staminaCost = entry.requiredInt("staminaCost"),
-            cooldown = entry.requiredInt("cooldown"),
-            range = entry.requiredInt("range"),
-            minRange = entry.optionalInt("minRange"),
-            areaRadius = entry.optionalInt("areaRadius"),
-            levelEffects = levelEffects,
-        )
-    }
-
-    private fun parseTalentLevelEffect(entry: Map<*, *>): TalentLevelEffect =
-        TalentLevelEffect(
-            damageMultiplier = entry.optionalDouble("damageMultiplier", 1.0),
-            knockback = entry.optionalInt("knockback"),
-            stunDuration = entry.optionalInt("stunDuration"),
-            armorBreakDuration = entry.optionalInt("armorBreakDuration"),
-            buffDuration = entry.optionalInt("buffDuration"),
-            buffMagnitude = entry.optionalDouble("buffMagnitude", 0.0),
-            debuffMagnitude = entry.optionalDouble("debuffMagnitude", 0.0),
-            debuffDuration = entry.optionalInt("debuffDuration"),
-        )
-
-    private fun parseBossTemplate(entry: Map<*, *>): MonsterTemplate {
-        val statsMap = entry.requiredMap("stats")
-        return MonsterTemplate(
-            id = entry.requiredString("id"),
-            name = entry.requiredString("name"),
-            glyph = entry.requiredString("glyph").single(),
-            colorHex = entry.requiredString("color"),
-            stats = Stats(
-                str = statsMap.requiredInt("str"),
-                dex = statsMap.requiredInt("dex"),
-                con = statsMap.requiredInt("con"),
-                wil = statsMap.requiredInt("wil"),
-            ),
-            baseHp = entry.requiredInt("baseHp"),
-            baseAttack = entry.requiredInt("baseAttack"),
-            baseDefense = entry.requiredInt("baseDefense"),
-            speed = entry.requiredInt("speed"),
-            ai = AIType.valueOf(entry.requiredString("ai")),
-            expReward = entry.requiredInt("expReward"),
-            spawnFloors = listOf(entry.optionalInt("spawnFloor").takeIf { it > 0 } ?: 5),
-            spawnWeight = 1,
-        )
-    }
-
-    private fun parseStatModifier(entry: Map<*, *>?): StatModifier {
-        if (entry == null) {
-            return StatModifier()
+            TalentSchemaV2(
+                id = talent.requiredString("id"),
+                nameKey = talent.requiredString("nameKey"),
+                descKey = talent.requiredString("descKey"),
+                visualKey = talent.requiredString("visualKey"),
+                iconKey = talent.requiredString("iconKey"),
+                audioProfile = talent.requiredString("audioProfile"),
+                schemaVersion = talent.requiredInt("schemaVersion"),
+                tags = talent.optionalStringList("tags"),
+                maxPoints = talent.requiredInt("maxPoints"),
+                category = talent.requiredString("category"),
+                damageType = talent.optionalString("damageType"),
+                kind = talent.requiredString("kind"),
+                cooldown = talent.requiredInt("cooldown"),
+                castTime = talent.requiredInt("castTime"),
+                range = talent.requiredInt("range"),
+                minRange = talent.optionalInt("minRange"),
+                areaRadius = talent.optionalInt("areaRadius"),
+                resourceCosts = talent.optionalIntMap("resourceCosts"),
+                targeting = talent.requiredString("targeting"),
+                requirements = requirements,
+                levelEffects = levelEffects,
+                keywords = talent.optionalStringList("keywords"),
+                callbacks = talent.optionalStringList("callbacks"),
+                telegraph = talent.requiredString("telegraph"),
+                treeId = talent.requiredString("treeId"),
+            )
         }
 
-        return StatModifier(
-            str = entry.optionalInt("str"),
-            dex = entry.optionalInt("dex"),
-            con = entry.optionalInt("con"),
-            wil = entry.optionalInt("wil"),
-            attack = entry.optionalInt("attack"),
-            defense = entry.optionalInt("defense"),
-            accuracy = entry.optionalInt("accuracy"),
-            evasion = entry.optionalInt("evasion"),
-            speed = entry.optionalInt("speed"),
-            maxHp = entry.optionalInt("maxHp"),
-            maxStamina = entry.optionalInt("maxStamina"),
-            hpRegen = entry.optionalDouble("hpRegen", 0.0),
-            staminaRegen = entry.optionalDouble("staminaRegen", 0.0),
-            critChance = entry.optionalDouble("critChance", 0.0),
-            talentPower = entry.optionalDouble("talentPower", 0.0),
-            attackMultiplierBonus = entry.optionalDouble("attackMultiplierBonus", 0.0),
-            defenseMultiplierBonus = entry.optionalDouble("defenseMultiplierBonus", 0.0),
+    private fun parseTalentTreeSchemas(root: Map<String, Any?>): List<TalentTreeSchemaV2> =
+        root.requiredList("talentTrees").map { entry ->
+            val tree = entry.requiredMap()
+            TalentTreeSchemaV2(
+                id = tree.requiredString("id"),
+                professionId = tree.requiredString("professionId"),
+                nameKey = tree.requiredString("nameKey"),
+                descKey = tree.requiredString("descKey"),
+                visualKey = tree.requiredString("visualKey"),
+                iconKey = tree.requiredString("iconKey"),
+                audioProfile = tree.requiredString("audioProfile"),
+                schemaVersion = tree.requiredInt("schemaVersion"),
+                tags = tree.optionalStringList("tags"),
+                layout = tree.requiredString("layout"),
+                nodes = tree.optionalStringList("nodes"),
+            )
+        }
+
+    private fun parseMonsterSchemas(root: Map<String, Any?>): List<MonsterSchemaV2> =
+        root.requiredList("monsters").map { entry ->
+            val monster = entry.requiredMap()
+            MonsterSchemaV2(
+                id = monster.requiredString("id"),
+                nameKey = monster.requiredString("nameKey"),
+                descKey = monster.requiredString("descKey"),
+                visualKey = monster.requiredString("visualKey"),
+                iconKey = monster.requiredString("iconKey"),
+                audioProfile = monster.requiredString("audioProfile"),
+                schemaVersion = monster.requiredInt("schemaVersion"),
+                tags = monster.optionalStringList("tags"),
+                archetype = monster.requiredString("archetype"),
+                glyph = monster.requiredString("glyph").single(),
+                colorHex = monster.requiredString("color"),
+                stats = monster.requiredMap("stats").toSchemaStats(),
+                baseHp = monster.requiredInt("baseHp"),
+                baseAttack = monster.requiredInt("baseAttack"),
+                baseDefense = monster.requiredInt("baseDefense"),
+                speed = monster.requiredInt("speed"),
+                ai = monster.requiredString("ai"),
+                aiProfileId = monster.requiredString("aiProfileId"),
+                lootProfileId = monster.requiredString("lootProfileId"),
+                talents = monster.optionalIntMap("talents"),
+                expReward = monster.requiredInt("expReward"),
+                spawnFloors = monster.requiredIntList("spawnFloors"),
+                spawnWeight = monster.requiredInt("spawnWeight"),
+            )
+        }
+
+    private fun parseBossSchemas(root: Map<String, Any?>): List<BossEncounterSchemaV2> =
+        root.requiredList("bossEncounters").map { entry ->
+            val boss = entry.requiredMap()
+            BossEncounterSchemaV2(
+                id = boss.requiredString("id"),
+                nameKey = boss.requiredString("nameKey"),
+                descKey = boss.requiredString("descKey"),
+                visualKey = boss.requiredString("visualKey"),
+                iconKey = boss.requiredString("iconKey"),
+                audioProfile = boss.requiredString("audioProfile"),
+                schemaVersion = boss.requiredInt("schemaVersion"),
+                tags = boss.optionalStringList("tags"),
+                bossTemplateId = boss.requiredString("bossTemplateId"),
+                arenaId = boss.requiredString("arenaId"),
+                phases = boss.optionalStringList("phases"),
+                rewards = boss.optionalStringList("rewards"),
+            )
+        }
+
+    private fun parseZoneSchemas(root: Map<String, Any?>): List<ZoneSchemaV2> =
+        root.requiredList("zones").map { entry ->
+            val zone = entry.requiredMap()
+            ZoneSchemaV2(
+                id = zone.requiredString("id"),
+                nameKey = zone.requiredString("nameKey"),
+                descKey = zone.requiredString("descKey"),
+                visualKey = zone.requiredString("visualKey"),
+                iconKey = zone.requiredString("iconKey"),
+                audioProfile = zone.requiredString("audioProfile"),
+                schemaVersion = zone.requiredInt("schemaVersion"),
+                tags = zone.optionalStringList("tags"),
+                biome = zone.requiredString("biome"),
+                floorCount = zone.requiredInt("floorCount"),
+                mapSize = zone.requiredMap("mapSize").toSchemaMapSize(),
+                recommendedLevel = zone.requiredMap("recommendedLevel").toSchemaLevelRange(),
+                environmentTheme = zone.requiredString("environmentTheme"),
+                specialMechanics = zone.optionalStringList("specialMechanics"),
+                tilesetKey = zone.requiredString("tilesetKey"),
+                ambientProfile = zone.requiredString("ambientProfile"),
+                monsterPools = zone.optionalStringList("monsterPools"),
+                elitePools = zone.optionalStringList("elitePools"),
+                bossEncounterId = zone.optionalString("bossEncounterId"),
+                objectiveSetId = zone.optionalString("objectiveSetId"),
+            )
+        }
+
+    private fun parseDifficultySchemas(root: Map<String, Any?>): List<DifficultySchemaV2> =
+        root.requiredList("difficulties").map { entry ->
+            val difficulty = entry.requiredMap()
+            DifficultySchemaV2(
+                id = difficulty.requiredString("id"),
+                nameKey = difficulty.requiredString("nameKey"),
+                descKey = difficulty.requiredString("descKey"),
+                visualKey = difficulty.requiredString("visualKey"),
+                iconKey = difficulty.requiredString("iconKey"),
+                audioProfile = difficulty.requiredString("audioProfile"),
+                schemaVersion = difficulty.requiredInt("schemaVersion"),
+                tags = difficulty.optionalStringList("tags"),
+                monsterHpMultiplier = difficulty.requiredDouble("monsterHpMultiplier"),
+                monsterDamageMultiplier = difficulty.requiredDouble("monsterDamageMultiplier"),
+                xpMultiplier = difficulty.requiredDouble("xpMultiplier"),
+                lootRarityBonus = difficulty.requiredDouble("lootRarityBonus"),
+                prerequisites = difficulty.optionalStringList("prerequisites"),
+            )
+        }
+
+    private fun parseItemBundleSchemas(root: Map<String, Any?>): ItemBundleSchemaV2 =
+        ItemBundleSchemaV2(
+            materials = root.requiredList("materials").map { entry ->
+                val material = entry.requiredMap()
+                MaterialSchemaV2(
+                    id = material.requiredString("id"),
+                    nameKey = material.requiredString("nameKey"),
+                    descKey = material.requiredString("descKey"),
+                    visualKey = material.requiredString("visualKey"),
+                    iconKey = material.requiredString("iconKey"),
+                    audioProfile = material.requiredString("audioProfile"),
+                    schemaVersion = material.requiredInt("schemaVersion"),
+                    tags = material.optionalStringList("tags"),
+                    minFloor = material.requiredInt("minFloor"),
+                    stats = material.optionalMap("stats")?.toSchemaStatModifier() ?: SchemaStatModifier(),
+                )
+            },
+            affixes = root.requiredList("affixes").map { entry ->
+                val affix = entry.requiredMap()
+                AffixSchemaV2(
+                    id = affix.requiredString("id"),
+                    nameKey = affix.requiredString("nameKey"),
+                    descKey = affix.requiredString("descKey"),
+                    visualKey = affix.requiredString("visualKey"),
+                    iconKey = affix.requiredString("iconKey"),
+                    audioProfile = affix.requiredString("audioProfile"),
+                    schemaVersion = affix.requiredInt("schemaVersion"),
+                    tags = affix.optionalStringList("tags"),
+                    type = AffixType.valueOf(affix.requiredString("type")),
+                    minFloor = affix.requiredInt("minFloor"),
+                    stats = affix.requiredMap("stats").toSchemaStatModifier(),
+                )
+            },
+            items = root.requiredList("items").map { entry ->
+                val item = entry.requiredMap()
+                ItemSchemaV2(
+                    id = item.requiredString("id"),
+                    nameKey = item.requiredString("nameKey"),
+                    descKey = item.requiredString("descKey"),
+                    visualKey = item.requiredString("visualKey"),
+                    iconKey = item.requiredString("iconKey"),
+                    audioProfile = item.requiredString("audioProfile"),
+                    schemaVersion = item.requiredInt("schemaVersion"),
+                    tags = item.optionalStringList("tags"),
+                    type = ItemType.valueOf(item.requiredString("type")),
+                    slot = item.optionalString("slot")?.let(EquipSlot::valueOf),
+                    glyph = item.requiredString("glyph").single(),
+                    colorHex = item.requiredString("color"),
+                    baseAttack = item.optionalNullableInt("baseAttack"),
+                    baseDefense = item.optionalNullableInt("baseDefense"),
+                    stats = item.optionalMap("stats")?.toSchemaStatModifier() ?: SchemaStatModifier(),
+                    materials = item.optionalStringList("materials"),
+                    dropFloors = item.requiredIntList("dropFloors"),
+                    dropWeight = item.requiredInt("dropWeight"),
+                    effect = item.optionalString("effect")?.let(ConsumableEffect::valueOf),
+                    magnitude = item.optionalInt("magnitude"),
+                )
+            },
         )
-    }
 
-    private fun Map<*, *>.requiredMap(key: String): Map<*, *> =
-        this[key] as? Map<*, *> ?: error("Missing map entry '$key'")
-
-    private fun Map<*, *>.optionalMap(key: String): Map<*, *>? = this[key] as? Map<*, *>
-
-    private fun Map<*, *>.requiredString(key: String): String =
-        this[key]?.toString() ?: error("Missing string entry '$key'")
-
-    private fun Map<*, *>.requiredInt(key: String): Int =
-        when (val value = this[key]) {
-            is Int -> value
-            is Long -> value.toInt()
-            is Number -> value.toInt()
-            is String -> value.toInt()
-            else -> error("Missing integer entry '$key'")
-        }
-
-    private fun Map<*, *>.requiredIntList(key: String): List<Int> =
-        (this[key] as? List<*>)?.map { value ->
-            when (value) {
-                is Int -> value
-                is Long -> value.toInt()
-                is Number -> value.toInt()
-                is String -> value.toInt()
-                else -> error("List '$key' must contain only integers")
-            }
-        } ?: error("Missing integer list '$key'")
-
-    private fun Map<*, *>.optionalStringList(key: String): List<String> =
-        (this[key] as? List<*>)?.map { value -> value?.toString() ?: error("List '$key' cannot contain nulls") } ?: emptyList()
-
-    private fun Map<*, *>.optionalInt(key: String): Int =
-        when (val value = this[key]) {
-            null -> 0
-            is Int -> value
-            is Long -> value.toInt()
-            is Number -> value.toInt()
-            is String -> value.toInt()
-            else -> error("Entry '$key' must be numeric")
-        }
-
-    private fun Map<*, *>.optionalDouble(
+    private fun parseNamedSchemaRefs(
+        root: Map<String, Any?>,
         key: String,
-        default: Double,
-    ): Double =
-        when (val value = this[key]) {
-            null -> default
-            is Double -> value
-            is Float -> value.toDouble()
-            is Int -> value.toDouble()
-            is Long -> value.toDouble()
-            is Number -> value.toDouble()
-            is String -> value.toDouble()
-            else -> error("Entry '$key' must be numeric")
+    ): List<NamedSchemaRef> =
+        root.requiredList(key).map { entry ->
+            val named = entry.requiredMap()
+            NamedSchemaRef(
+                id = named.requiredString("id"),
+                schemaVersion = named.requiredInt("schemaVersion"),
+            )
         }
+
+    private fun parseStringIdSet(
+        root: Map<String, Any?>,
+        key: String,
+    ): Set<String> =
+        root.requiredList(key).mapTo(linkedSetOf()) { entry ->
+            entry.requiredMap().requiredString("id")
+        }
+
+    private fun parseTalentLevelEffect(effect: Map<*, *>): TalentLevelEffectSchemaV2 =
+        TalentLevelEffectSchemaV2(
+            damageMultiplier = effect.optionalDouble("damageMultiplier", 1.0),
+            knockback = effect.optionalInt("knockback"),
+            stunDuration = effect.optionalInt("stunDuration"),
+            armorBreakDuration = effect.optionalInt("armorBreakDuration"),
+            buffDuration = effect.optionalInt("buffDuration"),
+            buffMagnitude = effect.optionalDouble("buffMagnitude", 0.0),
+            debuffMagnitude = effect.optionalDouble("debuffMagnitude", 0.0),
+            debuffDuration = effect.optionalInt("debuffDuration"),
+        )
+
+    private fun MonsterSchemaV2.toRuntimeMonster(localizer: Localizer): MonsterTemplate =
+        MonsterTemplate(
+            id = id,
+            name = localizer.text(nameKey),
+            glyph = glyph,
+            colorHex = colorHex,
+            stats = Stats(str = stats.str, dex = stats.dex, con = stats.con, wil = stats.wil),
+            baseHp = baseHp,
+            baseAttack = baseAttack,
+            baseDefense = baseDefense,
+            speed = speed,
+            ai = AIType.valueOf(ai),
+            expReward = expReward,
+            spawnFloors = spawnFloors,
+            spawnWeight = spawnWeight,
+            archetype = archetype,
+            visualKey = visualKey,
+            iconKey = iconKey,
+            audioProfile = audioProfile,
+            aiProfileId = aiProfileId,
+            lootProfileId = lootProfileId,
+            talentLevels = talents,
+        )
+
+    private fun ItemSchemaV2.toRuntimeItem(localizer: Localizer): ItemBaseDef {
+        val baseStats =
+            when (type) {
+                ItemType.WEAPON -> StatModifier(attack = baseAttack ?: 0)
+                ItemType.ARMOR -> StatModifier(defense = baseDefense ?: 0)
+                ItemType.CONSUMABLE -> StatModifier()
+            } + stats.toRuntimeStatModifier()
+        return ItemBaseDef(
+            id = id,
+            name = localizer.text(nameKey),
+            type = type,
+            slot = slot,
+            glyph = glyph,
+            colorHex = colorHex,
+            baseStats = baseStats,
+            allowedMaterials = materials,
+            dropFloors = dropFloors,
+            dropWeight = dropWeight,
+            effect = effect,
+            magnitude = magnitude,
+        )
+    }
+
+    private fun MaterialSchemaV2.toRuntimeMaterial(localizer: Localizer): MaterialDef =
+        MaterialDef(
+            id = id,
+            name = localizer.text(nameKey),
+            minFloor = minFloor,
+            statModifiers = stats.toRuntimeStatModifier(),
+        )
+
+    private fun AffixSchemaV2.toRuntimeAffix(localizer: Localizer): AffixDef =
+        AffixDef(
+            id = id,
+            name = localizer.text(nameKey),
+            type = type,
+            statModifiers = stats.toRuntimeStatModifier(),
+            minFloor = minFloor,
+        )
+
+    private fun TalentSchemaV2.toRuntimeTalent(localizer: Localizer): TalentDef =
+        TalentDef(
+            id = id,
+            name = localizer.text(nameKey),
+            description = localizer.text(descKey),
+            maxLevel = maxPoints,
+            staminaCost = resourceCosts["STAMINA"] ?: 0,
+            cooldown = cooldown,
+            range = range,
+            minRange = minRange,
+            areaRadius = areaRadius,
+            levelEffects =
+                levelEffects.mapValues { (_, effect) ->
+                    TalentLevelEffect(
+                        damageMultiplier = effect.damageMultiplier,
+                        knockback = effect.knockback,
+                        stunDuration = effect.stunDuration,
+                        armorBreakDuration = effect.armorBreakDuration,
+                        buffDuration = effect.buffDuration,
+                        buffMagnitude = effect.buffMagnitude,
+                        debuffMagnitude = effect.debuffMagnitude,
+                        debuffDuration = effect.debuffDuration,
+                    )
+                },
+        )
+
+    private fun SchemaStatModifier.toRuntimeStatModifier(): StatModifier =
+        StatModifier(
+            str = str,
+            dex = dex,
+            con = con,
+            wil = wil,
+            attack = attack,
+            defense = defense,
+            accuracy = accuracy,
+            evasion = evasion,
+            speed = speed,
+            maxHp = maxHp,
+            maxStamina = maxStamina,
+            hpRegen = hpRegen,
+            staminaRegen = staminaRegen,
+            critChance = critChance,
+            talentPower = talentPower,
+            attackMultiplierBonus = attackMultiplierBonus,
+            defenseMultiplierBonus = defenseMultiplierBonus,
+        )
+
+    private fun Map<*, *>.toSchemaStats(): SchemaStats =
+        SchemaStats(
+            str = requiredInt("str"),
+            dex = requiredInt("dex"),
+            con = requiredInt("con"),
+            wil = requiredInt("wil"),
+        )
+
+    private fun Map<*, *>.toSchemaStatModifier(): SchemaStatModifier =
+        SchemaStatModifier(
+            str = optionalInt("str"),
+            dex = optionalInt("dex"),
+            con = optionalInt("con"),
+            wil = optionalInt("wil"),
+            attack = optionalInt("attack"),
+            defense = optionalInt("defense"),
+            accuracy = optionalInt("accuracy"),
+            evasion = optionalInt("evasion"),
+            speed = optionalInt("speed"),
+            maxHp = optionalInt("maxHp"),
+            maxStamina = optionalInt("maxStamina"),
+            hpRegen = optionalDouble("hpRegen", 0.0),
+            staminaRegen = optionalDouble("staminaRegen", 0.0),
+            critChance = optionalDouble("critChance", 0.0),
+            talentPower = optionalDouble("talentPower", 0.0),
+            attackMultiplierBonus = optionalDouble("attackMultiplierBonus", 0.0),
+            defenseMultiplierBonus = optionalDouble("defenseMultiplierBonus", 0.0),
+        )
+
+    private fun Map<*, *>.toSchemaMapSize(): SchemaMapSize =
+        SchemaMapSize(
+            width = requiredInt("width"),
+            height = requiredInt("height"),
+        )
+
+    private fun Map<*, *>.toSchemaLevelRange(): SchemaLevelRange =
+        SchemaLevelRange(
+            min = requiredInt("min"),
+            max = requiredInt("max"),
+        )
 }
+
+private fun Any?.requiredMap(): Map<*, *> =
+    this as? Map<*, *> ?: error("Entry must be a map.")
+
+private fun Map<String, Any?>.requiredList(key: String): List<Any?> =
+    this[key] as? List<Any?> ?: error("Missing list entry '$key'")
+
+private fun Map<*, *>.requiredMap(key: String): Map<*, *> =
+    this[key] as? Map<*, *> ?: error("Missing map entry '$key'")
+
+private fun Map<*, *>.optionalMap(key: String): Map<*, *>? =
+    this[key] as? Map<*, *>
+
+private fun Map<*, *>.optionalList(key: String): List<Any?> =
+    (this[key] as? List<Any?>).orEmpty()
+
+private fun Map<*, *>.requiredString(key: String): String =
+    this[key]?.toString()?.takeIf(String::isNotBlank) ?: error("Missing string entry '$key'")
+
+private fun Map<*, *>.optionalString(key: String): String? =
+    this[key]?.toString()?.takeIf(String::isNotBlank)
+
+private fun Map<*, *>.requiredInt(key: String): Int =
+    when (val value = this[key]) {
+        is Int -> value
+        is Number -> value.toInt()
+        is String -> value.toInt()
+        else -> error("Missing integer entry '$key'")
+    }
+
+private fun Map<*, *>.optionalInt(
+    key: String,
+    default: Int = 0,
+): Int =
+    when (val value = this[key]) {
+        null -> default
+        is Int -> value
+        is Number -> value.toInt()
+        is String -> value.toInt()
+        else -> error("Entry '$key' must be numeric")
+    }
+
+private fun Map<*, *>.optionalNullableInt(key: String): Int? =
+    when (val value = this[key]) {
+        null -> null
+        is Int -> value
+        is Number -> value.toInt()
+        is String -> value.toInt()
+        else -> error("Entry '$key' must be numeric")
+    }
+
+private fun Map<*, *>.requiredIntList(key: String): List<Int> =
+    (this[key] as? List<*>)?.map { value ->
+        when (value) {
+            is Int -> value
+            is Number -> value.toInt()
+            is String -> value.toInt()
+            else -> error("List '$key' must contain only integers")
+        }
+    } ?: error("Missing integer list '$key'")
+
+private fun Map<*, *>.optionalStringList(key: String): List<String> =
+    (this[key] as? List<*>)?.map { value -> value?.toString() ?: error("List '$key' cannot contain nulls") } ?: emptyList()
+
+private fun Map<*, *>.optionalIntMap(key: String): Map<String, Int> =
+    optionalMap(key)?.entries?.associate { (rawKey, rawValue) ->
+        rawKey.toString() to
+            when (rawValue) {
+                is Int -> rawValue
+                is Number -> rawValue.toInt()
+                is String -> rawValue.toInt()
+                else -> error("Entry '$key' must contain numeric values")
+            }
+    } ?: emptyMap()
+
+private fun Map<*, *>.requiredDouble(key: String): Double =
+    when (val value = this[key]) {
+        is Double -> value
+        is Float -> value.toDouble()
+        is Number -> value.toDouble()
+        is String -> value.toDouble()
+        else -> error("Missing numeric entry '$key'")
+    }
+
+private fun Map<*, *>.optionalDouble(
+    key: String,
+    default: Double,
+): Double =
+    when (val value = this[key]) {
+        null -> default
+        is Double -> value
+        is Float -> value.toDouble()
+        is Number -> value.toDouble()
+        is String -> value.toDouble()
+        else -> error("Entry '$key' must be numeric")
+    }

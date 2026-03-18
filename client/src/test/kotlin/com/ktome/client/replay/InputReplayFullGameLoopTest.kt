@@ -19,6 +19,7 @@ import com.ktome.core.map.Point
 import com.ktome.core.pathfinding.AStar
 import com.ktome.core.run.RunOutcome
 import com.ktome.core.save.SaveManager
+import com.ktome.game.FOUNDATION_BOSS_TEMPLATE_ID
 import com.ktome.game.FoundationGameConfig
 import com.ktome.game.FoundationGameSession
 import com.ktome.game.GameModule
@@ -117,7 +118,7 @@ class InputReplayFullGameLoopTest {
         val bossId =
             world.entitiesWith(MonsterTemplateId::class, Position::class, Health::class)
                 .single { entityId ->
-                    requireNotNull(world.get<MonsterTemplateId>(entityId)).value == "dungeon_lord"
+                    requireNotNull(world.get<MonsterTemplateId>(entityId)).value == FOUNDATION_BOSS_TEMPLATE_ID
                 }
         world.remove<AIBehavior>(bossId)
         requireNotNull(world.get<Health>(bossId)).current = 1
@@ -241,7 +242,7 @@ class InputReplayFullGameLoopTest {
         val world = runtimeWorld(session)
         world.entitiesWith(MonsterTemplateId::class)
             .filter { entityId ->
-                requireNotNull(world.get<MonsterTemplateId>(entityId)).value != "dungeon_lord"
+                requireNotNull(world.get<MonsterTemplateId>(entityId)).value != FOUNDATION_BOSS_TEMPLATE_ID
             }
             .forEach(world::destroyEntity)
     }

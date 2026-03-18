@@ -18,6 +18,9 @@ import com.ktome.core.save.SaveManager
 import com.ktome.game.FoundationGameConfig
 import com.ktome.game.FoundationGameSession
 import com.ktome.game.GameModule
+import com.ktome.game.i18n.GameLocale
+import com.ktome.game.i18n.LocalizationBundle
+import com.ktome.game.i18n.Localizer
 import java.nio.file.Path
 
 class GameApp(
@@ -29,9 +32,14 @@ class GameApp(
     private val renderEnabled: Boolean = true,
     private val assetVersionProvider: () -> AssetVersionContract = AssetVersionResourceLoader::load,
     private val assetVersionGate: AssetVersionGate = AssetVersionGate(),
+    initialLocale: GameLocale = GameLocale.EN_US,
+    localizationBundle: LocalizationBundle = LocalizationBundle.load(),
 ) : Game() {
     private val lifecycle = LifecycleCoordinator(saveManager)
     private val assetContracts = AssetContractCoordinator(assetVersionProvider, assetVersionGate)
+    private val localizationBundle = localizationBundle
+    private var currentLocale: GameLocale = initialLocale
+    private var currentLocalizer: Localizer = localizationBundle.translator(initialLocale)
     private var activeSession: FoundationGameSession? = null
 
     override fun create() {
@@ -44,7 +52,7 @@ class GameApp(
         }
         val session =
             lifecycle.startNewSession {
-                GameModule.newFoundationSession(config = defaultConfig, saveManager = saveManager)
+                GameModule.newFoundationSession(config = defaultConfig, saveManager = saveManager, locale = currentLocale)
             }
         activeSession = session
         replaceScreen(FoundationGameScreen(this, session, gameCommandSourceFactory(), renderEnabled))
@@ -56,7 +64,7 @@ class GameApp(
         }
         val session =
             lifecycle.continueSession {
-                GameModule.loadFoundationSession(saveManager)
+                GameModule.loadFoundationSession(saveManager, locale = currentLocale)
             } ?: run {
                 showMainMenu(saveCurrent = false, notice = lifecycle.consumeNotice())
                 return
@@ -104,6 +112,21 @@ class GameApp(
         assetContracts.noticeOrNull()
 
     internal fun activeSessionOrNull(): FoundationGameSession? = activeSession
+
+    internal fun currentLocale(): GameLocale = currentLocale
+
+    internal fun localizer(): Localizer = currentLocalizer
+
+    internal fun cycleLocale(): GameLocale {
+        currentLocale = currentLocale.cycle()
+        currentLocalizer = localizationBundle.translator(currentLocale)
+        return currentLocale
+    }
+
+    internal fun text(
+        key: String,
+        vararg args: Pair<String, Any?>,
+    ): String = currentLocalizer.text(key, *args)
 
     private fun ensureAssetContracts(): Boolean =
         assetContractNotice()?.let { notice ->

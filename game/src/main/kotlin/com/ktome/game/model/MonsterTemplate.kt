@@ -21,4 +21,11 @@ data class MonsterTemplate(
     val expReward: Int,
     val spawnFloors: List<Int>,
     val spawnWeight: Int,
+    val archetype: String = "unknown",
+    val visualKey: String = "",
+    val iconKey: String = "",
+    val audioProfile: String = "",
+    val aiProfileId: String = "",
+    val lootProfileId: String = "",
+    val talentLevels: Map<String, Int> = emptyMap(),
 )

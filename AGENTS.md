@@ -58,6 +58,8 @@ K-ToME 是一个使用 `Kotlin + libGDX` 开发的类 ToME 回合制 Roguelike �
 
 对任何 `moderate / complex` 任务，开始实现前必须完成预检。
 
+凡是会新增、修改或重构 Kotlin 代码，不论任务大小，开始编码前都必须先阅读并遵守 [docs/rule/kotlin.md](docs/rule/kotlin.md)；未完成该项检查，视为预检未完成，不得开始实现。若该规范与本文件、phase 文档或 checklist gate 存在交叉约束，按更严格者执行。
+
 ### 3.1 必读文档
 
 至少阅读以下内容：
@@ -65,16 +67,18 @@ K-ToME 是一个使用 `Kotlin + libGDX` 开发的类 ToME 回合制 Roguelike �
 1. [docs/mvp-development-guide.md](docs/mvp-development-guide.md)
 2. [docs/2026-03-13-phase2-to-phase5-final-roadmap.md](docs/2026-03-13-phase2-to-phase5-final-roadmap.md)
 3. [docs/2026-03-13-core-systems-design-and-phase-supplements.md](docs/2026-03-13-core-systems-design-and-phase-supplements.md)
-4. 当前阶段 roadmap
-5. 当前阶段 verification checklist
-6. 本次命中的 `P?-W*` / PR 级设计文档
-7. 本次会修改到的代码与对应测试
+4. 如果本次涉及 Kotlin 改动：[docs/rule/kotlin.md](docs/rule/kotlin.md)
+5. 当前阶段 roadmap
+6. 当前阶段 verification checklist
+7. 本次命中的 `P?-W*` / PR 级设计文档
+8. 本次会修改到的代码与对应测试
 
 如果任务只是局部 bugfix，可以不重复通读所有 phase 文档，但仍必须确认：
 
 1. 没有破坏模块边界
 2. 没有违反当前 phase 冻结口径
 3. 没有绕过现有 harness / lint / 白盒门禁
+4. 如果涉及 Kotlin 改动，已按 [docs/rule/kotlin.md](docs/rule/kotlin.md) 完成预检与自检
 
 ### 3.2 第一条输出要求
 

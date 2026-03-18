@@ -1,0 +1,68 @@
+package com.ktome.tools.lint
+
+import com.ktome.game.i18n.GameLocale
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Tag
+import org.junit.jupiter.api.Test
+
+@Tag("localeLint")
+class LocaleLintTest {
+    private val en = LintFixtures.loadLocale(GameLocale.EN_US)
+    private val zh = LintFixtures.loadLocale(GameLocale.ZH_CN)
+    private val referencedKeys = LintFixtures.schemaReferencedKeys() + LintFixtures.codeReferencedLocaleKeys()
+
+    @Test
+    fun `locale bundles stay in lockstep and cover all schema referenced keys`() {
+        assertEquals(en.keys, zh.keys, "Locale bundles must expose the same key set.")
+        assertEquals(referencedKeys, en.keys, "Locale bundles must match the union of schema and code referenced keys.")
+
+        val allowedPrefixes =
+            listOf(
+                "ui.",
+                "log.",
+                "tile.",
+                "actor.",
+                "stairs.",
+                "status.",
+                "ai.",
+                "profession.",
+                "talent_tree.",
+                "talent.",
+                "monster.",
+                "boss.",
+                "zone.",
+                "difficulty.",
+                "material.",
+                "affix.",
+                "item.",
+            )
+        en.keys.forEach { key ->
+            assertTrue(allowedPrefixes.any(key::startsWith), "Unexpected locale key namespace: $key")
+        }
+    }
+
+    @Test
+    fun `placeholder contracts and formal text entries are valid`() {
+        en.keys.forEach { key ->
+            assertEquals(placeholders(en.getValue(key)), placeholders(zh.getValue(key)), "Placeholder mismatch for key $key")
+            if (key.endsWith(".name") || key.endsWith(".desc")) {
+                assertTrue(en.getValue(key).isNotBlank(), "English value is blank for $key")
+                assertTrue(zh.getValue(key).isNotBlank(), "Chinese value is blank for $key")
+            }
+        }
+    }
+
+    @Test
+    fun `formal schema does not regress to bare name or desc fields`() {
+        LintFixtures.formalObjectMaps().forEach { entry ->
+            assertFalse(entry.containsKey("name"), "Formal schema cannot contain bare 'name': $entry")
+            assertFalse(entry.containsKey("desc"), "Formal schema cannot contain bare 'desc': $entry")
+            assertFalse(entry.containsKey("description"), "Formal schema cannot contain bare 'description': $entry")
+        }
+    }
+
+    private fun placeholders(template: String): Set<String> =
+        "\\{([a-zA-Z0-9_]+)}".toRegex().findAll(template).map { match -> match.groupValues[1] }.toSet()
+}

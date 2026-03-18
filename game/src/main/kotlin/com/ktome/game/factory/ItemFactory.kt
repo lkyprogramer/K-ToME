@@ -11,19 +11,26 @@ import com.ktome.core.item.ItemInstance
 import com.ktome.core.map.Point
 
 class ItemFactory {
+    fun createCarriedItem(
+        world: World,
+        item: ItemInstance,
+    ): com.ktome.core.ecs.EntityId {
+        val itemId = world.createEntity()
+        world.add(itemId, Glyph(item.glyph))
+        world.add(itemId, DisplayColor(item.colorHex))
+        world.add(itemId, Name(item.name))
+        world.add(itemId, item)
+        return itemId
+    }
+
     fun createGroundItem(
         world: World,
         item: ItemInstance,
         position: Point,
     ): com.ktome.core.ecs.EntityId {
-        val itemId = world.createEntity()
+        val itemId = createCarriedItem(world, item)
         world.add(itemId, Position(position.x, position.y))
-        world.add(itemId, Glyph(item.glyph))
-        world.add(itemId, DisplayColor(item.colorHex))
-        world.add(itemId, Name(item.name))
-        world.add(itemId, item)
         world.add(itemId, GroundItem)
         return itemId
     }
 }
-

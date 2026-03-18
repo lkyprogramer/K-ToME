@@ -1,0 +1,69 @@
+professions:
+  - id: vanguard
+    nameKey: profession.vanguard.name
+    descKey: profession.vanguard.desc
+    visualKey: actor.vanguard
+    iconKey: icon.profession.vanguard
+    audioProfile: audio.profession.vanguard
+    schemaVersion: 2
+    tags: [profession, foundation]
+    resourceType: STAMINA
+    baseStats: { str: 12, dex: 8, con: 11, wil: 7 }
+    statGrowth: { str: 3, dex: 2, con: 3, wil: 1 }
+    startingResources: { STAMINA: 100 }
+    talentTrees: [vanguard_arms, vanguard_shield, vanguard_warcry]
+    startingTalents: [power_strike, shield_bash, war_cry]
+    startingKit: [short_sword, leather_armor, healing_potion]
+    unlockCondition: default
+    soloContract: foundation_frontliner
+  - id: arcanist
+    nameKey: profession.arcanist.name
+    descKey: profession.arcanist.desc
+    visualKey: actor.arcanist
+    iconKey: icon.profession.arcanist
+    audioProfile: audio.profession.arcanist
+    schemaVersion: 2
+    tags: [profession, foundation]
+    resourceType: MANA
+    baseStats: { str: 6, dex: 8, con: 7, wil: 14 }
+    statGrowth: { str: 1, dex: 2, con: 1, wil: 4 }
+    startingResources: { MANA: 100 }
+    talentTrees: [arcanist_flame, arcanist_frost, arcanist_arcane]
+    startingTalents: []
+    startingKit: [healing_potion]
+    unlockCondition: default
+    soloContract: foundation_caster
+  - id: rogue
+    nameKey: profession.rogue.name
+    descKey: profession.rogue.desc
+    visualKey: actor.rogue
+    iconKey: icon.profession.rogue
+    audioProfile: audio.profession.rogue
+    schemaVersion: 2
+    tags: [profession, foundation]
+    resourceType: ENERGY
+    baseStats: { str: 8, dex: 13, con: 8, wil: 7 }
+    statGrowth: { str: 2, dex: 4, con: 2, wil: 1 }
+    startingResources: { ENERGY: 100 }
+    talentTrees: [rogue_assassination, rogue_subtlety, rogue_agility]
+    startingTalents: []
+    startingKit: [short_sword, healing_potion]
+    unlockCondition: default
+    soloContract: foundation_skirmisher
+  - id: templar
+    nameKey: profession.templar.name
+    descKey: profession.templar.desc
+    visualKey: actor.templar
+    iconKey: icon.profession.templar
+    audioProfile: audio.profession.templar
+    schemaVersion: 2
+    tags: [profession, foundation]
+    resourceType: POSITIVE_ENERGY
+    baseStats: { str: 10, dex: 7, con: 10, wil: 12 }
+    statGrowth: { str: 2, dex: 1, con: 2, wil: 3 }
+    startingResources: { POSITIVE_ENERGY: 0 }
+    talentTrees: [templar_smite, templar_grace, templar_faith]
+    startingTalents: []
+    startingKit: [chain_mail, healing_potion]
+    unlockCondition: default
+    soloContract: foundation_judicator

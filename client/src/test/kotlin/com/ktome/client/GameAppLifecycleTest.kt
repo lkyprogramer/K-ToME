@@ -108,13 +108,13 @@ private fun sampleSnapshot(): SaveSnapshot =
     SaveSnapshot(
         timestampEpochMillis = 123L,
         worldSeed = 20260312L,
-        currentZoneId = "foundation_dungeon",
+        currentZoneId = "shattered_outpost",
         floorIndex = 2,
         mapWidth = 80,
         mapHeight = 50,
         fovRadius = 8,
         messageLogSize = 8,
-        playerProfessionId = "foundation_hero",
+        playerProfessionId = "vanguard",
         maxFloor = 5,
         turnCount = 18,
         player =

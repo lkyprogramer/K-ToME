@@ -321,7 +321,7 @@ class FoundationGameSessionTest {
         assertTrue(session.perform(PlayerCommand.Descend))
         assertTrue(session.perform(PlayerCommand.SaveGame))
 
-        val loaded = GameModule.loadFoundationSession(saveManager)
+        val loaded = GameModule.loadFoundationSession(saveManager, com.ktome.game.i18n.GameLocale.ZH_CN)
 
         assertNotNull(loaded)
         assertEquals(2, loaded?.currentFloor())
@@ -441,7 +441,7 @@ class FoundationGameSessionTest {
 
         assertTrue(persisted.perform(PlayerCommand.SaveGame))
         val loaded = requireNotNull(GameModule.loadFoundationSession(persistedSaveManager))
-        val loadedDummy = requireNotNull(entityByTemplateId(loaded, "orc"))
+        val loadedDummy = requireNotNull(entityByTemplateId(loaded, "orc.raider"))
         val loadedAttackDelta = requireNotNull(runtimeWorld(loaded).get<Position>(loadedDummy)).toPoint() - loaded.playerPosition()
 
         assertTrue(baseline.perform(PlayerCommand.Move(attackDelta)))
@@ -461,7 +461,7 @@ class FoundationGameSessionTest {
         val world = runtimeWorld(session)
         val bossId =
             world.entitiesWith(MonsterTemplateId::class)
-                .single { entityId -> requireNotNull(world.get<MonsterTemplateId>(entityId)).value == "dungeon_lord" }
+                .single { entityId -> requireNotNull(world.get<MonsterTemplateId>(entityId)).value == FOUNDATION_BOSS_TEMPLATE_ID }
         requireNotNull(world.get<Health>(bossId)).current = 1
         val bossPosition = requireNotNull(world.get<Position>(bossId)).toPoint()
         val attackOrigin = if (bossPosition.x > 0) Point(bossPosition.x - 1, bossPosition.y) else Point(bossPosition.x + 1, bossPosition.y)
@@ -581,14 +581,14 @@ class FoundationGameSessionTest {
         assertEquals(TileVisibility.VISIBLE, monsterInspect.visibility)
         assertEquals("Floor", monsterInspect.terrainName)
         assertEquals("Inspect Dummy", monsterInspect.actor?.name)
-        assertEquals("Monster CHASE", monsterInspect.actor?.role)
+        assertEquals("Monster Chase", monsterInspect.actor?.role)
         assertEquals(requireNotNull(world.get<Health>(monsterId)).max, monsterInspect.actor?.maxHp)
         assertTrue(monsterInspect.actor?.statusEffects?.contains("Stunned 2t") == true)
 
         val itemInspect = playerTileInspect.items.single()
         assertEquals("Inspect Blade", itemInspect.name)
         assertEquals("Weapon", itemInspect.typeLabel)
-        assertTrue(itemInspect.details.contains("Slot WEAPON"))
+        assertTrue(itemInspect.details.contains("Slot Weapon"))
         assertTrue(itemInspect.details.contains("ATK +5"))
         assertTrue(itemInspect.details.contains("SPD +1"))
     }

@@ -1,0 +1,9 @@
+aiProfiles:
+  - id: ai.chase.basic
+    schemaVersion: 2
+  - id: ai.kite.basic
+    schemaVersion: 2
+  - id: ai.patrol.basic
+    schemaVersion: 2
+  - id: ai.boss.dungeon_lord
+    schemaVersion: 2

@@ -71,9 +71,6 @@ import com.ktome.game.model.MonsterTemplate
 
 private const val HERO_GLYPH: Char = '@'
 private const val HERO_COLOR_HEX: String = "#FFD700"
-private const val HERO_NAME: String = "Hero"
-private const val DOWNSTAIRS_NAME: String = "Downstairs"
-private const val UPSTAIRS_NAME: String = "Upstairs"
 private const val STAIR_COLOR_HEX: String = "#D7E7FF"
 
 internal data class FloorRuntimeState(
@@ -97,6 +94,15 @@ internal data class RestoredRunState(
 )
 
 internal object SessionSnapshotMapper {
+    private val legacyMonsterTemplateIds =
+        mapOf(
+            "rat" to "beast.rat",
+            "bone_archer" to "undead.bone_archer",
+            "sentry" to "bandit.sentry",
+            "orc" to "orc.raider",
+            "dungeon_lord" to FOUNDATION_BOSS_TEMPLATE_ID,
+        )
+
     fun capturePlayer(
         world: World,
         playerId: EntityId,
@@ -313,7 +319,9 @@ internal object SessionSnapshotMapper {
         snapshot.experience?.let { experience -> world.add(entityId, toExperience(experience)) }
         snapshot.experienceReward?.let { reward -> world.add(entityId, ExperienceReward(reward)) }
         snapshot.aiBehavior?.let { behavior -> world.add(entityId, toAIBehavior(behavior)) }
-        snapshot.monsterTemplateId?.let { templateId -> world.add(entityId, MonsterTemplateId(templateId)) }
+        snapshot.monsterTemplateId?.let { templateId ->
+            world.add(entityId, MonsterTemplateId(normalizeMonsterTemplateId(templateId)))
+        }
         snapshot.patrolRoute?.let { route ->
             world.add(entityId, PatrolRoute(route.waypoints.map(PointSnapshot::toPoint), route.nextWaypointIndex))
         }
@@ -342,7 +350,7 @@ internal object SessionSnapshotMapper {
             world.add(entityId, CooldownState(cooldowns.toMutableMap()))
         }
         snapshot.effects?.let { effects ->
-            world.add(entityId, EffectTracker(effects.map(::restoreActiveEffect).toMutableList()))
+            world.add(entityId, EffectTracker(effects.map { effect -> restoreActiveEffect(effect, content.localizer) }.toMutableList()))
         }
         snapshot.talentLoadout?.let { loadout ->
             world.add(
@@ -363,12 +371,12 @@ internal object SessionSnapshotMapper {
         }
         if (snapshot.isPlayerControlled) {
             world.add(entityId, PlayerControlled)
-            applyPlayerPresentation(world, entityId)
+            applyPlayerPresentation(world, entityId, content.localizer.text("actor.player.name"))
         }
         snapshot.stair?.let { stair ->
             val direction = parseEnumFromSave<StairDirection>(value = stair.direction, label = "stair direction")
             world.add(entityId, Stair(direction))
-            applyStairPresentation(world, entityId, direction)
+            applyStairPresentation(world, entityId, direction, content.localizer)
         }
         snapshot.monsterTemplateId?.let { templateId ->
             applyMonsterPresentation(world, entityId, resolveMonsterTemplate(content, templateId))
@@ -521,11 +529,14 @@ internal object SessionSnapshotMapper {
             skipNextDecay = effect.skipNextDecay,
         )
 
-    private fun restoreActiveEffect(snapshot: ActiveEffectSnapshot): ActiveEffect {
+    private fun restoreActiveEffect(
+        snapshot: ActiveEffectSnapshot,
+        localizer: com.ktome.game.i18n.Localizer,
+    ): ActiveEffect {
         val type = parseEnumFromSave<StatusEffectType>(value = snapshot.type, label = "status effect type")
         return ActiveEffect(
             id = snapshot.id,
-            name = effectDisplayName(type),
+            name = effectDisplayName(localizer, type),
             type = type,
             remainingTurns = snapshot.remainingTurns,
             statModifiers = toStatModifier(snapshot.statModifiers),
@@ -533,12 +544,15 @@ internal object SessionSnapshotMapper {
         )
     }
 
-    private fun effectDisplayName(type: StatusEffectType): String =
+    private fun effectDisplayName(
+        localizer: com.ktome.game.i18n.Localizer,
+        type: StatusEffectType,
+    ): String =
         when (type) {
-            StatusEffectType.STUNNED -> "Stunned"
-            StatusEffectType.ARMOR_BREAK -> "Armor Break"
-            StatusEffectType.WAR_CRY_BUFF -> "War Cry"
-            StatusEffectType.WAR_CRY_DEBUFF -> "Shaken"
+            StatusEffectType.STUNNED -> localizer.text("status.stunned")
+            StatusEffectType.ARMOR_BREAK -> localizer.text("status.armor_break")
+            StatusEffectType.WAR_CRY_BUFF -> localizer.text("status.war_cry_buff")
+            StatusEffectType.WAR_CRY_DEBUFF -> localizer.text("status.war_cry_debuff")
         }
 
     private fun toItemSnapshot(item: ItemInstance): ItemSnapshot =
@@ -675,10 +689,11 @@ internal object SessionSnapshotMapper {
     private fun applyPlayerPresentation(
         world: World,
         entityId: EntityId,
+        playerName: String,
     ) {
         world.add(entityId, Glyph(HERO_GLYPH))
         world.add(entityId, DisplayColor(HERO_COLOR_HEX))
-        world.add(entityId, Name(HERO_NAME))
+        world.add(entityId, Name(playerName))
     }
 
     private fun applyMonsterPresentation(
@@ -705,19 +720,34 @@ internal object SessionSnapshotMapper {
         world: World,
         entityId: EntityId,
         direction: StairDirection,
+        localizer: com.ktome.game.i18n.Localizer,
     ) {
         world.add(entityId, Glyph(if (direction == StairDirection.DOWN) '>' else '<'))
         world.add(entityId, DisplayColor(STAIR_COLOR_HEX))
-        world.add(entityId, Name(if (direction == StairDirection.DOWN) DOWNSTAIRS_NAME else UPSTAIRS_NAME))
+        world.add(
+            entityId,
+            Name(
+                when (direction) {
+                    StairDirection.DOWN -> localizer.text("stairs.down.name")
+                    StairDirection.UP -> localizer.text("stairs.up.name")
+                },
+            ),
+        )
     }
 
     private fun resolveMonsterTemplate(
         content: GameContent,
         templateId: String,
     ): MonsterTemplate =
-        requireNotNull((content.monsterCatalog + content.bossDefinition.template).firstOrNull { template -> template.id == templateId }) {
+        requireNotNull(
+            (content.monsterCatalog + content.bossDefinition.template).firstOrNull { template ->
+                template.id == normalizeMonsterTemplateId(templateId)
+            },
+        ) {
             throw SaveRestoreException("Save references unknown monster template '$templateId'.")
         }
+
+    private fun normalizeMonsterTemplateId(templateId: String): String = legacyMonsterTemplateIds[templateId] ?: templateId
 
     private inline fun <reified T : Enum<T>> parseEnumFromSave(
         value: String,
