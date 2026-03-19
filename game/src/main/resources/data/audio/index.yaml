@@ -25,6 +25,7 @@ audioProfiles:
   - id: audio.monster.orc.raider
   - id: audio.monster.cultist.dungeon_lord
   - id: audio.boss.cultist.dungeon_lord
+  - id: audio.boss.warning
   - id: audio.zone.shattered_outpost
   - id: audio.zone.greenwood_fringe
   - id: audio.zone.deep_iron_pit

@@ -231,16 +231,6 @@
       ]
     },
     {
-      "key": "audio.monster.bandit.sentry",
-      "cueFamily": "monster",
-      "eventId": "audio.monster.bandit.sentry",
-      "sourcePath": "audio/monster/default.ogg",
-      "tags": [
-        "placeholder",
-        "phase2"
-      ]
-    },
-    {
       "key": "audio.monster.beast.rat",
       "cueFamily": "monster",
       "eventId": "audio.monster.beast.rat",

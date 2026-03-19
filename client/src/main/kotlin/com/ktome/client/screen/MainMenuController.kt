@@ -14,6 +14,13 @@ internal sealed interface MainMenuAction {
     data object ToggleLocale : MainMenuAction
 }
 
+internal data class MainMenuPollResult(
+    val action: MainMenuAction? = null,
+    val selectionChanged: Boolean = false,
+    val localeToggled: Boolean = false,
+    val rejected: Boolean = false,
+)
+
 internal class MainMenuController(
     private val input: InputSource = GdxInputSource,
 ) {
@@ -28,29 +35,36 @@ internal class MainMenuController(
             MenuEntry("ui.menu.exit", enabled = true),
         )
 
-    fun pollAction(hasSave: Boolean): MainMenuAction? {
+    fun pollAction(hasSave: Boolean): MainMenuPollResult {
         val entries = entries(hasSave)
         if (input.isKeyJustPressed(Keys.L)) {
-            return MainMenuAction.ToggleLocale
+            return MainMenuPollResult(action = MainMenuAction.ToggleLocale, localeToggled = true)
         }
+        var selectionChanged = false
         if (input.isKeyJustPressed(Keys.UP) || input.isKeyJustPressed(Keys.W)) {
             selectedIndex = (selectedIndex - 1).floorMod(entries.size)
+            selectionChanged = true
         }
         if (input.isKeyJustPressed(Keys.DOWN) || input.isKeyJustPressed(Keys.S)) {
             selectedIndex = (selectedIndex + 1).floorMod(entries.size)
+            selectionChanged = true
         }
         if (input.isKeyJustPressed(Keys.ENTER) || input.isKeyJustPressed(Keys.SPACE)) {
             val selected = entries[selectedIndex]
             if (!selected.enabled) {
-                return null
+                return MainMenuPollResult(selectionChanged = selectionChanged, rejected = true)
             }
-            return when (selectedIndex) {
-                0 -> MainMenuAction.StartNewGame
-                1 -> MainMenuAction.ContinueGame
-                else -> MainMenuAction.ExitGame
-            }
+            return MainMenuPollResult(
+                action =
+                    when (selectedIndex) {
+                        0 -> MainMenuAction.StartNewGame
+                        1 -> MainMenuAction.ContinueGame
+                        else -> MainMenuAction.ExitGame
+                    },
+                selectionChanged = selectionChanged,
+            )
         }
-        return null
+        return MainMenuPollResult(selectionChanged = selectionChanged)
     }
 
     internal data class MenuEntry(

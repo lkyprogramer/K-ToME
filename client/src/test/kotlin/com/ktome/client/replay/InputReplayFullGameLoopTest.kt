@@ -206,12 +206,12 @@ class InputReplayFullGameLoopTest {
     ): Boolean {
         val replayInput = extractReplayInput(inputHandler)
         replayInput.frame(justPressed = justPressed, pressed = pressed)
-        var snapshot = session.renderSnapshot()
-        val command = inputHandler.pollCommand(snapshot)
+        val previousSnapshot = session.renderSnapshot()
+        val command = inputHandler.pollCommand(previousSnapshot)
         val consumed = command?.let(session::perform) ?: false
         if (command != null) {
-            snapshot = session.renderSnapshot()
-            inputHandler.onCommandResult(snapshot, command, consumed)
+            val currentSnapshot = session.renderSnapshot()
+            inputHandler.onCommandResult(currentSnapshot, command, consumed)
         }
         replayInput.clear()
         return consumed
@@ -225,7 +225,7 @@ class InputReplayFullGameLoopTest {
         pressed: Set<Int> = justPressed,
     ): MainMenuAction? {
         input.frame(justPressed = justPressed, pressed = pressed)
-        val action = controller.pollAction(hasSave)
+        val action = controller.pollAction(hasSave).action
         input.clear()
         return action
     }

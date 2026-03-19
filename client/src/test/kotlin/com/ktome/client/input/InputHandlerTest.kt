@@ -7,6 +7,13 @@ import com.ktome.core.ecs.World
 import com.ktome.core.ecs.get
 import com.ktome.core.map.Point
 import com.ktome.core.save.SaveManager
+import com.ktome.core.snapshot.CellVisibilitySnapshot
+import com.ktome.core.snapshot.MapCellSnapshot
+import com.ktome.core.snapshot.PlayerStatusSnapshot
+import com.ktome.core.snapshot.PropRenderSnapshot
+import com.ktome.core.snapshot.RenderMetadataSnapshot
+import com.ktome.core.snapshot.RenderSnapshot
+import com.ktome.core.snapshot.RenderUiStateSnapshot
 import com.ktome.game.GameModule
 import com.ktome.game.PlayerCommand
 import java.nio.file.Path
@@ -85,6 +92,115 @@ class InputHandlerTest {
 
         input.frame(justPressed = setOf(Keys.S), pressed = setOf(Keys.CONTROL_LEFT, Keys.S))
         assertEquals(PlayerCommand.SaveGame, handler.pollCommand(session.renderSnapshot()))
+    }
+
+    @Test
+    fun `holding a movement key repeats move after a short delay`() {
+        val input = ReplayInputSource()
+        val handler = InputHandler(input)
+        val session = GameModule.newFoundationSession(saveManager = SaveManager(tempDir.resolve("held-movement-save")))
+        val snapshot = session.renderSnapshot()
+
+        input.frame(justPressed = setOf(Keys.RIGHT), pressed = setOf(Keys.RIGHT))
+        assertEquals(PlayerCommand.Move(Point(1, 0)), handler.pollCommand(snapshot))
+
+        repeat(11) {
+            input.frame(pressed = setOf(Keys.RIGHT))
+            assertNull(handler.pollCommand(snapshot))
+        }
+
+        input.frame(pressed = setOf(Keys.RIGHT))
+        assertEquals(PlayerCommand.Move(Point(1, 0)), handler.pollCommand(snapshot))
+
+        repeat(2) {
+            input.frame(pressed = setOf(Keys.RIGHT))
+            assertNull(handler.pollCommand(snapshot))
+        }
+
+        input.frame(pressed = setOf(Keys.RIGHT))
+        assertEquals(PlayerCommand.Move(Point(1, 0)), handler.pollCommand(snapshot))
+
+        input.clear()
+        input.frame()
+        assertNull(handler.pollCommand(snapshot))
+    }
+
+    @Test
+    fun `enter on stairs triggers floor transition command`() {
+        val input = ReplayInputSource()
+        val handler = InputHandler(input)
+        val snapshot =
+            RenderSnapshot(
+                metadata =
+                    RenderMetadataSnapshot(
+                        revision = 1,
+                        zoneId = "shattered_outpost",
+                        zoneNameKey = "zone.shattered_outpost.name",
+                        currentFloor = 1,
+                        maxFloor = 2,
+                        width = 8,
+                        height = 8,
+                        playerX = 3,
+                        playerY = 3,
+                        zoneVisualKey = "zone.shattered_outpost.visual",
+                        zoneAudioProfile = "audio.zone.shattered_outpost",
+                        tilesetKey = "tileset.ruins",
+                        ambientProfile = "ambient.shattered_outpost",
+                    ),
+                mapCells =
+                    listOf(
+                        MapCellSnapshot(
+                            x = 3,
+                            y = 3,
+                            visibility = CellVisibilitySnapshot.VISIBLE,
+                            terrainTypeId = "floor",
+                            terrainVisualKey = "tileset.ruins.ground_01",
+                            stairDirectionId = "DOWN",
+                        ),
+                    ),
+                props =
+                    listOf(
+                        PropRenderSnapshot(
+                            id = "stair:down:1",
+                            x = 3,
+                            y = 3,
+                            propTypeId = "stairs",
+                            stairDirectionId = "DOWN",
+                            visualKey = "prop.stairs.down",
+                            audioProfile = "audio.interactable.stairs",
+                        ),
+                    ),
+                uiState =
+                    RenderUiStateSnapshot(
+                        playerStatus =
+                            PlayerStatusSnapshot(
+                                currentHp = 12,
+                                maxHp = 12,
+                                currentResource = 8,
+                                maxResource = 8,
+                                resourceLabelKey = "ui.hud.stamina.short",
+                                resourceTypeId = "STAMINA",
+                                level = 1,
+                                currentExperience = 0,
+                                nextLevelRequirement = 12,
+                                statPoints = 0,
+                                talentPoints = 0,
+                                attack = 4,
+                                defense = 2,
+                                accuracy = 3,
+                                evasion = 2,
+                                speed = 100,
+                            ),
+                        equipment = emptyList(),
+                        talents = emptyList(),
+                        inventory = emptyList(),
+                        targetablePositions = emptyList(),
+                    ),
+            )
+
+        input.frame(justPressed = setOf(Keys.ENTER))
+        assertEquals(PlayerCommand.Descend, handler.pollCommand(snapshot))
+        input.clear()
     }
 
     private fun runtimeWorld(session: com.ktome.game.FoundationGameSession): World {

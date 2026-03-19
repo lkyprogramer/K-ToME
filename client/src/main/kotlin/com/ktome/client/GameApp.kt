@@ -10,6 +10,10 @@ import com.ktome.client.assets.ClientAssetLoadStrategy
 import com.ktome.client.assets.ManifestLoadException
 import com.ktome.client.assets.VisualManifest
 import com.ktome.client.assets.VisualManifestResourceLoader
+import com.ktome.client.audio.AudioSinkBindingsFactory
+import com.ktome.client.audio.AudioRouter
+import com.ktome.client.audio.DefaultAudioSinkBindingsFactory
+import com.ktome.client.input.AudioRouterAwareCommandSource
 import com.ktome.client.input.CommandSource
 import com.ktome.client.input.GdxInputSource
 import com.ktome.client.input.InputHandlerCommandSource
@@ -42,7 +46,8 @@ class GameApp(
     private val visualManifestProvider: () -> VisualManifest = VisualManifestResourceLoader::load,
     private val audioManifestProvider: () -> AudioManifest = AudioManifestResourceLoader::load,
     private val assetVersionGate: AssetVersionGate = AssetVersionGate(),
-    initialLocale: GameLocale = GameLocale.EN_US,
+    private val audioSinkBindingsFactory: AudioSinkBindingsFactory = DefaultAudioSinkBindingsFactory,
+    initialLocale: GameLocale = GameLocale.DEFAULT,
     localizationBundle: LocalizationBundle = LocalizationBundle.load(),
 ) : Game() {
     private val lifecycle = LifecycleCoordinator(saveManager)
@@ -57,6 +62,7 @@ class GameApp(
     private var currentLocale: GameLocale = initialLocale
     private var currentLocalizer: Localizer = localizationBundle.translator(initialLocale)
     private var activeSession: FoundationGameSession? = null
+    private val audioSinks = audioSinkBindingsFactory.create(renderEnabled)
 
     override fun create() {
         showMainMenu(saveCurrent = false, notice = assetContractNotice())
@@ -72,7 +78,7 @@ class GameApp(
             }
         activeSession = session
         assetContracts.prepareSession(session.renderSnapshot())
-        replaceScreen(FoundationGameScreen(this, session, requireClientAssets(), gameCommandSourceFactory(), renderEnabled))
+        replaceScreen(FoundationGameScreen(this, session, requireClientAssets(), prepareCommandSource(requireClientAssets(), gameCommandSourceFactory()), renderEnabled))
     }
 
     fun continueGame() {
@@ -88,7 +94,7 @@ class GameApp(
             }
         activeSession = session
         assetContracts.prepareSession(session.renderSnapshot())
-        replaceScreen(FoundationGameScreen(this, session, requireClientAssets(), gameCommandSourceFactory(), renderEnabled))
+        replaceScreen(FoundationGameScreen(this, session, requireClientAssets(), prepareCommandSource(requireClientAssets(), gameCommandSourceFactory()), renderEnabled))
     }
 
     fun showOutcome(session: FoundationGameSession) {
@@ -117,6 +123,8 @@ class GameApp(
 
     override fun dispose() {
         activeSession?.saveOnExit()
+        audioSinks.dispose()
+        assetContracts.dispose()
         super.dispose()
     }
 
@@ -150,6 +158,15 @@ class GameApp(
         assetContracts.warmCache(snapshot)
     }
 
+    internal fun audioRouterOrNull(): AudioRouter? =
+        assetContracts.bundleOrNull()?.let { bundle ->
+            AudioRouter(
+                bundle.audioResolver,
+                audioSinks.cueSink,
+                audioSinks.backgroundSink,
+            )
+        }
+
     private fun ensureAssetContracts(): Boolean =
         assetContractNotice()?.let { notice ->
             showMainMenu(saveCurrent = false, notice = notice)
@@ -159,6 +176,21 @@ class GameApp(
     private fun requireClientAssets(): ClientAssetBundle =
         requireNotNull(assetContracts.bundleOrNull()) {
             "Client assets must be loaded before entering the game screen."
+        }
+
+    private fun prepareCommandSource(
+        assets: ClientAssetBundle,
+        commandSource: CommandSource,
+    ): CommandSource =
+        commandSource.also { source ->
+            if (source is AudioRouterAwareCommandSource && source.audioRouter == null) {
+                source.audioRouter =
+                    AudioRouter(
+                        assets.audioResolver,
+                        audioSinks.cueSink,
+                        audioSinks.backgroundSink,
+                    )
+            }
         }
 
     companion object {
@@ -177,6 +209,7 @@ internal class AssetContractCoordinator(
 
     fun noticeOrNull(): String? =
         try {
+            dispose()
             assetVersionGate.requireCompatible(assetVersionProvider())
             cachedBundle =
                 ClientAssetBundleLoader.load(
@@ -188,16 +221,13 @@ internal class AssetContractCoordinator(
             }
             null
         } catch (exception: AssetVersionMismatchException) {
-            cachedBundle = null
-            loadStrategy = null
+            dispose()
             exception.message
         } catch (exception: AssetVersionLoadException) {
-            cachedBundle = null
-            loadStrategy = null
+            dispose()
             exception.message
         } catch (exception: ManifestLoadException) {
-            cachedBundle = null
-            loadStrategy = null
+            dispose()
             exception.message
         }
 
@@ -214,6 +244,12 @@ internal class AssetContractCoordinator(
     }
 
     internal fun loadStateOrNull(): com.ktome.client.assets.AssetLoadStateSnapshot? = loadStrategy?.stateSnapshot()
+
+    fun dispose() {
+        cachedBundle?.dispose()
+        cachedBundle = null
+        loadStrategy = null
+    }
 }
 
 internal class LifecycleCoordinator(

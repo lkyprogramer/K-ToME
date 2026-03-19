@@ -9,8 +9,9 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch
 import com.badlogic.gdx.utils.ScreenUtils
 import com.badlogic.gdx.utils.viewport.FitViewport
 import com.ktome.client.GameApp
-import com.ktome.client.input.InputSource
+import com.ktome.client.audio.AudioRouter
 import com.ktome.client.input.GdxInputSource
+import com.ktome.client.input.InputSource
 import com.ktome.client.render.KtomeFonts
 
 internal const val menuWidth = 960f
@@ -36,8 +37,10 @@ class MainMenuScreen(
     private var font: BitmapFont? = null
     private val viewport = FitViewport(menuWidth, menuHeight)
     private val controller = MainMenuController(inputSource)
+    private val audioRouter: AudioRouter? = app.audioRouterOrNull()
 
     override fun show() {
+        audioRouter?.onMenuShown()
         if (!renderEnabled) {
             return
         }
@@ -46,7 +49,14 @@ class MainMenuScreen(
     }
 
     override fun render(delta: Float) {
-        when (controller.pollAction(continueEnabled)) {
+        val poll = controller.pollAction(continueEnabled)
+        audioRouter?.onMenuInteraction(
+            selectionChanged = poll.selectionChanged,
+            localeToggled = poll.localeToggled,
+            accepted = poll.action != null && poll.action != MainMenuAction.ToggleLocale,
+            rejected = poll.rejected,
+        )
+        when (poll.action) {
             MainMenuAction.StartNewGame -> {
                 app.startNewGame()
                 return

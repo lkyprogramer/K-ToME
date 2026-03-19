@@ -16,6 +16,10 @@ enum class GameLocale(val id: String) {
         }
 
     companion object {
+        val DEFAULT: GameLocale = ZH_CN
+
+        val FALLBACK: GameLocale = EN_US
+
         fun fromId(id: String): GameLocale =
             entries.firstOrNull { locale -> locale.id == id }
                 ?: error("Unsupported locale id: $id")
@@ -27,7 +31,7 @@ class LocalizationBundle private constructor(
 ) {
     fun translator(locale: GameLocale): Localizer {
         val current = requireNotNull(bundles[locale]) { "Missing bundle for locale ${locale.id}" }
-        val fallback = requireNotNull(bundles[GameLocale.EN_US]) { "Missing fallback bundle for ${GameLocale.EN_US.id}" }
+        val fallback = requireNotNull(bundles[GameLocale.FALLBACK]) { "Missing fallback bundle for ${GameLocale.FALLBACK.id}" }
         return Localizer(locale = locale, current = current, fallback = fallback)
     }
 

@@ -3,6 +3,7 @@ package com.ktome.client.input
 import com.badlogic.gdx.Input.Keys
 import com.ktome.core.map.Point
 import com.ktome.core.snapshot.GridPointSnapshot
+import com.ktome.core.snapshot.PropRenderSnapshot
 import com.ktome.core.snapshot.RenderSnapshot
 import com.ktome.game.PrimaryStat
 import com.ktome.game.PlayerCommand
@@ -27,6 +28,8 @@ data class OverlayState(
 class InputHandler(
     private val input: InputSource = GdxInputSource,
 ) {
+    private val repeatInitialDelayFrames = 12
+    private val repeatIntervalFrames = 3
     private val movementBindings =
         linkedMapOf(
             Keys.Q to Point(-1, -1),
@@ -61,6 +64,8 @@ class InputHandler(
     private var targetingSlot: Int? = null
     private var targetingCursor: Point? = null
     private var inspectCursor: Point? = null
+    private var heldMovementKey: Int? = null
+    private var movementRepeatCountdown: Int = repeatInitialDelayFrames
 
     fun isMapMode(): Boolean = mode == UiMode.MAP
 
@@ -81,6 +86,9 @@ class InputHandler(
         }
 
         reconcileMode(snapshot)
+        if (mode != UiMode.MAP) {
+            resetMovementRepeat()
+        }
         return when (mode) {
             UiMode.MAP -> pollMapCommand(snapshot)
             UiMode.INVENTORY -> pollInventoryCommand(snapshot)
@@ -151,6 +159,12 @@ class InputHandler(
             return PlayerCommand.SaveGame
         }
 
+        stairCommandAtPlayer(snapshot)?.let { command ->
+            if (isInteractBinding()) {
+                return command
+            }
+        }
+
         if (isDescendBinding()) {
             return PlayerCommand.Descend
         }
@@ -159,7 +173,7 @@ class InputHandler(
             return PlayerCommand.Ascend
         }
 
-        val movement = movementBindings.entries.firstOrNull { (key, _) -> input.isKeyJustPressed(key) }?.value
+        val movement = pollMovementCommand()
         if (movement != null) {
             return PlayerCommand.Move(movement)
         }
@@ -175,11 +189,13 @@ class InputHandler(
         if (input.isKeyJustPressed(Keys.I)) {
             mode = UiMode.INVENTORY
             inventorySelection = inventorySelection.coerceAtMost((snapshot.uiState.inventory.size - 1).coerceAtLeast(0))
+            resetMovementRepeat()
             return null
         }
 
         if (input.isKeyJustPressed(Keys.T) && hasPendingTalentAllocation(snapshot)) {
             mode = UiMode.TALENT_ASSIGN
+            resetMovementRepeat()
             return null
         }
 
@@ -192,6 +208,7 @@ class InputHandler(
             mode = UiMode.TARGETING
             targetingSlot = slot
             targetingCursor = defaultTargetCursor(snapshot)
+            resetMovementRepeat()
         }
 
         return null
@@ -219,6 +236,7 @@ class InputHandler(
         val inventorySize = snapshot.uiState.inventory.size
         if (input.isKeyJustPressed(Keys.ESCAPE) || input.isKeyJustPressed(Keys.I)) {
             mode = UiMode.MAP
+            resetMovementRepeat()
             return null
         }
 
@@ -320,14 +338,20 @@ class InputHandler(
         mode = UiMode.MAP
         targetingSlot = null
         targetingCursor = null
+        resetMovementRepeat()
     }
 
     private fun clearInspect() {
         mode = UiMode.MAP
         inspectCursor = null
+        resetMovementRepeat()
     }
 
     private fun isSaveBinding(): Boolean = controlPressed() && input.isKeyJustPressed(Keys.S)
+
+    private fun isInteractBinding(): Boolean =
+        input.isKeyJustPressed(Keys.ENTER) ||
+            input.isKeyJustPressed(Keys.NUMPAD_ENTER)
 
     private fun isDescendBinding(): Boolean = shiftPressed() && input.isKeyJustPressed(Keys.PERIOD)
 
@@ -342,6 +366,53 @@ class InputHandler(
     private fun hasPendingTalentAllocation(snapshot: RenderSnapshot): Boolean = snapshot.uiState.playerStatus.talentPoints > 0
 
     private fun playerPosition(snapshot: RenderSnapshot): Point = Point(snapshot.metadata.playerX, snapshot.metadata.playerY)
+
+    private fun pollMovementCommand(): Point? {
+        movementBindings.entries.firstOrNull { (key, _) -> input.isKeyJustPressed(key) }?.let { (key, delta) ->
+            heldMovementKey = key
+            movementRepeatCountdown = repeatInitialDelayFrames
+            return delta
+        }
+
+        val key = heldMovementKey ?: return null
+        if (!input.isKeyPressed(key)) {
+            resetMovementRepeat()
+            return null
+        }
+
+        movementRepeatCountdown -= 1
+        if (movementRepeatCountdown > 0) {
+            return null
+        }
+
+        movementRepeatCountdown = repeatIntervalFrames
+        return movementBindings.getValue(key)
+    }
+
+    private fun resetMovementRepeat() {
+        heldMovementKey = null
+        movementRepeatCountdown = repeatInitialDelayFrames
+    }
+
+    private fun stairCommandAtPlayer(snapshot: RenderSnapshot): PlayerCommand? {
+        val playerPosition = playerPosition(snapshot)
+        val direction =
+            snapshot.mapCells
+                .firstOrNull { cell -> cell.x == playerPosition.x && cell.y == playerPosition.y }
+                ?.stairDirectionId
+                ?: snapshot.props
+                    .firstOrNull { prop -> prop.isStairAt(playerPosition) }
+                    ?.stairDirectionId
+
+        return when (direction) {
+            "UP" -> PlayerCommand.Ascend
+            "DOWN" -> PlayerCommand.Descend
+            else -> null
+        }
+    }
+
+    private fun PropRenderSnapshot.isStairAt(point: Point): Boolean =
+        propTypeId == "stairs" && x == point.x && y == point.y
 
     private fun GridPointSnapshot.toPoint(): Point = Point(x, y)
 }

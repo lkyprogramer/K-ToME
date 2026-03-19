@@ -36,6 +36,7 @@ import com.ktome.core.item.ItemBaseDef
 import com.ktome.core.item.ItemInstance
 import com.ktome.core.item.Inventory
 import com.ktome.core.item.InventoryManager
+import com.ktome.core.stats.StatsCalculator
 import java.nio.file.Path
 import kotlin.random.Random
 import com.ktome.game.data.schema.ProfessionSchemaV2
@@ -45,7 +46,7 @@ object GameModule {
     fun newFoundationSession(
         config: FoundationGameConfig = FoundationGameConfig(),
         saveManager: SaveManager = SaveManager(defaultSaveDir()),
-        locale: GameLocale = GameLocale.EN_US,
+        locale: GameLocale = GameLocale.DEFAULT,
     ): FoundationGameSession {
         val content = loadContent(locale)
         validateNewSessionConfig(config, content.schemaCatalog)
@@ -84,7 +85,7 @@ object GameModule {
 
     fun loadFoundationSession(
         saveManager: SaveManager,
-        locale: GameLocale = GameLocale.EN_US,
+        locale: GameLocale = GameLocale.DEFAULT,
     ): FoundationGameSession? {
         val snapshot = saveManager.load() ?: return null
         val loader = DataLoader(locale)
@@ -176,6 +177,8 @@ object GameModule {
                 stats = profession.baseStats.toRuntimeStats(),
             )
         installStarterKit(world, playerId, resolveStarterItems(content, profession))
+        StatsCalculator.recalculateAndStore(world, playerId)
+        PlayerResourcePools.ensureInitialized(world, playerId, profession)
         return SessionSnapshotMapper.capturePlayer(world, playerId)
     }
 
@@ -196,6 +199,7 @@ object GameModule {
         val itemFactory = ItemFactory()
         val bossFactory = BossFactory(factory)
         val itemGenerator = ItemGenerator(content.itemBundle, com.ktome.core.random.RandomSource.from(Random(floorSeed(config.seed, floor, 0x91F3))))
+        val monsterRandom = Random(floorSeed(config.seed, floor, 0x63AF))
         val bossDefinition = if (floor == config.maxFloor) resolveBossDefinition(content, zone) else null
         val stairsUp = if (floor > 1) map.playerStart else null
         val stairsDown =
@@ -225,6 +229,8 @@ object GameModule {
                 floor = floor,
                 catalog = resolveZoneMonsterCatalog(content, zone, floor),
                 occupiedPoints = occupiedPoints,
+                random = monsterRandom,
+                desiredCount = zoneMonsterSpawnCount(zone, floor, map.rooms.size),
             )
             spawnItems(
                 itemFactory = itemFactory,
@@ -259,14 +265,22 @@ object GameModule {
         floor: Int,
         catalog: List<MonsterTemplate>,
         occupiedPoints: MutableSet<Point>,
+        random: Random,
+        desiredCount: Int,
     ) {
         val availableTemplates = catalog.filter { floor in it.spawnFloors }.ifEmpty { catalog }
-        val behaviorPriority = listOf(AIType.CHASE, AIType.KITE, AIType.PATROL)
-        val selectedTemplates = behaviorPriority.mapNotNull { behavior ->
-            availableTemplates.firstOrNull { resolveAiType(it) == behavior }
+        val roomCandidates = map.rooms.drop(1)
+        if (availableTemplates.isEmpty() || roomCandidates.isEmpty()) {
+            return
         }
+        val spawnCount = desiredCount.coerceIn(1, roomCandidates.size)
+        val selectedTemplates = selectMonsterTemplates(availableTemplates, spawnCount, random)
 
-        map.rooms.drop(1).zip(selectedTemplates).forEach { (room, template) ->
+        roomCandidates
+            .shuffled(random)
+            .take(selectedTemplates.size)
+            .zip(selectedTemplates)
+            .forEach { (room, template) ->
             val spawnPoint = findSpawnPoint(room, map, occupiedPoints)
             factory.createMonster(
                 world = world,
@@ -275,7 +289,62 @@ object GameModule {
                 patrolRoute = if (resolveAiType(template) == AIType.PATROL) buildPatrolRoute(room) else null,
             )
             occupiedPoints += spawnPoint
+            }
+    }
+
+    private fun zoneMonsterSpawnCount(
+        zone: ZoneSchemaV2,
+        floor: Int,
+        roomCount: Int,
+    ): Int {
+        val roomBudget = (roomCount - 1).coerceAtLeast(1)
+        return when {
+            zone.id == "shattered_outpost" && floor == 1 -> roomBudget.coerceIn(4, 5)
+            else -> roomBudget.coerceAtMost(2)
         }
+    }
+
+    private fun selectMonsterTemplates(
+        availableTemplates: List<MonsterTemplate>,
+        desiredCount: Int,
+        random: Random,
+    ): List<MonsterTemplate> {
+        val legacyBehaviorSelection =
+            listOf(AIType.CHASE, AIType.KITE, AIType.PATROL)
+                .mapNotNull { behavior -> availableTemplates.firstOrNull { resolveAiType(it) == behavior } }
+                .distinctBy(MonsterTemplate::id)
+        if (desiredCount <= legacyBehaviorSelection.size) {
+            return legacyBehaviorSelection.take(desiredCount)
+        }
+
+        val guaranteed =
+            availableTemplates
+                .distinctBy(MonsterTemplate::id)
+                .sortedByDescending(MonsterTemplate::spawnWeight)
+                .take(desiredCount)
+                .toMutableList()
+
+        while (guaranteed.size < desiredCount) {
+            guaranteed += chooseWeightedTemplate(availableTemplates, random)
+        }
+        guaranteed.shuffle(random)
+        return guaranteed
+    }
+
+    private fun chooseWeightedTemplate(
+        templates: List<MonsterTemplate>,
+        random: Random,
+    ): MonsterTemplate {
+        val totalWeight = templates.sumOf(MonsterTemplate::spawnWeight)
+        require(totalWeight > 0) { "Monster selection requires a positive spawn weight." }
+        var roll = random.nextInt(totalWeight)
+        templates.forEach { template ->
+            roll -= template.spawnWeight
+            if (roll < 0) {
+                return template
+            }
+        }
+        return templates.last()
     }
 
     private fun spawnItems(

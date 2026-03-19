@@ -88,6 +88,12 @@ defaults:
       Single symbolic shape centered in frame, 65-75% canvas occupancy.
       Must be instantly readable at small display sizes — favor bold geometric forms over fine detail.
       Painterly but simplified. Thick outlines. 1-2 color accents on dark neutral base.
+    icon_damage_type: >
+      Game damage type icon on transparent background.
+      Single symbolic elemental or martial mark centered in frame, 65-75% canvas occupancy.
+      Must read instantly at hotbar and inspect sizes — bold silhouette first, material detail second.
+      Painterly but simplified. Thick outlines. One dominant hue per damage channel on a dark neutral base.
+      Avoid text, numerals, weapon hands, or busy scenery. This is a semantic combat marker, not a scene illustration.
     icon_item: >
       Game item icon on transparent background.
       Single object centered in frame, 65-75% canvas occupancy, slight 3/4 angle.
@@ -450,6 +456,46 @@ phase2AssetGates:
           - no hands, no arms, no character body parts
           - bold simplified shapes with thick outlines
         geminiKeyRequired: true
+      - id: phase2_p2b_icon_shield_bash
+        category: icon_skill
+        visualKey: icon.skill.vanguard.shield_bash
+        outputName: phase2/p2-b/icon_skill_vanguard_shield_bash.png
+        subject: >
+          A heavy iron kite shield smashing forward at close range, shown in three-quarter
+          view with the lower edge leading the strike. A burst of short impact sparks and a
+          compressed shock-ring flare from the contact point, implying a brutal shield slam.
+          The shield face is scarred and practical, with a reinforced steel boss and dark
+          leather edging. No hand, no arm, no target body — just the shield and its impact
+          energy. Color palette: dark gunmetal face, weathered brown leather trim, pale
+          silver impact flash.
+        profession: vanguard
+        moodTags: [impactful, defensive]
+        constraints:
+          - single focused subject centered in frame, 65-75% canvas occupancy
+          - transparent background
+          - no hands, no arms, no character body parts
+          - silhouette must read differently from guard_stance and power_strike
+          - bold simplified shapes with thick outlines
+        geminiKeyRequired: true
+      - id: phase2_p2b_icon_war_cry
+        category: icon_skill
+        visualKey: icon.skill.vanguard.war_cry
+        outputName: phase2/p2-b/icon_skill_vanguard_war_cry.png
+        subject: >
+          A battle-worn bronze war horn angled upward, emitting two layered crescent shockwaves
+          and flecks of heated breath-mist. The horn is wrapped in dark leather and fitted with
+          iron bands, conveying a seasoned battlefield rally tool rather than a ceremonial relic.
+          No hand, no mouth, no character head — just the horn and its expanding command energy.
+          Color palette: aged bronze, dark leather, warm amber resonance glow, faint pale smoke.
+        profession: vanguard
+        moodTags: [commanding, rallying]
+        constraints:
+          - single focused subject centered in frame, 65-75% canvas occupancy
+          - transparent background
+          - no hands, no arms, no character body parts
+          - silhouette must read instantly as a support or shout skill, not a weapon attack
+          - bold simplified shapes with thick outlines
+        geminiKeyRequired: true
       - id: phase2_p2b_icon_fire_bolt
         category: icon_skill
         visualKey: icon.skill.arcanist.fire_bolt
@@ -561,8 +607,174 @@ phase2AssetGates:
           - object reads as important and functional
           - bold shape readable at small display sizes
         geminiKeyRequired: true
+      - id: phase2_p2b_icon_damage_type_physical
+        category: icon_damage_type
+        visualKey: icon.damage_type.physical
+        outputName: phase2/p2-b/icon_damage_type_physical.png
+        subject: >
+          A martial physical-damage icon: a scarred iron blade edge crossing a split stone impact mark.
+          The mark is compact and emblematic, not a full weapon illustration. Forged iron and cracked stone
+          read as weight and blunt force. Palette: iron-grey, pale steel edge highlights, muted stone dust.
+        materialTags: [iron, stone]
+        moodTags: [forceful, grounded]
+        constraints:
+          - single symbolic combat mark centered in frame, 65-75% canvas occupancy
+          - transparent background
+          - bold silhouette readable at small hotbar and inspect sizes
+          - restrained neutral palette with physical impact emphasis
+        geminiKeyRequired: true
+      - id: phase2_p2b_icon_damage_type_fire
+        category: icon_damage_type
+        visualKey: icon.damage_type.fire
+        outputName: phase2/p2-b/icon_damage_type_fire.png
+        subject: >
+          A fire-damage icon: a compact rune-flame rising from a cracked ember core. The flame shape is sharp,
+          layered, and angular rather than soft or cartoonish. Heat reads through ember fissures and controlled glow.
+          Palette: ember orange, dark coal red, a narrow hot yellow-white core.
+        materialTags: [ember, ash]
+        moodTags: [volatile, searing]
+        constraints:
+          - single symbolic elemental mark centered in frame, 65-75% canvas occupancy
+          - transparent background
+          - controlled flame glow, no bloom-heavy haze
+          - bold silhouette readable at small UI scale
+        geminiKeyRequired: true
+      - id: phase2_p2b_icon_damage_type_cold
+        category: icon_damage_type
+        visualKey: icon.damage_type.cold
+        outputName: phase2/p2-b/icon_damage_type_cold.png
+        subject: >
+          A cold-damage icon: a faceted ice shard sigil over a circular frost ring. The central shard feels brittle,
+          sharp, and ancient, with hairline fractures visible inside the ice. Palette: frost cyan, pale blue-white,
+          cold grey shadow accents.
+        materialTags: [ice, frost]
+        moodTags: [biting, crystalline]
+        constraints:
+          - single symbolic elemental mark centered in frame, 65-75% canvas occupancy
+          - transparent background
+          - crisp geometric forms with restrained icy glow
+          - strong readability at small UI sizes
+        geminiKeyRequired: true
+      - id: phase2_p2b_icon_damage_type_lightning
+        category: icon_damage_type
+        visualKey: icon.damage_type.lightning
+        outputName: phase2/p2-b/icon_damage_type_lightning.png
+        subject: >
+          A lightning-damage icon: a forked white-gold bolt striking through a dark storm sigil. The bolt is jagged,
+          energetic, and directional, with a faint electric corona around impact points. Palette: lightning white-blue,
+          pale gold sparks, dark storm-blue backing shape.
+        materialTags: [storm, energy]
+        moodTags: [sudden, piercing]
+        constraints:
+          - single symbolic elemental mark centered in frame, 65-75% canvas occupancy
+          - transparent background
+          - controlled electric highlights, no full-screen glow
+          - bold silhouette readable at small UI sizes
+        geminiKeyRequired: true
+      - id: phase2_p2b_icon_damage_type_holy
+        category: icon_damage_type
+        visualKey: icon.damage_type.holy
+        outputName: phase2/p2-b/icon_damage_type_holy.png
+        subject: >
+          A holy-damage icon: a severe radiant sigil with a pale-gold central star enclosed by a warded ring.
+          The design feels sacred, disciplined, and old rather than soft or decorative. Palette: pale gold,
+          warm ivory, muted ash-grey shadow lines.
+        materialTags: [gold, ward]
+        moodTags: [sacred, disciplined]
+        constraints:
+          - single symbolic elemental mark centered in frame, 65-75% canvas occupancy
+          - transparent background
+          - restrained holy radiance, no bloom-heavy halo
+          - geometric lines remain clear at small UI sizes
+        geminiKeyRequired: true
+      - id: phase2_p2b_icon_damage_type_shadow
+        category: icon_damage_type
+        visualKey: icon.damage_type.shadow
+        outputName: phase2/p2-b/icon_damage_type_shadow.png
+        subject: >
+          A shadow-damage icon: a hooked eclipse sigil with a dark void core and curling shadow barbs.
+          The shape feels occult and predatory, with deep violet-black mass and a narrow cold highlight.
+          Palette: dark violet, soot black, restrained blue-violet edge light.
+        materialTags: [shadow, void]
+        moodTags: [occult, predatory]
+        constraints:
+          - single symbolic elemental mark centered in frame, 65-75% canvas occupancy
+          - transparent background
+          - deep dark mass with only restrained highlight accents
+          - bold silhouette readable at small UI sizes
+        geminiKeyRequired: true
+      - id: phase2_p2b_prop_stairs_down
+        category: prop_interactable
+        visualKey: prop.stairs.down
+        outputName: phase2/p2-b/prop_stairs_down.png
+        subject: >
+          A descending ruin stairwell entrance seen from a slightly elevated 3/4 angle. Worn stone steps sink into
+          darkness through a rectangular broken-floor opening framed by chipped masonry. The upper lip of the stairs
+          is cracked and dusted with rubble, with faint cold shadow gathering below to imply descent.
+          Palette: cold grey stone, dust-brown grit, deep blue-black shadow.
+        biome: RUINS
+        materialTags: [stone, dust]
+        moodTags: [foreboding, downward]
+        constraints:
+          - clear descending affordance readable at small game scale
+          - clear base footprint for map placement
+          - bold silhouette with visible stair opening and depth cue
+        geminiKeyRequired: true
+      - id: phase2_p2b_prop_stairs_up
+        category: prop_interactable
+        visualKey: prop.stairs.up
+        outputName: phase2/p2-b/prop_stairs_up.png
+        subject: >
+          An ascending ruin stairwell seen from a slightly elevated 3/4 angle. Broad worn stone steps rise toward a
+          broken arch threshold, with more light catching the upper stones than the lower run. Chipped masonry and
+          scattered rubble frame the stair edges, making the upward route obvious.
+          Palette: cold grey stone, pale dust, faint warm light on the upper landing.
+        biome: RUINS
+        materialTags: [stone, dust]
+        moodTags: [pathfinding, upward]
+        constraints:
+          - clear ascending affordance readable at small game scale
+          - clear base footprint for map placement
+          - bold silhouette with visible stair rise and lighter upper landing
+        geminiKeyRequired: true
+      - id: phase2_p2b_telegraph_warning_sigil
+        category: tile_decal
+        biome: RUINS
+        visualKey: vfx.telegraph.warning.sigil_01
+        outputName: phase2/p2-b/vfx_telegraph_warning_sigil_01.png
+        subject: >
+          A hostile telegraph overlay plate for imminent attacks. Angular concentric rune lines and directional wedges
+          converge toward the strike center, communicating attack timing and threat focus. It should feel arcane and
+          militarized rather than ornamental. Palette: ember-orange warning lines over cold iron-grey geometry with
+          dark negative space between forms.
+        materialTags: [rune, ember]
+        moodTags: [urgent, hostile]
+        constraints:
+          - overlay plate with clean readable geometry
+          - transparent background
+          - stronger directional attack language than the boss warning seal
+          - controlled glow suitable for compositing over map tiles
+        geminiKeyRequired: true
+      - id: phase2_p2b_zone_effect_ward_seal
+        category: tile_decal
+        biome: RUINS
+        visualKey: vfx.zone.effect.ward_seal_01
+        outputName: phase2/p2-b/vfx_zone_effect_ward_seal_01.png
+        subject: >
+          A zone-effect overlay seal for sacred or environmental fields. Broad circular ward geometry with broken outer
+          segments, subtle pale-gold lines, and a stable low-intensity center. It should read as persistent terrain magic,
+          not a short-lived attack telegraph. Palette: pale gold, ash-grey stone light, faint cool blue shadow.
+        materialTags: [ward, stone]
+        moodTags: [persistent, ritual]
+        constraints:
+          - overlay plate with clean readable geometry
+          - transparent background
+          - low-intensity stable glow, not urgent or explosive
+          - compositable over map tiles without obscuring terrain
+        geminiKeyRequired: true
       - id: phase2_p2b_boss_warning_sigil
-        category: vfx_plate
+        category: tile_decal
+        biome: RUINS
         visualKey: vfx.boss.warning.sigil_01
         outputName: phase2/p2-b/vfx_boss_warning_sigil_01.png
         subject: >

@@ -29,7 +29,9 @@ internal data class SessionLoadDescriptor(
     val terrainVisualKeys: Set<String>,
     val actorVisualKeys: Set<String>,
     val iconVisualKeys: Set<String>,
+    val statusIconKeys: Set<String>,
     val ambientAudioKeys: Set<String>,
+    val interactionAudioKeys: Set<String>,
     val sessionAudioKeys: Set<String>,
 )
 
@@ -57,9 +59,9 @@ class ClientAssetLoadStrategy(
         val descriptor =
             BootstrapLoadDescriptor(
                 localeBundleIds = setOf("en-US", "zh-CN"),
-                fontResources = setOf("fonts/ktome-ui-subset.otf"),
+                fontResources = setOf(ClientFontCatalog.UI_FONT_RESOURCE_ID),
                 menuVisualKeys = emptySet(),
-                menuAudioKeys = setOf("audio.music.menu"),
+                menuAudioKeys = setOf("audio.music.menu", "audio.ui.confirm", "audio.ui.cancel", "audio.ui.hover"),
             )
         descriptor.menuVisualKeys.forEach(::resolveVisualExact)
         descriptor.menuAudioKeys.forEach(::resolveAudioExact)
@@ -74,13 +76,26 @@ class ClientAssetLoadStrategy(
         val terrainVisualKeys = linkedSetOf<String>()
         val actorVisualKeys = linkedSetOf<String>()
         val iconVisualKeys = linkedSetOf<String>()
+        val statusIconKeys = linkedSetOf<String>()
         val ambientAudioKeys = linkedSetOf<String>()
+        val interactionAudioKeys =
+            linkedSetOf(
+                "audio.ui.confirm",
+                "audio.ui.cancel",
+                "audio.ui.hover",
+                "audio.footstep.default",
+                "audio.interactable.open",
+                "audio.interactable.stairs",
+                "audio.melee.light",
+                "audio.spell.basic",
+            )
 
         visualKeys += snapshot.metadata.zoneVisualKey
         audioKeys += snapshot.metadata.zoneAudioProfile
         audioKeys += snapshot.metadata.ambientProfile
         ambientAudioKeys += snapshot.metadata.zoneAudioProfile
         ambientAudioKeys += snapshot.metadata.ambientProfile
+        audioKeys += interactionAudioKeys
 
         snapshot.mapCells.forEach { cell ->
             visualKeys += cell.terrainVisualKey
@@ -95,6 +110,12 @@ class ClientAssetLoadStrategy(
             visualKeys += actor.visualKey
             actorVisualKeys += actor.visualKey
             actor.audioProfile?.let(audioKeys::add)
+            actor.statusEffects.forEach { effect ->
+                effect.iconKey?.let {
+                    visualKeys += it
+                    statusIconKeys += it
+                }
+            }
         }
         snapshot.uiState.equipment.forEach { equipment ->
             equipment.item?.let { item ->
@@ -105,6 +126,10 @@ class ClientAssetLoadStrategy(
         snapshot.uiState.talents.forEach { talent ->
             talent.visualKey?.let(visualKeys::add)
             talent.iconKey?.let {
+                visualKeys += it
+                iconVisualKeys += it
+            }
+            talent.damageTypeIconKey?.let {
                 visualKeys += it
                 iconVisualKeys += it
             }
@@ -133,7 +158,9 @@ class ClientAssetLoadStrategy(
                 terrainVisualKeys = terrainVisualKeys,
                 actorVisualKeys = actorVisualKeys,
                 iconVisualKeys = iconVisualKeys,
+                statusIconKeys = statusIconKeys,
                 ambientAudioKeys = ambientAudioKeys,
+                interactionAudioKeys = interactionAudioKeys,
                 sessionAudioKeys = audioKeys,
             )
         sessionVisualKeys = visualKeys
@@ -195,6 +222,7 @@ class ClientAssetLoadStrategy(
         require(!resolved.fallbackUsed && !resolved.matchedByPrefix) {
             "Session asset load requires exact visual key '$key'."
         }
+        assets.textureRepository.preload(resolved)
     }
 
     private fun resolveAudioExact(key: String) {

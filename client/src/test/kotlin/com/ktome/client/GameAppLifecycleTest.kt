@@ -13,6 +13,7 @@ import com.ktome.core.save.SaveSnapshot
 import com.ktome.core.save.StairSnapshot
 import com.ktome.client.assets.AudioManifest
 import com.ktome.client.assets.AudioManifestEntry
+import com.ktome.client.assets.ClientFontCatalog
 import com.ktome.client.assets.ManifestPrefixRule
 import com.ktome.client.assets.VisualManifestEntry
 import com.ktome.client.assets.VisualManifest
@@ -156,24 +157,27 @@ class GameAppLifecycleTest {
         assertNull(coordinator.noticeOrNull())
         val bootstrapState = requireNotNull(coordinator.loadStateOrNull())
         assertTrue(bootstrapState.bootstrapLoaded)
-        assertTrue("fonts/ktome-ui-subset.otf" in requireNotNull(bootstrapState.bootstrapDescriptor).fontResources)
+        assertTrue(ClientFontCatalog.UI_FONT_RESOURCE_ID in requireNotNull(bootstrapState.bootstrapDescriptor).fontResources)
         assertTrue("audio.music.menu" in requireNotNull(bootstrapState.bootstrapDescriptor).menuAudioKeys)
+        assertTrue("audio.ui.hover" in requireNotNull(bootstrapState.bootstrapDescriptor).menuAudioKeys)
 
         coordinator.prepareSession(sampleRenderSnapshot())
         val sessionState = requireNotNull(coordinator.loadStateOrNull())
         assertEquals("shattered_outpost", sessionState.sessionZoneId)
         assertEquals("tileset.ruins", requireNotNull(sessionState.sessionDescriptor).tilesetKey)
         assertTrue("ambient.shattered_outpost" in requireNotNull(sessionState.sessionDescriptor).ambientAudioKeys)
+        assertTrue("audio.interactable.open" in requireNotNull(sessionState.sessionDescriptor).interactionAudioKeys)
         assertTrue("tileset.ruins.ground_01" in requireNotNull(sessionState.sessionDescriptor).terrainVisualKeys)
         assertTrue("tileset.ruins.ground_01" in sessionState.sessionVisualKeys)
         assertTrue("ambient.shattered_outpost" in sessionState.sessionAudioKeys)
+        assertTrue("audio.spell.basic" in sessionState.sessionAudioKeys)
         assertTrue(sessionState.warmVisualKeys.isEmpty())
 
         coordinator.warmCache(sampleRenderSnapshot())
         val warmState = requireNotNull(coordinator.loadStateOrNull())
         assertTrue("vfx.boss.warning.sigil_01" in requireNotNull(warmState.warmCacheDescriptor).highValueVfxKeys)
         assertTrue("vfx.boss.warning.sigil_01" in warmState.warmVisualKeys)
-        assertTrue("audio.boss.cultist.dungeon_lord" in warmState.warmAudioKeys)
+        assertTrue("audio.boss.warning" in warmState.warmAudioKeys)
     }
 }
 
@@ -280,7 +284,7 @@ private fun phase2VisualManifest(): VisualManifest =
                 VisualManifestEntry(key = "tileset.ruins.ground_01", category = "tile_ground", rawOutputPath = "phase2/p2-b/tileset_ruins_ground_01.png", footprint = "1x1"),
                 VisualManifestEntry(key = "prop.stairs.down", category = "prop_interactable", rawOutputPath = "debug/prop_stairs_down.png", footprint = "1x1"),
                 VisualManifestEntry(key = "actor.vanguard", category = "actor_sprite", rawOutputPath = "phase2/p2-b/actor_vanguard.png", footprint = "1x1"),
-                VisualManifestEntry(key = "vfx.boss.warning.sigil_01", category = "vfx_plate", rawOutputPath = "phase2/p2-b/vfx_boss_warning_sigil_01.png", footprint = "overlay"),
+                VisualManifestEntry(key = "vfx.boss.warning.sigil_01", category = "tile_decal", rawOutputPath = "phase2/p2-b/vfx_boss_warning_sigil_01.png", footprint = "overlay"),
             ),
         prefixRules = listOf(ManifestPrefixRule(prefix = "icon.", targetKey = "missing_visual")),
     )
@@ -293,11 +297,18 @@ private fun phase2AudioManifest(): AudioManifest =
             listOf(
                 AudioManifestEntry(key = "audio.fallback.silence", cueFamily = "silence", eventId = "silence.default", sourcePath = "audio/fallback/silence.ogg"),
                 AudioManifestEntry(key = "audio.music.menu", cueFamily = "music", eventId = "music.menu", sourcePath = "audio/fallback/silence.ogg"),
+                AudioManifestEntry(key = "audio.ui.confirm", cueFamily = "ui", eventId = "ui.confirm", sourcePath = "audio/fallback/silence.ogg"),
+                AudioManifestEntry(key = "audio.ui.cancel", cueFamily = "ui", eventId = "ui.cancel", sourcePath = "audio/fallback/silence.ogg"),
+                AudioManifestEntry(key = "audio.ui.hover", cueFamily = "ui", eventId = "ui.hover", sourcePath = "audio/fallback/silence.ogg"),
                 AudioManifestEntry(key = "audio.zone.shattered_outpost", cueFamily = "ambience", eventId = "audio.zone.shattered_outpost", sourcePath = "audio/fallback/silence.ogg"),
                 AudioManifestEntry(key = "ambient.shattered_outpost", cueFamily = "ambience", eventId = "ambient.shattered_outpost", sourcePath = "audio/fallback/silence.ogg"),
+                AudioManifestEntry(key = "audio.interactable.open", cueFamily = "interactable", eventId = "interactable.open", sourcePath = "audio/fallback/silence.ogg"),
                 AudioManifestEntry(key = "audio.interactable.stairs", cueFamily = "interactable", eventId = "interactable.stairs", sourcePath = "audio/fallback/silence.ogg"),
+                AudioManifestEntry(key = "audio.footstep.default", cueFamily = "footstep", eventId = "footstep.default", sourcePath = "audio/fallback/silence.ogg"),
+                AudioManifestEntry(key = "audio.melee.light", cueFamily = "melee", eventId = "melee.light", sourcePath = "audio/fallback/silence.ogg"),
+                AudioManifestEntry(key = "audio.spell.basic", cueFamily = "spell", eventId = "spell.basic", sourcePath = "audio/fallback/silence.ogg"),
                 AudioManifestEntry(key = "audio.profession.vanguard", cueFamily = "profession", eventId = "profession.vanguard", sourcePath = "audio/fallback/silence.ogg"),
-                AudioManifestEntry(key = "audio.boss.cultist.dungeon_lord", cueFamily = "boss", eventId = "audio.boss.cultist.dungeon_lord", sourcePath = "audio/fallback/silence.ogg"),
+                AudioManifestEntry(key = "audio.boss.warning", cueFamily = "boss", eventId = "audio.boss.warning", sourcePath = "audio/fallback/silence.ogg"),
             ),
     )
 
@@ -307,6 +318,7 @@ private fun sampleRenderSnapshot(): RenderSnapshot =
             RenderMetadataSnapshot(
                 revision = 1,
                 zoneId = "shattered_outpost",
+                zoneNameKey = "zone.shattered_outpost.name",
                 currentFloor = 1,
                 maxFloor = 2,
                 width = 2,
@@ -353,7 +365,7 @@ private fun sampleRenderSnapshot(): RenderSnapshot =
                 OverlayRenderSnapshot(
                     id = "boss-warning:7",
                     visualKey = "vfx.boss.warning.sigil_01",
-                    audioProfile = "audio.boss.cultist.dungeon_lord",
+                    audioProfile = "audio.boss.warning",
                     previewTurns = 1,
                     dangerLevel = 3,
                     shape = OverlayShapeSnapshot.SINGLE_TILE,
@@ -370,6 +382,7 @@ private fun sampleRenderSnapshot(): RenderSnapshot =
                         currentResource = 12,
                         maxResource = 12,
                         resourceLabelKey = "ui.hud.stamina.short",
+                        resourceTypeId = "STAMINA",
                         level = 1,
                         currentExperience = 0,
                         nextLevelRequirement = 12,

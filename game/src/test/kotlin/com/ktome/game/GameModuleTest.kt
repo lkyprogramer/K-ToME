@@ -111,12 +111,12 @@ class GameModuleTest {
                 SaveManager(tempDir.resolve("arcanist-save")),
             )
 
-        assertEquals(listOf("Power Strike", "Shield Bash", "War Cry"), vanguardSession.talentSlots().map { slot -> slot.name })
+        assertEquals(listOf("猛击", "盾击", "战吼"), vanguardSession.talentSlots().map { slot -> slot.name })
         assertTrue(arcanistSession.talentSlots().isEmpty())
-        assertEquals(listOf("Short Sword", "Leather Armor", "Healing Potion"), vanguardSession.inventoryItems().map { item -> item.name })
-        assertEquals(listOf("Healing Potion"), arcanistSession.inventoryItems().map { item -> item.name })
-        assertEquals("Short Sword", vanguardSession.equipmentSlots().first { slot -> slot.slot == EquipSlot.WEAPON }.itemName)
-        assertEquals("Leather Armor", vanguardSession.equipmentSlots().first { slot -> slot.slot == EquipSlot.ARMOR }.itemName)
+        assertEquals(listOf("短剑", "皮甲", "治疗药水"), vanguardSession.inventoryItems().map { item -> item.name })
+        assertEquals(listOf("治疗药水"), arcanistSession.inventoryItems().map { item -> item.name })
+        assertEquals("短剑", vanguardSession.equipmentSlots().first { slot -> slot.slot == EquipSlot.WEAPON }.itemName)
+        assertEquals("皮甲", vanguardSession.equipmentSlots().first { slot -> slot.slot == EquipSlot.ARMOR }.itemName)
         assertTrue(vanguardSession.playerStatus().maxHp > arcanistSession.playerStatus().maxHp)
     }
 
@@ -140,6 +140,23 @@ class GameModuleTest {
         assertTrue(monsterIds.isNotEmpty())
         assertTrue(monsterIds.all { monsterId -> monsterId in setOf("beast.rat", "undead.bone_archer", "bandit.sentry") })
         assertTrue("undead.bone_archer" in monsterIds)
+    }
+
+    @Test
+    fun `default shattered outpost opens with a real encounter pack on floor one`() {
+        val session =
+            GameModule.newFoundationSession(
+                FoundationGameConfig(zoneId = "shattered_outpost"),
+                SaveManager(tempDir.resolve("shattered-outpost-save")),
+            )
+        val world = extractWorld(session)
+        val monsterIds =
+            world.entitiesWith(MonsterTemplateId::class)
+                .map { entityId -> requireNotNull(world.get<MonsterTemplateId>(entityId)).value }
+
+        assertTrue(monsterIds.size >= 4)
+        assertTrue("beast.rat" in monsterIds)
+        assertTrue("bandit.sentry" in monsterIds)
     }
 
     @Test

@@ -75,7 +75,7 @@ class LocaleLintTest {
         assertTrue(fontPath.exists(), "Bundled UI font is missing: $fontPath")
 
         val noticeText = LintFixtures.bundledUiFontNoticePath().readText()
-        assertTrue(noticeText.contains("subset"), "Bundled font notice must describe the subset contract.")
+        assertTrue(noticeText.contains("full Simplified Chinese coverage"), "Bundled font notice must describe the full-coverage contract.")
         assertTrue(noticeText.contains("Original font file"), "Bundled font notice must preserve upstream source provenance.")
 
         val requiredGlyphs = LintFixtures.requiredUiGlyphs()

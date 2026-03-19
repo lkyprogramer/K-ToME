@@ -41,6 +41,9 @@ import com.ktome.core.item.MaterialDef
 import com.ktome.core.item.StatModifier
 import com.ktome.core.map.GameMap
 import com.ktome.core.map.Point
+import com.ktome.core.resource.ResourcePoolSnapshot
+import com.ktome.core.resource.ResourcePools
+import com.ktome.core.resource.ResourceType
 import com.ktome.core.save.AIBehaviorSnapshot
 import com.ktome.core.save.ActiveEffectSnapshot
 import com.ktome.core.save.CombatProfileSnapshot
@@ -285,6 +288,12 @@ internal object SessionSnapshotMapper {
                 },
             cooldowns = world.get<CooldownState>(entityId)?.remainingByTalentId?.toMap(),
             effects = world.get<EffectTracker>(entityId)?.effects?.map(::toActiveEffectSnapshot),
+            resourcePools =
+                world.get<ResourcePools>(entityId)?.entries
+                    ?.values
+                    ?.sortedBy { pool -> pool.type.name }
+                    ?.map { pool -> ResourcePoolSnapshot(type = pool.type.name, current = pool.current, max = pool.max) }
+                    .orEmpty(),
             talentLoadout =
                 world.get<TalentLoadout>(entityId)?.let { loadout ->
                     TalentLoadoutSnapshot(
@@ -351,6 +360,18 @@ internal object SessionSnapshotMapper {
         }
         snapshot.effects?.let { effects ->
             world.add(entityId, EffectTracker(effects.map { effect -> restoreActiveEffect(effect, content.localizer) }.toMutableList()))
+        }
+        if (snapshot.resourcePools.isNotEmpty()) {
+            world.add(
+                entityId,
+                ResourcePools(
+                    entries =
+                        snapshot.resourcePools.associateTo(linkedMapOf()) { pool ->
+                            val type = ResourceType.fromId(pool.type)
+                            type to com.ktome.core.resource.ResourcePool(type = type, current = pool.current, max = pool.max)
+                        }.toMutableMap(),
+                ),
+            )
         }
         snapshot.talentLoadout?.let { loadout ->
             world.add(
@@ -421,6 +442,7 @@ internal object SessionSnapshotMapper {
                 ),
             cooldowns = snapshot.cooldowns?.entries?.sortedBy { (talentId, _) -> talentId }?.associateTo(linkedMapOf()) { (talentId, turns) -> talentId to turns },
             effects = snapshot.effects?.map(::copyActiveEffectSnapshot)?.sortedBy(ActiveEffectSnapshot::id),
+            resourcePools = snapshot.resourcePools.sortedBy(ResourcePoolSnapshot::type),
             talentLoadout =
                 talentLoadout?.copy(
                     slotToTalentId =

@@ -17,6 +17,7 @@ data class RenderSnapshot(
 data class RenderMetadataSnapshot(
     val revision: Long,
     val zoneId: String,
+    val zoneNameKey: String,
     val currentFloor: Int,
     val maxFloor: Int,
     val width: Int,
@@ -71,6 +72,8 @@ enum class ActorRoleKindSnapshot {
 data class StatusEffectRenderSnapshot(
     val typeId: String,
     val remainingTurns: Int,
+    val nameKey: String? = null,
+    val iconKey: String? = null,
 )
 
 @Serializable
@@ -117,6 +120,7 @@ data class OverlayRenderSnapshot(
     val shape: OverlayShapeSnapshot,
     val sourceAbilityId: String,
     val cells: List<GridPointSnapshot>,
+    val warningMessage: RenderTextTokenSnapshot? = null,
 )
 
 @Serializable
@@ -135,6 +139,7 @@ data class PlayerStatusSnapshot(
     val currentResource: Int,
     val maxResource: Int,
     val resourceLabelKey: String,
+    val resourceTypeId: String = "STAMINA",
     val level: Int,
     val currentExperience: Int,
     val nextLevelRequirement: Int,
@@ -160,11 +165,13 @@ data class TalentSlotSnapshot(
     val nameKey: String,
     val visualKey: String? = null,
     val iconKey: String? = null,
+    val damageTypeIconKey: String? = null,
     val audioProfile: String? = null,
     val level: Int,
     val maxLevel: Int,
     val resourceCost: Int,
     val resourceLabelKey: String,
+    val resourceTypeId: String = "STAMINA",
     val range: Int,
     val minRange: Int,
     val currentCooldown: Int,
@@ -183,6 +190,7 @@ data class InventoryEntrySnapshot(
 data class ItemRenderSnapshot(
     val baseItemId: String,
     val nameKey: String,
+    val descKey: String? = null,
     val typeId: String,
     val visualKey: String? = null,
     val iconKey: String? = null,
