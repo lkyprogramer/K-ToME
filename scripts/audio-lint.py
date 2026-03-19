@@ -22,6 +22,20 @@ REQUIRED_CUE_FAMILIES = {
     "music",
 }
 
+REQUIRED_AUDIBLE_KEY_PATHS = {
+    "audio.ui.confirm": "audio/ui/confirm.ogg",
+    "audio.footstep.default": "audio/footstep/default.ogg",
+    "audio.melee.default": "audio/melee/default.ogg",
+    "audio.spell.default": "audio/spell/default.ogg",
+    "audio.monster.default": "audio/monster/default.ogg",
+    "audio.interactable.stairs": "audio/interactable/stairs.ogg",
+    "ambient.shattered_outpost": "audio/ambient/shattered_outpost.ogg",
+    "ambient.greenwood_fringe": "audio/ambient/greenwood_fringe.ogg",
+    "ambient.deep_iron_pit": "audio/ambient/deep_iron_pit.ogg",
+    "ambient.grey_gate_depths": "audio/ambient/grey_gate_depths.ogg",
+    "audio.music.menu": "audio/music/menu.ogg",
+}
+
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Lint the Phase 2 audio manifest")
@@ -210,6 +224,19 @@ def validate(
             + "."
         )
 
+    for key, expected_path in REQUIRED_AUDIBLE_KEY_PATHS.items():
+        manifest_entry = manifest_by_key.get(key)
+        if manifest_entry is None:
+            errors.append(f"canonical audio manifest is missing required audible key '{key}'.")
+            continue
+        source_path = str(manifest_entry.get("sourcePath", "")).strip()
+        if source_path != expected_path:
+            errors.append(
+                f"required audible key '{key}' must resolve to '{expected_path}', got '{source_path}'."
+            )
+        if source_path == "audio/fallback/silence.ogg":
+            errors.append(f"required audible key '{key}' must not use the silence fallback.")
+
     for entry in plan_entries:
         if not isinstance(entry, dict):
             errors.append("audio plan entries must be mappings.")
@@ -241,6 +268,20 @@ def validate(
                     f"runtime audio manifest field mismatch for '{key}' -> {field_name}: "
                     f"assets-src='{manifest_entry.get(field_name, '')}' runtime='{runtime_entry.get(field_name, '')}'."
                 )
+
+    for key, expected_path in REQUIRED_AUDIBLE_KEY_PATHS.items():
+        plan_entry = next(
+            (entry for entry in plan_entries if isinstance(entry, dict) and str(entry.get("key", "")).strip() == key),
+            None,
+        )
+        if plan_entry is None:
+            errors.append(f"audio plan is missing required audible key '{key}'.")
+            continue
+        plan_source_path = str(plan_entry.get("sourcePath", "")).strip()
+        if plan_source_path != expected_path:
+            errors.append(
+                f"audio plan required audible key '{key}' must point to '{expected_path}', got '{plan_source_path}'."
+            )
 
     overlapping_spec_keys = sorted({str(entry.get("key", "")).strip() for entry in plan_entries if isinstance(entry, dict)} & set(bundled_by_key))
     if overlapping_spec_keys:
