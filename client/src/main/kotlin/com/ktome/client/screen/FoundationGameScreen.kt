@@ -8,24 +8,26 @@ import com.badlogic.gdx.utils.viewport.FitViewport
 import com.ktome.client.GameApp
 import com.ktome.client.assets.ClientAssetBundle
 import com.ktome.client.assets.RenderSnapshotAssetAudit
+import com.ktome.client.audio.AudioRouter
 import com.ktome.client.input.CommandSource
 import com.ktome.client.input.InputHandlerCommandSource
-import com.ktome.client.render.AsciiRenderer
+import com.ktome.client.render.TileRenderer
 import com.ktome.core.snapshot.RenderSnapshot
 import com.ktome.game.FoundationGameSession
 
-private const val cellWidth = 16f
-private const val cellHeight = 16f
+private const val cellWidth = 32f
+private const val cellHeight = 32f
 
 class FoundationGameScreen(
     private val app: GameApp,
     private val session: FoundationGameSession,
     private val assets: ClientAssetBundle,
-    private val commandSource: CommandSource = InputHandlerCommandSource(),
+    private val commandSource: CommandSource = InputHandlerCommandSource(audioRouter = AudioRouter(assets.audioResolver)),
     private val renderEnabled: Boolean = true,
 ) : ScreenAdapter() {
     private var batch: SpriteBatch? = null
-    private var renderer: AsciiRenderer? = null
+    private var renderer: TileRenderer? = null
+    private var lastAudioSnapshot: RenderSnapshot? = null
     private val assetAudit = RenderSnapshotAssetAudit(assets)
     private var lastAuditedRevision: Long? = null
     private val viewport =
@@ -61,15 +63,20 @@ class FoundationGameScreen(
         }
 
         if (commandSource.shouldReturnToMenu()) {
+            commandSource.onReturnToMenu()
             app.showMainMenu(saveCurrent = true)
             return
         }
 
         val overlayState = commandSource.overlayState()
         app.warmSessionAssets(snapshot)
+        if (lastAudioSnapshot?.metadata?.revision != snapshot.metadata.revision) {
+            commandSource.onSnapshotUpdated(lastAudioSnapshot, snapshot)
+            lastAudioSnapshot = snapshot
+        }
         if (!renderEnabled) {
             auditSnapshot(snapshot)
-            AsciiRenderer.buildRenderModel(session.localizer(), assets.visualResolver, snapshot, overlayState)
+            TileRenderer.renderHeadless(session.localizer(), assets.visualResolver, snapshot, overlayState, cellWidth = cellWidth, cellHeight = cellHeight)
             return
         }
 
@@ -99,6 +106,7 @@ class FoundationGameScreen(
         renderer = null
         batch?.dispose()
         batch = null
+        lastAudioSnapshot = null
     }
 
     private fun centerCamera() {
@@ -111,7 +119,14 @@ class FoundationGameScreen(
             batch = SpriteBatch()
         }
         if (renderer == null) {
-            renderer = AsciiRenderer(localizer = session.localizer(), visualResolver = assets.visualResolver, cellWidth = cellWidth, cellHeight = cellHeight)
+            renderer =
+                TileRenderer(
+                    localizer = session.localizer(),
+                    visualResolver = assets.visualResolver,
+                    textureRepository = assets.textureRepository,
+                    cellWidth = cellWidth,
+                    cellHeight = cellHeight,
+                )
         }
     }
 
@@ -132,10 +147,10 @@ class FoundationGameScreen(
 
 internal object FoundationViewportSupport {
     fun worldWidth(snapshot: RenderSnapshot): Float =
-        (snapshot.metadata.width + AsciiRenderer.sidebarColumns) * cellWidth
+        TileRenderer.worldWidth(snapshot, cellWidth = cellWidth, cellHeight = cellHeight)
 
     fun worldHeight(snapshot: RenderSnapshot): Float =
-        (snapshot.metadata.height + AsciiRenderer.uiRows) * cellHeight
+        TileRenderer.worldHeight(snapshot, cellWidth = cellWidth, cellHeight = cellHeight)
 
     fun syncViewport(
         viewport: FitViewport,

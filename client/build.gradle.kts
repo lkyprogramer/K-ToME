@@ -87,6 +87,16 @@ tasks.named<Test>("test") {
     enabled = true
 }
 
+tasks.named("processResources") {
+    dependsOn(rootProject.tasks.named("syncPhase2Manifests"))
+}
+
+tasks.withType<Test>().configureEach {
+    if (System.getProperty("os.name").contains("Mac", ignoreCase = true)) {
+        jvmArgs("-XstartOnFirstThread")
+    }
+}
+
 tasks.register<Test>("clientSmoke") {
     group = "verification"
     description = "Runs headless client smoke coverage."

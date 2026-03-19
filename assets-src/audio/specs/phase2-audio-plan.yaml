@@ -82,18 +82,38 @@ entries:
     cueFamily: ui
     eventId: ui.confirm
     sourcePath: audio/ui/confirm.ogg
+  - key: audio.ui.cancel
+    cueFamily: ui
+    eventId: ui.cancel
+    sourcePath: audio/ui/cancel.ogg
+  - key: audio.ui.hover
+    cueFamily: ui
+    eventId: ui.hover
+    sourcePath: audio/ui/hover.ogg
   - key: audio.footstep.default
     cueFamily: footstep
     eventId: footstep.default
     sourcePath: audio/footstep/default.ogg
+  - key: audio.interactable.open
+    cueFamily: interactable
+    eventId: interactable.open
+    sourcePath: audio/interactable/open.ogg
   - key: audio.melee.default
     cueFamily: melee
     eventId: melee.default
     sourcePath: audio/melee/default.ogg
+  - key: audio.melee.light
+    cueFamily: melee
+    eventId: melee.light
+    sourcePath: audio/melee/light.ogg
   - key: audio.spell.default
     cueFamily: spell
     eventId: spell.default
     sourcePath: audio/spell/default.ogg
+  - key: audio.spell.basic
+    cueFamily: spell
+    eventId: spell.basic
+    sourcePath: audio/spell/basic.ogg
   - key: audio.monster.default
     cueFamily: monster
     eventId: monster.default
@@ -138,3 +158,11 @@ entries:
     cueFamily: profession
     eventId: profession.templar
     sourcePath: audio/professions/templar.ogg
+  - key: audio.monster.bandit.sentry
+    cueFamily: monster
+    eventId: audio.monster.bandit.sentry
+    sourcePath: audio/monster/bandit_alert.ogg
+  - key: audio.boss.warning
+    cueFamily: boss
+    eventId: audio.boss.warning
+    sourcePath: audio/boss/warning.ogg

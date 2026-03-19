@@ -10,7 +10,7 @@ private const val windowHeight = 800
 
 fun main() {
     val configuration = Lwjgl3ApplicationConfiguration().apply {
-        setTitle("$windowTitle | arrows/numpad move, x inspect, </> stairs, Ctrl+S save")
+        setTitle("$windowTitle | arrows/numpad move, Enter stairs, x inspect, Ctrl+S save")
         setWindowedMode(windowWidth, windowHeight)
         useVsync(true)
         setForegroundFPS(60)

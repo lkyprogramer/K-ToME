@@ -24,6 +24,28 @@
       ]
     },
     {
+      "key": "audio.ui.cancel",
+      "cueFamily": "ui",
+      "eventId": "ui.cancel",
+      "sourcePath": "audio/ui/cancel.ogg",
+      "tags": [
+        "placeholder",
+        "phase2",
+        "ui"
+      ]
+    },
+    {
+      "key": "audio.ui.hover",
+      "cueFamily": "ui",
+      "eventId": "ui.hover",
+      "sourcePath": "audio/ui/hover.ogg",
+      "tags": [
+        "placeholder",
+        "phase2",
+        "ui"
+      ]
+    },
+    {
       "key": "audio.footstep.default",
       "cueFamily": "footstep",
       "eventId": "footstep.default",
@@ -32,6 +54,17 @@
         "placeholder",
         "phase2",
         "footstep"
+      ]
+    },
+    {
+      "key": "audio.interactable.open",
+      "cueFamily": "interactable",
+      "eventId": "interactable.open",
+      "sourcePath": "audio/interactable/open.ogg",
+      "tags": [
+        "placeholder",
+        "phase2",
+        "interactable"
       ]
     },
     {
@@ -46,10 +79,32 @@
       ]
     },
     {
+      "key": "audio.melee.light",
+      "cueFamily": "melee",
+      "eventId": "melee.light",
+      "sourcePath": "audio/melee/light.ogg",
+      "tags": [
+        "placeholder",
+        "phase2",
+        "melee"
+      ]
+    },
+    {
       "key": "audio.spell.default",
       "cueFamily": "spell",
       "eventId": "spell.default",
       "sourcePath": "audio/spell/default.ogg",
+      "tags": [
+        "placeholder",
+        "phase2",
+        "spell"
+      ]
+    },
+    {
+      "key": "audio.spell.basic",
+      "cueFamily": "spell",
+      "eventId": "spell.basic",
+      "sourcePath": "audio/spell/basic.ogg",
       "tags": [
         "placeholder",
         "phase2",
@@ -203,6 +258,17 @@
       "tags": [
         "placeholder",
         "phase2"
+      ]
+    },
+    {
+      "key": "audio.boss.warning",
+      "cueFamily": "boss",
+      "eventId": "audio.boss.warning",
+      "sourcePath": "audio/boss/warning.ogg",
+      "tags": [
+        "placeholder",
+        "phase2",
+        "boss-warning"
       ]
     },
     {
@@ -362,10 +428,11 @@
       "key": "audio.monster.bandit.sentry",
       "cueFamily": "monster",
       "eventId": "audio.monster.bandit.sentry",
-      "sourcePath": "audio/monster/default.ogg",
+      "sourcePath": "audio/monster/bandit_alert.ogg",
       "tags": [
         "placeholder",
-        "phase2"
+        "phase2",
+        "bandit-alert"
       ]
     },
     {

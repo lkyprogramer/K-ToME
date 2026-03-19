@@ -108,6 +108,7 @@ data class InspectView(
     val actor: InspectActorView? = null,
     val items: List<InspectItemView> = emptyList(),
     val stairLabel: String? = null,
+    val stairDirectionId: String? = null,
 )
 
 data class InspectActorView(

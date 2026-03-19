@@ -47,7 +47,7 @@ object RunObservationCapture {
             exploredTiles
                 .mapNotNull { point ->
                     session.inspectAt(point)
-                        .takeIf { it.stairLabel == "Downstairs" }
+                        .takeIf { it.stairDirectionId == "DOWN" }
                         ?.point
                 }
                 .distinct()

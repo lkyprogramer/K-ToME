@@ -1,4 +1,5 @@
-Bundled font: Noto Sans CJK SC (subset for K-ToME UI strings)
-Source: https://github.com/notofonts/noto-cjk
-Original font file: Sans/OTF/SimplifiedChinese/NotoSansCJKsc-Regular.otf
+Bundled font: Source Han Sans SC Regular
+Source: https://github.com/adobe-fonts/source-han-sans/releases/tag/2.005R
+Original font file: OTF/SimplifiedChinese/SourceHanSansSC-Regular.otf
 License family: SIL Open Font License 1.1
+Coverage rationale: full Simplified Chinese coverage for K-ToME UI strings

@@ -25,6 +25,7 @@ class VictoryScreen(
     private val viewport = FitViewport(menuWidth, menuHeight)
 
     override fun show() {
+        app.audioRouterOrNull()?.onMenuShown()
         if (!renderEnabled) {
             return
         }

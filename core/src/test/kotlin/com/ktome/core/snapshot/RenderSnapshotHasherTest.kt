@@ -29,6 +29,7 @@ class RenderSnapshotHasherTest {
                 RenderMetadataSnapshot(
                     revision = revision,
                     zoneId = "shattered_outpost",
+                    zoneNameKey = "zone.shattered_outpost.name",
                     currentFloor = 1,
                     maxFloor = 2,
                     width = 2,

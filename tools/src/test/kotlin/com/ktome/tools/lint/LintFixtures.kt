@@ -100,7 +100,7 @@ internal object LintFixtures {
 
     fun requiredUiGlyphs(): Set<Char> = UiGlyphCatalog.requiredGlyphs(::loadText)
 
-    fun bundledUiFontPath(): Path = repoRoot.resolve("client/src/main/resources/fonts/ktome-ui-subset.otf")
+    fun bundledUiFontPath(): Path = repoRoot.resolve("client/src/main/resources/fonts/source-han-sans-sc-regular.otf")
 
     fun bundledUiFontNoticePath(): Path = repoRoot.resolve("client/src/main/resources/fonts/OFL.txt")
 

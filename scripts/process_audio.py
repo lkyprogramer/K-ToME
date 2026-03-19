@@ -148,14 +148,17 @@ def stable_seed(identifier: str) -> int:
 def generate_placeholder_wav(output_path: pathlib.Path, cue_family: str, identifier: str) -> None:
     output_path.parent.mkdir(parents=True, exist_ok=True)
     rng = random.Random(stable_seed(identifier))
+    normalized_id = identifier.lower()
     if cue_family == "ambience":
-        duration_s = 4.0
+        duration_s = 5.2 if "shattered_outpost" in normalized_id else 4.0
     elif cue_family == "music":
-        duration_s = 6.0
+        duration_s = 8.0 if "menu" in normalized_id else 6.0
     elif cue_family == "interactable":
         duration_s = 0.45
     elif cue_family == "profession":
-        duration_s = 1.2
+        duration_s = 1.35 if "vanguard" in normalized_id or "arcanist" in normalized_id else 1.2
+    elif cue_family == "monster":
+        duration_s = 0.95 if "bandit" in normalized_id else 0.8
     elif cue_family == "silence":
         duration_s = 0.1
     else:
@@ -171,22 +174,41 @@ def generate_placeholder_wav(output_path: pathlib.Path, cue_family: str, identif
         t = index / TARGET_SAMPLE_RATE
         if cue_family == "ambience":
             envelope = min(1.0, t / 0.8, (duration_s - t) / 0.8)
-            noise = (rng.random() * 2.0 - 1.0) * 0.03
-            value = (
-                math.sin(2.0 * math.pi * base_frequency * t) * 0.08
-                + math.sin(2.0 * math.pi * secondary_frequency * t) * 0.05
-                + math.sin(2.0 * math.pi * 0.35 * t) * 0.04
-                + noise
-            ) * envelope
+            if "shattered_outpost" in normalized_id:
+                wind = (
+                    math.sin(2.0 * math.pi * 46 * t) * 0.08
+                    + math.sin(2.0 * math.pi * 91 * t) * 0.05
+                )
+                whistle = math.sin(2.0 * math.pi * (312 + math.sin(2.0 * math.pi * 0.16 * t) * 18) * t) * 0.035
+                rubble = (rng.random() * 2.0 - 1.0) * (0.018 + max(0.0, math.sin(2.0 * math.pi * 0.42 * t)) * 0.02)
+                value = (wind + whistle + rubble) * envelope
+            else:
+                noise = (rng.random() * 2.0 - 1.0) * 0.03
+                value = (
+                    math.sin(2.0 * math.pi * base_frequency * t) * 0.08
+                    + math.sin(2.0 * math.pi * secondary_frequency * t) * 0.05
+                    + math.sin(2.0 * math.pi * 0.35 * t) * 0.04
+                    + noise
+                ) * envelope
         elif cue_family == "music":
             envelope = min(1.0, t / 1.0, (duration_s - t) / 1.2)
-            chord = (
-                math.sin(2.0 * math.pi * base_frequency * t) * 0.10
-                + math.sin(2.0 * math.pi * (base_frequency * 1.25) * t) * 0.07
-                + math.sin(2.0 * math.pi * (base_frequency * 1.5) * t) * 0.05
-            )
-            pulse = math.sin(2.0 * math.pi * 0.25 * t) * 0.03
-            value = (chord + pulse) * envelope
+            if "menu" in normalized_id:
+                drone = math.sin(2.0 * math.pi * secondary_frequency * t) * 0.07
+                lead = (
+                    math.sin(2.0 * math.pi * base_frequency * t) * 0.08
+                    + math.sin(2.0 * math.pi * (base_frequency * 1.26) * t) * 0.06
+                )
+                chime = math.sin(2.0 * math.pi * (base_frequency * 2.02) * t + math.sin(2.0 * math.pi * 0.28 * t)) * 0.03
+                pulse = math.sin(2.0 * math.pi * 0.125 * t) * 0.025
+                value = (drone + lead + chime + pulse) * envelope
+            else:
+                chord = (
+                    math.sin(2.0 * math.pi * base_frequency * t) * 0.10
+                    + math.sin(2.0 * math.pi * (base_frequency * 1.25) * t) * 0.07
+                    + math.sin(2.0 * math.pi * (base_frequency * 1.5) * t) * 0.05
+                )
+                pulse = math.sin(2.0 * math.pi * 0.25 * t) * 0.03
+                value = (chord + pulse) * envelope
         elif cue_family == "interactable":
             pulse_times = (0.0, 0.12, 0.24)
             value = 0.0
@@ -228,16 +250,44 @@ def generate_placeholder_wav(output_path: pathlib.Path, cue_family: str, identif
             ) * envelope
         elif cue_family == "monster":
             envelope = min(1.0, t / 0.05, max(0.0, (duration_s - t) / 0.18))
-            growl = math.sin(2.0 * math.pi * 72 * t) * 0.20
-            rasp = (rng.random() * 2.0 - 1.0) * 0.06
-            value = (growl + rasp) * envelope
+            if "bandit" in normalized_id:
+                value = 0.0
+                for pulse_index, pulse_start in enumerate((0.0, 0.18)):
+                    age = t - pulse_start
+                    if 0.0 <= age <= 0.16:
+                        pitch = 780 - pulse_index * 90
+                        whistle = math.sin(2.0 * math.pi * pitch * age) * 0.16
+                        rasp = (rng.random() * 2.0 - 1.0) * 0.03
+                        value += (whistle + rasp) * math.exp(-age * 12.0)
+                value *= envelope
+            else:
+                growl = math.sin(2.0 * math.pi * 72 * t) * 0.20
+                rasp = (rng.random() * 2.0 - 1.0) * 0.06
+                value = (growl + rasp) * envelope
         elif cue_family == "profession":
-            segment = duration_s / 3.0
-            note_index = min(2, int(t / segment))
-            frequency = base_frequency + note_index * 110
-            local_t = t - segment * note_index
-            envelope = min(1.0, local_t / 0.05, max(0.0, (segment - local_t) / 0.15))
-            value = math.sin(2.0 * math.pi * frequency * local_t) * 0.24 * envelope
+            if "vanguard" in normalized_id:
+                segment = duration_s / 3.0
+                note_index = min(2, int(t / segment))
+                frequency = 176 + note_index * 58
+                local_t = t - segment * note_index
+                envelope = min(1.0, local_t / 0.04, max(0.0, (segment - local_t) / 0.12))
+                overtone = math.sin(2.0 * math.pi * (frequency * 2.0) * local_t) * 0.06
+                value = (math.sin(2.0 * math.pi * frequency * local_t) * 0.22 + overtone) * envelope
+            elif "arcanist" in normalized_id:
+                segment = duration_s / 3.0
+                note_index = min(2, int(t / segment))
+                frequency = 262 + note_index * 86
+                local_t = t - segment * note_index
+                shimmer = math.sin(2.0 * math.pi * (frequency * 1.5) * local_t + math.sin(2.0 * math.pi * 5.0 * local_t)) * 0.08
+                envelope = min(1.0, local_t / 0.06, max(0.0, (segment - local_t) / 0.18))
+                value = (math.sin(2.0 * math.pi * frequency * local_t) * 0.18 + shimmer) * envelope
+            else:
+                segment = duration_s / 3.0
+                note_index = min(2, int(t / segment))
+                frequency = base_frequency + note_index * 110
+                local_t = t - segment * note_index
+                envelope = min(1.0, local_t / 0.05, max(0.0, (segment - local_t) / 0.15))
+                value = math.sin(2.0 * math.pi * frequency * local_t) * 0.24 * envelope
         elif cue_family == "silence":
             value = 0.0
         else:

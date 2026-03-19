@@ -71,6 +71,7 @@ object ClientAssetBundleLoader {
                 audioManifest = audioManifest,
                 visualResolver = VisualManifestResolver(visualManifest, logSink),
                 audioResolver = AudioManifestResolver(audioManifest, logSink),
+                textureRepository = ClientTextureRepository(),
             )
         } catch (exception: IllegalArgumentException) {
             throw ManifestLoadException("Client asset bundle is invalid.", exception)

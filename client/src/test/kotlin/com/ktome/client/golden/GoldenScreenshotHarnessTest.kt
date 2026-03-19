@@ -1,28 +1,27 @@
 package com.ktome.client.golden
 
-import com.ktome.client.assets.ClientAssetBundleLoader
+import com.badlogic.gdx.ApplicationAdapter
+import com.badlogic.gdx.Gdx
+import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Application
+import com.badlogic.gdx.backends.lwjgl3.Lwjgl3ApplicationConfiguration
+import com.badlogic.gdx.graphics.Pixmap
+import com.badlogic.gdx.graphics.glutils.HdpiMode
+import com.badlogic.gdx.utils.ScreenUtils
+import com.ktome.client.GameApp
+import com.ktome.client.input.CommandSource
+import com.ktome.client.input.InputSource
 import com.ktome.client.input.OverlayState
 import com.ktome.client.input.UiMode
-import com.ktome.client.render.AsciiRenderer
-import com.ktome.client.render.AsciiTextTone
-import com.ktome.client.screen.MainMenuTextSnapshot
 import com.ktome.core.save.SaveManager
 import com.ktome.core.snapshot.RenderSnapshot
 import com.ktome.game.FoundationGameConfig
-import com.ktome.game.GameModule
+import com.ktome.game.harness.RunObservationCapture
+import com.ktome.game.harness.SmokeBot
 import com.ktome.game.i18n.GameLocale
-import com.ktome.game.i18n.Localizer
-import com.ktome.game.i18n.LocalizationBundle
-import java.awt.BasicStroke
-import java.awt.Color
-import java.awt.Graphics2D
-import java.awt.RenderingHints
-import java.awt.image.BufferedImage
-import java.nio.ByteBuffer
 import java.nio.file.Path
 import java.security.MessageDigest
-import kotlin.math.max
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
@@ -33,188 +32,205 @@ class GoldenScreenshotHarnessTest {
     lateinit var tempDir: Path
 
     @Test
-    fun `golden screenshot hashes remain stable`() {
-        val scenario = GoldenBaselineScenario()
-        val localizer = LocalizationBundle.load().translator(scenario.locale)
-        val renderer = SoftwareGoldenRenderer(scenario, localizer)
-        val snapshot = liveGameplaySnapshot(scenario)
+    fun `golden screenshot hashes remain stable for english and chinese formal screens`() {
+        val english = captureGoldenSet(GameLocale.EN_US, "en-us")
+        val chinese = captureGoldenSet(GameLocale.ZH_CN, "zh-cn")
 
-        val menuHash = renderer.pixelHash(renderer.renderMainMenu(productionMenuSnapshot(localizer)))
-        val hudHash = renderer.pixelHash(renderer.renderGame(snapshot, UiMode.MAP))
-        val inventoryHash = renderer.pixelHash(renderer.renderGame(snapshot, UiMode.INVENTORY))
-        val inspectHash = renderer.pixelHash(renderer.renderGame(snapshot, UiMode.INSPECT))
-
-        assertEquals("ded54864652335b5560e7cd8a600f43d659043411504a8b95c76bcb9e0d709e8", menuHash)
-        assertEquals("ab00cc351c050bc357beba08d759e91fd5245a9a16629a8ec34d0297a05c357d", hudHash)
-        assertEquals("007de4b64bce5812149d3577c654fa87cbc72484112713a5d829459dea583745", inventoryHash)
-        assertEquals("9c08ab022b085dd1ae17fb6d476eed0ded56ef9264037496fbc1378e6b13556c", inspectHash)
+        assertEquals(
+            listOf(
+                "cbd1cf6fd0c151be171c66530fe6d893b271bc8bbe6cfc1c8e859f7df89f3a8c",
+                "d526fc5500537001e5bca0a5215222e786f543e4b2b7d3595bab7eaa063df13f",
+                "934cffe81fbdf0c530011414be92df59f5a56ffdefc52f8864c10588ad06f05f",
+                "b426031140d27f0eac2efb98906fa9eb668a2d033d9328235a4c0e49954361f2",
+                "919c7b610f3fee94eeecb68375faadb8b2a05f55075e4b876c0513ade396acf7",
+                "239bc9cfd5a916b6699d082acab8d34f8a292027bf1c1b39b0f77260fa2d3b28",
+                "32e29c9eb24dc604bfdf2819c7c1100a7f24ffd9db1c5d745f220ba51d062a40",
+                "9bc0dc7aaa2f486d15b0c2aa53984512c9d23af9e4cc24516654c27ec124e065",
+            ),
+            english + chinese,
+        )
     }
 
-    private fun productionMenuSnapshot(localizer: Localizer): MainMenuTextSnapshot =
-        MainMenuTextSnapshot(
-            title = localizer.text("ui.menu.title"),
-            subtitle = localizer.text("ui.menu.subtitle"),
-            entries =
-                listOf(
-                    localizer.text("ui.menu.new_game"),
-                    localizer.text("ui.menu.continue"),
-                    localizer.text("ui.menu.exit"),
-                ),
-            language = localizer.text("ui.menu.language", "value" to localizer.localeLabel()),
-            controls = localizer.text("ui.menu.controls"),
-            notice = "Asset contract ready",
+    @Test
+    fun `boss warning golden hashes remain stable for english and chinese`() {
+        val english = captureBossWarningHash(GameLocale.EN_US, "boss-warning-en")
+        val chinese = captureBossWarningHash(GameLocale.ZH_CN, "boss-warning-zh")
+
+        assertEquals(
+            listOf(
+                "3766bdbf75b14464012da759b452a21f6cbd76edfd08549c66dd0c6bcf2cfcb0",
+                "7ca06c76c2cabcda1b8663468e02f74d02f19c770a1e67ea1be503a476eab778",
+            ),
+            listOf(english, chinese),
+        )
+    }
+
+    private fun captureGoldenSet(
+        locale: GameLocale,
+        saveFolderName: String,
+    ): List<String> =
+        withLwjgl3Context(width = 1280, height = 800) {
+            val overlaySource = MutableOverlayCommandSource()
+            val app =
+                GameApp(
+                    saveManager = SaveManager(tempDir.resolve(saveFolderName)),
+                    defaultConfig =
+                        FoundationGameConfig(
+                            seed = 20260318L,
+                            zoneId = "shattered_outpost",
+                            playerProfessionId = "vanguard",
+                        ),
+                    menuInputSourceFactory = { NoOpInputSource },
+                    gameCommandSourceFactory = { overlaySource },
+                    outcomeInputSourceFactory = { NoOpInputSource },
+                    renderEnabled = true,
+                    initialLocale = locale,
+                )
+
+            try {
+                app.create()
+                val menuHash = captureHash { repeat(2) { app.render() } }
+
+                app.startNewGame()
+                val hudHash =
+                    captureHash {
+                        overlaySource.overlayState = OverlayState(mode = UiMode.MAP)
+                        repeat(2) { app.render() }
+                    }
+                val inventoryHash =
+                    captureHash {
+                        overlaySource.overlayState = OverlayState(mode = UiMode.INVENTORY, inventorySelection = 0)
+                        repeat(2) { app.render() }
+                    }
+                val inspectHash =
+                    captureHash {
+                        overlaySource.overlayState = OverlayState(mode = UiMode.INSPECT)
+                        repeat(2) { app.render() }
+                    }
+                listOf(menuHash, hudHash, inventoryHash, inspectHash)
+            } finally {
+                app.dispose()
+            }
+        }
+
+    private fun captureBossWarningHash(
+        locale: GameLocale,
+        saveFolderName: String,
+    ): String =
+        withLwjgl3Context(width = 1280, height = 800) {
+            val overlaySource = MutableOverlayCommandSource()
+            val app =
+                GameApp(
+                    saveManager = SaveManager(tempDir.resolve(saveFolderName)),
+                    defaultConfig =
+                        FoundationGameConfig(
+                            seed = 20260317L,
+                            zoneId = "grey_gate_depths",
+                            playerProfessionId = "templar",
+                        ),
+                    menuInputSourceFactory = { NoOpInputSource },
+                    gameCommandSourceFactory = { overlaySource },
+                    outcomeInputSourceFactory = { NoOpInputSource },
+                    renderEnabled = true,
+                    initialLocale = locale,
+                )
+            val bot = SmokeBot()
+
+            try {
+                app.create()
+                app.startNewGame()
+                val session = requireNotNull(app.activeSessionOrNull()) { "Expected an active session for overlay golden capture." }
+
+                for (step in 0 until 800) {
+                    val snapshot = session.renderSnapshot()
+                    val hasBossWarning = snapshot.overlays.any { overlay -> overlay.id.startsWith("boss-warning:") }
+                    val hasTelegraph = snapshot.overlays.any { overlay -> overlay.id.startsWith("telegraph:") }
+                    if (hasBossWarning && hasTelegraph) {
+                        assertTrue(snapshot.logEvents.any { event -> event.message.key == "log.warning.boss_presence" })
+                        assertTrue(snapshot.logEvents.any { event -> event.message.key == "log.warning.telegraph" })
+                        overlaySource.overlayState = OverlayState(mode = UiMode.MAP)
+                        return@withLwjgl3Context captureHash { repeat(2) { app.render() } }
+                    }
+
+                    val command = bot.decide(RunObservationCapture.capture(session, step))
+                    check(session.perform(command)) { "Command rejected while driving overlay golden: $command" }
+                    app.render()
+                }
+
+                error("Failed to reach a visible boss warning overlay for locale ${locale.id}.")
+            } finally {
+                app.dispose()
+            }
+        }
+
+    private fun captureHash(render: () -> Unit): String {
+        render()
+        Gdx.gl.glFinish()
+        val pixmap = ScreenUtils.getFrameBufferPixmap(0, 0, Gdx.graphics.backBufferWidth, Gdx.graphics.backBufferHeight)
+        return try {
+            pixmapHash(pixmap)
+        } finally {
+            pixmap.dispose()
+        }
+    }
+
+    private fun pixmapHash(pixmap: Pixmap): String {
+        val bytes = ByteArray(pixmap.width * pixmap.height * 4)
+        val buffer = pixmap.pixels
+        buffer.rewind()
+        buffer.get(bytes)
+        buffer.rewind()
+        return MessageDigest.getInstance("SHA-256")
+            .digest(bytes)
+            .joinToString(separator = "") { byte -> "%02x".format(byte) }
+    }
+
+    private fun <T> withLwjgl3Context(
+        width: Int,
+        height: Int,
+        block: () -> T,
+    ): T {
+        var result: Result<T>? = null
+        val configuration =
+            Lwjgl3ApplicationConfiguration().apply {
+                setInitialVisible(false)
+                disableAudio(true)
+                setHdpiMode(HdpiMode.Pixels)
+                setWindowedMode(width, height)
+                setForegroundFPS(60)
+                setIdleFPS(60)
+                setPauseWhenLostFocus(false)
+                setPauseWhenMinimized(false)
+            }
+
+        Lwjgl3Application(
+            object : ApplicationAdapter() {
+                override fun create() {
+                    result = runCatching(block)
+                    Gdx.app.exit()
+                }
+            },
+            configuration,
         )
 
-    private fun liveGameplaySnapshot(scenario: GoldenBaselineScenario): RenderSnapshot =
-        GameModule.newFoundationSession(
-            config =
-                FoundationGameConfig(
-                    seed = scenario.seed,
-                    zoneId = "shattered_outpost",
-                    playerProfessionId = "vanguard",
-                ),
-            saveManager = SaveManager(tempDir.resolve("golden-save-${scenario.seed}")),
-            locale = scenario.locale,
-        ).renderSnapshot()
-
-    private data class GoldenBaselineScenario(
-        val seed: Long = 20260318L,
-        val locale: GameLocale = GameLocale.EN_US,
-        val menuBaseWidthPx: Int = 320,
-        val menuBaseHeightPx: Int = 180,
-        val gameBaseWidthPx: Int = 360,
-        val gameBaseHeightPx: Int = 220,
-        val cellBasePx: Int = 18,
-        val uiScale: Int = 1,
-        val fontId: String = "software-block-ui-v1",
-    ) {
-        val menuWidthPx: Int = menuBaseWidthPx * uiScale
-        val menuHeightPx: Int = menuBaseHeightPx * uiScale
-        val gameWidthPx: Int = gameBaseWidthPx * uiScale
-        val gameHeightPx: Int = gameBaseHeightPx * uiScale
-        val cellPx: Int = cellBasePx * uiScale
+        return requireNotNull(result) {
+            "LWJGL3 golden capture did not produce a result."
+        }.getOrThrow()
     }
+}
 
-    private class SoftwareGoldenRenderer(
-        private val scenario: GoldenBaselineScenario,
-        private val localizer: Localizer,
-    ) {
-        private val clientAssets = ClientAssetBundleLoader.load()
+private object NoOpInputSource : InputSource {
+    override fun isKeyJustPressed(keycode: Int): Boolean = false
 
-        init {
-            require(scenario.fontId.isNotBlank()) { "Golden screenshot fontId must not be blank." }
-        }
+    override fun isKeyPressed(keycode: Int): Boolean = false
+}
 
-        fun renderMainMenu(snapshot: MainMenuTextSnapshot): BufferedImage {
-            val scale = scenario.uiScale
-            val image = BufferedImage(scenario.menuWidthPx, scenario.menuHeightPx, BufferedImage.TYPE_INT_ARGB)
-            val graphics = image.createGraphics()
-            base(graphics, image.width, image.height)
-            graphics.color = Color(0xCC, 0xAA, 0x33)
-            graphics.fillRect(24 * scale, 18 * scale, snapshot.title.length * 12 * scale, 14 * scale)
-            graphics.color = Color(0x88, 0x88, 0x99)
-            graphics.fillRect(24 * scale, 40 * scale, snapshot.subtitle.length * 7 * scale, 8 * scale)
-            snapshot.entries.forEachIndexed { index, entry ->
-                graphics.color = if (index == 0) Color(0x33, 0xCC, 0xDD) else Color(0xDD, 0xDD, 0xDD)
-                graphics.fillRect(24 * scale, (72 + index * 18) * scale, entry.length * 7 * scale, 10 * scale)
-            }
-            graphics.color = Color(0xDD, 0x99, 0x33)
-            graphics.fillRect(24 * scale, 136 * scale, snapshot.language.length * 5 * scale, 8 * scale)
-            graphics.color = Color(0x77, 0x77, 0x77)
-            graphics.fillRect(24 * scale, 152 * scale, snapshot.controls.length * 4 * scale, 6 * scale)
-            snapshot.notice?.let { notice ->
-                graphics.color = Color(0xE7, 0x84, 0x7D)
-                graphics.fillRect(24 * scale, 164 * scale, notice.length * 4 * scale, 6 * scale)
-            }
-            graphics.dispose()
-            return image
-        }
+private class MutableOverlayCommandSource : CommandSource {
+    var overlayState: OverlayState = OverlayState(mode = UiMode.MAP)
 
-        fun renderGame(
-            snapshot: RenderSnapshot,
-            mode: UiMode,
-        ): BufferedImage {
-            val overlayState =
-                when (mode) {
-                    UiMode.INVENTORY -> OverlayState(mode = mode, inventorySelection = 0)
-                    else -> OverlayState(mode = mode)
-                }
-            val model = AsciiRenderer.buildRenderModel(localizer, clientAssets.visualResolver, snapshot, overlayState)
-            val cell = scenario.cellPx
-            val scale = scenario.uiScale
-            val image = BufferedImage(scenario.gameWidthPx, scenario.gameHeightPx, BufferedImage.TYPE_INT_ARGB)
-            val graphics = image.createGraphics()
-            base(graphics, image.width, image.height)
+    override fun nextCommand(snapshot: RenderSnapshot) = null
 
-            model.terrainGlyphs.forEach { glyph ->
-                graphics.color = Color.decode(glyph.colorHex)
-                graphics.fillRect(16 * scale + glyph.x * cell, 24 * scale + glyph.y * cell, cell - 2 * scale, cell - 2 * scale)
-            }
-            model.propGlyphs.forEach { glyph ->
-                graphics.color = Color.decode(glyph.colorHex)
-                graphics.fillRect(20 * scale + glyph.x * cell, 28 * scale + glyph.y * cell, cell - 10 * scale, cell - 10 * scale)
-            }
-            model.actorGlyphs.forEach { glyph ->
-                graphics.color = Color.decode(glyph.colorHex)
-                graphics.fillOval(19 * scale + glyph.x * cell, 27 * scale + glyph.y * cell, cell - 8 * scale, cell - 8 * scale)
-            }
-            model.targetCursor?.let { cursor ->
-                graphics.color = Color(0xFF, 0x24, 0x00)
-                graphics.stroke = BasicStroke(2f * scale)
-                graphics.drawRect(16 * scale + cursor.x * cell, 24 * scale + cursor.y * cell, cell - 2 * scale, cell - 2 * scale)
-            }
-            model.inspectCursor?.let { cursor ->
-                graphics.color = Color(0x00, 0xFF, 0xFF)
-                graphics.stroke = BasicStroke(2f * scale)
-                graphics.drawRect(19 * scale + cursor.x * cell, 27 * scale + cursor.y * cell, cell - 8 * scale, cell - 8 * scale)
-            }
+    override fun overlayState(): OverlayState = overlayState
 
-            graphics.color = Color(0xCC, 0xAA, 0x33)
-            graphics.fillRect(16 * scale, 8 * scale, max(120 * scale, model.hudText.length * 2 * scale), 8 * scale)
-
-            model.messageLines.takeLast(AsciiRenderer.messageRows).forEachIndexed { index, text ->
-                graphics.color = Color(0xDD, 0xDD, 0xDD)
-                graphics.fillRect(16 * scale, 206 * scale - index * 10 * scale, max(20 * scale, text.length * 3 * scale), 6 * scale)
-            }
-
-            model.sidebarLines.forEachIndexed { index, line ->
-                if (line.text.isBlank()) {
-                    return@forEachIndexed
-                }
-                graphics.color = tone(line.tone)
-                graphics.fillRect(246 * scale, 24 * scale + index * 10 * scale, max(12 * scale, line.text.length * 3 * scale), 6 * scale)
-            }
-
-            graphics.dispose()
-            return image
-        }
-
-        fun pixelHash(image: BufferedImage): String {
-            val argb = IntArray(image.width * image.height)
-            image.getRGB(0, 0, image.width, image.height, argb, 0, image.width)
-            val bytes = ByteBuffer.allocate(argb.size * Int.SIZE_BYTES).apply { argb.forEach(::putInt) }.array()
-            return MessageDigest.getInstance("SHA-256")
-                .digest(bytes)
-                .joinToString(separator = "") { byte -> "%02x".format(byte) }
-        }
-
-        private fun tone(tone: AsciiTextTone): Color =
-            when (tone) {
-                AsciiTextTone.GOLD -> Color(0xCC, 0xAA, 0x33)
-                AsciiTextTone.WHITE -> Color(0xDD, 0xDD, 0xDD)
-                AsciiTextTone.LIGHT_GRAY -> Color(0xAA, 0xAA, 0xAA)
-                AsciiTextTone.CYAN -> Color(0x33, 0xCC, 0xDD)
-                AsciiTextTone.GRAY -> Color(0x77, 0x77, 0x77)
-            }
-
-        private fun base(
-            graphics: Graphics2D,
-            width: Int,
-            height: Int,
-        ) {
-            graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_OFF)
-            graphics.color = Color(0x0A, 0x0A, 0x14)
-            graphics.fillRect(0, 0, width, height)
-        }
-    }
+    override fun isMapMode(): Boolean = overlayState.mode == UiMode.MAP
 }

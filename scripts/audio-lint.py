@@ -24,16 +24,25 @@ REQUIRED_CUE_FAMILIES = {
 
 REQUIRED_AUDIBLE_KEY_PATHS = {
     "audio.ui.confirm": "audio/ui/confirm.ogg",
+    "audio.ui.cancel": "audio/ui/cancel.ogg",
+    "audio.ui.hover": "audio/ui/hover.ogg",
     "audio.footstep.default": "audio/footstep/default.ogg",
+    "audio.interactable.open": "audio/interactable/open.ogg",
     "audio.melee.default": "audio/melee/default.ogg",
+    "audio.melee.light": "audio/melee/light.ogg",
     "audio.spell.default": "audio/spell/default.ogg",
+    "audio.spell.basic": "audio/spell/basic.ogg",
     "audio.monster.default": "audio/monster/default.ogg",
+    "audio.monster.bandit.sentry": "audio/monster/bandit_alert.ogg",
     "audio.interactable.stairs": "audio/interactable/stairs.ogg",
+    "audio.boss.warning": "audio/boss/warning.ogg",
     "ambient.shattered_outpost": "audio/ambient/shattered_outpost.ogg",
     "ambient.greenwood_fringe": "audio/ambient/greenwood_fringe.ogg",
     "ambient.deep_iron_pit": "audio/ambient/deep_iron_pit.ogg",
     "ambient.grey_gate_depths": "audio/ambient/grey_gate_depths.ogg",
     "audio.music.menu": "audio/music/menu.ogg",
+    "audio.profession.vanguard": "audio/professions/vanguard.ogg",
+    "audio.profession.arcanist": "audio/professions/arcanist.ogg",
 }
 
 

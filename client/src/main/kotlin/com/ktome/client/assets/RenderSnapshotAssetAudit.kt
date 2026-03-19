@@ -28,6 +28,9 @@ class RenderSnapshotAssetAudit(
         snapshot.actors.forEach { actor ->
             resolveVisual(actor.visualKey)
             resolveAudio(actor.audioProfile)
+            actor.statusEffects.forEach { effect ->
+                resolveVisual(effect.iconKey)
+            }
         }
 
         snapshot.overlays.forEach { overlay ->
@@ -41,6 +44,7 @@ class RenderSnapshotAssetAudit(
         snapshot.uiState.talents.forEach { talent ->
             resolveVisual(talent.visualKey)
             resolveVisual(talent.iconKey)
+            resolveVisual(talent.damageTypeIconKey)
             resolveAudio(talent.audioProfile)
         }
         snapshot.uiState.inventory.forEach { item ->

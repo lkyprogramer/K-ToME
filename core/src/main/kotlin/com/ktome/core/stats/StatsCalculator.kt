@@ -32,6 +32,14 @@ object StatsCalculator {
         return calculate(stats, profile, collectModifiers(world, entity))
     }
 
+    fun effectiveStats(
+        world: World,
+        entity: EntityId,
+    ): Stats {
+        val stats = requireNotNull(world.get<Stats>(entity)) { "Missing Stats for $entity" }
+        return applyModifiers(stats, collectModifiers(world, entity))
+    }
+
     fun recalculateAndStore(
         world: World,
         entity: EntityId,
@@ -74,13 +82,7 @@ object StatsCalculator {
         profile: CombatProfile,
         modifiers: StatModifier,
     ): DerivedStats {
-        val effectiveStats =
-            Stats(
-                str = stats.str + modifiers.str,
-                dex = stats.dex + modifiers.dex,
-                con = stats.con + modifiers.con,
-                wil = stats.wil + modifiers.wil,
-            )
+        val effectiveStats = applyModifiers(stats, modifiers)
 
         val attackBase = profile.baseAttack + effectiveStats.str * 2 + modifiers.attack
         val defenseBase = profile.baseDefense + modifiers.defense
@@ -107,6 +109,17 @@ object StatsCalculator {
         value: Int,
         bonus: Double,
     ): Int = (value * (1.0 + bonus)).roundToInt().coerceAtLeast(0)
+
+    private fun applyModifiers(
+        stats: Stats,
+        modifiers: StatModifier,
+    ): Stats =
+        Stats(
+            str = stats.str + modifiers.str,
+            dex = stats.dex + modifiers.dex,
+            con = stats.con + modifiers.con,
+            wil = stats.wil + modifiers.wil,
+        )
 
     private object ActiveEffectAccessor {
         fun modifier(effect: com.ktome.core.talent.ActiveEffect): StatModifier = effect.statModifiers

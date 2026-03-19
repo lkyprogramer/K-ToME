@@ -13,7 +13,7 @@ zones:
     recommendedLevel: { min: 1, max: 4 }
     environmentTheme: tutorial_ruins
     specialMechanics: [simple_traps]
-    tilesetKey: tileset.foundation.ascii
+    tilesetKey: tileset.ruins
     ambientProfile: ambient.shattered_outpost
     monsterPools: [beast.rat, bandit.sentry]
     elitePools: [orc.raider]
@@ -33,7 +33,7 @@ zones:
     recommendedLevel: { min: 3, max: 6 }
     environmentTheme: forest_patrol
     specialMechanics: [line_of_sight]
-    tilesetKey: tileset.foundation.ascii
+    tilesetKey: tileset.forest_edge
     ambientProfile: ambient.greenwood_fringe
     monsterPools: [beast.rat, undead.bone_archer]
     elitePools: [bandit.sentry]
@@ -53,7 +53,7 @@ zones:
     recommendedLevel: { min: 5, max: 8 }
     environmentTheme: mine_forge
     specialMechanics: [ore_cart]
-    tilesetKey: tileset.foundation.ascii
+    tilesetKey: tileset.mine
     ambientProfile: ambient.deep_iron_pit
     monsterPools: [undead.bone_archer, orc.raider]
     elitePools: [orc.raider]
@@ -73,7 +73,7 @@ zones:
     recommendedLevel: { min: 7, max: 10 }
     environmentTheme: sealed_depths
     specialMechanics: [sealed_gate]
-    tilesetKey: tileset.foundation.ascii
+    tilesetKey: tileset.shadow_depths
     ambientProfile: ambient.grey_gate_depths
     monsterPools: [orc.raider, undead.bone_archer]
     elitePools: [orc.raider]

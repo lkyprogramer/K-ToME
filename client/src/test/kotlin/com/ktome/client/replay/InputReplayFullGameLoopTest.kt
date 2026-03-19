@@ -225,7 +225,7 @@ class InputReplayFullGameLoopTest {
         pressed: Set<Int> = justPressed,
     ): MainMenuAction? {
         input.frame(justPressed = justPressed, pressed = pressed)
-        val action = controller.pollAction(hasSave)
+        val action = controller.pollAction(hasSave).action
         input.clear()
         return action
     }

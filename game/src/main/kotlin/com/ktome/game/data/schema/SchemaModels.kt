@@ -41,6 +41,7 @@ data class ProfessionSchemaV2(
     val baseStats: SchemaStats,
     val statGrowth: SchemaStats,
     val startingResources: Map<String, Int>,
+    val resourceCaps: Map<String, Int>,
     val talentTrees: List<String>,
     val startingTalents: List<String>,
     val startingKit: List<String>,

@@ -54,6 +54,7 @@ import com.ktome.core.progression.ExperienceSystem
 import com.ktome.core.random.RandomSource
 import com.ktome.core.random.SplitMix64RandomSource
 import com.ktome.core.random.StatefulRandomSource
+import com.ktome.core.resource.ResourceType
 import com.ktome.core.run.RunOutcome
 import com.ktome.core.save.PlayerSnapshot
 import com.ktome.core.save.PointSnapshot
@@ -130,10 +131,12 @@ class FoundationGameSession internal constructor(
     private var exploredTiles: LinkedHashSet<Point> = activeFloorState.exploredTiles
     private var renderSnapshotRevision: Long = 1L
     private var cachedRenderSnapshot: RenderSnapshot? = null
+    private var lastPlayerCombatTurn: Int = -1
 
     init {
         initialMessageLog.forEach(::addMessage)
         restorePendingTurnState()
+        ensurePlayerResourcePools()
         refreshFov()
     }
 
@@ -349,12 +352,15 @@ class FoundationGameSession internal constructor(
     }
 
     private fun buildRenderSnapshot(): RenderSnapshot {
+        ensurePlayerResourcePools()
         val zone = currentZoneSchema()
+        val overlays = buildOverlaySnapshots()
         return RenderSnapshot(
             metadata =
                 RenderMetadataSnapshot(
                     revision = renderSnapshotRevision,
                     zoneId = zone.id,
+                    zoneNameKey = zone.nameKey,
                     currentFloor = currentFloor(),
                     maxFloor = maxFloor(),
                     width = map.width,
@@ -369,11 +375,15 @@ class FoundationGameSession internal constructor(
             mapCells = buildMapCells(zone),
             props = buildPropSnapshots(),
             actors = buildActorSnapshots(),
-            overlays = buildOverlaySnapshots(),
+            overlays = overlays,
             uiState = buildRenderUiState(),
-            logEvents = messageLog.map(SessionLogEntry::snapshot),
+            logEvents = buildVisibleLogEvents(overlays),
         )
     }
+
+    private fun buildVisibleLogEvents(overlays: List<OverlayRenderSnapshot>): List<RenderLogEventSnapshot> =
+        messageLog.map(SessionLogEntry::snapshot) +
+            overlays.mapNotNull { overlay -> overlay.warningMessage?.let(::RenderLogEventSnapshot) }
 
     private fun buildMapCells(zone: ZoneSchemaV2): List<MapCellSnapshot> =
         buildList(capacity = map.width * map.height) {
@@ -503,12 +513,17 @@ class FoundationGameSession internal constructor(
                         OverlayRenderSnapshot(
                             id = "boss-warning:${entityId.value}",
                             visualKey = "vfx.boss.warning.sigil_01",
-                            audioProfile = bossSchema?.audioProfile,
+                            audioProfile = "audio.boss.warning",
                             previewTurns = 1,
                             dangerLevel = 3,
                             shape = OverlayShapeSnapshot.SINGLE_TILE,
                             sourceAbilityId = bossSchema?.id ?: "boss.warning.presence",
                             cells = listOf(GridPointSnapshot(position.x, position.y)),
+                            warningMessage =
+                                RenderTextTokenSnapshot(
+                                    "log.warning.boss_presence",
+                                    listOf(entityArg("boss", entityId)),
+                                ),
                         ),
                     )
 
@@ -568,13 +583,21 @@ class FoundationGameSession internal constructor(
         }
         return OverlayRenderSnapshot(
             id = "telegraph:${entityId.value}:${intent.talentId}",
-            visualKey = "vfx.boss.warning.sigil_01",
+            visualKey = "vfx.telegraph.warning.sigil_01",
             audioProfile = intent.talentSchema.audioProfile,
             previewTurns = 1,
             dangerLevel = if (intent.talentSchema.kind == "ACTIVE") 2 else 1,
             shape = telegraphShape(intent.talentSchema.telegraph),
             sourceAbilityId = intent.talentId,
             cells = cells.map { point -> GridPointSnapshot(point.x, point.y) },
+            warningMessage =
+                RenderTextTokenSnapshot(
+                    "log.warning.telegraph",
+                    listOf(
+                        entityArg("boss", entityId),
+                        talentArg("talent", intent.talentId, fallbackName = intent.talentId),
+                    ),
+                ),
         )
     }
 
@@ -650,14 +673,22 @@ class FoundationGameSession internal constructor(
             targetablePositions = targetableHostilePositions().map { point -> GridPointSnapshot(point.x, point.y) },
         )
 
+    private data class PlayerResourceView(
+        val current: Int,
+        val max: Int,
+        val typeId: String,
+    )
+
     private fun buildPlayerStatusSnapshot(): PlayerStatusSnapshot {
         val status = playerStatus()
+        val resource = playerResourceView(status)
         return PlayerStatusSnapshot(
             currentHp = status.currentHp,
             maxHp = status.maxHp,
-            currentResource = status.currentStamina,
-            maxResource = status.maxStamina,
-            resourceLabelKey = "ui.hud.stamina.short",
+            currentResource = resource.current,
+            maxResource = resource.max,
+            resourceLabelKey = resourceLabelKey(resource.typeId),
+            resourceTypeId = resource.typeId,
             level = status.level,
             currentExperience = status.currentExperience,
             nextLevelRequirement = status.nextLevelRequirement,
@@ -691,17 +722,20 @@ class FoundationGameSession internal constructor(
             val schema = requireNotNull(content.schemaCatalog.talents.firstOrNull { it.id == slot.talentId }) {
                 "Unknown talent schema '${slot.talentId}'."
             }
+            val resourceTypeId = schema.resourceCosts.keys.firstOrNull() ?: playerResourceView(playerStatus()).typeId
             TalentSlotSnapshot(
                 slot = slot.slot,
                 talentId = slot.talentId,
                 nameKey = schema.nameKey,
                 visualKey = schema.visualKey,
                 iconKey = schema.iconKey,
+                damageTypeIconKey = schema.damageType?.let(::damageTypeIconKey),
                 audioProfile = schema.audioProfile,
                 level = slot.level,
                 maxLevel = slot.maxLevel,
-                resourceCost = slot.staminaCost,
-                resourceLabelKey = "ui.hud.stamina.short",
+                resourceCost = schema.resourceCosts[resourceTypeId] ?: slot.staminaCost,
+                resourceLabelKey = resourceLabelKey(resourceTypeId),
+                resourceTypeId = resourceTypeId,
                 range = slot.range,
                 minRange = slot.minRange,
                 currentCooldown = slot.currentCooldown,
@@ -734,6 +768,7 @@ class FoundationGameSession internal constructor(
         return ItemRenderSnapshot(
             baseItemId = item.baseId,
             nameKey = schema.nameKey,
+            descKey = schema.descKey,
             typeId = item.type.name,
             visualKey = schema.visualKey,
             iconKey = schema.iconKey,
@@ -752,6 +787,51 @@ class FoundationGameSession internal constructor(
 
     private fun currentProfessionSchema(): ProfessionSchemaV2? =
         content.schemaCatalog.professions.firstOrNull { profession -> profession.id == config.playerProfessionId }
+
+    private fun playerResourceView(status: PlayerStatus = playerStatus()): PlayerResourceView {
+        val profession = currentProfessionSchema()
+        val resourceTypeId = profession?.resourceType ?: "STAMINA"
+        if (resourceTypeId == "STAMINA") {
+            return PlayerResourceView(
+                current = status.currentStamina,
+                max = status.maxStamina,
+                typeId = resourceTypeId,
+            )
+        }
+
+        val schema = requireNotNull(profession) {
+            "Missing profession schema for '${config.playerProfessionId}'."
+        }
+        val pools = PlayerResourcePools.sync(world, playerId, schema)
+        val pool =
+            requireNotNull(pools.pool(ResourceType.fromId(resourceTypeId))) {
+                "Missing resource pool '$resourceTypeId' for '$playerId'."
+            }
+        return PlayerResourceView(
+            current = pool.current,
+            max = pool.max,
+            typeId = resourceTypeId,
+        )
+    }
+
+    private fun resourceLabelKey(resourceTypeId: String): String =
+        when (resourceTypeId) {
+            "MANA" -> "ui.hud.mana.short"
+            "ENERGY" -> "ui.hud.energy.short"
+            "POSITIVE_ENERGY" -> "ui.hud.positive_energy.short"
+            else -> "ui.hud.stamina.short"
+        }
+
+    private fun damageTypeIconKey(damageTypeId: String): String =
+        when (damageTypeId) {
+            "PHYSICAL" -> "icon.damage_type.physical"
+            "FIRE" -> "icon.damage_type.fire"
+            "COLD" -> "icon.damage_type.cold"
+            "LIGHTNING" -> "icon.damage_type.lightning"
+            "HOLY" -> "icon.damage_type.holy"
+            "SHADOW" -> "icon.damage_type.shadow"
+            else -> "icon.damage_type.physical"
+        }
 
     private fun entityVisualKey(entityId: EntityId): String =
         when {
@@ -798,8 +878,8 @@ class FoundationGameSession internal constructor(
         tile: com.ktome.core.map.TileType,
     ): String =
         when (tile) {
-            com.ktome.core.map.TileType.FLOOR -> "${zone.tilesetKey}.floor"
-            com.ktome.core.map.TileType.WALL -> "${zone.tilesetKey}.wall"
+            com.ktome.core.map.TileType.FLOOR -> "${zone.tilesetKey}.ground_01"
+            com.ktome.core.map.TileType.WALL -> "${zone.tilesetKey}.wall_01"
         }
 
     private fun terrainTypeId(tile: com.ktome.core.map.TileType): String =
@@ -833,8 +913,16 @@ class FoundationGameSession internal constructor(
                 StatusEffectRenderSnapshot(
                     typeId = effect.type.name,
                     remainingTurns = effect.remainingTurns,
+                    nameKey = statusEffectNameKey(effect.type),
+                    iconKey = statusEffectIconKey(effect.type),
                 )
             }.orEmpty()
+
+    private fun statusEffectIconKey(type: StatusEffectType): String =
+        when (type) {
+            StatusEffectType.ARMOR_BREAK -> "icon.status.armor_break"
+            else -> "missing_visual"
+        }
 
     private fun stairDirectionAt(point: Point): StairDirection? =
         world.entitiesWith(Position::class, Stair::class)
@@ -872,6 +960,7 @@ class FoundationGameSession internal constructor(
                     emptyList()
                 },
             stairLabel = stairLabelAt(point),
+            stairDirectionId = stairDirectionAt(point)?.name,
         )
     }
 
@@ -978,6 +1067,16 @@ class FoundationGameSession internal constructor(
             val regen = requireNotNull(world.get<DerivedStats>(actorId)).staminaRegen.toInt().coerceAtLeast(0)
             stamina.current = (stamina.current + regen).coerceAtMost(stamina.max)
         }
+        if (actorId == playerId) {
+            currentProfessionSchema()?.let { profession ->
+                PlayerResourcePools.onTurnStart(
+                    world = world,
+                    playerId = playerId,
+                    profession = profession,
+                    inCombat = turnCount <= lastPlayerCombatTurn,
+                )
+            }
+        }
 
         activeTurnActor = actorId
     }
@@ -1001,6 +1100,9 @@ class FoundationGameSession internal constructor(
 
         if (changed) {
             StatsCalculator.recalculateAndStore(world, actorId)
+        }
+        if (actorId == playerId) {
+            ensurePlayerResourcePools()
         }
     }
 
@@ -1048,6 +1150,7 @@ class FoundationGameSession internal constructor(
                     }
                     experience.unspentStatPoints -= 1
                     StatsCalculator.recalculateAndStore(world, playerId)
+                    ensurePlayerResourcePools()
                     addMessage("log.stat.invest", keyArg("stat", primaryStatLabelKey(command.stat)))
                     CommandResolution(accepted = true, consumesTurn = false)
                 }
@@ -1114,6 +1217,7 @@ class FoundationGameSession internal constructor(
                                 }
                             if (result.success) {
                                 StatsCalculator.recalculateAndStore(world, playerId)
+                                ensurePlayerResourcePools()
                             }
                             addInventoryMessage(result)
                             CommandResolution(result.success, consumesTurn = false)
@@ -1160,6 +1264,7 @@ class FoundationGameSession internal constructor(
                         }
 
                         is TalentUseResult.Success -> {
+                            applyTalentResourceReactions(result.result)
                             logTalentResult(result.result)
                             handleTalentDeaths(result.result.targets, playerId)
                             CommandResolution.accepted()
@@ -1352,6 +1457,7 @@ class FoundationGameSession internal constructor(
         when (val result = talentResolver.resolve(world, map, monsterId, intent.talentId, intent.target)) {
             is TalentUseResult.Failure -> return false
             is TalentUseResult.Success -> {
+                applyTalentResourceReactions(result.result)
                 logTalentResult(result.result)
                 handleTalentDeaths(result.result.targets, monsterId)
                 return true
@@ -1377,6 +1483,7 @@ class FoundationGameSession internal constructor(
         }
 
         targetHealth.current = (targetHealth.current - result.finalDamage).coerceAtLeast(0)
+        applyDamageResourceReactions(attacker, target, result.finalDamage)
         logEvent(DamageDealtEvent(attacker, target, result.finalDamage, result.critical))
         addMessage(
             if (result.critical) {
@@ -1435,6 +1542,7 @@ class FoundationGameSession internal constructor(
         val health = requireNotNull(world.get<Health>(playerId))
         val stamina = requireNotNull(world.get<Stamina>(playerId))
         val result = ExperienceSystem.applyReward(experience = experience, health = health, stamina = stamina, reward = amount)
+        ensurePlayerResourcePools()
 
         logEvent(ExperienceGainedEvent(playerId, amount))
         addMessage("log.xp.gain", literalArg("amount", amount))
@@ -1545,7 +1653,14 @@ class FoundationGameSession internal constructor(
                 ?.takeIf { actorId -> actorId in pendingActions }
     }
 
+    private fun ensurePlayerResourcePools() {
+        currentProfessionSchema()?.let { profession ->
+            PlayerResourcePools.sync(world, playerId, profession)
+        }
+    }
+
     private fun syncActiveFloorState() {
+        ensurePlayerResourcePools()
         playerSnapshot = SessionSnapshotMapper.capturePlayer(world, playerId)
         val excludedEntities =
             linkedSetOf<EntityId>().apply {
@@ -1569,6 +1684,32 @@ class FoundationGameSession internal constructor(
                 payload = activeFloorState,
             ),
         )
+    }
+
+    private fun applyDamageResourceReactions(
+        attacker: EntityId,
+        target: EntityId,
+        damage: Int,
+    ) {
+        if (attacker == playerId || target == playerId) {
+            lastPlayerCombatTurn = turnCount
+        }
+        currentProfessionSchema()?.let { profession ->
+            if (attacker == playerId) {
+                PlayerResourcePools.onSuccessfulHit(world, playerId, profession)
+            }
+            if (target == playerId && damage > 0) {
+                PlayerResourcePools.onDamageTaken(world, playerId, profession, damage)
+            }
+        }
+    }
+
+    private fun applyTalentResourceReactions(result: com.ktome.core.talent.TalentResult) {
+        result.effects.forEach { effect ->
+            if (effect is com.ktome.core.talent.TalentEffectResult.Damage && effect.amount > 0) {
+                applyDamageResourceReactions(attacker = result.user, target = effect.target, damage = effect.amount)
+            }
+        }
     }
 
     private fun handleTalentDeaths(

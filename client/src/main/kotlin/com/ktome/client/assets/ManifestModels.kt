@@ -110,4 +110,9 @@ data class ClientAssetBundle(
     val audioManifest: AudioManifest,
     val visualResolver: VisualManifestResolver,
     val audioResolver: AudioManifestResolver,
-)
+    val textureRepository: ClientTextureRepository,
+) {
+    fun dispose() {
+        textureRepository.dispose()
+    }
+}

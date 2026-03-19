@@ -2,6 +2,7 @@ package com.ktome.core.save
 
 import com.ktome.core.map.GameMap
 import com.ktome.core.map.Point
+import com.ktome.core.resource.ResourcePoolSnapshot
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -159,6 +160,7 @@ data class EntitySnapshot(
     val equipment: EquipmentSnapshot? = null,
     val cooldowns: Map<String, Int>? = null,
     val effects: List<ActiveEffectSnapshot>? = null,
+    val resourcePools: List<ResourcePoolSnapshot> = emptyList(),
     val talentLoadout: TalentLoadoutSnapshot? = null,
     val itemState: ItemSnapshot? = null,
     val isGroundItem: Boolean = false,
@@ -176,13 +178,21 @@ data class EntitySnapshot(
         require(cooldowns?.values?.all { value -> value >= 0 } != false) {
             "Cooldown values must not be negative."
         }
+        require(resourcePools.distinctBy(ResourcePoolSnapshot::type).size == resourcePools.size) {
+            "Resource pools must not contain duplicate types."
+        }
         inventory?.validateOrThrow()
         equipment?.validateOrThrow()
         patrolRoute?.validateOrThrow()
         talentLoadout?.validateOrThrow()
         itemState?.validateOrThrow()
         effects?.forEach(ActiveEffectSnapshot::validateOrThrow)
+        resourcePools.forEach(ResourcePoolSnapshot::validate)
     }
+}
+
+private fun ResourcePoolSnapshot.validate() {
+    require(current <= max) { "Resource pool current must not exceed max for type '$type'." }
 }
 
 @Serializable

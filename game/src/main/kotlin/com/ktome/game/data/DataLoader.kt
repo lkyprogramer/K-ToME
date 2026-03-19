@@ -126,6 +126,7 @@ class DataLoader(
                 baseStats = profession.requiredMap("baseStats").toSchemaStats(),
                 statGrowth = profession.requiredMap("statGrowth").toSchemaStats(),
                 startingResources = profession.optionalIntMap("startingResources"),
+                resourceCaps = profession.optionalIntMap("resourceCaps"),
                 talentTrees = profession.optionalStringList("talentTrees"),
                 startingTalents = profession.optionalStringList("startingTalents"),
                 startingKit = profession.optionalStringList("startingKit"),

@@ -1,3 +1,11 @@
 tilesets:
   - id: tileset.foundation.ascii
     schemaVersion: 2
+  - id: tileset.ruins
+    schemaVersion: 2
+  - id: tileset.forest_edge
+    schemaVersion: 2
+  - id: tileset.mine
+    schemaVersion: 2
+  - id: tileset.shadow_depths
+    schemaVersion: 2

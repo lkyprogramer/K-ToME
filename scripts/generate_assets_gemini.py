@@ -47,6 +47,7 @@ ALLOWED_CATEGORIES = {
     "portrait",
     "icon_skill",
     "icon_status",
+    "icon_damage_type",
     "icon_item",
     "icon_quest",
     "ui_frame",
