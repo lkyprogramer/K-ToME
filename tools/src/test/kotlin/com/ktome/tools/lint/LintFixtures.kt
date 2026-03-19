@@ -21,8 +21,11 @@ internal object LintFixtures {
                 "ktome.repo.root system property is required for lint tests."
             },
         )
-    private val localeKeyPattern =
-        "\"((?:ui|log|tile|actor|stairs|status|ai|profession|talent_tree|talent|monster|boss|zone|difficulty|material|affix|item)\\.[A-Za-z0-9_.-]+)\""
+    private val localeKeyCallPattern =
+        """(?:\btr|(?:\b[A-Za-z_][A-Za-z0-9_.]*\.)?text|MenuEntry|RenderTextTokenSnapshot)\s*\(\s*"((?:ui|log|tile|actor|stairs|status|ai|profession|talent_tree|talent|monster|boss|zone|difficulty|material|affix|item)\.[A-Za-z0-9_.-]+)""""
+            .toRegex()
+    private val directLocaleLiteralPattern =
+        """"((?:ui|log|stairs|status|ai)\.[A-Za-z0-9_.-]+|(?:actor|profession|talent_tree|talent|monster|boss|zone|difficulty|material|affix|item)\.[A-Za-z0-9_.-]+\.(?:name|desc|role))""""
             .toRegex()
 
     val schemaResources: List<String> =
@@ -71,9 +74,16 @@ internal object LintFixtures {
 
         return buildSet {
             files.forEach { path ->
-                localeKeyPattern.findAll(path.readText()).forEach { match ->
+                val content = path.readText()
+                localeKeyCallPattern.findAll(content).forEach { match ->
                     val key = match.groupValues[1]
                     if (!key.startsWith("ai.") || key.count { char -> char == '.' } == 1) {
+                        add(key)
+                    }
+                }
+                directLocaleLiteralPattern.findAll(content).forEach { match ->
+                    val key = match.groupValues[1]
+                    if ((!key.startsWith("ai.") || key.count { char -> char == '.' } == 1) && !key.endsWith('.')) {
                         add(key)
                     }
                 }

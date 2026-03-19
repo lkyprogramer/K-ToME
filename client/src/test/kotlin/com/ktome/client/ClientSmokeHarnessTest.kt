@@ -4,10 +4,15 @@ import com.badlogic.gdx.ApplicationAdapter
 import com.badlogic.gdx.Input.Keys
 import com.badlogic.gdx.backends.headless.HeadlessApplication
 import com.badlogic.gdx.backends.headless.HeadlessApplicationConfiguration
+import com.ktome.client.assets.ClientAssetBundleLoader
 import com.ktome.client.input.CommandSource
 import com.ktome.client.input.InputSource
+import com.ktome.client.input.OverlayState
 import com.ktome.client.input.UiMode
 import com.ktome.client.render.AsciiRenderer
+import com.ktome.core.map.Point
+import com.ktome.core.snapshot.CellVisibilitySnapshot
+import com.ktome.core.snapshot.RenderSnapshot
 import com.ktome.client.screen.MainMenuScreen
 import com.ktome.client.screen.MainMenuTextSnapshot
 import com.ktome.core.save.AssetVersionContract
@@ -17,11 +22,10 @@ import com.ktome.game.FoundationGameSession
 import com.ktome.game.GameModule
 import com.ktome.game.PlayerCommand
 import com.ktome.game.harness.HarnessReportWriter
-import com.ktome.game.harness.RunBot
-import com.ktome.game.harness.RunObservationCapture
-import com.ktome.game.harness.SmokeBot
 import com.ktome.game.i18n.GameLocale
+import com.ktome.game.i18n.Localizer
 import java.nio.file.Path
+import kotlin.math.abs
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
@@ -31,6 +35,8 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 
 class ClientSmokeHarnessTest {
+    private val clientAssets = ClientAssetBundleLoader.load()
+
     @TempDir
     lateinit var tempDir: Path
 
@@ -162,16 +168,13 @@ class ClientSmokeHarnessTest {
             app.create()
             val menuSnapshot = captureMenuSnapshot(app, expectedLocale)
             val initialSession = awaitActiveSession(app)
-            val initialHudLine = initialSession?.let { AsciiRenderer.hudText(it.localizer(), it) }
-            val initialInventoryTitle = initialSession?.let { AsciiRenderer.sidebarTitle(it.localizer(), UiMode.INVENTORY) }
-            val initialInspectTitle = initialSession?.let { AsciiRenderer.sidebarTitle(it.localizer(), UiMode.INSPECT) }
-            val initialMessage = initialSession?.messageLog()?.firstOrNull()
+            val initialUi = initialSession?.let { session -> captureUiSnapshot(app.localizer(), session.renderSnapshot()) }
             repeat(180) { app.render() }
             val session = app.activeSessionOrNull()
-            val playerName = session?.actorViews()?.singleOrNull { it.isPlayer }?.name
+            val finalSnapshot = session?.renderSnapshot()
+            val finalUi = finalSnapshot?.let { snapshot -> captureUiSnapshot(app.localizer(), snapshot) }
             val localeId = session?.localizer()?.locale?.id
-            val playerRole = session?.inspectAt(session.playerPosition())?.actor?.role
-            val zoneId = session?.config?.zoneId
+            val zoneId = finalSnapshot?.metadata?.zoneId
             val professionId = session?.config?.playerProfessionId
             ClientSmokeReport(
                 name = name,
@@ -182,12 +185,12 @@ class ClientSmokeHarnessTest {
                         localeId == expectedLocale.id &&
                         menuSnapshot.subtitle == expectedMenuSubtitle &&
                         menuSnapshot.language == expectedMenuLanguage &&
-                        playerName == expectedPlayerName &&
-                        playerRole == expectedPlayerRole &&
-                        initialHudLine?.contains(expectedHudToken) == true &&
-                        initialInventoryTitle == expectedInventoryTitle &&
-                        initialInspectTitle == expectedInspectTitle &&
-                        initialMessage == expectedLogLine &&
+                        finalUi?.playerName == expectedPlayerName &&
+                        finalUi?.playerRole == expectedPlayerRole &&
+                        initialUi?.hudLine?.contains(expectedHudToken) == true &&
+                        initialUi?.inventoryTitle == expectedInventoryTitle &&
+                        initialUi?.inspectTitle == expectedInspectTitle &&
+                        initialUi?.firstMessage == expectedLogLine &&
                         botSource.consumedCommands > 0 &&
                         (session.currentTurnCount() > 0 || session.currentFloor() > 1),
                 screenName = app.screen?.javaClass?.simpleName ?: "None",
@@ -200,12 +203,12 @@ class ClientSmokeHarnessTest {
                 menuLanguage = menuSnapshot.language,
                 issuedCommands = botSource.issuedCommands,
                 consumedCommands = botSource.consumedCommands,
-                playerName = playerName,
-                playerRole = playerRole,
-                hudLine = initialHudLine,
-                inventoryTitle = initialInventoryTitle,
-                inspectTitle = initialInspectTitle,
-                firstMessage = initialMessage,
+                playerName = finalUi?.playerName,
+                playerRole = finalUi?.playerRole,
+                hudLine = initialUi?.hudLine,
+                inventoryTitle = initialUi?.inventoryTitle,
+                inspectTitle = initialUi?.inspectTitle,
+                firstMessage = initialUi?.firstMessage,
                 failureReason =
                     if (session == null) {
                         "Session was not created from main menu."
@@ -219,18 +222,18 @@ class ClientSmokeHarnessTest {
                         "Expected menu subtitle $expectedMenuSubtitle, got ${menuSnapshot.subtitle}."
                     } else if (menuSnapshot.language != expectedMenuLanguage) {
                         "Expected menu language label $expectedMenuLanguage, got ${menuSnapshot.language}."
-                    } else if (playerName != expectedPlayerName) {
-                        "Expected player name $expectedPlayerName, got $playerName."
-                    } else if (playerRole != expectedPlayerRole) {
-                        "Expected player role $expectedPlayerRole, got $playerRole."
-                    } else if (initialHudLine?.contains(expectedHudToken) != true) {
-                        "Expected HUD line to contain $expectedHudToken, got $initialHudLine."
-                    } else if (initialInventoryTitle != expectedInventoryTitle) {
-                        "Expected inventory title $expectedInventoryTitle, got $initialInventoryTitle."
-                    } else if (initialInspectTitle != expectedInspectTitle) {
-                        "Expected inspect title $expectedInspectTitle, got $initialInspectTitle."
-                    } else if (initialMessage != expectedLogLine) {
-                        "Expected first log line $expectedLogLine, got $initialMessage."
+                    } else if (finalUi?.playerName != expectedPlayerName) {
+                        "Expected player name $expectedPlayerName, got ${finalUi?.playerName}."
+                    } else if (finalUi?.playerRole != expectedPlayerRole) {
+                        "Expected player role $expectedPlayerRole, got ${finalUi?.playerRole}."
+                    } else if (initialUi?.hudLine?.contains(expectedHudToken) != true) {
+                        "Expected HUD line to contain $expectedHudToken, got ${initialUi?.hudLine}."
+                    } else if (initialUi?.inventoryTitle != expectedInventoryTitle) {
+                        "Expected inventory title $expectedInventoryTitle, got ${initialUi?.inventoryTitle}."
+                    } else if (initialUi?.inspectTitle != expectedInspectTitle) {
+                        "Expected inspect title $expectedInspectTitle, got ${initialUi?.inspectTitle}."
+                    } else if (initialUi?.firstMessage != expectedLogLine) {
+                        "Expected first log line $expectedLogLine, got ${initialUi?.firstMessage}."
                     } else if (botSource.consumedCommands <= 0) {
                         "Bot did not consume any command."
                     } else {
@@ -276,16 +279,13 @@ class ClientSmokeHarnessTest {
             app.create()
             val menuSnapshot = captureMenuSnapshot(app, expectedLocale)
             val initialLoaded = awaitActiveSession(app)
-            val initialHudLine = initialLoaded?.let { AsciiRenderer.hudText(it.localizer(), it) }
-            val initialInventoryTitle = initialLoaded?.let { AsciiRenderer.sidebarTitle(it.localizer(), UiMode.INVENTORY) }
-            val initialInspectTitle = initialLoaded?.let { AsciiRenderer.sidebarTitle(it.localizer(), UiMode.INSPECT) }
-            val initialMessage = initialLoaded?.messageLog()?.firstOrNull()
+            val initialUi = initialLoaded?.let { loadedSession -> captureUiSnapshot(app.localizer(), loadedSession.renderSnapshot()) }
             repeat(180) { app.render() }
             val loaded = app.activeSessionOrNull()
             val localeId = loaded?.localizer()?.locale?.id
-            val playerName = loaded?.actorViews()?.singleOrNull { it.isPlayer }?.name
-            val playerRole = loaded?.inspectAt(loaded.playerPosition())?.actor?.role
-            val zoneId = loaded?.config?.zoneId
+            val finalSnapshot = loaded?.renderSnapshot()
+            val finalUi = finalSnapshot?.let { snapshot -> captureUiSnapshot(app.localizer(), snapshot) }
+            val zoneId = finalSnapshot?.metadata?.zoneId
             val professionId = loaded?.config?.playerProfessionId
             ClientSmokeReport(
                 name = name,
@@ -294,12 +294,12 @@ class ClientSmokeHarnessTest {
                         localeId == expectedLocale.id &&
                         menuSnapshot.subtitle == expectedMenuSubtitle &&
                         menuSnapshot.language == expectedMenuLanguage &&
-                        playerName == expectedPlayerName &&
-                        playerRole == expectedPlayerRole &&
-                        initialHudLine?.contains(expectedHudToken) == true &&
-                        initialInventoryTitle == expectedInventoryTitle &&
-                        initialInspectTitle == expectedInspectTitle &&
-                        initialMessage == expectedLogLine &&
+                        finalUi?.playerName == expectedPlayerName &&
+                        finalUi?.playerRole == expectedPlayerRole &&
+                        initialUi?.hudLine?.contains(expectedHudToken) == true &&
+                        initialUi?.inventoryTitle == expectedInventoryTitle &&
+                        initialUi?.inspectTitle == expectedInspectTitle &&
+                        initialUi?.firstMessage == expectedLogLine &&
                         botSource.consumedCommands > 0 &&
                         loaded.currentTurnCount() >= session.currentTurnCount(),
                 screenName = app.screen?.javaClass?.simpleName ?: "None",
@@ -312,12 +312,12 @@ class ClientSmokeHarnessTest {
                 menuLanguage = menuSnapshot.language,
                 issuedCommands = botSource.issuedCommands,
                 consumedCommands = botSource.consumedCommands,
-                playerName = playerName,
-                playerRole = playerRole,
-                hudLine = initialHudLine,
-                inventoryTitle = initialInventoryTitle,
-                inspectTitle = initialInspectTitle,
-                firstMessage = initialMessage,
+                playerName = finalUi?.playerName,
+                playerRole = finalUi?.playerRole,
+                hudLine = initialUi?.hudLine,
+                inventoryTitle = initialUi?.inventoryTitle,
+                inspectTitle = initialUi?.inspectTitle,
+                firstMessage = initialUi?.firstMessage,
                 failureReason =
                     if (loaded == null) {
                         "Continue did not load a session."
@@ -327,18 +327,18 @@ class ClientSmokeHarnessTest {
                         "Expected menu subtitle $expectedMenuSubtitle, got ${menuSnapshot.subtitle}."
                     } else if (menuSnapshot.language != expectedMenuLanguage) {
                         "Expected menu language label $expectedMenuLanguage, got ${menuSnapshot.language}."
-                    } else if (playerName != expectedPlayerName) {
-                        "Expected player name $expectedPlayerName, got $playerName."
-                    } else if (playerRole != expectedPlayerRole) {
-                        "Expected player role $expectedPlayerRole, got $playerRole."
-                    } else if (initialHudLine?.contains(expectedHudToken) != true) {
-                        "Expected HUD line to contain $expectedHudToken, got $initialHudLine."
-                    } else if (initialInventoryTitle != expectedInventoryTitle) {
-                        "Expected inventory title $expectedInventoryTitle, got $initialInventoryTitle."
-                    } else if (initialInspectTitle != expectedInspectTitle) {
-                        "Expected inspect title $expectedInspectTitle, got $initialInspectTitle."
-                    } else if (initialMessage != expectedLogLine) {
-                        "Expected first log line $expectedLogLine, got $initialMessage."
+                    } else if (finalUi?.playerName != expectedPlayerName) {
+                        "Expected player name $expectedPlayerName, got ${finalUi?.playerName}."
+                    } else if (finalUi?.playerRole != expectedPlayerRole) {
+                        "Expected player role $expectedPlayerRole, got ${finalUi?.playerRole}."
+                    } else if (initialUi?.hudLine?.contains(expectedHudToken) != true) {
+                        "Expected HUD line to contain $expectedHudToken, got ${initialUi?.hudLine}."
+                    } else if (initialUi?.inventoryTitle != expectedInventoryTitle) {
+                        "Expected inventory title $expectedInventoryTitle, got ${initialUi?.inventoryTitle}."
+                    } else if (initialUi?.inspectTitle != expectedInspectTitle) {
+                        "Expected inspect title $expectedInspectTitle, got ${initialUi?.inspectTitle}."
+                    } else if (initialUi?.firstMessage != expectedLogLine) {
+                        "Expected first log line $expectedLogLine, got ${initialUi?.firstMessage}."
                     } else if (botSource.consumedCommands <= 0) {
                         "Bot did not consume any command after continue."
                     } else {
@@ -405,6 +405,51 @@ class ClientSmokeHarnessTest {
         }
         return app.activeSessionOrNull()
     }
+
+    private fun captureUiSnapshot(
+        localizer: Localizer,
+        snapshot: RenderSnapshot,
+    ): ClientUiSnapshot {
+        val hudLine = AsciiRenderer.hudText(localizer, snapshot)
+        val inventoryTitle = AsciiRenderer.sidebarTitle(localizer, UiMode.INVENTORY)
+        val inspectTitle = AsciiRenderer.sidebarTitle(localizer, UiMode.INSPECT)
+        val firstMessage =
+            AsciiRenderer.buildRenderModel(localizer, clientAssets.visualResolver, snapshot, OverlayState(mode = UiMode.MAP))
+                .messageLines
+                .firstOrNull()
+        val player = requireNotNull(snapshot.actors.singleOrNull { actor -> actor.isPlayer }) {
+            "Expected a single player actor in render snapshot."
+        }
+        val inspectLines =
+            AsciiRenderer.buildRenderModel(
+                localizer,
+                clientAssets.visualResolver,
+                snapshot,
+                OverlayState(
+                    mode = UiMode.INSPECT,
+                    inspectCursor = Point(snapshot.metadata.playerX, snapshot.metadata.playerY),
+                ),
+            ).sidebarLines.map { line -> line.text }
+        val playerName = localizer.text(player.nameKey)
+        val playerRole = inspectLines.firstOrNull { line -> line == localizer.text("actor.player.role") }
+        return ClientUiSnapshot(
+            hudLine = hudLine,
+            inventoryTitle = inventoryTitle,
+            inspectTitle = inspectTitle,
+            firstMessage = firstMessage,
+            playerName = playerName,
+            playerRole = playerRole,
+        )
+    }
+
+    private data class ClientUiSnapshot(
+        val hudLine: String,
+        val inventoryTitle: String,
+        val inspectTitle: String,
+        val firstMessage: String?,
+        val playerName: String,
+        val playerRole: String?,
+    )
 }
 
 private fun ClientSmokeHarnessTest.ClientSmokeReport.toJson() =
@@ -447,24 +492,19 @@ private class ScriptedInputSource(
 }
 
 private class BotCommandSource(
-    private val bot: RunBot = SmokeBot(),
 ) : CommandSource {
     var issuedCommands: Int = 0
         private set
     var consumedCommands: Int = 0
         private set
 
-    override fun nextCommand(session: FoundationGameSession): PlayerCommand? {
-        val command = bot.decide(RunObservationCapture.capture(session, session.currentTurnCount()))
+    override fun nextCommand(snapshot: RenderSnapshot): PlayerCommand? {
+        val command = SnapshotSmokeBot.decide(snapshot)
         issuedCommands += 1
         return command
     }
 
-    override fun onCommandResult(
-        session: FoundationGameSession,
-        command: PlayerCommand,
-        consumed: Boolean,
-    ) {
+    override fun onCommandResult(snapshot: RenderSnapshot, command: PlayerCommand, consumed: Boolean) {
         if (consumed) {
             consumedCommands += 1
         }
@@ -474,4 +514,99 @@ private class BotCommandSource(
         com.ktome.client.input.OverlayState(mode = com.ktome.client.input.UiMode.MAP)
 
     override fun isMapMode(): Boolean = true
+}
+
+private object SnapshotSmokeBot {
+    fun decide(snapshot: RenderSnapshot): PlayerCommand {
+        val player = Point(snapshot.metadata.playerX, snapshot.metadata.playerY)
+        val playerCell = snapshot.mapCells.firstOrNull { cell -> cell.x == player.x && cell.y == player.y }
+        if (playerCell?.items?.isNotEmpty() == true) {
+            return PlayerCommand.PickUp
+        }
+        when (playerCell?.stairDirectionId) {
+            "DOWN" -> return PlayerCommand.Descend
+            "UP" -> return PlayerCommand.Ascend
+        }
+
+        adjacentHostileDelta(player, snapshot)?.let { return PlayerCommand.Move(it) }
+        nextStepTowardGoal(player, snapshot)?.let { return PlayerCommand.Move(it) }
+        return PlayerCommand.Wait
+    }
+
+    private fun adjacentHostileDelta(player: Point, snapshot: RenderSnapshot): Point? =
+        snapshot.uiState.targetablePositions
+            .asSequence()
+            .map { target -> Point(target.x, target.y) }
+            .firstOrNull { target ->
+                abs(target.x - player.x) <= 1 &&
+                    abs(target.y - player.y) <= 1 &&
+                    (target.x != player.x || target.y != player.y)
+            }?.let { target -> Point(target.x - player.x, target.y - player.y) }
+
+    private fun nextStepTowardGoal(player: Point, snapshot: RenderSnapshot): Point? {
+        val cellsByPoint = snapshot.mapCells.associateBy { cell -> Point(cell.x, cell.y) }
+        val goals =
+            buildSet {
+                snapshot.mapCells
+                    .filter { cell ->
+                        cell.visibility == CellVisibilitySnapshot.VISIBLE &&
+                            (cell.items.isNotEmpty() || cell.stairDirectionId != null)
+                    }.forEach { cell -> add(Point(cell.x, cell.y)) }
+                snapshot.uiState.targetablePositions.forEach { target -> add(Point(target.x, target.y)) }
+            }
+        if (goals.isEmpty()) {
+            return firstExplorableStep(player, cellsByPoint)
+        }
+
+        val queue = ArrayDeque<Point>()
+        val previous = mutableMapOf<Point, Point?>()
+        queue += player
+        previous[player] = null
+        while (queue.isNotEmpty()) {
+            val current = queue.removeFirst()
+            if (current != player && current in goals) {
+                var cursor = current
+                while (previous[cursor] != player && previous[cursor] != null) {
+                    cursor = requireNotNull(previous[cursor])
+                }
+                return Point(cursor.x - player.x, cursor.y - player.y)
+            }
+            for (neighbor in neighbors(current)) {
+                if (neighbor in previous || !isTraversable(neighbor, cellsByPoint, goals)) {
+                    continue
+                }
+                previous[neighbor] = current
+                queue += neighbor
+            }
+        }
+        return firstExplorableStep(player, cellsByPoint)
+    }
+
+    private fun firstExplorableStep(
+        player: Point,
+        cellsByPoint: Map<Point, com.ktome.core.snapshot.MapCellSnapshot>,
+    ): Point? =
+        neighbors(player)
+            .firstOrNull { point -> isTraversable(point, cellsByPoint, emptySet()) }
+            ?.let { point -> Point(point.x - player.x, point.y - player.y) }
+
+    private fun isTraversable(
+        point: Point,
+        cellsByPoint: Map<Point, com.ktome.core.snapshot.MapCellSnapshot>,
+        goals: Set<Point>,
+    ): Boolean {
+        val cell = cellsByPoint[point] ?: return false
+        if (cell.visibility == CellVisibilitySnapshot.HIDDEN || cell.terrainTypeId == "wall") {
+            return false
+        }
+        return cell.actorEntityId == null || point in goals
+    }
+
+    private fun neighbors(point: Point): List<Point> =
+        listOf(
+            Point(point.x + 1, point.y),
+            Point(point.x, point.y + 1),
+            Point(point.x - 1, point.y),
+            Point(point.x, point.y - 1),
+        )
 }

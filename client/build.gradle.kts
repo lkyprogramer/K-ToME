@@ -7,6 +7,7 @@ import org.gradle.jvm.application.tasks.CreateStartScripts
 
 plugins {
     application
+    id("org.jetbrains.kotlin.plugin.serialization")
 }
 
 val harnessReportDir = rootProject.layout.buildDirectory.dir("reports/harness")
@@ -96,4 +97,14 @@ tasks.register<Test>("clientSmoke") {
     }
     systemProperty("ktome.harness.reportDir", harnessReportDir.get().asFile.absolutePath)
     outputs.dir(harnessReportDir)
+}
+
+tasks.register<Test>("goldenScreenshot") {
+    group = "verification"
+    description = "Runs deterministic screenshot golden coverage."
+    testClassesDirs = sourceSets.test.get().output.classesDirs
+    classpath = sourceSets.test.get().runtimeClasspath
+    useJUnitPlatform {
+        includeTags("goldenScreenshot")
+    }
 }

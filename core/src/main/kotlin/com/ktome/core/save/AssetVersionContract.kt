@@ -19,7 +19,7 @@ data class AssetVersionContract(
     companion object {
         val CURRENT: AssetVersionContract =
             AssetVersionContract(
-                styleVersion = "phase1-ascii",
+                styleVersion = "ktome-middle-fantasy-painterly-tile-v1",
                 visualManifestVersion = 1,
                 audioManifestVersion = 1,
                 assetPipelineVersion = 1,

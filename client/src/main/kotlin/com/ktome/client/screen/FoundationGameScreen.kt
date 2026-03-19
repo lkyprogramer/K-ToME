@@ -6,9 +6,12 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch
 import com.badlogic.gdx.utils.ScreenUtils
 import com.badlogic.gdx.utils.viewport.FitViewport
 import com.ktome.client.GameApp
+import com.ktome.client.assets.ClientAssetBundle
+import com.ktome.client.assets.RenderSnapshotAssetAudit
 import com.ktome.client.input.CommandSource
 import com.ktome.client.input.InputHandlerCommandSource
 import com.ktome.client.render.AsciiRenderer
+import com.ktome.core.snapshot.RenderSnapshot
 import com.ktome.game.FoundationGameSession
 
 private const val cellWidth = 16f
@@ -17,29 +20,39 @@ private const val cellHeight = 16f
 class FoundationGameScreen(
     private val app: GameApp,
     private val session: FoundationGameSession,
+    private val assets: ClientAssetBundle,
     private val commandSource: CommandSource = InputHandlerCommandSource(),
     private val renderEnabled: Boolean = true,
 ) : ScreenAdapter() {
     private var batch: SpriteBatch? = null
     private var renderer: AsciiRenderer? = null
-    private val viewport = FitViewport(
-        (session.map.width + AsciiRenderer.sidebarColumns) * cellWidth,
-        (session.map.height + AsciiRenderer.uiRows) * cellHeight,
-    )
+    private val assetAudit = RenderSnapshotAssetAudit(assets)
+    private var lastAuditedRevision: Long? = null
+    private val viewport =
+        session.renderSnapshot().let { initialSnapshot ->
+            FitViewport(
+                FoundationViewportSupport.worldWidth(initialSnapshot),
+                FoundationViewportSupport.worldHeight(initialSnapshot),
+            )
+        }
 
     override fun show() {
         centerCamera()
     }
 
     override fun render(delta: Float) {
+        var snapshot = session.renderSnapshot()
         if (session.runOutcome().isTerminal) {
             app.showOutcome(session)
             return
         }
 
-        commandSource.nextCommand(session)?.let { command ->
+        syncViewport(snapshot)
+        commandSource.nextCommand(snapshot)?.let { command ->
             val consumed = session.perform(command)
-            commandSource.onCommandResult(session, command, consumed)
+            snapshot = session.renderSnapshot()
+            syncViewport(snapshot)
+            commandSource.onCommandResult(snapshot, command, consumed)
         }
 
         if (session.runOutcome().isTerminal) {
@@ -52,11 +65,16 @@ class FoundationGameScreen(
             return
         }
 
+        val overlayState = commandSource.overlayState()
+        app.warmSessionAssets(snapshot)
         if (!renderEnabled) {
+            auditSnapshot(snapshot)
+            AsciiRenderer.buildRenderModel(session.localizer(), assets.visualResolver, snapshot, overlayState)
             return
         }
 
         ensureResources()
+        auditSnapshot(snapshot)
         val batch = requireNotNull(batch)
         val renderer = requireNotNull(renderer)
         ScreenUtils.clear(0.03f, 0.03f, 0.05f, 1f)
@@ -64,13 +82,14 @@ class FoundationGameScreen(
         batch.projectionMatrix = viewport.camera.combined
 
         batch.begin()
-        renderer.render(batch, session, commandSource.overlayState())
+        renderer.render(batch, snapshot, overlayState)
         batch.end()
     }
 
     override fun resize(width: Int, height: Int) {
         if (renderEnabled) {
             viewport.update(width, height, true)
+            syncViewport(session.renderSnapshot())
             centerCamera()
         }
     }
@@ -92,7 +111,47 @@ class FoundationGameScreen(
             batch = SpriteBatch()
         }
         if (renderer == null) {
-            renderer = AsciiRenderer(localizer = session.localizer(), cellWidth = cellWidth, cellHeight = cellHeight)
+            renderer = AsciiRenderer(localizer = session.localizer(), visualResolver = assets.visualResolver, cellWidth = cellWidth, cellHeight = cellHeight)
         }
+    }
+
+    private fun auditSnapshot(snapshot: com.ktome.core.snapshot.RenderSnapshot) {
+        if (lastAuditedRevision == snapshot.metadata.revision) {
+            return
+        }
+        assetAudit.audit(snapshot)
+        lastAuditedRevision = snapshot.metadata.revision
+    }
+
+    private fun syncViewport(snapshot: RenderSnapshot) {
+        if (FoundationViewportSupport.syncViewport(viewport, snapshot, Gdx.graphics.width, Gdx.graphics.height)) {
+            centerCamera()
+        }
+    }
+}
+
+internal object FoundationViewportSupport {
+    fun worldWidth(snapshot: RenderSnapshot): Float =
+        (snapshot.metadata.width + AsciiRenderer.sidebarColumns) * cellWidth
+
+    fun worldHeight(snapshot: RenderSnapshot): Float =
+        (snapshot.metadata.height + AsciiRenderer.uiRows) * cellHeight
+
+    fun syncViewport(
+        viewport: FitViewport,
+        snapshot: RenderSnapshot,
+        screenWidth: Int,
+        screenHeight: Int,
+    ): Boolean {
+        val targetWidth = worldWidth(snapshot)
+        val targetHeight = worldHeight(snapshot)
+        if (viewport.worldWidth == targetWidth && viewport.worldHeight == targetHeight) {
+            return false
+        }
+        viewport.setWorldSize(targetWidth, targetHeight)
+        if (Gdx.graphics != null) {
+            viewport.update(screenWidth, screenHeight, true)
+        }
+        return true
     }
 }

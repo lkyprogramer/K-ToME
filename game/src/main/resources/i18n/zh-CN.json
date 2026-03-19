@@ -82,6 +82,7 @@
   "tile.wall.name": "墙壁",
   "tile.unknown.name": "未知",
   "actor.player.name": "英雄",
+  "actor.unknown.name": "未知单位",
   "actor.player.role": "玩家",
   "actor.boss.role": "首领",
   "actor.monster.role": "怪物 {ai}",

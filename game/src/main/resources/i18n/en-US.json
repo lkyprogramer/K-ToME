@@ -82,6 +82,7 @@
   "tile.wall.name": "Wall",
   "tile.unknown.name": "Unknown",
   "actor.player.name": "Hero",
+  "actor.unknown.name": "Unknown Actor",
   "actor.player.role": "Player",
   "actor.boss.role": "Boss",
   "actor.monster.role": "Monster {ai}",

@@ -4,19 +4,16 @@ import com.badlogic.gdx.graphics.Color
 import com.badlogic.gdx.graphics.g2d.BitmapFont
 import com.badlogic.gdx.graphics.g2d.SpriteBatch
 import com.badlogic.gdx.utils.Disposable
+import com.ktome.client.assets.VisualManifestResolver
 import com.ktome.client.input.OverlayState
 import com.ktome.client.input.UiMode
 import com.ktome.client.ui.MessageLog
-import com.ktome.core.item.EquipSlot
-import com.ktome.core.map.Point
-import com.ktome.core.map.TileType
-import com.ktome.game.ActorView
-import com.ktome.game.FoundationGameSession
-import com.ktome.game.TileVisibility
+import com.ktome.core.snapshot.RenderSnapshot
 import com.ktome.game.i18n.Localizer
 
 class AsciiRenderer(
     private val localizer: Localizer,
+    private val visualResolver: VisualManifestResolver,
     private val cellWidth: Float = 16f,
     private val cellHeight: Float = 16f,
 ) : Disposable {
@@ -29,113 +26,65 @@ class AsciiRenderer(
 
     fun render(
         batch: SpriteBatch,
-        session: FoundationGameSession,
+        snapshot: RenderSnapshot,
         overlayState: OverlayState,
     ) {
-        val map = session.map
-        val visible = session.visibleTiles()
-        val explored = session.exploredTiles()
+        val model = buildRenderModel(localizer, visualResolver, snapshot, overlayState)
+        val mapHeight = snapshot.metadata.height
         val mapOffsetY = uiRows * cellHeight
 
-        for (y in 0 until map.height) {
-            for (x in 0 until map.width) {
-                val point = Point(x, y)
-                val glyphState = when {
-                    point in visible -> {
-                        val tile = map[point]
-                        GlyphState(tile.glyph, visibleColor(tile))
-                    }
-                    point in explored -> {
-                        val tile = map[point]
-                        GlyphState(tile.glyph, exploredColor(tile))
-                    }
-                    else -> null
-                }
-
-                glyphState?.let { state ->
-                    drawGlyph(batch, x, y, map.height, mapOffsetY, state)
-                }
-            }
+        model.terrainGlyphs.forEach { glyph ->
+            drawGlyph(batch, glyph.x, glyph.y, mapHeight, mapOffsetY, glyph.glyph, glyph.colorHex)
+        }
+        model.propGlyphs.forEach { glyph ->
+            drawGlyph(batch, glyph.x, glyph.y, mapHeight, mapOffsetY, glyph.glyph, glyph.colorHex)
+        }
+        model.overlayGlyphs.forEach { glyph ->
+            drawGlyph(batch, glyph.x, glyph.y, mapHeight, mapOffsetY, glyph.glyph, glyph.colorHex)
+        }
+        model.actorGlyphs.forEach { glyph ->
+            drawGlyph(batch, glyph.x, glyph.y, mapHeight, mapOffsetY, glyph.glyph, glyph.colorHex)
         }
 
-        session.actorViews()
-            .sortedBy { if (it.isPlayer) 1 else 0 }
-            .forEach { actor ->
-                drawActor(batch, actor, map.height, mapOffsetY)
-            }
+        model.targetCursor?.let { cursor ->
+            drawGlyph(batch, cursor.x, cursor.y, mapHeight, mapOffsetY, '*', "#FF2400")
+        }
+        model.inspectCursor?.let { cursor ->
+            drawGlyph(batch, cursor.x, cursor.y, mapHeight, mapOffsetY, '+', "#00FFFF")
+        }
 
-        drawTargetCursor(batch, overlayState, map.height, mapOffsetY)
-        drawInspectCursor(batch, overlayState, map.height, mapOffsetY)
-        drawStatus(batch, session)
-        drawMessages(batch, session)
-        drawSidebar(batch, session, overlayState, map.height, mapOffsetY)
+        uiFont.color = Color.GOLD
+        uiFont.draw(
+            batch,
+            model.hudText,
+            4f,
+            messageRows * cellHeight + cellHeight - 4f,
+        )
+
+        uiFont.color = Color.WHITE
+        messageLog.render(
+            batch = batch,
+            font = uiFont,
+            messages = model.messageLines,
+            x = 4f,
+            baselineY = 12f,
+            lineHeight = cellHeight,
+        )
+
+        val sidebarX = (snapshot.metadata.width + 1) * cellWidth
+        var line = mapOffsetY + mapHeight * cellHeight - 4f
+        model.sidebarLines.forEach { entry ->
+            uiFont.color = tone(entry.tone)
+            if (entry.text.isNotEmpty()) {
+                uiFont.draw(batch, entry.text, sidebarX, line)
+            }
+            line -= cellHeight
+        }
     }
 
     override fun dispose() {
         mapFont.dispose()
         uiFont.dispose()
-    }
-
-    private fun visibleColor(tile: TileType): Color =
-        when (tile) {
-            TileType.WALL -> Color.LIGHT_GRAY
-            TileType.FLOOR -> Color.WHITE
-        }
-
-    private fun exploredColor(tile: TileType): Color =
-        when (tile) {
-            TileType.WALL -> Color.DARK_GRAY
-            TileType.FLOOR -> Color.GRAY
-        }
-
-    private fun drawActor(
-        batch: SpriteBatch,
-        actor: ActorView,
-        mapHeight: Int,
-        mapOffsetY: Float,
-    ) {
-        drawGlyph(
-            batch = batch,
-            x = actor.position.x,
-            y = actor.position.y,
-            mapHeight = mapHeight,
-            mapOffsetY = mapOffsetY,
-            glyphState = GlyphState(actor.glyph, Color.valueOf(actor.colorHex.removePrefix("#"))),
-        )
-    }
-
-    private fun drawStatus(
-        batch: SpriteBatch,
-        session: FoundationGameSession,
-    ) {
-        val status = session.playerStatus()
-        uiFont.color =
-            when {
-                session.isVictory() -> Color.FOREST
-                session.isGameOver() -> Color.SCARLET
-                else -> Color.GOLD
-            }
-        uiFont.draw(
-            batch,
-            hudText(localizer, session),
-            4f,
-            messageRows * cellHeight + cellHeight - 4f,
-        )
-    }
-
-    private fun drawMessages(
-        batch: SpriteBatch,
-        session: FoundationGameSession,
-    ) {
-        uiFont.color = Color.WHITE
-        messageLog.render(
-            batch = batch,
-            font = uiFont,
-            messages = session.messageLog(),
-            x = 4f,
-            baselineY = 12f,
-            lineHeight = cellHeight,
-        )
     }
 
     private fun drawGlyph(
@@ -144,318 +93,25 @@ class AsciiRenderer(
         y: Int,
         mapHeight: Int,
         mapOffsetY: Float,
-        glyphState: GlyphState,
+        glyph: Char,
+        colorHex: String,
     ) {
-        mapFont.color = glyphState.color
+        mapFont.color = Color.valueOf(colorHex.removePrefix("#"))
         mapFont.draw(
             batch,
-            glyphState.glyph.toString(),
+            glyph.toString(),
             x * cellWidth + 2f,
             mapOffsetY + (mapHeight - y) * cellHeight - 4f,
         )
     }
 
-    private fun drawSidebar(
-        batch: SpriteBatch,
-        session: FoundationGameSession,
-        overlayState: OverlayState,
-        mapHeight: Int,
-        mapOffsetY: Float,
-    ) {
-        val sidebarX = (session.map.width + 1) * cellWidth
-        var line = mapOffsetY + mapHeight * cellHeight - 4f
-
-        uiFont.color = Color.GOLD
-        uiFont.draw(batch, tr("ui.sidebar.equipment"), sidebarX, line)
-        line -= cellHeight
-        uiFont.color = Color.WHITE
-        session.equipmentSlots().forEach { equipment ->
-            val label = slotLabel(equipment.slot)
-            uiFont.draw(batch, "$label: ${equipment.itemName ?: "-"}", sidebarX, line)
-            line -= cellHeight
-        }
-
-        line -= cellHeight / 2f
-        uiFont.color = Color.GOLD
-        uiFont.draw(batch, tr("ui.sidebar.talents"), sidebarX, line)
-        line -= cellHeight
-        uiFont.color = Color.WHITE
-        session.talentSlots().forEach { talent ->
-            val state =
-                if (talent.currentCooldown > 0) {
-                    "${tr("ui.sidebar.cooldown.short")}:${talent.currentCooldown}"
-                } else {
-                    tr("ui.sidebar.ready")
-                }
-            uiFont.draw(batch, "${talent.slot}.${talent.name} L${talent.level}/${talent.maxLevel} [$state]", sidebarX, line)
-            line -= cellHeight
-            uiFont.draw(batch, "   ${talent.staminaCost} ${tr("ui.hud.stamina.short")}", sidebarX, line)
-            line -= cellHeight
-        }
-
-        line -= cellHeight / 2f
-        uiFont.color = Color.GOLD
-        uiFont.draw(batch, tr("ui.sidebar.ground"), sidebarX, line)
-        line -= cellHeight
-        uiFont.color = Color.WHITE
-        val groundItems = session.itemNamesAtPlayerPosition()
-        if (groundItems.isEmpty()) {
-            uiFont.draw(batch, "-", sidebarX, line)
-            line -= cellHeight
-        } else {
-            groundItems.forEach { name ->
-                uiFont.draw(batch, name, sidebarX, line)
-                line -= cellHeight
-            }
-        }
-
-        when (overlayState.mode) {
-            UiMode.MAP -> {
-                line -= cellHeight / 2f
-                uiFont.color = Color.LIGHT_GRAY
-                uiFont.draw(batch, tr("ui.controls.map.pick_up"), sidebarX, line)
-                line -= cellHeight
-                uiFont.draw(batch, tr("ui.controls.map.inventory"), sidebarX, line)
-                line -= cellHeight
-                uiFont.draw(batch, tr("ui.controls.map.save"), sidebarX, line)
-                line -= cellHeight
-                if (session.canDescend()) {
-                    uiFont.draw(batch, tr("ui.controls.map.descend"), sidebarX, line)
-                    line -= cellHeight
-                }
-                if (session.canAscend()) {
-                    uiFont.draw(batch, tr("ui.controls.map.ascend"), sidebarX, line)
-                    line -= cellHeight
-                }
-                if (session.hasPendingTalentAllocation()) {
-                    uiFont.draw(batch, tr("ui.controls.map.spend_talent"), sidebarX, line)
-                    line -= cellHeight
-                }
-                if (session.hasPendingStatAllocation()) {
-                    uiFont.draw(batch, tr("ui.controls.map.spend_stat"), sidebarX, line)
-                }
-            }
-
-            UiMode.INVENTORY -> {
-                line -= cellHeight / 2f
-                uiFont.color = Color.GOLD
-                uiFont.draw(batch, sidebarTitle(localizer, UiMode.INVENTORY), sidebarX, line)
-                line -= cellHeight
-                session.inventoryItems().forEach { item ->
-                    uiFont.color = if (item.index == overlayState.inventorySelection) Color.CYAN else Color.WHITE
-                    val equipped = item.equippedSlot?.let { slot -> " [${slotLabel(slot)}]" } ?: ""
-                    uiFont.draw(batch, "${item.index + 1}. ${item.name}$equipped", sidebarX, line)
-                    line -= cellHeight
-                }
-                if (session.inventoryItems().isEmpty()) {
-                    uiFont.color = Color.GRAY
-                    uiFont.draw(batch, tr("ui.sidebar.empty"), sidebarX, line)
-                    line -= cellHeight
-                }
-                uiFont.color = Color.LIGHT_GRAY
-                uiFont.draw(batch, tr("ui.controls.inventory"), sidebarX, line)
-            }
-
-            UiMode.TARGETING -> {
-                line -= cellHeight / 2f
-                uiFont.color = Color.GOLD
-                uiFont.draw(batch, sidebarTitle(localizer, UiMode.TARGETING), sidebarX, line)
-                line -= cellHeight
-                uiFont.color = Color.WHITE
-                uiFont.draw(batch, tr("ui.targeting.slot", "slot" to overlayState.targetingSlot), sidebarX, line)
-                line -= cellHeight
-                val cursor = overlayState.targetingCursor
-                uiFont.draw(
-                    batch,
-                    tr("ui.targeting.cursor", "x" to (cursor?.x ?: "-"), "y" to (cursor?.y ?: "-")),
-                    sidebarX,
-                    line,
-                )
-                line -= cellHeight
-                uiFont.color = Color.LIGHT_GRAY
-                uiFont.draw(batch, tr("ui.controls.targeting"), sidebarX, line)
-            }
-
-            UiMode.INSPECT -> {
-                line -= cellHeight / 2f
-                val cursor = overlayState.inspectCursor ?: session.playerPosition()
-                val inspect = session.inspectAt(cursor)
-
-                uiFont.color = Color.GOLD
-                uiFont.draw(batch, sidebarTitle(localizer, UiMode.INSPECT), sidebarX, line)
-                line -= cellHeight
-                uiFont.color = Color.WHITE
-                uiFont.draw(batch, tr("ui.inspect.cursor", "x" to cursor.x, "y" to cursor.y), sidebarX, line)
-                line -= cellHeight
-                uiFont.draw(batch, "${visibilityLabel(inspect.visibility)} ${inspect.terrainName}", sidebarX, line)
-                line -= cellHeight
-
-                inspect.actor?.let { actor ->
-                    uiFont.color = Color.GOLD
-                    uiFont.draw(batch, actor.name, sidebarX, line)
-                    line -= cellHeight
-                    uiFont.color = Color.WHITE
-                    uiFont.draw(batch, actor.role, sidebarX, line)
-                    line -= cellHeight
-                    uiFont.draw(batch, "${tr("ui.hud.hp.short")} ${actor.currentHp}/${actor.maxHp}", sidebarX, line)
-                    line -= cellHeight
-                    uiFont.draw(batch, "${tr("ui.hud.attack.short")} ${actor.attack}  ${tr("ui.hud.defense.short")} ${actor.defense}", sidebarX, line)
-                    line -= cellHeight
-                    uiFont.draw(batch, "${tr("ui.hud.accuracy.short")} ${actor.accuracy}  ${tr("ui.hud.evasion.short")} ${actor.evasion}", sidebarX, line)
-                    line -= cellHeight
-                    uiFont.draw(batch, "${tr("ui.stat.str")} ${actor.strength}  ${tr("ui.stat.dex")} ${actor.dexterity}", sidebarX, line)
-                    line -= cellHeight
-                    uiFont.draw(batch, "${tr("ui.stat.con")} ${actor.constitution}  ${tr("ui.stat.wil")} ${actor.willpower}", sidebarX, line)
-                    line -= cellHeight
-                    uiFont.draw(batch, "${tr("ui.hud.speed.short")} ${actor.speed}", sidebarX, line)
-                    line -= cellHeight
-                    if (actor.statusEffects.isNotEmpty()) {
-                        uiFont.color = Color.LIGHT_GRAY
-                        actor.statusEffects.forEach { effect ->
-                            uiFont.draw(batch, effect, sidebarX, line)
-                            line -= cellHeight
-                        }
-                    }
-                }
-
-                if (inspect.items.isNotEmpty()) {
-                    line -= cellHeight / 2f
-                    uiFont.color = Color.GOLD
-                    uiFont.draw(batch, tr("ui.sidebar.items"), sidebarX, line)
-                    line -= cellHeight
-                    inspect.items.forEach { item ->
-                        uiFont.color = Color.WHITE
-                        uiFont.draw(batch, item.name, sidebarX, line)
-                        line -= cellHeight
-                        uiFont.color = Color.LIGHT_GRAY
-                        uiFont.draw(batch, item.typeLabel, sidebarX, line)
-                        line -= cellHeight
-                        item.details.forEach { detail ->
-                            uiFont.draw(batch, detail, sidebarX, line)
-                            line -= cellHeight
-                        }
-                    }
-                }
-
-                inspect.stairLabel?.let { stairLabel ->
-                    line -= cellHeight / 2f
-                    uiFont.color = Color.GOLD
-                    uiFont.draw(batch, stairLabel, sidebarX, line)
-                    line -= cellHeight
-                }
-
-                if (inspect.actor == null && inspect.items.isEmpty() && inspect.stairLabel == null) {
-                    uiFont.color = Color.GRAY
-                    val message =
-                        when (inspect.visibility) {
-                            TileVisibility.VISIBLE -> tr("ui.inspect.no_visible_target")
-                            TileVisibility.EXPLORED -> tr("ui.inspect.explored_not_visible")
-                            TileVisibility.HIDDEN -> tr("ui.inspect.unknown_tile")
-                        }
-                    uiFont.draw(batch, message, sidebarX, line)
-                    line -= cellHeight
-                }
-
-                uiFont.color = Color.LIGHT_GRAY
-                uiFont.draw(batch, tr("ui.controls.inspect"), sidebarX, line)
-            }
-
-            UiMode.STAT_ASSIGN -> {
-                line -= cellHeight / 2f
-                uiFont.color = Color.GOLD
-                uiFont.draw(batch, sidebarTitle(localizer, UiMode.STAT_ASSIGN), sidebarX, line)
-                line -= cellHeight
-                uiFont.color = Color.WHITE
-                uiFont.draw(batch, tr("ui.sidebar.points", "value" to session.playerStatus().statPoints), sidebarX, line)
-                line -= cellHeight
-                uiFont.draw(batch, "1. ${tr("ui.stat.str")}", sidebarX, line)
-                line -= cellHeight
-                uiFont.draw(batch, "2. ${tr("ui.stat.dex")}", sidebarX, line)
-                line -= cellHeight
-                uiFont.draw(batch, "3. ${tr("ui.stat.con")}", sidebarX, line)
-                line -= cellHeight
-                uiFont.draw(batch, "4. ${tr("ui.stat.wil")}", sidebarX, line)
-            }
-
-            UiMode.TALENT_ASSIGN -> {
-                line -= cellHeight / 2f
-                uiFont.color = Color.GOLD
-                uiFont.draw(batch, sidebarTitle(localizer, UiMode.TALENT_ASSIGN), sidebarX, line)
-                line -= cellHeight
-                uiFont.color = Color.WHITE
-                uiFont.draw(batch, tr("ui.sidebar.points", "value" to session.playerStatus().talentPoints), sidebarX, line)
-                line -= cellHeight
-                session.talentSlots().forEach { talent ->
-                    uiFont.draw(batch, "${talent.slot}. ${talent.name} L${talent.level}/${talent.maxLevel}", sidebarX, line)
-                    line -= cellHeight
-                }
-                uiFont.color = Color.LIGHT_GRAY
-                uiFont.draw(batch, tr("ui.controls.talent_assign"), sidebarX, line)
-            }
-        }
-    }
-
-    private fun drawTargetCursor(
-        batch: SpriteBatch,
-        overlayState: OverlayState,
-        mapHeight: Int,
-        mapOffsetY: Float,
-    ) {
-        val cursor = overlayState.targetingCursor ?: return
-        if (overlayState.mode != UiMode.TARGETING) {
-            return
-        }
-
-        mapFont.color = Color.SCARLET
-        mapFont.draw(
-            batch,
-            "X",
-            cursor.x * cellWidth + 2f,
-            mapOffsetY + (mapHeight - cursor.y) * cellHeight - 4f,
-        )
-    }
-
-    private fun drawInspectCursor(
-        batch: SpriteBatch,
-        overlayState: OverlayState,
-        mapHeight: Int,
-        mapOffsetY: Float,
-    ) {
-        val cursor = overlayState.inspectCursor ?: return
-        if (overlayState.mode != UiMode.INSPECT) {
-            return
-        }
-
-        mapFont.color = Color.CYAN
-        mapFont.draw(
-            batch,
-            "+",
-            cursor.x * cellWidth + 2f,
-            mapOffsetY + (mapHeight - cursor.y) * cellHeight - 4f,
-        )
-    }
-
-    private data class GlyphState(
-        val glyph: Char,
-        val color: Color,
-    )
-
-    private fun tr(
-        key: String,
-        vararg args: Pair<String, Any?>,
-    ): String = localizer.text(key, *args)
-
-    private fun slotLabel(slot: EquipSlot): String =
-        when (slot) {
-            EquipSlot.WEAPON -> tr("ui.sidebar.weapon")
-            EquipSlot.ARMOR -> tr("ui.sidebar.armor")
-        }
-
-    private fun visibilityLabel(visibility: TileVisibility): String =
-        when (visibility) {
-            TileVisibility.VISIBLE -> tr("ui.inspect.visible")
-            TileVisibility.EXPLORED -> tr("ui.inspect.explored")
-            TileVisibility.HIDDEN -> tr("ui.inspect.hidden")
+    private fun tone(tone: AsciiTextTone): Color =
+        when (tone) {
+            AsciiTextTone.GOLD -> Color.GOLD
+            AsciiTextTone.WHITE -> Color.WHITE
+            AsciiTextTone.LIGHT_GRAY -> Color.LIGHT_GRAY
+            AsciiTextTone.CYAN -> Color.CYAN
+            AsciiTextTone.GRAY -> Color.GRAY
         }
 
     companion object {
@@ -463,25 +119,27 @@ class AsciiRenderer(
         const val uiRows: Int = messageRows + 1
         const val sidebarColumns: Int = 28
 
+        internal fun buildRenderModel(
+            localizer: Localizer,
+            visualResolver: VisualManifestResolver,
+            snapshot: RenderSnapshot,
+            overlayState: OverlayState,
+        ): AsciiRenderModel = AsciiRenderModelBuilder.build(localizer, visualResolver, snapshot, overlayState)
+
         internal fun hudText(
             localizer: Localizer,
-            session: FoundationGameSession,
+            snapshot: RenderSnapshot,
         ): String {
-            val status = session.playerStatus()
-            fun tr(
-                key: String,
-                vararg args: Pair<String, Any?>,
-            ): String = localizer.text(key, *args)
-
-            return "${tr("ui.hud.floor.short")} ${session.currentFloor()}/${session.maxFloor()}  " +
-                "${tr("ui.hud.hp.short")} ${status.currentHp}/${status.maxHp}  " +
-                "${tr("ui.hud.stamina.short")} ${status.currentStamina}/${status.maxStamina}  " +
-                "${tr("ui.hud.attack.short")} ${status.attack}  " +
-                "${tr("ui.hud.defense.short")} ${status.defense}  " +
-                "${tr("ui.hud.level.short")} ${status.level}  " +
-                "${tr("ui.hud.xp.short")} ${status.currentExperience}/${status.nextLevelRequirement}  " +
-                "${tr("ui.hud.stat.short")} ${status.statPoints}  " +
-                "${tr("ui.hud.talent.short")} ${status.talentPoints}"
+            val status = snapshot.uiState.playerStatus
+            return "${localizer.text("ui.hud.floor.short")} ${snapshot.metadata.currentFloor}/${snapshot.metadata.maxFloor}  " +
+                "${localizer.text("ui.hud.hp.short")} ${status.currentHp}/${status.maxHp}  " +
+                "${localizer.text(status.resourceLabelKey)} ${status.currentResource}/${status.maxResource}  " +
+                "${localizer.text("ui.hud.attack.short")} ${status.attack}  " +
+                "${localizer.text("ui.hud.defense.short")} ${status.defense}  " +
+                "${localizer.text("ui.hud.level.short")} ${status.level}  " +
+                "${localizer.text("ui.hud.xp.short")} ${status.currentExperience}/${status.nextLevelRequirement}  " +
+                "${localizer.text("ui.hud.stat.short")} ${status.statPoints}  " +
+                "${localizer.text("ui.hud.talent.short")} ${status.talentPoints}"
         }
 
         internal fun sidebarTitle(
