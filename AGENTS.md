@@ -521,6 +521,20 @@ AI 场景矩阵、replay 哈希一致性、perf/soak 预算、Localization/Acces
 
 ### 8.4 构建与基础验证
 
+工具链环境固定规则：
+
+1. 本仓库的 Java / Kotlin 工具链以仓库根目录 `.sdkmanrc` 为准；当前固定为 `java=21.0.10-tem`、`kotlin=2.2.21`。
+2. 运行任何 `./gradlew`、`java`、`kotlinc` 之前，必须先执行：
+
+```bash
+source "$HOME/.sdkman/bin/sdkman-init.sh"
+sdk env
+```
+
+3. 若 `JAVA_HOME`、`java -version` 或 `which java` 与 `.sdkmanrc` 不一致，必须先修正环境，再分析构建或测试失败；禁止把错误 JDK 下的失败结果当成代码问题。
+4. 不要依赖系统 PATH 上的默认 JDK，也不要在仓库内混用 Homebrew JDK、系统 JDK 与 SDKMAN JDK。
+5. 如果后续需要调整 `.sdkmanrc`，必须与对应的构建脚本、`AGENTS.md` 和相关验证记录一起提交，避免仓库工具链口径漂移。
+
 提交前至少执行与本次改动匹配的命令。基础命令为：
 
 ```bash

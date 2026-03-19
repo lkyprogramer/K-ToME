@@ -1,7 +1,9 @@
 package com.ktome.tools.lint
 
+import com.ktome.client.assets.ClientAssetBundleLoader
 import com.ktome.game.data.DataLoader
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
@@ -11,6 +13,7 @@ class ContractLintTest {
     @Test
     fun `schema v2 contracts resolve all mandatory cross references`() {
         val catalog = DataLoader().loadSchemaCatalog()
+        val assets = ClientAssetBundleLoader.load()
         val professionIds = catalog.professions.map { it.id }.toSet()
         val talentIds = catalog.talents.map { it.id }.toSet()
         val treeIds = catalog.talentTrees.map { it.id }.toSet()
@@ -22,14 +25,24 @@ class ContractLintTest {
         val aiIds = catalog.aiProfiles.map { it.id }.toSet()
         val arenaIds = catalog.arenas.map { it.id }.toSet()
         val ambientIds = catalog.ambientProfiles.map { it.id }.toSet()
+        fun assertExactVisualKey(key: String) {
+            val resolved = assets.visualResolver.resolve(key)
+            assertFalse(resolved.fallbackUsed, "Unknown visual key $key")
+            assertFalse(resolved.matchedByPrefix, "Visual key $key resolved via prefix fallback")
+        }
+        fun assertExactAudioKey(key: String) {
+            val resolved = assets.audioResolver.resolve(key)
+            assertFalse(resolved.fallbackUsed, "Unknown audio profile $key")
+            assertFalse(resolved.matchedByPrefix, "Audio profile $key resolved via prefix fallback")
+        }
 
         catalog.professions.forEach { profession ->
             assertEquals(2, profession.schemaVersion)
             assertEquals("profession.${profession.id}.name", profession.nameKey)
             assertEquals("profession.${profession.id}.desc", profession.descKey)
-            assertTrue(catalog.visualKeys.contains(profession.visualKey), "Unknown visual key ${profession.visualKey}")
-            assertTrue(catalog.visualKeys.contains(profession.iconKey), "Unknown icon key ${profession.iconKey}")
-            assertTrue(catalog.audioProfiles.contains(profession.audioProfile), "Unknown audio profile ${profession.audioProfile}")
+            assertExactVisualKey(profession.visualKey)
+            assertExactVisualKey(profession.iconKey)
+            assertExactAudioKey(profession.audioProfile)
             profession.talentTrees.forEach { treeId -> assertTrue(treeIds.contains(treeId), "Unknown profession tree $treeId") }
             profession.startingTalents.forEach { talentId -> assertTrue(talentIds.contains(talentId), "Unknown starter talent $talentId") }
             profession.startingKit.forEach { itemId -> assertTrue(itemIds.contains(itemId), "Unknown starter item $itemId") }
@@ -40,9 +53,9 @@ class ContractLintTest {
             assertTrue(professionIds.contains(tree.professionId), "Unknown talent tree profession ${tree.professionId}")
             assertEquals("talent_tree.${tree.id}.name", tree.nameKey)
             assertEquals("talent_tree.${tree.id}.desc", tree.descKey)
-            assertTrue(catalog.visualKeys.contains(tree.visualKey), "Unknown visual key ${tree.visualKey}")
-            assertTrue(catalog.visualKeys.contains(tree.iconKey), "Unknown icon key ${tree.iconKey}")
-            assertTrue(catalog.audioProfiles.contains(tree.audioProfile), "Unknown audio profile ${tree.audioProfile}")
+            assertExactVisualKey(tree.visualKey)
+            assertExactVisualKey(tree.iconKey)
+            assertExactAudioKey(tree.audioProfile)
             tree.nodes.forEach { talentId -> assertTrue(talentIds.contains(talentId), "Unknown tree node $talentId") }
         }
 
@@ -53,9 +66,9 @@ class ContractLintTest {
             val tree = requireNotNull(treeById[talent.treeId]) { "Unknown tree ${talent.treeId}" }
             assertEquals("talent.${tree.professionId}.${talent.id}.name", talent.nameKey)
             assertEquals("talent.${tree.professionId}.${talent.id}.desc", talent.descKey)
-            assertTrue(catalog.visualKeys.contains(talent.visualKey), "Unknown visual key ${talent.visualKey}")
-            assertTrue(catalog.visualKeys.contains(talent.iconKey), "Unknown icon key ${talent.iconKey}")
-            assertTrue(catalog.audioProfiles.contains(talent.audioProfile), "Unknown audio profile ${talent.audioProfile}")
+            assertExactVisualKey(talent.visualKey)
+            assertExactVisualKey(talent.iconKey)
+            assertExactAudioKey(talent.audioProfile)
             talent.requirements.talentPrereqs.forEach { prereq ->
                 assertTrue(talentIds.contains(prereq.talentId), "Unknown talent prerequisite ${prereq.talentId}")
             }
@@ -65,9 +78,9 @@ class ContractLintTest {
             assertEquals(2, monster.schemaVersion)
             assertTrue(monster.id.contains('.'), "Monster id must use family namespace: ${monster.id}")
             assertTrue(monster.nameKey.startsWith("monster.${monster.id}."), "Monster key must follow monster.<family>.<id> namespace: ${monster.nameKey}")
-            assertTrue(catalog.visualKeys.contains(monster.visualKey), "Unknown visual key ${monster.visualKey}")
-            assertTrue(catalog.visualKeys.contains(monster.iconKey), "Unknown icon key ${monster.iconKey}")
-            assertTrue(catalog.audioProfiles.contains(monster.audioProfile), "Unknown audio profile ${monster.audioProfile}")
+            assertExactVisualKey(monster.visualKey)
+            assertExactVisualKey(monster.iconKey)
+            assertExactAudioKey(monster.audioProfile)
             assertTrue(aiIds.contains(monster.aiProfileId), "Unknown AI profile ${monster.aiProfileId}")
             assertTrue(lootIds.contains(monster.lootProfileId), "Unknown loot profile ${monster.lootProfileId}")
             monster.talents.keys.forEach { talentId -> assertTrue(talentIds.contains(talentId), "Unknown monster talent $talentId") }
@@ -77,9 +90,9 @@ class ContractLintTest {
             assertEquals(2, boss.schemaVersion)
             assertEquals("boss.${boss.bossTemplateId}.name", boss.nameKey)
             assertEquals("boss.${boss.bossTemplateId}.desc", boss.descKey)
-            assertTrue(catalog.visualKeys.contains(boss.visualKey), "Unknown visual key ${boss.visualKey}")
-            assertTrue(catalog.visualKeys.contains(boss.iconKey), "Unknown icon key ${boss.iconKey}")
-            assertTrue(catalog.audioProfiles.contains(boss.audioProfile), "Unknown audio profile ${boss.audioProfile}")
+            assertExactVisualKey(boss.visualKey)
+            assertExactVisualKey(boss.iconKey)
+            assertExactAudioKey(boss.audioProfile)
             assertTrue(monsterIds.contains(boss.bossTemplateId), "Unknown boss template ${boss.bossTemplateId}")
             assertTrue(arenaIds.contains(boss.arenaId), "Unknown arena ${boss.arenaId}")
             boss.rewards.forEach { rewardId -> assertTrue(lootIds.contains(rewardId), "Unknown boss reward $rewardId") }
@@ -91,9 +104,10 @@ class ContractLintTest {
             assertEquals("zone.${zone.id}.desc", zone.descKey)
             assertTrue(zone.floorCount > 0, "Zone floorCount must stay positive for ${zone.id}")
             assertTrue(zone.mapSize.width > 0 && zone.mapSize.height > 0, "Zone mapSize must stay positive for ${zone.id}")
-            assertTrue(catalog.visualKeys.contains(zone.visualKey), "Unknown visual key ${zone.visualKey}")
-            assertTrue(catalog.visualKeys.contains(zone.iconKey), "Unknown icon key ${zone.iconKey}")
-            assertTrue(catalog.audioProfiles.contains(zone.audioProfile), "Unknown audio profile ${zone.audioProfile}")
+            assertExactVisualKey(zone.visualKey)
+            assertExactVisualKey(zone.iconKey)
+            assertExactAudioKey(zone.audioProfile)
+            assertExactAudioKey(zone.ambientProfile)
             assertTrue(tilesetIds.contains(zone.tilesetKey), "Unknown tileset ${zone.tilesetKey}")
             assertTrue(ambientIds.contains(zone.ambientProfile), "Unknown ambient profile ${zone.ambientProfile}")
             zone.monsterPools.forEach { monsterId -> assertTrue(monsterIds.contains(monsterId), "Unknown zone monster $monsterId") }
@@ -105,25 +119,25 @@ class ContractLintTest {
             assertEquals(2, material.schemaVersion)
             assertEquals("material.${material.id.lowercase()}.name", material.nameKey)
             assertEquals("material.${material.id.lowercase()}.desc", material.descKey)
-            assertTrue(catalog.visualKeys.contains(material.visualKey), "Unknown visual key ${material.visualKey}")
-            assertTrue(catalog.visualKeys.contains(material.iconKey), "Unknown icon key ${material.iconKey}")
-            assertTrue(catalog.audioProfiles.contains(material.audioProfile), "Unknown audio profile ${material.audioProfile}")
+            assertExactVisualKey(material.visualKey)
+            assertExactVisualKey(material.iconKey)
+            assertExactAudioKey(material.audioProfile)
         }
         catalog.itemBundle.affixes.forEach { affix ->
             assertEquals(2, affix.schemaVersion)
             assertEquals("affix.${affix.id}.name", affix.nameKey)
             assertEquals("affix.${affix.id}.desc", affix.descKey)
-            assertTrue(catalog.visualKeys.contains(affix.visualKey), "Unknown visual key ${affix.visualKey}")
-            assertTrue(catalog.visualKeys.contains(affix.iconKey), "Unknown icon key ${affix.iconKey}")
-            assertTrue(catalog.audioProfiles.contains(affix.audioProfile), "Unknown audio profile ${affix.audioProfile}")
+            assertExactVisualKey(affix.visualKey)
+            assertExactVisualKey(affix.iconKey)
+            assertExactAudioKey(affix.audioProfile)
         }
         catalog.itemBundle.items.forEach { item ->
             assertEquals(2, item.schemaVersion)
             assertEquals("item.${item.id}.name", item.nameKey)
             assertEquals("item.${item.id}.desc", item.descKey)
-            assertTrue(catalog.visualKeys.contains(item.visualKey), "Unknown visual key ${item.visualKey}")
-            assertTrue(catalog.visualKeys.contains(item.iconKey), "Unknown icon key ${item.iconKey}")
-            assertTrue(catalog.audioProfiles.contains(item.audioProfile), "Unknown audio profile ${item.audioProfile}")
+            assertExactVisualKey(item.visualKey)
+            assertExactVisualKey(item.iconKey)
+            assertExactAudioKey(item.audioProfile)
             item.materials.forEach { materialId -> assertTrue(catalog.itemBundle.materials.any { it.id == materialId }, "Unknown material $materialId") }
         }
 
@@ -131,9 +145,9 @@ class ContractLintTest {
             assertEquals(2, difficulty.schemaVersion)
             assertEquals("difficulty.${difficulty.id}.name", difficulty.nameKey)
             assertEquals("difficulty.${difficulty.id}.desc", difficulty.descKey)
-            assertTrue(catalog.visualKeys.contains(difficulty.visualKey), "Unknown visual key ${difficulty.visualKey}")
-            assertTrue(catalog.visualKeys.contains(difficulty.iconKey), "Unknown icon key ${difficulty.iconKey}")
-            assertTrue(catalog.audioProfiles.contains(difficulty.audioProfile), "Unknown audio profile ${difficulty.audioProfile}")
+            assertExactVisualKey(difficulty.visualKey)
+            assertExactVisualKey(difficulty.iconKey)
+            assertExactAudioKey(difficulty.audioProfile)
         }
     }
 

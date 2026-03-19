@@ -206,10 +206,12 @@ class InputReplayFullGameLoopTest {
     ): Boolean {
         val replayInput = extractReplayInput(inputHandler)
         replayInput.frame(justPressed = justPressed, pressed = pressed)
-        val command = inputHandler.pollCommand(session)
+        var snapshot = session.renderSnapshot()
+        val command = inputHandler.pollCommand(snapshot)
         val consumed = command?.let(session::perform) ?: false
         if (command != null) {
-            inputHandler.onCommandResult(session, command, consumed)
+            snapshot = session.renderSnapshot()
+            inputHandler.onCommandResult(snapshot, command, consumed)
         }
         replayInput.clear()
         return consumed

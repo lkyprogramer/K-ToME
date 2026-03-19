@@ -6,6 +6,7 @@ plugins {
 
 dependencies {
     implementation(project(":game"))
+    testImplementation(project(":client"))
     testImplementation(project(":game"))
     testImplementation("org.yaml:snakeyaml:${rootProject.providers.gradleProperty("snakeyamlVersion").get()}")
     testImplementation("org.jetbrains.kotlinx:kotlinx-serialization-json-jvm:${rootProject.providers.gradleProperty("kotlinxSerializationVersion").get()}")

@@ -27,14 +27,14 @@ class InputHandlerTest {
         val playerStart = session.playerPosition()
 
         input.frame(justPressed = setOf(Keys.X))
-        assertNull(handler.pollCommand(session))
+        assertNull(handler.pollCommand(session.renderSnapshot()))
         assertEquals(UiMode.INSPECT, handler.overlayState().mode)
         assertEquals(playerStart, handler.overlayState().inspectCursor)
         input.clear()
 
         val start = requireNotNull(handler.overlayState().inspectCursor)
         input.frame(justPressed = setOf(Keys.S))
-        assertNull(handler.pollCommand(session))
+        assertNull(handler.pollCommand(session.renderSnapshot()))
         assertEquals(
             Point(start.x, (start.y + 1).coerceAtMost(session.map.height - 1)),
             handler.overlayState().inspectCursor,
@@ -43,7 +43,7 @@ class InputHandlerTest {
         input.clear()
 
         input.frame(justPressed = setOf(Keys.X))
-        assertNull(handler.pollCommand(session))
+        assertNull(handler.pollCommand(session.renderSnapshot()))
         assertEquals(UiMode.MAP, handler.overlayState().mode)
     }
 
@@ -55,21 +55,21 @@ class InputHandlerTest {
         requireNotNull(runtimeWorld(session).get<Experience>(session.playerId)).unspentStatPoints = 1
 
         input.frame(justPressed = setOf(Keys.X))
-        assertNull(handler.pollCommand(session))
+        assertNull(handler.pollCommand(session.renderSnapshot()))
         assertEquals(UiMode.INSPECT, handler.overlayState().mode)
         input.clear()
 
         input.frame()
-        assertNull(handler.pollCommand(session))
+        assertNull(handler.pollCommand(session.renderSnapshot()))
         assertEquals(UiMode.INSPECT, handler.overlayState().mode)
         input.clear()
 
         input.frame(justPressed = setOf(Keys.X))
-        assertNull(handler.pollCommand(session))
+        assertNull(handler.pollCommand(session.renderSnapshot()))
         assertEquals(UiMode.MAP, handler.overlayState().mode)
 
         input.frame()
-        assertNull(handler.pollCommand(session))
+        assertNull(handler.pollCommand(session.renderSnapshot()))
         assertEquals(UiMode.STAT_ASSIGN, handler.overlayState().mode)
     }
 
@@ -80,11 +80,11 @@ class InputHandlerTest {
         val session = GameModule.newFoundationSession(saveManager = SaveManager(tempDir.resolve("movement-save")))
 
         input.frame(justPressed = setOf(Keys.S))
-        assertEquals(PlayerCommand.Move(Point(0, 1)), handler.pollCommand(session))
+        assertEquals(PlayerCommand.Move(Point(0, 1)), handler.pollCommand(session.renderSnapshot()))
         input.clear()
 
         input.frame(justPressed = setOf(Keys.S), pressed = setOf(Keys.CONTROL_LEFT, Keys.S))
-        assertEquals(PlayerCommand.SaveGame, handler.pollCommand(session))
+        assertEquals(PlayerCommand.SaveGame, handler.pollCommand(session.renderSnapshot()))
     }
 
     private fun runtimeWorld(session: com.ktome.game.FoundationGameSession): World {

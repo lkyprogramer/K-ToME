@@ -10,12 +10,14 @@ from __future__ import annotations
 
 import argparse
 import base64
+import concurrent.futures
 import hashlib
 import json
 import os
 import pathlib
 import sys
 import time
+import threading
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -32,6 +34,8 @@ except Exception as exc:  # pragma: no cover
 DEFAULT_MODEL = "gemini-3.1-flash-image-preview"
 DEFAULT_ASPECT_RATIO = "1:1"
 DEFAULT_IMAGE_SIZE = "1K"
+REPORT_LOCK = threading.Lock()
+RETRYABLE_HTTP_STATUS = {429, 503, 504}
 
 ALLOWED_CATEGORIES = {
     "tile_ground",
@@ -69,6 +73,9 @@ class AssetJob:
     style_tag: str
     style_prompt: str
     art_style_bible: str
+    category_template: str
+    biome_atmosphere: str
+    faction_style: str
     gemini_key_required: bool
 
 
@@ -123,6 +130,22 @@ def parse_args() -> argparse.Namespace:
         type=int,
         default=int(os.getenv("GEMINI_REQUEST_DELAY_MS", "1500")),
     )
+    parser.add_argument(
+        "--skip-existing",
+        action="store_true",
+        help="Skip assets whose output file already exists.",
+    )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Print compiled prompts without calling the Gemini API.",
+    )
+    parser.add_argument(
+        "--concurrency",
+        type=int,
+        default=int(os.getenv("GEMINI_CONCURRENCY", "1")),
+        help="Maximum number of concurrent Gemini generation requests.",
+    )
     return parser.parse_args()
 
 
@@ -169,6 +192,24 @@ def parse_jobs(plan: dict[str, Any]) -> list[AssetJob]:
         raise ValueError("phase2AssetGates must be a non-empty mapping")
 
     default_negative = normalize_list(defaults.get("negativeConstraints"))
+    category_templates: dict[str, str] = {}
+    raw_templates = defaults.get("categoryPromptTemplates")
+    if isinstance(raw_templates, dict):
+        for k, v in raw_templates.items():
+            category_templates[str(k).strip()] = str(v).strip()
+
+    biome_atmosphere_map: dict[str, str] = {}
+    raw_biomes = defaults.get("biomeAtmosphere")
+    if isinstance(raw_biomes, dict):
+        for k, v in raw_biomes.items():
+            biome_atmosphere_map[str(k).strip()] = str(v).strip()
+
+    faction_style_map: dict[str, str] = {}
+    raw_factions = defaults.get("factionStyle")
+    if isinstance(raw_factions, dict):
+        for k, v in raw_factions.items():
+            faction_style_map[str(k).strip()] = str(v).strip()
+
     jobs: list[AssetJob] = []
     for gate_id, gate_payload in gate_map.items():
         if not isinstance(gate_payload, dict):
@@ -192,6 +233,9 @@ def parse_jobs(plan: dict[str, Any]) -> list[AssetJob]:
             if not asset_id or not output_name or not visual_key or not subject:
                 raise ValueError(f"Gate {gate_id} asset is missing id/outputName/visualKey/subject")
 
+            biome = str(asset.get("biome", "")).strip() or None
+            faction = str(asset.get("faction", "")).strip() or None
+
             jobs.append(
                 AssetJob(
                     gate_id=str(gate_id),
@@ -201,9 +245,9 @@ def parse_jobs(plan: dict[str, Any]) -> list[AssetJob]:
                     output_name=output_name,
                     visual_key=visual_key,
                     subject=subject,
-                    biome=str(asset.get("biome", "")).strip() or None,
+                    biome=biome,
                     profession=str(asset.get("profession", "")).strip() or None,
-                    faction=str(asset.get("faction", "")).strip() or None,
+                    faction=faction,
                     material_tags=normalize_list(asset.get("materialTags")),
                     mood_tags=normalize_list(asset.get("moodTags")),
                     constraints=normalize_list(asset.get("constraints")),
@@ -211,6 +255,9 @@ def parse_jobs(plan: dict[str, Any]) -> list[AssetJob]:
                     style_tag=style_tag,
                     style_prompt=style_prompt,
                     art_style_bible=art_style_bible,
+                    category_template=category_templates.get(category, ""),
+                    biome_atmosphere=biome_atmosphere_map.get(biome, "") if biome else "",
+                    faction_style=faction_style_map.get(faction, "") if faction else "",
                     gemini_key_required=bool(asset.get("geminiKeyRequired", True)),
                 )
             )
@@ -218,32 +265,46 @@ def parse_jobs(plan: dict[str, Any]) -> list[AssetJob]:
 
 
 def compile_prompt(job: AssetJob) -> str:
-    lines = [
-        f"Style tag: {job.style_tag}",
-        f"Style directive: {job.style_prompt}",
-        f"Must comply with art style bible summary anchored at: {job.art_style_bible}",
-        f"Category: {job.category}",
-        f"Subject: {job.subject}",
-        f"Runtime visual key: {job.visual_key}",
-        "Output requirements: transparent background, readable at 48x48, production-ready isolated asset.",
-    ]
-    if job.biome:
-        lines.append(f"Biome context: {job.biome}")
-    if job.profession:
-        lines.append(f"Profession context: {job.profession}")
-    if job.faction:
-        lines.append(f"Faction context: {job.faction}")
+    sections: list[str] = []
+
+    # 1. World & rendering style directive
+    sections.append(f"[Art Direction]\n{job.style_prompt}")
+
+    # 2. Category-specific template
+    if job.category_template:
+        sections.append(f"[Asset Type Rules]\n{job.category_template}")
+
+    # 3. Biome atmosphere
+    if job.biome_atmosphere:
+        sections.append(f"[Environment Atmosphere]\n{job.biome_atmosphere}")
+
+    # 4. Faction visual language
+    if job.faction_style:
+        sections.append(f"[Faction Visual Language]\n{job.faction_style}")
+
+    # 5. Subject — the specific asset description
+    sections.append(f"[Subject]\n{job.subject}")
+
+    # 6. Supporting tags
+    tag_parts: list[str] = []
     if job.material_tags:
-        lines.append(f"Material tags: {', '.join(job.material_tags)}")
+        tag_parts.append(f"Materials: {', '.join(job.material_tags)}")
     if job.mood_tags:
-        lines.append(f"Mood tags: {', '.join(job.mood_tags)}")
+        tag_parts.append(f"Mood: {', '.join(job.mood_tags)}")
+    if tag_parts:
+        sections.append("[Tags]\n" + "\n".join(tag_parts))
+
+    # 7. Constraints (already translated to visual language in YAML)
     if job.constraints:
-        lines.append("Constraints:")
-        lines.extend(f"- {item}" for item in job.constraints)
+        constraint_lines = "\n".join(f"- {c}" for c in job.constraints)
+        sections.append(f"[Requirements]\n{constraint_lines}")
+
+    # 8. Negative constraints
     if job.negative_constraints:
-        lines.append("Negative constraints:")
-        lines.extend(f"- {item}" for item in job.negative_constraints)
-    return "\n".join(lines)
+        neg_lines = "\n".join(f"- {c}" for c in job.negative_constraints)
+        sections.append(f"[Forbidden]\n{neg_lines}")
+
+    return "\n\n".join(sections)
 
 
 def call_gemini(
@@ -283,12 +344,15 @@ def call_gemini(
                 body = json.loads(response.read().decode("utf-8"))
         except urllib.error.HTTPError as exc:
             payload_text = exc.read().decode("utf-8", errors="replace")
+            if exc.code in RETRYABLE_HTTP_STATUS and attempt < request_retries:
+                time.sleep(max(2.0, 2.5 * (attempt + 1)))
+                continue
             raise RuntimeError(f"Gemini API HTTP {exc.code}: {payload_text}") from exc
         except Exception as exc:  # pragma: no cover
             last_error = exc
             if attempt >= request_retries:
                 break
-            time.sleep(1.0)
+            time.sleep(max(1.0, 1.5 * (attempt + 1)))
             continue
 
         candidates = body.get("candidates", [])
@@ -310,8 +374,62 @@ def call_gemini(
 
 def write_report(report_path: pathlib.Path, record: dict[str, Any]) -> None:
     report_path.parent.mkdir(parents=True, exist_ok=True)
-    with report_path.open("a", encoding="utf-8") as handle:
-        handle.write(json.dumps(record, ensure_ascii=False) + "\n")
+    with REPORT_LOCK:
+        with report_path.open("a", encoding="utf-8") as handle:
+            handle.write(json.dumps(record, ensure_ascii=False) + "\n")
+
+
+def generate_job(
+    *,
+    job: AssetJob,
+    out_dir: pathlib.Path,
+    report_path: pathlib.Path,
+    api_key: str,
+    model: str,
+    timeout_s: int,
+    image_aspect_ratio: str,
+    image_size: str,
+    request_retries: int,
+    delay_ms: int,
+    skip_existing: bool,
+) -> tuple[str, str]:
+    prompt = compile_prompt(job)
+    output_path = out_dir / job.output_name
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+
+    if skip_existing and output_path.is_file():
+        return ("skip", f"[skip] {job.asset_id} -> {output_path}")
+
+    image_bytes = call_gemini(
+        prompt=prompt,
+        api_key=api_key,
+        model=model,
+        timeout_s=timeout_s,
+        image_aspect_ratio=image_aspect_ratio,
+        image_size=image_size,
+        request_retries=request_retries,
+    )
+    output_path.write_bytes(image_bytes)
+
+    report_record = {
+        "generatedAt": datetime.now(timezone.utc).isoformat(),
+        "gateId": job.gate_id,
+        "gateDescription": job.gate_description,
+        "assetId": job.asset_id,
+        "category": job.category,
+        "visualKey": job.visual_key,
+        "outputPath": str(output_path),
+        "model": model,
+        "promptSha1": hashlib.sha1(prompt.encode("utf-8")).hexdigest(),
+        "styleTag": job.style_tag,
+        "artStyleBible": job.art_style_bible,
+    }
+    write_report(report_path, report_record)
+
+    if delay_ms > 0:
+        time.sleep(delay_ms / 1000.0)
+
+    return ("generated", f"[gemini] {job.asset_id} -> {output_path}")
 
 
 def main() -> int:
@@ -321,54 +439,67 @@ def main() -> int:
     report_path = pathlib.Path(args.report).resolve()
 
     try:
-        api_key = require_api_key(args.gemini_api_key)
         plan = load_plan(plan_path)
         jobs = parse_jobs(plan)
+        if args.concurrency <= 0:
+            raise ValueError("--concurrency must be >= 1")
+    except Exception as exc:
+        return fail(str(exc))
+
+    if args.dry_run:
+        for job in jobs:
+            prompt = compile_prompt(job)
+            print(f"{'=' * 72}")
+            print(f"Asset: {job.asset_id}  |  Category: {job.category}  |  Gate: {job.gate_id}")
+            print(f"Output: {job.output_name}")
+            print(f"{'- ' * 36}")
+            print(prompt)
+            print()
+        print(f"{'=' * 72}")
+        print(f"Total: {len(jobs)} assets")
+        return 0
+
+    try:
+        api_key = require_api_key(args.gemini_api_key)
     except Exception as exc:
         return fail(str(exc))
 
     out_dir.mkdir(parents=True, exist_ok=True)
-
     for job in jobs:
         if not job.gemini_key_required:
             return fail(f"Asset {job.asset_id} violates policy: geminiKeyRequired must be true")
 
-        prompt = compile_prompt(job)
-        output_path = out_dir / job.output_name
-        output_path.parent.mkdir(parents=True, exist_ok=True)
-
-        try:
-            image_bytes = call_gemini(
-                prompt=prompt,
+    errors: list[str] = []
+    with concurrent.futures.ThreadPoolExecutor(max_workers=args.concurrency) as executor:
+        future_to_job = {
+            executor.submit(
+                generate_job,
+                job=job,
+                out_dir=out_dir,
+                report_path=report_path,
                 api_key=api_key,
                 model=args.model,
                 timeout_s=args.timeout_s,
                 image_aspect_ratio=args.image_aspect_ratio,
                 image_size=args.image_size,
                 request_retries=args.request_retries,
-            )
-            output_path.write_bytes(image_bytes)
-        except Exception as exc:
-            return fail(f"Gemini generation failed for {job.asset_id}: {exc}")
-
-        report_record = {
-            "generatedAt": datetime.now(timezone.utc).isoformat(),
-            "gateId": job.gate_id,
-            "gateDescription": job.gate_description,
-            "assetId": job.asset_id,
-            "category": job.category,
-            "visualKey": job.visual_key,
-            "outputPath": str(output_path),
-            "model": args.model,
-            "promptSha1": hashlib.sha1(prompt.encode("utf-8")).hexdigest(),
-            "styleTag": job.style_tag,
-            "artStyleBible": job.art_style_bible,
+                delay_ms=args.delay_ms,
+                skip_existing=args.skip_existing,
+            ): job
+            for job in jobs
         }
-        write_report(report_path, report_record)
-        print(f"[gemini] {job.asset_id} -> {output_path}", flush=True)
+        for future in concurrent.futures.as_completed(future_to_job):
+            job = future_to_job[future]
+            try:
+                _, message = future.result()
+                print(message, flush=True)
+            except Exception as exc:
+                errors.append(f"Gemini generation failed for {job.asset_id}: {exc}")
 
-        if args.delay_ms > 0:
-            time.sleep(args.delay_ms / 1000.0)
+    if errors:
+        for message in errors:
+            print(message, file=sys.stderr)
+        return 1
 
     return 0
 

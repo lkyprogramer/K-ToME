@@ -1,0 +1,678 @@
+{
+  "manifestVersion": 1,
+  "fallbackKey": "audio.fallback.silence",
+  "entries": [
+    {
+      "key": "audio.fallback.silence",
+      "cueFamily": "silence",
+      "eventId": "silence.default",
+      "sourcePath": "audio/fallback/silence.ogg",
+      "tags": [
+        "fallback",
+        "phase2"
+      ]
+    },
+    {
+      "key": "audio.ui.confirm",
+      "cueFamily": "ui",
+      "eventId": "ui.confirm",
+      "sourcePath": "audio/ui/confirm.ogg",
+      "tags": [
+        "placeholder",
+        "phase2",
+        "ui"
+      ]
+    },
+    {
+      "key": "audio.footstep.default",
+      "cueFamily": "footstep",
+      "eventId": "footstep.default",
+      "sourcePath": "audio/footstep/default.ogg",
+      "tags": [
+        "placeholder",
+        "phase2",
+        "footstep"
+      ]
+    },
+    {
+      "key": "audio.melee.default",
+      "cueFamily": "melee",
+      "eventId": "melee.default",
+      "sourcePath": "audio/melee/default.ogg",
+      "tags": [
+        "placeholder",
+        "phase2",
+        "melee"
+      ]
+    },
+    {
+      "key": "audio.spell.default",
+      "cueFamily": "spell",
+      "eventId": "spell.default",
+      "sourcePath": "audio/spell/default.ogg",
+      "tags": [
+        "placeholder",
+        "phase2",
+        "spell"
+      ]
+    },
+    {
+      "key": "audio.monster.default",
+      "cueFamily": "monster",
+      "eventId": "monster.default",
+      "sourcePath": "audio/monster/default.ogg",
+      "tags": [
+        "placeholder",
+        "phase2",
+        "monster"
+      ]
+    },
+    {
+      "key": "ambient.deep_iron_pit",
+      "cueFamily": "ambience",
+      "eventId": "ambient.deep_iron_pit",
+      "sourcePath": "audio/ambient/deep_iron_pit.ogg",
+      "tags": [
+        "phase2",
+        "ambience"
+      ]
+    },
+    {
+      "key": "ambient.greenwood_fringe",
+      "cueFamily": "ambience",
+      "eventId": "ambient.greenwood_fringe",
+      "sourcePath": "audio/ambient/greenwood_fringe.ogg",
+      "tags": [
+        "phase2",
+        "ambience"
+      ]
+    },
+    {
+      "key": "ambient.grey_gate_depths",
+      "cueFamily": "ambience",
+      "eventId": "ambient.grey_gate_depths",
+      "sourcePath": "audio/ambient/grey_gate_depths.ogg",
+      "tags": [
+        "phase2",
+        "ambience"
+      ]
+    },
+    {
+      "key": "ambient.shattered_outpost",
+      "cueFamily": "ambience",
+      "eventId": "ambient.shattered_outpost",
+      "sourcePath": "audio/ambient/shattered_outpost.ogg",
+      "tags": [
+        "phase2",
+        "ambience"
+      ]
+    },
+    {
+      "key": "audio.music.menu",
+      "cueFamily": "music",
+      "eventId": "music.menu",
+      "sourcePath": "audio/music/menu.ogg",
+      "tags": [
+        "placeholder",
+        "phase2",
+        "music"
+      ]
+    },
+    {
+      "key": "audio.affix.of_fortitude",
+      "cueFamily": "affix",
+      "eventId": "audio.affix.of_fortitude",
+      "sourcePath": "audio/fallback/silence.ogg",
+      "tags": [
+        "fallback",
+        "placeholder",
+        "phase2"
+      ]
+    },
+    {
+      "key": "audio.affix.of_life",
+      "cueFamily": "affix",
+      "eventId": "audio.affix.of_life",
+      "sourcePath": "audio/fallback/silence.ogg",
+      "tags": [
+        "fallback",
+        "placeholder",
+        "phase2"
+      ]
+    },
+    {
+      "key": "audio.affix.of_speed",
+      "cueFamily": "affix",
+      "eventId": "audio.affix.of_speed",
+      "sourcePath": "audio/fallback/silence.ogg",
+      "tags": [
+        "fallback",
+        "placeholder",
+        "phase2"
+      ]
+    },
+    {
+      "key": "audio.affix.of_strength",
+      "cueFamily": "affix",
+      "eventId": "audio.affix.of_strength",
+      "sourcePath": "audio/fallback/silence.ogg",
+      "tags": [
+        "fallback",
+        "placeholder",
+        "phase2"
+      ]
+    },
+    {
+      "key": "audio.affix.sharp",
+      "cueFamily": "affix",
+      "eventId": "audio.affix.sharp",
+      "sourcePath": "audio/fallback/silence.ogg",
+      "tags": [
+        "fallback",
+        "placeholder",
+        "phase2"
+      ]
+    },
+    {
+      "key": "audio.affix.sturdy",
+      "cueFamily": "affix",
+      "eventId": "audio.affix.sturdy",
+      "sourcePath": "audio/fallback/silence.ogg",
+      "tags": [
+        "fallback",
+        "placeholder",
+        "phase2"
+      ]
+    },
+    {
+      "key": "audio.affix.swift",
+      "cueFamily": "affix",
+      "eventId": "audio.affix.swift",
+      "sourcePath": "audio/fallback/silence.ogg",
+      "tags": [
+        "fallback",
+        "placeholder",
+        "phase2"
+      ]
+    },
+    {
+      "key": "audio.boss.cultist.dungeon_lord",
+      "cueFamily": "boss",
+      "eventId": "audio.boss.cultist.dungeon_lord",
+      "sourcePath": "audio/boss/cultist_dungeon_lord.ogg",
+      "tags": [
+        "placeholder",
+        "phase2"
+      ]
+    },
+    {
+      "key": "audio.difficulty.normal",
+      "cueFamily": "difficulty",
+      "eventId": "audio.difficulty.normal",
+      "sourcePath": "audio/fallback/silence.ogg",
+      "tags": [
+        "fallback",
+        "placeholder",
+        "phase2"
+      ]
+    },
+    {
+      "key": "audio.interactable.stairs",
+      "cueFamily": "interactable",
+      "eventId": "interactable.stairs",
+      "sourcePath": "audio/interactable/stairs.ogg",
+      "tags": [
+        "phase2",
+        "interactable"
+      ]
+    },
+    {
+      "key": "audio.item.battle_axe",
+      "cueFamily": "item",
+      "eventId": "audio.item.battle_axe",
+      "sourcePath": "audio/fallback/silence.ogg",
+      "tags": [
+        "fallback",
+        "placeholder",
+        "phase2"
+      ]
+    },
+    {
+      "key": "audio.item.chain_mail",
+      "cueFamily": "item",
+      "eventId": "audio.item.chain_mail",
+      "sourcePath": "audio/fallback/silence.ogg",
+      "tags": [
+        "fallback",
+        "placeholder",
+        "phase2"
+      ]
+    },
+    {
+      "key": "audio.item.healing_potion",
+      "cueFamily": "item",
+      "eventId": "audio.item.healing_potion",
+      "sourcePath": "audio/fallback/silence.ogg",
+      "tags": [
+        "fallback",
+        "placeholder",
+        "phase2"
+      ]
+    },
+    {
+      "key": "audio.item.leather_armor",
+      "cueFamily": "item",
+      "eventId": "audio.item.leather_armor",
+      "sourcePath": "audio/fallback/silence.ogg",
+      "tags": [
+        "fallback",
+        "placeholder",
+        "phase2"
+      ]
+    },
+    {
+      "key": "audio.item.long_sword",
+      "cueFamily": "item",
+      "eventId": "audio.item.long_sword",
+      "sourcePath": "audio/fallback/silence.ogg",
+      "tags": [
+        "fallback",
+        "placeholder",
+        "phase2"
+      ]
+    },
+    {
+      "key": "audio.item.plate_armor",
+      "cueFamily": "item",
+      "eventId": "audio.item.plate_armor",
+      "sourcePath": "audio/fallback/silence.ogg",
+      "tags": [
+        "fallback",
+        "placeholder",
+        "phase2"
+      ]
+    },
+    {
+      "key": "audio.item.scroll_teleport",
+      "cueFamily": "item",
+      "eventId": "audio.item.scroll_teleport",
+      "sourcePath": "audio/fallback/silence.ogg",
+      "tags": [
+        "fallback",
+        "placeholder",
+        "phase2"
+      ]
+    },
+    {
+      "key": "audio.item.short_sword",
+      "cueFamily": "item",
+      "eventId": "audio.item.short_sword",
+      "sourcePath": "audio/fallback/silence.ogg",
+      "tags": [
+        "fallback",
+        "placeholder",
+        "phase2"
+      ]
+    },
+    {
+      "key": "audio.material.adamantite",
+      "cueFamily": "material",
+      "eventId": "audio.material.adamantite",
+      "sourcePath": "audio/fallback/silence.ogg",
+      "tags": [
+        "fallback",
+        "placeholder",
+        "phase2"
+      ]
+    },
+    {
+      "key": "audio.material.iron",
+      "cueFamily": "material",
+      "eventId": "audio.material.iron",
+      "sourcePath": "audio/fallback/silence.ogg",
+      "tags": [
+        "fallback",
+        "placeholder",
+        "phase2"
+      ]
+    },
+    {
+      "key": "audio.material.mithril",
+      "cueFamily": "material",
+      "eventId": "audio.material.mithril",
+      "sourcePath": "audio/fallback/silence.ogg",
+      "tags": [
+        "fallback",
+        "placeholder",
+        "phase2"
+      ]
+    },
+    {
+      "key": "audio.material.steel",
+      "cueFamily": "material",
+      "eventId": "audio.material.steel",
+      "sourcePath": "audio/fallback/silence.ogg",
+      "tags": [
+        "fallback",
+        "placeholder",
+        "phase2"
+      ]
+    },
+    {
+      "key": "audio.monster.bandit.sentry",
+      "cueFamily": "monster",
+      "eventId": "audio.monster.bandit.sentry",
+      "sourcePath": "audio/monster/default.ogg",
+      "tags": [
+        "placeholder",
+        "phase2"
+      ]
+    },
+    {
+      "key": "audio.monster.beast.rat",
+      "cueFamily": "monster",
+      "eventId": "audio.monster.beast.rat",
+      "sourcePath": "audio/monster/default.ogg",
+      "tags": [
+        "placeholder",
+        "phase2"
+      ]
+    },
+    {
+      "key": "audio.monster.cultist.dungeon_lord",
+      "cueFamily": "monster",
+      "eventId": "audio.monster.cultist.dungeon_lord",
+      "sourcePath": "audio/monster/default.ogg",
+      "tags": [
+        "placeholder",
+        "phase2"
+      ]
+    },
+    {
+      "key": "audio.monster.orc.raider",
+      "cueFamily": "monster",
+      "eventId": "audio.monster.orc.raider",
+      "sourcePath": "audio/monster/default.ogg",
+      "tags": [
+        "placeholder",
+        "phase2"
+      ]
+    },
+    {
+      "key": "audio.monster.undead.bone_archer",
+      "cueFamily": "monster",
+      "eventId": "audio.monster.undead.bone_archer",
+      "sourcePath": "audio/monster/default.ogg",
+      "tags": [
+        "placeholder",
+        "phase2"
+      ]
+    },
+    {
+      "key": "audio.profession.arcanist",
+      "cueFamily": "profession",
+      "eventId": "profession.arcanist",
+      "sourcePath": "audio/professions/arcanist.ogg",
+      "tags": [
+        "phase2",
+        "profession"
+      ]
+    },
+    {
+      "key": "audio.profession.rogue",
+      "cueFamily": "profession",
+      "eventId": "profession.rogue",
+      "sourcePath": "audio/professions/rogue.ogg",
+      "tags": [
+        "phase2",
+        "profession"
+      ]
+    },
+    {
+      "key": "audio.profession.templar",
+      "cueFamily": "profession",
+      "eventId": "profession.templar",
+      "sourcePath": "audio/professions/templar.ogg",
+      "tags": [
+        "phase2",
+        "profession"
+      ]
+    },
+    {
+      "key": "audio.profession.vanguard",
+      "cueFamily": "profession",
+      "eventId": "profession.vanguard",
+      "sourcePath": "audio/professions/vanguard.ogg",
+      "tags": [
+        "phase2",
+        "profession"
+      ]
+    },
+    {
+      "key": "audio.talent.charge",
+      "cueFamily": "talent",
+      "eventId": "audio.talent.charge",
+      "sourcePath": "audio/fallback/silence.ogg",
+      "tags": [
+        "fallback",
+        "placeholder",
+        "phase2"
+      ]
+    },
+    {
+      "key": "audio.talent.power_strike",
+      "cueFamily": "talent",
+      "eventId": "audio.talent.power_strike",
+      "sourcePath": "audio/fallback/silence.ogg",
+      "tags": [
+        "fallback",
+        "placeholder",
+        "phase2"
+      ]
+    },
+    {
+      "key": "audio.talent.shield_bash",
+      "cueFamily": "talent",
+      "eventId": "audio.talent.shield_bash",
+      "sourcePath": "audio/fallback/silence.ogg",
+      "tags": [
+        "fallback",
+        "placeholder",
+        "phase2"
+      ]
+    },
+    {
+      "key": "audio.talent.war_cry",
+      "cueFamily": "talent",
+      "eventId": "audio.talent.war_cry",
+      "sourcePath": "audio/fallback/silence.ogg",
+      "tags": [
+        "fallback",
+        "placeholder",
+        "phase2"
+      ]
+    },
+    {
+      "key": "audio.tree.arcanist_arcane",
+      "cueFamily": "tree",
+      "eventId": "audio.tree.arcanist_arcane",
+      "sourcePath": "audio/fallback/silence.ogg",
+      "tags": [
+        "fallback",
+        "placeholder",
+        "phase2"
+      ]
+    },
+    {
+      "key": "audio.tree.arcanist_flame",
+      "cueFamily": "tree",
+      "eventId": "audio.tree.arcanist_flame",
+      "sourcePath": "audio/fallback/silence.ogg",
+      "tags": [
+        "fallback",
+        "placeholder",
+        "phase2"
+      ]
+    },
+    {
+      "key": "audio.tree.arcanist_frost",
+      "cueFamily": "tree",
+      "eventId": "audio.tree.arcanist_frost",
+      "sourcePath": "audio/fallback/silence.ogg",
+      "tags": [
+        "fallback",
+        "placeholder",
+        "phase2"
+      ]
+    },
+    {
+      "key": "audio.tree.rogue_agility",
+      "cueFamily": "tree",
+      "eventId": "audio.tree.rogue_agility",
+      "sourcePath": "audio/fallback/silence.ogg",
+      "tags": [
+        "fallback",
+        "placeholder",
+        "phase2"
+      ]
+    },
+    {
+      "key": "audio.tree.rogue_assassination",
+      "cueFamily": "tree",
+      "eventId": "audio.tree.rogue_assassination",
+      "sourcePath": "audio/fallback/silence.ogg",
+      "tags": [
+        "fallback",
+        "placeholder",
+        "phase2"
+      ]
+    },
+    {
+      "key": "audio.tree.rogue_subtlety",
+      "cueFamily": "tree",
+      "eventId": "audio.tree.rogue_subtlety",
+      "sourcePath": "audio/fallback/silence.ogg",
+      "tags": [
+        "fallback",
+        "placeholder",
+        "phase2"
+      ]
+    },
+    {
+      "key": "audio.tree.templar_faith",
+      "cueFamily": "tree",
+      "eventId": "audio.tree.templar_faith",
+      "sourcePath": "audio/fallback/silence.ogg",
+      "tags": [
+        "fallback",
+        "placeholder",
+        "phase2"
+      ]
+    },
+    {
+      "key": "audio.tree.templar_grace",
+      "cueFamily": "tree",
+      "eventId": "audio.tree.templar_grace",
+      "sourcePath": "audio/fallback/silence.ogg",
+      "tags": [
+        "fallback",
+        "placeholder",
+        "phase2"
+      ]
+    },
+    {
+      "key": "audio.tree.templar_smite",
+      "cueFamily": "tree",
+      "eventId": "audio.tree.templar_smite",
+      "sourcePath": "audio/fallback/silence.ogg",
+      "tags": [
+        "fallback",
+        "placeholder",
+        "phase2"
+      ]
+    },
+    {
+      "key": "audio.tree.vanguard_arms",
+      "cueFamily": "tree",
+      "eventId": "audio.tree.vanguard_arms",
+      "sourcePath": "audio/fallback/silence.ogg",
+      "tags": [
+        "fallback",
+        "placeholder",
+        "phase2"
+      ]
+    },
+    {
+      "key": "audio.tree.vanguard_shield",
+      "cueFamily": "tree",
+      "eventId": "audio.tree.vanguard_shield",
+      "sourcePath": "audio/fallback/silence.ogg",
+      "tags": [
+        "fallback",
+        "placeholder",
+        "phase2"
+      ]
+    },
+    {
+      "key": "audio.tree.vanguard_warcry",
+      "cueFamily": "tree",
+      "eventId": "audio.tree.vanguard_warcry",
+      "sourcePath": "audio/fallback/silence.ogg",
+      "tags": [
+        "fallback",
+        "placeholder",
+        "phase2"
+      ]
+    },
+    {
+      "key": "audio.zone.deep_iron_pit",
+      "cueFamily": "zone",
+      "eventId": "audio.zone.deep_iron_pit",
+      "sourcePath": "audio/ambient/deep_iron_pit.ogg",
+      "tags": [
+        "placeholder",
+        "phase2"
+      ]
+    },
+    {
+      "key": "audio.zone.greenwood_fringe",
+      "cueFamily": "zone",
+      "eventId": "audio.zone.greenwood_fringe",
+      "sourcePath": "audio/ambient/greenwood_fringe.ogg",
+      "tags": [
+        "placeholder",
+        "phase2"
+      ]
+    },
+    {
+      "key": "audio.zone.grey_gate_depths",
+      "cueFamily": "zone",
+      "eventId": "audio.zone.grey_gate_depths",
+      "sourcePath": "audio/ambient/grey_gate_depths.ogg",
+      "tags": [
+        "placeholder",
+        "phase2"
+      ]
+    },
+    {
+      "key": "audio.zone.shattered_outpost",
+      "cueFamily": "zone",
+      "eventId": "audio.zone.shattered_outpost",
+      "sourcePath": "audio/ambient/shattered_outpost.ogg",
+      "tags": [
+        "placeholder",
+        "phase2"
+      ]
+    }
+  ],
+  "prefixRules": [
+    {
+      "prefix": "ambient.",
+      "targetKey": "audio.fallback.silence"
+    },
+    {
+      "prefix": "audio.",
+      "targetKey": "audio.fallback.silence"
+    }
+  ]
+}

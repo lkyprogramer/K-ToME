@@ -1,4 +1,5 @@
 import org.gradle.api.JavaVersion
+import org.gradle.api.tasks.Exec
 import org.gradle.api.plugins.JavaPluginExtension
 import org.gradle.api.tasks.SourceSetContainer
 import org.gradle.api.tasks.testing.Test
@@ -130,6 +131,85 @@ tasks.register("contractLint") {
     dependsOn(":tools:contractLint")
 }
 
+tasks.register<Exec>("assetLint") {
+    group = LifecycleBasePlugin.VERIFICATION_GROUP
+    description = "Validates the Phase 2 image asset plan."
+    commandLine("python3", "scripts/asset-lint.py", "--plan", "assets-src/image/specs/phase2-asset-plan.yaml")
+}
+
+tasks.register<Exec>("styleLint") {
+    group = LifecycleBasePlugin.VERIFICATION_GROUP
+    description = "Validates the Phase 2 art style contract bindings."
+    commandLine("python3", "scripts/style-lint.py", "--plan", "assets-src/image/specs/phase2-asset-plan.yaml")
+}
+
+tasks.register<Exec>("audioLint") {
+    group = LifecycleBasePlugin.VERIFICATION_GROUP
+    description = "Validates the Phase 2 audio cue plan and manifest."
+    dependsOn("syncPhase2Manifests")
+    commandLine(
+        "python3",
+        "scripts/audio-lint.py",
+        "--plan",
+        "assets-src/audio/specs/phase2-audio-plan.yaml",
+        "--manifest",
+        "assets-src/audio/manifests/phase2-audio-manifest.json",
+        "--runtime-manifest",
+        "client/src/main/resources/manifests/audio-manifest.json",
+        "--runtime-root",
+        "client/src/main/resources",
+    )
+}
+
+tasks.register<Exec>("syncPhase2Manifests") {
+    group = LifecycleBasePlugin.BUILD_GROUP
+    description = "Syncs canonical Phase 2 manifests from assets-src into runtime resources."
+    commandLine("python3", "scripts/sync_phase2_manifests.py")
+}
+
+tasks.register<Exec>("audioProcess") {
+    group = LifecycleBasePlugin.BUILD_GROUP
+    description = "Builds the Phase 2 runtime audio placeholders from raw sources."
+    dependsOn("syncPhase2Manifests")
+    commandLine(
+        "python3",
+        "scripts/process_audio.py",
+        "--runtime-manifest",
+        "client/src/main/resources/manifests/audio-manifest.json",
+        "--raw-dir",
+        "assets-src/audio/raw",
+        "--cleaned-dir",
+        "assets-src/audio/cleaned",
+        "--runtime-root",
+        "client/src/main/resources",
+        "--bootstrap-missing",
+    )
+}
+
+tasks.register<Exec>("manifestLint") {
+    group = LifecycleBasePlugin.VERIFICATION_GROUP
+    description = "Validates the Phase 2 image manifest against the asset plan."
+    dependsOn("syncPhase2Manifests")
+    commandLine(
+        "python3",
+        "scripts/manifest-lint.py",
+        "--plan",
+        "assets-src/image/specs/phase2-asset-plan.yaml",
+        "--manifest",
+        "assets-src/image/manifests/phase2-visual-manifest.json",
+        "--runtime-manifest",
+        "client/src/main/resources/manifests/visual-manifest.json",
+        "--runtime-root",
+        "client/src/main/resources",
+    )
+}
+
+tasks.register("goldenScreenshot") {
+    group = LifecycleBasePlugin.VERIFICATION_GROUP
+    description = "Runs deterministic screenshot golden coverage."
+    dependsOn(":client:goldenScreenshot")
+}
+
 tasks.register("preReleaseAcceptance") {
     group = LifecycleBasePlugin.VERIFICATION_GROUP
     description = "Runs the full pre-release acceptance gate, including smoke coverage, coverage reports, and desktop packaging."
@@ -137,6 +217,11 @@ tasks.register("preReleaseAcceptance") {
     dependsOn(test)
     dependsOn("localeLint")
     dependsOn("contractLint")
+    dependsOn("assetLint")
+    dependsOn("styleLint")
+    dependsOn("audioLint")
+    dependsOn("manifestLint")
+    dependsOn("goldenScreenshot")
     dependsOn("headlessSmoke")
     dependsOn("clientSmoke")
     dependsOn("jacocoTestReport")
@@ -150,6 +235,11 @@ tasks.register<JacocoReport>("jacocoTestReport") {
     dependsOn(test)
     dependsOn("localeLint")
     dependsOn("contractLint")
+    dependsOn("assetLint")
+    dependsOn("styleLint")
+    dependsOn("audioLint")
+    dependsOn("manifestLint")
+    dependsOn("goldenScreenshot")
     dependsOn("headlessSmoke")
     dependsOn("clientSmoke")
     dependsOn(subprojects.map { it.tasks.named("jacocoTestReport") })
@@ -179,6 +269,11 @@ tasks.named("check") {
     dependsOn(test)
     dependsOn("localeLint")
     dependsOn("contractLint")
+    dependsOn("assetLint")
+    dependsOn("styleLint")
+    dependsOn("audioLint")
+    dependsOn("manifestLint")
+    dependsOn("goldenScreenshot")
     dependsOn("headlessSmoke")
     dependsOn("clientSmoke")
     dependsOn("jacocoTestReport")

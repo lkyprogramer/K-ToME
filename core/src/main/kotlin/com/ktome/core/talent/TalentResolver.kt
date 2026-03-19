@@ -25,6 +25,7 @@ sealed interface TalentUseResult {
         val code: TalentFailureCode,
         val reason: String,
         val talentName: String? = null,
+        val talentId: String? = null,
     ) : TalentUseResult
 }
 
@@ -122,6 +123,7 @@ class TalentResolver(
                 code = TalentFailureCode.UNSUPPORTED_TALENT,
                 reason = "Talent is not supported yet.",
                 talentName = definition.name,
+                talentId = talentId,
             )
         }
         val stamina = requireNotNull(world.get<Stamina>(user)) { "Missing Stamina for $user" }
@@ -132,6 +134,7 @@ class TalentResolver(
                 code = TalentFailureCode.COOLDOWN,
                 reason = "${definition.name} is still cooling down.",
                 talentName = definition.name,
+                talentId = talentId,
             )
         }
         if (stamina.current < definition.staminaCost) {
@@ -139,6 +142,7 @@ class TalentResolver(
                 code = TalentFailureCode.NO_STAMINA,
                 reason = "Not enough stamina.",
                 talentName = definition.name,
+                talentId = talentId,
             )
         }
         if (definition.range == 0) {
@@ -152,6 +156,7 @@ class TalentResolver(
                     code = TalentFailureCode.TARGET_REQUIRED,
                     reason = "A target is required.",
                     talentName = definition.name,
+                    talentId = talentId,
                 )
         val distance = userPosition.chebyshevDistanceTo(targetPoint)
         if (distance > definition.range || distance < definition.minRange) {
@@ -159,6 +164,7 @@ class TalentResolver(
                 code = TalentFailureCode.OUT_OF_RANGE,
                 reason = "Target is out of range.",
                 talentName = definition.name,
+                talentId = talentId,
             )
         }
 
@@ -168,12 +174,14 @@ class TalentResolver(
                     code = TalentFailureCode.NO_TARGET,
                     reason = "No valid target.",
                     talentName = definition.name,
+                    talentId = talentId,
                 )
         if (definition.id == "charge" && chargeDestination(world, map, userPosition, targetPoint, targetEntity) == null) {
             return TalentUseResult.Failure(
                 code = TalentFailureCode.NO_CHARGE_PATH,
                 reason = "No path to charge target.",
                 talentName = definition.name,
+                talentId = talentId,
             )
         }
 
@@ -206,6 +214,7 @@ class TalentResolver(
                 code = TalentFailureCode.UNSUPPORTED_TALENT,
                 reason = "Talent is not supported yet.",
                 talentName = definition.name,
+                talentId = talentId,
             )
         }
 
@@ -332,6 +341,7 @@ class TalentResolver(
                     code = TalentFailureCode.UNSUPPORTED_TALENT,
                     reason = "Talent is not supported yet.",
                     talentName = definition.name,
+                    talentId = talentId,
                 )
         }
 

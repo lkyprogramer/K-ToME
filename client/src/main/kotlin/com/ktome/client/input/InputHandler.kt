@@ -2,8 +2,9 @@ package com.ktome.client.input
 
 import com.badlogic.gdx.Input.Keys
 import com.ktome.core.map.Point
+import com.ktome.core.snapshot.GridPointSnapshot
+import com.ktome.core.snapshot.RenderSnapshot
 import com.ktome.game.PrimaryStat
-import com.ktome.game.FoundationGameSession
 import com.ktome.game.PlayerCommand
 
 enum class UiMode {
@@ -72,33 +73,33 @@ class InputHandler(
             inspectCursor = inspectCursor,
         )
 
-    fun pollCommand(session: FoundationGameSession): PlayerCommand? {
+    fun pollCommand(snapshot: RenderSnapshot): PlayerCommand? {
         if (mode == UiMode.MAP && input.isKeyJustPressed(Keys.X)) {
             mode = UiMode.INSPECT
-            inspectCursor = defaultInspectCursor(session)
+            inspectCursor = defaultInspectCursor(snapshot)
             return null
         }
 
-        reconcileMode(session)
+        reconcileMode(snapshot)
         return when (mode) {
-            UiMode.MAP -> pollMapCommand(session)
-            UiMode.INVENTORY -> pollInventoryCommand(session)
-            UiMode.TARGETING -> pollTargetingCommand(session)
-            UiMode.INSPECT -> pollInspectCommand(session)
-            UiMode.STAT_ASSIGN -> pollStatAssignCommand(session)
-            UiMode.TALENT_ASSIGN -> pollTalentAssignCommand(session)
+            UiMode.MAP -> pollMapCommand(snapshot)
+            UiMode.INVENTORY -> pollInventoryCommand(snapshot)
+            UiMode.TARGETING -> pollTargetingCommand(snapshot)
+            UiMode.INSPECT -> pollInspectCommand(snapshot)
+            UiMode.STAT_ASSIGN -> pollStatAssignCommand(snapshot)
+            UiMode.TALENT_ASSIGN -> pollTalentAssignCommand(snapshot)
         }
     }
 
     fun onCommandResult(
-        session: FoundationGameSession,
+        snapshot: RenderSnapshot,
         command: PlayerCommand,
         consumed: Boolean,
     ) {
         when (command) {
             is PlayerCommand.UseTalent -> {
                 if (command.target == null) {
-                    reconcileMode(session)
+                    reconcileMode(snapshot)
                     return
                 }
 
@@ -116,23 +117,23 @@ class InputHandler(
             PlayerCommand.SaveGame,
             PlayerCommand.Ascend,
             PlayerCommand.Descend,
-            -> reconcileMode(session)
+            -> reconcileMode(snapshot)
 
             else -> Unit
         }
-        reconcileMode(session)
+        reconcileMode(snapshot)
     }
 
-    private fun reconcileMode(session: FoundationGameSession) {
+    private fun reconcileMode(snapshot: RenderSnapshot) {
         when (mode) {
             UiMode.STAT_ASSIGN -> {
-                if (!session.hasPendingStatAllocation()) {
+                if (!hasPendingStatAllocation(snapshot)) {
                     mode = UiMode.MAP
                 }
             }
 
             UiMode.TALENT_ASSIGN -> {
-                if (!session.hasPendingTalentAllocation()) {
+                if (!hasPendingTalentAllocation(snapshot)) {
                     mode = UiMode.MAP
                 }
             }
@@ -140,12 +141,12 @@ class InputHandler(
             else -> Unit
         }
 
-        if (session.hasPendingStatAllocation() && mode == UiMode.MAP) {
+        if (hasPendingStatAllocation(snapshot) && mode == UiMode.MAP) {
             mode = UiMode.STAT_ASSIGN
         }
     }
 
-    private fun pollMapCommand(session: FoundationGameSession): PlayerCommand? {
+    private fun pollMapCommand(snapshot: RenderSnapshot): PlayerCommand? {
         if (isSaveBinding()) {
             return PlayerCommand.SaveGame
         }
@@ -173,49 +174,49 @@ class InputHandler(
 
         if (input.isKeyJustPressed(Keys.I)) {
             mode = UiMode.INVENTORY
-            inventorySelection = inventorySelection.coerceAtMost((session.inventoryItems().size - 1).coerceAtLeast(0))
+            inventorySelection = inventorySelection.coerceAtMost((snapshot.uiState.inventory.size - 1).coerceAtLeast(0))
             return null
         }
 
-        if (input.isKeyJustPressed(Keys.T) && session.hasPendingTalentAllocation()) {
+        if (input.isKeyJustPressed(Keys.T) && hasPendingTalentAllocation(snapshot)) {
             mode = UiMode.TALENT_ASSIGN
             return null
         }
 
         hotkeySlot()?.let { slot ->
-            val talent = session.talentSlots().firstOrNull { it.slot == slot } ?: return null
+            val talent = snapshot.uiState.talents.firstOrNull { it.slot == slot } ?: return null
             if (!talent.requiresTarget) {
                 return PlayerCommand.UseTalent(slot)
             }
 
             mode = UiMode.TARGETING
             targetingSlot = slot
-            targetingCursor = defaultTargetCursor(session)
+            targetingCursor = defaultTargetCursor(snapshot)
         }
 
         return null
     }
 
-    private fun pollInspectCommand(session: FoundationGameSession): PlayerCommand? {
+    private fun pollInspectCommand(snapshot: RenderSnapshot): PlayerCommand? {
         if (input.isKeyJustPressed(Keys.ESCAPE) || input.isKeyJustPressed(Keys.X)) {
             clearInspect()
             return null
         }
 
-        val cursor = inspectCursor ?: defaultInspectCursor(session)
+        val cursor = inspectCursor ?: defaultInspectCursor(snapshot)
         val movement = movementBindings.entries.firstOrNull { (key, _) -> input.isKeyJustPressed(key) }?.value
         if (movement != null) {
             inspectCursor =
                 Point(
-                    x = (cursor.x + movement.x).coerceIn(0, session.map.width - 1),
-                    y = (cursor.y + movement.y).coerceIn(0, session.map.height - 1),
+                    x = (cursor.x + movement.x).coerceIn(0, snapshot.metadata.width - 1),
+                    y = (cursor.y + movement.y).coerceIn(0, snapshot.metadata.height - 1),
                 )
         }
         return null
     }
 
-    private fun pollInventoryCommand(session: FoundationGameSession): PlayerCommand? {
-        val inventorySize = session.inventoryItems().size
+    private fun pollInventoryCommand(snapshot: RenderSnapshot): PlayerCommand? {
+        val inventorySize = snapshot.uiState.inventory.size
         if (input.isKeyJustPressed(Keys.ESCAPE) || input.isKeyJustPressed(Keys.I)) {
             mode = UiMode.MAP
             return null
@@ -246,32 +247,32 @@ class InputHandler(
         return null
     }
 
-    private fun pollTargetingCommand(session: FoundationGameSession): PlayerCommand? {
+    private fun pollTargetingCommand(snapshot: RenderSnapshot): PlayerCommand? {
         if (input.isKeyJustPressed(Keys.ESCAPE)) {
             clearTargeting()
             return null
         }
 
-        val cursor = targetingCursor ?: session.playerPosition()
+        val cursor = targetingCursor ?: playerPosition(snapshot)
         val movement = movementBindings.entries.firstOrNull { (key, _) -> input.isKeyJustPressed(key) }?.value
         if (movement != null) {
             targetingCursor =
                 Point(
-                    x = (cursor.x + movement.x).coerceIn(0, session.map.width - 1),
-                    y = (cursor.y + movement.y).coerceIn(0, session.map.height - 1),
+                    x = (cursor.x + movement.x).coerceIn(0, snapshot.metadata.width - 1),
+                    y = (cursor.y + movement.y).coerceIn(0, snapshot.metadata.height - 1),
                 )
             return null
         }
 
         if (input.isKeyJustPressed(Keys.ENTER) || input.isKeyJustPressed(Keys.SPACE)) {
-            return PlayerCommand.UseTalent(requireNotNull(targetingSlot), targetingCursor ?: session.playerPosition())
+            return PlayerCommand.UseTalent(requireNotNull(targetingSlot), targetingCursor ?: playerPosition(snapshot))
         }
 
         return null
     }
 
-    private fun pollStatAssignCommand(session: FoundationGameSession): PlayerCommand? {
-        if (!session.hasPendingStatAllocation()) {
+    private fun pollStatAssignCommand(snapshot: RenderSnapshot): PlayerCommand? {
+        if (!hasPendingStatAllocation(snapshot)) {
             mode = UiMode.MAP
             return null
         }
@@ -285,12 +286,12 @@ class InputHandler(
         }
     }
 
-    private fun pollTalentAssignCommand(session: FoundationGameSession): PlayerCommand? {
+    private fun pollTalentAssignCommand(snapshot: RenderSnapshot): PlayerCommand? {
         if (input.isKeyJustPressed(Keys.ESCAPE) || input.isKeyJustPressed(Keys.T)) {
             mode = UiMode.MAP
             return null
         }
-        if (!session.hasPendingTalentAllocation()) {
+        if (!hasPendingTalentAllocation(snapshot)) {
             mode = UiMode.MAP
             return null
         }
@@ -307,12 +308,13 @@ class InputHandler(
             else -> null
         }
 
-    private fun defaultTargetCursor(session: FoundationGameSession): Point =
-        session.targetableHostilePositions()
+    private fun defaultTargetCursor(snapshot: RenderSnapshot): Point =
+        snapshot.uiState.targetablePositions
             .firstOrNull()
-            ?: session.playerPosition()
+            ?.toPoint()
+            ?: playerPosition(snapshot)
 
-    private fun defaultInspectCursor(session: FoundationGameSession): Point = session.playerPosition()
+    private fun defaultInspectCursor(snapshot: RenderSnapshot): Point = playerPosition(snapshot)
 
     private fun clearTargeting() {
         mode = UiMode.MAP
@@ -334,4 +336,12 @@ class InputHandler(
     private fun controlPressed(): Boolean = input.isKeyPressed(Keys.CONTROL_LEFT) || input.isKeyPressed(Keys.CONTROL_RIGHT)
 
     private fun shiftPressed(): Boolean = input.isKeyPressed(Keys.SHIFT_LEFT) || input.isKeyPressed(Keys.SHIFT_RIGHT)
+
+    private fun hasPendingStatAllocation(snapshot: RenderSnapshot): Boolean = snapshot.uiState.playerStatus.statPoints > 0
+
+    private fun hasPendingTalentAllocation(snapshot: RenderSnapshot): Boolean = snapshot.uiState.playerStatus.talentPoints > 0
+
+    private fun playerPosition(snapshot: RenderSnapshot): Point = Point(snapshot.metadata.playerX, snapshot.metadata.playerY)
+
+    private fun GridPointSnapshot.toPoint(): Point = Point(x, y)
 }

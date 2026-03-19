@@ -1,17 +1,17 @@
 package com.ktome.client.input
 
 import com.badlogic.gdx.Input.Keys
-import com.ktome.game.FoundationGameSession
+import com.ktome.core.snapshot.RenderSnapshot
 import com.ktome.game.PlayerCommand
 
 interface CommandSource {
-    fun nextCommand(session: FoundationGameSession): PlayerCommand?
+    fun nextCommand(snapshot: RenderSnapshot): PlayerCommand? = null
 
     fun onCommandResult(
-        session: FoundationGameSession,
+        snapshot: RenderSnapshot,
         command: PlayerCommand,
         consumed: Boolean,
-    )
+    ) {}
 
     fun overlayState(): OverlayState
 
@@ -24,14 +24,14 @@ class InputHandlerCommandSource(
     private val inputHandler: InputHandler = InputHandler(),
     private val inputSource: InputSource = GdxInputSource,
 ) : CommandSource {
-    override fun nextCommand(session: FoundationGameSession): PlayerCommand? = inputHandler.pollCommand(session)
+    override fun nextCommand(snapshot: RenderSnapshot): PlayerCommand? = inputHandler.pollCommand(snapshot)
 
     override fun onCommandResult(
-        session: FoundationGameSession,
+        snapshot: RenderSnapshot,
         command: PlayerCommand,
         consumed: Boolean,
     ) {
-        inputHandler.onCommandResult(session, command, consumed)
+        inputHandler.onCommandResult(snapshot, command, consumed)
     }
 
     override fun overlayState(): OverlayState = inputHandler.overlayState()

@@ -1,0 +1,140 @@
+manifestVersion: 1
+fallbackKey: audio.fallback.silence
+cueFamilies:
+  - id: silence
+    provider: generated
+    source: internal
+    license: internal
+  - id: ui
+    provider: generated
+    source: internal
+    license: internal
+  - id: footstep
+    provider: generated
+    source: internal
+    license: internal
+  - id: melee
+    provider: generated
+    source: internal
+    license: internal
+  - id: spell
+    provider: generated
+    source: internal
+    license: internal
+  - id: monster
+    provider: generated
+    source: internal
+    license: internal
+  - id: interactable
+    provider: generated
+    source: internal
+    license: internal
+  - id: ambience
+    provider: generated
+    source: internal
+    license: internal
+  - id: music
+    provider: generated
+    source: internal
+    license: internal
+  - id: profession
+    provider: generated
+    source: internal
+    license: internal
+  - id: affix
+    provider: placeholder
+    source: internal
+    license: internal
+  - id: boss
+    provider: generated
+    source: internal
+    license: internal
+  - id: difficulty
+    provider: placeholder
+    source: internal
+    license: internal
+  - id: item
+    provider: placeholder
+    source: internal
+    license: internal
+  - id: material
+    provider: placeholder
+    source: internal
+    license: internal
+  - id: talent
+    provider: placeholder
+    source: internal
+    license: internal
+  - id: tree
+    provider: placeholder
+    source: internal
+    license: internal
+  - id: zone
+    provider: generated
+    source: internal
+    license: internal
+entries:
+  - key: audio.fallback.silence
+    cueFamily: silence
+    eventId: silence.default
+    sourcePath: audio/fallback/silence.ogg
+  - key: audio.ui.confirm
+    cueFamily: ui
+    eventId: ui.confirm
+    sourcePath: audio/ui/confirm.ogg
+  - key: audio.footstep.default
+    cueFamily: footstep
+    eventId: footstep.default
+    sourcePath: audio/footstep/default.ogg
+  - key: audio.melee.default
+    cueFamily: melee
+    eventId: melee.default
+    sourcePath: audio/melee/default.ogg
+  - key: audio.spell.default
+    cueFamily: spell
+    eventId: spell.default
+    sourcePath: audio/spell/default.ogg
+  - key: audio.monster.default
+    cueFamily: monster
+    eventId: monster.default
+    sourcePath: audio/monster/default.ogg
+  - key: audio.interactable.stairs
+    cueFamily: interactable
+    eventId: interactable.stairs
+    sourcePath: audio/interactable/stairs.ogg
+  - key: ambient.shattered_outpost
+    cueFamily: ambience
+    eventId: ambient.shattered_outpost
+    sourcePath: audio/ambient/shattered_outpost.ogg
+  - key: ambient.greenwood_fringe
+    cueFamily: ambience
+    eventId: ambient.greenwood_fringe
+    sourcePath: audio/ambient/greenwood_fringe.ogg
+  - key: ambient.deep_iron_pit
+    cueFamily: ambience
+    eventId: ambient.deep_iron_pit
+    sourcePath: audio/ambient/deep_iron_pit.ogg
+  - key: ambient.grey_gate_depths
+    cueFamily: ambience
+    eventId: ambient.grey_gate_depths
+    sourcePath: audio/ambient/grey_gate_depths.ogg
+  - key: audio.music.menu
+    cueFamily: music
+    eventId: music.menu
+    sourcePath: audio/music/menu.ogg
+  - key: audio.profession.vanguard
+    cueFamily: profession
+    eventId: profession.vanguard
+    sourcePath: audio/professions/vanguard.ogg
+  - key: audio.profession.arcanist
+    cueFamily: profession
+    eventId: profession.arcanist
+    sourcePath: audio/professions/arcanist.ogg
+  - key: audio.profession.rogue
+    cueFamily: profession
+    eventId: profession.rogue
+    sourcePath: audio/professions/rogue.ogg
+  - key: audio.profession.templar
+    cueFamily: profession
+    eventId: profession.templar
+    sourcePath: audio/professions/templar.ogg

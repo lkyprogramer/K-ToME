@@ -21,6 +21,7 @@ sealed interface InventoryOperationResult {
         override val message: String,
         val itemId: EntityId,
         val itemName: String,
+        val itemBaseId: String? = null,
         val slot: EquipSlot? = null,
     ) : InventoryOperationResult {
         override val success: Boolean = true
@@ -30,6 +31,7 @@ sealed interface InventoryOperationResult {
         override val code: InventoryOperationCode,
         override val message: String,
         val itemName: String? = null,
+        val itemBaseId: String? = null,
         val slot: EquipSlot? = null,
     ) : InventoryOperationResult {
         override val success: Boolean = false
@@ -71,6 +73,7 @@ class InventoryManager {
                 code = InventoryOperationCode.NOT_ON_GROUND,
                 message = "${itemInstance.name} is not on the ground.",
                 itemName = itemInstance.name,
+                itemBaseId = itemInstance.baseId,
             )
         }
         if (inventory.itemIds.size >= inventory.capacity) {
@@ -88,6 +91,7 @@ class InventoryManager {
             message = "You pick up ${itemInstance.name}.",
             itemId = item,
             itemName = itemInstance.name,
+            itemBaseId = itemInstance.baseId,
         )
     }
 
@@ -117,6 +121,7 @@ class InventoryManager {
             message = "You drop ${item.name}.",
             itemId = itemId,
             itemName = item.name,
+            itemBaseId = item.baseId,
         )
     }
 
@@ -138,6 +143,7 @@ class InventoryManager {
                     code = InventoryOperationCode.CANNOT_EQUIP,
                     message = "${item.name} cannot be equipped.",
                     itemName = item.name,
+                    itemBaseId = item.baseId,
                 )
 
         equipmentOf(world, entity).slots[slot] = itemId
@@ -146,6 +152,7 @@ class InventoryManager {
             message = "You equip ${item.name}.",
             itemId = itemId,
             itemName = item.name,
+            itemBaseId = item.baseId,
             slot = slot,
         )
     }
@@ -167,6 +174,7 @@ class InventoryManager {
             message = "You remove ${item.name}.",
             itemId = itemId,
             itemName = item.name,
+            itemBaseId = item.baseId,
             slot = slot,
         )
     }
@@ -190,6 +198,7 @@ class InventoryManager {
                     code = InventoryOperationCode.NOT_CONSUMABLE,
                     message = "${item.name} is not consumable.",
                     itemName = item.name,
+                    itemBaseId = item.baseId,
                 )
 
         when (effect) {
@@ -228,6 +237,7 @@ class InventoryManager {
                 },
             itemId = itemId,
             itemName = item.name,
+            itemBaseId = item.baseId,
         )
     }
 

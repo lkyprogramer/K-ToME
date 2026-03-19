@@ -1,20 +1,153 @@
 styleTag: ktome-middle-fantasy-painterly-tile-v1
 artStyleBible: docs/2026-03-13-art-style-bible.md
 stylePrompt: >
-  Classical high fantasy in a Middle-earth inspired mode: weathered stone, iron, leather,
-  worn wood, muted natural pigments, sacred light and restrained arcane glow. Painterly,
-  grounded, readable at small size, never anime, never sci-fi, never glossy mobile-game UI.
+  Classical high fantasy in a Middle-earth inspired mode. A world soaked in age,
+  iron, moss, flame, and old oaths. Weathered stone, forged iron, old timber,
+  cracked leather, coarse wool — every surface shows the weight of centuries.
+
+  Rendering style: painterly concept-art finish with visible brushwork and clear
+  material differentiation. NOT photorealistic, NOT pixel art, NOT cel-shaded,
+  NOT glossy mobile-game aesthetic. Slight impasto texture on metals and stone;
+  soft dry-brush edges on cloth and organic surfaces. Never anime. Never sci-fi.
+
+  Color palette: dark foundation of charcoal black, iron blue-grey, damp stone
+  green, deep brown wood. Warm accents of torch orange, molten-iron red, dry
+  leather brown, old gold — used sparingly for focal points. Cold light accents
+  of moonlight blue, frost cyan, lightning white-blue, faint holy pale-gold —
+  reserved for magic and interaction cues. Overall low saturation; high brightness
+  only on interactive elements, magic cores, boss telegraphs, and key pickups.
+
+  Lighting: low-key illumination. Primary light from upper-left at roughly 45
+  degrees. Warm firelight and cool ambient fill coexist. Shadows are clear but
+  not crushed to pure black. Rim light is allowed on character shoulder-lines,
+  weapon edges, and interactable prop edges — but always restrained. No bloom-heavy
+  haze, no full-screen volumetric light, no dreamy ethereal glow.
+
+  Material priority: weathered stone > black iron / forged iron > old wood >
+  leather > wool / coarse cloth > bone, antler, dead branch > rune stone >
+  forge embers. Forbidden materials: modern plastic, mirror sci-fi alloy, neon
+  glass, oversaturated fluorescent liquid, pristine white ceramic or silver-white.
 defaults:
   imageAspectRatio: "1:1"
   imageSize: "1K"
   negativeConstraints:
     - no modern clothing
+    - no modern clothing or equipment
     - no firearms
+    - no firearms or gunpowder weapons
     - no sci-fi materials
-    - no cyberpunk lighting
+    - no sci-fi materials, chrome, or glass surfaces
+    - no cyberpunk or neon lighting
     - no anime proportions
+    - no anime proportions or cel-shading
     - no floating text, watermark or logo
-    - no busy background
+    - no floating text, watermark, logo, or UI elements baked into image
+    - no busy detailed background — transparent or clean only
+    - no recognizable franchise emblems (no White Tree of Gondor, no Eye of Sauron, no specific movie/game iconography)
+    - no bloom-heavy magical glow or oversaturated light effects
+    - no chibi or super-deformed proportions
+    - no pixel art style
+    - no photorealistic skin pore detail
+    - no glossy mobile-game icon aesthetic
+  categoryPromptTemplates:
+    tile_ground: >
+      Top-down square floor tile for an orthogonal grid game.
+      The tile must fill the ENTIRE square canvas edge-to-edge with NO rounded corners and NO circular crop.
+      Edges must allow seamless tiling when placed adjacent to identical tiles.
+      Painterly hand-painted surface texture with bold readable shapes.
+      Viewed from directly above. No perspective distortion.
+      Muted color palette, low saturation. Subtle material variation across the surface.
+    tile_wall: >
+      Top-down wall tile for an orthogonal grid game, viewed from directly above.
+      The tile must fill the full square canvas. Clear upper edge distinguishes wall from floor.
+      Painterly stone/wood/material texture, readable shapes, thick visual mass.
+      No perspective, no 3D extrusion. Flat top-down representation with shading to imply height.
+    actor_sprite: >
+      Full-body character sprite on transparent background, standing in a neutral-ready combat pose.
+      Painterly concept-art rendering with visible brushwork, NOT pixel art, NOT cel-shaded.
+      Strong readable silhouette — the character's profession and role must be identifiable from outline alone.
+      Proportions are realistic adult, no chibi, no anime.
+      Lit from upper-left with warm side light and cool ambient fill.
+      Armor and equipment show wear, scratches, patina — nothing is factory-new.
+    portrait: >
+      Chest-up character portrait on transparent background, 3/4 angle facing slightly left.
+      Painterly concept-art rendering with visible brushwork and material texture.
+      Expression is restrained and serious — no exaggerated emotion, no smile.
+      Face emphasizes character and profession identity, NOT idealized beauty.
+      Lighting: warm key light from upper-left, cool ambient fill, subtle rim light on shoulder/helmet edge.
+      Armor/clothing shows use and age. Muted earth tones dominate.
+    icon_skill: >
+      Game skill ability icon on transparent background.
+      SINGLE focused subject centered in frame, occupying 65-75% of the canvas.
+      Bold simplified shapes with thick dark outlines for readability at small sizes.
+      Painterly rendering but with iconic clarity — this is a UI element, not a scene illustration.
+      NO hands, NO arms, NO character parts unless the skill IS about the body part.
+      Restrained color: 1-2 dominant hues plus neutral darks. No excessive glow or bloom.
+    icon_status: >
+      Game status effect icon on transparent background.
+      Single symbolic shape centered in frame, 65-75% canvas occupancy.
+      Must be instantly readable at small display sizes — favor bold geometric forms over fine detail.
+      Painterly but simplified. Thick outlines. 1-2 color accents on dark neutral base.
+    icon_item: >
+      Game item icon on transparent background.
+      Single object centered in frame, 65-75% canvas occupancy, slight 3/4 angle.
+      Painterly rendering with material texture (glass, metal, leather, wood).
+      Object shows age and use — no pristine surfaces. Muted palette with one color accent.
+    icon_quest: >
+      Game quest item icon on transparent background.
+      Single key/artifact/token centered in frame, 65-75% canvas occupancy.
+      Painterly rendering. Object has narrative weight — it looks important and old.
+      Iron, bronze, stone, or bone materials. Subtle rune or insignia detail.
+    prop_interactable: >
+      Game prop object on transparent background, viewed from a slightly elevated 3/4 angle.
+      Clear base footprint visible. Object has obvious interactive affordance (handle, lock, opening).
+      Painterly concept-art rendering. Materials show age and heavy use.
+      Bold silhouette readable at small game scale. No background scene elements.
+    prop_environment: >
+      Game environment prop on transparent background, viewed from slightly elevated 3/4 angle.
+      Clear base footprint. Painterly rendering with strong material texture.
+      Object tells a story through wear and damage. Integrated into the world's visual language.
+    vfx_plate: >
+      Visual effect overlay plate on transparent background.
+      Abstract magical/energy pattern with clean readable geometry.
+      Painterly with controlled glow — luminous elements are restrained, not bloom-heavy.
+      Suitable for compositing over game scenes.
+  biomeAtmosphere:
+    RUINS: >
+      Setting: a crumbling frontier outpost long past its prime. Collapsed stone walls,
+      broken pillars, charred timber beams, moss creeping through mortar joints,
+      scattered rubble and old weapon fragments. Cold grey stone with patches of
+      damp green moss. Dust and ash in the crevices.
+    FOREST_EDGE: >
+      Setting: the cold fringe of an ancient northern forest. Dark fir trees, persistent
+      low fog between trunks, carpet of dead brown leaves, old overgrown hunter trails,
+      abandoned campfire stones. Muted greens and browns, cold blue-grey atmosphere.
+    MINE: >
+      Setting: an exhausted iron mine with remnants of forced labor. Rough-hewn stone
+      corridors, rusted iron rail segments, collapsed timber supports, soot-blackened
+      walls, forge-glow from deep vents, copper-green patina on metal fixtures.
+      Palette: dark stone, warm ember orange accents, oxidized metals.
+    SHADOW_DEPTHS: >
+      Setting: a sealed ritual crypt beneath the earth. Black volcanic stone, cracked
+      sacrificial altars, defaced holy statues, shadow-filled alcoves, faint purple-black
+      energy seeping from wall fractures. Palette: near-black stone, cold ash grey,
+      restrained dark purple-blue accents.
+  factionStyle:
+    bandit: >
+      Scavenged, mismatched equipment. Rusted iron, patched leather, torn cloth.
+      No uniform — each piece looted from different sources. Desperate and brutal.
+    undead: >
+      Ancient burial remains reanimated. Cracked yellowed bones, rotting cloth scraps,
+      corroded bronze and iron grave goods. Pale blue-grey bone, dark earth stains.
+    orc: >
+      Crude heavy iron, furnace soot, brutalist construction. Red-copper and black stone
+      aesthetic. Broad, heavy proportions. Industrial and savage.
+    cultist: >
+      Dark ritual vestments. Bone-white and ash-black robes, ritual scars, pale fire,
+      sacrificial implements. Ascetic and disturbing.
+    boss: >
+      Exaggerated scale and visual weight. Elite materials — sacred bronze, ancient iron,
+      ceremonial elements. Must read as a tier above normal enemies in silhouette mass.
 phase2AssetGates:
   P2-B:
     description: Minimal official slice image bootstrap for Vanguard, Arcanist and Shattered Outpost.
@@ -23,254 +156,429 @@ phase2AssetGates:
         category: tile_ground
         visualKey: tileset.ruins.ground_01
         outputName: phase2/p2-b/tileset_ruins_ground_01.png
-        subject: weathered ruined stone floor tile for a frontier outpost
+        subject: >
+          A square stone floor tile from a ruined frontier outpost. Large irregular flagstones
+          fitted together with crumbling mortar, moss growing in the gaps between stones.
+          Surface shows centuries of foot traffic — worn smooth in the center, chipped at edges.
+          Scattered fine gravel and dust in the deeper cracks. Color palette: cold grey stone
+          with warm brown mortar and muted olive-green moss accents.
         biome: RUINS
         materialTags: [stone, dust, moss]
         moodTags: [grim, grounded]
         constraints:
-          - top-down readable tile with clear edge definition
+          - square tile filling entire canvas edge-to-edge, no rounded corners, no circular crop
+          - seamless tiling edges for orthogonal grid placement
+          - bold simplified shapes readable when scaled to small game tiles
           - transparent background outside tile silhouette
-          - readable at 48x48 after scaling
         geminiKeyRequired: true
       - id: phase2_p2b_tileset_ruins_wall_01
         category: tile_wall
         visualKey: tileset.ruins.wall_01
         outputName: phase2/p2-b/tileset_ruins_wall_01.png
-        subject: broken frontier outpost wall tile with weathered stone blocks
+        subject: >
+          A square top-down wall tile of a ruined frontier outpost. Thick stone block wall
+          with a clear upper edge distinguishing it from adjacent floor tiles. Mortar crumbling
+          between large ashlar blocks, some blocks cracked or missing. Dark scorch marks on one
+          side from old fire damage. Moss and lichen creep along the base. Color palette: dark
+          grey stone with charred black patches and muted green-brown organic growth.
         biome: RUINS
         materialTags: [stone, moss, dust]
         moodTags: [worn, defensive]
         constraints:
-          - top-down readable wall tile with clear upper edge
-          - readable at 48x48 after scaling
+          - square tile filling entire canvas, clear upper edge for wall/floor distinction
+          - bold shapes readable when scaled to small game tiles
+          - flat top-down representation with shading implying height
         geminiKeyRequired: true
       - id: phase2_p2b_prop_armory_gate
         category: prop_interactable
         visualKey: prop.armory_gate
         outputName: phase2/p2-b/prop_armory_gate.png
-        subject: heavy ruined armory gate with iron bands and lock plate
+        subject: >
+          A heavy wooden armory gate reinforced with dark iron bands and a large central lock
+          plate. The wood is old oak, deeply weathered with vertical grain visible through
+          peeling dark stain. Iron bands show rust and hammer marks from original forging.
+          The lock plate has a visible keyhole — the interactive affordance. One hinge is
+          slightly bent. Gate stands upright with a clear rectangular base footprint.
+          Color palette: dark aged wood, rusted iron brown-orange, cold iron grey lock.
         biome: RUINS
         materialTags: [wood, iron]
         moodTags: [fortified, old]
         constraints:
-          - clear hotspot and base footprint
-          - readable at 48x48
+          - clear interactive keyhole/lock as visual hotspot
+          - clear base footprint for game placement
+          - bold silhouette readable at small game scale
         geminiKeyRequired: true
       - id: phase2_p2b_prop_supply_crate
         category: prop_interactable
         visualKey: prop.supply_crate
         outputName: phase2/p2-b/prop_supply_crate.png
-        subject: frontier supply crate with iron braces and worn travel markings
+        subject: >
+          A frontier military supply crate made of rough-hewn planks bound with iron braces.
+          Rope handles on two sides. Lid is slightly ajar, showing the interactive opening.
+          Faded travel markings scratched into the wood — not text, just tally scratches and
+          a crude directional arrow. Wood is grey from weather exposure. Iron braces show
+          orange rust at the joints. A short coil of hemp rope sits beside it.
+          Color palette: grey-brown wood, rust-orange iron, natural rope tan.
         biome: RUINS
         materialTags: [wood, rope, iron]
         moodTags: [practical, worn]
         constraints:
-          - clear hotspot and base footprint
-          - readable at 48x48
+          - clear interactive affordance (ajar lid or latch)
+          - clear base footprint for game placement
+          - bold silhouette readable at small game scale
         geminiKeyRequired: true
       - id: phase2_p2b_prop_alarm_bonfire
         category: prop_interactable
         visualKey: prop.alarm_bonfire
         outputName: phase2/p2-b/prop_alarm_bonfire.png
-        subject: raised alarm bonfire brazier for outpost warning beacon
+        subject: >
+          A raised iron brazier used as an outpost alarm beacon. Heavy tripod base of black
+          forged iron with a wide shallow fire bowl on top. The bowl contains charred logs and
+          ash, ready to be lit. An iron chain with a flint striker hangs from one leg — the
+          interactive element. The whole structure is darkened by old soot. Base shows
+          scorch marks on the stone beneath. Color palette: black iron, charcoal grey ash,
+          warm ember-orange residue in the bowl center.
         biome: RUINS
         materialTags: [iron, ash, charred wood]
         moodTags: [ominous, military]
         constraints:
-          - clear hotspot and base footprint
-          - readable at 48x48
+          - clear interactive element (flint striker or lighting trigger)
+          - clear base footprint for game placement
+          - bold silhouette readable at small game scale
         geminiKeyRequired: true
       - id: phase2_p2b_actor_vanguard
         category: actor_sprite
         visualKey: actor.vanguard
         outputName: phase2/p2-b/actor_vanguard.png
-        subject: disciplined shield-bearing vanguard in worn steel and tabard
+        subject: >
+          A battle-hardened human vanguard warrior in a ready defensive stance, weight
+          shifted slightly forward. Worn steel half-plate armor over chainmail, with a
+          faded dark blue tabard bearing a simple abstract geometric emblem (NO recognizable
+          franchise symbols, NO white tree, NO real-world heraldry). Large kite shield in
+          left hand showing dents and old repair patches. One-handed arming sword at right
+          side. Heavy leather belt with utility pouch. Weathered iron kettle helm.
+          Proportions: stocky, grounded, low center of gravity. Materials show years of
+          field use — scratched plate, frayed tabard edges, darkened leather.
         profession: vanguard
         materialTags: [steel, leather, cloth]
         moodTags: [steadfast, martial]
         constraints:
-          - full-body isolated sprite
-          - clear silhouette with shield and one-handed weapon
-          - readable at 48x48
+          - full-body isolated sprite on transparent background
+          - clear silhouette with shield and one-handed weapon identifiable from outline alone
+          - bold simplified forms readable at small game scale
         geminiKeyRequired: true
       - id: phase2_p2b_actor_arcanist
         category: actor_sprite
         visualKey: actor.arcanist
         outputName: phase2/p2-b/actor_arcanist.png
-        subject: battle arcanist in layered robes with restrained elemental focus
+        subject: >
+          A human battle arcanist standing in a balanced ready stance, one hand slightly
+          raised with a faint contained glow at the fingertips. Layered dark robes over
+          leather chest piece, with runed metal clasps at the collar and belt. A short
+          reinforced staff in the off-hand — NOT oversized, roughly shoulder height.
+          Hood down, revealing a weathered face with focused expression. Leather bracers
+          with inscribed ward-lines. Robes are dark charcoal with deep blue-grey trim,
+          edges frayed from field use. A small pouch of reagents at the hip.
+          Proportions: lean but not frail, scholarly bearing with combat readiness.
         profession: arcanist
         materialTags: [cloth, leather, runed metal]
         moodTags: [scholarly, dangerous]
         constraints:
-          - full-body isolated sprite
-          - no exaggerated staff larger than body
-          - readable at 48x48
+          - full-body isolated sprite on transparent background
+          - staff no larger than shoulder height — readable silhouette
+          - magic glow is minimal, a hint not a beacon
+          - bold forms readable at small game scale
         geminiKeyRequired: true
       - id: phase2_p2b_actor_bandit_raider
         category: actor_sprite
         visualKey: actor.bandit.raider
         outputName: phase2/p2-b/actor_bandit_raider.png
-        subject: rough frontier bandit raider with axe and scavenged armor
+        subject: >
+          A rough frontier bandit raider in an aggressive forward-leaning stance. Mismatched
+          scavenged armor — one rusted iron pauldron on the weapon shoulder, a patched leather
+          vest over bare-cloth shirt, torn trousers with makeshift shin guards. Wielding a
+          crude hand axe with a notched blade. Face wrapped in a dirty cloth mask below the
+          eyes. Belt hung with stolen trinkets and a crude knife sheath. Every piece of
+          equipment is from a different source — nothing matches. Color palette: rust brown,
+          dirty grey cloth, dull iron, mud-stained leather.
         faction: bandit
         materialTags: [leather, rusted iron, cloth]
         moodTags: [hostile, desperate]
         constraints:
-          - full-body isolated sprite
-          - readable at 48x48
+          - full-body isolated sprite on transparent background
+          - silhouette reads as hostile and scrappy, not disciplined
+          - bold forms readable at small game scale
         geminiKeyRequired: true
       - id: phase2_p2b_actor_bandit_archer
         category: actor_sprite
         visualKey: actor.bandit.archer
         outputName: phase2/p2-b/actor_bandit_archer.png
-        subject: lean bandit archer in patched frontier leathers
+        subject: >
+          A lean bandit archer in a watchful half-draw stance. Patched frontier leathers
+          over a threadbare tunic. A short hunting bow — not an elegant elven recurve, but a
+          crude self-bow with wrapped grip. A hip quiver with mismatched arrow fletchings.
+          Light leather cap pulled low. Narrow shoulders, wiry build — built for speed not
+          strength. One bracer on the bow arm, opposite hand bare. Cloak is a stolen horse
+          blanket cut into a half-cape. Color palette: faded brown leather, grey-green cloth,
+          pale wood bow, dirty off-white wrappings.
         faction: bandit
         materialTags: [wood, leather, cloth]
         moodTags: [watchful, hostile]
         constraints:
-          - full-body isolated sprite
-          - bow silhouette must remain readable at 48x48
+          - full-body isolated sprite on transparent background
+          - bow silhouette clearly readable at small game scale
+          - lean body distinct from heavier melee bandits
         geminiKeyRequired: true
       - id: phase2_p2b_actor_restless_skeleton
         category: actor_sprite
         visualKey: actor.undead.restless_skeleton
         outputName: phase2/p2-b/actor_restless_skeleton.png
-        subject: restless skeleton warrior with cracked bones and burial scraps
+        subject: >
+          A restless skeleton warrior risen from an old battlefield burial. Yellowed and
+          cracked bones with dark earth stains in the joints. Scraps of rotting burial cloth
+          hang from the ribcage and one shoulder. A corroded bronze short sword in one bony
+          hand, a fragment of a round shield boss strapped to the forearm with decayed leather.
+          Empty eye sockets with a faint cold blue-grey glow deep inside — subtle, not
+          blazing. Posture is stiff and unnatural, one shoulder higher than the other.
+          Color palette: pale bone-yellow, dark earth brown stains, corroded green-bronze,
+          rotting grey-brown cloth.
         faction: undead
         materialTags: [bone, cloth, rusted iron]
         moodTags: [haunted, ancient]
         constraints:
-          - full-body isolated sprite
-          - readable at 48x48
+          - full-body isolated sprite on transparent background
+          - eye glow is subtle, not blazing beacons
+          - skeletal silhouette clearly distinct from living humanoids
+          - bold forms readable at small game scale
         geminiKeyRequired: true
       - id: phase2_p2b_actor_bandit_captain
         category: actor_sprite
         visualKey: actor.bandit.captain
         outputName: phase2/p2-b/actor_bandit_captain.png
-        subject: hardened bandit captain with command cloak and brutal weapon
+        subject: >
+          A hardened bandit captain standing with commanding authority, one foot on a rock.
+          Better-quality scavenged armor than common bandits — a stolen military breastplate
+          with the original insignia scratched off, heavy leather vambraces, and a thick fur-
+          lined command cloak over one shoulder. Wielding a brutal falchion with a heavy
+          chopping blade. A string of looted tokens and coins hangs from the belt. Scarred
+          face visible, no mask — this one does not hide. Heavier build than rank-and-file
+          bandits. Color palette: dark steel breastplate, blood-brown leather, grey-black
+          fur cloak, tarnished metal trophies.
         faction: bandit
         materialTags: [steel, leather, cloth]
         moodTags: [commanding, dangerous]
         constraints:
-          - full-body isolated sprite
-          - clear elite silhouette readable at 48x48
+          - full-body isolated sprite on transparent background
+          - clear elite silhouette — visually heavier and more imposing than common bandits
+          - bold forms readable at small game scale
         geminiKeyRequired: true
       - id: phase2_p2b_portrait_vanguard
         category: portrait
         visualKey: portrait.vanguard
         outputName: phase2/p2-b/portrait_vanguard.png
-        subject: portrait of the Vanguard hero, stern and battle-worn
+        subject: >
+          Chest-up portrait of the Vanguard hero. A stern, battle-worn face with a strong
+          jawline and old scar across one cheek. Weathered iron kettle helm with a dented
+          brim. Dark blue tabard collar visible below the chin, over chainmail links. Eyes
+          are steady and resolute — no rage, no fear, just hard-earned discipline. Stubble
+          and dust on the skin. Steel pauldron visible on one shoulder with scratches and
+          a repair weld mark. Color palette: cold steel, dark blue cloth, warm skin with
+          weathering, iron-grey helm.
         profession: vanguard
         materialTags: [steel, leather]
         moodTags: [resolute]
         constraints:
-          - chest-up portrait
-          - readable face and armor silhouette
+          - chest-up portrait, 3/4 angle facing slightly left
+          - face and armor silhouette clearly readable
+          - expression restrained and serious
         geminiKeyRequired: true
       - id: phase2_p2b_portrait_arcanist
         category: portrait
         visualKey: portrait.arcanist
         outputName: phase2/p2-b/portrait_arcanist.png
-        subject: portrait of the Arcanist hero with restrained arcane glow
+        subject: >
+          Chest-up portrait of the Arcanist hero. A focused, scholarly face with sharp
+          intelligent eyes and prematurely greyed temples. Dark hood partially raised behind
+          the head but not covering it. Runed metal collar clasp at the throat glows with a
+          barely perceptible ward-light — restrained, not blazing. Deep charcoal robes with
+          blue-grey trim. One hand visible at chest level holding a small arcane focus — a
+          polished dark stone set in a wire cage. Skin shows the pallor of indoor study.
+          Color palette: dark charcoal cloth, iron blue-grey trim, warm skin undertone,
+          faint cool arcane hint at the collar.
         profession: arcanist
         materialTags: [cloth, runed metal]
         moodTags: [focused, scholarly]
         constraints:
-          - chest-up portrait
-          - readable face and robe silhouette
+          - chest-up portrait, 3/4 angle facing slightly left
+          - face and robe silhouette clearly readable
+          - arcane glow is minimal — a hint, not a light source
         geminiKeyRequired: true
       - id: phase2_p2b_icon_power_strike
         category: icon_skill
         visualKey: icon.skill.vanguard.power_strike
         outputName: phase2/p2-b/icon_skill_vanguard_power_strike.png
-        subject: heavy downward sword strike icon
+        subject: >
+          A single iron longsword mid-downward strike, blade angled from upper-right to
+          lower-left with a sharp motion arc trailing behind it. The blade shows dark
+          forged-iron coloring with a bright edge highlight. Motion lines are subtle and
+          painterly, not cartoon speed-lines. No hand, no arm, no character — just the
+          weapon and its motion energy. Warm steel-grey and cold blue-white accent.
         profession: vanguard
         moodTags: [forceful]
         constraints:
-          - centered icon silhouette occupying 60 to 75 percent of frame
+          - single focused subject centered in frame, 65-75% canvas occupancy
           - transparent background
+          - no hands, no arms, no character body parts
+          - bold simplified shapes with thick outlines
         geminiKeyRequired: true
       - id: phase2_p2b_icon_guard_stance
         category: icon_skill
         visualKey: icon.skill.vanguard.guard_stance
         outputName: phase2/p2-b/icon_skill_vanguard_guard_stance.png
-        subject: defensive shield stance icon
+        subject: >
+          A single kite shield viewed from the front, angled slightly to show depth. The
+          shield surface shows dents and old repair patches — a veteran's shield, not
+          ceremonial. A subtle ward-glow outlines the shield edge in pale blue-white,
+          implying magical reinforcement. No hand, no arm behind it — just the shield
+          and its protective energy. Color palette: dark iron-grey shield face, warm
+          brown leather edge-binding, faint cool blue-white ward outline.
         profession: vanguard
         moodTags: [protective]
         constraints:
-          - centered icon silhouette occupying 60 to 75 percent of frame
+          - single focused subject centered in frame, 65-75% canvas occupancy
           - transparent background
+          - no hands, no arms, no character body parts
+          - bold simplified shapes with thick outlines
         geminiKeyRequired: true
       - id: phase2_p2b_icon_fire_bolt
         category: icon_skill
         visualKey: icon.skill.arcanist.fire_bolt
         outputName: phase2/p2-b/icon_skill_arcanist_fire_bolt.png
-        subject: concentrated ember bolt icon
+        subject: >
+          A concentrated ember bolt — a tight compressed fire projectile with a sharp nose
+          and a short trailing wake of sparks. The core is bright molten orange-white,
+          transitioning to deep ember red at the edges. Charred black fragments trail behind.
+          The shape is linear and directional, angled from lower-left to upper-right. Not a
+          cartoon fireball — a focused, dangerous bolt of compressed flame.
+          Color palette: molten orange-white core, deep ember red edges, charcoal black trail.
         profession: arcanist
         moodTags: [arcane, focused]
         constraints:
-          - centered icon silhouette occupying 60 to 75 percent of frame
+          - single focused subject centered in frame, 65-75% canvas occupancy
           - transparent background
+          - no hands, no character — just the projectile
+          - bold shape readable at small display sizes
         geminiKeyRequired: true
       - id: phase2_p2b_icon_blink
         category: icon_skill
         visualKey: icon.skill.arcanist.blink
         outputName: phase2/p2-b/icon_skill_arcanist_blink.png
-        subject: arcane blink sigil icon
+        subject: >
+          An arcane blink sigil — a geometric teleportation glyph with sharp angular lines
+          forming a broken hexagon or star-fragment pattern. The sigil appears to be mid-
+          activation: the outer ring is stable cold blue-grey, while the inner fragments
+          are separating with bright white-blue energy between the gaps — implying spatial
+          displacement. Faint afterimage streaks radiate outward. Not a portal — a sigil
+          of instantaneous movement. Color palette: cold iron blue-grey structure, bright
+          white-blue activation energy, faint translucent streaks.
         profession: arcanist
         moodTags: [swift, arcane]
         constraints:
-          - centered icon silhouette occupying 60 to 75 percent of frame
+          - single focused subject centered in frame, 65-75% canvas occupancy
           - transparent background
+          - geometric clarity — readable as a distinct sigil at small sizes
+          - bold shapes with thick outlines
         geminiKeyRequired: true
       - id: phase2_p2b_icon_status_burn
         category: icon_status
         visualKey: icon.status.burn
         outputName: phase2/p2-b/icon_status_burn.png
-        subject: burning status icon with controlled flame shape
+        subject: >
+          A controlled flame shape representing the burning status effect. A single stylized
+          flame form with a sharp upward point — not a campfire, but an iconic abstract flame
+          symbol. The core is bright ember orange, the outer shape darkens to deep red-black
+          at the tips. A few small ember sparks float nearby. The overall shape is bold and
+          geometric enough to read as a clear symbol at very small sizes.
+          Color palette: bright ember orange core, deep red outer flame, charcoal dark tips.
         moodTags: [burning, dangerous]
         constraints:
-          - centered icon silhouette occupying 60 to 75 percent of frame
+          - single symbolic shape centered in frame, 65-75% canvas occupancy
           - transparent background
+          - bold geometric form readable at very small display sizes
+          - thick outlines, 1-2 color accents on dark base
         geminiKeyRequired: true
       - id: phase2_p2b_icon_status_armor_break
         category: icon_status
         visualKey: icon.status.armor_break
         outputName: phase2/p2-b/icon_status_armor_break.png
-        subject: broken armor plate status icon
+        subject: >
+          A broken armor plate representing the sundered-armor status effect. A single steel
+          breastplate fragment cracked diagonally into two pieces, the halves separated with
+          a visible fracture line between them. Impact damage radiates from the crack point.
+          The metal shows dark forged-iron coloring with a bright stress-fracture line.
+          No body behind it — just the broken plate as an abstract symbol.
+          Color palette: dark steel grey plate, bright fracture highlight, warm rust at edges.
         moodTags: [sundered, martial]
         constraints:
-          - centered icon silhouette occupying 60 to 75 percent of frame
+          - single symbolic shape centered in frame, 65-75% canvas occupancy
           - transparent background
+          - bold geometric form readable at very small display sizes
+          - thick outlines, clear fracture visual
         geminiKeyRequired: true
       - id: phase2_p2b_icon_item_minor_healing_potion
         category: icon_item
         visualKey: icon.item.minor_healing_potion
         outputName: phase2/p2-b/icon_item_minor_healing_potion.png
-        subject: small healing potion icon in worn fantasy glass vial
+        subject: >
+          A small healing potion in a worn hand-blown glass vial with a cork stopper. The
+          glass is imperfect with slight bubbles and thickness variation — not modern
+          laboratory glass. The liquid inside is a muted warm red, not neon. A simple
+          leather cord wraps the neck of the vial. The cork shows age. Slight 3/4 angle
+          view to show the liquid volume. Color palette: warm muted red liquid, pale
+          green-tinted glass, brown cork, tan leather cord.
         moodTags: [restorative]
         constraints:
-          - centered icon silhouette occupying 60 to 75 percent of frame
+          - single object centered in frame, 65-75% canvas occupancy
           - transparent background
+          - material texture visible (glass, cork, leather)
+          - readable shape at small display sizes
         geminiKeyRequired: true
       - id: phase2_p2b_icon_quest_armory_key
         category: icon_quest
         visualKey: icon.quest.armory_key
         outputName: phase2/p2-b/icon_quest_armory_key.png
-        subject: iron armory key icon with outpost insignia
+        subject: >
+          A large iron armory key with a simple outpost insignia stamped into the bow (the
+          handle end). The key is forged black iron with visible hammer marks on the shaft.
+          The bit (the teeth end) has a squared military pattern. A short length of iron
+          chain attaches to a ring at the bow. The metal shows age — dark patina with slight
+          rust at stress points. This is a utilitarian military key, not an ornate treasure.
+          Color palette: dark iron grey-black, warm rust-orange at edges, cold steel highlights.
         moodTags: [quest, utilitarian]
         constraints:
-          - centered icon silhouette occupying 60 to 75 percent of frame
+          - single object centered in frame, 65-75% canvas occupancy
           - transparent background
+          - object reads as important and functional
+          - bold shape readable at small display sizes
         geminiKeyRequired: true
       - id: phase2_p2b_boss_warning_sigil
         category: vfx_plate
         visualKey: vfx.boss.warning.sigil_01
         outputName: phase2/p2-b/vfx_boss_warning_sigil_01.png
-        subject: sacred warning sigil for boss telegraph overlay
+        subject: >
+          A sacred warning sigil for a boss telegraph overlay. A circular geometric pattern
+          with sharp angular subdivisions — part military warning, part sacred ward. The
+          outer ring is cold iron-grey with rune-like notches. The inner pattern pulses with
+          a controlled warm amber-orange glow from the center. Clean geometric lines, not
+          organic curves. The glow is restrained — it marks danger without overwhelming the
+          scene. Suitable for overlay compositing. Color palette: cold iron-grey outer ring,
+          warm amber-orange inner glow, dark fill between geometric lines.
         moodTags: [ominous, sacred]
         constraints:
           - overlay plate with clean readable geometry
           - transparent background
+          - glow is controlled and restrained, not bloom-heavy
+          - clean geometric forms for compositing
         geminiKeyRequired: true
   P2-C:
     description: Full Phase 2 short-run expansion assets for four professions and four zones.
@@ -279,263 +587,464 @@ phase2AssetGates:
         category: actor_sprite
         visualKey: actor.rogue
         outputName: phase2/p2-c/actor_rogue.png
-        subject: agile rogue with twin blades and shadowed cloak
+        subject: >
+          An agile human rogue in a low predatory stance, weight on the balls of the feet.
+          Dark leather armor fitted close to the body for silent movement — no loose plates
+          or jingling metal. Twin short blades held low, one forward one back. A deep
+          shadowed hood and half-face cloth mask. Narrow shoulders, wiry athletic build.
+          A short dark cloak wraps around one side, breaking the silhouette against torchlight.
+          Leather bandolier across the chest with small tool pouches. Soft-soled boots.
+          Color palette: deep charcoal leather, dark grey-brown cloth, cold steel blade edges,
+          shadow-dark cloak. Materials show use — oiled leather, frayed cloth edges.
         profession: rogue
         materialTags: [leather, cloth, steel]
         moodTags: [stealthy, predatory]
         constraints:
-          - full-body isolated sprite
-          - readable at 48x48
+          - full-body isolated sprite on transparent background
+          - silhouette reads as fast and light, distinct from heavier classes
+          - bold forms readable at small game scale
         geminiKeyRequired: true
       - id: phase2_p2c_actor_templar
         category: actor_sprite
         visualKey: actor.templar
         outputName: phase2/p2-c/actor_templar.png
-        subject: holy warrior templar with light-touched armor and seal iconography
+        subject: >
+          A holy warrior templar standing in a solemn upright stance with a heavy two-handed
+          warhammer resting on one shoulder. Full plate armor with sacred bronze accents at
+          the joints and collar — not gold, but warm aged bronze. A surcoat of heavy off-white
+          cloth with a simple abstract radiant seal emblem (NO specific franchise symbols).
+          The armor shows field service — scratched plate, mud on the greaves, a repaired
+          shoulder guard. A prayer scroll case hangs from the belt. Closed-face helm with
+          a narrow eye slit, carried under one arm or worn with visor up showing a stern face.
+          Color palette: cold steel plate, warm sacred bronze accents, off-white surcoat with
+          age-yellowing, dark leather straps.
         profession: templar
         materialTags: [steel, cloth, sacred bronze]
         moodTags: [holy, resolute]
         constraints:
-          - full-body isolated sprite
-          - readable at 48x48
+          - full-body isolated sprite on transparent background
+          - silhouette reads as heavy, righteous, and armored
+          - bold forms readable at small game scale
         geminiKeyRequired: true
       - id: phase2_p2c_actor_orc_miner
         category: actor_sprite
         visualKey: actor.orc.miner
         outputName: phase2/p2-c/actor_orc_miner.png
-        subject: brutal orc miner with pickaxe and furnace soot
+        subject: >
+          A brutal orc miner in a wide aggressive stance, thick arms and broad shoulders.
+          Heavy iron pickaxe in one hand, the head blackened with forge soot. Minimal armor —
+          a crude iron chest guard bolted directly to a leather harness, bare soot-covered
+          arms. Thick jaw and pronounced lower tusks. Skin is olive-grey with soot grime.
+          A heavy leather apron over one leg, singed at the edges from furnace work. Iron-
+          shod boots. Expression is hostile and brutish. Color palette: olive-grey skin,
+          black iron, dark soot, warm ember-orange residue on the pickaxe head, brown leather.
         faction: orc
         materialTags: [iron, leather, soot]
         moodTags: [harsh, industrial]
         constraints:
-          - full-body isolated sprite
-          - readable at 48x48
+          - full-body isolated sprite on transparent background
+          - broad heavy silhouette distinct from human proportions
+          - bold forms readable at small game scale
         geminiKeyRequired: true
       - id: phase2_p2c_actor_cultist_shadow_priest
         category: actor_sprite
         visualKey: actor.cultist.shadow_priest
         outputName: phase2/p2-c/actor_cultist_shadow_priest.png
-        subject: shadow cult priest in ritual vestments with pale fire
+        subject: >
+          A shadow cult priest standing with arms slightly raised in a ritual gesture. Long
+          bone-white and ash-black layered robes reaching the ground. A tall cowl hides the
+          upper face in shadow, revealing only a pale gaunt chin with ritual scar lines. One
+          hand holds a censer on a chain emitting pale cold fire — not orange flame, but a
+          ghostly blue-white smoke. Bone fetish tokens hang from a cord belt. Bare feet on
+          cold stone. The robes are clean but ancient, with careful mending — these are
+          ritual vestments, not rags. Color palette: bone-white inner robe, ash-black outer
+          vestments, pale blue-white censer flame, dark grey bone tokens.
         faction: cultist
         materialTags: [cloth, bone, ash]
         moodTags: [shadowed, ritual]
         constraints:
-          - full-body isolated sprite
-          - readable at 48x48
+          - full-body isolated sprite on transparent background
+          - silhouette reads as religious/ritual, distinct from combat classes
+          - pale fire is cold-toned, not warm
+          - bold forms readable at small game scale
         geminiKeyRequired: true
       - id: phase2_p2c_actor_ashgate_boss
         category: actor_sprite
         visualKey: actor.boss.ashgate_warden
         outputName: phase2/p2-c/actor_boss_ashgate_warden.png
-        subject: ashgate warden boss with sacred chains and shadowed armor
+        subject: >
+          The Ashgate Warden boss — a massive armored figure standing a full head taller
+          than normal enemies. Ancient sacred bronze plate armor blackened by ash and ritual
+          fire, with cracked holy seals at the shoulders and chest that once held divine power
+          but are now corrupted. Heavy ceremonial chains wrapped around both forearms, ending
+          in spiked weights. A great helm with a narrow cross-shaped eye slit, the helm's
+          crest broken and bent. A tattered sacred banner hangs from a backplate mount. The
+          pose is commanding — standing with chains held wide, reading as a tier above all
+          other enemies. Color palette: blackened sacred bronze, ash grey, dark iron chains,
+          faint corrupted amber glow in the cracked seals.
         faction: boss
         materialTags: [iron, ash, sacred bronze]
         moodTags: [imposing, holy, shadowed]
         constraints:
-          - full-body isolated sprite
-          - readable elite silhouette at 48x48
+          - full-body isolated sprite on transparent background
+          - silhouette significantly larger and heavier than regular enemies
+          - elite visual presence — reads as boss-tier from outline alone
+          - bold forms readable at small game scale
         geminiKeyRequired: true
       - id: phase2_p2c_portrait_rogue
         category: portrait
         visualKey: portrait.rogue
         outputName: phase2/p2-c/portrait_rogue.png
-        subject: portrait of the Rogue hero in a shadowed hood
+        subject: >
+          Chest-up portrait of the Rogue hero. A sharp watchful face half-hidden in a deep
+          shadowed hood. Only the lower face and one eye are clearly lit — the other eye
+          recedes into hood shadow. Lean facial features, a thin scar along the jawline.
+          Dark leather collar visible at the neck. The expression is calculating and cold,
+          not angry. A faint glint of a blade hilt is visible at the shoulder edge.
+          Color palette: deep shadow darks dominating, warm skin tone on the lit side,
+          dark leather brown, cold steel glint.
         profession: rogue
         materialTags: [cloth, leather]
         moodTags: [stealthy, sharp]
         constraints:
-          - chest-up portrait
-          - readable face and hood silhouette
+          - chest-up portrait, 3/4 angle facing slightly left
+          - hood shadow is a key compositional element
+          - face readable despite partial shadow
+          - expression restrained and serious
         geminiKeyRequired: true
       - id: phase2_p2c_portrait_templar
         category: portrait
         visualKey: portrait.templar
         outputName: phase2/p2-c/portrait_templar.png
-        subject: portrait of the Templar hero in radiant warplate
+        subject: >
+          Chest-up portrait of the Templar hero. A solemn devout face with a strong brow
+          and deep-set eyes that carry conviction. Short-cropped hair visible above the
+          gorget line. Heavy steel gorget and one sacred bronze pauldron visible at shoulder
+          level. The off-white surcoat collar shows at the neck with the abstract radiant
+          seal emblem partially visible. A faint warm light catches one side of the face as
+          if from a shrine flame, while the other side is cooled by ambient shadow.
+          Expression is grave and purposeful. Color palette: cold steel gorget, warm sacred
+          bronze accent, off-white cloth, warm-lit skin tone.
         profession: templar
         materialTags: [steel, cloth, sacred bronze]
         moodTags: [holy, steadfast]
         constraints:
-          - chest-up portrait
-          - readable face and armor silhouette
+          - chest-up portrait, 3/4 angle facing slightly left
+          - face and armor silhouette clearly readable
+          - expression restrained and solemn
         geminiKeyRequired: true
       - id: phase2_p2c_tileset_forest_edge_ground_01
         category: tile_ground
         visualKey: tileset.forest_edge.ground_01
         outputName: phase2/p2-c/tileset_forest_edge_ground_01.png
-        subject: damp forest edge ground tile with roots and leaf scatter
+        subject: >
+          A square forest-edge ground tile. Damp dark soil with a layer of dead brown leaves
+          and scattered pine needles. Several thick tree roots cross the surface, partially
+          buried. Small patches of pale moss cling to the exposed roots. The ground surface
+          is uneven with subtle depressions where water collects. No grass — this is a cold
+          northern forest floor where the canopy blocks sunlight. Color palette: dark brown
+          soil, dead amber-brown leaves, grey-brown roots, muted olive-grey moss patches.
         biome: FOREST_EDGE
         materialTags: [soil, roots, leaves]
         moodTags: [wild, cold]
         constraints:
-          - top-down readable tile with clear edge definition
-          - readable at 48x48 after scaling
+          - square tile filling entire canvas edge-to-edge, no rounded corners
+          - seamless tiling edges for orthogonal grid placement
+          - bold shapes readable when scaled to small game tiles
         geminiKeyRequired: true
       - id: phase2_p2c_tileset_forest_edge_wall_01
         category: tile_wall
         visualKey: tileset.forest_edge.wall_01
         outputName: phase2/p2-c/tileset_forest_edge_wall_01.png
-        subject: dense treeline wall tile for a forest fringe battlefield
+        subject: >
+          A square top-down wall tile representing a dense forest treeline barrier. Thick
+          dark tree trunks packed closely together, viewed from directly above. The canopy
+          mass is a dark muted green-black. Clear upper edge where the treeline meets the
+          open forest floor. Fallen branches and leaf debris along the base edge. The tree
+          trunks show dark bark texture with grey lichen. This is an impassable terrain
+          wall. Color palette: dark bark brown-grey, deep muted green-black canopy mass,
+          dead leaf amber at the base edge.
         biome: FOREST_EDGE
         materialTags: [wood, bark, leaves]
         moodTags: [wild, enclosing]
         constraints:
-          - top-down readable wall tile with clear upper edge
-          - readable at 48x48 after scaling
+          - square tile filling entire canvas, clear upper edge for wall/floor distinction
+          - bold shapes readable when scaled to small game tiles
+          - flat top-down representation
         geminiKeyRequired: true
       - id: phase2_p2c_tileset_mine_ground_01
         category: tile_ground
         visualKey: tileset.mine.ground_01
         outputName: phase2/p2-c/tileset_mine_ground_01.png
-        subject: iron mine floor tile with soot and rail wear
+        subject: >
+          A square mine floor tile of rough-hewn stone. The surface shows chisel marks from
+          excavation — long parallel grooves in the stone. A thin layer of coal dust and
+          iron filings darkens the surface. Small puddles of rusty water collect in the lower
+          grooves. NO iron rails crossing the tile — just bare excavated stone floor. Subtle
+          warm ember-orange discoloration in patches from nearby forge heat. Color palette:
+          dark grey stone, black coal-dust layer, rust-orange water stains, warm amber heat
+          discoloration.
         biome: MINE
         materialTags: [stone, iron, soot]
         moodTags: [industrial, harsh]
         constraints:
-          - top-down readable tile with clear edge definition
-          - readable at 48x48 after scaling
+          - square tile filling entire canvas edge-to-edge, no rounded corners
+          - seamless tiling edges — NO rails or tracks crossing the tile
+          - bold shapes readable when scaled to small game tiles
         geminiKeyRequired: true
       - id: phase2_p2c_tileset_mine_wall_01
         category: tile_wall
         visualKey: tileset.mine.wall_01
         outputName: phase2/p2-c/tileset_mine_wall_01.png
-        subject: mine tunnel wall tile with iron braces and soot
+        subject: >
+          A square top-down mine tunnel wall tile. Rough-hewn rock face reinforced with
+          heavy timber supports visible from above. The timber is dark and swollen from
+          underground moisture, with iron brackets bolting it to the stone. Soot blackens
+          the upper surfaces. The clear upper edge shows where the wall meets the tunnel
+          floor. Stone is unfinished — broken and angular, not dressed masonry. Iron bolt
+          heads are visible as small bright points in the dark wood. Color palette: dark
+          raw stone, soot-black timber, rust-orange iron brackets, damp dark patches.
         biome: MINE
         materialTags: [stone, timber, iron]
         moodTags: [claustrophobic, industrial]
         constraints:
-          - top-down readable wall tile with clear upper edge
-          - readable at 48x48 after scaling
+          - square tile filling entire canvas, clear upper edge for wall/floor distinction
+          - bold shapes readable when scaled to small game tiles
+          - flat top-down representation with shading implying depth
         geminiKeyRequired: true
       - id: phase2_p2c_tileset_shadow_depths_ground_01
         category: tile_ground
         visualKey: tileset.shadow_depths.ground_01
         outputName: phase2/p2-c/tileset_shadow_depths_ground_01.png
-        subject: shadow-haunted ritual floor tile with cracked runes
+        subject: >
+          A square ritual crypt floor tile of black volcanic stone. The surface is smooth
+          and cold, with thin cracked ritual lines carved into the stone — angular geometric
+          patterns, not organic curves. The carvings are filled with a faint dark purple-grey
+          residue. Ash collects in the deeper grooves. The stone itself is near-black with a
+          slight blue-grey sheen where polished by ancient traffic. Subtle cold light catches
+          the carved edges. Color palette: near-black volcanic stone, dark purple-grey ritual
+          residue, cold ash grey dust, faint blue-grey polish.
         biome: SHADOW_DEPTHS
         materialTags: [stone, ash, ritual pigment]
         moodTags: [shadowed, sacred]
         constraints:
-          - top-down readable tile with clear edge definition
-          - readable at 48x48 after scaling
+          - square tile filling entire canvas edge-to-edge, no rounded corners
+          - seamless tiling edges for orthogonal grid placement
+          - bold shapes readable when scaled to small game tiles
         geminiKeyRequired: true
       - id: phase2_p2c_tileset_shadow_depths_wall_01
         category: tile_wall
         visualKey: tileset.shadow_depths.wall_01
         outputName: phase2/p2-c/tileset_shadow_depths_wall_01.png
-        subject: ritual crypt wall tile with broken seals and ash stains
+        subject: >
+          A square top-down ritual crypt wall tile. Massive black stone blocks fitted with
+          precision — ancient and deliberate construction, not crude. Broken seal medallions
+          embedded in the wall surface, their inscriptions defaced. Ash stains streak down
+          from above. The clear upper edge shows where the wall mass meets the crypt floor.
+          Faint dark cracks in the mortar seep a subtle purple-black energy — barely visible,
+          more felt than seen. Color palette: deep black stone, dark ash-grey streaks,
+          corroded bronze seal fragments, faint purple-black crack energy.
         biome: SHADOW_DEPTHS
         materialTags: [stone, ash, bronze]
         moodTags: [ominous, sacred]
         constraints:
-          - top-down readable wall tile with clear upper edge
-          - readable at 48x48 after scaling
+          - square tile filling entire canvas, clear upper edge for wall/floor distinction
+          - bold shapes readable when scaled to small game tiles
+          - flat top-down representation
         geminiKeyRequired: true
       - id: phase2_p2c_prop_mine_furnace
         category: prop_environment
         visualKey: prop.mine_furnace
         outputName: phase2/p2-c/prop_mine_furnace.png
-        subject: mine furnace prop with embers and iron mouth
+        subject: >
+          A mine smelting furnace prop, a squat heavy structure of dark stone and iron.
+          Wide iron mouth opening at the front showing ember glow inside — hot coals and
+          residual heat, not roaring flame. Thick iron chimney pipe exits the top at an
+          angle. Soot covers every surface. Heavy stone base with cracked firebricks
+          visible where the outer shell has broken away. Iron tools (tongs, poker) lean
+          against one side. Slag deposits pool at the base. Color palette: dark soot-black
+          iron and stone, warm ember orange-red in the mouth, grey ash deposits, rust brown
+          tools.
         biome: MINE
         materialTags: [iron, stone, ember]
         moodTags: [industrial, hot]
         constraints:
-          - clear silhouette and base footprint
-          - readable at 48x48
+          - clear silhouette and base footprint for game placement
+          - warm glow is contained within the furnace mouth, not ambient
+          - bold forms readable at small game scale
         geminiKeyRequired: true
       - id: phase2_p2c_prop_ritual_altar
         category: prop_interactable
         visualKey: prop.ritual_altar
         outputName: phase2/p2-c/prop_ritual_altar.png
-        subject: ritual altar for ashgate depths with cracked holy and shadow sigils
+        subject: >
+          A ritual altar from the Ashgate depths — a low wide slab of black volcanic stone
+          on a stepped base. The surface is carved with intersecting holy and shadow sigils,
+          some cracked through the middle as if struck by a weapon. Dark stains that could
+          be old blood or ritual pigment fill the carvings. Sacred bronze bowls at two corners,
+          one overturned. Cold ash scattered across the surface. The interactive element is a
+          central depression where a key artifact could be placed. Color palette: black stone,
+          dark ritual stains, corroded sacred bronze, cold grey ash.
         biome: SHADOW_DEPTHS
         materialTags: [stone, ash, sacred bronze]
         moodTags: [ritual, ominous]
         constraints:
-          - clear hotspot and base footprint
-          - readable at 48x48
+          - clear interactive hotspot (central depression) for gameplay interaction
+          - clear base footprint for game placement
+          - bold forms readable at small game scale
         geminiKeyRequired: true
       - id: phase2_p2c_icon_divine_intervention
         category: icon_skill
         visualKey: icon.skill.templar.divine_intervention
         outputName: phase2/p2-c/icon_skill_templar_divine_intervention.png
-        subject: radiant intervention sigil icon
+        subject: >
+          A radiant intervention sigil — a sacred geometric ward pattern activating with
+          protective energy. A bold circular outer ring with angular ray extensions, like
+          a stylized holy sun-seal. The center contains a simple cross-diamond shape. The
+          glow is warm pale gold-white, restrained and solemn, not blinding. The sigil
+          implies divine protection descending from above. No hands, no character — just
+          the sigil and its light. Color palette: warm pale gold-white glow, dark iron-grey
+          geometric structure, cool shadow around the edges.
         profession: templar
         moodTags: [holy, protective]
         constraints:
-          - centered icon silhouette occupying 60 to 75 percent of frame
+          - single focused subject centered in frame, 65-75% canvas occupancy
           - transparent background
+          - glow is warm and restrained, not blinding
+          - bold geometric form readable at small display sizes
         geminiKeyRequired: true
       - id: phase2_p2c_icon_shadowstep
         category: icon_skill
         visualKey: icon.skill.rogue.shadowstep
         outputName: phase2/p2-c/icon_skill_rogue_shadowstep.png
-        subject: shadowstep mobility icon with blade and dark arc
+        subject: >
+          A shadowstep mobility icon — a single dark blade leaving a shadow-trail arc as
+          it sweeps from one position to another. The blade is a short dark dagger with a
+          cold steel edge highlight. The shadow trail is a dark smoke-like arc connecting
+          two implied positions, fading at the departure point. The motion reads left-to-right.
+          No hand, no character — just the blade and its shadow movement. Color palette:
+          dark charcoal shadow trail, cold steel blade edge, near-black smoke wisps.
         profession: rogue
         moodTags: [swift, shadowed]
         constraints:
-          - centered icon silhouette occupying 60 to 75 percent of frame
+          - single focused subject centered in frame, 65-75% canvas occupancy
           - transparent background
+          - no hands, no character body parts
+          - bold simplified shapes readable at small display sizes
         geminiKeyRequired: true
       - id: phase2_p2c_icon_mark_prey
         category: icon_skill
         visualKey: icon.skill.rogue.mark_prey
         outputName: phase2/p2-c/icon_skill_rogue_mark_prey.png
-        subject: hunter mark icon over a prey silhouette
+        subject: >
+          A hunter's mark icon — a stylized crosshair or targeting reticle made of thin
+          dark lines, overlaid on a simplified prey silhouette (a generic beast or humanoid
+          outline, not a specific creature). The mark lines are sharp angular slashes forming
+          an X-pattern over the silhouette's center mass. A single red accent dot at the
+          intersection point. The silhouette is dark and featureless — just an outline target.
+          Color palette: dark charcoal crosshair lines, mid-grey target silhouette, single
+          warm red accent point.
         profession: rogue
         moodTags: [predatory, tactical]
         constraints:
-          - centered icon silhouette occupying 60 to 75 percent of frame
+          - single focused subject centered in frame, 65-75% canvas occupancy
           - transparent background
+          - bold geometric mark readable at small display sizes
+          - the target silhouette is abstract, not a specific creature
         geminiKeyRequired: true
       - id: phase2_p2c_icon_smite
         category: icon_skill
         visualKey: icon.skill.templar.smite
         outputName: phase2/p2-c/icon_skill_templar_smite.png
-        subject: holy smite icon with descending radiant blade
+        subject: >
+          A holy smite icon — a single radiant blade of light descending from above at a
+          steep angle, striking downward with divine force. The blade of light is a sharp
+          angular beam narrowing to a point, warm pale gold-white at the impact end. A burst
+          of small radiant fragments explodes at the strike point. The motion is purely
+          vertical-to-diagonal. No hand, no character — just the divine strike energy.
+          Color palette: warm pale gold-white radiant blade, cool shadow surround, bright
+          burst fragments at impact.
         profession: templar
         moodTags: [holy, punishing]
         constraints:
-          - centered icon silhouette occupying 60 to 75 percent of frame
+          - single focused subject centered in frame, 65-75% canvas occupancy
           - transparent background
+          - no hands, no character — just the divine energy strike
+          - bold shape readable at small display sizes
         geminiKeyRequired: true
       - id: phase2_p2c_icon_status_cursed
         category: icon_status
         visualKey: icon.status.cursed
         outputName: phase2/p2-c/icon_status_cursed.png
-        subject: cursed status icon with cracked sigil and shadow burn
+        subject: >
+          A cursed status icon — a cracked ritual sigil with shadow corruption. A geometric
+          ward symbol (hexagon or circle) that has been broken — visible fracture lines run
+          through it. Dark purple-black energy seeps from the cracks like smoke. The original
+          sigil lines are cold iron-grey, now darkened and corrupted. The overall impression
+          is of a protective ward that has been shattered and turned malevolent.
+          Color palette: cracked iron-grey sigil lines, dark purple-black shadow energy
+          in the fractures, near-black background negative space.
         moodTags: [cursed, ominous]
         constraints:
-          - centered icon silhouette occupying 60 to 75 percent of frame
+          - single symbolic shape centered in frame, 65-75% canvas occupancy
           - transparent background
+          - bold geometric form readable at very small display sizes
+          - shadow energy is restrained, not overwhelming
         geminiKeyRequired: true
       - id: phase2_p2c_icon_status_consecration
         category: icon_status
         visualKey: icon.status.consecration
         outputName: phase2/p2-c/icon_status_consecration.png
-        subject: consecration status icon with radiant ward circle
+        subject: >
+          A consecration status icon — a radiant ward circle viewed from above. A perfect
+          geometric ring with angular inner subdivisions forming a sacred pattern. The ring
+          glows with warm pale gold-white energy. The interior of the circle is lighter than
+          the exterior, implying a zone of holy protection. The design is architectural and
+          precise, like a cathedral floor medallion. Color palette: warm pale gold-white
+          ring and inner lines, cool shadow exterior, faint amber fill inside the circle.
         moodTags: [holy, protective]
         constraints:
-          - centered icon silhouette occupying 60 to 75 percent of frame
+          - single symbolic shape centered in frame, 65-75% canvas occupancy
           - transparent background
+          - bold geometric form readable at very small display sizes
+          - glow is warm and controlled
         geminiKeyRequired: true
       - id: phase2_p2c_icon_item_mana_potion
         category: icon_item
         visualKey: icon.item.mana_potion
         outputName: phase2/p2-c/icon_item_mana_potion.png
-        subject: mana potion icon in arcane blue glass vial
+        subject: >
+          A mana potion in an arcane glass vial — similar form to the healing potion but
+          with distinct color. The glass has a slight blue tint from mineral content. The
+          liquid inside is a deep muted arcane blue, not neon. Faint luminous motes float
+          inside the liquid — tiny points of light suspended in the fluid. Cork stopper
+          sealed with a drop of dark wax. Leather cord wrap at the neck. Slight 3/4 angle.
+          Color palette: deep muted blue liquid, pale blue-tinted glass, faint luminous
+          white motes, brown cork, dark wax seal.
         moodTags: [arcane, restorative]
         constraints:
-          - centered icon silhouette occupying 60 to 75 percent of frame
+          - single object centered in frame, 65-75% canvas occupancy
           - transparent background
+          - distinct from healing potion by color — blue vs red
+          - readable shape at small display sizes
         geminiKeyRequired: true
       - id: phase2_p2c_icon_quest_seal_key
         category: icon_quest
         visualKey: icon.quest.seal_key
         outputName: phase2/p2-c/icon_quest_seal_key.png
-        subject: ritual seal key icon with holy and shadow motifs
+        subject: >
+          A ritual seal key — a heavy ceremonial key-artifact that combines holy and shadow
+          motifs. The bow (handle) is shaped as a broken holy seal with angular fragments.
+          The shaft is dark iron inscribed with faint ritual lines. The bit (teeth) is formed
+          of interlocking sacred bronze and dark iron elements. One side of the key carries
+          holy warmth (faint gold-amber), the other carries shadow cold (faint purple-grey)
+          — the duality is subtle, shown in the metal tones not in magical glow. This is an
+          object of power and narrative weight. Color palette: dark iron shaft, sacred bronze
+          and iron bit, faint warm gold-amber on one side, faint cool purple-grey on the other.
         moodTags: [quest, ritual]
         constraints:
-          - centered icon silhouette occupying 60 to 75 percent of frame
+          - single object centered in frame, 65-75% canvas occupancy
           - transparent background
+          - object reads as important, ceremonial, and ancient
+          - bold shape readable at small display sizes
         geminiKeyRequired: true

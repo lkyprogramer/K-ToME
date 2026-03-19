@@ -21,6 +21,8 @@ import com.ktome.core.random.SplitMix64RandomSource
 import com.ktome.core.save.InvalidSaveException
 import com.ktome.core.save.SaveManager
 import com.ktome.core.save.PointSnapshot
+import com.ktome.core.snapshot.RenderLogEventSnapshot
+import com.ktome.core.snapshot.RenderTextTokenSnapshot
 import com.ktome.game.data.DataLoader
 import com.ktome.game.data.schema.SchemaCatalog
 import com.ktome.game.i18n.GameLocale
@@ -76,7 +78,7 @@ object GameModule {
             saveManager = saveManager,
             dungeonManager = dungeonManager,
             playerSnapshot = startingPlayer,
-            initialMessageLog = listOf(content.localizer.text("log.session.enter_dungeon")),
+            initialMessageLog = listOf(RenderLogEventSnapshot(RenderTextTokenSnapshot("log.session.enter_dungeon"))),
         )
     }
 
@@ -131,7 +133,7 @@ object GameModule {
             saveManager = saveManager,
             dungeonManager = dungeonManager,
             playerSnapshot = restored.player,
-            initialMessageLog = listOf(content.localizer.text("log.session.loaded")),
+            initialMessageLog = listOf(RenderLogEventSnapshot(RenderTextTokenSnapshot("log.session.loaded"))),
             turnCount = restored.turnCount,
             combatRandomSource =
                 restored.combatRandomState?.let(SplitMix64RandomSource::fromState)

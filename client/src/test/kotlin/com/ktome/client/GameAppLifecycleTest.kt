@@ -11,6 +11,23 @@ import com.ktome.core.save.AssetVersionGate
 import com.ktome.core.save.SaveManager
 import com.ktome.core.save.SaveSnapshot
 import com.ktome.core.save.StairSnapshot
+import com.ktome.client.assets.AudioManifest
+import com.ktome.client.assets.AudioManifestEntry
+import com.ktome.client.assets.ManifestPrefixRule
+import com.ktome.client.assets.VisualManifestEntry
+import com.ktome.client.assets.VisualManifest
+import com.ktome.core.snapshot.ActorRenderSnapshot
+import com.ktome.core.snapshot.ActorRoleKindSnapshot
+import com.ktome.core.snapshot.CellVisibilitySnapshot
+import com.ktome.core.snapshot.GridPointSnapshot
+import com.ktome.core.snapshot.MapCellSnapshot
+import com.ktome.core.snapshot.OverlayRenderSnapshot
+import com.ktome.core.snapshot.OverlayShapeSnapshot
+import com.ktome.core.snapshot.PlayerStatusSnapshot
+import com.ktome.core.snapshot.PropRenderSnapshot
+import com.ktome.core.snapshot.RenderMetadataSnapshot
+import com.ktome.core.snapshot.RenderSnapshot
+import com.ktome.core.snapshot.RenderUiStateSnapshot
 import java.nio.file.Files
 import java.nio.file.Path
 import kotlin.io.path.exists
@@ -83,6 +100,8 @@ class GameAppLifecycleTest {
                 assetVersionProvider = {
                     AssetVersionContract.CURRENT.copy(visualManifestVersion = AssetVersionContract.CURRENT.visualManifestVersion + 1)
                 },
+                visualManifestProvider = { sampleVisualManifest() },
+                audioManifestProvider = { sampleAudioManifest() },
                 assetVersionGate = AssetVersionGate(),
             )
 
@@ -98,9 +117,63 @@ class GameAppLifecycleTest {
                 assetVersionProvider = {
                     throw AssetVersionLoadException("manifest missing")
                 },
+                visualManifestProvider = { sampleVisualManifest() },
+                audioManifestProvider = { sampleAudioManifest() },
             )
 
         assertEquals("manifest missing", coordinator.noticeOrNull())
+    }
+
+    @Test
+    fun `asset contract coordinator surfaces invalid manifest notice`() {
+        val coordinator =
+            AssetContractCoordinator(
+                assetVersionProvider = { AssetVersionContract.CURRENT },
+                visualManifestProvider = {
+                    sampleVisualManifest().copy(
+                        entries =
+                            listOf(
+                                sampleVisualManifest().entries.first(),
+                                sampleVisualManifest().entries.first(),
+                            ),
+                    )
+                },
+                audioManifestProvider = { sampleAudioManifest() },
+            )
+
+        assertEquals("Client asset bundle is invalid.", coordinator.noticeOrNull())
+    }
+
+    @Test
+    fun `asset contract coordinator tracks bootstrap session and warm cache phases`() {
+        val coordinator =
+            AssetContractCoordinator(
+                assetVersionProvider = { AssetVersionContract.CURRENT },
+                visualManifestProvider = { phase2VisualManifest() },
+                audioManifestProvider = { phase2AudioManifest() },
+            )
+
+        assertNull(coordinator.noticeOrNull())
+        val bootstrapState = requireNotNull(coordinator.loadStateOrNull())
+        assertTrue(bootstrapState.bootstrapLoaded)
+        assertTrue("fonts/ktome-ui-subset.otf" in requireNotNull(bootstrapState.bootstrapDescriptor).fontResources)
+        assertTrue("audio.music.menu" in requireNotNull(bootstrapState.bootstrapDescriptor).menuAudioKeys)
+
+        coordinator.prepareSession(sampleRenderSnapshot())
+        val sessionState = requireNotNull(coordinator.loadStateOrNull())
+        assertEquals("shattered_outpost", sessionState.sessionZoneId)
+        assertEquals("tileset.ruins", requireNotNull(sessionState.sessionDescriptor).tilesetKey)
+        assertTrue("ambient.shattered_outpost" in requireNotNull(sessionState.sessionDescriptor).ambientAudioKeys)
+        assertTrue("tileset.ruins.ground_01" in requireNotNull(sessionState.sessionDescriptor).terrainVisualKeys)
+        assertTrue("tileset.ruins.ground_01" in sessionState.sessionVisualKeys)
+        assertTrue("ambient.shattered_outpost" in sessionState.sessionAudioKeys)
+        assertTrue(sessionState.warmVisualKeys.isEmpty())
+
+        coordinator.warmCache(sampleRenderSnapshot())
+        val warmState = requireNotNull(coordinator.loadStateOrNull())
+        assertTrue("vfx.boss.warning.sigil_01" in requireNotNull(warmState.warmCacheDescriptor).highValueVfxKeys)
+        assertTrue("vfx.boss.warning.sigil_01" in warmState.warmVisualKeys)
+        assertTrue("audio.boss.cultist.dungeon_lord" in warmState.warmAudioKeys)
     }
 }
 
@@ -161,4 +234,156 @@ private fun sizedMap(
     MapSnapshot(
         rows = List(height) { ".".repeat(width) },
         playerStart = playerStart,
+    )
+
+private fun sampleVisualManifest(): VisualManifest =
+    VisualManifest(
+        manifestVersion = 1,
+        styleTag = "ktome-middle-fantasy-painterly-tile-v1",
+        fallbackKey = "missing_visual",
+        entries =
+            listOf(
+                VisualManifestEntry(
+                    key = "missing_visual",
+                    category = "debug",
+                    rawOutputPath = "debug/missing_visual.png",
+                    footprint = "ui",
+                ),
+            ),
+        prefixRules = listOf(ManifestPrefixRule(prefix = "icon.", targetKey = "missing_visual")),
+    )
+
+private fun sampleAudioManifest(): AudioManifest =
+    AudioManifest(
+        manifestVersion = 1,
+        fallbackKey = "audio.fallback.silence",
+        entries =
+            listOf(
+                AudioManifestEntry(
+                    key = "audio.fallback.silence",
+                    cueFamily = "silence",
+                    eventId = "silence.default",
+                    sourcePath = "audio/fallback/silence.ogg",
+                ),
+            ),
+    )
+
+private fun phase2VisualManifest(): VisualManifest =
+    VisualManifest(
+        manifestVersion = 1,
+        styleTag = "ktome-middle-fantasy-painterly-tile-v1",
+        fallbackKey = "missing_visual",
+        entries =
+            listOf(
+                VisualManifestEntry(key = "missing_visual", category = "debug", rawOutputPath = "debug/missing_visual.png", footprint = "ui"),
+                VisualManifestEntry(key = "zone.shattered_outpost.visual", category = "debug", rawOutputPath = "debug/missing_visual.png", footprint = "ui"),
+                VisualManifestEntry(key = "tileset.ruins.ground_01", category = "tile_ground", rawOutputPath = "phase2/p2-b/tileset_ruins_ground_01.png", footprint = "1x1"),
+                VisualManifestEntry(key = "prop.stairs.down", category = "prop_interactable", rawOutputPath = "debug/prop_stairs_down.png", footprint = "1x1"),
+                VisualManifestEntry(key = "actor.vanguard", category = "actor_sprite", rawOutputPath = "phase2/p2-b/actor_vanguard.png", footprint = "1x1"),
+                VisualManifestEntry(key = "vfx.boss.warning.sigil_01", category = "vfx_plate", rawOutputPath = "phase2/p2-b/vfx_boss_warning_sigil_01.png", footprint = "overlay"),
+            ),
+        prefixRules = listOf(ManifestPrefixRule(prefix = "icon.", targetKey = "missing_visual")),
+    )
+
+private fun phase2AudioManifest(): AudioManifest =
+    AudioManifest(
+        manifestVersion = 1,
+        fallbackKey = "audio.fallback.silence",
+        entries =
+            listOf(
+                AudioManifestEntry(key = "audio.fallback.silence", cueFamily = "silence", eventId = "silence.default", sourcePath = "audio/fallback/silence.ogg"),
+                AudioManifestEntry(key = "audio.music.menu", cueFamily = "music", eventId = "music.menu", sourcePath = "audio/fallback/silence.ogg"),
+                AudioManifestEntry(key = "audio.zone.shattered_outpost", cueFamily = "ambience", eventId = "audio.zone.shattered_outpost", sourcePath = "audio/fallback/silence.ogg"),
+                AudioManifestEntry(key = "ambient.shattered_outpost", cueFamily = "ambience", eventId = "ambient.shattered_outpost", sourcePath = "audio/fallback/silence.ogg"),
+                AudioManifestEntry(key = "audio.interactable.stairs", cueFamily = "interactable", eventId = "interactable.stairs", sourcePath = "audio/fallback/silence.ogg"),
+                AudioManifestEntry(key = "audio.profession.vanguard", cueFamily = "profession", eventId = "profession.vanguard", sourcePath = "audio/fallback/silence.ogg"),
+                AudioManifestEntry(key = "audio.boss.cultist.dungeon_lord", cueFamily = "boss", eventId = "audio.boss.cultist.dungeon_lord", sourcePath = "audio/fallback/silence.ogg"),
+            ),
+    )
+
+private fun sampleRenderSnapshot(): RenderSnapshot =
+    RenderSnapshot(
+        metadata =
+            RenderMetadataSnapshot(
+                revision = 1,
+                zoneId = "shattered_outpost",
+                currentFloor = 1,
+                maxFloor = 2,
+                width = 2,
+                height = 2,
+                playerX = 0,
+                playerY = 0,
+                zoneVisualKey = "zone.shattered_outpost.visual",
+                zoneAudioProfile = "audio.zone.shattered_outpost",
+                tilesetKey = "tileset.ruins",
+                ambientProfile = "ambient.shattered_outpost",
+            ),
+        mapCells =
+            listOf(
+                MapCellSnapshot(0, 0, CellVisibilitySnapshot.VISIBLE, terrainTypeId = "floor", terrainVisualKey = "tileset.ruins.ground_01"),
+                MapCellSnapshot(1, 0, CellVisibilitySnapshot.VISIBLE, terrainTypeId = "floor", terrainVisualKey = "tileset.ruins.ground_01", stairDirectionId = "DOWN"),
+            ),
+        props =
+            listOf(
+                PropRenderSnapshot(
+                    id = "stairs:down:9",
+                    x = 1,
+                    y = 0,
+                    propTypeId = "stairs",
+                    stairDirectionId = "DOWN",
+                    visualKey = "prop.stairs.down",
+                    audioProfile = "audio.interactable.stairs",
+                ),
+            ),
+        actors =
+            listOf(
+                ActorRenderSnapshot(
+                    entityId = 1,
+                    x = 0,
+                    y = 0,
+                    visualKey = "actor.vanguard",
+                    audioProfile = "audio.profession.vanguard",
+                    nameKey = "actor.player.name",
+                    isPlayer = true,
+                    roleKind = ActorRoleKindSnapshot.PLAYER,
+                ),
+            ),
+        overlays =
+            listOf(
+                OverlayRenderSnapshot(
+                    id = "boss-warning:7",
+                    visualKey = "vfx.boss.warning.sigil_01",
+                    audioProfile = "audio.boss.cultist.dungeon_lord",
+                    previewTurns = 1,
+                    dangerLevel = 3,
+                    shape = OverlayShapeSnapshot.SINGLE_TILE,
+                    sourceAbilityId = "dungeon_lord_encounter",
+                    cells = listOf(GridPointSnapshot(1, 0)),
+                ),
+            ),
+        uiState =
+            RenderUiStateSnapshot(
+                playerStatus =
+                    PlayerStatusSnapshot(
+                        currentHp = 24,
+                        maxHp = 24,
+                        currentResource = 12,
+                        maxResource = 12,
+                        resourceLabelKey = "ui.hud.stamina.short",
+                        level = 1,
+                        currentExperience = 0,
+                        nextLevelRequirement = 12,
+                        statPoints = 0,
+                        talentPoints = 0,
+                        attack = 7,
+                        defense = 5,
+                        accuracy = 6,
+                        evasion = 4,
+                        speed = 100,
+                    ),
+                equipment = emptyList(),
+                talents = emptyList(),
+                inventory = emptyList(),
+                targetablePositions = emptyList(),
+            ),
     )
