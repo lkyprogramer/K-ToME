@@ -174,9 +174,9 @@ class AudioRouter(
         current: RenderSnapshot,
     ) {
         transitionBackdrop(
-            current.metadata.ambientProfile
+            current.metadata.zoneAudioProfile
                 .takeUnless(String::isBlank)
-                ?: current.metadata.zoneAudioProfile.takeUnless(String::isBlank),
+                ?: current.metadata.ambientProfile.takeUnless(String::isBlank),
         )
         val previousOverlayIds = previous?.overlays?.mapTo(hashSetOf(), OverlayRenderSnapshot::id).orEmpty()
         current.overlays
@@ -188,7 +188,8 @@ class AudioRouter(
     }
 
     fun onCommandResolved(
-        snapshot: RenderSnapshot,
+        previousSnapshot: RenderSnapshot,
+        currentSnapshot: RenderSnapshot,
         command: PlayerCommand,
         consumed: Boolean,
     ) {
@@ -207,8 +208,8 @@ class AudioRouter(
         }
 
         when (command) {
-            is PlayerCommand.Move -> play("audio.footstep.default")
-            is PlayerCommand.UseTalent -> play(talentCueKey(snapshot, command.slot))
+            is PlayerCommand.Move -> play(moveCueKey(previousSnapshot, currentSnapshot))
+            is PlayerCommand.UseTalent -> play(talentCueKey(currentSnapshot, command.slot))
             is PlayerCommand.ActivateInventoryItem,
             PlayerCommand.PickUp,
             PlayerCommand.Ascend,
@@ -237,6 +238,19 @@ class AudioRouter(
             }
         return talent?.audioProfile ?: fallback
     }
+
+    private fun moveCueKey(
+        previousSnapshot: RenderSnapshot,
+        currentSnapshot: RenderSnapshot,
+    ): String =
+        if (
+            previousSnapshot.metadata.playerX != currentSnapshot.metadata.playerX ||
+            previousSnapshot.metadata.playerY != currentSnapshot.metadata.playerY
+        ) {
+            "audio.footstep.default"
+        } else {
+            "audio.melee.light"
+        }
 
     private fun play(key: String) {
         sink.emit(resolveExact(key))

@@ -40,7 +40,7 @@ class AudioRouterTest {
         router.onSnapshotUpdated(null, snapshot)
         router.onSnapshotUpdated(snapshot, snapshot)
 
-        assertEquals(listOf("audio.music.menu", "ambient.shattered_outpost"), sink.transitions)
+        assertEquals(listOf("audio.music.menu", "audio.zone.shattered_outpost"), sink.transitions)
     }
 
     @Test
@@ -68,19 +68,29 @@ class AudioRouterTest {
     }
 
     @Test
-    fun `command feedback prefers talent audio and falls back to spell cue`() {
+    fun `command feedback distinguishes movement from bump attacks and prefers talent audio`() {
         val sink = RecordingAudioCueSink()
         val router = AudioRouter(AudioManifestResolver(AudioManifestResourceLoader.load()), sink)
-        val snapshot = sampleSnapshot()
+        val movedSnapshot =
+            sampleSnapshot().copy(
+                metadata =
+                    sampleSnapshot().metadata.copy(
+                        playerX = 1,
+                        playerY = 0,
+                    ),
+            )
+        val stationarySnapshot = sampleSnapshot()
 
-        router.onCommandResolved(snapshot, PlayerCommand.Move(com.ktome.core.map.Point(1, 0)), consumed = true)
-        router.onCommandResolved(snapshot, PlayerCommand.UseTalent(slot = 1), consumed = true)
-        router.onCommandResolved(snapshot, PlayerCommand.UseTalent(slot = 3), consumed = true)
-        router.onCommandResolved(snapshot, PlayerCommand.Descend, consumed = false)
+        router.onCommandResolved(sampleSnapshot(), movedSnapshot, PlayerCommand.Move(com.ktome.core.map.Point(1, 0)), consumed = true)
+        router.onCommandResolved(sampleSnapshot(), stationarySnapshot, PlayerCommand.Move(com.ktome.core.map.Point(1, 0)), consumed = true)
+        router.onCommandResolved(sampleSnapshot(), stationarySnapshot, PlayerCommand.UseTalent(slot = 1), consumed = true)
+        router.onCommandResolved(sampleSnapshot(), stationarySnapshot, PlayerCommand.UseTalent(slot = 3), consumed = true)
+        router.onCommandResolved(sampleSnapshot(), stationarySnapshot, PlayerCommand.Descend, consumed = false)
 
         assertEquals(
             listOf(
                 "audio.footstep.default",
+                "audio.melee.light",
                 "audio.talent.power_strike",
                 "audio.spell.basic",
                 "audio.ui.cancel",

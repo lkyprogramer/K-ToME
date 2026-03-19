@@ -9,7 +9,8 @@ interface CommandSource {
     fun nextCommand(snapshot: RenderSnapshot): PlayerCommand? = null
 
     fun onCommandResult(
-        snapshot: RenderSnapshot,
+        previousSnapshot: RenderSnapshot,
+        currentSnapshot: RenderSnapshot,
         command: PlayerCommand,
         consumed: Boolean,
     ) {}
@@ -45,12 +46,13 @@ class InputHandlerCommandSource(
     }
 
     override fun onCommandResult(
-        snapshot: RenderSnapshot,
+        previousSnapshot: RenderSnapshot,
+        currentSnapshot: RenderSnapshot,
         command: PlayerCommand,
         consumed: Boolean,
     ) {
-        inputHandler.onCommandResult(snapshot, command, consumed)
-        audioRouter?.onCommandResolved(snapshot, command, consumed)
+        inputHandler.onCommandResult(currentSnapshot, command, consumed)
+        audioRouter?.onCommandResolved(previousSnapshot, currentSnapshot, command, consumed)
     }
 
     override fun overlayState(): OverlayState = inputHandler.overlayState()

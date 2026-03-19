@@ -212,7 +212,7 @@ class ClientSmokeHarnessTest {
 
                 assertRenderPath(capture, "Audio-enabled render smoke")
                 assertTrue(
-                    audioHarness.backgroundTransitions.containsAll(listOf("audio.music.menu", "ambient.shattered_outpost")),
+                    audioHarness.backgroundTransitions.containsAll(listOf("audio.music.menu", "audio.zone.shattered_outpost")),
                     "Expected menu and zone background tracks, got ${audioHarness.backgroundTransitions}.",
                 )
                 assertTrue(
@@ -268,7 +268,7 @@ class ClientSmokeHarnessTest {
                     if (hasBossWarning && hasTelegraph) {
                         app.render()
                         assertTrue(
-                            audioHarness.backgroundTransitions.contains("ambient.grey_gate_depths"),
+                            audioHarness.backgroundTransitions.contains("audio.zone.grey_gate_depths"),
                             "Expected grey gate ambience, got ${audioHarness.backgroundTransitions}.",
                         )
                         assertTrue(
@@ -851,7 +851,12 @@ private class BotCommandSource(
         return command
     }
 
-    override fun onCommandResult(snapshot: RenderSnapshot, command: PlayerCommand, consumed: Boolean) {
+    override fun onCommandResult(
+        previousSnapshot: RenderSnapshot,
+        currentSnapshot: RenderSnapshot,
+        command: PlayerCommand,
+        consumed: Boolean,
+    ) {
         if (consumed) {
             consumedCommands += 1
         }
@@ -900,11 +905,16 @@ private class SmokeCommandSource(
         return botSource.nextCommand(snapshot)
     }
 
-    override fun onCommandResult(snapshot: RenderSnapshot, command: PlayerCommand, consumed: Boolean) {
+    override fun onCommandResult(
+        previousSnapshot: RenderSnapshot,
+        currentSnapshot: RenderSnapshot,
+        command: PlayerCommand,
+        consumed: Boolean,
+    ) {
         if (lastUiCommand) {
-            uiSource.onCommandResult(snapshot, command, consumed)
+            uiSource.onCommandResult(previousSnapshot, currentSnapshot, command, consumed)
         } else {
-            botSource.onCommandResult(snapshot, command, consumed)
+            botSource.onCommandResult(previousSnapshot, currentSnapshot, command, consumed)
         }
     }
 

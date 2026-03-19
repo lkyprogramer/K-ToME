@@ -51,10 +51,11 @@ class FoundationGameScreen(
 
         syncViewport(snapshot)
         commandSource.nextCommand(snapshot)?.let { command ->
+            val previousSnapshot = snapshot
             val consumed = session.perform(command)
             snapshot = session.renderSnapshot()
             syncViewport(snapshot)
-            commandSource.onCommandResult(snapshot, command, consumed)
+            commandSource.onCommandResult(previousSnapshot, snapshot, command, consumed)
         }
 
         if (session.runOutcome().isTerminal) {
