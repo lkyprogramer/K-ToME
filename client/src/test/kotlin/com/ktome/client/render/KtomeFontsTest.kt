@@ -30,7 +30,7 @@ class KtomeFontsTest {
     }
 
     private fun <T> withHeadlessGdx(block: () -> T): T {
-        val backend = HeadlessApplication(object : ApplicationAdapter() {}, HeadlessApplicationConfiguration())
+        val backend = HeadlessApplication(NoOpApplicationAdapter, HeadlessApplicationConfiguration())
         val noOpGl =
             Proxy.newProxyInstance(
                 GL20::class.java.classLoader,
@@ -57,3 +57,5 @@ class KtomeFontsTest {
         }
     }
 }
+
+private object NoOpApplicationAdapter : ApplicationAdapter()

@@ -6,6 +6,7 @@ import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Application
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3ApplicationConfiguration
 import com.badlogic.gdx.graphics.Pixmap
 import com.badlogic.gdx.graphics.glutils.HdpiMode
+import com.badlogic.gdx.utils.GdxRuntimeException
 import com.badlogic.gdx.utils.ScreenUtils
 import com.ktome.client.GameApp
 import com.ktome.client.input.CommandSource
@@ -25,6 +26,7 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
+import org.opentest4j.TestAbortedException
 
 @Tag("goldenScreenshot")
 class GoldenScreenshotHarnessTest {
@@ -203,19 +205,42 @@ class GoldenScreenshotHarnessTest {
                 setPauseWhenMinimized(false)
             }
 
-        Lwjgl3Application(
-            object : ApplicationAdapter() {
-                override fun create() {
-                    result = runCatching(block)
-                    Gdx.app.exit()
-                }
-            },
-            configuration,
-        )
+        try {
+            Lwjgl3Application(
+                object : ApplicationAdapter() {
+                    override fun create() {
+                        result = runCatching(block)
+                        Gdx.app.exit()
+                    }
+                },
+                configuration,
+            )
+        } catch (exception: GdxRuntimeException) {
+            if (isUnavailableLwjglBackend(exception)) {
+                throw TestAbortedException(
+                    "Skipping LWJGL3 screenshot golden because the window backend is unavailable in this environment.",
+                    exception,
+                )
+            }
+            throw exception
+        }
 
         return requireNotNull(result) {
             "LWJGL3 golden capture did not produce a result."
         }.getOrThrow()
+    }
+
+    private fun isUnavailableLwjglBackend(exception: GdxRuntimeException): Boolean {
+        val messages =
+            generateSequence<Throwable>(exception) { current -> current.cause }
+                .mapNotNull(Throwable::message)
+                .joinToString(separator = "\n")
+        return listOf(
+            "Unable to initialize GLFW",
+            "Couldn't create window",
+            "Unable to initialize OpenAL",
+            "Audio device",
+        ).any(messages::contains)
     }
 }
 
