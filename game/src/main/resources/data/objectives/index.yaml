@@ -1,0 +1,25 @@
+objectiveSets:
+  - id: shattered_outpost_breach
+    nameKey: objective.shattered_outpost_breach.name
+    descKey: objective.shattered_outpost_breach.desc
+    schemaVersion: 2
+    tags: [objective, official_slice]
+    interactables: [supply_crate, alarm_bonfire, armory_gate]
+    placements:
+      - interactableId: supply_crate
+        floor: 1
+        anchor: player_start
+        offset: { x: 1, y: 0 }
+      - interactableId: alarm_bonfire
+        floor: 1
+        anchor: room_center
+        offset: { x: 0, y: 0 }
+      - interactableId: armory_gate
+        floor: 2
+        anchor: boss_entry
+        offset: { x: 0, y: 0 }
+      - interactableId: supply_crate
+        floor: 2
+        anchor: stairs_up
+        offset: { x: 1, y: 0 }
+    completionRule: defeat_zone_boss

@@ -10,6 +10,7 @@ class ZoneSchemaTest {
         val catalog = DataLoader().loadSchemaCatalog()
         val monsterIds = catalog.monsters.map { it.id }.toSet()
         val bossIds = catalog.bossEncounters.map { it.id }.toSet()
+        val objectiveIds = catalog.objectiveSets.map { it.id }.toSet()
         val tilesetIds = catalog.tilesets.map { it.id }.toSet()
         val ambientIds = catalog.ambientProfiles.map { it.id }.toSet()
 
@@ -22,6 +23,7 @@ class ZoneSchemaTest {
             zone.monsterPools.forEach { monsterId -> assertTrue(monsterIds.contains(monsterId), "Unknown monster pool member $monsterId") }
             zone.elitePools.forEach { monsterId -> assertTrue(monsterIds.contains(monsterId), "Unknown elite pool member $monsterId") }
             zone.bossEncounterId?.let { bossId -> assertTrue(bossIds.contains(bossId), "Unknown boss encounter $bossId") }
+            zone.objectiveSetId?.let { objectiveId -> assertTrue(objectiveIds.contains(objectiveId), "Unknown objective set $objectiveId") }
         }
     }
 }

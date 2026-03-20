@@ -44,6 +44,10 @@ enum class StatusEffectType {
     ARMOR_BREAK,
     WAR_CRY_BUFF,
     WAR_CRY_DEBUFF,
+    GUARD_STANCE_BUFF,
+    ARCANE_SHIELD_BUFF,
+    UNYIELDING_BUFF,
+    MANA_SURGE_BUFF,
 }
 
 data class ActiveEffect(

@@ -1,0 +1,69 @@
+styleTag: ktome-middle-fantasy-painterly-tile-v1
+artStyleBible: docs/2026-03-13-art-style-bible.md
+stylePrompt: >
+  Classical high fantasy in a Middle-earth inspired mode. A world soaked in age,
+  iron, moss, flame, and old oaths. Weathered stone, forged iron, old timber,
+  cracked leather, coarse wool — every surface shows the weight of centuries.
+
+  Rendering style: painterly concept-art finish with visible brushwork and clear
+  material differentiation. NOT photorealistic, NOT pixel art, NOT cel-shaded,
+  NOT glossy mobile-game aesthetic. Never anime. Never sci-fi.
+defaults:
+  imageAspectRatio: "1:1"
+  imageSize: "1K"
+  negativeConstraints:
+    - no modern clothing
+    - no firearms
+    - no sci-fi materials
+    - no anime proportions
+    - no floating text, watermark or logo
+    - no floating text, watermark, logo, or UI elements baked into image
+    - no busy detailed background — transparent or clean only
+    - no recognizable franchise emblems
+    - no bloom-heavy magical glow or oversaturated light effects
+    - no glossy mobile-game icon aesthetic
+  categoryPromptTemplates:
+    icon_quest: >
+      Game UI icon on transparent background.
+      Single centered subject with bold silhouette and clean readability at small size.
+    icon: >
+      Game icon on transparent background.
+      Single centered subject with bold silhouette, painterly rendering and high readability at small size.
+    icon_skill: >
+      Game skill ability icon on transparent background.
+      SINGLE focused subject centered in frame with strong small-size readability.
+phase2AssetGates:
+  PR06-Trace-Backfill:
+    description: Backfill missing Gemini generation trace for PR-06 formal slice assets.
+    assets:
+      - id: pr06_trace_icon_monster_bandit_captain
+        category: icon_quest
+        visualKey: icon.monster.bandit.captain
+        outputName: phase2/p2-b/icon_monster_bandit_captain.png
+        subject: >
+          A formal monster icon for the bandit captain. Head-and-shoulders frontier bandit commander with
+          scarred face, weathered kettle helm, trimmed beard, and rust-stained iron collar. The icon should
+          read as a dangerous human boss, disciplined and brutal rather than feral.
+        materialTags: [iron, leather, cloth]
+        moodTags: [commanding, hostile]
+        constraints:
+          - centered portrait-style monster icon on transparent background
+          - strong facial silhouette and readable boss identity at small size
+          - restrained palette, no cartoon exaggeration
+        geminiKeyRequired: true
+      - id: pr06_trace_talent_arcanist_flame_wall
+        category: icon_skill
+        visualKey: talent.arcanist.flame_wall.visual
+        outputName: phase2/p2-b/talent_arcanist_flame_wall.png
+        profession: arcanist
+        subject: >
+          Arcanist flame wall ability icon. A disciplined vertical barrier of fire with three to four dense
+          tongues of orange-red flame rising from a rune-scored ground seam. The wall should feel controlled,
+          magical, and battlefield-oriented rather than like a chaotic explosion.
+        materialTags: [fire, rune, ash]
+        moodTags: [arcane, defensive]
+        constraints:
+          - centered UI-ready icon on transparent background
+          - clear vertical wall silhouette, not a fireball or cone
+          - strong readability at hotbar size with restrained glow
+        geminiKeyRequired: true

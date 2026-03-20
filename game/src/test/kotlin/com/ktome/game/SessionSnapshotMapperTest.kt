@@ -80,6 +80,7 @@ class SessionSnapshotMapperTest {
                             exploredTiles = linkedSetOf(Point(3, 1), Point(1, 0), Point(1, 1)),
                             entities =
                                 mutableListOf(
+                                    EntitySnapshot(id = 11, position = PointSnapshot(3, 3), interactableId = "supply_crate"),
                                     EntitySnapshot(id = 9, position = PointSnapshot(4, 4)),
                                     EntitySnapshot(id = 7, position = PointSnapshot(2, 2)),
                                 ),
@@ -110,7 +111,8 @@ class SessionSnapshotMapperTest {
         assertEquals(listOf("alpha", "zeta"), snapshot.player.entity.effects?.map(ActiveEffectSnapshot::id))
         assertEquals(listOf("alpha", "zeta"), snapshot.player.carriedEntities.first().itemState?.affixIds)
         assertEquals(listOf(PointSnapshot(1, 0), PointSnapshot(1, 1), PointSnapshot(3, 1)), snapshot.floors.single().exploredTiles)
-        assertEquals(listOf(7, 9), snapshot.floors.single().entities.map(EntitySnapshot::id))
+        assertEquals(listOf(7, 9, 11), snapshot.floors.single().entities.map(EntitySnapshot::id))
+        assertEquals("supply_crate", snapshot.floors.single().entities.last().interactableId)
     }
 
     @Test

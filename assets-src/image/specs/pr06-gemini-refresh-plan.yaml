@@ -1,0 +1,201 @@
+styleTag: ktome-middle-fantasy-painterly-tile-v1
+artStyleBible: docs/2026-03-13-art-style-bible.md
+stylePrompt: >
+  Classical high fantasy in a Middle-earth inspired mode. A world soaked in age,
+  iron, moss, flame, and old oaths. Weathered stone, forged iron, old timber,
+  cracked leather, coarse wool — every surface shows the weight of centuries.
+
+  Rendering style: painterly concept-art finish with visible brushwork and clear
+  material differentiation. NOT photorealistic, NOT pixel art, NOT cel-shaded,
+  NOT glossy mobile-game aesthetic. Slight impasto texture on metals and stone;
+  soft dry-brush edges on cloth and organic surfaces. Never anime. Never sci-fi.
+
+  Color palette: dark foundation of charcoal black, iron blue-grey, damp stone
+  green, deep brown wood. Warm accents of torch orange, molten-iron red, dry
+  leather brown, old gold — used sparingly for focal points. Cold light accents
+  of moonlight blue, frost cyan, lightning white-blue, faint holy pale-gold —
+  reserved for magic and interaction cues. Overall low saturation; high brightness
+  only on interactive elements, magic cores, boss telegraphs, and key pickups.
+
+  Lighting: low-key illumination. Primary light from upper-left at roughly 45
+  degrees. Warm firelight and cool ambient fill coexist. Shadows are clear but
+  not crushed to pure black. Rim light is allowed on character shoulder-lines,
+  weapon edges, and interactable prop edges — but always restrained. No bloom-heavy
+  haze, no full-screen volumetric light, no dreamy ethereal glow.
+defaults:
+  imageAspectRatio: "1:1"
+  imageSize: "1K"
+  negativeConstraints:
+    - no modern clothing
+    - no firearms
+    - no sci-fi materials
+    - no anime proportions
+    - no floating text, watermark or logo
+    - no floating text, watermark, logo, or UI elements baked into image
+    - no busy detailed background — transparent or clean only
+    - no recognizable franchise emblems
+    - no bloom-heavy magical glow or oversaturated light effects
+    - no glossy mobile-game icon aesthetic
+  categoryPromptTemplates:
+    icon_item: >
+      Game item icon on transparent background.
+      Single object centered in frame, 65-75% canvas occupancy, slight 3/4 angle.
+      Painterly rendering with material texture (glass, metal, leather, wood).
+      Object shows age and use — no pristine surfaces. Muted palette with one color accent.
+    icon_skill: >
+      Game skill ability icon on transparent background.
+      SINGLE focused subject centered in frame, occupying 65-75% of the canvas.
+      Bold simplified shapes with thick dark outlines for readability at small sizes.
+      Painterly rendering but with iconic clarity — this is a UI element, not a scene illustration.
+      NO hands, NO arms, NO character parts unless the skill IS about the body part.
+      Restrained color: 1-2 dominant hues plus neutral darks. No excessive glow or bloom.
+phase2AssetGates:
+  PR06-Refresh:
+    description: Rebuild PR-06 starter-kit and vanguard visual assets with Gemini.
+    assets:
+      - id: pr06_item_short_sword
+        category: icon_item
+        visualKey: item.short_sword.icon
+        outputName: phase2/p2-b/icon_item_short_sword.png
+        subject: >
+          A worn frontier short sword for a Vanguard starter kit. Broad leaf-shaped steel blade,
+          practical iron crossguard, dark leather grip, and a solid weighted pommel. The sword
+          should read as reliable military kit rather than noble ornament. Surface shows nicks,
+          edge wear, and old sharpening marks. Palette: cold steel, iron blue-grey shadow, dark
+          leather brown, faint pale highlight on the sharpened edge.
+        materialTags: [steel, iron, leather]
+        moodTags: [martial, reliable]
+        constraints:
+          - single weapon object, centered, transparent background
+          - silhouette must read clearly at 160x160
+          - grounded low-fantasy military style, not heroic exaggeration
+        geminiKeyRequired: true
+      - id: pr06_item_chain_mail
+        category: icon_item
+        visualKey: item.chain_mail.icon
+        outputName: phase2/p2-b/icon_item_chain_mail.png
+        subject: >
+          A medium chain mail hauberk from a weathered outpost armory. Interlocked iron rings,
+          padded leather collar, short sleeves, and reinforced shoulder seams. It should feel
+          used but serviceable, with darkened metal, mud wear, and subtle patched repairs. No
+          heraldry. Palette: iron grey, soot-dark seams, worn brown leather lining.
+        materialTags: [iron, leather, cloth]
+        moodTags: [defensive, grounded]
+        constraints:
+          - single armor object, centered, transparent background
+          - chest silhouette must remain readable at icon size
+          - no glowing runes or decorative fantasy filigree
+        geminiKeyRequired: true
+      - id: pr06_item_basic_shield
+        category: icon_item
+        visualKey: item.basic_shield.icon
+        outputName: phase2/p2-b/icon_item_basic_shield.png
+        subject: >
+          A basic frontier shield for a Vanguard starter kit. Heater-shield profile, iron boss,
+          thick wood core beneath worn leather facing, and simple iron rim reinforcement. The
+          shield should feel practical and defensive, built for line combat, with scratches and
+          dents from repeated impacts. Palette: aged tan leather, dark timber, iron grey boss.
+        materialTags: [wood, leather, iron]
+        moodTags: [defensive, sturdy]
+        constraints:
+          - single shield object, centered, transparent background
+          - strong iconic silhouette with readable boss and rim
+          - no heraldic crest, no overdesigned ornament
+        geminiKeyRequired: true
+      - id: pr06_item_arcane_staff
+        category: icon_item
+        visualKey: item.arcane_staff.icon
+        outputName: phase2/p2-b/icon_item_arcane_staff.png
+        subject: >
+          An apprentice arcanist staff. A carved dark-wood shaft topped with a restrained blue-white
+          crystal focus held by simple iron prongs. It should read as scholarly field gear, not a
+          legendary artifact. The crystal emits a controlled inner glow, with faint arcane residue
+          along the binding. Palette: dark wood, cold steel, pale azure crystal light.
+        materialTags: [wood, iron, crystal]
+        moodTags: [arcane, disciplined]
+        constraints:
+          - single staff object, centered, transparent background
+          - readable crystal focus and shaft silhouette at icon size
+          - magic glow must be controlled, not bloom-heavy
+        geminiKeyRequired: true
+      - id: pr06_item_apprentice_robe
+        category: icon_item
+        visualKey: item.apprentice_robe.icon
+        outputName: phase2/p2-b/icon_item_apprentice_robe.png
+        subject: >
+          An apprentice mage robe from a rough frontier academy. Light layered cloth with a deep
+          blue outer shell, pale lining, and a small brass clasp near the collar. The robe should
+          look practical and slightly travel-worn, with stitched hems and restrained arcane trim.
+          Palette: desaturated cobalt blue, ash-blue shadow, pale lining, muted brass clasp.
+        materialTags: [cloth, brass]
+        moodTags: [scholarly, restrained]
+        constraints:
+          - single robe object, centered, transparent background
+          - silhouette must read as light armor/clothing, distinct from chain mail
+          - no royal luxury treatment, no excessive ornament
+        geminiKeyRequired: true
+      - id: pr06_visual_vanguard_power_strike
+        category: icon_skill
+        visualKey: talent.vanguard.power_strike.visual
+        outputName: phase2/p2-b/talent_vanguard_power_strike_visual.png
+        subject: >
+          A vanguard power strike ability visual. A heavy sword or blunt strike arc crashing forward
+          with condensed amber force, suggesting one committed devastating blow. Emphasis on impact
+          momentum and steel weight, not magical fire. Palette: iron steel, ember orange impact wedge,
+          dark charcoal backdrop.
+        profession: vanguard
+        materialTags: [steel, impact]
+        moodTags: [forceful, decisive]
+        constraints:
+          - centered UI-ready skill image on transparent background
+          - one strong diagonal strike shape plus impact burst
+          - no character portrait, no full body, no busy background
+        geminiKeyRequired: true
+      - id: pr06_visual_vanguard_shield_bash
+        category: icon_skill
+        visualKey: talent.vanguard.shield_bash.visual
+        outputName: phase2/p2-b/talent_vanguard_shield_bash_visual.png
+        subject: >
+          A vanguard shield bash ability visual. A rugged shield slamming forward with a short bright
+          shock wedge and compressed debris-like force at the point of impact. It should feel blunt,
+          defensive, and violent rather than elegant. Palette: leather tan, iron grey, warm impact gold.
+        profession: vanguard
+        materialTags: [shield, iron, impact]
+        moodTags: [brutal, defensive]
+        constraints:
+          - centered UI-ready skill image on transparent background
+          - shield is the primary subject, impact cue secondary
+          - no character face, no scenery
+        geminiKeyRequired: true
+      - id: pr06_visual_vanguard_war_cry
+        category: icon_skill
+        visualKey: talent.vanguard.war_cry.visual
+        outputName: phase2/p2-b/talent_vanguard_war_cry_visual.png
+        subject: >
+          A vanguard war cry ability visual. A stern iron war-helm or commanding martial sigil emitting
+          layered sound-wave rings and morale-shock pulses. The image should read as battlefield command
+          and intimidation, not holy magic. Palette: iron grey, leather darks, controlled amber resonance.
+        profession: vanguard
+        materialTags: [iron, leather, sound]
+        moodTags: [commanding, intimidating]
+        constraints:
+          - centered UI-ready skill image on transparent background
+          - one iconic helm or command sigil with outward wave geometry
+          - no text, no banner, no face close-up
+        geminiKeyRequired: true
+      - id: pr06_visual_vanguard_charge
+        category: icon_skill
+        visualKey: talent.vanguard.charge.visual
+        outputName: phase2/p2-b/talent_vanguard_charge_visual.png
+        subject: >
+          A vanguard charge ability visual. A forward-thrust spear or weapon silhouette framed by compressed
+          motion arcs, conveying a sudden armored rush. The image should feel kinetic and tactical, with cold
+          speed lines and restrained impact glow. Palette: steel blue, iron grey, pale motion light.
+        profession: vanguard
+        materialTags: [steel, motion]
+        moodTags: [kinetic, aggressive]
+        constraints:
+          - centered UI-ready skill image on transparent background
+          - one primary forward-thrust shape with motion arcs
+          - no full character body, no background environment
+        geminiKeyRequired: true

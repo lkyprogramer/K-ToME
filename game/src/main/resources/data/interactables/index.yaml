@@ -1,0 +1,25 @@
+interactables:
+  - id: armory_gate
+    nameKey: interactable.armory_gate.name
+    descKey: interactable.armory_gate.desc
+    visualKey: prop.armory_gate
+    audioProfile: audio.interactable.open
+    schemaVersion: 2
+    tags: [interactable, gate]
+    interactionTags: [gate, objective]
+  - id: supply_crate
+    nameKey: interactable.supply_crate.name
+    descKey: interactable.supply_crate.desc
+    visualKey: prop.supply_crate
+    audioProfile: audio.interactable.open
+    schemaVersion: 2
+    tags: [interactable, reward]
+    interactionTags: [loot, support]
+  - id: alarm_bonfire
+    nameKey: interactable.alarm_bonfire.name
+    descKey: interactable.alarm_bonfire.desc
+    visualKey: prop.alarm_bonfire
+    audioProfile: audio.boss.warning
+    schemaVersion: 2
+    tags: [interactable, warning]
+    interactionTags: [warning, objective]

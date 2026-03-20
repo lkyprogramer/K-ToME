@@ -5,6 +5,7 @@ import com.ktome.core.dungeon.FloorState
 import com.ktome.core.dungeon.StairDirection
 import com.ktome.core.ecs.DisplayColor
 import com.ktome.core.ecs.Glyph
+import com.ktome.core.ecs.Interactable
 import com.ktome.core.ecs.Name
 import com.ktome.core.ecs.Position
 import com.ktome.core.ecs.Stair
@@ -13,6 +14,7 @@ import com.ktome.core.ecs.add
 import com.ktome.core.ecs.AIType
 import com.ktome.core.ecs.PatrolRoute
 import com.ktome.core.ecs.get
+import com.ktome.core.fov.Shadowcasting
 import com.ktome.core.map.BspConfig
 import com.ktome.core.map.BspGenerator
 import com.ktome.core.map.Point
@@ -22,6 +24,7 @@ import com.ktome.core.save.InvalidSaveException
 import com.ktome.core.save.SaveManager
 import com.ktome.core.save.PointSnapshot
 import com.ktome.core.snapshot.RenderLogEventSnapshot
+import com.ktome.core.snapshot.RenderTextArgumentSnapshot
 import com.ktome.core.snapshot.RenderTextTokenSnapshot
 import com.ktome.game.data.DataLoader
 import com.ktome.game.data.schema.SchemaCatalog
@@ -43,6 +46,8 @@ import com.ktome.game.data.schema.ProfessionSchemaV2
 import com.ktome.game.data.schema.ZoneSchemaV2
 
 object GameModule {
+    private const val DEFAULT_ROUTE_VISIBILITY_RADIUS = 8
+
     fun newFoundationSession(
         config: FoundationGameConfig = FoundationGameConfig(),
         saveManager: SaveManager = SaveManager(defaultSaveDir()),
@@ -79,7 +84,7 @@ object GameModule {
             saveManager = saveManager,
             dungeonManager = dungeonManager,
             playerSnapshot = startingPlayer,
-            initialMessageLog = listOf(RenderLogEventSnapshot(RenderTextTokenSnapshot("log.session.enter_dungeon"))),
+            initialMessageLog = initialMessagesForZone(zone, content.schemaCatalog),
         )
     }
 
@@ -162,6 +167,25 @@ object GameModule {
         )
     }
 
+    private fun initialMessagesForZone(
+        zone: ZoneSchemaV2,
+        schemaCatalog: SchemaCatalog,
+    ): List<RenderLogEventSnapshot> =
+        buildList {
+            add(RenderLogEventSnapshot(RenderTextTokenSnapshot("log.session.enter_dungeon")))
+            val objective = schemaCatalog.objectiveSets.firstOrNull { objectiveSet -> objectiveSet.id == zone.objectiveSetId }
+            if (objective != null) {
+                add(
+                    RenderLogEventSnapshot(
+                        RenderTextTokenSnapshot(
+                            "log.objective.activate",
+                            arguments = listOf(RenderTextArgumentSnapshot(name = "objective", valueKey = objective.nameKey)),
+                        ),
+                    ),
+                )
+            }
+        }
+
     private fun createInitialPlayerSnapshot(
         content: GameContent,
         profession: ProfessionSchemaV2,
@@ -217,10 +241,17 @@ object GameModule {
         stairsUp?.let { point -> createStair(world, point, StairDirection.UP, content.localizer) }
         stairsDown?.let { point -> createStair(world, point, StairDirection.DOWN, content.localizer) }
 
+        val bossPosition =
+            if (bossDefinition != null) {
+                chooseBossPosition(map, occupiedPoints)
+            } else {
+                null
+            }
+
         if (bossDefinition != null) {
-            val bossPosition = chooseBossPosition(map, occupiedPoints)
-            bossFactory.createBoss(world, bossDefinition, bossPosition)
-            occupiedPoints += bossPosition
+            val resolvedBossPosition = requireNotNull(bossPosition)
+            bossFactory.createBoss(world, bossDefinition, resolvedBossPosition)
+            occupiedPoints += resolvedBossPosition
         } else {
             spawnMonsters(
                 factory = factory,
@@ -241,6 +272,17 @@ object GameModule {
                 occupiedPoints = occupiedPoints,
             )
         }
+        createObjectiveInteractables(
+            world = world,
+            map = map,
+            floor = floor,
+            content = content,
+            occupiedPoints = occupiedPoints,
+            objectiveSetId = zone.objectiveSetId,
+            stairsUp = stairsUp,
+            stairsDown = stairsDown,
+            bossPosition = bossPosition,
+        )
 
         return FloorState(
             floor = floor,
@@ -404,6 +446,154 @@ object GameModule {
         occupiedPoints: Set<Point>,
     ): Point = map.rooms.asReversed().map(Room::center).firstOrNull { it !in occupiedPoints } ?: map.floorPoints().first { it !in occupiedPoints }
 
+    private fun createObjectiveInteractables(
+        world: World,
+        map: com.ktome.core.map.GameMap,
+        floor: Int,
+        content: GameContent,
+        occupiedPoints: MutableSet<Point>,
+        objectiveSetId: String?,
+        stairsUp: Point?,
+        stairsDown: Point?,
+        bossPosition: Point?,
+    ) {
+        val objective =
+            content.schemaCatalog.objectiveSets.firstOrNull { objectiveSet ->
+                objectiveSet.id == objectiveSetId
+            } ?: return
+        plannedInteractables(
+            objective = objective,
+            floor = floor,
+            map = map,
+            occupiedPoints = occupiedPoints,
+            stairsUp = stairsUp,
+            stairsDown = stairsDown,
+            bossPosition = bossPosition,
+        )
+            .filter { (interactableId, _) -> interactableId in objective.interactables }
+            .forEach { (interactableId, point) ->
+                createInteractable(world, interactableId, point, content)
+                occupiedPoints += point
+            }
+    }
+
+    private fun plannedInteractables(
+        objective: com.ktome.game.data.schema.ObjectiveSetSchemaV2,
+        floor: Int,
+        map: com.ktome.core.map.GameMap,
+        occupiedPoints: Set<Point>,
+        stairsUp: Point?,
+        stairsDown: Point?,
+        bossPosition: Point?,
+    ): List<Pair<String, Point>> {
+        val reserved = occupiedPoints.toMutableSet()
+        return objective.placements
+            .asSequence()
+            .filter { placement -> placement.floor == floor }
+            .map { placement ->
+                placement.interactableId to preferredInteractablePoint(
+                    map = map,
+                    placement = placement,
+                    stairsUp = stairsUp,
+                    stairsDown = stairsDown,
+                    bossPosition = bossPosition,
+                )
+            }
+            .mapNotNull { (interactableId, preferredPoint) ->
+            findObjectiveInteractablePoint(map, preferredPoint, reserved)?.also { point ->
+                reserved += point
+            }?.let { point -> interactableId to point }
+        }.toList()
+    }
+
+    private fun preferredInteractablePoint(
+        map: com.ktome.core.map.GameMap,
+        placement: com.ktome.game.data.schema.ObjectiveInteractablePlacementSchemaV2,
+        stairsUp: Point?,
+        stairsDown: Point?,
+        bossPosition: Point?,
+    ): Point {
+        val routeSeed = stairsUp ?: map.playerStart
+        val anchor =
+            when (placement.anchor.lowercase()) {
+                "player_start" -> map.playerStart
+                "stairs_up" -> stairsUp ?: map.playerStart
+                "stairs_down" -> stairsDown ?: fallbackRoomCenter(map)
+                "room_center" -> routeVisibleAnchor(map, routeSeed, fallbackRoomCenter(map))
+                "boss_entry" -> routeVisibleAnchor(map, routeSeed, bossEntryPoint(map, bossPosition))
+                else -> error("Unsupported interactable placement anchor '${placement.anchor}'.")
+            }
+        return anchor + Point(placement.offset.x, placement.offset.y)
+    }
+
+    private fun fallbackRoomCenter(map: com.ktome.core.map.GameMap): Point =
+        map.rooms.drop(1)
+            .ifEmpty { map.rooms }
+            .let { rooms -> rooms[rooms.size / 2].center }
+
+    private fun bossEntryPoint(
+        map: com.ktome.core.map.GameMap,
+        bossPosition: Point?,
+    ): Point {
+        val center = bossPosition ?: return fallbackRoomCenter(map)
+        return Point.ALL_DIRECTIONS
+            .asSequence()
+            .map { delta -> center + delta }
+            .filter { point ->
+                map.isInBounds(point.x, point.y) &&
+                    !map[point].blocksMovement
+            }
+            .minWithOrNull(
+                compareBy<Point> { point -> point.chebyshevDistanceTo(map.playerStart) }
+                    .thenBy(Point::y)
+                    .thenBy(Point::x),
+            ) ?: center
+    }
+
+    private fun routeVisibleAnchor(
+        map: com.ktome.core.map.GameMap,
+        routeSeed: Point,
+        preferred: Point,
+    ): Point {
+        val visible =
+            Shadowcasting.computeVisible(
+                map = map,
+                origin = routeSeed,
+                radius = DEFAULT_ROUTE_VISIBILITY_RADIUS,
+            )
+        return visible
+            .asSequence()
+            .filter { point ->
+                map.isInBounds(point.x, point.y) &&
+                    !map[point].blocksMovement &&
+                    point != routeSeed
+            }
+            .minWithOrNull(
+                compareBy<Point> { point -> point.chebyshevDistanceTo(preferred) }
+                    .thenBy { point -> point.chebyshevDistanceTo(routeSeed) }
+                    .thenBy(Point::y)
+                    .thenBy(Point::x),
+            ) ?: preferred
+    }
+
+    private fun findObjectiveInteractablePoint(
+        map: com.ktome.core.map.GameMap,
+        preferred: Point,
+        occupiedPoints: Set<Point>,
+    ): Point? {
+        val candidates =
+            sequenceOf(preferred, map.playerStart)
+                .plus(Point.ALL_DIRECTIONS.asSequence().map { delta -> preferred + delta })
+                .plus(Point.ALL_DIRECTIONS.asSequence().map { delta -> map.playerStart + delta })
+                .distinct()
+        return candidates.firstOrNull { point ->
+            map.isInBounds(point.x, point.y) &&
+                !map[point].blocksMovement &&
+                point !in occupiedPoints &&
+                point != map.playerStart
+        }
+    }
+
     private fun createStair(
         world: World,
         position: Point,
@@ -424,6 +614,42 @@ object GameModule {
             ),
         )
         world.add(stairId, Stair(direction))
+    }
+
+    private fun createInteractable(
+        world: World,
+        interactableId: String,
+        position: Point,
+        content: GameContent,
+    ) {
+        val schema =
+            requireNotNull(content.schemaCatalog.interactables.firstOrNull { interactable -> interactable.id == interactableId }) {
+                "Unknown interactable '$interactableId'."
+            }
+        val entityId = world.createEntity()
+        world.add(entityId, Position(position.x, position.y))
+        world.add(entityId, Interactable(interactableId))
+        world.add(
+            entityId,
+            Glyph(
+                when (interactableId) {
+                    "armory_gate" -> '+'
+                    "alarm_bonfire" -> '^'
+                    else -> '&'
+                },
+            ),
+        )
+        world.add(
+            entityId,
+            DisplayColor(
+                when (interactableId) {
+                    "armory_gate" -> "#C7B48A"
+                    "alarm_bonfire" -> "#FF8A3D"
+                    else -> "#D6C977"
+                },
+            ),
+        )
+        world.add(entityId, Name(content.localizer.text(schema.nameKey)))
     }
 
     private fun resolveProfession(
@@ -638,7 +864,7 @@ object GameModule {
         when (template.aiProfileId) {
             "ai.kite.basic" -> AIType.KITE
             "ai.patrol.basic" -> AIType.PATROL
-            "ai.chase.basic", "ai.boss.dungeon_lord" -> AIType.CHASE
+            "ai.chase.basic", "ai.boss.dungeon_lord", "ai.boss.bandit_captain" -> AIType.CHASE
             else -> template.ai
         }
 

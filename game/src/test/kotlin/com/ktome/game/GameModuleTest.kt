@@ -1,6 +1,7 @@
 package com.ktome.game
 
 import com.ktome.core.dungeon.StairDirection
+import com.ktome.core.ecs.Interactable
 import com.ktome.core.ecs.MonsterTemplateId
 import com.ktome.core.ecs.Position
 import com.ktome.core.ecs.World
@@ -12,6 +13,7 @@ import com.ktome.core.save.PlayerSnapshot
 import com.ktome.core.save.PointSnapshot
 import com.ktome.core.save.SaveManager
 import com.ktome.core.save.SaveSnapshot
+import com.ktome.core.save.UnsupportedSaveContractVersionException
 import com.ktome.core.save.EntitySnapshot
 import com.ktome.core.save.FloorSnapshot
 import com.ktome.core.save.MapSnapshot
@@ -99,6 +101,56 @@ class GameModuleTest {
     }
 
     @Test
+    fun `load foundation session fails fast on pre interactable save contract version`() {
+        val saveManager = SaveManager(tempDir.resolve("stale-contract-save"))
+        Files.createDirectories(saveManager.savePath().parent)
+        saveManager.savePath().writeText(
+            """
+            {
+              "schemaVersion": 1,
+              "saveContractVersion": { "major": 2, "minor": 0 },
+              "buildMetadata": "phase2-dev",
+              "timestampEpochMillis": 1,
+              "worldSeed": 20260318,
+              "currentZoneId": "shattered_outpost",
+              "floorIndex": 1,
+              "mapWidth": 60,
+              "mapHeight": 40,
+              "fovRadius": 8,
+              "messageLogSize": 8,
+              "playerProfessionId": "vanguard",
+              "maxFloor": 2,
+              "turnCount": 0,
+              "player": {
+                "entity": {
+                  "id": 1,
+                  "position": { "x": 1, "y": 1 },
+                  "isPlayerControlled": true
+                },
+                "carriedEntities": []
+              },
+              "floors": [
+                {
+                  "floorIndex": 1,
+                  "map": {
+                    "rows": [".".repeat(60)],
+                    "playerStart": { "x": 1, "y": 1 }
+                  },
+                  "exploredTiles": [],
+                  "entities": []
+                }
+              ],
+              "pendingActionIds": []
+            }
+            """.trimIndent().replace("\".\".repeat(60)", "\"${".".repeat(60)}\""),
+        )
+
+        assertThrows(UnsupportedSaveContractVersionException::class.java) {
+            GameModule.loadFoundationSession(saveManager)
+        }
+    }
+
+    @Test
     fun `new foundation session derives starter talents stats and kit from profession schema`() {
         val vanguardSession =
             GameModule.newFoundationSession(
@@ -111,12 +163,13 @@ class GameModuleTest {
                 SaveManager(tempDir.resolve("arcanist-save")),
             )
 
-        assertEquals(listOf("猛击", "盾击", "战吼"), vanguardSession.talentSlots().map { slot -> slot.name })
-        assertTrue(arcanistSession.talentSlots().isEmpty())
-        assertEquals(listOf("短剑", "皮甲", "治疗药水"), vanguardSession.inventoryItems().map { item -> item.name })
-        assertEquals(listOf("治疗药水"), arcanistSession.inventoryItems().map { item -> item.name })
+        assertEquals(listOf("猛击", "横扫", "盾击", "格挡姿态", "战吼", "威压", "碎甲", "不屈"), vanguardSession.talentSlots().map { slot -> slot.name })
+        assertEquals(listOf("火球", "烈焰之墙", "冰箭", "霜冻新星", "奥术护盾", "闪现", "法力涌动", "冰封"), arcanistSession.talentSlots().map { slot -> slot.name })
+        assertEquals(listOf("短剑", "基础盾牌", "锁甲", "治疗药水"), vanguardSession.inventoryItems().map { item -> item.name })
+        assertEquals(listOf("奥术法杖", "学徒法袍", "法力药水"), arcanistSession.inventoryItems().map { item -> item.name })
         assertEquals("短剑", vanguardSession.equipmentSlots().first { slot -> slot.slot == EquipSlot.WEAPON }.itemName)
-        assertEquals("皮甲", vanguardSession.equipmentSlots().first { slot -> slot.slot == EquipSlot.ARMOR }.itemName)
+        assertEquals("基础盾牌", vanguardSession.equipmentSlots().first { slot -> slot.slot == EquipSlot.OFF_HAND }.itemName)
+        assertEquals("锁甲", vanguardSession.equipmentSlots().first { slot -> slot.slot == EquipSlot.ARMOR }.itemName)
         assertTrue(vanguardSession.playerStatus().maxHp > arcanistSession.playerStatus().maxHp)
     }
 
@@ -153,10 +206,16 @@ class GameModuleTest {
         val monsterIds =
             world.entitiesWith(MonsterTemplateId::class)
                 .map { entityId -> requireNotNull(world.get<MonsterTemplateId>(entityId)).value }
+        val interactableIds =
+            world.entitiesWith(Interactable::class)
+                .map { entityId -> requireNotNull(world.get<Interactable>(entityId)).id }
+                .toSet()
 
         assertTrue(monsterIds.size >= 4)
-        assertTrue("beast.rat" in monsterIds)
-        assertTrue("bandit.sentry" in monsterIds)
+        assertTrue("beast.rat_scavenger" in monsterIds)
+        assertTrue("goblin.scout" in monsterIds)
+        assertTrue("bandit.raider" in monsterIds || "bandit.archer" in monsterIds)
+        assertEquals(setOf("supply_crate", "alarm_bonfire"), interactableIds)
     }
 
     @Test
@@ -184,8 +243,8 @@ class GameModuleTest {
     fun `zone boss encounter id drives final floor boss routing`() {
         val session =
             GameModule.newFoundationSession(
-                FoundationGameConfig(zoneId = "grey_gate_depths"),
-                SaveManager(tempDir.resolve("grey-gate-save")),
+                FoundationGameConfig(zoneId = "shattered_outpost"),
+                SaveManager(tempDir.resolve("shattered-outpost-boss-save")),
             )
 
         session.automationMovePlayerTo(requireNotNull(session.automationStairPoint(StairDirection.DOWN)))
@@ -198,8 +257,8 @@ class GameModuleTest {
                 .toSet()
 
         assertEquals(2, session.maxFloor())
-        assertTrue(FOUNDATION_BOSS_TEMPLATE_ID in monsterIds)
-        assertNotNull(session.automationEntityByTemplateId(FOUNDATION_BOSS_TEMPLATE_ID))
+        assertTrue("bandit.captain" in monsterIds)
+        assertNotNull(session.automationEntityByTemplateId("bandit.captain"))
         assertNull(session.automationStairPoint(StairDirection.DOWN))
     }
 
@@ -245,8 +304,8 @@ class GameModuleTest {
         saveManager.savePath().writeText(
             """
             {
-              "schemaVersion": 1,
-              "saveContractVersion": { "major": 2, "minor": 0 },
+              "schemaVersion": 2,
+              "saveContractVersion": { "major": 2, "minor": 1 },
               "buildMetadata": "phase2-dev",
               "timestampEpochMillis": 1,
               "worldSeed": 20260318,

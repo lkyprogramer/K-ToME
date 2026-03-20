@@ -1,0 +1,127 @@
+styleTag: ktome-middle-fantasy-painterly-tile-v1
+artStyleBible: docs/2026-03-13-art-style-bible.md
+stylePrompt: 'Classical high fantasy in a Middle-earth inspired mode. A world soaked
+  in age, iron, moss, flame, and old oaths. Weathered stone, forged iron, old timber,
+  cracked leather, coarse wool — every surface shows the weight of centuries.
+
+  Rendering style: painterly concept-art finish with visible brushwork and clear material
+  differentiation. NOT photorealistic, NOT pixel art, NOT cel-shaded, NOT glossy mobile-game
+  aesthetic. Slight impasto texture on metals and stone; soft dry-brush edges on cloth
+  and organic surfaces. Never anime. Never sci-fi.
+
+  Color palette: dark foundation of charcoal black, iron blue-grey, damp stone green,
+  deep brown wood. Warm accents of torch orange, molten-iron red, dry leather brown,
+  old gold — used sparingly for focal points. Cold light accents of moonlight blue,
+  frost cyan, lightning white-blue, faint holy pale-gold — reserved for magic and
+  interaction cues. Overall low saturation; high brightness only on interactive elements,
+  magic cores, boss telegraphs, and key pickups.
+
+  Lighting: low-key illumination. Primary light from upper-left at roughly 45 degrees.
+  Warm firelight and cool ambient fill coexist. Shadows are clear but not crushed
+  to pure black. Rim light is allowed on character shoulder-lines, weapon edges, and
+  interactable prop edges — but always restrained. No bloom-heavy haze, no full-screen
+  volumetric light, no dreamy ethereal glow.
+
+  '
+defaults:
+  imageAspectRatio: '1:1'
+  imageSize: 1K
+  negativeConstraints:
+  - no modern clothing
+  - no firearms
+  - no sci-fi materials
+  - no anime proportions
+  - no floating text, watermark or logo
+  - no floating text, watermark, logo, or UI elements baked into image
+  - no busy detailed background — transparent or clean only
+  - no recognizable franchise emblems
+  - no bloom-heavy magical glow or oversaturated light effects
+  - no glossy mobile-game icon aesthetic
+  categoryPromptTemplates:
+    icon_item: 'Game item icon on transparent background. Single object centered in
+      frame, 65-75% canvas occupancy, slight 3/4 angle. Painterly rendering with material
+      texture (glass, metal, leather, wood). Object shows age and use — no pristine
+      surfaces. Muted palette with one color accent.
+
+      '
+    icon_skill: 'Game skill ability icon on transparent background. SINGLE focused
+      subject centered in frame, occupying 65-75% of the canvas. Bold simplified shapes
+      with thick dark outlines for readability at small sizes. Painterly rendering
+      but with iconic clarity — this is a UI element, not a scene illustration. NO
+      hands, NO arms, NO character parts unless the skill IS about the body part.
+      Restrained color: 1-2 dominant hues plus neutral darks. No excessive glow or
+      bloom.
+
+      '
+phase2AssetGates:
+  PR06-Refresh:
+    description: Rebuild PR-06 starter-kit and vanguard visual assets with Gemini.
+    assets:
+    - id: pr06_item_arcane_staff
+      category: icon_item
+      visualKey: item.arcane_staff.icon
+      outputName: phase2/p2-b/icon_item_arcane_staff.png
+      subject: 'An apprentice arcanist staff. A carved dark-wood shaft topped with
+        a restrained blue-white crystal focus held by simple iron prongs. It should
+        read as scholarly field gear, not a legendary artifact. The crystal emits
+        a controlled inner glow, with faint arcane residue along the binding. Palette:
+        dark wood, cold steel, pale azure crystal light.
+
+        '
+      materialTags:
+      - wood
+      - iron
+      - crystal
+      moodTags:
+      - arcane
+      - disciplined
+      constraints:
+      - single staff object, centered, transparent background
+      - readable crystal focus and shaft silhouette at icon size
+      - magic glow must be controlled, not bloom-heavy
+      geminiKeyRequired: true
+    - id: pr06_visual_vanguard_power_strike
+      category: icon_skill
+      visualKey: talent.vanguard.power_strike.visual
+      outputName: phase2/p2-b/talent_vanguard_power_strike_visual.png
+      subject: 'A vanguard power strike ability visual. A heavy sword or blunt strike
+        arc crashing forward with condensed amber force, suggesting one committed
+        devastating blow. Emphasis on impact momentum and steel weight, not magical
+        fire. Palette: iron steel, ember orange impact wedge, dark charcoal backdrop.
+
+        '
+      profession: vanguard
+      materialTags:
+      - steel
+      - impact
+      moodTags:
+      - forceful
+      - decisive
+      constraints:
+      - centered UI-ready skill image on transparent background
+      - one strong diagonal strike shape plus impact burst
+      - no character portrait, no full body, no busy background
+      geminiKeyRequired: true
+    - id: pr06_visual_vanguard_war_cry
+      category: icon_skill
+      visualKey: talent.vanguard.war_cry.visual
+      outputName: phase2/p2-b/talent_vanguard_war_cry_visual.png
+      subject: 'A vanguard war cry ability visual. A stern iron war-helm or commanding
+        martial sigil emitting layered sound-wave rings and morale-shock pulses. The
+        image should read as battlefield command and intimidation, not holy magic.
+        Palette: iron grey, leather darks, controlled amber resonance.
+
+        '
+      profession: vanguard
+      materialTags:
+      - iron
+      - leather
+      - sound
+      moodTags:
+      - commanding
+      - intimidating
+      constraints:
+      - centered UI-ready skill image on transparent background
+      - one iconic helm or command sigil with outward wave geometry
+      - no text, no banner, no face close-up
+      geminiKeyRequired: true

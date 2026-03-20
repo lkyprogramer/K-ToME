@@ -1,4 +1,16 @@
 bossEncounters:
+  - id: bandit_captain_encounter
+    nameKey: boss.bandit.captain.name
+    descKey: boss.bandit.captain.desc
+    visualKey: actor.bandit.captain
+    iconKey: icon.monster.bandit.captain
+    audioProfile: audio.boss.bandit_captain
+    schemaVersion: 2
+    tags: [boss, official_slice]
+    bossTemplateId: bandit.captain
+    arenaId: arena.shattered_outpost.boss
+    phases: [phase_foundation]
+    rewards: [loot.foundation.boss]
   - id: dungeon_lord_encounter
     nameKey: boss.cultist.dungeon_lord.name
     descKey: boss.cultist.dungeon_lord.desc

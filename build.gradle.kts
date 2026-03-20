@@ -72,7 +72,7 @@ subprojects {
         useJUnitPlatform()
         if (name == "test") {
             useJUnitPlatform {
-                excludeTags("headlessSmoke", "clientSmoke", "longRunLab")
+                excludeTags("headlessSmoke", "clientSmoke", "longRunLab", "soloClearLab")
             }
         }
         testLogging {
@@ -107,6 +107,12 @@ tasks.register("headlessSmoke") {
     dependsOn(":game:headlessSmoke")
 }
 
+tasks.register("soloClearLab") {
+    group = LifecycleBasePlugin.VERIFICATION_GROUP
+    description = "Runs the fixed-seed solo clear acceptance lab."
+    dependsOn(":game:soloClearLab")
+}
+
 tasks.register("clientSmoke") {
     group = LifecycleBasePlugin.VERIFICATION_GROUP
     description = "Runs headless client lifecycle smoke coverage."
@@ -134,7 +140,14 @@ tasks.register("contractLint") {
 tasks.register<Exec>("assetLint") {
     group = LifecycleBasePlugin.VERIFICATION_GROUP
     description = "Validates the Phase 2 image asset plan."
-    commandLine("python3", "scripts/asset-lint.py", "--plan", "assets-src/image/specs/phase2-asset-plan.yaml")
+    commandLine(
+        "python3",
+        "scripts/asset-lint.py",
+        "--plan",
+        "assets-src/image/specs/phase2-asset-plan.yaml",
+        "--report-dir",
+        "assets-src/image/manifests",
+    )
 }
 
 tasks.register<Exec>("styleLint") {
@@ -223,6 +236,8 @@ tasks.register("preReleaseAcceptance") {
     dependsOn("manifestLint")
     dependsOn("goldenScreenshot")
     dependsOn("headlessSmoke")
+    dependsOn("soloClearLab")
+    dependsOn("longRunLab")
     dependsOn("clientSmoke")
     dependsOn("jacocoTestReport")
     dependsOn(":core:jacocoTestCoverageVerification")
@@ -241,6 +256,8 @@ tasks.register<JacocoReport>("jacocoTestReport") {
     dependsOn("manifestLint")
     dependsOn("goldenScreenshot")
     dependsOn("headlessSmoke")
+    dependsOn("soloClearLab")
+    dependsOn("longRunLab")
     dependsOn("clientSmoke")
     dependsOn(subprojects.map { it.tasks.named("jacocoTestReport") })
 
@@ -275,6 +292,8 @@ tasks.named("check") {
     dependsOn("manifestLint")
     dependsOn("goldenScreenshot")
     dependsOn("headlessSmoke")
+    dependsOn("soloClearLab")
+    dependsOn("longRunLab")
     dependsOn("clientSmoke")
     dependsOn("jacocoTestReport")
     dependsOn(":core:jacocoTestCoverageVerification")

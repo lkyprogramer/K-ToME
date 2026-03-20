@@ -62,6 +62,20 @@ object RunObservationCapture {
                 }
                 .distinct()
                 .sortedWith(compareBy<Point> { it.y }.thenBy { it.x })
+        val visibleInteractables =
+            session.renderSnapshot().props
+                .asSequence()
+                .filter { prop -> prop.propTypeId != "stairs" }
+                .map { prop ->
+                    ObservedInteractable(
+                        id = prop.propTypeId,
+                        position = Point(prop.x, prop.y),
+                        interactionTags = session.automationInteractableTags(prop.propTypeId),
+                    )
+                }
+                .distinctBy { interactable -> interactable.id to interactable.position }
+                .sortedWith(compareBy<ObservedInteractable> { it.position.y }.thenBy { it.position.x })
+                .toList()
 
         val visibleBlockingPositions =
             session.actorViews()
@@ -73,6 +87,7 @@ object RunObservationCapture {
             floor = session.currentFloor(),
             turnIndex = turnIndex,
             playerStatus = session.playerStatus(),
+            playerResource = session.playerResourceView(),
             playerPosition = session.playerPosition(),
             map = session.map,
             visibleTiles = visibleTiles,
@@ -80,6 +95,7 @@ object RunObservationCapture {
             visibleHostilePositions = session.targetableHostilePositions(),
             visibleBlockingPositions = visibleBlockingPositions,
             visibleGroundItemPositions = visibleGroundItemPositions,
+            visibleInteractables = visibleInteractables,
             knownDownstairsPositions = knownDownstairsPositions,
             inventoryItems = session.inventoryItems(),
             talentSlots = session.talentSlots(),
@@ -107,6 +123,12 @@ internal fun RunObservation.signature(): String =
         append(playerStatus.currentStamina)
         append('/')
         append(playerStatus.maxStamina)
+        append('|')
+        append(playerResource.typeId)
+        append(':')
+        append(playerResource.current)
+        append('/')
+        append(playerResource.max)
         append('|')
         append(playerStatus.level)
         append('|')
@@ -146,6 +168,7 @@ internal fun PlayerCommand.consumesTurn(): Boolean =
     when (this) {
         PlayerCommand.Wait,
         is PlayerCommand.Move,
+        PlayerCommand.Interact,
         PlayerCommand.PickUp,
         PlayerCommand.Ascend,
         PlayerCommand.Descend,

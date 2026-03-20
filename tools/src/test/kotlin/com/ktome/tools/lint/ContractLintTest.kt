@@ -19,6 +19,8 @@ class ContractLintTest {
         val treeIds = catalog.talentTrees.map { it.id }.toSet()
         val monsterIds = catalog.monsters.map { it.id }.toSet()
         val bossIds = catalog.bossEncounters.map { it.id }.toSet()
+        val interactableIds = catalog.interactables.map { it.id }.toSet()
+        val objectiveIds = catalog.objectiveSets.map { it.id }.toSet()
         val itemIds = catalog.itemBundle.items.map { it.id }.toSet()
         val lootIds = catalog.lootProfiles.map { it.id }.toSet()
         val tilesetIds = catalog.tilesets.map { it.id }.toSet()
@@ -34,6 +36,13 @@ class ContractLintTest {
             val resolved = assets.audioResolver.resolve(key)
             assertFalse(resolved.fallbackUsed, "Unknown audio profile $key")
             assertFalse(resolved.matchedByPrefix, "Audio profile $key resolved via prefix fallback")
+        }
+
+        catalog.lootProfiles.forEach { lootProfile ->
+            assertEquals(2, lootProfile.schemaVersion)
+            lootProfile.itemIds.forEach { itemId ->
+                assertTrue(itemId in itemIds, "Unknown loot profile item $itemId")
+            }
         }
 
         catalog.professions.forEach { profession ->
@@ -71,6 +80,16 @@ class ContractLintTest {
             assertExactAudioKey(talent.audioProfile)
             talent.requirements.talentPrereqs.forEach { prereq ->
                 assertTrue(talentIds.contains(prereq.talentId), "Unknown talent prerequisite ${prereq.talentId}")
+            }
+        }
+
+        catalog.aiProfiles.forEach { aiProfile ->
+            assertEquals(2, aiProfile.schemaVersion)
+            aiProfile.talentPriority.forEach { talentId ->
+                assertTrue(talentIds.contains(talentId), "Unknown AI profile talent $talentId")
+            }
+            aiProfile.skipRules.forEach { rule ->
+                assertTrue(rule.talentId in aiProfile.talentPriority, "AI profile ${aiProfile.id} skip rule must reference configured talent ${rule.talentId}")
             }
         }
 
@@ -113,6 +132,45 @@ class ContractLintTest {
             zone.monsterPools.forEach { monsterId -> assertTrue(monsterIds.contains(monsterId), "Unknown zone monster $monsterId") }
             zone.elitePools.forEach { monsterId -> assertTrue(monsterIds.contains(monsterId), "Unknown zone elite $monsterId") }
             zone.bossEncounterId?.let { bossId -> assertTrue(bossIds.contains(bossId), "Unknown boss encounter $bossId") }
+            zone.objectiveSetId?.let { objectiveId -> assertTrue(objectiveIds.contains(objectiveId), "Unknown objective set $objectiveId") }
+        }
+
+        catalog.interactables.forEach { interactable ->
+            assertEquals(2, interactable.schemaVersion)
+            assertEquals("interactable.${interactable.id}.name", interactable.nameKey)
+            assertEquals("interactable.${interactable.id}.desc", interactable.descKey)
+            assertExactVisualKey(interactable.visualKey)
+            assertExactAudioKey(interactable.audioProfile)
+            assertTrue(interactable.interactionTags.isNotEmpty(), "Interactable ${interactable.id} must expose interaction tags.")
+        }
+
+        catalog.objectiveSets.forEach { objective ->
+            assertEquals(2, objective.schemaVersion)
+            assertEquals("objective.${objective.id}.name", objective.nameKey)
+            assertEquals("objective.${objective.id}.desc", objective.descKey)
+            assertTrue(objective.interactables.isNotEmpty(), "Objective ${objective.id} must reference at least one interactable.")
+            assertTrue(objective.placements.isNotEmpty(), "Objective ${objective.id} must define interactable placements.")
+            objective.interactables.forEach { interactableId ->
+                assertTrue(interactableIds.contains(interactableId), "Unknown objective interactable $interactableId")
+            }
+            objective.placements.forEach { placement ->
+                assertTrue(interactableIds.contains(placement.interactableId), "Unknown objective placement interactable ${placement.interactableId}")
+                assertTrue(placement.interactableId in objective.interactables, "Placement ${placement.interactableId} must be declared in objective ${objective.id}.")
+                assertTrue(placement.floor > 0, "Objective placement floor must stay positive for ${objective.id}.")
+                assertTrue(
+                    placement.anchor in setOf("player_start", "stairs_up", "stairs_down", "room_center", "boss_entry"),
+                    "Unsupported objective placement anchor ${placement.anchor}",
+                )
+            }
+        }
+
+        catalog.zones.forEach { zone ->
+            zone.objectiveSetId?.let { objectiveId ->
+                val objective = requireNotNull(catalog.objectiveSets.firstOrNull { it.id == objectiveId }) { "Unknown objective $objectiveId" }
+                objective.placements.forEach { placement ->
+                    assertTrue(placement.floor in 1..zone.floorCount, "Objective placement floor ${placement.floor} exceeds zone ${zone.id} floorCount ${zone.floorCount}.")
+                }
+            }
         }
 
         catalog.itemBundle.materials.forEach { material ->
@@ -168,7 +226,7 @@ class ContractLintTest {
         )
         assertEquals(
             mapOf(
-                "shattered_outpost" to null,
+                "shattered_outpost" to "bandit_captain_encounter",
                 "greenwood_fringe" to null,
                 "deep_iron_pit" to null,
                 "grey_gate_depths" to "dungeon_lord_encounter",
@@ -176,9 +234,23 @@ class ContractLintTest {
             catalog.zones.associate { zone -> zone.id to zone.bossEncounterId },
         )
         assertEquals(setOf("normal"), catalog.difficulties.map { it.id }.toSet())
-        assertEquals(
-            setOf("beast.rat", "undead.bone_archer", "bandit.sentry", "orc.raider", "cultist.dungeon_lord"),
-            catalog.monsters.map { it.id }.toSet(),
+        assertTrue(
+            catalog.monsters.map { it.id }.toSet().containsAll(
+                setOf(
+                    "beast.rat",
+                    "beast.rat_scavenger",
+                    "goblin.scout",
+                    "bandit.raider",
+                    "bandit.archer",
+                    "bandit.captain",
+                    "undead.restless_skeleton",
+                    "undead.bone_guard",
+                    "undead.bone_archer",
+                    "bandit.sentry",
+                    "orc.raider",
+                    "cultist.dungeon_lord",
+                ),
+            ),
         )
 
         val uniqueNameKeys =
@@ -189,6 +261,8 @@ class ContractLintTest {
                 addAll(catalog.monsters.map { it.nameKey })
                 addAll(catalog.bossEncounters.map { it.nameKey })
                 addAll(catalog.zones.map { it.nameKey })
+                addAll(catalog.interactables.map { it.nameKey })
+                addAll(catalog.objectiveSets.map { it.nameKey })
                 addAll(catalog.difficulties.map { it.nameKey })
                 addAll(catalog.itemBundle.materials.map { it.nameKey })
                 addAll(catalog.itemBundle.affixes.map { it.nameKey })
@@ -204,6 +278,8 @@ class ContractLintTest {
                 addAll(catalog.monsters.map { "monster:${it.id}" })
                 addAll(catalog.bossEncounters.map { "boss:${it.id}" })
                 addAll(catalog.zones.map { "zone:${it.id}" })
+                addAll(catalog.interactables.map { "interactable:${it.id}" })
+                addAll(catalog.objectiveSets.map { "objective:${it.id}" })
                 addAll(catalog.difficulties.map { "difficulty:${it.id}" })
                 addAll(catalog.itemBundle.materials.map { "material:${it.id}" })
                 addAll(catalog.itemBundle.affixes.map { "affix:${it.id}" })

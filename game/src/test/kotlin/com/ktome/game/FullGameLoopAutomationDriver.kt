@@ -4,21 +4,22 @@ import com.ktome.core.dungeon.StairDirection
 import com.ktome.core.ecs.AIType
 import com.ktome.core.ecs.BlocksMovement
 import com.ktome.core.ecs.Health
-import com.ktome.core.ecs.MonsterTemplateId
 import com.ktome.core.ecs.Position
 import com.ktome.core.ecs.World
 import com.ktome.core.ecs.get
 import com.ktome.core.map.Point
 import com.ktome.core.save.SaveManager
 import com.ktome.game.factory.EntityFactory
+import com.ktome.game.harness.RunObservationCapture
+import com.ktome.game.harness.SmokeBot
+import com.ktome.game.harness.consumesTurn
 import com.ktome.game.model.MonsterTemplate
 import org.junit.jupiter.api.Assertions.assertFalse
-import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertTrue
 
 internal class FullGameLoopAutomationDriver(
     private val saveManager: SaveManager,
-    private val config: FoundationGameConfig = FoundationGameConfig(zoneId = "grey_gate_depths"),
+    private val config: FoundationGameConfig = FoundationGameConfig(zoneId = "shattered_outpost"),
 ) {
     fun canContinue(): Boolean = saveManager.hasSave()
 
@@ -33,13 +34,18 @@ internal class FullGameLoopAutomationDriver(
         session: FoundationGameSession,
         targetFloor: Int,
     ) {
-        while (session.currentFloor() < targetFloor) {
-            val stair = requireNotNull(session.automationStairPoint(StairDirection.DOWN)) {
-                "No downstairs on floor ${session.currentFloor()}."
+        val bot = SmokeBot()
+        var turnCount = 0
+        var observation = RunObservationCapture.capture(session, turnCount)
+        while (session.currentFloor() < targetFloor && !observation.runOutcome.isTerminal && turnCount < 700) {
+            val command = requireNotNull(bot.decide(observation)) { "Bot failed to provide a command before floor $targetFloor." }
+            assertTrue(session.perform(command), "Command rejected while descending to floor $targetFloor: $command")
+            if (command.consumesTurn()) {
+                turnCount += 1
             }
-            session.automationMovePlayerTo(stair)
-            assertTrue(session.perform(PlayerCommand.Descend))
+            observation = RunObservationCapture.capture(session, turnCount)
         }
+        assertTrue(session.currentFloor() >= targetFloor, "Failed to reach floor $targetFloor, last messages=${observation.messageLogTail}")
     }
 
     fun saveAndRestart(session: FoundationGameSession): FoundationGameSession {
@@ -49,19 +55,18 @@ internal class FullGameLoopAutomationDriver(
     }
 
     fun killBossForVictory(session: FoundationGameSession) {
-        val world = session.automationWorld()
-        val bossId =
-            world.entitiesWith(MonsterTemplateId::class, Position::class, Health::class)
-                .single { entityId ->
-                    requireNotNull(world.get<MonsterTemplateId>(entityId)).value == FOUNDATION_BOSS_TEMPLATE_ID
-                }
-        requireNotNull(world.get<Health>(bossId)).current = 1
-        val bossPosition = requireNotNull(world.get<Position>(bossId)).toPoint()
-        val attackOrigin = findOpenAdjacentPoint(session, bossPosition)
-
-        session.automationMovePlayerTo(attackOrigin)
-        assertTrue(session.perform(PlayerCommand.Move(bossPosition - attackOrigin)))
-        assertTrue(session.isVictory())
+        val bot = SmokeBot()
+        var turnCount = 0
+        var observation = RunObservationCapture.capture(session, turnCount)
+        while (turnCount < 900 && !observation.runOutcome.isTerminal) {
+            val command = requireNotNull(bot.decide(observation)) { "Bot failed to provide a command." }
+            assertTrue(session.perform(command), "Command rejected during victory automation: $command")
+            if (command.consumesTurn()) {
+                turnCount += 1
+            }
+            observation = RunObservationCapture.capture(session, turnCount)
+        }
+        assertTrue(session.isVictory(), "Expected real victory path, last messages=${observation.messageLogTail}")
         assertFalse(canContinue())
     }
 

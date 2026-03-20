@@ -13,6 +13,8 @@ sealed interface PlayerCommand {
 
     data object PickUp : PlayerCommand
 
+    data object Interact : PlayerCommand
+
     data object Ascend : PlayerCommand
 
     data object Descend : PlayerCommand
@@ -61,10 +63,17 @@ data class PlayerStatus(
     val speed: Int,
 )
 
+data class PlayerResourceView(
+    val current: Int,
+    val max: Int,
+    val typeId: String,
+)
+
 data class InventoryItemView(
     val index: Int,
     val name: String,
     val type: ItemType,
+    val slot: EquipSlot? = null,
     val equippedSlot: EquipSlot? = null,
 )
 
@@ -80,6 +89,8 @@ data class TalentSlotView(
     val level: Int,
     val maxLevel: Int,
     val staminaCost: Int,
+    val resourceCost: Int = staminaCost,
+    val resourceTypeId: String = "STAMINA",
     val range: Int,
     val minRange: Int,
     val currentCooldown: Int,

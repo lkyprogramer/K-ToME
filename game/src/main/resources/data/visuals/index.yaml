@@ -4,7 +4,11 @@ visuals:
   - id: actor.rogue
   - id: actor.templar
   - id: actor.beast.rat
+  - id: actor.bandit.archer
+  - id: actor.bandit.captain
+  - id: actor.bandit.raider
   - id: actor.undead.bone_archer
+  - id: actor.undead.restless_skeleton
   - id: actor.bandit.sentry
   - id: actor.orc.raider
   - id: actor.cultist.dungeon_lord
@@ -44,6 +48,44 @@ visuals:
   - id: talent.vanguard.shield_bash.icon
   - id: talent.vanguard.war_cry.visual
   - id: talent.vanguard.war_cry.icon
+  - id: talent.vanguard.sweeping_strike.visual
+  - id: talent.vanguard.sweeping_strike.icon
+  - id: talent.vanguard.sunder_armor.visual
+  - id: talent.vanguard.sunder_armor.icon
+  - id: talent.vanguard.guard_stance.visual
+  - id: talent.vanguard.guard_stance.icon
+  - id: talent.vanguard.intimidation.visual
+  - id: talent.vanguard.intimidation.icon
+  - id: talent.vanguard.unyielding.visual
+  - id: talent.vanguard.unyielding.icon
+  - id: talent.arcanist.fireball.visual
+  - id: talent.arcanist.fireball.icon
+  - id: talent.arcanist.flame_wall.visual
+  - id: talent.arcanist.flame_wall.icon
+  - id: talent.arcanist.ice_bolt.visual
+  - id: talent.arcanist.ice_bolt.icon
+  - id: talent.arcanist.frost_nova.visual
+  - id: talent.arcanist.frost_nova.icon
+  - id: talent.arcanist.ice_prison.visual
+  - id: talent.arcanist.ice_prison.icon
+  - id: talent.arcanist.arcane_shield.visual
+  - id: talent.arcanist.arcane_shield.icon
+  - id: talent.arcanist.blink.visual
+  - id: talent.arcanist.blink.icon
+  - id: talent.arcanist.mana_surge.visual
+  - id: talent.arcanist.mana_surge.icon
+  - id: icon.skill.vanguard.guard_stance
+  - id: icon.skill.vanguard.power_strike
+  - id: icon.skill.vanguard.shield_bash
+  - id: icon.skill.vanguard.war_cry
+  - id: icon.skill.arcanist.blink
+  - id: icon.skill.arcanist.fire_bolt
+  - id: icon.monster.bandit.captain
+  - id: prop.alarm_bonfire
+  - id: prop.armory_gate
+  - id: prop.stairs.down
+  - id: prop.stairs.up
+  - id: prop.supply_crate
   - id: icon.monster.beast.rat
   - id: icon.monster.undead.bone_archer
   - id: icon.monster.bandit.sentry
@@ -93,9 +135,17 @@ visuals:
   - id: item.leather_armor.icon
   - id: item.chain_mail.visual
   - id: item.chain_mail.icon
+  - id: item.basic_shield.visual
+  - id: item.basic_shield.icon
   - id: item.plate_armor.visual
   - id: item.plate_armor.icon
   - id: item.healing_potion.visual
   - id: item.healing_potion.icon
   - id: item.scroll_teleport.visual
   - id: item.scroll_teleport.icon
+  - id: item.mana_potion.visual
+  - id: item.mana_potion.icon
+  - id: item.arcane_staff.visual
+  - id: item.arcane_staff.icon
+  - id: item.apprentice_robe.visual
+  - id: item.apprentice_robe.icon

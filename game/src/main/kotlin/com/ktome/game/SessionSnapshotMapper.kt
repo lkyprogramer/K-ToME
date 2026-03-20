@@ -15,6 +15,7 @@ import com.ktome.core.ecs.Faction
 import com.ktome.core.ecs.FactionTag
 import com.ktome.core.ecs.Glyph
 import com.ktome.core.ecs.Health
+import com.ktome.core.ecs.Interactable
 import com.ktome.core.ecs.MonsterTemplateId
 import com.ktome.core.ecs.Name
 import com.ktome.core.ecs.PatrolRoute
@@ -304,6 +305,7 @@ internal object SessionSnapshotMapper {
             itemState = world.get<ItemInstance>(entityId)?.let(::toItemSnapshot),
             isGroundItem = world.get<GroundItem>(entityId) != null,
             isPlayerControlled = world.get<PlayerControlled>(entityId) != null,
+            interactableId = world.get<Interactable>(entityId)?.id,
             stair = world.get<Stair>(entityId)?.let { StairSnapshot(direction = it.direction.name) },
         )
 
@@ -393,6 +395,10 @@ internal object SessionSnapshotMapper {
         if (snapshot.isPlayerControlled) {
             world.add(entityId, PlayerControlled)
             applyPlayerPresentation(world, entityId, content.localizer.text("actor.player.name"))
+        }
+        snapshot.interactableId?.let { interactableId ->
+            world.add(entityId, Interactable(interactableId))
+            applyInteractablePresentation(world, entityId, interactableId, content)
         }
         snapshot.stair?.let { stair ->
             val direction = parseEnumFromSave<StairDirection>(value = stair.direction, label = "stair direction")
@@ -575,6 +581,10 @@ internal object SessionSnapshotMapper {
             StatusEffectType.ARMOR_BREAK -> localizer.text("status.armor_break")
             StatusEffectType.WAR_CRY_BUFF -> localizer.text("status.war_cry_buff")
             StatusEffectType.WAR_CRY_DEBUFF -> localizer.text("status.war_cry_debuff")
+            StatusEffectType.GUARD_STANCE_BUFF -> localizer.text("status.guard_stance_buff")
+            StatusEffectType.ARCANE_SHIELD_BUFF -> localizer.text("status.arcane_shield_buff")
+            StatusEffectType.UNYIELDING_BUFF -> localizer.text("status.unyielding_buff")
+            StatusEffectType.MANA_SURGE_BUFF -> localizer.text("status.mana_surge_buff")
         }
 
     private fun toItemSnapshot(item: ItemInstance): ItemSnapshot =
@@ -614,6 +624,7 @@ internal object SessionSnapshotMapper {
                 snapshot.effect?.let { effect ->
                     parseEnumFromSave<ConsumableEffect>(value = effect, label = "consumable effect")
                 } ?: base.effect,
+            resourceTypeId = base.resourceTypeId,
             magnitude = snapshot.magnitude,
         )
     }
@@ -755,6 +766,33 @@ internal object SessionSnapshotMapper {
                 },
             ),
         )
+    }
+
+    private fun applyInteractablePresentation(
+        world: World,
+        entityId: EntityId,
+        interactableId: String,
+        content: GameContent,
+    ) {
+        val schema =
+            requireNotNull(content.schemaCatalog.interactables.firstOrNull { interactable -> interactable.id == interactableId }) {
+                "Unknown interactable '$interactableId'."
+            }
+        val glyph =
+            when (interactableId) {
+                "armory_gate" -> '+'
+                "alarm_bonfire" -> '^'
+                else -> '&'
+            }
+        val colorHex =
+            when (interactableId) {
+                "armory_gate" -> "#C7B48A"
+                "alarm_bonfire" -> "#FF8A3D"
+                else -> "#D6C977"
+            }
+        world.add(entityId, Glyph(glyph))
+        world.add(entityId, DisplayColor(colorHex))
+        world.add(entityId, Name(content.localizer.text(schema.nameKey)))
     }
 
     private fun resolveMonsterTemplate(

@@ -4,6 +4,7 @@ import com.ktome.core.ecs.EntityId
 
 enum class EquipSlot {
     WEAPON,
+    OFF_HAND,
     ARMOR,
 }
 
@@ -27,6 +28,7 @@ enum class ItemQuality(val affixCount: Int) {
 enum class ConsumableEffect {
     HEAL,
     TELEPORT,
+    RESTORE_RESOURCE,
 }
 
 data class StatModifier(
@@ -101,6 +103,7 @@ data class ItemBaseDef(
     val dropFloors: List<Int> = listOf(1),
     val dropWeight: Int = 1,
     val effect: ConsumableEffect? = null,
+    val resourceTypeId: String? = null,
     val magnitude: Int = 0,
 )
 
@@ -123,6 +126,7 @@ data class ItemInstance(
     val affixes: List<AffixDef> = emptyList(),
     val stats: StatModifier = StatModifier(),
     val effect: ConsumableEffect? = null,
+    val resourceTypeId: String? = null,
     val magnitude: Int = 0,
 )
 
@@ -136,4 +140,3 @@ data class Equipment(
 )
 
 data object GroundItem
-

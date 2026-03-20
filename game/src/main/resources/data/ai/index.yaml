@@ -7,3 +7,13 @@ aiProfiles:
     schemaVersion: 2
   - id: ai.boss.dungeon_lord
     schemaVersion: 2
+    talentPriority: [war_cry, power_strike, charge, shield_bash]
+    skipRules:
+      - talentId: war_cry
+        selfHasStatus: WAR_CRY_BUFF
+  - id: ai.boss.bandit_captain
+    schemaVersion: 2
+    talentPriority: [war_cry, power_strike, shield_bash]
+    skipRules:
+      - talentId: war_cry
+        selfHasStatus: WAR_CRY_BUFF

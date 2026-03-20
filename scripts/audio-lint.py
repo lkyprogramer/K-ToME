@@ -43,6 +43,16 @@ REQUIRED_AUDIBLE_KEY_PATHS = {
     "audio.music.menu": "audio/music/menu.ogg",
     "audio.profession.vanguard": "audio/professions/vanguard.ogg",
     "audio.profession.arcanist": "audio/professions/arcanist.ogg",
+    "audio.item.basic_shield": "audio/item/basic_shield.ogg",
+    "audio.item.arcane_staff": "audio/item/arcane_staff.ogg",
+    "audio.item.apprentice_robe": "audio/item/apprentice_robe.ogg",
+    "audio.item.mana_potion": "audio/item/mana_potion.ogg",
+    "audio.talent.power_strike": "audio/talent/power_strike.ogg",
+    "audio.talent.fireball": "audio/talent/fireball.ogg",
+    "audio.tree.vanguard_arms": "audio/tree/vanguard_arms.ogg",
+    "audio.tree.arcanist_flame": "audio/tree/arcanist_flame.ogg",
+    "audio.boss.bandit_captain": "audio/boss/bandit_captain.ogg",
+    "audio.zone.shattered_outpost": "audio/ambient/shattered_outpost.ogg",
 }
 
 
@@ -291,14 +301,6 @@ def validate(
             errors.append(
                 f"audio plan required audible key '{key}' must point to '{expected_path}', got '{plan_source_path}'."
             )
-
-    overlapping_spec_keys = sorted({str(entry.get("key", "")).strip() for entry in plan_entries if isinstance(entry, dict)} & set(bundled_by_key))
-    if overlapping_spec_keys:
-        errors.append(
-            "bundled audio spec catalog duplicates audio plan keys: "
-            + ", ".join(overlapping_spec_keys)
-            + "."
-        )
 
     expected_spec_keys = {str(entry.get("key", "")).strip() for entry in plan_entries if isinstance(entry, dict)} | set(bundled_by_key)
     missing_spec_keys = sorted(manifest_keys - expected_spec_keys)

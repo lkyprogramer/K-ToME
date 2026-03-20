@@ -45,7 +45,7 @@ class EntityFactoryTest {
         assertNotNull(world.get<Inventory>(playerId))
         assertNotNull(world.get<Equipment>(playerId))
         assertNotNull(world.get<CooldownState>(playerId))
-        assertEquals(4, requireNotNull(world.get<TalentLoadout>(playerId)).slotToTalentId.size)
+        assertEquals(talents.size, requireNotNull(world.get<TalentLoadout>(playerId)).slotToTalentId.size)
         assertNotNull(world.get<DerivedStats>(playerId))
         assertEquals("#FFD700", requireNotNull(world.get<DisplayColor>(playerId)).hex)
     }

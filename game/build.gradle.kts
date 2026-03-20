@@ -24,6 +24,18 @@ tasks.register<Test>("headlessSmoke") {
     outputs.dir(harnessReportDir)
 }
 
+tasks.register<Test>("soloClearLab") {
+    group = "verification"
+    description = "Runs the fixed-seed solo clear acceptance lab."
+    testClassesDirs = sourceSets.test.get().output.classesDirs
+    classpath = sourceSets.test.get().runtimeClasspath
+    useJUnitPlatform {
+        includeTags("soloClearLab")
+    }
+    systemProperty("ktome.harness.reportDir", harnessReportDir.get().asFile.absolutePath)
+    outputs.dir(harnessReportDir)
+}
+
 tasks.register<Test>("longRunLab") {
     group = "verification"
     description = "Runs nightly long-run AI matrix."
