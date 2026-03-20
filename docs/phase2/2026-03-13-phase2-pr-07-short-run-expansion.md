@@ -9,6 +9,10 @@
 **前置条件**: `P2-W6` 完成  
 **对应问题**: 最小正式切片只证明“路径成立”，还不足以证明 Phase 2 出口。必须扩成 4 职业、4 zone 和完整短局实验室，Phase 2 才能真正结束。
 
+> 本文保留为 `PR-07` 的原始设计基线。  
+> 审查后、按 sprint/PR 粒度可直接执行的收口计划，见：
+> [2026-03-20-phase2-pr-07-post-review-execution-plan.md](./2026-03-20-phase2-pr-07-post-review-execution-plan.md)
+
 ---
 
 ## 1. 阶段目标

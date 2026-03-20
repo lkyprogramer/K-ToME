@@ -1,5 +1,8 @@
 # Phase 2 Verification Checklist
 
+> `PR-07 / P2-C` 的审查后执行顺序、formal path 资源门禁与 sprint/PR 拆分，见：
+> [2026-03-20-phase2-pr-07-post-review-execution-plan.md](./2026-03-20-phase2-pr-07-post-review-execution-plan.md)
+
 ## 1. Automated Verification
 
 ### 1.1 Core & Game

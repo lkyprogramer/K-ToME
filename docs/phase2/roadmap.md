@@ -19,9 +19,10 @@ Phase 2 的主题不是继续堆内容，而是先把 Phase 1 的最小可玩主
 7. [2026-03-13-phase2-pr-05-minimal-tile-shell.md](./2026-03-13-phase2-pr-05-minimal-tile-shell.md)
 8. [2026-03-13-phase2-pr-06-minimal-official-slice.md](./2026-03-13-phase2-pr-06-minimal-official-slice.md)
 9. [2026-03-13-phase2-pr-07-short-run-expansion.md](./2026-03-13-phase2-pr-07-short-run-expansion.md)
-10. [../2026-03-13-phase2-to-phase5-final-roadmap.md](../2026-03-13-phase2-to-phase5-final-roadmap.md)
-11. [../2026-03-13-core-systems-design-and-phase-supplements.md](../2026-03-13-core-systems-design-and-phase-supplements.md)
-12. [../2026-03-13-art-style-bible.md](../2026-03-13-art-style-bible.md)
+10. [2026-03-20-phase2-pr-07-post-review-execution-plan.md](./2026-03-20-phase2-pr-07-post-review-execution-plan.md)
+11. [../2026-03-13-phase2-to-phase5-final-roadmap.md](../2026-03-13-phase2-to-phase5-final-roadmap.md)
+12. [../2026-03-13-core-systems-design-and-phase-supplements.md](../2026-03-13-core-systems-design-and-phase-supplements.md)
+13. [../2026-03-13-art-style-bible.md](../2026-03-13-art-style-bible.md)
 
 ## 3. 执行权威
 
