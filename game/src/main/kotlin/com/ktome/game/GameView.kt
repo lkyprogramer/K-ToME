@@ -1,6 +1,7 @@
 package com.ktome.game
 
 import com.ktome.core.ecs.EntityId
+import com.ktome.core.item.ConsumableEffect
 import com.ktome.core.item.EquipSlot
 import com.ktome.core.item.ItemType
 import com.ktome.core.map.Point
@@ -75,6 +76,7 @@ data class InventoryItemView(
     val type: ItemType,
     val slot: EquipSlot? = null,
     val equippedSlot: EquipSlot? = null,
+    val effect: ConsumableEffect? = null,
 )
 
 data class EquipmentSlotView(

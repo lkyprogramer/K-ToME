@@ -895,6 +895,7 @@ object GameModule {
             colorHex = colorHex,
             stats = baseStats.copy(),
             effect = effect,
+            resourceTypeId = resourceTypeId,
             magnitude = magnitude,
         )
 

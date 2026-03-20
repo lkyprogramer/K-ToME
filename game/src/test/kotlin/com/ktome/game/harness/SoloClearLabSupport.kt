@@ -704,7 +704,7 @@ private class SoloClearScriptBot : RunBot {
         if (!lowHealth) {
             return null
         }
-        val potionIndex = observation.inventoryItems.indexOfFirst { item -> item.type == ItemType.CONSUMABLE }
+        val potionIndex = observation.inventoryItems.indexOfFirst { item -> item.effect == ConsumableEffect.HEAL }
         return potionIndex.takeIf { it >= 0 }?.let(PlayerCommand::ActivateInventoryItem)
     }
 

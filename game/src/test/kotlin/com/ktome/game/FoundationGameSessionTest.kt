@@ -317,9 +317,28 @@ class FoundationGameSessionTest {
 
         assertTrue(session.perform(PlayerCommand.Interact))
         assertEquals(baselineInventoryCount + 1, session.inventoryItems().size)
-        assertTrue(session.inventoryItems().count { item -> item.name == "法力药水" } >= 2)
         assertTrue(session.playerResourceView().current > 5)
         assertTrue(session.renderSnapshot().logEvents.any { event -> event.message.key == "log.objective.progress" })
+    }
+
+    @Test
+    fun `interact armory gate on floor two avoids duplicate vanguard starter gear rewards`() {
+        val session =
+            GameModule.newFoundationSession(
+                FoundationGameConfig(seed = 20260318L, zoneId = "shattered_outpost", playerProfessionId = "vanguard"),
+                SaveManager(tempDir.resolve("interact-gate-vanguard-save")),
+            )
+
+        movePlayerTo(session, stairPoint(session, com.ktome.core.dungeon.StairDirection.DOWN))
+        assertTrue(session.perform(PlayerCommand.Descend))
+        val gatePoint = interactablePoint(session, "armory_gate")
+
+        session.automationMovePlayerTo(gatePoint)
+
+        assertTrue(session.perform(PlayerCommand.Interact))
+        assertEquals(1, inventoryBaseIds(session).count { baseId -> baseId == "basic_shield" })
+        assertEquals(1, inventoryBaseIds(session).count { baseId -> baseId == "chain_mail" })
+        assertEquals(2, inventoryBaseIds(session).count { baseId -> baseId == "healing_potion" })
     }
 
     @Test
@@ -584,7 +603,32 @@ class FoundationGameSessionTest {
         assertTrue(session.isVictory())
         assertFalse(saveManager.hasSave())
         assertEquals(baselineInventoryCount + 1, session.inventoryItems().size)
-        assertTrue(session.messageLog().any { message -> message.contains("Mana Potion") || message.contains("法力药水") })
+        assertEquals(1, inventoryBaseIds(session).count { baseId -> baseId == "mana_potion" })
+    }
+
+    @Test
+    fun `killing shattered outpost boss rewards vanguard without duplicating starter shield`() {
+        val saveManager = SaveManager(tempDir.resolve("bandit-boss-save"))
+        val session =
+            GameModule.newFoundationSession(
+                config = FoundationGameConfig(seed = 20260318L, zoneId = "shattered_outpost", playerProfessionId = "vanguard"),
+                saveManager = saveManager,
+            )
+
+        movePlayerTo(session, stairPoint(session, com.ktome.core.dungeon.StairDirection.DOWN))
+        assertTrue(session.perform(PlayerCommand.Descend))
+
+        val world = runtimeWorld(session)
+        val bossId = requireNotNull(entityByTemplateId(session, "bandit.captain"))
+        requireNotNull(world.get<Health>(bossId)).current = 1
+        val bossPosition = requireNotNull(world.get<Position>(bossId)).toPoint()
+        val attackOrigin = if (bossPosition.x > 0) Point(bossPosition.x - 1, bossPosition.y) else Point(bossPosition.x + 1, bossPosition.y)
+        movePlayerTo(session, attackOrigin)
+
+        assertTrue(session.perform(PlayerCommand.Move(bossPosition - attackOrigin)))
+        assertTrue(session.isVictory())
+        assertEquals(1, inventoryBaseIds(session).count { baseId -> baseId == "basic_shield" })
+        assertEquals(1, inventoryBaseIds(session).count { baseId -> baseId == "scroll_teleport" })
     }
 
     @Test
@@ -917,6 +961,12 @@ class FoundationGameSessionTest {
             world.entitiesWith(Position::class, Interactable::class)
                 .first { candidate -> requireNotNull(world.get<Interactable>(candidate)).id == interactableId }
         return requireNotNull(world.get<Position>(entityId)).toPoint()
+    }
+
+    private fun inventoryBaseIds(session: FoundationGameSession): List<String> {
+        val world = runtimeWorld(session)
+        val inventory = requireNotNull(world.get<com.ktome.core.item.Inventory>(session.playerId))
+        return inventory.itemIds.map { itemId -> requireNotNull(world.get<ItemInstance>(itemId)).baseId }
     }
 
     private fun sessionSaveManager(session: FoundationGameSession): SaveManager {

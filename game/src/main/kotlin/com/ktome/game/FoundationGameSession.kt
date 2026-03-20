@@ -312,6 +312,7 @@ class FoundationGameSession internal constructor(
                 type = item.type,
                 slot = item.slot,
                 equippedSlot = inventoryManager.equippedSlotOf(world, playerId, itemId),
+                effect = item.effect,
             )
         }
     }
@@ -957,13 +958,16 @@ class FoundationGameSession internal constructor(
     private fun itemSchemaFor(baseItemId: String) =
         content.schemaCatalog.itemBundle.items.firstOrNull { schema -> schema.id == baseItemId }
 
+    private fun itemBaseDef(baseItemId: String): ItemBaseDef? =
+        content.itemBundle.baseItems.firstOrNull { item -> item.id == baseItemId }
+
     private fun officialRewardItem(
         baseId: String,
         fallbackBaseId: String,
     ): ItemInstance {
         val base =
-            content.itemBundle.baseItems.firstOrNull { item -> item.id == baseId }
-                ?: requireNotNull(content.itemBundle.baseItems.firstOrNull { item -> item.id == fallbackBaseId }) {
+            itemBaseDef(baseId)
+                ?: requireNotNull(itemBaseDef(fallbackBaseId)) {
                     "Missing fallback reward item '$fallbackBaseId'."
         }
         return base.toRuntimeItem()
@@ -977,12 +981,40 @@ class FoundationGameSession internal constructor(
             profileIds
                 .flatMap { profileId -> lootProfile(profileId)?.itemIds.orEmpty() }
                 .distinct()
+        val freshCandidateIds = candidateIds.filterNot(currentOwnedItemBaseIds()::contains)
         val selectedBaseId =
-            rewardPreferenceOrder()
-                .firstOrNull { itemId -> itemId in candidateIds }
+            rewardPreferenceOrder().firstOrNull { itemId ->
+                itemId in freshCandidateIds && isRewardSuitableForCurrentProfession(itemId)
+            }
+                ?: fallbackBaseId.takeIf(::isRewardSuitableForCurrentProfession)
+                ?: rewardPreferenceOrder().firstOrNull { itemId ->
+                    itemId in candidateIds && isRewardSuitableForCurrentProfession(itemId)
+                }
+                ?: freshCandidateIds.firstOrNull { itemId -> isRewardSuitableForCurrentProfession(itemId) }
+                ?: freshCandidateIds.firstOrNull()
                 ?: candidateIds.firstOrNull()
                 ?: fallbackBaseId
         return officialRewardItem(baseId = selectedBaseId, fallbackBaseId = fallbackBaseId)
+    }
+
+    private fun currentOwnedItemBaseIds(): Set<String> {
+        val inventory = world.get<Inventory>(playerId) ?: return emptySet()
+        return inventory.itemIds
+            .mapNotNull { itemId -> world.get<ItemInstance>(itemId)?.baseId }
+            .toSet()
+    }
+
+    private fun isRewardSuitableForCurrentProfession(baseItemId: String): Boolean {
+        val profession = currentProfessionSchema() ?: return true
+        val base = itemBaseDef(baseItemId) ?: return false
+        if (base.resourceTypeId != null && base.resourceTypeId != profession.resourceType) {
+            return false
+        }
+        val itemSchema = itemSchemaFor(baseItemId)
+        if (profession.resourceType != ResourceType.MANA.name && itemSchema?.tags?.contains("arcane") == true) {
+            return false
+        }
+        return true
     }
 
     private fun rewardPreferenceOrder(): List<String> =

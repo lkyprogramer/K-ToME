@@ -1,5 +1,6 @@
 package com.ktome.game.harness
 
+import com.ktome.core.item.ConsumableEffect
 import com.ktome.core.map.Point
 import com.ktome.game.PlayerCommand
 import com.ktome.game.PrimaryStat
@@ -53,11 +54,23 @@ class SmokeBot : RunBot {
             )
 
     private fun preferredInventoryAction(observation: RunObservation): PlayerCommand? {
-        val criticalHealth = observation.playerStatus.currentHp * 100 <= observation.playerStatus.maxHp * 45
         val lowHealth = observation.playerStatus.currentHp * 100 <= observation.playerStatus.maxHp * 60
+        val adjacentHostiles = hostilesWithin(observation, 1)
+        val canEmergencyBlink = availableTalent(observation, "blink") != null
+        val escapeIndex =
+            observation.inventoryItems.indexOfFirst { item ->
+                lowHealth &&
+                    adjacentHostiles > 0 &&
+                    !canEmergencyBlink &&
+                    item.effect == ConsumableEffect.TELEPORT
+            }
+        if (escapeIndex >= 0) {
+            return PlayerCommand.ActivateInventoryItem(escapeIndex)
+        }
         val consumableIndex =
             observation.inventoryItems.indexOfFirst { item ->
-                item.type.name == "CONSUMABLE" && (lowHealth || criticalHealth)
+                lowHealth &&
+                    item.effect == ConsumableEffect.HEAL
             }
         if (consumableIndex >= 0) {
             return PlayerCommand.ActivateInventoryItem(consumableIndex)
