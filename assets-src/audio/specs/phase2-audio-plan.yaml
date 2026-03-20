@@ -54,7 +54,7 @@ cueFamilies:
     source: internal
     license: internal
   - id: item
-    provider: placeholder
+    provider: generated
     source: internal
     license: internal
   - id: material
@@ -62,11 +62,11 @@ cueFamilies:
     source: internal
     license: internal
   - id: talent
-    provider: placeholder
+    provider: generated
     source: internal
     license: internal
   - id: tree
-    provider: placeholder
+    provider: generated
     source: internal
     license: internal
   - id: zone
@@ -166,3 +166,151 @@ entries:
     cueFamily: boss
     eventId: audio.boss.warning
     sourcePath: audio/boss/warning.ogg
+  - key: audio.item.short_sword
+    cueFamily: item
+    eventId: audio.item.short_sword
+    sourcePath: audio/item/short_sword.ogg
+  - key: audio.item.chain_mail
+    cueFamily: item
+    eventId: audio.item.chain_mail
+    sourcePath: audio/item/chain_mail.ogg
+  - key: audio.item.basic_shield
+    cueFamily: item
+    eventId: audio.item.basic_shield
+    sourcePath: audio/item/basic_shield.ogg
+  - key: audio.item.healing_potion
+    cueFamily: item
+    eventId: audio.item.healing_potion
+    sourcePath: audio/item/healing_potion.ogg
+  - key: audio.item.arcane_staff
+    cueFamily: item
+    eventId: audio.item.arcane_staff
+    sourcePath: audio/item/arcane_staff.ogg
+  - key: audio.item.apprentice_robe
+    cueFamily: item
+    eventId: audio.item.apprentice_robe
+    sourcePath: audio/item/apprentice_robe.ogg
+  - key: audio.item.mana_potion
+    cueFamily: item
+    eventId: audio.item.mana_potion
+    sourcePath: audio/item/mana_potion.ogg
+  - key: audio.talent.power_strike
+    cueFamily: talent
+    eventId: audio.talent.power_strike
+    sourcePath: audio/talent/power_strike.ogg
+  - key: audio.talent.charge
+    cueFamily: talent
+    eventId: audio.talent.charge
+    sourcePath: audio/talent/charge.ogg
+  - key: audio.talent.shield_bash
+    cueFamily: talent
+    eventId: audio.talent.shield_bash
+    sourcePath: audio/talent/shield_bash.ogg
+  - key: audio.talent.war_cry
+    cueFamily: talent
+    eventId: audio.talent.war_cry
+    sourcePath: audio/talent/war_cry.ogg
+  - key: audio.talent.sweeping_strike
+    cueFamily: talent
+    eventId: audio.talent.sweeping_strike
+    sourcePath: audio/talent/sweeping_strike.ogg
+  - key: audio.talent.sunder_armor
+    cueFamily: talent
+    eventId: audio.talent.sunder_armor
+    sourcePath: audio/talent/sunder_armor.ogg
+  - key: audio.talent.guard_stance
+    cueFamily: talent
+    eventId: audio.talent.guard_stance
+    sourcePath: audio/talent/guard_stance.ogg
+  - key: audio.talent.intimidation
+    cueFamily: talent
+    eventId: audio.talent.intimidation
+    sourcePath: audio/talent/intimidation.ogg
+  - key: audio.talent.unyielding
+    cueFamily: talent
+    eventId: audio.talent.unyielding
+    sourcePath: audio/talent/unyielding.ogg
+  - key: audio.talent.fireball
+    cueFamily: talent
+    eventId: audio.talent.fireball
+    sourcePath: audio/talent/fireball.ogg
+  - key: audio.talent.flame_wall
+    cueFamily: talent
+    eventId: audio.talent.flame_wall
+    sourcePath: audio/talent/flame_wall.ogg
+  - key: audio.talent.ice_bolt
+    cueFamily: talent
+    eventId: audio.talent.ice_bolt
+    sourcePath: audio/talent/ice_bolt.ogg
+  - key: audio.talent.frost_nova
+    cueFamily: talent
+    eventId: audio.talent.frost_nova
+    sourcePath: audio/talent/frost_nova.ogg
+  - key: audio.talent.ice_prison
+    cueFamily: talent
+    eventId: audio.talent.ice_prison
+    sourcePath: audio/talent/ice_prison.ogg
+  - key: audio.talent.arcane_shield
+    cueFamily: talent
+    eventId: audio.talent.arcane_shield
+    sourcePath: audio/talent/arcane_shield.ogg
+  - key: audio.talent.blink
+    cueFamily: talent
+    eventId: audio.talent.blink
+    sourcePath: audio/talent/blink.ogg
+  - key: audio.talent.mana_surge
+    cueFamily: talent
+    eventId: audio.talent.mana_surge
+    sourcePath: audio/talent/mana_surge.ogg
+  - key: audio.tree.vanguard_arms
+    cueFamily: tree
+    eventId: audio.tree.vanguard_arms
+    sourcePath: audio/tree/vanguard_arms.ogg
+  - key: audio.tree.vanguard_shield
+    cueFamily: tree
+    eventId: audio.tree.vanguard_shield
+    sourcePath: audio/tree/vanguard_shield.ogg
+  - key: audio.tree.vanguard_warcry
+    cueFamily: tree
+    eventId: audio.tree.vanguard_warcry
+    sourcePath: audio/tree/vanguard_warcry.ogg
+  - key: audio.tree.arcanist_flame
+    cueFamily: tree
+    eventId: audio.tree.arcanist_flame
+    sourcePath: audio/tree/arcanist_flame.ogg
+  - key: audio.tree.arcanist_frost
+    cueFamily: tree
+    eventId: audio.tree.arcanist_frost
+    sourcePath: audio/tree/arcanist_frost.ogg
+  - key: audio.tree.arcanist_arcane
+    cueFamily: tree
+    eventId: audio.tree.arcanist_arcane
+    sourcePath: audio/tree/arcanist_arcane.ogg
+  - key: audio.boss.bandit_captain
+    cueFamily: boss
+    eventId: audio.boss.bandit_captain
+    sourcePath: audio/boss/bandit_captain.ogg
+  - key: audio.boss.cultist.dungeon_lord
+    cueFamily: boss
+    eventId: audio.boss.cultist.dungeon_lord
+    sourcePath: audio/boss/cultist_dungeon_lord.ogg
+  - key: audio.monster.bandit.captain
+    cueFamily: monster
+    eventId: audio.monster.bandit.captain
+    sourcePath: audio/monster/bandit_captain.ogg
+  - key: audio.zone.shattered_outpost
+    cueFamily: zone
+    eventId: audio.zone.shattered_outpost
+    sourcePath: audio/ambient/shattered_outpost.ogg
+  - key: audio.zone.greenwood_fringe
+    cueFamily: zone
+    eventId: audio.zone.greenwood_fringe
+    sourcePath: audio/ambient/greenwood_fringe.ogg
+  - key: audio.zone.deep_iron_pit
+    cueFamily: zone
+    eventId: audio.zone.deep_iron_pit
+    sourcePath: audio/ambient/deep_iron_pit.ogg
+  - key: audio.zone.grey_gate_depths
+    cueFamily: zone
+    eventId: audio.zone.grey_gate_depths
+    sourcePath: audio/ambient/grey_gate_depths.ogg

@@ -10,6 +10,9 @@ import com.ktome.core.ecs.add
 import com.ktome.core.ecs.get
 import com.ktome.core.ecs.has
 import com.ktome.core.map.Point
+import com.ktome.core.resource.ResourcePool
+import com.ktome.core.resource.ResourcePools
+import com.ktome.core.resource.ResourceType
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -121,6 +124,38 @@ class InventoryManagerTest {
         assertEquals(Point(5, 4), requireNotNull(world.get<Position>(player)).toPoint())
     }
 
+    @Test
+    fun `resource consumable restores matching pool`() {
+        val world = baseWorld()
+        val player = createPlayer(world)
+        world.add(
+            player,
+            ResourcePools(
+                linkedMapOf(
+                    ResourceType.MANA to ResourcePool(type = ResourceType.MANA, current = 12, max = 40),
+                ),
+            ),
+        )
+        val potion =
+            createItem(
+                world = world,
+                position = Point(1, 1),
+                type = ItemType.CONSUMABLE,
+                slot = null,
+                effect = ConsumableEffect.RESTORE_RESOURCE,
+                resourceTypeId = ResourceType.MANA.name,
+                magnitude = 15,
+            )
+        manager.pickUp(world, player, potion)
+
+        val result = manager.useConsumable(world, player, 0)
+
+        assertTrue(result.success)
+        assertEquals(27, requireNotNull(world.get<ResourcePools>(player)).pool(ResourceType.MANA)?.current)
+        assertTrue(requireNotNull(world.get<Inventory>(player)).itemIds.isEmpty())
+        assertFalse(world.isAlive(potion))
+    }
+
     private fun baseWorld(): World = World()
 
     private fun createPlayer(
@@ -144,6 +179,7 @@ class InventoryManagerTest {
         type: ItemType,
         slot: EquipSlot?,
         effect: ConsumableEffect? = null,
+        resourceTypeId: String? = null,
         magnitude: Int = 0,
     ): com.ktome.core.ecs.EntityId {
         val item = world.createEntity()
@@ -158,6 +194,7 @@ class InventoryManagerTest {
                 glyph = if (type == ItemType.CONSUMABLE) '!' else ')',
                 colorHex = "#FFFFFF",
                 effect = effect,
+                resourceTypeId = resourceTypeId,
                 magnitude = magnitude,
             ),
         )

@@ -114,3 +114,164 @@ monsters:
     expReward: 300
     spawnFloors: [5]
     spawnWeight: 1
+  - id: beast.rat_scavenger
+    nameKey: monster.beast.rat_scavenger.name
+    descKey: monster.beast.rat_scavenger.desc
+    visualKey: actor.beast.rat
+    iconKey: icon.monster.beast.rat
+    audioProfile: audio.monster.beast.rat
+    schemaVersion: 2
+    tags: [monster, beast]
+    archetype: skirmisher
+    glyph: "r"
+    color: "#8B6B3F"
+    stats: { str: 4, dex: 9, con: 4, wil: 1 }
+    baseHp: 14
+    baseAttack: 4
+    baseDefense: 0
+    speed: 112
+    ai: CHASE
+    aiProfileId: ai.chase.basic
+    lootProfileId: loot.foundation.common
+    talents: {}
+    expReward: 18
+    spawnFloors: [1, 2]
+    spawnWeight: 10
+  - id: goblin.scout
+    nameKey: monster.goblin.scout.name
+    descKey: monster.goblin.scout.desc
+    visualKey: actor.bandit.raider
+    iconKey: icon.monster.bandit.sentry
+    audioProfile: audio.monster.bandit.sentry
+    schemaVersion: 2
+    tags: [monster, goblin]
+    archetype: scout
+    glyph: "g"
+    color: "#6AA84F"
+    stats: { str: 5, dex: 10, con: 5, wil: 2 }
+    baseHp: 16
+    baseAttack: 5
+    baseDefense: 1
+    speed: 105
+    ai: PATROL
+    aiProfileId: ai.patrol.basic
+    lootProfileId: loot.foundation.common
+    talents: {}
+    expReward: 22
+    spawnFloors: [1, 2]
+    spawnWeight: 8
+  - id: bandit.raider
+    nameKey: monster.bandit.raider.name
+    descKey: monster.bandit.raider.desc
+    visualKey: actor.bandit.raider
+    iconKey: icon.monster.orc.raider
+    audioProfile: audio.monster.orc.raider
+    schemaVersion: 2
+    tags: [monster, bandit]
+    archetype: brute
+    glyph: "b"
+    color: "#7E5A3C"
+    stats: { str: 8, dex: 7, con: 8, wil: 2 }
+    baseHp: 26
+    baseAttack: 7
+    baseDefense: 2
+    speed: 96
+    ai: CHASE
+    aiProfileId: ai.chase.basic
+    lootProfileId: loot.foundation.common
+    talents: {}
+    expReward: 32
+    spawnFloors: [1, 2]
+    spawnWeight: 8
+  - id: bandit.archer
+    nameKey: monster.bandit.archer.name
+    descKey: monster.bandit.archer.desc
+    visualKey: actor.bandit.archer
+    iconKey: icon.monster.undead.bone_archer
+    audioProfile: audio.monster.undead.bone_archer
+    schemaVersion: 2
+    tags: [monster, bandit]
+    archetype: artillery
+    glyph: "a"
+    color: "#A67952"
+    stats: { str: 6, dex: 11, con: 5, wil: 3 }
+    baseHp: 20
+    baseAttack: 8
+    baseDefense: 1
+    speed: 100
+    ai: KITE
+    aiProfileId: ai.kite.basic
+    lootProfileId: loot.foundation.common
+    talents: {}
+    expReward: 34
+    spawnFloors: [1, 2]
+    spawnWeight: 7
+  - id: undead.restless_skeleton
+    nameKey: monster.undead.restless_skeleton.name
+    descKey: monster.undead.restless_skeleton.desc
+    visualKey: actor.undead.restless_skeleton
+    iconKey: icon.monster.undead.bone_archer
+    audioProfile: audio.monster.undead.bone_archer
+    schemaVersion: 2
+    tags: [monster, undead]
+    archetype: sentinel
+    glyph: "s"
+    color: "#D9D9D9"
+    stats: { str: 7, dex: 6, con: 8, wil: 2 }
+    baseHp: 24
+    baseAttack: 6
+    baseDefense: 2
+    speed: 92
+    ai: CHASE
+    aiProfileId: ai.chase.basic
+    lootProfileId: loot.foundation.common
+    talents: {}
+    expReward: 30
+    spawnFloors: [1, 2]
+    spawnWeight: 7
+  - id: undead.bone_guard
+    nameKey: monster.undead.bone_guard.name
+    descKey: monster.undead.bone_guard.desc
+    visualKey: actor.undead.restless_skeleton
+    iconKey: icon.monster.undead.bone_archer
+    audioProfile: audio.monster.undead.bone_archer
+    schemaVersion: 2
+    tags: [monster, undead]
+    archetype: brute
+    glyph: "G"
+    color: "#B7B7B7"
+    stats: { str: 9, dex: 6, con: 10, wil: 3 }
+    baseHp: 34
+    baseAttack: 9
+    baseDefense: 4
+    speed: 90
+    ai: CHASE
+    aiProfileId: ai.chase.basic
+    lootProfileId: loot.foundation.elite
+    talents: {}
+    expReward: 48
+    spawnFloors: [2]
+    spawnWeight: 5
+  - id: bandit.captain
+    nameKey: monster.bandit.captain.name
+    descKey: monster.bandit.captain.desc
+    visualKey: actor.bandit.captain
+    iconKey: icon.monster.bandit.captain
+    audioProfile: audio.monster.bandit.captain
+    schemaVersion: 2
+    tags: [monster, boss, bandit]
+    archetype: boss
+    glyph: "B"
+    color: "#C77C3A"
+    stats: { str: 14, dex: 10, con: 12, wil: 6 }
+    baseHp: 72
+    baseAttack: 9
+    baseDefense: 3
+    speed: 100
+    ai: CHASE
+    aiProfileId: ai.boss.bandit_captain
+    lootProfileId: loot.foundation.boss
+    talents: { war_cry: 1, shield_bash: 1, power_strike: 2 }
+    expReward: 220
+    spawnFloors: [2]
+    spawnWeight: 1

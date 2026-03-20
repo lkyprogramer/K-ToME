@@ -71,7 +71,7 @@ class EntityFactory {
         world.add(
             playerId,
             TalentLoadout(
-                slotToTalentId = talents.take(4).mapIndexed { index, talent -> (index + 1) to talent.id }.toMap(linkedMapOf()).toMutableMap(),
+                slotToTalentId = talents.mapIndexed { index, talent -> (index + 1) to talent.id }.toMap(linkedMapOf()).toMutableMap(),
                 talentLevels = talents.associate { talent -> talent.id to 1 }.toMutableMap(),
             ),
         )
@@ -127,7 +127,7 @@ class EntityFactory {
         when (template.aiProfileId) {
             "ai.kite.basic" -> AIType.KITE
             "ai.patrol.basic" -> AIType.PATROL
-            "ai.chase.basic", "ai.boss.dungeon_lord" -> AIType.CHASE
+            "ai.chase.basic", "ai.boss.dungeon_lord", "ai.boss.bandit_captain" -> AIType.CHASE
             else -> template.ai
         }
 }

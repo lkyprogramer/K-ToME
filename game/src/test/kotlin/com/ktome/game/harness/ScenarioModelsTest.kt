@@ -86,6 +86,7 @@ class ScenarioModelsTest {
             visibleHostilePositions = emptyList(),
             visibleBlockingPositions = emptySet(),
             visibleGroundItemPositions = emptyList(),
+            visibleInteractables = emptyList(),
             knownDownstairsPositions = emptyList(),
             inventoryItems = emptyList(),
             talentSlots = emptyList(),

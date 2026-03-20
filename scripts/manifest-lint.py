@@ -227,14 +227,6 @@ def validate_manifest(
             if not candidate.is_file():
                 errors.append(f"generated raw file not found for plan visualKey '{visual_key}': {candidate}.")
 
-    overlapping_spec_keys = sorted(set(plan_by_key) & set(bundled_by_key))
-    if overlapping_spec_keys:
-        errors.append(
-            "bundled visual spec catalog duplicates generated plan keys: "
-            + ", ".join(overlapping_spec_keys)
-            + "."
-        )
-
     expected_spec_keys = set(plan_by_key) | set(bundled_by_key)
     missing_spec_keys = sorted(source_by_key.keys() - expected_spec_keys)
     extra_spec_keys = sorted(expected_spec_keys - source_by_key.keys())

@@ -333,6 +333,21 @@
       ]
     },
     {
+      "key": "icon.monster.bandit.captain",
+      "category": "icon",
+      "rawOutputPath": "phase2/p2-b/icon_monster_bandit_captain.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase2",
+        "p2-b",
+        "icon",
+        "monster",
+        "bandit"
+      ]
+    },
+    {
       "key": "icon.monster.bandit.sentry",
       "category": "icon",
       "rawOutputPath": "debug/missing_visual.png",
@@ -634,53 +649,169 @@
     {
       "key": "item.chain_mail.icon",
       "category": "icon",
-      "rawOutputPath": "debug/missing_visual.png",
+      "rawOutputPath": "phase2/p2-b/icon_item_chain_mail.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "fallback",
-        "placeholder",
-        "phase2"
+        "phase2",
+        "item",
+        "starter_kit",
+        "official_slice"
       ]
     },
     {
       "key": "item.chain_mail.visual",
       "category": "debug",
-      "rawOutputPath": "debug/missing_visual.png",
+      "rawOutputPath": "phase2/p2-b/icon_item_chain_mail.png",
       "footprint": "1x1",
       "pivotX": 0.5,
       "pivotY": 0.08,
       "tags": [
-        "fallback",
-        "placeholder",
-        "phase2"
+        "phase2",
+        "item",
+        "starter_kit",
+        "official_slice"
+      ]
+    },
+    {
+      "key": "item.basic_shield.icon",
+      "category": "icon",
+      "rawOutputPath": "phase2/p2-b/icon_item_basic_shield.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase2",
+        "item",
+        "starter_kit",
+        "official_slice"
+      ]
+    },
+    {
+      "key": "item.basic_shield.visual",
+      "category": "debug",
+      "rawOutputPath": "phase2/p2-b/icon_item_basic_shield.png",
+      "footprint": "1x1",
+      "pivotX": 0.5,
+      "pivotY": 0.08,
+      "tags": [
+        "phase2",
+        "item",
+        "starter_kit",
+        "official_slice"
       ]
     },
     {
       "key": "item.healing_potion.icon",
       "category": "icon",
-      "rawOutputPath": "debug/missing_visual.png",
+      "rawOutputPath": "phase2/p2-b/icon_item_minor_healing_potion.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "fallback",
-        "placeholder",
-        "phase2"
+        "phase2",
+        "item",
+        "starter_kit",
+        "official_slice"
       ]
     },
     {
       "key": "item.healing_potion.visual",
       "category": "debug",
-      "rawOutputPath": "debug/missing_visual.png",
+      "rawOutputPath": "phase2/p2-b/icon_item_minor_healing_potion.png",
       "footprint": "1x1",
       "pivotX": 0.5,
       "pivotY": 0.08,
       "tags": [
-        "fallback",
-        "placeholder",
-        "phase2"
+        "phase2",
+        "item",
+        "starter_kit",
+        "official_slice"
+      ]
+    },
+    {
+      "key": "item.mana_potion.icon",
+      "category": "icon",
+      "rawOutputPath": "phase2/p2-c/icon_item_mana_potion.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase2",
+        "item",
+        "starter_kit",
+        "official_slice"
+      ]
+    },
+    {
+      "key": "item.mana_potion.visual",
+      "category": "debug",
+      "rawOutputPath": "phase2/p2-c/icon_item_mana_potion.png",
+      "footprint": "1x1",
+      "pivotX": 0.5,
+      "pivotY": 0.08,
+      "tags": [
+        "phase2",
+        "item",
+        "starter_kit",
+        "official_slice"
+      ]
+    },
+    {
+      "key": "item.arcane_staff.icon",
+      "category": "icon",
+      "rawOutputPath": "phase2/p2-b/icon_item_arcane_staff.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase2",
+        "item",
+        "starter_kit",
+        "official_slice"
+      ]
+    },
+    {
+      "key": "item.arcane_staff.visual",
+      "category": "debug",
+      "rawOutputPath": "phase2/p2-b/icon_item_arcane_staff.png",
+      "footprint": "1x1",
+      "pivotX": 0.5,
+      "pivotY": 0.08,
+      "tags": [
+        "phase2",
+        "item",
+        "starter_kit",
+        "official_slice"
+      ]
+    },
+    {
+      "key": "item.apprentice_robe.icon",
+      "category": "icon",
+      "rawOutputPath": "phase2/p2-b/icon_item_apprentice_robe.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase2",
+        "item",
+        "starter_kit",
+        "official_slice"
+      ]
+    },
+    {
+      "key": "item.apprentice_robe.visual",
+      "category": "debug",
+      "rawOutputPath": "phase2/p2-b/icon_item_apprentice_robe.png",
+      "footprint": "1x1",
+      "pivotX": 0.5,
+      "pivotY": 0.08,
+      "tags": [
+        "phase2",
+        "item",
+        "starter_kit",
+        "official_slice"
       ]
     },
     {
@@ -790,27 +921,29 @@
     {
       "key": "item.short_sword.icon",
       "category": "icon",
-      "rawOutputPath": "debug/missing_visual.png",
+      "rawOutputPath": "phase2/p2-b/icon_item_short_sword.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "fallback",
-        "placeholder",
-        "phase2"
+        "phase2",
+        "item",
+        "starter_kit",
+        "official_slice"
       ]
     },
     {
       "key": "item.short_sword.visual",
       "category": "debug",
-      "rawOutputPath": "debug/missing_visual.png",
+      "rawOutputPath": "phase2/p2-b/icon_item_short_sword.png",
       "footprint": "1x1",
       "pivotX": 0.5,
       "pivotY": 0.08,
       "tags": [
-        "fallback",
-        "placeholder",
-        "phase2"
+        "phase2",
+        "item",
+        "starter_kit",
+        "official_slice"
       ]
     },
     {
@@ -932,29 +1065,312 @@
       "asciiColorHex": "#FF69B4"
     },
     {
-      "key": "talent.vanguard.charge.icon",
-      "category": "icon",
-      "rawOutputPath": "debug/missing_visual.png",
+      "key": "talent.arcanist.arcane_shield.icon",
+      "category": "icon_skill",
+      "rawOutputPath": "phase2/p2-b/talent_arcanist_arcane_shield.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "fallback",
-        "placeholder",
-        "phase2"
+        "phase2",
+        "p2-b",
+        "talent",
+        "arcanist"
+      ]
+    },
+    {
+      "key": "talent.arcanist.arcane_shield.visual",
+      "category": "icon_skill",
+      "rawOutputPath": "phase2/p2-b/talent_arcanist_arcane_shield.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase2",
+        "p2-b",
+        "talent",
+        "arcanist"
+      ]
+    },
+    {
+      "key": "talent.arcanist.blink.icon",
+      "category": "icon_skill",
+      "rawOutputPath": "phase2/p2-b/talent_arcanist_blink.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase2",
+        "p2-b",
+        "talent",
+        "arcanist"
+      ]
+    },
+    {
+      "key": "talent.arcanist.blink.visual",
+      "category": "icon_skill",
+      "rawOutputPath": "phase2/p2-b/talent_arcanist_blink.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase2",
+        "p2-b",
+        "talent",
+        "arcanist"
+      ]
+    },
+    {
+      "key": "talent.arcanist.fireball.icon",
+      "category": "icon_skill",
+      "rawOutputPath": "phase2/p2-b/talent_arcanist_fireball.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase2",
+        "p2-b",
+        "talent",
+        "arcanist"
+      ]
+    },
+    {
+      "key": "talent.arcanist.fireball.visual",
+      "category": "icon_skill",
+      "rawOutputPath": "phase2/p2-b/talent_arcanist_fireball.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase2",
+        "p2-b",
+        "talent",
+        "arcanist"
+      ]
+    },
+    {
+      "key": "talent.arcanist.flame_wall.icon",
+      "category": "icon_skill",
+      "rawOutputPath": "phase2/p2-b/talent_arcanist_flame_wall.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase2",
+        "p2-b",
+        "talent",
+        "arcanist"
+      ]
+    },
+    {
+      "key": "talent.arcanist.flame_wall.visual",
+      "category": "icon_skill",
+      "rawOutputPath": "phase2/p2-b/talent_arcanist_flame_wall.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase2",
+        "p2-b",
+        "talent",
+        "arcanist"
+      ]
+    },
+    {
+      "key": "talent.arcanist.frost_nova.icon",
+      "category": "icon_skill",
+      "rawOutputPath": "phase2/p2-b/talent_arcanist_frost_nova.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase2",
+        "p2-b",
+        "talent",
+        "arcanist"
+      ]
+    },
+    {
+      "key": "talent.arcanist.frost_nova.visual",
+      "category": "icon_skill",
+      "rawOutputPath": "phase2/p2-b/talent_arcanist_frost_nova.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase2",
+        "p2-b",
+        "talent",
+        "arcanist"
+      ]
+    },
+    {
+      "key": "talent.arcanist.ice_bolt.icon",
+      "category": "icon_skill",
+      "rawOutputPath": "phase2/p2-b/talent_arcanist_ice_bolt.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase2",
+        "p2-b",
+        "talent",
+        "arcanist"
+      ]
+    },
+    {
+      "key": "talent.arcanist.ice_bolt.visual",
+      "category": "icon_skill",
+      "rawOutputPath": "phase2/p2-b/talent_arcanist_ice_bolt.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase2",
+        "p2-b",
+        "talent",
+        "arcanist"
+      ]
+    },
+    {
+      "key": "talent.arcanist.ice_prison.icon",
+      "category": "icon_skill",
+      "rawOutputPath": "phase2/p2-b/talent_arcanist_ice_prison.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase2",
+        "p2-b",
+        "talent",
+        "arcanist"
+      ]
+    },
+    {
+      "key": "talent.arcanist.ice_prison.visual",
+      "category": "icon_skill",
+      "rawOutputPath": "phase2/p2-b/talent_arcanist_ice_prison.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase2",
+        "p2-b",
+        "talent",
+        "arcanist"
+      ]
+    },
+    {
+      "key": "talent.arcanist.mana_surge.icon",
+      "category": "icon_skill",
+      "rawOutputPath": "phase2/p2-b/talent_arcanist_mana_surge.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase2",
+        "p2-b",
+        "talent",
+        "arcanist"
+      ]
+    },
+    {
+      "key": "talent.arcanist.mana_surge.visual",
+      "category": "icon_skill",
+      "rawOutputPath": "phase2/p2-b/talent_arcanist_mana_surge.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase2",
+        "p2-b",
+        "talent",
+        "arcanist"
+      ]
+    },
+    {
+      "key": "talent.vanguard.charge.icon",
+      "category": "icon",
+      "rawOutputPath": "phase2/p2-b/icon_skill_vanguard_charge.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase2",
+        "p2-b",
+        "talent",
+        "vanguard",
+        "official_slice"
       ]
     },
     {
       "key": "talent.vanguard.charge.visual",
-      "category": "debug",
-      "rawOutputPath": "debug/missing_visual.png",
-      "footprint": "1x1",
+      "category": "icon_skill",
+      "rawOutputPath": "phase2/p2-b/talent_vanguard_charge_visual.png",
+      "footprint": "ui",
       "pivotX": 0.5,
-      "pivotY": 0.08,
+      "pivotY": 0.5,
       "tags": [
-        "fallback",
-        "placeholder",
-        "phase2"
+        "phase2",
+        "p2-b",
+        "talent",
+        "vanguard"
+      ]
+    },
+    {
+      "key": "talent.vanguard.guard_stance.icon",
+      "category": "icon_skill",
+      "rawOutputPath": "phase2/p2-b/talent_vanguard_guard_stance.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase2",
+        "p2-b",
+        "talent",
+        "vanguard"
+      ]
+    },
+    {
+      "key": "talent.vanguard.guard_stance.visual",
+      "category": "icon_skill",
+      "rawOutputPath": "phase2/p2-b/talent_vanguard_guard_stance.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase2",
+        "p2-b",
+        "talent",
+        "vanguard"
+      ]
+    },
+    {
+      "key": "talent.vanguard.intimidation.icon",
+      "category": "icon_skill",
+      "rawOutputPath": "phase2/p2-b/talent_vanguard_intimidation.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase2",
+        "p2-b",
+        "talent",
+        "vanguard"
+      ]
+    },
+    {
+      "key": "talent.vanguard.intimidation.visual",
+      "category": "icon_skill",
+      "rawOutputPath": "phase2/p2-b/talent_vanguard_intimidation.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase2",
+        "p2-b",
+        "talent",
+        "vanguard"
       ]
     },
     {
@@ -965,22 +1381,26 @@
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "fallback",
-        "placeholder",
-        "phase2"
+        "phase2",
+        "p2-b",
+        "talent",
+        "vanguard",
+        "official_slice"
       ]
     },
     {
       "key": "talent.vanguard.power_strike.visual",
-      "category": "debug",
-      "rawOutputPath": "debug/missing_visual.png",
-      "footprint": "1x1",
+      "category": "icon_skill",
+      "rawOutputPath": "phase2/p2-b/talent_vanguard_power_strike_visual.png",
+      "footprint": "ui",
       "pivotX": 0.5,
-      "pivotY": 0.08,
+      "pivotY": 0.5,
       "tags": [
-        "fallback",
-        "placeholder",
-        "phase2"
+        "phase2",
+        "p2-b",
+        "talent",
+        "vanguard",
+        "official_slice"
       ]
     },
     {
@@ -991,22 +1411,110 @@
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "fallback",
-        "placeholder",
-        "phase2"
+        "phase2",
+        "p2-b",
+        "talent",
+        "vanguard",
+        "official_slice"
       ]
     },
     {
       "key": "talent.vanguard.shield_bash.visual",
-      "category": "debug",
-      "rawOutputPath": "debug/missing_visual.png",
-      "footprint": "1x1",
+      "category": "icon_skill",
+      "rawOutputPath": "phase2/p2-b/talent_vanguard_shield_bash_visual.png",
+      "footprint": "ui",
       "pivotX": 0.5,
-      "pivotY": 0.08,
+      "pivotY": 0.5,
       "tags": [
-        "fallback",
-        "placeholder",
-        "phase2"
+        "phase2",
+        "p2-b",
+        "talent",
+        "vanguard",
+        "official_slice"
+      ]
+    },
+    {
+      "key": "talent.vanguard.sunder_armor.icon",
+      "category": "icon_skill",
+      "rawOutputPath": "phase2/p2-b/talent_vanguard_sunder_armor.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase2",
+        "p2-b",
+        "talent",
+        "vanguard"
+      ]
+    },
+    {
+      "key": "talent.vanguard.sunder_armor.visual",
+      "category": "icon_skill",
+      "rawOutputPath": "phase2/p2-b/talent_vanguard_sunder_armor.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase2",
+        "p2-b",
+        "talent",
+        "vanguard"
+      ]
+    },
+    {
+      "key": "talent.vanguard.sweeping_strike.icon",
+      "category": "icon_skill",
+      "rawOutputPath": "phase2/p2-b/talent_vanguard_sweeping_strike.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase2",
+        "p2-b",
+        "talent",
+        "vanguard"
+      ]
+    },
+    {
+      "key": "talent.vanguard.sweeping_strike.visual",
+      "category": "icon_skill",
+      "rawOutputPath": "phase2/p2-b/talent_vanguard_sweeping_strike.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase2",
+        "p2-b",
+        "talent",
+        "vanguard"
+      ]
+    },
+    {
+      "key": "talent.vanguard.unyielding.icon",
+      "category": "icon_skill",
+      "rawOutputPath": "phase2/p2-b/talent_vanguard_unyielding.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase2",
+        "p2-b",
+        "talent",
+        "vanguard"
+      ]
+    },
+    {
+      "key": "talent.vanguard.unyielding.visual",
+      "category": "icon_skill",
+      "rawOutputPath": "phase2/p2-b/talent_vanguard_unyielding.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase2",
+        "p2-b",
+        "talent",
+        "vanguard"
       ]
     },
     {
@@ -1017,22 +1525,26 @@
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "fallback",
-        "placeholder",
-        "phase2"
+        "phase2",
+        "p2-b",
+        "talent",
+        "vanguard",
+        "official_slice"
       ]
     },
     {
       "key": "talent.vanguard.war_cry.visual",
-      "category": "debug",
-      "rawOutputPath": "debug/missing_visual.png",
-      "footprint": "1x1",
+      "category": "icon_skill",
+      "rawOutputPath": "phase2/p2-b/talent_vanguard_war_cry_visual.png",
+      "footprint": "ui",
       "pivotX": 0.5,
-      "pivotY": 0.08,
+      "pivotY": 0.5,
       "tags": [
-        "fallback",
-        "placeholder",
-        "phase2"
+        "phase2",
+        "p2-b",
+        "talent",
+        "vanguard",
+        "official_slice"
       ]
     },
     {

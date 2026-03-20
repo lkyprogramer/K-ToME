@@ -20,6 +20,7 @@ class ItemGenerator(
                 quality = ItemQuality.COMMON,
                 stats = base.baseStats,
                 effect = base.effect,
+                resourceTypeId = base.resourceTypeId,
                 magnitude = base.magnitude,
             )
         }
@@ -44,6 +45,7 @@ class ItemGenerator(
             affixes = affixes,
             stats = stats,
             effect = base.effect,
+            resourceTypeId = base.resourceTypeId,
             magnitude = base.magnitude,
         )
     }
@@ -141,4 +143,3 @@ class ItemGenerator(
         return values.last()
     }
 }
-

@@ -1,6 +1,7 @@
 package com.ktome.game
 
 import com.ktome.core.ecs.EntityId
+import com.ktome.core.item.ConsumableEffect
 import com.ktome.core.item.EquipSlot
 import com.ktome.core.item.ItemType
 import com.ktome.core.map.Point
@@ -12,6 +13,8 @@ sealed interface PlayerCommand {
     data object Wait : PlayerCommand
 
     data object PickUp : PlayerCommand
+
+    data object Interact : PlayerCommand
 
     data object Ascend : PlayerCommand
 
@@ -61,11 +64,19 @@ data class PlayerStatus(
     val speed: Int,
 )
 
+data class PlayerResourceView(
+    val current: Int,
+    val max: Int,
+    val typeId: String,
+)
+
 data class InventoryItemView(
     val index: Int,
     val name: String,
     val type: ItemType,
+    val slot: EquipSlot? = null,
     val equippedSlot: EquipSlot? = null,
+    val effect: ConsumableEffect? = null,
 )
 
 data class EquipmentSlotView(
@@ -80,6 +91,8 @@ data class TalentSlotView(
     val level: Int,
     val maxLevel: Int,
     val staminaCost: Int,
+    val resourceCost: Int = staminaCost,
+    val resourceTypeId: String = "STAMINA",
     val range: Int,
     val minRange: Int,
     val currentCooldown: Int,

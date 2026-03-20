@@ -1,4 +1,6 @@
 audioProfiles:
+  - id: audio.interactable.open
+  - id: audio.interactable.stairs
   - id: audio.profession.vanguard
   - id: audio.profession.arcanist
   - id: audio.profession.rogue
@@ -19,13 +21,28 @@ audioProfiles:
   - id: audio.talent.charge
   - id: audio.talent.shield_bash
   - id: audio.talent.war_cry
+  - id: audio.talent.sweeping_strike
+  - id: audio.talent.sunder_armor
+  - id: audio.talent.guard_stance
+  - id: audio.talent.intimidation
+  - id: audio.talent.unyielding
+  - id: audio.talent.fireball
+  - id: audio.talent.flame_wall
+  - id: audio.talent.ice_bolt
+  - id: audio.talent.frost_nova
+  - id: audio.talent.ice_prison
+  - id: audio.talent.arcane_shield
+  - id: audio.talent.blink
+  - id: audio.talent.mana_surge
   - id: audio.monster.beast.rat
   - id: audio.monster.undead.bone_archer
   - id: audio.monster.bandit.sentry
+  - id: audio.monster.bandit.captain
   - id: audio.monster.orc.raider
   - id: audio.monster.cultist.dungeon_lord
   - id: audio.boss.cultist.dungeon_lord
   - id: audio.boss.warning
+  - id: audio.boss.bandit_captain
   - id: audio.zone.shattered_outpost
   - id: audio.zone.greenwood_fringe
   - id: audio.zone.deep_iron_pit
@@ -47,6 +64,10 @@ audioProfiles:
   - id: audio.item.battle_axe
   - id: audio.item.leather_armor
   - id: audio.item.chain_mail
+  - id: audio.item.basic_shield
   - id: audio.item.plate_armor
   - id: audio.item.healing_potion
   - id: audio.item.scroll_teleport
+  - id: audio.item.mana_potion
+  - id: audio.item.arcane_staff
+  - id: audio.item.apprentice_robe

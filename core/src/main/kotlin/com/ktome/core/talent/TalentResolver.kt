@@ -14,6 +14,8 @@ import com.ktome.core.item.StatModifier
 import com.ktome.core.map.GameMap
 import com.ktome.core.map.Point
 import com.ktome.core.pathfinding.AStar
+import com.ktome.core.resource.ResourcePools
+import com.ktome.core.resource.ResourceType
 import com.ktome.core.stats.StatsCalculator
 
 sealed interface TalentUseResult {
@@ -83,13 +85,38 @@ sealed interface TalentEffectResult {
         val from: Point,
         val to: Point,
     ) : TalentEffectResult
+
+    data class ResourceRestore(
+        val target: EntityId,
+        val resourceTypeId: String,
+        val amount: Int,
+    ) : TalentEffectResult
 }
 
 class TalentResolver(
     private val registry: TalentRegistry,
     private val combatResolver: CombatResolver,
 ) {
-    private val supportedTalentIds = setOf("power_strike", "charge", "shield_bash", "war_cry")
+    private val supportedTalentIds =
+        setOf(
+            "power_strike",
+            "charge",
+            "shield_bash",
+            "war_cry",
+            "sweeping_strike",
+            "sunder_armor",
+            "guard_stance",
+            "intimidation",
+            "unyielding",
+            "fireball",
+            "flame_wall",
+            "ice_bolt",
+            "frost_nova",
+            "ice_prison",
+            "arcane_shield",
+            "blink",
+            "mana_surge",
+        )
 
     private data class DamageResolution(
         val hit: Boolean,
@@ -168,6 +195,18 @@ class TalentResolver(
             )
         }
 
+        if (definition.id == "blink") {
+            if (blinkDestination(world, map, userPosition, targetPoint, user) == null) {
+                return TalentUseResult.Failure(
+                    code = TalentFailureCode.NO_TARGET,
+                    reason = "No valid blink destination.",
+                    talentName = definition.name,
+                    talentId = talentId,
+                )
+            }
+            return null
+        }
+
         val targetEntity =
             hostileTargetAt(world, user, targetPoint)
                 ?: return TalentUseResult.Failure(
@@ -231,19 +270,7 @@ class TalentResolver(
                         knockback(world, map, user, targetEntity, effect.knockback)?.let(effects::add)
                     }
                     if (effect.armorBreakDuration > 0) {
-                        applyEffect(
-                            world = world,
-                            target = targetEntity,
-                            effect =
-                                ActiveEffect(
-                                    id = "power_strike_armor_break",
-                                    name = "Armor Break",
-                                    type = StatusEffectType.ARMOR_BREAK,
-                                    remainingTurns = effect.armorBreakDuration,
-                                    statModifiers = StatModifier(defense = -3),
-                                ),
-                        )
-                        effects += TalentEffectResult.StatusApplied(targetEntity, StatusEffectType.ARMOR_BREAK, effect.armorBreakDuration)
+                        applyArmorBreak(world, targetEntity, effect.armorBreakDuration, effects)
                     }
                 }
             }
@@ -258,18 +285,7 @@ class TalentResolver(
                 effects += TalentEffectResult.Movement(user, from, destination)
                 val damageResult = resolveDamage(world, user, targetEntity, effect.damageMultiplier, effects)
                 if (damageResult.hit && effect.stunDuration > 0) {
-                    applyEffect(
-                        world = world,
-                        target = targetEntity,
-                        effect =
-                            ActiveEffect(
-                                id = "charge_stun",
-                                name = "Stunned",
-                                type = StatusEffectType.STUNNED,
-                                remainingTurns = effect.stunDuration,
-                            ),
-                    )
-                    effects += TalentEffectResult.StatusApplied(targetEntity, StatusEffectType.STUNNED, effect.stunDuration)
+                    applyStun(world, targetEntity, effect.stunDuration, effects, effectId = "charge_stun")
                 }
             }
 
@@ -279,18 +295,7 @@ class TalentResolver(
                 val damageResult = resolveDamage(world, user, targetEntity, effect.damageMultiplier, effects)
                 if (damageResult.hit) {
                     if (effect.stunDuration > 0) {
-                        applyEffect(
-                            world = world,
-                            target = targetEntity,
-                            effect =
-                                ActiveEffect(
-                                    id = "shield_bash_stun",
-                                    name = "Stunned",
-                                    type = StatusEffectType.STUNNED,
-                                    remainingTurns = effect.stunDuration,
-                                ),
-                        )
-                        effects += TalentEffectResult.StatusApplied(targetEntity, StatusEffectType.STUNNED, effect.stunDuration)
+                        applyStun(world, targetEntity, effect.stunDuration, effects, effectId = "shield_bash_stun")
                     }
                     if (effect.knockback > 0) {
                         knockback(world, map, user, targetEntity, effect.knockback)?.let(effects::add)
@@ -299,41 +304,159 @@ class TalentResolver(
             }
 
             "war_cry" -> {
-                applyEffect(
-                    world = world,
-                    target = user,
-                    effect =
-                        ActiveEffect(
-                            id = "war_cry_buff",
-                            name = "War Cry",
-                            type = StatusEffectType.WAR_CRY_BUFF,
-                            remainingTurns = effect.buffDuration,
-                            statModifiers = StatModifier(attackMultiplierBonus = effect.buffMagnitude),
-                            skipNextDecay = true,
-                        ),
-                )
-                effects += TalentEffectResult.Buff(user, StatusEffectType.WAR_CRY_BUFF, effect.buffDuration, effect.buffMagnitude)
-                targets += user
+                applyWarCry(world, user, definition.areaRadius, effect, effects, targets)
+            }
 
-                if (effect.debuffDuration > 0 && effect.debuffMagnitude > 0.0) {
-                    val origin = requireNotNull(world.get<Position>(user)).toPoint()
-                    hostileTargetsWithin(world, user, origin, definition.areaRadius).forEach { enemy ->
-                        applyEffect(
-                            world = world,
-                            target = enemy,
-                            effect =
-                                ActiveEffect(
-                                    id = "war_cry_debuff",
-                                    name = "Shaken",
-                                    type = StatusEffectType.WAR_CRY_DEBUFF,
-                                    remainingTurns = effect.debuffDuration,
-                                    statModifiers = StatModifier(defenseMultiplierBonus = -effect.debuffMagnitude),
-                                ),
-                        )
-                        effects += TalentEffectResult.Buff(enemy, StatusEffectType.WAR_CRY_DEBUFF, effect.debuffDuration, effect.debuffMagnitude)
-                        targets += enemy
+            "sweeping_strike" -> {
+                val center = requireNotNull(target)
+                val hitTargets = hostileTargetsWithin(world, user, center, definition.areaRadius).ifEmpty {
+                    listOfNotNull(hostileTargetAt(world, user, center))
+                }
+                hitTargets.forEach { targetEntity ->
+                    targets += targetEntity
+                    val damageResult = resolveDamage(world, user, targetEntity, effect.damageMultiplier, effects)
+                    if (damageResult.hit && effect.knockback > 0) {
+                        knockback(world, map, user, targetEntity, effect.knockback)?.let(effects::add)
                     }
                 }
+            }
+
+            "sunder_armor" -> {
+                val targetEntity = requireNotNull(hostileTargetAt(world, user, requireNotNull(target)))
+                targets += targetEntity
+                val damageResult = resolveDamage(world, user, targetEntity, effect.damageMultiplier, effects)
+                if (damageResult.hit && effect.armorBreakDuration > 0) {
+                    applyArmorBreak(world, targetEntity, effect.armorBreakDuration, effects, effectId = "sunder_armor_break")
+                }
+            }
+
+            "guard_stance" -> {
+                applySelfBuff(
+                    world = world,
+                    target = user,
+                    effectId = "guard_stance_buff",
+                    name = "Guard Stance",
+                    type = StatusEffectType.GUARD_STANCE_BUFF,
+                    duration = effect.buffDuration,
+                    magnitude = effect.buffMagnitude,
+                    statModifiers = StatModifier(defenseMultiplierBonus = effect.buffMagnitude),
+                    effects = effects,
+                )
+                targets += user
+            }
+
+            "intimidation" -> {
+                val origin = requireNotNull(world.get<Position>(user)).toPoint()
+                hostileTargetsWithin(world, user, origin, definition.areaRadius).forEach { enemy ->
+                    applyDebuff(
+                        world = world,
+                        target = enemy,
+                        effectId = "intimidation_debuff",
+                        name = "Intimidated",
+                        type = StatusEffectType.WAR_CRY_DEBUFF,
+                        duration = effect.debuffDuration,
+                        magnitude = effect.debuffMagnitude,
+                        effects = effects,
+                    )
+                    targets += enemy
+                }
+            }
+
+            "unyielding" -> {
+                applySelfBuff(
+                    world = world,
+                    target = user,
+                    effectId = "unyielding_buff",
+                    name = "Unyielding",
+                    type = StatusEffectType.UNYIELDING_BUFF,
+                    duration = effect.buffDuration,
+                    magnitude = effect.buffMagnitude,
+                    statModifiers = StatModifier(defenseMultiplierBonus = effect.buffMagnitude),
+                    effects = effects,
+                )
+                targets += user
+            }
+
+            "fireball" -> {
+                val targetEntity = requireNotNull(hostileTargetAt(world, user, requireNotNull(target)))
+                targets += targetEntity
+                resolveDamage(world, user, targetEntity, effect.damageMultiplier, effects)
+            }
+
+            "flame_wall" -> {
+                val center = requireNotNull(target)
+                hostileTargetsWithin(world, user, center, definition.areaRadius).forEach { targetEntity ->
+                    targets += targetEntity
+                    resolveDamage(world, user, targetEntity, effect.damageMultiplier, effects)
+                }
+            }
+
+            "ice_bolt" -> {
+                val targetEntity = requireNotNull(hostileTargetAt(world, user, requireNotNull(target)))
+                targets += targetEntity
+                val damageResult = resolveDamage(world, user, targetEntity, effect.damageMultiplier, effects)
+                if (damageResult.hit && effect.stunDuration > 0) {
+                    applyStun(world, targetEntity, effect.stunDuration, effects, effectId = "ice_bolt_stun")
+                }
+            }
+
+            "frost_nova" -> {
+                val origin = requireNotNull(world.get<Position>(user)).toPoint()
+                hostileTargetsWithin(world, user, origin, definition.areaRadius).forEach { targetEntity ->
+                    targets += targetEntity
+                    val damageResult = resolveDamage(world, user, targetEntity, effect.damageMultiplier, effects)
+                    if (damageResult.hit && effect.stunDuration > 0) {
+                        applyStun(world, targetEntity, effect.stunDuration, effects, effectId = "frost_nova_stun")
+                    }
+                }
+            }
+
+            "ice_prison" -> {
+                val targetEntity = requireNotNull(hostileTargetAt(world, user, requireNotNull(target)))
+                targets += targetEntity
+                val damageResult = resolveDamage(world, user, targetEntity, effect.damageMultiplier, effects)
+                if (damageResult.hit && effect.stunDuration > 0) {
+                    applyStun(world, targetEntity, effect.stunDuration, effects, effectId = "ice_prison_stun")
+                }
+            }
+
+            "blink" -> {
+                val from = requireNotNull(world.get<Position>(user)).toPoint()
+                val destination = requireNotNull(blinkDestination(world, map, from, requireNotNull(target), user))
+                requireNotNull(world.get<Position>(user)).moveTo(destination)
+                effects += TalentEffectResult.Movement(user, from, destination)
+                targets += user
+            }
+
+            "arcane_shield" -> {
+                applySelfBuff(
+                    world = world,
+                    target = user,
+                    effectId = "arcane_shield_buff",
+                    name = "Arcane Shield",
+                    type = StatusEffectType.ARCANE_SHIELD_BUFF,
+                    duration = effect.buffDuration,
+                    magnitude = effect.buffMagnitude,
+                    statModifiers = StatModifier(defenseMultiplierBonus = effect.buffMagnitude),
+                    effects = effects,
+                )
+                targets += user
+            }
+
+            "mana_surge" -> {
+                applySelfBuff(
+                    world = world,
+                    target = user,
+                    effectId = "mana_surge_buff",
+                    name = "Mana Surge",
+                    type = StatusEffectType.MANA_SURGE_BUFF,
+                    duration = effect.buffDuration,
+                    magnitude = effect.buffMagnitude,
+                    statModifiers = StatModifier(talentPower = effect.buffMagnitude),
+                    effects = effects,
+                )
+                restoreResource(world, user, ResourceType.MANA, effect, effects)
+                targets += user
             }
 
             else ->
@@ -355,6 +478,158 @@ class TalentResolver(
                 effects = effects,
             ),
         )
+    }
+
+    private fun applyArmorBreak(
+        world: World,
+        target: EntityId,
+        duration: Int,
+        effects: MutableList<TalentEffectResult>,
+        effectId: String = "power_strike_armor_break",
+    ) {
+        applyEffect(
+            world = world,
+            target = target,
+            effect =
+                ActiveEffect(
+                    id = effectId,
+                    name = "Armor Break",
+                    type = StatusEffectType.ARMOR_BREAK,
+                    remainingTurns = duration,
+                    statModifiers = StatModifier(defense = -3),
+                ),
+        )
+        effects += TalentEffectResult.StatusApplied(target, StatusEffectType.ARMOR_BREAK, duration)
+    }
+
+    private fun applyStun(
+        world: World,
+        target: EntityId,
+        duration: Int,
+        effects: MutableList<TalentEffectResult>,
+        effectId: String,
+    ) {
+        applyEffect(
+            world = world,
+            target = target,
+            effect =
+                ActiveEffect(
+                    id = effectId,
+                    name = "Stunned",
+                    type = StatusEffectType.STUNNED,
+                    remainingTurns = duration,
+                ),
+        )
+        effects += TalentEffectResult.StatusApplied(target, StatusEffectType.STUNNED, duration)
+    }
+
+    private fun applySelfBuff(
+        world: World,
+        target: EntityId,
+        effectId: String,
+        name: String,
+        type: StatusEffectType,
+        duration: Int,
+        magnitude: Double,
+        statModifiers: StatModifier,
+        effects: MutableList<TalentEffectResult>,
+    ) {
+        applyEffect(
+            world = world,
+            target = target,
+            effect =
+                ActiveEffect(
+                    id = effectId,
+                    name = name,
+                    type = type,
+                    remainingTurns = duration,
+                    statModifiers = statModifiers,
+                    skipNextDecay = true,
+                ),
+        )
+        effects += TalentEffectResult.Buff(target, type, duration, magnitude)
+    }
+
+    private fun applyDebuff(
+        world: World,
+        target: EntityId,
+        effectId: String,
+        name: String,
+        type: StatusEffectType,
+        duration: Int,
+        magnitude: Double,
+        effects: MutableList<TalentEffectResult>,
+    ) {
+        applyEffect(
+            world = world,
+            target = target,
+            effect =
+                ActiveEffect(
+                    id = effectId,
+                    name = name,
+                    type = type,
+                    remainingTurns = duration,
+                    statModifiers = StatModifier(defenseMultiplierBonus = -magnitude),
+                ),
+        )
+        effects += TalentEffectResult.Buff(target, type, duration, magnitude)
+    }
+
+    private fun applyWarCry(
+        world: World,
+        user: EntityId,
+        areaRadius: Int,
+        effect: TalentLevelEffect,
+        effects: MutableList<TalentEffectResult>,
+        targets: LinkedHashSet<EntityId>,
+    ) {
+        applySelfBuff(
+            world = world,
+            target = user,
+            effectId = "war_cry_buff",
+            name = "War Cry",
+            type = StatusEffectType.WAR_CRY_BUFF,
+            duration = effect.buffDuration,
+            magnitude = effect.buffMagnitude,
+            statModifiers = StatModifier(attackMultiplierBonus = effect.buffMagnitude),
+            effects = effects,
+        )
+        targets += user
+
+        if (effect.debuffDuration > 0 && effect.debuffMagnitude > 0.0) {
+            val origin = requireNotNull(world.get<Position>(user)).toPoint()
+            hostileTargetsWithin(world, user, origin, areaRadius).forEach { enemy ->
+                applyDebuff(
+                    world = world,
+                    target = enemy,
+                    effectId = "war_cry_debuff",
+                    name = "Shaken",
+                    type = StatusEffectType.WAR_CRY_DEBUFF,
+                    duration = effect.debuffDuration,
+                    magnitude = effect.debuffMagnitude,
+                    effects = effects,
+                )
+                targets += enemy
+            }
+        }
+    }
+
+    private fun restoreResource(
+        world: World,
+        user: EntityId,
+        resourceType: ResourceType,
+        effect: TalentLevelEffect,
+        effects: MutableList<TalentEffectResult>,
+    ) {
+        val pools = world.get<ResourcePools>(user) ?: return
+        val pool = pools.pool(resourceType) ?: return
+        val before = pool.current
+        val amount = maxOf(8, (pool.max * effect.buffMagnitude).toInt().coerceAtLeast(0))
+        pool.restore(amount)
+        val restored = pool.current - before
+        if (restored > 0) {
+            effects += TalentEffectResult.ResourceRestore(user, resourceType.name, restored)
+        }
     }
 
     private fun resolveDamage(
@@ -447,6 +722,28 @@ class TalentResolver(
             }
             .minWithOrNull(compareBy<Pair<Point, Int>> { it.second }.thenBy { it.first.y }.thenBy { it.first.x })
             ?.first
+    }
+
+    private fun blinkDestination(
+        world: World,
+        map: GameMap,
+        from: Point,
+        targetPoint: Point,
+        user: EntityId,
+    ): Point? {
+        val blockedTiles = blockedTiles(world, excluding = setOf(user))
+        val candidates =
+            sequenceOf(targetPoint)
+                .plus(Point.ALL_DIRECTIONS.asSequence().map { direction -> targetPoint + direction })
+                .distinct()
+                .filter { destination ->
+                    destination != from &&
+                        map.isInBounds(destination.x, destination.y) &&
+                        !map[destination].blocksMovement &&
+                        destination !in blockedTiles
+                }
+
+        return candidates.minWithOrNull(compareBy<Point> { it.chebyshevDistanceTo(targetPoint) }.thenBy(Point::y).thenBy(Point::x))
     }
 
     private fun knockback(

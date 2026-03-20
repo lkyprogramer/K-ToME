@@ -3,126 +3,6 @@
   "fallbackKey": "audio.fallback.silence",
   "entries": [
     {
-      "key": "audio.fallback.silence",
-      "cueFamily": "silence",
-      "eventId": "silence.default",
-      "sourcePath": "audio/fallback/silence.ogg",
-      "tags": [
-        "fallback",
-        "phase2"
-      ]
-    },
-    {
-      "key": "audio.ui.confirm",
-      "cueFamily": "ui",
-      "eventId": "ui.confirm",
-      "sourcePath": "audio/ui/confirm.ogg",
-      "tags": [
-        "placeholder",
-        "phase2",
-        "ui"
-      ]
-    },
-    {
-      "key": "audio.ui.cancel",
-      "cueFamily": "ui",
-      "eventId": "ui.cancel",
-      "sourcePath": "audio/ui/cancel.ogg",
-      "tags": [
-        "placeholder",
-        "phase2",
-        "ui"
-      ]
-    },
-    {
-      "key": "audio.ui.hover",
-      "cueFamily": "ui",
-      "eventId": "ui.hover",
-      "sourcePath": "audio/ui/hover.ogg",
-      "tags": [
-        "placeholder",
-        "phase2",
-        "ui"
-      ]
-    },
-    {
-      "key": "audio.footstep.default",
-      "cueFamily": "footstep",
-      "eventId": "footstep.default",
-      "sourcePath": "audio/footstep/default.ogg",
-      "tags": [
-        "placeholder",
-        "phase2",
-        "footstep"
-      ]
-    },
-    {
-      "key": "audio.interactable.open",
-      "cueFamily": "interactable",
-      "eventId": "interactable.open",
-      "sourcePath": "audio/interactable/open.ogg",
-      "tags": [
-        "placeholder",
-        "phase2",
-        "interactable"
-      ]
-    },
-    {
-      "key": "audio.melee.default",
-      "cueFamily": "melee",
-      "eventId": "melee.default",
-      "sourcePath": "audio/melee/default.ogg",
-      "tags": [
-        "placeholder",
-        "phase2",
-        "melee"
-      ]
-    },
-    {
-      "key": "audio.melee.light",
-      "cueFamily": "melee",
-      "eventId": "melee.light",
-      "sourcePath": "audio/melee/light.ogg",
-      "tags": [
-        "placeholder",
-        "phase2",
-        "melee"
-      ]
-    },
-    {
-      "key": "audio.spell.default",
-      "cueFamily": "spell",
-      "eventId": "spell.default",
-      "sourcePath": "audio/spell/default.ogg",
-      "tags": [
-        "placeholder",
-        "phase2",
-        "spell"
-      ]
-    },
-    {
-      "key": "audio.spell.basic",
-      "cueFamily": "spell",
-      "eventId": "spell.basic",
-      "sourcePath": "audio/spell/basic.ogg",
-      "tags": [
-        "placeholder",
-        "phase2",
-        "spell"
-      ]
-    },
-    {
-      "key": "audio.monster.default",
-      "cueFamily": "monster",
-      "eventId": "monster.default",
-      "sourcePath": "audio/monster/default.ogg",
-      "tags": [
-        "placeholder",
-        "phase2",
-        "monster"
-      ]
-    },
-    {
       "key": "ambient.deep_iron_pit",
       "cueFamily": "ambience",
       "eventId": "ambient.deep_iron_pit",
@@ -159,18 +39,9 @@
       "sourcePath": "audio/ambient/shattered_outpost.ogg",
       "tags": [
         "phase2",
-        "ambience"
-      ]
-    },
-    {
-      "key": "audio.music.menu",
-      "cueFamily": "music",
-      "eventId": "music.menu",
-      "sourcePath": "audio/music/menu.ogg",
-      "tags": [
-        "placeholder",
-        "phase2",
-        "music"
+        "ambience",
+        "p2-b",
+        "official_slice"
       ]
     },
     {
@@ -251,6 +122,19 @@
       ]
     },
     {
+      "key": "audio.boss.bandit_captain",
+      "cueFamily": "boss",
+      "eventId": "audio.boss.bandit_captain",
+      "sourcePath": "audio/boss/bandit_captain.ogg",
+      "tags": [
+        "phase2",
+        "p2-b",
+        "boss",
+        "bandit",
+        "official_slice"
+      ]
+    },
+    {
       "key": "audio.boss.cultist.dungeon_lord",
       "cueFamily": "boss",
       "eventId": "audio.boss.cultist.dungeon_lord",
@@ -266,9 +150,10 @@
       "eventId": "audio.boss.warning",
       "sourcePath": "audio/boss/warning.ogg",
       "tags": [
-        "placeholder",
         "phase2",
-        "boss-warning"
+        "p2-b",
+        "boss-warning",
+        "official_slice"
       ]
     },
     {
@@ -283,13 +168,48 @@
       ]
     },
     {
+      "key": "audio.fallback.silence",
+      "cueFamily": "silence",
+      "eventId": "silence.default",
+      "sourcePath": "audio/fallback/silence.ogg",
+      "tags": [
+        "fallback",
+        "phase2"
+      ]
+    },
+    {
+      "key": "audio.footstep.default",
+      "cueFamily": "footstep",
+      "eventId": "footstep.default",
+      "sourcePath": "audio/footstep/default.ogg",
+      "tags": [
+        "placeholder",
+        "phase2",
+        "footstep"
+      ]
+    },
+    {
+      "key": "audio.interactable.open",
+      "cueFamily": "interactable",
+      "eventId": "interactable.open",
+      "sourcePath": "audio/interactable/open.ogg",
+      "tags": [
+        "phase2",
+        "p2-b",
+        "interactable",
+        "official_slice"
+      ]
+    },
+    {
       "key": "audio.interactable.stairs",
       "cueFamily": "interactable",
       "eventId": "interactable.stairs",
       "sourcePath": "audio/interactable/stairs.ogg",
       "tags": [
         "phase2",
-        "interactable"
+        "p2-b",
+        "interactable",
+        "official_slice"
       ]
     },
     {
@@ -307,22 +227,36 @@
       "key": "audio.item.chain_mail",
       "cueFamily": "item",
       "eventId": "audio.item.chain_mail",
-      "sourcePath": "audio/fallback/silence.ogg",
+      "sourcePath": "audio/item/chain_mail.ogg",
       "tags": [
-        "fallback",
-        "placeholder",
-        "phase2"
+        "phase2",
+        "item",
+        "starter_kit",
+        "official_slice"
+      ]
+    },
+    {
+      "key": "audio.item.basic_shield",
+      "cueFamily": "item",
+      "eventId": "audio.item.basic_shield",
+      "sourcePath": "audio/item/basic_shield.ogg",
+      "tags": [
+        "phase2",
+        "item",
+        "starter_kit",
+        "official_slice"
       ]
     },
     {
       "key": "audio.item.healing_potion",
       "cueFamily": "item",
       "eventId": "audio.item.healing_potion",
-      "sourcePath": "audio/fallback/silence.ogg",
+      "sourcePath": "audio/item/healing_potion.ogg",
       "tags": [
-        "fallback",
-        "placeholder",
-        "phase2"
+        "phase2",
+        "item",
+        "starter_kit",
+        "official_slice"
       ]
     },
     {
@@ -334,6 +268,42 @@
         "fallback",
         "placeholder",
         "phase2"
+      ]
+    },
+    {
+      "key": "audio.item.mana_potion",
+      "cueFamily": "item",
+      "eventId": "audio.item.mana_potion",
+      "sourcePath": "audio/item/mana_potion.ogg",
+      "tags": [
+        "phase2",
+        "item",
+        "starter_kit",
+        "official_slice"
+      ]
+    },
+    {
+      "key": "audio.item.arcane_staff",
+      "cueFamily": "item",
+      "eventId": "audio.item.arcane_staff",
+      "sourcePath": "audio/item/arcane_staff.ogg",
+      "tags": [
+        "phase2",
+        "item",
+        "starter_kit",
+        "official_slice"
+      ]
+    },
+    {
+      "key": "audio.item.apprentice_robe",
+      "cueFamily": "item",
+      "eventId": "audio.item.apprentice_robe",
+      "sourcePath": "audio/item/apprentice_robe.ogg",
+      "tags": [
+        "phase2",
+        "item",
+        "starter_kit",
+        "official_slice"
       ]
     },
     {
@@ -373,11 +343,12 @@
       "key": "audio.item.short_sword",
       "cueFamily": "item",
       "eventId": "audio.item.short_sword",
-      "sourcePath": "audio/fallback/silence.ogg",
+      "sourcePath": "audio/item/short_sword.ogg",
       "tags": [
-        "fallback",
-        "placeholder",
-        "phase2"
+        "phase2",
+        "item",
+        "starter_kit",
+        "official_slice"
       ]
     },
     {
@@ -425,6 +396,41 @@
       ]
     },
     {
+      "key": "audio.melee.default",
+      "cueFamily": "melee",
+      "eventId": "melee.default",
+      "sourcePath": "audio/melee/default.ogg",
+      "tags": [
+        "placeholder",
+        "phase2",
+        "melee"
+      ]
+    },
+    {
+      "key": "audio.melee.light",
+      "cueFamily": "melee",
+      "eventId": "melee.light",
+      "sourcePath": "audio/melee/light.ogg",
+      "tags": [
+        "placeholder",
+        "phase2",
+        "melee"
+      ]
+    },
+    {
+      "key": "audio.monster.bandit.captain",
+      "cueFamily": "monster",
+      "eventId": "audio.monster.bandit.captain",
+      "sourcePath": "audio/monster/bandit_captain.ogg",
+      "tags": [
+        "phase2",
+        "p2-b",
+        "monster",
+        "bandit",
+        "official_slice"
+      ]
+    },
+    {
       "key": "audio.monster.bandit.sentry",
       "cueFamily": "monster",
       "eventId": "audio.monster.bandit.sentry",
@@ -456,6 +462,17 @@
       ]
     },
     {
+      "key": "audio.monster.default",
+      "cueFamily": "monster",
+      "eventId": "monster.default",
+      "sourcePath": "audio/monster/default.ogg",
+      "tags": [
+        "placeholder",
+        "phase2",
+        "monster"
+      ]
+    },
+    {
       "key": "audio.monster.orc.raider",
       "cueFamily": "monster",
       "eventId": "audio.monster.orc.raider",
@@ -476,13 +493,26 @@
       ]
     },
     {
+      "key": "audio.music.menu",
+      "cueFamily": "music",
+      "eventId": "music.menu",
+      "sourcePath": "audio/music/menu.ogg",
+      "tags": [
+        "placeholder",
+        "phase2",
+        "music"
+      ]
+    },
+    {
       "key": "audio.profession.arcanist",
       "cueFamily": "profession",
       "eventId": "profession.arcanist",
       "sourcePath": "audio/professions/arcanist.ogg",
       "tags": [
         "phase2",
-        "profession"
+        "profession",
+        "p2-b",
+        "official_slice"
       ]
     },
     {
@@ -512,84 +542,274 @@
       "sourcePath": "audio/professions/vanguard.ogg",
       "tags": [
         "phase2",
-        "profession"
+        "profession",
+        "p2-b",
+        "official_slice"
+      ]
+    },
+    {
+      "key": "audio.spell.basic",
+      "cueFamily": "spell",
+      "eventId": "spell.basic",
+      "sourcePath": "audio/spell/basic.ogg",
+      "tags": [
+        "placeholder",
+        "phase2",
+        "spell"
+      ]
+    },
+    {
+      "key": "audio.spell.default",
+      "cueFamily": "spell",
+      "eventId": "spell.default",
+      "sourcePath": "audio/spell/default.ogg",
+      "tags": [
+        "placeholder",
+        "phase2",
+        "spell"
+      ]
+    },
+    {
+      "key": "audio.talent.arcane_shield",
+      "cueFamily": "talent",
+      "eventId": "audio.talent.arcane_shield",
+      "sourcePath": "audio/talent/arcane_shield.ogg",
+      "tags": [
+        "phase2",
+        "p2-b",
+        "talent",
+        "arcanist"
+      ]
+    },
+    {
+      "key": "audio.talent.blink",
+      "cueFamily": "talent",
+      "eventId": "audio.talent.blink",
+      "sourcePath": "audio/talent/blink.ogg",
+      "tags": [
+        "phase2",
+        "p2-b",
+        "talent",
+        "arcanist"
       ]
     },
     {
       "key": "audio.talent.charge",
       "cueFamily": "talent",
       "eventId": "audio.talent.charge",
-      "sourcePath": "audio/fallback/silence.ogg",
+      "sourcePath": "audio/talent/charge.ogg",
       "tags": [
-        "fallback",
-        "placeholder",
-        "phase2"
+        "phase2",
+        "p2-b",
+        "talent",
+        "vanguard"
+      ]
+    },
+    {
+      "key": "audio.talent.fireball",
+      "cueFamily": "talent",
+      "eventId": "audio.talent.fireball",
+      "sourcePath": "audio/talent/fireball.ogg",
+      "tags": [
+        "phase2",
+        "p2-b",
+        "talent",
+        "arcanist"
+      ]
+    },
+    {
+      "key": "audio.talent.flame_wall",
+      "cueFamily": "talent",
+      "eventId": "audio.talent.flame_wall",
+      "sourcePath": "audio/talent/flame_wall.ogg",
+      "tags": [
+        "phase2",
+        "p2-b",
+        "talent",
+        "arcanist"
+      ]
+    },
+    {
+      "key": "audio.talent.frost_nova",
+      "cueFamily": "talent",
+      "eventId": "audio.talent.frost_nova",
+      "sourcePath": "audio/talent/frost_nova.ogg",
+      "tags": [
+        "phase2",
+        "p2-b",
+        "talent",
+        "arcanist"
+      ]
+    },
+    {
+      "key": "audio.talent.guard_stance",
+      "cueFamily": "talent",
+      "eventId": "audio.talent.guard_stance",
+      "sourcePath": "audio/talent/guard_stance.ogg",
+      "tags": [
+        "phase2",
+        "p2-b",
+        "talent",
+        "vanguard"
+      ]
+    },
+    {
+      "key": "audio.talent.ice_bolt",
+      "cueFamily": "talent",
+      "eventId": "audio.talent.ice_bolt",
+      "sourcePath": "audio/talent/ice_bolt.ogg",
+      "tags": [
+        "phase2",
+        "p2-b",
+        "talent",
+        "arcanist"
+      ]
+    },
+    {
+      "key": "audio.talent.ice_prison",
+      "cueFamily": "talent",
+      "eventId": "audio.talent.ice_prison",
+      "sourcePath": "audio/talent/ice_prison.ogg",
+      "tags": [
+        "phase2",
+        "p2-b",
+        "talent",
+        "arcanist"
+      ]
+    },
+    {
+      "key": "audio.talent.intimidation",
+      "cueFamily": "talent",
+      "eventId": "audio.talent.intimidation",
+      "sourcePath": "audio/talent/intimidation.ogg",
+      "tags": [
+        "phase2",
+        "p2-b",
+        "talent",
+        "vanguard"
+      ]
+    },
+    {
+      "key": "audio.talent.mana_surge",
+      "cueFamily": "talent",
+      "eventId": "audio.talent.mana_surge",
+      "sourcePath": "audio/talent/mana_surge.ogg",
+      "tags": [
+        "phase2",
+        "p2-b",
+        "talent",
+        "arcanist"
       ]
     },
     {
       "key": "audio.talent.power_strike",
       "cueFamily": "talent",
       "eventId": "audio.talent.power_strike",
-      "sourcePath": "audio/fallback/silence.ogg",
+      "sourcePath": "audio/talent/power_strike.ogg",
       "tags": [
-        "fallback",
-        "placeholder",
-        "phase2"
+        "phase2",
+        "p2-b",
+        "talent",
+        "vanguard"
       ]
     },
     {
       "key": "audio.talent.shield_bash",
       "cueFamily": "talent",
       "eventId": "audio.talent.shield_bash",
-      "sourcePath": "audio/fallback/silence.ogg",
+      "sourcePath": "audio/talent/shield_bash.ogg",
       "tags": [
-        "fallback",
-        "placeholder",
-        "phase2"
+        "phase2",
+        "p2-b",
+        "talent",
+        "vanguard"
+      ]
+    },
+    {
+      "key": "audio.talent.sunder_armor",
+      "cueFamily": "talent",
+      "eventId": "audio.talent.sunder_armor",
+      "sourcePath": "audio/talent/sunder_armor.ogg",
+      "tags": [
+        "phase2",
+        "p2-b",
+        "talent",
+        "vanguard"
+      ]
+    },
+    {
+      "key": "audio.talent.sweeping_strike",
+      "cueFamily": "talent",
+      "eventId": "audio.talent.sweeping_strike",
+      "sourcePath": "audio/talent/sweeping_strike.ogg",
+      "tags": [
+        "phase2",
+        "p2-b",
+        "talent",
+        "vanguard"
+      ]
+    },
+    {
+      "key": "audio.talent.unyielding",
+      "cueFamily": "talent",
+      "eventId": "audio.talent.unyielding",
+      "sourcePath": "audio/talent/unyielding.ogg",
+      "tags": [
+        "phase2",
+        "p2-b",
+        "talent",
+        "vanguard"
       ]
     },
     {
       "key": "audio.talent.war_cry",
       "cueFamily": "talent",
       "eventId": "audio.talent.war_cry",
-      "sourcePath": "audio/fallback/silence.ogg",
+      "sourcePath": "audio/talent/war_cry.ogg",
       "tags": [
-        "fallback",
-        "placeholder",
-        "phase2"
+        "phase2",
+        "p2-b",
+        "talent",
+        "vanguard"
       ]
     },
     {
       "key": "audio.tree.arcanist_arcane",
       "cueFamily": "tree",
       "eventId": "audio.tree.arcanist_arcane",
-      "sourcePath": "audio/fallback/silence.ogg",
+      "sourcePath": "audio/tree/arcanist_arcane.ogg",
       "tags": [
-        "fallback",
-        "placeholder",
-        "phase2"
+        "phase2",
+        "p2-b",
+        "tree",
+        "arcanist",
+        "official_slice"
       ]
     },
     {
       "key": "audio.tree.arcanist_flame",
       "cueFamily": "tree",
       "eventId": "audio.tree.arcanist_flame",
-      "sourcePath": "audio/fallback/silence.ogg",
+      "sourcePath": "audio/tree/arcanist_flame.ogg",
       "tags": [
-        "fallback",
-        "placeholder",
-        "phase2"
+        "phase2",
+        "p2-b",
+        "tree",
+        "arcanist",
+        "official_slice"
       ]
     },
     {
       "key": "audio.tree.arcanist_frost",
       "cueFamily": "tree",
       "eventId": "audio.tree.arcanist_frost",
-      "sourcePath": "audio/fallback/silence.ogg",
+      "sourcePath": "audio/tree/arcanist_frost.ogg",
       "tags": [
-        "fallback",
-        "placeholder",
-        "phase2"
+        "phase2",
+        "p2-b",
+        "tree",
+        "arcanist",
+        "official_slice"
       ]
     },
     {
@@ -662,33 +882,72 @@
       "key": "audio.tree.vanguard_arms",
       "cueFamily": "tree",
       "eventId": "audio.tree.vanguard_arms",
-      "sourcePath": "audio/fallback/silence.ogg",
+      "sourcePath": "audio/tree/vanguard_arms.ogg",
       "tags": [
-        "fallback",
-        "placeholder",
-        "phase2"
+        "phase2",
+        "p2-b",
+        "tree",
+        "vanguard",
+        "official_slice"
       ]
     },
     {
       "key": "audio.tree.vanguard_shield",
       "cueFamily": "tree",
       "eventId": "audio.tree.vanguard_shield",
-      "sourcePath": "audio/fallback/silence.ogg",
+      "sourcePath": "audio/tree/vanguard_shield.ogg",
       "tags": [
-        "fallback",
-        "placeholder",
-        "phase2"
+        "phase2",
+        "p2-b",
+        "tree",
+        "vanguard",
+        "official_slice"
       ]
     },
     {
       "key": "audio.tree.vanguard_warcry",
       "cueFamily": "tree",
       "eventId": "audio.tree.vanguard_warcry",
-      "sourcePath": "audio/fallback/silence.ogg",
+      "sourcePath": "audio/tree/vanguard_warcry.ogg",
       "tags": [
-        "fallback",
+        "phase2",
+        "p2-b",
+        "tree",
+        "vanguard",
+        "official_slice"
+      ]
+    },
+    {
+      "key": "audio.ui.cancel",
+      "cueFamily": "ui",
+      "eventId": "ui.cancel",
+      "sourcePath": "audio/ui/cancel.ogg",
+      "tags": [
         "placeholder",
-        "phase2"
+        "phase2",
+        "ui"
+      ]
+    },
+    {
+      "key": "audio.ui.confirm",
+      "cueFamily": "ui",
+      "eventId": "ui.confirm",
+      "sourcePath": "audio/ui/confirm.ogg",
+      "tags": [
+        "placeholder",
+        "phase2",
+        "ui"
+      ]
+    },
+    {
+      "key": "audio.ui.hover",
+      "cueFamily": "ui",
+      "eventId": "ui.hover",
+      "sourcePath": "audio/ui/hover.ogg",
+      "tags": [
+        "placeholder",
+        "phase2",
+        "ui"
       ]
     },
     {
@@ -727,8 +986,10 @@
       "eventId": "audio.zone.shattered_outpost",
       "sourcePath": "audio/ambient/shattered_outpost.ogg",
       "tags": [
-        "placeholder",
-        "phase2"
+        "phase2",
+        "p2-b",
+        "zone",
+        "official_slice"
       ]
     }
   ],

@@ -159,7 +159,7 @@ class InputHandler(
             return PlayerCommand.SaveGame
         }
 
-        stairCommandAtPlayer(snapshot)?.let { command ->
+        interactionCommandAtPlayer(snapshot)?.let { command ->
             if (isInteractBinding()) {
                 return command
             }
@@ -394,8 +394,13 @@ class InputHandler(
         movementRepeatCountdown = repeatInitialDelayFrames
     }
 
-    private fun stairCommandAtPlayer(snapshot: RenderSnapshot): PlayerCommand? {
+    private fun interactionCommandAtPlayer(snapshot: RenderSnapshot): PlayerCommand? {
         val playerPosition = playerPosition(snapshot)
+        val interactable =
+            snapshot.props.firstOrNull { prop -> prop.isInteractableAt(playerPosition) }
+        if (interactable != null) {
+            return PlayerCommand.Interact
+        }
         val direction =
             snapshot.mapCells
                 .firstOrNull { cell -> cell.x == playerPosition.x && cell.y == playerPosition.y }
@@ -413,6 +418,9 @@ class InputHandler(
 
     private fun PropRenderSnapshot.isStairAt(point: Point): Boolean =
         propTypeId == "stairs" && x == point.x && y == point.y
+
+    private fun PropRenderSnapshot.isInteractableAt(point: Point): Boolean =
+        propTypeId != "stairs" && x == point.x && y == point.y
 
     private fun GridPointSnapshot.toPoint(): Point = Point(x, y)
 }

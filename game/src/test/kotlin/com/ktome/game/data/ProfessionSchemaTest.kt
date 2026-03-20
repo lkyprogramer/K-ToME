@@ -24,5 +24,13 @@ class ProfessionSchemaTest {
             profession.startingTalents.forEach { talentId -> assertTrue(talentIds.contains(talentId), "Unknown starter talent $talentId") }
             profession.startingKit.forEach { itemId -> assertTrue(itemIds.contains(itemId), "Unknown starter item $itemId") }
         }
+        assertEquals(
+            listOf("short_sword", "basic_shield", "chain_mail", "healing_potion"),
+            catalog.professions.first { it.id == "vanguard" }.startingKit,
+        )
+        assertEquals(
+            listOf("arcane_staff", "apprentice_robe", "mana_potion"),
+            catalog.professions.first { it.id == "arcanist" }.startingKit,
+        )
     }
 }

@@ -1,7 +1,13 @@
 lootProfiles:
   - id: loot.foundation.common
     schemaVersion: 2
+    tags: [loot, common]
+    itemIds: [healing_potion, scroll_teleport]
   - id: loot.foundation.elite
     schemaVersion: 2
+    tags: [loot, elite]
+    itemIds: [basic_shield, mana_potion, chain_mail, apprentice_robe]
   - id: loot.foundation.boss
     schemaVersion: 2
+    tags: [loot, boss]
+    itemIds: [basic_shield, mana_potion, scroll_teleport]

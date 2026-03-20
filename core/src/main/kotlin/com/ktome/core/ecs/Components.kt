@@ -117,3 +117,5 @@ data class PatrolRoute(
 }
 
 data class Stair(val direction: StairDirection)
+
+data class Interactable(val id: String)

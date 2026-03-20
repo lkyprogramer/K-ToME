@@ -12,13 +12,13 @@ zones:
     mapSize: { width: 60, height: 40 }
     recommendedLevel: { min: 1, max: 4 }
     environmentTheme: tutorial_ruins
-    specialMechanics: [simple_traps]
+    specialMechanics: [tutorial_lane, simple_traps, patrol_pressure]
     tilesetKey: tileset.ruins
     ambientProfile: ambient.shattered_outpost
-    monsterPools: [beast.rat, bandit.sentry]
-    elitePools: [orc.raider]
-    bossEncounterId:
-    objectiveSetId:
+    monsterPools: [beast.rat_scavenger, goblin.scout, bandit.raider, bandit.archer, undead.restless_skeleton]
+    elitePools: [undead.bone_guard]
+    bossEncounterId: bandit_captain_encounter
+    objectiveSetId: shattered_outpost_breach
   - id: greenwood_fringe
     nameKey: zone.greenwood_fringe.name
     descKey: zone.greenwood_fringe.desc

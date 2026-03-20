@@ -28,6 +28,11 @@ import com.ktome.client.input.InputSource
 import com.ktome.client.input.OverlayState
 import com.ktome.client.input.UiMode
 import com.ktome.client.render.TileRenderer
+import com.ktome.core.dungeon.StairDirection
+import com.ktome.core.ecs.EntityId
+import com.ktome.core.ecs.Position
+import com.ktome.core.ecs.World
+import com.ktome.core.ecs.get
 import com.ktome.core.map.Point
 import com.ktome.core.snapshot.CellVisibilitySnapshot
 import com.ktome.core.snapshot.RenderSnapshot
@@ -40,8 +45,6 @@ import com.ktome.game.FoundationGameSession
 import com.ktome.game.GameModule
 import com.ktome.game.PlayerCommand
 import com.ktome.game.harness.HarnessReportWriter
-import com.ktome.game.harness.RunObservationCapture
-import com.ktome.game.harness.SmokeBot
 import com.ktome.game.i18n.GameLocale
 import com.ktome.game.i18n.Localizer
 import java.nio.file.Path
@@ -88,13 +91,13 @@ class ClientSmokeHarnessTest {
                     expectedLogLine = "你进入了地牢。",
                 ),
                 runNewGameSmoke(
-                    name = "new-game-arcanist-greenwood-default-zh",
+                    name = "new-game-arcanist-shattered-outpost-default-zh",
                     saveManager = saveManager,
                     smokeSource = SmokeCommandSource(),
                     defaultConfig =
                         FoundationGameConfig(
                             seed = 20260318L,
-                            zoneId = "greenwood_fringe",
+                            zoneId = "shattered_outpost",
                             playerProfessionId = "arcanist",
                         ),
                     menuInput = ScriptedInputSource(Keys.ENTER),
@@ -244,8 +247,8 @@ class ClientSmokeHarnessTest {
                     defaultConfig =
                         FoundationGameConfig(
                             seed = 20260317L,
-                            zoneId = "grey_gate_depths",
-                            playerProfessionId = "templar",
+                            zoneId = "shattered_outpost",
+                            playerProfessionId = "vanguard",
                         ),
                     menuInputSourceFactory = { ScriptedInputSource() },
                     gameCommandSourceFactory = { PassiveCommandSource() },
@@ -254,36 +257,38 @@ class ClientSmokeHarnessTest {
                     assetVersionProvider = { AssetVersionContract.CURRENT },
                     audioSinkBindingsFactory = audioHarness.factory(),
                 )
-            val bot = SmokeBot()
-
             try {
                 app.create()
                 app.startNewGame()
                 val session = requireNotNull(app.activeSessionOrNull()) { "Expected active session for boss warning smoke." }
+                val stairsDown = requireNotNull(automationStairPoint(session, StairDirection.DOWN))
+                automationMovePlayerTo(session, stairsDown)
+                app.render()
+                check(session.perform(PlayerCommand.Descend)) { "Failed to descend into bandit captain floor." }
+                app.render()
 
-                for (step in 0 until 800) {
-                    val snapshot = session.renderSnapshot()
-                    val hasBossWarning = snapshot.overlays.any { overlay -> overlay.id.startsWith("boss-warning:") }
-                    val hasTelegraph = snapshot.overlays.any { overlay -> overlay.id.startsWith("telegraph:") }
-                    if (hasBossWarning && hasTelegraph) {
-                        app.render()
-                        assertTrue(
-                            audioHarness.backgroundTransitions.contains("audio.zone.grey_gate_depths"),
-                            "Expected grey gate ambience, got ${audioHarness.backgroundTransitions}.",
-                        )
-                        assertTrue(
-                            audioHarness.cueEvents.contains("audio.boss.warning"),
-                            "Expected boss warning cue, got ${audioHarness.cueEvents}.",
-                        )
-                        return@withLwjgl3Gdx
-                    }
+                val bossId = requireNotNull(automationEntityByTemplateId(session, "bandit.captain"))
+                val bossPoint = requireNotNull(automationWorld(session).get<Position>(bossId)).toPoint()
+                automationMovePlayerTo(session, bossPoint)
+                app.render()
 
-                    val command = bot.decide(RunObservationCapture.capture(session, step))
-                    check(session.perform(command)) { "Command rejected while driving audio boss smoke: $command" }
-                    app.render()
-                }
-
-                error("Failed to reach visible boss warning overlay in audio-enabled smoke.")
+                val snapshot = session.renderSnapshot()
+                assertTrue(
+                    snapshot.overlays.any { overlay -> overlay.id.startsWith("boss-warning:") },
+                    "Expected visible boss warning overlay, got ${snapshot.overlays.map { it.id }}.",
+                )
+                assertTrue(
+                    snapshot.overlays.any { overlay -> overlay.id.startsWith("telegraph:") },
+                    "Expected visible boss telegraph overlay, got ${snapshot.overlays.map { it.id }}.",
+                )
+                assertTrue(
+                    audioHarness.backgroundTransitions.contains("audio.zone.shattered_outpost"),
+                    "Expected shattered outpost ambience, got ${audioHarness.backgroundTransitions}.",
+                )
+                assertTrue(
+                    audioHarness.cueEvents.contains("audio.boss.warning"),
+                    "Expected boss warning cue, got ${audioHarness.cueEvents}.",
+                )
             } finally {
                 app.dispose()
             }
@@ -442,14 +447,15 @@ class ClientSmokeHarnessTest {
             val initialUi = initialLoaded?.let { loadedSession -> captureUiSnapshot(app, smokeSource, loadedSession) }
             repeat(180) { app.render() }
             val loaded = app.activeSessionOrNull()
-            val localeId = loaded?.localizer()?.locale?.id
-            val finalSnapshot = loaded?.renderSnapshot()
+            val observedSession = loaded ?: initialLoaded
+            val localeId = observedSession?.localizer()?.locale?.id
+            val finalSnapshot = observedSession?.renderSnapshot()
             val zoneId = finalSnapshot?.metadata?.zoneId
-            val professionId = loaded?.config?.playerProfessionId
+            val professionId = observedSession?.config?.playerProfessionId
             ClientSmokeReport(
                 name = name,
                 success =
-                    loaded != null &&
+                    initialLoaded != null &&
                         localeId == expectedLocale.id &&
                         menuSnapshot.subtitle == expectedMenuSubtitle &&
                         menuSnapshot.language == expectedMenuLanguage &&
@@ -463,13 +469,13 @@ class ClientSmokeHarnessTest {
                         initialUi?.inspectTitle == expectedInspectTitle &&
                         initialUi?.firstMessage == expectedLogLine &&
                         smokeSource.consumedCommands > 0 &&
-                        loaded.currentTurnCount() >= session.currentTurnCount(),
+                        observedSession.currentTurnCount() >= session.currentTurnCount(),
                 screenName = app.screen?.javaClass?.simpleName ?: "None",
                 localeId = localeId,
                 zoneId = zoneId,
                 professionId = professionId,
-                floorReached = loaded?.currentFloor(),
-                turns = loaded?.currentTurnCount(),
+                floorReached = observedSession?.currentFloor(),
+                turns = observedSession?.currentTurnCount(),
                 menuSubtitle = menuSnapshot.subtitle,
                 menuLanguage = menuSnapshot.language,
                 issuedCommands = smokeSource.issuedCommands,
@@ -481,7 +487,7 @@ class ClientSmokeHarnessTest {
                 inspectTitle = initialUi?.inspectTitle,
                 firstMessage = initialUi?.firstMessage,
                 failureReason =
-                    if (loaded == null) {
+                    if (initialLoaded == null) {
                         "Continue did not load a session."
                     } else if (localeId != expectedLocale.id) {
                         "Expected locale ${expectedLocale.id}, got $localeId."
@@ -1090,4 +1096,49 @@ private object SnapshotSmokeBot {
             Point(point.x - 1, point.y),
             Point(point.x, point.y - 1),
         )
+}
+
+private fun automationWorld(session: FoundationGameSession): World =
+    invokeSessionInternal(session, "automationWorld") as World
+
+private fun automationMovePlayerTo(
+    session: FoundationGameSession,
+    point: Point,
+) {
+    invokeSessionInternal(session, "automationMovePlayerTo", arrayOf(Point::class.java), point)
+}
+
+private fun automationStairPoint(
+    session: FoundationGameSession,
+    direction: StairDirection,
+): Point? =
+    invokeSessionInternal(session, "automationStairPoint", arrayOf(StairDirection::class.java), direction) as Point?
+
+private fun automationEntityByTemplateId(
+    session: FoundationGameSession,
+    templateId: String,
+): EntityId? =
+    invokeSessionInternal(session, "automationEntityByTemplateId", arrayOf(String::class.java), templateId) as EntityId?
+
+private fun invokeSessionInternal(
+    session: FoundationGameSession,
+    methodName: String,
+    parameterTypes: Array<Class<*>> = emptyArray(),
+    vararg args: Any?,
+): Any? {
+    val methods = session.javaClass.methods
+    val matchingMethods =
+        methods.filter { method ->
+            method.name == methodName ||
+                method.name.startsWith("${methodName}-") ||
+                method.name.startsWith("${methodName}\$")
+        }
+    val method =
+        matchingMethods.firstOrNull()
+            ?: error(
+            "No internal helper matched $methodName(${parameterTypes.joinToString { it.simpleName }}) on ${session.javaClass.name}. " +
+                "Candidates=${methods.map { it.name }.filter { it.startsWith(methodName) || it.contains(methodName) }}",
+        )
+    method.isAccessible = true
+    return method.invoke(session, *args)
 }

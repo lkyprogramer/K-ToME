@@ -198,6 +198,22 @@ items:
     baseDefense: 6
     dropFloors: [2, 3, 4]
     dropWeight: 5
+  - id: basic_shield
+    nameKey: item.basic_shield.name
+    descKey: item.basic_shield.desc
+    visualKey: item.basic_shield.visual
+    iconKey: item.basic_shield.icon
+    audioProfile: audio.item.basic_shield
+    schemaVersion: 2
+    tags: [item, armor, shield]
+    type: ARMOR
+    slot: OFF_HAND
+    glyph: "]"
+    color: "#A0896B"
+    baseDefense: 3
+    stats: { defense: 1, maxHp: 8 }
+    dropFloors: [1, 2, 3]
+    dropWeight: 6
   - id: plate_armor
     nameKey: item.plate_armor.name
     descKey: item.plate_armor.desc
@@ -243,3 +259,52 @@ items:
     magnitude: 0
     dropFloors: [1, 2, 3, 4, 5]
     dropWeight: 8
+  - id: mana_potion
+    nameKey: item.mana_potion.name
+    descKey: item.mana_potion.desc
+    visualKey: item.mana_potion.visual
+    iconKey: item.mana_potion.icon
+    audioProfile: audio.item.mana_potion
+    schemaVersion: 2
+    tags: [item, consumable, arcane]
+    type: CONSUMABLE
+    glyph: "!"
+    color: "#4B6DFF"
+    effect: RESTORE_RESOURCE
+    resourceTypeId: MANA
+    magnitude: 28
+    dropFloors: [1, 2, 3, 4, 5]
+    dropWeight: 10
+  - id: arcane_staff
+    nameKey: item.arcane_staff.name
+    descKey: item.arcane_staff.desc
+    visualKey: item.arcane_staff.visual
+    iconKey: item.arcane_staff.icon
+    audioProfile: audio.item.arcane_staff
+    schemaVersion: 2
+    tags: [item, weapon, arcane]
+    type: WEAPON
+    slot: WEAPON
+    glyph: ")"
+    color: "#7A6DFF"
+    baseAttack: 4
+    stats: { wil: 2, attack: 1 }
+    dropFloors: [1, 2]
+    dropWeight: 6
+    materials: [IRON, STEEL]
+  - id: apprentice_robe
+    nameKey: item.apprentice_robe.name
+    descKey: item.apprentice_robe.desc
+    visualKey: item.apprentice_robe.visual
+    iconKey: item.apprentice_robe.icon
+    audioProfile: audio.item.apprentice_robe
+    schemaVersion: 2
+    tags: [item, armor, arcane]
+    type: ARMOR
+    slot: ARMOR
+    glyph: "["
+    color: "#5A6FD6"
+    baseDefense: 2
+    stats: { wil: 1 }
+    dropFloors: [1, 2]
+    dropWeight: 6

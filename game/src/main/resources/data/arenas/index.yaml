@@ -1,3 +1,5 @@
 arenas:
+  - id: arena.shattered_outpost.boss
+    schemaVersion: 2
   - id: arena.grey_gate_depths.boss
     schemaVersion: 2

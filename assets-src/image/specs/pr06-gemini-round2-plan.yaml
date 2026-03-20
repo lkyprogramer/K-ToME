@@ -1,0 +1,344 @@
+styleTag: ktome-middle-fantasy-painterly-tile-v1
+artStyleBible: docs/2026-03-13-art-style-bible.md
+stylePrompt: >
+  Classical high fantasy in a Middle-earth inspired mode. A world soaked in age,
+  iron, moss, flame, and old oaths. Weathered stone, forged iron, old timber,
+  cracked leather, coarse wool — every surface shows the weight of centuries.
+
+  Rendering style: painterly concept-art finish with visible brushwork and clear
+  material differentiation. NOT photorealistic, NOT pixel art, NOT cel-shaded,
+  NOT glossy mobile-game aesthetic. Slight impasto texture on metals and stone;
+  soft dry-brush edges on cloth and organic surfaces. Never anime. Never sci-fi.
+
+  Color palette: dark foundation of charcoal black, iron blue-grey, damp stone
+  green, deep brown wood. Warm accents of torch orange, molten-iron red, dry
+  leather brown, old gold — used sparingly for focal points. Cold light accents
+  of moonlight blue, frost cyan, lightning white-blue, faint holy pale-gold —
+  reserved for magic and interaction cues. Overall low saturation; high brightness
+  only on interactive elements, magic cores, boss telegraphs, and key pickups.
+
+  Lighting: low-key illumination. Primary light from upper-left at roughly 45
+  degrees. Warm firelight and cool ambient fill coexist. Shadows are clear but
+  not crushed to pure black. Rim light is allowed on character shoulder-lines,
+  weapon edges, and interactable prop edges — but always restrained. No bloom-heavy
+  haze, no full-screen volumetric light, no dreamy ethereal glow.
+defaults:
+  imageAspectRatio: "1:1"
+  imageSize: "1K"
+  negativeConstraints:
+    - no modern clothing
+    - no firearms
+    - no sci-fi materials
+    - no anime proportions
+    - no floating text, watermark or logo
+    - no floating text, watermark, logo, or UI elements baked into image
+    - no busy detailed background — transparent or clean only
+    - no recognizable franchise emblems
+    - no bloom-heavy magical glow or oversaturated light effects
+    - no glossy mobile-game icon aesthetic
+  categoryPromptTemplates:
+    icon_item: >
+      Game item icon on transparent background.
+      Single object centered in frame, 65-75% canvas occupancy, slight 3/4 angle.
+      Painterly rendering with material texture (glass, metal, leather, wood).
+      Object shows age and use — no pristine surfaces. Muted palette with one color accent.
+    icon_skill: >
+      Game skill ability icon on transparent background.
+      SINGLE focused subject centered in frame, occupying 65-75% of the canvas.
+      Bold simplified shapes with thick dark outlines for readability at small sizes.
+      Painterly rendering but with iconic clarity — this is a UI element, not a scene illustration.
+      NO hands, NO arms, NO character parts unless the skill IS about the body part.
+      Restrained color: 1-2 dominant hues plus neutral darks. No excessive glow or bloom.
+phase2AssetGates:
+  PR06-Refresh-R2:
+    description: Rebuild remaining PR-06 placeholder and duplicated talent/item visuals with Gemini.
+    assets:
+      - id: pr06_item_healing_potion_refresh
+        category: icon_item
+        visualKey: item.healing_potion.icon
+        outputName: phase2/p2-b/icon_item_minor_healing_potion.png
+        subject: >
+          A frontier healing potion for the official slice starter kit. Thick glass vial with a modest
+          cork stopper, iron wire wrap, and deep crimson liquid that suggests reliable battlefield medicine
+          rather than alchemical luxury. The bottle should feel sturdy, travel-worn, and practical.
+        materialTags: [glass, iron, liquid]
+        moodTags: [restorative, practical]
+        constraints:
+          - single potion object, centered, transparent background
+          - clear readable silhouette at icon size
+          - no glowing holy aura, no ornate jewelry treatment
+        geminiKeyRequired: true
+      - id: pr06_item_mana_potion_refresh
+        category: icon_item
+        visualKey: item.mana_potion.icon
+        outputName: phase2/p2-c/icon_item_mana_potion.png
+        subject: >
+          A disciplined arcanist mana potion. Narrow glass flask with pale cobalt liquid, simple waxed seal,
+          and restrained silver wire binding near the neck. It should read as scholarly field stock, cool and
+          lucid, not as an explosive fantasy elixir.
+        materialTags: [glass, silver, liquid]
+        moodTags: [arcane, restorative]
+        constraints:
+          - single potion object, centered, transparent background
+          - dominant cold blue palette distinct from healing potion red
+          - no oversized magical explosion or neon glow
+        geminiKeyRequired: true
+
+      - id: pr06_icon_vanguard_charge
+        category: icon_skill
+        visualKey: talent.vanguard.charge.icon
+        outputName: phase2/p2-b/icon_skill_vanguard_charge.png
+        subject: >
+          Vanguard charge icon. A heavy weapon tip and armored surge wedge thrusting forward with compressed
+          motion arcs and a disciplined tactical rush. It should feel martial, direct, and kinetic rather than
+          fantastical.
+        profession: vanguard
+        materialTags: [steel, motion]
+        moodTags: [kinetic, tactical]
+        constraints:
+          - centered UI-ready icon on transparent background
+          - one thrusting forward shape with speed arcs
+          - no full character body and no scenery
+        geminiKeyRequired: true
+      - id: pr06_icon_vanguard_power_strike
+        category: icon_skill
+        visualKey: talent.vanguard.power_strike.icon
+        outputName: phase2/p2-b/icon_skill_vanguard_power_strike.png
+        subject: >
+          Vanguard power strike icon. A brutal blade or hammer impact sign with a dense amber-orange force wedge
+          behind it, conveying one committed crushing hit.
+        profession: vanguard
+        materialTags: [steel, impact]
+        moodTags: [forceful, direct]
+        constraints:
+          - centered UI-ready icon on transparent background
+          - strong impact silhouette readable at small size
+          - no character portrait and no magical fireball look
+        geminiKeyRequired: true
+      - id: pr06_icon_vanguard_shield_bash
+        category: icon_skill
+        visualKey: talent.vanguard.shield_bash.icon
+        outputName: phase2/p2-b/icon_skill_vanguard_shield_bash.png
+        subject: >
+          Vanguard shield bash icon. A rugged heater shield driving into a target with a blunt gold shock flare
+          and chipped debris burst. It should feel defensive and violent.
+        profession: vanguard
+        materialTags: [shield, iron, impact]
+        moodTags: [brutal, defensive]
+        constraints:
+          - centered UI-ready icon on transparent background
+          - shield is primary subject, impact burst secondary
+          - no faces, banners, or scenery
+        geminiKeyRequired: true
+      - id: pr06_icon_vanguard_war_cry
+        category: icon_skill
+        visualKey: talent.vanguard.war_cry.icon
+        outputName: phase2/p2-b/icon_skill_vanguard_war_cry.png
+        subject: >
+          Vanguard war cry icon. A stern iron war-helm or battlefield command sigil emitting layered sound-wave
+          pulses and morale-shock rings. It should read as martial command, not divine blessing.
+        profession: vanguard
+        materialTags: [iron, leather, sound]
+        moodTags: [commanding, intimidating]
+        constraints:
+          - centered UI-ready icon on transparent background
+          - one iconic helm or sigil with outward pulse geometry
+          - no text, no close-up face, no banner
+        geminiKeyRequired: true
+
+      - id: pr06_talent_vanguard_sweeping_strike
+        category: icon_skill
+        visualKey: talent.vanguard.sweeping_strike.visual
+        outputName: phase2/p2-b/talent_vanguard_sweeping_strike.png
+        subject: >
+          Vanguard sweeping strike talent art. A wide lateral steel arc carving through space with dust and ember
+          fragments pushed outward, reading as a battlefield-clearing sweep rather than a single target blow.
+        profession: vanguard
+        materialTags: [steel, motion, impact]
+        moodTags: [sweeping, martial]
+        constraints:
+          - centered UI-ready skill image on transparent background
+          - broad horizontal or crescent attack geometry
+          - no full body warrior and no busy background
+        geminiKeyRequired: true
+      - id: pr06_talent_vanguard_guard_stance
+        category: icon_skill
+        visualKey: talent.vanguard.guard_stance.visual
+        outputName: phase2/p2-b/talent_vanguard_guard_stance.png
+        subject: >
+          Vanguard guard stance talent art. A layered shield wall sigil with crossed guard lines and restrained
+          steel-blue protection glow, communicating bracing, discipline, and readiness.
+        profession: vanguard
+        materialTags: [shield, steel, ward]
+        moodTags: [guarded, disciplined]
+        constraints:
+          - centered UI-ready skill image on transparent background
+          - defensive geometry and shield motif must dominate
+          - no holy halo and no ornate religious iconography
+        geminiKeyRequired: true
+      - id: pr06_talent_vanguard_intimidation
+        category: icon_skill
+        visualKey: talent.vanguard.intimidation.visual
+        outputName: phase2/p2-b/talent_vanguard_intimidation.png
+        subject: >
+          Vanguard intimidation talent art. A hard iron face-mask or helm silhouette surrounded by sharp pressure
+          rings and threat lines, conveying psychological pressure and battlefield dominance.
+        profession: vanguard
+        materialTags: [iron, sound, pressure]
+        moodTags: [threatening, oppressive]
+        constraints:
+          - centered UI-ready skill image on transparent background
+          - one menacing martial symbol with outward pressure geometry
+          - no realistic portrait rendering
+        geminiKeyRequired: true
+      - id: pr06_talent_vanguard_sunder_armor
+        category: icon_skill
+        visualKey: talent.vanguard.sunder_armor.visual
+        outputName: phase2/p2-b/talent_vanguard_sunder_armor.png
+        subject: >
+          Vanguard sunder armor talent art. A weapon edge splitting through layered plates with bright fracture
+          sparks and cracked armor shards, emphasizing penetration and breakage.
+        profession: vanguard
+        materialTags: [steel, armor, fracture]
+        moodTags: [piercing, harsh]
+        constraints:
+          - centered UI-ready skill image on transparent background
+          - broken plate geometry must be readable at icon size
+          - no magical elemental explosion
+        geminiKeyRequired: true
+      - id: pr06_talent_vanguard_unyielding
+        category: icon_skill
+        visualKey: talent.vanguard.unyielding.visual
+        outputName: phase2/p2-b/talent_vanguard_unyielding.png
+        subject: >
+          Vanguard unyielding talent art. A battered shield or helm held within a hard square of stubborn steel
+          resolve, with low ember highlights suggesting refusal to fall under pressure.
+        profession: vanguard
+        materialTags: [steel, endurance]
+        moodTags: [resolute, stubborn]
+        constraints:
+          - centered UI-ready skill image on transparent background
+          - must read as endurance and refusal, not healing magic
+          - compact, iconic silhouette
+        geminiKeyRequired: true
+
+      - id: pr06_talent_arcanist_fireball
+        category: icon_skill
+        visualKey: talent.arcanist.fireball.visual
+        outputName: phase2/p2-b/talent_arcanist_fireball.png
+        subject: >
+          Arcanist fireball talent art. A dense orange-red orb with a short trailing plume and a focused molten
+          core, reading as a cast projectile rather than a wall or explosion.
+        profession: arcanist
+        materialTags: [fire, arcane]
+        moodTags: [focused, explosive]
+        constraints:
+          - centered UI-ready skill image on transparent background
+          - one fire projectile with controlled trail
+          - not a full blast wave and not a burning background scene
+        geminiKeyRequired: true
+      - id: pr06_talent_arcanist_flame_wall
+        category: icon_skill
+        visualKey: talent.arcanist.flame_wall.visual
+        outputName: phase2/p2-b/talent_arcanist_flame_wall.png
+        subject: >
+          Arcanist flame wall talent art. A vertical barrier of layered orange-red fire tongues and heat shimmer,
+          reading as a standing wall that blocks and burns rather than a fireball.
+        profession: arcanist
+        materialTags: [fire, barrier]
+        moodTags: [dangerous, shaping]
+        constraints:
+          - centered UI-ready skill image on transparent background
+          - clear vertical wall silhouette
+          - no humanoid caster and no background environment
+        geminiKeyRequired: true
+      - id: pr06_talent_arcanist_ice_bolt
+        category: icon_skill
+        visualKey: talent.arcanist.ice_bolt.visual
+        outputName: phase2/p2-b/talent_arcanist_ice_bolt.png
+        subject: >
+          Arcanist ice bolt talent art. A narrow frost shard projectile with cold cyan core, sharp crystalline edges,
+          and a faint freezing wake. It should read as fast and precise.
+        profession: arcanist
+        materialTags: [ice, crystal]
+        moodTags: [precise, cold]
+        constraints:
+          - centered UI-ready skill image on transparent background
+          - projectile silhouette must stay slim and readable
+          - no snowstorm or broad nova shape
+        geminiKeyRequired: true
+      - id: pr06_talent_arcanist_frost_nova
+        category: icon_skill
+        visualKey: talent.arcanist.frost_nova.visual
+        outputName: phase2/p2-b/talent_arcanist_frost_nova.png
+        subject: >
+          Arcanist frost nova talent art. A circular cold shock ring expanding from a frozen core with crystalline
+          shards and pale blue-white burst geometry, clearly reading as an outward nova.
+        profession: arcanist
+        materialTags: [ice, burst]
+        moodTags: [expansive, freezing]
+        constraints:
+          - centered UI-ready skill image on transparent background
+          - radial ring geometry must dominate
+          - no projectile shape and no human figure
+        geminiKeyRequired: true
+      - id: pr06_talent_arcanist_arcane_shield
+        category: icon_skill
+        visualKey: talent.arcanist.arcane_shield.visual
+        outputName: phase2/p2-b/talent_arcanist_arcane_shield.png
+        subject: >
+          Arcanist arcane shield talent art. A disciplined blue-white ward disc with concentric runic rings and a
+          stable core, reading as protection and control instead of raw explosion.
+        profession: arcanist
+        materialTags: [arcane, ward]
+        moodTags: [protective, disciplined]
+        constraints:
+          - centered UI-ready skill image on transparent background
+          - protective circular ward geometry must be explicit
+          - no holy cross, no fire, no character portrait
+        geminiKeyRequired: true
+      - id: pr06_talent_arcanist_blink
+        category: icon_skill
+        visualKey: talent.arcanist.blink.visual
+        outputName: phase2/p2-b/talent_arcanist_blink.png
+        subject: >
+          Arcanist blink talent art. A split-position arcane displacement mark with a tear of blue light and short
+          teleport streaks, suggesting sudden relocation rather than shield or projectile casting.
+        profession: arcanist
+        materialTags: [arcane, motion]
+        moodTags: [swift, elusive]
+        constraints:
+          - centered UI-ready skill image on transparent background
+          - teleport tear or displacement motif must be primary
+          - no explosion, no standing mage body
+        geminiKeyRequired: true
+      - id: pr06_talent_arcanist_mana_surge
+        category: icon_skill
+        visualKey: talent.arcanist.mana_surge.visual
+        outputName: phase2/p2-b/talent_arcanist_mana_surge.png
+        subject: >
+          Arcanist mana surge talent art. A rising column or spiral of blue-white arcane current feeding upward into
+          a bright core, communicating replenishment and power acceleration.
+        profession: arcanist
+        materialTags: [arcane, current]
+        moodTags: [energized, lucid]
+        constraints:
+          - centered UI-ready skill image on transparent background
+          - upward energy spiral or surge must dominate
+          - no shield-disc and no projectile-only silhouette
+        geminiKeyRequired: true
+      - id: pr06_talent_arcanist_ice_prison
+        category: icon_skill
+        visualKey: talent.arcanist.ice_prison.visual
+        outputName: phase2/p2-b/talent_arcanist_ice_prison.png
+        subject: >
+          Arcanist ice prison talent art. Angular frost pillars or crystalline bars locking inward around a cold core,
+          reading as confinement and entrapment rather than a nova or bolt.
+        profession: arcanist
+        materialTags: [ice, prison, crystal]
+        moodTags: [binding, severe]
+        constraints:
+          - centered UI-ready skill image on transparent background
+          - enclosing prison geometry must be obvious
+          - no projectile trail and no circular ward-disc
+        geminiKeyRequired: true

@@ -22,10 +22,10 @@ internal object LintFixtures {
             },
         )
     private val localeKeyCallPattern =
-        """(?:\btr|(?:\b[A-Za-z_][A-Za-z0-9_.]*\.)?text|MenuEntry|RenderTextTokenSnapshot)\s*\(\s*"((?:ui|log|tile|actor|stairs|status|ai|profession|talent_tree|talent|monster|boss|zone|difficulty|material|affix|item)\.[A-Za-z0-9_.-]+)""""
+        """(?:\btr|(?:\b[A-Za-z_][A-Za-z0-9_.]*\.)?text|MenuEntry|RenderTextTokenSnapshot)\s*\(\s*"((?:ui|log|tile|actor|stairs|status|ai|profession|talent_tree|talent|monster|boss|zone|difficulty|material|affix|item|interactable|objective)\.[A-Za-z0-9_.-]+)""""
             .toRegex()
     private val directLocaleLiteralPattern =
-        """"((?:ui|log|stairs|status|ai)\.[A-Za-z0-9_.-]+|(?:actor|profession|talent_tree|talent|monster|boss|zone|difficulty|material|affix|item)\.[A-Za-z0-9_.-]+\.(?:name|desc|role))""""
+        """"((?:ui|log|stairs|status|ai)\.[A-Za-z0-9_.-]+|(?:actor|profession|talent_tree|talent|monster|boss|zone|difficulty|material|affix|item|interactable)\.[A-Za-z0-9_.-]+\.(?:name|desc|role)|objective\.[A-Za-z0-9_.-]+\.(?:name|desc|role)|objective\.[A-Za-z0-9_.-]+\.step\.[A-Za-z0-9_.-]+)""""
             .toRegex()
 
     val schemaResources: List<String> =
@@ -35,6 +35,8 @@ internal object LintFixtures {
             "/data/monsters/index.yaml",
             "/data/bosses/index.yaml",
             "/data/zones/index.yaml",
+            "/data/interactables/index.yaml",
+            "/data/objectives/index.yaml",
             "/data/difficulties/index.yaml",
             "/data/items/index.yaml",
             "/data/loot/index.yaml",

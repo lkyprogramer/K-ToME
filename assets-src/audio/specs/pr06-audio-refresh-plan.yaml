@@ -1,0 +1,192 @@
+packId: pr06-official-audio-refresh-v1
+sampleRate: 44100
+targets:
+  - id: pr06_profession_vanguard
+    key: audio.profession.vanguard
+    sourcePath: audio/professions/vanguard.ogg
+    profile: profession_vanguard
+    durationSeconds: 1.40
+  - id: pr06_profession_arcanist
+    key: audio.profession.arcanist
+    sourcePath: audio/professions/arcanist.ogg
+    profile: profession_arcanist
+    durationSeconds: 1.40
+
+  - id: pr06_tree_vanguard_arms
+    key: audio.tree.vanguard_arms
+    sourcePath: audio/tree/vanguard_arms.ogg
+    profile: tree_vanguard_arms
+    durationSeconds: 0.70
+  - id: pr06_tree_vanguard_shield
+    key: audio.tree.vanguard_shield
+    sourcePath: audio/tree/vanguard_shield.ogg
+    profile: tree_vanguard_shield
+    durationSeconds: 0.70
+  - id: pr06_tree_vanguard_warcry
+    key: audio.tree.vanguard_warcry
+    sourcePath: audio/tree/vanguard_warcry.ogg
+    profile: tree_vanguard_warcry
+    durationSeconds: 0.70
+  - id: pr06_tree_arcanist_flame
+    key: audio.tree.arcanist_flame
+    sourcePath: audio/tree/arcanist_flame.ogg
+    profile: tree_arcanist_flame
+    durationSeconds: 0.70
+  - id: pr06_tree_arcanist_frost
+    key: audio.tree.arcanist_frost
+    sourcePath: audio/tree/arcanist_frost.ogg
+    profile: tree_arcanist_frost
+    durationSeconds: 0.70
+  - id: pr06_tree_arcanist_arcane
+    key: audio.tree.arcanist_arcane
+    sourcePath: audio/tree/arcanist_arcane.ogg
+    profile: tree_arcanist_arcane
+    durationSeconds: 0.70
+
+  - id: pr06_item_short_sword
+    key: audio.item.short_sword
+    sourcePath: audio/item/short_sword.ogg
+    profile: item_short_sword
+    durationSeconds: 0.28
+  - id: pr06_item_basic_shield
+    key: audio.item.basic_shield
+    sourcePath: audio/item/basic_shield.ogg
+    profile: item_basic_shield
+    durationSeconds: 0.42
+  - id: pr06_item_chain_mail
+    key: audio.item.chain_mail
+    sourcePath: audio/item/chain_mail.ogg
+    profile: item_chain_mail
+    durationSeconds: 0.42
+  - id: pr06_item_healing_potion
+    key: audio.item.healing_potion
+    sourcePath: audio/item/healing_potion.ogg
+    profile: item_healing_potion
+    durationSeconds: 0.48
+  - id: pr06_item_mana_potion
+    key: audio.item.mana_potion
+    sourcePath: audio/item/mana_potion.ogg
+    profile: item_mana_potion
+    durationSeconds: 0.50
+  - id: pr06_item_arcane_staff
+    key: audio.item.arcane_staff
+    sourcePath: audio/item/arcane_staff.ogg
+    profile: item_arcane_staff
+    durationSeconds: 0.58
+  - id: pr06_item_apprentice_robe
+    key: audio.item.apprentice_robe
+    sourcePath: audio/item/apprentice_robe.ogg
+    profile: item_apprentice_robe
+    durationSeconds: 0.34
+
+  - id: pr06_talent_power_strike
+    key: audio.talent.power_strike
+    sourcePath: audio/talent/power_strike.ogg
+    profile: talent_power_strike
+    durationSeconds: 0.56
+  - id: pr06_talent_sweeping_strike
+    key: audio.talent.sweeping_strike
+    sourcePath: audio/talent/sweeping_strike.ogg
+    profile: talent_sweeping_strike
+    durationSeconds: 0.62
+  - id: pr06_talent_shield_bash
+    key: audio.talent.shield_bash
+    sourcePath: audio/talent/shield_bash.ogg
+    profile: talent_shield_bash
+    durationSeconds: 0.50
+  - id: pr06_talent_guard_stance
+    key: audio.talent.guard_stance
+    sourcePath: audio/talent/guard_stance.ogg
+    profile: talent_guard_stance
+    durationSeconds: 0.78
+  - id: pr06_talent_war_cry
+    key: audio.talent.war_cry
+    sourcePath: audio/talent/war_cry.ogg
+    profile: talent_war_cry
+    durationSeconds: 0.54
+  - id: pr06_talent_intimidation
+    key: audio.talent.intimidation
+    sourcePath: audio/talent/intimidation.ogg
+    profile: talent_intimidation
+    durationSeconds: 0.56
+  - id: pr06_talent_sunder_armor
+    key: audio.talent.sunder_armor
+    sourcePath: audio/talent/sunder_armor.ogg
+    profile: talent_sunder_armor
+    durationSeconds: 0.46
+  - id: pr06_talent_unyielding
+    key: audio.talent.unyielding
+    sourcePath: audio/talent/unyielding.ogg
+    profile: talent_unyielding
+    durationSeconds: 0.76
+  - id: pr06_talent_fireball
+    key: audio.talent.fireball
+    sourcePath: audio/talent/fireball.ogg
+    profile: talent_fireball
+    durationSeconds: 0.44
+  - id: pr06_talent_flame_wall
+    key: audio.talent.flame_wall
+    sourcePath: audio/talent/flame_wall.ogg
+    profile: talent_flame_wall
+    durationSeconds: 0.62
+  - id: pr06_talent_ice_bolt
+    key: audio.talent.ice_bolt
+    sourcePath: audio/talent/ice_bolt.ogg
+    profile: talent_ice_bolt
+    durationSeconds: 0.28
+  - id: pr06_talent_frost_nova
+    key: audio.talent.frost_nova
+    sourcePath: audio/talent/frost_nova.ogg
+    profile: talent_frost_nova
+    durationSeconds: 0.68
+  - id: pr06_talent_arcane_shield
+    key: audio.talent.arcane_shield
+    sourcePath: audio/talent/arcane_shield.ogg
+    profile: talent_arcane_shield
+    durationSeconds: 0.74
+  - id: pr06_talent_blink
+    key: audio.talent.blink
+    sourcePath: audio/talent/blink.ogg
+    profile: talent_blink
+    durationSeconds: 0.42
+  - id: pr06_talent_mana_surge
+    key: audio.talent.mana_surge
+    sourcePath: audio/talent/mana_surge.ogg
+    profile: talent_mana_surge
+    durationSeconds: 0.66
+  - id: pr06_talent_ice_prison
+    key: audio.talent.ice_prison
+    sourcePath: audio/talent/ice_prison.ogg
+    profile: talent_ice_prison
+    durationSeconds: 0.50
+
+  - id: pr06_monster_bandit_captain
+    key: audio.monster.bandit.captain
+    sourcePath: audio/monster/bandit_captain.ogg
+    profile: monster_bandit_captain
+    durationSeconds: 0.34
+  - id: pr06_boss_bandit_captain
+    key: audio.boss.bandit_captain
+    sourcePath: audio/boss/bandit_captain.ogg
+    profile: boss_bandit_captain
+    durationSeconds: 0.62
+  - id: pr06_boss_warning
+    key: audio.boss.warning
+    sourcePath: audio/boss/warning.ogg
+    profile: boss_warning
+    durationSeconds: 0.42
+  - id: pr06_zone_shattered_outpost
+    key: audio.zone.shattered_outpost
+    sourcePath: audio/ambient/shattered_outpost.ogg
+    profile: zone_shattered_outpost
+    durationSeconds: 5.20
+  - id: pr06_interactable_open
+    key: audio.interactable.open
+    sourcePath: audio/interactable/open.ogg
+    profile: interactable_open
+    durationSeconds: 0.46
+  - id: pr06_interactable_stairs
+    key: audio.interactable.stairs
+    sourcePath: audio/interactable/stairs.ogg
+    profile: interactable_stairs
+    durationSeconds: 0.56

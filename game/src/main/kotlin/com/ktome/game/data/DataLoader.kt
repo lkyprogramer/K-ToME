@@ -11,20 +11,28 @@ import com.ktome.core.item.ItemDataBundle
 import com.ktome.core.item.ItemType
 import com.ktome.core.item.MaterialDef
 import com.ktome.core.item.StatModifier
+import com.ktome.core.talent.StatusEffectType
 import com.ktome.core.talent.TalentDef
 import com.ktome.core.talent.TalentLevelEffect
+import com.ktome.game.data.schema.AIProfileSchemaV2
+import com.ktome.game.data.schema.AITalentSkipRuleSchemaV2
 import com.ktome.game.data.schema.AffixSchemaV2
 import com.ktome.game.data.schema.BossEncounterSchemaV2
 import com.ktome.game.data.schema.DifficultySchemaV2
+import com.ktome.game.data.schema.InteractableSchemaV2
 import com.ktome.game.data.schema.ItemBundleSchemaV2
 import com.ktome.game.data.schema.ItemSchemaV2
+import com.ktome.game.data.schema.LootProfileSchemaV2
 import com.ktome.game.data.schema.MaterialSchemaV2
 import com.ktome.game.data.schema.MonsterSchemaV2
 import com.ktome.game.data.schema.NamedSchemaRef
+import com.ktome.game.data.schema.ObjectiveSetSchemaV2
+import com.ktome.game.data.schema.ObjectiveInteractablePlacementSchemaV2
 import com.ktome.game.data.schema.ProfessionSchemaV2
 import com.ktome.game.data.schema.SchemaCatalog
 import com.ktome.game.data.schema.SchemaLevelRange
 import com.ktome.game.data.schema.SchemaMapSize
+import com.ktome.game.data.schema.SchemaOffset
 import com.ktome.game.data.schema.SchemaStatModifier
 import com.ktome.game.data.schema.SchemaStats
 import com.ktome.game.data.schema.TalentLevelEffectSchemaV2
@@ -55,11 +63,13 @@ class DataLoader(
             monsters = parseMonsterSchemas(loadYamlMap("/data/monsters/index.yaml")),
             bossEncounters = parseBossSchemas(loadYamlMap("/data/bosses/index.yaml")),
             zones = parseZoneSchemas(loadYamlMap("/data/zones/index.yaml")),
+            interactables = parseInteractableSchemas(loadYamlMap("/data/interactables/index.yaml")),
+            objectiveSets = parseObjectiveSetSchemas(loadYamlMap("/data/objectives/index.yaml")),
             difficulties = parseDifficultySchemas(loadYamlMap("/data/difficulties/index.yaml")),
             itemBundle = parseItemBundleSchemas(loadYamlMap("/data/items/index.yaml")),
-            lootProfiles = parseNamedSchemaRefs(loadYamlMap("/data/loot/index.yaml"), "lootProfiles"),
+            lootProfiles = parseLootProfileSchemas(loadYamlMap("/data/loot/index.yaml")),
             tilesets = parseNamedSchemaRefs(loadYamlMap("/data/tilesets/index.yaml"), "tilesets"),
-            aiProfiles = parseNamedSchemaRefs(loadYamlMap("/data/ai/index.yaml"), "aiProfiles"),
+            aiProfiles = parseAiProfileSchemas(loadYamlMap("/data/ai/index.yaml")),
             arenas = parseNamedSchemaRefs(loadYamlMap("/data/arenas/index.yaml"), "arenas"),
             ambientProfiles = parseNamedSchemaRefs(loadYamlMap("/data/ambient/index.yaml"), "ambientProfiles"),
             visualKeys = parseStringIdSet(loadYamlMap("/data/visuals/index.yaml"), "visuals"),
@@ -279,6 +289,45 @@ class DataLoader(
             )
         }
 
+    private fun parseInteractableSchemas(root: Map<String, Any?>): List<InteractableSchemaV2> =
+        root.requiredList("interactables").map { entry ->
+            val interactable = entry.requiredMap()
+            InteractableSchemaV2(
+                id = interactable.requiredString("id"),
+                nameKey = interactable.requiredString("nameKey"),
+                descKey = interactable.requiredString("descKey"),
+                visualKey = interactable.requiredString("visualKey"),
+                audioProfile = interactable.requiredString("audioProfile"),
+                schemaVersion = interactable.requiredInt("schemaVersion"),
+                tags = interactable.optionalStringList("tags"),
+                interactionTags = interactable.optionalStringList("interactionTags"),
+            )
+        }
+
+    private fun parseObjectiveSetSchemas(root: Map<String, Any?>): List<ObjectiveSetSchemaV2> =
+        root.requiredList("objectiveSets").map { entry ->
+            val objective = entry.requiredMap()
+            ObjectiveSetSchemaV2(
+                id = objective.requiredString("id"),
+                nameKey = objective.requiredString("nameKey"),
+                descKey = objective.requiredString("descKey"),
+                schemaVersion = objective.requiredInt("schemaVersion"),
+                tags = objective.optionalStringList("tags"),
+                interactables = objective.optionalStringList("interactables"),
+                placements =
+                    objective.optionalList("placements").map { placementEntry ->
+                        val placement = placementEntry.requiredMap()
+                        ObjectiveInteractablePlacementSchemaV2(
+                            interactableId = placement.requiredString("interactableId"),
+                            floor = placement.requiredInt("floor"),
+                            anchor = placement.requiredString("anchor"),
+                            offset = placement.optionalMap("offset")?.toSchemaOffset() ?: SchemaOffset(),
+                        )
+                    },
+                completionRule = objective.requiredString("completionRule"),
+            )
+        }
+
     private fun parseDifficultySchemas(root: Map<String, Any?>): List<DifficultySchemaV2> =
         root.requiredList("difficulties").map { entry ->
             val difficulty = entry.requiredMap()
@@ -296,6 +345,35 @@ class DataLoader(
                 xpMultiplier = difficulty.requiredDouble("xpMultiplier"),
                 lootRarityBonus = difficulty.requiredDouble("lootRarityBonus"),
                 prerequisites = difficulty.optionalStringList("prerequisites"),
+            )
+        }
+
+    private fun parseLootProfileSchemas(root: Map<String, Any?>): List<LootProfileSchemaV2> =
+        root.requiredList("lootProfiles").map { entry ->
+            val profile = entry.requiredMap()
+            LootProfileSchemaV2(
+                id = profile.requiredString("id"),
+                schemaVersion = profile.requiredInt("schemaVersion"),
+                tags = profile.optionalStringList("tags"),
+                itemIds = profile.optionalStringList("itemIds"),
+            )
+        }
+
+    private fun parseAiProfileSchemas(root: Map<String, Any?>): List<AIProfileSchemaV2> =
+        root.requiredList("aiProfiles").map { entry ->
+            val profile = entry.requiredMap()
+            AIProfileSchemaV2(
+                id = profile.requiredString("id"),
+                schemaVersion = profile.requiredInt("schemaVersion"),
+                talentPriority = profile.optionalStringList("talentPriority"),
+                skipRules =
+                    profile.optionalList("skipRules").map { rawRule ->
+                        val rule = rawRule.requiredMap()
+                        AITalentSkipRuleSchemaV2(
+                            talentId = rule.requiredString("talentId"),
+                            selfHasStatus = StatusEffectType.valueOf(rule.requiredString("selfHasStatus")),
+                        )
+                    },
             )
         }
 
@@ -354,6 +432,7 @@ class DataLoader(
                     dropFloors = item.requiredIntList("dropFloors"),
                     dropWeight = item.requiredInt("dropWeight"),
                     effect = item.optionalString("effect")?.let(ConsumableEffect::valueOf),
+                    resourceTypeId = item.optionalString("resourceTypeId"),
                     magnitude = item.optionalInt("magnitude"),
                 )
             },
@@ -434,6 +513,7 @@ class DataLoader(
             dropFloors = dropFloors,
             dropWeight = dropWeight,
             effect = effect,
+            resourceTypeId = resourceTypeId,
             magnitude = magnitude,
         )
     }
@@ -541,6 +621,12 @@ class DataLoader(
         SchemaLevelRange(
             min = requiredInt("min"),
             max = requiredInt("max"),
+        )
+
+    private fun Map<*, *>.toSchemaOffset(): SchemaOffset =
+        SchemaOffset(
+            x = optionalInt("x"),
+            y = optionalInt("y"),
         )
 }
 

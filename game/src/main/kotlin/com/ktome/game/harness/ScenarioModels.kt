@@ -6,6 +6,7 @@ import com.ktome.core.run.RunOutcome
 import com.ktome.game.FOUNDATION_ZONE_ID
 import com.ktome.game.FOUNDATION_PROFESSION_ID
 import com.ktome.game.InventoryItemView
+import com.ktome.game.PlayerResourceView
 import com.ktome.game.PlayerStatus
 import com.ktome.game.TalentSlotView
 
@@ -31,6 +32,10 @@ sealed interface ScenarioGoal {
 
     data object ReachTerminal : ScenarioGoal {
         override fun isSatisfied(observation: RunObservation): Boolean = observation.runOutcome.isTerminal
+    }
+
+    data object Victory : ScenarioGoal {
+        override fun isSatisfied(observation: RunObservation): Boolean = observation.runOutcome is RunOutcome.Victory
     }
 
     data class ReachFloorOrTerminal(
@@ -104,12 +109,18 @@ sealed interface ScenarioAssertion {
         override fun verify(report: ScenarioReport): String? =
             if (report.checkpointRoundTripVerified) null else "Checkpoint round-trip was not verified."
     }
+
+    data object Victory : ScenarioAssertion {
+        override fun verify(report: ScenarioReport): String? =
+            if (report.outcome is RunOutcome.Victory) null else "Expected victory but got ${report.outcome}."
+    }
 }
 
 data class RunObservation(
     val floor: Int,
     val turnIndex: Int,
     val playerStatus: PlayerStatus,
+    val playerResource: PlayerResourceView = PlayerResourceView(current = 0, max = 0, typeId = "STAMINA"),
     val playerPosition: Point,
     val map: GameMap,
     val visibleTiles: Set<Point>,
@@ -117,6 +128,7 @@ data class RunObservation(
     val visibleHostilePositions: List<Point>,
     val visibleBlockingPositions: Set<Point>,
     val visibleGroundItemPositions: List<Point>,
+    val visibleInteractables: List<ObservedInteractable>,
     val knownDownstairsPositions: List<Point>,
     val inventoryItems: List<InventoryItemView>,
     val talentSlots: List<TalentSlotView>,
@@ -125,4 +137,10 @@ data class RunObservation(
     val runOutcome: RunOutcome,
     val messageLogTail: List<String>,
     val eventTail: List<String>,
+)
+
+data class ObservedInteractable(
+    val id: String,
+    val position: Point,
+    val interactionTags: Set<String> = emptySet(),
 )

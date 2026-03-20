@@ -203,6 +203,83 @@ class InputHandlerTest {
         input.clear()
     }
 
+    @Test
+    fun `enter on interactable tile triggers interact command before stairs fallback`() {
+        val input = ReplayInputSource()
+        val handler = InputHandler(input)
+        val snapshot =
+            RenderSnapshot(
+                metadata =
+                    RenderMetadataSnapshot(
+                        revision = 1,
+                        zoneId = "shattered_outpost",
+                        zoneNameKey = "zone.shattered_outpost.name",
+                        currentFloor = 1,
+                        maxFloor = 2,
+                        width = 8,
+                        height = 8,
+                        playerX = 3,
+                        playerY = 3,
+                        zoneVisualKey = "zone.shattered_outpost.visual",
+                        zoneAudioProfile = "audio.zone.shattered_outpost",
+                        tilesetKey = "tileset.ruins",
+                        ambientProfile = "ambient.shattered_outpost",
+                    ),
+                mapCells =
+                    listOf(
+                        MapCellSnapshot(
+                            x = 3,
+                            y = 3,
+                            visibility = CellVisibilitySnapshot.VISIBLE,
+                            terrainTypeId = "floor",
+                            terrainVisualKey = "tileset.ruins.ground_01",
+                            stairDirectionId = "DOWN",
+                        ),
+                    ),
+                props =
+                    listOf(
+                        PropRenderSnapshot(
+                            id = "interactable:supply_crate:1",
+                            x = 3,
+                            y = 3,
+                            propTypeId = "supply_crate",
+                            visualKey = "prop.supply_crate",
+                            audioProfile = "audio.interactable.open",
+                        ),
+                    ),
+                uiState =
+                    RenderUiStateSnapshot(
+                        playerStatus =
+                            PlayerStatusSnapshot(
+                                currentHp = 12,
+                                maxHp = 12,
+                                currentResource = 8,
+                                maxResource = 8,
+                                resourceLabelKey = "ui.hud.stamina.short",
+                                resourceTypeId = "STAMINA",
+                                level = 1,
+                                currentExperience = 0,
+                                nextLevelRequirement = 12,
+                                statPoints = 0,
+                                talentPoints = 0,
+                                attack = 4,
+                                defense = 2,
+                                accuracy = 3,
+                                evasion = 2,
+                                speed = 100,
+                            ),
+                        equipment = emptyList(),
+                        talents = emptyList(),
+                        inventory = emptyList(),
+                        targetablePositions = emptyList(),
+                    ),
+            )
+
+        input.frame(justPressed = setOf(Keys.ENTER))
+        assertEquals(PlayerCommand.Interact, handler.pollCommand(snapshot))
+        input.clear()
+    }
+
     private fun runtimeWorld(session: com.ktome.game.FoundationGameSession): World {
         val field = com.ktome.game.FoundationGameSession::class.java.getDeclaredField("world")
         field.isAccessible = true

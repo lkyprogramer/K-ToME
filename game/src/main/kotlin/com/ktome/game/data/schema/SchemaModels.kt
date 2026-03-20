@@ -1,5 +1,6 @@
 package com.ktome.game.data.schema
 
+import com.ktome.core.talent.StatusEffectType
 import com.ktome.core.item.AffixType
 import com.ktome.core.item.ConsumableEffect
 import com.ktome.core.item.EquipSlot
@@ -12,11 +13,13 @@ data class SchemaCatalog(
     val monsters: List<MonsterSchemaV2>,
     val bossEncounters: List<BossEncounterSchemaV2>,
     val zones: List<ZoneSchemaV2>,
+    val interactables: List<InteractableSchemaV2>,
+    val objectiveSets: List<ObjectiveSetSchemaV2>,
     val difficulties: List<DifficultySchemaV2>,
     val itemBundle: ItemBundleSchemaV2,
-    val lootProfiles: List<NamedSchemaRef>,
+    val lootProfiles: List<LootProfileSchemaV2>,
     val tilesets: List<NamedSchemaRef>,
-    val aiProfiles: List<NamedSchemaRef>,
+    val aiProfiles: List<AIProfileSchemaV2>,
     val arenas: List<NamedSchemaRef>,
     val ambientProfiles: List<NamedSchemaRef>,
     val visualKeys: Set<String>,
@@ -26,6 +29,25 @@ data class SchemaCatalog(
 data class NamedSchemaRef(
     val id: String,
     val schemaVersion: Int,
+)
+
+data class LootProfileSchemaV2(
+    val id: String,
+    val schemaVersion: Int,
+    val tags: List<String>,
+    val itemIds: List<String>,
+)
+
+data class AIProfileSchemaV2(
+    val id: String,
+    val schemaVersion: Int,
+    val talentPriority: List<String>,
+    val skipRules: List<AITalentSkipRuleSchemaV2>,
+)
+
+data class AITalentSkipRuleSchemaV2(
+    val talentId: String,
+    val selfHasStatus: StatusEffectType,
 )
 
 data class ProfessionSchemaV2(
@@ -175,6 +197,40 @@ data class ZoneSchemaV2(
     val objectiveSetId: String?,
 )
 
+data class InteractableSchemaV2(
+    val id: String,
+    val nameKey: String,
+    val descKey: String,
+    val visualKey: String,
+    val audioProfile: String,
+    val schemaVersion: Int,
+    val tags: List<String>,
+    val interactionTags: List<String>,
+)
+
+data class ObjectiveSetSchemaV2(
+    val id: String,
+    val nameKey: String,
+    val descKey: String,
+    val schemaVersion: Int,
+    val tags: List<String>,
+    val interactables: List<String>,
+    val placements: List<ObjectiveInteractablePlacementSchemaV2>,
+    val completionRule: String,
+)
+
+data class ObjectiveInteractablePlacementSchemaV2(
+    val interactableId: String,
+    val floor: Int,
+    val anchor: String,
+    val offset: SchemaOffset = SchemaOffset(),
+)
+
+data class SchemaOffset(
+    val x: Int = 0,
+    val y: Int = 0,
+)
+
 data class DifficultySchemaV2(
     val id: String,
     val nameKey: String,
@@ -244,6 +300,7 @@ data class ItemSchemaV2(
     val dropFloors: List<Int> = emptyList(),
     val dropWeight: Int = 1,
     val effect: ConsumableEffect? = null,
+    val resourceTypeId: String? = null,
     val magnitude: Int = 0,
 )
 

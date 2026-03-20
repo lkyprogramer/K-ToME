@@ -85,6 +85,7 @@ class AudioRouterTest {
         router.onCommandResolved(sampleSnapshot(), stationarySnapshot, PlayerCommand.Move(com.ktome.core.map.Point(1, 0)), consumed = true)
         router.onCommandResolved(sampleSnapshot(), stationarySnapshot, PlayerCommand.UseTalent(slot = 1), consumed = true)
         router.onCommandResolved(sampleSnapshot(), stationarySnapshot, PlayerCommand.UseTalent(slot = 3), consumed = true)
+        router.onCommandResolved(sampleSnapshot(), stationarySnapshot, PlayerCommand.Interact, consumed = true)
         router.onCommandResolved(sampleSnapshot(), stationarySnapshot, PlayerCommand.Descend, consumed = false)
 
         assertEquals(
@@ -93,6 +94,7 @@ class AudioRouterTest {
                 "audio.melee.light",
                 "audio.talent.power_strike",
                 "audio.spell.basic",
+                "audio.interactable.open",
                 "audio.ui.cancel",
             ),
             sink.events,

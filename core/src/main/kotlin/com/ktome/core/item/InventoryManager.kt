@@ -10,6 +10,8 @@ import com.ktome.core.ecs.get
 import com.ktome.core.ecs.has
 import com.ktome.core.ecs.remove
 import com.ktome.core.map.Point
+import com.ktome.core.resource.ResourcePools
+import com.ktome.core.resource.ResourceType
 
 sealed interface InventoryOperationResult {
     val success: Boolean
@@ -53,6 +55,7 @@ enum class InventoryOperationCode {
     NOTHING_EQUIPPED,
     NOT_CONSUMABLE,
     NO_TELEPORT_DESTINATION,
+    NO_RESOURCE_POOL,
 }
 
 class InventoryManager {
@@ -217,6 +220,32 @@ class InventoryManager {
                 val position = requireNotNull(world.get<Position>(entity)) { "Missing Position for $entity" }
                 position.moveTo(destination)
             }
+
+            ConsumableEffect.RESTORE_RESOURCE -> {
+                val resourceTypeId =
+                    item.resourceTypeId
+                        ?: return InventoryOperationResult.Failure(
+                            code = InventoryOperationCode.NO_RESOURCE_POOL,
+                            message = "${item.name} has no resource type configured.",
+                            itemName = item.name,
+                            itemBaseId = item.baseId,
+                        )
+                if (resourceTypeId == ResourceType.STAMINA.name) {
+                    val stamina = requireNotNull(world.get<Stamina>(entity)) { "Missing Stamina for $entity" }
+                    stamina.current = (stamina.current + item.magnitude).coerceAtMost(stamina.max)
+                } else {
+                    val resourceType = ResourceType.fromId(resourceTypeId)
+                    val pool =
+                        world.get<ResourcePools>(entity)?.pool(resourceType)
+                            ?: return InventoryOperationResult.Failure(
+                                code = InventoryOperationCode.NO_RESOURCE_POOL,
+                                message = "No ${resourceType.name} pool is available.",
+                                itemName = item.name,
+                                itemBaseId = item.baseId,
+                            )
+                    pool.restore(item.magnitude)
+                }
+            }
         }
 
         equippedSlotOf(world, entity, itemId)?.let { slot ->
@@ -229,11 +258,13 @@ class InventoryManager {
                 when (effect) {
                     ConsumableEffect.HEAL -> InventoryOperationCode.CONSUME_USE
                     ConsumableEffect.TELEPORT -> InventoryOperationCode.CONSUME_READ
+                    ConsumableEffect.RESTORE_RESOURCE -> InventoryOperationCode.CONSUME_USE
                 },
             message =
                 when (effect) {
                     ConsumableEffect.HEAL -> "You use ${item.name}."
                     ConsumableEffect.TELEPORT -> "You read ${item.name}."
+                    ConsumableEffect.RESTORE_RESOURCE -> "You use ${item.name}."
                 },
             itemId = itemId,
             itemName = item.name,

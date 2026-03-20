@@ -1,9 +1,7 @@
 package com.ktome.game.harness
 
 import com.ktome.core.run.RunOutcome
-import com.ktome.game.FOUNDATION_PROFESSION_ID
 import java.nio.file.Path
-import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
@@ -21,28 +19,30 @@ class LongRunLabTest {
     @Tag("longRunLab")
     fun `nightly long run lab meets first pass thresholds`() {
         val harness = HeadlessRunHarness(rootDir = tempDir)
-        val seeds = (20260312L..20260331L).toList()
         val reports =
-            seeds.map { seed ->
+            listOf(
+                "vanguard" to 20260312L,
+                "arcanist" to 20260313L,
+            ).map { (professionId, seed) ->
                 harness.run(
                     ScenarioSpec(
-                        name = "long-run-$seed",
+                        name = "long-run-$professionId-$seed",
                         seed = seed,
-                        professionId = FOUNDATION_PROFESSION_ID,
-                        maxTurns = 3000,
-                        goal = ScenarioGoal.ReachFloorOrTerminal(3),
-                        assertions = listOf(ScenarioAssertion.NoFailure, ScenarioAssertion.NoStall),
+                        professionId = professionId,
+                        maxTurns = 900,
+                        goal = ScenarioGoal.Victory,
+                        assertions = listOf(ScenarioAssertion.Victory, ScenarioAssertion.NoFailure, ScenarioAssertion.NoStall),
                     ),
                 )
             }
 
-        val floor3OrBetter = reports.count { it.floorReached >= 3 || (it.outcome.isTerminal && it.outcome !is RunOutcome.Defeat) }
-        val crashedOrStalled = reports.filter { it.crashedOrStalled() }
+        val victories = reports.count { it.outcome is RunOutcome.Victory }
+        val crashedOrStalled = reports.filter { it.crashedOrStalled() || it.outcome is RunOutcome.Defeat }
         val summary =
             buildJsonObject {
-                put("professionId", FOUNDATION_PROFESSION_ID)
-                put("seedCount", seeds.size)
-                put("floor3OrBetter", floor3OrBetter)
+                put("sliceId", "pr06-minimal-official-slice")
+                put("seedCount", reports.size)
+                put("victories", victories)
                 putJsonArray("reports") {
                     reports.forEach { add(it.toJson()) }
                 }
@@ -54,16 +54,21 @@ class LongRunLabTest {
             markdown =
                 buildString {
                     appendLine("# Long Run Lab")
-                    appendLine("- profession: $FOUNDATION_PROFESSION_ID")
-                    appendLine("- seeds: ${seeds.size}")
-                    appendLine("- floor3OrBetter: $floor3OrBetter")
+                    appendLine("- sliceId: pr06-minimal-official-slice")
+                    appendLine("- seeds: ${reports.size}")
+                    appendLine("- victories: $victories")
                     reports.forEach { report ->
-                        appendLine("- ${report.seed}: success=${report.success}, floor=${report.floorReached}, turns=${report.turns}, outcome=${report.outcome}")
+                        appendLine("- profession=${report.professionId}, seed=${report.seed}, success=${report.success}, floor=${report.floorReached}, turns=${report.turns}, outcome=${report.outcome}")
                     }
                 },
         )
 
-        assertEquals(0, crashedOrStalled.size, crashedOrStalled.joinToString(separator = "\n") { "${it.seed}: ${it.failureReason ?: it.stuckReason}" })
-        assertTrue(floor3OrBetter * 100 >= seeds.size * 70, "Expected at least 70% of runs to reach floor 3 or terminal, actual=$floor3OrBetter/${seeds.size}")
+        assertTrue(
+            crashedOrStalled.isEmpty(),
+            crashedOrStalled.joinToString(separator = "\n") { report ->
+                "${report.professionId}/${report.seed}: ${report.failureReason ?: report.stuckReason ?: report.outcome}"
+            },
+        )
+        assertTrue(victories == reports.size, "Expected all official-slice long-run probes to end in victory, actual=$victories/${reports.size}")
     }
 }

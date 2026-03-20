@@ -6,6 +6,7 @@ import com.ktome.core.ecs.AIType
 import com.ktome.core.ecs.DerivedStats
 import com.ktome.core.ecs.Experience
 import com.ktome.core.ecs.Health
+import com.ktome.core.ecs.Interactable
 import com.ktome.core.ecs.MonsterTemplateId
 import com.ktome.core.ecs.Position
 import com.ktome.core.ecs.Stair
@@ -22,6 +23,8 @@ import com.ktome.core.item.StatModifier
 import com.ktome.core.map.GameMap
 import com.ktome.core.map.Point
 import com.ktome.core.random.RandomSource
+import com.ktome.core.resource.ResourcePools
+import com.ktome.core.resource.ResourceType
 import com.ktome.core.save.SaveManager
 import com.ktome.core.save.SaveRestoreException
 import com.ktome.core.talent.ActiveEffect
@@ -228,6 +231,130 @@ class FoundationGameSessionTest {
         assertTrue(session.perform(PlayerCommand.ActivateInventoryItem(0)))
         assertEquals(EquipSlot.WEAPON, session.inventoryItems().single().equippedSlot)
         assertTrue(session.playerStatus().attack > 25)
+    }
+
+    @Test
+    fun `interact opens supply crate drops reward and removes interactable`() {
+        val session =
+            GameModule.newFoundationSession(
+                FoundationGameConfig(seed = 20260318L, zoneId = "shattered_outpost", playerProfessionId = "vanguard"),
+                SaveManager(tempDir.resolve("interact-crate-save")),
+            )
+        val cratePoint =
+            session.renderSnapshot().props
+                .first { prop -> prop.propTypeId == "supply_crate" }
+                .let { prop -> Point(prop.x, prop.y) }
+
+        session.automationMovePlayerTo(cratePoint)
+
+        assertTrue(session.perform(PlayerCommand.Interact))
+
+        val world = session.automationWorld()
+        val groundItems =
+            world.entitiesWith(Position::class, ItemInstance::class)
+                .filter { entityId -> requireNotNull(world.get<Position>(entityId)).toPoint() == cratePoint }
+                .mapNotNull { entityId -> world.get<ItemInstance>(entityId)?.baseId }
+        val remainingInteractables =
+            world.entitiesWith(Position::class, Interactable::class)
+                .filter { entityId -> requireNotNull(world.get<Position>(entityId)).toPoint() == cratePoint }
+
+        assertTrue("scroll_teleport" in groundItems || "healing_potion" in groundItems)
+        assertTrue(remainingInteractables.isEmpty())
+        assertTrue(session.messageLog().any { message -> message.contains("补给箱") || message.contains("Supply Crate") })
+    }
+
+    @Test
+    fun `interact alarm bonfire escalates floor pressure and records objective progress`() {
+        val session =
+            GameModule.newFoundationSession(
+                FoundationGameConfig(seed = 20260318L, zoneId = "shattered_outpost", playerProfessionId = "vanguard"),
+                SaveManager(tempDir.resolve("interact-bonfire-save")),
+            )
+        val bonfirePoint = interactablePoint(session, "alarm_bonfire")
+        val world = session.automationWorld()
+        val baselineMonsterCount = world.entitiesWith(MonsterTemplateId::class).size
+        val baselineBehaviors =
+            world.entitiesWith(AIBehavior::class)
+                .associateWith { entityId -> requireNotNull(world.get<AIBehavior>(entityId)).copy() }
+
+        session.automationMovePlayerTo(bonfirePoint)
+
+        assertTrue(session.perform(PlayerCommand.Interact))
+
+        val nextMonsterCount = world.entitiesWith(MonsterTemplateId::class).size
+        val alertedBehaviors =
+            baselineBehaviors.entries.count { (entityId, behavior) ->
+                world.get<AIBehavior>(entityId)?.let { updated ->
+                    updated.sightRadius > behavior.sightRadius || (behavior.type == AIType.PATROL && updated.type == AIType.CHASE)
+                } == true
+            }
+        val remainingInteractables =
+            world.entitiesWith(Position::class, Interactable::class)
+                .filter { entityId -> requireNotNull(world.get<Position>(entityId)).toPoint() == bonfirePoint }
+
+        assertEquals(baselineMonsterCount + 1, nextMonsterCount)
+        assertTrue(alertedBehaviors > 0)
+        assertTrue(remainingInteractables.isEmpty())
+        assertTrue(session.renderSnapshot().logEvents.any { event -> event.message.key == "log.objective.progress" })
+    }
+
+    @Test
+    fun `interact armory gate on floor two grants support reward and resupply`() {
+        val session =
+            GameModule.newFoundationSession(
+                FoundationGameConfig(seed = 20260318L, zoneId = "shattered_outpost", playerProfessionId = "arcanist"),
+                SaveManager(tempDir.resolve("interact-gate-save")),
+            )
+
+        movePlayerTo(session, stairPoint(session, com.ktome.core.dungeon.StairDirection.DOWN))
+        assertTrue(session.perform(PlayerCommand.Descend))
+        val gatePoint = interactablePoint(session, "armory_gate")
+        val baselineInventoryCount = session.inventoryItems().size
+        val world = session.automationWorld()
+        requireNotNull(requireNotNull(world.get<ResourcePools>(session.playerId)).pool(ResourceType.MANA)).current = 5
+
+        session.automationMovePlayerTo(gatePoint)
+
+        assertTrue(session.perform(PlayerCommand.Interact))
+        assertEquals(baselineInventoryCount + 1, session.inventoryItems().size)
+        assertTrue(session.playerResourceView().current > 5)
+        assertTrue(session.renderSnapshot().logEvents.any { event -> event.message.key == "log.objective.progress" })
+    }
+
+    @Test
+    fun `interact armory gate on floor two avoids duplicate vanguard starter gear rewards`() {
+        val session =
+            GameModule.newFoundationSession(
+                FoundationGameConfig(seed = 20260318L, zoneId = "shattered_outpost", playerProfessionId = "vanguard"),
+                SaveManager(tempDir.resolve("interact-gate-vanguard-save")),
+            )
+
+        movePlayerTo(session, stairPoint(session, com.ktome.core.dungeon.StairDirection.DOWN))
+        assertTrue(session.perform(PlayerCommand.Descend))
+        val gatePoint = interactablePoint(session, "armory_gate")
+
+        session.automationMovePlayerTo(gatePoint)
+
+        assertTrue(session.perform(PlayerCommand.Interact))
+        assertEquals(1, inventoryBaseIds(session).count { baseId -> baseId == "basic_shield" })
+        assertEquals(1, inventoryBaseIds(session).count { baseId -> baseId == "chain_mail" })
+        assertEquals(2, inventoryBaseIds(session).count { baseId -> baseId == "healing_potion" })
+    }
+
+    @Test
+    fun `mana potion restores arcanist mana from starter kit`() {
+        val session =
+            GameModule.newFoundationSession(
+                FoundationGameConfig(seed = 20260318L, zoneId = "shattered_outpost", playerProfessionId = "arcanist"),
+                SaveManager(tempDir.resolve("mana-potion-save")),
+            )
+        val world = session.automationWorld()
+        requireNotNull(requireNotNull(world.get<ResourcePools>(session.playerId)).pool(ResourceType.MANA)).current = 10
+        val potionIndex = session.inventoryItems().indexOfFirst { item -> item.name == "法力药水" }
+
+        assertTrue(potionIndex >= 0)
+        assertTrue(session.perform(PlayerCommand.ActivateInventoryItem(potionIndex)))
+        assertEquals(42, session.playerResourceView().current)
     }
 
     @Test
@@ -454,7 +581,7 @@ class FoundationGameSessionTest {
         val saveManager = SaveManager(tempDir.resolve("boss-save"))
         val session =
             GameModule.newFoundationSession(
-                config = FoundationGameConfig(zoneId = "grey_gate_depths"),
+                config = FoundationGameConfig(zoneId = "grey_gate_depths", playerProfessionId = "arcanist"),
                 saveManager = saveManager,
             )
 
@@ -466,6 +593,7 @@ class FoundationGameSessionTest {
         val bossId =
             world.entitiesWith(MonsterTemplateId::class)
                 .single { entityId -> requireNotNull(world.get<MonsterTemplateId>(entityId)).value == FOUNDATION_BOSS_TEMPLATE_ID }
+        val baselineInventoryCount = session.inventoryItems().size
         requireNotNull(world.get<Health>(bossId)).current = 1
         val bossPosition = requireNotNull(world.get<Position>(bossId)).toPoint()
         val attackOrigin = if (bossPosition.x > 0) Point(bossPosition.x - 1, bossPosition.y) else Point(bossPosition.x + 1, bossPosition.y)
@@ -474,6 +602,33 @@ class FoundationGameSessionTest {
         assertTrue(session.perform(PlayerCommand.Move(bossPosition - attackOrigin)))
         assertTrue(session.isVictory())
         assertFalse(saveManager.hasSave())
+        assertEquals(baselineInventoryCount + 1, session.inventoryItems().size)
+        assertEquals(1, inventoryBaseIds(session).count { baseId -> baseId == "mana_potion" })
+    }
+
+    @Test
+    fun `killing shattered outpost boss rewards vanguard without duplicating starter shield`() {
+        val saveManager = SaveManager(tempDir.resolve("bandit-boss-save"))
+        val session =
+            GameModule.newFoundationSession(
+                config = FoundationGameConfig(seed = 20260318L, zoneId = "shattered_outpost", playerProfessionId = "vanguard"),
+                saveManager = saveManager,
+            )
+
+        movePlayerTo(session, stairPoint(session, com.ktome.core.dungeon.StairDirection.DOWN))
+        assertTrue(session.perform(PlayerCommand.Descend))
+
+        val world = runtimeWorld(session)
+        val bossId = requireNotNull(entityByTemplateId(session, "bandit.captain"))
+        requireNotNull(world.get<Health>(bossId)).current = 1
+        val bossPosition = requireNotNull(world.get<Position>(bossId)).toPoint()
+        val attackOrigin = if (bossPosition.x > 0) Point(bossPosition.x - 1, bossPosition.y) else Point(bossPosition.x + 1, bossPosition.y)
+        movePlayerTo(session, attackOrigin)
+
+        assertTrue(session.perform(PlayerCommand.Move(bossPosition - attackOrigin)))
+        assertTrue(session.isVictory())
+        assertEquals(1, inventoryBaseIds(session).count { baseId -> baseId == "basic_shield" })
+        assertEquals(1, inventoryBaseIds(session).count { baseId -> baseId == "scroll_teleport" })
     }
 
     @Test
@@ -795,6 +950,23 @@ class FoundationGameSessionTest {
                     !session.map[point].blocksMovement &&
                     point !in occupied
             }
+    }
+
+    private fun interactablePoint(
+        session: FoundationGameSession,
+        interactableId: String,
+    ): Point {
+        val world = runtimeWorld(session)
+        val entityId =
+            world.entitiesWith(Position::class, Interactable::class)
+                .first { candidate -> requireNotNull(world.get<Interactable>(candidate)).id == interactableId }
+        return requireNotNull(world.get<Position>(entityId)).toPoint()
+    }
+
+    private fun inventoryBaseIds(session: FoundationGameSession): List<String> {
+        val world = runtimeWorld(session)
+        val inventory = requireNotNull(world.get<com.ktome.core.item.Inventory>(session.playerId))
+        return inventory.itemIds.map { itemId -> requireNotNull(world.get<ItemInstance>(itemId)).baseId }
     }
 
     private fun sessionSaveManager(session: FoundationGameSession): SaveManager {

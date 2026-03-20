@@ -13,8 +13,8 @@ professions:
     startingResources: { STAMINA: 100 }
     resourceCaps: { STAMINA: 100 }
     talentTrees: [vanguard_arms, vanguard_shield, vanguard_warcry]
-    startingTalents: [power_strike, shield_bash, war_cry]
-    startingKit: [short_sword, leather_armor, healing_potion]
+    startingTalents: [power_strike, sweeping_strike, shield_bash, guard_stance, war_cry, intimidation, sunder_armor, unyielding]
+    startingKit: [short_sword, basic_shield, chain_mail, healing_potion]
     unlockCondition: default
     soloContract: foundation_frontliner
   - id: arcanist
@@ -31,8 +31,8 @@ professions:
     startingResources: { MANA: 100 }
     resourceCaps: { MANA: 134 }
     talentTrees: [arcanist_flame, arcanist_frost, arcanist_arcane]
-    startingTalents: []
-    startingKit: [healing_potion]
+    startingTalents: [fireball, flame_wall, ice_bolt, frost_nova, arcane_shield, blink, mana_surge, ice_prison]
+    startingKit: [arcane_staff, apprentice_robe, mana_potion]
     unlockCondition: default
     soloContract: foundation_caster
   - id: rogue

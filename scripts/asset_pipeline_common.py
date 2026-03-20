@@ -23,6 +23,7 @@ ALLOWED_CATEGORIES = {
     "prop_environment",
     "actor_sprite",
     "portrait",
+    "icon",
     "icon_skill",
     "icon_status",
     "icon_damage_type",
@@ -30,6 +31,7 @@ ALLOWED_CATEGORIES = {
     "icon_quest",
     "ui_frame",
     "vfx_plate",
+    "debug",
 }
 DISALLOWED_ASSET_FIELDS = {
     "provider",
@@ -79,8 +81,12 @@ PHASE2_REQUIRED_VISUAL_KEYS = {
         "actor.arcanist",
         "portrait.vanguard",
         "portrait.arcanist",
-        "icon.skill.vanguard.power_strike",
-        "icon.skill.arcanist.fire_bolt",
+        "actor.bandit.captain",
+        "item.basic_shield.icon",
+        "item.arcane_staff.icon",
+        "item.apprentice_robe.icon",
+        "talent.vanguard.power_strike.icon",
+        "talent.arcanist.fireball.icon",
         "vfx.boss.warning.sigil_01",
     },
     "P2-C": {

@@ -81,7 +81,7 @@ data class SaveSnapshot(
     }
 
     companion object {
-        const val CURRENT_SCHEMA_VERSION: Int = 1
+        const val CURRENT_SCHEMA_VERSION: Int = 2
         const val DEFAULT_BUILD_METADATA: String = "phase2-dev"
     }
 }
@@ -165,6 +165,7 @@ data class EntitySnapshot(
     val itemState: ItemSnapshot? = null,
     val isGroundItem: Boolean = false,
     val isPlayerControlled: Boolean = false,
+    val interactableId: String? = null,
     val stair: StairSnapshot? = null,
 ) {
     init {
@@ -181,6 +182,7 @@ data class EntitySnapshot(
         require(resourcePools.distinctBy(ResourcePoolSnapshot::type).size == resourcePools.size) {
             "Resource pools must not contain duplicate types."
         }
+        require(interactableId == null || interactableId.isNotBlank()) { "Interactable ids must not be blank." }
         inventory?.validateOrThrow()
         equipment?.validateOrThrow()
         patrolRoute?.validateOrThrow()

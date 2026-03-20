@@ -196,6 +196,7 @@ class AudioRouter(
         if (!consumed) {
             when (command) {
                 is PlayerCommand.ActivateInventoryItem,
+                PlayerCommand.Interact,
                 is PlayerCommand.UseTalent,
                 PlayerCommand.Ascend,
                 PlayerCommand.Descend,
@@ -211,6 +212,7 @@ class AudioRouter(
             is PlayerCommand.Move -> play(moveCueKey(previousSnapshot, currentSnapshot))
             is PlayerCommand.UseTalent -> play(talentCueKey(currentSnapshot, command.slot))
             is PlayerCommand.ActivateInventoryItem,
+            PlayerCommand.Interact,
             PlayerCommand.PickUp,
             PlayerCommand.Ascend,
             PlayerCommand.Descend,

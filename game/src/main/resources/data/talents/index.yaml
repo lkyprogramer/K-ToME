@@ -9,7 +9,7 @@ talentTrees:
     schemaVersion: 2
     tags: [tree, vanguard]
     layout: foundation_grid
-    nodes: [power_strike, charge]
+    nodes: [power_strike, sweeping_strike, sunder_armor]
   - id: vanguard_shield
     professionId: vanguard
     nameKey: talent_tree.vanguard_shield.name
@@ -20,7 +20,7 @@ talentTrees:
     schemaVersion: 2
     tags: [tree, vanguard]
     layout: foundation_grid
-    nodes: [shield_bash]
+    nodes: [shield_bash, guard_stance]
   - id: vanguard_warcry
     professionId: vanguard
     nameKey: talent_tree.vanguard_warcry.name
@@ -31,7 +31,7 @@ talentTrees:
     schemaVersion: 2
     tags: [tree, vanguard]
     layout: foundation_grid
-    nodes: [war_cry]
+    nodes: [war_cry, intimidation, unyielding]
   - id: arcanist_flame
     professionId: arcanist
     nameKey: talent_tree.arcanist_flame.name
@@ -42,7 +42,7 @@ talentTrees:
     schemaVersion: 2
     tags: [tree, arcanist]
     layout: foundation_grid
-    nodes: []
+    nodes: [fireball, flame_wall]
   - id: arcanist_frost
     professionId: arcanist
     nameKey: talent_tree.arcanist_frost.name
@@ -53,7 +53,7 @@ talentTrees:
     schemaVersion: 2
     tags: [tree, arcanist]
     layout: foundation_grid
-    nodes: []
+    nodes: [ice_bolt, frost_nova, ice_prison]
   - id: arcanist_arcane
     professionId: arcanist
     nameKey: talent_tree.arcanist_arcane.name
@@ -64,7 +64,7 @@ talentTrees:
     schemaVersion: 2
     tags: [tree, arcanist]
     layout: foundation_grid
-    nodes: []
+    nodes: [arcane_shield, blink, mana_surge]
   - id: rogue_assassination
     professionId: rogue
     nameKey: talent_tree.rogue_assassination.name
@@ -248,3 +248,374 @@ talents:
       3: { buffDuration: 6, buffMagnitude: 0.28 }
       4: { buffDuration: 7, buffMagnitude: 0.32 }
       5: { buffDuration: 8, buffMagnitude: 0.35, debuffMagnitude: 0.20, debuffDuration: 5 }
+  - id: sweeping_strike
+    nameKey: talent.vanguard.sweeping_strike.name
+    descKey: talent.vanguard.sweeping_strike.desc
+    visualKey: talent.vanguard.sweeping_strike.visual
+    iconKey: talent.vanguard.sweeping_strike.icon
+    audioProfile: audio.talent.sweeping_strike
+    schemaVersion: 2
+    tags: [talent, vanguard, melee]
+    maxPoints: 5
+    category: ACTIVE
+    damageType: PHYSICAL
+    kind: ACTIVE
+    cooldown: 4
+    castTime: 1000
+    range: 1
+    minRange: 0
+    areaRadius: 1
+    resourceCosts: { STAMINA: 10 }
+    targeting: SINGLE_TARGET
+    callbacks: []
+    telegraph: melee_single
+    treeId: vanguard_arms
+    keywords: [damage, cleave]
+    levelEffects:
+      1: { damageMultiplier: 1.2 }
+      2: { damageMultiplier: 1.35 }
+      3: { damageMultiplier: 1.5 }
+      4: { damageMultiplier: 1.65 }
+      5: { damageMultiplier: 1.8, knockback: 1 }
+  - id: sunder_armor
+    nameKey: talent.vanguard.sunder_armor.name
+    descKey: talent.vanguard.sunder_armor.desc
+    visualKey: talent.vanguard.sunder_armor.visual
+    iconKey: talent.vanguard.sunder_armor.icon
+    audioProfile: audio.talent.sunder_armor
+    schemaVersion: 2
+    tags: [talent, vanguard, melee]
+    maxPoints: 5
+    category: ACTIVE
+    damageType: PHYSICAL
+    kind: ACTIVE
+    cooldown: 5
+    castTime: 1000
+    range: 1
+    minRange: 0
+    areaRadius: 0
+    resourceCosts: { STAMINA: 12 }
+    targeting: SINGLE_TARGET
+    callbacks: []
+    telegraph: melee_single
+    treeId: vanguard_arms
+    keywords: [damage, armor_break]
+    levelEffects:
+      1: { damageMultiplier: 1.1, armorBreakDuration: 2 }
+      2: { damageMultiplier: 1.2, armorBreakDuration: 2 }
+      3: { damageMultiplier: 1.3, armorBreakDuration: 3 }
+      4: { damageMultiplier: 1.4, armorBreakDuration: 3 }
+      5: { damageMultiplier: 1.5, armorBreakDuration: 4 }
+  - id: guard_stance
+    nameKey: talent.vanguard.guard_stance.name
+    descKey: talent.vanguard.guard_stance.desc
+    visualKey: talent.vanguard.guard_stance.visual
+    iconKey: talent.vanguard.guard_stance.icon
+    audioProfile: audio.talent.guard_stance
+    schemaVersion: 2
+    tags: [talent, vanguard, defense]
+    maxPoints: 5
+    category: ACTIVE
+    kind: ACTIVE
+    cooldown: 7
+    castTime: 1000
+    range: 0
+    minRange: 0
+    areaRadius: 0
+    resourceCosts: { STAMINA: 8 }
+    targeting: SELF
+    callbacks: []
+    telegraph: self_buff_aura
+    treeId: vanguard_shield
+    keywords: [buff, defense]
+    levelEffects:
+      1: { buffDuration: 3, buffMagnitude: 0.10 }
+      2: { buffDuration: 4, buffMagnitude: 0.12 }
+      3: { buffDuration: 4, buffMagnitude: 0.15 }
+      4: { buffDuration: 5, buffMagnitude: 0.18 }
+      5: { buffDuration: 5, buffMagnitude: 0.22 }
+  - id: intimidation
+    nameKey: talent.vanguard.intimidation.name
+    descKey: talent.vanguard.intimidation.desc
+    visualKey: talent.vanguard.intimidation.visual
+    iconKey: talent.vanguard.intimidation.icon
+    audioProfile: audio.talent.intimidation
+    schemaVersion: 2
+    tags: [talent, vanguard, support]
+    maxPoints: 5
+    category: ACTIVE
+    kind: ACTIVE
+    cooldown: 8
+    castTime: 1000
+    range: 0
+    minRange: 0
+    areaRadius: 4
+    resourceCosts: { STAMINA: 10 }
+    targeting: RADIUS_SELF
+    callbacks: []
+    telegraph: self_buff_aura
+    treeId: vanguard_warcry
+    keywords: [debuff, control]
+    levelEffects:
+      1: { debuffMagnitude: 0.10, debuffDuration: 3 }
+      2: { debuffMagnitude: 0.12, debuffDuration: 3 }
+      3: { debuffMagnitude: 0.14, debuffDuration: 4 }
+      4: { debuffMagnitude: 0.16, debuffDuration: 4 }
+      5: { debuffMagnitude: 0.20, debuffDuration: 5 }
+  - id: unyielding
+    nameKey: talent.vanguard.unyielding.name
+    descKey: talent.vanguard.unyielding.desc
+    visualKey: talent.vanguard.unyielding.visual
+    iconKey: talent.vanguard.unyielding.icon
+    audioProfile: audio.talent.unyielding
+    schemaVersion: 2
+    tags: [talent, vanguard, panic]
+    maxPoints: 5
+    category: ACTIVE
+    kind: ACTIVE
+    cooldown: 12
+    castTime: 1000
+    range: 0
+    minRange: 0
+    areaRadius: 0
+    resourceCosts: { STAMINA: 14 }
+    targeting: SELF
+    callbacks: []
+    telegraph: self_buff_aura
+    treeId: vanguard_warcry
+    keywords: [panic, defense]
+    levelEffects:
+      1: { buffDuration: 3, buffMagnitude: 0.15 }
+      2: { buffDuration: 3, buffMagnitude: 0.18 }
+      3: { buffDuration: 4, buffMagnitude: 0.20 }
+      4: { buffDuration: 4, buffMagnitude: 0.22 }
+      5: { buffDuration: 5, buffMagnitude: 0.25 }
+  - id: fireball
+    nameKey: talent.arcanist.fireball.name
+    descKey: talent.arcanist.fireball.desc
+    visualKey: talent.arcanist.fireball.visual
+    iconKey: talent.arcanist.fireball.icon
+    audioProfile: audio.talent.fireball
+    schemaVersion: 2
+    tags: [talent, arcanist, spell]
+    maxPoints: 5
+    category: ACTIVE
+    damageType: FIRE
+    kind: ACTIVE
+    cooldown: 3
+    castTime: 1000
+    range: 6
+    minRange: 1
+    areaRadius: 0
+    resourceCosts: { MANA: 10 }
+    targeting: SINGLE_TARGET
+    callbacks: []
+    telegraph: melee_single
+    treeId: arcanist_flame
+    keywords: [damage, ranged]
+    levelEffects:
+      1: { damageMultiplier: 1.3 }
+      2: { damageMultiplier: 1.45 }
+      3: { damageMultiplier: 1.6 }
+      4: { damageMultiplier: 1.8 }
+      5: { damageMultiplier: 2.0 }
+  - id: flame_wall
+    nameKey: talent.arcanist.flame_wall.name
+    descKey: talent.arcanist.flame_wall.desc
+    visualKey: talent.arcanist.flame_wall.visual
+    iconKey: talent.arcanist.flame_wall.icon
+    audioProfile: audio.talent.flame_wall
+    schemaVersion: 2
+    tags: [talent, arcanist, spell]
+    maxPoints: 5
+    category: ACTIVE
+    damageType: FIRE
+    kind: ACTIVE
+    cooldown: 6
+    castTime: 1000
+    range: 4
+    minRange: 1
+    areaRadius: 1
+    resourceCosts: { MANA: 14 }
+    targeting: SINGLE_TARGET
+    callbacks: []
+    telegraph: charge_lane
+    treeId: arcanist_flame
+    keywords: [damage, area]
+    levelEffects:
+      1: { damageMultiplier: 1.1 }
+      2: { damageMultiplier: 1.2 }
+      3: { damageMultiplier: 1.3 }
+      4: { damageMultiplier: 1.4 }
+      5: { damageMultiplier: 1.5 }
+  - id: ice_bolt
+    nameKey: talent.arcanist.ice_bolt.name
+    descKey: talent.arcanist.ice_bolt.desc
+    visualKey: talent.arcanist.ice_bolt.visual
+    iconKey: talent.arcanist.ice_bolt.icon
+    audioProfile: audio.talent.ice_bolt
+    schemaVersion: 2
+    tags: [talent, arcanist, spell]
+    maxPoints: 5
+    category: ACTIVE
+    damageType: COLD
+    kind: ACTIVE
+    cooldown: 3
+    castTime: 1000
+    range: 6
+    minRange: 1
+    areaRadius: 0
+    resourceCosts: { MANA: 9 }
+    targeting: SINGLE_TARGET
+    callbacks: []
+    telegraph: melee_single
+    treeId: arcanist_frost
+    keywords: [damage, slow]
+    levelEffects:
+      1: { damageMultiplier: 1.2 }
+      2: { damageMultiplier: 1.35 }
+      3: { damageMultiplier: 1.5 }
+      4: { damageMultiplier: 1.65 }
+      5: { damageMultiplier: 1.8, stunDuration: 1 }
+  - id: frost_nova
+    nameKey: talent.arcanist.frost_nova.name
+    descKey: talent.arcanist.frost_nova.desc
+    visualKey: talent.arcanist.frost_nova.visual
+    iconKey: talent.arcanist.frost_nova.icon
+    audioProfile: audio.talent.frost_nova
+    schemaVersion: 2
+    tags: [talent, arcanist, spell]
+    maxPoints: 5
+    category: ACTIVE
+    damageType: COLD
+    kind: ACTIVE
+    cooldown: 7
+    castTime: 1000
+    range: 0
+    minRange: 0
+    areaRadius: 2
+    resourceCosts: { MANA: 16 }
+    targeting: RADIUS_SELF
+    callbacks: []
+    telegraph: self_buff_aura
+    treeId: arcanist_frost
+    keywords: [area, control]
+    levelEffects:
+      1: { damageMultiplier: 1.0, stunDuration: 1 }
+      2: { damageMultiplier: 1.1, stunDuration: 1 }
+      3: { damageMultiplier: 1.2, stunDuration: 1 }
+      4: { damageMultiplier: 1.3, stunDuration: 2 }
+      5: { damageMultiplier: 1.4, stunDuration: 2 }
+  - id: ice_prison
+    nameKey: talent.arcanist.ice_prison.name
+    descKey: talent.arcanist.ice_prison.desc
+    visualKey: talent.arcanist.ice_prison.visual
+    iconKey: talent.arcanist.ice_prison.icon
+    audioProfile: audio.talent.ice_prison
+    schemaVersion: 2
+    tags: [talent, arcanist, spell]
+    maxPoints: 5
+    category: ACTIVE
+    damageType: COLD
+    kind: ACTIVE
+    cooldown: 8
+    castTime: 1000
+    range: 5
+    minRange: 1
+    areaRadius: 0
+    resourceCosts: { MANA: 18 }
+    targeting: SINGLE_TARGET
+    callbacks: []
+    telegraph: melee_single
+    treeId: arcanist_frost
+    keywords: [control]
+    levelEffects:
+      1: { damageMultiplier: 0.8, stunDuration: 1 }
+      2: { damageMultiplier: 0.9, stunDuration: 1 }
+      3: { damageMultiplier: 1.0, stunDuration: 2 }
+      4: { damageMultiplier: 1.1, stunDuration: 2 }
+      5: { damageMultiplier: 1.2, stunDuration: 2 }
+  - id: arcane_shield
+    nameKey: talent.arcanist.arcane_shield.name
+    descKey: talent.arcanist.arcane_shield.desc
+    visualKey: talent.arcanist.arcane_shield.visual
+    iconKey: talent.arcanist.arcane_shield.icon
+    audioProfile: audio.talent.arcane_shield
+    schemaVersion: 2
+    tags: [talent, arcanist, utility]
+    maxPoints: 5
+    category: ACTIVE
+    kind: ACTIVE
+    cooldown: 8
+    castTime: 1000
+    range: 0
+    minRange: 0
+    areaRadius: 0
+    resourceCosts: { MANA: 12 }
+    targeting: SELF
+    callbacks: []
+    telegraph: self_buff_aura
+    treeId: arcanist_arcane
+    keywords: [buff, defense]
+    levelEffects:
+      1: { buffDuration: 3, buffMagnitude: 0.10 }
+      2: { buffDuration: 3, buffMagnitude: 0.12 }
+      3: { buffDuration: 4, buffMagnitude: 0.15 }
+      4: { buffDuration: 4, buffMagnitude: 0.18 }
+      5: { buffDuration: 5, buffMagnitude: 0.20 }
+  - id: blink
+    nameKey: talent.arcanist.blink.name
+    descKey: talent.arcanist.blink.desc
+    visualKey: talent.arcanist.blink.visual
+    iconKey: talent.arcanist.blink.icon
+    audioProfile: audio.talent.blink
+    schemaVersion: 2
+    tags: [talent, arcanist, utility]
+    maxPoints: 5
+    category: ACTIVE
+    kind: ACTIVE
+    cooldown: 6
+    castTime: 1000
+    range: 5
+    minRange: 2
+    areaRadius: 0
+    resourceCosts: { MANA: 14 }
+    targeting: SINGLE_TARGET
+    callbacks: []
+    telegraph: charge_lane
+    treeId: arcanist_arcane
+    keywords: [movement]
+    levelEffects:
+      1: {}
+      2: {}
+      3: {}
+      4: {}
+      5: {}
+  - id: mana_surge
+    nameKey: talent.arcanist.mana_surge.name
+    descKey: talent.arcanist.mana_surge.desc
+    visualKey: talent.arcanist.mana_surge.visual
+    iconKey: talent.arcanist.mana_surge.icon
+    audioProfile: audio.talent.mana_surge
+    schemaVersion: 2
+    tags: [talent, arcanist, utility]
+    maxPoints: 5
+    category: ACTIVE
+    kind: ACTIVE
+    cooldown: 10
+    castTime: 1000
+    range: 0
+    minRange: 0
+    areaRadius: 0
+    resourceCosts: { MANA: 0 }
+    targeting: SELF
+    callbacks: []
+    telegraph: self_buff_aura
+    treeId: arcanist_arcane
+    keywords: [resource, buff]
+    levelEffects:
+      1: { buffDuration: 2, buffMagnitude: 0.10 }
+      2: { buffDuration: 2, buffMagnitude: 0.12 }
+      3: { buffDuration: 3, buffMagnitude: 0.14 }
+      4: { buffDuration: 3, buffMagnitude: 0.16 }
+      5: { buffDuration: 4, buffMagnitude: 0.18 }

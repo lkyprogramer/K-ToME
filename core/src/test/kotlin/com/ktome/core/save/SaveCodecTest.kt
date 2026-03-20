@@ -26,7 +26,7 @@ class SaveCodecTest {
             """
             {
               "schemaVersion": 1,
-              "saveContractVersion": { "major": 2, "minor": 0 },
+              "saveContractVersion": { "major": 2, "minor": 1 },
               "buildMetadata": "phase2-dev",
               "timestampEpochMillis": 1,
               "worldSeed": 20260318,

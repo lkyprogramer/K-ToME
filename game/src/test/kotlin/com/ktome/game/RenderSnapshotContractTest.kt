@@ -69,7 +69,10 @@ class RenderSnapshotContractTest {
         assertEquals("ui.hud.mana.short", snapshot.uiState.playerStatus.resourceLabelKey)
         assertEquals("MANA", snapshot.uiState.playerStatus.resourceTypeId)
         assertEquals(100, snapshot.uiState.playerStatus.currentResource)
-        assertEquals(134, snapshot.uiState.playerStatus.maxResource)
+        assertEquals(152, snapshot.uiState.playerStatus.maxResource)
+        assertTrue(snapshot.props.any { prop -> prop.propTypeId == "supply_crate" })
+        assertTrue(snapshot.props.any { prop -> prop.propTypeId == "alarm_bonfire" })
+        assertTrue(snapshot.logEvents.any { event -> event.message.key == "log.objective.activate" })
         assertTrue(snapshot.actors.all { actor -> actor.nameKey.isNotBlank() })
         assertTrue(snapshot.logEvents.all { event -> event.message.key.isNotBlank() })
     }
@@ -92,9 +95,9 @@ class RenderSnapshotContractTest {
         val pools = PlayerResourcePools.sync(world, playerId, profession)
         val mana = requireNotNull(pools.pool(ResourceType.MANA))
 
-        assertEquals(146, mana.max)
+        assertEquals(164, mana.max)
         assertEquals(112, mana.current)
-        assertEquals(146, session.renderSnapshot().uiState.playerStatus.maxResource)
+        assertEquals(164, session.renderSnapshot().uiState.playerStatus.maxResource)
     }
 
     @Test
@@ -216,6 +219,24 @@ class RenderSnapshotContractTest {
         assertEquals(OverlayShapeSnapshot.SINGLE_TILE, followUpTelegraph.shape)
         assertEquals(1, followUpTelegraph.previewTurns)
         assertTrue(followUpTelegraph.cells.isNotEmpty())
+    }
+
+    @Test
+    fun `descending into shattered outpost final floor exposes breach props and objective advance`() {
+        val session =
+            GameModule.newFoundationSession(
+                config = FoundationGameConfig(seed = 20260318L, zoneId = "shattered_outpost", playerProfessionId = "vanguard"),
+                saveManager = SaveManager(tempDir.resolve("objective-props")),
+            )
+        val stairsDown = requireNotNull(session.automationStairPoint(StairDirection.DOWN))
+
+        session.automationMovePlayerTo(stairsDown)
+        assertTrue(session.perform(PlayerCommand.Descend))
+
+        val snapshot = session.renderSnapshot()
+
+        assertTrue(snapshot.props.any { prop -> prop.propTypeId == "armory_gate" })
+        assertTrue(snapshot.logEvents.any { event -> event.message.key == "log.objective.advance" })
     }
 
     @Test
