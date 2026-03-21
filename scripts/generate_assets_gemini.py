@@ -45,6 +45,7 @@ ALLOWED_CATEGORIES = {
     "prop_environment",
     "actor_sprite",
     "portrait",
+    "icon",
     "icon_skill",
     "icon_status",
     "icon_damage_type",

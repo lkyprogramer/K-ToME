@@ -151,7 +151,7 @@ class GameModuleTest {
     }
 
     @Test
-    fun `new foundation session derives starter talents stats and kit from profession schema`() {
+    fun `new foundation session derives starter talents combat profile and kit from profession schema`() {
         val vanguardSession =
             GameModule.newFoundationSession(
                 FoundationGameConfig(playerProfessionId = "vanguard"),
@@ -162,15 +162,37 @@ class GameModuleTest {
                 FoundationGameConfig(playerProfessionId = "arcanist"),
                 SaveManager(tempDir.resolve("arcanist-save")),
             )
+        val rogueSession =
+            GameModule.newFoundationSession(
+                FoundationGameConfig(playerProfessionId = "rogue"),
+                SaveManager(tempDir.resolve("rogue-save")),
+            )
+        val templarSession =
+            GameModule.newFoundationSession(
+                FoundationGameConfig(playerProfessionId = "templar"),
+                SaveManager(tempDir.resolve("templar-save")),
+            )
 
-        assertEquals(listOf("猛击", "横扫", "盾击", "格挡姿态", "战吼", "威压", "碎甲", "不屈"), vanguardSession.talentSlots().map { slot -> slot.name })
-        assertEquals(listOf("火球", "烈焰之墙", "冰箭", "霜冻新星", "奥术护盾", "闪现", "法力涌动", "冰封"), arcanistSession.talentSlots().map { slot -> slot.name })
-        assertEquals(listOf("短剑", "基础盾牌", "锁甲", "治疗药水"), vanguardSession.inventoryItems().map { item -> item.name })
+        assertEquals(listOf("猛击", "盾击", "格挡姿态", "战吼"), vanguardSession.talentSlots().map { slot -> slot.name })
+        assertEquals(listOf("火球", "冰箭", "闪现", "奥术护盾"), arcanistSession.talentSlots().map { slot -> slot.name })
+        assertEquals(listOf("背刺", "毒刃", "潜行", "翻滚"), rogueSession.talentSlots().map { slot -> slot.name })
+        assertEquals(listOf("圣击", "圣光术", "神圣护盾", "虔信"), templarSession.talentSlots().map { slot -> slot.name })
+        assertEquals(listOf("长剑", "基础盾牌", "锁甲", "治疗药水"), vanguardSession.inventoryItems().map { item -> item.name })
         assertEquals(listOf("奥术法杖", "学徒法袍", "法力药水"), arcanistSession.inventoryItems().map { item -> item.name })
-        assertEquals("短剑", vanguardSession.equipmentSlots().first { slot -> slot.slot == EquipSlot.WEAPON }.itemName)
+        assertEquals(listOf("短剑", "皮甲", "治疗药水", "传送卷轴"), rogueSession.inventoryItems().map { item -> item.name })
+        assertEquals(listOf("长剑", "基础盾牌", "锁甲", "治疗药水"), templarSession.inventoryItems().map { item -> item.name })
+        assertEquals("长剑", vanguardSession.equipmentSlots().first { slot -> slot.slot == EquipSlot.WEAPON }.itemName)
         assertEquals("基础盾牌", vanguardSession.equipmentSlots().first { slot -> slot.slot == EquipSlot.OFF_HAND }.itemName)
         assertEquals("锁甲", vanguardSession.equipmentSlots().first { slot -> slot.slot == EquipSlot.ARMOR }.itemName)
+        assertEquals("短剑", rogueSession.equipmentSlots().first { slot -> slot.slot == EquipSlot.WEAPON }.itemName)
+        assertNull(rogueSession.equipmentSlots().first { slot -> slot.slot == EquipSlot.OFF_HAND }.itemName)
+        assertEquals("皮甲", rogueSession.equipmentSlots().first { slot -> slot.slot == EquipSlot.ARMOR }.itemName)
+        assertEquals("长剑", templarSession.equipmentSlots().first { slot -> slot.slot == EquipSlot.WEAPON }.itemName)
+        assertEquals("基础盾牌", templarSession.equipmentSlots().first { slot -> slot.slot == EquipSlot.OFF_HAND }.itemName)
+        assertEquals("锁甲", templarSession.equipmentSlots().first { slot -> slot.slot == EquipSlot.ARMOR }.itemName)
         assertTrue(vanguardSession.playerStatus().maxHp > arcanistSession.playerStatus().maxHp)
+        assertTrue(rogueSession.playerStatus().speed > vanguardSession.playerStatus().speed)
+        assertTrue(templarSession.playerStatus().defense > rogueSession.playerStatus().defense)
     }
 
     @Test
@@ -191,7 +213,20 @@ class GameModuleTest {
         assertEquals(70, session.map.width)
         assertEquals(45, session.map.height)
         assertTrue(monsterIds.isNotEmpty())
-        assertTrue(monsterIds.all { monsterId -> monsterId in setOf("beast.rat", "undead.bone_archer", "bandit.sentry") })
+        assertTrue(
+            monsterIds.all { monsterId ->
+                monsterId in
+                    setOf(
+                        "beast.rat",
+                        "beast.thorn_stalker",
+                        "undead.bone_archer",
+                        "undead.moss_archer",
+                        "bandit.trapper",
+                        "bandit.sentry",
+                        "bandit.wild_huntmaster",
+                    )
+            },
+        )
         assertTrue("undead.bone_archer" in monsterIds)
     }
 

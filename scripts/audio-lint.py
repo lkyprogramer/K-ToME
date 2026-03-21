@@ -7,7 +7,14 @@ import argparse
 import pathlib
 import sys
 
-from asset_pipeline_common import load_json, load_yaml, print_errors
+from asset_pipeline_common import (
+    PHASE2_REQUIRED_AUDIO_KEYS,
+    flatten_required_keys,
+    load_json,
+    load_yaml,
+    print_errors,
+    split_phase2_fallback_budget,
+)
 
 
 REQUIRED_CUE_FAMILIES = {
@@ -256,6 +263,35 @@ def validate(
         if source_path == "audio/fallback/silence.ogg":
             errors.append(f"required audible key '{key}' must not use the silence fallback.")
 
+    required_audio_keys = flatten_required_keys(PHASE2_REQUIRED_AUDIO_KEYS)
+    for key in sorted(required_audio_keys):
+        plan_entry = next(
+            (entry for entry in plan_entries if isinstance(entry, dict) and str(entry.get("key", "")).strip() == key),
+            None,
+        )
+        if plan_entry is None:
+            errors.append(f"audio plan is missing required formal-path key '{key}'.")
+            continue
+        plan_source_path = str(plan_entry.get("sourcePath", "")).strip()
+        if plan_source_path == "audio/fallback/silence.ogg":
+            errors.append(f"required formal-path audio key '{key}' must not use silence in audio plan.")
+
+        manifest_entry = manifest_by_key.get(key)
+        if manifest_entry is None:
+            errors.append(f"canonical audio manifest is missing required formal-path key '{key}'.")
+            continue
+        manifest_source_path = str(manifest_entry.get("sourcePath", "")).strip()
+        if manifest_source_path == "audio/fallback/silence.ogg":
+            errors.append(f"required formal-path audio key '{key}' must not use silence in canonical audio manifest.")
+
+        runtime_entry = runtime_by_key.get(key)
+        if runtime_entry is None:
+            errors.append(f"runtime audio manifest is missing required formal-path key '{key}'.")
+            continue
+        runtime_source_path = str(runtime_entry.get("sourcePath", "")).strip()
+        if runtime_source_path == "audio/fallback/silence.ogg":
+            errors.append(f"required formal-path audio key '{key}' must not use silence in runtime audio manifest.")
+
     for entry in plan_entries:
         if not isinstance(entry, dict):
             errors.append("audio plan entries must be mappings.")
@@ -361,10 +397,24 @@ def main() -> int:
     if errors:
         return print_errors(errors)
 
+    manifest = load_json(pathlib.Path(args.manifest))
+    manifest_by_key = {
+        str(entry.get("key", "")).strip(): entry
+        for entry in manifest["entries"]
+        if isinstance(entry, dict) and str(entry.get("key", "")).strip()
+    }
+    required_audio_keys = flatten_required_keys(PHASE2_REQUIRED_AUDIO_KEYS)
+    required_fallback_keys, silence_budget_keys = split_phase2_fallback_budget(
+        entries_by_key=manifest_by_key,
+        required_keys=required_audio_keys,
+        path_field="sourcePath",
+        fallback_value="audio/fallback/silence.ogg",
+    )
     print(
         "audio-lint OK: "
         f"plan={args.plan}, manifest={args.manifest}, runtimeManifest={args.runtime_manifest}, "
-        f"requiredCueFamilies={sorted(REQUIRED_CUE_FAMILIES)}"
+        f"requiredCueFamilies={sorted(REQUIRED_CUE_FAMILIES)}, requiredFormalPathKeys={len(required_audio_keys)}, "
+        f"requiredSilence={len(required_fallback_keys)}, phase2SilenceBudget={len(silence_budget_keys)}"
     )
     return 0
 

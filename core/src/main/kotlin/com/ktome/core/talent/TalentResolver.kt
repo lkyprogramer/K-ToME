@@ -1,12 +1,12 @@
 package com.ktome.core.talent
 
 import com.ktome.core.combat.CombatResolver
+import com.ktome.core.combat.DamageType
 import com.ktome.core.ecs.BlocksMovement
 import com.ktome.core.ecs.EntityId
 import com.ktome.core.ecs.FactionTag
 import com.ktome.core.ecs.Health
 import com.ktome.core.ecs.Position
-import com.ktome.core.ecs.Stamina
 import com.ktome.core.ecs.World
 import com.ktome.core.ecs.add
 import com.ktome.core.ecs.get
@@ -16,6 +16,7 @@ import com.ktome.core.map.Point
 import com.ktome.core.pathfinding.AStar
 import com.ktome.core.resource.ResourcePools
 import com.ktome.core.resource.ResourceType
+import com.ktome.core.resource.StaminaPools
 import com.ktome.core.stats.StatsCalculator
 
 sealed interface TalentUseResult {
@@ -36,6 +37,7 @@ enum class TalentFailureCode {
     UNSUPPORTED_TALENT,
     COOLDOWN,
     NO_STAMINA,
+    NO_RESOURCE,
     TARGET_REQUIRED,
     OUT_OF_RANGE,
     NO_TARGET,
@@ -55,6 +57,11 @@ sealed interface TalentEffectResult {
         val target: EntityId,
         val amount: Int,
         val crit: Boolean,
+    ) : TalentEffectResult
+
+    data class Heal(
+        val target: EntityId,
+        val amount: Int,
     ) : TalentEffectResult
 
     data class Miss(
@@ -116,6 +123,22 @@ class TalentResolver(
             "arcane_shield",
             "blink",
             "mana_surge",
+            "backstab",
+            "poison_blade",
+            "stealth",
+            "smoke_bomb",
+            "roll",
+            "blade_flurry",
+            "shadowstep",
+            "deathblow",
+            "holy_strike",
+            "judgment_hammer",
+            "holy_light",
+            "holy_shield",
+            "devotion",
+            "holy_aura",
+            "purify",
+            "divine_intervention",
         )
 
     private data class DamageResolution(
@@ -123,6 +146,11 @@ class TalentResolver(
         val finalDamage: Int = 0,
         val critical: Boolean = false,
     )
+
+    private fun effectiveRange(
+        definition: TalentDef,
+        level: Int,
+    ): Int = definition.range + (definition.levelEffects[level]?.rangeBonus ?: 0)
 
     fun canUse(
         world: World,
@@ -153,7 +181,6 @@ class TalentResolver(
                 talentId = talentId,
             )
         }
-        val stamina = requireNotNull(world.get<Stamina>(user)) { "Missing Stamina for $user" }
         val cooldowns = requireNotNull(world.get<CooldownState>(user)) { "Missing CooldownState for $user" }
 
         if (cooldowns.remainingByTalentId[talentId]?.let { it > 0 } == true) {
@@ -164,15 +191,24 @@ class TalentResolver(
                 talentId = talentId,
             )
         }
-        if (stamina.current < definition.staminaCost) {
+        val loadout = requireNotNull(world.get<TalentLoadout>(user)) { "Missing TalentLoadout for $user" }
+        val level = loadout.levelOf(talentId).coerceIn(1, definition.maxLevel)
+        val resourceFailure = insufficientResourceFailure(world, user, definition)
+        if (resourceFailure != null) {
             return TalentUseResult.Failure(
-                code = TalentFailureCode.NO_STAMINA,
-                reason = "Not enough stamina.",
+                code = resourceFailure,
+                reason =
+                    if (resourceFailure == TalentFailureCode.NO_STAMINA) {
+                        "Not enough stamina."
+                    } else {
+                        "Not enough resource."
+                    },
                 talentName = definition.name,
                 talentId = talentId,
             )
         }
-        if (definition.range == 0) {
+        val range = effectiveRange(definition, level)
+        if (range == 0) {
             return null
         }
 
@@ -186,7 +222,7 @@ class TalentResolver(
                     talentId = talentId,
                 )
         val distance = userPosition.chebyshevDistanceTo(targetPoint)
-        if (distance > definition.range || distance < definition.minRange) {
+        if (distance > range || distance < definition.minRange) {
             return TalentUseResult.Failure(
                 code = TalentFailureCode.OUT_OF_RANGE,
                 reason = "Target is out of range.",
@@ -195,11 +231,11 @@ class TalentResolver(
             )
         }
 
-        if (definition.id == "blink") {
+        if (definition.id == "blink" || definition.id == "roll") {
             if (blinkDestination(world, map, userPosition, targetPoint, user) == null) {
                 return TalentUseResult.Failure(
                     code = TalentFailureCode.NO_TARGET,
-                    reason = "No valid blink destination.",
+                    reason = "No valid movement destination.",
                     talentName = definition.name,
                     talentId = talentId,
                 )
@@ -223,6 +259,14 @@ class TalentResolver(
                 talentId = talentId,
             )
         }
+        if (definition.id == "shadowstep" && shadowstepDestination(world, map, userPosition, targetPoint, targetEntity) == null) {
+            return TalentUseResult.Failure(
+                code = TalentFailureCode.NO_TARGET,
+                reason = "No valid shadowstep landing point.",
+                talentName = definition.name,
+                talentId = talentId,
+            )
+        }
 
         return null
     }
@@ -241,7 +285,6 @@ class TalentResolver(
 
         val definition = requireNotNull(registry.get(talentId))
         val loadout = requireNotNull(world.get<TalentLoadout>(user)) { "Missing TalentLoadout for $user" }
-        val stamina = requireNotNull(world.get<Stamina>(user)) { "Missing Stamina for $user" }
         val cooldowns = requireNotNull(world.get<CooldownState>(user)) { "Missing CooldownState for $user" }
         val level = loadout.levelOf(talentId).coerceIn(1, definition.maxLevel)
         val effect = requireNotNull(definition.levelEffects[level]) { "Missing level effect for $talentId level $level" }
@@ -257,14 +300,14 @@ class TalentResolver(
             )
         }
 
-        stamina.current -= definition.staminaCost
+        spendResources(world, user, definition)
         cooldowns.remainingByTalentId[talentId] = definition.cooldown
 
         when (talentId) {
             "power_strike" -> {
                 val targetEntity = requireNotNull(hostileTargetAt(world, user, requireNotNull(target)))
                 targets += targetEntity
-                val damageResult = resolveDamage(world, user, targetEntity, effect.damageMultiplier, effects)
+                val damageResult = resolveDamage(world, user, targetEntity, definition.damageType, effect.damageMultiplier, effects)
                 if (damageResult.hit) {
                     if (effect.knockback > 0) {
                         knockback(world, map, user, targetEntity, effect.knockback)?.let(effects::add)
@@ -283,7 +326,7 @@ class TalentResolver(
                 val destination = requireNotNull(chargeDestination(world, map, from, targetPoint, targetEntity))
                 requireNotNull(world.get<Position>(user)).moveTo(destination)
                 effects += TalentEffectResult.Movement(user, from, destination)
-                val damageResult = resolveDamage(world, user, targetEntity, effect.damageMultiplier, effects)
+                val damageResult = resolveDamage(world, user, targetEntity, definition.damageType, effect.damageMultiplier, effects)
                 if (damageResult.hit && effect.stunDuration > 0) {
                     applyStun(world, targetEntity, effect.stunDuration, effects, effectId = "charge_stun")
                 }
@@ -292,7 +335,7 @@ class TalentResolver(
             "shield_bash" -> {
                 val targetEntity = requireNotNull(hostileTargetAt(world, user, requireNotNull(target)))
                 targets += targetEntity
-                val damageResult = resolveDamage(world, user, targetEntity, effect.damageMultiplier, effects)
+                val damageResult = resolveDamage(world, user, targetEntity, definition.damageType, effect.damageMultiplier, effects)
                 if (damageResult.hit) {
                     if (effect.stunDuration > 0) {
                         applyStun(world, targetEntity, effect.stunDuration, effects, effectId = "shield_bash_stun")
@@ -314,7 +357,7 @@ class TalentResolver(
                 }
                 hitTargets.forEach { targetEntity ->
                     targets += targetEntity
-                    val damageResult = resolveDamage(world, user, targetEntity, effect.damageMultiplier, effects)
+                    val damageResult = resolveDamage(world, user, targetEntity, definition.damageType, effect.damageMultiplier, effects)
                     if (damageResult.hit && effect.knockback > 0) {
                         knockback(world, map, user, targetEntity, effect.knockback)?.let(effects::add)
                     }
@@ -324,7 +367,7 @@ class TalentResolver(
             "sunder_armor" -> {
                 val targetEntity = requireNotNull(hostileTargetAt(world, user, requireNotNull(target)))
                 targets += targetEntity
-                val damageResult = resolveDamage(world, user, targetEntity, effect.damageMultiplier, effects)
+                val damageResult = resolveDamage(world, user, targetEntity, definition.damageType, effect.damageMultiplier, effects)
                 if (damageResult.hit && effect.armorBreakDuration > 0) {
                     applyArmorBreak(world, targetEntity, effect.armorBreakDuration, effects, effectId = "sunder_armor_break")
                 }
@@ -380,21 +423,21 @@ class TalentResolver(
             "fireball" -> {
                 val targetEntity = requireNotNull(hostileTargetAt(world, user, requireNotNull(target)))
                 targets += targetEntity
-                resolveDamage(world, user, targetEntity, effect.damageMultiplier, effects)
+                resolveDamage(world, user, targetEntity, definition.damageType, effect.damageMultiplier, effects)
             }
 
             "flame_wall" -> {
                 val center = requireNotNull(target)
                 hostileTargetsWithin(world, user, center, definition.areaRadius).forEach { targetEntity ->
                     targets += targetEntity
-                    resolveDamage(world, user, targetEntity, effect.damageMultiplier, effects)
+                    resolveDamage(world, user, targetEntity, definition.damageType, effect.damageMultiplier, effects)
                 }
             }
 
             "ice_bolt" -> {
                 val targetEntity = requireNotNull(hostileTargetAt(world, user, requireNotNull(target)))
                 targets += targetEntity
-                val damageResult = resolveDamage(world, user, targetEntity, effect.damageMultiplier, effects)
+                val damageResult = resolveDamage(world, user, targetEntity, definition.damageType, effect.damageMultiplier, effects)
                 if (damageResult.hit && effect.stunDuration > 0) {
                     applyStun(world, targetEntity, effect.stunDuration, effects, effectId = "ice_bolt_stun")
                 }
@@ -404,7 +447,7 @@ class TalentResolver(
                 val origin = requireNotNull(world.get<Position>(user)).toPoint()
                 hostileTargetsWithin(world, user, origin, definition.areaRadius).forEach { targetEntity ->
                     targets += targetEntity
-                    val damageResult = resolveDamage(world, user, targetEntity, effect.damageMultiplier, effects)
+                    val damageResult = resolveDamage(world, user, targetEntity, definition.damageType, effect.damageMultiplier, effects)
                     if (damageResult.hit && effect.stunDuration > 0) {
                         applyStun(world, targetEntity, effect.stunDuration, effects, effectId = "frost_nova_stun")
                     }
@@ -414,7 +457,7 @@ class TalentResolver(
             "ice_prison" -> {
                 val targetEntity = requireNotNull(hostileTargetAt(world, user, requireNotNull(target)))
                 targets += targetEntity
-                val damageResult = resolveDamage(world, user, targetEntity, effect.damageMultiplier, effects)
+                val damageResult = resolveDamage(world, user, targetEntity, definition.damageType, effect.damageMultiplier, effects)
                 if (damageResult.hit && effect.stunDuration > 0) {
                     applyStun(world, targetEntity, effect.stunDuration, effects, effectId = "ice_prison_stun")
                 }
@@ -456,6 +499,184 @@ class TalentResolver(
                     effects = effects,
                 )
                 restoreResource(world, user, ResourceType.MANA, effect, effects)
+                targets += user
+            }
+
+            "backstab" -> {
+                val targetEntity = requireNotNull(hostileTargetAt(world, user, requireNotNull(target)))
+                targets += targetEntity
+                resolveDamage(world, user, targetEntity, definition.damageType, effect.damageMultiplier, effects)
+            }
+
+            "poison_blade" -> {
+                val targetEntity = requireNotNull(hostileTargetAt(world, user, requireNotNull(target)))
+                targets += targetEntity
+                val damageResult = resolveDamage(world, user, targetEntity, definition.damageType, effect.damageMultiplier, effects)
+                if (damageResult.hit && effect.debuffDuration > 0) {
+                    applyCurse(world, targetEntity, effect.debuffDuration, effect.debuffMagnitude, effects, effectId = "poison_blade_curse")
+                }
+            }
+
+            "stealth" -> {
+                applySelfBuff(
+                    world = world,
+                    target = user,
+                    effectId = "stealth_buff",
+                    name = "Stealth",
+                    type = StatusEffectType.STEALTH_BUFF,
+                    duration = effect.buffDuration,
+                    magnitude = effect.buffMagnitude,
+                    statModifiers =
+                        StatModifier(
+                            evasion = maxOf(2, (effect.buffMagnitude * 20).toInt()),
+                            speed = maxOf(2, (effect.buffMagnitude * 10).toInt()),
+                        ),
+                    effects = effects,
+                )
+                targets += user
+            }
+
+            "smoke_bomb" -> {
+                val origin = requireNotNull(world.get<Position>(user)).toPoint()
+                hostileTargetsWithin(world, user, origin, definition.areaRadius).forEach { enemy ->
+                    applyCurse(world, enemy, effect.debuffDuration, effect.debuffMagnitude, effects, effectId = "smoke_bomb_curse")
+                    targets += enemy
+                }
+            }
+
+            "roll" -> {
+                val from = requireNotNull(world.get<Position>(user)).toPoint()
+                val destination = requireNotNull(blinkDestination(world, map, from, requireNotNull(target), user))
+                requireNotNull(world.get<Position>(user)).moveTo(destination)
+                effects += TalentEffectResult.Movement(user, from, destination)
+                targets += user
+            }
+
+            "blade_flurry" -> {
+                val center = requireNotNull(target)
+                val hitTargets = hostileTargetsWithin(world, user, center, definition.areaRadius).ifEmpty {
+                    listOfNotNull(hostileTargetAt(world, user, center))
+                }
+                hitTargets.forEach { targetEntity ->
+                    targets += targetEntity
+                    resolveDamage(world, user, targetEntity, definition.damageType, effect.damageMultiplier, effects)
+                }
+            }
+
+            "shadowstep" -> {
+                val targetPoint = requireNotNull(target)
+                val targetEntity = requireNotNull(hostileTargetAt(world, user, targetPoint))
+                val from = requireNotNull(world.get<Position>(user)).toPoint()
+                val destination = requireNotNull(shadowstepDestination(world, map, from, targetPoint, targetEntity))
+                requireNotNull(world.get<Position>(user)).moveTo(destination)
+                effects += TalentEffectResult.Movement(user, from, destination)
+                targets += user
+                targets += targetEntity
+                resolveDamage(world, user, targetEntity, definition.damageType, effect.damageMultiplier, effects)
+            }
+
+            "deathblow" -> {
+                val targetEntity = requireNotNull(hostileTargetAt(world, user, requireNotNull(target)))
+                targets += targetEntity
+                val damageResult = resolveDamage(world, user, targetEntity, definition.damageType, effect.damageMultiplier, effects)
+                if (damageResult.hit) {
+                    restoreResource(world, user, ResourceType.ENERGY, effect, effects)
+                }
+            }
+
+            "holy_strike" -> {
+                val targetEntity = requireNotNull(hostileTargetAt(world, user, requireNotNull(target)))
+                targets += targetEntity
+                resolveDamage(world, user, targetEntity, definition.damageType, effect.damageMultiplier, effects)
+            }
+
+            "judgment_hammer" -> {
+                val targetEntity = requireNotNull(hostileTargetAt(world, user, requireNotNull(target)))
+                targets += targetEntity
+                val damageResult = resolveDamage(world, user, targetEntity, definition.damageType, effect.damageMultiplier, effects)
+                if (damageResult.hit && effect.stunDuration > 0) {
+                    applyStun(world, targetEntity, effect.stunDuration, effects, effectId = "judgment_hammer_stun")
+                }
+            }
+
+            "holy_light" -> {
+                healTarget(world, user, effect, effects)
+                targets += user
+            }
+
+            "holy_shield" -> {
+                applySelfBuff(
+                    world = world,
+                    target = user,
+                    effectId = "holy_shield_buff",
+                    name = "Holy Shield",
+                    type = StatusEffectType.HOLY_SHIELD_BUFF,
+                    duration = effect.buffDuration,
+                    magnitude = effect.buffMagnitude,
+                    statModifiers = StatModifier(defenseMultiplierBonus = effect.buffMagnitude),
+                    effects = effects,
+                )
+                targets += user
+            }
+
+            "devotion" -> {
+                applySelfBuff(
+                    world = world,
+                    target = user,
+                    effectId = "devotion_buff",
+                    name = "Devotion",
+                    type = StatusEffectType.DEVOTION_BUFF,
+                    duration = effect.buffDuration,
+                    magnitude = effect.buffMagnitude,
+                    statModifiers =
+                        StatModifier(
+                            attackMultiplierBonus = effect.buffMagnitude,
+                            accuracy = maxOf(1, (effect.buffMagnitude * 10).toInt()),
+                        ),
+                    effects = effects,
+                )
+                targets += user
+            }
+
+            "holy_aura" -> {
+                applySelfBuff(
+                    world = world,
+                    target = user,
+                    effectId = "holy_aura_buff",
+                    name = "Holy Aura",
+                    type = StatusEffectType.HOLY_AURA_BUFF,
+                    duration = effect.buffDuration,
+                    magnitude = effect.buffMagnitude,
+                    statModifiers = StatModifier(defenseMultiplierBonus = effect.buffMagnitude),
+                    effects = effects,
+                )
+                targets += user
+                val origin = requireNotNull(world.get<Position>(user)).toPoint()
+                hostileTargetsWithin(world, user, origin, definition.areaRadius).forEach { enemy ->
+                    targets += enemy
+                    resolveDamage(world, user, enemy, definition.damageType, effect.damageMultiplier, effects)
+                }
+            }
+
+            "purify" -> {
+                clearNegativeEffects(world, user)
+                healTarget(world, user, effect, effects)
+                targets += user
+            }
+
+            "divine_intervention" -> {
+                healTarget(world, user, effect, effects)
+                applySelfBuff(
+                    world = world,
+                    target = user,
+                    effectId = "divine_intervention_holy_shield",
+                    name = "Divine Intervention",
+                    type = StatusEffectType.HOLY_SHIELD_BUFF,
+                    duration = effect.buffDuration,
+                    magnitude = effect.buffMagnitude,
+                    statModifiers = StatModifier(defenseMultiplierBonus = effect.buffMagnitude),
+                    effects = effects,
+                )
                 targets += user
             }
 
@@ -575,6 +796,33 @@ class TalentResolver(
         effects += TalentEffectResult.Buff(target, type, duration, magnitude)
     }
 
+    private fun applyCurse(
+        world: World,
+        target: EntityId,
+        duration: Int,
+        magnitude: Double,
+        effects: MutableList<TalentEffectResult>,
+        effectId: String,
+    ) {
+        applyEffect(
+            world = world,
+            target = target,
+            effect =
+                ActiveEffect(
+                    id = effectId,
+                    name = "Cursed",
+                    type = StatusEffectType.CURSED,
+                    remainingTurns = duration,
+                    statModifiers =
+                        StatModifier(
+                            attackMultiplierBonus = -magnitude,
+                            defenseMultiplierBonus = -magnitude,
+                        ),
+                ),
+        )
+        effects += TalentEffectResult.StatusApplied(target, StatusEffectType.CURSED, duration)
+    }
+
     private fun applyWarCry(
         world: World,
         user: EntityId,
@@ -632,14 +880,79 @@ class TalentResolver(
         }
     }
 
+    private fun healTarget(
+        world: World,
+        target: EntityId,
+        effect: TalentLevelEffect,
+        effects: MutableList<TalentEffectResult>,
+    ) {
+        val health = world.get<Health>(target) ?: return
+        val before = health.current
+        val amount = maxOf(10, (health.max * effect.buffMagnitude).toInt().coerceAtLeast(0))
+        health.current = (health.current + amount).coerceAtMost(health.max)
+        val restored = health.current - before
+        if (restored > 0) {
+            effects += TalentEffectResult.Heal(target, restored)
+        }
+    }
+
+    private fun insufficientResourceFailure(
+        world: World,
+        user: EntityId,
+        definition: TalentDef,
+    ): TalentFailureCode? {
+        for ((type, cost) in definition.resolvedResourceCosts()) {
+            if (resourceAmount(world, user, type) >= cost) {
+                continue
+            }
+            return if (type == ResourceType.STAMINA) {
+                TalentFailureCode.NO_STAMINA
+            } else {
+                TalentFailureCode.NO_RESOURCE
+            }
+        }
+        return null
+    }
+
+    private fun spendResources(
+        world: World,
+        user: EntityId,
+        definition: TalentDef,
+    ) {
+        definition.resolvedResourceCosts().forEach { (type, cost) ->
+            when (type) {
+                ResourceType.STAMINA -> StaminaPools.spend(world, user, cost)
+
+                else -> {
+                    val pool =
+                        requireNotNull(world.get<ResourcePools>(user)?.pool(type)) {
+                            "Missing ResourcePool '$type' for $user"
+                        }
+                    pool.spend(cost)
+                }
+            }
+        }
+    }
+
+    private fun resourceAmount(
+        world: World,
+        user: EntityId,
+        type: ResourceType,
+    ): Int =
+        when (type) {
+            ResourceType.STAMINA -> StaminaPools.current(world, user)
+            else -> world.get<ResourcePools>(user)?.pool(type)?.current ?: 0
+        }
+
     private fun resolveDamage(
         world: World,
         attacker: EntityId,
         target: EntityId,
+        damageType: DamageType,
         damageMultiplier: Double,
         effects: MutableList<TalentEffectResult>,
     ): DamageResolution {
-        val result = combatResolver.resolveMelee(world, attacker, target, damageMultiplier)
+        val result = combatResolver.resolveMelee(world, attacker, target, damageType, damageMultiplier)
         if (!result.hit) {
             effects += TalentEffectResult.Miss(target)
             return DamageResolution(hit = false)
@@ -746,6 +1059,24 @@ class TalentResolver(
         return candidates.minWithOrNull(compareBy<Point> { it.chebyshevDistanceTo(targetPoint) }.thenBy(Point::y).thenBy(Point::x))
     }
 
+    private fun shadowstepDestination(
+        world: World,
+        map: GameMap,
+        from: Point,
+        targetPoint: Point,
+        targetEntity: EntityId,
+    ): Point? {
+        val blockedTiles = blockedTiles(world, excluding = setOf(targetEntity))
+        return Point.ALL_DIRECTIONS
+            .map { direction -> targetPoint + direction }
+            .filter { destination ->
+                destination != from &&
+                    map.isInBounds(destination.x, destination.y) &&
+                    !map[destination].blocksMovement &&
+                    destination !in blockedTiles
+            }.minWithOrNull(compareBy<Point> { it.chebyshevDistanceTo(from) }.thenBy(Point::y).thenBy(Point::x))
+    }
+
     private fun knockback(
         world: World,
         map: GameMap,
@@ -787,4 +1118,24 @@ class TalentResolver(
             .filter { entityId -> entityId !in excluding }
             .map { entityId -> requireNotNull(world.get<Position>(entityId)).toPoint() }
             .toSet()
+
+    private fun clearNegativeEffects(
+        world: World,
+        target: EntityId,
+    ) {
+        val tracker = world.get<EffectTracker>(target) ?: return
+        val removed =
+            tracker.effects.removeAll { effect ->
+                effect.type in
+                    setOf(
+                        StatusEffectType.STUNNED,
+                        StatusEffectType.ARMOR_BREAK,
+                        StatusEffectType.WAR_CRY_DEBUFF,
+                        StatusEffectType.CURSED,
+                    )
+            }
+        if (removed) {
+            StatsCalculator.recalculateAndStore(world, target)
+        }
+    }
 }

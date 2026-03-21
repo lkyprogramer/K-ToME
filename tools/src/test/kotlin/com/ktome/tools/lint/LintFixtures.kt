@@ -79,7 +79,7 @@ internal object LintFixtures {
                 val content = path.readText()
                 localeKeyCallPattern.findAll(content).forEach { match ->
                     val key = match.groupValues[1]
-                    if (!key.startsWith("ai.") || key.count { char -> char == '.' } == 1) {
+                    if ((!key.startsWith("ai.") || key.count { char -> char == '.' } == 1) && !key.endsWith('.')) {
                         add(key)
                     }
                 }

@@ -275,3 +275,303 @@ monsters:
     expReward: 220
     spawnFloors: [2]
     spawnWeight: 1
+  - id: goblin.scrapper
+    nameKey: monster.goblin.scrapper.name
+    descKey: monster.goblin.scrapper.desc
+    visualKey: actor.bandit.raider
+    iconKey: icon.monster.bandit.sentry
+    audioProfile: audio.monster.default
+    schemaVersion: 2
+    tags: [monster, goblin]
+    archetype: brute
+    glyph: "g"
+    color: "#5A8E47"
+    stats: { str: 6, dex: 8, con: 6, wil: 2 }
+    baseHp: 20
+    baseAttack: 6
+    baseDefense: 1
+    baseAccuracy: 11
+    baseEvasion: 6
+    speed: 102
+    ai: CHASE
+    aiProfileId: ai.guard.basic
+    lootProfileId: loot.foundation.common
+    talents: {}
+    expReward: 24
+    spawnFloors: [1, 2]
+    spawnWeight: 7
+  - id: bandit.trapper
+    nameKey: monster.bandit.trapper.name
+    descKey: monster.bandit.trapper.desc
+    visualKey: actor.bandit.sentry
+    iconKey: icon.monster.bandit.sentry
+    audioProfile: audio.monster.bandit.sentry
+    schemaVersion: 2
+    tags: [monster, bandit]
+    archetype: controller
+    glyph: "t"
+    color: "#7E6F54"
+    stats: { str: 5, dex: 10, con: 5, wil: 3 }
+    baseHp: 18
+    baseAttack: 5
+    baseDefense: 1
+    baseAccuracy: 13
+    baseEvasion: 8
+    speed: 101
+    ai: PATROL
+    aiProfileId: ai.controller.pressure
+    lootProfileId: loot.foundation.common
+    talents: {}
+    expReward: 26
+    spawnFloors: [1, 2, 3]
+    spawnWeight: 6
+  - id: beast.thorn_stalker
+    nameKey: monster.beast.thorn_stalker.name
+    descKey: monster.beast.thorn_stalker.desc
+    visualKey: actor.beast.rat
+    iconKey: icon.monster.beast.rat
+    audioProfile: audio.monster.beast.rat
+    schemaVersion: 2
+    tags: [monster, beast]
+    archetype: skirmisher
+    glyph: "w"
+    color: "#567642"
+    stats: { str: 7, dex: 11, con: 6, wil: 2 }
+    baseHp: 22
+    baseAttack: 7
+    baseDefense: 1
+    baseAccuracy: 13
+    baseEvasion: 9
+    speed: 108
+    ai: CHASE
+    aiProfileId: ai.skirmisher.flank
+    lootProfileId: loot.foundation.common
+    talents: {}
+    expReward: 30
+    spawnFloors: [2, 3]
+    spawnWeight: 6
+  - id: undead.moss_archer
+    nameKey: monster.undead.moss_archer.name
+    descKey: monster.undead.moss_archer.desc
+    visualKey: actor.undead.bone_archer
+    iconKey: icon.monster.undead.bone_archer
+    audioProfile: audio.monster.undead.bone_archer
+    schemaVersion: 2
+    tags: [monster, undead]
+    archetype: artillery
+    glyph: "a"
+    color: "#8FAE7A"
+    stats: { str: 6, dex: 11, con: 5, wil: 3 }
+    baseHp: 22
+    baseAttack: 8
+    baseDefense: 1
+    baseAccuracy: 14
+    baseEvasion: 7
+    speed: 100
+    ai: KITE
+    aiProfileId: ai.kite.basic
+    lootProfileId: loot.foundation.common
+    talents: {}
+    expReward: 32
+    spawnFloors: [2, 3]
+    spawnWeight: 6
+  - id: bandit.wild_huntmaster
+    nameKey: monster.bandit.wild_huntmaster.name
+    descKey: monster.bandit.wild_huntmaster.desc
+    visualKey: actor.bandit.sentry
+    iconKey: icon.monster.bandit.sentry
+    audioProfile: audio.monster.bandit.sentry
+    schemaVersion: 2
+    tags: [monster, bandit, elite]
+    archetype: elite
+    glyph: "H"
+    color: "#96A85F"
+    stats: { str: 9, dex: 10, con: 8, wil: 4 }
+    baseHp: 38
+    baseAttack: 10
+    baseDefense: 3
+    baseAccuracy: 15
+    baseEvasion: 9
+    speed: 102
+    ai: PATROL
+    aiProfileId: ai.elite.huntmaster
+    lootProfileId: loot.foundation.elite
+    talents: {}
+    expReward: 58
+    spawnFloors: [2, 3]
+    spawnWeight: 3
+  - id: orc.miner
+    nameKey: monster.orc.miner.name
+    descKey: monster.orc.miner.desc
+    visualKey: actor.orc.miner
+    iconKey: icon.monster.orc.raider
+    audioProfile: audio.monster.orc.raider
+    schemaVersion: 2
+    tags: [monster, orc]
+    archetype: brute
+    glyph: "m"
+    color: "#607A55"
+    stats: { str: 11, dex: 6, con: 10, wil: 3 }
+    baseHp: 40
+    baseAttack: 9
+    baseDefense: 4
+    baseAccuracy: 11
+    baseEvasion: 5
+    speed: 92
+    ai: CHASE
+    aiProfileId: ai.guard.basic
+    lootProfileId: loot.foundation.common
+    talents: {}
+    expReward: 46
+    spawnFloors: [3, 4]
+    spawnWeight: 7
+  - id: cultist.ember_adept
+    nameKey: monster.cultist.ember_adept.name
+    descKey: monster.cultist.ember_adept.desc
+    visualKey: actor.cultist.shadow_priest
+    iconKey: icon.monster.cultist.dungeon_lord
+    audioProfile: audio.monster.default
+    schemaVersion: 2
+    tags: [monster, cultist]
+    archetype: controller
+    glyph: "c"
+    color: "#AA6F52"
+    stats: { str: 6, dex: 8, con: 6, wil: 9 }
+    baseHp: 26
+    baseAttack: 8
+    baseDefense: 2
+    baseAccuracy: 14
+    baseEvasion: 7
+    speed: 96
+    ai: KITE
+    aiProfileId: ai.controller.pressure
+    lootProfileId: loot.foundation.common
+    talents: {}
+    expReward: 40
+    spawnFloors: [3, 4]
+    spawnWeight: 6
+  - id: undead.ash_wraith
+    nameKey: monster.undead.ash_wraith.name
+    descKey: monster.undead.ash_wraith.desc
+    visualKey: actor.undead.bone_archer
+    iconKey: icon.monster.undead.bone_archer
+    audioProfile: audio.monster.undead.bone_archer
+    schemaVersion: 2
+    tags: [monster, undead]
+    archetype: artillery
+    glyph: "w"
+    color: "#9E8F8F"
+    stats: { str: 7, dex: 10, con: 6, wil: 6 }
+    baseHp: 28
+    baseAttack: 9
+    baseDefense: 2
+    baseAccuracy: 14
+    baseEvasion: 7
+    speed: 98
+    ai: KITE
+    aiProfileId: ai.kite.basic
+    lootProfileId: loot.foundation.common
+    talents: {}
+    expReward: 42
+    spawnFloors: [3, 4]
+    spawnWeight: 5
+  - id: orc.forge_guard
+    nameKey: monster.orc.forge_guard.name
+    descKey: monster.orc.forge_guard.desc
+    visualKey: actor.orc.miner
+    iconKey: icon.monster.orc.raider
+    audioProfile: audio.monster.orc.raider
+    schemaVersion: 2
+    tags: [monster, orc, elite]
+    archetype: elite
+    glyph: "F"
+    color: "#7A6B4B"
+    stats: { str: 13, dex: 7, con: 12, wil: 4 }
+    baseHp: 52
+    baseAttack: 12
+    baseDefense: 5
+    baseAccuracy: 13
+    baseEvasion: 6
+    speed: 92
+    ai: CHASE
+    aiProfileId: ai.elite.forge_guard
+    lootProfileId: loot.foundation.elite
+    talents: {}
+    expReward: 72
+    spawnFloors: [4]
+    spawnWeight: 3
+  - id: cultist.shadow_priest
+    nameKey: monster.cultist.shadow_priest.name
+    descKey: monster.cultist.shadow_priest.desc
+    visualKey: actor.cultist.shadow_priest
+    iconKey: icon.monster.cultist.dungeon_lord
+    audioProfile: audio.monster.default
+    schemaVersion: 2
+    tags: [monster, cultist]
+    archetype: controller
+    glyph: "p"
+    color: "#8E7FA8"
+    stats: { str: 6, dex: 8, con: 7, wil: 11 }
+    baseHp: 30
+    baseAttack: 9
+    baseDefense: 3
+    baseAccuracy: 15
+    baseEvasion: 8
+    speed: 97
+    ai: KITE
+    aiProfileId: ai.controller.shadow_priest
+    lootProfileId: loot.foundation.common
+    talents: {}
+    expReward: 48
+    spawnFloors: [4, 5]
+    spawnWeight: 5
+  - id: undead.chain_thrall
+    nameKey: monster.undead.chain_thrall.name
+    descKey: monster.undead.chain_thrall.desc
+    visualKey: actor.undead.restless_skeleton
+    iconKey: icon.monster.undead.bone_archer
+    audioProfile: audio.monster.undead.bone_archer
+    schemaVersion: 2
+    tags: [monster, undead]
+    archetype: sentinel
+    glyph: "t"
+    color: "#B0A79E"
+    stats: { str: 10, dex: 7, con: 10, wil: 4 }
+    baseHp: 36
+    baseAttack: 10
+    baseDefense: 4
+    baseAccuracy: 12
+    baseEvasion: 6
+    speed: 94
+    ai: CHASE
+    aiProfileId: ai.guard.basic
+    lootProfileId: loot.foundation.common
+    talents: {}
+    expReward: 50
+    spawnFloors: [4, 5]
+    spawnWeight: 6
+  - id: cultist.ashgate_warden
+    nameKey: monster.cultist.ashgate_warden.name
+    descKey: monster.cultist.ashgate_warden.desc
+    visualKey: actor.boss.ashgate_warden
+    iconKey: icon.monster.cultist.dungeon_lord
+    audioProfile: audio.monster.default
+    schemaVersion: 2
+    tags: [monster, cultist]
+    archetype: juggernaut
+    glyph: "W"
+    color: "#8C6E4B"
+    stats: { str: 14, dex: 7, con: 14, wil: 6 }
+    baseHp: 58
+    baseAttack: 13
+    baseDefense: 6
+    baseAccuracy: 13
+    baseEvasion: 5
+    speed: 90
+    ai: CHASE
+    aiProfileId: ai.elite.ashgate_warden
+    lootProfileId: loot.foundation.common
+    talents: {}
+    expReward: 86
+    spawnFloors: [5]
+    spawnWeight: 2

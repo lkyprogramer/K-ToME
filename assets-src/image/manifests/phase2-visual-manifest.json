@@ -113,13 +113,15 @@
     {
       "key": "actor.cultist.dungeon_lord",
       "category": "actor_sprite",
-      "rawOutputPath": "debug/actor_cultist_dungeon_lord.png",
+      "rawOutputPath": "phase2/p2-c/actor_cultist_dungeon_lord.png",
       "footprint": "1x1",
       "pivotX": 0.5,
       "pivotY": 0.08,
       "tags": [
         "phase2",
-        "boss"
+        "p2-c",
+        "boss",
+        "cultist"
       ],
       "asciiGlyph": "B",
       "asciiColorHex": "#FF5555"
@@ -458,27 +460,29 @@
     {
       "key": "boss.cultist.dungeon_lord.icon",
       "category": "icon",
-      "rawOutputPath": "debug/missing_visual.png",
+      "rawOutputPath": "phase2/p2-c/icon_boss_cultist_dungeon_lord.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "fallback",
-        "placeholder",
-        "phase2"
+        "phase2",
+        "p2-c",
+        "boss",
+        "cultist"
       ]
     },
     {
       "key": "boss.cultist.dungeon_lord.visual",
-      "category": "debug",
-      "rawOutputPath": "debug/missing_visual.png",
+      "category": "actor_sprite",
+      "rawOutputPath": "phase2/p2-c/boss_cultist_dungeon_lord_visual.png",
       "footprint": "1x1",
       "pivotX": 0.5,
       "pivotY": 0.08,
       "tags": [
-        "fallback",
-        "placeholder",
-        "phase2"
+        "phase2",
+        "p2-c",
+        "boss",
+        "cultist"
       ]
     },
     {
@@ -655,118 +659,136 @@
     {
       "key": "icon.monster.bandit.sentry",
       "category": "icon",
-      "rawOutputPath": "debug/missing_visual.png",
+      "rawOutputPath": "phase2/p2-b/icon_monster_bandit_sentry.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "fallback",
-        "placeholder",
-        "phase2"
+        "phase2",
+        "p2-b",
+        "icon",
+        "monster",
+        "bandit"
       ]
     },
     {
       "key": "icon.monster.beast.rat",
       "category": "icon",
-      "rawOutputPath": "debug/missing_visual.png",
+      "rawOutputPath": "phase2/p2-b/icon_monster_beast_rat.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "fallback",
-        "placeholder",
-        "phase2"
+        "phase2",
+        "p2-b",
+        "icon",
+        "monster",
+        "beast"
       ]
     },
     {
       "key": "icon.monster.cultist.dungeon_lord",
       "category": "icon",
-      "rawOutputPath": "debug/missing_visual.png",
+      "rawOutputPath": "phase2/p2-c/icon_monster_cultist_dungeon_lord.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "fallback",
-        "placeholder",
-        "phase2"
+        "phase2",
+        "p2-c",
+        "icon",
+        "monster",
+        "cultist"
       ]
     },
     {
       "key": "icon.monster.orc.raider",
       "category": "icon",
-      "rawOutputPath": "debug/missing_visual.png",
+      "rawOutputPath": "phase2/p2-c/icon_monster_orc_raider.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "fallback",
-        "placeholder",
-        "phase2"
+        "phase2",
+        "p2-c",
+        "icon",
+        "monster",
+        "orc"
       ]
     },
     {
       "key": "icon.monster.undead.bone_archer",
       "category": "icon",
-      "rawOutputPath": "debug/missing_visual.png",
+      "rawOutputPath": "phase2/p2-b/icon_monster_undead_bone_archer.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "fallback",
-        "placeholder",
-        "phase2"
+        "phase2",
+        "p2-b",
+        "icon",
+        "monster",
+        "undead"
       ]
     },
     {
       "key": "icon.profession.arcanist",
       "category": "icon",
-      "rawOutputPath": "debug/missing_visual.png",
+      "rawOutputPath": "phase2/p2-b/icon_profession_arcanist.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "fallback",
-        "placeholder",
-        "phase2"
+        "phase2",
+        "p2-b",
+        "icon",
+        "profession",
+        "arcanist"
       ]
     },
     {
       "key": "icon.profession.rogue",
       "category": "icon",
-      "rawOutputPath": "debug/missing_visual.png",
+      "rawOutputPath": "phase2/p2-c/icon_profession_rogue.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "fallback",
-        "placeholder",
-        "phase2"
+        "phase2",
+        "p2-c",
+        "icon",
+        "profession",
+        "rogue"
       ]
     },
     {
       "key": "icon.profession.templar",
       "category": "icon",
-      "rawOutputPath": "debug/missing_visual.png",
+      "rawOutputPath": "phase2/p2-c/icon_profession_templar.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "fallback",
-        "placeholder",
-        "phase2"
+        "phase2",
+        "p2-c",
+        "icon",
+        "profession",
+        "templar"
       ]
     },
     {
       "key": "icon.profession.vanguard",
       "category": "icon",
-      "rawOutputPath": "debug/missing_visual.png",
+      "rawOutputPath": "phase2/p2-b/icon_profession_vanguard.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "fallback",
-        "placeholder",
-        "phase2"
+        "phase2",
+        "p2-b",
+        "icon",
+        "profession",
+        "vanguard"
       ]
     },
     {
@@ -888,6 +910,216 @@
       ]
     },
     {
+      "key": "icon.skill.rogue.backstab",
+      "category": "icon_skill",
+      "rawOutputPath": "phase2/p2-c/icon_skill_rogue_mark_prey.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase2",
+        "p2-c",
+        "icon",
+        "skill",
+        "rogue"
+      ]
+    },
+    {
+      "key": "icon.skill.rogue.poison_blade",
+      "category": "icon_skill",
+      "rawOutputPath": "phase2/p2-c/icon_status_cursed.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase2",
+        "p2-c",
+        "icon",
+        "skill",
+        "rogue"
+      ]
+    },
+    {
+      "key": "icon.skill.rogue.stealth",
+      "category": "icon_skill",
+      "rawOutputPath": "phase2/p2-c/icon_skill_rogue_shadowstep.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase2",
+        "p2-c",
+        "icon",
+        "skill",
+        "rogue"
+      ]
+    },
+    {
+      "key": "icon.skill.rogue.smoke_bomb",
+      "category": "icon_skill",
+      "rawOutputPath": "phase2/p2-c/icon_status_cursed.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase2",
+        "p2-c",
+        "icon",
+        "skill",
+        "rogue"
+      ]
+    },
+    {
+      "key": "icon.skill.rogue.roll",
+      "category": "icon_skill",
+      "rawOutputPath": "phase2/p2-c/icon_skill_rogue_shadowstep.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase2",
+        "p2-c",
+        "icon",
+        "skill",
+        "rogue"
+      ]
+    },
+    {
+      "key": "icon.skill.rogue.blade_flurry",
+      "category": "icon_skill",
+      "rawOutputPath": "phase2/p2-c/icon_skill_rogue_shadowstep.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase2",
+        "p2-c",
+        "icon",
+        "skill",
+        "rogue"
+      ]
+    },
+    {
+      "key": "icon.skill.rogue.deathblow",
+      "category": "icon_skill",
+      "rawOutputPath": "phase2/p2-c/icon_skill_rogue_mark_prey.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase2",
+        "p2-c",
+        "icon",
+        "skill",
+        "rogue"
+      ]
+    },
+    {
+      "key": "icon.skill.templar.holy_strike",
+      "category": "icon_skill",
+      "rawOutputPath": "phase2/p2-c/icon_skill_templar_smite.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase2",
+        "p2-c",
+        "icon",
+        "skill",
+        "templar"
+      ]
+    },
+    {
+      "key": "icon.skill.templar.judgment_hammer",
+      "category": "icon_skill",
+      "rawOutputPath": "phase2/p2-c/icon_skill_templar_smite.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase2",
+        "p2-c",
+        "icon",
+        "skill",
+        "templar"
+      ]
+    },
+    {
+      "key": "icon.skill.templar.holy_light",
+      "category": "icon_skill",
+      "rawOutputPath": "phase2/p2-c/icon_status_consecration.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase2",
+        "p2-c",
+        "icon",
+        "skill",
+        "templar"
+      ]
+    },
+    {
+      "key": "icon.skill.templar.holy_shield",
+      "category": "icon_skill",
+      "rawOutputPath": "phase2/p2-c/icon_skill_templar_divine_intervention.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase2",
+        "p2-c",
+        "icon",
+        "skill",
+        "templar"
+      ]
+    },
+    {
+      "key": "icon.skill.templar.devotion",
+      "category": "icon_skill",
+      "rawOutputPath": "phase2/p2-c/icon_status_consecration.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase2",
+        "p2-c",
+        "icon",
+        "skill",
+        "templar"
+      ]
+    },
+    {
+      "key": "icon.skill.templar.holy_aura",
+      "category": "icon_skill",
+      "rawOutputPath": "phase2/p2-c/icon_status_consecration.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase2",
+        "p2-c",
+        "icon",
+        "skill",
+        "templar"
+      ]
+    },
+    {
+      "key": "icon.skill.templar.purify",
+      "category": "icon_skill",
+      "rawOutputPath": "phase2/p2-c/icon_status_consecration.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase2",
+        "p2-c",
+        "icon",
+        "skill",
+        "templar"
+      ]
+    },
+    {
       "key": "icon.skill.vanguard.guard_stance",
       "category": "icon_skill",
       "rawOutputPath": "phase2/p2-b/icon_skill_vanguard_guard_stance.png",
@@ -962,6 +1194,20 @@
       ]
     },
     {
+      "key": "icon.status.arcane_shield_buff",
+      "category": "icon_status",
+      "rawOutputPath": "phase2/p2-b/talent_arcanist_arcane_shield.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase2",
+        "p2-c",
+        "icon",
+        "status"
+      ]
+    },
+    {
       "key": "icon.status.burn",
       "category": "icon_status",
       "rawOutputPath": "phase2/p2-b/icon_status_burn.png",
@@ -971,6 +1217,90 @@
       "tags": [
         "phase2",
         "p2-b",
+        "icon",
+        "status"
+      ]
+    },
+    {
+      "key": "icon.status.guard_stance_buff",
+      "category": "icon_status",
+      "rawOutputPath": "phase2/p2-b/talent_vanguard_guard_stance.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase2",
+        "p2-c",
+        "icon",
+        "status"
+      ]
+    },
+    {
+      "key": "icon.status.mana_surge_buff",
+      "category": "icon_status",
+      "rawOutputPath": "phase2/p2-b/talent_arcanist_mana_surge.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase2",
+        "p2-c",
+        "icon",
+        "status"
+      ]
+    },
+    {
+      "key": "icon.status.stunned",
+      "category": "icon_status",
+      "rawOutputPath": "phase2/p2-b/icon_skill_vanguard_shield_bash.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase2",
+        "p2-c",
+        "icon",
+        "status"
+      ]
+    },
+    {
+      "key": "icon.status.unyielding_buff",
+      "category": "icon_status",
+      "rawOutputPath": "phase2/p2-b/talent_vanguard_unyielding.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase2",
+        "p2-c",
+        "icon",
+        "status"
+      ]
+    },
+    {
+      "key": "icon.status.war_cry_buff",
+      "category": "icon_status",
+      "rawOutputPath": "phase2/p2-b/icon_skill_vanguard_war_cry.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase2",
+        "p2-c",
+        "icon",
+        "status"
+      ]
+    },
+    {
+      "key": "icon.status.war_cry_debuff",
+      "category": "icon_status",
+      "rawOutputPath": "phase2/p2-b/talent_vanguard_intimidation.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase2",
+        "p2-c",
         "icon",
         "status"
       ]
@@ -1006,183 +1336,197 @@
     {
       "key": "icon.tree.arcanist_arcane",
       "category": "icon",
-      "rawOutputPath": "debug/missing_visual.png",
+      "rawOutputPath": "phase2/p2-b/icon_tree_arcanist_arcane.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "fallback",
-        "placeholder",
-        "phase2"
+        "phase2",
+        "p2-b",
+        "tree",
+        "arcanist"
       ]
     },
     {
       "key": "icon.tree.arcanist_flame",
       "category": "icon",
-      "rawOutputPath": "debug/missing_visual.png",
+      "rawOutputPath": "phase2/p2-b/icon_tree_arcanist_flame.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "fallback",
-        "placeholder",
-        "phase2"
+        "phase2",
+        "p2-b",
+        "tree",
+        "arcanist"
       ]
     },
     {
       "key": "icon.tree.arcanist_frost",
       "category": "icon",
-      "rawOutputPath": "debug/missing_visual.png",
+      "rawOutputPath": "phase2/p2-b/icon_tree_arcanist_frost.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "fallback",
-        "placeholder",
-        "phase2"
+        "phase2",
+        "p2-b",
+        "tree",
+        "arcanist"
       ]
     },
     {
       "key": "icon.tree.rogue_agility",
       "category": "icon",
-      "rawOutputPath": "debug/missing_visual.png",
+      "rawOutputPath": "phase2/p2-c/icon_skill_rogue_shadowstep.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "fallback",
-        "placeholder",
-        "phase2"
+        "phase2",
+        "p2-c",
+        "tree",
+        "rogue"
       ]
     },
     {
       "key": "icon.tree.rogue_assassination",
       "category": "icon",
-      "rawOutputPath": "debug/missing_visual.png",
+      "rawOutputPath": "phase2/p2-c/icon_skill_rogue_mark_prey.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "fallback",
-        "placeholder",
-        "phase2"
+        "phase2",
+        "p2-c",
+        "tree",
+        "rogue"
       ]
     },
     {
       "key": "icon.tree.rogue_subtlety",
       "category": "icon",
-      "rawOutputPath": "debug/missing_visual.png",
+      "rawOutputPath": "phase2/p2-c/icon_skill_rogue_shadowstep.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "fallback",
-        "placeholder",
-        "phase2"
+        "phase2",
+        "p2-c",
+        "tree",
+        "rogue"
       ]
     },
     {
       "key": "icon.tree.templar_faith",
       "category": "icon",
-      "rawOutputPath": "debug/missing_visual.png",
+      "rawOutputPath": "phase2/p2-c/icon_skill_templar_divine_intervention.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "fallback",
-        "placeholder",
-        "phase2"
+        "phase2",
+        "p2-c",
+        "tree",
+        "templar"
       ]
     },
     {
       "key": "icon.tree.templar_grace",
       "category": "icon",
-      "rawOutputPath": "debug/missing_visual.png",
+      "rawOutputPath": "phase2/p2-c/icon_status_consecration.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "fallback",
-        "placeholder",
-        "phase2"
+        "phase2",
+        "p2-c",
+        "tree",
+        "templar"
       ]
     },
     {
       "key": "icon.tree.templar_smite",
       "category": "icon",
-      "rawOutputPath": "debug/missing_visual.png",
+      "rawOutputPath": "phase2/p2-c/icon_skill_templar_smite.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "fallback",
-        "placeholder",
-        "phase2"
+        "phase2",
+        "p2-c",
+        "tree",
+        "templar"
       ]
     },
     {
       "key": "icon.tree.vanguard_arms",
       "category": "icon",
-      "rawOutputPath": "debug/missing_visual.png",
+      "rawOutputPath": "phase2/p2-b/icon_tree_vanguard_arms.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "fallback",
-        "placeholder",
-        "phase2"
+        "phase2",
+        "p2-b",
+        "tree",
+        "vanguard"
       ]
     },
     {
       "key": "icon.tree.vanguard_shield",
       "category": "icon",
-      "rawOutputPath": "debug/missing_visual.png",
+      "rawOutputPath": "phase2/p2-b/icon_tree_vanguard_shield.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "fallback",
-        "placeholder",
-        "phase2"
+        "phase2",
+        "p2-b",
+        "tree",
+        "vanguard"
       ]
     },
     {
       "key": "icon.tree.vanguard_warcry",
       "category": "icon",
-      "rawOutputPath": "debug/missing_visual.png",
+      "rawOutputPath": "phase2/p2-b/icon_tree_vanguard_warcry.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "fallback",
-        "placeholder",
-        "phase2"
+        "phase2",
+        "p2-b",
+        "tree",
+        "vanguard"
       ]
     },
     {
       "key": "item.battle_axe.icon",
       "category": "icon",
-      "rawOutputPath": "debug/missing_visual.png",
+      "rawOutputPath": "phase2/p2-c/icon_item_battle_axe.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "fallback",
-        "placeholder",
-        "phase2"
+        "phase2",
+        "item",
+        "loot",
+        "sprint1"
       ]
     },
     {
       "key": "item.battle_axe.visual",
       "category": "debug",
-      "rawOutputPath": "debug/missing_visual.png",
+      "rawOutputPath": "phase2/p2-c/icon_item_battle_axe.png",
       "footprint": "1x1",
       "pivotX": 0.5,
       "pivotY": 0.08,
       "tags": [
-        "fallback",
-        "placeholder",
-        "phase2"
+        "phase2",
+        "item",
+        "loot",
+        "sprint1"
       ]
     },
     {
@@ -1356,105 +1700,113 @@
     {
       "key": "item.leather_armor.icon",
       "category": "icon",
-      "rawOutputPath": "debug/missing_visual.png",
+      "rawOutputPath": "phase2/p2-c/icon_item_leather_armor.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "fallback",
-        "placeholder",
-        "phase2"
+        "phase2",
+        "item",
+        "loot",
+        "sprint1"
       ]
     },
     {
       "key": "item.leather_armor.visual",
       "category": "debug",
-      "rawOutputPath": "debug/missing_visual.png",
+      "rawOutputPath": "phase2/p2-c/icon_item_leather_armor.png",
       "footprint": "1x1",
       "pivotX": 0.5,
       "pivotY": 0.08,
       "tags": [
-        "fallback",
-        "placeholder",
-        "phase2"
+        "phase2",
+        "item",
+        "loot",
+        "sprint1"
       ]
     },
     {
       "key": "item.long_sword.icon",
       "category": "icon",
-      "rawOutputPath": "debug/missing_visual.png",
+      "rawOutputPath": "phase2/p2-c/icon_item_long_sword.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "fallback",
-        "placeholder",
-        "phase2"
+        "phase2",
+        "item",
+        "loot",
+        "sprint1"
       ]
     },
     {
       "key": "item.long_sword.visual",
       "category": "debug",
-      "rawOutputPath": "debug/missing_visual.png",
+      "rawOutputPath": "phase2/p2-c/icon_item_long_sword.png",
       "footprint": "1x1",
       "pivotX": 0.5,
       "pivotY": 0.08,
       "tags": [
-        "fallback",
-        "placeholder",
-        "phase2"
+        "phase2",
+        "item",
+        "loot",
+        "sprint1"
       ]
     },
     {
       "key": "item.plate_armor.icon",
       "category": "icon",
-      "rawOutputPath": "debug/missing_visual.png",
+      "rawOutputPath": "phase2/p2-c/icon_item_plate_armor.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "fallback",
-        "placeholder",
-        "phase2"
+        "phase2",
+        "item",
+        "loot",
+        "sprint1"
       ]
     },
     {
       "key": "item.plate_armor.visual",
       "category": "debug",
-      "rawOutputPath": "debug/missing_visual.png",
+      "rawOutputPath": "phase2/p2-c/icon_item_plate_armor.png",
       "footprint": "1x1",
       "pivotX": 0.5,
       "pivotY": 0.08,
       "tags": [
-        "fallback",
-        "placeholder",
-        "phase2"
+        "phase2",
+        "item",
+        "loot",
+        "sprint1"
       ]
     },
     {
       "key": "item.scroll_teleport.icon",
       "category": "icon",
-      "rawOutputPath": "debug/missing_visual.png",
+      "rawOutputPath": "phase2/p2-c/icon_item_scroll_teleport.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "fallback",
-        "placeholder",
-        "phase2"
+        "phase2",
+        "item",
+        "reward",
+        "sprint1"
       ]
     },
     {
       "key": "item.scroll_teleport.visual",
       "category": "debug",
-      "rawOutputPath": "debug/missing_visual.png",
+      "rawOutputPath": "phase2/p2-c/icon_item_scroll_teleport.png",
       "footprint": "1x1",
       "pivotX": 0.5,
       "pivotY": 0.08,
       "tags": [
-        "fallback",
-        "placeholder",
-        "phase2"
+        "phase2",
+        "item",
+        "reward",
+        "sprint1"
       ]
     },
     {
@@ -2426,158 +2778,170 @@
     },
     {
       "key": "tree.arcanist_arcane",
-      "category": "debug",
-      "rawOutputPath": "debug/missing_visual.png",
+      "category": "portrait",
+      "rawOutputPath": "phase2/p2-b/tree_arcanist_arcane.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "fallback",
-        "placeholder",
-        "phase2"
+        "phase2",
+        "p2-b",
+        "tree",
+        "arcanist"
       ]
     },
     {
       "key": "tree.arcanist_flame",
-      "category": "debug",
-      "rawOutputPath": "debug/missing_visual.png",
+      "category": "portrait",
+      "rawOutputPath": "phase2/p2-b/tree_arcanist_flame.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "fallback",
-        "placeholder",
-        "phase2"
+        "phase2",
+        "p2-b",
+        "tree",
+        "arcanist"
       ]
     },
     {
       "key": "tree.arcanist_frost",
-      "category": "debug",
-      "rawOutputPath": "debug/missing_visual.png",
+      "category": "portrait",
+      "rawOutputPath": "phase2/p2-b/tree_arcanist_frost.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "fallback",
-        "placeholder",
-        "phase2"
+        "phase2",
+        "p2-b",
+        "tree",
+        "arcanist"
       ]
     },
     {
       "key": "tree.rogue_agility",
-      "category": "debug",
-      "rawOutputPath": "debug/missing_visual.png",
+      "category": "portrait",
+      "rawOutputPath": "phase2/p2-c/portrait_rogue.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "fallback",
-        "placeholder",
-        "phase2"
+        "phase2",
+        "p2-c",
+        "tree",
+        "rogue"
       ]
     },
     {
       "key": "tree.rogue_assassination",
-      "category": "debug",
-      "rawOutputPath": "debug/missing_visual.png",
+      "category": "portrait",
+      "rawOutputPath": "phase2/p2-c/portrait_rogue.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "fallback",
-        "placeholder",
-        "phase2"
+        "phase2",
+        "p2-c",
+        "tree",
+        "rogue"
       ]
     },
     {
       "key": "tree.rogue_subtlety",
-      "category": "debug",
-      "rawOutputPath": "debug/missing_visual.png",
+      "category": "portrait",
+      "rawOutputPath": "phase2/p2-c/portrait_rogue.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "fallback",
-        "placeholder",
-        "phase2"
+        "phase2",
+        "p2-c",
+        "tree",
+        "rogue"
       ]
     },
     {
       "key": "tree.templar_faith",
-      "category": "debug",
-      "rawOutputPath": "debug/missing_visual.png",
+      "category": "portrait",
+      "rawOutputPath": "phase2/p2-c/portrait_templar.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "fallback",
-        "placeholder",
-        "phase2"
+        "phase2",
+        "p2-c",
+        "tree",
+        "templar"
       ]
     },
     {
       "key": "tree.templar_grace",
-      "category": "debug",
-      "rawOutputPath": "debug/missing_visual.png",
+      "category": "portrait",
+      "rawOutputPath": "phase2/p2-c/portrait_templar.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "fallback",
-        "placeholder",
-        "phase2"
+        "phase2",
+        "p2-c",
+        "tree",
+        "templar"
       ]
     },
     {
       "key": "tree.templar_smite",
-      "category": "debug",
-      "rawOutputPath": "debug/missing_visual.png",
+      "category": "portrait",
+      "rawOutputPath": "phase2/p2-c/portrait_templar.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "fallback",
-        "placeholder",
-        "phase2"
+        "phase2",
+        "p2-c",
+        "tree",
+        "templar"
       ]
     },
     {
       "key": "tree.vanguard_arms",
-      "category": "debug",
-      "rawOutputPath": "debug/missing_visual.png",
+      "category": "portrait",
+      "rawOutputPath": "phase2/p2-b/tree_vanguard_arms.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "fallback",
-        "placeholder",
-        "phase2"
+        "phase2",
+        "p2-b",
+        "tree",
+        "vanguard"
       ]
     },
     {
       "key": "tree.vanguard_shield",
-      "category": "debug",
-      "rawOutputPath": "debug/missing_visual.png",
+      "category": "portrait",
+      "rawOutputPath": "phase2/p2-b/tree_vanguard_shield.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "fallback",
-        "placeholder",
-        "phase2"
+        "phase2",
+        "p2-b",
+        "tree",
+        "vanguard"
       ]
     },
     {
       "key": "tree.vanguard_warcry",
-      "category": "debug",
-      "rawOutputPath": "debug/missing_visual.png",
+      "category": "portrait",
+      "rawOutputPath": "phase2/p2-b/tree_vanguard_warcry.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "fallback",
-        "placeholder",
-        "phase2"
+        "phase2",
+        "p2-b",
+        "tree",
+        "vanguard"
       ]
     },
     {
@@ -2630,107 +2994,123 @@
     },
     {
       "key": "zone.deep_iron_pit.icon",
-      "category": "icon",
-      "rawOutputPath": "debug/missing_visual.png",
+      "category": "icon_quest",
+      "rawOutputPath": "phase2/p2-c/zone_deep_iron_pit_icon.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "fallback",
-        "placeholder",
-        "phase2"
+        "phase2",
+        "p2-c",
+        "zone",
+        "mine"
       ]
     },
     {
       "key": "zone.deep_iron_pit.visual",
-      "category": "debug",
-      "rawOutputPath": "debug/missing_visual.png",
+      "category": "prop_environment",
+      "rawOutputPath": "phase2/p2-c/zone_deep_iron_pit_visual.png",
       "footprint": "1x1",
       "pivotX": 0.5,
       "pivotY": 0.08,
       "tags": [
-        "fallback",
-        "placeholder",
-        "phase2"
-      ]
+        "phase2",
+        "p2-c",
+        "zone",
+        "mine"
+      ],
+      "asciiGlyph": "+",
+      "asciiColorHex": "#FFFFFF"
     },
     {
       "key": "zone.greenwood_fringe.icon",
-      "category": "icon",
-      "rawOutputPath": "debug/missing_visual.png",
+      "category": "icon_quest",
+      "rawOutputPath": "phase2/p2-c/zone_greenwood_fringe_icon.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "fallback",
-        "placeholder",
-        "phase2"
+        "phase2",
+        "p2-c",
+        "zone",
+        "forest-edge"
       ]
     },
     {
       "key": "zone.greenwood_fringe.visual",
-      "category": "debug",
-      "rawOutputPath": "debug/missing_visual.png",
+      "category": "prop_environment",
+      "rawOutputPath": "phase2/p2-c/zone_greenwood_fringe_visual.png",
       "footprint": "1x1",
       "pivotX": 0.5,
       "pivotY": 0.08,
       "tags": [
-        "fallback",
-        "placeholder",
-        "phase2"
-      ]
+        "phase2",
+        "p2-c",
+        "zone",
+        "forest-edge"
+      ],
+      "asciiGlyph": "+",
+      "asciiColorHex": "#FFFFFF"
     },
     {
       "key": "zone.grey_gate_depths.icon",
-      "category": "icon",
-      "rawOutputPath": "debug/missing_visual.png",
+      "category": "icon_quest",
+      "rawOutputPath": "phase2/p2-c/zone_grey_gate_depths_icon.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "fallback",
-        "placeholder",
-        "phase2"
+        "phase2",
+        "p2-c",
+        "zone",
+        "shadow-depths"
       ]
     },
     {
       "key": "zone.grey_gate_depths.visual",
-      "category": "debug",
-      "rawOutputPath": "debug/missing_visual.png",
+      "category": "prop_environment",
+      "rawOutputPath": "phase2/p2-c/zone_grey_gate_depths_visual.png",
       "footprint": "1x1",
       "pivotX": 0.5,
       "pivotY": 0.08,
       "tags": [
-        "fallback",
-        "placeholder",
-        "phase2"
-      ]
+        "phase2",
+        "p2-c",
+        "zone",
+        "shadow-depths"
+      ],
+      "asciiGlyph": "+",
+      "asciiColorHex": "#FFFFFF"
     },
     {
       "key": "zone.shattered_outpost.icon",
-      "category": "icon",
-      "rawOutputPath": "debug/missing_visual.png",
+      "category": "icon_quest",
+      "rawOutputPath": "phase2/p2-c/zone_shattered_outpost_icon.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "fallback",
-        "placeholder",
-        "phase2"
+        "phase2",
+        "p2-c",
+        "zone",
+        "ruins"
       ]
     },
     {
       "key": "zone.shattered_outpost.visual",
-      "category": "debug",
-      "rawOutputPath": "debug/missing_visual.png",
+      "category": "prop_environment",
+      "rawOutputPath": "phase2/p2-c/zone_shattered_outpost_visual.png",
       "footprint": "1x1",
       "pivotX": 0.5,
       "pivotY": 0.08,
       "tags": [
-        "fallback",
-        "placeholder",
-        "phase2"
-      ]
+        "phase2",
+        "p2-c",
+        "zone",
+        "ruins"
+      ],
+      "asciiGlyph": "+",
+      "asciiColorHex": "#FFFFFF"
     }
   ],
   "prefixRules": [

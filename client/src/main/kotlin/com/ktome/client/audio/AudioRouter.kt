@@ -179,12 +179,21 @@ class AudioRouter(
                 ?: current.metadata.ambientProfile.takeUnless(String::isBlank),
         )
         val previousOverlayIds = previous?.overlays?.mapTo(hashSetOf(), OverlayRenderSnapshot::id).orEmpty()
-        current.overlays
+        val overlayCue =
+            current.overlays
             .filter { overlay -> overlay.id !in previousOverlayIds }
             .sortedWith(compareByDescending<OverlayRenderSnapshot> { it.dangerLevel }.thenBy(OverlayRenderSnapshot::id))
             .firstOrNull { overlay -> !overlay.audioProfile.isNullOrBlank() }
             ?.audioProfile
-            ?.let(::play)
+        if (overlayCue != null) {
+            play(overlayCue)
+            return
+        }
+        if (previous == null) {
+            return
+        }
+
+        snapshotTransitionCueKeys(previous, current).forEach(::play)
     }
 
     fun onCommandResolved(
@@ -210,13 +219,15 @@ class AudioRouter(
 
         when (command) {
             is PlayerCommand.Move -> play(moveCueKey(previousSnapshot, currentSnapshot))
-            is PlayerCommand.UseTalent -> play(talentCueKey(currentSnapshot, command.slot))
+            is PlayerCommand.UseTalent -> talentCueKeys(previousSnapshot, currentSnapshot, command.slot).forEach(::play)
             is PlayerCommand.ActivateInventoryItem,
             PlayerCommand.Interact,
             PlayerCommand.PickUp,
+            -> play("audio.interactable.open")
+
             PlayerCommand.Ascend,
             PlayerCommand.Descend,
-            -> play("audio.interactable.open")
+            -> play("audio.interactable.stairs")
 
             is PlayerCommand.AssignStat,
             is PlayerCommand.AssignTalent,
@@ -224,6 +235,20 @@ class AudioRouter(
             -> play("audio.ui.confirm")
 
             PlayerCommand.Wait -> Unit
+        }
+    }
+
+    private fun talentCueKeys(
+        previousSnapshot: RenderSnapshot,
+        currentSnapshot: RenderSnapshot,
+        slot: Int,
+    ): List<String> {
+        val talent = currentSnapshot.uiState.talents.firstOrNull { candidate -> candidate.slot == slot }
+        val addedLogKeys = newlyAddedLogKeys(previousSnapshot, currentSnapshot)
+        return buildList {
+            add(talentCueKey(currentSnapshot, slot))
+            resourceSpendCueKey(previousSnapshot, currentSnapshot, talent)?.let(::add)
+            damageCueKey(talent, addedLogKeys)?.let(::add)
         }
     }
 
@@ -237,9 +262,112 @@ class AudioRouter(
                 talent == null -> "audio.spell.basic"
                 talent.range <= 1 && !talent.requiresTarget -> "audio.melee.light"
                 else -> "audio.spell.basic"
-            }
+        }
         return talent?.audioProfile ?: fallback
     }
+
+    private fun damageCueKey(
+        talent: com.ktome.core.snapshot.TalentSlotSnapshot?,
+        addedLogKeys: List<String>,
+    ): String? {
+        if (addedLogKeys.any(::isTalentMissLogKey)) {
+            return null
+        }
+        if (addedLogKeys.none(::isTalentDamageLogKey)) {
+            return null
+        }
+        return when (talent?.damageTypeIconKey) {
+            "icon.damage_type.physical" -> "audio.damage.physical_hit"
+            "icon.damage_type.fire" -> "audio.damage.fire_hit"
+            "icon.damage_type.cold" -> "audio.damage.cold_hit"
+            "icon.damage_type.lightning" -> "audio.damage.lightning_hit"
+            "icon.damage_type.holy" -> "audio.damage.holy_hit"
+            "icon.damage_type.shadow" -> "audio.damage.shadow_hit"
+            else -> null
+        }
+    }
+
+    private fun resourceSpendCueKey(
+        previous: RenderSnapshot,
+        current: RenderSnapshot,
+        talent: com.ktome.core.snapshot.TalentSlotSnapshot?,
+    ): String? =
+        if (current.uiState.playerStatus.currentResource < previous.uiState.playerStatus.currentResource) {
+            resourceCueKey(talent?.resourceTypeId ?: current.uiState.playerStatus.resourceTypeId, restoring = false)
+        } else {
+            null
+        }
+
+    private fun snapshotTransitionCueKeys(
+        previous: RenderSnapshot,
+        current: RenderSnapshot,
+    ): List<String> {
+        val cues = linkedSetOf<String>()
+        newlyAddedLogKeys(previous, current)
+            .mapNotNull(::logCueKey)
+            .forEach(cues::add)
+        resourceRestoreCueKey(previous, current)?.let(cues::add)
+        newlyAddedInventoryItemAudioProfile(previous, current)?.let(cues::add)
+        newlyVisibleGroundItemAudioProfile(previous, current)?.let(cues::add)
+        return cues.toList()
+    }
+
+    private fun newlyAddedLogKeys(
+        previous: RenderSnapshot,
+        current: RenderSnapshot,
+    ): List<String> =
+        firstAddedValues(
+            previous = previous.logEvents.map { event -> event.message.key },
+            current = current.logEvents.map { event -> event.message.key },
+        )
+
+    private fun logCueKey(messageKey: String): String? =
+        when (messageKey) {
+            "log.level_up" -> "audio.ui.level_up"
+            "log.talent.unlock" -> "audio.ui.talent_unlock"
+            "log.objective.progress", "log.objective.advance" -> "audio.objective.progress"
+            "log.route.advance" -> "audio.route.transition"
+            "log.victory", "log.victory.escape" -> "audio.route.complete"
+            else -> null
+        }
+
+    private fun isTalentDamageLogKey(messageKey: String): Boolean =
+        when (messageKey) {
+            "log.talent.damage",
+            "log.talent.damage_crit",
+            -> true
+
+            else -> false
+        }
+
+    private fun isTalentMissLogKey(messageKey: String): Boolean =
+        when (messageKey) {
+            "log.talent.miss" -> true
+
+            else -> false
+        }
+
+    private fun resourceRestoreCueKey(
+        previous: RenderSnapshot,
+        current: RenderSnapshot,
+    ): String? =
+        if (current.uiState.playerStatus.currentResource > previous.uiState.playerStatus.currentResource) {
+            resourceCueKey(current.uiState.playerStatus.resourceTypeId, restoring = true)
+        } else {
+            null
+        }
+
+    private fun resourceCueKey(
+        resourceTypeId: String,
+        restoring: Boolean,
+    ): String? =
+        when (resourceTypeId.uppercase()) {
+            "MANA" -> if (restoring) "audio.resource.mana.restore" else "audio.resource.mana.spend"
+            "STAMINA" -> if (restoring) "audio.resource.stamina.restore" else "audio.resource.stamina.spend"
+            "ENERGY" -> if (restoring) "audio.resource.energy.restore" else "audio.resource.energy.spend"
+            "POSITIVE_ENERGY" -> if (restoring) "audio.resource.positive_energy.restore" else "audio.resource.positive_energy.spend"
+            else -> null
+        }
 
     private fun moveCueKey(
         previousSnapshot: RenderSnapshot,
@@ -256,6 +384,57 @@ class AudioRouter(
 
     private fun play(key: String) {
         sink.emit(resolveExact(key))
+    }
+
+    private fun newlyAddedInventoryItemAudioProfile(
+        previous: RenderSnapshot?,
+        current: RenderSnapshot,
+    ): String? =
+        firstAddedAudioProfile(
+            previous = previous?.uiState?.inventory.orEmpty().mapNotNull { entry -> entry.item.audioProfile },
+            current = current.uiState.inventory.mapNotNull { entry -> entry.item.audioProfile },
+        )
+
+    private fun newlyVisibleGroundItemAudioProfile(
+        previous: RenderSnapshot?,
+        current: RenderSnapshot,
+    ): String? =
+        firstAddedAudioProfile(
+            previous = previous.visibleGroundItemAudioProfiles(),
+            current = current.visibleGroundItemAudioProfiles(),
+        )
+
+    private fun RenderSnapshot?.visibleGroundItemAudioProfiles(): List<String> =
+        this?.mapCells
+            .orEmpty()
+            .flatMap { cell -> cell.items }
+            .mapNotNull { item -> item.audioProfile }
+
+    private fun firstAddedAudioProfile(
+        previous: List<String>,
+        current: List<String>,
+    ): String? {
+        return firstAddedValues(previous, current).firstOrNull()
+    }
+
+    private fun firstAddedValues(
+        previous: List<String>,
+        current: List<String>,
+    ): List<String> {
+        if (current.isEmpty()) {
+            return emptyList()
+        }
+        val remaining = previous.groupingBy { it }.eachCount().toMutableMap()
+        val added = mutableListOf<String>()
+        current.forEach { audioProfile ->
+            val previousCount = remaining[audioProfile] ?: 0
+            if (previousCount == 0) {
+                added += audioProfile
+            } else {
+                remaining[audioProfile] = previousCount - 1
+            }
+        }
+        return added
     }
 
     private fun transitionBackdrop(key: String?) {

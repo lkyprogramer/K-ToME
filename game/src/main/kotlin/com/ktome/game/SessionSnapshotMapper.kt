@@ -21,6 +21,7 @@ import com.ktome.core.ecs.Name
 import com.ktome.core.ecs.PatrolRoute
 import com.ktome.core.ecs.PlayerControlled
 import com.ktome.core.ecs.Position
+import com.ktome.core.ecs.ResistanceProfile
 import com.ktome.core.ecs.Stats
 import com.ktome.core.ecs.Stair
 import com.ktome.core.ecs.Stamina
@@ -45,6 +46,7 @@ import com.ktome.core.map.Point
 import com.ktome.core.resource.ResourcePoolSnapshot
 import com.ktome.core.resource.ResourcePools
 import com.ktome.core.resource.ResourceType
+import com.ktome.core.resource.StaminaPools
 import com.ktome.core.save.AIBehaviorSnapshot
 import com.ktome.core.save.ActiveEffectSnapshot
 import com.ktome.core.save.CombatProfileSnapshot
@@ -161,8 +163,18 @@ internal object SessionSnapshotMapper {
             world.get<Health>(entity)?.let { health ->
                 snapshot.healthCurrent?.let { health.current = it.coerceIn(0, health.max) }
             }
-            world.get<Stamina>(entity)?.let { stamina ->
-                snapshot.staminaCurrent?.let { stamina.current = it.coerceIn(0, stamina.max) }
+            val snapshotStamina =
+                snapshot.resourcePools
+                    .firstOrNull { pool -> pool.type == ResourceType.STAMINA.name }
+                    ?.current
+                    ?: snapshot.staminaCurrent
+            if (snapshotStamina != null && world.get<Stamina>(entity) != null) {
+                StaminaPools.syncTo(
+                    world = world,
+                    entityId = entity,
+                    nextCurrent = snapshotStamina,
+                    nextMax = StaminaPools.max(world, entity),
+                )
             }
         }
         return world
@@ -183,6 +195,8 @@ internal object SessionSnapshotMapper {
             timestampEpochMillis = System.currentTimeMillis(),
             worldSeed = config.seed,
             currentZoneId = config.zoneId,
+            zoneRoute = config.zoneRoute,
+            routeIndex = config.routeIndex,
             floorIndex = currentFloor,
             mapWidth = config.width,
             mapHeight = config.height,
@@ -226,6 +240,8 @@ internal object SessionSnapshotMapper {
                     messageLogSize = snapshot.messageLogSize,
                     zoneId = snapshot.currentZoneId,
                     playerProfessionId = snapshot.playerProfessionId,
+                    zoneRoute = snapshot.zoneRoute,
+                    routeIndex = snapshot.routeIndex,
                 ),
             currentFloor = snapshot.floorIndex,
             turnCount = snapshot.turnCount,
@@ -255,8 +271,9 @@ internal object SessionSnapshotMapper {
     private fun captureEntity(
         world: World,
         entityId: EntityId,
-    ): EntitySnapshot =
-        EntitySnapshot(
+    ): EntitySnapshot {
+        val staminaPool = world.get<ResourcePools>(entityId)?.pool(ResourceType.STAMINA)
+        return EntitySnapshot(
             id = entityId.value,
             position = world.get<Position>(entityId)?.toPoint()?.let(PointSnapshot::from),
             blocksMovement = world.get<BlocksMovement>(entityId)?.value == true,
@@ -264,7 +281,7 @@ internal object SessionSnapshotMapper {
             stats = world.get<Stats>(entityId)?.let(::toStatsSnapshot),
             combatProfile = world.get<CombatProfile>(entityId)?.let(::toCombatProfileSnapshot),
             healthCurrent = world.get<Health>(entityId)?.current,
-            staminaCurrent = world.get<Stamina>(entityId)?.current,
+            staminaCurrent = staminaPool?.current ?: world.get<Stamina>(entityId)?.current,
             energyCurrent = world.get<Energy>(entityId)?.current,
             experience = world.get<Experience>(entityId)?.let(::toExperienceSnapshot),
             experienceReward = world.get<ExperienceReward>(entityId)?.value,
@@ -308,6 +325,7 @@ internal object SessionSnapshotMapper {
             interactableId = world.get<Interactable>(entityId)?.id,
             stair = world.get<Stair>(entityId)?.let { StairSnapshot(direction = it.direction.name) },
         )
+    }
 
     private fun restoreEntity(
         world: World,
@@ -325,7 +343,12 @@ internal object SessionSnapshotMapper {
         snapshot.stats?.let { stats -> world.add(entityId, toStats(stats)) }
         snapshot.combatProfile?.let { profile -> world.add(entityId, toCombatProfile(profile)) }
         snapshot.healthCurrent?.let { current -> world.add(entityId, Health(current = current, max = current)) }
-        snapshot.staminaCurrent?.let { current -> world.add(entityId, Stamina(current = current, max = current)) }
+        val staminaPoolSnapshot = snapshot.resourcePools.firstOrNull { pool -> pool.type == ResourceType.STAMINA.name }
+        val staminaCurrent = staminaPoolSnapshot?.current ?: snapshot.staminaCurrent
+        val staminaMax = staminaPoolSnapshot?.max ?: snapshot.staminaCurrent
+        if (staminaCurrent != null && staminaMax != null) {
+            world.add(entityId, Stamina(current = staminaCurrent.coerceIn(0, staminaMax), max = staminaMax))
+        }
         snapshot.energyCurrent?.let { current -> world.add(entityId, Energy(current)) }
         snapshot.experience?.let { experience -> world.add(entityId, toExperience(experience)) }
         snapshot.experienceReward?.let { reward -> world.add(entityId, ExperienceReward(reward)) }
@@ -585,6 +608,11 @@ internal object SessionSnapshotMapper {
             StatusEffectType.ARCANE_SHIELD_BUFF -> localizer.text("status.arcane_shield_buff")
             StatusEffectType.UNYIELDING_BUFF -> localizer.text("status.unyielding_buff")
             StatusEffectType.MANA_SURGE_BUFF -> localizer.text("status.mana_surge_buff")
+            StatusEffectType.STEALTH_BUFF -> localizer.text("status.stealth_buff")
+            StatusEffectType.CURSED -> localizer.text("status.cursed")
+            StatusEffectType.HOLY_SHIELD_BUFF -> localizer.text("status.holy_shield_buff")
+            StatusEffectType.DEVOTION_BUFF -> localizer.text("status.devotion_buff")
+            StatusEffectType.HOLY_AURA_BUFF -> localizer.text("status.holy_aura_buff")
         }
 
     private fun toItemSnapshot(item: ItemInstance): ItemSnapshot =
@@ -737,6 +765,14 @@ internal object SessionSnapshotMapper {
         world.add(entityId, Glyph(template.glyph))
         world.add(entityId, DisplayColor(template.colorHex))
         world.add(entityId, Name(template.name))
+        if (template.resistances.isNotEmpty()) {
+            world.add(
+                entityId,
+                ResistanceProfile(
+                    values = template.resistances.entries.associateTo(linkedMapOf()) { (type, value) -> type to value },
+                ),
+            )
+        }
     }
 
     private fun applyItemPresentation(

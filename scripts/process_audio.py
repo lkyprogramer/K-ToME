@@ -79,6 +79,21 @@ def require_tool(name: str) -> str:
     return path
 
 
+def select_primary_cue_family(cue_families: list[str]) -> str:
+    family_set = set(cue_families)
+    if family_set == {"ambience", "zone"}:
+        return "ambience"
+    if "talent" in family_set:
+        return "talent"
+    if "profession" in family_set:
+        return "profession"
+    if "resource" in family_set:
+        return "resource"
+    if "damage" in family_set:
+        return "damage"
+    return cue_families[0]
+
+
 def parse_manifest(manifest_path: pathlib.Path) -> list[AudioAsset]:
     payload = load_json(manifest_path)
     entries = payload.get("entries")
@@ -108,16 +123,10 @@ def parse_manifest(manifest_path: pathlib.Path) -> list[AudioAsset]:
     assets: list[AudioAsset] = []
     for source_path, bucket in sorted(grouped.items()):
         cue_families = sorted(str(value) for value in bucket["cueFamilies"])
-        allowed_shared_families = (
-            source_path == "audio/fallback/silence.ogg" or
-            set(cue_families) == {"ambience", "zone"}
-        )
-        if len(cue_families) > 1 and not allowed_shared_families:
-            raise ValueError(f"Conflicting cue families for sourcePath '{source_path}': {cue_families}")
         assets.append(
             AudioAsset(
                 source_path=source_path,
-                cue_family="ambience" if set(cue_families) == {"ambience", "zone"} else cue_families[0],
+                cue_family=select_primary_cue_family(cue_families),
                 event_ids=tuple(sorted(set(bucket["eventIds"]))),
                 keys=tuple(sorted(set(bucket["keys"]))),
             ),

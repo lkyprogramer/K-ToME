@@ -23,3 +23,63 @@ objectiveSets:
         anchor: stairs_up
         offset: { x: 1, y: 0 }
     completionRule: defeat_zone_boss
+  - id: greenwood_signal_hunt
+    nameKey: objective.greenwood_signal_hunt.name
+    descKey: objective.greenwood_signal_hunt.desc
+    schemaVersion: 2
+    tags: [objective, route]
+    interactables: [trail_cache, warden_beacon, hunter_snare]
+    placements:
+      - interactableId: trail_cache
+        floor: 1
+        anchor: player_start
+        offset: { x: 1, y: 0 }
+      - interactableId: warden_beacon
+        floor: 1
+        anchor: room_center
+        offset: { x: 0, y: 0 }
+      - interactableId: hunter_snare
+        floor: 2
+        anchor: stairs_up
+        offset: { x: 1, y: 0 }
+    completionRule: explore_floor_pair
+  - id: deep_iron_pit_forge_run
+    nameKey: objective.deep_iron_pit_forge_run.name
+    descKey: objective.deep_iron_pit_forge_run.desc
+    schemaVersion: 2
+    tags: [objective, route]
+    interactables: [ore_stash, mine_furnace, slag_valve]
+    placements:
+      - interactableId: ore_stash
+        floor: 1
+        anchor: room_center
+        offset: { x: 0, y: 0 }
+      - interactableId: mine_furnace
+        floor: 2
+        anchor: boss_entry
+        offset: { x: 0, y: 0 }
+      - interactableId: slag_valve
+        floor: 2
+        anchor: stairs_up
+        offset: { x: 1, y: 0 }
+    completionRule: secure_forge_path
+  - id: grey_gate_seal_rite
+    nameKey: objective.grey_gate_seal_rite.name
+    descKey: objective.grey_gate_seal_rite.desc
+    schemaVersion: 2
+    tags: [objective, route]
+    interactables: [seal_cache, ritual_altar, shadow_brazier]
+    placements:
+      - interactableId: seal_cache
+        floor: 1
+        anchor: player_start
+        offset: { x: 1, y: 0 }
+      - interactableId: shadow_brazier
+        floor: 1
+        anchor: room_center
+        offset: { x: 0, y: 0 }
+      - interactableId: ritual_altar
+        floor: 2
+        anchor: boss_entry
+        offset: { x: 0, y: 0 }
+    completionRule: defeat_zone_boss

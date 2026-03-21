@@ -34,6 +34,23 @@ audioProfiles:
   - id: audio.talent.arcane_shield
   - id: audio.talent.blink
   - id: audio.talent.mana_surge
+  - id: audio.talent.backstab
+  - id: audio.talent.poison_blade
+  - id: audio.talent.stealth
+  - id: audio.talent.smoke_bomb
+  - id: audio.talent.roll
+  - id: audio.talent.blade_flurry
+  - id: audio.talent.shadowstep
+  - id: audio.talent.deathblow
+  - id: audio.talent.holy_strike
+  - id: audio.talent.judgment_hammer
+  - id: audio.talent.holy_light
+  - id: audio.talent.holy_shield
+  - id: audio.talent.devotion
+  - id: audio.talent.holy_aura
+  - id: audio.talent.purify
+  - id: audio.talent.divine_intervention
+  - id: audio.monster.default
   - id: audio.monster.beast.rat
   - id: audio.monster.undead.bone_archer
   - id: audio.monster.bandit.sentry

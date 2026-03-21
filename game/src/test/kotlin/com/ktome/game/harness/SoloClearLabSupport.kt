@@ -50,7 +50,7 @@ import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
 import kotlinx.serialization.json.putJsonObject
 
-internal const val SOLO_CLEAR_SCRIPT_VERSION: String = "solo-clear-lab-v1"
+internal const val SOLO_CLEAR_SCRIPT_VERSION: String = "solo-clear-lab-v2"
 
 internal enum class SoloClearScenario(
     val seed: Long,
@@ -164,6 +164,7 @@ internal class SoloClearLabHarness(
         val resourceTimeline = mutableListOf<Int>()
         var sawBossWarning = false
         var sawTalentTelegraph = false
+        var sawResourceRestoreLog = false
         var failureReason: String? = null
         var turnCount = 0
 
@@ -171,6 +172,8 @@ internal class SoloClearLabHarness(
             val snapshot = session.renderSnapshot()
             sawBossWarning = sawBossWarning || snapshot.overlays.any { it.sourceAbilityId == "bandit_captain_encounter" }
             sawTalentTelegraph = sawTalentTelegraph || snapshot.overlays.any { it.id.startsWith("telegraph:") }
+            sawResourceRestoreLog =
+                sawResourceRestoreLog || snapshot.logEvents.any { event -> event.message.key == "log.talent.resource_restore" }
 
             val observation = RunObservationCapture.capture(session, turnCount)
             resourceTimeline += observation.playerResource.current
@@ -205,9 +208,20 @@ internal class SoloClearLabHarness(
         val finalSnapshot = session.renderSnapshot()
         sawBossWarning = sawBossWarning || finalSnapshot.overlays.any { it.sourceAbilityId == "bandit_captain_encounter" }
         sawTalentTelegraph = sawTalentTelegraph || finalSnapshot.overlays.any { it.id.startsWith("telegraph:") }
+        sawResourceRestoreLog =
+            sawResourceRestoreLog || finalSnapshot.logEvents.any { event -> event.message.key == "log.talent.resource_restore" }
 
         if (failureReason == null) {
-            failureReason = validateRuntime(runtime, finalObservation, resourceTimeline, sawBossWarning, sawTalentTelegraph)
+            failureReason =
+                validateRuntime(
+                    runtime = runtime,
+                    observation = finalObservation,
+                    commandTrace = commandTrace,
+                    resourceTimeline = resourceTimeline,
+                    sawBossWarning = sawBossWarning,
+                    sawTalentTelegraph = sawTalentTelegraph,
+                    sawResourceRestoreLog = sawResourceRestoreLog,
+                )
         }
 
         val success = failureReason == null
@@ -326,9 +340,11 @@ internal class SoloClearLabHarness(
     private fun validateRuntime(
         runtime: SoloClearRuntime,
         observation: RunObservation,
+        commandTrace: List<String>,
         resourceTimeline: List<Int>,
         sawBossWarning: Boolean,
         sawTalentTelegraph: Boolean,
+        sawResourceRestoreLog: Boolean,
     ): String? {
         val session = runtime.session
         val world = session.automationWorld()
@@ -363,9 +379,21 @@ internal class SoloClearLabHarness(
             }
         }
 
+        if (runtime.scenario == SoloClearScenario.MOB_PACK && commandTrace.none { command -> command.startsWith("UseTalent(") }) {
+            return "Solo clear script did not execute any talent command."
+        }
+
         if (runtime.professionId == "rogue" && runtime.scenario == SoloClearScenario.MOB_PACK) {
-            if ((resourceTimeline.maxOrNull() ?: runtime.initialResource) <= runtime.initialResource) {
-                return "Rogue ENERGY did not increase after successful hits."
+            val spentResource = resourceTimeline.zipWithNext().any { (before, after) -> after < before }
+            val restoredResource = resourceTimeline.zipWithNext().any { (before, after) -> after > before }
+            if (!spentResource) {
+                return "Rogue ENERGY never dropped, so the spend loop was not exercised."
+            }
+            if (!restoredResource) {
+                return "Rogue ENERGY never recovered after talent usage or successful hits."
+            }
+            if (!sawResourceRestoreLog) {
+                return "Rogue ENERGY recovered only through passive turn regen; hit-driven restore was never observed."
             }
         }
 
@@ -374,7 +402,9 @@ internal class SoloClearLabHarness(
             if (peak <= runtime.initialResource) {
                 return "Templar POSITIVE_ENERGY never increased during combat."
             }
-            if ((resourceTimeline.lastOrNull() ?: peak) >= peak) {
+            val peakIndex = resourceTimeline.indexOfFirst { value -> value == peak }
+            val decayedAfterPeak = resourceTimeline.drop(peakIndex + 1).any { value -> value < peak }
+            if (!decayedAfterPeak) {
                 return "Templar POSITIVE_ENERGY did not decay after combat ended."
             }
         }
@@ -686,17 +716,27 @@ private data class SoloClearRuntime(
 
 private class SoloClearScriptBot : RunBot {
     override fun decide(observation: RunObservation): PlayerCommand? {
+        lootFollowUp(observation)?.let { return it }
         useEmergencyConsumable(observation)?.let { return it }
         useEmergencyTalent(observation)?.let { return it }
         useOffensiveTalent(observation)?.let { return it }
-        nearestHostile(observation)?.let { hostile ->
-            if (hostile.chebyshevDistanceTo(observation.playerPosition) <= 1) {
-                return PlayerCommand.Move(hostile.deltaFrom(observation.playerPosition))
-            }
-            val nextStep = stepToward(observation, hostile) ?: return PlayerCommand.Wait
-            return PlayerCommand.Move(nextStep.deltaFrom(observation.playerPosition))
-        }
+        pursueVisibleHostile(observation)?.let { return it }
         return PlayerCommand.Wait
+    }
+
+    private fun lootFollowUp(observation: RunObservation): PlayerCommand? {
+        if (observation.visibleHostilePositions.isNotEmpty()) {
+            return null
+        }
+        if (observation.visibleGroundItemPositions.any { point -> point == observation.playerPosition }) {
+            return PlayerCommand.PickUp
+        }
+        val target =
+            observation.visibleGroundItemPositions
+                .minByOrNull { point -> point.chebyshevDistanceTo(observation.playerPosition) }
+                ?: return null
+        val nextStep = stepToward(observation, target) ?: return null
+        return PlayerCommand.Move(nextStep.deltaFrom(observation.playerPosition))
     }
 
     private fun useEmergencyConsumable(observation: RunObservation): PlayerCommand? {
@@ -713,10 +753,19 @@ private class SoloClearScriptBot : RunBot {
         if (!lowHealth) {
             return null
         }
+        availableTalent(observation, "holy_light")?.let { return PlayerCommand.UseTalent(it.slot) }
+        availableTalent(observation, "divine_intervention")?.let { return PlayerCommand.UseTalent(it.slot) }
+        availableTalent(observation, "holy_shield")?.let { return PlayerCommand.UseTalent(it.slot) }
+        availableTalent(observation, "stealth")?.let { return PlayerCommand.UseTalent(it.slot) }
         availableTalent(observation, "unyielding")?.let { return PlayerCommand.UseTalent(it.slot) }
         availableTalent(observation, "arcane_shield")?.let { return PlayerCommand.UseTalent(it.slot) }
         availableTalent(observation, "guard_stance")?.let { return PlayerCommand.UseTalent(it.slot) }
         availableTalent(observation, "blink")?.let { slot ->
+            retreatPoint(observation, slot)?.let { target ->
+                return PlayerCommand.UseTalent(slot.slot, target)
+            }
+        }
+        availableTalent(observation, "roll")?.let { slot ->
             retreatPoint(observation, slot)?.let { target ->
                 return PlayerCommand.UseTalent(slot.slot, target)
             }
@@ -728,18 +777,36 @@ private class SoloClearScriptBot : RunBot {
         val nearest = nearestHostile(observation) ?: return null
         val adjacentHostiles = hostilesWithin(observation, 1)
         val nearbyHostiles = hostilesWithin(observation, 2)
+        val lowHealth = observation.playerStatus.currentHp * 100 <= observation.playerStatus.maxHp * 70
 
         if (adjacentHostiles >= 2) {
+            availableTalent(observation, "blade_flurry")?.let { return PlayerCommand.UseTalent(it.slot, nearest) }
+            availableTalent(observation, "holy_aura")?.let { return PlayerCommand.UseTalent(it.slot) }
             availableTalent(observation, "sweeping_strike")?.let { return PlayerCommand.UseTalent(it.slot, nearest) }
             availableTalent(observation, "frost_nova")?.let { return PlayerCommand.UseTalent(it.slot) }
         }
         if (nearbyHostiles >= 2) {
+            availableTalent(observation, "smoke_bomb")?.let { return PlayerCommand.UseTalent(it.slot) }
             availableTalent(observation, "war_cry")?.let { return PlayerCommand.UseTalent(it.slot) }
             availableTalent(observation, "intimidation")?.let { return PlayerCommand.UseTalent(it.slot) }
         }
         if (observation.playerResource.typeId == "MANA" && observation.playerResource.current * 100 <= observation.playerResource.max * 40) {
             availableTalent(observation, "mana_surge")?.let { return PlayerCommand.UseTalent(it.slot) }
         }
+        if (lowHealth) {
+            availableTalent(observation, "holy_light")?.let { return PlayerCommand.UseTalent(it.slot) }
+        }
+        if (nearbyHostiles >= 1) {
+            availableTalent(observation, "devotion")?.let { return PlayerCommand.UseTalent(it.slot) }
+            availableTalent(observation, "holy_shield")?.let { return PlayerCommand.UseTalent(it.slot) }
+            availableTalent(observation, "stealth")?.let { return PlayerCommand.UseTalent(it.slot) }
+        }
+        availableTargetedTalent(observation, nearest, "shadowstep")?.let { return it }
+        availableTargetedTalent(observation, nearest, "judgment_hammer")?.let { return it }
+        availableTargetedTalent(observation, nearest, "deathblow")?.let { return it }
+        availableTargetedTalent(observation, nearest, "poison_blade")?.let { return it }
+        availableTargetedTalent(observation, nearest, "backstab")?.let { return it }
+        availableTargetedTalent(observation, nearest, "holy_strike")?.let { return it }
         availableTargetedTalent(observation, nearest, "ice_prison")?.let { return it }
         availableTargetedTalent(observation, nearest, "shield_bash")?.let { return it }
         availableTargetedTalent(observation, nearest, "sunder_armor")?.let { return it }
@@ -768,6 +835,29 @@ private class SoloClearScriptBot : RunBot {
         return PlayerCommand.UseTalent(slot.slot, target)
     }
 
+    private fun pursueVisibleHostile(observation: RunObservation): PlayerCommand? {
+        val playerPosition = observation.playerPosition
+        val target =
+            observation.visibleHostilePositions
+                .minByOrNull { hostile -> hostile.chebyshevDistanceTo(playerPosition) }
+                ?: return null
+        if (target.chebyshevDistanceTo(playerPosition) <= 1) {
+            return PlayerCommand.Move(target.deltaFrom(playerPosition))
+        }
+        observation.visibleHostilePositions
+            .sortedWith(compareBy<Point> { hostile -> hostile.chebyshevDistanceTo(playerPosition) }.thenBy(Point::y).thenBy(Point::x))
+            .forEach { hostile ->
+                val nextStep = stepToward(observation, hostile) ?: return@forEach
+                return PlayerCommand.Move(nextStep.deltaFrom(playerPosition))
+            }
+        val directStep = target.deltaFrom(playerPosition)
+        val directPoint = playerPosition + directStep
+        if (observation.map.isInBounds(directPoint.x, directPoint.y) && !observation.map.blocksMovement(directPoint.x, directPoint.y)) {
+            return PlayerCommand.Move(directStep)
+        }
+        return PlayerCommand.Wait
+    }
+
     private fun availableTalent(
         observation: RunObservation,
         talentId: String,
@@ -775,6 +865,7 @@ private class SoloClearScriptBot : RunBot {
         observation.talentSlots.firstOrNull { slot ->
             slot.talentId == talentId &&
                 slot.currentCooldown <= 0 &&
+                slot.resourceTypeId == observation.playerResource.typeId &&
                 slot.resourceCost <= observation.playerResource.current
         }
 

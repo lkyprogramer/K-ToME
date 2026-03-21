@@ -22,4 +22,4 @@ bossEncounters:
     bossTemplateId: cultist.dungeon_lord
     arenaId: arena.grey_gate_depths.boss
     phases: [phase_foundation]
-    rewards: [loot.foundation.boss]
+    rewards: [loot.foundation.boss, loot.grey_gate_depths.reward]

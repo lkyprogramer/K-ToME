@@ -86,6 +86,7 @@ class HeadlessRunHarness(
                 seed = spec.seed,
                 zoneId = spec.zoneId,
                 professionId = spec.professionId,
+                routeIndex = session.config.routeIndex,
                 success = false,
                 outcome = session.runOutcome(),
                 floorReached = session.currentFloor(),
@@ -132,6 +133,8 @@ class HeadlessRunHarness(
                     seed = spec.seed,
                     zoneId = spec.zoneId,
                     playerProfessionId = spec.professionId,
+                    zoneRoute = spec.zoneRoute,
+                    routeIndex = spec.routeIndex,
                 ),
             saveManager = saveManager,
         )
@@ -140,6 +143,7 @@ class HeadlessRunHarness(
         session: FoundationGameSession,
         saveManager: SaveManager,
     ): CheckpointRoundTripResult {
+        val configBefore = session.config
         val floorBefore = session.currentFloor()
         val inventoryBefore = session.inventoryItems().map { it.name }
         if (!session.perform(PlayerCommand.SaveGame)) {
@@ -151,6 +155,27 @@ class HeadlessRunHarness(
         val inventoryAfter = loaded.inventoryItems().map { it.name }
         if (loaded.currentFloor() != floorBefore) {
             return CheckpointRoundTripResult(failureReason = "Checkpoint reload changed floor from $floorBefore to ${loaded.currentFloor()}.")
+        }
+        if (loaded.config.zoneId != configBefore.zoneId) {
+            return CheckpointRoundTripResult(
+                failureReason = "Checkpoint reload changed zone from ${configBefore.zoneId} to ${loaded.config.zoneId}.",
+            )
+        }
+        if (loaded.config.playerProfessionId != configBefore.playerProfessionId) {
+            return CheckpointRoundTripResult(
+                failureReason =
+                    "Checkpoint reload changed profession from ${configBefore.playerProfessionId} to ${loaded.config.playerProfessionId}.",
+            )
+        }
+        if (loaded.config.routeIndex != configBefore.routeIndex) {
+            return CheckpointRoundTripResult(
+                failureReason = "Checkpoint reload changed routeIndex from ${configBefore.routeIndex} to ${loaded.config.routeIndex}.",
+            )
+        }
+        if (loaded.config.zoneRoute != configBefore.zoneRoute) {
+            return CheckpointRoundTripResult(
+                failureReason = "Checkpoint reload changed zoneRoute from ${configBefore.zoneRoute} to ${loaded.config.zoneRoute}.",
+            )
         }
         if (inventoryAfter != inventoryBefore) {
             return CheckpointRoundTripResult(failureReason = "Checkpoint reload changed inventory order/content.")

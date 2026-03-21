@@ -2,6 +2,7 @@ package com.ktome.game.harness
 
 import com.ktome.core.map.Point
 import com.ktome.core.pathfinding.AStar
+import com.ktome.core.snapshot.ActorRoleKindSnapshot
 import com.ktome.game.FoundationGameSession
 import com.ktome.game.PlayerCommand
 import java.nio.file.Files
@@ -82,6 +83,14 @@ object RunObservationCapture {
                 .filterNot { it.isPlayer }
                 .map { it.position }
                 .toSet()
+        val visibleBossPositions =
+            session.renderSnapshot().actors
+                .asSequence()
+                .filter { actor -> !actor.isPlayer && actor.roleKind == ActorRoleKindSnapshot.BOSS }
+                .map { actor -> Point(actor.x, actor.y) }
+                .distinct()
+                .sortedWith(compareBy<Point> { it.y }.thenBy { it.x })
+                .toList()
 
         return RunObservation(
             floor = session.currentFloor(),
@@ -93,6 +102,7 @@ object RunObservationCapture {
             visibleTiles = visibleTiles,
             exploredTiles = exploredTiles,
             visibleHostilePositions = session.targetableHostilePositions(),
+            visibleBossPositions = visibleBossPositions,
             visibleBlockingPositions = visibleBlockingPositions,
             visibleGroundItemPositions = visibleGroundItemPositions,
             visibleInteractables = visibleInteractables,

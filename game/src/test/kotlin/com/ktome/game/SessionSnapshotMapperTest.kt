@@ -1,8 +1,10 @@
 package com.ktome.game
 
 import com.ktome.core.dungeon.FloorState
+import com.ktome.core.ecs.get
 import com.ktome.core.map.GameMap
 import com.ktome.core.map.Point
+import com.ktome.core.resource.ResourcePoolSnapshot
 import com.ktome.core.save.ActiveEffectSnapshot
 import com.ktome.core.save.EntitySnapshot
 import com.ktome.core.save.EquipmentSnapshot
@@ -13,10 +15,55 @@ import com.ktome.core.save.PointSnapshot
 import com.ktome.core.save.SaveSnapshot
 import com.ktome.core.save.StatModifierSnapshot
 import com.ktome.core.save.TalentLoadoutSnapshot
+import com.ktome.core.talent.TalentRegistry
+import com.ktome.game.data.DataLoader
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 
 class SessionSnapshotMapperTest {
+    @Test
+    fun `restore world prefers stamina resource pool over legacy stamina current`() {
+        val content = content()
+        val player =
+            PlayerSnapshot(
+                entity =
+                    EntitySnapshot(
+                        id = 1,
+                        position = PointSnapshot(1, 1),
+                        stats = com.ktome.core.save.StatsSnapshot(str = 10, dex = 10, con = 10, wil = 10),
+                        combatProfile =
+                            com.ktome.core.save.CombatProfileSnapshot(
+                                baseAttack = 5,
+                                baseDefense = 2,
+                                baseHp = 50,
+                                baseStamina = 40,
+                            ),
+                        staminaCurrent = 5,
+                        resourcePools =
+                            listOf(
+                                ResourcePoolSnapshot(type = "STAMINA", current = 23, max = 90),
+                            ),
+                        isPlayerControlled = true,
+                    ),
+            )
+        val floor =
+            FloorRuntimeState(
+                map = GameMap.fromAscii(rows = listOf(".....", ".....", "....."), playerStart = Point(1, 1)),
+                stairsDown = Point(4, 1),
+                exploredTiles = linkedSetOf(Point(1, 1)),
+                entities = mutableListOf(),
+            )
+
+        val world = SessionSnapshotMapper.restoreWorld(content, player, floor)
+        val restoredPlayer = com.ktome.core.ecs.EntityId(1)
+        val stamina = requireNotNull(world.get<com.ktome.core.ecs.Stamina>(restoredPlayer))
+        val pool = requireNotNull(requireNotNull(world.get<com.ktome.core.resource.ResourcePools>(restoredPlayer)).pool(com.ktome.core.resource.ResourceType.STAMINA))
+
+        assertEquals(23, stamina.current)
+        assertEquals(23, pool.current)
+        assertEquals(stamina.max, pool.max)
+    }
+
     @Test
     fun `to save snapshot canonicalizes collection ordering and preserves semantic ids`() {
         val player =
@@ -90,7 +137,15 @@ class SessionSnapshotMapperTest {
 
         val snapshot =
             SessionSnapshotMapper.toSaveSnapshot(
-                config = FoundationGameConfig(width = 5, height = 5, zoneId = "shattered_outpost", playerProfessionId = "vanguard"),
+                config =
+                    FoundationGameConfig(
+                        width = 5,
+                        height = 5,
+                        zoneId = "greenwood_fringe",
+                        playerProfessionId = "vanguard",
+                        zoneRoute = FOUNDATION_ZONE_ROUTE,
+                        routeIndex = 1,
+                    ),
                 currentFloor = 1,
                 turnCount = 12,
                 player = player,
@@ -101,7 +156,9 @@ class SessionSnapshotMapperTest {
                 activeTurnActorId = 1,
             )
 
-        assertEquals("shattered_outpost", snapshot.currentZoneId)
+        assertEquals("greenwood_fringe", snapshot.currentZoneId)
+        assertEquals(FOUNDATION_ZONE_ROUTE, snapshot.zoneRoute)
+        assertEquals(1, snapshot.routeIndex)
         assertEquals("vanguard", snapshot.playerProfessionId)
         assertEquals(listOf(21, 31), snapshot.player.carriedEntities.map(EntitySnapshot::id))
         assertEquals(listOf("ARMOR", "WEAPON"), snapshot.player.entity.equipment?.slots?.keys?.toList())
@@ -122,6 +179,8 @@ class SessionSnapshotMapperTest {
                 timestampEpochMillis = 1L,
                 worldSeed = 20260316L,
                 currentZoneId = "greenwood_fringe",
+                zoneRoute = FOUNDATION_ZONE_ROUTE,
+                routeIndex = 1,
                 floorIndex = 2,
                 mapWidth = 70,
                 mapHeight = 45,
@@ -151,5 +210,21 @@ class SessionSnapshotMapperTest {
 
         assertEquals("greenwood_fringe", restored.config.zoneId)
         assertEquals("rogue", restored.config.playerProfessionId)
+        assertEquals(FOUNDATION_ZONE_ROUTE, restored.config.zoneRoute)
+        assertEquals(1, restored.config.routeIndex)
+    }
+
+    private fun content(): GameContent {
+        val loader = DataLoader()
+        val talents = loader.loadTalentDefinitions()
+        return GameContent(
+            talents = talents,
+            talentRegistry = TalentRegistry().apply { registerAll(talents) },
+            monsterCatalog = loader.loadMonsterCatalog().monsters,
+            itemBundle = loader.loadItemBundle(),
+            bossDefinitions = loader.loadBossDefinitions(),
+            schemaCatalog = loader.loadSchemaCatalog(),
+            localizer = loader.localizer,
+        )
     }
 }

@@ -13,6 +13,8 @@ data class SaveSnapshot(
     val timestampEpochMillis: Long,
     val worldSeed: Long,
     val currentZoneId: String,
+    val zoneRoute: List<String> = listOf(currentZoneId),
+    val routeIndex: Int = 0,
     val floorIndex: Int,
     val mapWidth: Int,
     val mapHeight: Int,
@@ -41,6 +43,12 @@ data class SaveSnapshot(
         }
         require(buildMetadata.isNotBlank()) { "buildMetadata must not be blank." }
         require(currentZoneId.isNotBlank()) { "currentZoneId must not be blank." }
+        require(zoneRoute.isNotEmpty()) { "zoneRoute must not be empty." }
+        require(zoneRoute.all(String::isNotBlank)) { "zoneRoute must not contain blank zone ids." }
+        require(routeIndex in zoneRoute.indices) { "routeIndex $routeIndex must be within zoneRoute indices." }
+        require(zoneRoute[routeIndex] == currentZoneId) {
+            "currentZoneId '$currentZoneId' must match zoneRoute[$routeIndex]='${zoneRoute[routeIndex]}'."
+        }
         require(playerProfessionId.isNotBlank()) { "playerProfessionId must not be blank." }
         require(mapWidth > 0) { "Map width must be positive." }
         require(mapHeight > 0) { "Map height must be positive." }

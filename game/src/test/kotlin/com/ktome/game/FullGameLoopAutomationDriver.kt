@@ -10,6 +10,7 @@ import com.ktome.core.ecs.get
 import com.ktome.core.map.Point
 import com.ktome.core.save.SaveManager
 import com.ktome.game.factory.EntityFactory
+import com.ktome.game.harness.RunObservation
 import com.ktome.game.harness.RunObservationCapture
 import com.ktome.game.harness.SmokeBot
 import com.ktome.game.harness.consumesTurn
@@ -21,6 +22,8 @@ internal class FullGameLoopAutomationDriver(
     private val saveManager: SaveManager,
     private val config: FoundationGameConfig = FoundationGameConfig(zoneId = "shattered_outpost"),
 ) {
+    private val bot = SmokeBot()
+
     fun canContinue(): Boolean = saveManager.hasSave()
 
     fun newGame(): FoundationGameSession {
@@ -34,18 +37,28 @@ internal class FullGameLoopAutomationDriver(
         session: FoundationGameSession,
         targetFloor: Int,
     ) {
-        val bot = SmokeBot()
-        var turnCount = 0
-        var observation = RunObservationCapture.capture(session, turnCount)
-        while (session.currentFloor() < targetFloor && !observation.runOutcome.isTerminal && turnCount < 700) {
-            val command = requireNotNull(bot.decide(observation)) { "Bot failed to provide a command before floor $targetFloor." }
-            assertTrue(session.perform(command), "Command rejected while descending to floor $targetFloor: $command")
-            if (command.consumesTurn()) {
-                turnCount += 1
+        val result =
+            driveUntil(session, maxTurns = 700) { observation ->
+                observation.floor >= targetFloor
             }
-            observation = RunObservationCapture.capture(session, turnCount)
-        }
-        assertTrue(session.currentFloor() >= targetFloor, "Failed to reach floor $targetFloor, last messages=${observation.messageLogTail}")
+        assertTrue(
+            session.currentFloor() >= targetFloor,
+            "Failed to reach floor $targetFloor, last messages=${result.observation.messageLogTail}",
+        )
+    }
+
+    fun advanceUntilZone(
+        session: FoundationGameSession,
+        targetZoneId: String,
+    ) {
+        val result =
+            driveUntil(session, maxTurns = 2200) {
+                session.config.zoneId == targetZoneId || it.runOutcome.isTerminal
+            }
+        assertTrue(
+            session.config.zoneId == targetZoneId,
+            "Failed to reach zone $targetZoneId, last messages=${result.observation.messageLogTail}",
+        )
     }
 
     fun saveAndRestart(session: FoundationGameSession): FoundationGameSession {
@@ -55,18 +68,14 @@ internal class FullGameLoopAutomationDriver(
     }
 
     fun killBossForVictory(session: FoundationGameSession) {
-        val bot = SmokeBot()
-        var turnCount = 0
-        var observation = RunObservationCapture.capture(session, turnCount)
-        while (turnCount < 900 && !observation.runOutcome.isTerminal) {
-            val command = requireNotNull(bot.decide(observation)) { "Bot failed to provide a command." }
-            assertTrue(session.perform(command), "Command rejected during victory automation: $command")
-            if (command.consumesTurn()) {
-                turnCount += 1
-            }
-            observation = RunObservationCapture.capture(session, turnCount)
-        }
-        assertTrue(session.isVictory(), "Expected real victory path, last messages=${observation.messageLogTail}")
+        val result = driveUntil(session, maxTurns = 900) { observation -> observation.runOutcome.isTerminal }
+        assertTrue(session.isVictory(), "Expected real victory path, last messages=${result.observation.messageLogTail}")
+        assertFalse(canContinue())
+    }
+
+    fun completeRunForVictory(session: FoundationGameSession) {
+        val result = driveUntil(session, maxTurns = 3200) { observation -> observation.runOutcome.isTerminal }
+        assertTrue(session.isVictory(), "Expected route victory, last messages=${result.observation.messageLogTail}")
         assertFalse(canContinue())
     }
 
@@ -123,4 +132,27 @@ internal class FullGameLoopAutomationDriver(
                     point !in occupied
             } ?: error("No open adjacent point around $center.")
     }
+
+    private fun driveUntil(
+        session: FoundationGameSession,
+        maxTurns: Int,
+        stopWhen: (RunObservation) -> Boolean,
+    ): DriveResult {
+        var turnCount = 0
+        var observation = RunObservationCapture.capture(session, turnCount)
+        while (turnCount < maxTurns && !stopWhen(observation)) {
+            val command = requireNotNull(bot.decide(observation)) { "Bot failed to provide a command." }
+            assertTrue(session.perform(command), "Command rejected during automation: $command")
+            if (command.consumesTurn()) {
+                turnCount += 1
+            }
+            observation = RunObservationCapture.capture(session, turnCount)
+        }
+        return DriveResult(turnCount = turnCount, observation = observation)
+    }
+
+    private data class DriveResult(
+        val turnCount: Int,
+        val observation: RunObservation,
+    )
 }

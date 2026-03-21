@@ -12,6 +12,7 @@ import com.ktome.core.ecs.get
 import com.ktome.core.item.Equipment
 import com.ktome.core.item.ItemInstance
 import com.ktome.core.item.StatModifier
+import com.ktome.core.resource.StaminaPools
 import com.ktome.core.talent.EffectTracker
 import kotlin.math.roundToInt
 
@@ -51,10 +52,8 @@ object StatsCalculator {
             health.max = derived.maxHp
             health.current = (health.current + delta).coerceIn(0, health.max)
         }
-        world.get<Stamina>(entity)?.let { stamina ->
-            val delta = derived.maxStamina - stamina.max
-            stamina.max = derived.maxStamina
-            stamina.current = (stamina.current + delta).coerceIn(0, stamina.max)
+        world.get<Stamina>(entity)?.let {
+            StaminaPools.shiftMax(world, entity, derived.maxStamina)
         }
         return derived
     }

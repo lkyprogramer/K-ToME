@@ -13,6 +13,7 @@ import com.ktome.core.snapshot.OverlayShapeSnapshot
 import com.ktome.core.snapshot.RenderSnapshotHasher
 import com.ktome.core.stats.StatsCalculator
 import com.ktome.game.data.DataLoader
+import com.ktome.game.factory.EntityFactory
 import java.nio.file.Path
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -148,6 +149,36 @@ class RenderSnapshotContractTest {
 
         assertEquals(1, positive.current)
         assertEquals(1, session.renderSnapshot().uiState.playerStatus.currentResource)
+    }
+
+    @Test
+    fun `vanguard talent spend keeps stamina pool component and snapshot aligned`() {
+        val session =
+            GameModule.newFoundationSession(
+                config = FoundationGameConfig(seed = 20260318L, zoneId = "shattered_outpost", playerProfessionId = "vanguard"),
+                saveManager = SaveManager(tempDir.resolve("vanguard-stamina-resource")),
+            )
+        val world = session.automationWorld()
+        world.entitiesWith(MonsterTemplateId::class).forEach(world::destroyEntity)
+        val dummyId =
+            EntityFactory().createMonster(
+                world = world,
+                template = dummyTemplate(),
+                position = com.ktome.core.map.Point(session.playerPosition().x + 1, session.playerPosition().y),
+            )
+        val dummyPoint = requireNotNull(world.get<Position>(dummyId)).toPoint()
+        val powerStrikeSlot = session.talentSlots().first { slot -> slot.talentId == "power_strike" }.slot
+
+        assertTrue(session.perform(PlayerCommand.UseTalent(slot = powerStrikeSlot, target = dummyPoint)))
+
+        val staminaPool = requireNotNull(requireNotNull(world.get<com.ktome.core.resource.ResourcePools>(session.playerId)).pool(ResourceType.STAMINA))
+        val status = session.playerStatus()
+        val snapshotStatus = session.renderSnapshot().uiState.playerStatus
+
+        assertEquals(staminaPool.current, status.currentStamina)
+        assertEquals(staminaPool.max, status.maxStamina)
+        assertEquals(staminaPool.current, snapshotStatus.currentResource)
+        assertEquals(staminaPool.max, snapshotStatus.maxResource)
     }
 
     @Test
@@ -308,4 +339,21 @@ class RenderSnapshotContractTest {
         requireNotNull(schemaCatalog.professions.firstOrNull { profession -> profession.id == id }) {
             "Unknown profession '$id'."
         }
+
+    private fun dummyTemplate(): com.ktome.game.model.MonsterTemplate =
+        com.ktome.game.model.MonsterTemplate(
+            id = "dummy",
+            name = "Dummy",
+            glyph = 'd',
+            colorHex = "#AAAAAA",
+            stats = com.ktome.core.ecs.Stats(str = 1, dex = 1, con = 1, wil = 1),
+            baseHp = 50,
+            baseAttack = 1,
+            baseDefense = 0,
+            speed = 100,
+            ai = com.ktome.core.ecs.AIType.CHASE,
+            expReward = 1,
+            spawnFloors = listOf(1),
+            spawnWeight = 1,
+        )
 }

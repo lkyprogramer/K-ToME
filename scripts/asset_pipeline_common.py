@@ -75,33 +75,138 @@ EXPECTED_FOOTPRINT_BY_CATEGORY = {
 }
 PHASE2_REQUIRED_VISUAL_KEYS = {
     "P2-B": {
-        "tileset.ruins.ground_01",
-        "tileset.ruins.wall_01",
         "actor.vanguard",
         "actor.arcanist",
         "portrait.vanguard",
         "portrait.arcanist",
-        "actor.bandit.captain",
+        "icon.profession.vanguard",
+        "icon.profession.arcanist",
+        "prop.armory_gate",
+        "prop.supply_crate",
+        "prop.alarm_bonfire",
+        "prop.stairs.down",
+        "prop.stairs.up",
+        "icon.monster.bandit.captain",
+        "icon.monster.bandit.sentry",
+        "icon.monster.beast.rat",
+        "icon.monster.undead.bone_archer",
+        "icon.tree.vanguard_arms",
+        "icon.tree.vanguard_shield",
+        "icon.tree.vanguard_warcry",
+        "icon.tree.arcanist_arcane",
+        "icon.tree.arcanist_flame",
+        "icon.tree.arcanist_frost",
+        "tree.vanguard_arms",
+        "tree.vanguard_shield",
+        "tree.vanguard_warcry",
+        "tree.arcanist_arcane",
+        "tree.arcanist_flame",
+        "tree.arcanist_frost",
         "item.basic_shield.icon",
+        "item.healing_potion.icon",
+        "item.mana_potion.icon",
         "item.arcane_staff.icon",
         "item.apprentice_robe.icon",
-        "talent.vanguard.power_strike.icon",
-        "talent.arcanist.fireball.icon",
+        "icon.quest.armory_key",
+        "icon.skill.vanguard.power_strike",
+        "icon.skill.arcanist.blink",
+        "icon.damage_type.fire",
+        "icon.damage_type.shadow",
         "vfx.boss.warning.sigil_01",
+        "vfx.zone.effect.ward_seal_01",
     },
     "P2-C": {
         "actor.rogue",
         "actor.templar",
         "portrait.rogue",
         "portrait.templar",
-        "tileset.forest_edge.ground_01",
-        "tileset.forest_edge.wall_01",
-        "tileset.mine.ground_01",
-        "tileset.mine.wall_01",
-        "tileset.shadow_depths.ground_01",
-        "tileset.shadow_depths.wall_01",
+        "icon.profession.rogue",
+        "icon.profession.templar",
+        "actor.boss.ashgate_warden",
+        "actor.cultist.dungeon_lord",
+        "boss.cultist.dungeon_lord.visual",
+        "boss.cultist.dungeon_lord.icon",
+        "zone.shattered_outpost.visual",
+        "zone.shattered_outpost.icon",
+        "zone.greenwood_fringe.visual",
+        "zone.greenwood_fringe.icon",
+        "zone.deep_iron_pit.visual",
+        "zone.deep_iron_pit.icon",
+        "zone.grey_gate_depths.visual",
+        "zone.grey_gate_depths.icon",
+        "prop.mine_furnace",
+        "prop.ritual_altar",
+        "item.battle_axe.icon",
+        "item.leather_armor.icon",
+        "item.long_sword.icon",
+        "item.plate_armor.icon",
+        "item.scroll_teleport.icon",
+        "icon.monster.cultist.dungeon_lord",
+        "icon.monster.orc.raider",
+        "icon.quest.seal_key",
+        "icon.tree.rogue_agility",
+        "icon.tree.rogue_assassination",
         "icon.skill.rogue.shadowstep",
+        "icon.tree.templar_grace",
+        "icon.tree.templar_smite",
         "icon.skill.templar.divine_intervention",
+        "tree.rogue_agility",
+        "tree.rogue_assassination",
+        "icon.tree.rogue_subtlety",
+        "tree.templar_grace",
+        "tree.templar_smite",
+        "icon.tree.templar_faith",
+        "tree.rogue_subtlety",
+        "tree.templar_faith",
+    },
+}
+
+PHASE2_REQUIRED_AUDIO_KEYS = {
+    "P2-B": {
+        "audio.profession.vanguard",
+        "audio.profession.arcanist",
+        "audio.tree.vanguard_arms",
+        "audio.tree.arcanist_arcane",
+        "ambient.shattered_outpost",
+        "audio.zone.shattered_outpost",
+        "audio.boss.warning",
+        "audio.boss.bandit_captain",
+        "audio.interactable.open",
+        "audio.interactable.stairs",
+        "audio.ui.confirm",
+        "audio.ui.cancel",
+        "audio.ui.hover",
+        "audio.ui.level_up",
+        "audio.ui.talent_unlock",
+        "audio.objective.progress",
+        "audio.route.transition",
+        "audio.route.complete",
+        "audio.talent.power_strike",
+        "audio.talent.fireball",
+        "audio.item.basic_shield",
+        "audio.item.healing_potion",
+        "audio.item.mana_potion",
+        "audio.item.arcane_staff",
+    },
+    "P2-C": {
+        "audio.profession.rogue",
+        "audio.profession.templar",
+        "audio.tree.rogue_subtlety",
+        "audio.tree.templar_faith",
+        "ambient.greenwood_fringe",
+        "ambient.deep_iron_pit",
+        "ambient.grey_gate_depths",
+        "audio.zone.greenwood_fringe",
+        "audio.zone.deep_iron_pit",
+        "audio.zone.grey_gate_depths",
+        "audio.boss.cultist.dungeon_lord",
+        "audio.talent.shadowstep",
+        "audio.talent.divine_intervention",
+        "audio.item.battle_axe",
+        "audio.item.leather_armor",
+        "audio.item.long_sword",
+        "audio.item.plate_armor",
+        "audio.item.scroll_teleport",
     },
 }
 
@@ -132,6 +237,37 @@ def normalize_list(value: Any) -> list[str]:
     if isinstance(value, str) and value.strip():
         return [value.strip()]
     return []
+
+
+def flatten_required_keys(required_keys_by_gate: dict[str, set[str]]) -> set[str]:
+    flattened: set[str] = set()
+    for keys in required_keys_by_gate.values():
+        flattened |= set(keys)
+    return flattened
+
+
+def split_phase2_fallback_budget(
+    entries_by_key: dict[str, dict[str, Any]],
+    required_keys: set[str],
+    path_field: str,
+    fallback_value: str,
+) -> tuple[list[str], list[str]]:
+    required_fallback_keys: list[str] = []
+    budget_fallback_keys: list[str] = []
+
+    for key, entry in entries_by_key.items():
+        tags = set(normalize_list(entry.get("tags")))
+        if "phase2" not in tags:
+            continue
+        resolved_path = str(entry.get(path_field, "")).strip()
+        if resolved_path != fallback_value:
+            continue
+        if key in required_keys:
+            required_fallback_keys.append(key)
+        else:
+            budget_fallback_keys.append(key)
+
+    return sorted(required_fallback_keys), sorted(budget_fallback_keys)
 
 
 def collect_assets(plan: dict[str, Any]) -> list[dict[str, Any]]:

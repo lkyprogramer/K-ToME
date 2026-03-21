@@ -2,6 +2,7 @@ package com.ktome.game.harness
 
 import com.ktome.game.FOUNDATION_PROFESSION_ID
 import com.ktome.game.FOUNDATION_ZONE_ID
+import com.ktome.game.FOUNDATION_ZONE_ROUTE
 import java.nio.file.Path
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Tag
@@ -29,6 +30,8 @@ class HeadlessSmokeSuiteTest {
                         seed = 20260312L,
                         zoneId = FOUNDATION_ZONE_ID,
                         professionId = FOUNDATION_PROFESSION_ID,
+                        zoneRoute = FOUNDATION_ZONE_ROUTE,
+                        routeIndex = 0,
                         maxTurns = 450,
                         goal = ScenarioGoal.ReachFloor(2),
                         assertions = listOf(ScenarioAssertion.ReachedFloorAtLeast(2), ScenarioAssertion.NoFailure, ScenarioAssertion.NoStall),
@@ -40,6 +43,8 @@ class HeadlessSmokeSuiteTest {
                         seed = 20260313L,
                         zoneId = FOUNDATION_ZONE_ID,
                         professionId = "arcanist",
+                        zoneRoute = FOUNDATION_ZONE_ROUTE,
+                        routeIndex = 0,
                         maxTurns = 450,
                         goal = ScenarioGoal.ReachFloor(2),
                         saveLoadCheckpoint = SaveLoadCheckpoint(floor = 1, continueTurns = 10, verifyRoundTrip = true),
@@ -58,6 +63,8 @@ class HeadlessSmokeSuiteTest {
                         seed = 20260316L,
                         zoneId = "deep_iron_pit",
                         professionId = "rogue",
+                        zoneRoute = FOUNDATION_ZONE_ROUTE,
+                        routeIndex = 2,
                         maxTurns = 600,
                         goal = ScenarioGoal.ReachFloor(2),
                         assertions = listOf(ScenarioAssertion.ReachedFloorAtLeast(2), ScenarioAssertion.NoFailure, ScenarioAssertion.NoStall),
@@ -69,6 +76,8 @@ class HeadlessSmokeSuiteTest {
                         seed = 20260317L,
                         zoneId = "grey_gate_depths",
                         professionId = "templar",
+                        zoneRoute = FOUNDATION_ZONE_ROUTE,
+                        routeIndex = 3,
                         maxTurns = 600,
                         goal = ScenarioGoal.ReachFloor(2),
                         assertions = listOf(ScenarioAssertion.ReachedFloorAtLeast(2), ScenarioAssertion.NoFailure, ScenarioAssertion.NoStall),
@@ -88,7 +97,9 @@ class HeadlessSmokeSuiteTest {
                 buildString {
                     appendLine("# Headless Smoke")
                     reports.forEach { report ->
-                        appendLine("- ${report.name}: success=${report.success}, zone=${report.zoneId}, profession=${report.professionId}, floor=${report.floorReached}, turns=${report.turns}, outcome=${report.outcome}")
+                        appendLine(
+                            "- ${report.name}: success=${report.success}, zone=${report.zoneId}, routeIndex=${report.routeIndex}, profession=${report.professionId}, floor=${report.floorReached}, turns=${report.turns}, outcome=${report.outcome}",
+                        )
                     }
                 },
         )
@@ -103,6 +114,7 @@ internal fun ScenarioReport.toJson() =
         put("seed", seed)
         put("zoneId", zoneId)
         put("professionId", professionId)
+        put("routeIndex", routeIndex)
         put("success", success)
         put("outcome", outcome.toString())
         put("floorReached", floorReached)

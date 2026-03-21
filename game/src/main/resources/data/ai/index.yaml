@@ -1,9 +1,23 @@
 aiProfiles:
   - id: ai.chase.basic
     schemaVersion: 2
+  - id: ai.guard.basic
+    schemaVersion: 2
   - id: ai.kite.basic
     schemaVersion: 2
   - id: ai.patrol.basic
+    schemaVersion: 2
+  - id: ai.skirmisher.flank
+    schemaVersion: 2
+  - id: ai.controller.pressure
+    schemaVersion: 2
+  - id: ai.controller.shadow_priest
+    schemaVersion: 2
+  - id: ai.elite.huntmaster
+    schemaVersion: 2
+  - id: ai.elite.forge_guard
+    schemaVersion: 2
+  - id: ai.elite.ashgate_warden
     schemaVersion: 2
   - id: ai.boss.dungeon_lord
     schemaVersion: 2

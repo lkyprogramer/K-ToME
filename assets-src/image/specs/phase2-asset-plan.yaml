@@ -76,6 +76,10 @@ defaults:
       Face emphasizes character and profession identity, NOT idealized beauty.
       Lighting: warm key light from upper-left, cool ambient fill, subtle rim light on shoulder/helmet edge.
       Armor/clothing shows use and age. Muted earth tones dominate.
+    icon: >
+      Game UI icon on transparent background.
+      Single centered subject with bold silhouette, painterly rendering and high readability at small size.
+      Use restrained detail, strong outline separation, and one clear focal shape suitable for profession or tree identity.
     icon_skill: >
       Game skill ability icon on transparent background.
       SINGLE focused subject centered in frame, occupying 65-75% of the canvas.
@@ -398,6 +402,19 @@ phase2AssetGates:
           - face and armor silhouette clearly readable
           - expression restrained and serious
         geminiKeyRequired: true
+      - id: phase2_p2b_icon_profession_vanguard
+        category: icon
+        visualKey: icon.profession.vanguard
+        outputName: phase2/p2-b/icon_profession_vanguard.png
+        subject: >
+          Sprint 6 formal profession icon coverage for Vanguard. Reuse the approved Vanguard portrait runtime artwork through a dedicated icon-owned output so the profession formal path no longer resolves through missing_visual or a shared destructive alias.
+        profession: vanguard
+        moodTags: [resolute, martial]
+        constraints:
+          - strong HUD readability at small sizes
+          - reuse the approved finalized runtime artwork for this visual key
+          - keep a dedicated outputName owned by icon.profession.vanguard
+        geminiKeyRequired: true
       - id: phase2_p2b_portrait_arcanist
         category: portrait
         visualKey: portrait.arcanist
@@ -419,6 +436,19 @@ phase2AssetGates:
           - face and robe silhouette clearly readable
           - arcane glow is minimal — a hint, not a light source
         geminiKeyRequired: true
+      - id: phase2_p2b_icon_profession_arcanist
+        category: icon
+        visualKey: icon.profession.arcanist
+        outputName: phase2/p2-b/icon_profession_arcanist.png
+        subject: >
+          Sprint 6 formal profession icon coverage for Arcanist. Reuse the approved Arcanist portrait runtime artwork through a dedicated icon-owned output so the profession formal path stops depending on missing_visual.
+        profession: arcanist
+        moodTags: [arcane, scholarly]
+        constraints:
+          - strong HUD readability at small sizes
+          - reuse the approved finalized runtime artwork for this visual key
+          - keep a dedicated outputName owned by icon.profession.arcanist
+        geminiKeyRequired: true
       - id: phase2_p2b_icon_power_strike
         category: icon_skill
         visualKey: icon.skill.vanguard.power_strike
@@ -436,6 +466,19 @@ phase2AssetGates:
           - transparent background
           - no hands, no arms, no character body parts
           - bold simplified shapes with thick outlines
+        geminiKeyRequired: true
+      - id: phase2_p2b_icon_tree_vanguard_arms
+        category: icon
+        visualKey: icon.tree.vanguard_arms
+        outputName: phase2/p2-b/icon_tree_vanguard_arms.png
+        subject: >
+          Sprint 6 formal Vanguard tree icon coverage for vanguard_arms. Reuse the approved power-strike runtime artwork through a dedicated tree-owned output so icon.tree.vanguard_arms no longer resolves through missing_visual.
+        profession: vanguard
+        moodTags: [forceful, martial]
+        constraints:
+          - strong HUD readability at small sizes
+          - reuse the approved finalized runtime artwork for this visual key
+          - keep a dedicated outputName owned by icon.tree.vanguard_arms
         geminiKeyRequired: true
       - id: phase2_p2b_icon_guard_stance
         category: icon_skill
@@ -535,6 +578,229 @@ phase2AssetGates:
           - geometric clarity — readable as a distinct sigil at small sizes
           - bold shapes with thick outlines
         geminiKeyRequired: true
+      - id: phase2_p2b_icon_tree_arcanist_arcane
+        category: icon
+        visualKey: icon.tree.arcanist_arcane
+        outputName: phase2/p2-b/icon_tree_arcanist_arcane.png
+        subject: >
+          Sprint 6 formal Arcanist tree icon coverage for arcanist_arcane. Reuse the approved blink runtime artwork through a dedicated tree-owned output so icon.tree.arcanist_arcane no longer resolves through missing_visual.
+        profession: arcanist
+        moodTags: [arcane, swift]
+        constraints:
+          - strong HUD readability at small sizes
+          - reuse the approved finalized runtime artwork for this visual key
+          - keep a dedicated outputName owned by icon.tree.arcanist_arcane
+        geminiKeyRequired: true
+      - id: phase2_p2b_icon_tree_vanguard_shield
+        category: icon
+        visualKey: icon.tree.vanguard_shield
+        outputName: phase2/p2-b/icon_tree_vanguard_shield.png
+        subject: >
+          A Vanguard shield tree emblem — a scarred kite shield seen front-on with a strong
+          iron boss at the center and a restrained pale ward glow tracing the rim. The
+          shield dominates the frame and reads as steadfast defense, not a generic item icon.
+          Color palette: dark iron-grey plate, worn brown leather edging, pale blue-white
+          ward outline.
+        profession: vanguard
+        moodTags: [defensive, steadfast]
+        constraints:
+          - single focused subject centered in frame, 65-75% canvas occupancy
+          - transparent background
+          - bold silhouette readable at small HUD sizes
+        geminiKeyRequired: true
+      - id: phase2_p2b_icon_tree_vanguard_warcry
+        category: icon
+        visualKey: icon.tree.vanguard_warcry
+        outputName: phase2/p2-b/icon_tree_vanguard_warcry.png
+        subject: >
+          A Vanguard warcry tree emblem — a battered bronze war horn angled upward, emitting
+          two layered resonance arcs. The horn reads as command and rally, not ceremonial
+          decoration. Color palette: aged bronze, dark leather wrap, warm amber resonance.
+        profession: vanguard
+        moodTags: [commanding, rallying]
+        constraints:
+          - single focused subject centered in frame, 65-75% canvas occupancy
+          - transparent background
+          - bold silhouette readable at small HUD sizes
+        geminiKeyRequired: true
+      - id: phase2_p2b_icon_tree_arcanist_flame
+        category: icon
+        visualKey: icon.tree.arcanist_flame
+        outputName: phase2/p2-b/icon_tree_arcanist_flame.png
+        subject: >
+          An Arcanist flame tree emblem — a compact arcane brazier-sigil with a bright ember
+          core suspended inside a geometric iron frame. The fire is controlled and scholarly,
+          not a wild bonfire. Color palette: molten orange-white ember core, deep red edges,
+          cold iron frame.
+        profession: arcanist
+        moodTags: [arcane, burning]
+        constraints:
+          - single focused subject centered in frame, 65-75% canvas occupancy
+          - transparent background
+          - bold silhouette readable at small HUD sizes
+        geminiKeyRequired: true
+      - id: phase2_p2b_icon_tree_arcanist_frost
+        category: icon
+        visualKey: icon.tree.arcanist_frost
+        outputName: phase2/p2-b/icon_tree_arcanist_frost.png
+        subject: >
+          An Arcanist frost tree emblem — a faceted ice shard sigil suspended inside a broken
+          hexagonal rune frame, with cold mist curling outward. The image should read as
+          disciplined frost magic, not a weather icon. Color palette: pale icy blue, white
+          frost highlights, dark iron-blue frame.
+        profession: arcanist
+        moodTags: [arcane, cold]
+        constraints:
+          - single focused subject centered in frame, 65-75% canvas occupancy
+          - transparent background
+          - bold silhouette readable at small HUD sizes
+        geminiKeyRequired: true
+      - id: phase2_p2b_tree_vanguard_arms
+        category: portrait
+        visualKey: tree.vanguard_arms
+        outputName: phase2/p2-b/tree_vanguard_arms.png
+        subject: >
+          Chest-up talent tree portrait for Vanguard Arms. A battle-scarred human vanguard
+          turned slightly left, longsword resting across the chest in a ready but controlled
+          pose. Heavy mail and plate visible at the shoulders, jaw set with veteran resolve.
+          Color palette: dark steel, weathered leather, restrained cool light along the blade.
+        profession: vanguard
+        materialTags: [steel, leather]
+        moodTags: [martial, disciplined]
+        constraints:
+          - chest-up portrait, 3/4 angle
+          - clear face and weapon silhouette
+          - strong readability at talent tree scale
+        geminiKeyRequired: true
+      - id: phase2_p2b_tree_vanguard_shield
+        category: portrait
+        visualKey: tree.vanguard_shield
+        outputName: phase2/p2-b/tree_vanguard_shield.png
+        subject: >
+          Chest-up talent tree portrait for Vanguard Shield. A stern vanguard with a heavy
+          kite shield dominating the foreground, shoulder angled behind it. The shield shows
+          dents, field repairs, and a faint ward sheen. Color palette: dark iron-grey shield,
+          worn leather trim, cool pale ward light.
+        profession: vanguard
+        materialTags: [steel, leather]
+        moodTags: [defensive, steadfast]
+        constraints:
+          - chest-up portrait, 3/4 angle
+          - shield must read as the primary theme
+          - strong readability at talent tree scale
+        geminiKeyRequired: true
+      - id: phase2_p2b_tree_vanguard_warcry
+        category: portrait
+        visualKey: tree.vanguard_warcry
+        outputName: phase2/p2-b/tree_vanguard_warcry.png
+        subject: >
+          Chest-up talent tree portrait for Vanguard Warcry. A commanding battlefield veteran
+          caught mid-rally, head raised and mouth open in a controlled shout, bronze war horn
+          hanging near one shoulder. The image should read as leadership and pressure, not rage.
+          Color palette: weathered steel, aged bronze, warm ember-lit highlights.
+        profession: vanguard
+        materialTags: [steel, bronze]
+        moodTags: [commanding, forceful]
+        constraints:
+          - chest-up portrait, 3/4 angle
+          - expression should read as command, not berserk fury
+          - strong readability at talent tree scale
+        geminiKeyRequired: true
+      - id: phase2_p2b_tree_arcanist_arcane
+        category: portrait
+        visualKey: tree.arcanist_arcane
+        outputName: phase2/p2-b/tree_arcanist_arcane.png
+        subject: >
+          Chest-up talent tree portrait for Arcanist Arcane. A focused mage framed by precise
+          geometric runes hovering around one shoulder and collar line. The expression is calm,
+          analytical, and controlled. Color palette: cold iron-blue robes, pale white-blue rune light.
+        profession: arcanist
+        materialTags: [cloth, rune metal]
+        moodTags: [arcane, scholarly]
+        constraints:
+          - chest-up portrait, 3/4 angle
+          - geometric rune theme must read clearly
+          - strong readability at talent tree scale
+        geminiKeyRequired: true
+      - id: phase2_p2b_tree_arcanist_flame
+        category: portrait
+        visualKey: tree.arcanist_flame
+        outputName: phase2/p2-b/tree_arcanist_flame.png
+        subject: >
+          Chest-up talent tree portrait for Arcanist Flame. A composed mage lit by a restrained
+          ember glow rising from one hand just below frame, warm light catching the cheek and
+          robe folds. The fire should feel concentrated and studied, not explosive. Color palette:
+          ember orange-white highlights, deep crimson accents, cool dark robe shadows.
+        profession: arcanist
+        materialTags: [cloth, ember]
+        moodTags: [arcane, burning]
+        constraints:
+          - chest-up portrait, 3/4 angle
+          - warm firelight should be the key visual theme
+          - strong readability at talent tree scale
+        geminiKeyRequired: true
+      - id: phase2_p2b_tree_arcanist_frost
+        category: portrait
+        visualKey: tree.arcanist_frost
+        outputName: phase2/p2-b/tree_arcanist_frost.png
+        subject: >
+          Chest-up talent tree portrait for Arcanist Frost. A composed mage framed by thin
+          frost crystals and cold breath, with pale icy light reflecting off the hood and cheek.
+          The pose remains controlled and intellectual rather than dramatic. Color palette:
+          pale icy blue, white frost glow, dark iron-blue robe.
+        profession: arcanist
+        materialTags: [cloth, ice]
+        moodTags: [arcane, cold]
+        constraints:
+          - chest-up portrait, 3/4 angle
+          - cold light and crystal accents must read clearly
+          - strong readability at talent tree scale
+        geminiKeyRequired: true
+      - id: phase2_p2b_icon_monster_beast_rat
+        category: icon
+        visualKey: icon.monster.beast.rat
+        outputName: phase2/p2-b/icon_monster_beast_rat.png
+        subject: >
+          A monster icon for a giant scavenger rat — a snarling rat head in three-quarter view,
+          whiskers flared and incisors exposed. The face should read immediately as vermin and
+          hunger, not as a cute animal. Color palette: dirty grey-brown fur, pink scarred ears,
+          yellowed teeth.
+        moodTags: [feral, hungry]
+        constraints:
+          - single focused subject centered in frame, 65-75% canvas occupancy
+          - transparent background
+          - bold silhouette readable at small HUD sizes
+        geminiKeyRequired: true
+      - id: phase2_p2b_icon_monster_bandit_sentry
+        category: icon
+        visualKey: icon.monster.bandit.sentry
+        outputName: phase2/p2-b/icon_monster_bandit_sentry.png
+        subject: >
+          A monster icon for a bandit sentry — a hooded brigand head in three-quarter view
+          with a narrow watchful eye, wrapped scarf over the lower face, and rough leather
+          hood. The icon should read as alert and predatory. Color palette: dark hood cloth,
+          weathered leather, pale skin around one sharp eye.
+        moodTags: [alert, predatory]
+        constraints:
+          - single focused subject centered in frame, 65-75% canvas occupancy
+          - transparent background
+          - bold silhouette readable at small HUD sizes
+        geminiKeyRequired: true
+      - id: phase2_p2b_icon_monster_undead_bone_archer
+        category: icon
+        visualKey: icon.monster.undead.bone_archer
+        outputName: phase2/p2-b/icon_monster_undead_bone_archer.png
+        subject: >
+          A monster icon for an undead bone archer — a skull-faced undead marksman with a
+          cracked helm brow and a broken arrow shaft silhouette behind one shoulder. The
+          icon should read as skeletal, ranged, and hostile. Color palette: old bone white,
+          ash-grey metal, dark hollow eye sockets.
+        moodTags: [undead, hostile]
+        constraints:
+          - single focused subject centered in frame, 65-75% canvas occupancy
+          - transparent background
+          - bold silhouette readable at small HUD sizes
+        geminiKeyRequired: true
       - id: phase2_p2b_icon_status_burn
         category: icon_status
         visualKey: icon.status.burn
@@ -570,6 +836,90 @@ phase2AssetGates:
           - transparent background
           - bold geometric form readable at very small display sizes
           - thick outlines, clear fracture visual
+        geminiKeyRequired: true
+      - id: phase2_p2c_icon_status_stunned
+        category: icon_status
+        visualKey: icon.status.stunned
+        outputName: phase2/p2-b/icon_skill_vanguard_shield_bash.png
+        subject: >
+          Sprint 2 formal status coverage for stunned. Reuse the approved shield bash runtime artwork so the dedicated status key resolves exactly without fallback while the short-run control contract is being repaired.
+        materialTags: [steel, impact]
+        moodTags: [martial, control]
+        constraints:
+          - strong HUD readability at small sizes
+          - reuse the approved finalized runtime artwork for this visual key
+        geminiKeyRequired: true
+      - id: phase2_p2c_icon_status_war_cry_buff
+        category: icon_status
+        visualKey: icon.status.war_cry_buff
+        outputName: phase2/p2-b/icon_skill_vanguard_war_cry.png
+        subject: >
+          Sprint 2 formal status coverage for war cry empowerment. Reuse the approved war cry runtime artwork so the buff status has an exact icon contract instead of borrowing a talent key.
+        materialTags: [steel, voice]
+        moodTags: [martial, rallying]
+        constraints:
+          - strong HUD readability at small sizes
+          - reuse the approved finalized runtime artwork for this visual key
+        geminiKeyRequired: true
+      - id: phase2_p2c_icon_status_war_cry_debuff
+        category: icon_status
+        visualKey: icon.status.war_cry_debuff
+        outputName: phase2/p2-b/talent_vanguard_intimidation.png
+        subject: >
+          Sprint 2 formal status coverage for shaken. Reuse the approved intimidation runtime artwork so the debuff status resolves through a dedicated status key.
+        materialTags: [steel, shadow]
+        moodTags: [martial, oppressive]
+        constraints:
+          - strong HUD readability at small sizes
+          - reuse the approved finalized runtime artwork for this visual key
+        geminiKeyRequired: true
+      - id: phase2_p2c_icon_status_guard_stance_buff
+        category: icon_status
+        visualKey: icon.status.guard_stance_buff
+        outputName: phase2/p2-b/talent_vanguard_guard_stance.png
+        subject: >
+          Sprint 2 formal status coverage for guard stance. Reuse the approved guard stance runtime artwork so the defensive buff no longer depends on the talent icon key.
+        materialTags: [steel, ward]
+        moodTags: [defensive, steadfast]
+        constraints:
+          - strong HUD readability at small sizes
+          - reuse the approved finalized runtime artwork for this visual key
+        geminiKeyRequired: true
+      - id: phase2_p2c_icon_status_arcane_shield_buff
+        category: icon_status
+        visualKey: icon.status.arcane_shield_buff
+        outputName: phase2/p2-b/talent_arcanist_arcane_shield.png
+        subject: >
+          Sprint 2 formal status coverage for arcane shield. Reuse the approved arcane shield runtime artwork so the buff status has a dedicated exact key.
+        materialTags: [arcane, ward]
+        moodTags: [arcane, protective]
+        constraints:
+          - strong HUD readability at small sizes
+          - reuse the approved finalized runtime artwork for this visual key
+        geminiKeyRequired: true
+      - id: phase2_p2c_icon_status_unyielding_buff
+        category: icon_status
+        visualKey: icon.status.unyielding_buff
+        outputName: phase2/p2-b/talent_vanguard_unyielding.png
+        subject: >
+          Sprint 2 formal status coverage for unyielding. Reuse the approved unyielding runtime artwork so the endurance buff resolves through a stable status key.
+        materialTags: [steel, ward]
+        moodTags: [martial, enduring]
+        constraints:
+          - strong HUD readability at small sizes
+          - reuse the approved finalized runtime artwork for this visual key
+        geminiKeyRequired: true
+      - id: phase2_p2c_icon_status_mana_surge_buff
+        category: icon_status
+        visualKey: icon.status.mana_surge_buff
+        outputName: phase2/p2-b/talent_arcanist_mana_surge.png
+        subject: >
+          Sprint 2 formal status coverage for mana surge. Reuse the approved mana surge runtime artwork so the resource-growth buff has an exact status key.
+        materialTags: [arcane, energy]
+        moodTags: [arcane, energized]
+        constraints:
+          - strong HUD readability at small sizes
+          - reuse the approved finalized runtime artwork for this visual key
         geminiKeyRequired: true
       - id: phase2_p2b_icon_item_minor_healing_potion
         category: icon_item
@@ -1521,6 +1871,89 @@ phase2AssetGates:
           - elite visual presence — reads as boss-tier from outline alone
           - bold forms readable at small game scale
         geminiKeyRequired: true
+      - id: phase2_p2c_actor_cultist_dungeon_lord
+        category: actor_sprite
+        visualKey: actor.cultist.dungeon_lord
+        outputName: phase2/p2-c/actor_cultist_dungeon_lord.png
+        subject: >
+          The Dungeon Lord boss as a full-body isolated sprite. A towering cult tyrant in
+          layered ritual armor and ash-black robes, with a tall crown-like helm and a staff
+          or ritual blade held low. The silhouette should feel superior and final-boss-like,
+          not like a normal cultist. Sacred metal seals hang broken from the chest and belt.
+          Color palette: ash-black robe layers, corroded sacred bronze, pale bone details,
+          faint cold violet shadow-light in the eye slit.
+        faction: cultist
+        materialTags: [cloth, sacred bronze, bone]
+        moodTags: [boss, ritual, ominous]
+        constraints:
+          - full-body isolated sprite on transparent background
+          - silhouette clearly reads as boss-tier and distinct from shadow priests
+          - bold forms readable at small game scale
+        geminiKeyRequired: true
+      - id: phase2_p2c_boss_cultist_dungeon_lord_visual
+        category: actor_sprite
+        visualKey: boss.cultist.dungeon_lord.visual
+        outputName: phase2/p2-c/boss_cultist_dungeon_lord_visual.png
+        subject: >
+          Boss encounter visual for the Dungeon Lord. A ritual tyrant in an imposing front-
+          facing stance, robes and armor arranged for a strong ceremonial silhouette. The
+          image should read as the formal encounter presentation for the final short-run boss.
+          Color palette: ash-black cloth, corroded bronze, pale bone ornament, faint cold
+          violet light in the helm or eye area.
+        faction: cultist
+        materialTags: [cloth, sacred bronze, bone]
+        moodTags: [boss, ceremonial, ominous]
+        constraints:
+          - full-body isolated sprite on transparent background
+          - reads as an encounter-grade boss presentation rather than a generic monster
+          - bold forms readable at small game scale
+        geminiKeyRequired: true
+      - id: phase2_p2c_boss_cultist_dungeon_lord_icon
+        category: icon
+        visualKey: boss.cultist.dungeon_lord.icon
+        outputName: phase2/p2-c/icon_boss_cultist_dungeon_lord.png
+        subject: >
+          Boss icon for the Dungeon Lord — a close-up of a crowned ritual helm with narrow
+          eye slit and broken sacred seal fragments around it. The icon should read as the
+          final short-run boss at a glance. Color palette: dark iron-black helm, corroded
+          bronze crown edges, pale bone ornament, faint cold violet eye glow.
+        moodTags: [boss, ritual, ominous]
+        constraints:
+          - single focused subject centered in frame, 65-75% canvas occupancy
+          - transparent background
+          - bold silhouette readable at small HUD sizes
+        geminiKeyRequired: true
+      - id: phase2_p2c_icon_monster_cultist_dungeon_lord
+        category: icon
+        visualKey: icon.monster.cultist.dungeon_lord
+        outputName: phase2/p2-c/icon_monster_cultist_dungeon_lord.png
+        subject: >
+          Monster icon for the Dungeon Lord and related cult elite line — a severe ritual
+          helm and pale gaunt face in three-quarter view, framed by hanging sacred seal
+          fragments. The icon should read as cult authority and shadow power, not as a
+          generic priest. Color palette: ash-black hood, pale gaunt face, corroded bronze
+          seal shards, faint cold violet shadow-light.
+        moodTags: [cultist, elite, ominous]
+        constraints:
+          - single focused subject centered in frame, 65-75% canvas occupancy
+          - transparent background
+          - bold silhouette readable at small HUD sizes
+        geminiKeyRequired: true
+      - id: phase2_p2c_icon_monster_orc_raider
+        category: icon
+        visualKey: icon.monster.orc.raider
+        outputName: phase2/p2-c/icon_monster_orc_raider.png
+        subject: >
+          Monster icon for an orc raider — a brutish orc head in three-quarter view with
+          heavy brow, one tusk more chipped than the other, and a soot-black iron brow plate.
+          The icon should read as aggressive industrial raider, not a generic fantasy orc.
+          Color palette: olive-grey skin, dark soot-black iron, warm ember residue, dark leather straps.
+        moodTags: [brutal, industrial]
+        constraints:
+          - single focused subject centered in frame, 65-75% canvas occupancy
+          - transparent background
+          - bold silhouette readable at small HUD sizes
+        geminiKeyRequired: true
       - id: phase2_p2c_portrait_rogue
         category: portrait
         visualKey: portrait.rogue
@@ -1542,6 +1975,19 @@ phase2AssetGates:
           - face readable despite partial shadow
           - expression restrained and serious
         geminiKeyRequired: true
+      - id: phase2_p2c_icon_profession_rogue
+        category: icon
+        visualKey: icon.profession.rogue
+        outputName: phase2/p2-c/icon_profession_rogue.png
+        subject: >
+          Sprint 6 formal profession icon coverage for Rogue. Reuse the approved Rogue portrait runtime artwork through a dedicated icon-owned output so the profession formal path no longer resolves through missing_visual.
+        profession: rogue
+        moodTags: [stealthy, sharp]
+        constraints:
+          - strong HUD readability at small sizes
+          - reuse the approved finalized runtime artwork for this visual key
+          - keep a dedicated outputName owned by icon.profession.rogue
+        geminiKeyRequired: true
       - id: phase2_p2c_portrait_templar
         category: portrait
         visualKey: portrait.templar
@@ -1562,6 +2008,19 @@ phase2AssetGates:
           - chest-up portrait, 3/4 angle facing slightly left
           - face and armor silhouette clearly readable
           - expression restrained and solemn
+        geminiKeyRequired: true
+      - id: phase2_p2c_icon_profession_templar
+        category: icon
+        visualKey: icon.profession.templar
+        outputName: phase2/p2-c/icon_profession_templar.png
+        subject: >
+          Sprint 6 formal profession icon coverage for Templar. Reuse the approved Templar portrait runtime artwork through a dedicated icon-owned output so the profession formal path stops depending on missing_visual.
+        profession: templar
+        moodTags: [holy, steadfast]
+        constraints:
+          - strong HUD readability at small sizes
+          - reuse the approved finalized runtime artwork for this visual key
+          - keep a dedicated outputName owned by icon.profession.templar
         geminiKeyRequired: true
       - id: phase2_p2c_tileset_forest_edge_ground_01
         category: tile_ground
@@ -1802,6 +2261,312 @@ phase2AssetGates:
           - no hands, no character — just the divine energy strike
           - bold shape readable at small display sizes
         geminiKeyRequired: true
+      - id: phase2_p2c_icon_rogue_backstab
+        category: icon_skill
+        visualKey: icon.skill.rogue.backstab
+        outputName: phase2/p2-c/icon_skill_rogue_mark_prey.png
+        subject: >
+          Sprint 3 formal Rogue icon coverage for backstab. Reuse the approved mark-prey runtime artwork so the finalized icon.skill key resolves through the canonical image plan instead of only through manifest aliases.
+        profession: rogue
+        moodTags: [predatory, tactical]
+        constraints:
+          - strong HUD readability at small sizes
+          - reuse the approved finalized runtime artwork for this visual key
+        geminiKeyRequired: true
+      - id: phase2_p2c_icon_rogue_poison_blade
+        category: icon_skill
+        visualKey: icon.skill.rogue.poison_blade
+        outputName: phase2/p2-c/icon_status_cursed.png
+        subject: >
+          Sprint 3 formal Rogue icon coverage for poison_blade. Reuse the approved cursed runtime artwork so the finalized icon.skill key resolves through the canonical image plan without introducing a fallback alias path.
+        profession: rogue
+        moodTags: [cursed, venomous]
+        constraints:
+          - strong HUD readability at small sizes
+          - reuse the approved finalized runtime artwork for this visual key
+        geminiKeyRequired: true
+      - id: phase2_p2c_icon_rogue_stealth
+        category: icon_skill
+        visualKey: icon.skill.rogue.stealth
+        outputName: phase2/p2-c/icon_skill_rogue_shadowstep.png
+        subject: >
+          Sprint 3 formal Rogue icon coverage for stealth. Reuse the approved shadowstep runtime artwork so the finalized icon.skill key resolves through the canonical image plan instead of only through manifest aliases.
+        profession: rogue
+        moodTags: [stealthy, shadowed]
+        constraints:
+          - strong HUD readability at small sizes
+          - reuse the approved finalized runtime artwork for this visual key
+        geminiKeyRequired: true
+      - id: phase2_p2c_icon_rogue_smoke_bomb
+        category: icon_skill
+        visualKey: icon.skill.rogue.smoke_bomb
+        outputName: phase2/p2-c/icon_status_cursed.png
+        subject: >
+          Sprint 3 formal Rogue icon coverage for smoke_bomb. Reuse the approved cursed runtime artwork so the finalized icon.skill key resolves through the canonical image plan without a second source of truth.
+        profession: rogue
+        moodTags: [shadowed, disruptive]
+        constraints:
+          - strong HUD readability at small sizes
+          - reuse the approved finalized runtime artwork for this visual key
+        geminiKeyRequired: true
+      - id: phase2_p2c_icon_rogue_roll
+        category: icon_skill
+        visualKey: icon.skill.rogue.roll
+        outputName: phase2/p2-c/icon_skill_rogue_shadowstep.png
+        subject: >
+          Sprint 3 formal Rogue icon coverage for roll. Reuse the approved shadowstep runtime artwork so the finalized icon.skill key resolves through the canonical image plan instead of only through manifest aliases.
+        profession: rogue
+        moodTags: [swift, mobile]
+        constraints:
+          - strong HUD readability at small sizes
+          - reuse the approved finalized runtime artwork for this visual key
+        geminiKeyRequired: true
+      - id: phase2_p2c_icon_rogue_blade_flurry
+        category: icon_skill
+        visualKey: icon.skill.rogue.blade_flurry
+        outputName: phase2/p2-c/icon_skill_rogue_shadowstep.png
+        subject: >
+          Sprint 3 formal Rogue icon coverage for blade_flurry. Reuse the approved shadowstep runtime artwork so the finalized icon.skill key resolves through the canonical image plan without introducing a fallback alias path.
+        profession: rogue
+        moodTags: [swift, aggressive]
+        constraints:
+          - strong HUD readability at small sizes
+          - reuse the approved finalized runtime artwork for this visual key
+        geminiKeyRequired: true
+      - id: phase2_p2c_icon_rogue_deathblow
+        category: icon_skill
+        visualKey: icon.skill.rogue.deathblow
+        outputName: phase2/p2-c/icon_skill_rogue_mark_prey.png
+        subject: >
+          Sprint 3 formal Rogue icon coverage for deathblow. Reuse the approved mark-prey runtime artwork so the finalized icon.skill key resolves through the canonical image plan instead of only through manifest aliases.
+        profession: rogue
+        moodTags: [predatory, lethal]
+        constraints:
+          - strong HUD readability at small sizes
+          - reuse the approved finalized runtime artwork for this visual key
+        geminiKeyRequired: true
+      - id: phase2_p2c_icon_templar_holy_strike
+        category: icon_skill
+        visualKey: icon.skill.templar.holy_strike
+        outputName: phase2/p2-c/icon_skill_templar_smite.png
+        subject: >
+          Sprint 3 formal Templar icon coverage for holy_strike. Reuse the approved smite runtime artwork so the finalized icon.skill key resolves through the canonical image plan instead of only through manifest aliases.
+        profession: templar
+        moodTags: [holy, punishing]
+        constraints:
+          - strong HUD readability at small sizes
+          - reuse the approved finalized runtime artwork for this visual key
+        geminiKeyRequired: true
+      - id: phase2_p2c_icon_templar_judgment_hammer
+        category: icon_skill
+        visualKey: icon.skill.templar.judgment_hammer
+        outputName: phase2/p2-c/icon_skill_templar_smite.png
+        subject: >
+          Sprint 3 formal Templar icon coverage for judgment_hammer. Reuse the approved smite runtime artwork so the finalized icon.skill key resolves through the canonical image plan without a second source of truth.
+        profession: templar
+        moodTags: [holy, forceful]
+        constraints:
+          - strong HUD readability at small sizes
+          - reuse the approved finalized runtime artwork for this visual key
+        geminiKeyRequired: true
+      - id: phase2_p2c_icon_templar_holy_light
+        category: icon_skill
+        visualKey: icon.skill.templar.holy_light
+        outputName: phase2/p2-c/icon_status_consecration.png
+        subject: >
+          Sprint 3 formal Templar icon coverage for holy_light. Reuse the approved consecration runtime artwork so the finalized icon.skill key resolves through the canonical image plan instead of only through manifest aliases.
+        profession: templar
+        moodTags: [holy, restorative]
+        constraints:
+          - strong HUD readability at small sizes
+          - reuse the approved finalized runtime artwork for this visual key
+        geminiKeyRequired: true
+      - id: phase2_p2c_icon_templar_holy_shield
+        category: icon_skill
+        visualKey: icon.skill.templar.holy_shield
+        outputName: phase2/p2-c/icon_skill_templar_divine_intervention.png
+        subject: >
+          Sprint 3 formal Templar icon coverage for holy_shield. Reuse the approved divine-intervention runtime artwork so the finalized icon.skill key resolves through the canonical image plan instead of only through manifest aliases.
+        profession: templar
+        moodTags: [holy, protective]
+        constraints:
+          - strong HUD readability at small sizes
+          - reuse the approved finalized runtime artwork for this visual key
+        geminiKeyRequired: true
+      - id: phase2_p2c_icon_templar_devotion
+        category: icon_skill
+        visualKey: icon.skill.templar.devotion
+        outputName: phase2/p2-c/icon_status_consecration.png
+        subject: >
+          Sprint 3 formal Templar icon coverage for devotion. Reuse the approved consecration runtime artwork so the finalized icon.skill key resolves through the canonical image plan without a second source of truth.
+        profession: templar
+        moodTags: [holy, steadfast]
+        constraints:
+          - strong HUD readability at small sizes
+          - reuse the approved finalized runtime artwork for this visual key
+        geminiKeyRequired: true
+      - id: phase2_p2c_icon_templar_holy_aura
+        category: icon_skill
+        visualKey: icon.skill.templar.holy_aura
+        outputName: phase2/p2-c/icon_status_consecration.png
+        subject: >
+          Sprint 3 formal Templar icon coverage for holy_aura. Reuse the approved consecration runtime artwork so the finalized icon.skill key resolves through the canonical image plan instead of only through manifest aliases.
+        profession: templar
+        moodTags: [holy, radiant]
+        constraints:
+          - strong HUD readability at small sizes
+          - reuse the approved finalized runtime artwork for this visual key
+        geminiKeyRequired: true
+      - id: phase2_p2c_icon_templar_purify
+        category: icon_skill
+        visualKey: icon.skill.templar.purify
+        outputName: phase2/p2-c/icon_status_consecration.png
+        subject: >
+          Sprint 3 formal Templar icon coverage for purify. Reuse the approved consecration runtime artwork so the finalized icon.skill key resolves through the canonical image plan without introducing a fallback alias path.
+        profession: templar
+        moodTags: [holy, cleansing]
+        constraints:
+          - strong HUD readability at small sizes
+          - reuse the approved finalized runtime artwork for this visual key
+        geminiKeyRequired: true
+      - id: phase2_p2c_icon_tree_rogue_agility
+        category: icon
+        visualKey: icon.tree.rogue_agility
+        outputName: phase2/p2-c/icon_skill_rogue_shadowstep.png
+        subject: >
+          Sprint 3 formal Rogue tree icon coverage for rogue_agility. Reuse the approved shadowstep runtime artwork so the icon.tree key resolves through the canonical image plan instead of only through manifest aliases.
+        moodTags: [rogue, agile]
+        constraints:
+          - strong HUD readability at small sizes
+          - reuse the approved finalized runtime artwork for this visual key
+        geminiKeyRequired: true
+      - id: phase2_p2c_icon_tree_rogue_assassination
+        category: icon
+        visualKey: icon.tree.rogue_assassination
+        outputName: phase2/p2-c/icon_skill_rogue_mark_prey.png
+        subject: >
+          Sprint 3 formal Rogue tree icon coverage for rogue_assassination. Reuse the approved mark-prey runtime artwork so the icon.tree key resolves through the canonical image plan instead of only through manifest aliases.
+        moodTags: [rogue, predatory]
+        constraints:
+          - strong HUD readability at small sizes
+          - reuse the approved finalized runtime artwork for this visual key
+        geminiKeyRequired: true
+      - id: phase2_p2c_icon_tree_rogue_subtlety
+        category: icon
+        visualKey: icon.tree.rogue_subtlety
+        outputName: phase2/p2-c/icon_skill_rogue_shadowstep.png
+        subject: >
+          Sprint 3 formal Rogue tree icon coverage for rogue_subtlety. Reuse the approved shadowstep runtime artwork so the icon.tree key resolves through the canonical image plan without a second source of truth.
+        moodTags: [rogue, subtle]
+        constraints:
+          - strong HUD readability at small sizes
+          - reuse the approved finalized runtime artwork for this visual key
+        geminiKeyRequired: true
+      - id: phase2_p2c_icon_tree_templar_faith
+        category: icon
+        visualKey: icon.tree.templar_faith
+        outputName: phase2/p2-c/icon_skill_templar_divine_intervention.png
+        subject: >
+          Sprint 3 formal Templar tree icon coverage for templar_faith. Reuse the approved divine-intervention runtime artwork so the icon.tree key resolves through the canonical image plan instead of only through manifest aliases.
+        moodTags: [templar, faith]
+        constraints:
+          - strong HUD readability at small sizes
+          - reuse the approved finalized runtime artwork for this visual key
+        geminiKeyRequired: true
+      - id: phase2_p2c_icon_tree_templar_grace
+        category: icon
+        visualKey: icon.tree.templar_grace
+        outputName: phase2/p2-c/icon_status_consecration.png
+        subject: >
+          Sprint 3 formal Templar tree icon coverage for templar_grace. Reuse the approved consecration runtime artwork so the icon.tree key resolves through the canonical image plan without a second source of truth.
+        moodTags: [templar, graceful]
+        constraints:
+          - strong HUD readability at small sizes
+          - reuse the approved finalized runtime artwork for this visual key
+        geminiKeyRequired: true
+      - id: phase2_p2c_icon_tree_templar_smite
+        category: icon
+        visualKey: icon.tree.templar_smite
+        outputName: phase2/p2-c/icon_skill_templar_smite.png
+        subject: >
+          Sprint 3 formal Templar tree icon coverage for templar_smite. Reuse the approved smite runtime artwork so the icon.tree key resolves through the canonical image plan instead of only through manifest aliases.
+        moodTags: [templar, punitive]
+        constraints:
+          - strong HUD readability at small sizes
+          - reuse the approved finalized runtime artwork for this visual key
+        geminiKeyRequired: true
+      - id: phase2_p2c_tree_rogue_agility
+        category: portrait
+        visualKey: tree.rogue_agility
+        outputName: phase2/p2-c/portrait_rogue.png
+        subject: >
+          Sprint 3 formal Rogue tree portrait coverage for rogue_agility. Reuse the approved Rogue portrait runtime artwork so the tree visual key resolves through the canonical image plan instead of only through manifest aliases.
+        profession: rogue
+        moodTags: [rogue, agile]
+        constraints:
+          - strong UI readability at talent tree scale
+          - reuse the approved finalized runtime artwork for this visual key
+        geminiKeyRequired: true
+      - id: phase2_p2c_tree_rogue_assassination
+        category: portrait
+        visualKey: tree.rogue_assassination
+        outputName: phase2/p2-c/portrait_rogue.png
+        subject: >
+          Sprint 3 formal Rogue tree portrait coverage for rogue_assassination. Reuse the approved Rogue portrait runtime artwork so the tree visual key resolves through the canonical image plan without a second source of truth.
+        profession: rogue
+        moodTags: [rogue, predatory]
+        constraints:
+          - strong UI readability at talent tree scale
+          - reuse the approved finalized runtime artwork for this visual key
+        geminiKeyRequired: true
+      - id: phase2_p2c_tree_rogue_subtlety
+        category: portrait
+        visualKey: tree.rogue_subtlety
+        outputName: phase2/p2-c/portrait_rogue.png
+        subject: >
+          Sprint 3 formal Rogue tree portrait coverage for rogue_subtlety. Reuse the approved Rogue portrait runtime artwork so the tree visual key resolves through the canonical image plan instead of only through manifest aliases.
+        profession: rogue
+        moodTags: [rogue, subtle]
+        constraints:
+          - strong UI readability at talent tree scale
+          - reuse the approved finalized runtime artwork for this visual key
+        geminiKeyRequired: true
+      - id: phase2_p2c_tree_templar_faith
+        category: portrait
+        visualKey: tree.templar_faith
+        outputName: phase2/p2-c/portrait_templar.png
+        subject: >
+          Sprint 3 formal Templar tree portrait coverage for templar_faith. Reuse the approved Templar portrait runtime artwork so the tree visual key resolves through the canonical image plan instead of only through manifest aliases.
+        profession: templar
+        moodTags: [templar, faithful]
+        constraints:
+          - strong UI readability at talent tree scale
+          - reuse the approved finalized runtime artwork for this visual key
+        geminiKeyRequired: true
+      - id: phase2_p2c_tree_templar_grace
+        category: portrait
+        visualKey: tree.templar_grace
+        outputName: phase2/p2-c/portrait_templar.png
+        subject: >
+          Sprint 3 formal Templar tree portrait coverage for templar_grace. Reuse the approved Templar portrait runtime artwork so the tree visual key resolves through the canonical image plan without a second source of truth.
+        profession: templar
+        moodTags: [templar, graceful]
+        constraints:
+          - strong UI readability at talent tree scale
+          - reuse the approved finalized runtime artwork for this visual key
+        geminiKeyRequired: true
+      - id: phase2_p2c_tree_templar_smite
+        category: portrait
+        visualKey: tree.templar_smite
+        outputName: phase2/p2-c/portrait_templar.png
+        subject: >
+          Sprint 3 formal Templar tree portrait coverage for templar_smite. Reuse the approved Templar portrait runtime artwork so the tree visual key resolves through the canonical image plan instead of only through manifest aliases.
+        profession: templar
+        moodTags: [templar, punitive]
+        constraints:
+          - strong UI readability at talent tree scale
+          - reuse the approved finalized runtime artwork for this visual key
+        geminiKeyRequired: true
       - id: phase2_p2c_icon_status_cursed
         category: icon_status
         visualKey: icon.status.cursed
@@ -1858,6 +2623,126 @@ phase2AssetGates:
           - distinct from healing potion by color — blue vs red
           - readable shape at small display sizes
         geminiKeyRequired: true
+      - id: phase2_p2c_item_leather_armor_visual
+        category: debug
+        visualKey: item.leather_armor.visual
+        outputName: phase2/p2-c/icon_item_leather_armor.png
+        subject: >
+          Sprint 1 common-loot formalization for leather_armor. Reuse the approved runtime artwork so the dropped item key resolves through the canonical image plan rather than only through manifest aliases.
+        materialTags: [gear]
+        moodTags: [practical, readable]
+        constraints:
+          - single focused asset with strong small-size readability
+          - reuse the approved finalized runtime artwork for this visual key
+        geminiKeyRequired: true
+      - id: phase2_p2c_item_leather_armor_icon
+        category: icon
+        visualKey: item.leather_armor.icon
+        outputName: phase2/p2-c/icon_item_leather_armor.png
+        subject: >
+          Sprint 1 common-loot formalization for leather_armor. Reuse the approved runtime artwork so the dropped item key resolves through the canonical image plan rather than only through manifest aliases.
+        materialTags: [gear]
+        moodTags: [practical, readable]
+        constraints:
+          - single focused asset with strong small-size readability
+          - reuse the approved finalized runtime artwork for this visual key
+        geminiKeyRequired: true
+      - id: phase2_p2c_item_long_sword_visual
+        category: debug
+        visualKey: item.long_sword.visual
+        outputName: phase2/p2-c/icon_item_long_sword.png
+        subject: >
+          Sprint 1 elite-loot formalization for long_sword. Reuse the approved runtime artwork so the dropped item key resolves through the canonical image plan rather than only through manifest aliases.
+        materialTags: [gear]
+        moodTags: [practical, readable]
+        constraints:
+          - single focused asset with strong small-size readability
+          - reuse the approved finalized runtime artwork for this visual key
+        geminiKeyRequired: true
+      - id: phase2_p2c_item_long_sword_icon
+        category: icon
+        visualKey: item.long_sword.icon
+        outputName: phase2/p2-c/icon_item_long_sword.png
+        subject: >
+          Sprint 1 elite-loot formalization for long_sword. Reuse the approved runtime artwork so the dropped item key resolves through the canonical image plan rather than only through manifest aliases.
+        materialTags: [gear]
+        moodTags: [practical, readable]
+        constraints:
+          - single focused asset with strong small-size readability
+          - reuse the approved finalized runtime artwork for this visual key
+        geminiKeyRequired: true
+      - id: phase2_p2c_item_battle_axe_visual
+        category: debug
+        visualKey: item.battle_axe.visual
+        outputName: phase2/p2-c/icon_item_battle_axe.png
+        subject: >
+          Sprint 1 boss-loot formalization for battle_axe. Reuse the approved runtime artwork so the dropped item key resolves through the canonical image plan rather than only through manifest aliases.
+        materialTags: [gear]
+        moodTags: [practical, readable]
+        constraints:
+          - single focused asset with strong small-size readability
+          - reuse the approved finalized runtime artwork for this visual key
+        geminiKeyRequired: true
+      - id: phase2_p2c_item_battle_axe_icon
+        category: icon
+        visualKey: item.battle_axe.icon
+        outputName: phase2/p2-c/icon_item_battle_axe.png
+        subject: >
+          Sprint 1 boss-loot formalization for battle_axe. Reuse the approved runtime artwork so the dropped item key resolves through the canonical image plan rather than only through manifest aliases.
+        materialTags: [gear]
+        moodTags: [practical, readable]
+        constraints:
+          - single focused asset with strong small-size readability
+          - reuse the approved finalized runtime artwork for this visual key
+        geminiKeyRequired: true
+      - id: phase2_p2c_item_plate_armor_visual
+        category: debug
+        visualKey: item.plate_armor.visual
+        outputName: phase2/p2-c/icon_item_plate_armor.png
+        subject: >
+          Sprint 1 boss-loot formalization for plate_armor. Reuse the approved runtime artwork so the dropped item key resolves through the canonical image plan rather than only through manifest aliases.
+        materialTags: [gear]
+        moodTags: [practical, readable]
+        constraints:
+          - single focused asset with strong small-size readability
+          - reuse the approved finalized runtime artwork for this visual key
+        geminiKeyRequired: true
+      - id: phase2_p2c_item_plate_armor_icon
+        category: icon
+        visualKey: item.plate_armor.icon
+        outputName: phase2/p2-c/icon_item_plate_armor.png
+        subject: >
+          Sprint 1 boss-loot formalization for plate_armor. Reuse the approved runtime artwork so the dropped item key resolves through the canonical image plan rather than only through manifest aliases.
+        materialTags: [gear]
+        moodTags: [practical, readable]
+        constraints:
+          - single focused asset with strong small-size readability
+          - reuse the approved finalized runtime artwork for this visual key
+        geminiKeyRequired: true
+      - id: phase2_p2c_item_scroll_teleport_visual
+        category: debug
+        visualKey: item.scroll_teleport.visual
+        outputName: phase2/p2-c/icon_item_scroll_teleport.png
+        subject: >
+          Sprint 1 reward-path formalization for scroll_teleport. Reuse the approved runtime artwork so the reward item key resolves through the canonical image plan rather than only through manifest aliases.
+        materialTags: [gear]
+        moodTags: [practical, readable]
+        constraints:
+          - single focused asset with strong small-size readability
+          - reuse the approved finalized runtime artwork for this visual key
+        geminiKeyRequired: true
+      - id: phase2_p2c_item_scroll_teleport_icon
+        category: icon
+        visualKey: item.scroll_teleport.icon
+        outputName: phase2/p2-c/icon_item_scroll_teleport.png
+        subject: >
+          Sprint 1 reward-path formalization for scroll_teleport. Reuse the approved runtime artwork so the reward item key resolves through the canonical image plan rather than only through manifest aliases.
+        materialTags: [gear]
+        moodTags: [practical, readable]
+        constraints:
+          - single focused asset with strong small-size readability
+          - reuse the approved finalized runtime artwork for this visual key
+        geminiKeyRequired: true
       - id: phase2_p2c_icon_quest_seal_key
         category: icon_quest
         visualKey: icon.quest.seal_key
@@ -1877,4 +2762,116 @@ phase2AssetGates:
           - transparent background
           - object reads as important, ceremonial, and ancient
           - bold shape readable at small display sizes
+        geminiKeyRequired: true
+      - id: phase2_p2c_zone_shattered_outpost_visual
+        category: prop_environment
+        visualKey: zone.shattered_outpost.visual
+        outputName: phase2/p2-c/zone_shattered_outpost_visual.png
+        subject: >
+          Sprint 4 route formalization for shattered_outpost. Reuse the approved armory-gate
+          runtime artwork as the start-zone landmark visual so the route no longer resolves
+          through missing_visual.
+        biome: RUINS
+        materialTags: [stone, iron]
+        moodTags: [frontier, readable]
+        constraints:
+          - clear zone-landmark silhouette readable at small game scale
+          - duplicate the approved finalized runtime artwork into a zone-owned output path
+        geminiKeyRequired: true
+      - id: phase2_p2c_zone_shattered_outpost_icon
+        category: icon_quest
+        visualKey: zone.shattered_outpost.icon
+        outputName: phase2/p2-c/zone_shattered_outpost_icon.png
+        subject: >
+          Sprint 4 route formalization for shattered_outpost. Reuse the approved outpost quest-key
+          icon as the compact zone icon so the start of the route has a formal non-placeholder key.
+        materialTags: [stone, iron]
+        moodTags: [fortified, readable]
+        constraints:
+          - single emblem centered in frame, 65-75% canvas occupancy
+          - duplicate the approved finalized runtime artwork into a zone-owned output path
+        geminiKeyRequired: true
+      - id: phase2_p2c_zone_greenwood_fringe_visual
+        category: prop_environment
+        visualKey: zone.greenwood_fringe.visual
+        outputName: phase2/p2-c/zone_greenwood_fringe_visual.png
+        subject: >
+          Sprint 4 route formalization for greenwood_fringe. Reuse the approved forest-edge wall
+          artwork as the zone landmark visual so the second route segment resolves through formal
+          plan coverage instead of missing_visual.
+        biome: FOREST_EDGE
+        materialTags: [stone, wood, moss]
+        moodTags: [woodland, readable]
+        constraints:
+          - clear zone-landmark silhouette readable at small game scale
+          - duplicate the approved finalized runtime artwork into a zone-owned output path
+        geminiKeyRequired: true
+      - id: phase2_p2c_zone_greenwood_fringe_icon
+        category: icon_quest
+        visualKey: zone.greenwood_fringe.icon
+        outputName: phase2/p2-c/zone_greenwood_fringe_icon.png
+        subject: >
+          Sprint 4 route formalization for greenwood_fringe. Reuse the approved forest-edge wall
+          artwork as the zone icon so the route UI key resolves exactly without a placeholder.
+        materialTags: [stone, wood]
+        moodTags: [woodland, restrained]
+        constraints:
+          - single emblem centered in frame, 65-75% canvas occupancy
+          - duplicate the approved finalized runtime artwork into a zone-owned output path
+        geminiKeyRequired: true
+      - id: phase2_p2c_zone_deep_iron_pit_visual
+        category: prop_environment
+        visualKey: zone.deep_iron_pit.visual
+        outputName: phase2/p2-c/zone_deep_iron_pit_visual.png
+        subject: >
+          Sprint 4 route formalization for deep_iron_pit. Reuse the approved mine-furnace runtime
+          artwork as the zone landmark visual so the industrial mid-route segment resolves through
+          the canonical image plan.
+        biome: MINE
+        materialTags: [iron, stone]
+        moodTags: [industrial, readable]
+        constraints:
+          - clear zone-landmark silhouette readable at small game scale
+          - duplicate the approved finalized runtime artwork into a zone-owned output path
+        geminiKeyRequired: true
+      - id: phase2_p2c_zone_deep_iron_pit_icon
+        category: icon_quest
+        visualKey: zone.deep_iron_pit.icon
+        outputName: phase2/p2-c/zone_deep_iron_pit_icon.png
+        subject: >
+          Sprint 4 route formalization for deep_iron_pit. Reuse the approved mine-furnace runtime
+          artwork as the compact zone icon so the route icon key no longer falls back to missing_visual.
+        materialTags: [iron, ember]
+        moodTags: [industrial, severe]
+        constraints:
+          - single emblem centered in frame, 65-75% canvas occupancy
+          - duplicate the approved finalized runtime artwork into a zone-owned output path
+        geminiKeyRequired: true
+      - id: phase2_p2c_zone_grey_gate_depths_visual
+        category: prop_environment
+        visualKey: zone.grey_gate_depths.visual
+        outputName: phase2/p2-c/zone_grey_gate_depths_visual.png
+        subject: >
+          Sprint 4 route formalization for grey_gate_depths. Reuse the approved ritual-altar runtime
+          artwork as the terminal-zone landmark visual so the final route segment resolves through
+          formal image coverage.
+        biome: SHADOW_DEPTHS
+        materialTags: [stone, ash, bronze]
+        moodTags: [sealed, readable]
+        constraints:
+          - clear zone-landmark silhouette readable at small game scale
+          - duplicate the approved finalized runtime artwork into a zone-owned output path
+        geminiKeyRequired: true
+      - id: phase2_p2c_zone_grey_gate_depths_icon
+        category: icon_quest
+        visualKey: zone.grey_gate_depths.icon
+        outputName: phase2/p2-c/zone_grey_gate_depths_icon.png
+        subject: >
+          Sprint 4 route formalization for grey_gate_depths. Reuse the approved seal-key runtime icon
+          as the compact zone icon so the terminal route gate no longer depends on a placeholder key.
+        materialTags: [stone, seal]
+        moodTags: [sealed, forbidden]
+        constraints:
+          - single emblem centered in frame, 65-75% canvas occupancy
+          - duplicate the approved finalized runtime artwork into a zone-owned output path
         geminiKeyRequired: true

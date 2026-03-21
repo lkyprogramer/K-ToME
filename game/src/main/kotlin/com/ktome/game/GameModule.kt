@@ -28,6 +28,7 @@ import com.ktome.core.snapshot.RenderTextArgumentSnapshot
 import com.ktome.core.snapshot.RenderTextTokenSnapshot
 import com.ktome.game.data.DataLoader
 import com.ktome.game.data.schema.SchemaCatalog
+import com.ktome.game.data.schema.SchemaCombatProfile
 import com.ktome.game.i18n.GameLocale
 import com.ktome.game.factory.BossFactory
 import com.ktome.game.factory.EntityFactory
@@ -56,23 +57,10 @@ object GameModule {
         val content = loadContent(locale)
         validateNewSessionConfig(config, content.schemaCatalog)
         val profession = resolveProfession(content.schemaCatalog, config.playerProfessionId)
-        val zone = resolveZone(content.schemaCatalog, config.zoneId)
-        require(config.floor in 1..zone.floorCount) {
-            "Start floor ${config.floor} is outside zone '${zone.id}' range 1..${zone.floorCount}."
-        }
-        val sessionConfig =
-            config.copy(
-                width = zone.mapSize.width,
-                height = zone.mapSize.height,
-                maxFloor = zone.floorCount,
-            )
         val playerSnapshot = createInitialPlayerSnapshot(content, profession, Point.ZERO)
-        val dungeonManager =
-            DungeonManager(
-                maxFloor = sessionConfig.maxFloor,
-                startFloor = sessionConfig.floor,
-                floorLoader = { floor -> generateFloor(content, sessionConfig, zone, floor) },
-            )
+        val zoneRuntime = buildZoneRuntime(content, config)
+        val sessionConfig = zoneRuntime.config
+        val dungeonManager = zoneRuntime.dungeonManager
         val startFloor = dungeonManager.currentState()
         val startingPlayer =
             playerSnapshot.copy(
@@ -84,7 +72,8 @@ object GameModule {
             saveManager = saveManager,
             dungeonManager = dungeonManager,
             playerSnapshot = startingPlayer,
-            initialMessageLog = initialMessagesForZone(zone, content.schemaCatalog),
+            initialMessageLog = zoneRuntime.initialMessages,
+            zoneRuntimeFactory = { nextConfig -> buildZoneRuntime(content, nextConfig) },
         )
     }
 
@@ -149,6 +138,34 @@ object GameModule {
                     ?: FoundationGameSession.defaultSessionRandomSource(sessionConfig, restored.turnCount),
             restoredPendingActionIds = restored.pendingActionIds,
             restoredActiveTurnActorId = restored.activeTurnActorId,
+            zoneRuntimeFactory = { nextConfig -> buildZoneRuntime(content, nextConfig) },
+        )
+    }
+
+    private fun buildZoneRuntime(
+        content: GameContent,
+        config: FoundationGameConfig,
+    ): ZoneRuntimeBundle {
+        val zone = resolveZone(content.schemaCatalog, config.zoneId)
+        require(config.floor in 1..zone.floorCount) {
+            "Start floor ${config.floor} is outside zone '${zone.id}' range 1..${zone.floorCount}."
+        }
+        val resolvedConfig =
+            config.copy(
+                width = zone.mapSize.width,
+                height = zone.mapSize.height,
+                maxFloor = zone.floorCount,
+            )
+        val dungeonManager =
+            DungeonManager(
+                maxFloor = resolvedConfig.maxFloor,
+                startFloor = resolvedConfig.floor,
+                floorLoader = { floor -> generateFloor(content, resolvedConfig, zone, floor) },
+            )
+        return ZoneRuntimeBundle(
+            config = resolvedConfig,
+            dungeonManager = dungeonManager,
+            initialMessages = initialMessagesForZone(zone, content.schemaCatalog),
         )
     }
 
@@ -199,6 +216,7 @@ object GameModule {
                 talents = resolveStartingTalents(content, profession),
                 playerName = content.localizer.text("actor.player.name"),
                 stats = profession.baseStats.toRuntimeStats(),
+                combatProfile = profession.combatProfile.toRuntimeCombatProfile(),
             )
         installStarterKit(world, playerId, resolveStarterItems(content, profession))
         StatsCalculator.recalculateAndStore(world, playerId)
@@ -218,7 +236,7 @@ object GameModule {
                 config = BspConfig(width = config.width, height = config.height),
             ).generate()
         val world = World()
-        reserveEntityRange(world, floor)
+        reserveEntityRange(world, config.routeIndex, floor)
         val factory = EntityFactory()
         val itemFactory = ItemFactory()
         val bossFactory = BossFactory(factory)
@@ -634,7 +652,9 @@ object GameModule {
             Glyph(
                 when (interactableId) {
                     "armory_gate" -> '+'
-                    "alarm_bonfire" -> '^'
+                    "alarm_bonfire", "warden_beacon", "slag_valve", "shadow_brazier" -> '^'
+                    "mine_furnace" -> '#'
+                    "ritual_altar" -> '='
                     else -> '&'
                 },
             ),
@@ -644,7 +664,11 @@ object GameModule {
             DisplayColor(
                 when (interactableId) {
                     "armory_gate" -> "#C7B48A"
-                    "alarm_bonfire" -> "#FF8A3D"
+                    "alarm_bonfire", "warden_beacon" -> "#FF8A3D"
+                    "slag_valve" -> "#D66A3D"
+                    "shadow_brazier" -> "#8A73C9"
+                    "mine_furnace" -> "#C16B3C"
+                    "ritual_altar" -> "#6E6786"
                     else -> "#D6C977"
                 },
             ),
@@ -690,23 +714,7 @@ object GameModule {
     private fun resolveStartingTalentIds(
         content: GameContent,
         profession: ProfessionSchemaV2,
-    ): List<String> {
-        if (profession.startingTalents.isNotEmpty()) {
-            return profession.startingTalents.distinct()
-        }
-        val treeIds = profession.talentTrees.toSet()
-        val treeNodeIds =
-            content.schemaCatalog.talentTrees
-                .filter { tree -> tree.id in treeIds }
-                .flatMap { tree -> tree.nodes }
-        if (treeNodeIds.isNotEmpty()) {
-            return treeNodeIds.distinct()
-        }
-        return content.schemaCatalog.talents
-            .filter { talent -> talent.treeId in treeIds }
-            .map { talent -> talent.id }
-            .distinct()
-    }
+    ): List<String> = TalentProgression.unlockedTalentIds(content.schemaCatalog, profession, level = 1)
 
     private fun resolveStarterItems(
         content: GameContent,
@@ -779,6 +787,9 @@ object GameModule {
         config: FoundationGameConfig,
         schemaCatalog: SchemaCatalog,
     ) {
+        routeValidationError(config, schemaCatalog)?.let { message ->
+            throw IllegalArgumentException(message)
+        }
         require(schemaCatalog.zones.any { it.id == config.zoneId }) {
             "Unknown zone id '${config.zoneId}'. Update FoundationGameConfig to use a formal ZoneSpec id."
         }
@@ -791,6 +802,7 @@ object GameModule {
         config: FoundationGameConfig,
         schemaCatalog: SchemaCatalog,
     ) {
+        routeValidationError(config, schemaCatalog)?.let(::InvalidSaveException)?.let { throw it }
         if (schemaCatalog.zones.none { it.id == config.zoneId }) {
             throw InvalidSaveException("Save references unknown zone id '${config.zoneId}'.")
         }
@@ -813,6 +825,26 @@ object GameModule {
                 "Save current floor ${config.floor} is outside zone '${zone.id}' range 1..${zone.floorCount}.",
             )
         }
+    }
+
+    private fun routeValidationError(
+        config: FoundationGameConfig,
+        schemaCatalog: SchemaCatalog,
+    ): String? {
+        if (config.zoneRoute.isEmpty()) {
+            return "Zone route must not be empty."
+        }
+        if (config.routeIndex !in config.zoneRoute.indices) {
+            return "Route index ${config.routeIndex} must be within zone route indices."
+        }
+        if (config.zoneRoute[config.routeIndex] != config.zoneId) {
+            return "Current zone '${config.zoneId}' must match zoneRoute[${config.routeIndex}]='${config.zoneRoute[config.routeIndex]}'."
+        }
+        val unknownZoneIds = config.zoneRoute.filterNot { zoneId -> schemaCatalog.zones.any { zone -> zone.id == zoneId } }
+        if (unknownZoneIds.isNotEmpty()) {
+            return "Zone route contains unknown zone ids: $unknownZoneIds."
+        }
+        return null
     }
 
     private fun validateLoadedFloorContracts(
@@ -862,17 +894,33 @@ object GameModule {
 
     private fun resolveAiType(template: MonsterTemplate): AIType =
         when (template.aiProfileId) {
-            "ai.kite.basic" -> AIType.KITE
-            "ai.patrol.basic" -> AIType.PATROL
-            "ai.chase.basic", "ai.boss.dungeon_lord", "ai.boss.bandit_captain" -> AIType.CHASE
+            "ai.kite.basic",
+            "ai.controller.pressure",
+            "ai.controller.shadow_priest",
+            ->
+                AIType.KITE
+            "ai.patrol.basic",
+            "ai.skirmisher.flank",
+            "ai.elite.huntmaster",
+            ->
+                AIType.PATROL
+            "ai.chase.basic",
+            "ai.guard.basic",
+            "ai.elite.forge_guard",
+            "ai.elite.ashgate_warden",
+            "ai.boss.dungeon_lord",
+            "ai.boss.bandit_captain",
+            ->
+                AIType.CHASE
             else -> template.ai
         }
 
     private fun reserveEntityRange(
         world: World,
+        routeIndex: Int,
         floor: Int,
     ) {
-        val reservation = com.ktome.core.ecs.EntityId(floor * 1_000)
+        val reservation = com.ktome.core.ecs.EntityId((routeIndex + 1) * 10_000 + floor * 1_000)
         world.createEntity(reservation)
         world.destroyEntity(reservation)
     }
@@ -883,6 +931,18 @@ object GameModule {
             dex = dex,
             con = con,
             wil = wil,
+        )
+
+    private fun SchemaCombatProfile.toRuntimeCombatProfile() =
+        com.ktome.core.ecs.CombatProfile(
+            baseAttack = baseAttack,
+            baseDefense = baseDefense,
+            baseAccuracy = baseAccuracy,
+            baseEvasion = baseEvasion,
+            baseSpeed = baseSpeed,
+            baseHp = baseHp,
+            baseStamina = baseStamina,
+            baseHpRegen = baseHpRegen,
         )
 
     private fun ItemBaseDef.toStarterItem() =

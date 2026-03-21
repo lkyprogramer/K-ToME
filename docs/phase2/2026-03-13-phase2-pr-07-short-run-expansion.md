@@ -12,6 +12,10 @@
 > 本文保留为 `PR-07` 的原始设计基线。  
 > 审查后、按 sprint/PR 粒度可直接执行的收口计划，见：
 > [2026-03-20-phase2-pr-07-post-review-execution-plan.md](./2026-03-20-phase2-pr-07-post-review-execution-plan.md)
+>
+> 自 Sprint 7 起，`P2-C` 的 formal-path 解释固定为两层：
+> 1. required key 必须做到 `0 missing_visual / 0 silence.ogg`
+> 2. 剩余 `phase2` placeholder / silence 只能作为非 formal debug budget 单独统计，不能再和完成态 blocker 混算
 
 ---
 

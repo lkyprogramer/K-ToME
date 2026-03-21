@@ -128,6 +128,7 @@ class TalentResolverTest {
                         name = "火球",
                         description = "",
                         staminaCost = 0,
+                        resourceCosts = mapOf(ResourceType.MANA to 10),
                         cooldown = 3,
                         range = 6,
                         minRange = 1,
@@ -138,6 +139,7 @@ class TalentResolverTest {
                         name = "烈焰之墙",
                         description = "",
                         staminaCost = 0,
+                        resourceCosts = mapOf(ResourceType.MANA to 14),
                         cooldown = 6,
                         range = 4,
                         minRange = 1,
@@ -149,6 +151,7 @@ class TalentResolverTest {
                         name = "冰箭",
                         description = "",
                         staminaCost = 0,
+                        resourceCosts = mapOf(ResourceType.MANA to 9),
                         cooldown = 3,
                         range = 6,
                         minRange = 1,
@@ -159,6 +162,7 @@ class TalentResolverTest {
                         name = "霜冻新星",
                         description = "",
                         staminaCost = 0,
+                        resourceCosts = mapOf(ResourceType.MANA to 16),
                         cooldown = 7,
                         range = 0,
                         areaRadius = 2,
@@ -169,6 +173,7 @@ class TalentResolverTest {
                         name = "冰封",
                         description = "",
                         staminaCost = 0,
+                        resourceCosts = mapOf(ResourceType.MANA to 18),
                         cooldown = 8,
                         range = 5,
                         minRange = 1,
@@ -179,6 +184,7 @@ class TalentResolverTest {
                         name = "闪现",
                         description = "",
                         staminaCost = 0,
+                        resourceCosts = mapOf(ResourceType.MANA to 14),
                         cooldown = 6,
                         range = 5,
                         minRange = 2,
@@ -189,6 +195,7 @@ class TalentResolverTest {
                         name = "奥术护盾",
                         description = "",
                         staminaCost = 0,
+                        resourceCosts = mapOf(ResourceType.MANA to 12),
                         cooldown = 8,
                         range = 0,
                         levelEffects = mapOf(1 to TalentLevelEffect(buffDuration = 3, buffMagnitude = 0.10)),
@@ -201,6 +208,103 @@ class TalentResolverTest {
                         cooldown = 10,
                         range = 0,
                         levelEffects = mapOf(1 to TalentLevelEffect(buffDuration = 2, buffMagnitude = 0.10)),
+                    ),
+                    TalentDef(
+                        id = "backstab",
+                        name = "背刺",
+                        description = "",
+                        staminaCost = 0,
+                        resourceCosts = mapOf(ResourceType.ENERGY to 12),
+                        cooldown = 3,
+                        range = 1,
+                        levelEffects = mapOf(1 to TalentLevelEffect(damageMultiplier = 1.35)),
+                    ),
+                    TalentDef(
+                        id = "poison_blade",
+                        name = "毒刃",
+                        description = "",
+                        staminaCost = 0,
+                        resourceCosts = mapOf(ResourceType.ENERGY to 14),
+                        cooldown = 4,
+                        range = 1,
+                        levelEffects = mapOf(1 to TalentLevelEffect(damageMultiplier = 1.05, debuffMagnitude = 0.10, debuffDuration = 2)),
+                        damageType = com.ktome.core.combat.DamageType.SHADOW,
+                    ),
+                    TalentDef(
+                        id = "roll",
+                        name = "翻滚",
+                        description = "",
+                        staminaCost = 0,
+                        resourceCosts = mapOf(ResourceType.ENERGY to 8),
+                        cooldown = 4,
+                        range = 3,
+                        minRange = 1,
+                        levelEffects = mapOf(1 to TalentLevelEffect()),
+                    ),
+                    TalentDef(
+                        id = "shadowstep",
+                        name = "影袭",
+                        description = "",
+                        staminaCost = 0,
+                        resourceCosts = mapOf(ResourceType.ENERGY to 20),
+                        cooldown = 7,
+                        range = 5,
+                        minRange = 2,
+                        levelEffects = mapOf(1 to TalentLevelEffect(damageMultiplier = 1.20)),
+                        damageType = com.ktome.core.combat.DamageType.SHADOW,
+                    ),
+                    TalentDef(
+                        id = "deathblow",
+                        name = "处决",
+                        description = "",
+                        staminaCost = 0,
+                        resourceCosts = mapOf(ResourceType.ENERGY to 24),
+                        cooldown = 8,
+                        range = 1,
+                        levelEffects = mapOf(1 to TalentLevelEffect(damageMultiplier = 1.60, buffMagnitude = 0.10)),
+                    ),
+                    TalentDef(
+                        id = "holy_strike",
+                        name = "圣击",
+                        description = "",
+                        staminaCost = 0,
+                        resourceCosts = mapOf(ResourceType.POSITIVE_ENERGY to 10),
+                        cooldown = 3,
+                        range = 1,
+                        levelEffects = mapOf(1 to TalentLevelEffect(damageMultiplier = 1.30)),
+                        damageType = com.ktome.core.combat.DamageType.HOLY,
+                    ),
+                    TalentDef(
+                        id = "judgment_hammer",
+                        name = "裁决之锤",
+                        description = "",
+                        staminaCost = 0,
+                        resourceCosts = mapOf(ResourceType.POSITIVE_ENERGY to 14),
+                        cooldown = 5,
+                        range = 4,
+                        minRange = 1,
+                        levelEffects = mapOf(1 to TalentLevelEffect(damageMultiplier = 1.10, stunDuration = 1)),
+                        damageType = com.ktome.core.combat.DamageType.HOLY,
+                    ),
+                    TalentDef(
+                        id = "holy_light",
+                        name = "圣光术",
+                        description = "",
+                        staminaCost = 0,
+                        resourceCosts = mapOf(ResourceType.POSITIVE_ENERGY to 12),
+                        cooldown = 6,
+                        range = 0,
+                        levelEffects = mapOf(1 to TalentLevelEffect(buffMagnitude = 0.18)),
+                    ),
+                    TalentDef(
+                        id = "holy_shield",
+                        name = "神圣护盾",
+                        description = "",
+                        staminaCost = 0,
+                        resourceCosts = mapOf(ResourceType.POSITIVE_ENERGY to 12),
+                        cooldown = 8,
+                        range = 0,
+                        levelEffects = mapOf(1 to TalentLevelEffect(buffDuration = 3, buffMagnitude = 0.12)),
                     ),
                 ),
             )
@@ -250,6 +354,7 @@ class TalentResolverTest {
         assertTrue(result is TalentUseResult.Success)
         assertEquals(6, requireNotNull(world.get<Health>(monster)).current)
         assertEquals(32, requireNotNull(world.get<Stamina>(player)).current)
+        assertEquals(32, requireNotNull(world.get<ResourcePools>(player)).pool(ResourceType.STAMINA)?.current)
         assertEquals(3, requireNotNull(world.get<CooldownState>(player)).remainingByTalentId["power_strike"])
     }
 
@@ -375,6 +480,18 @@ class TalentResolverTest {
 
         assertTrue(result is TalentUseResult.Success)
         assertTrue(requireNotNull(world.get<Health>(monster)).current < 40)
+        assertEquals(90, requireNotNull(world.get<ResourcePools>(player)).pool(ResourceType.MANA)?.current)
+    }
+
+    @Test
+    fun `cannot use mana talent without enough mana`() {
+        val world = baseWorld()
+        val player = createPlayer(world, cooldown = 0, mana = 5)
+        createMonster(world, Point(4, 2))
+
+        val reason = resolver().canUse(world, map, player, "fireball", Point(4, 2))
+
+        assertEquals("Not enough resource.", reason)
     }
 
     @Test
@@ -406,6 +523,80 @@ class TalentResolverTest {
         assertTrue(result is TalentUseResult.Success)
         assertEquals(30, requireNotNull(world.get<ResourcePools>(player)).pool(ResourceType.MANA)?.current)
         assertTrue(requireNotNull(world.get<com.ktome.core.talent.EffectTracker>(player)).has(StatusEffectType.MANA_SURGE_BUFF))
+    }
+
+    @Test
+    fun `poison blade applies cursed and spends energy`() {
+        val world = baseWorld()
+        val player = createPlayer(world, cooldown = 0)
+        val monster = createMonster(world, Point(2, 2))
+
+        val result = resolver().resolve(world, map, player, "poison_blade", Point(2, 2))
+
+        assertTrue(result is TalentUseResult.Success)
+        assertTrue(requireNotNull(world.get<com.ktome.core.talent.EffectTracker>(monster)).has(StatusEffectType.CURSED))
+        assertEquals(46, requireNotNull(world.get<ResourcePools>(player)).pool(ResourceType.ENERGY)?.current)
+    }
+
+    @Test
+    fun `roll repositions user with energy cost`() {
+        val world = baseWorld()
+        val player = createPlayer(world, cooldown = 0)
+
+        val result = resolver().resolve(world, map, player, "roll", Point(4, 2))
+
+        assertTrue(result is TalentUseResult.Success)
+        assertEquals(Point(4, 2), requireNotNull(world.get<Position>(player)).toPoint())
+        assertEquals(52, requireNotNull(world.get<ResourcePools>(player)).pool(ResourceType.ENERGY)?.current)
+    }
+
+    @Test
+    fun `shadowstep lands adjacent to target and deals shadow damage`() {
+        val world = baseWorld()
+        val player = createPlayer(world, cooldown = 0)
+        val monster = createMonster(world, Point(5, 2))
+
+        val result = resolver().resolve(world, map, player, "shadowstep", Point(5, 2))
+
+        assertTrue(result is TalentUseResult.Success)
+        assertEquals(1, requireNotNull(world.get<Position>(player)).toPoint().chebyshevDistanceTo(Point(5, 2)))
+        assertTrue(requireNotNull(world.get<Health>(monster)).current < 40)
+    }
+
+    @Test
+    fun `deathblow restores energy after a successful hit`() {
+        val world = baseWorld()
+        val player = createPlayer(world, cooldown = 0, energy = 30)
+        createMonster(world, Point(2, 2))
+
+        val result = resolver().resolve(world, map, player, "deathblow", Point(2, 2))
+
+        assertTrue(result is TalentUseResult.Success)
+        assertEquals(16, requireNotNull(world.get<ResourcePools>(player)).pool(ResourceType.ENERGY)?.current)
+    }
+
+    @Test
+    fun `holy light heals the player using positive energy`() {
+        val world = baseWorld()
+        val player = createPlayer(world, cooldown = 0, positiveEnergy = 40)
+        requireNotNull(world.get<Health>(player)).current = 20
+
+        val result = resolver().resolve(world, map, player, "holy_light", null)
+
+        assertTrue(result is TalentUseResult.Success)
+        assertTrue(requireNotNull(world.get<Health>(player)).current > 20)
+        assertEquals(28, requireNotNull(world.get<ResourcePools>(player)).pool(ResourceType.POSITIVE_ENERGY)?.current)
+    }
+
+    @Test
+    fun `holy shield applies templar defensive buff`() {
+        val world = baseWorld()
+        val player = createPlayer(world, cooldown = 0, positiveEnergy = 40)
+
+        val result = resolver().resolve(world, map, player, "holy_shield", null)
+
+        assertTrue(result is TalentUseResult.Success)
+        assertTrue(requireNotNull(world.get<com.ktome.core.talent.EffectTracker>(player)).has(StatusEffectType.HOLY_SHIELD_BUFF))
     }
 
     @Test
@@ -444,6 +635,9 @@ class TalentResolverTest {
     private fun createPlayer(
         world: World,
         stamina: Int = 40,
+        mana: Int = 100,
+        energy: Int = 60,
+        positiveEnergy: Int = 30,
         cooldown: Int = 3,
         levelOverrides: Map<String, Int> = emptyMap(),
     ): com.ktome.core.ecs.EntityId {
@@ -475,6 +669,15 @@ class TalentResolverTest {
                         15 to "blink",
                         16 to "arcane_shield",
                         17 to "mana_surge",
+                        18 to "backstab",
+                        19 to "poison_blade",
+                        20 to "roll",
+                        21 to "shadowstep",
+                        22 to "deathblow",
+                        23 to "holy_strike",
+                        24 to "judgment_hammer",
+                        25 to "holy_light",
+                        26 to "holy_shield",
                     ),
                 talentLevels =
                     linkedMapOf(
@@ -495,6 +698,15 @@ class TalentResolverTest {
                         "blink" to 1,
                         "arcane_shield" to 1,
                         "mana_surge" to 1,
+                        "backstab" to 1,
+                        "poison_blade" to 1,
+                        "roll" to 1,
+                        "shadowstep" to 1,
+                        "deathblow" to 1,
+                        "holy_strike" to 1,
+                        "judgment_hammer" to 1,
+                        "holy_light" to 1,
+                        "holy_shield" to 1,
                     ).apply {
                     putAll(levelOverrides)
                 },
@@ -516,6 +728,17 @@ class TalentResolverTest {
         world.add(player, derived)
         world.add(player, Health(current = derived.maxHp, max = derived.maxHp))
         world.add(player, Stamina(current = stamina, max = derived.maxStamina))
+        world.add(
+            player,
+            ResourcePools(
+                linkedMapOf(
+                    ResourceType.STAMINA to ResourcePool(type = ResourceType.STAMINA, current = stamina, max = derived.maxStamina),
+                    ResourceType.MANA to ResourcePool(type = ResourceType.MANA, current = mana, max = 100),
+                    ResourceType.ENERGY to ResourcePool(type = ResourceType.ENERGY, current = energy, max = 100),
+                    ResourceType.POSITIVE_ENERGY to ResourcePool(type = ResourceType.POSITIVE_ENERGY, current = positiveEnergy, max = 100),
+                ),
+            ),
+        )
         return player
     }
 

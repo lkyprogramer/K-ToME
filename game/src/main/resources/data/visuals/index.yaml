@@ -11,7 +11,10 @@ visuals:
   - id: actor.undead.restless_skeleton
   - id: actor.bandit.sentry
   - id: actor.orc.raider
+  - id: actor.orc.miner
   - id: actor.cultist.dungeon_lord
+  - id: actor.cultist.shadow_priest
+  - id: actor.boss.ashgate_warden
   - id: icon.profession.vanguard
   - id: icon.profession.arcanist
   - id: icon.profession.rogue
@@ -74,15 +77,49 @@ visuals:
   - id: talent.arcanist.blink.icon
   - id: talent.arcanist.mana_surge.visual
   - id: talent.arcanist.mana_surge.icon
+  - id: talent.rogue.backstab.visual
+  - id: talent.rogue.poison_blade.visual
+  - id: talent.rogue.stealth.visual
+  - id: talent.rogue.smoke_bomb.visual
+  - id: talent.rogue.roll.visual
+  - id: talent.rogue.blade_flurry.visual
+  - id: talent.rogue.shadowstep.visual
+  - id: talent.rogue.deathblow.visual
+  - id: talent.templar.holy_strike.visual
+  - id: talent.templar.judgment_hammer.visual
+  - id: talent.templar.holy_light.visual
+  - id: talent.templar.holy_shield.visual
+  - id: talent.templar.devotion.visual
+  - id: talent.templar.holy_aura.visual
+  - id: talent.templar.purify.visual
+  - id: talent.templar.divine_intervention.visual
   - id: icon.skill.vanguard.guard_stance
   - id: icon.skill.vanguard.power_strike
   - id: icon.skill.vanguard.shield_bash
   - id: icon.skill.vanguard.war_cry
   - id: icon.skill.arcanist.blink
   - id: icon.skill.arcanist.fire_bolt
+  - id: icon.skill.rogue.backstab
+  - id: icon.skill.rogue.poison_blade
+  - id: icon.skill.rogue.stealth
+  - id: icon.skill.rogue.smoke_bomb
+  - id: icon.skill.rogue.roll
+  - id: icon.skill.rogue.blade_flurry
+  - id: icon.skill.rogue.shadowstep
+  - id: icon.skill.rogue.deathblow
+  - id: icon.skill.templar.holy_strike
+  - id: icon.skill.templar.judgment_hammer
+  - id: icon.skill.templar.holy_light
+  - id: icon.skill.templar.holy_shield
+  - id: icon.skill.templar.devotion
+  - id: icon.skill.templar.holy_aura
+  - id: icon.skill.templar.purify
+  - id: icon.skill.templar.divine_intervention
   - id: icon.monster.bandit.captain
   - id: prop.alarm_bonfire
   - id: prop.armory_gate
+  - id: prop.mine_furnace
+  - id: prop.ritual_altar
   - id: prop.stairs.down
   - id: prop.stairs.up
   - id: prop.supply_crate
