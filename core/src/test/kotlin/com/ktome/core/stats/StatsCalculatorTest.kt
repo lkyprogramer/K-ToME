@@ -12,6 +12,9 @@ import com.ktome.core.item.EquipSlot
 import com.ktome.core.item.ItemInstance
 import com.ktome.core.item.ItemType
 import com.ktome.core.item.StatModifier
+import com.ktome.core.resource.ResourcePool
+import com.ktome.core.resource.ResourcePools
+import com.ktome.core.resource.ResourceType
 import com.ktome.core.talent.ActiveEffect
 import com.ktome.core.talent.EffectTracker
 import com.ktome.core.talent.StatusEffectType
@@ -93,6 +96,14 @@ class StatsCalculatorTest {
         world.add(actor, Health(current = 20, max = 120))
         world.add(actor, Stamina(current = 7, max = 70))
         world.add(
+            actor,
+            ResourcePools(
+                linkedMapOf(
+                    ResourceType.STAMINA to ResourcePool(type = ResourceType.STAMINA, current = 7, max = 70),
+                ),
+            ),
+        )
+        world.add(
             armor,
             ItemInstance(
                 baseId = "plate",
@@ -111,7 +122,8 @@ class StatsCalculatorTest {
         assertEquals(80, derived.maxStamina)
         assertEquals(40, requireNotNull(world.get<Health>(actor)).current)
         assertEquals(17, requireNotNull(world.get<Stamina>(actor)).current)
+        assertEquals(17, requireNotNull(world.get<ResourcePools>(actor)).pool(ResourceType.STAMINA)?.current)
+        assertEquals(80, requireNotNull(world.get<ResourcePools>(actor)).pool(ResourceType.STAMINA)?.max)
         assertTrue(requireNotNull(world.get<com.ktome.core.ecs.DerivedStats>(actor)).defense >= 7)
     }
 }
-

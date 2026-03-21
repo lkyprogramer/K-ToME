@@ -1,5 +1,6 @@
 package com.ktome.game.data
 
+import com.ktome.core.combat.DamageType
 import com.ktome.core.ecs.AIType
 import com.ktome.core.ecs.Stats
 import com.ktome.core.item.AffixDef
@@ -10,6 +11,7 @@ import com.ktome.core.item.ItemBaseDef
 import com.ktome.core.item.ItemDataBundle
 import com.ktome.core.item.ItemType
 import com.ktome.core.item.MaterialDef
+import com.ktome.core.resource.ResourceType
 import com.ktome.core.item.StatModifier
 import com.ktome.core.talent.StatusEffectType
 import com.ktome.core.talent.TalentDef
@@ -30,6 +32,7 @@ import com.ktome.game.data.schema.ObjectiveSetSchemaV2
 import com.ktome.game.data.schema.ObjectiveInteractablePlacementSchemaV2
 import com.ktome.game.data.schema.ProfessionSchemaV2
 import com.ktome.game.data.schema.SchemaCatalog
+import com.ktome.game.data.schema.SchemaCombatProfile
 import com.ktome.game.data.schema.SchemaLevelRange
 import com.ktome.game.data.schema.SchemaMapSize
 import com.ktome.game.data.schema.SchemaOffset
@@ -134,6 +137,7 @@ class DataLoader(
                 tags = profession.optionalStringList("tags"),
                 resourceType = profession.requiredString("resourceType"),
                 baseStats = profession.requiredMap("baseStats").toSchemaStats(),
+                combatProfile = profession.requiredMap("combatProfile").toSchemaCombatProfile(),
                 statGrowth = profession.requiredMap("statGrowth").toSchemaStats(),
                 startingResources = profession.optionalIntMap("startingResources"),
                 resourceCaps = profession.optionalIntMap("resourceCaps"),
@@ -185,6 +189,7 @@ class DataLoader(
                 minRange = talent.optionalInt("minRange"),
                 areaRadius = talent.optionalInt("areaRadius"),
                 resourceCosts = talent.optionalIntMap("resourceCosts"),
+                unlockLevel = talent.optionalInt("unlockLevel", 1),
                 targeting = talent.requiredString("targeting"),
                 requirements = requirements,
                 levelEffects = levelEffects,
@@ -232,10 +237,13 @@ class DataLoader(
                 baseHp = monster.requiredInt("baseHp"),
                 baseAttack = monster.requiredInt("baseAttack"),
                 baseDefense = monster.requiredInt("baseDefense"),
+                baseAccuracy = monster.optionalInt("baseAccuracy", 10),
+                baseEvasion = monster.optionalInt("baseEvasion", 5),
                 speed = monster.requiredInt("speed"),
                 ai = monster.requiredString("ai"),
                 aiProfileId = monster.requiredString("aiProfileId"),
                 lootProfileId = monster.requiredString("lootProfileId"),
+                resistances = monster.optionalIntMap("resistances"),
                 talents = monster.optionalIntMap("talents"),
                 expReward = monster.requiredInt("expReward"),
                 spawnFloors = monster.requiredIntList("spawnFloors"),
@@ -464,10 +472,23 @@ class DataLoader(
             knockback = effect.optionalInt("knockback"),
             stunDuration = effect.optionalInt("stunDuration"),
             armorBreakDuration = effect.optionalInt("armorBreakDuration"),
+            rangeBonus = effect.optionalInt("rangeBonus"),
             buffDuration = effect.optionalInt("buffDuration"),
             buffMagnitude = effect.optionalDouble("buffMagnitude", 0.0),
             debuffMagnitude = effect.optionalDouble("debuffMagnitude", 0.0),
             debuffDuration = effect.optionalInt("debuffDuration"),
+        )
+
+    private fun Map<*, *>.toSchemaCombatProfile(): SchemaCombatProfile =
+        SchemaCombatProfile(
+            baseAttack = requiredInt("baseAttack"),
+            baseDefense = requiredInt("baseDefense"),
+            baseAccuracy = optionalInt("baseAccuracy", 10),
+            baseEvasion = optionalInt("baseEvasion", 5),
+            baseSpeed = optionalInt("baseSpeed", 100),
+            baseHp = requiredInt("baseHp"),
+            baseStamina = optionalInt("baseStamina", 40),
+            baseHpRegen = optionalDouble("baseHpRegen", 1.0),
         )
 
     private fun MonsterSchemaV2.toRuntimeMonster(localizer: Localizer): MonsterTemplate =
@@ -480,17 +501,24 @@ class DataLoader(
             baseHp = baseHp,
             baseAttack = baseAttack,
             baseDefense = baseDefense,
+            baseAccuracy = baseAccuracy,
+            baseEvasion = baseEvasion,
             speed = speed,
             ai = AIType.valueOf(ai),
             expReward = expReward,
             spawnFloors = spawnFloors,
             spawnWeight = spawnWeight,
             archetype = archetype,
+            tags = tags,
             visualKey = visualKey,
             iconKey = iconKey,
             audioProfile = audioProfile,
             aiProfileId = aiProfileId,
             lootProfileId = lootProfileId,
+            resistances =
+                resistances.entries
+                    .associate { (damageTypeId, value) -> DamageType.valueOf(damageTypeId) to value }
+                    .toMap(linkedMapOf()),
             talentLevels = talents,
         )
 
@@ -541,7 +569,12 @@ class DataLoader(
             name = localizer.text(nameKey),
             description = localizer.text(descKey),
             maxLevel = maxPoints,
+            damageType = damageType?.let(DamageType::valueOf) ?: DamageType.PHYSICAL,
             staminaCost = resourceCosts["STAMINA"] ?: 0,
+            resourceCosts =
+                resourceCosts.entries
+                    .associate { (resourceTypeId, cost) -> ResourceType.fromId(resourceTypeId) to cost }
+                    .toMap(linkedMapOf()),
             cooldown = cooldown,
             range = range,
             minRange = minRange,
@@ -553,6 +586,7 @@ class DataLoader(
                         knockback = effect.knockback,
                         stunDuration = effect.stunDuration,
                         armorBreakDuration = effect.armorBreakDuration,
+                        rangeBonus = effect.rangeBonus,
                         buffDuration = effect.buffDuration,
                         buffMagnitude = effect.buffMagnitude,
                         debuffMagnitude = effect.debuffMagnitude,

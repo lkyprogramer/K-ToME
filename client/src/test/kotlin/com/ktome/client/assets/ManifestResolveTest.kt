@@ -80,6 +80,26 @@ class ManifestResolveTest {
     }
 
     @Test
+    fun `route zone keys resolve to formal runtime visuals instead of debug placeholders`() {
+        val resolver = ClientAssetBundleLoader.load().visualResolver
+
+        listOf(
+            "zone.shattered_outpost.visual" to "phase2/p2-c/zone_shattered_outpost_visual.png",
+            "zone.shattered_outpost.icon" to "phase2/p2-c/zone_shattered_outpost_icon.png",
+            "zone.greenwood_fringe.visual" to "phase2/p2-c/zone_greenwood_fringe_visual.png",
+            "zone.greenwood_fringe.icon" to "phase2/p2-c/zone_greenwood_fringe_icon.png",
+            "zone.deep_iron_pit.visual" to "phase2/p2-c/zone_deep_iron_pit_visual.png",
+            "zone.deep_iron_pit.icon" to "phase2/p2-c/zone_deep_iron_pit_icon.png",
+            "zone.grey_gate_depths.visual" to "phase2/p2-c/zone_grey_gate_depths_visual.png",
+            "zone.grey_gate_depths.icon" to "phase2/p2-c/zone_grey_gate_depths_icon.png",
+        ).forEach { (key, expectedPath) ->
+            val resolved = resolver.resolve(key)
+            assertEquals(expectedPath, resolved.entry.rawOutputPath)
+            assertFalse(resolved.fallbackUsed)
+        }
+    }
+
+    @Test
     fun `canResolve only accepts exact manifest keys`() {
         val assets = ClientAssetBundleLoader.load()
 

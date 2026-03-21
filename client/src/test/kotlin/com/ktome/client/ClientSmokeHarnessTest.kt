@@ -40,6 +40,7 @@ import com.ktome.client.screen.MainMenuScreen
 import com.ktome.client.screen.MainMenuTextSnapshot
 import com.ktome.core.save.AssetVersionContract
 import com.ktome.core.save.SaveManager
+import com.ktome.game.FOUNDATION_ZONE_ROUTE
 import com.ktome.game.FoundationGameConfig
 import com.ktome.game.FoundationGameSession
 import com.ktome.game.GameModule
@@ -127,11 +128,17 @@ class ClientSmokeHarnessTest {
                     expectedInspectTitle = "Inspect",
                     expectedLogLine = "You enter the dungeon.",
                 ),
-                runContinueSmoke(
-                    name = "continue-zh-after-en-save",
+                runNewGameSmoke(
+                    name = "new-game-rogue-greenwood-zh",
                     saveManager = saveManager,
-                    smokeSource = continueSource,
-                    menuInput = ScriptedInputSource(Keys.DOWN, Keys.ENTER),
+                    smokeSource = SmokeCommandSource(),
+                    defaultConfig =
+                        FoundationGameConfig(
+                            seed = 20260316L,
+                            zoneId = "greenwood_fringe",
+                            playerProfessionId = "rogue",
+                        ),
+                    menuInput = ScriptedInputSource(Keys.ENTER),
                     expectedLocale = GameLocale.ZH_CN,
                     expectedMenuSubtitle = "主菜单",
                     expectedMenuLanguage = "语言：简体中文",
@@ -140,7 +147,71 @@ class ClientSmokeHarnessTest {
                     expectedHudToken = "层",
                     expectedInventoryTitle = "背包",
                     expectedInspectTitle = "检视",
+                    expectedLogLine = "你进入了地牢。",
+                ),
+                runNewGameSmoke(
+                    name = "new-game-templar-grey-gate-en",
+                    saveManager = saveManager,
+                    smokeSource = SmokeCommandSource(),
+                    defaultConfig =
+                        FoundationGameConfig(
+                            seed = 20260317L,
+                            zoneId = "grey_gate_depths",
+                            playerProfessionId = "templar",
+                        ),
+                    menuInput = ScriptedInputSource(Keys.L, Keys.ENTER),
+                    expectedLocale = GameLocale.EN_US,
+                    expectedMenuSubtitle = "Main Menu",
+                    expectedMenuLanguage = "Language: English",
+                    expectedPlayerName = "Hero",
+                    expectedPlayerRole = "Player",
+                    expectedHudToken = "FL",
+                    expectedInventoryTitle = "Inventory",
+                    expectedInspectTitle = "Inspect",
+                    expectedLogLine = "You enter the dungeon.",
+                ),
+                runContinueSmoke(
+                    name = "continue-zh-after-en-save",
+                    saveManager = saveManager,
+                    smokeSource = continueSource,
+                    savedConfig = FoundationGameConfig(seed = 20260313L),
+                    menuInput = ScriptedInputSource(Keys.DOWN, Keys.ENTER),
+                    expectedLocale = GameLocale.ZH_CN,
+                    expectedZoneId = "shattered_outpost",
+                    expectedProfessionId = "vanguard",
+                    expectedMenuSubtitle = "主菜单",
+                    expectedMenuLanguage = "语言：简体中文",
+                    expectedPlayerName = "英雄",
+                    expectedPlayerRole = "玩家",
+                    expectedHudToken = "层",
+                    expectedInventoryTitle = "背包",
+                    expectedInspectTitle = "检视",
                     expectedLogLine = "游戏已加载。",
+                ),
+                runContinueSmoke(
+                    name = "continue-rogue-deep-iron-pit-en",
+                    saveManager = saveManager,
+                    smokeSource = SmokeCommandSource(),
+                    savedConfig =
+                        FoundationGameConfig(
+                            seed = 20260316L,
+                            zoneId = "deep_iron_pit",
+                            playerProfessionId = "rogue",
+                            zoneRoute = FOUNDATION_ZONE_ROUTE,
+                            routeIndex = 2,
+                        ),
+                    menuInput = ScriptedInputSource(Keys.L, Keys.DOWN, Keys.ENTER),
+                    expectedLocale = GameLocale.EN_US,
+                    expectedZoneId = "deep_iron_pit",
+                    expectedProfessionId = "rogue",
+                    expectedMenuSubtitle = "Main Menu",
+                    expectedMenuLanguage = "Language: English",
+                    expectedPlayerName = "Hero",
+                    expectedPlayerRole = "Player",
+                    expectedHudToken = "FL",
+                    expectedInventoryTitle = "Inventory",
+                    expectedInspectTitle = "Inspect",
+                    expectedLogLine = "Game loaded.",
                 ),
             )
 
@@ -413,8 +484,11 @@ class ClientSmokeHarnessTest {
         name: String,
         saveManager: SaveManager,
         smokeSource: SmokeCommandSource,
+        savedConfig: FoundationGameConfig,
         menuInput: ScriptedInputSource,
         expectedLocale: GameLocale,
+        expectedZoneId: String,
+        expectedProfessionId: String,
         expectedMenuSubtitle: String,
         expectedMenuLanguage: String,
         expectedPlayerName: String,
@@ -424,7 +498,7 @@ class ClientSmokeHarnessTest {
         expectedInspectTitle: String,
         expectedLogLine: String,
     ): ClientSmokeReport {
-        val session = GameModule.newFoundationSession(FoundationGameConfig(seed = 20260313L), saveManager, GameLocale.EN_US)
+        val session = GameModule.newFoundationSession(savedConfig, saveManager, GameLocale.EN_US)
         repeat(8) {
             session.perform(PlayerCommand.Wait)
         }
@@ -434,7 +508,7 @@ class ClientSmokeHarnessTest {
             val app =
                 GameApp(
                     saveManager = saveManager,
-                    defaultConfig = FoundationGameConfig(seed = 20260313L),
+                    defaultConfig = savedConfig,
                     menuInputSourceFactory = { menuInput },
                     gameCommandSourceFactory = { smokeSource },
                     outcomeInputSourceFactory = { ScriptedInputSource() },
@@ -457,6 +531,8 @@ class ClientSmokeHarnessTest {
                 success =
                     initialLoaded != null &&
                         localeId == expectedLocale.id &&
+                        zoneId == expectedZoneId &&
+                        professionId == expectedProfessionId &&
                         menuSnapshot.subtitle == expectedMenuSubtitle &&
                         menuSnapshot.language == expectedMenuLanguage &&
                         initialUi?.playerName == expectedPlayerName &&
@@ -491,6 +567,10 @@ class ClientSmokeHarnessTest {
                         "Continue did not load a session."
                     } else if (localeId != expectedLocale.id) {
                         "Expected locale ${expectedLocale.id}, got $localeId."
+                    } else if (zoneId != expectedZoneId) {
+                        "Expected zone $expectedZoneId, got $zoneId."
+                    } else if (professionId != expectedProfessionId) {
+                        "Expected profession $expectedProfessionId, got $professionId."
                     } else if (menuSnapshot.subtitle != expectedMenuSubtitle) {
                         "Expected menu subtitle $expectedMenuSubtitle, got ${menuSnapshot.subtitle}."
                     } else if (menuSnapshot.language != expectedMenuLanguage) {
@@ -618,7 +698,7 @@ class ClientSmokeHarnessTest {
                 },
                 configuration,
             )
-        } catch (exception: GdxRuntimeException) {
+        } catch (exception: RuntimeException) {
             if (isUnavailableLwjglBackend(exception)) {
                 throw TestAbortedException(
                     "Skipping render-enabled client smoke because LWJGL3 backend is unavailable in this environment.",
@@ -633,17 +713,25 @@ class ClientSmokeHarnessTest {
         }.getOrThrow()
     }
 
-    private fun isUnavailableLwjglBackend(exception: GdxRuntimeException): Boolean {
+    private fun isUnavailableLwjglBackend(exception: Throwable): Boolean {
         val messages =
             generateSequence<Throwable>(exception) { current -> current.cause }
                 .mapNotNull(Throwable::message)
                 .joinToString(separator = "\n")
+        val stackTrace =
+            generateSequence<Throwable>(exception) { current -> current.cause }
+                .flatMap { throwable -> throwable.stackTrace.asSequence() }
+                .joinToString(separator = "\n") { element -> "${element.className}.${element.methodName}" }
         return listOf(
             "Unable to initialize GLFW",
             "Couldn't create window",
             "Unable to initialize OpenAL",
             "Audio device",
-        ).any(messages::contains)
+        ).any(messages::contains) ||
+            listOf(
+                "org.lwjgl.glfw.GLFW.glfwGetMonitorPos",
+                "com.badlogic.gdx.backends.lwjgl3.Lwjgl3ApplicationConfiguration.toLwjgl3Monitor",
+            ).any(stackTrace::contains)
     }
 
     private fun frameBufferHash(): String {

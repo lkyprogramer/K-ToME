@@ -61,6 +61,7 @@ data class ProfessionSchemaV2(
     val tags: List<String>,
     val resourceType: String,
     val baseStats: SchemaStats,
+    val combatProfile: SchemaCombatProfile,
     val statGrowth: SchemaStats,
     val startingResources: Map<String, Int>,
     val resourceCaps: Map<String, Int>,
@@ -69,6 +70,17 @@ data class ProfessionSchemaV2(
     val startingKit: List<String>,
     val unlockCondition: String,
     val soloContract: String,
+)
+
+data class SchemaCombatProfile(
+    val baseAttack: Int,
+    val baseDefense: Int,
+    val baseAccuracy: Int = 10,
+    val baseEvasion: Int = 5,
+    val baseSpeed: Int = 100,
+    val baseHp: Int = 50,
+    val baseStamina: Int = 40,
+    val baseHpRegen: Double = 1.0,
 )
 
 data class TalentSchemaV2(
@@ -90,6 +102,7 @@ data class TalentSchemaV2(
     val minRange: Int,
     val areaRadius: Int,
     val resourceCosts: Map<String, Int>,
+    val unlockLevel: Int,
     val targeting: String,
     val requirements: TalentRequirementsSchemaV2,
     val levelEffects: Map<Int, TalentLevelEffectSchemaV2>,
@@ -113,6 +126,7 @@ data class TalentLevelEffectSchemaV2(
     val knockback: Int = 0,
     val stunDuration: Int = 0,
     val armorBreakDuration: Int = 0,
+    val rangeBonus: Int = 0,
     val buffDuration: Int = 0,
     val buffMagnitude: Double = 0.0,
     val debuffMagnitude: Double = 0.0,
@@ -149,10 +163,13 @@ data class MonsterSchemaV2(
     val baseHp: Int,
     val baseAttack: Int,
     val baseDefense: Int,
+    val baseAccuracy: Int,
+    val baseEvasion: Int,
     val speed: Int,
     val ai: String,
     val aiProfileId: String,
     val lootProfileId: String,
+    val resistances: Map<String, Int>,
     val talents: Map<String, Int>,
     val expReward: Int,
     val spawnFloors: List<Int>,

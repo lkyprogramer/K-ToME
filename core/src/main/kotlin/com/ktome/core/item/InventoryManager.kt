@@ -3,7 +3,6 @@ package com.ktome.core.item
 import com.ktome.core.ecs.EntityId
 import com.ktome.core.ecs.Health
 import com.ktome.core.ecs.Position
-import com.ktome.core.ecs.Stamina
 import com.ktome.core.ecs.World
 import com.ktome.core.ecs.add
 import com.ktome.core.ecs.get
@@ -12,6 +11,7 @@ import com.ktome.core.ecs.remove
 import com.ktome.core.map.Point
 import com.ktome.core.resource.ResourcePools
 import com.ktome.core.resource.ResourceType
+import com.ktome.core.resource.StaminaPools
 
 sealed interface InventoryOperationResult {
     val success: Boolean
@@ -231,8 +231,7 @@ class InventoryManager {
                             itemBaseId = item.baseId,
                         )
                 if (resourceTypeId == ResourceType.STAMINA.name) {
-                    val stamina = requireNotNull(world.get<Stamina>(entity)) { "Missing Stamina for $entity" }
-                    stamina.current = (stamina.current + item.magnitude).coerceAtMost(stamina.max)
+                    StaminaPools.restore(world, entity, item.magnitude)
                 } else {
                     val resourceType = ResourceType.fromId(resourceTypeId)
                     val pool =

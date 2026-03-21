@@ -18,6 +18,7 @@ from asset_pipeline_common import (
     REQUIRED_GATES,
     canonical_gate_prefix,
     collect_assets,
+    flatten_required_keys,
     grouped_assets,
     load_yaml,
     normalize_list,
@@ -231,8 +232,14 @@ def main() -> int:
     plan = load_yaml(plan_path)
     grouped = grouped_assets(plan)
     counts = {gate_id: len(assets) for gate_id, assets in sorted(grouped.items())}
+    required_counts = {gate_id: len(PHASE2_REQUIRED_VISUAL_KEYS[gate_id]) for gate_id in sorted(REQUIRED_GATES)}
     total = sum(counts.values())
-    print(f"asset-lint OK: total={total}, gates={counts}, plan={plan_path}, reportDir={report_dir}")
+    print(
+        "asset-lint OK: "
+        f"total={total}, gates={counts}, requiredVisualKeys={required_counts}, "
+        f"requiredVisualKeyTotal={len(flatten_required_keys(PHASE2_REQUIRED_VISUAL_KEYS))}, "
+        f"plan={plan_path}, reportDir={report_dir}"
+    )
     return 0
 
 

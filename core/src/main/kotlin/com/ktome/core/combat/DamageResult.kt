@@ -1,9 +1,11 @@
 package com.ktome.core.combat
 
 data class DamageResult(
+    val type: DamageType,
     val rawDamage: Int,
     val reducedDamage: Int,
     val finalDamage: Int,
+    val resistanceValue: Int = 0,
 )
 
 data class CombatResult(

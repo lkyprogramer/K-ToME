@@ -120,4 +120,48 @@ class CombatResolverTest {
 
         assertEquals(firstResult, secondResult)
     }
+
+    @Test
+    fun `elemental damage is reduced by resistance and carries its type`() {
+        val resolver = CombatResolver(TestRandomSource(doubles = listOf(0.0, 0.99), ints = listOf(0)))
+
+        val result =
+            resolver.resolveMelee(
+                attackerAttack = 12,
+                attackerAccuracy = 20,
+                attackerDex = 10,
+                targetDefense = 99,
+                targetEvasion = 0,
+                targetCurrentHp = 20,
+                damageType = DamageType.FIRE,
+                targetResistance = 50,
+            )
+
+        assertTrue(result.hit)
+        assertEquals(DamageType.FIRE, result.damage?.type)
+        assertEquals(6, result.damage?.finalDamage)
+        assertEquals(50, result.damage?.resistanceValue)
+    }
+
+    @Test
+    fun `physical damage ignores elemental resistance and still uses armor`() {
+        val resolver = CombatResolver(TestRandomSource(doubles = listOf(0.0, 0.99), ints = listOf(0)))
+
+        val result =
+            resolver.resolveMelee(
+                attackerAttack = 12,
+                attackerAccuracy = 20,
+                attackerDex = 10,
+                targetDefense = 4,
+                targetEvasion = 0,
+                targetCurrentHp = 20,
+                damageType = DamageType.PHYSICAL,
+                targetResistance = 75,
+            )
+
+        assertTrue(result.hit)
+        assertEquals(DamageType.PHYSICAL, result.damage?.type)
+        assertEquals(8, result.damage?.finalDamage)
+        assertEquals(0, result.damage?.resistanceValue)
+    }
 }

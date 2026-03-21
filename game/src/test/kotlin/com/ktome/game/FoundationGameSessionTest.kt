@@ -10,7 +10,6 @@ import com.ktome.core.ecs.Interactable
 import com.ktome.core.ecs.MonsterTemplateId
 import com.ktome.core.ecs.Position
 import com.ktome.core.ecs.Stair
-import com.ktome.core.ecs.Stamina
 import com.ktome.core.ecs.World
 import com.ktome.core.ecs.add
 import com.ktome.core.ecs.get
@@ -25,6 +24,7 @@ import com.ktome.core.map.Point
 import com.ktome.core.random.RandomSource
 import com.ktome.core.resource.ResourcePools
 import com.ktome.core.resource.ResourceType
+import com.ktome.core.resource.StaminaPools
 import com.ktome.core.save.SaveManager
 import com.ktome.core.save.SaveRestoreException
 import com.ktome.core.talent.ActiveEffect
@@ -109,6 +109,54 @@ class FoundationGameSessionTest {
         assertEquals(requireNotNull(runtimeWorld.get<Health>(playerId)).max, requireNotNull(runtimeWorld.get<Health>(playerId)).current)
         assertTrue(session.messageLog().any { it.contains("gain 180 experience") })
         assertTrue(session.messageLog().any { it.contains("advance to level 2") })
+    }
+
+    @Test
+    fun `level up applies profession stat growth and unlock cadence`() {
+        val session =
+            GameModule.newFoundationSession(
+                FoundationGameConfig(seed = 20260320L, zoneId = "shattered_outpost", playerProfessionId = "vanguard"),
+                SaveManager(tempDir.resolve("vanguard-growth-save")),
+            )
+        clearMonsters(session)
+        val baseline = session.playerStatus()
+        val dummyId = installExperienceDummy(session, id = "vanguard_growth_dummy", expReward = 1500)
+        val dummyPosition = requireNotNull(runtimeWorld(session).get<Position>(dummyId)).toPoint()
+
+        assertTrue(session.perform(PlayerCommand.Move(dummyPosition - session.playerPosition())))
+
+        val runtimeWorld = runtimeWorld(session)
+        assertEquals(5, requireNotNull(runtimeWorld.get<Experience>(session.playerId)).level)
+        assertTrue(session.playerStatus().attack > baseline.attack)
+        assertTrue(session.playerStatus().maxHp > baseline.maxHp)
+        assertEquals(
+            listOf("猛击", "盾击", "格挡姿态", "战吼", "冲锋", "横扫", "碎甲", "威压", "不屈"),
+            session.talentSlots().map { slot -> slot.name },
+        )
+        assertTrue(session.messageLog().any { message -> message.contains("冲锋") || message.contains("Charge") })
+    }
+
+    @Test
+    fun `arcanist level growth unlocks mana surge and increases blink range`() {
+        val session =
+            GameModule.newFoundationSession(
+                FoundationGameConfig(seed = 20260320L, zoneId = "shattered_outpost", playerProfessionId = "arcanist"),
+                SaveManager(tempDir.resolve("arcanist-growth-save")),
+            )
+        clearMonsters(session)
+        val baselineBlink = session.talentSlots().first { slot -> slot.talentId == "blink" }
+        val dummyId = installExperienceDummy(session, id = "arcanist_growth_dummy", expReward = 1500)
+        val dummyPosition = requireNotNull(runtimeWorld(session).get<Position>(dummyId)).toPoint()
+
+        assertTrue(session.perform(PlayerCommand.Move(dummyPosition - session.playerPosition())))
+
+        val blinkSlot = session.talentSlots().first { slot -> slot.talentId == "blink" }.slot
+        assertTrue(session.perform(PlayerCommand.AssignTalent(blinkSlot)))
+        val blink = session.talentSlots().first { slot -> slot.talentId == "blink" }
+        assertEquals(5, requireNotNull(runtimeWorld(session).get<Experience>(session.playerId)).level)
+        assertTrue(blink.range > baselineBlink.range)
+        assertTrue(session.talentSlots().any { slot -> slot.talentId == "mana_surge" })
+        assertTrue(session.talentSlots().any { slot -> slot.talentId == "ice_prison" })
     }
 
     @Test
@@ -342,6 +390,52 @@ class FoundationGameSessionTest {
     }
 
     @Test
+    fun `interact trail cache drops a greenwood reward and records objective progress`() {
+        val session =
+            GameModule.newFoundationSession(
+                FoundationGameConfig(seed = 20260318L, zoneId = "greenwood_fringe", playerProfessionId = "rogue"),
+                SaveManager(tempDir.resolve("greenwood-trail-cache-save")),
+            )
+        val cachePoint = interactablePoint(session, "trail_cache")
+
+        session.automationMovePlayerTo(cachePoint)
+
+        assertTrue(session.perform(PlayerCommand.Interact))
+
+        val world = session.automationWorld()
+        val groundItems =
+            world.entitiesWith(Position::class, ItemInstance::class)
+                .filter { entityId -> requireNotNull(world.get<Position>(entityId)).toPoint() == cachePoint }
+                .mapNotNull { entityId -> world.get<ItemInstance>(entityId)?.baseId }
+                .toSet()
+
+        assertTrue(groundItems.any { itemId -> itemId in setOf("bandit_trophy", "emerald_charm", "hunter_bow", "stamina_draught") })
+        assertTrue(session.renderSnapshot().logEvents.any { event -> event.message.key == "log.objective.progress" })
+    }
+
+    @Test
+    fun `interact mine furnace grants route support reward and restores stamina`() {
+        val session =
+            GameModule.newFoundationSession(
+                FoundationGameConfig(seed = 20260318L, zoneId = "deep_iron_pit", playerProfessionId = "vanguard"),
+                SaveManager(tempDir.resolve("deep-iron-furnace-save")),
+            )
+
+        movePlayerTo(session, stairPoint(session, com.ktome.core.dungeon.StairDirection.DOWN))
+        assertTrue(session.perform(PlayerCommand.Descend))
+        val furnacePoint = interactablePoint(session, "mine_furnace")
+        val baselineInventoryCount = session.inventoryItems().size
+        StaminaPools.syncTo(session.automationWorld(), session.playerId, nextCurrent = 5, nextMax = StaminaPools.max(session.automationWorld(), session.playerId))
+
+        session.automationMovePlayerTo(furnacePoint)
+
+        assertTrue(session.perform(PlayerCommand.Interact))
+        assertEquals(baselineInventoryCount + 1, session.inventoryItems().size)
+        assertTrue(session.playerStatus().currentStamina > 5)
+        assertTrue(session.renderSnapshot().logEvents.any { event -> event.message.key == "log.objective.progress" })
+    }
+
+    @Test
     fun `mana potion restores arcanist mana from starter kit`() {
         val session =
             GameModule.newFoundationSession(
@@ -355,6 +449,79 @@ class FoundationGameSessionTest {
         assertTrue(potionIndex >= 0)
         assertTrue(session.perform(PlayerCommand.ActivateInventoryItem(potionIndex)))
         assertEquals(42, session.playerResourceView().current)
+    }
+
+    @Test
+    fun `using arcanist talent consumes mana from resource pools`() {
+        val session =
+            GameModule.newFoundationSession(
+                FoundationGameConfig(seed = 20260318L, zoneId = "shattered_outpost", playerProfessionId = "arcanist"),
+                SaveManager(tempDir.resolve("arcanist-talent-save")),
+            )
+        clearMonsters(session)
+        val dummyId = installCombatDummy(session)
+        val dummyPosition = requireNotNull(runtimeWorld(session).get<Position>(dummyId)).toPoint()
+        val fireballSlot = session.talentSlots().first { slot -> slot.talentId == "fireball" }.slot
+        requireNotNull(requireNotNull(runtimeWorld(session).get<ResourcePools>(session.playerId)).pool(ResourceType.MANA)).current = 20
+
+        assertTrue(session.perform(PlayerCommand.UseTalent(slot = fireballSlot, target = dummyPosition)))
+        assertEquals(14, session.playerResourceView().current)
+        assertEquals(14, session.renderSnapshot().uiState.playerStatus.currentResource)
+    }
+
+    @Test
+    fun `using rogue talent consumes energy from resource pools`() {
+        val session =
+            GameModule.newFoundationSession(
+                FoundationGameConfig(seed = 20260318L, zoneId = "shattered_outpost", playerProfessionId = "rogue"),
+                SaveManager(tempDir.resolve("rogue-talent-save")),
+            )
+        clearMonsters(session)
+        val rollSlot = session.talentSlots().first { slot -> slot.talentId == "roll" }.slot
+        val initialStamina = session.playerStatus().currentStamina
+        requireNotNull(requireNotNull(runtimeWorld(session).get<ResourcePools>(session.playerId)).pool(ResourceType.ENERGY)).current = 30
+        val target = Point(session.playerPosition().x + 2, session.playerPosition().y)
+
+        assertTrue(session.perform(PlayerCommand.UseTalent(slot = rollSlot, target = target)))
+        assertFalse(session.playerResourceView().current == 30)
+        assertEquals(initialStamina, session.playerStatus().currentStamina)
+    }
+
+    @Test
+    fun `holy light heals templar and emits heal log`() {
+        val session =
+            GameModule.newFoundationSession(
+                FoundationGameConfig(seed = 20260318L, zoneId = "shattered_outpost", playerProfessionId = "templar"),
+                SaveManager(tempDir.resolve("templar-heal-save")),
+            )
+        clearMonsters(session)
+        val holyLightSlot = session.talentSlots().first { slot -> slot.talentId == "holy_light" }.slot
+        requireNotNull(runtimeWorld(session).get<Health>(session.playerId)).current = 20
+        requireNotNull(requireNotNull(runtimeWorld(session).get<ResourcePools>(session.playerId)).pool(ResourceType.POSITIVE_ENERGY)).current = 30
+
+        assertTrue(session.perform(PlayerCommand.UseTalent(slot = holyLightSlot)))
+        assertTrue(session.playerStatus().currentHp > 20)
+        assertTrue(session.renderSnapshot().logEvents.any { event -> event.message.key == "log.talent.heal" })
+    }
+
+    @Test
+    fun `mana gated talent fails without spending cooldown or health on target`() {
+        val session =
+            GameModule.newFoundationSession(
+                FoundationGameConfig(seed = 20260318L, zoneId = "shattered_outpost", playerProfessionId = "arcanist"),
+                SaveManager(tempDir.resolve("arcanist-no-mana-save")),
+            )
+        clearMonsters(session)
+        val dummyId = installCombatDummy(session)
+        val dummyPosition = requireNotNull(runtimeWorld(session).get<Position>(dummyId)).toPoint()
+        val fireballSlot = session.talentSlots().first { slot -> slot.talentId == "fireball" }.slot
+        requireNotNull(requireNotNull(runtimeWorld(session).get<ResourcePools>(session.playerId)).pool(ResourceType.MANA)).current = 5
+        val baselineHp = monsterHp(session, dummyId)
+
+        assertFalse(session.perform(PlayerCommand.UseTalent(slot = fireballSlot, target = dummyPosition)))
+        assertEquals(7, session.playerResourceView().current)
+        assertEquals(baselineHp, monsterHp(session, dummyId))
+        assertEquals(0, playerCooldown(session, "fireball"))
     }
 
     @Test
@@ -390,6 +557,86 @@ class FoundationGameSessionTest {
         assertTrue(consumed)
         assertTrue(session.playerStatus().currentStamina < session.playerStatus().maxStamina)
         assertEquals(2, session.talentSlots().first { it.slot == 1 }.currentCooldown)
+    }
+
+    @Test
+    fun `stunned status uses the exact formal icon key in render snapshots`() {
+        val session =
+            GameModule.newFoundationSession(
+                FoundationGameConfig(seed = 20260318L, zoneId = "shattered_outpost", playerProfessionId = "vanguard"),
+                SaveManager(tempDir.resolve("status-icon-save")),
+            )
+        clearMonsters(session)
+        val monsterId = installCombatDummy(session)
+        val shieldBashSlot = session.talentSlots().first { it.talentId == "shield_bash" }.slot
+
+        assertTrue(session.perform(PlayerCommand.UseTalent(slot = shieldBashSlot, target = requireNotNull(runtimeWorld(session).get<Position>(monsterId)).toPoint())))
+
+        val stunnedEffect =
+            session.renderSnapshot().actors
+                .first { it.entityId == monsterId.value }
+                .statusEffects
+                .first { it.typeId == StatusEffectType.STUNNED.name }
+        assertEquals("icon.status.stunned", stunnedEffect.iconKey)
+    }
+
+    @Test
+    fun `killing common monster drops ground loot from its loot profile`() {
+        val session =
+            GameModule.newFoundationSession(
+                FoundationGameConfig(seed = 20260318L, zoneId = "shattered_outpost", playerProfessionId = "vanguard"),
+                SaveManager(tempDir.resolve("common-loot-save")),
+            )
+
+        val world = runtimeWorld(session)
+        val monsterId =
+            requireNotNull(
+                entityByTemplateId(session, "beast.rat")
+                    ?: entityByTemplateId(session, "beast.rat_scavenger")
+                    ?: entityByTemplateId(session, "bandit.sentry"),
+            )
+        requireNotNull(world.get<Health>(monsterId)).current = 1
+        val deathPoint = requireNotNull(world.get<Position>(monsterId)).toPoint()
+        val attackOrigin = findOpenAdjacentPoint(session, deathPoint)
+        movePlayerTo(session, attackOrigin)
+
+        assertTrue(session.perform(PlayerCommand.Move(deathPoint - attackOrigin)))
+        assertTrue(groundItemBaseIdsAt(session, deathPoint).any { baseId -> baseId in setOf("healing_potion", "short_sword", "leather_armor") })
+        assertTrue(session.messageLog().any { message -> message.contains("drops") || message.contains("掉落") })
+    }
+
+    @Test
+    fun `killing elite monster drops ground loot from elite profile`() {
+        val session =
+            GameModule.newFoundationSession(
+                FoundationGameConfig(seed = 20260318L, zoneId = "shattered_outpost", playerProfessionId = "vanguard"),
+                SaveManager(tempDir.resolve("elite-loot-save")),
+            )
+
+        movePlayerTo(session, stairPoint(session, com.ktome.core.dungeon.StairDirection.DOWN))
+        assertTrue(session.perform(PlayerCommand.Descend))
+        clearMonsters(session)
+
+        val world = runtimeWorld(session)
+        val elitePosition = findOpenAdjacentPoint(session, session.playerPosition())
+        val monsterId =
+            EntityFactory().createMonster(
+                world = world,
+                template = dataLoader.loadMonsterCatalog().monsters.first { monster -> monster.id == "undead.bone_guard" },
+                position = elitePosition,
+            )
+        world.remove<AIBehavior>(monsterId)
+        requireNotNull(world.get<Health>(monsterId)).current = 1
+        val deathPoint = requireNotNull(world.get<Position>(monsterId)).toPoint()
+        val attackOrigin = findOpenAdjacentPoint(session, deathPoint)
+        movePlayerTo(session, attackOrigin)
+
+        assertTrue(session.perform(PlayerCommand.Move(deathPoint - attackOrigin)))
+        assertTrue(
+            groundItemBaseIdsAt(session, deathPoint).any { baseId ->
+                baseId in setOf("basic_shield", "mana_potion", "chain_mail", "apprentice_robe", "long_sword")
+            },
+        )
     }
 
     @Test
@@ -473,6 +720,46 @@ class FoundationGameSessionTest {
 
         assertEquals(baseline.playerStatus().currentStamina, loaded.playerStatus().currentStamina)
         assertEquals(playerCooldown(baseline, "power_strike"), playerCooldown(loaded, "power_strike"))
+    }
+
+    @Test
+    fun `manual save preserves stamina component pool and hud in lockstep`() {
+        val saveManager = SaveManager(tempDir.resolve("stamina-lockstep-save"))
+        val session =
+            GameModule.newFoundationSession(
+                FoundationGameConfig(seed = 20260318L, zoneId = "shattered_outpost", playerProfessionId = "vanguard"),
+                saveManager,
+            )
+        clearMonsters(session)
+        val dummyId = installCombatDummy(session)
+        val dummyPosition = requireNotNull(runtimeWorld(session).get<Position>(dummyId)).toPoint()
+        val powerStrikeSlot = session.talentSlots().first { slot -> slot.talentId == "power_strike" }.slot
+
+        assertTrue(session.perform(PlayerCommand.UseTalent(slot = powerStrikeSlot, target = dummyPosition)))
+        val liveStamina = session.playerStatus().currentStamina
+        val livePool =
+            requireNotNull(
+                requireNotNull(runtimeWorld(session).get<ResourcePools>(session.playerId)).pool(ResourceType.STAMINA),
+            ).current
+        val liveHud = session.renderSnapshot().uiState.playerStatus.currentResource
+
+        assertEquals(liveStamina, livePool)
+        assertEquals(liveStamina, liveHud)
+        assertEquals(liveStamina, session.playerResourceView().current)
+
+        assertTrue(session.perform(PlayerCommand.SaveGame))
+        val loaded = requireNotNull(GameModule.loadFoundationSession(saveManager))
+        val loadedStamina = loaded.playerStatus().currentStamina
+        val loadedPool =
+            requireNotNull(
+                requireNotNull(runtimeWorld(loaded).get<ResourcePools>(loaded.playerId)).pool(ResourceType.STAMINA),
+            ).current
+        val loadedHud = loaded.renderSnapshot().uiState.playerStatus.currentResource
+
+        assertEquals(liveStamina, loadedStamina)
+        assertEquals(loadedStamina, loadedPool)
+        assertEquals(loadedStamina, loadedHud)
+        assertEquals(loadedStamina, loaded.playerResourceView().current)
     }
 
     @Test
@@ -627,8 +914,8 @@ class FoundationGameSessionTest {
 
         assertTrue(session.perform(PlayerCommand.Move(bossPosition - attackOrigin)))
         assertTrue(session.isVictory())
-        assertEquals(1, inventoryBaseIds(session).count { baseId -> baseId == "basic_shield" })
-        assertEquals(1, inventoryBaseIds(session).count { baseId -> baseId == "scroll_teleport" })
+        assertTrue(inventoryBaseIds(session).count { baseId -> baseId == "basic_shield" } <= 1)
+        assertEquals(1, inventoryBaseIds(session).count { baseId -> baseId == "forgebreaker_pick" })
     }
 
     @Test
@@ -881,7 +1168,7 @@ class FoundationGameSessionTest {
 
     private fun primePlayerTurnState(session: FoundationGameSession) {
         val world = runtimeWorld(session)
-        requireNotNull(world.get<Stamina>(session.playerId)).current = 0
+        StaminaPools.syncTo(world, session.playerId, nextCurrent = 0, nextMax = StaminaPools.max(world, session.playerId))
         requireNotNull(world.get<com.ktome.core.talent.CooldownState>(session.playerId)).remainingByTalentId["power_strike"] = 3
     }
 
@@ -910,6 +1197,38 @@ class FoundationGameSessionTest {
                         speed = 90,
                         ai = AIType.CHASE,
                         expReward = 0,
+                        spawnFloors = listOf(session.currentFloor()),
+                        spawnWeight = 1,
+                    ),
+                position = dummyPosition,
+            )
+        world.remove<AIBehavior>(dummyId)
+        return dummyId
+    }
+
+    private fun installExperienceDummy(
+        session: FoundationGameSession,
+        id: String,
+        expReward: Int,
+    ): com.ktome.core.ecs.EntityId {
+        val world = runtimeWorld(session)
+        val dummyPosition = findOpenAdjacentPoint(session, session.playerPosition())
+        val dummyId =
+            EntityFactory().createMonster(
+                world = world,
+                template =
+                    MonsterTemplate(
+                        id = id,
+                        name = "Growth Dummy",
+                        glyph = 'd',
+                        colorHex = "#AAAAAA",
+                        stats = com.ktome.core.ecs.Stats(str = 1, dex = 1, con = 1, wil = 1),
+                        baseHp = 1,
+                        baseAttack = 1,
+                        baseDefense = 0,
+                        speed = 90,
+                        ai = AIType.CHASE,
+                        expReward = expReward,
                         spawnFloors = listOf(session.currentFloor()),
                         spawnWeight = 1,
                     ),
@@ -967,6 +1286,16 @@ class FoundationGameSessionTest {
         val world = runtimeWorld(session)
         val inventory = requireNotNull(world.get<com.ktome.core.item.Inventory>(session.playerId))
         return inventory.itemIds.map { itemId -> requireNotNull(world.get<ItemInstance>(itemId)).baseId }
+    }
+
+    private fun groundItemBaseIdsAt(
+        session: FoundationGameSession,
+        point: Point,
+    ): List<String> {
+        val world = runtimeWorld(session)
+        return world.entitiesWith(Position::class, ItemInstance::class)
+            .filter { entityId -> requireNotNull(world.get<Position>(entityId)).toPoint() == point }
+            .map { entityId -> requireNotNull(world.get<ItemInstance>(entityId)).baseId }
     }
 
     private fun sessionSaveManager(session: FoundationGameSession): SaveManager {

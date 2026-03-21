@@ -21,6 +21,10 @@ cueFamilies:
     provider: generated
     source: internal
     license: internal
+  - id: damage
+    provider: generated
+    source: internal
+    license: internal
   - id: monster
     provider: generated
     source: internal
@@ -61,6 +65,10 @@ cueFamilies:
     provider: placeholder
     source: internal
     license: internal
+  - id: resource
+    provider: generated
+    source: internal
+    license: internal
   - id: talent
     provider: generated
     source: internal
@@ -90,6 +98,26 @@ entries:
     cueFamily: ui
     eventId: ui.hover
     sourcePath: audio/ui/hover.ogg
+  - key: audio.ui.level_up
+    cueFamily: ui
+    eventId: ui.level_up
+    sourcePath: audio/ui/confirm.ogg
+  - key: audio.ui.talent_unlock
+    cueFamily: ui
+    eventId: ui.talent_unlock
+    sourcePath: audio/ui/hover.ogg
+  - key: audio.objective.progress
+    cueFamily: ui
+    eventId: objective.progress
+    sourcePath: audio/ui/hover.ogg
+  - key: audio.route.transition
+    cueFamily: interactable
+    eventId: route.transition
+    sourcePath: audio/interactable/stairs.ogg
+  - key: audio.route.complete
+    cueFamily: ui
+    eventId: route.complete
+    sourcePath: audio/ui/confirm.ogg
   - key: audio.footstep.default
     cueFamily: footstep
     eventId: footstep.default
@@ -114,6 +142,62 @@ entries:
     cueFamily: spell
     eventId: spell.basic
     sourcePath: audio/spell/basic.ogg
+  - key: audio.damage.physical_hit
+    cueFamily: damage
+    eventId: damage.physical_hit
+    sourcePath: audio/melee/light.ogg
+  - key: audio.damage.fire_hit
+    cueFamily: damage
+    eventId: damage.fire_hit
+    sourcePath: audio/talent/fireball.ogg
+  - key: audio.damage.cold_hit
+    cueFamily: damage
+    eventId: damage.cold_hit
+    sourcePath: audio/talent/ice_bolt.ogg
+  - key: audio.damage.lightning_hit
+    cueFamily: damage
+    eventId: damage.lightning_hit
+    sourcePath: audio/spell/basic.ogg
+  - key: audio.damage.holy_hit
+    cueFamily: damage
+    eventId: damage.holy_hit
+    sourcePath: audio/talent/arcane_shield.ogg
+  - key: audio.damage.shadow_hit
+    cueFamily: damage
+    eventId: damage.shadow_hit
+    sourcePath: audio/talent/intimidation.ogg
+  - key: audio.resource.stamina.spend
+    cueFamily: resource
+    eventId: resource.stamina.spend
+    sourcePath: audio/resource/stamina_spend.ogg
+  - key: audio.resource.stamina.restore
+    cueFamily: resource
+    eventId: resource.stamina.restore
+    sourcePath: audio/resource/stamina_restore.ogg
+  - key: audio.resource.mana.spend
+    cueFamily: resource
+    eventId: resource.mana.spend
+    sourcePath: audio/resource/mana_spend.ogg
+  - key: audio.resource.mana.restore
+    cueFamily: resource
+    eventId: resource.mana.restore
+    sourcePath: audio/resource/mana_restore.ogg
+  - key: audio.resource.energy.restore
+    cueFamily: resource
+    eventId: resource.energy.restore
+    sourcePath: audio/resource/energy_restore.ogg
+  - key: audio.resource.energy.spend
+    cueFamily: resource
+    eventId: resource.energy.spend
+    sourcePath: audio/resource/energy_spend.ogg
+  - key: audio.resource.positive_energy.restore
+    cueFamily: resource
+    eventId: resource.positive_energy.restore
+    sourcePath: audio/resource/positive_energy_restore.ogg
+  - key: audio.resource.positive_energy.spend
+    cueFamily: resource
+    eventId: resource.positive_energy.spend
+    sourcePath: audio/resource/positive_energy_spend.ogg
   - key: audio.monster.default
     cueFamily: monster
     eventId: monster.default
@@ -194,6 +278,26 @@ entries:
     cueFamily: item
     eventId: audio.item.mana_potion
     sourcePath: audio/item/mana_potion.ogg
+  - key: audio.item.leather_armor
+    cueFamily: item
+    eventId: audio.item.leather_armor
+    sourcePath: audio/item/chain_mail.ogg
+  - key: audio.item.long_sword
+    cueFamily: item
+    eventId: audio.item.long_sword
+    sourcePath: audio/item/short_sword.ogg
+  - key: audio.item.battle_axe
+    cueFamily: item
+    eventId: audio.item.battle_axe
+    sourcePath: audio/item/short_sword.ogg
+  - key: audio.item.plate_armor
+    cueFamily: item
+    eventId: audio.item.plate_armor
+    sourcePath: audio/item/chain_mail.ogg
+  - key: audio.item.scroll_teleport
+    cueFamily: item
+    eventId: audio.item.scroll_teleport
+    sourcePath: audio/talent/blink.ogg
   - key: audio.talent.power_strike
     cueFamily: talent
     eventId: audio.talent.power_strike
@@ -262,6 +366,70 @@ entries:
     cueFamily: talent
     eventId: audio.talent.mana_surge
     sourcePath: audio/talent/mana_surge.ogg
+  - key: audio.talent.backstab
+    cueFamily: talent
+    eventId: audio.talent.backstab
+    sourcePath: audio/talent/power_strike.ogg
+  - key: audio.talent.poison_blade
+    cueFamily: talent
+    eventId: audio.talent.poison_blade
+    sourcePath: audio/talent/sunder_armor.ogg
+  - key: audio.talent.stealth
+    cueFamily: talent
+    eventId: audio.talent.stealth
+    sourcePath: audio/talent/blink.ogg
+  - key: audio.talent.smoke_bomb
+    cueFamily: talent
+    eventId: audio.talent.smoke_bomb
+    sourcePath: audio/talent/intimidation.ogg
+  - key: audio.talent.roll
+    cueFamily: talent
+    eventId: audio.talent.roll
+    sourcePath: audio/talent/blink.ogg
+  - key: audio.talent.blade_flurry
+    cueFamily: talent
+    eventId: audio.talent.blade_flurry
+    sourcePath: audio/talent/sweeping_strike.ogg
+  - key: audio.talent.shadowstep
+    cueFamily: talent
+    eventId: audio.talent.shadowstep
+    sourcePath: audio/talent/blink.ogg
+  - key: audio.talent.deathblow
+    cueFamily: talent
+    eventId: audio.talent.deathblow
+    sourcePath: audio/talent/power_strike.ogg
+  - key: audio.talent.holy_strike
+    cueFamily: talent
+    eventId: audio.talent.holy_strike
+    sourcePath: audio/talent/power_strike.ogg
+  - key: audio.talent.judgment_hammer
+    cueFamily: talent
+    eventId: audio.talent.judgment_hammer
+    sourcePath: audio/talent/shield_bash.ogg
+  - key: audio.talent.holy_light
+    cueFamily: talent
+    eventId: audio.talent.holy_light
+    sourcePath: audio/talent/mana_surge.ogg
+  - key: audio.talent.holy_shield
+    cueFamily: talent
+    eventId: audio.talent.holy_shield
+    sourcePath: audio/talent/arcane_shield.ogg
+  - key: audio.talent.devotion
+    cueFamily: talent
+    eventId: audio.talent.devotion
+    sourcePath: audio/talent/mana_surge.ogg
+  - key: audio.talent.holy_aura
+    cueFamily: talent
+    eventId: audio.talent.holy_aura
+    sourcePath: audio/talent/war_cry.ogg
+  - key: audio.talent.purify
+    cueFamily: talent
+    eventId: audio.talent.purify
+    sourcePath: audio/talent/mana_surge.ogg
+  - key: audio.talent.divine_intervention
+    cueFamily: talent
+    eventId: audio.talent.divine_intervention
+    sourcePath: audio/talent/unyielding.ogg
   - key: audio.tree.vanguard_arms
     cueFamily: tree
     eventId: audio.tree.vanguard_arms
@@ -286,6 +454,30 @@ entries:
     cueFamily: tree
     eventId: audio.tree.arcanist_arcane
     sourcePath: audio/tree/arcanist_arcane.ogg
+  - key: audio.tree.rogue_agility
+    cueFamily: tree
+    eventId: audio.tree.rogue_agility
+    sourcePath: audio/professions/rogue.ogg
+  - key: audio.tree.rogue_assassination
+    cueFamily: tree
+    eventId: audio.tree.rogue_assassination
+    sourcePath: audio/professions/rogue.ogg
+  - key: audio.tree.rogue_subtlety
+    cueFamily: tree
+    eventId: audio.tree.rogue_subtlety
+    sourcePath: audio/professions/rogue.ogg
+  - key: audio.tree.templar_faith
+    cueFamily: tree
+    eventId: audio.tree.templar_faith
+    sourcePath: audio/professions/templar.ogg
+  - key: audio.tree.templar_grace
+    cueFamily: tree
+    eventId: audio.tree.templar_grace
+    sourcePath: audio/professions/templar.ogg
+  - key: audio.tree.templar_smite
+    cueFamily: tree
+    eventId: audio.tree.templar_smite
+    sourcePath: audio/professions/templar.ogg
   - key: audio.boss.bandit_captain
     cueFamily: boss
     eventId: audio.boss.bandit_captain

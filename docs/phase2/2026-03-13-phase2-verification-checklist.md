@@ -3,7 +3,25 @@
 > `PR-07 / P2-C` 的审查后执行顺序、formal path 资源门禁与 sprint/PR 拆分，见：
 > [2026-03-20-phase2-pr-07-post-review-execution-plan.md](./2026-03-20-phase2-pr-07-post-review-execution-plan.md)
 
+## 0. Current Stage Truth
+
+1. 当前主线状态固定为 `P2-B 已完成 / P2-C 未完成`。
+2. `OfficialSliceStability`（位于 `:game:test`）、`longRunLab`、`clientSmoke`、`goldenScreenshot` 对 `PR-06` 官方切片的通过，只能作为 `P2-B` 稳定性证据，不能视为 `P2-C` 已完成。
+3. `PR-06` 稳定性问题不再是当前 blocker；后续只允许对 `P2-B` 正式切片做 bugfix，不允许为了 `P2-C` 目标重写其既有真相。
+4. 当前 `P2-C` 的正式阻塞项是：`Rogue / Templar` 正式化、`4 zone` 真实 route、`24 怪 + 24 物品` 下限、gate 重对齐，以及 Visual/Audio formal path 收口。
+5. 命中 `phase2` formal-path required key 的 `debug/missing_visual.png` 或 `audio/fallback/silence.ogg`，必须视为 `P2-C` blocker，而不是“最后再补”的资源尾债。
+
 ## 1. Automated Verification
+
+### 1.0 Gate Interpretation
+
+1. `:game:test` 中的 `OfficialSliceStability` 继续承担 `P2-B` 官方切片回归；它的意义是守住最小正式切片，不是替代 `P2-C` 的 route / content / formal path 验收。
+2. `headlessSmoke`、`clientSmoke`、`goldenScreenshot`、`longRunLab`、`preReleaseAcceptance` 必须逐步覆盖当前短局正式主路径，而不是只证明 `shattered_outpost` 仍可跑通。
+3. `soloClearLab`、`assetLint`、`styleLint`、`audioLint`、`manifestLint` 是 `P2-C` 完成态门禁的一部分，用来证明四职业短局、资源追溯链和 formal path required key 已经收口。
+4. 只要 `P2-C` required route、content floor 或 formal path 仍缺任一项，即使基础 smoke 全绿，也不能宣称 Phase 2 完成。
+5. `manifestLint` 与 `audioLint` 的输出必须显式区分：
+   - required formal-path key 当前是否仍命中 fallback
+   - 剩余 `phase2` debug budget 还保留多少 `missing_visual` / `silence.ogg`
 
 ### 1.1 Core & Game
 
@@ -35,13 +53,17 @@
 ### 1.3 必须检查的结果
 
 1. save/load 往返稳定。
-2. locale key 无缺漏、无占位符不一致。
-3. manifest 可完整解析。
-4. screenshot golden 无非预期漂移。
-5. 四职业短局实验室全部通过。
-6. 正式资源的 spec / manifest / style / audio 追溯链完整。
-7. `build/reports/harness/headless-smoke.json`、`client-smoke.json`、`long-run-summary.json` 都可追溯。
-8. `preReleaseAcceptance` 仍然通过，且 Phase 2 新增内容没有绕过既有发布前验收链。
+2. `OfficialSliceStability` 继续证明 `P2-B` 官方切片稳定，没有因 `P2-C` 扩张产生回归。
+3. `4 zone` route 可以启动、推进、结算，并在 save/load 后恢复正确 route 位置。
+4. locale key 无缺漏、无占位符不一致。
+5. manifest 可完整解析。
+6. screenshot golden 无非预期漂移。
+7. 四职业短局实验室全部通过。
+8. `P2-C` formal-path required visual key 不再命中 `missing_visual`，required audio key 不再命中 `silence.ogg`。
+9. 正式资源的 spec / manifest / style / audio 追溯链完整。
+10. `build/reports/harness/headless-smoke.json`、`client-smoke.json`、`long-run-summary.json` 都可追溯。
+11. `preReleaseAcceptance` 仍然通过，且 Phase 2 新增内容没有绕过既有发布前验收链。
+12. `assetLint`、`manifestLint`、`audioLint` 的成功输出里，必须能读到 required key 总数、required fallback 数，以及剩余 `phase2` placeholder/silence budget 数。
 
 ## 2. Manual White-Box Verification
 

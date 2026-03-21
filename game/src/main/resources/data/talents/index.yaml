@@ -9,7 +9,7 @@ talentTrees:
     schemaVersion: 2
     tags: [tree, vanguard]
     layout: foundation_grid
-    nodes: [power_strike, sweeping_strike, sunder_armor]
+    nodes: [power_strike, charge, sweeping_strike, sunder_armor]
   - id: vanguard_shield
     professionId: vanguard
     nameKey: talent_tree.vanguard_shield.name
@@ -75,7 +75,7 @@ talentTrees:
     schemaVersion: 2
     tags: [tree, rogue]
     layout: foundation_grid
-    nodes: []
+    nodes: [backstab, poison_blade, deathblow]
   - id: rogue_subtlety
     professionId: rogue
     nameKey: talent_tree.rogue_subtlety.name
@@ -86,7 +86,7 @@ talentTrees:
     schemaVersion: 2
     tags: [tree, rogue]
     layout: foundation_grid
-    nodes: []
+    nodes: [stealth, smoke_bomb, shadowstep]
   - id: rogue_agility
     professionId: rogue
     nameKey: talent_tree.rogue_agility.name
@@ -97,7 +97,7 @@ talentTrees:
     schemaVersion: 2
     tags: [tree, rogue]
     layout: foundation_grid
-    nodes: []
+    nodes: [roll, blade_flurry]
   - id: templar_smite
     professionId: templar
     nameKey: talent_tree.templar_smite.name
@@ -108,7 +108,7 @@ talentTrees:
     schemaVersion: 2
     tags: [tree, templar]
     layout: foundation_grid
-    nodes: []
+    nodes: [holy_strike, judgment_hammer]
   - id: templar_grace
     professionId: templar
     nameKey: talent_tree.templar_grace.name
@@ -119,7 +119,7 @@ talentTrees:
     schemaVersion: 2
     tags: [tree, templar]
     layout: foundation_grid
-    nodes: []
+    nodes: [holy_light, holy_shield, purify]
   - id: templar_faith
     professionId: templar
     nameKey: talent_tree.templar_faith.name
@@ -130,7 +130,7 @@ talentTrees:
     schemaVersion: 2
     tags: [tree, templar]
     layout: foundation_grid
-    nodes: []
+    nodes: [devotion, holy_aura, divine_intervention]
 
 talents:
   - id: power_strike
@@ -151,6 +151,7 @@ talents:
     minRange: 0
     areaRadius: 0
     resourceCosts: { STAMINA: 8 }
+    unlockLevel: 1
     targeting: SINGLE_TARGET
     callbacks: []
     telegraph: melee_single
@@ -180,6 +181,7 @@ talents:
     minRange: 3
     areaRadius: 0
     resourceCosts: { STAMINA: 12 }
+    unlockLevel: 3
     targeting: SINGLE_TARGET
     callbacks: []
     telegraph: charge_lane
@@ -209,6 +211,7 @@ talents:
     minRange: 0
     areaRadius: 0
     resourceCosts: { STAMINA: 10 }
+    unlockLevel: 1
     targeting: SINGLE_TARGET
     callbacks: []
     telegraph: melee_single
@@ -237,6 +240,7 @@ talents:
     minRange: 0
     areaRadius: 3
     resourceCosts: { STAMINA: 15 }
+    unlockLevel: 1
     targeting: RADIUS_SELF
     callbacks: []
     telegraph: self_buff_aura
@@ -266,6 +270,7 @@ talents:
     minRange: 0
     areaRadius: 1
     resourceCosts: { STAMINA: 10 }
+    unlockLevel: 2
     targeting: SINGLE_TARGET
     callbacks: []
     telegraph: melee_single
@@ -295,6 +300,7 @@ talents:
     minRange: 0
     areaRadius: 0
     resourceCosts: { STAMINA: 12 }
+    unlockLevel: 4
     targeting: SINGLE_TARGET
     callbacks: []
     telegraph: melee_single
@@ -323,6 +329,7 @@ talents:
     minRange: 0
     areaRadius: 0
     resourceCosts: { STAMINA: 8 }
+    unlockLevel: 1
     targeting: SELF
     callbacks: []
     telegraph: self_buff_aura
@@ -351,6 +358,7 @@ talents:
     minRange: 0
     areaRadius: 4
     resourceCosts: { STAMINA: 10 }
+    unlockLevel: 4
     targeting: RADIUS_SELF
     callbacks: []
     telegraph: self_buff_aura
@@ -379,6 +387,7 @@ talents:
     minRange: 0
     areaRadius: 0
     resourceCosts: { STAMINA: 14 }
+    unlockLevel: 5
     targeting: SELF
     callbacks: []
     telegraph: self_buff_aura
@@ -408,6 +417,7 @@ talents:
     minRange: 1
     areaRadius: 0
     resourceCosts: { MANA: 10 }
+    unlockLevel: 1
     targeting: SINGLE_TARGET
     callbacks: []
     telegraph: melee_single
@@ -437,6 +447,7 @@ talents:
     minRange: 1
     areaRadius: 1
     resourceCosts: { MANA: 14 }
+    unlockLevel: 4
     targeting: SINGLE_TARGET
     callbacks: []
     telegraph: charge_lane
@@ -466,6 +477,7 @@ talents:
     minRange: 1
     areaRadius: 0
     resourceCosts: { MANA: 9 }
+    unlockLevel: 1
     targeting: SINGLE_TARGET
     callbacks: []
     telegraph: melee_single
@@ -495,6 +507,7 @@ talents:
     minRange: 0
     areaRadius: 2
     resourceCosts: { MANA: 16 }
+    unlockLevel: 3
     targeting: RADIUS_SELF
     callbacks: []
     telegraph: self_buff_aura
@@ -524,6 +537,7 @@ talents:
     minRange: 1
     areaRadius: 0
     resourceCosts: { MANA: 18 }
+    unlockLevel: 5
     targeting: SINGLE_TARGET
     callbacks: []
     telegraph: melee_single
@@ -552,6 +566,7 @@ talents:
     minRange: 0
     areaRadius: 0
     resourceCosts: { MANA: 12 }
+    unlockLevel: 1
     targeting: SELF
     callbacks: []
     telegraph: self_buff_aura
@@ -580,17 +595,18 @@ talents:
     minRange: 2
     areaRadius: 0
     resourceCosts: { MANA: 14 }
+    unlockLevel: 1
     targeting: SINGLE_TARGET
     callbacks: []
     telegraph: charge_lane
     treeId: arcanist_arcane
     keywords: [movement]
     levelEffects:
-      1: {}
-      2: {}
-      3: {}
-      4: {}
-      5: {}
+      1: { rangeBonus: 0 }
+      2: { rangeBonus: 1 }
+      3: { rangeBonus: 2 }
+      4: { rangeBonus: 3 }
+      5: { rangeBonus: 4 }
   - id: mana_surge
     nameKey: talent.arcanist.mana_surge.name
     descKey: talent.arcanist.mana_surge.desc
@@ -608,6 +624,7 @@ talents:
     minRange: 0
     areaRadius: 0
     resourceCosts: { MANA: 0 }
+    unlockLevel: 2
     targeting: SELF
     callbacks: []
     telegraph: self_buff_aura
@@ -619,3 +636,476 @@ talents:
       3: { buffDuration: 3, buffMagnitude: 0.14 }
       4: { buffDuration: 3, buffMagnitude: 0.16 }
       5: { buffDuration: 4, buffMagnitude: 0.18 }
+  - id: backstab
+    nameKey: talent.rogue.backstab.name
+    descKey: talent.rogue.backstab.desc
+    visualKey: icon.skill.rogue.backstab
+    iconKey: icon.skill.rogue.backstab
+    audioProfile: audio.talent.backstab
+    schemaVersion: 2
+    tags: [talent, rogue, melee]
+    maxPoints: 5
+    category: ACTIVE
+    damageType: PHYSICAL
+    kind: ACTIVE
+    cooldown: 3
+    castTime: 1000
+    range: 1
+    minRange: 0
+    areaRadius: 0
+    resourceCosts: { ENERGY: 12 }
+    unlockLevel: 1
+    targeting: SINGLE_TARGET
+    callbacks: []
+    telegraph: melee_single
+    treeId: rogue_assassination
+    keywords: [damage, finisher]
+    levelEffects:
+      1: { damageMultiplier: 1.35 }
+      2: { damageMultiplier: 1.50 }
+      3: { damageMultiplier: 1.70 }
+      4: { damageMultiplier: 1.90 }
+      5: { damageMultiplier: 2.10 }
+  - id: poison_blade
+    nameKey: talent.rogue.poison_blade.name
+    descKey: talent.rogue.poison_blade.desc
+    visualKey: icon.skill.rogue.poison_blade
+    iconKey: icon.skill.rogue.poison_blade
+    audioProfile: audio.talent.poison_blade
+    schemaVersion: 2
+    tags: [talent, rogue, shadow]
+    maxPoints: 5
+    category: ACTIVE
+    damageType: SHADOW
+    kind: ACTIVE
+    cooldown: 4
+    castTime: 1000
+    range: 1
+    minRange: 0
+    areaRadius: 0
+    resourceCosts: { ENERGY: 14 }
+    unlockLevel: 1
+    targeting: SINGLE_TARGET
+    callbacks: []
+    telegraph: melee_single
+    treeId: rogue_assassination
+    keywords: [damage, curse]
+    levelEffects:
+      1: { damageMultiplier: 1.05, debuffMagnitude: 0.10, debuffDuration: 2 }
+      2: { damageMultiplier: 1.15, debuffMagnitude: 0.12, debuffDuration: 2 }
+      3: { damageMultiplier: 1.25, debuffMagnitude: 0.14, debuffDuration: 3 }
+      4: { damageMultiplier: 1.40, debuffMagnitude: 0.16, debuffDuration: 3 }
+      5: { damageMultiplier: 1.55, debuffMagnitude: 0.18, debuffDuration: 4 }
+  - id: stealth
+    nameKey: talent.rogue.stealth.name
+    descKey: talent.rogue.stealth.desc
+    visualKey: icon.skill.rogue.stealth
+    iconKey: icon.skill.rogue.stealth
+    audioProfile: audio.talent.stealth
+    schemaVersion: 2
+    tags: [talent, rogue, utility]
+    maxPoints: 5
+    category: ACTIVE
+    kind: ACTIVE
+    cooldown: 7
+    castTime: 1000
+    range: 0
+    minRange: 0
+    areaRadius: 0
+    resourceCosts: { ENERGY: 10 }
+    unlockLevel: 1
+    targeting: SELF
+    callbacks: []
+    telegraph: self_buff_aura
+    treeId: rogue_subtlety
+    keywords: [buff, mobility]
+    levelEffects:
+      1: { buffDuration: 3, buffMagnitude: 0.12 }
+      2: { buffDuration: 4, buffMagnitude: 0.14 }
+      3: { buffDuration: 4, buffMagnitude: 0.16 }
+      4: { buffDuration: 5, buffMagnitude: 0.18 }
+      5: { buffDuration: 6, buffMagnitude: 0.20 }
+  - id: smoke_bomb
+    nameKey: talent.rogue.smoke_bomb.name
+    descKey: talent.rogue.smoke_bomb.desc
+    visualKey: icon.skill.rogue.smoke_bomb
+    iconKey: icon.skill.rogue.smoke_bomb
+    audioProfile: audio.talent.smoke_bomb
+    schemaVersion: 2
+    tags: [talent, rogue, control]
+    maxPoints: 5
+    category: ACTIVE
+    damageType: SHADOW
+    kind: ACTIVE
+    cooldown: 8
+    castTime: 1000
+    range: 0
+    minRange: 0
+    areaRadius: 2
+    resourceCosts: { ENERGY: 16 }
+    unlockLevel: 2
+    targeting: RADIUS_SELF
+    callbacks: []
+    telegraph: self_buff_aura
+    treeId: rogue_subtlety
+    keywords: [debuff, control]
+    levelEffects:
+      1: { debuffMagnitude: 0.10, debuffDuration: 2 }
+      2: { debuffMagnitude: 0.12, debuffDuration: 3 }
+      3: { debuffMagnitude: 0.14, debuffDuration: 3 }
+      4: { debuffMagnitude: 0.16, debuffDuration: 4 }
+      5: { debuffMagnitude: 0.18, debuffDuration: 4 }
+  - id: roll
+    nameKey: talent.rogue.roll.name
+    descKey: talent.rogue.roll.desc
+    visualKey: icon.skill.rogue.roll
+    iconKey: icon.skill.rogue.roll
+    audioProfile: audio.talent.roll
+    schemaVersion: 2
+    tags: [talent, rogue, mobility]
+    maxPoints: 5
+    category: ACTIVE
+    kind: ACTIVE
+    cooldown: 4
+    castTime: 1000
+    range: 3
+    minRange: 1
+    areaRadius: 0
+    resourceCosts: { ENERGY: 8 }
+    unlockLevel: 1
+    targeting: SINGLE_TARGET
+    callbacks: []
+    telegraph: charge_lane
+    treeId: rogue_agility
+    keywords: [movement, reposition]
+    levelEffects:
+      1: { rangeBonus: 0 }
+      2: { rangeBonus: 0 }
+      3: { rangeBonus: 1 }
+      4: { rangeBonus: 1 }
+      5: { rangeBonus: 2 }
+  - id: blade_flurry
+    nameKey: talent.rogue.blade_flurry.name
+    descKey: talent.rogue.blade_flurry.desc
+    visualKey: icon.skill.rogue.blade_flurry
+    iconKey: icon.skill.rogue.blade_flurry
+    audioProfile: audio.talent.blade_flurry
+    schemaVersion: 2
+    tags: [talent, rogue, melee]
+    maxPoints: 5
+    category: ACTIVE
+    damageType: PHYSICAL
+    kind: ACTIVE
+    cooldown: 6
+    castTime: 1000
+    range: 1
+    minRange: 0
+    areaRadius: 1
+    resourceCosts: { ENERGY: 18 }
+    unlockLevel: 2
+    targeting: SINGLE_TARGET
+    callbacks: []
+    telegraph: melee_single
+    treeId: rogue_agility
+    keywords: [damage, cleave]
+    levelEffects:
+      1: { damageMultiplier: 1.10 }
+      2: { damageMultiplier: 1.25 }
+      3: { damageMultiplier: 1.40 }
+      4: { damageMultiplier: 1.55 }
+      5: { damageMultiplier: 1.75 }
+  - id: shadowstep
+    nameKey: talent.rogue.shadowstep.name
+    descKey: talent.rogue.shadowstep.desc
+    visualKey: icon.skill.rogue.shadowstep
+    iconKey: icon.skill.rogue.shadowstep
+    audioProfile: audio.talent.shadowstep
+    schemaVersion: 2
+    tags: [talent, rogue, mobility]
+    maxPoints: 5
+    category: ACTIVE
+    damageType: SHADOW
+    kind: ACTIVE
+    cooldown: 7
+    castTime: 1000
+    range: 5
+    minRange: 2
+    areaRadius: 0
+    resourceCosts: { ENERGY: 20 }
+    unlockLevel: 4
+    targeting: SINGLE_TARGET
+    callbacks: []
+    telegraph: charge_lane
+    treeId: rogue_subtlety
+    keywords: [movement, damage]
+    levelEffects:
+      1: { damageMultiplier: 1.20 }
+      2: { damageMultiplier: 1.35 }
+      3: { damageMultiplier: 1.50 }
+      4: { damageMultiplier: 1.65 }
+      5: { damageMultiplier: 1.80 }
+  - id: deathblow
+    nameKey: talent.rogue.deathblow.name
+    descKey: talent.rogue.deathblow.desc
+    visualKey: icon.skill.rogue.deathblow
+    iconKey: icon.skill.rogue.deathblow
+    audioProfile: audio.talent.deathblow
+    schemaVersion: 2
+    tags: [talent, rogue, finisher]
+    maxPoints: 5
+    category: ACTIVE
+    damageType: PHYSICAL
+    kind: ACTIVE
+    cooldown: 8
+    castTime: 1000
+    range: 1
+    minRange: 0
+    areaRadius: 0
+    resourceCosts: { ENERGY: 24 }
+    unlockLevel: 5
+    targeting: SINGLE_TARGET
+    callbacks: []
+    telegraph: melee_single
+    treeId: rogue_assassination
+    keywords: [damage, resource]
+    levelEffects:
+      1: { damageMultiplier: 1.60, buffMagnitude: 0.10 }
+      2: { damageMultiplier: 1.85, buffMagnitude: 0.12 }
+      3: { damageMultiplier: 2.10, buffMagnitude: 0.14 }
+      4: { damageMultiplier: 2.35, buffMagnitude: 0.16 }
+      5: { damageMultiplier: 2.70, buffMagnitude: 0.18 }
+  - id: holy_strike
+    nameKey: talent.templar.holy_strike.name
+    descKey: talent.templar.holy_strike.desc
+    visualKey: icon.skill.templar.holy_strike
+    iconKey: icon.skill.templar.holy_strike
+    audioProfile: audio.talent.holy_strike
+    schemaVersion: 2
+    tags: [talent, templar, holy]
+    maxPoints: 5
+    category: ACTIVE
+    damageType: HOLY
+    kind: ACTIVE
+    cooldown: 3
+    castTime: 1000
+    range: 1
+    minRange: 0
+    areaRadius: 0
+    resourceCosts: { POSITIVE_ENERGY: 10 }
+    unlockLevel: 1
+    targeting: SINGLE_TARGET
+    callbacks: []
+    telegraph: melee_single
+    treeId: templar_smite
+    keywords: [damage, holy]
+    levelEffects:
+      1: { damageMultiplier: 1.30 }
+      2: { damageMultiplier: 1.45 }
+      3: { damageMultiplier: 1.60 }
+      4: { damageMultiplier: 1.80 }
+      5: { damageMultiplier: 2.00 }
+  - id: judgment_hammer
+    nameKey: talent.templar.judgment_hammer.name
+    descKey: talent.templar.judgment_hammer.desc
+    visualKey: icon.skill.templar.judgment_hammer
+    iconKey: icon.skill.templar.judgment_hammer
+    audioProfile: audio.talent.judgment_hammer
+    schemaVersion: 2
+    tags: [talent, templar, control]
+    maxPoints: 5
+    category: ACTIVE
+    damageType: HOLY
+    kind: ACTIVE
+    cooldown: 5
+    castTime: 1000
+    range: 4
+    minRange: 1
+    areaRadius: 0
+    resourceCosts: { POSITIVE_ENERGY: 14 }
+    unlockLevel: 2
+    targeting: SINGLE_TARGET
+    callbacks: []
+    telegraph: melee_single
+    treeId: templar_smite
+    keywords: [damage, stun]
+    levelEffects:
+      1: { damageMultiplier: 1.10, stunDuration: 1 }
+      2: { damageMultiplier: 1.20, stunDuration: 1 }
+      3: { damageMultiplier: 1.35, stunDuration: 1 }
+      4: { damageMultiplier: 1.50, stunDuration: 2 }
+      5: { damageMultiplier: 1.70, stunDuration: 2 }
+  - id: holy_light
+    nameKey: talent.templar.holy_light.name
+    descKey: talent.templar.holy_light.desc
+    visualKey: icon.skill.templar.holy_light
+    iconKey: icon.skill.templar.holy_light
+    audioProfile: audio.talent.holy_light
+    schemaVersion: 2
+    tags: [talent, templar, support]
+    maxPoints: 5
+    category: ACTIVE
+    kind: ACTIVE
+    cooldown: 6
+    castTime: 1000
+    range: 0
+    minRange: 0
+    areaRadius: 0
+    resourceCosts: { POSITIVE_ENERGY: 12 }
+    unlockLevel: 1
+    targeting: SELF
+    callbacks: []
+    telegraph: self_buff_aura
+    treeId: templar_grace
+    keywords: [heal]
+    levelEffects:
+      1: { buffMagnitude: 0.18 }
+      2: { buffMagnitude: 0.22 }
+      3: { buffMagnitude: 0.26 }
+      4: { buffMagnitude: 0.30 }
+      5: { buffMagnitude: 0.35 }
+  - id: holy_shield
+    nameKey: talent.templar.holy_shield.name
+    descKey: talent.templar.holy_shield.desc
+    visualKey: icon.skill.templar.holy_shield
+    iconKey: icon.skill.templar.holy_shield
+    audioProfile: audio.talent.holy_shield
+    schemaVersion: 2
+    tags: [talent, templar, defense]
+    maxPoints: 5
+    category: ACTIVE
+    kind: ACTIVE
+    cooldown: 8
+    castTime: 1000
+    range: 0
+    minRange: 0
+    areaRadius: 0
+    resourceCosts: { POSITIVE_ENERGY: 12 }
+    unlockLevel: 1
+    targeting: SELF
+    callbacks: []
+    telegraph: self_buff_aura
+    treeId: templar_grace
+    keywords: [buff, defense]
+    levelEffects:
+      1: { buffDuration: 3, buffMagnitude: 0.12 }
+      2: { buffDuration: 3, buffMagnitude: 0.14 }
+      3: { buffDuration: 4, buffMagnitude: 0.16 }
+      4: { buffDuration: 4, buffMagnitude: 0.18 }
+      5: { buffDuration: 5, buffMagnitude: 0.20 }
+  - id: devotion
+    nameKey: talent.templar.devotion.name
+    descKey: talent.templar.devotion.desc
+    visualKey: icon.skill.templar.devotion
+    iconKey: icon.skill.templar.devotion
+    audioProfile: audio.talent.devotion
+    schemaVersion: 2
+    tags: [talent, templar, support]
+    maxPoints: 5
+    category: ACTIVE
+    kind: ACTIVE
+    cooldown: 7
+    castTime: 1000
+    range: 0
+    minRange: 0
+    areaRadius: 0
+    resourceCosts: { POSITIVE_ENERGY: 0 }
+    unlockLevel: 1
+    targeting: SELF
+    callbacks: []
+    telegraph: self_buff_aura
+    treeId: templar_faith
+    keywords: [buff, holy]
+    levelEffects:
+      1: { buffDuration: 4, buffMagnitude: 0.10 }
+      2: { buffDuration: 4, buffMagnitude: 0.12 }
+      3: { buffDuration: 5, buffMagnitude: 0.14 }
+      4: { buffDuration: 5, buffMagnitude: 0.16 }
+      5: { buffDuration: 6, buffMagnitude: 0.18 }
+  - id: holy_aura
+    nameKey: talent.templar.holy_aura.name
+    descKey: talent.templar.holy_aura.desc
+    visualKey: icon.skill.templar.holy_aura
+    iconKey: icon.skill.templar.holy_aura
+    audioProfile: audio.talent.holy_aura
+    schemaVersion: 2
+    tags: [talent, templar, aura]
+    maxPoints: 5
+    category: ACTIVE
+    damageType: HOLY
+    kind: ACTIVE
+    cooldown: 8
+    castTime: 1000
+    range: 0
+    minRange: 0
+    areaRadius: 2
+    resourceCosts: { POSITIVE_ENERGY: 18 }
+    unlockLevel: 3
+    targeting: RADIUS_SELF
+    callbacks: []
+    telegraph: self_buff_aura
+    treeId: templar_faith
+    keywords: [buff, holy, area]
+    levelEffects:
+      1: { damageMultiplier: 0.90, buffDuration: 3, buffMagnitude: 0.10 }
+      2: { damageMultiplier: 1.00, buffDuration: 3, buffMagnitude: 0.12 }
+      3: { damageMultiplier: 1.10, buffDuration: 4, buffMagnitude: 0.14 }
+      4: { damageMultiplier: 1.20, buffDuration: 4, buffMagnitude: 0.16 }
+      5: { damageMultiplier: 1.35, buffDuration: 5, buffMagnitude: 0.18 }
+  - id: purify
+    nameKey: talent.templar.purify.name
+    descKey: talent.templar.purify.desc
+    visualKey: icon.skill.templar.purify
+    iconKey: icon.skill.templar.purify
+    audioProfile: audio.talent.purify
+    schemaVersion: 2
+    tags: [talent, templar, support]
+    maxPoints: 5
+    category: ACTIVE
+    kind: ACTIVE
+    cooldown: 7
+    castTime: 1000
+    range: 0
+    minRange: 0
+    areaRadius: 0
+    resourceCosts: { POSITIVE_ENERGY: 10 }
+    unlockLevel: 4
+    targeting: SELF
+    callbacks: []
+    telegraph: self_buff_aura
+    treeId: templar_grace
+    keywords: [heal, cleanse]
+    levelEffects:
+      1: { buffMagnitude: 0.10 }
+      2: { buffMagnitude: 0.12 }
+      3: { buffMagnitude: 0.15 }
+      4: { buffMagnitude: 0.18 }
+      5: { buffMagnitude: 0.22 }
+  - id: divine_intervention
+    nameKey: talent.templar.divine_intervention.name
+    descKey: talent.templar.divine_intervention.desc
+    visualKey: icon.skill.templar.divine_intervention
+    iconKey: icon.skill.templar.divine_intervention
+    audioProfile: audio.talent.divine_intervention
+    schemaVersion: 2
+    tags: [talent, templar, emergency]
+    maxPoints: 5
+    category: ACTIVE
+    kind: ACTIVE
+    cooldown: 12
+    castTime: 1000
+    range: 0
+    minRange: 0
+    areaRadius: 0
+    resourceCosts: { POSITIVE_ENERGY: 0 }
+    unlockLevel: 5
+    targeting: SELF
+    callbacks: []
+    telegraph: self_buff_aura
+    treeId: templar_faith
+    keywords: [heal, buff, defense]
+    levelEffects:
+      1: { buffDuration: 2, buffMagnitude: 0.20 }
+      2: { buffDuration: 3, buffMagnitude: 0.24 }
+      3: { buffDuration: 3, buffMagnitude: 0.28 }
+      4: { buffDuration: 4, buffMagnitude: 0.32 }
+      5: { buffDuration: 5, buffMagnitude: 0.36 }

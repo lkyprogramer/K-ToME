@@ -13,10 +13,12 @@ import com.ktome.core.save.SaveSnapshot
 import com.ktome.core.save.StairSnapshot
 import com.ktome.client.assets.AudioManifest
 import com.ktome.client.assets.AudioManifestEntry
+import com.ktome.client.assets.AudioManifestResourceLoader
 import com.ktome.client.assets.ClientFontCatalog
 import com.ktome.client.assets.ManifestPrefixRule
 import com.ktome.client.assets.VisualManifestEntry
 import com.ktome.client.assets.VisualManifest
+import com.ktome.client.assets.VisualManifestResourceLoader
 import com.ktome.core.snapshot.ActorRenderSnapshot
 import com.ktome.core.snapshot.ActorRoleKindSnapshot
 import com.ktome.core.snapshot.CellVisibilitySnapshot
@@ -272,45 +274,9 @@ private fun sampleAudioManifest(): AudioManifest =
             ),
     )
 
-private fun phase2VisualManifest(): VisualManifest =
-    VisualManifest(
-        manifestVersion = 1,
-        styleTag = "ktome-middle-fantasy-painterly-tile-v1",
-        fallbackKey = "missing_visual",
-        entries =
-            listOf(
-                VisualManifestEntry(key = "missing_visual", category = "debug", rawOutputPath = "debug/missing_visual.png", footprint = "ui"),
-                VisualManifestEntry(key = "zone.shattered_outpost.visual", category = "debug", rawOutputPath = "debug/missing_visual.png", footprint = "ui"),
-                VisualManifestEntry(key = "tileset.ruins.ground_01", category = "tile_ground", rawOutputPath = "phase2/p2-b/tileset_ruins_ground_01.png", footprint = "1x1"),
-                VisualManifestEntry(key = "prop.stairs.down", category = "prop_interactable", rawOutputPath = "debug/prop_stairs_down.png", footprint = "1x1"),
-                VisualManifestEntry(key = "actor.vanguard", category = "actor_sprite", rawOutputPath = "phase2/p2-b/actor_vanguard.png", footprint = "1x1"),
-                VisualManifestEntry(key = "vfx.boss.warning.sigil_01", category = "tile_decal", rawOutputPath = "phase2/p2-b/vfx_boss_warning_sigil_01.png", footprint = "overlay"),
-            ),
-        prefixRules = listOf(ManifestPrefixRule(prefix = "icon.", targetKey = "missing_visual")),
-    )
+private fun phase2VisualManifest(): VisualManifest = VisualManifestResourceLoader.load()
 
-private fun phase2AudioManifest(): AudioManifest =
-    AudioManifest(
-        manifestVersion = 1,
-        fallbackKey = "audio.fallback.silence",
-        entries =
-            listOf(
-                AudioManifestEntry(key = "audio.fallback.silence", cueFamily = "silence", eventId = "silence.default", sourcePath = "audio/fallback/silence.ogg"),
-                AudioManifestEntry(key = "audio.music.menu", cueFamily = "music", eventId = "music.menu", sourcePath = "audio/fallback/silence.ogg"),
-                AudioManifestEntry(key = "audio.ui.confirm", cueFamily = "ui", eventId = "ui.confirm", sourcePath = "audio/fallback/silence.ogg"),
-                AudioManifestEntry(key = "audio.ui.cancel", cueFamily = "ui", eventId = "ui.cancel", sourcePath = "audio/fallback/silence.ogg"),
-                AudioManifestEntry(key = "audio.ui.hover", cueFamily = "ui", eventId = "ui.hover", sourcePath = "audio/fallback/silence.ogg"),
-                AudioManifestEntry(key = "audio.zone.shattered_outpost", cueFamily = "ambience", eventId = "audio.zone.shattered_outpost", sourcePath = "audio/fallback/silence.ogg"),
-                AudioManifestEntry(key = "ambient.shattered_outpost", cueFamily = "ambience", eventId = "ambient.shattered_outpost", sourcePath = "audio/fallback/silence.ogg"),
-                AudioManifestEntry(key = "audio.interactable.open", cueFamily = "interactable", eventId = "interactable.open", sourcePath = "audio/fallback/silence.ogg"),
-                AudioManifestEntry(key = "audio.interactable.stairs", cueFamily = "interactable", eventId = "interactable.stairs", sourcePath = "audio/fallback/silence.ogg"),
-                AudioManifestEntry(key = "audio.footstep.default", cueFamily = "footstep", eventId = "footstep.default", sourcePath = "audio/fallback/silence.ogg"),
-                AudioManifestEntry(key = "audio.melee.light", cueFamily = "melee", eventId = "melee.light", sourcePath = "audio/fallback/silence.ogg"),
-                AudioManifestEntry(key = "audio.spell.basic", cueFamily = "spell", eventId = "spell.basic", sourcePath = "audio/fallback/silence.ogg"),
-                AudioManifestEntry(key = "audio.profession.vanguard", cueFamily = "profession", eventId = "profession.vanguard", sourcePath = "audio/fallback/silence.ogg"),
-                AudioManifestEntry(key = "audio.boss.warning", cueFamily = "boss", eventId = "audio.boss.warning", sourcePath = "audio/fallback/silence.ogg"),
-            ),
-    )
+private fun phase2AudioManifest(): AudioManifest = AudioManifestResourceLoader.load()
 
 private fun sampleRenderSnapshot(): RenderSnapshot =
     RenderSnapshot(

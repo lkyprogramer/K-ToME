@@ -2,12 +2,24 @@ lootProfiles:
   - id: loot.foundation.common
     schemaVersion: 2
     tags: [loot, common]
-    itemIds: [healing_potion, scroll_teleport]
+    itemIds: [healing_potion, short_sword, leather_armor, bandit_trophy, stamina_draught, hunter_bow]
   - id: loot.foundation.elite
     schemaVersion: 2
     tags: [loot, elite]
-    itemIds: [basic_shield, mana_potion, chain_mail, apprentice_robe]
+    itemIds: [basic_shield, mana_potion, chain_mail, apprentice_robe, long_sword, emerald_charm, furnace_talisman, energy_tonic]
   - id: loot.foundation.boss
     schemaVersion: 2
     tags: [loot, boss]
-    itemIds: [basic_shield, mana_potion, scroll_teleport]
+    itemIds: [battle_axe, plate_armor, arcane_staff, scroll_teleport, mana_potion, forgebreaker_pick, sanctified_seal, seal_reliquary, shadow_cloak, consecrated_oil]
+  - id: loot.greenwood_fringe.reward
+    schemaVersion: 2
+    tags: [loot, reward, greenwood]
+    itemIds: [bandit_trophy, emerald_charm, hunter_bow, stamina_draught]
+  - id: loot.deep_iron_pit.reward
+    schemaVersion: 2
+    tags: [loot, reward, mine]
+    itemIds: [furnace_talisman, war_maul, forgebreaker_pick, energy_tonic]
+  - id: loot.grey_gate_depths.reward
+    schemaVersion: 2
+    tags: [loot, reward, grey_gate]
+    itemIds: [seal_reliquary, shadow_cloak, sanctified_seal, consecrated_oil]

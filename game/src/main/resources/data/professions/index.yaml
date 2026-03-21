@@ -9,12 +9,13 @@ professions:
     tags: [profession, foundation]
     resourceType: STAMINA
     baseStats: { str: 12, dex: 8, con: 11, wil: 7 }
+    combatProfile: { baseAttack: 5, baseDefense: 3, baseAccuracy: 10, baseEvasion: 5, baseSpeed: 98, baseHp: 54, baseStamina: 44, baseHpRegen: 1.2 }
     statGrowth: { str: 3, dex: 2, con: 3, wil: 1 }
     startingResources: { STAMINA: 100 }
     resourceCaps: { STAMINA: 100 }
     talentTrees: [vanguard_arms, vanguard_shield, vanguard_warcry]
-    startingTalents: [power_strike, sweeping_strike, shield_bash, guard_stance, war_cry, intimidation, sunder_armor, unyielding]
-    startingKit: [short_sword, basic_shield, chain_mail, healing_potion]
+    startingTalents: [power_strike, shield_bash, guard_stance, war_cry]
+    startingKit: [long_sword, basic_shield, chain_mail, healing_potion]
     unlockCondition: default
     soloContract: foundation_frontliner
   - id: arcanist
@@ -27,11 +28,12 @@ professions:
     tags: [profession, foundation]
     resourceType: MANA
     baseStats: { str: 6, dex: 8, con: 7, wil: 14 }
+    combatProfile: { baseAttack: 4, baseDefense: 1, baseAccuracy: 11, baseEvasion: 6, baseSpeed: 102, baseHp: 46, baseStamina: 34, baseHpRegen: 1.0 }
     statGrowth: { str: 1, dex: 2, con: 1, wil: 4 }
     startingResources: { MANA: 100 }
     resourceCaps: { MANA: 134 }
     talentTrees: [arcanist_flame, arcanist_frost, arcanist_arcane]
-    startingTalents: [fireball, flame_wall, ice_bolt, frost_nova, arcane_shield, blink, mana_surge, ice_prison]
+    startingTalents: [fireball, ice_bolt, blink, arcane_shield]
     startingKit: [arcane_staff, apprentice_robe, mana_potion]
     unlockCondition: default
     soloContract: foundation_caster
@@ -45,12 +47,13 @@ professions:
     tags: [profession, foundation]
     resourceType: ENERGY
     baseStats: { str: 8, dex: 13, con: 8, wil: 7 }
+    combatProfile: { baseAttack: 5, baseDefense: 2, baseAccuracy: 12, baseEvasion: 8, baseSpeed: 108, baseHp: 48, baseStamina: 40, baseHpRegen: 1.0 }
     statGrowth: { str: 2, dex: 4, con: 2, wil: 1 }
     startingResources: { ENERGY: 100 }
     resourceCaps: { ENERGY: 100 }
     talentTrees: [rogue_assassination, rogue_subtlety, rogue_agility]
-    startingTalents: []
-    startingKit: [short_sword, healing_potion]
+    startingTalents: [backstab, poison_blade, stealth, roll]
+    startingKit: [short_sword, leather_armor, healing_potion, scroll_teleport]
     unlockCondition: default
     soloContract: foundation_skirmisher
   - id: templar
@@ -63,11 +66,12 @@ professions:
     tags: [profession, foundation]
     resourceType: POSITIVE_ENERGY
     baseStats: { str: 10, dex: 7, con: 10, wil: 12 }
+    combatProfile: { baseAttack: 6, baseDefense: 5, baseAccuracy: 11, baseEvasion: 5, baseSpeed: 102, baseHp: 58, baseStamina: 42, baseHpRegen: 1.2 }
     statGrowth: { str: 2, dex: 1, con: 2, wil: 3 }
     startingResources: { POSITIVE_ENERGY: 0 }
     resourceCaps: { POSITIVE_ENERGY: 100 }
     talentTrees: [templar_smite, templar_grace, templar_faith]
-    startingTalents: []
-    startingKit: [chain_mail, healing_potion]
+    startingTalents: [holy_strike, holy_light, holy_shield, devotion]
+    startingKit: [long_sword, basic_shield, chain_mail, healing_potion]
     unlockCondition: default
     soloContract: foundation_judicator

@@ -156,6 +156,30 @@ class InventoryManagerTest {
         assertFalse(world.isAlive(potion))
     }
 
+    @Test
+    fun `stamina consumable restores stamina pool and component together`() {
+        val world = baseWorld()
+        val player = createPlayer(world)
+        requireNotNull(world.get<ResourcePools>(player)).pool(ResourceType.STAMINA)?.current = 3
+        val potion =
+            createItem(
+                world = world,
+                position = Point(1, 1),
+                type = ItemType.CONSUMABLE,
+                slot = null,
+                effect = ConsumableEffect.RESTORE_RESOURCE,
+                resourceTypeId = ResourceType.STAMINA.name,
+                magnitude = 4,
+            )
+        manager.pickUp(world, player, potion)
+
+        val result = manager.useConsumable(world, player, 0)
+
+        assertTrue(result.success)
+        assertEquals(7, requireNotNull(world.get<ResourcePools>(player)).pool(ResourceType.STAMINA)?.current)
+        assertEquals(7, requireNotNull(world.get<Stamina>(player)).current)
+    }
+
     private fun baseWorld(): World = World()
 
     private fun createPlayer(
@@ -168,6 +192,14 @@ class InventoryManagerTest {
         world.add(player, CombatProfile(baseAttack = 5, baseDefense = 2))
         world.add(player, Health(current = 10, max = 10))
         world.add(player, Stamina(current = 10, max = 10))
+        world.add(
+            player,
+            ResourcePools(
+                linkedMapOf(
+                    ResourceType.STAMINA to ResourcePool(type = ResourceType.STAMINA, current = 10, max = 10),
+                ),
+            ),
+        )
         world.add(player, Inventory(capacity = capacity))
         world.add(player, Equipment())
         return player

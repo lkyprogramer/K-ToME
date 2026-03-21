@@ -77,6 +77,8 @@ data class InventoryItemView(
     val slot: EquipSlot? = null,
     val equippedSlot: EquipSlot? = null,
     val effect: ConsumableEffect? = null,
+    val resourceTypeId: String? = null,
+    val magnitude: Int = 0,
 )
 
 data class EquipmentSlotView(

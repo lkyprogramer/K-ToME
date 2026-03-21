@@ -116,29 +116,29 @@
 
 1. `P2-B` 核心资源已存在并可视为冻结基线
 2. `P2-C` 已有部分资源条目，但 formal path 未收口
-3. 当前 runtime manifest 中，`phase2` 正式路径仍存在大量 fallback：
-   - `visual-manifest.json` 中有 `78` 条 `phase2` key 仍直接指向 `debug/missing_visual.png`
-   - `audio-manifest.json` 中有 `24` 条 `phase2` key 仍直接指向 `audio/fallback/silence.ogg`
+3. 截至当前 Sprint 7 开始时，formal-path required key 已经与“剩余 debug 预算”分开统计：
+   - required visual key 当前为 `0 missing_visual`
+   - required audio key 当前为 `0 silence.ogg`
+   - 剩余 `phase2` 预算仍有 `25` 条 visual key 指向 `debug/missing_visual.png`
+   - 剩余 `phase2` 预算仍有 `13` 条 audio key 指向 `audio/fallback/silence.ogg`
 
 当前高风险缺口必须明确点名：
 
-1. `Rogue / Templar` 的 `tree.*`、部分 talent icon / visual / cue
-2. 剩余 `3` 个 zone 的 `zone.*.visual`、`zone.*.icon`
-3. `dungeon_lord` 及其相关 Boss 视觉 / 音频锚点
-4. zone signature objective / interactable / reward 对应资源
-5. `P2-C` 新增 monster / item / reward / route cue 的 canonical entry
+1. 非 formal 路径的 `affix.*`、`material.*`、`difficulty.normal.*` 仍保留 visual/audio budget
+2. `missing_visual` / `audio.fallback.silence` 仍作为 debug entry 保留，必须与 formal-path blocker 分开解释
+3. 后续若要继续压缩 budget，应优先决定 affix / material / difficulty 是否在 Phase 2 就升级为正式资产
 
 为避免团队继续误判，本执行版使用以下三态表来定义资源状态：
 
 | 资源域 | 已有正式资产 | 已有 spec / manifest 但未收口 | 当前仍是 placeholder / silence |
 | --- | --- | --- | --- |
-| Profession | `actor.vanguard`、`actor.arcanist`、`actor.rogue`、`actor.templar`；四职业 portrait | Rogue / Templar 的完整 tree / talent 资源矩阵尚未完整进入 formal gate | Rogue / Templar 多个 `tree.*`、相关 cue 仍落到 fallback |
-| Zone | `tileset.ruins`、`tileset.forest_edge`、`tileset.mine`、`tileset.shadow_depths` 核心切片 | route 转场、zone objective prop、zone reward 锚点仍需补 spec 与 gate | `zone.greenwood_fringe.*`、`zone.deep_iron_pit.*`、`zone.grey_gate_depths.*` 关键条目仍有 placeholder |
-| Boss | `bandit_captain` 基本成立 | `dungeon_lord` 已有 schema 与部分 manifest 条目 | `boss.cultist.dungeon_lord.visual/icon` 仍命中 placeholder |
-| Objective / Interactable | `shattered_outpost` 的 `armory_gate / supply_crate / alarm_bonfire` 已形成正式锚点 | 中间区与终区的 route objective / interactable 需要新增 spec | 非 `shattered_outpost` 的 route 关键锚点仍未正式化 |
-| Reward / Item | `basic_shield`、`arcane_staff`、`apprentice_robe`、`healing_potion`、`mana_potion` 等已有正式条目 | `24` 物品矩阵与 signature reward 需要补 spec / cue | 多个 P2-C item cue 仍是 silence fallback |
-| Talent / Tree | Vanguard / Arcanist 主链较完整 | damage type / growth / unlock 节奏引入后需要同步补 icon/cue | Rogue / Templar tree、部分 talent visual / cue 仍未正式收口 |
-| Core UI Cue | `confirm / cancel / hover / footstep / melee / spell / boss.warning` 已成型 | route progress、reward confirm、zone transition 等需新增 cue | 非核心、未纳入 formal path 的条目可保留预算，但不能混入完成态 |
+| Profession | `actor.*`、四职业 portrait、四职业 `icon.profession.*` 已正式化 | 无职业主入口 formal blocker | 无职业主入口 cue 留在 silence；剩余 budget 不在 profession 主路径 |
+| Zone | `4 zone` 的 `visual / icon`、stairs、route objective prop 已正式化 | 无 route 主入口 placeholder blocker | 无 route 主入口 silence blocker；剩余预算不在 zone 主路径 |
+| Boss | `bandit_captain`、`dungeon_lord` 的 actor / encounter visual / icon / cue 已正式化 | 无新的 boss formal blocker | boss 主路径当前无 placeholder / silence blocker |
+| Objective / Interactable | route objective / interactable 已全部进入 runtime 主链 | 非主路径 objective 可继续走预算统计 | 当前主路径 objective/interactable 无 silence blocker |
+| Reward / Item | `24` 物品矩阵、signature reward icon/cue 已进入主链 | 非主路径 affix / material 仍需在 Phase 3+ 决定是否正式化 | affix / material 的 visual/audio 仍属于非 formal budget |
+| Talent / Tree | `33` 个 talent 的 skill icon/cue 与 `12` 棵 tree 的 `tree.* / icon.tree.*` 已有 runtime entry | 无新的职业树 formal blocker | 当前 visual budget 不再集中在 tree 主路径 |
+| Core UI Cue | `confirm / cancel / hover / footstep / melee / spell / boss.warning` 与 route cue 已成型 | 报告字段仍需显式区分 required key 与 debug budget | 非 formal、未纳入 required set 的条目可以保留预算，但必须单独统计 |
 
 ---
 

@@ -1,5 +1,6 @@
 package com.ktome.core.ecs
 
+import com.ktome.core.combat.DamageType
 import com.ktome.core.dungeon.StairDirection
 import com.ktome.core.map.Point
 
@@ -48,6 +49,12 @@ data class CombatProfile(
     val baseStamina: Int = 40,
     val baseHpRegen: Double = 1.0,
 )
+
+data class ResistanceProfile(
+    val values: MutableMap<DamageType, Int> = linkedMapOf(),
+) {
+    fun valueFor(type: DamageType): Int = values[type] ?: 0
+}
 
 data class DerivedStats(
     val attack: Int,

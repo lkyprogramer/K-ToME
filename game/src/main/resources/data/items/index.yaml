@@ -308,3 +308,198 @@ items:
     stats: { wil: 1 }
     dropFloors: [1, 2]
     dropWeight: 6
+  - id: hunter_bow
+    nameKey: item.hunter_bow.name
+    descKey: item.hunter_bow.desc
+    visualKey: item.long_sword.visual
+    iconKey: item.long_sword.icon
+    audioProfile: audio.item.long_sword
+    schemaVersion: 2
+    tags: [item, weapon]
+    type: WEAPON
+    slot: WEAPON
+    glyph: ")"
+    color: "#7A6A54"
+    baseAttack: 7
+    stats: { dex: 1, accuracy: 2 }
+    dropFloors: [2, 3]
+    dropWeight: 6
+    materials: [IRON, STEEL, MITHRIL]
+  - id: war_maul
+    nameKey: item.war_maul.name
+    descKey: item.war_maul.desc
+    visualKey: item.battle_axe.visual
+    iconKey: item.battle_axe.icon
+    audioProfile: audio.item.battle_axe
+    schemaVersion: 2
+    tags: [item, weapon]
+    type: WEAPON
+    slot: WEAPON
+    glyph: ")"
+    color: "#706964"
+    baseAttack: 12
+    stats: { attack: 1, accuracy: -1 }
+    dropFloors: [3, 4, 5]
+    dropWeight: 4
+    materials: [STEEL, MITHRIL, ADAMANTITE]
+  - id: forgebreaker_pick
+    nameKey: item.forgebreaker_pick.name
+    descKey: item.forgebreaker_pick.desc
+    visualKey: item.battle_axe.visual
+    iconKey: item.battle_axe.icon
+    audioProfile: audio.item.battle_axe
+    schemaVersion: 2
+    tags: [item, weapon, reward]
+    type: WEAPON
+    slot: WEAPON
+    glyph: ")"
+    color: "#8B6F41"
+    baseAttack: 13
+    stats: { str: 1, attack: 2, accuracy: 1 }
+    dropFloors: [4, 5]
+    dropWeight: 1
+    materials: [MITHRIL, ADAMANTITE]
+  - id: shadow_cloak
+    nameKey: item.shadow_cloak.name
+    descKey: item.shadow_cloak.desc
+    visualKey: item.leather_armor.visual
+    iconKey: item.leather_armor.icon
+    audioProfile: audio.item.leather_armor
+    schemaVersion: 2
+    tags: [item, armor]
+    type: ARMOR
+    slot: ARMOR
+    glyph: "["
+    color: "#4E4B5E"
+    baseDefense: 4
+    stats: { dex: 1, evasion: 2 }
+    dropFloors: [4, 5]
+    dropWeight: 4
+  - id: bandit_trophy
+    nameKey: item.bandit_trophy.name
+    descKey: item.bandit_trophy.desc
+    visualKey: item.basic_shield.visual
+    iconKey: item.basic_shield.icon
+    audioProfile: audio.item.basic_shield
+    schemaVersion: 2
+    tags: [item, armor, accessory]
+    type: ARMOR
+    slot: OFF_HAND
+    glyph: "]"
+    color: "#8A7148"
+    baseDefense: 1
+    stats: { dex: 1, critChance: 0.04, accuracy: 1 }
+    dropFloors: [2, 3]
+    dropWeight: 4
+  - id: emerald_charm
+    nameKey: item.emerald_charm.name
+    descKey: item.emerald_charm.desc
+    visualKey: item.mana_potion.visual
+    iconKey: item.mana_potion.icon
+    audioProfile: audio.item.mana_potion
+    schemaVersion: 2
+    tags: [item, armor, accessory]
+    type: ARMOR
+    slot: OFF_HAND
+    glyph: "]"
+    color: "#4F8F6B"
+    baseDefense: 1
+    stats: { wil: 1, evasion: 1, talentPower: 0.05 }
+    dropFloors: [2, 3, 4]
+    dropWeight: 4
+  - id: furnace_talisman
+    nameKey: item.furnace_talisman.name
+    descKey: item.furnace_talisman.desc
+    visualKey: item.basic_shield.visual
+    iconKey: item.basic_shield.icon
+    audioProfile: audio.item.basic_shield
+    schemaVersion: 2
+    tags: [item, armor, accessory]
+    type: ARMOR
+    slot: OFF_HAND
+    glyph: "]"
+    color: "#8C5E3C"
+    baseDefense: 2
+    stats: { con: 1, maxStamina: 8, attack: 1 }
+    dropFloors: [3, 4]
+    dropWeight: 4
+  - id: seal_reliquary
+    nameKey: item.seal_reliquary.name
+    descKey: item.seal_reliquary.desc
+    visualKey: item.scroll_teleport.visual
+    iconKey: item.scroll_teleport.icon
+    audioProfile: audio.item.scroll_teleport
+    schemaVersion: 2
+    tags: [item, armor, accessory]
+    type: ARMOR
+    slot: OFF_HAND
+    glyph: "]"
+    color: "#7B728E"
+    baseDefense: 2
+    stats: { wil: 1, defense: 1, talentPower: 0.06 }
+    dropFloors: [4, 5]
+    dropWeight: 3
+  - id: sanctified_seal
+    nameKey: item.sanctified_seal.name
+    descKey: item.sanctified_seal.desc
+    visualKey: item.basic_shield.visual
+    iconKey: item.basic_shield.icon
+    audioProfile: audio.item.basic_shield
+    schemaVersion: 2
+    tags: [item, armor, accessory, reward]
+    type: ARMOR
+    slot: OFF_HAND
+    glyph: "]"
+    color: "#C1B27B"
+    baseDefense: 3
+    stats: { wil: 1, defense: 2, maxHp: 10 }
+    dropFloors: [5]
+    dropWeight: 1
+  - id: stamina_draught
+    nameKey: item.stamina_draught.name
+    descKey: item.stamina_draught.desc
+    visualKey: item.healing_potion.visual
+    iconKey: item.healing_potion.icon
+    audioProfile: audio.item.healing_potion
+    schemaVersion: 2
+    tags: [item, consumable]
+    type: CONSUMABLE
+    glyph: "!"
+    color: "#D88B3B"
+    effect: RESTORE_RESOURCE
+    resourceTypeId: STAMINA
+    magnitude: 20
+    dropFloors: [2, 3, 4, 5]
+    dropWeight: 8
+  - id: energy_tonic
+    nameKey: item.energy_tonic.name
+    descKey: item.energy_tonic.desc
+    visualKey: item.mana_potion.visual
+    iconKey: item.mana_potion.icon
+    audioProfile: audio.item.mana_potion
+    schemaVersion: 2
+    tags: [item, consumable]
+    type: CONSUMABLE
+    glyph: "!"
+    color: "#3BB2A0"
+    effect: RESTORE_RESOURCE
+    resourceTypeId: ENERGY
+    magnitude: 18
+    dropFloors: [2, 3, 4, 5]
+    dropWeight: 7
+  - id: consecrated_oil
+    nameKey: item.consecrated_oil.name
+    descKey: item.consecrated_oil.desc
+    visualKey: item.healing_potion.visual
+    iconKey: item.healing_potion.icon
+    audioProfile: audio.item.healing_potion
+    schemaVersion: 2
+    tags: [item, consumable]
+    type: CONSUMABLE
+    glyph: "!"
+    color: "#E7D27B"
+    effect: RESTORE_RESOURCE
+    resourceTypeId: POSITIVE_ENERGY
+    magnitude: 18
+    dropFloors: [3, 4, 5]
+    dropWeight: 6

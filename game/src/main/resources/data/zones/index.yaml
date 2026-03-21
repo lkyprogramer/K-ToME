@@ -32,13 +32,13 @@ zones:
     mapSize: { width: 70, height: 45 }
     recommendedLevel: { min: 3, max: 6 }
     environmentTheme: forest_patrol
-    specialMechanics: [line_of_sight]
+    specialMechanics: [line_of_sight, trail_pressure, beacon_warning]
     tilesetKey: tileset.forest_edge
     ambientProfile: ambient.greenwood_fringe
-    monsterPools: [beast.rat, undead.bone_archer]
-    elitePools: [bandit.sentry]
+    monsterPools: [beast.rat, beast.thorn_stalker, undead.bone_archer, undead.moss_archer, bandit.trapper]
+    elitePools: [bandit.sentry, bandit.wild_huntmaster]
     bossEncounterId:
-    objectiveSetId:
+    objectiveSetId: greenwood_signal_hunt
   - id: deep_iron_pit
     nameKey: zone.deep_iron_pit.name
     descKey: zone.deep_iron_pit.desc
@@ -52,13 +52,13 @@ zones:
     mapSize: { width: 80, height: 50 }
     recommendedLevel: { min: 5, max: 8 }
     environmentTheme: mine_forge
-    specialMechanics: [ore_cart]
+    specialMechanics: [ore_cart, furnace_pressure, slag_alert]
     tilesetKey: tileset.mine
     ambientProfile: ambient.deep_iron_pit
-    monsterPools: [undead.bone_archer, orc.raider]
-    elitePools: [orc.raider]
+    monsterPools: [undead.bone_archer, undead.ash_wraith, orc.raider, orc.miner, cultist.ember_adept]
+    elitePools: [orc.raider, orc.forge_guard]
     bossEncounterId:
-    objectiveSetId:
+    objectiveSetId: deep_iron_pit_forge_run
   - id: grey_gate_depths
     nameKey: zone.grey_gate_depths.name
     descKey: zone.grey_gate_depths.desc
@@ -72,10 +72,10 @@ zones:
     mapSize: { width: 80, height: 50 }
     recommendedLevel: { min: 7, max: 10 }
     environmentTheme: sealed_depths
-    specialMechanics: [sealed_gate]
+    specialMechanics: [sealed_gate, ritual_pressure, shadow_warning]
     tilesetKey: tileset.shadow_depths
     ambientProfile: ambient.grey_gate_depths
-    monsterPools: [orc.raider, undead.bone_archer]
-    elitePools: [orc.raider]
+    monsterPools: [undead.bone_archer, undead.chain_thrall, cultist.shadow_priest]
+    elitePools: [cultist.ashgate_warden]
     bossEncounterId: dungeon_lord_encounter
-    objectiveSetId:
+    objectiveSetId: grey_gate_seal_rite

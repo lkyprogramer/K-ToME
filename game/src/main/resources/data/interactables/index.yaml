@@ -23,3 +23,75 @@ interactables:
     schemaVersion: 2
     tags: [interactable, warning]
     interactionTags: [warning, objective]
+  - id: trail_cache
+    nameKey: interactable.trail_cache.name
+    descKey: interactable.trail_cache.desc
+    visualKey: prop.supply_crate
+    audioProfile: audio.interactable.open
+    schemaVersion: 2
+    tags: [interactable, reward]
+    interactionTags: [loot, support]
+  - id: warden_beacon
+    nameKey: interactable.warden_beacon.name
+    descKey: interactable.warden_beacon.desc
+    visualKey: prop.alarm_bonfire
+    audioProfile: audio.boss.warning
+    schemaVersion: 2
+    tags: [interactable, warning]
+    interactionTags: [warning, objective]
+  - id: hunter_snare
+    nameKey: interactable.hunter_snare.name
+    descKey: interactable.hunter_snare.desc
+    visualKey: prop.armory_gate
+    audioProfile: audio.interactable.open
+    schemaVersion: 2
+    tags: [interactable, support]
+    interactionTags: [support, objective]
+  - id: ore_stash
+    nameKey: interactable.ore_stash.name
+    descKey: interactable.ore_stash.desc
+    visualKey: prop.supply_crate
+    audioProfile: audio.interactable.open
+    schemaVersion: 2
+    tags: [interactable, reward]
+    interactionTags: [loot, support]
+  - id: mine_furnace
+    nameKey: interactable.mine_furnace.name
+    descKey: interactable.mine_furnace.desc
+    visualKey: prop.mine_furnace
+    audioProfile: audio.interactable.open
+    schemaVersion: 2
+    tags: [interactable, support]
+    interactionTags: [support, objective]
+  - id: slag_valve
+    nameKey: interactable.slag_valve.name
+    descKey: interactable.slag_valve.desc
+    visualKey: prop.alarm_bonfire
+    audioProfile: audio.boss.warning
+    schemaVersion: 2
+    tags: [interactable, warning]
+    interactionTags: [warning, objective]
+  - id: seal_cache
+    nameKey: interactable.seal_cache.name
+    descKey: interactable.seal_cache.desc
+    visualKey: prop.supply_crate
+    audioProfile: audio.interactable.open
+    schemaVersion: 2
+    tags: [interactable, reward]
+    interactionTags: [loot, support]
+  - id: ritual_altar
+    nameKey: interactable.ritual_altar.name
+    descKey: interactable.ritual_altar.desc
+    visualKey: prop.ritual_altar
+    audioProfile: audio.interactable.open
+    schemaVersion: 2
+    tags: [interactable, support]
+    interactionTags: [support, objective]
+  - id: shadow_brazier
+    nameKey: interactable.shadow_brazier.name
+    descKey: interactable.shadow_brazier.desc
+    visualKey: prop.alarm_bonfire
+    audioProfile: audio.boss.warning
+    schemaVersion: 2
+    tags: [interactable, warning]
+    interactionTags: [warning, objective]

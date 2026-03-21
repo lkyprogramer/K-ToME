@@ -7,7 +7,15 @@ import argparse
 import pathlib
 import sys
 
-from asset_pipeline_common import collect_assets, load_json, load_yaml, print_errors
+from asset_pipeline_common import (
+    PHASE2_REQUIRED_VISUAL_KEYS,
+    collect_assets,
+    flatten_required_keys,
+    load_json,
+    load_yaml,
+    print_errors,
+    split_phase2_fallback_budget,
+)
 
 
 def parse_args() -> argparse.Namespace:
@@ -200,6 +208,23 @@ def validate_manifest(
         if not fallback_asset_path.is_file():
             errors.append(f"runtime visual fallback asset is missing: {fallback_asset_path}.")
 
+    required_visual_keys = flatten_required_keys(PHASE2_REQUIRED_VISUAL_KEYS)
+    for key in sorted(required_visual_keys):
+        source_entry = source_by_key.get(key)
+        if source_entry is None:
+            errors.append(f"canonical visual manifest is missing required formal-path key '{key}'.")
+            continue
+        source_path = str(source_entry.get("rawOutputPath", "")).strip()
+        if source_path == "debug/missing_visual.png":
+            errors.append(f"required formal-path visual key '{key}' must not use missing_visual in canonical manifest.")
+        runtime_entry = runtime_by_key.get(key)
+        if runtime_entry is None:
+            errors.append(f"runtime visual manifest is missing required formal-path key '{key}'.")
+            continue
+        runtime_path = str(runtime_entry.get("rawOutputPath", "")).strip()
+        if runtime_path == "debug/missing_visual.png":
+            errors.append(f"required formal-path visual key '{key}' must not use missing_visual in runtime manifest.")
+
     compare_entries(source_by_key, runtime_by_key, runtime_root, errors)
 
     plan_by_key: dict[str, dict] = {}
@@ -271,10 +296,23 @@ def main() -> int:
         return print_errors(errors)
 
     manifest = load_json(pathlib.Path(args.manifest))
+    required_visual_keys = flatten_required_keys(PHASE2_REQUIRED_VISUAL_KEYS)
+    source_by_key = {
+        str(entry.get("key", "")).strip(): entry
+        for entry in manifest["entries"]
+        if isinstance(entry, dict) and str(entry.get("key", "")).strip()
+    }
+    required_fallback_keys, placeholder_budget_keys = split_phase2_fallback_budget(
+        entries_by_key=source_by_key,
+        required_keys=required_visual_keys,
+        path_field="rawOutputPath",
+        fallback_value="debug/missing_visual.png",
+    )
     print(
         "manifest-lint OK: "
         f"entries={len(manifest['entries'])}, styleTag={manifest['styleTag']}, manifest={args.manifest}, "
-        f"runtimeManifest={args.runtime_manifest}"
+        f"runtimeManifest={args.runtime_manifest}, requiredFormalPathKeys={len(required_visual_keys)}, "
+        f"requiredMissingVisual={len(required_fallback_keys)}, phase2PlaceholderBudget={len(placeholder_budget_keys)}"
     )
     return 0
 

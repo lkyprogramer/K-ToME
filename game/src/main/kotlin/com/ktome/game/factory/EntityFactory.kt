@@ -17,6 +17,7 @@ import com.ktome.core.ecs.Name
 import com.ktome.core.ecs.PatrolRoute
 import com.ktome.core.ecs.PlayerControlled
 import com.ktome.core.ecs.Position
+import com.ktome.core.ecs.ResistanceProfile
 import com.ktome.core.ecs.Stats
 import com.ktome.core.ecs.Stamina
 import com.ktome.core.ecs.World
@@ -38,17 +39,18 @@ class EntityFactory {
         talents: List<TalentDef>,
         playerName: String = "Hero",
         stats: Stats = Stats(str = 10, dex = 10, con = 10, wil = 10),
+        combatProfile: CombatProfile =
+            CombatProfile(
+                baseAttack = 5,
+                baseDefense = 2,
+                baseAccuracy = 10,
+                baseEvasion = 5,
+                baseSpeed = 100,
+                baseHp = 50,
+            ),
     ): com.ktome.core.ecs.EntityId {
         val playerId = world.createEntity()
-        val profile = CombatProfile(
-            baseAttack = 5,
-            baseDefense = 2,
-            baseAccuracy = 10,
-            baseEvasion = 5,
-            baseSpeed = 100,
-            baseHp = 50,
-        )
-        val derivedStats = StatsCalculator.calculate(stats, profile)
+        val derivedStats = StatsCalculator.calculate(stats, combatProfile)
 
         world.add(playerId, Position(position.x, position.y))
         world.add(playerId, Glyph('@'))
@@ -58,7 +60,7 @@ class EntityFactory {
         world.add(playerId, FactionTag(Faction.PLAYER))
         world.add(playerId, BlocksMovement())
         world.add(playerId, stats.copy())
-        world.add(playerId, profile)
+        world.add(playerId, combatProfile)
         world.add(playerId, derivedStats)
         world.add(playerId, Health(current = derivedStats.maxHp, max = derivedStats.maxHp))
         world.add(playerId, Stamina(current = derivedStats.maxStamina, max = derivedStats.maxStamina))
@@ -89,8 +91,8 @@ class EntityFactory {
         val profile = CombatProfile(
             baseAttack = template.baseAttack,
             baseDefense = template.baseDefense,
-            baseAccuracy = 10,
-            baseEvasion = 5,
+            baseAccuracy = template.baseAccuracy,
+            baseEvasion = template.baseEvasion,
             baseSpeed = template.speed,
             baseHp = template.baseHp,
         )
@@ -106,6 +108,14 @@ class EntityFactory {
         world.add(monsterId, template.stats.copy())
         world.add(monsterId, profile)
         world.add(monsterId, derivedStats)
+        if (template.resistances.isNotEmpty()) {
+            world.add(
+                monsterId,
+                ResistanceProfile(
+                    values = template.resistances.entries.associateTo(linkedMapOf()) { (type, value) -> type to value },
+                ),
+            )
+        }
         world.add(monsterId, Health(current = derivedStats.maxHp, max = derivedStats.maxHp))
         world.add(monsterId, Energy())
         world.add(monsterId, ExperienceReward(template.expReward))
@@ -125,9 +135,24 @@ class EntityFactory {
 
     private fun resolveAiType(template: MonsterTemplate): AIType =
         when (template.aiProfileId) {
-            "ai.kite.basic" -> AIType.KITE
-            "ai.patrol.basic" -> AIType.PATROL
-            "ai.chase.basic", "ai.boss.dungeon_lord", "ai.boss.bandit_captain" -> AIType.CHASE
+            "ai.kite.basic",
+            "ai.controller.pressure",
+            "ai.controller.shadow_priest",
+            ->
+                AIType.KITE
+            "ai.patrol.basic",
+            "ai.skirmisher.flank",
+            "ai.elite.huntmaster",
+            ->
+                AIType.PATROL
+            "ai.chase.basic",
+            "ai.guard.basic",
+            "ai.elite.forge_guard",
+            "ai.elite.ashgate_warden",
+            "ai.boss.dungeon_lord",
+            "ai.boss.bandit_captain",
+            ->
+                AIType.CHASE
             else -> template.ai
         }
 }
