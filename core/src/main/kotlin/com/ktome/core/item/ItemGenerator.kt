@@ -9,6 +9,13 @@ class ItemGenerator(
 ) {
     fun generate(floor: Int): ItemInstance {
         val base = chooseBaseItem(floor)
+        return generate(base, floor)
+    }
+
+    fun generate(
+        base: ItemBaseDef,
+        floor: Int,
+    ): ItemInstance {
         if (base.type == ItemType.CONSUMABLE) {
             return ItemInstance(
                 baseId = base.id,
@@ -22,6 +29,7 @@ class ItemGenerator(
                 effect = base.effect,
                 resourceTypeId = base.resourceTypeId,
                 magnitude = base.magnitude,
+                passive = base.passive,
             )
         }
 
@@ -47,6 +55,7 @@ class ItemGenerator(
             effect = base.effect,
             resourceTypeId = base.resourceTypeId,
             magnitude = base.magnitude,
+            passive = base.passive,
         )
     }
 

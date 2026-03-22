@@ -6,6 +6,7 @@ import com.ktome.core.item.EquipSlot
 import com.ktome.core.item.ItemType
 import com.ktome.core.map.Point
 import com.ktome.core.run.RunOutcome
+import com.ktome.core.snapshot.RenderTextTokenSnapshot
 
 sealed interface PlayerCommand {
     data class Move(val delta: Point) : PlayerCommand
@@ -50,8 +51,6 @@ data class ActorView(
 data class PlayerStatus(
     val currentHp: Int,
     val maxHp: Int,
-    val currentStamina: Int,
-    val maxStamina: Int,
     val level: Int,
     val currentExperience: Int,
     val nextLevelRequirement: Int,
@@ -92,8 +91,7 @@ data class TalentSlotView(
     val name: String,
     val level: Int,
     val maxLevel: Int,
-    val staminaCost: Int,
-    val resourceCost: Int = staminaCost,
+    val resourceCost: Int,
     val resourceTypeId: String = "STAMINA",
     val range: Int,
     val minRange: Int,
@@ -108,6 +106,17 @@ data class RunSummary(
     val maxFloor: Int,
     val turns: Int,
     val playerLevel: Int,
+    val zoneNameKey: String,
+    val outcomeReasonKey: String,
+    val killerNameKey: String?,
+    val killerTemplateId: String?,
+    val finalHpCurrent: Int,
+    val finalHpMax: Int,
+    val finalResourceTypeId: String,
+    val finalResourceLabelKey: String,
+    val finalResourceCurrent: Int,
+    val finalResourceMax: Int,
+    val lastEvents: List<RenderTextTokenSnapshot>,
 )
 
 enum class TileVisibility {

@@ -46,7 +46,7 @@ cueFamilies:
     source: internal
     license: internal
   - id: affix
-    provider: placeholder
+    provider: shared-existing
     source: internal
     license: internal
   - id: boss
@@ -54,7 +54,7 @@ cueFamilies:
     source: internal
     license: internal
   - id: difficulty
-    provider: placeholder
+    provider: shared-existing
     source: internal
     license: internal
   - id: item
@@ -62,7 +62,7 @@ cueFamilies:
     source: internal
     license: internal
   - id: material
-    provider: placeholder
+    provider: shared-existing
     source: internal
     license: internal
   - id: resource

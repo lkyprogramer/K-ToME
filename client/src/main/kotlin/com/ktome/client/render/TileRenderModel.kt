@@ -15,7 +15,9 @@ import com.ktome.core.snapshot.PropRenderSnapshot
 import com.ktome.core.snapshot.RenderLogEventSnapshot
 import com.ktome.core.snapshot.RenderSnapshot
 import com.ktome.core.snapshot.RenderTextArgumentSnapshot
+import com.ktome.core.snapshot.RenderTextTokenSnapshot
 import com.ktome.core.snapshot.StatusEffectRenderSnapshot
+import com.ktome.core.snapshot.TalentSlotSnapshot
 import com.ktome.game.i18n.Localizer
 
 internal enum class TileTextTone {
@@ -197,18 +199,18 @@ internal object TileRenderModelBuilder {
         val resourceTone = resourceTone(playerStatus.resourceTypeId)
         val statusIcons = player.statusEffects.mapNotNull { effect -> effect.iconKey?.let { resolveVisual(visualResolver, it) } }
         val hotbar =
-            snapshot.uiState.talents.map { talent ->
-                TileHotbarSlotModel(
-                    slot = talent.slot,
-                    label = localizer.text(talent.nameKey),
-                    icon = talent.iconKey?.let { resolveVisual(visualResolver, it) },
-                    accentIcon = talent.damageTypeIconKey?.let { resolveVisual(visualResolver, it) },
-                    resourceText = "${talent.resourceCost} ${localizer.text(talent.resourceLabelKey)}",
-                    cooldownText =
-                        if (talent.currentCooldown > 0) {
-                            localizer.text("ui.sidebar.cooldown.short") + ":" + talent.currentCooldown
-                        } else {
-                            null
+                snapshot.uiState.talents.map { talent ->
+                    TileHotbarSlotModel(
+                        slot = talent.slot,
+                        label = localizer.text(talent.nameKey),
+                        icon = talent.iconKey?.let { resolveVisual(visualResolver, it) },
+                        accentIcon = talent.damageTypeIconKey?.let { resolveVisual(visualResolver, it) },
+                        resourceText = talentUsageSummary(localizer, talent),
+                        cooldownText =
+                            if (talent.currentCooldown > 0) {
+                                localizer.text("ui.sidebar.cooldown.short") + ":" + talent.currentCooldown
+                            } else {
+                                null
                         },
                 )
             }
@@ -276,7 +278,7 @@ internal object TileRenderModelBuilder {
                     val item = equipment.item
                     rows +=
                         TileTextRow(
-                            text = "${slotLabel(localizer, equipment.slotId)}: ${item?.let { localizer.text(it.nameKey) } ?: "-"}",
+                            text = "${slotLabel(localizer, equipment.slotId)}: ${item?.let { renderItemDisplay(localizer, it) } ?: "-"}",
                             tone = TileTextTone.WHITE,
                             icon = item?.iconKey?.let { resolveVisual(visualResolver, it) },
                         )
@@ -288,7 +290,7 @@ internal object TileRenderModelBuilder {
                     playerCell.items.forEach { item ->
                         rows +=
                             TileTextRow(
-                                text = localizer.text(item.nameKey),
+                                text = renderItemDisplay(localizer, item),
                                 tone = TileTextTone.WHITE,
                                 icon = item.iconKey?.let { resolveVisual(visualResolver, it) },
                             )
@@ -297,11 +299,29 @@ internal object TileRenderModelBuilder {
                 rows += TileTextRow(localizer.text("ui.controls.map.inventory"), TileTextTone.LIGHT_GRAY)
                 rows += TileTextRow(localizer.text("ui.controls.map.pick_up"), TileTextTone.LIGHT_GRAY)
                 rows += TileTextRow(localizer.text("ui.controls.map.save"), TileTextTone.LIGHT_GRAY)
+                if (snapshot.uiState.talents.isNotEmpty()) {
+                    rows += TileTextRow(localizer.text("ui.controls.map.use_talent"), TileTextTone.LIGHT_GRAY)
+                }
+                if (snapshot.uiState.talents.any(TalentSlotSnapshot::requiresTarget)) {
+                    rows += TileTextRow(localizer.text("ui.controls.map.target_talent"), TileTextTone.LIGHT_GRAY)
+                }
+                if (playerCell.stairDirectionId == "DOWN") {
+                    rows += TileTextRow(localizer.text("ui.controls.map.descend"), TileTextTone.LIGHT_GRAY)
+                }
+                if (playerCell.stairDirectionId == "UP") {
+                    rows += TileTextRow(localizer.text("ui.controls.map.ascend"), TileTextTone.LIGHT_GRAY)
+                }
+                if (snapshot.uiState.playerStatus.talentPoints > 0) {
+                    rows += TileTextRow(localizer.text("ui.controls.map.spend_talent"), TileTextTone.LIGHT_GRAY)
+                }
+                if (snapshot.uiState.playerStatus.statPoints > 0) {
+                    rows += TileTextRow(localizer.text("ui.controls.map.spend_stat"), TileTextTone.LIGHT_GRAY)
+                }
             }
 
             UiMode.INVENTORY -> {
                 snapshot.uiState.inventory.forEach { entry ->
-                    val label = "${entry.index + 1}. ${localizer.text(entry.item.nameKey)}"
+                    val label = "${entry.index + 1}. ${renderItemDisplay(localizer, entry.item)}"
                     val equipped = entry.equippedSlotId?.let { slotId -> " [${slotLabel(localizer, slotId)}]" }.orEmpty()
                     rows +=
                         TileTextRow(
@@ -373,12 +393,15 @@ internal object TileRenderModelBuilder {
                     cell.items.forEach { item ->
                         rows +=
                             TileTextRow(
-                                text = localizer.text(item.nameKey),
+                                text = renderItemDisplay(localizer, item),
                                 tone = TileTextTone.WHITE,
                                 icon = item.iconKey?.let { resolveVisual(visualResolver, it) },
                             )
                         item.descKey?.let { descKey ->
                             rows += TileTextRow(localizer.text(descKey), TileTextTone.LIGHT_GRAY)
+                        }
+                        itemDetailLines(localizer, item).forEach { detail ->
+                            rows += TileTextRow(detail, TileTextTone.LIGHT_GRAY)
                         }
                     }
                 }
@@ -418,7 +441,7 @@ internal object TileRenderModelBuilder {
                 snapshot.uiState.talents.forEach { talent ->
                     rows +=
                         TileTextRow(
-                            text = "${talent.slot}. ${localizer.text(talent.nameKey)} ${talent.level}/${talent.maxLevel}",
+                            text = talentSidebarLabel(localizer, talent),
                             tone = TileTextTone.WHITE,
                             icon = talent.iconKey?.let { resolveVisual(visualResolver, it) },
                         )
@@ -520,7 +543,48 @@ internal object TileRenderModelBuilder {
     private fun resolveArgument(
         localizer: Localizer,
         argument: RenderTextArgumentSnapshot,
-    ): String = argument.valueKey?.let(localizer::text) ?: argument.value.orEmpty()
+    ): String =
+        argument.valueToken?.let { token -> renderTextToken(localizer, token) }
+            ?: argument.valueKey?.let(localizer::text)
+            ?: argument.value.orEmpty()
+
+    private fun renderItemDisplay(
+        localizer: Localizer,
+        item: ItemRenderSnapshot,
+    ): String = item.displayName?.let { token -> renderTextToken(localizer, token) } ?: localizer.text(item.nameKey)
+
+    private fun talentUsageSummary(
+        localizer: Localizer,
+        talent: TalentSlotSnapshot,
+    ): String {
+        val resourceText = "${talent.resourceCost} ${localizer.text(talent.resourceLabelKey)}"
+        if (!talent.requiresTarget) {
+            return resourceText
+        }
+        return "$resourceText · ${localizer.text("ui.sidebar.target.range", "range" to talent.range)}"
+    }
+
+    private fun talentSidebarLabel(
+        localizer: Localizer,
+        talent: TalentSlotSnapshot,
+    ): String {
+        val targetSuffix =
+            if (talent.requiresTarget) {
+                " [${localizer.text("ui.sidebar.target.range", "range" to talent.range)}]"
+            } else {
+                ""
+            }
+        return "${talent.slot}. ${localizer.text(talent.nameKey)} ${talent.level}/${talent.maxLevel}$targetSuffix"
+    }
+
+    private fun renderTextToken(
+        localizer: Localizer,
+        token: RenderTextTokenSnapshot,
+    ): String =
+        localizer.text(
+            token.key,
+            *token.arguments.map { argument -> argument.name to resolveArgument(localizer, argument) }.toTypedArray(),
+        )
 
     private fun itemDetailLines(
         localizer: Localizer,
@@ -529,6 +593,18 @@ internal object TileRenderModelBuilder {
         buildList {
             item.slotId?.let { slotId ->
                 add(localizer.text("ui.inspect.slot", "slot" to slotLabel(localizer, slotId)))
+            }
+            item.qualityNameKey?.let { qualityNameKey ->
+                add(localizer.text("ui.inspect.quality", "quality" to localizer.text(qualityNameKey)))
+            }
+            item.materialNameKey?.let { materialNameKey ->
+                add(localizer.text("ui.inspect.material", "material" to localizer.text(materialNameKey)))
+            }
+            item.affixNameKeys.forEach { affixNameKey ->
+                add(localizer.text("ui.inspect.affix", "affix" to localizer.text(affixNameKey)))
+            }
+            item.passiveDescriptions.forEach { token ->
+                add(renderTextToken(localizer, token))
             }
             addAll(statModifierLines(localizer, item.stats))
             when (item.effectTypeId) {

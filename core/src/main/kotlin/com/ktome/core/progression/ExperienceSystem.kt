@@ -1,17 +1,14 @@
 package com.ktome.core.progression
 
 import com.ktome.core.ecs.Experience
-import com.ktome.core.ecs.Health
-import com.ktome.core.ecs.Stamina
-import com.ktome.core.resource.ResourcePools
-import com.ktome.core.resource.ResourceType
 
 data class ExperienceGainResult(
     val experience: Experience,
     val levelsGained: Int,
     val gainedStatPoints: Int,
     val gainedTalentPoints: Int,
-    val healthRestored: Boolean,
+    val shouldRestoreHealthToMax: Boolean,
+    val shouldRestorePrimaryResourceToMax: Boolean,
 )
 
 object ExperienceSystem {
@@ -19,9 +16,6 @@ object ExperienceSystem {
 
     fun applyReward(
         experience: Experience,
-        health: Health? = null,
-        stamina: Stamina? = null,
-        resourcePools: ResourcePools? = null,
         reward: Int,
     ): ExperienceGainResult {
         require(reward >= 0) { "reward must be non-negative." }
@@ -43,27 +37,16 @@ object ExperienceSystem {
                 experience.unspentTalentPoints += 1
                 totalTalentPoints += 1
             }
-
-            health?.let { it.current = it.max }
-            val staminaPool = resourcePools?.pool(ResourceType.STAMINA)
-            if (staminaPool != null) {
-                staminaPool.syncTo(nextCurrent = staminaPool.max, nextMax = staminaPool.max)
-                stamina?.let { component ->
-                    component.max = staminaPool.max
-                    component.current = staminaPool.current
-                }
-            } else {
-                stamina?.let { it.current = it.max }
-            }
-            restored = true
         }
 
+        restored = totalLevelsGained > 0
         return ExperienceGainResult(
             experience = experience,
             levelsGained = totalLevelsGained,
             gainedStatPoints = totalStatPoints,
             gainedTalentPoints = totalTalentPoints,
-            healthRestored = restored,
+            shouldRestoreHealthToMax = restored,
+            shouldRestorePrimaryResourceToMax = restored,
         )
     }
 }

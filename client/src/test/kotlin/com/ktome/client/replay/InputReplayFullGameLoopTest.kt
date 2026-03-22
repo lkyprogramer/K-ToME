@@ -43,7 +43,7 @@ class InputReplayFullGameLoopTest {
     fun `replay path exercises menu continue victory and game over through key bindings`() {
         val saveManager = SaveManager(tempDir.resolve("replay-save"))
         val menuInput = ReplayInputSource()
-        val menu = MainMenuController(menuInput)
+        val menu = MainMenuController(menuInput, GameModule.availableProfessionIds(), initialProfessionId = "vanguard")
 
         assertFalse(saveManager.hasSave())
         val newGameAction = pressMenu(menu, menuInput, hasSave = false, justPressed = setOf(Keys.ENTER))

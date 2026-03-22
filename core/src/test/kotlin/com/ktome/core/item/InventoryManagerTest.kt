@@ -4,7 +4,6 @@ import com.ktome.core.ecs.CombatProfile
 import com.ktome.core.ecs.Health
 import com.ktome.core.ecs.Position
 import com.ktome.core.ecs.Stats
-import com.ktome.core.ecs.Stamina
 import com.ktome.core.ecs.World
 import com.ktome.core.ecs.add
 import com.ktome.core.ecs.get
@@ -157,7 +156,7 @@ class InventoryManagerTest {
     }
 
     @Test
-    fun `stamina consumable restores stamina pool and component together`() {
+    fun `stamina consumable restores stamina pool`() {
         val world = baseWorld()
         val player = createPlayer(world)
         requireNotNull(world.get<ResourcePools>(player)).pool(ResourceType.STAMINA)?.current = 3
@@ -177,7 +176,6 @@ class InventoryManagerTest {
 
         assertTrue(result.success)
         assertEquals(7, requireNotNull(world.get<ResourcePools>(player)).pool(ResourceType.STAMINA)?.current)
-        assertEquals(7, requireNotNull(world.get<Stamina>(player)).current)
     }
 
     private fun baseWorld(): World = World()
@@ -191,7 +189,6 @@ class InventoryManagerTest {
         world.add(player, Stats(str = 10, dex = 10, con = 10, wil = 10))
         world.add(player, CombatProfile(baseAttack = 5, baseDefense = 2))
         world.add(player, Health(current = 10, max = 10))
-        world.add(player, Stamina(current = 10, max = 10))
         world.add(
             player,
             ResourcePools(

@@ -1,19 +1,40 @@
 package com.ktome.core.resource
 
 import com.ktome.core.ecs.EntityId
-import com.ktome.core.ecs.Stamina
 import com.ktome.core.ecs.World
 import com.ktome.core.ecs.add
 import com.ktome.core.ecs.get
 
 object StaminaPools {
+    fun hasPool(
+        world: World,
+        entityId: EntityId,
+    ): Boolean = world.get<ResourcePools>(entityId)?.pool(ResourceType.STAMINA) != null
+
+    fun ensurePool(
+        world: World,
+        entityId: EntityId,
+        current: Int,
+        max: Int,
+    ): ResourcePool {
+        val pools = world.get<ResourcePools>(entityId) ?: ResourcePools().also { resourcePools -> world.add(entityId, resourcePools) }
+        return pools.pool(ResourceType.STAMINA)
+            ?: ResourcePool(
+                type = ResourceType.STAMINA,
+                current = current.coerceIn(0, max.coerceAtLeast(0)),
+                max = max.coerceAtLeast(0),
+            ).also { pool ->
+                pools.entries[ResourceType.STAMINA] = pool
+            }
+    }
+
     fun pool(
         world: World,
         entityId: EntityId,
-    ): ResourcePool {
-        val pools = world.get<ResourcePools>(entityId) ?: ResourcePools().also { resourcePools -> world.add(entityId, resourcePools) }
-        return pools.pool(ResourceType.STAMINA) ?: seedFromComponent(world, entityId, pools)
-    }
+    ): ResourcePool =
+        requireNotNull(world.get<ResourcePools>(entityId)?.pool(ResourceType.STAMINA)) {
+            "Missing STAMINA ResourcePool for $entityId"
+        }
 
     fun current(
         world: World,
@@ -33,7 +54,6 @@ object StaminaPools {
         val pool = pool(world, entityId)
         val before = pool.current
         pool.spend(amount)
-        syncComponentFromPool(world, entityId, pool)
         return before - pool.current
     }
 
@@ -45,7 +65,6 @@ object StaminaPools {
         val pool = pool(world, entityId)
         val before = pool.current
         pool.restore(amount)
-        syncComponentFromPool(world, entityId, pool)
         return pool.current - before
     }
 
@@ -57,7 +76,7 @@ object StaminaPools {
     ): ResourcePool {
         val pool = pool(world, entityId)
         pool.syncTo(nextCurrent = nextCurrent, nextMax = nextMax)
-        return syncComponentFromPool(world, entityId, pool)
+        return pool
     }
 
     fun shiftMax(
@@ -86,36 +105,5 @@ object StaminaPools {
             nextCurrent = pool.max,
             nextMax = pool.max,
         )
-    }
-
-    fun syncComponentFromPool(
-        world: World,
-        entityId: EntityId,
-    ): ResourcePool = syncComponentFromPool(world, entityId, pool(world, entityId))
-
-    private fun seedFromComponent(
-        world: World,
-        entityId: EntityId,
-        pools: ResourcePools,
-    ): ResourcePool {
-        val stamina = requireNotNull(world.get<Stamina>(entityId)) { "Missing Stamina for $entityId" }
-        val pool = pools.getOrCreate(ResourceType.STAMINA, current = stamina.current, max = stamina.max)
-        return syncComponentFromPool(world, entityId, pool)
-    }
-
-    private fun syncComponentFromPool(
-        world: World,
-        entityId: EntityId,
-        pool: ResourcePool,
-    ): ResourcePool {
-        val stamina = world.get<Stamina>(entityId)
-        if (stamina == null) {
-            world.add(entityId, Stamina(current = pool.current, max = pool.max))
-            return pool
-        }
-
-        stamina.max = pool.max
-        stamina.current = pool.current.coerceIn(0, pool.max)
-        return pool
     }
 }

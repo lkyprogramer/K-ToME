@@ -164,4 +164,26 @@ class CombatResolverTest {
         assertEquals(8, result.damage?.finalDamage)
         assertEquals(0, result.damage?.resistanceValue)
     }
+
+    @Test
+    fun `elemental vulnerability increases final damage and preserves negative resistance`() {
+        val resolver = CombatResolver(TestRandomSource(doubles = listOf(0.0, 0.99), ints = listOf(0)))
+
+        val result =
+            resolver.resolveMelee(
+                attackerAttack = 12,
+                attackerAccuracy = 20,
+                attackerDex = 10,
+                targetDefense = 99,
+                targetEvasion = 0,
+                targetCurrentHp = 20,
+                damageType = DamageType.COLD,
+                targetResistance = -25,
+            )
+
+        assertTrue(result.hit)
+        assertEquals(DamageType.COLD, result.damage?.type)
+        assertEquals(15, result.damage?.finalDamage)
+        assertEquals(-25, result.damage?.resistanceValue)
+    }
 }

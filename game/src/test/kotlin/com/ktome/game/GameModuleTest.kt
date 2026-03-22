@@ -17,6 +17,7 @@ import com.ktome.core.save.UnsupportedSaveContractVersionException
 import com.ktome.core.save.EntitySnapshot
 import com.ktome.core.save.FloorSnapshot
 import com.ktome.core.save.MapSnapshot
+import com.ktome.core.resource.ResourcePoolSnapshot
 import org.junit.jupiter.api.Assertions.assertEquals
 import java.nio.file.Files
 import java.nio.file.Path
@@ -148,6 +149,94 @@ class GameModuleTest {
         assertThrows(UnsupportedSaveContractVersionException::class.java) {
             GameModule.loadFoundationSession(saveManager)
         }
+    }
+
+    @Test
+    fun `load foundation session rejects saves whose player is missing profession resource pool`() {
+        val saveManager = SaveManager(tempDir.resolve("missing-profession-resource-save"))
+        saveManager.save(
+            SaveSnapshot(
+                timestampEpochMillis = 1L,
+                worldSeed = 20260318L,
+                currentZoneId = "greenwood_fringe",
+                floorIndex = 1,
+                mapWidth = 70,
+                mapHeight = 45,
+                fovRadius = 8,
+                messageLogSize = 8,
+                playerProfessionId = "arcanist",
+                maxFloor = 2,
+                turnCount = 0,
+                player =
+                    PlayerSnapshot(
+                        entity =
+                            EntitySnapshot(
+                                id = 1,
+                                position = PointSnapshot(1, 1),
+                                resourcePools = listOf(ResourcePoolSnapshot(type = "STAMINA", current = 40, max = 40)),
+                                isPlayerControlled = true,
+                            ),
+                    ),
+                floors =
+                    listOf(
+                        FloorSnapshot(
+                            floorIndex = 1,
+                            map = zoneSizedMap(width = 70, height = 45, playerStart = PointSnapshot(1, 1)),
+                        ),
+                    ),
+            ),
+        )
+
+        val exception =
+            assertThrows(InvalidSaveException::class.java) {
+                GameModule.loadFoundationSession(saveManager)
+            }
+
+        assertTrue(exception.message!!.contains("MANA"))
+    }
+
+    @Test
+    fun `load foundation session rejects saves whose player is missing stamina pool`() {
+        val saveManager = SaveManager(tempDir.resolve("missing-stamina-resource-save"))
+        saveManager.save(
+            SaveSnapshot(
+                timestampEpochMillis = 1L,
+                worldSeed = 20260318L,
+                currentZoneId = "greenwood_fringe",
+                floorIndex = 1,
+                mapWidth = 70,
+                mapHeight = 45,
+                fovRadius = 8,
+                messageLogSize = 8,
+                playerProfessionId = "arcanist",
+                maxFloor = 2,
+                turnCount = 0,
+                player =
+                    PlayerSnapshot(
+                        entity =
+                            EntitySnapshot(
+                                id = 1,
+                                position = PointSnapshot(1, 1),
+                                resourcePools = listOf(ResourcePoolSnapshot(type = "MANA", current = 30, max = 80)),
+                                isPlayerControlled = true,
+                            ),
+                    ),
+                floors =
+                    listOf(
+                        FloorSnapshot(
+                            floorIndex = 1,
+                            map = zoneSizedMap(width = 70, height = 45, playerStart = PointSnapshot(1, 1)),
+                        ),
+                    ),
+            ),
+        )
+
+        val exception =
+            assertThrows(InvalidSaveException::class.java) {
+                GameModule.loadFoundationSession(saveManager)
+            }
+
+        assertTrue(exception.message!!.contains("STAMINA"))
     }
 
     @Test
@@ -340,7 +429,7 @@ class GameModuleTest {
             """
             {
               "schemaVersion": 2,
-              "saveContractVersion": { "major": 2, "minor": 1 },
+              "saveContractVersion": { "major": 3, "minor": 1 },
               "buildMetadata": "phase2-dev",
               "timestampEpochMillis": 1,
               "worldSeed": 20260318,

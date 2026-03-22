@@ -6,11 +6,13 @@ import com.ktome.core.ai.AIDecision
 import com.ktome.core.ai.AIDecisionContext
 import com.ktome.core.ai.AITargetSnapshot
 import com.ktome.core.combat.CombatResolver
+import com.ktome.core.combat.DamageType
 import com.ktome.core.dungeon.DungeonManager
 import com.ktome.core.dungeon.FloorState
 import com.ktome.core.dungeon.StairDirection
 import com.ktome.core.ecs.AIBehavior
 import com.ktome.core.ecs.AIType
+import com.ktome.core.ecs.AiTriggerTracker
 import com.ktome.core.ecs.BlocksMovement
 import com.ktome.core.ecs.DerivedStats
 import com.ktome.core.ecs.DisplayColor
@@ -26,29 +28,36 @@ import com.ktome.core.ecs.MonsterTemplateId
 import com.ktome.core.ecs.Name
 import com.ktome.core.ecs.PatrolRoute
 import com.ktome.core.ecs.Position
+import com.ktome.core.ecs.ResistanceProfile
 import com.ktome.core.ecs.Stats
 import com.ktome.core.ecs.Stair
-import com.ktome.core.ecs.Stamina
 import com.ktome.core.ecs.World
 import com.ktome.core.ecs.add
 import com.ktome.core.ecs.get
+import com.ktome.core.ecs.remove
 import com.ktome.core.event.DamageDealtEvent
 import com.ktome.core.event.EntityDeathEvent
 import com.ktome.core.event.ExperienceGainedEvent
 import com.ktome.core.event.LevelUpEvent
 import com.ktome.core.event.MissEvent
 import com.ktome.core.fov.Shadowcasting
+import com.ktome.core.item.AffixType
 import com.ktome.core.item.EquipSlot
 import com.ktome.core.item.Equipment
+import com.ktome.core.item.EquipmentPassive
+import com.ktome.core.item.EquippedPassiveSource
 import com.ktome.core.item.ItemBaseDef
 import com.ktome.core.item.ItemDataBundle
+import com.ktome.core.item.ItemGenerator
 import com.ktome.core.item.Inventory
 import com.ktome.core.item.InventoryManager
 import com.ktome.core.item.InventoryOperationCode
 import com.ktome.core.item.InventoryOperationResult
 import com.ktome.core.item.ItemInstance
+import com.ktome.core.item.ItemQuality
 import com.ktome.core.item.ItemType
 import com.ktome.core.item.MaterialDef
+import com.ktome.core.item.PassiveEffectResolver
 import com.ktome.core.item.StatModifier
 import com.ktome.core.map.GameMap
 import com.ktome.core.map.Point
@@ -90,12 +99,15 @@ import com.ktome.core.talent.EffectTracker
 import com.ktome.core.talent.StatusEffectType
 import com.ktome.core.talent.TalentLoadout
 import com.ktome.core.talent.TalentFailureCode
+import com.ktome.core.talent.DamageMultiplierResolver
 import com.ktome.core.talent.TalentRegistry
 import com.ktome.core.talent.TalentResolver
 import com.ktome.core.talent.TalentUseResult
 import com.ktome.core.turn.TurnActorState
 import com.ktome.core.turn.TurnScheduler
 import com.ktome.game.data.schema.ItemBundleSchemaV2
+import com.ktome.game.data.schema.AITriggerConditionKindSchemaV2
+import com.ktome.game.data.schema.AITriggerSchemaV2
 import com.ktome.game.data.schema.ProfessionSchemaV2
 import com.ktome.game.data.schema.AIProfileSchemaV2
 import com.ktome.game.data.schema.SchemaCatalog
@@ -109,12 +121,15 @@ import com.ktome.game.i18n.Localizer
 import com.ktome.game.model.BossDefinition
 import com.ktome.game.model.MonsterTemplate
 import java.nio.file.Files
+import kotlin.math.abs
 
 internal data class ZoneRuntimeBundle(
     val config: FoundationGameConfig,
     val dungeonManager: DungeonManager<FloorRuntimeState>,
     val initialMessages: List<RenderLogEventSnapshot>,
 )
+
+private const val SUMMARY_EVENT_LIMIT: Int = 5
 
 class FoundationGameSession internal constructor(
     config: FoundationGameConfig,
@@ -136,10 +151,18 @@ class FoundationGameSession internal constructor(
         error("Zone transition is not supported for config $unsupportedZoneConfig.")
     },
 ) {
+    private data class LevelUpFeedbackSnapshot(
+        val stats: Stats,
+        val maxHp: Int,
+        val resourceTypeId: String,
+        val resourceMax: Int,
+    )
+
     var config: FoundationGameConfig = config
         private set
     private val messageLog = ArrayDeque<SessionLogEntry>()
     private val recentEvents = ArrayDeque<String>()
+    private val recentSummaryEvents = ArrayDeque<RenderTextTokenSnapshot>()
     private val pendingActions = ArrayDeque<EntityId>()
     private var activeTurnActor: EntityId? = null
     private var runOutcome: RunOutcome = RunOutcome.InProgress
@@ -153,12 +176,26 @@ class FoundationGameSession internal constructor(
     private var lastPlayerCombatTurn: Int = -1
     private val objectiveProgressTokens = linkedSetOf<String>()
     private var checkpointRequested: Boolean = false
+    private var terminalKillerNameKey: String? = null
+    private var terminalKillerTemplateId: String? = null
+    private val playerBaseResistanceValues: Map<DamageType, Int> =
+        world.get<ResistanceProfile>(playerId)?.values?.toMap(linkedMapOf()) ?: emptyMap()
 
     init {
+        talentResolver.damageMultiplierResolver =
+            DamageMultiplierResolver { _, attacker, target, damageType, baseMultiplier ->
+                resolveDamageMultiplier(
+                    attacker = attacker,
+                    target = target,
+                    damageType = damageType,
+                    baseMultiplier = baseMultiplier,
+                )
+            }
         initialMessageLog.forEach(::addMessage)
         restorePendingTurnState()
         syncUnlockedPlayerTalents()
         ensurePlayerResourcePools()
+        syncPlayerResistanceProfile()
         refreshFov()
     }
 
@@ -248,12 +285,25 @@ class FoundationGameSession internal constructor(
         if (!runOutcome.isTerminal) {
             null
         } else {
+            val health = requireNotNull(world.get<Health>(playerId)) { "Missing Health for $playerId." }
+            val resource = resolvePlayerResourceView()
             RunSummary(
                 outcome = runOutcome,
                 floorReached = currentFloor(),
                 maxFloor = config.maxFloor,
                 turns = turnCount,
                 playerLevel = playerStatus().level,
+                zoneNameKey = currentZoneSchema().nameKey,
+                outcomeReasonKey = runOutcomeReasonKey(runOutcome),
+                killerNameKey = terminalKillerNameKey,
+                killerTemplateId = terminalKillerTemplateId,
+                finalHpCurrent = health.current.coerceAtLeast(0),
+                finalHpMax = health.max,
+                finalResourceTypeId = resource.typeId,
+                finalResourceLabelKey = resourceLabelKey(resource.typeId),
+                finalResourceCurrent = resource.current,
+                finalResourceMax = resource.max,
+                lastEvents = recentSummaryEvents.toList(),
             )
         }
 
@@ -299,8 +349,6 @@ class FoundationGameSession internal constructor(
         return PlayerStatus(
             currentHp = health.current,
             maxHp = health.max,
-            currentStamina = StaminaPools.current(world, playerId),
-            maxStamina = StaminaPools.max(world, playerId),
             level = experience.level,
             currentExperience = experience.current,
             nextLevelRequirement = ExperienceSystem.nextLevelExp(experience.level),
@@ -351,8 +399,10 @@ class FoundationGameSession internal constructor(
             val definition = talentRegistry.get(talentId) ?: return@mapNotNull null
             val schema = talentSchemaFor(talentId)
             val level = loadout.levelOf(talentId).coerceIn(1, definition.maxLevel)
-            val resourceTypeId = schema?.resourceCosts?.keys?.firstOrNull() ?: currentProfessionSchema()?.resourceType ?: "STAMINA"
-            val resourceCost = schema?.resourceCosts?.get(resourceTypeId) ?: definition.staminaCost
+            val schemaResource = schema?.resourceCosts?.entries?.firstOrNull()
+            val definitionResource = definition.resolvedResourceCosts().entries.firstOrNull()
+            val resourceTypeId = schemaResource?.key ?: definitionResource?.key?.name ?: currentProfessionSchema()?.resourceType ?: ResourceType.STAMINA.name
+            val resourceCost = schemaResource?.value ?: definitionResource?.value ?: 0
             val effectiveRange = definition.range + (definition.levelEffects[level]?.rangeBonus ?: 0)
             TalentSlotView(
                 slot = slot,
@@ -360,7 +410,6 @@ class FoundationGameSession internal constructor(
                 name = definition.name,
                 level = level,
                 maxLevel = definition.maxLevel,
-                staminaCost = definition.staminaCost,
                 resourceCost = resourceCost,
                 resourceTypeId = resourceTypeId,
                 range = effectiveRange,
@@ -564,26 +613,36 @@ class FoundationGameSession internal constructor(
                     return@flatMap emptyList()
                 }
                 val bossSchema = bossSchemaByTemplateId[templateId]
+                val behavior = world.get<AIBehavior>(entityId)
+                val targetVisible =
+                    behavior != null &&
+                        playerPosition() in Shadowcasting.computeVisible(map = map, origin = position, radius = behavior.sightRadius)
                 buildList {
-                    add(
-                        OverlayRenderSnapshot(
-                            id = "boss-warning:${entityId.value}",
-                            visualKey = "vfx.boss.warning.sigil_01",
-                            audioProfile = "audio.boss.warning",
-                            previewTurns = 1,
-                            dangerLevel = 3,
-                            shape = OverlayShapeSnapshot.SINGLE_TILE,
-                            sourceAbilityId = bossSchema?.id ?: "boss.warning.presence",
-                            cells = listOf(GridPointSnapshot(position.x, position.y)),
-                            warningMessage =
-                                RenderTextTokenSnapshot(
-                                    "log.warning.boss_presence",
-                                    listOf(entityArg("boss", entityId)),
-                                ),
-                        ),
-                    )
+                    if (targetVisible) {
+                        add(
+                            OverlayRenderSnapshot(
+                                id = "boss-warning:${entityId.value}",
+                                visualKey = "vfx.boss.warning.sigil_01",
+                                audioProfile = "audio.boss.warning",
+                                previewTurns = 1,
+                                dangerLevel = 3,
+                                shape = OverlayShapeSnapshot.SINGLE_TILE,
+                                sourceAbilityId = bossSchema?.id ?: "boss.warning.presence",
+                                cells = listOf(GridPointSnapshot(position.x, position.y)),
+                                warningMessage =
+                                    RenderTextTokenSnapshot(
+                                        "log.warning.boss_presence",
+                                        listOf(entityArg("boss", entityId)),
+                                    ),
+                            ),
+                        )
+                    }
 
-                    nextMonsterTalentIntent(entityId, talentSchemaById)?.let { intent ->
+                    nextMonsterTalentIntent(
+                        monsterId = entityId,
+                        talentSchemaById = talentSchemaById,
+                        targetVisible = targetVisible,
+                    )?.let { intent ->
                         telegraphOverlayFor(entityId, position, intent)?.let(::add)
                     }
                 }
@@ -594,14 +653,25 @@ class FoundationGameSession internal constructor(
         val talentId: String,
         val talentSchema: TalentSchemaV2,
         val target: Point?,
+        val triggerId: String? = null,
+        val consumesOnce: Boolean = false,
+        val postMessage: RenderTextTokenSnapshot? = null,
     )
 
     private fun nextMonsterTalentIntent(
         monsterId: EntityId,
         talentSchemaById: Map<String, TalentSchemaV2>,
+        targetVisible: Boolean,
     ): MonsterTalentIntent? {
         val loadout = world.get<TalentLoadout>(monsterId) ?: return null
         val targetPosition = playerPosition()
+        triggeredMonsterTalentIntent(
+            monsterId = monsterId,
+            loadout = loadout,
+            talentSchemaById = talentSchemaById,
+            targetVisible = targetVisible,
+            targetPosition = targetPosition,
+        )?.let { return it }
         val prioritizedTalentIds =
             prioritizedMonsterTalentIds(
                 loadout = loadout,
@@ -625,6 +695,77 @@ class FoundationGameSession internal constructor(
             )
         }
     }
+
+    private fun triggeredMonsterTalentIntent(
+        monsterId: EntityId,
+        loadout: TalentLoadout,
+        talentSchemaById: Map<String, TalentSchemaV2>,
+        targetVisible: Boolean,
+        targetPosition: Point,
+    ): MonsterTalentIntent? {
+        val aiProfile = aiProfileFor(monsterId) ?: return null
+        val tracker = world.get<AiTriggerTracker>(monsterId)
+        return aiProfile.triggers.firstNotNullOfOrNull { trigger ->
+            if (trigger.once && tracker?.consumedTriggerIds?.contains(trigger.triggerId) == true) {
+                return@firstNotNullOfOrNull null
+            }
+            if (!isMonsterTriggerConditionSatisfied(trigger, monsterId, targetVisible)) {
+                return@firstNotNullOfOrNull null
+            }
+            if (trigger.talentId !in loadout.talentLevels) {
+                return@firstNotNullOfOrNull null
+            }
+            if (shouldSkipMonsterTalent(monsterId = monsterId, talentId = trigger.talentId)) {
+                return@firstNotNullOfOrNull null
+            }
+            val definition = talentRegistry.get(trigger.talentId) ?: return@firstNotNullOfOrNull null
+            val target = if (definition.range > 0) targetPosition else null
+            if (talentResolver.canUse(world, map, monsterId, trigger.talentId, target) != null) {
+                return@firstNotNullOfOrNull null
+            }
+            val talentSchema = talentSchemaById[trigger.talentId] ?: return@firstNotNullOfOrNull null
+            MonsterTalentIntent(
+                talentId = trigger.talentId,
+                talentSchema = talentSchema,
+                target = target,
+                triggerId = trigger.triggerId,
+                consumesOnce = trigger.once,
+                postMessage = triggerPostMessageToken(trigger),
+            )
+        }
+    }
+
+    private fun isMonsterTriggerConditionSatisfied(
+        trigger: AITriggerSchemaV2,
+        monsterId: EntityId,
+        targetVisible: Boolean,
+    ): Boolean =
+        when (trigger.condition) {
+            AITriggerConditionKindSchemaV2.ON_COMBAT_START -> {
+                val tracker = world.get<AiTriggerTracker>(monsterId) ?: return false
+                targetVisible &&
+                    (
+                        trigger.triggerId in tracker.pendingCombatStartTriggerIds ||
+                            !tracker.engagedInCombat
+                    )
+            }
+            AITriggerConditionKindSchemaV2.HP_BELOW_RATIO -> {
+                val health = world.get<Health>(monsterId) ?: return false
+                val threshold = trigger.threshold ?: return false
+                health.max > 0 && health.current.toDouble() / health.max <= threshold
+            }
+        }
+
+    private fun triggerPostMessageToken(trigger: AITriggerSchemaV2): RenderTextTokenSnapshot? =
+        trigger.postMessageKey?.let { key ->
+            RenderTextTokenSnapshot(
+                key = key,
+                arguments =
+                    trigger.postMessageArgs.entries
+                        .sortedBy { (name, _) -> name }
+                        .map { (name, valueKey) -> keyArg(name, valueKey) },
+            )
+        }
 
     private fun prioritizedMonsterTalentIds(
         loadout: TalentLoadout,
@@ -858,15 +999,22 @@ class FoundationGameSession internal constructor(
         val schema = requireNotNull(itemSchemaFor(item)) {
             "Unknown item schema '${item.baseId}'."
         }
+        val materialNameKey = item.materialId?.let(::materialSchemaFor)?.nameKey
+        val affixNameKeys = item.affixes.mapNotNull { affix -> affixSchemaFor(affix.id)?.nameKey }
         return ItemRenderSnapshot(
             baseItemId = item.baseId,
             nameKey = schema.nameKey,
+            displayName = itemDisplayToken(item),
             descKey = schema.descKey,
             typeId = item.type.name,
             visualKey = schema.visualKey,
             iconKey = schema.iconKey,
             audioProfile = schema.audioProfile,
             slotId = item.slot?.name,
+            qualityNameKey = qualityLabelKey(item.quality),
+            materialNameKey = materialNameKey,
+            affixNameKeys = affixNameKeys,
+            passiveDescriptions = item.passive?.let(::passiveDescriptionToken)?.let(::listOf).orEmpty(),
             stats = item.stats.toSnapshot(),
             effectTypeId = item.effect?.name,
             magnitude = item.magnitude,
@@ -896,20 +1044,16 @@ class FoundationGameSession internal constructor(
         content.schemaCatalog.lootProfiles.firstOrNull { profile -> profile.id == profileId }
 
     private fun resolvePlayerResourceView(): PlayerResourceView {
-        val profession = currentProfessionSchema()
-        val resourceTypeId = profession?.resourceType ?: "STAMINA"
-        if (resourceTypeId == "STAMINA") {
-            return PlayerResourceView(
-                current = StaminaPools.current(world, playerId),
-                max = StaminaPools.max(world, playerId),
-                typeId = resourceTypeId,
-            )
-        }
-
-        val schema = requireNotNull(profession) {
-            "Missing profession schema for '${config.playerProfessionId}'."
-        }
-        val pools = PlayerResourcePools.sync(world, playerId, schema)
+        val schema = currentProfessionSchema()
+        val resourceTypeId = schema?.resourceType ?: ResourceType.STAMINA.name
+        val pools =
+            if (schema != null) {
+                PlayerResourceService.sync(world, playerId, schema)
+            } else {
+                requireNotNull(world.get<com.ktome.core.resource.ResourcePools>(playerId)) {
+                    "Missing ResourcePools for '$playerId'."
+                }
+            }
         val pool =
             requireNotNull(pools.pool(ResourceType.fromId(resourceTypeId))) {
                 "Missing resource pool '$resourceTypeId' for '$playerId'."
@@ -927,6 +1071,16 @@ class FoundationGameSession internal constructor(
             "ENERGY" -> "ui.hud.energy.short"
             "POSITIVE_ENERGY" -> "ui.hud.positive_energy.short"
             else -> "ui.hud.stamina.short"
+        }
+
+    private fun damageTypeLabelKey(damageType: DamageType): String =
+        when (damageType) {
+            DamageType.PHYSICAL -> "damage_type.physical.name"
+            DamageType.FIRE -> "damage_type.fire.name"
+            DamageType.COLD -> "damage_type.cold.name"
+            DamageType.LIGHTNING -> "damage_type.lightning.name"
+            DamageType.HOLY -> "damage_type.holy.name"
+            DamageType.SHADOW -> "damage_type.shadow.name"
         }
 
     private fun damageTypeIconKey(damageTypeId: String): String =
@@ -975,6 +1129,12 @@ class FoundationGameSession internal constructor(
 
     private fun itemSchemaFor(baseItemId: String) =
         content.schemaCatalog.itemBundle.items.firstOrNull { schema -> schema.id == baseItemId }
+
+    private fun materialSchemaFor(materialId: String) =
+        content.schemaCatalog.itemBundle.materials.firstOrNull { schema -> schema.id == materialId }
+
+    private fun affixSchemaFor(affixId: String) =
+        content.schemaCatalog.itemBundle.affixes.firstOrNull { schema -> schema.id == affixId }
 
     private fun itemBaseDef(baseItemId: String): ItemBaseDef? =
         content.itemBundle.baseItems.firstOrNull { item -> item.id == baseItemId }
@@ -1095,15 +1255,17 @@ class FoundationGameSession internal constructor(
     }
 
     private fun restoreArmorySupplies(): Int {
-        val profession = currentProfessionSchema() ?: return 0
-        if (profession.resourceType == ResourceType.STAMINA.name) {
-            val restored = (StaminaPools.max(world, playerId) / 3).coerceAtLeast(8)
-            return StaminaPools.restore(world, playerId, restored)
-        }
-
-        val pools = PlayerResourcePools.sync(world, playerId, profession)
-        val pool = pools.pool(ResourceType.fromId(profession.resourceType)) ?: return 0
-        val restored = (pool.max / 4).coerceAtLeast(10)
+        val resource = resolvePlayerResourceView()
+        val pool =
+            requireNotNull(world.get<com.ktome.core.resource.ResourcePools>(playerId)?.pool(ResourceType.fromId(resource.typeId))) {
+                "Missing resource pool '${resource.typeId}' for '$playerId'."
+            }
+        val restored =
+            if (resource.typeId == ResourceType.STAMINA.name) {
+                (pool.max / 3).coerceAtLeast(8)
+            } else {
+                (pool.max / 4).coerceAtLeast(10)
+            }
         val before = pool.current
         pool.restore(restored)
         return pool.current - before
@@ -1375,13 +1537,14 @@ class FoundationGameSession internal constructor(
             }
         }
 
-        world.get<Stamina>(actorId)?.let {
+        if (StaminaPools.hasPool(world, actorId)) {
             val regen = requireNotNull(world.get<DerivedStats>(actorId)).staminaRegen.toInt().coerceAtLeast(0)
             StaminaPools.restore(world, actorId, regen)
         }
+        applyTurnStartPassives(actorId)
         if (actorId == playerId) {
             currentProfessionSchema()?.let { profession ->
-                PlayerResourcePools.onTurnStart(
+                PlayerResourceService.onTurnStart(
                     world = world,
                     playerId = playerId,
                     profession = profession,
@@ -1532,6 +1695,7 @@ class FoundationGameSession internal constructor(
                             if (result.success) {
                                 StatsCalculator.recalculateAndStore(world, playerId)
                                 ensurePlayerResourcePools()
+                                syncPlayerResistanceProfile()
                             }
                             addInventoryMessage(result)
                             CommandResolution(result.success, consumesTurn = false)
@@ -1580,6 +1744,7 @@ class FoundationGameSession internal constructor(
                         is TalentUseResult.Success -> {
                             applyTalentResourceReactions(result.result)
                             logTalentResult(result.result)
+                            logTriggeredTalentDamagePassives(result.result)
                             handleTalentDeaths(result.result.targets, playerId)
                             CommandResolution.accepted()
                         }
@@ -1592,23 +1757,28 @@ class FoundationGameSession internal constructor(
         if (!world.isAlive(playerId)) {
             return
         }
+        val behavior = world.get<AIBehavior>(monsterId) ?: return
+        val position = requireNotNull(world.get<Position>(monsterId)).toPoint()
+        val targetPosition = playerPosition()
+        val targetVisible = targetPosition in Shadowcasting.computeVisible(map = map, origin = position, radius = behavior.sightRadius)
+        val enteredCombatThisTurn = updateMonsterCombatState(monsterId, targetVisible)
         if (world.get<EffectTracker>(monsterId)?.has(StatusEffectType.STUNNED) == true) {
+            expireCombatStartTriggers(monsterId, enteredCombatThisTurn)
             return
         }
-        if (tryUseMonsterTalent(monsterId)) {
+        if (tryUseMonsterTalent(monsterId, targetVisible)) {
+            expireCombatStartTriggers(monsterId, enteredCombatThisTurn)
             return
         }
 
-        val behavior = world.get<AIBehavior>(monsterId) ?: return
-        val position = requireNotNull(world.get<Position>(monsterId)).toPoint()
         val patrolRoute = world.get<PatrolRoute>(monsterId)
         val decision = AIDecision.decide(
             AIDecisionContext(
                 map = map,
                 actor = AIActorSnapshot(monsterId, position, behavior, patrolRoute),
-                target = AITargetSnapshot(playerId, playerPosition()),
+                target = AITargetSnapshot(playerId, targetPosition),
                 occupiedTiles = occupiedBlockingTiles(excluding = monsterId),
-                targetVisible = playerPosition() in Shadowcasting.computeVisible(map = map, origin = position, radius = behavior.sightRadius),
+                targetVisible = targetVisible,
             ),
         )
 
@@ -1626,6 +1796,41 @@ class FoundationGameSession internal constructor(
 
             AIAction.Wait -> Unit
         }
+        expireCombatStartTriggers(monsterId, enteredCombatThisTurn)
+    }
+
+    private fun updateMonsterCombatState(
+        monsterId: EntityId,
+        targetVisible: Boolean,
+    ): Boolean {
+        val tracker = world.get<AiTriggerTracker>(monsterId) ?: return false
+        if (!targetVisible) {
+            tracker.engagedInCombat = false
+            tracker.pendingCombatStartTriggerIds.clear()
+            return false
+        }
+        if (!tracker.engagedInCombat) {
+            tracker.engagedInCombat = true
+            tracker.pendingCombatStartTriggerIds.clear()
+            tracker.pendingCombatStartTriggerIds +=
+                aiProfileFor(monsterId)
+                    ?.triggers
+                    ?.filter { trigger -> trigger.condition == AITriggerConditionKindSchemaV2.ON_COMBAT_START }
+                    ?.map(AITriggerSchemaV2::triggerId)
+                    .orEmpty()
+            return true
+        }
+        return false
+    }
+
+    private fun expireCombatStartTriggers(
+        monsterId: EntityId,
+        enteredCombatThisTurn: Boolean,
+    ) {
+        if (!enteredCombatThisTurn) {
+            return
+        }
+        world.get<AiTriggerTracker>(monsterId)?.pendingCombatStartTriggerIds?.clear()
     }
 
     private fun inspectActorView(entityId: EntityId): InspectActorView {
@@ -1670,6 +1875,7 @@ class FoundationGameSession internal constructor(
     private fun itemDetailLines(item: ItemInstance): List<String> =
         buildList {
             item.slot?.let { add(tr("ui.inspect.slot", "slot" to equipSlotLabel(it))) }
+            addAll(itemPresentationLines(item))
             addAll(statModifierLines(item.stats))
             when (item.effect) {
                 com.ktome.core.item.ConsumableEffect.HEAL -> add(tr("ui.inspect.restore_hp", "amount" to item.magnitude))
@@ -1682,6 +1888,20 @@ class FoundationGameSession internal constructor(
             }
             if (isEmpty()) {
                 add(tr("ui.inspect.no_special_effect"))
+            }
+        }
+
+    private fun itemPresentationLines(item: ItemInstance): List<String> =
+        buildList {
+            add(tr("ui.inspect.quality", "quality" to tr(qualityLabelKey(item.quality))))
+            item.materialName?.let { materialName ->
+                add(tr("ui.inspect.material", "material" to materialName))
+            }
+            item.affixes.forEach { affix ->
+                add(tr("ui.inspect.affix", "affix" to affix.name))
+            }
+            item.passive?.let { passive ->
+                add(render(passiveDescriptionToken(passive)))
             }
         }
 
@@ -1769,18 +1989,42 @@ class FoundationGameSession internal constructor(
             .firstOrNull { entityId -> requireNotNull(world.get<Position>(entityId)).toPoint() == point }
             ?.let { entityId -> stairName(requireNotNull(world.get<Stair>(entityId)).direction) }
 
-    private fun tryUseMonsterTalent(monsterId: EntityId): Boolean {
+    private fun tryUseMonsterTalent(
+        monsterId: EntityId,
+        targetVisible: Boolean,
+    ): Boolean {
         val talentSchemaById = content.schemaCatalog.talents.associateBy(TalentSchemaV2::id)
-        val intent = nextMonsterTalentIntent(monsterId, talentSchemaById) ?: return false
+        val intent =
+            nextMonsterTalentIntent(
+                monsterId = monsterId,
+                talentSchemaById = talentSchemaById,
+                targetVisible = targetVisible,
+            ) ?: return false
         when (val result = talentResolver.resolve(world, map, monsterId, intent.talentId, intent.target)) {
             is TalentUseResult.Failure -> return false
             is TalentUseResult.Success -> {
                 applyTalentResourceReactions(result.result)
                 logTalentResult(result.result)
+                logTriggeredTalentDamagePassives(result.result)
+                consumeMonsterTrigger(monsterId, intent)
+                intent.postMessage?.let { token -> addMessage(RenderLogEventSnapshot(token)) }
                 handleTalentDeaths(result.result.targets, monsterId)
                 return true
             }
         }
+    }
+
+    private fun consumeMonsterTrigger(
+        monsterId: EntityId,
+        intent: MonsterTalentIntent,
+    ) {
+        val triggerId = intent.triggerId ?: return
+        val tracker = world.get<AiTriggerTracker>(monsterId) ?: return
+        tracker.pendingCombatStartTriggerIds.remove(triggerId)
+        if (!intent.consumesOnce) {
+            return
+        }
+        tracker.consumedTriggerIds.add(triggerId)
     }
 
     private fun resolveAttack(
@@ -1788,7 +2032,15 @@ class FoundationGameSession internal constructor(
         target: EntityId,
     ) {
         val targetHealth = requireNotNull(world.get<Health>(target))
-        val result = combatResolver.resolveMelee(world, attacker, target)
+        val damageAdjustment = resolveDamageAdjustment(attacker, target, DamageType.PHYSICAL)
+        val result =
+            combatResolver.resolveMelee(
+                world = world,
+                attacker = attacker,
+                target = target,
+                damageType = DamageType.PHYSICAL,
+                damageMultiplier = damageAdjustment.multiplier,
+            )
 
         if (!result.hit) {
             logEvent(MissEvent(attacker, target))
@@ -1803,6 +2055,7 @@ class FoundationGameSession internal constructor(
         targetHealth.current = (targetHealth.current - result.finalDamage).coerceAtLeast(0)
         applyDamageResourceReactions(attacker, target, result.finalDamage)
         logEvent(DamageDealtEvent(attacker, target, result.finalDamage, result.critical))
+        logTriggeredDamagePassives(attacker = attacker, sources = damageAdjustment.sources)
         addMessage(
             if (result.critical) {
                 "log.attack.crit"
@@ -1824,9 +2077,13 @@ class FoundationGameSession internal constructor(
         killer: EntityId?,
     ) {
         logEvent(EntityDeathEvent(target, killer))
+        val deathTargetArg = entityArg("target", target)
+        val killerSummary = killer?.let(::terminalKillerSummary)
 
         if (target == playerId) {
             runOutcome = RunOutcome.Defeat(currentFloor())
+            terminalKillerNameKey = killerSummary?.nameKey
+            terminalKillerTemplateId = killerSummary?.templateId
             pendingActions.clear()
             activeTurnActor = null
             saveManager.deleteSave()
@@ -1840,7 +2097,7 @@ class FoundationGameSession internal constructor(
                 activeBossTemplateId != null &&
                 world.get<MonsterTemplateId>(target)?.value == activeBossTemplateId
 
-        addMessage("log.entity.death", entityArg("target", target))
+        addMessage("log.entity.death", deathTargetArg)
         val monsterDropArg = entityArg("monster", target)
         val reward = world.get<ExperienceReward>(target)?.value ?: 0
         val deathPoint = world.get<Position>(target)?.toPoint()
@@ -1856,13 +2113,11 @@ class FoundationGameSession internal constructor(
         }
         if (deathPoint != null && droppedLoot != null) {
             ItemFactory().createGroundItem(world, droppedLoot, deathPoint)
-            val lootSchema = requireNotNull(itemSchemaFor(droppedLoot.baseId)) {
-                "Unknown loot drop item '${droppedLoot.baseId}'."
-            }
             addMessage(
-                "log.loot.monster_drop",
+                "log.loot.monster_drop_quality",
                 monsterDropArg,
-                keyArg("item", lootSchema.nameKey),
+                keyArg("quality", qualityLabelKey(droppedLoot.quality)),
+                itemDisplayArgument("item", droppedLoot, includeQuality = false),
             )
         }
         if (isBoss) {
@@ -1891,32 +2146,37 @@ class FoundationGameSession internal constructor(
                 pendingActions.clear()
                 activeTurnActor = null
                 saveManager.deleteSave()
-                addMessage("log.victory", entityArg("target", target))
+                addMessage("log.victory", deathTargetArg)
             }
         }
     }
 
+    private data class TerminalKillerSummary(
+        val nameKey: String?,
+        val templateId: String?,
+    )
+
+    private fun terminalKillerSummary(killer: EntityId): TerminalKillerSummary =
+        TerminalKillerSummary(
+            nameKey = entityNameKeyOrNull(killer),
+            templateId = world.get<MonsterTemplateId>(killer)?.value,
+        )
+
     private fun gainExperience(amount: Int) {
         val experience = requireNotNull(world.get<Experience>(playerId))
-        val health = requireNotNull(world.get<Health>(playerId))
-        val stamina = requireNotNull(world.get<Stamina>(playerId))
         val profession = currentProfessionSchema()
-        val resourcePools = profession?.let { schema -> PlayerResourcePools.sync(world, playerId, schema) }
-        val result =
-            ExperienceSystem.applyReward(
-                experience = experience,
-                health = health,
-                stamina = stamina,
-                resourcePools = resourcePools,
-                reward = amount,
-            )
+        val baseline = captureLevelUpFeedbackSnapshot()
+        val result = ExperienceSystem.applyReward(experience = experience, reward = amount)
+        var unlockedTalentIds = emptyList<String>()
         if (result.levelsGained > 0) {
             profession?.let { schema ->
                 applyLevelGrowth(schema, result.levelsGained)
-                syncUnlockedPlayerTalents(notify = true)
+                unlockedTalentIds = syncUnlockedPlayerTalents()
             }
         }
         ensurePlayerResourcePools()
+        applyExperienceRecovery(result)
+        val updated = captureLevelUpFeedbackSnapshot()
 
         logEvent(ExperienceGainedEvent(playerId, amount))
         addMessage("log.xp.gain", literalArg("amount", amount))
@@ -1931,6 +2191,26 @@ class FoundationGameSession internal constructor(
                 ),
             )
             addMessage("log.level_up", literalArg("level", experience.level))
+            logLevelUpGrowth(baseline, updated)
+            unlockedTalentIds.forEach { talentId ->
+                addMessage("log.talent.unlock", keyArg("talent", talentNameKey(talentId)))
+            }
+        }
+    }
+
+    private fun applyExperienceRecovery(result: com.ktome.core.progression.ExperienceGainResult) {
+        if (result.shouldRestoreHealthToMax) {
+            world.get<Health>(playerId)?.let { health ->
+                health.current = health.max
+            }
+        }
+        if (result.shouldRestorePrimaryResourceToMax) {
+            val resource = resolvePlayerResourceView()
+            val pool =
+                requireNotNull(world.get<com.ktome.core.resource.ResourcePools>(playerId)?.pool(ResourceType.fromId(resource.typeId))) {
+                    "Missing resource pool '${resource.typeId}' for '$playerId'."
+                }
+            pool.syncTo(nextCurrent = pool.max, nextMax = pool.max)
         }
     }
 
@@ -2071,6 +2351,7 @@ class FoundationGameSession internal constructor(
                     ),
             )
         world = SessionSnapshotMapper.restoreWorld(content, playerSnapshot, activeFloorState)
+        syncPlayerResistanceProfile()
         pendingActions.clear()
         activeTurnActor = null
         nextRuntime.initialMessages.forEach(::addMessage)
@@ -2094,17 +2375,18 @@ class FoundationGameSession internal constructor(
 
     private fun ensurePlayerResourcePools() {
         currentProfessionSchema()?.let { profession ->
-            PlayerResourcePools.sync(world, playerId, profession)
+            PlayerResourceService.sync(world, playerId, profession)
         }
     }
 
     private fun syncUnlockedPlayerTalents(
         notify: Boolean = false,
-    ) {
-        val profession = currentProfessionSchema() ?: return
-        val experience = world.get<Experience>(playerId) ?: return
-        val loadout = world.get<TalentLoadout>(playerId) ?: return
+    ): List<String> {
+        val profession = currentProfessionSchema() ?: return emptyList()
+        val experience = world.get<Experience>(playerId) ?: return emptyList()
+        val loadout = world.get<TalentLoadout>(playerId) ?: return emptyList()
         val unlockedTalentIds = TalentProgression.unlockedTalentIds(content.schemaCatalog, profession, experience.level)
+        val newlyUnlockedTalentIds = mutableListOf<String>()
         var nextSlot = (loadout.slotToTalentId.keys.maxOrNull() ?: 0) + 1
         unlockedTalentIds.forEach { talentId ->
             loadout.talentLevels.putIfAbsent(talentId, 1)
@@ -2113,10 +2395,12 @@ class FoundationGameSession internal constructor(
             }
             loadout.slotToTalentId[nextSlot] = talentId
             nextSlot += 1
+            newlyUnlockedTalentIds += talentId
             if (notify) {
                 addMessage("log.talent.unlock", keyArg("talent", talentNameKey(talentId)))
             }
         }
+        return newlyUnlockedTalentIds
     }
 
     private fun syncActiveFloorState() {
@@ -2146,6 +2430,126 @@ class FoundationGameSession internal constructor(
         )
     }
 
+    private fun applyTurnStartPassives(actorId: EntityId) {
+        val health = world.get<Health>(actorId) ?: return
+        PassiveEffectResolver.equippedPassives(world, actorId).forEach { source ->
+            when (val passive = source.passive) {
+                is EquipmentPassive.HpRegenPerTurn -> {
+                    val before = health.current
+                    health.current = (health.current + passive.amount).coerceAtMost(health.max)
+                    val restored = health.current - before
+                    if (restored > 0 && actorId == playerId) {
+                        addMessage(
+                            "log.passive.hp_regen",
+                            itemDisplayArgument("item", source.item),
+                            literalArg("amount", restored),
+                        )
+                    }
+                }
+
+                is EquipmentPassive.DamageTypeBonus,
+                is EquipmentPassive.DamageVsTag,
+                is EquipmentPassive.ResistanceBonus,
+                -> Unit
+            }
+        }
+    }
+
+    private fun syncPlayerResistanceProfile() {
+        val combined = playerBaseResistanceValues.toMutableMap()
+        PassiveEffectResolver.resistanceBonuses(PassiveEffectResolver.equippedPassives(world, playerId)).forEach { (type, amount) ->
+            combined[type] = (combined[type] ?: 0) + amount
+        }
+        if (combined.isEmpty()) {
+            world.remove<ResistanceProfile>(playerId)
+        } else {
+            world.add(
+                playerId,
+                ResistanceProfile(
+                    values = combined.toMutableMap(),
+                ),
+            )
+        }
+    }
+
+    private fun resolveDamageMultiplier(
+        attacker: EntityId,
+        target: EntityId,
+        damageType: DamageType,
+        baseMultiplier: Double,
+    ): Double = baseMultiplier * resolveDamageAdjustment(attacker, target, damageType).multiplier
+
+    private fun resolveDamageAdjustment(
+        attacker: EntityId,
+        target: EntityId,
+        damageType: DamageType,
+    ) = PassiveEffectResolver.resolveDamageAdjustment(
+        passives = PassiveEffectResolver.equippedPassives(world, attacker),
+        targetTags = targetTagsFor(target),
+        damageType = damageType,
+    )
+
+    private fun targetTagsFor(target: EntityId): Set<String> {
+        val templateId = world.get<MonsterTemplateId>(target)?.value ?: return emptySet()
+        return content.allMonsterTemplates()
+            .firstOrNull { template -> template.id == templateId }
+            ?.tags
+            ?.toSet()
+            .orEmpty()
+    }
+
+    private fun logTriggeredDamagePassives(
+        attacker: EntityId,
+        sources: List<EquippedPassiveSource>,
+    ) {
+        if (attacker != playerId || sources.isEmpty()) {
+            return
+        }
+        sources
+            .distinctBy { source -> source.item.baseId to source.passive }
+            .forEach { source ->
+                val itemArgument = itemDisplayArgument("item", source.item)
+                when (val passive = source.passive) {
+                    is EquipmentPassive.DamageVsTag ->
+                        addMessage(
+                            "log.passive.damage_bonus_vs_tag",
+                            itemArgument,
+                            monsterTagArg("tag", passive.tag),
+                            literalArg("amount", (passive.bonusPercent * 100).toInt()),
+                        )
+
+                    is EquipmentPassive.DamageTypeBonus ->
+                        addMessage(
+                            "log.passive.damage_bonus_type",
+                            itemArgument,
+                            keyArg("damageType", damageTypeLabelKey(passive.type)),
+                            literalArg("amount", (passive.bonusPercent * 100).toInt()),
+                        )
+
+                    is EquipmentPassive.HpRegenPerTurn,
+                    is EquipmentPassive.ResistanceBonus,
+                    -> Unit
+                }
+            }
+    }
+
+    private fun logTriggeredTalentDamagePassives(result: com.ktome.core.talent.TalentResult) {
+        if (result.user != playerId) {
+            return
+        }
+        val triggeredSources =
+            result.effects
+                .filterIsInstance<com.ktome.core.talent.TalentEffectResult.Damage>()
+                .flatMap { effect ->
+                    resolveDamageAdjustment(
+                        attacker = result.user,
+                        target = effect.target,
+                        damageType = effect.damageType,
+                    ).sources
+                }
+        logTriggeredDamagePassives(attacker = result.user, sources = triggeredSources)
+    }
+
     private fun applyDamageResourceReactions(
         attacker: EntityId,
         target: EntityId,
@@ -2156,10 +2560,10 @@ class FoundationGameSession internal constructor(
         }
         currentProfessionSchema()?.let { profession ->
             if (attacker == playerId) {
-                PlayerResourcePools.onSuccessfulHit(world, playerId, profession)
+                PlayerResourceService.onSuccessfulHit(world, playerId, profession)
             }
             if (target == playerId && damage > 0) {
-                PlayerResourcePools.onDamageTaken(world, playerId, profession, damage)
+                PlayerResourceService.onDamageTaken(world, playerId, profession, damage)
             }
         }
     }
@@ -2446,6 +2850,18 @@ class FoundationGameSession internal constructor(
                         entityArg("target", effect.target),
                         literalArg("damage", effect.amount),
                     )
+                    if (effect.damageType.isElemental && effect.resistanceValue != 0) {
+                        addMessage(
+                            if (effect.resistanceValue > 0) {
+                                "log.talent.damage_resisted"
+                            } else {
+                                "log.talent.damage_vulnerable"
+                            },
+                            entityArg("target", effect.target),
+                            keyArg("damageType", damageTypeLabelKey(effect.damageType)),
+                            literalArg("amount", abs(effect.resistanceValue)),
+                        )
+                    }
                 }
 
                 is com.ktome.core.talent.TalentEffectResult.Heal -> {
@@ -2532,6 +2948,10 @@ class FoundationGameSession internal constructor(
             messageLog.removeFirst()
         }
         messageLog += SessionLogEntry(render(message.message), message)
+        if (recentSummaryEvents.size == SUMMARY_EVENT_LIMIT) {
+            recentSummaryEvents.removeFirst()
+        }
+        recentSummaryEvents += message.message
         invalidateRenderSnapshot()
     }
 
@@ -2559,10 +2979,13 @@ class FoundationGameSession internal constructor(
     private fun render(token: RenderTextTokenSnapshot): String =
         content.localizer.text(
             token.key,
-            *token.arguments.map { argument ->
-                argument.name to (argument.valueKey?.let(content.localizer::text) ?: argument.value.orEmpty())
-            }.toTypedArray(),
+            *token.arguments.map { argument -> argument.name to renderArgument(argument) }.toTypedArray(),
         )
+
+    private fun renderArgument(argument: RenderTextArgumentSnapshot): String =
+        argument.valueToken?.let(::render)
+            ?: argument.valueKey?.let(content.localizer::text)
+            ?: argument.value.orEmpty()
 
     private fun literalArg(
         name: String,
@@ -2582,6 +3005,91 @@ class FoundationGameSession internal constructor(
             valueKey = valueKey,
         )
 
+    private fun tokenArg(
+        name: String,
+        valueToken: RenderTextTokenSnapshot,
+    ): RenderTextArgumentSnapshot =
+        RenderTextArgumentSnapshot(
+            name = name,
+            valueToken = valueToken,
+        )
+
+    private fun qualityLabelKey(quality: ItemQuality): String =
+        when (quality) {
+            ItemQuality.COMMON -> "item.quality.common"
+            ItemQuality.MAGIC -> "item.quality.magic"
+            ItemQuality.RARE -> "item.quality.rare"
+        }
+
+    private fun runOutcomeReasonKey(outcome: RunOutcome): String =
+        when (outcome) {
+            is RunOutcome.Defeat ->
+                when (outcome.reason) {
+                    "player_died" -> "ui.summary.reason.player_died"
+                    else -> outcome.reason
+                }
+
+            is RunOutcome.Victory ->
+                when (outcome.reason) {
+                    "boss_defeated" -> "ui.summary.reason.boss_defeated"
+                    else -> outcome.reason
+                }
+
+            RunOutcome.InProgress -> "ui.summary.reason.in_progress"
+        }
+
+    private fun passiveDescriptionToken(passive: EquipmentPassive): RenderTextTokenSnapshot =
+        when (passive) {
+            is EquipmentPassive.DamageVsTag ->
+                RenderTextTokenSnapshot(
+                    "ui.inspect.passive.damage_vs_tag",
+                    listOf(
+                        literalArg("amount", (passive.bonusPercent * 100).toInt()),
+                        monsterTagArg("tag", passive.tag),
+                    ),
+                )
+
+            is EquipmentPassive.HpRegenPerTurn ->
+                RenderTextTokenSnapshot(
+                    "ui.inspect.passive.hp_regen_turn",
+                    listOf(
+                        literalArg("amount", passive.amount),
+                    ),
+                )
+
+            is EquipmentPassive.DamageTypeBonus ->
+                RenderTextTokenSnapshot(
+                    "ui.inspect.passive.damage_type_bonus",
+                    listOf(
+                        literalArg("amount", (passive.bonusPercent * 100).toInt()),
+                        keyArg("damageType", damageTypeLabelKey(passive.type)),
+                    ),
+                )
+
+            is EquipmentPassive.ResistanceBonus ->
+                RenderTextTokenSnapshot(
+                    "ui.inspect.passive.resistance_bonus",
+                    listOf(
+                        literalArg("amount", passive.amount),
+                        keyArg("damageType", damageTypeLabelKey(passive.damageType)),
+                    ),
+                )
+        }
+
+    private fun monsterTagArg(
+        name: String,
+        tag: String,
+    ): RenderTextArgumentSnapshot =
+        monsterTagLabelKeyOrNull(tag)
+            ?.let { key -> keyArg(name, key) }
+            ?: literalArg(name, tag)
+
+    private fun monsterTagLabelKeyOrNull(tag: String): String? =
+        when (tag) {
+            "bandit" -> "monster.tag.bandit"
+            else -> null
+        }
+
     private fun ItemBaseDef.toRuntimeItem(): ItemInstance =
         ItemInstance(
             baseId = id,
@@ -2594,10 +3102,8 @@ class FoundationGameSession internal constructor(
             effect = effect,
             resourceTypeId = resourceTypeId,
             magnitude = magnitude,
+            passive = passive,
         )
-
-    private fun primaryStatLabel(stat: PrimaryStat): String =
-        tr(primaryStatLabelKey(stat))
 
     private fun primaryStatLabelKey(stat: PrimaryStat): String =
         when (stat) {
@@ -2606,6 +3112,100 @@ class FoundationGameSession internal constructor(
             PrimaryStat.CON -> "ui.stat.con"
             PrimaryStat.WIL -> "ui.stat.wil"
         }
+
+    private fun captureLevelUpFeedbackSnapshot(): LevelUpFeedbackSnapshot {
+        val stats = requireNotNull(world.get<Stats>(playerId)) { "Missing Stats for $playerId." }.copy()
+        val health = requireNotNull(world.get<Health>(playerId)) { "Missing Health for $playerId." }
+        val resource = resolvePlayerResourceView()
+        return LevelUpFeedbackSnapshot(
+            stats = stats,
+            maxHp = health.max,
+            resourceTypeId = resource.typeId,
+            resourceMax = resource.max,
+        )
+    }
+
+    private fun logLevelUpGrowth(
+        baseline: LevelUpFeedbackSnapshot,
+        updated: LevelUpFeedbackSnapshot,
+    ) {
+        buildLevelUpStatArguments(baseline.stats, updated.stats)?.let { arguments ->
+            addMessage("log.level_up.stats", *arguments.toTypedArray())
+        }
+
+        val hpDelta = updated.maxHp - baseline.maxHp
+        if (hpDelta > 0) {
+            addMessage("log.level_up.hp_max", literalArg("amount", hpDelta))
+        }
+
+        val resourceDelta = updated.resourceMax - baseline.resourceMax
+        if (resourceDelta > 0) {
+            addMessage(
+                "log.level_up.resource_max",
+                keyArg("resource", resourceLabelKey(updated.resourceTypeId)),
+                literalArg("amount", resourceDelta),
+            )
+        }
+    }
+
+    private fun buildLevelUpStatArguments(
+        baseline: Stats,
+        updated: Stats,
+    ): List<RenderTextArgumentSnapshot>? {
+        val deltas =
+            linkedMapOf(
+                PrimaryStat.STR to (updated.str - baseline.str),
+                PrimaryStat.DEX to (updated.dex - baseline.dex),
+                PrimaryStat.CON to (updated.con - baseline.con),
+                PrimaryStat.WIL to (updated.wil - baseline.wil),
+            )
+        if (deltas.values.none { delta -> delta != 0 }) {
+            return null
+        }
+        val separator = levelUpStatSeparator()
+        val orderedStats = deltas.keys.toList()
+        return buildList {
+            orderedStats.forEachIndexed { index, stat ->
+                val delta = deltas.getValue(stat)
+                add(levelUpStatLabelArg(stat, delta))
+                add(levelUpStatDeltaArg(stat, delta))
+                if (index < orderedStats.lastIndex) {
+                    val hasCurrent = delta != 0
+                    val hasNext = orderedStats.drop(index + 1).any { nextStat -> deltas.getValue(nextStat) != 0 }
+                    add(literalArg("sep${index + 1}", if (hasCurrent && hasNext) separator else ""))
+                }
+            }
+        }
+    }
+
+    private fun levelUpStatSeparator(): String =
+        when (content.localizer.locale) {
+            GameLocale.ZH_CN -> "、"
+            GameLocale.EN_US -> ", "
+        }
+
+    private fun levelUpStatLabelArg(
+        stat: PrimaryStat,
+        delta: Int,
+    ): RenderTextArgumentSnapshot =
+        if (delta == 0) {
+            literalArg("${stat.name.lowercase()}Label", "")
+        } else {
+            keyArg("${stat.name.lowercase()}Label", primaryStatLabelKey(stat))
+        }
+
+    private fun levelUpStatDeltaArg(
+        stat: PrimaryStat,
+        delta: Int,
+    ): RenderTextArgumentSnapshot =
+        literalArg(
+            stat.name.lowercase(),
+            if (delta == 0) {
+                ""
+            } else {
+                "+$delta"
+            },
+        )
 
     private fun itemTypeLabel(type: ItemType): String =
         tr(itemTypeLabelKey(type))
@@ -2717,17 +3317,17 @@ class FoundationGameSession internal constructor(
             is InventoryOperationResult.Success ->
                 when (result.code) {
                     InventoryOperationCode.PICK_UP ->
-                        inventoryItemMessage("log.inventory.pick_up", result.itemBaseId, result.itemName)
+                        inventoryItemMessage("log.inventory.pick_up", result)
                     InventoryOperationCode.EQUIP ->
-                        inventoryItemMessage("log.inventory.equip", result.itemBaseId, result.itemName)
+                        inventoryItemMessage("log.inventory.equip", result)
                     InventoryOperationCode.REMOVE ->
-                        inventoryItemMessage("log.inventory.remove", result.itemBaseId, result.itemName)
+                        inventoryItemMessage("log.inventory.remove", result)
                     InventoryOperationCode.CONSUME_USE ->
-                        inventoryItemMessage("log.inventory.consume.use", result.itemBaseId, result.itemName)
+                        inventoryItemMessage("log.inventory.consume.use", result)
                     InventoryOperationCode.CONSUME_READ ->
-                        inventoryItemMessage("log.inventory.consume.read", result.itemBaseId, result.itemName)
+                        inventoryItemMessage("log.inventory.consume.read", result)
                     InventoryOperationCode.DROP ->
-                        inventoryItemMessage("log.inventory.drop", result.itemBaseId, result.itemName)
+                        inventoryItemMessage("log.inventory.drop", result)
                     else -> error("Unsupported inventory success code ${result.code}.")
                 }
 
@@ -2738,7 +3338,7 @@ class FoundationGameSession internal constructor(
                             message = RenderTextTokenSnapshot("log.inventory.not_item"),
                         )
                     InventoryOperationCode.NOT_ON_GROUND ->
-                        inventoryItemMessage("log.inventory.not_on_ground", result.itemBaseId, result.itemName)
+                        inventoryItemMessage("log.inventory.not_on_ground", result)
                     InventoryOperationCode.PACK_FULL ->
                         RenderLogEventSnapshot(
                             message = RenderTextTokenSnapshot("log.inventory.pack_full"),
@@ -2748,7 +3348,7 @@ class FoundationGameSession internal constructor(
                             message = RenderTextTokenSnapshot("log.inventory.pack_slot_empty"),
                         )
                     InventoryOperationCode.CANNOT_EQUIP ->
-                        inventoryItemMessage("log.inventory.cannot_equip", result.itemBaseId, result.itemName)
+                        inventoryItemMessage("log.inventory.cannot_equip", result)
                     InventoryOperationCode.NOTHING_EQUIPPED ->
                         RenderLogEventSnapshot(
                             message =
@@ -2760,7 +3360,7 @@ class FoundationGameSession internal constructor(
                                 ),
                         )
                     InventoryOperationCode.NOT_CONSUMABLE ->
-                        inventoryItemMessage("log.inventory.not_consumable", result.itemBaseId, result.itemName)
+                        inventoryItemMessage("log.inventory.not_consumable", result)
                     InventoryOperationCode.NO_TELEPORT_DESTINATION ->
                         RenderLogEventSnapshot(
                             message = RenderTextTokenSnapshot("log.inventory.no_teleport_destination"),
@@ -2775,14 +3375,52 @@ class FoundationGameSession internal constructor(
 
     private fun inventoryItemMessage(
         key: String,
+        result: InventoryOperationResult.Success,
+    ): RenderLogEventSnapshot =
+        inventoryItemMessage(
+            key = key,
+            itemBaseId = result.itemBaseId,
+            itemName = result.itemName,
+            itemQuality = result.itemQuality,
+            itemMaterialId = result.itemMaterialId,
+            itemAffixIds = result.itemAffixIds,
+        )
+
+    private fun inventoryItemMessage(
+        key: String,
+        result: InventoryOperationResult.Failure,
+    ): RenderLogEventSnapshot =
+        inventoryItemMessage(
+            key = key,
+            itemBaseId = result.itemBaseId,
+            itemName = result.itemName,
+            itemQuality = result.itemQuality,
+            itemMaterialId = result.itemMaterialId,
+            itemAffixIds = result.itemAffixIds,
+        )
+
+    private fun inventoryItemMessage(
+        key: String,
         itemBaseId: String?,
         itemName: String?,
+        itemQuality: ItemQuality?,
+        itemMaterialId: String?,
+        itemAffixIds: List<String>,
     ): RenderLogEventSnapshot =
         RenderLogEventSnapshot(
             message =
                 RenderTextTokenSnapshot(
                     key,
-                    listOf(itemArg("item", itemBaseId, itemName)),
+                    listOf(
+                        itemDisplayArgument(
+                            name = "item",
+                            itemBaseId = itemBaseId,
+                            fallbackName = itemName,
+                            itemQuality = itemQuality,
+                            itemMaterialId = itemMaterialId,
+                            itemAffixIds = itemAffixIds,
+                        ),
+                    ),
                 ),
         )
 
@@ -2795,6 +3433,134 @@ class FoundationGameSession internal constructor(
             ?.let(::itemNameKeyOrNull)
             ?.let { key -> keyArg(name, key) }
             ?: literalArg(name, fallbackName.orEmpty())
+
+    private fun itemDisplayArgument(
+        name: String,
+        item: ItemInstance,
+        includeQuality: Boolean = true,
+    ): RenderTextArgumentSnapshot =
+        itemDisplayArgument(
+            name = name,
+            itemBaseId = item.baseId,
+            fallbackName = item.name,
+            itemQuality = item.quality,
+            itemMaterialId = item.materialId,
+            itemAffixIds = item.affixes.map { affix -> affix.id },
+            includeQuality = includeQuality,
+        )
+
+    private fun itemDisplayArgument(
+        name: String,
+        itemBaseId: String?,
+        fallbackName: String?,
+        itemQuality: ItemQuality?,
+        itemMaterialId: String?,
+        itemAffixIds: List<String>,
+        includeQuality: Boolean = true,
+    ): RenderTextArgumentSnapshot =
+        itemDisplayToken(
+            itemBaseId = itemBaseId,
+            itemQuality = itemQuality,
+            itemMaterialId = itemMaterialId,
+            itemAffixIds = itemAffixIds,
+            includeQuality = includeQuality,
+        )?.let { token -> tokenArg(name, token) }
+            ?: itemArg(name, itemBaseId, fallbackName)
+
+    private fun itemDisplayToken(
+        item: ItemInstance,
+        includeQuality: Boolean = true,
+    ): RenderTextTokenSnapshot? =
+        itemDisplayToken(
+            itemBaseId = item.baseId,
+            itemQuality = item.quality,
+            itemMaterialId = item.materialId,
+            itemAffixIds = item.affixes.map { affix -> affix.id },
+            includeQuality = includeQuality,
+        )
+
+    private fun itemDisplayToken(
+        itemBaseId: String?,
+        itemQuality: ItemQuality?,
+        itemMaterialId: String?,
+        itemAffixIds: List<String>,
+        includeQuality: Boolean,
+    ): RenderTextTokenSnapshot? {
+        val baseNameKey = itemBaseId?.let(::itemNameKeyOrNull) ?: return null
+        val affixSchemas = itemAffixIds.mapNotNull(::affixSchemaFor)
+        val prefixes = affixSchemas.filter { schema -> schema.type == AffixType.PREFIX }
+        val suffixes = affixSchemas.filter { schema -> schema.type == AffixType.SUFFIX }
+        return RenderTextTokenSnapshot(
+            key = "item.display.composed",
+            arguments =
+                listOf(
+                    itemDisplayQualityArg("quality", itemQuality, includeQuality),
+                    itemDisplayAffixArg("prefix1", prefixes.getOrNull(0)?.nameKey),
+                    itemDisplayAffixArg("prefix2", prefixes.getOrNull(1)?.nameKey),
+                    itemDisplayMaterialArg("material", itemMaterialId?.let(::materialSchemaFor)?.nameKey),
+                    keyArg("base", baseNameKey),
+                    itemDisplayAffixArg("suffix1", suffixes.getOrNull(0)?.nameKey, isSuffix = true),
+                    itemDisplayAffixArg("suffix2", suffixes.getOrNull(1)?.nameKey, isSuffix = true),
+                ),
+        )
+    }
+
+    private fun itemDisplayQualityArg(
+        name: String,
+        itemQuality: ItemQuality?,
+        includeQuality: Boolean,
+    ): RenderTextArgumentSnapshot =
+        itemQuality
+            ?.takeIf { includeQuality && it != ItemQuality.COMMON }
+            ?.let(::qualityLabelKey)
+            ?.let { qualityNameKey ->
+                tokenArg(
+                    name,
+                    RenderTextTokenSnapshot(
+                        key = "item.display.part.quality",
+                        arguments = listOf(keyArg("quality", qualityNameKey)),
+                    ),
+                )
+            }
+            ?: literalArg(name, "")
+
+    private fun itemDisplayMaterialArg(
+        name: String,
+        materialNameKey: String?,
+    ): RenderTextArgumentSnapshot =
+        materialNameKey
+            ?.let { valueKey ->
+                tokenArg(
+                    name,
+                    RenderTextTokenSnapshot(
+                        key = "item.display.part.material",
+                        arguments = listOf(keyArg("material", valueKey)),
+                    ),
+                )
+            }
+            ?: literalArg(name, "")
+
+    private fun itemDisplayAffixArg(
+        name: String,
+        affixNameKey: String?,
+        isSuffix: Boolean = false,
+    ): RenderTextArgumentSnapshot =
+        affixNameKey
+            ?.let { valueKey ->
+                tokenArg(
+                    name,
+                    RenderTextTokenSnapshot(
+                        key =
+                            if (isSuffix) {
+                                "item.display.part.suffix"
+                            } else {
+                                "item.display.part.prefix"
+                            },
+                        arguments = listOf(keyArg("affix", valueKey)),
+                    ),
+                )
+            }
+            ?: literalArg(name, "")
 
     private fun itemNameKeyOrNull(baseItemId: String): String? =
         content.schemaCatalog.itemBundle.items.firstOrNull { schema -> schema.id == baseItemId }?.nameKey
@@ -2813,7 +3579,7 @@ class FoundationGameSession internal constructor(
             return null
         }
         val floorCandidates = candidateItems.filter { item -> currentFloor() in item.dropFloors }.ifEmpty { candidateItems }
-        return chooseWeightedLootItem(floorCandidates).toRuntimeItem()
+        return ItemGenerator(content.itemBundle, sessionRandom).generate(chooseWeightedLootItem(floorCandidates), currentFloor())
     }
 
     private fun chooseWeightedLootItem(candidates: List<ItemBaseDef>): ItemBaseDef {
@@ -3017,6 +3783,7 @@ class FoundationGameSession internal constructor(
                         dropWeight = 1,
                         effect = item.effect,
                         magnitude = item.magnitude,
+                        passive = item.passive,
                     )
                 }
 

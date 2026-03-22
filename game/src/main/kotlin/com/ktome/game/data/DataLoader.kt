@@ -6,6 +6,7 @@ import com.ktome.core.ecs.Stats
 import com.ktome.core.item.AffixDef
 import com.ktome.core.item.AffixType
 import com.ktome.core.item.ConsumableEffect
+import com.ktome.core.item.EquipmentPassive
 import com.ktome.core.item.EquipSlot
 import com.ktome.core.item.ItemBaseDef
 import com.ktome.core.item.ItemDataBundle
@@ -17,10 +18,14 @@ import com.ktome.core.talent.StatusEffectType
 import com.ktome.core.talent.TalentDef
 import com.ktome.core.talent.TalentLevelEffect
 import com.ktome.game.data.schema.AIProfileSchemaV2
+import com.ktome.game.data.schema.AITriggerActionKindSchemaV2
+import com.ktome.game.data.schema.AITriggerConditionKindSchemaV2
+import com.ktome.game.data.schema.AITriggerSchemaV2
 import com.ktome.game.data.schema.AITalentSkipRuleSchemaV2
 import com.ktome.game.data.schema.AffixSchemaV2
 import com.ktome.game.data.schema.BossEncounterSchemaV2
 import com.ktome.game.data.schema.DifficultySchemaV2
+import com.ktome.game.data.schema.EquipmentPassiveSchemaV2
 import com.ktome.game.data.schema.InteractableSchemaV2
 import com.ktome.game.data.schema.ItemBundleSchemaV2
 import com.ktome.game.data.schema.ItemSchemaV2
@@ -382,6 +387,29 @@ class DataLoader(
                             selfHasStatus = StatusEffectType.valueOf(rule.requiredString("selfHasStatus")),
                         )
                     },
+                triggers =
+                    profile.optionalList("triggers").map { rawTrigger ->
+                        val trigger = rawTrigger.requiredMap()
+                        AITriggerSchemaV2(
+                            triggerId = trigger.requiredString("triggerId"),
+                            condition =
+                                when (trigger.requiredString("condition")) {
+                                    "onCombatStart" -> AITriggerConditionKindSchemaV2.ON_COMBAT_START
+                                    "hpBelowRatio" -> AITriggerConditionKindSchemaV2.HP_BELOW_RATIO
+                                    else -> error("Unsupported AI trigger condition '${trigger.requiredString("condition")}'.")
+                                },
+                            threshold = trigger.optionalNullableDouble("threshold"),
+                            action =
+                                when (trigger.requiredString("action")) {
+                                    "forceTalent" -> AITriggerActionKindSchemaV2.FORCE_TALENT
+                                    else -> error("Unsupported AI trigger action '${trigger.requiredString("action")}'.")
+                                },
+                            talentId = trigger.requiredString("talentId"),
+                            postMessageKey = trigger.optionalString("postMessageKey"),
+                            postMessageArgs = trigger.optionalStringMap("postMessageArgs"),
+                            once = trigger.optionalBoolean("once"),
+                        )
+                    },
             )
         }
 
@@ -442,6 +470,7 @@ class DataLoader(
                     effect = item.optionalString("effect")?.let(ConsumableEffect::valueOf),
                     resourceTypeId = item.optionalString("resourceTypeId"),
                     magnitude = item.optionalInt("magnitude"),
+                    passive = item.optionalMap("passive")?.toEquipmentPassiveSchema(),
                 )
             },
         )
@@ -543,8 +572,46 @@ class DataLoader(
             effect = effect,
             resourceTypeId = resourceTypeId,
             magnitude = magnitude,
+            passive = passive?.toRuntimePassive(),
         )
     }
+
+    private fun Map<*, *>.toEquipmentPassiveSchema(): EquipmentPassiveSchemaV2 =
+        EquipmentPassiveSchemaV2(
+            kind = requiredString("kind"),
+            tag = optionalString("tag"),
+            damageType = optionalString("damageType"),
+            bonusPercent = optionalDouble("bonusPercent", 0.0),
+            amount = optionalInt("amount"),
+        )
+
+    private fun EquipmentPassiveSchemaV2.toRuntimePassive(): EquipmentPassive =
+        when (kind) {
+            "DamageVsTag" ->
+                EquipmentPassive.DamageVsTag(
+                    tag = requireNotNull(tag) { "DamageVsTag passive requires 'tag'." },
+                    bonusPercent = bonusPercent,
+                )
+
+            "HpRegenPerTurn" ->
+                EquipmentPassive.HpRegenPerTurn(
+                    amount = amount,
+                )
+
+            "DamageTypeBonus" ->
+                EquipmentPassive.DamageTypeBonus(
+                    type = DamageType.valueOf(requireNotNull(damageType) { "DamageTypeBonus passive requires 'damageType'." }),
+                    bonusPercent = bonusPercent,
+                )
+
+            "ResistanceBonus" ->
+                EquipmentPassive.ResistanceBonus(
+                    damageType = DamageType.valueOf(requireNotNull(damageType) { "ResistanceBonus passive requires 'damageType'." }),
+                    amount = amount,
+                )
+
+            else -> error("Unsupported equipment passive kind '$kind'.")
+        }
 
     private fun MaterialSchemaV2.toRuntimeMaterial(localizer: Localizer): MaterialDef =
         MaterialDef(
@@ -570,7 +637,6 @@ class DataLoader(
             description = localizer.text(descKey),
             maxLevel = maxPoints,
             damageType = damageType?.let(DamageType::valueOf) ?: DamageType.PHYSICAL,
-            staminaCost = resourceCosts["STAMINA"] ?: 0,
             resourceCosts =
                 resourceCosts.entries
                     .associate { (resourceTypeId, cost) -> ResourceType.fromId(resourceTypeId) to cost }
@@ -738,6 +804,11 @@ private fun Map<*, *>.optionalIntMap(key: String): Map<String, Int> =
             }
     } ?: emptyMap()
 
+private fun Map<*, *>.optionalStringMap(key: String): Map<String, String> =
+    optionalMap(key)?.entries?.associate { (rawKey, rawValue) ->
+        rawKey.toString() to (rawValue?.toString()?.takeIf(String::isNotBlank) ?: error("Entry '$key' must contain non-blank string values"))
+    } ?: emptyMap()
+
 private fun Map<*, *>.requiredDouble(key: String): Double =
     when (val value = this[key]) {
         is Double -> value
@@ -758,4 +829,25 @@ private fun Map<*, *>.optionalDouble(
         is Number -> value.toDouble()
         is String -> value.toDouble()
         else -> error("Entry '$key' must be numeric")
+    }
+
+private fun Map<*, *>.optionalNullableDouble(key: String): Double? =
+    when (val value = this[key]) {
+        null -> null
+        is Double -> value
+        is Float -> value.toDouble()
+        is Number -> value.toDouble()
+        is String -> value.toDouble()
+        else -> error("Entry '$key' must be numeric")
+    }
+
+private fun Map<*, *>.optionalBoolean(
+    key: String,
+    default: Boolean = false,
+): Boolean =
+    when (val value = this[key]) {
+        null -> default
+        is Boolean -> value
+        is String -> value.toBooleanStrict()
+        else -> error("Entry '$key' must be boolean")
     }

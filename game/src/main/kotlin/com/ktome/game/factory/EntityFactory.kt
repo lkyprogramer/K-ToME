@@ -1,6 +1,7 @@
 package com.ktome.game.factory
 
 import com.ktome.core.ecs.AIBehavior
+import com.ktome.core.ecs.AiTriggerTracker
 import com.ktome.core.ecs.AIType
 import com.ktome.core.ecs.BlocksMovement
 import com.ktome.core.ecs.CombatProfile
@@ -19,12 +20,12 @@ import com.ktome.core.ecs.PlayerControlled
 import com.ktome.core.ecs.Position
 import com.ktome.core.ecs.ResistanceProfile
 import com.ktome.core.ecs.Stats
-import com.ktome.core.ecs.Stamina
 import com.ktome.core.ecs.World
 import com.ktome.core.ecs.add
 import com.ktome.core.item.Equipment
 import com.ktome.core.item.Inventory
 import com.ktome.core.map.Point
+import com.ktome.core.resource.StaminaPools
 import com.ktome.core.stats.StatsCalculator
 import com.ktome.core.talent.CooldownState
 import com.ktome.core.talent.EffectTracker
@@ -63,7 +64,7 @@ class EntityFactory {
         world.add(playerId, combatProfile)
         world.add(playerId, derivedStats)
         world.add(playerId, Health(current = derivedStats.maxHp, max = derivedStats.maxHp))
-        world.add(playerId, Stamina(current = derivedStats.maxStamina, max = derivedStats.maxStamina))
+        StaminaPools.ensurePool(world, playerId, current = derivedStats.maxStamina, max = derivedStats.maxStamina)
         world.add(playerId, Energy())
         world.add(playerId, Experience())
         world.add(playerId, Inventory())
@@ -120,6 +121,22 @@ class EntityFactory {
         world.add(monsterId, Energy())
         world.add(monsterId, ExperienceReward(template.expReward))
         world.add(monsterId, EffectTracker())
+        if (template.talentLevels.isNotEmpty()) {
+            StaminaPools.ensurePool(world, monsterId, current = derivedStats.maxStamina, max = derivedStats.maxStamina)
+            world.add(monsterId, CooldownState())
+            world.add(
+                monsterId,
+                TalentLoadout(
+                    slotToTalentId =
+                        template.talentLevels.keys
+                            .mapIndexed { index, talentId -> (index + 1) to talentId }
+                            .toMap(linkedMapOf())
+                            .toMutableMap(),
+                    talentLevels = template.talentLevels.toMutableMap(),
+                ),
+            )
+            world.add(monsterId, AiTriggerTracker())
+        }
         world.add(
             monsterId,
             when (resolveAiType(template)) {

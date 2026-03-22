@@ -2,7 +2,6 @@ package com.ktome.game
 
 import com.ktome.core.ecs.DerivedStats
 import com.ktome.core.ecs.EntityId
-import com.ktome.core.ecs.Stamina
 import com.ktome.core.ecs.World
 import com.ktome.core.ecs.add
 import com.ktome.core.ecs.get
@@ -14,22 +13,20 @@ import com.ktome.core.stats.StatsCalculator
 import com.ktome.game.data.schema.ProfessionSchemaV2
 import kotlin.math.roundToInt
 
-internal object PlayerResourcePools {
+internal object PlayerResourceService {
     fun ensureInitialized(
         world: World,
         playerId: EntityId,
         profession: ProfessionSchemaV2,
     ): ResourcePools {
         val pools = world.get<ResourcePools>(playerId) ?: ResourcePools().also { resourcePools -> world.add(playerId, resourcePools) }
-        StaminaPools.pool(world, playerId)
-
-        val mainType = mainResourceType(profession)
-        if (mainType == ResourceType.STAMINA) {
-            StaminaPools.syncComponentFromPool(world, playerId)
-            return pools
+        val staminaMax = maxFor(world, playerId, profession, ResourceType.STAMINA)
+        if (!StaminaPools.hasPool(world, playerId)) {
+            StaminaPools.ensurePool(world, playerId, current = staminaMax, max = staminaMax)
         }
 
-        if (pools.pool(mainType) == null) {
+        val mainType = mainResourceType(profession)
+        if (mainType != ResourceType.STAMINA && pools.pool(mainType) == null) {
             pools.entries[mainType] =
                 ResourcePool(
                     type = mainType,
@@ -62,12 +59,12 @@ internal object PlayerResourcePools {
         profession: ProfessionSchemaV2,
         pools: ResourcePools,
     ): ResourcePools {
-        StaminaPools.syncTo(
-            world = world,
-            entityId = playerId,
-            nextCurrent = StaminaPools.current(world, playerId),
-            nextMax = maxFor(world, playerId, profession, ResourceType.STAMINA),
-        )
+        val staminaNextMax = maxFor(world, playerId, profession, ResourceType.STAMINA)
+        if (!StaminaPools.hasPool(world, playerId)) {
+            StaminaPools.ensurePool(world, playerId, current = staminaNextMax, max = staminaNextMax)
+        } else {
+            StaminaPools.shiftMax(world, playerId, staminaNextMax)
+        }
 
         val mainType = mainResourceType(profession)
         if (mainType == ResourceType.STAMINA) {
@@ -125,22 +122,6 @@ internal object PlayerResourcePools {
         val pools = sync(world, playerId, profession)
         val restored = (damage * 0.15f).roundToInt().coerceAtLeast(1)
         pools.pool(ResourceType.POSITIVE_ENERGY)?.restore(restored)
-    }
-
-    internal fun syncStaminaPoolFromComponent(
-        world: World,
-        playerId: EntityId,
-        pools: ResourcePools = world.get<ResourcePools>(playerId) ?: ResourcePools().also { resourcePools -> world.add(playerId, resourcePools) },
-    ): ResourcePool {
-        val stamina = requireNotNull(world.get<Stamina>(playerId)) { "Missing Stamina for $playerId." }
-        val derived = requireNotNull(world.get<DerivedStats>(playerId)) { "Missing DerivedStats for $playerId." }
-        val pool = pools.getOrCreate(ResourceType.STAMINA, current = stamina.current, max = derived.maxStamina)
-        return StaminaPools.syncTo(
-            world = world,
-            entityId = playerId,
-            nextCurrent = pool.current,
-            nextMax = derived.maxStamina,
-        )
     }
 
     private fun mainResourceType(profession: ProfessionSchemaV2): ResourceType =

@@ -43,11 +43,32 @@ data class AIProfileSchemaV2(
     val schemaVersion: Int,
     val talentPriority: List<String>,
     val skipRules: List<AITalentSkipRuleSchemaV2>,
+    val triggers: List<AITriggerSchemaV2> = emptyList(),
 )
 
 data class AITalentSkipRuleSchemaV2(
     val talentId: String,
     val selfHasStatus: StatusEffectType,
+)
+
+enum class AITriggerConditionKindSchemaV2 {
+    ON_COMBAT_START,
+    HP_BELOW_RATIO,
+}
+
+enum class AITriggerActionKindSchemaV2 {
+    FORCE_TALENT,
+}
+
+data class AITriggerSchemaV2(
+    val triggerId: String,
+    val condition: AITriggerConditionKindSchemaV2,
+    val threshold: Double? = null,
+    val action: AITriggerActionKindSchemaV2,
+    val talentId: String,
+    val postMessageKey: String? = null,
+    val postMessageArgs: Map<String, String> = emptyMap(),
+    val once: Boolean = false,
 )
 
 data class ProfessionSchemaV2(
@@ -297,6 +318,14 @@ data class AffixSchemaV2(
     val stats: SchemaStatModifier,
 )
 
+data class EquipmentPassiveSchemaV2(
+    val kind: String,
+    val tag: String? = null,
+    val damageType: String? = null,
+    val bonusPercent: Double = 0.0,
+    val amount: Int = 0,
+)
+
 data class ItemSchemaV2(
     val id: String,
     val nameKey: String,
@@ -319,6 +348,7 @@ data class ItemSchemaV2(
     val effect: ConsumableEffect? = null,
     val resourceTypeId: String? = null,
     val magnitude: Int = 0,
+    val passive: EquipmentPassiveSchemaV2? = null,
 )
 
 data class SchemaStats(

@@ -20,6 +20,8 @@ class VictoryScreen(
     private val inputSource: InputSource = GdxInputSource,
     private val renderEnabled: Boolean = true,
 ) : ScreenAdapter() {
+    private val bodyLines: List<String>
+        get() = OutcomeSummaryPresenter.bodyLines(app, summary, isVictory = true)
     private var batch: SpriteBatch? = null
     private var font: BitmapFont? = null
     private val viewport = FitViewport(menuWidth, menuHeight)
@@ -51,13 +53,15 @@ class VictoryScreen(
 
         batch.begin()
         font.color = Color.FOREST
-        font.draw(batch, app.text("ui.victory.title"), 120f, 420f)
+        font.draw(batch, app.text("ui.victory.title"), 120f, 470f)
         font.color = Color.WHITE
-        font.draw(batch, app.text("ui.victory.floors_cleared", "current" to summary.floorReached, "max" to summary.maxFloor), 120f, 340f)
-        font.draw(batch, app.text("ui.summary.turns_taken", "turns" to summary.turns), 120f, 308f)
-        font.draw(batch, app.text("ui.summary.final_level", "level" to summary.playerLevel), 120f, 276f)
+        var y = 418f
+        bodyLines.forEach { line ->
+            font.draw(batch, line, 120f, y)
+            y -= 26f
+        }
         font.color = Color.LIGHT_GRAY
-        font.draw(batch, app.text("ui.screen.return_to_menu"), 120f, 140f)
+        font.draw(batch, app.text("ui.screen.return_to_menu"), 120f, 40f)
         batch.end()
     }
 
@@ -79,7 +83,7 @@ class VictoryScreen(
             batch = SpriteBatch()
         }
         if (font == null) {
-            font = KtomeFonts.createUiFont(size = 24)
+            font = KtomeFonts.createUiFont(size = 20)
         }
     }
 }

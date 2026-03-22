@@ -287,4 +287,32 @@ class ContractLintTest {
             }
         assertEquals(uniqueIds.size, uniqueIds.toSet().size, "Object ids must stay unique inside their namespaces.")
     }
+
+    @Test
+    fun `stage e formalized namespaces do not resolve through prefix fallback`() {
+        val assets = ClientAssetBundleLoader.load()
+
+        listOf(
+            "affix.__stage_e_probe__.icon",
+            "affix.__stage_e_probe__.visual",
+            "material.__stage_e_probe__.icon",
+            "material.__stage_e_probe__.visual",
+            "difficulty.__stage_e_probe__.icon",
+            "difficulty.__stage_e_probe__.visual",
+        ).forEach { key ->
+            val resolved = assets.visualResolver.resolve(key)
+            assertTrue(resolved.fallbackUsed, "Unknown visual key $key must fall back directly to the sentinel entry.")
+            assertFalse(resolved.matchedByPrefix, "Unknown visual key $key must not resolve through prefix fallback.")
+        }
+
+        listOf(
+            "audio.affix.__stage_e_probe__",
+            "audio.material.__stage_e_probe__",
+            "audio.difficulty.__stage_e_probe__",
+        ).forEach { key ->
+            val resolved = assets.audioResolver.resolve(key)
+            assertTrue(resolved.fallbackUsed, "Unknown audio key $key must fall back directly to the sentinel entry.")
+            assertFalse(resolved.matchedByPrefix, "Unknown audio key $key must not resolve through prefix fallback.")
+        }
+    }
 }

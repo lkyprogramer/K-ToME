@@ -85,8 +85,6 @@ class SmokeBotTest {
                     PlayerStatus(
                         currentHp = 30,
                         maxHp = 30,
-                        currentStamina = 8,
-                        maxStamina = 12,
                         level = 1,
                         currentExperience = 0,
                         nextLevelRequirement = 10,
@@ -179,7 +177,6 @@ class SmokeBotTest {
                             name = "闪现",
                             level = 1,
                             maxLevel = 5,
-                            staminaCost = 0,
                             resourceCost = 12,
                             resourceTypeId = "MANA",
                             range = 6,
@@ -204,8 +201,6 @@ class SmokeBotTest {
                     PlayerStatus(
                         currentHp = 14,
                         maxHp = 30,
-                        currentStamina = 8,
-                        maxStamina = 12,
                         level = 1,
                         currentExperience = 0,
                         nextLevelRequirement = 10,
@@ -229,7 +224,6 @@ class SmokeBotTest {
                             name = "闪现",
                             level = 1,
                             maxLevel = 5,
-                            staminaCost = 0,
                             resourceCost = 12,
                             resourceTypeId = "MANA",
                             range = 6,
@@ -251,8 +245,6 @@ class SmokeBotTest {
             PlayerStatus(
                 currentHp = 10,
                 maxHp = 30,
-                currentStamina = 8,
-                maxStamina = 12,
                 level = 1,
                 currentExperience = 0,
                 nextLevelRequirement = 10,
@@ -301,8 +293,6 @@ class SmokeBotTest {
         PlayerStatus(
             currentHp = 30,
             maxHp = 30,
-            currentStamina = 8,
-            maxStamina = 12,
             level = 1,
             currentExperience = 0,
             nextLevelRequirement = 10,

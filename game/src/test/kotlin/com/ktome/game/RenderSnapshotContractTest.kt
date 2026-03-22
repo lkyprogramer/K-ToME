@@ -6,6 +6,13 @@ import com.ktome.core.ecs.Position
 import com.ktome.core.ecs.Stats
 import com.ktome.core.ecs.get
 import com.ktome.core.dungeon.StairDirection
+import com.ktome.core.item.AffixDef
+import com.ktome.core.item.AffixType
+import com.ktome.core.item.EquipmentPassive
+import com.ktome.core.item.ItemInstance
+import com.ktome.core.item.ItemQuality
+import com.ktome.core.item.ItemType
+import com.ktome.core.item.StatModifier
 import com.ktome.core.resource.ResourceType
 import com.ktome.core.save.SaveManager
 import com.ktome.core.snapshot.CellVisibilitySnapshot
@@ -14,6 +21,7 @@ import com.ktome.core.snapshot.RenderSnapshotHasher
 import com.ktome.core.stats.StatsCalculator
 import com.ktome.game.data.DataLoader
 import com.ktome.game.factory.EntityFactory
+import com.ktome.game.factory.ItemFactory
 import java.nio.file.Path
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -79,6 +87,73 @@ class RenderSnapshotContractTest {
     }
 
     @Test
+    fun `item render snapshots expose quality affix material and passive semantics for detail panes`() {
+        val session =
+            GameModule.newFoundationSession(
+                config = FoundationGameConfig(seed = 20260318L, zoneId = "greenwood_fringe", playerProfessionId = "rogue"),
+                saveManager = SaveManager(tempDir.resolve("item-render-contract")),
+            )
+        val world = session.automationWorld()
+        val playerId = world.entitiesWith(PlayerControlled::class).single()
+        val inventory = requireNotNull(world.get<com.ktome.core.item.Inventory>(playerId))
+        val itemFactory = ItemFactory()
+
+        inventory.itemIds +=
+            itemFactory.createCarriedItem(
+                world = world,
+                item =
+                    ItemInstance(
+                        baseId = "battle_axe",
+                        name = "Mithril Battle Axe of Speed",
+                        type = ItemType.WEAPON,
+                        slot = com.ktome.core.item.EquipSlot.WEAPON,
+                        glyph = ')',
+                        colorHex = "#C0C0C0",
+                        quality = ItemQuality.RARE,
+                        materialId = "MITHRIL",
+                        materialName = "Mithril",
+                        affixes = listOf(AffixDef(id = "of_speed", name = "of Speed", type = AffixType.SUFFIX, statModifiers = StatModifier(speed = 15))),
+                        stats = StatModifier(attack = 9, speed = 15),
+                    ),
+            )
+        inventory.itemIds +=
+            itemFactory.createCarriedItem(
+                world = world,
+                item =
+                    ItemInstance(
+                        baseId = "bandit_trophy",
+                        name = "Bandit Trophy",
+                        type = ItemType.ARMOR,
+                        slot = com.ktome.core.item.EquipSlot.OFF_HAND,
+                        glyph = ']',
+                        colorHex = "#8A7148",
+                        quality = ItemQuality.COMMON,
+                        stats = StatModifier(dex = 1),
+                        passive = EquipmentPassive.DamageVsTag("bandit", 0.15),
+                    ),
+            )
+
+        val snapshot = session.renderSnapshot()
+        val rareWeapon = snapshot.uiState.inventory.first { entry -> entry.item.baseItemId == "battle_axe" }.item
+        val passiveReward = snapshot.uiState.inventory.first { entry -> entry.item.baseItemId == "bandit_trophy" }.item
+        val rareWeaponDisplayName = requireNotNull(rareWeapon.displayName)
+
+        assertEquals("item.quality.rare", rareWeapon.qualityNameKey)
+        assertEquals("material.mithril.name", rareWeapon.materialNameKey)
+        assertEquals(listOf("affix.of_speed.name"), rareWeapon.affixNameKeys)
+        assertEquals("item.display.composed", rareWeaponDisplayName.key)
+        assertEquals(
+            "item.battle_axe.name",
+            rareWeaponDisplayName.arguments.first { argument -> argument.name == "base" }.valueKey,
+        )
+        assertEquals(
+            "item.display.part.material",
+            requireNotNull(rareWeaponDisplayName.arguments.first { argument -> argument.name == "material" }.valueToken).key,
+        )
+        assertEquals("ui.inspect.passive.damage_vs_tag", passiveReward.passiveDescriptions.single().key)
+    }
+
+    @Test
     fun `arcanist mana cap follows runtime wil after stat recalculation`() {
         val session =
             GameModule.newFoundationSession(
@@ -93,7 +168,7 @@ class RenderSnapshotContractTest {
         stats.wil += 2
         StatsCalculator.recalculateAndStore(world, playerId)
 
-        val pools = PlayerResourcePools.sync(world, playerId, profession)
+        val pools = PlayerResourceService.sync(world, playerId, profession)
         val mana = requireNotNull(pools.pool(ResourceType.MANA))
 
         assertEquals(164, mana.max)
@@ -111,11 +186,11 @@ class RenderSnapshotContractTest {
         val world = session.automationWorld()
         val playerId = world.entitiesWith(PlayerControlled::class).single()
         val profession = profession("rogue")
-        val pools = PlayerResourcePools.sync(world, playerId, profession)
+        val pools = PlayerResourceService.sync(world, playerId, profession)
         val energy = requireNotNull(pools.pool(ResourceType.ENERGY))
 
         energy.spend(20)
-        PlayerResourcePools.onSuccessfulHit(world, playerId, profession)
+        PlayerResourceService.onSuccessfulHit(world, playerId, profession)
 
         assertEquals(88, energy.current)
         assertEquals(100, session.renderSnapshot().uiState.playerStatus.maxResource)
@@ -132,7 +207,7 @@ class RenderSnapshotContractTest {
         val world = session.automationWorld()
         val playerId = world.entitiesWith(PlayerControlled::class).single()
         val profession = profession("templar")
-        val pools = PlayerResourcePools.sync(world, playerId, profession)
+        val pools = PlayerResourceService.sync(world, playerId, profession)
         val positive = requireNotNull(pools.pool(ResourceType.POSITIVE_ENERGY))
 
         val status = session.renderSnapshot().uiState.playerStatus
@@ -142,9 +217,9 @@ class RenderSnapshotContractTest {
         assertEquals(0, status.currentResource)
         assertEquals(100, status.maxResource)
 
-        PlayerResourcePools.onDamageTaken(world, playerId, profession, damage = 20)
-        PlayerResourcePools.onSuccessfulHit(world, playerId, profession)
-        PlayerResourcePools.onTurnStart(world, playerId, profession, inCombat = false)
+        PlayerResourceService.onDamageTaken(world, playerId, profession, damage = 20)
+        PlayerResourceService.onSuccessfulHit(world, playerId, profession)
+        PlayerResourceService.onTurnStart(world, playerId, profession, inCombat = false)
         session.automationMovePlayerTo(session.playerPosition())
 
         assertEquals(1, positive.current)
@@ -172,11 +247,11 @@ class RenderSnapshotContractTest {
         assertTrue(session.perform(PlayerCommand.UseTalent(slot = powerStrikeSlot, target = dummyPoint)))
 
         val staminaPool = requireNotNull(requireNotNull(world.get<com.ktome.core.resource.ResourcePools>(session.playerId)).pool(ResourceType.STAMINA))
-        val status = session.playerStatus()
+        val resource = session.playerResourceView()
         val snapshotStatus = session.renderSnapshot().uiState.playerStatus
 
-        assertEquals(staminaPool.current, status.currentStamina)
-        assertEquals(staminaPool.max, status.maxStamina)
+        assertEquals(staminaPool.current, resource.current)
+        assertEquals(staminaPool.max, resource.max)
         assertEquals(staminaPool.current, snapshotStatus.currentResource)
         assertEquals(staminaPool.max, snapshotStatus.maxResource)
     }

@@ -355,9 +355,9 @@
    - regen / armory / HUD / inspect / snapshot 全走 pool
    - `prepareActorTurn()` 的 STAMINA 回复不再以 `world.get<Stamina>` 为前置
    - `gainExperience()` 不再 `requireNotNull(world.get<Stamina>(playerId))`
-10. [PlayerResourcePools.kt](/Users/luo/Documents/github/K-ToME/game/src/main/kotlin/com/ktome/game/PlayerResourcePools.kt)
+10. [PlayerResourceService.kt](/Users/luo/Documents/github/K-ToME/game/src/main/kotlin/com/ktome/game/PlayerResourceService.kt)
    - 删除 `syncStaminaPoolFromComponent` 等兼容追赶逻辑
-   - 如果类型名不再准确，可顺手重命名为 `PlayerResourceService`
+   - 玩家正式资源池合同的 fail-fast 校验位于 `game` 的 load 边界，而不是 `core.save`；原因是职业到主资源的映射属于 `game schema` 责任
 11. [SessionSnapshotMapper.kt](/Users/luo/Documents/github/K-ToME/game/src/main/kotlin/com/ktome/game/SessionSnapshotMapper.kt)
    - capture/restore 只处理 `resourcePools`
 
@@ -1016,6 +1016,12 @@ data class RunSummary(
 
 只在后续要明显增强物品体验时再启动，决定 `25 visual / 13 audio` debug budget 是否需要升级为正式资产。
 
+当前已触发并执行的决策是：
+
+1. 由于 `Stage C / PR-C2` 已把 `material / affix` 明确带入 inspect、inventory list 与 log token 的正式玩家路径，继续让这批 key 停留在 `missing_visual / silence.ogg` debug budget 中会让“正式语义已成立、资源仍算可降级”这两套口径并存
+2. 因此 `Phase 2` 当前集合内的 `affix / material / difficulty` key 统一升级为 minimal formal assets
+3. 本次 formalization 只要求脱离 fallback budget，并允许复用现有正式图片/音频；更细粒度的专属 affix/material 资产制作继续留给 `Phase 3/4`
+
 **为什么放到最后**
 
 1. 当前它们不阻塞任何 Phase 2 完成态 gate
@@ -1026,6 +1032,8 @@ data class RunSummary(
 1. Stage C（PR-C2）要求在 UI 中明确展示 material / affix，发现 placeholder 视觉严重影响体验
 2. 或 Phase 3 内容包准备显著扩展装备生态
 
+当前采用的是触发条件 1。
+
 **验证**
 
 当前这 4 个 lint task 都已作为 root Gradle task 存在：
@@ -1033,6 +1041,11 @@ data class RunSummary(
 - `./gradlew styleLint`
 - `./gradlew audioLint`
 - `./gradlew manifestLint`
+
+完成态预期：
+
+1. `phase2PlaceholderBudget` 从 `25` 收敛到 `1`（仅保留 `missing_visual` sentinel）
+2. `phase2SilenceBudget` 从 `13` 收敛到 `1`（仅保留 `audio.fallback.silence` sentinel）
 
 ---
 
@@ -1101,7 +1114,7 @@ PR-E1 (可选资产 formalization，触发条件见 Stage E)
    - 它改 save/view 合同，是所有后续 PR 的新基线
 2. `PR-A2` 与 `PR-A3`
    - 前者改正式运行时真相，后者改升级编排 typed result；同时做只会放大定位成本
-3. `PR-A2` 与任何重 `FoundationGameSession.kt` / `PlayerResourcePools.kt` 的 PR
+3. `PR-A2` 与任何重 `FoundationGameSession.kt` / `PlayerResourceService.kt` 的 PR
    - 包括 `C1`、`D1`、以及任何试图提前落地的 runtime 反馈 PR
 4. `PR-C1` 与 `PR-D1`
    - 两者都可能影响战斗体验判断与 SoloClearLab 稳定性
@@ -1150,7 +1163,7 @@ PR-E1 (可选资产 formalization，触发条件见 Stage E)
 | PR | 推荐提交 1 | 推荐提交 2 | 推荐提交 3 | 推荐提交 4 |
 |----|-----------|-----------|-----------|-----------|
 | PR-A1 | 删除 stamina 专用合同字段 + 同步修复 `DataLoader/playerStatus/SessionSnapshotMapper/TalentSlotView` 直接编译断点 | save contract version 抬升 + codec / mapper 测试 | grep 清理旧字段引用 + `TalentResolverTest/SmokeBotTest/ScenarioModelsTest` fixture 迁移 | 文档同步 |
-| PR-A2 | 将全部 `Stamina` 组件读写点切换到 `ResourcePools`（`StatsCalculator/ExperienceSystem/InventoryManager/FoundationGameSession/PlayerResourcePools/SessionSnapshotMapper/factory`） | 删除 `Stamina` 组件定义 + `StaminaPools` 桥接语义 | 测试迁移（`StatsCalculatorTest/InventoryManagerTest/BossFactoryTest/EntityFactoryTest` 等） | save/load、SoloClearLab、longRunLab 集成验证 |
+| PR-A2 | 将全部 `Stamina` 组件读写点切换到 `ResourcePools`（`StatsCalculator/ExperienceSystem/InventoryManager/FoundationGameSession/PlayerResourceService/SessionSnapshotMapper/factory`） | 删除 `Stamina` 组件定义 + `StaminaPools` 桥接语义 | 测试迁移（`StatsCalculatorTest/InventoryManagerTest/BossFactoryTest/EntityFactoryTest` 等） | save/load、SoloClearLab、longRunLab 集成验证 |
 | PR-A3 | `ExperienceSystem` 改为返回 typed resolution | session 消费 typed progression 结果并完成回满/日志编排 | 升级/属性变化测试补齐 | 文档同步 |
 | PR-B1 | 怪物抗性数据填充 + schema/test 冻结 | session 日志 token 接线 | i18n + golden/update | 文档与 review 记录 |
 | PR-B2 | level-up / unlock / growth 日志接线 | i18n + game test | golden 或白盒记录 | — |

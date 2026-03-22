@@ -1,5 +1,7 @@
 package com.ktome.core.save
 
+import com.ktome.core.resource.ResourcePoolSnapshot
+
 internal object SaveFixtures {
     fun emptyScene(): SaveSnapshot =
         SaveSnapshot(
@@ -25,7 +27,6 @@ internal object SaveFixtures {
                             stats = StatsSnapshot(str = 10, dex = 10, con = 10, wil = 10),
                             combatProfile = CombatProfileSnapshot(baseAttack = 5, baseDefense = 2, baseHp = 50, baseStamina = 40),
                             healthCurrent = 50,
-                            staminaCurrent = 40,
                             energyCurrent = 0,
                             experience = ExperienceSnapshot(),
                             inventory = InventorySnapshot(capacity = 12),
@@ -37,6 +38,7 @@ internal object SaveFixtures {
                                     slotToTalentId = mapOf(1 to "power_strike"),
                                     talentLevels = mapOf("power_strike" to 1),
                                 ),
+                            resourcePools = listOf(ResourcePoolSnapshot(type = "STAMINA", current = 40, max = 40)),
                             isPlayerControlled = true,
                         ),
                 ),
@@ -114,8 +116,8 @@ internal object SaveFixtures {
                 PlayerSnapshot(
                     entity =
                         emptyScene().player.entity.copy(
-                            staminaCurrent = 23,
                             energyCurrent = 100,
+                            resourcePools = listOf(ResourcePoolSnapshot(type = "STAMINA", current = 23, max = 40)),
                             inventory = InventorySnapshot(capacity = 12, itemIds = listOf(21)),
                             equipment = EquipmentSnapshot(slots = mapOf("WEAPON" to 21)),
                             cooldowns = mapOf("power_strike" to 2),

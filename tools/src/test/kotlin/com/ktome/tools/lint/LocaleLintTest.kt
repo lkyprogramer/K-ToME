@@ -26,6 +26,7 @@ class LocaleLintTest {
                 "ui.",
                 "log.",
                 "tile.",
+                "damage_type.",
                 "actor.",
                 "stairs.",
                 "status.",

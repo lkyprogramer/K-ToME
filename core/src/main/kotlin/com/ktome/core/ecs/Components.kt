@@ -75,11 +75,6 @@ data class Health(
     var max: Int,
 )
 
-data class Stamina(
-    var current: Int,
-    var max: Int,
-)
-
 data class VisionRadius(val value: Int = 8)
 
 data class AttackProfile(val range: Int = 1)
@@ -110,6 +105,12 @@ data class AIBehavior(
     val preferredRange: IntRange
         get() = preferredRangeStart..preferredRangeEnd
 }
+
+data class AiTriggerTracker(
+    val consumedTriggerIds: MutableSet<String> = linkedSetOf(),
+    val pendingCombatStartTriggerIds: MutableSet<String> = linkedSetOf(),
+    var engagedInCombat: Boolean = false,
+)
 
 data class MonsterTemplateId(val value: String)
 

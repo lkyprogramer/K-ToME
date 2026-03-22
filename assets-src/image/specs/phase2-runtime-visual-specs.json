@@ -103,183 +103,197 @@
     {
       "key": "affix.of_fortitude.icon",
       "category": "icon",
-      "rawOutputPath": "debug/missing_visual.png",
+      "rawOutputPath": "phase2/p2-b/icon_skill_vanguard_guard_stance.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "fallback",
-        "placeholder",
-        "phase2"
+        "phase2",
+        "p2-opt",
+        "affix",
+        "defense"
       ]
     },
     {
       "key": "affix.of_fortitude.visual",
-      "category": "debug",
-      "rawOutputPath": "debug/missing_visual.png",
-      "footprint": "1x1",
+      "category": "icon",
+      "rawOutputPath": "phase2/p2-b/icon_skill_vanguard_guard_stance.png",
+      "footprint": "ui",
       "pivotX": 0.5,
-      "pivotY": 0.08,
+      "pivotY": 0.5,
       "tags": [
-        "fallback",
-        "placeholder",
-        "phase2"
+        "phase2",
+        "p2-opt",
+        "affix",
+        "defense"
       ]
     },
     {
       "key": "affix.of_life.icon",
       "category": "icon",
-      "rawOutputPath": "debug/missing_visual.png",
+      "rawOutputPath": "phase2/p2-b/icon_item_minor_healing_potion.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "fallback",
-        "placeholder",
-        "phase2"
+        "phase2",
+        "p2-opt",
+        "affix",
+        "life"
       ]
     },
     {
       "key": "affix.of_life.visual",
-      "category": "debug",
-      "rawOutputPath": "debug/missing_visual.png",
-      "footprint": "1x1",
+      "category": "icon",
+      "rawOutputPath": "phase2/p2-b/icon_item_minor_healing_potion.png",
+      "footprint": "ui",
       "pivotX": 0.5,
-      "pivotY": 0.08,
+      "pivotY": 0.5,
       "tags": [
-        "fallback",
-        "placeholder",
-        "phase2"
+        "phase2",
+        "p2-opt",
+        "affix",
+        "life"
       ]
     },
     {
       "key": "affix.of_speed.icon",
       "category": "icon",
-      "rawOutputPath": "debug/missing_visual.png",
+      "rawOutputPath": "phase2/p2-b/icon_skill_arcanist_blink.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "fallback",
-        "placeholder",
-        "phase2"
+        "phase2",
+        "p2-opt",
+        "affix",
+        "speed"
       ]
     },
     {
       "key": "affix.of_speed.visual",
-      "category": "debug",
-      "rawOutputPath": "debug/missing_visual.png",
-      "footprint": "1x1",
+      "category": "icon",
+      "rawOutputPath": "phase2/p2-b/icon_skill_arcanist_blink.png",
+      "footprint": "ui",
       "pivotX": 0.5,
-      "pivotY": 0.08,
+      "pivotY": 0.5,
       "tags": [
-        "fallback",
-        "placeholder",
-        "phase2"
+        "phase2",
+        "p2-opt",
+        "affix",
+        "speed"
       ]
     },
     {
       "key": "affix.of_strength.icon",
       "category": "icon",
-      "rawOutputPath": "debug/missing_visual.png",
+      "rawOutputPath": "phase2/p2-b/icon_skill_vanguard_power_strike.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "fallback",
-        "placeholder",
-        "phase2"
+        "phase2",
+        "p2-opt",
+        "affix",
+        "offense"
       ]
     },
     {
       "key": "affix.of_strength.visual",
-      "category": "debug",
-      "rawOutputPath": "debug/missing_visual.png",
-      "footprint": "1x1",
+      "category": "icon",
+      "rawOutputPath": "phase2/p2-b/icon_skill_vanguard_power_strike.png",
+      "footprint": "ui",
       "pivotX": 0.5,
-      "pivotY": 0.08,
+      "pivotY": 0.5,
       "tags": [
-        "fallback",
-        "placeholder",
-        "phase2"
+        "phase2",
+        "p2-opt",
+        "affix",
+        "offense"
       ]
     },
     {
       "key": "affix.sharp.icon",
       "category": "icon",
-      "rawOutputPath": "debug/missing_visual.png",
+      "rawOutputPath": "phase2/p2-b/icon_item_short_sword.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "fallback",
-        "placeholder",
-        "phase2"
+        "phase2",
+        "p2-opt",
+        "affix",
+        "offense"
       ]
     },
     {
       "key": "affix.sharp.visual",
-      "category": "debug",
-      "rawOutputPath": "debug/missing_visual.png",
-      "footprint": "1x1",
+      "category": "icon",
+      "rawOutputPath": "phase2/p2-b/icon_item_short_sword.png",
+      "footprint": "ui",
       "pivotX": 0.5,
-      "pivotY": 0.08,
+      "pivotY": 0.5,
       "tags": [
-        "fallback",
-        "placeholder",
-        "phase2"
+        "phase2",
+        "p2-opt",
+        "affix",
+        "offense"
       ]
     },
     {
       "key": "affix.sturdy.icon",
       "category": "icon",
-      "rawOutputPath": "debug/missing_visual.png",
+      "rawOutputPath": "phase2/p2-b/icon_item_basic_shield.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "fallback",
-        "placeholder",
-        "phase2"
+        "phase2",
+        "p2-opt",
+        "affix",
+        "defense"
       ]
     },
     {
       "key": "affix.sturdy.visual",
-      "category": "debug",
-      "rawOutputPath": "debug/missing_visual.png",
-      "footprint": "1x1",
+      "category": "icon",
+      "rawOutputPath": "phase2/p2-b/icon_item_basic_shield.png",
+      "footprint": "ui",
       "pivotX": 0.5,
-      "pivotY": 0.08,
+      "pivotY": 0.5,
       "tags": [
-        "fallback",
-        "placeholder",
-        "phase2"
+        "phase2",
+        "p2-opt",
+        "affix",
+        "defense"
       ]
     },
     {
       "key": "affix.swift.icon",
       "category": "icon",
-      "rawOutputPath": "debug/missing_visual.png",
+      "rawOutputPath": "phase2/p2-c/icon_skill_rogue_shadowstep.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "fallback",
-        "placeholder",
-        "phase2"
+        "phase2",
+        "p2-opt",
+        "affix",
+        "speed"
       ]
     },
     {
       "key": "affix.swift.visual",
-      "category": "debug",
-      "rawOutputPath": "debug/missing_visual.png",
-      "footprint": "1x1",
+      "category": "icon",
+      "rawOutputPath": "phase2/p2-c/icon_skill_rogue_shadowstep.png",
+      "footprint": "ui",
       "pivotX": 0.5,
-      "pivotY": 0.08,
+      "pivotY": 0.5,
       "tags": [
-        "fallback",
-        "placeholder",
-        "phase2"
+        "phase2",
+        "p2-opt",
+        "affix",
+        "speed"
       ]
     },
     {
@@ -313,27 +327,27 @@
     {
       "key": "difficulty.normal.icon",
       "category": "icon",
-      "rawOutputPath": "debug/missing_visual.png",
+      "rawOutputPath": "phase2/p2-b/icon_damage_type_physical.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "fallback",
-        "placeholder",
-        "phase2"
+        "phase2",
+        "p2-opt",
+        "difficulty"
       ]
     },
     {
       "key": "difficulty.normal.visual",
-      "category": "debug",
-      "rawOutputPath": "debug/missing_visual.png",
-      "footprint": "1x1",
+      "category": "icon",
+      "rawOutputPath": "phase2/p2-b/icon_damage_type_physical.png",
+      "footprint": "ui",
       "pivotX": 0.5,
-      "pivotY": 0.08,
+      "pivotY": 0.5,
       "tags": [
-        "fallback",
-        "placeholder",
-        "phase2"
+        "phase2",
+        "p2-opt",
+        "difficulty"
       ]
     },
     {
@@ -1203,105 +1217,113 @@
     {
       "key": "material.adamantite.icon",
       "category": "icon",
-      "rawOutputPath": "debug/missing_visual.png",
+      "rawOutputPath": "phase2/p2-c/icon_item_battle_axe.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "fallback",
-        "placeholder",
-        "phase2"
+        "phase2",
+        "p2-opt",
+        "material",
+        "adamantite"
       ]
     },
     {
       "key": "material.adamantite.visual",
-      "category": "debug",
-      "rawOutputPath": "debug/missing_visual.png",
-      "footprint": "1x1",
+      "category": "icon",
+      "rawOutputPath": "phase2/p2-c/icon_item_battle_axe.png",
+      "footprint": "ui",
       "pivotX": 0.5,
-      "pivotY": 0.08,
+      "pivotY": 0.5,
       "tags": [
-        "fallback",
-        "placeholder",
-        "phase2"
+        "phase2",
+        "p2-opt",
+        "material",
+        "adamantite"
       ]
     },
     {
       "key": "material.iron.icon",
       "category": "icon",
-      "rawOutputPath": "debug/missing_visual.png",
+      "rawOutputPath": "phase2/p2-b/icon_item_short_sword.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "fallback",
-        "placeholder",
-        "phase2"
+        "phase2",
+        "p2-opt",
+        "material",
+        "iron"
       ]
     },
     {
       "key": "material.iron.visual",
-      "category": "debug",
-      "rawOutputPath": "debug/missing_visual.png",
-      "footprint": "1x1",
+      "category": "icon",
+      "rawOutputPath": "phase2/p2-b/icon_item_short_sword.png",
+      "footprint": "ui",
       "pivotX": 0.5,
-      "pivotY": 0.08,
+      "pivotY": 0.5,
       "tags": [
-        "fallback",
-        "placeholder",
-        "phase2"
+        "phase2",
+        "p2-opt",
+        "material",
+        "iron"
       ]
     },
     {
       "key": "material.mithril.icon",
       "category": "icon",
-      "rawOutputPath": "debug/missing_visual.png",
+      "rawOutputPath": "phase2/p2-b/icon_item_arcane_staff.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "fallback",
-        "placeholder",
-        "phase2"
+        "phase2",
+        "p2-opt",
+        "material",
+        "mithril"
       ]
     },
     {
       "key": "material.mithril.visual",
-      "category": "debug",
-      "rawOutputPath": "debug/missing_visual.png",
-      "footprint": "1x1",
+      "category": "icon",
+      "rawOutputPath": "phase2/p2-b/icon_item_arcane_staff.png",
+      "footprint": "ui",
       "pivotX": 0.5,
-      "pivotY": 0.08,
+      "pivotY": 0.5,
       "tags": [
-        "fallback",
-        "placeholder",
-        "phase2"
+        "phase2",
+        "p2-opt",
+        "material",
+        "mithril"
       ]
     },
     {
       "key": "material.steel.icon",
       "category": "icon",
-      "rawOutputPath": "debug/missing_visual.png",
+      "rawOutputPath": "phase2/p2-c/icon_item_long_sword.png",
       "footprint": "ui",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "fallback",
-        "placeholder",
-        "phase2"
+        "phase2",
+        "p2-opt",
+        "material",
+        "steel"
       ]
     },
     {
       "key": "material.steel.visual",
-      "category": "debug",
-      "rawOutputPath": "debug/missing_visual.png",
-      "footprint": "1x1",
+      "category": "icon",
+      "rawOutputPath": "phase2/p2-c/icon_item_long_sword.png",
+      "footprint": "ui",
       "pivotX": 0.5,
-      "pivotY": 0.08,
+      "pivotY": 0.5,
       "tags": [
-        "fallback",
-        "placeholder",
-        "phase2"
+        "phase2",
+        "p2-opt",
+        "material",
+        "steel"
       ]
     },
     {

@@ -20,13 +20,18 @@ import com.ktome.core.map.BspGenerator
 import com.ktome.core.map.Point
 import com.ktome.core.map.Room
 import com.ktome.core.random.SplitMix64RandomSource
+import com.ktome.core.resource.ResourceType
 import com.ktome.core.save.InvalidSaveException
+import com.ktome.core.save.PlayerSnapshot
 import com.ktome.core.save.SaveManager
 import com.ktome.core.save.PointSnapshot
 import com.ktome.core.snapshot.RenderLogEventSnapshot
 import com.ktome.core.snapshot.RenderTextArgumentSnapshot
 import com.ktome.core.snapshot.RenderTextTokenSnapshot
 import com.ktome.game.data.DataLoader
+import com.ktome.game.data.schema.AIProfileSchemaV2
+import com.ktome.game.data.schema.AITriggerActionKindSchemaV2
+import com.ktome.game.data.schema.AITriggerConditionKindSchemaV2
 import com.ktome.game.data.schema.SchemaCatalog
 import com.ktome.game.data.schema.SchemaCombatProfile
 import com.ktome.game.i18n.GameLocale
@@ -48,6 +53,10 @@ import com.ktome.game.data.schema.ZoneSchemaV2
 
 object GameModule {
     private const val DEFAULT_ROUTE_VISIBILITY_RADIUS = 8
+
+    fun availableProfessionIds(
+        locale: GameLocale = GameLocale.DEFAULT,
+    ): List<String> = DataLoader(locale).loadSchemaCatalog().professions.map(ProfessionSchemaV2::id)
 
     fun newFoundationSession(
         config: FoundationGameConfig = FoundationGameConfig(),
@@ -83,20 +92,12 @@ object GameModule {
     ): FoundationGameSession? {
         val snapshot = saveManager.load() ?: return null
         val loader = DataLoader(locale)
-        val schemaCatalog = loader.loadSchemaCatalog()
-        val talents = loader.loadTalentDefinitions()
         val restored = SessionSnapshotMapper.fromSaveSnapshot(snapshot)
-        val content =
-            GameContent(
-                talents = talents,
-                talentRegistry = com.ktome.core.talent.TalentRegistry().apply { registerAll(talents) },
-                monsterCatalog = loader.loadMonsterCatalog().monsters,
-                itemBundle = loader.loadItemBundle(),
-                bossDefinitions = loader.loadBossDefinitions(),
-                schemaCatalog = schemaCatalog,
-                localizer = loader.localizer,
-            )
+        val content = buildContent(loader)
+        val schemaCatalog = content.schemaCatalog
         validateLoadedSessionConfig(restored.config, schemaCatalog)
+        val profession = resolveProfession(schemaCatalog, restored.config.playerProfessionId)
+        validateLoadedPlayerResourceContract(restored.player, profession)
         val zone = resolveZone(schemaCatalog, restored.config.zoneId)
         val sessionConfig =
             restored.config.copy(
@@ -171,6 +172,10 @@ object GameModule {
 
     private fun loadContent(locale: GameLocale): GameContent {
         val loader = DataLoader(locale)
+        return buildContent(loader)
+    }
+
+    private fun buildContent(loader: DataLoader): GameContent {
         val schemaCatalog = loader.loadSchemaCatalog()
         val talents = loader.loadTalentDefinitions()
         return GameContent(
@@ -181,7 +186,7 @@ object GameModule {
             bossDefinitions = loader.loadBossDefinitions(),
             schemaCatalog = schemaCatalog,
             localizer = loader.localizer,
-        )
+        ).also(::validateAiProfileContracts)
     }
 
     private fun initialMessagesForZone(
@@ -220,7 +225,7 @@ object GameModule {
             )
         installStarterKit(world, playerId, resolveStarterItems(content, profession))
         StatsCalculator.recalculateAndStore(world, playerId)
-        PlayerResourcePools.ensureInitialized(world, playerId, profession)
+        PlayerResourceService.ensureInitialized(world, playerId, profession)
         return SessionSnapshotMapper.capturePlayer(world, playerId)
     }
 
@@ -827,6 +832,70 @@ object GameModule {
         }
     }
 
+    private fun validateLoadedPlayerResourceContract(
+        player: PlayerSnapshot,
+        profession: ProfessionSchemaV2,
+    ) {
+        val availablePoolTypes = player.entity.resourcePools.map { pool -> pool.type }.toSet()
+        val missingPoolTypes = requiredPlayerResourcePoolTypes(profession).filterNot(availablePoolTypes::contains)
+        if (missingPoolTypes.isNotEmpty()) {
+            throw InvalidSaveException(
+                "Save player entity is missing required resource pools $missingPoolTypes for profession '${profession.id}'.",
+            )
+        }
+    }
+
+    private fun requiredPlayerResourcePoolTypes(profession: ProfessionSchemaV2): Set<String> =
+        linkedSetOf<String>().apply {
+            add(ResourceType.STAMINA.name)
+            add(profession.resourceType)
+        }
+
+    private fun validateAiProfileContracts(content: GameContent) {
+        val talentIds = content.talents.map { talent -> talent.id }.toSet()
+        val profilesById = content.schemaCatalog.aiProfiles.associateBy(AIProfileSchemaV2::id)
+        content.schemaCatalog.aiProfiles.forEach { profile ->
+            require(profile.triggers.distinctBy { trigger -> trigger.triggerId }.size == profile.triggers.size) {
+                "AI profile '${profile.id}' contains duplicate trigger ids."
+            }
+            profile.triggers.forEach { trigger ->
+                require(trigger.triggerId.isNotBlank()) { "AI trigger ids must not be blank in profile '${profile.id}'." }
+                when (trigger.condition) {
+                    AITriggerConditionKindSchemaV2.ON_COMBAT_START -> {
+                        require(trigger.threshold == null) {
+                            "AI trigger '${trigger.triggerId}' in profile '${profile.id}' must not declare threshold for onCombatStart."
+                        }
+                    }
+
+                    AITriggerConditionKindSchemaV2.HP_BELOW_RATIO -> {
+                        require(trigger.threshold != null && trigger.threshold in 0.0..1.0 && trigger.threshold > 0.0) {
+                            "AI trigger '${trigger.triggerId}' in profile '${profile.id}' must declare threshold within (0.0, 1.0]."
+                        }
+                    }
+                }
+                require(trigger.action == AITriggerActionKindSchemaV2.FORCE_TALENT) {
+                    "AI trigger '${trigger.triggerId}' in profile '${profile.id}' must use forceTalent."
+                }
+                require(trigger.talentId in talentIds) {
+                    "AI trigger '${trigger.triggerId}' in profile '${profile.id}' references unknown talent '${trigger.talentId}'."
+                }
+                require(trigger.postMessageKey != null || trigger.postMessageArgs.isEmpty()) {
+                    "AI trigger '${trigger.triggerId}' in profile '${profile.id}' declares postMessageArgs without postMessageKey."
+                }
+            }
+        }
+        content.allMonsterTemplates().forEach { template ->
+            val profile = requireNotNull(profilesById[template.aiProfileId]) {
+                "Monster template '${template.id}' references unknown AI profile '${template.aiProfileId}'."
+            }
+            profile.triggers.forEach { trigger ->
+                require(template.talentLevels.containsKey(trigger.talentId)) {
+                    "Monster template '${template.id}' uses AI trigger '${trigger.triggerId}' for talent '${trigger.talentId}', but that talent is not configured on the monster."
+                }
+            }
+        }
+    }
+
     private fun routeValidationError(
         config: FoundationGameConfig,
         schemaCatalog: SchemaCatalog,
@@ -957,6 +1026,7 @@ object GameModule {
             effect = effect,
             resourceTypeId = resourceTypeId,
             magnitude = magnitude,
+            passive = passive,
         )
 
     private fun defaultSaveDir(): Path = Path.of(System.getProperty("user.home"), ".ktome")

@@ -47,14 +47,14 @@ class GoldenScreenshotHarnessTest {
 
         assertEquals(
             listOf(
-                "cbd1cf6fd0c151be171c66530fe6d893b271bc8bbe6cfc1c8e859f7df89f3a8c",
-                "b49bd4ecd50e89500d36651c222e1dfad39d419a0b40a3875e97ecc69bcfbdeb",
-                "650801a7d00963c7e09796c697580123209b5eb34587610bda439a6cb97b6f0e",
-                "0bda13335140bfd09c4dc7152e0395d7bab1091470af0b5aebf516d1a014060c",
-                "919c7b610f3fee94eeecb68375faadb8b2a05f55075e4b876c0513ade396acf7",
-                "cd669ef5522a58bddc655e72f919ef8910bd058fc91fb5bb3774cf2171e8d306",
-                "3ba36554c35a7a5614be5a5861cbc017578fdda551f3a229d9204af31d912a1a",
-                "4c5f5e6cd50bdc83718669f20f8e137e5530d2c852ba4865921f4d1c8ede3d3f",
+                "820a41898093a475e4a32e72925e32b07268d2130ff1af55b63ad2926adeae33",
+                "5f1d0a0beefe35591632a36775affbe7888ad7f8388b0f0e26b826744fe1129d",
+                "f80ad05054066dc3269b3521adbd9af18d3f4feb3ad61755a3f0695aa2c62e40",
+                "7e86ed2a97316e35f70438b676a96ee2faaa9d2e61a6b65c96ac2635a27d56a2",
+                "3ef9508e890a818d8d80ee5e2d09486007b647fa1d14413b854548931e8bbdbb",
+                "6a0d93bde0b6058c725a9ccb06f2ec3b437669ce69ccc2df80ac40b2ee6c9b67",
+                "2cf6ff321b1c3abc1e074943445a1cba2fc5406054ea1958fad5207f7c5ea2bd",
+                "470c23e05d96ba48099b0543ab5dbc6002fd321fc58026e4a976bd8589d1feeb",
             ),
             english + chinese,
         )
@@ -67,8 +67,8 @@ class GoldenScreenshotHarnessTest {
 
         assertEquals(
             listOf(
-                "70174807734c4ba72ce65504b4870f83b42dde2dc7ed6bd83091a1126680023d",
-                "b0e2ca943e139d44eb51f5a97a28d9660fc8b34953e2d26fd63ce0e6a2bfe55b",
+                "ac51ba53b925c41690275ef69fc077d3a6d3f0b570928dd2ddceee7149b53f78",
+                "8e4acbf07a3563abf6510557147aa5175cda0359bdf7cff38b6ca4ed69e21f1e",
             ),
             listOf(english, chinese),
         )
@@ -81,12 +81,28 @@ class GoldenScreenshotHarnessTest {
 
         assertEquals(
             listOf(
-                "deb6d72c942fbb9ee7e28c33d2216533fbbf99227e3fc20980da9009f43978f9",
-                "7c1115992f3466004504ba7b2241cc433865a2940db422177649443b38547dbe",
+                "7ea2a898a69c4004cd508b557d142c067160a7ce8c51eaf46233a0d5b82644c5",
+                "82bb30ac7c565acd07ecbc5ae708ee4a31ebb3ec956916ad020ab6205d947460",
                 "086a00c58a1092862105214b197a2c0cdc733ec56d309f72ae91c6ff5875c753",
-                "c4a1412ce651c3f7245f77f4d40e3e4af0bde5f5f709ac518182983603a3f278",
-                "6776aa8892ad4e749f8f9d53993d2c210ed5bf0c38791e644ff6c682a2672c42",
-                "565ea214eecfd4c57807e68e662a2659b72bb77788e9ce840e807abc9b6213de",
+                "31c00678f72b3937cb08a34954c6bc2c90cead3743e7b8c9e88c797c64f647e2",
+                "f0164cdd7d72451810e92ecbfde126db1826fe3b7149442154eb93d14ff62911",
+                "1b7bea26db556726694f74d4a5761a8a5ae420364e34ac16ea7d78bea2f2b4e8",
+            ),
+            english + chinese,
+        )
+    }
+
+    @Test
+    fun `outcome recap golden hashes remain stable for english and chinese`() {
+        val english = captureOutcomeSet(GameLocale.EN_US, "outcome-en")
+        val chinese = captureOutcomeSet(GameLocale.ZH_CN, "outcome-zh")
+
+        assertEquals(
+            listOf(
+                "6f2b6ca634c01f6c86b868148ec92347ec89a4a43c13b40cede0c9bb2a83fc65",
+                "c8f83fe0a33039f71c8dbc4e5b3c5162a0667beed8d2e5ceacd1b8a4bb970e37",
+                "b8d0501796817d28853fd81302c4e48ecaf3ba50782b26c4064b403c5d9981f3",
+                "7f418c9f08973502e7123d485120b602979f18ef0cf36ca550722c35c2e7d38c",
             ),
             english + chinese,
         )
@@ -222,6 +238,63 @@ class GoldenScreenshotHarnessTest {
             }
         }
 
+    private fun captureOutcomeSet(
+        locale: GameLocale,
+        saveFolderName: String,
+    ): List<String> =
+        withLwjgl3Context(width = 1280, height = 800) {
+            val overlaySource = MutableOverlayCommandSource()
+            val app =
+                GameApp(
+                    saveManager = SaveManager(tempDir.resolve(saveFolderName)),
+                    defaultConfig =
+                        FoundationGameConfig(
+                            seed = 20260322L,
+                            zoneId = "shattered_outpost",
+                            playerProfessionId = "vanguard",
+                        ),
+                    menuInputSourceFactory = { NoOpInputSource },
+                    gameCommandSourceFactory = { overlaySource },
+                    outcomeInputSourceFactory = { NoOpInputSource },
+                    renderEnabled = true,
+                    initialLocale = locale,
+                )
+
+            try {
+                app.create()
+                val defeatHash =
+                    run {
+                        app.startNewGame()
+                        val defeatSession = requireNotNull(app.activeSessionOrNull()) { "Expected an active session for defeat golden capture." }
+                        automationForceDefeatPlayer(defeatSession)
+                        app.showOutcome(defeatSession)
+                        captureHash { repeat(2) { app.render() } }
+                    }
+                val victoryHash =
+                    run {
+                        app.startNewGame()
+                        val victorySession = requireNotNull(app.activeSessionOrNull()) { "Expected an active session for victory golden capture." }
+                        val stairsDown = requireNotNull(automationStairPoint(victorySession, StairDirection.DOWN)) { "Expected downstairs for victory golden capture." }
+                        automationMovePlayerTo(victorySession, stairsDown)
+                        app.render()
+                        check(victorySession.perform(PlayerCommand.Descend)) { "Failed to descend for victory golden capture in locale ${locale.id}." }
+                        app.render()
+                        val bossId = requireNotNull(automationEntityByTemplateId(victorySession, "bandit.captain")) { "Expected bandit captain for victory golden capture." }
+                        val bossPoint = requireNotNull(automationWorld(victorySession).get<Position>(bossId)) { "Expected boss position for victory golden capture." }.toPoint()
+                        requireNotNull(automationWorld(victorySession).get<com.ktome.core.ecs.Health>(bossId)).current = 1
+                        val attackOrigin = if (bossPoint.x > 0) Point(bossPoint.x - 1, bossPoint.y) else Point(bossPoint.x + 1, bossPoint.y)
+                        automationMovePlayerTo(victorySession, attackOrigin)
+                        app.render()
+                        check(victorySession.perform(PlayerCommand.Move(bossPoint - attackOrigin))) { "Failed to finish boss for victory golden capture in locale ${locale.id}." }
+                        app.showOutcome(victorySession)
+                        captureHash { repeat(2) { app.render() } }
+                    }
+                listOf(defeatHash, victoryHash)
+            } finally {
+                app.dispose()
+            }
+        }
+
     private fun captureHash(render: () -> Unit): String {
         render()
         Gdx.gl.glFinish()
@@ -347,6 +420,10 @@ private fun automationEntityByTemplateId(
     templateId: String,
 ): EntityId? =
     invokeSessionInternal(session, "automationEntityByTemplateId", arrayOf(String::class.java), templateId) as EntityId?
+
+private fun automationForceDefeatPlayer(session: FoundationGameSession) {
+    invokeSessionInternal(session, "automationForceDefeatPlayer")
+}
 
 private fun invokeSessionInternal(
     session: FoundationGameSession,

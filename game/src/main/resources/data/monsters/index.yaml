@@ -35,7 +35,7 @@ monsters:
     color: "#C8C8C8"
     stats: { str: 5, dex: 10, con: 5, wil: 2 }
     baseHp: 18
-    baseAttack: 7
+    baseAttack: 4
     baseDefense: 1
     speed: 100
     ai: KITE
@@ -110,7 +110,7 @@ monsters:
     ai: CHASE
     aiProfileId: ai.boss.dungeon_lord
     lootProfileId: loot.foundation.boss
-    talents: { war_cry: 3, power_strike: 4 }
+    talents: { war_cry: 3, power_strike: 4, charge: 2 }
     expReward: 300
     spawnFloors: [5]
     spawnWeight: 1
@@ -196,7 +196,7 @@ monsters:
     color: "#A67952"
     stats: { str: 6, dex: 11, con: 5, wil: 3 }
     baseHp: 20
-    baseAttack: 8
+    baseAttack: 7
     baseDefense: 1
     speed: 100
     ai: KITE
@@ -225,6 +225,7 @@ monsters:
     ai: CHASE
     aiProfileId: ai.chase.basic
     lootProfileId: loot.foundation.common
+    resistances: { HOLY: -20, SHADOW: 15 }
     talents: {}
     expReward: 30
     spawnFloors: [1, 2]
@@ -242,7 +243,7 @@ monsters:
     color: "#B7B7B7"
     stats: { str: 9, dex: 6, con: 10, wil: 3 }
     baseHp: 34
-    baseAttack: 9
+    baseAttack: 8
     baseDefense: 4
     speed: 90
     ai: CHASE
@@ -264,14 +265,14 @@ monsters:
     glyph: "B"
     color: "#C77C3A"
     stats: { str: 14, dex: 10, con: 12, wil: 6 }
-    baseHp: 72
-    baseAttack: 9
-    baseDefense: 3
+    baseHp: 48
+    baseAttack: 8
+    baseDefense: 1
     speed: 100
     ai: CHASE
     aiProfileId: ai.boss.bandit_captain
     lootProfileId: loot.foundation.boss
-    talents: { war_cry: 1, shield_bash: 1, power_strike: 2 }
+    talents: { war_cry: 1, shield_bash: 1, power_strike: 2, charge: 1 }
     expReward: 220
     spawnFloors: [2]
     spawnWeight: 1
@@ -296,6 +297,7 @@ monsters:
     ai: CHASE
     aiProfileId: ai.guard.basic
     lootProfileId: loot.foundation.common
+    resistances: { FIRE: -10, SHADOW: 10 }
     talents: {}
     expReward: 24
     spawnFloors: [1, 2]
@@ -396,7 +398,8 @@ monsters:
     ai: PATROL
     aiProfileId: ai.elite.huntmaster
     lootProfileId: loot.foundation.elite
-    talents: {}
+    resistances: { FIRE: -10, COLD: 10 }
+    talents: { power_strike: 2 }
     expReward: 58
     spawnFloors: [2, 3]
     spawnWeight: 3
@@ -421,6 +424,7 @@ monsters:
     ai: CHASE
     aiProfileId: ai.guard.basic
     lootProfileId: loot.foundation.common
+    resistances: { FIRE: 15, COLD: -10 }
     talents: {}
     expReward: 46
     spawnFloors: [3, 4]
@@ -446,6 +450,7 @@ monsters:
     ai: KITE
     aiProfileId: ai.controller.pressure
     lootProfileId: loot.foundation.common
+    resistances: { FIRE: 20, HOLY: -15 }
     talents: {}
     expReward: 40
     spawnFloors: [3, 4]
@@ -496,7 +501,7 @@ monsters:
     ai: CHASE
     aiProfileId: ai.elite.forge_guard
     lootProfileId: loot.foundation.elite
-    talents: {}
+    talents: { war_cry: 2, shield_bash: 2 }
     expReward: 72
     spawnFloors: [4]
     spawnWeight: 3

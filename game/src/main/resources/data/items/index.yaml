@@ -389,6 +389,7 @@ items:
     color: "#8A7148"
     baseDefense: 1
     stats: { dex: 1, critChance: 0.04, accuracy: 1 }
+    passive: { kind: DamageVsTag, tag: bandit, bonusPercent: 0.15 }
     dropFloors: [2, 3]
     dropWeight: 4
   - id: emerald_charm
@@ -405,6 +406,7 @@ items:
     color: "#4F8F6B"
     baseDefense: 1
     stats: { wil: 1, evasion: 1, talentPower: 0.05 }
+    passive: { kind: HpRegenPerTurn, amount: 2 }
     dropFloors: [2, 3, 4]
     dropWeight: 4
   - id: furnace_talisman
@@ -421,6 +423,7 @@ items:
     color: "#8C5E3C"
     baseDefense: 2
     stats: { con: 1, maxStamina: 8, attack: 1 }
+    passive: { kind: DamageTypeBonus, damageType: FIRE, bonusPercent: 0.15 }
     dropFloors: [3, 4]
     dropWeight: 4
   - id: seal_reliquary
@@ -437,6 +440,7 @@ items:
     color: "#7B728E"
     baseDefense: 2
     stats: { wil: 1, defense: 1, talentPower: 0.06 }
+    passive: { kind: ResistanceBonus, damageType: SHADOW, amount: 10 }
     dropFloors: [4, 5]
     dropWeight: 3
   - id: sanctified_seal

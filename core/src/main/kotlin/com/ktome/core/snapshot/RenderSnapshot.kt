@@ -190,12 +190,17 @@ data class InventoryEntrySnapshot(
 data class ItemRenderSnapshot(
     val baseItemId: String,
     val nameKey: String,
+    val displayName: RenderTextTokenSnapshot? = null,
     val descKey: String? = null,
     val typeId: String,
     val visualKey: String? = null,
     val iconKey: String? = null,
     val audioProfile: String? = null,
     val slotId: String? = null,
+    val qualityNameKey: String? = null,
+    val materialNameKey: String? = null,
+    val affixNameKeys: List<String> = emptyList(),
+    val passiveDescriptions: List<RenderTextTokenSnapshot> = emptyList(),
     val stats: ItemStatModifierSnapshot = ItemStatModifierSnapshot(),
     val effectTypeId: String? = null,
     val magnitude: Int = 0,
@@ -225,6 +230,7 @@ data class RenderTextArgumentSnapshot(
     val name: String,
     val value: String? = null,
     val valueKey: String? = null,
+    val valueToken: RenderTextTokenSnapshot? = null,
 )
 
 @Serializable
