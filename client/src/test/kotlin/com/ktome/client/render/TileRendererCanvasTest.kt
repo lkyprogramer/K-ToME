@@ -12,11 +12,16 @@ import com.ktome.client.input.UiMode
 import com.ktome.core.snapshot.ActorRenderSnapshot
 import com.ktome.core.snapshot.ActorRoleKindSnapshot
 import com.ktome.core.snapshot.CellVisibilitySnapshot
+import com.ktome.core.snapshot.GridPointSnapshot
+import com.ktome.core.snapshot.ItemRenderSnapshot
 import com.ktome.core.snapshot.MapCellSnapshot
 import com.ktome.core.snapshot.PlayerStatusSnapshot
 import com.ktome.core.snapshot.RenderMetadataSnapshot
 import com.ktome.core.snapshot.RenderSnapshot
+import com.ktome.core.snapshot.RenderTextArgumentSnapshot
+import com.ktome.core.snapshot.RenderTextTokenSnapshot
 import com.ktome.core.snapshot.RenderUiStateSnapshot
+import com.ktome.core.snapshot.TalentSlotSnapshot
 import com.ktome.game.i18n.GameLocale
 import com.ktome.game.i18n.LocalizationBundle
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -137,6 +142,103 @@ class TileRendererCanvasTest {
         assertTrue(metrics.logX > metrics.infoX + metrics.infoWidth + 40f)
     }
 
+    @Test
+    fun `render model surfaces talent use and targeting hints in map mode`() {
+        val localizer = LocalizationBundle.load().translator(GameLocale.EN_US)
+        val model =
+            TileRenderer.buildRenderModel(
+                localizer = localizer,
+                visualResolver = sampleResolver(),
+                snapshot =
+                    sampleSnapshot(
+                        talents =
+                            listOf(
+                                TalentSlotSnapshot(
+                                    slot = 1,
+                                    talentId = "fireball",
+                                    nameKey = "talent.arcanist.fireball.name",
+                                    level = 1,
+                                    maxLevel = 5,
+                                    resourceCost = 12,
+                                    resourceLabelKey = "ui.hud.mana.short",
+                                    resourceTypeId = "MANA",
+                                    range = 4,
+                                    minRange = 1,
+                                    currentCooldown = 0,
+                                    maxCooldown = 4,
+                                    requiresTarget = true,
+                                ),
+                            ),
+                    ),
+                overlayState = OverlayState(mode = UiMode.MAP),
+            )
+
+        assertTrue(model.sidebar.rows.any { row -> row.text == "1-4 use talent" })
+        assertTrue(model.sidebar.rows.any { row -> row.text == "Targeted talent: move cursor, Enter confirm" })
+        assertTrue(model.hud.hotbar.single().resourceText.contains("AIM 4"))
+    }
+
+    @Test
+    fun `inspect sidebar uses composed item display name`() {
+        val localizer = LocalizationBundle.load().translator(GameLocale.EN_US)
+        val item =
+            ItemRenderSnapshot(
+                baseItemId = "short_sword",
+                nameKey = "item.short_sword.name",
+                displayName =
+                    RenderTextTokenSnapshot(
+                        key = "item.display.composed",
+                        arguments =
+                            listOf(
+                                RenderTextArgumentSnapshot(
+                                    name = "quality",
+                                    valueToken =
+                                        RenderTextTokenSnapshot(
+                                            key = "item.display.part.quality",
+                                            arguments = listOf(RenderTextArgumentSnapshot(name = "quality", valueKey = "item.quality.rare")),
+                                        ),
+                                ),
+                                RenderTextArgumentSnapshot(name = "prefix1", value = ""),
+                                RenderTextArgumentSnapshot(name = "prefix2", value = ""),
+                                RenderTextArgumentSnapshot(
+                                    name = "material",
+                                    valueToken =
+                                        RenderTextTokenSnapshot(
+                                            key = "item.display.part.material",
+                                            arguments = listOf(RenderTextArgumentSnapshot(name = "material", valueKey = "material.mithril.name")),
+                                        ),
+                                ),
+                                RenderTextArgumentSnapshot(name = "suffix1", value = ""),
+                                RenderTextArgumentSnapshot(name = "suffix2", value = ""),
+                                RenderTextArgumentSnapshot(name = "base", valueKey = "item.short_sword.name"),
+                            ),
+                    ),
+                typeId = "WEAPON",
+            )
+        val model =
+            TileRenderer.buildRenderModel(
+                localizer = localizer,
+                visualResolver = sampleResolver(),
+                snapshot =
+                    sampleSnapshot(
+                        cells =
+                            listOf(
+                                MapCellSnapshot(
+                                    x = 0,
+                                    y = 0,
+                                    visibility = CellVisibilitySnapshot.VISIBLE,
+                                    terrainTypeId = "floor",
+                                    terrainVisualKey = "tileset.test.ground_01",
+                                    items = listOf(item),
+                                ),
+                            ),
+                    ),
+                overlayState = OverlayState(mode = UiMode.INSPECT, inspectCursor = com.ktome.core.map.Point(0, 0)),
+            )
+
+        assertTrue(model.sidebar.rows.any { row -> row.text == "Rare Mithril Short Sword" })
+    }
+
     private fun sampleResolver(): VisualManifestResolver =
         VisualManifestResolver(
             manifest =
@@ -174,6 +276,7 @@ class TileRendererCanvasTest {
         width: Int = 1,
         height: Int = 1,
         cells: List<MapCellSnapshot>? = null,
+        talents: List<TalentSlotSnapshot> = emptyList(),
     ): RenderSnapshot =
         RenderSnapshot(
             metadata =
@@ -246,11 +349,11 @@ class TileRendererCanvasTest {
                             accuracy = 6,
                             evasion = 4,
                             speed = 100,
-                        ),
+                    ),
                     equipment = emptyList(),
-                    talents = emptyList(),
+                    talents = talents,
                     inventory = emptyList(),
-                    targetablePositions = emptyList(),
+                    targetablePositions = listOf(GridPointSnapshot(0, 0)),
                 ),
         )
 }

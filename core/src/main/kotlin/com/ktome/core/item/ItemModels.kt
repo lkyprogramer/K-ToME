@@ -1,5 +1,6 @@
 package com.ktome.core.item
 
+import com.ktome.core.combat.DamageType
 import com.ktome.core.ecs.EntityId
 
 enum class EquipSlot {
@@ -29,6 +30,27 @@ enum class ConsumableEffect {
     HEAL,
     TELEPORT,
     RESTORE_RESOURCE,
+}
+
+sealed interface EquipmentPassive {
+    data class DamageVsTag(
+        val tag: String,
+        val bonusPercent: Double,
+    ) : EquipmentPassive
+
+    data class HpRegenPerTurn(
+        val amount: Int,
+    ) : EquipmentPassive
+
+    data class DamageTypeBonus(
+        val type: DamageType,
+        val bonusPercent: Double,
+    ) : EquipmentPassive
+
+    data class ResistanceBonus(
+        val damageType: DamageType,
+        val amount: Int,
+    ) : EquipmentPassive
 }
 
 data class StatModifier(
@@ -105,6 +127,7 @@ data class ItemBaseDef(
     val effect: ConsumableEffect? = null,
     val resourceTypeId: String? = null,
     val magnitude: Int = 0,
+    val passive: EquipmentPassive? = null,
 )
 
 data class ItemDataBundle(
@@ -128,6 +151,7 @@ data class ItemInstance(
     val effect: ConsumableEffect? = null,
     val resourceTypeId: String? = null,
     val magnitude: Int = 0,
+    val passive: EquipmentPassive? = null,
 )
 
 data class Inventory(

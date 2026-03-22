@@ -2,10 +2,12 @@ package com.ktome.game
 
 import com.ktome.core.dungeon.FloorState
 import com.ktome.core.ecs.get
+import com.ktome.core.item.EquipmentPassive
 import com.ktome.core.map.GameMap
 import com.ktome.core.map.Point
 import com.ktome.core.resource.ResourcePoolSnapshot
 import com.ktome.core.save.ActiveEffectSnapshot
+import com.ktome.core.save.AiTriggerTrackerSnapshot
 import com.ktome.core.save.EntitySnapshot
 import com.ktome.core.save.EquipmentSnapshot
 import com.ktome.core.save.InventorySnapshot
@@ -18,11 +20,12 @@ import com.ktome.core.save.TalentLoadoutSnapshot
 import com.ktome.core.talent.TalentRegistry
 import com.ktome.game.data.DataLoader
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class SessionSnapshotMapperTest {
     @Test
-    fun `restore world prefers stamina resource pool over legacy stamina current`() {
+    fun `restore world preserves stamina resource pool current`() {
         val content = content()
         val player =
             PlayerSnapshot(
@@ -38,7 +41,6 @@ class SessionSnapshotMapperTest {
                                 baseHp = 50,
                                 baseStamina = 40,
                             ),
-                        staminaCurrent = 5,
                         resourcePools =
                             listOf(
                                 ResourcePoolSnapshot(type = "STAMINA", current = 23, max = 90),
@@ -56,12 +58,10 @@ class SessionSnapshotMapperTest {
 
         val world = SessionSnapshotMapper.restoreWorld(content, player, floor)
         val restoredPlayer = com.ktome.core.ecs.EntityId(1)
-        val stamina = requireNotNull(world.get<com.ktome.core.ecs.Stamina>(restoredPlayer))
         val pool = requireNotNull(requireNotNull(world.get<com.ktome.core.resource.ResourcePools>(restoredPlayer)).pool(com.ktome.core.resource.ResourceType.STAMINA))
 
-        assertEquals(23, stamina.current)
         assertEquals(23, pool.current)
-        assertEquals(stamina.max, pool.max)
+        assertEquals(90, pool.max)
     }
 
     @Test
@@ -212,6 +212,80 @@ class SessionSnapshotMapperTest {
         assertEquals("rogue", restored.config.playerProfessionId)
         assertEquals(FOUNDATION_ZONE_ROUTE, restored.config.zoneRoute)
         assertEquals(1, restored.config.routeIndex)
+    }
+
+    @Test
+    fun `restore item instance derives passive from base item schema instead of save payload`() {
+        val content = content()
+        val player =
+            PlayerSnapshot(
+                entity =
+                    EntitySnapshot(
+                        id = 1,
+                        position = PointSnapshot(1, 1),
+                        inventory = InventorySnapshot(capacity = 12, itemIds = listOf(21)),
+                        isPlayerControlled = true,
+                    ),
+                carriedEntities =
+                    listOf(
+                        EntitySnapshot(
+                            id = 21,
+                            itemState =
+                                ItemSnapshot(
+                                    baseId = "bandit_trophy",
+                                    type = "ARMOR",
+                                    slot = "OFF_HAND",
+                                    quality = "COMMON",
+                                    stats = StatModifierSnapshot(dex = 1, accuracy = 1),
+                                ),
+                        ),
+                    ),
+            )
+        val floor =
+            FloorRuntimeState(
+                map = GameMap.fromAscii(rows = listOf(".....", ".....", "....."), playerStart = Point(1, 1)),
+                stairsDown = Point(4, 1),
+                exploredTiles = linkedSetOf(Point(1, 1)),
+                entities = mutableListOf(),
+            )
+
+        val world = SessionSnapshotMapper.restoreWorld(content, player, floor)
+        val itemId = requireNotNull(world.get<com.ktome.core.item.Inventory>(com.ktome.core.ecs.EntityId(1))).itemIds.single()
+        val restored = requireNotNull(world.get<com.ktome.core.item.ItemInstance>(itemId))
+
+        assertTrue(restored.passive is EquipmentPassive.DamageVsTag)
+        assertEquals("bandit", (restored.passive as EquipmentPassive.DamageVsTag).tag)
+        assertEquals(0.15, (restored.passive as EquipmentPassive.DamageVsTag).bonusPercent, 0.0001)
+    }
+
+    @Test
+    fun `restore world preserves ai trigger tracker state`() {
+        val content = content()
+        val player = PlayerSnapshot(entity = EntitySnapshot(id = 1, position = PointSnapshot(1, 1), isPlayerControlled = true))
+        val floor =
+            FloorRuntimeState(
+                map = GameMap.fromAscii(rows = listOf(".....", ".....", "....."), playerStart = Point(1, 1)),
+                exploredTiles = linkedSetOf(Point(1, 1)),
+                entities =
+                    mutableListOf(
+                        EntitySnapshot(
+                            id = 7,
+                            position = PointSnapshot(3, 1),
+                            monsterTemplateId = "cultist.dungeon_lord",
+                            aiTriggerTracker =
+                                AiTriggerTrackerSnapshot(
+                                    consumedTriggerIds = listOf("dungeon_lord_opening_war_cry"),
+                                    engagedInCombat = true,
+                                ),
+                        ),
+                    ),
+            )
+
+        val world = SessionSnapshotMapper.restoreWorld(content, player, floor)
+        val tracker = requireNotNull(world.get<com.ktome.core.ecs.AiTriggerTracker>(com.ktome.core.ecs.EntityId(7)))
+
+        assertTrue(tracker.engagedInCombat)
+        assertEquals(setOf("dungeon_lord_opening_war_cry"), tracker.consumedTriggerIds)
     }
 
     private fun content(): GameContent {

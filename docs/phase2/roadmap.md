@@ -46,7 +46,7 @@ Phase 2 的主题不是继续堆内容，而是先把 Phase 1 的最小可玩主
 当前需要用两条口径同时看：
 
 1. formal-path required key 当前已经做到 `visual = 0 missing_visual`、`audio = 0 silence.ogg`
-2. `phase2` 剩余 debug budget 仍有 `25` 条 visual placeholder、`13` 条 audio silence；这些不再与 required blocker 混算，但必须被显式统计
+2. `phase2` 剩余 debug budget 当前只保留 fallback sentinel 自身：`1` 条 visual placeholder（`missing_visual`）与 `1` 条 audio silence（`audio.fallback.silence`）；这些不再与 required blocker 混算，但必须被显式统计
 
 | 资源域 | 已有正式资产 | 已有 spec / manifest 但未收口 | 当前仍是 placeholder / silence |
 | --- | --- | --- | --- |
@@ -54,9 +54,9 @@ Phase 2 的主题不是继续堆内容，而是先把 Phase 1 的最小可玩主
 | Zone | `4 zone` 的 `visual / icon`、route prop、ambient/cue 已正式化 | route 主路径无新增 formal blocker | zone 主路径当前无 placeholder/silence blocker |
 | Boss | `bandit_captain` 与 `dungeon_lord` 的 actor / encounter visual / icon / cue 已进入正式主链 | 无新的 boss formal blocker | boss 主路径当前无 placeholder/silence blocker |
 | Objective / Interactable | route objective / interactable 已进入 runtime 主链 | 非主路径 objective 可以继续走预算 | 当前主路径 objective/interactable 无 silence blocker |
-| Reward / Item | `24` 物品矩阵与 signature reward 已进入主链 | affix / material 仍未决定是否升级为正式资产 | affix / material visual/audio 仍在 debug budget 中 |
+| Reward / Item | `24` 物品矩阵、signature reward、以及当前 `affix / material` key 集都已进入正式主链 | 更细粒度的专属 affix/material 资产仍可留待 Phase 3/4 扩展 | 当前 Phase 2 item 体验已不再依赖 affix/material placeholder |
 | Talent / Tree | `33` 个 talent skill icon/cue 与 `12` 棵 tree 的 `tree.* / icon.tree.*` 已进入正式主链 | 无新的职业树 formal blocker | visual budget 不再集中在 tree 主路径 |
-| Core UI Cue | `confirm / cancel / hover / footstep / melee / spell / boss.warning` 与 route cue 已成型 | 仍需把 required key 与 debug budget 的统计口径固定到 lint 输出 | 非 formal 条目可保留预算，但不能再与完成态 blocker 混算 |
+| Core UI Cue | `confirm / cancel / hover / footstep / melee / spell / boss.warning`、`difficulty.normal` 与 route cue 已成型 | 仍需把 required key 与 debug budget 的统计口径固定到 lint 输出 | 非 formal 条目可保留预算，但不能再与完成态 blocker 混算 |
 
 ## 6. 执行 Lane
 

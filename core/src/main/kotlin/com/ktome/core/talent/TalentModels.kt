@@ -4,33 +4,20 @@ import com.ktome.core.combat.DamageType
 import com.ktome.core.item.StatModifier
 import com.ktome.core.resource.ResourceType
 
-private fun defaultResourceCosts(staminaCost: Int): Map<ResourceType, Int> =
-    if (staminaCost > 0) {
-        linkedMapOf(ResourceType.STAMINA to staminaCost)
-    } else {
-        emptyMap()
-    }
-
 data class TalentDef(
     val id: String,
     val name: String,
     val description: String,
     val maxLevel: Int = 5,
     val damageType: DamageType = DamageType.PHYSICAL,
-    val staminaCost: Int = 0,
-    val resourceCosts: Map<ResourceType, Int> = defaultResourceCosts(staminaCost),
+    val resourceCosts: Map<ResourceType, Int> = emptyMap(),
     val cooldown: Int,
     val range: Int,
     val minRange: Int = 0,
     val areaRadius: Int = 0,
     val levelEffects: Map<Int, TalentLevelEffect>,
 ) {
-    fun resolvedResourceCosts(): Map<ResourceType, Int> =
-        if (resourceCosts.isNotEmpty()) {
-            resourceCosts.filterValues { cost -> cost > 0 }
-        } else {
-            defaultResourceCosts(staminaCost)
-        }
+    fun resolvedResourceCosts(): Map<ResourceType, Int> = resourceCosts.filterValues { cost -> cost > 0 }
 }
 
 data class TalentLevelEffect(

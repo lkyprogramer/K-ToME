@@ -3,7 +3,6 @@ package com.ktome.core.stats
 import com.ktome.core.ecs.CombatProfile
 import com.ktome.core.ecs.Health
 import com.ktome.core.ecs.Stats
-import com.ktome.core.ecs.Stamina
 import com.ktome.core.ecs.World
 import com.ktome.core.ecs.add
 import com.ktome.core.ecs.get
@@ -94,7 +93,6 @@ class StatsCalculatorTest {
         world.add(actor, CombatProfile(baseAttack = 5, baseDefense = 2, baseHp = 40, baseStamina = 20))
         world.add(actor, Equipment(slots = linkedMapOf(EquipSlot.ARMOR to armor)))
         world.add(actor, Health(current = 20, max = 120))
-        world.add(actor, Stamina(current = 7, max = 70))
         world.add(
             actor,
             ResourcePools(
@@ -121,7 +119,6 @@ class StatsCalculatorTest {
         assertEquals(140, derived.maxHp)
         assertEquals(80, derived.maxStamina)
         assertEquals(40, requireNotNull(world.get<Health>(actor)).current)
-        assertEquals(17, requireNotNull(world.get<Stamina>(actor)).current)
         assertEquals(17, requireNotNull(world.get<ResourcePools>(actor)).pool(ResourceType.STAMINA)?.current)
         assertEquals(80, requireNotNull(world.get<ResourcePools>(actor)).pool(ResourceType.STAMINA)?.max)
         assertTrue(requireNotNull(world.get<com.ktome.core.ecs.DerivedStats>(actor)).defense >= 7)

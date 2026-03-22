@@ -1,8 +1,9 @@
 package com.ktome.game.data
 
 import com.ktome.core.combat.DamageType
+import com.ktome.core.item.EquipmentPassive
 import com.ktome.game.i18n.GameLocale
-import com.ktome.core.talent.StatusEffectType
+import com.ktome.game.data.schema.AITriggerConditionKindSchemaV2
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -77,6 +78,8 @@ class SchemaV2LoaderTest {
         assertTrue(catalog.itemBundle.items.count { item -> "accessory" in item.tags } >= 4)
         assertTrue(catalog.itemBundle.items.count { item -> "consumable" in item.tags } >= 6)
         assertTrue(catalog.itemBundle.items.count { item -> setOf("reward", "boss_reward", "quest").any(item.tags::contains) } >= 2)
+        assertEquals("DamageVsTag", catalog.itemBundle.items.first { item -> item.id == "bandit_trophy" }.passive?.kind)
+        assertEquals("ResistanceBonus", catalog.itemBundle.items.first { item -> item.id == "seal_reliquary" }.passive?.kind)
         assertTrue(catalog.visualKeys.contains("actor.vanguard"))
         assertTrue(catalog.visualKeys.contains("talent.arcanist.mana_surge.icon"))
         assertTrue(catalog.visualKeys.contains("icon.skill.rogue.backstab"))
@@ -103,9 +106,18 @@ class SchemaV2LoaderTest {
             catalog.lootProfiles.first { it.id == "loot.foundation.boss" }.itemIds,
         )
         val banditCaptainAi = catalog.aiProfiles.first { it.id == "ai.boss.bandit_captain" }
-        assertEquals(listOf("war_cry", "power_strike", "shield_bash"), banditCaptainAi.talentPriority)
-        assertEquals(1, banditCaptainAi.skipRules.size)
-        assertEquals(StatusEffectType.WAR_CRY_BUFF, banditCaptainAi.skipRules.single().selfHasStatus)
+        assertEquals(listOf("power_strike", "shield_bash"), banditCaptainAi.talentPriority)
+        assertTrue(banditCaptainAi.skipRules.isEmpty())
+        assertEquals(2, banditCaptainAi.triggers.size)
+        assertEquals("bandit_captain_opening_shield_bash", banditCaptainAi.triggers.first().triggerId)
+        assertEquals(AITriggerConditionKindSchemaV2.ON_COMBAT_START, banditCaptainAi.triggers.first().condition)
+        assertTrue(banditCaptainAi.triggers.first().once)
+        assertEquals("bandit_captain_enrage_40", banditCaptainAi.triggers.last().triggerId)
+        assertEquals(AITriggerConditionKindSchemaV2.HP_BELOW_RATIO, banditCaptainAi.triggers.last().condition)
+        assertTrue(banditCaptainAi.triggers.last().once)
+        val dungeonLordAi = catalog.aiProfiles.first { it.id == "ai.boss.dungeon_lord" }
+        assertEquals("log.boss.desperate", dungeonLordAi.triggers.last().postMessageKey)
+        assertEquals("monster.cultist.dungeon_lord.name", dungeonLordAi.triggers.last().postMessageArgs.getValue("source"))
         assertTrue(catalog.arenas.any { it.id == "arena.shattered_outpost.boss" })
     }
 
@@ -123,6 +135,7 @@ class SchemaV2LoaderTest {
         assertEquals("Fireball", enLoader.loadTalentDefinitions().first { it.id == "fireball" }.name)
         assertEquals("火球", zhLoader.loadTalentDefinitions().first { it.id == "fireball" }.name)
         assertEquals(DamageType.FIRE, enLoader.loadTalentDefinitions().first { it.id == "fireball" }.damageType)
+        assertTrue(enLoader.loadItemBundle().baseItems.first { it.id == "emerald_charm" }.passive is EquipmentPassive.HpRegenPerTurn)
         assertEquals(4, enLoader.loadTalentDefinitions().first { it.id == "blink" }.levelEffects.getValue(5).rangeBonus)
     }
 
@@ -140,7 +153,13 @@ class SchemaV2LoaderTest {
         assertEquals("audio.monster.cultist.dungeon_lord", boss.audioProfile)
         assertEquals("ai.boss.dungeon_lord", boss.aiProfileId)
         assertEquals("loot.foundation.boss", boss.lootProfileId)
-        assertEquals(mapOf("war_cry" to 3, "power_strike" to 4), boss.talentLevels)
+        assertEquals(mapOf("war_cry" to 3, "power_strike" to 4, "charge" to 2), boss.talentLevels)
+        val huntmaster =
+            DataLoader(GameLocale.EN_US)
+                .loadMonsterCatalog()
+                .monsters
+                .first { monster -> monster.id == "bandit.wild_huntmaster" }
+        assertEquals(mapOf("power_strike" to 2), huntmaster.talentLevels)
     }
 
     @Test

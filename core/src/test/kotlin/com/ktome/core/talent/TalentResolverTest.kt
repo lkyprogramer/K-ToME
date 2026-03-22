@@ -9,7 +9,6 @@ import com.ktome.core.ecs.FactionTag
 import com.ktome.core.ecs.Health
 import com.ktome.core.ecs.Position
 import com.ktome.core.ecs.Stats
-import com.ktome.core.ecs.Stamina
 import com.ktome.core.ecs.World
 import com.ktome.core.ecs.add
 import com.ktome.core.ecs.get
@@ -26,6 +25,8 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class TalentResolverTest {
+    private fun staminaCosts(cost: Int): Map<ResourceType, Int> = linkedMapOf(ResourceType.STAMINA to cost)
+
     private val registry =
         TalentRegistry().apply {
             registerAll(
@@ -34,7 +35,7 @@ class TalentResolverTest {
                         id = "power_strike",
                         name = "猛击",
                         description = "",
-                        staminaCost = 8,
+                        resourceCosts = staminaCosts(8),
                         cooldown = 3,
                         range = 1,
                         levelEffects =
@@ -47,7 +48,7 @@ class TalentResolverTest {
                         id = "charge",
                         name = "冲锋",
                         description = "",
-                        staminaCost = 12,
+                        resourceCosts = staminaCosts(12),
                         cooldown = 6,
                         range = 5,
                         minRange = 3,
@@ -61,7 +62,7 @@ class TalentResolverTest {
                         id = "shield_bash",
                         name = "盾击",
                         description = "",
-                        staminaCost = 10,
+                        resourceCosts = staminaCosts(10),
                         cooldown = 5,
                         range = 1,
                         levelEffects = mapOf(1 to TalentLevelEffect(damageMultiplier = 1.2, stunDuration = 2)),
@@ -70,7 +71,7 @@ class TalentResolverTest {
                         id = "war_cry",
                         name = "战吼",
                         description = "",
-                        staminaCost = 15,
+                        resourceCosts = staminaCosts(15),
                         cooldown = 10,
                         range = 0,
                         areaRadius = 3,
@@ -80,7 +81,7 @@ class TalentResolverTest {
                         id = "sweeping_strike",
                         name = "横扫",
                         description = "",
-                        staminaCost = 10,
+                        resourceCosts = staminaCosts(10),
                         cooldown = 4,
                         range = 1,
                         areaRadius = 1,
@@ -90,7 +91,7 @@ class TalentResolverTest {
                         id = "sunder_armor",
                         name = "碎甲",
                         description = "",
-                        staminaCost = 12,
+                        resourceCosts = staminaCosts(12),
                         cooldown = 5,
                         range = 1,
                         levelEffects = mapOf(1 to TalentLevelEffect(damageMultiplier = 1.1, armorBreakDuration = 2)),
@@ -99,7 +100,7 @@ class TalentResolverTest {
                         id = "guard_stance",
                         name = "格挡姿态",
                         description = "",
-                        staminaCost = 8,
+                        resourceCosts = staminaCosts(8),
                         cooldown = 7,
                         range = 0,
                         levelEffects = mapOf(1 to TalentLevelEffect(buffDuration = 3, buffMagnitude = 0.10)),
@@ -108,7 +109,7 @@ class TalentResolverTest {
                         id = "intimidation",
                         name = "威压",
                         description = "",
-                        staminaCost = 10,
+                        resourceCosts = staminaCosts(10),
                         cooldown = 8,
                         range = 0,
                         areaRadius = 4,
@@ -118,7 +119,7 @@ class TalentResolverTest {
                         id = "unyielding",
                         name = "不屈",
                         description = "",
-                        staminaCost = 14,
+                        resourceCosts = staminaCosts(14),
                         cooldown = 12,
                         range = 0,
                         levelEffects = mapOf(1 to TalentLevelEffect(buffDuration = 3, buffMagnitude = 0.15)),
@@ -127,7 +128,6 @@ class TalentResolverTest {
                         id = "fireball",
                         name = "火球",
                         description = "",
-                        staminaCost = 0,
                         resourceCosts = mapOf(ResourceType.MANA to 10),
                         cooldown = 3,
                         range = 6,
@@ -138,7 +138,6 @@ class TalentResolverTest {
                         id = "flame_wall",
                         name = "烈焰之墙",
                         description = "",
-                        staminaCost = 0,
                         resourceCosts = mapOf(ResourceType.MANA to 14),
                         cooldown = 6,
                         range = 4,
@@ -150,7 +149,6 @@ class TalentResolverTest {
                         id = "ice_bolt",
                         name = "冰箭",
                         description = "",
-                        staminaCost = 0,
                         resourceCosts = mapOf(ResourceType.MANA to 9),
                         cooldown = 3,
                         range = 6,
@@ -161,7 +159,6 @@ class TalentResolverTest {
                         id = "frost_nova",
                         name = "霜冻新星",
                         description = "",
-                        staminaCost = 0,
                         resourceCosts = mapOf(ResourceType.MANA to 16),
                         cooldown = 7,
                         range = 0,
@@ -172,7 +169,6 @@ class TalentResolverTest {
                         id = "ice_prison",
                         name = "冰封",
                         description = "",
-                        staminaCost = 0,
                         resourceCosts = mapOf(ResourceType.MANA to 18),
                         cooldown = 8,
                         range = 5,
@@ -183,7 +179,6 @@ class TalentResolverTest {
                         id = "blink",
                         name = "闪现",
                         description = "",
-                        staminaCost = 0,
                         resourceCosts = mapOf(ResourceType.MANA to 14),
                         cooldown = 6,
                         range = 5,
@@ -194,7 +189,6 @@ class TalentResolverTest {
                         id = "arcane_shield",
                         name = "奥术护盾",
                         description = "",
-                        staminaCost = 0,
                         resourceCosts = mapOf(ResourceType.MANA to 12),
                         cooldown = 8,
                         range = 0,
@@ -204,7 +198,6 @@ class TalentResolverTest {
                         id = "mana_surge",
                         name = "法力涌动",
                         description = "",
-                        staminaCost = 0,
                         cooldown = 10,
                         range = 0,
                         levelEffects = mapOf(1 to TalentLevelEffect(buffDuration = 2, buffMagnitude = 0.10)),
@@ -213,7 +206,6 @@ class TalentResolverTest {
                         id = "backstab",
                         name = "背刺",
                         description = "",
-                        staminaCost = 0,
                         resourceCosts = mapOf(ResourceType.ENERGY to 12),
                         cooldown = 3,
                         range = 1,
@@ -223,7 +215,6 @@ class TalentResolverTest {
                         id = "poison_blade",
                         name = "毒刃",
                         description = "",
-                        staminaCost = 0,
                         resourceCosts = mapOf(ResourceType.ENERGY to 14),
                         cooldown = 4,
                         range = 1,
@@ -234,7 +225,6 @@ class TalentResolverTest {
                         id = "roll",
                         name = "翻滚",
                         description = "",
-                        staminaCost = 0,
                         resourceCosts = mapOf(ResourceType.ENERGY to 8),
                         cooldown = 4,
                         range = 3,
@@ -245,7 +235,6 @@ class TalentResolverTest {
                         id = "shadowstep",
                         name = "影袭",
                         description = "",
-                        staminaCost = 0,
                         resourceCosts = mapOf(ResourceType.ENERGY to 20),
                         cooldown = 7,
                         range = 5,
@@ -257,7 +246,6 @@ class TalentResolverTest {
                         id = "deathblow",
                         name = "处决",
                         description = "",
-                        staminaCost = 0,
                         resourceCosts = mapOf(ResourceType.ENERGY to 24),
                         cooldown = 8,
                         range = 1,
@@ -267,7 +255,6 @@ class TalentResolverTest {
                         id = "holy_strike",
                         name = "圣击",
                         description = "",
-                        staminaCost = 0,
                         resourceCosts = mapOf(ResourceType.POSITIVE_ENERGY to 10),
                         cooldown = 3,
                         range = 1,
@@ -278,7 +265,6 @@ class TalentResolverTest {
                         id = "judgment_hammer",
                         name = "裁决之锤",
                         description = "",
-                        staminaCost = 0,
                         resourceCosts = mapOf(ResourceType.POSITIVE_ENERGY to 14),
                         cooldown = 5,
                         range = 4,
@@ -290,7 +276,6 @@ class TalentResolverTest {
                         id = "holy_light",
                         name = "圣光术",
                         description = "",
-                        staminaCost = 0,
                         resourceCosts = mapOf(ResourceType.POSITIVE_ENERGY to 12),
                         cooldown = 6,
                         range = 0,
@@ -300,7 +285,6 @@ class TalentResolverTest {
                         id = "holy_shield",
                         name = "神圣护盾",
                         description = "",
-                        staminaCost = 0,
                         resourceCosts = mapOf(ResourceType.POSITIVE_ENERGY to 12),
                         cooldown = 8,
                         range = 0,
@@ -353,7 +337,6 @@ class TalentResolverTest {
 
         assertTrue(result is TalentUseResult.Success)
         assertEquals(6, requireNotNull(world.get<Health>(monster)).current)
-        assertEquals(32, requireNotNull(world.get<Stamina>(player)).current)
         assertEquals(32, requireNotNull(world.get<ResourcePools>(player)).pool(ResourceType.STAMINA)?.current)
         assertEquals(3, requireNotNull(world.get<CooldownState>(player)).remainingByTalentId["power_strike"])
     }
@@ -608,7 +591,7 @@ class TalentResolverTest {
                 id = "unsupported",
                 name = "未实现技能",
                 description = "",
-                staminaCost = 9,
+                resourceCosts = staminaCosts(9),
                 cooldown = 4,
                 range = 0,
                 levelEffects = mapOf(1 to TalentLevelEffect()),
@@ -616,13 +599,13 @@ class TalentResolverTest {
         )
         requireNotNull(world.get<TalentLoadout>(player)).talentLevels["unsupported"] = 1
 
-        val beforeStamina = requireNotNull(world.get<Stamina>(player)).current
+        val beforeStamina = requireNotNull(world.get<ResourcePools>(player)).pool(ResourceType.STAMINA)?.current
         val beforeCooldowns = requireNotNull(world.get<CooldownState>(player)).remainingByTalentId.toMap()
 
         val result = resolver().resolve(world, map, player, "unsupported", null)
 
         assertTrue(result is TalentUseResult.Failure)
-        assertEquals(beforeStamina, requireNotNull(world.get<Stamina>(player)).current)
+        assertEquals(beforeStamina, requireNotNull(world.get<ResourcePools>(player)).pool(ResourceType.STAMINA)?.current)
         assertEquals(beforeCooldowns, requireNotNull(world.get<CooldownState>(player)).remainingByTalentId)
     }
 
@@ -727,7 +710,6 @@ class TalentResolverTest {
         val derived = StatsCalculator.calculate(world, player)
         world.add(player, derived)
         world.add(player, Health(current = derived.maxHp, max = derived.maxHp))
-        world.add(player, Stamina(current = stamina, max = derived.maxStamina))
         world.add(
             player,
             ResourcePools(

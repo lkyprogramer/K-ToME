@@ -1,6 +1,7 @@
 package com.ktome.game
 
 import com.ktome.core.ecs.AIBehavior
+import com.ktome.core.ecs.AiTriggerTracker
 import com.ktome.core.ecs.DisplayColor
 import com.ktome.core.ecs.DerivedStats
 import com.ktome.core.ecs.Experience
@@ -11,11 +12,12 @@ import com.ktome.core.ecs.Health
 import com.ktome.core.ecs.Name
 import com.ktome.core.ecs.PatrolRoute
 import com.ktome.core.ecs.Position
-import com.ktome.core.ecs.Stamina
 import com.ktome.core.ecs.World
 import com.ktome.core.ecs.get
 import com.ktome.core.item.Equipment
 import com.ktome.core.item.Inventory
+import com.ktome.core.resource.ResourcePools
+import com.ktome.core.resource.ResourceType
 import com.ktome.core.talent.CooldownState
 import com.ktome.core.talent.TalentLoadout
 import com.ktome.game.data.DataLoader
@@ -41,7 +43,7 @@ class EntityFactoryTest {
         assertEquals("Hero", requireNotNull(world.get<Name>(playerId)).value)
         assertNotNull(world.get<Health>(playerId))
         assertNotNull(world.get<Experience>(playerId))
-        assertNotNull(world.get<Stamina>(playerId))
+        assertNotNull(requireNotNull(world.get<ResourcePools>(playerId)).pool(ResourceType.STAMINA))
         assertNotNull(world.get<Inventory>(playerId))
         assertNotNull(world.get<Equipment>(playerId))
         assertNotNull(world.get<CooldownState>(playerId))
@@ -82,5 +84,18 @@ class EntityFactoryTest {
         assertEquals("Sentry", requireNotNull(world.get<Name>(monsterId)).value)
         assertEquals(com.ktome.core.ecs.AIType.PATROL, requireNotNull(world.get<AIBehavior>(monsterId)).type)
         assertEquals(0, requireNotNull(world.get<PatrolRoute>(monsterId)).nextWaypointIndex)
+    }
+
+    @Test
+    fun `createMonster installs talent runtime components when template defines talents`() {
+        val world = World()
+        val template = DataLoader().loadMonsterCatalog().monsters.first { monster -> monster.id == "orc.forge_guard" }
+
+        val monsterId = factory.createMonster(world = world, template = template, position = Point(6, 7))
+
+        assertNotNull(requireNotNull(world.get<ResourcePools>(monsterId)).pool(ResourceType.STAMINA))
+        assertEquals(template.talentLevels, requireNotNull(world.get<TalentLoadout>(monsterId)).talentLevels)
+        assertNotNull(world.get<CooldownState>(monsterId))
+        assertNotNull(world.get<AiTriggerTracker>(monsterId))
     }
 }

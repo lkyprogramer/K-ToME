@@ -66,8 +66,6 @@ class ScenarioModelsTest {
                 PlayerStatus(
                     currentHp = 10,
                     maxHp = 10,
-                    currentStamina = 5,
-                    maxStamina = 5,
                     level = 1,
                     currentExperience = 0,
                     nextLevelRequirement = 10,

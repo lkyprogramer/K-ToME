@@ -157,7 +157,6 @@ data class EntitySnapshot(
     val stats: StatsSnapshot? = null,
     val combatProfile: CombatProfileSnapshot? = null,
     val healthCurrent: Int? = null,
-    val staminaCurrent: Int? = null,
     val energyCurrent: Int? = null,
     val experience: ExperienceSnapshot? = null,
     val experienceReward: Int? = null,
@@ -168,6 +167,7 @@ data class EntitySnapshot(
     val equipment: EquipmentSnapshot? = null,
     val cooldowns: Map<String, Int>? = null,
     val effects: List<ActiveEffectSnapshot>? = null,
+    val aiTriggerTracker: AiTriggerTrackerSnapshot? = null,
     val resourcePools: List<ResourcePoolSnapshot> = emptyList(),
     val talentLoadout: TalentLoadoutSnapshot? = null,
     val itemState: ItemSnapshot? = null,
@@ -183,7 +183,6 @@ data class EntitySnapshot(
     fun validateOrThrow() {
         require(id > 0) { "Entity ids must be positive." }
         require(healthCurrent == null || healthCurrent >= 0) { "healthCurrent must not be negative." }
-        require(staminaCurrent == null || staminaCurrent >= 0) { "staminaCurrent must not be negative." }
         require(cooldowns?.values?.all { value -> value >= 0 } != false) {
             "Cooldown values must not be negative."
         }
@@ -196,8 +195,27 @@ data class EntitySnapshot(
         patrolRoute?.validateOrThrow()
         talentLoadout?.validateOrThrow()
         itemState?.validateOrThrow()
+        aiTriggerTracker?.validateOrThrow()
         effects?.forEach(ActiveEffectSnapshot::validateOrThrow)
         resourcePools.forEach(ResourcePoolSnapshot::validate)
+    }
+}
+
+@Serializable
+data class AiTriggerTrackerSnapshot(
+    val consumedTriggerIds: List<String> = emptyList(),
+    val pendingCombatStartTriggerIds: List<String> = emptyList(),
+    val engagedInCombat: Boolean = false,
+) {
+    fun validateOrThrow() {
+        require(consumedTriggerIds.all(String::isNotBlank)) { "Consumed trigger ids must not be blank." }
+        require(consumedTriggerIds.distinct().size == consumedTriggerIds.size) {
+            "Consumed trigger ids must not contain duplicates."
+        }
+        require(pendingCombatStartTriggerIds.all(String::isNotBlank)) { "Pending combat-start trigger ids must not be blank." }
+        require(pendingCombatStartTriggerIds.distinct().size == pendingCombatStartTriggerIds.size) {
+            "Pending combat-start trigger ids must not contain duplicates."
+        }
     }
 }
 

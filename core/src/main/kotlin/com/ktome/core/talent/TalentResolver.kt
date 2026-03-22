@@ -16,7 +16,6 @@ import com.ktome.core.map.Point
 import com.ktome.core.pathfinding.AStar
 import com.ktome.core.resource.ResourcePools
 import com.ktome.core.resource.ResourceType
-import com.ktome.core.resource.StaminaPools
 import com.ktome.core.stats.StatsCalculator
 
 sealed interface TalentUseResult {
@@ -30,6 +29,16 @@ sealed interface TalentUseResult {
         val talentName: String? = null,
         val talentId: String? = null,
     ) : TalentUseResult
+}
+
+fun interface DamageMultiplierResolver {
+    fun resolve(
+        world: World,
+        attacker: EntityId,
+        target: EntityId,
+        damageType: DamageType,
+        baseMultiplier: Double,
+    ): Double
 }
 
 enum class TalentFailureCode {
@@ -57,6 +66,8 @@ sealed interface TalentEffectResult {
         val target: EntityId,
         val amount: Int,
         val crit: Boolean,
+        val damageType: DamageType = DamageType.PHYSICAL,
+        val resistanceValue: Int = 0,
     ) : TalentEffectResult
 
     data class Heal(
@@ -104,6 +115,9 @@ class TalentResolver(
     private val registry: TalentRegistry,
     private val combatResolver: CombatResolver,
 ) {
+    var damageMultiplierResolver: DamageMultiplierResolver =
+        DamageMultiplierResolver { _, _, _, _, baseMultiplier -> baseMultiplier }
+
     private val supportedTalentIds =
         setOf(
             "power_strike",
@@ -920,17 +934,11 @@ class TalentResolver(
         definition: TalentDef,
     ) {
         definition.resolvedResourceCosts().forEach { (type, cost) ->
-            when (type) {
-                ResourceType.STAMINA -> StaminaPools.spend(world, user, cost)
-
-                else -> {
-                    val pool =
-                        requireNotNull(world.get<ResourcePools>(user)?.pool(type)) {
-                            "Missing ResourcePool '$type' for $user"
-                        }
-                    pool.spend(cost)
+            val pool =
+                requireNotNull(world.get<ResourcePools>(user)?.pool(type)) {
+                    "Missing ResourcePool '$type' for $user"
                 }
-            }
+            pool.spend(cost)
         }
     }
 
@@ -938,11 +946,7 @@ class TalentResolver(
         world: World,
         user: EntityId,
         type: ResourceType,
-    ): Int =
-        when (type) {
-            ResourceType.STAMINA -> StaminaPools.current(world, user)
-            else -> world.get<ResourcePools>(user)?.pool(type)?.current ?: 0
-        }
+    ): Int = world.get<ResourcePools>(user)?.pool(type)?.current ?: 0
 
     private fun resolveDamage(
         world: World,
@@ -952,18 +956,34 @@ class TalentResolver(
         damageMultiplier: Double,
         effects: MutableList<TalentEffectResult>,
     ): DamageResolution {
-        val result = combatResolver.resolveMelee(world, attacker, target, damageType, damageMultiplier)
+        val effectiveMultiplier =
+            damageMultiplierResolver.resolve(
+                world = world,
+                attacker = attacker,
+                target = target,
+                damageType = damageType,
+                baseMultiplier = damageMultiplier,
+            )
+        val result = combatResolver.resolveMelee(world, attacker, target, damageType, effectiveMultiplier)
         if (!result.hit) {
             effects += TalentEffectResult.Miss(target)
             return DamageResolution(hit = false)
         }
 
         val health = requireNotNull(world.get<Health>(target)) { "Missing Health for $target" }
-        health.current = (health.current - result.finalDamage).coerceAtLeast(0)
-        effects += TalentEffectResult.Damage(target, result.finalDamage, result.critical)
+        val damage = requireNotNull(result.damage) { "Missing DamageResult for successful hit." }
+        health.current = (health.current - damage.finalDamage).coerceAtLeast(0)
+        effects +=
+            TalentEffectResult.Damage(
+                target = target,
+                amount = damage.finalDamage,
+                crit = result.critical,
+                damageType = damage.type,
+                resistanceValue = damage.resistanceValue,
+            )
         return DamageResolution(
             hit = true,
-            finalDamage = result.finalDamage,
+            finalDamage = damage.finalDamage,
             critical = result.critical,
         )
     }

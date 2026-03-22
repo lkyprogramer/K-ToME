@@ -11,7 +11,6 @@ import com.ktome.core.ecs.remove
 import com.ktome.core.map.Point
 import com.ktome.core.resource.ResourcePools
 import com.ktome.core.resource.ResourceType
-import com.ktome.core.resource.StaminaPools
 
 sealed interface InventoryOperationResult {
     val success: Boolean
@@ -23,7 +22,10 @@ sealed interface InventoryOperationResult {
         override val message: String,
         val itemId: EntityId,
         val itemName: String,
+        val itemQuality: ItemQuality? = null,
         val itemBaseId: String? = null,
+        val itemMaterialId: String? = null,
+        val itemAffixIds: List<String> = emptyList(),
         val slot: EquipSlot? = null,
     ) : InventoryOperationResult {
         override val success: Boolean = true
@@ -33,7 +35,10 @@ sealed interface InventoryOperationResult {
         override val code: InventoryOperationCode,
         override val message: String,
         val itemName: String? = null,
+        val itemQuality: ItemQuality? = null,
         val itemBaseId: String? = null,
+        val itemMaterialId: String? = null,
+        val itemAffixIds: List<String> = emptyList(),
         val slot: EquipSlot? = null,
     ) : InventoryOperationResult {
         override val success: Boolean = false
@@ -76,7 +81,10 @@ class InventoryManager {
                 code = InventoryOperationCode.NOT_ON_GROUND,
                 message = "${itemInstance.name} is not on the ground.",
                 itemName = itemInstance.name,
+                itemQuality = itemInstance.quality,
                 itemBaseId = itemInstance.baseId,
+                itemMaterialId = itemInstance.materialId,
+                itemAffixIds = itemInstance.affixes.map(AffixDef::id),
             )
         }
         if (inventory.itemIds.size >= inventory.capacity) {
@@ -94,7 +102,10 @@ class InventoryManager {
             message = "You pick up ${itemInstance.name}.",
             itemId = item,
             itemName = itemInstance.name,
+            itemQuality = itemInstance.quality,
             itemBaseId = itemInstance.baseId,
+            itemMaterialId = itemInstance.materialId,
+            itemAffixIds = itemInstance.affixes.map(AffixDef::id),
         )
     }
 
@@ -124,7 +135,10 @@ class InventoryManager {
             message = "You drop ${item.name}.",
             itemId = itemId,
             itemName = item.name,
+            itemQuality = item.quality,
             itemBaseId = item.baseId,
+            itemMaterialId = item.materialId,
+            itemAffixIds = item.affixes.map(AffixDef::id),
         )
     }
 
@@ -146,7 +160,10 @@ class InventoryManager {
                     code = InventoryOperationCode.CANNOT_EQUIP,
                     message = "${item.name} cannot be equipped.",
                     itemName = item.name,
+                    itemQuality = item.quality,
                     itemBaseId = item.baseId,
+                    itemMaterialId = item.materialId,
+                    itemAffixIds = item.affixes.map(AffixDef::id),
                 )
 
         equipmentOf(world, entity).slots[slot] = itemId
@@ -155,7 +172,10 @@ class InventoryManager {
             message = "You equip ${item.name}.",
             itemId = itemId,
             itemName = item.name,
+            itemQuality = item.quality,
             itemBaseId = item.baseId,
+            itemMaterialId = item.materialId,
+            itemAffixIds = item.affixes.map(AffixDef::id),
             slot = slot,
         )
     }
@@ -177,7 +197,10 @@ class InventoryManager {
             message = "You remove ${item.name}.",
             itemId = itemId,
             itemName = item.name,
+            itemQuality = item.quality,
             itemBaseId = item.baseId,
+            itemMaterialId = item.materialId,
+            itemAffixIds = item.affixes.map(AffixDef::id),
             slot = slot,
         )
     }
@@ -201,7 +224,10 @@ class InventoryManager {
                     code = InventoryOperationCode.NOT_CONSUMABLE,
                     message = "${item.name} is not consumable.",
                     itemName = item.name,
+                    itemQuality = item.quality,
                     itemBaseId = item.baseId,
+                    itemMaterialId = item.materialId,
+                    itemAffixIds = item.affixes.map(AffixDef::id),
                 )
 
         when (effect) {
@@ -228,22 +254,24 @@ class InventoryManager {
                             code = InventoryOperationCode.NO_RESOURCE_POOL,
                             message = "${item.name} has no resource type configured.",
                             itemName = item.name,
+                            itemQuality = item.quality,
                             itemBaseId = item.baseId,
+                            itemMaterialId = item.materialId,
+                            itemAffixIds = item.affixes.map(AffixDef::id),
                         )
-                if (resourceTypeId == ResourceType.STAMINA.name) {
-                    StaminaPools.restore(world, entity, item.magnitude)
-                } else {
-                    val resourceType = ResourceType.fromId(resourceTypeId)
-                    val pool =
-                        world.get<ResourcePools>(entity)?.pool(resourceType)
-                            ?: return InventoryOperationResult.Failure(
-                                code = InventoryOperationCode.NO_RESOURCE_POOL,
-                                message = "No ${resourceType.name} pool is available.",
-                                itemName = item.name,
-                                itemBaseId = item.baseId,
-                            )
-                    pool.restore(item.magnitude)
-                }
+                val resourceType = ResourceType.fromId(resourceTypeId)
+                val pool =
+                    world.get<ResourcePools>(entity)?.pool(resourceType)
+                        ?: return InventoryOperationResult.Failure(
+                            code = InventoryOperationCode.NO_RESOURCE_POOL,
+                            message = "No ${resourceType.name} pool is available.",
+                            itemName = item.name,
+                            itemQuality = item.quality,
+                            itemBaseId = item.baseId,
+                            itemMaterialId = item.materialId,
+                            itemAffixIds = item.affixes.map(AffixDef::id),
+                        )
+                pool.restore(item.magnitude)
             }
         }
 
@@ -267,7 +295,10 @@ class InventoryManager {
                 },
             itemId = itemId,
             itemName = item.name,
+            itemQuality = item.quality,
             itemBaseId = item.baseId,
+            itemMaterialId = item.materialId,
+            itemAffixIds = item.affixes.map(AffixDef::id),
         )
     }
 

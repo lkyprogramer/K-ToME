@@ -15,6 +15,7 @@ import com.ktome.core.snapshot.PropRenderSnapshot
 import com.ktome.core.snapshot.RenderLogEventSnapshot
 import com.ktome.core.snapshot.RenderSnapshot
 import com.ktome.core.snapshot.RenderTextArgumentSnapshot
+import com.ktome.core.snapshot.RenderTextTokenSnapshot
 import com.ktome.core.snapshot.StatusEffectRenderSnapshot
 import com.ktome.game.i18n.Localizer
 
@@ -131,7 +132,7 @@ internal object AsciiRenderModelBuilder {
 
         lines += AsciiTextLine(localizer.text("ui.sidebar.equipment"), AsciiTextTone.GOLD)
         snapshot.uiState.equipment.forEach { equipment ->
-            val itemName = equipment.item?.let { item -> localizer.text(item.nameKey) } ?: "-"
+            val itemName = equipment.item?.let { item -> renderItemDisplay(localizer, item) } ?: "-"
             lines += AsciiTextLine("${slotLabel(localizer, equipment.slotId)}: $itemName", AsciiTextTone.WHITE)
         }
 
@@ -143,13 +144,13 @@ internal object AsciiRenderModelBuilder {
                     "${localizer.text("ui.sidebar.cooldown.short")}:${talent.currentCooldown}"
                 } else {
                     localizer.text("ui.sidebar.ready")
-                }
+            }
             lines += AsciiTextLine(
-                "${talent.slot}.${localizer.text(talent.nameKey)} L${talent.level}/${talent.maxLevel} [$state]",
+                "${talent.slot}.${localizer.text(talent.nameKey)} L${talent.level}/${talent.maxLevel} [$state]${talentTargetSuffix(localizer, talent.requiresTarget, talent.range)}",
                 AsciiTextTone.WHITE,
             )
             lines += AsciiTextLine(
-                "   ${talent.resourceCost} ${localizer.text(talent.resourceLabelKey)}",
+                "   ${talentUsageSummary(localizer, talent.resourceCost, talent.resourceLabelKey, talent.requiresTarget, talent.range)}",
                 AsciiTextTone.WHITE,
             )
         }
@@ -160,7 +161,7 @@ internal object AsciiRenderModelBuilder {
             lines += AsciiTextLine("-", AsciiTextTone.WHITE)
         } else {
             playerCell.items.forEach { item ->
-                lines += AsciiTextLine(localizer.text(item.nameKey), AsciiTextTone.WHITE)
+                lines += AsciiTextLine(renderItemDisplay(localizer, item), AsciiTextTone.WHITE)
             }
         }
 
@@ -170,6 +171,12 @@ internal object AsciiRenderModelBuilder {
                 lines += AsciiTextLine(localizer.text("ui.controls.map.pick_up"), AsciiTextTone.LIGHT_GRAY)
                 lines += AsciiTextLine(localizer.text("ui.controls.map.inventory"), AsciiTextTone.LIGHT_GRAY)
                 lines += AsciiTextLine(localizer.text("ui.controls.map.save"), AsciiTextTone.LIGHT_GRAY)
+                if (snapshot.uiState.talents.isNotEmpty()) {
+                    lines += AsciiTextLine(localizer.text("ui.controls.map.use_talent"), AsciiTextTone.LIGHT_GRAY)
+                }
+                if (snapshot.uiState.talents.any { talent -> talent.requiresTarget }) {
+                    lines += AsciiTextLine(localizer.text("ui.controls.map.target_talent"), AsciiTextTone.LIGHT_GRAY)
+                }
                 if (playerCell.stairDirectionId == "DOWN") {
                     lines += AsciiTextLine(localizer.text("ui.controls.map.descend"), AsciiTextTone.LIGHT_GRAY)
                 }
@@ -190,7 +197,7 @@ internal object AsciiRenderModelBuilder {
                 snapshot.uiState.inventory.forEach { item ->
                     val equipped = item.equippedSlotId?.let { slotId -> " [${slotLabel(localizer, slotId)}]" } ?: ""
                     lines += AsciiTextLine(
-                        "${item.index + 1}. ${localizer.text(item.item.nameKey)}$equipped",
+                        "${item.index + 1}. ${renderItemDisplay(localizer, item.item)}$equipped",
                         if (item.index == overlayState.inventorySelection) AsciiTextTone.CYAN else AsciiTextTone.WHITE,
                     )
                 }
@@ -257,7 +264,7 @@ internal object AsciiRenderModelBuilder {
                 if (cell.items.isNotEmpty()) {
                     lines += AsciiTextLine(localizer.text("ui.sidebar.items"), AsciiTextTone.GOLD)
                     cell.items.forEach { item ->
-                        lines += AsciiTextLine(localizer.text(item.nameKey), AsciiTextTone.WHITE)
+                        lines += AsciiTextLine(renderItemDisplay(localizer, item), AsciiTextTone.WHITE)
                         itemDetailLines(localizer, item).forEach { detail ->
                             lines += AsciiTextLine(detail, AsciiTextTone.LIGHT_GRAY)
                         }
@@ -304,7 +311,7 @@ internal object AsciiRenderModelBuilder {
                 )
                 snapshot.uiState.talents.forEach { talent ->
                     lines += AsciiTextLine(
-                        "${talent.slot}. ${localizer.text(talent.nameKey)} ${talent.level}/${talent.maxLevel}",
+                        "${talent.slot}. ${localizer.text(talent.nameKey)} ${talent.level}/${talent.maxLevel}${talentTargetSuffix(localizer, talent.requiresTarget, talent.range)}",
                         AsciiTextTone.WHITE,
                     )
                 }
@@ -441,7 +448,49 @@ internal object AsciiRenderModelBuilder {
     private fun resolveArgument(
         localizer: Localizer,
         argument: RenderTextArgumentSnapshot,
-    ): String = argument.valueKey?.let(localizer::text) ?: argument.value.orEmpty()
+    ): String =
+        argument.valueToken?.let { token -> renderTextToken(localizer, token) }
+            ?: argument.valueKey?.let(localizer::text)
+            ?: argument.value.orEmpty()
+
+    private fun renderItemDisplay(
+        localizer: Localizer,
+        item: ItemRenderSnapshot,
+    ): String = item.displayName?.let { token -> renderTextToken(localizer, token) } ?: localizer.text(item.nameKey)
+
+    private fun talentUsageSummary(
+        localizer: Localizer,
+        resourceCost: Int,
+        resourceLabelKey: String,
+        requiresTarget: Boolean,
+        range: Int,
+    ): String {
+        val resourceText = "$resourceCost ${localizer.text(resourceLabelKey)}"
+        if (!requiresTarget) {
+            return resourceText
+        }
+        return "$resourceText · ${localizer.text("ui.sidebar.target.range", "range" to range)}"
+    }
+
+    private fun talentTargetSuffix(
+        localizer: Localizer,
+        requiresTarget: Boolean,
+        range: Int,
+    ): String =
+        if (requiresTarget) {
+            " [${localizer.text("ui.sidebar.target.range", "range" to range)}]"
+        } else {
+            ""
+        }
+
+    private fun renderTextToken(
+        localizer: Localizer,
+        token: RenderTextTokenSnapshot,
+    ): String =
+        localizer.text(
+            token.key,
+            *token.arguments.map { argument -> argument.name to resolveArgument(localizer, argument) }.toTypedArray(),
+        )
 
     private fun itemDetailLines(
         localizer: Localizer,
@@ -450,6 +499,18 @@ internal object AsciiRenderModelBuilder {
         buildList {
             item.slotId?.let { slotId ->
                 add(localizer.text("ui.inspect.slot", "slot" to slotLabel(localizer, slotId)))
+            }
+            item.qualityNameKey?.let { qualityNameKey ->
+                add(localizer.text("ui.inspect.quality", "quality" to localizer.text(qualityNameKey)))
+            }
+            item.materialNameKey?.let { materialNameKey ->
+                add(localizer.text("ui.inspect.material", "material" to localizer.text(materialNameKey)))
+            }
+            item.affixNameKeys.forEach { affixNameKey ->
+                add(localizer.text("ui.inspect.affix", "affix" to localizer.text(affixNameKey)))
+            }
+            item.passiveDescriptions.forEach { token ->
+                add(renderTextToken(localizer, token))
             }
             addAll(statModifierLines(localizer, item.stats))
             when (item.effectTypeId) {

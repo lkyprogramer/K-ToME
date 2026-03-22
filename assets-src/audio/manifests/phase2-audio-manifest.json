@@ -48,77 +48,84 @@
       "key": "audio.affix.of_fortitude",
       "cueFamily": "affix",
       "eventId": "audio.affix.of_fortitude",
-      "sourcePath": "audio/fallback/silence.ogg",
+      "sourcePath": "audio/talent/guard_stance.ogg",
       "tags": [
-        "fallback",
-        "placeholder",
-        "phase2"
+        "phase2",
+        "p2-opt",
+        "affix",
+        "defense"
       ]
     },
     {
       "key": "audio.affix.of_life",
       "cueFamily": "affix",
       "eventId": "audio.affix.of_life",
-      "sourcePath": "audio/fallback/silence.ogg",
+      "sourcePath": "audio/item/healing_potion.ogg",
       "tags": [
-        "fallback",
-        "placeholder",
-        "phase2"
+        "phase2",
+        "p2-opt",
+        "affix",
+        "life"
       ]
     },
     {
       "key": "audio.affix.of_speed",
       "cueFamily": "affix",
       "eventId": "audio.affix.of_speed",
-      "sourcePath": "audio/fallback/silence.ogg",
+      "sourcePath": "audio/talent/blink.ogg",
       "tags": [
-        "fallback",
-        "placeholder",
-        "phase2"
+        "phase2",
+        "p2-opt",
+        "affix",
+        "speed"
       ]
     },
     {
       "key": "audio.affix.of_strength",
       "cueFamily": "affix",
       "eventId": "audio.affix.of_strength",
-      "sourcePath": "audio/fallback/silence.ogg",
+      "sourcePath": "audio/talent/power_strike.ogg",
       "tags": [
-        "fallback",
-        "placeholder",
-        "phase2"
+        "phase2",
+        "p2-opt",
+        "affix",
+        "offense"
       ]
     },
     {
       "key": "audio.affix.sharp",
       "cueFamily": "affix",
       "eventId": "audio.affix.sharp",
-      "sourcePath": "audio/fallback/silence.ogg",
+      "sourcePath": "audio/item/short_sword.ogg",
       "tags": [
-        "fallback",
-        "placeholder",
-        "phase2"
+        "phase2",
+        "p2-opt",
+        "affix",
+        "offense"
       ]
     },
     {
       "key": "audio.affix.sturdy",
       "cueFamily": "affix",
       "eventId": "audio.affix.sturdy",
-      "sourcePath": "audio/fallback/silence.ogg",
+      "sourcePath": "audio/item/basic_shield.ogg",
       "tags": [
-        "fallback",
-        "placeholder",
-        "phase2"
+        "phase2",
+        "p2-opt",
+        "affix",
+        "defense"
       ]
     },
     {
       "key": "audio.affix.swift",
       "cueFamily": "affix",
       "eventId": "audio.affix.swift",
-      "sourcePath": "audio/fallback/silence.ogg",
+      "sourcePath": "audio/ui/hover.ogg",
       "tags": [
-        "fallback",
-        "placeholder",
-        "phase2"
+        "phase2",
+        "p2-opt",
+        "affix",
+        "speed"
       ]
     },
     {
@@ -160,11 +167,11 @@
       "key": "audio.difficulty.normal",
       "cueFamily": "difficulty",
       "eventId": "audio.difficulty.normal",
-      "sourcePath": "audio/fallback/silence.ogg",
+      "sourcePath": "audio/ui/confirm.ogg",
       "tags": [
-        "fallback",
-        "placeholder",
-        "phase2"
+        "phase2",
+        "p2-opt",
+        "difficulty"
       ]
     },
     {
@@ -448,44 +455,48 @@
       "key": "audio.material.adamantite",
       "cueFamily": "material",
       "eventId": "audio.material.adamantite",
-      "sourcePath": "audio/fallback/silence.ogg",
+      "sourcePath": "audio/item/basic_shield.ogg",
       "tags": [
-        "fallback",
-        "placeholder",
-        "phase2"
+        "phase2",
+        "p2-opt",
+        "material",
+        "adamantite"
       ]
     },
     {
       "key": "audio.material.iron",
       "cueFamily": "material",
       "eventId": "audio.material.iron",
-      "sourcePath": "audio/fallback/silence.ogg",
+      "sourcePath": "audio/item/short_sword.ogg",
       "tags": [
-        "fallback",
-        "placeholder",
-        "phase2"
+        "phase2",
+        "p2-opt",
+        "material",
+        "iron"
       ]
     },
     {
       "key": "audio.material.mithril",
       "cueFamily": "material",
       "eventId": "audio.material.mithril",
-      "sourcePath": "audio/fallback/silence.ogg",
+      "sourcePath": "audio/item/arcane_staff.ogg",
       "tags": [
-        "fallback",
-        "placeholder",
-        "phase2"
+        "phase2",
+        "p2-opt",
+        "material",
+        "mithril"
       ]
     },
     {
       "key": "audio.material.steel",
       "cueFamily": "material",
       "eventId": "audio.material.steel",
-      "sourcePath": "audio/fallback/silence.ogg",
+      "sourcePath": "audio/item/chain_mail.ogg",
       "tags": [
-        "fallback",
-        "placeholder",
-        "phase2"
+        "phase2",
+        "p2-opt",
+        "material",
+        "steel"
       ]
     },
     {
@@ -1419,10 +1430,6 @@
   "prefixRules": [
     {
       "prefix": "ambient.",
-      "targetKey": "audio.fallback.silence"
-    },
-    {
-      "prefix": "audio.",
       "targetKey": "audio.fallback.silence"
     }
   ]

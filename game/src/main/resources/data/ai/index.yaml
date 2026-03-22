@@ -15,8 +15,26 @@ aiProfiles:
     schemaVersion: 2
   - id: ai.elite.huntmaster
     schemaVersion: 2
+    talentPriority: [power_strike]
+    triggers:
+      - triggerId: elite_huntmaster_finish_50
+        condition: hpBelowRatio
+        threshold: 0.5
+        action: forceTalent
+        talentId: power_strike
+        once: true
   - id: ai.elite.forge_guard
     schemaVersion: 2
+    talentPriority: [shield_bash, war_cry]
+    skipRules:
+      - talentId: war_cry
+        selfHasStatus: WAR_CRY_BUFF
+    triggers:
+      - triggerId: elite_forge_guard_opening_shield_bash
+        condition: onCombatStart
+        action: forceTalent
+        talentId: shield_bash
+        once: true
   - id: ai.elite.ashgate_warden
     schemaVersion: 2
   - id: ai.boss.dungeon_lord
@@ -25,9 +43,36 @@ aiProfiles:
     skipRules:
       - talentId: war_cry
         selfHasStatus: WAR_CRY_BUFF
+    triggers:
+      - triggerId: dungeon_lord_opening_war_cry
+        condition: onCombatStart
+        action: forceTalent
+        talentId: war_cry
+        once: true
+      - triggerId: dungeon_lord_desperate_charge
+        condition: hpBelowRatio
+        threshold: 0.3
+        action: forceTalent
+        talentId: charge
+        postMessageKey: log.boss.desperate
+        postMessageArgs:
+          source: monster.cultist.dungeon_lord.name
+        once: true
   - id: ai.boss.bandit_captain
     schemaVersion: 2
-    talentPriority: [war_cry, power_strike, shield_bash]
-    skipRules:
-      - talentId: war_cry
-        selfHasStatus: WAR_CRY_BUFF
+    talentPriority: [power_strike, shield_bash]
+    triggers:
+      - triggerId: bandit_captain_opening_shield_bash
+        condition: onCombatStart
+        action: forceTalent
+        talentId: shield_bash
+        once: true
+      - triggerId: bandit_captain_enrage_40
+        condition: hpBelowRatio
+        threshold: 0.4
+        action: forceTalent
+        talentId: power_strike
+        postMessageKey: log.boss.enrage
+        postMessageArgs:
+          source: monster.bandit.captain.name
+        once: true

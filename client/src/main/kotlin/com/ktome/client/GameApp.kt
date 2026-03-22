@@ -27,6 +27,8 @@ import com.ktome.core.save.AssetVersionGate
 import com.ktome.core.save.AssetVersionMismatchException
 import com.ktome.core.save.SaveLoadException
 import com.ktome.core.save.SaveManager
+import com.ktome.core.snapshot.RenderTextArgumentSnapshot
+import com.ktome.core.snapshot.RenderTextTokenSnapshot
 import com.ktome.game.FoundationGameConfig
 import com.ktome.game.FoundationGameSession
 import com.ktome.game.GameModule
@@ -38,6 +40,7 @@ import java.nio.file.Path
 class GameApp(
     private val saveManager: SaveManager = SaveManager(defaultSaveDir()),
     private val defaultConfig: FoundationGameConfig = FoundationGameConfig(),
+    availableProfessionIdsProvider: (GameLocale) -> List<String> = { locale -> GameModule.availableProfessionIds(locale) },
     private val menuInputSourceFactory: () -> InputSource = { GdxInputSource },
     private val gameCommandSourceFactory: () -> CommandSource = { InputHandlerCommandSource() },
     private val outcomeInputSourceFactory: () -> InputSource = { GdxInputSource },
@@ -50,6 +53,10 @@ class GameApp(
     initialLocale: GameLocale = GameLocale.DEFAULT,
     localizationBundle: LocalizationBundle = LocalizationBundle.load(),
 ) : Game() {
+    private val availableProfessionIds: List<String> =
+        availableProfessionIdsProvider(initialLocale)
+            .distinct()
+            .ifEmpty { listOf(defaultConfig.playerProfessionId) }
     private val lifecycle = LifecycleCoordinator(saveManager)
     private val assetContracts =
         AssetContractCoordinator(
@@ -61,6 +68,9 @@ class GameApp(
     private val localizationBundle = localizationBundle
     private var currentLocale: GameLocale = initialLocale
     private var currentLocalizer: Localizer = localizationBundle.translator(initialLocale)
+    private var selectedProfessionId: String =
+        defaultConfig.playerProfessionId.takeIf(availableProfessionIds::contains)
+            ?: availableProfessionIds.first()
     private var activeSession: FoundationGameSession? = null
     private val audioSinks = audioSinkBindingsFactory.create(renderEnabled)
 
@@ -68,13 +78,19 @@ class GameApp(
         showMainMenu(saveCurrent = false, notice = assetContractNotice())
     }
 
-    fun startNewGame() {
+    fun startNewGame(professionId: String = selectedProfessionId) {
         if (!ensureAssetContracts()) {
             return
         }
+        val resolvedProfessionId = professionId.takeIf(availableProfessionIds::contains) ?: selectedProfessionId
+        selectedProfessionId = resolvedProfessionId
         val session =
             lifecycle.startNewSession {
-                GameModule.newFoundationSession(config = defaultConfig, saveManager = saveManager, locale = currentLocale)
+                GameModule.newFoundationSession(
+                    config = defaultConfig.copy(playerProfessionId = resolvedProfessionId),
+                    saveManager = saveManager,
+                    locale = currentLocale,
+                )
             }
         activeSession = session
         assetContracts.prepareSession(session.renderSnapshot())
@@ -118,7 +134,17 @@ class GameApp(
         }
         activeSession = null
         val continueEnabled = lifecycle.refreshContinueAvailability()
-        replaceScreen(MainMenuScreen(this, continueEnabled, notice ?: lifecycle.consumeNotice(), menuInputSourceFactory(), renderEnabled))
+        replaceScreen(
+            MainMenuScreen(
+                app = this,
+                continueEnabled = continueEnabled,
+                availableProfessionIds = availableProfessionIds,
+                selectedProfessionId = selectedProfessionId,
+                notice = notice ?: lifecycle.consumeNotice(),
+                inputSource = menuInputSourceFactory(),
+                renderEnabled = renderEnabled,
+            ),
+        )
     }
 
     override fun dispose() {
@@ -143,6 +169,12 @@ class GameApp(
 
     internal fun localizer(): Localizer = currentLocalizer
 
+    internal fun rememberProfessionSelection(professionId: String) {
+        if (professionId in availableProfessionIds) {
+            selectedProfessionId = professionId
+        }
+    }
+
     internal fun cycleLocale(): GameLocale {
         currentLocale = currentLocale.cycle()
         currentLocalizer = localizationBundle.translator(currentLocale)
@@ -153,6 +185,17 @@ class GameApp(
         key: String,
         vararg args: Pair<String, Any?>,
     ): String = currentLocalizer.text(key, *args)
+
+    internal fun text(token: RenderTextTokenSnapshot): String =
+        currentLocalizer.text(
+            token.key,
+            *token.arguments.map { argument -> argument.name to renderTextArgument(argument) }.toTypedArray(),
+        )
+
+    private fun renderTextArgument(argument: RenderTextArgumentSnapshot): String =
+        argument.valueToken?.let(::text)
+            ?: argument.valueKey?.let(currentLocalizer::text)
+            ?: argument.value.orEmpty()
 
     internal fun warmSessionAssets(snapshot: com.ktome.core.snapshot.RenderSnapshot) {
         assetContracts.warmCache(snapshot)

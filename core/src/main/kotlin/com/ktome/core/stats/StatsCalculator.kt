@@ -5,7 +5,6 @@ import com.ktome.core.ecs.DerivedStats
 import com.ktome.core.ecs.EntityId
 import com.ktome.core.ecs.Health
 import com.ktome.core.ecs.Stats
-import com.ktome.core.ecs.Stamina
 import com.ktome.core.ecs.World
 import com.ktome.core.ecs.add
 import com.ktome.core.ecs.get
@@ -52,7 +51,7 @@ object StatsCalculator {
             health.max = derived.maxHp
             health.current = (health.current + delta).coerceIn(0, health.max)
         }
-        world.get<Stamina>(entity)?.let {
+        if (StaminaPools.hasPool(world, entity)) {
             StaminaPools.shiftMax(world, entity, derived.maxStamina)
         }
         return derived

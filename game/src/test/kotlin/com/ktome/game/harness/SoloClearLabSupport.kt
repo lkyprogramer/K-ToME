@@ -32,7 +32,7 @@ import com.ktome.game.FoundationGameConfig
 import com.ktome.game.FoundationGameSession
 import com.ktome.game.GameContent
 import com.ktome.game.PlayerCommand
-import com.ktome.game.PlayerResourcePools
+import com.ktome.game.PlayerResourceService
 import com.ktome.game.SessionSnapshotMapper
 import com.ktome.game.data.DataLoader
 import com.ktome.game.data.schema.ProfessionSchemaV2
@@ -270,7 +270,7 @@ internal class SoloClearLabHarness(
 
         installScenarioLevel(world, playerId, scenario.level)
         installBlueGear(world, playerId, professionId)
-        PlayerResourcePools.ensureInitialized(world, playerId, profession)
+        PlayerResourceService.ensureInitialized(world, playerId, profession)
         setInitialResource(world, playerId, professionId)
 
         val taggedEntities =
@@ -619,7 +619,7 @@ internal class SoloClearLabHarness(
         when (scenario) {
             SoloClearScenario.MOB_PACK -> Point(2, 2)
             SoloClearScenario.ELITE -> Point(3, 7)
-            SoloClearScenario.BOSS -> Point(4, 10)
+            SoloClearScenario.BOSS -> Point(10, 10)
         }
 
     private fun createRoomMap(

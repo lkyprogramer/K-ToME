@@ -4,6 +4,7 @@ import com.ktome.core.dungeon.FloorState
 import com.ktome.core.dungeon.StairDirection
 import com.ktome.core.ecs.AIBehavior
 import com.ktome.core.ecs.AIType
+import com.ktome.core.ecs.AiTriggerTracker
 import com.ktome.core.ecs.BlocksMovement
 import com.ktome.core.ecs.CombatProfile
 import com.ktome.core.ecs.DisplayColor
@@ -24,7 +25,6 @@ import com.ktome.core.ecs.Position
 import com.ktome.core.ecs.ResistanceProfile
 import com.ktome.core.ecs.Stats
 import com.ktome.core.ecs.Stair
-import com.ktome.core.ecs.Stamina
 import com.ktome.core.ecs.World
 import com.ktome.core.ecs.add
 import com.ktome.core.ecs.get
@@ -46,8 +46,8 @@ import com.ktome.core.map.Point
 import com.ktome.core.resource.ResourcePoolSnapshot
 import com.ktome.core.resource.ResourcePools
 import com.ktome.core.resource.ResourceType
-import com.ktome.core.resource.StaminaPools
 import com.ktome.core.save.AIBehaviorSnapshot
+import com.ktome.core.save.AiTriggerTrackerSnapshot
 import com.ktome.core.save.ActiveEffectSnapshot
 import com.ktome.core.save.CombatProfileSnapshot
 import com.ktome.core.save.EntitySnapshot
@@ -167,14 +167,10 @@ internal object SessionSnapshotMapper {
                 snapshot.resourcePools
                     .firstOrNull { pool -> pool.type == ResourceType.STAMINA.name }
                     ?.current
-                    ?: snapshot.staminaCurrent
-            if (snapshotStamina != null && world.get<Stamina>(entity) != null) {
-                StaminaPools.syncTo(
-                    world = world,
-                    entityId = entity,
-                    nextCurrent = snapshotStamina,
-                    nextMax = StaminaPools.max(world, entity),
-                )
+            if (snapshotStamina != null) {
+                world.get<ResourcePools>(entity)?.pool(ResourceType.STAMINA)?.let { pool ->
+                    pool.syncTo(nextCurrent = snapshotStamina, nextMax = pool.max)
+                }
             }
         }
         return world
@@ -281,7 +277,6 @@ internal object SessionSnapshotMapper {
             stats = world.get<Stats>(entityId)?.let(::toStatsSnapshot),
             combatProfile = world.get<CombatProfile>(entityId)?.let(::toCombatProfileSnapshot),
             healthCurrent = world.get<Health>(entityId)?.current,
-            staminaCurrent = staminaPool?.current ?: world.get<Stamina>(entityId)?.current,
             energyCurrent = world.get<Energy>(entityId)?.current,
             experience = world.get<Experience>(entityId)?.let(::toExperienceSnapshot),
             experienceReward = world.get<ExperienceReward>(entityId)?.value,
@@ -306,6 +301,14 @@ internal object SessionSnapshotMapper {
                 },
             cooldowns = world.get<CooldownState>(entityId)?.remainingByTalentId?.toMap(),
             effects = world.get<EffectTracker>(entityId)?.effects?.map(::toActiveEffectSnapshot),
+            aiTriggerTracker =
+                world.get<AiTriggerTracker>(entityId)?.let { tracker ->
+                    AiTriggerTrackerSnapshot(
+                        consumedTriggerIds = tracker.consumedTriggerIds.sorted(),
+                        pendingCombatStartTriggerIds = tracker.pendingCombatStartTriggerIds.sorted(),
+                        engagedInCombat = tracker.engagedInCombat,
+                    )
+                },
             resourcePools =
                 world.get<ResourcePools>(entityId)?.entries
                     ?.values
@@ -343,12 +346,6 @@ internal object SessionSnapshotMapper {
         snapshot.stats?.let { stats -> world.add(entityId, toStats(stats)) }
         snapshot.combatProfile?.let { profile -> world.add(entityId, toCombatProfile(profile)) }
         snapshot.healthCurrent?.let { current -> world.add(entityId, Health(current = current, max = current)) }
-        val staminaPoolSnapshot = snapshot.resourcePools.firstOrNull { pool -> pool.type == ResourceType.STAMINA.name }
-        val staminaCurrent = staminaPoolSnapshot?.current ?: snapshot.staminaCurrent
-        val staminaMax = staminaPoolSnapshot?.max ?: snapshot.staminaCurrent
-        if (staminaCurrent != null && staminaMax != null) {
-            world.add(entityId, Stamina(current = staminaCurrent.coerceIn(0, staminaMax), max = staminaMax))
-        }
         snapshot.energyCurrent?.let { current -> world.add(entityId, Energy(current)) }
         snapshot.experience?.let { experience -> world.add(entityId, toExperience(experience)) }
         snapshot.experienceReward?.let { reward -> world.add(entityId, ExperienceReward(reward)) }
@@ -385,6 +382,16 @@ internal object SessionSnapshotMapper {
         }
         snapshot.effects?.let { effects ->
             world.add(entityId, EffectTracker(effects.map { effect -> restoreActiveEffect(effect, content.localizer) }.toMutableList()))
+        }
+        snapshot.aiTriggerTracker?.let { tracker ->
+            world.add(
+                entityId,
+                AiTriggerTracker(
+                    consumedTriggerIds = tracker.consumedTriggerIds.toCollection(linkedSetOf()),
+                    pendingCombatStartTriggerIds = tracker.pendingCombatStartTriggerIds.toCollection(linkedSetOf()),
+                    engagedInCombat = tracker.engagedInCombat,
+                ),
+            )
         }
         if (snapshot.resourcePools.isNotEmpty()) {
             world.add(
@@ -453,6 +460,7 @@ internal object SessionSnapshotMapper {
         val inventory = snapshot.inventory
         val equipment = snapshot.equipment
         val talentLoadout = snapshot.talentLoadout
+        val aiTriggerTracker = snapshot.aiTriggerTracker
 
         return snapshot.copy(
             position = snapshot.position?.copy(),
@@ -471,6 +479,11 @@ internal object SessionSnapshotMapper {
                 ),
             cooldowns = snapshot.cooldowns?.entries?.sortedBy { (talentId, _) -> talentId }?.associateTo(linkedMapOf()) { (talentId, turns) -> talentId to turns },
             effects = snapshot.effects?.map(::copyActiveEffectSnapshot)?.sortedBy(ActiveEffectSnapshot::id),
+            aiTriggerTracker =
+                aiTriggerTracker?.copy(
+                    consumedTriggerIds = aiTriggerTracker.consumedTriggerIds.sorted(),
+                    pendingCombatStartTriggerIds = aiTriggerTracker.pendingCombatStartTriggerIds.sorted(),
+                ),
             resourcePools = snapshot.resourcePools.sortedBy(ResourcePoolSnapshot::type),
             talentLoadout =
                 talentLoadout?.copy(
@@ -654,6 +667,7 @@ internal object SessionSnapshotMapper {
                 } ?: base.effect,
             resourceTypeId = base.resourceTypeId,
             magnitude = snapshot.magnitude,
+            passive = base.passive,
         )
     }
 
