@@ -1806,7 +1806,6 @@ class FoundationGameSession internal constructor(
         val tracker = world.get<AiTriggerTracker>(monsterId) ?: return false
         if (!targetVisible) {
             tracker.engagedInCombat = false
-            tracker.consumedTriggerIds.clear()
             tracker.pendingCombatStartTriggerIds.clear()
             return false
         }

@@ -1174,6 +1174,37 @@ class FoundationGameSessionTest {
     }
 
     @Test
+    fun `boss opening trigger stays consumed after losing sight and re engaging`() {
+        val session =
+            GameModule.newFoundationSession(
+                config = FoundationGameConfig(seed = 20260322L, zoneId = "grey_gate_depths", playerProfessionId = "vanguard"),
+                saveManager = SaveManager(tempDir.resolve("boss-trigger-los-save")),
+            )
+        movePlayerTo(session, stairPoint(session, com.ktome.core.dungeon.StairDirection.DOWN))
+        assertTrue(session.perform(PlayerCommand.Descend))
+
+        val bossId = requireNotNull(entityByTemplateId(session, "cultist.dungeon_lord"))
+        val bossPoint = requireNotNull(runtimeWorld(session).get<Position>(bossId)).toPoint()
+        movePlayerTo(session, findOpenAdjacentPoint(session, bossPoint))
+
+        assertTrue(session.perform(PlayerCommand.Wait))
+        assertEquals(setOf("dungeon_lord_opening_war_cry"), aiTriggerTracker(session, bossId).consumedTriggerIds)
+
+        movePlayerTo(session, findOpenPointAtDistance(session, center = bossPoint, distance = 9))
+
+        assertTrue(session.perform(PlayerCommand.Wait))
+        assertFalse(aiTriggerTracker(session, bossId).engagedInCombat)
+        assertEquals(setOf("dungeon_lord_opening_war_cry"), aiTriggerTracker(session, bossId).consumedTriggerIds)
+
+        movePlayerTo(session, findOpenAdjacentPoint(session, bossPoint))
+
+        assertTrue(session.perform(PlayerCommand.Wait))
+        assertTrue(aiTriggerTracker(session, bossId).engagedInCombat)
+        assertTrue(aiTriggerTracker(session, bossId).pendingCombatStartTriggerIds.isEmpty())
+        assertEquals(setOf("dungeon_lord_opening_war_cry"), aiTriggerTracker(session, bossId).consumedTriggerIds)
+    }
+
+    @Test
     fun `boss hp trigger posts message after forced talent`() {
         val session =
             GameModule.newFoundationSession(
