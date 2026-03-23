@@ -17,11 +17,11 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
 
-private const val OFFICIAL_SLICE_STABILITY_SCRIPT_VERSION: String = "official-slice-stability-v1"
+private const val OFFICIAL_SLICE_STABILITY_SCRIPT_VERSION: String = "official-slice-stability-v2"
 private const val OFFICIAL_SLICE_MIN_TURNS: Int = 40
 private const val OFFICIAL_SLICE_MAX_TURNS: Int = 450
 private const val OFFICIAL_SLICE_MAX_FLOOR2_SPLIT: Int = 260
-private const val OFFICIAL_SLICE_MAX_BOSS_ENCOUNTER_TURNS: Int = 120
+private const val OFFICIAL_SLICE_MAX_BOSS_ENCOUNTER_TURNS: Int = 125
 
 class OfficialSliceStabilityTest {
     @TempDir

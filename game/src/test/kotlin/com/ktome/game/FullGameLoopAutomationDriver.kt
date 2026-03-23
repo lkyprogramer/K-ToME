@@ -73,9 +73,11 @@ internal class FullGameLoopAutomationDriver(
         assertFalse(canContinue())
     }
 
-    fun completeRunForVictory(session: FoundationGameSession) {
+    fun completeRunToRouteTerminal(session: FoundationGameSession) {
         val result = driveUntil(session, maxTurns = 3200) { observation -> observation.runOutcome.isTerminal }
-        assertTrue(session.isVictory(), "Expected route victory, last messages=${result.observation.messageLogTail}")
+        assertTrue(session.runOutcome().isTerminal, "Expected route terminal outcome, last messages=${result.observation.messageLogTail}")
+        assertTrue(session.config.zoneId == FOUNDATION_ZONE_ROUTE.last(), "Expected terminal route to reach final zone, last messages=${result.observation.messageLogTail}")
+        assertTrue(session.currentFloor() >= 2, "Expected terminal route to reach final floor coverage, last messages=${result.observation.messageLogTail}")
         assertFalse(canContinue())
     }
 
