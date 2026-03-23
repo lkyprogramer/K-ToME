@@ -232,4 +232,41 @@ class CombatResolverTest {
         assertEquals(expectedHealthAfterApply, observedHealthDuringCallback)
         assertEquals(observedHealthDuringCallback, requireNotNull(world.get<Health>(target)).current)
     }
+
+    @Test
+    fun `world damage callbacks can mutate target health without resolver overwriting it`() {
+        val resolver = CombatResolver(TestRandomSource(doubles = listOf(0.0, 0.99), ints = listOf(0)))
+        val world = World()
+        val attacker = world.createEntity()
+        val target = world.createEntity()
+        world.add(attacker, Stats(str = 10, dex = 10, con = 10, wil = 10))
+        world.add(attacker, CombatProfile(baseAttack = 12, baseDefense = 0, baseAccuracy = 20, baseHp = 40))
+        world.add(attacker, Health(current = 40, max = 40))
+        world.add(target, Stats(str = 10, dex = 0, con = 10, wil = 10))
+        world.add(target, CombatProfile(baseAttack = 4, baseDefense = 0, baseAccuracy = 0, baseEvasion = 0, baseHp = 30))
+        world.add(target, Health(current = 30, max = 30))
+
+        val result =
+            resolver.resolveMelee(
+                world = world,
+                attacker = attacker,
+                target = target,
+                callbacks =
+                    listOf(
+                        PipelineCallback(
+                            ownerId = EntityId(100),
+                            callbackName = "heal_on_damage_taken",
+                            phase = CombatCallbackPhase.ON_DAMAGE_TAKEN,
+                            priority = 10,
+                        ) {
+                            requireNotNull(world.get<Health>(target)).current += 5
+                            CallbackDecision()
+                        },
+                    ),
+            )
+
+        assertTrue(result.hit)
+        val expectedTentativeHealth = (30 - result.finalDamage).coerceAtLeast(0)
+        assertEquals(expectedTentativeHealth + 5, requireNotNull(world.get<Health>(target)).current)
+    }
 }

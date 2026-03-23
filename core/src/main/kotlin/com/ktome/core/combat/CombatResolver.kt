@@ -154,6 +154,8 @@ class CombatResolver(
         if (!outcome.hit || outcome.finalDamage <= 0) {
             return
         }
-        targetHealth.current = outcome.packet.remainingHpAfterApply.coerceAtLeast(0)
+        if (outcome.packet.remainingHpAfterApply > 0 && targetHealth.current <= 0) {
+            targetHealth.current = outcome.packet.remainingHpAfterApply
+        }
     }
 }

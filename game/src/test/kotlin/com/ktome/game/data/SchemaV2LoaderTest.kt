@@ -271,6 +271,36 @@ class SchemaV2LoaderTest {
     }
 
     @Test
+    fun `schema v2 loader rejects save gated effects without save dimension`() {
+        val loader = DataLoader(GameLocale.EN_US)
+        val parseMethod =
+            DataLoader::class.java.getDeclaredMethod("parseTalentLevelEffect", Map::class.java).apply {
+                isAccessible = true
+            }
+
+        val error =
+            assertThrows(InvocationTargetException::class.java) {
+                parseMethod.invoke(
+                    loader,
+                    linkedMapOf(
+                        "associatedEffects" to
+                            listOf(
+                                linkedMapOf(
+                                    "effectId" to "invalid_save_gate",
+                                    "effectType" to "STUNNED",
+                                    "applicationPolicy" to "HOSTILE_HIT_THEN_SAVE",
+                                    "duration" to 2,
+                                ),
+                            ),
+                    ),
+                )
+            }
+
+        assertTrue(error.cause is IllegalArgumentException)
+        assertTrue(error.cause?.message?.contains("requires saveDimension") == true)
+    }
+
+    @Test
     fun `fixed seed loot corpora surface long sword and shadow cloak on formal short run reward paths`() {
         val loader = DataLoader(GameLocale.EN_US)
         val schemaCatalog = loader.loadSchemaCatalog()

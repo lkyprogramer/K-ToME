@@ -537,7 +537,7 @@ class DataLoader(
                             saveDimension = configuredEffect.optionalString("saveDimension"),
                             duration = configuredEffect.optionalInt("duration"),
                             magnitude = configuredEffect.optionalDouble("magnitude", 0.0),
-                        )
+                        ).also(::validateAssociatedEffectSchema)
                     },
                 cleanseEffect =
                     effect.optionalMap("cleanseEffect")?.let { configuredCleanse ->
@@ -561,6 +561,13 @@ class DataLoader(
         require(configuredLegacyFields.isEmpty()) {
             "Talent effect uses removed legacy fields ${configuredLegacyFields.joinToString()}; " +
                 "use associatedEffects/cleanseEffect plus healFraction/resourceRestoreFraction instead."
+        }
+    }
+
+    private fun validateAssociatedEffectSchema(effect: AssociatedStatusEffectSchemaV2) {
+        val applicationPolicy = ApplicationPolicy.valueOf(effect.applicationPolicy)
+        require(!applicationPolicy.requiresSave() || effect.saveDimension != null) {
+            "Associated effect ${effect.effectId} requires saveDimension for $applicationPolicy."
         }
     }
 
