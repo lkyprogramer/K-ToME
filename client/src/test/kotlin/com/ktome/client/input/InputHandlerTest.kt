@@ -13,6 +13,8 @@ import com.ktome.core.snapshot.PlayerStatusSnapshot
 import com.ktome.core.snapshot.PropRenderSnapshot
 import com.ktome.core.snapshot.RenderMetadataSnapshot
 import com.ktome.core.snapshot.RenderSnapshot
+import com.ktome.core.snapshot.TalentReserveSnapshot
+import com.ktome.core.snapshot.TalentSlotSnapshot
 import com.ktome.core.snapshot.RenderUiStateSnapshot
 import com.ktome.game.GameModule
 import com.ktome.game.PlayerCommand
@@ -123,6 +125,63 @@ class InputHandlerTest {
         input.clear()
         input.frame()
         assertNull(handler.pollCommand(snapshot))
+    }
+
+    @Test
+    fun `l enters loadout edit and enter equips selected reserve talent`() {
+        val input = ReplayInputSource()
+        val handler = InputHandler(input)
+        val snapshot =
+            snapshotWithLoadout(
+                reserveTalents =
+                    listOf(
+                        reserveTalent("charge", "talent.vanguard.charge.name"),
+                        reserveTalent("sweeping_strike", "talent.vanguard.sweeping_strike.name"),
+                    ),
+            )
+
+        input.frame(justPressed = setOf(Keys.L))
+        assertNull(handler.pollCommand(snapshot))
+        assertEquals(UiMode.LOADOUT_EDIT, handler.overlayState().mode)
+        input.clear()
+
+        input.frame(justPressed = setOf(Keys.NUM_4))
+        assertNull(handler.pollCommand(snapshot))
+        assertEquals(4, handler.overlayState().loadoutSlotSelection)
+        input.clear()
+
+        input.frame(justPressed = setOf(Keys.DOWN))
+        assertNull(handler.pollCommand(snapshot))
+        assertEquals(1, handler.overlayState().loadoutReserveSelection)
+        input.clear()
+
+        input.frame(justPressed = setOf(Keys.ENTER))
+        assertEquals(PlayerCommand.EquipTalentToSlot(slot = 4, talentId = "sweeping_strike"), handler.pollCommand(snapshot))
+    }
+
+    @Test
+    fun `loadout edit remains available while stat points are pending`() {
+        val input = ReplayInputSource()
+        val handler = InputHandler(input)
+        val snapshot = snapshotWithLoadout(statPoints = 1, reserveTalents = listOf(reserveTalent("charge", "talent.vanguard.charge.name")))
+
+        input.frame(justPressed = setOf(Keys.L))
+        assertNull(handler.pollCommand(snapshot))
+        assertEquals(UiMode.LOADOUT_EDIT, handler.overlayState().mode)
+        input.clear()
+
+        input.frame()
+        assertNull(handler.pollCommand(snapshot))
+        assertEquals(UiMode.LOADOUT_EDIT, handler.overlayState().mode)
+        input.clear()
+
+        input.frame(justPressed = setOf(Keys.ESCAPE))
+        assertNull(handler.pollCommand(snapshot))
+        assertEquals(UiMode.MAP, handler.overlayState().mode)
+
+        input.frame()
+        assertNull(handler.pollCommand(snapshot))
+        assertEquals(UiMode.STAT_ASSIGN, handler.overlayState().mode)
     }
 
     @Test
@@ -285,4 +344,111 @@ class InputHandlerTest {
         field.isAccessible = true
         return field.get(session) as World
     }
+
+    private fun snapshotWithLoadout(
+        statPoints: Int = 0,
+        reserveTalents: List<TalentReserveSnapshot> = emptyList(),
+    ): RenderSnapshot =
+        RenderSnapshot(
+            metadata =
+                RenderMetadataSnapshot(
+                    revision = 1,
+                    zoneId = "shattered_outpost",
+                    zoneNameKey = "zone.shattered_outpost.name",
+                    currentFloor = 1,
+                    maxFloor = 2,
+                    width = 8,
+                    height = 8,
+                    playerX = 3,
+                    playerY = 3,
+                    zoneVisualKey = "zone.shattered_outpost.visual",
+                    zoneAudioProfile = "audio.zone.shattered_outpost",
+                    tilesetKey = "tileset.ruins",
+                    ambientProfile = "ambient.shattered_outpost",
+                ),
+            mapCells =
+                listOf(
+                    MapCellSnapshot(
+                        x = 3,
+                        y = 3,
+                        visibility = CellVisibilitySnapshot.VISIBLE,
+                        terrainTypeId = "floor",
+                        terrainVisualKey = "tileset.ruins.ground_01",
+                    ),
+                ),
+            uiState =
+                RenderUiStateSnapshot(
+                    playerStatus =
+                        PlayerStatusSnapshot(
+                            currentHp = 12,
+                            maxHp = 12,
+                            currentResource = 8,
+                            maxResource = 8,
+                            resourceLabelKey = "ui.hud.stamina.short",
+                            resourceTypeId = "STAMINA",
+                            level = 1,
+                            currentExperience = 0,
+                            nextLevelRequirement = 12,
+                            statPoints = statPoints,
+                            talentPoints = 0,
+                            attack = 4,
+                            defense = 2,
+                            accuracy = 3,
+                            evasion = 2,
+                            speed = 100,
+                        ),
+                    equipment = emptyList(),
+                    talents =
+                        listOf(
+                            activeTalent(slot = 1, talentId = "power_strike", nameKey = "talent.vanguard.power_strike.name"),
+                            activeTalent(slot = 2, talentId = "shield_bash", nameKey = "talent.vanguard.shield_bash.name"),
+                            activeTalent(slot = 3, talentId = "guard_stance", nameKey = "talent.vanguard.guard_stance.name"),
+                            activeTalent(slot = 4, talentId = "war_cry", nameKey = "talent.vanguard.war_cry.name"),
+                        ),
+                    reserveTalents = reserveTalents,
+                    inventory = emptyList(),
+                    targetablePositions = emptyList(),
+                ),
+        )
+
+    private fun activeTalent(
+        slot: Int,
+        talentId: String,
+        nameKey: String,
+    ): TalentSlotSnapshot =
+        TalentSlotSnapshot(
+            slot = slot,
+            talentId = talentId,
+            nameKey = nameKey,
+            level = 1,
+            maxLevel = 5,
+            resourceCost = 8,
+            resourceLabelKey = "ui.hud.stamina.short",
+            resourceTypeId = "STAMINA",
+            range = 1,
+            minRange = 0,
+            currentCooldown = 0,
+            maxCooldown = 3,
+            requiresTarget = false,
+        )
+
+    private fun reserveTalent(
+        talentId: String,
+        nameKey: String,
+    ): TalentReserveSnapshot =
+        TalentReserveSnapshot(
+            talentId = talentId,
+            nameKey = nameKey,
+            level = 1,
+            maxLevel = 5,
+            resourceCost = 8,
+            resourceLabelKey = "ui.hud.stamina.short",
+            resourceTypeId = "STAMINA",
+            range = 3,
+            minRange = 1,
+            currentCooldown = 0,
+            maxCooldown = 3,
+            requiresTarget = true,
+            descKey = nameKey.replace(".name", ".desc"),
+        )
 }

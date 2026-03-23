@@ -2,11 +2,16 @@ package com.ktome.game.data
 
 import com.ktome.core.combat.DamageType
 import com.ktome.core.item.EquipmentPassive
+import com.ktome.core.item.ItemBaseDef
+import com.ktome.core.item.ItemDataBundle
+import com.ktome.core.item.ItemGenerator
+import com.ktome.core.random.RandomSource
 import com.ktome.game.i18n.GameLocale
 import com.ktome.game.data.schema.AITriggerConditionKindSchemaV2
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import kotlin.random.Random
 
 class SchemaV2LoaderTest {
     @Test
@@ -78,8 +83,16 @@ class SchemaV2LoaderTest {
         assertTrue(catalog.itemBundle.items.count { item -> "accessory" in item.tags } >= 4)
         assertTrue(catalog.itemBundle.items.count { item -> "consumable" in item.tags } >= 6)
         assertTrue(catalog.itemBundle.items.count { item -> setOf("reward", "boss_reward", "quest").any(item.tags::contains) } >= 2)
+        assertTrue(
+            catalog.itemBundle.items.count { item -> item.passive != null && "accessory" !in item.tags } >= 4,
+            "Phase 2 PR-F4 should expose at least four non-accessory passive items.",
+        )
         assertEquals("DamageVsTag", catalog.itemBundle.items.first { item -> item.id == "bandit_trophy" }.passive?.kind)
         assertEquals("ResistanceBonus", catalog.itemBundle.items.first { item -> item.id == "seal_reliquary" }.passive?.kind)
+        assertEquals("DamageVsTag", catalog.itemBundle.items.first { item -> item.id == "hunter_bow" }.passive?.kind)
+        assertEquals("DamageVsTag", catalog.itemBundle.items.first { item -> item.id == "long_sword" }.passive?.kind)
+        assertEquals("ResistanceBonus", catalog.itemBundle.items.first { item -> item.id == "chain_mail" }.passive?.kind)
+        assertEquals("ResistanceBonus", catalog.itemBundle.items.first { item -> item.id == "shadow_cloak" }.passive?.kind)
         assertTrue(catalog.visualKeys.contains("actor.vanguard"))
         assertTrue(catalog.visualKeys.contains("talent.arcanist.mana_surge.icon"))
         assertTrue(catalog.visualKeys.contains("icon.skill.rogue.backstab"))
@@ -97,14 +110,19 @@ class SchemaV2LoaderTest {
             listOf("healing_potion", "short_sword", "leather_armor", "bandit_trophy", "stamina_draught", "hunter_bow"),
             catalog.lootProfiles.first { it.id == "loot.foundation.common" }.itemIds,
         )
+        assertTrue(catalog.lootProfiles.first { it.id == "loot.foundation.common" }.itemIds.contains("hunter_bow"))
         assertEquals(
             listOf("basic_shield", "mana_potion", "chain_mail", "apprentice_robe", "long_sword", "emerald_charm", "furnace_talisman", "energy_tonic"),
             catalog.lootProfiles.first { it.id == "loot.foundation.elite" }.itemIds,
+        )
+        assertTrue(
+            catalog.lootProfiles.first { it.id == "loot.foundation.elite" }.itemIds.containsAll(listOf("chain_mail", "long_sword")),
         )
         assertEquals(
             listOf("battle_axe", "plate_armor", "arcane_staff", "scroll_teleport", "mana_potion", "forgebreaker_pick", "sanctified_seal", "seal_reliquary", "shadow_cloak", "consecrated_oil"),
             catalog.lootProfiles.first { it.id == "loot.foundation.boss" }.itemIds,
         )
+        assertTrue(catalog.lootProfiles.first { it.id == "loot.foundation.boss" }.itemIds.contains("shadow_cloak"))
         val banditCaptainAi = catalog.aiProfiles.first { it.id == "ai.boss.bandit_captain" }
         assertEquals(listOf("power_strike", "shield_bash"), banditCaptainAi.talentPriority)
         assertTrue(banditCaptainAi.skipRules.isEmpty())
@@ -136,6 +154,10 @@ class SchemaV2LoaderTest {
         assertEquals("火球", zhLoader.loadTalentDefinitions().first { it.id == "fireball" }.name)
         assertEquals(DamageType.FIRE, enLoader.loadTalentDefinitions().first { it.id == "fireball" }.damageType)
         assertTrue(enLoader.loadItemBundle().baseItems.first { it.id == "emerald_charm" }.passive is EquipmentPassive.HpRegenPerTurn)
+        assertTrue(enLoader.loadItemBundle().baseItems.first { it.id == "hunter_bow" }.passive is EquipmentPassive.DamageVsTag)
+        assertTrue(enLoader.loadItemBundle().baseItems.first { it.id == "long_sword" }.passive is EquipmentPassive.DamageVsTag)
+        assertTrue(enLoader.loadItemBundle().baseItems.first { it.id == "chain_mail" }.passive is EquipmentPassive.ResistanceBonus)
+        assertTrue(enLoader.loadItemBundle().baseItems.first { it.id == "shadow_cloak" }.passive is EquipmentPassive.ResistanceBonus)
         assertEquals(4, enLoader.loadTalentDefinitions().first { it.id == "blink" }.levelEffects.getValue(5).rangeBonus)
     }
 
@@ -177,5 +199,78 @@ class SchemaV2LoaderTest {
 
         assertEquals("ai.boss.bandit_captain", boss.aiProfileId)
         assertEquals("arena.shattered_outpost.boss", encounter.arenaId)
+    }
+
+    @Test
+    fun `fixed seed loot corpora surface long sword and shadow cloak on formal short run reward paths`() {
+        val loader = DataLoader(GameLocale.EN_US)
+        val schemaCatalog = loader.loadSchemaCatalog()
+        val itemBundle = loader.loadItemBundle()
+
+        val eliteProfile =
+            schemaCatalog.lootProfiles.first { profile -> profile.id == "loot.foundation.elite" }
+        val bossProfile =
+            schemaCatalog.lootProfiles.first { profile -> profile.id == "loot.foundation.boss" }
+
+        val eliteSeenBaseIds =
+            generatedLootBaseIds(
+                itemBundle = itemBundle,
+                candidateItems = eliteProfile.itemIds.map { itemId -> resolveBaseItem(itemBundle, itemId) },
+                floor = 2,
+                seeds = 20260318L..20260381L,
+            )
+        val bossSeenBaseIds =
+            generatedLootBaseIds(
+                itemBundle = itemBundle,
+                candidateItems = bossProfile.itemIds.map { itemId -> resolveBaseItem(itemBundle, itemId) },
+                floor = 4,
+                seeds = 20260318L..20260381L,
+            )
+
+        assertTrue(
+            "long_sword" in eliteSeenBaseIds,
+            "Expected fixed elite loot seed corpus to surface long_sword from loot.foundation.elite.",
+        )
+        assertTrue(
+            "shadow_cloak" in bossSeenBaseIds,
+            "Expected fixed boss loot seed corpus to surface shadow_cloak from loot.foundation.boss.",
+        )
+    }
+
+    private fun generatedLootBaseIds(
+        itemBundle: ItemDataBundle,
+        candidateItems: List<ItemBaseDef>,
+        floor: Int,
+        seeds: LongRange,
+    ): Set<String> =
+        seeds.map { seed ->
+            val random = RandomSource.from(Random(seed))
+            val floorCandidates = candidateItems.filter { item -> floor in item.dropFloors }.ifEmpty { candidateItems }
+            val chosenBase = chooseWeightedLootItem(floorCandidates, random)
+            ItemGenerator(itemBundle, random).generate(chosenBase, floor).baseId
+        }.toSet()
+
+    private fun resolveBaseItem(
+        itemBundle: ItemDataBundle,
+        itemId: String,
+    ): ItemBaseDef =
+        requireNotNull(itemBundle.baseItems.firstOrNull { item -> item.id == itemId }) {
+            "Missing item base $itemId in bundle."
+        }
+
+    private fun chooseWeightedLootItem(
+        candidates: List<ItemBaseDef>,
+        random: RandomSource,
+    ): ItemBaseDef {
+        val totalWeight = candidates.sumOf { item -> item.dropWeight.coerceAtLeast(1) }
+        require(totalWeight > 0) { "Loot selection requires a positive total weight." }
+        var roll = random.nextInt(0, totalWeight)
+        candidates.forEach { item ->
+            roll -= item.dropWeight.coerceAtLeast(1)
+            if (roll < 0) {
+                return item
+            }
+        }
+        return candidates.last()
     }
 }

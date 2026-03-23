@@ -16,15 +16,18 @@ import com.ktome.core.snapshot.GridPointSnapshot
 import com.ktome.core.snapshot.ItemRenderSnapshot
 import com.ktome.core.snapshot.MapCellSnapshot
 import com.ktome.core.snapshot.PlayerStatusSnapshot
+import com.ktome.core.snapshot.RenderLogEventSnapshot
 import com.ktome.core.snapshot.RenderMetadataSnapshot
 import com.ktome.core.snapshot.RenderSnapshot
 import com.ktome.core.snapshot.RenderTextArgumentSnapshot
 import com.ktome.core.snapshot.RenderTextTokenSnapshot
 import com.ktome.core.snapshot.RenderUiStateSnapshot
+import com.ktome.core.snapshot.TalentReserveSnapshot
 import com.ktome.core.snapshot.TalentSlotSnapshot
 import com.ktome.game.i18n.GameLocale
 import com.ktome.game.i18n.LocalizationBundle
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
@@ -174,8 +177,133 @@ class TileRendererCanvasTest {
             )
 
         assertTrue(model.sidebar.rows.any { row -> row.text == "1-4 use talent" })
+        assertTrue(model.sidebar.rows.any { row -> row.text == "L edit loadout" })
         assertTrue(model.sidebar.rows.any { row -> row.text == "Targeted talent: move cursor, Enter confirm" })
         assertTrue(model.hud.hotbar.single().resourceText.contains("AIM 4"))
+        assertTrue(model.sidebar.rows.any { row -> row.text == "A ruined border outpost and the opening stretch of the run." })
+    }
+
+    @Test
+    fun `zone description only appears in map sidebar`() {
+        val localizer = LocalizationBundle.load().translator(GameLocale.EN_US)
+        val mapModel =
+            TileRenderer.buildRenderModel(
+                localizer = localizer,
+                visualResolver = sampleResolver(),
+                snapshot = sampleSnapshot(),
+                overlayState = OverlayState(mode = UiMode.MAP),
+            )
+        val inventoryModel =
+            TileRenderer.buildRenderModel(
+                localizer = localizer,
+                visualResolver = sampleResolver(),
+                snapshot = sampleSnapshot(),
+                overlayState = OverlayState(mode = UiMode.INVENTORY),
+            )
+
+        assertTrue(mapModel.sidebar.rows.any { row -> row.text == "A ruined border outpost and the opening stretch of the run." })
+        assertFalse(inventoryModel.sidebar.rows.any { row -> row.text == "A ruined border outpost and the opening stretch of the run." })
+    }
+
+    @Test
+    fun `render model highlights high signal log families with distinct tones`() {
+        val localizer = LocalizationBundle.load().translator(GameLocale.EN_US)
+        val model =
+            TileRenderer.buildRenderModel(
+                localizer = localizer,
+                visualResolver = sampleResolver(),
+                snapshot =
+                    sampleSnapshot(
+                        logEvents =
+                            listOf(
+                                RenderLogEventSnapshot(
+                                    RenderTextTokenSnapshot(
+                                        key = "log.zone.enter",
+                                        arguments =
+                                            listOf(
+                                                RenderTextArgumentSnapshot(name = "zone", valueKey = "zone.shattered_outpost.name"),
+                                                RenderTextArgumentSnapshot(name = "desc", valueKey = "zone.shattered_outpost.desc"),
+                                            ),
+                                    ),
+                                ),
+                                RenderLogEventSnapshot(RenderTextTokenSnapshot("log.passive.damage_bonus_vs_tag")),
+                                RenderLogEventSnapshot(RenderTextTokenSnapshot("log.talent.damage_resisted")),
+                                RenderLogEventSnapshot(RenderTextTokenSnapshot("log.talent.damage_vulnerable")),
+                                RenderLogEventSnapshot(RenderTextTokenSnapshot("log.level_up")),
+                                RenderLogEventSnapshot(RenderTextTokenSnapshot("log.boss.enrage")),
+                            ),
+                    ),
+                overlayState = OverlayState(mode = UiMode.MAP),
+            )
+
+        assertEquals(
+            listOf(
+                TileTextTone.CYAN,
+                TileTextTone.GREEN,
+                TileTextTone.BLUE,
+                TileTextTone.RED,
+                TileTextTone.GOLD,
+                TileTextTone.RED,
+            ),
+            model.messageLines.map { line -> line.tone },
+        )
+    }
+
+    @Test
+    fun `loadout edit sidebar shows active slots reserve talents and equip controls`() {
+        val localizer = LocalizationBundle.load().translator(GameLocale.EN_US)
+        val model =
+            TileRenderer.buildRenderModel(
+                localizer = localizer,
+                visualResolver = sampleResolver(),
+                snapshot =
+                    sampleSnapshot(
+                        talents =
+                            listOf(
+                                TalentSlotSnapshot(
+                                    slot = 1,
+                                    talentId = "power_strike",
+                                    nameKey = "talent.vanguard.power_strike.name",
+                                    level = 1,
+                                    maxLevel = 5,
+                                    resourceCost = 8,
+                                    resourceLabelKey = "ui.hud.stamina.short",
+                                    resourceTypeId = "STAMINA",
+                                    range = 1,
+                                    minRange = 0,
+                                    currentCooldown = 0,
+                                    maxCooldown = 3,
+                                    requiresTarget = false,
+                                ),
+                            ),
+                        reserveTalents =
+                            listOf(
+                                TalentReserveSnapshot(
+                                    talentId = "charge",
+                                    nameKey = "talent.vanguard.charge.name",
+                                    level = 1,
+                                    maxLevel = 5,
+                                    resourceCost = 10,
+                                    resourceLabelKey = "ui.hud.stamina.short",
+                                    resourceTypeId = "STAMINA",
+                                    range = 3,
+                                    minRange = 1,
+                                    currentCooldown = 0,
+                                    maxCooldown = 4,
+                                    requiresTarget = true,
+                                    descKey = "talent.vanguard.charge.desc",
+                                ),
+                            ),
+                    ),
+                overlayState = OverlayState(mode = UiMode.LOADOUT_EDIT, loadoutSlotSelection = 1, loadoutReserveSelection = 0),
+            )
+
+        assertEquals("Loadout", model.sidebar.title)
+        assertTrue(model.sidebar.rows.any { row -> row.text == "Active Slots" })
+        assertTrue(model.sidebar.rows.any { row -> row.text == "Reserve Talents" })
+        assertTrue(model.sidebar.rows.any { row -> row.text.contains("Charge 1/5") })
+        assertTrue(model.sidebar.rows.any { row -> row.text == "Rush a distant enemy. Higher ranks add stun." })
+        assertTrue(model.sidebar.rows.any { row -> row.text == "1-4 choose slot  W/X move reserve  E equip  L/Esc close" })
     }
 
     @Test
@@ -277,6 +405,8 @@ class TileRendererCanvasTest {
         height: Int = 1,
         cells: List<MapCellSnapshot>? = null,
         talents: List<TalentSlotSnapshot> = emptyList(),
+        reserveTalents: List<TalentReserveSnapshot> = emptyList(),
+        logEvents: List<RenderLogEventSnapshot> = emptyList(),
     ): RenderSnapshot =
         RenderSnapshot(
             metadata =
@@ -284,6 +414,7 @@ class TileRendererCanvasTest {
                     revision = 1,
                     zoneId = "shattered_outpost",
                     zoneNameKey = "zone.shattered_outpost.name",
+                    zoneDescKey = "zone.shattered_outpost.desc",
                     currentFloor = 1,
                     maxFloor = 2,
                     width = width,
@@ -352,9 +483,11 @@ class TileRendererCanvasTest {
                     ),
                     equipment = emptyList(),
                     talents = talents,
+                    reserveTalents = reserveTalents,
                     inventory = emptyList(),
                     targetablePositions = listOf(GridPointSnapshot(0, 0)),
                 ),
+            logEvents = logEvents,
         )
 }
 

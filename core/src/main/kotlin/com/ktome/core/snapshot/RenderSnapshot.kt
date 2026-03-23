@@ -18,6 +18,7 @@ data class RenderMetadataSnapshot(
     val revision: Long,
     val zoneId: String,
     val zoneNameKey: String,
+    val zoneDescKey: String? = null,
     val currentFloor: Int,
     val maxFloor: Int,
     val width: Int,
@@ -128,6 +129,7 @@ data class RenderUiStateSnapshot(
     val playerStatus: PlayerStatusSnapshot,
     val equipment: List<EquipmentSlotSnapshot>,
     val talents: List<TalentSlotSnapshot>,
+    val reserveTalents: List<TalentReserveSnapshot> = emptyList(),
     val inventory: List<InventoryEntrySnapshot>,
     val targetablePositions: List<GridPointSnapshot>,
 )
@@ -177,6 +179,28 @@ data class TalentSlotSnapshot(
     val currentCooldown: Int,
     val maxCooldown: Int,
     val requiresTarget: Boolean,
+    val descKey: String? = null,
+)
+
+@Serializable
+data class TalentReserveSnapshot(
+    val talentId: String,
+    val nameKey: String,
+    val visualKey: String? = null,
+    val iconKey: String? = null,
+    val damageTypeIconKey: String? = null,
+    val audioProfile: String? = null,
+    val level: Int,
+    val maxLevel: Int,
+    val resourceCost: Int,
+    val resourceLabelKey: String,
+    val resourceTypeId: String = "STAMINA",
+    val range: Int,
+    val minRange: Int,
+    val currentCooldown: Int,
+    val maxCooldown: Int,
+    val requiresTarget: Boolean,
+    val descKey: String? = null,
 )
 
 @Serializable

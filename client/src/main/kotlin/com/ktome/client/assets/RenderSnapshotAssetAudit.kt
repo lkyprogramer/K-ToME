@@ -47,6 +47,12 @@ class RenderSnapshotAssetAudit(
             resolveVisual(talent.damageTypeIconKey)
             resolveAudio(talent.audioProfile)
         }
+        snapshot.uiState.reserveTalents.forEach { talent ->
+            resolveVisual(talent.visualKey)
+            resolveVisual(talent.iconKey)
+            resolveVisual(talent.damageTypeIconKey)
+            resolveAudio(talent.audioProfile)
+        }
         snapshot.uiState.inventory.forEach { item ->
             auditItem(item.item)
         }

@@ -9,14 +9,16 @@ import com.badlogic.gdx.graphics.glutils.HdpiMode
 import com.badlogic.gdx.utils.GdxRuntimeException
 import com.badlogic.gdx.utils.ScreenUtils
 import com.ktome.client.GameApp
+import com.ktome.client.automationWorld
+import com.ktome.client.installReserveTalent
 import com.ktome.client.input.CommandSource
 import com.ktome.client.input.InputSource
 import com.ktome.client.input.OverlayState
 import com.ktome.client.input.UiMode
+import com.ktome.client.render.TileRenderer
 import com.ktome.core.dungeon.StairDirection
 import com.ktome.core.ecs.EntityId
 import com.ktome.core.ecs.Position
-import com.ktome.core.ecs.World
 import com.ktome.core.ecs.get
 import com.ktome.core.map.Point
 import com.ktome.core.save.SaveManager
@@ -48,13 +50,15 @@ class GoldenScreenshotHarnessTest {
         assertEquals(
             listOf(
                 "820a41898093a475e4a32e72925e32b07268d2130ff1af55b63ad2926adeae33",
-                "5f1d0a0beefe35591632a36775affbe7888ad7f8388b0f0e26b826744fe1129d",
-                "f80ad05054066dc3269b3521adbd9af18d3f4feb3ad61755a3f0695aa2c62e40",
-                "7e86ed2a97316e35f70438b676a96ee2faaa9d2e61a6b65c96ac2635a27d56a2",
+                "77f7ad2e55ef733be41520f872ea3164071bd4de98ab78dae65a20e631b721da",
+                "d91fcac794c5b646cff50e8ff3b8753c2ae4ef05937f54e27a25377885747865",
+                "6f031feda0f5b571062eaed71048715ab13ad8bf3d1894f9e0f0fccc2879bdf4",
+                "c27ecc9b75ca6fb833da88d2d2b7dadde90af8ba61b88ab0a7fada893ac94044",
                 "3ef9508e890a818d8d80ee5e2d09486007b647fa1d14413b854548931e8bbdbb",
-                "6a0d93bde0b6058c725a9ccb06f2ec3b437669ce69ccc2df80ac40b2ee6c9b67",
-                "2cf6ff321b1c3abc1e074943445a1cba2fc5406054ea1958fad5207f7c5ea2bd",
-                "470c23e05d96ba48099b0543ab5dbc6002fd321fc58026e4a976bd8589d1feeb",
+                "e56d962493cfb1d606dbf183bb36ea2f4bf10cf8575e031f849a18988d4c6037",
+                "3be187cd3a8c04a1b30498e2cdcbb859c41c30a9b5a10ff1f98a3924a1bbb085",
+                "aee1dc853f3d989b8fa83e4822afc0828d2991eef1cb2bff2969d847b650d44e",
+                "393029017e19960d9170904555f6d2b3612558173bcce3a7b5a3f45f95ce2bb6",
             ),
             english + chinese,
         )
@@ -67,8 +71,8 @@ class GoldenScreenshotHarnessTest {
 
         assertEquals(
             listOf(
-                "ac51ba53b925c41690275ef69fc077d3a6d3f0b570928dd2ddceee7149b53f78",
-                "8e4acbf07a3563abf6510557147aa5175cda0359bdf7cff38b6ca4ed69e21f1e",
+                "1cca9ddddb188ef88deffe12c5f05e6f9b90496516ee421cced7573a42f785e3",
+                "6e39aaa2a084bc9e9eae651b9807dede078f4d9d7fd1b90cd85dbc5254876edd",
             ),
             listOf(english, chinese),
         )
@@ -81,12 +85,40 @@ class GoldenScreenshotHarnessTest {
 
         assertEquals(
             listOf(
-                "7ea2a898a69c4004cd508b557d142c067160a7ce8c51eaf46233a0d5b82644c5",
-                "82bb30ac7c565acd07ecbc5ae708ee4a31ebb3ec956916ad020ab6205d947460",
-                "086a00c58a1092862105214b197a2c0cdc733ec56d309f72ae91c6ff5875c753",
-                "31c00678f72b3937cb08a34954c6bc2c90cead3743e7b8c9e88c797c64f647e2",
-                "f0164cdd7d72451810e92ecbfde126db1826fe3b7149442154eb93d14ff62911",
-                "1b7bea26db556726694f74d4a5761a8a5ae420364e34ac16ea7d78bea2f2b4e8",
+                "90bf9e5b5e69ae43b400375e4a223ae46627933d0e876ddbc3ec967d1e3802cf",
+                "b3f0e67e671b89450a812165614bf4ee6d8ed1bd902989709e2f68e297c7b73e",
+                "fa423d9786135ef41c8cd2ccafedf215e0cfe612721004c7a7b4a90051d58df4",
+                "ca7c57294761076c1d1430dde5327897e94f4842142a0481eee66ef48e215c25",
+                "fa06c48a1749ab42af7a620e89f44ba67bea21b0b8c8d4b6b7b0bc376d593840",
+                "a19c959c0673f1c9e93260637ca8aa50e81ecd610cefc720806047e7eb3cd38a",
+            ),
+            english + chinese,
+        )
+    }
+
+    @Test
+    fun `gameplay log emphasis hashes remain stable for english and chinese`() {
+        val english =
+            listOf(
+                captureFormalLogHash(GameLocale.EN_US, "log-tone-formal-en"),
+                captureRouteMidpointLogHash(GameLocale.EN_US, "log-tone-route-en"),
+                captureBossWarningLogHash(GameLocale.EN_US, "log-tone-boss-en"),
+            )
+        val chinese =
+            listOf(
+                captureFormalLogHash(GameLocale.ZH_CN, "log-tone-formal-zh"),
+                captureRouteMidpointLogHash(GameLocale.ZH_CN, "log-tone-route-zh"),
+                captureBossWarningLogHash(GameLocale.ZH_CN, "log-tone-boss-zh"),
+            )
+
+        assertEquals(
+            listOf(
+                "1b31abf9392c4162b7caba0d6c564d5568b9e192cbc2a9467835e1e20585f5a8",
+                "1c90f155f8760570387901d0d5bfc8a0ad7310b88a7ad959658ff0920ef83743",
+                "8e5f389fabac712b78b97acf0392e10d1c45015b5b0e1e6bdb6dac109cd46ad9",
+                "caec9b15deb06a9b5a9a2c14be6a43e68feecfc121e4a9505b490a9cc7bec828",
+                "be5bd37c46dc1b4abe00a97e5e6bf4f03d777d1722c1d83c50f4ab3fc3a0d0b8",
+                "9bcf3a9f7856201ad11f7daa00d1b99d8d1e999d99c8941068eb769047312330",
             ),
             english + chinese,
         )
@@ -100,9 +132,9 @@ class GoldenScreenshotHarnessTest {
         assertEquals(
             listOf(
                 "6f2b6ca634c01f6c86b868148ec92347ec89a4a43c13b40cede0c9bb2a83fc65",
-                "c8f83fe0a33039f71c8dbc4e5b3c5162a0667beed8d2e5ceacd1b8a4bb970e37",
+                "b149b1b2f2e2a04ad494f19a8d3e99b1740d1d4e7545e61c361a356aae408fb8",
                 "b8d0501796817d28853fd81302c4e48ecaf3ba50782b26c4064b403c5d9981f3",
-                "7f418c9f08973502e7123d485120b602979f18ef0cf36ca550722c35c2e7d38c",
+                "9a2f4da614c4afe432d6d033c1f45217ab349ccd6b71d0f665bc939809c4493f",
             ),
             english + chinese,
         )
@@ -122,6 +154,7 @@ class GoldenScreenshotHarnessTest {
                     playerProfessionId = "vanguard",
                 ),
             includeMenu = true,
+            includeLoadout = true,
         )
 
     private fun captureRouteMidpointSet(
@@ -141,11 +174,81 @@ class GoldenScreenshotHarnessTest {
                 ),
         )
 
+    private fun captureFormalLogHash(
+        locale: GameLocale,
+        saveFolderName: String,
+    ): String =
+        withLwjgl3Context(width = 1280, height = 800) {
+            val overlaySource = MutableOverlayCommandSource()
+            val app =
+                GameApp(
+                    saveManager = SaveManager(tempDir.resolve(saveFolderName)),
+                    defaultConfig =
+                        FoundationGameConfig(
+                            seed = 20260318L,
+                            zoneId = "shattered_outpost",
+                            playerProfessionId = "vanguard",
+                        ),
+                    menuInputSourceFactory = { NoOpInputSource },
+                    gameCommandSourceFactory = { overlaySource },
+                    outcomeInputSourceFactory = { NoOpInputSource },
+                    renderEnabled = true,
+                    initialLocale = locale,
+                )
+
+            try {
+                app.create()
+                app.startNewGame()
+                val session = requireNotNull(app.activeSessionOrNull()) { "Expected active session for formal log golden capture." }
+                installReserveTalent(session, "charge", fixtureLabel = "golden loadout fixture")
+                overlaySource.overlayState = OverlayState(mode = UiMode.MAP)
+                captureGameplayLogHash(session) { repeat(2) { app.render() } }
+            } finally {
+                app.dispose()
+            }
+        }
+
+    private fun captureRouteMidpointLogHash(
+        locale: GameLocale,
+        saveFolderName: String,
+    ): String =
+        withLwjgl3Context(width = 1280, height = 800) {
+            val overlaySource = MutableOverlayCommandSource()
+            val app =
+                GameApp(
+                    saveManager = SaveManager(tempDir.resolve(saveFolderName)),
+                    defaultConfig =
+                        FoundationGameConfig(
+                            seed = 20260316L,
+                            zoneId = "deep_iron_pit",
+                            playerProfessionId = "rogue",
+                            zoneRoute = FOUNDATION_ZONE_ROUTE,
+                            routeIndex = 2,
+                        ),
+                    menuInputSourceFactory = { NoOpInputSource },
+                    gameCommandSourceFactory = { overlaySource },
+                    outcomeInputSourceFactory = { NoOpInputSource },
+                    renderEnabled = true,
+                    initialLocale = locale,
+                )
+
+            try {
+                app.create()
+                app.startNewGame()
+                val session = requireNotNull(app.activeSessionOrNull()) { "Expected active session for route log golden capture." }
+                overlaySource.overlayState = OverlayState(mode = UiMode.MAP)
+                captureGameplayLogHash(session) { repeat(2) { app.render() } }
+            } finally {
+                app.dispose()
+            }
+        }
+
     private fun captureGameplaySet(
         locale: GameLocale,
         saveFolderName: String,
         defaultConfig: FoundationGameConfig,
         includeMenu: Boolean = false,
+        includeLoadout: Boolean = false,
     ): List<String> =
         withLwjgl3Context(width = 1280, height = 800) {
             val overlaySource = MutableOverlayCommandSource()
@@ -168,6 +271,13 @@ class GoldenScreenshotHarnessTest {
                 }
 
                 app.startNewGame()
+                if (includeLoadout) {
+                    installReserveTalent(
+                        requireNotNull(app.activeSessionOrNull()) { "Expected an active session for loadout golden capture." },
+                        "charge",
+                        fixtureLabel = "golden loadout fixture",
+                    )
+                }
                 hashes +=
                     captureHash {
                         overlaySource.overlayState = OverlayState(mode = UiMode.MAP)
@@ -178,6 +288,13 @@ class GoldenScreenshotHarnessTest {
                         overlaySource.overlayState = OverlayState(mode = UiMode.INVENTORY, inventorySelection = 0)
                         repeat(2) { app.render() }
                     }
+                if (includeLoadout) {
+                    hashes +=
+                        captureHash {
+                            overlaySource.overlayState = OverlayState(mode = UiMode.LOADOUT_EDIT, loadoutSlotSelection = 1, loadoutReserveSelection = 0)
+                            repeat(2) { app.render() }
+                        }
+                }
                 hashes +=
                     captureHash {
                         overlaySource.overlayState = OverlayState(mode = UiMode.INSPECT)
@@ -233,6 +350,48 @@ class GoldenScreenshotHarnessTest {
                 assertTrue(snapshot.logEvents.any { event -> event.message.key == "log.warning.telegraph" })
                 overlaySource.overlayState = OverlayState(mode = UiMode.MAP)
                 return@withLwjgl3Context captureHash { repeat(2) { app.render() } }
+            } finally {
+                app.dispose()
+            }
+        }
+
+    private fun captureBossWarningLogHash(
+        locale: GameLocale,
+        saveFolderName: String,
+    ): String =
+        withLwjgl3Context(width = 1280, height = 800) {
+            val overlaySource = MutableOverlayCommandSource()
+            val app =
+                GameApp(
+                    saveManager = SaveManager(tempDir.resolve(saveFolderName)),
+                    defaultConfig =
+                        FoundationGameConfig(
+                            seed = 20260317L,
+                            zoneId = "grey_gate_depths",
+                            playerProfessionId = "templar",
+                        ),
+                    menuInputSourceFactory = { NoOpInputSource },
+                    gameCommandSourceFactory = { overlaySource },
+                    outcomeInputSourceFactory = { NoOpInputSource },
+                    renderEnabled = true,
+                    initialLocale = locale,
+                )
+
+            try {
+                app.create()
+                app.startNewGame()
+                val session = requireNotNull(app.activeSessionOrNull()) { "Expected active session for boss log golden capture." }
+                val stairsDown = requireNotNull(automationStairPoint(session, StairDirection.DOWN)) { "Expected downstairs entry for boss log golden capture." }
+                automationMovePlayerTo(session, stairsDown)
+                app.render()
+                check(session.perform(PlayerCommand.Descend)) { "Failed to descend into boss floor for locale ${locale.id}." }
+                app.render()
+
+                val bossId = requireNotNull(automationEntityByTemplateId(session, "cultist.dungeon_lord")) { "Expected dungeon lord boss for boss log golden capture." }
+                val bossPoint = requireNotNull(automationWorld(session).get<Position>(bossId)) { "Expected boss position for boss log golden capture." }.toPoint()
+                automationMovePlayerTo(session, bossPoint)
+                overlaySource.overlayState = OverlayState(mode = UiMode.MAP)
+                captureGameplayLogHash(session) { repeat(2) { app.render() } }
             } finally {
                 app.dispose()
             }
@@ -299,6 +458,38 @@ class GoldenScreenshotHarnessTest {
         render()
         Gdx.gl.glFinish()
         val pixmap = ScreenUtils.getFrameBufferPixmap(0, 0, Gdx.graphics.backBufferWidth, Gdx.graphics.backBufferHeight)
+        return try {
+            pixmapHash(pixmap)
+        } finally {
+            pixmap.dispose()
+        }
+    }
+
+    private fun captureGameplayLogHash(
+        snapshotSource: FoundationGameSession,
+        render: () -> Unit,
+    ): String {
+        val snapshot = snapshotSource.renderSnapshot()
+        val layout = TileRenderer.layoutMetrics(snapshot.metadata.width, snapshot.metadata.height, cellWidth = 32f, cellHeight = 32f)
+        return captureHash(
+            x = layout.logX.toInt(),
+            y = layout.cardY.toInt(),
+            width = layout.logWidth.toInt(),
+            height = layout.cardHeight.toInt(),
+            render = render,
+        )
+    }
+
+    private fun captureHash(
+        x: Int,
+        y: Int,
+        width: Int,
+        height: Int,
+        render: () -> Unit,
+    ): String {
+        render()
+        Gdx.gl.glFinish()
+        val pixmap = ScreenUtils.getFrameBufferPixmap(x, y, width, height)
         return try {
             pixmapHash(pixmap)
         } finally {
@@ -398,9 +589,6 @@ private class MutableOverlayCommandSource : CommandSource {
 
     override fun isMapMode(): Boolean = overlayState.mode == UiMode.MAP
 }
-
-private fun automationWorld(session: FoundationGameSession): World =
-    invokeSessionInternal(session, "automationWorld") as World
 
 private fun automationMovePlayerTo(
     session: FoundationGameSession,

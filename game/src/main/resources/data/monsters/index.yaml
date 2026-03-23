@@ -110,6 +110,7 @@ monsters:
     ai: CHASE
     aiProfileId: ai.boss.dungeon_lord
     lootProfileId: loot.foundation.boss
+    resistances: { SHADOW: 20, HOLY: -20 }
     talents: { war_cry: 3, power_strike: 4, charge: 2 }
     expReward: 300
     spawnFloors: [5]
@@ -202,10 +203,11 @@ monsters:
     ai: KITE
     aiProfileId: ai.kite.basic
     lootProfileId: loot.foundation.common
+    resistances: { FIRE: -10 }
     talents: {}
     expReward: 34
     spawnFloors: [1, 2]
-    spawnWeight: 7
+    spawnWeight: 5
   - id: undead.restless_skeleton
     nameKey: monster.undead.restless_skeleton.name
     descKey: monster.undead.restless_skeleton.desc
@@ -249,6 +251,7 @@ monsters:
     ai: CHASE
     aiProfileId: ai.chase.basic
     lootProfileId: loot.foundation.elite
+    resistances: { HOLY: -15, SHADOW: 15 }
     talents: {}
     expReward: 48
     spawnFloors: [2]
@@ -272,6 +275,7 @@ monsters:
     ai: CHASE
     aiProfileId: ai.boss.bandit_captain
     lootProfileId: loot.foundation.boss
+    resistances: { FIRE: -10 }
     talents: { war_cry: 1, shield_bash: 1, power_strike: 2, charge: 1 }
     expReward: 220
     spawnFloors: [2]
@@ -348,6 +352,7 @@ monsters:
     ai: CHASE
     aiProfileId: ai.skirmisher.flank
     lootProfileId: loot.foundation.common
+    resistances: { FIRE: -10 }
     talents: {}
     expReward: 30
     spawnFloors: [2, 3]
@@ -373,6 +378,7 @@ monsters:
     ai: KITE
     aiProfileId: ai.kite.basic
     lootProfileId: loot.foundation.common
+    resistances: { HOLY: -15, SHADOW: 10 }
     talents: {}
     expReward: 32
     spawnFloors: [2, 3]
@@ -427,7 +433,7 @@ monsters:
     resistances: { FIRE: 15, COLD: -10 }
     talents: {}
     expReward: 46
-    spawnFloors: [3, 4]
+    spawnFloors: [1, 2]
     spawnWeight: 7
   - id: cultist.ember_adept
     nameKey: monster.cultist.ember_adept.name
@@ -453,7 +459,7 @@ monsters:
     resistances: { FIRE: 20, HOLY: -15 }
     talents: {}
     expReward: 40
-    spawnFloors: [3, 4]
+    spawnFloors: [1, 2]
     spawnWeight: 6
   - id: undead.ash_wraith
     nameKey: monster.undead.ash_wraith.name
@@ -501,9 +507,10 @@ monsters:
     ai: CHASE
     aiProfileId: ai.elite.forge_guard
     lootProfileId: loot.foundation.elite
+    resistances: { FIRE: 20, COLD: -10 }
     talents: { war_cry: 2, shield_bash: 2 }
     expReward: 72
-    spawnFloors: [4]
+    spawnFloors: [2]
     spawnWeight: 3
   - id: cultist.shadow_priest
     nameKey: monster.cultist.shadow_priest.name
@@ -526,9 +533,10 @@ monsters:
     ai: KITE
     aiProfileId: ai.controller.shadow_priest
     lootProfileId: loot.foundation.common
+    resistances: { SHADOW: 20, HOLY: -15 }
     talents: {}
     expReward: 48
-    spawnFloors: [4, 5]
+    spawnFloors: [1, 2]
     spawnWeight: 5
   - id: undead.chain_thrall
     nameKey: monster.undead.chain_thrall.name
@@ -551,9 +559,10 @@ monsters:
     ai: CHASE
     aiProfileId: ai.guard.basic
     lootProfileId: loot.foundation.common
+    resistances: { HOLY: -20, SHADOW: 15 }
     talents: {}
     expReward: 50
-    spawnFloors: [4, 5]
+    spawnFloors: [1, 2]
     spawnWeight: 6
   - id: cultist.ashgate_warden
     nameKey: monster.cultist.ashgate_warden.name
@@ -576,7 +585,8 @@ monsters:
     ai: CHASE
     aiProfileId: ai.elite.ashgate_warden
     lootProfileId: loot.foundation.common
+    resistances: { SHADOW: 15, HOLY: -10 }
     talents: {}
     expReward: 86
-    spawnFloors: [5]
+    spawnFloors: [2]
     spawnWeight: 2

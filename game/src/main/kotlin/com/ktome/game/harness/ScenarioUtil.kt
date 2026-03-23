@@ -109,6 +109,7 @@ object RunObservationCapture {
             knownDownstairsPositions = knownDownstairsPositions,
             inventoryItems = session.inventoryItems(),
             talentSlots = session.talentSlots(),
+            reserveTalents = session.reserveTalentSlots(),
             canAscend = session.canAscend(),
             canDescend = session.canDescend(),
             runOutcome = session.runOutcome(),
@@ -144,7 +145,17 @@ internal fun RunObservation.signature(): String =
         append('/')
         append(playerStatus.speed)
         append('|')
-        append(talentSlots.joinToString(separator = ",") { "${it.slot}:${it.currentCooldown}" })
+        append(
+            talentSlots.joinToString(separator = ",") { slot ->
+                "${slot.slot}:${slot.talentId}:${slot.currentCooldown}"
+            },
+        )
+        append('|')
+        append(
+            reserveTalents.joinToString(separator = ",") { talent ->
+                "${talent.talentId}:${talent.currentCooldown}"
+            },
+        )
         append('|')
         append(inventoryItems.size)
         append('|')
@@ -182,6 +193,7 @@ internal fun PlayerCommand.consumesTurn(): Boolean =
         is PlayerCommand.ActivateInventoryItem,
         -> true
 
+        is PlayerCommand.EquipTalentToSlot,
         is PlayerCommand.AssignStat,
         is PlayerCommand.AssignTalent,
         PlayerCommand.SaveGame,

@@ -8,6 +8,8 @@ import com.ktome.core.map.Point
 import com.ktome.core.run.RunOutcome
 import com.ktome.core.snapshot.RenderTextTokenSnapshot
 
+const val PLAYER_ACTIVE_TALENT_SLOT_COUNT: Int = 4
+
 sealed interface PlayerCommand {
     data class Move(val delta: Point) : PlayerCommand
 
@@ -26,6 +28,8 @@ sealed interface PlayerCommand {
     data class ActivateInventoryItem(val index: Int) : PlayerCommand
 
     data class UseTalent(val slot: Int, val target: Point? = null) : PlayerCommand
+
+    data class EquipTalentToSlot(val slot: Int, val talentId: String) : PlayerCommand
 
     data class AssignStat(val stat: PrimaryStat) : PlayerCommand
 
@@ -89,6 +93,22 @@ data class TalentSlotView(
     val slot: Int,
     val talentId: String,
     val name: String,
+    val descKey: String? = null,
+    val level: Int,
+    val maxLevel: Int,
+    val resourceCost: Int,
+    val resourceTypeId: String = "STAMINA",
+    val range: Int,
+    val minRange: Int,
+    val currentCooldown: Int,
+    val maxCooldown: Int,
+    val requiresTarget: Boolean,
+)
+
+data class TalentReserveView(
+    val talentId: String,
+    val name: String,
+    val descKey: String? = null,
     val level: Int,
     val maxLevel: Int,
     val resourceCost: Int,

@@ -7,7 +7,6 @@ import com.badlogic.gdx.utils.Disposable
 import com.ktome.client.assets.VisualManifestResolver
 import com.ktome.client.input.OverlayState
 import com.ktome.client.input.UiMode
-import com.ktome.client.ui.MessageLog
 import com.ktome.core.snapshot.RenderSnapshot
 import com.ktome.game.i18n.Localizer
 
@@ -22,7 +21,6 @@ class AsciiRenderer(
         color = Color.WHITE
     }
     private val uiFont = KtomeFonts.createUiFont(size = 18)
-    private val messageLog = MessageLog(maxLines = messageRows)
 
     fun render(
         batch: SpriteBatch,
@@ -61,15 +59,10 @@ class AsciiRenderer(
             messageRows * cellHeight + cellHeight - 4f,
         )
 
-        uiFont.color = Color.WHITE
-        messageLog.render(
-            batch = batch,
-            font = uiFont,
-            messages = model.messageLines,
-            x = 4f,
-            baselineY = 12f,
-            lineHeight = cellHeight,
-        )
+        model.messageLines.takeLast(messageRows).forEachIndexed { index, entry ->
+            uiFont.color = tone(entry.tone)
+            uiFont.draw(batch, entry.text, 4f, 12f + index * cellHeight)
+        }
 
         val sidebarX = (snapshot.metadata.width + 1) * cellWidth
         var line = mapOffsetY + mapHeight * cellHeight - 4f
@@ -112,6 +105,8 @@ class AsciiRenderer(
             AsciiTextTone.LIGHT_GRAY -> Color.LIGHT_GRAY
             AsciiTextTone.CYAN -> Color.CYAN
             AsciiTextTone.GRAY -> Color.GRAY
+            AsciiTextTone.GREEN -> Color.valueOf("59C173")
+            AsciiTextTone.RED -> Color.valueOf("D95959")
         }
 
     companion object {
@@ -149,6 +144,7 @@ class AsciiRenderer(
             when (mode) {
                 UiMode.MAP -> localizer.text("ui.sidebar.ground")
                 UiMode.INVENTORY -> localizer.text("ui.sidebar.inventory")
+                UiMode.LOADOUT_EDIT -> localizer.text("ui.sidebar.loadout")
                 UiMode.TARGETING -> localizer.text("ui.sidebar.targeting")
                 UiMode.INSPECT -> localizer.text("ui.sidebar.inspect")
                 UiMode.STAT_ASSIGN -> localizer.text("ui.sidebar.assign_stats")

@@ -17,7 +17,9 @@ import com.ktome.core.snapshot.RenderSnapshot
 import com.ktome.core.snapshot.RenderTextArgumentSnapshot
 import com.ktome.core.snapshot.RenderTextTokenSnapshot
 import com.ktome.core.snapshot.StatusEffectRenderSnapshot
+import com.ktome.core.snapshot.TalentReserveSnapshot
 import com.ktome.core.snapshot.TalentSlotSnapshot
+import com.ktome.game.PLAYER_ACTIVE_TALENT_SLOT_COUNT
 import com.ktome.game.i18n.Localizer
 
 internal enum class TileTextTone {
@@ -49,6 +51,11 @@ internal data class TileTextRow(
     val tone: TileTextTone,
     val icon: ResolvedVisualAsset? = null,
     val selected: Boolean = false,
+)
+
+internal data class TileMessageLine(
+    val text: String,
+    val tone: TileTextTone,
 )
 
 internal data class TileGaugeModel(
@@ -105,7 +112,7 @@ internal data class TileRenderModel(
     val targetCursor: com.ktome.core.map.Point?,
     val inspectCursor: com.ktome.core.map.Point?,
     val hud: TileHudModel,
-    val messageLines: List<String>,
+    val messageLines: List<TileMessageLine>,
     val sidebar: TileSidebarModel,
 )
 
@@ -180,7 +187,13 @@ internal object TileRenderModelBuilder {
             targetCursor = overlayState.targetingCursor,
             inspectCursor = overlayState.inspectCursor,
             hud = buildHud(localizer, visualResolver, snapshot, overlayState, player, actorById, cellByPoint),
-            messageLines = snapshot.logEvents.map { event -> renderLogEvent(localizer, event) },
+            messageLines =
+                snapshot.logEvents.map { event ->
+                    TileMessageLine(
+                        text = renderLogEvent(localizer, event),
+                        tone = messageTone(event.message.key),
+                    )
+                },
             sidebar = buildSidebar(localizer, visualResolver, snapshot, overlayState, player, actorById, cellByPoint),
         )
     }
@@ -273,6 +286,9 @@ internal object TileRenderModelBuilder {
 
         when (overlayState.mode) {
             UiMode.MAP -> {
+                snapshot.metadata.zoneDescKey?.let { descKey ->
+                    rows += TileTextRow(localizer.text(descKey), TileTextTone.LIGHT_GRAY)
+                }
                 rows += TileTextRow(localizer.text("ui.sidebar.equipment"), TileTextTone.GOLD)
                 snapshot.uiState.equipment.forEach { equipment ->
                     val item = equipment.item
@@ -301,6 +317,7 @@ internal object TileRenderModelBuilder {
                 rows += TileTextRow(localizer.text("ui.controls.map.save"), TileTextTone.LIGHT_GRAY)
                 if (snapshot.uiState.talents.isNotEmpty()) {
                     rows += TileTextRow(localizer.text("ui.controls.map.use_talent"), TileTextTone.LIGHT_GRAY)
+                    rows += TileTextRow(localizer.text("ui.controls.map.edit_loadout"), TileTextTone.LIGHT_GRAY)
                 }
                 if (snapshot.uiState.talents.any(TalentSlotSnapshot::requiresTarget)) {
                     rows += TileTextRow(localizer.text("ui.controls.map.target_talent"), TileTextTone.LIGHT_GRAY)
@@ -345,6 +362,42 @@ internal object TileRenderModelBuilder {
                     }
                 }
                 rows += TileTextRow(localizer.text("ui.controls.inventory"), TileTextTone.LIGHT_GRAY)
+            }
+
+            UiMode.LOADOUT_EDIT -> {
+                val activeTalents = snapshot.uiState.talents.associateBy(TalentSlotSnapshot::slot)
+                rows += TileTextRow(localizer.text("ui.sidebar.active_loadout"), TileTextTone.GOLD)
+                (1..PLAYER_ACTIVE_TALENT_SLOT_COUNT).forEach { slot ->
+                    val talent = activeTalents[slot]
+                    rows +=
+                        TileTextRow(
+                            text = loadoutSlotLabel(localizer, slot, talent),
+                            tone = if (overlayState.loadoutSlotSelection == slot) TileTextTone.CYAN else TileTextTone.WHITE,
+                            icon = talent?.iconKey?.let { resolveVisual(visualResolver, it) },
+                            selected = overlayState.loadoutSlotSelection == slot,
+                        )
+                }
+                rows += TileTextRow(localizer.text("ui.sidebar.reserve_talents"), TileTextTone.GOLD)
+                if (snapshot.uiState.reserveTalents.isEmpty()) {
+                    rows += TileTextRow(localizer.text("ui.sidebar.empty"), TileTextTone.GRAY)
+                } else {
+                    snapshot.uiState.reserveTalents.forEachIndexed { index, talent ->
+                        rows +=
+                            TileTextRow(
+                                text = reserveTalentLabel(localizer, talent),
+                                tone = if (overlayState.loadoutReserveSelection == index) TileTextTone.CYAN else TileTextTone.WHITE,
+                                icon = talent.iconKey?.let { resolveVisual(visualResolver, it) },
+                                selected = overlayState.loadoutReserveSelection == index,
+                            )
+                    }
+                    snapshot.uiState.reserveTalents.getOrNull(overlayState.loadoutReserveSelection)?.let { talent ->
+                        talent.descKey?.let { descKey ->
+                            rows += TileTextRow(localizer.text(descKey), TileTextTone.LIGHT_GRAY)
+                        }
+                        rows += TileTextRow(talentUsageSummary(localizer, talent), TileTextTone.LIGHT_GRAY)
+                    }
+                }
+                rows += TileTextRow(localizer.text("ui.controls.loadout"), TileTextTone.LIGHT_GRAY)
             }
 
             UiMode.TARGETING -> {
@@ -477,6 +530,17 @@ internal object TileRenderModelBuilder {
             else -> TileTextTone.GREEN
         }
 
+    private fun messageTone(messageKey: String): TileTextTone =
+        when {
+            messageKey == "log.talent.damage_resisted" -> TileTextTone.BLUE
+            messageKey == "log.talent.damage_vulnerable" -> TileTextTone.RED
+            messageKey.startsWith("log.passive.") -> TileTextTone.GREEN
+            messageKey.startsWith("log.level_up") -> TileTextTone.GOLD
+            messageKey == "log.zone.enter" -> TileTextTone.CYAN
+            messageKey.startsWith("log.boss.") -> TileTextTone.RED
+            else -> TileTextTone.WHITE
+        }
+
     private fun overlayAlpha(dangerLevel: Int): Float =
         when {
             dangerLevel >= 3 -> 0.85f
@@ -556,12 +620,25 @@ internal object TileRenderModelBuilder {
     private fun talentUsageSummary(
         localizer: Localizer,
         talent: TalentSlotSnapshot,
+    ): String = talentUsageSummary(localizer, talent.resourceCost, talent.resourceLabelKey, talent.requiresTarget, talent.range)
+
+    private fun talentUsageSummary(
+        localizer: Localizer,
+        talent: TalentReserveSnapshot,
+    ): String = talentUsageSummary(localizer, talent.resourceCost, talent.resourceLabelKey, talent.requiresTarget, talent.range)
+
+    private fun talentUsageSummary(
+        localizer: Localizer,
+        resourceCost: Int,
+        resourceLabelKey: String,
+        requiresTarget: Boolean,
+        range: Int,
     ): String {
-        val resourceText = "${talent.resourceCost} ${localizer.text(talent.resourceLabelKey)}"
-        if (!talent.requiresTarget) {
+        val resourceText = "$resourceCost ${localizer.text(resourceLabelKey)}"
+        if (!requiresTarget) {
             return resourceText
         }
-        return "$resourceText · ${localizer.text("ui.sidebar.target.range", "range" to talent.range)}"
+        return "$resourceText · ${localizer.text("ui.sidebar.target.range", "range" to range)}"
     }
 
     private fun talentSidebarLabel(
@@ -573,9 +650,33 @@ internal object TileRenderModelBuilder {
                 " [${localizer.text("ui.sidebar.target.range", "range" to talent.range)}]"
             } else {
                 ""
-            }
+        }
         return "${talent.slot}. ${localizer.text(talent.nameKey)} ${talent.level}/${talent.maxLevel}$targetSuffix"
     }
+
+    private fun reserveTalentLabel(
+        localizer: Localizer,
+        talent: TalentReserveSnapshot,
+    ): String {
+        val targetSuffix =
+            if (talent.requiresTarget) {
+                " [${localizer.text("ui.sidebar.target.range", "range" to talent.range)}]"
+            } else {
+                ""
+            }
+        return "${localizer.text(talent.nameKey)} ${talent.level}/${talent.maxLevel}$targetSuffix"
+    }
+
+    private fun loadoutSlotLabel(
+        localizer: Localizer,
+        slot: Int,
+        talent: TalentSlotSnapshot?,
+    ): String =
+        if (talent == null) {
+            "$slot. ${localizer.text("ui.sidebar.empty")}"
+        } else {
+            "$slot. ${localizer.text(talent.nameKey)} ${talent.level}/${talent.maxLevel}"
+        }
 
     private fun renderTextToken(
         localizer: Localizer,

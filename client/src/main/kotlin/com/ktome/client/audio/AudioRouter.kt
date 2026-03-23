@@ -158,6 +158,8 @@ class AudioRouter(
 
         val selectionChanged =
             previous.inventorySelection != current.inventorySelection ||
+                previous.loadoutSlotSelection != current.loadoutSlotSelection ||
+                previous.loadoutReserveSelection != current.loadoutReserveSelection ||
                 previous.targetingCursor != current.targetingCursor ||
                 previous.inspectCursor != current.inspectCursor
         if (selectionChanged) {
@@ -205,6 +207,7 @@ class AudioRouter(
         if (!consumed) {
             when (command) {
                 is PlayerCommand.ActivateInventoryItem,
+                is PlayerCommand.EquipTalentToSlot,
                 PlayerCommand.Interact,
                 is PlayerCommand.UseTalent,
                 PlayerCommand.Ascend,
@@ -229,6 +232,7 @@ class AudioRouter(
             PlayerCommand.Descend,
             -> play("audio.interactable.stairs")
 
+            is PlayerCommand.EquipTalentToSlot,
             is PlayerCommand.AssignStat,
             is PlayerCommand.AssignTalent,
             PlayerCommand.SaveGame,

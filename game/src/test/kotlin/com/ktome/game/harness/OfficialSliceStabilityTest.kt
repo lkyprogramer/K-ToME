@@ -183,6 +183,7 @@ class OfficialSliceStabilityTest {
             is PlayerCommand.ActivateInventoryItem -> "ActivateInventoryItem(${command.index})"
             is PlayerCommand.UseTalent ->
                 command.target?.let { target -> "UseTalent(${command.slot},${target.x},${target.y})" } ?: "UseTalent(${command.slot})"
+            is PlayerCommand.EquipTalentToSlot -> "EquipTalentToSlot(${command.slot},${command.talentId})"
             is PlayerCommand.AssignStat -> "AssignStat(${command.stat})"
             is PlayerCommand.AssignTalent -> "AssignTalent(${command.slot})"
         }

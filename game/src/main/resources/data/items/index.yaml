@@ -149,6 +149,7 @@ items:
     glyph: ")"
     color: "#C0C0C0"
     baseAttack: 8
+    passive: { kind: DamageVsTag, tag: undead, bonusPercent: 0.10 }
     dropFloors: [2, 3, 4, 5]
     dropWeight: 7
     materials: [IRON, STEEL, MITHRIL, ADAMANTITE]
@@ -196,6 +197,7 @@ items:
     glyph: "["
     color: "#808080"
     baseDefense: 6
+    passive: { kind: ResistanceBonus, damageType: FIRE, amount: 8 }
     dropFloors: [2, 3, 4]
     dropWeight: 5
   - id: basic_shield
@@ -322,6 +324,7 @@ items:
     color: "#7A6A54"
     baseAttack: 7
     stats: { dex: 1, accuracy: 2 }
+    passive: { kind: DamageVsTag, tag: bandit, bonusPercent: 0.10 }
     dropFloors: [2, 3]
     dropWeight: 6
     materials: [IRON, STEEL, MITHRIL]
@@ -373,6 +376,7 @@ items:
     color: "#4E4B5E"
     baseDefense: 4
     stats: { dex: 1, evasion: 2 }
+    passive: { kind: ResistanceBonus, damageType: SHADOW, amount: 8 }
     dropFloors: [4, 5]
     dropWeight: 4
   - id: bandit_trophy

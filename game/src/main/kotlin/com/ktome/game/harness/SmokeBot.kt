@@ -30,6 +30,7 @@ class SmokeBot : RunBot {
         if (observation.playerStatus.talentPoints > 0) {
             preferredTalentUpgrade(observation)?.let { slot -> return PlayerCommand.AssignTalent(slot.slot) }
         }
+        LoadoutPlanner.preferredLoadoutCommand(observation)?.let { return it }
         if (observation.inventoryItems.size < SMOKE_BOT_INVENTORY_CAPACITY && observation.visibleGroundItemPositions.any { it == observation.playerPosition }) {
             return PlayerCommand.PickUp
         }

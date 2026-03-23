@@ -195,6 +195,18 @@ object GameModule {
     ): List<RenderLogEventSnapshot> =
         buildList {
             add(RenderLogEventSnapshot(RenderTextTokenSnapshot("log.session.enter_dungeon")))
+            add(
+                RenderLogEventSnapshot(
+                    RenderTextTokenSnapshot(
+                        "log.zone.enter",
+                        arguments =
+                            listOf(
+                                RenderTextArgumentSnapshot(name = "zone", valueKey = zone.nameKey),
+                                RenderTextArgumentSnapshot(name = "desc", valueKey = zone.descKey),
+                            ),
+                    ),
+                ),
+            )
             val objective = schemaCatalog.objectiveSets.firstOrNull { objectiveSet -> objectiveSet.id == zone.objectiveSetId }
             if (objective != null) {
                 add(
@@ -277,6 +289,7 @@ object GameModule {
             occupiedPoints += resolvedBossPosition
         } else {
             spawnMonsters(
+                zone = zone,
                 factory = factory,
                 world = world,
                 map = map,
@@ -324,6 +337,7 @@ object GameModule {
     }
 
     private fun spawnMonsters(
+        zone: ZoneSchemaV2,
         factory: EntityFactory,
         world: World,
         map: com.ktome.core.map.GameMap,
@@ -338,22 +352,25 @@ object GameModule {
         if (availableTemplates.isEmpty() || roomCandidates.isEmpty()) {
             return
         }
-        val spawnCount = desiredCount.coerceIn(1, roomCandidates.size)
-        val selectedTemplates = selectMonsterTemplates(availableTemplates, spawnCount, random)
+        val maxSpawnSlots = roomCandidates.size + if (allowsRoomPack(zone, floor)) 1 else 0
+        val spawnCount = desiredCount.coerceIn(1, maxSpawnSlots)
+        val selectedTemplates = selectMonsterTemplates(zone, floor, availableTemplates, spawnCount, random)
+        val plannedRooms = plannedMonsterRooms(zone, floor, roomCandidates, selectedTemplates.size, random)
 
-        roomCandidates
-            .shuffled(random)
-            .take(selectedTemplates.size)
+        plannedRooms
             .zip(selectedTemplates)
-            .forEach { (room, template) ->
-            val spawnPoint = findSpawnPoint(room, map, occupiedPoints)
-            factory.createMonster(
-                world = world,
-                template = template,
-                position = spawnPoint,
-                patrolRoute = if (resolveAiType(template) == AIType.PATROL) buildPatrolRoute(room) else null,
-            )
-            occupiedPoints += spawnPoint
+            .groupBy({ (room, _) -> room }, { (_, template) -> template })
+            .forEach { (room, templates) ->
+                val spawnPoints = findSpawnPoints(room, map, occupiedPoints, templates.size)
+                templates.zip(spawnPoints).forEach { (template, spawnPoint) ->
+                    factory.createMonster(
+                        world = world,
+                        template = template,
+                        position = spawnPoint,
+                        patrolRoute = if (resolveAiType(template) == AIType.PATROL) buildPatrolRoute(room) else null,
+                    )
+                    occupiedPoints += spawnPoint
+                }
             }
     }
 
@@ -362,38 +379,158 @@ object GameModule {
         floor: Int,
         roomCount: Int,
     ): Int {
-        val roomBudget = (roomCount - 1).coerceAtLeast(1)
-        return when {
-            zone.id == "shattered_outpost" && floor == 1 -> roomBudget.coerceIn(4, 5)
-            else -> roomBudget.coerceAtMost(2)
+        return when (zone.id) {
+            "shattered_outpost" -> if (floor == 1) 3 else 4
+            "greenwood_fringe" -> if (floor == 1) 4 else 5
+            else -> roomCount.coerceAtMost(4).coerceAtLeast(3)
         }
     }
 
     private fun selectMonsterTemplates(
+        zone: ZoneSchemaV2,
+        floor: Int,
         availableTemplates: List<MonsterTemplate>,
         desiredCount: Int,
         random: Random,
     ): List<MonsterTemplate> {
-        val legacyBehaviorSelection =
-            listOf(AIType.CHASE, AIType.KITE, AIType.PATROL)
-                .mapNotNull { behavior -> availableTemplates.firstOrNull { resolveAiType(it) == behavior } }
+        val uniqueCatalog = availableTemplates.distinctBy(MonsterTemplate::id)
+        val selected = encounterAnchorTemplates(zone, floor, uniqueCatalog, random).take(desiredCount).toMutableList()
+
+        while (selected.size < desiredCount) {
+            val weightedUniqueCandidate =
+                selectWeightedTemplate(
+                    candidates = uniqueCatalog,
+                    zone = zone,
+                    floor = floor,
+                    selected = selected,
+                    random = random,
+                    uniqueOnly = true,
+                )
+            if (weightedUniqueCandidate != null) {
+                selected += weightedUniqueCandidate
+                continue
+            }
+            val weightedDuplicateCandidate =
+                selectWeightedTemplate(
+                    candidates = availableTemplates,
+                    zone = zone,
+                    floor = floor,
+                    selected = selected,
+                    random = random,
+                    uniqueOnly = false,
+                ) ?: break
+            selected += weightedDuplicateCandidate
+        }
+        selected.shuffle(random)
+        return selected
+    }
+
+    private fun encounterAnchorTemplates(
+        zone: ZoneSchemaV2,
+        floor: Int,
+        availableTemplates: List<MonsterTemplate>,
+        random: Random,
+    ): List<MonsterTemplate> {
+        val selected = mutableListOf<MonsterTemplate>()
+        encounterBehaviorOrder(zone, floor).forEach { behavior ->
+            selectWeightedTemplate(
+                candidates = availableTemplates.filter { template -> resolveAiType(template) == behavior },
+                zone = zone,
+                floor = floor,
+                selected = selected,
+                random = random,
+                uniqueOnly = true,
+            )?.let(selected::add)
+        }
+        return selected
+    }
+
+    private fun selectWeightedTemplate(
+        candidates: List<MonsterTemplate>,
+        zone: ZoneSchemaV2,
+        floor: Int,
+        selected: List<MonsterTemplate>,
+        random: Random,
+        uniqueOnly: Boolean,
+    ): MonsterTemplate? {
+        val selectedIds = if (uniqueOnly) selected.mapTo(linkedSetOf(), MonsterTemplate::id) else emptySet()
+        val weightedPool =
+            candidates
+                .asSequence()
+                .filter { template -> !uniqueOnly || template.id !in selectedIds }
+                .filter { template -> canSelectEncounterTemplate(zone, floor, selected, template) }
                 .distinctBy(MonsterTemplate::id)
-        if (desiredCount <= legacyBehaviorSelection.size) {
-            return legacyBehaviorSelection.take(desiredCount)
+                .toList()
+        if (weightedPool.isEmpty()) {
+            return null
+        }
+        return chooseWeightedTemplate(weightedPool, random)
+    }
+
+    private fun encounterBehaviorOrder(
+        zone: ZoneSchemaV2,
+        floor: Int,
+    ): List<AIType> =
+        when {
+            zone.id == "shattered_outpost" && floor == 1 -> listOf(AIType.CHASE, AIType.PATROL)
+            else -> listOf(AIType.CHASE, AIType.KITE, AIType.PATROL)
         }
 
-        val guaranteed =
-            availableTemplates
-                .distinctBy(MonsterTemplate::id)
-                .sortedByDescending(MonsterTemplate::spawnWeight)
-                .take(desiredCount)
-                .toMutableList()
-
-        while (guaranteed.size < desiredCount) {
-            guaranteed += chooseWeightedTemplate(availableTemplates, random)
+    private fun canSelectEncounterTemplate(
+        zone: ZoneSchemaV2,
+        floor: Int,
+        selected: List<MonsterTemplate>,
+        candidate: MonsterTemplate,
+    ): Boolean {
+        if (resolveAiType(candidate) != AIType.KITE) {
+            return true
         }
-        guaranteed.shuffle(random)
-        return guaranteed
+        return selected.count { template -> resolveAiType(template) == AIType.KITE } < maxKiteSpawnCount(zone, floor)
+    }
+
+    private fun maxKiteSpawnCount(
+        zone: ZoneSchemaV2,
+        floor: Int,
+    ): Int =
+        when {
+            zone.id == "shattered_outpost" && floor == 1 -> 0
+            zone.id == "greenwood_fringe" && floor == 1 -> 1
+            else -> Int.MAX_VALUE
+        }
+
+    private fun allowsRoomPack(
+        zone: ZoneSchemaV2,
+        floor: Int,
+    ): Boolean =
+        when (zone.id) {
+            "shattered_outpost" -> floor == 1
+            "greenwood_fringe" -> floor <= 2
+            else -> false
+        }
+
+    private fun plannedMonsterRooms(
+        zone: ZoneSchemaV2,
+        floor: Int,
+        roomCandidates: List<Room>,
+        spawnCount: Int,
+        random: Random,
+    ): List<Room> {
+        if (spawnCount <= 0 || roomCandidates.isEmpty()) {
+            return emptyList()
+        }
+        val shuffledRooms = roomCandidates.shuffled(random)
+        if (!allowsRoomPack(zone, floor) || spawnCount < 3) {
+            return shuffledRooms.take(spawnCount)
+        }
+
+        val packRoom = shuffledRooms.firstOrNull { room -> room.width >= 6 && room.height >= 6 } ?: return shuffledRooms.take(spawnCount)
+        val planned = mutableListOf(packRoom, packRoom)
+        val remainingRooms = shuffledRooms.filterNot { room -> room == packRoom }
+        planned += remainingRooms.take((spawnCount - planned.size).coerceAtLeast(0))
+        while (planned.size < spawnCount) {
+            planned += shuffledRooms[(planned.size - 1).mod(shuffledRooms.size)]
+        }
+        return planned
     }
 
     private fun chooseWeightedTemplate(
@@ -422,28 +559,48 @@ object GameModule {
     ) {
         val itemRooms = map.rooms.drop(1).take(4)
         itemRooms.forEach { room ->
-            val spawnPoint = findSpawnPoint(room, map, occupiedPoints)
+            val spawnPoint = findSpawnPoints(room, map, occupiedPoints).first()
             itemFactory.createGroundItem(world, itemGenerator.generate(floor), spawnPoint)
             occupiedPoints += spawnPoint
         }
     }
 
-    private fun findSpawnPoint(
+    private fun findSpawnPoints(
         room: Room,
         map: com.ktome.core.map.GameMap,
         occupiedPoints: Set<Point>,
-    ): Point {
-        val candidates = sequenceOf(
-            room.center,
+        count: Int = 1,
+    ): List<Point> {
+        val reserved = occupiedPoints.toMutableSet()
+        val preferred = mutableListOf<Point>()
+        preferred += room.center
+        preferred += listOf(
+            Point(room.center.x + 1, room.center.y),
+            Point(room.center.x - 1, room.center.y),
+            Point(room.center.x, room.center.y + 1),
+            Point(room.center.x, room.center.y - 1),
             Point(room.left + 1, room.top + 1),
             Point(room.right - 1, room.bottom - 1),
             Point(room.left + 1, room.bottom - 1),
             Point(room.right - 1, room.top + 1),
-        ).distinct()
+        )
+        preferred +=
+            (room.left + 1 until room.right).flatMap { x ->
+                (room.top + 1 until room.bottom).map { y -> Point(x, y) }
+            }
 
-        return candidates.firstOrNull { point ->
-            !map[point].blocksMovement && point !in occupiedPoints
-        } ?: room.center
+        val result = mutableListOf<Point>()
+        preferred.distinct().forEach { point ->
+            if (result.size >= count) {
+                return@forEach
+            }
+            if (!room.contains(point) || map[point].blocksMovement || point in reserved) {
+                return@forEach
+            }
+            result += point
+            reserved += point
+        }
+        return result.ifEmpty { listOf(room.center) }.take(count)
     }
 
     private fun buildPatrolRoute(room: Room): PatrolRoute {
@@ -912,6 +1069,16 @@ object GameModule {
         val unknownZoneIds = config.zoneRoute.filterNot { zoneId -> schemaCatalog.zones.any { zone -> zone.id == zoneId } }
         if (unknownZoneIds.isNotEmpty()) {
             return "Zone route contains unknown zone ids: $unknownZoneIds."
+        }
+        val duplicateZoneIds =
+            config.zoneRoute
+                .groupingBy { zoneId -> zoneId }
+                .eachCount()
+                .filterValues { count -> count > 1 }
+                .keys
+                .toList()
+        if (duplicateZoneIds.isNotEmpty()) {
+            return "Zone route must not repeat zone ids: $duplicateZoneIds."
         }
         return null
     }

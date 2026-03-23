@@ -92,14 +92,15 @@ import com.ktome.core.snapshot.RenderTextArgumentSnapshot
 import com.ktome.core.snapshot.RenderTextTokenSnapshot
 import com.ktome.core.snapshot.RenderUiStateSnapshot
 import com.ktome.core.snapshot.StatusEffectRenderSnapshot
+import com.ktome.core.snapshot.TalentReserveSnapshot
 import com.ktome.core.snapshot.TalentSlotSnapshot
 import com.ktome.core.stats.StatsCalculator
 import com.ktome.core.talent.CooldownState
+import com.ktome.core.talent.DamageMultiplierResolver
 import com.ktome.core.talent.EffectTracker
 import com.ktome.core.talent.StatusEffectType
-import com.ktome.core.talent.TalentLoadout
 import com.ktome.core.talent.TalentFailureCode
-import com.ktome.core.talent.DamageMultiplierResolver
+import com.ktome.core.talent.TalentLoadout
 import com.ktome.core.talent.TalentRegistry
 import com.ktome.core.talent.TalentResolver
 import com.ktome.core.talent.TalentUseResult
@@ -156,6 +157,21 @@ class FoundationGameSession internal constructor(
         val maxHp: Int,
         val resourceTypeId: String,
         val resourceMax: Int,
+    )
+
+    private data class TalentUiDetails(
+        val talentId: String,
+        val name: String,
+        val descKey: String?,
+        val level: Int,
+        val maxLevel: Int,
+        val resourceCost: Int,
+        val resourceTypeId: String,
+        val range: Int,
+        val minRange: Int,
+        val currentCooldown: Int,
+        val maxCooldown: Int,
+        val requiresTarget: Boolean,
     )
 
     var config: FoundationGameConfig = config
@@ -395,30 +411,97 @@ class FoundationGameSession internal constructor(
     fun talentSlots(): List<TalentSlotView> {
         val loadout = world.get<TalentLoadout>(playerId) ?: return emptyList()
         val cooldowns = world.get<CooldownState>(playerId)?.remainingByTalentId.orEmpty()
-        return loadout.slotToTalentId.entries.sortedBy { it.key }.mapNotNull { (slot, talentId) ->
-            val definition = talentRegistry.get(talentId) ?: return@mapNotNull null
-            val schema = talentSchemaFor(talentId)
-            val level = loadout.levelOf(talentId).coerceIn(1, definition.maxLevel)
-            val schemaResource = schema?.resourceCosts?.entries?.firstOrNull()
-            val definitionResource = definition.resolvedResourceCosts().entries.firstOrNull()
-            val resourceTypeId = schemaResource?.key ?: definitionResource?.key?.name ?: currentProfessionSchema()?.resourceType ?: ResourceType.STAMINA.name
-            val resourceCost = schemaResource?.value ?: definitionResource?.value ?: 0
-            val effectiveRange = definition.range + (definition.levelEffects[level]?.rangeBonus ?: 0)
+        return activeTalentMappings(loadout).mapNotNull { (slot, talentId) ->
+            val details = playerTalentDetails(loadout, talentId, cooldowns) ?: return@mapNotNull null
             TalentSlotView(
                 slot = slot,
-                talentId = talentId,
-                name = definition.name,
-                level = level,
-                maxLevel = definition.maxLevel,
-                resourceCost = resourceCost,
-                resourceTypeId = resourceTypeId,
-                range = effectiveRange,
-                minRange = definition.minRange,
-                currentCooldown = cooldowns[talentId] ?: 0,
-                maxCooldown = definition.cooldown,
-                requiresTarget = effectiveRange > 0,
+                talentId = details.talentId,
+                name = details.name,
+                descKey = details.descKey,
+                level = details.level,
+                maxLevel = details.maxLevel,
+                resourceCost = details.resourceCost,
+                resourceTypeId = details.resourceTypeId,
+                range = details.range,
+                minRange = details.minRange,
+                currentCooldown = details.currentCooldown,
+                maxCooldown = details.maxCooldown,
+                requiresTarget = details.requiresTarget,
             )
         }
+    }
+
+    fun reserveTalentSlots(): List<TalentReserveView> {
+        val loadout = world.get<TalentLoadout>(playerId) ?: return emptyList()
+        val cooldowns = world.get<CooldownState>(playerId)?.remainingByTalentId.orEmpty()
+        return reserveTalentIds(loadout).mapNotNull { talentId ->
+            val details = playerTalentDetails(loadout, talentId, cooldowns) ?: return@mapNotNull null
+            TalentReserveView(
+                talentId = details.talentId,
+                name = details.name,
+                descKey = details.descKey,
+                level = details.level,
+                maxLevel = details.maxLevel,
+                resourceCost = details.resourceCost,
+                resourceTypeId = details.resourceTypeId,
+                range = details.range,
+                minRange = details.minRange,
+                currentCooldown = details.currentCooldown,
+                maxCooldown = details.maxCooldown,
+                requiresTarget = details.requiresTarget,
+            )
+        }
+    }
+
+    private fun activeTalentMappings(loadout: TalentLoadout): List<Pair<Int, String>> =
+        (1..PLAYER_ACTIVE_TALENT_SLOT_COUNT).mapNotNull { slot ->
+            loadout.talentIdAt(slot)?.let { talentId -> slot to talentId }
+        }
+
+    private fun reserveTalentIds(loadout: TalentLoadout): List<String> {
+        val activeTalentIds = activeTalentMappings(loadout).mapTo(linkedSetOf()) { (_, talentId) -> talentId }
+        return orderedUnlockedTalentIds(loadout).filterNot(activeTalentIds::contains)
+    }
+
+    private fun orderedUnlockedTalentIds(loadout: TalentLoadout): List<String> {
+        val ordered = linkedSetOf<String>()
+        val profession = currentProfessionSchema()
+        val experience = world.get<Experience>(playerId)
+        if (profession != null && experience != null) {
+            TalentProgression.unlockedTalentIds(content.schemaCatalog, profession, experience.level)
+                .filterTo(ordered) { talentId -> talentId in loadout.talentLevels }
+        }
+        loadout.talentLevels.keys.forEach(ordered::add)
+        return ordered.toList()
+    }
+
+    private fun playerTalentDetails(
+        loadout: TalentLoadout,
+        talentId: String,
+        cooldowns: Map<String, Int>,
+    ): TalentUiDetails? {
+        val definition = talentRegistry.get(talentId) ?: return null
+        val schema = talentSchemaFor(talentId)
+        val level = loadout.levelOf(talentId).coerceIn(1, definition.maxLevel)
+        val schemaResource = schema?.resourceCosts?.entries?.firstOrNull()
+        val definitionResource = definition.resolvedResourceCosts().entries.firstOrNull()
+        val resourceTypeId = schemaResource?.key ?: definitionResource?.key?.name ?: currentProfessionSchema()?.resourceType ?: ResourceType.STAMINA.name
+        val resourceCost = schemaResource?.value ?: definitionResource?.value ?: 0
+        val effectiveRange = definition.range + (definition.levelEffects[level]?.rangeBonus ?: 0)
+        return TalentUiDetails(
+            talentId = talentId,
+            name = definition.name,
+            descKey = schema?.descKey,
+            level = level,
+            maxLevel = definition.maxLevel,
+            resourceCost = resourceCost,
+            resourceTypeId = resourceTypeId,
+            range = effectiveRange,
+            minRange = definition.minRange,
+            currentCooldown = cooldowns[talentId] ?: 0,
+            maxCooldown = definition.cooldown,
+            requiresTarget = effectiveRange > 0,
+        )
     }
 
     fun itemNamesAtPlayerPosition(): List<String> =
@@ -447,6 +530,7 @@ class FoundationGameSession internal constructor(
                     revision = renderSnapshotRevision,
                     zoneId = zone.id,
                     zoneNameKey = zone.nameKey,
+                    zoneDescKey = zone.descKey,
                     currentFloor = currentFloor(),
                     maxFloor = maxFloor(),
                     width = map.width,
@@ -909,6 +993,7 @@ class FoundationGameSession internal constructor(
             playerStatus = buildPlayerStatusSnapshot(),
             equipment = buildEquipmentSnapshots(),
             talents = buildTalentSnapshots(),
+            reserveTalents = buildReserveTalentSnapshots(),
             inventory = buildInventoryEntries(),
             targetablePositions = targetableHostilePositions().map { point -> GridPointSnapshot(point.x, point.y) },
         )
@@ -975,6 +1060,34 @@ class FoundationGameSession internal constructor(
                 currentCooldown = slot.currentCooldown,
                 maxCooldown = slot.maxCooldown,
                 requiresTarget = slot.requiresTarget,
+                descKey = slot.descKey,
+            )
+        }
+
+    private fun buildReserveTalentSnapshots(): List<TalentReserveSnapshot> =
+        reserveTalentSlots().map { talent ->
+            val schema = requireNotNull(content.schemaCatalog.talents.firstOrNull { it.id == talent.talentId }) {
+                "Unknown talent schema '${talent.talentId}'."
+            }
+            val resourceTypeId = schema.resourceCosts.keys.firstOrNull() ?: resolvePlayerResourceView().typeId
+            TalentReserveSnapshot(
+                talentId = talent.talentId,
+                nameKey = schema.nameKey,
+                visualKey = schema.visualKey,
+                iconKey = schema.iconKey,
+                damageTypeIconKey = schema.damageType?.let(::damageTypeIconKey),
+                audioProfile = schema.audioProfile,
+                level = talent.level,
+                maxLevel = talent.maxLevel,
+                resourceCost = schema.resourceCosts[resourceTypeId] ?: talent.resourceCost,
+                resourceLabelKey = resourceLabelKey(resourceTypeId),
+                resourceTypeId = resourceTypeId,
+                range = talent.range,
+                minRange = talent.minRange,
+                currentCooldown = talent.currentCooldown,
+                maxCooldown = talent.maxCooldown,
+                requiresTarget = talent.requiresTarget,
+                descKey = talent.descKey,
             )
         }
 
@@ -1656,6 +1769,38 @@ class FoundationGameSession internal constructor(
                             "log.talent.advance",
                             keyArg("talent", talentNameKey(talentId)),
                             literalArg("level", currentLevel + 1),
+                        )
+                        CommandResolution(accepted = true, consumesTurn = false)
+                    }
+                }
+            }
+
+            is PlayerCommand.EquipTalentToSlot -> {
+                val loadout = requireNotNull(world.get<TalentLoadout>(playerId)) { "Missing TalentLoadout for $playerId." }
+                if (command.slot !in 1..PLAYER_ACTIVE_TALENT_SLOT_COUNT) {
+                    addMessage("log.loadout.invalid_slot", literalArg("slot", command.slot))
+                    CommandResolution.rejected()
+                } else if (command.talentId !in loadout.talentLevels) {
+                    addMessage("log.loadout.not_unlocked", keyArg("talent", talentNameKey(command.talentId)))
+                    CommandResolution.rejected()
+                } else {
+                    val equippedBefore = loadout.talentIdAt(command.slot)
+                    val currentlyEquippedSlot =
+                        activeTalentMappings(loadout)
+                            .firstOrNull { (_, talentId) -> talentId == command.talentId }
+                            ?.first
+                    if (equippedBefore == command.talentId) {
+                        CommandResolution(accepted = true, consumesTurn = false)
+                    } else {
+                        if (currentlyEquippedSlot != null) {
+                            loadout.slotToTalentId.remove(currentlyEquippedSlot)
+                        }
+                        loadout.slotToTalentId[command.slot] = command.talentId
+                        canonicalizePlayerLoadout(loadout)
+                        addMessage(
+                            "log.loadout.equip",
+                            keyArg("talent", talentNameKey(command.talentId)),
+                            literalArg("slot", command.slot),
                         )
                         CommandResolution(accepted = true, consumesTurn = false)
                     }
@@ -2387,20 +2532,40 @@ class FoundationGameSession internal constructor(
         val loadout = world.get<TalentLoadout>(playerId) ?: return emptyList()
         val unlockedTalentIds = TalentProgression.unlockedTalentIds(content.schemaCatalog, profession, experience.level)
         val newlyUnlockedTalentIds = mutableListOf<String>()
-        var nextSlot = (loadout.slotToTalentId.keys.maxOrNull() ?: 0) + 1
         unlockedTalentIds.forEach { talentId ->
+            val wasUnlocked = talentId in loadout.talentLevels
             loadout.talentLevels.putIfAbsent(talentId, 1)
-            if (talentId in loadout.slotToTalentId.values) {
-                return@forEach
+            if (!wasUnlocked) {
+                newlyUnlockedTalentIds += talentId
             }
-            loadout.slotToTalentId[nextSlot] = talentId
-            nextSlot += 1
-            newlyUnlockedTalentIds += talentId
-            if (notify) {
+        }
+        canonicalizePlayerLoadout(loadout)
+        if (notify) {
+            newlyUnlockedTalentIds.forEach { talentId ->
                 addMessage("log.talent.unlock", keyArg("talent", talentNameKey(talentId)))
             }
         }
         return newlyUnlockedTalentIds
+    }
+
+    private fun canonicalizePlayerLoadout(loadout: TalentLoadout) {
+        val activeTalentIds = linkedSetOf<String>()
+        (1..PLAYER_ACTIVE_TALENT_SLOT_COUNT).forEach { slot ->
+            loadout.talentIdAt(slot)
+                ?.takeIf { talentId -> talentId in loadout.talentLevels }
+                ?.takeUnless(activeTalentIds::contains)
+                ?.let(activeTalentIds::add)
+        }
+        orderedUnlockedTalentIds(loadout).forEach { talentId ->
+            if (activeTalentIds.size >= PLAYER_ACTIVE_TALENT_SLOT_COUNT) {
+                return@forEach
+            }
+            activeTalentIds += talentId
+        }
+        loadout.slotToTalentId.clear()
+        activeTalentIds.forEachIndexed { index, talentId ->
+            loadout.slotToTalentId[index + 1] = talentId
+        }
     }
 
     private fun syncActiveFloorState() {
@@ -2560,10 +2725,14 @@ class FoundationGameSession internal constructor(
         }
         currentProfessionSchema()?.let { profession ->
             if (attacker == playerId) {
+                val before = resolvePlayerResourceView()
                 PlayerResourceService.onSuccessfulHit(world, playerId, profession)
+                logPlayerResourceRestore(before)
             }
             if (target == playerId && damage > 0) {
+                val before = resolvePlayerResourceView()
                 PlayerResourceService.onDamageTaken(world, playerId, profession, damage)
+                logPlayerResourceRestore(before)
             }
         }
     }
@@ -2574,6 +2743,19 @@ class FoundationGameSession internal constructor(
                 applyDamageResourceReactions(attacker = result.user, target = effect.target, damage = effect.amount)
             }
         }
+    }
+
+    private fun logPlayerResourceRestore(before: PlayerResourceView) {
+        val after = resolvePlayerResourceView()
+        if (after.typeId != before.typeId || after.current <= before.current) {
+            return
+        }
+        addMessage(
+            "log.talent.resource_restore",
+            entityArg("target", playerId),
+            literalArg("amount", after.current - before.current),
+            keyArg("resource", resourceLabelKey(after.typeId)),
+        )
     }
 
     private fun talentSchemaFor(talentId: String): TalentSchemaV2? =
@@ -2891,7 +3073,7 @@ class FoundationGameSession internal constructor(
                         "log.talent.resource_restore",
                         entityArg("target", effect.target),
                         literalArg("amount", effect.amount),
-                        literalArg("resource", effect.resourceTypeId),
+                        keyArg("resource", resourceLabelKey(effect.resourceTypeId)),
                     )
                 }
 
@@ -2948,10 +3130,12 @@ class FoundationGameSession internal constructor(
             messageLog.removeFirst()
         }
         messageLog += SessionLogEntry(render(message.message), message)
-        if (recentSummaryEvents.size == SUMMARY_EVENT_LIMIT) {
-            recentSummaryEvents.removeFirst()
+        if (shouldIncludeInRunSummary(message.message)) {
+            if (recentSummaryEvents.size == SUMMARY_EVENT_LIMIT) {
+                recentSummaryEvents.removeFirst()
+            }
+            recentSummaryEvents += message.message
         }
-        recentSummaryEvents += message.message
         invalidateRenderSnapshot()
     }
 
@@ -2970,6 +3154,8 @@ class FoundationGameSession internal constructor(
         renderSnapshotRevision += 1
         cachedRenderSnapshot = null
     }
+
+    private fun shouldIncludeInRunSummary(message: RenderTextTokenSnapshot): Boolean = message.key != "log.zone.enter"
 
     private fun tr(
         key: String,

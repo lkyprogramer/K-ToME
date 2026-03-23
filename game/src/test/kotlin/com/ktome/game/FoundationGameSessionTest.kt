@@ -137,8 +137,12 @@ class FoundationGameSessionTest {
         assertTrue(session.playerStatus().attack > baseline.attack)
         assertTrue(session.playerStatus().maxHp > baseline.maxHp)
         assertEquals(
-            listOf("猛击", "盾击", "格挡姿态", "战吼", "冲锋", "横扫", "碎甲", "威压", "不屈"),
+            listOf("猛击", "盾击", "格挡姿态", "战吼"),
             session.talentSlots().map { slot -> slot.name },
+        )
+        assertEquals(
+            listOf("冲锋", "横扫", "碎甲", "威压", "不屈"),
+            session.reserveTalentSlots().map { slot -> slot.name },
         )
         assertTrue(session.messageLog().any { message -> message.contains("冲锋") || message.contains("Charge") })
         val logKeys = session.renderSnapshot().logEvents.map { event -> event.message.key }
@@ -201,8 +205,8 @@ class FoundationGameSessionTest {
         val blink = session.talentSlots().first { slot -> slot.talentId == "blink" }
         assertEquals(5, requireNotNull(runtimeWorld(session).get<Experience>(session.playerId)).level)
         assertTrue(blink.range > baselineBlink.range)
-        assertTrue(session.talentSlots().any { slot -> slot.talentId == "mana_surge" })
-        assertTrue(session.talentSlots().any { slot -> slot.talentId == "ice_prison" })
+        assertTrue(session.reserveTalentSlots().any { slot -> slot.talentId == "mana_surge" })
+        assertTrue(session.reserveTalentSlots().any { slot -> slot.talentId == "ice_prison" })
         assertEquals(
             "96",
             requireNotNull(logEventByKey(session, "log.level_up.resource_max"))
@@ -258,8 +262,9 @@ class FoundationGameSessionTest {
         assertEquals(5, requireNotNull(runtimeWorld.get<Experience>(session.playerId)).level)
         assertTrue(session.playerStatus().attack > baseline.attack)
         assertTrue(session.playerStatus().maxHp > baseline.maxHp)
-        assertTrue(session.talentSlots().any { slot -> slot.talentId == "shadowstep" })
-        assertTrue(session.talentSlots().any { slot -> slot.talentId == "deathblow" })
+        assertTrue(session.talentSlots().any { slot -> slot.talentId == "roll" })
+        assertTrue(session.reserveTalentSlots().any { slot -> slot.talentId == "shadowstep" })
+        assertTrue(session.reserveTalentSlots().any { slot -> slot.talentId == "deathblow" })
         assertTrue(session.messageLog().any { message -> message.contains("影袭") || message.contains("Shadowstep") })
 
         val logKeys = session.renderSnapshot().logEvents.map { event -> event.message.key }
@@ -267,6 +272,67 @@ class FoundationGameSessionTest {
         assertTrue(logKeys.contains("log.level_up.hp_max"))
         assertFalse(logKeys.contains("log.level_up.resource_max"))
         assertTrue(logKeys.indexOf("log.level_up") < logKeys.indexOf("log.talent.unlock"))
+    }
+
+    @Test
+    fun `vanguard reserve charge can replace active slot and remap preserves cooldown across save load`() {
+        val saveManager = SaveManager(tempDir.resolve("vanguard-loadout-save"))
+        val session =
+            GameModule.newFoundationSession(
+                FoundationGameConfig(seed = 20260320L, zoneId = "shattered_outpost", playerProfessionId = "vanguard"),
+                saveManager,
+            )
+        clearMonsters(session)
+        val dummyId = installExperienceDummy(session, id = "vanguard_loadout_dummy", expReward = 1500)
+        val dummyPosition = requireNotNull(runtimeWorld(session).get<Position>(dummyId)).toPoint()
+
+        assertTrue(session.perform(PlayerCommand.Move(dummyPosition - session.playerPosition())))
+        assertTrue(session.reserveTalentSlots().any { slot -> slot.talentId == "charge" })
+
+        assertTrue(session.perform(PlayerCommand.EquipTalentToSlot(slot = 4, talentId = "charge")))
+        assertEquals("charge", session.talentSlots().first { slot -> slot.slot == 4 }.talentId)
+        assertTrue(session.reserveTalentSlots().any { slot -> slot.talentId == "war_cry" })
+
+        requireNotNull(runtimeWorld(session).get<com.ktome.core.talent.CooldownState>(session.playerId)).remainingByTalentId["charge"] = 2
+        val cooldownAfterUse = playerCooldown(session, "charge")
+        assertTrue(cooldownAfterUse > 0)
+
+        assertTrue(session.perform(PlayerCommand.EquipTalentToSlot(slot = 1, talentId = "charge")))
+        assertEquals("charge", session.talentSlots().first { slot -> slot.slot == 1 }.talentId)
+        assertEquals(cooldownAfterUse, playerCooldown(session, "charge"))
+        assertTrue(session.saveOnExit())
+
+        val loaded = requireNotNull(GameModule.loadFoundationSession(saveManager))
+
+        assertEquals("charge", loaded.talentSlots().first { slot -> slot.slot == 1 }.talentId)
+        assertEquals("power_strike", loaded.talentSlots().first { slot -> slot.slot == 4 }.talentId)
+        assertEquals(cooldownAfterUse, playerCooldown(loaded, "charge"))
+        assertTrue(loaded.reserveTalentSlots().any { slot -> slot.talentId == "war_cry" })
+    }
+
+    @Test
+    fun `templar reserve judgment hammer can be equipped and cast from active slot`() {
+        val session =
+            GameModule.newFoundationSession(
+                FoundationGameConfig(seed = 20260320L, zoneId = "shattered_outpost", playerProfessionId = "templar"),
+                SaveManager(tempDir.resolve("templar-loadout-save")),
+            )
+        clearMonsters(session)
+        val dummyId = installExperienceDummy(session, id = "templar_loadout_dummy", expReward = 600)
+        val dummyPosition = requireNotNull(runtimeWorld(session).get<Position>(dummyId)).toPoint()
+
+        assertTrue(session.perform(PlayerCommand.Move(dummyPosition - session.playerPosition())))
+        assertTrue(session.reserveTalentSlots().any { slot -> slot.talentId == "judgment_hammer" })
+        requireNotNull(requireNotNull(runtimeWorld(session).get<ResourcePools>(session.playerId)).pool(ResourceType.POSITIVE_ENERGY)).current = 30
+
+        assertTrue(session.perform(PlayerCommand.EquipTalentToSlot(slot = 2, talentId = "judgment_hammer")))
+        val hammerSlot = session.talentSlots().first { slot -> slot.talentId == "judgment_hammer" }.slot
+        val targetPoint = findOpenPointAtDistance(session, minDistance = 1, maxDistance = 3)
+        installCombatDummy(session, id = "hammer_target", position = targetPoint)
+        session.automationMovePlayerTo(session.playerPosition())
+
+        assertTrue(session.perform(PlayerCommand.UseTalent(slot = hammerSlot, target = targetPoint)))
+        assertTrue(playerCooldown(session, "judgment_hammer") > 0)
     }
 
     @Test
@@ -813,6 +879,26 @@ class FoundationGameSessionTest {
     }
 
     @Test
+    fun `rogue successful hit logs hit driven energy restore`() {
+        val session =
+            GameModule.newFoundationSession(
+                FoundationGameConfig(seed = 20260318L, zoneId = "shattered_outpost", playerProfessionId = "rogue"),
+                SaveManager(tempDir.resolve("rogue-hit-restore-save")),
+            )
+        clearMonsters(session)
+        val dummyId = installCombatDummy(session)
+        val dummyPosition = requireNotNull(runtimeWorld(session).get<Position>(dummyId)).toPoint()
+        val backstabSlot = session.talentSlots().first { slot -> slot.talentId == "backstab" }.slot
+        requireNotNull(requireNotNull(runtimeWorld(session).get<ResourcePools>(session.playerId)).pool(ResourceType.ENERGY)).current = 20
+
+        assertTrue(session.perform(PlayerCommand.UseTalent(slot = backstabSlot, target = dummyPosition)))
+        val feedback = requireNotNull(logEventByKey(session, "log.talent.resource_restore"))
+        val arguments = feedback.message.arguments.associateBy { argument -> argument.name }
+        assertEquals("ui.hud.energy.short", arguments.getValue("resource").valueKey)
+        assertEquals(null, arguments.getValue("resource").value)
+    }
+
+    @Test
     fun `holy light heals templar and emits heal log`() {
         val session =
             GameModule.newFoundationSession(
@@ -1033,6 +1119,97 @@ class FoundationGameSessionTest {
         assertNotNull(loaded)
         assertEquals(2, loaded?.currentFloor())
         assertTrue(loaded?.inventoryItems()?.any { it.name == "短剑" } == true)
+    }
+
+    @Test
+    fun `route transitions emit zone entry messages for each newly entered zone`() {
+        val session =
+            GameModule.newFoundationSession(
+                config =
+                    FoundationGameConfig(
+                        seed = 20260322L,
+                        zoneId = "deep_iron_pit",
+                        playerProfessionId = "rogue",
+                        zoneRoute = FOUNDATION_ZONE_ROUTE,
+                        routeIndex = 2,
+                    ),
+                saveManager = SaveManager(tempDir.resolve("route-zone-enter-save")),
+            )
+
+        val initialZoneEnter = requireNotNull(logEventByKey(session, "log.zone.enter"))
+        assertEquals("zone.deep_iron_pit.name", initialZoneEnter.message.arguments.first { argument -> argument.name == "zone" }.valueKey)
+        assertEquals("zone.deep_iron_pit.desc", initialZoneEnter.message.arguments.first { argument -> argument.name == "desc" }.valueKey)
+
+        movePlayerTo(session, stairPoint(session, com.ktome.core.dungeon.StairDirection.DOWN))
+        assertTrue(session.perform(PlayerCommand.Descend))
+        movePlayerTo(session, stairPoint(session, com.ktome.core.dungeon.StairDirection.DOWN))
+        assertTrue(session.perform(PlayerCommand.Descend))
+
+        val snapshot = session.renderSnapshot()
+        val zoneEnterEvents = snapshot.logEvents.filter { event -> event.message.key == "log.zone.enter" }
+        val latestZoneEnter = zoneEnterEvents.last()
+
+        assertEquals("grey_gate_depths", snapshot.metadata.zoneId)
+        assertEquals("zone.grey_gate_depths.desc", snapshot.metadata.zoneDescKey)
+        assertTrue(snapshot.logEvents.any { event -> event.message.key == "log.route.advance" })
+        assertEquals(1, zoneEnterEvents.count { event -> event.message.arguments.first { argument -> argument.name == "zone" }.valueKey == "zone.grey_gate_depths.name" })
+        assertEquals("zone.grey_gate_depths.name", latestZoneEnter.message.arguments.first { argument -> argument.name == "zone" }.valueKey)
+        assertEquals("zone.grey_gate_depths.desc", latestZoneEnter.message.arguments.first { argument -> argument.name == "desc" }.valueKey)
+    }
+
+    @Test
+    fun `loading a save keeps zone metadata without replaying zone entry log`() {
+        val saveManager = SaveManager(tempDir.resolve("zone-desc-load-save"))
+        val session =
+            GameModule.newFoundationSession(
+                config = FoundationGameConfig(seed = 20260322L, zoneId = "greenwood_fringe", playerProfessionId = "rogue"),
+                saveManager = saveManager,
+            )
+
+        assertTrue(session.perform(PlayerCommand.SaveGame))
+
+        val loaded = requireNotNull(GameModule.loadFoundationSession(saveManager))
+        val snapshot = loaded.renderSnapshot()
+
+        assertEquals("greenwood_fringe", snapshot.metadata.zoneId)
+        assertEquals("zone.greenwood_fringe.desc", snapshot.metadata.zoneDescKey)
+        assertEquals("log.session.loaded", snapshot.logEvents.firstOrNull()?.message?.key)
+        assertFalse(snapshot.logEvents.any { event -> event.message.key == "log.zone.enter" })
+    }
+
+    @Test
+    fun `duplicate zone ids are rejected in zone routes`() {
+        val error =
+            assertThrows(IllegalArgumentException::class.java) {
+                GameModule.newFoundationSession(
+                    config =
+                        FoundationGameConfig(
+                            seed = 20260322L,
+                            zoneId = "shattered_outpost",
+                            playerProfessionId = "vanguard",
+                            zoneRoute = listOf("shattered_outpost", "greenwood_fringe", "shattered_outpost"),
+                            routeIndex = 0,
+                        ),
+                    saveManager = SaveManager(tempDir.resolve("duplicate-route-save")),
+                )
+            }
+
+        assertTrue(requireNotNull(error.message).contains("must not repeat zone ids"))
+    }
+
+    @Test
+    fun `zone entry logs do not pollute run summary last events`() {
+        val session =
+            GameModule.newFoundationSession(
+                config = FoundationGameConfig(seed = 20260322L, zoneId = "shattered_outpost", playerProfessionId = "vanguard"),
+                saveManager = SaveManager(tempDir.resolve("zone-summary-save")),
+            )
+
+        session.automationForceDefeatPlayer()
+        val summary = requireNotNull(session.runSummary())
+
+        assertFalse(summary.lastEvents.any { event -> event.key == "log.zone.enter" })
+        assertTrue(summary.lastEvents.any { event -> event.key == "log.player.death" })
     }
 
     @Test
@@ -1337,7 +1514,12 @@ class FoundationGameSessionTest {
         assertTrue(session.isVictory())
         assertFalse(saveManager.hasSave())
         assertEquals(baselineInventoryCount + 1, session.inventoryItems().size)
-        assertEquals(1, inventoryBaseIds(session).count { baseId -> baseId == "mana_potion" })
+        assertEquals(1, inventoryBaseIds(session).count { baseId -> baseId == "seal_reliquary" })
+        val rewardLog = requireNotNull(logEventByKey(session, "log.boss.reward.claimed"))
+        assertEquals(
+            "item.seal_reliquary.name",
+            rewardLog.message.arguments.first { argument -> argument.name == "item" }.valueKey,
+        )
     }
 
     @Test
@@ -1680,10 +1862,11 @@ class FoundationGameSessionTest {
         session: FoundationGameSession,
         id: String = "orc",
         resistances: Map<DamageType, Int> = emptyMap(),
+        position: Point? = null,
     ): com.ktome.core.ecs.EntityId {
         val world = runtimeWorld(session)
         world.entitiesWith(MonsterTemplateId::class).forEach(world::destroyEntity)
-        val dummyPosition = findOpenAdjacentPoint(session, session.playerPosition())
+        val dummyPosition = position ?: findOpenAdjacentPoint(session, session.playerPosition())
         val dummyId =
             EntityFactory().createMonster(
                 world = world,
@@ -1708,6 +1891,25 @@ class FoundationGameSessionTest {
             )
         world.remove<AIBehavior>(dummyId)
         return dummyId
+    }
+
+    private fun findOpenPointAtDistance(
+        session: FoundationGameSession,
+        minDistance: Int,
+        maxDistance: Int,
+    ): Point {
+        val origin = session.playerPosition()
+        val world = runtimeWorld(session)
+        val occupied = world.entitiesWith(Position::class).mapTo(linkedSetOf()) { entityId -> requireNotNull(world.get<Position>(entityId)).toPoint() }
+        return session.map.floorPoints()
+            .filter { point ->
+                point != origin &&
+                    point in session.visibleTiles() &&
+                    point.chebyshevDistanceTo(origin) in minDistance..maxDistance &&
+                    point !in occupied
+            }
+            .sortedWith(compareBy<Point> { point -> point.chebyshevDistanceTo(origin) }.thenBy(Point::y).thenBy(Point::x))
+            .first()
     }
 
     private fun installExperienceDummy(

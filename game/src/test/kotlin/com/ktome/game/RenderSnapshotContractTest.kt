@@ -72,6 +72,7 @@ class RenderSnapshotContractTest {
         assertTrue(snapshot.logEvents.isNotEmpty())
         assertEquals("shattered_outpost", snapshot.metadata.zoneId)
         assertEquals("zone.shattered_outpost.name", snapshot.metadata.zoneNameKey)
+        assertEquals("zone.shattered_outpost.desc", snapshot.metadata.zoneDescKey)
         assertEquals("audio.zone.shattered_outpost", snapshot.metadata.zoneAudioProfile)
         assertEquals("ambient.shattered_outpost", snapshot.metadata.ambientProfile)
         assertEquals("tileset.ruins", snapshot.metadata.tilesetKey)
@@ -81,9 +82,44 @@ class RenderSnapshotContractTest {
         assertEquals(152, snapshot.uiState.playerStatus.maxResource)
         assertTrue(snapshot.props.any { prop -> prop.propTypeId == "supply_crate" })
         assertTrue(snapshot.props.any { prop -> prop.propTypeId == "alarm_bonfire" })
+        val zoneEnter = requireNotNull(snapshot.logEvents.firstOrNull { event -> event.message.key == "log.zone.enter" })
+        assertEquals("zone.shattered_outpost.name", zoneEnter.message.arguments.first { argument -> argument.name == "zone" }.valueKey)
+        assertEquals("zone.shattered_outpost.desc", zoneEnter.message.arguments.first { argument -> argument.name == "desc" }.valueKey)
         assertTrue(snapshot.logEvents.any { event -> event.message.key == "log.objective.activate" })
         assertTrue(snapshot.actors.all { actor -> actor.nameKey.isNotBlank() })
         assertTrue(snapshot.logEvents.all { event -> event.message.key.isNotBlank() })
+    }
+
+    @Test
+    fun `render snapshot separates active and reserve talents after loadout remap`() {
+        val session =
+            GameModule.newFoundationSession(
+                config = FoundationGameConfig(seed = 20260320L, zoneId = "shattered_outpost", playerProfessionId = "vanguard"),
+                saveManager = SaveManager(tempDir.resolve("loadout-snapshot")),
+            )
+        clearMonsters(session)
+        val dummyId = installExperienceDummy(session, id = "snapshot_dummy", expReward = 1500)
+        val dummyPoint = requireNotNull(session.automationWorld().get<Position>(dummyId)).toPoint()
+
+        assertTrue(session.perform(PlayerCommand.Move(dummyPoint - session.playerPosition())))
+
+        val leveledSnapshot = session.renderSnapshot()
+
+        assertEquals(listOf(1, 2, 3, 4), leveledSnapshot.uiState.talents.map { talent -> talent.slot })
+        assertTrue(leveledSnapshot.uiState.talents.none { talent -> talent.talentId == "charge" })
+        assertTrue(leveledSnapshot.uiState.reserveTalents.any { talent -> talent.talentId == "charge" && talent.descKey != null })
+        assertTrue(
+            leveledSnapshot.uiState.reserveTalents.none { reserve ->
+                leveledSnapshot.uiState.talents.any { active -> active.talentId == reserve.talentId }
+            },
+        )
+
+        assertTrue(session.perform(PlayerCommand.EquipTalentToSlot(slot = 4, talentId = "charge")))
+        val remappedSnapshot = session.renderSnapshot()
+
+        assertEquals("charge", remappedSnapshot.uiState.talents.first { talent -> talent.slot == 4 }.talentId)
+        assertFalse(remappedSnapshot.uiState.reserveTalents.any { talent -> talent.talentId == "charge" })
+        assertTrue(remappedSnapshot.uiState.reserveTalents.any { talent -> talent.talentId == "war_cry" })
     }
 
     @Test
@@ -431,4 +467,45 @@ class RenderSnapshotContractTest {
             spawnFloors = listOf(1),
             spawnWeight = 1,
         )
+
+    private fun clearMonsters(session: FoundationGameSession) {
+        val world = session.automationWorld()
+        world.entitiesWith(MonsterTemplateId::class).forEach(world::destroyEntity)
+    }
+
+    private fun installExperienceDummy(
+        session: FoundationGameSession,
+        id: String,
+        expReward: Int,
+    ): com.ktome.core.ecs.EntityId =
+        EntityFactory().createMonster(
+            world = session.automationWorld(),
+            template =
+                com.ktome.game.model.MonsterTemplate(
+                    id = id,
+                    name = "Training Dummy",
+                    glyph = 'd',
+                    colorHex = "#AAAAAA",
+                    stats = com.ktome.core.ecs.Stats(str = 1, dex = 1, con = 1, wil = 1),
+                    baseHp = 1,
+                    baseAttack = 1,
+                    baseDefense = 0,
+                    speed = 90,
+                    ai = com.ktome.core.ecs.AIType.CHASE,
+                    expReward = expReward,
+                    spawnFloors = listOf(session.currentFloor()),
+                    spawnWeight = 1,
+                ),
+            position = findOpenAdjacentPoint(session),
+        )
+
+    private fun findOpenAdjacentPoint(session: FoundationGameSession): com.ktome.core.map.Point {
+        val origin = session.playerPosition()
+        val world = session.automationWorld()
+        val occupied = world.entitiesWith(Position::class).mapTo(linkedSetOf()) { entityId -> requireNotNull(world.get<Position>(entityId)).toPoint() }
+        return session.map.floorPoints()
+            .filter { point -> point != origin && point.chebyshevDistanceTo(origin) == 1 && point !in occupied }
+            .sortedWith(compareBy<com.ktome.core.map.Point>(com.ktome.core.map.Point::y).thenBy(com.ktome.core.map.Point::x))
+            .first()
+    }
 }
