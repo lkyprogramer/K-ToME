@@ -216,8 +216,11 @@ object HarnessReportWriter {
         markdown: String,
     ) {
         val dir = reportDir()
-        Files.createDirectories(dir)
-        Files.writeString(dir.resolve("$fileStem.json"), Json { prettyPrint = true }.encodeToString(JsonElement.serializer(), payload))
-        Files.writeString(dir.resolve("$fileStem.md"), markdown)
+        val jsonPath = dir.resolve("$fileStem.json")
+        val markdownPath = dir.resolve("$fileStem.md")
+        Files.createDirectories(jsonPath.parent)
+        Files.createDirectories(markdownPath.parent)
+        Files.writeString(jsonPath, Json { prettyPrint = true }.encodeToString(JsonElement.serializer(), payload))
+        Files.writeString(markdownPath, markdown)
     }
 }

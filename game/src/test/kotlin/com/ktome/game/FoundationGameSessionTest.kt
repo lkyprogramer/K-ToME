@@ -5,6 +5,7 @@ import com.ktome.core.combat.DamageType
 import com.ktome.core.ecs.AIBehavior
 import com.ktome.core.ecs.AIType
 import com.ktome.core.ecs.AiTriggerTracker
+import com.ktome.core.ecs.CombatProfile
 import com.ktome.core.ecs.DerivedStats
 import com.ktome.core.ecs.Experience
 import com.ktome.core.ecs.Health
@@ -13,6 +14,7 @@ import com.ktome.core.ecs.MonsterTemplateId
 import com.ktome.core.ecs.Position
 import com.ktome.core.ecs.ResistanceProfile
 import com.ktome.core.ecs.Stair
+import com.ktome.core.ecs.Stats
 import com.ktome.core.ecs.World
 import com.ktome.core.ecs.add
 import com.ktome.core.ecs.get
@@ -34,6 +36,7 @@ import com.ktome.core.resource.ResourceType
 import com.ktome.core.resource.StaminaPools
 import com.ktome.core.save.SaveManager
 import com.ktome.core.save.SaveRestoreException
+import com.ktome.core.stats.StatsCalculator
 import com.ktome.core.talent.ActiveEffect
 import com.ktome.core.talent.EffectTracker
 import com.ktome.core.talent.StatusEffectType
@@ -551,6 +554,12 @@ class FoundationGameSessionTest {
             )
         clearMonsters(session)
         val world = runtimeWorld(session)
+        requireNotNull(world.get<Stats>(session.playerId)).dex = 40
+        world.add(
+            session.playerId,
+            requireNotNull(world.get<CombatProfile>(session.playerId)).copy(baseAccuracy = 120),
+        )
+        StatsCalculator.recalculateAndStore(world, session.playerId)
         val banditId =
             EntityFactory().createMonster(
                 world = world,
@@ -577,6 +586,12 @@ class FoundationGameSessionTest {
             )
         clearMonsters(session)
         val world = runtimeWorld(session)
+        requireNotNull(world.get<Stats>(session.playerId)).dex = 40
+        world.add(
+            session.playerId,
+            requireNotNull(world.get<CombatProfile>(session.playerId)).copy(baseAccuracy = 120),
+        )
+        StatsCalculator.recalculateAndStore(world, session.playerId)
         val fireResistant =
             EntityFactory().createMonster(
                 world = world,
@@ -587,6 +602,27 @@ class FoundationGameSessionTest {
                 position = findOpenAdjacentPoint(session, session.playerPosition()),
             )
         world.remove<AIBehavior>(fireResistant)
+        requireNotNull(world.get<Stats>(fireResistant)).apply {
+            str = 4
+            dex = 0
+            con = 4
+            wil = 1
+        }
+        world.add(
+            fireResistant,
+            CombatProfile(
+                baseAttack = 4,
+                baseDefense = 0,
+                baseAccuracy = 0,
+                baseEvasion = 0,
+                baseHp = 200,
+            ),
+        )
+        StatsCalculator.recalculateAndStore(world, fireResistant)
+        requireNotNull(world.get<Health>(fireResistant)).apply {
+            current = 200
+            max = 200
+        }
         val talismanIndex = addInventoryItem(session, baseItem("furnace_talisman"))
         assertTrue(session.perform(PlayerCommand.ActivateInventoryItem(talismanIndex)))
         val fireballSlot = session.talentSlots().first { slot -> slot.talentId == "fireball" }.slot

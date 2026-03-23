@@ -1,5 +1,12 @@
 package com.ktome.core.combat
 
+import com.ktome.core.ecs.CombatProfile
+import com.ktome.core.ecs.EntityId
+import com.ktome.core.ecs.Health
+import com.ktome.core.ecs.Stats
+import com.ktome.core.ecs.World
+import com.ktome.core.ecs.add
+import com.ktome.core.ecs.get
 import com.ktome.core.random.RandomSource
 import com.ktome.core.support.TestRandomSource
 import kotlin.random.Random
@@ -26,7 +33,7 @@ class CombatResolverTest {
         assertTrue(result.hit)
         assertFalse(result.crit)
         assertNotNull(result.damage)
-        assertEquals(10, result.damage?.finalDamage)
+        assertEquals(12, result.damage?.finalDamage)
     }
 
     @Test
@@ -161,7 +168,7 @@ class CombatResolverTest {
 
         assertTrue(result.hit)
         assertEquals(DamageType.PHYSICAL, result.damage?.type)
-        assertEquals(8, result.damage?.finalDamage)
+        assertEquals(12, result.damage?.finalDamage)
         assertEquals(0, result.damage?.resistanceValue)
     }
 
@@ -185,5 +192,44 @@ class CombatResolverTest {
         assertEquals(DamageType.COLD, result.damage?.type)
         assertEquals(15, result.damage?.finalDamage)
         assertEquals(-25, result.damage?.resistanceValue)
+    }
+
+    @Test
+    fun `world on damage applied callback observes health after tentative damage application`() {
+        val resolver = CombatResolver(TestRandomSource(doubles = listOf(0.0, 0.99), ints = listOf(0)))
+        val world = World()
+        val attacker = world.createEntity()
+        val target = world.createEntity()
+        world.add(attacker, Stats(str = 10, dex = 10, con = 10, wil = 10))
+        world.add(attacker, CombatProfile(baseAttack = 12, baseDefense = 0, baseAccuracy = 20, baseHp = 40))
+        world.add(attacker, Health(current = 40, max = 40))
+        world.add(target, Stats(str = 10, dex = 0, con = 10, wil = 10))
+        world.add(target, CombatProfile(baseAttack = 4, baseDefense = 0, baseAccuracy = 0, baseEvasion = 0, baseHp = 20))
+        world.add(target, Health(current = 20, max = 20))
+
+        var observedHealthDuringCallback = -1
+        val result =
+            resolver.resolveMelee(
+                world = world,
+                attacker = attacker,
+                target = target,
+                callbacks =
+                    listOf(
+                        PipelineCallback(
+                            ownerId = EntityId(99),
+                            callbackName = "observe_applied_health",
+                            phase = CombatCallbackPhase.ON_DAMAGE_APPLIED,
+                            priority = 10,
+                        ) {
+                            observedHealthDuringCallback = requireNotNull(world.get<Health>(target)).current
+                            CallbackDecision()
+                        },
+                    ),
+            )
+
+        assertTrue(result.hit)
+        val expectedHealthAfterApply = (20 - result.finalDamage).coerceAtLeast(0)
+        assertEquals(expectedHealthAfterApply, observedHealthDuringCallback)
+        assertEquals(observedHealthDuringCallback, requireNotNull(world.get<Health>(target)).current)
     }
 }

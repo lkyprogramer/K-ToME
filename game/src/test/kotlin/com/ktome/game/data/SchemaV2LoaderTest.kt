@@ -1,16 +1,21 @@
 package com.ktome.game.data
 
+import com.ktome.core.combat.ApplicationPolicy
 import com.ktome.core.combat.DamageType
+import com.ktome.core.combat.SaveDimension
 import com.ktome.core.item.EquipmentPassive
 import com.ktome.core.item.ItemBaseDef
 import com.ktome.core.item.ItemDataBundle
 import com.ktome.core.item.ItemGenerator
 import com.ktome.core.random.RandomSource
+import com.ktome.core.talent.StatusEffectType
 import com.ktome.game.i18n.GameLocale
 import com.ktome.game.data.schema.AITriggerConditionKindSchemaV2
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import java.lang.reflect.InvocationTargetException
 import kotlin.random.Random
 
 class SchemaV2LoaderTest {
@@ -64,6 +69,22 @@ class SchemaV2LoaderTest {
         assertEquals(listOf("holy_light", "holy_shield", "purify"), catalog.talentTrees.first { it.id == "templar_grace" }.nodes)
         assertEquals(3, catalog.talents.first { it.id == "charge" }.unlockLevel)
         assertEquals(4, catalog.talents.first { it.id == "blink" }.levelEffects.getValue(5).rangeBonus)
+        assertEquals("PHYSICAL", catalog.talents.first { it.id == "power_strike" }.powerDimension)
+        assertEquals(
+            "HOSTILE_HIT_THEN_SAVE",
+            catalog.talents.first { it.id == "power_strike" }.levelEffects.getValue(5).associatedEffects.single().applicationPolicy,
+        )
+        assertEquals(
+            "MENTAL",
+            catalog.talents.first { it.id == "intimidation" }.levelEffects.getValue(1).associatedEffects.single().saveDimension,
+        )
+        assertEquals(
+            "INSTANT_ACTION",
+            catalog.talents.first { it.id == "purify" }.levelEffects.getValue(1).cleanseEffect?.applicationPolicy,
+        )
+        assertEquals(0.10, catalog.talents.first { it.id == "mana_surge" }.levelEffects.getValue(1).resourceRestoreFraction)
+        assertEquals(0.18, catalog.talents.first { it.id == "holy_light" }.levelEffects.getValue(1).healFraction)
+        assertEquals(0.20, catalog.talents.first { it.id == "divine_intervention" }.levelEffects.getValue(1).healFraction)
         assertEquals("audio.talent.shadowstep", catalog.talents.first { it.id == "shadowstep" }.audioProfile)
         assertEquals("icon.skill.templar.holy_shield", catalog.talents.first { it.id == "holy_shield" }.iconKey)
         assertEquals(
@@ -153,6 +174,21 @@ class SchemaV2LoaderTest {
         assertEquals("Fireball", enLoader.loadTalentDefinitions().first { it.id == "fireball" }.name)
         assertEquals("火球", zhLoader.loadTalentDefinitions().first { it.id == "fireball" }.name)
         assertEquals(DamageType.FIRE, enLoader.loadTalentDefinitions().first { it.id == "fireball" }.damageType)
+        assertEquals(SaveDimension.PHYSICAL, enLoader.loadTalentDefinitions().first { it.id == "power_strike" }.powerDimension)
+        assertEquals(
+            ApplicationPolicy.HOSTILE_HIT_THEN_SAVE,
+            enLoader.loadTalentDefinitions().first { it.id == "power_strike" }.levelEffects.getValue(5).associatedEffects.single().applicationPolicy,
+        )
+        assertEquals(
+            StatusEffectType.HOLY_SHIELD_BUFF,
+            enLoader.loadTalentDefinitions().first { it.id == "holy_shield" }.levelEffects.getValue(1).associatedEffects.single().effectType,
+        )
+        assertEquals(
+            ApplicationPolicy.INSTANT_ACTION,
+            enLoader.loadTalentDefinitions().first { it.id == "purify" }.levelEffects.getValue(1).cleanseEffect?.applicationPolicy,
+        )
+        assertEquals(0.10, enLoader.loadTalentDefinitions().first { it.id == "mana_surge" }.levelEffects.getValue(1).resourceRestoreFraction)
+        assertEquals(0.18, enLoader.loadTalentDefinitions().first { it.id == "holy_light" }.levelEffects.getValue(1).healFraction)
         assertTrue(enLoader.loadItemBundle().baseItems.first { it.id == "emerald_charm" }.passive is EquipmentPassive.HpRegenPerTurn)
         assertTrue(enLoader.loadItemBundle().baseItems.first { it.id == "hunter_bow" }.passive is EquipmentPassive.DamageVsTag)
         assertTrue(enLoader.loadItemBundle().baseItems.first { it.id == "long_sword" }.passive is EquipmentPassive.DamageVsTag)
@@ -199,6 +235,39 @@ class SchemaV2LoaderTest {
 
         assertEquals("ai.boss.bandit_captain", boss.aiProfileId)
         assertEquals("arena.shattered_outpost.boss", encounter.arenaId)
+    }
+
+    @Test
+    fun `schema v2 loader rejects removed legacy effect fields`() {
+        val loader = DataLoader(GameLocale.EN_US)
+        val parseMethod =
+            DataLoader::class.java.getDeclaredMethod("parseTalentLevelEffect", Map::class.java).apply {
+                isAccessible = true
+            }
+
+        val error =
+            assertThrows(InvocationTargetException::class.java) {
+                parseMethod.invoke(
+                    loader,
+                    linkedMapOf(
+                        "damageMultiplier" to 1.2,
+                        "stunDuration" to 2,
+                        "associatedEffects" to
+                            listOf(
+                                linkedMapOf(
+                                    "effectId" to "legacy_stun",
+                                    "effectType" to "STUNNED",
+                                    "applicationPolicy" to "HOSTILE_HIT_THEN_SAVE",
+                                    "saveDimension" to "PHYSICAL",
+                                    "duration" to 2,
+                                ),
+                            ),
+                    ),
+                )
+            }
+
+        assertTrue(error.cause is IllegalArgumentException)
+        assertTrue(error.cause?.message?.contains("removed legacy fields stunDuration") == true)
     }
 
     @Test

@@ -4,6 +4,8 @@ plugins {
     `java-library`
 }
 
+val harnessReportDir = rootProject.layout.buildDirectory.dir("reports/harness")
+
 dependencies {
     implementation(project(":game"))
     testImplementation(project(":client"))
@@ -14,6 +16,21 @@ dependencies {
 
 tasks.withType<Test>().configureEach {
     systemProperty("ktome.repo.root", rootProject.projectDir.absolutePath)
+}
+
+tasks.register<Test>("combatTraceGolden") {
+    group = "verification"
+    description = "Runs the Phase 3 FORMULA corpus golden trace harness."
+    testClassesDirs = sourceSets.test.get().output.classesDirs
+    classpath = sourceSets.test.get().runtimeClasspath
+    useJUnitPlatform {
+        includeTags("combatTraceGolden")
+    }
+    systemProperty("ktome.harness.reportDir", harnessReportDir.get().asFile.absolutePath)
+    providers.systemProperty("ktome.updateCombatGolden").orNull?.let { value ->
+        systemProperty("ktome.updateCombatGolden", value)
+    }
+    outputs.dir(harnessReportDir)
 }
 
 tasks.register<Test>("localeLint") {

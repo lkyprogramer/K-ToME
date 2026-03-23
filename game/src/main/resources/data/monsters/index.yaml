@@ -110,7 +110,7 @@ monsters:
     ai: CHASE
     aiProfileId: ai.boss.dungeon_lord
     lootProfileId: loot.foundation.boss
-    resistances: { SHADOW: 20, HOLY: -20 }
+    resistances: { SHADOW: 20 }
     talents: { war_cry: 3, power_strike: 4, charge: 2 }
     expReward: 300
     spawnFloors: [5]
@@ -227,7 +227,7 @@ monsters:
     ai: CHASE
     aiProfileId: ai.chase.basic
     lootProfileId: loot.foundation.common
-    resistances: { HOLY: -20, SHADOW: 15 }
+    resistances: { SHADOW: 15 }
     talents: {}
     expReward: 30
     spawnFloors: [1, 2]
@@ -251,7 +251,7 @@ monsters:
     ai: CHASE
     aiProfileId: ai.chase.basic
     lootProfileId: loot.foundation.elite
-    resistances: { HOLY: -15, SHADOW: 15 }
+    resistances: { SHADOW: 15 }
     talents: {}
     expReward: 48
     spawnFloors: [2]
@@ -378,7 +378,7 @@ monsters:
     ai: KITE
     aiProfileId: ai.kite.basic
     lootProfileId: loot.foundation.common
-    resistances: { HOLY: -15, SHADOW: 10 }
+    resistances: { SHADOW: 10 }
     talents: {}
     expReward: 32
     spawnFloors: [2, 3]
@@ -456,7 +456,7 @@ monsters:
     ai: KITE
     aiProfileId: ai.controller.pressure
     lootProfileId: loot.foundation.common
-    resistances: { FIRE: 20, HOLY: -15 }
+    resistances: { FIRE: 20 }
     talents: {}
     expReward: 40
     spawnFloors: [1, 2]
@@ -533,7 +533,7 @@ monsters:
     ai: KITE
     aiProfileId: ai.controller.shadow_priest
     lootProfileId: loot.foundation.common
-    resistances: { SHADOW: 20, HOLY: -15 }
+    resistances: { SHADOW: 20 }
     talents: {}
     expReward: 48
     spawnFloors: [1, 2]
@@ -559,7 +559,7 @@ monsters:
     ai: CHASE
     aiProfileId: ai.guard.basic
     lootProfileId: loot.foundation.common
-    resistances: { HOLY: -20, SHADOW: 15 }
+    resistances: { SHADOW: 15 }
     talents: {}
     expReward: 50
     spawnFloors: [1, 2]
@@ -585,7 +585,7 @@ monsters:
     ai: CHASE
     aiProfileId: ai.elite.ashgate_warden
     lootProfileId: loot.foundation.common
-    resistances: { SHADOW: 15, HOLY: -10 }
+    resistances: { SHADOW: 15 }
     talents: {}
     expReward: 86
     spawnFloors: [2]

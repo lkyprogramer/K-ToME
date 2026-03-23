@@ -6,6 +6,7 @@ import com.ktome.core.ai.AIDecision
 import com.ktome.core.ai.AIDecisionContext
 import com.ktome.core.ai.AITargetSnapshot
 import com.ktome.core.combat.CombatResolver
+import com.ktome.core.combat.DamageFormula
 import com.ktome.core.combat.DamageType
 import com.ktome.core.dungeon.DungeonManager
 import com.ktome.core.dungeon.FloorState
@@ -57,6 +58,7 @@ import com.ktome.core.item.ItemInstance
 import com.ktome.core.item.ItemQuality
 import com.ktome.core.item.ItemType
 import com.ktome.core.item.MaterialDef
+import com.ktome.core.item.PassiveDamageAdjustment
 import com.ktome.core.item.PassiveEffectResolver
 import com.ktome.core.item.StatModifier
 import com.ktome.core.map.GameMap
@@ -2176,7 +2178,6 @@ class FoundationGameSession internal constructor(
         attacker: EntityId,
         target: EntityId,
     ) {
-        val targetHealth = requireNotNull(world.get<Health>(target))
         val damageAdjustment = resolveDamageAdjustment(attacker, target, DamageType.PHYSICAL)
         val result =
             combatResolver.resolveMelee(
@@ -2197,7 +2198,6 @@ class FoundationGameSession internal constructor(
             return
         }
 
-        targetHealth.current = (targetHealth.current - result.finalDamage).coerceAtLeast(0)
         applyDamageResourceReactions(attacker, target, result.finalDamage)
         logEvent(DamageDealtEvent(attacker, target, result.finalDamage, result.critical))
         logTriggeredDamagePassives(attacker = attacker, sources = damageAdjustment.sources)
@@ -2648,11 +2648,17 @@ class FoundationGameSession internal constructor(
         attacker: EntityId,
         target: EntityId,
         damageType: DamageType,
-    ) = PassiveEffectResolver.resolveDamageAdjustment(
-        passives = PassiveEffectResolver.equippedPassives(world, attacker),
-        targetTags = targetTagsFor(target),
-        damageType = damageType,
-    )
+    ): PassiveDamageAdjustment {
+        val targetTags = targetTagsFor(target)
+        val passiveAdjustment =
+            PassiveEffectResolver.resolveDamageAdjustment(
+                passives = PassiveEffectResolver.equippedPassives(world, attacker),
+                targetTags = targetTags,
+                damageType = damageType,
+            )
+        val holyTagMultiplier = DamageFormula.tagDamageMultiplier(damageType, targetTags)
+        return passiveAdjustment.copy(multiplier = passiveAdjustment.multiplier * holyTagMultiplier)
+    }
 
     private fun targetTagsFor(target: EntityId): Set<String> {
         val templateId = world.get<MonsterTemplateId>(target)?.value ?: return emptySet()

@@ -144,6 +144,7 @@ talents:
     maxPoints: 5
     category: ACTIVE
     damageType: PHYSICAL
+    powerDimension: PHYSICAL
     kind: ACTIVE
     cooldown: 3
     castTime: 1000
@@ -162,7 +163,17 @@ talents:
       2: { damageMultiplier: 1.7 }
       3: { damageMultiplier: 1.9 }
       4: { damageMultiplier: 2.2 }
-      5: { damageMultiplier: 2.5, knockback: 1, armorBreakDuration: 3 }
+      5:
+        damageMultiplier: 2.5
+        knockback: 1
+        associatedEffects:
+          - effectId: power_strike_armor_break
+            effectType: ARMOR_BREAK
+            trigger: ON_HIT
+            targetScope: PRIMARY_TARGET
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: PHYSICAL
+            duration: 3
   - id: charge
     nameKey: talent.vanguard.charge.name
     descKey: talent.vanguard.charge.desc
@@ -174,6 +185,7 @@ talents:
     maxPoints: 5
     category: ACTIVE
     damageType: PHYSICAL
+    powerDimension: PHYSICAL
     kind: ACTIVE
     cooldown: 6
     castTime: 1000
@@ -192,7 +204,16 @@ talents:
       2: { damageMultiplier: 1.3 }
       3: { damageMultiplier: 1.5 }
       4: { damageMultiplier: 1.6 }
-      5: { damageMultiplier: 1.8, stunDuration: 2 }
+      5:
+        damageMultiplier: 1.8
+        associatedEffects:
+          - effectId: charge_stun
+            effectType: STUNNED
+            trigger: ON_HIT
+            targetScope: PRIMARY_TARGET
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: PHYSICAL
+            duration: 2
   - id: shield_bash
     nameKey: talent.vanguard.shield_bash.name
     descKey: talent.vanguard.shield_bash.desc
@@ -204,6 +225,7 @@ talents:
     maxPoints: 5
     category: ACTIVE
     damageType: PHYSICAL
+    powerDimension: PHYSICAL
     kind: ACTIVE
     cooldown: 5
     castTime: 1000
@@ -218,11 +240,57 @@ talents:
     treeId: vanguard_shield
     keywords: [damage, stun, knockback]
     levelEffects:
-      1: { damageMultiplier: 1.2, stunDuration: 2 }
-      2: { damageMultiplier: 1.3, stunDuration: 2 }
-      3: { damageMultiplier: 1.4, stunDuration: 2 }
-      4: { damageMultiplier: 1.5, stunDuration: 3 }
-      5: { damageMultiplier: 1.6, stunDuration: 3, knockback: 2 }
+      1:
+        damageMultiplier: 1.2
+        associatedEffects:
+          - effectId: shield_bash_stun
+            effectType: STUNNED
+            trigger: ON_HIT
+            targetScope: PRIMARY_TARGET
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: PHYSICAL
+            duration: 2
+      2:
+        damageMultiplier: 1.3
+        associatedEffects:
+          - effectId: shield_bash_stun
+            effectType: STUNNED
+            trigger: ON_HIT
+            targetScope: PRIMARY_TARGET
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: PHYSICAL
+            duration: 2
+      3:
+        damageMultiplier: 1.4
+        associatedEffects:
+          - effectId: shield_bash_stun
+            effectType: STUNNED
+            trigger: ON_HIT
+            targetScope: PRIMARY_TARGET
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: PHYSICAL
+            duration: 2
+      4:
+        damageMultiplier: 1.5
+        associatedEffects:
+          - effectId: shield_bash_stun
+            effectType: STUNNED
+            trigger: ON_HIT
+            targetScope: PRIMARY_TARGET
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: PHYSICAL
+            duration: 3
+      5:
+        damageMultiplier: 1.6
+        knockback: 2
+        associatedEffects:
+          - effectId: shield_bash_stun
+            effectType: STUNNED
+            trigger: ON_HIT
+            targetScope: PRIMARY_TARGET
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: PHYSICAL
+            duration: 3
   - id: war_cry
     nameKey: talent.vanguard.war_cry.name
     descKey: talent.vanguard.war_cry.desc
@@ -233,6 +301,7 @@ talents:
     tags: [talent, vanguard, support]
     maxPoints: 5
     category: ACTIVE
+    powerDimension: MENTAL
     kind: ACTIVE
     cooldown: 10
     castTime: 1000
@@ -247,11 +316,59 @@ talents:
     treeId: vanguard_warcry
     keywords: [buff, debuff]
     levelEffects:
-      1: { buffDuration: 5, buffMagnitude: 0.20 }
-      2: { buffDuration: 5, buffMagnitude: 0.25 }
-      3: { buffDuration: 6, buffMagnitude: 0.28 }
-      4: { buffDuration: 7, buffMagnitude: 0.32 }
-      5: { buffDuration: 8, buffMagnitude: 0.35, debuffMagnitude: 0.20, debuffDuration: 5 }
+      1:
+        associatedEffects:
+          - effectId: war_cry_buff
+            effectType: WAR_CRY_BUFF
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 5
+            magnitude: 0.20
+      2:
+        associatedEffects:
+          - effectId: war_cry_buff
+            effectType: WAR_CRY_BUFF
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 5
+            magnitude: 0.25
+      3:
+        associatedEffects:
+          - effectId: war_cry_buff
+            effectType: WAR_CRY_BUFF
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 6
+            magnitude: 0.28
+      4:
+        associatedEffects:
+          - effectId: war_cry_buff
+            effectType: WAR_CRY_BUFF
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 7
+            magnitude: 0.32
+      5:
+        associatedEffects:
+          - effectId: war_cry_buff
+            effectType: WAR_CRY_BUFF
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 8
+            magnitude: 0.35
+          - effectId: war_cry_debuff
+            effectType: WAR_CRY_DEBUFF
+            trigger: ON_CAST
+            targetScope: HOSTILES_IN_RADIUS
+            applicationPolicy: HOSTILE_SAVE_ONLY
+            saveDimension: MENTAL
+            duration: 5
+            magnitude: 0.20
   - id: sweeping_strike
     nameKey: talent.vanguard.sweeping_strike.name
     descKey: talent.vanguard.sweeping_strike.desc
@@ -263,6 +380,7 @@ talents:
     maxPoints: 5
     category: ACTIVE
     damageType: PHYSICAL
+    powerDimension: PHYSICAL
     kind: ACTIVE
     cooldown: 4
     castTime: 1000
@@ -307,11 +425,56 @@ talents:
     treeId: vanguard_arms
     keywords: [damage, armor_break]
     levelEffects:
-      1: { damageMultiplier: 1.1, armorBreakDuration: 2 }
-      2: { damageMultiplier: 1.2, armorBreakDuration: 2 }
-      3: { damageMultiplier: 1.3, armorBreakDuration: 3 }
-      4: { damageMultiplier: 1.4, armorBreakDuration: 3 }
-      5: { damageMultiplier: 1.5, armorBreakDuration: 4 }
+      1:
+        damageMultiplier: 1.1
+        associatedEffects:
+          - effectId: sunder_armor_break
+            effectType: ARMOR_BREAK
+            trigger: ON_HIT
+            targetScope: PRIMARY_TARGET
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: PHYSICAL
+            duration: 2
+      2:
+        damageMultiplier: 1.2
+        associatedEffects:
+          - effectId: sunder_armor_break
+            effectType: ARMOR_BREAK
+            trigger: ON_HIT
+            targetScope: PRIMARY_TARGET
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: PHYSICAL
+            duration: 2
+      3:
+        damageMultiplier: 1.3
+        associatedEffects:
+          - effectId: sunder_armor_break
+            effectType: ARMOR_BREAK
+            trigger: ON_HIT
+            targetScope: PRIMARY_TARGET
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: PHYSICAL
+            duration: 3
+      4:
+        damageMultiplier: 1.4
+        associatedEffects:
+          - effectId: sunder_armor_break
+            effectType: ARMOR_BREAK
+            trigger: ON_HIT
+            targetScope: PRIMARY_TARGET
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: PHYSICAL
+            duration: 3
+      5:
+        damageMultiplier: 1.5
+        associatedEffects:
+          - effectId: sunder_armor_break
+            effectType: ARMOR_BREAK
+            trigger: ON_HIT
+            targetScope: PRIMARY_TARGET
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: PHYSICAL
+            duration: 4
   - id: guard_stance
     nameKey: talent.vanguard.guard_stance.name
     descKey: talent.vanguard.guard_stance.desc
@@ -336,11 +499,51 @@ talents:
     treeId: vanguard_shield
     keywords: [buff, defense]
     levelEffects:
-      1: { buffDuration: 3, buffMagnitude: 0.10 }
-      2: { buffDuration: 4, buffMagnitude: 0.12 }
-      3: { buffDuration: 4, buffMagnitude: 0.15 }
-      4: { buffDuration: 5, buffMagnitude: 0.18 }
-      5: { buffDuration: 5, buffMagnitude: 0.22 }
+      1:
+        associatedEffects:
+          - effectId: guard_stance_buff
+            effectType: GUARD_STANCE_BUFF
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 3
+            magnitude: 0.10
+      2:
+        associatedEffects:
+          - effectId: guard_stance_buff
+            effectType: GUARD_STANCE_BUFF
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 4
+            magnitude: 0.12
+      3:
+        associatedEffects:
+          - effectId: guard_stance_buff
+            effectType: GUARD_STANCE_BUFF
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 4
+            magnitude: 0.15
+      4:
+        associatedEffects:
+          - effectId: guard_stance_buff
+            effectType: GUARD_STANCE_BUFF
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 5
+            magnitude: 0.18
+      5:
+        associatedEffects:
+          - effectId: guard_stance_buff
+            effectType: GUARD_STANCE_BUFF
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 5
+            magnitude: 0.22
   - id: intimidation
     nameKey: talent.vanguard.intimidation.name
     descKey: talent.vanguard.intimidation.desc
@@ -351,6 +554,7 @@ talents:
     tags: [talent, vanguard, support]
     maxPoints: 5
     category: ACTIVE
+    powerDimension: MENTAL
     kind: ACTIVE
     cooldown: 8
     castTime: 1000
@@ -365,11 +569,56 @@ talents:
     treeId: vanguard_warcry
     keywords: [debuff, control]
     levelEffects:
-      1: { debuffMagnitude: 0.10, debuffDuration: 3 }
-      2: { debuffMagnitude: 0.12, debuffDuration: 3 }
-      3: { debuffMagnitude: 0.14, debuffDuration: 4 }
-      4: { debuffMagnitude: 0.16, debuffDuration: 4 }
-      5: { debuffMagnitude: 0.20, debuffDuration: 5 }
+      1:
+        associatedEffects:
+          - effectId: intimidation_debuff
+            effectType: WAR_CRY_DEBUFF
+            trigger: ON_CAST
+            targetScope: HOSTILES_IN_RADIUS
+            applicationPolicy: HOSTILE_SAVE_ONLY
+            saveDimension: MENTAL
+            duration: 3
+            magnitude: 0.10
+      2:
+        associatedEffects:
+          - effectId: intimidation_debuff
+            effectType: WAR_CRY_DEBUFF
+            trigger: ON_CAST
+            targetScope: HOSTILES_IN_RADIUS
+            applicationPolicy: HOSTILE_SAVE_ONLY
+            saveDimension: MENTAL
+            duration: 3
+            magnitude: 0.12
+      3:
+        associatedEffects:
+          - effectId: intimidation_debuff
+            effectType: WAR_CRY_DEBUFF
+            trigger: ON_CAST
+            targetScope: HOSTILES_IN_RADIUS
+            applicationPolicy: HOSTILE_SAVE_ONLY
+            saveDimension: MENTAL
+            duration: 4
+            magnitude: 0.14
+      4:
+        associatedEffects:
+          - effectId: intimidation_debuff
+            effectType: WAR_CRY_DEBUFF
+            trigger: ON_CAST
+            targetScope: HOSTILES_IN_RADIUS
+            applicationPolicy: HOSTILE_SAVE_ONLY
+            saveDimension: MENTAL
+            duration: 4
+            magnitude: 0.16
+      5:
+        associatedEffects:
+          - effectId: intimidation_debuff
+            effectType: WAR_CRY_DEBUFF
+            trigger: ON_CAST
+            targetScope: HOSTILES_IN_RADIUS
+            applicationPolicy: HOSTILE_SAVE_ONLY
+            saveDimension: MENTAL
+            duration: 5
+            magnitude: 0.20
   - id: unyielding
     nameKey: talent.vanguard.unyielding.name
     descKey: talent.vanguard.unyielding.desc
@@ -394,11 +643,51 @@ talents:
     treeId: vanguard_warcry
     keywords: [panic, defense]
     levelEffects:
-      1: { buffDuration: 3, buffMagnitude: 0.15 }
-      2: { buffDuration: 3, buffMagnitude: 0.18 }
-      3: { buffDuration: 4, buffMagnitude: 0.20 }
-      4: { buffDuration: 4, buffMagnitude: 0.22 }
-      5: { buffDuration: 5, buffMagnitude: 0.25 }
+      1:
+        associatedEffects:
+          - effectId: unyielding_buff
+            effectType: UNYIELDING_BUFF
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 3
+            magnitude: 0.15
+      2:
+        associatedEffects:
+          - effectId: unyielding_buff
+            effectType: UNYIELDING_BUFF
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 3
+            magnitude: 0.18
+      3:
+        associatedEffects:
+          - effectId: unyielding_buff
+            effectType: UNYIELDING_BUFF
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 4
+            magnitude: 0.20
+      4:
+        associatedEffects:
+          - effectId: unyielding_buff
+            effectType: UNYIELDING_BUFF
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 4
+            magnitude: 0.22
+      5:
+        associatedEffects:
+          - effectId: unyielding_buff
+            effectType: UNYIELDING_BUFF
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 5
+            magnitude: 0.25
   - id: fireball
     nameKey: talent.arcanist.fireball.name
     descKey: talent.arcanist.fireball.desc
@@ -470,6 +759,7 @@ talents:
     maxPoints: 5
     category: ACTIVE
     damageType: COLD
+    powerDimension: SPELL
     kind: ACTIVE
     cooldown: 3
     castTime: 1000
@@ -488,7 +778,16 @@ talents:
       2: { damageMultiplier: 1.35 }
       3: { damageMultiplier: 1.5 }
       4: { damageMultiplier: 1.65 }
-      5: { damageMultiplier: 1.8, stunDuration: 1 }
+      5:
+        damageMultiplier: 1.8
+        associatedEffects:
+          - effectId: ice_bolt_stun
+            effectType: STUNNED
+            trigger: ON_HIT
+            targetScope: PRIMARY_TARGET
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: SPELL
+            duration: 1
   - id: frost_nova
     nameKey: talent.arcanist.frost_nova.name
     descKey: talent.arcanist.frost_nova.desc
@@ -500,6 +799,7 @@ talents:
     maxPoints: 5
     category: ACTIVE
     damageType: COLD
+    powerDimension: SPELL
     kind: ACTIVE
     cooldown: 7
     castTime: 1000
@@ -514,11 +814,56 @@ talents:
     treeId: arcanist_frost
     keywords: [area, control]
     levelEffects:
-      1: { damageMultiplier: 1.0, stunDuration: 1 }
-      2: { damageMultiplier: 1.1, stunDuration: 1 }
-      3: { damageMultiplier: 1.2, stunDuration: 1 }
-      4: { damageMultiplier: 1.3, stunDuration: 2 }
-      5: { damageMultiplier: 1.4, stunDuration: 2 }
+      1:
+        damageMultiplier: 1.0
+        associatedEffects:
+          - effectId: frost_nova_stun
+            effectType: STUNNED
+            trigger: ON_HIT
+            targetScope: PRIMARY_TARGET
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: SPELL
+            duration: 1
+      2:
+        damageMultiplier: 1.1
+        associatedEffects:
+          - effectId: frost_nova_stun
+            effectType: STUNNED
+            trigger: ON_HIT
+            targetScope: PRIMARY_TARGET
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: SPELL
+            duration: 1
+      3:
+        damageMultiplier: 1.2
+        associatedEffects:
+          - effectId: frost_nova_stun
+            effectType: STUNNED
+            trigger: ON_HIT
+            targetScope: PRIMARY_TARGET
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: SPELL
+            duration: 1
+      4:
+        damageMultiplier: 1.3
+        associatedEffects:
+          - effectId: frost_nova_stun
+            effectType: STUNNED
+            trigger: ON_HIT
+            targetScope: PRIMARY_TARGET
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: SPELL
+            duration: 2
+      5:
+        damageMultiplier: 1.4
+        associatedEffects:
+          - effectId: frost_nova_stun
+            effectType: STUNNED
+            trigger: ON_HIT
+            targetScope: PRIMARY_TARGET
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: SPELL
+            duration: 2
   - id: ice_prison
     nameKey: talent.arcanist.ice_prison.name
     descKey: talent.arcanist.ice_prison.desc
@@ -530,6 +875,7 @@ talents:
     maxPoints: 5
     category: ACTIVE
     damageType: COLD
+    powerDimension: SPELL
     kind: ACTIVE
     cooldown: 8
     castTime: 1000
@@ -544,11 +890,56 @@ talents:
     treeId: arcanist_frost
     keywords: [control]
     levelEffects:
-      1: { damageMultiplier: 0.8, stunDuration: 1 }
-      2: { damageMultiplier: 0.9, stunDuration: 1 }
-      3: { damageMultiplier: 1.0, stunDuration: 2 }
-      4: { damageMultiplier: 1.1, stunDuration: 2 }
-      5: { damageMultiplier: 1.2, stunDuration: 2 }
+      1:
+        damageMultiplier: 0.8
+        associatedEffects:
+          - effectId: ice_prison_stun
+            effectType: STUNNED
+            trigger: ON_HIT
+            targetScope: PRIMARY_TARGET
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: SPELL
+            duration: 1
+      2:
+        damageMultiplier: 0.9
+        associatedEffects:
+          - effectId: ice_prison_stun
+            effectType: STUNNED
+            trigger: ON_HIT
+            targetScope: PRIMARY_TARGET
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: SPELL
+            duration: 1
+      3:
+        damageMultiplier: 1.0
+        associatedEffects:
+          - effectId: ice_prison_stun
+            effectType: STUNNED
+            trigger: ON_HIT
+            targetScope: PRIMARY_TARGET
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: SPELL
+            duration: 2
+      4:
+        damageMultiplier: 1.1
+        associatedEffects:
+          - effectId: ice_prison_stun
+            effectType: STUNNED
+            trigger: ON_HIT
+            targetScope: PRIMARY_TARGET
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: SPELL
+            duration: 2
+      5:
+        damageMultiplier: 1.2
+        associatedEffects:
+          - effectId: ice_prison_stun
+            effectType: STUNNED
+            trigger: ON_HIT
+            targetScope: PRIMARY_TARGET
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: SPELL
+            duration: 2
   - id: arcane_shield
     nameKey: talent.arcanist.arcane_shield.name
     descKey: talent.arcanist.arcane_shield.desc
@@ -573,11 +964,51 @@ talents:
     treeId: arcanist_arcane
     keywords: [buff, defense]
     levelEffects:
-      1: { buffDuration: 3, buffMagnitude: 0.10 }
-      2: { buffDuration: 3, buffMagnitude: 0.12 }
-      3: { buffDuration: 4, buffMagnitude: 0.15 }
-      4: { buffDuration: 4, buffMagnitude: 0.18 }
-      5: { buffDuration: 5, buffMagnitude: 0.20 }
+      1:
+        associatedEffects:
+          - effectId: arcane_shield_buff
+            effectType: ARCANE_SHIELD_BUFF
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 3
+            magnitude: 0.10
+      2:
+        associatedEffects:
+          - effectId: arcane_shield_buff
+            effectType: ARCANE_SHIELD_BUFF
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 3
+            magnitude: 0.12
+      3:
+        associatedEffects:
+          - effectId: arcane_shield_buff
+            effectType: ARCANE_SHIELD_BUFF
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 4
+            magnitude: 0.15
+      4:
+        associatedEffects:
+          - effectId: arcane_shield_buff
+            effectType: ARCANE_SHIELD_BUFF
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 4
+            magnitude: 0.18
+      5:
+        associatedEffects:
+          - effectId: arcane_shield_buff
+            effectType: ARCANE_SHIELD_BUFF
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 5
+            magnitude: 0.20
   - id: blink
     nameKey: talent.arcanist.blink.name
     descKey: talent.arcanist.blink.desc
@@ -631,11 +1062,56 @@ talents:
     treeId: arcanist_arcane
     keywords: [resource, buff]
     levelEffects:
-      1: { buffDuration: 2, buffMagnitude: 0.10 }
-      2: { buffDuration: 2, buffMagnitude: 0.12 }
-      3: { buffDuration: 3, buffMagnitude: 0.14 }
-      4: { buffDuration: 3, buffMagnitude: 0.16 }
-      5: { buffDuration: 4, buffMagnitude: 0.18 }
+      1:
+        resourceRestoreFraction: 0.10
+        associatedEffects:
+          - effectId: mana_surge_buff
+            effectType: MANA_SURGE_BUFF
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 2
+            magnitude: 0.10
+      2:
+        resourceRestoreFraction: 0.12
+        associatedEffects:
+          - effectId: mana_surge_buff
+            effectType: MANA_SURGE_BUFF
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 2
+            magnitude: 0.12
+      3:
+        resourceRestoreFraction: 0.14
+        associatedEffects:
+          - effectId: mana_surge_buff
+            effectType: MANA_SURGE_BUFF
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 3
+            magnitude: 0.14
+      4:
+        resourceRestoreFraction: 0.16
+        associatedEffects:
+          - effectId: mana_surge_buff
+            effectType: MANA_SURGE_BUFF
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 3
+            magnitude: 0.16
+      5:
+        resourceRestoreFraction: 0.18
+        associatedEffects:
+          - effectId: mana_surge_buff
+            effectType: MANA_SURGE_BUFF
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 4
+            magnitude: 0.18
   - id: backstab
     nameKey: talent.rogue.backstab.name
     descKey: talent.rogue.backstab.desc
@@ -677,6 +1153,7 @@ talents:
     maxPoints: 5
     category: ACTIVE
     damageType: SHADOW
+    powerDimension: MENTAL
     kind: ACTIVE
     cooldown: 4
     castTime: 1000
@@ -691,11 +1168,61 @@ talents:
     treeId: rogue_assassination
     keywords: [damage, curse]
     levelEffects:
-      1: { damageMultiplier: 1.05, debuffMagnitude: 0.10, debuffDuration: 2 }
-      2: { damageMultiplier: 1.15, debuffMagnitude: 0.12, debuffDuration: 2 }
-      3: { damageMultiplier: 1.25, debuffMagnitude: 0.14, debuffDuration: 3 }
-      4: { damageMultiplier: 1.40, debuffMagnitude: 0.16, debuffDuration: 3 }
-      5: { damageMultiplier: 1.55, debuffMagnitude: 0.18, debuffDuration: 4 }
+      1:
+        damageMultiplier: 1.05
+        associatedEffects:
+          - effectId: poison_blade_curse
+            effectType: CURSED
+            trigger: ON_HIT
+            targetScope: PRIMARY_TARGET
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: MENTAL
+            duration: 2
+            magnitude: 0.10
+      2:
+        damageMultiplier: 1.15
+        associatedEffects:
+          - effectId: poison_blade_curse
+            effectType: CURSED
+            trigger: ON_HIT
+            targetScope: PRIMARY_TARGET
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: MENTAL
+            duration: 2
+            magnitude: 0.12
+      3:
+        damageMultiplier: 1.25
+        associatedEffects:
+          - effectId: poison_blade_curse
+            effectType: CURSED
+            trigger: ON_HIT
+            targetScope: PRIMARY_TARGET
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: MENTAL
+            duration: 3
+            magnitude: 0.14
+      4:
+        damageMultiplier: 1.40
+        associatedEffects:
+          - effectId: poison_blade_curse
+            effectType: CURSED
+            trigger: ON_HIT
+            targetScope: PRIMARY_TARGET
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: MENTAL
+            duration: 3
+            magnitude: 0.16
+      5:
+        damageMultiplier: 1.55
+        associatedEffects:
+          - effectId: poison_blade_curse
+            effectType: CURSED
+            trigger: ON_HIT
+            targetScope: PRIMARY_TARGET
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: MENTAL
+            duration: 4
+            magnitude: 0.18
   - id: stealth
     nameKey: talent.rogue.stealth.name
     descKey: talent.rogue.stealth.desc
@@ -720,11 +1247,51 @@ talents:
     treeId: rogue_subtlety
     keywords: [buff, mobility]
     levelEffects:
-      1: { buffDuration: 3, buffMagnitude: 0.12 }
-      2: { buffDuration: 4, buffMagnitude: 0.14 }
-      3: { buffDuration: 4, buffMagnitude: 0.16 }
-      4: { buffDuration: 5, buffMagnitude: 0.18 }
-      5: { buffDuration: 6, buffMagnitude: 0.20 }
+      1:
+        associatedEffects:
+          - effectId: stealth_buff
+            effectType: STEALTH_BUFF
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 3
+            magnitude: 0.12
+      2:
+        associatedEffects:
+          - effectId: stealth_buff
+            effectType: STEALTH_BUFF
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 4
+            magnitude: 0.14
+      3:
+        associatedEffects:
+          - effectId: stealth_buff
+            effectType: STEALTH_BUFF
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 4
+            magnitude: 0.16
+      4:
+        associatedEffects:
+          - effectId: stealth_buff
+            effectType: STEALTH_BUFF
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 5
+            magnitude: 0.18
+      5:
+        associatedEffects:
+          - effectId: stealth_buff
+            effectType: STEALTH_BUFF
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 6
+            magnitude: 0.20
   - id: smoke_bomb
     nameKey: talent.rogue.smoke_bomb.name
     descKey: talent.rogue.smoke_bomb.desc
@@ -736,6 +1303,7 @@ talents:
     maxPoints: 5
     category: ACTIVE
     damageType: SHADOW
+    powerDimension: MENTAL
     kind: ACTIVE
     cooldown: 8
     castTime: 1000
@@ -750,11 +1318,56 @@ talents:
     treeId: rogue_subtlety
     keywords: [debuff, control]
     levelEffects:
-      1: { debuffMagnitude: 0.10, debuffDuration: 2 }
-      2: { debuffMagnitude: 0.12, debuffDuration: 3 }
-      3: { debuffMagnitude: 0.14, debuffDuration: 3 }
-      4: { debuffMagnitude: 0.16, debuffDuration: 4 }
-      5: { debuffMagnitude: 0.18, debuffDuration: 4 }
+      1:
+        associatedEffects:
+          - effectId: smoke_bomb_curse
+            effectType: CURSED
+            trigger: ON_CAST
+            targetScope: HOSTILES_IN_RADIUS
+            applicationPolicy: HOSTILE_SAVE_ONLY
+            saveDimension: MENTAL
+            duration: 2
+            magnitude: 0.10
+      2:
+        associatedEffects:
+          - effectId: smoke_bomb_curse
+            effectType: CURSED
+            trigger: ON_CAST
+            targetScope: HOSTILES_IN_RADIUS
+            applicationPolicy: HOSTILE_SAVE_ONLY
+            saveDimension: MENTAL
+            duration: 3
+            magnitude: 0.12
+      3:
+        associatedEffects:
+          - effectId: smoke_bomb_curse
+            effectType: CURSED
+            trigger: ON_CAST
+            targetScope: HOSTILES_IN_RADIUS
+            applicationPolicy: HOSTILE_SAVE_ONLY
+            saveDimension: MENTAL
+            duration: 3
+            magnitude: 0.14
+      4:
+        associatedEffects:
+          - effectId: smoke_bomb_curse
+            effectType: CURSED
+            trigger: ON_CAST
+            targetScope: HOSTILES_IN_RADIUS
+            applicationPolicy: HOSTILE_SAVE_ONLY
+            saveDimension: MENTAL
+            duration: 4
+            magnitude: 0.16
+      5:
+        associatedEffects:
+          - effectId: smoke_bomb_curse
+            effectType: CURSED
+            trigger: ON_CAST
+            targetScope: HOSTILES_IN_RADIUS
+            applicationPolicy: HOSTILE_SAVE_ONLY
+            saveDimension: MENTAL
+            duration: 4
+            magnitude: 0.18
   - id: roll
     nameKey: talent.rogue.roll.name
     descKey: talent.rogue.roll.desc
@@ -869,11 +1482,11 @@ talents:
     treeId: rogue_assassination
     keywords: [damage, resource]
     levelEffects:
-      1: { damageMultiplier: 1.60, buffMagnitude: 0.10 }
-      2: { damageMultiplier: 1.85, buffMagnitude: 0.12 }
-      3: { damageMultiplier: 2.10, buffMagnitude: 0.14 }
-      4: { damageMultiplier: 2.35, buffMagnitude: 0.16 }
-      5: { damageMultiplier: 2.70, buffMagnitude: 0.18 }
+      1: { damageMultiplier: 1.60, resourceRestoreFraction: 0.10 }
+      2: { damageMultiplier: 1.85, resourceRestoreFraction: 0.12 }
+      3: { damageMultiplier: 2.10, resourceRestoreFraction: 0.14 }
+      4: { damageMultiplier: 2.35, resourceRestoreFraction: 0.16 }
+      5: { damageMultiplier: 2.70, resourceRestoreFraction: 0.18 }
   - id: holy_strike
     nameKey: talent.templar.holy_strike.name
     descKey: talent.templar.holy_strike.desc
@@ -915,6 +1528,7 @@ talents:
     maxPoints: 5
     category: ACTIVE
     damageType: HOLY
+    powerDimension: SPELL
     kind: ACTIVE
     cooldown: 5
     castTime: 1000
@@ -929,11 +1543,56 @@ talents:
     treeId: templar_smite
     keywords: [damage, stun]
     levelEffects:
-      1: { damageMultiplier: 1.10, stunDuration: 1 }
-      2: { damageMultiplier: 1.20, stunDuration: 1 }
-      3: { damageMultiplier: 1.35, stunDuration: 1 }
-      4: { damageMultiplier: 1.50, stunDuration: 2 }
-      5: { damageMultiplier: 1.70, stunDuration: 2 }
+      1:
+        damageMultiplier: 1.10
+        associatedEffects:
+          - effectId: judgment_hammer_stun
+            effectType: STUNNED
+            trigger: ON_HIT
+            targetScope: PRIMARY_TARGET
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: SPELL
+            duration: 1
+      2:
+        damageMultiplier: 1.20
+        associatedEffects:
+          - effectId: judgment_hammer_stun
+            effectType: STUNNED
+            trigger: ON_HIT
+            targetScope: PRIMARY_TARGET
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: SPELL
+            duration: 1
+      3:
+        damageMultiplier: 1.35
+        associatedEffects:
+          - effectId: judgment_hammer_stun
+            effectType: STUNNED
+            trigger: ON_HIT
+            targetScope: PRIMARY_TARGET
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: SPELL
+            duration: 1
+      4:
+        damageMultiplier: 1.50
+        associatedEffects:
+          - effectId: judgment_hammer_stun
+            effectType: STUNNED
+            trigger: ON_HIT
+            targetScope: PRIMARY_TARGET
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: SPELL
+            duration: 2
+      5:
+        damageMultiplier: 1.70
+        associatedEffects:
+          - effectId: judgment_hammer_stun
+            effectType: STUNNED
+            trigger: ON_HIT
+            targetScope: PRIMARY_TARGET
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: SPELL
+            duration: 2
   - id: holy_light
     nameKey: talent.templar.holy_light.name
     descKey: talent.templar.holy_light.desc
@@ -958,11 +1617,11 @@ talents:
     treeId: templar_grace
     keywords: [heal]
     levelEffects:
-      1: { buffMagnitude: 0.18 }
-      2: { buffMagnitude: 0.22 }
-      3: { buffMagnitude: 0.26 }
-      4: { buffMagnitude: 0.30 }
-      5: { buffMagnitude: 0.35 }
+      1: { healFraction: 0.18 }
+      2: { healFraction: 0.22 }
+      3: { healFraction: 0.26 }
+      4: { healFraction: 0.30 }
+      5: { healFraction: 0.35 }
   - id: holy_shield
     nameKey: talent.templar.holy_shield.name
     descKey: talent.templar.holy_shield.desc
@@ -987,11 +1646,51 @@ talents:
     treeId: templar_grace
     keywords: [buff, defense]
     levelEffects:
-      1: { buffDuration: 3, buffMagnitude: 0.12 }
-      2: { buffDuration: 3, buffMagnitude: 0.14 }
-      3: { buffDuration: 4, buffMagnitude: 0.16 }
-      4: { buffDuration: 4, buffMagnitude: 0.18 }
-      5: { buffDuration: 5, buffMagnitude: 0.20 }
+      1:
+        associatedEffects:
+          - effectId: holy_shield_buff
+            effectType: HOLY_SHIELD_BUFF
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 3
+            magnitude: 0.12
+      2:
+        associatedEffects:
+          - effectId: holy_shield_buff
+            effectType: HOLY_SHIELD_BUFF
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 3
+            magnitude: 0.14
+      3:
+        associatedEffects:
+          - effectId: holy_shield_buff
+            effectType: HOLY_SHIELD_BUFF
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 4
+            magnitude: 0.16
+      4:
+        associatedEffects:
+          - effectId: holy_shield_buff
+            effectType: HOLY_SHIELD_BUFF
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 4
+            magnitude: 0.18
+      5:
+        associatedEffects:
+          - effectId: holy_shield_buff
+            effectType: HOLY_SHIELD_BUFF
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 5
+            magnitude: 0.20
   - id: devotion
     nameKey: talent.templar.devotion.name
     descKey: talent.templar.devotion.desc
@@ -1016,11 +1715,51 @@ talents:
     treeId: templar_faith
     keywords: [buff, holy]
     levelEffects:
-      1: { buffDuration: 4, buffMagnitude: 0.10 }
-      2: { buffDuration: 4, buffMagnitude: 0.12 }
-      3: { buffDuration: 5, buffMagnitude: 0.14 }
-      4: { buffDuration: 5, buffMagnitude: 0.16 }
-      5: { buffDuration: 6, buffMagnitude: 0.18 }
+      1:
+        associatedEffects:
+          - effectId: devotion_buff
+            effectType: DEVOTION_BUFF
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 4
+            magnitude: 0.10
+      2:
+        associatedEffects:
+          - effectId: devotion_buff
+            effectType: DEVOTION_BUFF
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 4
+            magnitude: 0.12
+      3:
+        associatedEffects:
+          - effectId: devotion_buff
+            effectType: DEVOTION_BUFF
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 5
+            magnitude: 0.14
+      4:
+        associatedEffects:
+          - effectId: devotion_buff
+            effectType: DEVOTION_BUFF
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 5
+            magnitude: 0.16
+      5:
+        associatedEffects:
+          - effectId: devotion_buff
+            effectType: DEVOTION_BUFF
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 6
+            magnitude: 0.18
   - id: holy_aura
     nameKey: talent.templar.holy_aura.name
     descKey: talent.templar.holy_aura.desc
@@ -1046,11 +1785,56 @@ talents:
     treeId: templar_faith
     keywords: [buff, holy, area]
     levelEffects:
-      1: { damageMultiplier: 0.90, buffDuration: 3, buffMagnitude: 0.10 }
-      2: { damageMultiplier: 1.00, buffDuration: 3, buffMagnitude: 0.12 }
-      3: { damageMultiplier: 1.10, buffDuration: 4, buffMagnitude: 0.14 }
-      4: { damageMultiplier: 1.20, buffDuration: 4, buffMagnitude: 0.16 }
-      5: { damageMultiplier: 1.35, buffDuration: 5, buffMagnitude: 0.18 }
+      1:
+        damageMultiplier: 0.90
+        associatedEffects:
+          - effectId: holy_aura_buff
+            effectType: HOLY_AURA_BUFF
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 3
+            magnitude: 0.10
+      2:
+        damageMultiplier: 1.00
+        associatedEffects:
+          - effectId: holy_aura_buff
+            effectType: HOLY_AURA_BUFF
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 3
+            magnitude: 0.12
+      3:
+        damageMultiplier: 1.10
+        associatedEffects:
+          - effectId: holy_aura_buff
+            effectType: HOLY_AURA_BUFF
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 4
+            magnitude: 0.14
+      4:
+        damageMultiplier: 1.20
+        associatedEffects:
+          - effectId: holy_aura_buff
+            effectType: HOLY_AURA_BUFF
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 4
+            magnitude: 0.16
+      5:
+        damageMultiplier: 1.35
+        associatedEffects:
+          - effectId: holy_aura_buff
+            effectType: HOLY_AURA_BUFF
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 5
+            magnitude: 0.18
   - id: purify
     nameKey: talent.templar.purify.name
     descKey: talent.templar.purify.desc
@@ -1075,11 +1859,46 @@ talents:
     treeId: templar_grace
     keywords: [heal, cleanse]
     levelEffects:
-      1: { buffMagnitude: 0.10 }
-      2: { buffMagnitude: 0.12 }
-      3: { buffMagnitude: 0.15 }
-      4: { buffMagnitude: 0.18 }
-      5: { buffMagnitude: 0.22 }
+      1:
+        healFraction: 0.10
+        cleanseEffect:
+          effectId: purify_cleanse
+          trigger: ON_CAST
+          targetScope: SELF
+          applicationPolicy: INSTANT_ACTION
+          maxEffectsRemoved: 1
+      2:
+        healFraction: 0.12
+        cleanseEffect:
+          effectId: purify_cleanse
+          trigger: ON_CAST
+          targetScope: SELF
+          applicationPolicy: INSTANT_ACTION
+          maxEffectsRemoved: 1
+      3:
+        healFraction: 0.15
+        cleanseEffect:
+          effectId: purify_cleanse
+          trigger: ON_CAST
+          targetScope: SELF
+          applicationPolicy: INSTANT_ACTION
+          maxEffectsRemoved: 1
+      4:
+        healFraction: 0.18
+        cleanseEffect:
+          effectId: purify_cleanse
+          trigger: ON_CAST
+          targetScope: SELF
+          applicationPolicy: INSTANT_ACTION
+          maxEffectsRemoved: 1
+      5:
+        healFraction: 0.22
+        cleanseEffect:
+          effectId: purify_cleanse
+          trigger: ON_CAST
+          targetScope: SELF
+          applicationPolicy: INSTANT_ACTION
+          maxEffectsRemoved: 1
   - id: divine_intervention
     nameKey: talent.templar.divine_intervention.name
     descKey: talent.templar.divine_intervention.desc
@@ -1104,8 +1923,53 @@ talents:
     treeId: templar_faith
     keywords: [heal, buff, defense]
     levelEffects:
-      1: { buffDuration: 2, buffMagnitude: 0.20 }
-      2: { buffDuration: 3, buffMagnitude: 0.24 }
-      3: { buffDuration: 3, buffMagnitude: 0.28 }
-      4: { buffDuration: 4, buffMagnitude: 0.32 }
-      5: { buffDuration: 5, buffMagnitude: 0.36 }
+      1:
+        healFraction: 0.20
+        associatedEffects:
+          - effectId: divine_intervention_holy_shield
+            effectType: HOLY_SHIELD_BUFF
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 2
+            magnitude: 0.20
+      2:
+        healFraction: 0.24
+        associatedEffects:
+          - effectId: divine_intervention_holy_shield
+            effectType: HOLY_SHIELD_BUFF
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 3
+            magnitude: 0.24
+      3:
+        healFraction: 0.28
+        associatedEffects:
+          - effectId: divine_intervention_holy_shield
+            effectType: HOLY_SHIELD_BUFF
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 3
+            magnitude: 0.28
+      4:
+        healFraction: 0.32
+        associatedEffects:
+          - effectId: divine_intervention_holy_shield
+            effectType: HOLY_SHIELD_BUFF
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 4
+            magnitude: 0.32
+      5:
+        healFraction: 0.36
+        associatedEffects:
+          - effectId: divine_intervention_holy_shield
+            effectType: HOLY_SHIELD_BUFF
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 5
+            magnitude: 0.36

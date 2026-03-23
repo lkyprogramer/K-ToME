@@ -1,0 +1,1151 @@
+{
+    "phaseId": "P3",
+    "rulesetVersion": "3.0.0",
+    "traceSchemaVersion": "1",
+    "corpusId": "FORMULA",
+    "scenarios": [
+        {
+            "scenarioId": "basic_physical",
+            "statusReason": null,
+            "envelope": {
+                "phaseId": "P3",
+                "rulesetVersion": "3.0.0",
+                "traceSchemaVersion": "1",
+                "corpusId": "FORMULA"
+            },
+            "trace": {
+                "traceId": "formula-basic-physical",
+                "turn": 0,
+                "attackerId": -1,
+                "targetId": -2,
+                "abilityId": "basic_attack",
+                "damageType": "PHYSICAL",
+                "steps": [
+                    {
+                        "stepIndex": 1,
+                        "stepName": "HIT_CHECK",
+                        "inputs": {
+                            "accuracy": "25",
+                            "rawEvasion": "0",
+                            "effectiveEvasion": "0.0000",
+                            "hitFormula": "SIGMOID"
+                        },
+                        "outputs": {
+                            "hitChance": "0.7720",
+                            "roll": "0.0000",
+                            "hit": "true"
+                        },
+                        "flags": [],
+                        "callbacks": []
+                    },
+                    {
+                        "stepIndex": 2,
+                        "stepName": "CRIT_CHECK",
+                        "inputs": {
+                            "critChance": "0.0500",
+                            "critResistance": "0.0000"
+                        },
+                        "outputs": {
+                            "effectiveCritChance": "0.0500",
+                            "roll": "0.9900",
+                            "critical": "false",
+                            "critMultiplier": "1.0000"
+                        },
+                        "flags": [],
+                        "callbacks": []
+                    },
+                    {
+                        "stepIndex": 3,
+                        "stepName": "RAW_DAMAGE_CALCULATION",
+                        "inputs": {
+                            "baseDamage": "12",
+                            "varianceRoll": "0",
+                            "damageMultiplier": "1.0000",
+                            "critical": "false"
+                        },
+                        "outputs": {
+                            "rolledDamage": "12",
+                            "rawDamage": "12"
+                        },
+                        "flags": [],
+                        "callbacks": []
+                    },
+                    {
+                        "stepIndex": 4,
+                        "stepName": "PRE_REDUCTION_CALLBACKS",
+                        "inputs": {
+                            "incomingRawDamage": "12",
+                            "shieldPoints": "0"
+                        },
+                        "outputs": {
+                            "damageType": "PHYSICAL",
+                            "absorbedByShield": "0",
+                            "remainingRawDamage": "12"
+                        },
+                        "flags": [],
+                        "callbacks": []
+                    },
+                    {
+                        "stepIndex": 5,
+                        "stepName": "ARMOR_RESISTANCE_REDUCTION",
+                        "inputs": {
+                            "damageType": "PHYSICAL",
+                            "rawDamage": "12",
+                            "targetArmor": "40",
+                            "targetResistance": "0"
+                        },
+                        "outputs": {
+                            "effectiveArmor": "40",
+                            "reducedDamage": "9"
+                        },
+                        "flags": [],
+                        "callbacks": []
+                    },
+                    {
+                        "stepIndex": 6,
+                        "stepName": "PENETRATION_APPLICATION",
+                        "inputs": {
+                            "armorPenetration": "0",
+                            "resistancePenetration": "0"
+                        },
+                        "outputs": {
+                            "penetrationContribution": "0"
+                        },
+                        "flags": [],
+                        "callbacks": []
+                    },
+                    {
+                        "stepIndex": 7,
+                        "stepName": "POST_REDUCTION_CALLBACKS",
+                        "inputs": {
+                            "reducedDamageBeforeCallbacks": "9"
+                        },
+                        "outputs": {
+                            "postReductionModifier": "0",
+                            "reducedDamage": "9"
+                        },
+                        "flags": [],
+                        "callbacks": []
+                    },
+                    {
+                        "stepIndex": 8,
+                        "stepName": "FINAL_DAMAGE_APPLICATION",
+                        "inputs": {
+                            "targetCurrentHp": "30",
+                            "damageBeforeClamp": "9"
+                        },
+                        "outputs": {
+                            "finalDamage": "9",
+                            "remainingHp": "21"
+                        },
+                        "flags": [],
+                        "callbacks": []
+                    },
+                    {
+                        "stepIndex": 9,
+                        "stepName": "ON_DAMAGE_TAKEN_CALLBACKS",
+                        "inputs": {
+                            "finalDamage": "9"
+                        },
+                        "outputs": {},
+                        "flags": [],
+                        "callbacks": []
+                    },
+                    {
+                        "stepIndex": 10,
+                        "stepName": "DEATH_CHECK",
+                        "inputs": {
+                            "wouldKill": "false"
+                        },
+                        "outputs": {
+                            "deathPrevented": "false",
+                            "targetKilled": "false"
+                        },
+                        "flags": [],
+                        "callbacks": []
+                    },
+                    {
+                        "stepIndex": 11,
+                        "stepName": "ON_KILL_CALLBACKS",
+                        "inputs": {
+                            "targetKilled": "false"
+                        },
+                        "outputs": {
+                            "killCallbacksTriggered": "false"
+                        },
+                        "flags": [],
+                        "callbacks": []
+                    },
+                    {
+                        "stepIndex": 12,
+                        "stepName": "EXPERIENCE_AND_LOOT",
+                        "inputs": {
+                            "targetKilled": "false"
+                        },
+                        "outputs": {
+                            "experienceGranted": "false",
+                            "lootGenerated": "false"
+                        },
+                        "flags": [
+                            "NO_RUNTIME_LOOT"
+                        ],
+                        "callbacks": []
+                    }
+                ],
+                "result": {
+                    "hit": true,
+                    "critical": false,
+                    "critMultiplier": 1.0,
+                    "rawDamage": 12,
+                    "preReductionAbsorbed": 0,
+                    "armorResistanceReduced": 3,
+                    "penetrationContribution": 0,
+                    "postReductionModifier": 0,
+                    "finalDamage": 9,
+                    "targetKilled": false,
+                    "deathPrevented": false
+                },
+                "childTraceIds": []
+            }
+        },
+        {
+            "scenarioId": "crit_fire",
+            "statusReason": null,
+            "envelope": {
+                "phaseId": "P3",
+                "rulesetVersion": "3.0.0",
+                "traceSchemaVersion": "1",
+                "corpusId": "FORMULA"
+            },
+            "trace": {
+                "traceId": "formula-crit-fire",
+                "turn": 0,
+                "attackerId": -1,
+                "targetId": -2,
+                "abilityId": "fire_crit",
+                "damageType": "FIRE",
+                "steps": [
+                    {
+                        "stepIndex": 1,
+                        "stepName": "HIT_CHECK",
+                        "inputs": {
+                            "accuracy": "30",
+                            "rawEvasion": "0",
+                            "effectiveEvasion": "0.0000",
+                            "hitFormula": "SIGMOID"
+                        },
+                        "outputs": {
+                            "hitChance": "0.7988",
+                            "roll": "0.0000",
+                            "hit": "true"
+                        },
+                        "flags": [],
+                        "callbacks": []
+                    },
+                    {
+                        "stepIndex": 2,
+                        "stepName": "CRIT_CHECK",
+                        "inputs": {
+                            "critChance": "0.2000",
+                            "critResistance": "0.0000"
+                        },
+                        "outputs": {
+                            "effectiveCritChance": "0.2000",
+                            "roll": "0.0000",
+                            "critical": "true",
+                            "critMultiplier": "1.5000"
+                        },
+                        "flags": [],
+                        "callbacks": []
+                    },
+                    {
+                        "stepIndex": 3,
+                        "stepName": "RAW_DAMAGE_CALCULATION",
+                        "inputs": {
+                            "baseDamage": "14",
+                            "varianceRoll": "0",
+                            "damageMultiplier": "1.0000",
+                            "critical": "true"
+                        },
+                        "outputs": {
+                            "rolledDamage": "14",
+                            "rawDamage": "21"
+                        },
+                        "flags": [],
+                        "callbacks": []
+                    },
+                    {
+                        "stepIndex": 4,
+                        "stepName": "PRE_REDUCTION_CALLBACKS",
+                        "inputs": {
+                            "incomingRawDamage": "21",
+                            "shieldPoints": "0"
+                        },
+                        "outputs": {
+                            "damageType": "FIRE",
+                            "absorbedByShield": "0",
+                            "remainingRawDamage": "21"
+                        },
+                        "flags": [],
+                        "callbacks": []
+                    },
+                    {
+                        "stepIndex": 5,
+                        "stepName": "ARMOR_RESISTANCE_REDUCTION",
+                        "inputs": {
+                            "damageType": "FIRE",
+                            "rawDamage": "21",
+                            "targetArmor": "0",
+                            "targetResistance": "25"
+                        },
+                        "outputs": {
+                            "effectiveResistance": "25",
+                            "reducedDamage": "16"
+                        },
+                        "flags": [],
+                        "callbacks": []
+                    },
+                    {
+                        "stepIndex": 6,
+                        "stepName": "PENETRATION_APPLICATION",
+                        "inputs": {
+                            "armorPenetration": "0",
+                            "resistancePenetration": "0"
+                        },
+                        "outputs": {
+                            "penetrationContribution": "0"
+                        },
+                        "flags": [],
+                        "callbacks": []
+                    },
+                    {
+                        "stepIndex": 7,
+                        "stepName": "POST_REDUCTION_CALLBACKS",
+                        "inputs": {
+                            "reducedDamageBeforeCallbacks": "16"
+                        },
+                        "outputs": {
+                            "postReductionModifier": "0",
+                            "reducedDamage": "16"
+                        },
+                        "flags": [],
+                        "callbacks": []
+                    },
+                    {
+                        "stepIndex": 8,
+                        "stepName": "FINAL_DAMAGE_APPLICATION",
+                        "inputs": {
+                            "targetCurrentHp": "40",
+                            "damageBeforeClamp": "16"
+                        },
+                        "outputs": {
+                            "finalDamage": "16",
+                            "remainingHp": "24"
+                        },
+                        "flags": [],
+                        "callbacks": []
+                    },
+                    {
+                        "stepIndex": 9,
+                        "stepName": "ON_DAMAGE_TAKEN_CALLBACKS",
+                        "inputs": {
+                            "finalDamage": "16"
+                        },
+                        "outputs": {},
+                        "flags": [],
+                        "callbacks": []
+                    },
+                    {
+                        "stepIndex": 10,
+                        "stepName": "DEATH_CHECK",
+                        "inputs": {
+                            "wouldKill": "false"
+                        },
+                        "outputs": {
+                            "deathPrevented": "false",
+                            "targetKilled": "false"
+                        },
+                        "flags": [],
+                        "callbacks": []
+                    },
+                    {
+                        "stepIndex": 11,
+                        "stepName": "ON_KILL_CALLBACKS",
+                        "inputs": {
+                            "targetKilled": "false"
+                        },
+                        "outputs": {
+                            "killCallbacksTriggered": "false"
+                        },
+                        "flags": [],
+                        "callbacks": []
+                    },
+                    {
+                        "stepIndex": 12,
+                        "stepName": "EXPERIENCE_AND_LOOT",
+                        "inputs": {
+                            "targetKilled": "false"
+                        },
+                        "outputs": {
+                            "experienceGranted": "false",
+                            "lootGenerated": "false"
+                        },
+                        "flags": [
+                            "NO_RUNTIME_LOOT"
+                        ],
+                        "callbacks": []
+                    }
+                ],
+                "result": {
+                    "hit": true,
+                    "critical": true,
+                    "critMultiplier": 1.5,
+                    "rawDamage": 21,
+                    "preReductionAbsorbed": 0,
+                    "armorResistanceReduced": 5,
+                    "penetrationContribution": 0,
+                    "postReductionModifier": 0,
+                    "finalDamage": 16,
+                    "targetKilled": false,
+                    "deathPrevented": false
+                },
+                "childTraceIds": []
+            }
+        },
+        {
+            "scenarioId": "elemental_interaction",
+            "statusReason": "POWER_SAVE_SUCCESS",
+            "envelope": {
+                "phaseId": "P3",
+                "rulesetVersion": "3.0.0",
+                "traceSchemaVersion": "1",
+                "corpusId": "FORMULA"
+            },
+            "trace": {
+                "traceId": "formula-elemental-interaction",
+                "turn": 0,
+                "attackerId": -1,
+                "targetId": -2,
+                "abilityId": "holy_mark",
+                "damageType": "HOLY",
+                "steps": [
+                    {
+                        "stepIndex": 1,
+                        "stepName": "HIT_CHECK",
+                        "inputs": {
+                            "accuracy": "25",
+                            "rawEvasion": "0",
+                            "effectiveEvasion": "0.0000",
+                            "hitFormula": "SIGMOID"
+                        },
+                        "outputs": {
+                            "hitChance": "0.7720",
+                            "roll": "0.0000",
+                            "hit": "true"
+                        },
+                        "flags": [],
+                        "callbacks": []
+                    },
+                    {
+                        "stepIndex": 2,
+                        "stepName": "CRIT_CHECK",
+                        "inputs": {
+                            "critChance": "0.0500",
+                            "critResistance": "0.0000"
+                        },
+                        "outputs": {
+                            "effectiveCritChance": "0.0500",
+                            "roll": "0.9900",
+                            "critical": "false",
+                            "critMultiplier": "1.0000"
+                        },
+                        "flags": [],
+                        "callbacks": []
+                    },
+                    {
+                        "stepIndex": 3,
+                        "stepName": "RAW_DAMAGE_CALCULATION",
+                        "inputs": {
+                            "baseDamage": "10",
+                            "varianceRoll": "0",
+                            "damageMultiplier": "1.0000",
+                            "critical": "false"
+                        },
+                        "outputs": {
+                            "rolledDamage": "10",
+                            "rawDamage": "10"
+                        },
+                        "flags": [],
+                        "callbacks": []
+                    },
+                    {
+                        "stepIndex": 4,
+                        "stepName": "PRE_REDUCTION_CALLBACKS",
+                        "inputs": {
+                            "incomingRawDamage": "10",
+                            "shieldPoints": "0"
+                        },
+                        "outputs": {
+                            "damageType": "HOLY",
+                            "absorbedByShield": "0",
+                            "remainingRawDamage": "10"
+                        },
+                        "flags": [],
+                        "callbacks": []
+                    },
+                    {
+                        "stepIndex": 5,
+                        "stepName": "ARMOR_RESISTANCE_REDUCTION",
+                        "inputs": {
+                            "damageType": "HOLY",
+                            "rawDamage": "10",
+                            "targetArmor": "0",
+                            "targetResistance": "0"
+                        },
+                        "outputs": {
+                            "effectiveResistance": "0",
+                            "reducedDamage": "10"
+                        },
+                        "flags": [],
+                        "callbacks": []
+                    },
+                    {
+                        "stepIndex": 6,
+                        "stepName": "PENETRATION_APPLICATION",
+                        "inputs": {
+                            "armorPenetration": "0",
+                            "resistancePenetration": "0"
+                        },
+                        "outputs": {
+                            "penetrationContribution": "0"
+                        },
+                        "flags": [],
+                        "callbacks": []
+                    },
+                    {
+                        "stepIndex": 7,
+                        "stepName": "POST_REDUCTION_CALLBACKS",
+                        "inputs": {
+                            "reducedDamageBeforeCallbacks": "10"
+                        },
+                        "outputs": {
+                            "postReductionModifier": "0",
+                            "reducedDamage": "10"
+                        },
+                        "flags": [],
+                        "callbacks": []
+                    },
+                    {
+                        "stepIndex": 8,
+                        "stepName": "FINAL_DAMAGE_APPLICATION",
+                        "inputs": {
+                            "targetCurrentHp": "35",
+                            "damageBeforeClamp": "10"
+                        },
+                        "outputs": {
+                            "finalDamage": "10",
+                            "remainingHp": "25"
+                        },
+                        "flags": [],
+                        "callbacks": []
+                    },
+                    {
+                        "stepIndex": 9,
+                        "stepName": "ON_DAMAGE_TAKEN_CALLBACKS",
+                        "inputs": {
+                            "finalDamage": "10"
+                        },
+                        "outputs": {
+                            "statusApplied": "true",
+                            "statusReason": "POWER_SAVE_SUCCESS",
+                            "elementalInteractionId": "holy_burst",
+                            "childTraceId": "child-formula-1"
+                        },
+                        "flags": [
+                            "ELEMENTAL_INTERACTION"
+                        ],
+                        "callbacks": [
+                            {
+                                "ownerId": 2,
+                                "callbackName": "holy-thorns",
+                                "priority": 100,
+                                "result": "CONTINUE",
+                                "effect": "RETALIATE_LOGGED"
+                            }
+                        ]
+                    },
+                    {
+                        "stepIndex": 10,
+                        "stepName": "DEATH_CHECK",
+                        "inputs": {
+                            "wouldKill": "false"
+                        },
+                        "outputs": {
+                            "deathPrevented": "false",
+                            "targetKilled": "false"
+                        },
+                        "flags": [],
+                        "callbacks": []
+                    },
+                    {
+                        "stepIndex": 11,
+                        "stepName": "ON_KILL_CALLBACKS",
+                        "inputs": {
+                            "targetKilled": "false"
+                        },
+                        "outputs": {
+                            "killCallbacksTriggered": "false"
+                        },
+                        "flags": [],
+                        "callbacks": []
+                    },
+                    {
+                        "stepIndex": 12,
+                        "stepName": "EXPERIENCE_AND_LOOT",
+                        "inputs": {
+                            "targetKilled": "false"
+                        },
+                        "outputs": {
+                            "experienceGranted": "false",
+                            "lootGenerated": "false"
+                        },
+                        "flags": [
+                            "NO_RUNTIME_LOOT"
+                        ],
+                        "callbacks": []
+                    }
+                ],
+                "result": {
+                    "hit": true,
+                    "critical": false,
+                    "critMultiplier": 1.0,
+                    "rawDamage": 10,
+                    "preReductionAbsorbed": 0,
+                    "armorResistanceReduced": 0,
+                    "penetrationContribution": 0,
+                    "postReductionModifier": 0,
+                    "finalDamage": 10,
+                    "targetKilled": false,
+                    "deathPrevented": false
+                },
+                "childTraceIds": [
+                    "child-formula-1"
+                ]
+            }
+        },
+        {
+            "scenarioId": "shield_absorb",
+            "statusReason": null,
+            "envelope": {
+                "phaseId": "P3",
+                "rulesetVersion": "3.0.0",
+                "traceSchemaVersion": "1",
+                "corpusId": "FORMULA"
+            },
+            "trace": {
+                "traceId": "formula-shield-absorb",
+                "turn": 0,
+                "attackerId": -1,
+                "targetId": -2,
+                "abilityId": "shield_absorb",
+                "damageType": "PHYSICAL",
+                "steps": [
+                    {
+                        "stepIndex": 1,
+                        "stepName": "HIT_CHECK",
+                        "inputs": {
+                            "accuracy": "24",
+                            "rawEvasion": "0",
+                            "effectiveEvasion": "0.0000",
+                            "hitFormula": "SIGMOID"
+                        },
+                        "outputs": {
+                            "hitChance": "0.7662",
+                            "roll": "0.0000",
+                            "hit": "true"
+                        },
+                        "flags": [],
+                        "callbacks": []
+                    },
+                    {
+                        "stepIndex": 2,
+                        "stepName": "CRIT_CHECK",
+                        "inputs": {
+                            "critChance": "0.0500",
+                            "critResistance": "0.0000"
+                        },
+                        "outputs": {
+                            "effectiveCritChance": "0.0500",
+                            "roll": "0.9900",
+                            "critical": "false",
+                            "critMultiplier": "1.0000"
+                        },
+                        "flags": [],
+                        "callbacks": []
+                    },
+                    {
+                        "stepIndex": 3,
+                        "stepName": "RAW_DAMAGE_CALCULATION",
+                        "inputs": {
+                            "baseDamage": "11",
+                            "varianceRoll": "0",
+                            "damageMultiplier": "1.0000",
+                            "critical": "false"
+                        },
+                        "outputs": {
+                            "rolledDamage": "11",
+                            "rawDamage": "11"
+                        },
+                        "flags": [],
+                        "callbacks": []
+                    },
+                    {
+                        "stepIndex": 4,
+                        "stepName": "PRE_REDUCTION_CALLBACKS",
+                        "inputs": {
+                            "incomingRawDamage": "11",
+                            "shieldPoints": "20"
+                        },
+                        "outputs": {
+                            "damageType": "PHYSICAL",
+                            "absorbedByShield": "11",
+                            "remainingRawDamage": "0"
+                        },
+                        "flags": [
+                            "SHIELD_ABSORB"
+                        ],
+                        "callbacks": []
+                    }
+                ],
+                "result": {
+                    "hit": true,
+                    "critical": false,
+                    "critMultiplier": 1.0,
+                    "rawDamage": 11,
+                    "preReductionAbsorbed": 11,
+                    "armorResistanceReduced": 0,
+                    "penetrationContribution": 0,
+                    "postReductionModifier": 0,
+                    "finalDamage": 0,
+                    "targetKilled": false,
+                    "deathPrevented": false
+                },
+                "childTraceIds": []
+            }
+        },
+        {
+            "scenarioId": "status_resisted",
+            "statusReason": "POWER_SAVE_RESIST",
+            "envelope": {
+                "phaseId": "P3",
+                "rulesetVersion": "3.0.0",
+                "traceSchemaVersion": "1",
+                "corpusId": "FORMULA"
+            },
+            "trace": {
+                "traceId": "formula-status-resisted",
+                "turn": 0,
+                "attackerId": -1,
+                "targetId": -2,
+                "abilityId": "status_resisted",
+                "damageType": "COLD",
+                "steps": [
+                    {
+                        "stepIndex": 1,
+                        "stepName": "HIT_CHECK",
+                        "inputs": {
+                            "accuracy": "24",
+                            "rawEvasion": "0",
+                            "effectiveEvasion": "0.0000",
+                            "hitFormula": "SIGMOID"
+                        },
+                        "outputs": {
+                            "hitChance": "0.7662",
+                            "roll": "0.0000",
+                            "hit": "true"
+                        },
+                        "flags": [],
+                        "callbacks": []
+                    },
+                    {
+                        "stepIndex": 2,
+                        "stepName": "CRIT_CHECK",
+                        "inputs": {
+                            "critChance": "0.0500",
+                            "critResistance": "0.0000"
+                        },
+                        "outputs": {
+                            "effectiveCritChance": "0.0500",
+                            "roll": "0.9900",
+                            "critical": "false",
+                            "critMultiplier": "1.0000"
+                        },
+                        "flags": [],
+                        "callbacks": []
+                    },
+                    {
+                        "stepIndex": 3,
+                        "stepName": "RAW_DAMAGE_CALCULATION",
+                        "inputs": {
+                            "baseDamage": "10",
+                            "varianceRoll": "0",
+                            "damageMultiplier": "1.0000",
+                            "critical": "false"
+                        },
+                        "outputs": {
+                            "rolledDamage": "10",
+                            "rawDamage": "10"
+                        },
+                        "flags": [],
+                        "callbacks": []
+                    },
+                    {
+                        "stepIndex": 4,
+                        "stepName": "PRE_REDUCTION_CALLBACKS",
+                        "inputs": {
+                            "incomingRawDamage": "10",
+                            "shieldPoints": "0"
+                        },
+                        "outputs": {
+                            "damageType": "COLD",
+                            "absorbedByShield": "0",
+                            "remainingRawDamage": "10"
+                        },
+                        "flags": [],
+                        "callbacks": []
+                    },
+                    {
+                        "stepIndex": 5,
+                        "stepName": "ARMOR_RESISTANCE_REDUCTION",
+                        "inputs": {
+                            "damageType": "COLD",
+                            "rawDamage": "10",
+                            "targetArmor": "0",
+                            "targetResistance": "0"
+                        },
+                        "outputs": {
+                            "effectiveResistance": "0",
+                            "reducedDamage": "10"
+                        },
+                        "flags": [],
+                        "callbacks": []
+                    },
+                    {
+                        "stepIndex": 6,
+                        "stepName": "PENETRATION_APPLICATION",
+                        "inputs": {
+                            "armorPenetration": "0",
+                            "resistancePenetration": "0"
+                        },
+                        "outputs": {
+                            "penetrationContribution": "0"
+                        },
+                        "flags": [],
+                        "callbacks": []
+                    },
+                    {
+                        "stepIndex": 7,
+                        "stepName": "POST_REDUCTION_CALLBACKS",
+                        "inputs": {
+                            "reducedDamageBeforeCallbacks": "10"
+                        },
+                        "outputs": {
+                            "postReductionModifier": "0",
+                            "reducedDamage": "10"
+                        },
+                        "flags": [],
+                        "callbacks": []
+                    },
+                    {
+                        "stepIndex": 8,
+                        "stepName": "FINAL_DAMAGE_APPLICATION",
+                        "inputs": {
+                            "targetCurrentHp": "35",
+                            "damageBeforeClamp": "10"
+                        },
+                        "outputs": {
+                            "finalDamage": "10",
+                            "remainingHp": "25"
+                        },
+                        "flags": [],
+                        "callbacks": []
+                    },
+                    {
+                        "stepIndex": 9,
+                        "stepName": "ON_DAMAGE_TAKEN_CALLBACKS",
+                        "inputs": {
+                            "finalDamage": "10"
+                        },
+                        "outputs": {
+                            "statusApplied": "false",
+                            "statusReason": "POWER_SAVE_RESIST"
+                        },
+                        "flags": [],
+                        "callbacks": []
+                    },
+                    {
+                        "stepIndex": 10,
+                        "stepName": "DEATH_CHECK",
+                        "inputs": {
+                            "wouldKill": "false"
+                        },
+                        "outputs": {
+                            "deathPrevented": "false",
+                            "targetKilled": "false"
+                        },
+                        "flags": [],
+                        "callbacks": []
+                    },
+                    {
+                        "stepIndex": 11,
+                        "stepName": "ON_KILL_CALLBACKS",
+                        "inputs": {
+                            "targetKilled": "false"
+                        },
+                        "outputs": {
+                            "killCallbacksTriggered": "false"
+                        },
+                        "flags": [],
+                        "callbacks": []
+                    },
+                    {
+                        "stepIndex": 12,
+                        "stepName": "EXPERIENCE_AND_LOOT",
+                        "inputs": {
+                            "targetKilled": "false"
+                        },
+                        "outputs": {
+                            "experienceGranted": "false",
+                            "lootGenerated": "false"
+                        },
+                        "flags": [
+                            "NO_RUNTIME_LOOT"
+                        ],
+                        "callbacks": []
+                    }
+                ],
+                "result": {
+                    "hit": true,
+                    "critical": false,
+                    "critMultiplier": 1.0,
+                    "rawDamage": 10,
+                    "preReductionAbsorbed": 0,
+                    "armorResistanceReduced": 0,
+                    "penetrationContribution": 0,
+                    "postReductionModifier": 0,
+                    "finalDamage": 10,
+                    "targetKilled": false,
+                    "deathPrevented": false
+                },
+                "childTraceIds": []
+            }
+        },
+        {
+            "scenarioId": "status_success",
+            "statusReason": "POWER_SAVE_SUCCESS",
+            "envelope": {
+                "phaseId": "P3",
+                "rulesetVersion": "3.0.0",
+                "traceSchemaVersion": "1",
+                "corpusId": "FORMULA"
+            },
+            "trace": {
+                "traceId": "formula-status-success",
+                "turn": 0,
+                "attackerId": -1,
+                "targetId": -2,
+                "abilityId": "status_success",
+                "damageType": "PHYSICAL",
+                "steps": [
+                    {
+                        "stepIndex": 1,
+                        "stepName": "HIT_CHECK",
+                        "inputs": {
+                            "accuracy": "24",
+                            "rawEvasion": "0",
+                            "effectiveEvasion": "0.0000",
+                            "hitFormula": "SIGMOID"
+                        },
+                        "outputs": {
+                            "hitChance": "0.7662",
+                            "roll": "0.0000",
+                            "hit": "true"
+                        },
+                        "flags": [],
+                        "callbacks": []
+                    },
+                    {
+                        "stepIndex": 2,
+                        "stepName": "CRIT_CHECK",
+                        "inputs": {
+                            "critChance": "0.0500",
+                            "critResistance": "0.0000"
+                        },
+                        "outputs": {
+                            "effectiveCritChance": "0.0500",
+                            "roll": "0.9900",
+                            "critical": "false",
+                            "critMultiplier": "1.0000"
+                        },
+                        "flags": [],
+                        "callbacks": []
+                    },
+                    {
+                        "stepIndex": 3,
+                        "stepName": "RAW_DAMAGE_CALCULATION",
+                        "inputs": {
+                            "baseDamage": "10",
+                            "varianceRoll": "0",
+                            "damageMultiplier": "1.0000",
+                            "critical": "false"
+                        },
+                        "outputs": {
+                            "rolledDamage": "10",
+                            "rawDamage": "10"
+                        },
+                        "flags": [],
+                        "callbacks": []
+                    },
+                    {
+                        "stepIndex": 4,
+                        "stepName": "PRE_REDUCTION_CALLBACKS",
+                        "inputs": {
+                            "incomingRawDamage": "10",
+                            "shieldPoints": "0"
+                        },
+                        "outputs": {
+                            "damageType": "PHYSICAL",
+                            "absorbedByShield": "0",
+                            "remainingRawDamage": "10"
+                        },
+                        "flags": [],
+                        "callbacks": []
+                    },
+                    {
+                        "stepIndex": 5,
+                        "stepName": "ARMOR_RESISTANCE_REDUCTION",
+                        "inputs": {
+                            "damageType": "PHYSICAL",
+                            "rawDamage": "10",
+                            "targetArmor": "0",
+                            "targetResistance": "0"
+                        },
+                        "outputs": {
+                            "effectiveArmor": "0",
+                            "reducedDamage": "10"
+                        },
+                        "flags": [],
+                        "callbacks": []
+                    },
+                    {
+                        "stepIndex": 6,
+                        "stepName": "PENETRATION_APPLICATION",
+                        "inputs": {
+                            "armorPenetration": "0",
+                            "resistancePenetration": "0"
+                        },
+                        "outputs": {
+                            "penetrationContribution": "0"
+                        },
+                        "flags": [],
+                        "callbacks": []
+                    },
+                    {
+                        "stepIndex": 7,
+                        "stepName": "POST_REDUCTION_CALLBACKS",
+                        "inputs": {
+                            "reducedDamageBeforeCallbacks": "10"
+                        },
+                        "outputs": {
+                            "postReductionModifier": "0",
+                            "reducedDamage": "10"
+                        },
+                        "flags": [],
+                        "callbacks": []
+                    },
+                    {
+                        "stepIndex": 8,
+                        "stepName": "FINAL_DAMAGE_APPLICATION",
+                        "inputs": {
+                            "targetCurrentHp": "35",
+                            "damageBeforeClamp": "10"
+                        },
+                        "outputs": {
+                            "finalDamage": "10",
+                            "remainingHp": "25"
+                        },
+                        "flags": [],
+                        "callbacks": []
+                    },
+                    {
+                        "stepIndex": 9,
+                        "stepName": "ON_DAMAGE_TAKEN_CALLBACKS",
+                        "inputs": {
+                            "finalDamage": "10"
+                        },
+                        "outputs": {
+                            "statusApplied": "true",
+                            "statusReason": "POWER_SAVE_SUCCESS"
+                        },
+                        "flags": [],
+                        "callbacks": []
+                    },
+                    {
+                        "stepIndex": 10,
+                        "stepName": "DEATH_CHECK",
+                        "inputs": {
+                            "wouldKill": "false"
+                        },
+                        "outputs": {
+                            "deathPrevented": "false",
+                            "targetKilled": "false"
+                        },
+                        "flags": [],
+                        "callbacks": []
+                    },
+                    {
+                        "stepIndex": 11,
+                        "stepName": "ON_KILL_CALLBACKS",
+                        "inputs": {
+                            "targetKilled": "false"
+                        },
+                        "outputs": {
+                            "killCallbacksTriggered": "false"
+                        },
+                        "flags": [],
+                        "callbacks": []
+                    },
+                    {
+                        "stepIndex": 12,
+                        "stepName": "EXPERIENCE_AND_LOOT",
+                        "inputs": {
+                            "targetKilled": "false"
+                        },
+                        "outputs": {
+                            "experienceGranted": "false",
+                            "lootGenerated": "false"
+                        },
+                        "flags": [
+                            "NO_RUNTIME_LOOT"
+                        ],
+                        "callbacks": []
+                    }
+                ],
+                "result": {
+                    "hit": true,
+                    "critical": false,
+                    "critMultiplier": 1.0,
+                    "rawDamage": 10,
+                    "preReductionAbsorbed": 0,
+                    "armorResistanceReduced": 0,
+                    "penetrationContribution": 0,
+                    "postReductionModifier": 0,
+                    "finalDamage": 10,
+                    "targetKilled": false,
+                    "deathPrevented": false
+                },
+                "childTraceIds": []
+            }
+        }
+    ]
+}

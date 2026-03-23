@@ -137,6 +137,12 @@ tasks.register("contractLint") {
     dependsOn(":tools:contractLint")
 }
 
+tasks.register("combatTraceGolden") {
+    group = LifecycleBasePlugin.VERIFICATION_GROUP
+    description = "Runs the Phase 3 FORMULA corpus combat trace golden harness."
+    dependsOn(":tools:combatTraceGolden")
+}
+
 tasks.register<Exec>("assetLint") {
     group = LifecycleBasePlugin.VERIFICATION_GROUP
     description = "Validates the Phase 2 image asset plan."
