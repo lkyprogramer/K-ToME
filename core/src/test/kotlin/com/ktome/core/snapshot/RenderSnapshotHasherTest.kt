@@ -23,6 +23,24 @@ class RenderSnapshotHasherTest {
         assertNotEquals(RenderSnapshotHasher.sha256(before), RenderSnapshotHasher.sha256(after))
     }
 
+    @Test
+    fun `different zone description and reserve talent fields change canonical hash`() {
+        val before = sampleSnapshot(revision = 3L)
+        val after =
+            before.copy(
+                metadata = before.metadata.copy(zoneDescKey = "zone.grey_gate_depths.desc"),
+                uiState =
+                    before.uiState.copy(
+                        reserveTalents =
+                            before.uiState.reserveTalents.map { reserve ->
+                                reserve.copy(descKey = "talent.vanguard.charge.desc.alt")
+                            },
+                    ),
+            )
+
+        assertNotEquals(RenderSnapshotHasher.sha256(before), RenderSnapshotHasher.sha256(after))
+    }
+
     private fun sampleSnapshot(revision: Long): RenderSnapshot =
         RenderSnapshot(
             metadata =
@@ -30,6 +48,7 @@ class RenderSnapshotHasherTest {
                     revision = revision,
                     zoneId = "shattered_outpost",
                     zoneNameKey = "zone.shattered_outpost.name",
+                    zoneDescKey = "zone.shattered_outpost.desc",
                     currentFloor = 1,
                     maxFloor = 2,
                     width = 2,
@@ -111,13 +130,50 @@ class RenderSnapshotHasherTest {
                                     ItemRenderSnapshot(
                                         baseItemId = "short_sword",
                                         nameKey = "item.short_sword.name",
-                                        typeId = "WEAPON",
-                                        slotId = "WEAPON",
-                                        stats = ItemStatModifierSnapshot(attack = 3),
-                                    ),
+                                typeId = "WEAPON",
+                                slotId = "WEAPON",
+                                stats = ItemStatModifierSnapshot(attack = 3),
+                                descKey = "item.short_sword.desc",
+                            ),
                             ),
                         ),
-                    talents = emptyList(),
+                    talents =
+                        listOf(
+                            TalentSlotSnapshot(
+                                slot = 1,
+                                talentId = "power_strike",
+                                nameKey = "talent.vanguard.power_strike.name",
+                                iconKey = "icon.skill.vanguard.power_strike",
+                                level = 1,
+                                maxLevel = 5,
+                                resourceCost = 5,
+                                resourceLabelKey = "ui.hud.stamina.short",
+                                range = 1,
+                                minRange = 1,
+                                currentCooldown = 0,
+                                maxCooldown = 3,
+                                requiresTarget = true,
+                                descKey = "talent.vanguard.power_strike.desc",
+                            ),
+                        ),
+                    reserveTalents =
+                        listOf(
+                            TalentReserveSnapshot(
+                                talentId = "charge",
+                                nameKey = "talent.vanguard.charge.name",
+                                iconKey = "icon.skill.vanguard.charge",
+                                level = 1,
+                                maxLevel = 5,
+                                resourceCost = 8,
+                                resourceLabelKey = "ui.hud.stamina.short",
+                                range = 4,
+                                minRange = 2,
+                                currentCooldown = 0,
+                                maxCooldown = 6,
+                                requiresTarget = true,
+                                descKey = "talent.vanguard.charge.desc",
+                            ),
+                        ),
                     inventory = emptyList(),
                     targetablePositions = listOf(GridPointSnapshot(1, 0)),
                 ),

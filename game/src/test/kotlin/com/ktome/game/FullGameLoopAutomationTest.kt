@@ -14,7 +14,7 @@ class FullGameLoopAutomationTest {
     lateinit var tempDir: Path
 
     @Test
-    fun `scripted automation covers route transition save continue victory and permadeath`() {
+    fun `scripted automation covers route transition save continue terminal outcome and permadeath`() {
         val saveManager = SaveManager(tempDir.resolve("automation-save-arcanist"))
         val driver =
             FullGameLoopAutomationDriver(
@@ -45,9 +45,9 @@ class FullGameLoopAutomationTest {
         assertEquals(1, continued.config.routeIndex)
         assertEquals(1, continued.currentFloor())
 
-        driver.completeRunForVictory(continued)
-        assertTrue(continued.isVictory())
-        assertFalse(saveManager.hasSave(), "Victory should clear the single save slot.")
+        driver.completeRunToRouteTerminal(continued)
+        assertTrue(continued.runOutcome().isTerminal)
+        assertFalse(saveManager.hasSave(), "Terminal route outcome should clear the single save slot.")
 
         val secondRun = driver.newGame()
         assertEquals(1, secondRun.currentFloor())

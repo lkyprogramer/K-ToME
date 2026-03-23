@@ -15,7 +15,7 @@ zones:
     specialMechanics: [tutorial_lane, simple_traps, patrol_pressure]
     tilesetKey: tileset.ruins
     ambientProfile: ambient.shattered_outpost
-    monsterPools: [beast.rat_scavenger, goblin.scout, bandit.raider, bandit.archer, undead.restless_skeleton]
+    monsterPools: [beast.rat_scavenger, goblin.scrapper, bandit.raider, bandit.archer, undead.restless_skeleton]
     elitePools: [undead.bone_guard]
     bossEncounterId: bandit_captain_encounter
     objectiveSetId: shattered_outpost_breach
@@ -35,7 +35,7 @@ zones:
     specialMechanics: [line_of_sight, trail_pressure, beacon_warning]
     tilesetKey: tileset.forest_edge
     ambientProfile: ambient.greenwood_fringe
-    monsterPools: [beast.rat, beast.thorn_stalker, undead.bone_archer, undead.moss_archer, bandit.trapper]
+    monsterPools: [beast.rat, beast.thorn_stalker, undead.bone_archer, undead.moss_archer, bandit.trapper, bandit.archer]
     elitePools: [bandit.sentry, bandit.wild_huntmaster]
     bossEncounterId:
     objectiveSetId: greenwood_signal_hunt

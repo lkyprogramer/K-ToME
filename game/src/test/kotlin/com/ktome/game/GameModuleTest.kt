@@ -18,15 +18,19 @@ import com.ktome.core.save.EntitySnapshot
 import com.ktome.core.save.FloorSnapshot
 import com.ktome.core.save.MapSnapshot
 import com.ktome.core.resource.ResourcePoolSnapshot
+import com.ktome.game.data.DataLoader
+import com.ktome.game.model.MonsterTemplate
 import org.junit.jupiter.api.Assertions.assertEquals
 import java.nio.file.Files
 import java.nio.file.Path
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
+import kotlin.math.abs
 import kotlin.io.path.writeText
 
 class GameModuleTest {
@@ -309,6 +313,7 @@ class GameModuleTest {
                         "beast.rat",
                         "beast.thorn_stalker",
                         "undead.bone_archer",
+                        "bandit.archer",
                         "undead.moss_archer",
                         "bandit.trapper",
                         "bandit.sentry",
@@ -316,7 +321,7 @@ class GameModuleTest {
                     )
             },
         )
-        assertTrue("undead.bone_archer" in monsterIds)
+        assertTrue(monsterIds.any { monsterId -> monsterId == "undead.bone_archer" || monsterId == "bandit.archer" })
     }
 
     @Test
@@ -335,11 +340,73 @@ class GameModuleTest {
                 .map { entityId -> requireNotNull(world.get<Interactable>(entityId)).id }
                 .toSet()
 
-        assertTrue(monsterIds.size >= 4)
-        assertTrue("beast.rat_scavenger" in monsterIds)
-        assertTrue("goblin.scout" in monsterIds)
-        assertTrue("bandit.raider" in monsterIds || "bandit.archer" in monsterIds)
+        assertTrue(monsterIds.size >= 3)
+        assertTrue("bandit.archer" !in monsterIds)
+        assertTrue(hasAdjacentMonsterPair(world))
         assertEquals(setOf("supply_crate", "alarm_bonfire"), interactableIds)
+    }
+
+    @Test
+    fun `greenwood fringe starts with mixed melee and ranged pressure`() {
+        val session =
+            GameModule.newFoundationSession(
+                FoundationGameConfig(zoneId = "greenwood_fringe"),
+                SaveManager(tempDir.resolve("greenwood-pack-save")),
+            )
+        val world = extractWorld(session)
+        val monsterIds =
+            world.entitiesWith(MonsterTemplateId::class)
+                .map { entityId -> requireNotNull(world.get<MonsterTemplateId>(entityId)).value }
+
+        assertTrue(monsterIds.size >= 4)
+        assertTrue(monsterIds.any { monsterId -> monsterId == "beast.rat" })
+        assertTrue(
+            monsterIds.any { monsterId ->
+                monsterId == "undead.bone_archer" || monsterId == "bandit.trapper" || monsterId == "bandit.archer"
+            },
+        )
+        assertTrue(hasAdjacentMonsterPair(world))
+    }
+
+    @Test
+    fun `route visible encounter catalog preserves early fairness reachable packs and later ranged pressure`() {
+        val loader = DataLoader()
+        val zonesById = loader.loadSchemaCatalog().zones.associateBy { zone -> zone.id }
+        val runtimeCatalog = loader.loadMonsterCatalog().monsters.associateBy(MonsterTemplate::id)
+        val bossTemplateIdsByEncounterId = loader.loadSchemaCatalog().bossEncounters.associate { encounter -> encounter.id to encounter.bossTemplateId }
+        val encounterCatalog =
+            FOUNDATION_ZONE_ROUTE.flatMap { zoneId ->
+                val zone = requireNotNull(zonesById[zoneId]) { "Missing zone schema for $zoneId." }
+                (1..zone.floorCount).map { floor ->
+                    routeVisibleEncounterFloor(zone, floor, runtimeCatalog, bossTemplateIdsByEncounterId)
+                }
+            }
+
+        val shatteredOutpostFloorOne =
+            encounterCatalog.single { encounter ->
+                encounter.zoneId == "shattered_outpost" && encounter.floor == 1
+            }
+        assertFalse("bandit.archer" in shatteredOutpostFloorOne.monsterIds)
+        assertTrue(shatteredOutpostFloorOne.packEnabled)
+
+        val firstReachableRangedPressure =
+            requireNotNull(
+                encounterCatalog.firstOrNull { encounter ->
+                    !encounter.isBossFloor &&
+                        encounter.monsterIds.any { monsterId -> isRangedPressure(requireNotNull(runtimeCatalog[monsterId])) }
+                },
+            ) { "Expected at least one route-visible non-boss ranged pressure floor." }
+        assertEquals("greenwood_fringe", firstReachableRangedPressure.zoneId)
+        assertEquals(1, firstReachableRangedPressure.floor)
+        assertTrue(
+            firstReachableRangedPressure.monsterIds.any { monsterId ->
+                monsterId == "bandit.archer" || monsterId == "undead.bone_archer" || monsterId == "bandit.trapper"
+            },
+        )
+        assertTrue(
+            encounterCatalog.any { encounter -> encounter.packEnabled && !encounter.isBossFloor && encounter.monsterIds.isNotEmpty() },
+            "Expected pack logic to land on a route-visible non-boss floor.",
+        )
     }
 
     @Test
@@ -525,6 +592,17 @@ class GameModuleTest {
         return field.get(session) as World
     }
 
+    private fun hasAdjacentMonsterPair(world: World): Boolean {
+        val monsterPoints =
+            world.entitiesWith(Position::class, MonsterTemplateId::class)
+                .map { entityId -> requireNotNull(world.get<Position>(entityId)).toPoint() }
+        return monsterPoints.any { first ->
+            monsterPoints.any { second ->
+                first != second && abs(first.x - second.x) + abs(first.y - second.y) == 1
+            }
+        }
+    }
+
     private fun zoneSizedMap(
         width: Int,
         height: Int,
@@ -534,4 +612,5 @@ class GameModuleTest {
             rows = List(height) { ".".repeat(width) },
             playerStart = playerStart,
         )
+
 }

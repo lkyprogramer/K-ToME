@@ -2,6 +2,7 @@ package com.ktome.game.harness
 
 import com.ktome.core.item.ConsumableEffect
 import com.ktome.core.map.Point
+import com.ktome.core.pathfinding.AStar
 import com.ktome.game.PlayerCommand
 import com.ktome.game.PrimaryStat
 import com.ktome.game.TalentSlotView
@@ -22,6 +23,7 @@ class SmokeBot : RunBot {
     private var navigationFloor: Int? = null
     private var currentPosition: Point? = null
     private var previousPosition: Point? = null
+    private val recentPositions = ArrayDeque<Point>()
 
     private fun pickImmediateAction(observation: RunObservation): PlayerCommand? {
         if (observation.playerStatus.statPoints > 0) {
@@ -30,13 +32,14 @@ class SmokeBot : RunBot {
         if (observation.playerStatus.talentPoints > 0) {
             preferredTalentUpgrade(observation)?.let { slot -> return PlayerCommand.AssignTalent(slot.slot) }
         }
+        LoadoutPlanner.preferredLoadoutCommand(observation)?.let { return it }
         if (observation.inventoryItems.size < SMOKE_BOT_INVENTORY_CAPACITY && observation.visibleGroundItemPositions.any { it == observation.playerPosition }) {
             return PlayerCommand.PickUp
         }
+        preferredInventoryAction(observation)?.let { return it }
         if (observation.visibleInteractables.any { interactable -> interactable.position == observation.playerPosition && shouldInteract(interactable) }) {
             return PlayerCommand.Interact
         }
-        preferredInventoryAction(observation)?.let { return it }
         if (observation.canDescend) {
             return PlayerCommand.Descend
         }
@@ -158,7 +161,7 @@ class SmokeBot : RunBot {
             }
         }
 
-        if (observation.playerResource.typeId == "MANA" && (adjacentHostiles > 0 || (bossClose && criticalHealth))) {
+        if (observation.playerResource.typeId == "MANA" && (adjacentHostiles > 0 || (bossClose && lowHealth))) {
             availableTalent(observation, "blink")?.let { slot ->
                 safeBlinkTarget(observation, slot)?.let { target ->
                     return PlayerCommand.UseTalent(slot.slot, target)
@@ -272,9 +275,12 @@ class SmokeBot : RunBot {
         val target =
             firstReachableTarget(
                 observation,
-                observation.visibleGroundItemPositions.sortedBy { it.chebyshevDistanceTo(observation.playerPosition) },
+                observation.visibleGroundItemPositions
+                    .filter { itemPosition ->
+                        itemPosition.chebyshevDistanceTo(observation.playerPosition) <= MAX_ITEM_DETOUR_DISTANCE
+                    }.sortedBy { it.chebyshevDistanceTo(observation.playerPosition) },
             ) ?: return null
-        val nextStep = stepToward(observation, target) ?: return null
+        val nextStep = navigationStepToward(observation, target) ?: return null
         return PlayerCommand.Move(nextStep.deltaFrom(observation.playerPosition))
     }
 
@@ -290,7 +296,7 @@ class SmokeBot : RunBot {
         if (target == observation.playerPosition) {
             return PlayerCommand.Interact
         }
-        val nextStep = stepToward(observation, target) ?: return null
+        val nextStep = navigationStepToward(observation, target) ?: return null
         return PlayerCommand.Move(nextStep.deltaFrom(observation.playerPosition))
     }
 
@@ -301,7 +307,7 @@ class SmokeBot : RunBot {
                 observation.knownDownstairsPositions.sortedBy { it.chebyshevDistanceTo(observation.playerPosition) },
             )
         if (knownDownstairs != null) {
-            val nextStep = stepToward(observation, knownDownstairs) ?: return null
+            val nextStep = navigationStepToward(observation, knownDownstairs) ?: return null
             return PlayerCommand.Move(nextStep.deltaFrom(observation.playerPosition))
         }
 
@@ -340,11 +346,11 @@ class SmokeBot : RunBot {
                 )
                 .toList()
         val explorationTarget =
-            firstReachableTarget(observation, unexploredCandidates, avoidImmediateBacktrack = true)
-                ?: firstReachableTarget(observation, frontierCandidates, avoidImmediateBacktrack = true)
+            firstReachableTarget(observation, frontierCandidates, avoidImmediateBacktrack = true)
+                ?: firstReachableTarget(observation, unexploredCandidates, avoidImmediateBacktrack = true)
                 ?: firstReachableTarget(observation, patrolCandidates, avoidImmediateBacktrack = true)
-                ?: firstReachableTarget(observation, unexploredCandidates)
                 ?: firstReachableTarget(observation, frontierCandidates)
+                ?: firstReachableTarget(observation, unexploredCandidates)
                 ?: firstReachableTarget(observation, patrolCandidates)
                 ?: return null
 
@@ -363,7 +369,7 @@ class SmokeBot : RunBot {
             }
         }
 
-        val nextStep = stepToward(observation, explorationTarget) ?: return null
+        val nextStep = navigationStepToward(observation, explorationTarget) ?: return null
         return PlayerCommand.Move(nextStep.deltaFrom(observation.playerPosition))
     }
 
@@ -373,20 +379,31 @@ class SmokeBot : RunBot {
         avoidImmediateBacktrack: Boolean = false,
     ): Point? =
         candidates
+            .withIndex()
             .asSequence()
-            .mapNotNull { candidate ->
+            .mapNotNull { indexedCandidate ->
+                val candidate = indexedCandidate.value
                 val nextStep =
                     if (candidate == observation.playerPosition) {
                         observation.playerPosition
                     } else {
-                        stepToward(observation, candidate)
+                        navigationStepToward(observation, candidate)
                     }
-                nextStep?.let { step -> candidate to step }
-            }.let { reachableTargets ->
-                val avoidPosition = previousPosition.takeIf { avoidImmediateBacktrack }
-                reachableTargets.firstOrNull { (_, step) -> step != avoidPosition }?.first
-                    ?: reachableTargets.firstOrNull()?.first
-            }
+                nextStep?.let { step ->
+                    ReachableTarget(
+                        candidate = candidate,
+                        nextStep = step,
+                        candidateOrder = indexedCandidate.index,
+                    )
+                }
+            }.minWithOrNull(
+                compareBy<ReachableTarget> { target ->
+                    val avoidPosition = previousPosition.takeIf { avoidImmediateBacktrack }
+                    if (target.nextStep == avoidPosition) 1 else 0
+                }.thenBy { target -> recentVisitCount(target.nextStep) }
+                    .thenBy { target -> recentVisitRecency(target.nextStep) }
+                    .thenBy { target -> target.candidateOrder },
+            )?.candidate
 
     private fun updateNavigationHistory(observation: RunObservation) {
         val playerPosition = observation.playerPosition
@@ -394,16 +411,59 @@ class SmokeBot : RunBot {
             navigationFloor = observation.floor
             currentPosition = playerPosition
             previousPosition = null
+            recentPositions.clear()
+            recentPositions.addLast(playerPosition)
             return
         }
         if (currentPosition == null) {
             currentPosition = playerPosition
+            recentPositions.clear()
+            recentPositions.addLast(playerPosition)
             return
         }
         if (currentPosition != playerPosition) {
             previousPosition = currentPosition
             currentPosition = playerPosition
+            recentPositions.addLast(playerPosition)
+            if (recentPositions.size > RECENT_POSITION_WINDOW) {
+                recentPositions.removeFirst()
+            }
         }
+    }
+
+    private fun recentVisitCount(position: Point): Int = recentPositions.count { recent -> recent == position }
+
+    private fun recentVisitRecency(position: Point): Int =
+        recentPositions
+            .withIndex()
+            .lastOrNull { (_, recent) -> recent == position }
+            ?.index ?: -1
+
+    private fun navigationStepToward(
+        observation: RunObservation,
+        target: Point,
+    ): Point? {
+        val primaryStep = stepToward(observation, target) ?: return null
+        if (recentVisitCount(primaryStep) < NAVIGATION_REPEAT_THRESHOLD) {
+            return primaryStep
+        }
+        val recentSoftBlocks =
+            recentPositions
+                .filter { position ->
+                    position != observation.playerPosition &&
+                        position != target
+                }.toSet()
+        if (recentSoftBlocks.isEmpty()) {
+            return primaryStep
+        }
+        val alternateStep =
+            AStar.findPath(
+                map = observation.map,
+                start = observation.playerPosition,
+                goal = target,
+                blocked = (observation.visibleBlockingPositions - target) + recentSoftBlocks,
+            ).getOrNull(1)
+        return alternateStep ?: primaryStep
     }
 
     private fun nearestHostile(observation: RunObservation): Point? =
@@ -557,7 +617,16 @@ class SmokeBot : RunBot {
         return distance in slot.minRange..slot.range
     }
 
+    private data class ReachableTarget(
+        val candidate: Point,
+        val nextStep: Point,
+        val candidateOrder: Int,
+    )
+
     private companion object {
         const val SMOKE_BOT_INVENTORY_CAPACITY: Int = 12
+        const val RECENT_POSITION_WINDOW: Int = 8
+        const val MAX_ITEM_DETOUR_DISTANCE: Int = 4
+        const val NAVIGATION_REPEAT_THRESHOLD: Int = 2
     }
 }

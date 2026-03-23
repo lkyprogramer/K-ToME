@@ -8,6 +8,7 @@ import com.ktome.game.FOUNDATION_PROFESSION_ID
 import com.ktome.game.InventoryItemView
 import com.ktome.game.PlayerResourceView
 import com.ktome.game.PlayerStatus
+import com.ktome.game.TalentReserveView
 import com.ktome.game.TalentSlotView
 
 data class ScenarioSpec(
@@ -136,6 +137,7 @@ data class RunObservation(
     val knownDownstairsPositions: List<Point>,
     val inventoryItems: List<InventoryItemView>,
     val talentSlots: List<TalentSlotView>,
+    val reserveTalents: List<TalentReserveView> = emptyList(),
     val canAscend: Boolean,
     val canDescend: Boolean,
     val runOutcome: RunOutcome,

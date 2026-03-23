@@ -1,6 +1,9 @@
 package com.ktome.game.data
 
 import com.ktome.core.combat.DamageType
+import com.ktome.game.routeVisibleCommonMonsters
+import com.ktome.game.routeVisibleEliteOrBossMonsters
+import com.ktome.game.routeVisibleMonsters
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -56,10 +59,15 @@ class MonsterSchemaTest {
                 "Expected at least one $family monster with formal elemental resistance data.",
             )
         }
+        val beasts = runtimeCatalog.values.filter { monster -> "beast" in monster.tags }
+        val beastResistanceCarriers = beasts.filter { monster -> monster.resistances.values.any { value -> value != 0 } }
+        assertTrue(beastResistanceCarriers.size <= 1, "Beast family should stay on a low/zero resistance baseline in Phase 2.")
         assertTrue(
-            runtimeCatalog.values
-                .filter { monster -> "beast" in monster.tags }
-                .all { monster -> monster.resistances.isEmpty() },
+            beastResistanceCarriers.all { monster ->
+                monster.resistances.entries.count { (_, value) -> value != 0 } <= 1 &&
+                    monster.resistances.values.all { value -> value in -10..10 }
+            },
+            "Any beast resistance deviation should remain a single mild signal in Phase 2.",
         )
         schemaCatalog.monsters.forEach { monster ->
             val runtimeMonster = requireNotNull(runtimeCatalog[monster.id]) { "Missing runtime monster projection for ${monster.id}" }
@@ -88,5 +96,83 @@ class MonsterSchemaTest {
                 assertTrue(schemaCatalog.talents.any { it.id == talentId }, "Unknown monster talent $talentId")
             }
         }
+    }
+
+    @Test
+    fun `route zones expose minimum resistance coverage across common special and elite samples`() {
+        val loader = DataLoader()
+        val schemaCatalog = loader.loadSchemaCatalog()
+        val zoneCatalog = schemaCatalog.zones.associateBy { zone -> zone.id }
+        val runtimeCatalog = loader.loadMonsterCatalog().monsters.associateBy { monster -> monster.id }
+        val bossTemplateIdsByEncounterId = schemaCatalog.bossEncounters.associate { encounter -> encounter.id to encounter.bossTemplateId }
+        val specialArchetypes = setOf("artillery", "controller")
+        val signatureCarrierIdsByZone =
+            mapOf(
+                "shattered_outpost" to setOf("goblin.scrapper"),
+            )
+
+        listOf("shattered_outpost", "greenwood_fringe", "deep_iron_pit", "grey_gate_depths").forEach { zoneId ->
+            val zone = requireNotNull(zoneCatalog[zoneId]) { "Missing zone schema for $zoneId." }
+            val commonPool = routeVisibleCommonMonsters(zone, runtimeCatalog)
+            val eliteOrBossPool = routeVisibleEliteOrBossMonsters(zone, runtimeCatalog, bossTemplateIdsByEncounterId)
+            val routePool = routeVisibleMonsters(zone, runtimeCatalog, bossTemplateIdsByEncounterId)
+            val signatureCarrierIds = signatureCarrierIdsByZone[zoneId].orEmpty()
+
+            assertTrue(
+                routePool.count { monster -> monster.resistances.values.any { value -> value != 0 } } >= 3,
+                "Zone $zoneId should expose at least 3 route-visible monsters with non-zero resistances.",
+            )
+            assertTrue(
+                commonPool.any { monster ->
+                    monster.archetype !in specialArchetypes &&
+                        monster.resistances.values.any { value -> value != 0 }
+                },
+                "Zone $zoneId should keep at least one common frontline resistance sample.",
+            )
+            assertTrue(
+                routePool.any { monster ->
+                    (monster.id in signatureCarrierIds || monster.archetype in specialArchetypes) &&
+                        monster.resistances.values.any { value -> value != 0 }
+                },
+                "Zone $zoneId should keep at least one signature or ranged/caster resistance sample.",
+            )
+            assertTrue(
+                eliteOrBossPool.any { monster -> monster.resistances.values.any { value -> value != 0 } },
+                "Zone $zoneId should keep at least one elite or boss resistance sample.",
+            )
+        }
+    }
+
+    @Test
+    fun `route resistance coverage preserves fire shadow and holy memory points`() {
+        val loader = DataLoader()
+        val schemaCatalog = loader.loadSchemaCatalog()
+        val zoneCatalog = schemaCatalog.zones
+        val runtimeCatalog = loader.loadMonsterCatalog().monsters.associateBy { monster -> monster.id }
+        val bossTemplateIdsByEncounterId = schemaCatalog.bossEncounters.associate { encounter -> encounter.id to encounter.bossTemplateId }
+        val routePool =
+            zoneCatalog
+                .flatMap { zone -> routeVisibleMonsters(zone, runtimeCatalog, bossTemplateIdsByEncounterId) }
+                .distinctBy { monster -> monster.id }
+
+        assertTrue(
+            routePool.any { monster -> (monster.resistances[DamageType.FIRE] ?: 0) > 0 },
+            "Expected at least one route-visible monster with positive FIRE resistance.",
+        )
+        assertTrue(
+            routePool.any { monster -> (monster.resistances[DamageType.FIRE] ?: 0) < 0 },
+            "Expected at least one route-visible monster vulnerable to FIRE.",
+        )
+        assertTrue(
+            routePool.any { monster -> (monster.resistances[DamageType.SHADOW] ?: 0) > 0 },
+            "Expected at least one route-visible monster with positive SHADOW resistance.",
+        )
+        assertTrue(
+            routePool.any { monster ->
+                ("undead" in monster.tags || "cultist" in monster.tags) &&
+                    (monster.resistances[DamageType.HOLY] ?: 0) < 0
+            },
+            "Expected route-visible undead or cultist monsters to preserve HOLY vulnerability samples.",
+        )
     }
 }

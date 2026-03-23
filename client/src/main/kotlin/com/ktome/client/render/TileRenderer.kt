@@ -294,6 +294,7 @@ class TileRenderer(
             when (mode) {
                 UiMode.MAP -> localizer.text("ui.sidebar.ground")
                 UiMode.INVENTORY -> localizer.text("ui.sidebar.inventory")
+                UiMode.LOADOUT_EDIT -> localizer.text("ui.sidebar.loadout")
                 UiMode.TARGETING -> localizer.text("ui.sidebar.targeting")
                 UiMode.INSPECT -> localizer.text("ui.sidebar.inspect")
                 UiMode.STAT_ASSIGN -> localizer.text("ui.sidebar.assign_stats")
@@ -404,18 +405,18 @@ class TileRenderer(
 
         private fun drawMessages(
             canvas: TileCanvas,
-            messageLines: List<String>,
+            messageLines: List<TileMessageLine>,
             layout: TileLayoutMetrics,
         ) {
             val topY = layout.cardY + layout.cardHeight - 18f
             val maxChars = maxCharsForWidth(layout.logWidth - 24f, TileTextStyle.SMALL)
-            messageLines.takeLast(messageRows).forEachIndexed { index, text ->
+            messageLines.takeLast(messageRows).forEachIndexed { index, line ->
                 canvas.drawText(
                     TileTextStyle.SMALL,
-                    truncateText(text, maxChars),
+                    truncateText(line.text, maxChars),
                     layout.logX + 12f,
                     topY - index * 26f,
-                    Color.WHITE,
+                    tone(line.tone),
                 )
             }
         }

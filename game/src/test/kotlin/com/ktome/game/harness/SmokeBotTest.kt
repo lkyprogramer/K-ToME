@@ -20,6 +20,7 @@ class SmokeBotTest {
     private val bot = SmokeBot()
     private val map = GameMap.fromAscii(rows = listOf(".....", ".....", "....."), playerStart = Point(1, 1))
     private val corridorMap = GameMap.fromAscii(rows = listOf("......."), playerStart = Point(3, 0))
+    private val longCorridorMap = GameMap.fromAscii(rows = listOf("..........."), playerStart = Point(4, 0))
 
     @Test
     fun `low hp uses healing consumable`() {
@@ -71,6 +72,32 @@ class SmokeBotTest {
                         ),
                     ),
                 visibleHostilePositions = listOf(Point(2, 1)),
+            )
+
+        assertEquals(PlayerCommand.ActivateInventoryItem(0), bot.decide(observation))
+    }
+
+    @Test
+    fun `low hp heals before interacting with an objective on the same tile`() {
+        val observation =
+            observation(
+                inventoryItems =
+                    listOf(
+                        InventoryItemView(
+                            index = 0,
+                            name = "治疗药水",
+                            type = ItemType.CONSUMABLE,
+                            effect = ConsumableEffect.HEAL,
+                        ),
+                    ),
+                visibleInteractables =
+                    listOf(
+                        ObservedInteractable(
+                            id = "boss_gate",
+                            position = Point(1, 1),
+                            interactionTags = setOf("objective"),
+                        ),
+                    ),
             )
 
         assertEquals(PlayerCommand.ActivateInventoryItem(0), bot.decide(observation))
@@ -159,6 +186,79 @@ class SmokeBotTest {
     }
 
     @Test
+    fun `patrol exploration avoids stepping back into recent short cycle when alternatives exist`() {
+        val routeBot = SmokeBot()
+        val openMap =
+            GameMap.fromAscii(
+                rows =
+                    listOf(
+                        "...",
+                        "...",
+                        "...",
+                    ),
+                playerStart = Point(1, 1),
+            )
+        val exploredTiles = openMap.floorPoints().toSet()
+
+        listOf(
+            Point(1, 1),
+            Point(2, 1),
+            Point(2, 2),
+            Point(1, 2),
+            Point(1, 1),
+        ).forEach { position ->
+            routeBot.decide(
+                observation(
+                    inventoryItems = emptyList(),
+                    map = openMap,
+                    playerPosition = position,
+                    playerStatus = healthyStatus(),
+                    visibleTiles = exploredTiles,
+                    exploredTiles = exploredTiles,
+                ),
+            )
+        }
+
+        val command =
+            routeBot.decide(
+                observation(
+                    inventoryItems = emptyList(),
+                    map = openMap,
+                    playerPosition = Point(1, 1),
+                    playerStatus = healthyStatus(),
+                    visibleTiles = exploredTiles,
+                    exploredTiles = exploredTiles,
+                ),
+            )
+
+        assertTrue(command is PlayerCommand.Move)
+        val destination = Point(1, 1) + (command as PlayerCommand.Move).delta
+        assertFalse(
+            destination in setOf(Point(2, 1), Point(2, 2), Point(1, 2)),
+            "Expected patrol move to break the recent short cycle, but got $command.",
+        )
+    }
+
+    @Test
+    fun `distant visible loot does not override downstairs navigation`() {
+        val command =
+            bot.decide(
+                observation(
+                    inventoryItems = emptyList(),
+                    map = longCorridorMap,
+                    playerPosition = Point(4, 0),
+                    playerStatus = healthyStatus(),
+                    visibleTiles = longCorridorMap.floorPoints().toSet(),
+                    exploredTiles = longCorridorMap.floorPoints().toSet(),
+                    knownDownstairsPositions = listOf(Point(0, 0)),
+                    visibleGroundItemPositions = listOf(Point(10, 0)),
+                ),
+            )
+
+        assertEquals(PlayerCommand.Move(Point(-1, 0)), command)
+    }
+
+    @Test
     fun `healthy mana class does not blink only because boss is visible`() {
         val observation =
             observation(
@@ -169,27 +269,14 @@ class SmokeBotTest {
                 knownDownstairsPositions = listOf(Point(0, 1)),
                 exploredTiles = setOf(Point(1, 1), Point(0, 1), Point(2, 1), Point(3, 1), Point(4, 1)),
                 visibleTiles = setOf(Point(0, 1), Point(1, 1), Point(2, 1), Point(3, 1), Point(4, 1)),
-                talentSlots =
-                    listOf(
-                        TalentSlotView(
-                            slot = 3,
-                            talentId = "blink",
-                            name = "闪现",
-                            level = 1,
-                            maxLevel = 5,
-                            resourceCost = 12,
-                            resourceTypeId = "MANA",
-                            range = 6,
-                            minRange = 0,
-                            currentCooldown = 0,
-                            maxCooldown = 6,
-                            requiresTarget = true,
-                        ),
-                    ),
+                talentSlots = manaLoadout(),
             )
 
         val command = bot.decide(observation)
-        assertTrue(command is PlayerCommand.Move, "Expected healthy mana class to keep navigating instead of blinking, but got $command.")
+        assertFalse(
+            command is PlayerCommand.UseTalent && command.slot == 2,
+            "Expected healthy mana class to avoid blink just because a boss is visible, but got $command.",
+        )
     }
 
     @Test
@@ -216,27 +303,14 @@ class SmokeBotTest {
                 visibleBossPositions = listOf(Point(4, 1)),
                 visibleTiles = setOf(Point(1, 1), Point(2, 1), Point(3, 1), Point(4, 1)),
                 exploredTiles = setOf(Point(1, 1), Point(2, 1), Point(3, 1), Point(4, 1)),
-                talentSlots =
-                    listOf(
-                        TalentSlotView(
-                            slot = 3,
-                            talentId = "blink",
-                            name = "闪现",
-                            level = 1,
-                            maxLevel = 5,
-                            resourceCost = 12,
-                            resourceTypeId = "MANA",
-                            range = 6,
-                            minRange = 0,
-                            currentCooldown = 0,
-                            maxCooldown = 6,
-                            requiresTarget = true,
-                        ),
-                    ),
+                talentSlots = manaLoadout(),
             )
 
         val command = bot.decide(observation)
-        assertTrue(command is PlayerCommand.Move, "Single boss pressure at range should not trigger panic blink, but got $command.")
+        assertFalse(
+            command is PlayerCommand.UseTalent && command.slot == 2,
+            "Single boss pressure at range should not trigger panic blink, but got $command.",
+        )
     }
 
     private fun observation(
@@ -261,6 +335,8 @@ class SmokeBotTest {
         visibleTiles: Set<Point> = setOf(Point(1, 1)),
         exploredTiles: Set<Point> = setOf(Point(1, 1)),
         knownDownstairsPositions: List<Point> = emptyList(),
+        visibleGroundItemPositions: List<Point> = emptyList(),
+        visibleInteractables: List<ObservedInteractable> = emptyList(),
         map: GameMap = this.map,
         playerPosition: Point = Point(1, 1),
         talentSlots: List<TalentSlotView> = emptyList(),
@@ -277,8 +353,8 @@ class SmokeBotTest {
             visibleHostilePositions = visibleHostilePositions,
             visibleBossPositions = visibleBossPositions,
             visibleBlockingPositions = emptySet(),
-            visibleGroundItemPositions = emptyList(),
-            visibleInteractables = emptyList(),
+            visibleGroundItemPositions = visibleGroundItemPositions,
+            visibleInteractables = visibleInteractables,
             knownDownstairsPositions = knownDownstairsPositions,
             inventoryItems = inventoryItems,
             talentSlots = talentSlots,
@@ -303,5 +379,35 @@ class SmokeBotTest {
             accuracy = 5,
             evasion = 3,
             speed = 100,
+        )
+
+    private fun manaLoadout(): List<TalentSlotView> =
+        listOf(
+            talentSlot(slot = 1, talentId = "fireball", resourceCost = 8, range = 6, requiresTarget = true),
+            talentSlot(slot = 2, talentId = "blink", resourceCost = 12, range = 6, requiresTarget = true),
+            talentSlot(slot = 3, talentId = "ice_prison", resourceCost = 10, range = 6, requiresTarget = true),
+            talentSlot(slot = 4, talentId = "arcane_shield", resourceCost = 0, range = 0, requiresTarget = false),
+        )
+
+    private fun talentSlot(
+        slot: Int,
+        talentId: String,
+        resourceCost: Int,
+        range: Int,
+        requiresTarget: Boolean,
+    ): TalentSlotView =
+        TalentSlotView(
+            slot = slot,
+            talentId = talentId,
+            name = talentId,
+            level = 1,
+            maxLevel = 5,
+            resourceCost = resourceCost,
+            resourceTypeId = "MANA",
+            range = range,
+            minRange = 0,
+            currentCooldown = 0,
+            maxCooldown = 6,
+            requiresTarget = requiresTarget,
         )
 }

@@ -31,7 +31,6 @@ import com.ktome.client.render.TileRenderer
 import com.ktome.core.dungeon.StairDirection
 import com.ktome.core.ecs.EntityId
 import com.ktome.core.ecs.Position
-import com.ktome.core.ecs.World
 import com.ktome.core.ecs.get
 import com.ktome.core.map.Point
 import com.ktome.core.snapshot.CellVisibilitySnapshot
@@ -87,6 +86,8 @@ class ClientSmokeHarnessTest {
                     expectedPlayerName = "英雄",
                     expectedPlayerRole = "玩家",
                     expectedHudToken = "层",
+                    expectedZoneDescription = "废弃边境前哨，短局的起点。",
+                    expectedLoadoutTitle = "技能装配",
                     expectedInventoryTitle = "背包",
                     expectedInspectTitle = "检视",
                     expectedLogLine = "你进入了地牢。",
@@ -108,6 +109,8 @@ class ClientSmokeHarnessTest {
                     expectedPlayerName = "英雄",
                     expectedPlayerRole = "玩家",
                     expectedHudToken = "层",
+                    expectedZoneDescription = "废弃边境前哨，短局的起点。",
+                    expectedLoadoutTitle = "技能装配",
                     expectedInventoryTitle = "背包",
                     expectedInspectTitle = "检视",
                     expectedLogLine = "你进入了地牢。",
@@ -124,6 +127,8 @@ class ClientSmokeHarnessTest {
                     expectedPlayerName = "Hero",
                     expectedPlayerRole = "Player",
                     expectedHudToken = "FL",
+                    expectedZoneDescription = "A ruined border outpost and the opening stretch of the run.",
+                    expectedLoadoutTitle = "Loadout",
                     expectedInventoryTitle = "Inventory",
                     expectedInspectTitle = "Inspect",
                     expectedLogLine = "You enter the dungeon.",
@@ -145,6 +150,8 @@ class ClientSmokeHarnessTest {
                     expectedPlayerName = "英雄",
                     expectedPlayerRole = "玩家",
                     expectedHudToken = "层",
+                    expectedZoneDescription = "有巡逻压力与视野遮挡的林地边缘。",
+                    expectedLoadoutTitle = "技能装配",
                     expectedInventoryTitle = "背包",
                     expectedInspectTitle = "检视",
                     expectedLogLine = "你进入了地牢。",
@@ -166,6 +173,8 @@ class ClientSmokeHarnessTest {
                     expectedPlayerName = "Hero",
                     expectedPlayerRole = "Player",
                     expectedHudToken = "FL",
+                    expectedZoneDescription = "The sealed descent leading to the short-run boss.",
+                    expectedLoadoutTitle = "Loadout",
                     expectedInventoryTitle = "Inventory",
                     expectedInspectTitle = "Inspect",
                     expectedLogLine = "You enter the dungeon.",
@@ -184,6 +193,8 @@ class ClientSmokeHarnessTest {
                     expectedPlayerName = "英雄",
                     expectedPlayerRole = "玩家",
                     expectedHudToken = "层",
+                    expectedZoneDescription = "废弃边境前哨，短局的起点。",
+                    expectedLoadoutTitle = "技能装配",
                     expectedInventoryTitle = "背包",
                     expectedInspectTitle = "检视",
                     expectedLogLine = "游戏已加载。",
@@ -209,6 +220,8 @@ class ClientSmokeHarnessTest {
                     expectedPlayerName = "Hero",
                     expectedPlayerRole = "Player",
                     expectedHudToken = "FL",
+                    expectedZoneDescription = "An industrial mine choked with heat and metal.",
+                    expectedLoadoutTitle = "Loadout",
                     expectedInventoryTitle = "Inventory",
                     expectedInspectTitle = "Inspect",
                     expectedLogLine = "Game loaded.",
@@ -253,6 +266,9 @@ class ClientSmokeHarnessTest {
 
             try {
                 app.create()
+                app.startNewGame()
+                val session = requireNotNull(awaitActiveSession(app)) { "Render-enabled smoke did not create a session." }
+                installProfessionReserveTalent(session)
                 val capture = captureRenderedUiPath(app, smokeSource)
 
                 assertRenderPath(capture, "Render-enabled smoke")
@@ -266,7 +282,7 @@ class ClientSmokeHarnessTest {
     @Tag("clientSmoke")
     fun `client smoke covers audio enabled formal path`() {
         withLwjgl3Gdx(enableAudio = true) {
-            val smokeSource = SmokeCommandSource(overlayInput = ScriptedInputSource(Keys.I, Keys.DOWN, Keys.ESCAPE, Keys.X, Keys.ESCAPE))
+            val smokeSource = SmokeCommandSource(overlayInput = ScriptedInputSource(Keys.L, Keys.ESCAPE, Keys.I, Keys.DOWN, Keys.ESCAPE, Keys.X, Keys.ESCAPE))
             val audioHarness = RecordingAudioHarness.withGdxDelegates()
             val app =
                 GameApp(
@@ -282,6 +298,9 @@ class ClientSmokeHarnessTest {
 
             try {
                 app.create()
+                app.startNewGame()
+                val session = requireNotNull(awaitActiveSession(app)) { "Audio-enabled render smoke did not create a session." }
+                installProfessionReserveTalent(session)
                 val capture = captureRenderedUiPath(app, smokeSource)
 
                 assertRenderPath(capture, "Audio-enabled render smoke")
@@ -378,6 +397,8 @@ class ClientSmokeHarnessTest {
         expectedPlayerName: String,
         expectedPlayerRole: String,
         expectedHudToken: String,
+        expectedZoneDescription: String,
+        expectedLoadoutTitle: String,
         expectedInventoryTitle: String,
         expectedInspectTitle: String,
         expectedLogLine: String,
@@ -396,6 +417,7 @@ class ClientSmokeHarnessTest {
             app.create()
             val menuSnapshot = captureMenuSnapshot(app, expectedLocale)
             val initialSession = awaitActiveSession(app)
+            initialSession?.let(::installProfessionReserveTalent)
             val initialUi = initialSession?.let { session -> captureUiSnapshot(app, smokeSource, session) }
             repeat(180) { app.render() }
             val session = app.activeSessionOrNull()
@@ -415,9 +437,13 @@ class ClientSmokeHarnessTest {
                         initialUi?.playerName == expectedPlayerName &&
                         initialUi?.playerRole == expectedPlayerRole &&
                         initialUi?.hudLine?.contains(expectedHudToken) == true &&
+                        initialUi?.zoneDescription == expectedZoneDescription &&
                         initialUi?.inspectHasKeyStats == true &&
+                        initialUi?.enteredLoadout == true &&
                         initialUi?.enteredInventory == true &&
                         initialUi?.enteredInspect == true &&
+                        initialUi?.loadoutTitle == expectedLoadoutTitle &&
+                        initialUi?.loadoutHasReserveTalent == true &&
                         initialUi?.inventoryTitle == expectedInventoryTitle &&
                         initialUi?.inspectTitle == expectedInspectTitle &&
                         initialUi?.firstMessage == expectedLogLine &&
@@ -436,6 +462,8 @@ class ClientSmokeHarnessTest {
                 playerName = initialUi?.playerName,
                 playerRole = initialUi?.playerRole,
                 hudLine = initialUi?.hudLine,
+                zoneDescription = initialUi?.zoneDescription,
+                loadoutTitle = initialUi?.loadoutTitle,
                 inventoryTitle = initialUi?.inventoryTitle,
                 inspectTitle = initialUi?.inspectTitle,
                 firstMessage = initialUi?.firstMessage,
@@ -458,12 +486,20 @@ class ClientSmokeHarnessTest {
                         "Expected player role $expectedPlayerRole, got ${initialUi?.playerRole}."
                     } else if (initialUi?.hudLine?.contains(expectedHudToken) != true) {
                         "Expected HUD line to contain $expectedHudToken, got ${initialUi?.hudLine}."
+                    } else if (initialUi?.zoneDescription != expectedZoneDescription) {
+                        "Expected zone description $expectedZoneDescription, got ${initialUi?.zoneDescription}."
                     } else if (initialUi?.inspectHasKeyStats != true) {
                         "Inspect sidebar is missing key stat overview."
+                    } else if (initialUi?.enteredLoadout != true) {
+                        "Loadout overlay was not entered through the input path."
                     } else if (initialUi?.enteredInventory != true) {
                         "Inventory overlay was not entered through the input path."
                     } else if (initialUi?.enteredInspect != true) {
                         "Inspect overlay was not entered through the input path."
+                    } else if (initialUi?.loadoutTitle != expectedLoadoutTitle) {
+                        "Expected loadout title $expectedLoadoutTitle, got ${initialUi?.loadoutTitle}."
+                    } else if (initialUi?.loadoutHasReserveTalent != true) {
+                        "Loadout overlay did not render any reserve talent row."
                     } else if (initialUi?.inventoryTitle != expectedInventoryTitle) {
                         "Expected inventory title $expectedInventoryTitle, got ${initialUi?.inventoryTitle}."
                     } else if (initialUi?.inspectTitle != expectedInspectTitle) {
@@ -494,6 +530,8 @@ class ClientSmokeHarnessTest {
         expectedPlayerName: String,
         expectedPlayerRole: String,
         expectedHudToken: String,
+        expectedZoneDescription: String,
+        expectedLoadoutTitle: String,
         expectedInventoryTitle: String,
         expectedInspectTitle: String,
         expectedLogLine: String,
@@ -518,6 +556,7 @@ class ClientSmokeHarnessTest {
             app.create()
             val menuSnapshot = captureMenuSnapshot(app, expectedLocale)
             val initialLoaded = awaitActiveSession(app)
+            initialLoaded?.let(::installProfessionReserveTalent)
             val initialUi = initialLoaded?.let { loadedSession -> captureUiSnapshot(app, smokeSource, loadedSession) }
             repeat(180) { app.render() }
             val loaded = app.activeSessionOrNull()
@@ -538,9 +577,13 @@ class ClientSmokeHarnessTest {
                         initialUi?.playerName == expectedPlayerName &&
                         initialUi?.playerRole == expectedPlayerRole &&
                         initialUi?.hudLine?.contains(expectedHudToken) == true &&
+                        initialUi?.zoneDescription == expectedZoneDescription &&
                         initialUi?.inspectHasKeyStats == true &&
+                        initialUi?.enteredLoadout == true &&
                         initialUi?.enteredInventory == true &&
                         initialUi?.enteredInspect == true &&
+                        initialUi?.loadoutTitle == expectedLoadoutTitle &&
+                        initialUi?.loadoutHasReserveTalent == true &&
                         initialUi?.inventoryTitle == expectedInventoryTitle &&
                         initialUi?.inspectTitle == expectedInspectTitle &&
                         initialUi?.firstMessage == expectedLogLine &&
@@ -559,6 +602,8 @@ class ClientSmokeHarnessTest {
                 playerName = initialUi?.playerName,
                 playerRole = initialUi?.playerRole,
                 hudLine = initialUi?.hudLine,
+                zoneDescription = initialUi?.zoneDescription,
+                loadoutTitle = initialUi?.loadoutTitle,
                 inventoryTitle = initialUi?.inventoryTitle,
                 inspectTitle = initialUi?.inspectTitle,
                 firstMessage = initialUi?.firstMessage,
@@ -581,12 +626,20 @@ class ClientSmokeHarnessTest {
                         "Expected player role $expectedPlayerRole, got ${initialUi?.playerRole}."
                     } else if (initialUi?.hudLine?.contains(expectedHudToken) != true) {
                         "Expected HUD line to contain $expectedHudToken, got ${initialUi?.hudLine}."
+                    } else if (initialUi?.zoneDescription != expectedZoneDescription) {
+                        "Expected zone description $expectedZoneDescription, got ${initialUi?.zoneDescription}."
                     } else if (initialUi?.inspectHasKeyStats != true) {
                         "Inspect sidebar is missing key stat overview."
+                    } else if (initialUi?.enteredLoadout != true) {
+                        "Loadout overlay was not entered through the input path."
                     } else if (initialUi?.enteredInventory != true) {
                         "Inventory overlay was not entered through the input path."
                     } else if (initialUi?.enteredInspect != true) {
                         "Inspect overlay was not entered through the input path."
+                    } else if (initialUi?.loadoutTitle != expectedLoadoutTitle) {
+                        "Expected loadout title $expectedLoadoutTitle, got ${initialUi?.loadoutTitle}."
+                    } else if (initialUi?.loadoutHasReserveTalent != true) {
+                        "Loadout overlay did not render any reserve talent row."
                     } else if (initialUi?.inventoryTitle != expectedInventoryTitle) {
                         "Expected inventory title $expectedInventoryTitle, got ${initialUi?.inventoryTitle}."
                     } else if (initialUi?.inspectTitle != expectedInspectTitle) {
@@ -619,6 +672,7 @@ class ClientSmokeHarnessTest {
         frameBudget: Int = 180,
     ): RenderPathCapture {
         var mapHash: String? = null
+        var loadoutHash: String? = null
         var inventoryHash: String? = null
         var inspectHash: String? = null
 
@@ -629,14 +683,17 @@ class ClientSmokeHarnessTest {
             }
             when (smokeSource.overlayState().mode) {
                 UiMode.MAP -> if (mapHash == null) mapHash = frameBufferHash()
+                UiMode.LOADOUT_EDIT -> if (loadoutHash == null) loadoutHash = frameBufferHash()
                 UiMode.INVENTORY -> if (inventoryHash == null) inventoryHash = frameBufferHash()
                 UiMode.INSPECT -> if (inspectHash == null) inspectHash = frameBufferHash()
                 else -> Unit
             }
             if (
                 mapHash != null &&
+                loadoutHash != null &&
                 inventoryHash != null &&
                 inspectHash != null &&
+                smokeSource.entered(UiMode.LOADOUT_EDIT) &&
                 smokeSource.entered(UiMode.INVENTORY) &&
                 smokeSource.entered(UiMode.INSPECT)
             ) {
@@ -646,8 +703,10 @@ class ClientSmokeHarnessTest {
 
         return RenderPathCapture(
             mapHash = mapHash,
+            loadoutHash = loadoutHash,
             inventoryHash = inventoryHash,
             inspectHash = inspectHash,
+            enteredLoadout = smokeSource.entered(UiMode.LOADOUT_EDIT),
             enteredInventory = smokeSource.entered(UiMode.INVENTORY),
             enteredInspect = smokeSource.entered(UiMode.INSPECT),
         )
@@ -657,15 +716,17 @@ class ClientSmokeHarnessTest {
         capture: RenderPathCapture,
         label: String,
     ) {
+        assertTrue(capture.enteredLoadout, "$label never entered loadout mode.")
         assertTrue(capture.enteredInventory, "$label never entered inventory mode.")
         assertTrue(capture.enteredInspect, "$label never entered inspect mode.")
         assertTrue(capture.mapHash != null, "$label did not capture a map frame.")
+        assertTrue(capture.loadoutHash != null, "$label did not capture a loadout frame.")
         assertTrue(capture.inventoryHash != null, "$label did not capture an inventory frame.")
         assertTrue(capture.inspectHash != null, "$label did not capture an inspect frame.")
         assertEquals(
-            3,
-            setOf(capture.mapHash, capture.inventoryHash, capture.inspectHash).size,
-            "$label map/inventory/inspect frames should differ.",
+            4,
+            setOf(capture.mapHash, capture.loadoutHash, capture.inventoryHash, capture.inspectHash).size,
+            "$label map/loadout/inventory/inspect frames should differ.",
         )
     }
 
@@ -767,6 +828,8 @@ class ClientSmokeHarnessTest {
         val playerName: String? = null,
         val playerRole: String? = null,
         val hudLine: String? = null,
+        val zoneDescription: String? = null,
+        val loadoutTitle: String? = null,
         val inventoryTitle: String? = null,
         val inspectTitle: String? = null,
         val firstMessage: String? = null,
@@ -775,8 +838,10 @@ class ClientSmokeHarnessTest {
 
     private data class RenderPathCapture(
         val mapHash: String?,
+        val loadoutHash: String?,
         val inventoryHash: String?,
         val inspectHash: String?,
+        val enteredLoadout: Boolean,
         val enteredInventory: Boolean,
         val enteredInspect: Boolean,
     )
@@ -814,16 +879,23 @@ class ClientSmokeHarnessTest {
         val localizer = app.localizer()
         val snapshot = session.renderSnapshot()
         val mapModel = TileRenderer.buildRenderModel(localizer, clientAssets.visualResolver, snapshot, OverlayState(mode = UiMode.MAP))
+        var loadoutCapture: OverlayCapture? = null
         var inventoryCapture: OverlayCapture? = null
         var inspectCapture: OverlayCapture? = null
-        repeat(12) {
-            if (inventoryCapture != null && inspectCapture != null) {
+        repeat(16) {
+            if (loadoutCapture != null && inventoryCapture != null && inspectCapture != null) {
                 return@repeat
             }
             app.render()
             val activeSession = app.activeSessionOrNull() ?: return@repeat
             val overlayState = smokeSource.overlayState()
             when (overlayState.mode) {
+                UiMode.LOADOUT_EDIT -> {
+                    if (loadoutCapture == null) {
+                        loadoutCapture = captureOverlay(localizer, activeSession.renderSnapshot(), overlayState)
+                    }
+                }
+
                 UiMode.INVENTORY -> {
                     if (inventoryCapture == null) {
                         inventoryCapture = captureOverlay(localizer, activeSession.renderSnapshot(), overlayState)
@@ -842,9 +914,15 @@ class ClientSmokeHarnessTest {
         val player = requireNotNull(snapshot.actors.singleOrNull { actor -> actor.isPlayer }) {
             "Expected a single player actor in render snapshot."
         }
+        val reserveTalentName =
+            snapshot.uiState.reserveTalents.firstOrNull()?.nameKey?.let(localizer::text)
         val inspectLines = inspectCapture?.rows.orEmpty()
         val playerName = localizer.text(player.nameKey)
         val playerRole = inspectLines.firstOrNull { line -> line == localizer.text("actor.player.role") }
+        val zoneDescription =
+            snapshot.metadata.zoneDescKey
+                ?.let(localizer::text)
+                ?.takeIf { desc -> mapModel.sidebar.rows.any { row -> row.text == desc } }
         val inspectHasKeyStats =
             inspectLines.any { line -> line.contains(localizer.text("ui.hud.accuracy.short")) && line.contains(localizer.text("ui.hud.evasion.short")) } &&
                 inspectLines.any { line -> line.contains(localizer.text("ui.stat.str")) && line.contains(localizer.text("ui.stat.dex")) } &&
@@ -852,12 +930,16 @@ class ClientSmokeHarnessTest {
                 inspectLines.any { line -> line.contains(localizer.text("ui.hud.speed.short")) }
         return ClientUiSnapshot(
             hudLine = mapModel.hud.summaryText,
+            loadoutTitle = loadoutCapture?.title,
             inventoryTitle = inventoryCapture?.title,
             inspectTitle = inspectCapture?.title,
-            firstMessage = mapModel.messageLines.firstOrNull(),
+            firstMessage = mapModel.messageLines.firstOrNull()?.text,
             playerName = playerName,
             playerRole = playerRole,
+            zoneDescription = zoneDescription,
             inspectHasKeyStats = inspectHasKeyStats,
+            loadoutHasReserveTalent = reserveTalentName != null && loadoutCapture?.rows.orEmpty().any { row -> row.contains(reserveTalentName) },
+            enteredLoadout = smokeSource.entered(UiMode.LOADOUT_EDIT),
             enteredInventory = smokeSource.entered(UiMode.INVENTORY),
             enteredInspect = smokeSource.entered(UiMode.INSPECT),
         )
@@ -882,12 +964,16 @@ class ClientSmokeHarnessTest {
 
     private data class ClientUiSnapshot(
         val hudLine: String,
+        val zoneDescription: String?,
+        val loadoutTitle: String?,
         val inventoryTitle: String?,
         val inspectTitle: String?,
         val firstMessage: String?,
         val playerName: String,
         val playerRole: String?,
         val inspectHasKeyStats: Boolean,
+        val loadoutHasReserveTalent: Boolean,
+        val enteredLoadout: Boolean,
         val enteredInventory: Boolean,
         val enteredInspect: Boolean,
     )
@@ -910,6 +996,8 @@ private fun ClientSmokeHarnessTest.ClientSmokeReport.toJson() =
         playerName?.let { put("playerName", it) }
         playerRole?.let { put("playerRole", it) }
         hudLine?.let { put("hudLine", it) }
+        zoneDescription?.let { put("zoneDescription", it) }
+        loadoutTitle?.let { put("loadoutTitle", it) }
         inventoryTitle?.let { put("inventoryTitle", it) }
         inspectTitle?.let { put("inspectTitle", it) }
         firstMessage?.let { put("firstMessage", it) }
@@ -964,7 +1052,7 @@ private class BotCommandSource(
 
 private class SmokeCommandSource(
     private val botSource: BotCommandSource = BotCommandSource(),
-    overlayInput: ScriptedInputSource = ScriptedInputSource(Keys.I, Keys.ESCAPE, Keys.X, Keys.ESCAPE),
+    overlayInput: ScriptedInputSource = ScriptedInputSource(Keys.L, Keys.ESCAPE, Keys.I, Keys.ESCAPE, Keys.X, Keys.ESCAPE),
 ) : CommandSource, AudioRouterAwareCommandSource {
     private val uiSource =
         InputHandlerCommandSource(
@@ -1185,9 +1273,6 @@ private object SnapshotSmokeBot {
             Point(point.x, point.y - 1),
         )
 }
-
-private fun automationWorld(session: FoundationGameSession): World =
-    invokeSessionInternal(session, "automationWorld") as World
 
 private fun automationMovePlayerTo(
     session: FoundationGameSession,

@@ -17,6 +17,8 @@ import com.ktome.core.snapshot.RenderSnapshot
 import com.ktome.core.snapshot.RenderTextArgumentSnapshot
 import com.ktome.core.snapshot.RenderTextTokenSnapshot
 import com.ktome.core.snapshot.StatusEffectRenderSnapshot
+import com.ktome.core.snapshot.TalentReserveSnapshot
+import com.ktome.game.PLAYER_ACTIVE_TALENT_SLOT_COUNT
 import com.ktome.game.i18n.Localizer
 
 internal enum class AsciiTextTone {
@@ -25,6 +27,8 @@ internal enum class AsciiTextTone {
     LIGHT_GRAY,
     CYAN,
     GRAY,
+    GREEN,
+    RED,
 }
 
 internal data class AsciiGlyphPlacement(
@@ -47,7 +51,7 @@ internal data class AsciiRenderModel(
     val targetCursor: com.ktome.core.map.Point?,
     val inspectCursor: com.ktome.core.map.Point?,
     val hudText: String,
-    val messageLines: List<String>,
+    val messageLines: List<AsciiTextLine>,
     val sidebarLines: List<AsciiTextLine>,
 )
 
@@ -115,7 +119,13 @@ internal object AsciiRenderModelBuilder {
             targetCursor = overlayState.targetingCursor,
             inspectCursor = overlayState.inspectCursor,
             hudText = AsciiRenderer.hudText(localizer, snapshot),
-            messageLines = snapshot.logEvents.map { event -> renderLogEvent(localizer, event) },
+            messageLines =
+                snapshot.logEvents.map { event ->
+                    AsciiTextLine(
+                        text = renderLogEvent(localizer, event),
+                        tone = messageTone(event.message.key),
+                    )
+                },
             sidebarLines = buildSidebarLines(localizer, snapshot, overlayState, cellByPoint, actorById),
         )
     }
@@ -129,6 +139,12 @@ internal object AsciiRenderModelBuilder {
     ): List<AsciiTextLine> {
         val lines = mutableListOf<AsciiTextLine>()
         val playerCell = requireNotNull(cellByPoint[point(snapshot.metadata.playerX, snapshot.metadata.playerY)])
+        if (overlayState.mode == UiMode.MAP) {
+            snapshot.metadata.zoneDescKey?.let { descKey ->
+                lines += AsciiTextLine(localizer.text(descKey), AsciiTextTone.LIGHT_GRAY)
+                lines += blankLine()
+            }
+        }
 
         lines += AsciiTextLine(localizer.text("ui.sidebar.equipment"), AsciiTextTone.GOLD)
         snapshot.uiState.equipment.forEach { equipment ->
@@ -144,7 +160,7 @@ internal object AsciiRenderModelBuilder {
                     "${localizer.text("ui.sidebar.cooldown.short")}:${talent.currentCooldown}"
                 } else {
                     localizer.text("ui.sidebar.ready")
-            }
+                }
             lines += AsciiTextLine(
                 "${talent.slot}.${localizer.text(talent.nameKey)} L${talent.level}/${talent.maxLevel} [$state]${talentTargetSuffix(localizer, talent.requiresTarget, talent.range)}",
                 AsciiTextTone.WHITE,
@@ -173,6 +189,7 @@ internal object AsciiRenderModelBuilder {
                 lines += AsciiTextLine(localizer.text("ui.controls.map.save"), AsciiTextTone.LIGHT_GRAY)
                 if (snapshot.uiState.talents.isNotEmpty()) {
                     lines += AsciiTextLine(localizer.text("ui.controls.map.use_talent"), AsciiTextTone.LIGHT_GRAY)
+                    lines += AsciiTextLine(localizer.text("ui.controls.map.edit_loadout"), AsciiTextTone.LIGHT_GRAY)
                 }
                 if (snapshot.uiState.talents.any { talent -> talent.requiresTarget }) {
                     lines += AsciiTextLine(localizer.text("ui.controls.map.target_talent"), AsciiTextTone.LIGHT_GRAY)
@@ -205,6 +222,38 @@ internal object AsciiRenderModelBuilder {
                     lines += AsciiTextLine(localizer.text("ui.sidebar.empty"), AsciiTextTone.GRAY)
                 }
                 lines += AsciiTextLine(localizer.text("ui.controls.inventory"), AsciiTextTone.LIGHT_GRAY)
+            }
+
+            UiMode.LOADOUT_EDIT -> {
+                val activeTalents = snapshot.uiState.talents.associateBy { talent -> talent.slot }
+                lines += AsciiTextLine(localizer.text("ui.sidebar.active_loadout"), AsciiTextTone.GOLD)
+                (1..PLAYER_ACTIVE_TALENT_SLOT_COUNT).forEach { slot ->
+                    val talent = activeTalents[slot]
+                    lines +=
+                        AsciiTextLine(
+                            loadoutSlotLabel(localizer, slot, talent),
+                            if (overlayState.loadoutSlotSelection == slot) AsciiTextTone.CYAN else AsciiTextTone.WHITE,
+                        )
+                }
+                lines += AsciiTextLine(localizer.text("ui.sidebar.reserve_talents"), AsciiTextTone.GOLD)
+                if (snapshot.uiState.reserveTalents.isEmpty()) {
+                    lines += AsciiTextLine(localizer.text("ui.sidebar.empty"), AsciiTextTone.GRAY)
+                } else {
+                    snapshot.uiState.reserveTalents.forEachIndexed { index, talent ->
+                        lines +=
+                            AsciiTextLine(
+                                reserveTalentLabel(localizer, talent),
+                                if (overlayState.loadoutReserveSelection == index) AsciiTextTone.CYAN else AsciiTextTone.WHITE,
+                            )
+                    }
+                    snapshot.uiState.reserveTalents.getOrNull(overlayState.loadoutReserveSelection)?.let { talent ->
+                        talent.descKey?.let { descKey ->
+                            lines += AsciiTextLine(localizer.text(descKey), AsciiTextTone.LIGHT_GRAY)
+                        }
+                        lines += AsciiTextLine(talentUsageSummary(localizer, talent), AsciiTextTone.LIGHT_GRAY)
+                    }
+                }
+                lines += AsciiTextLine(localizer.text("ui.controls.loadout"), AsciiTextTone.LIGHT_GRAY)
             }
 
             UiMode.TARGETING -> {
@@ -436,6 +485,17 @@ internal object AsciiRenderModelBuilder {
             else -> localizer.text("actor.generic.role")
         }
 
+    private fun messageTone(messageKey: String): AsciiTextTone =
+        when {
+            messageKey == "log.talent.damage_resisted" -> AsciiTextTone.CYAN
+            messageKey == "log.talent.damage_vulnerable" -> AsciiTextTone.RED
+            messageKey.startsWith("log.passive.") -> AsciiTextTone.GREEN
+            messageKey.startsWith("log.level_up") -> AsciiTextTone.GOLD
+            messageKey == "log.zone.enter" -> AsciiTextTone.CYAN
+            messageKey.startsWith("log.boss.") -> AsciiTextTone.RED
+            else -> AsciiTextTone.WHITE
+        }
+
     private fun renderLogEvent(
         localizer: Localizer,
         event: RenderLogEventSnapshot,
@@ -472,6 +532,11 @@ internal object AsciiRenderModelBuilder {
         return "$resourceText · ${localizer.text("ui.sidebar.target.range", "range" to range)}"
     }
 
+    private fun talentUsageSummary(
+        localizer: Localizer,
+        talent: TalentReserveSnapshot,
+    ): String = talentUsageSummary(localizer, talent.resourceCost, talent.resourceLabelKey, talent.requiresTarget, talent.range)
+
     private fun talentTargetSuffix(
         localizer: Localizer,
         requiresTarget: Boolean,
@@ -481,6 +546,22 @@ internal object AsciiRenderModelBuilder {
             " [${localizer.text("ui.sidebar.target.range", "range" to range)}]"
         } else {
             ""
+        }
+
+    private fun reserveTalentLabel(
+        localizer: Localizer,
+        talent: TalentReserveSnapshot,
+    ): String = "${localizer.text(talent.nameKey)} ${talent.level}/${talent.maxLevel}${talentTargetSuffix(localizer, talent.requiresTarget, talent.range)}"
+
+    private fun loadoutSlotLabel(
+        localizer: Localizer,
+        slot: Int,
+        talent: com.ktome.core.snapshot.TalentSlotSnapshot?,
+    ): String =
+        if (talent == null) {
+            "$slot. ${localizer.text("ui.sidebar.empty")}"
+        } else {
+            "$slot. ${localizer.text(talent.nameKey)} ${talent.level}/${talent.maxLevel}"
         }
 
     private fun renderTextToken(

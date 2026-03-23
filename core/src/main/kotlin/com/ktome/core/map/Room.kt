@@ -26,6 +26,8 @@ data class Room(
     val center: Point
         get() = Point(x + width / 2, y + height / 2)
 
+    fun contains(point: Point): Boolean = point.x in left..right && point.y in top..bottom
+
     fun intersects(other: Room): Boolean =
         left <= other.right &&
             right >= other.left &&

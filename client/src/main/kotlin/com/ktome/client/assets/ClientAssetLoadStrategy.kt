@@ -154,6 +154,18 @@ class ClientAssetLoadStrategy(
             }
             talent.audioProfile?.let(audioKeys::add)
         }
+        snapshot.uiState.reserveTalents.forEach { talent ->
+            talent.visualKey?.let(visualKeys::add)
+            talent.iconKey?.let {
+                visualKeys += it
+                iconVisualKeys += it
+            }
+            talent.damageTypeIconKey?.let {
+                visualKeys += it
+                iconVisualKeys += it
+            }
+            talent.audioProfile?.let(audioKeys::add)
+        }
         snapshot.uiState.inventory.forEach { entry ->
             collectItem(entry.item, visualKeys, audioKeys)
             entry.item.iconKey?.let(iconVisualKeys::add)

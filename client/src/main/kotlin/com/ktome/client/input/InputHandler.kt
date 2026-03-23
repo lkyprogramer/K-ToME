@@ -6,11 +6,13 @@ import com.ktome.core.snapshot.GridPointSnapshot
 import com.ktome.core.snapshot.PropRenderSnapshot
 import com.ktome.core.snapshot.RenderSnapshot
 import com.ktome.game.PrimaryStat
+import com.ktome.game.PLAYER_ACTIVE_TALENT_SLOT_COUNT
 import com.ktome.game.PlayerCommand
 
 enum class UiMode {
     MAP,
     INVENTORY,
+    LOADOUT_EDIT,
     TARGETING,
     INSPECT,
     STAT_ASSIGN,
@@ -20,6 +22,8 @@ enum class UiMode {
 data class OverlayState(
     val mode: UiMode,
     val inventorySelection: Int = 0,
+    val loadoutSlotSelection: Int = 1,
+    val loadoutReserveSelection: Int = 0,
     val targetingSlot: Int? = null,
     val targetingCursor: Point? = null,
     val inspectCursor: Point? = null,
@@ -61,6 +65,8 @@ class InputHandler(
     private val waitBindings = listOf(Keys.PERIOD, Keys.SPACE, Keys.NUMPAD_5)
     private var mode: UiMode = UiMode.MAP
     private var inventorySelection: Int = 0
+    private var loadoutSlotSelection: Int = 1
+    private var loadoutReserveSelection: Int = 0
     private var targetingSlot: Int? = null
     private var targetingCursor: Point? = null
     private var inspectCursor: Point? = null
@@ -73,12 +79,18 @@ class InputHandler(
         OverlayState(
             mode = mode,
             inventorySelection = inventorySelection,
+            loadoutSlotSelection = loadoutSlotSelection,
+            loadoutReserveSelection = loadoutReserveSelection,
             targetingSlot = targetingSlot,
             targetingCursor = targetingCursor,
             inspectCursor = inspectCursor,
         )
 
     fun pollCommand(snapshot: RenderSnapshot): PlayerCommand? {
+        if (mode == UiMode.MAP && input.isKeyJustPressed(Keys.L)) {
+            enterLoadoutEdit(snapshot)
+            return null
+        }
         if (mode == UiMode.MAP && input.isKeyJustPressed(Keys.X)) {
             mode = UiMode.INSPECT
             inspectCursor = defaultInspectCursor(snapshot)
@@ -92,6 +104,7 @@ class InputHandler(
         return when (mode) {
             UiMode.MAP -> pollMapCommand(snapshot)
             UiMode.INVENTORY -> pollInventoryCommand(snapshot)
+            UiMode.LOADOUT_EDIT -> pollLoadoutCommand(snapshot)
             UiMode.TARGETING -> pollTargetingCommand(snapshot)
             UiMode.INSPECT -> pollInspectCommand(snapshot)
             UiMode.STAT_ASSIGN -> pollStatAssignCommand(snapshot)
@@ -120,6 +133,8 @@ class InputHandler(
                 }
             }
 
+            is PlayerCommand.EquipTalentToSlot -> reconcileMode(snapshot)
+
             is PlayerCommand.AssignStat,
             is PlayerCommand.AssignTalent,
             PlayerCommand.SaveGame,
@@ -138,6 +153,11 @@ class InputHandler(
                 if (!hasPendingStatAllocation(snapshot)) {
                     mode = UiMode.MAP
                 }
+            }
+
+            UiMode.LOADOUT_EDIT -> {
+                loadoutSlotSelection = loadoutSlotSelection.coerceIn(1, PLAYER_ACTIVE_TALENT_SLOT_COUNT)
+                loadoutReserveSelection = loadoutReserveSelection.coerceIn(0, (snapshot.uiState.reserveTalents.size - 1).coerceAtLeast(0))
             }
 
             UiMode.TALENT_ASSIGN -> {
@@ -209,6 +229,46 @@ class InputHandler(
             targetingSlot = slot
             targetingCursor = defaultTargetCursor(snapshot)
             resetMovementRepeat()
+        }
+
+        return null
+    }
+
+    private fun pollLoadoutCommand(snapshot: RenderSnapshot): PlayerCommand? {
+        if (input.isKeyJustPressed(Keys.ESCAPE) || input.isKeyJustPressed(Keys.L)) {
+            clearLoadoutEdit()
+            return null
+        }
+
+        when {
+            input.isKeyJustPressed(Keys.NUM_1) -> loadoutSlotSelection = 1
+            input.isKeyJustPressed(Keys.NUM_2) -> loadoutSlotSelection = 2
+            input.isKeyJustPressed(Keys.NUM_3) -> loadoutSlotSelection = 3
+            input.isKeyJustPressed(Keys.NUM_4) -> loadoutSlotSelection = 4
+        }
+
+        val reserveSize = snapshot.uiState.reserveTalents.size
+        if (reserveSize == 0) {
+            return null
+        }
+
+        if (input.isKeyJustPressed(Keys.UP) || input.isKeyJustPressed(Keys.W)) {
+            loadoutReserveSelection = (loadoutReserveSelection - 1).coerceAtLeast(0)
+            return null
+        }
+
+        if (input.isKeyJustPressed(Keys.DOWN) || input.isKeyJustPressed(Keys.X)) {
+            loadoutReserveSelection = (loadoutReserveSelection + 1).coerceAtMost(reserveSize - 1)
+            return null
+        }
+
+        if (
+            input.isKeyJustPressed(Keys.ENTER) ||
+            input.isKeyJustPressed(Keys.SPACE) ||
+            input.isKeyJustPressed(Keys.E)
+        ) {
+            val talent = snapshot.uiState.reserveTalents.getOrNull(loadoutReserveSelection) ?: return null
+            return PlayerCommand.EquipTalentToSlot(slot = loadoutSlotSelection, talentId = talent.talentId)
         }
 
         return null
@@ -341,9 +401,21 @@ class InputHandler(
         resetMovementRepeat()
     }
 
+    private fun clearLoadoutEdit() {
+        mode = UiMode.MAP
+        resetMovementRepeat()
+    }
+
     private fun clearInspect() {
         mode = UiMode.MAP
         inspectCursor = null
+        resetMovementRepeat()
+    }
+
+    private fun enterLoadoutEdit(snapshot: RenderSnapshot) {
+        mode = UiMode.LOADOUT_EDIT
+        loadoutSlotSelection = loadoutSlotSelection.coerceIn(1, PLAYER_ACTIVE_TALENT_SLOT_COUNT)
+        loadoutReserveSelection = loadoutReserveSelection.coerceIn(0, (snapshot.uiState.reserveTalents.size - 1).coerceAtLeast(0))
         resetMovementRepeat()
     }
 

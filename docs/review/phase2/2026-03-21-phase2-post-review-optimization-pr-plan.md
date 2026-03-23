@@ -1370,3 +1370,15 @@ PR-E1 (可选资产 formalization，触发条件见 Stage E)
 其中 PR-B1 的优先级被上调——它不仅是反馈优化，更是 DamageType 从"管线存在"到"数据生效"的关键补全，直接影响 PR-C1 的体验基础。
 
 按本计划推进，可以在不重开 Phase 2 主线的前提下，把 deep review 的有效建议沉淀为一组低返工、可直接执行的优化 PR。
+
+---
+
+## 12. 2026-03-23 Follow-up Status
+
+后续玩家侧 polish 已按拆分计划落地到 `PR-F1 ~ PR-F5`，当前状态补充如下：
+
+1. `Phase 2` 已解锁 talent 现在通过最小 `loadout remap` 进入正式可操作路径；正式战斗热栏仍固定为 `1-4`
+2. route 主线怪物抗性覆盖已从“家族最低覆盖线”升级为“短局可感知覆盖”，并额外纳入 boss floor / encounter gating 的 runtime 校验
+3. zone `descKey` 已进入 snapshot metadata 与正式入口提示，且不会污染 outcome summary
+4. 非 accessory passive 装备已扩到武器 / 防具，并补固定 seed loot corpus 验证它们能在短局奖励路径里真实出现
+5. 前期遭遇调优与日志显著化已接入正式 `game/client` 路径；tone 分类继续只依赖现有 `message.key` 家族
