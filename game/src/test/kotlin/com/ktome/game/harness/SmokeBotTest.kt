@@ -313,6 +313,176 @@ class SmokeBotTest {
         )
     }
 
+    @Test
+    fun `critical health templar heals before casting devotion under ranged pressure`() {
+        val observation =
+            observation(
+                inventoryItems = emptyList(),
+                playerStatus =
+                    PlayerStatus(
+                        currentHp = 12,
+                        maxHp = 30,
+                        level = 1,
+                        currentExperience = 0,
+                        nextLevelRequirement = 10,
+                        statPoints = 0,
+                        talentPoints = 0,
+                        attack = 6,
+                        defense = 4,
+                        accuracy = 5,
+                        evasion = 3,
+                        speed = 100,
+                    ),
+                playerResource = PlayerResourceView(current = 20, max = 20, typeId = "POSITIVE_ENERGY"),
+                visibleHostilePositions = listOf(Point(4, 1)),
+                visibleTiles = setOf(Point(1, 1), Point(2, 1), Point(3, 1), Point(4, 1)),
+                exploredTiles = setOf(Point(1, 1), Point(2, 1), Point(3, 1), Point(4, 1)),
+                talentSlots =
+                    listOf(
+                        talentSlot(slot = 1, talentId = "holy_light", resourceTypeId = "POSITIVE_ENERGY", resourceCost = 12, range = 0, requiresTarget = false),
+                        talentSlot(slot = 2, talentId = "devotion", resourceTypeId = "POSITIVE_ENERGY", resourceCost = 0, range = 0, requiresTarget = false),
+                    ),
+            )
+
+        assertEquals(PlayerCommand.UseTalent(1), bot.decide(observation))
+    }
+
+    @Test
+    fun `critical health mana class blinks away from multiple nearby hostiles`() {
+        val observation =
+            observation(
+                inventoryItems = emptyList(),
+                playerStatus =
+                    PlayerStatus(
+                        currentHp = 11,
+                        maxHp = 30,
+                        level = 1,
+                        currentExperience = 0,
+                        nextLevelRequirement = 10,
+                        statPoints = 0,
+                        talentPoints = 0,
+                        attack = 6,
+                        defense = 4,
+                        accuracy = 5,
+                        evasion = 3,
+                        speed = 100,
+                    ),
+                playerResource = PlayerResourceView(current = 20, max = 20, typeId = "MANA"),
+                visibleHostilePositions = listOf(Point(4, 1), Point(4, 2)),
+                visibleTiles = setOf(Point(1, 1), Point(2, 1), Point(3, 1), Point(4, 1), Point(4, 2), Point(1, 2), Point(2, 2), Point(3, 2)),
+                exploredTiles = setOf(Point(1, 1), Point(2, 1), Point(3, 1), Point(4, 1), Point(4, 2), Point(1, 2), Point(2, 2), Point(3, 2)),
+                talentSlots = manaLoadout(),
+            )
+
+        val command = bot.decide(observation)
+
+        assertTrue(command is PlayerCommand.UseTalent && command.slot == 2, "Expected critical mana bot to blink away from multiple hostiles, but got $command.")
+    }
+
+    @Test
+    fun `low health mana class retreats from nearby hostile when no combat talent is ready`() {
+        val observation =
+            observation(
+                inventoryItems = emptyList(),
+                playerStatus =
+                    PlayerStatus(
+                        currentHp = 14,
+                        maxHp = 30,
+                        level = 1,
+                        currentExperience = 0,
+                        nextLevelRequirement = 10,
+                        statPoints = 0,
+                        talentPoints = 0,
+                        attack = 6,
+                        defense = 4,
+                        accuracy = 5,
+                        evasion = 3,
+                        speed = 100,
+                    ),
+                playerResource = PlayerResourceView(current = 10, max = 20, typeId = "MANA"),
+                map = corridorMap,
+                playerPosition = Point(3, 0),
+                visibleHostilePositions = listOf(Point(5, 0)),
+                visibleTiles = corridorMap.floorPoints().toSet(),
+                exploredTiles = corridorMap.floorPoints().toSet(),
+                talentSlots = emptyList(),
+            )
+
+        assertEquals(PlayerCommand.Move(Point(-1, 0)), bot.decide(observation))
+    }
+
+    @Test
+    fun `low health templar retreats under mixed melee and ranged pressure when no emergency action is ready`() {
+        val observation =
+            observation(
+                inventoryItems = emptyList(),
+                playerStatus =
+                    PlayerStatus(
+                        currentHp = 16,
+                        maxHp = 30,
+                        level = 1,
+                        currentExperience = 0,
+                        nextLevelRequirement = 10,
+                        statPoints = 0,
+                        talentPoints = 0,
+                        attack = 6,
+                        defense = 4,
+                        accuracy = 5,
+                        evasion = 3,
+                        speed = 100,
+                    ),
+                playerResource = PlayerResourceView(current = 8, max = 20, typeId = "POSITIVE_ENERGY"),
+                map = corridorMap,
+                playerPosition = Point(3, 0),
+                visibleHostilePositions = listOf(Point(4, 0), Point(6, 0)),
+                visibleTiles = corridorMap.floorPoints().toSet(),
+                exploredTiles = corridorMap.floorPoints().toSet(),
+                talentSlots =
+                    listOf(
+                        talentSlot(slot = 1, talentId = "holy_light", resourceTypeId = "POSITIVE_ENERGY", resourceCost = 12, range = 0, requiresTarget = false),
+                        talentSlot(slot = 2, talentId = "holy_shield", resourceTypeId = "POSITIVE_ENERGY", resourceCost = 12, range = 0, requiresTarget = false),
+                    ),
+            )
+
+        assertEquals(PlayerCommand.Move(Point(-1, 0)), bot.decide(observation))
+    }
+
+    @Test
+    fun `low health templar retreats from adjacent hostile when no emergency action is ready`() {
+        val observation =
+            observation(
+                inventoryItems = emptyList(),
+                playerStatus =
+                    PlayerStatus(
+                        currentHp = 16,
+                        maxHp = 30,
+                        level = 1,
+                        currentExperience = 0,
+                        nextLevelRequirement = 10,
+                        statPoints = 0,
+                        talentPoints = 0,
+                        attack = 6,
+                        defense = 4,
+                        accuracy = 5,
+                        evasion = 3,
+                        speed = 100,
+                    ),
+                playerResource = PlayerResourceView(current = 8, max = 20, typeId = "POSITIVE_ENERGY"),
+                map = corridorMap,
+                playerPosition = Point(3, 0),
+                visibleHostilePositions = listOf(Point(4, 0)),
+                visibleTiles = corridorMap.floorPoints().toSet(),
+                exploredTiles = corridorMap.floorPoints().toSet(),
+                talentSlots =
+                    listOf(
+                        talentSlot(slot = 1, talentId = "holy_light", resourceTypeId = "POSITIVE_ENERGY", resourceCost = 12, range = 0, requiresTarget = false),
+                        talentSlot(slot = 2, talentId = "holy_shield", resourceTypeId = "POSITIVE_ENERGY", resourceCost = 12, range = 0, requiresTarget = false),
+                    ),
+            )
+
+        assertEquals(PlayerCommand.Move(Point(-1, 0)), bot.decide(observation))
+    }
+
     private fun observation(
         inventoryItems: List<InventoryItemView>,
         playerStatus: PlayerStatus =
@@ -330,6 +500,7 @@ class SmokeBotTest {
                 evasion = 3,
                 speed = 100,
             ),
+        playerResource: PlayerResourceView = PlayerResourceView(current = 6, max = 20, typeId = "MANA"),
         visibleHostilePositions: List<Point> = emptyList(),
         visibleBossPositions: List<Point> = emptyList(),
         visibleTiles: Set<Point> = setOf(Point(1, 1)),
@@ -345,7 +516,7 @@ class SmokeBotTest {
             floor = 1,
             turnIndex = 10,
             playerStatus = playerStatus,
-            playerResource = PlayerResourceView(current = 6, max = 20, typeId = "MANA"),
+            playerResource = playerResource,
             playerPosition = playerPosition,
             map = map,
             visibleTiles = visibleTiles,
@@ -392,6 +563,7 @@ class SmokeBotTest {
     private fun talentSlot(
         slot: Int,
         talentId: String,
+        resourceTypeId: String = "MANA",
         resourceCost: Int,
         range: Int,
         requiresTarget: Boolean,
@@ -403,7 +575,7 @@ class SmokeBotTest {
             level = 1,
             maxLevel = 5,
             resourceCost = resourceCost,
-            resourceTypeId = "MANA",
+            resourceTypeId = resourceTypeId,
             range = range,
             minRange = 0,
             currentCooldown = 0,

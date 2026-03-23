@@ -1,6 +1,8 @@
 package com.ktome.core.talent
 
+import com.ktome.core.combat.ApplicationPolicy
 import com.ktome.core.combat.CombatResolver
+import com.ktome.core.combat.SaveDimension
 import com.ktome.core.ecs.BlocksMovement
 import com.ktome.core.ecs.CombatProfile
 import com.ktome.core.ecs.DerivedStats
@@ -27,6 +29,70 @@ import org.junit.jupiter.api.Test
 class TalentResolverTest {
     private fun staminaCosts(cost: Int): Map<ResourceType, Int> = linkedMapOf(ResourceType.STAMINA to cost)
 
+    private fun selfEffect(
+        effectId: String,
+        effectType: StatusEffectType,
+        duration: Int,
+        magnitude: Double,
+    ): AssociatedStatusEffect =
+        AssociatedStatusEffect(
+            effectId = effectId,
+            effectType = effectType,
+            trigger = EffectTrigger.ON_CAST,
+            targetScope = EffectTargetScope.SELF,
+            applicationPolicy = ApplicationPolicy.SELF_AUTO,
+            duration = duration,
+            magnitude = magnitude,
+        )
+
+    private fun hostileOnHitEffect(
+        effectId: String,
+        effectType: StatusEffectType,
+        duration: Int,
+        saveDimension: SaveDimension,
+        magnitude: Double = 0.0,
+    ): AssociatedStatusEffect =
+        AssociatedStatusEffect(
+            effectId = effectId,
+            effectType = effectType,
+            trigger = EffectTrigger.ON_HIT,
+            targetScope = EffectTargetScope.PRIMARY_TARGET,
+            applicationPolicy = ApplicationPolicy.HOSTILE_HIT_THEN_SAVE,
+            saveDimension = saveDimension,
+            duration = duration,
+            magnitude = magnitude,
+        )
+
+    private fun hostileSaveOnlyEffect(
+        effectId: String,
+        effectType: StatusEffectType,
+        duration: Int,
+        saveDimension: SaveDimension,
+        magnitude: Double,
+    ): AssociatedStatusEffect =
+        AssociatedStatusEffect(
+            effectId = effectId,
+            effectType = effectType,
+            trigger = EffectTrigger.ON_CAST,
+            targetScope = EffectTargetScope.HOSTILES_IN_RADIUS,
+            applicationPolicy = ApplicationPolicy.HOSTILE_SAVE_ONLY,
+            saveDimension = saveDimension,
+            duration = duration,
+            magnitude = magnitude,
+        )
+
+    private fun selfCleanse(
+        effectId: String,
+        maxEffectsRemoved: Int = 1,
+    ): CleanseEffect =
+        CleanseEffect(
+            effectId = effectId,
+            trigger = EffectTrigger.ON_CAST,
+            targetScope = EffectTargetScope.SELF,
+            applicationPolicy = ApplicationPolicy.INSTANT_ACTION,
+            maxEffectsRemoved = maxEffectsRemoved,
+        )
+
     private val registry =
         TalentRegistry().apply {
             registerAll(
@@ -41,7 +107,20 @@ class TalentResolverTest {
                         levelEffects =
                             mapOf(
                                 1 to TalentLevelEffect(damageMultiplier = 1.5),
-                                5 to TalentLevelEffect(damageMultiplier = 2.5, knockback = 1, armorBreakDuration = 3),
+                                5 to
+                                    TalentLevelEffect(
+                                        damageMultiplier = 2.5,
+                                        knockback = 1,
+                                        associatedEffects =
+                                            listOf(
+                                                hostileOnHitEffect(
+                                                    effectId = "power_strike_armor_break",
+                                                    effectType = StatusEffectType.ARMOR_BREAK,
+                                                    duration = 3,
+                                                    saveDimension = SaveDimension.PHYSICAL,
+                                                ),
+                                            ),
+                                    ),
                             ),
                     ),
                     TalentDef(
@@ -55,7 +134,19 @@ class TalentResolverTest {
                         levelEffects =
                             mapOf(
                                 1 to TalentLevelEffect(damageMultiplier = 1.2),
-                                5 to TalentLevelEffect(damageMultiplier = 1.8, stunDuration = 2),
+                                5 to
+                                    TalentLevelEffect(
+                                        damageMultiplier = 1.8,
+                                        associatedEffects =
+                                            listOf(
+                                                hostileOnHitEffect(
+                                                    effectId = "charge_stun",
+                                                    effectType = StatusEffectType.STUNNED,
+                                                    duration = 2,
+                                                    saveDimension = SaveDimension.PHYSICAL,
+                                                ),
+                                            ),
+                                    ),
                             ),
                     ),
                     TalentDef(
@@ -65,7 +156,22 @@ class TalentResolverTest {
                         resourceCosts = staminaCosts(10),
                         cooldown = 5,
                         range = 1,
-                        levelEffects = mapOf(1 to TalentLevelEffect(damageMultiplier = 1.2, stunDuration = 2)),
+                        levelEffects =
+                            mapOf(
+                                1 to
+                                    TalentLevelEffect(
+                                        damageMultiplier = 1.2,
+                                        associatedEffects =
+                                            listOf(
+                                                hostileOnHitEffect(
+                                                    effectId = "shield_bash_stun",
+                                                    effectType = StatusEffectType.STUNNED,
+                                                    duration = 2,
+                                                    saveDimension = SaveDimension.PHYSICAL,
+                                                ),
+                                            ),
+                                    ),
+                            ),
                     ),
                     TalentDef(
                         id = "war_cry",
@@ -75,7 +181,23 @@ class TalentResolverTest {
                         cooldown = 10,
                         range = 0,
                         areaRadius = 3,
-                        levelEffects = mapOf(5 to TalentLevelEffect(buffDuration = 8, buffMagnitude = 0.35, debuffMagnitude = 0.20, debuffDuration = 5)),
+                        levelEffects =
+                            mapOf(
+                                5 to
+                                    TalentLevelEffect(
+                                        associatedEffects =
+                                            listOf(
+                                                selfEffect("war_cry_buff", StatusEffectType.WAR_CRY_BUFF, duration = 8, magnitude = 0.35),
+                                                hostileSaveOnlyEffect(
+                                                    effectId = "war_cry_debuff",
+                                                    effectType = StatusEffectType.WAR_CRY_DEBUFF,
+                                                    duration = 5,
+                                                    saveDimension = SaveDimension.MENTAL,
+                                                    magnitude = 0.20,
+                                                ),
+                                            ),
+                                    ),
+                            ),
                     ),
                     TalentDef(
                         id = "sweeping_strike",
@@ -94,7 +216,22 @@ class TalentResolverTest {
                         resourceCosts = staminaCosts(12),
                         cooldown = 5,
                         range = 1,
-                        levelEffects = mapOf(1 to TalentLevelEffect(damageMultiplier = 1.1, armorBreakDuration = 2)),
+                        levelEffects =
+                            mapOf(
+                                1 to
+                                    TalentLevelEffect(
+                                        damageMultiplier = 1.1,
+                                        associatedEffects =
+                                            listOf(
+                                                hostileOnHitEffect(
+                                                    effectId = "sunder_armor_break",
+                                                    effectType = StatusEffectType.ARMOR_BREAK,
+                                                    duration = 2,
+                                                    saveDimension = SaveDimension.PHYSICAL,
+                                                ),
+                                            ),
+                                    ),
+                            ),
                     ),
                     TalentDef(
                         id = "guard_stance",
@@ -103,7 +240,16 @@ class TalentResolverTest {
                         resourceCosts = staminaCosts(8),
                         cooldown = 7,
                         range = 0,
-                        levelEffects = mapOf(1 to TalentLevelEffect(buffDuration = 3, buffMagnitude = 0.10)),
+                        levelEffects =
+                            mapOf(
+                                1 to
+                                    TalentLevelEffect(
+                                        associatedEffects =
+                                            listOf(
+                                                selfEffect("guard_stance_buff", StatusEffectType.GUARD_STANCE_BUFF, duration = 3, magnitude = 0.10),
+                                            ),
+                                    ),
+                            ),
                     ),
                     TalentDef(
                         id = "intimidation",
@@ -113,7 +259,22 @@ class TalentResolverTest {
                         cooldown = 8,
                         range = 0,
                         areaRadius = 4,
-                        levelEffects = mapOf(1 to TalentLevelEffect(debuffMagnitude = 0.10, debuffDuration = 3)),
+                        levelEffects =
+                            mapOf(
+                                1 to
+                                    TalentLevelEffect(
+                                        associatedEffects =
+                                            listOf(
+                                                hostileSaveOnlyEffect(
+                                                    effectId = "intimidation_debuff",
+                                                    effectType = StatusEffectType.WAR_CRY_DEBUFF,
+                                                    duration = 3,
+                                                    saveDimension = SaveDimension.MENTAL,
+                                                    magnitude = 0.10,
+                                                ),
+                                            ),
+                                    ),
+                            ),
                     ),
                     TalentDef(
                         id = "unyielding",
@@ -122,7 +283,16 @@ class TalentResolverTest {
                         resourceCosts = staminaCosts(14),
                         cooldown = 12,
                         range = 0,
-                        levelEffects = mapOf(1 to TalentLevelEffect(buffDuration = 3, buffMagnitude = 0.15)),
+                        levelEffects =
+                            mapOf(
+                                1 to
+                                    TalentLevelEffect(
+                                        associatedEffects =
+                                            listOf(
+                                                selfEffect("unyielding_buff", StatusEffectType.UNYIELDING_BUFF, duration = 3, magnitude = 0.15),
+                                            ),
+                                    ),
+                            ),
                     ),
                     TalentDef(
                         id = "fireball",
@@ -153,7 +323,23 @@ class TalentResolverTest {
                         cooldown = 3,
                         range = 6,
                         minRange = 1,
-                        levelEffects = mapOf(5 to TalentLevelEffect(damageMultiplier = 1.8, stunDuration = 1), 1 to TalentLevelEffect(damageMultiplier = 1.2)),
+                        levelEffects =
+                            mapOf(
+                                5 to
+                                    TalentLevelEffect(
+                                        damageMultiplier = 1.8,
+                                        associatedEffects =
+                                            listOf(
+                                                hostileOnHitEffect(
+                                                    effectId = "ice_bolt_stun",
+                                                    effectType = StatusEffectType.STUNNED,
+                                                    duration = 1,
+                                                    saveDimension = SaveDimension.SPELL,
+                                                ),
+                                            ),
+                                    ),
+                                1 to TalentLevelEffect(damageMultiplier = 1.2),
+                            ),
                     ),
                     TalentDef(
                         id = "frost_nova",
@@ -163,7 +349,22 @@ class TalentResolverTest {
                         cooldown = 7,
                         range = 0,
                         areaRadius = 2,
-                        levelEffects = mapOf(1 to TalentLevelEffect(damageMultiplier = 1.0, stunDuration = 1)),
+                        levelEffects =
+                            mapOf(
+                                1 to
+                                    TalentLevelEffect(
+                                        damageMultiplier = 1.0,
+                                        associatedEffects =
+                                            listOf(
+                                                hostileOnHitEffect(
+                                                    effectId = "frost_nova_stun",
+                                                    effectType = StatusEffectType.STUNNED,
+                                                    duration = 1,
+                                                    saveDimension = SaveDimension.SPELL,
+                                                ),
+                                            ),
+                                    ),
+                            ),
                     ),
                     TalentDef(
                         id = "ice_prison",
@@ -173,7 +374,22 @@ class TalentResolverTest {
                         cooldown = 8,
                         range = 5,
                         minRange = 1,
-                        levelEffects = mapOf(1 to TalentLevelEffect(damageMultiplier = 0.8, stunDuration = 1)),
+                        levelEffects =
+                            mapOf(
+                                1 to
+                                    TalentLevelEffect(
+                                        damageMultiplier = 0.8,
+                                        associatedEffects =
+                                            listOf(
+                                                hostileOnHitEffect(
+                                                    effectId = "ice_prison_stun",
+                                                    effectType = StatusEffectType.STUNNED,
+                                                    duration = 1,
+                                                    saveDimension = SaveDimension.SPELL,
+                                                ),
+                                            ),
+                                    ),
+                            ),
                     ),
                     TalentDef(
                         id = "blink",
@@ -192,7 +408,16 @@ class TalentResolverTest {
                         resourceCosts = mapOf(ResourceType.MANA to 12),
                         cooldown = 8,
                         range = 0,
-                        levelEffects = mapOf(1 to TalentLevelEffect(buffDuration = 3, buffMagnitude = 0.10)),
+                        levelEffects =
+                            mapOf(
+                                1 to
+                                    TalentLevelEffect(
+                                        associatedEffects =
+                                            listOf(
+                                                selfEffect("arcane_shield_buff", StatusEffectType.ARCANE_SHIELD_BUFF, duration = 3, magnitude = 0.10),
+                                            ),
+                                    ),
+                            ),
                     ),
                     TalentDef(
                         id = "mana_surge",
@@ -200,7 +425,17 @@ class TalentResolverTest {
                         description = "",
                         cooldown = 10,
                         range = 0,
-                        levelEffects = mapOf(1 to TalentLevelEffect(buffDuration = 2, buffMagnitude = 0.10)),
+                        levelEffects =
+                            mapOf(
+                                1 to
+                                    TalentLevelEffect(
+                                        resourceRestoreFraction = 0.10,
+                                        associatedEffects =
+                                            listOf(
+                                                selfEffect("mana_surge_buff", StatusEffectType.MANA_SURGE_BUFF, duration = 2, magnitude = 0.10),
+                                            ),
+                                    ),
+                            ),
                     ),
                     TalentDef(
                         id = "backstab",
@@ -218,7 +453,23 @@ class TalentResolverTest {
                         resourceCosts = mapOf(ResourceType.ENERGY to 14),
                         cooldown = 4,
                         range = 1,
-                        levelEffects = mapOf(1 to TalentLevelEffect(damageMultiplier = 1.05, debuffMagnitude = 0.10, debuffDuration = 2)),
+                        levelEffects =
+                            mapOf(
+                                1 to
+                                    TalentLevelEffect(
+                                        damageMultiplier = 1.05,
+                                        associatedEffects =
+                                            listOf(
+                                                hostileOnHitEffect(
+                                                    effectId = "poison_blade_curse",
+                                                    effectType = StatusEffectType.CURSED,
+                                                    duration = 2,
+                                                    saveDimension = SaveDimension.MENTAL,
+                                                    magnitude = 0.10,
+                                                ),
+                                            ),
+                                    ),
+                            ),
                         damageType = com.ktome.core.combat.DamageType.SHADOW,
                     ),
                     TalentDef(
@@ -249,7 +500,7 @@ class TalentResolverTest {
                         resourceCosts = mapOf(ResourceType.ENERGY to 24),
                         cooldown = 8,
                         range = 1,
-                        levelEffects = mapOf(1 to TalentLevelEffect(damageMultiplier = 1.60, buffMagnitude = 0.10)),
+                        levelEffects = mapOf(1 to TalentLevelEffect(damageMultiplier = 1.60, resourceRestoreFraction = 0.10)),
                     ),
                     TalentDef(
                         id = "holy_strike",
@@ -269,7 +520,22 @@ class TalentResolverTest {
                         cooldown = 5,
                         range = 4,
                         minRange = 1,
-                        levelEffects = mapOf(1 to TalentLevelEffect(damageMultiplier = 1.10, stunDuration = 1)),
+                        levelEffects =
+                            mapOf(
+                                1 to
+                                    TalentLevelEffect(
+                                        damageMultiplier = 1.10,
+                                        associatedEffects =
+                                            listOf(
+                                                hostileOnHitEffect(
+                                                    effectId = "judgment_hammer_stun",
+                                                    effectType = StatusEffectType.STUNNED,
+                                                    duration = 1,
+                                                    saveDimension = SaveDimension.SPELL,
+                                                ),
+                                            ),
+                                    ),
+                            ),
                         damageType = com.ktome.core.combat.DamageType.HOLY,
                     ),
                     TalentDef(
@@ -279,7 +545,7 @@ class TalentResolverTest {
                         resourceCosts = mapOf(ResourceType.POSITIVE_ENERGY to 12),
                         cooldown = 6,
                         range = 0,
-                        levelEffects = mapOf(1 to TalentLevelEffect(buffMagnitude = 0.18)),
+                        levelEffects = mapOf(1 to TalentLevelEffect(healFraction = 0.18)),
                     ),
                     TalentDef(
                         id = "holy_shield",
@@ -288,7 +554,16 @@ class TalentResolverTest {
                         resourceCosts = mapOf(ResourceType.POSITIVE_ENERGY to 12),
                         cooldown = 8,
                         range = 0,
-                        levelEffects = mapOf(1 to TalentLevelEffect(buffDuration = 3, buffMagnitude = 0.12)),
+                        levelEffects =
+                            mapOf(
+                                1 to
+                                    TalentLevelEffect(
+                                        associatedEffects =
+                                            listOf(
+                                                selfEffect("holy_shield_buff", StatusEffectType.HOLY_SHIELD_BUFF, duration = 3, magnitude = 0.12),
+                                            ),
+                                    ),
+                            ),
                     ),
                 ),
             )
@@ -336,7 +611,7 @@ class TalentResolverTest {
         val result = resolver().resolve(world, map, player, "power_strike", Point(2, 2))
 
         assertTrue(result is TalentUseResult.Success)
-        assertEquals(6, requireNotNull(world.get<Health>(monster)).current)
+        assertEquals(3, requireNotNull(world.get<Health>(monster)).current)
         assertEquals(32, requireNotNull(world.get<ResourcePools>(player)).pool(ResourceType.STAMINA)?.current)
         assertEquals(3, requireNotNull(world.get<CooldownState>(player)).remainingByTalentId["power_strike"])
     }
@@ -365,6 +640,21 @@ class TalentResolverTest {
         resolver().resolve(world, map, player, "shield_bash", Point(2, 2))
 
         assertTrue(requireNotNull(world.get<com.ktome.core.talent.EffectTracker>(monster)).has(StatusEffectType.STUNNED))
+    }
+
+    @Test
+    fun `shield bash stun now respects hostile hit then save`() {
+        val world = baseWorld()
+        val player = createPlayer(world, cooldown = 0)
+        val monster = createMonster(world, Point(2, 2))
+
+        val result =
+            resolver(TestRandomSource(doubles = listOf(0.0, 0.99, 0.99), ints = listOf(0)))
+                .resolve(world, map, player, "shield_bash", Point(2, 2))
+
+        assertTrue(result is TalentUseResult.Success)
+        assertTrue(requireNotNull(world.get<Health>(monster)).current < 40)
+        assertFalse(requireNotNull(world.get<com.ktome.core.talent.EffectTracker>(monster)).has(StatusEffectType.STUNNED))
     }
 
     @Test
@@ -451,6 +741,20 @@ class TalentResolverTest {
 
         assertTrue(result is TalentUseResult.Success)
         assertTrue(requireNotNull(world.get<com.ktome.core.talent.EffectTracker>(nearby)).has(StatusEffectType.WAR_CRY_DEBUFF))
+    }
+
+    @Test
+    fun `intimidation save only debuff can be resisted`() {
+        val world = baseWorld()
+        val player = createPlayer(world, cooldown = 0)
+        val nearby = createMonster(world, Point(3, 2))
+
+        val result =
+            resolver(TestRandomSource(doubles = listOf(0.99), ints = listOf(0)))
+                .resolve(world, map, player, "intimidation", null)
+
+        assertTrue(result is TalentUseResult.Success)
+        assertFalse(requireNotNull(world.get<com.ktome.core.talent.EffectTracker>(nearby)).has(StatusEffectType.WAR_CRY_DEBUFF))
     }
 
     @Test

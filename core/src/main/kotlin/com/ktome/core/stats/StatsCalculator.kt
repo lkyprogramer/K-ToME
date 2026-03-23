@@ -1,8 +1,10 @@
 package com.ktome.core.stats
 
+import com.ktome.core.combat.PowerSaveFormula
 import com.ktome.core.ecs.CombatProfile
 import com.ktome.core.ecs.DerivedStats
 import com.ktome.core.ecs.EntityId
+import com.ktome.core.ecs.Experience
 import com.ktome.core.ecs.Health
 import com.ktome.core.ecs.Stats
 import com.ktome.core.ecs.World
@@ -20,8 +22,9 @@ object StatsCalculator {
         stats: Stats,
         profile: CombatProfile,
         modifiers: StatModifier = StatModifier(),
+        level: Int = 1,
     ): DerivedStats =
-        calculateDerived(stats, profile, modifiers)
+        calculateDerived(stats, profile, modifiers, level)
 
     fun calculate(
         world: World,
@@ -29,7 +32,8 @@ object StatsCalculator {
     ): DerivedStats {
         val stats = requireNotNull(world.get<Stats>(entity)) { "Missing Stats for $entity" }
         val profile = requireNotNull(world.get<CombatProfile>(entity)) { "Missing CombatProfile for $entity" }
-        return calculate(stats, profile, collectModifiers(world, entity))
+        val level = world.get<Experience>(entity)?.level ?: 1
+        return calculate(stats, profile, collectModifiers(world, entity), level)
     }
 
     fun effectiveStats(
@@ -79,6 +83,7 @@ object StatsCalculator {
         stats: Stats,
         profile: CombatProfile,
         modifiers: StatModifier,
+        level: Int,
     ): DerivedStats {
         val effectiveStats = applyModifiers(stats, modifiers)
 
@@ -95,11 +100,13 @@ object StatsCalculator {
             evasion = evasionBase,
             speed = speedBase,
             critChance = (0.05 + effectiveStats.dex * 0.002 + modifiers.critChance).coerceIn(0.0, 0.50),
+            critResistance = 0.0,
             maxHp = profile.baseHp + effectiveStats.con * 8 + modifiers.maxHp,
             maxStamina = profile.baseStamina + effectiveStats.wil * 5 + modifiers.maxStamina,
             hpRegen = profile.baseHpRegen + effectiveStats.con * 0.2 + modifiers.hpRegen,
             staminaRegen = 3.0 + modifiers.staminaRegen,
             talentPower = 1.0 + effectiveStats.wil * 0.01 + modifiers.talentPower,
+            powerSave = PowerSaveFormula.calculate(effectiveStats, level),
         )
     }
 

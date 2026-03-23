@@ -116,6 +116,7 @@ data class TalentSchemaV2(
     val maxPoints: Int,
     val category: String,
     val damageType: String?,
+    val powerDimension: String?,
     val kind: String,
     val cooldown: Int,
     val castTime: Int,
@@ -145,13 +146,30 @@ data class TalentPrerequisiteSchemaV2(
 data class TalentLevelEffectSchemaV2(
     val damageMultiplier: Double = 1.0,
     val knockback: Int = 0,
-    val stunDuration: Int = 0,
-    val armorBreakDuration: Int = 0,
     val rangeBonus: Int = 0,
-    val buffDuration: Int = 0,
-    val buffMagnitude: Double = 0.0,
-    val debuffMagnitude: Double = 0.0,
-    val debuffDuration: Int = 0,
+    val healFraction: Double = 0.0,
+    val resourceRestoreFraction: Double = 0.0,
+    val associatedEffects: List<AssociatedStatusEffectSchemaV2> = emptyList(),
+    val cleanseEffect: CleanseEffectSchemaV2? = null,
+)
+
+data class AssociatedStatusEffectSchemaV2(
+    val effectId: String,
+    val effectType: String,
+    val trigger: String,
+    val targetScope: String,
+    val applicationPolicy: String,
+    val saveDimension: String? = null,
+    val duration: Int = 0,
+    val magnitude: Double = 0.0,
+)
+
+data class CleanseEffectSchemaV2(
+    val effectId: String = "cleanse",
+    val trigger: String = "ON_CAST",
+    val targetScope: String = "SELF",
+    val applicationPolicy: String = "INSTANT_ACTION",
+    val maxEffectsRemoved: Int = 1,
 )
 
 data class TalentTreeSchemaV2(

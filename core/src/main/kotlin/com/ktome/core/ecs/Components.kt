@@ -1,6 +1,7 @@
 package com.ktome.core.ecs
 
 import com.ktome.core.combat.DamageType
+import com.ktome.core.combat.PowerSaveStats
 import com.ktome.core.dungeon.StairDirection
 import com.ktome.core.map.Point
 
@@ -63,11 +64,13 @@ data class DerivedStats(
     val evasion: Int,
     val speed: Int,
     val critChance: Double,
+    val critResistance: Double = 0.0,
     val maxHp: Int,
     val maxStamina: Int,
     val hpRegen: Double,
     val staminaRegen: Double,
     val talentPower: Double,
+    val powerSave: PowerSaveStats = PowerSaveStats(),
 )
 
 data class Health(

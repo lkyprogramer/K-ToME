@@ -1,6 +1,8 @@
 package com.ktome.game.data
 
+import com.ktome.core.combat.ApplicationPolicy
 import com.ktome.core.combat.DamageType
+import com.ktome.core.combat.SaveDimension
 import com.ktome.core.ecs.AIType
 import com.ktome.core.ecs.Stats
 import com.ktome.core.item.AffixDef
@@ -14,6 +16,10 @@ import com.ktome.core.item.ItemType
 import com.ktome.core.item.MaterialDef
 import com.ktome.core.resource.ResourceType
 import com.ktome.core.item.StatModifier
+import com.ktome.core.talent.AssociatedStatusEffect
+import com.ktome.core.talent.CleanseEffect
+import com.ktome.core.talent.EffectTargetScope
+import com.ktome.core.talent.EffectTrigger
 import com.ktome.core.talent.StatusEffectType
 import com.ktome.core.talent.TalentDef
 import com.ktome.core.talent.TalentLevelEffect
@@ -43,6 +49,8 @@ import com.ktome.game.data.schema.SchemaMapSize
 import com.ktome.game.data.schema.SchemaOffset
 import com.ktome.game.data.schema.SchemaStatModifier
 import com.ktome.game.data.schema.SchemaStats
+import com.ktome.game.data.schema.AssociatedStatusEffectSchemaV2
+import com.ktome.game.data.schema.CleanseEffectSchemaV2
 import com.ktome.game.data.schema.TalentLevelEffectSchemaV2
 import com.ktome.game.data.schema.TalentPrerequisiteSchemaV2
 import com.ktome.game.data.schema.TalentRequirementsSchemaV2
@@ -61,6 +69,18 @@ class DataLoader(
     private val locale: GameLocale = GameLocale.EN_US,
     private val localizationBundle: LocalizationBundle = LocalizationBundle.load(),
 ) {
+    private companion object {
+        val REMOVED_LEGACY_EFFECT_FIELDS =
+            setOf(
+                "stunDuration",
+                "armorBreakDuration",
+                "buffDuration",
+                "buffMagnitude",
+                "debuffMagnitude",
+                "debuffDuration",
+            )
+    }
+
     val localizer: Localizer = localizationBundle.translator(locale)
 
     fun loadSchemaCatalog(): SchemaCatalog =
@@ -187,6 +207,7 @@ class DataLoader(
                 maxPoints = talent.requiredInt("maxPoints"),
                 category = talent.requiredString("category"),
                 damageType = talent.optionalString("damageType"),
+                powerDimension = talent.optionalString("powerDimension"),
                 kind = talent.requiredString("kind"),
                 cooldown = talent.requiredInt("cooldown"),
                 castTime = talent.requiredInt("castTime"),
@@ -495,18 +516,60 @@ class DataLoader(
             entry.requiredMap().requiredString("id")
         }
 
-    private fun parseTalentLevelEffect(effect: Map<*, *>): TalentLevelEffectSchemaV2 =
-        TalentLevelEffectSchemaV2(
-            damageMultiplier = effect.optionalDouble("damageMultiplier", 1.0),
-            knockback = effect.optionalInt("knockback"),
-            stunDuration = effect.optionalInt("stunDuration"),
-            armorBreakDuration = effect.optionalInt("armorBreakDuration"),
-            rangeBonus = effect.optionalInt("rangeBonus"),
-            buffDuration = effect.optionalInt("buffDuration"),
-            buffMagnitude = effect.optionalDouble("buffMagnitude", 0.0),
-            debuffMagnitude = effect.optionalDouble("debuffMagnitude", 0.0),
-            debuffDuration = effect.optionalInt("debuffDuration"),
-        )
+    private fun parseTalentLevelEffect(effect: Map<*, *>): TalentLevelEffectSchemaV2 {
+        validateRemovedLegacyEffectFields(effect)
+        val parsed =
+            TalentLevelEffectSchemaV2(
+                damageMultiplier = effect.optionalDouble("damageMultiplier", 1.0),
+                knockback = effect.optionalInt("knockback"),
+                rangeBonus = effect.optionalInt("rangeBonus"),
+                healFraction = effect.optionalDouble("healFraction", 0.0),
+                resourceRestoreFraction = effect.optionalDouble("resourceRestoreFraction", 0.0),
+                associatedEffects =
+                    effect.optionalList("associatedEffects").map { entry ->
+                        val configuredEffect = entry.requiredMap()
+                        AssociatedStatusEffectSchemaV2(
+                            effectId = configuredEffect.requiredString("effectId"),
+                            effectType = configuredEffect.requiredString("effectType"),
+                            trigger = configuredEffect.optionalString("trigger") ?: "ON_CAST",
+                            targetScope = configuredEffect.optionalString("targetScope") ?: "SELF",
+                            applicationPolicy = configuredEffect.requiredString("applicationPolicy"),
+                            saveDimension = configuredEffect.optionalString("saveDimension"),
+                            duration = configuredEffect.optionalInt("duration"),
+                            magnitude = configuredEffect.optionalDouble("magnitude", 0.0),
+                        ).also(::validateAssociatedEffectSchema)
+                    },
+                cleanseEffect =
+                    effect.optionalMap("cleanseEffect")?.let { configuredCleanse ->
+                        CleanseEffectSchemaV2(
+                            effectId = configuredCleanse.optionalString("effectId") ?: "cleanse",
+                            trigger = configuredCleanse.optionalString("trigger") ?: "ON_CAST",
+                            targetScope = configuredCleanse.optionalString("targetScope") ?: "SELF",
+                            applicationPolicy = configuredCleanse.optionalString("applicationPolicy") ?: "INSTANT_ACTION",
+                            maxEffectsRemoved = configuredCleanse.optionalInt("maxEffectsRemoved", 1),
+                        )
+                    },
+            )
+        return parsed
+    }
+
+    private fun validateRemovedLegacyEffectFields(effect: Map<*, *>) {
+        val configuredLegacyFields =
+            REMOVED_LEGACY_EFFECT_FIELDS.filter { fieldName ->
+                effect[fieldName] != null
+            }
+        require(configuredLegacyFields.isEmpty()) {
+            "Talent effect uses removed legacy fields ${configuredLegacyFields.joinToString()}; " +
+                "use associatedEffects/cleanseEffect plus healFraction/resourceRestoreFraction instead."
+        }
+    }
+
+    private fun validateAssociatedEffectSchema(effect: AssociatedStatusEffectSchemaV2) {
+        val applicationPolicy = ApplicationPolicy.valueOf(effect.applicationPolicy)
+        require(!applicationPolicy.requiresSave() || effect.saveDimension != null) {
+            "Associated effect ${effect.effectId} requires saveDimension for $applicationPolicy."
+        }
+    }
 
     private fun Map<*, *>.toSchemaCombatProfile(): SchemaCombatProfile =
         SchemaCombatProfile(
@@ -637,6 +700,7 @@ class DataLoader(
             description = localizer.text(descKey),
             maxLevel = maxPoints,
             damageType = damageType?.let(DamageType::valueOf) ?: DamageType.PHYSICAL,
+            powerDimension = powerDimension?.let(SaveDimension::valueOf),
             resourceCosts =
                 resourceCosts.entries
                     .associate { (resourceTypeId, cost) -> ResourceType.fromId(resourceTypeId) to cost }
@@ -650,15 +714,34 @@ class DataLoader(
                     TalentLevelEffect(
                         damageMultiplier = effect.damageMultiplier,
                         knockback = effect.knockback,
-                        stunDuration = effect.stunDuration,
-                        armorBreakDuration = effect.armorBreakDuration,
                         rangeBonus = effect.rangeBonus,
-                        buffDuration = effect.buffDuration,
-                        buffMagnitude = effect.buffMagnitude,
-                        debuffMagnitude = effect.debuffMagnitude,
-                        debuffDuration = effect.debuffDuration,
+                        healFraction = effect.healFraction,
+                        resourceRestoreFraction = effect.resourceRestoreFraction,
+                        associatedEffects = effect.associatedEffects.map { associatedEffect -> associatedEffect.toRuntime() },
+                        cleanseEffect = effect.cleanseEffect?.toRuntime(),
                     )
                 },
+        )
+
+    private fun AssociatedStatusEffectSchemaV2.toRuntime(): AssociatedStatusEffect =
+        AssociatedStatusEffect(
+            effectId = effectId,
+            effectType = StatusEffectType.fromSchemaId(effectType),
+            trigger = EffectTrigger.valueOf(trigger),
+            targetScope = EffectTargetScope.valueOf(targetScope),
+            applicationPolicy = ApplicationPolicy.valueOf(applicationPolicy),
+            saveDimension = saveDimension?.let(SaveDimension::valueOf),
+            duration = duration,
+            magnitude = magnitude,
+        )
+
+    private fun CleanseEffectSchemaV2.toRuntime(): CleanseEffect =
+        CleanseEffect(
+            effectId = effectId,
+            trigger = EffectTrigger.valueOf(trigger),
+            targetScope = EffectTargetScope.valueOf(targetScope),
+            applicationPolicy = ApplicationPolicy.valueOf(applicationPolicy),
+            maxEffectsRemoved = maxEffectsRemoved,
         )
 
     private fun SchemaStatModifier.toRuntimeStatModifier(): StatModifier =

@@ -783,14 +783,16 @@ data class TalentDef(
 data class TalentLevelEffect(
     val damageMultiplier: Double = 1.0,
     val knockback: Int = 0,
-    val stunDuration: Int = 0,
-    val armorBreakDuration: Int = 0,
-    val buffDuration: Int = 0,
-    val buffMagnitude: Double = 0.0,
-    val debuffMagnitude: Double = 0.0,
-    val debuffDuration: Int = 0
+    val healFraction: Double = 0.0,
+    val resourceRestoreFraction: Double = 0.0,
+    val associatedEffects: List<AssociatedStatusEffect> = emptyList(),
+    val cleanseEffect: CleanseEffect? = null,
 )
 ```
+
+Phase 3 起，`stunDuration / armorBreakDuration / buffDuration / buffMagnitude / debuffMagnitude / debuffDuration`
+这类状态兼容字段已经移除；控制、增益、减益与净化统一通过 `associatedEffects / cleanseEffect`
+声明，治疗与资源恢复分别使用 `healFraction / resourceRestoreFraction`。
 
 #### 4 个战士天赋详细定义
 

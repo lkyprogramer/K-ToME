@@ -144,7 +144,7 @@ class MonsterSchemaTest {
     }
 
     @Test
-    fun `route resistance coverage preserves fire shadow and holy memory points`() {
+    fun `route resistance coverage keeps fire shadow samples and holy tag vulnerability off the resistance baseline`() {
         val loader = DataLoader()
         val schemaCatalog = loader.loadSchemaCatalog()
         val zoneCatalog = schemaCatalog.zones
@@ -168,11 +168,15 @@ class MonsterSchemaTest {
             "Expected at least one route-visible monster with positive SHADOW resistance.",
         )
         assertTrue(
-            routePool.any { monster ->
-                ("undead" in monster.tags || "cultist" in monster.tags) &&
+            routePool.any { monster -> "undead" in monster.tags || "demon" in monster.tags },
+            "Expected route-visible undead or demon monsters for HOLY tag bonus coverage.",
+        )
+        assertTrue(
+            routePool.none { monster ->
+                ("undead" in monster.tags || "demon" in monster.tags) &&
                     (monster.resistances[DamageType.HOLY] ?: 0) < 0
             },
-            "Expected route-visible undead or cultist monsters to preserve HOLY vulnerability samples.",
+            "HOLY vulnerability should come from the tag multiplier path, not default negative HOLY resistance.",
         )
     }
 }

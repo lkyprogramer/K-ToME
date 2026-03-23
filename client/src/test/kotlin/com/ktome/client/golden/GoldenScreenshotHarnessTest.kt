@@ -132,9 +132,9 @@ class GoldenScreenshotHarnessTest {
         assertEquals(
             listOf(
                 "6f2b6ca634c01f6c86b868148ec92347ec89a4a43c13b40cede0c9bb2a83fc65",
-                "b149b1b2f2e2a04ad494f19a8d3e99b1740d1d4e7545e61c361a356aae408fb8",
+                "79c2a3e154377aa878425fd77fe696c1bd57db4b243d6d05be89554cac81d52c",
                 "b8d0501796817d28853fd81302c4e48ecaf3ba50782b26c4064b403c5d9981f3",
-                "9a2f4da614c4afe432d6d033c1f45217ab349ccd6b71d0f665bc939809c4493f",
+                "06af50691b392f4a40732072be5397d0847c2c0393cbb281bef57534c173baa7",
             ),
             english + chinese,
         )

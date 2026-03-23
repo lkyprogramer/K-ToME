@@ -32,7 +32,9 @@ class SmokeBot : RunBot {
         if (observation.playerStatus.talentPoints > 0) {
             preferredTalentUpgrade(observation)?.let { slot -> return PlayerCommand.AssignTalent(slot.slot) }
         }
-        LoadoutPlanner.preferredLoadoutCommand(observation)?.let { return it }
+        if (observation.visibleHostilePositions.isEmpty() && observation.visibleBossPositions.isEmpty()) {
+            LoadoutPlanner.preferredLoadoutCommand(observation)?.let { return it }
+        }
         if (observation.inventoryItems.size < SMOKE_BOT_INVENTORY_CAPACITY && observation.visibleGroundItemPositions.any { it == observation.playerPosition }) {
             return PlayerCommand.PickUp
         }
@@ -144,9 +146,13 @@ class SmokeBot : RunBot {
             return null
         }
 
-        if (criticalHealth && adjacentHostiles > 0) {
+        if (criticalHealth && nearbyHostiles > 0) {
             availableTalent(observation, "holy_light")?.let { slot -> return PlayerCommand.UseTalent(slot.slot) }
             availableTalent(observation, "divine_intervention")?.let { slot -> return PlayerCommand.UseTalent(slot.slot) }
+            availableTalent(observation, "purify")?.let { slot -> return PlayerCommand.UseTalent(slot.slot) }
+        }
+
+        if (criticalHealth && adjacentHostiles > 0) {
             availableTalent(observation, "holy_shield")?.let { slot -> return PlayerCommand.UseTalent(slot.slot) }
             availableTalent(observation, "stealth")?.let { slot -> return PlayerCommand.UseTalent(slot.slot) }
             availableTalent(observation, "blink")?.let { slot ->
@@ -155,6 +161,14 @@ class SmokeBot : RunBot {
                 }
             }
             availableTalent(observation, "roll")?.let { slot ->
+                safeBlinkTarget(observation, slot)?.let { target ->
+                    return PlayerCommand.UseTalent(slot.slot, target)
+                }
+            }
+        }
+
+        if (observation.playerResource.typeId == "MANA" && criticalHealth && nearbyHostiles >= 2) {
+            availableTalent(observation, "blink")?.let { slot ->
                 safeBlinkTarget(observation, slot)?.let { target ->
                     return PlayerCommand.UseTalent(slot.slot, target)
                 }
@@ -198,6 +212,8 @@ class SmokeBot : RunBot {
         val nearbyHostiles = hostilesWithin(observation, 3)
         val bossVisible = observation.visibleBossPositions.isNotEmpty()
         val lowMana = observation.playerResource.typeId == "MANA" && observation.playerResource.current * 100 <= observation.playerResource.max * 50
+        val lowHealthThreshold = if (bossVisible) 80 else 65
+        val lowHealth = observation.playerStatus.currentHp * 100 <= observation.playerStatus.maxHp * lowHealthThreshold
 
         if (nearbyHostiles >= 2) {
             availableTalent(observation, "smoke_bomb")?.let { slot -> return PlayerCommand.UseTalent(slot.slot) }
@@ -205,9 +221,11 @@ class SmokeBot : RunBot {
             availableTalent(observation, "intimidation")?.let { slot -> return PlayerCommand.UseTalent(slot.slot) }
         }
         if (nearbyHostiles >= 1 || bossVisible) {
-            availableTalent(observation, "devotion")?.let { slot -> return PlayerCommand.UseTalent(slot.slot) }
             availableTalent(observation, "holy_shield")?.let { slot -> return PlayerCommand.UseTalent(slot.slot) }
             availableTalent(observation, "arcane_shield")?.let { slot -> return PlayerCommand.UseTalent(slot.slot) }
+            if (!lowHealth) {
+                availableTalent(observation, "devotion")?.let { slot -> return PlayerCommand.UseTalent(slot.slot) }
+            }
             availableTalent(observation, "stealth")?.let { slot -> return PlayerCommand.UseTalent(slot.slot) }
         }
         if (lowMana) {
@@ -244,7 +262,16 @@ class SmokeBot : RunBot {
         val distance = observation.playerPosition.chebyshevDistanceTo(hostile)
         val hasOffensiveTalent = offensiveTalentOrder.any { talentId -> availableTalent(observation, talentId) != null }
         val lowHealth = observation.playerStatus.currentHp * 100 <= observation.playerStatus.maxHp * 65
-        if (observation.playerResource.typeId == "MANA" && (distance <= 1 || (lowHealth && distance <= 2 && hostilesWithin(observation, 2) >= 2))) {
+        val adjacentHostiles = hostilesWithin(observation, 1)
+        val nearbyHostiles = hostilesWithin(observation, 3)
+        val shouldRetreat =
+            when (observation.playerResource.typeId) {
+                "MANA" -> lowHealth && distance <= 2
+                "POSITIVE_ENERGY" -> lowHealth && distance <= 2
+                "ENERGY" -> lowHealth && adjacentHostiles > 0 && nearbyHostiles >= 2
+                else -> false
+            }
+        if (shouldRetreat) {
             retreatStep(observation, hostile)?.let { retreat ->
                 return PlayerCommand.Move(retreat.deltaFrom(observation.playerPosition))
             }

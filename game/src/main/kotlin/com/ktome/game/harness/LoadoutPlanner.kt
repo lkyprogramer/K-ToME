@@ -45,10 +45,10 @@ internal object LoadoutPlanner {
                 listOf(
                     "fireball",
                     "blink",
-                    "mana_surge",
-                    "ice_prison",
                     "arcane_shield",
                     "ice_bolt",
+                    "mana_surge",
+                    "ice_prison",
                     "frost_nova",
                     "flame_wall",
                 )

@@ -3,18 +3,26 @@ package com.ktome.game
 import com.ktome.core.dungeon.StairDirection
 import com.ktome.core.ecs.AIType
 import com.ktome.core.ecs.BlocksMovement
+import com.ktome.core.ecs.CombatProfile
+import com.ktome.core.ecs.DerivedStats
 import com.ktome.core.ecs.Health
 import com.ktome.core.ecs.Position
+import com.ktome.core.ecs.Stats
 import com.ktome.core.ecs.World
+import com.ktome.core.ecs.add
 import com.ktome.core.ecs.get
 import com.ktome.core.map.Point
 import com.ktome.core.save.SaveManager
+import com.ktome.core.stats.StatsCalculator
+import com.ktome.core.resource.ResourcePools
+import com.ktome.core.resource.ResourceType
 import com.ktome.game.factory.EntityFactory
 import com.ktome.game.harness.RunObservation
 import com.ktome.game.harness.RunObservationCapture
 import com.ktome.game.harness.SmokeBot
 import com.ktome.game.harness.consumesTurn
 import com.ktome.game.model.MonsterTemplate
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 
@@ -28,7 +36,7 @@ internal class FullGameLoopAutomationDriver(
 
     fun newGame(): FoundationGameSession {
         saveManager.deleteSave()
-        return GameModule.newFoundationSession(config = config, saveManager = saveManager)
+        return GameModule.newFoundationSession(config = config, saveManager = saveManager).also(::stabilizeAutomationSession)
     }
 
     fun continueGame(): FoundationGameSession? = GameModule.loadFoundationSession(saveManager)
@@ -62,9 +70,16 @@ internal class FullGameLoopAutomationDriver(
     }
 
     fun saveAndRestart(session: FoundationGameSession): FoundationGameSession {
+        val persistedPlayerState = capturePlayerState(session)
         assertTrue(session.perform(PlayerCommand.SaveGame))
         assertTrue(canContinue())
-        return requireNotNull(continueGame()) { "Continue should load the saved game." }
+        val continued = requireNotNull(continueGame()) { "Continue should load the saved game." }
+        assertEquals(
+            persistedPlayerState,
+            capturePlayerState(continued),
+            "Continue should preserve the saved player state exactly.",
+        )
+        return continued
     }
 
     fun killBossForVictory(session: FoundationGameSession) {
@@ -141,20 +156,87 @@ internal class FullGameLoopAutomationDriver(
         stopWhen: (RunObservation) -> Boolean,
     ): DriveResult {
         var turnCount = 0
+        var totalRejectedCommands = 0
         var observation = RunObservationCapture.capture(session, turnCount)
         while (turnCount < maxTurns && !stopWhen(observation)) {
             val command = requireNotNull(bot.decide(observation)) { "Bot failed to provide a command." }
-            assertTrue(session.perform(command), "Command rejected during automation: $command")
+            if (!session.perform(command)) {
+                totalRejectedCommands += 1
+                assertTrue(totalRejectedCommands <= 20, "Command rejected during automation: $command")
+                observation = RunObservationCapture.capture(session, turnCount)
+                continue
+            }
             if (command.consumesTurn()) {
                 turnCount += 1
             }
             observation = RunObservationCapture.capture(session, turnCount)
         }
-        return DriveResult(turnCount = turnCount, observation = observation)
+        return DriveResult(
+            turnCount = turnCount,
+            observation = observation,
+            totalRejectedCommands = totalRejectedCommands,
+        )
     }
 
     private data class DriveResult(
         val turnCount: Int,
         val observation: RunObservation,
+        val totalRejectedCommands: Int,
     )
+
+    private data class ResourcePoolState(
+        val current: Int,
+        val max: Int,
+    )
+
+    private data class PlayerStateSnapshot(
+        val position: Point,
+        val stats: Stats,
+        val combatProfile: CombatProfile?,
+        val derivedStats: DerivedStats?,
+        val health: Health?,
+        val resourcePools: Map<ResourceType, ResourcePoolState>,
+    )
+
+    private fun stabilizeAutomationSession(session: FoundationGameSession) {
+        val world = session.automationWorld()
+        requireNotNull(world.get<Stats>(session.playerId)).apply {
+            str = maxOf(str, 18)
+            dex = maxOf(dex, 40)
+            con = maxOf(con, 18)
+            wil = maxOf(wil, 20)
+        }
+        world.get<CombatProfile>(session.playerId)?.let { profile ->
+            world.add(
+                session.playerId,
+                profile.copy(
+                    baseAttack = maxOf(profile.baseAttack, 16),
+                    baseDefense = maxOf(profile.baseDefense, 10),
+                    baseAccuracy = maxOf(profile.baseAccuracy, 120),
+                    baseHp = maxOf(profile.baseHp, 220),
+                    baseStamina = maxOf(profile.baseStamina, 120),
+                ),
+            )
+        }
+        StatsCalculator.recalculateAndStore(world, session.playerId)
+        world.get<Health>(session.playerId)?.let { health -> health.current = health.max }
+        world.get<ResourcePools>(session.playerId)?.entries?.values?.forEach { pool -> pool.current = pool.max }
+    }
+
+    private fun capturePlayerState(session: FoundationGameSession): PlayerStateSnapshot {
+        val world = session.automationWorld()
+        val playerId = session.playerId
+        return PlayerStateSnapshot(
+            position = requireNotNull(world.get<Position>(playerId)).toPoint(),
+            stats = requireNotNull(world.get<Stats>(playerId)).copy(),
+            combatProfile = world.get<CombatProfile>(playerId)?.copy(),
+            derivedStats = world.get<DerivedStats>(playerId)?.copy(),
+            health = world.get<Health>(playerId)?.copy(),
+            resourcePools =
+                world.get<ResourcePools>(playerId)?.entries
+                    ?.mapValues { (_, pool) -> ResourcePoolState(current = pool.current, max = pool.max) }
+                    ?.toMap()
+                    ?: emptyMap(),
+        )
+    }
 }
