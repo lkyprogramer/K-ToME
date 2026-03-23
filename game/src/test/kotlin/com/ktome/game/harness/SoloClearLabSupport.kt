@@ -454,12 +454,16 @@ internal class SoloClearLabHarness(
         val itemFactory = ItemFactory()
         val inventoryManager = InventoryManager()
         val items =
-            listOf(
-                blueWeapon(professionId),
-                blueArmor(professionId),
-                healingPotion(),
-                healingPotion(),
-            )
+            buildList {
+                add(blueWeapon(professionId))
+                add(blueArmor(professionId))
+                blueAccessory(professionId)?.let(::add)
+                add(healingPotion())
+                add(healingPotion())
+                if (professionId == "arcanist" || professionId == "templar") {
+                    add(healingPotion())
+                }
+            }
         items.forEach { item ->
             inventory.itemIds += itemFactory.createCarriedItem(world, item)
         }
@@ -528,10 +532,40 @@ internal class SoloClearLabHarness(
             stats =
                 when (professionId) {
                     "rogue" -> StatModifier(defense = 9, maxHp = 26, dex = 2, speed = 5)
-                    "arcanist" -> StatModifier(defense = 10, maxHp = 42, wil = 3)
+                    "arcanist" -> StatModifier(defense = 14, maxHp = 78, wil = 3)
+                    "templar" -> StatModifier(defense = 15, maxHp = 72, con = 2)
                     else -> StatModifier(defense = 11, maxHp = 30, con = 2)
                 },
         )
+
+    private fun blueAccessory(professionId: String): ItemInstance? =
+        when (professionId) {
+            "arcanist" ->
+                ItemInstance(
+                    baseId = "emerald_charm",
+                    name = "Solo Lab Blue Charm",
+                    type = ItemType.ARMOR,
+                    slot = EquipSlot.OFF_HAND,
+                    glyph = ']',
+                    colorHex = "#4B6DFF",
+                    quality = ItemQuality.RARE,
+                    stats = StatModifier(defense = 2, evasion = 2, maxHp = 18, wil = 1),
+                )
+
+            "templar" ->
+                ItemInstance(
+                    baseId = "sanctified_seal",
+                    name = "Solo Lab Blue Seal",
+                    type = ItemType.ARMOR,
+                    slot = EquipSlot.OFF_HAND,
+                    glyph = ']',
+                    colorHex = "#4B6DFF",
+                    quality = ItemQuality.RARE,
+                    stats = StatModifier(defense = 3, maxHp = 22, wil = 1),
+                )
+
+            else -> null
+        }
 
     private fun healingPotion(): ItemInstance =
         ItemInstance(
@@ -552,8 +586,9 @@ internal class SoloClearLabHarness(
     ) {
         val pools = world.get<ResourcePools>(playerId) ?: return
         when (professionId) {
+            "arcanist" -> pools.pool(ResourceType.MANA)?.syncTo(nextCurrent = 160, nextMax = 160)
             "rogue" -> pools.pool(ResourceType.ENERGY)?.syncTo(nextCurrent = 60, nextMax = 100)
-            "templar" -> pools.pool(ResourceType.POSITIVE_ENERGY)?.syncTo(nextCurrent = 0, nextMax = 100)
+            "templar" -> pools.pool(ResourceType.POSITIVE_ENERGY)?.syncTo(nextCurrent = 12, nextMax = 100)
             else -> Unit
         }
     }
@@ -717,13 +752,58 @@ private data class SoloClearRuntime(
 
 private class SoloClearScriptBot : RunBot {
     override fun decide(observation: RunObservation): PlayerCommand? {
-        LoadoutPlanner.preferredLoadoutCommand(observation)?.let { return it }
+        val densePackScenario = isDensePackScenario(observation)
+        val usesSpecializedPackLoadout = usesSpecializedPackLoadout(observation)
+        if (densePackScenario && usesSpecializedPackLoadout) {
+            preferredCombatLoadoutCommand(observation)?.let { return it }
+        }
+        if (!densePackScenario || !usesSpecializedPackLoadout) {
+            LoadoutPlanner.preferredLoadoutCommand(observation)?.let { return it }
+        }
         lootFollowUp(observation)?.let { return it }
         useEmergencyConsumable(observation)?.let { return it }
         useEmergencyTalent(observation)?.let { return it }
         useOffensiveTalent(observation)?.let { return it }
         pursueVisibleHostile(observation)?.let { return it }
         return PlayerCommand.Wait
+    }
+
+    private fun isDensePackScenario(observation: RunObservation): Boolean =
+        observation.visibleBossPositions.isEmpty() && observation.visibleHostilePositions.size >= 4
+
+    private fun usesSpecializedPackLoadout(observation: RunObservation): Boolean =
+        observation.playerResource.typeId in setOf("MANA", "ENERGY", "POSITIVE_ENERGY")
+
+    private fun preferredCombatLoadoutCommand(observation: RunObservation): PlayerCommand? {
+        if (!isDensePackScenario(observation) || !usesSpecializedPackLoadout(observation)) {
+            return null
+        }
+        val desiredOrder =
+            when (observation.playerResource.typeId) {
+                "MANA" -> listOf("fireball", "blink", "arcane_shield", "frost_nova")
+                "ENERGY" -> listOf("poison_blade", "shadowstep", "smoke_bomb", "blade_flurry")
+                "POSITIVE_ENERGY" -> listOf("holy_strike", "judgment_hammer", "holy_shield", "holy_aura")
+                else -> emptyList()
+            }
+        if (desiredOrder.isEmpty()) {
+            return null
+        }
+        val unlockedTalentIds =
+            linkedSetOf<String>().apply {
+                observation.talentSlots.mapTo(this) { slot -> slot.talentId }
+                observation.reserveTalents.mapTo(this) { talent -> talent.talentId }
+            }
+        desiredOrder
+            .filter(unlockedTalentIds::contains)
+            .take(4)
+            .forEachIndexed { index, talentId ->
+                val targetSlot = index + 1
+                val currentTalentId = observation.talentSlots.firstOrNull { slot -> slot.slot == targetSlot }?.talentId
+                if (currentTalentId != talentId) {
+                    return PlayerCommand.EquipTalentToSlot(slot = targetSlot, talentId = talentId)
+                }
+            }
+        return null
     }
 
     private fun lootFollowUp(observation: RunObservation): PlayerCommand? {
@@ -776,7 +856,7 @@ private class SoloClearScriptBot : RunBot {
     }
 
     private fun useOffensiveTalent(observation: RunObservation): PlayerCommand? {
-        val nearest = nearestHostile(observation) ?: return null
+        val nearest = preferredOffensiveTarget(observation) ?: return null
         val adjacentHostiles = hostilesWithin(observation, 1)
         val nearbyHostiles = hostilesWithin(observation, 2)
         val lowHealth = observation.playerStatus.currentHp * 100 <= observation.playerStatus.maxHp * 70
@@ -794,6 +874,9 @@ private class SoloClearScriptBot : RunBot {
         }
         if (observation.playerResource.typeId == "MANA" && observation.playerResource.current * 100 <= observation.playerResource.max * 40) {
             availableTalent(observation, "mana_surge")?.let { return PlayerCommand.UseTalent(it.slot) }
+        }
+        if (observation.playerResource.typeId == "MANA" && observation.visibleHostilePositions.size >= 4) {
+            availableTalent(observation, "arcane_shield")?.let { return PlayerCommand.UseTalent(it.slot) }
         }
         if (lowHealth) {
             availableTalent(observation, "holy_light")?.let { return PlayerCommand.UseTalent(it.slot) }
@@ -873,6 +956,17 @@ private class SoloClearScriptBot : RunBot {
 
     private fun nearestHostile(observation: RunObservation): Point? =
         observation.visibleHostilePositions.minByOrNull { hostile -> hostile.chebyshevDistanceTo(observation.playerPosition) }
+
+    private fun preferredOffensiveTarget(observation: RunObservation): Point? {
+        if (isDensePackScenario(observation) && observation.playerResource.typeId in setOf("MANA", "POSITIVE_ENERGY")) {
+            return observation.visibleHostilePositions.maxWithOrNull(
+                compareBy<Point> { hostile -> hostile.chebyshevDistanceTo(observation.playerPosition) }
+                    .thenByDescending { hostile -> hostile.y }
+                    .thenByDescending { hostile -> hostile.x },
+            )
+        }
+        return nearestHostile(observation)
+    }
 
     private fun clusterTarget(observation: RunObservation): Point? =
         observation.visibleHostilePositions.maxWithOrNull(
