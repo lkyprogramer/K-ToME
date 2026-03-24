@@ -147,7 +147,7 @@ talents:
     powerDimension: PHYSICAL
     kind: ACTIVE
     cooldown: 3
-    castTime: 1000
+    castTime: STANDARD
     range: 1
     minRange: 0
     areaRadius: 0
@@ -155,7 +155,7 @@ talents:
     unlockLevel: 1
     targeting: SINGLE_TARGET
     callbacks: []
-    telegraph: melee_single
+    telegraphRef: melee_single
     treeId: vanguard_arms
     keywords: [damage, knockback, armor_break]
     levelEffects:
@@ -188,7 +188,7 @@ talents:
     powerDimension: PHYSICAL
     kind: ACTIVE
     cooldown: 6
-    castTime: 1000
+    castTime: STANDARD
     range: 5
     minRange: 3
     areaRadius: 0
@@ -196,7 +196,7 @@ talents:
     unlockLevel: 3
     targeting: SINGLE_TARGET
     callbacks: []
-    telegraph: charge_lane
+    telegraphRef: charge_lane
     treeId: vanguard_arms
     keywords: [damage, movement, stun]
     levelEffects:
@@ -228,7 +228,7 @@ talents:
     powerDimension: PHYSICAL
     kind: ACTIVE
     cooldown: 5
-    castTime: 1000
+    castTime: STANDARD
     range: 1
     minRange: 0
     areaRadius: 0
@@ -236,7 +236,7 @@ talents:
     unlockLevel: 1
     targeting: SINGLE_TARGET
     callbacks: []
-    telegraph: melee_single
+    telegraphRef: melee_single
     treeId: vanguard_shield
     keywords: [damage, stun, knockback]
     levelEffects:
@@ -304,7 +304,7 @@ talents:
     powerDimension: MENTAL
     kind: ACTIVE
     cooldown: 10
-    castTime: 1000
+    castTime: STANDARD
     range: 0
     minRange: 0
     areaRadius: 3
@@ -312,14 +312,14 @@ talents:
     unlockLevel: 1
     targeting: RADIUS_SELF
     callbacks: []
-    telegraph: self_buff_aura
+    telegraphRef: self_buff_aura
     treeId: vanguard_warcry
     keywords: [buff, debuff]
     levelEffects:
       1:
         associatedEffects:
           - effectId: war_cry_buff
-            effectType: WAR_CRY_BUFF
+            effectType: war_cry_empower
             trigger: ON_CAST
             targetScope: SELF
             applicationPolicy: SELF_AUTO
@@ -328,7 +328,7 @@ talents:
       2:
         associatedEffects:
           - effectId: war_cry_buff
-            effectType: WAR_CRY_BUFF
+            effectType: war_cry_empower
             trigger: ON_CAST
             targetScope: SELF
             applicationPolicy: SELF_AUTO
@@ -337,7 +337,7 @@ talents:
       3:
         associatedEffects:
           - effectId: war_cry_buff
-            effectType: WAR_CRY_BUFF
+            effectType: war_cry_empower
             trigger: ON_CAST
             targetScope: SELF
             applicationPolicy: SELF_AUTO
@@ -346,7 +346,7 @@ talents:
       4:
         associatedEffects:
           - effectId: war_cry_buff
-            effectType: WAR_CRY_BUFF
+            effectType: war_cry_empower
             trigger: ON_CAST
             targetScope: SELF
             applicationPolicy: SELF_AUTO
@@ -355,14 +355,14 @@ talents:
       5:
         associatedEffects:
           - effectId: war_cry_buff
-            effectType: WAR_CRY_BUFF
+            effectType: war_cry_empower
             trigger: ON_CAST
             targetScope: SELF
             applicationPolicy: SELF_AUTO
             duration: 8
             magnitude: 0.35
           - effectId: war_cry_debuff
-            effectType: WAR_CRY_DEBUFF
+            effectType: war_cry_shaken
             trigger: ON_CAST
             targetScope: HOSTILES_IN_RADIUS
             applicationPolicy: HOSTILE_SAVE_ONLY
@@ -383,7 +383,7 @@ talents:
     powerDimension: PHYSICAL
     kind: ACTIVE
     cooldown: 4
-    castTime: 1000
+    castTime: STANDARD
     range: 1
     minRange: 0
     areaRadius: 1
@@ -391,7 +391,7 @@ talents:
     unlockLevel: 2
     targeting: SINGLE_TARGET
     callbacks: []
-    telegraph: melee_single
+    telegraphRef: melee_single
     treeId: vanguard_arms
     keywords: [damage, cleave]
     levelEffects:
@@ -413,7 +413,7 @@ talents:
     damageType: PHYSICAL
     kind: ACTIVE
     cooldown: 5
-    castTime: 1000
+    castTime: STANDARD
     range: 1
     minRange: 0
     areaRadius: 0
@@ -421,7 +421,7 @@ talents:
     unlockLevel: 4
     targeting: SINGLE_TARGET
     callbacks: []
-    telegraph: melee_single
+    telegraphRef: melee_single
     treeId: vanguard_arms
     keywords: [damage, armor_break]
     levelEffects:
@@ -487,7 +487,7 @@ talents:
     category: ACTIVE
     kind: ACTIVE
     cooldown: 7
-    castTime: 1000
+    castTime: STANDARD
     range: 0
     minRange: 0
     areaRadius: 0
@@ -495,7 +495,7 @@ talents:
     unlockLevel: 1
     targeting: SELF
     callbacks: []
-    telegraph: self_buff_aura
+    telegraphRef: self_buff_aura
     treeId: vanguard_shield
     keywords: [buff, defense]
     levelEffects:
@@ -557,7 +557,7 @@ talents:
     powerDimension: MENTAL
     kind: ACTIVE
     cooldown: 8
-    castTime: 1000
+    castTime: STANDARD
     range: 0
     minRange: 0
     areaRadius: 4
@@ -565,14 +565,14 @@ talents:
     unlockLevel: 4
     targeting: RADIUS_SELF
     callbacks: []
-    telegraph: self_buff_aura
+    telegraphRef: self_buff_aura
     treeId: vanguard_warcry
     keywords: [debuff, control]
     levelEffects:
       1:
         associatedEffects:
           - effectId: intimidation_debuff
-            effectType: WAR_CRY_DEBUFF
+            effectType: war_cry_shaken
             trigger: ON_CAST
             targetScope: HOSTILES_IN_RADIUS
             applicationPolicy: HOSTILE_SAVE_ONLY
@@ -582,7 +582,7 @@ talents:
       2:
         associatedEffects:
           - effectId: intimidation_debuff
-            effectType: WAR_CRY_DEBUFF
+            effectType: war_cry_shaken
             trigger: ON_CAST
             targetScope: HOSTILES_IN_RADIUS
             applicationPolicy: HOSTILE_SAVE_ONLY
@@ -592,7 +592,7 @@ talents:
       3:
         associatedEffects:
           - effectId: intimidation_debuff
-            effectType: WAR_CRY_DEBUFF
+            effectType: war_cry_shaken
             trigger: ON_CAST
             targetScope: HOSTILES_IN_RADIUS
             applicationPolicy: HOSTILE_SAVE_ONLY
@@ -602,7 +602,7 @@ talents:
       4:
         associatedEffects:
           - effectId: intimidation_debuff
-            effectType: WAR_CRY_DEBUFF
+            effectType: war_cry_shaken
             trigger: ON_CAST
             targetScope: HOSTILES_IN_RADIUS
             applicationPolicy: HOSTILE_SAVE_ONLY
@@ -612,7 +612,7 @@ talents:
       5:
         associatedEffects:
           - effectId: intimidation_debuff
-            effectType: WAR_CRY_DEBUFF
+            effectType: war_cry_shaken
             trigger: ON_CAST
             targetScope: HOSTILES_IN_RADIUS
             applicationPolicy: HOSTILE_SAVE_ONLY
@@ -631,7 +631,7 @@ talents:
     category: ACTIVE
     kind: ACTIVE
     cooldown: 12
-    castTime: 1000
+    castTime: STANDARD
     range: 0
     minRange: 0
     areaRadius: 0
@@ -639,7 +639,7 @@ talents:
     unlockLevel: 5
     targeting: SELF
     callbacks: []
-    telegraph: self_buff_aura
+    telegraphRef: self_buff_aura
     treeId: vanguard_warcry
     keywords: [panic, defense]
     levelEffects:
@@ -701,7 +701,7 @@ talents:
     damageType: FIRE
     kind: ACTIVE
     cooldown: 3
-    castTime: 1000
+    castTime: STANDARD
     range: 6
     minRange: 1
     areaRadius: 0
@@ -709,7 +709,7 @@ talents:
     unlockLevel: 1
     targeting: SINGLE_TARGET
     callbacks: []
-    telegraph: melee_single
+    telegraphRef: melee_single
     treeId: arcanist_flame
     keywords: [damage, ranged]
     levelEffects:
@@ -731,7 +731,7 @@ talents:
     damageType: FIRE
     kind: ACTIVE
     cooldown: 6
-    castTime: 1000
+    castTime: STANDARD
     range: 4
     minRange: 1
     areaRadius: 1
@@ -739,7 +739,7 @@ talents:
     unlockLevel: 4
     targeting: SINGLE_TARGET
     callbacks: []
-    telegraph: charge_lane
+    telegraphRef: charge_lane
     treeId: arcanist_flame
     keywords: [damage, area]
     levelEffects:
@@ -762,7 +762,7 @@ talents:
     powerDimension: SPELL
     kind: ACTIVE
     cooldown: 3
-    castTime: 1000
+    castTime: STANDARD
     range: 6
     minRange: 1
     areaRadius: 0
@@ -770,7 +770,7 @@ talents:
     unlockLevel: 1
     targeting: SINGLE_TARGET
     callbacks: []
-    telegraph: melee_single
+    telegraphRef: melee_single
     treeId: arcanist_frost
     keywords: [damage, slow]
     levelEffects:
@@ -802,7 +802,7 @@ talents:
     powerDimension: SPELL
     kind: ACTIVE
     cooldown: 7
-    castTime: 1000
+    castTime: STANDARD
     range: 0
     minRange: 0
     areaRadius: 2
@@ -810,7 +810,7 @@ talents:
     unlockLevel: 3
     targeting: RADIUS_SELF
     callbacks: []
-    telegraph: self_buff_aura
+    telegraphRef: self_buff_aura
     treeId: arcanist_frost
     keywords: [area, control]
     levelEffects:
@@ -878,7 +878,7 @@ talents:
     powerDimension: SPELL
     kind: ACTIVE
     cooldown: 8
-    castTime: 1000
+    castTime: STANDARD
     range: 5
     minRange: 1
     areaRadius: 0
@@ -886,7 +886,7 @@ talents:
     unlockLevel: 5
     targeting: SINGLE_TARGET
     callbacks: []
-    telegraph: melee_single
+    telegraphRef: melee_single
     treeId: arcanist_frost
     keywords: [control]
     levelEffects:
@@ -952,7 +952,7 @@ talents:
     category: ACTIVE
     kind: ACTIVE
     cooldown: 8
-    castTime: 1000
+    castTime: STANDARD
     range: 0
     minRange: 0
     areaRadius: 0
@@ -960,7 +960,7 @@ talents:
     unlockLevel: 1
     targeting: SELF
     callbacks: []
-    telegraph: self_buff_aura
+    telegraphRef: self_buff_aura
     treeId: arcanist_arcane
     keywords: [buff, defense]
     levelEffects:
@@ -1021,7 +1021,7 @@ talents:
     category: ACTIVE
     kind: ACTIVE
     cooldown: 6
-    castTime: 1000
+    castTime: STANDARD
     range: 5
     minRange: 2
     areaRadius: 0
@@ -1029,7 +1029,7 @@ talents:
     unlockLevel: 1
     targeting: SINGLE_TARGET
     callbacks: []
-    telegraph: charge_lane
+    telegraphRef: charge_lane
     treeId: arcanist_arcane
     keywords: [movement]
     levelEffects:
@@ -1050,7 +1050,7 @@ talents:
     category: ACTIVE
     kind: ACTIVE
     cooldown: 10
-    castTime: 1000
+    castTime: STANDARD
     range: 0
     minRange: 0
     areaRadius: 0
@@ -1058,7 +1058,7 @@ talents:
     unlockLevel: 2
     targeting: SELF
     callbacks: []
-    telegraph: self_buff_aura
+    telegraphRef: self_buff_aura
     treeId: arcanist_arcane
     keywords: [resource, buff]
     levelEffects:
@@ -1125,7 +1125,7 @@ talents:
     damageType: PHYSICAL
     kind: ACTIVE
     cooldown: 3
-    castTime: 1000
+    castTime: STANDARD
     range: 1
     minRange: 0
     areaRadius: 0
@@ -1133,7 +1133,7 @@ talents:
     unlockLevel: 1
     targeting: SINGLE_TARGET
     callbacks: []
-    telegraph: melee_single
+    telegraphRef: melee_single
     treeId: rogue_assassination
     keywords: [damage, finisher]
     levelEffects:
@@ -1156,7 +1156,7 @@ talents:
     powerDimension: MENTAL
     kind: ACTIVE
     cooldown: 4
-    castTime: 1000
+    castTime: STANDARD
     range: 1
     minRange: 0
     areaRadius: 0
@@ -1164,7 +1164,7 @@ talents:
     unlockLevel: 1
     targeting: SINGLE_TARGET
     callbacks: []
-    telegraph: melee_single
+    telegraphRef: melee_single
     treeId: rogue_assassination
     keywords: [damage, curse]
     levelEffects:
@@ -1235,7 +1235,7 @@ talents:
     category: ACTIVE
     kind: ACTIVE
     cooldown: 7
-    castTime: 1000
+    castTime: STANDARD
     range: 0
     minRange: 0
     areaRadius: 0
@@ -1243,7 +1243,7 @@ talents:
     unlockLevel: 1
     targeting: SELF
     callbacks: []
-    telegraph: self_buff_aura
+    telegraphRef: self_buff_aura
     treeId: rogue_subtlety
     keywords: [buff, mobility]
     levelEffects:
@@ -1306,7 +1306,7 @@ talents:
     powerDimension: MENTAL
     kind: ACTIVE
     cooldown: 8
-    castTime: 1000
+    castTime: STANDARD
     range: 0
     minRange: 0
     areaRadius: 2
@@ -1314,7 +1314,7 @@ talents:
     unlockLevel: 2
     targeting: RADIUS_SELF
     callbacks: []
-    telegraph: self_buff_aura
+    telegraphRef: self_buff_aura
     treeId: rogue_subtlety
     keywords: [debuff, control]
     levelEffects:
@@ -1380,7 +1380,7 @@ talents:
     category: ACTIVE
     kind: ACTIVE
     cooldown: 4
-    castTime: 1000
+    castTime: STANDARD
     range: 3
     minRange: 1
     areaRadius: 0
@@ -1388,7 +1388,7 @@ talents:
     unlockLevel: 1
     targeting: SINGLE_TARGET
     callbacks: []
-    telegraph: charge_lane
+    telegraphRef: charge_lane
     treeId: rogue_agility
     keywords: [movement, reposition]
     levelEffects:
@@ -1410,7 +1410,7 @@ talents:
     damageType: PHYSICAL
     kind: ACTIVE
     cooldown: 6
-    castTime: 1000
+    castTime: STANDARD
     range: 1
     minRange: 0
     areaRadius: 1
@@ -1418,7 +1418,7 @@ talents:
     unlockLevel: 2
     targeting: SINGLE_TARGET
     callbacks: []
-    telegraph: melee_single
+    telegraphRef: melee_single
     treeId: rogue_agility
     keywords: [damage, cleave]
     levelEffects:
@@ -1440,7 +1440,7 @@ talents:
     damageType: SHADOW
     kind: ACTIVE
     cooldown: 7
-    castTime: 1000
+    castTime: STANDARD
     range: 5
     minRange: 2
     areaRadius: 0
@@ -1448,7 +1448,7 @@ talents:
     unlockLevel: 4
     targeting: SINGLE_TARGET
     callbacks: []
-    telegraph: charge_lane
+    telegraphRef: charge_lane
     treeId: rogue_subtlety
     keywords: [movement, damage]
     levelEffects:
@@ -1470,7 +1470,7 @@ talents:
     damageType: PHYSICAL
     kind: ACTIVE
     cooldown: 8
-    castTime: 1000
+    castTime: STANDARD
     range: 1
     minRange: 0
     areaRadius: 0
@@ -1478,7 +1478,7 @@ talents:
     unlockLevel: 5
     targeting: SINGLE_TARGET
     callbacks: []
-    telegraph: melee_single
+    telegraphRef: melee_single
     treeId: rogue_assassination
     keywords: [damage, resource]
     levelEffects:
@@ -1500,7 +1500,7 @@ talents:
     damageType: HOLY
     kind: ACTIVE
     cooldown: 3
-    castTime: 1000
+    castTime: STANDARD
     range: 1
     minRange: 0
     areaRadius: 0
@@ -1508,7 +1508,7 @@ talents:
     unlockLevel: 1
     targeting: SINGLE_TARGET
     callbacks: []
-    telegraph: melee_single
+    telegraphRef: melee_single
     treeId: templar_smite
     keywords: [damage, holy]
     levelEffects:
@@ -1531,7 +1531,7 @@ talents:
     powerDimension: SPELL
     kind: ACTIVE
     cooldown: 5
-    castTime: 1000
+    castTime: STANDARD
     range: 4
     minRange: 1
     areaRadius: 0
@@ -1539,7 +1539,7 @@ talents:
     unlockLevel: 2
     targeting: SINGLE_TARGET
     callbacks: []
-    telegraph: melee_single
+    telegraphRef: melee_single
     treeId: templar_smite
     keywords: [damage, stun]
     levelEffects:
@@ -1605,7 +1605,7 @@ talents:
     category: ACTIVE
     kind: ACTIVE
     cooldown: 6
-    castTime: 1000
+    castTime: STANDARD
     range: 0
     minRange: 0
     areaRadius: 0
@@ -1613,7 +1613,7 @@ talents:
     unlockLevel: 1
     targeting: SELF
     callbacks: []
-    telegraph: self_buff_aura
+    telegraphRef: self_buff_aura
     treeId: templar_grace
     keywords: [heal]
     levelEffects:
@@ -1634,7 +1634,7 @@ talents:
     category: ACTIVE
     kind: ACTIVE
     cooldown: 8
-    castTime: 1000
+    castTime: STANDARD
     range: 0
     minRange: 0
     areaRadius: 0
@@ -1642,7 +1642,7 @@ talents:
     unlockLevel: 1
     targeting: SELF
     callbacks: []
-    telegraph: self_buff_aura
+    telegraphRef: self_buff_aura
     treeId: templar_grace
     keywords: [buff, defense]
     levelEffects:
@@ -1703,7 +1703,7 @@ talents:
     category: ACTIVE
     kind: ACTIVE
     cooldown: 7
-    castTime: 1000
+    castTime: STANDARD
     range: 0
     minRange: 0
     areaRadius: 0
@@ -1711,7 +1711,7 @@ talents:
     unlockLevel: 1
     targeting: SELF
     callbacks: []
-    telegraph: self_buff_aura
+    telegraphRef: self_buff_aura
     treeId: templar_faith
     keywords: [buff, holy]
     levelEffects:
@@ -1773,7 +1773,7 @@ talents:
     damageType: HOLY
     kind: ACTIVE
     cooldown: 8
-    castTime: 1000
+    castTime: STANDARD
     range: 0
     minRange: 0
     areaRadius: 2
@@ -1781,7 +1781,7 @@ talents:
     unlockLevel: 3
     targeting: RADIUS_SELF
     callbacks: []
-    telegraph: self_buff_aura
+    telegraphRef: self_buff_aura
     treeId: templar_faith
     keywords: [buff, holy, area]
     levelEffects:
@@ -1847,7 +1847,7 @@ talents:
     category: ACTIVE
     kind: ACTIVE
     cooldown: 7
-    castTime: 1000
+    castTime: STANDARD
     range: 0
     minRange: 0
     areaRadius: 0
@@ -1855,7 +1855,7 @@ talents:
     unlockLevel: 4
     targeting: SELF
     callbacks: []
-    telegraph: self_buff_aura
+    telegraphRef: self_buff_aura
     treeId: templar_grace
     keywords: [heal, cleanse]
     levelEffects:
@@ -1911,7 +1911,7 @@ talents:
     category: ACTIVE
     kind: ACTIVE
     cooldown: 12
-    castTime: 1000
+    castTime: STANDARD
     range: 0
     minRange: 0
     areaRadius: 0
@@ -1919,7 +1919,7 @@ talents:
     unlockLevel: 5
     targeting: SELF
     callbacks: []
-    telegraph: self_buff_aura
+    telegraphRef: self_buff_aura
     treeId: templar_faith
     keywords: [heal, buff, defense]
     levelEffects:

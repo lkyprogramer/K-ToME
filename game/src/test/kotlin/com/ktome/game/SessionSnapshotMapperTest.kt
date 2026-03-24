@@ -140,8 +140,8 @@ class SessionSnapshotMapperTest {
                         cooldowns = linkedMapOf("zeta" to 1, "alpha" to 2),
                         effects =
                             listOf(
-                                ActiveEffectSnapshot(id = "zeta", type = "WAR_CRY_DEBUFF", remainingTurns = 1),
-                                ActiveEffectSnapshot(id = "alpha", type = "WAR_CRY_BUFF", remainingTurns = 2),
+                                ActiveEffectSnapshot(id = "zeta", type = "war_cry_shaken", remainingTurns = 1),
+                                ActiveEffectSnapshot(id = "alpha", type = "war_cry_empower", remainingTurns = 2),
                             ),
                         talentLoadout =
                             TalentLoadoutSnapshot(
@@ -355,15 +355,17 @@ class SessionSnapshotMapperTest {
 
     private fun content(): GameContent {
         val loader = DataLoader()
+        val schemaCatalog = loader.loadSchemaCatalog()
         val talents = loader.loadTalentDefinitions()
         return GameContent(
             talents = talents,
-            statuses = loader.loadSchemaCatalog().statuses,
+            statuses = schemaCatalog.statuses,
+            statusCatalog = loader.loadStatusCatalog(),
             talentRegistry = TalentRegistry().apply { registerAll(talents) },
             monsterCatalog = loader.loadMonsterCatalog().monsters,
             itemBundle = loader.loadItemBundle(),
             bossDefinitions = loader.loadBossDefinitions(),
-            schemaCatalog = loader.loadSchemaCatalog(),
+            schemaCatalog = schemaCatalog,
             localizer = loader.localizer,
         )
     }

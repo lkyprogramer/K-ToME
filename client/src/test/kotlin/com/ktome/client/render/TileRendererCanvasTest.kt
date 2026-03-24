@@ -12,6 +12,8 @@ import com.ktome.client.input.UiMode
 import com.ktome.core.snapshot.ActorRenderSnapshot
 import com.ktome.core.snapshot.ActorRoleKindSnapshot
 import com.ktome.core.snapshot.CellVisibilitySnapshot
+import com.ktome.core.snapshot.DescriptionModelSnapshot
+import com.ktome.core.snapshot.DescriptionValueSnapshot
 import com.ktome.core.snapshot.GridPointSnapshot
 import com.ktome.core.snapshot.ItemRenderSnapshot
 import com.ktome.core.snapshot.MapCellSnapshot
@@ -24,6 +26,7 @@ import com.ktome.core.snapshot.RenderTextTokenSnapshot
 import com.ktome.core.snapshot.RenderUiStateSnapshot
 import com.ktome.core.snapshot.StatusEffectCategorySnapshot
 import com.ktome.core.snapshot.StatusEffectRenderSnapshot
+import com.ktome.core.snapshot.TalentBreakpointPreviewSnapshot
 import com.ktome.core.snapshot.TalentReserveSnapshot
 import com.ktome.core.snapshot.TalentSlotSnapshot
 import com.ktome.game.i18n.GameLocale
@@ -365,6 +368,17 @@ class TileRendererCanvasTest {
                                     maxCooldown = 4,
                                     requiresTarget = true,
                                     descKey = "talent.vanguard.charge.desc",
+                                    descriptionModel =
+                                        DescriptionModelSnapshot(
+                                            templateKey = "talent.vanguard.charge.desc",
+                                            placeholders =
+                                                mapOf(
+                                                    "minRange" to DescriptionValueSnapshot.IntValue(1),
+                                                    "range" to DescriptionValueSnapshot.IntValue(3),
+                                                    "damagePercent" to DescriptionValueSnapshot.IntValue(120),
+                                                ),
+                                            keywords = listOf("damage", "stun"),
+                                        ),
                                 ),
                             ),
                     ),
@@ -375,8 +389,74 @@ class TileRendererCanvasTest {
         assertTrue(model.sidebar.rows.any { row -> row.text == "Active Slots" })
         assertTrue(model.sidebar.rows.any { row -> row.text == "Reserve Talents" })
         assertTrue(model.sidebar.rows.any { row -> row.text.contains("Charge 1/5") })
-        assertTrue(model.sidebar.rows.any { row -> row.text == "Rush a distant enemy. Higher ranks add stun." })
+        assertTrue(model.sidebar.rows.any { row -> row.text.contains("Rush a foe from 1 to 3 tiles away for 120% Damage.") })
         assertTrue(model.sidebar.rows.any { row -> row.text == "1-4 choose slot  W/X move reserve  E equip  L/Esc close" })
+    }
+
+    @Test
+    fun `loadout edit sidebar renders breakpoint preview rows with secondary gray tone`() {
+        val localizer = LocalizationBundle.load().translator(GameLocale.EN_US)
+        val model =
+            TileRenderer.buildRenderModel(
+                localizer = localizer,
+                visualResolver = sampleResolver(),
+                snapshot =
+                    sampleSnapshot(
+                        reserveTalents =
+                            listOf(
+                                TalentReserveSnapshot(
+                                    talentId = "charge",
+                                    nameKey = "talent.vanguard.charge.name",
+                                    level = 2,
+                                    committedLevel = 1,
+                                    maxLevel = 5,
+                                    resourceCost = 10,
+                                    resourceLabelKey = "ui.hud.stamina.short",
+                                    resourceTypeId = "STAMINA",
+                                    range = 5,
+                                    minRange = 1,
+                                    currentCooldown = 0,
+                                    maxCooldown = 4,
+                                    requiresTarget = true,
+                                    descKey = "talent.vanguard.charge.desc",
+                                    descriptionModel =
+                                        DescriptionModelSnapshot(
+                                            templateKey = "talent.vanguard.charge.desc",
+                                            placeholders =
+                                                mapOf(
+                                                    "minRange" to DescriptionValueSnapshot.IntValue(1),
+                                                    "range" to DescriptionValueSnapshot.IntValue(5),
+                                                    "damagePercent" to DescriptionValueSnapshot.IntValue(130),
+                                                ),
+                                        ),
+                                    nextBreakpointPreview =
+                                        TalentBreakpointPreviewSnapshot(
+                                            atRank = 5,
+                                            model =
+                                                DescriptionModelSnapshot(
+                                                    templateKey = "talent.breakpoint.apply_status",
+                                                    placeholders =
+                                                        mapOf(
+                                                            "statusDuration" to DescriptionValueSnapshot.IntValue(2),
+                                                            "statusId" to
+                                                                DescriptionValueSnapshot.StatusValue(
+                                                                    statusId = "STUN",
+                                                                    nameKey = "status.stun",
+                                                                ),
+                                                        ),
+                                                ),
+                                        ),
+                                ),
+                            ),
+                    ),
+                overlayState = OverlayState(mode = UiMode.LOADOUT_EDIT, loadoutReserveSelection = 0),
+            )
+
+        val breakpointHeader = model.sidebar.rows.first { row -> row.text == "Next breakpoint: rank 5." }
+        val breakpointEffect = model.sidebar.rows.first { row -> row.text.contains("new status effect for 2 turns") }
+
+        assertEquals(TileTextTone.GRAY, breakpointHeader.tone)
+        assertEquals(TileTextTone.GRAY, breakpointEffect.tone)
     }
 
     @Test

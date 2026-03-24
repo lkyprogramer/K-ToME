@@ -1,5 +1,6 @@
 package com.ktome.game.data
 
+import com.ktome.game.telegraph.FoundationTelegraphRegistry
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -31,7 +32,11 @@ class TalentSchemaTest {
         )
 
         catalog.talentTrees.forEach { tree ->
-            assertTrue(professionIds.contains(tree.professionId), "Unknown profession ${tree.professionId}")
+            if (tree.raceId == null) {
+                assertTrue(professionIds.contains(tree.professionId), "Unknown profession ${tree.professionId}")
+            } else {
+                assertTrue(tree.professionId.isBlank(), "Race tree ${tree.id} must not also declare professionId ${tree.professionId}")
+            }
             assertTrue(tree.layout.isNotBlank())
             tree.nodes.forEach { talentId -> assertTrue(talentIds.contains(talentId), "Unknown tree node $talentId") }
         }
@@ -41,7 +46,10 @@ class TalentSchemaTest {
             assertTrue(talent.nameKey.startsWith("talent."))
             assertTrue(talent.nameKey.endsWith(".name"))
             assertTrue(talent.descKey.endsWith(".desc"))
-            assertTrue(talent.telegraph.isNotBlank())
+            talent.telegraphRef?.let { telegraphRef ->
+                assertEquals(telegraphRef, FoundationTelegraphRegistry.CORE.require(telegraphRef).id)
+            }
+            assertTrue(talent.castTime in setOf("INSTANT", "QUICK", "STANDARD", "HEAVY"))
             assertTrue(talent.callbacks.isNotEmpty() || talent.callbacks.isEmpty())
             talent.requirements.talentPrereqs.forEach { prereq ->
                 assertTrue(talentIds.contains(prereq.talentId), "Unknown prerequisite ${prereq.talentId}")

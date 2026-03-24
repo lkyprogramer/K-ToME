@@ -5,6 +5,7 @@ import com.ktome.core.map.Point
 import com.ktome.core.pathfinding.AStar
 import com.ktome.game.PlayerCommand
 import com.ktome.game.PrimaryStat
+import com.ktome.game.TalentReserveView
 import com.ktome.game.TalentSlotView
 
 class SmokeBot : RunBot {
@@ -26,11 +27,14 @@ class SmokeBot : RunBot {
     private val recentPositions = ArrayDeque<Point>()
 
     private fun pickImmediateAction(observation: RunObservation): PlayerCommand? {
+        if (hasPendingTalentDraft(observation)) {
+            return PlayerCommand.ConfirmTalentDraft
+        }
         if (observation.playerStatus.statPoints > 0) {
             return PlayerCommand.AssignStat(preferredStat(observation))
         }
         if (observation.playerStatus.talentPoints > 0) {
-            preferredTalentUpgrade(observation)?.let { slot -> return PlayerCommand.AssignTalent(slot.slot) }
+            preferredTalentUpgrade(observation)?.let { talent -> return PlayerCommand.AssignTalent(talent.talentId) }
         }
         if (observation.visibleHostilePositions.isEmpty() && observation.visibleBossPositions.isEmpty()) {
             LoadoutPlanner.preferredLoadoutCommand(observation)?.let { return it }
@@ -48,6 +52,10 @@ class SmokeBot : RunBot {
         return null
     }
 
+    private fun hasPendingTalentDraft(observation: RunObservation): Boolean =
+        observation.talentSlots.any(TalentSlotView::hasPendingAllocation) ||
+            observation.reserveTalents.any { talent -> talent.hasPendingAllocation }
+
     private fun preferredStat(observation: RunObservation): PrimaryStat =
         when (observation.playerResource.typeId) {
             "MANA" -> PrimaryStat.WIL
@@ -56,13 +64,13 @@ class SmokeBot : RunBot {
             else -> PrimaryStat.STR
         }
 
-    private fun preferredTalentUpgrade(observation: RunObservation): TalentSlotView? =
-        observation.talentSlots
-            .filter { slot -> slot.level < slot.maxLevel }
+    private fun preferredTalentUpgrade(observation: RunObservation): TalentUpgradeCandidate? =
+        (observation.talentSlots.map(::TalentUpgradeCandidate) + observation.reserveTalents.map(::TalentUpgradeCandidate))
+            .filter { talent -> talent.level < talent.maxLevel }
             .maxWithOrNull(
-                compareBy<TalentSlotView> { talentUpgradePriority(it.talentId) }
+                compareBy<TalentUpgradeCandidate> { talentUpgradePriority(it.talentId) }
                     .thenBy { -it.level }
-                    .thenBy { -it.slot },
+                    .thenBy { it.sourcePriority },
             )
 
     private fun preferredInventoryAction(observation: RunObservation): PlayerCommand? {
@@ -649,6 +657,27 @@ class SmokeBot : RunBot {
         val nextStep: Point,
         val candidateOrder: Int,
     )
+
+    private data class TalentUpgradeCandidate(
+        val talentId: String,
+        val level: Int,
+        val maxLevel: Int,
+        val sourcePriority: Int,
+    ) {
+        constructor(slot: TalentSlotView) : this(
+            talentId = slot.talentId,
+            level = slot.level,
+            maxLevel = slot.maxLevel,
+            sourcePriority = -slot.slot,
+        )
+
+        constructor(talent: TalentReserveView) : this(
+            talentId = talent.talentId,
+            level = talent.level,
+            maxLevel = talent.maxLevel,
+            sourcePriority = Int.MIN_VALUE,
+        )
+    }
 
     private companion object {
         const val SMOKE_BOT_INVENTORY_CAPACITY: Int = 12

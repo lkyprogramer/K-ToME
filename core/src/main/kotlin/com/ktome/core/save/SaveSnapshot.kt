@@ -172,6 +172,7 @@ data class EntitySnapshot(
     val aiTriggerTracker: AiTriggerTrackerSnapshot? = null,
     val resourcePools: List<ResourcePoolSnapshot> = emptyList(),
     val talentLoadout: TalentLoadoutSnapshot? = null,
+    val talentAllocationDraft: TalentAllocationDraftSnapshot? = null,
     val itemState: ItemSnapshot? = null,
     val isGroundItem: Boolean = false,
     val isPlayerControlled: Boolean = false,
@@ -196,6 +197,7 @@ data class EntitySnapshot(
         equipment?.validateOrThrow()
         patrolRoute?.validateOrThrow()
         talentLoadout?.validateOrThrow()
+        talentAllocationDraft?.validateOrThrow()
         itemState?.validateOrThrow()
         aiTriggerTracker?.validateOrThrow()
         effects?.forEach(ActiveEffectSnapshot::validateOrThrow)
@@ -305,6 +307,27 @@ data class TalentLoadoutSnapshot(
         require(slotToTalentId.values.all(String::isNotBlank)) { "Talent ids must not be blank." }
         require(talentLevels.keys.all(String::isNotBlank)) { "Talent ids must not be blank." }
         require(talentLevels.values.all { level -> level > 0 }) { "Talent levels must be positive." }
+    }
+}
+
+@Serializable
+data class TalentAllocationDraftSnapshot(
+    val ownerType: String,
+    val treeOwnerId: String,
+    val pendingRanks: Map<String, Int> = emptyMap(),
+    val previousPendingRanks: Map<String, Int>? = null,
+) {
+    fun validateOrThrow() {
+        require(ownerType.isNotBlank()) { "Talent draft ownerType must not be blank." }
+        require(treeOwnerId.isNotBlank()) { "Talent draft treeOwnerId must not be blank." }
+        require(pendingRanks.keys.all(String::isNotBlank)) { "Talent draft ids must not be blank." }
+        require(pendingRanks.values.all { rank -> rank >= 0 }) { "Talent draft ranks must not be negative." }
+        require(previousPendingRanks?.keys?.all(String::isNotBlank) != false) {
+            "Talent draft rollback ids must not be blank."
+        }
+        require(previousPendingRanks?.values?.all { rank -> rank >= 0 } != false) {
+            "Talent draft rollback ranks must not be negative."
+        }
     }
 }
 

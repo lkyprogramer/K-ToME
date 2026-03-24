@@ -43,6 +43,7 @@ class LocaleLintTest {
                 "item.",
                 "interactable.",
                 "objective.",
+                "keyword.",
             )
         en.keys.forEach { key ->
             assertTrue(allowedPrefixes.any(key::startsWith), "Unexpected locale key namespace: $key")

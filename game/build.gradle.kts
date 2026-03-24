@@ -47,3 +47,15 @@ tasks.register<Test>("longRunLab") {
     systemProperty("ktome.harness.reportDir", harnessReportDir.get().asFile.absolutePath)
     outputs.dir(harnessReportDir)
 }
+
+tasks.register<Test>("bossHarness") {
+    group = "verification"
+    description = "Runs boss encounter stability and warning harness coverage."
+    testClassesDirs = sourceSets.test.get().output.classesDirs
+    classpath = sourceSets.test.get().runtimeClasspath
+    useJUnitPlatform {
+        includeTags("bossHarness")
+    }
+    systemProperty("ktome.harness.reportDir", harnessReportDir.get().asFile.absolutePath)
+    outputs.dir(harnessReportDir)
+}

@@ -1,7 +1,10 @@
 package com.ktome.tools.lint
 
 import com.ktome.client.assets.ClientAssetBundleLoader
+import com.ktome.core.talent.KeywordRegistry
 import com.ktome.game.data.DataLoader
+import com.ktome.game.i18n.GameLocale
+import com.ktome.game.telegraph.FoundationTelegraphRegistry
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -27,6 +30,7 @@ class ContractLintTest {
         val aiIds = catalog.aiProfiles.map { it.id }.toSet()
         val arenaIds = catalog.arenas.map { it.id }.toSet()
         val ambientIds = catalog.ambientProfiles.map { it.id }.toSet()
+        fun ownerNamespace(tree: com.ktome.game.data.schema.TalentTreeSchemaV2): String = tree.raceId ?: tree.professionId
         fun assertExactVisualKey(key: String) {
             val resolved = assets.visualResolver.resolve(key)
             assertFalse(resolved.fallbackUsed, "Unknown visual key $key")
@@ -59,7 +63,11 @@ class ContractLintTest {
 
         catalog.talentTrees.forEach { tree ->
             assertEquals(2, tree.schemaVersion)
-            assertTrue(professionIds.contains(tree.professionId), "Unknown talent tree profession ${tree.professionId}")
+            if (tree.raceId == null) {
+                assertTrue(professionIds.contains(tree.professionId), "Unknown talent tree profession ${tree.professionId}")
+            } else {
+                assertTrue(tree.professionId.isBlank(), "Race tree ${tree.id} must not also reference profession ${tree.professionId}")
+            }
             assertEquals("talent_tree.${tree.id}.name", tree.nameKey)
             assertEquals("talent_tree.${tree.id}.desc", tree.descKey)
             assertExactVisualKey(tree.visualKey)
@@ -73,11 +81,15 @@ class ContractLintTest {
             assertEquals(2, talent.schemaVersion)
             assertTrue(treeIds.contains(talent.treeId), "Unknown talent tree ${talent.treeId}")
             val tree = requireNotNull(treeById[talent.treeId]) { "Unknown tree ${talent.treeId}" }
-            assertEquals("talent.${tree.professionId}.${talent.id}.name", talent.nameKey)
-            assertEquals("talent.${tree.professionId}.${talent.id}.desc", talent.descKey)
+            val namespace = ownerNamespace(tree)
+            assertEquals("talent.$namespace.${talent.id}.name", talent.nameKey)
+            assertEquals("talent.$namespace.${talent.id}.desc", talent.descKey)
             assertExactVisualKey(talent.visualKey)
             assertExactVisualKey(talent.iconKey)
             assertExactAudioKey(talent.audioProfile)
+            assertTrue(talent.castTime in setOf("INSTANT", "QUICK", "STANDARD", "HEAVY"), "Unsupported castTime ${talent.castTime}")
+            KeywordRegistry.CORE.resolveAll(talent.keywords)
+            talent.telegraphRef?.let(FoundationTelegraphRegistry.CORE::require)
             talent.requirements.talentPrereqs.forEach { prereq ->
                 assertTrue(talentIds.contains(prereq.talentId), "Unknown talent prerequisite ${prereq.talentId}")
             }
@@ -286,6 +298,18 @@ class ContractLintTest {
                 addAll(catalog.itemBundle.items.map { "item:${it.id}" })
             }
         assertEquals(uniqueIds.size, uniqueIds.toSet().size, "Object ids must stay unique inside their namespaces.")
+    }
+
+    @Test
+    fun `locale keyword markup stays aligned with keyword registry`() {
+        GameLocale.entries.forEach { locale ->
+            LintFixtures.localeKeywordMarkupIds(locale).forEach { keywordId ->
+                assertTrue(
+                    KeywordRegistry.CORE.resolve(keywordId) != null,
+                    "Locale ${locale.id} references unknown keyword markup [[$keywordId]].",
+                )
+            }
+        }
     }
 
     @Test

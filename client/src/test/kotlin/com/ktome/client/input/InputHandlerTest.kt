@@ -16,6 +16,7 @@ import com.ktome.core.snapshot.RenderSnapshot
 import com.ktome.core.snapshot.TalentReserveSnapshot
 import com.ktome.core.snapshot.TalentSlotSnapshot
 import com.ktome.core.snapshot.RenderUiStateSnapshot
+import com.ktome.core.talent.TalentTreeOwnerType
 import com.ktome.game.GameModule
 import com.ktome.game.PlayerCommand
 import java.nio.file.Path
@@ -185,6 +186,126 @@ class InputHandlerTest {
     }
 
     @Test
+    fun `talent assign mode maps confirm rollback and respec commands`() {
+        val input = ReplayInputSource()
+        val handler = InputHandler(input)
+        val snapshot = snapshotWithLoadout(talentPoints = 2, reserveTalents = listOf(reserveTalent("charge", "talent.vanguard.charge.name")))
+
+        input.frame(justPressed = setOf(Keys.T))
+        assertNull(handler.pollCommand(snapshot))
+        assertEquals(UiMode.TALENT_ASSIGN, handler.overlayState().mode)
+        input.clear()
+
+        input.frame(justPressed = setOf(Keys.ENTER))
+        assertEquals(PlayerCommand.ConfirmTalentDraft, handler.pollCommand(snapshot))
+        input.clear()
+
+        input.frame(justPressed = setOf(Keys.BACKSPACE))
+        assertEquals(PlayerCommand.RollbackTalentDraft, handler.pollCommand(snapshot))
+        input.clear()
+
+        input.frame(justPressed = setOf(Keys.R))
+        assertEquals(
+            PlayerCommand.RespecTalentTree(
+                ownerType = TalentTreeOwnerType.PROFESSION,
+                treeOwnerId = "vanguard",
+            ),
+            handler.pollCommand(snapshot),
+        )
+    }
+
+    @Test
+    fun `talent assign respec follows focused reserve tree owner`() {
+        val input = ReplayInputSource()
+        val handler = InputHandler(input)
+        val snapshot =
+            snapshotWithLoadout(
+                talentPoints = 2,
+                reserveTalents =
+                    listOf(
+                        reserveTalent(
+                            talentId = "moon_blessing",
+                            nameKey = "talent.shalore.moon_blessing.name",
+                            ownerType = TalentTreeOwnerType.RACE,
+                            treeOwnerId = "shalore",
+                        ),
+                    ),
+            )
+
+        input.frame(justPressed = setOf(Keys.T))
+        assertNull(handler.pollCommand(snapshot))
+        input.clear()
+
+        input.frame(justPressed = setOf(Keys.DOWN))
+        assertNull(handler.pollCommand(snapshot))
+        input.clear()
+
+        input.frame(justPressed = setOf(Keys.R))
+        assertEquals(
+            PlayerCommand.RespecTalentTree(
+                ownerType = TalentTreeOwnerType.RACE,
+                treeOwnerId = "shalore",
+            ),
+            handler.pollCommand(snapshot),
+        )
+    }
+
+    @Test
+    fun `talent assign mode can invest selected reserve talent directly`() {
+        val input = ReplayInputSource()
+        val handler = InputHandler(input)
+        val snapshot =
+            snapshotWithLoadout(
+                talentPoints = 2,
+                reserveTalents =
+                    listOf(
+                        reserveTalent("charge", "talent.vanguard.charge.name"),
+                        reserveTalent("sweeping_strike", "talent.vanguard.sweeping_strike.name"),
+                    ),
+            )
+
+        input.frame(justPressed = setOf(Keys.T))
+        assertNull(handler.pollCommand(snapshot))
+        assertEquals(UiMode.TALENT_ASSIGN, handler.overlayState().mode)
+        input.clear()
+
+        input.frame(justPressed = setOf(Keys.DOWN))
+        assertNull(handler.pollCommand(snapshot))
+        assertEquals(1, handler.overlayState().loadoutReserveSelection)
+        assertEquals(TalentAssignFocus.RESERVE, handler.overlayState().talentAssignFocus)
+        input.clear()
+
+        input.frame(justPressed = setOf(Keys.E))
+        assertEquals(PlayerCommand.AssignTalent("sweeping_strike"), handler.pollCommand(snapshot))
+    }
+
+    @Test
+    fun `pending reserve allocation keeps talent assign mode available`() {
+        val input = ReplayInputSource()
+        val handler = InputHandler(input)
+        val snapshot =
+            snapshotWithLoadout(
+                reserveTalents =
+                    listOf(
+                        reserveTalent(
+                            talentId = "charge",
+                            nameKey = "talent.vanguard.charge.name",
+                            hasPendingAllocation = true,
+                        ),
+                    ),
+            )
+
+        input.frame(justPressed = setOf(Keys.T))
+        assertNull(handler.pollCommand(snapshot))
+        assertEquals(UiMode.TALENT_ASSIGN, handler.overlayState().mode)
+        input.clear()
+
+        input.frame()
+        assertNull(handler.pollCommand(snapshot))
+        assertEquals(UiMode.TALENT_ASSIGN, handler.overlayState().mode)
+    }
+
+    @Test
     fun `enter on stairs triggers floor transition command`() {
         val input = ReplayInputSource()
         val handler = InputHandler(input)
@@ -347,6 +468,7 @@ class InputHandlerTest {
 
     private fun snapshotWithLoadout(
         statPoints: Int = 0,
+        talentPoints: Int = 0,
         reserveTalents: List<TalentReserveSnapshot> = emptyList(),
     ): RenderSnapshot =
         RenderSnapshot(
@@ -390,7 +512,7 @@ class InputHandlerTest {
                             currentExperience = 0,
                             nextLevelRequirement = 12,
                             statPoints = statPoints,
-                            talentPoints = 0,
+                            talentPoints = talentPoints,
                             attack = 4,
                             defense = 2,
                             accuracy = 3,
@@ -415,10 +537,15 @@ class InputHandlerTest {
         slot: Int,
         talentId: String,
         nameKey: String,
+        ownerType: TalentTreeOwnerType = TalentTreeOwnerType.PROFESSION,
+        treeOwnerId: String = "vanguard",
+        hasPendingAllocation: Boolean = false,
     ): TalentSlotSnapshot =
         TalentSlotSnapshot(
             slot = slot,
             talentId = talentId,
+            ownerType = ownerType.name,
+            treeOwnerId = treeOwnerId,
             nameKey = nameKey,
             level = 1,
             maxLevel = 5,
@@ -430,14 +557,20 @@ class InputHandlerTest {
             currentCooldown = 0,
             maxCooldown = 3,
             requiresTarget = false,
+            hasPendingAllocation = hasPendingAllocation,
         )
 
     private fun reserveTalent(
         talentId: String,
         nameKey: String,
+        ownerType: TalentTreeOwnerType = TalentTreeOwnerType.PROFESSION,
+        treeOwnerId: String = "vanguard",
+        hasPendingAllocation: Boolean = false,
     ): TalentReserveSnapshot =
         TalentReserveSnapshot(
             talentId = talentId,
+            ownerType = ownerType.name,
+            treeOwnerId = treeOwnerId,
             nameKey = nameKey,
             level = 1,
             maxLevel = 5,
@@ -450,5 +583,6 @@ class InputHandlerTest {
             maxCooldown = 3,
             requiresTarget = true,
             descKey = nameKey.replace(".name", ".desc"),
+            hasPendingAllocation = hasPendingAllocation,
         )
 }

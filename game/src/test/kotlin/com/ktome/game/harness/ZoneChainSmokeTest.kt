@@ -156,7 +156,10 @@ class ZoneChainSmokeTest {
                 command.target?.let { target -> "UseTalent(${command.slot},${target.x},${target.y})" } ?: "UseTalent(${command.slot})"
             is PlayerCommand.EquipTalentToSlot -> "EquipTalentToSlot(${command.slot},${command.talentId})"
             is PlayerCommand.AssignStat -> "AssignStat(${command.stat})"
-            is PlayerCommand.AssignTalent -> "AssignTalent(${command.slot})"
+            is PlayerCommand.AssignTalent -> "AssignTalent(${command.talentId})"
+            PlayerCommand.ConfirmTalentDraft -> "ConfirmTalentDraft"
+            PlayerCommand.RollbackTalentDraft -> "RollbackTalentDraft"
+            is PlayerCommand.RespecTalentTree -> "RespecTalentTree(${command.ownerType},${command.treeOwnerId})"
         }
 
     private fun sha256(value: String): String =

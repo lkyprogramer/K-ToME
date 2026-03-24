@@ -230,28 +230,40 @@ statuses:
     tags: [debuff, latest_override, actor]
     category: DEBUFF
     carrierKind: ACTOR
-  - id: WAR_CRY_BUFF
-    effectType: WAR_CRY_BUFF
+  - id: war_cry_empower
+    effectType: CUSTOM
     nameKey: status.war_cry_buff
     descKey: status.war_cry_buff.desc
     visualKey: icon.status.war_cry_buff
     iconKey: icon.status.war_cry_buff
     audioProfile: audio.monster.default
     schemaVersion: 1
-    tags: [buff, unique, actor]
+    tags: [buff, unique, actor, talent_local]
     category: BUFF
     carrierKind: ACTOR
-  - id: WAR_CRY_DEBUFF
-    effectType: WAR_CRY_DEBUFF
+    stackingRule: UNIQUE
+    replacePolicy: KEEP_STRONGEST
+    uniquenessKey: war_cry_empower
+    sourceScopedUnique: true
+    stats:
+      attackMultiplierBonus: 1.0
+  - id: war_cry_shaken
+    effectType: CUSTOM
     nameKey: status.war_cry_debuff
     descKey: status.war_cry_debuff.desc
     visualKey: icon.status.war_cry_debuff
     iconKey: icon.status.war_cry_debuff
     audioProfile: audio.monster.default
     schemaVersion: 1
-    tags: [debuff, unique, actor]
+    tags: [debuff, unique, actor, talent_local]
     category: DEBUFF
     carrierKind: ACTOR
+    stackingRule: UNIQUE
+    replacePolicy: KEEP_STRONGEST
+    uniquenessKey: war_cry_shaken
+    sourceScopedUnique: true
+    stats:
+      defenseMultiplierBonus: -1.0
   - id: GUARD_STANCE_BUFF
     effectType: GUARD_STANCE_BUFF
     nameKey: status.guard_stance_buff

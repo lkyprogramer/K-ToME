@@ -85,6 +85,8 @@ import com.ktome.core.save.SaveManager
 import com.ktome.core.snapshot.ActorRenderSnapshot
 import com.ktome.core.snapshot.ActorRoleKindSnapshot
 import com.ktome.core.snapshot.CellVisibilitySnapshot
+import com.ktome.core.snapshot.DescriptionModelSnapshot
+import com.ktome.core.snapshot.DescriptionValueSnapshot
 import com.ktome.core.snapshot.EquipmentSlotSnapshot
 import com.ktome.core.snapshot.GridPointSnapshot
 import com.ktome.core.snapshot.InventoryEntrySnapshot
@@ -103,6 +105,7 @@ import com.ktome.core.snapshot.RenderTextTokenSnapshot
 import com.ktome.core.snapshot.RenderUiStateSnapshot
 import com.ktome.core.snapshot.StatusEffectCategorySnapshot
 import com.ktome.core.snapshot.StatusEffectRenderSnapshot
+import com.ktome.core.snapshot.TalentBreakpointPreviewSnapshot
 import com.ktome.core.snapshot.TalentReserveSnapshot
 import com.ktome.core.snapshot.TalentSlotSnapshot
 import com.ktome.core.status.EffectCategory
@@ -113,12 +116,21 @@ import com.ktome.core.status.StatusTickResolver
 import com.ktome.core.stats.StatsCalculator
 import com.ktome.core.talent.CooldownState
 import com.ktome.core.talent.DamageMultiplierResolver
+import com.ktome.core.talent.DescriptionModel
+import com.ktome.core.talent.DescriptionValue
+import com.ktome.core.talent.DynamicDescriptionResolver
 import com.ktome.core.talent.EffectTracker
-import com.ktome.core.talent.StatusEffectType
+import com.ktome.core.talent.RespecManager
+import com.ktome.core.status.StatusEffectType
+import com.ktome.core.talent.RollbackManager
+import com.ktome.core.talent.TalentAllocationDraft
+import com.ktome.core.talent.TalentAllocationPlanner
 import com.ktome.core.talent.TalentFailureCode
 import com.ktome.core.talent.TalentLoadout
+import com.ktome.core.talent.TalentPrerequisiteValidator
 import com.ktome.core.talent.TalentRegistry
 import com.ktome.core.talent.TalentResolver
+import com.ktome.core.talent.TalentTreeOwnerType
 import com.ktome.core.talent.TalentUseResult
 import com.ktome.core.turn.TurnActorState
 import com.ktome.core.turn.TurnScheduler
@@ -160,7 +172,7 @@ class FoundationGameSession internal constructor(
     private val combatRandomSource: RandomSource = defaultCombatRandomSource(config, turnCount),
     private val combatResolver: CombatResolver = CombatResolver(combatRandomSource),
     private val talentRegistry: TalentRegistry = content.talentRegistry,
-    private val talentResolver: TalentResolver = TalentResolver(talentRegistry, combatResolver),
+    private val talentResolver: TalentResolver = TalentResolver(talentRegistry, combatResolver, content.statusCatalog),
     private val sessionRandom: RandomSource = defaultSessionRandomSource(config, turnCount),
     private val restoredPendingActionIds: List<Int> = emptyList(),
     private val restoredActiveTurnActorId: Int? = null,
@@ -168,6 +180,9 @@ class FoundationGameSession internal constructor(
         error("Zone transition is not supported for config $unsupportedZoneConfig.")
     },
 ) {
+    private val talentTreeOwnerResolver =
+        TalentTreeOwnerResolver(content.schemaCatalog.talentTrees.associateBy { tree -> tree.id })
+
     private data class LevelUpFeedbackSnapshot(
         val stats: Stats,
         val maxHp: Int,
@@ -180,6 +195,7 @@ class FoundationGameSession internal constructor(
         val name: String,
         val descKey: String?,
         val level: Int,
+        val committedLevel: Int,
         val maxLevel: Int,
         val resourceCost: Int,
         val resourceTypeId: String,
@@ -188,6 +204,9 @@ class FoundationGameSession internal constructor(
         val currentCooldown: Int,
         val maxCooldown: Int,
         val requiresTarget: Boolean,
+        val descriptionModel: DescriptionModel,
+        val nextBreakpointPreview: TalentBreakpointPreviewSnapshot?,
+        val hasPendingAllocation: Boolean,
     )
 
     var config: FoundationGameConfig = config
@@ -210,6 +229,7 @@ class FoundationGameSession internal constructor(
     private var checkpointRequested: Boolean = false
     private var terminalKillerNameKey: String? = null
     private var terminalKillerTemplateId: String? = null
+    private val respecManager: RespecManager = RespecManager()
     private val playerBaseResistanceValues: Map<DamageType, Int> =
         world.get<ResistanceProfile>(playerId)?.values?.toMap(linkedMapOf()) ?: emptyMap()
 
@@ -345,7 +365,11 @@ class FoundationGameSession internal constructor(
 
     fun hasPendingStatAllocation(): Boolean = playerStatus().statPoints > 0
 
-    fun hasPendingTalentAllocation(): Boolean = playerStatus().talentPoints > 0
+    fun hasPendingTalentAllocation(): Boolean =
+        playerStatus().talentPoints > 0 ||
+            world.get<TalentLoadout>(playerId)?.let { loadout ->
+                TalentAllocationPlanner.hasPendingChanges(liveRanks = loadout.talentLevels, draft = talentDraft())
+            } == true
 
     fun saveOnExit(): Boolean = if (runOutcome.isTerminal) false else persistRun()
 
@@ -374,10 +398,59 @@ class FoundationGameSession internal constructor(
         handleDeath(playerId, null)
     }
 
+    private fun talentDraft(): TalentAllocationDraft? = world.get(playerId)
+
+    private fun setTalentDraft(draft: TalentAllocationDraft?) {
+        if (draft == null) {
+            world.remove<TalentAllocationDraft>(playerId)
+        } else {
+            world.add(playerId, draft)
+        }
+    }
+
+    private fun storeNormalizedTalentDraft(
+        loadout: TalentLoadout,
+        draft: TalentAllocationDraft?,
+    ) {
+        setTalentDraft(TalentAllocationPlanner.normalize(liveRanks = loadout.talentLevels, draft = draft))
+    }
+
+    private fun minimumTalentRanks(
+        loadout: TalentLoadout,
+        owner: TalentTreeOwnerRef? = null,
+    ): Map<String, Int> =
+        scopedTalentRanks(loadout = loadout, owner = owner).keys.associateWith { 1 }
+
+    private fun effectiveTalentRanks(loadout: TalentLoadout): Map<String, Int> =
+        TalentAllocationPlanner.effectiveRanks(liveRanks = loadout.talentLevels, draft = talentDraft())
+
+    private fun talentAllocationPreview(
+        loadout: TalentLoadout,
+        availablePoints: Int,
+    ) = TalentAllocationPlanner.preview(
+        liveRanks = loadout.talentLevels,
+        minimumRanks = minimumTalentRanks(loadout),
+        availablePoints = availablePoints,
+        draft = talentDraft(),
+    )
+
+    private fun remainingTalentPoints(
+        loadout: TalentLoadout,
+        availablePoints: Int,
+    ): Int = talentAllocationPreview(loadout, availablePoints).remainingPoints
+
+    private fun canOpenTalentAllocation(): Boolean {
+        val loadout = world.get<TalentLoadout>(playerId) ?: return false
+        return loadout.talentLevels.isNotEmpty()
+    }
+
+    private fun isPlayerInCombat(): Boolean = turnCount <= lastPlayerCombatTurn
+
     fun playerStatus(): PlayerStatus {
         val health = requireNotNull(world.get<Health>(playerId))
         val experience = requireNotNull(world.get<Experience>(playerId))
         val derivedStats = requireNotNull(world.get<DerivedStats>(playerId))
+        val loadout = world.get<TalentLoadout>(playerId)
         return PlayerStatus(
             currentHp = health.current,
             maxHp = health.max,
@@ -385,7 +458,7 @@ class FoundationGameSession internal constructor(
             currentExperience = experience.current,
             nextLevelRequirement = ExperienceSystem.nextLevelExp(experience.level),
             statPoints = experience.unspentStatPoints,
-            talentPoints = experience.unspentTalentPoints,
+            talentPoints = loadout?.let { draftLoadout -> remainingTalentPoints(draftLoadout, experience.unspentTalentPoints) } ?: experience.unspentTalentPoints,
             attack = derivedStats.attack,
             defense = derivedStats.defense,
             accuracy = derivedStats.accuracy,
@@ -435,6 +508,7 @@ class FoundationGameSession internal constructor(
                 name = details.name,
                 descKey = details.descKey,
                 level = details.level,
+                committedLevel = details.committedLevel,
                 maxLevel = details.maxLevel,
                 resourceCost = details.resourceCost,
                 resourceTypeId = details.resourceTypeId,
@@ -443,6 +517,9 @@ class FoundationGameSession internal constructor(
                 currentCooldown = details.currentCooldown,
                 maxCooldown = details.maxCooldown,
                 requiresTarget = details.requiresTarget,
+                descriptionModel = details.descriptionModel,
+                nextBreakpointPreview = details.nextBreakpointPreview,
+                hasPendingAllocation = details.hasPendingAllocation,
             )
         }
     }
@@ -457,6 +534,7 @@ class FoundationGameSession internal constructor(
                 name = details.name,
                 descKey = details.descKey,
                 level = details.level,
+                committedLevel = details.committedLevel,
                 maxLevel = details.maxLevel,
                 resourceCost = details.resourceCost,
                 resourceTypeId = details.resourceTypeId,
@@ -465,6 +543,9 @@ class FoundationGameSession internal constructor(
                 currentCooldown = details.currentCooldown,
                 maxCooldown = details.maxCooldown,
                 requiresTarget = details.requiresTarget,
+                descriptionModel = details.descriptionModel,
+                nextBreakpointPreview = details.nextBreakpointPreview,
+                hasPendingAllocation = details.hasPendingAllocation,
             )
         }
     }
@@ -498,17 +579,20 @@ class FoundationGameSession internal constructor(
     ): TalentUiDetails? {
         val definition = talentRegistry.get(talentId) ?: return null
         val schema = talentSchemaFor(talentId)
-        val level = loadout.levelOf(talentId).coerceIn(1, definition.maxLevel)
-        val schemaResource = schema?.resourceCosts?.entries?.firstOrNull()
+        val committedLevel = loadout.levelOf(talentId).coerceIn(1, definition.maxLevel)
+        val level = (effectiveTalentRanks(loadout)[talentId] ?: committedLevel).coerceIn(1, definition.maxLevel)
+        val schemaResource = schema?.resourceCosts?.firstOrNull()
         val definitionResource = definition.resolvedResourceCosts().entries.firstOrNull()
-        val resourceTypeId = schemaResource?.key ?: definitionResource?.key?.name ?: currentProfessionSchema()?.resourceType ?: ResourceType.STAMINA.name
-        val resourceCost = schemaResource?.value ?: definitionResource?.value ?: 0
+        val resourceTypeId = schemaResource?.axis ?: definitionResource?.key?.name ?: currentProfessionSchema()?.resourceType ?: ResourceType.STAMINA.name
+        val resourceCost = schemaResource?.amount ?: definitionResource?.value ?: 0
         val effectiveRange = definition.range + (definition.levelEffects[level]?.rangeBonus ?: 0)
+        val descriptionModel = DynamicDescriptionResolver.resolve(definition, com.ktome.core.talent.DescriptionContext(currentRank = committedLevel, previewRank = level))
         return TalentUiDetails(
             talentId = talentId,
-            name = definition.name,
-            descKey = schema?.descKey,
+            name = tr(definition.nameKey),
+            descKey = definition.descriptionTemplateKey,
             level = level,
+            committedLevel = committedLevel,
             maxLevel = definition.maxLevel,
             resourceCost = resourceCost,
             resourceTypeId = resourceTypeId,
@@ -517,6 +601,9 @@ class FoundationGameSession internal constructor(
             currentCooldown = cooldowns[talentId] ?: 0,
             maxCooldown = definition.cooldown,
             requiresTarget = effectiveRange > 0,
+            descriptionModel = descriptionModel,
+            nextBreakpointPreview = DynamicDescriptionResolver.nextBreakpointPreview(definition, level)?.toSnapshot(),
+            hasPendingAllocation = level != committedLevel,
         )
     }
 
@@ -897,7 +984,7 @@ class FoundationGameSession internal constructor(
             ?.skipRules
             ?.any { rule ->
                 rule.talentId == talentId &&
-                    world.get<EffectTracker>(monsterId)?.has(rule.selfHasStatus) == true
+                    world.get<EffectTracker>(monsterId)?.activeEffects()?.any { effect -> effect.schemaId == rule.selfHasStatus } == true
             } == true
 
     private fun aiProfileFor(monsterId: EntityId): AIProfileSchemaV2? {
@@ -917,7 +1004,8 @@ class FoundationGameSession internal constructor(
         origin: Point,
         intent: MonsterTalentIntent,
     ): OverlayRenderSnapshot? {
-        val cells = telegraphCells(origin, intent.target ?: origin, intent.talentSchema)
+        val telegraphSpec = content.telegraphSpecFor(intent.talentSchema.telegraphRef) ?: return null
+        val cells = telegraphCells(origin, intent.target ?: origin, intent.talentSchema, telegraphSpec)
         if (cells.isEmpty()) {
             return null
         }
@@ -925,9 +1013,9 @@ class FoundationGameSession internal constructor(
             id = "telegraph:${entityId.value}:${intent.talentId}",
             visualKey = "vfx.telegraph.warning.sigil_01",
             audioProfile = intent.talentSchema.audioProfile,
-            previewTurns = 1,
-            dangerLevel = if (intent.talentSchema.kind == "ACTIVE") 2 else 1,
-            shape = telegraphShape(intent.talentSchema.telegraph),
+            previewTurns = telegraphSpec.previewTurns,
+            dangerLevel = telegraphSpec.dangerLevel.level,
+            shape = telegraphShape(telegraphSpec.shape),
             sourceAbilityId = intent.talentId,
             cells = cells.map { point -> GridPointSnapshot(point.x, point.y) },
             warningMessage =
@@ -941,23 +1029,70 @@ class FoundationGameSession internal constructor(
         )
     }
 
-    private fun telegraphShape(telegraph: String): OverlayShapeSnapshot =
-        when (telegraph) {
-            "charge_lane" -> OverlayShapeSnapshot.LINE
-            "self_buff_aura" -> OverlayShapeSnapshot.RING
-            else -> OverlayShapeSnapshot.SINGLE_TILE
+    private fun telegraphShape(shape: com.ktome.core.ai.TelegraphShape): OverlayShapeSnapshot =
+        when (shape) {
+            com.ktome.core.ai.TelegraphShape.SINGLE_TILE -> OverlayShapeSnapshot.SINGLE_TILE
+            com.ktome.core.ai.TelegraphShape.LINE -> OverlayShapeSnapshot.LINE
+            com.ktome.core.ai.TelegraphShape.CIRCLE -> OverlayShapeSnapshot.RING
+            com.ktome.core.ai.TelegraphShape.CONE -> OverlayShapeSnapshot.CONE
         }
 
     private fun telegraphCells(
         origin: Point,
         target: Point,
         talentSchema: TalentSchemaV2,
+        telegraphSpec: com.ktome.core.ai.TelegraphSpec,
     ): List<Point> =
-        when (talentSchema.telegraph) {
-            "charge_lane" -> lineTowards(origin, target, maxSteps = maxOf(1, talentSchema.range))
-            "self_buff_aura" -> auraCells(origin, radius = maxOf(1, talentSchema.areaRadius))
-            else -> listOf(projectSingleTarget(origin, target, maxSteps = maxOf(1, talentSchema.range)))
+        when (telegraphSpec.pattern) {
+            com.ktome.core.ai.TelegraphPattern.LINE -> lineTowards(origin, target, maxSteps = maxOf(1, talentSchema.targeting.range))
+            com.ktome.core.ai.TelegraphPattern.AURA -> auraCells(origin, radius = maxOf(1, talentSchema.targeting.areaRadius))
+            com.ktome.core.ai.TelegraphPattern.SINGLE_TARGET ->
+                listOf(projectSingleTarget(origin, target, maxSteps = maxOf(1, talentSchema.targeting.range)))
         }
+
+    private fun resolveTalentTreeOwner(talentSchema: TalentSchemaV2): TalentTreeOwnerRef? =
+        talentTreeOwnerResolver.ownerForTalent(talentSchema)
+
+    private fun scopedTalentRanks(
+        loadout: TalentLoadout,
+        owner: TalentTreeOwnerRef? = null,
+    ): Map<String, Int> =
+        if (owner == null) {
+            loadout.talentLevels.toMap(linkedMapOf())
+        } else {
+            loadout.talentLevels
+                .filterKeys { talentId ->
+                    talentSchemaFor(talentId)
+                        ?.let(::resolveTalentTreeOwner) == owner
+                }.toMap(linkedMapOf())
+        }
+
+    private fun ensureDraftOwner(
+        existingDraft: TalentAllocationDraft?,
+        owner: TalentTreeOwnerRef,
+    ): Boolean =
+        existingDraft == null ||
+            (existingDraft.ownerType == owner.ownerType && existingDraft.treeOwnerId == owner.treeOwnerId)
+
+    private fun applyTalentDraft(
+        loadout: TalentLoadout,
+        currentDraft: TalentAllocationDraft?,
+        owner: TalentTreeOwnerRef,
+        talentId: String,
+        nextLevel: Int,
+    ): TalentAllocationDraft =
+        TalentAllocationPlanner.applyRankIncrease(
+            draft = currentDraft,
+            ownerType = owner.ownerType,
+            treeOwnerId = owner.treeOwnerId,
+            talentId = talentId,
+            nextRank = nextLevel,
+        )
+
+    private fun rejectTalentOwnerConflict(messageKey: String): CommandResolution {
+        addMessage(messageKey)
+        return CommandResolution.rejected()
+    }
 
     private fun projectSingleTarget(
         origin: Point,
@@ -1057,10 +1192,13 @@ class FoundationGameSession internal constructor(
             val schema = requireNotNull(content.schemaCatalog.talents.firstOrNull { it.id == slot.talentId }) {
                 "Unknown talent schema '${slot.talentId}'."
             }
-            val resourceTypeId = schema.resourceCosts.keys.firstOrNull() ?: resolvePlayerResourceView().typeId
+            val owner = requireNotNull(resolveTalentTreeOwner(schema)) { "Unknown talent tree owner for '${slot.talentId}'." }
+            val resourceTypeId = schema.resourceCosts.firstOrNull()?.axis ?: resolvePlayerResourceView().typeId
             TalentSlotSnapshot(
                 slot = slot.slot,
                 talentId = slot.talentId,
+                ownerType = owner.ownerType.name,
+                treeOwnerId = owner.treeOwnerId,
                 nameKey = schema.nameKey,
                 visualKey = schema.visualKey,
                 iconKey = schema.iconKey,
@@ -1068,7 +1206,7 @@ class FoundationGameSession internal constructor(
                 audioProfile = schema.audioProfile,
                 level = slot.level,
                 maxLevel = slot.maxLevel,
-                resourceCost = schema.resourceCosts[resourceTypeId] ?: slot.resourceCost,
+                resourceCost = schema.resourceCosts.firstOrNull { cost -> cost.axis == resourceTypeId }?.amount ?: slot.resourceCost,
                 resourceLabelKey = resourceLabelKey(resourceTypeId),
                 resourceTypeId = resourceTypeId,
                 range = slot.range,
@@ -1077,6 +1215,11 @@ class FoundationGameSession internal constructor(
                 maxCooldown = slot.maxCooldown,
                 requiresTarget = slot.requiresTarget,
                 descKey = slot.descKey,
+                committedLevel = slot.committedLevel,
+                descriptionModel = slot.descriptionModel?.toSnapshot(),
+                nextBreakpointPreview = slot.nextBreakpointPreview,
+                isMaxRank = slot.level >= slot.maxLevel,
+                hasPendingAllocation = slot.hasPendingAllocation,
             )
         }
 
@@ -1085,9 +1228,12 @@ class FoundationGameSession internal constructor(
             val schema = requireNotNull(content.schemaCatalog.talents.firstOrNull { it.id == talent.talentId }) {
                 "Unknown talent schema '${talent.talentId}'."
             }
-            val resourceTypeId = schema.resourceCosts.keys.firstOrNull() ?: resolvePlayerResourceView().typeId
+            val owner = requireNotNull(resolveTalentTreeOwner(schema)) { "Unknown talent tree owner for '${talent.talentId}'." }
+            val resourceTypeId = schema.resourceCosts.firstOrNull()?.axis ?: resolvePlayerResourceView().typeId
             TalentReserveSnapshot(
                 talentId = talent.talentId,
+                ownerType = owner.ownerType.name,
+                treeOwnerId = owner.treeOwnerId,
                 nameKey = schema.nameKey,
                 visualKey = schema.visualKey,
                 iconKey = schema.iconKey,
@@ -1095,7 +1241,7 @@ class FoundationGameSession internal constructor(
                 audioProfile = schema.audioProfile,
                 level = talent.level,
                 maxLevel = talent.maxLevel,
-                resourceCost = schema.resourceCosts[resourceTypeId] ?: talent.resourceCost,
+                resourceCost = schema.resourceCosts.firstOrNull { cost -> cost.axis == resourceTypeId }?.amount ?: talent.resourceCost,
                 resourceLabelKey = resourceLabelKey(resourceTypeId),
                 resourceTypeId = resourceTypeId,
                 range = talent.range,
@@ -1104,8 +1250,43 @@ class FoundationGameSession internal constructor(
                 maxCooldown = talent.maxCooldown,
                 requiresTarget = talent.requiresTarget,
                 descKey = talent.descKey,
+                committedLevel = talent.committedLevel,
+                descriptionModel = talent.descriptionModel?.toSnapshot(),
+                nextBreakpointPreview = talent.nextBreakpointPreview,
+                isMaxRank = talent.level >= talent.maxLevel,
+                hasPendingAllocation = talent.hasPendingAllocation,
             )
         }
+
+    private fun DescriptionModel.toSnapshot(): DescriptionModelSnapshot =
+        DescriptionModelSnapshot(
+            templateKey = templateKey,
+            placeholders =
+                placeholders.mapValues { (name, value) ->
+                    when (value) {
+                        is DescriptionValue.BooleanValue -> DescriptionValueSnapshot.BooleanValue(value.value)
+                        is DescriptionValue.DecimalValue -> DescriptionValueSnapshot.DecimalValue(value.value)
+                        is DescriptionValue.IntValue -> DescriptionValueSnapshot.IntValue(value.value)
+                        is DescriptionValue.TextValue ->
+                            if (name == "statusId") {
+                                DescriptionValueSnapshot.StatusValue(
+                                    statusId = value.value,
+                                    nameKey = statusNameKey(value.value),
+                                )
+                            } else {
+                                DescriptionValueSnapshot.TextValue(value.value)
+                            }
+                    }
+                },
+            keywords = keywords,
+        )
+
+    private fun com.ktome.core.talent.TalentBreakpointPreview.toSnapshot(): TalentBreakpointPreviewSnapshot =
+        TalentBreakpointPreviewSnapshot(
+            atRank = atRank,
+            descriptionAddendumKey = descriptionAddendumKey,
+            model = model.toSnapshot(),
+        )
 
     private fun buildInventoryEntries(): List<InventoryEntrySnapshot> =
         inventoryItems().map { itemView ->
@@ -1759,7 +1940,15 @@ class FoundationGameSession internal constructor(
         val finalDamage = result.damage.finalDamage
 
         logEvent(DamageDealtEvent(dueEffect.sourceEntityId ?: actorId, actorId, finalDamage, crit = false))
-        logEvent(StatusTickEvent(actorId, dueEffect.effect.type, finalDamage, dueEffect.carrierKind))
+        logEvent(
+            StatusTickEvent(
+                target = actorId,
+                statusType = dueEffect.effect.type,
+                statusId = dueEffect.effect.schemaId,
+                damage = finalDamage,
+                carrierKind = dueEffect.carrierKind,
+            ),
+        )
         addMessage(
             "log.status.tick",
             keyArg("status", dueEffect.effect.nameKey ?: statusEffectNameKey(dueEffect.effect.type)),
@@ -1849,27 +2038,115 @@ class FoundationGameSession internal constructor(
             is PlayerCommand.AssignTalent -> {
                 val experience = requireNotNull(world.get<Experience>(playerId))
                 val loadout = requireNotNull(world.get<TalentLoadout>(playerId))
-                val talentId = loadout.talentIdAt(command.slot)
-                if (experience.unspentTalentPoints <= 0) {
+                val talentId = command.talentId
+                val talentSchema = talentSchemaFor(talentId)
+                val remainingPoints = remainingTalentPoints(loadout, experience.unspentTalentPoints)
+                if (remainingPoints <= 0) {
                     addMessage("log.talent.none")
                     CommandResolution.rejected()
-                } else if (talentId == null) {
-                    addMessage("log.talent.slot_empty", literalArg("slot", command.slot))
+                } else if (talentId !in loadout.talentLevels) {
+                    addMessage("log.loadout.not_unlocked", keyArg("talent", talentNameKey(talentId)))
+                    CommandResolution.rejected()
+                } else if (talentSchema == null) {
+                    rejectTalentOwnerConflict("log.talent.owner_unresolved")
+                } else {
+                    val owner = resolveTalentTreeOwner(talentSchema)
+                    val existingDraft = talentDraft()
+                    if (owner == null) {
+                        rejectTalentOwnerConflict("log.talent.owner_unresolved")
+                    } else if (!ensureDraftOwner(existingDraft, owner)) {
+                        rejectTalentOwnerConflict("log.talent.owner_conflict")
+                    } else {
+                        val definition = requireNotNull(talentRegistry.get(talentId))
+                        val currentLevel = effectiveTalentRanks(loadout)[talentId] ?: loadout.levelOf(talentId)
+                        if (currentLevel >= definition.maxLevel) {
+                            addMessage("log.talent.max_level", keyArg("talent", talentNameKey(talentId)))
+                            CommandResolution.rejected()
+                        } else {
+                            val nextLevel = currentLevel + 1
+                            val nextDraft =
+                                applyTalentDraft(
+                                    loadout = loadout,
+                                    currentDraft = existingDraft,
+                                    owner = owner,
+                                    talentId = talentId,
+                                    nextLevel = nextLevel,
+                                )
+                            val candidateRanks = TalentAllocationPlanner.effectiveRanks(loadout.talentLevels, nextDraft)
+                            val missingPrerequisites = TalentPrerequisiteValidator.missingPrerequisites(definition.prerequisites, candidateRanks)
+                            if (missingPrerequisites.isNotEmpty()) {
+                                addMessage(
+                                    "log.talent.requirement_missing",
+                                    keyArg("talent", talentNameKey(talentId)),
+                                    keyArg("required", talentNameKey(missingPrerequisites.first().talentId)),
+                                    literalArg("rank", missingPrerequisites.first().minRank),
+                                )
+                                CommandResolution.rejected()
+                            } else {
+                                storeNormalizedTalentDraft(loadout, nextDraft)
+                                addMessage(
+                                    "log.talent.preview_advance",
+                                    keyArg("talent", talentNameKey(talentId)),
+                                    literalArg("level", nextLevel),
+                                )
+                                CommandResolution(accepted = true, consumesTurn = false)
+                            }
+                        }
+                    }
+                }
+            }
+
+            PlayerCommand.ConfirmTalentDraft -> {
+                val draft = talentDraft()
+                val experience = requireNotNull(world.get<Experience>(playerId))
+                val loadout = requireNotNull(world.get<TalentLoadout>(playerId))
+                if (draft == null) {
                     CommandResolution.rejected()
                 } else {
-                    val definition = requireNotNull(talentRegistry.get(talentId))
-                    val currentLevel = loadout.levelOf(talentId)
-                    if (currentLevel >= definition.maxLevel) {
-                        addMessage("log.talent.max_level", keyArg("talent", talentNameKey(talentId)))
-                        CommandResolution.rejected()
+                    val preview = talentAllocationPreview(loadout, experience.unspentTalentPoints)
+                    draft.pendingRanks.forEach { (talentId, rank) ->
+                        loadout.talentLevels[talentId] = rank
+                    }
+                    experience.unspentTalentPoints = preview.remainingPoints
+                    setTalentDraft(null)
+                    canonicalizePlayerLoadout(loadout)
+                    addMessage("log.talent.draft_confirmed")
+                    CommandResolution(accepted = true, consumesTurn = false)
+                }
+            }
+
+            PlayerCommand.RollbackTalentDraft -> {
+                val loadout = requireNotNull(world.get<TalentLoadout>(playerId))
+                val draft = talentDraft()
+                if (draft == null || draft.previousPendingRanks == null) {
+                    CommandResolution.rejected()
+                } else {
+                    storeNormalizedTalentDraft(loadout, RollbackManager.rollback(draft))
+                    addMessage("log.talent.draft_rollback")
+                    CommandResolution(accepted = true, consumesTurn = false)
+                }
+            }
+
+            is PlayerCommand.RespecTalentTree -> {
+                val loadout = requireNotNull(world.get<TalentLoadout>(playerId))
+                if (isPlayerInCombat()) {
+                    addMessage("log.talent.respec_blocked")
+                    CommandResolution.rejected()
+                } else {
+                    val owner = TalentTreeOwnerRef(command.ownerType, command.treeOwnerId)
+                    val liveRanks = scopedTalentRanks(loadout = loadout, owner = owner)
+                    if (liveRanks.isEmpty()) {
+                        rejectTalentOwnerConflict("log.talent.owner_unresolved")
                     } else {
-                        loadout.talentLevels[talentId] = currentLevel + 1
-                        experience.unspentTalentPoints -= 1
-                        addMessage(
-                            "log.talent.advance",
-                            keyArg("talent", talentNameKey(talentId)),
-                            literalArg("level", currentLevel + 1),
-                        )
+                        val respecDraft =
+                            respecManager.createDraft(
+                                ownerType = owner.ownerType,
+                                treeOwnerId = owner.treeOwnerId,
+                                liveRanks = liveRanks,
+                                minimumRanks = minimumTalentRanks(loadout = loadout, owner = owner),
+                            )
+                        storeNormalizedTalentDraft(loadout, respecDraft)
+                        addMessage("log.talent.respec")
                         CommandResolution(accepted = true, consumesTurn = false)
                     }
                 }
@@ -2558,6 +2835,13 @@ class FoundationGameSession internal constructor(
             dungeonManager.knownFloors()
                 .sorted()
                 .mapNotNull { floor -> dungeonManager.stateOf(floor) }
+        val serializedPendingActionIds =
+            buildList {
+                activeTurnActor
+                    ?.takeIf { actorId -> actorId !in pendingActions }
+                    ?.let { actorId -> add(actorId.value) }
+                addAll(pendingActions.map(EntityId::value))
+            }.distinct()
         return saveManager.save(
             SessionSnapshotMapper.toSaveSnapshot(
                 config = config,
@@ -2567,8 +2851,8 @@ class FoundationGameSession internal constructor(
                 floors = floors,
                 combatRandomState = (combatRandomSource as? StatefulRandomSource)?.snapshotState(),
                 sessionRandomState = (sessionRandom as? StatefulRandomSource)?.snapshotState(),
-                pendingActionIds = pendingActions.map(EntityId::value),
-                activeTurnActorId = activeTurnActor?.value,
+                pendingActionIds = serializedPendingActionIds,
+                activeTurnActorId = activeTurnActor?.value?.takeIf { actorId -> actorId in serializedPendingActionIds },
             ),
         )
     }
@@ -3132,18 +3416,26 @@ class FoundationGameSession internal constructor(
         result.effects.forEach { effect ->
             when (effect) {
                 is com.ktome.core.talent.TalentEffectResult.Buff -> {
-                    logEvent(StatusAppliedEvent(effect.target, effect.type, source = result.user, remainingTurns = effect.duration))
+                    logEvent(
+                        StatusAppliedEvent(
+                            target = effect.target,
+                            statusType = effect.type,
+                            statusId = effect.statusId,
+                            source = result.user,
+                            remainingTurns = effect.duration,
+                        ),
+                    )
                     addMessage(
-                        when (effect.type) {
-                            StatusEffectType.WAR_CRY_BUFF -> "log.talent.target_empowered"
-                            StatusEffectType.WAR_CRY_DEBUFF -> "log.talent.target_shaken"
+                        when (effect.statusId) {
+                            "war_cry_empower" -> "log.talent.target_empowered"
+                            "war_cry_shaken" -> "log.talent.target_shaken"
                             else -> "log.talent.target_affected"
                         },
                         entityArg("target", effect.target),
                         literalArg("turns", effect.duration),
                     )
                     effect.interactionId?.let { interactionId ->
-                        logStatusInteraction(effect.target, effect.type, interactionId, result.user, effect.previousSource)
+                        logStatusInteraction(effect.target, effect.type, effect.statusId, interactionId, result.user, effect.previousSource)
                     }
                 }
 
@@ -3207,8 +3499,14 @@ class FoundationGameSession internal constructor(
                 }
 
                 is com.ktome.core.talent.TalentEffectResult.StatusCleanse -> {
-                    effect.removed.forEach { removedType ->
-                        logEvent(StatusCleanseEvent(effect.target, removedType))
+                    effect.removed.forEachIndexed { index, removedType ->
+                        logEvent(
+                            StatusCleanseEvent(
+                                target = effect.target,
+                                statusType = removedType,
+                                statusId = effect.removedStatusIds.getOrElse(index) { removedType.schemaId },
+                            ),
+                        )
                     }
                     if (effect.removed.isNotEmpty()) {
                         addMessage(
@@ -3220,18 +3518,26 @@ class FoundationGameSession internal constructor(
                 }
 
                 is com.ktome.core.talent.TalentEffectResult.StatusApplied -> {
-                    logEvent(StatusAppliedEvent(effect.target, effect.type, source = result.user, remainingTurns = effect.duration))
+                    logEvent(
+                        StatusAppliedEvent(
+                            target = effect.target,
+                            statusType = effect.type,
+                            statusId = effect.statusId,
+                            source = result.user,
+                            remainingTurns = effect.duration,
+                        ),
+                    )
                     addMessage(
-                        when (effect.type) {
-                            StatusEffectType.STUN -> "log.talent.target_stunned"
-                            StatusEffectType.ARMOR_BREAK -> "log.talent.target_armor_broken"
+                        when (effect.statusId) {
+                            StatusEffectType.STUN.schemaId -> "log.talent.target_stunned"
+                            StatusEffectType.ARMOR_BREAK.schemaId -> "log.talent.target_armor_broken"
                             else -> "log.talent.target_affected"
                         },
                         entityArg("target", effect.target),
                         literalArg("turns", effect.duration),
                     )
                     effect.interactionId?.let { interactionId ->
-                        logStatusInteraction(effect.target, effect.type, interactionId, result.user, effect.previousSource)
+                        logStatusInteraction(effect.target, effect.type, effect.statusId, interactionId, result.user, effect.previousSource)
                     }
                 }
             }
@@ -3241,13 +3547,22 @@ class FoundationGameSession internal constructor(
     private fun logStatusInteraction(
         target: EntityId,
         type: StatusEffectType,
+        statusId: String,
         interactionId: String,
         source: EntityId,
         previousSource: EntityId?,
     ) {
         when (interactionId) {
             "TAUNT_OVERRIDE" -> {
-                logEvent(TauntOverrideEvent(target = target, previousSource = previousSource, newSource = source))
+                logEvent(
+                    TauntOverrideEvent(
+                        target = target,
+                        statusType = type,
+                        statusId = statusId,
+                        previousSource = previousSource,
+                        newSource = source,
+                    ),
+                )
                 addMessage(
                     "log.status.taunt_override",
                     entityArg("target", target),
@@ -3257,7 +3572,14 @@ class FoundationGameSession internal constructor(
             }
 
             else -> {
-                logEvent(StatusInteractionEvent(target = target, statusType = type, interactionId = interactionId))
+                logEvent(
+                    StatusInteractionEvent(
+                        target = target,
+                        statusType = type,
+                        statusId = statusId,
+                        interactionId = interactionId,
+                    ),
+                )
                 addStatusInteractionMessage(target, interactionId)
             }
         }
@@ -3638,7 +3960,21 @@ class FoundationGameSession internal constructor(
         tr(statusEffectNameKey(type))
 
     private fun statusEffectNameKey(type: StatusEffectType): String =
-        content.statusSchemaFor(type.schemaId)?.nameKey ?: StatusDefinitions.nameKey(type)
+        content.statusSchemaFor(type.schemaId)?.nameKey
+            ?: if (type == StatusEffectType.CUSTOM) {
+                "status.custom"
+            } else {
+                StatusDefinitions.nameKey(type)
+            }
+
+    private fun statusNameKey(statusId: String): String =
+        content.statusSchemaFor(statusId)?.nameKey
+            ?: content.statusCatalog.definitionOrNull(statusId)?.nameKey
+            ?: if (StatusEffectType.fromSchemaId(statusId) == StatusEffectType.CUSTOM) {
+                "status.custom"
+            } else {
+                statusEffectNameKey(StatusEffectType.fromSchemaId(statusId))
+            }
 
     private fun EffectCategory.toSnapshotCategory(): StatusEffectCategorySnapshot =
         when (this) {
@@ -4033,12 +4369,12 @@ class FoundationGameSession internal constructor(
             is EntityDeathEvent -> "death:${event.entity.value}:${event.killer?.value ?: "none"}"
             is ExperienceGainedEvent -> "xp:${event.entity.value}:${event.amount}"
             is LevelUpEvent -> "level:${event.entity.value}:${event.newLevel}"
-            is StatusAppliedEvent -> "status_apply:${event.target.value}:${event.statusType.schemaId}:${event.remainingTurns}"
-            is StatusCleanseEvent -> "status_cleanse:${event.target.value}:${event.statusType.schemaId}:${event.reason}"
-            is StatusTickEvent -> "status_tick:${event.target.value}:${event.statusType.schemaId}:${event.damage}:${event.carrierKind.name}"
-            is StatusInteractionEvent -> "status_interaction:${event.target.value}:${event.statusType.schemaId}:${event.interactionId}"
-            is TauntOverrideEvent -> "taunt_override:${event.target.value}:${event.newSource?.value ?: "none"}"
-            is StealthBrokenEvent -> "stealth_break:${event.target.value}:${event.damage}"
+            is StatusAppliedEvent -> "status_apply:${event.target.value}:${event.statusId}:${event.remainingTurns}"
+            is StatusCleanseEvent -> "status_cleanse:${event.target.value}:${event.statusId}:${event.reason}"
+            is StatusTickEvent -> "status_tick:${event.target.value}:${event.statusId}:${event.damage}:${event.carrierKind.name}"
+            is StatusInteractionEvent -> "status_interaction:${event.target.value}:${event.statusId}:${event.interactionId}"
+            is TauntOverrideEvent -> "taunt_override:${event.target.value}:${event.statusId}:${event.newSource?.value ?: "none"}"
+            is StealthBrokenEvent -> "stealth_break:${event.target.value}:${event.statusId}:${event.damage}"
             else -> event::class.simpleName ?: "UnknownEvent"
         }
 
@@ -4073,6 +4409,7 @@ class FoundationGameSession internal constructor(
             GameContent(
                 talents = emptyList(),
                 statuses = emptyList(),
+                statusCatalog = com.ktome.core.status.StatusCatalog.EMPTY,
                 talentRegistry = talentRegistry,
                 monsterCatalog = compatibilityMonsterCatalog(world, currentFloor),
                 itemBundle = compatibilityItemBundle(world, currentFloor),

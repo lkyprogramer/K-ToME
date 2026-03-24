@@ -28,7 +28,7 @@ aiProfiles:
     talentPriority: [shield_bash, war_cry]
     skipRules:
       - talentId: war_cry
-        selfHasStatus: WAR_CRY_BUFF
+        selfHasStatus: war_cry_empower
     triggers:
       - triggerId: elite_forge_guard_opening_shield_bash
         condition: onCombatStart
@@ -42,7 +42,7 @@ aiProfiles:
     talentPriority: [war_cry, power_strike, charge, shield_bash]
     skipRules:
       - talentId: war_cry
-        selfHasStatus: WAR_CRY_BUFF
+        selfHasStatus: war_cry_empower
     triggers:
       - triggerId: dungeon_lord_opening_war_cry
         condition: onCombatStart

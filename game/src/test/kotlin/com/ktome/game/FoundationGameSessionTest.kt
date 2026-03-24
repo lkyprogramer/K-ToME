@@ -2,6 +2,8 @@ package com.ktome.game
 
 import com.ktome.core.combat.CombatResolver
 import com.ktome.core.combat.DamageType
+import com.ktome.core.dungeon.DungeonManager
+import com.ktome.core.dungeon.FloorState
 import com.ktome.core.ecs.AIBehavior
 import com.ktome.core.ecs.AIType
 import com.ktome.core.ecs.AiTriggerTracker
@@ -41,9 +43,14 @@ import com.ktome.core.save.SaveRestoreException
 import com.ktome.core.stats.StatsCalculator
 import com.ktome.core.talent.ActiveEffect
 import com.ktome.core.talent.EffectTracker
-import com.ktome.core.talent.StatusEffectType
+import com.ktome.core.status.StatusEffectType
+import com.ktome.core.talent.TalentAllocationDraft
+import com.ktome.core.talent.TalentCategory
+import com.ktome.core.talent.TalentDef
+import com.ktome.core.talent.TalentLevelEffect
 import com.ktome.core.talent.TalentResolver
 import com.ktome.core.talent.TalentRegistry
+import com.ktome.core.talent.TalentTreeOwnerType
 import com.ktome.core.status.StatusLifecycle
 import com.ktome.game.data.DataLoader
 import com.ktome.game.factory.EntityFactory
@@ -206,8 +213,7 @@ class FoundationGameSessionTest {
 
         assertTrue(session.perform(PlayerCommand.Move(dummyPosition - session.playerPosition())))
 
-        val blinkSlot = session.talentSlots().first { slot -> slot.talentId == "blink" }.slot
-        assertTrue(session.perform(PlayerCommand.AssignTalent(blinkSlot)))
+        assertTrue(session.perform(PlayerCommand.AssignTalent("blink")))
         val blink = session.talentSlots().first { slot -> slot.talentId == "blink" }
         assertEquals(5, requireNotNull(runtimeWorld(session).get<Experience>(session.playerId)).level)
         assertTrue(blink.range > baselineBlink.range)
@@ -229,6 +235,144 @@ class FoundationGameSessionTest {
                 .first { argument -> argument.name == "resource" }
                 .valueKey,
         )
+    }
+
+    @Test
+    fun `assign talent stays in draft until confirm commits live rank`() {
+        val session =
+            GameModule.newFoundationSession(
+                FoundationGameConfig(seed = 20260320L, zoneId = "shattered_outpost", playerProfessionId = "arcanist"),
+                SaveManager(tempDir.resolve("talent-draft-confirm-save")),
+            )
+        clearMonsters(session)
+        val dummyId = installExperienceDummy(session, id = "talent_draft_confirm_dummy", expReward = 1500)
+        val dummyPosition = requireNotNull(runtimeWorld(session).get<Position>(dummyId)).toPoint()
+        assertTrue(session.perform(PlayerCommand.Move(dummyPosition - session.playerPosition())))
+
+        val liveLoadout = requireNotNull(runtimeWorld(session).get<com.ktome.core.talent.TalentLoadout>(session.playerId))
+        val committedRank = liveLoadout.levelOf("blink")
+
+        assertTrue(session.perform(PlayerCommand.AssignTalent("blink")))
+        assertEquals(committedRank + 1, session.talentSlots().first { slot -> slot.talentId == "blink" }.level)
+        assertEquals(committedRank, session.talentSlots().first { slot -> slot.talentId == "blink" }.committedLevel)
+        assertEquals(committedRank, liveLoadout.levelOf("blink"))
+
+        assertTrue(session.perform(PlayerCommand.ConfirmTalentDraft))
+        assertEquals(committedRank + 1, liveLoadout.levelOf("blink"))
+        assertEquals(committedRank + 1, session.talentSlots().first { slot -> slot.talentId == "blink" }.committedLevel)
+        assertTrue(session.renderSnapshot().logEvents.any { event -> event.message.key == "log.talent.draft_confirmed" })
+    }
+
+    @Test
+    fun `rollback clears pending talent preview without mutating live rank`() {
+        val session =
+            GameModule.newFoundationSession(
+                FoundationGameConfig(seed = 20260320L, zoneId = "shattered_outpost", playerProfessionId = "arcanist"),
+                SaveManager(tempDir.resolve("talent-draft-rollback-save")),
+            )
+        clearMonsters(session)
+        val dummyId = installExperienceDummy(session, id = "talent_draft_rollback_dummy", expReward = 1500)
+        val dummyPosition = requireNotNull(runtimeWorld(session).get<Position>(dummyId)).toPoint()
+        assertTrue(session.perform(PlayerCommand.Move(dummyPosition - session.playerPosition())))
+
+        val liveLoadout = requireNotNull(runtimeWorld(session).get<com.ktome.core.talent.TalentLoadout>(session.playerId))
+        val committedRank = liveLoadout.levelOf("blink")
+
+        assertTrue(session.perform(PlayerCommand.AssignTalent("blink")))
+        assertTrue(session.perform(PlayerCommand.RollbackTalentDraft))
+        assertEquals(committedRank, liveLoadout.levelOf("blink"))
+        assertEquals(committedRank, session.talentSlots().first { slot -> slot.talentId == "blink" }.level)
+        assertFalse(session.talentSlots().any { slot -> slot.hasPendingAllocation })
+        assertTrue(session.renderSnapshot().logEvents.any { event -> event.message.key == "log.talent.draft_rollback" })
+    }
+
+    @Test
+    fun `reserve talent can be assigned directly without equipping it first`() {
+        val session =
+            GameModule.newFoundationSession(
+                FoundationGameConfig(seed = 20260320L, zoneId = "shattered_outpost", playerProfessionId = "arcanist"),
+                SaveManager(tempDir.resolve("reserve-talent-direct-assign-save")),
+            )
+        clearMonsters(session)
+        val dummyId = installExperienceDummy(session, id = "reserve_talent_direct_assign_dummy", expReward = 1500)
+        val dummyPosition = requireNotNull(runtimeWorld(session).get<Position>(dummyId)).toPoint()
+        assertTrue(session.perform(PlayerCommand.Move(dummyPosition - session.playerPosition())))
+
+        val liveLoadout = requireNotNull(runtimeWorld(session).get<com.ktome.core.talent.TalentLoadout>(session.playerId))
+        val committedRank = liveLoadout.levelOf("mana_surge")
+
+        assertTrue(session.perform(PlayerCommand.AssignTalent("mana_surge")))
+        val preview = session.reserveTalentSlots().first { slot -> slot.talentId == "mana_surge" }
+        assertEquals(committedRank + 1, preview.level)
+        assertEquals(committedRank, preview.committedLevel)
+        assertTrue(preview.hasPendingAllocation)
+
+        assertTrue(session.perform(PlayerCommand.ConfirmTalentDraft))
+        assertEquals(committedRank + 1, liveLoadout.levelOf("mana_surge"))
+    }
+
+    @Test
+    fun `rollback only removes the most recent pending talent step even after save load`() {
+        val saveManager = SaveManager(tempDir.resolve("talent-draft-rollback-history-save"))
+        val session =
+            GameModule.newFoundationSession(
+                FoundationGameConfig(seed = 20260320L, zoneId = "shattered_outpost", playerProfessionId = "arcanist"),
+                saveManager,
+            )
+        clearMonsters(session)
+        val dummyId = installExperienceDummy(session, id = "talent_draft_rollback_history_dummy", expReward = 1500)
+        val dummyPosition = requireNotNull(runtimeWorld(session).get<Position>(dummyId)).toPoint()
+        assertTrue(session.perform(PlayerCommand.Move(dummyPosition - session.playerPosition())))
+
+        val liveLoadout = requireNotNull(runtimeWorld(session).get<com.ktome.core.talent.TalentLoadout>(session.playerId))
+        val committedBlink = liveLoadout.levelOf("blink")
+        val committedManaSurge = liveLoadout.levelOf("mana_surge")
+
+        assertTrue(session.perform(PlayerCommand.AssignTalent("blink")))
+        assertTrue(session.perform(PlayerCommand.AssignTalent("mana_surge")))
+        assertTrue(session.saveOnExit())
+
+        val loaded = requireNotNull(GameModule.loadFoundationSession(saveManager))
+        assertTrue(loaded.perform(PlayerCommand.RollbackTalentDraft))
+
+        val blink = loaded.talentSlots().first { slot -> slot.talentId == "blink" }
+        val manaSurge = loaded.reserveTalentSlots().first { slot -> slot.talentId == "mana_surge" }
+        assertEquals(committedBlink + 1, blink.level)
+        assertEquals(committedBlink, blink.committedLevel)
+        assertTrue(blink.hasPendingAllocation)
+        assertEquals(committedManaSurge, manaSurge.level)
+        assertEquals(committedManaSurge, manaSurge.committedLevel)
+        assertFalse(manaSurge.hasPendingAllocation)
+        assertFalse(loaded.perform(PlayerCommand.RollbackTalentDraft))
+    }
+
+    @Test
+    fun `pending talent draft survives save and load without touching live loadout`() {
+        val saveManager = SaveManager(tempDir.resolve("talent-draft-persist-save"))
+        val session =
+            GameModule.newFoundationSession(
+                FoundationGameConfig(seed = 20260320L, zoneId = "shattered_outpost", playerProfessionId = "arcanist"),
+                saveManager,
+            )
+        clearMonsters(session)
+        val dummyId = installExperienceDummy(session, id = "talent_draft_persist_dummy", expReward = 1500)
+        val dummyPosition = requireNotNull(runtimeWorld(session).get<Position>(dummyId)).toPoint()
+        assertTrue(session.perform(PlayerCommand.Move(dummyPosition - session.playerPosition())))
+
+        val liveLoadout = requireNotNull(runtimeWorld(session).get<com.ktome.core.talent.TalentLoadout>(session.playerId))
+        val committedRank = liveLoadout.levelOf("blink")
+
+        assertTrue(session.perform(PlayerCommand.AssignTalent("blink")))
+        assertTrue(session.saveOnExit())
+
+        val loaded = requireNotNull(GameModule.loadFoundationSession(saveManager))
+        val loadedBlink = loaded.talentSlots().first { slot -> slot.talentId == "blink" }
+        val loadedLoadout = requireNotNull(runtimeWorld(loaded).get<com.ktome.core.talent.TalentLoadout>(loaded.playerId))
+
+        assertEquals(committedRank + 1, loadedBlink.level)
+        assertEquals(committedRank, loadedBlink.committedLevel)
+        assertTrue(loadedBlink.hasPendingAllocation)
+        assertEquals(committedRank, loadedLoadout.levelOf("blink"))
     }
 
     @Test
@@ -1335,8 +1479,35 @@ class FoundationGameSessionTest {
         val effect =
             requireNotNull(runtimeWorld.get<com.ktome.core.talent.EffectTracker>(playerId))
                 .effects
-                .single { it.type == StatusEffectType.WAR_CRY_BUFF }
+                .single { it.schemaId == "war_cry_empower" }
         assertEquals(5, effect.remainingTurns)
+        assertTrue(recentEventSummaries(session).any { summary -> summary == "status_apply:${playerId.value}:war_cry_empower:5" })
+    }
+
+    @Test
+    fun `respec draft only rewinds the selected owner tree when profession and race talents coexist`() {
+        val session = mixedOwnerRespecSession(tempDir.resolve("mixed-owner-respec-save"))
+
+        assertTrue(
+            session.perform(
+                PlayerCommand.RespecTalentTree(
+                    ownerType = TalentTreeOwnerType.PROFESSION,
+                    treeOwnerId = "vanguard",
+                ),
+            ),
+        )
+
+        val draft = requireNotNull(runtimeWorld(session).get<TalentAllocationDraft>(session.playerId))
+        assertEquals(TalentTreeOwnerType.PROFESSION, draft.ownerType)
+        assertEquals("vanguard", draft.treeOwnerId)
+        assertEquals(mapOf("power_strike" to 1), draft.pendingRanks)
+        assertFalse("moon_blessing" in draft.pendingRanks)
+
+        assertTrue(session.perform(PlayerCommand.ConfirmTalentDraft))
+
+        val loadout = requireNotNull(runtimeWorld(session).get<com.ktome.core.talent.TalentLoadout>(session.playerId))
+        assertEquals(1, loadout.levelOf("power_strike"))
+        assertEquals(4, loadout.levelOf("moon_blessing"))
     }
 
     @Test
@@ -1559,7 +1730,7 @@ class FoundationGameSessionTest {
         val session = GameModule.newFoundationSession(saveManager = saveManager)
         requireNotNull(runtimeWorld(session).get<EffectTracker>(session.playerId)).effects +=
             StatusLifecycle.createInstance(
-                type = StatusEffectType.WAR_CRY_BUFF,
+                type = StatusEffectType.GUARD_STANCE_BUFF,
                 effectId = "checkpoint_buff",
                 duration = 3,
                 statModifierOverride = StatModifier(attack = 1),
@@ -1600,7 +1771,11 @@ class FoundationGameSessionTest {
         movePlayerTo(session, findOpenAdjacentPoint(session, bossPoint))
 
         assertTrue(session.perform(PlayerCommand.Wait))
-        assertTrue(requireNotNull(runtimeWorld(session).get<EffectTracker>(bossId)).has(StatusEffectType.WAR_CRY_BUFF))
+        assertTrue(
+            requireNotNull(runtimeWorld(session).get<EffectTracker>(bossId))
+                .activeEffects()
+                .any { effect -> effect.schemaId == "war_cry_empower" },
+        )
         assertEquals(setOf("dungeon_lord_opening_war_cry"), aiTriggerTracker(session, bossId).consumedTriggerIds)
 
         assertTrue(session.perform(PlayerCommand.SaveGame))
@@ -2016,7 +2191,7 @@ class FoundationGameSessionTest {
         assertNotNull(logEventByKey(session, "log.status.freeze_overwritten_by_burn"))
         assertNotNull(logEventByKey(session, "log.status.taunt_override"))
         assertTrue(recentEventSummaries(session).any { summary -> summary.contains("status_interaction:${monsterId.value}:BURN:FREEZE_OVERWRITTEN_BY_BURN") })
-        assertTrue(recentEventSummaries(session).any { summary -> summary.contains("taunt_override:${monsterId.value}:${session.playerId.value}") })
+        assertTrue(recentEventSummaries(session).any { summary -> summary.contains("taunt_override:${monsterId.value}:TAUNT:${session.playerId.value}") })
     }
 
     @Test
@@ -2116,8 +2291,129 @@ class FoundationGameSessionTest {
             playerId = playerId,
             combatResolver = combatResolver,
             talentRegistry = talentRegistry,
-            talentResolver = TalentResolver(talentRegistry, combatResolver),
+            talentResolver = TalentResolver(talentRegistry, combatResolver, dataLoader.loadStatusCatalog()),
             sessionRandom = fixedRandom(0.0, 2),
+        )
+    }
+
+    private fun mixedOwnerRespecSession(savePath: Path): FoundationGameSession {
+        val professionTalent = requireNotNull(talents.firstOrNull { talent -> talent.id == "power_strike" })
+        val raceTalent =
+            TalentDef(
+                id = "moon_blessing",
+                nameKey = "talent.shalore.moon_blessing.name",
+                descriptionTemplateKey = "talent.shalore.moon_blessing.desc",
+                maxRank = 5,
+                category = TalentCategory.PASSIVE,
+                cooldown = 0,
+                levelEffects = (1..5).associateWith { TalentLevelEffect() },
+                treeId = "race_tree",
+            )
+
+        val schemaCatalog = dataLoader.loadSchemaCatalog()
+        val professionSchema =
+            requireNotNull(schemaCatalog.professions.firstOrNull { profession -> profession.id == "vanguard" }).copy(
+                talentTrees = listOf("profession_tree"),
+                startingTalents = listOf(professionTalent.id),
+                startingKit = emptyList(),
+            )
+        val professionTalentSchema = requireNotNull(schemaCatalog.talents.firstOrNull { talent -> talent.id == professionTalent.id })
+        val professionTree =
+            requireNotNull(schemaCatalog.talentTrees.firstOrNull { tree -> tree.id == professionTalentSchema.treeId }).copy(
+                id = "profession_tree",
+                nodes = listOf(professionTalent.id),
+            )
+        val raceTree =
+            com.ktome.game.data.schema.TalentTreeSchemaV2(
+                id = "race_tree",
+                professionId = "",
+                raceId = "shalore",
+                nameKey = "talent_tree.race_tree.name",
+                descKey = "talent_tree.race_tree.desc",
+                visualKey = "tree.race",
+                iconKey = "tree.race.icon",
+                audioProfile = "audio.tree.race",
+                schemaVersion = 2,
+                tags = emptyList(),
+                layout = "grid",
+                nodes = listOf("moon_blessing"),
+            )
+        val raceTalentSchema =
+            com.ktome.game.data.schema.TalentSchemaV2(
+                id = "moon_blessing",
+                nameKey = "talent.shalore.moon_blessing.name",
+                descKey = "talent.shalore.moon_blessing.desc",
+                visualKey = "talent.shalore.moon_blessing.visual",
+                iconKey = "talent.shalore.moon_blessing.icon",
+                audioProfile = "audio.talent.shalore",
+                schemaVersion = 2,
+                tags = emptyList(),
+                maxPoints = 5,
+                tier = 1,
+                category = "PASSIVE",
+                damageType = null,
+                powerDimension = null,
+                kind = "UTILITY",
+                cooldown = 0,
+                castTime = "INSTANT",
+                targeting = com.ktome.game.data.schema.TalentTargetingSchemaV2(type = "SELF", range = 0, minRange = 0, areaRadius = 0),
+                resourceCosts = emptyList(),
+                unlockLevel = 1,
+                requirements = com.ktome.game.data.schema.TalentRequirementsSchemaV2(),
+                levelEffects = linkedMapOf(1 to com.ktome.game.data.schema.TalentLevelEffectSchemaV2()),
+                breakpoints = emptyList(),
+                keywords = emptyList(),
+                callbacks = emptyList(),
+                telegraphRef = null,
+                aiHints = null,
+                treeId = "race_tree",
+            )
+        val content =
+            GameContent(
+                talents = listOf(professionTalent, raceTalent),
+                statuses = schemaCatalog.statuses,
+                statusCatalog = dataLoader.loadStatusCatalog(),
+                talentRegistry = TalentRegistry().apply { registerAll(listOf(professionTalent, raceTalent)) },
+                monsterCatalog = emptyList(),
+                itemBundle = dataLoader.loadItemBundle(),
+                bossDefinitions = emptyMap(),
+                schemaCatalog =
+                    schemaCatalog.copy(
+                        professions = listOf(professionSchema),
+                        talents = listOf(professionTalentSchema.copy(treeId = "profession_tree"), raceTalentSchema),
+                        talentTrees = listOf(professionTree, raceTree),
+                    ),
+                localizer = dataLoader.localizer,
+            )
+
+        val world = World()
+        val map = GameMap.fromAscii(rows = listOf(".....", ".....", "....."), playerStart = Point(1, 1))
+        val playerId = EntityFactory().createPlayer(world, Point(1, 1), listOf(professionTalent, raceTalent))
+        val loadout = requireNotNull(world.get<com.ktome.core.talent.TalentLoadout>(playerId))
+        loadout.talentLevels["power_strike"] = 3
+        loadout.talentLevels["moon_blessing"] = 4
+
+        val floorState =
+            FloorState(
+                floor = 1,
+                payload =
+                    SessionSnapshotMapper.captureFloor(
+                        map = map,
+                        stairsUp = null,
+                        stairsDown = null,
+                        exploredTiles = emptySet(),
+                        world = world,
+                        excludedEntities = setOf(playerId),
+                    ),
+            )
+        val dungeonManager = DungeonManager<FloorRuntimeState>(maxFloor = 1, floorLoader = { floorState }).apply { putState(floorState) }
+
+        return FoundationGameSession(
+            config = FoundationGameConfig(width = map.width, height = map.height, zoneId = "shattered_outpost", playerProfessionId = "vanguard", maxFloor = 1),
+            content = content,
+            saveManager = SaveManager(savePath),
+            dungeonManager = dungeonManager,
+            playerSnapshot = SessionSnapshotMapper.capturePlayer(world, playerId),
         )
     }
 

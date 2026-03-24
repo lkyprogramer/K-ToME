@@ -119,7 +119,7 @@ object RunObservationCapture {
     }
 }
 
-internal fun RunObservation.signature(): String =
+fun RunObservation.signature(): String =
     buildString {
         append(floor)
         append('|')
@@ -147,13 +147,13 @@ internal fun RunObservation.signature(): String =
         append('|')
         append(
             talentSlots.joinToString(separator = ",") { slot ->
-                "${slot.slot}:${slot.talentId}:${slot.currentCooldown}"
+                "${slot.slot}:${slot.talentId}:${slot.level}:${slot.committedLevel}:${slot.hasPendingAllocation}:${slot.currentCooldown}"
             },
         )
         append('|')
         append(
             reserveTalents.joinToString(separator = ",") { talent ->
-                "${talent.talentId}:${talent.currentCooldown}"
+                "${talent.talentId}:${talent.level}:${talent.committedLevel}:${talent.hasPendingAllocation}:${talent.currentCooldown}"
             },
         )
         append('|')
@@ -162,7 +162,7 @@ internal fun RunObservation.signature(): String =
         append(visibleHostilePositions.size)
     }
 
-internal fun stepToward(
+fun stepToward(
     observation: RunObservation,
     target: Point,
 ): Point? =
@@ -173,15 +173,15 @@ internal fun stepToward(
         blocked = observation.visibleBlockingPositions - target,
     ).getOrNull(1)
 
-internal fun Point.deltaFrom(origin: Point): Point =
+fun Point.deltaFrom(origin: Point): Point =
     Point(
         x = (x - origin.x).coerceIn(-1, 1),
         y = (y - origin.y).coerceIn(-1, 1),
     )
 
-internal fun PlayerCommand.commandName(): String = this::class.simpleName ?: "UnknownCommand"
+fun PlayerCommand.commandName(): String = this::class.simpleName ?: "UnknownCommand"
 
-internal fun PlayerCommand.consumesTurn(): Boolean =
+fun PlayerCommand.consumesTurn(): Boolean =
     when (this) {
         PlayerCommand.Wait,
         is PlayerCommand.Move,
@@ -196,6 +196,9 @@ internal fun PlayerCommand.consumesTurn(): Boolean =
         is PlayerCommand.EquipTalentToSlot,
         is PlayerCommand.AssignStat,
         is PlayerCommand.AssignTalent,
+        is PlayerCommand.RespecTalentTree,
+        PlayerCommand.ConfirmTalentDraft,
+        PlayerCommand.RollbackTalentDraft,
         PlayerCommand.SaveGame,
         -> false
     }

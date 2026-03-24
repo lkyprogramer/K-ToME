@@ -5,6 +5,9 @@ import com.ktome.client.assets.VisualManifestResolver
 import com.ktome.client.input.OverlayState
 import com.ktome.client.input.UiMode
 import com.ktome.client.ui.status.StatusHudRenderer
+import com.ktome.client.ui.talent.DescriptionLine
+import com.ktome.client.ui.talent.DescriptionLineKind
+import com.ktome.client.ui.talent.DescriptionPresenter
 import com.ktome.core.snapshot.ActorRenderSnapshot
 import com.ktome.core.snapshot.ActorRoleKindSnapshot
 import com.ktome.core.snapshot.CellVisibilitySnapshot
@@ -19,6 +22,7 @@ import com.ktome.core.snapshot.RenderTextArgumentSnapshot
 import com.ktome.core.snapshot.RenderTextTokenSnapshot
 import com.ktome.core.snapshot.StatusEffectRenderSnapshot
 import com.ktome.core.snapshot.TalentReserveSnapshot
+import com.ktome.core.snapshot.TalentSlotSnapshot
 import com.ktome.game.PLAYER_ACTIVE_TALENT_SLOT_COUNT
 import com.ktome.game.i18n.Localizer
 
@@ -248,8 +252,8 @@ internal object AsciiRenderModelBuilder {
                             )
                     }
                     snapshot.uiState.reserveTalents.getOrNull(overlayState.loadoutReserveSelection)?.let { talent ->
-                        talent.descKey?.let { descKey ->
-                            lines += AsciiTextLine(localizer.text(descKey), AsciiTextTone.LIGHT_GRAY)
+                        DescriptionPresenter.presentReserveTalentLines(localizer, talent).forEach { line ->
+                            lines += AsciiTextLine(line.text, descriptionTone(line))
                         }
                         lines += AsciiTextLine(talentUsageSummary(localizer, talent), AsciiTextTone.LIGHT_GRAY)
                     }
@@ -361,9 +365,53 @@ internal object AsciiRenderModelBuilder {
                 )
                 snapshot.uiState.talents.forEach { talent ->
                     lines += AsciiTextLine(
-                        "${talent.slot}. ${localizer.text(talent.nameKey)} ${talent.level}/${talent.maxLevel}${talentTargetSuffix(localizer, talent.requiresTarget, talent.range)}",
-                        AsciiTextTone.WHITE,
+                        "${talent.slot}. ${localizer.text(talent.nameKey)} ${talentRankLabel(talent.level, talent.committedLevel, talent.maxLevel)}${talentTargetSuffix(localizer, talent.requiresTarget, talent.range)}",
+                        if (
+                            overlayState.talentAssignFocus == com.ktome.client.input.TalentAssignFocus.ACTIVE &&
+                            overlayState.loadoutSlotSelection == talent.slot
+                        ) {
+                            AsciiTextTone.CYAN
+                        } else {
+                            AsciiTextTone.WHITE
+                        },
                     )
+                }
+                if (snapshot.uiState.reserveTalents.isNotEmpty()) {
+                    lines += AsciiTextLine(localizer.text("ui.sidebar.reserve_talents"), AsciiTextTone.GOLD)
+                    snapshot.uiState.reserveTalents.forEachIndexed { index, talent ->
+                        lines +=
+                            AsciiTextLine(
+                                reserveTalentLabel(localizer, talent),
+                                if (
+                                    overlayState.talentAssignFocus == com.ktome.client.input.TalentAssignFocus.RESERVE &&
+                                    overlayState.loadoutReserveSelection == index
+                                ) {
+                                    AsciiTextTone.CYAN
+                                } else {
+                                    AsciiTextTone.WHITE
+                                },
+                            )
+                    }
+                }
+                val focusedActiveTalent =
+                    snapshot.uiState.talents.firstOrNull { talent ->
+                        overlayState.talentAssignFocus == com.ktome.client.input.TalentAssignFocus.ACTIVE &&
+                            talent.slot == overlayState.loadoutSlotSelection
+                    }
+                val focusedReserveTalent =
+                    snapshot.uiState.reserveTalents.getOrNull(overlayState.loadoutReserveSelection)
+                        ?.takeIf { overlayState.talentAssignFocus == com.ktome.client.input.TalentAssignFocus.RESERVE }
+                focusedActiveTalent?.let { talent ->
+                    DescriptionPresenter.presentTalentLines(localizer, talent).forEach { line ->
+                        lines += AsciiTextLine(line.text, descriptionTone(line))
+                    }
+                    lines += AsciiTextLine(talentUsageSummary(localizer, talent.resourceCost, talent.resourceLabelKey, talent.requiresTarget, talent.range), AsciiTextTone.LIGHT_GRAY)
+                }
+                focusedReserveTalent?.let { talent ->
+                    DescriptionPresenter.presentReserveTalentLines(localizer, talent).forEach { line ->
+                        lines += AsciiTextLine(line.text, descriptionTone(line))
+                    }
+                    lines += AsciiTextLine(talentUsageSummary(localizer, talent.resourceCost, talent.resourceLabelKey, talent.requiresTarget, talent.range), AsciiTextTone.LIGHT_GRAY)
                 }
                 lines += AsciiTextLine(localizer.text("ui.controls.talent_assign"), AsciiTextTone.LIGHT_GRAY)
             }
@@ -497,6 +545,15 @@ internal object AsciiRenderModelBuilder {
             else -> AsciiTextTone.WHITE
         }
 
+    private fun descriptionTone(line: DescriptionLine): AsciiTextTone =
+        when (line.kind) {
+            DescriptionLineKind.SECONDARY -> AsciiTextTone.GRAY
+            DescriptionLineKind.PRIMARY,
+            DescriptionLineKind.KEYWORD,
+            DescriptionLineKind.STATE,
+            -> AsciiTextTone.LIGHT_GRAY
+        }
+
     private fun renderLogEvent(
         localizer: Localizer,
         event: RenderLogEventSnapshot,
@@ -552,17 +609,28 @@ internal object AsciiRenderModelBuilder {
     private fun reserveTalentLabel(
         localizer: Localizer,
         talent: TalentReserveSnapshot,
-    ): String = "${localizer.text(talent.nameKey)} ${talent.level}/${talent.maxLevel}${talentTargetSuffix(localizer, talent.requiresTarget, talent.range)}"
+    ): String = "${localizer.text(talent.nameKey)} ${talentRankLabel(talent.level, talent.committedLevel, talent.maxLevel)}${talentTargetSuffix(localizer, talent.requiresTarget, talent.range)}"
 
     private fun loadoutSlotLabel(
         localizer: Localizer,
         slot: Int,
-        talent: com.ktome.core.snapshot.TalentSlotSnapshot?,
+        talent: TalentSlotSnapshot?,
     ): String =
         if (talent == null) {
             "$slot. ${localizer.text("ui.sidebar.empty")}"
         } else {
-            "$slot. ${localizer.text(talent.nameKey)} ${talent.level}/${talent.maxLevel}"
+            "$slot. ${localizer.text(talent.nameKey)} ${talentRankLabel(talent.level, talent.committedLevel, talent.maxLevel)}"
+        }
+
+    private fun talentRankLabel(
+        level: Int,
+        committedLevel: Int,
+        maxLevel: Int,
+    ): String =
+        if (level == committedLevel) {
+            "$level/$maxLevel"
+        } else {
+            "$level/$maxLevel (live $committedLevel)"
         }
 
     private fun renderTextToken(

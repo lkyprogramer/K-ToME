@@ -68,6 +68,7 @@ import com.ktome.core.save.SaveSnapshot
 import com.ktome.core.save.SaveRestoreException
 import com.ktome.core.save.StairSnapshot
 import com.ktome.core.save.StatModifierSnapshot
+import com.ktome.core.save.TalentAllocationDraftSnapshot
 import com.ktome.core.save.StatsSnapshot
 import com.ktome.core.save.TalentLoadoutSnapshot
 import com.ktome.core.save.WorldEffectSnapshot
@@ -75,8 +76,11 @@ import com.ktome.core.stats.StatsCalculator
 import com.ktome.core.talent.ActiveEffect
 import com.ktome.core.talent.CooldownState
 import com.ktome.core.talent.EffectTracker
-import com.ktome.core.talent.StatusEffectType
+import com.ktome.core.talent.TalentAllocationDraft
 import com.ktome.core.talent.TalentLoadout
+import com.ktome.core.talent.TalentTreeOwnerType
+import com.ktome.core.status.StatusDefinitions
+import com.ktome.core.status.StatusEffectType
 import com.ktome.core.status.StatusLifecycle
 import com.ktome.game.model.MonsterTemplate
 
@@ -329,6 +333,22 @@ internal object SessionSnapshotMapper {
                         talentLevels = loadout.talentLevels.toMap(),
                     )
                 },
+            talentAllocationDraft =
+                world.get<TalentAllocationDraft>(entityId)?.let { draft ->
+                    TalentAllocationDraftSnapshot(
+                        ownerType = draft.ownerType.name,
+                        treeOwnerId = draft.treeOwnerId,
+                        pendingRanks =
+                            draft.pendingRanks.entries
+                                .sortedBy { (talentId, _) -> talentId }
+                                .associateTo(linkedMapOf()) { (talentId, rank) -> talentId to rank },
+                        previousPendingRanks =
+                            draft.previousPendingRanks
+                                ?.entries
+                                ?.sortedBy { (talentId, _) -> talentId }
+                                ?.associateTo(linkedMapOf()) { (talentId, rank) -> talentId to rank },
+                    )
+                },
             itemState = world.get<ItemInstance>(entityId)?.let(::toItemSnapshot),
             isGroundItem = world.get<GroundItem>(entityId) != null,
             isPlayerControlled = world.get<PlayerControlled>(entityId) != null,
@@ -391,16 +411,16 @@ internal object SessionSnapshotMapper {
             world.add(
                 entityId,
                 EffectTracker(
-                    effects = effects.map { effect -> restoreActiveEffect(effect, content.localizer) }.toMutableList(),
+                    effects = effects.map { effect -> restoreActiveEffect(effect, content) }.toMutableList(),
                     ownerId = entityId,
                 ),
             )
         }
         snapshot.areaEffectEmitter?.let { emitter ->
-            world.add(entityId, restoreAreaEffectEmitter(emitter, content.localizer))
+            world.add(entityId, restoreAreaEffectEmitter(emitter, content))
         }
         snapshot.worldEffect?.let { effect ->
-            world.add(entityId, restoreWorldEffect(effect, content.localizer))
+            world.add(entityId, restoreWorldEffect(effect, content))
         }
         snapshot.aiTriggerTracker?.let { tracker ->
             world.add(
@@ -430,6 +450,24 @@ internal object SessionSnapshotMapper {
                 TalentLoadout(
                     slotToTalentId = loadout.slotToTalentId.toMutableMap(),
                     talentLevels = loadout.talentLevels.toMutableMap(),
+                ),
+            )
+        }
+        snapshot.talentAllocationDraft?.let { draft ->
+            world.add(
+                entityId,
+                TalentAllocationDraft(
+                    ownerType = parseEnumFromSave<TalentTreeOwnerType>(value = draft.ownerType, label = "talent draft owner type"),
+                    treeOwnerId = draft.treeOwnerId,
+                    pendingRanks =
+                        draft.pendingRanks.entries
+                            .sortedBy { (talentId, _) -> talentId }
+                            .associateTo(linkedMapOf()) { (talentId, rank) -> talentId to rank },
+                    previousPendingRanks =
+                        draft.previousPendingRanks
+                            ?.entries
+                            ?.sortedBy { (talentId, _) -> talentId }
+                            ?.associateTo(linkedMapOf()) { (talentId, rank) -> talentId to rank },
                 ),
             )
         }
@@ -479,6 +517,7 @@ internal object SessionSnapshotMapper {
         val inventory = snapshot.inventory
         val equipment = snapshot.equipment
         val talentLoadout = snapshot.talentLoadout
+        val talentAllocationDraft = snapshot.talentAllocationDraft
         val aiTriggerTracker = snapshot.aiTriggerTracker
 
         return snapshot.copy(
@@ -516,6 +555,18 @@ internal object SessionSnapshotMapper {
                         talentLoadout.talentLevels.entries
                             .sortedBy { (talentId, _) -> talentId }
                             .associateTo(linkedMapOf()) { (talentId, level) -> talentId to level },
+                ),
+            talentAllocationDraft =
+                talentAllocationDraft?.copy(
+                    pendingRanks =
+                        talentAllocationDraft.pendingRanks.entries
+                            .sortedBy { (talentId, _) -> talentId }
+                            .associateTo(linkedMapOf()) { (talentId, rank) -> talentId to rank },
+                    previousPendingRanks =
+                        talentAllocationDraft.previousPendingRanks
+                            ?.entries
+                            ?.sortedBy { (talentId, _) -> talentId }
+                            ?.associateTo(linkedMapOf()) { (talentId, rank) -> talentId to rank },
                 ),
             itemState = snapshot.itemState?.let(::canonicalizeItemSnapshot),
             stair = snapshot.stair?.copy(),
@@ -649,11 +700,14 @@ internal object SessionSnapshotMapper {
 
     private fun restoreActiveEffect(
         snapshot: ActiveEffectSnapshot,
-        localizer: com.ktome.game.i18n.Localizer,
+        content: GameContent,
     ): ActiveEffect {
-        val type = StatusEffectType.fromSchemaId(snapshot.type)
+        val definition =
+            content.statusCatalog.definitionOrNull(snapshot.type)
+                ?: StatusDefinitions.definitionForSchemaId(snapshot.type)
+                ?: StatusDefinitions.definitionFor(StatusEffectType.fromSchemaId(snapshot.type))
         return StatusLifecycle.createInstance(
-            type = type,
+            definition = definition,
             effectId = snapshot.id,
             duration = snapshot.remainingTurns,
             magnitude = snapshot.magnitude,
@@ -668,25 +722,25 @@ internal object SessionSnapshotMapper {
 
     private fun restoreAreaEffectEmitter(
         snapshot: AreaEffectEmitterSnapshot,
-        localizer: com.ktome.game.i18n.Localizer,
+        content: GameContent,
     ): AreaEffectEmitter =
         AreaEffectEmitter(
             emitterId = snapshot.emitterId,
             sourceEntityId = snapshot.sourceEntityId?.let(::EntityId),
             affectedActorIds = snapshot.affectedActorIds.map(::EntityId).toSet(),
             emitterPriority = snapshot.emitterPriority,
-            effects = snapshot.effects.map { effect -> restoreActiveEffect(effect, localizer) }.toMutableList(),
+            effects = snapshot.effects.map { effect -> restoreActiveEffect(effect, content) }.toMutableList(),
         )
 
     private fun restoreWorldEffect(
         snapshot: WorldEffectSnapshot,
-        localizer: com.ktome.game.i18n.Localizer,
+        content: GameContent,
     ): WorldEffect =
         WorldEffect(
             effectId = snapshot.effectId,
             affectedActorIds = snapshot.affectedActorIds.map(::EntityId).toSet(),
             worldPriority = snapshot.worldPriority,
-            effects = snapshot.effects.map { effect -> restoreActiveEffect(effect, localizer) }.toMutableList(),
+            effects = snapshot.effects.map { effect -> restoreActiveEffect(effect, content) }.toMutableList(),
         )
 
     private fun toItemSnapshot(item: ItemInstance): ItemSnapshot =
