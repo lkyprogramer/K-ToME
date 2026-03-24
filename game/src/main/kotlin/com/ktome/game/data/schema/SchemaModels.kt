@@ -8,6 +8,7 @@ import com.ktome.core.item.ItemType
 
 data class SchemaCatalog(
     val professions: List<ProfessionSchemaV2>,
+    val statuses: List<StatusSchemaV2>,
     val talents: List<TalentSchemaV2>,
     val talentTrees: List<TalentTreeSchemaV2>,
     val monsters: List<MonsterSchemaV2>,
@@ -24,6 +25,20 @@ data class SchemaCatalog(
     val ambientProfiles: List<NamedSchemaRef>,
     val visualKeys: Set<String>,
     val audioProfiles: Set<String>,
+)
+
+data class StatusSchemaV2(
+    val id: String,
+    val effectType: String,
+    val nameKey: String,
+    val descKey: String,
+    val visualKey: String,
+    val iconKey: String,
+    val audioProfile: String,
+    val schemaVersion: Int,
+    val tags: List<String>,
+    val category: String,
+    val carrierKind: String,
 )
 
 data class NamedSchemaRef(

@@ -1,5 +1,7 @@
 package com.ktome.core.combat
 
+import com.ktome.core.status.StatusEffectType
+
 data class DamagePacket(
     val request: DamageRequest,
     val hitConfirmed: Boolean,
@@ -34,6 +36,7 @@ data class CombatResult(
     val trace: CombatResolutionTrace? = null,
     val envelope: TraceEnvelope? = null,
     val statusApplication: StatusApplicationResolution? = null,
+    val removedStatusTypes: Set<StatusEffectType> = emptySet(),
 ) {
     val rawDamage: Int
         get() = damage?.rawDamage ?: 0
@@ -47,3 +50,10 @@ data class CombatResult(
     val critical: Boolean
         get() = crit
 }
+
+data class StatusTickResult(
+    val damage: DamageResult,
+    val targetKilled: Boolean,
+    val trace: CombatResolutionTrace,
+    val envelope: TraceEnvelope,
+)

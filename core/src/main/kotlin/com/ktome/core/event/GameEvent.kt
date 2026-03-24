@@ -2,6 +2,8 @@ package com.ktome.core.event
 
 import com.ktome.core.ecs.EntityId
 import com.ktome.core.movement.MoveBlockReason
+import com.ktome.core.status.EffectCarrierKind
+import com.ktome.core.status.StatusEffectType
 
 sealed interface GameEvent
 
@@ -40,3 +42,53 @@ data class MovementBlockedEvent(
     val entity: EntityId,
     val reason: MoveBlockReason,
 ) : GameEvent
+
+sealed interface StatusEvent : GameEvent {
+    val target: EntityId
+    val statusType: StatusEffectType
+}
+
+data class StatusAppliedEvent(
+    override val target: EntityId,
+    override val statusType: StatusEffectType,
+    val source: EntityId? = null,
+    val remainingTurns: Int,
+) : StatusEvent
+
+data class StatusRemovedEvent(
+    override val target: EntityId,
+    override val statusType: StatusEffectType,
+    val reason: String,
+) : StatusEvent
+
+data class StatusCleanseEvent(
+    override val target: EntityId,
+    override val statusType: StatusEffectType,
+    val reason: String = "CLEANSE",
+) : StatusEvent
+
+data class StatusTickEvent(
+    override val target: EntityId,
+    override val statusType: StatusEffectType,
+    val damage: Int,
+    val carrierKind: EffectCarrierKind,
+) : StatusEvent
+
+data class TauntOverrideEvent(
+    override val target: EntityId,
+    override val statusType: StatusEffectType = StatusEffectType.TAUNT,
+    val previousSource: EntityId?,
+    val newSource: EntityId?,
+) : StatusEvent
+
+data class StealthBrokenEvent(
+    override val target: EntityId,
+    override val statusType: StatusEffectType = StatusEffectType.STEALTH,
+    val damage: Int,
+) : StatusEvent
+
+data class StatusInteractionEvent(
+    override val target: EntityId,
+    override val statusType: StatusEffectType,
+    val interactionId: String,
+) : StatusEvent

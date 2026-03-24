@@ -14,7 +14,7 @@
 
 ## 1. 阶段目标
 
-完成天赋树 V2 的完整基础设施，建立**语义说明模型**、断点成长 UX、`AllocationDraft`、关键词注册表与 telegraph 引用基线。
+完成天赋树 V2 的完整基础设施，建立**语义说明模型**、断点成长 UX、`AllocationDraft`、关键词注册表与 telegraph 引用基线，并把 talent-local effect 从 `core.status` 的专用枚举依赖中抽离。
 
 完成标准：
 
@@ -25,6 +25,7 @@
 5. 断点成长 UX 冻结（当前 rank 已激活效果 + 下一断点预览）。
 6. Respec / rollback 改为 `TalentAllocationDraft` 驱动，preview 与 rollback 不再直接改动 live runtime。
 7. 关键词注册表与 talent schema 联通。
+8. `WAR_CRY` 这类只服务于 talent/content 的局部 buff/debuff 不再要求新增 `StatusEffectType`，改为由 schema + typed effect op 驱动。
 
 ## 2. 当前问题
 
@@ -35,6 +36,7 @@
 5. 没有断点成长 UX，玩家无法预览下一断点效果。
 6. `respec / rollback` 仍是对真实世界状态直接动手，后续状态、副作用和即时效果都会越来越难维护。
 7. `talent.telegraph` 还没有和 `PR-04` 的统一 `TelegraphSpec` 权威对齐。
+8. `WAR_CRY_BUFF / WAR_CRY_DEBUFF` 虽已改为通用唯一性规则，但仍作为专用 `StatusEffectType` 存在，导致 talent schema、职业内容和 `core.status` 的语义边界继续耦合。
 
 ### 2.1 本 PR 必须冻结的口径
 
@@ -44,6 +46,7 @@
 4. prerequisite 固定为 `talentId + minRank`。
 5. `telegraph` 只保留引用式入口，不再在本 PR 定义第二套 telegraph 权威结构。
 6. `respec / rollback` 都建立在 `TalentAllocationDraft` 之上。
+7. talent-local sourced buff/debuff 若不依赖全局 tick / cleanse lock / mutual exclusion / combat callback 等状态引擎语义，则不得继续通过新增 `StatusEffectType` 建模；首个收口对象固定为 `WAR_CRY`。
 
 ## 3. 范围与非目标
 
@@ -56,6 +59,7 @@
 5. Respec v1。
 6. Rollback v1。
 7. 关键词注册表。
+8. talent-local effect 去类型化（`WAR_CRY` 首轮收口）。
 
 ### 3.2 非目标
 
@@ -63,6 +67,7 @@
 2. 不在本 PR 处理进阶职业或种族天赋的具体内容（`P3-W5`）。
 3. 不在本 PR 处理 telegraph 渲染（`P3-W4 W4b`）。
 4. 不在本 PR 把 `core` 做成本地化引擎或 tooltip presenter。
+5. 不在本 PR 一次性迁移全部职业局部效果；只要求建立去类型化合同，并完成 `WAR_CRY` 首轮收口，剩余同类效果由 `P3-W5` 内容接线时按新合同接入。
 
 ## 4. 技术方案
 
@@ -111,6 +116,8 @@ data class TalentPrerequisite(
 6. 旧命名 `ACTOR / TILE / RADIUS` 在 `Phase 3` 统一映射为 `SINGLE_TARGET / GROUND_TARGET / RADIUS_SELF|RADIUS_TARGET`；`WALL / SUMMON_SLOT` 只保留为 `Phase 4+` 预留概念，不进入本 PR runtime targeting 枚举。
 7. `telegraphRef` 只引用 `PR-04` 定义的 `TelegraphSpec`，本 PR 不再定义第二份 telegraph schema。
 8. `actionCost` 使用详设文档 §6.2 冻结的 `ActionCost` 枚举；YAML 的 `castTime` 只是该字段的输入别名。
+9. `EffectOp.ApplyStatus.statusId` 固定引用 status schema id，而不是运行时 enum 名称。
+10. 只有具备全局状态引擎语义的效果才允许占用 `StatusEffectType`；talent-local sourced effect 必须优先走 schema + `statusId`。
 
 首轮字段映射参考：
 
@@ -146,6 +153,7 @@ data class TalentPrerequisite(
 2. `damageType` 是 talent 级默认通道；若某个 `EffectOp.Damage` 显式声明 `damageType`，以 op 级定义覆盖 talent 默认值。
 3. `Vanguard` 的单体战技与 `Arcanist` 的投射法术必须都能由该最小集合表达。
 4. 首批 6 类只覆盖 `Phase 3` 主线天赋；`GrantShield / SustainToggle / AreaPlace` 等复合类型允许在实施中按需追加，但追加时必须回写本节。
+5. `WAR_CRY` 这类 talent-local sourced buff/debuff 必须能只靠 `EffectOp.ApplyStatus(statusId=...) + status schema` 表达，不再要求在 `core.status` 新增专用枚举成员。
 
 建议最小结构：
 
@@ -407,6 +415,7 @@ core/src/test/kotlin/com/ktome/core/talent/KeywordRegistryTest.kt
 ### 5.2 `game`
 
 1. `talents/*.yaml` 的前置条件、telegraph 引用、effect op 数据扩展。
+2. `WAR_CRY` 的 talent/schema 接线改为引用 schema-driven `statusId`，不再依赖专用 `StatusEffectType.WAR_CRY_*`。
 
 ### 5.3 `client`
 
@@ -442,6 +451,7 @@ core/src/test/kotlin/com/ktome/core/talent/KeywordRegistryTest.kt
 12. rollback 只回退最近一次未确认分配。
 13. `telegraphRef` 能正确引用 `PR-04` 的统一 telegraph 规格。
 14. `breakpoints` 能稳定映射到 YAML，并按 `atRank asc` 排序。
+15. `WAR_CRY` 的职业局部 buff/debuff 通过 schema/`statusId` 和通用唯一性字段表达，而不是新增或继续保留专用 `StatusEffectType` 规则分支。
 
 ### 6.3 自动化命令
 
@@ -465,3 +475,4 @@ core/src/test/kotlin/com/ktome/core/talent/KeywordRegistryTest.kt
 4. `TalentAllocationDraft` 进入正式路径。
 5. respec / rollback 的关键路径有自动化测试且不再直接改 live runtime。
 6. `telegraphRef` 与 `PR-04` 的统一权威结构对齐。
+7. `WAR_CRY` 完成首轮去类型化收口，不再依赖专用 `StatusEffectType` 作为 talent/content 的表达边界。

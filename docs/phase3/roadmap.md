@@ -21,7 +21,7 @@ Phase 3 的主题是把 `Phase 2` 的正式合同升级为“有战斗深度、�
 
 5. [2026-03-13-phase3-pr-01-combat-formula-v2-and-trace-golden.md](./2026-03-13-phase3-pr-01-combat-formula-v2-and-trace-golden.md) — P3-W1 战斗公式 V2、Resolution Trace 与 Golden Corpus
 6. [2026-03-13-phase3-pr-02-status-lifecycle.md](./2026-03-13-phase3-pr-02-status-lifecycle.md) — P3-W2 状态生命周期
-7. [2026-03-13-phase3-pr-03-talent-tree-v2-and-dynamic-descriptions.md](./2026-03-13-phase3-pr-03-talent-tree-v2-and-dynamic-descriptions.md) — P3-W3 天赋树 V2 与动态说明
+7. [2026-03-13-phase3-pr-03-talent-tree-v2-and-dynamic-descriptions.md](./2026-03-13-phase3-pr-03-talent-tree-v2-and-dynamic-descriptions.md) — P3-W3 天赋树 V2、动态说明与 talent-local effect 去类型化
 8. [2026-03-13-phase3-pr-04-aiprofile-dsl-and-boss-encounter.md](./2026-03-13-phase3-pr-04-aiprofile-dsl-and-boss-encounter.md) — P3-W4 AIProfile DSL 与 BossEncounter
 9. [2026-03-13-phase3-pr-05-class-formalization.md](./2026-03-13-phase3-pr-05-class-formalization.md) — P3-W5 职业正式化
 10. [2026-03-13-phase3-pr-06-long-run-world-structure.md](./2026-03-13-phase3-pr-06-long-run-world-structure.md) — P3-W6 长局世界结构
@@ -47,7 +47,7 @@ Phase 3 的主题是把 `Phase 2` 的正式合同升级为“有战斗深度、�
 ```text
 P3-W1 (PR-01: 公式 / ApplicationPolicy / Resolution Trace)
   ├── P3-W2 (PR-02: 状态生命周期 / Effect Carrier)
-  ├── P3-W3 (PR-03: Talent Schema / DescriptionModel / AllocationDraft)
+  ├── P3-W3 (PR-03: Talent Schema / DescriptionModel / AllocationDraft / talent-local effect 去类型化)
   │       └── P3-W4 (PR-04: AIProfile / TelegraphSpec / BossEncounter)
   │                    └── P3-W5 (PR-05: W5a Rules -> W5b Content -> W5c Client+QA)
   │                              └── P3-W6 (PR-06: W6a World -> W6b Economy/Affix -> W6c LongRunLab)

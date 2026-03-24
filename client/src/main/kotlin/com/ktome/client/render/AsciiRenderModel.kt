@@ -4,6 +4,7 @@ import com.ktome.client.assets.ResolvedVisualAsset
 import com.ktome.client.assets.VisualManifestResolver
 import com.ktome.client.input.OverlayState
 import com.ktome.client.input.UiMode
+import com.ktome.client.ui.status.StatusHudRenderer
 import com.ktome.core.snapshot.ActorRenderSnapshot
 import com.ktome.core.snapshot.ActorRoleKindSnapshot
 import com.ktome.core.snapshot.CellVisibilitySnapshot
@@ -306,7 +307,7 @@ internal object AsciiRenderModelBuilder {
                     )
                     lines += AsciiTextLine("${localizer.text("ui.hud.speed.short")} ${inspected.speed}", AsciiTextTone.WHITE)
                     inspected.statusEffects.forEach { effect ->
-                        lines += AsciiTextLine(formatStatusEffect(localizer, effect), AsciiTextTone.LIGHT_GRAY)
+                        lines += AsciiTextLine(StatusHudRenderer.renderTurns(localizer, effect), AsciiTextTone.LIGHT_GRAY)
                     }
                 }
 
@@ -652,28 +653,6 @@ internal object AsciiRenderModelBuilder {
             add("$label ${signed((value * 100).toInt())}%")
         }
     }
-
-    private fun formatStatusEffect(
-        localizer: Localizer,
-        effect: StatusEffectRenderSnapshot,
-    ): String =
-        localizer.text(
-            "ui.inspect.effect.turns",
-            "name" to statusEffectLabel(localizer, effect.typeId),
-            "turns" to effect.remainingTurns,
-        )
-
-    private fun statusEffectLabel(
-        localizer: Localizer,
-        typeId: String,
-    ): String =
-        when (typeId) {
-            "STUNNED" -> localizer.text("status.stunned")
-            "ARMOR_BREAK" -> localizer.text("status.armor_break")
-            "WAR_CRY_BUFF" -> localizer.text("status.war_cry_buff")
-            "WAR_CRY_DEBUFF" -> localizer.text("status.war_cry_debuff")
-            else -> typeId
-        }
 
     private fun stairName(
         localizer: Localizer,

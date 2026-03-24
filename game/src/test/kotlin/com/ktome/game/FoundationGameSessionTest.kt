@@ -19,6 +19,8 @@ import com.ktome.core.ecs.World
 import com.ktome.core.ecs.add
 import com.ktome.core.ecs.get
 import com.ktome.core.ecs.remove
+import com.ktome.core.effect.AreaEffectEmitter
+import com.ktome.core.effect.WorldEffect
 import com.ktome.core.item.AffixDef
 import com.ktome.core.item.AffixType
 import com.ktome.core.item.ConsumableEffect
@@ -42,6 +44,7 @@ import com.ktome.core.talent.EffectTracker
 import com.ktome.core.talent.StatusEffectType
 import com.ktome.core.talent.TalentResolver
 import com.ktome.core.talent.TalentRegistry
+import com.ktome.core.status.StatusLifecycle
 import com.ktome.game.data.DataLoader
 import com.ktome.game.factory.EntityFactory
 import com.ktome.game.factory.ItemFactory
@@ -1023,8 +1026,231 @@ class FoundationGameSessionTest {
             session.renderSnapshot().actors
                 .first { it.entityId == monsterId.value }
                 .statusEffects
-                .first { it.typeId == StatusEffectType.STUNNED.name }
+                .first { it.typeId == StatusEffectType.STUN.schemaId }
         assertEquals("icon.status.stunned", stunnedEffect.iconKey)
+    }
+
+    @Test
+    fun `stacked armor break is exposed through render snapshot status metadata`() {
+        val session =
+            GameModule.newFoundationSession(
+                FoundationGameConfig(seed = 20260318L, zoneId = "shattered_outpost", playerProfessionId = "vanguard"),
+                SaveManager(tempDir.resolve("armor-break-status-save")),
+            )
+        clearMonsters(session)
+        val monsterId = installCombatDummy(session, id = "armor_dummy")
+        val tracker = requireNotNull(runtimeWorld(session).get<EffectTracker>(monsterId))
+        repeat(2) { index ->
+            StatusLifecycle.applyEffect(
+                tracker,
+                StatusLifecycle.createInstance(
+                    type = StatusEffectType.ARMOR_BREAK,
+                    effectId = "armor_break_$index",
+                    duration = 3,
+                ),
+            )
+        }
+        StatsCalculator.recalculateAndStore(runtimeWorld(session), monsterId)
+
+        val armorBreak =
+            session.renderSnapshot().actors
+                .first { actor -> actor.entityId == monsterId.value }
+                .statusEffects
+                .first { effect -> effect.typeId == StatusEffectType.ARMOR_BREAK.schemaId }
+
+        assertEquals(2, armorBreak.stackCount)
+        assertEquals(3, armorBreak.stackCap)
+    }
+
+    @Test
+    fun `bleed ticks before stunned monster skips its turn`() {
+        val session =
+            GameModule.newFoundationSession(
+                FoundationGameConfig(seed = 20260318L, zoneId = "shattered_outpost", playerProfessionId = "vanguard"),
+                SaveManager(tempDir.resolve("bleed-stun-save")),
+            )
+        clearMonsters(session)
+        val monsterId = installCombatDummy(session, id = "bleed_dummy")
+        val tracker = requireNotNull(runtimeWorld(session).get<EffectTracker>(monsterId))
+        StatusLifecycle.applyEffect(
+            tracker,
+            StatusLifecycle.createInstance(
+                type = StatusEffectType.BLEED,
+                effectId = "bleed",
+                duration = 2,
+                sourceEntityId = session.playerId,
+                tickDamageOverride = 4,
+            ),
+        )
+        StatusLifecycle.applyEffect(
+            tracker,
+            StatusLifecycle.createInstance(
+                type = StatusEffectType.STUN,
+                effectId = "stun",
+                duration = 1,
+                sourceEntityId = session.playerId,
+            ),
+        )
+        StatsCalculator.recalculateAndStore(runtimeWorld(session), monsterId)
+        val before = requireNotNull(runtimeWorld(session).get<Health>(monsterId)).current
+
+        var after = before
+        repeat(3) {
+            if (after < before) {
+                return@repeat
+            }
+            assertTrue(session.perform(PlayerCommand.Wait))
+            after = requireNotNull(runtimeWorld(session).get<Health>(monsterId)).current
+        }
+        assertTrue(after < before)
+    }
+
+    @Test
+    fun `all actor layer dots resolve before death and preserve original killer`() {
+        val session =
+            GameModule.newFoundationSession(
+                FoundationGameConfig(seed = 20260318L, zoneId = "shattered_outpost", playerProfessionId = "vanguard"),
+                SaveManager(tempDir.resolve("dot-layer-death-save")),
+            )
+        clearMonsters(session)
+        val monsterId = installCombatDummy(session, id = "dot_layer_dummy")
+        val world = runtimeWorld(session)
+        val tracker = requireNotNull(world.get<EffectTracker>(monsterId))
+        requireNotNull(world.get<Health>(monsterId)).current = 2
+        StatusLifecycle.applyEffect(
+            tracker,
+            StatusLifecycle.createInstance(
+                type = StatusEffectType.BLEED,
+                effectId = "bleed",
+                duration = 1,
+                sourceEntityId = session.playerId,
+                tickDamageOverride = 2,
+            ),
+        )
+        StatusLifecycle.applyEffect(
+            tracker,
+            StatusLifecycle.createInstance(
+                type = StatusEffectType.POISON,
+                effectId = "poison",
+                duration = 1,
+                sourceEntityId = session.playerId,
+                tickDamageOverride = 2,
+            ),
+        )
+        StatsCalculator.recalculateAndStore(world, monsterId)
+
+        repeat(5) {
+            if (!world.isAlive(monsterId)) {
+                return@repeat
+            }
+            assertTrue(session.perform(PlayerCommand.Wait))
+        }
+
+        assertFalse(world.isAlive(monsterId))
+        val recentEvents = recentEventSummaries(session)
+        assertEquals(2, recentEvents.count { event -> event.startsWith("status_tick:${monsterId.value}:") })
+        assertTrue(recentEvents.contains("death:${monsterId.value}:${session.playerId.value}"))
+    }
+
+    @Test
+    fun `area and world carrier effects decay after the affected actor turn`() {
+        val session =
+            GameModule.newFoundationSession(
+                FoundationGameConfig(seed = 20260318L, zoneId = "shattered_outpost", playerProfessionId = "vanguard"),
+                SaveManager(tempDir.resolve("carrier-decay-save")),
+            )
+        clearMonsters(session)
+        val monsterId = installCombatDummy(session, id = "carrier_decay_dummy")
+        val world = runtimeWorld(session)
+        val areaEntity = world.createEntity()
+        val worldEntity = world.createEntity()
+        world.add(
+            areaEntity,
+            AreaEffectEmitter(
+                emitterId = "poison_cloud",
+                sourceEntityId = session.playerId,
+                affectedActorIds = setOf(monsterId),
+                effects =
+                    mutableListOf(
+                        StatusLifecycle.createInstance(
+                            type = StatusEffectType.POISON,
+                            effectId = "poison_area",
+                            duration = 1,
+                            sourceEntityId = session.playerId,
+                            tickDamageOverride = 1,
+                        ),
+                    ),
+            ),
+        )
+        world.add(
+            worldEntity,
+            WorldEffect(
+                effectId = "arena_aura",
+                affectedActorIds = setOf(monsterId),
+                effects =
+                    mutableListOf(
+                        StatusLifecycle.createInstance(
+                            type = StatusEffectType.BURN,
+                            effectId = "burn_world",
+                            duration = 1,
+                            tickDamageOverride = 1,
+                        ),
+                    ),
+            ),
+        )
+
+        repeat(5) {
+            if (requireNotNull(world.get<AreaEffectEmitter>(areaEntity)).effects.isEmpty() &&
+                requireNotNull(world.get<WorldEffect>(worldEntity)).effects.isEmpty()
+            ) {
+                return@repeat
+            }
+            assertTrue(session.perform(PlayerCommand.Wait))
+        }
+
+        assertTrue(requireNotNull(world.get<AreaEffectEmitter>(areaEntity)).effects.isEmpty())
+        assertTrue(requireNotNull(world.get<WorldEffect>(worldEntity)).effects.isEmpty())
+    }
+
+    @Test
+    fun `lethal world carrier tick without source still handles death`() {
+        val session =
+            GameModule.newFoundationSession(
+                FoundationGameConfig(seed = 20260318L, zoneId = "shattered_outpost", playerProfessionId = "vanguard"),
+                SaveManager(tempDir.resolve("world-dot-no-source-death-save")),
+            )
+        clearMonsters(session)
+        val monsterId = installCombatDummy(session, id = "world_dot_no_source_dummy")
+        val world = runtimeWorld(session)
+        val worldEntity = world.createEntity()
+        requireNotNull(world.get<Health>(monsterId)).current = 1
+        world.add(
+            worldEntity,
+            WorldEffect(
+                effectId = "hazard_no_source",
+                affectedActorIds = setOf(monsterId),
+                effects =
+                    mutableListOf(
+                        StatusLifecycle.createInstance(
+                            type = StatusEffectType.BURN,
+                            effectId = "burn_world_no_source",
+                            duration = 1,
+                            tickDamageOverride = 2,
+                        ),
+                    ),
+            ),
+        )
+
+        repeat(5) {
+            if (!world.isAlive(monsterId)) {
+                return@repeat
+            }
+            assertTrue(session.perform(PlayerCommand.Wait))
+        }
+
+        assertFalse(world.isAlive(monsterId))
+        val recentEvents = recentEventSummaries(session)
+        assertTrue(recentEvents.any { event -> event == "death:${monsterId.value}:${monsterId.value}" })
     }
 
     @Test
@@ -1332,12 +1558,11 @@ class FoundationGameSessionTest {
         val saveManager = SaveManager(tempDir.resolve("checkpoint-save"))
         val session = GameModule.newFoundationSession(saveManager = saveManager)
         requireNotNull(runtimeWorld(session).get<EffectTracker>(session.playerId)).effects +=
-            ActiveEffect(
-                id = "checkpoint_buff",
-                name = "Checkpoint Buff",
+            StatusLifecycle.createInstance(
                 type = StatusEffectType.WAR_CRY_BUFF,
-                remainingTurns = 3,
-                statModifiers = StatModifier(attack = 1),
+                effectId = "checkpoint_buff",
+                duration = 3,
+                statModifierOverride = StatModifier(attack = 1),
             )
 
         movePlayerTo(session, stairPoint(session, com.ktome.core.dungeon.StairDirection.DOWN))
@@ -1702,11 +1927,10 @@ class FoundationGameSessionTest {
                 position = Point(2, 1),
             )
         requireNotNull(world.get<EffectTracker>(monsterId)).effects +=
-            ActiveEffect(
-                id = "inspect_stun",
-                name = "Stunned",
-                type = StatusEffectType.STUNNED,
-                remainingTurns = 2,
+            StatusLifecycle.createInstance(
+                type = StatusEffectType.STUN,
+                effectId = "inspect_stun",
+                duration = 2,
             )
         itemFactory.createGroundItem(
             world = world,
@@ -1749,6 +1973,76 @@ class FoundationGameSessionTest {
         assertTrue(itemInspect.details.contains("+15% damage vs Bandits"))
         assertTrue(itemInspect.details.contains("ATK +5"))
         assertTrue(itemInspect.details.contains("SPD +1"))
+    }
+
+    @Test
+    fun `status interactions are surfaced through visible render log messages`() {
+        val session =
+            GameModule.newFoundationSession(
+                FoundationGameConfig(seed = 20260324L, zoneId = "shattered_outpost", playerProfessionId = "vanguard"),
+                SaveManager(tempDir.resolve("status-feedback-log")),
+            )
+        clearMonsters(session)
+        val monsterId = installCombatDummy(session, id = "status_feedback_dummy")
+        val method = FoundationGameSession::class.java.getDeclaredMethod("logTalentResult", com.ktome.core.talent.TalentResult::class.java)
+        method.isAccessible = true
+
+        method.invoke(
+            session,
+            com.ktome.core.talent.TalentResult(
+                talentId = "status_feedback_test",
+                talentName = "Status Feedback",
+                user = session.playerId,
+                targets = listOf(monsterId),
+                effects =
+                    listOf(
+                        com.ktome.core.talent.TalentEffectResult.StatusApplied(
+                            target = monsterId,
+                            type = StatusEffectType.BURN,
+                            duration = 3,
+                            interactionId = "FREEZE_OVERWRITTEN_BY_BURN",
+                        ),
+                        com.ktome.core.talent.TalentEffectResult.StatusApplied(
+                            target = monsterId,
+                            type = StatusEffectType.TAUNT,
+                            duration = 2,
+                            interactionId = "TAUNT_OVERRIDE",
+                            previousSource = monsterId,
+                        ),
+                    ),
+            ),
+        )
+
+        assertNotNull(logEventByKey(session, "log.status.freeze_overwritten_by_burn"))
+        assertNotNull(logEventByKey(session, "log.status.taunt_override"))
+        assertTrue(recentEventSummaries(session).any { summary -> summary.contains("status_interaction:${monsterId.value}:BURN:FREEZE_OVERWRITTEN_BY_BURN") })
+        assertTrue(recentEventSummaries(session).any { summary -> summary.contains("taunt_override:${monsterId.value}:${session.playerId.value}") })
+    }
+
+    @Test
+    fun `melee attacks that break stealth add a visible log message`() {
+        val session =
+            GameModule.newFoundationSession(
+                FoundationGameConfig(seed = 20260324L, zoneId = "shattered_outpost", playerProfessionId = "vanguard"),
+                SaveManager(tempDir.resolve("stealth-break-log")),
+            )
+        clearMonsters(session)
+        val monsterId = installCombatDummy(session, id = "stealth_dummy")
+        StatusLifecycle.applyEffect(
+            requireNotNull(runtimeWorld(session).get<EffectTracker>(monsterId)),
+            StatusLifecycle.createInstance(
+                type = StatusEffectType.STEALTH,
+                effectId = "monster_stealth",
+                duration = 3,
+            ),
+        )
+        val targetPoint = requireNotNull(runtimeWorld(session).get<Position>(monsterId)).toPoint()
+
+        assertTrue(session.perform(PlayerCommand.Move(targetPoint - session.playerPosition())))
+
+        assertNotNull(logEventByKey(session, "log.status.stealth_broken"))
+        assertFalse(requireNotNull(runtimeWorld(session).get<EffectTracker>(monsterId)).has(StatusEffectType.STEALTH))
+        assertTrue(recentEventSummaries(session).any { summary -> summary.contains("stealth_break:${monsterId.value}:") })
     }
 
     @Test
@@ -1831,6 +2125,13 @@ class FoundationGameSessionTest {
         val field = FoundationGameSession::class.java.getDeclaredField("world")
         field.isAccessible = true
         return field.get(session) as World
+    }
+
+    private fun recentEventSummaries(session: FoundationGameSession): List<String> {
+        val field = FoundationGameSession::class.java.getDeclaredField("recentEvents")
+        field.isAccessible = true
+        @Suppress("UNCHECKED_CAST")
+        return (field.get(session) as ArrayDeque<String>).toList()
     }
 
     private fun movePlayerTo(

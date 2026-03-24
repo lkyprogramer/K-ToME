@@ -141,7 +141,7 @@ class TalentResolverTest {
                                             listOf(
                                                 hostileOnHitEffect(
                                                     effectId = "charge_stun",
-                                                    effectType = StatusEffectType.STUNNED,
+                                                    effectType = StatusEffectType.STUN,
                                                     duration = 2,
                                                     saveDimension = SaveDimension.PHYSICAL,
                                                 ),
@@ -165,7 +165,7 @@ class TalentResolverTest {
                                             listOf(
                                                 hostileOnHitEffect(
                                                     effectId = "shield_bash_stun",
-                                                    effectType = StatusEffectType.STUNNED,
+                                                    effectType = StatusEffectType.STUN,
                                                     duration = 2,
                                                     saveDimension = SaveDimension.PHYSICAL,
                                                 ),
@@ -332,7 +332,7 @@ class TalentResolverTest {
                                             listOf(
                                                 hostileOnHitEffect(
                                                     effectId = "ice_bolt_stun",
-                                                    effectType = StatusEffectType.STUNNED,
+                                                    effectType = StatusEffectType.STUN,
                                                     duration = 1,
                                                     saveDimension = SaveDimension.SPELL,
                                                 ),
@@ -358,7 +358,7 @@ class TalentResolverTest {
                                             listOf(
                                                 hostileOnHitEffect(
                                                     effectId = "frost_nova_stun",
-                                                    effectType = StatusEffectType.STUNNED,
+                                                    effectType = StatusEffectType.STUN,
                                                     duration = 1,
                                                     saveDimension = SaveDimension.SPELL,
                                                 ),
@@ -383,7 +383,7 @@ class TalentResolverTest {
                                             listOf(
                                                 hostileOnHitEffect(
                                                     effectId = "ice_prison_stun",
-                                                    effectType = StatusEffectType.STUNNED,
+                                                    effectType = StatusEffectType.STUN,
                                                     duration = 1,
                                                     saveDimension = SaveDimension.SPELL,
                                                 ),
@@ -462,7 +462,7 @@ class TalentResolverTest {
                                             listOf(
                                                 hostileOnHitEffect(
                                                     effectId = "poison_blade_curse",
-                                                    effectType = StatusEffectType.CURSED,
+                                                    effectType = StatusEffectType.CURSE,
                                                     duration = 2,
                                                     saveDimension = SaveDimension.MENTAL,
                                                     magnitude = 0.10,
@@ -529,7 +529,7 @@ class TalentResolverTest {
                                             listOf(
                                                 hostileOnHitEffect(
                                                     effectId = "judgment_hammer_stun",
-                                                    effectType = StatusEffectType.STUNNED,
+                                                    effectType = StatusEffectType.STUN,
                                                     duration = 1,
                                                     saveDimension = SaveDimension.SPELL,
                                                 ),
@@ -639,7 +639,7 @@ class TalentResolverTest {
 
         resolver().resolve(world, map, player, "shield_bash", Point(2, 2))
 
-        assertTrue(requireNotNull(world.get<com.ktome.core.talent.EffectTracker>(monster)).has(StatusEffectType.STUNNED))
+        assertTrue(requireNotNull(world.get<com.ktome.core.talent.EffectTracker>(monster)).has(StatusEffectType.STUN))
     }
 
     @Test
@@ -654,7 +654,7 @@ class TalentResolverTest {
 
         assertTrue(result is TalentUseResult.Success)
         assertTrue(requireNotNull(world.get<Health>(monster)).current < 40)
-        assertFalse(requireNotNull(world.get<com.ktome.core.talent.EffectTracker>(monster)).has(StatusEffectType.STUNNED))
+        assertFalse(requireNotNull(world.get<com.ktome.core.talent.EffectTracker>(monster)).has(StatusEffectType.STUN))
     }
 
     @Test
@@ -821,7 +821,7 @@ class TalentResolverTest {
         val result = resolver().resolve(world, map, player, "poison_blade", Point(2, 2))
 
         assertTrue(result is TalentUseResult.Success)
-        assertTrue(requireNotNull(world.get<com.ktome.core.talent.EffectTracker>(monster)).has(StatusEffectType.CURSED))
+        assertTrue(requireNotNull(world.get<com.ktome.core.talent.EffectTracker>(monster)).has(StatusEffectType.CURSE))
         assertEquals(46, requireNotNull(world.get<ResourcePools>(player)).pool(ResourceType.ENERGY)?.current)
     }
 

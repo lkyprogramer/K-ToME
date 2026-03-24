@@ -22,6 +22,8 @@ import com.ktome.core.snapshot.RenderSnapshot
 import com.ktome.core.snapshot.RenderTextArgumentSnapshot
 import com.ktome.core.snapshot.RenderTextTokenSnapshot
 import com.ktome.core.snapshot.RenderUiStateSnapshot
+import com.ktome.core.snapshot.StatusEffectCategorySnapshot
+import com.ktome.core.snapshot.StatusEffectRenderSnapshot
 import com.ktome.core.snapshot.TalentReserveSnapshot
 import com.ktome.core.snapshot.TalentSlotSnapshot
 import com.ktome.game.i18n.GameLocale
@@ -250,6 +252,77 @@ class TileRendererCanvasTest {
     }
 
     @Test
+    fun `render model keeps player status turns visible in hud badges`() {
+        val localizer = LocalizationBundle.load().translator(GameLocale.EN_US)
+        val model =
+            TileRenderer.buildRenderModel(
+                localizer = localizer,
+                visualResolver = sampleResolver(),
+                snapshot =
+                    sampleSnapshot(
+                        playerStatusEffects =
+                            listOf(
+                                StatusEffectRenderSnapshot(
+                                    typeId = "ARMOR_BREAK",
+                                    remainingTurns = 3,
+                                    nameKey = "status.armor_break",
+                                    iconKey = "missing_visual",
+                                    stackCount = 2,
+                                    stackCap = 3,
+                                    category = StatusEffectCategorySnapshot.DEBUFF,
+                                ),
+                            ),
+                    ),
+                overlayState = OverlayState(mode = UiMode.MAP),
+            )
+
+        assertEquals(1, model.hud.statusIcons.size)
+        assertEquals("2/3 3t", model.hud.statusIcons.single().badgeText)
+    }
+
+    @Test
+    fun `render canvas uses distinct status tones for buffs and debuffs`() {
+        val canvas = RecordingTileCanvas()
+
+        TileRenderer.renderToCanvas(
+            localizer = LocalizationBundle.load().translator(GameLocale.EN_US),
+            visualResolver = sampleResolver(),
+            snapshot =
+                sampleSnapshot(
+                    playerStatusEffects =
+                        listOf(
+                            StatusEffectRenderSnapshot(
+                                typeId = "HASTE",
+                                remainingTurns = 2,
+                                nameKey = "status.haste",
+                                iconKey = "missing_visual",
+                                category = StatusEffectCategorySnapshot.BUFF,
+                            ),
+                            StatusEffectRenderSnapshot(
+                                typeId = "ARMOR_BREAK",
+                                remainingTurns = 3,
+                                nameKey = "status.armor_break",
+                                iconKey = "missing_visual",
+                                stackCount = 2,
+                                stackCap = 3,
+                                category = StatusEffectCategorySnapshot.DEBUFF,
+                            ),
+                        ),
+                ),
+            overlayState = OverlayState(mode = UiMode.MAP),
+            canvas = canvas,
+            cellWidth = 32f,
+            cellHeight = 32f,
+        )
+
+        val buffBadge = canvas.textDraws.first { draw -> draw.text == "2t" }
+        val debuffBadge = canvas.textDraws.first { draw -> draw.text == "2/3 3t" }
+
+        assertEquals(Color.valueOf("7FE0A0"), buffBadge.color)
+        assertEquals(Color.valueOf("FF9A8D"), debuffBadge.color)
+    }
+
+    @Test
     fun `loadout edit sidebar shows active slots reserve talents and equip controls`() {
         val localizer = LocalizationBundle.load().translator(GameLocale.EN_US)
         val model =
@@ -404,6 +477,7 @@ class TileRendererCanvasTest {
         width: Int = 1,
         height: Int = 1,
         cells: List<MapCellSnapshot>? = null,
+        playerStatusEffects: List<StatusEffectRenderSnapshot> = emptyList(),
         talents: List<TalentSlotSnapshot> = emptyList(),
         reserveTalents: List<TalentReserveSnapshot> = emptyList(),
         logEvents: List<RenderLogEventSnapshot> = emptyList(),
@@ -458,6 +532,7 @@ class TileRendererCanvasTest {
                         dexterity = 8,
                         constitution = 11,
                         willpower = 7,
+                        statusEffects = playerStatusEffects,
                     ),
                 ),
             uiState =

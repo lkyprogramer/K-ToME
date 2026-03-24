@@ -127,6 +127,6 @@ object StatsCalculator {
         )
 
     private object ActiveEffectAccessor {
-        fun modifier(effect: com.ktome.core.talent.ActiveEffect): StatModifier = effect.statModifiers
+        fun modifier(effect: com.ktome.core.talent.ActiveEffect): StatModifier = effect.effectiveStatModifier()
     }
 }

@@ -49,6 +49,7 @@ import com.ktome.game.data.schema.SchemaMapSize
 import com.ktome.game.data.schema.SchemaOffset
 import com.ktome.game.data.schema.SchemaStatModifier
 import com.ktome.game.data.schema.SchemaStats
+import com.ktome.game.data.schema.StatusSchemaV2
 import com.ktome.game.data.schema.AssociatedStatusEffectSchemaV2
 import com.ktome.game.data.schema.CleanseEffectSchemaV2
 import com.ktome.game.data.schema.TalentLevelEffectSchemaV2
@@ -86,6 +87,7 @@ class DataLoader(
     fun loadSchemaCatalog(): SchemaCatalog =
         SchemaCatalog(
             professions = parseProfessionSchemas(loadYamlMap("/data/professions/index.yaml")),
+            statuses = parseStatusSchemas(loadYamlMap("/data/statuses/index.yaml")),
             talents = parseTalentSchemas(loadYamlMap("/data/talents/index.yaml")),
             talentTrees = parseTalentTreeSchemas(loadYamlMap("/data/talents/index.yaml")),
             monsters = parseMonsterSchemas(loadYamlMap("/data/monsters/index.yaml")),
@@ -171,6 +173,24 @@ class DataLoader(
                 startingKit = profession.optionalStringList("startingKit"),
                 unlockCondition = profession.requiredString("unlockCondition"),
                 soloContract = profession.requiredString("soloContract"),
+            )
+        }
+
+    private fun parseStatusSchemas(root: Map<String, Any?>): List<StatusSchemaV2> =
+        root.requiredList("statuses").map { entry ->
+            val status = entry.requiredMap()
+            StatusSchemaV2(
+                id = status.requiredString("id"),
+                effectType = status.requiredString("effectType"),
+                nameKey = status.requiredString("nameKey"),
+                descKey = status.requiredString("descKey"),
+                visualKey = status.requiredString("visualKey"),
+                iconKey = status.requiredString("iconKey"),
+                audioProfile = status.requiredString("audioProfile"),
+                schemaVersion = status.requiredInt("schemaVersion"),
+                tags = status.optionalStringList("tags"),
+                category = status.requiredString("category"),
+                carrierKind = status.requiredString("carrierKind"),
             )
         }
 

@@ -36,11 +36,19 @@ import com.ktome.core.ecs.World
 import com.ktome.core.ecs.add
 import com.ktome.core.ecs.get
 import com.ktome.core.ecs.remove
+import com.ktome.core.effect.AreaEffectEmitter
+import com.ktome.core.effect.WorldEffect
 import com.ktome.core.event.DamageDealtEvent
 import com.ktome.core.event.EntityDeathEvent
 import com.ktome.core.event.ExperienceGainedEvent
 import com.ktome.core.event.LevelUpEvent
 import com.ktome.core.event.MissEvent
+import com.ktome.core.event.StatusAppliedEvent
+import com.ktome.core.event.StatusCleanseEvent
+import com.ktome.core.event.StatusInteractionEvent
+import com.ktome.core.event.StatusTickEvent
+import com.ktome.core.event.StealthBrokenEvent
+import com.ktome.core.event.TauntOverrideEvent
 import com.ktome.core.fov.Shadowcasting
 import com.ktome.core.item.AffixType
 import com.ktome.core.item.EquipSlot
@@ -93,9 +101,15 @@ import com.ktome.core.snapshot.RenderSnapshot
 import com.ktome.core.snapshot.RenderTextArgumentSnapshot
 import com.ktome.core.snapshot.RenderTextTokenSnapshot
 import com.ktome.core.snapshot.RenderUiStateSnapshot
+import com.ktome.core.snapshot.StatusEffectCategorySnapshot
 import com.ktome.core.snapshot.StatusEffectRenderSnapshot
 import com.ktome.core.snapshot.TalentReserveSnapshot
 import com.ktome.core.snapshot.TalentSlotSnapshot
+import com.ktome.core.status.EffectCategory
+import com.ktome.core.status.EffectCarrierKind
+import com.ktome.core.status.StatusDefinitions
+import com.ktome.core.status.StatusLifecycle
+import com.ktome.core.status.StatusTickResolver
 import com.ktome.core.stats.StatsCalculator
 import com.ktome.core.talent.CooldownState
 import com.ktome.core.talent.DamageMultiplierResolver
@@ -1485,33 +1499,19 @@ class FoundationGameSession internal constructor(
 
     private fun activeStatusEffectSnapshots(entityId: EntityId): List<StatusEffectRenderSnapshot> =
         world.get<EffectTracker>(entityId)
-            ?.effects
-            ?.filter { effect -> effect.remainingTurns > 0 }
+            ?.activeEffects()
             ?.map { effect ->
+                val statusSchema = content.statusSchemaFor(effect.schemaId)
                 StatusEffectRenderSnapshot(
-                    typeId = effect.type.name,
+                    typeId = effect.schemaId,
                     remainingTurns = effect.remainingTurns,
-                    nameKey = statusEffectNameKey(effect.type),
-                    iconKey = statusEffectIconKey(effect.type),
+                    nameKey = effect.nameKey ?: statusSchema?.nameKey ?: statusEffectNameKey(effect.type),
+                    iconKey = effect.iconKey ?: statusSchema?.iconKey ?: StatusDefinitions.iconKey(effect.type),
+                    stackCount = effect.stackCount,
+                    stackCap = effect.stackCap.takeIf { cap -> cap > 1 },
+                    category = effect.category.toSnapshotCategory(),
                 )
             }.orEmpty()
-
-    private fun statusEffectIconKey(type: StatusEffectType): String =
-        when (type) {
-            StatusEffectType.STUNNED -> "icon.status.stunned"
-            StatusEffectType.ARMOR_BREAK -> "icon.status.armor_break"
-            StatusEffectType.WAR_CRY_BUFF -> "icon.status.war_cry_buff"
-            StatusEffectType.WAR_CRY_DEBUFF -> "icon.status.war_cry_debuff"
-            StatusEffectType.GUARD_STANCE_BUFF -> "icon.status.guard_stance_buff"
-            StatusEffectType.ARCANE_SHIELD_BUFF -> "icon.status.arcane_shield_buff"
-            StatusEffectType.UNYIELDING_BUFF -> "icon.status.unyielding_buff"
-            StatusEffectType.MANA_SURGE_BUFF -> "icon.status.mana_surge_buff"
-            StatusEffectType.STEALTH_BUFF -> "icon.skill.rogue.shadowstep"
-            StatusEffectType.CURSED -> "icon.status.cursed"
-            StatusEffectType.HOLY_SHIELD_BUFF -> "icon.skill.templar.divine_intervention"
-            StatusEffectType.DEVOTION_BUFF -> "icon.status.consecration"
-            StatusEffectType.HOLY_AURA_BUFF -> "icon.status.consecration"
-        }
 
     private fun stairDirectionAt(point: Point): StairDirection? =
         world.entitiesWith(Position::class, Stair::class)
@@ -1564,7 +1564,10 @@ class FoundationGameSession internal constructor(
             return false
         }
 
-        prepareActorTurn(playerId)
+        if (!prepareActorTurn(playerId)) {
+            refreshFov()
+            return false
+        }
         val resolution = executePlayerCommand(command)
         if (!resolution.accepted) {
             refreshFov()
@@ -1624,7 +1627,11 @@ class FoundationGameSession internal constructor(
                 continue
             }
 
-            prepareActorTurn(nextActor)
+            if (!prepareActorTurn(nextActor)) {
+                pendingActions.removeFirst()
+                activeTurnActor = null
+                continue
+            }
             if (nextActor == playerId) {
                 break
             }
@@ -1636,9 +1643,9 @@ class FoundationGameSession internal constructor(
         }
     }
 
-    private fun prepareActorTurn(actorId: EntityId) {
+    private fun prepareActorTurn(actorId: EntityId): Boolean {
         if (activeTurnActor == actorId) {
-            return
+            return world.isAlive(actorId)
         }
 
         world.get<CooldownState>(actorId)?.let { cooldowns ->
@@ -1650,6 +1657,11 @@ class FoundationGameSession internal constructor(
                     cooldowns.remainingByTalentId[talentId] = remaining
                 }
             }
+        }
+
+        if (!applyTurnStartStatusEffects(actorId)) {
+            activeTurnActor = null
+            return false
         }
 
         if (StaminaPools.hasPool(world, actorId)) {
@@ -1669,30 +1681,116 @@ class FoundationGameSession internal constructor(
         }
 
         activeTurnActor = actorId
+        return world.isAlive(actorId)
     }
 
     private fun finishActorTurn(actorId: EntityId) {
-        val tracker = world.get<EffectTracker>(actorId) ?: return
-        var changed = false
-        val iterator = tracker.effects.iterator()
-        while (iterator.hasNext()) {
-            val effect = iterator.next()
-            if (effect.skipNextDecay) {
-                effect.skipNextDecay = false
-                continue
-            }
-            effect.remainingTurns -= 1
-            if (effect.remainingTurns <= 0) {
-                iterator.remove()
-                changed = true
-            }
-        }
+        val tracker = world.get<EffectTracker>(actorId)
+        val changed = tracker?.let(StatusLifecycle::decayEndOfTurn) == true
+        decayAreaEffectEmitters(actorId)
+        decayWorldEffects(actorId)
 
         if (changed) {
             StatsCalculator.recalculateAndStore(world, actorId)
         }
         if (actorId == playerId) {
             ensurePlayerResourcePools()
+        }
+    }
+
+    private fun applyTurnStartStatusEffects(actorId: EntityId): Boolean {
+        val dueEffects = StatusTickResolver.dueEffects(world, actorId)
+        if (dueEffects.isEmpty()) {
+            return world.isAlive(actorId)
+        }
+        var pendingDeathKiller: EntityId? = null
+
+        listOf(
+            EffectCarrierKind.ACTOR,
+            EffectCarrierKind.AREA,
+            EffectCarrierKind.WORLD,
+        ).forEach { carrierKind ->
+            dueEffects
+                .filter { dueEffect -> dueEffect.carrierKind == carrierKind }
+                .forEach { dueEffect ->
+                    val killer = applyTurnStartStatusTick(actorId, dueEffect)
+                    if (pendingDeathKiller == null) {
+                        pendingDeathKiller = killer
+                    }
+                }
+            if (pendingDeathKiller != null) {
+                handleDeath(actorId, pendingDeathKiller)
+                return false
+            }
+        }
+
+        if (world.isAlive(actorId)) {
+            StatsCalculator.recalculateAndStore(world, actorId)
+        }
+        return world.isAlive(actorId)
+    }
+
+    private fun applyTurnStartStatusTick(
+        actorId: EntityId,
+        dueEffect: com.ktome.core.status.CarrierDueEffect,
+    ): EntityId? {
+        val tracker = world.get<EffectTracker>(actorId)
+        if (tracker != null && StatusLifecycle.hasInvulnerable(tracker)) {
+            return null
+        }
+
+        val damageType = dueEffect.effect.tickDamageType ?: return null
+        val rawDamage = dueEffect.effect.tickDamage
+        if (rawDamage <= 0) {
+            return null
+        }
+
+        val result =
+            combatResolver.resolveStatusTick(
+                world = world,
+                source = dueEffect.sourceEntityId,
+                target = actorId,
+                statusType = dueEffect.effect.type,
+                damageType = damageType,
+                rawDamage = rawDamage,
+                turn = turnCount,
+                traceId = "status-tick:${dueEffect.effect.id}:${actorId.value}",
+            )
+        val finalDamage = result.damage.finalDamage
+
+        logEvent(DamageDealtEvent(dueEffect.sourceEntityId ?: actorId, actorId, finalDamage, crit = false))
+        logEvent(StatusTickEvent(actorId, dueEffect.effect.type, finalDamage, dueEffect.carrierKind))
+        addMessage(
+            "log.status.tick",
+            keyArg("status", dueEffect.effect.nameKey ?: statusEffectNameKey(dueEffect.effect.type)),
+            entityArg("target", actorId),
+            literalArg("damage", finalDamage),
+        )
+        tracker?.let { activeTracker ->
+            val removed = StatusLifecycle.breakOnDamage(activeTracker, finalDamage)
+            if (removed.any { effect -> effect.type == StatusEffectType.STEALTH }) {
+                logStealthBroken(actorId, finalDamage)
+            }
+        }
+
+        return if (result.targetKilled) dueEffect.sourceEntityId ?: actorId else null
+    }
+
+    private fun decayAreaEffectEmitters(actorId: EntityId) {
+        world.entitiesWith(AreaEffectEmitter::class).forEach { entityId ->
+            val emitter = world.get<AreaEffectEmitter>(entityId) ?: return@forEach
+            if (actorId in emitter.affectedActorIds) {
+                StatusLifecycle.decayEndOfTurn(emitter)
+            }
+        }
+    }
+
+    private fun decayWorldEffects(actorId: EntityId) {
+        world.entitiesWith(WorldEffect::class).forEach { entityId ->
+            val effect = world.get<WorldEffect>(entityId) ?: return@forEach
+            if (actorId in effect.affectedActorIds) {
+                StatusLifecycle.decayEndOfTurn(effect)
+            }
         }
     }
 
@@ -1909,7 +2007,7 @@ class FoundationGameSession internal constructor(
         val targetPosition = playerPosition()
         val targetVisible = targetPosition in Shadowcasting.computeVisible(map = map, origin = position, radius = behavior.sightRadius)
         val enteredCombatThisTurn = updateMonsterCombatState(monsterId, targetVisible)
-        if (world.get<EffectTracker>(monsterId)?.has(StatusEffectType.STUNNED) == true) {
+        if (world.get<EffectTracker>(monsterId)?.has(StatusEffectType.STUN) == true) {
             expireCombatStartTriggers(monsterId, enteredCombatThisTurn)
             return
         }
@@ -2113,10 +2211,25 @@ class FoundationGameSession internal constructor(
 
     private fun activeStatusEffects(entityId: EntityId): List<String> =
         world.get<EffectTracker>(entityId)
-            ?.effects
-            ?.filter { effect -> effect.remainingTurns > 0 }
-            ?.map { effect -> tr("ui.inspect.effect.turns", "name" to statusEffectName(effect.type), "turns" to effect.remainingTurns) }
+            ?.activeEffects()
+            ?.map { effect ->
+                tr(
+                    "ui.inspect.effect.turns",
+                    "name" to (statusEffectName(effect.type) + statusStackSuffix(effect.stackCount, effect.stackCap)),
+                    "turns" to effect.remainingTurns,
+                )
+            }
             .orEmpty()
+
+    private fun statusStackSuffix(
+        stackCount: Int,
+        stackCap: Int,
+    ): String =
+        when {
+            stackCount <= 1 -> ""
+            stackCap > 1 -> " x$stackCount/$stackCap"
+            else -> " x$stackCount"
+        }
 
     private fun tileName(tile: com.ktome.core.map.TileType): String =
         when (tile) {
@@ -2211,6 +2324,9 @@ class FoundationGameSession internal constructor(
             entityArg("target", target),
             literalArg("damage", result.finalDamage),
         )
+        if (StatusEffectType.STEALTH in result.removedStatusTypes) {
+            logStealthBroken(target, result.finalDamage)
+        }
 
         if (result.targetKilled) {
             handleDeath(target, attacker)
@@ -3016,6 +3132,7 @@ class FoundationGameSession internal constructor(
         result.effects.forEach { effect ->
             when (effect) {
                 is com.ktome.core.talent.TalentEffectResult.Buff -> {
+                    logEvent(StatusAppliedEvent(effect.target, effect.type, source = result.user, remainingTurns = effect.duration))
                     addMessage(
                         when (effect.type) {
                             StatusEffectType.WAR_CRY_BUFF -> "log.talent.target_empowered"
@@ -3025,6 +3142,9 @@ class FoundationGameSession internal constructor(
                         entityArg("target", effect.target),
                         literalArg("turns", effect.duration),
                     )
+                    effect.interactionId?.let { interactionId ->
+                        logStatusInteraction(effect.target, effect.type, interactionId, result.user, effect.previousSource)
+                    }
                 }
 
                 is com.ktome.core.talent.TalentEffectResult.Damage -> {
@@ -3049,6 +3169,9 @@ class FoundationGameSession internal constructor(
                             keyArg("damageType", damageTypeLabelKey(effect.damageType)),
                             literalArg("amount", abs(effect.resistanceValue)),
                         )
+                    }
+                    if (effect.stealthBroken) {
+                        logStealthBroken(effect.target, effect.amount)
                     }
                 }
 
@@ -3083,19 +3206,92 @@ class FoundationGameSession internal constructor(
                     )
                 }
 
+                is com.ktome.core.talent.TalentEffectResult.StatusCleanse -> {
+                    effect.removed.forEach { removedType ->
+                        logEvent(StatusCleanseEvent(effect.target, removedType))
+                    }
+                    if (effect.removed.isNotEmpty()) {
+                        addMessage(
+                            "log.status.cleanse",
+                            entityArg("target", effect.target),
+                            literalArg("count", effect.removed.size),
+                        )
+                    }
+                }
+
                 is com.ktome.core.talent.TalentEffectResult.StatusApplied -> {
+                    logEvent(StatusAppliedEvent(effect.target, effect.type, source = result.user, remainingTurns = effect.duration))
                     addMessage(
                         when (effect.type) {
-                            StatusEffectType.STUNNED -> "log.talent.target_stunned"
+                            StatusEffectType.STUN -> "log.talent.target_stunned"
                             StatusEffectType.ARMOR_BREAK -> "log.talent.target_armor_broken"
                             else -> "log.talent.target_affected"
                         },
                         entityArg("target", effect.target),
                         literalArg("turns", effect.duration),
                     )
+                    effect.interactionId?.let { interactionId ->
+                        logStatusInteraction(effect.target, effect.type, interactionId, result.user, effect.previousSource)
+                    }
                 }
             }
         }
+    }
+
+    private fun logStatusInteraction(
+        target: EntityId,
+        type: StatusEffectType,
+        interactionId: String,
+        source: EntityId,
+        previousSource: EntityId?,
+    ) {
+        when (interactionId) {
+            "TAUNT_OVERRIDE" -> {
+                logEvent(TauntOverrideEvent(target = target, previousSource = previousSource, newSource = source))
+                addMessage(
+                    "log.status.taunt_override",
+                    entityArg("target", target),
+                    entityArg("source", source),
+                    previousSource?.let { entityArg("previous", it) } ?: literalArg("previous", tr("actor.unknown.name")),
+                )
+            }
+
+            else -> {
+                logEvent(StatusInteractionEvent(target = target, statusType = type, interactionId = interactionId))
+                addStatusInteractionMessage(target, interactionId)
+            }
+        }
+    }
+
+    private fun addStatusInteractionMessage(
+        target: EntityId,
+        interactionId: String,
+    ) {
+        when (interactionId) {
+            "FREEZE_OVERWRITTEN_BY_BURN" ->
+                addMessage(
+                    "log.status.freeze_overwritten_by_burn",
+                    entityArg("target", target),
+                )
+
+            "BURN_OVERWRITTEN_BY_FREEZE" ->
+                addMessage(
+                    "log.status.burn_overwritten_by_freeze",
+                    entityArg("target", target),
+                )
+        }
+    }
+
+    private fun logStealthBroken(
+        target: EntityId,
+        damage: Int,
+    ) {
+        logEvent(StealthBrokenEvent(target, damage = damage))
+        addMessage(
+            "log.status.stealth_broken",
+            entityArg("target", target),
+            literalArg("damage", damage),
+        )
     }
 
     private fun randomTeleportDestination(): Point {
@@ -3442,20 +3638,13 @@ class FoundationGameSession internal constructor(
         tr(statusEffectNameKey(type))
 
     private fun statusEffectNameKey(type: StatusEffectType): String =
-        when (type) {
-            StatusEffectType.STUNNED -> "status.stunned"
-            StatusEffectType.ARMOR_BREAK -> "status.armor_break"
-            StatusEffectType.WAR_CRY_BUFF -> "status.war_cry_buff"
-            StatusEffectType.WAR_CRY_DEBUFF -> "status.war_cry_debuff"
-            StatusEffectType.GUARD_STANCE_BUFF -> "status.guard_stance_buff"
-            StatusEffectType.ARCANE_SHIELD_BUFF -> "status.arcane_shield_buff"
-            StatusEffectType.UNYIELDING_BUFF -> "status.unyielding_buff"
-            StatusEffectType.MANA_SURGE_BUFF -> "status.mana_surge_buff"
-            StatusEffectType.STEALTH_BUFF -> "status.stealth_buff"
-            StatusEffectType.CURSED -> "status.cursed"
-            StatusEffectType.HOLY_SHIELD_BUFF -> "status.holy_shield_buff"
-            StatusEffectType.DEVOTION_BUFF -> "status.devotion_buff"
-            StatusEffectType.HOLY_AURA_BUFF -> "status.holy_aura_buff"
+        content.statusSchemaFor(type.schemaId)?.nameKey ?: StatusDefinitions.nameKey(type)
+
+    private fun EffectCategory.toSnapshotCategory(): StatusEffectCategorySnapshot =
+        when (this) {
+            EffectCategory.BUFF -> StatusEffectCategorySnapshot.BUFF
+            EffectCategory.DEBUFF -> StatusEffectCategorySnapshot.DEBUFF
+            EffectCategory.NEUTRAL -> StatusEffectCategorySnapshot.NEUTRAL
         }
 
     private fun talentFailureMessage(result: TalentUseResult.Failure): RenderLogEventSnapshot =
@@ -3844,6 +4033,12 @@ class FoundationGameSession internal constructor(
             is EntityDeathEvent -> "death:${event.entity.value}:${event.killer?.value ?: "none"}"
             is ExperienceGainedEvent -> "xp:${event.entity.value}:${event.amount}"
             is LevelUpEvent -> "level:${event.entity.value}:${event.newLevel}"
+            is StatusAppliedEvent -> "status_apply:${event.target.value}:${event.statusType.schemaId}:${event.remainingTurns}"
+            is StatusCleanseEvent -> "status_cleanse:${event.target.value}:${event.statusType.schemaId}:${event.reason}"
+            is StatusTickEvent -> "status_tick:${event.target.value}:${event.statusType.schemaId}:${event.damage}:${event.carrierKind.name}"
+            is StatusInteractionEvent -> "status_interaction:${event.target.value}:${event.statusType.schemaId}:${event.interactionId}"
+            is TauntOverrideEvent -> "taunt_override:${event.target.value}:${event.newSource?.value ?: "none"}"
+            is StealthBrokenEvent -> "stealth_break:${event.target.value}:${event.damage}"
             else -> event::class.simpleName ?: "UnknownEvent"
         }
 
@@ -3877,6 +4072,7 @@ class FoundationGameSession internal constructor(
         ): GameContent =
             GameContent(
                 talents = emptyList(),
+                statuses = emptyList(),
                 talentRegistry = talentRegistry,
                 monsterCatalog = compatibilityMonsterCatalog(world, currentFloor),
                 itemBundle = compatibilityItemBundle(world, currentFloor),
@@ -3907,6 +4103,7 @@ class FoundationGameSession internal constructor(
                 schemaCatalog =
                     SchemaCatalog(
                         professions = emptyList(),
+                        statuses = emptyList(),
                         talents = emptyList(),
                         talentTrees = emptyList(),
                         monsters = emptyList(),

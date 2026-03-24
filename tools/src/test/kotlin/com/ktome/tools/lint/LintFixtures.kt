@@ -31,6 +31,7 @@ internal object LintFixtures {
     val schemaResources: List<String> =
         listOf(
             "/data/professions/index.yaml",
+            "/data/statuses/index.yaml",
             "/data/talents/index.yaml",
             "/data/monsters/index.yaml",
             "/data/bosses/index.yaml",
@@ -64,6 +65,7 @@ internal object LintFixtures {
     fun codeReferencedLocaleKeys(): Set<String> {
         val files =
             listOf(
+                repoRoot.resolve("core/src/main/kotlin"),
                 repoRoot.resolve("client/src/main/kotlin"),
                 repoRoot.resolve("game/src/main/kotlin"),
             ).flatMap { root ->

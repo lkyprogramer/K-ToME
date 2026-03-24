@@ -12,6 +12,7 @@ import com.ktome.client.assets.VisualManifestResolver
 import com.ktome.client.input.OverlayState
 import com.ktome.client.input.UiMode
 import com.ktome.core.snapshot.RenderSnapshot
+import com.ktome.core.snapshot.StatusEffectCategorySnapshot
 import com.ktome.game.i18n.Localizer
 import kotlin.math.roundToInt
 
@@ -346,7 +347,21 @@ class TileRenderer(
 
             var statusX = layout.focusX + 12f
             hud.statusIcons.forEach { icon ->
-                canvas.drawAsset(icon, statusX, textTopY - 94f, 26f, 26f)
+                canvas.drawRect(
+                    statusX - 1f,
+                    textTopY - 95f,
+                    28f,
+                    28f,
+                    statusAccentColor(icon.category),
+                )
+                canvas.drawAsset(icon.asset, statusX, textTopY - 94f, 26f, 26f)
+                canvas.drawText(
+                    TileTextStyle.SMALL,
+                    icon.badgeText,
+                    statusX,
+                    textTopY - 100f,
+                    statusBadgeColor(icon.category),
+                )
                 statusX += 34f
             }
 
@@ -704,6 +719,20 @@ class TileRenderer(
                 TileTextTone.GREEN -> color("59C173")
                 TileTextTone.RED -> color("D95959")
                 TileTextTone.BLUE -> color("5C90D2")
+            }
+
+        private fun statusAccentColor(category: StatusEffectCategorySnapshot): Color =
+            when (category) {
+                StatusEffectCategorySnapshot.BUFF -> color("1F6A3B", 0.78f)
+                StatusEffectCategorySnapshot.DEBUFF -> color("7A2B25", 0.80f)
+                StatusEffectCategorySnapshot.NEUTRAL -> color("3A4353", 0.72f)
+            }
+
+        private fun statusBadgeColor(category: StatusEffectCategorySnapshot): Color =
+            when (category) {
+                StatusEffectCategorySnapshot.BUFF -> color("7FE0A0")
+                StatusEffectCategorySnapshot.DEBUFF -> color("FF9A8D")
+                StatusEffectCategorySnapshot.NEUTRAL -> Color.LIGHT_GRAY
             }
 
         internal fun color(

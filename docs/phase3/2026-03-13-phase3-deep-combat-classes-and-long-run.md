@@ -225,6 +225,7 @@ client/src/main/kotlin/com/ktome/client/ui/talent/*
 3. `core` 只输出 `DescriptionModel` 等语义结构，不直接输出最终本地化字符串。
 4. `respec` 与 `rollback` 必须建立在 `AllocationDraft` 之上，并有自动化回归。
 5. `DescriptionModel.placeholders` 必须保留数值 / 布尔 / 文本类型信息，不能过早降成纯字符串。
+6. 只具有 talent 局部来源语义、没有全局状态引擎语义的 buff/debuff（如 `WAR_CRY`）必须在 `P3-W3` 收敛到 schema/typed effect op，不再继续扩张 `StatusEffectType`。
 
 第一版 UX / 操作合同：
 

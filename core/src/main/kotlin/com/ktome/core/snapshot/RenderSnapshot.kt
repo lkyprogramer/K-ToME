@@ -75,7 +75,17 @@ data class StatusEffectRenderSnapshot(
     val remainingTurns: Int,
     val nameKey: String? = null,
     val iconKey: String? = null,
+    val stackCount: Int = 1,
+    val stackCap: Int? = null,
+    val category: StatusEffectCategorySnapshot = StatusEffectCategorySnapshot.DEBUFF,
 )
+
+@Serializable
+enum class StatusEffectCategorySnapshot {
+    BUFF,
+    DEBUFF,
+    NEUTRAL,
+}
 
 @Serializable
 data class ActorRenderSnapshot(

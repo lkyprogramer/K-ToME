@@ -688,6 +688,7 @@ internal class SoloClearLabHarness(
         val talents = loader.loadTalentDefinitions()
         return GameContent(
             talents = talents,
+            statuses = schemaCatalog.statuses,
             talentRegistry = TalentRegistry().apply { registerAll(talents) },
             monsterCatalog = loader.loadMonsterCatalog().monsters,
             itemBundle = loader.loadItemBundle(),

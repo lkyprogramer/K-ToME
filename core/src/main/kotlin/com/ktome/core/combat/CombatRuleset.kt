@@ -12,4 +12,12 @@ object CombatRuleset {
             traceSchemaVersion = TRACE_SCHEMA_VERSION,
             corpusId = CombatCorpusId.FORMULA,
         )
+
+    fun statusEnvelope(): TraceEnvelope =
+        TraceEnvelope(
+            phaseId = PHASE_ID,
+            rulesetVersion = RULESET_VERSION,
+            traceSchemaVersion = TRACE_SCHEMA_VERSION,
+            corpusId = CombatCorpusId.STATUS,
+        )
 }
