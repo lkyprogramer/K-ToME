@@ -1,6 +1,6 @@
 package com.ktome.game.data.schema
 
-import com.ktome.core.talent.StatusEffectType
+import com.ktome.core.talent.TalentTreeOwnerType
 import com.ktome.core.item.AffixType
 import com.ktome.core.item.ConsumableEffect
 import com.ktome.core.item.EquipSlot
@@ -39,6 +39,18 @@ data class StatusSchemaV2(
     val tags: List<String>,
     val category: String,
     val carrierKind: String,
+    val stackingRule: String? = null,
+    val stackCap: Int? = null,
+    val replacePolicy: String? = null,
+    val uniquenessKey: String? = null,
+    val exclusiveGroup: String? = null,
+    val sourceScopedUnique: Boolean = false,
+    val dispellable: Boolean? = null,
+    val remoteRemovalPolicy: String? = null,
+    val breaksOnActualDamage: Boolean = false,
+    val consumedOnDamageType: String? = null,
+    val consumedDamageMultiplier: Double? = null,
+    val stats: SchemaStatModifier = SchemaStatModifier(),
 )
 
 data class NamedSchemaRef(
@@ -63,7 +75,7 @@ data class AIProfileSchemaV2(
 
 data class AITalentSkipRuleSchemaV2(
     val talentId: String,
-    val selfHasStatus: StatusEffectType,
+    val selfHasStatus: String,
 )
 
 enum class AITriggerConditionKindSchemaV2 {
@@ -129,24 +141,38 @@ data class TalentSchemaV2(
     val schemaVersion: Int,
     val tags: List<String>,
     val maxPoints: Int,
+    val tier: Int,
     val category: String,
     val damageType: String?,
     val powerDimension: String?,
     val kind: String,
     val cooldown: Int,
-    val castTime: Int,
+    val castTime: String,
+    val targeting: TalentTargetingSchemaV2,
+    val resourceCosts: List<ResourceCostSchemaV2>,
+    val unlockLevel: Int,
+    val requirements: TalentRequirementsSchemaV2,
+    val levelEffects: Map<Int, TalentLevelEffectSchemaV2>,
+    val breakpoints: List<TalentBreakpointSchemaV2>,
+    val keywords: List<String>,
+    val callbacks: List<String>,
+    val telegraphRef: String? = null,
+    val aiHints: TalentAiHintsSchemaV2?,
+    val treeId: String,
+)
+
+data class TalentTargetingSchemaV2(
+    val type: String,
     val range: Int,
     val minRange: Int,
     val areaRadius: Int,
-    val resourceCosts: Map<String, Int>,
-    val unlockLevel: Int,
-    val targeting: String,
-    val requirements: TalentRequirementsSchemaV2,
-    val levelEffects: Map<Int, TalentLevelEffectSchemaV2>,
-    val keywords: List<String>,
-    val callbacks: List<String>,
-    val telegraph: String,
-    val treeId: String,
+    val requiresLineOfSight: Boolean = true,
+    val friendlyFire: Boolean = false,
+)
+
+data class ResourceCostSchemaV2(
+    val axis: String,
+    val amount: Int,
 )
 
 data class TalentRequirementsSchemaV2(
@@ -187,9 +213,26 @@ data class CleanseEffectSchemaV2(
     val maxEffectsRemoved: Int = 1,
 )
 
+data class TalentAiHintsSchemaV2(
+    val role: String,
+    val preferredRange: IntRangeSchemaV2? = null,
+    val isSustainToggle: Boolean = false,
+)
+
+data class IntRangeSchemaV2(
+    val start: Int,
+    val endInclusive: Int,
+)
+
+data class TalentBreakpointSchemaV2(
+    val atRank: Int,
+    val descriptionAddendumKey: String? = null,
+)
+
 data class TalentTreeSchemaV2(
     val id: String,
-    val professionId: String,
+    val professionId: String = "",
+    val raceId: String? = null,
     val nameKey: String,
     val descKey: String,
     val visualKey: String,
@@ -199,7 +242,20 @@ data class TalentTreeSchemaV2(
     val tags: List<String>,
     val layout: String,
     val nodes: List<String>,
-)
+) {
+    fun ownerRef(): com.ktome.game.TalentTreeOwnerRef =
+        if (raceId != null) {
+            com.ktome.game.TalentTreeOwnerRef(
+                ownerType = TalentTreeOwnerType.RACE,
+                treeOwnerId = raceId,
+            )
+        } else {
+            com.ktome.game.TalentTreeOwnerRef(
+                ownerType = TalentTreeOwnerType.PROFESSION,
+                treeOwnerId = professionId,
+            )
+        }
+}
 
 data class MonsterSchemaV2(
     val id: String,

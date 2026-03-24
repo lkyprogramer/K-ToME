@@ -11,12 +11,16 @@ class StatusSchemaContractTest {
     @Test
     fun `status schema stays aligned with runtime definitions`() {
         val statuses = loader.loadSchemaCatalog().statuses
+        val runtimeCatalog = loader.loadStatusCatalog()
 
         statuses.forEach { schema ->
             val type = StatusEffectType.fromSchemaId(schema.effectType)
-            val definition = StatusDefinitions.definitionFor(type)
+            val definition = runtimeCatalog.definitionFor(schema.id)
 
-            assertEquals(type.schemaId, schema.id)
+            if (type != StatusEffectType.CUSTOM) {
+                assertEquals(type.schemaId, schema.id)
+                assertEquals(StatusDefinitions.definitionFor(type).nameKey, schema.nameKey)
+            }
             assertEquals(definition.nameKey, schema.nameKey)
             assertEquals(definition.iconKey, schema.iconKey)
             assertEquals(definition.category.name, schema.category)

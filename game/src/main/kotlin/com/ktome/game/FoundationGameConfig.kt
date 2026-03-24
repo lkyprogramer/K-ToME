@@ -1,16 +1,5 @@
 package com.ktome.game
 
-const val FOUNDATION_ZONE_ID: String = "shattered_outpost"
-const val FOUNDATION_PROFESSION_ID: String = "vanguard"
-const val FOUNDATION_BOSS_TEMPLATE_ID: String = "cultist.dungeon_lord"
-val FOUNDATION_ZONE_ROUTE: List<String> =
-    listOf(
-        "shattered_outpost",
-        "greenwood_fringe",
-        "deep_iron_pit",
-        "grey_gate_depths",
-    )
-
 data class FoundationGameConfig(
     val width: Int = 80,
     val height: Int = 50,

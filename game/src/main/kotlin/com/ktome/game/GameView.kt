@@ -7,8 +7,7 @@ import com.ktome.core.item.ItemType
 import com.ktome.core.map.Point
 import com.ktome.core.run.RunOutcome
 import com.ktome.core.snapshot.RenderTextTokenSnapshot
-
-const val PLAYER_ACTIVE_TALENT_SLOT_COUNT: Int = 4
+import com.ktome.core.talent.TalentTreeOwnerType
 
 sealed interface PlayerCommand {
     data class Move(val delta: Point) : PlayerCommand
@@ -33,7 +32,16 @@ sealed interface PlayerCommand {
 
     data class AssignStat(val stat: PrimaryStat) : PlayerCommand
 
-    data class AssignTalent(val slot: Int) : PlayerCommand
+    data class AssignTalent(val talentId: String) : PlayerCommand
+
+    data object ConfirmTalentDraft : PlayerCommand
+
+    data object RollbackTalentDraft : PlayerCommand
+
+    data class RespecTalentTree(
+        val ownerType: TalentTreeOwnerType,
+        val treeOwnerId: String,
+    ) : PlayerCommand
 }
 
 enum class PrimaryStat {
@@ -95,6 +103,7 @@ data class TalentSlotView(
     val name: String,
     val descKey: String? = null,
     val level: Int,
+    val committedLevel: Int = level,
     val maxLevel: Int,
     val resourceCost: Int,
     val resourceTypeId: String = "STAMINA",
@@ -103,6 +112,9 @@ data class TalentSlotView(
     val currentCooldown: Int,
     val maxCooldown: Int,
     val requiresTarget: Boolean,
+    val descriptionModel: com.ktome.core.talent.DescriptionModel? = null,
+    val nextBreakpointPreview: com.ktome.core.snapshot.TalentBreakpointPreviewSnapshot? = null,
+    val hasPendingAllocation: Boolean = false,
 )
 
 data class TalentReserveView(
@@ -110,6 +122,7 @@ data class TalentReserveView(
     val name: String,
     val descKey: String? = null,
     val level: Int,
+    val committedLevel: Int = level,
     val maxLevel: Int,
     val resourceCost: Int,
     val resourceTypeId: String = "STAMINA",
@@ -118,6 +131,9 @@ data class TalentReserveView(
     val currentCooldown: Int,
     val maxCooldown: Int,
     val requiresTarget: Boolean,
+    val descriptionModel: com.ktome.core.talent.DescriptionModel? = null,
+    val nextBreakpointPreview: com.ktome.core.snapshot.TalentBreakpointPreviewSnapshot? = null,
+    val hasPendingAllocation: Boolean = false,
 )
 
 data class RunSummary(

@@ -1,5 +1,7 @@
 package com.ktome.game.data
 
+import com.ktome.core.talent.ActionCost
+import com.ktome.core.talent.EffectOp
 import com.ktome.core.combat.ApplicationPolicy
 import com.ktome.core.combat.DamageType
 import com.ktome.core.combat.SaveDimension
@@ -8,9 +10,13 @@ import com.ktome.core.item.ItemBaseDef
 import com.ktome.core.item.ItemDataBundle
 import com.ktome.core.item.ItemGenerator
 import com.ktome.core.random.RandomSource
-import com.ktome.core.talent.StatusEffectType
+import com.ktome.core.resource.ResourceType
+import com.ktome.core.status.StatusEffectType
+import com.ktome.core.talent.TalentDef
+import com.ktome.core.talent.TalentRole
 import com.ktome.game.i18n.GameLocale
 import com.ktome.game.data.schema.AITriggerConditionKindSchemaV2
+import com.ktome.game.data.schema.TalentSchemaV2
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -68,6 +74,7 @@ class SchemaV2LoaderTest {
         assertEquals(listOf("backstab", "poison_blade", "deathblow"), catalog.talentTrees.first { it.id == "rogue_assassination" }.nodes)
         assertEquals(listOf("holy_light", "holy_shield", "purify"), catalog.talentTrees.first { it.id == "templar_grace" }.nodes)
         assertEquals(3, catalog.talents.first { it.id == "charge" }.unlockLevel)
+        assertEquals("charge_lane", catalog.talents.first { it.id == "charge" }.telegraphRef)
         assertEquals(4, catalog.talents.first { it.id == "blink" }.levelEffects.getValue(5).rangeBonus)
         assertEquals("PHYSICAL", catalog.talents.first { it.id == "power_strike" }.powerDimension)
         assertEquals(
@@ -169,23 +176,44 @@ class SchemaV2LoaderTest {
         assertEquals("老鼠", zhLoader.loadMonsterCatalog().monsters.first { it.id == "beast.rat" }.name)
         assertEquals("Short Sword", enLoader.loadItemBundle().baseItems.first { it.id == "short_sword" }.name)
         assertEquals("短剑", zhLoader.loadItemBundle().baseItems.first { it.id == "short_sword" }.name)
-        assertEquals("Power Strike", enLoader.loadTalentDefinitions().first { it.id == "power_strike" }.name)
-        assertEquals("猛击", zhLoader.loadTalentDefinitions().first { it.id == "power_strike" }.name)
-        assertEquals("Fireball", enLoader.loadTalentDefinitions().first { it.id == "fireball" }.name)
-        assertEquals("火球", zhLoader.loadTalentDefinitions().first { it.id == "fireball" }.name)
+        assertEquals("talent.vanguard.power_strike.name", enLoader.loadTalentDefinitions().first { it.id == "power_strike" }.nameKey)
+        assertEquals("talent.vanguard.power_strike.name", zhLoader.loadTalentDefinitions().first { it.id == "power_strike" }.nameKey)
+        assertEquals("talent.arcanist.fireball.name", enLoader.loadTalentDefinitions().first { it.id == "fireball" }.nameKey)
+        assertEquals("talent.arcanist.fireball.name", zhLoader.loadTalentDefinitions().first { it.id == "fireball" }.nameKey)
         assertEquals(DamageType.FIRE, enLoader.loadTalentDefinitions().first { it.id == "fireball" }.damageType)
         assertEquals(SaveDimension.PHYSICAL, enLoader.loadTalentDefinitions().first { it.id == "power_strike" }.powerDimension)
+        assertEquals(ActionCost.STANDARD, enLoader.loadTalentDefinitions().first { it.id == "power_strike" }.actionCost)
         assertEquals(
             ApplicationPolicy.HOSTILE_HIT_THEN_SAVE,
             enLoader.loadTalentDefinitions().first { it.id == "power_strike" }.levelEffects.getValue(5).associatedEffects.single().applicationPolicy,
         )
         assertEquals(
-            StatusEffectType.HOLY_SHIELD_BUFF,
-            enLoader.loadTalentDefinitions().first { it.id == "holy_shield" }.levelEffects.getValue(1).associatedEffects.single().effectType,
+            StatusEffectType.HOLY_SHIELD_BUFF.schemaId,
+            enLoader.loadTalentDefinitions().first { it.id == "holy_shield" }.levelEffects.getValue(1).associatedEffects.single().statusId,
         )
         assertEquals(
             ApplicationPolicy.INSTANT_ACTION,
             enLoader.loadTalentDefinitions().first { it.id == "purify" }.levelEffects.getValue(1).cleanseEffect?.applicationPolicy,
+        )
+        assertEquals(
+            ResourceType.MANA,
+            enLoader.loadTalentDefinitions().first { it.id == "mana_surge" }
+                .levelEffects
+                .getValue(1)
+                .effectOps
+                .filterIsInstance<EffectOp.ResourceRestore>()
+                .single()
+                .type,
+        )
+        assertEquals(
+            ResourceType.ENERGY,
+            enLoader.loadTalentDefinitions().first { it.id == "deathblow" }
+                .levelEffects
+                .getValue(1)
+                .effectOps
+                .filterIsInstance<EffectOp.ResourceRestore>()
+                .single()
+                .type,
         )
         assertEquals(0.10, enLoader.loadTalentDefinitions().first { it.id == "mana_surge" }.levelEffects.getValue(1).resourceRestoreFraction)
         assertEquals(0.18, enLoader.loadTalentDefinitions().first { it.id == "holy_light" }.levelEffects.getValue(1).healFraction)
@@ -298,6 +326,71 @@ class SchemaV2LoaderTest {
 
         assertTrue(error.cause is IllegalArgumentException)
         assertTrue(error.cause?.message?.contains("requires saveDimension") == true)
+    }
+
+    @Test
+    fun `schema v2 loader parses and projects talent ai hints`() {
+        val loader = DataLoader(GameLocale.EN_US)
+        val parseMethod =
+            DataLoader::class.java.getDeclaredMethod("parseTalentSchemas", Map::class.java).apply {
+                isAccessible = true
+            }
+        val toRuntimeMethod =
+            DataLoader::class.java.getDeclaredMethod("toRuntimeTalent", TalentSchemaV2::class.java, ResourceType::class.java).apply {
+                isAccessible = true
+            }
+
+        @Suppress("UNCHECKED_CAST")
+        val schema =
+            (parseMethod.invoke(
+                loader,
+                linkedMapOf(
+                    "talents" to
+                        listOf(
+                            linkedMapOf(
+                                "id" to "test_ai_hints",
+                                "nameKey" to "talent.test.ai_hints.name",
+                                "descKey" to "talent.test.ai_hints.desc",
+                                "visualKey" to "talent.test.ai_hints.visual",
+                                "iconKey" to "icon.skill.test.ai_hints",
+                                "audioProfile" to "audio.talent.test.ai_hints",
+                                "schemaVersion" to 2,
+                                "maxPoints" to 5,
+                                "tier" to 2,
+                                "category" to "ACTIVE",
+                                "damageType" to "SHADOW",
+                                "powerDimension" to "MENTAL",
+                                "kind" to "ACTIVE",
+                                "cooldown" to 8,
+                                "castTime" to "STANDARD",
+                                "targeting" to "SINGLE_TARGET",
+                                "range" to 5,
+                                "minRange" to 1,
+                                "resourceCosts" to linkedMapOf("MANA" to 12),
+                                "levelEffects" to linkedMapOf("1" to linkedMapOf<String, Any?>()),
+                                "aiHints" to
+                                    linkedMapOf(
+                                        "role" to "CONTROL",
+                                        "preferredRange" to listOf(3, 5),
+                                        "isSustainToggle" to true,
+                                    ),
+                                "treeId" to "arcanist_arcane",
+                            ),
+                        ),
+                ),
+            ) as List<TalentSchemaV2>).single()
+
+        assertEquals("CONTROL", schema.aiHints?.role)
+        assertEquals(3, schema.aiHints?.preferredRange?.start)
+        assertEquals(5, schema.aiHints?.preferredRange?.endInclusive)
+        assertTrue(schema.aiHints?.isSustainToggle == true)
+
+        val runtimeTalent =
+            toRuntimeMethod.invoke(loader, schema, ResourceType.MANA) as TalentDef
+
+        assertEquals(TalentRole.CONTROL, runtimeTalent.aiHints?.role)
+        assertEquals(3..5, runtimeTalent.aiHints?.preferredRange)
+        assertTrue(runtimeTalent.aiHints?.isSustainToggle == true)
     }
 
     @Test

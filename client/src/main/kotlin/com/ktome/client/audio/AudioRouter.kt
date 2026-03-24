@@ -235,6 +235,9 @@ class AudioRouter(
             is PlayerCommand.EquipTalentToSlot,
             is PlayerCommand.AssignStat,
             is PlayerCommand.AssignTalent,
+            is PlayerCommand.RespecTalentTree,
+            PlayerCommand.ConfirmTalentDraft,
+            PlayerCommand.RollbackTalentDraft,
             PlayerCommand.SaveGame,
             -> play("audio.ui.confirm")
 

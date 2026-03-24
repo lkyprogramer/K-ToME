@@ -14,15 +14,36 @@ import com.ktome.core.item.ItemBaseDef
 import com.ktome.core.item.ItemDataBundle
 import com.ktome.core.item.ItemType
 import com.ktome.core.item.MaterialDef
-import com.ktome.core.resource.ResourceType
 import com.ktome.core.item.StatModifier
+import com.ktome.core.resource.ResourceType
+import com.ktome.core.status.EffectCarrierKind
+import com.ktome.core.status.EffectCategory
+import com.ktome.core.status.RemoteRemovalPolicy
+import com.ktome.core.status.ReplacePolicy
+import com.ktome.core.status.StackingRule
+import com.ktome.core.status.StatusCatalog
+import com.ktome.core.status.StatusEffectDef
+import com.ktome.core.status.StatusEffectType
+import com.ktome.core.status.StatusDefinitions
 import com.ktome.core.talent.AssociatedStatusEffect
+import com.ktome.core.talent.ActionCost
 import com.ktome.core.talent.CleanseEffect
+import com.ktome.core.talent.DisplacementType
+import com.ktome.core.talent.EffectOp
 import com.ktome.core.talent.EffectTargetScope
 import com.ktome.core.talent.EffectTrigger
-import com.ktome.core.talent.StatusEffectType
+import com.ktome.core.talent.KeywordRegistry
+import com.ktome.core.talent.ResourceCost
+import com.ktome.core.talent.ScalingDef
 import com.ktome.core.talent.TalentDef
+import com.ktome.core.talent.TalentAiHints
+import com.ktome.core.talent.TalentBreakpoint
+import com.ktome.core.talent.TalentCategory
 import com.ktome.core.talent.TalentLevelEffect
+import com.ktome.core.talent.TalentPrerequisite
+import com.ktome.core.talent.TalentRole
+import com.ktome.core.talent.TalentTargeting
+import com.ktome.core.talent.TalentTargetingType
 import com.ktome.game.data.schema.AIProfileSchemaV2
 import com.ktome.game.data.schema.AITriggerActionKindSchemaV2
 import com.ktome.game.data.schema.AITriggerConditionKindSchemaV2
@@ -42,6 +63,7 @@ import com.ktome.game.data.schema.NamedSchemaRef
 import com.ktome.game.data.schema.ObjectiveSetSchemaV2
 import com.ktome.game.data.schema.ObjectiveInteractablePlacementSchemaV2
 import com.ktome.game.data.schema.ProfessionSchemaV2
+import com.ktome.game.data.schema.ResourceCostSchemaV2
 import com.ktome.game.data.schema.SchemaCatalog
 import com.ktome.game.data.schema.SchemaCombatProfile
 import com.ktome.game.data.schema.SchemaLevelRange
@@ -52,10 +74,14 @@ import com.ktome.game.data.schema.SchemaStats
 import com.ktome.game.data.schema.StatusSchemaV2
 import com.ktome.game.data.schema.AssociatedStatusEffectSchemaV2
 import com.ktome.game.data.schema.CleanseEffectSchemaV2
+import com.ktome.game.data.schema.IntRangeSchemaV2
+import com.ktome.game.data.schema.TalentAiHintsSchemaV2
+import com.ktome.game.data.schema.TalentBreakpointSchemaV2
 import com.ktome.game.data.schema.TalentLevelEffectSchemaV2
 import com.ktome.game.data.schema.TalentPrerequisiteSchemaV2
 import com.ktome.game.data.schema.TalentRequirementsSchemaV2
 import com.ktome.game.data.schema.TalentSchemaV2
+import com.ktome.game.data.schema.TalentTargetingSchemaV2
 import com.ktome.game.data.schema.TalentTreeSchemaV2
 import com.ktome.game.data.schema.ZoneSchemaV2
 import com.ktome.game.i18n.GameLocale
@@ -64,6 +90,7 @@ import com.ktome.game.i18n.Localizer
 import com.ktome.game.model.BossDefinition
 import com.ktome.game.model.MonsterCatalog
 import com.ktome.game.model.MonsterTemplate
+import com.ktome.game.telegraph.FoundationTelegraphRegistry
 import org.yaml.snakeyaml.Yaml
 
 class DataLoader(
@@ -124,7 +151,15 @@ class DataLoader(
 
     fun loadTalentDefinitions(): List<TalentDef> {
         val catalog = loadSchemaCatalog()
-        return catalog.talents.map { schema -> schema.toRuntimeTalent(localizer) }
+        return catalog.talents.map { schema ->
+            val defaultRestoreResourceType = schema.resourceCosts.firstOrNull()?.let { cost -> ResourceType.fromId(cost.axis) }
+            schema.toRuntimeTalent(defaultRestoreResourceType = defaultRestoreResourceType)
+        }
+    }
+
+    fun loadStatusCatalog(): StatusCatalog {
+        val catalog = loadSchemaCatalog()
+        return StatusCatalog(catalog.statuses.map { schema -> schema.toRuntimeStatusDefinition() })
     }
 
     fun loadBossDefinitions(): Map<String, BossDefinition> {
@@ -191,6 +226,18 @@ class DataLoader(
                 tags = status.optionalStringList("tags"),
                 category = status.requiredString("category"),
                 carrierKind = status.requiredString("carrierKind"),
+                stackingRule = status.optionalString("stackingRule"),
+                stackCap = status.optionalNullableInt("stackCap"),
+                replacePolicy = status.optionalString("replacePolicy"),
+                uniquenessKey = status.optionalString("uniquenessKey"),
+                exclusiveGroup = status.optionalString("exclusiveGroup"),
+                sourceScopedUnique = status.optionalBoolean("sourceScopedUnique"),
+                dispellable = status.optionalNullableBoolean("dispellable"),
+                remoteRemovalPolicy = status.optionalString("remoteRemovalPolicy"),
+                breaksOnActualDamage = status.optionalBoolean("breaksOnActualDamage"),
+                consumedOnDamageType = status.optionalString("consumedOnDamageType"),
+                consumedDamageMultiplier = status.optionalNullableDouble("consumedDamageMultiplier"),
+                stats = status.optionalMap("stats")?.toSchemaStatModifier() ?: SchemaStatModifier(),
             )
         }
 
@@ -214,6 +261,43 @@ class DataLoader(
                 talent.requiredMap("levelEffects").entries.associate { (rawLevel, rawEffect) ->
                     rawLevel.toString().toInt() to parseTalentLevelEffect(rawEffect.requiredMap())
                 }
+            val targeting =
+                TalentTargetingSchemaV2(
+                    type = talent.requiredString("targeting"),
+                    range = talent.requiredInt("range"),
+                    minRange = talent.optionalInt("minRange"),
+                    areaRadius = talent.optionalInt("areaRadius"),
+                )
+            val breakpoints =
+                talent.optionalList("breakpoints").map { rawBreakpoint ->
+                    val breakpoint = rawBreakpoint.requiredMap()
+                    TalentBreakpointSchemaV2(
+                        atRank = breakpoint.requiredInt("atRank"),
+                        descriptionAddendumKey = breakpoint.optionalString("descriptionAddendumKey"),
+                    )
+                }
+            val resourceCosts =
+                talent.optionalIntMap("resourceCosts").entries.map { (axis, amount) ->
+                    ResourceCostSchemaV2(axis = axis, amount = amount)
+                }
+            val keywords = talent.optionalStringList("keywords")
+            KeywordRegistry.CORE.resolveAll(keywords)
+            val telegraphRef = talent.optionalString("telegraphRef")
+            telegraphRef?.let(FoundationTelegraphRegistry.CORE::require)
+            val aiHints =
+                talent.optionalMap("aiHints")?.let { hints ->
+                    TalentAiHintsSchemaV2(
+                        role = hints.requiredString("role"),
+                        preferredRange =
+                            hints.optionalList("preferredRange").takeIf { values -> values.size == 2 }?.let { values ->
+                                IntRangeSchemaV2(
+                                    start = values[0].requiredIntValue(),
+                                    endInclusive = values[1].requiredIntValue(),
+                                )
+                            },
+                        isSustainToggle = hints.optionalBoolean("isSustainToggle"),
+                    )
+                }
 
             TalentSchemaV2(
                 id = talent.requiredString("id"),
@@ -225,23 +309,23 @@ class DataLoader(
                 schemaVersion = talent.requiredInt("schemaVersion"),
                 tags = talent.optionalStringList("tags"),
                 maxPoints = talent.requiredInt("maxPoints"),
+                tier = talent.optionalInt("tier", 1),
                 category = talent.requiredString("category"),
                 damageType = talent.optionalString("damageType"),
                 powerDimension = talent.optionalString("powerDimension"),
                 kind = talent.requiredString("kind"),
                 cooldown = talent.requiredInt("cooldown"),
-                castTime = talent.requiredInt("castTime"),
-                range = talent.requiredInt("range"),
-                minRange = talent.optionalInt("minRange"),
-                areaRadius = talent.optionalInt("areaRadius"),
-                resourceCosts = talent.optionalIntMap("resourceCosts"),
+                castTime = talent.requiredString("castTime"),
+                targeting = targeting,
+                resourceCosts = resourceCosts,
                 unlockLevel = talent.optionalInt("unlockLevel", 1),
-                targeting = talent.requiredString("targeting"),
                 requirements = requirements,
                 levelEffects = levelEffects,
-                keywords = talent.optionalStringList("keywords"),
+                breakpoints = breakpoints,
+                keywords = keywords,
                 callbacks = talent.optionalStringList("callbacks"),
-                telegraph = talent.requiredString("telegraph"),
+                telegraphRef = telegraphRef,
+                aiHints = aiHints,
                 treeId = talent.requiredString("treeId"),
             )
         }
@@ -249,9 +333,15 @@ class DataLoader(
     private fun parseTalentTreeSchemas(root: Map<String, Any?>): List<TalentTreeSchemaV2> =
         root.requiredList("talentTrees").map { entry ->
             val tree = entry.requiredMap()
+            val professionId = tree.optionalString("professionId") ?: ""
+            val raceId = tree.optionalString("raceId")
+            check((professionId.isNotBlank()) xor (raceId != null)) {
+                "Talent tree '${tree.requiredString("id")}' must declare exactly one owner via professionId or raceId."
+            }
             TalentTreeSchemaV2(
                 id = tree.requiredString("id"),
-                professionId = tree.requiredString("professionId"),
+                professionId = professionId,
+                raceId = raceId,
                 nameKey = tree.requiredString("nameKey"),
                 descKey = tree.requiredString("descKey"),
                 visualKey = tree.requiredString("visualKey"),
@@ -425,7 +515,7 @@ class DataLoader(
                         val rule = rawRule.requiredMap()
                         AITalentSkipRuleSchemaV2(
                             talentId = rule.requiredString("talentId"),
-                            selfHasStatus = StatusEffectType.valueOf(rule.requiredString("selfHasStatus")),
+                            selfHasStatus = rule.requiredString("selfHasStatus"),
                         )
                     },
                 triggers =
@@ -713,22 +803,23 @@ class DataLoader(
             minFloor = minFloor,
         )
 
-    private fun TalentSchemaV2.toRuntimeTalent(localizer: Localizer): TalentDef =
+    private fun TalentSchemaV2.toRuntimeTalent(defaultRestoreResourceType: ResourceType?): TalentDef =
         TalentDef(
             id = id,
-            name = localizer.text(nameKey),
-            description = localizer.text(descKey),
-            maxLevel = maxPoints,
+            nameKey = nameKey,
+            descriptionTemplateKey = descKey,
+            iconKey = iconKey,
+            visualKey = visualKey,
+            audioProfile = audioProfile,
+            maxRank = maxPoints,
+            tier = tier,
+            category = TalentCategory.valueOf(category),
             damageType = damageType?.let(DamageType::valueOf) ?: DamageType.PHYSICAL,
             powerDimension = powerDimension?.let(SaveDimension::valueOf),
-            resourceCosts =
-                resourceCosts.entries
-                    .associate { (resourceTypeId, cost) -> ResourceType.fromId(resourceTypeId) to cost }
-                    .toMap(linkedMapOf()),
+            resourceCosts = resourceCosts.map { cost -> ResourceCost(type = ResourceType.fromId(cost.axis), amount = cost.amount) },
             cooldown = cooldown,
-            range = range,
-            minRange = minRange,
-            areaRadius = areaRadius,
+            actionCost = castTime.toActionCost(),
+            targetingDef = targeting.toRuntimeTargeting(),
             levelEffects =
                 levelEffects.mapValues { (_, effect) ->
                     TalentLevelEffect(
@@ -739,14 +830,49 @@ class DataLoader(
                         resourceRestoreFraction = effect.resourceRestoreFraction,
                         associatedEffects = effect.associatedEffects.map { associatedEffect -> associatedEffect.toRuntime() },
                         cleanseEffect = effect.cleanseEffect?.toRuntime(),
+                        effectOps =
+                            effect.toEffectOps(
+                                defaultDamageType = damageType?.let(DamageType::valueOf),
+                                defaultRestoreResourceType = defaultRestoreResourceType,
+                            ),
                     )
                 },
+            prerequisites = requirements.talentPrereqs.map { prereq -> TalentPrerequisite(prereq.talentId, prereq.minRank) },
+            breakpoints =
+                if (breakpoints.isNotEmpty()) {
+                    breakpoints
+                        .sortedBy(TalentBreakpointSchemaV2::atRank)
+                        .map { breakpoint ->
+                            TalentBreakpoint(
+                                atRank = breakpoint.atRank,
+                                descriptionAddendumKey = breakpoint.descriptionAddendumKey,
+                                unlockedEffects =
+                                    levelEffects[breakpoint.atRank]
+                                        ?.toEffectOps(
+                                            defaultDamageType = damageType?.let(DamageType::valueOf),
+                                            defaultRestoreResourceType = defaultRestoreResourceType,
+                                        ).orEmpty(),
+                            )
+                        }
+                } else {
+                    inferBreakpoints(
+                        rankEffects = levelEffects,
+                        defaultDamageType = damageType?.let(DamageType::valueOf),
+                        defaultRestoreResourceType = defaultRestoreResourceType,
+                    )
+                },
+            keywords = keywords,
+            aiHints = aiHints?.toRuntime(),
+            telegraphRef = telegraphRef,
+            callbacks = callbacks,
+            treeId = treeId,
+            unlockLevel = unlockLevel,
         )
 
     private fun AssociatedStatusEffectSchemaV2.toRuntime(): AssociatedStatusEffect =
         AssociatedStatusEffect(
             effectId = effectId,
-            effectType = StatusEffectType.fromSchemaId(effectType),
+            statusId = canonicalStatusId(effectType),
             trigger = EffectTrigger.valueOf(trigger),
             targetScope = EffectTargetScope.valueOf(targetScope),
             applicationPolicy = ApplicationPolicy.valueOf(applicationPolicy),
@@ -763,6 +889,167 @@ class DataLoader(
             applicationPolicy = ApplicationPolicy.valueOf(applicationPolicy),
             maxEffectsRemoved = maxEffectsRemoved,
         )
+
+    private fun TalentLevelEffectSchemaV2.toEffectOps(
+        defaultDamageType: DamageType?,
+        defaultRestoreResourceType: ResourceType?,
+    ): List<EffectOp> =
+        buildList {
+            if (damageMultiplier > 0.0) {
+                add(
+                    EffectOp.Damage(
+                        damageType = defaultDamageType,
+                        scaling = ScalingDef(attackMultiplier = damageMultiplier),
+                    ),
+                )
+            }
+            if (healFraction > 0.0) {
+                add(EffectOp.Heal(maxHpFraction = healFraction))
+            }
+            if (resourceRestoreFraction > 0.0) {
+                defaultRestoreResourceType?.let { resourceType ->
+                    add(
+                        EffectOp.ResourceRestore(
+                            type = resourceType,
+                            fraction = resourceRestoreFraction,
+                        ),
+                    )
+                }
+            }
+            if (knockback > 0) {
+                add(EffectOp.Displacement(type = DisplacementType.PUSH, distance = knockback))
+            }
+            associatedEffects.forEach { effect ->
+                add(
+                    EffectOp.ApplyStatus(
+                        statusId = canonicalStatusId(effect.effectType),
+                        duration = effect.duration,
+                        applicationPolicy = ApplicationPolicy.valueOf(effect.applicationPolicy),
+                        trigger = EffectTrigger.valueOf(effect.trigger),
+                        targetScope = EffectTargetScope.valueOf(effect.targetScope),
+                        saveDimension = effect.saveDimension?.let(SaveDimension::valueOf),
+                        magnitude = effect.magnitude,
+                    ),
+                )
+            }
+        }
+
+    private fun TalentAiHintsSchemaV2.toRuntime(): TalentAiHints =
+        TalentAiHints(
+            role = TalentRole.valueOf(role),
+            preferredRange = preferredRange?.let { range -> range.start..range.endInclusive },
+            isSustainToggle = isSustainToggle,
+        )
+
+    private fun canonicalStatusId(effectType: String): String =
+        StatusDefinitions.definitionForSchemaId(effectType)?.id
+            ?: StatusEffectType.fromSchemaId(effectType)
+                .takeUnless { type -> type == StatusEffectType.CUSTOM }
+                ?.schemaId
+            ?: effectType
+
+    private fun TalentTargetingSchemaV2.toRuntimeTargeting(): TalentTargeting =
+        TalentTargeting(
+            type = TalentTargetingType.valueOf(type),
+            range = range,
+            minRange = minRange,
+            areaRadius = areaRadius,
+            requiresLineOfSight = requiresLineOfSight,
+            friendlyFire = friendlyFire,
+        )
+
+    private fun StatusSchemaV2.toRuntimeStatusDefinition(): StatusEffectDef {
+        val engineType = StatusEffectType.fromSchemaId(effectType)
+        val fallbackDefinition = StatusDefinitions.definitionForSchemaId(effectType)
+        return StatusEffectDef(
+            id = id,
+            type = if (engineType == StatusEffectType.CUSTOM) StatusEffectType.CUSTOM else engineType,
+            category = EffectCategory.valueOf(category),
+            nameKey = nameKey,
+            iconKey = iconKey,
+            stackingRule = stackingRule?.let(StackingRule::valueOf) ?: fallbackDefinition?.stackingRule ?: StackingRule.REFRESH_DURATION,
+            stackCap = stackCap ?: fallbackDefinition?.stackCap ?: 1,
+            replacePolicy = replacePolicy?.let(ReplacePolicy::valueOf) ?: fallbackDefinition?.replacePolicy ?: ReplacePolicy.REFRESH_DURATION,
+            uniquenessKey = uniquenessKey ?: fallbackDefinition?.uniquenessKey,
+            exclusiveGroup = exclusiveGroup ?: fallbackDefinition?.exclusiveGroup,
+            sourceScopedUnique = sourceScopedUnique || (fallbackDefinition?.sourceScopedUnique == true),
+            dispellable = dispellable ?: fallbackDefinition?.dispellable ?: engineType.dispellable,
+            remoteRemovalPolicy =
+                remoteRemovalPolicy?.let(RemoteRemovalPolicy::valueOf)
+                    ?: fallbackDefinition?.remoteRemovalPolicy
+                    ?: RemoteRemovalPolicy.ACTOR_CLEANSE_REMOVABLE,
+            carrierKind = EffectCarrierKind.valueOf(carrierKind),
+            statModifier = stats.toRuntimeStatModifier().takeUnless { modifier -> modifier == StatModifier.ZERO } ?: fallbackDefinition?.statModifier ?: StatModifier.ZERO,
+            breaksOnActualDamage = breaksOnActualDamage || (fallbackDefinition?.breaksOnActualDamage == true),
+            consumedOnDamageType = consumedOnDamageType?.let(DamageType::valueOf) ?: fallbackDefinition?.consumedOnDamageType,
+            consumedDamageMultiplier = consumedDamageMultiplier ?: fallbackDefinition?.consumedDamageMultiplier ?: 1.0,
+        )
+    }
+
+    private fun inferBreakpoints(
+        rankEffects: Map<Int, TalentLevelEffectSchemaV2>,
+        defaultDamageType: DamageType?,
+        defaultRestoreResourceType: ResourceType?,
+    ): List<TalentBreakpoint> {
+        val sortedRanks = rankEffects.keys.sorted()
+        return sortedRanks.mapNotNull { rank ->
+            if (rank == sortedRanks.first()) {
+                return@mapNotNull null
+            }
+            val currentOps = rankEffects.getValue(rank).toEffectOps(defaultDamageType, defaultRestoreResourceType)
+            val previousOps = rankEffects.getValue(rank - 1).toEffectOps(defaultDamageType, defaultRestoreResourceType)
+            val previousSignatures = previousOps.map(::breakpointSignature).toSet()
+            val unlockedEffects = currentOps.filter { effect -> breakpointSignature(effect) !in previousSignatures }
+            if (unlockedEffects.isEmpty()) {
+                return@mapNotNull null
+            }
+            TalentBreakpoint(
+                atRank = rank,
+                unlockedEffects = unlockedEffects,
+            )
+        }
+    }
+
+    private fun breakpointSignature(effect: EffectOp): String =
+        when (effect) {
+            is EffectOp.Damage -> "damage:${effect.damageType?.name ?: "default"}"
+            is EffectOp.Heal -> "heal"
+            is EffectOp.ApplyStatus ->
+                "apply_status:${effect.statusId}:${effect.targetScope.name}:${effect.trigger.name}:${effect.applicationPolicy.name}"
+            is EffectOp.ResourceRestore -> "resource_restore:${effect.type.name}"
+            is EffectOp.Displacement -> "displacement:${effect.type.name}:${effect.targetScope.name}"
+            is EffectOp.StatModifier -> "stat_modifier:${statModifierAxes(effect.modifier)}:${effect.targetScope.name}"
+        }
+
+    private fun statModifierAxes(modifier: StatModifier): String =
+        buildList {
+            if (modifier.str != 0) add("str")
+            if (modifier.dex != 0) add("dex")
+            if (modifier.con != 0) add("con")
+            if (modifier.wil != 0) add("wil")
+            if (modifier.attack != 0) add("attack")
+            if (modifier.defense != 0) add("defense")
+            if (modifier.accuracy != 0) add("accuracy")
+            if (modifier.evasion != 0) add("evasion")
+            if (modifier.speed != 0) add("speed")
+            if (modifier.maxHp != 0) add("maxHp")
+            if (modifier.maxStamina != 0) add("maxStamina")
+            if (modifier.hpRegen != 0.0) add("hpRegen")
+            if (modifier.staminaRegen != 0.0) add("staminaRegen")
+            if (modifier.critChance != 0.0) add("critChance")
+            if (modifier.talentPower != 0.0) add("talentPower")
+            if (modifier.attackMultiplierBonus != 0.0) add("attackMultiplierBonus")
+            if (modifier.defenseMultiplierBonus != 0.0) add("defenseMultiplierBonus")
+        }.sorted().joinToString(separator = "|")
+
+    private fun String.toActionCost(): ActionCost =
+        when (uppercase()) {
+            "INSTANT" -> ActionCost.INSTANT
+            "QUICK" -> ActionCost.QUICK
+            "STANDARD" -> ActionCost.STANDARD
+            "HEAVY" -> ActionCost.HEAVY
+            else -> error("Unsupported action cost alias '$this'.")
+        }
 
     private fun SchemaStatModifier.toRuntimeStatModifier(): StatModifier =
         StatModifier(
@@ -944,6 +1231,14 @@ private fun Map<*, *>.optionalNullableDouble(key: String): Double? =
         else -> error("Entry '$key' must be numeric")
     }
 
+private fun Map<*, *>.optionalNullableBoolean(key: String): Boolean? =
+    when (val value = this[key]) {
+        null -> null
+        is Boolean -> value
+        is String -> value.toBooleanStrict()
+        else -> error("Entry '$key' must be boolean")
+    }
+
 private fun Map<*, *>.optionalBoolean(
     key: String,
     default: Boolean = false,
@@ -953,4 +1248,12 @@ private fun Map<*, *>.optionalBoolean(
         is Boolean -> value
         is String -> value.toBooleanStrict()
         else -> error("Entry '$key' must be boolean")
+    }
+
+private fun Any?.requiredIntValue(): Int =
+    when (this) {
+        is Int -> this
+        is Number -> toInt()
+        is String -> toInt()
+        else -> error("Expected integer value, got '$this'.")
     }

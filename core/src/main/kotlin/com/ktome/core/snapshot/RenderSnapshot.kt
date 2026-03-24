@@ -1,5 +1,6 @@
 package com.ktome.core.snapshot
 
+import com.ktome.core.talent.TalentTreeOwnerType
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -145,6 +146,41 @@ data class RenderUiStateSnapshot(
 )
 
 @Serializable
+sealed interface DescriptionValueSnapshot {
+    @Serializable
+    data class IntValue(val value: Int) : DescriptionValueSnapshot
+
+    @Serializable
+    data class DecimalValue(val value: Double) : DescriptionValueSnapshot
+
+    @Serializable
+    data class BooleanValue(val value: Boolean) : DescriptionValueSnapshot
+
+    @Serializable
+    data class TextValue(val value: String) : DescriptionValueSnapshot
+
+    @Serializable
+    data class StatusValue(
+        val statusId: String,
+        val nameKey: String,
+    ) : DescriptionValueSnapshot
+}
+
+@Serializable
+data class DescriptionModelSnapshot(
+    val templateKey: String,
+    val placeholders: Map<String, DescriptionValueSnapshot> = emptyMap(),
+    val keywords: List<String> = emptyList(),
+)
+
+@Serializable
+data class TalentBreakpointPreviewSnapshot(
+    val atRank: Int,
+    val descriptionAddendumKey: String? = null,
+    val model: DescriptionModelSnapshot,
+)
+
+@Serializable
 data class PlayerStatusSnapshot(
     val currentHp: Int,
     val maxHp: Int,
@@ -174,6 +210,8 @@ data class EquipmentSlotSnapshot(
 data class TalentSlotSnapshot(
     val slot: Int,
     val talentId: String,
+    val ownerType: String = TalentTreeOwnerType.PROFESSION.name,
+    val treeOwnerId: String = "",
     val nameKey: String,
     val visualKey: String? = null,
     val iconKey: String? = null,
@@ -190,11 +228,18 @@ data class TalentSlotSnapshot(
     val maxCooldown: Int,
     val requiresTarget: Boolean,
     val descKey: String? = null,
+    val committedLevel: Int = level,
+    val descriptionModel: DescriptionModelSnapshot? = null,
+    val nextBreakpointPreview: TalentBreakpointPreviewSnapshot? = null,
+    val isMaxRank: Boolean = false,
+    val hasPendingAllocation: Boolean = false,
 )
 
 @Serializable
 data class TalentReserveSnapshot(
     val talentId: String,
+    val ownerType: String = TalentTreeOwnerType.PROFESSION.name,
+    val treeOwnerId: String = "",
     val nameKey: String,
     val visualKey: String? = null,
     val iconKey: String? = null,
@@ -211,6 +256,11 @@ data class TalentReserveSnapshot(
     val maxCooldown: Int,
     val requiresTarget: Boolean,
     val descKey: String? = null,
+    val committedLevel: Int = level,
+    val descriptionModel: DescriptionModelSnapshot? = null,
+    val nextBreakpointPreview: TalentBreakpointPreviewSnapshot? = null,
+    val isMaxRank: Boolean = false,
+    val hasPendingAllocation: Boolean = false,
 )
 
 @Serializable

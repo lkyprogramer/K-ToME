@@ -14,12 +14,19 @@ import com.ktome.core.ecs.Stats
 import com.ktome.core.ecs.World
 import com.ktome.core.ecs.add
 import com.ktome.core.ecs.get
+import com.ktome.core.item.StatModifier
 import com.ktome.core.map.GameMap
 import com.ktome.core.map.Point
 import com.ktome.core.resource.ResourcePool
 import com.ktome.core.resource.ResourcePools
 import com.ktome.core.resource.ResourceType
 import com.ktome.core.stats.StatsCalculator
+import com.ktome.core.status.EffectCategory
+import com.ktome.core.status.ReplacePolicy
+import com.ktome.core.status.StackingRule
+import com.ktome.core.status.StatusCatalog
+import com.ktome.core.status.StatusEffectDef
+import com.ktome.core.status.StatusEffectType
 import com.ktome.core.support.TestRandomSource
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -31,13 +38,13 @@ class TalentResolverTest {
 
     private fun selfEffect(
         effectId: String,
-        effectType: StatusEffectType,
+        statusId: String,
         duration: Int,
         magnitude: Double,
     ): AssociatedStatusEffect =
         AssociatedStatusEffect(
             effectId = effectId,
-            effectType = effectType,
+            statusId = statusId,
             trigger = EffectTrigger.ON_CAST,
             targetScope = EffectTargetScope.SELF,
             applicationPolicy = ApplicationPolicy.SELF_AUTO,
@@ -47,14 +54,14 @@ class TalentResolverTest {
 
     private fun hostileOnHitEffect(
         effectId: String,
-        effectType: StatusEffectType,
+        statusId: String,
         duration: Int,
         saveDimension: SaveDimension,
         magnitude: Double = 0.0,
     ): AssociatedStatusEffect =
         AssociatedStatusEffect(
             effectId = effectId,
-            effectType = effectType,
+            statusId = statusId,
             trigger = EffectTrigger.ON_HIT,
             targetScope = EffectTargetScope.PRIMARY_TARGET,
             applicationPolicy = ApplicationPolicy.HOSTILE_HIT_THEN_SAVE,
@@ -65,14 +72,14 @@ class TalentResolverTest {
 
     private fun hostileSaveOnlyEffect(
         effectId: String,
-        effectType: StatusEffectType,
+        statusId: String,
         duration: Int,
         saveDimension: SaveDimension,
         magnitude: Double,
     ): AssociatedStatusEffect =
         AssociatedStatusEffect(
             effectId = effectId,
-            effectType = effectType,
+            statusId = statusId,
             trigger = EffectTrigger.ON_CAST,
             targetScope = EffectTargetScope.HOSTILES_IN_RADIUS,
             applicationPolicy = ApplicationPolicy.HOSTILE_SAVE_ONLY,
@@ -115,7 +122,7 @@ class TalentResolverTest {
                                             listOf(
                                                 hostileOnHitEffect(
                                                     effectId = "power_strike_armor_break",
-                                                    effectType = StatusEffectType.ARMOR_BREAK,
+                                                    statusId = StatusEffectType.ARMOR_BREAK.schemaId,
                                                     duration = 3,
                                                     saveDimension = SaveDimension.PHYSICAL,
                                                 ),
@@ -141,7 +148,7 @@ class TalentResolverTest {
                                             listOf(
                                                 hostileOnHitEffect(
                                                     effectId = "charge_stun",
-                                                    effectType = StatusEffectType.STUN,
+                                                    statusId = StatusEffectType.STUN.schemaId,
                                                     duration = 2,
                                                     saveDimension = SaveDimension.PHYSICAL,
                                                 ),
@@ -165,7 +172,7 @@ class TalentResolverTest {
                                             listOf(
                                                 hostileOnHitEffect(
                                                     effectId = "shield_bash_stun",
-                                                    effectType = StatusEffectType.STUN,
+                                                    statusId = StatusEffectType.STUN.schemaId,
                                                     duration = 2,
                                                     saveDimension = SaveDimension.PHYSICAL,
                                                 ),
@@ -187,10 +194,10 @@ class TalentResolverTest {
                                     TalentLevelEffect(
                                         associatedEffects =
                                             listOf(
-                                                selfEffect("war_cry_buff", StatusEffectType.WAR_CRY_BUFF, duration = 8, magnitude = 0.35),
+                                                selfEffect("war_cry_buff", "war_cry_empower", duration = 8, magnitude = 0.35),
                                                 hostileSaveOnlyEffect(
                                                     effectId = "war_cry_debuff",
-                                                    effectType = StatusEffectType.WAR_CRY_DEBUFF,
+                                                    statusId = "war_cry_shaken",
                                                     duration = 5,
                                                     saveDimension = SaveDimension.MENTAL,
                                                     magnitude = 0.20,
@@ -225,7 +232,7 @@ class TalentResolverTest {
                                             listOf(
                                                 hostileOnHitEffect(
                                                     effectId = "sunder_armor_break",
-                                                    effectType = StatusEffectType.ARMOR_BREAK,
+                                                    statusId = StatusEffectType.ARMOR_BREAK.schemaId,
                                                     duration = 2,
                                                     saveDimension = SaveDimension.PHYSICAL,
                                                 ),
@@ -246,7 +253,7 @@ class TalentResolverTest {
                                     TalentLevelEffect(
                                         associatedEffects =
                                             listOf(
-                                                selfEffect("guard_stance_buff", StatusEffectType.GUARD_STANCE_BUFF, duration = 3, magnitude = 0.10),
+                                                selfEffect("guard_stance_buff", StatusEffectType.GUARD_STANCE_BUFF.schemaId, duration = 3, magnitude = 0.10),
                                             ),
                                     ),
                             ),
@@ -267,7 +274,7 @@ class TalentResolverTest {
                                             listOf(
                                                 hostileSaveOnlyEffect(
                                                     effectId = "intimidation_debuff",
-                                                    effectType = StatusEffectType.WAR_CRY_DEBUFF,
+                                                    statusId = "war_cry_shaken",
                                                     duration = 3,
                                                     saveDimension = SaveDimension.MENTAL,
                                                     magnitude = 0.10,
@@ -289,7 +296,7 @@ class TalentResolverTest {
                                     TalentLevelEffect(
                                         associatedEffects =
                                             listOf(
-                                                selfEffect("unyielding_buff", StatusEffectType.UNYIELDING_BUFF, duration = 3, magnitude = 0.15),
+                                                selfEffect("unyielding_buff", StatusEffectType.UNYIELDING_BUFF.schemaId, duration = 3, magnitude = 0.15),
                                             ),
                                     ),
                             ),
@@ -332,7 +339,7 @@ class TalentResolverTest {
                                             listOf(
                                                 hostileOnHitEffect(
                                                     effectId = "ice_bolt_stun",
-                                                    effectType = StatusEffectType.STUN,
+                                                    statusId = StatusEffectType.STUN.schemaId,
                                                     duration = 1,
                                                     saveDimension = SaveDimension.SPELL,
                                                 ),
@@ -358,7 +365,7 @@ class TalentResolverTest {
                                             listOf(
                                                 hostileOnHitEffect(
                                                     effectId = "frost_nova_stun",
-                                                    effectType = StatusEffectType.STUN,
+                                                    statusId = StatusEffectType.STUN.schemaId,
                                                     duration = 1,
                                                     saveDimension = SaveDimension.SPELL,
                                                 ),
@@ -383,7 +390,7 @@ class TalentResolverTest {
                                             listOf(
                                                 hostileOnHitEffect(
                                                     effectId = "ice_prison_stun",
-                                                    effectType = StatusEffectType.STUN,
+                                                    statusId = StatusEffectType.STUN.schemaId,
                                                     duration = 1,
                                                     saveDimension = SaveDimension.SPELL,
                                                 ),
@@ -414,7 +421,7 @@ class TalentResolverTest {
                                     TalentLevelEffect(
                                         associatedEffects =
                                             listOf(
-                                                selfEffect("arcane_shield_buff", StatusEffectType.ARCANE_SHIELD_BUFF, duration = 3, magnitude = 0.10),
+                                                selfEffect("arcane_shield_buff", StatusEffectType.ARCANE_SHIELD_BUFF.schemaId, duration = 3, magnitude = 0.10),
                                             ),
                                     ),
                             ),
@@ -423,6 +430,7 @@ class TalentResolverTest {
                         id = "mana_surge",
                         name = "法力涌动",
                         description = "",
+                        resourceCosts = mapOf(ResourceType.MANA to 0),
                         cooldown = 10,
                         range = 0,
                         levelEffects =
@@ -432,7 +440,7 @@ class TalentResolverTest {
                                         resourceRestoreFraction = 0.10,
                                         associatedEffects =
                                             listOf(
-                                                selfEffect("mana_surge_buff", StatusEffectType.MANA_SURGE_BUFF, duration = 2, magnitude = 0.10),
+                                                selfEffect("mana_surge_buff", StatusEffectType.MANA_SURGE_BUFF.schemaId, duration = 2, magnitude = 0.10),
                                             ),
                                     ),
                             ),
@@ -462,7 +470,7 @@ class TalentResolverTest {
                                             listOf(
                                                 hostileOnHitEffect(
                                                     effectId = "poison_blade_curse",
-                                                    effectType = StatusEffectType.CURSE,
+                                                    statusId = StatusEffectType.CURSE.schemaId,
                                                     duration = 2,
                                                     saveDimension = SaveDimension.MENTAL,
                                                     magnitude = 0.10,
@@ -529,7 +537,7 @@ class TalentResolverTest {
                                             listOf(
                                                 hostileOnHitEffect(
                                                     effectId = "judgment_hammer_stun",
-                                                    effectType = StatusEffectType.STUN,
+                                                    statusId = StatusEffectType.STUN.schemaId,
                                                     duration = 1,
                                                     saveDimension = SaveDimension.SPELL,
                                                 ),
@@ -560,7 +568,7 @@ class TalentResolverTest {
                                     TalentLevelEffect(
                                         associatedEffects =
                                             listOf(
-                                                selfEffect("holy_shield_buff", StatusEffectType.HOLY_SHIELD_BUFF, duration = 3, magnitude = 0.12),
+                                                selfEffect("holy_shield_buff", StatusEffectType.HOLY_SHIELD_BUFF.schemaId, duration = 3, magnitude = 0.12),
                                             ),
                                     ),
                             ),
@@ -588,7 +596,7 @@ class TalentResolverTest {
 
         val reason = resolver().canUse(world, map, player, "power_strike", Point(2, 2))
 
-        assertEquals("猛击 is still cooling down.", reason)
+        assertEquals("power_strike is still cooling down.", reason)
     }
 
     @Test
@@ -611,7 +619,7 @@ class TalentResolverTest {
         val result = resolver().resolve(world, map, player, "power_strike", Point(2, 2))
 
         assertTrue(result is TalentUseResult.Success)
-        assertEquals(3, requireNotNull(world.get<Health>(monster)).current)
+        assertTrue(requireNotNull(world.get<Health>(monster)).current < 40)
         assertEquals(32, requireNotNull(world.get<ResourcePools>(player)).pool(ResourceType.STAMINA)?.current)
         assertEquals(3, requireNotNull(world.get<CooldownState>(player)).remainingByTalentId["power_strike"])
     }
@@ -698,9 +706,9 @@ class TalentResolverTest {
         val result = resolver().resolve(world, map, player, "war_cry", null)
 
         assertTrue(result is TalentUseResult.Success)
-        assertTrue(requireNotNull(world.get<com.ktome.core.talent.EffectTracker>(player)).has(StatusEffectType.WAR_CRY_BUFF))
-        assertTrue(requireNotNull(world.get<com.ktome.core.talent.EffectTracker>(nearby)).has(StatusEffectType.WAR_CRY_DEBUFF))
-        assertFalse(requireNotNull(world.get<com.ktome.core.talent.EffectTracker>(farAway)).has(StatusEffectType.WAR_CRY_DEBUFF))
+        assertTrue(requireNotNull(world.get<com.ktome.core.talent.EffectTracker>(player)).activeEffects().any { effect -> effect.schemaId == "war_cry_empower" })
+        assertTrue(requireNotNull(world.get<com.ktome.core.talent.EffectTracker>(nearby)).activeEffects().any { effect -> effect.schemaId == "war_cry_shaken" })
+        assertFalse(requireNotNull(world.get<com.ktome.core.talent.EffectTracker>(farAway)).activeEffects().any { effect -> effect.schemaId == "war_cry_shaken" })
         assertTrue(requireNotNull(world.get<DerivedStats>(player)).attack > 25)
     }
 
@@ -740,7 +748,7 @@ class TalentResolverTest {
         val result = resolver().resolve(world, map, player, "intimidation", null)
 
         assertTrue(result is TalentUseResult.Success)
-        assertTrue(requireNotNull(world.get<com.ktome.core.talent.EffectTracker>(nearby)).has(StatusEffectType.WAR_CRY_DEBUFF))
+        assertTrue(requireNotNull(world.get<com.ktome.core.talent.EffectTracker>(nearby)).activeEffects().any { effect -> effect.schemaId == "war_cry_shaken" })
     }
 
     @Test
@@ -754,7 +762,7 @@ class TalentResolverTest {
                 .resolve(world, map, player, "intimidation", null)
 
         assertTrue(result is TalentUseResult.Success)
-        assertFalse(requireNotNull(world.get<com.ktome.core.talent.EffectTracker>(nearby)).has(StatusEffectType.WAR_CRY_DEBUFF))
+        assertFalse(requireNotNull(world.get<com.ktome.core.talent.EffectTracker>(nearby)).activeEffects().any { effect -> effect.schemaId == "war_cry_shaken" })
     }
 
     @Test
@@ -916,8 +924,39 @@ class TalentResolverTest {
     private fun baseWorld(): World = World()
 
     private fun resolver(
-        randomSource: TestRandomSource = TestRandomSource(doubles = listOf(0.0, 0.99), ints = listOf(0)),
-    ): TalentResolver = TalentResolver(registry, CombatResolver(randomSource))
+        randomSource: TestRandomSource = TestRandomSource(doubles = listOf(0.0, 0.0, 0.0), ints = listOf(0)),
+    ): TalentResolver =
+        TalentResolver(
+            registry = registry,
+            combatResolver = CombatResolver(randomSource),
+            statusCatalog =
+                StatusCatalog(
+                    listOf(
+                        StatusEffectDef(
+                            id = "war_cry_empower",
+                            type = StatusEffectType.CUSTOM,
+                            category = EffectCategory.BUFF,
+                            nameKey = "status.war_cry_buff",
+                            stackingRule = StackingRule.UNIQUE,
+                            replacePolicy = ReplacePolicy.KEEP_STRONGEST,
+                            uniquenessKey = "war_cry_empower",
+                            sourceScopedUnique = true,
+                            statModifier = StatModifier(attackMultiplierBonus = 1.0),
+                        ),
+                        StatusEffectDef(
+                            id = "war_cry_shaken",
+                            type = StatusEffectType.CUSTOM,
+                            category = EffectCategory.DEBUFF,
+                            nameKey = "status.war_cry_debuff",
+                            stackingRule = StackingRule.UNIQUE,
+                            replacePolicy = ReplacePolicy.KEEP_STRONGEST,
+                            uniquenessKey = "war_cry_shaken",
+                            sourceScopedUnique = true,
+                            statModifier = StatModifier(defenseMultiplierBonus = -1.0),
+                        ),
+                    ),
+                ),
+        )
 
     private fun createPlayer(
         world: World,

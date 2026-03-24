@@ -46,11 +46,13 @@ data class MovementBlockedEvent(
 sealed interface StatusEvent : GameEvent {
     val target: EntityId
     val statusType: StatusEffectType
+    val statusId: String
 }
 
 data class StatusAppliedEvent(
     override val target: EntityId,
     override val statusType: StatusEffectType,
+    override val statusId: String = statusType.schemaId,
     val source: EntityId? = null,
     val remainingTurns: Int,
 ) : StatusEvent
@@ -58,18 +60,21 @@ data class StatusAppliedEvent(
 data class StatusRemovedEvent(
     override val target: EntityId,
     override val statusType: StatusEffectType,
+    override val statusId: String = statusType.schemaId,
     val reason: String,
 ) : StatusEvent
 
 data class StatusCleanseEvent(
     override val target: EntityId,
     override val statusType: StatusEffectType,
+    override val statusId: String = statusType.schemaId,
     val reason: String = "CLEANSE",
 ) : StatusEvent
 
 data class StatusTickEvent(
     override val target: EntityId,
     override val statusType: StatusEffectType,
+    override val statusId: String = statusType.schemaId,
     val damage: Int,
     val carrierKind: EffectCarrierKind,
 ) : StatusEvent
@@ -77,6 +82,7 @@ data class StatusTickEvent(
 data class TauntOverrideEvent(
     override val target: EntityId,
     override val statusType: StatusEffectType = StatusEffectType.TAUNT,
+    override val statusId: String = statusType.schemaId,
     val previousSource: EntityId?,
     val newSource: EntityId?,
 ) : StatusEvent
@@ -84,11 +90,13 @@ data class TauntOverrideEvent(
 data class StealthBrokenEvent(
     override val target: EntityId,
     override val statusType: StatusEffectType = StatusEffectType.STEALTH,
+    override val statusId: String = statusType.schemaId,
     val damage: Int,
 ) : StatusEvent
 
 data class StatusInteractionEvent(
     override val target: EntityId,
     override val statusType: StatusEffectType,
+    override val statusId: String = statusType.schemaId,
     val interactionId: String,
 ) : StatusEvent

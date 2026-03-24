@@ -259,6 +259,57 @@ class SmokeBotTest {
     }
 
     @Test
+    fun `pending talent draft is confirmed before exploration actions`() {
+        val command =
+            bot.decide(
+                observation(
+                    inventoryItems = emptyList(),
+                    playerStatus = healthyStatus(),
+                    talentSlots =
+                        listOf(
+                            talentSlot(
+                                slot = 1,
+                                talentId = "fireball",
+                                resourceCost = 8,
+                                range = 6,
+                                requiresTarget = true,
+                            ).copy(
+                                level = 2,
+                                committedLevel = 1,
+                                hasPendingAllocation = true,
+                            ),
+                        ),
+                    knownDownstairsPositions = listOf(Point(0, 1)),
+                    visibleTiles = setOf(Point(0, 1), Point(1, 1)),
+                    exploredTiles = setOf(Point(0, 1), Point(1, 1)),
+                ),
+            )
+
+        assertEquals(PlayerCommand.ConfirmTalentDraft, command)
+    }
+
+    @Test
+    fun `talent upgrade priority can target reserve talents directly`() {
+        val command =
+            bot.decide(
+                observation(
+                    inventoryItems = emptyList(),
+                    playerStatus = healthyStatus().copy(talentPoints = 1),
+                    talentSlots =
+                        listOf(
+                            talentSlot(slot = 1, talentId = "fireball", resourceCost = 8, range = 6, requiresTarget = true).copy(level = 5, maxLevel = 5),
+                        ),
+                    reserveTalents =
+                        listOf(
+                            reserveTalentView(talentId = "mana_surge"),
+                        ),
+                ),
+            )
+
+        assertEquals(PlayerCommand.AssignTalent("mana_surge"), command)
+    }
+
+    @Test
     fun `healthy mana class does not blink only because boss is visible`() {
         val observation =
             observation(
@@ -511,6 +562,7 @@ class SmokeBotTest {
         map: GameMap = this.map,
         playerPosition: Point = Point(1, 1),
         talentSlots: List<TalentSlotView> = emptyList(),
+        reserveTalents: List<com.ktome.game.TalentReserveView> = emptyList(),
     ): RunObservation =
         RunObservation(
             floor = 1,
@@ -529,6 +581,7 @@ class SmokeBotTest {
             knownDownstairsPositions = knownDownstairsPositions,
             inventoryItems = inventoryItems,
             talentSlots = talentSlots,
+            reserveTalents = reserveTalents,
             canAscend = false,
             canDescend = false,
             runOutcome = RunOutcome.InProgress,
@@ -581,5 +634,24 @@ class SmokeBotTest {
             currentCooldown = 0,
             maxCooldown = 6,
             requiresTarget = requiresTarget,
+        )
+
+    private fun reserveTalentView(
+        talentId: String,
+        level: Int = 1,
+        maxLevel: Int = 5,
+    ): com.ktome.game.TalentReserveView =
+        com.ktome.game.TalentReserveView(
+            talentId = talentId,
+            name = talentId,
+            level = level,
+            maxLevel = maxLevel,
+            resourceCost = 0,
+            resourceTypeId = "MANA",
+            range = 0,
+            minRange = 0,
+            currentCooldown = 0,
+            maxCooldown = 6,
+            requiresTarget = false,
         )
 }

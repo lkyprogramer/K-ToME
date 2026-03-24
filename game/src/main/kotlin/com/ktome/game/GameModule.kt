@@ -40,6 +40,7 @@ import com.ktome.game.factory.EntityFactory
 import com.ktome.game.factory.ItemFactory
 import com.ktome.game.model.BossDefinition
 import com.ktome.game.model.MonsterTemplate
+import com.ktome.game.telegraph.FoundationTelegraphRegistry
 import com.ktome.core.item.ItemGenerator
 import com.ktome.core.item.ItemBaseDef
 import com.ktome.core.item.ItemInstance
@@ -178,15 +179,18 @@ object GameModule {
     private fun buildContent(loader: DataLoader): GameContent {
         val schemaCatalog = loader.loadSchemaCatalog()
         val talents = loader.loadTalentDefinitions()
+        val statusCatalog = loader.loadStatusCatalog()
         return GameContent(
             talents = talents,
             statuses = schemaCatalog.statuses,
+            statusCatalog = statusCatalog,
             talentRegistry = com.ktome.core.talent.TalentRegistry().apply { registerAll(talents) },
             monsterCatalog = loader.loadMonsterCatalog().monsters,
             itemBundle = loader.loadItemBundle(),
             bossDefinitions = loader.loadBossDefinitions(),
             schemaCatalog = schemaCatalog,
             localizer = loader.localizer,
+            telegraphRegistry = FoundationTelegraphRegistry.CORE,
         ).also(::validateAiProfileContracts)
     }
 

@@ -153,7 +153,8 @@ data class TalentPrerequisite(
 2. `damageType` 是 talent 级默认通道；若某个 `EffectOp.Damage` 显式声明 `damageType`，以 op 级定义覆盖 talent 默认值。
 3. `Vanguard` 的单体战技与 `Arcanist` 的投射法术必须都能由该最小集合表达。
 4. 首批 6 类只覆盖 `Phase 3` 主线天赋；`GrantShield / SustainToggle / AreaPlace` 等复合类型允许在实施中按需追加，但追加时必须回写本节。
-5. `WAR_CRY` 这类 talent-local sourced buff/debuff 必须能只靠 `EffectOp.ApplyStatus(statusId=...) + status schema` 表达，不再要求在 `core.status` 新增专用枚举成员。
+5. `ResourceRestore` 在 `Phase 3` 继续使用 `ResourceType` 作为当前资源轴载体；若 `PR-05` 后续抽离独立 `ResourceAxis`，统一在资源系统重构时迁移，`W3` 不维持两套并行常量。
+6. `WAR_CRY` 这类 talent-local sourced buff/debuff 必须能只靠 `EffectOp.ApplyStatus(statusId=...) + status schema` 表达，不再要求在 `core.status` 新增专用枚举成员。
 
 建议最小结构：
 
@@ -177,8 +178,9 @@ sealed interface EffectOp {
     ) : EffectOp
 
     data class ResourceRestore(
-        val axis: ResourceAxis,
-        val amount: Int,
+        val type: ResourceType,
+        val amount: Int = 0,
+        val fraction: Double = 0.0,
     ) : EffectOp
 
     data class Displacement(
@@ -187,9 +189,9 @@ sealed interface EffectOp {
     ) : EffectOp
 
     data class StatModifier(
-        val statId: String,
-        val amount: Int,
+        val modifier: com.ktome.core.item.StatModifier,
         val duration: Int,
+        val targetScope: EffectTargetScope = EffectTargetScope.SELF,
     ) : EffectOp
 }
 
@@ -201,6 +203,11 @@ enum class DisplacementType {
 }
 ```
 
+补充说明：
+
+1. `ResourceRestore.type` 在 `Phase 3` 继续复用 `ResourceType`，作为当前资源轴语义的唯一运行时载体。
+2. `StatModifier` 继续复用 `core.item.StatModifier` 聚合结构，避免 talent/status/item 各自维护第二套 modifier 表达。
+
 ### 4.1.2 `ResourceCost`、`TalentAiHints` 与 `TalentBreakpoint`
 
 冻结口径：
@@ -208,13 +215,13 @@ enum class DisplacementType {
 1. `resourceCost` 统一升级为 `resourceCosts: List<ResourceCost>`，以支持双轴职业和未来多资源技能。
 2. `TalentAiHints` 是 AI 理解 talent 用途的正式输入，不允许留给 `AIProfile` 侧猜测。
 3. breakpoint 不是隐式布尔标记，必须有结构化对象表达“在哪一级、解锁什么、如何预览”。
-4. `ResourceAxis` 统一复用 `PR-05 §4.1` 的职业资源轴枚举，`W3` 不再自造第二套资源轴常量。
+4. `Phase 3` 继续使用 `ResourceType` 作为当前资源轴 carrier；`PR-05` 若后续抽离独立 `ResourceAxis`，再统一迁移，`W3` 不自造第二套并行资源轴常量。
 
 建议最小结构：
 
 ```kotlin
 data class ResourceCost(
-    val axis: ResourceAxis,
+    val type: ResourceType,
     val amount: Int,
 )
 
@@ -315,7 +322,8 @@ client/src/main/kotlin/com/ktome/client/ui/talent/TalentTooltip.kt
 1. 当前 rank 已激活效果必须清晰展示。
 2. 下一断点会新增什么必须可预览。
 3. 未达到的断点效果允许以灰态或次级文案预览，但不得伪装成已激活效果。
-4. 满级 talent 必须有明确的“已满”视觉标记。
+4. presenter 必须保留“次级预览”语义标记（例如 `DescriptionLineKind.SECONDARY`），render 层再将其映射为灰态或其他次级视觉风格，不能只靠文案前缀猜测。
+5. 满级 talent 必须有明确的“已满”视觉标记。
 
 ### 4.4 `TalentAllocationDraft`
 

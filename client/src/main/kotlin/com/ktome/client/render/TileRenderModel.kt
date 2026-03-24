@@ -7,6 +7,9 @@ import com.ktome.client.input.UiMode
 import com.ktome.client.ui.status.StatusHudRenderer
 import com.ktome.client.ui.status.StatusHudIconModel
 import com.ktome.client.ui.status.StatusIconResolver
+import com.ktome.client.ui.talent.DescriptionLine
+import com.ktome.client.ui.talent.DescriptionLineKind
+import com.ktome.client.ui.talent.DescriptionPresenter
 import com.ktome.core.snapshot.ActorRenderSnapshot
 import com.ktome.core.snapshot.ActorRoleKindSnapshot
 import com.ktome.core.snapshot.CellVisibilitySnapshot
@@ -394,8 +397,8 @@ internal object TileRenderModelBuilder {
                             )
                     }
                     snapshot.uiState.reserveTalents.getOrNull(overlayState.loadoutReserveSelection)?.let { talent ->
-                        talent.descKey?.let { descKey ->
-                            rows += TileTextRow(localizer.text(descKey), TileTextTone.LIGHT_GRAY)
+                        DescriptionPresenter.presentReserveTalentLines(localizer, talent).forEach { line ->
+                            rows += TileTextRow(line.text, descriptionTone(line))
                         }
                         rows += TileTextRow(talentUsageSummary(localizer, talent), TileTextTone.LIGHT_GRAY)
                     }
@@ -498,9 +501,62 @@ internal object TileRenderModelBuilder {
                     rows +=
                         TileTextRow(
                             text = talentSidebarLabel(localizer, talent),
-                            tone = TileTextTone.WHITE,
+                            tone =
+                                if (
+                                    overlayState.talentAssignFocus == com.ktome.client.input.TalentAssignFocus.ACTIVE &&
+                                    overlayState.loadoutSlotSelection == talent.slot
+                                ) {
+                                    TileTextTone.CYAN
+                                } else {
+                                    TileTextTone.WHITE
+                                },
                             icon = talent.iconKey?.let { resolveVisual(visualResolver, it) },
+                            selected =
+                                overlayState.talentAssignFocus == com.ktome.client.input.TalentAssignFocus.ACTIVE &&
+                                    overlayState.loadoutSlotSelection == talent.slot,
                         )
+                }
+                if (snapshot.uiState.reserveTalents.isNotEmpty()) {
+                    rows += TileTextRow(localizer.text("ui.sidebar.reserve_talents"), TileTextTone.GOLD)
+                    snapshot.uiState.reserveTalents.forEachIndexed { index, talent ->
+                        rows +=
+                            TileTextRow(
+                                text = reserveTalentLabel(localizer, talent),
+                                tone =
+                                    if (
+                                        overlayState.talentAssignFocus == com.ktome.client.input.TalentAssignFocus.RESERVE &&
+                                        overlayState.loadoutReserveSelection == index
+                                    ) {
+                                        TileTextTone.CYAN
+                                    } else {
+                                        TileTextTone.WHITE
+                                    },
+                                icon = talent.iconKey?.let { resolveVisual(visualResolver, it) },
+                                selected =
+                                    overlayState.talentAssignFocus == com.ktome.client.input.TalentAssignFocus.RESERVE &&
+                                        overlayState.loadoutReserveSelection == index,
+                            )
+                    }
+                }
+                val focusedActiveTalent =
+                    snapshot.uiState.talents.firstOrNull { talent ->
+                        overlayState.talentAssignFocus == com.ktome.client.input.TalentAssignFocus.ACTIVE &&
+                            talent.slot == overlayState.loadoutSlotSelection
+                    }
+                val focusedReserveTalent =
+                    snapshot.uiState.reserveTalents.getOrNull(overlayState.loadoutReserveSelection)
+                        ?.takeIf { overlayState.talentAssignFocus == com.ktome.client.input.TalentAssignFocus.RESERVE }
+                focusedActiveTalent?.let { talent ->
+                    DescriptionPresenter.presentTalentLines(localizer, talent).forEach { line ->
+                        rows += TileTextRow(line.text, descriptionTone(line))
+                    }
+                    rows += TileTextRow(talentUsageSummary(localizer, talent), TileTextTone.LIGHT_GRAY)
+                }
+                focusedReserveTalent?.let { talent ->
+                    DescriptionPresenter.presentReserveTalentLines(localizer, talent).forEach { line ->
+                        rows += TileTextRow(line.text, descriptionTone(line))
+                    }
+                    rows += TileTextRow(talentUsageSummary(localizer, talent), TileTextTone.LIGHT_GRAY)
                 }
                 rows += TileTextRow(localizer.text("ui.controls.talent_assign"), TileTextTone.LIGHT_GRAY)
             }
@@ -542,6 +598,15 @@ internal object TileRenderModelBuilder {
             messageKey == "log.zone.enter" -> TileTextTone.CYAN
             messageKey.startsWith("log.boss.") -> TileTextTone.RED
             else -> TileTextTone.WHITE
+        }
+
+    private fun descriptionTone(line: DescriptionLine): TileTextTone =
+        when (line.kind) {
+            DescriptionLineKind.SECONDARY -> TileTextTone.GRAY
+            DescriptionLineKind.PRIMARY,
+            DescriptionLineKind.KEYWORD,
+            DescriptionLineKind.STATE,
+            -> TileTextTone.LIGHT_GRAY
         }
 
     private fun overlayAlpha(dangerLevel: Int): Float =
@@ -654,7 +719,7 @@ internal object TileRenderModelBuilder {
             } else {
                 ""
         }
-        return "${talent.slot}. ${localizer.text(talent.nameKey)} ${talent.level}/${talent.maxLevel}$targetSuffix"
+        return "${talent.slot}. ${localizer.text(talent.nameKey)} ${talentRankLabel(talent.level, talent.committedLevel, talent.maxLevel)}$targetSuffix"
     }
 
     private fun reserveTalentLabel(
@@ -667,7 +732,7 @@ internal object TileRenderModelBuilder {
             } else {
                 ""
             }
-        return "${localizer.text(talent.nameKey)} ${talent.level}/${talent.maxLevel}$targetSuffix"
+        return "${localizer.text(talent.nameKey)} ${talentRankLabel(talent.level, talent.committedLevel, talent.maxLevel)}$targetSuffix"
     }
 
     private fun loadoutSlotLabel(
@@ -678,7 +743,18 @@ internal object TileRenderModelBuilder {
         if (talent == null) {
             "$slot. ${localizer.text("ui.sidebar.empty")}"
         } else {
-            "$slot. ${localizer.text(talent.nameKey)} ${talent.level}/${talent.maxLevel}"
+            "$slot. ${localizer.text(talent.nameKey)} ${talentRankLabel(talent.level, talent.committedLevel, talent.maxLevel)}"
+        }
+
+    private fun talentRankLabel(
+        level: Int,
+        committedLevel: Int,
+        maxLevel: Int,
+    ): String =
+        if (level == committedLevel) {
+            "$level/$maxLevel"
+        } else {
+            "$level/$maxLevel (live $committedLevel)"
         }
 
     private fun renderTextToken(

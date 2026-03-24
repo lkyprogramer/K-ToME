@@ -21,7 +21,11 @@ import com.ktome.core.resource.ResourcePools
 import com.ktome.core.resource.ResourceType
 import com.ktome.core.stats.StatsCalculator
 import com.ktome.core.status.CleansePolicy
+import com.ktome.core.status.EffectCategory
+import com.ktome.core.status.StatusCatalog
 import com.ktome.core.status.StatusDefinitions
+import com.ktome.core.status.StatusEffectDef
+import com.ktome.core.status.StatusEffectType
 import com.ktome.core.status.StatusLifecycle
 
 sealed interface TalentUseResult {
@@ -36,6 +40,31 @@ sealed interface TalentUseResult {
         val talentId: String? = null,
     ) : TalentUseResult
 }
+
+private fun StatModifier.scaledOrFixed(magnitude: Double): StatModifier =
+    if (magnitude == 0.0) {
+        this
+    } else {
+        StatModifier(
+            str = (str * magnitude).toInt(),
+            dex = (dex * magnitude).toInt(),
+            con = (con * magnitude).toInt(),
+            wil = (wil * magnitude).toInt(),
+            attack = (attack * magnitude).toInt(),
+            defense = (defense * magnitude).toInt(),
+            accuracy = (accuracy * magnitude).toInt(),
+            evasion = (evasion * magnitude).toInt(),
+            speed = (speed * magnitude).toInt(),
+            maxHp = (maxHp * magnitude).toInt(),
+            maxStamina = (maxStamina * magnitude).toInt(),
+            hpRegen = hpRegen * magnitude,
+            staminaRegen = staminaRegen * magnitude,
+            critChance = critChance * magnitude,
+            talentPower = talentPower * magnitude,
+            attackMultiplierBonus = attackMultiplierBonus * magnitude,
+            defenseMultiplierBonus = defenseMultiplierBonus * magnitude,
+        )
+    }
 
 fun interface DamageMultiplierResolver {
     fun resolve(
@@ -95,6 +124,7 @@ sealed interface TalentEffectResult {
     data class StatusApplied(
         val target: EntityId,
         val type: StatusEffectType,
+        val statusId: String = type.schemaId,
         val duration: Int,
         val interactionId: String? = null,
         val previousSource: EntityId? = null,
@@ -103,6 +133,7 @@ sealed interface TalentEffectResult {
     data class Buff(
         val target: EntityId,
         val type: StatusEffectType,
+        val statusId: String = type.schemaId,
         val duration: Int,
         val magnitude: Double,
         val interactionId: String? = null,
@@ -112,6 +143,7 @@ sealed interface TalentEffectResult {
     data class StatusCleanse(
         val target: EntityId,
         val removed: List<StatusEffectType>,
+        val removedStatusIds: List<String> = removed.map(StatusEffectType::schemaId),
     ) : TalentEffectResult
 
     data class Movement(
@@ -130,29 +162,10 @@ sealed interface TalentEffectResult {
 class TalentResolver(
     private val registry: TalentRegistry,
     private val combatResolver: CombatResolver,
+    private val statusCatalog: StatusCatalog = StatusCatalog.EMPTY,
 ) {
     var damageMultiplierResolver: DamageMultiplierResolver =
         DamageMultiplierResolver { _, _, _, _, baseMultiplier -> baseMultiplier }
-
-    private companion object {
-        val BUFF_LIKE_EFFECT_TYPES =
-            setOf(
-                StatusEffectType.WAR_CRY_BUFF,
-                StatusEffectType.GUARD_STANCE_BUFF,
-                StatusEffectType.ARCANE_SHIELD_BUFF,
-                StatusEffectType.UNYIELDING_BUFF,
-                StatusEffectType.MANA_SURGE_BUFF,
-                StatusEffectType.STEALTH,
-                StatusEffectType.HOLY_SHIELD_BUFF,
-                StatusEffectType.DEVOTION_BUFF,
-                StatusEffectType.HOLY_AURA_BUFF,
-                StatusEffectType.GUARD,
-                StatusEffectType.SHIELD,
-                StatusEffectType.REGEN,
-                StatusEffectType.HASTE,
-                StatusEffectType.INVULNERABLE,
-            )
-    }
 
     private val supportedTalentIds =
         setOf(
@@ -227,7 +240,7 @@ class TalentResolver(
             return TalentUseResult.Failure(
                 code = TalentFailureCode.UNSUPPORTED_TALENT,
                 reason = "Talent is not supported yet.",
-                talentName = definition.name,
+                talentName = definition.nameKey,
                 talentId = talentId,
             )
         }
@@ -236,8 +249,8 @@ class TalentResolver(
         if (cooldowns.remainingByTalentId[talentId]?.let { it > 0 } == true) {
             return TalentUseResult.Failure(
                 code = TalentFailureCode.COOLDOWN,
-                reason = "${definition.name} is still cooling down.",
-                talentName = definition.name,
+                reason = "${definition.id} is still cooling down.",
+                talentName = definition.nameKey,
                 talentId = talentId,
             )
         }
@@ -253,7 +266,7 @@ class TalentResolver(
                     } else {
                         "Not enough resource."
                     },
-                talentName = definition.name,
+                talentName = definition.nameKey,
                 talentId = talentId,
             )
         }
@@ -268,7 +281,7 @@ class TalentResolver(
                 ?: return TalentUseResult.Failure(
                     code = TalentFailureCode.TARGET_REQUIRED,
                     reason = "A target is required.",
-                    talentName = definition.name,
+                    talentName = definition.nameKey,
                     talentId = talentId,
                 )
         val distance = userPosition.chebyshevDistanceTo(targetPoint)
@@ -276,7 +289,7 @@ class TalentResolver(
             return TalentUseResult.Failure(
                 code = TalentFailureCode.OUT_OF_RANGE,
                 reason = "Target is out of range.",
-                talentName = definition.name,
+                talentName = definition.nameKey,
                 talentId = talentId,
             )
         }
@@ -286,7 +299,7 @@ class TalentResolver(
                 return TalentUseResult.Failure(
                     code = TalentFailureCode.NO_TARGET,
                     reason = "No valid movement destination.",
-                    talentName = definition.name,
+                    talentName = definition.nameKey,
                     talentId = talentId,
                 )
             }
@@ -298,24 +311,24 @@ class TalentResolver(
                 ?: return TalentUseResult.Failure(
                     code = TalentFailureCode.NO_TARGET,
                     reason = "No valid target.",
-                    talentName = definition.name,
+                    talentName = definition.nameKey,
                     talentId = talentId,
                 )
         if (definition.id == "charge" && chargeDestination(world, map, userPosition, targetPoint, targetEntity) == null) {
             return TalentUseResult.Failure(
                 code = TalentFailureCode.NO_CHARGE_PATH,
                 reason = "No path to charge target.",
-                talentName = definition.name,
+                talentName = definition.nameKey,
                 talentId = talentId,
             )
         }
         if (definition.id == "shadowstep" && shadowstepDestination(world, map, userPosition, targetPoint, targetEntity) == null) {
             return TalentUseResult.Failure(
-                code = TalentFailureCode.NO_TARGET,
-                reason = "No valid shadowstep landing point.",
-                talentName = definition.name,
-                talentId = talentId,
-            )
+                    code = TalentFailureCode.NO_TARGET,
+                    reason = "No valid shadowstep landing point.",
+                    talentName = definition.nameKey,
+                    talentId = talentId,
+                )
         }
 
         return null
@@ -345,7 +358,7 @@ class TalentResolver(
             return TalentUseResult.Failure(
                 code = TalentFailureCode.UNSUPPORTED_TALENT,
                 reason = "Talent is not supported yet.",
-                talentName = definition.name,
+                talentName = definition.nameKey,
                 talentId = talentId,
             )
         }
@@ -604,7 +617,7 @@ class TalentResolver(
                     trigger = EffectTrigger.ON_CAST,
                     effects = effects,
                 )
-                restoreResource(world, user, ResourceType.MANA, effect, effects)
+                restoreConfiguredResource(world, user, definition, effect, effects)
                 targets += user
             }
 
@@ -695,7 +708,7 @@ class TalentResolver(
                 val damageResult =
                     resolveDamage(world, user, targetEntity, definition.damageType, effect.damageMultiplier, effects, abilityId = definition.id)
                 if (damageResult.hit) {
-                    restoreResource(world, user, ResourceType.ENERGY, effect, effects)
+                    restoreConfiguredResource(world, user, definition, effect, effects)
                 }
             }
 
@@ -799,7 +812,7 @@ class TalentResolver(
                 return TalentUseResult.Failure(
                     code = TalentFailureCode.UNSUPPORTED_TALENT,
                     reason = "Talent is not supported yet.",
-                    talentName = definition.name,
+                    talentName = definition.nameKey,
                     talentId = talentId,
                 )
         }
@@ -808,7 +821,7 @@ class TalentResolver(
         return TalentUseResult.Success(
             TalentResult(
                 talentId = definition.id,
-                talentName = definition.name,
+                talentName = definition.nameKey,
                 user = user,
                 targets = targets.toList(),
                 effects = effects,
@@ -891,7 +904,7 @@ class TalentResolver(
         }
         val request =
             StatusApplicationRequest(
-                statusId = spec.effectId,
+                statusId = spec.statusId,
                 duration = spec.duration,
                 applicationPolicy = spec.applicationPolicy,
                 saveDimension = resolveSaveDimension(spec, definition),
@@ -943,7 +956,12 @@ class TalentResolver(
             maxEffectsRemoved = spec.maxEffectsRemoved,
         )
         if (removed.isNotEmpty()) {
-            effects += TalentEffectResult.StatusCleanse(target = target, removed = removed.map { effect -> effect.type })
+            effects +=
+                TalentEffectResult.StatusCleanse(
+                    target = target,
+                    removed = removed.map { effect -> effect.type },
+                    removedStatusIds = removed.map { effect -> effect.schemaId },
+                )
         }
     }
 
@@ -954,7 +972,7 @@ class TalentResolver(
         spec.saveDimension
             ?: definition.powerDimension
             ?: if (spec.applicationPolicy.requiresSave()) {
-                error("Talent ${definition.id} effect ${spec.effectId} requires saveDimension for ${spec.applicationPolicy}.")
+                error("Talent ${definition.id} status ${spec.statusId} requires saveDimension for ${spec.applicationPolicy}.")
             } else {
                 null
             }
@@ -962,20 +980,26 @@ class TalentResolver(
     private fun buildActiveEffect(
         spec: AssociatedStatusEffect,
         sourceEntityId: EntityId,
-    ): ActiveEffect =
-        StatusLifecycle.createInstance(
-            type = spec.effectType,
+    ): ActiveEffect {
+        val statusDefinition = statusCatalog.definitionFor(spec.statusId)
+        return StatusLifecycle.createInstance(
+            definition = statusDefinition,
             effectId = spec.effectId,
             duration = spec.duration,
             magnitude = spec.magnitude,
             sourceEntityId = sourceEntityId,
             skipNextDecay = spec.targetScope == EffectTargetScope.SELF,
             applicationPolicy = spec.applicationPolicy,
-            statModifierOverride = effectStatModifiers(spec),
+            statModifierOverride = effectStatModifiers(spec, statusDefinition),
         )
+    }
 
-    private fun effectStatModifiers(spec: AssociatedStatusEffect): StatModifier =
-        when (spec.effectType) {
+    private fun effectStatModifiers(
+        spec: AssociatedStatusEffect,
+        statusDefinition: StatusEffectDef,
+    ): StatModifier =
+        when (statusDefinition.type) {
+            StatusEffectType.CUSTOM -> statusDefinition.statModifier.scaledOrFixed(spec.magnitude)
             StatusEffectType.GUARD,
             StatusEffectType.SHIELD,
             StatusEffectType.REGEN,
@@ -985,10 +1009,9 @@ class TalentResolver(
             StatusEffectType.WEAKEN,
             StatusEffectType.OVERCHARGE,
             StatusEffectType.INVULNERABLE,
-            StatusEffectType.STUN -> StatModifier()
+            StatusEffectType.STUN,
+            -> StatModifier()
             StatusEffectType.ARMOR_BREAK -> StatModifier(defense = -3)
-            StatusEffectType.WAR_CRY_BUFF -> StatModifier(attackMultiplierBonus = spec.magnitude)
-            StatusEffectType.WAR_CRY_DEBUFF -> StatModifier(defenseMultiplierBonus = -spec.magnitude)
             StatusEffectType.GUARD_STANCE_BUFF -> StatModifier(defenseMultiplierBonus = spec.magnitude)
             StatusEffectType.ARCANE_SHIELD_BUFF -> StatModifier(defenseMultiplierBonus = spec.magnitude)
             StatusEffectType.UNYIELDING_BUFF -> StatModifier(defenseMultiplierBonus = spec.magnitude)
@@ -1025,11 +1048,13 @@ class TalentResolver(
         spec: AssociatedStatusEffect,
         target: EntityId,
         changeResult: com.ktome.core.status.StatusChangeResult,
-    ): TalentEffectResult =
-        if (spec.effectType in BUFF_LIKE_EFFECT_TYPES) {
+    ): TalentEffectResult {
+        val statusDefinition = statusCatalog.definitionFor(spec.statusId)
+        return if (statusDefinition.category == EffectCategory.BUFF) {
             TalentEffectResult.Buff(
                 target = target,
-                type = spec.effectType,
+                type = statusDefinition.type,
+                statusId = statusDefinition.id,
                 duration = spec.duration,
                 magnitude = spec.magnitude,
                 interactionId = changeResult.interactionId,
@@ -1038,12 +1063,31 @@ class TalentResolver(
         } else {
             TalentEffectResult.StatusApplied(
                 target = target,
-                type = spec.effectType,
+                type = statusDefinition.type,
+                statusId = statusDefinition.id,
                 duration = spec.duration,
                 interactionId = changeResult.interactionId,
                 previousSource = previousOverrideSource(changeResult),
             )
         }
+    }
+
+    private fun restoreConfiguredResource(
+        world: World,
+        user: EntityId,
+        definition: TalentDef,
+        effect: TalentLevelEffect,
+        effects: MutableList<TalentEffectResult>,
+    ) {
+        val resourceType =
+            effect.effectOps
+                .filterIsInstance<EffectOp.ResourceRestore>()
+                .firstOrNull()
+                ?.type
+                ?: definition.resourceCosts.firstOrNull()?.type
+                ?: return
+        restoreResource(world, user, resourceType, effect, effects)
+    }
 
     private fun restoreResource(
         world: World,

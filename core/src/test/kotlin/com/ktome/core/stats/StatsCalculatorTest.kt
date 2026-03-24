@@ -15,7 +15,11 @@ import com.ktome.core.resource.ResourcePool
 import com.ktome.core.resource.ResourcePools
 import com.ktome.core.resource.ResourceType
 import com.ktome.core.talent.EffectTracker
-import com.ktome.core.talent.StatusEffectType
+import com.ktome.core.status.EffectCategory
+import com.ktome.core.status.ReplacePolicy
+import com.ktome.core.status.StackingRule
+import com.ktome.core.status.StatusEffectDef
+import com.ktome.core.status.StatusEffectType
 import com.ktome.core.status.StatusLifecycle
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -61,10 +65,20 @@ class StatsCalculatorTest {
             EffectTracker(
                 mutableListOf(
                     StatusLifecycle.createInstance(
-                        type = StatusEffectType.WAR_CRY_BUFF,
+                        definition =
+                            StatusEffectDef(
+                                id = "war_cry_empower",
+                                type = StatusEffectType.CUSTOM,
+                                category = EffectCategory.BUFF,
+                                nameKey = "status.war_cry_buff",
+                                stackingRule = StackingRule.UNIQUE,
+                                replacePolicy = ReplacePolicy.KEEP_STRONGEST,
+                                uniquenessKey = "war_cry_empower",
+                                sourceScopedUnique = true,
+                                statModifier = StatModifier(attackMultiplierBonus = 0.20),
+                            ),
                         effectId = "war_cry",
                         duration = 3,
-                        statModifierOverride = StatModifier(attackMultiplierBonus = 0.20),
                     ),
                     StatusLifecycle.createInstance(
                         type = StatusEffectType.ARMOR_BREAK,

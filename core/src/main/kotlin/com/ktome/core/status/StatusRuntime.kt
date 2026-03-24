@@ -61,6 +61,7 @@ enum class StatusEffectType(
     val dispellable: Boolean = true,
     val introducedPhase: String = "P2",
 ) {
+    CUSTOM("CUSTOM", EffectCategory.NEUTRAL, introducedPhase = "P3"),
     STUN("STUN", EffectCategory.DEBUFF, introducedPhase = "P1"),
     ARMOR_BREAK("ARMOR_BREAK", EffectCategory.DEBUFF, introducedPhase = "P1"),
     GUARD("GUARD", EffectCategory.BUFF),
@@ -82,8 +83,6 @@ enum class StatusEffectType(
     INVULNERABLE("INVULNERABLE", EffectCategory.BUFF, dispellable = false, introducedPhase = "P3"),
     STEALTH("STEALTH", EffectCategory.BUFF, dispellable = false, introducedPhase = "P3"),
     TAUNT("TAUNT", EffectCategory.DEBUFF, introducedPhase = "P3"),
-    WAR_CRY_BUFF("WAR_CRY_BUFF", EffectCategory.BUFF),
-    WAR_CRY_DEBUFF("WAR_CRY_DEBUFF", EffectCategory.DEBUFF),
     GUARD_STANCE_BUFF("GUARD_STANCE_BUFF", EffectCategory.BUFF),
     ARCANE_SHIELD_BUFF("ARCANE_SHIELD_BUFF", EffectCategory.BUFF),
     UNYIELDING_BUFF("UNYIELDING_BUFF", EffectCategory.BUFF),
@@ -99,7 +98,7 @@ enum class StatusEffectType(
                 "STUN", "STUNNED" -> STUN
                 "CURSE", "CURSED" -> CURSE
                 "STEALTH", "STEALTH_BUFF" -> STEALTH
-                else -> values().firstOrNull { type -> type.schemaId == id } ?: valueOf(id)
+                else -> values().firstOrNull { type -> type.schemaId == id } ?: runCatching { valueOf(id) }.getOrDefault(CUSTOM)
             }
     }
 }
@@ -107,6 +106,7 @@ enum class StatusEffectType(
 data class StatusEffectDef(
     val id: String,
     val type: StatusEffectType,
+    val category: EffectCategory = type.category,
     val nameKey: String,
     val iconKey: String? = null,
     val stackingRule: StackingRule,
@@ -126,9 +126,7 @@ data class StatusEffectDef(
     val breaksOnActualDamage: Boolean = false,
     val consumedOnDamageType: DamageType? = null,
     val consumedDamageMultiplier: Double = 1.0,
-) {
-    val category: EffectCategory = type.category
-}
+)
 
 data class StatusInstance(
     val id: String,
@@ -384,25 +382,6 @@ object StatusDefinitions {
                     iconKey = "icon.status.war_cry_debuff",
                     stackingRule = StackingRule.LATEST_OVERRIDES,
                 ),
-            StatusEffectType.WAR_CRY_BUFF to
-                def(
-                    type = StatusEffectType.WAR_CRY_BUFF,
-                    nameKey = "status.war_cry_buff",
-                    iconKey = "icon.status.war_cry_buff",
-                    stackingRule = StackingRule.UNIQUE,
-                    uniquenessKey = StatusEffectType.WAR_CRY_BUFF.schemaId,
-                    sourceScopedUnique = true,
-                ),
-            StatusEffectType.WAR_CRY_DEBUFF to
-                def(
-                    type = StatusEffectType.WAR_CRY_DEBUFF,
-                    nameKey = "status.war_cry_debuff",
-                    iconKey = "icon.status.war_cry_debuff",
-                    stackingRule = StackingRule.UNIQUE,
-                    uniquenessKey = StatusEffectType.WAR_CRY_DEBUFF.schemaId,
-                    sourceScopedUnique = true,
-                    statModifier = StatModifier(defenseMultiplierBonus = -0.20),
-                ),
             StatusEffectType.GUARD_STANCE_BUFF to
                 def(
                     type = StatusEffectType.GUARD_STANCE_BUFF,
@@ -457,6 +436,9 @@ object StatusDefinitions {
     fun definitionFor(type: StatusEffectType): StatusEffectDef =
         requireNotNull(definitions[type]) { "Missing status definition for ${type.name}." }
 
+    fun definitionForSchemaId(schemaId: String): StatusEffectDef? =
+        definitions.values.firstOrNull { definition -> definition.type.schemaId == schemaId }
+
     fun nameKey(type: StatusEffectType): String = definitionFor(type).nameKey
 
     fun iconKey(type: StatusEffectType): String? = definitionFor(type).iconKey
@@ -465,6 +447,7 @@ object StatusDefinitions {
         type: StatusEffectType,
         nameKey: String,
         iconKey: String?,
+        category: EffectCategory = type.category,
         stackingRule: StackingRule,
         stackCap: Int = 1,
         replacePolicy: ReplacePolicy = ReplacePolicy.REFRESH_DURATION,
@@ -484,8 +467,9 @@ object StatusDefinitions {
         consumedDamageMultiplier: Double = 1.0,
     ): StatusEffectDef =
         StatusEffectDef(
-            id = type.schemaId.lowercase(),
+            id = type.schemaId,
             type = type,
+            category = category,
             nameKey = nameKey,
             iconKey = iconKey,
             stackingRule = stackingRule,
@@ -510,7 +494,7 @@ object StatusDefinitions {
 
 object StatusLifecycle {
     fun createInstance(
-        type: StatusEffectType,
+        definition: StatusEffectDef,
         effectId: String,
         duration: Int,
         magnitude: Double = 0.0,
@@ -520,18 +504,17 @@ object StatusLifecycle {
         applicationPolicy: ApplicationPolicy? = null,
         statModifierOverride: StatModifier? = null,
         tickDamageOverride: Int? = null,
-    ): StatusInstance {
-        val definition = StatusDefinitions.definitionFor(type)
-        return StatusInstance(
+    ): StatusInstance =
+        StatusInstance(
             id = effectId,
-            type = type,
+            type = definition.type,
             remainingTurns = duration,
-            statModifiers = statModifierOverride ?: defaultStatModifier(type, magnitude),
+            statModifiers = statModifierOverride ?: definition.statModifier,
             skipNextDecay = skipNextDecay,
             nameKey = definition.nameKey,
             iconKey = definition.iconKey,
             category = definition.category,
-            schemaId = type.schemaId,
+            schemaId = definition.id,
             stackCount = 1,
             stackCap = definition.stackCap,
             stackingRule = definition.stackingRule,
@@ -553,6 +536,32 @@ object StatusLifecycle {
             breaksOnActualDamage = definition.breaksOnActualDamage,
             consumedOnDamageType = definition.consumedOnDamageType,
             consumedDamageMultiplier = definition.consumedDamageMultiplier,
+        )
+
+    fun createInstance(
+        type: StatusEffectType,
+        effectId: String,
+        duration: Int,
+        magnitude: Double = 0.0,
+        sourceEntityId: EntityId? = null,
+        appliedTurn: Int = 0,
+        skipNextDecay: Boolean = false,
+        applicationPolicy: ApplicationPolicy? = null,
+        statModifierOverride: StatModifier? = null,
+        tickDamageOverride: Int? = null,
+    ): StatusInstance {
+        val definition = StatusDefinitions.definitionFor(type)
+        return createInstance(
+            definition = definition.copy(id = type.schemaId, statModifier = statModifierOverride ?: defaultStatModifier(type, magnitude)),
+            effectId = effectId,
+            duration = duration,
+            magnitude = magnitude,
+            sourceEntityId = sourceEntityId,
+            appliedTurn = appliedTurn,
+            skipNextDecay = skipNextDecay,
+            applicationPolicy = applicationPolicy,
+            statModifierOverride = statModifierOverride ?: defaultStatModifier(type, magnitude),
+            tickDamageOverride = tickDamageOverride,
         )
     }
 
@@ -862,6 +871,7 @@ object StatusLifecycle {
         magnitude: Double,
     ): StatModifier =
         when (type) {
+            StatusEffectType.CUSTOM,
             StatusEffectType.STUN,
             StatusEffectType.OVERCHARGE,
             StatusEffectType.BLEED,
@@ -912,8 +922,6 @@ object StatusLifecycle {
                     speed = maxOf(2, (magnitude * 10).roundToInt()),
                 )
 
-            StatusEffectType.WAR_CRY_BUFF -> StatModifier(attackMultiplierBonus = magnitude)
-            StatusEffectType.WAR_CRY_DEBUFF -> StatModifier(defenseMultiplierBonus = -magnitude)
             StatusEffectType.MANA_SURGE_BUFF -> StatModifier(talentPower = magnitude)
             StatusEffectType.DEVOTION_BUFF ->
                 StatModifier(

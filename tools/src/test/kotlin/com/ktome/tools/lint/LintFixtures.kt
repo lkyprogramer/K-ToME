@@ -1,5 +1,7 @@
 package com.ktome.tools.lint
 
+import com.ktome.core.talent.DynamicDescriptionResolver
+import com.ktome.core.talent.KeywordRegistry
 import com.ktome.game.i18n.GameLocale
 import com.ktome.game.i18n.UiGlyphCatalog
 import kotlinx.serialization.json.Json
@@ -27,6 +29,7 @@ internal object LintFixtures {
     private val directLocaleLiteralPattern =
         """"((?:ui|log|stairs|status|ai|damage_type)\.[A-Za-z0-9_.-]+|(?:actor|profession|talent_tree|talent|monster|boss|zone|difficulty|material|affix|interactable)\.[A-Za-z0-9_.-]+\.(?:name|desc|role|resource_hint)|objective\.[A-Za-z0-9_.-]+\.(?:name|desc|role)|objective\.[A-Za-z0-9_.-]+\.step\.[A-Za-z0-9_.-]+|item\.[A-Za-z0-9_.-]+\.(?:name|desc|role)|item\.(?:quality|display)\.[A-Za-z0-9_.-]+|monster\.tag\.[A-Za-z0-9_.-]+)""""
             .toRegex()
+    private val keywordMarkupPattern = Regex("\\[\\[([a-z0-9_]+)]]")
 
     val schemaResources: List<String> =
         listOf(
@@ -95,11 +98,23 @@ internal object LintFixtures {
                 }
             }
             GameLocale.entries.forEach { locale -> add("ui.locale.${locale.id}") }
+            KeywordRegistry.CORE.all().forEach { keyword ->
+                add(keyword.nameKey)
+                add(keyword.tooltipKey)
+            }
+            addAll(DynamicDescriptionResolver.BREAKPOINT_TEMPLATE_KEYS)
         }
     }
 
     fun schemaFieldValues(field: String): Set<String> =
         schemaResources.flatMapTo(linkedSetOf()) { resource -> extractFieldValues(loadYaml(resource), field) }
+
+    fun localeKeywordMarkupIds(locale: GameLocale): Set<String> =
+        loadLocale(locale)
+            .values
+            .flatMapTo(linkedSetOf()) { value ->
+                keywordMarkupPattern.findAll(value).map { match -> match.groupValues[1] }.toList()
+            }
 
     fun formalObjectMaps(): List<Map<*, *>> =
         schemaResources.flatMap { resource -> extractFormalObjects(loadYaml(resource)) }

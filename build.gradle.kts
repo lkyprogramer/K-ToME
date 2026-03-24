@@ -143,6 +143,12 @@ tasks.register("combatTraceGolden") {
     dependsOn(":tools:combatTraceGolden")
 }
 
+tasks.register("bossHarness") {
+    group = LifecycleBasePlugin.VERIFICATION_GROUP
+    description = "Runs the Phase 3 boss encounter stability harness."
+    dependsOn(":game:bossHarness")
+}
+
 tasks.register<Exec>("assetLint") {
     group = LifecycleBasePlugin.VERIFICATION_GROUP
     description = "Validates the Phase 2 image asset plan."
@@ -254,6 +260,8 @@ tasks.register<JacocoReport>("jacocoTestReport") {
     group = LifecycleBasePlugin.VERIFICATION_GROUP
     description = "Generates an aggregate JaCoCo coverage report for all subprojects."
     dependsOn(test)
+    dependsOn("combatTraceGolden")
+    dependsOn("bossHarness")
     dependsOn("localeLint")
     dependsOn("contractLint")
     dependsOn("assetLint")

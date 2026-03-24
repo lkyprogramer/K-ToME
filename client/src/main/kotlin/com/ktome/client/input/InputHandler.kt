@@ -5,6 +5,9 @@ import com.ktome.core.map.Point
 import com.ktome.core.snapshot.GridPointSnapshot
 import com.ktome.core.snapshot.PropRenderSnapshot
 import com.ktome.core.snapshot.RenderSnapshot
+import com.ktome.core.snapshot.TalentReserveSnapshot
+import com.ktome.core.snapshot.TalentSlotSnapshot
+import com.ktome.core.talent.TalentTreeOwnerType
 import com.ktome.game.PrimaryStat
 import com.ktome.game.PLAYER_ACTIVE_TALENT_SLOT_COUNT
 import com.ktome.game.PlayerCommand
@@ -19,11 +22,17 @@ enum class UiMode {
     TALENT_ASSIGN,
 }
 
+enum class TalentAssignFocus {
+    ACTIVE,
+    RESERVE,
+}
+
 data class OverlayState(
     val mode: UiMode,
     val inventorySelection: Int = 0,
     val loadoutSlotSelection: Int = 1,
     val loadoutReserveSelection: Int = 0,
+    val talentAssignFocus: TalentAssignFocus = TalentAssignFocus.ACTIVE,
     val targetingSlot: Int? = null,
     val targetingCursor: Point? = null,
     val inspectCursor: Point? = null,
@@ -67,6 +76,7 @@ class InputHandler(
     private var inventorySelection: Int = 0
     private var loadoutSlotSelection: Int = 1
     private var loadoutReserveSelection: Int = 0
+    private var talentAssignFocus: TalentAssignFocus = TalentAssignFocus.ACTIVE
     private var targetingSlot: Int? = null
     private var targetingCursor: Point? = null
     private var inspectCursor: Point? = null
@@ -81,6 +91,7 @@ class InputHandler(
             inventorySelection = inventorySelection,
             loadoutSlotSelection = loadoutSlotSelection,
             loadoutReserveSelection = loadoutReserveSelection,
+            talentAssignFocus = talentAssignFocus,
             targetingSlot = targetingSlot,
             targetingCursor = targetingCursor,
             inspectCursor = inspectCursor,
@@ -137,6 +148,9 @@ class InputHandler(
 
             is PlayerCommand.AssignStat,
             is PlayerCommand.AssignTalent,
+            is PlayerCommand.RespecTalentTree,
+            PlayerCommand.ConfirmTalentDraft,
+            PlayerCommand.RollbackTalentDraft,
             PlayerCommand.SaveGame,
             PlayerCommand.Ascend,
             PlayerCommand.Descend,
@@ -161,8 +175,14 @@ class InputHandler(
             }
 
             UiMode.TALENT_ASSIGN -> {
-                if (!hasPendingTalentAllocation(snapshot)) {
+                loadoutSlotSelection = loadoutSlotSelection.coerceIn(1, PLAYER_ACTIVE_TALENT_SLOT_COUNT)
+                loadoutReserveSelection = loadoutReserveSelection.coerceIn(0, (snapshot.uiState.reserveTalents.size - 1).coerceAtLeast(0))
+                if (!canOpenTalentAllocation(snapshot)) {
                     mode = UiMode.MAP
+                } else if (snapshot.uiState.talents.isEmpty() && snapshot.uiState.reserveTalents.isNotEmpty()) {
+                    talentAssignFocus = TalentAssignFocus.RESERVE
+                } else if (snapshot.uiState.reserveTalents.isEmpty()) {
+                    talentAssignFocus = TalentAssignFocus.ACTIVE
                 }
             }
 
@@ -213,9 +233,8 @@ class InputHandler(
             return null
         }
 
-        if (input.isKeyJustPressed(Keys.T) && hasPendingTalentAllocation(snapshot)) {
-            mode = UiMode.TALENT_ASSIGN
-            resetMovementRepeat()
+        if (input.isKeyJustPressed(Keys.T) && canOpenTalentAllocation(snapshot)) {
+            enterTalentAssign(snapshot)
             return null
         }
 
@@ -369,12 +388,56 @@ class InputHandler(
             mode = UiMode.MAP
             return null
         }
-        if (!hasPendingTalentAllocation(snapshot)) {
+        if (!canOpenTalentAllocation(snapshot)) {
             mode = UiMode.MAP
             return null
         }
+        if (input.isKeyJustPressed(Keys.ENTER) || input.isKeyJustPressed(Keys.SPACE)) {
+            return PlayerCommand.ConfirmTalentDraft
+        }
+        if (input.isKeyJustPressed(Keys.BACKSPACE) || input.isKeyJustPressed(Keys.DEL)) {
+            return PlayerCommand.RollbackTalentDraft
+        }
+        if (input.isKeyJustPressed(Keys.R)) {
+            return selectedTalentOwner(snapshot)?.let { owner ->
+                PlayerCommand.RespecTalentTree(ownerType = owner.ownerType, treeOwnerId = owner.treeOwnerId)
+            }
+        }
+        if (snapshot.uiState.reserveTalents.isNotEmpty()) {
+            if (input.isKeyJustPressed(Keys.UP) || input.isKeyJustPressed(Keys.W)) {
+                loadoutReserveSelection = (loadoutReserveSelection - 1).coerceAtLeast(0)
+                talentAssignFocus = TalentAssignFocus.RESERVE
+                return null
+            }
+            if (input.isKeyJustPressed(Keys.DOWN) || input.isKeyJustPressed(Keys.X)) {
+                loadoutReserveSelection = (loadoutReserveSelection + 1).coerceAtMost(snapshot.uiState.reserveTalents.lastIndex)
+                talentAssignFocus = TalentAssignFocus.RESERVE
+                return null
+            }
+            if (
+                input.isKeyJustPressed(Keys.E) ||
+                input.isKeyJustPressed(Keys.NUMPAD_ENTER)
+            ) {
+                selectedReserveTalent(snapshot)?.takeIf { snapshot.uiState.playerStatus.talentPoints > 0 }?.let { talent ->
+                    talentAssignFocus = TalentAssignFocus.RESERVE
+                    return PlayerCommand.AssignTalent(talent.talentId)
+                }
+            }
+        }
 
-        return hotkeySlot()?.let(PlayerCommand::AssignTalent)
+        hotkeySlot()?.let { slot ->
+            loadoutSlotSelection = slot
+            talentAssignFocus = TalentAssignFocus.ACTIVE
+            snapshot.uiState.talents
+                .firstOrNull { talent -> talent.slot == slot }
+                ?.takeIf { snapshot.uiState.playerStatus.talentPoints > 0 }
+                ?.let { talent ->
+                return PlayerCommand.AssignTalent(talent.talentId)
+            }
+            return null
+        }
+
+        return null
     }
 
     private fun hotkeySlot(): Int? =
@@ -403,6 +466,19 @@ class InputHandler(
 
     private fun clearLoadoutEdit() {
         mode = UiMode.MAP
+        resetMovementRepeat()
+    }
+
+    private fun enterTalentAssign(snapshot: RenderSnapshot) {
+        mode = UiMode.TALENT_ASSIGN
+        loadoutSlotSelection = loadoutSlotSelection.coerceIn(1, PLAYER_ACTIVE_TALENT_SLOT_COUNT)
+        loadoutReserveSelection = loadoutReserveSelection.coerceIn(0, (snapshot.uiState.reserveTalents.size - 1).coerceAtLeast(0))
+        talentAssignFocus =
+            if (snapshot.uiState.talents.isNotEmpty()) {
+                TalentAssignFocus.ACTIVE
+            } else {
+                TalentAssignFocus.RESERVE
+            }
         resetMovementRepeat()
     }
 
@@ -435,9 +511,46 @@ class InputHandler(
 
     private fun hasPendingStatAllocation(snapshot: RenderSnapshot): Boolean = snapshot.uiState.playerStatus.statPoints > 0
 
-    private fun hasPendingTalentAllocation(snapshot: RenderSnapshot): Boolean = snapshot.uiState.playerStatus.talentPoints > 0
+    private fun hasPendingTalentAllocation(snapshot: RenderSnapshot): Boolean =
+        snapshot.uiState.playerStatus.talentPoints > 0 ||
+            snapshot.uiState.talents.any(TalentSlotSnapshot::hasPendingAllocation) ||
+            snapshot.uiState.reserveTalents.any(TalentReserveSnapshot::hasPendingAllocation)
+
+    private fun canOpenTalentAllocation(snapshot: RenderSnapshot): Boolean =
+        snapshot.uiState.talents.isNotEmpty() || snapshot.uiState.reserveTalents.isNotEmpty()
 
     private fun playerPosition(snapshot: RenderSnapshot): Point = Point(snapshot.metadata.playerX, snapshot.metadata.playerY)
+
+    private fun selectedActiveTalent(snapshot: RenderSnapshot): TalentSlotSnapshot? =
+        snapshot.uiState.talents.firstOrNull { talent -> talent.slot == loadoutSlotSelection }
+            ?: snapshot.uiState.talents.firstOrNull()
+
+    private fun selectedReserveTalent(snapshot: RenderSnapshot): TalentReserveSnapshot? =
+        snapshot.uiState.reserveTalents.getOrNull(loadoutReserveSelection)
+
+    private fun selectedTalentOwner(snapshot: RenderSnapshot): PlayerCommand.RespecTalentTree? =
+        when (talentAssignFocus) {
+            TalentAssignFocus.ACTIVE -> selectedActiveTalent(snapshot)?.toRespecCommand()
+                ?: selectedReserveTalent(snapshot)?.toRespecCommand()
+
+            TalentAssignFocus.RESERVE -> selectedReserveTalent(snapshot)?.toRespecCommand()
+                ?: selectedActiveTalent(snapshot)?.toRespecCommand()
+        }
+
+    private fun TalentSlotSnapshot.toRespecCommand(): PlayerCommand.RespecTalentTree =
+        PlayerCommand.RespecTalentTree(
+            ownerType = parseOwnerType(ownerType),
+            treeOwnerId = treeOwnerId,
+        )
+
+    private fun TalentReserveSnapshot.toRespecCommand(): PlayerCommand.RespecTalentTree =
+        PlayerCommand.RespecTalentTree(
+            ownerType = parseOwnerType(ownerType),
+            treeOwnerId = treeOwnerId,
+        )
+
+    private fun parseOwnerType(ownerType: String): TalentTreeOwnerType =
+        enumValueOf<TalentTreeOwnerType>(ownerType)
 
     private fun pollMovementCommand(): Point? {
         movementBindings.entries.firstOrNull { (key, _) -> input.isKeyJustPressed(key) }?.let { (key, delta) ->

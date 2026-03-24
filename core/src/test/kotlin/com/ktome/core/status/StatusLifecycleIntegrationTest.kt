@@ -1,6 +1,7 @@
 package com.ktome.core.status
 
 import com.ktome.core.ecs.EntityId
+import com.ktome.core.item.StatModifier
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 
@@ -12,7 +13,7 @@ class StatusLifecycleIntegrationTest {
         StatusLifecycle.applyEffect(
             tracker,
             StatusLifecycle.createInstance(
-                type = StatusEffectType.WAR_CRY_BUFF,
+                definition = warCryEmpowerDefinition(),
                 effectId = "war_cry_first",
                 duration = 4,
                 magnitude = 0.20,
@@ -22,7 +23,7 @@ class StatusLifecycleIntegrationTest {
         StatusLifecycle.applyEffect(
             tracker,
             StatusLifecycle.createInstance(
-                type = StatusEffectType.WAR_CRY_BUFF,
+                definition = warCryEmpowerDefinition(),
                 effectId = "war_cry_refresh",
                 duration = 6,
                 magnitude = 0.35,
@@ -32,7 +33,7 @@ class StatusLifecycleIntegrationTest {
         StatusLifecycle.applyEffect(
             tracker,
             StatusLifecycle.createInstance(
-                type = StatusEffectType.WAR_CRY_BUFF,
+                definition = warCryEmpowerDefinition(),
                 effectId = "war_cry_other_source",
                 duration = 5,
                 magnitude = 0.25,
@@ -40,7 +41,7 @@ class StatusLifecycleIntegrationTest {
             ),
         )
 
-        val warCryEffects = tracker.activeEffects().filter { effect -> effect.type == StatusEffectType.WAR_CRY_BUFF }.sortedBy { effect -> effect.sourceEntityId?.value }
+        val warCryEffects = tracker.activeEffects().filter { effect -> effect.schemaId == "war_cry_empower" }.sortedBy { effect -> effect.sourceEntityId?.value }
 
         assertEquals(2, warCryEffects.size)
         assertEquals(6, warCryEffects.first().remainingTurns)
@@ -48,4 +49,17 @@ class StatusLifecycleIntegrationTest {
         assertEquals(5, warCryEffects.last().remainingTurns)
         assertEquals(0.25, warCryEffects.last().magnitude, 0.0001)
     }
+
+    private fun warCryEmpowerDefinition(): StatusEffectDef =
+        StatusEffectDef(
+            id = "war_cry_empower",
+            type = StatusEffectType.CUSTOM,
+            category = EffectCategory.BUFF,
+            nameKey = "status.war_cry_buff",
+            stackingRule = StackingRule.UNIQUE,
+            replacePolicy = ReplacePolicy.KEEP_STRONGEST,
+            uniquenessKey = "war_cry_empower",
+            sourceScopedUnique = true,
+            statModifier = StatModifier(attackMultiplierBonus = 1.0),
+        )
 }
