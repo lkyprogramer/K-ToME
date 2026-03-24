@@ -1213,6 +1213,47 @@ class FoundationGameSessionTest {
     }
 
     @Test
+    fun `lethal world carrier tick without source still handles death`() {
+        val session =
+            GameModule.newFoundationSession(
+                FoundationGameConfig(seed = 20260318L, zoneId = "shattered_outpost", playerProfessionId = "vanguard"),
+                SaveManager(tempDir.resolve("world-dot-no-source-death-save")),
+            )
+        clearMonsters(session)
+        val monsterId = installCombatDummy(session, id = "world_dot_no_source_dummy")
+        val world = runtimeWorld(session)
+        val worldEntity = world.createEntity()
+        requireNotNull(world.get<Health>(monsterId)).current = 1
+        world.add(
+            worldEntity,
+            WorldEffect(
+                effectId = "hazard_no_source",
+                affectedActorIds = setOf(monsterId),
+                effects =
+                    mutableListOf(
+                        StatusLifecycle.createInstance(
+                            type = StatusEffectType.BURN,
+                            effectId = "burn_world_no_source",
+                            duration = 1,
+                            tickDamageOverride = 2,
+                        ),
+                    ),
+            ),
+        )
+
+        repeat(5) {
+            if (!world.isAlive(monsterId)) {
+                return@repeat
+            }
+            assertTrue(session.perform(PlayerCommand.Wait))
+        }
+
+        assertFalse(world.isAlive(monsterId))
+        val recentEvents = recentEventSummaries(session)
+        assertTrue(recentEvents.any { event -> event == "death:${monsterId.value}:${monsterId.value}" })
+    }
+
+    @Test
     fun `killing common monster drops ground loot from its loot profile`() {
         val session =
             GameModule.newFoundationSession(

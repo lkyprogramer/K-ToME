@@ -1773,7 +1773,7 @@ class FoundationGameSession internal constructor(
             }
         }
 
-        return if (result.targetKilled) dueEffect.sourceEntityId else null
+        return if (result.targetKilled) dueEffect.sourceEntityId ?: actorId else null
     }
 
     private fun decayAreaEffectEmitters(actorId: EntityId) {
