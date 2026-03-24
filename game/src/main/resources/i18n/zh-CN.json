@@ -206,6 +206,7 @@
   "log.talent.unlock": "{talent} 现已可用。",
   "log.talent.preview_advance": "{talent} 的预览等级提升到 {level}。",
   "log.talent.draft_confirmed": "天赋分配已确认。",
+  "log.talent.draft_confirm_blocked": "战斗中不能确认天赋分配。",
   "log.talent.draft_rollback": "未确认的天赋分配已回退。",
   "log.talent.respec": "已生成洗点预览。",
   "log.talent.respec_blocked": "战斗中不能洗点。",

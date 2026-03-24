@@ -264,6 +264,32 @@ class FoundationGameSessionTest {
     }
 
     @Test
+    fun `confirm talent draft is blocked during combat and keeps pending preview intact`() {
+        val session =
+            GameModule.newFoundationSession(
+                FoundationGameConfig(seed = 20260320L, zoneId = "shattered_outpost", playerProfessionId = "arcanist"),
+                SaveManager(tempDir.resolve("talent-draft-confirm-combat-save")),
+            )
+        clearMonsters(session)
+        val growthDummyId = installExperienceDummy(session, id = "talent_draft_combat_growth_dummy", expReward = 1500)
+        val growthDummyPosition = requireNotNull(runtimeWorld(session).get<Position>(growthDummyId)).toPoint()
+        assertTrue(session.perform(PlayerCommand.Move(growthDummyPosition - session.playerPosition())))
+
+        val liveLoadout = requireNotNull(runtimeWorld(session).get<com.ktome.core.talent.TalentLoadout>(session.playerId))
+        val committedRank = liveLoadout.levelOf("blink")
+        assertTrue(session.perform(PlayerCommand.AssignTalent("blink")))
+        forcePlayerInCombat(session)
+
+        assertFalse(session.perform(PlayerCommand.ConfirmTalentDraft))
+        assertEquals(committedRank, liveLoadout.levelOf("blink"))
+        val blink = session.talentSlots().first { slot -> slot.talentId == "blink" }
+        assertEquals(committedRank + 1, blink.level)
+        assertEquals(committedRank, blink.committedLevel)
+        assertTrue(blink.hasPendingAllocation)
+        assertTrue(session.renderSnapshot().logEvents.any { event -> event.message.key == "log.talent.draft_confirm_blocked" })
+    }
+
+    @Test
     fun `rollback clears pending talent preview without mutating live rank`() {
         val session =
             GameModule.newFoundationSession(
@@ -2421,6 +2447,12 @@ class FoundationGameSessionTest {
         val field = FoundationGameSession::class.java.getDeclaredField("world")
         field.isAccessible = true
         return field.get(session) as World
+    }
+
+    private fun forcePlayerInCombat(session: FoundationGameSession) {
+        val turnCountField = FoundationGameSession::class.java.getDeclaredField("turnCount").apply { isAccessible = true }
+        val combatTurnField = FoundationGameSession::class.java.getDeclaredField("lastPlayerCombatTurn").apply { isAccessible = true }
+        combatTurnField.setInt(session, turnCountField.getInt(session))
     }
 
     private fun recentEventSummaries(session: FoundationGameSession): List<String> {

@@ -206,6 +206,7 @@
   "log.talent.unlock": "{talent} is now available.",
   "log.talent.preview_advance": "{talent} preview advances to rank {level}.",
   "log.talent.draft_confirmed": "Talent allocation confirmed.",
+  "log.talent.draft_confirm_blocked": "Cannot confirm talent allocation during combat.",
   "log.talent.draft_rollback": "Talent allocation preview rolled back.",
   "log.talent.respec": "Talent respec preview is ready.",
   "log.talent.respec_blocked": "Cannot respec during combat.",

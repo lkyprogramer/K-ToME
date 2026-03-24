@@ -2102,6 +2102,9 @@ class FoundationGameSession internal constructor(
                 val loadout = requireNotNull(world.get<TalentLoadout>(playerId))
                 if (draft == null) {
                     CommandResolution.rejected()
+                } else if (isPlayerInCombat()) {
+                    addMessage("log.talent.draft_confirm_blocked")
+                    CommandResolution.rejected()
                 } else {
                     val preview = talentAllocationPreview(loadout, experience.unspentTalentPoints)
                     draft.pendingRanks.forEach { (talentId, rank) ->
