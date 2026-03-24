@@ -1,12 +1,15 @@
 package com.ktome.game
 
 import com.ktome.core.dungeon.FloorState
+import com.ktome.core.effect.AreaEffectEmitter
+import com.ktome.core.effect.WorldEffect
 import com.ktome.core.ecs.get
 import com.ktome.core.item.EquipmentPassive
 import com.ktome.core.map.GameMap
 import com.ktome.core.map.Point
 import com.ktome.core.resource.ResourcePoolSnapshot
 import com.ktome.core.save.ActiveEffectSnapshot
+import com.ktome.core.save.AreaEffectEmitterSnapshot
 import com.ktome.core.save.AiTriggerTrackerSnapshot
 import com.ktome.core.save.EntitySnapshot
 import com.ktome.core.save.EquipmentSnapshot
@@ -17,6 +20,7 @@ import com.ktome.core.save.PointSnapshot
 import com.ktome.core.save.SaveSnapshot
 import com.ktome.core.save.StatModifierSnapshot
 import com.ktome.core.save.TalentLoadoutSnapshot
+import com.ktome.core.save.WorldEffectSnapshot
 import com.ktome.core.talent.TalentRegistry
 import com.ktome.game.data.DataLoader
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -62,6 +66,67 @@ class SessionSnapshotMapperTest {
 
         assertEquals(23, pool.current)
         assertEquals(90, pool.max)
+    }
+
+    @Test
+    fun `restore world preserves area and world effect carriers`() {
+        val content = content()
+        val player =
+            PlayerSnapshot(
+                entity =
+                    EntitySnapshot(
+                        id = 1,
+                        position = PointSnapshot(1, 1),
+                        stats = com.ktome.core.save.StatsSnapshot(str = 10, dex = 10, con = 10, wil = 10),
+                        combatProfile =
+                            com.ktome.core.save.CombatProfileSnapshot(
+                                baseAttack = 5,
+                                baseDefense = 2,
+                                baseHp = 50,
+                                baseStamina = 40,
+                            ),
+                        isPlayerControlled = true,
+                    ),
+            )
+        val floor =
+            FloorRuntimeState(
+                map = GameMap.fromAscii(rows = listOf(".....", ".....", "....."), playerStart = Point(1, 1)),
+                entities =
+                    mutableListOf(
+                        EntitySnapshot(
+                            id = 21,
+                            areaEffectEmitter =
+                                AreaEffectEmitterSnapshot(
+                                    emitterId = "poison_cloud",
+                                    sourceEntityId = 1,
+                                    affectedActorIds = listOf(1),
+                                    emitterPriority = 10,
+                                    effects = listOf(ActiveEffectSnapshot(id = "poison_area", type = "POISON", remainingTurns = 2)),
+                                ),
+                        ),
+                        EntitySnapshot(
+                            id = 22,
+                            worldEffect =
+                                WorldEffectSnapshot(
+                                    effectId = "arena_aura",
+                                    affectedActorIds = listOf(1),
+                                    worldPriority = 30,
+                                    effects = listOf(ActiveEffectSnapshot(id = "burn_world", type = "BURN", remainingTurns = 1)),
+                                ),
+                        ),
+                    ),
+            )
+
+        val world = SessionSnapshotMapper.restoreWorld(content, player, floor)
+        val restoredArea = requireNotNull(world.get<AreaEffectEmitter>(com.ktome.core.ecs.EntityId(21)))
+        val restoredWorld = requireNotNull(world.get<WorldEffect>(com.ktome.core.ecs.EntityId(22)))
+
+        assertEquals("poison_cloud", restoredArea.emitterId)
+        assertEquals(listOf(com.ktome.core.ecs.EntityId(1)), restoredArea.affectedActorIds.toList())
+        assertEquals("POISON", restoredArea.effects.single().schemaId)
+        assertEquals("arena_aura", restoredWorld.effectId)
+        assertEquals(listOf(com.ktome.core.ecs.EntityId(1)), restoredWorld.affectedActorIds.toList())
+        assertEquals("BURN", restoredWorld.effects.single().schemaId)
     }
 
     @Test
@@ -293,6 +358,7 @@ class SessionSnapshotMapperTest {
         val talents = loader.loadTalentDefinitions()
         return GameContent(
             talents = talents,
+            statuses = loader.loadSchemaCatalog().statuses,
             talentRegistry = TalentRegistry().apply { registerAll(talents) },
             monsterCatalog = loader.loadMonsterCatalog().monsters,
             itemBundle = loader.loadItemBundle(),

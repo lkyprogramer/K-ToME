@@ -4,6 +4,9 @@ import com.ktome.client.assets.ResolvedVisualAsset
 import com.ktome.client.assets.VisualManifestResolver
 import com.ktome.client.input.OverlayState
 import com.ktome.client.input.UiMode
+import com.ktome.client.ui.status.StatusHudRenderer
+import com.ktome.client.ui.status.StatusHudIconModel
+import com.ktome.client.ui.status.StatusIconResolver
 import com.ktome.core.snapshot.ActorRenderSnapshot
 import com.ktome.core.snapshot.ActorRoleKindSnapshot
 import com.ktome.core.snapshot.CellVisibilitySnapshot
@@ -90,7 +93,7 @@ internal data class TileHudModel(
     val floorText: String,
     val hpGauge: TileGaugeModel,
     val resourceGauge: TileGaugeModel,
-    val statusIcons: List<ResolvedVisualAsset>,
+    val statusIcons: List<StatusHudIconModel>,
     val focusIcon: ResolvedVisualAsset?,
     val focusName: String?,
     val focusLines: List<String>,
@@ -210,7 +213,7 @@ internal object TileRenderModelBuilder {
         val playerStatus = snapshot.uiState.playerStatus
         val focusActor = focusedActor(snapshot, overlayState, actorById, cellByPoint)
         val resourceTone = resourceTone(playerStatus.resourceTypeId)
-        val statusIcons = player.statusEffects.mapNotNull { effect -> effect.iconKey?.let { resolveVisual(visualResolver, it) } }
+        val statusIcons = StatusIconResolver.resolveIcons(visualResolver, player.statusEffects)
         val hotbar =
                 snapshot.uiState.talents.map { talent ->
                     TileHotbarSlotModel(
@@ -234,7 +237,7 @@ internal object TileRenderModelBuilder {
                     actorRole(localizer, actor),
                     "${localizer.text("ui.hud.hp.short")} ${actor.currentHp}/${actor.maxHp}",
                     "${localizer.text("ui.hud.attack.short")} ${actor.attack}  ${localizer.text("ui.hud.defense.short")} ${actor.defense}",
-                ) + actor.statusEffects.map { effect -> formatStatusEffect(localizer, effect) }
+                ) + actor.statusEffects.map { effect -> StatusHudRenderer.renderTurns(localizer, effect) }
             } ?: emptyList()
 
         return TileHudModel(
@@ -435,7 +438,7 @@ internal object TileRenderModelBuilder {
                     inspected.statusEffects.forEach { effect ->
                         rows +=
                             TileTextRow(
-                                text = formatStatusEffect(localizer, effect),
+                                text = StatusHudRenderer.renderTurns(localizer, effect),
                                 tone = TileTextTone.LIGHT_GRAY,
                                 icon = effect.iconKey?.let { resolveVisual(visualResolver, it) },
                             )
@@ -766,21 +769,6 @@ internal object TileRenderModelBuilder {
             add("$label ${signed((value * 100).toInt())}%")
         }
     }
-
-    private fun formatStatusEffect(
-        localizer: Localizer,
-        effect: StatusEffectRenderSnapshot,
-    ): String =
-        localizer.text(
-            "ui.inspect.effect.turns",
-            "name" to statusEffectLabel(localizer, effect),
-            "turns" to effect.remainingTurns,
-        )
-
-    private fun statusEffectLabel(
-        localizer: Localizer,
-        effect: StatusEffectRenderSnapshot,
-    ): String = effect.nameKey?.let(localizer::text) ?: effect.typeId
 
     private fun stairName(
         localizer: Localizer,

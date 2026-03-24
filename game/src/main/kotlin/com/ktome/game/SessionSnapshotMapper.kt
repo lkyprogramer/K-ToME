@@ -28,6 +28,8 @@ import com.ktome.core.ecs.Stair
 import com.ktome.core.ecs.World
 import com.ktome.core.ecs.add
 import com.ktome.core.ecs.get
+import com.ktome.core.effect.AreaEffectEmitter
+import com.ktome.core.effect.WorldEffect
 import com.ktome.core.item.AffixType
 import com.ktome.core.item.ConsumableEffect
 import com.ktome.core.item.Equipment
@@ -49,6 +51,7 @@ import com.ktome.core.resource.ResourceType
 import com.ktome.core.save.AIBehaviorSnapshot
 import com.ktome.core.save.AiTriggerTrackerSnapshot
 import com.ktome.core.save.ActiveEffectSnapshot
+import com.ktome.core.save.AreaEffectEmitterSnapshot
 import com.ktome.core.save.CombatProfileSnapshot
 import com.ktome.core.save.EntitySnapshot
 import com.ktome.core.save.EquipmentSnapshot
@@ -67,12 +70,14 @@ import com.ktome.core.save.StairSnapshot
 import com.ktome.core.save.StatModifierSnapshot
 import com.ktome.core.save.StatsSnapshot
 import com.ktome.core.save.TalentLoadoutSnapshot
+import com.ktome.core.save.WorldEffectSnapshot
 import com.ktome.core.stats.StatsCalculator
 import com.ktome.core.talent.ActiveEffect
 import com.ktome.core.talent.CooldownState
 import com.ktome.core.talent.EffectTracker
 import com.ktome.core.talent.StatusEffectType
 import com.ktome.core.talent.TalentLoadout
+import com.ktome.core.status.StatusLifecycle
 import com.ktome.game.model.MonsterTemplate
 
 private const val HERO_GLYPH: Char = '@'
@@ -301,6 +306,8 @@ internal object SessionSnapshotMapper {
                 },
             cooldowns = world.get<CooldownState>(entityId)?.remainingByTalentId?.toMap(),
             effects = world.get<EffectTracker>(entityId)?.effects?.map(::toActiveEffectSnapshot),
+            areaEffectEmitter = world.get<AreaEffectEmitter>(entityId)?.let(::toAreaEffectEmitterSnapshot),
+            worldEffect = world.get<WorldEffect>(entityId)?.let(::toWorldEffectSnapshot),
             aiTriggerTracker =
                 world.get<AiTriggerTracker>(entityId)?.let { tracker ->
                     AiTriggerTrackerSnapshot(
@@ -381,7 +388,19 @@ internal object SessionSnapshotMapper {
             world.add(entityId, CooldownState(cooldowns.toMutableMap()))
         }
         snapshot.effects?.let { effects ->
-            world.add(entityId, EffectTracker(effects.map { effect -> restoreActiveEffect(effect, content.localizer) }.toMutableList()))
+            world.add(
+                entityId,
+                EffectTracker(
+                    effects = effects.map { effect -> restoreActiveEffect(effect, content.localizer) }.toMutableList(),
+                    ownerId = entityId,
+                ),
+            )
+        }
+        snapshot.areaEffectEmitter?.let { emitter ->
+            world.add(entityId, restoreAreaEffectEmitter(emitter, content.localizer))
+        }
+        snapshot.worldEffect?.let { effect ->
+            world.add(entityId, restoreWorldEffect(effect, content.localizer))
         }
         snapshot.aiTriggerTracker?.let { tracker ->
             world.add(
@@ -479,6 +498,8 @@ internal object SessionSnapshotMapper {
                 ),
             cooldowns = snapshot.cooldowns?.entries?.sortedBy { (talentId, _) -> talentId }?.associateTo(linkedMapOf()) { (talentId, turns) -> talentId to turns },
             effects = snapshot.effects?.map(::copyActiveEffectSnapshot)?.sortedBy(ActiveEffectSnapshot::id),
+            areaEffectEmitter = snapshot.areaEffectEmitter?.let(::copyAreaEffectEmitterSnapshot),
+            worldEffect = snapshot.worldEffect?.let(::copyWorldEffectSnapshot),
             aiTriggerTracker =
                 aiTriggerTracker?.copy(
                     consumedTriggerIds = aiTriggerTracker.consumedTriggerIds.sorted(),
@@ -510,6 +531,18 @@ internal object SessionSnapshotMapper {
     private fun copyActiveEffectSnapshot(snapshot: ActiveEffectSnapshot): ActiveEffectSnapshot =
         snapshot.copy(
             statModifiers = snapshot.statModifiers.copy(),
+        )
+
+    private fun copyAreaEffectEmitterSnapshot(snapshot: AreaEffectEmitterSnapshot): AreaEffectEmitterSnapshot =
+        snapshot.copy(
+            affectedActorIds = snapshot.affectedActorIds.sorted(),
+            effects = snapshot.effects.map(::copyActiveEffectSnapshot).sortedBy(ActiveEffectSnapshot::id),
+        )
+
+    private fun copyWorldEffectSnapshot(snapshot: WorldEffectSnapshot): WorldEffectSnapshot =
+        snapshot.copy(
+            affectedActorIds = snapshot.affectedActorIds.sorted(),
+            effects = snapshot.effects.map(::copyActiveEffectSnapshot).sortedBy(ActiveEffectSnapshot::id),
         )
 
     private fun toStatsSnapshot(stats: Stats): StatsSnapshot =
@@ -587,46 +620,74 @@ internal object SessionSnapshotMapper {
     private fun toActiveEffectSnapshot(effect: ActiveEffect): ActiveEffectSnapshot =
         ActiveEffectSnapshot(
             id = effect.id,
-            type = effect.type.name,
+            type = effect.schemaId,
             remainingTurns = effect.remainingTurns,
             statModifiers = toStatModifierSnapshot(effect.statModifiers),
             skipNextDecay = effect.skipNextDecay,
+            stackCount = effect.stackCount,
+            appliedTurn = effect.appliedTurn,
+            sourceEntityId = effect.sourceEntityId?.value,
+            magnitude = effect.magnitude,
+        )
+
+    private fun toAreaEffectEmitterSnapshot(emitter: AreaEffectEmitter): AreaEffectEmitterSnapshot =
+        AreaEffectEmitterSnapshot(
+            emitterId = emitter.emitterId,
+            sourceEntityId = emitter.sourceEntityId?.value,
+            affectedActorIds = emitter.affectedActorIds.map(EntityId::value).sorted(),
+            emitterPriority = emitter.emitterPriority,
+            effects = emitter.effects.map(::toActiveEffectSnapshot).sortedBy(ActiveEffectSnapshot::id),
+        )
+
+    private fun toWorldEffectSnapshot(effect: WorldEffect): WorldEffectSnapshot =
+        WorldEffectSnapshot(
+            effectId = effect.effectId,
+            affectedActorIds = effect.affectedActorIds.map(EntityId::value).sorted(),
+            worldPriority = effect.worldPriority,
+            effects = effect.effects.map(::toActiveEffectSnapshot).sortedBy(ActiveEffectSnapshot::id),
         )
 
     private fun restoreActiveEffect(
         snapshot: ActiveEffectSnapshot,
         localizer: com.ktome.game.i18n.Localizer,
     ): ActiveEffect {
-        val type = parseEnumFromSave<StatusEffectType>(value = snapshot.type, label = "status effect type")
-        return ActiveEffect(
-            id = snapshot.id,
-            name = effectDisplayName(localizer, type),
+        val type = StatusEffectType.fromSchemaId(snapshot.type)
+        return StatusLifecycle.createInstance(
             type = type,
-            remainingTurns = snapshot.remainingTurns,
-            statModifiers = toStatModifier(snapshot.statModifiers),
+            effectId = snapshot.id,
+            duration = snapshot.remainingTurns,
+            magnitude = snapshot.magnitude,
+            sourceEntityId = snapshot.sourceEntityId?.let(::EntityId),
+            appliedTurn = snapshot.appliedTurn,
             skipNextDecay = snapshot.skipNextDecay,
-        )
+            statModifierOverride = toStatModifier(snapshot.statModifiers),
+        ).also { effect ->
+            effect.stackCount = snapshot.stackCount
+        }
     }
 
-    private fun effectDisplayName(
+    private fun restoreAreaEffectEmitter(
+        snapshot: AreaEffectEmitterSnapshot,
         localizer: com.ktome.game.i18n.Localizer,
-        type: StatusEffectType,
-    ): String =
-        when (type) {
-            StatusEffectType.STUNNED -> localizer.text("status.stunned")
-            StatusEffectType.ARMOR_BREAK -> localizer.text("status.armor_break")
-            StatusEffectType.WAR_CRY_BUFF -> localizer.text("status.war_cry_buff")
-            StatusEffectType.WAR_CRY_DEBUFF -> localizer.text("status.war_cry_debuff")
-            StatusEffectType.GUARD_STANCE_BUFF -> localizer.text("status.guard_stance_buff")
-            StatusEffectType.ARCANE_SHIELD_BUFF -> localizer.text("status.arcane_shield_buff")
-            StatusEffectType.UNYIELDING_BUFF -> localizer.text("status.unyielding_buff")
-            StatusEffectType.MANA_SURGE_BUFF -> localizer.text("status.mana_surge_buff")
-            StatusEffectType.STEALTH_BUFF -> localizer.text("status.stealth_buff")
-            StatusEffectType.CURSED -> localizer.text("status.cursed")
-            StatusEffectType.HOLY_SHIELD_BUFF -> localizer.text("status.holy_shield_buff")
-            StatusEffectType.DEVOTION_BUFF -> localizer.text("status.devotion_buff")
-            StatusEffectType.HOLY_AURA_BUFF -> localizer.text("status.holy_aura_buff")
-        }
+    ): AreaEffectEmitter =
+        AreaEffectEmitter(
+            emitterId = snapshot.emitterId,
+            sourceEntityId = snapshot.sourceEntityId?.let(::EntityId),
+            affectedActorIds = snapshot.affectedActorIds.map(::EntityId).toSet(),
+            emitterPriority = snapshot.emitterPriority,
+            effects = snapshot.effects.map { effect -> restoreActiveEffect(effect, localizer) }.toMutableList(),
+        )
+
+    private fun restoreWorldEffect(
+        snapshot: WorldEffectSnapshot,
+        localizer: com.ktome.game.i18n.Localizer,
+    ): WorldEffect =
+        WorldEffect(
+            effectId = snapshot.effectId,
+            affectedActorIds = snapshot.affectedActorIds.map(::EntityId).toSet(),
+            worldPriority = snapshot.worldPriority,
+            effects = snapshot.effects.map { effect -> restoreActiveEffect(effect, localizer) }.toMutableList(),
+        )
 
     private fun toItemSnapshot(item: ItemInstance): ItemSnapshot =
         ItemSnapshot(

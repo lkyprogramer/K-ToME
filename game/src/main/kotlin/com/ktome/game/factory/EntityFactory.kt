@@ -70,7 +70,7 @@ class EntityFactory {
         world.add(playerId, Inventory())
         world.add(playerId, Equipment())
         world.add(playerId, CooldownState())
-        world.add(playerId, EffectTracker())
+        world.add(playerId, EffectTracker(ownerId = playerId))
         world.add(
             playerId,
             TalentLoadout(
@@ -120,7 +120,7 @@ class EntityFactory {
         world.add(monsterId, Health(current = derivedStats.maxHp, max = derivedStats.maxHp))
         world.add(monsterId, Energy())
         world.add(monsterId, ExperienceReward(template.expReward))
-        world.add(monsterId, EffectTracker())
+        world.add(monsterId, EffectTracker(ownerId = monsterId))
         if (template.talentLevels.isNotEmpty()) {
             StaminaPools.ensurePool(world, monsterId, current = derivedStats.maxStamina, max = derivedStats.maxStamina)
             world.add(monsterId, CooldownState())

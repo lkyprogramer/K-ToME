@@ -52,13 +52,13 @@ class GoldenScreenshotHarnessTest {
                 "820a41898093a475e4a32e72925e32b07268d2130ff1af55b63ad2926adeae33",
                 "77f7ad2e55ef733be41520f872ea3164071bd4de98ab78dae65a20e631b721da",
                 "d91fcac794c5b646cff50e8ff3b8753c2ae4ef05937f54e27a25377885747865",
-                "6f031feda0f5b571062eaed71048715ab13ad8bf3d1894f9e0f0fccc2879bdf4",
+                "56a60e43769c6bf920f7380591df18a13729918837c828e1d9a40c19a7ac3bf0",
                 "c27ecc9b75ca6fb833da88d2d2b7dadde90af8ba61b88ab0a7fada893ac94044",
                 "3ef9508e890a818d8d80ee5e2d09486007b647fa1d14413b854548931e8bbdbb",
-                "e56d962493cfb1d606dbf183bb36ea2f4bf10cf8575e031f849a18988d4c6037",
-                "3be187cd3a8c04a1b30498e2cdcbb859c41c30a9b5a10ff1f98a3924a1bbb085",
-                "aee1dc853f3d989b8fa83e4822afc0828d2991eef1cb2bff2969d847b650d44e",
-                "393029017e19960d9170904555f6d2b3612558173bcce3a7b5a3f45f95ce2bb6",
+                "c8bfb305c5fe7357d060a6a4ff89db5a97c8a8215b44066bfb8ef08fc09ef4b2",
+                "f5e43b94b16f94eb21b4fbbd268bd952cd719e0ffc8e30c69337ef7822668c1e",
+                "596f969afffce5780180b0bb0262a65477bb62af2b523da4232cc17066049d1c",
+                "00ede9f0aeb0a6e577571ec4a42930c81731cd86f2cd2f0199ece8ede7c63630",
             ),
             english + chinese,
         )
@@ -71,7 +71,7 @@ class GoldenScreenshotHarnessTest {
 
         assertEquals(
             listOf(
-                "1cca9ddddb188ef88deffe12c5f05e6f9b90496516ee421cced7573a42f785e3",
+                "5988a4a5753e4566455f171b38cd0d1c743aad52f6181d5e3f03e835b59f1f4f",
                 "6e39aaa2a084bc9e9eae651b9807dede078f4d9d7fd1b90cd85dbc5254876edd",
             ),
             listOf(english, chinese),
@@ -85,12 +85,12 @@ class GoldenScreenshotHarnessTest {
 
         assertEquals(
             listOf(
-                "90bf9e5b5e69ae43b400375e4a223ae46627933d0e876ddbc3ec967d1e3802cf",
+                "d91fa54fcbcb2fdee731426a09f945d12793a26c1b2488fd3841b0b799b9ba7c",
                 "b3f0e67e671b89450a812165614bf4ee6d8ed1bd902989709e2f68e297c7b73e",
                 "fa423d9786135ef41c8cd2ccafedf215e0cfe612721004c7a7b4a90051d58df4",
-                "ca7c57294761076c1d1430dde5327897e94f4842142a0481eee66ef48e215c25",
-                "fa06c48a1749ab42af7a620e89f44ba67bea21b0b8c8d4b6b7b0bc376d593840",
-                "a19c959c0673f1c9e93260637ca8aa50e81ecd610cefc720806047e7eb3cd38a",
+                "e35ef0b952e035fe1b1ff014ba98cee7f824721171150aa0eb4f1a28a66fecbb",
+                "c659cd61cacfb7e4d65d3fbe9d07d0831408dc4aea258407539301205ccc43e7",
+                "17ed5ba410d0807c2771c48bc45016331e76985222344b4cb4996cc45ee60058",
             ),
             english + chinese,
         )
@@ -116,7 +116,7 @@ class GoldenScreenshotHarnessTest {
                 "1b31abf9392c4162b7caba0d6c564d5568b9e192cbc2a9467835e1e20585f5a8",
                 "1c90f155f8760570387901d0d5bfc8a0ad7310b88a7ad959658ff0920ef83743",
                 "8e5f389fabac712b78b97acf0392e10d1c45015b5b0e1e6bdb6dac109cd46ad9",
-                "caec9b15deb06a9b5a9a2c14be6a43e68feecfc121e4a9505b490a9cc7bec828",
+                "c0f403639c4cf564a878d000846fb3dc1807d3ac034ea15d84922db17c224648",
                 "be5bd37c46dc1b4abe00a97e5e6bf4f03d777d1722c1d83c50f4ab3fc3a0d0b8",
                 "9bcf3a9f7856201ad11f7daa00d1b99d8d1e999d99c8941068eb769047312330",
             ),
@@ -132,9 +132,9 @@ class GoldenScreenshotHarnessTest {
         assertEquals(
             listOf(
                 "6f2b6ca634c01f6c86b868148ec92347ec89a4a43c13b40cede0c9bb2a83fc65",
-                "79c2a3e154377aa878425fd77fe696c1bd57db4b243d6d05be89554cac81d52c",
+                "32c1a3ba726f1ed0239a8987095e2a1643d8f6d42a65eecd88e3d4b735be9ac1",
                 "b8d0501796817d28853fd81302c4e48ecaf3ba50782b26c4064b403c5d9981f3",
-                "06af50691b392f4a40732072be5397d0847c2c0393cbb281bef57534c173baa7",
+                "ca86d509df9678ca602d78bb9c0fde108714873f27e1cfcd240570e9bcc3ddfc",
             ),
             english + chinese,
         )

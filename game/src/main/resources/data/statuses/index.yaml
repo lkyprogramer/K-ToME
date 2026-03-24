@@ -1,0 +1,331 @@
+statuses:
+  - id: STUN
+    effectType: STUN
+    nameKey: status.stun
+    descKey: status.stun.desc
+    visualKey: icon.status.stunned
+    iconKey: icon.status.stunned
+    audioProfile: audio.monster.default
+    schemaVersion: 1
+    tags: [debuff, hard_control, actor]
+    category: DEBUFF
+    carrierKind: ACTOR
+  - id: ARMOR_BREAK
+    effectType: ARMOR_BREAK
+    nameKey: status.armor_break
+    descKey: status.armor_break.desc
+    visualKey: icon.status.armor_break
+    iconKey: icon.status.armor_break
+    audioProfile: audio.monster.default
+    schemaVersion: 1
+    tags: [debuff, stack_cap, actor]
+    category: DEBUFF
+    carrierKind: ACTOR
+  - id: GUARD
+    effectType: GUARD
+    nameKey: status.guard
+    descKey: status.guard.desc
+    visualKey: icon.status.guard_stance_buff
+    iconKey: icon.status.guard_stance_buff
+    audioProfile: audio.monster.default
+    schemaVersion: 1
+    tags: [buff, strongest, actor]
+    category: BUFF
+    carrierKind: ACTOR
+  - id: MARKED
+    effectType: MARKED
+    nameKey: status.marked
+    descKey: status.marked.desc
+    visualKey: icon.status.war_cry_debuff
+    iconKey: icon.status.war_cry_debuff
+    audioProfile: audio.monster.default
+    schemaVersion: 1
+    tags: [debuff, refresh, actor]
+    category: DEBUFF
+    carrierKind: ACTOR
+  - id: ROOT
+    effectType: ROOT
+    nameKey: status.root
+    descKey: status.root.desc
+    visualKey: icon.status.stunned
+    iconKey: icon.status.stunned
+    audioProfile: audio.monster.default
+    schemaVersion: 1
+    tags: [debuff, hard_control, actor]
+    category: DEBUFF
+    carrierKind: ACTOR
+  - id: SILENCE
+    effectType: SILENCE
+    nameKey: status.silence
+    descKey: status.silence.desc
+    visualKey: icon.status.mana_surge_buff
+    iconKey: icon.status.mana_surge_buff
+    audioProfile: audio.monster.default
+    schemaVersion: 1
+    tags: [debuff, refresh, actor]
+    category: DEBUFF
+    carrierKind: ACTOR
+  - id: BLEED
+    effectType: BLEED
+    nameKey: status.bleed
+    descKey: status.bleed.desc
+    visualKey: icon.status.cursed
+    iconKey: icon.status.cursed
+    audioProfile: audio.monster.default
+    schemaVersion: 1
+    tags: [debuff, dot, actor]
+    category: DEBUFF
+    carrierKind: ACTOR
+  - id: BURN
+    effectType: BURN
+    nameKey: status.burn
+    descKey: status.burn.desc
+    visualKey: icon.status.cursed
+    iconKey: icon.status.cursed
+    audioProfile: audio.monster.default
+    schemaVersion: 1
+    tags: [debuff, dot, actor]
+    category: DEBUFF
+    carrierKind: ACTOR
+  - id: SHIELD
+    effectType: SHIELD
+    nameKey: status.shield
+    descKey: status.shield.desc
+    visualKey: icon.skill.templar.divine_intervention
+    iconKey: icon.skill.templar.divine_intervention
+    audioProfile: audio.monster.default
+    schemaVersion: 1
+    tags: [buff, strongest, actor]
+    category: BUFF
+    carrierKind: ACTOR
+  - id: REGEN
+    effectType: REGEN
+    nameKey: status.regen
+    descKey: status.regen.desc
+    visualKey: icon.status.unyielding_buff
+    iconKey: icon.status.unyielding_buff
+    audioProfile: audio.monster.default
+    schemaVersion: 1
+    tags: [buff, strongest, actor]
+    category: BUFF
+    carrierKind: ACTOR
+  - id: HASTE
+    effectType: HASTE
+    nameKey: status.haste
+    descKey: status.haste.desc
+    visualKey: icon.status.war_cry_buff
+    iconKey: icon.status.war_cry_buff
+    audioProfile: audio.monster.default
+    schemaVersion: 1
+    tags: [buff, refresh, actor]
+    category: BUFF
+    carrierKind: ACTOR
+  - id: SLOW
+    effectType: SLOW
+    nameKey: status.slow
+    descKey: status.slow.desc
+    visualKey: icon.status.war_cry_debuff
+    iconKey: icon.status.war_cry_debuff
+    audioProfile: audio.monster.default
+    schemaVersion: 1
+    tags: [debuff, refresh, actor]
+    category: DEBUFF
+    carrierKind: ACTOR
+  - id: FREEZE
+    effectType: FREEZE
+    nameKey: status.freeze
+    descKey: status.freeze.desc
+    visualKey: icon.status.stunned
+    iconKey: icon.status.stunned
+    audioProfile: audio.monster.default
+    schemaVersion: 1
+    tags: [debuff, control, actor]
+    category: DEBUFF
+    carrierKind: ACTOR
+  - id: POISON
+    effectType: POISON
+    nameKey: status.poison
+    descKey: status.poison.desc
+    visualKey: icon.status.cursed
+    iconKey: icon.status.cursed
+    audioProfile: audio.monster.default
+    schemaVersion: 1
+    tags: [debuff, dot, actor]
+    category: DEBUFF
+    carrierKind: ACTOR
+  - id: BANE
+    effectType: BANE
+    nameKey: status.bane
+    descKey: status.bane.desc
+    visualKey: icon.status.war_cry_debuff
+    iconKey: icon.status.war_cry_debuff
+    audioProfile: audio.monster.default
+    schemaVersion: 1
+    tags: [debuff, refresh, actor]
+    category: DEBUFF
+    carrierKind: ACTOR
+  - id: CURSE
+    effectType: CURSE
+    nameKey: status.curse
+    descKey: status.curse.desc
+    visualKey: icon.status.cursed
+    iconKey: icon.status.cursed
+    audioProfile: audio.monster.default
+    schemaVersion: 1
+    tags: [debuff, refresh, actor]
+    category: DEBUFF
+    carrierKind: ACTOR
+  - id: WEAKEN
+    effectType: WEAKEN
+    nameKey: status.weaken
+    descKey: status.weaken.desc
+    visualKey: icon.status.war_cry_debuff
+    iconKey: icon.status.war_cry_debuff
+    audioProfile: audio.monster.default
+    schemaVersion: 1
+    tags: [debuff, refresh, actor]
+    category: DEBUFF
+    carrierKind: ACTOR
+  - id: OVERCHARGE
+    effectType: OVERCHARGE
+    nameKey: status.overcharge
+    descKey: status.overcharge.desc
+    visualKey: icon.status.mana_surge_buff
+    iconKey: icon.status.mana_surge_buff
+    audioProfile: audio.monster.default
+    schemaVersion: 1
+    tags: [debuff, lightning, actor]
+    category: DEBUFF
+    carrierKind: ACTOR
+  - id: INVULNERABLE
+    effectType: INVULNERABLE
+    nameKey: status.invulnerable
+    descKey: status.invulnerable.desc
+    visualKey: icon.skill.templar.divine_intervention
+    iconKey: icon.skill.templar.divine_intervention
+    audioProfile: audio.monster.default
+    schemaVersion: 1
+    tags: [buff, locked, actor]
+    category: BUFF
+    carrierKind: ACTOR
+  - id: STEALTH
+    effectType: STEALTH
+    nameKey: status.stealth
+    descKey: status.stealth.desc
+    visualKey: icon.skill.rogue.shadowstep
+    iconKey: icon.skill.rogue.shadowstep
+    audioProfile: audio.monster.default
+    schemaVersion: 1
+    tags: [buff, locked, actor]
+    category: BUFF
+    carrierKind: ACTOR
+  - id: TAUNT
+    effectType: TAUNT
+    nameKey: status.taunt
+    descKey: status.taunt.desc
+    visualKey: icon.status.war_cry_debuff
+    iconKey: icon.status.war_cry_debuff
+    audioProfile: audio.monster.default
+    schemaVersion: 1
+    tags: [debuff, latest_override, actor]
+    category: DEBUFF
+    carrierKind: ACTOR
+  - id: WAR_CRY_BUFF
+    effectType: WAR_CRY_BUFF
+    nameKey: status.war_cry_buff
+    descKey: status.war_cry_buff.desc
+    visualKey: icon.status.war_cry_buff
+    iconKey: icon.status.war_cry_buff
+    audioProfile: audio.monster.default
+    schemaVersion: 1
+    tags: [buff, unique, actor]
+    category: BUFF
+    carrierKind: ACTOR
+  - id: WAR_CRY_DEBUFF
+    effectType: WAR_CRY_DEBUFF
+    nameKey: status.war_cry_debuff
+    descKey: status.war_cry_debuff.desc
+    visualKey: icon.status.war_cry_debuff
+    iconKey: icon.status.war_cry_debuff
+    audioProfile: audio.monster.default
+    schemaVersion: 1
+    tags: [debuff, unique, actor]
+    category: DEBUFF
+    carrierKind: ACTOR
+  - id: GUARD_STANCE_BUFF
+    effectType: GUARD_STANCE_BUFF
+    nameKey: status.guard_stance_buff
+    descKey: status.guard_stance_buff.desc
+    visualKey: icon.status.guard_stance_buff
+    iconKey: icon.status.guard_stance_buff
+    audioProfile: audio.monster.default
+    schemaVersion: 1
+    tags: [buff, strongest, actor]
+    category: BUFF
+    carrierKind: ACTOR
+  - id: ARCANE_SHIELD_BUFF
+    effectType: ARCANE_SHIELD_BUFF
+    nameKey: status.arcane_shield_buff
+    descKey: status.arcane_shield_buff.desc
+    visualKey: icon.status.arcane_shield_buff
+    iconKey: icon.status.arcane_shield_buff
+    audioProfile: audio.monster.default
+    schemaVersion: 1
+    tags: [buff, strongest, actor]
+    category: BUFF
+    carrierKind: ACTOR
+  - id: UNYIELDING_BUFF
+    effectType: UNYIELDING_BUFF
+    nameKey: status.unyielding_buff
+    descKey: status.unyielding_buff.desc
+    visualKey: icon.status.unyielding_buff
+    iconKey: icon.status.unyielding_buff
+    audioProfile: audio.monster.default
+    schemaVersion: 1
+    tags: [buff, strongest, actor]
+    category: BUFF
+    carrierKind: ACTOR
+  - id: MANA_SURGE_BUFF
+    effectType: MANA_SURGE_BUFF
+    nameKey: status.mana_surge_buff
+    descKey: status.mana_surge_buff.desc
+    visualKey: icon.status.mana_surge_buff
+    iconKey: icon.status.mana_surge_buff
+    audioProfile: audio.monster.default
+    schemaVersion: 1
+    tags: [buff, refresh, actor]
+    category: BUFF
+    carrierKind: ACTOR
+  - id: HOLY_SHIELD_BUFF
+    effectType: HOLY_SHIELD_BUFF
+    nameKey: status.holy_shield_buff
+    descKey: status.holy_shield_buff.desc
+    visualKey: icon.skill.templar.divine_intervention
+    iconKey: icon.skill.templar.divine_intervention
+    audioProfile: audio.monster.default
+    schemaVersion: 1
+    tags: [buff, strongest, actor]
+    category: BUFF
+    carrierKind: ACTOR
+  - id: DEVOTION_BUFF
+    effectType: DEVOTION_BUFF
+    nameKey: status.devotion_buff
+    descKey: status.devotion_buff.desc
+    visualKey: icon.status.consecration
+    iconKey: icon.status.consecration
+    audioProfile: audio.monster.default
+    schemaVersion: 1
+    tags: [buff, refresh, actor]
+    category: BUFF
+    carrierKind: ACTOR
+  - id: HOLY_AURA_BUFF
+    effectType: HOLY_AURA_BUFF
+    nameKey: status.holy_aura_buff
+    descKey: status.holy_aura_buff.desc
+    visualKey: icon.status.consecration
+    iconKey: icon.status.consecration
+    audioProfile: audio.monster.default
+    schemaVersion: 1
+    tags: [buff, refresh, actor]
+    category: BUFF
+    carrierKind: ACTOR

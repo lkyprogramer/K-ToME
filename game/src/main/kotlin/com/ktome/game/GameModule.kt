@@ -180,6 +180,7 @@ object GameModule {
         val talents = loader.loadTalentDefinitions()
         return GameContent(
             talents = talents,
+            statuses = schemaCatalog.statuses,
             talentRegistry = com.ktome.core.talent.TalentRegistry().apply { registerAll(talents) },
             monsterCatalog = loader.loadMonsterCatalog().monsters,
             itemBundle = loader.loadItemBundle(),

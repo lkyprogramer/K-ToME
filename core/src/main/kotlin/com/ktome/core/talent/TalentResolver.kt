@@ -20,6 +20,9 @@ import com.ktome.core.pathfinding.AStar
 import com.ktome.core.resource.ResourcePools
 import com.ktome.core.resource.ResourceType
 import com.ktome.core.stats.StatsCalculator
+import com.ktome.core.status.CleansePolicy
+import com.ktome.core.status.StatusDefinitions
+import com.ktome.core.status.StatusLifecycle
 
 sealed interface TalentUseResult {
     data class Success(
@@ -71,6 +74,7 @@ sealed interface TalentEffectResult {
         val crit: Boolean,
         val damageType: DamageType = DamageType.PHYSICAL,
         val resistanceValue: Int = 0,
+        val stealthBroken: Boolean = false,
     ) : TalentEffectResult
 
     data class Heal(
@@ -92,6 +96,8 @@ sealed interface TalentEffectResult {
         val target: EntityId,
         val type: StatusEffectType,
         val duration: Int,
+        val interactionId: String? = null,
+        val previousSource: EntityId? = null,
     ) : TalentEffectResult
 
     data class Buff(
@@ -99,6 +105,13 @@ sealed interface TalentEffectResult {
         val type: StatusEffectType,
         val duration: Int,
         val magnitude: Double,
+        val interactionId: String? = null,
+        val previousSource: EntityId? = null,
+    ) : TalentEffectResult
+
+    data class StatusCleanse(
+        val target: EntityId,
+        val removed: List<StatusEffectType>,
     ) : TalentEffectResult
 
     data class Movement(
@@ -125,22 +138,19 @@ class TalentResolver(
         val BUFF_LIKE_EFFECT_TYPES =
             setOf(
                 StatusEffectType.WAR_CRY_BUFF,
-                StatusEffectType.WAR_CRY_DEBUFF,
                 StatusEffectType.GUARD_STANCE_BUFF,
                 StatusEffectType.ARCANE_SHIELD_BUFF,
                 StatusEffectType.UNYIELDING_BUFF,
                 StatusEffectType.MANA_SURGE_BUFF,
-                StatusEffectType.STEALTH_BUFF,
+                StatusEffectType.STEALTH,
                 StatusEffectType.HOLY_SHIELD_BUFF,
                 StatusEffectType.DEVOTION_BUFF,
                 StatusEffectType.HOLY_AURA_BUFF,
-            )
-        val NEGATIVE_EFFECT_TYPES =
-            setOf(
-                StatusEffectType.STUNNED,
-                StatusEffectType.ARMOR_BREAK,
-                StatusEffectType.WAR_CRY_DEBUFF,
-                StatusEffectType.CURSED,
+                StatusEffectType.GUARD,
+                StatusEffectType.SHIELD,
+                StatusEffectType.REGEN,
+                StatusEffectType.HASTE,
+                StatusEffectType.INVULNERABLE,
             )
     }
 
@@ -843,6 +853,7 @@ class TalentResolver(
                         user = user,
                         target = target,
                         spec = spec,
+                        effects = effects,
                     )
                 }
             }
@@ -896,8 +907,8 @@ class TalentResolver(
         if (!resolution.applied) {
             return
         }
-        applyEffect(world, target, buildActiveEffect(spec))
-        effects += buildTalentEffectResult(spec, target)
+        val changeResult = applyEffect(world, target, buildActiveEffect(spec, user))
+        effects += buildTalentEffectResult(spec, target, changeResult)
     }
 
     private fun applyConfiguredCleanse(
@@ -905,6 +916,7 @@ class TalentResolver(
         user: EntityId,
         target: EntityId,
         spec: CleanseEffect,
+        effects: MutableList<TalentEffectResult>,
     ) {
         check(spec.applicationPolicy != ApplicationPolicy.TAG_AUTO) {
             "TAG_AUTO cleanse effects are not supported by TalentResolver yet."
@@ -925,11 +937,14 @@ class TalentResolver(
         if (!resolution.applied) {
             return
         }
-        clearNegativeEffects(
+        val removed = clearNegativeEffects(
             world = world,
             target = target,
             maxEffectsRemoved = spec.maxEffectsRemoved,
         )
+        if (removed.isNotEmpty()) {
+            effects += TalentEffectResult.StatusCleanse(target = target, removed = removed.map { effect -> effect.type })
+        }
     }
 
     private fun resolveSaveDimension(
@@ -944,36 +959,33 @@ class TalentResolver(
                 null
             }
 
-    private fun buildActiveEffect(spec: AssociatedStatusEffect): ActiveEffect =
-        ActiveEffect(
-            id = spec.effectId,
-            name = effectDisplayName(spec.effectType),
+    private fun buildActiveEffect(
+        spec: AssociatedStatusEffect,
+        sourceEntityId: EntityId,
+    ): ActiveEffect =
+        StatusLifecycle.createInstance(
             type = spec.effectType,
-            remainingTurns = spec.duration,
-            statModifiers = effectStatModifiers(spec),
+            effectId = spec.effectId,
+            duration = spec.duration,
+            magnitude = spec.magnitude,
+            sourceEntityId = sourceEntityId,
             skipNextDecay = spec.targetScope == EffectTargetScope.SELF,
+            applicationPolicy = spec.applicationPolicy,
+            statModifierOverride = effectStatModifiers(spec),
         )
-
-    private fun effectDisplayName(type: StatusEffectType): String =
-        when (type) {
-            StatusEffectType.STUNNED -> "Stunned"
-            StatusEffectType.ARMOR_BREAK -> "Armor Break"
-            StatusEffectType.WAR_CRY_BUFF -> "War Cry"
-            StatusEffectType.WAR_CRY_DEBUFF -> "Shaken"
-            StatusEffectType.GUARD_STANCE_BUFF -> "Guard Stance"
-            StatusEffectType.ARCANE_SHIELD_BUFF -> "Arcane Shield"
-            StatusEffectType.UNYIELDING_BUFF -> "Unyielding"
-            StatusEffectType.MANA_SURGE_BUFF -> "Mana Surge"
-            StatusEffectType.STEALTH_BUFF -> "Stealth"
-            StatusEffectType.CURSED -> "Cursed"
-            StatusEffectType.HOLY_SHIELD_BUFF -> "Holy Shield"
-            StatusEffectType.DEVOTION_BUFF -> "Devotion"
-            StatusEffectType.HOLY_AURA_BUFF -> "Holy Aura"
-        }
 
     private fun effectStatModifiers(spec: AssociatedStatusEffect): StatModifier =
         when (spec.effectType) {
-            StatusEffectType.STUNNED -> StatModifier()
+            StatusEffectType.GUARD,
+            StatusEffectType.SHIELD,
+            StatusEffectType.REGEN,
+            StatusEffectType.HASTE,
+            StatusEffectType.SLOW,
+            StatusEffectType.BANE,
+            StatusEffectType.WEAKEN,
+            StatusEffectType.OVERCHARGE,
+            StatusEffectType.INVULNERABLE,
+            StatusEffectType.STUN -> StatModifier()
             StatusEffectType.ARMOR_BREAK -> StatModifier(defense = -3)
             StatusEffectType.WAR_CRY_BUFF -> StatModifier(attackMultiplierBonus = spec.magnitude)
             StatusEffectType.WAR_CRY_DEBUFF -> StatModifier(defenseMultiplierBonus = -spec.magnitude)
@@ -981,12 +993,12 @@ class TalentResolver(
             StatusEffectType.ARCANE_SHIELD_BUFF -> StatModifier(defenseMultiplierBonus = spec.magnitude)
             StatusEffectType.UNYIELDING_BUFF -> StatModifier(defenseMultiplierBonus = spec.magnitude)
             StatusEffectType.MANA_SURGE_BUFF -> StatModifier(talentPower = spec.magnitude)
-            StatusEffectType.STEALTH_BUFF ->
+            StatusEffectType.STEALTH ->
                 StatModifier(
                     evasion = maxOf(2, (spec.magnitude * 20).toInt()),
                     speed = maxOf(2, (spec.magnitude * 10).toInt()),
                 )
-            StatusEffectType.CURSED ->
+            StatusEffectType.CURSE ->
                 StatModifier(
                     attackMultiplierBonus = -spec.magnitude,
                     defenseMultiplierBonus = -spec.magnitude,
@@ -998,16 +1010,39 @@ class TalentResolver(
                     accuracy = maxOf(1, (spec.magnitude * 10).toInt()),
                 )
             StatusEffectType.HOLY_AURA_BUFF -> StatModifier(defenseMultiplierBonus = spec.magnitude)
+            StatusEffectType.MARKED,
+            StatusEffectType.ROOT,
+            StatusEffectType.SILENCE,
+            StatusEffectType.BLEED,
+            StatusEffectType.BURN,
+            StatusEffectType.FREEZE,
+            StatusEffectType.POISON,
+            StatusEffectType.TAUNT,
+            -> StatModifier.ZERO
         }
 
     private fun buildTalentEffectResult(
         spec: AssociatedStatusEffect,
         target: EntityId,
+        changeResult: com.ktome.core.status.StatusChangeResult,
     ): TalentEffectResult =
         if (spec.effectType in BUFF_LIKE_EFFECT_TYPES) {
-            TalentEffectResult.Buff(target, spec.effectType, spec.duration, spec.magnitude)
+            TalentEffectResult.Buff(
+                target = target,
+                type = spec.effectType,
+                duration = spec.duration,
+                magnitude = spec.magnitude,
+                interactionId = changeResult.interactionId,
+                previousSource = previousOverrideSource(changeResult),
+            )
         } else {
-            TalentEffectResult.StatusApplied(target, spec.effectType, spec.duration)
+            TalentEffectResult.StatusApplied(
+                target = target,
+                type = spec.effectType,
+                duration = spec.duration,
+                interactionId = changeResult.interactionId,
+                previousSource = previousOverrideSource(changeResult),
+            )
         }
 
     private fun restoreResource(
@@ -1121,6 +1156,7 @@ class TalentResolver(
                 crit = result.critical,
                 damageType = damage.type,
                 resistanceValue = damage.resistanceValue,
+                stealthBroken = StatusEffectType.STEALTH in result.removedStatusTypes,
             )
         return DamageResolution(
             hit = true,
@@ -1133,11 +1169,11 @@ class TalentResolver(
         world: World,
         target: EntityId,
         effect: ActiveEffect,
-    ) {
-        val tracker = world.get<EffectTracker>(target) ?: EffectTracker().also { world.add(target, it) }
-        tracker.effects.removeAll { it.type == effect.type }
-        tracker.effects += effect
+    ): com.ktome.core.status.StatusChangeResult {
+        val tracker = world.get<EffectTracker>(target) ?: EffectTracker(ownerId = target).also { world.add(target, it) }
+        val result = StatusLifecycle.applyEffect(tracker, effect)
         StatsCalculator.recalculateAndStore(world, target)
+        return result
     }
 
     private fun hostileTargetAt(
@@ -1284,35 +1320,28 @@ class TalentResolver(
         world: World,
         target: EntityId,
         maxEffectsRemoved: Int,
-    ): Int {
+    ): List<ActiveEffect> {
         if (maxEffectsRemoved <= 0) {
-            return 0
+            return emptyList()
         }
-        val tracker = world.get<EffectTracker>(target) ?: return 0
+        val tracker = world.get<EffectTracker>(target) ?: return emptyList()
         val removable =
-            tracker.effects
-                .filter { effect -> effect.type in NEGATIVE_EFFECT_TYPES }
-                .sortedWith(
-                    compareBy<ActiveEffect>(
-                        { negativeEffectPriority(it.type) },
-                        { -it.remainingTurns },
-                        { it.id },
-                    ),
-                ).take(maxEffectsRemoved)
+            StatusLifecycle.cleanse(
+                tracker = tracker,
+                maxEffectsRemoved = maxEffectsRemoved,
+                policy = CleansePolicy.DEFAULT,
+            )
         if (removable.isEmpty()) {
-            return 0
+            return emptyList()
         }
-        tracker.effects.removeAll(removable.toSet())
         StatsCalculator.recalculateAndStore(world, target)
-        return removable.size
+        return removable
     }
 
-    private fun negativeEffectPriority(type: StatusEffectType): Int =
-        when (type) {
-            StatusEffectType.STUNNED -> 0
-            StatusEffectType.CURSED -> 1
-            StatusEffectType.ARMOR_BREAK -> 2
-            StatusEffectType.WAR_CRY_DEBUFF -> 3
-            else -> Int.MAX_VALUE
+    private fun previousOverrideSource(changeResult: com.ktome.core.status.StatusChangeResult): EntityId? =
+        if (changeResult.interactionId == "TAUNT_OVERRIDE") {
+            changeResult.removed.firstOrNull { effect -> effect.type == StatusEffectType.TAUNT }?.sourceEntityId
+        } else {
+            null
         }
 }

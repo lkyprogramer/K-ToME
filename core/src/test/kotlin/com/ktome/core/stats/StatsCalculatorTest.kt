@@ -14,9 +14,9 @@ import com.ktome.core.item.StatModifier
 import com.ktome.core.resource.ResourcePool
 import com.ktome.core.resource.ResourcePools
 import com.ktome.core.resource.ResourceType
-import com.ktome.core.talent.ActiveEffect
 import com.ktome.core.talent.EffectTracker
 import com.ktome.core.talent.StatusEffectType
+import com.ktome.core.status.StatusLifecycle
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -60,19 +60,17 @@ class StatsCalculatorTest {
             actor,
             EffectTracker(
                 mutableListOf(
-                    ActiveEffect(
-                        id = "war_cry",
-                        name = "War Cry",
+                    StatusLifecycle.createInstance(
                         type = StatusEffectType.WAR_CRY_BUFF,
-                        remainingTurns = 3,
-                        statModifiers = StatModifier(attackMultiplierBonus = 0.20),
+                        effectId = "war_cry",
+                        duration = 3,
+                        statModifierOverride = StatModifier(attackMultiplierBonus = 0.20),
                     ),
-                    ActiveEffect(
-                        id = "armor_break",
-                        name = "Armor Break",
+                    StatusLifecycle.createInstance(
                         type = StatusEffectType.ARMOR_BREAK,
-                        remainingTurns = 2,
-                        statModifiers = StatModifier(defense = -3),
+                        effectId = "armor_break",
+                        duration = 2,
+                        statModifierOverride = StatModifier(defense = -3),
                     ),
                 ),
             ),

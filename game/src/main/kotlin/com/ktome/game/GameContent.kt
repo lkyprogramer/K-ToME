@@ -4,12 +4,14 @@ import com.ktome.core.talent.TalentDef
 import com.ktome.core.talent.TalentRegistry
 import com.ktome.core.item.ItemDataBundle
 import com.ktome.game.data.schema.SchemaCatalog
+import com.ktome.game.data.schema.StatusSchemaV2
 import com.ktome.game.i18n.Localizer
 import com.ktome.game.model.BossDefinition
 import com.ktome.game.model.MonsterTemplate
 
 internal data class GameContent(
     val talents: List<TalentDef>,
+    val statuses: List<StatusSchemaV2>,
     val talentRegistry: TalentRegistry,
     val monsterCatalog: List<MonsterTemplate>,
     val itemBundle: ItemDataBundle,
@@ -26,4 +28,7 @@ internal data class GameContent(
 
     fun allMonsterTemplates(): List<MonsterTemplate> =
         (monsterCatalog + bossDefinitions.values.map(BossDefinition::template)).distinctBy(MonsterTemplate::id)
+
+    fun statusSchemaFor(statusId: String): StatusSchemaV2? =
+        statuses.firstOrNull { schema -> schema.id == statusId || schema.effectType == statusId }
 }

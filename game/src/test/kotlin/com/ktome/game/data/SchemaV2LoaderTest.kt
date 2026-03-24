@@ -256,7 +256,7 @@ class SchemaV2LoaderTest {
                             listOf(
                                 linkedMapOf(
                                     "effectId" to "legacy_stun",
-                                    "effectType" to "STUNNED",
+                                    "effectType" to "STUN",
                                     "applicationPolicy" to "HOSTILE_HIT_THEN_SAVE",
                                     "saveDimension" to "PHYSICAL",
                                     "duration" to 2,
@@ -287,7 +287,7 @@ class SchemaV2LoaderTest {
                             listOf(
                                 linkedMapOf(
                                     "effectId" to "invalid_save_gate",
-                                    "effectType" to "STUNNED",
+                                    "effectType" to "STUN",
                                     "applicationPolicy" to "HOSTILE_HIT_THEN_SAVE",
                                     "duration" to 2,
                                 ),

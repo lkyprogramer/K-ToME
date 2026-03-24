@@ -5,6 +5,9 @@ import com.ktome.core.combat.DamageType
 import com.ktome.core.combat.SaveDimension
 import com.ktome.core.item.StatModifier
 import com.ktome.core.resource.ResourceType
+import com.ktome.core.status.StatusEffectType
+import com.ktome.core.status.StatusInstance
+import com.ktome.core.status.StatusTracker
 
 data class TalentDef(
     val id: String,
@@ -76,43 +79,8 @@ data class CooldownState(
     val remainingByTalentId: MutableMap<String, Int> = linkedMapOf(),
 )
 
-enum class StatusEffectType {
-    STUNNED,
-    ARMOR_BREAK,
-    WAR_CRY_BUFF,
-    WAR_CRY_DEBUFF,
-    GUARD_STANCE_BUFF,
-    ARCANE_SHIELD_BUFF,
-    UNYIELDING_BUFF,
-    MANA_SURGE_BUFF,
-    STEALTH_BUFF,
-    CURSED,
-    HOLY_SHIELD_BUFF,
-    DEVOTION_BUFF,
-    HOLY_AURA_BUFF,
-    ;
+typealias StatusEffectType = com.ktome.core.status.StatusEffectType
 
-    companion object {
-        fun fromSchemaId(id: String): StatusEffectType =
-            when (id) {
-                "STUN", "STUNNED" -> STUNNED
-                "CURSE", "CURSED" -> CURSED
-                else -> valueOf(id)
-            }
-    }
-}
+typealias ActiveEffect = StatusInstance
 
-data class ActiveEffect(
-    val id: String,
-    val name: String,
-    val type: StatusEffectType,
-    var remainingTurns: Int,
-    val statModifiers: StatModifier = StatModifier(),
-    var skipNextDecay: Boolean = false,
-)
-
-data class EffectTracker(
-    val effects: MutableList<ActiveEffect> = mutableListOf(),
-) {
-    fun has(type: StatusEffectType): Boolean = effects.any { it.type == type && it.remainingTurns > 0 }
-}
+typealias EffectTracker = StatusTracker

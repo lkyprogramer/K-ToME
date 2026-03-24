@@ -167,6 +167,8 @@ data class EntitySnapshot(
     val equipment: EquipmentSnapshot? = null,
     val cooldowns: Map<String, Int>? = null,
     val effects: List<ActiveEffectSnapshot>? = null,
+    val areaEffectEmitter: AreaEffectEmitterSnapshot? = null,
+    val worldEffect: WorldEffectSnapshot? = null,
     val aiTriggerTracker: AiTriggerTrackerSnapshot? = null,
     val resourcePools: List<ResourcePoolSnapshot> = emptyList(),
     val talentLoadout: TalentLoadoutSnapshot? = null,
@@ -197,6 +199,8 @@ data class EntitySnapshot(
         itemState?.validateOrThrow()
         aiTriggerTracker?.validateOrThrow()
         effects?.forEach(ActiveEffectSnapshot::validateOrThrow)
+        areaEffectEmitter?.validateOrThrow()
+        worldEffect?.validateOrThrow()
         resourcePools.forEach(ResourcePoolSnapshot::validate)
     }
 }
@@ -316,11 +320,47 @@ data class ActiveEffectSnapshot(
     val remainingTurns: Int,
     val statModifiers: StatModifierSnapshot = StatModifierSnapshot(),
     val skipNextDecay: Boolean = false,
+    val stackCount: Int = 1,
+    val appliedTurn: Int = 0,
+    val sourceEntityId: Int? = null,
+    val magnitude: Double = 0.0,
 ) {
     fun validateOrThrow() {
         require(id.isNotBlank()) { "Effect ids must not be blank." }
         require(type.isNotBlank()) { "Effect types must not be blank." }
         require(remainingTurns >= 0) { "remainingTurns must not be negative." }
+        require(stackCount > 0) { "stackCount must be positive." }
+    }
+}
+
+@Serializable
+data class AreaEffectEmitterSnapshot(
+    val emitterId: String,
+    val sourceEntityId: Int? = null,
+    val affectedActorIds: List<Int> = emptyList(),
+    val emitterPriority: Int = 200,
+    val effects: List<ActiveEffectSnapshot> = emptyList(),
+) {
+    fun validateOrThrow() {
+        require(emitterId.isNotBlank()) { "Area effect emitter ids must not be blank." }
+        require(emitterPriority >= 0) { "Area effect emitter priority must not be negative." }
+        require(affectedActorIds.all { id -> id > 0 }) { "Affected actor ids must be positive." }
+        effects.forEach(ActiveEffectSnapshot::validateOrThrow)
+    }
+}
+
+@Serializable
+data class WorldEffectSnapshot(
+    val effectId: String,
+    val affectedActorIds: List<Int> = emptyList(),
+    val worldPriority: Int = 300,
+    val effects: List<ActiveEffectSnapshot> = emptyList(),
+) {
+    fun validateOrThrow() {
+        require(effectId.isNotBlank()) { "World effect ids must not be blank." }
+        require(worldPriority >= 0) { "World effect priority must not be negative." }
+        require(affectedActorIds.all { id -> id > 0 }) { "Affected actor ids must be positive." }
+        effects.forEach(ActiveEffectSnapshot::validateOrThrow)
     }
 }
 
