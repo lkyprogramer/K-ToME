@@ -1,5 +1,9 @@
 package com.ktome.game.data.schema
 
+import com.ktome.core.ai.AIProfile
+import com.ktome.core.ai.BossPhaseDef
+import com.ktome.core.ai.TelegraphSpec
+import com.ktome.core.ai.ThreatProfileDef
 import com.ktome.core.talent.TalentTreeOwnerType
 import com.ktome.core.item.AffixType
 import com.ktome.core.item.ConsumableEffect
@@ -13,6 +17,8 @@ data class SchemaCatalog(
     val talentTrees: List<TalentTreeSchemaV2>,
     val monsters: List<MonsterSchemaV2>,
     val bossEncounters: List<BossEncounterSchemaV2>,
+    val telegraphSpecs: List<TelegraphSpec>,
+    val threatProfiles: List<ThreatProfileDef>,
     val zones: List<ZoneSchemaV2>,
     val interactables: List<InteractableSchemaV2>,
     val objectiveSets: List<ObjectiveSetSchemaV2>,
@@ -20,7 +26,7 @@ data class SchemaCatalog(
     val itemBundle: ItemBundleSchemaV2,
     val lootProfiles: List<LootProfileSchemaV2>,
     val tilesets: List<NamedSchemaRef>,
-    val aiProfiles: List<AIProfileSchemaV2>,
+    val aiProfiles: List<AIProfile>,
     val arenas: List<NamedSchemaRef>,
     val ambientProfiles: List<NamedSchemaRef>,
     val visualKeys: Set<String>,
@@ -63,39 +69,6 @@ data class LootProfileSchemaV2(
     val schemaVersion: Int,
     val tags: List<String>,
     val itemIds: List<String>,
-)
-
-data class AIProfileSchemaV2(
-    val id: String,
-    val schemaVersion: Int,
-    val talentPriority: List<String>,
-    val skipRules: List<AITalentSkipRuleSchemaV2>,
-    val triggers: List<AITriggerSchemaV2> = emptyList(),
-)
-
-data class AITalentSkipRuleSchemaV2(
-    val talentId: String,
-    val selfHasStatus: String,
-)
-
-enum class AITriggerConditionKindSchemaV2 {
-    ON_COMBAT_START,
-    HP_BELOW_RATIO,
-}
-
-enum class AITriggerActionKindSchemaV2 {
-    FORCE_TALENT,
-}
-
-data class AITriggerSchemaV2(
-    val triggerId: String,
-    val condition: AITriggerConditionKindSchemaV2,
-    val threshold: Double? = null,
-    val action: AITriggerActionKindSchemaV2,
-    val talentId: String,
-    val postMessageKey: String? = null,
-    val postMessageArgs: Map<String, String> = emptyMap(),
-    val once: Boolean = false,
 )
 
 data class ProfessionSchemaV2(
@@ -295,9 +268,9 @@ data class BossEncounterSchemaV2(
     val audioProfile: String,
     val schemaVersion: Int,
     val tags: List<String>,
-    val bossTemplateId: String,
+    val templateId: String,
     val arenaId: String,
-    val phases: List<String>,
+    val phases: List<BossPhaseDef>,
     val rewards: List<String>,
 )
 

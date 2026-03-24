@@ -21,6 +21,7 @@ import com.ktome.game.harness.RunObservation
 import com.ktome.game.harness.RunObservationCapture
 import com.ktome.game.harness.SmokeBot
 import com.ktome.game.harness.consumesTurn
+import com.ktome.game.harness.routeProgressCommand
 import com.ktome.game.model.MonsterTemplate
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -46,7 +47,7 @@ internal class FullGameLoopAutomationDriver(
         targetFloor: Int,
     ) {
         val result =
-            driveUntil(session, maxTurns = 700) { observation ->
+            driveUntil(session, maxTurns = 700, prioritizeRouteProgress = true) { observation ->
                 observation.floor >= targetFloor
             }
         assertTrue(
@@ -60,7 +61,7 @@ internal class FullGameLoopAutomationDriver(
         targetZoneId: String,
     ) {
         val result =
-            driveUntil(session, maxTurns = 2200) {
+            driveUntil(session, maxTurns = 2200, prioritizeRouteProgress = true) {
                 session.config.zoneId == targetZoneId || it.runOutcome.isTerminal
             }
         assertTrue(
@@ -89,7 +90,7 @@ internal class FullGameLoopAutomationDriver(
     }
 
     fun completeRunToRouteTerminal(session: FoundationGameSession) {
-        val result = driveUntil(session, maxTurns = 3200) { observation -> observation.runOutcome.isTerminal }
+        val result = driveUntil(session, maxTurns = 3200, prioritizeRouteProgress = true) { observation -> observation.runOutcome.isTerminal }
         assertTrue(session.runOutcome().isTerminal, "Expected route terminal outcome, last messages=${result.observation.messageLogTail}")
         assertTrue(session.config.zoneId == FOUNDATION_ZONE_ROUTE.last(), "Expected terminal route to reach final zone, last messages=${result.observation.messageLogTail}")
         assertTrue(session.currentFloor() >= 2, "Expected terminal route to reach final floor coverage, last messages=${result.observation.messageLogTail}")
@@ -153,13 +154,18 @@ internal class FullGameLoopAutomationDriver(
     private fun driveUntil(
         session: FoundationGameSession,
         maxTurns: Int,
+        prioritizeRouteProgress: Boolean = false,
         stopWhen: (RunObservation) -> Boolean,
     ): DriveResult {
         var turnCount = 0
         var totalRejectedCommands = 0
         var observation = RunObservationCapture.capture(session, turnCount)
-        while (turnCount < maxTurns && !stopWhen(observation)) {
-            val command = requireNotNull(bot.decide(observation)) { "Bot failed to provide a command." }
+        while (turnCount < maxTurns && !observation.runOutcome.isTerminal && !stopWhen(observation)) {
+            val command =
+                requireNotNull(
+                    routeProgressCommand(session, observation).takeIf { prioritizeRouteProgress }
+                        ?: bot.decide(observation),
+                ) { "Bot failed to provide a command." }
             if (!session.perform(command)) {
                 totalRejectedCommands += 1
                 assertTrue(totalRejectedCommands <= 20, "Command rejected during automation: $command")

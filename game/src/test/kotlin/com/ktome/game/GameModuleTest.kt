@@ -373,7 +373,7 @@ class GameModuleTest {
         val loader = DataLoader()
         val zonesById = loader.loadSchemaCatalog().zones.associateBy { zone -> zone.id }
         val runtimeCatalog = loader.loadMonsterCatalog().monsters.associateBy(MonsterTemplate::id)
-        val bossTemplateIdsByEncounterId = loader.loadSchemaCatalog().bossEncounters.associate { encounter -> encounter.id to encounter.bossTemplateId }
+        val bossTemplateIdsByEncounterId = loader.loadSchemaCatalog().bossEncounters.associate { encounter -> encounter.id to encounter.templateId }
         val encounterCatalog =
             FOUNDATION_ZONE_ROUTE.flatMap { zoneId ->
                 val zone = requireNotNull(zonesById[zoneId]) { "Missing zone schema for $zoneId." }

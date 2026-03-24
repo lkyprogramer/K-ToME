@@ -7,10 +7,42 @@ bossEncounters:
     audioProfile: audio.boss.bandit_captain
     schemaVersion: 2
     tags: [boss, official_slice]
-    bossTemplateId: bandit.captain
+    templateId: bandit.captain
     arenaId: arena.shattered_outpost.boss
-    phases: [phase_foundation]
+    phases:
+      - id: phase_full
+        hpThreshold: 1.0
+        hpEnd: 0.0
+        aiProfileId: ai.boss.bandit_captain.phase_full
     rewards: [loot.foundation.boss]
+  - id: molten_giant_encounter
+    nameKey: boss.orc.molten_giant.name
+    descKey: boss.orc.molten_giant.desc
+    visualKey: actor.orc.raider
+    iconKey: icon.monster.orc.raider
+    audioProfile: audio.monster.orc.raider
+    schemaVersion: 2
+    tags: [boss, phase3]
+    templateId: orc.molten_giant
+    arenaId: arena.deep_iron_pit.boss
+    phases:
+      - id: phase_full
+        hpThreshold: 1.0
+        hpEnd: 0.5
+        aiProfileId: ai.boss.molten_giant.phase_full
+      - id: phase_enraged
+        hpThreshold: 0.5
+        hpEnd: 0.0
+        aiProfileId: ai.boss.molten_giant.phase_enraged
+        resetAiPhaseState: true
+        onEnter:
+          - type: EMIT_EVENT
+            messageKey: log.boss.enrage
+          - type: TELEGRAPH
+            telegraphSpecId: molten_giant_phase_warning
+          - type: INVULNERABLE
+            invulnerableTurns: 1
+    rewards: [loot.foundation.boss, loot.deep_iron_pit.reward]
   - id: dungeon_lord_encounter
     nameKey: boss.cultist.dungeon_lord.name
     descKey: boss.cultist.dungeon_lord.desc
@@ -18,8 +50,23 @@ bossEncounters:
     iconKey: boss.cultist.dungeon_lord.icon
     audioProfile: audio.boss.cultist.dungeon_lord
     schemaVersion: 2
-    tags: [boss, foundation]
-    bossTemplateId: cultist.dungeon_lord
+    tags: [boss, phase3]
+    templateId: cultist.dungeon_lord
     arenaId: arena.grey_gate_depths.boss
-    phases: [phase_foundation]
+    phases:
+      - id: phase_full
+        hpThreshold: 1.0
+        hpEnd: 0.45
+        aiProfileId: ai.boss.dungeon_lord.phase_full
+      - id: phase_desperate
+        hpThreshold: 0.45
+        hpEnd: 0.0
+        aiProfileId: ai.boss.dungeon_lord.phase_enraged
+        resetAiPhaseState: true
+        onEnter:
+          - type: CLEAR_STATUSES
+          - type: EMIT_EVENT
+            messageKey: log.boss.desperate
+          - type: TELEGRAPH
+            telegraphSpecId: dungeon_lord_phase_warning
     rewards: [loot.foundation.boss, loot.grey_gate_depths.reward]

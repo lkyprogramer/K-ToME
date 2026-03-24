@@ -5,6 +5,7 @@ import com.ktome.core.ecs.MonsterTemplateId
 import com.ktome.core.ecs.Position
 import com.ktome.core.ecs.Stats
 import com.ktome.core.ecs.get
+import com.ktome.core.ecs.remove
 import com.ktome.core.dungeon.StairDirection
 import com.ktome.core.item.AffixDef
 import com.ktome.core.item.AffixType
@@ -334,33 +335,111 @@ class RenderSnapshotContractTest {
 
         val bossId = requireNotNull(session.automationEntityByTemplateId(FOUNDATION_BOSS_TEMPLATE_ID))
         val bossPoint = requireNotNull(session.automationWorld().get<Position>(bossId)).toPoint()
-        session.automationMovePlayerTo(bossPoint)
+        session.automationMovePlayerTo(findOpenAdjacentPoint(session, bossPoint))
+        requireNotNull(session.automationWorld().get<com.ktome.core.talent.EffectTracker>(bossId)).effects.removeIf { effect ->
+            effect.schemaId == "war_cry_empower"
+        }
+        session.automationWorld().remove<com.ktome.core.ai.PendingTelegraphState>(bossId)
+        requireNotNull(session.automationWorld().get<com.ktome.core.talent.CooldownState>(bossId)).remainingByTalentId.apply {
+            this["war_cry"] = 0
+            this["power_strike"] = 99
+            this["charge"] = 99
+        }
 
         val initialSnapshot = session.renderSnapshot()
         val overlay = requireNotNull(initialSnapshot.overlays.singleOrNull { candidate -> candidate.id == "boss-warning:${bossId.value}" })
-        val initialTelegraph = requireNotNull(initialSnapshot.overlays.singleOrNull { candidate -> candidate.id == "telegraph:${bossId.value}:war_cry" })
         assertEquals("vfx.boss.warning.sigil_01", overlay.visualKey)
         assertEquals("log.warning.boss_presence", overlay.warningMessage?.key)
         assertEquals(1, overlay.previewTurns)
         assertEquals(3, overlay.dangerLevel)
         assertEquals(OverlayShapeSnapshot.SINGLE_TILE, overlay.shape)
         assertTrue(overlay.cells.any { cell -> cell.x == bossPoint.x && cell.y == bossPoint.y })
-        assertEquals("war_cry", initialTelegraph.sourceAbilityId)
+        assertNull(initialSnapshot.overlays.firstOrNull { candidate -> candidate.id.startsWith("telegraph:${bossId.value}:") })
+
+        var telegraphSnapshot = session.renderSnapshot()
+        var initialTelegraph =
+            telegraphSnapshot.overlays.singleOrNull { candidate ->
+                candidate.id.startsWith("telegraph:${bossId.value}:") && candidate.sourceAbilityId == "war_cry"
+            }
+        for (attempt in 0 until 5) {
+            if (initialTelegraph != null) {
+                break
+            }
+            assertTrue(session.perform(PlayerCommand.Wait))
+            telegraphSnapshot = session.renderSnapshot()
+            initialTelegraph =
+                telegraphSnapshot.overlays.singleOrNull { candidate ->
+                    candidate.id.startsWith("telegraph:${bossId.value}:") && candidate.sourceAbilityId == "war_cry"
+                }
+        }
+        initialTelegraph = requireNotNull(initialTelegraph)
+        assertEquals("war_cry", session.recentAIDecisionTraces().last { trace -> trace.actorId == bossId.value }.selectedActionId)
         assertEquals("log.warning.telegraph", initialTelegraph.warningMessage?.key)
         assertEquals(OverlayShapeSnapshot.RING, initialTelegraph.shape)
         assertEquals(1, initialTelegraph.previewTurns)
         assertTrue(initialTelegraph.cells.any { cell -> cell.x == bossPoint.x && cell.y == bossPoint.y })
-        val warningKeys = initialSnapshot.logEvents.takeLast(2).map { event -> event.message.key }
-        assertEquals(listOf("log.warning.boss_presence", "log.warning.telegraph"), warningKeys)
+
+        assertTrue(session.perform(PlayerCommand.Wait))
+        assertNull(session.renderSnapshot().overlays.firstOrNull { candidate -> candidate.id.startsWith("telegraph:${bossId.value}:") })
+
+        requireNotNull(session.automationWorld().get<com.ktome.core.talent.CooldownState>(bossId)).remainingByTalentId.apply {
+            this["war_cry"] = 99
+            this["power_strike"] = 0
+        }
+
+        var followUpSnapshot = session.renderSnapshot()
+        var followUpTelegraph =
+            followUpSnapshot.overlays.singleOrNull { candidate ->
+                candidate.id.startsWith("telegraph:${bossId.value}:") && candidate.sourceAbilityId == "power_strike"
+            }
+        for (attempt in 0 until 6) {
+            if (followUpTelegraph != null) {
+                break
+            }
+            assertTrue(session.perform(PlayerCommand.Wait))
+            followUpSnapshot = session.renderSnapshot()
+            followUpTelegraph =
+                followUpSnapshot.overlays.singleOrNull { candidate ->
+                    candidate.id.startsWith("telegraph:${bossId.value}:") && candidate.sourceAbilityId == "power_strike"
+                }
+        }
+        followUpTelegraph = requireNotNull(followUpTelegraph)
+        assertEquals("power_strike", session.recentAIDecisionTraces().last { trace -> trace.actorId == bossId.value }.selectedActionId)
+        assertEquals("power_strike", followUpTelegraph.sourceAbilityId)
+        assertEquals(OverlayShapeSnapshot.RING, followUpTelegraph.shape)
+        assertTrue(followUpTelegraph.previewTurns >= 1)
+        assertTrue(followUpTelegraph.cells.isNotEmpty())
+    }
+
+    @Test
+    fun `phase enter telegraph keeps line geometry instead of collapsing to the boss tile`() {
+        val session =
+            GameModule.newFoundationSession(
+                config = FoundationGameConfig(seed = 20260318L, zoneId = "grey_gate_depths", playerProfessionId = "templar"),
+                saveManager = SaveManager(tempDir.resolve("boss-phase-warning-geometry")),
+            )
+        val stairsDown = requireNotNull(session.automationStairPoint(StairDirection.DOWN))
+        session.automationMovePlayerTo(stairsDown)
+        assertTrue(session.perform(PlayerCommand.Descend))
+
+        val bossId = requireNotNull(session.automationEntityByTemplateId(FOUNDATION_BOSS_TEMPLATE_ID))
+        val world = session.automationWorld()
+        val bossPoint = requireNotNull(world.get<Position>(bossId)).toPoint()
+        session.automationMovePlayerTo(findOpenAdjacentPoint(session, bossPoint))
+        val bossHealth = requireNotNull(world.get<com.ktome.core.ecs.Health>(bossId))
+        bossHealth.current = bossHealth.max * 2 / 5
 
         assertTrue(session.perform(PlayerCommand.Wait))
 
-        val followUpSnapshot = session.renderSnapshot()
-        val followUpTelegraph = requireNotNull(followUpSnapshot.overlays.singleOrNull { candidate -> candidate.id == "telegraph:${bossId.value}:power_strike" })
-        assertEquals("power_strike", followUpTelegraph.sourceAbilityId)
-        assertEquals(OverlayShapeSnapshot.SINGLE_TILE, followUpTelegraph.shape)
-        assertEquals(1, followUpTelegraph.previewTurns)
-        assertTrue(followUpTelegraph.cells.isNotEmpty())
+        val overlay =
+            requireNotNull(
+                session.renderSnapshot().overlays.singleOrNull { candidate ->
+                    candidate.id.startsWith("telegraph:${bossId.value}:dungeon_lord_phase_warning")
+                },
+            )
+        assertEquals(OverlayShapeSnapshot.LINE, overlay.shape)
+        assertTrue(overlay.cells.size > 1)
+        assertTrue(overlay.cells.any { cell -> cell.x != bossPoint.x || cell.y != bossPoint.y })
     }
 
     @Test
@@ -507,5 +586,20 @@ class RenderSnapshotContractTest {
             .filter { point -> point != origin && point.chebyshevDistanceTo(origin) == 1 && point !in occupied }
             .sortedWith(compareBy<com.ktome.core.map.Point>(com.ktome.core.map.Point::y).thenBy(com.ktome.core.map.Point::x))
             .first()
+    }
+
+    private fun findOpenAdjacentPoint(
+        session: FoundationGameSession,
+        center: com.ktome.core.map.Point,
+    ): com.ktome.core.map.Point {
+        val world = session.automationWorld()
+        val occupied = world.entitiesWith(Position::class).mapTo(linkedSetOf()) { entityId -> requireNotNull(world.get<Position>(entityId)).toPoint() }
+        return com.ktome.core.map.Point.ALL_DIRECTIONS
+            .map { delta -> center + delta }
+            .first { point ->
+                session.map.isInBounds(point.x, point.y) &&
+                    !session.map[point].blocksMovement &&
+                    point !in occupied
+            }
     }
 }

@@ -1,5 +1,6 @@
 package com.ktome.game.factory
 
+import com.ktome.core.ai.AIPerceptionState
 import com.ktome.core.ecs.AIBehavior
 import com.ktome.core.ecs.AiTriggerTracker
 import com.ktome.core.ecs.AIType
@@ -137,9 +138,10 @@ class EntityFactory {
             )
             world.add(monsterId, AiTriggerTracker())
         }
+        world.add(monsterId, AIPerceptionState())
         world.add(
             monsterId,
-            when (resolveAiType(template)) {
+            when (template.ai) {
                 AIType.KITE -> AIBehavior(AIType.KITE, sightRadius = 8, preferredRangeStart = 2, preferredRangeEnd = 3)
                 AIType.CHASE -> AIBehavior(AIType.CHASE, sightRadius = 8)
                 AIType.PATROL -> AIBehavior(AIType.PATROL, sightRadius = 8)
@@ -149,27 +151,4 @@ class EntityFactory {
 
         return monsterId
     }
-
-    private fun resolveAiType(template: MonsterTemplate): AIType =
-        when (template.aiProfileId) {
-            "ai.kite.basic",
-            "ai.controller.pressure",
-            "ai.controller.shadow_priest",
-            ->
-                AIType.KITE
-            "ai.patrol.basic",
-            "ai.skirmisher.flank",
-            "ai.elite.huntmaster",
-            ->
-                AIType.PATROL
-            "ai.chase.basic",
-            "ai.guard.basic",
-            "ai.elite.forge_guard",
-            "ai.elite.ashgate_warden",
-            "ai.boss.dungeon_lord",
-            "ai.boss.bandit_captain",
-            ->
-                AIType.CHASE
-            else -> template.ai
-        }
 }

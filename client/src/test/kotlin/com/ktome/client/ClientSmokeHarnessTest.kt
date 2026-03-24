@@ -29,6 +29,7 @@ import com.ktome.client.input.OverlayState
 import com.ktome.client.input.UiMode
 import com.ktome.client.render.TileRenderer
 import com.ktome.core.dungeon.StairDirection
+import com.ktome.core.ecs.BlocksMovement
 import com.ktome.core.ecs.EntityId
 import com.ktome.core.ecs.Position
 import com.ktome.core.ecs.get
@@ -359,10 +360,10 @@ class ClientSmokeHarnessTest {
 
                 val bossId = requireNotNull(automationEntityByTemplateId(session, "bandit.captain"))
                 val bossPoint = requireNotNull(automationWorld(session).get<Position>(bossId)).toPoint()
-                automationMovePlayerTo(session, bossPoint)
+                automationMovePlayerTo(session, findOpenAdjacentPoint(session, bossPoint))
                 app.render()
 
-                val snapshot = session.renderSnapshot()
+                val snapshot = waitForBossTelegraph(session, app)
                 assertTrue(
                     snapshot.overlays.any { overlay -> overlay.id.startsWith("boss-warning:") },
                     "Expected visible boss warning overlay, got ${snapshot.overlays.map { it.id }}.",
@@ -812,6 +813,23 @@ class ClientSmokeHarnessTest {
         }
     }
 
+    private fun waitForBossTelegraph(
+        session: FoundationGameSession,
+        app: GameApp,
+        maxTurns: Int = 4,
+    ): RenderSnapshot {
+        repeat(maxTurns) { index ->
+            val snapshot = session.renderSnapshot()
+            val hasTelegraph = snapshot.overlays.any { overlay -> overlay.id.startsWith("telegraph:") }
+            if (hasTelegraph) {
+                return snapshot
+            }
+            check(session.perform(PlayerCommand.Wait)) { "Failed to advance boss warning turn at step ${index + 1}." }
+            app.render()
+        }
+        return session.renderSnapshot()
+    }
+
     internal data class ClientSmokeReport(
         val name: String,
         val success: Boolean,
@@ -977,6 +995,26 @@ class ClientSmokeHarnessTest {
         val enteredInventory: Boolean,
         val enteredInspect: Boolean,
     )
+}
+
+private fun findOpenAdjacentPoint(
+    session: FoundationGameSession,
+    center: Point,
+): Point {
+    val world = automationWorld(session)
+    val occupied =
+        world.entitiesWith(Position::class, BlocksMovement::class)
+            .map { entityId -> requireNotNull(world.get<Position>(entityId)).toPoint() }
+            .toSet()
+
+    return Point.ALL_DIRECTIONS
+        .asSequence()
+        .map { delta -> center + delta }
+        .firstOrNull { point ->
+            session.map.isInBounds(point.x, point.y) &&
+                !session.map[point].blocksMovement &&
+                point !in occupied
+        } ?: error("No open adjacent point around $center.")
 }
 
 private fun ClientSmokeHarnessTest.ClientSmokeReport.toJson() =

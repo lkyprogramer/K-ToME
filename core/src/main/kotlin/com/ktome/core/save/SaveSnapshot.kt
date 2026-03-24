@@ -170,6 +170,9 @@ data class EntitySnapshot(
     val areaEffectEmitter: AreaEffectEmitterSnapshot? = null,
     val worldEffect: WorldEffectSnapshot? = null,
     val aiTriggerTracker: AiTriggerTrackerSnapshot? = null,
+    val aiPerception: AIPerceptionSnapshot? = null,
+    val pendingTelegraph: PendingTelegraphSnapshot? = null,
+    val bossEncounterState: BossEncounterStateSnapshot? = null,
     val resourcePools: List<ResourcePoolSnapshot> = emptyList(),
     val talentLoadout: TalentLoadoutSnapshot? = null,
     val talentAllocationDraft: TalentAllocationDraftSnapshot? = null,
@@ -200,6 +203,9 @@ data class EntitySnapshot(
         talentAllocationDraft?.validateOrThrow()
         itemState?.validateOrThrow()
         aiTriggerTracker?.validateOrThrow()
+        aiPerception?.validateOrThrow()
+        pendingTelegraph?.validateOrThrow()
+        bossEncounterState?.validateOrThrow()
         effects?.forEach(ActiveEffectSnapshot::validateOrThrow)
         areaEffectEmitter?.validateOrThrow()
         worldEffect?.validateOrThrow()
@@ -222,6 +228,46 @@ data class AiTriggerTrackerSnapshot(
         require(pendingCombatStartTriggerIds.distinct().size == pendingCombatStartTriggerIds.size) {
             "Pending combat-start trigger ids must not contain duplicates."
         }
+    }
+}
+
+@Serializable
+data class AIPerceptionSnapshot(
+    val lastKnownTargetPosition: PointSnapshot? = null,
+) {
+    fun validateOrThrow() {
+        // No-op; PointSnapshot is already structurally validated by construction.
+    }
+}
+
+@Serializable
+data class PendingTelegraphSnapshot(
+    val telegraphSpecId: String,
+    val sourceAbilityId: String,
+    val remainingTurns: Int,
+    val targetPoint: PointSnapshot,
+    val queuedAbilityId: String? = null,
+    val dangerLevel: String,
+) {
+    fun validateOrThrow() {
+        require(telegraphSpecId.isNotBlank()) { "Telegraph spec id must not be blank." }
+        require(sourceAbilityId.isNotBlank()) { "Telegraph source ability id must not be blank." }
+        require(remainingTurns > 0) { "Telegraph remaining turns must stay positive." }
+        require(dangerLevel.isNotBlank()) { "Telegraph danger level must not be blank." }
+    }
+}
+
+@Serializable
+data class BossEncounterStateSnapshot(
+    val encounterId: String,
+    val currentPhaseId: String? = null,
+    val encounterTurnCount: Int = 0,
+    val phaseTurnCount: Int = 0,
+) {
+    fun validateOrThrow() {
+        require(encounterId.isNotBlank()) { "Boss encounter id must not be blank." }
+        require(encounterTurnCount >= 0) { "Boss encounter turn count must not be negative." }
+        require(phaseTurnCount >= 0) { "Boss phase turn count must not be negative." }
     }
 }
 

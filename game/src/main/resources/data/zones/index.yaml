@@ -57,7 +57,7 @@ zones:
     ambientProfile: ambient.deep_iron_pit
     monsterPools: [undead.bone_archer, undead.ash_wraith, orc.raider, orc.miner, cultist.ember_adept]
     elitePools: [orc.raider, orc.forge_guard]
-    bossEncounterId:
+    bossEncounterId: molten_giant_encounter
     objectiveSetId: deep_iron_pit_forge_run
   - id: grey_gate_depths
     nameKey: zone.grey_gate_depths.name

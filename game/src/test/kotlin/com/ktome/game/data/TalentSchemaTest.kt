@@ -1,6 +1,5 @@
 package com.ktome.game.data
 
-import com.ktome.game.telegraph.FoundationTelegraphRegistry
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -12,6 +11,7 @@ class TalentSchemaTest {
         val professionIds = catalog.professions.map { it.id }.toSet()
         val talentIds = catalog.talents.map { it.id }.toSet()
         val treeIds = catalog.talentTrees.map { it.id }.toSet()
+        val telegraphIds = catalog.telegraphSpecs.map { it.id }.toSet()
 
         assertEquals(
             setOf(
@@ -47,7 +47,7 @@ class TalentSchemaTest {
             assertTrue(talent.nameKey.endsWith(".name"))
             assertTrue(talent.descKey.endsWith(".desc"))
             talent.telegraphRef?.let { telegraphRef ->
-                assertEquals(telegraphRef, FoundationTelegraphRegistry.CORE.require(telegraphRef).id)
+                assertTrue(telegraphRef in telegraphIds, "Unknown telegraph ref $telegraphRef")
             }
             assertTrue(talent.castTime in setOf("INSTANT", "QUICK", "STANDARD", "HEAVY"))
             assertTrue(talent.callbacks.isNotEmpty() || talent.callbacks.isEmpty())

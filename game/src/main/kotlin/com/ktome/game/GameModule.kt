@@ -28,10 +28,9 @@ import com.ktome.core.save.PointSnapshot
 import com.ktome.core.snapshot.RenderLogEventSnapshot
 import com.ktome.core.snapshot.RenderTextArgumentSnapshot
 import com.ktome.core.snapshot.RenderTextTokenSnapshot
+import com.ktome.core.ai.AIActionType
+import com.ktome.core.ai.AICondition
 import com.ktome.game.data.DataLoader
-import com.ktome.game.data.schema.AIProfileSchemaV2
-import com.ktome.game.data.schema.AITriggerActionKindSchemaV2
-import com.ktome.game.data.schema.AITriggerConditionKindSchemaV2
 import com.ktome.game.data.schema.SchemaCatalog
 import com.ktome.game.data.schema.SchemaCombatProfile
 import com.ktome.game.i18n.GameLocale
@@ -40,7 +39,8 @@ import com.ktome.game.factory.EntityFactory
 import com.ktome.game.factory.ItemFactory
 import com.ktome.game.model.BossDefinition
 import com.ktome.game.model.MonsterTemplate
-import com.ktome.game.telegraph.FoundationTelegraphRegistry
+import com.ktome.game.telegraph.TelegraphRegistry
+import com.ktome.game.telegraph.ThreatProfileRegistry
 import com.ktome.core.item.ItemGenerator
 import com.ktome.core.item.ItemBaseDef
 import com.ktome.core.item.ItemInstance
@@ -190,7 +190,8 @@ object GameModule {
             bossDefinitions = loader.loadBossDefinitions(),
             schemaCatalog = schemaCatalog,
             localizer = loader.localizer,
-            telegraphRegistry = FoundationTelegraphRegistry.CORE,
+            telegraphRegistry = TelegraphRegistry(schemaCatalog.telegraphSpecs.associateBy { spec -> spec.id }),
+            threatProfileRegistry = ThreatProfileRegistry(schemaCatalog.threatProfiles.associateBy { profile -> profile.id }),
         ).also(::validateAiProfileContracts)
     }
 
@@ -1015,48 +1016,122 @@ object GameModule {
 
     private fun validateAiProfileContracts(content: GameContent) {
         val talentIds = content.talents.map { talent -> talent.id }.toSet()
-        val profilesById = content.schemaCatalog.aiProfiles.associateBy(AIProfileSchemaV2::id)
+        val profilesById = content.schemaCatalog.aiProfiles.associateBy { profile -> profile.id }
+        val threatProfileIds = content.schemaCatalog.threatProfiles.map { profile -> profile.id }.toSet()
+        require(profilesById.size == content.schemaCatalog.aiProfiles.size) {
+            "AI profile ids must stay unique."
+        }
+        require(threatProfileIds.size == content.schemaCatalog.threatProfiles.size) {
+            "Threat profile ids must stay unique."
+        }
         content.schemaCatalog.aiProfiles.forEach { profile ->
-            require(profile.triggers.distinctBy { trigger -> trigger.triggerId }.size == profile.triggers.size) {
-                "AI profile '${profile.id}' contains duplicate trigger ids."
+            require(profile.perceptionRange > 0) { "AI profile '${profile.id}' must declare positive perceptionRange." }
+            require(profile.actions.isNotEmpty()) { "AI profile '${profile.id}' must declare at least one action." }
+            require(profile.actions.distinctBy { action -> action.id }.size == profile.actions.size) {
+                "AI profile '${profile.id}' contains duplicate action ids."
             }
-            profile.triggers.forEach { trigger ->
-                require(trigger.triggerId.isNotBlank()) { "AI trigger ids must not be blank in profile '${profile.id}'." }
-                when (trigger.condition) {
-                    AITriggerConditionKindSchemaV2.ON_COMBAT_START -> {
-                        require(trigger.threshold == null) {
-                            "AI trigger '${trigger.triggerId}' in profile '${profile.id}' must not declare threshold for onCombatStart."
-                        }
+            profile.actions.forEach { action ->
+                require(action.id.isNotBlank()) { "AI action ids must not be blank in profile '${profile.id}'." }
+                if (action.type == AIActionType.USE_ABILITY) {
+                    require(!action.abilityId.isNullOrBlank()) {
+                        "AI action '${action.id}' in profile '${profile.id}' must declare abilityId when type=USE_ABILITY."
                     }
-
-                    AITriggerConditionKindSchemaV2.HP_BELOW_RATIO -> {
-                        require(trigger.threshold != null && trigger.threshold in 0.0..1.0 && trigger.threshold > 0.0) {
-                            "AI trigger '${trigger.triggerId}' in profile '${profile.id}' must declare threshold within (0.0, 1.0]."
-                        }
+                    require(action.abilityId in talentIds) {
+                        "AI action '${action.id}' in profile '${profile.id}' references unknown talent '${action.abilityId}'."
+                    }
+                } else {
+                    require(action.abilityId == null) {
+                        "AI action '${action.id}' in profile '${profile.id}' must not declare abilityId unless type=USE_ABILITY."
                     }
                 }
-                require(trigger.action == AITriggerActionKindSchemaV2.FORCE_TALENT) {
-                    "AI trigger '${trigger.triggerId}' in profile '${profile.id}' must use forceTalent."
-                }
-                require(trigger.talentId in talentIds) {
-                    "AI trigger '${trigger.triggerId}' in profile '${profile.id}' references unknown talent '${trigger.talentId}'."
-                }
-                require(trigger.postMessageKey != null || trigger.postMessageArgs.isEmpty()) {
-                    "AI trigger '${trigger.triggerId}' in profile '${profile.id}' declares postMessageArgs without postMessageKey."
+                action.condition?.let { condition ->
+                    require(aiConditionDepth(condition) <= 3) {
+                        "AI action '${action.id}' in profile '${profile.id}' exceeds AI condition max depth 3."
+                    }
                 }
             }
         }
+        require(content.schemaCatalog.telegraphSpecs.distinctBy { spec -> spec.id }.size == content.schemaCatalog.telegraphSpecs.size) {
+            "Telegraph spec ids must stay unique."
+        }
+        content.schemaCatalog.telegraphSpecs.forEach { spec ->
+            require(spec.previewTurns > 0) { "Telegraph spec '${spec.id}' must declare previewTurns > 0." }
+            require(spec.threatProfileId in threatProfileIds) {
+                "Telegraph spec '${spec.id}' references unknown threat profile '${spec.threatProfileId}'."
+            }
+            require(spec.counterplayTags.isNotEmpty()) {
+                "Telegraph spec '${spec.id}' must declare at least one counterplay tag."
+            }
+        }
+        validateThreatProfileBands(content)
+        val monsterById = content.allMonsterTemplates().associateBy(MonsterTemplate::id)
         content.allMonsterTemplates().forEach { template ->
             val profile = requireNotNull(profilesById[template.aiProfileId]) {
                 "Monster template '${template.id}' references unknown AI profile '${template.aiProfileId}'."
             }
-            profile.triggers.forEach { trigger ->
-                require(template.talentLevels.containsKey(trigger.talentId)) {
-                    "Monster template '${template.id}' uses AI trigger '${trigger.triggerId}' for talent '${trigger.talentId}', but that talent is not configured on the monster."
+            profile.actions
+                .filter { action -> action.type == AIActionType.USE_ABILITY }
+                .forEach { action ->
+                    require(template.talentLevels.containsKey(action.abilityId)) {
+                        "Monster template '${template.id}' uses AI action '${action.id}' for talent '${action.abilityId}', but that talent is not configured on the monster."
+                    }
                 }
+        }
+        content.schemaCatalog.bossEncounters.forEach { encounter ->
+            require(monsterById.containsKey(encounter.templateId)) {
+                "Boss encounter '${encounter.id}' references unknown monster '${encounter.templateId}'."
+            }
+            require(encounter.phases.isNotEmpty()) { "Boss encounter '${encounter.id}' must declare at least one phase." }
+            val sortedByThreshold =
+                encounter.phases.mapNotNull { phase -> phase.hpThreshold }
+                    .zipWithNext()
+                    .all { (current, next) -> current >= next }
+            require(sortedByThreshold) {
+                "Boss encounter '${encounter.id}' phases must stay sorted by hpThreshold descending."
+            }
+            encounter.phases.forEach { phase ->
+                require(phase.aiProfileId in profilesById) {
+                    "Boss phase '${phase.id}' in encounter '${encounter.id}' references unknown AI profile '${phase.aiProfileId}'."
+                }
+                phase.onEnter.forEach { event ->
+                    event.telegraphSpecId?.let { telegraphId ->
+                        require(content.telegraphRegistry.resolve(telegraphId) != null) {
+                            "Boss phase '${phase.id}' in encounter '${encounter.id}' references unknown telegraph '$telegraphId'."
+                        }
+                    }
+                }
+                val bossProfile = requireNotNull(profilesById[phase.aiProfileId])
+                bossProfile.actions
+                    .filter { action -> action.type == AIActionType.USE_ABILITY }
+                    .forEach { action ->
+                        require(monsterById.getValue(encounter.templateId).talentLevels.containsKey(action.abilityId)) {
+                            "Boss encounter '${encounter.id}' phase '${phase.id}' uses talent '${action.abilityId}' not configured on '${encounter.templateId}'."
+                        }
+                    }
             }
         }
     }
+
+    private fun validateThreatProfileBands(content: GameContent) {
+        content.schemaCatalog.threatProfiles
+            .groupBy { profile -> "${profile.defenderArchetype}:${profile.difficultyId}" }
+            .forEach { (groupId, profiles) ->
+                val sorted = profiles.sortedBy { profile -> profile.levelBand.min }
+                sorted.zipWithNext().forEach { (current, next) ->
+                    require(current.levelBand.max < next.levelBand.min) {
+                        "Threat profile level bands overlap inside group '$groupId': ${current.id} and ${next.id}."
+                    }
+                }
+            }
+    }
+
+    private fun aiConditionDepth(condition: AICondition): Int =
+        when (condition) {
+            is AICondition.And -> 1 + (condition.conditions.maxOfOrNull(::aiConditionDepth) ?: 0)
+            is AICondition.Or -> 1 + (condition.conditions.maxOfOrNull(::aiConditionDepth) ?: 0)
+            is AICondition.Not -> 1 + aiConditionDepth(condition.condition)
+            else -> 1
+        }
 
     private fun routeValidationError(
         config: FoundationGameConfig,
@@ -1149,8 +1224,11 @@ object GameModule {
             "ai.guard.basic",
             "ai.elite.forge_guard",
             "ai.elite.ashgate_warden",
-            "ai.boss.dungeon_lord",
-            "ai.boss.bandit_captain",
+            "ai.boss.bandit_captain.phase_full",
+            "ai.boss.molten_giant.phase_full",
+            "ai.boss.molten_giant.phase_enraged",
+            "ai.boss.dungeon_lord.phase_full",
+            "ai.boss.dungeon_lord.phase_enraged",
             ->
                 AIType.CHASE
             else -> template.ai

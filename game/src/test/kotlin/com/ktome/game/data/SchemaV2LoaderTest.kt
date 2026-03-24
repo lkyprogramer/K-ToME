@@ -12,10 +12,10 @@ import com.ktome.core.item.ItemGenerator
 import com.ktome.core.random.RandomSource
 import com.ktome.core.resource.ResourceType
 import com.ktome.core.status.StatusEffectType
+import com.ktome.core.ai.AISelectionPolicy
 import com.ktome.core.talent.TalentDef
 import com.ktome.core.talent.TalentRole
 import com.ktome.game.i18n.GameLocale
-import com.ktome.game.data.schema.AITriggerConditionKindSchemaV2
 import com.ktome.game.data.schema.TalentSchemaV2
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertThrows
@@ -104,7 +104,7 @@ class SchemaV2LoaderTest {
             catalog.objectiveSets.single { it.id == "shattered_outpost_breach" }.placements.map { it.anchor }.toSet(),
         )
         assertEquals(setOf("normal"), catalog.difficulties.map { it.id }.toSet())
-        assertEquals(24, catalog.monsters.size)
+        assertEquals(25, catalog.monsters.size)
         assertEquals(24, catalog.itemBundle.items.size)
         assertTrue(catalog.itemBundle.items.count { item -> "weapon" in item.tags } >= 6)
         assertTrue(catalog.itemBundle.items.count { item -> "armor" in item.tags && "accessory" !in item.tags } >= 6)
@@ -151,20 +151,16 @@ class SchemaV2LoaderTest {
             catalog.lootProfiles.first { it.id == "loot.foundation.boss" }.itemIds,
         )
         assertTrue(catalog.lootProfiles.first { it.id == "loot.foundation.boss" }.itemIds.contains("shadow_cloak"))
-        val banditCaptainAi = catalog.aiProfiles.first { it.id == "ai.boss.bandit_captain" }
-        assertEquals(listOf("power_strike", "shield_bash"), banditCaptainAi.talentPriority)
-        assertTrue(banditCaptainAi.skipRules.isEmpty())
-        assertEquals(2, banditCaptainAi.triggers.size)
-        assertEquals("bandit_captain_opening_shield_bash", banditCaptainAi.triggers.first().triggerId)
-        assertEquals(AITriggerConditionKindSchemaV2.ON_COMBAT_START, banditCaptainAi.triggers.first().condition)
-        assertTrue(banditCaptainAi.triggers.first().once)
-        assertEquals("bandit_captain_enrage_40", banditCaptainAi.triggers.last().triggerId)
-        assertEquals(AITriggerConditionKindSchemaV2.HP_BELOW_RATIO, banditCaptainAi.triggers.last().condition)
-        assertTrue(banditCaptainAi.triggers.last().once)
-        val dungeonLordAi = catalog.aiProfiles.first { it.id == "ai.boss.dungeon_lord" }
-        assertEquals("log.boss.desperate", dungeonLordAi.triggers.last().postMessageKey)
-        assertEquals("monster.cultist.dungeon_lord.name", dungeonLordAi.triggers.last().postMessageArgs.getValue("source"))
+        val banditCaptainAi = catalog.aiProfiles.first { it.id == "ai.boss.bandit_captain.phase_full" }
+        assertEquals(AISelectionPolicy.WEIGHTED_RANDOM, banditCaptainAi.selectionPolicy)
+        assertEquals("shield_bash", banditCaptainAi.actions.first().abilityId)
+        assertEquals("ai.boss.dungeon_lord.phase_enraged", catalog.aiProfiles.first { it.id == "ai.boss.dungeon_lord.phase_enraged" }.id)
+        assertTrue(catalog.telegraphSpecs.any { spec -> spec.id == "molten_giant_phase_warning" })
+        assertTrue(catalog.threatProfiles.any { profile -> profile.id == "threat.frontliner.mid" })
+        assertEquals("molten_giant_encounter", catalog.zones.first { it.id == "deep_iron_pit" }.bossEncounterId)
+        assertEquals(2, catalog.bossEncounters.first { it.id == "dungeon_lord_encounter" }.phases.size)
         assertTrue(catalog.arenas.any { it.id == "arena.shattered_outpost.boss" })
+        assertTrue(catalog.arenas.any { it.id == "arena.deep_iron_pit.boss" })
     }
 
     @Test
@@ -237,7 +233,7 @@ class SchemaV2LoaderTest {
         assertEquals("actor.cultist.dungeon_lord", boss.visualKey)
         assertEquals("icon.monster.cultist.dungeon_lord", boss.iconKey)
         assertEquals("audio.monster.cultist.dungeon_lord", boss.audioProfile)
-        assertEquals("ai.boss.dungeon_lord", boss.aiProfileId)
+        assertEquals("ai.boss.dungeon_lord.phase_full", boss.aiProfileId)
         assertEquals("loot.foundation.boss", boss.lootProfileId)
         assertEquals(mapOf("war_cry" to 3, "power_strike" to 4, "charge" to 2), boss.talentLevels)
         val huntmaster =
@@ -261,7 +257,7 @@ class SchemaV2LoaderTest {
                 .bossEncounters
                 .first { schema -> schema.id == "bandit_captain_encounter" }
 
-        assertEquals("ai.boss.bandit_captain", boss.aiProfileId)
+        assertEquals("ai.boss.bandit_captain.phase_full", boss.aiProfileId)
         assertEquals("arena.shattered_outpost.boss", encounter.arenaId)
     }
 
@@ -332,7 +328,7 @@ class SchemaV2LoaderTest {
     fun `schema v2 loader parses and projects talent ai hints`() {
         val loader = DataLoader(GameLocale.EN_US)
         val parseMethod =
-            DataLoader::class.java.getDeclaredMethod("parseTalentSchemas", Map::class.java).apply {
+            DataLoader::class.java.getDeclaredMethod("parseTalentSchemas", Map::class.java, Set::class.java).apply {
                 isAccessible = true
             }
         val toRuntimeMethod =
@@ -378,6 +374,7 @@ class SchemaV2LoaderTest {
                             ),
                         ),
                 ),
+                emptySet<String>(),
             ) as List<TalentSchemaV2>).single()
 
         assertEquals("CONTROL", schema.aiHints?.role)

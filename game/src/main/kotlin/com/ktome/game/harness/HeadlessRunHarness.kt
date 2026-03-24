@@ -49,7 +49,10 @@ class HeadlessRunHarness(
             }
 
             val command =
-                bot.decide(observation) ?: run {
+                routeProgressCommand(session, observation)
+                    .takeIf { shouldPrioritizeRouteProgress(spec, observation) }
+                    ?: bot.decide(observation)
+                    ?: run {
                     failureReason = "Bot returned no command."
                     break
                 }
@@ -122,6 +125,18 @@ class HeadlessRunHarness(
         val observedCheckpointTurn = checkpointTurn ?: return false
         return observation.turnIndex - observedCheckpointTurn >= checkpoint.continueTurns
     }
+
+    private fun shouldPrioritizeRouteProgress(
+        spec: ScenarioSpec,
+        observation: RunObservation,
+    ): Boolean =
+        when (spec.goal) {
+            is ScenarioGoal.ReachFloor,
+            is ScenarioGoal.ReachFloorOrTerminal,
+            -> !observation.runOutcome.isTerminal
+
+            else -> false
+        }
 
     private fun newSession(
         spec: ScenarioSpec,

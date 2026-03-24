@@ -1,5 +1,24 @@
 package com.ktome.game.data
 
+import com.ktome.core.ai.AIAction
+import com.ktome.core.ai.AIActionType
+import com.ktome.core.ai.AICondition
+import com.ktome.core.ai.AIConditionScope
+import com.ktome.core.ai.AIDefaultBehavior
+import com.ktome.core.ai.AIProfile
+import com.ktome.core.ai.AISelectionPolicy
+import com.ktome.core.ai.BossEncounter
+import com.ktome.core.ai.BossPhaseDef
+import com.ktome.core.ai.BossPhaseEvent
+import com.ktome.core.ai.BossPhaseEventType
+import com.ktome.core.ai.BossPhaseTransitionTiming
+import com.ktome.core.ai.CounterplayTag
+import com.ktome.core.ai.DangerLevel
+import com.ktome.core.ai.LevelBand
+import com.ktome.core.ai.TelegraphShape
+import com.ktome.core.ai.TelegraphSpec
+import com.ktome.core.ai.TelegraphStage
+import com.ktome.core.ai.ThreatProfileDef
 import com.ktome.core.combat.ApplicationPolicy
 import com.ktome.core.combat.DamageType
 import com.ktome.core.combat.SaveDimension
@@ -44,11 +63,6 @@ import com.ktome.core.talent.TalentPrerequisite
 import com.ktome.core.talent.TalentRole
 import com.ktome.core.talent.TalentTargeting
 import com.ktome.core.talent.TalentTargetingType
-import com.ktome.game.data.schema.AIProfileSchemaV2
-import com.ktome.game.data.schema.AITriggerActionKindSchemaV2
-import com.ktome.game.data.schema.AITriggerConditionKindSchemaV2
-import com.ktome.game.data.schema.AITriggerSchemaV2
-import com.ktome.game.data.schema.AITalentSkipRuleSchemaV2
 import com.ktome.game.data.schema.AffixSchemaV2
 import com.ktome.game.data.schema.BossEncounterSchemaV2
 import com.ktome.game.data.schema.DifficultySchemaV2
@@ -90,7 +104,6 @@ import com.ktome.game.i18n.Localizer
 import com.ktome.game.model.BossDefinition
 import com.ktome.game.model.MonsterCatalog
 import com.ktome.game.model.MonsterTemplate
-import com.ktome.game.telegraph.FoundationTelegraphRegistry
 import org.yaml.snakeyaml.Yaml
 
 class DataLoader(
@@ -111,14 +124,19 @@ class DataLoader(
 
     val localizer: Localizer = localizationBundle.translator(locale)
 
-    fun loadSchemaCatalog(): SchemaCatalog =
-        SchemaCatalog(
+    fun loadSchemaCatalog(): SchemaCatalog {
+        val telegraphSpecs = parseTelegraphSpecs(loadYamlMap("/data/telegraph/index.yaml"))
+        val telegraphIds = telegraphSpecs.map(TelegraphSpec::id).toSet()
+        val threatProfiles = parseThreatProfiles(loadYamlMap("/data/telegraph/threat_profiles/index.yaml"))
+        return SchemaCatalog(
             professions = parseProfessionSchemas(loadYamlMap("/data/professions/index.yaml")),
             statuses = parseStatusSchemas(loadYamlMap("/data/statuses/index.yaml")),
-            talents = parseTalentSchemas(loadYamlMap("/data/talents/index.yaml")),
+            talents = parseTalentSchemas(loadYamlMap("/data/talents/index.yaml"), telegraphIds),
             talentTrees = parseTalentTreeSchemas(loadYamlMap("/data/talents/index.yaml")),
             monsters = parseMonsterSchemas(loadYamlMap("/data/monsters/index.yaml")),
-            bossEncounters = parseBossSchemas(loadYamlMap("/data/bosses/index.yaml")),
+            bossEncounters = parseBossSchemas(loadYamlMap("/data/bosses/index.yaml"), telegraphIds),
+            telegraphSpecs = telegraphSpecs,
+            threatProfiles = threatProfiles,
             zones = parseZoneSchemas(loadYamlMap("/data/zones/index.yaml")),
             interactables = parseInteractableSchemas(loadYamlMap("/data/interactables/index.yaml")),
             objectiveSets = parseObjectiveSetSchemas(loadYamlMap("/data/objectives/index.yaml")),
@@ -126,12 +144,13 @@ class DataLoader(
             itemBundle = parseItemBundleSchemas(loadYamlMap("/data/items/index.yaml")),
             lootProfiles = parseLootProfileSchemas(loadYamlMap("/data/loot/index.yaml")),
             tilesets = parseNamedSchemaRefs(loadYamlMap("/data/tilesets/index.yaml"), "tilesets"),
-            aiProfiles = parseAiProfileSchemas(loadYamlMap("/data/ai/index.yaml")),
+            aiProfiles = parseAiProfiles(loadYamlMap("/data/ai/index.yaml")),
             arenas = parseNamedSchemaRefs(loadYamlMap("/data/arenas/index.yaml"), "arenas"),
             ambientProfiles = parseNamedSchemaRefs(loadYamlMap("/data/ambient/index.yaml"), "ambientProfiles"),
             visualKeys = parseStringIdSet(loadYamlMap("/data/visuals/index.yaml"), "visuals"),
             audioProfiles = parseStringIdSet(loadYamlMap("/data/audio/index.yaml"), "audioProfiles"),
         )
+    }
 
     fun loadMonsterCatalog(): MonsterCatalog {
         val catalog = loadSchemaCatalog()
@@ -166,14 +185,25 @@ class DataLoader(
         val catalog = loadSchemaCatalog()
         return catalog.bossEncounters.associate { encounter ->
             val template =
-                requireNotNull(catalog.monsters.firstOrNull { monster -> monster.id == encounter.bossTemplateId }) {
-                    "Boss encounter '${encounter.id}' references unknown monster '${encounter.bossTemplateId}'."
+                requireNotNull(catalog.monsters.firstOrNull { monster -> monster.id == encounter.templateId }) {
+                    "Boss encounter '${encounter.id}' references unknown monster '${encounter.templateId}'."
                 }
             encounter.id to
                 BossDefinition(
                     encounterId = encounter.id,
+                    encounter =
+                        BossEncounter(
+                            id = encounter.id,
+                            templateId = encounter.templateId,
+                            phases = encounter.phases,
+                        ),
                     template = template.toRuntimeMonster(localizer),
                     talentLevels = template.talents,
+                    nameKey = encounter.nameKey,
+                    descKey = encounter.descKey,
+                    visualKey = encounter.visualKey,
+                    iconKey = encounter.iconKey,
+                    audioProfile = encounter.audioProfile,
                 )
         }
     }
@@ -241,7 +271,10 @@ class DataLoader(
             )
         }
 
-    private fun parseTalentSchemas(root: Map<String, Any?>): List<TalentSchemaV2> =
+    private fun parseTalentSchemas(
+        root: Map<String, Any?>,
+        telegraphIds: Set<String>,
+    ): List<TalentSchemaV2> =
         root.requiredList("talents").map { entry ->
             val talent = entry.requiredMap()
             val requirements =
@@ -283,7 +316,11 @@ class DataLoader(
             val keywords = talent.optionalStringList("keywords")
             KeywordRegistry.CORE.resolveAll(keywords)
             val telegraphRef = talent.optionalString("telegraphRef")
-            telegraphRef?.let(FoundationTelegraphRegistry.CORE::require)
+            telegraphRef?.let { reference ->
+                require(reference in telegraphIds) {
+                    "Talent '${talent.requiredString("id")}' references unknown telegraph '$reference'."
+                }
+            }
             val aiHints =
                 talent.optionalMap("aiHints")?.let { hints ->
                     TalentAiHintsSchemaV2(
@@ -387,7 +424,10 @@ class DataLoader(
             )
         }
 
-    private fun parseBossSchemas(root: Map<String, Any?>): List<BossEncounterSchemaV2> =
+    private fun parseBossSchemas(
+        root: Map<String, Any?>,
+        telegraphIds: Set<String>,
+    ): List<BossEncounterSchemaV2> =
         root.requiredList("bossEncounters").map { entry ->
             val boss = entry.requiredMap()
             BossEncounterSchemaV2(
@@ -399,9 +439,16 @@ class DataLoader(
                 audioProfile = boss.requiredString("audioProfile"),
                 schemaVersion = boss.requiredInt("schemaVersion"),
                 tags = boss.optionalStringList("tags"),
-                bossTemplateId = boss.requiredString("bossTemplateId"),
+                templateId = boss.requiredString("templateId"),
                 arenaId = boss.requiredString("arenaId"),
-                phases = boss.optionalStringList("phases"),
+                phases =
+                    boss.optionalList("phases").also { phases ->
+                        require(phases.isNotEmpty()) {
+                            "Boss encounter '${boss.requiredString("id")}' must declare at least one phase."
+                        }
+                    }.map { rawPhase ->
+                        parseBossPhaseDef(rawPhase.requiredMap(), telegraphIds)
+                    },
                 rewards = boss.optionalStringList("rewards"),
             )
         }
@@ -503,46 +550,178 @@ class DataLoader(
             )
         }
 
-    private fun parseAiProfileSchemas(root: Map<String, Any?>): List<AIProfileSchemaV2> =
-        root.requiredList("aiProfiles").map { entry ->
-            val profile = entry.requiredMap()
-            AIProfileSchemaV2(
-                id = profile.requiredString("id"),
-                schemaVersion = profile.requiredInt("schemaVersion"),
-                talentPriority = profile.optionalStringList("talentPriority"),
-                skipRules =
-                    profile.optionalList("skipRules").map { rawRule ->
-                        val rule = rawRule.requiredMap()
-                        AITalentSkipRuleSchemaV2(
-                            talentId = rule.requiredString("talentId"),
-                            selfHasStatus = rule.requiredString("selfHasStatus"),
-                        )
+    private fun parseTelegraphSpecs(root: Map<String, Any?>): List<TelegraphSpec> =
+        root.requiredList("telegraphSpecs").map { entry ->
+            val spec = entry.requiredMap()
+            TelegraphSpec(
+                id = spec.requiredString("id"),
+                shape = TelegraphShape.valueOf(spec.requiredString("shape")),
+                previewTurns = spec.requiredInt("previewTurns"),
+                dangerLevel = DangerLevel.valueOf(spec.requiredString("dangerLevel")),
+                threatProfileId = spec.requiredString("threatProfileId"),
+                radius = spec.optionalNullableInt("radius"),
+                length = spec.optionalNullableInt("length"),
+                angle = spec.optionalNullableInt("angle"),
+                counterplayTags =
+                    spec.optionalStringList("counterplayTags").map { tag ->
+                        CounterplayTag.valueOf(tag)
                     },
-                triggers =
-                    profile.optionalList("triggers").map { rawTrigger ->
-                        val trigger = rawTrigger.requiredMap()
-                        AITriggerSchemaV2(
-                            triggerId = trigger.requiredString("triggerId"),
-                            condition =
-                                when (trigger.requiredString("condition")) {
-                                    "onCombatStart" -> AITriggerConditionKindSchemaV2.ON_COMBAT_START
-                                    "hpBelowRatio" -> AITriggerConditionKindSchemaV2.HP_BELOW_RATIO
-                                    else -> error("Unsupported AI trigger condition '${trigger.requiredString("condition")}'.")
-                                },
-                            threshold = trigger.optionalNullableDouble("threshold"),
-                            action =
-                                when (trigger.requiredString("action")) {
-                                    "forceTalent" -> AITriggerActionKindSchemaV2.FORCE_TALENT
-                                    else -> error("Unsupported AI trigger action '${trigger.requiredString("action")}'.")
-                                },
-                            talentId = trigger.requiredString("talentId"),
-                            postMessageKey = trigger.optionalString("postMessageKey"),
-                            postMessageArgs = trigger.optionalStringMap("postMessageArgs"),
-                            once = trigger.optionalBoolean("once"),
+                stages =
+                    spec.optionalList("stages").map { rawStage ->
+                        val stage = rawStage.requiredMap()
+                        TelegraphStage(
+                            id = stage.requiredString("id"),
+                            durationTurns = stage.requiredInt("durationTurns"),
                         )
                     },
             )
         }
+
+    private fun parseThreatProfiles(root: Map<String, Any?>): List<ThreatProfileDef> =
+        root.requiredList("threatProfiles").map { entry ->
+            val profile = entry.requiredMap()
+            ThreatProfileDef(
+                id = profile.requiredString("id"),
+                defenderArchetype = profile.requiredString("defenderArchetype"),
+                levelBand =
+                    profile.requiredMap("levelBand").let { levelBand ->
+                        LevelBand(
+                            min = levelBand.requiredInt("min"),
+                            max = levelBand.requiredInt("max"),
+                        )
+                    },
+                difficultyId = profile.requiredString("difficultyId"),
+                expectedMaxHp = profile.requiredInt("expectedMaxHp"),
+                expectedArmor = profile.optionalInt("expectedArmor"),
+                expectedResistances =
+                    profile.optionalIntMap("expectedResistances").entries.associate { (typeId, value) ->
+                        DamageType.valueOf(typeId) to value
+                    },
+            )
+        }
+
+    private fun parseAiProfiles(root: Map<String, Any?>): List<AIProfile> =
+        root.requiredList("aiProfiles").map { entry ->
+            val profile = entry.requiredMap()
+            AIProfile(
+                id = profile.requiredString("id"),
+                perceptionRange = profile.requiredInt("perceptionRange"),
+                useLastKnownPosition = profile.optionalBoolean("useLastKnownPosition", true),
+                defaultBehavior = AIDefaultBehavior.valueOf(profile.requiredString("defaultBehavior")),
+                selectionPolicy = AISelectionPolicy.valueOf(profile.requiredString("selectionPolicy")),
+                actions =
+                    profile.optionalList("actions").also { actions ->
+                        require(actions.isNotEmpty()) {
+                            "AI profile '${profile.requiredString("id")}' must declare at least one action."
+                        }
+                    }.map { rawAction ->
+                        parseAiAction(rawAction.requiredMap())
+                    },
+            )
+        }
+
+    private fun parseAiAction(action: Map<*, *>): AIAction =
+        AIAction(
+            id = action.requiredString("id"),
+            type = AIActionType.valueOf(action.requiredString("type")),
+            orderKey = action.optionalNullableInt("orderKey"),
+            weight = action.optionalNullableDouble("weight"),
+            condition = action.optionalMap("condition")?.let(::parseAiCondition),
+            abilityId = action.optionalString("abilityId"),
+        )
+
+    private fun parseAiCondition(condition: Map<*, *>): AICondition =
+        when (condition.requiredString("type")) {
+            "TARGET_VISIBLE" -> AICondition.TargetVisible
+            "TARGET_DISTANCE_LESS_THAN" ->
+                AICondition.TargetDistanceLessThan(
+                    distance = condition.requiredInt("distance"),
+                )
+            "TARGET_DISTANCE_AT_MOST" ->
+                AICondition.TargetDistanceAtMost(
+                    distance = condition.requiredInt("distance"),
+                )
+            "TARGET_DISTANCE_BETWEEN" ->
+                AICondition.TargetDistanceBetween(
+                    minDistance = condition.requiredInt("minDistance"),
+                    maxDistance = condition.requiredInt("maxDistance"),
+                )
+            "TARGET_HP_BELOW" ->
+                AICondition.TargetHpBelow(
+                    threshold = condition.requiredDouble("threshold"),
+                )
+            "HP_BELOW" ->
+                AICondition.HpBelow(
+                    threshold = condition.requiredDouble("threshold"),
+                )
+            "HAS_STATUS" ->
+                AICondition.HasStatus(
+                    statusId = condition.requiredString("statusId"),
+                    scope = condition.optionalString("scope")?.let(AIConditionScope::valueOf) ?: AIConditionScope.SELF,
+                )
+            "TALENT_READY" ->
+                AICondition.TalentReady(
+                    talentId = condition.requiredString("talentId"),
+                )
+            "TURN_COUNT_MODULO" ->
+                AICondition.TurnCountModulo(
+                    divisor = condition.requiredInt("divisor"),
+                    remainder = condition.requiredInt("remainder"),
+                )
+            "AND" ->
+                AICondition.And(
+                    conditions = condition.optionalList("conditions").map { nested -> parseAiCondition(nested.requiredMap()) },
+                )
+            "OR" ->
+                AICondition.Or(
+                    conditions = condition.optionalList("conditions").map { nested -> parseAiCondition(nested.requiredMap()) },
+                )
+            "NOT" ->
+                AICondition.Not(
+                    condition = parseAiCondition(condition.requiredMap("condition")),
+                )
+            else -> error("Unsupported AI condition type '${condition.requiredString("type")}'.")
+        }
+
+    private fun parseBossPhaseDef(
+        phase: Map<*, *>,
+        telegraphIds: Set<String>,
+    ): BossPhaseDef =
+        BossPhaseDef(
+            id = phase.requiredString("id"),
+            hpThreshold = phase.optionalNullableDouble("hpThreshold"),
+            hpEnd = phase.optionalNullableDouble("hpEnd"),
+            turnCount = phase.optionalNullableInt("turnCount"),
+            requiredStatus = phase.optionalString("requiredStatus"),
+            aiProfileId = phase.requiredString("aiProfileId"),
+            onEnter =
+                phase.optionalList("onEnter").map { rawEvent ->
+                    parseBossPhaseEvent(rawEvent.requiredMap(), telegraphIds)
+                },
+            resetAiPhaseState = phase.optionalBoolean("resetAiPhaseState"),
+            transitionTiming =
+                phase.optionalString("transitionTiming")?.let(BossPhaseTransitionTiming::valueOf)
+                    ?: BossPhaseTransitionTiming.START_OF_TURN,
+        )
+
+    private fun parseBossPhaseEvent(
+        event: Map<*, *>,
+        telegraphIds: Set<String>,
+    ): BossPhaseEvent {
+        val eventType = BossPhaseEventType.valueOf(event.requiredString("type"))
+        val telegraphSpecId = event.optionalString("telegraphSpecId")
+        if (telegraphSpecId != null) {
+            require(telegraphSpecId in telegraphIds) {
+                "Boss phase event references unknown telegraph '$telegraphSpecId'."
+            }
+        }
+        return BossPhaseEvent(
+            type = eventType,
+            telegraphSpecId = telegraphSpecId,
+            invulnerableTurns = event.optionalNullableInt("invulnerableTurns"),
+            messageKey = event.optionalString("messageKey"),
+        )
+    }
 
     private fun parseItemBundleSchemas(root: Map<String, Any?>): ItemBundleSchemaV2 =
         ItemBundleSchemaV2(

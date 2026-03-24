@@ -17,6 +17,7 @@ import com.ktome.client.input.OverlayState
 import com.ktome.client.input.UiMode
 import com.ktome.client.render.TileRenderer
 import com.ktome.core.dungeon.StairDirection
+import com.ktome.core.ecs.BlocksMovement
 import com.ktome.core.ecs.EntityId
 import com.ktome.core.ecs.Position
 import com.ktome.core.ecs.get
@@ -55,10 +56,10 @@ class GoldenScreenshotHarnessTest {
                 "f7de1893da879fdb5d55956ae37fde2be6b8f37b10c165c8c3677aa8bf54a750",
                 "c27ecc9b75ca6fb833da88d2d2b7dadde90af8ba61b88ab0a7fada893ac94044",
                 "3ef9508e890a818d8d80ee5e2d09486007b647fa1d14413b854548931e8bbdbb",
-                "e56d962493cfb1d606dbf183bb36ea2f4bf10cf8575e031f849a18988d4c6037",
-                "3be187cd3a8c04a1b30498e2cdcbb859c41c30a9b5a10ff1f98a3924a1bbb085",
-                "07b3647a9d24a8bd55b1ec6a47b26e623ae63bc98c212f77cdc5ce4aaba67c48",
-                "393029017e19960d9170904555f6d2b3612558173bcce3a7b5a3f45f95ce2bb6",
+                "671d3da0805fce30b1151024f8256ec600be1bb9467f6f08bd7cca3938d75ce7",
+                "819eb5d79e87200d77743c61f172514947b5d45595f8c14b66acaddd3f58add7",
+                "71490750fc350c040da880026095cdb163f2779a63623f301abad6f4e6f65888",
+                "84c3aa965055203a83b8ef7c5e321c478e041e83810c75f9e0a772a1474211cd",
             ),
             english + chinese,
         )
@@ -71,8 +72,8 @@ class GoldenScreenshotHarnessTest {
 
         assertEquals(
             listOf(
-                "acbeb13cef88e9e161bf73f43e6e7c03d5d482ac64853a8d9b6cd1cdfe83454d",
-                "6e39aaa2a084bc9e9eae651b9807dede078f4d9d7fd1b90cd85dbc5254876edd",
+                "73a4778011f1e781df940f467387d76fb16909c807871060afa353f5df3aea7a",
+                "0d3290dcc56a7a2778cf5d753d1dfd3a7762b97364e9089a03c73f4a6d65ba3b",
             ),
             listOf(english, chinese),
         )
@@ -85,7 +86,7 @@ class GoldenScreenshotHarnessTest {
 
         assertEquals(
             listOf(
-                "d91fa54fcbcb2fdee731426a09f945d12793a26c1b2488fd3841b0b799b9ba7c",
+                "90bf9e5b5e69ae43b400375e4a223ae46627933d0e876ddbc3ec967d1e3802cf",
                 "b3f0e67e671b89450a812165614bf4ee6d8ed1bd902989709e2f68e297c7b73e",
                 "fa423d9786135ef41c8cd2ccafedf215e0cfe612721004c7a7b4a90051d58df4",
                 "e35ef0b952e035fe1b1ff014ba98cee7f824721171150aa0eb4f1a28a66fecbb",
@@ -116,7 +117,7 @@ class GoldenScreenshotHarnessTest {
                 "1b31abf9392c4162b7caba0d6c564d5568b9e192cbc2a9467835e1e20585f5a8",
                 "1c90f155f8760570387901d0d5bfc8a0ad7310b88a7ad959658ff0920ef83743",
                 "8e5f389fabac712b78b97acf0392e10d1c45015b5b0e1e6bdb6dac109cd46ad9",
-                "caec9b15deb06a9b5a9a2c14be6a43e68feecfc121e4a9505b490a9cc7bec828",
+                "c0f403639c4cf564a878d000846fb3dc1807d3ac034ea15d84922db17c224648",
                 "be5bd37c46dc1b4abe00a97e5e6bf4f03d777d1722c1d83c50f4ab3fc3a0d0b8",
                 "9bcf3a9f7856201ad11f7daa00d1b99d8d1e999d99c8941068eb769047312330",
             ),
@@ -132,9 +133,9 @@ class GoldenScreenshotHarnessTest {
         assertEquals(
             listOf(
                 "6f2b6ca634c01f6c86b868148ec92347ec89a4a43c13b40cede0c9bb2a83fc65",
-                "0c66f2877a02ca6998904c9429baca0b31c0650a7da8313136631bd954b31d79",
+                "50fa3e4ce217d63954643edbf422170a039d8b6d919a62a0770a6be86bed1dca",
                 "b8d0501796817d28853fd81302c4e48ecaf3ba50782b26c4064b403c5d9981f3",
-                "2a41cc8212898889d8c26d0daed47ee1993a136c218b37a5df509e589139fc03",
+                "3a873bbe5f53636cfa64ed1dfbfa4b76fcbebb27f27a12c234b5ee39a1d9e9c8",
             ),
             english + chinese,
         )
@@ -340,10 +341,10 @@ class GoldenScreenshotHarnessTest {
 
                 val bossId = requireNotNull(automationEntityByTemplateId(session, "cultist.dungeon_lord")) { "Expected dungeon lord boss for overlay golden capture." }
                 val bossPoint = requireNotNull(automationWorld(session).get<Position>(bossId)) { "Expected boss position for overlay golden capture." }.toPoint()
-                automationMovePlayerTo(session, bossPoint)
+                automationMovePlayerTo(session, findOpenAdjacentPoint(session, bossPoint))
                 app.render()
 
-                val snapshot = session.renderSnapshot()
+                val snapshot = waitForBossTelegraph(session, app)
                 assertTrue(snapshot.overlays.any { overlay -> overlay.id.startsWith("boss-warning:") })
                 assertTrue(snapshot.overlays.any { overlay -> overlay.id.startsWith("telegraph:") })
                 assertTrue(snapshot.logEvents.any { event -> event.message.key == "log.warning.boss_presence" })
@@ -389,7 +390,8 @@ class GoldenScreenshotHarnessTest {
 
                 val bossId = requireNotNull(automationEntityByTemplateId(session, "cultist.dungeon_lord")) { "Expected dungeon lord boss for boss log golden capture." }
                 val bossPoint = requireNotNull(automationWorld(session).get<Position>(bossId)) { "Expected boss position for boss log golden capture." }.toPoint()
-                automationMovePlayerTo(session, bossPoint)
+                automationMovePlayerTo(session, findOpenAdjacentPoint(session, bossPoint))
+                waitForBossTelegraph(session, app)
                 overlaySource.overlayState = OverlayState(mode = UiMode.MAP)
                 captureGameplayLogHash(session) { repeat(2) { app.render() } }
             } finally {
@@ -572,6 +574,23 @@ class GoldenScreenshotHarnessTest {
             ).any(stackTrace::contains)
     }
 
+    private fun waitForBossTelegraph(
+        session: FoundationGameSession,
+        app: GameApp,
+        maxTurns: Int = 4,
+    ): RenderSnapshot {
+        repeat(maxTurns) { index ->
+            val snapshot = session.renderSnapshot()
+            val hasTelegraph = snapshot.overlays.any { overlay -> overlay.id.startsWith("telegraph:") }
+            if (hasTelegraph) {
+                return snapshot
+            }
+            check(session.perform(PlayerCommand.Wait)) { "Failed to advance boss warning turn at step ${index + 1}." }
+            app.render()
+        }
+        return session.renderSnapshot()
+    }
+
 }
 
 private object NoOpInputSource : InputSource {
@@ -611,6 +630,26 @@ private fun automationEntityByTemplateId(
 
 private fun automationForceDefeatPlayer(session: FoundationGameSession) {
     invokeSessionInternal(session, "automationForceDefeatPlayer")
+}
+
+private fun findOpenAdjacentPoint(
+    session: FoundationGameSession,
+    center: Point,
+): Point {
+    val world = automationWorld(session)
+    val occupied =
+        world.entitiesWith(Position::class, BlocksMovement::class)
+            .map { entityId -> requireNotNull(world.get<Position>(entityId)).toPoint() }
+            .toSet()
+
+    return Point.ALL_DIRECTIONS
+        .asSequence()
+        .map { delta -> center + delta }
+        .firstOrNull { point ->
+            session.map.isInBounds(point.x, point.y) &&
+                !session.map[point].blocksMovement &&
+                point !in occupied
+        } ?: error("No open adjacent point around $center.")
 }
 
 private fun invokeSessionInternal(

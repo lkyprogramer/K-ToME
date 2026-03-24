@@ -1,5 +1,7 @@
 package com.ktome.client.render
 
+import com.ktome.client.telegraph.TelegraphRenderer
+import com.ktome.client.telegraph.TelegraphStyle
 import com.ktome.client.assets.ResolvedVisualAsset
 import com.ktome.client.assets.VisualManifestResolver
 import com.ktome.client.input.OverlayState
@@ -37,6 +39,7 @@ internal enum class TileTextTone {
     GREEN,
     RED,
     BLUE,
+    MAGENTA,
 }
 
 internal data class TileVisualPlacement(
@@ -169,7 +172,7 @@ internal object TileRenderModelBuilder {
                         x = cell.x,
                         y = cell.y,
                         asset = asset,
-                        alpha = overlayAlpha(overlay.dangerLevel),
+                        alpha = TelegraphStyle.overlayAlpha(overlay.dangerLevel),
                     )
                 }
             }
@@ -294,6 +297,10 @@ internal object TileRenderModelBuilder {
             UiMode.MAP -> {
                 snapshot.metadata.zoneDescKey?.let { descKey ->
                     rows += TileTextRow(localizer.text(descKey), TileTextTone.LIGHT_GRAY)
+                }
+                if (snapshot.overlays.isNotEmpty()) {
+                    rows += TileTextRow(localizer.text("ui.sidebar.warnings"), TileTextTone.GOLD)
+                    rows += TelegraphRenderer.tileRows(localizer, snapshot)
                 }
                 rows += TileTextRow(localizer.text("ui.sidebar.equipment"), TileTextTone.GOLD)
                 snapshot.uiState.equipment.forEach { equipment ->
@@ -607,13 +614,6 @@ internal object TileRenderModelBuilder {
             DescriptionLineKind.KEYWORD,
             DescriptionLineKind.STATE,
             -> TileTextTone.LIGHT_GRAY
-        }
-
-    private fun overlayAlpha(dangerLevel: Int): Float =
-        when {
-            dangerLevel >= 3 -> 0.85f
-            dangerLevel == 2 -> 0.65f
-            else -> 0.45f
         }
 
     private fun resolveVisual(

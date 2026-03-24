@@ -160,6 +160,10 @@ class SmokeBot : RunBot {
             availableTalent(observation, "purify")?.let { slot -> return PlayerCommand.UseTalent(slot.slot) }
         }
 
+        if (observation.playerResource.typeId == "POSITIVE_ENERGY" && lowHealth && adjacentHostiles > 0) {
+            availableTalent(observation, "holy_light")?.let { slot -> return PlayerCommand.UseTalent(slot.slot) }
+        }
+
         if (criticalHealth && adjacentHostiles > 0) {
             availableTalent(observation, "holy_shield")?.let { slot -> return PlayerCommand.UseTalent(slot.slot) }
             availableTalent(observation, "stealth")?.let { slot -> return PlayerCommand.UseTalent(slot.slot) }
@@ -272,10 +276,11 @@ class SmokeBot : RunBot {
         val lowHealth = observation.playerStatus.currentHp * 100 <= observation.playerStatus.maxHp * 65
         val adjacentHostiles = hostilesWithin(observation, 1)
         val nearbyHostiles = hostilesWithin(observation, 3)
+        val bossVisible = observation.visibleBossPositions.isNotEmpty()
         val shouldRetreat =
             when (observation.playerResource.typeId) {
                 "MANA" -> lowHealth && distance <= 2
-                "POSITIVE_ENERGY" -> lowHealth && distance <= 2
+                "POSITIVE_ENERGY" -> lowHealth && distance <= 2 && (nearbyHostiles >= 2 || bossVisible)
                 "ENERGY" -> lowHealth && adjacentHostiles > 0 && nearbyHostiles >= 2
                 else -> false
             }
@@ -288,6 +293,9 @@ class SmokeBot : RunBot {
             availableTalent(observation, "roll")
                 ?.takeIf { slot -> hostile.isWithin(slot, observation.playerPosition) }
                 ?.let { slot -> return PlayerCommand.UseTalent(slot.slot, hostile) }
+        }
+        if (distance > 1 && shouldPreserveRouteProgress(observation)) {
+            return null
         }
         if (distance > 1 && observation.playerResource.typeId == "POSITIVE_ENERGY" && !hasOffensiveTalent) {
             return null
@@ -601,6 +609,10 @@ class SmokeBot : RunBot {
             "objective" in interactable.interactionTags && "warning" !in interactable.interactionTags -> true
             else -> false
         }
+
+    private fun shouldPreserveRouteProgress(observation: RunObservation): Boolean =
+        observation.playerResource.typeId == "POSITIVE_ENERGY" &&
+            observation.visibleBossPositions.isEmpty()
 
     private fun interactablePriority(interactable: ObservedInteractable): Int =
         when {
