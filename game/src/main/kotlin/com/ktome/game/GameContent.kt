@@ -1,5 +1,6 @@
 package com.ktome.game
 
+import com.ktome.core.ai.AIProfile
 import com.ktome.core.talent.TalentDef
 import com.ktome.core.talent.TalentRegistry
 import com.ktome.core.item.ItemDataBundle
@@ -9,8 +10,8 @@ import com.ktome.game.data.schema.StatusSchemaV2
 import com.ktome.game.i18n.Localizer
 import com.ktome.game.model.BossDefinition
 import com.ktome.game.model.MonsterTemplate
-import com.ktome.game.telegraph.FoundationTelegraphRegistry
 import com.ktome.game.telegraph.TelegraphRegistry
+import com.ktome.game.telegraph.ThreatProfileRegistry
 
 internal data class GameContent(
     val talents: List<TalentDef>,
@@ -22,8 +23,11 @@ internal data class GameContent(
     val bossDefinitions: Map<String, BossDefinition>,
     val schemaCatalog: SchemaCatalog,
     val localizer: Localizer,
-    val telegraphRegistry: TelegraphRegistry = FoundationTelegraphRegistry.CORE,
+    val telegraphRegistry: TelegraphRegistry = TelegraphRegistry(schemaCatalog.telegraphSpecs.associateBy { spec -> spec.id }),
+    val threatProfileRegistry: ThreatProfileRegistry = ThreatProfileRegistry(schemaCatalog.threatProfiles.associateBy { profile -> profile.id }),
 ) {
+    val aiProfilesById: Map<String, AIProfile> = schemaCatalog.aiProfiles.associateBy(AIProfile::id)
+
     fun bossDefinitionForZone(zoneId: String): BossDefinition? =
         schemaCatalog.zones.firstOrNull { zone -> zone.id == zoneId }
             ?.bossEncounterId
@@ -39,4 +43,7 @@ internal data class GameContent(
 
     fun telegraphSpecFor(telegraphRef: String?): com.ktome.core.ai.TelegraphSpec? =
         telegraphRef?.let(telegraphRegistry::resolve)
+
+    fun aiProfile(profileId: String?): AIProfile? =
+        profileId?.let(aiProfilesById::get)
 }

@@ -38,6 +38,8 @@ internal object LintFixtures {
             "/data/talents/index.yaml",
             "/data/monsters/index.yaml",
             "/data/bosses/index.yaml",
+            "/data/telegraph/index.yaml",
+            "/data/telegraph/threat_profiles/index.yaml",
             "/data/zones/index.yaml",
             "/data/interactables/index.yaml",
             "/data/objectives/index.yaml",
@@ -62,7 +64,8 @@ internal object LintFixtures {
         schemaResources.flatMapTo(linkedSetOf()) { resource ->
             extractFieldValues(loadYaml(resource), "nameKey") +
                 extractFieldValues(loadYaml(resource), "descKey") +
-                extractFieldValues(loadYaml(resource), "postMessageKey")
+                extractFieldValues(loadYaml(resource), "postMessageKey") +
+                extractFieldValues(loadYaml(resource), "messageKey")
         }
 
     fun codeReferencedLocaleKeys(): Set<String> {

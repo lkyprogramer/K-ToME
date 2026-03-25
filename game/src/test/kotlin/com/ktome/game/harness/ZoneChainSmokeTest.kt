@@ -83,7 +83,9 @@ class ZoneChainSmokeTest {
 
         while (turns < ZONE_CHAIN_SMOKE_MAX_TURNS && !session.runOutcome().isTerminal) {
             val observation = RunObservationCapture.capture(session, turns)
-            val command = bot.decide(observation)
+            val command: PlayerCommand? =
+                routeProgressCommand(session, observation)
+                    ?: bot.decide(observation)
             if (command == null) {
                 failureReason = "SmokeBot returned no command."
                 break
@@ -166,6 +168,7 @@ class ZoneChainSmokeTest {
         MessageDigest.getInstance("SHA-256")
             .digest(value.toByteArray())
             .joinToString(separator = "") { byte -> "%02x".format(byte) }
+
 }
 
 private data class ZoneChainSpec(

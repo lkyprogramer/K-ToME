@@ -1,10 +1,10 @@
 package com.ktome.tools.lint
 
 import com.ktome.client.assets.ClientAssetBundleLoader
+import com.ktome.core.ai.AIActionType
 import com.ktome.core.talent.KeywordRegistry
 import com.ktome.game.data.DataLoader
 import com.ktome.game.i18n.GameLocale
-import com.ktome.game.telegraph.FoundationTelegraphRegistry
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -28,6 +28,7 @@ class ContractLintTest {
         val lootIds = catalog.lootProfiles.map { it.id }.toSet()
         val tilesetIds = catalog.tilesets.map { it.id }.toSet()
         val aiIds = catalog.aiProfiles.map { it.id }.toSet()
+        val telegraphIds = catalog.telegraphSpecs.map { it.id }.toSet()
         val arenaIds = catalog.arenas.map { it.id }.toSet()
         val ambientIds = catalog.ambientProfiles.map { it.id }.toSet()
         fun ownerNamespace(tree: com.ktome.game.data.schema.TalentTreeSchemaV2): String = tree.raceId ?: tree.professionId
@@ -89,21 +90,23 @@ class ContractLintTest {
             assertExactAudioKey(talent.audioProfile)
             assertTrue(talent.castTime in setOf("INSTANT", "QUICK", "STANDARD", "HEAVY"), "Unsupported castTime ${talent.castTime}")
             KeywordRegistry.CORE.resolveAll(talent.keywords)
-            talent.telegraphRef?.let(FoundationTelegraphRegistry.CORE::require)
+            talent.telegraphRef?.let { telegraphRef -> assertTrue(telegraphRef in telegraphIds, "Unknown telegraph $telegraphRef") }
             talent.requirements.talentPrereqs.forEach { prereq ->
                 assertTrue(talentIds.contains(prereq.talentId), "Unknown talent prerequisite ${prereq.talentId}")
             }
         }
 
         catalog.aiProfiles.forEach { aiProfile ->
-            assertEquals(2, aiProfile.schemaVersion)
-            aiProfile.talentPriority.forEach { talentId ->
-                assertTrue(talentIds.contains(talentId), "Unknown AI profile talent $talentId")
-            }
-            aiProfile.skipRules.forEach { rule ->
-                assertTrue(rule.talentId in aiProfile.talentPriority, "AI profile ${aiProfile.id} skip rule must reference configured talent ${rule.talentId}")
+            assertTrue(aiProfile.perceptionRange > 0, "AI profile ${aiProfile.id} must declare positive perceptionRange")
+            assertTrue(aiProfile.actions.isNotEmpty(), "AI profile ${aiProfile.id} must declare at least one action")
+            aiProfile.actions.forEach { action ->
+                if (action.type == AIActionType.USE_ABILITY) {
+                    assertTrue(action.abilityId in talentIds, "Unknown AI ability ${action.abilityId} in profile ${aiProfile.id}")
+                }
             }
         }
+
+        ThreatProfileLint.validate(catalog)
 
         catalog.monsters.forEach { monster ->
             assertEquals(2, monster.schemaVersion)
@@ -119,13 +122,22 @@ class ContractLintTest {
 
         catalog.bossEncounters.forEach { boss ->
             assertEquals(2, boss.schemaVersion)
-            assertEquals("boss.${boss.bossTemplateId}.name", boss.nameKey)
-            assertEquals("boss.${boss.bossTemplateId}.desc", boss.descKey)
+            assertEquals("boss.${boss.templateId}.name", boss.nameKey)
+            assertEquals("boss.${boss.templateId}.desc", boss.descKey)
             assertExactVisualKey(boss.visualKey)
             assertExactVisualKey(boss.iconKey)
             assertExactAudioKey(boss.audioProfile)
-            assertTrue(monsterIds.contains(boss.bossTemplateId), "Unknown boss template ${boss.bossTemplateId}")
+            assertTrue(monsterIds.contains(boss.templateId), "Unknown boss template ${boss.templateId}")
             assertTrue(arenaIds.contains(boss.arenaId), "Unknown arena ${boss.arenaId}")
+            assertTrue(boss.phases.isNotEmpty(), "Boss ${boss.id} must declare at least one phase")
+            boss.phases.forEach { phase ->
+                assertTrue(aiIds.contains(phase.aiProfileId), "Unknown boss phase AI profile ${phase.aiProfileId}")
+                phase.onEnter.forEach { event ->
+                    event.telegraphSpecId?.let { telegraphId ->
+                        assertTrue(telegraphId in telegraphIds, "Unknown boss telegraph $telegraphId")
+                    }
+                }
+            }
             boss.rewards.forEach { rewardId -> assertTrue(lootIds.contains(rewardId), "Unknown boss reward $rewardId") }
         }
 
@@ -240,7 +252,7 @@ class ContractLintTest {
             mapOf(
                 "shattered_outpost" to "bandit_captain_encounter",
                 "greenwood_fringe" to null,
-                "deep_iron_pit" to null,
+                "deep_iron_pit" to "molten_giant_encounter",
                 "grey_gate_depths" to "dungeon_lord_encounter",
             ),
             catalog.zones.associate { zone -> zone.id to zone.bossEncounterId },

@@ -1,5 +1,9 @@
 package com.ktome.game
 
+import com.ktome.core.ai.AIPerceptionState
+import com.ktome.core.ai.BossEncounterState
+import com.ktome.core.ai.DangerLevel
+import com.ktome.core.ai.PendingTelegraphState
 import com.ktome.core.dungeon.FloorState
 import com.ktome.core.dungeon.StairDirection
 import com.ktome.core.ecs.AIBehavior
@@ -49,9 +53,11 @@ import com.ktome.core.resource.ResourcePoolSnapshot
 import com.ktome.core.resource.ResourcePools
 import com.ktome.core.resource.ResourceType
 import com.ktome.core.save.AIBehaviorSnapshot
+import com.ktome.core.save.AIPerceptionSnapshot
 import com.ktome.core.save.AiTriggerTrackerSnapshot
 import com.ktome.core.save.ActiveEffectSnapshot
 import com.ktome.core.save.AreaEffectEmitterSnapshot
+import com.ktome.core.save.BossEncounterStateSnapshot
 import com.ktome.core.save.CombatProfileSnapshot
 import com.ktome.core.save.EntitySnapshot
 import com.ktome.core.save.EquipmentSnapshot
@@ -61,6 +67,7 @@ import com.ktome.core.save.InventorySnapshot
 import com.ktome.core.save.InvalidSaveException
 import com.ktome.core.save.ItemSnapshot
 import com.ktome.core.save.MapSnapshot
+import com.ktome.core.save.PendingTelegraphSnapshot
 import com.ktome.core.save.PatrolRouteSnapshot
 import com.ktome.core.save.PlayerSnapshot
 import com.ktome.core.save.PointSnapshot
@@ -320,6 +327,32 @@ internal object SessionSnapshotMapper {
                         engagedInCombat = tracker.engagedInCombat,
                     )
                 },
+            aiPerception =
+                world.get<AIPerceptionState>(entityId)?.let { perception ->
+                    AIPerceptionSnapshot(
+                        lastKnownTargetPosition = perception.lastKnownTargetPosition?.let(PointSnapshot::from),
+                    )
+                },
+            pendingTelegraph =
+                world.get<PendingTelegraphState>(entityId)?.let { telegraph ->
+                    PendingTelegraphSnapshot(
+                        telegraphSpecId = telegraph.telegraphSpecId,
+                        sourceAbilityId = telegraph.sourceAbilityId,
+                        remainingTurns = telegraph.remainingTurns,
+                        targetPoint = PointSnapshot.from(telegraph.targetPoint),
+                        queuedAbilityId = telegraph.queuedAbilityId,
+                        dangerLevel = telegraph.resolvedDangerLevel.name,
+                    )
+                },
+            bossEncounterState =
+                world.get<BossEncounterState>(entityId)?.let { bossState ->
+                    BossEncounterStateSnapshot(
+                        encounterId = bossState.encounterId,
+                        currentPhaseId = bossState.currentPhaseId,
+                        encounterTurnCount = bossState.encounterTurnCount,
+                        phaseTurnCount = bossState.phaseTurnCount,
+                    )
+                },
             resourcePools =
                 world.get<ResourcePools>(entityId)?.entries
                     ?.values
@@ -429,6 +462,38 @@ internal object SessionSnapshotMapper {
                     consumedTriggerIds = tracker.consumedTriggerIds.toCollection(linkedSetOf()),
                     pendingCombatStartTriggerIds = tracker.pendingCombatStartTriggerIds.toCollection(linkedSetOf()),
                     engagedInCombat = tracker.engagedInCombat,
+                ),
+            )
+        }
+        snapshot.aiPerception?.let { perception ->
+            world.add(
+                entityId,
+                AIPerceptionState(
+                    lastKnownTargetPosition = perception.lastKnownTargetPosition?.toPoint(),
+                ),
+            )
+        }
+        snapshot.pendingTelegraph?.let { telegraph ->
+            world.add(
+                entityId,
+                PendingTelegraphState(
+                    telegraphSpecId = telegraph.telegraphSpecId,
+                    sourceAbilityId = telegraph.sourceAbilityId,
+                    remainingTurns = telegraph.remainingTurns,
+                    targetPoint = telegraph.targetPoint.toPoint(),
+                    queuedAbilityId = telegraph.queuedAbilityId,
+                    resolvedDangerLevel = parseEnumFromSave<DangerLevel>(telegraph.dangerLevel, "telegraph danger level"),
+                ),
+            )
+        }
+        snapshot.bossEncounterState?.let { bossState ->
+            world.add(
+                entityId,
+                BossEncounterState(
+                    encounterId = bossState.encounterId,
+                    currentPhaseId = bossState.currentPhaseId,
+                    encounterTurnCount = bossState.encounterTurnCount,
+                    phaseTurnCount = bossState.phaseTurnCount,
                 ),
             )
         }
@@ -544,6 +609,19 @@ internal object SessionSnapshotMapper {
                     consumedTriggerIds = aiTriggerTracker.consumedTriggerIds.sorted(),
                     pendingCombatStartTriggerIds = aiTriggerTracker.pendingCombatStartTriggerIds.sorted(),
                 ),
+            aiPerception =
+                snapshot.aiPerception?.let { perception ->
+                    perception.copy(
+                        lastKnownTargetPosition = perception.lastKnownTargetPosition?.copy(),
+                    )
+                },
+            pendingTelegraph =
+                snapshot.pendingTelegraph?.let { telegraph ->
+                    telegraph.copy(
+                        targetPoint = telegraph.targetPoint.copy(),
+                    )
+                },
+            bossEncounterState = snapshot.bossEncounterState?.copy(),
             resourcePools = snapshot.resourcePools.sortedBy(ResourcePoolSnapshot::type),
             talentLoadout =
                 talentLoadout?.copy(

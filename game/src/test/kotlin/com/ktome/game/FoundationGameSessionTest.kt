@@ -1,18 +1,26 @@
 package com.ktome.game
 
+import com.ktome.core.ai.AIPerceptionState
+import com.ktome.core.ai.BossEncounter
+import com.ktome.core.ai.BossEncounterState
+import com.ktome.core.ai.BossPhaseTransitionTiming
+import com.ktome.core.ai.PendingTelegraphState
 import com.ktome.core.combat.CombatResolver
 import com.ktome.core.combat.DamageType
+import com.ktome.core.dungeon.StairDirection
 import com.ktome.core.dungeon.DungeonManager
 import com.ktome.core.dungeon.FloorState
 import com.ktome.core.ecs.AIBehavior
 import com.ktome.core.ecs.AIType
-import com.ktome.core.ecs.AiTriggerTracker
+import com.ktome.core.ecs.BlocksMovement
 import com.ktome.core.ecs.CombatProfile
 import com.ktome.core.ecs.DerivedStats
+import com.ktome.core.ecs.EntityId
 import com.ktome.core.ecs.Experience
 import com.ktome.core.ecs.Health
 import com.ktome.core.ecs.Interactable
 import com.ktome.core.ecs.MonsterTemplateId
+import com.ktome.core.ecs.Name
 import com.ktome.core.ecs.Position
 import com.ktome.core.ecs.ResistanceProfile
 import com.ktome.core.ecs.Stair
@@ -34,6 +42,7 @@ import com.ktome.core.item.ItemType
 import com.ktome.core.item.StatModifier
 import com.ktome.core.map.GameMap
 import com.ktome.core.map.Point
+import com.ktome.core.pathfinding.AStar
 import com.ktome.core.random.RandomSource
 import com.ktome.core.resource.ResourcePools
 import com.ktome.core.resource.ResourceType
@@ -60,6 +69,7 @@ import java.nio.file.Files
 import java.nio.file.Path
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertThrows
@@ -1587,17 +1597,17 @@ class FoundationGameSessionTest {
                 config =
                     FoundationGameConfig(
                         seed = 20260322L,
-                        zoneId = "deep_iron_pit",
+                        zoneId = "greenwood_fringe",
                         playerProfessionId = "rogue",
                         zoneRoute = FOUNDATION_ZONE_ROUTE,
-                        routeIndex = 2,
+                        routeIndex = 1,
                     ),
                 saveManager = SaveManager(tempDir.resolve("route-zone-enter-save")),
             )
 
         val initialZoneEnter = requireNotNull(logEventByKey(session, "log.zone.enter"))
-        assertEquals("zone.deep_iron_pit.name", initialZoneEnter.message.arguments.first { argument -> argument.name == "zone" }.valueKey)
-        assertEquals("zone.deep_iron_pit.desc", initialZoneEnter.message.arguments.first { argument -> argument.name == "desc" }.valueKey)
+        assertEquals("zone.greenwood_fringe.name", initialZoneEnter.message.arguments.first { argument -> argument.name == "zone" }.valueKey)
+        assertEquals("zone.greenwood_fringe.desc", initialZoneEnter.message.arguments.first { argument -> argument.name == "desc" }.valueKey)
 
         movePlayerTo(session, stairPoint(session, com.ktome.core.dungeon.StairDirection.DOWN))
         assertTrue(session.perform(PlayerCommand.Descend))
@@ -1608,12 +1618,12 @@ class FoundationGameSessionTest {
         val zoneEnterEvents = snapshot.logEvents.filter { event -> event.message.key == "log.zone.enter" }
         val latestZoneEnter = zoneEnterEvents.last()
 
-        assertEquals("grey_gate_depths", snapshot.metadata.zoneId)
-        assertEquals("zone.grey_gate_depths.desc", snapshot.metadata.zoneDescKey)
+        assertEquals("deep_iron_pit", snapshot.metadata.zoneId)
+        assertEquals("zone.deep_iron_pit.desc", snapshot.metadata.zoneDescKey)
         assertTrue(snapshot.logEvents.any { event -> event.message.key == "log.route.advance" })
-        assertEquals(1, zoneEnterEvents.count { event -> event.message.arguments.first { argument -> argument.name == "zone" }.valueKey == "zone.grey_gate_depths.name" })
-        assertEquals("zone.grey_gate_depths.name", latestZoneEnter.message.arguments.first { argument -> argument.name == "zone" }.valueKey)
-        assertEquals("zone.grey_gate_depths.desc", latestZoneEnter.message.arguments.first { argument -> argument.name == "desc" }.valueKey)
+        assertEquals(1, zoneEnterEvents.count { event -> event.message.arguments.first { argument -> argument.name == "zone" }.valueKey == "zone.deep_iron_pit.name" })
+        assertEquals("zone.deep_iron_pit.name", latestZoneEnter.message.arguments.first { argument -> argument.name == "zone" }.valueKey)
+        assertEquals("zone.deep_iron_pit.desc", latestZoneEnter.message.arguments.first { argument -> argument.name == "desc" }.valueKey)
     }
 
     @Test
@@ -1782,7 +1792,7 @@ class FoundationGameSessionTest {
     }
 
     @Test
-    fun `boss opening trigger consumes once and survives save load`() {
+    fun `boss telegraph and phase runtime survive save load`() {
         val saveManager = SaveManager(tempDir.resolve("boss-trigger-save"))
         val session =
             GameModule.newFoundationSession(
@@ -1793,27 +1803,40 @@ class FoundationGameSessionTest {
         assertTrue(session.perform(PlayerCommand.Descend))
 
         val bossId = requireNotNull(entityByTemplateId(session, "cultist.dungeon_lord"))
-        val bossPoint = requireNotNull(runtimeWorld(session).get<Position>(bossId)).toPoint()
+        val world = runtimeWorld(session)
+        val bossPoint = requireNotNull(world.get<Position>(bossId)).toPoint()
         movePlayerTo(session, findOpenAdjacentPoint(session, bossPoint))
+        val bossHealth = requireNotNull(world.get<Health>(bossId))
+        bossHealth.current = bossHealth.max * 2 / 5
 
         assertTrue(session.perform(PlayerCommand.Wait))
-        assertTrue(
-            requireNotNull(runtimeWorld(session).get<EffectTracker>(bossId))
-                .activeEffects()
-                .any { effect -> effect.schemaId == "war_cry_empower" },
-        )
-        assertEquals(setOf("dungeon_lord_opening_war_cry"), aiTriggerTracker(session, bossId).consumedTriggerIds)
+        val pendingTelegraph = requireNotNull(world.get<PendingTelegraphState>(bossId))
+        val phaseState = requireNotNull(world.get<BossEncounterState>(bossId))
+        val phaseTrace = session.recentBossTraces().last { trace -> trace.actorId == bossId.value }
+
+        assertEquals("dungeon_lord_phase_warning", pendingTelegraph.telegraphSpecId)
+        assertEquals("dungeon_lord_phase_warning", pendingTelegraph.sourceAbilityId)
+        assertEquals("phase_desperate", phaseState.currentPhaseId)
+        assertNotNull(logEventByKey(session, "log.boss.desperate"))
+        assertEquals("phase_desperate", phaseTrace.toPhase)
+        assertTrue(phaseTrace.sideEffects.contains("TELEGRAPH:dungeon_lord_phase_warning"))
 
         assertTrue(session.perform(PlayerCommand.SaveGame))
         val loaded = requireNotNull(GameModule.loadFoundationSession(saveManager))
         val loadedBossId = requireNotNull(entityByTemplateId(loaded, "cultist.dungeon_lord"))
+        val loadedWorld = runtimeWorld(loaded)
+        val loadedPendingTelegraph = requireNotNull(loadedWorld.get<PendingTelegraphState>(loadedBossId))
+        val loadedPhaseState = requireNotNull(loadedWorld.get<BossEncounterState>(loadedBossId))
 
-        assertEquals(setOf("dungeon_lord_opening_war_cry"), aiTriggerTracker(loaded, loadedBossId).consumedTriggerIds)
-        assertTrue(aiTriggerTracker(loaded, loadedBossId).engagedInCombat)
+        assertEquals(pendingTelegraph.telegraphSpecId, loadedPendingTelegraph.telegraphSpecId)
+        assertEquals(pendingTelegraph.sourceAbilityId, loadedPendingTelegraph.sourceAbilityId)
+        assertEquals(pendingTelegraph.remainingTurns, loadedPendingTelegraph.remainingTurns)
+        assertEquals(phaseState.currentPhaseId, loadedPhaseState.currentPhaseId)
+        assertEquals(phaseState.encounterTurnCount, loadedPhaseState.encounterTurnCount)
     }
 
     @Test
-    fun `boss opening trigger stays consumed after losing sight and re engaging`() {
+    fun `boss phase entry trace is not replayed after losing sight and re engaging`() {
         val session =
             GameModule.newFoundationSession(
                 config = FoundationGameConfig(seed = 20260322L, zoneId = "grey_gate_depths", playerProfessionId = "vanguard"),
@@ -1823,56 +1846,232 @@ class FoundationGameSessionTest {
         assertTrue(session.perform(PlayerCommand.Descend))
 
         val bossId = requireNotNull(entityByTemplateId(session, "cultist.dungeon_lord"))
-        val bossPoint = requireNotNull(runtimeWorld(session).get<Position>(bossId)).toPoint()
+        val world = runtimeWorld(session)
+        val bossPoint = requireNotNull(world.get<Position>(bossId)).toPoint()
+        movePlayerTo(session, findOpenAdjacentPoint(session, bossPoint))
+        requireNotNull(world.get<Health>(bossId)).current = requireNotNull(world.get<Health>(bossId)).max * 2 / 5
+
+        assertTrue(session.perform(PlayerCommand.Wait))
+        val transitionCount = session.recentBossTraces().count { trace -> trace.actorId == bossId.value && trace.toPhase == "phase_desperate" }
+        assertEquals("phase_desperate", requireNotNull(world.get<BossEncounterState>(bossId)).currentPhaseId)
+
+        movePlayerTo(session, findOpenPointAtDistance(session, center = bossPoint, distance = 13))
+
+        assertTrue(session.perform(PlayerCommand.Wait))
+        assertEquals("phase_desperate", requireNotNull(world.get<BossEncounterState>(bossId)).currentPhaseId)
+        assertEquals(
+            transitionCount,
+            session.recentBossTraces().count { trace -> trace.actorId == bossId.value && trace.toPhase == "phase_desperate" },
+        )
+
         movePlayerTo(session, findOpenAdjacentPoint(session, bossPoint))
 
         assertTrue(session.perform(PlayerCommand.Wait))
-        assertEquals(setOf("dungeon_lord_opening_war_cry"), aiTriggerTracker(session, bossId).consumedTriggerIds)
-
-        movePlayerTo(session, findOpenPointAtDistance(session, center = bossPoint, distance = 9))
-
-        assertTrue(session.perform(PlayerCommand.Wait))
-        assertFalse(aiTriggerTracker(session, bossId).engagedInCombat)
-        assertEquals(setOf("dungeon_lord_opening_war_cry"), aiTriggerTracker(session, bossId).consumedTriggerIds)
-
-        movePlayerTo(session, findOpenAdjacentPoint(session, bossPoint))
-
-        assertTrue(session.perform(PlayerCommand.Wait))
-        assertTrue(aiTriggerTracker(session, bossId).engagedInCombat)
-        assertTrue(aiTriggerTracker(session, bossId).pendingCombatStartTriggerIds.isEmpty())
-        assertEquals(setOf("dungeon_lord_opening_war_cry"), aiTriggerTracker(session, bossId).consumedTriggerIds)
+        assertEquals(
+            transitionCount,
+            session.recentBossTraces().count { trace -> trace.actorId == bossId.value && trace.toPhase == "phase_desperate" },
+        )
+        assertEquals("phase_desperate", requireNotNull(world.get<BossEncounterState>(bossId)).currentPhaseId)
     }
 
     @Test
-    fun `boss hp trigger posts message after forced talent`() {
+    fun `boss stealth does not create extra phase transitions before hp gate is met`() {
         val session =
             GameModule.newFoundationSession(
-                config = FoundationGameConfig(seed = 20260322L, zoneId = "shattered_outpost", playerProfessionId = "vanguard"),
+                config = FoundationGameConfig(seed = 20260322L, zoneId = "grey_gate_depths", playerProfessionId = "vanguard"),
+                saveManager = SaveManager(tempDir.resolve("boss-stealth-phase-gate")),
+            )
+        movePlayerTo(session, stairPoint(session, com.ktome.core.dungeon.StairDirection.DOWN))
+        assertTrue(session.perform(PlayerCommand.Descend))
+
+        val world = runtimeWorld(session)
+        val bossId = requireNotNull(entityByTemplateId(session, "cultist.dungeon_lord"))
+        val bossPoint = requireNotNull(world.get<Position>(bossId)).toPoint()
+        movePlayerTo(session, findOpenAdjacentPoint(session, bossPoint))
+        requireNotNull(world.get<com.ktome.core.talent.CooldownState>(bossId)).remainingByTalentId.apply {
+            this["war_cry"] = 99
+            this["power_strike"] = 99
+            this["charge"] = 99
+        }
+
+        repeat(3) {
+            if (world.get<BossEncounterState>(bossId)?.currentPhaseId == "phase_full") {
+                return@repeat
+            }
+            assertTrue(session.perform(PlayerCommand.Wait))
+        }
+        assertEquals("phase_full", requireNotNull(world.get<BossEncounterState>(bossId)).currentPhaseId)
+        val desperateTraceCountBeforeStealth =
+            session.recentBossTraces().count { trace -> trace.actorId == bossId.value && trace.toPhase == "phase_desperate" }
+
+        StatusLifecycle.applyEffect(
+            requireNotNull(world.get<EffectTracker>(session.playerId)),
+            StatusLifecycle.createInstance(
+                type = StatusEffectType.STEALTH,
+                effectId = "boss_stealth_gate_test",
+                duration = 10,
+                sourceEntityId = session.playerId,
+            ),
+        )
+
+        repeat(3) {
+            assertTrue(session.perform(PlayerCommand.Wait))
+        }
+
+        assertEquals("phase_full", requireNotNull(world.get<BossEncounterState>(bossId)).currentPhaseId)
+        assertEquals(
+            desperateTraceCountBeforeStealth,
+            session.recentBossTraces().count { trace -> trace.actorId == bossId.value && trace.toPhase == "phase_desperate" },
+        )
+
+        val bossHealth = requireNotNull(world.get<Health>(bossId))
+        bossHealth.current = bossHealth.max * 2 / 5
+        assertTrue(session.perform(PlayerCommand.Wait))
+
+        assertEquals("phase_desperate", requireNotNull(world.get<BossEncounterState>(bossId)).currentPhaseId)
+        assertEquals(
+            desperateTraceCountBeforeStealth + 1,
+            session.recentBossTraces().count { trace -> trace.actorId == bossId.value && trace.toPhase == "phase_desperate" },
+        )
+    }
+
+    @Test
+    fun `boss hp threshold transition posts message and records trace`() {
+        val session =
+            GameModule.newFoundationSession(
+                config = FoundationGameConfig(seed = 20260322L, zoneId = "grey_gate_depths", playerProfessionId = "vanguard"),
                 saveManager = SaveManager(tempDir.resolve("boss-hp-trigger-save")),
             )
         movePlayerTo(session, stairPoint(session, com.ktome.core.dungeon.StairDirection.DOWN))
         assertTrue(session.perform(PlayerCommand.Descend))
 
         val world = runtimeWorld(session)
-        val bossId = requireNotNull(entityByTemplateId(session, "bandit.captain"))
+        val bossId = requireNotNull(entityByTemplateId(session, "cultist.dungeon_lord"))
         val bossPoint = requireNotNull(world.get<Position>(bossId)).toPoint()
         movePlayerTo(session, findOpenAdjacentPoint(session, bossPoint))
-
-        assertTrue(session.perform(PlayerCommand.Wait))
         val bossHealth = requireNotNull(world.get<Health>(bossId))
         bossHealth.current = bossHealth.max * 2 / 5
-        requireNotNull(world.get<com.ktome.core.talent.CooldownState>(bossId)).remainingByTalentId["power_strike"] = 0
 
         assertTrue(session.perform(PlayerCommand.Wait))
-        assertNotNull(logEventByKey(session, "log.boss.enrage"))
+        val trace = requireNotNull(session.recentBossTraces().lastOrNull { recent -> recent.actorId == bossId.value })
+        assertNotNull(logEventByKey(session, "log.boss.desperate"))
+        assertEquals("phase_desperate", requireNotNull(world.get<BossEncounterState>(bossId)).currentPhaseId)
+        assertEquals("phase_desperate", trace.toPhase)
+        assertEquals("hp_threshold", trace.trigger)
+        assertTrue(trace.sideEffects.contains("TELEGRAPH:dungeon_lord_phase_warning"))
+        assertEquals("dungeon_lord_phase_warning", requireNotNull(world.get<PendingTelegraphState>(bossId)).telegraphSpecId)
+    }
+
+    @Test
+    fun `allow fatal transition phase prevents boss death and enters configured phase`() {
+        val session =
+            GameModule.newFoundationSession(
+                config = FoundationGameConfig(seed = 20260322L, zoneId = "deep_iron_pit", playerProfessionId = "vanguard"),
+                saveManager = SaveManager(tempDir.resolve("boss-fatal-phase-transition")),
+            )
+        movePlayerTo(session, stairPoint(session, com.ktome.core.dungeon.StairDirection.DOWN))
+        assertTrue(session.perform(PlayerCommand.Descend))
+
+        val world = runtimeWorld(session)
+        val bossId = requireNotNull(entityByTemplateId(session, "orc.molten_giant"))
+        replaceContent(
+            session,
+            sessionContent(session).let { content ->
+                val definition = requireNotNull(content.bossDefinitions["molten_giant_encounter"])
+                val updatedEncounter =
+                    BossEncounter(
+                        id = definition.encounter.id,
+                        templateId = definition.encounter.templateId,
+                        phases =
+                            definition.encounter.phases.map { phase ->
+                                if (phase.id == "phase_enraged") {
+                                    phase.copy(transitionTiming = BossPhaseTransitionTiming.ALLOW_FATAL_TRANSITION)
+                                } else {
+                                    phase
+                                }
+                            },
+                    )
+                content.copy(
+                    bossDefinitions =
+                        content.bossDefinitions +
+                            ("molten_giant_encounter" to definition.copy(encounter = updatedEncounter)),
+                )
+            },
+        )
+
+        val bossState = requireNotNull(world.get<BossEncounterState>(bossId))
+        bossState.currentPhaseId = "phase_full"
+        val bossHealth = requireNotNull(world.get<Health>(bossId))
+        bossHealth.current = 0
+
+        invokeHandleDeath(session, bossId, session.playerId)
+
+        assertTrue(world.isAlive(bossId))
+        assertEquals("phase_enraged", bossState.currentPhaseId)
+        assertEquals(1, bossHealth.current)
         assertEquals(
-            setOf("bandit_captain_opening_shield_bash", "bandit_captain_enrage_40"),
-            aiTriggerTracker(session, bossId).consumedTriggerIds,
+            "molten_giant_phase_warning",
+            requireNotNull(world.get<PendingTelegraphState>(bossId)).telegraphSpecId,
+        )
+        assertTrue(
+            session.recentBossTraces().any { trace ->
+                trace.actorId == bossId.value &&
+                    trace.toPhase == "phase_enraged" &&
+                    "TELEGRAPH:molten_giant_phase_warning" in trace.sideEffects
+            },
         )
     }
 
     @Test
-    fun `on combat start trigger expires after the opening turn when talent is unusable`() {
+    fun `start of turn phase change clears stale queued telegraph before it resolves`() {
+        val session =
+            GameModule.newFoundationSession(
+                config = FoundationGameConfig(seed = 20260322L, zoneId = "grey_gate_depths", playerProfessionId = "vanguard"),
+                saveManager = SaveManager(tempDir.resolve("boss-phase-clears-stale-telegraph")),
+            )
+        movePlayerTo(session, stairPoint(session, com.ktome.core.dungeon.StairDirection.DOWN))
+        assertTrue(session.perform(PlayerCommand.Descend))
+
+        val world = runtimeWorld(session)
+        val bossId = requireNotNull(entityByTemplateId(session, "cultist.dungeon_lord"))
+        val bossPoint = requireNotNull(world.get<Position>(bossId)).toPoint()
+        movePlayerTo(session, findOpenAdjacentPoint(session, bossPoint))
+        requireNotNull(world.get<com.ktome.core.talent.CooldownState>(bossId)).remainingByTalentId.apply {
+            this["war_cry"] = 99
+            this["power_strike"] = 0
+            this["charge"] = 99
+        }
+
+        var queuedTelegraph: PendingTelegraphState? = null
+        for (attempt in 0 until 6) {
+            assertTrue(session.perform(PlayerCommand.Wait))
+            val candidate = world.get<PendingTelegraphState>(bossId)
+            if (candidate?.sourceAbilityId == "power_strike") {
+                queuedTelegraph = candidate
+                break
+            }
+        }
+        queuedTelegraph = requireNotNull(queuedTelegraph)
+        assertEquals("power_strike", queuedTelegraph.sourceAbilityId)
+
+        val bossHealth = requireNotNull(world.get<Health>(bossId))
+        bossHealth.current = bossHealth.max * 2 / 5
+
+        assertTrue(session.perform(PlayerCommand.Wait))
+
+        val replacementTelegraph = requireNotNull(world.get<PendingTelegraphState>(bossId))
+        val trace = requireNotNull(session.recentBossTraces().lastOrNull { recent -> recent.actorId == bossId.value })
+        assertEquals("phase_desperate", requireNotNull(world.get<BossEncounterState>(bossId)).currentPhaseId)
+        assertEquals("dungeon_lord_phase_warning", replacementTelegraph.telegraphSpecId)
+        assertEquals("dungeon_lord_phase_warning", replacementTelegraph.sourceAbilityId)
+        assertNotEquals("power_strike", replacementTelegraph.sourceAbilityId)
+        assertEquals("hp_threshold", trace.trigger)
+        assertTrue(trace.sideEffects.contains("CLEAR_PENDING_TELEGRAPH"))
+        assertTrue(trace.sideEffects.contains("TELEGRAPH:dungeon_lord_phase_warning"))
+    }
+
+    @Test
+    fun `telegraph lifecycle clears after resolution and next decision schedules a fresh warning`() {
         val session =
             GameModule.newFoundationSession(
                 config = FoundationGameConfig(seed = 20260322L, zoneId = "shattered_outpost", playerProfessionId = "vanguard"),
@@ -1884,19 +2083,317 @@ class FoundationGameSessionTest {
         val world = runtimeWorld(session)
         val bossId = requireNotNull(entityByTemplateId(session, "bandit.captain"))
         val bossPoint = requireNotNull(world.get<Position>(bossId)).toPoint()
-        val openingSightPoint = findOpenPointAtDistance(session, center = bossPoint, distance = 2)
-        movePlayerTo(session, openingSightPoint)
-
-        assertTrue(session.perform(PlayerCommand.Wait))
-        assertTrue(aiTriggerTracker(session, bossId).engagedInCombat)
-        assertTrue(aiTriggerTracker(session, bossId).pendingCombatStartTriggerIds.isEmpty())
-        assertFalse(aiTriggerTracker(session, bossId).consumedTriggerIds.contains("bandit_captain_opening_shield_bash"))
-
         movePlayerTo(session, findOpenAdjacentPoint(session, bossPoint))
+        requireNotNull(world.get<com.ktome.core.talent.CooldownState>(bossId)).remainingByTalentId.apply {
+            this["shield_bash"] = 0
+            this["power_strike"] = 99
+            this["charge"] = 99
+        }
+
+        var firstTelegraph: PendingTelegraphState? = null
+        for (attempt in 0 until 6) {
+            assertTrue(session.perform(PlayerCommand.Wait))
+            val candidate = world.get<PendingTelegraphState>(bossId)
+            if (candidate?.sourceAbilityId == "shield_bash") {
+                firstTelegraph = candidate
+                break
+            }
+        }
+        firstTelegraph = requireNotNull(firstTelegraph)
+        assertEquals("shield_bash", firstTelegraph.sourceAbilityId)
+        assertEquals("melee_single", firstTelegraph.telegraphSpecId)
+
+        requireNotNull(world.get<com.ktome.core.talent.CooldownState>(bossId)).remainingByTalentId.apply {
+            this["shield_bash"] = 99
+            this["power_strike"] = 0
+        }
+
+        var secondTelegraph: PendingTelegraphState? = null
+        for (attempt in 0 until 6) {
+            assertTrue(session.perform(PlayerCommand.Wait))
+            val candidate = world.get<PendingTelegraphState>(bossId)
+            if (candidate?.sourceAbilityId == "power_strike") {
+                secondTelegraph = candidate
+                break
+            }
+        }
+        secondTelegraph = requireNotNull(secondTelegraph)
+        assertEquals("power_strike", secondTelegraph.sourceAbilityId)
+        assertEquals("melee_single", secondTelegraph.telegraphSpecId)
+    }
+
+    @Test
+    fun `kite ai falls back to attack when retreat has no valid step`() {
+        val session =
+            GameModule.newFoundationSession(
+                config = FoundationGameConfig(seed = 20260322L, zoneId = "shattered_outpost", playerProfessionId = "vanguard"),
+                saveManager = SaveManager(tempDir.resolve("blocked-retreat-fallback")),
+            )
+        clearMonsters(session)
+        val world = runtimeWorld(session)
+        val playerPoint = session.playerPosition()
+        val monsterPoint = findOpenAdjacentPoint(session, playerPoint)
+        val monsterId =
+            installAiMonster(
+                session = session,
+                id = "blocked_kiter",
+                position = monsterPoint,
+                aiProfileId = "ai.kite.basic",
+                aiType = AIType.KITE,
+            )
+
+        Point.ALL_DIRECTIONS
+            .map { delta -> monsterPoint + delta }
+            .filter { point ->
+                point != playerPoint &&
+                    session.map.isInBounds(point.x, point.y) &&
+                    !session.map[point].blocksMovement
+            }.forEach { point ->
+                createTargetDummy(session, point)
+            }
+
+        val before = requireNotNull(world.get<Position>(monsterId)).toPoint()
+        val playerHealthBefore = requireNotNull(world.get<Health>(session.playerId)).current
+        var after = before
+        repeat(3) {
+            assertTrue(session.perform(PlayerCommand.Wait))
+            after = requireNotNull(world.get<Position>(monsterId)).toPoint()
+            if (
+                logEventByKey(session, "log.attack.hit") != null ||
+                logEventByKey(session, "log.attack.miss") != null ||
+                logEventByKey(session, "log.attack.crit") != null ||
+                requireNotNull(world.get<Health>(session.playerId)).current < playerHealthBefore
+            ) {
+                return@repeat
+            }
+        }
+
+        assertEquals(before, after)
+        assertTrue(
+            logEventByKey(session, "log.attack.hit") != null ||
+                logEventByKey(session, "log.attack.miss") != null ||
+                logEventByKey(session, "log.attack.crit") != null ||
+                requireNotNull(world.get<Health>(session.playerId)).current < playerHealthBefore,
+        )
+    }
+
+    @Test
+    fun `kite ai does not deal melee damage from preferred range`() {
+        val session =
+            GameModule.newFoundationSession(
+                config = FoundationGameConfig(seed = 20260322L, zoneId = "shattered_outpost", playerProfessionId = "vanguard"),
+                saveManager = SaveManager(tempDir.resolve("kite-range-guard")),
+            )
+        clearMonsters(session)
+        val world = runtimeWorld(session)
+        val monsterPoint = findOpenPointAtDistance(session, minDistance = 3, maxDistance = 3)
+        installAiMonster(
+            session = session,
+            id = "range_locked_kiter",
+            position = monsterPoint,
+            aiProfileId = "ai.kite.basic",
+            aiType = AIType.KITE,
+        )
+
+        val playerHealthBefore = requireNotNull(world.get<Health>(session.playerId)).current
+        repeat(3) {
+            assertTrue(session.perform(PlayerCommand.Wait))
+        }
+
+        assertEquals(playerHealthBefore, requireNotNull(world.get<Health>(session.playerId)).current)
+        assertNull(logEventByKey(session, "log.attack.hit"))
+        assertNull(logEventByKey(session, "log.attack.crit"))
+        assertNull(logEventByKey(session, "log.attack.miss"))
+    }
+
+    @Test
+    fun `grey gate first floor downstairs remains pathable from the player start`() {
+        val session =
+            GameModule.newFoundationSession(
+                config = FoundationGameConfig(seed = 20260317L, zoneId = "grey_gate_depths", playerProfessionId = "templar"),
+                saveManager = SaveManager(tempDir.resolve("grey-gate-floor-one-pathing")),
+            )
+        val stairsDown = requireNotNull(session.automationStairPoint(StairDirection.DOWN))
+
+        val path =
+            AStar.findPath(
+                map = session.map,
+                start = session.playerPosition(),
+                goal = stairsDown,
+            )
+
+        assertTrue(path.isNotEmpty(), "Expected a static path from player start to grey gate downstairs.")
+    }
+
+    @Test
+    fun `stealth hides player and ai walks to last known position`() {
+        val session =
+            GameModule.newFoundationSession(
+                config = FoundationGameConfig(seed = 20260322L, zoneId = "shattered_outpost", playerProfessionId = "vanguard"),
+                saveManager = SaveManager(tempDir.resolve("stealth-last-known-position")),
+            )
+        val world = runtimeWorld(session)
+        clearMonsters(session)
+        val playerStart = session.playerPosition()
+        val monsterId =
+            EntityFactory().createMonster(
+                world = world,
+                template = dataLoader.loadMonsterCatalog().monsters.first { monster -> monster.id == "beast.rat" },
+                position = findOpenPointAtDistance(session, minDistance = 4, maxDistance = 4),
+            )
+
+        val perception = requireNotNull(world.get<AIPerceptionState>(monsterId))
+        repeat(3) {
+            if (perception.lastKnownTargetPosition == playerStart) {
+                return@repeat
+            }
+            assertTrue(session.perform(PlayerCommand.Wait))
+        }
+        val beforeStealth = requireNotNull(world.get<Position>(monsterId)).toPoint()
+        assertEquals(playerStart, perception.lastKnownTargetPosition)
+
+        StatusLifecycle.applyEffect(
+            requireNotNull(world.get<EffectTracker>(session.playerId)),
+            StatusLifecycle.createInstance(
+                type = StatusEffectType.STEALTH,
+                effectId = "player_stealth_test",
+                duration = 5,
+                sourceEntityId = session.playerId,
+            ),
+        )
+        val evadePoint = findOpenAdjacentPoint(session, playerStart)
+
+        assertTrue(session.perform(PlayerCommand.Move(evadePoint - session.playerPosition())))
+        var afterStealth = requireNotNull(world.get<Position>(monsterId)).toPoint()
+        repeat(3) {
+            if (afterStealth.chebyshevDistanceTo(playerStart) < beforeStealth.chebyshevDistanceTo(playerStart)) {
+                return@repeat
+            }
+            assertTrue(session.perform(PlayerCommand.Wait))
+            afterStealth = requireNotNull(world.get<Position>(monsterId)).toPoint()
+        }
+
+        assertTrue(afterStealth.chebyshevDistanceTo(playerStart) < beforeStealth.chebyshevDistanceTo(playerStart))
+        assertEquals(playerStart, perception.lastKnownTargetPosition)
+
+        repeat(5) {
+            if (perception.lastKnownTargetPosition != null) {
+                assertTrue(session.perform(PlayerCommand.Wait))
+            }
+        }
+
+        assertNull(perception.lastKnownTargetPosition)
+    }
+
+    @Test
+    fun `ai clears last known target and falls back after reaching it`() {
+        val session =
+            GameModule.newFoundationSession(
+                config = FoundationGameConfig(seed = 20260322L, zoneId = "shattered_outpost", playerProfessionId = "vanguard"),
+                saveManager = SaveManager(tempDir.resolve("stealth-last-known-fallback")),
+            )
+        val world = runtimeWorld(session)
+        clearMonsters(session)
+        val playerStart = session.playerPosition()
+        val monsterId =
+            EntityFactory().createMonster(
+                world = world,
+                template = dataLoader.loadMonsterCatalog().monsters.first { monster -> monster.id == "beast.rat" },
+                position = findOpenPointAtDistance(session, minDistance = 4, maxDistance = 4),
+            )
+
+        val perception = requireNotNull(world.get<AIPerceptionState>(monsterId))
+        repeat(3) {
+            if (perception.lastKnownTargetPosition == playerStart) {
+                return@repeat
+            }
+            assertTrue(session.perform(PlayerCommand.Wait))
+        }
+        assertEquals(playerStart, perception.lastKnownTargetPosition)
+
+        StatusLifecycle.applyEffect(
+            requireNotNull(world.get<EffectTracker>(session.playerId)),
+            StatusLifecycle.createInstance(
+                type = StatusEffectType.STEALTH,
+                effectId = "player_stealth_fallback_test",
+                duration = 10,
+                sourceEntityId = session.playerId,
+            ),
+        )
+        val hiddenDestination = findOpenPointAtDistance(session, center = playerStart, distance = 6)
+        movePlayerTo(session, hiddenDestination)
+
+        repeat(8) {
+            if (perception.lastKnownTargetPosition == null) {
+                return@repeat
+            }
+            assertTrue(session.perform(PlayerCommand.Wait))
+        }
+
+        val settledPosition = requireNotNull(world.get<Position>(monsterId)).toPoint()
+        assertEquals(playerStart, settledPosition)
+        assertNull(perception.lastKnownTargetPosition)
 
         assertTrue(session.perform(PlayerCommand.Wait))
-        assertTrue(aiTriggerTracker(session, bossId).pendingCombatStartTriggerIds.isEmpty())
-        assertFalse(aiTriggerTracker(session, bossId).consumedTriggerIds.contains("bandit_captain_opening_shield_bash"))
+        val afterFallback = requireNotNull(world.get<Position>(monsterId)).toPoint()
+        assertEquals(settledPosition, afterFallback)
+        assertTrue(afterFallback.chebyshevDistanceTo(hiddenDestination) >= settledPosition.chebyshevDistanceTo(hiddenDestination))
+    }
+
+    @Test
+    fun `taunt forces ai toward taunt source and restores player targeting after it ends`() {
+        val session =
+            GameModule.newFoundationSession(
+                config = FoundationGameConfig(seed = 20260322L, zoneId = "shattered_outpost", playerProfessionId = "vanguard"),
+                saveManager = SaveManager(tempDir.resolve("taunt-target-selection")),
+            )
+        val world = runtimeWorld(session)
+        clearMonsters(session)
+        val playerStart = session.playerPosition()
+        val monsterPoint = findOpenPointAtDistance(session, minDistance = 2, maxDistance = 2)
+        val monsterId =
+            installAiMonster(
+                session = session,
+                id = "taunt_tracker",
+                position = monsterPoint,
+            )
+        val tauntSourcePoint = findOpenPointAwayFrom(session, center = monsterPoint, awayFrom = playerStart)
+        val tauntSourceId = createTargetDummy(session, tauntSourcePoint)
+
+        StatusLifecycle.applyEffect(
+            requireNotNull(world.get<EffectTracker>(monsterId)),
+            StatusLifecycle.createInstance(
+                type = StatusEffectType.TAUNT,
+                effectId = "forced_taunt_test",
+                duration = 3,
+                sourceEntityId = tauntSourceId,
+            ),
+        )
+
+        val playerHealthBefore = requireNotNull(world.get<Health>(session.playerId)).current
+        val tauntSourceHealth = requireNotNull(world.get<Health>(tauntSourceId))
+        var tauntedPosition = requireNotNull(world.get<Position>(monsterId)).toPoint()
+        repeat(3) {
+            assertTrue(session.perform(PlayerCommand.Wait))
+            tauntedPosition = requireNotNull(world.get<Position>(monsterId)).toPoint()
+            if (tauntSourceHealth.current < tauntSourceHealth.max || tauntedPosition.chebyshevDistanceTo(tauntSourcePoint) < monsterPoint.chebyshevDistanceTo(tauntSourcePoint)) {
+                return@repeat
+            }
+        }
+        assertTrue(tauntSourceHealth.current < tauntSourceHealth.max || tauntedPosition.chebyshevDistanceTo(tauntSourcePoint) < monsterPoint.chebyshevDistanceTo(tauntSourcePoint))
+        assertEquals(playerHealthBefore, requireNotNull(world.get<Health>(session.playerId)).current)
+
+        requireNotNull(world.get<EffectTracker>(monsterId)).effects.removeIf { effect -> effect.type == StatusEffectType.TAUNT }
+
+        var restoredPosition = tauntedPosition
+        repeat(3) {
+            assertTrue(session.perform(PlayerCommand.Wait))
+            restoredPosition = requireNotNull(world.get<Position>(monsterId)).toPoint()
+            if (restoredPosition.chebyshevDistanceTo(session.playerPosition()) < tauntedPosition.chebyshevDistanceTo(session.playerPosition())) {
+                return@repeat
+            }
+        }
+        assertTrue(restoredPosition.chebyshevDistanceTo(session.playerPosition()) < tauntedPosition.chebyshevDistanceTo(session.playerPosition()))
     }
 
     @Test
@@ -2449,6 +2946,33 @@ class FoundationGameSessionTest {
         return field.get(session) as World
     }
 
+    private fun sessionContent(session: FoundationGameSession): GameContent {
+        val field = FoundationGameSession::class.java.getDeclaredField("content")
+        field.isAccessible = true
+        return field.get(session) as GameContent
+    }
+
+    private fun replaceContent(
+        session: FoundationGameSession,
+        content: GameContent,
+    ) {
+        val field = FoundationGameSession::class.java.getDeclaredField("content")
+        field.isAccessible = true
+        field.set(session, content)
+    }
+
+    private fun invokeHandleDeath(
+        session: FoundationGameSession,
+        target: EntityId,
+        killer: EntityId?,
+    ) {
+        val method =
+            FoundationGameSession::class.java.declaredMethods
+                .first { declared -> declared.name.startsWith("handleDeath-") && declared.parameterCount == 2 }
+        method.isAccessible = true
+        method.invoke(session, target.value, killer)
+    }
+
     private fun forcePlayerInCombat(session: FoundationGameSession) {
         val turnCountField = FoundationGameSession::class.java.getDeclaredField("turnCount").apply { isAccessible = true }
         val combatTurnField = FoundationGameSession::class.java.getDeclaredField("lastPlayerCombatTurn").apply { isAccessible = true }
@@ -2518,11 +3042,6 @@ class FoundationGameSessionTest {
         talentId: String,
     ): Int = requireNotNull(runtimeWorld(session).get<com.ktome.core.talent.CooldownState>(session.playerId)).remainingByTalentId[talentId] ?: 0
 
-    private fun aiTriggerTracker(
-        session: FoundationGameSession,
-        entityId: com.ktome.core.ecs.EntityId,
-    ): AiTriggerTracker = requireNotNull(runtimeWorld(session).get<AiTriggerTracker>(entityId))
-
     private fun installCombatDummy(
         session: FoundationGameSession,
         id: String = "orc",
@@ -2556,6 +3075,56 @@ class FoundationGameSessionTest {
             )
         world.remove<AIBehavior>(dummyId)
         return dummyId
+    }
+
+    private fun installAiMonster(
+        session: FoundationGameSession,
+        id: String,
+        position: Point,
+        aiProfileId: String = "ai.chase.basic",
+        aiType: AIType = AIType.CHASE,
+    ): com.ktome.core.ecs.EntityId =
+        EntityFactory().createMonster(
+            world = runtimeWorld(session),
+            template =
+                MonsterTemplate(
+                    id = id,
+                    name = "AI Tracker",
+                    glyph = 't',
+                    colorHex = "#CC5555",
+                    stats = com.ktome.core.ecs.Stats(str = 1, dex = 1, con = 1, wil = 1),
+                    baseHp = 40,
+                    baseAttack = 2,
+                    baseDefense = 0,
+                    speed = 90,
+                    ai = aiType,
+                    expReward = 0,
+                    spawnFloors = listOf(session.currentFloor()),
+                    spawnWeight = 1,
+                    aiProfileId = aiProfileId,
+                ),
+            position = position,
+        )
+
+    private fun createTargetDummy(
+        session: FoundationGameSession,
+        position: Point,
+    ): com.ktome.core.ecs.EntityId {
+        val world = runtimeWorld(session)
+        val entityId = world.createEntity()
+        val stats = Stats(str = 1, dex = 1, con = 1, wil = 1)
+        val combatProfile = CombatProfile(baseAttack = 1, baseDefense = 0, baseHp = 20)
+        val derived = StatsCalculator.calculate(stats, combatProfile)
+        world.add(entityId, Position(position.x, position.y))
+        world.add(entityId, Name("Taunt Dummy"))
+        world.add(entityId, Health(current = 20, max = 20))
+        world.add(entityId, stats)
+        world.add(entityId, combatProfile)
+        world.add(entityId, derived)
+        world.add(entityId, ResistanceProfile())
+        world.add(entityId, EffectTracker(ownerId = entityId))
+        world.add(entityId, BlocksMovement())
+        return entityId
     }
 
     private fun findOpenPointAtDistance(
@@ -2668,6 +3237,27 @@ class FoundationGameSessionTest {
                     point !in occupied
             }
             .sortedWith(compareBy<Point>(Point::y).thenBy(Point::x))
+            .first()
+    }
+
+    private fun findOpenPointAwayFrom(
+        session: FoundationGameSession,
+        center: Point,
+        awayFrom: Point,
+    ): Point {
+        val world = runtimeWorld(session)
+        val occupied =
+            world.entitiesWith(Position::class)
+                .map { entityId -> requireNotNull(world.get<Position>(entityId)).toPoint() }
+                .toSet()
+
+        return Point.ALL_DIRECTIONS.asSequence()
+            .map { delta -> center + delta }
+            .filter { point ->
+                session.map.isInBounds(point.x, point.y) &&
+                    !session.map[point].blocksMovement &&
+                    point !in occupied
+            }.sortedWith(compareByDescending<Point> { point -> point.chebyshevDistanceTo(awayFrom) }.thenBy(Point::y).thenBy(Point::x))
             .first()
     }
 

@@ -1,10 +1,29 @@
 package com.ktome.game
 
 import com.ktome.core.ai.AIAction
-import com.ktome.core.ai.AIActorSnapshot
-import com.ktome.core.ai.AIDecision
-import com.ktome.core.ai.AIDecisionContext
-import com.ktome.core.ai.AITargetSnapshot
+import com.ktome.core.ai.AIActionType
+import com.ktome.core.ai.AIDecisionTrace
+import com.ktome.core.ai.AIDefaultBehavior
+import com.ktome.core.ai.AIPathCommand
+import com.ktome.core.ai.AIPathing
+import com.ktome.core.ai.AIPathingActorSnapshot
+import com.ktome.core.ai.AIPathingContext
+import com.ktome.core.ai.AIPathingResult
+import com.ktome.core.ai.AIPathingTargetSnapshot
+import com.ktome.core.ai.AIPerceptionState
+import com.ktome.core.ai.AIProfileDecisionContext
+import com.ktome.core.ai.AIProfileResolver
+import com.ktome.core.ai.BossEncounterState
+import com.ktome.core.ai.BossPhaseEventType
+import com.ktome.core.ai.BossPhaseEvaluationContext
+import com.ktome.core.ai.BossPhaseManager
+import com.ktome.core.ai.BossPhaseResolution
+import com.ktome.core.ai.BossPhaseTransitionTiming
+import com.ktome.core.ai.BossTrace
+import com.ktome.core.ai.DangerLevel
+import com.ktome.core.ai.PendingTelegraphState
+import com.ktome.core.ai.StealthTauntHandler
+import com.ktome.core.ai.ThreatRatingResolver
 import com.ktome.core.combat.CombatResolver
 import com.ktome.core.combat.DamageFormula
 import com.ktome.core.combat.DamageType
@@ -135,11 +154,9 @@ import com.ktome.core.talent.TalentUseResult
 import com.ktome.core.turn.TurnActorState
 import com.ktome.core.turn.TurnScheduler
 import com.ktome.game.data.schema.ItemBundleSchemaV2
-import com.ktome.game.data.schema.AITriggerConditionKindSchemaV2
-import com.ktome.game.data.schema.AITriggerSchemaV2
 import com.ktome.game.data.schema.ProfessionSchemaV2
-import com.ktome.game.data.schema.AIProfileSchemaV2
 import com.ktome.game.data.schema.SchemaCatalog
+import com.ktome.game.data.schema.TalentLevelEffectSchemaV2
 import com.ktome.game.data.schema.TalentSchemaV2
 import com.ktome.game.data.schema.ZoneSchemaV2
 import com.ktome.game.factory.EntityFactory
@@ -159,6 +176,7 @@ internal data class ZoneRuntimeBundle(
 )
 
 private const val SUMMARY_EVENT_LIMIT: Int = 5
+private const val AI_TRACE_LIMIT: Int = 64
 
 class FoundationGameSession internal constructor(
     config: FoundationGameConfig,
@@ -209,6 +227,11 @@ class FoundationGameSession internal constructor(
         val hasPendingAllocation: Boolean,
     )
 
+    private data class BossPhaseTurnUpdate(
+        val profile: com.ktome.core.ai.AIProfile?,
+        val phaseChanged: Boolean,
+    )
+
     var config: FoundationGameConfig = config
         private set
     private val messageLog = ArrayDeque<SessionLogEntry>()
@@ -229,6 +252,8 @@ class FoundationGameSession internal constructor(
     private var checkpointRequested: Boolean = false
     private var terminalKillerNameKey: String? = null
     private var terminalKillerTemplateId: String? = null
+    private val recentAiDecisionTraces = ArrayDeque<AIDecisionTrace>()
+    private val recentBossTraces = ArrayDeque<BossTrace>()
     private val respecManager: RespecManager = RespecManager()
     private val playerBaseResistanceValues: Map<DamageType, Int> =
         world.get<ResistanceProfile>(playerId)?.values?.toMap(linkedMapOf()) ?: emptyMap()
@@ -783,8 +808,6 @@ class FoundationGameSession internal constructor(
             }.sortedWith(compareBy<ActorRenderSnapshot> { it.y }.thenBy { it.x }.thenBy(ActorRenderSnapshot::entityId))
 
     private fun buildOverlaySnapshots(): List<OverlayRenderSnapshot> {
-        val bossSchemaByTemplateId = content.schemaCatalog.bossEncounters.associateBy { schema -> schema.bossTemplateId }
-        val talentSchemaById = content.schemaCatalog.talents.associateBy { schema -> schema.id }
         return world.entitiesWith(Position::class, Health::class, MonsterTemplateId::class)
             .flatMap { entityId ->
                 val health = requireNotNull(world.get<Health>(entityId))
@@ -792,204 +815,100 @@ class FoundationGameSession internal constructor(
                     return@flatMap emptyList()
                 }
                 val templateId = requireNotNull(world.get<MonsterTemplateId>(entityId)).value
-                if (templateId !in content.bossTemplateIds()) {
-                    return@flatMap emptyList()
-                }
                 val position = requireNotNull(world.get<Position>(entityId)).toPoint()
-                if (position !in visibleTiles) {
-                    return@flatMap emptyList()
-                }
-                val bossSchema = bossSchemaByTemplateId[templateId]
-                val behavior = world.get<AIBehavior>(entityId)
-                val targetVisible =
-                    behavior != null &&
-                        playerPosition() in Shadowcasting.computeVisible(map = map, origin = position, radius = behavior.sightRadius)
                 buildList {
-                    if (targetVisible) {
-                        add(
-                            OverlayRenderSnapshot(
-                                id = "boss-warning:${entityId.value}",
-                                visualKey = "vfx.boss.warning.sigil_01",
-                                audioProfile = "audio.boss.warning",
-                                previewTurns = 1,
-                                dangerLevel = 3,
-                                shape = OverlayShapeSnapshot.SINGLE_TILE,
-                                sourceAbilityId = bossSchema?.id ?: "boss.warning.presence",
-                                cells = listOf(GridPointSnapshot(position.x, position.y)),
-                                warningMessage =
-                                    RenderTextTokenSnapshot(
-                                        "log.warning.boss_presence",
-                                        listOf(entityArg("boss", entityId)),
-                                    ),
-                            ),
-                        )
+                    if (templateId in content.bossTemplateIds() && position in visibleTiles) {
+                        val behavior = world.get<AIBehavior>(entityId)
+                        val perceptionRange = monsterPerceptionRange(entityId, behavior)
+                        val effectiveTargetId = effectiveTargetIdFor(entityId)
+                        val targetVisible = targetVisibleFor(entityId, effectiveTargetId, position, perceptionRange)
+                        if (targetVisible) {
+                            add(
+                                OverlayRenderSnapshot(
+                                    id = "boss-warning:${entityId.value}",
+                                    visualKey = "vfx.boss.warning.sigil_01",
+                                    audioProfile = "audio.boss.warning",
+                                    previewTurns = 1,
+                                    dangerLevel = DangerLevel.HIGH.overlaySeverity,
+                                    shape = OverlayShapeSnapshot.SINGLE_TILE,
+                                    sourceAbilityId = bossDefinitionByTemplateId(templateId)?.encounterId ?: "boss.warning.presence",
+                                    cells = listOf(GridPointSnapshot(position.x, position.y)),
+                                    warningMessage =
+                                        RenderTextTokenSnapshot(
+                                            "log.warning.boss_presence",
+                                            listOf(entityArg("boss", entityId)),
+                                        ),
+                                ),
+                            )
+                        }
                     }
-
-                    nextMonsterTalentIntent(
-                        monsterId = entityId,
-                        talentSchemaById = talentSchemaById,
-                        targetVisible = targetVisible,
-                    )?.let { intent ->
-                        telegraphOverlayFor(entityId, position, intent)?.let(::add)
+                    world.get<PendingTelegraphState>(entityId)?.let { pending ->
+                        overlayForPendingTelegraph(entityId, position, pending)?.let(::add)
                     }
                 }
             }.sortedBy(OverlayRenderSnapshot::id)
     }
 
-    private data class MonsterTalentIntent(
-        val talentId: String,
-        val talentSchema: TalentSchemaV2,
-        val target: Point?,
-        val triggerId: String? = null,
-        val consumesOnce: Boolean = false,
-        val postMessage: RenderTextTokenSnapshot? = null,
-    )
-
-    private fun nextMonsterTalentIntent(
-        monsterId: EntityId,
-        talentSchemaById: Map<String, TalentSchemaV2>,
-        targetVisible: Boolean,
-    ): MonsterTalentIntent? {
-        val loadout = world.get<TalentLoadout>(monsterId) ?: return null
-        val targetPosition = playerPosition()
-        triggeredMonsterTalentIntent(
-            monsterId = monsterId,
-            loadout = loadout,
-            talentSchemaById = talentSchemaById,
-            targetVisible = targetVisible,
-            targetPosition = targetPosition,
-        )?.let { return it }
-        val prioritizedTalentIds =
-            prioritizedMonsterTalentIds(
-                loadout = loadout,
-                aiProfile = aiProfileFor(monsterId),
-            )
-
-        return prioritizedTalentIds.firstNotNullOfOrNull { talentId ->
-            if (shouldSkipMonsterTalent(monsterId = monsterId, talentId = talentId)) {
-                return@firstNotNullOfOrNull null
-            }
-            val definition = talentRegistry.get(talentId) ?: return@firstNotNullOfOrNull null
-            val target = if (definition.range > 0) targetPosition else null
-            if (talentResolver.canUse(world, map, monsterId, talentId, target) != null) {
-                return@firstNotNullOfOrNull null
-            }
-            val talentSchema = talentSchemaById[talentId] ?: return@firstNotNullOfOrNull null
-            MonsterTalentIntent(
-                talentId = talentId,
-                talentSchema = talentSchema,
-                target = target,
-            )
+    private fun overlayForPendingTelegraph(
+        entityId: EntityId,
+        origin: Point,
+        pending: PendingTelegraphState,
+    ): OverlayRenderSnapshot? {
+        if (origin !in visibleTiles) {
+            return null
         }
-    }
-
-    private fun triggeredMonsterTalentIntent(
-        monsterId: EntityId,
-        loadout: TalentLoadout,
-        talentSchemaById: Map<String, TalentSchemaV2>,
-        targetVisible: Boolean,
-        targetPosition: Point,
-    ): MonsterTalentIntent? {
-        val aiProfile = aiProfileFor(monsterId) ?: return null
-        val tracker = world.get<AiTriggerTracker>(monsterId)
-        return aiProfile.triggers.firstNotNullOfOrNull { trigger ->
-            if (trigger.once && tracker?.consumedTriggerIds?.contains(trigger.triggerId) == true) {
-                return@firstNotNullOfOrNull null
-            }
-            if (!isMonsterTriggerConditionSatisfied(trigger, monsterId, targetVisible)) {
-                return@firstNotNullOfOrNull null
-            }
-            if (trigger.talentId !in loadout.talentLevels) {
-                return@firstNotNullOfOrNull null
-            }
-            if (shouldSkipMonsterTalent(monsterId = monsterId, talentId = trigger.talentId)) {
-                return@firstNotNullOfOrNull null
-            }
-            val definition = talentRegistry.get(trigger.talentId) ?: return@firstNotNullOfOrNull null
-            val target = if (definition.range > 0) targetPosition else null
-            if (talentResolver.canUse(world, map, monsterId, trigger.talentId, target) != null) {
-                return@firstNotNullOfOrNull null
-            }
-            val talentSchema = talentSchemaById[trigger.talentId] ?: return@firstNotNullOfOrNull null
-            MonsterTalentIntent(
-                talentId = trigger.talentId,
-                talentSchema = talentSchema,
-                target = target,
-                triggerId = trigger.triggerId,
-                consumesOnce = trigger.once,
-                postMessage = triggerPostMessageToken(trigger),
-            )
+        val telegraphSpec = content.telegraphRegistry.resolve(pending.telegraphSpecId) ?: return null
+        val talentSchema = pending.queuedAbilityId?.let(::talentSchemaFor)
+        val cells = telegraphCells(origin, pending.targetPoint, talentSchema, telegraphSpec)
+        if (cells.isEmpty()) {
+            return null
         }
-    }
-
-    private fun isMonsterTriggerConditionSatisfied(
-        trigger: AITriggerSchemaV2,
-        monsterId: EntityId,
-        targetVisible: Boolean,
-    ): Boolean =
-        when (trigger.condition) {
-            AITriggerConditionKindSchemaV2.ON_COMBAT_START -> {
-                val tracker = world.get<AiTriggerTracker>(monsterId) ?: return false
-                targetVisible &&
-                    (
-                        trigger.triggerId in tracker.pendingCombatStartTriggerIds ||
-                            !tracker.engagedInCombat
+        return OverlayRenderSnapshot(
+            id = "telegraph:${entityId.value}:${pending.telegraphSpecId}:${pending.sourceAbilityId}",
+            visualKey = "vfx.telegraph.warning.sigil_01",
+            audioProfile = talentSchema?.audioProfile ?: "audio.boss.warning",
+            previewTurns = pending.remainingTurns,
+            dangerLevel = pending.resolvedDangerLevel.overlaySeverity,
+            shape = telegraphShape(telegraphSpec.shape),
+            sourceAbilityId = pending.sourceAbilityId,
+            cells = cells.map { point -> GridPointSnapshot(point.x, point.y) },
+            warningMessage =
+                if (pending.queuedAbilityId != null) {
+                    RenderTextTokenSnapshot(
+                        "log.warning.telegraph",
+                        listOf(
+                            entityArg("boss", entityId),
+                            talentArg("talent", pending.sourceAbilityId, fallbackName = pending.sourceAbilityId),
+                        ),
                     )
-            }
-            AITriggerConditionKindSchemaV2.HP_BELOW_RATIO -> {
-                val health = world.get<Health>(monsterId) ?: return false
-                val threshold = trigger.threshold ?: return false
-                health.max > 0 && health.current.toDouble() / health.max <= threshold
-            }
-        }
-
-    private fun triggerPostMessageToken(trigger: AITriggerSchemaV2): RenderTextTokenSnapshot? =
-        trigger.postMessageKey?.let { key ->
-            RenderTextTokenSnapshot(
-                key = key,
-                arguments =
-                    trigger.postMessageArgs.entries
-                        .sortedBy { (name, _) -> name }
-                        .map { (name, valueKey) -> keyArg(name, valueKey) },
-            )
-        }
-
-    private fun prioritizedMonsterTalentIds(
-        loadout: TalentLoadout,
-        aiProfile: AIProfileSchemaV2?,
-    ): List<String> {
-        val configured =
-            aiProfile
-                ?.talentPriority
-                ?.mapNotNull { configuredTalentId ->
-                    loadout.slotToTalentId.values.firstOrNull { talentId -> talentId == configuredTalentId }
-                }
-                .orEmpty()
-        if (configured.isNotEmpty()) {
-            return configured
-        }
-        return listOfNotNull(
-            loadout.slotToTalentId.values.firstOrNull { it == "war_cry" },
-            loadout.slotToTalentId.values.firstOrNull { it == "power_strike" },
-            loadout.slotToTalentId.values.firstOrNull { it == "charge" },
-            loadout.slotToTalentId.values.firstOrNull { it == "shield_bash" },
+                } else {
+                    RenderTextTokenSnapshot(
+                        "log.warning.boss_presence",
+                        listOf(entityArg("boss", entityId)),
+                    )
+                },
         )
     }
 
-    private fun shouldSkipMonsterTalent(
-        monsterId: EntityId,
-        talentId: String,
-    ): Boolean =
-        aiProfileFor(monsterId)
-            ?.skipRules
-            ?.any { rule ->
-                rule.talentId == talentId &&
-                    world.get<EffectTracker>(monsterId)?.activeEffects()?.any { effect -> effect.schemaId == rule.selfHasStatus } == true
-            } == true
+    private fun bossDefinitionByTemplateId(templateId: String): BossDefinition? =
+        content.bossDefinitions.values.firstOrNull { definition -> definition.template.id == templateId }
 
-    private fun aiProfileFor(monsterId: EntityId): AIProfileSchemaV2? {
-        val aiProfileId = monsterAiProfileId(monsterId) ?: return null
-        return content.schemaCatalog.aiProfiles.firstOrNull { profile -> profile.id == aiProfileId }
+    private fun activeAiProfileFor(monsterId: EntityId): com.ktome.core.ai.AIProfile? {
+        val bossState = world.get<BossEncounterState>(monsterId)
+        if (bossState != null) {
+            val encounter = bossEncounterFor(monsterId) ?: return null
+            val activePhase =
+                bossState.currentPhaseId?.let { phaseId ->
+                    encounter.phases.firstOrNull { phase -> phase.id == phaseId }
+                } ?: encounter.phases.firstOrNull()
+            return content.aiProfile(activePhase?.aiProfileId)
+        }
+        return content.aiProfile(monsterAiProfileId(monsterId))
+    }
+
+    private fun bossEncounterFor(monsterId: EntityId): com.ktome.core.ai.BossEncounter? {
+        val templateId = world.get<MonsterTemplateId>(monsterId)?.value ?: return null
+        return bossDefinitionByTemplateId(templateId)?.encounter
     }
 
     private fun monsterAiProfileId(monsterId: EntityId): String? {
@@ -999,39 +918,8 @@ class FoundationGameSession internal constructor(
             ?.aiProfileId
     }
 
-    private fun telegraphOverlayFor(
-        entityId: EntityId,
-        origin: Point,
-        intent: MonsterTalentIntent,
-    ): OverlayRenderSnapshot? {
-        val telegraphSpec = content.telegraphSpecFor(intent.talentSchema.telegraphRef) ?: return null
-        val cells = telegraphCells(origin, intent.target ?: origin, intent.talentSchema, telegraphSpec)
-        if (cells.isEmpty()) {
-            return null
-        }
-        return OverlayRenderSnapshot(
-            id = "telegraph:${entityId.value}:${intent.talentId}",
-            visualKey = "vfx.telegraph.warning.sigil_01",
-            audioProfile = intent.talentSchema.audioProfile,
-            previewTurns = telegraphSpec.previewTurns,
-            dangerLevel = telegraphSpec.dangerLevel.level,
-            shape = telegraphShape(telegraphSpec.shape),
-            sourceAbilityId = intent.talentId,
-            cells = cells.map { point -> GridPointSnapshot(point.x, point.y) },
-            warningMessage =
-                RenderTextTokenSnapshot(
-                    "log.warning.telegraph",
-                    listOf(
-                        entityArg("boss", entityId),
-                        talentArg("talent", intent.talentId, fallbackName = intent.talentId),
-                    ),
-                ),
-        )
-    }
-
     private fun telegraphShape(shape: com.ktome.core.ai.TelegraphShape): OverlayShapeSnapshot =
         when (shape) {
-            com.ktome.core.ai.TelegraphShape.SINGLE_TILE -> OverlayShapeSnapshot.SINGLE_TILE
             com.ktome.core.ai.TelegraphShape.LINE -> OverlayShapeSnapshot.LINE
             com.ktome.core.ai.TelegraphShape.CIRCLE -> OverlayShapeSnapshot.RING
             com.ktome.core.ai.TelegraphShape.CONE -> OverlayShapeSnapshot.CONE
@@ -1040,15 +928,61 @@ class FoundationGameSession internal constructor(
     private fun telegraphCells(
         origin: Point,
         target: Point,
-        talentSchema: TalentSchemaV2,
+        talentSchema: TalentSchemaV2?,
         telegraphSpec: com.ktome.core.ai.TelegraphSpec,
     ): List<Point> =
-        when (telegraphSpec.pattern) {
-            com.ktome.core.ai.TelegraphPattern.LINE -> lineTowards(origin, target, maxSteps = maxOf(1, talentSchema.targeting.range))
-            com.ktome.core.ai.TelegraphPattern.AURA -> auraCells(origin, radius = maxOf(1, talentSchema.targeting.areaRadius))
-            com.ktome.core.ai.TelegraphPattern.SINGLE_TARGET ->
-                listOf(projectSingleTarget(origin, target, maxSteps = maxOf(1, talentSchema.targeting.range)))
+        when (telegraphSpec.shape) {
+            com.ktome.core.ai.TelegraphShape.LINE ->
+                lineTowards(
+                    origin,
+                    target,
+                    maxSteps = telegraphSpec.length ?: maxOf(1, talentSchema?.targeting?.range ?: origin.chebyshevDistanceTo(target)),
+                )
+            com.ktome.core.ai.TelegraphShape.CIRCLE -> {
+                val center =
+                    when (talentSchema?.targeting?.type) {
+                        "SELF",
+                        "RADIUS_SELF",
+                        null,
+                        -> origin
+                        else -> target
+                    }
+                auraCells(center, radius = telegraphSpec.radius ?: talentSchema?.targeting?.areaRadius ?: 0)
+            }
+            com.ktome.core.ai.TelegraphShape.CONE ->
+                coneCells(
+                    origin = origin,
+                    target = target,
+                    length = telegraphSpec.length ?: maxOf(1, talentSchema?.targeting?.range ?: 1),
+                    angle = telegraphSpec.angle ?: 90,
+                )
         }
+
+    private fun effectiveTargetIdFor(monsterId: EntityId): EntityId =
+        StealthTauntHandler.resolveTargetId(
+            effectTracker = world.get<EffectTracker>(monsterId),
+            fallbackTargetId = playerId,
+            isAlive = world::isAlive,
+        )
+
+    private fun monsterPerceptionRange(
+        monsterId: EntityId,
+        behavior: AIBehavior?,
+    ): Int = activeAiProfileFor(monsterId)?.perceptionRange ?: behavior?.sightRadius ?: config.fovRadius
+
+    private fun targetVisibleFor(
+        monsterId: EntityId,
+        targetId: EntityId,
+        origin: Point,
+        perceptionRange: Int,
+    ): Boolean {
+        val targetPosition = world.get<Position>(targetId)?.toPoint() ?: return false
+        return StealthTauntHandler.isTargetVisible(
+            effectTracker = world.get<EffectTracker>(targetId),
+            targetPosition = targetPosition,
+            visibleTiles = Shadowcasting.computeVisible(map = map, origin = origin, radius = perceptionRange),
+        )
+    }
 
     private fun resolveTalentTreeOwner(talentSchema: TalentSchemaV2): TalentTreeOwnerRef? =
         talentTreeOwnerResolver.ownerForTalent(talentSchema)
@@ -1118,7 +1052,7 @@ class FoundationGameSession internal constructor(
         if (dx == 0 && dy == 0) {
             return listOf(origin)
         }
-        val stepCount = minOf(maxSteps, maxOf(1, origin.chebyshevDistanceTo(target)))
+        val stepCount = maxOf(1, maxSteps)
         return (1..stepCount)
             .map { step -> Point(origin.x + dx * step, origin.y + dy * step) }
             .filter { point -> map.isInBounds(point.x, point.y) }
@@ -1138,6 +1072,55 @@ class FoundationGameSession internal constructor(
                 }
             }
         }.distinct()
+
+    private fun coneCells(
+        origin: Point,
+        target: Point,
+        length: Int,
+        angle: Int,
+    ): List<Point> {
+        val dx = (target.x - origin.x).coerceIn(-1, 1)
+        val dy = (target.y - origin.y).coerceIn(-1, 1)
+        if (dx == 0 && dy == 0) {
+            return listOf(origin)
+        }
+        val normalizedAngle = angle.coerceAtLeast(30)
+        val lateralReach = maxOf(1, (normalizedAngle / 45))
+        return buildList {
+            for (step in 1..maxOf(1, length)) {
+                val center = Point(origin.x + dx * step, origin.y + dy * step)
+                for (offset in -lateralReach..lateralReach) {
+                    val point =
+                        if (dx != 0 && dy != 0) {
+                            Point(center.x + offset, center.y - offset)
+                        } else if (dx != 0) {
+                            Point(center.x, center.y + offset)
+                        } else {
+                            Point(center.x + offset, center.y)
+                        }
+                    if (map.isInBounds(point.x, point.y)) {
+                        add(point)
+                    }
+                }
+            }
+        }.distinct()
+    }
+
+    private val DangerLevel.overlaySeverity: Int
+        get() =
+            when (this) {
+                DangerLevel.LOW -> 1
+                DangerLevel.MODERATE -> 2
+                DangerLevel.HIGH -> 3
+                DangerLevel.LETHAL -> 4
+            }
+
+    private fun AIType.toDefaultBehavior(): AIDefaultBehavior =
+        when (this) {
+            AIType.CHASE -> AIDefaultBehavior.CHASE
+            AIType.KITE -> AIDefaultBehavior.KITE
+            AIType.PATROL -> AIDefaultBehavior.PATROL
+        }
 
     private fun buildRenderUiState(): RenderUiStateSnapshot =
         RenderUiStateSnapshot(
@@ -2284,78 +2267,284 @@ class FoundationGameSession internal constructor(
         }
         val behavior = world.get<AIBehavior>(monsterId) ?: return
         val position = requireNotNull(world.get<Position>(monsterId)).toPoint()
-        val targetPosition = playerPosition()
-        val targetVisible = targetPosition in Shadowcasting.computeVisible(map = map, origin = position, radius = behavior.sightRadius)
-        val enteredCombatThisTurn = updateMonsterCombatState(monsterId, targetVisible)
+        val phaseUpdate = updateBossPhaseIfNeeded(monsterId, BossPhaseTransitionTiming.START_OF_TURN)
+        if (phaseUpdate.phaseChanged && world.get<PendingTelegraphState>(monsterId) != null) {
+            return
+        }
         if (world.get<EffectTracker>(monsterId)?.has(StatusEffectType.STUN) == true) {
-            expireCombatStartTriggers(monsterId, enteredCombatThisTurn)
             return
         }
-        if (tryUseMonsterTalent(monsterId, targetVisible)) {
-            expireCombatStartTriggers(monsterId, enteredCombatThisTurn)
+        if (advancePendingTelegraph(monsterId)) {
             return
         }
+        val effectiveTargetId = effectiveTargetIdFor(monsterId)
+        val targetPosition = world.get<Position>(effectiveTargetId)?.toPoint() ?: playerPosition()
+        val profile = phaseUpdate.profile ?: activeAiProfileFor(monsterId)
+        val perceptionRange = profile?.perceptionRange ?: behavior.sightRadius
+        val targetVisible = targetVisibleFor(monsterId, effectiveTargetId, position, perceptionRange)
+        syncLastKnownTargetPosition(monsterId, targetPosition, targetVisible)
 
-        val patrolRoute = world.get<PatrolRoute>(monsterId)
-        val decision = AIDecision.decide(
-            AIDecisionContext(
-                map = map,
-                actor = AIActorSnapshot(monsterId, position, behavior, patrolRoute),
-                target = AITargetSnapshot(playerId, targetPosition),
-                occupiedTiles = occupiedBlockingTiles(excluding = monsterId),
-                targetVisible = targetVisible,
-            ),
-        )
-
-        decision.nextPatrolIndex?.let { nextIndex ->
-            patrolRoute?.nextWaypointIndex = nextIndex
-        }
-
-        when (val action = decision.action) {
-            is AIAction.Attack -> resolveAttack(monsterId, action.target)
-            is AIAction.Move -> {
-                if (blockerAt(action.destination) == null) {
-                    requireNotNull(world.get<Position>(monsterId)).moveTo(action.destination)
-                }
+        val selectedAction =
+            profile?.let { activeProfile ->
+                val decision =
+                    AIProfileResolver.decide(
+                        profile = activeProfile,
+                        context =
+                            AIProfileDecisionContext(
+                                actorId = monsterId.value,
+                                turnId = turnCount,
+                                selfHpRatio = healthRatio(monsterId),
+                                targetHpRatio = healthRatioOrNull(effectiveTargetId),
+                                targetVisible = targetVisible,
+                                targetDistance = position.chebyshevDistanceTo(targetPosition),
+                                selfStatusIds = activeStatusIds(monsterId),
+                                targetStatusIds = activeStatusIds(effectiveTargetId),
+                                usableAbilityIds = usableAbilityIdsFor(monsterId, effectiveTargetId, targetVisible, targetPosition),
+                                currentEncounterTurn = world.get<BossEncounterState>(monsterId)?.encounterTurnCount ?: 0,
+                            ),
+                        randomSource = sessionRandom,
+                    )
+                recordAiDecisionTrace(decision.trace)
+                decision.selectedAction
             }
 
-            AIAction.Wait -> Unit
-        }
-        expireCombatStartTriggers(monsterId, enteredCombatThisTurn)
-    }
-
-    private fun updateMonsterCombatState(
-        monsterId: EntityId,
-        targetVisible: Boolean,
-    ): Boolean {
-        val tracker = world.get<AiTriggerTracker>(monsterId) ?: return false
-        if (!targetVisible) {
-            tracker.engagedInCombat = false
-            tracker.pendingCombatStartTriggerIds.clear()
-            return false
-        }
-        if (!tracker.engagedInCombat) {
-            tracker.engagedInCombat = true
-            tracker.pendingCombatStartTriggerIds.clear()
-            tracker.pendingCombatStartTriggerIds +=
-                aiProfileFor(monsterId)
-                    ?.triggers
-                    ?.filter { trigger -> trigger.condition == AITriggerConditionKindSchemaV2.ON_COMBAT_START }
-                    ?.map(AITriggerSchemaV2::triggerId)
-                    .orEmpty()
-            return true
-        }
-        return false
-    }
-
-    private fun expireCombatStartTriggers(
-        monsterId: EntityId,
-        enteredCombatThisTurn: Boolean,
-    ) {
-        if (!enteredCombatThisTurn) {
+        if (selectedAction != null && executeSelectedAiAction(monsterId, selectedAction, effectiveTargetId, targetPosition, targetVisible)) {
             return
         }
-        world.get<AiTriggerTracker>(monsterId)?.pendingCombatStartTriggerIds?.clear()
+
+        executeDefaultBehavior(monsterId, behavior, effectiveTargetId, targetPosition, targetVisible)
+    }
+
+    private fun healthRatio(entityId: EntityId): Double {
+        val health = requireNotNull(world.get<Health>(entityId)) { "Missing Health for '$entityId'." }
+        return if (health.max <= 0) 0.0 else health.current.coerceAtLeast(0).toDouble() / health.max.toDouble()
+    }
+
+    private fun healthRatioOrNull(entityId: EntityId): Double? =
+        world.get<Health>(entityId)?.let { health ->
+            if (health.max <= 0) {
+                0.0
+            } else {
+                health.current.coerceAtLeast(0).toDouble() / health.max.toDouble()
+            }
+        }
+
+    private fun activeStatusIds(entityId: EntityId): Set<String> =
+        world.get<EffectTracker>(entityId)
+            ?.activeEffects()
+            ?.mapTo(linkedSetOf()) { effect -> effect.schemaId }
+            .orEmpty()
+
+    private fun syncLastKnownTargetPosition(
+        monsterId: EntityId,
+        targetPosition: Point,
+        targetVisible: Boolean,
+    ) = StealthTauntHandler.rememberLastKnownTargetPosition(world.get<AIPerceptionState>(monsterId), targetVisible, targetPosition)
+
+    private fun updateBossPhaseIfNeeded(
+        monsterId: EntityId,
+        transitionTiming: BossPhaseTransitionTiming,
+        advanceTurnCounter: Boolean = true,
+    ): BossPhaseTurnUpdate {
+        val bossState =
+            world.get<BossEncounterState>(monsterId)
+                ?: return BossPhaseTurnUpdate(profile = null, phaseChanged = false)
+        val encounter =
+            bossEncounterFor(monsterId)
+                ?: return BossPhaseTurnUpdate(profile = null, phaseChanged = false)
+        if (advanceTurnCounter) {
+            bossState.encounterTurnCount += 1
+        }
+        val resolution =
+            if (transitionTiming == BossPhaseTransitionTiming.ALLOW_FATAL_TRANSITION) {
+                BossPhaseManager.resolvePhaseResolutionOrNull(
+                    encounter = encounter,
+                    context =
+                        BossPhaseEvaluationContext(
+                            healthRatio = healthRatio(monsterId),
+                            encounterTurnCount = bossState.encounterTurnCount,
+                            activeStatusIds = activeStatusIds(monsterId),
+                        ),
+                    currentPhaseId = bossState.currentPhaseId,
+                    transitionTiming = transitionTiming,
+                ) ?: return BossPhaseTurnUpdate(profile = activeAiProfileFor(monsterId), phaseChanged = false)
+            } else {
+                BossPhaseManager.resolvePhaseResolution(
+                    encounter = encounter,
+                    context =
+                        BossPhaseEvaluationContext(
+                            healthRatio = healthRatio(monsterId),
+                            encounterTurnCount = bossState.encounterTurnCount,
+                            activeStatusIds = activeStatusIds(monsterId),
+                        ),
+                    currentPhaseId = bossState.currentPhaseId,
+                    transitionTiming = transitionTiming,
+                )
+            }
+        val nextPhase = resolution.phase
+        if (bossState.currentPhaseId != nextPhase.id) {
+            applyBossPhaseEnter(monsterId, bossState, encounter, resolution)
+            return BossPhaseTurnUpdate(
+                profile = content.aiProfile(nextPhase.aiProfileId),
+                phaseChanged = true,
+            )
+        } else {
+            bossState.phaseTurnCount += 1
+        }
+        return BossPhaseTurnUpdate(
+            profile = content.aiProfile(nextPhase.aiProfileId),
+            phaseChanged = false,
+        )
+    }
+
+    private fun applyBossPhaseEnter(
+        monsterId: EntityId,
+        bossState: BossEncounterState,
+        encounter: com.ktome.core.ai.BossEncounter,
+        resolution: BossPhaseResolution,
+    ) {
+        val nextPhase = resolution.phase
+        val previousPhaseId = bossState.currentPhaseId
+        bossState.currentPhaseId = nextPhase.id
+        bossState.phaseTurnCount = 0
+        val sideEffects = mutableListOf<String>()
+        if (world.get<PendingTelegraphState>(monsterId) != null) {
+            world.remove<PendingTelegraphState>(monsterId)
+            sideEffects += "CLEAR_PENDING_TELEGRAPH"
+        }
+        if (nextPhase.resetAiPhaseState) {
+            clearBossRuntimeState(monsterId)
+            sideEffects += "RESET_AI_PHASE_STATE"
+        }
+        nextPhase.onEnter.forEach { event ->
+            when (event.type) {
+                BossPhaseEventType.TELEGRAPH -> {
+                    val telegraphSpecId = requireNotNull(event.telegraphSpecId) {
+                        "Boss phase '${nextPhase.id}' TELEGRAPH event must declare telegraphSpecId."
+                    }
+                    val spec = content.telegraphRegistry.require(telegraphSpecId)
+                    world.remove<PendingTelegraphState>(monsterId)
+                    world.add(
+                        monsterId,
+                        PendingTelegraphState(
+                            telegraphSpecId = telegraphSpecId,
+                            sourceAbilityId = telegraphSpecId,
+                            remainingTurns = spec.previewTurns,
+                            targetPoint = bossPhaseTelegraphTargetPoint(monsterId),
+                            queuedAbilityId = null,
+                            resolvedDangerLevel = spec.dangerLevel,
+                        ),
+                    )
+                    sideEffects += "TELEGRAPH:$telegraphSpecId"
+                }
+
+                BossPhaseEventType.CLEAR_STATUSES -> {
+                    world.get<EffectTracker>(monsterId)?.effects?.clear()
+                    sideEffects += "CLEAR_STATUSES"
+                }
+
+                BossPhaseEventType.INVULNERABLE -> {
+                    event.invulnerableTurns?.let { turns ->
+                        grantBossInvulnerable(monsterId, turns)
+                        sideEffects += "INVULNERABLE:$turns"
+                    }
+                }
+
+                BossPhaseEventType.EMIT_EVENT -> {
+                    event.messageKey?.let { messageKey ->
+                        addMessage(messageKey, entityArg("source", monsterId))
+                        sideEffects += "EMIT_EVENT:$messageKey"
+                    }
+                }
+            }
+        }
+        recordBossTrace(
+            BossTrace(
+                encounterId = encounter.id,
+                actorId = monsterId.value,
+                fromPhase = previousPhaseId,
+                toPhase = nextPhase.id,
+                trigger = resolution.matchedTriggers.joinToString(separator = "+").ifBlank { "phase_match" },
+                turnId = turnCount,
+                sideEffects = sideEffects,
+            ),
+        )
+    }
+
+    private fun bossPhaseTelegraphTargetPoint(monsterId: EntityId): Point {
+        val origin = requireNotNull(world.get<Position>(monsterId)).toPoint()
+        val effectiveTargetId = effectiveTargetIdFor(monsterId)
+        val behavior = world.get<AIBehavior>(monsterId)
+        val perceptionRange = activeAiProfileFor(monsterId)?.perceptionRange ?: behavior?.sightRadius ?: config.fovRadius
+        val targetVisible = targetVisibleFor(monsterId, effectiveTargetId, origin, perceptionRange)
+        return when {
+            targetVisible -> world.get<Position>(effectiveTargetId)?.toPoint()
+            else -> world.get<AIPerceptionState>(monsterId)?.lastKnownTargetPosition
+        } ?: origin
+    }
+
+    private fun clearBossRuntimeState(monsterId: EntityId) {
+        world.get<AIPerceptionState>(monsterId)?.lastKnownTargetPosition = null
+        world.get<AiTriggerTracker>(monsterId)?.apply {
+            engagedInCombat = false
+            pendingCombatStartTriggerIds.clear()
+        }
+    }
+
+    private fun grantBossInvulnerable(
+        monsterId: EntityId,
+        turns: Int,
+    ) {
+        val tracker = world.get<EffectTracker>(monsterId) ?: return
+        StatusLifecycle.applyEffect(
+            tracker,
+            StatusLifecycle.createInstance(
+                type = StatusEffectType.INVULNERABLE,
+                effectId = "boss_phase_invulnerable_${monsterId.value}_${turnCount}",
+                duration = turns,
+                sourceEntityId = monsterId,
+            ),
+        )
+    }
+
+    private fun advancePendingTelegraph(monsterId: EntityId): Boolean {
+        val pending = world.get<PendingTelegraphState>(monsterId) ?: return false
+        if (pending.remainingTurns > 1) {
+            pending.remainingTurns -= 1
+            return true
+        }
+
+        world.remove<PendingTelegraphState>(monsterId)
+        val queuedAbilityId = pending.queuedAbilityId ?: return true
+        val target = talentRegistry.get(queuedAbilityId)?.range?.takeIf { range -> range > 0 }?.let { pending.targetPoint }
+        when (val result = talentResolver.resolve(world, map, monsterId, queuedAbilityId, target)) {
+            is TalentUseResult.Failure -> return true
+            is TalentUseResult.Success -> {
+                applyTalentResourceReactions(result.result)
+                logTalentResult(result.result)
+                logTriggeredTalentDamagePassives(result.result)
+                handleTalentDeaths(result.result.targets, monsterId)
+                return true
+            }
+        }
+    }
+
+    internal fun recentAIDecisionTraces(): List<AIDecisionTrace> = recentAiDecisionTraces.toList()
+
+    internal fun recentBossTraces(): List<BossTrace> = recentBossTraces.toList()
+
+    private fun recordAiDecisionTrace(trace: AIDecisionTrace) {
+        recentAiDecisionTraces += trace
+        while (recentAiDecisionTraces.size > AI_TRACE_LIMIT) {
+            recentAiDecisionTraces.removeFirst()
+        }
+    }
+
+    private fun recordBossTrace(trace: BossTrace) {
+        recentBossTraces += trace
+        while (recentBossTraces.size > AI_TRACE_LIMIT) {
+            recentBossTraces.removeFirst()
+        }
     }
 
     private fun inspectActorView(entityId: EntityId): InspectActorView {
@@ -2529,42 +2718,236 @@ class FoundationGameSession internal constructor(
             .firstOrNull { entityId -> requireNotNull(world.get<Position>(entityId)).toPoint() == point }
             ?.let { entityId -> stairName(requireNotNull(world.get<Stair>(entityId)).direction) }
 
-    private fun tryUseMonsterTalent(
+    private fun usableAbilityIdsFor(
         monsterId: EntityId,
+        targetId: EntityId,
         targetVisible: Boolean,
-    ): Boolean {
-        val talentSchemaById = content.schemaCatalog.talents.associateBy(TalentSchemaV2::id)
-        val intent =
-            nextMonsterTalentIntent(
-                monsterId = monsterId,
-                talentSchemaById = talentSchemaById,
-                targetVisible = targetVisible,
-            ) ?: return false
-        when (val result = talentResolver.resolve(world, map, monsterId, intent.talentId, intent.target)) {
-            is TalentUseResult.Failure -> return false
-            is TalentUseResult.Success -> {
-                applyTalentResourceReactions(result.result)
-                logTalentResult(result.result)
-                logTriggeredTalentDamagePassives(result.result)
-                consumeMonsterTrigger(monsterId, intent)
-                intent.postMessage?.let { token -> addMessage(RenderLogEventSnapshot(token)) }
-                handleTalentDeaths(result.result.targets, monsterId)
-                return true
-            }
+        targetPosition: Point,
+    ): Set<String> {
+        val loadout = world.get<TalentLoadout>(monsterId) ?: return emptySet()
+        return loadout.talentLevels.keys.filterTo(linkedSetOf()) { talentId ->
+            val definition = talentRegistry.get(talentId) ?: return@filterTo false
+            val targetPoint = abilityTargetPoint(definition, targetVisible, targetPosition)
+            talentResolver.canUse(world, map, monsterId, talentId, targetPoint) == null &&
+                (definition.range == 0 || targetVisible || targetId != playerId)
         }
     }
 
-    private fun consumeMonsterTrigger(
+    private fun abilityTargetPoint(
+        definition: com.ktome.core.talent.TalentDef,
+        targetVisible: Boolean,
+        targetPosition: Point,
+    ): Point? =
+        when {
+            definition.range <= 0 -> null
+            !targetVisible -> null
+            else -> targetPosition
+        }
+
+    private fun executeSelectedAiAction(
         monsterId: EntityId,
-        intent: MonsterTalentIntent,
+        selectedAction: com.ktome.core.ai.AIAction,
+        targetId: EntityId,
+        targetPosition: Point,
+        targetVisible: Boolean,
+    ): Boolean {
+        return when (selectedAction.type) {
+            AIActionType.ATTACK_TARGET -> {
+                val monsterPosition = requireNotNull(world.get<Position>(monsterId)).toPoint()
+                if (
+                    !targetVisible ||
+                    !world.isAlive(targetId) ||
+                    !monsterPosition.isAdjacentTo(targetPosition)
+                ) {
+                    false
+                } else {
+                    resolveAttack(monsterId, targetId)
+                    true
+                }
+            }
+
+            AIActionType.MOVE_TOWARD_TARGET -> {
+                if (!targetVisible) {
+                    false
+                } else {
+                    val behavior = requireNotNull(world.get<AIBehavior>(monsterId))
+                    applyPathingResult(
+                        monsterId = monsterId,
+                        result =
+                            AIPathing.moveToward(
+                                pathingContext(
+                                    monsterId = monsterId,
+                                    targetId = targetId,
+                                    targetPosition = targetPosition,
+                                    behavior = behavior,
+                                    targetVisible = true,
+                                ),
+                            ),
+                    )
+                    true
+                }
+            }
+
+            AIActionType.RETREAT_FROM_TARGET -> {
+                if (!targetVisible) {
+                    false
+                } else {
+                    val behavior = requireNotNull(world.get<AIBehavior>(monsterId))
+                    val retreat = AIPathing.retreatStep(pathingContext(monsterId, targetId, targetPosition, behavior, targetVisible = true))
+                    retreat?.let { destination ->
+                        applyPathingResult(monsterId, AIPathingResult(AIPathCommand.Move(destination)))
+                        true
+                    } ?: false
+                }
+            }
+
+            AIActionType.USE_ABILITY -> {
+                val abilityId = requireNotNull(selectedAction.abilityId) {
+                    "AI action '${selectedAction.id}' must declare abilityId."
+                }
+                val definition = talentRegistry.get(abilityId) ?: return false
+                val targetPoint = abilityTargetPoint(definition, targetVisible, targetPosition)
+                val talentSchema = talentSchemaFor(abilityId) ?: return false
+                val telegraphRef = talentSchema.telegraphRef
+                if (telegraphRef != null) {
+                    scheduleTelegraphedAbility(monsterId, abilityId, targetPoint ?: requireNotNull(world.get<Position>(monsterId)).toPoint(), talentSchema)
+                } else {
+                    when (val result = talentResolver.resolve(world, map, monsterId, abilityId, targetPoint)) {
+                        is TalentUseResult.Failure -> return false
+                        is TalentUseResult.Success -> {
+                            applyTalentResourceReactions(result.result)
+                            logTalentResult(result.result)
+                            logTriggeredTalentDamagePassives(result.result)
+                            handleTalentDeaths(result.result.targets, monsterId)
+                        }
+                    }
+                }
+                true
+            }
+
+            AIActionType.WAIT -> true
+        }
+    }
+
+    private fun scheduleTelegraphedAbility(
+        monsterId: EntityId,
+        abilityId: String,
+        targetPoint: Point,
+        talentSchema: TalentSchemaV2,
     ) {
-        val triggerId = intent.triggerId ?: return
-        val tracker = world.get<AiTriggerTracker>(monsterId) ?: return
-        tracker.pendingCombatStartTriggerIds.remove(triggerId)
-        if (!intent.consumesOnce) {
+        val telegraphSpec = content.telegraphSpecFor(talentSchema.telegraphRef) ?: return
+        val threatProfile = content.threatProfileRegistry.require(telegraphSpec.threatProfileId)
+        val loadout = world.get<TalentLoadout>(monsterId)
+        val rank = loadout?.talentLevels?.get(abilityId) ?: 1
+        val levelEffect =
+            talentSchema.levelEffects[rank]
+                ?: talentSchema.levelEffects.entries.maxByOrNull { (resolvedRank, _) -> resolvedRank }?.value
+                ?: TalentLevelEffectSchemaV2()
+        val assessment =
+            ThreatRatingResolver.assess(
+                telegraphSpec = telegraphSpec,
+                threatProfile = threatProfile,
+                baseAttack = world.get<DerivedStats>(monsterId)?.attack ?: 0,
+                damageMultiplier = levelEffect.damageMultiplier,
+                damageType = talentSchema.damageType?.let(DamageType::valueOf),
+            )
+        world.remove<PendingTelegraphState>(monsterId)
+        world.add(
+            monsterId,
+            PendingTelegraphState(
+                telegraphSpecId = telegraphSpec.id,
+                sourceAbilityId = abilityId,
+                remainingTurns = assessment.previewTurns,
+                targetPoint = targetPoint,
+                queuedAbilityId = abilityId,
+                resolvedDangerLevel = assessment.dangerLevel,
+            ),
+        )
+    }
+
+    private fun executeDefaultBehavior(
+        monsterId: EntityId,
+        behavior: AIBehavior,
+        targetId: EntityId,
+        targetPosition: Point,
+        targetVisible: Boolean,
+    ) {
+        val position = requireNotNull(world.get<Position>(monsterId)).toPoint()
+        val profile = activeAiProfileFor(monsterId)
+        val perception = world.get<AIPerceptionState>(monsterId)
+        val lastKnownTarget =
+            StealthTauntHandler.consumeLastKnownTargetPosition(
+                perception = perception,
+                currentPosition = position,
+                useLastKnownPosition = profile?.useLastKnownPosition == true,
+            )
+        if (!targetVisible && lastKnownTarget != null) {
+            applyPathingResult(
+                monsterId = monsterId,
+                result =
+                    AIPathing.moveToward(
+                        pathingContext(
+                            monsterId = monsterId,
+                            targetId = targetId,
+                            targetPosition = lastKnownTarget,
+                            behavior = behavior,
+                            targetVisible = true,
+                        ),
+                    ),
+            )
             return
         }
-        tracker.consumedTriggerIds.add(triggerId)
+
+        val result =
+            when (profile?.defaultBehavior ?: behavior.type.toDefaultBehavior()) {
+                AIDefaultBehavior.CHASE ->
+                    AIPathing.chase(pathingContext(monsterId, targetId, targetPosition, behavior, targetVisible))
+                AIDefaultBehavior.KITE ->
+                    AIPathing.kite(pathingContext(monsterId, targetId, targetPosition, behavior, targetVisible))
+                AIDefaultBehavior.PATROL ->
+                    AIPathing.patrol(pathingContext(monsterId, targetId, targetPosition, behavior, targetVisible))
+                AIDefaultBehavior.WAIT -> AIPathingResult(AIPathCommand.Wait)
+            }
+        applyPathingResult(monsterId, result)
+    }
+
+    private fun pathingContext(
+        monsterId: EntityId,
+        targetId: EntityId,
+        targetPosition: Point,
+        behavior: AIBehavior,
+        targetVisible: Boolean,
+    ): AIPathingContext =
+        AIPathingContext(
+            map = map,
+            actor =
+                AIPathingActorSnapshot(
+                    entityId = monsterId,
+                    position = requireNotNull(world.get<Position>(monsterId)).toPoint(),
+                    behavior = behavior,
+                    patrolRoute = world.get<PatrolRoute>(monsterId),
+                ),
+            target = AIPathingTargetSnapshot(entityId = targetId, position = targetPosition),
+            occupiedTiles = occupiedBlockingTiles(excluding = monsterId),
+            targetVisible = targetVisible,
+        )
+
+    private fun applyPathingResult(
+        monsterId: EntityId,
+        result: AIPathingResult,
+    ) {
+        result.nextPatrolIndex?.let { nextIndex ->
+            world.get<PatrolRoute>(monsterId)?.nextWaypointIndex = nextIndex
+        }
+        when (val command = result.command) {
+            is AIPathCommand.Attack -> resolveAttack(monsterId, command.target)
+            is AIPathCommand.Move -> {
+                if (blockerAt(command.destination) == null) {
+                    requireNotNull(world.get<Position>(monsterId)).moveTo(command.destination)
+                }
+            }
+            AIPathCommand.Wait -> Unit
+        }
     }
 
     private fun resolveAttack(
@@ -2617,6 +3000,9 @@ class FoundationGameSession internal constructor(
         target: EntityId,
         killer: EntityId?,
     ) {
+        if (target != playerId && tryApplyBossFatalTransition(target)) {
+            return
+        }
         logEvent(EntityDeathEvent(target, killer))
         val deathTargetArg = entityArg("target", target)
         val killerSummary = killer?.let(::terminalKillerSummary)
@@ -2690,6 +3076,28 @@ class FoundationGameSession internal constructor(
                 addMessage("log.victory", deathTargetArg)
             }
         }
+    }
+
+    private fun tryApplyBossFatalTransition(target: EntityId): Boolean {
+        val bossState = world.get<BossEncounterState>(target) ?: return false
+        val health = world.get<Health>(target) ?: return false
+        if (health.current > 0) {
+            return false
+        }
+
+        val phaseUpdate =
+            updateBossPhaseIfNeeded(
+                monsterId = target,
+                transitionTiming = BossPhaseTransitionTiming.ALLOW_FATAL_TRANSITION,
+                advanceTurnCounter = false,
+            )
+        if (!phaseUpdate.phaseChanged) {
+            return false
+        }
+
+        health.current = maxOf(health.current, 1)
+        bossState.phaseTurnCount = 0
+        return true
     }
 
     private data class TerminalKillerSummary(
@@ -4421,6 +4829,12 @@ class FoundationGameSession internal constructor(
                         "compatibility_boss_encounter" to
                             BossDefinition(
                                 encounterId = "compatibility_boss_encounter",
+                                encounter =
+                                    com.ktome.core.ai.BossEncounter(
+                                        id = "compatibility_boss_encounter",
+                                        templateId = "compatibility_boss",
+                                        phases = emptyList(),
+                                    ),
                                 template =
                                     MonsterTemplate(
                                         id = "compatibility_boss",
@@ -4438,6 +4852,11 @@ class FoundationGameSession internal constructor(
                                         spawnWeight = 1,
                                     ),
                                 talentLevels = emptyMap(),
+                                nameKey = "boss.compatibility_boss.name",
+                                descKey = "boss.compatibility_boss.desc",
+                                visualKey = "boss.cultist.dungeon_lord.visual",
+                                iconKey = "boss.cultist.dungeon_lord.icon",
+                                audioProfile = "audio.boss.warning",
                             ),
                     ),
                 schemaCatalog =
@@ -4448,6 +4867,8 @@ class FoundationGameSession internal constructor(
                         talentTrees = emptyList(),
                         monsters = emptyList(),
                         bossEncounters = emptyList(),
+                        telegraphSpecs = emptyList(),
+                        threatProfiles = emptyList(),
                         zones = emptyList(),
                         interactables = emptyList(),
                         objectiveSets = emptyList(),
@@ -4462,6 +4883,8 @@ class FoundationGameSession internal constructor(
                         audioProfiles = emptySet(),
                     ),
                 localizer = LocalizationBundle.load().translator(GameLocale.EN_US),
+                telegraphRegistry = com.ktome.game.telegraph.TelegraphRegistry(emptyMap()),
+                threatProfileRegistry = com.ktome.game.telegraph.ThreatProfileRegistry(emptyMap()),
             )
 
         private fun compatibilityMonsterCatalog(

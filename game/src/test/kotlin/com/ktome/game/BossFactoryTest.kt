@@ -1,5 +1,6 @@
 package com.ktome.game
 
+import com.ktome.core.ai.BossEncounterState
 import com.ktome.core.ecs.Position
 import com.ktome.core.ecs.World
 import com.ktome.core.ecs.get
@@ -25,6 +26,7 @@ class BossFactoryTest {
         assertEquals(Point(7, 8), requireNotNull(world.get<Position>(bossId)).toPoint())
         assertNotNull(requireNotNull(world.get<ResourcePools>(bossId)).pool(ResourceType.STAMINA))
         assertNotNull(world.get<CooldownState>(bossId))
+        assertEquals(definition.encounter.id, requireNotNull(world.get<BossEncounterState>(bossId)).encounterId)
         assertEquals(definition.template.talentLevels.size, requireNotNull(world.get<TalentLoadout>(bossId)).slotToTalentId.size)
     }
 }

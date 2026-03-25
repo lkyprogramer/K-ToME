@@ -1,5 +1,9 @@
 package com.ktome.game.harness
 
+import com.ktome.core.dungeon.StairDirection
+import com.ktome.core.ecs.BlocksMovement
+import com.ktome.core.ecs.Position
+import com.ktome.core.ecs.get
 import com.ktome.core.map.Point
 import com.ktome.core.pathfinding.AStar
 import com.ktome.core.snapshot.ActorRoleKindSnapshot
@@ -178,6 +182,36 @@ fun Point.deltaFrom(origin: Point): Point =
         x = (x - origin.x).coerceIn(-1, 1),
         y = (y - origin.y).coerceIn(-1, 1),
     )
+
+fun routeProgressCommand(
+    session: FoundationGameSession,
+    observation: RunObservation,
+): PlayerCommand? {
+    if (observation.canDescend) {
+        return PlayerCommand.Descend
+    }
+
+    val stairsDown = session.automationStairPoint(StairDirection.DOWN) ?: return null
+    if (stairsDown == observation.playerPosition) {
+        return PlayerCommand.Descend
+    }
+
+    val occupiedTiles =
+        session.automationWorld()
+            .entitiesWith(Position::class, BlocksMovement::class)
+            .filter { entityId -> entityId != session.playerId }
+            .map { entityId -> requireNotNull(session.automationWorld().get<Position>(entityId)).toPoint() }
+            .toSet()
+    val path =
+        AStar.findPath(
+            map = session.map,
+            start = observation.playerPosition,
+            goal = stairsDown,
+            blocked = occupiedTiles - stairsDown,
+        )
+    val nextStep = path.getOrNull(1) ?: return null
+    return PlayerCommand.Move(nextStep.deltaFrom(observation.playerPosition))
+}
 
 fun PlayerCommand.commandName(): String = this::class.simpleName ?: "UnknownCommand"
 

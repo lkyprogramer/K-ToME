@@ -39,6 +39,7 @@ class MonsterSchemaTest {
                     "orc.raider",
                     "orc.miner",
                     "orc.forge_guard",
+                    "orc.molten_giant",
                     "cultist.dungeon_lord",
                     "cultist.ember_adept",
                     "cultist.shadow_priest",
@@ -46,8 +47,8 @@ class MonsterSchemaTest {
                 ),
             ),
         )
-        assertEquals(24, schemaCatalog.monsters.size)
-        assertEquals(2, schemaCatalog.monsters.count { monster -> "boss" in monster.tags })
+        assertEquals(25, schemaCatalog.monsters.size)
+        assertEquals(3, schemaCatalog.monsters.count { monster -> "boss" in monster.tags })
         assertEquals(4, schemaCatalog.monsters.count { monster -> "elite" in monster.tags || monster.lootProfileId.endsWith(".elite") })
         assertEquals(18, schemaCatalog.monsters.count { monster -> "boss" !in monster.tags && "elite" !in monster.tags && !monster.lootProfileId.endsWith(".elite") })
         assertTrue(setOf("beast", "bandit", "undead", "orc", "cultist", "goblin").all(familyTags::contains))
@@ -104,7 +105,7 @@ class MonsterSchemaTest {
         val schemaCatalog = loader.loadSchemaCatalog()
         val zoneCatalog = schemaCatalog.zones.associateBy { zone -> zone.id }
         val runtimeCatalog = loader.loadMonsterCatalog().monsters.associateBy { monster -> monster.id }
-        val bossTemplateIdsByEncounterId = schemaCatalog.bossEncounters.associate { encounter -> encounter.id to encounter.bossTemplateId }
+        val bossTemplateIdsByEncounterId = schemaCatalog.bossEncounters.associate { encounter -> encounter.id to encounter.templateId }
         val specialArchetypes = setOf("artillery", "controller")
         val signatureCarrierIdsByZone =
             mapOf(
@@ -149,7 +150,7 @@ class MonsterSchemaTest {
         val schemaCatalog = loader.loadSchemaCatalog()
         val zoneCatalog = schemaCatalog.zones
         val runtimeCatalog = loader.loadMonsterCatalog().monsters.associateBy { monster -> monster.id }
-        val bossTemplateIdsByEncounterId = schemaCatalog.bossEncounters.associate { encounter -> encounter.id to encounter.bossTemplateId }
+        val bossTemplateIdsByEncounterId = schemaCatalog.bossEncounters.associate { encounter -> encounter.id to encounter.templateId }
         val routePool =
             zoneCatalog
                 .flatMap { zone -> routeVisibleMonsters(zone, runtimeCatalog, bossTemplateIdsByEncounterId) }

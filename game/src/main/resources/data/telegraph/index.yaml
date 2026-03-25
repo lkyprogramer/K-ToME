@@ -1,0 +1,51 @@
+telegraphSpecs:
+  - id: melee_single
+    schemaVersion: 2
+    tags: [telegraph, talent]
+    shape: CIRCLE
+    radius: 0
+    previewTurns: 1
+    dangerLevel: HIGH
+    threatProfileId: threat.frontliner.early
+    counterplayTags: [BLOCK, DODGE]
+    stages: []
+  - id: charge_lane
+    schemaVersion: 2
+    tags: [telegraph, talent]
+    shape: LINE
+    length: 5
+    previewTurns: 1
+    dangerLevel: HIGH
+    threatProfileId: threat.frontliner.mid
+    counterplayTags: [DODGE, INTERRUPT]
+    stages: []
+  - id: self_buff_aura
+    schemaVersion: 2
+    tags: [telegraph, talent]
+    shape: CIRCLE
+    radius: 1
+    previewTurns: 1
+    dangerLevel: MODERATE
+    threatProfileId: threat.frontliner.early
+    counterplayTags: [INTERRUPT]
+    stages: []
+  - id: molten_giant_phase_warning
+    schemaVersion: 2
+    tags: [telegraph, boss]
+    shape: CIRCLE
+    radius: 2
+    previewTurns: 2
+    dangerLevel: LETHAL
+    threatProfileId: threat.frontliner.mid
+    counterplayTags: [DODGE, BLOCK]
+    stages: []
+  - id: dungeon_lord_phase_warning
+    schemaVersion: 2
+    tags: [telegraph, boss]
+    shape: LINE
+    length: 6
+    previewTurns: 1
+    dangerLevel: HIGH
+    threatProfileId: threat.frontliner.mid
+    counterplayTags: [DODGE, INTERRUPT]
+    stages: []

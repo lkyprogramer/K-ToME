@@ -1,0 +1,19 @@
+threatProfiles:
+  - id: threat.frontliner.early
+    schemaVersion: 2
+    tags: [threat, telegraph]
+    defenderArchetype: frontliner
+    levelBand: { min: 1, max: 6 }
+    difficultyId: normal
+    expectedMaxHp: 52
+    expectedArmor: 3
+    expectedResistances: { FIRE: 0, SHADOW: 0 }
+  - id: threat.frontliner.mid
+    schemaVersion: 2
+    tags: [threat, telegraph]
+    defenderArchetype: frontliner
+    levelBand: { min: 7, max: 10 }
+    difficultyId: normal
+    expectedMaxHp: 78
+    expectedArmor: 6
+    expectedResistances: { FIRE: 10, SHADOW: 10 }

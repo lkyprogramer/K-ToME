@@ -1,78 +1,486 @@
 aiProfiles:
   - id: ai.chase.basic
     schemaVersion: 2
+    perceptionRange: 8
+    useLastKnownPosition: true
+    defaultBehavior: CHASE
+    selectionPolicy: DETERMINISTIC_PRIORITY
+    actions:
+      - id: strike
+        type: ATTACK_TARGET
+        orderKey: 10
+        condition:
+          type: TARGET_DISTANCE_LESS_THAN
+          distance: 2
+      - id: advance
+        type: MOVE_TOWARD_TARGET
+        orderKey: 20
+        condition:
+          type: TARGET_VISIBLE
   - id: ai.guard.basic
     schemaVersion: 2
+    perceptionRange: 8
+    useLastKnownPosition: false
+    defaultBehavior: WAIT
+    selectionPolicy: DETERMINISTIC_PRIORITY
+    actions:
+      - id: strike
+        type: ATTACK_TARGET
+        orderKey: 10
+        condition:
+          type: TARGET_DISTANCE_LESS_THAN
+          distance: 2
+      - id: hold_line
+        type: MOVE_TOWARD_TARGET
+        orderKey: 20
+        condition:
+          type: TARGET_VISIBLE
   - id: ai.kite.basic
     schemaVersion: 2
+    perceptionRange: 8
+    useLastKnownPosition: true
+    defaultBehavior: KITE
+    selectionPolicy: DETERMINISTIC_PRIORITY
+    actions:
+      - id: retreat
+        type: RETREAT_FROM_TARGET
+        orderKey: 10
+        condition:
+          type: TARGET_DISTANCE_LESS_THAN
+          distance: 2
+      - id: harry
+        type: WAIT
+        orderKey: 20
+        condition:
+          type: TARGET_DISTANCE_BETWEEN
+          minDistance: 2
+          maxDistance: 3
+      - id: reposition
+        type: MOVE_TOWARD_TARGET
+        orderKey: 30
+        condition:
+          type: TARGET_VISIBLE
   - id: ai.patrol.basic
     schemaVersion: 2
+    perceptionRange: 8
+    useLastKnownPosition: false
+    defaultBehavior: PATROL
+    selectionPolicy: DETERMINISTIC_PRIORITY
+    actions:
+      - id: strike
+        type: ATTACK_TARGET
+        orderKey: 10
+        condition:
+          type: TARGET_DISTANCE_LESS_THAN
+          distance: 2
+      - id: close
+        type: MOVE_TOWARD_TARGET
+        orderKey: 20
+        condition:
+          type: TARGET_VISIBLE
   - id: ai.skirmisher.flank
     schemaVersion: 2
+    perceptionRange: 8
+    useLastKnownPosition: true
+    defaultBehavior: PATROL
+    selectionPolicy: DETERMINISTIC_PRIORITY
+    actions:
+      - id: strike
+        type: ATTACK_TARGET
+        orderKey: 10
+        condition:
+          type: TARGET_DISTANCE_LESS_THAN
+          distance: 2
+      - id: flank
+        type: MOVE_TOWARD_TARGET
+        orderKey: 20
+        condition:
+          type: TARGET_VISIBLE
   - id: ai.controller.pressure
     schemaVersion: 2
+    perceptionRange: 9
+    useLastKnownPosition: true
+    defaultBehavior: KITE
+    selectionPolicy: DETERMINISTIC_PRIORITY
+    actions:
+      - id: standoff
+        type: MOVE_TOWARD_TARGET
+        orderKey: 10
+        condition:
+          type: TARGET_DISTANCE_BETWEEN
+          minDistance: 2
+          maxDistance: 4
+      - id: retreat
+        type: RETREAT_FROM_TARGET
+        orderKey: 20
+        condition:
+          type: TARGET_DISTANCE_LESS_THAN
+          distance: 2
+      - id: pressure
+        type: MOVE_TOWARD_TARGET
+        orderKey: 30
+        condition:
+          type: TARGET_VISIBLE
   - id: ai.controller.shadow_priest
     schemaVersion: 2
+    perceptionRange: 9
+    useLastKnownPosition: true
+    defaultBehavior: KITE
+    selectionPolicy: DETERMINISTIC_PRIORITY
+    actions:
+      - id: standoff
+        type: ATTACK_TARGET
+        orderKey: 10
+        condition:
+          type: TARGET_DISTANCE_BETWEEN
+          minDistance: 2
+          maxDistance: 4
+      - id: retreat
+        type: RETREAT_FROM_TARGET
+        orderKey: 20
+        condition:
+          type: TARGET_DISTANCE_LESS_THAN
+          distance: 2
+      - id: shadow_step
+        type: MOVE_TOWARD_TARGET
+        orderKey: 30
+        condition:
+          type: TARGET_VISIBLE
   - id: ai.elite.huntmaster
     schemaVersion: 2
-    talentPriority: [power_strike]
-    triggers:
-      - triggerId: elite_huntmaster_finish_50
-        condition: hpBelowRatio
-        threshold: 0.5
-        action: forceTalent
-        talentId: power_strike
-        once: true
+    perceptionRange: 8
+    useLastKnownPosition: true
+    defaultBehavior: PATROL
+    selectionPolicy: DETERMINISTIC_PRIORITY
+    actions:
+      - id: finishing_strike
+        type: USE_ABILITY
+        orderKey: 10
+        abilityId: power_strike
+        condition:
+          type: AND
+          conditions:
+            - type: HP_BELOW
+              threshold: 0.5
+            - type: TARGET_DISTANCE_LESS_THAN
+              distance: 2
+            - type: TALENT_READY
+              talentId: power_strike
+      - id: strike
+        type: ATTACK_TARGET
+        orderKey: 20
+        condition:
+          type: TARGET_DISTANCE_LESS_THAN
+          distance: 2
+      - id: pursue
+        type: MOVE_TOWARD_TARGET
+        orderKey: 30
+        condition:
+          type: TARGET_VISIBLE
   - id: ai.elite.forge_guard
     schemaVersion: 2
-    talentPriority: [shield_bash, war_cry]
-    skipRules:
-      - talentId: war_cry
-        selfHasStatus: war_cry_empower
-    triggers:
-      - triggerId: elite_forge_guard_opening_shield_bash
-        condition: onCombatStart
-        action: forceTalent
-        talentId: shield_bash
-        once: true
+    perceptionRange: 8
+    useLastKnownPosition: true
+    defaultBehavior: CHASE
+    selectionPolicy: DETERMINISTIC_PRIORITY
+    actions:
+      - id: opening_bash
+        type: USE_ABILITY
+        orderKey: 10
+        abilityId: shield_bash
+        condition:
+          type: AND
+          conditions:
+            - type: TARGET_DISTANCE_LESS_THAN
+              distance: 2
+            - type: TALENT_READY
+              talentId: shield_bash
+      - id: battle_cry
+        type: USE_ABILITY
+        orderKey: 20
+        abilityId: war_cry
+        condition:
+          type: AND
+          conditions:
+            - type: TALENT_READY
+              talentId: war_cry
+            - type: NOT
+              condition:
+                type: HAS_STATUS
+                scope: SELF
+                statusId: war_cry_empower
+      - id: strike
+        type: ATTACK_TARGET
+        orderKey: 30
+        condition:
+          type: TARGET_DISTANCE_LESS_THAN
+          distance: 2
+      - id: advance
+        type: MOVE_TOWARD_TARGET
+        orderKey: 40
+        condition:
+          type: TARGET_VISIBLE
   - id: ai.elite.ashgate_warden
     schemaVersion: 2
-  - id: ai.boss.dungeon_lord
+    perceptionRange: 8
+    useLastKnownPosition: true
+    defaultBehavior: CHASE
+    selectionPolicy: DETERMINISTIC_PRIORITY
+    actions:
+      - id: strike
+        type: ATTACK_TARGET
+        orderKey: 10
+        condition:
+          type: TARGET_DISTANCE_LESS_THAN
+          distance: 2
+      - id: close
+        type: MOVE_TOWARD_TARGET
+        orderKey: 20
+        condition:
+          type: TARGET_VISIBLE
+  - id: ai.boss.bandit_captain.phase_full
     schemaVersion: 2
-    talentPriority: [war_cry, power_strike, charge, shield_bash]
-    skipRules:
-      - talentId: war_cry
-        selfHasStatus: war_cry_empower
-    triggers:
-      - triggerId: dungeon_lord_opening_war_cry
-        condition: onCombatStart
-        action: forceTalent
-        talentId: war_cry
-        once: true
-      - triggerId: dungeon_lord_desperate_charge
-        condition: hpBelowRatio
-        threshold: 0.3
-        action: forceTalent
-        talentId: charge
-        postMessageKey: log.boss.desperate
-        postMessageArgs:
-          source: monster.cultist.dungeon_lord.name
-        once: true
-  - id: ai.boss.bandit_captain
+    perceptionRange: 9
+    useLastKnownPosition: true
+    defaultBehavior: CHASE
+    selectionPolicy: WEIGHTED_RANDOM
+    actions:
+      - id: shield_bash
+        type: USE_ABILITY
+        orderKey: 10
+        weight: 35
+        abilityId: shield_bash
+        condition:
+          type: AND
+          conditions:
+            - type: TARGET_DISTANCE_LESS_THAN
+              distance: 2
+            - type: TALENT_READY
+              talentId: shield_bash
+      - id: power_strike
+        type: USE_ABILITY
+        orderKey: 20
+        weight: 30
+        abilityId: power_strike
+        condition:
+          type: AND
+          conditions:
+            - type: TARGET_DISTANCE_LESS_THAN
+              distance: 2
+            - type: TALENT_READY
+              talentId: power_strike
+      - id: charge
+        type: USE_ABILITY
+        orderKey: 30
+        weight: 20
+        abilityId: charge
+        condition:
+          type: AND
+          conditions:
+            - type: TARGET_DISTANCE_BETWEEN
+              minDistance: 2
+              maxDistance: 5
+            - type: TALENT_READY
+              talentId: charge
+      - id: strike
+        type: ATTACK_TARGET
+        orderKey: 40
+        weight: 10
+        condition:
+          type: TARGET_DISTANCE_LESS_THAN
+          distance: 2
+      - id: advance
+        type: MOVE_TOWARD_TARGET
+        orderKey: 50
+        weight: 5
+        condition:
+          type: TARGET_VISIBLE
+  - id: ai.boss.molten_giant.phase_full
     schemaVersion: 2
-    talentPriority: [power_strike, shield_bash]
-    triggers:
-      - triggerId: bandit_captain_opening_shield_bash
-        condition: onCombatStart
-        action: forceTalent
-        talentId: shield_bash
-        once: true
-      - triggerId: bandit_captain_enrage_40
-        condition: hpBelowRatio
-        threshold: 0.4
-        action: forceTalent
-        talentId: power_strike
-        postMessageKey: log.boss.enrage
-        postMessageArgs:
-          source: monster.bandit.captain.name
-        once: true
+    perceptionRange: 10
+    useLastKnownPosition: true
+    defaultBehavior: CHASE
+    selectionPolicy: WEIGHTED_RANDOM
+    actions:
+      - id: power_strike
+        type: USE_ABILITY
+        orderKey: 10
+        weight: 45
+        abilityId: power_strike
+        condition:
+          type: AND
+          conditions:
+            - type: TARGET_DISTANCE_LESS_THAN
+              distance: 2
+            - type: TALENT_READY
+              talentId: power_strike
+      - id: charge
+        type: USE_ABILITY
+        orderKey: 20
+        weight: 25
+        abilityId: charge
+        condition:
+          type: AND
+          conditions:
+            - type: TARGET_DISTANCE_BETWEEN
+              minDistance: 2
+              maxDistance: 6
+            - type: TALENT_READY
+              talentId: charge
+      - id: war_cry
+        type: USE_ABILITY
+        orderKey: 30
+        weight: 20
+        abilityId: war_cry
+        condition:
+          type: AND
+          conditions:
+            - type: TALENT_READY
+              talentId: war_cry
+            - type: NOT
+              condition:
+                type: HAS_STATUS
+                scope: SELF
+                statusId: war_cry_empower
+      - id: advance
+        type: MOVE_TOWARD_TARGET
+        orderKey: 40
+        weight: 10
+        condition:
+          type: TARGET_VISIBLE
+  - id: ai.boss.molten_giant.phase_enraged
+    schemaVersion: 2
+    perceptionRange: 10
+    useLastKnownPosition: true
+    defaultBehavior: CHASE
+    selectionPolicy: WEIGHTED_RANDOM
+    actions:
+      - id: enraged_charge
+        type: USE_ABILITY
+        orderKey: 10
+        weight: 35
+        abilityId: charge
+        condition:
+          type: AND
+          conditions:
+            - type: TARGET_DISTANCE_BETWEEN
+              minDistance: 2
+              maxDistance: 6
+            - type: TALENT_READY
+              talentId: charge
+      - id: crushing_strike
+        type: USE_ABILITY
+        orderKey: 20
+        weight: 45
+        abilityId: power_strike
+        condition:
+          type: AND
+          conditions:
+            - type: TARGET_DISTANCE_LESS_THAN
+              distance: 2
+            - type: TALENT_READY
+              talentId: power_strike
+      - id: strike
+        type: ATTACK_TARGET
+        orderKey: 30
+        weight: 15
+        condition:
+          type: TARGET_DISTANCE_LESS_THAN
+          distance: 2
+      - id: advance
+        type: MOVE_TOWARD_TARGET
+        orderKey: 40
+        weight: 5
+        condition:
+          type: TARGET_VISIBLE
+  - id: ai.boss.dungeon_lord.phase_full
+    schemaVersion: 2
+    perceptionRange: 12
+    useLastKnownPosition: true
+    defaultBehavior: CHASE
+    selectionPolicy: WEIGHTED_RANDOM
+    actions:
+      - id: war_cry
+        type: USE_ABILITY
+        orderKey: 10
+        weight: 20
+        abilityId: war_cry
+        condition:
+          type: AND
+          conditions:
+            - type: TALENT_READY
+              talentId: war_cry
+            - type: NOT
+              condition:
+                type: HAS_STATUS
+                scope: SELF
+                statusId: war_cry_empower
+      - id: power_strike
+        type: USE_ABILITY
+        orderKey: 20
+        weight: 30
+        abilityId: power_strike
+        condition:
+          type: AND
+          conditions:
+            - type: TARGET_DISTANCE_LESS_THAN
+              distance: 2
+            - type: TALENT_READY
+              talentId: power_strike
+      - id: charge
+        type: USE_ABILITY
+        orderKey: 30
+        weight: 35
+        abilityId: charge
+        condition:
+          type: AND
+          conditions:
+            - type: TARGET_DISTANCE_BETWEEN
+              minDistance: 2
+              maxDistance: 6
+            - type: TALENT_READY
+              talentId: charge
+      - id: advance
+        type: MOVE_TOWARD_TARGET
+        orderKey: 40
+        weight: 15
+        condition:
+          type: TARGET_VISIBLE
+  - id: ai.boss.dungeon_lord.phase_enraged
+    schemaVersion: 2
+    perceptionRange: 12
+    useLastKnownPosition: true
+    defaultBehavior: CHASE
+    selectionPolicy: WEIGHTED_RANDOM
+    actions:
+      - id: desperate_charge
+        type: USE_ABILITY
+        orderKey: 10
+        weight: 40
+        abilityId: charge
+        condition:
+          type: AND
+          conditions:
+            - type: TARGET_DISTANCE_BETWEEN
+              minDistance: 2
+              maxDistance: 6
+            - type: TALENT_READY
+              talentId: charge
+      - id: finishing_strike
+        type: USE_ABILITY
+        orderKey: 20
+        weight: 40
+        abilityId: power_strike
+        condition:
+          type: AND
+          conditions:
+            - type: TARGET_DISTANCE_LESS_THAN
+              distance: 2
+            - type: TALENT_READY
+              talentId: power_strike
+      - id: press_forward
+        type: MOVE_TOWARD_TARGET
+        orderKey: 30
+        weight: 20
+        condition:
+          type: TARGET_VISIBLE

@@ -719,6 +719,7 @@ class TileRenderer(
                 TileTextTone.GREEN -> color("59C173")
                 TileTextTone.RED -> color("D95959")
                 TileTextTone.BLUE -> color("5C90D2")
+                TileTextTone.MAGENTA -> color("7B1FA2")
             }
 
         private fun statusAccentColor(category: StatusEffectCategorySnapshot): Color =

@@ -1,5 +1,7 @@
 package com.ktome.client.render
 
+import com.ktome.client.telegraph.TelegraphRenderer
+import com.ktome.client.telegraph.TelegraphStyle
 import com.ktome.client.assets.ResolvedVisualAsset
 import com.ktome.client.assets.VisualManifestResolver
 import com.ktome.client.input.OverlayState
@@ -34,6 +36,7 @@ internal enum class AsciiTextTone {
     GRAY,
     GREEN,
     RED,
+    MAGENTA,
 }
 
 internal data class AsciiGlyphPlacement(
@@ -147,6 +150,11 @@ internal object AsciiRenderModelBuilder {
         if (overlayState.mode == UiMode.MAP) {
             snapshot.metadata.zoneDescKey?.let { descKey ->
                 lines += AsciiTextLine(localizer.text(descKey), AsciiTextTone.LIGHT_GRAY)
+                lines += blankLine()
+            }
+            if (snapshot.overlays.isNotEmpty()) {
+                lines += AsciiTextLine(localizer.text("ui.sidebar.warnings"), AsciiTextTone.GOLD)
+                lines += TelegraphRenderer.asciiLines(localizer, snapshot)
                 lines += blankLine()
             }
         }
@@ -455,12 +463,7 @@ internal object AsciiRenderModelBuilder {
         visualResolver: VisualManifestResolver,
         overlay: com.ktome.core.snapshot.OverlayRenderSnapshot,
     ): AsciiPresentation {
-        val fallbackColor =
-            when {
-                overlay.dangerLevel >= 3 -> "#FF2400"
-                overlay.dangerLevel == 2 -> "#FF8C00"
-                else -> "#FFD700"
-            }
+        val fallbackColor = TelegraphStyle.fallbackColorHex(overlay.dangerLevel)
         return presentationFrom(resolveVisual(visualResolver, overlay.visualKey), AsciiPresentation('!', fallbackColor))
     }
 

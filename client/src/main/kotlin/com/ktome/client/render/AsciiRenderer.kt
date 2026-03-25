@@ -107,6 +107,7 @@ class AsciiRenderer(
             AsciiTextTone.GRAY -> Color.GRAY
             AsciiTextTone.GREEN -> Color.valueOf("59C173")
             AsciiTextTone.RED -> Color.valueOf("D95959")
+            AsciiTextTone.MAGENTA -> Color.valueOf("7B1FA2")
         }
 
     companion object {

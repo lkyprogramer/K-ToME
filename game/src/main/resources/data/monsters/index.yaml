@@ -108,7 +108,7 @@ monsters:
     baseDefense: 7
     speed: 95
     ai: CHASE
-    aiProfileId: ai.boss.dungeon_lord
+    aiProfileId: ai.boss.dungeon_lord.phase_full
     lootProfileId: loot.foundation.boss
     resistances: { SHADOW: 20 }
     talents: { war_cry: 3, power_strike: 4, charge: 2 }
@@ -273,7 +273,7 @@ monsters:
     baseDefense: 1
     speed: 100
     ai: CHASE
-    aiProfileId: ai.boss.bandit_captain
+    aiProfileId: ai.boss.bandit_captain.phase_full
     lootProfileId: loot.foundation.boss
     resistances: { FIRE: -10 }
     talents: { war_cry: 1, shield_bash: 1, power_strike: 2, charge: 1 }
@@ -512,6 +512,32 @@ monsters:
     expReward: 72
     spawnFloors: [2]
     spawnWeight: 3
+  - id: orc.molten_giant
+    nameKey: monster.orc.molten_giant.name
+    descKey: monster.orc.molten_giant.desc
+    visualKey: actor.orc.raider
+    iconKey: icon.monster.orc.raider
+    audioProfile: audio.monster.orc.raider
+    schemaVersion: 2
+    tags: [monster, boss, orc]
+    archetype: boss
+    glyph: "B"
+    color: "#C85A30"
+    stats: { str: 17, dex: 8, con: 16, wil: 6 }
+    baseHp: 96
+    baseAttack: 18
+    baseDefense: 6
+    baseAccuracy: 13
+    baseEvasion: 5
+    speed: 88
+    ai: CHASE
+    aiProfileId: ai.boss.molten_giant.phase_full
+    lootProfileId: loot.foundation.boss
+    resistances: { FIRE: 25, COLD: -10 }
+    talents: { power_strike: 4, charge: 2, war_cry: 2 }
+    expReward: 280
+    spawnFloors: [2]
+    spawnWeight: 1
   - id: cultist.shadow_priest
     nameKey: monster.cultist.shadow_priest.name
     descKey: monster.cultist.shadow_priest.desc

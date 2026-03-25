@@ -1259,23 +1259,36 @@ class TalentResolver(
         targetEntity: EntityId,
     ): Point? {
         val blockedTiles = blockedTiles(world, excluding = setOf(targetEntity))
+        var bestDestination: Point? = null
+        var bestPathLength: Int? = null
 
-        return Point.ALL_DIRECTIONS
+        Point.ALL_DIRECTIONS
             .map { direction -> targetPoint + direction }
             .filter { destination ->
                 destination != from &&
                     map.isInBounds(destination.x, destination.y) &&
                     !map[destination].blocksMovement &&
                     destination !in blockedTiles
-            }
-            .mapNotNull { destination ->
+            }.forEach { destination ->
                 val path = AStar.findPath(map = map, start = from, goal = destination, blocked = blockedTiles)
-                destination.takeIf { path.isNotEmpty() }?.let { reachableDestination ->
-                    reachableDestination to path.size
+                if (path.isEmpty()) {
+                    return@forEach
+                }
+                val pathLength = path.size
+                val shouldReplace =
+                    bestDestination == null ||
+                        requireNotNull(bestPathLength) > pathLength ||
+                        (
+                            requireNotNull(bestPathLength) == pathLength &&
+                                comparePointOrder(destination, requireNotNull(bestDestination)) < 0
+                        )
+                if (shouldReplace) {
+                    bestDestination = destination
+                    bestPathLength = pathLength
                 }
             }
-            .minWithOrNull(compareBy<Pair<Point, Int>> { it.second }.thenBy { it.first.y }.thenBy { it.first.x })
-            ?.first
+
+        return bestDestination
     }
 
     private fun blinkDestination(
@@ -1297,7 +1310,20 @@ class TalentResolver(
                         destination !in blockedTiles
                 }
 
-        return candidates.minWithOrNull(compareBy<Point> { it.chebyshevDistanceTo(targetPoint) }.thenBy(Point::y).thenBy(Point::x))
+        var bestDestination: Point? = null
+        candidates.forEach { destination ->
+            val shouldReplace =
+                bestDestination == null ||
+                    compareDistanceThenPointOrder(
+                        left = destination,
+                        right = requireNotNull(bestDestination),
+                        distanceFrom = targetPoint,
+                    ) < 0
+            if (shouldReplace) {
+                bestDestination = destination
+            }
+        }
+        return bestDestination
     }
 
     private fun shadowstepDestination(
@@ -1308,14 +1334,50 @@ class TalentResolver(
         targetEntity: EntityId,
     ): Point? {
         val blockedTiles = blockedTiles(world, excluding = setOf(targetEntity))
-        return Point.ALL_DIRECTIONS
+        var bestDestination: Point? = null
+        Point.ALL_DIRECTIONS
             .map { direction -> targetPoint + direction }
             .filter { destination ->
                 destination != from &&
                     map.isInBounds(destination.x, destination.y) &&
                     !map[destination].blocksMovement &&
                     destination !in blockedTiles
-            }.minWithOrNull(compareBy<Point> { it.chebyshevDistanceTo(from) }.thenBy(Point::y).thenBy(Point::x))
+            }.forEach { destination ->
+                val shouldReplace =
+                    bestDestination == null ||
+                        compareDistanceThenPointOrder(
+                            left = destination,
+                            right = requireNotNull(bestDestination),
+                            distanceFrom = from,
+                        ) < 0
+                if (shouldReplace) {
+                    bestDestination = destination
+                }
+            }
+        return bestDestination
+    }
+
+    private fun compareDistanceThenPointOrder(
+        left: Point,
+        right: Point,
+        distanceFrom: Point,
+    ): Int {
+        val distanceCompare = left.chebyshevDistanceTo(distanceFrom).compareTo(right.chebyshevDistanceTo(distanceFrom))
+        if (distanceCompare != 0) {
+            return distanceCompare
+        }
+        return comparePointOrder(left, right)
+    }
+
+    private fun comparePointOrder(
+        left: Point,
+        right: Point,
+    ): Int {
+        val yCompare = left.y.compareTo(right.y)
+        if (yCompare != 0) {
+            return yCompare
+        }
+        return left.x.compareTo(right.x)
     }
 
     private fun knockback(

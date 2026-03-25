@@ -399,6 +399,42 @@ class SmokeBotTest {
     }
 
     @Test
+    fun `low health templar heals before shielding under adjacent melee pressure`() {
+        val observation =
+            observation(
+                inventoryItems = emptyList(),
+                playerStatus =
+                    PlayerStatus(
+                        currentHp = 18,
+                        maxHp = 30,
+                        level = 1,
+                        currentExperience = 0,
+                        nextLevelRequirement = 10,
+                        statPoints = 0,
+                        talentPoints = 0,
+                        attack = 6,
+                        defense = 4,
+                        accuracy = 5,
+                        evasion = 3,
+                        speed = 100,
+                    ),
+                playerResource = PlayerResourceView(current = 20, max = 20, typeId = "POSITIVE_ENERGY"),
+                map = corridorMap,
+                playerPosition = Point(3, 0),
+                visibleHostilePositions = listOf(Point(4, 0)),
+                visibleTiles = corridorMap.floorPoints().toSet(),
+                exploredTiles = corridorMap.floorPoints().toSet(),
+                talentSlots =
+                    listOf(
+                        talentSlot(slot = 1, talentId = "holy_light", resourceTypeId = "POSITIVE_ENERGY", resourceCost = 12, range = 0, requiresTarget = false),
+                        talentSlot(slot = 2, talentId = "holy_shield", resourceTypeId = "POSITIVE_ENERGY", resourceCost = 12, range = 0, requiresTarget = false),
+                    ),
+            )
+
+        assertEquals(PlayerCommand.UseTalent(1), bot.decide(observation))
+    }
+
+    @Test
     fun `critical health mana class blinks away from multiple nearby hostiles`() {
         val observation =
             observation(
@@ -499,7 +535,7 @@ class SmokeBotTest {
     }
 
     @Test
-    fun `low health templar retreats from adjacent hostile when no emergency action is ready`() {
+    fun `low health templar holds melee pressure against a single adjacent hostile when no emergency action is ready`() {
         val observation =
             observation(
                 inventoryItems = emptyList(),
@@ -528,6 +564,29 @@ class SmokeBotTest {
                     listOf(
                         talentSlot(slot = 1, talentId = "holy_light", resourceTypeId = "POSITIVE_ENERGY", resourceCost = 12, range = 0, requiresTarget = false),
                         talentSlot(slot = 2, talentId = "holy_shield", resourceTypeId = "POSITIVE_ENERGY", resourceCost = 12, range = 0, requiresTarget = false),
+                    ),
+            )
+
+        assertEquals(PlayerCommand.Move(Point(1, 0)), bot.decide(observation))
+    }
+
+    @Test
+    fun `templar without judgment hammer keeps route progress instead of chasing distant hostile`() {
+        val observation =
+            observation(
+                inventoryItems = emptyList(),
+                playerStatus = healthyStatus(),
+                playerResource = PlayerResourceView(current = 12, max = 20, typeId = "POSITIVE_ENERGY"),
+                map = corridorMap,
+                playerPosition = Point(3, 0),
+                visibleHostilePositions = listOf(Point(6, 0)),
+                visibleTiles = corridorMap.floorPoints().toSet(),
+                exploredTiles = corridorMap.floorPoints().toSet(),
+                knownDownstairsPositions = listOf(Point(0, 0)),
+                talentSlots =
+                    listOf(
+                        talentSlot(slot = 1, talentId = "holy_strike", resourceTypeId = "POSITIVE_ENERGY", resourceCost = 8, range = 1, requiresTarget = true),
+                        talentSlot(slot = 2, talentId = "holy_light", resourceTypeId = "POSITIVE_ENERGY", resourceCost = 12, range = 0, requiresTarget = false),
                     ),
             )
 
