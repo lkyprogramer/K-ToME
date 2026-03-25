@@ -416,6 +416,7 @@ class SchemaV2LoaderTest {
                                     "id" to "broken_profession",
                                     "nameKey" to "profession.broken.name",
                                     "descKey" to "profession.broken.desc",
+                                    "resourceHintKey" to "profession.broken.resource_hint",
                                     "visualKey" to "actor.vanguard",
                                     "iconKey" to "icon.profession.vanguard",
                                     "audioProfile" to "audio.profession.vanguard",
@@ -464,6 +465,76 @@ class SchemaV2LoaderTest {
 
         assertTrue(causeMessages.isNotEmpty())
         assertTrue(causeMessages.any { message -> "primarySpendAxis" in message })
+    }
+
+    @Test
+    fun `schema v2 loader rejects profession schemas without resource hint key`() {
+        val loader = DataLoader(GameLocale.EN_US)
+        val parseMethod =
+            DataLoader::class.java.getDeclaredMethod("parseProfessionSchemas", Map::class.java).apply {
+                isAccessible = true
+            }
+
+        val error =
+            assertThrows(InvocationTargetException::class.java) {
+                parseMethod.invoke(
+                    loader,
+                    linkedMapOf(
+                        "professions" to
+                            listOf(
+                                linkedMapOf(
+                                    "id" to "broken_profession",
+                                    "nameKey" to "profession.broken.name",
+                                    "descKey" to "profession.broken.desc",
+                                    "visualKey" to "actor.vanguard",
+                                    "iconKey" to "icon.profession.vanguard",
+                                    "audioProfile" to "audio.profession.vanguard",
+                                    "schemaVersion" to 1,
+                                    "resourceProfiles" to
+                                        listOf(
+                                            linkedMapOf(
+                                                "axis" to "STAMINA",
+                                                "initialCurrent" to 40,
+                                                "max" to 40,
+                                            ),
+                                        ),
+                                    "primarySpendAxis" to "STAMINA",
+                                    "baseStats" to linkedMapOf("str" to 10, "dex" to 8, "con" to 9, "wil" to 7),
+                                    "combatProfile" to
+                                        linkedMapOf(
+                                            "baseHp" to 22,
+                                            "baseAttack" to 6,
+                                            "baseDefense" to 4,
+                                            "baseAccuracy" to 6,
+                                            "baseEvasion" to 4,
+                                            "baseSpeed" to 100,
+                                        ),
+                                    "statGrowth" to linkedMapOf("str" to 2, "dex" to 1, "con" to 2, "wil" to 1),
+                                    "talentTrees" to emptyList<String>(),
+                                    "startingTalents" to emptyList<String>(),
+                                    "startingKit" to emptyList<String>(),
+                                    "soloContract" to
+                                        linkedMapOf(
+                                            "offenseTags" to listOf("single_target"),
+                                            "defenseTags" to listOf("guard"),
+                                            "mobilityTags" to listOf("dash"),
+                                            "aoeAnswerTags" to listOf("cleave"),
+                                            "bossAnswerTags" to listOf("burst"),
+                                            "panicAnswerTags" to listOf("shield"),
+                                        ),
+                                ),
+                            ),
+                    ),
+                )
+            }
+
+        val causeMessages =
+            generateSequence(error.cause) { throwable -> throwable.cause }
+                .mapNotNull(Throwable::message)
+                .toList()
+
+        assertTrue(causeMessages.isNotEmpty())
+        assertTrue(causeMessages.any { message -> "resourceHintKey" in message })
     }
 
     @Test

@@ -19,6 +19,7 @@ class ProfessionSchemaTest {
         catalog.professions.forEach { profession ->
             assertEquals("profession.${profession.id}.name", profession.nameKey)
             assertEquals("profession.${profession.id}.desc", profession.descKey)
+            assertEquals("profession.${profession.id}.resource_hint", profession.resourceHintKey)
             assertTrue(profession.baseStats.str + profession.baseStats.dex + profession.baseStats.con + profession.baseStats.wil > 0)
             assertTrue(profession.statGrowth.str + profession.statGrowth.dex + profession.statGrowth.con + profession.statGrowth.wil > 0)
             assertTrue(profession.resourceProfiles.isNotEmpty())

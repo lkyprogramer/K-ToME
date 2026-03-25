@@ -58,6 +58,7 @@ class ContractLintTest {
             assertEquals(3, profession.schemaVersion)
             assertEquals("profession.${profession.id}.name", profession.nameKey)
             assertEquals("profession.${profession.id}.desc", profession.descKey)
+            assertEquals("profession.${profession.id}.resource_hint", profession.resourceHintKey)
             assertExactVisualKey(profession.visualKey)
             assertExactVisualKey(profession.iconKey)
             assertExactAudioKey(profession.audioProfile)

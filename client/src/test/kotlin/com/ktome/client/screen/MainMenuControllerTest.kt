@@ -2,10 +2,11 @@ package com.ktome.client.screen
 
 import com.badlogic.gdx.Input.Keys
 import com.ktome.client.input.InputSource
-import com.ktome.core.profession.ProfessionTier
 import com.ktome.core.profile.ClassPlayabilityState
-import com.ktome.core.profile.ClassUnlockState
-import com.ktome.game.ProfessionSelectionOption
+import com.ktome.game.PlayerCreationSelection
+import com.ktome.game.PlayerCreationState
+import com.ktome.game.ProfessionPlayerCreationOption
+import com.ktome.game.RacePlayerCreationOption
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -18,25 +19,22 @@ class MainMenuControllerTest {
         val controller =
             MainMenuController(
                 input = input,
-                availableProfessionIds = listOf("vanguard", "arcanist", "rogue", "templar"),
-                availableRaceIds = listOf("human", "elf", "dwarf"),
-                initialProfessionId = "vanguard",
-                initialRaceId = "human",
-                professionSelections = playableSelections(),
+                playerCreationState = playableState(),
             )
 
         input.push(Keys.RIGHT)
         val changed = controller.pollAction(hasSave = false)
-        assertEquals("arcanist", changed.selectedProfessionId)
+        assertEquals("arcanist", changed.selection.professionId)
         assertTrue(changed.professionChanged)
         assertTrue(changed.selectionChanged)
+        assertEquals(PlayerCreationFocus.PROFESSION, changed.focusedAxis)
         assertEquals(null, changed.action)
 
         input.push(Keys.ENTER)
         val started = controller.pollAction(hasSave = false)
         assertEquals(MainMenuAction.StartNewGame, started.action)
-        assertEquals("arcanist", started.selectedProfessionId)
-        assertEquals("human", started.selectedRaceId)
+        assertEquals("arcanist", started.selection.professionId)
+        assertEquals("human", started.selection.raceId)
     }
 
     @Test
@@ -45,15 +43,11 @@ class MainMenuControllerTest {
         val controller =
             MainMenuController(
                 input = input,
-                availableProfessionIds = listOf("vanguard", "arcanist", "rogue", "templar"),
-                availableRaceIds = listOf("human", "elf", "dwarf"),
-                initialProfessionId = "vanguard",
-                initialRaceId = "human",
-                professionSelections = playableSelections(),
+                playerCreationState = playableState(),
             )
 
         val changed = controller.pollAction(hasSave = true)
-        assertEquals("templar", changed.selectedProfessionId)
+        assertEquals("templar", changed.selection.professionId)
         assertTrue(changed.professionChanged)
         assertFalse(changed.rejected)
     }
@@ -64,86 +58,136 @@ class MainMenuControllerTest {
         val controller =
             MainMenuController(
                 input = input,
-                availableProfessionIds = listOf("vanguard", "arcanist"),
-                availableRaceIds = listOf("human", "elf", "dwarf"),
-                initialProfessionId = "vanguard",
-                initialRaceId = "human",
-                professionSelections = playableSelections().take(2),
+                playerCreationState =
+                    playableState().copy(
+                        professionOptions = playableState().professionOptions.take(2),
+                    ),
             )
 
         input.push(Keys.E)
         val changed = controller.pollAction(hasSave = false)
-        assertEquals("elf", changed.selectedRaceId)
+        assertEquals("elf", changed.selection.raceId)
         assertTrue(changed.raceChanged)
         assertTrue(changed.selectionChanged)
+        assertEquals(PlayerCreationFocus.RACE, changed.focusedAxis)
         assertEquals(null, changed.action)
 
         input.push(Keys.ENTER)
         val started = controller.pollAction(hasSave = false)
         assertEquals(MainMenuAction.StartNewGame, started.action)
-        assertEquals("elf", started.selectedRaceId)
+        assertEquals("elf", started.selection.raceId)
     }
 
     @Test
-    fun `start new game is rejected for locked or unavailable professions`() {
+    fun `start new game is rejected for locked or unavailable professions and races`() {
         val lockedInput = QueueInputSource(Keys.ENTER)
         val lockedController =
             MainMenuController(
                 input = lockedInput,
-                availableProfessionIds = listOf("vanguard", "arcanist", "rogue"),
-                availableRaceIds = listOf("human", "elf"),
-                initialProfessionId = "arcanist",
-                initialRaceId = "human",
-                professionSelections = mixedSelections(),
+                playerCreationState =
+                    PlayerCreationState(
+                        professionOptions = mixedProfessionOptions(),
+                        raceOptions = playableState().raceOptions.take(2),
+                        selection = PlayerCreationSelection(professionId = "arcanist", raceId = "human"),
+                    ),
             )
 
         val lockedResult = lockedController.pollAction(hasSave = false)
         assertEquals(null, lockedResult.action)
-        assertEquals("arcanist", lockedResult.selectedProfessionId)
-        assertEquals("human", lockedResult.selectedRaceId)
+        assertEquals("arcanist", lockedResult.selection.professionId)
+        assertEquals("human", lockedResult.selection.raceId)
         assertTrue(lockedResult.rejected)
 
         val unavailableInput = QueueInputSource(Keys.ENTER)
         val unavailableController =
             MainMenuController(
                 input = unavailableInput,
-                availableProfessionIds = listOf("vanguard", "arcanist", "rogue"),
-                availableRaceIds = listOf("human", "elf"),
-                initialProfessionId = "rogue",
-                initialRaceId = "human",
-                professionSelections = mixedSelections(),
+                playerCreationState =
+                    PlayerCreationState(
+                        professionOptions = mixedProfessionOptions(),
+                        raceOptions = playableState().raceOptions.take(2),
+                        selection = PlayerCreationSelection(professionId = "rogue", raceId = "human"),
+                    ),
             )
 
         val unavailableResult = unavailableController.pollAction(hasSave = false)
         assertEquals(null, unavailableResult.action)
-        assertEquals("rogue", unavailableResult.selectedProfessionId)
-        assertEquals("human", unavailableResult.selectedRaceId)
+        assertEquals("rogue", unavailableResult.selection.professionId)
+        assertEquals("human", unavailableResult.selection.raceId)
         assertTrue(unavailableResult.rejected)
+
+        val lockedRaceInput = QueueInputSource(Keys.ENTER)
+        val lockedRaceController =
+            MainMenuController(
+                input = lockedRaceInput,
+                playerCreationState =
+                    PlayerCreationState(
+                        professionOptions = playableState().professionOptions.take(2),
+                        raceOptions = mixedRaceOptions(),
+                        selection = PlayerCreationSelection(professionId = "vanguard", raceId = "orc"),
+                    ),
+            )
+
+        val lockedRaceResult = lockedRaceController.pollAction(hasSave = false)
+        assertEquals(null, lockedRaceResult.action)
+        assertEquals("orc", lockedRaceResult.selection.raceId)
+        assertTrue(lockedRaceResult.rejected)
     }
 
-    private fun playableSelections(): List<ProfessionSelectionOption> =
-        listOf(
-            selection("vanguard", ClassPlayabilityState.PLAYABLE),
-            selection("arcanist", ClassPlayabilityState.PLAYABLE),
-            selection("rogue", ClassPlayabilityState.PLAYABLE),
-            selection("templar", ClassPlayabilityState.PLAYABLE),
+    private fun playableState(): PlayerCreationState =
+        PlayerCreationState(
+            professionOptions =
+                listOf(
+                    professionOption("vanguard", ClassPlayabilityState.PLAYABLE),
+                    professionOption("arcanist", ClassPlayabilityState.PLAYABLE),
+                    professionOption("rogue", ClassPlayabilityState.PLAYABLE),
+                    professionOption("templar", ClassPlayabilityState.PLAYABLE),
+                ),
+            raceOptions =
+                listOf(
+                    raceOption("human", ClassPlayabilityState.PLAYABLE),
+                    raceOption("elf", ClassPlayabilityState.PLAYABLE),
+                    raceOption("dwarf", ClassPlayabilityState.PLAYABLE),
+                ),
+            selection = PlayerCreationSelection(professionId = "vanguard", raceId = "human"),
         )
 
-    private fun mixedSelections(): List<ProfessionSelectionOption> =
+    private fun mixedProfessionOptions(): List<ProfessionPlayerCreationOption> =
         listOf(
-            selection("vanguard", ClassPlayabilityState.PLAYABLE),
-            selection("arcanist", ClassPlayabilityState.LOCKED),
-            selection("rogue", ClassPlayabilityState.UNLOCKED_BUT_UNAVAILABLE),
+            professionOption("vanguard", ClassPlayabilityState.PLAYABLE),
+            professionOption("arcanist", ClassPlayabilityState.LOCKED),
+            professionOption("rogue", ClassPlayabilityState.UNLOCKED_BUT_UNAVAILABLE),
         )
 
-    private fun selection(
+    private fun mixedRaceOptions(): List<RacePlayerCreationOption> =
+        listOf(
+            raceOption("human", ClassPlayabilityState.PLAYABLE),
+            raceOption("orc", ClassPlayabilityState.LOCKED),
+        )
+
+    private fun professionOption(
         id: String,
         playabilityState: ClassPlayabilityState,
-    ): ProfessionSelectionOption =
-        ProfessionSelectionOption(
+    ): ProfessionPlayerCreationOption =
+        ProfessionPlayerCreationOption(
             id = id,
-            tier = ProfessionTier.BASE,
-            unlockState = ClassUnlockState.RELEASE_UNLOCKED,
+            displayNameKey = "profession.$id.name",
+            descriptionKey = "profession.$id.desc",
+            unlockState = com.ktome.core.profile.ClassUnlockState.RELEASE_UNLOCKED,
+            playabilityState = playabilityState,
+            tier = com.ktome.core.profession.ProfessionTier.BASE,
+            resourceHintKey = "profession.$id.resource_hint",
+        )
+
+    private fun raceOption(
+        id: String,
+        playabilityState: ClassPlayabilityState,
+    ): RacePlayerCreationOption =
+        RacePlayerCreationOption(
+            id = id,
+            displayNameKey = "race.$id.name",
+            descriptionKey = "race.$id.desc",
+            unlockState = com.ktome.core.profile.ClassUnlockState.RELEASE_UNLOCKED,
             playabilityState = playabilityState,
         )
 }

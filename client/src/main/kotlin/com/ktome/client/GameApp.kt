@@ -40,7 +40,8 @@ import com.ktome.core.snapshot.RenderTextTokenSnapshot
 import com.ktome.game.FoundationGameConfig
 import com.ktome.game.FoundationGameSession
 import com.ktome.game.GameModule
-import com.ktome.game.ProfessionSelectionOption
+import com.ktome.game.PlayerCreationSelection
+import com.ktome.game.PlayerCreationState
 import com.ktome.game.i18n.GameLocale
 import com.ktome.game.i18n.LocalizationBundle
 import com.ktome.game.i18n.Localizer
@@ -49,11 +50,16 @@ import java.nio.file.Path
 class GameApp(
     private val saveManager: SaveManager = SaveManager(defaultSaveDir()),
     private val defaultConfig: FoundationGameConfig = FoundationGameConfig(),
-    availableProfessionIdsProvider: (GameLocale) -> List<String> = { locale -> GameModule.availableProfessionIds(locale) },
-    availableRaceIdsProvider: (GameLocale) -> List<String> = { locale -> GameModule.availablePlayerCreationRaceIds(locale) },
-    private val professionSelectionProvider:
-        (GameLocale, ProfileData, AvailabilityContext) -> List<ProfessionSelectionOption> =
-            { locale, profile, context -> GameModule.professionSelections(locale, profile, context) },
+    private val playerCreationStateProvider:
+        (GameLocale, ProfileData, PlayerCreationSelection?) -> PlayerCreationState =
+            { locale, profile, previousSelection ->
+                GameModule.playerCreationState(
+                    locale = locale,
+                    profile = profile,
+                    previousSelection = previousSelection,
+                    context = AvailabilityContext.PLAYER_CREATION,
+                )
+            },
     private val profileManager: ProfileManager = ProfileManager(defaultSaveDir().resolve("profile")),
     private val menuInputSourceFactory: () -> InputSource = { GdxInputSource },
     private val gameCommandSourceFactory: () -> CommandSource = { InputHandlerCommandSource() },
@@ -72,8 +78,11 @@ class GameApp(
             profileManager = profileManager,
             localizer = localizationBundle.translator(initialLocale),
         )
-    private val availableProfessionIdsProvider = availableProfessionIdsProvider
-    private val availableRaceIdsProvider = availableRaceIdsProvider
+    private val defaultPlayerCreationSelection =
+        PlayerCreationSelection(
+            professionId = defaultConfig.playerProfessionId,
+            raceId = defaultConfig.playerRaceId,
+        )
     private val lifecycle = LifecycleCoordinator(saveManager)
     private val assetContracts =
         AssetContractCoordinator(
@@ -87,16 +96,11 @@ class GameApp(
     private var currentLocalizer: Localizer = localizationBundle.translator(initialLocale)
     private var profileData: ProfileData = initialProfileState.profileData
     private var profilePersistenceEnabled: Boolean = initialProfileState.persistenceEnabled
-    private var professionSelections: List<ProfessionSelectionOption> =
-        resolveProfessionSelections(locale = initialLocale)
-    private var availableRaceIds: List<String> = resolveAvailableRaceIds(locale = initialLocale)
-    private var selectedProfessionId: String =
-        defaultConfig.playerProfessionId.takeIf(::containsProfession)
-            ?: professionSelections.firstOrNull { option -> option.playabilityState == ClassPlayabilityState.PLAYABLE }?.id
-            ?: professionSelections.first().id
-    private var selectedRaceId: String =
-        defaultConfig.playerRaceId.takeIf(::containsRace)
-            ?: availableRaceIds.first()
+    private var playerCreationState: PlayerCreationState =
+        resolvePlayerCreationState(
+            locale = initialLocale,
+            previousSelection = defaultPlayerCreationSelection,
+        )
     private var activeSession: FoundationGameSession? = null
     private var pendingMenuNotice: String? = initialProfileState.notice
     private val audioSinks = audioSinkBindingsFactory.create(renderEnabled)
@@ -105,34 +109,19 @@ class GameApp(
         showMainMenu(saveCurrent = false, notice = assetContractNotice())
     }
 
-    fun startNewGame(
-        professionId: String = selectedProfessionId,
-        raceId: String = selectedRaceId,
-    ) {
+    fun startNewGame(selection: PlayerCreationSelection = playerCreationState.selection) {
         if (!ensureAssetContracts()) {
             return
         }
-        refreshPlayerCreationSelections()
-        val selectedOption =
-            professionSelections.firstOrNull { option -> option.id == professionId }
-                ?: professionSelections.firstOrNull { option -> option.id == selectedProfessionId }
-                ?: professionSelections.first()
-        if (selectedOption.playabilityState != ClassPlayabilityState.PLAYABLE) {
-            selectedProfessionId = selectedOption.id
-            showMainMenu(saveCurrent = false, notice = professionSelectionNotice(selectedOption))
+        val refreshedState = refreshPlayerCreationState(selection)
+        if (!refreshedState.canStartNewGame()) {
+            showMainMenu(saveCurrent = false, notice = playerCreationSelectionNotice(refreshedState))
             return
         }
-        val resolvedProfessionId = selectedOption.id
-        val resolvedRaceId =
-            raceId.takeIf(::containsRace)
-                ?: selectedRaceId.takeIf(::containsRace)
-                ?: availableRaceIds.first()
-        selectedProfessionId = resolvedProfessionId
-        selectedRaceId = resolvedRaceId
         val session =
             lifecycle.startNewSession {
                 GameModule.newFoundationSession(
-                    config = newGameConfig(defaultConfig, resolvedProfessionId, resolvedRaceId),
+                    config = playerCreationConfig(refreshedState.selection),
                     saveManager = saveManager,
                     locale = currentLocale,
                     profile = profileData,
@@ -181,17 +170,13 @@ class GameApp(
             activeSession?.saveOnExit()
         }
         activeSession = null
-        refreshPlayerCreationSelections()
+        refreshPlayerCreationState()
         val continueEnabled = lifecycle.refreshContinueAvailability()
         replaceScreen(
             MainMenuScreen(
                 app = this,
                 continueEnabled = continueEnabled,
-                availableProfessionIds = professionSelections.map(ProfessionSelectionOption::id),
-                professionSelections = professionSelections,
-                availableRaceIds = availableRaceIds,
-                selectedProfessionId = selectedProfessionId,
-                selectedRaceId = selectedRaceId,
+                playerCreationState = playerCreationState,
                 notice = notice ?: pendingMenuNotice ?: lifecycle.consumeNotice(),
                 inputSource = menuInputSourceFactory(),
                 renderEnabled = renderEnabled,
@@ -222,22 +207,26 @@ class GameApp(
 
     internal fun localizer(): Localizer = currentLocalizer
 
-    internal fun rememberProfessionSelection(professionId: String) {
-        if (containsProfession(professionId)) {
-            selectedProfessionId = professionId
-        }
-    }
-
-    internal fun rememberRaceSelection(raceId: String) {
-        if (containsRace(raceId)) {
-            selectedRaceId = raceId
-        }
+    internal fun rememberPlayerCreationSelection(selection: PlayerCreationSelection) {
+        playerCreationState =
+            playerCreationState.copy(
+                selection = PlayerCreationSelection(
+                    professionId =
+                        selection.professionId
+                            .takeIf { optionId -> playerCreationState.professionOptions.any { option -> option.id == optionId } }
+                            ?: playerCreationState.selection.professionId,
+                    raceId =
+                        selection.raceId
+                            .takeIf { optionId -> playerCreationState.raceOptions.any { option -> option.id == optionId } }
+                            ?: playerCreationState.selection.raceId,
+                ),
+            )
     }
 
     internal fun cycleLocale(): GameLocale {
         currentLocale = currentLocale.cycle()
         currentLocalizer = localizationBundle.translator(currentLocale)
-        refreshPlayerCreationSelections()
+        refreshPlayerCreationState()
         return currentLocale
     }
 
@@ -276,55 +265,46 @@ class GameApp(
             false
         } ?: true
 
-    private fun refreshPlayerCreationSelections() {
-        professionSelections = resolveProfessionSelections(locale = currentLocale)
-        availableRaceIds = resolveAvailableRaceIds(locale = currentLocale)
-        if (!containsProfession(selectedProfessionId)) {
-            selectedProfessionId =
-                professionSelections.firstOrNull { option -> option.playabilityState == ClassPlayabilityState.PLAYABLE }?.id
-                    ?: professionSelections.first().id
+    private fun refreshPlayerCreationState(
+        previousSelection: PlayerCreationSelection = playerCreationState.selection,
+    ): PlayerCreationState =
+        resolvePlayerCreationState(currentLocale, previousSelection).also { refreshed ->
+            playerCreationState = refreshed
         }
-        if (!containsRace(selectedRaceId)) {
-            selectedRaceId = availableRaceIds.first()
+
+    private fun resolvePlayerCreationState(
+        locale: GameLocale,
+        previousSelection: PlayerCreationSelection? = null,
+    ): PlayerCreationState =
+        playerCreationStateProvider(locale, profileData, previousSelection)
+
+    private fun playerCreationSelectionNotice(state: PlayerCreationState): String {
+        val professionOption = state.selectedProfessionOption()
+        if (professionOption.playabilityState != ClassPlayabilityState.PLAYABLE) {
+            return when (professionOption.playabilityState) {
+                ClassPlayabilityState.PLAYABLE -> ""
+                ClassPlayabilityState.LOCKED ->
+                    text("ui.menu.profession_locked", "profession" to text(professionOption.displayNameKey))
+
+                ClassPlayabilityState.UNLOCKED_BUT_UNAVAILABLE ->
+                    text("ui.menu.profession_unavailable", "profession" to text(professionOption.displayNameKey))
+            }
         }
-    }
-
-    private fun resolveProfessionSelections(locale: GameLocale): List<ProfessionSelectionOption> {
-        val baselineIds =
-            availableProfessionIdsProvider(locale)
-                .distinct()
-                .ifEmpty { listOf(defaultConfig.playerProfessionId) }
-        val catalogById =
-            professionSelectionProvider(locale, profileData, AvailabilityContext.PLAYER_CREATION)
-                .associateBy(ProfessionSelectionOption::id)
-        return baselineIds.map { professionId ->
-            catalogById[professionId]
-                ?: ProfessionSelectionOption(
-                    id = professionId,
-                    tier = com.ktome.core.profession.ProfessionTier.BASE,
-                    unlockState = com.ktome.core.profile.ClassUnlockState.RELEASE_UNLOCKED,
-                    playabilityState = ClassPlayabilityState.PLAYABLE,
-                )
-        }
-    }
-
-    private fun resolveAvailableRaceIds(locale: GameLocale): List<String> =
-        availableRaceIdsProvider(locale)
-            .distinct()
-            .ifEmpty { listOf(defaultConfig.playerRaceId) }
-
-    private fun containsProfession(professionId: String): Boolean =
-        professionSelections.any { option -> option.id == professionId }
-
-    private fun containsRace(raceId: String): Boolean = raceId in availableRaceIds
-
-    private fun professionSelectionNotice(option: ProfessionSelectionOption): String =
-        when (option.playabilityState) {
+        val raceOption = state.selectedRaceOption()
+        return when (raceOption.playabilityState) {
             ClassPlayabilityState.PLAYABLE -> ""
-            ClassPlayabilityState.LOCKED -> text("ui.menu.profession_locked", "profession" to text("profession.${option.id}.name"))
+            ClassPlayabilityState.LOCKED -> text("ui.menu.race_locked", "race" to text(raceOption.displayNameKey))
             ClassPlayabilityState.UNLOCKED_BUT_UNAVAILABLE ->
-                text("ui.menu.profession_unavailable", "profession" to text("profession.${option.id}.name"))
+                text("ui.menu.race_unavailable", "race" to text(raceOption.displayNameKey))
         }
+    }
+
+    private fun playerCreationConfig(selection: PlayerCreationSelection): FoundationGameConfig =
+        newGameConfig(
+            defaultConfig = defaultConfig,
+            professionId = selection.professionId,
+            raceId = selection.raceId,
+        )
 
     private fun recordProfileRun(session: FoundationGameSession) {
         val result =
@@ -339,7 +319,7 @@ class GameApp(
         profileData = result.profileData
         pendingMenuNotice = result.notice
         if (result.persisted) {
-            refreshPlayerCreationSelections()
+            refreshPlayerCreationState()
         }
     }
 

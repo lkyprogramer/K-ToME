@@ -14,14 +14,14 @@ class MainMenuScreenTextTest {
         val enLocalizer = LocalizationBundle.load().translator(GameLocale.EN_US)
 
         listOf("vanguard", "arcanist", "rogue", "templar").forEach { professionId ->
-            val zhHint = professionResourceHint(zhLocalizer, professionId)
-            val enHint = professionResourceHint(enLocalizer, professionId)
+            val zhHint = resourceHintText(zhLocalizer, "profession.$professionId.resource_hint")
+            val enHint = resourceHintText(enLocalizer, "profession.$professionId.resource_hint")
 
             assertFalse(zhHint.startsWith("!!"))
             assertFalse(enHint.startsWith("!!"))
         }
-        assertTrue(professionResourceHint(zhLocalizer, "rogue").contains("能量"))
-        assertTrue(professionResourceHint(enLocalizer, "templar").contains("POSITIVE"))
+        assertTrue(resourceHintText(zhLocalizer, "profession.rogue.resource_hint").contains("能量"))
+        assertTrue(resourceHintText(enLocalizer, "profession.templar.resource_hint").contains("POSITIVE"))
     }
 
     @Test
@@ -34,11 +34,22 @@ class MainMenuScreenTextTest {
     }
 
     @Test
-    fun `profession selection label includes current race`() {
+    fun `selection labels keep profession and race independent`() {
         val zhLocalizer = LocalizationBundle.load().translator(GameLocale.ZH_CN)
         val enLocalizer = LocalizationBundle.load().translator(GameLocale.EN_US)
 
-        assertEquals("Class: Vanguard  Race: Human", professionSelectionLabel(enLocalizer, "vanguard", "human"))
-        assertEquals("职业：战卫  种族：矮人", professionSelectionLabel(zhLocalizer, "vanguard", "dwarf"))
+        assertEquals("Class: Vanguard", selectionLabel(enLocalizer, "ui.menu.profession", "profession.vanguard.name"))
+        assertEquals("Race: Human", selectionLabel(enLocalizer, "ui.menu.race", "race.human.name"))
+        assertEquals("职业：战卫", selectionLabel(zhLocalizer, "ui.menu.profession", "profession.vanguard.name"))
+        assertEquals("种族：矮人", selectionLabel(zhLocalizer, "ui.menu.race", "race.dwarf.name"))
+    }
+
+    @Test
+    fun `selection state text resolves through generic availability keys`() {
+        val zhLocalizer = LocalizationBundle.load().translator(GameLocale.ZH_CN)
+        val enLocalizer = LocalizationBundle.load().translator(GameLocale.EN_US)
+
+        assertEquals("Status: PLAYABLE", selectionStateText(enLocalizer, com.ktome.core.profile.ClassPlayabilityState.PLAYABLE))
+        assertEquals("状态：锁定", selectionStateText(zhLocalizer, com.ktome.core.profile.ClassPlayabilityState.LOCKED))
     }
 }

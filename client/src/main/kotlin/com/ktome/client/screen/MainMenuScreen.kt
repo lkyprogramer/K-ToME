@@ -1,7 +1,6 @@
 package com.ktome.client.screen
 
 import com.badlogic.gdx.Gdx
-import com.badlogic.gdx.Input.Keys
 import com.badlogic.gdx.ScreenAdapter
 import com.badlogic.gdx.graphics.Color
 import com.badlogic.gdx.graphics.g2d.BitmapFont
@@ -13,9 +12,10 @@ import com.ktome.client.audio.AudioRouter
 import com.ktome.client.input.GdxInputSource
 import com.ktome.client.input.InputSource
 import com.ktome.client.render.KtomeFonts
-import com.ktome.client.ui.creation.ClassSelectPanel
+import com.ktome.client.ui.creation.PlayerCreationPanel
+import com.ktome.client.ui.creation.PlayerCreationSectionModel
 import com.ktome.core.profile.ClassPlayabilityState
-import com.ktome.game.ProfessionSelectionOption
+import com.ktome.game.PlayerCreationState
 import com.ktome.game.i18n.Localizer
 
 internal const val menuWidth = 960f
@@ -28,7 +28,7 @@ internal const val MAIN_MENU_FOOTER_LANGUAGE_Y = 128f
 internal const val MAIN_MENU_FOOTER_CONTROLS_Y = 80f
 internal const val MAIN_MENU_FOOTER_NOTICE_Y = 44f
 internal const val MAIN_MENU_FOOTER_LINE_HEIGHT = 24f
-internal const val MAIN_MENU_CLASS_ENTRY_BASE_OFFSET_Y = 104f
+internal const val MAIN_MENU_CLASS_ENTRY_BASE_OFFSET_Y = 132f
 internal const val MAIN_MENU_CLASS_ENTRY_STEP_Y = 32f
 
 internal fun mainMenuClassEntryY(index: Int): Float =
@@ -41,6 +41,9 @@ internal data class MainMenuTextSnapshot(
     val professionState: String,
     val professionDescription: String,
     val professionResourceHint: String,
+    val race: String,
+    val raceState: String,
+    val raceDescription: String,
     val entries: List<String>,
     val language: String,
     val controls: String,
@@ -50,19 +53,7 @@ internal data class MainMenuTextSnapshot(
 class MainMenuScreen(
     private val app: GameApp,
     private val continueEnabled: Boolean,
-    private val availableProfessionIds: List<String>,
-    private val availableRaceIds: List<String>,
-    private val professionSelections: List<ProfessionSelectionOption> =
-        availableProfessionIds.map { professionId ->
-            ProfessionSelectionOption(
-                id = professionId,
-                tier = com.ktome.core.profession.ProfessionTier.BASE,
-                unlockState = com.ktome.core.profile.ClassUnlockState.RELEASE_UNLOCKED,
-                playabilityState = ClassPlayabilityState.PLAYABLE,
-            )
-        },
-    selectedProfessionId: String,
-    selectedRaceId: String,
+    playerCreationState: PlayerCreationState,
     private val notice: String? = null,
     inputSource: InputSource = GdxInputSource,
     private val renderEnabled: Boolean = true,
@@ -73,11 +64,7 @@ class MainMenuScreen(
     private val controller =
         MainMenuController(
             input = inputSource,
-            availableProfessionIds = availableProfessionIds,
-            availableRaceIds = availableRaceIds,
-            initialProfessionId = selectedProfessionId,
-            initialRaceId = selectedRaceId,
-            professionSelections = professionSelections,
+            playerCreationState = playerCreationState,
         )
     private val audioRouter: AudioRouter? = app.audioRouterOrNull()
 
@@ -92,11 +79,8 @@ class MainMenuScreen(
 
     override fun render(delta: Float) {
         val poll = controller.pollAction(continueEnabled)
-        if (poll.professionChanged) {
-            app.rememberProfessionSelection(poll.selectedProfessionId)
-        }
-        if (poll.raceChanged) {
-            app.rememberRaceSelection(poll.selectedRaceId)
+        if (poll.professionChanged || poll.raceChanged) {
+            app.rememberPlayerCreationSelection(poll.selection)
         }
         audioRouter?.onMenuInteraction(
             selectionChanged = poll.selectionChanged,
@@ -106,10 +90,7 @@ class MainMenuScreen(
         )
         when (poll.action) {
             MainMenuAction.StartNewGame -> {
-                app.startNewGame(
-                    professionId = poll.selectedProfessionId,
-                    raceId = poll.selectedRaceId,
-                )
+                app.startNewGame(poll.selection)
                 return
             }
             MainMenuAction.ContinueGame -> {
@@ -120,7 +101,11 @@ class MainMenuScreen(
                 Gdx.app.exit()
                 return
             }
-            MainMenuAction.ToggleLocale -> Unit.also { app.cycleLocale() }
+            MainMenuAction.ToggleLocale -> {
+                app.cycleLocale()
+                app.showMainMenu(saveCurrent = false, notice = notice)
+                return
+            }
             null -> Unit
         }
         if (!renderEnabled) {
@@ -137,12 +122,22 @@ class MainMenuScreen(
 
         val selectedIndex = controller.selectedIndex()
         val entries = controller.entries(continueEnabled)
-        val classSelectPanel =
-            ClassSelectPanel.build(
-                profession = text.profession,
-                professionState = text.professionState,
-                professionDescription = text.professionDescription,
-                professionResourceHint = text.professionResourceHint,
+        val playerCreationPanel =
+            PlayerCreationPanel.build(
+                professionSection =
+                    PlayerCreationSectionModel(
+                        title = text.profession,
+                        state = text.professionState,
+                        description = text.professionDescription,
+                        detail = text.professionResourceHint,
+                    ),
+                raceSection =
+                    PlayerCreationSectionModel(
+                        title = text.race,
+                        state = text.raceState,
+                        description = text.raceDescription,
+                    ),
+                focusedAxis = controller.currentFocus(),
                 entries = entries,
                 selectedIndex = selectedIndex,
                 localizedEntryLabels = text.entries,
@@ -153,7 +148,15 @@ class MainMenuScreen(
         font.draw(batch, text.title, MAIN_MENU_TEXT_X, MAIN_MENU_TITLE_Y)
         font.color = Color.LIGHT_GRAY
         font.draw(batch, text.subtitle, MAIN_MENU_TEXT_X, MAIN_MENU_SUBTITLE_Y)
-        ClassSelectPanel.render(batch, font, classSelectPanel, professionStateColor(controller.currentProfessionId()), MAIN_MENU_TEXT_X, MAIN_MENU_PANEL_TOP_Y)
+        PlayerCreationPanel.render(
+            batch = batch,
+            font = font,
+            model = playerCreationPanel,
+            professionStateColor = selectionStateColor(controller.currentProfessionOption().playabilityState),
+            raceStateColor = selectionStateColor(controller.currentRaceOption().playabilityState),
+            x = MAIN_MENU_TEXT_X,
+            topY = MAIN_MENU_PANEL_TOP_Y,
+        )
 
         font.color = Color.GOLD
         font.draw(batch, text.language, MAIN_MENU_TEXT_X, MAIN_MENU_FOOTER_LANGUAGE_Y)
@@ -189,61 +192,53 @@ class MainMenuScreen(
     }
 
     internal fun textSnapshot(): MainMenuTextSnapshot =
-        controller.currentProfessionId().let { professionId ->
-            val raceId = controller.currentRaceId()
-            MainMenuTextSnapshot(
-                title = app.text("ui.menu.title"),
-                subtitle = app.text("ui.menu.subtitle"),
-                profession = professionSelectionLabel(app.localizer(), professionId, raceId),
-                professionState = professionStateText(app.localizer(), selectionFor(professionId).playabilityState),
-                professionDescription = app.text("profession.$professionId.desc"),
-                professionResourceHint = professionResourceHint(app.localizer(), professionId),
-                entries = controller.entries(continueEnabled).map { entry -> app.text(entry.labelKey) },
-                language = app.text("ui.menu.language", "value" to app.localizer().localeLabel()),
-                controls = app.text("ui.menu.controls"),
-                notice = notice?.takeIf(String::isNotBlank),
-            )
-        }
+        MainMenuTextSnapshot(
+            title = app.text("ui.menu.title"),
+            subtitle = app.text("ui.menu.subtitle"),
+            profession = selectionLabel(app.localizer(), "ui.menu.profession", controller.currentProfessionOption().displayNameKey),
+            professionState = selectionStateText(app.localizer(), controller.currentProfessionOption().playabilityState),
+            professionDescription = app.text(controller.currentProfessionOption().descriptionKey),
+            professionResourceHint =
+                resourceHintText(
+                    app.localizer(),
+                    controller.currentProfessionOption().resourceHintKey,
+                ),
+            race = selectionLabel(app.localizer(), "ui.menu.race", controller.currentRaceOption().displayNameKey),
+            raceState = selectionStateText(app.localizer(), controller.currentRaceOption().playabilityState),
+            raceDescription = app.text(controller.currentRaceOption().descriptionKey),
+            entries = controller.entries(continueEnabled).map { entry -> app.text(entry.labelKey) },
+            language = app.text("ui.menu.language", "value" to app.localizer().localeLabel()),
+            controls = app.text("ui.menu.controls"),
+            notice = notice?.takeIf(String::isNotBlank),
+        )
 
-    private fun selectionFor(professionId: String): ProfessionSelectionOption =
-        professionSelections.firstOrNull { option -> option.id == professionId }
-            ?: ProfessionSelectionOption(
-                id = professionId,
-                tier = com.ktome.core.profession.ProfessionTier.BASE,
-                unlockState = com.ktome.core.profile.ClassUnlockState.RELEASE_UNLOCKED,
-                playabilityState = ClassPlayabilityState.PLAYABLE,
-            )
-
-    private fun professionStateColor(professionId: String): Color =
-        when (selectionFor(professionId).playabilityState) {
+    private fun selectionStateColor(state: ClassPlayabilityState): Color =
+        when (state) {
             ClassPlayabilityState.PLAYABLE -> Color.CYAN
             ClassPlayabilityState.UNLOCKED_BUT_UNAVAILABLE -> Color.GOLD
             ClassPlayabilityState.LOCKED -> Color.DARK_GRAY
         }
 }
 
-internal fun professionResourceHint(
+internal fun resourceHintText(
     localizer: Localizer,
-    professionId: String,
-): String = localizer.text("profession.$professionId.resource_hint")
+    resourceHintKey: String,
+): String = localizer.text(resourceHintKey)
 
-internal fun professionSelectionLabel(
+internal fun selectionLabel(
     localizer: Localizer,
-    professionId: String,
-    raceId: String,
-): String =
-    localizer.text("ui.menu.profession", "value" to localizer.text("profession.$professionId.name")) +
-        "  " +
-        localizer.text("ui.menu.race", "value" to localizer.text("race.$raceId.name"))
+    labelKey: String,
+    valueKey: String,
+): String = localizer.text(labelKey, "value" to localizer.text(valueKey))
 
-internal fun professionStateText(
+internal fun selectionStateText(
     localizer: Localizer,
     state: ClassPlayabilityState,
 ): String =
     localizer.text(
         when (state) {
-            ClassPlayabilityState.PLAYABLE -> "ui.menu.profession_state.playable"
-            ClassPlayabilityState.UNLOCKED_BUT_UNAVAILABLE -> "ui.menu.profession_state.unavailable"
-            ClassPlayabilityState.LOCKED -> "ui.menu.profession_state.locked"
+            ClassPlayabilityState.PLAYABLE -> "ui.menu.selection_state.playable"
+            ClassPlayabilityState.UNLOCKED_BUT_UNAVAILABLE -> "ui.menu.selection_state.unavailable"
+            ClassPlayabilityState.LOCKED -> "ui.menu.selection_state.locked"
         },
     )

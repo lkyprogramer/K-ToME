@@ -238,6 +238,7 @@ class DataLoader(
                 id = profession.requiredString("id"),
                 nameKey = profession.requiredString("nameKey"),
                 descKey = profession.requiredString("descKey"),
+                resourceHintKey = profession.requiredString("resourceHintKey"),
                 visualKey = profession.requiredString("visualKey"),
                 iconKey = profession.requiredString("iconKey"),
                 audioProfile = profession.requiredString("audioProfile"),

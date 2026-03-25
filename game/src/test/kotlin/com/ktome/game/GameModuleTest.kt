@@ -9,6 +9,7 @@ import com.ktome.core.ecs.get
 import com.ktome.core.item.EquipSlot
 import com.ktome.core.item.ItemInstance
 import com.ktome.core.profile.AvailabilityContext
+import com.ktome.core.profile.ClassPlayabilityState
 import com.ktome.core.profile.ProfileData
 import com.ktome.core.save.InvalidSaveException
 import com.ktome.core.save.PlayerSnapshot
@@ -118,11 +119,52 @@ class GameModuleTest {
     }
 
     @Test
-    fun `player creation race list excludes locked frozen races`() {
+    fun `player creation state exposes profession and race options with playability`() {
+        val state = GameModule.playerCreationState()
+
+        assertEquals("vanguard", state.selection.professionId)
+        assertEquals("human", state.selection.raceId)
+        assertTrue(state.professionOptions.all { option -> option.resourceHintKey == "profession.${option.id}.resource_hint" })
         assertEquals(
-            listOf("human", "elf", "dwarf"),
-            GameModule.availablePlayerCreationRaceIds(),
+            com.ktome.core.profile.ClassUnlockState.RELEASE_UNLOCKED,
+            state.professionOptions.first { option -> option.id == "vanguard" }.unlockState,
         )
+        assertEquals(
+            com.ktome.core.profession.ProfessionTier.ADVANCED,
+            state.professionOptions.first { option -> option.id == "spellblade" }.tier,
+        )
+        assertEquals(
+            ClassPlayabilityState.UNLOCKED_BUT_UNAVAILABLE,
+            state.professionOptions.first { option -> option.id == "spellblade" }.playabilityState,
+        )
+        assertEquals(
+            ClassPlayabilityState.LOCKED,
+            state.raceOptions.first { option -> option.id == "orc" }.playabilityState,
+        )
+        assertEquals(
+            com.ktome.core.profile.ClassUnlockState.LOCKED,
+            state.raceOptions.first { option -> option.id == "orc" }.unlockState,
+        )
+    }
+
+    @Test
+    fun `player creation state preserves valid selection and falls back invalid entries to playable defaults`() {
+        val preserved =
+            GameModule.playerCreationState(
+                previousSelection = PlayerCreationSelection(professionId = "templar", raceId = "dwarf"),
+            )
+
+        assertEquals("templar", preserved.selection.professionId)
+        assertEquals("dwarf", preserved.selection.raceId)
+
+        val fallback =
+            GameModule.playerCreationState(
+                previousSelection = PlayerCreationSelection(professionId = "missing", raceId = "orc"),
+            )
+
+        assertEquals("vanguard", fallback.selection.professionId)
+        assertEquals("orc", fallback.selection.raceId)
+        assertFalse(fallback.canStartNewGame())
     }
 
     @Test

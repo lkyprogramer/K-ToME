@@ -66,11 +66,10 @@ internal object LintFixtures {
         schemaResources.flatMapTo(linkedSetOf()) { resource ->
             extractFieldValues(loadYaml(resource), "nameKey") +
                 extractFieldValues(loadYaml(resource), "descKey") +
+                extractFieldValues(loadYaml(resource), "resourceHintKey") +
                 extractFieldValues(loadYaml(resource), "postMessageKey") +
                 extractFieldValues(loadYaml(resource), "messageKey")
-        } +
-            extractFieldValues(loadYaml("/data/professions/index.yaml"), "id")
-                .mapTo(linkedSetOf()) { professionId -> "profession.$professionId.resource_hint" }
+        }
 
     fun codeReferencedLocaleKeys(): Set<String> {
         val files =

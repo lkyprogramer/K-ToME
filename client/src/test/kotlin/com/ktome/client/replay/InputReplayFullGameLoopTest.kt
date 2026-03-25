@@ -46,10 +46,7 @@ class InputReplayFullGameLoopTest {
         val menu =
             MainMenuController(
                 input = menuInput,
-                availableProfessionIds = GameModule.availableProfessionIds(),
-                availableRaceIds = GameModule.availablePlayerCreationRaceIds(),
-                initialProfessionId = "vanguard",
-                initialRaceId = "human",
+                playerCreationState = GameModule.playerCreationState(),
             )
 
         assertFalse(saveManager.hasSave())

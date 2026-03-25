@@ -46,7 +46,6 @@ import com.ktome.core.item.ItemBaseDef
 import com.ktome.core.item.ItemInstance
 import com.ktome.core.item.Inventory
 import com.ktome.core.item.InventoryManager
-import com.ktome.core.profession.ProfessionTier
 import com.ktome.core.profession.ReleaseUnlockCondition
 import com.ktome.core.profile.AdvancedClassUnlockRule
 import com.ktome.core.profile.AvailabilityContext
@@ -64,44 +63,51 @@ import com.ktome.game.data.schema.ZoneSchemaV2
 object GameModule {
     private const val DEFAULT_ROUTE_VISIBILITY_RADIUS = 8
 
-    fun availableProfessionIds(
-        locale: GameLocale = GameLocale.DEFAULT,
-    ): List<String> = DataLoader(locale).loadSchemaCatalog().professions.map(ProfessionSchemaV2::id)
-
-    fun professionSelections(
+    fun playerCreationState(
         locale: GameLocale = GameLocale.DEFAULT,
         profile: ProfileData = ProfileData(),
+        previousSelection: PlayerCreationSelection? = null,
         context: AvailabilityContext = AvailabilityContext.PLAYER_CREATION,
-    ): List<ProfessionSelectionOption> =
-        DataLoader(locale)
-            .loadSchemaCatalog()
-            .professions
-            .map { profession ->
+    ): PlayerCreationState {
+        val schemaCatalog = DataLoader(locale).loadSchemaCatalog()
+        val professionOptions =
+            schemaCatalog.professions.map { profession ->
                 val unlockState = effectiveUnlockState(profession, profile)
-                ProfessionSelectionOption(
+                ProfessionPlayerCreationOption(
                     id = profession.id,
-                    tier = profession.tier,
+                    displayNameKey = profession.nameKey,
+                    descriptionKey = profession.descKey,
                     unlockState = unlockState,
                     playabilityState = ClassAvailabilityResolver.resolve(unlockState = unlockState, context = context),
+                    tier = profession.tier,
+                    resourceHintKey = profession.resourceHintKey,
                 )
             }
-
-    fun availableRaceIds(
-        locale: GameLocale = GameLocale.DEFAULT,
-    ): List<String> = DataLoader(locale).loadSchemaCatalog().races.map(RaceDef::id)
-
-    fun availablePlayerCreationRaceIds(
-        locale: GameLocale = GameLocale.DEFAULT,
-    ): List<String> =
-        DataLoader(locale)
-            .loadSchemaCatalog()
-            .races
-            .filter { race ->
-                ClassAvailabilityResolver.resolve(
+        val raceOptions =
+            schemaCatalog.races.map { race ->
+                RacePlayerCreationOption(
+                    id = race.id,
+                    displayNameKey = race.nameKey,
+                    descriptionKey = race.descKey,
                     unlockState = race.initialUnlockState,
-                    context = AvailabilityContext.PLAYER_CREATION,
-                ) == ClassPlayabilityState.PLAYABLE
-            }.map(RaceDef::id)
+                    playabilityState =
+                        ClassAvailabilityResolver.resolve(
+                            unlockState = race.initialUnlockState,
+                            context = context,
+                        ),
+                )
+            }
+        return PlayerCreationState(
+            professionOptions = professionOptions,
+            raceOptions = raceOptions,
+            selection =
+                resolvePlayerCreationSelection(
+                    previousSelection = previousSelection,
+                    professionOptions = professionOptions,
+                    raceOptions = raceOptions,
+                ),
+        )
+    }
 
     fun advancedClassUnlockRules(
         locale: GameLocale = GameLocale.DEFAULT,
@@ -1148,6 +1154,25 @@ object GameModule {
             "$selectionType '$selectionId' is $resolvedState in $availabilityContext and cannot start a new session."
         }
     }
+
+    private fun resolvePlayerCreationSelection(
+        previousSelection: PlayerCreationSelection?,
+        professionOptions: List<ProfessionPlayerCreationOption>,
+        raceOptions: List<RacePlayerCreationOption>,
+    ): PlayerCreationSelection =
+        PlayerCreationSelection(
+            professionId = resolveSelectedOptionId(previousSelection?.professionId, professionOptions),
+            raceId = resolveSelectedOptionId(previousSelection?.raceId, raceOptions),
+        )
+
+    private fun resolveSelectedOptionId(
+        previousId: String?,
+        options: List<PlayerCreationOption>,
+    ): String =
+        previousId
+            ?.takeIf { optionId -> options.any { option -> option.id == optionId } }
+            ?: options.firstOrNull { option -> option.playabilityState == ClassPlayabilityState.PLAYABLE }?.id
+            ?: options.first().id
 
     private fun validateAiProfileContracts(content: GameContent) {
         val talentIds = content.talents.map { talent -> talent.id }.toSet()
