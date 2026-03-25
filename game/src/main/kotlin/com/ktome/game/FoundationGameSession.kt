@@ -1440,7 +1440,7 @@ class FoundationGameSession internal constructor(
                 ?: ResourceType.STAMINA
         val primaryProfile =
             schema?.let { profession ->
-                profession.primarySpendAxis?.let(profession::resourceProfile)
+                profession.resourceProfile(profession.primarySpendAxis)
             }
         val secondaryResourceType =
             schema?.stateAxis

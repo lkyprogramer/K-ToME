@@ -19,8 +19,10 @@ internal sealed interface MainMenuAction {
 internal data class MainMenuPollResult(
     val action: MainMenuAction? = null,
     val selectedProfessionId: String,
+    val selectedRaceId: String,
     val selectionChanged: Boolean = false,
     val professionChanged: Boolean = false,
+    val raceChanged: Boolean = false,
     val localeToggled: Boolean = false,
     val rejected: Boolean = false,
 )
@@ -28,11 +30,16 @@ internal data class MainMenuPollResult(
 internal class MainMenuController(
     private val input: InputSource = GdxInputSource,
     availableProfessionIds: List<String>,
+    availableRaceIds: List<String>,
     initialProfessionId: String,
+    initialRaceId: String,
     professionSelections: List<ProfessionSelectionOption> = emptyList(),
 ) {
     private val professionIds: List<String> = availableProfessionIds.distinct().also { ids ->
         require(ids.isNotEmpty()) { "Main menu requires at least one available profession." }
+    }
+    private val raceIds: List<String> = availableRaceIds.distinct().also { ids ->
+        require(ids.isNotEmpty()) { "Main menu requires at least one available race." }
     }
     private val professionSelectionStates: Map<String, ClassPlayabilityState> =
         professionSelections
@@ -40,10 +47,13 @@ internal class MainMenuController(
             .associate { selection -> selection.id to selection.playabilityState }
     private var selectedIndex: Int = 0
     private var selectedProfessionIndex: Int = professionIds.indexOf(initialProfessionId).takeIf { it >= 0 } ?: 0
+    private var selectedRaceIndex: Int = raceIds.indexOf(initialRaceId).takeIf { it >= 0 } ?: 0
 
     fun selectedIndex(): Int = selectedIndex
 
     fun currentProfessionId(): String = professionIds[selectedProfessionIndex]
+
+    fun currentRaceId(): String = raceIds[selectedRaceIndex]
 
     fun entries(hasSave: Boolean): List<MenuEntry> =
         listOf(
@@ -58,11 +68,13 @@ internal class MainMenuController(
             return MainMenuPollResult(
                 action = MainMenuAction.ToggleLocale,
                 selectedProfessionId = currentProfessionId(),
+                selectedRaceId = currentRaceId(),
                 localeToggled = true,
             )
         }
         var selectionChanged = false
         var professionChanged = false
+        var raceChanged = false
         if (input.isKeyJustPressed(Keys.UP) || input.isKeyJustPressed(Keys.W)) {
             selectedIndex = (selectedIndex - 1).floorMod(entries.size)
             selectionChanged = true
@@ -79,13 +91,23 @@ internal class MainMenuController(
             selectedProfessionIndex = (selectedProfessionIndex + 1).floorMod(professionIds.size)
             professionChanged = true
         }
+        if (input.isKeyJustPressed(Keys.Q)) {
+            selectedRaceIndex = (selectedRaceIndex - 1).floorMod(raceIds.size)
+            raceChanged = true
+        }
+        if (input.isKeyJustPressed(Keys.E)) {
+            selectedRaceIndex = (selectedRaceIndex + 1).floorMod(raceIds.size)
+            raceChanged = true
+        }
         if (input.isKeyJustPressed(Keys.ENTER) || input.isKeyJustPressed(Keys.SPACE)) {
             val selected = entries[selectedIndex]
             if (!selected.enabled) {
                 return MainMenuPollResult(
                     selectedProfessionId = currentProfessionId(),
-                    selectionChanged = selectionChanged || professionChanged,
+                    selectedRaceId = currentRaceId(),
+                    selectionChanged = selectionChanged || professionChanged || raceChanged,
                     professionChanged = professionChanged,
+                    raceChanged = raceChanged,
                     rejected = true,
                 )
             }
@@ -97,14 +119,18 @@ internal class MainMenuController(
                         else -> MainMenuAction.ExitGame
                     },
                 selectedProfessionId = currentProfessionId(),
-                selectionChanged = selectionChanged || professionChanged,
+                selectedRaceId = currentRaceId(),
+                selectionChanged = selectionChanged || professionChanged || raceChanged,
                 professionChanged = professionChanged,
+                raceChanged = raceChanged,
             )
         }
         return MainMenuPollResult(
             selectedProfessionId = currentProfessionId(),
-            selectionChanged = selectionChanged || professionChanged,
+            selectedRaceId = currentRaceId(),
+            selectionChanged = selectionChanged || professionChanged || raceChanged,
             professionChanged = professionChanged,
+            raceChanged = raceChanged,
         )
     }
 

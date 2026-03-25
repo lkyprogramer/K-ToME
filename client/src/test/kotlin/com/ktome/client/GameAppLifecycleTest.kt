@@ -36,6 +36,7 @@ import com.ktome.core.snapshot.RenderSnapshot
 import com.ktome.core.snapshot.RenderUiStateSnapshot
 import com.ktome.game.i18n.GameLocale
 import com.ktome.game.i18n.LocalizationBundle
+import com.ktome.game.FoundationGameConfig
 import java.nio.file.Files
 import java.nio.file.Path
 import kotlin.io.path.exists
@@ -236,6 +237,19 @@ class GameAppLifecycleTest {
         assertEquals(originalProfile, result.profileData)
         assertFalse(result.persisted)
         assertEquals(localizer.text("ui.menu.profile_save_failed"), result.notice)
+    }
+
+    @Test
+    fun `new game config copies selected profession and race`() {
+        val config =
+            newGameConfig(
+                defaultConfig = FoundationGameConfig(playerProfessionId = "vanguard", playerRaceId = "human"),
+                professionId = "spellblade",
+                raceId = "elf",
+            )
+
+        assertEquals("spellblade", config.playerProfessionId)
+        assertEquals("elf", config.playerRaceId)
     }
 }
 

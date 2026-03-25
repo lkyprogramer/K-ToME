@@ -90,6 +90,19 @@ object GameModule {
         locale: GameLocale = GameLocale.DEFAULT,
     ): List<String> = DataLoader(locale).loadSchemaCatalog().races.map(RaceDef::id)
 
+    fun availablePlayerCreationRaceIds(
+        locale: GameLocale = GameLocale.DEFAULT,
+    ): List<String> =
+        DataLoader(locale)
+            .loadSchemaCatalog()
+            .races
+            .filter { race ->
+                ClassAvailabilityResolver.resolve(
+                    unlockState = race.initialUnlockState,
+                    context = AvailabilityContext.PLAYER_CREATION,
+                ) == ClassPlayabilityState.PLAYABLE
+            }.map(RaceDef::id)
+
     fun advancedClassUnlockRules(
         locale: GameLocale = GameLocale.DEFAULT,
     ): List<AdvancedClassUnlockRule> =

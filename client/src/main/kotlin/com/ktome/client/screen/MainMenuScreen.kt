@@ -51,6 +51,7 @@ class MainMenuScreen(
     private val app: GameApp,
     private val continueEnabled: Boolean,
     private val availableProfessionIds: List<String>,
+    private val availableRaceIds: List<String>,
     private val professionSelections: List<ProfessionSelectionOption> =
         availableProfessionIds.map { professionId ->
             ProfessionSelectionOption(
@@ -61,6 +62,7 @@ class MainMenuScreen(
             )
         },
     selectedProfessionId: String,
+    selectedRaceId: String,
     private val notice: String? = null,
     inputSource: InputSource = GdxInputSource,
     private val renderEnabled: Boolean = true,
@@ -72,7 +74,9 @@ class MainMenuScreen(
         MainMenuController(
             input = inputSource,
             availableProfessionIds = availableProfessionIds,
+            availableRaceIds = availableRaceIds,
             initialProfessionId = selectedProfessionId,
+            initialRaceId = selectedRaceId,
             professionSelections = professionSelections,
         )
     private val audioRouter: AudioRouter? = app.audioRouterOrNull()
@@ -91,6 +95,9 @@ class MainMenuScreen(
         if (poll.professionChanged) {
             app.rememberProfessionSelection(poll.selectedProfessionId)
         }
+        if (poll.raceChanged) {
+            app.rememberRaceSelection(poll.selectedRaceId)
+        }
         audioRouter?.onMenuInteraction(
             selectionChanged = poll.selectionChanged,
             localeToggled = poll.localeToggled,
@@ -99,7 +106,10 @@ class MainMenuScreen(
         )
         when (poll.action) {
             MainMenuAction.StartNewGame -> {
-                app.startNewGame(poll.selectedProfessionId)
+                app.startNewGame(
+                    professionId = poll.selectedProfessionId,
+                    raceId = poll.selectedRaceId,
+                )
                 return
             }
             MainMenuAction.ContinueGame -> {
@@ -180,10 +190,11 @@ class MainMenuScreen(
 
     internal fun textSnapshot(): MainMenuTextSnapshot =
         controller.currentProfessionId().let { professionId ->
+            val raceId = controller.currentRaceId()
             MainMenuTextSnapshot(
                 title = app.text("ui.menu.title"),
                 subtitle = app.text("ui.menu.subtitle"),
-                profession = app.text("ui.menu.profession", "value" to app.text("profession.$professionId.name")),
+                profession = professionSelectionLabel(app.localizer(), professionId, raceId),
                 professionState = professionStateText(app.localizer(), selectionFor(professionId).playabilityState),
                 professionDescription = app.text("profession.$professionId.desc"),
                 professionResourceHint = professionResourceHint(app.localizer(), professionId),
@@ -215,6 +226,15 @@ internal fun professionResourceHint(
     localizer: Localizer,
     professionId: String,
 ): String = localizer.text("profession.$professionId.resource_hint")
+
+internal fun professionSelectionLabel(
+    localizer: Localizer,
+    professionId: String,
+    raceId: String,
+): String =
+    localizer.text("ui.menu.profession", "value" to localizer.text("profession.$professionId.name")) +
+        "  " +
+        localizer.text("ui.menu.race", "value" to localizer.text("race.$raceId.name"))
 
 internal fun professionStateText(
     localizer: Localizer,

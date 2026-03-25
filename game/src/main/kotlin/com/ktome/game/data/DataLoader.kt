@@ -248,7 +248,7 @@ class DataLoader(
                     profession.requiredList("resourceProfiles").map { rawProfile ->
                         parseResourceProfileRef(rawProfile.requiredMap())
                     },
-                primarySpendAxis = profession.optionalString("primarySpendAxis")?.uppercase()?.let(ResourceAxis::fromId),
+                primarySpendAxis = ResourceAxis.fromId(profession.requiredString("primarySpendAxis").uppercase()),
                 stateAxis = profession.optionalString("stateAxis")?.uppercase()?.let(ResourceAxis::fromId),
                 baseStats = profession.requiredMap("baseStats").toSchemaStats(),
                 combatProfile = profession.requiredMap("combatProfile").toSchemaCombatProfile(),

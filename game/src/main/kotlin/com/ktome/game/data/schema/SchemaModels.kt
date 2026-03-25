@@ -100,7 +100,7 @@ data class ProfessionSchemaV2(
                 max = 100,
             ),
         ),
-    val primarySpendAxis: ResourceAxis? = ResourceAxis.STAMINA,
+    val primarySpendAxis: ResourceAxis = ResourceAxis.STAMINA,
     val stateAxis: ResourceAxis? = null,
     val baseStats: SchemaStats,
     val combatProfile: SchemaCombatProfile,
@@ -121,7 +121,9 @@ data class ProfessionSchemaV2(
         ),
 ) {
     val resourceType: String
-        get() = primarySpendAxis?.asResourceTypeOrNull()?.name ?: ResourceType.STAMINA.name
+        get() = requireNotNull(primarySpendAxis.asResourceTypeOrNull()) {
+            "Profession '$id' primary axis '$primarySpendAxis' must resolve to a spendable resource type."
+        }.name
 
     val startingResources: Map<String, Int>
         get() =

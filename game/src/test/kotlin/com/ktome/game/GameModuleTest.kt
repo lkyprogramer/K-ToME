@@ -118,6 +118,14 @@ class GameModuleTest {
     }
 
     @Test
+    fun `player creation race list excludes locked frozen races`() {
+        assertEquals(
+            listOf("human", "elf", "dwarf"),
+            GameModule.availablePlayerCreationRaceIds(),
+        )
+    }
+
+    @Test
     fun `load foundation session rejects saves with unknown formal zone or profession ids`() {
         val saveManager = SaveManager(tempDir.resolve("invalid-loaded-save"))
         saveManager.save(

@@ -19,7 +19,9 @@ class MainMenuControllerTest {
             MainMenuController(
                 input = input,
                 availableProfessionIds = listOf("vanguard", "arcanist", "rogue", "templar"),
+                availableRaceIds = listOf("human", "elf", "dwarf"),
                 initialProfessionId = "vanguard",
+                initialRaceId = "human",
                 professionSelections = playableSelections(),
             )
 
@@ -34,6 +36,7 @@ class MainMenuControllerTest {
         val started = controller.pollAction(hasSave = false)
         assertEquals(MainMenuAction.StartNewGame, started.action)
         assertEquals("arcanist", started.selectedProfessionId)
+        assertEquals("human", started.selectedRaceId)
     }
 
     @Test
@@ -43,7 +46,9 @@ class MainMenuControllerTest {
             MainMenuController(
                 input = input,
                 availableProfessionIds = listOf("vanguard", "arcanist", "rogue", "templar"),
+                availableRaceIds = listOf("human", "elf", "dwarf"),
                 initialProfessionId = "vanguard",
+                initialRaceId = "human",
                 professionSelections = playableSelections(),
             )
 
@@ -54,19 +59,48 @@ class MainMenuControllerTest {
     }
 
     @Test
+    fun `q and e cycle races and start action keeps selected race`() {
+        val input = QueueInputSource()
+        val controller =
+            MainMenuController(
+                input = input,
+                availableProfessionIds = listOf("vanguard", "arcanist"),
+                availableRaceIds = listOf("human", "elf", "dwarf"),
+                initialProfessionId = "vanguard",
+                initialRaceId = "human",
+                professionSelections = playableSelections().take(2),
+            )
+
+        input.push(Keys.E)
+        val changed = controller.pollAction(hasSave = false)
+        assertEquals("elf", changed.selectedRaceId)
+        assertTrue(changed.raceChanged)
+        assertTrue(changed.selectionChanged)
+        assertEquals(null, changed.action)
+
+        input.push(Keys.ENTER)
+        val started = controller.pollAction(hasSave = false)
+        assertEquals(MainMenuAction.StartNewGame, started.action)
+        assertEquals("elf", started.selectedRaceId)
+    }
+
+    @Test
     fun `start new game is rejected for locked or unavailable professions`() {
         val lockedInput = QueueInputSource(Keys.ENTER)
         val lockedController =
             MainMenuController(
                 input = lockedInput,
                 availableProfessionIds = listOf("vanguard", "arcanist", "rogue"),
+                availableRaceIds = listOf("human", "elf"),
                 initialProfessionId = "arcanist",
+                initialRaceId = "human",
                 professionSelections = mixedSelections(),
             )
 
         val lockedResult = lockedController.pollAction(hasSave = false)
         assertEquals(null, lockedResult.action)
         assertEquals("arcanist", lockedResult.selectedProfessionId)
+        assertEquals("human", lockedResult.selectedRaceId)
         assertTrue(lockedResult.rejected)
 
         val unavailableInput = QueueInputSource(Keys.ENTER)
@@ -74,13 +108,16 @@ class MainMenuControllerTest {
             MainMenuController(
                 input = unavailableInput,
                 availableProfessionIds = listOf("vanguard", "arcanist", "rogue"),
+                availableRaceIds = listOf("human", "elf"),
                 initialProfessionId = "rogue",
+                initialRaceId = "human",
                 professionSelections = mixedSelections(),
             )
 
         val unavailableResult = unavailableController.pollAction(hasSave = false)
         assertEquals(null, unavailableResult.action)
         assertEquals("rogue", unavailableResult.selectedProfessionId)
+        assertEquals("human", unavailableResult.selectedRaceId)
         assertTrue(unavailableResult.rejected)
     }
 

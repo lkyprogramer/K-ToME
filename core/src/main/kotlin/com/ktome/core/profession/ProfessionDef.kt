@@ -8,7 +8,7 @@ data class ProfessionDef(
     val id: String,
     val tier: ProfessionTier,
     val resourceProfiles: List<ResourceProfileRef>,
-    val primarySpendAxis: ResourceAxis?,
+    val primarySpendAxis: ResourceAxis,
     val stateAxis: ResourceAxis?,
     val initialUnlockState: ClassUnlockState = ClassUnlockState.RELEASE_UNLOCKED,
     val releaseUnlockCondition: ReleaseUnlockCondition? = null,
@@ -21,10 +21,11 @@ data class ProfessionDef(
             "Profession '$id' must not declare duplicate resource axes."
         }
         require(resourceProfiles.size <= 2) { "Profession '$id' must not declare more than two resource axes." }
-        primarySpendAxis?.let { axis ->
-            require(resourceProfiles.any { profile -> profile.axis == axis }) {
-                "Profession '$id' primary axis '$axis' must be present in resourceProfiles."
-            }
+        require(primarySpendAxis != ResourceAxis.HP) {
+            "Profession '$id' primary axis must be a spendable resource axis, not HP."
+        }
+        require(resourceProfiles.any { profile -> profile.axis == primarySpendAxis }) {
+            "Profession '$id' primary axis '$primarySpendAxis' must be present in resourceProfiles."
         }
         stateAxis?.let { axis ->
             require(resourceProfiles.any { profile -> profile.axis == axis }) {

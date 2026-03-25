@@ -50,12 +50,12 @@ class GoldenScreenshotHarnessTest {
 
         assertEquals(
             listOf(
-                "a2e469cdfd67281f71572ab6c52d454e85f288eb5b1ef0bc8004d925ab4e8c08",
+                "b911e1194f6e62bb4457e7a674222f180fba030351c04eef718976599bc4bee3",
                 "87e74b02146133de7716f41ee4d03fc77ef04b3cd37bb321d9f31986b6042265",
                 "d4a926cb79911bdc936486d22aec8de792158d747140d5cf618b37d2c2bd47cf",
                 "328088a7d79178b5ac1a3be62981963c2d5621be39868175c28c8cdc6b0d168e",
                 "57f252516565c91ca960a7e3126ca1020313b6e36bae97ae4d487e935a9fb1ef",
-                "fad44cca4aec7f3f527605fc435f54f3f34805bb29787e563d9e3a6e8c5791dd",
+                "b173fa3da4dd3516d95fdd1a48069a2fcf06fc349401ed1e85c55d6360707930",
                 "1aecb13c235c08dda6cd2c05657331dffe5344019d7243862ef57fc330d26e32",
                 "93fe8f676de13067ce4189228c925bf336b03bafc6f5e1f969c5a82070395726",
                 "abc51dbd5dd418d563f3e2e12e5a9d91cc745d97b631d2990650e06d7cb4bcc0",
@@ -72,7 +72,7 @@ class GoldenScreenshotHarnessTest {
 
         assertEquals(
             listOf(
-                "a375e5139913ae3b51c9636b44a108f3e1ad6117b8175d060a8cf67b9373b902",
+                "17b415b62ac23b360418329f9bc464615acabeb8f26f59729bab1cc3b61973e0",
                 "224d408e2d7e78d2d7c6eeed7e75eff86c567d8723af557b5d19abf352f7e0be",
             ),
             listOf(english, chinese),
@@ -86,10 +86,10 @@ class GoldenScreenshotHarnessTest {
 
         assertEquals(
             listOf(
-                "0de02416e4401888c8748fcec24e98dfaed43ea327c654a298d7a2e8f9e2a71d",
+                "78f59822ece130739bca4c2d792db77588f5e51e18b6961568f1d3f8b4a61ddd",
                 "6a9553fdc44b24158df8fdf17474e6df1814da8eedda08c497d9e976b471591d",
                 "73a17ba22162777c6fc863e014cead29d5ef3df7aeeb270657bc5bfcaf97b735",
-                "239047b704fd8114c05c53b137b86a06beaa595330f8edb9d10aafec8c770c62",
+                "60bfb4291ab5f572d70f7547997c2676800d00cafb99a3e436af311cb487e6af",
                 "526d8be010c15c4e667f92abb120a675ad18ec32035b213ca07fd52e4e90108f",
                 "e9595e800dc444dd53943168fe668687fbb02208a02c4347a6f53f86eb765296",
             ),

@@ -23,6 +23,7 @@ class ProfessionSchemaTest {
             assertTrue(profession.statGrowth.str + profession.statGrowth.dex + profession.statGrowth.con + profession.statGrowth.wil > 0)
             assertTrue(profession.resourceProfiles.isNotEmpty())
             assertTrue(profession.resourceProfiles.size <= 2)
+            assertTrue(profession.resourceProfiles.any { profile -> profile.axis == profession.primarySpendAxis })
             assertTrue(profession.soloContract.offenseTags.isNotEmpty())
             assertTrue(profession.soloContract.defenseTags.isNotEmpty())
             assertTrue(profession.soloContract.mobilityTags.isNotEmpty())
