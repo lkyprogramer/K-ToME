@@ -1,7 +1,9 @@
 package com.ktome.game
 
 import com.ktome.core.ai.AIPerceptionState
+import com.ktome.core.ai.BossEncounter
 import com.ktome.core.ai.BossEncounterState
+import com.ktome.core.ai.BossPhaseTransitionTiming
 import com.ktome.core.ai.PendingTelegraphState
 import com.ktome.core.combat.CombatResolver
 import com.ktome.core.combat.DamageType
@@ -13,6 +15,7 @@ import com.ktome.core.ecs.AIType
 import com.ktome.core.ecs.BlocksMovement
 import com.ktome.core.ecs.CombatProfile
 import com.ktome.core.ecs.DerivedStats
+import com.ktome.core.ecs.EntityId
 import com.ktome.core.ecs.Experience
 import com.ktome.core.ecs.Health
 import com.ktome.core.ecs.Interactable
@@ -1960,6 +1963,66 @@ class FoundationGameSessionTest {
     }
 
     @Test
+    fun `allow fatal transition phase prevents boss death and enters configured phase`() {
+        val session =
+            GameModule.newFoundationSession(
+                config = FoundationGameConfig(seed = 20260322L, zoneId = "deep_iron_pit", playerProfessionId = "vanguard"),
+                saveManager = SaveManager(tempDir.resolve("boss-fatal-phase-transition")),
+            )
+        movePlayerTo(session, stairPoint(session, com.ktome.core.dungeon.StairDirection.DOWN))
+        assertTrue(session.perform(PlayerCommand.Descend))
+
+        val world = runtimeWorld(session)
+        val bossId = requireNotNull(entityByTemplateId(session, "orc.molten_giant"))
+        replaceContent(
+            session,
+            sessionContent(session).let { content ->
+                val definition = requireNotNull(content.bossDefinitions["molten_giant_encounter"])
+                val updatedEncounter =
+                    BossEncounter(
+                        id = definition.encounter.id,
+                        templateId = definition.encounter.templateId,
+                        phases =
+                            definition.encounter.phases.map { phase ->
+                                if (phase.id == "phase_enraged") {
+                                    phase.copy(transitionTiming = BossPhaseTransitionTiming.ALLOW_FATAL_TRANSITION)
+                                } else {
+                                    phase
+                                }
+                            },
+                    )
+                content.copy(
+                    bossDefinitions =
+                        content.bossDefinitions +
+                            ("molten_giant_encounter" to definition.copy(encounter = updatedEncounter)),
+                )
+            },
+        )
+
+        val bossState = requireNotNull(world.get<BossEncounterState>(bossId))
+        bossState.currentPhaseId = "phase_full"
+        val bossHealth = requireNotNull(world.get<Health>(bossId))
+        bossHealth.current = 0
+
+        invokeHandleDeath(session, bossId, session.playerId)
+
+        assertTrue(world.isAlive(bossId))
+        assertEquals("phase_enraged", bossState.currentPhaseId)
+        assertEquals(1, bossHealth.current)
+        assertEquals(
+            "molten_giant_phase_warning",
+            requireNotNull(world.get<PendingTelegraphState>(bossId)).telegraphSpecId,
+        )
+        assertTrue(
+            session.recentBossTraces().any { trace ->
+                trace.actorId == bossId.value &&
+                    trace.toPhase == "phase_enraged" &&
+                    "TELEGRAPH:molten_giant_phase_warning" in trace.sideEffects
+            },
+        )
+    }
+
+    @Test
     fun `start of turn phase change clears stale queued telegraph before it resolves`() {
         val session =
             GameModule.newFoundationSession(
@@ -2881,6 +2944,33 @@ class FoundationGameSessionTest {
         val field = FoundationGameSession::class.java.getDeclaredField("world")
         field.isAccessible = true
         return field.get(session) as World
+    }
+
+    private fun sessionContent(session: FoundationGameSession): GameContent {
+        val field = FoundationGameSession::class.java.getDeclaredField("content")
+        field.isAccessible = true
+        return field.get(session) as GameContent
+    }
+
+    private fun replaceContent(
+        session: FoundationGameSession,
+        content: GameContent,
+    ) {
+        val field = FoundationGameSession::class.java.getDeclaredField("content")
+        field.isAccessible = true
+        field.set(session, content)
+    }
+
+    private fun invokeHandleDeath(
+        session: FoundationGameSession,
+        target: EntityId,
+        killer: EntityId?,
+    ) {
+        val method =
+            FoundationGameSession::class.java.declaredMethods
+                .first { declared -> declared.name.startsWith("handleDeath-") && declared.parameterCount == 2 }
+        method.isAccessible = true
+        method.invoke(session, target.value, killer)
     }
 
     private fun forcePlayerInCombat(session: FoundationGameSession) {

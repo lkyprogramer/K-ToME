@@ -19,12 +19,12 @@ object BossPhaseManager {
         transitionTiming: BossPhaseTransitionTiming? = null,
     ): BossPhaseDef = resolvePhaseResolution(encounter, context, currentPhaseId, transitionTiming).phase
 
-    fun resolvePhaseResolution(
+    fun resolvePhaseResolutionOrNull(
         encounter: BossEncounter,
         context: BossPhaseEvaluationContext,
         currentPhaseId: String? = null,
         transitionTiming: BossPhaseTransitionTiming? = null,
-    ): BossPhaseResolution {
+    ): BossPhaseResolution? {
         val currentPhase =
             currentPhaseId?.let { phaseId ->
                 requireNotNull(encounter.phases.firstOrNull { phase -> phase.id == phaseId }) {
@@ -36,15 +36,14 @@ object BossPhaseManager {
                 phase.id != currentPhaseId &&
                     (transitionTiming == null || phase.transitionTiming == transitionTiming) &&
                     matches(phase, context)
-            } ?: currentPhase
-            ?: requireNotNull(
-                encounter.phases.firstOrNull { phase ->
-                    (transitionTiming == null || phase.transitionTiming == transitionTiming) &&
-                        matches(phase, context)
-                },
-            ) {
-                "Boss encounter '${encounter.id}' has no matching phase for hpRatio=${context.healthRatio} turnCount=${context.encounterTurnCount} timing=${transitionTiming ?: "ANY"}."
+            } ?: currentPhase?.takeIf { phase ->
+                transitionTiming == null || phase.transitionTiming == transitionTiming
             }
+            ?: encounter.phases.firstOrNull { phase ->
+                (transitionTiming == null || phase.transitionTiming == transitionTiming) &&
+                    matches(phase, context)
+            }
+            ?: return null
         return BossPhaseResolution(
             phase = nextPhase,
             matchedTriggers =
@@ -55,6 +54,16 @@ object BossPhaseManager {
                 ),
         )
     }
+
+    fun resolvePhaseResolution(
+        encounter: BossEncounter,
+        context: BossPhaseEvaluationContext,
+        currentPhaseId: String? = null,
+        transitionTiming: BossPhaseTransitionTiming? = null,
+    ): BossPhaseResolution =
+        requireNotNull(resolvePhaseResolutionOrNull(encounter, context, currentPhaseId, transitionTiming)) {
+            "Boss encounter '${encounter.id}' has no matching phase for hpRatio=${context.healthRatio} turnCount=${context.encounterTurnCount} timing=${transitionTiming ?: "ANY"}."
+        }
 
     private fun matches(
         phase: BossPhaseDef,

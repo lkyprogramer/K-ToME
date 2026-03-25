@@ -1,6 +1,7 @@
 package com.ktome.core.ai
 
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
 
 class BossPhaseManagerTest {
@@ -58,5 +59,28 @@ class BossPhaseManagerTest {
             )
 
         assertEquals("phase_locked", phase.id)
+    }
+
+    @Test
+    fun `allow fatal transition returns null when no fatal phase matches`() {
+        val encounter =
+            BossEncounter(
+                id = "bandit_captain",
+                templateId = "bandit.captain",
+                phases =
+                    listOf(
+                        BossPhaseDef(id = "phase_full", hpThreshold = 1.0, hpEnd = 0.0, aiProfileId = "full"),
+                    ),
+            )
+
+        val resolution =
+            BossPhaseManager.resolvePhaseResolutionOrNull(
+                encounter = encounter,
+                context = BossPhaseEvaluationContext(healthRatio = 0.0, encounterTurnCount = 0),
+                currentPhaseId = "phase_full",
+                transitionTiming = BossPhaseTransitionTiming.ALLOW_FATAL_TRANSITION,
+            )
+
+        assertNull(resolution)
     }
 }

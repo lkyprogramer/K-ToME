@@ -1,7 +1,9 @@
 package com.ktome.game.data
 
 import com.ktome.core.ai.BossPhaseEventType
+import java.lang.reflect.InvocationTargetException
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
@@ -22,5 +24,25 @@ class BossEncounterTest {
             "molten_giant_phase_warning",
             phase.onEnter.first { event -> event.type == BossPhaseEventType.TELEGRAPH }.telegraphSpecId,
         )
+    }
+
+    @Test
+    fun `loader rejects telegraph boss events without telegraph spec id`() {
+        val loader = DataLoader()
+        val parseMethod =
+            DataLoader::class.java.getDeclaredMethod("parseBossPhaseEvent", Map::class.java, Set::class.java).apply {
+                isAccessible = true
+            }
+
+        val error =
+            assertThrows(InvocationTargetException::class.java) {
+                parseMethod.invoke(
+                    loader,
+                    linkedMapOf("type" to "TELEGRAPH"),
+                    setOf("molten_giant_phase_warning"),
+                )
+            }
+
+        assertTrue(requireNotNull(error.cause?.message).contains("telegraphSpecId"))
     }
 }

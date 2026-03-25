@@ -603,8 +603,12 @@ class DataLoader(
     private fun parseAiProfiles(root: Map<String, Any?>): List<AIProfile> =
         root.requiredList("aiProfiles").map { entry ->
             val profile = entry.requiredMap()
+            val id = profile.requiredString("id")
+            require(profile.requiredInt("schemaVersion") == 2) {
+                "AI profile '$id' must use schemaVersion 2."
+            }
             AIProfile(
-                id = profile.requiredString("id"),
+                id = id,
                 perceptionRange = profile.requiredInt("perceptionRange"),
                 useLastKnownPosition = profile.optionalBoolean("useLastKnownPosition", true),
                 defaultBehavior = AIDefaultBehavior.valueOf(profile.requiredString("defaultBehavior")),
@@ -612,7 +616,7 @@ class DataLoader(
                 actions =
                     profile.optionalList("actions").also { actions ->
                         require(actions.isNotEmpty()) {
-                            "AI profile '${profile.requiredString("id")}' must declare at least one action."
+                            "AI profile '$id' must declare at least one action."
                         }
                     }.map { rawAction ->
                         parseAiAction(rawAction.requiredMap())
@@ -709,7 +713,15 @@ class DataLoader(
         telegraphIds: Set<String>,
     ): BossPhaseEvent {
         val eventType = BossPhaseEventType.valueOf(event.requiredString("type"))
-        val telegraphSpecId = event.optionalString("telegraphSpecId")
+        val telegraphSpecId =
+            when (eventType) {
+                BossPhaseEventType.TELEGRAPH ->
+                    requireNotNull(event.optionalString("telegraphSpecId")) {
+                        "Boss phase TELEGRAPH event must declare telegraphSpecId."
+                    }
+
+                else -> event.optionalString("telegraphSpecId")
+            }
         if (telegraphSpecId != null) {
             require(telegraphSpecId in telegraphIds) {
                 "Boss phase event references unknown telegraph '$telegraphSpecId'."

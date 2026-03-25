@@ -2317,7 +2317,7 @@ class FoundationGameSession internal constructor(
 
     private fun healthRatio(entityId: EntityId): Double {
         val health = requireNotNull(world.get<Health>(entityId)) { "Missing Health for '$entityId'." }
-        return if (health.max <= 0) 0.0 else health.current.toDouble() / health.max.toDouble()
+        return if (health.max <= 0) 0.0 else health.current.coerceAtLeast(0).toDouble() / health.max.toDouble()
     }
 
     private fun healthRatioOrNull(entityId: EntityId): Double? =
@@ -2325,7 +2325,7 @@ class FoundationGameSession internal constructor(
             if (health.max <= 0) {
                 0.0
             } else {
-                health.current.toDouble() / health.max.toDouble()
+                health.current.coerceAtLeast(0).toDouble() / health.max.toDouble()
             }
         }
 
@@ -2344,6 +2344,7 @@ class FoundationGameSession internal constructor(
     private fun updateBossPhaseIfNeeded(
         monsterId: EntityId,
         transitionTiming: BossPhaseTransitionTiming,
+        advanceTurnCounter: Boolean = true,
     ): BossPhaseTurnUpdate {
         val bossState =
             world.get<BossEncounterState>(monsterId)
@@ -2351,19 +2352,35 @@ class FoundationGameSession internal constructor(
         val encounter =
             bossEncounterFor(monsterId)
                 ?: return BossPhaseTurnUpdate(profile = null, phaseChanged = false)
-        bossState.encounterTurnCount += 1
+        if (advanceTurnCounter) {
+            bossState.encounterTurnCount += 1
+        }
         val resolution =
-            BossPhaseManager.resolvePhaseResolution(
-                encounter = encounter,
-                context =
-                    BossPhaseEvaluationContext(
-                        healthRatio = healthRatio(monsterId),
-                        encounterTurnCount = bossState.encounterTurnCount,
-                        activeStatusIds = activeStatusIds(monsterId),
-                    ),
-                currentPhaseId = bossState.currentPhaseId,
-                transitionTiming = transitionTiming,
-            )
+            if (transitionTiming == BossPhaseTransitionTiming.ALLOW_FATAL_TRANSITION) {
+                BossPhaseManager.resolvePhaseResolutionOrNull(
+                    encounter = encounter,
+                    context =
+                        BossPhaseEvaluationContext(
+                            healthRatio = healthRatio(monsterId),
+                            encounterTurnCount = bossState.encounterTurnCount,
+                            activeStatusIds = activeStatusIds(monsterId),
+                        ),
+                    currentPhaseId = bossState.currentPhaseId,
+                    transitionTiming = transitionTiming,
+                ) ?: return BossPhaseTurnUpdate(profile = activeAiProfileFor(monsterId), phaseChanged = false)
+            } else {
+                BossPhaseManager.resolvePhaseResolution(
+                    encounter = encounter,
+                    context =
+                        BossPhaseEvaluationContext(
+                            healthRatio = healthRatio(monsterId),
+                            encounterTurnCount = bossState.encounterTurnCount,
+                            activeStatusIds = activeStatusIds(monsterId),
+                        ),
+                    currentPhaseId = bossState.currentPhaseId,
+                    transitionTiming = transitionTiming,
+                )
+            }
         val nextPhase = resolution.phase
         if (bossState.currentPhaseId != nextPhase.id) {
             applyBossPhaseEnter(monsterId, bossState, encounter, resolution)
@@ -2983,6 +3000,9 @@ class FoundationGameSession internal constructor(
         target: EntityId,
         killer: EntityId?,
     ) {
+        if (target != playerId && tryApplyBossFatalTransition(target)) {
+            return
+        }
         logEvent(EntityDeathEvent(target, killer))
         val deathTargetArg = entityArg("target", target)
         val killerSummary = killer?.let(::terminalKillerSummary)
@@ -3056,6 +3076,28 @@ class FoundationGameSession internal constructor(
                 addMessage("log.victory", deathTargetArg)
             }
         }
+    }
+
+    private fun tryApplyBossFatalTransition(target: EntityId): Boolean {
+        val bossState = world.get<BossEncounterState>(target) ?: return false
+        val health = world.get<Health>(target) ?: return false
+        if (health.current > 0) {
+            return false
+        }
+
+        val phaseUpdate =
+            updateBossPhaseIfNeeded(
+                monsterId = target,
+                transitionTiming = BossPhaseTransitionTiming.ALLOW_FATAL_TRANSITION,
+                advanceTurnCounter = false,
+            )
+        if (!phaseUpdate.phaseChanged) {
+            return false
+        }
+
+        health.current = maxOf(health.current, 1)
+        bossState.phaseTurnCount = 0
+        return true
     }
 
     private data class TerminalKillerSummary(

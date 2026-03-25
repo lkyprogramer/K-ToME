@@ -4,7 +4,9 @@ import com.ktome.core.ai.AICondition
 import com.ktome.core.ai.AIProfile
 import com.ktome.core.ai.AISelectionPolicy
 import com.ktome.game.i18n.GameLocale
+import java.lang.reflect.InvocationTargetException
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
@@ -74,6 +76,37 @@ class AIProfileDslTest {
         val composite = condition as AICondition.Or
         assertTrue(composite.conditions[0] is AICondition.TargetVisible)
         assertTrue(composite.conditions[1] is AICondition.Not)
+    }
+
+    @Test
+    fun `loader rejects ai profiles with stale schema version`() {
+        val loader = DataLoader(GameLocale.EN_US)
+        val parseMethod =
+            DataLoader::class.java.getDeclaredMethod("parseAiProfiles", Map::class.java).apply {
+                isAccessible = true
+            }
+
+        val error =
+            assertThrows(InvocationTargetException::class.java) {
+                parseMethod.invoke(
+                    loader,
+                    linkedMapOf(
+                        "aiProfiles" to
+                            listOf(
+                                linkedMapOf(
+                                    "id" to "ai.test.stale",
+                                    "schemaVersion" to 1,
+                                    "perceptionRange" to 8,
+                                    "defaultBehavior" to "CHASE",
+                                    "selectionPolicy" to "DETERMINISTIC_PRIORITY",
+                                    "actions" to listOf(linkedMapOf("id" to "wait", "type" to "WAIT")),
+                                ),
+                            ),
+                    ),
+                )
+            }
+
+        assertTrue(requireNotNull(error.cause?.message).contains("schemaVersion 2"))
     }
 
     @Test
