@@ -29,8 +29,11 @@ class SchemaV2LoaderTest {
     fun `schema v2 loader reads full content catalog`() {
         val catalog = DataLoader(GameLocale.EN_US).loadSchemaCatalog()
 
-        assertEquals(setOf("vanguard", "arcanist", "rogue", "templar"), catalog.professions.map { it.id }.toSet())
-        assertEquals(12, catalog.talentTrees.size)
+        assertEquals(
+            setOf("vanguard", "arcanist", "rogue", "templar", "berserker", "spellblade", "shadowblade", "warden"),
+            catalog.professions.map { it.id }.toSet(),
+        )
+        assertEquals(29, catalog.talentTrees.size)
         assertTrue(
             catalog.talents.map { it.id }.toSet().containsAll(
                 setOf(
@@ -48,6 +51,10 @@ class SchemaV2LoaderTest {
                     "holy_light",
                     "holy_shield",
                     "devotion",
+                    "blood_rush",
+                    "spell_parry",
+                    "human_resolve",
+                    "dwarf_forge_heart",
                 ),
             ),
         )
@@ -71,7 +78,7 @@ class SchemaV2LoaderTest {
         )
         assertEquals(3, catalog.professions.first { it.id == "vanguard" }.combatProfile.baseDefense)
         assertEquals(102, catalog.professions.first { it.id == "arcanist" }.combatProfile.baseSpeed)
-        assertEquals(listOf("backstab", "poison_blade", "deathblow"), catalog.talentTrees.first { it.id == "rogue_assassination" }.nodes)
+        assertEquals(listOf("backstab", "poison_blade", "deathblow", "execution"), catalog.talentTrees.first { it.id == "rogue_assassination" }.nodes)
         assertEquals(listOf("holy_light", "holy_shield", "purify"), catalog.talentTrees.first { it.id == "templar_grace" }.nodes)
         assertEquals(3, catalog.talents.first { it.id == "charge" }.unlockLevel)
         assertEquals("charge_lane", catalog.talents.first { it.id == "charge" }.telegraphRef)

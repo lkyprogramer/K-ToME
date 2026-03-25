@@ -51,6 +51,16 @@ import kotlinx.serialization.json.putJsonArray
 import kotlinx.serialization.json.putJsonObject
 
 internal const val SOLO_CLEAR_SCRIPT_VERSION: String = "solo-clear-lab-v2"
+internal const val SOLO_CLEAR_BOSS_TELEGRAPH_WAIT_TURNS: Int = 3
+internal val SOLO_CLEAR_PROFESSIONS: List<String> =
+    listOf(
+        "vanguard",
+        "arcanist",
+        "rogue",
+        "templar",
+        "berserker",
+        "spellblade",
+    )
 
 internal enum class SoloClearScenario(
     val seed: Long,
@@ -111,10 +121,16 @@ internal data class SoloClearLabReport(
     val initialResource: Int,
     val peakResource: Int,
     val finalResource: Int,
+    val secondaryResourceTypeId: String? = null,
+    val initialSecondaryResource: Int? = null,
+    val peakSecondaryResource: Int? = null,
+    val finalSecondaryResource: Int? = null,
     val sawBossWarning: Boolean,
     val sawTalentTelegraph: Boolean,
     val commandTrace: List<String>,
+    val executedTalentIds: List<String>,
     val resourceTimeline: List<Int>,
+    val secondaryResourceTimeline: List<Int>,
     val lastMessages: List<String>,
     val eventTail: List<String>,
 ) {
@@ -135,10 +151,16 @@ internal data class SoloClearLabReport(
             put("initialResource", initialResource)
             put("peakResource", peakResource)
             put("finalResource", finalResource)
+            secondaryResourceTypeId?.let { put("secondaryResourceTypeId", it) }
+            initialSecondaryResource?.let { put("initialSecondaryResource", it) }
+            peakSecondaryResource?.let { put("peakSecondaryResource", it) }
+            finalSecondaryResource?.let { put("finalSecondaryResource", it) }
             put("sawBossWarning", sawBossWarning)
             put("sawTalentTelegraph", sawTalentTelegraph)
             putJsonArray("commandTrace") { commandTrace.forEach { add(JsonPrimitive(it)) } }
+            putJsonArray("executedTalentIds") { executedTalentIds.forEach { add(JsonPrimitive(it)) } }
             putJsonArray("resourceTimeline") { resourceTimeline.forEach { add(JsonPrimitive(it)) } }
+            putJsonArray("secondaryResourceTimeline") { secondaryResourceTimeline.forEach { add(JsonPrimitive(it)) } }
             putJsonArray("lastMessages") { lastMessages.forEach { add(JsonPrimitive(it)) } }
             putJsonArray("eventTail") { eventTail.forEach { add(JsonPrimitive(it)) } }
         }
@@ -161,12 +183,15 @@ internal class SoloClearLabHarness(
         val session = runtime.session
         val bot = SoloClearScriptBot()
         val commandTrace = mutableListOf<String>()
+        val executedTalentIds = mutableListOf<String>()
         val resourceTimeline = mutableListOf<Int>()
+        val secondaryResourceTimeline = mutableListOf<Int>()
         var sawBossWarning = false
         var sawTalentTelegraph = false
         var sawResourceRestoreLog = false
         var failureReason: String? = null
         var turnCount = 0
+        var bossTelegraphWaitTurns = 0
 
         while (turnCount < scenario.maxTurns && !session.runOutcome().isTerminal && !goalReached(session, runtime)) {
             val snapshot = session.renderSnapshot()
@@ -177,15 +202,30 @@ internal class SoloClearLabHarness(
 
             val observation = RunObservationCapture.capture(session, turnCount)
             resourceTimeline += observation.playerResource.current
+            observation.playerResource.secondary?.current?.let(secondaryResourceTimeline::add)
             val command =
-                bot.decide(observation) ?: run {
+                pendingBossTelegraphObservationCommand(
+                    scenario = runtime.scenario,
+                    observation = observation,
+                    sawBossWarning = sawBossWarning,
+                    sawTalentTelegraph = sawTalentTelegraph,
+                    waitedTurns = bossTelegraphWaitTurns,
+                )?.also {
+                    bossTelegraphWaitTurns += 1
+                } ?: run {
+                    bossTelegraphWaitTurns = 0
+                    bot.decide(observation)
+                } ?: run {
                     failureReason = "Script bot returned no command."
                     break
                 }
-            commandTrace += renderCommand(command)
+            commandTrace += renderCommand(command, observation)
             if (!session.perform(command)) {
                 failureReason = "Command rejected: ${renderCommand(command)}"
                 break
+            }
+            if (command is PlayerCommand.UseTalent) {
+                observation.talentSlots.firstOrNull { slot -> slot.slot == command.slot }?.talentId?.let(executedTalentIds::add)
             }
             if (command.consumesTurn()) {
                 turnCount += 1
@@ -196,6 +236,7 @@ internal class SoloClearLabHarness(
             repeat(3) {
                 val observation = RunObservationCapture.capture(session, turnCount)
                 resourceTimeline += observation.playerResource.current
+                observation.playerResource.secondary?.current?.let(secondaryResourceTimeline::add)
                 commandTrace += renderCommand(PlayerCommand.Wait)
                 if (session.perform(PlayerCommand.Wait)) {
                     turnCount += 1
@@ -205,6 +246,7 @@ internal class SoloClearLabHarness(
 
         val finalObservation = RunObservationCapture.capture(session, turnCount)
         resourceTimeline += finalObservation.playerResource.current
+        finalObservation.playerResource.secondary?.current?.let(secondaryResourceTimeline::add)
         val finalSnapshot = session.renderSnapshot()
         sawBossWarning = sawBossWarning || finalSnapshot.overlays.any { it.sourceAbilityId == "bandit_captain_encounter" }
         sawTalentTelegraph = sawTalentTelegraph || finalSnapshot.overlays.any { it.id.startsWith("telegraph:") }
@@ -218,6 +260,8 @@ internal class SoloClearLabHarness(
                     observation = finalObservation,
                     commandTrace = commandTrace,
                     resourceTimeline = resourceTimeline,
+                    secondaryResourceTimeline = secondaryResourceTimeline,
+                    executedTalentIds = executedTalentIds,
                     sawBossWarning = sawBossWarning,
                     sawTalentTelegraph = sawTalentTelegraph,
                     sawResourceRestoreLog = sawResourceRestoreLog,
@@ -241,10 +285,16 @@ internal class SoloClearLabHarness(
             initialResource = runtime.initialResource,
             peakResource = resourceTimeline.maxOrNull() ?: runtime.initialResource,
             finalResource = resourceTimeline.lastOrNull() ?: runtime.initialResource,
+            secondaryResourceTypeId = finalObservation.playerResource.secondary?.typeId,
+            initialSecondaryResource = secondaryResourceTimeline.firstOrNull(),
+            peakSecondaryResource = secondaryResourceTimeline.maxOrNull(),
+            finalSecondaryResource = secondaryResourceTimeline.lastOrNull(),
             sawBossWarning = sawBossWarning,
             sawTalentTelegraph = sawTalentTelegraph,
             commandTrace = commandTrace,
+            executedTalentIds = executedTalentIds,
             resourceTimeline = resourceTimeline,
+            secondaryResourceTimeline = secondaryResourceTimeline,
             lastMessages = finalObservation.messageLogTail,
             eventTail = finalObservation.eventTail,
         )
@@ -342,6 +392,8 @@ internal class SoloClearLabHarness(
         observation: RunObservation,
         commandTrace: List<String>,
         resourceTimeline: List<Int>,
+        secondaryResourceTimeline: List<Int>,
+        executedTalentIds: List<String>,
         sawBossWarning: Boolean,
         sawTalentTelegraph: Boolean,
         sawResourceRestoreLog: Boolean,
@@ -379,7 +431,10 @@ internal class SoloClearLabHarness(
             }
         }
 
-        if (runtime.scenario == SoloClearScenario.MOB_PACK && commandTrace.none { command -> command.startsWith("UseTalent(") }) {
+        if (
+            runtime.scenario == SoloClearScenario.MOB_PACK &&
+            commandTrace.none { command -> command.startsWith("UseTalent(") }
+        ) {
             return "Solo clear script did not execute any talent command."
         }
 
@@ -406,6 +461,29 @@ internal class SoloClearLabHarness(
             val decayedAfterPeak = resourceTimeline.drop(peakIndex + 1).any { value -> value < peak }
             if (!decayedAfterPeak) {
                 return "Templar POSITIVE_ENERGY did not decay after combat ended."
+            }
+        }
+
+        if (runtime.professionId == "berserker" && runtime.scenario == SoloClearScenario.MOB_PACK) {
+            val restoredResource = resourceTimeline.zipWithNext().any { (before, after) -> after > before }
+            val spentResource = resourceTimeline.zipWithNext().any { (before, after) -> after < before }
+            if (!restoredResource) {
+                return "Berserker HATE never increased during combat."
+            }
+            if (!spentResource) {
+                return "Berserker HATE was never spent by an active talent."
+            }
+            if (executedTalentIds.none { talentId -> talentId in BERSERKER_TALENT_IDS }) {
+                return "Berserker smoke never executed a berserker talent."
+            }
+        }
+
+        if (runtime.professionId == "spellblade" && runtime.scenario == SoloClearScenario.MOB_PACK) {
+            if (secondaryResourceTimeline.distinct().size <= 1) {
+                return "Spellblade EQUILIBRIUM never changed during combat."
+            }
+            if (executedTalentIds.none { talentId -> talentId in SPELLBLADE_TALENT_IDS }) {
+                return "Spellblade smoke never executed a spellblade talent."
             }
         }
 
@@ -460,7 +538,7 @@ internal class SoloClearLabHarness(
                 blueAccessory(professionId)?.let(::add)
                 add(healingPotion())
                 add(healingPotion())
-                if (professionId == "arcanist" || professionId == "templar") {
+                if (professionId == "arcanist" || professionId == "templar" || professionId == "berserker" || professionId == "spellblade") {
                     add(healingPotion())
                 }
             }
@@ -477,6 +555,34 @@ internal class SoloClearLabHarness(
 
     private fun blueWeapon(professionId: String): ItemInstance =
         when (professionId) {
+            "berserker" ->
+                ItemInstance(
+                    baseId = "battle_axe",
+                    name = "Solo Lab Blue Axe",
+                    type = ItemType.WEAPON,
+                    slot = EquipSlot.WEAPON,
+                    glyph = ')',
+                    colorHex = "#4B6DFF",
+                    quality = ItemQuality.RARE,
+                    materialId = "MITHRIL",
+                    materialName = "Mithril",
+                    stats = StatModifier(str = 6, con = 2, attack = 13, accuracy = 4, critChance = 0.06),
+                )
+
+            "spellblade" ->
+                ItemInstance(
+                    baseId = "long_sword",
+                    name = "Solo Lab Blue Spellblade",
+                    type = ItemType.WEAPON,
+                    slot = EquipSlot.WEAPON,
+                    glyph = ')',
+                    colorHex = "#4B6DFF",
+                    quality = ItemQuality.RARE,
+                    materialId = "MITHRIL",
+                    materialName = "Mithril",
+                    stats = StatModifier(wil = 4, attack = 9, accuracy = 6, talentPower = 0.18),
+                )
+
             "arcanist" ->
                 ItemInstance(
                     baseId = "arcane_staff",
@@ -522,7 +628,11 @@ internal class SoloClearLabHarness(
 
     private fun blueArmor(professionId: String): ItemInstance =
         ItemInstance(
-            baseId = "chain_mail",
+            baseId =
+                when (professionId) {
+                    "spellblade" -> "apprentice_robe"
+                    else -> "chain_mail"
+                },
             name = "Solo Lab Blue Armor",
             type = ItemType.ARMOR,
             slot = EquipSlot.ARMOR,
@@ -531,6 +641,8 @@ internal class SoloClearLabHarness(
             quality = ItemQuality.RARE,
             stats =
                 when (professionId) {
+                    "berserker" -> StatModifier(defense = 16, maxHp = 88, con = 4, str = 2)
+                    "spellblade" -> StatModifier(defense = 11, maxHp = 62, wil = 4, evasion = 2, talentPower = 0.12)
                     "rogue" -> StatModifier(defense = 9, maxHp = 26, dex = 2, speed = 5)
                     "arcanist" -> StatModifier(defense = 14, maxHp = 78, wil = 3)
                     "templar" -> StatModifier(defense = 15, maxHp = 72, con = 2)
@@ -544,6 +656,18 @@ internal class SoloClearLabHarness(
                 ItemInstance(
                     baseId = "emerald_charm",
                     name = "Solo Lab Blue Charm",
+                    type = ItemType.ARMOR,
+                    slot = EquipSlot.OFF_HAND,
+                    glyph = ']',
+                    colorHex = "#4B6DFF",
+                    quality = ItemQuality.RARE,
+                    stats = StatModifier(defense = 2, evasion = 2, maxHp = 18, wil = 1),
+                )
+
+            "spellblade" ->
+                ItemInstance(
+                    baseId = "emerald_charm",
+                    name = "Solo Lab Blue Spell Charm",
                     type = ItemType.ARMOR,
                     slot = EquipSlot.OFF_HAND,
                     glyph = ']',
@@ -586,6 +710,8 @@ internal class SoloClearLabHarness(
     ) {
         val pools = world.get<ResourcePools>(playerId) ?: return
         when (professionId) {
+            "berserker" -> pools.pool(ResourceType.HATE)?.syncTo(nextCurrent = 40, nextMax = 100)
+            "spellblade" -> pools.pool(ResourceType.MANA)?.syncTo(nextCurrent = 160, nextMax = 160)
             "arcanist" -> pools.pool(ResourceType.MANA)?.syncTo(nextCurrent = 160, nextMax = 160)
             "rogue" -> pools.pool(ResourceType.ENERGY)?.syncTo(nextCurrent = 60, nextMax = 100)
             "templar" -> pools.pool(ResourceType.POSITIVE_ENERGY)?.syncTo(nextCurrent = 12, nextMax = 100)
@@ -699,7 +825,10 @@ internal class SoloClearLabHarness(
         )
     }
 
-    private fun renderCommand(command: PlayerCommand): String =
+    private fun renderCommand(
+        command: PlayerCommand,
+        observation: RunObservation? = null,
+    ): String =
         when (command) {
             is PlayerCommand.Move -> "Move(${command.delta.x},${command.delta.y})"
             PlayerCommand.Wait -> "Wait"
@@ -709,8 +838,15 @@ internal class SoloClearLabHarness(
             PlayerCommand.Descend -> "Descend"
             PlayerCommand.SaveGame -> "SaveGame"
             is PlayerCommand.ActivateInventoryItem -> "ActivateInventoryItem(${command.index})"
+            is PlayerCommand.UseInscription -> "UseInscription(${command.hotkey})"
             is PlayerCommand.UseTalent ->
-                command.target?.let { target -> "UseTalent(${command.slot},${target.x},${target.y})" } ?: "UseTalent(${command.slot})"
+                observation
+                    ?.talentSlots
+                    ?.firstOrNull { slot -> slot.slot == command.slot }
+                    ?.talentId
+                    ?.let { talentId ->
+                        command.target?.let { target -> "UseTalent(${command.slot}:$talentId,${target.x},${target.y})" } ?: "UseTalent(${command.slot}:$talentId)"
+                    } ?: command.target?.let { target -> "UseTalent(${command.slot},${target.x},${target.y})" } ?: "UseTalent(${command.slot})"
             is PlayerCommand.EquipTalentToSlot -> "EquipTalentToSlot(${command.slot},${command.talentId})"
             is PlayerCommand.AssignStat -> "AssignStat(${command.stat})"
             is PlayerCommand.AssignTalent -> "AssignTalent(${command.talentId})"
@@ -740,8 +876,12 @@ internal class SoloClearLabHarness(
                 appendLine("- ${scenario.name.lowercase()}: seed=${scenario.seed}, ${scenario.summary}")
             }
             reports.forEach { report ->
+                val secondarySummary =
+                    report.secondaryResourceTypeId?.let { type ->
+                        ", secondary=$type:${report.finalSecondaryResource}"
+                    }.orEmpty()
                 appendLine(
-                    "- profession=${report.professionId}, scenario=${report.scenarioId}, success=${report.success}, turns=${report.turns}, hp=${report.currentHp}/${report.maxHp}, resource=${report.resourceTypeId}:${report.finalResource}, outcome=${report.outcome}",
+                    "- profession=${report.professionId}, scenario=${report.scenarioId}, success=${report.success}, turns=${report.turns}, hp=${report.currentHp}/${report.maxHp}, resource=${report.resourceTypeId}:${report.finalResource}$secondarySummary, outcome=${report.outcome}",
                 )
             }
         }
@@ -755,14 +895,40 @@ private data class SoloClearRuntime(
     val initialResource: Int,
 )
 
+internal fun pendingBossTelegraphObservationCommand(
+    scenario: SoloClearScenario,
+    observation: RunObservation,
+    sawBossWarning: Boolean,
+    sawTalentTelegraph: Boolean,
+    waitedTurns: Int,
+): PlayerCommand? {
+    if (scenario != SoloClearScenario.BOSS) {
+        return null
+    }
+    if (!sawBossWarning || sawTalentTelegraph || waitedTurns >= SOLO_CLEAR_BOSS_TELEGRAPH_WAIT_TURNS) {
+        return null
+    }
+    val nearestBossDistance =
+        observation.visibleBossPositions
+            .minOfOrNull { bossPosition -> bossPosition.chebyshevDistanceTo(observation.playerPosition) }
+            ?: return null
+    if (nearestBossDistance > 1) {
+        return null
+    }
+    val safeEnoughToWait = observation.playerStatus.currentHp * 100 > observation.playerStatus.maxHp * 55
+    if (!safeEnoughToWait) {
+        return null
+    }
+    return PlayerCommand.Wait
+}
+
 private class SoloClearScriptBot : RunBot {
     override fun decide(observation: RunObservation): PlayerCommand? {
-        val densePackScenario = isDensePackScenario(observation)
         val usesSpecializedPackLoadout = usesSpecializedPackLoadout(observation)
-        if (densePackScenario && usesSpecializedPackLoadout) {
+        if (usesSpecializedPackLoadout) {
             preferredCombatLoadoutCommand(observation)?.let { return it }
         }
-        if (!densePackScenario || !usesSpecializedPackLoadout) {
+        if (!usesSpecializedPackLoadout) {
             LoadoutPlanner.preferredLoadoutCommand(observation)?.let { return it }
         }
         lootFollowUp(observation)?.let { return it }
@@ -777,20 +943,10 @@ private class SoloClearScriptBot : RunBot {
         observation.visibleBossPositions.isEmpty() && observation.visibleHostilePositions.size >= 4
 
     private fun usesSpecializedPackLoadout(observation: RunObservation): Boolean =
-        observation.playerResource.typeId in setOf("MANA", "ENERGY", "POSITIVE_ENERGY")
+        observation.playerResource.typeId in setOf("MANA", "ENERGY", "POSITIVE_ENERGY", "HATE")
 
     private fun preferredCombatLoadoutCommand(observation: RunObservation): PlayerCommand? {
-        if (!isDensePackScenario(observation) || !usesSpecializedPackLoadout(observation)) {
-            return null
-        }
-        val desiredOrder =
-            when (observation.playerResource.typeId) {
-                "MANA" -> listOf("fireball", "blink", "arcane_shield", "frost_nova")
-                "ENERGY" -> listOf("poison_blade", "shadowstep", "smoke_bomb", "blade_flurry")
-                "POSITIVE_ENERGY" -> listOf("holy_strike", "judgment_hammer", "holy_shield", "holy_aura")
-                else -> emptyList()
-            }
-        if (desiredOrder.isEmpty()) {
+        if (!usesSpecializedPackLoadout(observation)) {
             return null
         }
         val unlockedTalentIds =
@@ -798,6 +954,35 @@ private class SoloClearScriptBot : RunBot {
                 observation.talentSlots.mapTo(this) { slot -> slot.talentId }
                 observation.reserveTalents.mapTo(this) { talent -> talent.talentId }
             }
+        val desiredOrder =
+            when (observation.playerResource.typeId) {
+                "MANA" ->
+                    if (listOf("arcane_edge", "mana_lunge", "spell_parry", "spell_rend", "flux_burst", "flux_anchor").any(unlockedTalentIds::contains)) {
+                        if (observation.visibleBossPositions.isNotEmpty()) {
+                            listOf("arcane_edge", "mana_lunge", "spell_parry", "spell_rend", "flux_anchor", "flux_burst")
+                        } else if (isDensePackScenario(observation)) {
+                            listOf("arcane_edge", "mana_lunge", "flux_burst", "spell_parry", "flux_anchor", "spell_rend")
+                        } else {
+                            listOf("arcane_edge", "mana_lunge", "spell_parry", "flux_anchor", "spell_rend", "flux_burst")
+                        }
+                    } else {
+                        listOf("fireball", "blink", "arcane_shield", "frost_nova", "mana_surge", "flame_wall")
+                    }
+                "ENERGY" -> listOf("poison_blade", "shadowstep", "smoke_bomb", "blade_flurry", "deathblow", "stealth")
+                "POSITIVE_ENERGY" -> listOf("holy_strike", "judgment_hammer", "holy_shield", "holy_aura", "holy_light", "divine_intervention")
+                "HATE" ->
+                    if (observation.visibleBossPositions.isNotEmpty()) {
+                        listOf("savage_hew", "rupture_wave", "blood_rush", "last_stand", "kill_frenzy", "reckless_slam")
+                    } else if (isDensePackScenario(observation)) {
+                        listOf("reckless_slam", "blood_rush", "savage_hew", "kill_frenzy", "rupture_wave", "last_stand")
+                    } else {
+                        listOf("savage_hew", "blood_rush", "reckless_slam", "rupture_wave", "kill_frenzy", "last_stand")
+                    }
+                else -> emptyList()
+            }
+        if (desiredOrder.isEmpty()) {
+            return null
+        }
         desiredOrder
             .filter(unlockedTalentIds::contains)
             .take(4)
@@ -840,6 +1025,10 @@ private class SoloClearScriptBot : RunBot {
         if (!lowHealth) {
             return null
         }
+        availableTalent(observation, "last_stand")?.let { return PlayerCommand.UseTalent(it.slot) }
+        availableTalent(observation, "spell_parry")?.let { return PlayerCommand.UseTalent(it.slot) }
+        availableTalent(observation, "kill_frenzy")?.let { return PlayerCommand.UseTalent(it.slot) }
+        availableTalent(observation, "flux_anchor")?.let { return PlayerCommand.UseTalent(it.slot) }
         availableTalent(observation, "holy_light")?.let { return PlayerCommand.UseTalent(it.slot) }
         availableTalent(observation, "divine_intervention")?.let { return PlayerCommand.UseTalent(it.slot) }
         availableTalent(observation, "holy_shield")?.let { return PlayerCommand.UseTalent(it.slot) }
@@ -847,7 +1036,17 @@ private class SoloClearScriptBot : RunBot {
         availableTalent(observation, "unyielding")?.let { return PlayerCommand.UseTalent(it.slot) }
         availableTalent(observation, "arcane_shield")?.let { return PlayerCommand.UseTalent(it.slot) }
         availableTalent(observation, "guard_stance")?.let { return PlayerCommand.UseTalent(it.slot) }
+        availableTalent(observation, "blood_rush")?.let { slot ->
+            retreatPoint(observation, slot)?.let { target ->
+                return PlayerCommand.UseTalent(slot.slot, target)
+            }
+        }
         availableTalent(observation, "blink")?.let { slot ->
+            retreatPoint(observation, slot)?.let { target ->
+                return PlayerCommand.UseTalent(slot.slot, target)
+            }
+        }
+        availableTalent(observation, "mana_lunge")?.let { slot ->
             retreatPoint(observation, slot)?.let { target ->
                 return PlayerCommand.UseTalent(slot.slot, target)
             }
@@ -856,6 +1055,9 @@ private class SoloClearScriptBot : RunBot {
             retreatPoint(observation, slot)?.let { target ->
                 return PlayerCommand.UseTalent(slot.slot, target)
             }
+        }
+        nearestHostile(observation)?.let { target ->
+            availableTargetedTalent(observation, target, "charge")?.let { return it }
         }
         return null
     }
@@ -868,6 +1070,8 @@ private class SoloClearScriptBot : RunBot {
 
         if (adjacentHostiles >= 2) {
             availableTalent(observation, "blade_flurry")?.let { return PlayerCommand.UseTalent(it.slot, nearest) }
+            availableTalent(observation, "reckless_slam")?.let { return PlayerCommand.UseTalent(it.slot) }
+            availableTalent(observation, "flux_burst")?.let { return PlayerCommand.UseTalent(it.slot) }
             availableTalent(observation, "holy_aura")?.let { return PlayerCommand.UseTalent(it.slot) }
             availableTalent(observation, "sweeping_strike")?.let { return PlayerCommand.UseTalent(it.slot, nearest) }
             availableTalent(observation, "frost_nova")?.let { return PlayerCommand.UseTalent(it.slot) }
@@ -876,6 +1080,7 @@ private class SoloClearScriptBot : RunBot {
             availableTalent(observation, "smoke_bomb")?.let { return PlayerCommand.UseTalent(it.slot) }
             availableTalent(observation, "war_cry")?.let { return PlayerCommand.UseTalent(it.slot) }
             availableTalent(observation, "intimidation")?.let { return PlayerCommand.UseTalent(it.slot) }
+            availableTalent(observation, "kill_frenzy")?.let { return PlayerCommand.UseTalent(it.slot) }
         }
         if (observation.playerResource.typeId == "MANA" && observation.playerResource.current * 100 <= observation.playerResource.max * 40) {
             availableTalent(observation, "mana_surge")?.let { return PlayerCommand.UseTalent(it.slot) }
@@ -891,6 +1096,11 @@ private class SoloClearScriptBot : RunBot {
             availableTalent(observation, "holy_shield")?.let { return PlayerCommand.UseTalent(it.slot) }
             availableTalent(observation, "stealth")?.let { return PlayerCommand.UseTalent(it.slot) }
         }
+        availableTargetedTalent(observation, nearest, "arcane_edge")?.let { return it }
+        availableTargetedTalent(observation, nearest, "savage_hew")?.let { return it }
+        availableTargetedTalent(observation, nearest, "spell_rend")?.let { return it }
+        availableTargetedTalent(observation, nearest, "blood_rush")?.let { return it }
+        availableTargetedTalent(observation, nearest, "mana_lunge")?.let { return it }
         availableTargetedTalent(observation, nearest, "shadowstep")?.let { return it }
         availableTargetedTalent(observation, nearest, "judgment_hammer")?.let { return it }
         availableTargetedTalent(observation, nearest, "deathblow")?.let { return it }
@@ -900,7 +1110,9 @@ private class SoloClearScriptBot : RunBot {
         availableTargetedTalent(observation, nearest, "ice_prison")?.let { return it }
         availableTargetedTalent(observation, nearest, "shield_bash")?.let { return it }
         availableTargetedTalent(observation, nearest, "sunder_armor")?.let { return it }
+        availableTargetedTalent(observation, nearest, "charge")?.let { return it }
         availableTargetedTalent(observation, nearest, "power_strike")?.let { return it }
+        availableTargetedTalent(observation, nearest, "rupture_wave")?.let { return it }
         if (nearbyHostiles >= 2) {
             clusterTarget(observation)?.let { cluster ->
                 availableTalent(observation, "flame_wall")
@@ -963,7 +1175,7 @@ private class SoloClearScriptBot : RunBot {
         observation.visibleHostilePositions.minByOrNull { hostile -> hostile.chebyshevDistanceTo(observation.playerPosition) }
 
     private fun preferredOffensiveTarget(observation: RunObservation): Point? {
-        if (isDensePackScenario(observation) && observation.playerResource.typeId in setOf("MANA", "POSITIVE_ENERGY")) {
+        if (isDensePackScenario(observation) && observation.playerResource.typeId in setOf("MANA", "POSITIVE_ENERGY", "HATE")) {
             return observation.visibleHostilePositions.maxWithOrNull(
                 compareBy<Point> { hostile -> hostile.chebyshevDistanceTo(observation.playerPosition) }
                     .thenByDescending { hostile -> hostile.y }
@@ -1009,3 +1221,23 @@ private class SoloClearScriptBot : RunBot {
         return distance in slot.minRange..slot.range
     }
 }
+
+private val BERSERKER_TALENT_IDS: Set<String> =
+    setOf(
+        "blood_rush",
+        "savage_hew",
+        "reckless_slam",
+        "rupture_wave",
+        "kill_frenzy",
+        "last_stand",
+    )
+
+private val SPELLBLADE_TALENT_IDS: Set<String> =
+    setOf(
+        "arcane_edge",
+        "spell_rend",
+        "flux_anchor",
+        "flux_burst",
+        "mana_lunge",
+        "spell_parry",
+    )

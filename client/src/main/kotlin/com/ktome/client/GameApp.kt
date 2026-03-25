@@ -22,6 +22,14 @@ import com.ktome.client.screen.FoundationGameScreen
 import com.ktome.client.screen.GameOverScreen
 import com.ktome.client.screen.MainMenuScreen
 import com.ktome.client.screen.VictoryScreen
+import com.ktome.core.combat.CombatRuleset
+import com.ktome.core.profile.AvailabilityContext
+import com.ktome.core.profile.AdvancedClassUnlockRule
+import com.ktome.core.profile.ClassPlayabilityState
+import com.ktome.core.profile.ProfileData
+import com.ktome.core.profile.ProfileManager
+import com.ktome.core.profile.ProfileProgression
+import com.ktome.core.profile.RunSummary as ProfileRunSummary
 import com.ktome.core.save.AssetVersionContract
 import com.ktome.core.save.AssetVersionGate
 import com.ktome.core.save.AssetVersionMismatchException
@@ -32,6 +40,7 @@ import com.ktome.core.snapshot.RenderTextTokenSnapshot
 import com.ktome.game.FoundationGameConfig
 import com.ktome.game.FoundationGameSession
 import com.ktome.game.GameModule
+import com.ktome.game.ProfessionSelectionOption
 import com.ktome.game.i18n.GameLocale
 import com.ktome.game.i18n.LocalizationBundle
 import com.ktome.game.i18n.Localizer
@@ -41,6 +50,10 @@ class GameApp(
     private val saveManager: SaveManager = SaveManager(defaultSaveDir()),
     private val defaultConfig: FoundationGameConfig = FoundationGameConfig(),
     availableProfessionIdsProvider: (GameLocale) -> List<String> = { locale -> GameModule.availableProfessionIds(locale) },
+    private val professionSelectionProvider:
+        (GameLocale, ProfileData, AvailabilityContext) -> List<ProfessionSelectionOption> =
+            { locale, profile, context -> GameModule.professionSelections(locale, profile, context) },
+    private val profileManager: ProfileManager = ProfileManager(defaultSaveDir().resolve("profile")),
     private val menuInputSourceFactory: () -> InputSource = { GdxInputSource },
     private val gameCommandSourceFactory: () -> CommandSource = { InputHandlerCommandSource() },
     private val outcomeInputSourceFactory: () -> InputSource = { GdxInputSource },
@@ -53,10 +66,12 @@ class GameApp(
     initialLocale: GameLocale = GameLocale.DEFAULT,
     localizationBundle: LocalizationBundle = LocalizationBundle.load(),
 ) : Game() {
-    private val availableProfessionIds: List<String> =
-        availableProfessionIdsProvider(initialLocale)
-            .distinct()
-            .ifEmpty { listOf(defaultConfig.playerProfessionId) }
+    private val initialProfileState =
+        loadProfilePersistenceState(
+            profileManager = profileManager,
+            localizer = localizationBundle.translator(initialLocale),
+        )
+    private val availableProfessionIdsProvider = availableProfessionIdsProvider
     private val lifecycle = LifecycleCoordinator(saveManager)
     private val assetContracts =
         AssetContractCoordinator(
@@ -68,10 +83,16 @@ class GameApp(
     private val localizationBundle = localizationBundle
     private var currentLocale: GameLocale = initialLocale
     private var currentLocalizer: Localizer = localizationBundle.translator(initialLocale)
+    private var profileData: ProfileData = initialProfileState.profileData
+    private var profilePersistenceEnabled: Boolean = initialProfileState.persistenceEnabled
+    private var professionSelections: List<ProfessionSelectionOption> =
+        resolveProfessionSelections(locale = initialLocale)
     private var selectedProfessionId: String =
-        defaultConfig.playerProfessionId.takeIf(availableProfessionIds::contains)
-            ?: availableProfessionIds.first()
+        defaultConfig.playerProfessionId.takeIf(::containsProfession)
+            ?: professionSelections.firstOrNull { option -> option.playabilityState == ClassPlayabilityState.PLAYABLE }?.id
+            ?: professionSelections.first().id
     private var activeSession: FoundationGameSession? = null
+    private var pendingMenuNotice: String? = initialProfileState.notice
     private val audioSinks = audioSinkBindingsFactory.create(renderEnabled)
 
     override fun create() {
@@ -82,7 +103,17 @@ class GameApp(
         if (!ensureAssetContracts()) {
             return
         }
-        val resolvedProfessionId = professionId.takeIf(availableProfessionIds::contains) ?: selectedProfessionId
+        refreshProfessionSelections()
+        val selectedOption =
+            professionSelections.firstOrNull { option -> option.id == professionId }
+                ?: professionSelections.firstOrNull { option -> option.id == selectedProfessionId }
+                ?: professionSelections.first()
+        if (selectedOption.playabilityState != ClassPlayabilityState.PLAYABLE) {
+            selectedProfessionId = selectedOption.id
+            showMainMenu(saveCurrent = false, notice = professionSelectionNotice(selectedOption))
+            return
+        }
+        val resolvedProfessionId = selectedOption.id
         selectedProfessionId = resolvedProfessionId
         val session =
             lifecycle.startNewSession {
@@ -90,6 +121,8 @@ class GameApp(
                     config = defaultConfig.copy(playerProfessionId = resolvedProfessionId),
                     saveManager = saveManager,
                     locale = currentLocale,
+                    profile = profileData,
+                    availabilityContext = AvailabilityContext.PLAYER_CREATION,
                 )
             }
         activeSession = session
@@ -115,6 +148,7 @@ class GameApp(
 
     fun showOutcome(session: FoundationGameSession) {
         val summary = session.runSummary() ?: return
+        recordProfileRun(session)
         activeSession = null
         replaceScreen(
             if (session.isVictory()) {
@@ -133,18 +167,21 @@ class GameApp(
             activeSession?.saveOnExit()
         }
         activeSession = null
+        refreshProfessionSelections()
         val continueEnabled = lifecycle.refreshContinueAvailability()
         replaceScreen(
             MainMenuScreen(
                 app = this,
                 continueEnabled = continueEnabled,
-                availableProfessionIds = availableProfessionIds,
+                availableProfessionIds = professionSelections.map(ProfessionSelectionOption::id),
+                professionSelections = professionSelections,
                 selectedProfessionId = selectedProfessionId,
-                notice = notice ?: lifecycle.consumeNotice(),
+                notice = notice ?: pendingMenuNotice ?: lifecycle.consumeNotice(),
                 inputSource = menuInputSourceFactory(),
                 renderEnabled = renderEnabled,
             ),
         )
+        pendingMenuNotice = null
     }
 
     override fun dispose() {
@@ -170,7 +207,7 @@ class GameApp(
     internal fun localizer(): Localizer = currentLocalizer
 
     internal fun rememberProfessionSelection(professionId: String) {
-        if (professionId in availableProfessionIds) {
+        if (containsProfession(professionId)) {
             selectedProfessionId = professionId
         }
     }
@@ -178,6 +215,7 @@ class GameApp(
     internal fun cycleLocale(): GameLocale {
         currentLocale = currentLocale.cycle()
         currentLocalizer = localizationBundle.translator(currentLocale)
+        refreshProfessionSelections()
         return currentLocale
     }
 
@@ -216,6 +254,78 @@ class GameApp(
             false
         } ?: true
 
+    private fun refreshProfessionSelections() {
+        professionSelections = resolveProfessionSelections(locale = currentLocale)
+        if (!containsProfession(selectedProfessionId)) {
+            selectedProfessionId =
+                professionSelections.firstOrNull { option -> option.playabilityState == ClassPlayabilityState.PLAYABLE }?.id
+                    ?: professionSelections.first().id
+        }
+    }
+
+    private fun resolveProfessionSelections(locale: GameLocale): List<ProfessionSelectionOption> {
+        val baselineIds =
+            availableProfessionIdsProvider(locale)
+                .distinct()
+                .ifEmpty { listOf(defaultConfig.playerProfessionId) }
+        val catalogById =
+            professionSelectionProvider(locale, profileData, AvailabilityContext.PLAYER_CREATION)
+                .associateBy(ProfessionSelectionOption::id)
+        return baselineIds.map { professionId ->
+            catalogById[professionId]
+                ?: ProfessionSelectionOption(
+                    id = professionId,
+                    tier = com.ktome.core.profession.ProfessionTier.BASE,
+                    unlockState = com.ktome.core.profile.ClassUnlockState.RELEASE_UNLOCKED,
+                    playabilityState = ClassPlayabilityState.PLAYABLE,
+                )
+        }
+    }
+
+    private fun containsProfession(professionId: String): Boolean =
+        professionSelections.any { option -> option.id == professionId }
+
+    private fun professionSelectionNotice(option: ProfessionSelectionOption): String =
+        when (option.playabilityState) {
+            ClassPlayabilityState.PLAYABLE -> ""
+            ClassPlayabilityState.LOCKED -> text("ui.menu.profession_locked", "profession" to text("profession.${option.id}.name"))
+            ClassPlayabilityState.UNLOCKED_BUT_UNAVAILABLE ->
+                text("ui.menu.profession_unavailable", "profession" to text("profession.${option.id}.name"))
+        }
+
+    private fun recordProfileRun(session: FoundationGameSession) {
+        val result =
+            appendAndPersistProfileRun(
+                profileManager = profileManager,
+                profile = profileData,
+                persistenceEnabled = profilePersistenceEnabled,
+                summary = profileRunSummary(session),
+                unlockRules = GameModule.advancedClassUnlockRules(currentLocale),
+                localizer = currentLocalizer,
+            )
+        profileData = result.profileData
+        pendingMenuNotice = result.notice
+        if (result.persisted) {
+            refreshProfessionSelections()
+        }
+    }
+
+    private fun profileRunSummary(session: FoundationGameSession): ProfileRunSummary =
+        ProfileRunSummary(
+            seed = session.config.seed,
+            finishedAtEpochMillis = System.currentTimeMillis(),
+            classId = session.config.playerProfessionId,
+            raceId = session.config.playerRaceId,
+            finalZoneId = session.config.zoneId,
+            turnCount = session.currentTurnCount(),
+            headlessTurnEquivalent = session.currentTurnCount(),
+            zoneRouteHash = session.config.zoneRoute.joinToString(">"),
+            buildHash = PROFILE_BUILD_HASH,
+            rulesetVersion = CombatRuleset.RULESET_VERSION,
+            victory = session.isVictory(),
+            defeatReason = session.runOutcome().takeUnless { outcome -> session.isVictory() }?.toString(),
+        )
+
     private fun requireClientAssets(): ClientAssetBundle =
         requireNotNull(assetContracts.bundleOrNull()) {
             "Client assets must be loaded before entering the game screen."
@@ -237,7 +347,69 @@ class GameApp(
         }
 
     companion object {
+        private const val PROFILE_BUILD_HASH: String = "ktome-0.1.0"
+
         private fun defaultSaveDir(): Path = Path.of(System.getProperty("user.home"), ".ktome")
+    }
+}
+
+internal data class LoadedProfilePersistenceState(
+    val profileData: ProfileData,
+    val persistenceEnabled: Boolean,
+    val notice: String? = null,
+)
+
+internal data class PersistedProfileRunResult(
+    val profileData: ProfileData,
+    val persisted: Boolean,
+    val notice: String? = null,
+)
+
+internal fun loadProfilePersistenceState(
+    profileManager: ProfileManager,
+    localizer: Localizer,
+): LoadedProfilePersistenceState =
+    runCatching { profileManager.load() }
+        .fold(
+            onSuccess = { profile -> LoadedProfilePersistenceState(profileData = profile, persistenceEnabled = true) },
+            onFailure = {
+                LoadedProfilePersistenceState(
+                    profileData = ProfileData(),
+                    persistenceEnabled = false,
+                    notice = localizer.text("ui.menu.profile_load_failed"),
+                )
+            },
+        )
+
+internal fun appendAndPersistProfileRun(
+    profileManager: ProfileManager,
+    profile: ProfileData,
+    persistenceEnabled: Boolean,
+    summary: ProfileRunSummary,
+    unlockRules: Iterable<AdvancedClassUnlockRule>,
+    localizer: Localizer,
+): PersistedProfileRunResult {
+    if (!persistenceEnabled) {
+        return PersistedProfileRunResult(
+            profileData = profile,
+            persisted = false,
+            notice = localizer.text("ui.menu.profile_load_failed"),
+        )
+    }
+    val updatedProfile =
+        ProfileProgression.appendRun(
+            profile = profile,
+            summary = summary,
+            unlockRules = unlockRules,
+        )
+    return if (profileManager.save(updatedProfile)) {
+        PersistedProfileRunResult(profileData = updatedProfile, persisted = true)
+    } else {
+        PersistedProfileRunResult(
+            profileData = profile,
+            persisted = false,
+            notice = localizer.text("ui.menu.profile_save_failed"),
+        )
     }
 }
 

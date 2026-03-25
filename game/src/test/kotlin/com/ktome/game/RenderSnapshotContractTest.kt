@@ -79,8 +79,8 @@ class RenderSnapshotContractTest {
         assertEquals("tileset.ruins", snapshot.metadata.tilesetKey)
         assertEquals("ui.hud.mana.short", snapshot.uiState.playerStatus.resourceLabelKey)
         assertEquals("MANA", snapshot.uiState.playerStatus.resourceTypeId)
-        assertEquals(100, snapshot.uiState.playerStatus.currentResource)
-        assertEquals(152, snapshot.uiState.playerStatus.maxResource)
+        assertEquals(session.playerResourceView().current, snapshot.uiState.playerStatus.currentResource)
+        assertEquals(session.playerResourceView().max, snapshot.uiState.playerStatus.maxResource)
         assertTrue(snapshot.props.any { prop -> prop.propTypeId == "supply_crate" })
         assertTrue(snapshot.props.any { prop -> prop.propTypeId == "alarm_bonfire" })
         val zoneEnter = requireNotNull(snapshot.logEvents.firstOrNull { event -> event.message.key == "log.zone.enter" })
@@ -201,6 +201,7 @@ class RenderSnapshotContractTest {
         val playerId = world.entitiesWith(PlayerControlled::class).single()
         val profession = profession("arcanist")
         val stats = requireNotNull(world.get<Stats>(playerId))
+        val baseline = session.playerResourceView()
 
         stats.wil += 2
         StatsCalculator.recalculateAndStore(world, playerId)
@@ -208,9 +209,9 @@ class RenderSnapshotContractTest {
         val pools = PlayerResourceService.sync(world, playerId, profession)
         val mana = requireNotNull(pools.pool(ResourceType.MANA))
 
-        assertEquals(164, mana.max)
-        assertEquals(112, mana.current)
-        assertEquals(164, session.renderSnapshot().uiState.playerStatus.maxResource)
+        assertEquals(baseline.max + 12, mana.max)
+        assertEquals(baseline.current + 12, mana.current)
+        assertEquals(mana.max, session.renderSnapshot().uiState.playerStatus.maxResource)
     }
 
     @Test

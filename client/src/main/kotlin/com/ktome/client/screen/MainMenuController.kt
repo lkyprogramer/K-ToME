@@ -3,6 +3,8 @@ package com.ktome.client.screen
 import com.badlogic.gdx.Input.Keys
 import com.ktome.client.input.GdxInputSource
 import com.ktome.client.input.InputSource
+import com.ktome.core.profile.ClassPlayabilityState
+import com.ktome.game.ProfessionSelectionOption
 
 internal sealed interface MainMenuAction {
     data object StartNewGame : MainMenuAction
@@ -27,10 +29,15 @@ internal class MainMenuController(
     private val input: InputSource = GdxInputSource,
     availableProfessionIds: List<String>,
     initialProfessionId: String,
+    professionSelections: List<ProfessionSelectionOption> = emptyList(),
 ) {
     private val professionIds: List<String> = availableProfessionIds.distinct().also { ids ->
         require(ids.isNotEmpty()) { "Main menu requires at least one available profession." }
     }
+    private val professionSelectionStates: Map<String, ClassPlayabilityState> =
+        professionSelections
+            .distinctBy(ProfessionSelectionOption::id)
+            .associate { selection -> selection.id to selection.playabilityState }
     private var selectedIndex: Int = 0
     private var selectedProfessionIndex: Int = professionIds.indexOf(initialProfessionId).takeIf { it >= 0 } ?: 0
 
@@ -40,7 +47,7 @@ internal class MainMenuController(
 
     fun entries(hasSave: Boolean): List<MenuEntry> =
         listOf(
-            MenuEntry("ui.menu.new_game", enabled = true),
+            MenuEntry("ui.menu.new_game", enabled = canStartNewGame()),
             MenuEntry("ui.menu.continue", enabled = hasSave),
             MenuEntry("ui.menu.exit", enabled = true),
         )
@@ -100,6 +107,11 @@ internal class MainMenuController(
             professionChanged = professionChanged,
         )
     }
+
+    private fun canStartNewGame(): Boolean = selectedProfessionState() == ClassPlayabilityState.PLAYABLE
+
+    private fun selectedProfessionState(): ClassPlayabilityState =
+        professionSelectionStates[currentProfessionId()] ?: ClassPlayabilityState.PLAYABLE
 
     internal data class MenuEntry(
         val labelKey: String,

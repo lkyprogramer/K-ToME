@@ -14,6 +14,7 @@ internal object SaveFixtures {
             fovRadius = 8,
             messageLogSize = 8,
             playerProfessionId = "foundation_hero",
+            playerRaceId = "human",
             maxFloor = 3,
             turnCount = 0,
             player =

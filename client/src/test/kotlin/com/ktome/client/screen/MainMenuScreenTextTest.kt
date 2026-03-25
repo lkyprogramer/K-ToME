@@ -22,4 +22,13 @@ class MainMenuScreenTextTest {
         assertTrue(professionResourceHint(zhLocalizer, "rogue").contains("能量"))
         assertTrue(professionResourceHint(enLocalizer, "templar").contains("POSITIVE"))
     }
+
+    @Test
+    fun `main menu footer spacing stays below the class entry stack`() {
+        val lastEntryY = mainMenuClassEntryY(3)
+
+        assertTrue(MAIN_MENU_FOOTER_LANGUAGE_Y + MAIN_MENU_FOOTER_LINE_HEIGHT <= lastEntryY)
+        assertTrue(MAIN_MENU_FOOTER_CONTROLS_Y + MAIN_MENU_FOOTER_LINE_HEIGHT <= MAIN_MENU_FOOTER_LANGUAGE_Y)
+        assertTrue(MAIN_MENU_FOOTER_NOTICE_Y + MAIN_MENU_FOOTER_LINE_HEIGHT <= MAIN_MENU_FOOTER_CONTROLS_Y)
+    }
 }

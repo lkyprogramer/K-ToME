@@ -8,6 +8,7 @@ import com.ktome.core.ecs.get
 import com.ktome.core.map.Point
 import com.ktome.core.save.SaveManager
 import com.ktome.core.snapshot.CellVisibilitySnapshot
+import com.ktome.core.snapshot.InscriptionSlotSnapshot
 import com.ktome.core.snapshot.MapCellSnapshot
 import com.ktome.core.snapshot.PlayerStatusSnapshot
 import com.ktome.core.snapshot.PropRenderSnapshot
@@ -95,6 +96,28 @@ class InputHandlerTest {
 
         input.frame(justPressed = setOf(Keys.S), pressed = setOf(Keys.CONTROL_LEFT, Keys.S))
         assertEquals(PlayerCommand.SaveGame, handler.pollCommand(session.renderSnapshot()))
+    }
+
+    @Test
+    fun `controlled inscription hotkey enters targeting mode and confirms targeted use`() {
+        val input = ReplayInputSource()
+        val handler = InputHandler(input)
+        val snapshot = snapshotWithLoadout(inscriptions = listOf(inscriptionSlot(hotkey = 5, requiresTarget = true)))
+
+        input.frame(justPressed = setOf(Keys.NUM_5))
+        assertNull(handler.pollCommand(snapshot))
+        assertEquals(UiMode.TARGETING, handler.overlayState().mode)
+        assertEquals(5, handler.overlayState().targetingInscriptionHotkey)
+        assertEquals(Point(3, 3), handler.overlayState().targetingCursor)
+        input.clear()
+
+        input.frame(justPressed = setOf(Keys.RIGHT))
+        assertNull(handler.pollCommand(snapshot))
+        assertEquals(Point(4, 3), handler.overlayState().targetingCursor)
+        input.clear()
+
+        input.frame(justPressed = setOf(Keys.ENTER))
+        assertEquals(PlayerCommand.UseInscription(hotkey = 5, target = Point(4, 3)), handler.pollCommand(snapshot))
     }
 
     @Test
@@ -470,6 +493,7 @@ class InputHandlerTest {
         statPoints: Int = 0,
         talentPoints: Int = 0,
         reserveTalents: List<TalentReserveSnapshot> = emptyList(),
+        inscriptions: List<InscriptionSlotSnapshot> = emptyList(),
     ): RenderSnapshot =
         RenderSnapshot(
             metadata =
@@ -528,6 +552,7 @@ class InputHandlerTest {
                             activeTalent(slot = 4, talentId = "war_cry", nameKey = "talent.vanguard.war_cry.name"),
                         ),
                     reserveTalents = reserveTalents,
+                    inscriptions = inscriptions,
                     inventory = emptyList(),
                     targetablePositions = emptyList(),
                 ),
@@ -584,5 +609,21 @@ class InputHandlerTest {
             requiresTarget = true,
             descKey = nameKey.replace(".name", ".desc"),
             hasPendingAllocation = hasPendingAllocation,
+        )
+
+    private fun inscriptionSlot(
+        hotkey: Int,
+        requiresTarget: Boolean,
+    ): InscriptionSlotSnapshot =
+        InscriptionSlotSnapshot(
+            hotkey = hotkey,
+            inscriptionId = if (requiresTarget) "controlled_phase" else "phase_door",
+            nameKey = "inscription.controlled_phase.name",
+            descKey = "inscription.controlled_phase.desc",
+            iconKey = "icon.skill.arcanist.blink",
+            categoryId = "MOVEMENT",
+            cooldownRemaining = 0,
+            maxCooldown = 15,
+            requiresTarget = requiresTarget,
         )
 }

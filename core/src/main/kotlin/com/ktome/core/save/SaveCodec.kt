@@ -77,7 +77,7 @@ class SaveCodec(
             try {
                 json.decodeFromJsonElement<SaveSnapshot>(root)
             } catch (exception: SerializationException) {
-                throw InvalidSaveException("Save file does not match the current Phase 2 save schema.", exception)
+                throw InvalidSaveException("Save file does not match the current save schema.", exception)
             } catch (exception: IllegalArgumentException) {
                 throw InvalidSaveException("Save file failed validation: ${exception.message}", exception)
             }

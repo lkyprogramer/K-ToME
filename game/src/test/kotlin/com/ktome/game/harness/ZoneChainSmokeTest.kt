@@ -154,6 +154,7 @@ class ZoneChainSmokeTest {
             PlayerCommand.Descend -> "Descend"
             PlayerCommand.SaveGame -> "SaveGame"
             is PlayerCommand.ActivateInventoryItem -> "ActivateInventoryItem(${command.index})"
+            is PlayerCommand.UseInscription -> "UseInscription(${command.hotkey})"
             is PlayerCommand.UseTalent ->
                 command.target?.let { target -> "UseTalent(${command.slot},${target.x},${target.y})" } ?: "UseTalent(${command.slot})"
             is PlayerCommand.EquipTalentToSlot -> "EquipTalentToSlot(${command.slot},${command.talentId})"

@@ -19,6 +19,9 @@ import com.ktome.client.assets.ManifestPrefixRule
 import com.ktome.client.assets.VisualManifestEntry
 import com.ktome.client.assets.VisualManifest
 import com.ktome.client.assets.VisualManifestResourceLoader
+import com.ktome.core.profile.AdvancedClassUnlockRule
+import com.ktome.core.profile.ProfileData
+import com.ktome.core.profile.ProfileManager
 import com.ktome.core.snapshot.ActorRenderSnapshot
 import com.ktome.core.snapshot.ActorRoleKindSnapshot
 import com.ktome.core.snapshot.CellVisibilitySnapshot
@@ -31,6 +34,8 @@ import com.ktome.core.snapshot.PropRenderSnapshot
 import com.ktome.core.snapshot.RenderMetadataSnapshot
 import com.ktome.core.snapshot.RenderSnapshot
 import com.ktome.core.snapshot.RenderUiStateSnapshot
+import com.ktome.game.i18n.GameLocale
+import com.ktome.game.i18n.LocalizationBundle
 import java.nio.file.Files
 import java.nio.file.Path
 import kotlin.io.path.exists
@@ -181,6 +186,57 @@ class GameAppLifecycleTest {
         assertTrue("vfx.boss.warning.sigil_01" in warmState.warmVisualKeys)
         assertTrue("audio.boss.warning" in warmState.warmAudioKeys)
     }
+
+    @Test
+    fun `malformed profile disables persistence and surfaces explicit notice`() {
+        val profileDir = tempDir.resolve("corrupt-profile")
+        Files.createDirectories(profileDir)
+        profileDir.resolve(ProfileManager.DEFAULT_FILE_NAME).writeText("""{"profileVersion":"oops"}""")
+        val localizer = LocalizationBundle.load().translator(GameLocale.EN_US)
+
+        val result = loadProfilePersistenceState(ProfileManager(profileDir), localizer)
+
+        assertEquals(ProfileData(), result.profileData)
+        assertFalse(result.persistenceEnabled)
+        assertEquals(localizer.text("ui.menu.profile_load_failed"), result.notice)
+    }
+
+    @Test
+    fun `failed profile save keeps previous in memory progression`() {
+        val profileDir = tempDir.resolve("blocked-profile")
+        Files.createDirectories(profileDir)
+        Files.createDirectories(profileDir.resolve(ProfileManager.DEFAULT_FILE_NAME))
+        val profileManager = ProfileManager(profileDir)
+        val localizer = LocalizationBundle.load().translator(GameLocale.EN_US)
+        val originalProfile = ProfileData(releaseUnlockedClasses = setOf("berserker"))
+
+        val result =
+            appendAndPersistProfileRun(
+                profileManager = profileManager,
+                profile = originalProfile,
+                persistenceEnabled = true,
+                summary =
+                    com.ktome.core.profile.RunSummary(
+                        seed = 1L,
+                        finishedAtEpochMillis = 2L,
+                        classId = "arcanist",
+                        raceId = "human",
+                        finalZoneId = "abyssal_temple",
+                        turnCount = 100,
+                        headlessTurnEquivalent = 100,
+                        zoneRouteHash = "route",
+                        buildHash = "build",
+                        rulesetVersion = "phase3",
+                        victory = true,
+                    ),
+                unlockRules = listOf(AdvancedClassUnlockRule(classId = "spellblade", requiredProfessionId = "arcanist")),
+                localizer = localizer,
+            )
+
+        assertEquals(originalProfile, result.profileData)
+        assertFalse(result.persisted)
+        assertEquals(localizer.text("ui.menu.profile_save_failed"), result.notice)
+    }
 }
 
 private fun sampleSnapshot(): SaveSnapshot =
@@ -194,6 +250,7 @@ private fun sampleSnapshot(): SaveSnapshot =
         fovRadius = 8,
         messageLogSize = 8,
         playerProfessionId = "vanguard",
+        playerRaceId = "human",
         maxFloor = 2,
         turnCount = 18,
         player =

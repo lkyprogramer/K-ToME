@@ -141,6 +141,7 @@ data class RenderUiStateSnapshot(
     val equipment: List<EquipmentSlotSnapshot>,
     val talents: List<TalentSlotSnapshot>,
     val reserveTalents: List<TalentReserveSnapshot> = emptyList(),
+    val inscriptions: List<InscriptionSlotSnapshot> = emptyList(),
     val inventory: List<InventoryEntrySnapshot>,
     val targetablePositions: List<GridPointSnapshot>,
 )
@@ -188,16 +189,38 @@ data class PlayerStatusSnapshot(
     val maxResource: Int,
     val resourceLabelKey: String,
     val resourceTypeId: String = "STAMINA",
+    val resourceStableMin: Int? = null,
+    val resourceStableMax: Int? = null,
+    val secondaryResourceCurrent: Int? = null,
+    val secondaryResourceMax: Int? = null,
+    val secondaryResourceLabelKey: String? = null,
+    val secondaryResourceTypeId: String? = null,
+    val secondaryResourceStableMin: Int? = null,
+    val secondaryResourceStableMax: Int? = null,
     val level: Int,
     val currentExperience: Int,
     val nextLevelRequirement: Int,
     val statPoints: Int,
     val talentPoints: Int,
+    val raceTalentPoints: Int = 0,
     val attack: Int,
     val defense: Int,
     val accuracy: Int,
     val evasion: Int,
     val speed: Int,
+)
+
+@Serializable
+data class InscriptionSlotSnapshot(
+    val hotkey: Int,
+    val inscriptionId: String,
+    val nameKey: String,
+    val descKey: String,
+    val iconKey: String,
+    val categoryId: String,
+    val cooldownRemaining: Int,
+    val maxCooldown: Int,
+    val requiresTarget: Boolean = false,
 )
 
 @Serializable

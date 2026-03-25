@@ -26,6 +26,11 @@ sealed interface PlayerCommand {
 
     data class ActivateInventoryItem(val index: Int) : PlayerCommand
 
+    data class UseInscription(
+        val hotkey: Int,
+        val target: Point? = null,
+    ) : PlayerCommand
+
     data class UseTalent(val slot: Int, val target: Point? = null) : PlayerCommand
 
     data class EquipTalentToSlot(val slot: Int, val talentId: String) : PlayerCommand
@@ -68,6 +73,7 @@ data class PlayerStatus(
     val nextLevelRequirement: Int,
     val statPoints: Int,
     val talentPoints: Int,
+    val raceTalentPoints: Int = 0,
     val attack: Int,
     val defense: Int,
     val accuracy: Int,
@@ -79,6 +85,28 @@ data class PlayerResourceView(
     val current: Int,
     val max: Int,
     val typeId: String,
+    val stableMin: Int? = null,
+    val stableMax: Int? = null,
+    val secondary: SecondaryPlayerResourceView? = null,
+)
+
+data class SecondaryPlayerResourceView(
+    val current: Int,
+    val max: Int,
+    val typeId: String,
+    val stableMin: Int? = null,
+    val stableMax: Int? = null,
+)
+
+data class InscriptionView(
+    val hotkey: Int,
+    val inscriptionId: String,
+    val nameKey: String,
+    val descKey: String,
+    val iconKey: String,
+    val categoryId: String,
+    val cooldownRemaining: Int,
+    val maxCooldown: Int,
 )
 
 data class InventoryItemView(

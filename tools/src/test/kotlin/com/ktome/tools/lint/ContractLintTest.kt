@@ -18,13 +18,17 @@ class ContractLintTest {
         val catalog = DataLoader().loadSchemaCatalog()
         val assets = ClientAssetBundleLoader.load()
         val professionIds = catalog.professions.map { it.id }.toSet()
+        val advancedProfessionIds = setOf("berserker", "spellblade", "shadowblade", "warden")
         val talentIds = catalog.talents.map { it.id }.toSet()
         val treeIds = catalog.talentTrees.map { it.id }.toSet()
+        val raceIds = catalog.races.map { it.id }.toSet()
         val monsterIds = catalog.monsters.map { it.id }.toSet()
         val bossIds = catalog.bossEncounters.map { it.id }.toSet()
         val interactableIds = catalog.interactables.map { it.id }.toSet()
         val objectiveIds = catalog.objectiveSets.map { it.id }.toSet()
         val itemIds = catalog.itemBundle.items.map { it.id }.toSet()
+        val inscriptionIds = catalog.inscriptions.map { it.id }
+        val uniqueInscriptionIds = inscriptionIds.toSet()
         val lootIds = catalog.lootProfiles.map { it.id }.toSet()
         val tilesetIds = catalog.tilesets.map { it.id }.toSet()
         val aiIds = catalog.aiProfiles.map { it.id }.toSet()
@@ -51,7 +55,7 @@ class ContractLintTest {
         }
 
         catalog.professions.forEach { profession ->
-            assertEquals(2, profession.schemaVersion)
+            assertEquals(3, profession.schemaVersion)
             assertEquals("profession.${profession.id}.name", profession.nameKey)
             assertEquals("profession.${profession.id}.desc", profession.descKey)
             assertExactVisualKey(profession.visualKey)
@@ -63,11 +67,16 @@ class ContractLintTest {
         }
 
         catalog.talentTrees.forEach { tree ->
-            assertEquals(2, tree.schemaVersion)
+            assertTrue(tree.schemaVersion in setOf(2, 3), "Unsupported talent tree schemaVersion ${tree.schemaVersion} for ${tree.id}")
             if (tree.raceId == null) {
                 assertTrue(professionIds.contains(tree.professionId), "Unknown talent tree profession ${tree.professionId}")
+                if (tree.professionId in advancedProfessionIds) {
+                    assertEquals(3, tree.schemaVersion, "Advanced profession tree ${tree.id} must use schemaVersion 3.")
+                }
             } else {
                 assertTrue(tree.professionId.isBlank(), "Race tree ${tree.id} must not also reference profession ${tree.professionId}")
+                assertTrue(raceIds.contains(tree.raceId), "Unknown race talent tree owner ${tree.raceId}")
+                assertEquals(3, tree.schemaVersion, "Race tree ${tree.id} must use schemaVersion 3.")
             }
             assertEquals("talent_tree.${tree.id}.name", tree.nameKey)
             assertEquals("talent_tree.${tree.id}.desc", tree.descKey)
@@ -79,12 +88,17 @@ class ContractLintTest {
 
         val treeById = catalog.talentTrees.associateBy { it.id }
         catalog.talents.forEach { talent ->
-            assertEquals(2, talent.schemaVersion)
+            assertTrue(talent.schemaVersion in setOf(2, 3), "Unsupported talent schemaVersion ${talent.schemaVersion} for ${talent.id}")
             assertTrue(treeIds.contains(talent.treeId), "Unknown talent tree ${talent.treeId}")
             val tree = requireNotNull(treeById[talent.treeId]) { "Unknown tree ${talent.treeId}" }
             val namespace = ownerNamespace(tree)
-            assertEquals("talent.$namespace.${talent.id}.name", talent.nameKey)
-            assertEquals("talent.$namespace.${talent.id}.desc", talent.descKey)
+            val expectedKeyBase =
+                tree.raceId?.let { raceId ->
+                    val leafId = talent.id.removePrefix("${raceId}_")
+                    "talent.race.$raceId.$leafId"
+                } ?: "talent.$namespace.${talent.id}"
+            assertEquals("$expectedKeyBase.name", talent.nameKey)
+            assertEquals("$expectedKeyBase.desc", talent.descKey)
             assertExactVisualKey(talent.visualKey)
             assertExactVisualKey(talent.iconKey)
             assertExactAudioKey(talent.audioProfile)
@@ -95,6 +109,29 @@ class ContractLintTest {
                 assertTrue(talentIds.contains(prereq.talentId), "Unknown talent prerequisite ${prereq.talentId}")
             }
         }
+
+        catalog.races.forEach { race ->
+            assertEquals(1, race.schemaVersion)
+            assertEquals("race.${race.id}.name", race.nameKey)
+            assertEquals("race.${race.id}.desc", race.descKey)
+            assertExactVisualKey(race.visualKey)
+            assertExactVisualKey(race.iconKey)
+            assertExactAudioKey(race.audioProfile)
+            race.talentTrees.forEach { treeId -> assertTrue(treeId in treeIds, "Unknown race tree $treeId") }
+            race.startingTalents.forEach { talentId -> assertTrue(talentId in talentIds, "Unknown race talent $talentId") }
+        }
+
+        catalog.inscriptions.forEach { inscription ->
+            assertEquals("inscription.${inscription.id}.name", inscription.nameKey)
+            assertEquals("inscription.${inscription.id}.desc", inscription.descKey)
+            assertExactVisualKey(inscription.iconKey)
+            assertTrue(inscription.cooldown >= 0, "Inscription ${inscription.id} must not have negative cooldown.")
+        }
+        assertEquals(
+            inscriptionIds.size,
+            uniqueInscriptionIds.size,
+            "Inscription ids must stay unique.",
+        )
 
         catalog.aiProfiles.forEach { aiProfile ->
             assertTrue(aiProfile.perceptionRange > 0, "AI profile ${aiProfile.id} must declare positive perceptionRange")
@@ -237,7 +274,10 @@ class ContractLintTest {
     fun `phase2 skeleton ids and family namespaces stay frozen`() {
         val catalog = DataLoader().loadSchemaCatalog()
 
-        assertEquals(setOf("vanguard", "arcanist", "rogue", "templar"), catalog.professions.map { it.id }.toSet())
+        assertEquals(
+            setOf("vanguard", "arcanist", "rogue", "templar", "berserker", "spellblade", "shadowblade", "warden"),
+            catalog.professions.map { it.id }.toSet(),
+        )
         assertEquals(setOf("shattered_outpost", "greenwood_fringe", "deep_iron_pit", "grey_gate_depths"), catalog.zones.map { it.id }.toSet())
         assertEquals(
             mapOf(
@@ -280,6 +320,8 @@ class ContractLintTest {
         val uniqueNameKeys =
             buildList {
                 addAll(catalog.professions.map { it.nameKey })
+                addAll(catalog.races.map { it.nameKey })
+                addAll(catalog.inscriptions.map { it.nameKey })
                 addAll(catalog.talentTrees.map { it.nameKey })
                 addAll(catalog.talents.map { it.nameKey })
                 addAll(catalog.monsters.map { it.nameKey })
@@ -297,6 +339,8 @@ class ContractLintTest {
         val uniqueIds =
             buildList {
                 addAll(catalog.professions.map { "profession:${it.id}" })
+                addAll(catalog.races.map { "race:${it.id}" })
+                addAll(catalog.inscriptions.map { "inscription:${it.id}" })
                 addAll(catalog.talentTrees.map { "talent_tree:${it.id}" })
                 addAll(catalog.talents.map { "talent:${it.id}" })
                 addAll(catalog.monsters.map { "monster:${it.id}" })

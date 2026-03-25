@@ -13,15 +13,32 @@ import com.ktome.client.audio.AudioRouter
 import com.ktome.client.input.GdxInputSource
 import com.ktome.client.input.InputSource
 import com.ktome.client.render.KtomeFonts
+import com.ktome.client.ui.creation.ClassSelectPanel
+import com.ktome.core.profile.ClassPlayabilityState
+import com.ktome.game.ProfessionSelectionOption
 import com.ktome.game.i18n.Localizer
 
 internal const val menuWidth = 960f
 internal const val menuHeight = 540f
+internal const val MAIN_MENU_TEXT_X = 120f
+internal const val MAIN_MENU_TITLE_Y = 420f
+internal const val MAIN_MENU_SUBTITLE_Y = 392f
+internal const val MAIN_MENU_PANEL_TOP_Y = 352f
+internal const val MAIN_MENU_FOOTER_LANGUAGE_Y = 128f
+internal const val MAIN_MENU_FOOTER_CONTROLS_Y = 80f
+internal const val MAIN_MENU_FOOTER_NOTICE_Y = 44f
+internal const val MAIN_MENU_FOOTER_LINE_HEIGHT = 24f
+internal const val MAIN_MENU_CLASS_ENTRY_BASE_OFFSET_Y = 104f
+internal const val MAIN_MENU_CLASS_ENTRY_STEP_Y = 32f
+
+internal fun mainMenuClassEntryY(index: Int): Float =
+    MAIN_MENU_PANEL_TOP_Y - MAIN_MENU_CLASS_ENTRY_BASE_OFFSET_Y - index * MAIN_MENU_CLASS_ENTRY_STEP_Y
 
 internal data class MainMenuTextSnapshot(
     val title: String,
     val subtitle: String,
     val profession: String,
+    val professionState: String,
     val professionDescription: String,
     val professionResourceHint: String,
     val entries: List<String>,
@@ -34,6 +51,15 @@ class MainMenuScreen(
     private val app: GameApp,
     private val continueEnabled: Boolean,
     private val availableProfessionIds: List<String>,
+    private val professionSelections: List<ProfessionSelectionOption> =
+        availableProfessionIds.map { professionId ->
+            ProfessionSelectionOption(
+                id = professionId,
+                tier = com.ktome.core.profession.ProfessionTier.BASE,
+                unlockState = com.ktome.core.profile.ClassUnlockState.RELEASE_UNLOCKED,
+                playabilityState = ClassPlayabilityState.PLAYABLE,
+            )
+        },
     selectedProfessionId: String,
     private val notice: String? = null,
     inputSource: InputSource = GdxInputSource,
@@ -42,7 +68,13 @@ class MainMenuScreen(
     private var batch: SpriteBatch? = null
     private var font: BitmapFont? = null
     private val viewport = FitViewport(menuWidth, menuHeight)
-    private val controller = MainMenuController(input = inputSource, availableProfessionIds = availableProfessionIds, initialProfessionId = selectedProfessionId)
+    private val controller =
+        MainMenuController(
+            input = inputSource,
+            availableProfessionIds = availableProfessionIds,
+            initialProfessionId = selectedProfessionId,
+            professionSelections = professionSelections,
+        )
     private val audioRouter: AudioRouter? = app.audioRouterOrNull()
 
     override fun show() {
@@ -94,35 +126,32 @@ class MainMenuScreen(
         batch.projectionMatrix = viewport.camera.combined
 
         val selectedIndex = controller.selectedIndex()
+        val entries = controller.entries(continueEnabled)
+        val classSelectPanel =
+            ClassSelectPanel.build(
+                profession = text.profession,
+                professionState = text.professionState,
+                professionDescription = text.professionDescription,
+                professionResourceHint = text.professionResourceHint,
+                entries = entries,
+                selectedIndex = selectedIndex,
+                localizedEntryLabels = text.entries,
+            )
 
         batch.begin()
         font.color = Color.GOLD
-        font.draw(batch, text.title, 120f, 420f)
+        font.draw(batch, text.title, MAIN_MENU_TEXT_X, MAIN_MENU_TITLE_Y)
         font.color = Color.LIGHT_GRAY
-        font.draw(batch, text.subtitle, 120f, 392f)
-        font.color = Color.WHITE
-        font.draw(batch, text.profession, 120f, 352f)
-        font.color = Color.GRAY
-        font.draw(batch, text.professionDescription, 120f, 324f)
-        font.draw(batch, text.professionResourceHint, 120f, 296f)
-
-        controller.entries(continueEnabled).forEachIndexed { index, entry ->
-            font.color =
-                when {
-                    !entry.enabled -> Color.DARK_GRAY
-                    index == selectedIndex -> Color.CYAN
-                    else -> Color.WHITE
-                }
-            font.draw(batch, text.entries[index], 120f, 248f - index * 32f)
-        }
+        font.draw(batch, text.subtitle, MAIN_MENU_TEXT_X, MAIN_MENU_SUBTITLE_Y)
+        ClassSelectPanel.render(batch, font, classSelectPanel, professionStateColor(controller.currentProfessionId()), MAIN_MENU_TEXT_X, MAIN_MENU_PANEL_TOP_Y)
 
         font.color = Color.GOLD
-        font.draw(batch, text.language, 120f, 160f)
+        font.draw(batch, text.language, MAIN_MENU_TEXT_X, MAIN_MENU_FOOTER_LANGUAGE_Y)
         font.color = Color.GRAY
-        font.draw(batch, text.controls, 120f, 112f)
+        font.draw(batch, text.controls, MAIN_MENU_TEXT_X, MAIN_MENU_FOOTER_CONTROLS_Y)
         text.notice?.let { message ->
             font.color = Color.SALMON
-            font.draw(batch, message, 120f, 76f)
+            font.draw(batch, message, MAIN_MENU_TEXT_X, MAIN_MENU_FOOTER_NOTICE_Y)
         }
         batch.end()
     }
@@ -155,6 +184,7 @@ class MainMenuScreen(
                 title = app.text("ui.menu.title"),
                 subtitle = app.text("ui.menu.subtitle"),
                 profession = app.text("ui.menu.profession", "value" to app.text("profession.$professionId.name")),
+                professionState = professionStateText(app.localizer(), selectionFor(professionId).playabilityState),
                 professionDescription = app.text("profession.$professionId.desc"),
                 professionResourceHint = professionResourceHint(app.localizer(), professionId),
                 entries = controller.entries(continueEnabled).map { entry -> app.text(entry.labelKey) },
@@ -163,18 +193,37 @@ class MainMenuScreen(
                 notice = notice?.takeIf(String::isNotBlank),
             )
         }
+
+    private fun selectionFor(professionId: String): ProfessionSelectionOption =
+        professionSelections.firstOrNull { option -> option.id == professionId }
+            ?: ProfessionSelectionOption(
+                id = professionId,
+                tier = com.ktome.core.profession.ProfessionTier.BASE,
+                unlockState = com.ktome.core.profile.ClassUnlockState.RELEASE_UNLOCKED,
+                playabilityState = ClassPlayabilityState.PLAYABLE,
+            )
+
+    private fun professionStateColor(professionId: String): Color =
+        when (selectionFor(professionId).playabilityState) {
+            ClassPlayabilityState.PLAYABLE -> Color.CYAN
+            ClassPlayabilityState.UNLOCKED_BUT_UNAVAILABLE -> Color.GOLD
+            ClassPlayabilityState.LOCKED -> Color.DARK_GRAY
+        }
 }
 
 internal fun professionResourceHint(
     localizer: Localizer,
     professionId: String,
+): String = localizer.text("profession.$professionId.resource_hint")
+
+internal fun professionStateText(
+    localizer: Localizer,
+    state: ClassPlayabilityState,
 ): String =
     localizer.text(
-        when (professionId) {
-            "vanguard" -> "profession.vanguard.resource_hint"
-            "arcanist" -> "profession.arcanist.resource_hint"
-            "rogue" -> "profession.rogue.resource_hint"
-            "templar" -> "profession.templar.resource_hint"
-            else -> error("Unknown profession '$professionId'.")
+        when (state) {
+            ClassPlayabilityState.PLAYABLE -> "ui.menu.profession_state.playable"
+            ClassPlayabilityState.UNLOCKED_BUT_UNAVAILABLE -> "ui.menu.profession_state.unavailable"
+            ClassPlayabilityState.LOCKED -> "ui.menu.profession_state.locked"
         },
     )

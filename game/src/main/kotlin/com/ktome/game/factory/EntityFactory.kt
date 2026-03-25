@@ -26,6 +26,7 @@ import com.ktome.core.ecs.add
 import com.ktome.core.item.Equipment
 import com.ktome.core.item.Inventory
 import com.ktome.core.map.Point
+import com.ktome.core.race.RaceTalentPointBank
 import com.ktome.core.resource.StaminaPools
 import com.ktome.core.stats.StatsCalculator
 import com.ktome.core.talent.CooldownState
@@ -68,6 +69,7 @@ class EntityFactory {
         StaminaPools.ensurePool(world, playerId, current = derivedStats.maxStamina, max = derivedStats.maxStamina)
         world.add(playerId, Energy())
         world.add(playerId, Experience())
+        world.add(playerId, RaceTalentPointBank())
         world.add(playerId, Inventory())
         world.add(playerId, Equipment())
         world.add(playerId, CooldownState())

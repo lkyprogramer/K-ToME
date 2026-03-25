@@ -10,6 +10,7 @@ data class FoundationGameConfig(
     val messageLogSize: Int = 8,
     val zoneId: String = FOUNDATION_ZONE_ID,
     val playerProfessionId: String = FOUNDATION_PROFESSION_ID,
+    val playerRaceId: String = FOUNDATION_RACE_ID,
     val zoneRoute: List<String> = listOf(zoneId),
     val routeIndex: Int = 0,
 )

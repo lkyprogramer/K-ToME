@@ -5,6 +5,7 @@ import com.ktome.core.combat.DamageType
 import com.ktome.core.combat.SaveDimension
 import com.ktome.core.ecs.EntityId
 import com.ktome.core.item.StatModifier
+import com.ktome.core.resource.EquilibriumAffinity
 import com.ktome.core.resource.ResourceType
 import com.ktome.core.status.StatusInstance
 import com.ktome.core.status.StatusTracker
@@ -31,6 +32,7 @@ data class TalentDef(
     val keywords: List<String> = emptyList(),
     val aiHints: TalentAiHints? = null,
     val telegraphRef: String? = null,
+    val equilibriumAffinity: EquilibriumAffinity = EquilibriumAffinity.NEUTRAL,
     val callbacks: List<String> = emptyList(),
     val treeId: String = "",
     val unlockLevel: Int = 1,

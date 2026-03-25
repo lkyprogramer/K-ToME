@@ -5,73 +5,266 @@ professions:
     visualKey: actor.vanguard
     iconKey: icon.profession.vanguard
     audioProfile: audio.profession.vanguard
-    schemaVersion: 2
+    schemaVersion: 3
     tags: [profession, foundation]
-    resourceType: STAMINA
+    tier: BASE
+    resourceProfiles:
+      - axis: STAMINA
+        initialCurrent: 44
+        max: 44
+        regen: { type: PER_TURN, amount: 3 }
+    primarySpendAxis: STAMINA
     baseStats: { str: 12, dex: 8, con: 11, wil: 7 }
     combatProfile: { baseAttack: 5, baseDefense: 3, baseAccuracy: 10, baseEvasion: 5, baseSpeed: 98, baseHp: 54, baseStamina: 44, baseHpRegen: 1.2 }
     statGrowth: { str: 3, dex: 2, con: 3, wil: 1 }
-    startingResources: { STAMINA: 100 }
-    resourceCaps: { STAMINA: 100 }
     talentTrees: [vanguard_arms, vanguard_shield, vanguard_warcry]
     startingTalents: [power_strike, shield_bash, guard_stance, war_cry]
     startingKit: [long_sword, basic_shield, chain_mail, healing_potion]
-    unlockCondition: default
-    soloContract: foundation_frontliner
+    initialUnlockState: RELEASE_UNLOCKED
+    soloContract:
+      offenseTags: [melee, burst, armor_break]
+      defenseTags: [guard, shield, mitigation]
+      mobilityTags: [charge, hold_line]
+      aoeAnswerTags: [sweep, warcry]
+      bossAnswerTags: [execute, taunt, armor_break]
+      panicAnswerTags: [unyielding, iron_wall]
   - id: arcanist
     nameKey: profession.arcanist.name
     descKey: profession.arcanist.desc
     visualKey: actor.arcanist
     iconKey: icon.profession.arcanist
     audioProfile: audio.profession.arcanist
-    schemaVersion: 2
+    schemaVersion: 3
     tags: [profession, foundation]
-    resourceType: MANA
+    tier: BASE
+    resourceProfiles:
+      - axis: MANA
+        initialCurrent: 60
+        max: 60
+        regen: { type: PER_TURN, amount: 2 }
+    primarySpendAxis: MANA
     baseStats: { str: 6, dex: 8, con: 7, wil: 14 }
     combatProfile: { baseAttack: 4, baseDefense: 1, baseAccuracy: 11, baseEvasion: 6, baseSpeed: 102, baseHp: 46, baseStamina: 34, baseHpRegen: 1.0 }
     statGrowth: { str: 1, dex: 2, con: 1, wil: 4 }
-    startingResources: { MANA: 100 }
-    resourceCaps: { MANA: 134 }
     talentTrees: [arcanist_flame, arcanist_frost, arcanist_arcane]
     startingTalents: [fireball, ice_bolt, blink, arcane_shield]
     startingKit: [arcane_staff, apprentice_robe, mana_potion]
-    unlockCondition: default
-    soloContract: foundation_caster
+    initialUnlockState: RELEASE_UNLOCKED
+    soloContract:
+      offenseTags: [spell, ranged, burst]
+      defenseTags: [arcane_shield, blink]
+      mobilityTags: [blink, control]
+      aoeAnswerTags: [fireball, blizzard, meteor]
+      bossAnswerTags: [arcane_overload, immolate]
+      panicAnswerTags: [blink, ice_prison]
   - id: rogue
     nameKey: profession.rogue.name
     descKey: profession.rogue.desc
     visualKey: actor.rogue
     iconKey: icon.profession.rogue
     audioProfile: audio.profession.rogue
-    schemaVersion: 2
+    schemaVersion: 3
     tags: [profession, foundation]
-    resourceType: ENERGY
+    tier: BASE
+    resourceProfiles:
+      - axis: ENERGY
+        initialCurrent: 100
+        max: 100
+        regen:
+          type: COMPOSITE
+          entries:
+            - { type: PER_TURN, amount: 5 }
+            - { type: ON_HIT, amount: 8 }
+    primarySpendAxis: ENERGY
     baseStats: { str: 8, dex: 13, con: 8, wil: 7 }
     combatProfile: { baseAttack: 5, baseDefense: 2, baseAccuracy: 12, baseEvasion: 8, baseSpeed: 108, baseHp: 48, baseStamina: 40, baseHpRegen: 1.0 }
     statGrowth: { str: 2, dex: 4, con: 2, wil: 1 }
-    startingResources: { ENERGY: 100 }
-    resourceCaps: { ENERGY: 100 }
     talentTrees: [rogue_assassination, rogue_subtlety, rogue_agility]
     startingTalents: [backstab, poison_blade, stealth, roll]
     startingKit: [short_sword, leather_armor, healing_potion, scroll_teleport]
-    unlockCondition: default
-    soloContract: foundation_skirmisher
+    initialUnlockState: RELEASE_UNLOCKED
+    soloContract:
+      offenseTags: [burst, crit, stealth]
+      defenseTags: [stealth, evade]
+      mobilityTags: [roll, shadowstep, vanish]
+      aoeAnswerTags: [blade_flurry, smoke_bomb]
+      bossAnswerTags: [execution, deathblow]
+      panicAnswerTags: [stealth, vanish]
   - id: templar
     nameKey: profession.templar.name
     descKey: profession.templar.desc
     visualKey: actor.templar
     iconKey: icon.profession.templar
     audioProfile: audio.profession.templar
-    schemaVersion: 2
+    schemaVersion: 3
     tags: [profession, foundation]
-    resourceType: POSITIVE_ENERGY
+    tier: BASE
+    resourceProfiles:
+      - axis: POSITIVE_ENERGY
+        initialCurrent: 0
+        max: 100
+        regen:
+          type: COMPOSITE
+          entries:
+            - { type: ON_DAMAGE_TAKEN, percent: 0.15 }
+            - { type: ON_HIT, amount: 3 }
+            - { type: DECAY, amountPerTurn: 5, outOfCombatOnly: true }
+    primarySpendAxis: POSITIVE_ENERGY
     baseStats: { str: 10, dex: 7, con: 10, wil: 12 }
     combatProfile: { baseAttack: 6, baseDefense: 5, baseAccuracy: 11, baseEvasion: 5, baseSpeed: 102, baseHp: 58, baseStamina: 42, baseHpRegen: 1.2 }
     statGrowth: { str: 2, dex: 1, con: 2, wil: 3 }
-    startingResources: { POSITIVE_ENERGY: 0 }
-    resourceCaps: { POSITIVE_ENERGY: 100 }
     talentTrees: [templar_smite, templar_grace, templar_faith]
     startingTalents: [holy_strike, holy_light, holy_shield, devotion]
     startingKit: [long_sword, basic_shield, chain_mail, healing_potion]
-    unlockCondition: default
-    soloContract: foundation_judicator
+    initialUnlockState: RELEASE_UNLOCKED
+    soloContract:
+      offenseTags: [holy, smite, execute]
+      defenseTags: [shield, cleanse, sustain]
+      mobilityTags: [faith, steadfast]
+      aoeAnswerTags: [judgment_hammer, holy_aura, consecration]
+      bossAnswerTags: [heavens_judgment, holy_mark]
+      panicAnswerTags: [divine_intervention, purify]
+  - id: berserker
+    nameKey: profession.berserker.name
+    descKey: profession.berserker.desc
+    visualKey: actor.vanguard
+    iconKey: icon.profession.vanguard
+    audioProfile: audio.profession.vanguard
+    schemaVersion: 3
+    tags: [profession, advanced, playable]
+    tier: ADVANCED
+    resourceProfiles:
+      - axis: HATE
+        initialCurrent: 0
+        max: 100
+        regen:
+          type: COMPOSITE
+          entries:
+            - { type: ON_DAMAGE_TAKEN, percent: 0.20 }
+            - { type: ON_HIT, amount: 6 }
+            - { type: ON_KILL, amount: 12 }
+            - { type: DECAY, amountPerTurn: 8, outOfCombatOnly: true }
+    primarySpendAxis: HATE
+    stateAxis: HATE
+    baseStats: { str: 14, dex: 9, con: 10, wil: 6 }
+    combatProfile: { baseAttack: 7, baseDefense: 2, baseAccuracy: 11, baseEvasion: 5, baseSpeed: 104, baseHp: 58, baseStamina: 36, baseHpRegen: 1.1 }
+    statGrowth: { str: 3, dex: 2, con: 2, wil: 1 }
+    talentTrees: [berserker_wrath, berserker_ruin, berserker_bloodwar]
+    startingTalents: [blood_rush, savage_hew, reckless_slam, kill_frenzy]
+    startingKit: [war_maul, chain_mail, healing_potion]
+    initialUnlockState: DEV_UNLOCKED
+    releaseUnlockCondition:
+      type: REQUIRE_PROFESSION_CLEARED
+      professionId: vanguard
+    soloContract:
+      offenseTags: [rage, burst, cleave]
+      defenseTags: [lifesteal, grit]
+      mobilityTags: [rush, slam]
+      aoeAnswerTags: [reckless_slam, rupture_wave]
+      bossAnswerTags: [savage_hew, rupture_wave]
+      panicAnswerTags: [last_stand, blood_rush]
+  - id: spellblade
+    nameKey: profession.spellblade.name
+    descKey: profession.spellblade.desc
+    visualKey: actor.arcanist
+    iconKey: icon.profession.arcanist
+    audioProfile: audio.profession.arcanist
+    schemaVersion: 3
+    tags: [profession, advanced, playable]
+    tier: ADVANCED
+    resourceProfiles:
+      - axis: MANA
+        initialCurrent: 52
+        max: 52
+        regen: { type: PER_TURN, amount: 2 }
+      - axis: EQUILIBRIUM
+        initialCurrent: 50
+        max: 100
+        stableMin: 30
+        stableMax: 70
+    primarySpendAxis: MANA
+    stateAxis: EQUILIBRIUM
+    baseStats: { str: 10, dex: 10, con: 8, wil: 13 }
+    combatProfile: { baseAttack: 5, baseDefense: 3, baseAccuracy: 11, baseEvasion: 6, baseSpeed: 104, baseHp: 50, baseStamina: 34, baseHpRegen: 1.0 }
+    statGrowth: { str: 2, dex: 2, con: 1, wil: 3 }
+    talentTrees: [spellblade_enchanted_blade, spellblade_elemental_flux, spellblade_battle_spell]
+    startingTalents: [arcane_edge, mana_lunge, flux_anchor, spell_parry]
+    startingKit: [long_sword, apprentice_robe, mana_potion, scroll_teleport]
+    initialUnlockState: DEV_UNLOCKED
+    releaseUnlockCondition:
+      type: REQUIRE_PROFESSION_CLEARED
+      professionId: arcanist
+    soloContract:
+      offenseTags: [hybrid, arcane, melee]
+      defenseTags: [parry, ward]
+      mobilityTags: [lunge, blink_strike]
+      aoeAnswerTags: [arcane_wave, flux_burst]
+      bossAnswerTags: [arcane_edge, spell_rend]
+      panicAnswerTags: [spell_parry, flux_anchor]
+  - id: shadowblade
+    nameKey: profession.shadowblade.name
+    descKey: profession.shadowblade.desc
+    visualKey: actor.rogue
+    iconKey: icon.profession.rogue
+    audioProfile: audio.profession.rogue
+    schemaVersion: 3
+    tags: [profession, advanced, frozen]
+    tier: ADVANCED
+    resourceProfiles:
+      - axis: ENERGY
+        initialCurrent: 100
+        max: 100
+        regen:
+          type: COMPOSITE
+          entries:
+            - { type: PER_TURN, amount: 5 }
+            - { type: ON_HIT, amount: 8 }
+    primarySpendAxis: ENERGY
+    baseStats: { str: 8, dex: 15, con: 8, wil: 7 }
+    combatProfile: { baseAttack: 6, baseDefense: 2, baseAccuracy: 12, baseEvasion: 9, baseSpeed: 110, baseHp: 48, baseStamina: 36, baseHpRegen: 1.0 }
+    statGrowth: { str: 2, dex: 4, con: 2, wil: 1 }
+    talentTrees: [shadowblade_assassination_plus, shadowblade_shadowstep_mastery, shadowblade_venom_night]
+    startingTalents: []
+    startingKit: [short_sword, leather_armor, healing_potion]
+    initialUnlockState: LOCKED
+    soloContract:
+      offenseTags: [shadow, burst]
+      defenseTags: [stealth]
+      mobilityTags: [shadowstep]
+      aoeAnswerTags: [venom_cloud]
+      bossAnswerTags: [execution]
+      panicAnswerTags: [vanish]
+  - id: warden
+    nameKey: profession.warden.name
+    descKey: profession.warden.desc
+    visualKey: actor.templar
+    iconKey: icon.profession.templar
+    audioProfile: audio.profession.templar
+    schemaVersion: 3
+    tags: [profession, advanced, frozen]
+    tier: ADVANCED
+    resourceProfiles:
+      - axis: POSITIVE_ENERGY
+        initialCurrent: 0
+        max: 100
+        regen:
+          type: COMPOSITE
+          entries:
+            - { type: ON_DAMAGE_TAKEN, percent: 0.15 }
+            - { type: ON_HIT, amount: 3 }
+            - { type: DECAY, amountPerTurn: 5, outOfCombatOnly: true }
+    primarySpendAxis: POSITIVE_ENERGY
+    baseStats: { str: 11, dex: 8, con: 11, wil: 12 }
+    combatProfile: { baseAttack: 6, baseDefense: 5, baseAccuracy: 10, baseEvasion: 5, baseSpeed: 98, baseHp: 60, baseStamina: 40, baseHpRegen: 1.2 }
+    statGrowth: { str: 2, dex: 1, con: 3, wil: 3 }
+    talentTrees: [warden_nature_guard, warden_life_ward, warden_earth_bastion]
+    startingTalents: []
+    startingKit: [long_sword, basic_shield, chain_mail, healing_potion]
+    initialUnlockState: LOCKED
+    soloContract:
+      offenseTags: [holy, control]
+      defenseTags: [guard, life_ward]
+      mobilityTags: [ward_step]
+      aoeAnswerTags: [earth_bastion]
+      bossAnswerTags: [life_ward]
+      panicAnswerTags: [guardian_bloom]

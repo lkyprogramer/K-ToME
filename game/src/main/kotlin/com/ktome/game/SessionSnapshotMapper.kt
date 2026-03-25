@@ -34,6 +34,9 @@ import com.ktome.core.ecs.add
 import com.ktome.core.ecs.get
 import com.ktome.core.effect.AreaEffectEmitter
 import com.ktome.core.effect.WorldEffect
+import com.ktome.core.inscription.InscriptionCooldownState
+import com.ktome.core.inscription.InscriptionLoadout
+import com.ktome.core.inscription.InscriptionSlot
 import com.ktome.core.item.AffixType
 import com.ktome.core.item.ConsumableEffect
 import com.ktome.core.item.Equipment
@@ -49,6 +52,9 @@ import com.ktome.core.item.MaterialDef
 import com.ktome.core.item.StatModifier
 import com.ktome.core.map.GameMap
 import com.ktome.core.map.Point
+import com.ktome.core.race.RaceTalentPointBank
+import com.ktome.core.resource.EquilibriumAffinity
+import com.ktome.core.resource.EquilibriumState
 import com.ktome.core.resource.ResourcePoolSnapshot
 import com.ktome.core.resource.ResourcePools
 import com.ktome.core.resource.ResourceType
@@ -63,6 +69,8 @@ import com.ktome.core.save.EntitySnapshot
 import com.ktome.core.save.EquipmentSnapshot
 import com.ktome.core.save.ExperienceSnapshot
 import com.ktome.core.save.FloorSnapshot
+import com.ktome.core.save.InscriptionLoadoutSnapshot
+import com.ktome.core.save.InscriptionSlotSaveSnapshot
 import com.ktome.core.save.InventorySnapshot
 import com.ktome.core.save.InvalidSaveException
 import com.ktome.core.save.ItemSnapshot
@@ -215,6 +223,7 @@ internal object SessionSnapshotMapper {
             fovRadius = config.fovRadius,
             messageLogSize = config.messageLogSize,
             playerProfessionId = config.playerProfessionId,
+            playerRaceId = config.playerRaceId,
             maxFloor = config.maxFloor,
             turnCount = turnCount,
             player = canonicalizePlayerSnapshot(player),
@@ -252,6 +261,7 @@ internal object SessionSnapshotMapper {
                     messageLogSize = snapshot.messageLogSize,
                     zoneId = snapshot.currentZoneId,
                     playerProfessionId = snapshot.playerProfessionId,
+                    playerRaceId = snapshot.playerRaceId,
                     zoneRoute = snapshot.zoneRoute,
                     routeIndex = snapshot.routeIndex,
                 ),
@@ -359,6 +369,15 @@ internal object SessionSnapshotMapper {
                     ?.sortedBy { pool -> pool.type.name }
                     ?.map { pool -> ResourcePoolSnapshot(type = pool.type.name, current = pool.current, max = pool.max) }
                     .orEmpty(),
+            equilibriumLastAffinity = world.get<EquilibriumState>(entityId)?.lastResolvedAffinity?.name,
+            raceTalentPoints = world.get<RaceTalentPointBank>(entityId)?.unspentPoints,
+            inscriptionLoadout =
+                world.get<InscriptionLoadout>(entityId)?.let { loadout ->
+                    InscriptionLoadoutSnapshot(
+                        slots = loadout.slots.map { slot -> InscriptionSlotSaveSnapshot(hotkey = slot.hotkey, inscriptionId = slot.inscriptionId) },
+                    )
+                },
+            inscriptionCooldowns = world.get<InscriptionCooldownState>(entityId)?.remainingByInscriptionId?.toMap(),
             talentLoadout =
                 world.get<TalentLoadout>(entityId)?.let { loadout ->
                     TalentLoadoutSnapshot(
@@ -509,6 +528,31 @@ internal object SessionSnapshotMapper {
                 ),
             )
         }
+        snapshot.equilibriumLastAffinity?.let { affinity ->
+            world.add(
+                entityId,
+                EquilibriumState(
+                    lastResolvedAffinity = parseEnumFromSave<EquilibriumAffinity>(affinity, "equilibrium affinity"),
+                ),
+            )
+        }
+        snapshot.raceTalentPoints?.let { unspentPoints ->
+            world.add(entityId, RaceTalentPointBank(unspentPoints = unspentPoints))
+        }
+        snapshot.inscriptionLoadout?.let { loadout ->
+            world.add(
+                entityId,
+                InscriptionLoadout(
+                    slots =
+                        loadout.slots
+                            .map { slot -> InscriptionSlot(hotkey = slot.hotkey, inscriptionId = slot.inscriptionId) }
+                            .toMutableList(),
+                ),
+            )
+        }
+        snapshot.inscriptionCooldowns?.let { cooldowns ->
+            world.add(entityId, InscriptionCooldownState(cooldowns.toMutableMap()))
+        }
         snapshot.talentLoadout?.let { loadout ->
             world.add(
                 entityId,
@@ -584,6 +628,7 @@ internal object SessionSnapshotMapper {
         val talentLoadout = snapshot.talentLoadout
         val talentAllocationDraft = snapshot.talentAllocationDraft
         val aiTriggerTracker = snapshot.aiTriggerTracker
+        val inscriptionLoadout = snapshot.inscriptionLoadout
 
         return snapshot.copy(
             position = snapshot.position?.copy(),
@@ -623,6 +668,18 @@ internal object SessionSnapshotMapper {
                 },
             bossEncounterState = snapshot.bossEncounterState?.copy(),
             resourcePools = snapshot.resourcePools.sortedBy(ResourcePoolSnapshot::type),
+            inscriptionLoadout =
+                inscriptionLoadout?.copy(
+                    slots =
+                        inscriptionLoadout.slots
+                            .sortedBy(InscriptionSlotSaveSnapshot::hotkey)
+                            .map { slot -> slot.copy() },
+                ),
+            inscriptionCooldowns =
+                snapshot.inscriptionCooldowns
+                    ?.entries
+                    ?.sortedBy { (inscriptionId, _) -> inscriptionId }
+                    ?.associateTo(linkedMapOf()) { (inscriptionId, turns) -> inscriptionId to turns },
             talentLoadout =
                 talentLoadout?.copy(
                     slotToTalentId =

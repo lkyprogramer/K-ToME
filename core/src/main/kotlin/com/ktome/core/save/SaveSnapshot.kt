@@ -21,6 +21,7 @@ data class SaveSnapshot(
     val fovRadius: Int,
     val messageLogSize: Int,
     val playerProfessionId: String,
+    val playerRaceId: String,
     val maxFloor: Int,
     val turnCount: Int,
     val player: PlayerSnapshot,
@@ -50,6 +51,7 @@ data class SaveSnapshot(
             "currentZoneId '$currentZoneId' must match zoneRoute[$routeIndex]='${zoneRoute[routeIndex]}'."
         }
         require(playerProfessionId.isNotBlank()) { "playerProfessionId must not be blank." }
+        require(playerRaceId.isNotBlank()) { "playerRaceId must not be blank." }
         require(mapWidth > 0) { "Map width must be positive." }
         require(mapHeight > 0) { "Map height must be positive." }
         require(fovRadius > 0) { "FOV radius must be positive." }
@@ -89,7 +91,7 @@ data class SaveSnapshot(
     }
 
     companion object {
-        const val CURRENT_SCHEMA_VERSION: Int = 2
+        const val CURRENT_SCHEMA_VERSION: Int = 3
         const val DEFAULT_BUILD_METADATA: String = "phase2-dev"
     }
 }
@@ -174,6 +176,10 @@ data class EntitySnapshot(
     val pendingTelegraph: PendingTelegraphSnapshot? = null,
     val bossEncounterState: BossEncounterStateSnapshot? = null,
     val resourcePools: List<ResourcePoolSnapshot> = emptyList(),
+    val equilibriumLastAffinity: String? = null,
+    val raceTalentPoints: Int? = null,
+    val inscriptionLoadout: InscriptionLoadoutSnapshot? = null,
+    val inscriptionCooldowns: Map<String, Int>? = null,
     val talentLoadout: TalentLoadoutSnapshot? = null,
     val talentAllocationDraft: TalentAllocationDraftSnapshot? = null,
     val itemState: ItemSnapshot? = null,
@@ -195,9 +201,19 @@ data class EntitySnapshot(
         require(resourcePools.distinctBy(ResourcePoolSnapshot::type).size == resourcePools.size) {
             "Resource pools must not contain duplicate types."
         }
+        require(raceTalentPoints == null || raceTalentPoints >= 0) {
+            "raceTalentPoints must not be negative."
+        }
+        require(inscriptionCooldowns?.keys?.all(String::isNotBlank) != false) {
+            "Inscription cooldown ids must not be blank."
+        }
+        require(inscriptionCooldowns?.values?.all { value -> value >= 0 } != false) {
+            "Inscription cooldowns must not be negative."
+        }
         require(interactableId == null || interactableId.isNotBlank()) { "Interactable ids must not be blank." }
         inventory?.validateOrThrow()
         equipment?.validateOrThrow()
+        inscriptionLoadout?.validateOrThrow()
         patrolRoute?.validateOrThrow()
         talentLoadout?.validateOrThrow()
         talentAllocationDraft?.validateOrThrow()
@@ -353,6 +369,29 @@ data class TalentLoadoutSnapshot(
         require(slotToTalentId.values.all(String::isNotBlank)) { "Talent ids must not be blank." }
         require(talentLevels.keys.all(String::isNotBlank)) { "Talent ids must not be blank." }
         require(talentLevels.values.all { level -> level > 0 }) { "Talent levels must be positive." }
+    }
+}
+
+@Serializable
+data class InscriptionLoadoutSnapshot(
+    val slots: List<InscriptionSlotSaveSnapshot> = emptyList(),
+) {
+    fun validateOrThrow() {
+        require(slots.distinctBy(InscriptionSlotSaveSnapshot::hotkey).size == slots.size) {
+            "Inscription hotkeys must stay unique."
+        }
+        slots.forEach(InscriptionSlotSaveSnapshot::validateOrThrow)
+    }
+}
+
+@Serializable
+data class InscriptionSlotSaveSnapshot(
+    val hotkey: Int,
+    val inscriptionId: String,
+) {
+    fun validateOrThrow() {
+        require(hotkey in 5..8) { "Inscription hotkey must stay within 5..8." }
+        require(inscriptionId.isNotBlank()) { "Inscription ids must not be blank." }
     }
 }
 

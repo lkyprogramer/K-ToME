@@ -4,6 +4,15 @@ import com.ktome.core.ai.AIProfile
 import com.ktome.core.ai.BossPhaseDef
 import com.ktome.core.ai.TelegraphSpec
 import com.ktome.core.ai.ThreatProfileDef
+import com.ktome.core.inscription.InscriptionDef
+import com.ktome.core.profession.ProfessionTier
+import com.ktome.core.profession.ReleaseUnlockCondition
+import com.ktome.core.profession.SoloContractDef
+import com.ktome.core.profile.ClassUnlockState
+import com.ktome.core.race.RaceDef
+import com.ktome.core.resource.ResourceAxis
+import com.ktome.core.resource.ResourceProfileRef
+import com.ktome.core.resource.ResourceType
 import com.ktome.core.talent.TalentTreeOwnerType
 import com.ktome.core.item.AffixType
 import com.ktome.core.item.ConsumableEffect
@@ -12,6 +21,8 @@ import com.ktome.core.item.ItemType
 
 data class SchemaCatalog(
     val professions: List<ProfessionSchemaV2>,
+    val races: List<RaceDef> = emptyList(),
+    val inscriptions: List<InscriptionDef> = emptyList(),
     val statuses: List<StatusSchemaV2>,
     val talents: List<TalentSchemaV2>,
     val talentTrees: List<TalentTreeSchemaV2>,
@@ -80,18 +91,53 @@ data class ProfessionSchemaV2(
     val audioProfile: String,
     val schemaVersion: Int,
     val tags: List<String>,
-    val resourceType: String,
+    val tier: ProfessionTier = ProfessionTier.BASE,
+    val resourceProfiles: List<ResourceProfileRef> =
+        listOf(
+            ResourceProfileRef(
+                axis = ResourceAxis.STAMINA,
+                initialCurrent = 100,
+                max = 100,
+            ),
+        ),
+    val primarySpendAxis: ResourceAxis? = ResourceAxis.STAMINA,
+    val stateAxis: ResourceAxis? = null,
     val baseStats: SchemaStats,
     val combatProfile: SchemaCombatProfile,
     val statGrowth: SchemaStats,
-    val startingResources: Map<String, Int>,
-    val resourceCaps: Map<String, Int>,
     val talentTrees: List<String>,
     val startingTalents: List<String>,
     val startingKit: List<String>,
-    val unlockCondition: String,
-    val soloContract: String,
-)
+    val initialUnlockState: ClassUnlockState = ClassUnlockState.RELEASE_UNLOCKED,
+    val releaseUnlockCondition: ReleaseUnlockCondition? = null,
+    val soloContract: SoloContractDef =
+        SoloContractDef(
+            offenseTags = listOf("offense"),
+            defenseTags = listOf("defense"),
+            mobilityTags = listOf("mobility"),
+            aoeAnswerTags = listOf("aoe"),
+            bossAnswerTags = listOf("boss"),
+            panicAnswerTags = listOf("panic"),
+        ),
+) {
+    val resourceType: String
+        get() = primarySpendAxis?.asResourceTypeOrNull()?.name ?: ResourceType.STAMINA.name
+
+    val startingResources: Map<String, Int>
+        get() =
+            resourceProfiles
+                .mapNotNull { profile -> profile.resourceType?.let { type -> type.name to profile.initialCurrent } }
+                .toMap(linkedMapOf())
+
+    val resourceCaps: Map<String, Int>
+        get() =
+            resourceProfiles
+                .mapNotNull { profile -> profile.resourceType?.let { type -> type.name to profile.max } }
+                .toMap(linkedMapOf())
+
+    fun resourceProfile(axis: ResourceAxis): ResourceProfileRef? =
+        resourceProfiles.firstOrNull { profile -> profile.axis == axis }
+}
 
 data class SchemaCombatProfile(
     val baseAttack: Int,
@@ -130,6 +176,7 @@ data class TalentSchemaV2(
     val keywords: List<String>,
     val callbacks: List<String>,
     val telegraphRef: String? = null,
+    val equilibriumAffinity: String? = null,
     val aiHints: TalentAiHintsSchemaV2?,
     val treeId: String,
 )

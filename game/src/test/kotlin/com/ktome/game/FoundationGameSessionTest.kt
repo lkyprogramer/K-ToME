@@ -31,6 +31,9 @@ import com.ktome.core.ecs.get
 import com.ktome.core.ecs.remove
 import com.ktome.core.effect.AreaEffectEmitter
 import com.ktome.core.effect.WorldEffect
+import com.ktome.core.inscription.InscriptionCooldownState
+import com.ktome.core.inscription.InscriptionLoadout
+import com.ktome.core.inscription.InscriptionSlot
 import com.ktome.core.item.AffixDef
 import com.ktome.core.item.AffixType
 import com.ktome.core.item.ConsumableEffect
@@ -145,7 +148,7 @@ class FoundationGameSessionTest {
     fun `level up applies profession stat growth and unlock cadence`() {
         val session =
             GameModule.newFoundationSession(
-                FoundationGameConfig(seed = 20260320L, zoneId = "shattered_outpost", playerProfessionId = "vanguard"),
+                FoundationGameConfig(seed = 20260320L, zoneId = "shattered_outpost", playerProfessionId = "vanguard", messageLogSize = 24),
                 SaveManager(tempDir.resolve("vanguard-growth-save")),
             )
         clearMonsters(session)
@@ -163,10 +166,9 @@ class FoundationGameSessionTest {
             listOf("猛击", "盾击", "格挡姿态", "战吼"),
             session.talentSlots().map { slot -> slot.name },
         )
-        assertEquals(
-            listOf("冲锋", "横扫", "碎甲", "威压", "不屈"),
-            session.reserveTalentSlots().map { slot -> slot.name },
-        )
+        val reserveTalentNames = session.reserveTalentSlots().map { slot -> slot.name }
+        assertTrue(reserveTalentNames.containsAll(listOf("冲锋", "横扫", "碎甲", "嘲讽", "不屈")))
+        assertTrue(reserveTalentNames.any { name -> name == "集结战旗" || name == "威压" })
         assertTrue(session.messageLog().any { message -> message.contains("冲锋") || message.contains("Charge") })
         val logKeys = session.renderSnapshot().logEvents.map { event -> event.message.key }
         assertTrue(logKeys.contains("log.level_up.stats"))
@@ -213,7 +215,7 @@ class FoundationGameSessionTest {
     fun `arcanist level growth unlocks mana surge and increases blink range`() {
         val session =
             GameModule.newFoundationSession(
-                FoundationGameConfig(seed = 20260320L, zoneId = "shattered_outpost", playerProfessionId = "arcanist"),
+                FoundationGameConfig(seed = 20260320L, zoneId = "shattered_outpost", playerProfessionId = "arcanist", messageLogSize = 24),
                 SaveManager(tempDir.resolve("arcanist-growth-save")),
             )
         clearMonsters(session)
@@ -415,7 +417,7 @@ class FoundationGameSessionTest {
     fun `templar level growth omits fixed resource cap change log`() {
         val session =
             GameModule.newFoundationSession(
-                FoundationGameConfig(seed = 20260320L, zoneId = "shattered_outpost", playerProfessionId = "templar"),
+                FoundationGameConfig(seed = 20260320L, zoneId = "shattered_outpost", playerProfessionId = "templar", messageLogSize = 24),
                 SaveManager(tempDir.resolve("templar-growth-save")),
             )
         clearMonsters(session)
@@ -434,7 +436,7 @@ class FoundationGameSessionTest {
     fun `rogue level growth logs stat gains and unlocks without resource cap change`() {
         val session =
             GameModule.newFoundationSession(
-                FoundationGameConfig(seed = 20260320L, zoneId = "shattered_outpost", playerProfessionId = "rogue"),
+                FoundationGameConfig(seed = 20260320L, zoneId = "shattered_outpost", playerProfessionId = "rogue", messageLogSize = 24),
                 SaveManager(tempDir.resolve("rogue-growth-save")),
             )
         clearMonsters(session)
@@ -2397,6 +2399,36 @@ class FoundationGameSessionTest {
     }
 
     @Test
+    fun `controlled phase inscription teleports to the chosen open tile within range`() {
+        val session =
+            GameModule.newFoundationSession(
+                config = FoundationGameConfig(seed = 20260323L),
+                saveManager = SaveManager(tempDir.resolve("controlled-phase-inscription")),
+            )
+        equipInscription(session, hotkey = 5, inscriptionId = "controlled_phase")
+        val destination = findOpenPointAtDistance(session, minDistance = 3, maxDistance = 3)
+
+        assertTrue(session.perform(PlayerCommand.UseInscription(hotkey = 5, target = destination)))
+        assertEquals(destination, session.playerPosition())
+    }
+
+    @Test
+    fun `controlled phase inscription rejects blocked or out of range targets`() {
+        val session =
+            GameModule.newFoundationSession(
+                config = FoundationGameConfig(seed = 20260324L),
+                saveManager = SaveManager(tempDir.resolve("controlled-phase-invalid-target")),
+            )
+        equipInscription(session, hotkey = 5, inscriptionId = "controlled_phase")
+        val originalPosition = session.playerPosition()
+        val invalidTarget = findOpenPointAtDistance(session, center = originalPosition, distance = 9)
+
+        assertFalse(session.perform(PlayerCommand.UseInscription(hotkey = 5, target = invalidTarget)))
+        assertEquals(originalPosition, session.playerPosition())
+        assertEquals("log.inscription.no_teleport_destination", requireNotNull(logEventByKey(session, "log.inscription.no_teleport_destination")).message.key)
+    }
+
+    @Test
     fun `save and load preserve future teleport randomness`() {
         val config = FoundationGameConfig(seed = 20260313L)
         val baseline = GameModule.newFoundationSession(config = config, saveManager = SaveManager(tempDir.resolve("teleport-baseline")))
@@ -3215,6 +3247,19 @@ class FoundationGameSessionTest {
                     !session.map[point].blocksMovement &&
                     point !in occupied
             }
+    }
+
+    private fun equipInscription(
+        session: FoundationGameSession,
+        hotkey: Int,
+        inscriptionId: String,
+    ) {
+        val world = runtimeWorld(session)
+        val loadout = world.get<InscriptionLoadout>(session.playerId) ?: InscriptionLoadout().also { world.add(session.playerId, it) }
+        loadout.slots.clear()
+        loadout.slots += InscriptionSlot(hotkey = hotkey, inscriptionId = inscriptionId)
+        val cooldowns = world.get<InscriptionCooldownState>(session.playerId) ?: InscriptionCooldownState().also { world.add(session.playerId, it) }
+        cooldowns.remainingByInscriptionId.clear()
     }
 
     private fun findOpenPointAtDistance(

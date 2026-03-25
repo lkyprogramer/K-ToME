@@ -252,6 +252,7 @@ class SessionSnapshotMapperTest {
                 fovRadius = 8,
                 messageLogSize = 8,
                 playerProfessionId = "rogue",
+                playerRaceId = "human",
                 maxFloor = 2,
                 turnCount = 10,
                 player =

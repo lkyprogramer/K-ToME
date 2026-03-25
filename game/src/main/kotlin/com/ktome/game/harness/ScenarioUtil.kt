@@ -224,6 +224,7 @@ fun PlayerCommand.consumesTurn(): Boolean =
         PlayerCommand.Ascend,
         PlayerCommand.Descend,
         is PlayerCommand.UseTalent,
+        is PlayerCommand.UseInscription,
         is PlayerCommand.ActivateInventoryItem,
         -> true
 

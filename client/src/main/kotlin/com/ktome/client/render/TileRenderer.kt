@@ -332,8 +332,16 @@ class TileRenderer(
                 textTopY - smallLineHeight,
                 Color.LIGHT_GRAY,
             )
-            drawGauge(canvas, hud.hpGauge, layout.infoX + 12f, layout.cardY + 42f, layout.infoWidth - 24f, 18f)
-            drawGauge(canvas, hud.resourceGauge, layout.infoX + 12f, layout.cardY + 16f, layout.infoWidth - 24f, 18f)
+            val gaugeHeight = 14f
+            val gaugeGap = 4f
+            val secondaryGaugeY = layout.cardY + 4f
+            val resourceGaugeY = secondaryGaugeY + gaugeHeight + gaugeGap
+            val hpGaugeY = resourceGaugeY + gaugeHeight + gaugeGap
+            drawGauge(canvas, hud.hpGauge, layout.infoX + 12f, hpGaugeY, layout.infoWidth - 24f, gaugeHeight)
+            drawGauge(canvas, hud.resourceGauge, layout.infoX + 12f, resourceGaugeY, layout.infoWidth - 24f, gaugeHeight)
+            hud.secondaryResourceGauge?.let { gauge ->
+                drawGauge(canvas, gauge, layout.infoX + 12f, secondaryGaugeY, layout.infoWidth - 24f, gaugeHeight)
+            }
 
             summaryLines.forEachIndexed { index, line ->
                 canvas.drawText(
