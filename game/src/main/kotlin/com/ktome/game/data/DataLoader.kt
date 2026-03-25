@@ -24,6 +24,9 @@ import com.ktome.core.combat.DamageType
 import com.ktome.core.combat.SaveDimension
 import com.ktome.core.ecs.AIType
 import com.ktome.core.ecs.Stats
+import com.ktome.core.inscription.InscriptionCategory
+import com.ktome.core.inscription.InscriptionDef
+import com.ktome.core.inscription.InscriptionEffect
 import com.ktome.core.item.AffixDef
 import com.ktome.core.item.AffixType
 import com.ktome.core.item.ConsumableEffect
@@ -34,6 +37,17 @@ import com.ktome.core.item.ItemDataBundle
 import com.ktome.core.item.ItemType
 import com.ktome.core.item.MaterialDef
 import com.ktome.core.item.StatModifier
+import com.ktome.core.profession.ProfessionTier
+import com.ktome.core.profession.ReleaseUnlockCondition
+import com.ktome.core.profession.SoloContractDef
+import com.ktome.core.profile.ClassUnlockState
+import com.ktome.core.race.RaceDef
+import com.ktome.core.race.RaceStatModifiers
+import com.ktome.core.resource.DecayPolicy
+import com.ktome.core.resource.EquilibriumAffinity
+import com.ktome.core.resource.ResourceAxis
+import com.ktome.core.resource.ResourceProfileRef
+import com.ktome.core.resource.ResourceRegenProfile
 import com.ktome.core.resource.ResourceType
 import com.ktome.core.status.EffectCarrierKind
 import com.ktome.core.status.EffectCategory
@@ -130,6 +144,8 @@ class DataLoader(
         val threatProfiles = parseThreatProfiles(loadYamlMap("/data/telegraph/threat_profiles/index.yaml"))
         return SchemaCatalog(
             professions = parseProfessionSchemas(loadYamlMap("/data/professions/index.yaml")),
+            races = parseRaceDefs(loadYamlMap("/data/races/index.yaml")),
+            inscriptions = parseInscriptionDefs(loadYamlMap("/data/inscriptions/index.yaml")),
             statuses = parseStatusSchemas(loadYamlMap("/data/statuses/index.yaml")),
             talents = parseTalentSchemas(loadYamlMap("/data/talents/index.yaml"), telegraphIds),
             talentTrees = parseTalentTreeSchemas(loadYamlMap("/data/talents/index.yaml")),
@@ -222,24 +238,181 @@ class DataLoader(
                 id = profession.requiredString("id"),
                 nameKey = profession.requiredString("nameKey"),
                 descKey = profession.requiredString("descKey"),
+                resourceHintKey = profession.requiredString("resourceHintKey"),
                 visualKey = profession.requiredString("visualKey"),
                 iconKey = profession.requiredString("iconKey"),
                 audioProfile = profession.requiredString("audioProfile"),
                 schemaVersion = profession.requiredInt("schemaVersion"),
                 tags = profession.optionalStringList("tags"),
-                resourceType = profession.requiredString("resourceType"),
+                tier = profession.optionalString("tier")?.uppercase()?.let(ProfessionTier::valueOf) ?: ProfessionTier.BASE,
+                resourceProfiles =
+                    profession.requiredList("resourceProfiles").map { rawProfile ->
+                        parseResourceProfileRef(rawProfile.requiredMap())
+                    },
+                primarySpendAxis = ResourceAxis.fromId(profession.requiredString("primarySpendAxis").uppercase()),
+                stateAxis = profession.optionalString("stateAxis")?.uppercase()?.let(ResourceAxis::fromId),
                 baseStats = profession.requiredMap("baseStats").toSchemaStats(),
                 combatProfile = profession.requiredMap("combatProfile").toSchemaCombatProfile(),
                 statGrowth = profession.requiredMap("statGrowth").toSchemaStats(),
-                startingResources = profession.optionalIntMap("startingResources"),
-                resourceCaps = profession.optionalIntMap("resourceCaps"),
                 talentTrees = profession.optionalStringList("talentTrees"),
                 startingTalents = profession.optionalStringList("startingTalents"),
                 startingKit = profession.optionalStringList("startingKit"),
-                unlockCondition = profession.requiredString("unlockCondition"),
-                soloContract = profession.requiredString("soloContract"),
+                initialUnlockState =
+                    profession.optionalString("initialUnlockState")
+                        ?.uppercase()
+                        ?.let(ClassUnlockState::valueOf)
+                        ?: ClassUnlockState.RELEASE_UNLOCKED,
+                releaseUnlockCondition = profession.optionalMap("releaseUnlockCondition")?.let(::parseReleaseUnlockCondition),
+                soloContract = parseSoloContract(profession.requiredMap("soloContract")),
             )
         }
+
+    private fun parseResourceProfileRef(profile: Map<*, *>): ResourceProfileRef =
+        ResourceProfileRef(
+            axis = ResourceAxis.fromId(profile.requiredString("axis").uppercase()),
+            initialCurrent = profile.requiredInt("initialCurrent"),
+            max = profile.requiredInt("max"),
+            regenProfile = profile.optionalMap("regen")?.let(::parseResourceRegenProfile) ?: ResourceRegenProfile.None,
+            stableMin = profile.optionalNullableInt("stableMin"),
+            stableMax = profile.optionalNullableInt("stableMax"),
+        )
+
+    private fun parseResourceRegenProfile(raw: Map<*, *>): ResourceRegenProfile {
+        val type = raw.requiredString("type").uppercase()
+        return when (type) {
+            "PER_TURN" -> ResourceRegenProfile.PerTurn(raw.requiredInt("amount"))
+            "ON_HIT" -> ResourceRegenProfile.OnHit(raw.requiredInt("amount"))
+            "ON_DAMAGE_TAKEN" -> ResourceRegenProfile.OnDamageTaken(raw.requiredDouble("percent"))
+            "ON_KILL" -> ResourceRegenProfile.OnKill(raw.requiredInt("amount"))
+            "DECAY" ->
+                ResourceRegenProfile.Decay(
+                    DecayPolicy(
+                        amountPerTurn = raw.requiredInt("amountPerTurn"),
+                        outOfCombatOnly = raw.optionalBoolean("outOfCombatOnly", default = true),
+                    ),
+                )
+
+            "COMPOSITE" ->
+                ResourceRegenProfile.Composite(
+                    raw.requiredList("entries").map { entry ->
+                        parseResourceRegenProfile(entry.requiredMap())
+                    },
+                )
+
+            "NONE" -> ResourceRegenProfile.None
+            else -> error("Unknown resource regen profile type '$type'.")
+        }
+    }
+
+    private fun parseReleaseUnlockCondition(raw: Map<*, *>): ReleaseUnlockCondition {
+        val type = raw.requiredString("type").uppercase()
+        return when (type) {
+            "REQUIRE_PROFESSION_CLEARED" ->
+                ReleaseUnlockCondition.RequireProfessionCleared(
+                    professionId = raw.requiredString("professionId"),
+                )
+
+            else -> error("Unknown release unlock condition type '$type'.")
+        }
+    }
+
+    private fun parseSoloContract(raw: Map<*, *>): SoloContractDef =
+        SoloContractDef(
+            offenseTags = raw.requiredStringList("offenseTags"),
+            defenseTags = raw.requiredStringList("defenseTags"),
+            mobilityTags = raw.requiredStringList("mobilityTags"),
+            aoeAnswerTags = raw.requiredStringList("aoeAnswerTags"),
+            bossAnswerTags = raw.requiredStringList("bossAnswerTags"),
+            panicAnswerTags = raw.requiredStringList("panicAnswerTags"),
+        )
+
+    private fun parseRaceDefs(root: Map<String, Any?>): List<RaceDef> =
+        root.requiredList("races").map { entry ->
+            val race = entry.requiredMap()
+            RaceDef(
+                id = race.requiredString("id"),
+                nameKey = race.requiredString("nameKey"),
+                descKey = race.requiredString("descKey"),
+                visualKey = race.requiredString("visualKey"),
+                iconKey = race.requiredString("iconKey"),
+                audioProfile = race.requiredString("audioProfile"),
+                schemaVersion = race.requiredInt("schemaVersion"),
+                tags = race.optionalStringList("tags"),
+                statModifiers =
+                    race.optionalMap("statModifiers")?.let { modifiers ->
+                        RaceStatModifiers(
+                            str = modifiers.optionalInt("str"),
+                            dex = modifiers.optionalInt("dex"),
+                            con = modifiers.optionalInt("con"),
+                            wil = modifiers.optionalInt("wil"),
+                            hpDelta = modifiers.optionalInt("hpDelta"),
+                            accuracyDelta = modifiers.optionalInt("accuracyDelta"),
+                            evasionDelta = modifiers.optionalInt("evasionDelta"),
+                            speedDelta = modifiers.optionalInt("speedDelta"),
+                        )
+                    } ?: RaceStatModifiers(),
+                talentTrees = race.optionalStringList("talentTrees"),
+                startingTalents = race.optionalStringList("startingTalents"),
+                initialUnlockState =
+                    race.optionalString("initialUnlockState")
+                        ?.uppercase()
+                        ?.let(ClassUnlockState::valueOf)
+                        ?: ClassUnlockState.RELEASE_UNLOCKED,
+            )
+        }
+
+    private fun parseInscriptionDefs(root: Map<String, Any?>): List<InscriptionDef> =
+        root.requiredList("inscriptions").map { entry ->
+            val inscription = entry.requiredMap()
+            InscriptionDef(
+                id = inscription.requiredString("id"),
+                nameKey = inscription.requiredString("nameKey"),
+                descKey = inscription.requiredString("descKey"),
+                iconKey = inscription.requiredString("iconKey"),
+                category = InscriptionCategory.valueOf(inscription.requiredString("category").uppercase()),
+                cooldown = inscription.requiredInt("cooldown"),
+                tier = inscription.requiredInt("tier"),
+                effect = parseInscriptionEffect(inscription.requiredMap("effect")),
+            )
+        }
+
+    private fun parseInscriptionEffect(raw: Map<*, *>): InscriptionEffect {
+        val type = raw.requiredString("type").uppercase()
+        return when (type) {
+            "HEAL" ->
+                InscriptionEffect.Heal(
+                    amount = raw.optionalInt("amount"),
+                    percentMax = raw.optionalDouble("percentMax", default = 0.0),
+                )
+
+            "TELEPORT" ->
+                InscriptionEffect.Teleport(
+                    range = raw.requiredInt("range"),
+                    controlled = raw.optionalBoolean("controlled"),
+                )
+
+            "SHIELD" ->
+                InscriptionEffect.Shield(
+                    amount = raw.requiredInt("amount"),
+                    duration = raw.requiredInt("duration"),
+                )
+
+            "CLEANSE" ->
+                InscriptionEffect.Cleanse(
+                    count = raw.requiredInt("count"),
+                    alsoHeal = raw.optionalInt("alsoHeal"),
+                )
+
+            "DAMAGE_BOOST" ->
+                InscriptionEffect.DamageBoost(
+                    multiplier = raw.requiredDouble("multiplier"),
+                    duration = raw.requiredInt("duration"),
+                    damageType = raw.optionalString("damageType")?.uppercase()?.let(DamageType::valueOf),
+                )
+
+            else -> error("Unknown inscription effect type '$type'.")
+        }
+    }
 
     private fun parseStatusSchemas(root: Map<String, Any?>): List<StatusSchemaV2> =
         root.requiredList("statuses").map { entry ->
@@ -362,6 +535,7 @@ class DataLoader(
                 keywords = keywords,
                 callbacks = talent.optionalStringList("callbacks"),
                 telegraphRef = telegraphRef,
+                equilibriumAffinity = talent.optionalString("equilibriumAffinity"),
                 aiHints = aiHints,
                 treeId = talent.requiredString("treeId"),
             )
@@ -1055,6 +1229,7 @@ class DataLoader(
             keywords = keywords,
             aiHints = aiHints?.toRuntime(),
             telegraphRef = telegraphRef,
+            equilibriumAffinity = equilibriumAffinity?.uppercase()?.let(EquilibriumAffinity::valueOf) ?: EquilibriumAffinity.NEUTRAL,
             callbacks = callbacks,
             treeId = treeId,
             unlockLevel = unlockLevel,
@@ -1314,7 +1489,7 @@ class DataLoader(
 private fun Any?.requiredMap(): Map<*, *> =
     this as? Map<*, *> ?: error("Entry must be a map.")
 
-private fun Map<String, Any?>.requiredList(key: String): List<Any?> =
+private fun Map<*, *>.requiredList(key: String): List<Any?> =
     this[key] as? List<Any?> ?: error("Missing list entry '$key'")
 
 private fun Map<*, *>.requiredMap(key: String): Map<*, *> =
@@ -1373,6 +1548,9 @@ private fun Map<*, *>.requiredIntList(key: String): List<Int> =
 
 private fun Map<*, *>.optionalStringList(key: String): List<String> =
     (this[key] as? List<*>)?.map { value -> value?.toString() ?: error("List '$key' cannot contain nulls") } ?: emptyList()
+
+private fun Map<*, *>.requiredStringList(key: String): List<String> =
+    optionalStringList(key).ifEmpty { error("Missing string list '$key'") }
 
 private fun Map<*, *>.optionalIntMap(key: String): Map<String, Int> =
     optionalMap(key)?.entries?.associate { (rawKey, rawValue) ->

@@ -8,6 +8,9 @@ import com.ktome.core.ecs.World
 import com.ktome.core.ecs.get
 import com.ktome.core.item.EquipSlot
 import com.ktome.core.item.ItemInstance
+import com.ktome.core.profile.AvailabilityContext
+import com.ktome.core.profile.ClassPlayabilityState
+import com.ktome.core.profile.ProfileData
 import com.ktome.core.save.InvalidSaveException
 import com.ktome.core.save.PlayerSnapshot
 import com.ktome.core.save.PointSnapshot
@@ -71,6 +74,100 @@ class GameModuleTest {
     }
 
     @Test
+    fun `new foundation session enforces player creation availability for advanced professions`() {
+        val blocked =
+            assertThrows(IllegalArgumentException::class.java) {
+                GameModule.newFoundationSession(
+                    config = FoundationGameConfig(playerProfessionId = "berserker"),
+                    saveManager = SaveManager(tempDir.resolve("blocked-advanced-profession")),
+                )
+            }
+
+        assertTrue(blocked.message!!.contains("UNLOCKED_BUT_UNAVAILABLE"))
+
+        val unlocked =
+            GameModule.newFoundationSession(
+                config = FoundationGameConfig(playerProfessionId = "berserker"),
+                saveManager = SaveManager(tempDir.resolve("released-advanced-profession")),
+                profile = ProfileData(releaseUnlockedClasses = setOf("berserker")),
+            )
+
+        assertEquals("berserker", unlocked.config.playerProfessionId)
+
+        val devLab =
+            GameModule.newFoundationSession(
+                config = FoundationGameConfig(playerProfessionId = "spellblade"),
+                saveManager = SaveManager(tempDir.resolve("dev-lab-advanced-profession")),
+                availabilityContext = AvailabilityContext.DEV_LAB,
+            )
+
+        assertEquals("spellblade", devLab.config.playerProfessionId)
+    }
+
+    @Test
+    fun `new foundation session rejects locked races even in white box contexts`() {
+        val exception =
+            assertThrows(IllegalArgumentException::class.java) {
+                GameModule.newFoundationSession(
+                    config = FoundationGameConfig(playerRaceId = "orc"),
+                    saveManager = SaveManager(tempDir.resolve("locked-race")),
+                    availabilityContext = AvailabilityContext.WHITE_BOX,
+                )
+            }
+
+        assertTrue(exception.message!!.contains("Race 'orc'"))
+    }
+
+    @Test
+    fun `player creation state exposes profession and race options with playability`() {
+        val state = GameModule.playerCreationState()
+
+        assertEquals("vanguard", state.selection.professionId)
+        assertEquals("human", state.selection.raceId)
+        assertTrue(state.professionOptions.all { option -> option.resourceHintKey == "profession.${option.id}.resource_hint" })
+        assertEquals(
+            com.ktome.core.profile.ClassUnlockState.RELEASE_UNLOCKED,
+            state.professionOptions.first { option -> option.id == "vanguard" }.unlockState,
+        )
+        assertEquals(
+            com.ktome.core.profession.ProfessionTier.ADVANCED,
+            state.professionOptions.first { option -> option.id == "spellblade" }.tier,
+        )
+        assertEquals(
+            ClassPlayabilityState.UNLOCKED_BUT_UNAVAILABLE,
+            state.professionOptions.first { option -> option.id == "spellblade" }.playabilityState,
+        )
+        assertEquals(
+            ClassPlayabilityState.LOCKED,
+            state.raceOptions.first { option -> option.id == "orc" }.playabilityState,
+        )
+        assertEquals(
+            com.ktome.core.profile.ClassUnlockState.LOCKED,
+            state.raceOptions.first { option -> option.id == "orc" }.unlockState,
+        )
+    }
+
+    @Test
+    fun `player creation state preserves valid selection and falls back invalid entries to playable defaults`() {
+        val preserved =
+            GameModule.playerCreationState(
+                previousSelection = PlayerCreationSelection(professionId = "templar", raceId = "dwarf"),
+            )
+
+        assertEquals("templar", preserved.selection.professionId)
+        assertEquals("dwarf", preserved.selection.raceId)
+
+        val fallback =
+            GameModule.playerCreationState(
+                previousSelection = PlayerCreationSelection(professionId = "missing", raceId = "orc"),
+            )
+
+        assertEquals("vanguard", fallback.selection.professionId)
+        assertEquals("orc", fallback.selection.raceId)
+        assertFalse(fallback.canStartNewGame())
+    }
+
+    @Test
     fun `load foundation session rejects saves with unknown formal zone or profession ids`() {
         val saveManager = SaveManager(tempDir.resolve("invalid-loaded-save"))
         saveManager.save(
@@ -84,6 +181,7 @@ class GameModuleTest {
                 fovRadius = 8,
                 messageLogSize = 8,
                 playerProfessionId = "invalid_profession",
+                playerRaceId = "human",
                 maxFloor = 1,
                 turnCount = 0,
                 player =
@@ -156,6 +254,57 @@ class GameModuleTest {
     }
 
     @Test
+    fun `load foundation session rejects pre phase3 save schema before applying defaults`() {
+        val saveManager = SaveManager(tempDir.resolve("phase2-schema-save"))
+        Files.createDirectories(saveManager.savePath().parent)
+        saveManager.savePath().writeText(
+            """
+            {
+              "schemaVersion": 2,
+              "saveContractVersion": { "major": 3, "minor": 1 },
+              "buildMetadata": "phase2-dev",
+              "timestampEpochMillis": 1,
+              "worldSeed": 20260318,
+              "currentZoneId": "shattered_outpost",
+              "floorIndex": 1,
+              "mapWidth": 60,
+              "mapHeight": 40,
+              "fovRadius": 8,
+              "messageLogSize": 8,
+              "playerProfessionId": "vanguard",
+              "playerRaceId": "human",
+              "maxFloor": 2,
+              "turnCount": 0,
+              "player": {
+                "entity": {
+                  "id": 1,
+                  "position": { "x": 1, "y": 1 },
+                  "isPlayerControlled": true
+                },
+                "carriedEntities": []
+              },
+              "floors": [
+                {
+                  "floorIndex": 1,
+                  "map": {
+                    "rows": ["${".".repeat(60)}"],
+                    "playerStart": { "x": 1, "y": 1 }
+                  },
+                  "exploredTiles": [],
+                  "entities": []
+                }
+              ],
+              "pendingActionIds": []
+            }
+            """.trimIndent(),
+        )
+
+        assertThrows(InvalidSaveException::class.java) {
+            GameModule.loadFoundationSession(saveManager)
+        }
+    }
+
+    @Test
     fun `load foundation session rejects saves whose player is missing profession resource pool`() {
         val saveManager = SaveManager(tempDir.resolve("missing-profession-resource-save"))
         saveManager.save(
@@ -169,6 +318,7 @@ class GameModuleTest {
                 fovRadius = 8,
                 messageLogSize = 8,
                 playerProfessionId = "arcanist",
+                playerRaceId = "human",
                 maxFloor = 2,
                 turnCount = 0,
                 player =
@@ -213,6 +363,7 @@ class GameModuleTest {
                 fovRadius = 8,
                 messageLogSize = 8,
                 playerProfessionId = "arcanist",
+                playerRaceId = "human",
                 maxFloor = 2,
                 turnCount = 0,
                 player =
@@ -467,6 +618,7 @@ class GameModuleTest {
                 fovRadius = 8,
                 messageLogSize = 8,
                 playerProfessionId = "vanguard",
+                playerRaceId = "human",
                 maxFloor = 5,
                 turnCount = 0,
                 player =
@@ -495,7 +647,7 @@ class GameModuleTest {
         saveManager.savePath().writeText(
             """
             {
-              "schemaVersion": 2,
+              "schemaVersion": 3,
               "saveContractVersion": { "major": 3, "minor": 1 },
               "buildMetadata": "phase2-dev",
               "timestampEpochMillis": 1,
@@ -507,6 +659,7 @@ class GameModuleTest {
               "fovRadius": 8,
               "messageLogSize": 8,
               "playerProfessionId": "vanguard",
+              "playerRaceId": "human",
               "maxFloor": 2,
               "turnCount": 0,
               "player": {
@@ -552,6 +705,7 @@ class GameModuleTest {
                 fovRadius = 8,
                 messageLogSize = 8,
                 playerProfessionId = "vanguard",
+                playerRaceId = "human",
                 maxFloor = 2,
                 turnCount = 0,
                 player =

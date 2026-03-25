@@ -6,16 +6,16 @@ import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 
-class SoloClearLabTest {
+class SoloClearLabV2Test {
     @TempDir
     lateinit var tempDir: Path
 
     @Test
     @Tag("soloClearLab")
-    fun `solo clear lab v1 meets the fixed phase2 matrix`() {
+    fun `solo clear lab v2 meets the fixed phase3 matrix`() {
         val harness = SoloClearLabHarness(rootDir = tempDir)
         val reports =
-            listOf("vanguard", "arcanist", "rogue", "templar")
+            SOLO_CLEAR_PROFESSIONS
                 .flatMap { professionId ->
                     SoloClearScenario.entries.map { scenario ->
                         harness.run(professionId = professionId, scenario = scenario)
@@ -28,6 +28,13 @@ class SoloClearLabTest {
             markdown = harness.reportsToMarkdown(reports),
         )
 
+        val bossReports = reports.filter { it.scenarioId == SoloClearScenario.BOSS.name.lowercase() }
+        assertTrue(
+            bossReports.all { it.sawBossWarning && it.sawTalentTelegraph },
+            bossReports.joinToString(separator = "\n") { report ->
+                "${report.professionId}/${report.scenarioId}: warning=${report.sawBossWarning}, telegraph=${report.sawTalentTelegraph}"
+            },
+        )
         assertTrue(
             reports.all { it.success },
             reports.joinToString(separator = "\n") { report ->

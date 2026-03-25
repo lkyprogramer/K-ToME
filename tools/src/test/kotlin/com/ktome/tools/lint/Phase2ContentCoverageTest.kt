@@ -30,7 +30,10 @@ class Phase2ContentCoverageTest {
         val objectiveIds = catalog.objectiveSets.map { it.id }.toSet()
         val bossIds = catalog.bossEncounters.map { it.id }.toSet()
 
-        assertEquals(setOf("vanguard", "arcanist", "rogue", "templar"), professionById.keys)
+        assertEquals(
+            setOf("vanguard", "arcanist", "rogue", "templar", "berserker", "spellblade", "shadowblade", "warden"),
+            professionById.keys,
+        )
         assertEquals(FOUNDATION_ZONE_ROUTE.toSet(), zoneById.keys)
         assertTrue(catalog.monsters.size >= 24, "Expected at least 24 monsters, got ${catalog.monsters.size}.")
         assertTrue(catalog.itemBundle.items.size >= 24, "Expected at least 24 items, got ${catalog.itemBundle.items.size}.")
@@ -45,9 +48,19 @@ class Phase2ContentCoverageTest {
 
         professionById.values.forEach { profession ->
             assertTrue(profession.talentTrees.size >= 3, "Profession ${profession.id} must expose at least 3 trees.")
-            assertTrue(profession.startingTalents.size >= 4, "Profession ${profession.id} must expose at least 4 starting talents.")
+            if ("frozen" !in profession.tags) {
+                assertTrue(profession.startingTalents.size >= 4, "Profession ${profession.id} must expose at least 4 starting talents.")
+            } else {
+                assertTrue(profession.startingTalents.isEmpty(), "Frozen profession ${profession.id} must keep starter runtime frozen.")
+            }
             assertTrue(profession.startingKit.isNotEmpty(), "Profession ${profession.id} must expose starting kit.")
-            assertTrue(profession.soloContract.isNotBlank(), "Profession ${profession.id} must expose solo contract.")
+            assertTrue(profession.resourceProfiles.isNotEmpty(), "Profession ${profession.id} must expose at least one resource profile.")
+            assertTrue(profession.soloContract.offenseTags.isNotEmpty(), "Profession ${profession.id} must expose offense tags.")
+            assertTrue(profession.soloContract.defenseTags.isNotEmpty(), "Profession ${profession.id} must expose defense tags.")
+            assertTrue(profession.soloContract.mobilityTags.isNotEmpty(), "Profession ${profession.id} must expose mobility tags.")
+            assertTrue(profession.soloContract.aoeAnswerTags.isNotEmpty(), "Profession ${profession.id} must expose aoe answer tags.")
+            assertTrue(profession.soloContract.bossAnswerTags.isNotEmpty(), "Profession ${profession.id} must expose boss answer tags.")
+            assertTrue(profession.soloContract.panicAnswerTags.isNotEmpty(), "Profession ${profession.id} must expose panic answer tags.")
             assertTrue(
                 profession.resourceType in profession.startingResources.keys,
                 "Profession ${profession.id} must initialize its primary resource ${profession.resourceType}.",

@@ -20,7 +20,7 @@ talentTrees:
     schemaVersion: 2
     tags: [tree, vanguard]
     layout: foundation_grid
-    nodes: [shield_bash, guard_stance]
+    nodes: [shield_bash, guard_stance, taunt, iron_wall]
   - id: vanguard_warcry
     professionId: vanguard
     nameKey: talent_tree.vanguard_warcry.name
@@ -31,7 +31,7 @@ talentTrees:
     schemaVersion: 2
     tags: [tree, vanguard]
     layout: foundation_grid
-    nodes: [war_cry, intimidation, unyielding]
+    nodes: [war_cry, intimidation, rallying_banner, unyielding]
   - id: arcanist_flame
     professionId: arcanist
     nameKey: talent_tree.arcanist_flame.name
@@ -42,7 +42,7 @@ talentTrees:
     schemaVersion: 2
     tags: [tree, arcanist]
     layout: foundation_grid
-    nodes: [fireball, flame_wall]
+    nodes: [fireball, flame_wall, immolate, meteor]
   - id: arcanist_frost
     professionId: arcanist
     nameKey: talent_tree.arcanist_frost.name
@@ -64,7 +64,7 @@ talentTrees:
     schemaVersion: 2
     tags: [tree, arcanist]
     layout: foundation_grid
-    nodes: [arcane_shield, blink, mana_surge]
+    nodes: [arcane_shield, blink, mana_surge, arcane_overload]
   - id: rogue_assassination
     professionId: rogue
     nameKey: talent_tree.rogue_assassination.name
@@ -75,7 +75,7 @@ talentTrees:
     schemaVersion: 2
     tags: [tree, rogue]
     layout: foundation_grid
-    nodes: [backstab, poison_blade, deathblow]
+    nodes: [backstab, poison_blade, deathblow, execution]
   - id: rogue_subtlety
     professionId: rogue
     nameKey: talent_tree.rogue_subtlety.name
@@ -97,7 +97,7 @@ talentTrees:
     schemaVersion: 2
     tags: [tree, rogue]
     layout: foundation_grid
-    nodes: [roll, blade_flurry]
+    nodes: [roll, blade_flurry, killer_instinct, vanish]
   - id: templar_smite
     professionId: templar
     nameKey: talent_tree.templar_smite.name
@@ -108,7 +108,7 @@ talentTrees:
     schemaVersion: 2
     tags: [tree, templar]
     layout: foundation_grid
-    nodes: [holy_strike, judgment_hammer]
+    nodes: [holy_strike, judgment_hammer, holy_mark, heavens_judgment]
   - id: templar_grace
     professionId: templar
     nameKey: talent_tree.templar_grace.name
@@ -131,6 +131,193 @@ talentTrees:
     tags: [tree, templar]
     layout: foundation_grid
     nodes: [devotion, holy_aura, divine_intervention]
+  - id: berserker_wrath
+    professionId: berserker
+    nameKey: talent_tree.berserker_wrath.name
+    descKey: talent_tree.berserker_wrath.desc
+    visualKey: tree.vanguard_arms
+    iconKey: icon.tree.vanguard_arms
+    audioProfile: audio.tree.vanguard_arms
+    schemaVersion: 3
+    tags: [tree, berserker]
+    layout: foundation_grid
+    nodes: [blood_rush, savage_hew]
+  - id: berserker_ruin
+    professionId: berserker
+    nameKey: talent_tree.berserker_ruin.name
+    descKey: talent_tree.berserker_ruin.desc
+    visualKey: tree.vanguard_shield
+    iconKey: icon.tree.vanguard_shield
+    audioProfile: audio.tree.vanguard_shield
+    schemaVersion: 3
+    tags: [tree, berserker]
+    layout: foundation_grid
+    nodes: [reckless_slam, rupture_wave]
+  - id: berserker_bloodwar
+    professionId: berserker
+    nameKey: talent_tree.berserker_bloodwar.name
+    descKey: talent_tree.berserker_bloodwar.desc
+    visualKey: tree.vanguard_warcry
+    iconKey: icon.tree.vanguard_warcry
+    audioProfile: audio.tree.vanguard_warcry
+    schemaVersion: 3
+    tags: [tree, berserker]
+    layout: foundation_grid
+    nodes: [kill_frenzy, last_stand]
+  - id: spellblade_enchanted_blade
+    professionId: spellblade
+    nameKey: talent_tree.spellblade_enchanted_blade.name
+    descKey: talent_tree.spellblade_enchanted_blade.desc
+    visualKey: tree.arcanist_arcane
+    iconKey: icon.tree.arcanist_arcane
+    audioProfile: audio.tree.arcanist_arcane
+    schemaVersion: 3
+    tags: [tree, spellblade]
+    layout: foundation_grid
+    nodes: [arcane_edge, spell_rend]
+  - id: spellblade_elemental_flux
+    professionId: spellblade
+    nameKey: talent_tree.spellblade_elemental_flux.name
+    descKey: talent_tree.spellblade_elemental_flux.desc
+    visualKey: tree.arcanist_flame
+    iconKey: icon.tree.arcanist_flame
+    audioProfile: audio.tree.arcanist_flame
+    schemaVersion: 3
+    tags: [tree, spellblade]
+    layout: foundation_grid
+    nodes: [flux_anchor, flux_burst]
+  - id: spellblade_battle_spell
+    professionId: spellblade
+    nameKey: talent_tree.spellblade_battle_spell.name
+    descKey: talent_tree.spellblade_battle_spell.desc
+    visualKey: tree.arcanist_frost
+    iconKey: icon.tree.arcanist_frost
+    audioProfile: audio.tree.arcanist_frost
+    schemaVersion: 3
+    tags: [tree, spellblade]
+    layout: foundation_grid
+    nodes: [mana_lunge, spell_parry]
+  - id: shadowblade_assassination_plus
+    professionId: shadowblade
+    nameKey: talent_tree.shadowblade_assassination_plus.name
+    descKey: talent_tree.shadowblade_assassination_plus.desc
+    visualKey: tree.rogue_assassination
+    iconKey: icon.tree.rogue_assassination
+    audioProfile: audio.tree.rogue_assassination
+    schemaVersion: 3
+    tags: [tree, shadowblade]
+    layout: foundation_grid
+    nodes: []
+  - id: shadowblade_shadowstep_mastery
+    professionId: shadowblade
+    nameKey: talent_tree.shadowblade_shadowstep_mastery.name
+    descKey: talent_tree.shadowblade_shadowstep_mastery.desc
+    visualKey: tree.rogue_subtlety
+    iconKey: icon.tree.rogue_subtlety
+    audioProfile: audio.tree.rogue_subtlety
+    schemaVersion: 3
+    tags: [tree, shadowblade]
+    layout: foundation_grid
+    nodes: []
+  - id: shadowblade_venom_night
+    professionId: shadowblade
+    nameKey: talent_tree.shadowblade_venom_night.name
+    descKey: talent_tree.shadowblade_venom_night.desc
+    visualKey: tree.rogue_agility
+    iconKey: icon.tree.rogue_agility
+    audioProfile: audio.tree.rogue_agility
+    schemaVersion: 3
+    tags: [tree, shadowblade]
+    layout: foundation_grid
+    nodes: []
+  - id: warden_nature_guard
+    professionId: warden
+    nameKey: talent_tree.warden_nature_guard.name
+    descKey: talent_tree.warden_nature_guard.desc
+    visualKey: tree.templar_smite
+    iconKey: icon.tree.templar_smite
+    audioProfile: audio.tree.templar_smite
+    schemaVersion: 3
+    tags: [tree, warden]
+    layout: foundation_grid
+    nodes: []
+  - id: warden_life_ward
+    professionId: warden
+    nameKey: talent_tree.warden_life_ward.name
+    descKey: talent_tree.warden_life_ward.desc
+    visualKey: tree.templar_grace
+    iconKey: icon.tree.templar_grace
+    audioProfile: audio.tree.templar_grace
+    schemaVersion: 3
+    tags: [tree, warden]
+    layout: foundation_grid
+    nodes: []
+  - id: warden_earth_bastion
+    professionId: warden
+    nameKey: talent_tree.warden_earth_bastion.name
+    descKey: talent_tree.warden_earth_bastion.desc
+    visualKey: tree.templar_faith
+    iconKey: icon.tree.templar_faith
+    audioProfile: audio.tree.templar_faith
+    schemaVersion: 3
+    tags: [tree, warden]
+    layout: foundation_grid
+    nodes: []
+  - id: human_adaptability
+    raceId: human
+    nameKey: talent_tree.human_adaptability.name
+    descKey: talent_tree.human_adaptability.desc
+    visualKey: tree.vanguard_warcry
+    iconKey: icon.tree.vanguard_warcry
+    audioProfile: audio.tree.vanguard_warcry
+    schemaVersion: 3
+    tags: [tree, race, human]
+    layout: foundation_grid
+    nodes: [human_resolve, human_mastery]
+  - id: elf_keen_senses
+    raceId: elf
+    nameKey: talent_tree.elf_keen_senses.name
+    descKey: talent_tree.elf_keen_senses.desc
+    visualKey: tree.arcanist_arcane
+    iconKey: icon.tree.arcanist_arcane
+    audioProfile: audio.tree.arcanist_arcane
+    schemaVersion: 3
+    tags: [tree, race, elf]
+    layout: foundation_grid
+    nodes: [elf_scouting, elf_glade_step]
+  - id: dwarf_resilience
+    raceId: dwarf
+    nameKey: talent_tree.dwarf_resilience.name
+    descKey: talent_tree.dwarf_resilience.desc
+    visualKey: tree.templar_grace
+    iconKey: icon.tree.templar_grace
+    audioProfile: audio.tree.templar_grace
+    schemaVersion: 3
+    tags: [tree, race, dwarf]
+    layout: foundation_grid
+    nodes: [dwarf_grit, dwarf_forge_heart]
+  - id: orc_battle_fury
+    raceId: orc
+    nameKey: talent_tree.orc_battle_fury.name
+    descKey: talent_tree.orc_battle_fury.desc
+    visualKey: tree.vanguard_arms
+    iconKey: icon.tree.vanguard_arms
+    audioProfile: audio.tree.vanguard_arms
+    schemaVersion: 3
+    tags: [tree, race, orc]
+    layout: foundation_grid
+    nodes: []
+  - id: undead_deathless_will
+    raceId: undead
+    nameKey: talent_tree.undead_deathless_will.name
+    descKey: talent_tree.undead_deathless_will.desc
+    visualKey: tree.rogue_subtlety
+    iconKey: icon.tree.rogue_subtlety
+    audioProfile: audio.tree.rogue_subtlety
+    schemaVersion: 3
+    tags: [tree, race, undead]
+    layout: foundation_grid
+    nodes: []
 
 talents:
   - id: power_strike
@@ -1973,3 +2160,1370 @@ talents:
             applicationPolicy: SELF_AUTO
             duration: 5
             magnitude: 0.36
+  - id: taunt
+    nameKey: talent.vanguard.taunt.name
+    descKey: talent.vanguard.taunt.desc
+    visualKey: talent.vanguard.war_cry.visual
+    iconKey: talent.vanguard.war_cry.icon
+    audioProfile: audio.talent.war_cry
+    schemaVersion: 3
+    tags: [talent, vanguard, control]
+    maxPoints: 5
+    category: ACTIVE
+    powerDimension: MENTAL
+    kind: ACTIVE
+    cooldown: 9
+    castTime: STANDARD
+    range: 0
+    minRange: 0
+    areaRadius: 3
+    resourceCosts: { STAMINA: 10 }
+    unlockLevel: 3
+    targeting: RADIUS_SELF
+    callbacks: []
+    telegraphRef: self_buff_aura
+    treeId: vanguard_shield
+    keywords: [control, taunt]
+    levelEffects:
+      1:
+        associatedEffects:
+          - effectId: taunt_debuff
+            effectType: TAUNT
+            trigger: ON_CAST
+            targetScope: HOSTILES_IN_RADIUS
+            applicationPolicy: HOSTILE_SAVE_ONLY
+            saveDimension: MENTAL
+            duration: 2
+      2:
+        associatedEffects:
+          - effectId: taunt_debuff
+            effectType: TAUNT
+            trigger: ON_CAST
+            targetScope: HOSTILES_IN_RADIUS
+            applicationPolicy: HOSTILE_SAVE_ONLY
+            saveDimension: MENTAL
+            duration: 2
+      3:
+        associatedEffects:
+          - effectId: taunt_debuff
+            effectType: TAUNT
+            trigger: ON_CAST
+            targetScope: HOSTILES_IN_RADIUS
+            applicationPolicy: HOSTILE_SAVE_ONLY
+            saveDimension: MENTAL
+            duration: 3
+      4:
+        associatedEffects:
+          - effectId: taunt_debuff
+            effectType: TAUNT
+            trigger: ON_CAST
+            targetScope: HOSTILES_IN_RADIUS
+            applicationPolicy: HOSTILE_SAVE_ONLY
+            saveDimension: MENTAL
+            duration: 3
+      5:
+        associatedEffects:
+          - effectId: taunt_debuff
+            effectType: TAUNT
+            trigger: ON_CAST
+            targetScope: HOSTILES_IN_RADIUS
+            applicationPolicy: HOSTILE_SAVE_ONLY
+            saveDimension: MENTAL
+            duration: 4
+  - id: iron_wall
+    nameKey: talent.vanguard.iron_wall.name
+    descKey: talent.vanguard.iron_wall.desc
+    visualKey: talent.vanguard.guard_stance.visual
+    iconKey: talent.vanguard.guard_stance.icon
+    audioProfile: audio.talent.guard_stance
+    schemaVersion: 3
+    tags: [talent, vanguard, defense]
+    maxPoints: 5
+    category: ACTIVE
+    kind: ACTIVE
+    cooldown: 10
+    castTime: STANDARD
+    range: 0
+    minRange: 0
+    areaRadius: 0
+    resourceCosts: { STAMINA: 12 }
+    unlockLevel: 5
+    targeting: SELF
+    callbacks: []
+    telegraphRef: self_buff_aura
+    treeId: vanguard_shield
+    keywords: [buff, defense]
+    levelEffects:
+      1:
+        associatedEffects:
+          - effectId: iron_wall_guard
+            effectType: GUARD_STANCE_BUFF
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 3
+            magnitude: 0.18
+      2:
+        associatedEffects:
+          - effectId: iron_wall_guard
+            effectType: GUARD_STANCE_BUFF
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 4
+            magnitude: 0.20
+      3:
+        associatedEffects:
+          - effectId: iron_wall_guard
+            effectType: GUARD_STANCE_BUFF
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 4
+            magnitude: 0.24
+      4:
+        associatedEffects:
+          - effectId: iron_wall_guard
+            effectType: GUARD_STANCE_BUFF
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 5
+            magnitude: 0.28
+      5:
+        associatedEffects:
+          - effectId: iron_wall_guard
+            effectType: GUARD_STANCE_BUFF
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 5
+            magnitude: 0.32
+  - id: rallying_banner
+    nameKey: talent.vanguard.rallying_banner.name
+    descKey: talent.vanguard.rallying_banner.desc
+    visualKey: talent.vanguard.war_cry.visual
+    iconKey: talent.vanguard.war_cry.icon
+    audioProfile: audio.talent.war_cry
+    schemaVersion: 3
+    tags: [talent, vanguard, support]
+    maxPoints: 5
+    category: ACTIVE
+    kind: ACTIVE
+    cooldown: 9
+    castTime: STANDARD
+    range: 0
+    minRange: 0
+    areaRadius: 0
+    resourceCosts: { STAMINA: 8 }
+    unlockLevel: 4
+    targeting: SELF
+    callbacks: []
+    telegraphRef: self_buff_aura
+    treeId: vanguard_warcry
+    keywords: [heal, panic]
+    levelEffects:
+      1: { healFraction: 0.08 }
+      2: { healFraction: 0.10 }
+      3: { healFraction: 0.12 }
+      4: { healFraction: 0.14 }
+      5: { healFraction: 0.16 }
+  - id: immolate
+    nameKey: talent.arcanist.immolate.name
+    descKey: talent.arcanist.immolate.desc
+    visualKey: talent.arcanist.fireball.visual
+    iconKey: talent.arcanist.fireball.icon
+    audioProfile: audio.talent.fireball
+    schemaVersion: 3
+    tags: [talent, arcanist, spell]
+    maxPoints: 5
+    category: ACTIVE
+    damageType: FIRE
+    powerDimension: SPELL
+    kind: ACTIVE
+    cooldown: 6
+    castTime: STANDARD
+    range: 6
+    minRange: 1
+    areaRadius: 0
+    resourceCosts: { MANA: 16 }
+    unlockLevel: 4
+    targeting: SINGLE_TARGET
+    callbacks: []
+    telegraphRef: melee_single
+    treeId: arcanist_flame
+    keywords: [damage, boss]
+    levelEffects:
+      1: { damageMultiplier: 1.7 }
+      2: { damageMultiplier: 1.9 }
+      3: { damageMultiplier: 2.1 }
+      4: { damageMultiplier: 2.3 }
+      5: { damageMultiplier: 2.5 }
+  - id: meteor
+    nameKey: talent.arcanist.meteor.name
+    descKey: talent.arcanist.meteor.desc
+    visualKey: talent.arcanist.flame_wall.visual
+    iconKey: talent.arcanist.flame_wall.icon
+    audioProfile: audio.talent.flame_wall
+    schemaVersion: 3
+    tags: [talent, arcanist, spell]
+    maxPoints: 5
+    category: ACTIVE
+    damageType: FIRE
+    powerDimension: SPELL
+    kind: ACTIVE
+    cooldown: 10
+    castTime: HEAVY
+    range: 5
+    minRange: 2
+    areaRadius: 2
+    resourceCosts: { MANA: 22 }
+    unlockLevel: 5
+    targeting: GROUND_TARGET
+    callbacks: []
+    telegraphRef: charge_lane
+    treeId: arcanist_flame
+    keywords: [damage, area, boss]
+    levelEffects:
+      1: { damageMultiplier: 1.8 }
+      2: { damageMultiplier: 2.0 }
+      3: { damageMultiplier: 2.2 }
+      4: { damageMultiplier: 2.4 }
+      5: { damageMultiplier: 2.6 }
+  - id: arcane_overload
+    nameKey: talent.arcanist.arcane_overload.name
+    descKey: talent.arcanist.arcane_overload.desc
+    visualKey: talent.arcanist.arcane_shield.visual
+    iconKey: talent.arcanist.arcane_shield.icon
+    audioProfile: audio.talent.mana_surge
+    schemaVersion: 3
+    tags: [talent, arcanist, utility]
+    maxPoints: 5
+    category: ACTIVE
+    kind: ACTIVE
+    cooldown: 12
+    castTime: STANDARD
+    range: 0
+    minRange: 0
+    areaRadius: 0
+    resourceCosts: { MANA: 0 }
+    unlockLevel: 5
+    targeting: SELF
+    callbacks: []
+    telegraphRef: self_buff_aura
+    treeId: arcanist_arcane
+    keywords: [buff, resource, boss]
+    levelEffects:
+      1:
+        resourceRestoreFraction: 0.12
+        associatedEffects:
+          - effectId: arcane_overload_buff
+            effectType: MANA_SURGE_BUFF
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 2
+            magnitude: 0.16
+      2:
+        resourceRestoreFraction: 0.14
+        associatedEffects:
+          - effectId: arcane_overload_buff
+            effectType: MANA_SURGE_BUFF
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 2
+            magnitude: 0.18
+      3:
+        resourceRestoreFraction: 0.16
+        associatedEffects:
+          - effectId: arcane_overload_buff
+            effectType: MANA_SURGE_BUFF
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 3
+            magnitude: 0.20
+      4:
+        resourceRestoreFraction: 0.18
+        associatedEffects:
+          - effectId: arcane_overload_buff
+            effectType: MANA_SURGE_BUFF
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 3
+            magnitude: 0.22
+      5:
+        resourceRestoreFraction: 0.20
+        associatedEffects:
+          - effectId: arcane_overload_buff
+            effectType: MANA_SURGE_BUFF
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 4
+            magnitude: 0.24
+  - id: execution
+    nameKey: talent.rogue.execution.name
+    descKey: talent.rogue.execution.desc
+    visualKey: icon.skill.rogue.backstab
+    iconKey: icon.skill.rogue.backstab
+    audioProfile: audio.talent.backstab
+    schemaVersion: 3
+    tags: [talent, rogue, melee]
+    maxPoints: 5
+    category: ACTIVE
+    damageType: PHYSICAL
+    kind: ACTIVE
+    cooldown: 8
+    castTime: STANDARD
+    range: 1
+    minRange: 0
+    areaRadius: 0
+    resourceCosts: { ENERGY: 18 }
+    unlockLevel: 5
+    targeting: SINGLE_TARGET
+    callbacks: []
+    telegraphRef: melee_single
+    treeId: rogue_assassination
+    keywords: [damage, finisher, boss]
+    levelEffects:
+      1: { damageMultiplier: 2.1 }
+      2: { damageMultiplier: 2.3 }
+      3: { damageMultiplier: 2.5 }
+      4: { damageMultiplier: 2.7 }
+      5: { damageMultiplier: 3.0 }
+  - id: killer_instinct
+    nameKey: talent.rogue.killer_instinct.name
+    descKey: talent.rogue.killer_instinct.desc
+    visualKey: icon.skill.rogue.backstab
+    iconKey: icon.skill.rogue.backstab
+    audioProfile: audio.talent.backstab
+    schemaVersion: 3
+    tags: [talent, rogue, utility]
+    maxPoints: 5
+    category: ACTIVE
+    kind: ACTIVE
+    cooldown: 7
+    castTime: STANDARD
+    range: 0
+    minRange: 0
+    areaRadius: 0
+    resourceCosts: { ENERGY: 8 }
+    unlockLevel: 3
+    targeting: SELF
+    callbacks: []
+    telegraphRef: self_buff_aura
+    treeId: rogue_agility
+    keywords: [buff, crit]
+    levelEffects:
+      1:
+        associatedEffects:
+          - effectId: killer_instinct_buff
+            effectType: war_cry_empower
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 2
+            magnitude: 0.12
+      2:
+        associatedEffects:
+          - effectId: killer_instinct_buff
+            effectType: war_cry_empower
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 2
+            magnitude: 0.14
+      3:
+        associatedEffects:
+          - effectId: killer_instinct_buff
+            effectType: war_cry_empower
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 3
+            magnitude: 0.16
+      4:
+        associatedEffects:
+          - effectId: killer_instinct_buff
+            effectType: war_cry_empower
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 3
+            magnitude: 0.18
+      5:
+        associatedEffects:
+          - effectId: killer_instinct_buff
+            effectType: war_cry_empower
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 4
+            magnitude: 0.20
+  - id: vanish
+    nameKey: talent.rogue.vanish.name
+    descKey: talent.rogue.vanish.desc
+    visualKey: icon.skill.rogue.stealth
+    iconKey: icon.skill.rogue.stealth
+    audioProfile: audio.talent.stealth
+    schemaVersion: 3
+    tags: [talent, rogue, panic]
+    maxPoints: 5
+    category: ACTIVE
+    kind: ACTIVE
+    cooldown: 12
+    castTime: QUICK
+    range: 0
+    minRange: 0
+    areaRadius: 0
+    resourceCosts: { ENERGY: 12 }
+    unlockLevel: 5
+    targeting: SELF
+    callbacks: []
+    telegraphRef: self_buff_aura
+    treeId: rogue_agility
+    keywords: [stealth, panic, mobility]
+    levelEffects:
+      1:
+        associatedEffects:
+          - effectId: vanish_stealth
+            effectType: STEALTH_BUFF
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 2
+            magnitude: 0.16
+      2:
+        associatedEffects:
+          - effectId: vanish_stealth
+            effectType: STEALTH_BUFF
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 2
+            magnitude: 0.18
+      3:
+        associatedEffects:
+          - effectId: vanish_stealth
+            effectType: STEALTH_BUFF
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 3
+            magnitude: 0.20
+      4:
+        associatedEffects:
+          - effectId: vanish_stealth
+            effectType: STEALTH_BUFF
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 3
+            magnitude: 0.22
+      5:
+        associatedEffects:
+          - effectId: vanish_stealth
+            effectType: STEALTH_BUFF
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 4
+            magnitude: 0.24
+  - id: holy_mark
+    nameKey: talent.templar.holy_mark.name
+    descKey: talent.templar.holy_mark.desc
+    visualKey: icon.skill.templar.holy_strike
+    iconKey: icon.skill.templar.holy_strike
+    audioProfile: audio.talent.holy_strike
+    schemaVersion: 3
+    tags: [talent, templar, holy]
+    maxPoints: 5
+    category: ACTIVE
+    damageType: HOLY
+    powerDimension: SPELL
+    kind: ACTIVE
+    cooldown: 5
+    castTime: STANDARD
+    range: 4
+    minRange: 1
+    areaRadius: 0
+    resourceCosts: { POSITIVE_ENERGY: 10 }
+    unlockLevel: 3
+    targeting: SINGLE_TARGET
+    callbacks: []
+    telegraphRef: melee_single
+    treeId: templar_smite
+    keywords: [damage, mark]
+    levelEffects:
+      1:
+        damageMultiplier: 1.1
+        associatedEffects:
+          - effectId: holy_mark_status
+            effectType: MARKED
+            trigger: ON_HIT
+            targetScope: PRIMARY_TARGET
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: SPELL
+            duration: 2
+      2:
+        damageMultiplier: 1.2
+        associatedEffects:
+          - effectId: holy_mark_status
+            effectType: MARKED
+            trigger: ON_HIT
+            targetScope: PRIMARY_TARGET
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: SPELL
+            duration: 2
+      3:
+        damageMultiplier: 1.3
+        associatedEffects:
+          - effectId: holy_mark_status
+            effectType: MARKED
+            trigger: ON_HIT
+            targetScope: PRIMARY_TARGET
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: SPELL
+            duration: 3
+      4:
+        damageMultiplier: 1.4
+        associatedEffects:
+          - effectId: holy_mark_status
+            effectType: MARKED
+            trigger: ON_HIT
+            targetScope: PRIMARY_TARGET
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: SPELL
+            duration: 3
+      5:
+        damageMultiplier: 1.5
+        associatedEffects:
+          - effectId: holy_mark_status
+            effectType: MARKED
+            trigger: ON_HIT
+            targetScope: PRIMARY_TARGET
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: SPELL
+            duration: 4
+  - id: heavens_judgment
+    nameKey: talent.templar.heavens_judgment.name
+    descKey: talent.templar.heavens_judgment.desc
+    visualKey: icon.skill.templar.judgment_hammer
+    iconKey: icon.skill.templar.judgment_hammer
+    audioProfile: audio.talent.judgment_hammer
+    schemaVersion: 3
+    tags: [talent, templar, holy]
+    maxPoints: 5
+    category: ACTIVE
+    damageType: HOLY
+    powerDimension: SPELL
+    kind: ACTIVE
+    cooldown: 10
+    castTime: HEAVY
+    range: 4
+    minRange: 1
+    areaRadius: 1
+    resourceCosts: { POSITIVE_ENERGY: 18 }
+    unlockLevel: 5
+    targeting: RADIUS_TARGET
+    callbacks: []
+    telegraphRef: charge_lane
+    treeId: templar_smite
+    keywords: [damage, area, boss]
+    levelEffects:
+      1: { damageMultiplier: 1.8 }
+      2: { damageMultiplier: 2.0 }
+      3: { damageMultiplier: 2.2 }
+      4: { damageMultiplier: 2.4 }
+      5: { damageMultiplier: 2.7 }
+  - id: blood_rush
+    nameKey: talent.berserker.blood_rush.name
+    descKey: talent.berserker.blood_rush.desc
+    visualKey: talent.vanguard.charge.visual
+    iconKey: talent.vanguard.charge.icon
+    audioProfile: audio.talent.charge
+    schemaVersion: 3
+    tags: [talent, berserker, mobility]
+    maxPoints: 5
+    category: ACTIVE
+    damageType: PHYSICAL
+    powerDimension: PHYSICAL
+    kind: ACTIVE
+    cooldown: 5
+    castTime: STANDARD
+    range: 4
+    minRange: 1
+    areaRadius: 0
+    resourceCosts: { HATE: 0 }
+    unlockLevel: 1
+    targeting: SINGLE_TARGET
+    callbacks: []
+    telegraphRef: charge_lane
+    treeId: berserker_wrath
+    keywords: [mobility, panic]
+    levelEffects:
+      1: { damageMultiplier: 1.1, healFraction: 0.06 }
+      2: { damageMultiplier: 1.2, healFraction: 0.08 }
+      3: { damageMultiplier: 1.3, healFraction: 0.10 }
+      4: { damageMultiplier: 1.4, healFraction: 0.12 }
+      5: { damageMultiplier: 1.5, healFraction: 0.14 }
+  - id: savage_hew
+    nameKey: talent.berserker.savage_hew.name
+    descKey: talent.berserker.savage_hew.desc
+    visualKey: talent.vanguard.power_strike.visual
+    iconKey: talent.vanguard.power_strike.icon
+    audioProfile: audio.talent.power_strike
+    schemaVersion: 3
+    tags: [talent, berserker, melee]
+    maxPoints: 5
+    category: ACTIVE
+    damageType: PHYSICAL
+    powerDimension: PHYSICAL
+    kind: ACTIVE
+    cooldown: 4
+    castTime: STANDARD
+    range: 1
+    minRange: 0
+    areaRadius: 0
+    resourceCosts: { HATE: 14 }
+    unlockLevel: 1
+    targeting: SINGLE_TARGET
+    callbacks: []
+    telegraphRef: melee_single
+    treeId: berserker_wrath
+    keywords: [damage, burst]
+    levelEffects:
+      1: { damageMultiplier: 1.5 }
+      2: { damageMultiplier: 1.7 }
+      3: { damageMultiplier: 1.9 }
+      4: { damageMultiplier: 2.1 }
+      5: { damageMultiplier: 2.3 }
+  - id: reckless_slam
+    nameKey: talent.berserker.reckless_slam.name
+    descKey: talent.berserker.reckless_slam.desc
+    visualKey: talent.vanguard.sweeping_strike.visual
+    iconKey: talent.vanguard.sweeping_strike.icon
+    audioProfile: audio.talent.sweeping_strike
+    schemaVersion: 3
+    tags: [talent, berserker, melee]
+    maxPoints: 5
+    category: ACTIVE
+    damageType: PHYSICAL
+    powerDimension: PHYSICAL
+    kind: ACTIVE
+    cooldown: 6
+    castTime: STANDARD
+    range: 0
+    minRange: 0
+    areaRadius: 1
+    resourceCosts: { HATE: 18 }
+    unlockLevel: 2
+    targeting: RADIUS_SELF
+    callbacks: []
+    telegraphRef: self_buff_aura
+    treeId: berserker_ruin
+    keywords: [damage, area]
+    levelEffects:
+      1: { damageMultiplier: 1.2, knockback: 1 }
+      2: { damageMultiplier: 1.35, knockback: 1 }
+      3: { damageMultiplier: 1.5, knockback: 1 }
+      4: { damageMultiplier: 1.65, knockback: 1 }
+      5: { damageMultiplier: 1.8, knockback: 2 }
+  - id: rupture_wave
+    nameKey: talent.berserker.rupture_wave.name
+    descKey: talent.berserker.rupture_wave.desc
+    visualKey: talent.vanguard.sweeping_strike.visual
+    iconKey: talent.vanguard.sweeping_strike.icon
+    audioProfile: audio.talent.sweeping_strike
+    schemaVersion: 3
+    tags: [talent, berserker, melee]
+    maxPoints: 5
+    category: ACTIVE
+    damageType: PHYSICAL
+    powerDimension: PHYSICAL
+    kind: ACTIVE
+    cooldown: 8
+    castTime: STANDARD
+    range: 1
+    minRange: 0
+    areaRadius: 1
+    resourceCosts: { HATE: 22 }
+    unlockLevel: 4
+    targeting: RADIUS_TARGET
+    callbacks: []
+    telegraphRef: charge_lane
+    treeId: berserker_ruin
+    keywords: [damage, area, boss]
+    levelEffects:
+      1: { damageMultiplier: 1.4 }
+      2: { damageMultiplier: 1.55 }
+      3: { damageMultiplier: 1.7 }
+      4: { damageMultiplier: 1.9 }
+      5: { damageMultiplier: 2.1 }
+  - id: kill_frenzy
+    nameKey: talent.berserker.kill_frenzy.name
+    descKey: talent.berserker.kill_frenzy.desc
+    visualKey: talent.vanguard.war_cry.visual
+    iconKey: talent.vanguard.war_cry.icon
+    audioProfile: audio.talent.war_cry
+    schemaVersion: 3
+    tags: [talent, berserker, support]
+    maxPoints: 5
+    category: ACTIVE
+    kind: ACTIVE
+    cooldown: 7
+    castTime: STANDARD
+    range: 0
+    minRange: 0
+    areaRadius: 0
+    resourceCosts: { HATE: 0 }
+    unlockLevel: 2
+    targeting: SELF
+    callbacks: []
+    telegraphRef: self_buff_aura
+    treeId: berserker_bloodwar
+    keywords: [buff, resource]
+    levelEffects:
+      1:
+        resourceRestoreFraction: 0.08
+        associatedEffects:
+          - effectId: kill_frenzy_buff
+            effectType: war_cry_empower
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 2
+            magnitude: 0.10
+      2:
+        resourceRestoreFraction: 0.10
+        associatedEffects:
+          - effectId: kill_frenzy_buff
+            effectType: war_cry_empower
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 2
+            magnitude: 0.12
+      3:
+        resourceRestoreFraction: 0.12
+        associatedEffects:
+          - effectId: kill_frenzy_buff
+            effectType: war_cry_empower
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 3
+            magnitude: 0.14
+      4:
+        resourceRestoreFraction: 0.14
+        associatedEffects:
+          - effectId: kill_frenzy_buff
+            effectType: war_cry_empower
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 3
+            magnitude: 0.16
+      5:
+        resourceRestoreFraction: 0.16
+        associatedEffects:
+          - effectId: kill_frenzy_buff
+            effectType: war_cry_empower
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 4
+            magnitude: 0.18
+  - id: last_stand
+    nameKey: talent.berserker.last_stand.name
+    descKey: talent.berserker.last_stand.desc
+    visualKey: talent.vanguard.unyielding.visual
+    iconKey: talent.vanguard.unyielding.icon
+    audioProfile: audio.talent.unyielding
+    schemaVersion: 3
+    tags: [talent, berserker, panic]
+    maxPoints: 5
+    category: ACTIVE
+    kind: ACTIVE
+    cooldown: 12
+    castTime: STANDARD
+    range: 0
+    minRange: 0
+    areaRadius: 0
+    resourceCosts: { HATE: 10 }
+    unlockLevel: 5
+    targeting: SELF
+    callbacks: []
+    telegraphRef: self_buff_aura
+    treeId: berserker_bloodwar
+    keywords: [panic, defense]
+    levelEffects:
+      1:
+        healFraction: 0.10
+        associatedEffects:
+          - effectId: last_stand_buff
+            effectType: UNYIELDING_BUFF
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 2
+            magnitude: 0.18
+      2:
+        healFraction: 0.12
+        associatedEffects:
+          - effectId: last_stand_buff
+            effectType: UNYIELDING_BUFF
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 2
+            magnitude: 0.20
+      3:
+        healFraction: 0.14
+        associatedEffects:
+          - effectId: last_stand_buff
+            effectType: UNYIELDING_BUFF
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 3
+            magnitude: 0.22
+      4:
+        healFraction: 0.16
+        associatedEffects:
+          - effectId: last_stand_buff
+            effectType: UNYIELDING_BUFF
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 3
+            magnitude: 0.24
+      5:
+        healFraction: 0.18
+        associatedEffects:
+          - effectId: last_stand_buff
+            effectType: UNYIELDING_BUFF
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 4
+            magnitude: 0.26
+  - id: arcane_edge
+    nameKey: talent.spellblade.arcane_edge.name
+    descKey: talent.spellblade.arcane_edge.desc
+    visualKey: talent.arcanist.fireball.visual
+    iconKey: talent.arcanist.fireball.icon
+    audioProfile: audio.talent.fireball
+    schemaVersion: 3
+    tags: [talent, spellblade, hybrid]
+    maxPoints: 5
+    category: ACTIVE
+    damageType: LIGHTNING
+    powerDimension: SPELL
+    kind: ACTIVE
+    cooldown: 4
+    castTime: STANDARD
+    range: 1
+    minRange: 0
+    areaRadius: 0
+    resourceCosts: { MANA: 10 }
+    unlockLevel: 1
+    targeting: SINGLE_TARGET
+    callbacks: []
+    telegraphRef: melee_single
+    equilibriumAffinity: ARCANE
+    treeId: spellblade_enchanted_blade
+    keywords: [damage, hybrid]
+    levelEffects:
+      1: { damageMultiplier: 1.3 }
+      2: { damageMultiplier: 1.45 }
+      3: { damageMultiplier: 1.6 }
+      4: { damageMultiplier: 1.75 }
+      5: { damageMultiplier: 1.9 }
+  - id: spell_rend
+    nameKey: talent.spellblade.spell_rend.name
+    descKey: talent.spellblade.spell_rend.desc
+    visualKey: talent.arcanist.fireball.visual
+    iconKey: talent.arcanist.fireball.icon
+    audioProfile: audio.talent.fireball
+    schemaVersion: 3
+    tags: [talent, spellblade, hybrid]
+    maxPoints: 5
+    category: ACTIVE
+    damageType: LIGHTNING
+    powerDimension: SPELL
+    kind: ACTIVE
+    cooldown: 7
+    castTime: STANDARD
+    range: 1
+    minRange: 0
+    areaRadius: 0
+    resourceCosts: { MANA: 16 }
+    unlockLevel: 4
+    targeting: SINGLE_TARGET
+    callbacks: []
+    telegraphRef: melee_single
+    equilibriumAffinity: ARCANE
+    treeId: spellblade_enchanted_blade
+    keywords: [damage, boss]
+    levelEffects:
+      1: { damageMultiplier: 1.7 }
+      2: { damageMultiplier: 1.9 }
+      3: { damageMultiplier: 2.1 }
+      4: { damageMultiplier: 2.3 }
+      5: { damageMultiplier: 2.5 }
+  - id: flux_anchor
+    nameKey: talent.spellblade.flux_anchor.name
+    descKey: talent.spellblade.flux_anchor.desc
+    visualKey: talent.arcanist.mana_surge.visual
+    iconKey: talent.arcanist.mana_surge.icon
+    audioProfile: audio.talent.mana_surge
+    schemaVersion: 3
+    tags: [talent, spellblade, utility]
+    maxPoints: 5
+    category: ACTIVE
+    kind: ACTIVE
+    cooldown: 8
+    castTime: STANDARD
+    range: 0
+    minRange: 0
+    areaRadius: 0
+    resourceCosts: { MANA: 0 }
+    unlockLevel: 1
+    targeting: SELF
+    callbacks: []
+    telegraphRef: self_buff_aura
+    equilibriumAffinity: NEUTRAL
+    treeId: spellblade_elemental_flux
+    keywords: [resource, defense]
+    levelEffects:
+      1: { resourceRestoreFraction: 0.10 }
+      2: { resourceRestoreFraction: 0.12 }
+      3: { resourceRestoreFraction: 0.14 }
+      4: { resourceRestoreFraction: 0.16 }
+      5: { resourceRestoreFraction: 0.18 }
+  - id: flux_burst
+    nameKey: talent.spellblade.flux_burst.name
+    descKey: talent.spellblade.flux_burst.desc
+    visualKey: talent.arcanist.flame_wall.visual
+    iconKey: talent.arcanist.flame_wall.icon
+    audioProfile: audio.talent.flame_wall
+    schemaVersion: 3
+    tags: [talent, spellblade, area]
+    maxPoints: 5
+    category: ACTIVE
+    damageType: LIGHTNING
+    powerDimension: SPELL
+    kind: ACTIVE
+    cooldown: 7
+    castTime: STANDARD
+    range: 0
+    minRange: 0
+    areaRadius: 2
+    resourceCosts: { MANA: 14 }
+    unlockLevel: 4
+    targeting: RADIUS_SELF
+    callbacks: []
+    telegraphRef: self_buff_aura
+    equilibriumAffinity: ARCANE
+    treeId: spellblade_elemental_flux
+    keywords: [damage, area]
+    levelEffects:
+      1: { damageMultiplier: 1.2 }
+      2: { damageMultiplier: 1.35 }
+      3: { damageMultiplier: 1.5 }
+      4: { damageMultiplier: 1.65 }
+      5: { damageMultiplier: 1.8 }
+  - id: mana_lunge
+    nameKey: talent.spellblade.mana_lunge.name
+    descKey: talent.spellblade.mana_lunge.desc
+    visualKey: talent.arcanist.blink.visual
+    iconKey: talent.arcanist.blink.icon
+    audioProfile: audio.talent.blink
+    schemaVersion: 3
+    tags: [talent, spellblade, mobility]
+    maxPoints: 5
+    category: ACTIVE
+    damageType: PHYSICAL
+    powerDimension: PHYSICAL
+    kind: ACTIVE
+    cooldown: 5
+    castTime: STANDARD
+    range: 4
+    minRange: 1
+    areaRadius: 0
+    resourceCosts: { MANA: 8 }
+    unlockLevel: 1
+    targeting: SINGLE_TARGET
+    callbacks: []
+    telegraphRef: charge_lane
+    equilibriumAffinity: PHYSICAL
+    treeId: spellblade_battle_spell
+    keywords: [mobility, damage]
+    levelEffects:
+      1: { damageMultiplier: 1.1 }
+      2: { damageMultiplier: 1.2 }
+      3: { damageMultiplier: 1.3 }
+      4: { damageMultiplier: 1.4 }
+      5: { damageMultiplier: 1.5 }
+  - id: spell_parry
+    nameKey: talent.spellblade.spell_parry.name
+    descKey: talent.spellblade.spell_parry.desc
+    visualKey: icon.skill.templar.holy_shield
+    iconKey: icon.skill.templar.holy_shield
+    audioProfile: audio.talent.holy_shield
+    schemaVersion: 3
+    tags: [talent, spellblade, defense]
+    maxPoints: 5
+    category: ACTIVE
+    kind: ACTIVE
+    cooldown: 8
+    castTime: QUICK
+    range: 0
+    minRange: 0
+    areaRadius: 0
+    resourceCosts: { MANA: 10 }
+    unlockLevel: 2
+    targeting: SELF
+    callbacks: []
+    telegraphRef: self_buff_aura
+    equilibriumAffinity: NEUTRAL
+    treeId: spellblade_battle_spell
+    keywords: [defense, panic]
+    levelEffects:
+      1:
+        associatedEffects:
+          - effectId: spell_parry_shield
+            effectType: HOLY_SHIELD_BUFF
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 2
+            magnitude: 0.12
+      2:
+        associatedEffects:
+          - effectId: spell_parry_shield
+            effectType: HOLY_SHIELD_BUFF
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 2
+            magnitude: 0.14
+      3:
+        associatedEffects:
+          - effectId: spell_parry_shield
+            effectType: HOLY_SHIELD_BUFF
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 3
+            magnitude: 0.16
+      4:
+        associatedEffects:
+          - effectId: spell_parry_shield
+            effectType: HOLY_SHIELD_BUFF
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 3
+            magnitude: 0.18
+      5:
+        associatedEffects:
+          - effectId: spell_parry_shield
+            effectType: HOLY_SHIELD_BUFF
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 4
+            magnitude: 0.20
+  - id: human_resolve
+    nameKey: talent.race.human.resolve.name
+    descKey: talent.race.human.resolve.desc
+    visualKey: icon.skill.templar.holy_light
+    iconKey: icon.skill.templar.holy_light
+    audioProfile: audio.talent.holy_light
+    schemaVersion: 3
+    tags: [talent, race, human]
+    maxPoints: 5
+    category: ACTIVE
+    kind: ACTIVE
+    cooldown: 8
+    castTime: STANDARD
+    range: 0
+    minRange: 0
+    areaRadius: 0
+    unlockLevel: 1
+    targeting: SELF
+    callbacks: []
+    telegraphRef: self_buff_aura
+    treeId: human_adaptability
+    keywords: [heal]
+    levelEffects:
+      1: { healFraction: 0.08 }
+      2: { healFraction: 0.10 }
+      3: { healFraction: 0.12 }
+      4: { healFraction: 0.14 }
+      5: { healFraction: 0.16 }
+  - id: human_mastery
+    nameKey: talent.race.human.mastery.name
+    descKey: talent.race.human.mastery.desc
+    visualKey: talent.vanguard.war_cry.visual
+    iconKey: talent.vanguard.war_cry.icon
+    audioProfile: audio.talent.war_cry
+    schemaVersion: 3
+    tags: [talent, race, human]
+    maxPoints: 5
+    category: ACTIVE
+    kind: ACTIVE
+    cooldown: 10
+    castTime: STANDARD
+    range: 0
+    minRange: 0
+    areaRadius: 0
+    unlockLevel: 4
+    targeting: SELF
+    callbacks: []
+    telegraphRef: self_buff_aura
+    treeId: human_adaptability
+    keywords: [buff]
+    levelEffects:
+      1:
+        associatedEffects:
+          - effectId: human_mastery_buff
+            effectType: war_cry_empower
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 2
+            magnitude: 0.08
+      2:
+        associatedEffects:
+          - effectId: human_mastery_buff
+            effectType: war_cry_empower
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 2
+            magnitude: 0.10
+      3:
+        associatedEffects:
+          - effectId: human_mastery_buff
+            effectType: war_cry_empower
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 3
+            magnitude: 0.12
+      4:
+        associatedEffects:
+          - effectId: human_mastery_buff
+            effectType: war_cry_empower
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 3
+            magnitude: 0.14
+      5:
+        associatedEffects:
+          - effectId: human_mastery_buff
+            effectType: war_cry_empower
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 4
+            magnitude: 0.16
+  - id: elf_scouting
+    nameKey: talent.race.elf.scouting.name
+    descKey: talent.race.elf.scouting.desc
+    visualKey: talent.arcanist.blink.visual
+    iconKey: talent.arcanist.blink.icon
+    audioProfile: audio.talent.blink
+    schemaVersion: 3
+    tags: [talent, race, elf]
+    maxPoints: 5
+    category: ACTIVE
+    kind: ACTIVE
+    cooldown: 7
+    castTime: STANDARD
+    range: 4
+    minRange: 1
+    areaRadius: 0
+    unlockLevel: 1
+    targeting: SINGLE_TARGET
+    callbacks: []
+    telegraphRef: charge_lane
+    treeId: elf_keen_senses
+    keywords: [mobility]
+    levelEffects:
+      1: { rangeBonus: 0 }
+      2: { rangeBonus: 1 }
+      3: { rangeBonus: 2 }
+      4: { rangeBonus: 3 }
+      5: { rangeBonus: 4 }
+  - id: elf_glade_step
+    nameKey: talent.race.elf.glade_step.name
+    descKey: talent.race.elf.glade_step.desc
+    visualKey: talent.arcanist.blink.visual
+    iconKey: talent.arcanist.blink.icon
+    audioProfile: audio.talent.blink
+    schemaVersion: 3
+    tags: [talent, race, elf]
+    maxPoints: 5
+    category: ACTIVE
+    kind: ACTIVE
+    cooldown: 9
+    castTime: STANDARD
+    range: 5
+    minRange: 1
+    areaRadius: 0
+    unlockLevel: 4
+    targeting: SINGLE_TARGET
+    callbacks: []
+    telegraphRef: charge_lane
+    treeId: elf_keen_senses
+    keywords: [mobility, panic]
+    levelEffects:
+      1: { rangeBonus: 1 }
+      2: { rangeBonus: 2 }
+      3: { rangeBonus: 3 }
+      4: { rangeBonus: 4 }
+      5: { rangeBonus: 5 }
+  - id: dwarf_grit
+    nameKey: talent.race.dwarf.grit.name
+    descKey: talent.race.dwarf.grit.desc
+    visualKey: talent.vanguard.guard_stance.visual
+    iconKey: talent.vanguard.guard_stance.icon
+    audioProfile: audio.talent.guard_stance
+    schemaVersion: 3
+    tags: [talent, race, dwarf]
+    maxPoints: 5
+    category: ACTIVE
+    kind: ACTIVE
+    cooldown: 8
+    castTime: STANDARD
+    range: 0
+    minRange: 0
+    areaRadius: 0
+    unlockLevel: 1
+    targeting: SELF
+    callbacks: []
+    telegraphRef: self_buff_aura
+    treeId: dwarf_resilience
+    keywords: [defense]
+    levelEffects:
+      1:
+        associatedEffects:
+          - effectId: dwarf_grit_guard
+            effectType: GUARD_STANCE_BUFF
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 2
+            magnitude: 0.10
+      2:
+        associatedEffects:
+          - effectId: dwarf_grit_guard
+            effectType: GUARD_STANCE_BUFF
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 2
+            magnitude: 0.12
+      3:
+        associatedEffects:
+          - effectId: dwarf_grit_guard
+            effectType: GUARD_STANCE_BUFF
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 3
+            magnitude: 0.14
+      4:
+        associatedEffects:
+          - effectId: dwarf_grit_guard
+            effectType: GUARD_STANCE_BUFF
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 3
+            magnitude: 0.16
+      5:
+        associatedEffects:
+          - effectId: dwarf_grit_guard
+            effectType: GUARD_STANCE_BUFF
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 4
+            magnitude: 0.18
+  - id: dwarf_forge_heart
+    nameKey: talent.race.dwarf.forge_heart.name
+    descKey: talent.race.dwarf.forge_heart.desc
+    visualKey: icon.skill.templar.holy_shield
+    iconKey: icon.skill.templar.holy_shield
+    audioProfile: audio.talent.holy_shield
+    schemaVersion: 3
+    tags: [talent, race, dwarf]
+    maxPoints: 5
+    category: ACTIVE
+    kind: ACTIVE
+    cooldown: 10
+    castTime: STANDARD
+    range: 0
+    minRange: 0
+    areaRadius: 0
+    unlockLevel: 4
+    targeting: SELF
+    callbacks: []
+    telegraphRef: self_buff_aura
+    treeId: dwarf_resilience
+    keywords: [defense, panic]
+    levelEffects:
+      1:
+        associatedEffects:
+          - effectId: dwarf_forge_heart_shield
+            effectType: HOLY_SHIELD_BUFF
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 2
+            magnitude: 0.10
+      2:
+        associatedEffects:
+          - effectId: dwarf_forge_heart_shield
+            effectType: HOLY_SHIELD_BUFF
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 2
+            magnitude: 0.12
+      3:
+        associatedEffects:
+          - effectId: dwarf_forge_heart_shield
+            effectType: HOLY_SHIELD_BUFF
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 3
+            magnitude: 0.14
+      4:
+        associatedEffects:
+          - effectId: dwarf_forge_heart_shield
+            effectType: HOLY_SHIELD_BUFF
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 3
+            magnitude: 0.16
+      5:
+        associatedEffects:
+          - effectId: dwarf_forge_heart_shield
+            effectType: HOLY_SHIELD_BUFF
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 4
+            magnitude: 0.18

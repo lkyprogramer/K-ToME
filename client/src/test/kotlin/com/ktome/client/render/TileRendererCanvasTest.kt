@@ -33,6 +33,7 @@ import com.ktome.game.i18n.GameLocale
 import com.ktome.game.i18n.LocalizationBundle
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
@@ -127,6 +128,72 @@ class TileRendererCanvasTest {
     }
 
     @Test
+    fun `render canvas keeps hud gauges clear of the title line`() {
+        val canvas = RecordingTileCanvas()
+
+        TileRenderer.renderToCanvas(
+            localizer = LocalizationBundle.load().translator(GameLocale.EN_US),
+            visualResolver = sampleResolver(),
+            snapshot = sampleSnapshot(),
+            overlayState = OverlayState(mode = UiMode.MAP),
+            canvas = canvas,
+            cellWidth = 32f,
+            cellHeight = 32f,
+        )
+
+        val subtitleDraw = requireNotNull(canvas.textDraws.getOrNull(1))
+        val gaugeBackgrounds = canvas.rectDraws.filter { draw -> draw.height == 14f }
+        val topGauge = requireNotNull(gaugeBackgrounds.maxByOrNull { draw -> draw.y })
+
+        assertTrue(topGauge.y + topGauge.height <= subtitleDraw.y)
+        assertTrue(subtitleDraw.y - (topGauge.y + topGauge.height) >= 4f)
+    }
+
+    @Test
+    fun `render canvas keeps three gauge stack clear of the title line for dual resource classes`() {
+        val canvas = RecordingTileCanvas()
+        val baseSnapshot = sampleSnapshot()
+        val snapshot =
+            baseSnapshot.copy(
+                uiState =
+                    baseSnapshot.uiState.copy(
+                        playerStatus =
+                            baseSnapshot.uiState.playerStatus.copy(
+                                currentResource = 11,
+                                maxResource = 20,
+                                resourceLabelKey = "ui.hud.mana.short",
+                                resourceTypeId = "MANA",
+                                secondaryResourceCurrent = 7,
+                                secondaryResourceMax = 12,
+                                secondaryResourceLabelKey = "ui.hud.equilibrium.short",
+                                secondaryResourceTypeId = "EQUILIBRIUM",
+                                secondaryResourceStableMin = 3,
+                                secondaryResourceStableMax = 9,
+                            ),
+                    ),
+            )
+
+        TileRenderer.renderToCanvas(
+            localizer = LocalizationBundle.load().translator(GameLocale.EN_US),
+            visualResolver = sampleResolver(),
+            snapshot = snapshot,
+            overlayState = OverlayState(mode = UiMode.MAP),
+            canvas = canvas,
+            cellWidth = 32f,
+            cellHeight = 32f,
+        )
+
+        val subtitleDraw = requireNotNull(canvas.textDraws.getOrNull(1))
+        val gaugeBackgrounds = canvas.rectDraws.filter { draw -> draw.height == 14f }
+        val sortedGaugeBackgrounds = gaugeBackgrounds.sortedBy { draw -> draw.y }
+
+        assertEquals(3, sortedGaugeBackgrounds.size)
+        assertTrue(sortedGaugeBackgrounds.zipWithNext().all { (lower, upper) -> upper.y >= lower.y + lower.height + 4f })
+        assertTrue(sortedGaugeBackgrounds.last().y + sortedGaugeBackgrounds.last().height <= subtitleDraw.y)
+        assertTrue(subtitleDraw.y - (sortedGaugeBackgrounds.last().y + sortedGaugeBackgrounds.last().height) >= 4f)
+    }
+
+    @Test
     fun `responsive layout keeps sidebar compact on small maps`() {
         val metrics = TileRenderer.layoutMetrics(mapWidth = 11, mapHeight = 10, cellWidth = 32f, cellHeight = 32f)
         val legacyWorldWidth = (11 + TileRenderer.sidebarColumns) * 32f
@@ -186,6 +253,46 @@ class TileRendererCanvasTest {
         assertTrue(model.sidebar.rows.any { row -> row.text == "Targeted talent: move cursor, Enter confirm" })
         assertTrue(model.hud.hotbar.single().resourceText.contains("AIM 4"))
         assertTrue(model.sidebar.rows.any { row -> row.text == "A ruined border outpost and the opening stretch of the run." })
+    }
+
+    @Test
+    fun `render model exposes secondary resource as a dedicated gauge`() {
+        val localizer = LocalizationBundle.load().translator(GameLocale.EN_US)
+        val baseSnapshot = sampleSnapshot()
+        val snapshot =
+            baseSnapshot.copy(
+                uiState =
+                    baseSnapshot.uiState.copy(
+                        playerStatus =
+                            baseSnapshot.uiState.playerStatus.copy(
+                                currentResource = 11,
+                                maxResource = 20,
+                                resourceLabelKey = "ui.hud.mana.short",
+                                resourceTypeId = "MANA",
+                                secondaryResourceCurrent = 7,
+                                secondaryResourceMax = 12,
+                                secondaryResourceLabelKey = "ui.hud.equilibrium.short",
+                                secondaryResourceTypeId = "EQUILIBRIUM",
+                                secondaryResourceStableMin = 3,
+                                secondaryResourceStableMax = 9,
+                            ),
+                    ),
+            )
+
+        val model =
+            TileRenderer.buildRenderModel(
+                localizer = localizer,
+                visualResolver = sampleResolver(),
+                snapshot = snapshot,
+                overlayState = OverlayState(mode = UiMode.MAP),
+            )
+
+        assertNotNull(model.hud.secondaryResourceGauge)
+        assertEquals("EQL", model.hud.secondaryResourceGauge!!.label)
+        assertEquals("EQUILIBRIUM", model.hud.secondaryResourceGauge!!.resourceTypeId)
+        assertEquals(3, model.hud.secondaryResourceGauge!!.stableMin)
+        assertEquals(9, model.hud.secondaryResourceGauge!!.stableMax)
+        assertFalse(model.hud.summaryText.contains("EQL"))
     }
 
     @Test

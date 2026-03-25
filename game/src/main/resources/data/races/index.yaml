@@ -1,0 +1,61 @@
+races:
+  - id: human
+    nameKey: race.human.name
+    descKey: race.human.desc
+    visualKey: actor.vanguard
+    iconKey: icon.profession.vanguard
+    audioProfile: audio.profession.vanguard
+    schemaVersion: 1
+    tags: [race, playable]
+    statModifiers: { wil: 1, hpDelta: 2 }
+    talentTrees: [human_adaptability]
+    startingTalents: []
+    initialUnlockState: RELEASE_UNLOCKED
+  - id: elf
+    nameKey: race.elf.name
+    descKey: race.elf.desc
+    visualKey: actor.arcanist
+    iconKey: icon.profession.arcanist
+    audioProfile: audio.profession.arcanist
+    schemaVersion: 1
+    tags: [race, playable]
+    statModifiers: { dex: 1, evasionDelta: 1, speedDelta: 2 }
+    talentTrees: [elf_keen_senses]
+    startingTalents: []
+    initialUnlockState: RELEASE_UNLOCKED
+  - id: dwarf
+    nameKey: race.dwarf.name
+    descKey: race.dwarf.desc
+    visualKey: actor.templar
+    iconKey: icon.profession.templar
+    audioProfile: audio.profession.templar
+    schemaVersion: 1
+    tags: [race, playable]
+    statModifiers: { con: 1, hpDelta: 4, speedDelta: -2 }
+    talentTrees: [dwarf_resilience]
+    startingTalents: []
+    initialUnlockState: RELEASE_UNLOCKED
+  - id: orc
+    nameKey: race.orc.name
+    descKey: race.orc.desc
+    visualKey: actor.orc.miner
+    iconKey: icon.monster.orc.raider
+    audioProfile: audio.monster.default
+    schemaVersion: 1
+    tags: [race, frozen]
+    statModifiers: { str: 1, hpDelta: 3 }
+    talentTrees: [orc_battle_fury]
+    startingTalents: []
+    initialUnlockState: LOCKED
+  - id: undead
+    nameKey: race.undead.name
+    descKey: race.undead.desc
+    visualKey: actor.cultist.shadow_priest
+    iconKey: icon.monster.cultist.dungeon_lord
+    audioProfile: audio.monster.default
+    schemaVersion: 1
+    tags: [race, frozen]
+    statModifiers: { wil: 1, hpDelta: 1 }
+    talentTrees: [undead_deathless_will]
+    startingTalents: []
+    initialUnlockState: LOCKED

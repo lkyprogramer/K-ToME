@@ -69,6 +69,12 @@ import com.ktome.core.event.StatusTickEvent
 import com.ktome.core.event.StealthBrokenEvent
 import com.ktome.core.event.TauntOverrideEvent
 import com.ktome.core.fov.Shadowcasting
+import com.ktome.core.inscription.InscriptionCategory
+import com.ktome.core.inscription.InscriptionCooldownState
+import com.ktome.core.inscription.InscriptionDef
+import com.ktome.core.inscription.InscriptionEffect
+import com.ktome.core.inscription.InscriptionLoadout
+import com.ktome.core.inscription.InscriptionManager
 import com.ktome.core.item.AffixType
 import com.ktome.core.item.EquipSlot
 import com.ktome.core.item.Equipment
@@ -92,9 +98,14 @@ import com.ktome.core.map.GameMap
 import com.ktome.core.map.Point
 import com.ktome.core.movement.MovementRules
 import com.ktome.core.progression.ExperienceSystem
+import com.ktome.core.race.RaceTalentPointBank
+import com.ktome.core.race.RaceTalentPointProgression
 import com.ktome.core.random.RandomSource
 import com.ktome.core.random.SplitMix64RandomSource
 import com.ktome.core.random.StatefulRandomSource
+import com.ktome.core.resource.EquilibriumAffinity
+import com.ktome.core.resource.EquilibriumState
+import com.ktome.core.resource.ResourceAxis
 import com.ktome.core.resource.ResourceType
 import com.ktome.core.resource.StaminaPools
 import com.ktome.core.run.RunOutcome
@@ -108,6 +119,7 @@ import com.ktome.core.snapshot.DescriptionModelSnapshot
 import com.ktome.core.snapshot.DescriptionValueSnapshot
 import com.ktome.core.snapshot.EquipmentSlotSnapshot
 import com.ktome.core.snapshot.GridPointSnapshot
+import com.ktome.core.snapshot.InscriptionSlotSnapshot
 import com.ktome.core.snapshot.InventoryEntrySnapshot
 import com.ktome.core.snapshot.ItemRenderSnapshot
 import com.ktome.core.snapshot.ItemStatModifierSnapshot
@@ -168,6 +180,7 @@ import com.ktome.game.model.BossDefinition
 import com.ktome.game.model.MonsterTemplate
 import java.nio.file.Files
 import kotlin.math.abs
+import kotlin.math.roundToInt
 
 internal data class ZoneRuntimeBundle(
     val config: FoundationGameConfig,
@@ -271,7 +284,9 @@ class FoundationGameSession internal constructor(
         initialMessageLog.forEach(::addMessage)
         restorePendingTurnState()
         syncUnlockedPlayerTalents()
+        StatsCalculator.recalculateAndStore(world, playerId)
         ensurePlayerResourcePools()
+        ensurePlayerInscriptions()
         syncPlayerResistanceProfile()
         refreshFov()
     }
@@ -392,6 +407,7 @@ class FoundationGameSession internal constructor(
 
     fun hasPendingTalentAllocation(): Boolean =
         playerStatus().talentPoints > 0 ||
+            playerStatus().raceTalentPoints > 0 ||
             world.get<TalentLoadout>(playerId)?.let { loadout ->
                 TalentAllocationPlanner.hasPendingChanges(liveRanks = loadout.talentLevels, draft = talentDraft())
             } == true
@@ -452,9 +468,10 @@ class FoundationGameSession internal constructor(
     private fun talentAllocationPreview(
         loadout: TalentLoadout,
         availablePoints: Int,
+        owner: TalentTreeOwnerRef? = talentDraftOwner(),
     ) = TalentAllocationPlanner.preview(
-        liveRanks = loadout.talentLevels,
-        minimumRanks = minimumTalentRanks(loadout),
+        liveRanks = scopedTalentRanks(loadout = loadout, owner = owner),
+        minimumRanks = minimumTalentRanks(loadout, owner),
         availablePoints = availablePoints,
         draft = talentDraft(),
     )
@@ -462,7 +479,39 @@ class FoundationGameSession internal constructor(
     private fun remainingTalentPoints(
         loadout: TalentLoadout,
         availablePoints: Int,
-    ): Int = talentAllocationPreview(loadout, availablePoints).remainingPoints
+        owner: TalentTreeOwnerRef? = talentDraftOwner(),
+    ): Int = talentAllocationPreview(loadout, availablePoints, owner).remainingPoints
+
+    private fun talentDraftOwner(): TalentTreeOwnerRef? =
+        talentDraft()?.let { draft ->
+            TalentTreeOwnerRef(
+                ownerType = draft.ownerType,
+                treeOwnerId = draft.treeOwnerId,
+            )
+        }
+
+    private fun availableTalentPointsForOwner(
+        ownerType: TalentTreeOwnerType,
+        experience: Experience = requireNotNull(world.get<Experience>(playerId)),
+    ): Int =
+        when (ownerType) {
+            TalentTreeOwnerType.PROFESSION -> experience.unspentTalentPoints
+            TalentTreeOwnerType.RACE -> world.get<RaceTalentPointBank>(playerId)?.unspentPoints ?: 0
+        }
+
+    private fun storeRemainingTalentPointsForOwner(
+        ownerType: TalentTreeOwnerType,
+        remainingPoints: Int,
+        experience: Experience = requireNotNull(world.get<Experience>(playerId)),
+    ) {
+        when (ownerType) {
+            TalentTreeOwnerType.PROFESSION -> experience.unspentTalentPoints = remainingPoints
+            TalentTreeOwnerType.RACE -> {
+                val bank = world.get<RaceTalentPointBank>(playerId) ?: RaceTalentPointBank().also { world.add(playerId, it) }
+                bank.unspentPoints = remainingPoints
+            }
+        }
+    }
 
     private fun canOpenTalentAllocation(): Boolean {
         val loadout = world.get<TalentLoadout>(playerId) ?: return false
@@ -476,6 +525,20 @@ class FoundationGameSession internal constructor(
         val experience = requireNotNull(world.get<Experience>(playerId))
         val derivedStats = requireNotNull(world.get<DerivedStats>(playerId))
         val loadout = world.get<TalentLoadout>(playerId)
+        val raceTalentBank = world.get<RaceTalentPointBank>(playerId)
+        val draftOwner = talentDraftOwner()
+        val professionTalentPoints =
+            if (loadout != null && draftOwner?.ownerType == TalentTreeOwnerType.PROFESSION) {
+                remainingTalentPoints(loadout, experience.unspentTalentPoints, draftOwner)
+            } else {
+                experience.unspentTalentPoints
+            }
+        val raceTalentPoints =
+            if (loadout != null && draftOwner?.ownerType == TalentTreeOwnerType.RACE) {
+                remainingTalentPoints(loadout, raceTalentBank?.unspentPoints ?: 0, draftOwner)
+            } else {
+                raceTalentBank?.unspentPoints ?: 0
+            }
         return PlayerStatus(
             currentHp = health.current,
             maxHp = health.max,
@@ -483,7 +546,8 @@ class FoundationGameSession internal constructor(
             currentExperience = experience.current,
             nextLevelRequirement = ExperienceSystem.nextLevelExp(experience.level),
             statPoints = experience.unspentStatPoints,
-            talentPoints = loadout?.let { draftLoadout -> remainingTalentPoints(draftLoadout, experience.unspentTalentPoints) } ?: experience.unspentTalentPoints,
+            talentPoints = professionTalentPoints,
+            raceTalentPoints = raceTalentPoints,
             attack = derivedStats.attack,
             defense = derivedStats.defense,
             accuracy = derivedStats.accuracy,
@@ -1128,6 +1192,7 @@ class FoundationGameSession internal constructor(
             equipment = buildEquipmentSnapshots(),
             talents = buildTalentSnapshots(),
             reserveTalents = buildReserveTalentSnapshots(),
+            inscriptions = buildInscriptionSnapshots(),
             inventory = buildInventoryEntries(),
             targetablePositions = targetableHostilePositions().map { point -> GridPointSnapshot(point.x, point.y) },
         )
@@ -1142,11 +1207,20 @@ class FoundationGameSession internal constructor(
             maxResource = resource.max,
             resourceLabelKey = resourceLabelKey(resource.typeId),
             resourceTypeId = resource.typeId,
+            resourceStableMin = resource.stableMin,
+            resourceStableMax = resource.stableMax,
+            secondaryResourceCurrent = resource.secondary?.current,
+            secondaryResourceMax = resource.secondary?.max,
+            secondaryResourceLabelKey = resource.secondary?.typeId?.let(::resourceLabelKey),
+            secondaryResourceTypeId = resource.secondary?.typeId,
+            secondaryResourceStableMin = resource.secondary?.stableMin,
+            secondaryResourceStableMax = resource.secondary?.stableMax,
             level = status.level,
             currentExperience = status.currentExperience,
             nextLevelRequirement = status.nextLevelRequirement,
             statPoints = status.statPoints,
             talentPoints = status.talentPoints,
+            raceTalentPoints = status.raceTalentPoints,
             attack = status.attack,
             defense = status.defense,
             accuracy = status.accuracy,
@@ -1241,6 +1315,26 @@ class FoundationGameSession internal constructor(
             )
         }
 
+    private fun buildInscriptionSnapshots(): List<InscriptionSlotSnapshot> {
+        val loadout = world.get<InscriptionLoadout>(playerId) ?: return emptyList()
+        val cooldowns = world.get<InscriptionCooldownState>(playerId)
+        val defsById = content.inscriptions.associateBy(InscriptionDef::id)
+        return loadout.slots.mapNotNull { slot ->
+            val definition = defsById[slot.inscriptionId] ?: return@mapNotNull null
+            InscriptionSlotSnapshot(
+                hotkey = slot.hotkey,
+                inscriptionId = definition.id,
+                nameKey = definition.nameKey,
+                descKey = definition.descKey,
+                iconKey = definition.iconKey,
+                categoryId = definition.category.name,
+                cooldownRemaining = cooldowns?.remainingByInscriptionId?.get(definition.id) ?: 0,
+                maxCooldown = definition.cooldown,
+                requiresTarget = (definition.effect as? InscriptionEffect.Teleport)?.controlled == true,
+            )
+        }
+    }
+
     private fun DescriptionModel.toSnapshot(): DescriptionModelSnapshot =
         DescriptionModelSnapshot(
             templateKey = templateKey,
@@ -1322,6 +1416,9 @@ class FoundationGameSession internal constructor(
     private fun currentProfessionSchema(): ProfessionSchemaV2? =
         content.schemaCatalog.professions.firstOrNull { profession -> profession.id == config.playerProfessionId }
 
+    private fun currentRaceSchema() =
+        content.schemaCatalog.races.firstOrNull { race -> race.id == config.playerRaceId }
+
     private fun currentObjectiveSetSchema() =
         content.schemaCatalog.objectiveSets.firstOrNull { objectiveSet -> objectiveSet.id == currentZoneSchema().objectiveSetId }
 
@@ -1338,7 +1435,23 @@ class FoundationGameSession internal constructor(
 
     private fun resolvePlayerResourceView(): PlayerResourceView {
         val schema = currentProfessionSchema()
-        val resourceTypeId = schema?.resourceType ?: ResourceType.STAMINA.name
+        val primaryResourceType =
+            schema?.primarySpendAxis?.asResourceTypeOrNull()
+                ?: ResourceType.STAMINA
+        val primaryProfile =
+            schema?.let { profession ->
+                profession.resourceProfile(profession.primarySpendAxis)
+            }
+        val secondaryResourceType =
+            schema?.stateAxis
+                ?.asResourceTypeOrNull()
+                ?.takeIf { type -> type != primaryResourceType }
+        val secondaryProfile =
+            schema?.let { profession ->
+                profession.stateAxis
+                    ?.takeIf { axis -> axis != profession.primarySpendAxis }
+                    ?.let(profession::resourceProfile)
+            }
         val pools =
             if (schema != null) {
                 PlayerResourceService.sync(world, playerId, schema)
@@ -1348,13 +1461,27 @@ class FoundationGameSession internal constructor(
                 }
             }
         val pool =
-            requireNotNull(pools.pool(ResourceType.fromId(resourceTypeId))) {
-                "Missing resource pool '$resourceTypeId' for '$playerId'."
+            requireNotNull(pools.pool(primaryResourceType)) {
+                "Missing resource pool '${primaryResourceType.name}' for '$playerId'."
             }
         return PlayerResourceView(
             current = pool.current,
             max = pool.max,
-            typeId = resourceTypeId,
+            typeId = primaryResourceType.name,
+            stableMin = primaryProfile?.stableMin,
+            stableMax = primaryProfile?.stableMax,
+            secondary =
+                secondaryResourceType
+                    ?.let(pools::pool)
+                    ?.let { secondary ->
+                        SecondaryPlayerResourceView(
+                            current = secondary.current,
+                            max = secondary.max,
+                            typeId = secondary.type.name,
+                            stableMin = secondaryProfile?.stableMin,
+                            stableMax = secondaryProfile?.stableMax,
+                        )
+                    },
         )
     }
 
@@ -1363,6 +1490,8 @@ class FoundationGameSession internal constructor(
             "MANA" -> "ui.hud.mana.short"
             "ENERGY" -> "ui.hud.energy.short"
             "POSITIVE_ENERGY" -> "ui.hud.positive_energy.short"
+            "HATE" -> "ui.hud.hate.short"
+            "EQUILIBRIUM" -> "ui.hud.equilibrium.short"
             else -> "ui.hud.stamina.short"
         }
 
@@ -1842,6 +1971,7 @@ class FoundationGameSession internal constructor(
                     inCombat = turnCount <= lastPlayerCombatTurn,
                 )
             }
+            world.get<InscriptionCooldownState>(playerId)?.let(InscriptionManager::tickCooldowns)
         }
 
         activeTurnActor = actorId
@@ -2023,11 +2153,7 @@ class FoundationGameSession internal constructor(
                 val loadout = requireNotNull(world.get<TalentLoadout>(playerId))
                 val talentId = command.talentId
                 val talentSchema = talentSchemaFor(talentId)
-                val remainingPoints = remainingTalentPoints(loadout, experience.unspentTalentPoints)
-                if (remainingPoints <= 0) {
-                    addMessage("log.talent.none")
-                    CommandResolution.rejected()
-                } else if (talentId !in loadout.talentLevels) {
+                if (talentId !in loadout.talentLevels) {
                     addMessage("log.loadout.not_unlocked", keyArg("talent", talentNameKey(talentId)))
                     CommandResolution.rejected()
                 } else if (talentSchema == null) {
@@ -2040,39 +2166,45 @@ class FoundationGameSession internal constructor(
                     } else if (!ensureDraftOwner(existingDraft, owner)) {
                         rejectTalentOwnerConflict("log.talent.owner_conflict")
                     } else {
-                        val definition = requireNotNull(talentRegistry.get(talentId))
-                        val currentLevel = effectiveTalentRanks(loadout)[talentId] ?: loadout.levelOf(talentId)
-                        if (currentLevel >= definition.maxLevel) {
-                            addMessage("log.talent.max_level", keyArg("talent", talentNameKey(talentId)))
+                        val remainingPoints = remainingTalentPoints(loadout, availableTalentPointsForOwner(owner.ownerType, experience), owner)
+                        if (remainingPoints <= 0) {
+                            addMessage("log.talent.none")
                             CommandResolution.rejected()
                         } else {
-                            val nextLevel = currentLevel + 1
-                            val nextDraft =
-                                applyTalentDraft(
-                                    loadout = loadout,
-                                    currentDraft = existingDraft,
-                                    owner = owner,
-                                    talentId = talentId,
-                                    nextLevel = nextLevel,
-                                )
-                            val candidateRanks = TalentAllocationPlanner.effectiveRanks(loadout.talentLevels, nextDraft)
-                            val missingPrerequisites = TalentPrerequisiteValidator.missingPrerequisites(definition.prerequisites, candidateRanks)
-                            if (missingPrerequisites.isNotEmpty()) {
-                                addMessage(
-                                    "log.talent.requirement_missing",
-                                    keyArg("talent", talentNameKey(talentId)),
-                                    keyArg("required", talentNameKey(missingPrerequisites.first().talentId)),
-                                    literalArg("rank", missingPrerequisites.first().minRank),
-                                )
+                            val definition = requireNotNull(talentRegistry.get(talentId))
+                            val currentLevel = effectiveTalentRanks(loadout)[talentId] ?: loadout.levelOf(talentId)
+                            if (currentLevel >= definition.maxLevel) {
+                                addMessage("log.talent.max_level", keyArg("talent", talentNameKey(talentId)))
                                 CommandResolution.rejected()
                             } else {
-                                storeNormalizedTalentDraft(loadout, nextDraft)
-                                addMessage(
-                                    "log.talent.preview_advance",
-                                    keyArg("talent", talentNameKey(talentId)),
-                                    literalArg("level", nextLevel),
-                                )
-                                CommandResolution(accepted = true, consumesTurn = false)
+                                val nextLevel = currentLevel + 1
+                                val nextDraft =
+                                    applyTalentDraft(
+                                        loadout = loadout,
+                                        currentDraft = existingDraft,
+                                        owner = owner,
+                                        talentId = talentId,
+                                        nextLevel = nextLevel,
+                                    )
+                                val candidateRanks = TalentAllocationPlanner.effectiveRanks(loadout.talentLevels, nextDraft)
+                                val missingPrerequisites = TalentPrerequisiteValidator.missingPrerequisites(definition.prerequisites, candidateRanks)
+                                if (missingPrerequisites.isNotEmpty()) {
+                                    addMessage(
+                                        "log.talent.requirement_missing",
+                                        keyArg("talent", talentNameKey(talentId)),
+                                        keyArg("required", talentNameKey(missingPrerequisites.first().talentId)),
+                                        literalArg("rank", missingPrerequisites.first().minRank),
+                                    )
+                                    CommandResolution.rejected()
+                                } else {
+                                    storeNormalizedTalentDraft(loadout, nextDraft)
+                                    addMessage(
+                                        "log.talent.preview_advance",
+                                        keyArg("talent", talentNameKey(talentId)),
+                                        literalArg("level", nextLevel),
+                                    )
+                                    CommandResolution(accepted = true, consumesTurn = false)
+                                }
                             }
                         }
                     }
@@ -2089,11 +2221,12 @@ class FoundationGameSession internal constructor(
                     addMessage("log.talent.draft_confirm_blocked")
                     CommandResolution.rejected()
                 } else {
-                    val preview = talentAllocationPreview(loadout, experience.unspentTalentPoints)
+                    val owner = TalentTreeOwnerRef(draft.ownerType, draft.treeOwnerId)
+                    val preview = talentAllocationPreview(loadout, availableTalentPointsForOwner(owner.ownerType, experience), owner)
                     draft.pendingRanks.forEach { (talentId, rank) ->
                         loadout.talentLevels[talentId] = rank
                     }
-                    experience.unspentTalentPoints = preview.remainingPoints
+                    storeRemainingTalentPointsForOwner(owner.ownerType, preview.remainingPoints, experience)
                     setTalentDraft(null)
                     canonicalizePlayerLoadout(loadout)
                     addMessage("log.talent.draft_confirmed")
@@ -2251,6 +2384,9 @@ class FoundationGameSession internal constructor(
 
                         is TalentUseResult.Success -> {
                             applyTalentResourceReactions(result.result)
+                            if (result.result.hasConfirmedResolutionSuccess()) {
+                                recordSuccessfulPlayerAffinity(talentId)
+                            }
                             logTalentResult(result.result)
                             logTriggeredTalentDamagePassives(result.result)
                             handleTalentDeaths(result.result.targets, playerId)
@@ -2258,6 +2394,134 @@ class FoundationGameSession internal constructor(
                         }
                     }
                 }
+            }
+
+            is PlayerCommand.UseInscription -> {
+                val used = useInscription(command.hotkey, command.target)
+                CommandResolution(accepted = used, consumesTurn = used)
+            }
+        }
+
+    private fun useInscription(
+        hotkey: Int,
+        target: Point? = null,
+    ): Boolean {
+        ensurePlayerInscriptions()
+        val loadout = world.get<InscriptionLoadout>(playerId) ?: return false
+        val slot =
+            loadout.slots.firstOrNull { inscriptionSlot -> inscriptionSlot.hotkey == hotkey }
+                ?: run {
+                    addMessage("log.inscription.slot_empty", literalArg("slot", hotkey))
+                    return false
+                }
+        val definition =
+            content.inscriptions.firstOrNull { inscription -> inscription.id == slot.inscriptionId }
+                ?: run {
+                    addMessage("log.inscription.missing", literalArg("slot", hotkey))
+                    return false
+                }
+        val cooldowns = world.get<InscriptionCooldownState>(playerId) ?: InscriptionCooldownState().also { world.add(playerId, it) }
+        if (InscriptionManager.isOnCooldown(cooldowns, definition.id)) {
+            addMessage(
+                "log.inscription.cooldown",
+                keyArg("inscription", definition.nameKey),
+                literalArg("turns", cooldowns.remainingByInscriptionId[definition.id] ?: 0),
+            )
+            return false
+        }
+        if (!applyInscriptionEffect(definition, target)) {
+            return false
+        }
+        InscriptionManager.startCooldown(cooldowns, definition)
+        addMessage("log.inscription.use", keyArg("inscription", definition.nameKey))
+        return true
+    }
+
+    private fun applyInscriptionEffect(
+        definition: InscriptionDef,
+        target: Point? = null,
+    ): Boolean =
+        when (val effect = definition.effect) {
+            is InscriptionEffect.Heal -> {
+                val health = requireNotNull(world.get<Health>(playerId)) { "Missing Health for $playerId." }
+                val amount =
+                    maxOf(
+                        effect.amount,
+                        (health.max * effect.percentMax).roundToInt(),
+                    ).coerceAtLeast(0)
+                val before = health.current
+                health.current = (health.current + amount).coerceAtMost(health.max)
+                addMessage("log.inscription.heal", literalArg("amount", health.current - before))
+                true
+            }
+
+            is InscriptionEffect.Teleport -> {
+                val destination =
+                    if (effect.controlled) {
+                        resolveControlledTeleportDestination(target = target, maxRange = effect.range)
+                            ?: run {
+                                addMessage("log.inscription.no_teleport_destination")
+                                return false
+                            }
+                    } else {
+                        randomTeleportDestination(maxRange = effect.range)
+                    }
+                requireNotNull(world.get<Position>(playerId)).moveTo(destination)
+                refreshFov()
+                addMessage("log.inscription.teleport")
+                true
+            }
+
+            is InscriptionEffect.Shield -> {
+                StatusLifecycle.applyEffect(
+                    world,
+                    playerId,
+                    StatusLifecycle.createInstance(
+                        type = StatusEffectType.HOLY_SHIELD_BUFF,
+                        effectId = "inscription:${definition.id}:$turnCount",
+                        duration = effect.duration,
+                        magnitude = (effect.amount.toDouble() / 100.0).coerceAtLeast(0.1),
+                        sourceEntityId = playerId,
+                        appliedTurn = turnCount,
+                    ),
+                )
+                StatsCalculator.recalculateAndStore(world, playerId)
+                syncPlayerResistanceProfile()
+                addMessage("log.inscription.shield", literalArg("turns", effect.duration))
+                true
+            }
+
+            is InscriptionEffect.Cleanse -> {
+                val tracker = world.get<EffectTracker>(playerId)
+                val removed = tracker?.let { activeTracker -> StatusLifecycle.cleanse(activeTracker, effect.count) }.orEmpty()
+                if (effect.alsoHeal > 0) {
+                    world.get<Health>(playerId)?.let { health ->
+                        health.current = (health.current + effect.alsoHeal).coerceAtMost(health.max)
+                    }
+                }
+                if (removed.isNotEmpty()) {
+                    addMessage("log.inscription.cleanse", literalArg("count", removed.size))
+                }
+                StatsCalculator.recalculateAndStore(world, playerId)
+                true
+            }
+
+            is InscriptionEffect.DamageBoost -> {
+                StatusLifecycle.applyEffect(
+                    world,
+                    playerId,
+                    StatusLifecycle.createInstance(
+                        type = StatusEffectType.MANA_SURGE_BUFF,
+                        effectId = "inscription:${definition.id}:$turnCount",
+                        duration = effect.duration,
+                        magnitude = (effect.multiplier - 1.0).coerceAtLeast(0.0),
+                        sourceEntityId = playerId,
+                        appliedTurn = turnCount,
+                    ),
+                )
+                StatsCalculator.recalculateAndStore(world, playerId)
+                addMessage("log.inscription.buff", literalArg("turns", effect.duration))
+                true
             }
         }
 
@@ -2975,6 +3239,9 @@ class FoundationGameSession internal constructor(
         }
 
         applyDamageResourceReactions(attacker, target, result.finalDamage)
+        if (attacker == playerId) {
+            recordSuccessfulPlayerAffinity(EquilibriumAffinity.PHYSICAL)
+        }
         logEvent(DamageDealtEvent(attacker, target, result.finalDamage, result.critical))
         logTriggeredDamagePassives(attacker = attacker, sources = damageAdjustment.sources)
         addMessage(
@@ -3016,6 +3283,12 @@ class FoundationGameSession internal constructor(
             saveManager.deleteSave()
             addMessage("log.player.death")
             return
+        }
+
+        if (killer == playerId) {
+            currentProfessionSchema()?.let { profession ->
+                PlayerResourceService.onKill(world, playerId, profession)
+            }
         }
 
         val activeBossTemplateId = activeBossDefinition()?.template?.id
@@ -3114,8 +3387,20 @@ class FoundationGameSession internal constructor(
     private fun gainExperience(amount: Int) {
         val experience = requireNotNull(world.get<Experience>(playerId))
         val profession = currentProfessionSchema()
+        val previousLevel = experience.level
         val baseline = captureLevelUpFeedbackSnapshot()
         val result = ExperienceSystem.applyReward(experience = experience, reward = amount)
+        if (result.levelsGained > 0) {
+            val raceTalentDelta =
+                RaceTalentPointProgression.deltaForLevelRange(
+                    previousLevel = previousLevel,
+                    nextLevel = experience.level,
+                )
+            if (raceTalentDelta > 0) {
+                val bank = world.get<RaceTalentPointBank>(playerId) ?: RaceTalentPointBank().also { world.add(playerId, it) }
+                bank.unspentPoints += raceTalentDelta
+            }
+        }
         var unlockedTalentIds = emptyList<String>()
         if (result.levelsGained > 0) {
             profession?.let { schema ->
@@ -3335,13 +3620,48 @@ class FoundationGameSession internal constructor(
         }
     }
 
+    private fun ensurePlayerInscriptions() {
+        val loadout = world.get<InscriptionLoadout>(playerId) ?: InscriptionLoadout().also { world.add(playerId, it) }
+        if (world.get<InscriptionCooldownState>(playerId) == null) {
+            world.add(playerId, InscriptionCooldownState())
+        }
+        if (loadout.slots.isNotEmpty()) {
+            return
+        }
+        val defaultsById = content.inscriptions.associateBy(InscriptionDef::id)
+        listOf("healing_light", "phase_door", "iron_shield", "purge")
+            .mapNotNull(defaultsById::get)
+            .forEach { definition ->
+                val equippedDefinitions = loadout.slots.mapNotNull { slot -> defaultsById[slot.inscriptionId] }
+                InscriptionManager.equip(loadout, equippedDefinitions, definition)
+            }
+    }
+
+    private fun recordSuccessfulPlayerAffinity(talentId: String) {
+        val profession = currentProfessionSchema() ?: return
+        val affinity = talentRegistry.get(talentId)?.equilibriumAffinity ?: return
+        recordSuccessfulPlayerAffinity(affinity)
+    }
+
+    private fun recordSuccessfulPlayerAffinity(affinity: EquilibriumAffinity) {
+        currentProfessionSchema()?.let { profession ->
+            PlayerResourceService.recordSuccessfulAffinity(
+                world = world,
+                playerId = playerId,
+                profession = profession,
+                affinity = affinity,
+            )
+        }
+    }
+
     private fun syncUnlockedPlayerTalents(
         notify: Boolean = false,
     ): List<String> {
         val profession = currentProfessionSchema() ?: return emptyList()
+        val race = currentRaceSchema()
         val experience = world.get<Experience>(playerId) ?: return emptyList()
         val loadout = world.get<TalentLoadout>(playerId) ?: return emptyList()
-        val unlockedTalentIds = TalentProgression.unlockedTalentIds(content.schemaCatalog, profession, experience.level)
+        val unlockedTalentIds = TalentProgression.unlockedTalentIds(content.schemaCatalog, profession, experience.level, race)
         val newlyUnlockedTalentIds = mutableListOf<String>()
         unlockedTalentIds.forEach { talentId ->
             val wasUnlocked = talentId in loadout.talentLevels
@@ -3468,7 +3788,78 @@ class FoundationGameSession internal constructor(
                 damageType = damageType,
             )
         val holyTagMultiplier = DamageFormula.tagDamageMultiplier(damageType, targetTags)
-        return passiveAdjustment.copy(multiplier = passiveAdjustment.multiplier * holyTagMultiplier)
+        val professionMultiplier = professionDamageMultiplier(attacker = attacker, target = target, damageType = damageType)
+        return passiveAdjustment.copy(multiplier = passiveAdjustment.multiplier * holyTagMultiplier * professionMultiplier)
+    }
+
+    private fun professionDamageMultiplier(
+        attacker: EntityId,
+        target: EntityId,
+        damageType: DamageType,
+    ): Double {
+        if (attacker != playerId && target != playerId) {
+            return 1.0
+        }
+        val profession = currentProfessionSchema() ?: return 1.0
+        return hateDamageMultiplier(attacker = attacker, target = target, profession = profession) *
+            equilibriumDamageMultiplier(attacker = attacker, damageType = damageType, profession = profession)
+    }
+
+    private fun hateDamageMultiplier(
+        attacker: EntityId,
+        target: EntityId,
+        profession: ProfessionSchemaV2,
+    ): Double {
+        if (profession.primarySpendAxis != ResourceAxis.HATE && profession.stateAxis != ResourceAxis.HATE) {
+            return 1.0
+        }
+        val hate = world.get<com.ktome.core.resource.ResourcePools>(playerId)?.pool(ResourceType.HATE)?.current ?: return 1.0
+        val outgoing =
+            when {
+                attacker != playerId -> 1.0
+                hate >= 80 -> 1.20
+                hate >= 60 -> 1.12
+                hate >= 30 -> 1.05
+                else -> 1.0
+            }
+        val incomingRisk =
+            when {
+                target != playerId -> 1.0
+                hate >= 80 -> 1.12
+                hate >= 60 -> 1.06
+                else -> 1.0
+            }
+        return outgoing * incomingRisk
+    }
+
+    private fun equilibriumDamageMultiplier(
+        attacker: EntityId,
+        damageType: DamageType,
+        profession: ProfessionSchemaV2,
+    ): Double {
+        if (attacker != playerId || profession.stateAxis != ResourceAxis.EQUILIBRIUM) {
+            return 1.0
+        }
+        val profile = profession.resourceProfile(ResourceAxis.EQUILIBRIUM) ?: return 1.0
+        val stableMin = profile.stableMin ?: return 1.0
+        val stableMax = profile.stableMax ?: return 1.0
+        val current = world.get<com.ktome.core.resource.ResourcePools>(playerId)?.pool(ResourceType.EQUILIBRIUM)?.current ?: return 1.0
+        if (current in stableMin..stableMax) {
+            return 1.0
+        }
+        val pressure =
+            when {
+                current < stableMin -> (stableMin - current).coerceAtMost(30)
+                else -> (current - stableMax).coerceAtMost(30)
+            }
+        val favoredMultiplier = 1.0 + pressure / 100.0
+        val penalizedMultiplier = (1.0 - pressure / 150.0).coerceAtLeast(0.8)
+        return when {
+            current < stableMin && damageType == DamageType.PHYSICAL -> favoredMultiplier
+            current < stableMin -> penalizedMultiplier
+            current > stableMax && damageType != DamageType.PHYSICAL -> favoredMultiplier
+            else -> penalizedMultiplier
+        }
     }
 
     private fun targetTagsFor(target: EntityId): Set<String> {
@@ -3561,6 +3952,9 @@ class FoundationGameSession internal constructor(
             }
         }
     }
+
+    private fun com.ktome.core.talent.TalentResult.hasConfirmedResolutionSuccess(): Boolean =
+        effects.any { effect -> effect !is com.ktome.core.talent.TalentEffectResult.Miss }
 
     private fun logPlayerResourceRestore(before: PlayerResourceView) {
         val after = resolvePlayerResourceView()
@@ -4027,13 +4421,39 @@ class FoundationGameSession internal constructor(
         )
     }
 
-    private fun randomTeleportDestination(): Point {
+    private fun randomTeleportDestination(maxRange: Int? = null): Point {
         val occupied = occupiedBlockingTiles(excluding = playerId)
-        val candidates = map.floorPoints().filter { point -> point !in occupied }
+        val origin = playerPosition()
+        val candidates =
+            map.floorPoints().filter { point ->
+                point !in occupied &&
+                    !map[point].blocksMovement &&
+                    (maxRange == null || origin.chebyshevDistanceTo(point) <= maxRange)
+            }
         if (candidates.isEmpty()) {
-            return playerPosition()
+            return origin
         }
         return candidates[sessionRandom.nextInt(0, candidates.size)]
+    }
+
+    private fun resolveControlledTeleportDestination(
+        target: Point?,
+        maxRange: Int,
+    ): Point? {
+        val destination = target ?: return null
+        if (!map.isInBounds(destination.x, destination.y)) {
+            return null
+        }
+        if (playerPosition().chebyshevDistanceTo(destination) > maxRange) {
+            return null
+        }
+        if (map[destination].blocksMovement) {
+            return null
+        }
+        if (destination in occupiedBlockingTiles(excluding = playerId)) {
+            return null
+        }
+        return destination
     }
 
     private fun occupiedBlockingTiles(excluding: EntityId? = null): Set<Point> =
@@ -4875,6 +5295,8 @@ class FoundationGameSession internal constructor(
                         difficulties = emptyList(),
                         itemBundle = ItemBundleSchemaV2(materials = emptyList(), affixes = emptyList(), items = emptyList()),
                         lootProfiles = emptyList(),
+                        races = emptyList(),
+                        inscriptions = emptyList(),
                         tilesets = emptyList(),
                         aiProfiles = emptyList(),
                         arenas = emptyList(),

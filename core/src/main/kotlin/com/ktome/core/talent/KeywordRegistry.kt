@@ -38,6 +38,7 @@ class KeywordRegistry(
                     listOf(
                         KeywordSemantic("armor_break", KeywordSemanticType.OFFENSE, "keyword.armor_break.name", "keyword.armor_break.tooltip"),
                         KeywordSemantic("bleed", KeywordSemanticType.OFFENSE, "keyword.bleed.name", "keyword.bleed.tooltip"),
+                        KeywordSemantic("burst", KeywordSemanticType.OFFENSE, "keyword.burst.name", "keyword.burst.tooltip"),
                         KeywordSemantic("burn", KeywordSemanticType.OFFENSE, "keyword.burn.name", "keyword.burn.tooltip"),
                         KeywordSemantic("freeze", KeywordSemanticType.CONTROL, "keyword.freeze.name", "keyword.freeze.tooltip"),
                         KeywordSemantic("stun", KeywordSemanticType.CONTROL, "keyword.stun.name", "keyword.stun.tooltip"),
@@ -60,6 +61,7 @@ class KeywordRegistry(
                         KeywordSemantic("movement", KeywordSemanticType.MOBILITY, "keyword.movement.name", "keyword.movement.tooltip"),
                         KeywordSemantic("single_target", KeywordSemanticType.TARGETING, "keyword.single_target.name", "keyword.single_target.tooltip"),
                         KeywordSemantic("area", KeywordSemanticType.TARGETING, "keyword.area.name", "keyword.area.tooltip"),
+                        KeywordSemantic("boss", KeywordSemanticType.OFFENSE, "keyword.boss.name", "keyword.boss.tooltip"),
                         KeywordSemantic("buff", KeywordSemanticType.DEFENSE, "keyword.buff.name", "keyword.buff.tooltip"),
                         KeywordSemantic("cleave", KeywordSemanticType.OFFENSE, "keyword.cleave.name", "keyword.cleave.tooltip"),
                         KeywordSemantic("control", KeywordSemanticType.CONTROL, "keyword.control.name", "keyword.control.tooltip"),
@@ -69,13 +71,17 @@ class KeywordRegistry(
                         KeywordSemantic("finisher", KeywordSemanticType.OFFENSE, "keyword.finisher.name", "keyword.finisher.tooltip"),
                         KeywordSemantic("heal", KeywordSemanticType.DEFENSE, "keyword.heal.name", "keyword.heal.tooltip"),
                         KeywordSemantic("holy", KeywordSemanticType.UTILITY, "keyword.holy.name", "keyword.holy.tooltip"),
+                        KeywordSemantic("hybrid", KeywordSemanticType.UTILITY, "keyword.hybrid.name", "keyword.hybrid.tooltip"),
                         KeywordSemantic("knockback", KeywordSemanticType.CONTROL, "keyword.knockback.name", "keyword.knockback.tooltip"),
+                        KeywordSemantic("mark", KeywordSemanticType.CONTROL, "keyword.mark.name", "keyword.mark.tooltip"),
                         KeywordSemantic("mobility", KeywordSemanticType.MOBILITY, "keyword.mobility.name", "keyword.mobility.tooltip"),
                         KeywordSemantic("panic", KeywordSemanticType.DEFENSE, "keyword.panic.name", "keyword.panic.tooltip"),
                         KeywordSemantic("ranged", KeywordSemanticType.TARGETING, "keyword.ranged.name", "keyword.ranged.tooltip"),
                         KeywordSemantic("reposition", KeywordSemanticType.MOBILITY, "keyword.reposition.name", "keyword.reposition.tooltip"),
                         KeywordSemantic("resource", KeywordSemanticType.RESOURCE, "keyword.resource.name", "keyword.resource.tooltip"),
                         KeywordSemantic("slow", KeywordSemanticType.CONTROL, "keyword.slow.name", "keyword.slow.tooltip"),
+                        KeywordSemantic("stealth", KeywordSemanticType.MOBILITY, "keyword.stealth.name", "keyword.stealth.tooltip"),
+                        KeywordSemantic("taunt", KeywordSemanticType.CONTROL, "keyword.taunt.name", "keyword.taunt.tooltip"),
                     ).associateBy(KeywordSemantic::id),
             )
     }

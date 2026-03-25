@@ -204,6 +204,9 @@ internal object AsciiRenderModelBuilder {
                     lines += AsciiTextLine(localizer.text("ui.controls.map.use_talent"), AsciiTextTone.LIGHT_GRAY)
                     lines += AsciiTextLine(localizer.text("ui.controls.map.edit_loadout"), AsciiTextTone.LIGHT_GRAY)
                 }
+                if (snapshot.uiState.inscriptions.isNotEmpty()) {
+                    lines += AsciiTextLine(localizer.text("ui.controls.map.use_inscription"), AsciiTextTone.LIGHT_GRAY)
+                }
                 if (snapshot.uiState.talents.any { talent -> talent.requiresTarget }) {
                     lines += AsciiTextLine(localizer.text("ui.controls.map.target_talent"), AsciiTextTone.LIGHT_GRAY)
                 }
@@ -213,7 +216,7 @@ internal object AsciiRenderModelBuilder {
                 if (playerCell.stairDirectionId == "UP") {
                     lines += AsciiTextLine(localizer.text("ui.controls.map.ascend"), AsciiTextTone.LIGHT_GRAY)
                 }
-                if (snapshot.uiState.playerStatus.talentPoints > 0) {
+                if (snapshot.uiState.playerStatus.talentPoints > 0 || snapshot.uiState.playerStatus.raceTalentPoints > 0) {
                     lines += AsciiTextLine(localizer.text("ui.controls.map.spend_talent"), AsciiTextTone.LIGHT_GRAY)
                 }
                 if (snapshot.uiState.playerStatus.statPoints > 0) {
@@ -333,6 +336,23 @@ internal object AsciiRenderModelBuilder {
                     }
                 }
 
+                if (snapshot.uiState.inscriptions.isNotEmpty()) {
+                    lines += AsciiTextLine(localizer.text("ui.sidebar.inscriptions"), AsciiTextTone.GOLD)
+                    snapshot.uiState.inscriptions.forEach { inscription ->
+                        val cooldownSuffix =
+                            if (inscription.cooldownRemaining > 0) {
+                                " (${inscription.cooldownRemaining})"
+                            } else {
+                                ""
+                            }
+                        lines +=
+                            AsciiTextLine(
+                                "${inscription.hotkey}. ${localizer.text(inscription.nameKey)}$cooldownSuffix",
+                                if (inscription.cooldownRemaining > 0) AsciiTextTone.GRAY else AsciiTextTone.WHITE,
+                            )
+                    }
+                }
+
                 cell.stairDirectionId?.let { directionId ->
                     lines += AsciiTextLine(stairName(localizer, directionId), AsciiTextTone.LIGHT_GRAY)
                 }
@@ -368,9 +388,15 @@ internal object AsciiRenderModelBuilder {
                 lines += blankLine()
                 lines += AsciiTextLine(AsciiRenderer.sidebarTitle(localizer, UiMode.TALENT_ASSIGN), AsciiTextTone.GOLD)
                 lines += AsciiTextLine(
-                    localizer.text("ui.sidebar.points", "value" to snapshot.uiState.playerStatus.talentPoints),
+                    localizer.text("ui.sidebar.talent_points", "value" to snapshot.uiState.playerStatus.talentPoints),
                     AsciiTextTone.WHITE,
                 )
+                if (snapshot.uiState.playerStatus.raceTalentPoints > 0) {
+                    lines += AsciiTextLine(
+                        localizer.text("ui.sidebar.race_talent_points", "value" to snapshot.uiState.playerStatus.raceTalentPoints),
+                        AsciiTextTone.WHITE,
+                    )
+                }
                 snapshot.uiState.talents.forEach { talent ->
                     lines += AsciiTextLine(
                         "${talent.slot}. ${localizer.text(talent.nameKey)} ${talentRankLabel(talent.level, talent.committedLevel, talent.maxLevel)}${talentTargetSuffix(localizer, talent.requiresTarget, talent.range)}",

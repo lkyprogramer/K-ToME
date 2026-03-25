@@ -24,16 +24,18 @@ internal object LintFixtures {
             },
         )
     private val localeKeyCallPattern =
-        """(?:\btr|(?:\b[A-Za-z_][A-Za-z0-9_.]*\.)?text|MenuEntry|RenderTextTokenSnapshot)\s*\(\s*(?:[A-Za-z_][A-Za-z0-9_]*\s*=\s*)?"((?:ui|log|tile|actor|stairs|status|ai|profession|talent_tree|talent|monster|boss|zone|difficulty|material|affix|item|interactable|objective)\.[A-Za-z0-9_.-]+)""""
+        """(?:\btr|(?:\b[A-Za-z_][A-Za-z0-9_.]*\.)?text|MenuEntry|RenderTextTokenSnapshot)\s*\(\s*(?:[A-Za-z_][A-Za-z0-9_]*\s*=\s*)?"((?:ui|log|tile|actor|stairs|status|ai|profession|race|inscription|talent_tree|talent|monster|boss|zone|difficulty|material|affix|item|interactable|objective)\.[A-Za-z0-9_.-]+)""""
             .toRegex()
     private val directLocaleLiteralPattern =
-        """"((?:ui|log|stairs|status|ai|damage_type)\.[A-Za-z0-9_.-]+|(?:actor|profession|talent_tree|talent|monster|boss|zone|difficulty|material|affix|interactable)\.[A-Za-z0-9_.-]+\.(?:name|desc|role|resource_hint)|objective\.[A-Za-z0-9_.-]+\.(?:name|desc|role)|objective\.[A-Za-z0-9_.-]+\.step\.[A-Za-z0-9_.-]+|item\.[A-Za-z0-9_.-]+\.(?:name|desc|role)|item\.(?:quality|display)\.[A-Za-z0-9_.-]+|monster\.tag\.[A-Za-z0-9_.-]+)""""
+        """"((?:ui|log|stairs|status|ai|damage_type)\.[A-Za-z0-9_.-]+|(?:actor|profession|race|inscription|talent_tree|talent|monster|boss|zone|difficulty|material|affix|interactable)\.[A-Za-z0-9_.-]+\.(?:name|desc|role|resource_hint)|objective\.[A-Za-z0-9_.-]+\.(?:name|desc|role)|objective\.[A-Za-z0-9_.-]+\.step\.[A-Za-z0-9_.-]+|item\.[A-Za-z0-9_.-]+\.(?:name|desc|role)|item\.(?:quality|display)\.[A-Za-z0-9_.-]+|monster\.tag\.[A-Za-z0-9_.-]+)""""
             .toRegex()
     private val keywordMarkupPattern = Regex("\\[\\[([a-z0-9_]+)]]")
 
     val schemaResources: List<String> =
         listOf(
             "/data/professions/index.yaml",
+            "/data/races/index.yaml",
+            "/data/inscriptions/index.yaml",
             "/data/statuses/index.yaml",
             "/data/talents/index.yaml",
             "/data/monsters/index.yaml",
@@ -64,6 +66,7 @@ internal object LintFixtures {
         schemaResources.flatMapTo(linkedSetOf()) { resource ->
             extractFieldValues(loadYaml(resource), "nameKey") +
                 extractFieldValues(loadYaml(resource), "descKey") +
+                extractFieldValues(loadYaml(resource), "resourceHintKey") +
                 extractFieldValues(loadYaml(resource), "postMessageKey") +
                 extractFieldValues(loadYaml(resource), "messageKey")
         }

@@ -46,7 +46,15 @@ import com.ktome.core.item.ItemBaseDef
 import com.ktome.core.item.ItemInstance
 import com.ktome.core.item.Inventory
 import com.ktome.core.item.InventoryManager
+import com.ktome.core.profession.ReleaseUnlockCondition
+import com.ktome.core.profile.AdvancedClassUnlockRule
+import com.ktome.core.profile.AvailabilityContext
+import com.ktome.core.profile.ClassAvailabilityResolver
+import com.ktome.core.profile.ClassPlayabilityState
+import com.ktome.core.profile.ClassUnlockState
+import com.ktome.core.profile.ProfileData
 import com.ktome.core.stats.StatsCalculator
+import com.ktome.core.race.RaceDef
 import java.nio.file.Path
 import kotlin.random.Random
 import com.ktome.game.data.schema.ProfessionSchemaV2
@@ -55,19 +63,87 @@ import com.ktome.game.data.schema.ZoneSchemaV2
 object GameModule {
     private const val DEFAULT_ROUTE_VISIBILITY_RADIUS = 8
 
-    fun availableProfessionIds(
+    fun playerCreationState(
         locale: GameLocale = GameLocale.DEFAULT,
-    ): List<String> = DataLoader(locale).loadSchemaCatalog().professions.map(ProfessionSchemaV2::id)
+        profile: ProfileData = ProfileData(),
+        previousSelection: PlayerCreationSelection? = null,
+        context: AvailabilityContext = AvailabilityContext.PLAYER_CREATION,
+    ): PlayerCreationState {
+        val schemaCatalog = DataLoader(locale).loadSchemaCatalog()
+        val professionOptions =
+            schemaCatalog.professions.map { profession ->
+                val unlockState = effectiveUnlockState(profession, profile)
+                ProfessionPlayerCreationOption(
+                    id = profession.id,
+                    displayNameKey = profession.nameKey,
+                    descriptionKey = profession.descKey,
+                    unlockState = unlockState,
+                    playabilityState = ClassAvailabilityResolver.resolve(unlockState = unlockState, context = context),
+                    tier = profession.tier,
+                    resourceHintKey = profession.resourceHintKey,
+                )
+            }
+        val raceOptions =
+            schemaCatalog.races.map { race ->
+                RacePlayerCreationOption(
+                    id = race.id,
+                    displayNameKey = race.nameKey,
+                    descriptionKey = race.descKey,
+                    unlockState = race.initialUnlockState,
+                    playabilityState =
+                        ClassAvailabilityResolver.resolve(
+                            unlockState = race.initialUnlockState,
+                            context = context,
+                        ),
+                )
+            }
+        return PlayerCreationState(
+            professionOptions = professionOptions,
+            raceOptions = raceOptions,
+            selection =
+                resolvePlayerCreationSelection(
+                    previousSelection = previousSelection,
+                    professionOptions = professionOptions,
+                    raceOptions = raceOptions,
+                ),
+        )
+    }
+
+    fun advancedClassUnlockRules(
+        locale: GameLocale = GameLocale.DEFAULT,
+    ): List<AdvancedClassUnlockRule> =
+        DataLoader(locale)
+            .loadSchemaCatalog()
+            .professions
+            .mapNotNull { profession ->
+                when (val condition = profession.releaseUnlockCondition) {
+                    is ReleaseUnlockCondition.RequireProfessionCleared ->
+                        AdvancedClassUnlockRule(
+                            classId = profession.id,
+                            requiredProfessionId = condition.professionId,
+                        )
+
+                    null -> null
+                }
+            }
 
     fun newFoundationSession(
         config: FoundationGameConfig = FoundationGameConfig(),
         saveManager: SaveManager = SaveManager(defaultSaveDir()),
         locale: GameLocale = GameLocale.DEFAULT,
+        profile: ProfileData = ProfileData(),
+        availabilityContext: AvailabilityContext = AvailabilityContext.PLAYER_CREATION,
     ): FoundationGameSession {
         val content = loadContent(locale)
-        validateNewSessionConfig(config, content.schemaCatalog)
+        validateNewSessionConfig(
+            config = config,
+            schemaCatalog = content.schemaCatalog,
+            profile = profile,
+            availabilityContext = availabilityContext,
+        )
         val profession = resolveProfession(content.schemaCatalog, config.playerProfessionId)
-        val playerSnapshot = createInitialPlayerSnapshot(content, profession, Point.ZERO)
+        val race = resolveRace(content.schemaCatalog, config.playerRaceId)
+        val playerSnapshot = createInitialPlayerSnapshot(content, profession, race, Point.ZERO)
         val zoneRuntime = buildZoneRuntime(content, config)
         val sessionConfig = zoneRuntime.config
         val dungeonManager = zoneRuntime.dungeonManager
@@ -98,6 +174,7 @@ object GameModule {
         val schemaCatalog = content.schemaCatalog
         validateLoadedSessionConfig(restored.config, schemaCatalog)
         val profession = resolveProfession(schemaCatalog, restored.config.playerProfessionId)
+        resolveRace(schemaCatalog, restored.config.playerRaceId)
         validateLoadedPlayerResourceContract(restored.player, profession)
         val zone = resolveZone(schemaCatalog, restored.config.zoneId)
         val sessionConfig =
@@ -185,6 +262,8 @@ object GameModule {
             statuses = schemaCatalog.statuses,
             statusCatalog = statusCatalog,
             talentRegistry = com.ktome.core.talent.TalentRegistry().apply { registerAll(talents) },
+            races = schemaCatalog.races,
+            inscriptions = schemaCatalog.inscriptions,
             monsterCatalog = loader.loadMonsterCatalog().monsters,
             itemBundle = loader.loadItemBundle(),
             bossDefinitions = loader.loadBossDefinitions(),
@@ -229,6 +308,7 @@ object GameModule {
     private fun createInitialPlayerSnapshot(
         content: GameContent,
         profession: ProfessionSchemaV2,
+        race: RaceDef,
         position: Point,
     ): com.ktome.core.save.PlayerSnapshot {
         val world = World()
@@ -236,10 +316,10 @@ object GameModule {
             EntityFactory().createPlayer(
                 world = world,
                 position = position,
-                talents = resolveStartingTalents(content, profession),
+                talents = resolveStartingTalents(content, profession, race),
                 playerName = content.localizer.text("actor.player.name"),
-                stats = profession.baseStats.toRuntimeStats(),
-                combatProfile = profession.combatProfile.toRuntimeCombatProfile(),
+                stats = profession.baseStats.toRuntimeStats(race),
+                combatProfile = profession.combatProfile.toRuntimeCombatProfile(race),
             )
         installStarterKit(world, playerId, resolveStarterItems(content, profession))
         StatsCalculator.recalculateAndStore(world, playerId)
@@ -873,7 +953,8 @@ object GameModule {
     private fun resolveStartingTalents(
         content: GameContent,
         profession: ProfessionSchemaV2,
-    ) = resolveStartingTalentIds(content, profession).map { talentId ->
+        race: RaceDef? = null,
+    ) = resolveStartingTalentIds(content, profession, race).map { talentId ->
         requireNotNull(content.talents.firstOrNull { it.id == talentId }) {
             "Profession '${profession.id}' references unknown starter talent '$talentId'."
         }
@@ -882,7 +963,8 @@ object GameModule {
     private fun resolveStartingTalentIds(
         content: GameContent,
         profession: ProfessionSchemaV2,
-    ): List<String> = TalentProgression.unlockedTalentIds(content.schemaCatalog, profession, level = 1)
+        race: RaceDef? = null,
+    ): List<String> = TalentProgression.unlockedTalentIds(content.schemaCatalog, profession, level = 1, race = race)
 
     private fun resolveStarterItems(
         content: GameContent,
@@ -954,6 +1036,8 @@ object GameModule {
     private fun validateNewSessionConfig(
         config: FoundationGameConfig,
         schemaCatalog: SchemaCatalog,
+        profile: ProfileData,
+        availabilityContext: AvailabilityContext,
     ) {
         routeValidationError(config, schemaCatalog)?.let { message ->
             throw IllegalArgumentException(message)
@@ -964,6 +1048,31 @@ object GameModule {
         require(schemaCatalog.professions.any { it.id == config.playerProfessionId }) {
             "Unknown profession id '${config.playerProfessionId}'. Update FoundationGameConfig to use a formal ProfessionDef id."
         }
+        require(schemaCatalog.races.any { it.id == config.playerRaceId }) {
+            "Unknown race id '${config.playerRaceId}'. Update FoundationGameConfig to use a formal RaceDef id."
+        }
+        val profession = resolveProfession(schemaCatalog, config.playerProfessionId)
+        requirePlayableSelection(
+            selectionType = "Profession",
+            selectionId = profession.id,
+            resolvedState =
+                ClassAvailabilityResolver.resolve(
+                    unlockState = effectiveUnlockState(profession, profile),
+                    context = availabilityContext,
+                ),
+            availabilityContext = availabilityContext,
+        )
+        val race = resolveRace(schemaCatalog, config.playerRaceId)
+        requirePlayableSelection(
+            selectionType = "Race",
+            selectionId = race.id,
+            resolvedState =
+                ClassAvailabilityResolver.resolve(
+                    unlockState = race.initialUnlockState,
+                    context = availabilityContext,
+                ),
+            availabilityContext = availabilityContext,
+        )
     }
 
     private fun validateLoadedSessionConfig(
@@ -976,6 +1085,9 @@ object GameModule {
         }
         if (schemaCatalog.professions.none { it.id == config.playerProfessionId }) {
             throw InvalidSaveException("Save references unknown profession id '${config.playerProfessionId}'.")
+        }
+        if (schemaCatalog.races.none { it.id == config.playerRaceId }) {
+            throw InvalidSaveException("Save references unknown race id '${config.playerRaceId}'.")
         }
         val zone = resolveZone(schemaCatalog, config.zoneId)
         if (config.width != zone.mapSize.width || config.height != zone.mapSize.height) {
@@ -1011,8 +1123,56 @@ object GameModule {
     private fun requiredPlayerResourcePoolTypes(profession: ProfessionSchemaV2): Set<String> =
         linkedSetOf<String>().apply {
             add(ResourceType.STAMINA.name)
-            add(profession.resourceType)
+            profession.resourceProfiles.mapNotNullTo(this) { profile -> profile.resourceType?.name }
         }
+
+    private fun resolveRace(
+        schemaCatalog: SchemaCatalog,
+        raceId: String,
+    ): RaceDef =
+        requireNotNull(schemaCatalog.races.firstOrNull { race -> race.id == raceId }) {
+            "Unknown race id '$raceId'."
+        }
+
+    private fun effectiveUnlockState(
+        profession: ProfessionSchemaV2,
+        profile: ProfileData,
+    ): ClassUnlockState =
+        if (profession.id in profile.releaseUnlockedClasses) {
+            ClassUnlockState.RELEASE_UNLOCKED
+        } else {
+            profession.initialUnlockState
+        }
+
+    private fun requirePlayableSelection(
+        selectionType: String,
+        selectionId: String,
+        resolvedState: ClassPlayabilityState,
+        availabilityContext: AvailabilityContext,
+    ) {
+        require(resolvedState == ClassPlayabilityState.PLAYABLE) {
+            "$selectionType '$selectionId' is $resolvedState in $availabilityContext and cannot start a new session."
+        }
+    }
+
+    private fun resolvePlayerCreationSelection(
+        previousSelection: PlayerCreationSelection?,
+        professionOptions: List<ProfessionPlayerCreationOption>,
+        raceOptions: List<RacePlayerCreationOption>,
+    ): PlayerCreationSelection =
+        PlayerCreationSelection(
+            professionId = resolveSelectedOptionId(previousSelection?.professionId, professionOptions),
+            raceId = resolveSelectedOptionId(previousSelection?.raceId, raceOptions),
+        )
+
+    private fun resolveSelectedOptionId(
+        previousId: String?,
+        options: List<PlayerCreationOption>,
+    ): String =
+        previousId
+            ?.takeIf { optionId -> options.any { option -> option.id == optionId } }
+            ?: options.firstOrNull { option -> option.playabilityState == ClassPlayabilityState.PLAYABLE }?.id
+            ?: options.first().id
 
     private fun validateAiProfileContracts(content: GameContent) {
         val talentIds = content.talents.map { talent -> talent.id }.toSet()
@@ -1244,22 +1404,22 @@ object GameModule {
         world.destroyEntity(reservation)
     }
 
-    private fun com.ktome.game.data.schema.SchemaStats.toRuntimeStats() =
+    private fun com.ktome.game.data.schema.SchemaStats.toRuntimeStats(race: RaceDef) =
         com.ktome.core.ecs.Stats(
-            str = str,
-            dex = dex,
-            con = con,
-            wil = wil,
+            str = str + race.statModifiers.str,
+            dex = dex + race.statModifiers.dex,
+            con = con + race.statModifiers.con,
+            wil = wil + race.statModifiers.wil,
         )
 
-    private fun SchemaCombatProfile.toRuntimeCombatProfile() =
+    private fun SchemaCombatProfile.toRuntimeCombatProfile(race: RaceDef) =
         com.ktome.core.ecs.CombatProfile(
             baseAttack = baseAttack,
             baseDefense = baseDefense,
-            baseAccuracy = baseAccuracy,
-            baseEvasion = baseEvasion,
-            baseSpeed = baseSpeed,
-            baseHp = baseHp,
+            baseAccuracy = baseAccuracy + race.statModifiers.accuracyDelta,
+            baseEvasion = baseEvasion + race.statModifiers.evasionDelta,
+            baseSpeed = baseSpeed + race.statModifiers.speedDelta,
+            baseHp = baseHp + race.statModifiers.hpDelta,
             baseStamina = baseStamina,
             baseHpRegen = baseHpRegen,
         )

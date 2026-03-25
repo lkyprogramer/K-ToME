@@ -19,7 +19,13 @@ class LocaleLintTest {
     @Test
     fun `locale bundles stay in lockstep and cover all schema referenced keys`() {
         assertEquals(en.keys, zh.keys, "Locale bundles must expose the same key set.")
-        assertEquals(referencedKeys, en.keys, "Locale bundles must match the union of schema and code referenced keys.")
+        val missingKeys = referencedKeys - en.keys
+        val extraKeys = en.keys - referencedKeys
+        assertTrue(
+            missingKeys.isEmpty() && extraKeys.isEmpty(),
+            "Locale bundles must match the union of schema and code referenced keys. " +
+                "missing=${missingKeys.take(20)} extra=${extraKeys.take(20)}",
+        )
 
         val allowedPrefixes =
             listOf(
@@ -32,6 +38,8 @@ class LocaleLintTest {
                 "status.",
                 "ai.",
                 "profession.",
+                "race.",
+                "inscription.",
                 "talent_tree.",
                 "talent.",
                 "monster.",

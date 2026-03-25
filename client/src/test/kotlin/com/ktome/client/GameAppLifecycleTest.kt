@@ -1,5 +1,8 @@
 package com.ktome.client
 
+import com.badlogic.gdx.ApplicationAdapter
+import com.badlogic.gdx.backends.headless.HeadlessApplication
+import com.badlogic.gdx.backends.headless.HeadlessApplicationConfiguration
 import com.ktome.core.dungeon.StairDirection
 import com.ktome.core.save.EntitySnapshot
 import com.ktome.core.save.FloorSnapshot
@@ -19,6 +22,12 @@ import com.ktome.client.assets.ManifestPrefixRule
 import com.ktome.client.assets.VisualManifestEntry
 import com.ktome.client.assets.VisualManifest
 import com.ktome.client.assets.VisualManifestResourceLoader
+import com.ktome.client.input.InputSource
+import com.ktome.client.screen.MainMenuScreen
+import com.ktome.client.screen.selectionLabel
+import com.ktome.core.profile.AdvancedClassUnlockRule
+import com.ktome.core.profile.ProfileData
+import com.ktome.core.profile.ProfileManager
 import com.ktome.core.snapshot.ActorRenderSnapshot
 import com.ktome.core.snapshot.ActorRoleKindSnapshot
 import com.ktome.core.snapshot.CellVisibilitySnapshot
@@ -31,6 +40,13 @@ import com.ktome.core.snapshot.PropRenderSnapshot
 import com.ktome.core.snapshot.RenderMetadataSnapshot
 import com.ktome.core.snapshot.RenderSnapshot
 import com.ktome.core.snapshot.RenderUiStateSnapshot
+import com.ktome.game.i18n.GameLocale
+import com.ktome.game.i18n.LocalizationBundle
+import com.ktome.game.FoundationGameConfig
+import com.ktome.game.PlayerCreationSelection
+import com.ktome.game.PlayerCreationState
+import com.ktome.game.ProfessionPlayerCreationOption
+import com.ktome.game.RacePlayerCreationOption
 import java.nio.file.Files
 import java.nio.file.Path
 import kotlin.io.path.exists
@@ -40,6 +56,7 @@ import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNotSame
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 
@@ -181,6 +198,226 @@ class GameAppLifecycleTest {
         assertTrue("vfx.boss.warning.sigil_01" in warmState.warmVisualKeys)
         assertTrue("audio.boss.warning" in warmState.warmAudioKeys)
     }
+
+    @Test
+    fun `malformed profile disables persistence and surfaces explicit notice`() {
+        val profileDir = tempDir.resolve("corrupt-profile")
+        Files.createDirectories(profileDir)
+        profileDir.resolve(ProfileManager.DEFAULT_FILE_NAME).writeText("""{"profileVersion":"oops"}""")
+        val localizer = LocalizationBundle.load().translator(GameLocale.EN_US)
+
+        val result = loadProfilePersistenceState(ProfileManager(profileDir), localizer)
+
+        assertEquals(ProfileData(), result.profileData)
+        assertFalse(result.persistenceEnabled)
+        assertEquals(localizer.text("ui.menu.profile_load_failed"), result.notice)
+    }
+
+    @Test
+    fun `failed profile save keeps previous in memory progression`() {
+        val profileDir = tempDir.resolve("blocked-profile")
+        Files.createDirectories(profileDir)
+        Files.createDirectories(profileDir.resolve(ProfileManager.DEFAULT_FILE_NAME))
+        val profileManager = ProfileManager(profileDir)
+        val localizer = LocalizationBundle.load().translator(GameLocale.EN_US)
+        val originalProfile = ProfileData(releaseUnlockedClasses = setOf("berserker"))
+
+        val result =
+            appendAndPersistProfileRun(
+                profileManager = profileManager,
+                profile = originalProfile,
+                persistenceEnabled = true,
+                summary =
+                    com.ktome.core.profile.RunSummary(
+                        seed = 1L,
+                        finishedAtEpochMillis = 2L,
+                        classId = "arcanist",
+                        raceId = "human",
+                        finalZoneId = "abyssal_temple",
+                        turnCount = 100,
+                        headlessTurnEquivalent = 100,
+                        zoneRouteHash = "route",
+                        buildHash = "build",
+                        rulesetVersion = "phase3",
+                        victory = true,
+                    ),
+                unlockRules = listOf(AdvancedClassUnlockRule(classId = "spellblade", requiredProfessionId = "arcanist")),
+                localizer = localizer,
+            )
+
+        assertEquals(originalProfile, result.profileData)
+        assertFalse(result.persisted)
+        assertEquals(localizer.text("ui.menu.profile_save_failed"), result.notice)
+    }
+
+    @Test
+    fun `new game config copies selected profession and race`() {
+        val config =
+            newGameConfig(
+                defaultConfig = FoundationGameConfig(playerProfessionId = "vanguard", playerRaceId = "human"),
+                professionId = "spellblade",
+                raceId = "elf",
+            )
+
+        assertEquals("spellblade", config.playerProfessionId)
+        assertEquals("elf", config.playerRaceId)
+    }
+
+    @Test
+    fun `cycle locale refreshes player creation state with remembered unified selection`() {
+        val calls = mutableListOf<Pair<GameLocale, PlayerCreationSelection?>>()
+        val app =
+            GameApp(
+                saveManager = SaveManager(tempDir.resolve("player-creation-refresh")),
+                renderEnabled = false,
+                initialLocale = GameLocale.EN_US,
+                playerCreationStateProvider = { locale, _, previousSelection ->
+                    calls += locale to previousSelection
+                    playerCreationState(selection = previousSelection ?: PlayerCreationSelection("vanguard", "human"))
+                },
+            )
+
+        try {
+            app.rememberPlayerCreationSelection(PlayerCreationSelection("arcanist", "elf"))
+
+            val nextLocale = app.cycleLocale()
+
+            assertEquals(GameLocale.ZH_CN, nextLocale)
+            assertEquals(GameLocale.EN_US to PlayerCreationSelection("vanguard", "human"), calls.first())
+            assertEquals(GameLocale.ZH_CN to PlayerCreationSelection("arcanist", "elf"), calls.last())
+        } finally {
+            app.dispose()
+        }
+    }
+
+    @Test
+    fun `locale toggle rebuilds main menu with refreshed player creation state`() {
+        withHeadlessGdx {
+            val input = QueueInputSource(com.badlogic.gdx.Input.Keys.L)
+            val app =
+                GameApp(
+                    saveManager = SaveManager(tempDir.resolve("locale-toggle-menu-refresh")),
+                    renderEnabled = false,
+                    initialLocale = GameLocale.EN_US,
+                    menuInputSourceFactory = { input },
+                    playerCreationStateProvider = { locale, _, _ -> localeSpecificPlayerCreationState(locale) },
+                )
+
+            try {
+                app.showMainMenu(saveCurrent = false)
+                val initialScreen = app.screen as MainMenuScreen
+                val initialSnapshot = initialScreen.textSnapshot()
+                assertEquals(
+                    selectionLabel(app.localizer(), "ui.menu.profession", "profession.vanguard.name"),
+                    initialSnapshot.profession,
+                )
+                assertEquals(
+                    selectionLabel(app.localizer(), "ui.menu.race", "race.human.name"),
+                    initialSnapshot.race,
+                )
+
+                initialScreen.render(0f)
+
+                assertEquals(GameLocale.ZH_CN, app.currentLocale())
+                val refreshedScreen = app.screen as MainMenuScreen
+                assertNotSame(initialScreen, refreshedScreen)
+                val refreshedSnapshot = refreshedScreen.textSnapshot()
+                assertEquals(
+                    selectionLabel(app.localizer(), "ui.menu.profession", "profession.arcanist.name"),
+                    refreshedSnapshot.profession,
+                )
+                assertEquals(
+                    selectionLabel(app.localizer(), "ui.menu.race", "race.elf.name"),
+                    refreshedSnapshot.race,
+                )
+            } finally {
+                app.dispose()
+            }
+        }
+    }
+}
+
+private fun playerCreationState(selection: PlayerCreationSelection): PlayerCreationState =
+    PlayerCreationState(
+        professionOptions =
+            listOf(
+                professionOption("vanguard"),
+                professionOption("arcanist"),
+            ),
+        raceOptions =
+            listOf(
+                raceOption("human"),
+                raceOption("elf"),
+            ),
+        selection = selection,
+    )
+
+private fun localeSpecificPlayerCreationState(locale: GameLocale): PlayerCreationState =
+    when (locale) {
+        GameLocale.EN_US ->
+            playerCreationState(
+                selection = PlayerCreationSelection(professionId = "vanguard", raceId = "human"),
+            )
+
+        GameLocale.ZH_CN ->
+            PlayerCreationState(
+                professionOptions =
+                    listOf(
+                        professionOption("arcanist"),
+                        professionOption("vanguard"),
+                    ),
+                raceOptions =
+                    listOf(
+                        raceOption("elf"),
+                        raceOption("human"),
+                    ),
+                selection = PlayerCreationSelection(professionId = "arcanist", raceId = "elf"),
+            )
+    }
+
+private fun professionOption(id: String): ProfessionPlayerCreationOption =
+    ProfessionPlayerCreationOption(
+        id = id,
+        displayNameKey = "profession.$id.name",
+        descriptionKey = "profession.$id.desc",
+        unlockState = com.ktome.core.profile.ClassUnlockState.RELEASE_UNLOCKED,
+        playabilityState = com.ktome.core.profile.ClassPlayabilityState.PLAYABLE,
+        tier = com.ktome.core.profession.ProfessionTier.BASE,
+        resourceHintKey = "profession.$id.resource_hint",
+    )
+
+private fun raceOption(id: String): RacePlayerCreationOption =
+    RacePlayerCreationOption(
+        id = id,
+        displayNameKey = "race.$id.name",
+        descriptionKey = "race.$id.desc",
+        unlockState = com.ktome.core.profile.ClassUnlockState.RELEASE_UNLOCKED,
+        playabilityState = com.ktome.core.profile.ClassPlayabilityState.PLAYABLE,
+    )
+
+private fun <T> withHeadlessGdx(block: () -> T): T {
+    val backend = HeadlessApplication(object : ApplicationAdapter() {}, HeadlessApplicationConfiguration())
+    return try {
+        block()
+    } finally {
+        backend.exit()
+    }
+}
+
+private class QueueInputSource(
+    vararg keys: Int,
+) : InputSource {
+    private val queue = ArrayDeque<Int>().apply { keys.forEach(::addLast) }
+
+    override fun isKeyJustPressed(keycode: Int): Boolean =
+        if (queue.firstOrNull() == keycode) {
+            queue.removeFirst()
+            true
+        } else {
+            false
+        }
+
+    override fun isKeyPressed(keycode: Int): Boolean = false
 }
 
 private fun sampleSnapshot(): SaveSnapshot =
@@ -194,6 +431,7 @@ private fun sampleSnapshot(): SaveSnapshot =
         fovRadius = 8,
         messageLogSize = 8,
         playerProfessionId = "vanguard",
+        playerRaceId = "human",
         maxFloor = 2,
         turnCount = 18,
         player =

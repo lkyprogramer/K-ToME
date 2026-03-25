@@ -29,8 +29,11 @@ class SchemaV2LoaderTest {
     fun `schema v2 loader reads full content catalog`() {
         val catalog = DataLoader(GameLocale.EN_US).loadSchemaCatalog()
 
-        assertEquals(setOf("vanguard", "arcanist", "rogue", "templar"), catalog.professions.map { it.id }.toSet())
-        assertEquals(12, catalog.talentTrees.size)
+        assertEquals(
+            setOf("vanguard", "arcanist", "rogue", "templar", "berserker", "spellblade", "shadowblade", "warden"),
+            catalog.professions.map { it.id }.toSet(),
+        )
+        assertEquals(29, catalog.talentTrees.size)
         assertTrue(
             catalog.talents.map { it.id }.toSet().containsAll(
                 setOf(
@@ -48,6 +51,10 @@ class SchemaV2LoaderTest {
                     "holy_light",
                     "holy_shield",
                     "devotion",
+                    "blood_rush",
+                    "spell_parry",
+                    "human_resolve",
+                    "dwarf_forge_heart",
                 ),
             ),
         )
@@ -71,7 +78,7 @@ class SchemaV2LoaderTest {
         )
         assertEquals(3, catalog.professions.first { it.id == "vanguard" }.combatProfile.baseDefense)
         assertEquals(102, catalog.professions.first { it.id == "arcanist" }.combatProfile.baseSpeed)
-        assertEquals(listOf("backstab", "poison_blade", "deathblow"), catalog.talentTrees.first { it.id == "rogue_assassination" }.nodes)
+        assertEquals(listOf("backstab", "poison_blade", "deathblow", "execution"), catalog.talentTrees.first { it.id == "rogue_assassination" }.nodes)
         assertEquals(listOf("holy_light", "holy_shield", "purify"), catalog.talentTrees.first { it.id == "templar_grace" }.nodes)
         assertEquals(3, catalog.talents.first { it.id == "charge" }.unlockLevel)
         assertEquals("charge_lane", catalog.talents.first { it.id == "charge" }.telegraphRef)
@@ -388,6 +395,146 @@ class SchemaV2LoaderTest {
         assertEquals(TalentRole.CONTROL, runtimeTalent.aiHints?.role)
         assertEquals(3..5, runtimeTalent.aiHints?.preferredRange)
         assertTrue(runtimeTalent.aiHints?.isSustainToggle == true)
+    }
+
+    @Test
+    fun `schema v2 loader rejects profession schemas without primary spend axis`() {
+        val loader = DataLoader(GameLocale.EN_US)
+        val parseMethod =
+            DataLoader::class.java.getDeclaredMethod("parseProfessionSchemas", Map::class.java).apply {
+                isAccessible = true
+            }
+
+        val error =
+            assertThrows(InvocationTargetException::class.java) {
+                parseMethod.invoke(
+                    loader,
+                    linkedMapOf(
+                        "professions" to
+                            listOf(
+                                linkedMapOf(
+                                    "id" to "broken_profession",
+                                    "nameKey" to "profession.broken.name",
+                                    "descKey" to "profession.broken.desc",
+                                    "resourceHintKey" to "profession.broken.resource_hint",
+                                    "visualKey" to "actor.vanguard",
+                                    "iconKey" to "icon.profession.vanguard",
+                                    "audioProfile" to "audio.profession.vanguard",
+                                    "schemaVersion" to 1,
+                                    "resourceProfiles" to
+                                        listOf(
+                                            linkedMapOf(
+                                                "axis" to "STAMINA",
+                                                "initialCurrent" to 40,
+                                                "max" to 40,
+                                            ),
+                                        ),
+                                    "baseStats" to linkedMapOf("str" to 10, "dex" to 8, "con" to 9, "wil" to 7),
+                                    "combatProfile" to
+                                        linkedMapOf(
+                                            "baseHp" to 22,
+                                            "baseAttack" to 6,
+                                            "baseDefense" to 4,
+                                            "baseAccuracy" to 6,
+                                            "baseEvasion" to 4,
+                                            "baseSpeed" to 100,
+                                        ),
+                                    "statGrowth" to linkedMapOf("str" to 2, "dex" to 1, "con" to 2, "wil" to 1),
+                                    "talentTrees" to emptyList<String>(),
+                                    "startingTalents" to emptyList<String>(),
+                                    "startingKit" to emptyList<String>(),
+                                    "soloContract" to
+                                        linkedMapOf(
+                                            "offenseTags" to listOf("single_target"),
+                                            "defenseTags" to listOf("guard"),
+                                            "mobilityTags" to listOf("dash"),
+                                            "aoeAnswerTags" to listOf("cleave"),
+                                            "bossAnswerTags" to listOf("burst"),
+                                            "panicAnswerTags" to listOf("shield"),
+                                        ),
+                                ),
+                            ),
+                    ),
+                )
+            }
+
+        val causeMessages =
+            generateSequence(error.cause) { throwable -> throwable.cause }
+                .mapNotNull(Throwable::message)
+                .toList()
+
+        assertTrue(causeMessages.isNotEmpty())
+        assertTrue(causeMessages.any { message -> "primarySpendAxis" in message })
+    }
+
+    @Test
+    fun `schema v2 loader rejects profession schemas without resource hint key`() {
+        val loader = DataLoader(GameLocale.EN_US)
+        val parseMethod =
+            DataLoader::class.java.getDeclaredMethod("parseProfessionSchemas", Map::class.java).apply {
+                isAccessible = true
+            }
+
+        val error =
+            assertThrows(InvocationTargetException::class.java) {
+                parseMethod.invoke(
+                    loader,
+                    linkedMapOf(
+                        "professions" to
+                            listOf(
+                                linkedMapOf(
+                                    "id" to "broken_profession",
+                                    "nameKey" to "profession.broken.name",
+                                    "descKey" to "profession.broken.desc",
+                                    "visualKey" to "actor.vanguard",
+                                    "iconKey" to "icon.profession.vanguard",
+                                    "audioProfile" to "audio.profession.vanguard",
+                                    "schemaVersion" to 1,
+                                    "resourceProfiles" to
+                                        listOf(
+                                            linkedMapOf(
+                                                "axis" to "STAMINA",
+                                                "initialCurrent" to 40,
+                                                "max" to 40,
+                                            ),
+                                        ),
+                                    "primarySpendAxis" to "STAMINA",
+                                    "baseStats" to linkedMapOf("str" to 10, "dex" to 8, "con" to 9, "wil" to 7),
+                                    "combatProfile" to
+                                        linkedMapOf(
+                                            "baseHp" to 22,
+                                            "baseAttack" to 6,
+                                            "baseDefense" to 4,
+                                            "baseAccuracy" to 6,
+                                            "baseEvasion" to 4,
+                                            "baseSpeed" to 100,
+                                        ),
+                                    "statGrowth" to linkedMapOf("str" to 2, "dex" to 1, "con" to 2, "wil" to 1),
+                                    "talentTrees" to emptyList<String>(),
+                                    "startingTalents" to emptyList<String>(),
+                                    "startingKit" to emptyList<String>(),
+                                    "soloContract" to
+                                        linkedMapOf(
+                                            "offenseTags" to listOf("single_target"),
+                                            "defenseTags" to listOf("guard"),
+                                            "mobilityTags" to listOf("dash"),
+                                            "aoeAnswerTags" to listOf("cleave"),
+                                            "bossAnswerTags" to listOf("burst"),
+                                            "panicAnswerTags" to listOf("shield"),
+                                        ),
+                                ),
+                            ),
+                    ),
+                )
+            }
+
+        val causeMessages =
+            generateSequence(error.cause) { throwable -> throwable.cause }
+                .mapNotNull(Throwable::message)
+                .toList()
+
+        assertTrue(causeMessages.isNotEmpty())
+        assertTrue(causeMessages.any { message -> "resourceHintKey" in message })
     }
 
     @Test

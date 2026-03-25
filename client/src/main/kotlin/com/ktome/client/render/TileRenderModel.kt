@@ -6,6 +6,8 @@ import com.ktome.client.assets.ResolvedVisualAsset
 import com.ktome.client.assets.VisualManifestResolver
 import com.ktome.client.input.OverlayState
 import com.ktome.client.input.UiMode
+import com.ktome.client.ui.hud.ResourceGaugeModel
+import com.ktome.client.ui.hud.ResourceHud
 import com.ktome.client.ui.status.StatusHudRenderer
 import com.ktome.client.ui.status.StatusHudIconModel
 import com.ktome.client.ui.status.StatusIconResolver
@@ -73,6 +75,8 @@ internal data class TileGaugeModel(
     val max: Int,
     val tone: TileTextTone,
     val resourceTypeId: String,
+    val stableMin: Int? = null,
+    val stableMax: Int? = null,
 ) {
     val percent: Float =
         if (max <= 0) {
@@ -99,6 +103,7 @@ internal data class TileHudModel(
     val floorText: String,
     val hpGauge: TileGaugeModel,
     val resourceGauge: TileGaugeModel,
+    val secondaryResourceGauge: TileGaugeModel? = null,
     val statusIcons: List<StatusHudIconModel>,
     val focusIcon: ResolvedVisualAsset?,
     val focusName: String?,
@@ -217,8 +222,8 @@ internal object TileRenderModelBuilder {
         cellByPoint: Map<com.ktome.core.map.Point, MapCellSnapshot>,
     ): TileHudModel {
         val playerStatus = snapshot.uiState.playerStatus
+        val resourceHud = ResourceHud.build(localizer, snapshot)
         val focusActor = focusedActor(snapshot, overlayState, actorById, cellByPoint)
-        val resourceTone = resourceTone(playerStatus.resourceTypeId)
         val statusIcons = StatusIconResolver.resolveIcons(visualResolver, player.statusEffects)
         val hotbar =
                 snapshot.uiState.talents.map { talent ->
@@ -258,25 +263,14 @@ internal object TileRenderModelBuilder {
                     tone = TileTextTone.RED,
                     resourceTypeId = "HEALTH",
                 ),
-            resourceGauge =
-                TileGaugeModel(
-                    label = localizer.text(playerStatus.resourceLabelKey),
-                    current = playerStatus.currentResource,
-                    max = playerStatus.maxResource,
-                    tone = resourceTone,
-                    resourceTypeId = playerStatus.resourceTypeId,
-                ),
+            resourceGauge = resourceHud.primaryGauge.toTileGauge(),
+            secondaryResourceGauge = resourceHud.secondaryGauge?.toTileGauge(),
             statusIcons = statusIcons,
             focusIcon = focusActor?.let { actor -> resolveVisual(visualResolver, actor.visualKey) },
             focusName = focusName,
             focusLines = focusLines,
             hotbar = hotbar,
-            summaryText =
-                "${localizer.text("ui.hud.floor.short")} ${snapshot.metadata.currentFloor}/${snapshot.metadata.maxFloor}  " +
-                    "${localizer.text("ui.hud.hp.short")} ${playerStatus.currentHp}/${playerStatus.maxHp}  " +
-                    "${localizer.text(playerStatus.resourceLabelKey)} ${playerStatus.currentResource}/${playerStatus.maxResource}  " +
-                    "${localizer.text("ui.hud.attack.short")} ${playerStatus.attack}  " +
-                    "${localizer.text("ui.hud.defense.short")} ${playerStatus.defense}",
+            summaryText = resourceHud.summaryText,
         )
     }
 
@@ -312,6 +306,23 @@ internal object TileRenderModelBuilder {
                             icon = item?.iconKey?.let { resolveVisual(visualResolver, it) },
                         )
                 }
+                if (snapshot.uiState.inscriptions.isNotEmpty()) {
+                    rows += TileTextRow(localizer.text("ui.sidebar.inscriptions"), TileTextTone.GOLD)
+                    snapshot.uiState.inscriptions.forEach { inscription ->
+                        val cooldownSuffix =
+                            if (inscription.cooldownRemaining > 0) {
+                                " (${inscription.cooldownRemaining})"
+                            } else {
+                                ""
+                            }
+                        rows +=
+                            TileTextRow(
+                                text = "${inscription.hotkey}. ${localizer.text(inscription.nameKey)}$cooldownSuffix",
+                                tone = if (inscription.cooldownRemaining > 0) TileTextTone.GRAY else TileTextTone.WHITE,
+                                icon = inscription.iconKey.let { iconKey -> resolveVisual(visualResolver, iconKey) },
+                            )
+                    }
+                }
                 rows += TileTextRow(localizer.text("ui.sidebar.items"), TileTextTone.GOLD)
                 if (playerCell.items.isEmpty()) {
                     rows += TileTextRow(localizer.text("ui.sidebar.empty"), TileTextTone.GRAY)
@@ -332,6 +343,9 @@ internal object TileRenderModelBuilder {
                     rows += TileTextRow(localizer.text("ui.controls.map.use_talent"), TileTextTone.LIGHT_GRAY)
                     rows += TileTextRow(localizer.text("ui.controls.map.edit_loadout"), TileTextTone.LIGHT_GRAY)
                 }
+                if (snapshot.uiState.inscriptions.isNotEmpty()) {
+                    rows += TileTextRow(localizer.text("ui.controls.map.use_inscription"), TileTextTone.LIGHT_GRAY)
+                }
                 if (snapshot.uiState.talents.any(TalentSlotSnapshot::requiresTarget)) {
                     rows += TileTextRow(localizer.text("ui.controls.map.target_talent"), TileTextTone.LIGHT_GRAY)
                 }
@@ -341,7 +355,7 @@ internal object TileRenderModelBuilder {
                 if (playerCell.stairDirectionId == "UP") {
                     rows += TileTextRow(localizer.text("ui.controls.map.ascend"), TileTextTone.LIGHT_GRAY)
                 }
-                if (snapshot.uiState.playerStatus.talentPoints > 0) {
+                if (snapshot.uiState.playerStatus.talentPoints > 0 || snapshot.uiState.playerStatus.raceTalentPoints > 0) {
                     rows += TileTextRow(localizer.text("ui.controls.map.spend_talent"), TileTextTone.LIGHT_GRAY)
                 }
                 if (snapshot.uiState.playerStatus.statPoints > 0) {
@@ -503,7 +517,10 @@ internal object TileRenderModelBuilder {
             }
 
             UiMode.TALENT_ASSIGN -> {
-                rows += TileTextRow(localizer.text("ui.sidebar.points", "value" to snapshot.uiState.playerStatus.talentPoints), TileTextTone.WHITE)
+                rows += TileTextRow(localizer.text("ui.sidebar.talent_points", "value" to snapshot.uiState.playerStatus.talentPoints), TileTextTone.WHITE)
+                if (snapshot.uiState.playerStatus.raceTalentPoints > 0) {
+                    rows += TileTextRow(localizer.text("ui.sidebar.race_talent_points", "value" to snapshot.uiState.playerStatus.raceTalentPoints), TileTextTone.WHITE)
+                }
                 snapshot.uiState.talents.forEach { talent ->
                     rows +=
                         TileTextRow(
@@ -606,6 +623,17 @@ internal object TileRenderModelBuilder {
             messageKey.startsWith("log.boss.") -> TileTextTone.RED
             else -> TileTextTone.WHITE
         }
+
+    private fun ResourceGaugeModel.toTileGauge(): TileGaugeModel =
+        TileGaugeModel(
+            label = label,
+            current = current,
+            max = max,
+            tone = resourceTone(resourceTypeId),
+            resourceTypeId = resourceTypeId,
+            stableMin = stableMin,
+            stableMax = stableMax,
+        )
 
     private fun descriptionTone(line: DescriptionLine): TileTextTone =
         when (line.kind) {

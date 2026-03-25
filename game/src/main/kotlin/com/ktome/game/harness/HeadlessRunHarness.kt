@@ -1,5 +1,6 @@
 package com.ktome.game.harness
 
+import com.ktome.core.profile.AvailabilityContext
 import com.ktome.core.save.SaveManager
 import com.ktome.game.FoundationGameConfig
 import com.ktome.game.FoundationGameSession
@@ -152,6 +153,7 @@ class HeadlessRunHarness(
                     routeIndex = spec.routeIndex,
                 ),
             saveManager = saveManager,
+            availabilityContext = AvailabilityContext.DEV_LAB,
         )
 
     private fun roundTripCheckpoint(

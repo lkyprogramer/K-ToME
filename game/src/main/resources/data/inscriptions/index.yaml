@@ -1,0 +1,86 @@
+inscriptions:
+  - id: healing_light
+    nameKey: inscription.healing_light.name
+    descKey: inscription.healing_light.desc
+    iconKey: icon.skill.templar.holy_light
+    category: HEALING
+    cooldown: 15
+    tier: 1
+    effect:
+      type: HEAL
+      percentMax: 0.20
+  - id: healing_surge
+    nameKey: inscription.healing_surge.name
+    descKey: inscription.healing_surge.desc
+    iconKey: icon.skill.templar.holy_light
+    category: HEALING
+    cooldown: 12
+    tier: 2
+    effect:
+      type: HEAL
+      percentMax: 0.35
+  - id: phase_door
+    nameKey: inscription.phase_door.name
+    descKey: inscription.phase_door.desc
+    iconKey: icon.skill.arcanist.blink
+    category: MOVEMENT
+    cooldown: 20
+    tier: 1
+    effect:
+      type: TELEPORT
+      range: 10
+      controlled: false
+  - id: controlled_phase
+    nameKey: inscription.controlled_phase.name
+    descKey: inscription.controlled_phase.desc
+    iconKey: icon.skill.arcanist.blink
+    category: MOVEMENT
+    cooldown: 15
+    tier: 2
+    effect:
+      type: TELEPORT
+      range: 8
+      controlled: true
+  - id: iron_shield
+    nameKey: inscription.iron_shield.name
+    descKey: inscription.iron_shield.desc
+    iconKey: icon.skill.templar.holy_shield
+    category: PROTECTION
+    cooldown: 18
+    tier: 1
+    effect:
+      type: SHIELD
+      amount: 24
+      duration: 5
+  - id: diamond_shield
+    nameKey: inscription.diamond_shield.name
+    descKey: inscription.diamond_shield.desc
+    iconKey: icon.skill.templar.holy_shield
+    category: PROTECTION
+    cooldown: 25
+    tier: 3
+    effect:
+      type: SHIELD
+      amount: 48
+      duration: 5
+  - id: purge
+    nameKey: inscription.purge.name
+    descKey: inscription.purge.desc
+    iconKey: icon.skill.templar.purify
+    category: CLEANSING
+    cooldown: 12
+    tier: 1
+    effect:
+      type: CLEANSE
+      count: 1
+  - id: greater_purge
+    nameKey: inscription.greater_purge.name
+    descKey: inscription.greater_purge.desc
+    iconKey: icon.skill.templar.purify
+    category: CLEANSING
+    cooldown: 15
+    tier: 2
+    effect:
+      type: CLEANSE
+      count: 2
+      alsoHeal: 12

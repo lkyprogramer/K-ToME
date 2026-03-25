@@ -202,6 +202,24 @@ class TalentResolver(
             "holy_aura",
             "purify",
             "divine_intervention",
+            "blood_rush",
+            "savage_hew",
+            "reckless_slam",
+            "rupture_wave",
+            "kill_frenzy",
+            "last_stand",
+            "arcane_edge",
+            "spell_rend",
+            "flux_anchor",
+            "flux_burst",
+            "mana_lunge",
+            "spell_parry",
+            "human_resolve",
+            "human_mastery",
+            "elf_scouting",
+            "elf_glade_step",
+            "dwarf_grit",
+            "dwarf_forge_heart",
         )
 
     private data class DamageResolution(
@@ -294,7 +312,7 @@ class TalentResolver(
             )
         }
 
-        if (definition.id == "blink" || definition.id == "roll") {
+        if (definition.id in BLINK_STYLE_TALENTS) {
             if (blinkDestination(world, map, userPosition, targetPoint, user) == null) {
                 return TalentUseResult.Failure(
                     code = TalentFailureCode.NO_TARGET,
@@ -314,7 +332,7 @@ class TalentResolver(
                     talentName = definition.nameKey,
                     talentId = talentId,
                 )
-        if (definition.id == "charge" && chargeDestination(world, map, userPosition, targetPoint, targetEntity) == null) {
+        if (definition.id in CHARGE_STYLE_TALENTS && chargeDestination(world, map, userPosition, targetPoint, targetEntity) == null) {
             return TalentUseResult.Failure(
                 code = TalentFailureCode.NO_CHARGE_PATH,
                 reason = "No path to charge target.",
@@ -367,7 +385,11 @@ class TalentResolver(
         cooldowns.remainingByTalentId[talentId] = definition.cooldown
 
         when (talentId) {
-            "power_strike" -> {
+            "power_strike",
+            "savage_hew",
+            "arcane_edge",
+            "spell_rend",
+            -> {
                 val targetEntity = requireNotNull(hostileTargetAt(world, user, requireNotNull(target)))
                 targets += targetEntity
                 val damageResult =
@@ -388,7 +410,10 @@ class TalentResolver(
                 )
             }
 
-            "charge" -> {
+            "charge",
+            "blood_rush",
+            "mana_lunge",
+            -> {
                 val targetPoint = requireNotNull(target)
                 val targetEntity = requireNotNull(hostileTargetAt(world, user, targetPoint))
                 targets += targetEntity
@@ -398,6 +423,9 @@ class TalentResolver(
                 effects += TalentEffectResult.Movement(user, from, destination)
                 val damageResult =
                     resolveDamage(world, user, targetEntity, definition.damageType, effect.damageMultiplier, effects, abilityId = definition.id)
+                if (talentId == "blood_rush" && damageResult.hit) {
+                    healTarget(world, user, effect, effects)
+                }
                 applyConfiguredEffects(
                     world = world,
                     user = user,
@@ -447,7 +475,9 @@ class TalentResolver(
                 )
             }
 
-            "sweeping_strike" -> {
+            "sweeping_strike",
+            "rupture_wave",
+            -> {
                 val center = requireNotNull(target)
                 val hitTargets = hostileTargetsWithin(world, user, center, definition.areaRadius).ifEmpty {
                     listOfNotNull(hostileTargetAt(world, user, center))
@@ -481,6 +511,20 @@ class TalentResolver(
             }
 
             "guard_stance" -> {
+                targets += user
+                applyConfiguredEffects(
+                    world = world,
+                    user = user,
+                    definition = definition,
+                    effect = effect,
+                    trigger = EffectTrigger.ON_CAST,
+                    effects = effects,
+                )
+            }
+
+            "human_mastery",
+            "dwarf_grit",
+            -> {
                 targets += user
                 applyConfiguredEffects(
                     world = world,
@@ -596,6 +640,16 @@ class TalentResolver(
                 targets += user
             }
 
+            "elf_scouting",
+            "elf_glade_step",
+            -> {
+                val from = requireNotNull(world.get<Position>(user)).toPoint()
+                val destination = requireNotNull(blinkDestination(world, map, from, requireNotNull(target), user))
+                requireNotNull(world.get<Position>(user)).moveTo(destination)
+                effects += TalentEffectResult.Movement(user, from, destination)
+                targets += user
+            }
+
             "arcane_shield" -> {
                 targets += user
                 applyConfiguredEffects(
@@ -608,7 +662,10 @@ class TalentResolver(
                 )
             }
 
-            "mana_surge" -> {
+            "mana_surge",
+            "kill_frenzy",
+            "flux_anchor",
+            -> {
                 applyConfiguredEffects(
                     world = world,
                     user = user,
@@ -741,7 +798,15 @@ class TalentResolver(
                 targets += user
             }
 
-            "holy_shield" -> {
+            "human_resolve" -> {
+                healTarget(world, user, effect, effects)
+                targets += user
+            }
+
+            "holy_shield",
+            "spell_parry",
+            "dwarf_forge_heart",
+            -> {
                 targets += user
                 applyConfiguredEffects(
                     world = world,
@@ -765,7 +830,10 @@ class TalentResolver(
                 )
             }
 
-            "holy_aura" -> {
+            "holy_aura",
+            "reckless_slam",
+            "flux_burst",
+            -> {
                 targets += user
                 applyConfiguredEffects(
                     world = world,
@@ -778,7 +846,11 @@ class TalentResolver(
                 val origin = requireNotNull(world.get<Position>(user)).toPoint()
                 hostileTargetsWithin(world, user, origin, definition.areaRadius).forEach { enemy ->
                     targets += enemy
-                    resolveDamage(world, user, enemy, definition.damageType, effect.damageMultiplier, effects, abilityId = definition.id)
+                    val damageResult =
+                        resolveDamage(world, user, enemy, definition.damageType, effect.damageMultiplier, effects, abilityId = definition.id)
+                    if (damageResult.hit && effect.knockback > 0) {
+                        knockback(world, map, user, enemy, effect.knockback)?.let(effects::add)
+                    }
                 }
             }
 
@@ -795,7 +867,9 @@ class TalentResolver(
                 targets += user
             }
 
-            "divine_intervention" -> {
+            "divine_intervention",
+            "last_stand",
+            -> {
                 healTarget(world, user, effect, effects)
                 targets += user
                 applyConfiguredEffects(
@@ -1450,4 +1524,9 @@ class TalentResolver(
         } else {
             null
         }
+
+    private companion object {
+        val BLINK_STYLE_TALENTS: Set<String> = setOf("blink", "roll", "elf_scouting", "elf_glade_step")
+        val CHARGE_STYLE_TALENTS: Set<String> = setOf("charge", "blood_rush", "mana_lunge")
+    }
 }

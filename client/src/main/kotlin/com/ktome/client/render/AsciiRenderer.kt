@@ -7,6 +7,7 @@ import com.badlogic.gdx.utils.Disposable
 import com.ktome.client.assets.VisualManifestResolver
 import com.ktome.client.input.OverlayState
 import com.ktome.client.input.UiMode
+import com.ktome.client.ui.hud.ResourceHud
 import com.ktome.core.snapshot.RenderSnapshot
 import com.ktome.game.i18n.Localizer
 
@@ -125,18 +126,7 @@ class AsciiRenderer(
         internal fun hudText(
             localizer: Localizer,
             snapshot: RenderSnapshot,
-        ): String {
-            val status = snapshot.uiState.playerStatus
-            return "${localizer.text("ui.hud.floor.short")} ${snapshot.metadata.currentFloor}/${snapshot.metadata.maxFloor}  " +
-                "${localizer.text("ui.hud.hp.short")} ${status.currentHp}/${status.maxHp}  " +
-                "${localizer.text(status.resourceLabelKey)} ${status.currentResource}/${status.maxResource}  " +
-                "${localizer.text("ui.hud.attack.short")} ${status.attack}  " +
-                "${localizer.text("ui.hud.defense.short")} ${status.defense}  " +
-                "${localizer.text("ui.hud.level.short")} ${status.level}  " +
-                "${localizer.text("ui.hud.xp.short")} ${status.currentExperience}/${status.nextLevelRequirement}  " +
-                "${localizer.text("ui.hud.stat.short")} ${status.statPoints}  " +
-                "${localizer.text("ui.hud.talent.short")} ${status.talentPoints}"
-        }
+        ): String = ResourceHud.inlineHudText(localizer, snapshot)
 
         internal fun sidebarTitle(
             localizer: Localizer,

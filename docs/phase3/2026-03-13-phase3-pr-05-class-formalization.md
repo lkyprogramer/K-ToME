@@ -214,9 +214,9 @@ game/src/main/resources/data/talents/templar/*.yaml
 
 | 职业 | 主轴 | 支线 1 | 支线 2 | 支线 3 |
 | --- | --- | --- | --- | --- |
-| `Vanguard` | `STAMINA` | Arms（输出） | Defense（生存） | Tactics（控制/机动） |
-| `Arcanist` | `MANA` | Destruction（输出） | Arcane Shield（生存） | Chrono（控制/机动） |
-| `Rogue` | `ENERGY` | Combat（输出） | Subtlety（机动） | Assassination（爆发） |
+| `Vanguard` | `STAMINA` | Arms（输出） | Shield（生存） | Warcry（控制/机动） |
+| `Arcanist` | `MANA` | Flame（输出） | Frost（控制） | Arcane（护盾/机动） |
+| `Rogue` | `ENERGY` | Assassination（爆发） | Subtlety（机动） | Agility（节奏/位移） |
 | `Templar` | `POSITIVE_ENERGY` | Smite（输出） | Grace（生存/净化） | Faith（光环/buff） |
 
 ### 4.4 [W5b] Berserker 可玩路径

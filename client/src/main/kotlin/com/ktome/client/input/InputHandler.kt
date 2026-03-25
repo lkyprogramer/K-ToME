@@ -34,6 +34,7 @@ data class OverlayState(
     val loadoutReserveSelection: Int = 0,
     val talentAssignFocus: TalentAssignFocus = TalentAssignFocus.ACTIVE,
     val targetingSlot: Int? = null,
+    val targetingInscriptionHotkey: Int? = null,
     val targetingCursor: Point? = null,
     val inspectCursor: Point? = null,
 )
@@ -78,6 +79,7 @@ class InputHandler(
     private var loadoutReserveSelection: Int = 0
     private var talentAssignFocus: TalentAssignFocus = TalentAssignFocus.ACTIVE
     private var targetingSlot: Int? = null
+    private var targetingInscriptionHotkey: Int? = null
     private var targetingCursor: Point? = null
     private var inspectCursor: Point? = null
     private var heldMovementKey: Int? = null
@@ -93,6 +95,7 @@ class InputHandler(
             loadoutReserveSelection = loadoutReserveSelection,
             talentAssignFocus = talentAssignFocus,
             targetingSlot = targetingSlot,
+            targetingInscriptionHotkey = targetingInscriptionHotkey,
             targetingCursor = targetingCursor,
             inspectCursor = inspectCursor,
         )
@@ -140,6 +143,23 @@ class InputHandler(
                 } else {
                     mode = UiMode.TARGETING
                     targetingSlot = command.slot
+                    targetingInscriptionHotkey = null
+                    targetingCursor = command.target
+                }
+            }
+
+            is PlayerCommand.UseInscription -> {
+                if (command.target == null) {
+                    reconcileMode(snapshot)
+                    return
+                }
+
+                if (consumed) {
+                    clearTargeting()
+                } else {
+                    mode = UiMode.TARGETING
+                    targetingSlot = command.hotkey
+                    targetingInscriptionHotkey = command.hotkey
                     targetingCursor = command.target
                 }
             }
@@ -238,6 +258,18 @@ class InputHandler(
             return null
         }
 
+        hotkeyInscription(snapshot)?.let { inscription ->
+            if (!inscription.requiresTarget) {
+                return PlayerCommand.UseInscription(inscription.hotkey)
+            }
+            mode = UiMode.TARGETING
+            targetingSlot = inscription.hotkey
+            targetingInscriptionHotkey = inscription.hotkey
+            targetingCursor = playerPosition(snapshot)
+            resetMovementRepeat()
+            return null
+        }
+
         hotkeySlot()?.let { slot ->
             val talent = snapshot.uiState.talents.firstOrNull { it.slot == slot } ?: return null
             if (!talent.requiresTarget) {
@@ -246,6 +278,7 @@ class InputHandler(
 
             mode = UiMode.TARGETING
             targetingSlot = slot
+            targetingInscriptionHotkey = null
             targetingCursor = defaultTargetCursor(snapshot)
             resetMovementRepeat()
         }
@@ -362,6 +395,9 @@ class InputHandler(
         }
 
         if (input.isKeyJustPressed(Keys.ENTER) || input.isKeyJustPressed(Keys.SPACE)) {
+            targetingInscriptionHotkey?.let { hotkey ->
+                return PlayerCommand.UseInscription(hotkey, targetingCursor ?: playerPosition(snapshot))
+            }
             return PlayerCommand.UseTalent(requireNotNull(targetingSlot), targetingCursor ?: playerPosition(snapshot))
         }
 
@@ -418,7 +454,7 @@ class InputHandler(
                 input.isKeyJustPressed(Keys.E) ||
                 input.isKeyJustPressed(Keys.NUMPAD_ENTER)
             ) {
-                selectedReserveTalent(snapshot)?.takeIf { snapshot.uiState.playerStatus.talentPoints > 0 }?.let { talent ->
+                selectedReserveTalent(snapshot)?.takeIf { talent -> availableTalentPoints(snapshot, talent.ownerType) > 0 }?.let { talent ->
                     talentAssignFocus = TalentAssignFocus.RESERVE
                     return PlayerCommand.AssignTalent(talent.talentId)
                 }
@@ -430,7 +466,7 @@ class InputHandler(
             talentAssignFocus = TalentAssignFocus.ACTIVE
             snapshot.uiState.talents
                 .firstOrNull { talent -> talent.slot == slot }
-                ?.takeIf { snapshot.uiState.playerStatus.talentPoints > 0 }
+                ?.takeIf { talent -> availableTalentPoints(snapshot, talent.ownerType) > 0 }
                 ?.let { talent ->
                 return PlayerCommand.AssignTalent(talent.talentId)
             }
@@ -449,6 +485,15 @@ class InputHandler(
             else -> null
         }
 
+    private fun hotkeyInscription(snapshot: RenderSnapshot) =
+        when {
+            input.isKeyJustPressed(Keys.NUM_5) -> snapshot.uiState.inscriptions.firstOrNull { inscription -> inscription.hotkey == 5 }
+            input.isKeyJustPressed(Keys.NUM_6) -> snapshot.uiState.inscriptions.firstOrNull { inscription -> inscription.hotkey == 6 }
+            input.isKeyJustPressed(Keys.NUM_7) -> snapshot.uiState.inscriptions.firstOrNull { inscription -> inscription.hotkey == 7 }
+            input.isKeyJustPressed(Keys.NUM_8) -> snapshot.uiState.inscriptions.firstOrNull { inscription -> inscription.hotkey == 8 }
+            else -> null
+        }
+
     private fun defaultTargetCursor(snapshot: RenderSnapshot): Point =
         snapshot.uiState.targetablePositions
             .firstOrNull()
@@ -460,6 +505,7 @@ class InputHandler(
     private fun clearTargeting() {
         mode = UiMode.MAP
         targetingSlot = null
+        targetingInscriptionHotkey = null
         targetingCursor = null
         resetMovementRepeat()
     }
@@ -513,6 +559,7 @@ class InputHandler(
 
     private fun hasPendingTalentAllocation(snapshot: RenderSnapshot): Boolean =
         snapshot.uiState.playerStatus.talentPoints > 0 ||
+            snapshot.uiState.playerStatus.raceTalentPoints > 0 ||
             snapshot.uiState.talents.any(TalentSlotSnapshot::hasPendingAllocation) ||
             snapshot.uiState.reserveTalents.any(TalentReserveSnapshot::hasPendingAllocation)
 
@@ -551,6 +598,15 @@ class InputHandler(
 
     private fun parseOwnerType(ownerType: String): TalentTreeOwnerType =
         enumValueOf<TalentTreeOwnerType>(ownerType)
+
+    private fun availableTalentPoints(
+        snapshot: RenderSnapshot,
+        ownerType: String,
+    ): Int =
+        when (parseOwnerType(ownerType)) {
+            TalentTreeOwnerType.PROFESSION -> snapshot.uiState.playerStatus.talentPoints
+            TalentTreeOwnerType.RACE -> snapshot.uiState.playerStatus.raceTalentPoints
+        }
 
     private fun pollMovementCommand(): Point? {
         movementBindings.entries.firstOrNull { (key, _) -> input.isKeyJustPressed(key) }?.let { (key, delta) ->

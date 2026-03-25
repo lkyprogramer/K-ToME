@@ -22,6 +22,14 @@ import com.ktome.client.screen.FoundationGameScreen
 import com.ktome.client.screen.GameOverScreen
 import com.ktome.client.screen.MainMenuScreen
 import com.ktome.client.screen.VictoryScreen
+import com.ktome.core.combat.CombatRuleset
+import com.ktome.core.profile.AvailabilityContext
+import com.ktome.core.profile.AdvancedClassUnlockRule
+import com.ktome.core.profile.ClassPlayabilityState
+import com.ktome.core.profile.ProfileData
+import com.ktome.core.profile.ProfileManager
+import com.ktome.core.profile.ProfileProgression
+import com.ktome.core.profile.RunSummary as ProfileRunSummary
 import com.ktome.core.save.AssetVersionContract
 import com.ktome.core.save.AssetVersionGate
 import com.ktome.core.save.AssetVersionMismatchException
@@ -32,6 +40,8 @@ import com.ktome.core.snapshot.RenderTextTokenSnapshot
 import com.ktome.game.FoundationGameConfig
 import com.ktome.game.FoundationGameSession
 import com.ktome.game.GameModule
+import com.ktome.game.PlayerCreationSelection
+import com.ktome.game.PlayerCreationState
 import com.ktome.game.i18n.GameLocale
 import com.ktome.game.i18n.LocalizationBundle
 import com.ktome.game.i18n.Localizer
@@ -40,7 +50,17 @@ import java.nio.file.Path
 class GameApp(
     private val saveManager: SaveManager = SaveManager(defaultSaveDir()),
     private val defaultConfig: FoundationGameConfig = FoundationGameConfig(),
-    availableProfessionIdsProvider: (GameLocale) -> List<String> = { locale -> GameModule.availableProfessionIds(locale) },
+    private val playerCreationStateProvider:
+        (GameLocale, ProfileData, PlayerCreationSelection?) -> PlayerCreationState =
+            { locale, profile, previousSelection ->
+                GameModule.playerCreationState(
+                    locale = locale,
+                    profile = profile,
+                    previousSelection = previousSelection,
+                    context = AvailabilityContext.PLAYER_CREATION,
+                )
+            },
+    private val profileManager: ProfileManager = ProfileManager(defaultSaveDir().resolve("profile")),
     private val menuInputSourceFactory: () -> InputSource = { GdxInputSource },
     private val gameCommandSourceFactory: () -> CommandSource = { InputHandlerCommandSource() },
     private val outcomeInputSourceFactory: () -> InputSource = { GdxInputSource },
@@ -53,10 +73,16 @@ class GameApp(
     initialLocale: GameLocale = GameLocale.DEFAULT,
     localizationBundle: LocalizationBundle = LocalizationBundle.load(),
 ) : Game() {
-    private val availableProfessionIds: List<String> =
-        availableProfessionIdsProvider(initialLocale)
-            .distinct()
-            .ifEmpty { listOf(defaultConfig.playerProfessionId) }
+    private val initialProfileState =
+        loadProfilePersistenceState(
+            profileManager = profileManager,
+            localizer = localizationBundle.translator(initialLocale),
+        )
+    private val defaultPlayerCreationSelection =
+        PlayerCreationSelection(
+            professionId = defaultConfig.playerProfessionId,
+            raceId = defaultConfig.playerRaceId,
+        )
     private val lifecycle = LifecycleCoordinator(saveManager)
     private val assetContracts =
         AssetContractCoordinator(
@@ -68,28 +94,38 @@ class GameApp(
     private val localizationBundle = localizationBundle
     private var currentLocale: GameLocale = initialLocale
     private var currentLocalizer: Localizer = localizationBundle.translator(initialLocale)
-    private var selectedProfessionId: String =
-        defaultConfig.playerProfessionId.takeIf(availableProfessionIds::contains)
-            ?: availableProfessionIds.first()
+    private var profileData: ProfileData = initialProfileState.profileData
+    private var profilePersistenceEnabled: Boolean = initialProfileState.persistenceEnabled
+    private var playerCreationState: PlayerCreationState =
+        resolvePlayerCreationState(
+            locale = initialLocale,
+            previousSelection = defaultPlayerCreationSelection,
+        )
     private var activeSession: FoundationGameSession? = null
+    private var pendingMenuNotice: String? = initialProfileState.notice
     private val audioSinks = audioSinkBindingsFactory.create(renderEnabled)
 
     override fun create() {
         showMainMenu(saveCurrent = false, notice = assetContractNotice())
     }
 
-    fun startNewGame(professionId: String = selectedProfessionId) {
+    fun startNewGame(selection: PlayerCreationSelection = playerCreationState.selection) {
         if (!ensureAssetContracts()) {
             return
         }
-        val resolvedProfessionId = professionId.takeIf(availableProfessionIds::contains) ?: selectedProfessionId
-        selectedProfessionId = resolvedProfessionId
+        val refreshedState = refreshPlayerCreationState(selection)
+        if (!refreshedState.canStartNewGame()) {
+            showMainMenu(saveCurrent = false, notice = playerCreationSelectionNotice(refreshedState))
+            return
+        }
         val session =
             lifecycle.startNewSession {
                 GameModule.newFoundationSession(
-                    config = defaultConfig.copy(playerProfessionId = resolvedProfessionId),
+                    config = playerCreationConfig(refreshedState.selection),
                     saveManager = saveManager,
                     locale = currentLocale,
+                    profile = profileData,
+                    availabilityContext = AvailabilityContext.PLAYER_CREATION,
                 )
             }
         activeSession = session
@@ -115,6 +151,7 @@ class GameApp(
 
     fun showOutcome(session: FoundationGameSession) {
         val summary = session.runSummary() ?: return
+        recordProfileRun(session)
         activeSession = null
         replaceScreen(
             if (session.isVictory()) {
@@ -133,18 +170,19 @@ class GameApp(
             activeSession?.saveOnExit()
         }
         activeSession = null
+        refreshPlayerCreationState()
         val continueEnabled = lifecycle.refreshContinueAvailability()
         replaceScreen(
             MainMenuScreen(
                 app = this,
                 continueEnabled = continueEnabled,
-                availableProfessionIds = availableProfessionIds,
-                selectedProfessionId = selectedProfessionId,
-                notice = notice ?: lifecycle.consumeNotice(),
+                playerCreationState = playerCreationState,
+                notice = notice ?: pendingMenuNotice ?: lifecycle.consumeNotice(),
                 inputSource = menuInputSourceFactory(),
                 renderEnabled = renderEnabled,
             ),
         )
+        pendingMenuNotice = null
     }
 
     override fun dispose() {
@@ -169,15 +207,26 @@ class GameApp(
 
     internal fun localizer(): Localizer = currentLocalizer
 
-    internal fun rememberProfessionSelection(professionId: String) {
-        if (professionId in availableProfessionIds) {
-            selectedProfessionId = professionId
-        }
+    internal fun rememberPlayerCreationSelection(selection: PlayerCreationSelection) {
+        playerCreationState =
+            playerCreationState.copy(
+                selection = PlayerCreationSelection(
+                    professionId =
+                        selection.professionId
+                            .takeIf { optionId -> playerCreationState.professionOptions.any { option -> option.id == optionId } }
+                            ?: playerCreationState.selection.professionId,
+                    raceId =
+                        selection.raceId
+                            .takeIf { optionId -> playerCreationState.raceOptions.any { option -> option.id == optionId } }
+                            ?: playerCreationState.selection.raceId,
+                ),
+            )
     }
 
     internal fun cycleLocale(): GameLocale {
         currentLocale = currentLocale.cycle()
         currentLocalizer = localizationBundle.translator(currentLocale)
+        refreshPlayerCreationState()
         return currentLocale
     }
 
@@ -216,6 +265,80 @@ class GameApp(
             false
         } ?: true
 
+    private fun refreshPlayerCreationState(
+        previousSelection: PlayerCreationSelection = playerCreationState.selection,
+    ): PlayerCreationState =
+        resolvePlayerCreationState(currentLocale, previousSelection).also { refreshed ->
+            playerCreationState = refreshed
+        }
+
+    private fun resolvePlayerCreationState(
+        locale: GameLocale,
+        previousSelection: PlayerCreationSelection? = null,
+    ): PlayerCreationState =
+        playerCreationStateProvider(locale, profileData, previousSelection)
+
+    private fun playerCreationSelectionNotice(state: PlayerCreationState): String {
+        val professionOption = state.selectedProfessionOption()
+        if (professionOption.playabilityState != ClassPlayabilityState.PLAYABLE) {
+            return when (professionOption.playabilityState) {
+                ClassPlayabilityState.PLAYABLE -> ""
+                ClassPlayabilityState.LOCKED ->
+                    text("ui.menu.profession_locked", "profession" to text(professionOption.displayNameKey))
+
+                ClassPlayabilityState.UNLOCKED_BUT_UNAVAILABLE ->
+                    text("ui.menu.profession_unavailable", "profession" to text(professionOption.displayNameKey))
+            }
+        }
+        val raceOption = state.selectedRaceOption()
+        return when (raceOption.playabilityState) {
+            ClassPlayabilityState.PLAYABLE -> ""
+            ClassPlayabilityState.LOCKED -> text("ui.menu.race_locked", "race" to text(raceOption.displayNameKey))
+            ClassPlayabilityState.UNLOCKED_BUT_UNAVAILABLE ->
+                text("ui.menu.race_unavailable", "race" to text(raceOption.displayNameKey))
+        }
+    }
+
+    private fun playerCreationConfig(selection: PlayerCreationSelection): FoundationGameConfig =
+        newGameConfig(
+            defaultConfig = defaultConfig,
+            professionId = selection.professionId,
+            raceId = selection.raceId,
+        )
+
+    private fun recordProfileRun(session: FoundationGameSession) {
+        val result =
+            appendAndPersistProfileRun(
+                profileManager = profileManager,
+                profile = profileData,
+                persistenceEnabled = profilePersistenceEnabled,
+                summary = profileRunSummary(session),
+                unlockRules = GameModule.advancedClassUnlockRules(currentLocale),
+                localizer = currentLocalizer,
+            )
+        profileData = result.profileData
+        pendingMenuNotice = result.notice
+        if (result.persisted) {
+            refreshPlayerCreationState()
+        }
+    }
+
+    private fun profileRunSummary(session: FoundationGameSession): ProfileRunSummary =
+        ProfileRunSummary(
+            seed = session.config.seed,
+            finishedAtEpochMillis = System.currentTimeMillis(),
+            classId = session.config.playerProfessionId,
+            raceId = session.config.playerRaceId,
+            finalZoneId = session.config.zoneId,
+            turnCount = session.currentTurnCount(),
+            headlessTurnEquivalent = session.currentTurnCount(),
+            zoneRouteHash = session.config.zoneRoute.joinToString(">"),
+            buildHash = PROFILE_BUILD_HASH,
+            rulesetVersion = CombatRuleset.RULESET_VERSION,
+            victory = session.isVictory(),
+            defeatReason = session.runOutcome().takeUnless { outcome -> session.isVictory() }?.toString(),
+        )
+
     private fun requireClientAssets(): ClientAssetBundle =
         requireNotNull(assetContracts.bundleOrNull()) {
             "Client assets must be loaded before entering the game screen."
@@ -237,7 +360,75 @@ class GameApp(
         }
 
     companion object {
+        private const val PROFILE_BUILD_HASH: String = "ktome-0.1.0"
+
         private fun defaultSaveDir(): Path = Path.of(System.getProperty("user.home"), ".ktome")
+    }
+}
+
+internal data class LoadedProfilePersistenceState(
+    val profileData: ProfileData,
+    val persistenceEnabled: Boolean,
+    val notice: String? = null,
+)
+
+internal data class PersistedProfileRunResult(
+    val profileData: ProfileData,
+    val persisted: Boolean,
+    val notice: String? = null,
+)
+
+internal fun newGameConfig(
+    defaultConfig: FoundationGameConfig,
+    professionId: String,
+    raceId: String,
+): FoundationGameConfig = defaultConfig.copy(playerProfessionId = professionId, playerRaceId = raceId)
+
+internal fun loadProfilePersistenceState(
+    profileManager: ProfileManager,
+    localizer: Localizer,
+): LoadedProfilePersistenceState =
+    runCatching { profileManager.load() }
+        .fold(
+            onSuccess = { profile -> LoadedProfilePersistenceState(profileData = profile, persistenceEnabled = true) },
+            onFailure = {
+                LoadedProfilePersistenceState(
+                    profileData = ProfileData(),
+                    persistenceEnabled = false,
+                    notice = localizer.text("ui.menu.profile_load_failed"),
+                )
+            },
+        )
+
+internal fun appendAndPersistProfileRun(
+    profileManager: ProfileManager,
+    profile: ProfileData,
+    persistenceEnabled: Boolean,
+    summary: ProfileRunSummary,
+    unlockRules: Iterable<AdvancedClassUnlockRule>,
+    localizer: Localizer,
+): PersistedProfileRunResult {
+    if (!persistenceEnabled) {
+        return PersistedProfileRunResult(
+            profileData = profile,
+            persisted = false,
+            notice = localizer.text("ui.menu.profile_load_failed"),
+        )
+    }
+    val updatedProfile =
+        ProfileProgression.appendRun(
+            profile = profile,
+            summary = summary,
+            unlockRules = unlockRules,
+        )
+    return if (profileManager.save(updatedProfile)) {
+        PersistedProfileRunResult(profileData = updatedProfile, persisted = true)
+    } else {
+        PersistedProfileRunResult(
+            profileData = profile,
+            persisted = false,
+            notice = localizer.text("ui.menu.profile_save_failed"),
+        )
     }
 }
 

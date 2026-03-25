@@ -1,6 +1,8 @@
 package com.ktome.game
 
 import com.ktome.core.ai.AIProfile
+import com.ktome.core.inscription.InscriptionDef
+import com.ktome.core.race.RaceDef
 import com.ktome.core.talent.TalentDef
 import com.ktome.core.talent.TalentRegistry
 import com.ktome.core.item.ItemDataBundle
@@ -18,6 +20,8 @@ internal data class GameContent(
     val statuses: List<StatusSchemaV2>,
     val statusCatalog: StatusCatalog,
     val talentRegistry: TalentRegistry,
+    val races: List<RaceDef> = emptyList(),
+    val inscriptions: List<InscriptionDef> = emptyList(),
     val monsterCatalog: List<MonsterTemplate>,
     val itemBundle: ItemDataBundle,
     val bossDefinitions: Map<String, BossDefinition>,
@@ -27,6 +31,7 @@ internal data class GameContent(
     val threatProfileRegistry: ThreatProfileRegistry = ThreatProfileRegistry(schemaCatalog.threatProfiles.associateBy { profile -> profile.id }),
 ) {
     val aiProfilesById: Map<String, AIProfile> = schemaCatalog.aiProfiles.associateBy(AIProfile::id)
+    val racesById: Map<String, RaceDef> = races.associateBy(RaceDef::id)
 
     fun bossDefinitionForZone(zoneId: String): BossDefinition? =
         schemaCatalog.zones.firstOrNull { zone -> zone.id == zoneId }
