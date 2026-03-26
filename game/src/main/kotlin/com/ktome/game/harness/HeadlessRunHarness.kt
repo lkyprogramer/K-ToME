@@ -285,6 +285,9 @@ class HeadlessRunHarness(
                     "Checkpoint reload changed headlessTurnEquivalent from ${session.currentHeadlessTurnEquivalent()} to ${loaded.currentHeadlessTurnEquivalent()}.",
             )
         }
+        if (loaded.milestoneRewardSummaries() != session.milestoneRewardSummaries()) {
+            return CheckpointRoundTripResult(failureReason = "Checkpoint reload changed milestoneRewardSummaries.")
+        }
         if (inventoryAfter != inventoryBefore) {
             return CheckpointRoundTripResult(failureReason = "Checkpoint reload changed inventory order/content.")
         }

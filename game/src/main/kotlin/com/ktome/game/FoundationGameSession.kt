@@ -229,6 +229,7 @@ class FoundationGameSession internal constructor(
     private var worldProgress: WorldProgressDef = WorldProgressDef(),
     private var shardBalance: Int = 0,
     private var shopStates: MutableMap<String, ShopInventoryState> = linkedMapOf(),
+    restoredMilestoneRewardSummaries: List<MilestoneRewardSummary> = emptyList(),
     private val inventoryManager: InventoryManager = InventoryManager(),
     private val combatRandomSource: RandomSource = defaultCombatRandomSource(config, turnCount),
     private val combatResolver: CombatResolver = CombatResolver(combatRandomSource),
@@ -316,7 +317,7 @@ class FoundationGameSession internal constructor(
     private var terminalKillerTemplateId: String? = null
     private val recentAiDecisionTraces = ArrayDeque<AIDecisionTrace>()
     private val recentBossTraces = ArrayDeque<BossTrace>()
-    private val recordedMilestoneRewardSummaries = mutableListOf<MilestoneRewardSummary>()
+    private val recordedMilestoneRewardSummaries = restoredMilestoneRewardSummaries.toMutableList()
     private val respecManager: RespecManager = RespecManager()
     private var activeShopId: String? = null
     private var pendingRouteSelection: List<RouteAdvanceOption> = emptyList()
@@ -459,6 +460,8 @@ class FoundationGameSession internal constructor(
 
     fun milestoneRewardSummaries(): List<MilestoneRewardSummary> =
         recordedMilestoneRewardSummaries.map(::finalizeMilestoneRewardSummary)
+
+    private fun persistedMilestoneRewardSummaries(): List<MilestoneRewardSummary> = recordedMilestoneRewardSummaries.toList()
 
     fun recentEventLog(limit: Int = 20): List<String> = recentEvents.takeLast(limit)
 
@@ -4666,6 +4669,7 @@ class FoundationGameSession internal constructor(
                 shopStates = shopStates(),
                 combatRandomState = (combatRandomSource as? StatefulRandomSource)?.snapshotState(),
                 sessionRandomState = (sessionRandom as? StatefulRandomSource)?.snapshotState(),
+                milestoneRewards = persistedMilestoneRewardSummaries(),
                 pendingActionIds = serializedPendingActionIds,
                 activeTurnActorId = activeTurnActor?.value?.takeIf { actorId -> actorId in serializedPendingActionIds },
             ),

@@ -1,5 +1,9 @@
 package com.ktome.core.save
 
+import com.ktome.core.item.EquipSlot
+import com.ktome.core.item.ItemQuality
+import com.ktome.core.item.MilestoneRewardSource
+import com.ktome.core.profile.MilestoneRewardSummary
 import com.ktome.core.resource.ResourcePoolSnapshot
 
 internal object SaveFixtures {
@@ -113,6 +117,20 @@ internal object SaveFixtures {
             sessionRandomState = 4096L,
             pendingActionIds = listOf(1),
             activeTurnActorId = 1,
+            milestoneRewards =
+                listOf(
+                    MilestoneRewardSummary(
+                        rewardSource = MilestoneRewardSource.ROUTE,
+                        sourceId = "route.greenwood_fringe.deep_iron_pit",
+                        zoneId = "greenwood_fringe",
+                        baseItemId = "forgebreaker_pick",
+                        equipSlot = EquipSlot.WEAPON,
+                        qualityTier = ItemQuality.MAGIC,
+                        buildHashAtGrant = "vanguard#human#grant",
+                        affixIds = listOf("sharp"),
+                        equippedBaseItemIdBeforeReward = "short_sword",
+                    ),
+                ),
             player =
                 PlayerSnapshot(
                     entity =

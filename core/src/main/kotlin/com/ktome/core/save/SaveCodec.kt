@@ -147,6 +147,7 @@ class SaveCodec(
                 "headlessTurnEquivalent",
                 "player",
                 "floors",
+                "milestoneRewards",
             )
         private val REQUIRED_WORLD_PROGRESS_FIELDS =
             setOf(

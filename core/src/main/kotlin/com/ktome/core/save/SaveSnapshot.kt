@@ -3,6 +3,7 @@ package com.ktome.core.save
 import com.ktome.core.map.GameMap
 import com.ktome.core.map.Point
 import com.ktome.core.economy.ShopInventoryState
+import com.ktome.core.profile.MilestoneRewardSummary
 import com.ktome.core.resource.ResourcePoolSnapshot
 import com.ktome.core.world.WorldProgressDef
 import kotlinx.serialization.Serializable
@@ -34,6 +35,7 @@ data class SaveSnapshot(
     val floors: List<FloorSnapshot>,
     val combatRandomState: Long? = null,
     val sessionRandomState: Long? = null,
+    val milestoneRewards: List<MilestoneRewardSummary> = emptyList(),
     val pendingActionIds: List<Int> = emptyList(),
     val activeTurnActorId: Int? = null,
 ) {
@@ -89,6 +91,9 @@ data class SaveSnapshot(
         ) {
             "All floor snapshots must match top-level mapWidth $mapWidth."
         }
+        require(milestoneRewards.distinctBy { reward -> "${reward.rewardSource}:${reward.sourceId}" }.size == milestoneRewards.size) {
+            "Milestone rewards must not contain duplicate source entries."
+        }
         require(pendingActionIds.all { pendingId -> pendingId > 0 }) {
             "Pending action entity ids must be positive."
         }
@@ -103,7 +108,7 @@ data class SaveSnapshot(
     }
 
     companion object {
-        const val CURRENT_SCHEMA_VERSION: Int = 5
+        const val CURRENT_SCHEMA_VERSION: Int = 6
         const val DEFAULT_BUILD_METADATA: String = "phase3-pr06-dev"
     }
 }

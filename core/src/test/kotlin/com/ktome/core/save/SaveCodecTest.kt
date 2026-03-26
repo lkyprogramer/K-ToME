@@ -25,8 +25,8 @@ class SaveCodecTest {
         val raw =
             """
             {
-              "schemaVersion": 1,
-              "saveContractVersion": { "major": 3, "minor": 1 },
+              "schemaVersion": ${SaveSnapshot.CURRENT_SCHEMA_VERSION},
+              "saveContractVersion": { "major": ${SaveContractVersion.CURRENT.major}, "minor": ${SaveContractVersion.CURRENT.minor} },
               "buildMetadata": "phase2-dev",
               "timestampEpochMillis": 1,
               "worldSeed": 20260318,

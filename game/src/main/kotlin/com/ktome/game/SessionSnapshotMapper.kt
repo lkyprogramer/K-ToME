@@ -58,6 +58,7 @@ import com.ktome.core.resource.EquilibriumState
 import com.ktome.core.resource.ResourcePoolSnapshot
 import com.ktome.core.resource.ResourcePools
 import com.ktome.core.resource.ResourceType
+import com.ktome.core.profile.MilestoneRewardSummary
 import com.ktome.core.save.AIBehaviorSnapshot
 import com.ktome.core.save.AIPerceptionSnapshot
 import com.ktome.core.save.AiTriggerTrackerSnapshot
@@ -125,6 +126,7 @@ internal data class RestoredRunState(
     val shopStates: List<ShopInventoryState> = emptyList(),
     val combatRandomState: Long? = null,
     val sessionRandomState: Long? = null,
+    val milestoneRewards: List<MilestoneRewardSummary> = emptyList(),
     val pendingActionIds: List<Int> = emptyList(),
     val activeTurnActorId: Int? = null,
 )
@@ -218,6 +220,7 @@ internal object SessionSnapshotMapper {
         shopStates: List<ShopInventoryState> = emptyList(),
         combatRandomState: Long?,
         sessionRandomState: Long?,
+        milestoneRewards: List<MilestoneRewardSummary> = emptyList(),
         pendingActionIds: List<Int>,
         activeTurnActorId: Int?,
     ): SaveSnapshot =
@@ -243,6 +246,7 @@ internal object SessionSnapshotMapper {
             player = canonicalizePlayerSnapshot(player),
             combatRandomState = combatRandomState,
             sessionRandomState = sessionRandomState,
+            milestoneRewards = milestoneRewards,
             pendingActionIds = pendingActionIds,
             activeTurnActorId = activeTurnActorId,
             floors =
@@ -288,6 +292,7 @@ internal object SessionSnapshotMapper {
             shopStates = snapshot.shopStates.sortedBy(ShopInventoryState::shopId),
             combatRandomState = snapshot.combatRandomState,
             sessionRandomState = snapshot.sessionRandomState,
+            milestoneRewards = snapshot.milestoneRewards,
             pendingActionIds = snapshot.pendingActionIds.toList(),
             activeTurnActorId = snapshot.activeTurnActorId,
             floors =

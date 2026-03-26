@@ -15,6 +15,7 @@ import com.ktome.core.save.InvalidSaveException
 import com.ktome.core.save.PlayerSnapshot
 import com.ktome.core.save.PointSnapshot
 import com.ktome.core.save.SaveManager
+import com.ktome.core.save.SaveContractVersion
 import com.ktome.core.save.SaveSnapshot
 import com.ktome.core.save.UnsupportedSaveContractVersionException
 import com.ktome.core.save.EntitySnapshot
@@ -261,7 +262,7 @@ class GameModuleTest {
             """
             {
               "schemaVersion": 2,
-              "saveContractVersion": { "major": 3, "minor": 1 },
+              "saveContractVersion": { "major": ${SaveContractVersion.CURRENT.major}, "minor": ${SaveContractVersion.CURRENT.minor} },
               "buildMetadata": "phase2-dev",
               "timestampEpochMillis": 1,
               "worldSeed": 20260318,
@@ -653,7 +654,7 @@ class GameModuleTest {
             """
             {
               "schemaVersion": 3,
-              "saveContractVersion": { "major": 3, "minor": 1 },
+              "saveContractVersion": { "major": ${SaveContractVersion.CURRENT.major}, "minor": ${SaveContractVersion.CURRENT.minor} },
               "buildMetadata": "phase2-dev",
               "timestampEpochMillis": 1,
               "worldSeed": 20260318,

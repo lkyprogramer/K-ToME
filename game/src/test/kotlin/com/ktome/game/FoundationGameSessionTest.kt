@@ -1637,6 +1637,32 @@ class FoundationGameSessionTest {
     }
 
     @Test
+    fun `manual save preserves milestone reward summaries across reload`() {
+        val saveManager = SaveManager(tempDir.resolve("milestone-reward-reload-save"))
+        val session =
+            GameModule.newFoundationSession(
+                FoundationGameConfig(seed = 20260318L, zoneId = "shattered_outpost", playerProfessionId = "arcanist"),
+                saveManager,
+            )
+
+        movePlayerTo(session, stairPoint(session, com.ktome.core.dungeon.StairDirection.DOWN))
+        assertTrue(session.perform(PlayerCommand.Descend))
+        session.automationMovePlayerTo(interactablePoint(session, "armory_gate"))
+        assertTrue(session.perform(PlayerCommand.Interact))
+
+        val expectedMilestoneRewards = session.milestoneRewardSummaries()
+        assertFalse(expectedMilestoneRewards.isEmpty())
+        assertTrue(session.perform(PlayerCommand.SaveGame))
+
+        val loaded = requireNotNull(GameModule.loadFoundationSession(saveManager))
+        assertEquals(expectedMilestoneRewards, loaded.milestoneRewardSummaries())
+
+        loaded.automationForceDefeatPlayer()
+        val summary = requireNotNull(loaded.profileRunSummary(finishedAtEpochMillis = 1234L))
+        assertEquals(expectedMilestoneRewards, summary.milestoneRewards)
+    }
+
+    @Test
     fun `route transitions emit zone entry messages for each newly entered zone`() {
         val session =
             GameModule.newFoundationSession(

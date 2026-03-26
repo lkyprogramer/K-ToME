@@ -5,8 +5,12 @@ import com.ktome.core.effect.AreaEffectEmitter
 import com.ktome.core.effect.WorldEffect
 import com.ktome.core.ecs.get
 import com.ktome.core.item.EquipmentPassive
+import com.ktome.core.item.EquipSlot
+import com.ktome.core.item.ItemQuality
+import com.ktome.core.item.MilestoneRewardSource
 import com.ktome.core.map.GameMap
 import com.ktome.core.map.Point
+import com.ktome.core.profile.MilestoneRewardSummary
 import com.ktome.core.resource.ResourcePoolSnapshot
 import com.ktome.core.save.ActiveEffectSnapshot
 import com.ktome.core.save.AreaEffectEmitterSnapshot
@@ -199,6 +203,20 @@ class SessionSnapshotMapperTest {
                         ),
                 ),
             )
+        val milestoneRewards =
+            listOf(
+                MilestoneRewardSummary(
+                    rewardSource = MilestoneRewardSource.ROUTE,
+                    sourceId = "route.greenwood_fringe.deep_iron_pit",
+                    zoneId = "greenwood_fringe",
+                    baseItemId = "forgebreaker_pick",
+                    equipSlot = EquipSlot.WEAPON,
+                    qualityTier = ItemQuality.MAGIC,
+                    buildHashAtGrant = "vanguard#human#grant",
+                    affixIds = listOf("alpha"),
+                    equippedBaseItemIdBeforeReward = "short_sword",
+                ),
+            )
 
         val snapshot =
             SessionSnapshotMapper.toSaveSnapshot(
@@ -218,6 +236,7 @@ class SessionSnapshotMapperTest {
                 floors = floors,
                 combatRandomState = null,
                 sessionRandomState = null,
+                milestoneRewards = milestoneRewards,
                 pendingActionIds = listOf(1, 7),
                 activeTurnActorId = 1,
             )
@@ -236,6 +255,7 @@ class SessionSnapshotMapperTest {
         assertEquals(listOf(PointSnapshot(1, 0), PointSnapshot(1, 1), PointSnapshot(3, 1)), snapshot.floors.single().exploredTiles)
         assertEquals(listOf(7, 9, 11), snapshot.floors.single().entities.map(EntitySnapshot::id))
         assertEquals("supply_crate", snapshot.floors.single().entities.last().interactableId)
+        assertEquals(milestoneRewards, snapshot.milestoneRewards)
     }
 
     @Test
@@ -256,6 +276,20 @@ class SessionSnapshotMapperTest {
                 playerRaceId = "human",
                 maxFloor = 2,
                 turnCount = 10,
+                milestoneRewards =
+                    listOf(
+                        MilestoneRewardSummary(
+                            rewardSource = MilestoneRewardSource.CACHE,
+                            sourceId = "armory_gate",
+                            zoneId = "greenwood_fringe",
+                            baseItemId = "seal_reliquary",
+                            equipSlot = EquipSlot.OFF_HAND,
+                            qualityTier = ItemQuality.RARE,
+                            buildHashAtGrant = "rogue#human#grant",
+                            affixIds = listOf("shadowed"),
+                            equippedBaseItemIdBeforeReward = "basic_shield",
+                        ),
+                    ),
                 player =
                     PlayerSnapshot(
                         entity = EntitySnapshot(id = 1, position = PointSnapshot(1, 1), isPlayerControlled = true),
@@ -280,6 +314,7 @@ class SessionSnapshotMapperTest {
         assertEquals(FOUNDATION_ZONE_ROUTE, restored.config.zoneRoute)
         assertEquals(1, restored.config.routeIndex)
         assertEquals(10, restored.headlessTurnEquivalent)
+        assertEquals(snapshot.milestoneRewards, restored.milestoneRewards)
     }
 
     @Test
