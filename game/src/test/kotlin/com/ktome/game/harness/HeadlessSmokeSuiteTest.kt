@@ -126,6 +126,27 @@ internal fun ScenarioReport.toJson() =
         put("localeId", localeId)
         put("profileId", profileId)
         buildHash?.let { put("buildHash", it) }
+        putJsonArray("milestoneRewards") {
+            milestoneRewards.forEach { reward ->
+                add(
+                    buildJsonObject {
+                        put("rewardSource", reward.rewardSource.name)
+                        put("sourceId", reward.sourceId)
+                        put("zoneId", reward.zoneId)
+                        put("baseItemId", reward.baseItemId)
+                        put("equipSlot", reward.equipSlot.name)
+                        put("qualityTier", reward.qualityTier.name)
+                        put("buildHashAtGrant", reward.buildHashAtGrant)
+                        putJsonArray("affixIds") {
+                            reward.affixIds.forEach { affixId -> add(JsonPrimitive(affixId)) }
+                        }
+                        reward.equippedBaseItemIdBeforeReward?.let { put("equippedBaseItemIdBeforeReward", it) }
+                        reward.equippedBaseItemIdAtRunEnd?.let { put("equippedBaseItemIdAtRunEnd", it) }
+                        put("adoptedInFinalBuild", reward.adoptedInFinalBuild)
+                    },
+                )
+            }
+        }
         put("success", success)
         put("outcome", outcome.toString())
         put("floorReached", floorReached)

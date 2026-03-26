@@ -223,6 +223,7 @@ object GameModule {
             worldProgress = restored.worldProgress,
             shardBalance = restored.shardBalance,
             shopStates = restored.shopStates.associateByTo(linkedMapOf(), ShopInventoryState::shopId),
+            restoredMilestoneRewardSummaries = restored.milestoneRewards,
             combatRandomSource =
                 restored.combatRandomState?.let(SplitMix64RandomSource::fromState)
                     ?: FoundationGameSession.defaultCombatRandomSource(sessionConfig, restored.turnCount),

@@ -38,21 +38,27 @@ class ItemGenerator(
             )
         }
 
-        val quality = chooseQuality(floor)
+        val quality = chooseQuality(floor = floor, qualityFloor = affixContext.qualityFloor)
         val material = chooseMaterial(base, floor)
+        val requiredAffixCount = maxOf(quality.affixCount, affixContext.minAffixCount)
         val resolvedAffixContext =
             affixContext.copy(
                 itemTags = affixContext.itemTags + base.tags,
+                qualityFloor = quality,
+                minAffixCount = requiredAffixCount,
             )
         val affixes =
             resolveEquipType(base)?.let { equipType ->
                 affixGenerator.generate(
                     floor = floor,
-                    count = quality.affixCount,
+                    count = requiredAffixCount,
                     equipType = equipType,
                     context = resolvedAffixContext,
                 )
             }.orEmpty()
+        require(affixes.size >= resolvedAffixContext.minAffixCount) {
+            "Reward item '${base.id}' failed to satisfy minAffixCount=${resolvedAffixContext.minAffixCount}."
+        }
         val stats = listOf(base.baseStats, material?.statModifiers ?: StatModifier.ZERO)
             .plus(affixes.map(AffixDef::statModifiers))
             .fold(StatModifier.ZERO) { acc, modifier -> acc + modifier }
@@ -87,16 +93,21 @@ class ItemGenerator(
         return chooseWeighted(candidates) { it.dropWeight }
     }
 
-    private fun chooseQuality(floor: Int): ItemQuality {
+    private fun chooseQuality(
+        floor: Int,
+        qualityFloor: ItemQuality? = null,
+    ): ItemQuality {
         val commonWeight = (60 - floor * 5).coerceAtLeast(20)
         val magicWeight = 30 + floor * 3
         val rareWeight = 10 + floor * 2
         val roll = random.nextInt(0, commonWeight + magicWeight + rareWeight)
-        return when {
+        val rolled =
+            when {
             roll < commonWeight -> ItemQuality.COMMON
             roll < commonWeight + magicWeight -> ItemQuality.MAGIC
             else -> ItemQuality.RARE
         }
+        return if (qualityFloor == null || rolled.ordinal >= qualityFloor.ordinal) rolled else qualityFloor
     }
 
     private fun chooseMaterial(

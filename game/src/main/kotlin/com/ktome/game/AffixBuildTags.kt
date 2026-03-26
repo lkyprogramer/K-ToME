@@ -15,6 +15,25 @@ internal fun professionAffixBuildContext(
         buildTags = professionAffixBuildTags(schemaCatalog, profession, unlockedTalentIds),
     )
 
+internal fun routeRewardBiasTags(rescueTags: Set<String>): Set<String> =
+    linkedSetOf<String>().apply {
+        rescueTags.forEach { tag ->
+            val normalized = tag.trim().lowercase()
+            if (normalized.isBlank()) {
+                return@forEach
+            }
+            add(normalized)
+            when (normalized) {
+                "movement" -> addAll(listOf("mobility", "rescue"))
+                "recovery" -> addAll(listOf("sustain", "life", "regeneration", "rescue"))
+                "protection" -> addAll(listOf("protection", "defense"))
+                "cleansing" -> addAll(listOf("cleansing", "rescue"))
+                "arcane" -> addAll(listOf("arcane", "spell"))
+                "fire" -> addAll(listOf("fire", "offense"))
+            }
+        }
+    }
+
 internal fun professionAffixBuildTags(
     schemaCatalog: SchemaCatalog,
     profession: ProfessionSchemaV2,

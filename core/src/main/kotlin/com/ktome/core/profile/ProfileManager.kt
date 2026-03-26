@@ -127,6 +127,7 @@ class ProfileCodec(
                 "claimedRouteRewardIds",
                 "shardBalance",
                 "buildHash",
+                "milestoneRewards",
                 "rulesetVersion",
                 "victory",
             )

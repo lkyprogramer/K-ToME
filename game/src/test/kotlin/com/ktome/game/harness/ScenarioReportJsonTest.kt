@@ -1,5 +1,9 @@
 package com.ktome.game.harness
 
+import com.ktome.core.item.ItemQuality
+import com.ktome.core.item.MilestoneRewardSource
+import com.ktome.core.item.EquipSlot
+import com.ktome.core.profile.MilestoneRewardSummary
 import com.ktome.core.run.RunOutcome
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
@@ -27,6 +31,22 @@ class ScenarioReportJsonTest {
                 corpusId = HarnessMetadata.LONG_RUN_FULL_CORPUS_ID,
                 localeId = "en-US",
                 buildHash = "templar#human#build",
+                milestoneRewards =
+                    listOf(
+                        MilestoneRewardSummary(
+                            rewardSource = MilestoneRewardSource.ROUTE,
+                            sourceId = "route.greenwood_fringe.deep_iron_pit",
+                            zoneId = "greenwood_fringe",
+                            baseItemId = "forgebreaker_pick",
+                            equipSlot = EquipSlot.WEAPON,
+                            qualityTier = ItemQuality.MAGIC,
+                            buildHashAtGrant = "templar#human#grant",
+                            affixIds = listOf("flaming", "fortified"),
+                            equippedBaseItemIdBeforeReward = "long_sword",
+                            equippedBaseItemIdAtRunEnd = "forgebreaker_pick",
+                            adoptedInFinalBuild = true,
+                        ),
+                    ),
                 goalReached = true,
                 zonePath = listOf("shattered_outpost"),
                 zoneHeadlessMilestones =
@@ -77,6 +97,15 @@ class ScenarioReportJsonTest {
         assertEquals(HarnessMetadata.PHASE_ID, json.requiredString("phaseId"))
         assertEquals(HarnessMetadata.LONG_RUN_FULL_CORPUS_ID, json.requiredString("corpusId"))
         assertEquals("templar#human#build", json.requiredString("buildHash"))
+        val milestoneRewards = json.requiredArray("milestoneRewards")
+        assertEquals(1, milestoneRewards.size)
+        assertEquals("ROUTE", milestoneRewards.single().jsonObject.requiredString("rewardSource"))
+        assertEquals("forgebreaker_pick", milestoneRewards.single().jsonObject.requiredString("baseItemId"))
+        assertEquals("WEAPON", milestoneRewards.single().jsonObject.requiredString("equipSlot"))
+        assertEquals("templar#human#grant", milestoneRewards.single().jsonObject.requiredString("buildHashAtGrant"))
+        assertEquals("long_sword", milestoneRewards.single().jsonObject.requiredString("equippedBaseItemIdBeforeReward"))
+        assertEquals("forgebreaker_pick", milestoneRewards.single().jsonObject.requiredString("equippedBaseItemIdAtRunEnd"))
+        assertEquals("true", milestoneRewards.single().jsonObject.requiredString("adoptedInFinalBuild"))
         val objectives = json.requiredArray("zoneObjectiveSummaries")
         assertEquals(1, objectives.size)
         assertEquals("quest.shattered_outpost", objectives.single().jsonObject.requiredString("questId"))

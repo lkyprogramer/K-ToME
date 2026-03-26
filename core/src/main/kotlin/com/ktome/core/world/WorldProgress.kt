@@ -92,14 +92,20 @@ data class RouteReward(
     val claimPolicy: RewardClaimPolicy = RewardClaimPolicy.ON_FIRST_ROUTE_CLEAR,
     val levelBandRef: String,
     val shardReward: Int,
-    val guaranteedDropIds: List<String>,
+    val guaranteedUtilityDropIds: List<String>,
+    val milestoneRewardProfileIds: List<String> = emptyList(),
     val rescueTags: Set<String> = emptySet(),
 ) {
     init {
         require(routeId.isNotBlank()) { "RouteReward.routeId must not be blank." }
         require(levelBandRef.isNotBlank()) { "RouteReward.levelBandRef must not be blank." }
         require(shardReward >= 0) { "RouteReward.shardReward must not be negative." }
-        require(guaranteedDropIds.none(String::isBlank)) { "RouteReward.guaranteedDropIds must not contain blank values." }
+        require(guaranteedUtilityDropIds.none(String::isBlank)) {
+            "RouteReward.guaranteedUtilityDropIds must not contain blank values."
+        }
+        require(milestoneRewardProfileIds.none(String::isBlank)) {
+            "RouteReward.milestoneRewardProfileIds must not contain blank values."
+        }
         require(rescueTags.none(String::isBlank)) { "RouteReward.rescueTags must not contain blank values." }
     }
 }

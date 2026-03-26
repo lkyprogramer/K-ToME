@@ -93,6 +93,7 @@ import com.ktome.core.item.ItemInstance
 import com.ktome.core.item.ItemQuality
 import com.ktome.core.item.ItemType
 import com.ktome.core.item.MaterialDef
+import com.ktome.core.item.MilestoneRewardSource
 import com.ktome.core.item.PassiveDamageAdjustment
 import com.ktome.core.item.PassiveEffectResolver
 import com.ktome.core.item.StatModifier
@@ -101,6 +102,7 @@ import com.ktome.core.map.Point
 import com.ktome.core.movement.MovementRules
 import com.ktome.core.progression.ExperienceSystem
 import com.ktome.core.profile.RunSummary as ProfileRunSummary
+import com.ktome.core.profile.MilestoneRewardSummary
 import com.ktome.core.race.RaceTalentPointBank
 import com.ktome.core.race.RaceTalentPointProgression
 import com.ktome.core.random.RandomSource
@@ -227,6 +229,7 @@ class FoundationGameSession internal constructor(
     private var worldProgress: WorldProgressDef = WorldProgressDef(),
     private var shardBalance: Int = 0,
     private var shopStates: MutableMap<String, ShopInventoryState> = linkedMapOf(),
+    restoredMilestoneRewardSummaries: List<MilestoneRewardSummary> = emptyList(),
     private val inventoryManager: InventoryManager = InventoryManager(),
     private val combatRandomSource: RandomSource = defaultCombatRandomSource(config, turnCount),
     private val combatResolver: CombatResolver = CombatResolver(combatRandomSource),
@@ -280,6 +283,18 @@ class FoundationGameSession internal constructor(
         val reward: RouteReward? = null,
     )
 
+    private data class RewardGenerationContext(
+        val rewardSource: MilestoneRewardSource,
+        val sourceId: String,
+        val floor: Int,
+        val qualityFloor: ItemQuality,
+        val minAffixCount: Int,
+        val routeBiasTags: Set<String> = emptySet(),
+        val reservedSlots: Set<EquipSlot> = emptySet(),
+        val occupiedSlots: Set<EquipSlot> = emptySet(),
+        val replacementSlot: EquipSlot? = null,
+    )
+
     var config: FoundationGameConfig = config
         private set
     private val messageLog = ArrayDeque<SessionLogEntry>()
@@ -302,6 +317,7 @@ class FoundationGameSession internal constructor(
     private var terminalKillerTemplateId: String? = null
     private val recentAiDecisionTraces = ArrayDeque<AIDecisionTrace>()
     private val recentBossTraces = ArrayDeque<BossTrace>()
+    private val recordedMilestoneRewardSummaries = restoredMilestoneRewardSummaries.toMutableList()
     private val respecManager: RespecManager = RespecManager()
     private var activeShopId: String? = null
     private var pendingRouteSelection: List<RouteAdvanceOption> = emptyList()
@@ -442,6 +458,11 @@ class FoundationGameSession internal constructor(
         ).joinToString(separator = "#")
     }
 
+    fun milestoneRewardSummaries(): List<MilestoneRewardSummary> =
+        recordedMilestoneRewardSummaries.map(::finalizeMilestoneRewardSummary)
+
+    private fun persistedMilestoneRewardSummaries(): List<MilestoneRewardSummary> = recordedMilestoneRewardSummaries.toList()
+
     fun recentEventLog(limit: Int = 20): List<String> = recentEvents.takeLast(limit)
 
     fun isGameOver(): Boolean = runOutcome is RunOutcome.Defeat
@@ -498,6 +519,7 @@ class FoundationGameSession internal constructor(
                 claimedRouteRewardIds = worldProgress.claimedRouteRewards.sorted(),
                 shardBalance = shardBalance,
                 buildHash = currentBuildHash(),
+                milestoneRewards = milestoneRewardSummaries(),
                 rulesetVersion = CombatRuleset.RULESET_VERSION,
                 victory = isVictory(),
                 defeatReason = if (isVictory()) null else runOutcome.toString(),
@@ -1382,7 +1404,7 @@ class FoundationGameSession internal constructor(
                         shardReward = option.reward?.shardReward ?: 0,
                         rewardItemNameKeys =
                             option.reward
-                                ?.guaranteedDropIds
+                                ?.guaranteedUtilityDropIds
                                 ?.mapNotNull { baseId -> itemSchemaFor(baseId)?.nameKey }
                                 .orEmpty(),
                         rescueTags = option.reward?.rescueTags?.sorted().orEmpty(),
@@ -1773,12 +1795,19 @@ class FoundationGameSession internal constructor(
             return
         }
         val guaranteedRewards =
-            reward.guaranteedDropIds.mapNotNull { baseId ->
+            reward.guaranteedUtilityDropIds.mapNotNull { baseId ->
                 itemBaseDef(baseId)?.toRuntimeItem()
             }
+        val reservedSlots = guaranteedRewards.mapNotNull(ItemInstance::slot).toSet()
+        val milestoneReward =
+            routeMilestoneRewardItem(
+                reward = reward,
+                reservedSlots = reservedSlots,
+                occupiedSlots = currentEquippedSlots(),
+            )
         val hasSufficientInventoryCapacity =
             dropPoint == null ||
-                hasInventoryCapacityFor(guaranteedRewards.size)
+                hasInventoryCapacityFor(guaranteedRewards.size + if (milestoneReward != null) 1 else 0)
         if (!hasSufficientInventoryCapacity) {
             return
         }
@@ -1786,6 +1815,14 @@ class FoundationGameSession internal constructor(
         dropPoint?.let { point ->
             guaranteedRewards.forEach { rewardItem ->
                 grantRewardItem(rewardItem, point)
+            }
+            milestoneReward?.let { rewardItem ->
+                grantRewardItem(rewardItem, point)
+                recordMilestoneReward(
+                    rewardSource = MilestoneRewardSource.ROUTE,
+                    sourceId = reward.routeId,
+                    reward = rewardItem,
+                )
             }
         }
         worldProgress = worldProgress.withClaimedRouteReward(reward.routeId)
@@ -1966,28 +2003,29 @@ class FoundationGameSession internal constructor(
         return base.toRuntimeItem()
     }
 
-    private fun rewardItemFromProfiles(
+    private fun milestoneRewardItemFromProfiles(
         profileIds: List<String>,
         fallbackBaseId: String,
+        rewardContext: RewardGenerationContext,
     ): ItemInstance {
         val candidateIds =
             profileIds
                 .flatMap { profileId -> lootProfile(profileId)?.itemIds.orEmpty() }
                 .distinct()
-        val freshCandidateIds = candidateIds.filterNot(currentOwnedItemBaseIds()::contains)
+        val effectiveFallbackBaseId = normalizeMilestoneFallbackBaseId(fallbackBaseId, rewardContext)
         val selectedBaseId =
-            rewardPreferenceOrder().firstOrNull { itemId ->
-                itemId in freshCandidateIds && isRewardSuitableForCurrentProfession(itemId)
-            }
-                ?: fallbackBaseId.takeIf(::isRewardSuitableForCurrentProfession)
-                ?: rewardPreferenceOrder().firstOrNull { itemId ->
-                    itemId in candidateIds && isRewardSuitableForCurrentProfession(itemId)
+            rankMilestoneRewardCandidateIds(candidateIds, rewardContext).firstOrNull()
+                ?: effectiveFallbackBaseId
+        val base =
+            itemBaseDef(selectedBaseId)
+                ?: requireNotNull(itemBaseDef(effectiveFallbackBaseId)) {
+                    "Missing fallback milestone reward item '$effectiveFallbackBaseId'."
                 }
-                ?: freshCandidateIds.firstOrNull { itemId -> isRewardSuitableForCurrentProfession(itemId) }
-                ?: freshCandidateIds.firstOrNull()
-                ?: candidateIds.firstOrNull()
-                ?: fallbackBaseId
-        return officialRewardItem(baseId = selectedBaseId, fallbackBaseId = fallbackBaseId)
+        return ItemGenerator(content.itemBundle, sessionRandom).generate(
+            base = base,
+            floor = rewardContext.floor,
+            affixContext = milestoneAffixContext(rewardContext),
+        )
     }
 
     private fun currentOwnedItemBaseIds(): Set<String> {
@@ -1996,6 +2034,11 @@ class FoundationGameSession internal constructor(
             .mapNotNull { itemId -> world.get<ItemInstance>(itemId)?.baseId }
             .toSet()
     }
+
+    private fun currentEquippedSlots(): Set<EquipSlot> =
+        world.get<Equipment>(playerId)?.slots?.keys?.toSet() ?: emptySet()
+
+    private fun equippedBaseItemIdFor(slot: EquipSlot): String? = equippedItemFor(slot)?.baseId
 
     private fun isRewardSuitableForCurrentProfession(baseItemId: String): Boolean {
         val profession = currentProfessionSchema() ?: return true
@@ -2010,6 +2053,152 @@ class FoundationGameSession internal constructor(
         return true
     }
 
+    private fun rankMilestoneRewardCandidateIds(
+        candidateIds: List<String>,
+        rewardContext: RewardGenerationContext,
+    ): List<String> {
+        val strictCandidates = strictMilestoneRewardCandidateIds(candidateIds, rewardContext)
+        if (strictCandidates.isNotEmpty() || rewardContext.replacementSlot != null) {
+            return strictCandidates
+        }
+        val replacementSlot = selectMilestoneReplacementSlot(candidateIds, rewardContext) ?: return emptyList()
+        return strictMilestoneRewardCandidateIds(candidateIds, rewardContext.copy(replacementSlot = replacementSlot))
+    }
+
+    private fun strictMilestoneRewardCandidateIds(
+        candidateIds: List<String>,
+        rewardContext: RewardGenerationContext,
+    ): List<String> =
+        candidateIds
+            .distinct()
+            .filter { baseItemId -> isMilestoneRewardBaseAllowed(baseItemId, rewardContext) }
+            .sortedWith(
+                compareByDescending<String> { baseItemId -> milestoneRewardBaseScore(baseItemId, rewardContext) }
+                    .thenBy { baseItemId -> rewardPreferenceOrder().indexOf(baseItemId).takeIf { it >= 0 } ?: Int.MAX_VALUE }
+                    .thenByDescending { baseItemId -> itemBaseDef(baseItemId)?.dropWeight ?: 0 }
+                    .thenBy { it },
+            )
+
+    private fun selectMilestoneReplacementSlot(
+        candidateIds: List<String>,
+        rewardContext: RewardGenerationContext,
+    ): EquipSlot? =
+        MILESTONE_REPLACEMENT_SLOT_PRIORITY.firstOrNull { candidateSlot ->
+            candidateSlot in rewardContext.occupiedSlots &&
+                candidateSlot !in rewardContext.reservedSlots &&
+                strictMilestoneRewardCandidateIds(
+                    candidateIds = candidateIds,
+                    rewardContext = rewardContext.copy(replacementSlot = candidateSlot),
+                ).isNotEmpty()
+        }
+
+    private fun isMilestoneRewardBaseAllowed(
+        baseItemId: String,
+        rewardContext: RewardGenerationContext,
+    ): Boolean {
+        val base = itemBaseDef(baseItemId) ?: return false
+        val slot = base.slot ?: return false
+        if (base.type == ItemType.CONSUMABLE || base.id in DETERMINISTIC_RESCUE_UTILITY_BASE_IDS) {
+            return false
+        }
+        if (!isRewardSuitableForCurrentProfession(baseItemId)) {
+            return false
+        }
+        if (slot in rewardContext.reservedSlots) {
+            return false
+        }
+        return slot !in rewardContext.occupiedSlots || slot == rewardContext.replacementSlot
+    }
+
+    private fun milestoneRewardBaseScore(
+        baseItemId: String,
+        rewardContext: RewardGenerationContext,
+    ): Int {
+        val base = itemBaseDef(baseItemId) ?: return Int.MIN_VALUE
+        val baseTags = rewardBaseTags(base)
+        val buildContext = currentAffixBuildContext()
+        val freshBonus = if (baseItemId !in currentOwnedItemBaseIds()) 120 else 0
+        val buildMatchScore = baseTags.count(buildContext.buildTags::contains) * 10
+        val routeBiasScore = baseTags.count(rewardContext.routeBiasTags::contains) * 6
+        val rewardBiasScore = baseTags.count(rewardSourceBiasTags(rewardContext.rewardSource)::contains) * 3
+        return freshBonus + buildMatchScore + routeBiasScore + rewardBiasScore + (base.dropWeight.coerceAtLeast(1))
+    }
+
+    private fun rewardBaseTags(base: ItemBaseDef): Set<String> =
+        linkedSetOf<String>().apply {
+            addAll(base.tags.map(String::lowercase))
+            add(base.type.name.lowercase())
+            base.slot?.name?.lowercase()?.let(::add)
+            base.resourceTypeId?.lowercase()?.let(::add)
+            if (base.baseStats.attack > 0) {
+                add("offense")
+            }
+            if (base.baseStats.defense > 0 || base.baseStats.maxHp > 0) {
+                addAll(listOf("protection", "defense"))
+            }
+            if (base.baseStats.evasion > 0 || base.baseStats.speed > 0) {
+                add("mobility")
+            }
+            if (base.baseStats.talentPower > 0.0 || base.baseStats.wil > 0) {
+                add("spell")
+            }
+            when (val passive = base.passive) {
+                is EquipmentPassive.DamageTypeBonus -> {
+                    add(passive.type.name.lowercase())
+                    add("offense")
+                }
+                is EquipmentPassive.ResistanceBonus -> {
+                    add(passive.damageType.name.lowercase())
+                    addAll(listOf("protection", "resistance"))
+                }
+                is EquipmentPassive.HpRegenPerTurn -> addAll(listOf("sustain", "life", "regeneration"))
+                is EquipmentPassive.DamageVsTag -> add("offense")
+                null -> Unit
+            }
+        }
+
+    private fun normalizeMilestoneFallbackBaseId(
+        fallbackBaseId: String,
+        rewardContext: RewardGenerationContext,
+    ): String =
+        selectMilestoneFallbackBaseId(
+            preferredBaseIds = listOf(fallbackBaseId) + rewardPreferenceOrder(),
+            rewardContext = rewardContext,
+        )
+
+    private fun defaultMilestoneFallbackBaseId(rewardContext: RewardGenerationContext): String =
+        selectMilestoneFallbackBaseId(
+            preferredBaseIds = rewardPreferenceOrder(),
+            rewardContext = rewardContext,
+        )
+
+    private fun selectMilestoneFallbackBaseId(
+        preferredBaseIds: List<String>,
+        rewardContext: RewardGenerationContext,
+    ): String {
+        rankMilestoneRewardCandidateIds(preferredBaseIds, rewardContext).firstOrNull()?.let { fallbackBaseId ->
+            return fallbackBaseId
+        }
+        return requireNotNull(
+            rankMilestoneRewardCandidateIds(
+                candidateIds = content.itemBundle.baseItems.map(ItemBaseDef::id),
+                rewardContext = rewardContext,
+            ).firstOrNull(),
+        ) {
+            "No legal milestone reward base available for ${rewardContext.rewardSource}:${rewardContext.sourceId}."
+        }
+    }
+
+    private fun milestoneAffixContext(rewardContext: RewardGenerationContext): AffixSelectionContext {
+        val buildContext = currentAffixBuildContext()
+        return buildContext.copy(
+            rewardSource = rewardContext.rewardSource,
+            qualityFloor = rewardContext.qualityFloor,
+            minAffixCount = rewardContext.minAffixCount,
+            routeBiasTags = rewardContext.routeBiasTags,
+        )
+    }
+
     private fun rewardPreferenceOrder(): List<String> =
         when (config.playerProfessionId) {
             "vanguard" -> listOf("abyssal_heartstone", "forgebreaker_pick", "basic_shield", "chain_mail", "war_maul", "healing_potion", "scroll_teleport")
@@ -2017,6 +2206,13 @@ class FoundationGameSession internal constructor(
             "rogue" -> listOf("abyssal_heartstone", "bandit_trophy", "hunter_bow", "leather_armor", "energy_tonic", "scroll_teleport", "healing_potion")
             "templar" -> listOf("abyssal_heartstone", "sanctified_seal", "long_sword", "basic_shield", "chain_mail", "consecrated_oil", "healing_potion")
             else -> listOf("healing_potion", "scroll_teleport")
+        }
+
+    private fun rewardSourceBiasTags(source: MilestoneRewardSource): Set<String> =
+        when (source) {
+            MilestoneRewardSource.ROUTE -> setOf("reward", "route")
+            MilestoneRewardSource.BOSS -> setOf("reward", "boss", "elite")
+            MilestoneRewardSource.CACHE -> setOf("reward", "cache")
         }
 
     private fun grantRewardItem(
@@ -2032,22 +2228,128 @@ class FoundationGameSession internal constructor(
         return false
     }
 
-    private fun supportRewardItem(): ItemInstance =
-        rewardItemFromProfiles(
-            profileIds = listOf("loot.foundation.elite"),
-            fallbackBaseId = "healing_potion",
-        )
-
     private fun zoneRewardItem(
         profileIds: List<String>,
         fallbackBaseId: String,
-    ): ItemInstance = rewardItemFromProfiles(profileIds = profileIds, fallbackBaseId = fallbackBaseId)
+        rewardContext: RewardGenerationContext,
+    ): ItemInstance =
+        milestoneRewardItemFromProfiles(
+            profileIds = profileIds,
+            fallbackBaseId = fallbackBaseId,
+            rewardContext = rewardContext,
+        )
 
     private fun activeBossRewardItem(): ItemInstance =
-        rewardItemFromProfiles(
+        milestoneRewardItemFromProfiles(
             profileIds = activeBossEncounterSchema()?.rewards.orEmpty(),
-            fallbackBaseId = "scroll_teleport",
+            fallbackBaseId = defaultMilestoneFallbackBaseId(
+                RewardGenerationContext(
+                    rewardSource = MilestoneRewardSource.BOSS,
+                    sourceId = activeBossEncounterSchema()?.id ?: currentZoneSchema().id,
+                    floor = itemFloorForRecommendedLevel(currentZoneSchema().recommendedLevel.max),
+                    qualityFloor = ItemQuality.RARE,
+                    minAffixCount =
+                        if (activeBossEncounterSchema()?.tags?.contains("finale") == true) {
+                            3
+                        } else {
+                            2
+                        },
+                    occupiedSlots = currentEquippedSlots(),
+                ),
+            ),
+            rewardContext =
+                RewardGenerationContext(
+                    rewardSource = MilestoneRewardSource.BOSS,
+                    sourceId = activeBossEncounterSchema()?.id ?: currentZoneSchema().id,
+                    floor = itemFloorForRecommendedLevel(currentZoneSchema().recommendedLevel.max),
+                    qualityFloor = ItemQuality.RARE,
+                    minAffixCount =
+                        if (activeBossEncounterSchema()?.tags?.contains("finale") == true) {
+                            3
+                        } else {
+                            2
+                        },
+                    occupiedSlots = currentEquippedSlots(),
+                ),
         )
+
+    private fun routeMilestoneRewardItem(
+        reward: RouteReward,
+        reservedSlots: Set<EquipSlot>,
+        occupiedSlots: Set<EquipSlot>,
+    ): ItemInstance? {
+        if (reward.milestoneRewardProfileIds.isEmpty()) {
+            return null
+        }
+        return milestoneRewardItemFromProfiles(
+            profileIds = reward.milestoneRewardProfileIds,
+            fallbackBaseId =
+                normalizeMilestoneFallbackBaseId(
+                    fallbackBaseId = reward.guaranteedUtilityDropIds.firstOrNull().orEmpty(),
+                    rewardContext =
+                        RewardGenerationContext(
+                            rewardSource = MilestoneRewardSource.ROUTE,
+                            sourceId = reward.routeId,
+                            floor = itemFloorForLevelBand(reward.levelBandRef),
+                            qualityFloor = ItemQuality.MAGIC,
+                            minAffixCount = 1,
+                            routeBiasTags = routeRewardBiasTags(reward.rescueTags),
+                            reservedSlots = reservedSlots,
+                            occupiedSlots = occupiedSlots,
+                        ),
+                ),
+            rewardContext =
+                RewardGenerationContext(
+                    rewardSource = MilestoneRewardSource.ROUTE,
+                    sourceId = reward.routeId,
+                    floor = itemFloorForLevelBand(reward.levelBandRef),
+                    qualityFloor = ItemQuality.MAGIC,
+                    minAffixCount = 1,
+                    routeBiasTags = routeRewardBiasTags(reward.rescueTags),
+                    reservedSlots = reservedSlots,
+                    occupiedSlots = occupiedSlots,
+                ),
+        )
+    }
+
+    private fun recordMilestoneReward(
+        rewardSource: MilestoneRewardSource,
+        sourceId: String,
+        reward: ItemInstance,
+    ) {
+        val equipSlot = requireNotNull(reward.slot) {
+            "Milestone reward '${reward.baseId}' from $rewardSource:$sourceId must be equippable."
+        }
+        recordedMilestoneRewardSummaries +=
+            MilestoneRewardSummary(
+                rewardSource = rewardSource,
+                sourceId = sourceId,
+                zoneId = config.zoneId,
+                baseItemId = reward.baseId,
+                equipSlot = equipSlot,
+                qualityTier = reward.quality,
+                buildHashAtGrant = currentBuildHash(),
+                affixIds = reward.affixes.map(com.ktome.core.item.AffixDef::id),
+                equippedBaseItemIdBeforeReward = equippedBaseItemIdFor(equipSlot),
+            )
+    }
+
+    private fun finalizeMilestoneRewardSummary(summary: MilestoneRewardSummary): MilestoneRewardSummary {
+        val equippedBaseItemIdAtRunEnd = equippedBaseItemIdFor(summary.equipSlot)
+        return summary.copy(
+            equippedBaseItemIdAtRunEnd = equippedBaseItemIdAtRunEnd,
+            adoptedInFinalBuild = equippedBaseItemIdAtRunEnd == summary.baseItemId,
+        )
+    }
+
+    private fun itemFloorForLevelBand(levelBandRef: String): Int {
+        val normalized = levelBandRef.removePrefix("lv")
+        val maxLevel = normalized.substringAfter('_', normalized).toIntOrNull() ?: 1
+        return itemFloorForRecommendedLevel(maxLevel)
+    }
+
+    private fun itemFloorForRecommendedLevel(maxLevel: Int): Int =
+        ((maxLevel - 1) / 3 + 1).coerceIn(1, 5)
 
     private data class ObjectiveProgressSpec(
         val token: String,
@@ -2088,6 +2390,18 @@ class FoundationGameSession internal constructor(
             fallbackBaseId = ZoneMechanicRuntime.uniqueContentFallbackBaseId(currentZoneSchema().uniqueContentTag),
         )
 
+    private fun ZoneSchemaV2.rewardBiasTags(): Set<String> =
+        linkedSetOf<String>().apply {
+            uniqueContentTag
+                ?.split('.', '_', '-')
+                ?.map(String::trim)
+                ?.filter(String::isNotBlank)
+                ?.map(String::lowercase)
+                ?.forEach(::add)
+            specialMechanics.map(String::lowercase).forEach(::add)
+            environmentTheme.takeIf(String::isNotBlank)?.lowercase()?.let(::add)
+        }
+
     private fun groundRewardSpecFor(interactableId: String): RewardSpec? =
         when (interactableId) {
             "supply_crate" -> RewardSpec(profileIds = emptyList(), fallbackBaseId = "scroll_teleport")
@@ -2113,11 +2427,27 @@ class FoundationGameSession internal constructor(
             else -> null
         }
 
-    private fun groundRewardItemFor(spec: RewardSpec): ItemInstance =
+    private fun groundRewardItemFor(
+        interactableId: String,
+        spec: RewardSpec,
+    ): ItemInstance =
         if (spec.profileIds.isEmpty()) {
             officialRewardItem(baseId = spec.fallbackBaseId, fallbackBaseId = "healing_potion")
         } else {
-            zoneRewardItem(profileIds = spec.profileIds, fallbackBaseId = spec.fallbackBaseId)
+            zoneRewardItem(
+                profileIds = spec.profileIds,
+                fallbackBaseId = spec.fallbackBaseId,
+                rewardContext =
+                    RewardGenerationContext(
+                        rewardSource = MilestoneRewardSource.CACHE,
+                        sourceId = interactableId,
+                        floor = itemFloorForRecommendedLevel(currentZoneSchema().recommendedLevel.max),
+                        qualityFloor = ItemQuality.MAGIC,
+                        minAffixCount = 1,
+                        routeBiasTags = routeRewardBiasTags(currentZoneSchema().rewardBiasTags()),
+                        occupiedSlots = currentEquippedSlots(),
+                    ),
+            )
         }
 
     private fun dropGroundRewardFromInteractable(
@@ -2125,8 +2455,15 @@ class FoundationGameSession internal constructor(
         position: Point,
         spec: RewardSpec,
     ) {
-        val reward = groundRewardItemFor(spec)
+        val reward = groundRewardItemFor(schema.id, spec)
         ItemFactory().createGroundItem(world, reward, position)
+        if (spec.profileIds.isNotEmpty()) {
+            recordMilestoneReward(
+                rewardSource = MilestoneRewardSource.CACHE,
+                sourceId = schema.id,
+                reward = reward,
+            )
+        }
         val rewardSchema = requireNotNull(itemSchemaFor(reward.baseId)) {
             "Unknown item schema '${reward.baseId}'."
         }
@@ -2142,8 +2479,29 @@ class FoundationGameSession internal constructor(
         position: Point,
         spec: RewardSpec,
     ) {
-        val reward = zoneRewardItem(profileIds = spec.profileIds, fallbackBaseId = spec.fallbackBaseId)
+        val reward =
+            zoneRewardItem(
+                profileIds = spec.profileIds,
+                fallbackBaseId = spec.fallbackBaseId,
+                rewardContext =
+                    RewardGenerationContext(
+                        rewardSource = MilestoneRewardSource.CACHE,
+                        sourceId = schema.id,
+                        floor = itemFloorForRecommendedLevel(currentZoneSchema().recommendedLevel.max),
+                        qualityFloor = ItemQuality.MAGIC,
+                        minAffixCount = 1,
+                        routeBiasTags = routeRewardBiasTags(currentZoneSchema().rewardBiasTags()),
+                        occupiedSlots = currentEquippedSlots(),
+                    ),
+            )
         grantRewardItem(reward, position)
+        if (spec.profileIds.isNotEmpty()) {
+            recordMilestoneReward(
+                rewardSource = MilestoneRewardSource.CACHE,
+                sourceId = schema.id,
+                reward = reward,
+            )
+        }
         val rewardSchema = requireNotNull(itemSchemaFor(reward.baseId)) {
             "Unknown support reward item '${reward.baseId}'."
         }
@@ -4067,6 +4425,11 @@ class FoundationGameSession internal constructor(
             deathPoint?.let { point ->
                 val bossReward = activeBossRewardItem()
                 val stored = grantRewardItem(bossReward, point)
+                recordMilestoneReward(
+                    rewardSource = MilestoneRewardSource.BOSS,
+                    sourceId = activeBossEncounterSchema()?.id ?: currentZoneSchema().id,
+                    reward = bossReward,
+                )
                 val rewardSchema = requireNotNull(itemSchemaFor(bossReward.baseId)) {
                     "Unknown boss reward item '${bossReward.baseId}'."
                 }
@@ -4306,6 +4669,7 @@ class FoundationGameSession internal constructor(
                 shopStates = shopStates(),
                 combatRandomState = (combatRandomSource as? StatefulRandomSource)?.snapshotState(),
                 sessionRandomState = (sessionRandom as? StatefulRandomSource)?.snapshotState(),
+                milestoneRewards = persistedMilestoneRewardSummaries(),
                 pendingActionIds = serializedPendingActionIds,
                 activeTurnActorId = activeTurnActor?.value?.takeIf { actorId -> actorId in serializedPendingActionIds },
             ),
@@ -6210,6 +6574,19 @@ class FoundationGameSession internal constructor(
             config: FoundationGameConfig,
             turnCount: Int,
         ): StatefulRandomSource = SplitMix64RandomSource.fromSeed(config.seed xor turnCount.toLong() xor SESSION_RANDOM_SALT)
+
+        private val DETERMINISTIC_RESCUE_UTILITY_BASE_IDS: Set<String> =
+            setOf(
+                "healing_potion",
+                "scroll_teleport",
+                "mana_potion",
+                "stamina_draught",
+                "energy_tonic",
+                "consecrated_oil",
+            )
+
+        private val MILESTONE_REPLACEMENT_SLOT_PRIORITY: List<EquipSlot> =
+            listOf(EquipSlot.OFF_HAND, EquipSlot.ARMOR, EquipSlot.WEAPON)
 
         private data object UntrackedRandomSource : RandomSource {
             override fun nextDouble(): Double = 0.0

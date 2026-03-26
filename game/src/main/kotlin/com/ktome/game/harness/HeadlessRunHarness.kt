@@ -156,6 +156,7 @@ class HeadlessRunHarness(
                 localeId = session.localizer().locale.id,
                 profileId = HarnessMetadata.PROFILE_ID,
                 buildHash = session.currentBuildHash(),
+                milestoneRewards = session.milestoneRewardSummaries(),
                 goalReached = goalSatisfied(spec, observation, checkpointTurn),
                 failureReason = failureReason,
                 stuckReason = stuckReason,
@@ -283,6 +284,9 @@ class HeadlessRunHarness(
                 failureReason =
                     "Checkpoint reload changed headlessTurnEquivalent from ${session.currentHeadlessTurnEquivalent()} to ${loaded.currentHeadlessTurnEquivalent()}.",
             )
+        }
+        if (loaded.milestoneRewardSummaries() != session.milestoneRewardSummaries()) {
+            return CheckpointRoundTripResult(failureReason = "Checkpoint reload changed milestoneRewardSummaries.")
         }
         if (inventoryAfter != inventoryBefore) {
             return CheckpointRoundTripResult(failureReason = "Checkpoint reload changed inventory order/content.")

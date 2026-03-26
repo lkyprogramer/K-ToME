@@ -28,7 +28,7 @@ class SaveVersionCompatibilityTest {
                 codec.decode(encoded)
             }
 
-        assertTrue(exception.message!!.contains("99.1"))
+        assertTrue(exception.message!!.contains("99.${SaveContractVersion.CURRENT.minor}"))
     }
 
     @Test

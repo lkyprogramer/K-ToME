@@ -5,10 +5,14 @@ import com.ktome.core.ecs.EntityId
 import com.ktome.core.ecs.Interactable
 import com.ktome.core.ecs.Position
 import com.ktome.core.ecs.get
+import com.ktome.core.item.EquipSlot
 import com.ktome.core.item.Inventory
 import com.ktome.core.item.ItemInstance
+import com.ktome.core.item.ItemQuality
+import com.ktome.core.item.MilestoneRewardSource
 import com.ktome.core.save.SaveManager
 import com.ktome.core.world.ObjectiveState
+import com.ktome.game.data.DataLoader
 import com.ktome.game.factory.ItemFactory
 import com.ktome.game.i18n.GameLocale
 import java.nio.file.Path
@@ -21,6 +25,8 @@ import org.junit.jupiter.api.io.TempDir
 class LongRunWorldStructureSessionTest {
     @TempDir
     lateinit var tempDir: Path
+
+    private val itemBasesById = DataLoader().loadItemBundle().baseItems.associateBy { item -> item.id }
 
     @Test
     fun `new shattered outpost run does not start with cleared quest flags`() {
@@ -123,6 +129,14 @@ class LongRunWorldStructureSessionTest {
         assertTrue(firstClearSession.perform(PlayerCommand.SelectRoute(1)))
         assertEquals(60, firstClearSession.currentShardBalance())
         assertTrue("route.greenwood_fringe.deep_iron_pit" in firstClearSession.worldProgress().claimedRouteRewards)
+        requireNotNull(
+            firstClearSession.milestoneRewardSummaries().firstOrNull { reward ->
+                reward.rewardSource == MilestoneRewardSource.ROUTE &&
+                    reward.sourceId == "route.greenwood_fringe.deep_iron_pit" &&
+                    reward.qualityTier.ordinal >= ItemQuality.MAGIC.ordinal &&
+                    reward.affixIds.isNotEmpty()
+            },
+        )
 
         val unlockSession =
             GameModule.newFoundationSession(
@@ -145,6 +159,13 @@ class LongRunWorldStructureSessionTest {
         assertTrue(unlockSession.perform(PlayerCommand.SelectRoute(0)))
         assertEquals(20, unlockSession.currentShardBalance())
         assertTrue("route.greenwood_fringe.bandit_camp" in unlockSession.worldProgress().claimedRouteRewards)
+        requireNotNull(
+            unlockSession.milestoneRewardSummaries().firstOrNull { reward ->
+                reward.rewardSource == MilestoneRewardSource.ROUTE &&
+                    reward.sourceId == "route.greenwood_fringe.bandit_camp" &&
+                    reward.affixIds.isNotEmpty()
+            },
+        )
     }
 
     @Test
@@ -173,6 +194,7 @@ class LongRunWorldStructureSessionTest {
         assertEquals("deep_iron_pit", session.config.zoneId)
         assertEquals(0, session.currentShardBalance())
         assertTrue("route.greenwood_fringe.deep_iron_pit" !in session.worldProgress().claimedRouteRewards)
+        assertTrue(session.milestoneRewardSummaries().isEmpty())
     }
 
     @Test
@@ -469,6 +491,39 @@ class LongRunWorldStructureSessionTest {
         assertTrue("orc.molten_giant" in session.worldProgress().defeatedBossIds)
         val routeSelection = requireNotNull(session.renderSnapshot().uiState.activeRouteSelection)
         assertTrue(routeSelection.options.any { option -> option.destinationZoneId == "grey_gate_depths" })
+    }
+
+    @Test
+    fun `shattered outpost route milestone prefers open off hand when utility reward uses no slot`() {
+        val session =
+            GameModule.newFoundationSession(
+                config =
+                    FoundationGameConfig(
+                        seed = 20260325L,
+                        zoneId = "shattered_outpost",
+                        playerProfessionId = "arcanist",
+                        zoneRoute = listOf("shattered_outpost"),
+                        routeIndex = 0,
+                    ),
+                saveManager = SaveManager(tempDir.resolve("shattered-outpost-route-slot-save")),
+            )
+
+        movePlayerTo(session, stairPoint(session, StairDirection.DOWN))
+        assertTrue(session.perform(PlayerCommand.Descend))
+
+        val bossId = requireNotNull(session.automationEntityByTemplateId("bandit.captain"))
+        invokeHandleDeath(session, EntityId(bossId.value), session.playerId)
+
+        val rewardSummary =
+            requireNotNull(
+                session.milestoneRewardSummaries().firstOrNull { reward ->
+                    reward.rewardSource == MilestoneRewardSource.ROUTE &&
+                        reward.sourceId == "route.shattered_outpost.greenwood_fringe" &&
+                        reward.qualityTier.ordinal >= ItemQuality.MAGIC.ordinal &&
+                        reward.affixIds.isNotEmpty()
+                },
+            )
+        assertEquals(EquipSlot.OFF_HAND, requireNotNull(itemBasesById[rewardSummary.baseItemId]).slot)
     }
 
     @Test

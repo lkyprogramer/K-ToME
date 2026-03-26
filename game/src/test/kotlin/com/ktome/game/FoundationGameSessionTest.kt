@@ -43,6 +43,7 @@ import com.ktome.core.item.EquipSlot
 import com.ktome.core.item.ItemInstance
 import com.ktome.core.item.ItemQuality
 import com.ktome.core.item.ItemType
+import com.ktome.core.item.MilestoneRewardSource
 import com.ktome.core.item.StatModifier
 import com.ktome.core.map.GameMap
 import com.ktome.core.map.Point
@@ -88,6 +89,7 @@ class FoundationGameSessionTest {
     private val dataLoader = DataLoader()
     private val talents = dataLoader.loadTalentDefinitions()
     private val talentRegistry = TalentRegistry().apply { registerAll(talents) }
+    private val itemBasesById = dataLoader.loadItemBundle().baseItems.associateBy { item -> item.id }
 
     @Test
     fun `player kill grants experience and level up`() {
@@ -920,6 +922,32 @@ class FoundationGameSessionTest {
         assertTrue(session.inventoryItems().size >= baselineInventoryCount + 1)
         assertTrue(session.playerResourceView().current > 5)
         assertTrue(session.renderSnapshot().logEvents.any { event -> event.message.key == "log.objective.progress" })
+        val rewardSummary =
+            requireNotNull(
+                session.milestoneRewardSummaries().firstOrNull { reward ->
+                    reward.rewardSource == MilestoneRewardSource.CACHE &&
+                        reward.sourceId == "armory_gate" &&
+                        reward.qualityTier.ordinal >= ItemQuality.MAGIC.ordinal &&
+                        reward.affixIds.isNotEmpty()
+                },
+            )
+        assertEquals(EquipSlot.OFF_HAND, requireNotNull(itemBasesById[rewardSummary.baseItemId]).slot)
+        assertEquals(EquipSlot.OFF_HAND, rewardSummary.equipSlot)
+        assertNull(rewardSummary.equippedBaseItemIdBeforeReward)
+        assertFalse(rewardSummary.buildHashAtGrant.isBlank())
+        assertNull(rewardSummary.equippedBaseItemIdAtRunEnd)
+        assertFalse(rewardSummary.adoptedInFinalBuild)
+        val rewardInventoryIndex = inventoryIndexOfBaseId(session, rewardSummary.baseItemId)
+        assertTrue(session.perform(PlayerCommand.ActivateInventoryItem(rewardInventoryIndex)))
+        val adoptedSummary =
+            requireNotNull(
+                session.milestoneRewardSummaries().firstOrNull { reward ->
+                    reward.rewardSource == MilestoneRewardSource.CACHE &&
+                        reward.sourceId == "armory_gate"
+                },
+            )
+        assertEquals(rewardSummary.baseItemId, adoptedSummary.equippedBaseItemIdAtRunEnd)
+        assertTrue(adoptedSummary.adoptedInFinalBuild)
     }
 
     @Test
@@ -939,7 +967,14 @@ class FoundationGameSessionTest {
         assertTrue(session.perform(PlayerCommand.Interact))
         assertEquals(1, inventoryBaseIds(session).count { baseId -> baseId == "basic_shield" })
         assertEquals(1, inventoryBaseIds(session).count { baseId -> baseId == "chain_mail" })
-        assertEquals(2, inventoryBaseIds(session).count { baseId -> baseId == "healing_potion" })
+        assertTrue(inventoryBaseIds(session).count { baseId -> baseId == "healing_potion" } >= 1)
+        assertTrue(
+            session.milestoneRewardSummaries().any { reward ->
+                reward.rewardSource == MilestoneRewardSource.CACHE &&
+                    reward.sourceId == "armory_gate" &&
+                    reward.affixIds.isNotEmpty()
+            },
+        )
     }
 
     @Test
@@ -964,6 +999,14 @@ class FoundationGameSessionTest {
 
         assertTrue(groundItems.any { itemId -> itemId in setOf("bandit_trophy", "emerald_charm", "hunter_bow", "stamina_draught") })
         assertTrue(session.renderSnapshot().logEvents.any { event -> event.message.key == "log.objective.progress" })
+        assertTrue(
+            session.milestoneRewardSummaries().any { reward ->
+                reward.rewardSource == MilestoneRewardSource.CACHE &&
+                    reward.sourceId == "trail_cache" &&
+                    reward.qualityTier.ordinal >= ItemQuality.MAGIC.ordinal &&
+                    reward.affixIds.isNotEmpty()
+            },
+        )
     }
 
     @Test
@@ -1591,6 +1634,32 @@ class FoundationGameSessionTest {
         assertNotNull(loaded)
         assertEquals(2, loaded?.currentFloor())
         assertTrue(loaded?.inventoryItems()?.any { it.name == "短剑" } == true)
+    }
+
+    @Test
+    fun `manual save preserves milestone reward summaries across reload`() {
+        val saveManager = SaveManager(tempDir.resolve("milestone-reward-reload-save"))
+        val session =
+            GameModule.newFoundationSession(
+                FoundationGameConfig(seed = 20260318L, zoneId = "shattered_outpost", playerProfessionId = "arcanist"),
+                saveManager,
+            )
+
+        movePlayerTo(session, stairPoint(session, com.ktome.core.dungeon.StairDirection.DOWN))
+        assertTrue(session.perform(PlayerCommand.Descend))
+        session.automationMovePlayerTo(interactablePoint(session, "armory_gate"))
+        assertTrue(session.perform(PlayerCommand.Interact))
+
+        val expectedMilestoneRewards = session.milestoneRewardSummaries()
+        assertFalse(expectedMilestoneRewards.isEmpty())
+        assertTrue(session.perform(PlayerCommand.SaveGame))
+
+        val loaded = requireNotNull(GameModule.loadFoundationSession(saveManager))
+        assertEquals(expectedMilestoneRewards, loaded.milestoneRewardSummaries())
+
+        loaded.automationForceDefeatPlayer()
+        val summary = requireNotNull(loaded.profileRunSummary(finishedAtEpochMillis = 1234L))
+        assertEquals(expectedMilestoneRewards, summary.milestoneRewards)
     }
 
     @Test
@@ -2536,6 +2605,16 @@ class FoundationGameSessionTest {
         assertTrue("route.grey_gate_depths.underground_river" in session.worldProgress().claimedRouteRewards)
         assertTrue(session.inventoryItems().size >= baselineInventoryCount + 1)
         assertTrue(inventoryBaseIds(session).count { baseId -> baseId == "seal_reliquary" } >= 1)
+        val rewardSummary =
+            requireNotNull(
+                session.milestoneRewardSummaries().firstOrNull { reward ->
+                    reward.rewardSource == MilestoneRewardSource.BOSS &&
+                        reward.sourceId == "dungeon_lord_encounter" &&
+                        reward.qualityTier == ItemQuality.RARE &&
+                        reward.affixIds.size >= 2
+                },
+            )
+        assertEquals(EquipSlot.OFF_HAND, requireNotNull(itemBasesById[rewardSummary.baseItemId]).slot)
         val rewardLog = logEventByKey(session, "log.boss.reward.claimed") ?: logEventByKey(session, "log.boss.reward.dropped")
         rewardLog?.let { snapshot ->
             assertEquals(
@@ -2577,6 +2656,18 @@ class FoundationGameSessionTest {
         assertEquals(1, session.config.routeIndex)
         assertEquals(1, inventoryBaseIds(session).count { baseId -> baseId == "basic_shield" })
         assertTrue(inventoryBaseIds(session).count { baseId -> baseId == "healing_potion" } >= 2)
+        val rewardSummary =
+            requireNotNull(
+                session.milestoneRewardSummaries().firstOrNull { reward ->
+                    reward.rewardSource == MilestoneRewardSource.ROUTE &&
+                        reward.sourceId == "route.shattered_outpost.greenwood_fringe" &&
+                        reward.qualityTier.ordinal >= ItemQuality.MAGIC.ordinal &&
+                        reward.affixIds.isNotEmpty()
+                },
+            )
+        assertEquals(EquipSlot.OFF_HAND, rewardSummary.equipSlot)
+        assertEquals(EquipSlot.OFF_HAND, requireNotNull(itemBasesById[rewardSummary.baseItemId]).slot)
+        assertEquals("basic_shield", rewardSummary.equippedBaseItemIdBeforeReward)
         assertTrue("route.shattered_outpost.greenwood_fringe" in session.worldProgress().claimedRouteRewards)
         assertTrue(saveManager.hasSave())
     }
@@ -2597,6 +2688,14 @@ class FoundationGameSessionTest {
         assertTrue(session.isVictory())
         assertEquals(baselineInventoryCount + 1, session.inventoryItems().size)
         assertEquals(1, inventoryBaseIds(session).count { baseId -> baseId == "abyssal_heartstone" })
+        assertTrue(
+            session.milestoneRewardSummaries().any { reward ->
+                reward.rewardSource == MilestoneRewardSource.BOSS &&
+                    reward.sourceId == "abyssal_guardian_encounter" &&
+                    reward.qualityTier == ItemQuality.RARE &&
+                    reward.affixIds.size >= 3
+            },
+        )
         val rewardLog = logEventByKey(session, "log.boss.reward.claimed") ?: logEventByKey(session, "log.boss.reward.dropped")
         rewardLog?.let { snapshot ->
             assertEquals(
@@ -3420,6 +3519,28 @@ class FoundationGameSessionTest {
         val index = inventory.itemIds.size
         inventory.itemIds += ItemFactory().createCarriedItem(world, item)
         return index
+    }
+
+    private fun inventoryIndexOfBaseId(
+        session: FoundationGameSession,
+        baseItemId: String,
+    ): Int =
+        requireNotNull(
+            session.inventoryItems().firstOrNull { itemView ->
+                inventoryBaseIdAt(session, itemView.index) == baseItemId
+            }?.index,
+        ) {
+            "Expected inventory item '$baseItemId'."
+        }
+
+    private fun inventoryBaseIdAt(
+        session: FoundationGameSession,
+        inventoryIndex: Int,
+    ): String {
+        val world = runtimeWorld(session)
+        val inventory = requireNotNull(world.get<com.ktome.core.item.Inventory>(session.playerId))
+        val itemId = requireNotNull(inventory.itemIds.getOrNull(inventoryIndex)) { "Missing inventory slot $inventoryIndex." }
+        return requireNotNull(world.get<ItemInstance>(itemId)).baseId
     }
 
     private fun baseItem(baseId: String): ItemInstance {
