@@ -2,6 +2,7 @@ package com.ktome.game.harness
 
 import com.ktome.core.map.GameMap
 import com.ktome.core.map.Point
+import com.ktome.core.profile.MilestoneRewardSummary
 import com.ktome.core.run.RunOutcome
 import com.ktome.core.snapshot.RouteSelectionSnapshot
 import com.ktome.core.world.ObjectiveState
@@ -130,6 +131,7 @@ data class ScenarioReport(
     val localeId: String = "headless",
     val profileId: String = HarnessMetadata.PROFILE_ID,
     val buildHash: String? = null,
+    val milestoneRewards: List<MilestoneRewardSummary> = emptyList(),
     val goalReached: Boolean,
     val failureReason: String? = null,
     val stuckReason: String? = null,

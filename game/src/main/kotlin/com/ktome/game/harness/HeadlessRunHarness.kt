@@ -156,6 +156,7 @@ class HeadlessRunHarness(
                 localeId = session.localizer().locale.id,
                 profileId = HarnessMetadata.PROFILE_ID,
                 buildHash = session.currentBuildHash(),
+                milestoneRewards = session.milestoneRewardSummaries(),
                 goalReached = goalSatisfied(spec, observation, checkpointTurn),
                 failureReason = failureReason,
                 stuckReason = stuckReason,

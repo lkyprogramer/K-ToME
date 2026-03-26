@@ -1,5 +1,8 @@
 package com.ktome.core.profile
 
+import com.ktome.core.item.ItemQuality
+import com.ktome.core.item.MilestoneRewardSource
+import com.ktome.core.item.EquipSlot
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -29,6 +32,22 @@ class ProfileDataTest {
                             headlessTurnEquivalent = 345,
                             zoneRouteHash = "route",
                             buildHash = "build",
+                            milestoneRewards =
+                                listOf(
+                                    MilestoneRewardSummary(
+                                        rewardSource = MilestoneRewardSource.ROUTE,
+                                        sourceId = "route.greenwood_fringe.deep_iron_pit",
+                                        zoneId = "greenwood_fringe",
+                                        baseItemId = "forgebreaker_pick",
+                                        equipSlot = EquipSlot.WEAPON,
+                                        qualityTier = ItemQuality.MAGIC,
+                                        buildHashAtGrant = "grant-build",
+                                        affixIds = listOf("flaming"),
+                                        equippedBaseItemIdBeforeReward = "arcane_staff",
+                                        equippedBaseItemIdAtRunEnd = "forgebreaker_pick",
+                                        adoptedInFinalBuild = true,
+                                    ),
+                                ),
                             rulesetVersion = "phase3",
                             victory = true,
                         ),

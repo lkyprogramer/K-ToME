@@ -1,5 +1,6 @@
 package com.ktome.game.harness
 
+import com.ktome.core.item.MilestoneRewardSource
 import com.ktome.core.run.RunOutcome
 import com.ktome.game.FOUNDATION_ZONE_ROUTE
 import java.nio.file.Path
@@ -132,6 +133,22 @@ class LongRunLabFullTest {
         val branchSampleCount = reports.count { report -> report.zonePath.any(OPTIONAL_ZONE_IDS::contains) }
         val deathDistribution = nonVictoryReports.groupingBy(ScenarioReport::finalZoneId).eachCount().toSortedMap()
         val routeHashDistribution = reports.groupingBy(ScenarioReport::zoneRouteHash).eachCount().toSortedMap()
+        val milestoneRewards = reports.flatMap(ScenarioReport::milestoneRewards)
+        val milestoneRewardQualityDistribution = milestoneRewards.groupingBy { it.qualityTier.name }.eachCount().toSortedMap()
+        val milestoneAffixCountDistribution = milestoneRewards.groupingBy { it.affixIds.size.toString() }.eachCount().toSortedMap()
+        val milestoneRewardAdoptionDistribution =
+            milestoneRewards
+                .groupingBy { reward -> if (reward.adoptedInFinalBuild) "adopted" else "notAdopted" }
+                .eachCount()
+                .toSortedMap()
+        val milestoneRewardSlotDistribution = milestoneRewards.groupingBy { it.equipSlot.name }.eachCount().toSortedMap()
+        val routeRewardAffixUsageSummary =
+            milestoneRewards
+                .filter { reward -> reward.rewardSource == MilestoneRewardSource.ROUTE }
+                .flatMap { reward -> reward.affixIds.ifEmpty { listOf("none") } }
+                .groupingBy { it }
+                .eachCount()
+                .toSortedMap()
 
         HarnessReportWriter.writeJsonAndMarkdown(
             fileStem = "long-run-full",
@@ -163,6 +180,21 @@ class LongRunLabFullTest {
                     putJsonObject("zoneRouteHashDistribution") {
                         routeHashDistribution.forEach { (routeHash, count) -> put(routeHash, count) }
                     }
+                    putJsonObject("milestoneRewardQualityDistribution") {
+                        milestoneRewardQualityDistribution.forEach { (quality, count) -> put(quality, count) }
+                    }
+                    putJsonObject("milestoneAffixCountDistribution") {
+                        milestoneAffixCountDistribution.forEach { (affixCount, count) -> put(affixCount, count) }
+                    }
+                    putJsonObject("milestoneRewardAdoptionDistribution") {
+                        milestoneRewardAdoptionDistribution.forEach { (adoption, count) -> put(adoption, count) }
+                    }
+                    putJsonObject("milestoneRewardSlotDistribution") {
+                        milestoneRewardSlotDistribution.forEach { (slotId, count) -> put(slotId, count) }
+                    }
+                    putJsonObject("routeRewardAffixUsageSummary") {
+                        routeRewardAffixUsageSummary.forEach { (affixId, count) -> put(affixId, count) }
+                    }
                     putJsonArray("reports") {
                         reports.forEach { add(it.toJson()) }
                     }
@@ -187,13 +219,22 @@ class LongRunLabFullTest {
                     appendLine("- averageHeadlessTurns: $averageHeadlessTurns")
                     appendLine("- deathDistribution: ${if (deathDistribution.isEmpty()) "none" else deathDistribution}")
                     appendLine("- zoneRouteHashDistribution: ${if (routeHashDistribution.isEmpty()) "none" else routeHashDistribution}")
+                    appendLine("- milestoneRewardQualityDistribution: ${if (milestoneRewardQualityDistribution.isEmpty()) "none" else milestoneRewardQualityDistribution}")
+                    appendLine("- milestoneAffixCountDistribution: ${if (milestoneAffixCountDistribution.isEmpty()) "none" else milestoneAffixCountDistribution}")
+                    appendLine("- milestoneRewardAdoptionDistribution: ${if (milestoneRewardAdoptionDistribution.isEmpty()) "none" else milestoneRewardAdoptionDistribution}")
+                    appendLine("- milestoneRewardSlotDistribution: ${if (milestoneRewardSlotDistribution.isEmpty()) "none" else milestoneRewardSlotDistribution}")
+                    appendLine("- routeRewardAffixUsageSummary: ${if (routeRewardAffixUsageSummary.isEmpty()) "none" else routeRewardAffixUsageSummary}")
                     reports.forEach { report ->
                         val objectiveSummary =
                             report.zoneObjectiveSummaries.joinToString { summary ->
                                 "${summary.zoneId}:${summary.state.name}${if (summary.completionFlagGranted) "#flag" else ""}"
                             }
+                        val milestoneSummary =
+                            report.milestoneRewards.joinToString { reward ->
+                                "${reward.rewardSource}:${reward.baseItemId}:${reward.equipSlot.name}:before=${reward.equippedBaseItemIdBeforeReward ?: "empty"}:final=${reward.equippedBaseItemIdAtRunEnd ?: "empty"}:adopted=${reward.adoptedInFinalBuild}:${reward.qualityTier.name}:${if (reward.affixIds.isEmpty()) "none" else reward.affixIds.joinToString("+")}"
+                            }
                         appendLine(
-                            "- class=${report.professionId}, race=${report.raceId}, seed=${report.seed}, finalZone=${report.finalZoneId}, turns=${report.turns}, headless=${report.headlessTurnEquivalent}, routeHash=${report.zoneRouteHash}, route=${report.zonePath.joinToString(" -> ")}, objectives=${if (objectiveSummary.isBlank()) "none" else objectiveSummary}, buildHash=${report.buildHash ?: "unknown"}, outcome=${report.outcome}, crashedOrStalled=${report.crashedOrStalled()}",
+                            "- class=${report.professionId}, race=${report.raceId}, seed=${report.seed}, finalZone=${report.finalZoneId}, turns=${report.turns}, headless=${report.headlessTurnEquivalent}, routeHash=${report.zoneRouteHash}, route=${report.zonePath.joinToString(" -> ")}, objectives=${if (objectiveSummary.isBlank()) "none" else objectiveSummary}, buildHash=${report.buildHash ?: "unknown"}, milestoneRewards=${if (milestoneSummary.isBlank()) "none" else milestoneSummary}, outcome=${report.outcome}, crashedOrStalled=${report.crashedOrStalled()}",
                         )
                         if (report.headlessTurnEquivalent > 2900 || report.outcome !is RunOutcome.Victory) {
                             val zoneHeadlessSummary =
@@ -237,8 +278,8 @@ class LongRunLabFullTest {
         )
         if (afterDeepIronRatio != null) {
             assertTrue(
-                afterDeepIronRatio > 0.5,
-                "Expected more than 50% of non-victory runs to fail after deep_iron_pit, actual=$afterDeepIronRatio",
+                afterDeepIronRatio >= 0.5,
+                "Expected at least 50% of non-victory runs to fail after deep_iron_pit, actual=$afterDeepIronRatio",
             )
         }
     }

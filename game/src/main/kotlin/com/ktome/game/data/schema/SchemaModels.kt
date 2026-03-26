@@ -470,7 +470,8 @@ data class RouteRewardSchemaV2(
     val claimPolicy: String,
     val levelBandRef: String,
     val shardReward: Int,
-    val guaranteedDropIds: List<String>,
+    val guaranteedUtilityDropIds: List<String>,
+    val milestoneRewardProfileIds: List<String>,
     val rescueTags: List<String>,
 )
 

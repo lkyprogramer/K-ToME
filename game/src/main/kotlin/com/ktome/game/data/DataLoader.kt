@@ -713,7 +713,8 @@ class DataLoader(
                 claimPolicy = reward.requiredString("claimPolicy"),
                 levelBandRef = reward.requiredString("levelBandRef"),
                 shardReward = reward.requiredInt("shardReward"),
-                guaranteedDropIds = reward.optionalStringList("guaranteedDropIds"),
+                guaranteedUtilityDropIds = reward.optionalStringList("guaranteedUtilityDropIds"),
+                milestoneRewardProfileIds = reward.optionalStringList("milestoneRewardProfileIds"),
                 rescueTags = reward.optionalStringList("rescueTags"),
             )
         }
@@ -1313,7 +1314,8 @@ class DataLoader(
             claimPolicy = RewardClaimPolicy.valueOf(claimPolicy),
             levelBandRef = levelBandRef,
             shardReward = shardReward,
-            guaranteedDropIds = guaranteedDropIds,
+            guaranteedUtilityDropIds = guaranteedUtilityDropIds,
+            milestoneRewardProfileIds = milestoneRewardProfileIds,
             rescueTags = rescueTags.toSet(),
         )
 

@@ -5,16 +5,27 @@ import com.ktome.core.random.RandomSource
 data class AffixSelectionContext(
     val itemTags: Set<String> = emptySet(),
     val buildTags: Set<String> = emptySet(),
-)
+    val routeBiasTags: Set<String> = emptySet(),
+    val rewardSource: MilestoneRewardSource? = null,
+    val qualityFloor: ItemQuality? = null,
+    val minAffixCount: Int = 0,
+    val blacklistFamilies: Set<String> = emptySet(),
+) {
+    init {
+        require(minAffixCount >= 0) { "AffixSelectionContext.minAffixCount must not be negative." }
+    }
+}
 
 class AffixTagWeighting {
     fun weight(
         affix: AffixDef,
         context: AffixSelectionContext,
     ): Int {
-        val relevantTags = context.itemTags + context.buildTags
-        val matchingTags = affix.tags.count(relevantTags::contains)
-        return (1 + matchingTags * 3).coerceAtLeast(1)
+        val itemMatches = affix.tags.count(context.itemTags::contains)
+        val buildMatches = affix.tags.count(context.buildTags::contains)
+        val routeMatches = affix.tags.count(context.routeBiasTags::contains)
+        val sourceMatches = affix.tags.count(rewardSourceBiasTags(context.rewardSource)::contains)
+        return (1 + itemMatches + buildMatches * 4 + routeMatches * 2 + sourceMatches).coerceAtLeast(1)
     }
 }
 
@@ -24,11 +35,15 @@ class AffixBlacklist {
         selected: List<AffixDef>,
         context: AffixSelectionContext,
     ): Boolean {
+        val selectedFamilies = selected.mapTo(linkedSetOf(), AffixDef::familyId)
+        if (affix.familyId() in selectedFamilies || affix.familyId() in context.blacklistFamilies) {
+            return true
+        }
         val selectedTags = selected.flatMapTo(linkedSetOf()) { chosen -> chosen.tags }
         if (affix.blacklistTags.any(selectedTags::contains)) {
             return true
         }
-        val relevantTags = context.itemTags + context.buildTags
+        val relevantTags = context.itemTags + context.buildTags + context.routeBiasTags
         return affix.blacklistTags.any(relevantTags::contains)
     }
 }
@@ -104,3 +119,41 @@ class AffixGenerator(
         return eligible.last()
     }
 }
+
+private fun rewardSourceBiasTags(source: MilestoneRewardSource?): Set<String> =
+    when (source) {
+        MilestoneRewardSource.ROUTE -> setOf("reward", "route")
+        MilestoneRewardSource.BOSS -> setOf("boss", "elite", "reward")
+        MilestoneRewardSource.CACHE -> setOf("cache", "reward")
+        null -> emptySet()
+    }
+
+private fun AffixDef.familyId(): String =
+    tags.firstOrNull(KNOWN_AFFIX_FAMILY_TAGS::contains) ?: id
+
+private val KNOWN_AFFIX_FAMILY_TAGS: Set<String> =
+    linkedSetOf(
+        "physical",
+        "fire",
+        "cold",
+        "lightning",
+        "holy",
+        "shadow",
+        "offense",
+        "defense",
+        "protection",
+        "mobility",
+        "control",
+        "resistance",
+        "rescue",
+        "cleansing",
+        "life",
+        "sustain",
+        "accuracy",
+        "strength",
+        "spell",
+        "willpower",
+        "armor_break",
+        "precision",
+        "brutal",
+    )

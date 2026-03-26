@@ -1,5 +1,8 @@
 package com.ktome.core.profile
 
+import com.ktome.core.item.ItemQuality
+import com.ktome.core.item.MilestoneRewardSource
+import com.ktome.core.item.EquipSlot
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -16,7 +19,39 @@ data class ProfileData(
     }
 
     companion object {
-        const val CURRENT_PROFILE_VERSION: Int = 2
+        const val CURRENT_PROFILE_VERSION: Int = 4
+    }
+}
+
+@Serializable
+data class MilestoneRewardSummary(
+    val rewardSource: MilestoneRewardSource,
+    val sourceId: String,
+    val zoneId: String,
+    val baseItemId: String,
+    val equipSlot: EquipSlot,
+    val qualityTier: ItemQuality,
+    val buildHashAtGrant: String,
+    val affixIds: List<String> = emptyList(),
+    val equippedBaseItemIdBeforeReward: String? = null,
+    val equippedBaseItemIdAtRunEnd: String? = null,
+    val adoptedInFinalBuild: Boolean = false,
+) {
+    init {
+        require(sourceId.isNotBlank()) { "MilestoneRewardSummary.sourceId must not be blank." }
+        require(zoneId.isNotBlank()) { "MilestoneRewardSummary.zoneId must not be blank." }
+        require(baseItemId.isNotBlank()) { "MilestoneRewardSummary.baseItemId must not be blank." }
+        require(buildHashAtGrant.isNotBlank()) { "MilestoneRewardSummary.buildHashAtGrant must not be blank." }
+        require(affixIds.none(String::isBlank)) { "MilestoneRewardSummary.affixIds must not contain blank ids." }
+        require(equippedBaseItemIdBeforeReward?.isNotBlank() != false) {
+            "MilestoneRewardSummary.equippedBaseItemIdBeforeReward must not be blank."
+        }
+        require(equippedBaseItemIdAtRunEnd?.isNotBlank() != false) {
+            "MilestoneRewardSummary.equippedBaseItemIdAtRunEnd must not be blank."
+        }
+        require(!adoptedInFinalBuild || equippedBaseItemIdAtRunEnd == baseItemId) {
+            "Adopted milestone rewards must match equippedBaseItemIdAtRunEnd."
+        }
     }
 }
 
@@ -35,6 +70,7 @@ data class RunSummary(
     val claimedRouteRewardIds: List<String> = emptyList(),
     val shardBalance: Int = 0,
     val buildHash: String,
+    val milestoneRewards: List<MilestoneRewardSummary> = emptyList(),
     val rulesetVersion: String,
     val victory: Boolean,
     val defeatReason: String? = null,
@@ -49,6 +85,9 @@ data class RunSummary(
         require(claimedRouteRewardIds.none(String::isBlank)) { "RunSummary.claimedRouteRewardIds must not contain blank ids." }
         require(shardBalance >= 0) { "RunSummary.shardBalance must not be negative." }
         require(buildHash.isNotBlank()) { "RunSummary.buildHash must not be blank." }
+        require(milestoneRewards.distinctBy { reward -> "${reward.rewardSource}:${reward.sourceId}" }.size == milestoneRewards.size) {
+            "RunSummary.milestoneRewards must not contain duplicate entries."
+        }
         require(rulesetVersion.isNotBlank()) { "RunSummary.rulesetVersion must not be blank." }
         require(turnCount >= 0) { "RunSummary.turnCount must not be negative." }
         require(headlessTurnEquivalent >= 0) { "RunSummary.headlessTurnEquivalent must not be negative." }

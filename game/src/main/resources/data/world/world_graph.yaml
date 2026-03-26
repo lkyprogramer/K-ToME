@@ -51,59 +51,69 @@ routeRewards:
     claimPolicy: ON_FIRST_ROUTE_CLEAR
     levelBandRef: lv1_4
     shardReward: 35
-    guaranteedDropIds: [healing_potion]
+    guaranteedUtilityDropIds: [healing_potion]
+    milestoneRewardProfileIds: [loot.foundation.elite]
     rescueTags: [RECOVERY]
   - routeId: route.greenwood_fringe.elven_ruins
     claimPolicy: ON_ROUTE_UNLOCK
     levelBandRef: lv5_7
     shardReward: 25
-    guaranteedDropIds: [emerald_charm]
+    guaranteedUtilityDropIds: [emerald_charm]
+    milestoneRewardProfileIds: [loot.greenwood_fringe.reward, loot.foundation.elite]
     rescueTags: [ARCANE]
   - routeId: route.greenwood_fringe.bandit_camp
     claimPolicy: ON_ROUTE_UNLOCK
     levelBandRef: lv3_5
     shardReward: 20
-    guaranteedDropIds: [bandit_trophy]
+    guaranteedUtilityDropIds: [bandit_trophy]
+    milestoneRewardProfileIds: [loot.greenwood_fringe.reward, loot.foundation.elite]
     rescueTags: [MOVEMENT]
   - routeId: route.greenwood_fringe.deep_iron_pit
     claimPolicy: ON_FIRST_ROUTE_CLEAR
     levelBandRef: lv5_8
     shardReward: 60
-    guaranteedDropIds: [basic_shield]
+    guaranteedUtilityDropIds: [basic_shield]
+    milestoneRewardProfileIds: [loot.deep_iron_pit.reward, loot.foundation.elite]
     rescueTags: [PROTECTION]
   - routeId: route.deep_iron_pit.molten_core
     claimPolicy: ON_ROUTE_UNLOCK
     levelBandRef: lv7_9
     shardReward: 30
-    guaranteedDropIds: [furnace_talisman]
+    guaranteedUtilityDropIds: [furnace_talisman]
+    milestoneRewardProfileIds: [loot.deep_iron_pit.reward, loot.foundation.elite]
     rescueTags: [FIRE]
   - routeId: route.deep_iron_pit.grey_gate_depths
     claimPolicy: ON_FIRST_ROUTE_CLEAR
     levelBandRef: lv7_10
     shardReward: 75
-    guaranteedDropIds: [forgebreaker_pick]
+    guaranteedUtilityDropIds: [forgebreaker_pick]
+    milestoneRewardProfileIds: [loot.deep_iron_pit.reward, loot.foundation.boss]
     rescueTags: [MOVEMENT, CLEANSING]
   - routeId: route.grey_gate_depths.underground_river
     claimPolicy: ON_FIRST_ROUTE_CLEAR
     levelBandRef: lv10_12
     shardReward: 90
-    guaranteedDropIds: [seal_reliquary]
+    guaranteedUtilityDropIds: [seal_reliquary]
+    milestoneRewardProfileIds: [loot.grey_gate_depths.reward, loot.foundation.boss]
     rescueTags: [CLEANSING]
   - routeId: route.underground_river.crystal_cavern
     claimPolicy: ON_ROUTE_UNLOCK
     levelBandRef: lv11_13
     shardReward: 35
-    guaranteedDropIds: [mana_potion]
+    guaranteedUtilityDropIds: [mana_potion]
+    milestoneRewardProfileIds: [loot.grey_gate_depths.reward, loot.foundation.elite]
     rescueTags: [ARCANE]
   - routeId: route.underground_river.abyssal_temple
     claimPolicy: ON_FIRST_ROUTE_CLEAR
     levelBandRef: lv12_15
     shardReward: 110
-    guaranteedDropIds: [sanctified_seal]
+    guaranteedUtilityDropIds: [sanctified_seal]
+    milestoneRewardProfileIds: [loot.grey_gate_depths.reward, loot.foundation.boss]
     rescueTags: [PROTECTION]
   - routeId: route.abyssal_temple.abyssal_heart
     claimPolicy: ON_FIRST_ROUTE_CLEAR
     levelBandRef: lv15
     shardReward: 150
-    guaranteedDropIds: [shadow_cloak]
+    guaranteedUtilityDropIds: [shadow_cloak]
+    milestoneRewardProfileIds: [loot.abyssal_heart.reward, loot.foundation.boss]
     rescueTags: [MOVEMENT, PROTECTION]
