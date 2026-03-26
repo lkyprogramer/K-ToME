@@ -5,8 +5,11 @@ import com.ktome.core.ecs.EntityId
 import com.ktome.core.ecs.Interactable
 import com.ktome.core.ecs.Position
 import com.ktome.core.ecs.get
+import com.ktome.core.item.Inventory
+import com.ktome.core.item.ItemInstance
 import com.ktome.core.save.SaveManager
 import com.ktome.core.world.ObjectiveState
+import com.ktome.game.factory.ItemFactory
 import com.ktome.game.i18n.GameLocale
 import java.nio.file.Path
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -142,6 +145,34 @@ class LongRunWorldStructureSessionTest {
         assertTrue(unlockSession.perform(PlayerCommand.SelectRoute(0)))
         assertEquals(20, unlockSession.currentShardBalance())
         assertTrue("route.greenwood_fringe.bandit_camp" in unlockSession.worldProgress().claimedRouteRewards)
+    }
+
+    @Test
+    fun `route reward is not claimed when guaranteed reward cannot fit inventory`() {
+        val session =
+            GameModule.newFoundationSession(
+                config =
+                    FoundationGameConfig(
+                        seed = 20260325L,
+                        zoneId = "greenwood_fringe",
+                        playerProfessionId = "rogue",
+                        zoneRoute = listOf("shattered_outpost", "greenwood_fringe"),
+                        routeIndex = 1,
+                    ),
+                saveManager = SaveManager(tempDir.resolve("route-reward-inventory-capacity-save")),
+            )
+
+        fillInventoryToCapacity(session)
+        assertEquals(0, session.currentShardBalance())
+        movePlayerTo(session, stairPoint(session, StairDirection.DOWN))
+        assertTrue(session.perform(PlayerCommand.Descend))
+        movePlayerTo(session, stairPoint(session, StairDirection.DOWN))
+        assertTrue(session.perform(PlayerCommand.Descend))
+        assertTrue(session.perform(PlayerCommand.SelectRoute(1)))
+
+        assertEquals("deep_iron_pit", session.config.zoneId)
+        assertEquals(0, session.currentShardBalance())
+        assertTrue("route.greenwood_fringe.deep_iron_pit" !in session.worldProgress().claimedRouteRewards)
     }
 
     @Test
@@ -503,5 +534,16 @@ class LongRunWorldStructureSessionTest {
             }
         method.isAccessible = true
         method.invoke(session, target.value, killer)
+    }
+
+    private fun fillInventoryToCapacity(session: FoundationGameSession) {
+        val world = session.automationWorld()
+        val inventory = requireNotNull(world.get<Inventory>(session.playerId))
+        val seedItemId = requireNotNull(inventory.itemIds.firstOrNull()) { "Expected at least one starter inventory item." }
+        val seedItem = requireNotNull(world.get<ItemInstance>(seedItemId)) { "Missing starter inventory item instance." }
+        val itemFactory = ItemFactory()
+        while (inventory.itemIds.size < inventory.capacity) {
+            inventory.itemIds += itemFactory.createCarriedItem(world, seedItem.copy())
+        }
     }
 }

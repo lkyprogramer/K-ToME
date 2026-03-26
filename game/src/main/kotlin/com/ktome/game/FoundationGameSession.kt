@@ -1772,15 +1772,32 @@ class FoundationGameSession internal constructor(
         if (reward.claimPolicy != claimPolicy || reward.routeId in worldProgress.claimedRouteRewards) {
             return
         }
+        val guaranteedRewards =
+            reward.guaranteedDropIds.mapNotNull { baseId ->
+                itemBaseDef(baseId)?.toRuntimeItem()
+            }
+        val hasSufficientInventoryCapacity =
+            dropPoint == null ||
+                hasInventoryCapacityFor(guaranteedRewards.size)
+        if (!hasSufficientInventoryCapacity) {
+            return
+        }
         grantShards(reward.shardReward)
         dropPoint?.let { point ->
-            reward.guaranteedDropIds.forEach { baseId ->
-                itemBaseDef(baseId)?.toRuntimeItem()?.let { rewardItem ->
-                    grantRewardItem(rewardItem, point)
-                }
+            guaranteedRewards.forEach { rewardItem ->
+                grantRewardItem(rewardItem, point)
             }
         }
         worldProgress = worldProgress.withClaimedRouteReward(reward.routeId)
+    }
+
+    private fun hasInventoryCapacityFor(itemCount: Int): Boolean {
+        if (itemCount <= 0) {
+            return true
+        }
+        val inventory = requireNotNull(world.get<Inventory>(playerId)) { "Missing Inventory for $playerId" }
+        val availableSlots = inventory.capacity - inventory.itemIds.size
+        return availableSlots >= itemCount
     }
 
     private fun shopOfferLabelKey(offer: ShopOffer): String =
