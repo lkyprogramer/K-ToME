@@ -1,11 +1,17 @@
 package com.ktome.game.harness
 
+import com.ktome.core.ecs.Health
+import com.ktome.core.ecs.Position
+import com.ktome.core.ecs.get
 import com.ktome.core.profile.AvailabilityContext
 import com.ktome.core.save.SaveManager
+import com.ktome.core.world.ObjectiveState
 import com.ktome.game.FoundationGameConfig
 import com.ktome.game.FoundationGameSession
 import com.ktome.game.GameModule
 import com.ktome.game.PlayerCommand
+import com.ktome.game.data.DataLoader
+import com.ktome.game.zoneRouteHash
 import java.nio.file.Files
 import java.nio.file.Path
 import java.util.ArrayDeque
@@ -24,6 +30,9 @@ class HeadlessRunHarness(
         var session = newSession(spec, saveManager)
         val commandStats = linkedMapOf<String, Int>()
         val commandTail = ArrayDeque<String>()
+        val zoneHeadlessMilestones = mutableListOf<ZoneHeadlessMilestone>()
+        val visitedZonePath = mutableListOf<String>()
+        val captainEncounterTrace = ArrayDeque<CaptainEncounterTraceEntry>()
         val stallDetector = StallDetector(maxRepeats = stallRepeats)
         var turnCount = 0
         var checkpointVerified = false
@@ -32,6 +41,19 @@ class HeadlessRunHarness(
         var failureReason: String? = null
         var stuckReason: String? = null
         var observation = RunObservationCapture.capture(session, turnCount)
+        appendVisitedZone(visitedZonePath, session.config.zoneId)
+        appendZoneMilestone(
+            milestones = zoneHeadlessMilestones,
+            zoneId = session.config.zoneId,
+            turnIndex = turnCount,
+            headlessTurnEquivalent = session.currentHeadlessTurnEquivalent(),
+        )
+        appendCaptainEncounterTrace(
+            trace = captainEncounterTrace,
+            session = session,
+            observation = observation,
+            commandName = null,
+        )
 
         while (turnCount < spec.maxTurns && !observation.runOutcome.isTerminal && !goalSatisfied(spec, observation, checkpointTurn)) {
             val checkpoint = spec.saveLoadCheckpoint
@@ -46,6 +68,19 @@ class HeadlessRunHarness(
                 }
                 session = roundTrip.loadedSession ?: session
                 observation = RunObservationCapture.capture(session, turnCount)
+                appendVisitedZone(visitedZonePath, session.config.zoneId)
+                appendZoneMilestone(
+                    milestones = zoneHeadlessMilestones,
+                    zoneId = session.config.zoneId,
+                    turnIndex = turnCount,
+                    headlessTurnEquivalent = session.currentHeadlessTurnEquivalent(),
+                )
+                appendCaptainEncounterTrace(
+                    trace = captainEncounterTrace,
+                    session = session,
+                    observation = observation,
+                    commandName = "CheckpointReload",
+                )
                 stallDetector.reset()
             }
 
@@ -74,6 +109,19 @@ class HeadlessRunHarness(
             }
 
             observation = RunObservationCapture.capture(session, turnCount)
+            appendVisitedZone(visitedZonePath, session.config.zoneId)
+            appendZoneMilestone(
+                milestones = zoneHeadlessMilestones,
+                zoneId = session.config.zoneId,
+                turnIndex = turnCount,
+                headlessTurnEquivalent = session.currentHeadlessTurnEquivalent(),
+            )
+            appendCaptainEncounterTrace(
+                trace = captainEncounterTrace,
+                session = session,
+                observation = observation,
+                commandName = command.commandName(),
+            )
             stallDetector.observe(observation)?.let { reason ->
                 stuckReason = reason
                 break
@@ -90,16 +138,32 @@ class HeadlessRunHarness(
                 seed = spec.seed,
                 zoneId = spec.zoneId,
                 professionId = spec.professionId,
+                raceId = spec.raceId,
                 routeIndex = session.config.routeIndex,
+                finalZoneId = session.config.zoneId,
+                zoneRouteHash = zoneRouteHash(visitedZonePath),
+                zonePath = visitedZonePath.toList(),
                 success = false,
                 outcome = session.runOutcome(),
                 floorReached = session.currentFloor(),
                 turns = turnCount,
+                headlessTurnEquivalent = session.currentHeadlessTurnEquivalent(),
+                buildId = HarnessMetadata.BUILD_ID,
+                phaseId = HarnessMetadata.PHASE_ID,
+                rulesetVersion = HarnessMetadata.RULESET_VERSION,
+                traceSchemaVersion = HarnessMetadata.TRACE_SCHEMA_VERSION,
+                corpusId = spec.corpusId,
+                localeId = session.localizer().locale.id,
+                profileId = HarnessMetadata.PROFILE_ID,
+                buildHash = session.currentBuildHash(),
                 goalReached = goalSatisfied(spec, observation, checkpointTurn),
                 failureReason = failureReason,
                 stuckReason = stuckReason,
                 checkpointRoundTripVerified = checkpointVerified,
                 commandStats = commandStats.toMap(),
+                zoneHeadlessMilestones = zoneHeadlessMilestones.toList(),
+                zoneObjectiveSummaries = buildZoneObjectiveSummaries(session, visitedZonePath),
+                captainEncounterTrace = captainEncounterTrace.toList(),
                 lastCommands = commandTail.toList(),
                 lastMessages = observation.messageLogTail,
                 eventTail = observation.eventTail,
@@ -132,11 +196,19 @@ class HeadlessRunHarness(
         observation: RunObservation,
     ): Boolean =
         when (spec.goal) {
+            ScenarioGoal.ReachTerminal,
+            ScenarioGoal.Victory,
+            -> true
+
             is ScenarioGoal.ReachFloor,
             is ScenarioGoal.ReachFloorOrTerminal,
+            is ScenarioGoal.ReachZoneAtLeastOrTerminal,
             -> !observation.runOutcome.isTerminal
 
-            else -> false
+            is ScenarioGoal.SurviveTurns ->
+                spec.assertions
+                    .filterIsInstance<ScenarioAssertion.FinalZoneAtLeast>()
+                    .any { assertion -> zoneDepth(observation.zoneId) < zoneDepth(assertion.zoneId) }
         }
 
     private fun newSession(
@@ -149,6 +221,7 @@ class HeadlessRunHarness(
                     seed = spec.seed,
                     zoneId = spec.zoneId,
                     playerProfessionId = spec.professionId,
+                    playerRaceId = spec.raceId,
                     zoneRoute = spec.zoneRoute,
                     routeIndex = spec.routeIndex,
                 ),
@@ -194,6 +267,23 @@ class HeadlessRunHarness(
                 failureReason = "Checkpoint reload changed zoneRoute from ${configBefore.zoneRoute} to ${loaded.config.zoneRoute}.",
             )
         }
+        if (loaded.worldProgress() != session.worldProgress()) {
+            return CheckpointRoundTripResult(failureReason = "Checkpoint reload changed worldProgress state.")
+        }
+        if (loaded.shopStates() != session.shopStates()) {
+            return CheckpointRoundTripResult(failureReason = "Checkpoint reload changed shopStates.")
+        }
+        if (loaded.currentShardBalance() != session.currentShardBalance()) {
+            return CheckpointRoundTripResult(
+                failureReason = "Checkpoint reload changed shardBalance from ${session.currentShardBalance()} to ${loaded.currentShardBalance()}.",
+            )
+        }
+        if (loaded.currentHeadlessTurnEquivalent() != session.currentHeadlessTurnEquivalent()) {
+            return CheckpointRoundTripResult(
+                failureReason =
+                    "Checkpoint reload changed headlessTurnEquivalent from ${session.currentHeadlessTurnEquivalent()} to ${loaded.currentHeadlessTurnEquivalent()}.",
+            )
+        }
         if (inventoryAfter != inventoryBefore) {
             return CheckpointRoundTripResult(failureReason = "Checkpoint reload changed inventory order/content.")
         }
@@ -205,4 +295,104 @@ class HeadlessRunHarness(
         val verified: Boolean = false,
         val failureReason: String? = null,
     )
+
+    private fun appendZoneMilestone(
+        milestones: MutableList<ZoneHeadlessMilestone>,
+        zoneId: String,
+        turnIndex: Int,
+        headlessTurnEquivalent: Int,
+    ) {
+        if (milestones.lastOrNull()?.zoneId == zoneId) {
+            return
+        }
+        val previous = milestones.lastOrNull()
+        milestones +=
+            ZoneHeadlessMilestone(
+                zoneId = zoneId,
+                turnIndex = turnIndex,
+                headlessTurnEquivalent = headlessTurnEquivalent,
+                deltaTurns = if (previous == null) 0 else turnIndex - previous.turnIndex,
+                deltaHeadlessTurns = if (previous == null) 0 else headlessTurnEquivalent - previous.headlessTurnEquivalent,
+            )
+    }
+
+    private fun appendCaptainEncounterTrace(
+        trace: ArrayDeque<CaptainEncounterTraceEntry>,
+        session: FoundationGameSession,
+        observation: RunObservation,
+        commandName: String?,
+    ) {
+        if (session.config.zoneId != "shattered_outpost" || session.currentFloor() < 2) {
+            return
+        }
+        val captainId = session.automationEntityByTemplateId("bandit.captain")
+        val captainHealth = captainId?.let { entityId -> session.automationWorld().get<Health>(entityId) }
+        val captainPosition = captainId?.let { entityId -> session.automationWorld().get<Position>(entityId)?.toPoint() }
+        val entry =
+            CaptainEncounterTraceEntry(
+                turnIndex = observation.turnIndex,
+                headlessTurnEquivalent = session.currentHeadlessTurnEquivalent(),
+                floor = session.currentFloor(),
+                playerHp = observation.playerStatus.currentHp,
+                playerMaxHp = observation.playerStatus.maxHp,
+                playerResourceCurrent = observation.playerResource.current,
+                playerResourceMax = observation.playerResource.max,
+                playerResourceTypeId = observation.playerResource.typeId,
+                captainHp = captainHealth?.current,
+                captainMaxHp = captainHealth?.max,
+                captainDistance = captainPosition?.chebyshevDistanceTo(observation.playerPosition),
+                command = commandName,
+                recentMessages = observation.messageLogTail.takeLast(CAPTAIN_TRACE_MESSAGE_WINDOW),
+                recentEvents = observation.eventTail.takeLast(CAPTAIN_TRACE_EVENT_WINDOW),
+            )
+        if (trace.lastOrNull() == entry) {
+            return
+        }
+        trace.addLast(entry)
+        while (trace.size > CAPTAIN_TRACE_LIMIT) {
+            trace.removeFirst()
+        }
+    }
+
+    private fun buildZoneObjectiveSummaries(
+        session: FoundationGameSession,
+        visitedZonePath: List<String>,
+    ): List<ZoneObjectiveSummary> {
+        val catalog = DataLoader(session.localizer().locale).loadSchemaCatalog()
+        val zonesById = catalog.zones.associateBy { zone -> zone.id }
+        val objectivesById = catalog.objectiveSets.associateBy { objective -> objective.id }
+        val worldProgress = session.worldProgress()
+        return visitedZonePath
+            .distinct()
+            .mapNotNull { zoneId ->
+                val zone = zonesById[zoneId] ?: return@mapNotNull null
+                val objective = zone.objectiveSetId?.let(objectivesById::get) ?: return@mapNotNull null
+                val questId = objective.linkedQuestId ?: return@mapNotNull null
+                val objectiveId = objective.questObjectiveId ?: return@mapNotNull null
+                val quest = worldProgress.questStates[questId] ?: return@mapNotNull null
+                val state = quest.objectiveStates[objectiveId] ?: ObjectiveState.LOCKED
+                ZoneObjectiveSummary(
+                    zoneId = zoneId,
+                    questId = questId,
+                    objectiveId = objectiveId,
+                    state = state,
+                    completionFlagGranted = quest.completionFlags.any(worldProgress.worldFlags::contains),
+                )
+            }
+    }
+
+    private fun appendVisitedZone(
+        visitedZonePath: MutableList<String>,
+        zoneId: String,
+    ) {
+        if (visitedZonePath.lastOrNull() != zoneId) {
+            visitedZonePath += zoneId
+        }
+    }
+
+    private companion object {
+        const val CAPTAIN_TRACE_LIMIT: Int = 80
+        const val CAPTAIN_TRACE_MESSAGE_WINDOW: Int = 4
+        const val CAPTAIN_TRACE_EVENT_WINDOW: Int = 4
+    }
 }

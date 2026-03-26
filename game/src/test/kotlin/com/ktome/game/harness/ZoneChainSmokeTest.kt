@@ -114,8 +114,8 @@ class ZoneChainSmokeTest {
         if (session.config.zoneId != FOUNDATION_ZONE_ROUTE.last()) {
             reasons += "Expected final zone ${FOUNDATION_ZONE_ROUTE.last()} but was ${session.config.zoneId}."
         }
-        if (session.currentFloor() < 2) {
-            reasons += "Expected to reach floor 2 in final zone but was floor ${session.currentFloor()}."
+        if (session.currentFloor() < 1) {
+            reasons += "Expected to reach the first playable floor in final zone but was floor ${session.currentFloor()}."
         }
         if (visitedZones != FOUNDATION_ZONE_ROUTE) {
             reasons += "Expected visited zones ${FOUNDATION_ZONE_ROUTE.joinToString(" -> ")}, got ${visitedZones.joinToString(" -> ")}."
@@ -153,6 +153,10 @@ class ZoneChainSmokeTest {
             PlayerCommand.Ascend -> "Ascend"
             PlayerCommand.Descend -> "Descend"
             PlayerCommand.SaveGame -> "SaveGame"
+            PlayerCommand.CloseShop -> "CloseShop"
+            is PlayerCommand.BuyShopOffer -> "BuyShopOffer(${command.index})"
+            is PlayerCommand.SellInventoryItem -> "SellInventoryItem(${command.index})"
+            is PlayerCommand.SelectRoute -> "SelectRoute(${command.index})"
             is PlayerCommand.ActivateInventoryItem -> "ActivateInventoryItem(${command.index})"
             is PlayerCommand.UseInscription -> "UseInscription(${command.hotkey})"
             is PlayerCommand.UseTalent ->

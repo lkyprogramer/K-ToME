@@ -6,7 +6,7 @@ zones:
     iconKey: zone.shattered_outpost.icon
     audioProfile: audio.zone.shattered_outpost
     schemaVersion: 2
-    tags: [zone, foundation]
+    tags: [zone, foundation, mandatory]
     biome: ruins
     floorCount: 2
     mapSize: { width: 60, height: 40 }
@@ -15,6 +15,7 @@ zones:
     specialMechanics: [tutorial_lane, simple_traps, patrol_pressure]
     tilesetKey: tileset.ruins
     ambientProfile: ambient.shattered_outpost
+    worldRole: mandatory
     monsterPools: [beast.rat_scavenger, goblin.scrapper, bandit.raider, bandit.archer, undead.restless_skeleton]
     elitePools: [undead.bone_guard]
     bossEncounterId: bandit_captain_encounter
@@ -26,7 +27,7 @@ zones:
     iconKey: zone.greenwood_fringe.icon
     audioProfile: audio.zone.greenwood_fringe
     schemaVersion: 2
-    tags: [zone, foundation]
+    tags: [zone, foundation, mandatory]
     biome: forest
     floorCount: 2
     mapSize: { width: 70, height: 45 }
@@ -35,10 +36,56 @@ zones:
     specialMechanics: [line_of_sight, trail_pressure, beacon_warning]
     tilesetKey: tileset.forest_edge
     ambientProfile: ambient.greenwood_fringe
+    worldRole: mandatory
     monsterPools: [beast.rat, beast.thorn_stalker, undead.bone_archer, undead.moss_archer, bandit.trapper, bandit.archer]
     elitePools: [bandit.sentry, bandit.wild_huntmaster]
     bossEncounterId:
     objectiveSetId: greenwood_signal_hunt
+    shopNodeId: greenwood_supply_post
+  - id: bandit_camp
+    nameKey: zone.bandit_camp.name
+    descKey: zone.bandit_camp.desc
+    visualKey: zone.greenwood_fringe.visual
+    iconKey: zone.greenwood_fringe.icon
+    audioProfile: audio.zone.greenwood_fringe
+    schemaVersion: 2
+    tags: [zone, optional]
+    biome: forest
+    floorCount: 2
+    mapSize: { width: 64, height: 42 }
+    recommendedLevel: { min: 3, max: 5 }
+    environmentTheme: forest_patrol
+    specialMechanics: [ambush_lane, cache_raids]
+    tilesetKey: tileset.forest_edge
+    ambientProfile: ambient.greenwood_fringe
+    worldRole: optional
+    monsterPools: [bandit.raider, bandit.archer, bandit.trapper, goblin.scout]
+    elitePools: [bandit.wild_huntmaster]
+    bossEncounterId:
+    objectiveSetId: bandit_camp_cache_raid
+    uniqueContentTag: optional.bandit_camp.cache
+  - id: elven_ruins
+    nameKey: zone.elven_ruins.name
+    descKey: zone.elven_ruins.desc
+    visualKey: zone.greenwood_fringe.visual
+    iconKey: zone.greenwood_fringe.icon
+    audioProfile: audio.zone.greenwood_fringe
+    schemaVersion: 2
+    tags: [zone, optional]
+    biome: ruins
+    floorCount: 2
+    mapSize: { width: 68, height: 44 }
+    recommendedLevel: { min: 5, max: 7 }
+    environmentTheme: sealed_depths
+    specialMechanics: [lore_cache, arcanist_echoes]
+    tilesetKey: tileset.ruins
+    ambientProfile: ambient.greenwood_fringe
+    worldRole: optional
+    monsterPools: [undead.bone_archer, undead.moss_archer, cultist.shadow_priest]
+    elitePools: [cultist.ashgate_warden]
+    bossEncounterId:
+    objectiveSetId: elven_ruins_relic_ward
+    uniqueContentTag: optional.elven_ruins.relic
   - id: deep_iron_pit
     nameKey: zone.deep_iron_pit.name
     descKey: zone.deep_iron_pit.desc
@@ -46,7 +93,7 @@ zones:
     iconKey: zone.deep_iron_pit.icon
     audioProfile: audio.zone.deep_iron_pit
     schemaVersion: 2
-    tags: [zone, foundation]
+    tags: [zone, mandatory]
     biome: mine
     floorCount: 2
     mapSize: { width: 80, height: 50 }
@@ -55,10 +102,34 @@ zones:
     specialMechanics: [ore_cart, furnace_pressure, slag_alert]
     tilesetKey: tileset.mine
     ambientProfile: ambient.deep_iron_pit
+    worldRole: mandatory
     monsterPools: [undead.bone_archer, undead.ash_wraith, orc.raider, orc.miner, cultist.ember_adept]
     elitePools: [orc.raider, orc.forge_guard]
     bossEncounterId: molten_giant_encounter
     objectiveSetId: deep_iron_pit_forge_run
+    shopNodeId: deep_iron_pit_waystation
+  - id: molten_core
+    nameKey: zone.molten_core.name
+    descKey: zone.molten_core.desc
+    visualKey: zone.deep_iron_pit.visual
+    iconKey: zone.deep_iron_pit.icon
+    audioProfile: audio.zone.deep_iron_pit
+    schemaVersion: 2
+    tags: [zone, optional]
+    biome: mine
+    floorCount: 2
+    mapSize: { width: 76, height: 48 }
+    recommendedLevel: { min: 7, max: 9 }
+    environmentTheme: mine_forge
+    specialMechanics: [lava_pockets, forge_cache]
+    tilesetKey: tileset.mine
+    ambientProfile: ambient.deep_iron_pit
+    worldRole: optional
+    monsterPools: [cultist.ember_adept, undead.ash_wraith, orc.forge_guard]
+    elitePools: [orc.forge_guard]
+    bossEncounterId:
+    objectiveSetId: molten_core_pressure
+    uniqueContentTag: optional.molten_core.relic
   - id: grey_gate_depths
     nameKey: zone.grey_gate_depths.name
     descKey: zone.grey_gate_depths.desc
@@ -66,7 +137,7 @@ zones:
     iconKey: zone.grey_gate_depths.icon
     audioProfile: audio.zone.grey_gate_depths
     schemaVersion: 2
-    tags: [zone, foundation]
+    tags: [zone, mandatory]
     biome: depths
     floorCount: 2
     mapSize: { width: 80, height: 50 }
@@ -75,7 +146,93 @@ zones:
     specialMechanics: [sealed_gate, ritual_pressure, shadow_warning]
     tilesetKey: tileset.shadow_depths
     ambientProfile: ambient.grey_gate_depths
+    worldRole: mandatory
     monsterPools: [undead.bone_archer, undead.chain_thrall, cultist.shadow_priest]
     elitePools: [cultist.ashgate_warden]
     bossEncounterId: dungeon_lord_encounter
     objectiveSetId: grey_gate_seal_rite
+  - id: underground_river
+    nameKey: zone.underground_river.name
+    descKey: zone.underground_river.desc
+    visualKey: zone.grey_gate_depths.visual
+    iconKey: zone.grey_gate_depths.icon
+    audioProfile: audio.zone.grey_gate_depths
+    schemaVersion: 2
+    tags: [zone, mandatory]
+    biome: cavern
+    floorCount: 2
+    mapSize: { width: 84, height: 52 }
+    recommendedLevel: { min: 10, max: 12 }
+    environmentTheme: sealed_depths
+    specialMechanics: [currents, ferry_crossing, drowned_ambush]
+    tilesetKey: tileset.shadow_depths
+    ambientProfile: ambient.grey_gate_depths
+    worldRole: mandatory
+    monsterPools: [undead.chain_thrall, cultist.shadow_priest, beast.rat, undead.moss_archer]
+    elitePools: [cultist.ashgate_warden]
+    bossEncounterId:
+    objectiveSetId: underground_river_crossing
+  - id: crystal_cavern
+    nameKey: zone.crystal_cavern.name
+    descKey: zone.crystal_cavern.desc
+    visualKey: zone.grey_gate_depths.visual
+    iconKey: zone.grey_gate_depths.icon
+    audioProfile: audio.zone.grey_gate_depths
+    schemaVersion: 2
+    tags: [zone, optional]
+    biome: cavern
+    floorCount: 2
+    mapSize: { width: 82, height: 50 }
+    recommendedLevel: { min: 11, max: 13 }
+    environmentTheme: sealed_depths
+    specialMechanics: [crystal_shards, resonance_cache]
+    tilesetKey: tileset.shadow_depths
+    ambientProfile: ambient.grey_gate_depths
+    worldRole: optional
+    monsterPools: [cultist.shadow_priest, undead.chain_thrall, beast.thorn_stalker]
+    elitePools: [cultist.ashgate_warden]
+    bossEncounterId:
+    objectiveSetId: crystal_cavern_resonance
+    uniqueContentTag: optional.crystal_cavern.node
+  - id: abyssal_temple
+    nameKey: zone.abyssal_temple.name
+    descKey: zone.abyssal_temple.desc
+    visualKey: zone.grey_gate_depths.visual
+    iconKey: zone.grey_gate_depths.icon
+    audioProfile: audio.zone.grey_gate_depths
+    schemaVersion: 2
+    tags: [zone, mandatory]
+    biome: temple
+    floorCount: 2
+    mapSize: { width: 86, height: 54 }
+    recommendedLevel: { min: 12, max: 15 }
+    environmentTheme: sealed_depths
+    specialMechanics: [abyssal_ward, prayer_hall, void_pressure]
+    tilesetKey: tileset.shadow_depths
+    ambientProfile: ambient.grey_gate_depths
+    worldRole: mandatory
+    monsterPools: [cultist.shadow_priest, undead.chain_thrall, cultist.ember_adept]
+    elitePools: [cultist.ashgate_warden, orc.forge_guard]
+    bossEncounterId:
+    objectiveSetId: abyssal_temple_sanctum
+  - id: abyssal_heart
+    nameKey: zone.abyssal_heart.name
+    descKey: zone.abyssal_heart.desc
+    visualKey: zone.grey_gate_depths.visual
+    iconKey: zone.grey_gate_depths.icon
+    audioProfile: audio.zone.grey_gate_depths
+    schemaVersion: 2
+    tags: [zone, mandatory, finale]
+    biome: temple
+    floorCount: 1
+    mapSize: { width: 90, height: 56 }
+    recommendedLevel: { min: 15, max: 15 }
+    environmentTheme: sealed_depths
+    specialMechanics: [finale, void_eruption, heart_ward]
+    tilesetKey: tileset.shadow_depths
+    ambientProfile: ambient.grey_gate_depths
+    worldRole: mandatory
+    monsterPools: [cultist.shadow_priest, undead.chain_thrall]
+    elitePools: [cultist.ashgate_warden]
+    bossEncounterId: abyssal_guardian_encounter
+    objectiveSetId: abyssal_heart_finale

@@ -214,6 +214,28 @@ class GameAppLifecycleTest {
     }
 
     @Test
+    fun `unsupported profile version disables persistence and surfaces explicit notice`() {
+        val profileDir = tempDir.resolve("legacy-profile")
+        Files.createDirectories(profileDir)
+        profileDir.resolve(ProfileManager.DEFAULT_FILE_NAME).writeText(
+            """
+            {
+              "profileVersion": 1,
+              "releaseUnlockedClasses": [],
+              "runHistory": []
+            }
+            """.trimIndent(),
+        )
+        val localizer = LocalizationBundle.load().translator(GameLocale.EN_US)
+
+        val result = loadProfilePersistenceState(ProfileManager(profileDir), localizer)
+
+        assertEquals(ProfileData(), result.profileData)
+        assertFalse(result.persistenceEnabled)
+        assertEquals(localizer.text("ui.menu.profile_load_failed"), result.notice)
+    }
+
+    @Test
     fun `failed profile save keeps previous in memory progression`() {
         val profileDir = tempDir.resolve("blocked-profile")
         Files.createDirectories(profileDir)

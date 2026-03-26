@@ -22,7 +22,6 @@ import com.ktome.client.screen.FoundationGameScreen
 import com.ktome.client.screen.GameOverScreen
 import com.ktome.client.screen.MainMenuScreen
 import com.ktome.client.screen.VictoryScreen
-import com.ktome.core.combat.CombatRuleset
 import com.ktome.core.profile.AvailabilityContext
 import com.ktome.core.profile.AdvancedClassUnlockRule
 import com.ktome.core.profile.ClassPlayabilityState
@@ -39,6 +38,7 @@ import com.ktome.core.snapshot.RenderTextArgumentSnapshot
 import com.ktome.core.snapshot.RenderTextTokenSnapshot
 import com.ktome.game.FoundationGameConfig
 import com.ktome.game.FoundationGameSession
+import com.ktome.game.FOUNDATION_ZONE_ID
 import com.ktome.game.GameModule
 import com.ktome.game.PlayerCreationSelection
 import com.ktome.game.PlayerCreationState
@@ -150,7 +150,7 @@ class GameApp(
     }
 
     fun showOutcome(session: FoundationGameSession) {
-        val summary = session.runSummary() ?: return
+        val summary = session.outcomeSummary() ?: return
         recordProfileRun(session)
         activeSession = null
         replaceScreen(
@@ -312,7 +312,7 @@ class GameApp(
                 profileManager = profileManager,
                 profile = profileData,
                 persistenceEnabled = profilePersistenceEnabled,
-                summary = profileRunSummary(session),
+                summary = requireNotNull(session.profileRunSummary(System.currentTimeMillis())),
                 unlockRules = GameModule.advancedClassUnlockRules(currentLocale),
                 localizer = currentLocalizer,
             )
@@ -322,22 +322,6 @@ class GameApp(
             refreshPlayerCreationState()
         }
     }
-
-    private fun profileRunSummary(session: FoundationGameSession): ProfileRunSummary =
-        ProfileRunSummary(
-            seed = session.config.seed,
-            finishedAtEpochMillis = System.currentTimeMillis(),
-            classId = session.config.playerProfessionId,
-            raceId = session.config.playerRaceId,
-            finalZoneId = session.config.zoneId,
-            turnCount = session.currentTurnCount(),
-            headlessTurnEquivalent = session.currentTurnCount(),
-            zoneRouteHash = session.config.zoneRoute.joinToString(">"),
-            buildHash = PROFILE_BUILD_HASH,
-            rulesetVersion = CombatRuleset.RULESET_VERSION,
-            victory = session.isVictory(),
-            defeatReason = session.runOutcome().takeUnless { outcome -> session.isVictory() }?.toString(),
-        )
 
     private fun requireClientAssets(): ClientAssetBundle =
         requireNotNull(assetContracts.bundleOrNull()) {
@@ -360,8 +344,6 @@ class GameApp(
         }
 
     companion object {
-        private const val PROFILE_BUILD_HASH: String = "ktome-0.1.0"
-
         private fun defaultSaveDir(): Path = Path.of(System.getProperty("user.home"), ".ktome")
     }
 }
@@ -382,7 +364,14 @@ internal fun newGameConfig(
     defaultConfig: FoundationGameConfig,
     professionId: String,
     raceId: String,
-): FoundationGameConfig = defaultConfig.copy(playerProfessionId = professionId, playerRaceId = raceId)
+): FoundationGameConfig =
+    defaultConfig.copy(
+        zoneId = FOUNDATION_ZONE_ID,
+        zoneRoute = listOf(FOUNDATION_ZONE_ID),
+        routeIndex = 0,
+        playerProfessionId = professionId,
+        playerRaceId = raceId,
+    )
 
 internal fun loadProfilePersistenceState(
     profileManager: ProfileManager,

@@ -45,6 +45,7 @@ class LocaleLintTest {
                 "monster.",
                 "boss.",
                 "zone.",
+                "shop.",
                 "difficulty.",
                 "material.",
                 "affix.",

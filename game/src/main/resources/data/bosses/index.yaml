@@ -70,3 +70,30 @@ bossEncounters:
           - type: TELEGRAPH
             telegraphSpecId: dungeon_lord_phase_warning
     rewards: [loot.foundation.boss, loot.grey_gate_depths.reward]
+  - id: abyssal_guardian_encounter
+    nameKey: boss.abyssal.guardian.name
+    descKey: boss.abyssal.guardian.desc
+    visualKey: boss.cultist.dungeon_lord.visual
+    iconKey: boss.cultist.dungeon_lord.icon
+    audioProfile: audio.boss.cultist.dungeon_lord
+    schemaVersion: 2
+    tags: [boss, phase3, finale]
+    templateId: abyssal.guardian
+    arenaId: arena.abyssal_heart.boss
+    phases:
+      - id: phase_full
+        hpThreshold: 1.0
+        hpEnd: 0.40
+        aiProfileId: ai.boss.abyssal_guardian.phase_full
+      - id: phase_abyssal
+        hpThreshold: 0.40
+        hpEnd: 0.0
+        aiProfileId: ai.boss.abyssal_guardian.phase_abyssal
+        resetAiPhaseState: true
+        onEnter:
+          - type: CLEAR_STATUSES
+          - type: EMIT_EVENT
+            messageKey: log.boss.desperate
+          - type: TELEGRAPH
+            telegraphSpecId: abyssal_guardian_phase_warning
+    rewards: [loot.abyssal_heart.reward]

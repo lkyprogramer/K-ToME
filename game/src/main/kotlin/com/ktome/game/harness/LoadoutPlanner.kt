@@ -4,15 +4,15 @@ import com.ktome.game.PlayerCommand
 
 internal object LoadoutPlanner {
     fun preferredLoadoutCommand(observation: RunObservation): PlayerCommand? {
-        val desiredOrder = desiredLoadoutOrder(observation)
-        if (desiredOrder.isEmpty()) {
-            return null
-        }
         val unlockedTalentIds =
             linkedSetOf<String>().apply {
                 observation.talentSlots.mapTo(this) { slot -> slot.talentId }
                 observation.reserveTalents.mapTo(this) { talent -> talent.talentId }
             }
+        val desiredOrder = desiredLoadoutOrder(observation, unlockedTalentIds)
+        if (desiredOrder.isEmpty()) {
+            return null
+        }
         desiredOrder
             .filter(unlockedTalentIds::contains)
             .take(4)
@@ -26,9 +26,22 @@ internal object LoadoutPlanner {
         return null
     }
 
-    private fun desiredLoadoutOrder(observation: RunObservation): List<String> =
-        when (observation.playerResource.typeId) {
-            "STAMINA" ->
+    private fun desiredLoadoutOrder(
+        observation: RunObservation,
+        unlockedTalentIds: Set<String>,
+    ): List<String> =
+        when {
+            unlockedTalentIds.any(SPELLBLADE_TALENT_IDS::contains) ->
+                listOf(
+                    "arcane_edge",
+                    "mana_lunge",
+                    "spell_parry",
+                    "flux_anchor",
+                    "spell_rend",
+                    "flux_burst",
+                )
+
+            observation.playerResource.typeId == "STAMINA" ->
                 listOf(
                     "power_strike",
                     "shield_bash",
@@ -41,7 +54,7 @@ internal object LoadoutPlanner {
                     "unyielding",
                 )
 
-            "MANA" ->
+            observation.playerResource.typeId == "MANA" ->
                 listOf(
                     "fireball",
                     "blink",
@@ -53,7 +66,7 @@ internal object LoadoutPlanner {
                     "flame_wall",
                 )
 
-            "ENERGY" ->
+            observation.playerResource.typeId == "ENERGY" ->
                 listOf(
                     "backstab",
                     "poison_blade",
@@ -65,7 +78,7 @@ internal object LoadoutPlanner {
                     "deathblow",
                 )
 
-            "POSITIVE_ENERGY" ->
+            observation.playerResource.typeId == "POSITIVE_ENERGY" ->
                 listOf(
                     "holy_strike",
                     "holy_light",
@@ -79,4 +92,14 @@ internal object LoadoutPlanner {
 
             else -> emptyList()
         }
+
+    private val SPELLBLADE_TALENT_IDS =
+        setOf(
+            "arcane_edge",
+            "spell_rend",
+            "flux_anchor",
+            "flux_burst",
+            "mana_lunge",
+            "spell_parry",
+        )
 }

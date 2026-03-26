@@ -12,7 +12,7 @@ monsters:
     color: "#8B6B3F"
     stats: { str: 3, dex: 8, con: 4, wil: 1 }
     baseHp: 12
-    baseAttack: 3
+    baseAttack: 4
     baseDefense: 0
     speed: 110
     ai: CHASE
@@ -35,7 +35,7 @@ monsters:
     color: "#C8C8C8"
     stats: { str: 5, dex: 10, con: 5, wil: 2 }
     baseHp: 18
-    baseAttack: 4
+    baseAttack: 3
     baseDefense: 1
     speed: 100
     ai: KITE
@@ -103,10 +103,10 @@ monsters:
     glyph: "B"
     color: "#D94C3D"
     stats: { str: 16, dex: 11, con: 15, wil: 12 }
-    baseHp: 125
-    baseAttack: 14
-    baseDefense: 7
-    speed: 95
+    baseHp: 78
+    baseAttack: 10
+    baseDefense: 3
+    speed: 90
     ai: CHASE
     aiProfileId: ai.boss.dungeon_lord.phase_full
     lootProfileId: loot.foundation.boss
@@ -268,17 +268,41 @@ monsters:
     glyph: "B"
     color: "#C77C3A"
     stats: { str: 14, dex: 10, con: 12, wil: 6 }
-    baseHp: 48
-    baseAttack: 8
+    baseHp: 38
+    baseAttack: 4
     baseDefense: 1
     speed: 100
     ai: CHASE
     aiProfileId: ai.boss.bandit_captain.phase_full
     lootProfileId: loot.foundation.boss
     resistances: { FIRE: -10 }
-    talents: { war_cry: 1, shield_bash: 1, power_strike: 2, charge: 1 }
+    talents: { war_cry: 1 }
     expReward: 220
     spawnFloors: [2]
+    spawnWeight: 1
+  - id: abyssal.guardian
+    nameKey: monster.abyssal.guardian.name
+    descKey: monster.abyssal.guardian.desc
+    visualKey: actor.cultist.dungeon_lord
+    iconKey: icon.monster.cultist.dungeon_lord
+    audioProfile: audio.monster.cultist.dungeon_lord
+    schemaVersion: 2
+    tags: [monster, boss, abyssal]
+    archetype: boss
+    glyph: "A"
+    color: "#8A4FFF"
+    stats: { str: 18, dex: 12, con: 18, wil: 14 }
+    baseHp: 72
+    baseAttack: 9
+    baseDefense: 3
+    speed: 90
+    ai: CHASE
+    aiProfileId: ai.boss.abyssal_guardian.phase_full
+    lootProfileId: loot.abyssal_heart.reward
+    resistances: { SHADOW: 0, HOLY: 0 }
+    talents: { war_cry: 3, power_strike: 4, charge: 2 }
+    expReward: 420
+    spawnFloors: [6]
     spawnWeight: 1
   - id: goblin.scrapper
     nameKey: monster.goblin.scrapper.name
@@ -343,12 +367,12 @@ monsters:
     glyph: "w"
     color: "#567642"
     stats: { str: 7, dex: 11, con: 6, wil: 2 }
-    baseHp: 22
-    baseAttack: 7
+    baseHp: 20
+    baseAttack: 6
     baseDefense: 1
     baseAccuracy: 13
     baseEvasion: 9
-    speed: 108
+    speed: 104
     ai: CHASE
     aiProfileId: ai.skirmisher.flank
     lootProfileId: loot.foundation.common
@@ -498,9 +522,9 @@ monsters:
     glyph: "F"
     color: "#7A6B4B"
     stats: { str: 13, dex: 7, con: 12, wil: 4 }
-    baseHp: 52
-    baseAttack: 12
-    baseDefense: 5
+    baseHp: 38
+    baseAttack: 9
+    baseDefense: 3
     baseAccuracy: 13
     baseEvasion: 6
     speed: 92
@@ -508,7 +532,7 @@ monsters:
     aiProfileId: ai.elite.forge_guard
     lootProfileId: loot.foundation.elite
     resistances: { FIRE: 20, COLD: -10 }
-    talents: { war_cry: 2, shield_bash: 2 }
+    talents: { war_cry: 1, shield_bash: 1 }
     expReward: 72
     spawnFloors: [2]
     spawnWeight: 3
@@ -524,17 +548,17 @@ monsters:
     glyph: "B"
     color: "#C85A30"
     stats: { str: 17, dex: 8, con: 16, wil: 6 }
-    baseHp: 96
-    baseAttack: 18
-    baseDefense: 6
+    baseHp: 58
+    baseAttack: 10
+    baseDefense: 4
     baseAccuracy: 13
     baseEvasion: 5
-    speed: 88
+    speed: 84
     ai: CHASE
     aiProfileId: ai.boss.molten_giant.phase_full
     lootProfileId: loot.foundation.boss
     resistances: { FIRE: 25, COLD: -10 }
-    talents: { power_strike: 4, charge: 2, war_cry: 2 }
+    talents: { power_strike: 2, charge: 1 }
     expReward: 280
     spawnFloors: [2]
     spawnWeight: 1
@@ -550,12 +574,12 @@ monsters:
     glyph: "p"
     color: "#8E7FA8"
     stats: { str: 6, dex: 8, con: 7, wil: 11 }
-    baseHp: 30
-    baseAttack: 9
+    baseHp: 24
+    baseAttack: 7
     baseDefense: 3
     baseAccuracy: 15
     baseEvasion: 8
-    speed: 97
+    speed: 94
     ai: KITE
     aiProfileId: ai.controller.shadow_priest
     lootProfileId: loot.foundation.common
@@ -576,12 +600,12 @@ monsters:
     glyph: "t"
     color: "#B0A79E"
     stats: { str: 10, dex: 7, con: 10, wil: 4 }
-    baseHp: 36
-    baseAttack: 10
-    baseDefense: 4
+    baseHp: 30
+    baseAttack: 8
+    baseDefense: 3
     baseAccuracy: 12
     baseEvasion: 6
-    speed: 94
+    speed: 90
     ai: CHASE
     aiProfileId: ai.guard.basic
     lootProfileId: loot.foundation.common
@@ -602,9 +626,9 @@ monsters:
     glyph: "W"
     color: "#8C6E4B"
     stats: { str: 14, dex: 7, con: 14, wil: 6 }
-    baseHp: 58
-    baseAttack: 13
-    baseDefense: 6
+    baseHp: 44
+    baseAttack: 10
+    baseDefense: 4
     baseAccuracy: 13
     baseEvasion: 5
     speed: 90

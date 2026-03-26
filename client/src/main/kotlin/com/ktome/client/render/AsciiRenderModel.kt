@@ -197,6 +197,7 @@ internal object AsciiRenderModelBuilder {
         when (overlayState.mode) {
             UiMode.MAP -> {
                 lines += blankLine()
+                lines += AsciiTextLine(localizer.text("ui.sidebar.shards", "value" to snapshot.uiState.shardBalance), AsciiTextTone.GOLD)
                 lines += AsciiTextLine(localizer.text("ui.controls.map.pick_up"), AsciiTextTone.LIGHT_GRAY)
                 lines += AsciiTextLine(localizer.text("ui.controls.map.inventory"), AsciiTextTone.LIGHT_GRAY)
                 lines += AsciiTextLine(localizer.text("ui.controls.map.save"), AsciiTextTone.LIGHT_GRAY)
@@ -222,6 +223,66 @@ internal object AsciiRenderModelBuilder {
                 if (snapshot.uiState.playerStatus.statPoints > 0) {
                     lines += AsciiTextLine(localizer.text("ui.controls.map.spend_stat"), AsciiTextTone.LIGHT_GRAY)
                 }
+            }
+
+            UiMode.SHOP -> {
+                lines += blankLine()
+                lines += AsciiTextLine(localizer.text("ui.sidebar.shards", "value" to snapshot.uiState.shardBalance), AsciiTextTone.GOLD)
+                lines += AsciiTextLine(localizer.text("ui.shop.buy"), if (overlayState.shopFocus == com.ktome.client.input.ShopFocus.BUY) AsciiTextTone.GOLD else AsciiTextTone.WHITE)
+                snapshot.uiState.activeShop?.offers?.forEach { offer ->
+                    lines +=
+                        AsciiTextLine(
+                            "${offer.index + 1}. ${localizer.text(offer.labelKey)} (${offer.price})",
+                            if (overlayState.shopFocus == com.ktome.client.input.ShopFocus.BUY && overlayState.shopOfferSelection == offer.index) AsciiTextTone.CYAN else AsciiTextTone.WHITE,
+                        )
+                }
+                if (snapshot.uiState.activeShop?.offers.isNullOrEmpty()) {
+                    lines += AsciiTextLine(localizer.text("ui.sidebar.empty"), AsciiTextTone.GRAY)
+                }
+                lines += AsciiTextLine(localizer.text("ui.shop.sell"), if (overlayState.shopFocus == com.ktome.client.input.ShopFocus.SELL) AsciiTextTone.GOLD else AsciiTextTone.WHITE)
+                val sellEntries = snapshot.uiState.activeShop?.sellEntries.orEmpty()
+                if (sellEntries.isEmpty()) {
+                    lines += AsciiTextLine(localizer.text("ui.sidebar.empty"), AsciiTextTone.GRAY)
+                } else {
+                    sellEntries.forEachIndexed { displayIndex, sellEntry ->
+                        val inventoryEntry = snapshot.uiState.inventory.firstOrNull { entry -> entry.index == sellEntry.inventoryIndex }
+                        val itemName = inventoryEntry?.let { entry -> renderItemDisplay(localizer, entry.item) } ?: "-"
+                        lines +=
+                            AsciiTextLine(
+                                "${displayIndex + 1}. $itemName (${sellEntry.price})",
+                                if (overlayState.shopFocus == com.ktome.client.input.ShopFocus.SELL && overlayState.inventorySelection == displayIndex) AsciiTextTone.CYAN else AsciiTextTone.WHITE,
+                            )
+                    }
+                }
+                lines += AsciiTextLine(localizer.text("ui.controls.shop"), AsciiTextTone.LIGHT_GRAY)
+            }
+
+            UiMode.WORLD_MAP -> {
+                lines += blankLine()
+                val routePanel = snapshot.uiState.activeRouteSelection
+                if (routePanel == null) {
+                    lines += AsciiTextLine(localizer.text("ui.sidebar.empty"), AsciiTextTone.GRAY)
+                } else {
+                    lines += AsciiTextLine(localizer.text("ui.world_map.current_zone", "zone" to localizer.text(routePanel.currentZoneNameKey)), AsciiTextTone.GOLD)
+                    routePanel.options.forEach { option ->
+                        lines +=
+                            AsciiTextLine(
+                                "${option.index + 1}. ${localizer.text(option.destinationZoneNameKey)}",
+                                if (overlayState.routeSelection == option.index) AsciiTextTone.CYAN else AsciiTextTone.WHITE,
+                            )
+                        option.destinationZoneDescKey?.let { descKey ->
+                            lines += AsciiTextLine(localizer.text(descKey), AsciiTextTone.LIGHT_GRAY)
+                        }
+                        lines += AsciiTextLine("${option.levelBandRef} / ${option.shardReward}", AsciiTextTone.LIGHT_GRAY)
+                        if (option.rewardItemNameKeys.isNotEmpty()) {
+                            lines += AsciiTextLine(option.rewardItemNameKeys.joinToString(separator = ", ") { key -> localizer.text(key) }, AsciiTextTone.GREEN)
+                        }
+                        if (option.rescueTags.isNotEmpty()) {
+                            lines += AsciiTextLine(option.rescueTags.joinToString(separator = " / "), AsciiTextTone.LIGHT_GRAY)
+                        }
+                    }
+                }
+                lines += AsciiTextLine(localizer.text("ui.controls.world_map"), AsciiTextTone.LIGHT_GRAY)
             }
 
             UiMode.INVENTORY -> {

@@ -24,6 +24,7 @@ import com.ktome.core.ai.DangerLevel
 import com.ktome.core.ai.PendingTelegraphState
 import com.ktome.core.ai.StealthTauntHandler
 import com.ktome.core.ai.ThreatRatingResolver
+import com.ktome.core.combat.CombatRuleset
 import com.ktome.core.combat.CombatResolver
 import com.ktome.core.combat.DamageFormula
 import com.ktome.core.combat.DamageType
@@ -75,6 +76,7 @@ import com.ktome.core.inscription.InscriptionDef
 import com.ktome.core.inscription.InscriptionEffect
 import com.ktome.core.inscription.InscriptionLoadout
 import com.ktome.core.inscription.InscriptionManager
+import com.ktome.core.item.AffixSelectionContext
 import com.ktome.core.item.AffixType
 import com.ktome.core.item.EquipSlot
 import com.ktome.core.item.Equipment
@@ -98,6 +100,7 @@ import com.ktome.core.map.GameMap
 import com.ktome.core.map.Point
 import com.ktome.core.movement.MovementRules
 import com.ktome.core.progression.ExperienceSystem
+import com.ktome.core.profile.RunSummary as ProfileRunSummary
 import com.ktome.core.race.RaceTalentPointBank
 import com.ktome.core.race.RaceTalentPointProgression
 import com.ktome.core.random.RandomSource
@@ -112,6 +115,10 @@ import com.ktome.core.run.RunOutcome
 import com.ktome.core.save.PlayerSnapshot
 import com.ktome.core.save.PointSnapshot
 import com.ktome.core.save.SaveManager
+import com.ktome.core.economy.ShopInventoryState
+import com.ktome.core.economy.ShardEconomy
+import com.ktome.core.economy.ShopNode
+import com.ktome.core.economy.ShopOffer
 import com.ktome.core.snapshot.ActorRenderSnapshot
 import com.ktome.core.snapshot.ActorRoleKindSnapshot
 import com.ktome.core.snapshot.CellVisibilitySnapshot
@@ -133,7 +140,12 @@ import com.ktome.core.snapshot.RenderMetadataSnapshot
 import com.ktome.core.snapshot.RenderSnapshot
 import com.ktome.core.snapshot.RenderTextArgumentSnapshot
 import com.ktome.core.snapshot.RenderTextTokenSnapshot
+import com.ktome.core.snapshot.RouteOptionSnapshot
+import com.ktome.core.snapshot.RouteSelectionSnapshot
 import com.ktome.core.snapshot.RenderUiStateSnapshot
+import com.ktome.core.snapshot.ShopOfferSnapshot
+import com.ktome.core.snapshot.ShopPanelSnapshot
+import com.ktome.core.snapshot.ShopSellEntrySnapshot
 import com.ktome.core.snapshot.StatusEffectCategorySnapshot
 import com.ktome.core.snapshot.StatusEffectRenderSnapshot
 import com.ktome.core.snapshot.TalentBreakpointPreviewSnapshot
@@ -165,15 +177,27 @@ import com.ktome.core.talent.TalentTreeOwnerType
 import com.ktome.core.talent.TalentUseResult
 import com.ktome.core.turn.TurnActorState
 import com.ktome.core.turn.TurnScheduler
+import com.ktome.core.world.WorldProgressDef
+import com.ktome.core.world.ObjectiveState
+import com.ktome.core.world.QuestProgress
+import com.ktome.core.world.RewardClaimPolicy
+import com.ktome.core.world.RouteReward
+import com.ktome.core.world.ZoneConnection
 import com.ktome.game.data.schema.ItemBundleSchemaV2
 import com.ktome.game.data.schema.ProfessionSchemaV2
 import com.ktome.game.data.schema.SchemaCatalog
+import com.ktome.game.data.schema.SchemaLevelRange
+import com.ktome.game.data.schema.SchemaMapSize
 import com.ktome.game.data.schema.TalentLevelEffectSchemaV2
 import com.ktome.game.data.schema.TalentSchemaV2
 import com.ktome.game.data.schema.ZoneSchemaV2
 import com.ktome.game.factory.EntityFactory
 import com.ktome.game.factory.ItemFactory
 import com.ktome.game.i18n.GameLocale
+import com.ktome.game.data.schema.InteractableSchemaV2
+import com.ktome.game.objective.ObjectiveCompletionRule
+import com.ktome.game.objective.ObjectiveCompletionTrigger
+import com.ktome.game.objective.ObjectiveRuntimeEvaluator
 import com.ktome.game.i18n.LocalizationBundle
 import com.ktome.game.i18n.Localizer
 import com.ktome.game.model.BossDefinition
@@ -199,6 +223,10 @@ class FoundationGameSession internal constructor(
     private var playerSnapshot: PlayerSnapshot,
     initialMessageLog: List<RenderLogEventSnapshot> = emptyList(),
     private var turnCount: Int = 0,
+    private var headlessTurnEquivalent: Int = 0,
+    private var worldProgress: WorldProgressDef = WorldProgressDef(),
+    private var shardBalance: Int = 0,
+    private var shopStates: MutableMap<String, ShopInventoryState> = linkedMapOf(),
     private val inventoryManager: InventoryManager = InventoryManager(),
     private val combatRandomSource: RandomSource = defaultCombatRandomSource(config, turnCount),
     private val combatResolver: CombatResolver = CombatResolver(combatRandomSource),
@@ -210,6 +238,7 @@ class FoundationGameSession internal constructor(
     private val zoneRuntimeFactory: (FoundationGameConfig) -> ZoneRuntimeBundle = { unsupportedZoneConfig ->
         error("Zone transition is not supported for config $unsupportedZoneConfig.")
     },
+    private val isolatedZoneSlice: Boolean = false,
 ) {
     private val talentTreeOwnerResolver =
         TalentTreeOwnerResolver(content.schemaCatalog.talentTrees.associateBy { tree -> tree.id })
@@ -245,6 +274,12 @@ class FoundationGameSession internal constructor(
         val phaseChanged: Boolean,
     )
 
+    private data class RouteAdvanceOption(
+        val connection: ZoneConnection,
+        val destinationZoneId: String,
+        val reward: RouteReward? = null,
+    )
+
     var config: FoundationGameConfig = config
         private set
     private val messageLog = ArrayDeque<SessionLogEntry>()
@@ -268,6 +303,8 @@ class FoundationGameSession internal constructor(
     private val recentAiDecisionTraces = ArrayDeque<AIDecisionTrace>()
     private val recentBossTraces = ArrayDeque<BossTrace>()
     private val respecManager: RespecManager = RespecManager()
+    private var activeShopId: String? = null
+    private var pendingRouteSelection: List<RouteAdvanceOption> = emptyList()
     private val playerBaseResistanceValues: Map<DamageType, Int> =
         world.get<ResistanceProfile>(playerId)?.values?.toMap(linkedMapOf()) ?: emptyMap()
 
@@ -288,6 +325,7 @@ class FoundationGameSession internal constructor(
         ensurePlayerResourcePools()
         ensurePlayerInscriptions()
         syncPlayerResistanceProfile()
+        restorePendingZoneAdvanceIfNeeded()
         refreshFov()
     }
 
@@ -303,11 +341,15 @@ class FoundationGameSession internal constructor(
         inventoryManager: InventoryManager = InventoryManager(),
     ) : this(
         config = config,
-        content = compatibilityContent(talentRegistry = talentRegistry, world = world, currentFloor = config.floor),
+        content = compatibilityContent(config = config, talentRegistry = talentRegistry, world = world, currentFloor = config.floor),
         saveManager = SaveManager(Files.createTempDirectory("ktome-session-save")),
         dungeonManager = compatibilityDungeonManager(config, map, world, playerId),
         playerSnapshot = SessionSnapshotMapper.capturePlayer(world, playerId),
         initialMessageLog = listOf(RenderLogEventSnapshot(RenderTextTokenSnapshot("log.session.enter_dungeon"))),
+        worldProgress = WorldProgressDef(),
+        headlessTurnEquivalent = 0,
+        shardBalance = 0,
+        shopStates = linkedMapOf(),
         inventoryManager = inventoryManager,
         combatRandomSource = UntrackedRandomSource,
         combatResolver = combatResolver,
@@ -325,6 +367,12 @@ class FoundationGameSession internal constructor(
         get() = EntityId(playerSnapshot.entity.id)
 
     fun currentFloor(): Int = dungeonManager.currentFloor
+
+    fun worldProgress(): WorldProgressDef = worldProgress
+
+    fun currentShardBalance(): Int = shardBalance
+
+    fun shopStates(): List<ShopInventoryState> = shopStates.values.sortedBy(ShopInventoryState::shopId)
 
     fun maxFloor(): Int = config.maxFloor
 
@@ -365,6 +413,35 @@ class FoundationGameSession internal constructor(
 
     fun currentTurnCount(): Int = turnCount
 
+    fun currentHeadlessTurnEquivalent(): Int = headlessTurnEquivalent
+
+    fun currentBuildHash(): String {
+        val equipmentHash =
+            EquipSlot.entries.joinToString(separator = "|") { slot ->
+                val equipped = equippedItemFor(slot)
+                if (equipped == null) {
+                    "${slot.name}:-"
+                } else {
+                    "${slot.name}:${equipped.baseId}:${equipped.materialId ?: "-"}:${equipped.affixes.joinToString(separator = "+", transform = com.ktome.core.item.AffixDef::id)}"
+                }
+            }
+        val talentHash =
+            talentSlots()
+                .sortedBy { slot -> slot.slot }
+                .joinToString(separator = "|") { slot -> "${slot.slot}:${slot.talentId}:${slot.level}" }
+        val inscriptionHash =
+            buildInscriptionSnapshots()
+                .sortedBy(InscriptionSlotSnapshot::hotkey)
+                .joinToString(separator = "|") { slot -> "${slot.hotkey}:${slot.inscriptionId}" }
+        return listOf(
+            config.playerProfessionId,
+            config.playerRaceId,
+            equipmentHash,
+            talentHash,
+            inscriptionHash,
+        ).joinToString(separator = "#")
+    }
+
     fun recentEventLog(limit: Int = 20): List<String> = recentEvents.takeLast(limit)
 
     fun isGameOver(): Boolean = runOutcome is RunOutcome.Defeat
@@ -373,19 +450,23 @@ class FoundationGameSession internal constructor(
 
     fun runOutcome(): RunOutcome = runOutcome
 
-    fun runSummary(): RunSummary? =
+    fun outcomeSummary(): OutcomeSummary? =
         if (!runOutcome.isTerminal) {
             null
         } else {
             val health = requireNotNull(world.get<Health>(playerId)) { "Missing Health for $playerId." }
             val resource = resolvePlayerResourceView()
-            RunSummary(
+            OutcomeSummary(
                 outcome = runOutcome,
                 floorReached = currentFloor(),
                 maxFloor = config.maxFloor,
                 turns = turnCount,
+                headlessTurnEquivalent = headlessTurnEquivalent,
                 playerLevel = playerStatus().level,
                 zoneNameKey = currentZoneSchema().nameKey,
+                zonePath = config.zoneRoute,
+                shardBalance = shardBalance,
+                defeatedBossIds = worldProgress.defeatedBossIds.sorted(),
                 outcomeReasonKey = runOutcomeReasonKey(runOutcome),
                 killerNameKey = terminalKillerNameKey,
                 killerTemplateId = terminalKillerTemplateId,
@@ -396,6 +477,30 @@ class FoundationGameSession internal constructor(
                 finalResourceCurrent = resource.current,
                 finalResourceMax = resource.max,
                 lastEvents = recentSummaryEvents.toList(),
+            )
+        }
+
+    fun profileRunSummary(finishedAtEpochMillis: Long): ProfileRunSummary? =
+        if (!runOutcome.isTerminal) {
+            null
+        } else {
+            ProfileRunSummary(
+                seed = config.seed,
+                finishedAtEpochMillis = finishedAtEpochMillis,
+                classId = config.playerProfessionId,
+                raceId = config.playerRaceId,
+                finalZoneId = config.zoneId,
+                turnCount = turnCount,
+                headlessTurnEquivalent = headlessTurnEquivalent,
+                zoneRouteHash = zoneRouteHash(config.zoneRoute),
+                zonePath = config.zoneRoute,
+                defeatedBossIds = worldProgress.defeatedBossIds.sorted(),
+                claimedRouteRewardIds = worldProgress.claimedRouteRewards.sorted(),
+                shardBalance = shardBalance,
+                buildHash = currentBuildHash(),
+                rulesetVersion = CombatRuleset.RULESET_VERSION,
+                victory = isVictory(),
+                defeatReason = if (isVictory()) null else runOutcome.toString(),
             )
         }
 
@@ -432,8 +537,38 @@ class FoundationGameSession internal constructor(
         world.entitiesWith(MonsterTemplateId::class)
             .firstOrNull { entityId -> world.get<MonsterTemplateId>(entityId)?.value == templateId }
 
+    internal fun automationBossPoint(): Point? =
+        world.entitiesWith(Position::class, BossEncounterState::class, Health::class)
+            .firstOrNull { entityId -> (world.get<Health>(entityId)?.current ?: 0) > 0 }
+            ?.let { entityId -> requireNotNull(world.get<Position>(entityId)).toPoint() }
+
+    internal fun automationPendingObjectiveInteractablePoint(): Point? {
+        val objective = currentObjectiveSetSchema() ?: return null
+        val state = currentObjectiveStateEntry()?.second ?: return null
+        if (state != ObjectiveState.AVAILABLE) {
+            return null
+        }
+        val currentFloorInteractableIds =
+            objective.placements
+                .asSequence()
+                .filter { placement -> placement.floor == currentFloor() }
+                .map { placement -> placement.interactableId }
+                .toSet()
+        if (currentFloorInteractableIds.isEmpty()) {
+            return null
+        }
+        return world.entitiesWith(Position::class, Interactable::class)
+            .asSequence()
+            .filter { entityId -> world.get<Interactable>(entityId)?.id in currentFloorInteractableIds }
+            .mapNotNull { entityId -> world.get<Position>(entityId)?.toPoint() }
+            .minWithOrNull(compareBy<Point> { point -> point.chebyshevDistanceTo(playerPosition()) }.thenBy(Point::y).thenBy(Point::x))
+    }
+
     internal fun automationInteractableTags(interactableId: String): Set<String> =
         interactableSchemaFor(interactableId)?.interactionTags?.toSet().orEmpty()
+
+    internal fun automationCanPurchaseShopOffer(index: Int): Boolean =
+        availableShopOffers().getOrNull(index)?.let(::canPurchaseShopOffer) == true
 
     internal fun automationForceDefeatPlayer() {
         handleDeath(playerId, null)
@@ -1195,7 +1330,67 @@ class FoundationGameSession internal constructor(
             inscriptions = buildInscriptionSnapshots(),
             inventory = buildInventoryEntries(),
             targetablePositions = targetableHostilePositions().map { point -> GridPointSnapshot(point.x, point.y) },
+            shardBalance = shardBalance,
+            activeShop = buildShopPanelSnapshot(),
+            activeRouteSelection = buildRouteSelectionSnapshot(),
         )
+
+    private fun buildShopPanelSnapshot(): ShopPanelSnapshot? {
+        val shop = currentShopNode() ?: return null
+        if (activeShopId == null) {
+            return null
+        }
+        return ShopPanelSnapshot(
+            shopId = shop.id,
+            shopNameKey = shop.nameKey,
+            offers =
+                availableShopOffers().mapIndexed { index, offer ->
+                    ShopOfferSnapshot(
+                        index = index,
+                        labelKey = shopOfferLabelKey(offer),
+                        price = offer.price,
+                        tags = offer.tags.sorted(),
+                    )
+                },
+            sellEntries =
+                inventoryItems()
+                    .map { itemView ->
+                        ShopSellEntrySnapshot(
+                            inventoryIndex = itemView.index,
+                            price = sellValueForInventoryIndex(itemView.index),
+                        )
+                    },
+        )
+    }
+
+    private fun buildRouteSelectionSnapshot(): RouteSelectionSnapshot? {
+        if (pendingRouteSelection.isEmpty()) {
+            return null
+        }
+        return RouteSelectionSnapshot(
+            currentZoneNameKey = currentZoneSchema().nameKey,
+            options =
+                pendingRouteSelection.mapIndexed { index, option ->
+                    val destinationZone = zoneSchemaFor(option.destinationZoneId)
+                    RouteOptionSnapshot(
+                        index = index,
+                        routeId = option.connection.id,
+                        destinationZoneId = destinationZone.id,
+                        destinationZoneNameKey = destinationZone.nameKey,
+                        destinationZoneDescKey = destinationZone.descKey,
+                        levelBandRef = option.reward?.levelBandRef ?: destinationZone.toLevelBandRef(),
+                        shardReward = option.reward?.shardReward ?: 0,
+                        rewardItemNameKeys =
+                            option.reward
+                                ?.guaranteedDropIds
+                                ?.mapNotNull { baseId -> itemSchemaFor(baseId)?.nameKey }
+                                .orEmpty(),
+                        rescueTags = option.reward?.rescueTags?.sorted().orEmpty(),
+                        isReturnPath = option.destinationZoneId == config.zoneRoute.getOrNull(config.routeIndex - 1),
+                    )
+                },
+        )
+    }
 
     private fun buildPlayerStatusSnapshot(): PlayerStatusSnapshot {
         val status = playerStatus()
@@ -1413,14 +1608,195 @@ class FoundationGameSession internal constructor(
             "Unknown zone '${config.zoneId}'."
         }
 
+    private fun zoneSchemaFor(zoneId: String): ZoneSchemaV2 =
+        requireNotNull(content.schemaCatalog.zones.firstOrNull { zone -> zone.id == zoneId }) {
+            "Unknown zone '$zoneId'."
+        }
+
     private fun currentProfessionSchema(): ProfessionSchemaV2? =
         content.schemaCatalog.professions.firstOrNull { profession -> profession.id == config.playerProfessionId }
 
     private fun currentRaceSchema() =
         content.schemaCatalog.races.firstOrNull { race -> race.id == config.playerRaceId }
 
+    private fun currentShopNode(): ShopNode? =
+        activeShopId?.let { shopId ->
+            content.schemaCatalog.shopNodes.firstOrNull { shop -> shop.id == shopId }
+        }
+
+    private fun configuredShopNode(): ShopNode? =
+        currentZoneSchema().shopNodeId?.let { shopId ->
+            content.schemaCatalog.shopNodes.firstOrNull { shop -> shop.id == shopId }
+        }
+
     private fun currentObjectiveSetSchema() =
         content.schemaCatalog.objectiveSets.firstOrNull { objectiveSet -> objectiveSet.id == currentZoneSchema().objectiveSetId }
+
+    private fun currentQuestProgressTemplate(): QuestProgress? =
+        currentObjectiveSetSchema()?.linkedQuestId?.let { questId ->
+            worldProgress.questStates[questId]
+                ?: content.schemaCatalog.questProgressions.firstOrNull { quest -> quest.questId == questId }
+        }
+
+    private fun currentObjectiveCompletionRule(): ObjectiveCompletionRule? =
+        currentObjectiveSetSchema()?.let { objective -> ObjectiveCompletionRule.fromSchemaId(objective.completionRule) }
+
+    private fun currentQuestObjectiveId(): String? = currentObjectiveSetSchema()?.questObjectiveId
+
+    private fun currentObjectiveStateEntry(): Pair<QuestProgress, ObjectiveState>? {
+        val objective = currentObjectiveSetSchema() ?: return null
+        val quest = currentQuestProgressTemplate() ?: return null
+        val objectiveId = requireNotNull(objective.questObjectiveId) {
+            "Objective set '${objective.id}' must define questObjectiveId when linkedQuestId is present."
+        }
+        val currentState = requireNotNull(quest.objectiveStates[objectiveId]) {
+            "Quest '${quest.questId}' is missing objective '$objectiveId' for objective set '${objective.id}'."
+        }
+        return quest to currentState
+    }
+
+    private fun updateCurrentObjectiveState(transform: (ObjectiveState) -> ObjectiveState): ObjectiveState? {
+        val objective = currentObjectiveSetSchema() ?: return null
+        val quest = currentQuestProgressTemplate() ?: return null
+        val objectiveId = requireNotNull(objective.questObjectiveId) {
+            "Objective set '${objective.id}' must define questObjectiveId when linkedQuestId is present."
+        }
+        val currentState = requireNotNull(quest.objectiveStates[objectiveId]) {
+            "Quest '${quest.questId}' is missing objective '$objectiveId' for objective set '${objective.id}'."
+        }
+        val nextState = transform(currentState)
+        if (nextState == currentState) {
+            return currentState
+        }
+        val updatedQuest =
+            quest.copy(
+                objectiveStates = quest.objectiveStates + (objectiveId to nextState),
+            )
+        worldProgress = worldProgress.withQuestProgress(quest.questId, updatedQuest)
+        return nextState
+    }
+
+    private fun completeCurrentZoneQuest(trigger: ObjectiveCompletionTrigger): Boolean {
+        val objective = currentObjectiveSetSchema() ?: return false
+        val rule = currentObjectiveCompletionRule() ?: return false
+        val floorReached = currentFloor()
+        val maxFloor = config.maxFloor
+        val objectiveStateEntry = currentObjectiveStateEntry() ?: return false
+        val currentState = objectiveStateEntry.second
+        val satisfied =
+            ObjectiveRuntimeEvaluator.isSatisfied(
+                rule = rule,
+                currentState = currentState,
+                trigger = trigger,
+                floorReached = floorReached,
+                maxFloor = maxFloor,
+            )
+        if (!satisfied) {
+            return false
+        }
+        val (quest, state) = objectiveStateEntry
+        if (state == ObjectiveState.COMPLETED) {
+            return false
+        }
+        val objectiveId = requireNotNull(objective.questObjectiveId)
+        val completedQuest =
+            quest.copy(
+                objectiveStates = quest.objectiveStates + (objectiveId to ObjectiveState.COMPLETED),
+            )
+        val progressedWorld = worldProgress.withQuestProgress(quest.questId, completedQuest)
+        worldProgress =
+            if (progressedWorld.isQuestCompleted(quest.questId)) {
+                progressedWorld.copy(
+                    worldFlags = progressedWorld.worldFlags + completedQuest.completionFlags,
+                )
+            } else {
+                progressedWorld
+            }
+        return true
+    }
+
+    private fun plannedNextZoneId(): String? = config.zoneRoute.getOrNull(config.routeIndex + 1)
+
+    private fun activeShopState(): ShopInventoryState? =
+        currentShopNode()?.let { shop -> shopStates[shop.id] }
+
+    private fun availableShopOffers(): List<ShopOffer> {
+        val shop = currentShopNode() ?: return emptyList()
+        val purchasedIds = shopStates[shop.id]?.purchasedOfferIds.orEmpty()
+        return shop.inventory.filterNot { offer -> offer.id in purchasedIds }
+    }
+
+    private fun routeRewardFor(routeId: String): RouteReward? =
+        content.schemaCatalog.routeRewards.firstOrNull { reward -> reward.routeId == routeId }
+
+    private fun plannedRouteAdvanceOption(): RouteAdvanceOption? {
+        val nextZoneId = plannedNextZoneId() ?: return null
+        return content.schemaCatalog.worldGraph.outgoingConnections(config.zoneId)
+            .firstOrNull { connection ->
+                content.schemaCatalog.worldGraph.destinationFor(config.zoneId, connection) == nextZoneId
+            }?.let { connection ->
+                RouteAdvanceOption(
+                    connection = connection,
+                    destinationZoneId = nextZoneId,
+                    reward = routeRewardFor(connection.id),
+                )
+            }
+    }
+
+    private fun availableRouteAdvanceOptions(): List<RouteAdvanceOption> {
+        val immediatePreviousZoneId = config.zoneRoute.getOrNull(config.routeIndex - 1)
+        return content.schemaCatalog.worldGraph.outgoingConnections(config.zoneId)
+            .map { connection ->
+                RouteAdvanceOption(
+                    connection = connection,
+                    destinationZoneId = content.schemaCatalog.worldGraph.destinationFor(config.zoneId, connection),
+                    reward = routeRewardFor(connection.id),
+                )
+            }.filter { option ->
+                worldProgress.satisfies(option.connection.gate)
+            }.filter { option ->
+                option.destinationZoneId != config.zoneId
+            }.sortedWith(
+                compareBy<RouteAdvanceOption> { option -> if (option.destinationZoneId == immediatePreviousZoneId) 1 else 0 }
+                    .thenBy { option -> zoneSchemaFor(option.destinationZoneId).recommendedLevel.min }
+                    .thenBy { option -> option.destinationZoneId },
+            )
+    }
+
+    private fun claimRouteReward(
+        option: RouteAdvanceOption,
+        claimPolicy: RewardClaimPolicy,
+        dropPoint: Point?,
+    ) {
+        val reward = option.reward ?: return
+        if (reward.claimPolicy != claimPolicy || reward.routeId in worldProgress.claimedRouteRewards) {
+            return
+        }
+        grantShards(reward.shardReward)
+        dropPoint?.let { point ->
+            reward.guaranteedDropIds.forEach { baseId ->
+                itemBaseDef(baseId)?.toRuntimeItem()?.let { rewardItem ->
+                    grantRewardItem(rewardItem, point)
+                }
+            }
+        }
+        worldProgress = worldProgress.withClaimedRouteReward(reward.routeId)
+    }
+
+    private fun shopOfferLabelKey(offer: ShopOffer): String =
+        when {
+            offer.itemBaseId != null -> {
+                val itemBaseId = requireNotNull(offer.itemBaseId)
+                requireNotNull(itemSchemaFor(itemBaseId)) { "Unknown shop item '$itemBaseId'." }.nameKey
+            }
+            offer.inscriptionId != null ->
+                requireNotNull(content.inscriptions.firstOrNull { inscription -> inscription.id == offer.inscriptionId }) {
+                    "Unknown shop inscription '${offer.inscriptionId}'."
+                }.nameKey
+            else -> error("Shop offer '${offer.id}' is missing both itemBaseId and inscriptionId.")
+        }
+
+    private fun ZoneSchemaV2.toLevelBandRef(): String = "lv${recommendedLevel.min}_${recommendedLevel.max}"
 
     private fun activeBossEncounterSchema() =
         activeBossDefinition()?.encounterId?.let { encounterId ->
@@ -1619,10 +1995,10 @@ class FoundationGameSession internal constructor(
 
     private fun rewardPreferenceOrder(): List<String> =
         when (config.playerProfessionId) {
-            "vanguard" -> listOf("forgebreaker_pick", "basic_shield", "chain_mail", "war_maul", "healing_potion", "scroll_teleport")
-            "arcanist" -> listOf("seal_reliquary", "emerald_charm", "mana_potion", "apprentice_robe", "scroll_teleport", "healing_potion")
-            "rogue" -> listOf("bandit_trophy", "hunter_bow", "leather_armor", "energy_tonic", "scroll_teleport", "healing_potion")
-            "templar" -> listOf("sanctified_seal", "long_sword", "basic_shield", "chain_mail", "consecrated_oil", "healing_potion")
+            "vanguard" -> listOf("abyssal_heartstone", "forgebreaker_pick", "basic_shield", "chain_mail", "war_maul", "healing_potion", "scroll_teleport")
+            "arcanist" -> listOf("abyssal_heartstone", "seal_reliquary", "emerald_charm", "mana_potion", "apprentice_robe", "scroll_teleport", "healing_potion")
+            "rogue" -> listOf("abyssal_heartstone", "bandit_trophy", "hunter_bow", "leather_armor", "energy_tonic", "scroll_teleport", "healing_potion")
+            "templar" -> listOf("abyssal_heartstone", "sanctified_seal", "long_sword", "basic_shield", "chain_mail", "consecrated_oil", "healing_potion")
             else -> listOf("healing_potion", "scroll_teleport")
         }
 
@@ -1655,6 +2031,116 @@ class FoundationGameSession internal constructor(
             profileIds = activeBossEncounterSchema()?.rewards.orEmpty(),
             fallbackBaseId = "scroll_teleport",
         )
+
+    private data class ObjectiveProgressSpec(
+        val token: String,
+        val stepKey: String,
+    )
+
+    private data class RewardSpec(
+        val profileIds: List<String>,
+        val fallbackBaseId: String,
+    )
+
+    private fun objectiveProgressSpecFor(interactableId: String): ObjectiveProgressSpec? =
+        when (interactableId) {
+            "trail_cache" -> ObjectiveProgressSpec("greenwood.trail_cache", "objective.greenwood_signal_hunt.step.trail_cache_opened")
+            "ore_stash" -> ObjectiveProgressSpec("deep_iron_pit.ore_stash", "objective.deep_iron_pit_forge_run.step.ore_stash_opened")
+            "seal_cache" -> ObjectiveProgressSpec("grey_gate.seal_cache", "objective.grey_gate_seal_rite.step.seal_cache_opened")
+            "alarm_bonfire" -> ObjectiveProgressSpec("shattered_outpost.alarm_triggered", "objective.shattered_outpost_breach.step.alarm_triggered")
+            "warden_beacon" -> ObjectiveProgressSpec("greenwood.warden_beacon", "objective.greenwood_signal_hunt.step.warden_beacon_triggered")
+            "slag_valve" -> ObjectiveProgressSpec("deep_iron_pit.slag_valve", "objective.deep_iron_pit_forge_run.step.slag_valve_opened")
+            "shadow_brazier" -> ObjectiveProgressSpec("grey_gate.shadow_brazier", "objective.grey_gate_seal_rite.step.shadow_brazier_lit")
+            "armory_gate" -> ObjectiveProgressSpec("shattered_outpost.armory_opened", "objective.shattered_outpost_breach.step.armory_opened")
+            "hunter_snare" -> ObjectiveProgressSpec("greenwood.hunter_snare", "objective.greenwood_signal_hunt.step.hunter_snare_cut")
+            "mine_furnace" -> ObjectiveProgressSpec("deep_iron_pit.mine_furnace", "objective.deep_iron_pit_forge_run.step.furnace_claimed")
+            "ritual_altar" -> ObjectiveProgressSpec("grey_gate.ritual_altar", "objective.grey_gate_seal_rite.step.ritual_altar_secured")
+            "bandit_cache" -> ObjectiveProgressSpec("bandit_camp.cache_raided", "objective.bandit_camp_cache_raid.step.cache_raided")
+            "elven_wardstone" -> ObjectiveProgressSpec("elven_ruins.wardstone_claimed", "objective.elven_ruins_relic_ward.step.wardstone_claimed")
+            "molten_pressure_valve" -> ObjectiveProgressSpec("molten_core.pressure_stabilized", "objective.molten_core_pressure.step.pressure_stabilized")
+            "crystal_resonance_node" -> ObjectiveProgressSpec("crystal_cavern.node_attuned", "objective.crystal_cavern_resonance.step.node_attuned")
+            "river_ferry_anchor" -> ObjectiveProgressSpec("underground_river.ferry_anchor_secured", "objective.underground_river_crossing.step.ferry_anchor_secured")
+            "temple_ward_reliquary" -> ObjectiveProgressSpec("abyssal_temple.ward_reliquary_claimed", "objective.abyssal_temple_sanctum.step.ward_reliquary_claimed")
+            "heart_ward_focus" -> ObjectiveProgressSpec("abyssal_heart.ward_stabilized", "objective.abyssal_heart_finale.step.ward_stabilized")
+            else -> null
+        }
+
+    private fun optionalZoneRewardSpec(): RewardSpec =
+        RewardSpec(
+            profileIds = ZoneMechanicRuntime.uniqueContentRewardProfiles(currentZoneSchema().uniqueContentTag),
+            fallbackBaseId = ZoneMechanicRuntime.uniqueContentFallbackBaseId(currentZoneSchema().uniqueContentTag),
+        )
+
+    private fun groundRewardSpecFor(interactableId: String): RewardSpec? =
+        when (interactableId) {
+            "supply_crate" -> RewardSpec(profileIds = emptyList(), fallbackBaseId = "scroll_teleport")
+            "trail_cache" -> RewardSpec(listOf("loot.greenwood_fringe.reward", "loot.foundation.common"), "healing_potion")
+            "ore_stash" -> RewardSpec(listOf("loot.deep_iron_pit.reward", "loot.foundation.elite"), "stamina_draught")
+            "seal_cache" -> RewardSpec(listOf("loot.grey_gate_depths.reward", "loot.foundation.boss"), "scroll_teleport")
+            "bandit_cache" -> optionalZoneRewardSpec()
+            else -> null
+        }
+
+    private fun supportRewardSpecFor(interactableId: String): RewardSpec? =
+        when (interactableId) {
+            "armory_gate" -> RewardSpec(listOf("loot.foundation.elite"), "healing_potion")
+            "hunter_snare" -> RewardSpec(listOf("loot.greenwood_fringe.reward", "loot.foundation.elite"), "bandit_trophy")
+            "mine_furnace" -> RewardSpec(listOf("loot.deep_iron_pit.reward", "loot.foundation.elite"), "forgebreaker_pick")
+            "ritual_altar" -> RewardSpec(listOf("loot.grey_gate_depths.reward", "loot.foundation.boss"), "sanctified_seal")
+            "elven_wardstone" -> optionalZoneRewardSpec()
+            "molten_pressure_valve" -> optionalZoneRewardSpec()
+            "crystal_resonance_node" -> optionalZoneRewardSpec()
+            "river_ferry_anchor" -> RewardSpec(listOf("loot.foundation.common", "loot.grey_gate_depths.reward"), "scroll_teleport")
+            "temple_ward_reliquary" -> RewardSpec(listOf("loot.foundation.boss", "loot.grey_gate_depths.reward"), "sanctified_seal")
+            "heart_ward_focus" -> RewardSpec(listOf("loot.foundation.boss"), "abyssal_heartstone")
+            else -> null
+        }
+
+    private fun groundRewardItemFor(spec: RewardSpec): ItemInstance =
+        if (spec.profileIds.isEmpty()) {
+            officialRewardItem(baseId = spec.fallbackBaseId, fallbackBaseId = "healing_potion")
+        } else {
+            zoneRewardItem(profileIds = spec.profileIds, fallbackBaseId = spec.fallbackBaseId)
+        }
+
+    private fun dropGroundRewardFromInteractable(
+        schema: InteractableSchemaV2,
+        position: Point,
+        spec: RewardSpec,
+    ) {
+        val reward = groundRewardItemFor(spec)
+        ItemFactory().createGroundItem(world, reward, position)
+        val rewardSchema = requireNotNull(itemSchemaFor(reward.baseId)) {
+            "Unknown item schema '${reward.baseId}'."
+        }
+        addMessage(
+            "log.interactable.supply_crate",
+            keyArg("interactable", schema.nameKey),
+            keyArg("item", rewardSchema.nameKey),
+        )
+    }
+
+    private fun grantSupportRewardFromInteractable(
+        schema: InteractableSchemaV2,
+        position: Point,
+        spec: RewardSpec,
+    ) {
+        val reward = zoneRewardItem(profileIds = spec.profileIds, fallbackBaseId = spec.fallbackBaseId)
+        grantRewardItem(reward, position)
+        val rewardSchema = requireNotNull(itemSchemaFor(reward.baseId)) {
+            "Unknown support reward item '${reward.baseId}'."
+        }
+        addMessage("log.interactable.support", keyArg("interactable", schema.nameKey))
+        addMessage(
+            "log.interactable.support.reward",
+            keyArg("interactable", schema.nameKey),
+            keyArg("item", rewardSchema.nameKey),
+        )
+        val restored = restoreArmorySupplies()
+        if (restored > 0) {
+            addMessage("log.interactable.support.resupply", literalArg("amount", restored))
+        }
+    }
 
     private fun alertCurrentFloorHostiles(): Int {
         val playerFaction = requireNotNull(world.get<FactionTag>(playerId)).value
@@ -1700,6 +2186,9 @@ class FoundationGameSession internal constructor(
         val objective = currentObjectiveSetSchema() ?: return
         if (!objectiveProgressTokens.add(token)) {
             return
+        }
+        if (objective.linkedQuestId != null) {
+            updateCurrentObjectiveState(ObjectiveRuntimeEvaluator::onProgressRecorded)
         }
         addMessage(
             "log.objective.progress",
@@ -1872,6 +2361,7 @@ class FoundationGameSession internal constructor(
             pendingActions.removeFirstOrNull()
             activeTurnActor = null
             turnCount += 1
+            headlessTurnEquivalent += 1
             advanceUntilPlayerTurn()
             maybePersistCheckpoint(resolution)
         }
@@ -1933,6 +2423,7 @@ class FoundationGameSession internal constructor(
             executeMonsterTurn(nextActor)
             finishActorTurn(nextActor)
             activeTurnActor = null
+            headlessTurnEquivalent += 1
         }
     }
 
@@ -2096,8 +2587,23 @@ class FoundationGameSession internal constructor(
         }
     }
 
-    private fun executePlayerCommand(command: PlayerCommand): CommandResolution =
-        when (command) {
+    private fun executePlayerCommand(command: PlayerCommand): CommandResolution {
+        if (pendingRouteSelection.isNotEmpty() && command !is PlayerCommand.SelectRoute && command != PlayerCommand.SaveGame) {
+            addMessage("log.route.selection.pending")
+            return CommandResolution.rejected()
+        }
+        if (
+            activeShopId != null &&
+            command !is PlayerCommand.CloseShop &&
+            command !is PlayerCommand.BuyShopOffer &&
+            command !is PlayerCommand.SellInventoryItem &&
+            command != PlayerCommand.SaveGame
+        ) {
+            addMessage("log.shop.pending")
+            return CommandResolution.rejected()
+        }
+
+        return when (command) {
             PlayerCommand.Wait -> {
                 addMessage("log.wait")
                 CommandResolution.accepted()
@@ -2117,15 +2623,31 @@ class FoundationGameSession internal constructor(
 
             PlayerCommand.Interact -> interactAtPlayerPosition()
 
-            PlayerCommand.Ascend -> CommandResolution(transitionFloor(StairDirection.UP), consumesTurn = true, persistCheckpointAfterTurn = true)
+            PlayerCommand.Ascend -> resolveStairCommand(StairDirection.UP)
 
-            PlayerCommand.Descend -> CommandResolution(transitionFloor(StairDirection.DOWN), consumesTurn = true, persistCheckpointAfterTurn = true)
+            PlayerCommand.Descend -> resolveStairCommand(StairDirection.DOWN)
 
             PlayerCommand.SaveGame -> {
                 val saved = persistRun()
                 addMessage(if (saved) "log.save.success" else "log.save.failure")
                 CommandResolution(accepted = true, consumesTurn = false)
             }
+
+            PlayerCommand.CloseShop -> {
+                if (activeShopId == null) {
+                    CommandResolution.rejected()
+                } else {
+                    activeShopId = null
+                    addMessage("log.shop.close")
+                    CommandResolution(accepted = true, consumesTurn = false)
+                }
+            }
+
+            is PlayerCommand.BuyShopOffer -> buyShopOffer(command.index)
+
+            is PlayerCommand.SellInventoryItem -> sellInventoryItem(command.index)
+
+            is PlayerCommand.SelectRoute -> selectRoute(command.index)
 
             is PlayerCommand.AssignStat -> {
                 val experience = requireNotNull(world.get<Experience>(playerId))
@@ -2273,6 +2795,7 @@ class FoundationGameSession internal constructor(
 
             is PlayerCommand.EquipTalentToSlot -> {
                 val loadout = requireNotNull(world.get<TalentLoadout>(playerId)) { "Missing TalentLoadout for $playerId." }
+                syncUnlockedPlayerTalents()
                 if (command.slot !in 1..PLAYER_ACTIVE_TALENT_SLOT_COUNT) {
                     addMessage("log.loadout.invalid_slot", literalArg("slot", command.slot))
                     CommandResolution.rejected()
@@ -2400,6 +2923,201 @@ class FoundationGameSession internal constructor(
                 val used = useInscription(command.hotkey, command.target)
                 CommandResolution(accepted = used, consumesTurn = used)
             }
+        }
+    }
+
+    private fun resolveStairCommand(direction: StairDirection): CommandResolution {
+        val transition = transitionFloor(direction)
+        return when (transition) {
+            TransitionOutcome.REJECTED -> CommandResolution.rejected()
+            TransitionOutcome.OPENED_ROUTE_SELECTION -> CommandResolution(accepted = true, consumesTurn = false)
+            TransitionOutcome.TRANSITIONED -> CommandResolution(accepted = true, consumesTurn = true, persistCheckpointAfterTurn = true)
+        }
+    }
+
+    private fun buyShopOffer(index: Int): CommandResolution {
+        val shop = currentShopNode() ?: return CommandResolution.rejected()
+        val offer = availableShopOffers().getOrNull(index)
+        if (offer == null) {
+            addMessage("log.shop.offer_missing")
+            return CommandResolution.rejected()
+        }
+        if (!ShardEconomy.canAfford(shardBalance, offer.price)) {
+            addMessage("log.shop.cannot_afford", literalArg("price", offer.price))
+            return CommandResolution.rejected()
+        }
+
+        when {
+            offer.itemBaseId != null -> {
+                val itemBaseId = requireNotNull(offer.itemBaseId)
+                val rewardItem =
+                    requireNotNull(itemBaseDef(itemBaseId)) { "Unknown shop item '$itemBaseId'." }
+                        .toRuntimeItem()
+                val stored = grantRewardItem(rewardItem, playerPosition())
+                shardBalance -= offer.price
+                markShopOfferPurchased(shop.id, offer.id)
+                addMessage(
+                    if (stored) "log.shop.buy.item" else "log.shop.buy.item_dropped",
+                    keyArg("shop", shop.nameKey),
+                    keyArg("item", requireNotNull(itemSchemaFor(itemBaseId)).nameKey),
+                    literalArg("price", offer.price),
+                )
+                return CommandResolution(accepted = true, consumesTurn = false)
+            }
+
+            offer.inscriptionId != null -> {
+                ensurePlayerInscriptions()
+                val loadout = world.get<InscriptionLoadout>(playerId) ?: return CommandResolution.rejected()
+                val definition =
+                    requireNotNull(content.inscriptions.firstOrNull { inscription -> inscription.id == offer.inscriptionId }) {
+                        "Unknown shop inscription '${offer.inscriptionId}'."
+                    }
+                val equippedDefinitions =
+                    loadout.slots.mapNotNull { slot ->
+                        content.inscriptions.firstOrNull { inscription -> inscription.id == slot.inscriptionId }
+                    }
+                if (!InscriptionManager.canEquip(loadout, equippedDefinitions, definition)) {
+                    addMessage("log.shop.inscription_slots_full", keyArg("inscription", definition.nameKey))
+                    return CommandResolution.rejected()
+                }
+                InscriptionManager.equip(loadout, equippedDefinitions, definition)
+                shardBalance -= offer.price
+                markShopOfferPurchased(shop.id, offer.id)
+                addMessage(
+                    "log.shop.buy.inscription",
+                    keyArg("shop", shop.nameKey),
+                    keyArg("inscription", definition.nameKey),
+                    literalArg("price", offer.price),
+                )
+                return CommandResolution(accepted = true, consumesTurn = false)
+            }
+
+            else -> return CommandResolution.rejected()
+        }
+    }
+
+    private fun canPurchaseShopOffer(offer: ShopOffer): Boolean {
+        if (!ShardEconomy.canAfford(shardBalance, offer.price)) {
+            return false
+        }
+        return when {
+            offer.itemBaseId != null -> true
+            offer.inscriptionId != null -> {
+                ensurePlayerInscriptions()
+                val loadout = world.get<InscriptionLoadout>(playerId) ?: return false
+                val definition =
+                    requireNotNull(content.inscriptions.firstOrNull { inscription -> inscription.id == offer.inscriptionId }) {
+                        "Unknown shop inscription '${offer.inscriptionId}'."
+                    }
+                val equippedDefinitions =
+                    loadout.slots.mapNotNull { slot ->
+                        content.inscriptions.firstOrNull { inscription -> inscription.id == slot.inscriptionId }
+                    }
+                InscriptionManager.canEquip(loadout, equippedDefinitions, definition)
+            }
+            else -> false
+        }
+    }
+
+    private fun sellInventoryItem(index: Int): CommandResolution {
+        val shop = currentShopNode() ?: return CommandResolution.rejected()
+        val inventory = world.get<Inventory>(playerId) ?: return CommandResolution.rejected()
+        val itemId = inventory.itemIds.getOrNull(index)
+        if (itemId == null) {
+            addMessage("log.inventory.slot_empty")
+            return CommandResolution.rejected()
+        }
+        val item = requireNotNull(world.get<ItemInstance>(itemId)) { "Missing inventory item '$itemId'." }
+        equippedSlotForItem(itemId)?.let { slot ->
+            world.get<Equipment>(playerId)?.slots?.remove(slot)
+        }
+        inventory.itemIds.removeAt(index)
+        world.destroyEntity(itemId)
+        val sellValue = sellValueForItem(item)
+        shardBalance += sellValue
+        StatsCalculator.recalculateAndStore(world, playerId)
+        ensurePlayerResourcePools()
+        syncPlayerResistanceProfile()
+        addMessage(
+            "log.shop.sell",
+            keyArg("shop", shop.nameKey),
+            keyArg("item", requireNotNull(itemSchemaFor(item.baseId)).nameKey),
+            literalArg("price", sellValue),
+        )
+        return CommandResolution(accepted = true, consumesTurn = false)
+    }
+
+    private fun selectRoute(index: Int): CommandResolution {
+        val option = pendingRouteSelection.getOrNull(index)
+        if (option == null) {
+            addMessage("log.route.selection.invalid")
+            return CommandResolution.rejected()
+        }
+        pendingRouteSelection = emptyList()
+        completeZoneTransition(option)
+        addMessage(
+            "log.route.selection.confirmed",
+            keyArg("zone", zoneSchemaFor(option.destinationZoneId).nameKey),
+        )
+        return CommandResolution(accepted = true, consumesTurn = false, persistCheckpointAfterTurn = true)
+    }
+
+    private fun markShopOfferPurchased(
+        shopId: String,
+        offerId: String,
+    ) {
+        val state = shopStates[shopId] ?: ShopInventoryState(shopId = shopId)
+        shopStates[shopId] = state.copy(purchasedOfferIds = state.purchasedOfferIds + offerId)
+    }
+
+    private fun equippedSlotForItem(itemId: EntityId): EquipSlot? =
+        world.get<Equipment>(playerId)
+            ?.slots
+            ?.entries
+            ?.firstOrNull { (_, equippedItemId) -> equippedItemId == itemId }
+            ?.key
+
+    private fun sellValueForInventoryIndex(index: Int): Int {
+        val itemId = world.get<Inventory>(playerId)?.itemIds?.getOrNull(index)
+            ?: return 0
+        val item = world.get<ItemInstance>(itemId) ?: return 0
+        return sellValueForItem(item)
+    }
+
+    private fun sellValueForItem(item: ItemInstance): Int {
+        val basePrice =
+            when (item.type) {
+                ItemType.WEAPON -> 32
+                ItemType.ARMOR -> 30
+                ItemType.CONSUMABLE -> 18
+            }
+        val qualityPrice =
+            when (item.quality) {
+                ItemQuality.COMMON -> 0
+                ItemQuality.MAGIC -> 14
+                ItemQuality.RARE -> 30
+            }
+        val affixPrice = item.affixes.sumOf { affix -> affix.tier * 8 }
+        val magnitudePrice = (item.magnitude / 4).coerceAtLeast(0)
+        val materialPrice = item.materialId?.let(::materialSchemaFor)?.minFloor?.times(3) ?: 0
+        return ShardEconomy.sellValue(basePrice + qualityPrice + affixPrice + magnitudePrice + materialPrice)
+    }
+
+    private fun grantShards(amount: Int) {
+        if (amount <= 0) {
+            return
+        }
+        shardBalance += amount
+        addMessage("log.shard.gain", literalArg("amount", amount))
+    }
+
+    private fun shardRewardForKill(
+        isBoss: Boolean,
+    ): Int =
+        if (isBoss) {
+            12 + currentZoneSchema().recommendedLevel.min * 2
+        } else {
+            maxOf(3, currentFloor() + currentZoneSchema().recommendedLevel.min / 2)
         }
 
     private fun useInscription(
@@ -3292,10 +4010,11 @@ class FoundationGameSession internal constructor(
         }
 
         val activeBossTemplateId = activeBossDefinition()?.template?.id
+        val defeatedBossTemplateId = world.get<MonsterTemplateId>(target)?.value
         val isBoss =
             currentFloor() == config.maxFloor &&
                 activeBossTemplateId != null &&
-                world.get<MonsterTemplateId>(target)?.value == activeBossTemplateId
+                defeatedBossTemplateId == activeBossTemplateId
 
         addMessage("log.entity.death", deathTargetArg)
         val monsterDropArg = entityArg("monster", target)
@@ -3311,6 +4030,9 @@ class FoundationGameSession internal constructor(
         if (killer == playerId && reward > 0) {
             gainExperience(reward)
         }
+        if (killer == playerId) {
+            grantShards(shardRewardForKill(isBoss = isBoss))
+        }
         if (deathPoint != null && droppedLoot != null) {
             ItemFactory().createGroundItem(world, droppedLoot, deathPoint)
             addMessage(
@@ -3321,6 +4043,10 @@ class FoundationGameSession internal constructor(
             )
         }
         if (isBoss) {
+            defeatedBossTemplateId?.let { bossId ->
+                worldProgress = worldProgress.withDefeatedBoss(bossId)
+            }
+            val objectiveCompleted = completeCurrentZoneQuest(ObjectiveCompletionTrigger.BOSS_DEFEAT)
             deathPoint?.let { point ->
                 val bossReward = activeBossRewardItem()
                 val stored = grantRewardItem(bossReward, point)
@@ -3336,17 +4062,21 @@ class FoundationGameSession internal constructor(
                     keyArg("item", rewardSchema.nameKey),
                 )
             }
-            currentObjectiveSetSchema()?.let { objective ->
-                addMessage("log.objective.complete", keyArg("objective", objective.nameKey))
+            if (objectiveCompleted) {
+                currentObjectiveSetSchema()?.let { objective ->
+                    addMessage("log.objective.complete", keyArg("objective", objective.nameKey))
+                }
             }
-            if (advanceToNextZoneInRoute()) {
-                addMessage("log.route.advance", keyArg("zone", currentZoneSchema().nameKey))
-            } else {
-                runOutcome = RunOutcome.Victory(currentFloor())
-                pendingActions.clear()
-                activeTurnActor = null
-                saveManager.deleteSave()
-                addMessage("log.victory", deathTargetArg)
+            when (beginZoneAdvance()) {
+                TransitionOutcome.REJECTED -> Unit
+                TransitionOutcome.OPENED_ROUTE_SELECTION -> Unit
+                TransitionOutcome.TRANSITIONED -> {
+                    if (runOutcome.isTerminal) {
+                        addMessage("log.victory", deathTargetArg)
+                    } else {
+                        addMessage("log.route.advance", keyArg("zone", currentZoneSchema().nameKey))
+                    }
+                }
             }
         }
     }
@@ -3465,7 +4195,7 @@ class FoundationGameSession internal constructor(
         StatsCalculator.recalculateAndStore(world, playerId)
     }
 
-    private fun transitionFloor(direction: StairDirection): Boolean {
+    private fun transitionFloor(direction: StairDirection): TransitionOutcome {
         val requiredStair =
             when (direction) {
                 StairDirection.UP -> activeFloorState.stairsUp
@@ -3478,20 +4208,28 @@ class FoundationGameSession internal constructor(
                     StairDirection.DOWN -> "log.stairs.missing_down"
                 },
             )
-            return false
+            return TransitionOutcome.REJECTED
         }
 
         if (direction == StairDirection.DOWN && currentFloor() == config.maxFloor && activeBossDefinition() == null) {
-            if (advanceToNextZoneInRoute()) {
-                addMessage("log.route.advance", keyArg("zone", currentZoneSchema().nameKey))
-                return true
+            val objectiveCompleted = completeCurrentZoneQuest(ObjectiveCompletionTrigger.ZONE_EXIT)
+            if (objectiveCompleted) {
+                currentObjectiveSetSchema()?.let { objective ->
+                    addMessage("log.objective.complete", keyArg("objective", objective.nameKey))
+                }
             }
-            runOutcome = RunOutcome.Victory(currentFloor())
-            pendingActions.clear()
-            activeTurnActor = null
-            saveManager.deleteSave()
-            addMessage("log.victory.escape")
-            return true
+            return when (beginZoneAdvance()) {
+                TransitionOutcome.REJECTED -> TransitionOutcome.REJECTED
+                TransitionOutcome.OPENED_ROUTE_SELECTION -> TransitionOutcome.OPENED_ROUTE_SELECTION
+                TransitionOutcome.TRANSITIONED -> {
+                    if (runOutcome.isTerminal) {
+                        addMessage("log.victory.escape")
+                    } else {
+                        addMessage("log.route.advance", keyArg("zone", currentZoneSchema().nameKey))
+                    }
+                    TransitionOutcome.TRANSITIONED
+                }
+            }
         }
 
         syncActiveFloorState()
@@ -3518,7 +4256,7 @@ class FoundationGameSession internal constructor(
             )
             addMessage("log.objective.advance")
         }
-        return true
+        return TransitionOutcome.TRANSITIONED
     }
 
     private fun persistRun(): Boolean {
@@ -3543,8 +4281,12 @@ class FoundationGameSession internal constructor(
                 config = config,
                 currentFloor = currentFloor(),
                 turnCount = turnCount,
+                headlessTurnEquivalent = headlessTurnEquivalent,
                 player = playerSnapshot,
                 floors = floors,
+                worldProgress = worldProgress,
+                shardBalance = shardBalance,
+                shopStates = shopStates(),
                 combatRandomState = (combatRandomSource as? StatefulRandomSource)?.snapshotState(),
                 sessionRandomState = (sessionRandom as? StatefulRandomSource)?.snapshotState(),
                 pendingActionIds = serializedPendingActionIds,
@@ -3565,17 +4307,58 @@ class FoundationGameSession internal constructor(
         }
     }
 
-    private fun advanceToNextZoneInRoute(): Boolean {
-        val nextRouteIndex = config.routeIndex + 1
-        if (nextRouteIndex !in config.zoneRoute.indices) {
-            return false
+    private fun beginZoneAdvance(): TransitionOutcome {
+        val plannedOption = plannedRouteAdvanceOption()
+        if (plannedOption != null) {
+            if (!worldProgress.satisfies(plannedOption.connection.gate)) {
+                addMessage("log.route.blocked")
+                return TransitionOutcome.REJECTED
+            }
+            completeZoneTransition(plannedOption)
+            return TransitionOutcome.TRANSITIONED
+        }
+        if ("finale" in currentZoneSchema().tags) {
+            finalizeVictory()
+            return TransitionOutcome.TRANSITIONED
+        }
+        if (isolatedZoneSlice) {
+            finalizeVictory()
+            return TransitionOutcome.TRANSITIONED
         }
 
+        val availableOptions = availableRouteAdvanceOptions()
+        if (availableOptions.isEmpty()) {
+            finalizeVictory()
+            return TransitionOutcome.TRANSITIONED
+        }
+        if (availableOptions.size == 1) {
+            completeZoneTransition(availableOptions.single())
+            return TransitionOutcome.TRANSITIONED
+        }
+        pendingRouteSelection = availableOptions
+        addMessage("log.route.selection.open", literalArg("count", availableOptions.size))
+        return TransitionOutcome.OPENED_ROUTE_SELECTION
+    }
+
+    private fun completeZoneTransition(option: RouteAdvanceOption) {
+        pendingRouteSelection = emptyList()
+        worldProgress = worldProgress.withUnlockedRoute(option.connection.id)
+        claimRouteReward(option, claimPolicy = RewardClaimPolicy.ON_ROUTE_UNLOCK, dropPoint = playerPosition())
+        claimRouteReward(option, claimPolicy = RewardClaimPolicy.ON_FIRST_ROUTE_CLEAR, dropPoint = playerPosition())
+
         syncActiveFloorState()
+        val nextRouteIndex = config.routeIndex + 1
+        val nextRoute =
+            if (plannedNextZoneId() == option.destinationZoneId) {
+                config.zoneRoute
+            } else {
+                config.zoneRoute.take(config.routeIndex + 1) + option.destinationZoneId
+            }
         val nextConfig =
             config.copy(
                 floor = 1,
-                zoneId = config.zoneRoute[nextRouteIndex],
+                zoneId = option.destinationZoneId,
+                zoneRoute = nextRoute,
                 routeIndex = nextRouteIndex,
             )
         val nextRuntime = zoneRuntimeFactory(nextConfig)
@@ -3595,10 +4378,18 @@ class FoundationGameSession internal constructor(
         syncPlayerResistanceProfile()
         pendingActions.clear()
         activeTurnActor = null
+        activeShopId = null
         nextRuntime.initialMessages.forEach(::addMessage)
         checkpointRequested = true
         refreshFov()
-        return true
+    }
+
+    private fun finalizeVictory() {
+        runOutcome = RunOutcome.Victory(currentFloor())
+        pendingRouteSelection = emptyList()
+        pendingActions.clear()
+        activeTurnActor = null
+        saveManager.deleteSave()
     }
 
     private fun restorePendingTurnState() {
@@ -3612,6 +4403,22 @@ class FoundationGameSession internal constructor(
                 ?.let(::EntityId)
                 ?.takeIf(world::isAlive)
                 ?.takeIf { actorId -> actorId in pendingActions }
+    }
+
+    private fun restorePendingZoneAdvanceIfNeeded() {
+        if (isolatedZoneSlice || runOutcome.isTerminal || currentFloor() != config.maxFloor || activeFloorState.stairsDown != null) {
+            return
+        }
+        val activeBoss = activeBossDefinition() ?: return
+        val bossAlive =
+            world.entitiesWith(MonsterTemplateId::class, Health::class)
+                .any { entityId ->
+                    world.get<MonsterTemplateId>(entityId)?.value == activeBoss.template.id &&
+                        (world.get<Health>(entityId)?.current ?: 0) > 0
+                }
+        if (!bossAlive) {
+            pendingRouteSelection = availableRouteAdvanceOptions()
+        }
     }
 
     private fun ensurePlayerResourcePools() {
@@ -4010,66 +4817,24 @@ class FoundationGameSession internal constructor(
         val position = requireNotNull(world.get<Position>(entityId)).toPoint()
 
         when (interactable.id) {
-            "supply_crate" -> {
-                val reward = officialRewardItem(baseId = "scroll_teleport", fallbackBaseId = "healing_potion")
-                ItemFactory().createGroundItem(world, reward, position)
-                val rewardSchema = requireNotNull(itemSchemaFor(reward.baseId)) {
-                    "Unknown item schema '${reward.baseId}'."
+            "merchant_stall" -> {
+                val shop = configuredShopNode()
+                if (shop == null) {
+                    addMessage("log.interactable.none")
+                    return CommandResolution.rejected()
                 }
-                addMessage(
-                    "log.interactable.supply_crate",
-                    keyArg("interactable", schema.nameKey),
-                    keyArg("item", rewardSchema.nameKey),
-                )
+                activeShopId = shop.id
+                addMessage("log.shop.open", keyArg("shop", shop.nameKey))
+                return CommandResolution(accepted = true, consumesTurn = false)
             }
 
-            "trail_cache",
-            "ore_stash",
-            "seal_cache",
-            -> {
-                val reward =
-                    when (interactable.id) {
-                        "trail_cache" ->
-                            zoneRewardItem(
-                                profileIds = listOf("loot.greenwood_fringe.reward", "loot.foundation.common"),
-                                fallbackBaseId = "healing_potion",
-                            )
-                        "ore_stash" ->
-                            zoneRewardItem(
-                                profileIds = listOf("loot.deep_iron_pit.reward", "loot.foundation.elite"),
-                                fallbackBaseId = "stamina_draught",
-                            )
-                        else ->
-                            zoneRewardItem(
-                                profileIds = listOf("loot.grey_gate_depths.reward", "loot.foundation.boss"),
-                                fallbackBaseId = "scroll_teleport",
-                            )
-                    }
-                ItemFactory().createGroundItem(world, reward, position)
-                val rewardSchema = requireNotNull(itemSchemaFor(reward.baseId)) {
-                    "Unknown item schema '${reward.baseId}'."
+            in setOf("supply_crate", "trail_cache", "ore_stash", "seal_cache", "bandit_cache") -> {
+                val rewardSpec = requireNotNull(groundRewardSpecFor(interactable.id)) {
+                    "Missing ground reward spec for interactable '${interactable.id}'."
                 }
-                addMessage(
-                    "log.interactable.supply_crate",
-                    keyArg("interactable", schema.nameKey),
-                    keyArg("item", rewardSchema.nameKey),
-                )
-                when (interactable.id) {
-                    "trail_cache" ->
-                        recordObjectiveProgress(
-                            token = "greenwood.trail_cache",
-                            stepKey = "objective.greenwood_signal_hunt.step.trail_cache_opened",
-                        )
-                    "ore_stash" ->
-                        recordObjectiveProgress(
-                            token = "deep_iron_pit.ore_stash",
-                            stepKey = "objective.deep_iron_pit_forge_run.step.ore_stash_opened",
-                        )
-                    "seal_cache" ->
-                        recordObjectiveProgress(
-                            token = "grey_gate.seal_cache",
-                            stepKey = "objective.grey_gate_seal_rite.step.seal_cache_opened",
-                        )
+                dropGroundRewardFromInteractable(schema, position, rewardSpec)
+                objectiveProgressSpecFor(interactable.id)?.let { progress ->
+                    recordObjectiveProgress(token = progress.token, stepKey = progress.stepKey)
                 }
             }
 
@@ -4082,10 +4847,9 @@ class FoundationGameSession internal constructor(
                 spawnAlarmReinforcement(position)?.let { reinforcementId ->
                     addMessage("log.interactable.alarm_bonfire.reinforcement", entityArg("monster", reinforcementId))
                 }
-                recordObjectiveProgress(
-                    token = "shattered_outpost.alarm_triggered",
-                    stepKey = "objective.shattered_outpost_breach.step.alarm_triggered",
-                )
+                objectiveProgressSpecFor(interactable.id)?.let { progress ->
+                    recordObjectiveProgress(token = progress.token, stepKey = progress.stepKey)
+                }
             }
 
             "warden_beacon",
@@ -4100,102 +4864,33 @@ class FoundationGameSession internal constructor(
                 spawnAlarmReinforcement(position)?.let { reinforcementId ->
                     addMessage("log.interactable.alarm_bonfire.reinforcement", entityArg("monster", reinforcementId))
                 }
-                when (interactable.id) {
-                    "warden_beacon" ->
-                        recordObjectiveProgress(
-                            token = "greenwood.warden_beacon",
-                            stepKey = "objective.greenwood_signal_hunt.step.warden_beacon_triggered",
-                        )
-                    "slag_valve" ->
-                        recordObjectiveProgress(
-                            token = "deep_iron_pit.slag_valve",
-                            stepKey = "objective.deep_iron_pit_forge_run.step.slag_valve_opened",
-                        )
-                    "shadow_brazier" ->
-                        recordObjectiveProgress(
-                            token = "grey_gate.shadow_brazier",
-                            stepKey = "objective.grey_gate_seal_rite.step.shadow_brazier_lit",
-                        )
+                objectiveProgressSpecFor(interactable.id)?.let { progress ->
+                    recordObjectiveProgress(token = progress.token, stepKey = progress.stepKey)
                 }
             }
 
-            "armory_gate" -> {
-                addMessage("log.interactable.armory_gate", keyArg("interactable", schema.nameKey))
-                val reward = supportRewardItem()
-                grantRewardItem(reward, position)
-                val rewardSchema = requireNotNull(itemSchemaFor(reward.baseId)) {
-                    "Unknown support reward item '${reward.baseId}'."
+            in setOf(
+                "armory_gate",
+                "hunter_snare",
+                "mine_furnace",
+                "ritual_altar",
+                "elven_wardstone",
+                "molten_pressure_valve",
+                "crystal_resonance_node",
+                "river_ferry_anchor",
+                "temple_ward_reliquary",
+                "heart_ward_focus",
+            ) -> {
+                val rewardSpec = requireNotNull(supportRewardSpecFor(interactable.id)) {
+                    "Missing support reward spec for interactable '${interactable.id}'."
                 }
-                addMessage(
-                    "log.interactable.armory_gate.reward",
-                    keyArg("interactable", schema.nameKey),
-                    keyArg("item", rewardSchema.nameKey),
-                )
-                val restored = restoreArmorySupplies()
-                if (restored > 0) {
-                    addMessage("log.interactable.armory_gate.resupply", literalArg("amount", restored))
+                grantSupportRewardFromInteractable(schema, position, rewardSpec)
+                objectiveProgressSpecFor(interactable.id)?.let { progress ->
+                    recordObjectiveProgress(token = progress.token, stepKey = progress.stepKey)
                 }
-                recordObjectiveProgress(
-                    token = "shattered_outpost.armory_opened",
-                    stepKey = "objective.shattered_outpost_breach.step.armory_opened",
-                )
-                addMessage("log.objective.advance")
-            }
-
-            "hunter_snare",
-            "mine_furnace",
-            "ritual_altar",
-            -> {
-                addMessage("log.interactable.armory_gate", keyArg("interactable", schema.nameKey))
-                val reward =
-                    when (interactable.id) {
-                        "hunter_snare" ->
-                            zoneRewardItem(
-                                profileIds = listOf("loot.greenwood_fringe.reward", "loot.foundation.elite"),
-                                fallbackBaseId = "bandit_trophy",
-                            )
-                        "mine_furnace" ->
-                            zoneRewardItem(
-                                profileIds = listOf("loot.deep_iron_pit.reward", "loot.foundation.elite"),
-                                fallbackBaseId = "forgebreaker_pick",
-                            )
-                        else ->
-                            zoneRewardItem(
-                                profileIds = listOf("loot.grey_gate_depths.reward", "loot.foundation.boss"),
-                                fallbackBaseId = "sanctified_seal",
-                            )
-                    }
-                grantRewardItem(reward, position)
-                val rewardSchema = requireNotNull(itemSchemaFor(reward.baseId)) {
-                    "Unknown support reward item '${reward.baseId}'."
+                if (interactable.id in setOf("armory_gate", "hunter_snare", "mine_furnace", "ritual_altar")) {
+                    addMessage("log.objective.advance")
                 }
-                addMessage(
-                    "log.interactable.armory_gate.reward",
-                    keyArg("interactable", schema.nameKey),
-                    keyArg("item", rewardSchema.nameKey),
-                )
-                val restored = restoreArmorySupplies()
-                if (restored > 0) {
-                    addMessage("log.interactable.armory_gate.resupply", literalArg("amount", restored))
-                }
-                when (interactable.id) {
-                    "hunter_snare" ->
-                        recordObjectiveProgress(
-                            token = "greenwood.hunter_snare",
-                            stepKey = "objective.greenwood_signal_hunt.step.hunter_snare_cut",
-                        )
-                    "mine_furnace" ->
-                        recordObjectiveProgress(
-                            token = "deep_iron_pit.mine_furnace",
-                            stepKey = "objective.deep_iron_pit_forge_run.step.furnace_claimed",
-                        )
-                    "ritual_altar" ->
-                        recordObjectiveProgress(
-                            token = "grey_gate.ritual_altar",
-                            stepKey = "objective.grey_gate_seal_rite.step.ritual_altar_secured",
-                        )
-                }
-                addMessage("log.objective.advance")
             }
 
             else -> {
@@ -5127,7 +5822,22 @@ class FoundationGameSession internal constructor(
             return null
         }
         val floorCandidates = candidateItems.filter { item -> currentFloor() in item.dropFloors }.ifEmpty { candidateItems }
-        return ItemGenerator(content.itemBundle, sessionRandom).generate(chooseWeightedLootItem(floorCandidates), currentFloor())
+        return ItemGenerator(content.itemBundle, sessionRandom).generate(
+            base = chooseWeightedLootItem(floorCandidates),
+            floor = currentFloor(),
+            affixContext = currentAffixBuildContext(),
+        )
+    }
+
+    private fun currentAffixBuildContext(): AffixSelectionContext {
+        val profession = currentProfessionSchema() ?: return AffixSelectionContext()
+        val loadout = world.get<TalentLoadout>(playerId)
+        val unlockedTalentIds = loadout?.let(::orderedUnlockedTalentIds)?.toSet() ?: profession.startingTalents.toSet()
+        return professionAffixBuildContext(
+            schemaCatalog = content.schemaCatalog,
+            profession = profession,
+            unlockedTalentIds = unlockedTalentIds,
+        )
     }
 
     private fun chooseWeightedLootItem(candidates: List<ItemBaseDef>): ItemBaseDef {
@@ -5228,21 +5938,33 @@ class FoundationGameSession internal constructor(
         }
     }
 
+    private enum class TransitionOutcome {
+        REJECTED,
+        OPENED_ROUTE_SELECTION,
+        TRANSITIONED,
+    }
+
     companion object {
         private const val COMBAT_RANDOM_SALT: Long = 0xC0FFEE
         private const val SESSION_RANDOM_SALT: Long = 0x51A17A
 
         private fun compatibilityContent(
+            config: FoundationGameConfig,
             talentRegistry: TalentRegistry,
             world: World,
             currentFloor: Int,
-        ): GameContent =
-            GameContent(
+        ): GameContent {
+            val monsterCatalog = compatibilityMonsterCatalog(world, currentFloor)
+            val compatibilityBossEncounterId =
+                world.entitiesWith(BossEncounterState::class)
+                    .firstOrNull()
+                    ?.let { "compatibility_boss_encounter" }
+            return GameContent(
                 talents = emptyList(),
                 statuses = emptyList(),
                 statusCatalog = com.ktome.core.status.StatusCatalog.EMPTY,
                 talentRegistry = talentRegistry,
-                monsterCatalog = compatibilityMonsterCatalog(world, currentFloor),
+                monsterCatalog = monsterCatalog,
                 itemBundle = compatibilityItemBundle(world, currentFloor),
                 bossDefinitions =
                     mapOf(
@@ -5289,7 +6011,32 @@ class FoundationGameSession internal constructor(
                         bossEncounters = emptyList(),
                         telegraphSpecs = emptyList(),
                         threatProfiles = emptyList(),
-                        zones = emptyList(),
+                        zones =
+                            listOf(
+                                ZoneSchemaV2(
+                                    id = config.zoneId,
+                                    nameKey = "zone.${config.zoneId}.name",
+                                    descKey = "zone.${config.zoneId}.desc",
+                                    visualKey = "zone.${config.zoneId}.visual",
+                                    iconKey = "zone.${config.zoneId}.icon",
+                                    audioProfile = "audio.zone.${config.zoneId}",
+                                    schemaVersion = 2,
+                                    tags = listOf("zone", "compatibility"),
+                                    biome = "compatibility",
+                                    floorCount = config.maxFloor,
+                                    mapSize = SchemaMapSize(width = config.width, height = config.height),
+                                    recommendedLevel = SchemaLevelRange(min = 1, max = maxOf(1, currentFloor)),
+                                    environmentTheme = "compatibility",
+                                    specialMechanics = emptyList(),
+                                    tilesetKey = "tileset.compatibility",
+                                    ambientProfile = "ambient.compatibility",
+                                    worldRole = "compatibility",
+                                    monsterPools = monsterCatalog.map(MonsterTemplate::id),
+                                    elitePools = emptyList(),
+                                    bossEncounterId = compatibilityBossEncounterId,
+                                    objectiveSetId = null,
+                                ),
+                            ),
                         interactables = emptyList(),
                         objectiveSets = emptyList(),
                         difficulties = emptyList(),
@@ -5308,6 +6055,7 @@ class FoundationGameSession internal constructor(
                 telegraphRegistry = com.ktome.game.telegraph.TelegraphRegistry(emptyMap()),
                 threatProfileRegistry = com.ktome.game.telegraph.ThreatProfileRegistry(emptyMap()),
             )
+        }
 
         private fun compatibilityMonsterCatalog(
             world: World,

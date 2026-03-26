@@ -7,6 +7,7 @@ import com.ktome.core.ecs.get
 import com.ktome.core.map.Point
 import com.ktome.core.pathfinding.AStar
 import com.ktome.core.snapshot.ActorRoleKindSnapshot
+import com.ktome.core.snapshot.RouteSelectionSnapshot
 import com.ktome.game.FoundationGameSession
 import com.ktome.game.PlayerCommand
 import java.nio.file.Files
@@ -97,10 +98,12 @@ object RunObservationCapture {
                 .toList()
 
         return RunObservation(
+            zoneId = session.renderSnapshot().metadata.zoneId,
             floor = session.currentFloor(),
             turnIndex = turnIndex,
             playerStatus = session.playerStatus(),
             playerResource = session.playerResourceView(),
+            shardBalance = session.renderSnapshot().uiState.shardBalance,
             playerPosition = session.playerPosition(),
             map = session.map,
             visibleTiles = visibleTiles,
@@ -111,6 +114,25 @@ object RunObservationCapture {
             visibleGroundItemPositions = visibleGroundItemPositions,
             visibleInteractables = visibleInteractables,
             knownDownstairsPositions = knownDownstairsPositions,
+            playerStatusTypeIds =
+                session.renderSnapshot().actors
+                    .firstOrNull { actor -> actor.isPlayer }
+                    ?.statusEffects
+                    ?.mapTo(linkedSetOf()) { status -> status.typeId }
+                    .orEmpty(),
+            activeRouteSelection = session.renderSnapshot().uiState.activeRouteSelection,
+            activeShopId = session.renderSnapshot().uiState.activeShop?.shopId,
+            activeShopOffers =
+                session.renderSnapshot().uiState.activeShop
+                    ?.offers
+                    ?.map { offer ->
+                        ObservedShopOffer(
+                            index = offer.index,
+                            price = offer.price,
+                            tags = offer.tags.toSet(),
+                            purchasable = session.automationCanPurchaseShopOffer(offer.index),
+                        )
+                    }.orEmpty(),
             inventoryItems = session.inventoryItems(),
             talentSlots = session.talentSlots(),
             reserveTalents = session.reserveTalentSlots(),
@@ -187,13 +209,8 @@ fun routeProgressCommand(
     session: FoundationGameSession,
     observation: RunObservation,
 ): PlayerCommand? {
-    if (observation.canDescend) {
-        return PlayerCommand.Descend
-    }
-
-    val stairsDown = session.automationStairPoint(StairDirection.DOWN) ?: return null
-    if (stairsDown == observation.playerPosition) {
-        return PlayerCommand.Descend
+    session.renderSnapshot().uiState.activeRouteSelection?.let { routeSelection ->
+        return PlayerCommand.SelectRoute(preferredRouteIndex(routeSelection))
     }
 
     val occupiedTiles =
@@ -202,16 +219,79 @@ fun routeProgressCommand(
             .filter { entityId -> entityId != session.playerId }
             .map { entityId -> requireNotNull(session.automationWorld().get<Position>(entityId)).toPoint() }
             .toSet()
-    val path =
-        AStar.findPath(
-            map = session.map,
-            start = observation.playerPosition,
-            goal = stairsDown,
-            blocked = occupiedTiles - stairsDown,
-        )
-    val nextStep = path.getOrNull(1) ?: return null
-    return PlayerCommand.Move(nextStep.deltaFrom(observation.playerPosition))
+
+    val canPursueObjectiveHook =
+        observation.visibleBossPositions.isEmpty() &&
+            observation.visibleHostilePositions.none { hostile ->
+                hostile.chebyshevDistanceTo(observation.playerPosition) <= 2
+            }
+    if (canPursueObjectiveHook) {
+        session.automationPendingObjectiveInteractablePoint()?.let { objectivePoint ->
+            if (objectivePoint == observation.playerPosition) {
+                return PlayerCommand.Interact
+            }
+            val path =
+                AStar.findPath(
+                    map = session.map,
+                    start = observation.playerPosition,
+                    goal = objectivePoint,
+                    blocked = occupiedTiles - objectivePoint,
+                )
+            path.getOrNull(1)?.let { nextStep ->
+                return PlayerCommand.Move(nextStep.deltaFrom(observation.playerPosition))
+            }
+        }
+    }
+
+    if (observation.canDescend) {
+        return PlayerCommand.Descend
+    }
+
+    val stairsDown = session.automationStairPoint(StairDirection.DOWN)
+    if (stairsDown != null) {
+        if (stairsDown == observation.playerPosition) {
+            return PlayerCommand.Descend
+        }
+        val path =
+            AStar.findPath(
+                map = session.map,
+                start = observation.playerPosition,
+                goal = stairsDown,
+                blocked = occupiedTiles - stairsDown,
+            )
+        val nextStep = path.getOrNull(1) ?: return null
+        return PlayerCommand.Move(nextStep.deltaFrom(observation.playerPosition))
+    }
+
+    val bossPoint = session.automationBossPoint()
+    if (bossPoint != null && observation.visibleBossPositions.isEmpty()) {
+        val path =
+            AStar.findPath(
+                map = session.map,
+                start = observation.playerPosition,
+                goal = bossPoint,
+                blocked = occupiedTiles - bossPoint,
+            )
+        val nextStep = path.getOrNull(1) ?: return null
+        return PlayerCommand.Move(nextStep.deltaFrom(observation.playerPosition))
+    }
+    return null
 }
+
+internal fun preferredRouteIndex(routeSelection: RouteSelectionSnapshot): Int {
+    val mainlineOption =
+        routeSelection.options.firstOrNull { option ->
+            !option.isReturnPath && option.destinationZoneId !in OPTIONAL_ZONE_IDS
+        }
+    if (mainlineOption != null) {
+        return mainlineOption.index
+    }
+
+    val branchOption = routeSelection.options.firstOrNull { option -> !option.isReturnPath }
+    return branchOption?.index ?: routeSelection.options.firstOrNull()?.index ?: 0
+}
+
+private val OPTIONAL_ZONE_IDS = setOf("bandit_camp", "elven_ruins", "molten_core", "crystal_cavern")
 
 fun PlayerCommand.commandName(): String = this::class.simpleName ?: "UnknownCommand"
 
@@ -228,6 +308,10 @@ fun PlayerCommand.consumesTurn(): Boolean =
         is PlayerCommand.ActivateInventoryItem,
         -> true
 
+        PlayerCommand.CloseShop,
+        is PlayerCommand.BuyShopOffer,
+        is PlayerCommand.SellInventoryItem,
+        is PlayerCommand.SelectRoute,
         is PlayerCommand.EquipTalentToSlot,
         is PlayerCommand.AssignStat,
         is PlayerCommand.AssignTalent,

@@ -14,7 +14,22 @@ class ZoneSchemaTest {
         val tilesetIds = catalog.tilesets.map { it.id }.toSet()
         val ambientIds = catalog.ambientProfiles.map { it.id }.toSet()
 
-        assertEquals(setOf("shattered_outpost", "greenwood_fringe", "deep_iron_pit", "grey_gate_depths"), catalog.zones.map { it.id }.toSet())
+        assertEquals(
+            setOf(
+                "shattered_outpost",
+                "greenwood_fringe",
+                "bandit_camp",
+                "elven_ruins",
+                "deep_iron_pit",
+                "molten_core",
+                "grey_gate_depths",
+                "underground_river",
+                "crystal_cavern",
+                "abyssal_temple",
+                "abyssal_heart",
+            ),
+            catalog.zones.map { it.id }.toSet(),
+        )
         catalog.zones.forEach { zone ->
             assertEquals("zone.${zone.id}.name", zone.nameKey)
             assertEquals("zone.${zone.id}.desc", zone.descKey)

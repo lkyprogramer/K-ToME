@@ -202,6 +202,7 @@ aiProfiles:
         condition:
           type: AND
           conditions:
+            - type: TARGET_VISIBLE
             - type: TALENT_READY
               talentId: war_cry
             - type: NOT
@@ -245,54 +246,17 @@ aiProfiles:
     defaultBehavior: CHASE
     selectionPolicy: WEIGHTED_RANDOM
     actions:
-      - id: shield_bash
-        type: USE_ABILITY
-        orderKey: 10
-        weight: 35
-        abilityId: shield_bash
-        condition:
-          type: AND
-          conditions:
-            - type: TARGET_DISTANCE_LESS_THAN
-              distance: 2
-            - type: TALENT_READY
-              talentId: shield_bash
-      - id: power_strike
-        type: USE_ABILITY
-        orderKey: 20
-        weight: 30
-        abilityId: power_strike
-        condition:
-          type: AND
-          conditions:
-            - type: TARGET_DISTANCE_LESS_THAN
-              distance: 2
-            - type: TALENT_READY
-              talentId: power_strike
-      - id: charge
-        type: USE_ABILITY
-        orderKey: 30
-        weight: 20
-        abilityId: charge
-        condition:
-          type: AND
-          conditions:
-            - type: TARGET_DISTANCE_BETWEEN
-              minDistance: 2
-              maxDistance: 5
-            - type: TALENT_READY
-              talentId: charge
       - id: strike
         type: ATTACK_TARGET
-        orderKey: 40
-        weight: 10
+        orderKey: 10
+        weight: 30
         condition:
           type: TARGET_DISTANCE_LESS_THAN
           distance: 2
       - id: advance
         type: MOVE_TOWARD_TARGET
-        orderKey: 50
-        weight: 5
+        orderKey: 20
+        weight: 15
         condition:
           type: TARGET_VISIBLE
   - id: ai.boss.molten_giant.phase_full
@@ -305,7 +269,7 @@ aiProfiles:
       - id: power_strike
         type: USE_ABILITY
         orderKey: 10
-        weight: 45
+        weight: 35
         abilityId: power_strike
         condition:
           type: AND
@@ -317,7 +281,7 @@ aiProfiles:
       - id: charge
         type: USE_ABILITY
         orderKey: 20
-        weight: 25
+        weight: 15
         abilityId: charge
         condition:
           type: AND
@@ -327,24 +291,9 @@ aiProfiles:
               maxDistance: 6
             - type: TALENT_READY
               talentId: charge
-      - id: war_cry
-        type: USE_ABILITY
-        orderKey: 30
-        weight: 20
-        abilityId: war_cry
-        condition:
-          type: AND
-          conditions:
-            - type: TALENT_READY
-              talentId: war_cry
-            - type: NOT
-              condition:
-                type: HAS_STATUS
-                scope: SELF
-                statusId: war_cry_empower
       - id: advance
         type: MOVE_TOWARD_TARGET
-        orderKey: 40
+        orderKey: 30
         weight: 10
         condition:
           type: TARGET_VISIBLE
@@ -408,6 +357,7 @@ aiProfiles:
         condition:
           type: AND
           conditions:
+            - type: TARGET_VISIBLE
             - type: TALENT_READY
               talentId: war_cry
             - type: NOT
@@ -440,6 +390,13 @@ aiProfiles:
               maxDistance: 6
             - type: TALENT_READY
               talentId: charge
+      - id: strike
+        type: ATTACK_TARGET
+        orderKey: 35
+        weight: 25
+        condition:
+          type: TARGET_DISTANCE_LESS_THAN
+          distance: 2
       - id: advance
         type: MOVE_TOWARD_TARGET
         orderKey: 40
@@ -478,9 +435,142 @@ aiProfiles:
               distance: 2
             - type: TALENT_READY
               talentId: power_strike
+      - id: close_quarters
+        type: ATTACK_TARGET
+        orderKey: 25
+        weight: 35
+        condition:
+          type: TARGET_DISTANCE_LESS_THAN
+          distance: 2
       - id: press_forward
         type: MOVE_TOWARD_TARGET
         orderKey: 30
         weight: 20
         condition:
           type: TARGET_VISIBLE
+  - id: ai.boss.abyssal_guardian.phase_full
+    schemaVersion: 2
+    perceptionRange: 13
+    useLastKnownPosition: true
+    defaultBehavior: CHASE
+    selectionPolicy: WEIGHTED_RANDOM
+    actions:
+      - id: abyssal_roar
+        type: USE_ABILITY
+        orderKey: 10
+        weight: 28
+        abilityId: war_cry
+        condition:
+          type: AND
+          conditions:
+            - type: TARGET_VISIBLE
+            - type: TALENT_READY
+              talentId: war_cry
+            - type: NOT
+              condition:
+                type: HAS_STATUS
+                scope: SELF
+                statusId: war_cry_empower
+      - id: abyssal_charge
+        type: USE_ABILITY
+        orderKey: 20
+        weight: 36
+        abilityId: charge
+        condition:
+          type: AND
+          conditions:
+            - type: TARGET_DISTANCE_BETWEEN
+              minDistance: 2
+              maxDistance: 7
+            - type: TALENT_READY
+              talentId: charge
+      - id: anchor_strike
+        type: USE_ABILITY
+        orderKey: 25
+        weight: 26
+        abilityId: power_strike
+        condition:
+          type: AND
+          conditions:
+            - type: TARGET_DISTANCE_LESS_THAN
+              distance: 2
+            - type: TALENT_READY
+              talentId: power_strike
+      - id: abyssal_strike
+        type: ATTACK_TARGET
+        orderKey: 30
+        weight: 18
+        condition:
+          type: TARGET_DISTANCE_LESS_THAN
+          distance: 2
+      - id: hunt
+        type: MOVE_TOWARD_TARGET
+        orderKey: 40
+        weight: 14
+        condition:
+          type: TARGET_DISTANCE_BETWEEN
+          minDistance: 2
+          maxDistance: 13
+  - id: ai.boss.abyssal_guardian.phase_abyssal
+    schemaVersion: 2
+    perceptionRange: 13
+    useLastKnownPosition: true
+    defaultBehavior: CHASE
+    selectionPolicy: WEIGHTED_RANDOM
+    actions:
+      - id: collapse_charge
+        type: USE_ABILITY
+        orderKey: 10
+        weight: 44
+        abilityId: charge
+        condition:
+          type: AND
+          conditions:
+            - type: TARGET_DISTANCE_BETWEEN
+              minDistance: 2
+              maxDistance: 7
+            - type: TALENT_READY
+              talentId: charge
+      - id: void_breach
+        type: USE_ABILITY
+        orderKey: 20
+        weight: 42
+        abilityId: power_strike
+        condition:
+          type: AND
+          conditions:
+            - type: TARGET_DISTANCE_LESS_THAN
+              distance: 2
+            - type: TALENT_READY
+              talentId: power_strike
+      - id: abyssal_howl
+        type: USE_ABILITY
+        orderKey: 25
+        weight: 22
+        abilityId: war_cry
+        condition:
+          type: AND
+          conditions:
+            - type: TARGET_VISIBLE
+            - type: TALENT_READY
+              talentId: war_cry
+            - type: NOT
+              condition:
+                type: HAS_STATUS
+                scope: SELF
+                statusId: war_cry_empower
+      - id: relentless_strike
+        type: ATTACK_TARGET
+        orderKey: 30
+        weight: 28
+        condition:
+          type: TARGET_DISTANCE_LESS_THAN
+          distance: 2
+      - id: press_abyss
+        type: MOVE_TOWARD_TARGET
+        orderKey: 35
+        weight: 20
+        condition:
+          type: TARGET_DISTANCE_BETWEEN
+          minDistance: 2
+          maxDistance: 13

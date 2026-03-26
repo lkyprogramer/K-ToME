@@ -2,7 +2,9 @@ package com.ktome.core.save
 
 import com.ktome.core.map.GameMap
 import com.ktome.core.map.Point
+import com.ktome.core.economy.ShopInventoryState
 import com.ktome.core.resource.ResourcePoolSnapshot
+import com.ktome.core.world.WorldProgressDef
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -15,6 +17,9 @@ data class SaveSnapshot(
     val currentZoneId: String,
     val zoneRoute: List<String> = listOf(currentZoneId),
     val routeIndex: Int = 0,
+    val worldProgress: WorldProgressDef = WorldProgressDef(),
+    val shardBalance: Int = 0,
+    val shopStates: List<ShopInventoryState> = emptyList(),
     val floorIndex: Int,
     val mapWidth: Int,
     val mapHeight: Int,
@@ -24,6 +29,7 @@ data class SaveSnapshot(
     val playerRaceId: String,
     val maxFloor: Int,
     val turnCount: Int,
+    val headlessTurnEquivalent: Int = turnCount,
     val player: PlayerSnapshot,
     val floors: List<FloorSnapshot>,
     val combatRandomState: Long? = null,
@@ -50,6 +56,10 @@ data class SaveSnapshot(
         require(zoneRoute[routeIndex] == currentZoneId) {
             "currentZoneId '$currentZoneId' must match zoneRoute[$routeIndex]='${zoneRoute[routeIndex]}'."
         }
+        require(shardBalance >= 0) { "shardBalance must not be negative." }
+        require(shopStates.distinctBy(ShopInventoryState::shopId).size == shopStates.size) {
+            "shopStates must not contain duplicate shop ids."
+        }
         require(playerProfessionId.isNotBlank()) { "playerProfessionId must not be blank." }
         require(playerRaceId.isNotBlank()) { "playerRaceId must not be blank." }
         require(mapWidth > 0) { "Map width must be positive." }
@@ -57,6 +67,8 @@ data class SaveSnapshot(
         require(fovRadius > 0) { "FOV radius must be positive." }
         require(messageLogSize > 0) { "Message log size must be positive." }
         require(floorIndex in 1..maxFloor) { "Floor index $floorIndex must be within 1..$maxFloor." }
+        require(turnCount >= 0) { "turnCount must not be negative." }
+        require(headlessTurnEquivalent >= 0) { "headlessTurnEquivalent must not be negative." }
         require(floors.isNotEmpty()) { "At least one floor snapshot is required." }
         require(floors.all { floor -> floor.floorIndex in 1..maxFloor }) {
             "All floor snapshots must be within 1..$maxFloor."
@@ -91,8 +103,8 @@ data class SaveSnapshot(
     }
 
     companion object {
-        const val CURRENT_SCHEMA_VERSION: Int = 3
-        const val DEFAULT_BUILD_METADATA: String = "phase2-dev"
+        const val CURRENT_SCHEMA_VERSION: Int = 5
+        const val DEFAULT_BUILD_METADATA: String = "phase3-pr06-dev"
     }
 }
 

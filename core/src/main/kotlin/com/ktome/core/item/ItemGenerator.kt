@@ -6,15 +6,20 @@ import kotlin.random.Random
 class ItemGenerator(
     private val bundle: ItemDataBundle,
     private val random: RandomSource,
+    private val affixGenerator: AffixGenerator = AffixGenerator(AffixPool(bundle.affixes), random),
 ) {
-    fun generate(floor: Int): ItemInstance {
+    fun generate(
+        floor: Int,
+        affixContext: AffixSelectionContext = AffixSelectionContext(),
+    ): ItemInstance {
         val base = chooseBaseItem(floor)
-        return generate(base, floor)
+        return generate(base, floor, affixContext)
     }
 
     fun generate(
         base: ItemBaseDef,
         floor: Int,
+        affixContext: AffixSelectionContext = AffixSelectionContext(),
     ): ItemInstance {
         if (base.type == ItemType.CONSUMABLE) {
             return ItemInstance(
@@ -35,7 +40,19 @@ class ItemGenerator(
 
         val quality = chooseQuality(floor)
         val material = chooseMaterial(base, floor)
-        val affixes = chooseAffixes(floor, quality.affixCount)
+        val resolvedAffixContext =
+            affixContext.copy(
+                itemTags = affixContext.itemTags + base.tags,
+            )
+        val affixes =
+            resolveEquipType(base)?.let { equipType ->
+                affixGenerator.generate(
+                    floor = floor,
+                    count = quality.affixCount,
+                    equipType = equipType,
+                    context = resolvedAffixContext,
+                )
+            }.orEmpty()
         val stats = listOf(base.baseStats, material?.statModifiers ?: StatModifier.ZERO)
             .plus(affixes.map(AffixDef::statModifiers))
             .fold(StatModifier.ZERO) { acc, modifier -> acc + modifier }
@@ -95,22 +112,12 @@ class ItemGenerator(
         return candidates[random.nextInt(0, candidates.size)]
     }
 
-    private fun chooseAffixes(
-        floor: Int,
-        count: Int,
-    ): List<AffixDef> {
-        if (count == 0) {
-            return emptyList()
+    private fun resolveEquipType(base: ItemBaseDef): AffixEquipType? =
+        when (base.type) {
+            ItemType.WEAPON -> AffixEquipType.WEAPON
+            ItemType.ARMOR -> AffixEquipType.ARMOR
+            ItemType.CONSUMABLE -> null
         }
-
-        val available = bundle.affixes.filter { floor >= it.minFloor }.toMutableList()
-        val selected = mutableListOf<AffixDef>()
-        repeat(count.coerceAtMost(available.size)) {
-            val index = random.nextInt(0, available.size)
-            selected += available.removeAt(index)
-        }
-        return selected
-    }
 
     private fun buildName(
         base: ItemBaseDef,

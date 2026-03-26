@@ -31,27 +31,28 @@ class BossHarnessTest {
 
     @Test
     @Tag("bossHarness")
-    fun `boss harness covers two bosses with telegraph and trace consistency`() {
+    fun `boss harness covers phase three roster with telegraph and trace consistency`() {
         val reports =
             listOf(
-                runBanditCaptainHarness(seed = 20260324L),
                 runMoltenGiantHarness(seed = 20260325L),
+                runDungeonLordHarness(seed = 20260326L),
+                runAbyssalGuardianHarness(seed = 20260327L),
             )
 
         HarnessReportWriter.writeJsonAndMarkdown(
             fileStem = "boss-harness",
             payload =
                 buildJsonObject {
-                    put("scriptVersion", "boss-harness-v1")
+                    put("scriptVersion", "boss-harness-v2")
                     putJsonArray("reports") { reports.forEach { report -> add(report.toJson()) } }
                 },
             markdown =
                 buildString {
                     appendLine("# Boss Harness")
-                    appendLine("- scriptVersion: boss-harness-v1")
+                    appendLine("- scriptVersion: boss-harness-v2")
                     reports.forEach { report ->
                         appendLine(
-                            "- boss=${report.templateId}, zone=${report.zoneId}, seed=${report.seed}, locale=${report.localeId}, success=${report.success}, telegraph=${report.telegraphKey}, phase=${report.phaseId}, aiTraceCount=${report.aiTraceCount}, bossTraceCount=${report.bossTraceCount}, aiTraceHash=${report.aiTraceHash}, bossTraceHash=${report.bossTraceHash}",
+                            "- boss=${report.templateId}, zone=${report.zoneId}, seed=${report.seed}, locale=${report.localeId}, success=${report.success}, telegraph=${report.telegraphKey}, phase=${report.phaseId}, expectedAction=${report.expectedSelectedActionId ?: "none"}, selectedActions=${if (report.selectedActionIds.isEmpty()) "none" else report.selectedActionIds}, observedAiTraceCount=${report.observedAiTraceCount}/${report.requiredAiTraceCount}, bossTraceCount=${report.bossTraceCount}, aiTraceHash=${report.aiTraceHash}, bossTraceHash=${report.bossTraceHash}",
                         )
                     }
                 },
@@ -60,46 +61,6 @@ class BossHarnessTest {
         assertTrue(
             reports.all { report -> report.success },
             reports.joinToString(separator = "\n") { report -> "${report.templateId}: ${report.failureReason ?: "unknown failure"}" },
-        )
-    }
-
-    private fun runBanditCaptainHarness(seed: Long): BossHarnessReport {
-        val session =
-            GameModule.newFoundationSession(
-                config = FoundationGameConfig(seed = seed, zoneId = "shattered_outpost", playerProfessionId = "vanguard"),
-                saveManager = SaveManager(tempDir.resolve("boss-bandit-$seed")),
-            )
-        descendToBossFloor(session)
-        val bossId = requireNotNull(session.automationEntityByTemplateId("bandit.captain"))
-        val world = session.automationWorld()
-        val bossPoint = requireNotNull(world.get<Position>(bossId)).toPoint()
-        session.automationMovePlayerTo(findOpenAdjacentPoint(session, bossPoint))
-        requireNotNull(world.get<com.ktome.core.talent.CooldownState>(bossId)).remainingByTalentId.apply {
-            this["shield_bash"] = 0
-            this["power_strike"] = 99
-            this["charge"] = 99
-        }
-
-        var telegraph: PendingTelegraphState? = null
-        for (attempt in 0 until 6) {
-            assertTrue(session.perform(PlayerCommand.Wait))
-            val candidate = world.get<PendingTelegraphState>(bossId)
-            if (candidate?.sourceAbilityId == "shield_bash") {
-                telegraph = candidate
-                break
-            }
-        }
-
-        return buildReport(
-            session = session,
-            seed = seed,
-            zoneId = "shattered_outpost",
-            templateId = "bandit.captain",
-            telegraph = telegraph,
-            phaseState = world.get<BossEncounterState>(bossId),
-            expectedTelegraphKey = "shield_bash",
-            expectedPhaseId = "phase_full",
-            expectedSelectedActionId = "shield_bash",
         )
     }
 
@@ -119,18 +80,88 @@ class BossHarnessTest {
         requireNotNull(world.get<com.ktome.core.ecs.Health>(bossId)).current =
             requireNotNull(world.get<com.ktome.core.ecs.Health>(bossId)).max * 49 / 100
         assertTrue(session.perform(PlayerCommand.Wait))
+        val phaseTelegraph = world.get<PendingTelegraphState>(bossId)
+        waitForPhaseActionTrace(session, "crushing_strike")
 
         return buildReport(
             session = session,
             seed = seed,
             zoneId = "deep_iron_pit",
             templateId = "orc.molten_giant",
-            telegraph = world.get<PendingTelegraphState>(bossId),
+            telegraph = phaseTelegraph,
             phaseState = world.get<BossEncounterState>(bossId),
             expectedTelegraphKey = "molten_giant_phase_warning",
             expectedPhaseId = "phase_enraged",
+            expectedSelectedActionId = "crushing_strike",
             expectedBossTracePhaseId = "phase_enraged",
             expectedBossTraceSideEffect = "TELEGRAPH:molten_giant_phase_warning",
+        )
+    }
+
+    private fun runDungeonLordHarness(seed: Long): BossHarnessReport {
+        val session =
+            GameModule.newFoundationSession(
+                config = FoundationGameConfig(seed = seed, zoneId = "grey_gate_depths", playerProfessionId = "templar"),
+                saveManager = SaveManager(tempDir.resolve("boss-dungeon-$seed")),
+            )
+        descendToBossFloor(session)
+        val bossId = requireNotNull(session.automationEntityByTemplateId("cultist.dungeon_lord"))
+        val world = session.automationWorld()
+        val bossPoint = requireNotNull(world.get<Position>(bossId)).toPoint()
+        session.automationMovePlayerTo(findOpenAdjacentPoint(session, bossPoint))
+
+        assertTrue(session.perform(PlayerCommand.Wait))
+        requireNotNull(world.get<com.ktome.core.ecs.Health>(bossId)).current =
+            requireNotNull(world.get<com.ktome.core.ecs.Health>(bossId)).max * 40 / 100
+        assertTrue(session.perform(PlayerCommand.Wait))
+        val phaseTelegraph = world.get<PendingTelegraphState>(bossId)
+        waitForPhaseActionTrace(session, "finishing_strike")
+
+        return buildReport(
+            session = session,
+            seed = seed,
+            zoneId = "grey_gate_depths",
+            templateId = "cultist.dungeon_lord",
+            telegraph = phaseTelegraph,
+            phaseState = world.get<BossEncounterState>(bossId),
+            expectedTelegraphKey = "dungeon_lord_phase_warning",
+            expectedPhaseId = "phase_desperate",
+            expectedSelectedActionId = "finishing_strike",
+            expectedBossTracePhaseId = "phase_desperate",
+            expectedBossTraceSideEffect = "TELEGRAPH:dungeon_lord_phase_warning",
+        )
+    }
+
+    private fun runAbyssalGuardianHarness(seed: Long): BossHarnessReport {
+        val session =
+            GameModule.newFoundationSession(
+                config = FoundationGameConfig(seed = seed, zoneId = "abyssal_heart", playerProfessionId = "vanguard"),
+                saveManager = SaveManager(tempDir.resolve("boss-abyssal-$seed")),
+            )
+        val bossId = requireNotNull(session.automationEntityByTemplateId("abyssal.guardian"))
+        val world = session.automationWorld()
+        val bossPoint = requireNotNull(world.get<Position>(bossId)).toPoint()
+        session.automationMovePlayerTo(findOpenAdjacentPoint(session, bossPoint))
+
+        assertTrue(session.perform(PlayerCommand.Wait))
+        requireNotNull(world.get<com.ktome.core.ecs.Health>(bossId)).current =
+            requireNotNull(world.get<com.ktome.core.ecs.Health>(bossId)).max * 35 / 100
+        assertTrue(session.perform(PlayerCommand.Wait))
+        val phaseTelegraph = world.get<PendingTelegraphState>(bossId)
+        waitForPhaseActionTrace(session, "void_breach")
+
+        return buildReport(
+            session = session,
+            seed = seed,
+            zoneId = "abyssal_heart",
+            templateId = "abyssal.guardian",
+            telegraph = phaseTelegraph,
+            phaseState = world.get<BossEncounterState>(bossId),
+            expectedTelegraphKey = "abyssal_guardian_phase_warning",
+            expectedPhaseId = "phase_abyssal",
+            expectedSelectedActionId = "void_breach",
+            expectedBossTracePhaseId = "phase_abyssal",
+            expectedBossTraceSideEffect = "TELEGRAPH:abyssal_guardian_phase_warning",
         )
     }
 
@@ -156,6 +187,7 @@ class BossHarnessTest {
         val aiTraceHash = sha256(aiJson)
         val bossTraceHash = sha256(bossJson)
         val traceRoundTripMatches = decodedAi == aiTraces && decodedBoss == bossTraces
+        val selectedActionIds = decodedAi.mapNotNull(AIDecisionTrace::selectedActionId).distinct().sorted()
         val telegraphMatches =
             telegraph != null &&
                 (telegraph.sourceAbilityId == expectedTelegraphKey || telegraph.telegraphSpecId == expectedTelegraphKey)
@@ -203,6 +235,10 @@ class BossHarnessTest {
             success = success,
             phaseId = phaseState?.currentPhaseId,
             telegraphKey = telegraph?.sourceAbilityId ?: telegraph?.telegraphSpecId,
+            expectedSelectedActionId = expectedSelectedActionId,
+            selectedActionIds = selectedActionIds,
+            requiredAiTraceCount = if (aiTraceRequired) 1 else 0,
+            observedAiTraceCount = decodedAi.size,
             aiTraceCount = decodedAi.size,
             bossTraceCount = decodedBoss.size,
             aiTraceHash = aiTraceHash,
@@ -233,6 +269,21 @@ class BossHarnessTest {
                     point !in occupied
             }
     }
+
+    private fun waitForPhaseActionTrace(
+        session: FoundationGameSession,
+        expectedActionId: String,
+    ) {
+        repeat(6) {
+            if (session.recentAIDecisionTraces().any { trace -> trace.selectedActionId == expectedActionId }) {
+                return
+            }
+            if (session.runOutcome().isTerminal) {
+                return
+            }
+            assertTrue(session.perform(PlayerCommand.Wait))
+        }
+    }
 }
 
 private data class BossHarnessReport(
@@ -243,6 +294,10 @@ private data class BossHarnessReport(
     val success: Boolean,
     val phaseId: String?,
     val telegraphKey: String?,
+    val expectedSelectedActionId: String?,
+    val selectedActionIds: List<String>,
+    val requiredAiTraceCount: Int,
+    val observedAiTraceCount: Int,
     val aiTraceCount: Int,
     val bossTraceCount: Int,
     val aiTraceHash: String,
@@ -260,6 +315,10 @@ private data class BossHarnessReport(
             put("success", success)
             phaseId?.let { put("phaseId", it) }
             telegraphKey?.let { put("telegraphKey", it) }
+            expectedSelectedActionId?.let { put("expectedSelectedActionId", it) }
+            putJsonArray("selectedActionIds") { selectedActionIds.forEach { actionId -> add(JsonPrimitive(actionId)) } }
+            put("requiredAiTraceCount", requiredAiTraceCount)
+            put("observedAiTraceCount", observedAiTraceCount)
             put("aiTraceCount", aiTraceCount)
             put("bossTraceCount", bossTraceCount)
             put("aiTraceHash", aiTraceHash)
@@ -269,8 +328,10 @@ private data class BossHarnessReport(
             failureReason?.let { put("failureReason", it) }
             putJsonArray("checks") {
                 add(JsonPrimitive("telegraph"))
+                add(JsonPrimitive("phaseTransition"))
                 add(JsonPrimitive("bossTracePayload"))
                 add(JsonPrimitive("aiDecisionTracePayload"))
+                add(JsonPrimitive("phaseSpecificActionTrace"))
                 add(JsonPrimitive("traceHash"))
             }
         }

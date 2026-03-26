@@ -72,7 +72,7 @@ class ItemGeneratorTest {
             ItemGenerator(
                 bundle,
                 TestRandomSource(
-                    ints = listOf(0, 99, 0, 1, 0),
+                    ints = listOf(0, 99, 0, 0, 0),
                     defaultInt = 0,
                     defaultDouble = 0.95,
                 ),
@@ -94,5 +94,62 @@ class ItemGeneratorTest {
         assertEquals(ItemQuality.COMMON, generated.quality)
         assertTrue(generated.affixes.isEmpty())
         assertEquals(null, generated.materialId)
+    }
+
+    @Test
+    fun `caller provided build tags influence affix generation`() {
+        val base =
+            ItemBaseDef(
+                id = "wand",
+                name = "法杖",
+                type = ItemType.WEAPON,
+                slot = EquipSlot.WEAPON,
+                glyph = ')',
+                colorHex = "#FFFFFF",
+                dropFloors = listOf(3),
+            )
+        val affixBundle =
+            ItemDataBundle(
+                baseItems = listOf(base),
+                materials = emptyList(),
+                affixes =
+                    listOf(
+                        AffixDef(
+                            id = "stormforged",
+                            name = "风暴铸造",
+                            type = AffixType.PREFIX,
+                            statModifiers = StatModifier(attack = 2),
+                            tags = setOf("arcanist"),
+                        ),
+                        AffixDef(
+                            id = "brutal",
+                            name = "残暴",
+                            type = AffixType.PREFIX,
+                            statModifiers = StatModifier(attack = 2),
+                            tags = setOf("vanguard"),
+                        ),
+                    ),
+            )
+
+        val withBuildTags =
+            ItemGenerator(
+                affixBundle,
+                TestRandomSource(ints = listOf(50, 1)),
+            ).generate(
+                base = base,
+                floor = 3,
+                affixContext = AffixSelectionContext(buildTags = setOf("arcanist")),
+            )
+        val withoutBuildTags =
+            ItemGenerator(
+                affixBundle,
+                TestRandomSource(ints = listOf(50, 1)),
+            ).generate(
+                base = base,
+                floor = 3,
+            )
+
+        assertEquals(listOf("stormforged"), withBuildTags.affixes.map(AffixDef::id))
+        assertEquals(listOf("brutal"), withoutBuildTags.affixes.map(AffixDef::id))
     }
 }

@@ -20,6 +20,11 @@ enum class AffixType {
     SUFFIX,
 }
 
+enum class AffixEquipType {
+    WEAPON,
+    ARMOR,
+}
+
 enum class ItemQuality(val affixCount: Int) {
     COMMON(0),
     MAGIC(1),
@@ -102,8 +107,12 @@ data class AffixDef(
     val id: String,
     val name: String,
     val type: AffixType,
+    val equipType: AffixEquipType = AffixEquipType.WEAPON,
+    val tier: Int = 1,
     val statModifiers: StatModifier,
     val minFloor: Int = 1,
+    val tags: Set<String> = emptySet(),
+    val blacklistTags: Set<String> = emptySet(),
 )
 
 data class MaterialDef(
@@ -118,6 +127,7 @@ data class ItemBaseDef(
     val name: String,
     val type: ItemType,
     val slot: EquipSlot? = null,
+    val tags: Set<String> = emptySet(),
     val glyph: Char,
     val colorHex: String,
     val baseStats: StatModifier = StatModifier(),

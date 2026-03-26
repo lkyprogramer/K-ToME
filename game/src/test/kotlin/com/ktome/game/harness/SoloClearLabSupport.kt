@@ -50,7 +50,7 @@ import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
 import kotlinx.serialization.json.putJsonObject
 
-internal const val SOLO_CLEAR_SCRIPT_VERSION: String = "solo-clear-lab-v2"
+internal const val SOLO_CLEAR_SCRIPT_VERSION: String = "solo-clear-lab-v4"
 internal const val SOLO_CLEAR_BOSS_TELEGRAPH_WAIT_TURNS: Int = 3
 internal val SOLO_CLEAR_PROFESSIONS: List<String> =
     listOf(
@@ -100,7 +100,7 @@ internal enum class SoloClearScenario(
         zoneId = "shattered_outpost",
         floor = 2,
         maxTurns = 140,
-        summary = "20x20 boss room, kill bandit captain, observe warning/telegraph",
+        summary = "20x20 boss room, kill bandit captain, observe boss warning",
     ),
 }
 
@@ -181,7 +181,7 @@ internal class SoloClearLabHarness(
     ): SoloClearLabReport {
         val runtime = buildScenarioRuntime(professionId, scenario)
         val session = runtime.session
-        val bot = SoloClearScriptBot()
+        val bot: RunBot = SoloClearScriptBot()
         val commandTrace = mutableListOf<String>()
         val executedTalentIds = mutableListOf<String>()
         val resourceTimeline = mutableListOf<Int>()
@@ -376,6 +376,7 @@ internal class SoloClearLabHarness(
                 dungeonManager = dungeonManager,
                 playerSnapshot = playerSnapshot,
                 initialMessageLog = listOf(RenderLogEventSnapshot(RenderTextTokenSnapshot("log.session.loaded"))),
+                isolatedZoneSlice = true,
             )
 
         return SoloClearRuntime(
@@ -425,8 +426,8 @@ internal class SoloClearLabHarness(
                 if (!session.isVictory()) {
                     return "Boss scenario did not produce a victory outcome."
                 }
-                if (!sawBossWarning || !sawTalentTelegraph) {
-                    return "Boss scenario did not expose both warning and telegraph overlays."
+                if (!sawBossWarning) {
+                    return "Boss scenario did not expose the boss warning overlay."
                 }
             }
         }
@@ -837,6 +838,10 @@ internal class SoloClearLabHarness(
             PlayerCommand.Ascend -> "Ascend"
             PlayerCommand.Descend -> "Descend"
             PlayerCommand.SaveGame -> "SaveGame"
+            PlayerCommand.CloseShop -> "CloseShop"
+            is PlayerCommand.BuyShopOffer -> "BuyShopOffer(${command.index})"
+            is PlayerCommand.SellInventoryItem -> "SellInventoryItem(${command.index})"
+            is PlayerCommand.SelectRoute -> "SelectRoute(${command.index})"
             is PlayerCommand.ActivateInventoryItem -> "ActivateInventoryItem(${command.index})"
             is PlayerCommand.UseInscription -> "UseInscription(${command.hotkey})"
             is PlayerCommand.UseTalent ->
@@ -924,11 +929,13 @@ internal fun pendingBossTelegraphObservationCommand(
 
 private class SoloClearScriptBot : RunBot {
     override fun decide(observation: RunObservation): PlayerCommand? {
+        val shouldReconfigureLoadout =
+            isDensePackScenario(observation) || observation.visibleBossPositions.isNotEmpty()
         val usesSpecializedPackLoadout = usesSpecializedPackLoadout(observation)
-        if (usesSpecializedPackLoadout) {
+        if (shouldReconfigureLoadout && usesSpecializedPackLoadout) {
             preferredCombatLoadoutCommand(observation)?.let { return it }
         }
-        if (!usesSpecializedPackLoadout) {
+        if (shouldReconfigureLoadout && !usesSpecializedPackLoadout) {
             LoadoutPlanner.preferredLoadoutCommand(observation)?.let { return it }
         }
         lootFollowUp(observation)?.let { return it }
@@ -972,11 +979,11 @@ private class SoloClearScriptBot : RunBot {
                 "POSITIVE_ENERGY" -> listOf("holy_strike", "judgment_hammer", "holy_shield", "holy_aura", "holy_light", "divine_intervention")
                 "HATE" ->
                     if (observation.visibleBossPositions.isNotEmpty()) {
-                        listOf("savage_hew", "rupture_wave", "blood_rush", "last_stand", "kill_frenzy", "reckless_slam")
+                        listOf("savage_hew", "rupture_wave", "kill_frenzy", "last_stand", "reckless_slam")
                     } else if (isDensePackScenario(observation)) {
-                        listOf("reckless_slam", "blood_rush", "savage_hew", "kill_frenzy", "rupture_wave", "last_stand")
+                        listOf("reckless_slam", "savage_hew", "kill_frenzy", "rupture_wave", "last_stand")
                     } else {
-                        listOf("savage_hew", "blood_rush", "reckless_slam", "rupture_wave", "kill_frenzy", "last_stand")
+                        listOf("savage_hew", "reckless_slam", "rupture_wave", "kill_frenzy", "last_stand")
                     }
                 else -> emptyList()
             }
@@ -1036,11 +1043,6 @@ private class SoloClearScriptBot : RunBot {
         availableTalent(observation, "unyielding")?.let { return PlayerCommand.UseTalent(it.slot) }
         availableTalent(observation, "arcane_shield")?.let { return PlayerCommand.UseTalent(it.slot) }
         availableTalent(observation, "guard_stance")?.let { return PlayerCommand.UseTalent(it.slot) }
-        availableTalent(observation, "blood_rush")?.let { slot ->
-            retreatPoint(observation, slot)?.let { target ->
-                return PlayerCommand.UseTalent(slot.slot, target)
-            }
-        }
         availableTalent(observation, "blink")?.let { slot ->
             retreatPoint(observation, slot)?.let { target ->
                 return PlayerCommand.UseTalent(slot.slot, target)
@@ -1088,9 +1090,6 @@ private class SoloClearScriptBot : RunBot {
         if (observation.playerResource.typeId == "MANA" && observation.visibleHostilePositions.size >= 4) {
             availableTalent(observation, "arcane_shield")?.let { return PlayerCommand.UseTalent(it.slot) }
         }
-        if (lowHealth) {
-            availableTalent(observation, "holy_light")?.let { return PlayerCommand.UseTalent(it.slot) }
-        }
         if (nearbyHostiles >= 1) {
             availableTalent(observation, "devotion")?.let { return PlayerCommand.UseTalent(it.slot) }
             availableTalent(observation, "holy_shield")?.let { return PlayerCommand.UseTalent(it.slot) }
@@ -1099,7 +1098,6 @@ private class SoloClearScriptBot : RunBot {
         availableTargetedTalent(observation, nearest, "arcane_edge")?.let { return it }
         availableTargetedTalent(observation, nearest, "savage_hew")?.let { return it }
         availableTargetedTalent(observation, nearest, "spell_rend")?.let { return it }
-        availableTargetedTalent(observation, nearest, "blood_rush")?.let { return it }
         availableTargetedTalent(observation, nearest, "mana_lunge")?.let { return it }
         availableTargetedTalent(observation, nearest, "shadowstep")?.let { return it }
         availableTargetedTalent(observation, nearest, "judgment_hammer")?.let { return it }

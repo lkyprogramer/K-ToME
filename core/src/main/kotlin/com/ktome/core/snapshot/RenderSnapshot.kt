@@ -144,6 +144,9 @@ data class RenderUiStateSnapshot(
     val inscriptions: List<InscriptionSlotSnapshot> = emptyList(),
     val inventory: List<InventoryEntrySnapshot>,
     val targetablePositions: List<GridPointSnapshot>,
+    val shardBalance: Int = 0,
+    val activeShop: ShopPanelSnapshot? = null,
+    val activeRouteSelection: RouteSelectionSnapshot? = null,
 )
 
 @Serializable
@@ -291,6 +294,48 @@ data class InventoryEntrySnapshot(
     val index: Int,
     val item: ItemRenderSnapshot,
     val equippedSlotId: String? = null,
+)
+
+@Serializable
+data class ShopPanelSnapshot(
+    val shopId: String,
+    val shopNameKey: String,
+    val offers: List<ShopOfferSnapshot>,
+    val sellEntries: List<ShopSellEntrySnapshot> = emptyList(),
+)
+
+@Serializable
+data class ShopOfferSnapshot(
+    val index: Int,
+    val labelKey: String,
+    val price: Int,
+    val tags: List<String> = emptyList(),
+)
+
+@Serializable
+data class ShopSellEntrySnapshot(
+    val inventoryIndex: Int,
+    val price: Int,
+)
+
+@Serializable
+data class RouteSelectionSnapshot(
+    val currentZoneNameKey: String,
+    val options: List<RouteOptionSnapshot>,
+)
+
+@Serializable
+data class RouteOptionSnapshot(
+    val index: Int,
+    val routeId: String,
+    val destinationZoneId: String,
+    val destinationZoneNameKey: String,
+    val destinationZoneDescKey: String? = null,
+    val levelBandRef: String,
+    val shardReward: Int,
+    val rewardItemNameKeys: List<String> = emptyList(),
+    val rescueTags: List<String> = emptyList(),
+    val isReturnPath: Boolean = false,
 )
 
 @Serializable

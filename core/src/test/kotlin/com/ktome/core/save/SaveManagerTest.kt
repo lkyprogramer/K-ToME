@@ -10,6 +10,10 @@ import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.jsonObject
 
 class SaveManagerTest {
     @TempDir
@@ -60,6 +64,45 @@ class SaveManagerTest {
         assertFalse(manager.hasSave())
         assertTrue(manager.hasSaveFile())
         assertThrows(MalformedSaveException::class.java) {
+            manager.load()
+        }
+    }
+
+    @Test
+    fun `missing pr06 save field is rejected instead of defaulting`() {
+        val manager = SaveManager(tempDir)
+        val codec = SaveCodec()
+        val json = Json { prettyPrint = true }
+        val encoded = codec.encode(SaveFixtures.resourceHeavyScene())
+        val root = json.parseToJsonElement(encoded).jsonObject
+        val corrupted = JsonObject(root.filterKeys { key -> key != "headlessTurnEquivalent" })
+        manager.savePath().parent.createDirectories()
+        manager.savePath().writeText(json.encodeToString(JsonObject.serializer(), corrupted))
+
+        assertThrows(InvalidSaveException::class.java) {
+            manager.load()
+        }
+    }
+
+    @Test
+    fun `missing nested world progress fields are rejected instead of defaulting`() {
+        val manager = SaveManager(tempDir)
+        val codec = SaveCodec()
+        val json = Json { prettyPrint = true }
+        val encoded = codec.encode(SaveFixtures.resourceHeavyScene())
+        val root = json.parseToJsonElement(encoded).jsonObject
+        val worldProgress = root.getValue("worldProgress").jsonObject
+        val corruptedWorldProgress = JsonObject(worldProgress.filterKeys { key -> key != "claimedRouteRewards" })
+        val corrupted =
+            JsonObject(
+                root.toMutableMap().apply {
+                    put("worldProgress", corruptedWorldProgress)
+                },
+            )
+        manager.savePath().parent.createDirectories()
+        manager.savePath().writeText(json.encodeToString(JsonObject.serializer(), corrupted))
+
+        assertThrows(InvalidSaveException::class.java) {
             manager.load()
         }
     }

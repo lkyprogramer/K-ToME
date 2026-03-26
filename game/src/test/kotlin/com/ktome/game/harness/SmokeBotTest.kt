@@ -78,6 +78,27 @@ class SmokeBotTest {
     }
 
     @Test
+    fun `low hp uses teleport scroll as escape when boss closes in without blink`() {
+        val observation =
+            observation(
+                inventoryItems =
+                    listOf(
+                        InventoryItemView(
+                            index = 0,
+                            name = "传送卷轴",
+                            type = ItemType.CONSUMABLE,
+                            effect = ConsumableEffect.TELEPORT,
+                        ),
+                    ),
+                visibleBossPositions = listOf(Point(4, 1)),
+                visibleTiles = setOf(Point(1, 1), Point(2, 1), Point(3, 1), Point(4, 1)),
+                exploredTiles = setOf(Point(1, 1), Point(2, 1), Point(3, 1), Point(4, 1)),
+            )
+
+        assertEquals(PlayerCommand.ActivateInventoryItem(0), bot.decide(observation))
+    }
+
+    @Test
     fun `low hp heals before interacting with an objective on the same tile`() {
         val observation =
             observation(
@@ -101,6 +122,42 @@ class SmokeBotTest {
             )
 
         assertEquals(PlayerCommand.ActivateInventoryItem(0), bot.decide(observation))
+    }
+
+    @Test
+    fun `active shop buys affordable rescue offer before closing`() {
+        val observation =
+            observation(
+                inventoryItems = emptyList(),
+                zoneId = "greenwood_fringe",
+                shardBalance = 45,
+                activeShopId = "greenwood_supply_post",
+                activeShopOffers =
+                    listOf(
+                        ObservedShopOffer(index = 0, price = 18, tags = setOf("RECOVERY")),
+                        ObservedShopOffer(index = 1, price = 42, tags = setOf("MOVEMENT")),
+                    ),
+            )
+
+        assertEquals(PlayerCommand.BuyShopOffer(1), bot.decide(observation))
+    }
+
+    @Test
+    fun `active shop skips unactionable rescue inscription and buys the next purchasable rescue offer`() {
+        val observation =
+            observation(
+                inventoryItems = emptyList(),
+                zoneId = "greenwood_fringe",
+                shardBalance = 45,
+                activeShopId = "greenwood_supply_post",
+                activeShopOffers =
+                    listOf(
+                        ObservedShopOffer(index = 0, price = 18, tags = setOf("RECOVERY"), purchasable = true),
+                        ObservedShopOffer(index = 1, price = 42, tags = setOf("MOVEMENT"), purchasable = false),
+                    ),
+            )
+
+        assertEquals(PlayerCommand.BuyShopOffer(0), bot.decide(observation))
     }
 
     @Test
@@ -331,6 +388,99 @@ class SmokeBotTest {
     }
 
     @Test
+    fun `healthy rogue does not cast stealth only because a boss is visible`() {
+        val observation =
+            observation(
+                inventoryItems = emptyList(),
+                playerStatus = healthyStatus(),
+                playerResource = PlayerResourceView(current = 20, max = 20, typeId = "ENERGY"),
+                visibleHostilePositions = listOf(Point(4, 1)),
+                visibleBossPositions = listOf(Point(4, 1)),
+                knownDownstairsPositions = listOf(Point(0, 1)),
+                exploredTiles = setOf(Point(1, 1), Point(0, 1), Point(2, 1), Point(3, 1), Point(4, 1)),
+                visibleTiles = setOf(Point(0, 1), Point(1, 1), Point(2, 1), Point(3, 1), Point(4, 1)),
+                talentSlots =
+                    listOf(
+                        talentSlot(slot = 1, talentId = "stealth", resourceTypeId = "ENERGY", resourceCost = 0, range = 0, requiresTarget = false),
+                    ),
+            )
+
+        assertFalse(
+            bot.decide(observation) is PlayerCommand.UseTalent,
+            "Healthy rogue should not cast stealth just because a boss is visible.",
+        )
+    }
+
+    @Test
+    fun `visible boss without hostile snapshot is still pursued`() {
+        val observation =
+            observation(
+                inventoryItems = emptyList(),
+                playerResource = PlayerResourceView(current = 20, max = 20, typeId = "STAMINA"),
+                map = corridorMap,
+                playerPosition = Point(3, 0),
+                visibleBossPositions = listOf(Point(0, 0)),
+                visibleTiles = corridorMap.floorPoints().toSet(),
+                exploredTiles = corridorMap.floorPoints().toSet(),
+            )
+
+        assertEquals(PlayerCommand.Move(Point(-1, 0)), bot.decide(observation))
+    }
+
+    @Test
+    fun `last seen threat keeps pursuit when it drops out of sight`() {
+        val routeBot = SmokeBot()
+
+        routeBot.decide(
+            observation(
+                inventoryItems = emptyList(),
+                playerResource = PlayerResourceView(current = 20, max = 20, typeId = "STAMINA"),
+                map = longCorridorMap,
+                playerPosition = Point(4, 0),
+                visibleHostilePositions = listOf(Point(8, 0)),
+                visibleTiles = setOf(Point(4, 0), Point(5, 0), Point(6, 0), Point(7, 0), Point(8, 0)),
+                exploredTiles = setOf(Point(4, 0), Point(5, 0), Point(6, 0), Point(7, 0), Point(8, 0)),
+            ),
+        )
+
+        val command =
+            routeBot.decide(
+                observation(
+                    inventoryItems = emptyList(),
+                    playerResource = PlayerResourceView(current = 20, max = 20, typeId = "STAMINA"),
+                    map = longCorridorMap,
+                    playerPosition = Point(4, 0),
+                    visibleTiles = setOf(Point(4, 0), Point(5, 0), Point(6, 0)),
+                    exploredTiles = setOf(Point(4, 0), Point(5, 0), Point(6, 0)),
+                ),
+            )
+
+        assertEquals(PlayerCommand.Move(Point(1, 0)), command)
+    }
+
+    @Test
+    fun `low mana class does not recast mana surge while buff is active`() {
+        val observation =
+            observation(
+                inventoryItems = emptyList(),
+                playerStatus = healthyStatus(),
+                playerResource = PlayerResourceView(current = 8, max = 20, typeId = "MANA"),
+                map = corridorMap,
+                playerPosition = Point(3, 0),
+                visibleHostilePositions = listOf(Point(6, 0)),
+                visibleTiles = corridorMap.floorPoints().toSet(),
+                exploredTiles = corridorMap.floorPoints().toSet(),
+                playerStatusTypeIds = setOf("MANA_SURGE_BUFF"),
+                talentSlots =
+                    listOf(
+                        talentSlot(slot = 1, talentId = "mana_surge", resourceCost = 0, range = 0, requiresTarget = false),
+                    ),
+            )
+
+        assertEquals(PlayerCommand.Move(Point(1, 0)), bot.decide(observation))
+    }
+
+    @Test
     fun `low health mana class does not panic blink against a single boss at range`() {
         val observation =
             observation(
@@ -399,6 +549,42 @@ class SmokeBotTest {
     }
 
     @Test
+    fun `critical health human class uses human resolve before shield`() {
+        val observation =
+            observation(
+                inventoryItems = emptyList(),
+                playerStatus =
+                    PlayerStatus(
+                        currentHp = 12,
+                        maxHp = 30,
+                        level = 1,
+                        currentExperience = 0,
+                        nextLevelRequirement = 10,
+                        statPoints = 0,
+                        talentPoints = 0,
+                        attack = 6,
+                        defense = 4,
+                        accuracy = 5,
+                        evasion = 3,
+                        speed = 100,
+                    ),
+                playerResource = PlayerResourceView(current = 20, max = 20, typeId = "POSITIVE_ENERGY"),
+                map = corridorMap,
+                playerPosition = Point(3, 0),
+                visibleHostilePositions = listOf(Point(4, 0)),
+                visibleTiles = corridorMap.floorPoints().toSet(),
+                exploredTiles = corridorMap.floorPoints().toSet(),
+                talentSlots =
+                    listOf(
+                        talentSlot(slot = 1, talentId = "human_resolve", resourceTypeId = "POSITIVE_ENERGY", resourceCost = 0, range = 0, requiresTarget = false),
+                        talentSlot(slot = 2, talentId = "holy_shield", resourceTypeId = "POSITIVE_ENERGY", resourceCost = 12, range = 0, requiresTarget = false),
+                    ),
+            )
+
+        assertEquals(PlayerCommand.UseTalent(1), bot.decide(observation))
+    }
+
+    @Test
     fun `low health templar heals before shielding under adjacent melee pressure`() {
         val observation =
             observation(
@@ -435,6 +621,27 @@ class SmokeBotTest {
     }
 
     @Test
+    fun `low health dwarf uses grit when hostiles are nearby`() {
+        val observation =
+            observation(
+                inventoryItems = emptyList(),
+                playerStatus = healthyStatus().copy(currentHp = 16),
+                playerResource = PlayerResourceView(current = 20, max = 20, typeId = "STAMINA"),
+                map = corridorMap,
+                playerPosition = Point(3, 0),
+                visibleHostilePositions = listOf(Point(5, 0)),
+                visibleTiles = corridorMap.floorPoints().toSet(),
+                exploredTiles = corridorMap.floorPoints().toSet(),
+                talentSlots =
+                    listOf(
+                        talentSlot(slot = 1, talentId = "dwarf_grit", resourceTypeId = "STAMINA", resourceCost = 0, range = 0, requiresTarget = false),
+                    ),
+            )
+
+        assertEquals(PlayerCommand.UseTalent(1), bot.decide(observation))
+    }
+
+    @Test
     fun `critical health mana class blinks away from multiple nearby hostiles`() {
         val observation =
             observation(
@@ -464,6 +671,51 @@ class SmokeBotTest {
         val command = bot.decide(observation)
 
         assertTrue(command is PlayerCommand.UseTalent && command.slot == 2, "Expected critical mana bot to blink away from multiple hostiles, but got $command.")
+    }
+
+    @Test
+    fun `elf scouting is used to close on distant visible hostile`() {
+        val observation =
+            observation(
+                inventoryItems = emptyList(),
+                playerStatus = healthyStatus(),
+                playerResource = PlayerResourceView(current = 20, max = 20, typeId = "STAMINA"),
+                map = longCorridorMap,
+                playerPosition = Point(4, 0),
+                visibleHostilePositions = listOf(Point(8, 0)),
+                visibleTiles = longCorridorMap.floorPoints().toSet(),
+                exploredTiles = longCorridorMap.floorPoints().toSet(),
+                talentSlots =
+                    listOf(
+                        talentSlot(slot = 1, talentId = "elf_scouting", resourceTypeId = "STAMINA", resourceCost = 0, range = 4, requiresTarget = true).copy(minRange = 1),
+                    ),
+            )
+
+        assertEquals(PlayerCommand.UseTalent(1, Point(8, 0)), bot.decide(observation))
+    }
+
+    @Test
+    fun `healthy vanguard does not recast guard stance on a lone visible boss`() {
+        val observation =
+            observation(
+                inventoryItems = emptyList(),
+                playerStatus = healthyStatus(),
+                playerResource = PlayerResourceView(current = 20, max = 20, typeId = "STAMINA"),
+                visibleHostilePositions = listOf(Point(4, 1)),
+                visibleBossPositions = listOf(Point(4, 1)),
+                knownDownstairsPositions = listOf(Point(0, 1)),
+                exploredTiles = setOf(Point(1, 1), Point(0, 1), Point(2, 1), Point(3, 1), Point(4, 1)),
+                visibleTiles = setOf(Point(0, 1), Point(1, 1), Point(2, 1), Point(3, 1), Point(4, 1)),
+                talentSlots =
+                    listOf(
+                        talentSlot(slot = 1, talentId = "guard_stance", resourceTypeId = "STAMINA", resourceCost = 0, range = 0, requiresTarget = false),
+                    ),
+            )
+
+        assertFalse(
+            bot.decide(observation) is PlayerCommand.UseTalent,
+            "Healthy vanguard should not spend a turn on guard stance against a lone visible boss.",
+        )
     }
 
     @Test
@@ -571,6 +823,43 @@ class SmokeBotTest {
     }
 
     @Test
+    fun `low health templar holds melee pressure against a lone adjacent boss when no emergency action is ready`() {
+        val observation =
+            observation(
+                inventoryItems = emptyList(),
+                playerStatus =
+                    PlayerStatus(
+                        currentHp = 16,
+                        maxHp = 30,
+                        level = 1,
+                        currentExperience = 0,
+                        nextLevelRequirement = 10,
+                        statPoints = 0,
+                        talentPoints = 0,
+                        attack = 6,
+                        defense = 4,
+                        accuracy = 5,
+                        evasion = 3,
+                        speed = 100,
+                    ),
+                playerResource = PlayerResourceView(current = 8, max = 20, typeId = "POSITIVE_ENERGY"),
+                map = corridorMap,
+                playerPosition = Point(3, 0),
+                visibleHostilePositions = listOf(Point(4, 0)),
+                visibleBossPositions = listOf(Point(4, 0)),
+                visibleTiles = corridorMap.floorPoints().toSet(),
+                exploredTiles = corridorMap.floorPoints().toSet(),
+                talentSlots =
+                    listOf(
+                        talentSlot(slot = 1, talentId = "holy_light", resourceTypeId = "POSITIVE_ENERGY", resourceCost = 12, range = 0, requiresTarget = false),
+                        talentSlot(slot = 2, talentId = "holy_shield", resourceTypeId = "POSITIVE_ENERGY", resourceCost = 12, range = 0, requiresTarget = false),
+                    ),
+            )
+
+        assertEquals(PlayerCommand.Move(Point(1, 0)), bot.decide(observation))
+    }
+
+    @Test
     fun `templar without judgment hammer keeps route progress instead of chasing distant hostile`() {
         val observation =
             observation(
@@ -593,8 +882,91 @@ class SmokeBotTest {
         assertEquals(PlayerCommand.Move(Point(-1, 0)), bot.decide(observation))
     }
 
+    @Test
+    fun `templar without ready offensive talent still chases a distant boss`() {
+        val observation =
+            observation(
+                inventoryItems = emptyList(),
+                playerStatus = healthyStatus(),
+                playerResource = PlayerResourceView(current = 0, max = 20, typeId = "POSITIVE_ENERGY"),
+                map = longCorridorMap,
+                playerPosition = Point(4, 0),
+                visibleBossPositions = listOf(Point(8, 0)),
+                visibleTiles = longCorridorMap.floorPoints().toSet(),
+                exploredTiles = longCorridorMap.floorPoints().toSet(),
+                knownDownstairsPositions = listOf(Point(0, 0)),
+                talentSlots =
+                    listOf(
+                        talentSlot(slot = 1, talentId = "holy_strike", resourceTypeId = "POSITIVE_ENERGY", resourceCost = 8, range = 1, requiresTarget = true),
+                        talentSlot(slot = 2, talentId = "holy_light", resourceTypeId = "POSITIVE_ENERGY", resourceCost = 12, range = 0, requiresTarget = false),
+                    ),
+            )
+
+        assertEquals(PlayerCommand.Move(Point(1, 0)), bot.decide(observation))
+    }
+
+    @Test
+    fun `templar keeps boss pursuit after briefly losing sight until the last seen area is searched`() {
+        val initialObservation =
+            observation(
+                inventoryItems = emptyList(),
+                playerStatus = healthyStatus(),
+                playerResource = PlayerResourceView(current = 0, max = 20, typeId = "POSITIVE_ENERGY"),
+                map = longCorridorMap,
+                playerPosition = Point(4, 0),
+                visibleBossPositions = listOf(Point(8, 0)),
+                visibleTiles = longCorridorMap.floorPoints().toSet(),
+                exploredTiles = longCorridorMap.floorPoints().toSet(),
+                knownDownstairsPositions = listOf(Point(0, 0)),
+                talentSlots =
+                    listOf(
+                        talentSlot(slot = 1, talentId = "holy_strike", resourceTypeId = "POSITIVE_ENERGY", resourceCost = 8, range = 1, requiresTarget = true),
+                        talentSlot(slot = 2, talentId = "holy_light", resourceTypeId = "POSITIVE_ENERGY", resourceCost = 12, range = 0, requiresTarget = false),
+                    ),
+            )
+        assertEquals(PlayerCommand.Move(Point(1, 0)), bot.decide(initialObservation))
+
+        val lostSightObservation =
+            observation(
+                inventoryItems = emptyList(),
+                playerStatus = healthyStatus(),
+                playerResource = PlayerResourceView(current = 0, max = 20, typeId = "POSITIVE_ENERGY"),
+                map = longCorridorMap,
+                playerPosition = Point(5, 0),
+                visibleTiles = longCorridorMap.floorPoints().toSet(),
+                exploredTiles = longCorridorMap.floorPoints().toSet(),
+                knownDownstairsPositions = listOf(Point(0, 0)),
+                talentSlots =
+                    listOf(
+                        talentSlot(slot = 1, talentId = "holy_strike", resourceTypeId = "POSITIVE_ENERGY", resourceCost = 8, range = 1, requiresTarget = true),
+                        talentSlot(slot = 2, talentId = "holy_light", resourceTypeId = "POSITIVE_ENERGY", resourceCost = 12, range = 0, requiresTarget = false),
+                    ),
+            )
+        assertEquals(PlayerCommand.Move(Point(1, 0)), bot.decide(lostSightObservation))
+
+        val searchedObservation =
+            observation(
+                inventoryItems = emptyList(),
+                playerStatus = healthyStatus(),
+                playerResource = PlayerResourceView(current = 0, max = 20, typeId = "POSITIVE_ENERGY"),
+                map = longCorridorMap,
+                playerPosition = Point(7, 0),
+                visibleTiles = longCorridorMap.floorPoints().toSet(),
+                exploredTiles = longCorridorMap.floorPoints().toSet(),
+                knownDownstairsPositions = listOf(Point(0, 0)),
+                talentSlots =
+                    listOf(
+                        talentSlot(slot = 1, talentId = "holy_strike", resourceTypeId = "POSITIVE_ENERGY", resourceCost = 8, range = 1, requiresTarget = true),
+                        talentSlot(slot = 2, talentId = "holy_light", resourceTypeId = "POSITIVE_ENERGY", resourceCost = 12, range = 0, requiresTarget = false),
+                    ),
+            )
+
+        assertEquals(PlayerCommand.Move(Point(-1, 0)), bot.decide(searchedObservation))
+    }
+
     private fun observation(
         inventoryItems: List<InventoryItemView>,
+        zoneId: String = "shattered_outpost",
         playerStatus: PlayerStatus =
             PlayerStatus(
                 currentHp = 10,
@@ -611,6 +983,7 @@ class SmokeBotTest {
                 speed = 100,
             ),
         playerResource: PlayerResourceView = PlayerResourceView(current = 6, max = 20, typeId = "MANA"),
+        shardBalance: Int = 0,
         visibleHostilePositions: List<Point> = emptyList(),
         visibleBossPositions: List<Point> = emptyList(),
         visibleTiles: Set<Point> = setOf(Point(1, 1)),
@@ -618,16 +991,21 @@ class SmokeBotTest {
         knownDownstairsPositions: List<Point> = emptyList(),
         visibleGroundItemPositions: List<Point> = emptyList(),
         visibleInteractables: List<ObservedInteractable> = emptyList(),
+        activeShopId: String? = null,
+        activeShopOffers: List<ObservedShopOffer> = emptyList(),
         map: GameMap = this.map,
         playerPosition: Point = Point(1, 1),
+        playerStatusTypeIds: Set<String> = emptySet(),
         talentSlots: List<TalentSlotView> = emptyList(),
         reserveTalents: List<com.ktome.game.TalentReserveView> = emptyList(),
     ): RunObservation =
         RunObservation(
+            zoneId = zoneId,
             floor = 1,
             turnIndex = 10,
             playerStatus = playerStatus,
             playerResource = playerResource,
+            shardBalance = shardBalance,
             playerPosition = playerPosition,
             map = map,
             visibleTiles = visibleTiles,
@@ -638,6 +1016,9 @@ class SmokeBotTest {
             visibleGroundItemPositions = visibleGroundItemPositions,
             visibleInteractables = visibleInteractables,
             knownDownstairsPositions = knownDownstairsPositions,
+            playerStatusTypeIds = playerStatusTypeIds,
+            activeShopId = activeShopId,
+            activeShopOffers = activeShopOffers,
             inventoryItems = inventoryItems,
             talentSlots = talentSlots,
             reserveTalents = reserveTalents,

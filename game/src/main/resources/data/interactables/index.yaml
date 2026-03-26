@@ -7,6 +7,14 @@ interactables:
     schemaVersion: 2
     tags: [interactable, gate]
     interactionTags: [gate, objective]
+  - id: merchant_stall
+    nameKey: interactable.merchant_stall.name
+    descKey: interactable.merchant_stall.desc
+    visualKey: prop.armory_gate
+    audioProfile: audio.interactable.open
+    schemaVersion: 2
+    tags: [interactable, shop]
+    interactionTags: [shop]
   - id: supply_crate
     nameKey: interactable.supply_crate.name
     descKey: interactable.supply_crate.desc
@@ -95,3 +103,59 @@ interactables:
     schemaVersion: 2
     tags: [interactable, warning]
     interactionTags: [warning, objective]
+  - id: bandit_cache
+    nameKey: interactable.bandit_cache.name
+    descKey: interactable.bandit_cache.desc
+    visualKey: prop.supply_crate
+    audioProfile: audio.interactable.open
+    schemaVersion: 2
+    tags: [interactable, reward, optional]
+    interactionTags: [loot, objective]
+  - id: elven_wardstone
+    nameKey: interactable.elven_wardstone.name
+    descKey: interactable.elven_wardstone.desc
+    visualKey: prop.ritual_altar
+    audioProfile: audio.interactable.open
+    schemaVersion: 2
+    tags: [interactable, support, optional]
+    interactionTags: [support, objective]
+  - id: molten_pressure_valve
+    nameKey: interactable.molten_pressure_valve.name
+    descKey: interactable.molten_pressure_valve.desc
+    visualKey: prop.mine_furnace
+    audioProfile: audio.interactable.open
+    schemaVersion: 2
+    tags: [interactable, support, optional]
+    interactionTags: [support, objective]
+  - id: crystal_resonance_node
+    nameKey: interactable.crystal_resonance_node.name
+    descKey: interactable.crystal_resonance_node.desc
+    visualKey: prop.ritual_altar
+    audioProfile: audio.interactable.open
+    schemaVersion: 2
+    tags: [interactable, support, optional]
+    interactionTags: [support, objective]
+  - id: river_ferry_anchor
+    nameKey: interactable.river_ferry_anchor.name
+    descKey: interactable.river_ferry_anchor.desc
+    visualKey: prop.armory_gate
+    audioProfile: audio.interactable.open
+    schemaVersion: 2
+    tags: [interactable, support, route]
+    interactionTags: [support, objective]
+  - id: temple_ward_reliquary
+    nameKey: interactable.temple_ward_reliquary.name
+    descKey: interactable.temple_ward_reliquary.desc
+    visualKey: prop.ritual_altar
+    audioProfile: audio.interactable.open
+    schemaVersion: 2
+    tags: [interactable, support, route]
+    interactionTags: [support, objective]
+  - id: heart_ward_focus
+    nameKey: interactable.heart_ward_focus.name
+    descKey: interactable.heart_ward_focus.desc
+    visualKey: prop.ritual_altar
+    audioProfile: audio.interactable.open
+    schemaVersion: 2
+    tags: [interactable, support, finale]
+    interactionTags: [support, objective]

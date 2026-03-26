@@ -158,6 +158,9 @@ class AudioRouter(
 
         val selectionChanged =
             previous.inventorySelection != current.inventorySelection ||
+                previous.shopOfferSelection != current.shopOfferSelection ||
+                previous.routeSelection != current.routeSelection ||
+                previous.shopFocus != current.shopFocus ||
                 previous.loadoutSlotSelection != current.loadoutSlotSelection ||
                 previous.loadoutReserveSelection != current.loadoutReserveSelection ||
                 previous.targetingCursor != current.targetingCursor ||
@@ -233,6 +236,9 @@ class AudioRouter(
             PlayerCommand.Descend,
             -> play("audio.interactable.stairs")
 
+            is PlayerCommand.BuyShopOffer,
+            is PlayerCommand.SellInventoryItem,
+            is PlayerCommand.SelectRoute,
             is PlayerCommand.EquipTalentToSlot,
             is PlayerCommand.AssignStat,
             is PlayerCommand.AssignTalent,
@@ -241,6 +247,8 @@ class AudioRouter(
             PlayerCommand.RollbackTalentDraft,
             PlayerCommand.SaveGame,
             -> play("audio.ui.confirm")
+
+            PlayerCommand.CloseShop -> play("audio.ui.cancel")
 
             PlayerCommand.Wait -> Unit
         }

@@ -134,6 +134,8 @@ class AsciiRenderer(
         ): String =
             when (mode) {
                 UiMode.MAP -> localizer.text("ui.sidebar.ground")
+                UiMode.SHOP -> localizer.text("ui.sidebar.shop")
+                UiMode.WORLD_MAP -> localizer.text("ui.sidebar.world_map")
                 UiMode.INVENTORY -> localizer.text("ui.sidebar.inventory")
                 UiMode.LOADOUT_EDIT -> localizer.text("ui.sidebar.loadout")
                 UiMode.TARGETING -> localizer.text("ui.sidebar.targeting")

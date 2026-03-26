@@ -5,6 +5,10 @@ import com.ktome.core.ai.BossPhaseDef
 import com.ktome.core.ai.TelegraphSpec
 import com.ktome.core.ai.ThreatProfileDef
 import com.ktome.core.inscription.InscriptionDef
+import com.ktome.core.economy.AffordableRescueSlotPolicy
+import com.ktome.core.economy.RescueInventoryPolicy
+import com.ktome.core.economy.ShopNode
+import com.ktome.core.economy.ShopOffer
 import com.ktome.core.profession.ProfessionTier
 import com.ktome.core.profession.ReleaseUnlockCondition
 import com.ktome.core.profession.SoloContractDef
@@ -14,10 +18,16 @@ import com.ktome.core.resource.ResourceAxis
 import com.ktome.core.resource.ResourceProfileRef
 import com.ktome.core.resource.ResourceType
 import com.ktome.core.talent.TalentTreeOwnerType
+import com.ktome.core.item.AffixEquipType
 import com.ktome.core.item.AffixType
 import com.ktome.core.item.ConsumableEffect
 import com.ktome.core.item.EquipSlot
 import com.ktome.core.item.ItemType
+import com.ktome.core.world.GateCondition
+import com.ktome.core.world.QuestProgress
+import com.ktome.core.world.RouteReward
+import com.ktome.core.world.WorldGraph
+import com.ktome.core.world.ZoneConnection
 
 data class SchemaCatalog(
     val professions: List<ProfessionSchemaV2>,
@@ -31,6 +41,10 @@ data class SchemaCatalog(
     val telegraphSpecs: List<TelegraphSpec>,
     val threatProfiles: List<ThreatProfileDef>,
     val zones: List<ZoneSchemaV2>,
+    val worldGraph: WorldGraph = WorldGraph(startZoneId = "shattered_outpost", connections = emptyList()),
+    val routeRewards: List<RouteReward> = emptyList(),
+    val questProgressions: List<QuestProgress> = emptyList(),
+    val shopNodes: List<ShopNode> = emptyList(),
     val interactables: List<InteractableSchemaV2>,
     val objectiveSets: List<ObjectiveSetSchemaV2>,
     val difficulties: List<DifficultySchemaV2>,
@@ -341,10 +355,13 @@ data class ZoneSchemaV2(
     val specialMechanics: List<String>,
     val tilesetKey: String,
     val ambientProfile: String,
+    val worldRole: String,
     val monsterPools: List<String>,
     val elitePools: List<String>,
     val bossEncounterId: String?,
     val objectiveSetId: String?,
+    val shopNodeId: String? = null,
+    val uniqueContentTag: String? = null,
 )
 
 data class InteractableSchemaV2(
@@ -367,6 +384,8 @@ data class ObjectiveSetSchemaV2(
     val interactables: List<String>,
     val placements: List<ObjectiveInteractablePlacementSchemaV2>,
     val completionRule: String,
+    val linkedQuestId: String? = null,
+    val questObjectiveId: String? = null,
 )
 
 data class ObjectiveInteractablePlacementSchemaV2(
@@ -426,8 +445,67 @@ data class AffixSchemaV2(
     val schemaVersion: Int,
     val tags: List<String>,
     val type: AffixType,
+    val equipType: AffixEquipType,
+    val tier: Int,
     val minFloor: Int,
     val stats: SchemaStatModifier,
+    val blacklistTags: List<String> = emptyList(),
+)
+
+data class WorldGraphSchemaV2(
+    val startZoneId: String,
+    val connections: List<ZoneConnectionSchemaV2>,
+)
+
+data class ZoneConnectionSchemaV2(
+    val id: String,
+    val fromZoneId: String,
+    val toZoneId: String,
+    val isBidirectional: Boolean = true,
+    val gate: GateCondition = GateCondition(),
+)
+
+data class RouteRewardSchemaV2(
+    val routeId: String,
+    val claimPolicy: String,
+    val levelBandRef: String,
+    val shardReward: Int,
+    val guaranteedDropIds: List<String>,
+    val rescueTags: List<String>,
+)
+
+data class QuestProgressSchemaV2(
+    val questId: String,
+    val objectiveStates: Map<String, String>,
+    val completionFlags: List<String>,
+)
+
+data class ShopNodeSchemaV2(
+    val id: String,
+    val zoneId: String,
+    val nameKey: String,
+    val inventory: List<ShopOfferSchemaV2>,
+    val rescuePolicy: RescueInventoryPolicySchemaV2,
+)
+
+data class ShopOfferSchemaV2(
+    val id: String,
+    val itemBaseId: String? = null,
+    val inscriptionId: String? = null,
+    val price: Int,
+    val tags: List<String> = emptyList(),
+)
+
+data class RescueInventoryPolicySchemaV2(
+    val guaranteedTags: List<String>,
+    val affordability: AffordableRescueSlotPolicySchemaV2,
+)
+
+data class AffordableRescueSlotPolicySchemaV2(
+    val checkpointId: String,
+    val expectedShardBudgetByCheckpoint: Int,
+    val mandatoryAffordableItemCount: Int,
+    val requiredAffordableTags: List<String>,
 )
 
 data class EquipmentPassiveSchemaV2(

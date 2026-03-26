@@ -49,3 +49,14 @@ telegraphSpecs:
     threatProfileId: threat.frontliner.mid
     counterplayTags: [DODGE, INTERRUPT]
     stages: []
+  - id: abyssal_guardian_phase_warning
+    schemaVersion: 2
+    tags: [telegraph, boss, finale]
+    shape: CONE
+    length: 5
+    angle: 90
+    previewTurns: 2
+    dangerLevel: LETHAL
+    threatProfileId: threat.frontliner.mid
+    counterplayTags: [DODGE, INTERRUPT, BLOCK]
+    stages: []

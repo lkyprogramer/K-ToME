@@ -58,34 +58,8 @@ class SaveVersionCompatibilityTest {
     @Test
     fun `semantically invalid current contract save is normalized to invalid save exception`() {
         val invalidCurrentContractSave =
-            """
-            {
-              "schemaVersion": 1,
-              "saveContractVersion": { "major": 3, "minor": 1 },
-              "buildMetadata": "phase2-dev",
-              "timestampEpochMillis": 1,
-              "worldSeed": 42,
-              "currentZoneId": "foundation_dungeon",
-              "floorIndex": 1,
-              "mapWidth": 80,
-              "mapHeight": 50,
-              "fovRadius": 8,
-              "messageLogSize": 8,
-              "playerProfessionId": "foundation_hero",
-              "maxFloor": 1,
-              "turnCount": 0,
-              "player": { "entity": { "id": 1, "isPlayerControlled": true } },
-              "floors": [
-                {
-                  "floorIndex": 1,
-                  "map": {
-                    "rows": [],
-                    "playerStart": { "x": 0, "y": 0 }
-                  }
-                }
-              ]
-            }
-            """.trimIndent()
+            codec.encode(SaveFixtures.emptyScene())
+                .replace("\"routeIndex\": 0", "\"routeIndex\": 99")
 
         val exception =
             assertThrows(InvalidSaveException::class.java) {

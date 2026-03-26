@@ -31,7 +31,7 @@ races:
     audioProfile: audio.profession.templar
     schemaVersion: 1
     tags: [race, playable]
-    statModifiers: { con: 1, hpDelta: 4, speedDelta: -2 }
+    statModifiers: { con: 1, hpDelta: 4, speedDelta: -1 }
     talentTrees: [dwarf_resilience]
     startingTalents: []
     initialUnlockState: RELEASE_UNLOCKED

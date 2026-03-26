@@ -14,7 +14,11 @@ import com.ktome.core.ecs.add
 import com.ktome.core.ecs.AIType
 import com.ktome.core.ecs.PatrolRoute
 import com.ktome.core.ecs.get
+import com.ktome.core.economy.ShardEconomy
+import com.ktome.core.economy.ShopInventoryState
+import com.ktome.core.economy.ShopNode
 import com.ktome.core.fov.Shadowcasting
+import com.ktome.core.item.AffixSelectionContext
 import com.ktome.core.map.BspConfig
 import com.ktome.core.map.BspGenerator
 import com.ktome.core.map.Point
@@ -55,6 +59,8 @@ import com.ktome.core.profile.ClassUnlockState
 import com.ktome.core.profile.ProfileData
 import com.ktome.core.stats.StatsCalculator
 import com.ktome.core.race.RaceDef
+import com.ktome.core.world.ObjectiveState
+import com.ktome.core.world.WorldProgressDef
 import java.nio.file.Path
 import kotlin.random.Random
 import com.ktome.game.data.schema.ProfessionSchemaV2
@@ -159,6 +165,10 @@ object GameModule {
             dungeonManager = dungeonManager,
             playerSnapshot = startingPlayer,
             initialMessageLog = zoneRuntime.initialMessages,
+            worldProgress = initialWorldProgress(content.schemaCatalog),
+            shopStates = content.schemaCatalog.shopNodes.associateByTo(linkedMapOf(), ShopNode::id) { shop ->
+                ShopInventoryState(shopId = shop.id)
+            },
             zoneRuntimeFactory = { nextConfig -> buildZoneRuntime(content, nextConfig) },
         )
     }
@@ -209,6 +219,10 @@ object GameModule {
             playerSnapshot = restored.player,
             initialMessageLog = listOf(RenderLogEventSnapshot(RenderTextTokenSnapshot("log.session.loaded"))),
             turnCount = restored.turnCount,
+            headlessTurnEquivalent = restored.headlessTurnEquivalent,
+            worldProgress = restored.worldProgress,
+            shardBalance = restored.shardBalance,
+            shopStates = restored.shopStates.associateByTo(linkedMapOf(), ShopInventoryState::shopId),
             combatRandomSource =
                 restored.combatRandomState?.let(SplitMix64RandomSource::fromState)
                     ?: FoundationGameSession.defaultCombatRandomSource(sessionConfig, restored.turnCount),
@@ -271,7 +285,10 @@ object GameModule {
             localizer = loader.localizer,
             telegraphRegistry = TelegraphRegistry(schemaCatalog.telegraphSpecs.associateBy { spec -> spec.id }),
             threatProfileRegistry = ThreatProfileRegistry(schemaCatalog.threatProfiles.associateBy { profile -> profile.id }),
-        ).also(::validateAiProfileContracts)
+        ).also { content ->
+            validateAiProfileContracts(content)
+            validateWorldStructureContracts(content)
+        }
     }
 
     private fun initialMessagesForZone(
@@ -299,6 +316,16 @@ object GameModule {
                         RenderTextTokenSnapshot(
                             "log.objective.activate",
                             arguments = listOf(RenderTextArgumentSnapshot(name = "objective", valueKey = objective.nameKey)),
+                        ),
+                    ),
+                )
+            }
+            ZoneMechanicRuntime.introHintKey(zone)?.let { hintKey ->
+                add(
+                    RenderLogEventSnapshot(
+                        RenderTextTokenSnapshot(
+                            "log.zone.mechanic_hint",
+                            arguments = listOf(RenderTextArgumentSnapshot(name = "hint", valueKey = hintKey)),
                         ),
                     ),
                 )
@@ -344,6 +371,8 @@ object GameModule {
         val itemFactory = ItemFactory()
         val bossFactory = BossFactory(factory)
         val itemGenerator = ItemGenerator(content.itemBundle, com.ktome.core.random.RandomSource.from(Random(floorSeed(config.seed, floor, 0x91F3))))
+        val profession = resolveProfession(content.schemaCatalog, config.playerProfessionId)
+        val affixBuildContext = professionAffixBuildContext(content.schemaCatalog, profession)
         val monsterRandom = Random(floorSeed(config.seed, floor, 0x63AF))
         val bossDefinition = if (floor == config.maxFloor) resolveBossDefinition(content, zone) else null
         val stairsUp = if (floor > 1) map.playerStart else null
@@ -385,14 +414,15 @@ object GameModule {
                 random = monsterRandom,
                 desiredCount = zoneMonsterSpawnCount(zone, floor, map.rooms.size),
             )
-            spawnItems(
-                itemFactory = itemFactory,
-                itemGenerator = itemGenerator,
-                world = world,
-                map = map,
-                floor = floor,
-                occupiedPoints = occupiedPoints,
-            )
+        spawnItems(
+            itemFactory = itemFactory,
+            itemGenerator = itemGenerator,
+            affixContext = affixBuildContext,
+            world = world,
+            map = map,
+            floor = floor,
+            occupiedPoints = occupiedPoints,
+        )
         }
         createObjectiveInteractables(
             world = world,
@@ -404,6 +434,15 @@ object GameModule {
             stairsUp = stairsUp,
             stairsDown = stairsDown,
             bossPosition = bossPosition,
+        )
+        createShopInteractable(
+            world = world,
+            map = map,
+            floor = floor,
+            zone = zone,
+            content = content,
+            occupiedPoints = occupiedPoints,
+            stairsUp = stairsUp,
         )
 
         return FloorState(
@@ -433,6 +472,9 @@ object GameModule {
         random: Random,
         desiredCount: Int,
     ) {
+        if (desiredCount <= 0) {
+            return
+        }
         val availableTemplates = catalog.filter { floor in it.spawnFloors }.ifEmpty { catalog }
         val roomCandidates = map.rooms.drop(1)
         if (availableTemplates.isEmpty() || roomCandidates.isEmpty()) {
@@ -466,8 +508,12 @@ object GameModule {
         roomCount: Int,
     ): Int {
         return when (zone.id) {
-            "shattered_outpost" -> if (floor == 1) 3 else 4
-            "greenwood_fringe" -> if (floor == 1) 4 else 5
+            "shattered_outpost" -> 2
+            "greenwood_fringe" -> 2
+            "deep_iron_pit" -> 1
+            "grey_gate_depths" -> 0
+            "underground_river" -> 1
+            "abyssal_temple" -> 0
             else -> roomCount.coerceAtMost(4).coerceAtLeast(3)
         }
     }
@@ -580,7 +626,11 @@ object GameModule {
     ): Int =
         when {
             zone.id == "shattered_outpost" && floor == 1 -> 0
-            zone.id == "greenwood_fringe" && floor == 1 -> 1
+            zone.id == "greenwood_fringe" -> 0
+            zone.id == "deep_iron_pit" -> 1
+            zone.id == "grey_gate_depths" -> 1
+            zone.id == "underground_river" -> 1
+            zone.id == "abyssal_temple" -> 1
             else -> Int.MAX_VALUE
         }
 
@@ -638,6 +688,7 @@ object GameModule {
     private fun spawnItems(
         itemFactory: ItemFactory,
         itemGenerator: ItemGenerator,
+        affixContext: AffixSelectionContext,
         world: World,
         map: com.ktome.core.map.GameMap,
         floor: Int,
@@ -646,7 +697,7 @@ object GameModule {
         val itemRooms = map.rooms.drop(1).take(4)
         itemRooms.forEach { room ->
             val spawnPoint = findSpawnPoints(room, map, occupiedPoints).first()
-            itemFactory.createGroundItem(world, itemGenerator.generate(floor), spawnPoint)
+            itemFactory.createGroundItem(world, itemGenerator.generate(floor, affixContext), spawnPoint)
             occupiedPoints += spawnPoint
         }
     }
@@ -900,6 +951,7 @@ object GameModule {
             Glyph(
                 when (interactableId) {
                     "armory_gate" -> '+'
+                    "merchant_stall" -> '$'
                     "alarm_bonfire", "warden_beacon", "slag_valve", "shadow_brazier" -> '^'
                     "mine_furnace" -> '#'
                     "ritual_altar" -> '='
@@ -912,6 +964,7 @@ object GameModule {
             DisplayColor(
                 when (interactableId) {
                     "armory_gate" -> "#C7B48A"
+                    "merchant_stall" -> "#F2D16B"
                     "alarm_bonfire", "warden_beacon" -> "#FF8A3D"
                     "slag_valve" -> "#D66A3D"
                     "shadow_brazier" -> "#8A73C9"
@@ -922,6 +975,31 @@ object GameModule {
             ),
         )
         world.add(entityId, Name(content.localizer.text(schema.nameKey)))
+    }
+
+    private fun createShopInteractable(
+        world: World,
+        map: com.ktome.core.map.GameMap,
+        floor: Int,
+        zone: ZoneSchemaV2,
+        content: GameContent,
+        occupiedPoints: MutableSet<Point>,
+        stairsUp: Point?,
+    ) {
+        val shopNodeId = zone.shopNodeId ?: return
+        val placementFloor =
+            when (shopNodeId) {
+                "greenwood_supply_post" -> 1
+                "deep_iron_pit_waystation" -> maxOf(1, zone.floorCount / 2)
+                else -> 1
+            }
+        if (floor != placementFloor) {
+            return
+        }
+        val preferredPoint = routeVisibleAnchor(map, stairsUp ?: map.playerStart, fallbackRoomCenter(map))
+        val shopPoint = findObjectiveInteractablePoint(map, preferredPoint, occupiedPoints) ?: return
+        createInteractable(world, "merchant_stall", shopPoint, content)
+        occupiedPoints += shopPoint
     }
 
     private fun resolveProfession(
@@ -1285,6 +1363,114 @@ object GameModule {
             }
     }
 
+    private fun validateWorldStructureContracts(content: GameContent) {
+        val schemaCatalog = content.schemaCatalog
+        val zonesById = schemaCatalog.zones.associateBy(ZoneSchemaV2::id)
+        val shopsById = schemaCatalog.shopNodes.associateBy(ShopNode::id)
+        val objectivesById = schemaCatalog.objectiveSets.associateBy { objective -> objective.id }
+        val questsById = schemaCatalog.questProgressions.associateBy { quest -> quest.questId }
+        val worldConnectionsById = schemaCatalog.worldGraph.connections.associateBy { connection -> connection.id }
+        require(shopsById.size == schemaCatalog.shopNodes.size) {
+            "Shop ids must stay unique."
+        }
+        val routeRewardsById = schemaCatalog.routeRewards.associateBy { reward -> reward.routeId }
+        require(routeRewardsById.size == schemaCatalog.routeRewards.size) {
+            "Route reward ids must stay unique."
+        }
+        require(routeRewardsById.keys == worldConnectionsById.keys) {
+            val missingRewards = worldConnectionsById.keys - routeRewardsById.keys
+            val orphanRewards = routeRewardsById.keys - worldConnectionsById.keys
+            "Route rewards must match world graph connections. Missing=$missingRewards orphaned=$orphanRewards"
+        }
+
+        schemaCatalog.questProgressions.forEach { quest ->
+            require(quest.objectiveStates.isEmpty() || quest.objectiveStates.values.any { state -> state != ObjectiveState.COMPLETED }) {
+                "Quest '${quest.questId}' must not start fully completed in seed data."
+            }
+        }
+
+        schemaCatalog.objectiveSets.forEach { objective ->
+            objective.linkedQuestId?.let { questId ->
+                val quest = requireNotNull(questsById[questId]) {
+                    "Objective set '${objective.id}' references unknown quest '$questId'."
+                }
+                val questObjectiveId = requireNotNull(objective.questObjectiveId) {
+                    "Objective set '${objective.id}' must define questObjectiveId when linkedQuestId is present."
+                }
+                require(questObjectiveId in quest.objectiveStates) {
+                    "Objective set '${objective.id}' references unknown quest objective '$questObjectiveId' in quest '$questId'."
+                }
+            }
+        }
+
+        schemaCatalog.shopNodes.forEach { shop ->
+            require(shop.zoneId in zonesById) {
+                "Shop '${shop.id}' references unknown zone '${shop.zoneId}'."
+            }
+            shop.rescuePolicy.guaranteedTags.forEach { tag ->
+                require(shop.inventory.any { offer -> tag in offer.tags }) {
+                    "Shop '${shop.id}' is missing guaranteed rescue tag '$tag' in inventory."
+                }
+            }
+            val affordableOffers =
+                ShardEconomy.mandatoryAffordableOffers(
+                    offers = shop.inventory,
+                    balance = shop.rescuePolicy.affordability.expectedShardBudgetByCheckpoint,
+                    requiredTags = shop.rescuePolicy.affordability.requiredAffordableTags,
+                )
+            require(affordableOffers.size >= shop.rescuePolicy.affordability.mandatoryAffordableItemCount) {
+                "Shop '${shop.id}' fails rescue affordability contract at checkpoint '${shop.rescuePolicy.affordability.checkpointId}'."
+            }
+        }
+
+        schemaCatalog.zones.forEach { zone ->
+            val objective =
+                zone.objectiveSetId?.let { objectiveSetId ->
+                    require(objectiveSetId in objectivesById) {
+                        "Zone '${zone.id}' references unknown objective set '$objectiveSetId'."
+                    }
+                    requireNotNull(objectivesById[objectiveSetId]) {
+                        "Zone '${zone.id}' references unknown objective set '$objectiveSetId'."
+                    }
+                }
+
+            require(zone.worldRole != "optional" || objective != null) {
+                "Optional zone '${zone.id}' must define objectiveSetId."
+            }
+            if (zone.worldRole == "optional") {
+                require(objective != null && objective.interactables.isNotEmpty() && objective.placements.isNotEmpty()) {
+                    "Optional zone '${zone.id}' must define a non-empty objective/interactable hook."
+                }
+            }
+            if (zone.id in setOf("underground_river", "abyssal_temple", "abyssal_heart")) {
+                require(objective != null && objective.interactables.isNotEmpty() && objective.placements.isNotEmpty()) {
+                    "Late zone '${zone.id}' must expose at least one runtime objective hook."
+                }
+            }
+            objective?.let { objectiveSet ->
+                require(objectiveSet.linkedQuestId != null && objectiveSet.questObjectiveId != null) {
+                    "Zone '${zone.id}' objective '${objectiveSet.id}' must bind to quest-backed runtime state."
+                }
+                objectiveSet.placements.forEach { placement ->
+                    require(placement.interactableId in objectiveSet.interactables) {
+                        "Objective '${objectiveSet.id}' placement '${placement.interactableId}' must be declared in interactables."
+                    }
+                    require(placement.floor in 1..zone.floorCount) {
+                        "Objective '${objectiveSet.id}' placement floor ${placement.floor} exceeds zone '${zone.id}' floorCount ${zone.floorCount}."
+                    }
+                }
+            }
+            zone.shopNodeId?.let { shopNodeId ->
+                val shop = requireNotNull(shopsById[shopNodeId]) {
+                    "Zone '${zone.id}' references unknown shop '$shopNodeId'."
+                }
+                require(shop.zoneId == zone.id) {
+                    "Zone '${zone.id}' references shop '$shopNodeId', but the shop belongs to zone '${shop.zoneId}'."
+                }
+            }
+        }
+    }
+
     private fun aiConditionDepth(condition: AICondition): Int =
         when (condition) {
             is AICondition.And -> 1 + (condition.conditions.maxOfOrNull(::aiConditionDepth) ?: 0)
@@ -1310,17 +1496,24 @@ object GameModule {
         if (unknownZoneIds.isNotEmpty()) {
             return "Zone route contains unknown zone ids: $unknownZoneIds."
         }
-        val duplicateZoneIds =
-            config.zoneRoute
-                .groupingBy { zoneId -> zoneId }
-                .eachCount()
-                .filterValues { count -> count > 1 }
-                .keys
-                .toList()
-        if (duplicateZoneIds.isNotEmpty()) {
-            return "Zone route must not repeat zone ids: $duplicateZoneIds."
+        val graph = schemaCatalog.worldGraph
+        config.zoneRoute.zipWithNext().forEach { (fromZoneId, toZoneId) ->
+            val canTraverse =
+                graph.outgoingConnections(fromZoneId).any { connection ->
+                    graph.destinationFor(fromZoneId, connection) == toZoneId
+                }
+            if (!canTraverse) {
+                return "Zone route contains an unreachable edge: $fromZoneId -> $toZoneId."
+            }
         }
         return null
+    }
+
+    private fun initialWorldProgress(schemaCatalog: SchemaCatalog): WorldProgressDef {
+        val questStates = schemaCatalog.questProgressions.associateBy { quest -> quest.questId }
+        return WorldProgressDef(
+            questStates = questStates,
+        )
     }
 
     private fun validateLoadedFloorContracts(

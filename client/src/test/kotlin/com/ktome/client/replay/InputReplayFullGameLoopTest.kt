@@ -4,14 +4,12 @@ import com.badlogic.gdx.Input.Keys
 import com.ktome.client.input.InputHandler
 import com.ktome.client.screen.MainMenuAction
 import com.ktome.client.screen.MainMenuController
-import com.ktome.core.dungeon.StairDirection
+import com.ktome.core.ai.BossEncounterState
 import com.ktome.core.ecs.AIBehavior
 import com.ktome.core.ecs.AIType
 import com.ktome.core.ecs.BlocksMovement
 import com.ktome.core.ecs.Health
-import com.ktome.core.ecs.MonsterTemplateId
 import com.ktome.core.ecs.Position
-import com.ktome.core.ecs.Stair
 import com.ktome.core.ecs.World
 import com.ktome.core.ecs.get
 import com.ktome.core.ecs.remove
@@ -19,7 +17,7 @@ import com.ktome.core.map.Point
 import com.ktome.core.pathfinding.AStar
 import com.ktome.core.run.RunOutcome
 import com.ktome.core.save.SaveManager
-import com.ktome.game.FOUNDATION_BOSS_TEMPLATE_ID
+import com.ktome.game.FOUNDATION_ZONE_ROUTE
 import com.ktome.game.FoundationGameConfig
 import com.ktome.game.FoundationGameSession
 import com.ktome.game.GameModule
@@ -53,10 +51,17 @@ class InputReplayFullGameLoopTest {
         val newGameAction = pressMenu(menu, menuInput, hasSave = false, justPressed = setOf(Keys.ENTER))
         assertEquals(MainMenuAction.StartNewGame, newGameAction)
 
-        val session = GameModule.newFoundationSession(FoundationGameConfig(zoneId = "grey_gate_depths"), saveManager)
+        val session =
+            GameModule.newFoundationSession(
+                FoundationGameConfig(
+                    zoneId = "abyssal_heart",
+                    zoneRoute = FOUNDATION_ZONE_ROUTE,
+                    routeIndex = FOUNDATION_ZONE_ROUTE.lastIndex,
+                ),
+                saveManager,
+            )
         val inputHandler = InputHandler(ReplayInputSource())
-        descendToFloor(session, inputHandler, targetFloor = 2)
-        assertEquals(2, session.currentFloor())
+        assertEquals(1, session.currentFloor())
 
         assertTrue(runCommand(session, inputHandler, justPressed = setOf(Keys.S), pressed = setOf(Keys.CONTROL_LEFT, Keys.S)))
         assertTrue(saveManager.hasSave())
@@ -70,7 +75,7 @@ class InputReplayFullGameLoopTest {
         assertNotNull(continued)
         val continuedSession = requireNotNull(continued)
         val continuedInput = InputHandler(ReplayInputSource())
-        assertEquals(2, continuedSession.currentFloor())
+        assertEquals(1, continuedSession.currentFloor())
 
         killBossByReplay(continuedSession, continuedInput)
         assertTrue(continuedSession.runOutcome() is RunOutcome.Victory)
@@ -94,36 +99,14 @@ class InputReplayFullGameLoopTest {
         assertNull(GameModule.loadFoundationSession(saveManager))
     }
 
-    private fun descendToFloor(
-        session: FoundationGameSession,
-        inputHandler: InputHandler,
-        targetFloor: Int,
-    ) {
-        while (session.currentFloor() < targetFloor) {
-            clearRegularMonsters(session)
-            val stair = requireNotNull(stairPoint(session, StairDirection.DOWN))
-            replayMovePath(session, inputHandler, stair)
-            assertTrue(
-                runCommand(
-                    session = session,
-                    inputHandler = inputHandler,
-                    justPressed = setOf(Keys.PERIOD),
-                    pressed = setOf(Keys.SHIFT_LEFT, Keys.PERIOD),
-                ),
-            )
-        }
-    }
-
     private fun killBossByReplay(
         session: FoundationGameSession,
         inputHandler: InputHandler,
     ) {
         val world = runtimeWorld(session)
         val bossId =
-            world.entitiesWith(MonsterTemplateId::class, Position::class, Health::class)
-                .single { entityId ->
-                    requireNotNull(world.get<MonsterTemplateId>(entityId)).value == FOUNDATION_BOSS_TEMPLATE_ID
-                }
+            world.entitiesWith(BossEncounterState::class, Position::class, Health::class)
+                .single { entityId -> (requireNotNull(world.get<Health>(entityId)).current) > 0 }
         world.remove<AIBehavior>(bossId)
         requireNotNull(world.get<Health>(bossId)).current = 1
         val bossPosition = requireNotNull(world.get<Position>(bossId)).toPoint()
@@ -234,22 +217,10 @@ class InputReplayFullGameLoopTest {
         return action
     }
 
-    private fun stairPoint(
-        session: FoundationGameSession,
-        direction: StairDirection,
-    ): Point? {
-        val world = runtimeWorld(session)
-        return world.entitiesWith(Position::class, Stair::class)
-            .firstOrNull { entityId -> requireNotNull(world.get<Stair>(entityId)).direction == direction }
-            ?.let { entityId -> requireNotNull(world.get<Position>(entityId)).toPoint() }
-    }
-
     private fun clearRegularMonsters(session: FoundationGameSession) {
         val world = runtimeWorld(session)
-        world.entitiesWith(MonsterTemplateId::class)
-            .filter { entityId ->
-                requireNotNull(world.get<MonsterTemplateId>(entityId)).value != FOUNDATION_BOSS_TEMPLATE_ID
-            }
+        world.entitiesWith(Health::class)
+            .filter { entityId -> world.get<BossEncounterState>(entityId) == null && entityId != session.playerId }
             .forEach(world::destroyEntity)
     }
 

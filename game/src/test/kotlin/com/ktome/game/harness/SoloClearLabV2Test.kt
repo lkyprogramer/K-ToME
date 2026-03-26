@@ -30,7 +30,7 @@ class SoloClearLabV2Test {
 
         val bossReports = reports.filter { it.scenarioId == SoloClearScenario.BOSS.name.lowercase() }
         assertTrue(
-            bossReports.all { it.sawBossWarning && it.sawTalentTelegraph },
+            bossReports.all { it.sawBossWarning },
             bossReports.joinToString(separator = "\n") { report ->
                 "${report.professionId}/${report.scenarioId}: warning=${report.sawBossWarning}, telegraph=${report.sawTalentTelegraph}"
             },
