@@ -97,6 +97,8 @@ import com.ktome.core.talent.TalentTreeOwnerType
 import com.ktome.core.status.StatusDefinitions
 import com.ktome.core.status.StatusEffectType
 import com.ktome.core.status.StatusLifecycle
+import com.ktome.core.economy.ShopInventoryState
+import com.ktome.core.world.WorldProgressDef
 import com.ktome.game.model.MonsterTemplate
 
 private const val HERO_GLYPH: Char = '@'
@@ -115,8 +117,12 @@ internal data class RestoredRunState(
     val config: FoundationGameConfig,
     val currentFloor: Int,
     val turnCount: Int,
+    val headlessTurnEquivalent: Int = turnCount,
     val player: PlayerSnapshot,
     val floors: List<FloorState<FloorRuntimeState>>,
+    val worldProgress: WorldProgressDef = WorldProgressDef(),
+    val shardBalance: Int = 0,
+    val shopStates: List<ShopInventoryState> = emptyList(),
     val combatRandomState: Long? = null,
     val sessionRandomState: Long? = null,
     val pendingActionIds: List<Int> = emptyList(),
@@ -204,8 +210,12 @@ internal object SessionSnapshotMapper {
         config: FoundationGameConfig,
         currentFloor: Int,
         turnCount: Int,
+        headlessTurnEquivalent: Int,
         player: PlayerSnapshot,
         floors: List<FloorState<FloorRuntimeState>>,
+        worldProgress: WorldProgressDef = WorldProgressDef(),
+        shardBalance: Int = 0,
+        shopStates: List<ShopInventoryState> = emptyList(),
         combatRandomState: Long?,
         sessionRandomState: Long?,
         pendingActionIds: List<Int>,
@@ -217,6 +227,9 @@ internal object SessionSnapshotMapper {
             currentZoneId = config.zoneId,
             zoneRoute = config.zoneRoute,
             routeIndex = config.routeIndex,
+            worldProgress = worldProgress,
+            shardBalance = shardBalance,
+            shopStates = shopStates.sortedBy(ShopInventoryState::shopId),
             floorIndex = currentFloor,
             mapWidth = config.width,
             mapHeight = config.height,
@@ -226,6 +239,7 @@ internal object SessionSnapshotMapper {
             playerRaceId = config.playerRaceId,
             maxFloor = config.maxFloor,
             turnCount = turnCount,
+            headlessTurnEquivalent = headlessTurnEquivalent,
             player = canonicalizePlayerSnapshot(player),
             combatRandomState = combatRandomState,
             sessionRandomState = sessionRandomState,
@@ -267,7 +281,11 @@ internal object SessionSnapshotMapper {
                 ),
             currentFloor = snapshot.floorIndex,
             turnCount = snapshot.turnCount,
+            headlessTurnEquivalent = snapshot.headlessTurnEquivalent,
             player = canonicalizePlayerSnapshot(snapshot.player),
+            worldProgress = snapshot.worldProgress,
+            shardBalance = snapshot.shardBalance,
+            shopStates = snapshot.shopStates.sortedBy(ShopInventoryState::shopId),
             combatRandomState = snapshot.combatRandomState,
             sessionRandomState = snapshot.sessionRandomState,
             pendingActionIds = snapshot.pendingActionIds.toList(),
@@ -1081,12 +1099,14 @@ internal object SessionSnapshotMapper {
         val glyph =
             when (interactableId) {
                 "armory_gate" -> '+'
+                "merchant_stall" -> '$'
                 "alarm_bonfire" -> '^'
                 else -> '&'
             }
         val colorHex =
             when (interactableId) {
                 "armory_gate" -> "#C7B48A"
+                "merchant_stall" -> "#F2D16B"
                 "alarm_bonfire" -> "#FF8A3D"
                 else -> "#D6C977"
             }

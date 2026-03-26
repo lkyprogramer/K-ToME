@@ -28,6 +28,7 @@ import com.ktome.core.inscription.InscriptionCategory
 import com.ktome.core.inscription.InscriptionDef
 import com.ktome.core.inscription.InscriptionEffect
 import com.ktome.core.item.AffixDef
+import com.ktome.core.item.AffixEquipType
 import com.ktome.core.item.AffixType
 import com.ktome.core.item.ConsumableEffect
 import com.ktome.core.item.EquipmentPassive
@@ -37,6 +38,10 @@ import com.ktome.core.item.ItemDataBundle
 import com.ktome.core.item.ItemType
 import com.ktome.core.item.MaterialDef
 import com.ktome.core.item.StatModifier
+import com.ktome.core.economy.AffordableRescueSlotPolicy
+import com.ktome.core.economy.RescueInventoryPolicy
+import com.ktome.core.economy.ShopNode
+import com.ktome.core.economy.ShopOffer
 import com.ktome.core.profession.ProfessionTier
 import com.ktome.core.profession.ReleaseUnlockCondition
 import com.ktome.core.profession.SoloContractDef
@@ -77,6 +82,14 @@ import com.ktome.core.talent.TalentPrerequisite
 import com.ktome.core.talent.TalentRole
 import com.ktome.core.talent.TalentTargeting
 import com.ktome.core.talent.TalentTargetingType
+import com.ktome.core.world.GateCondition
+import com.ktome.core.world.ObjectiveState
+import com.ktome.core.world.QuestProgress
+import com.ktome.core.world.RewardClaimPolicy
+import com.ktome.core.world.RouteReward
+import com.ktome.core.world.WorldGraph
+import com.ktome.core.world.ZoneConnection
+import com.ktome.game.data.schema.AffordableRescueSlotPolicySchemaV2
 import com.ktome.game.data.schema.AffixSchemaV2
 import com.ktome.game.data.schema.BossEncounterSchemaV2
 import com.ktome.game.data.schema.DifficultySchemaV2
@@ -91,7 +104,10 @@ import com.ktome.game.data.schema.NamedSchemaRef
 import com.ktome.game.data.schema.ObjectiveSetSchemaV2
 import com.ktome.game.data.schema.ObjectiveInteractablePlacementSchemaV2
 import com.ktome.game.data.schema.ProfessionSchemaV2
+import com.ktome.game.data.schema.QuestProgressSchemaV2
 import com.ktome.game.data.schema.ResourceCostSchemaV2
+import com.ktome.game.data.schema.RescueInventoryPolicySchemaV2
+import com.ktome.game.data.schema.RouteRewardSchemaV2
 import com.ktome.game.data.schema.SchemaCatalog
 import com.ktome.game.data.schema.SchemaCombatProfile
 import com.ktome.game.data.schema.SchemaLevelRange
@@ -99,6 +115,8 @@ import com.ktome.game.data.schema.SchemaMapSize
 import com.ktome.game.data.schema.SchemaOffset
 import com.ktome.game.data.schema.SchemaStatModifier
 import com.ktome.game.data.schema.SchemaStats
+import com.ktome.game.data.schema.ShopNodeSchemaV2
+import com.ktome.game.data.schema.ShopOfferSchemaV2
 import com.ktome.game.data.schema.StatusSchemaV2
 import com.ktome.game.data.schema.AssociatedStatusEffectSchemaV2
 import com.ktome.game.data.schema.CleanseEffectSchemaV2
@@ -111,7 +129,9 @@ import com.ktome.game.data.schema.TalentRequirementsSchemaV2
 import com.ktome.game.data.schema.TalentSchemaV2
 import com.ktome.game.data.schema.TalentTargetingSchemaV2
 import com.ktome.game.data.schema.TalentTreeSchemaV2
+import com.ktome.game.data.schema.WorldGraphSchemaV2
 import com.ktome.game.data.schema.ZoneSchemaV2
+import com.ktome.game.data.schema.ZoneConnectionSchemaV2
 import com.ktome.game.i18n.GameLocale
 import com.ktome.game.i18n.LocalizationBundle
 import com.ktome.game.i18n.Localizer
@@ -142,6 +162,7 @@ class DataLoader(
         val telegraphSpecs = parseTelegraphSpecs(loadYamlMap("/data/telegraph/index.yaml"))
         val telegraphIds = telegraphSpecs.map(TelegraphSpec::id).toSet()
         val threatProfiles = parseThreatProfiles(loadYamlMap("/data/telegraph/threat_profiles/index.yaml"))
+        val worldGraphSchema = parseWorldGraphSchema(loadYamlMap("/data/world/world_graph.yaml"))
         return SchemaCatalog(
             professions = parseProfessionSchemas(loadYamlMap("/data/professions/index.yaml")),
             races = parseRaceDefs(loadYamlMap("/data/races/index.yaml")),
@@ -154,6 +175,10 @@ class DataLoader(
             telegraphSpecs = telegraphSpecs,
             threatProfiles = threatProfiles,
             zones = parseZoneSchemas(loadYamlMap("/data/zones/index.yaml")),
+            worldGraph = worldGraphSchema.toRuntime(),
+            routeRewards = parseRouteRewardSchemas(loadYamlMap("/data/world/world_graph.yaml")).map { schema -> schema.toRuntime() },
+            questProgressions = parseQuestProgressSchemas(loadYamlMap("/data/world/quests.yaml")).map { schema -> schema.toRuntime() },
+            shopNodes = parseShopNodeSchemas(loadYamlMap("/data/shops/index.yaml")).map { schema -> schema.toRuntime() },
             interactables = parseInteractableSchemas(loadYamlMap("/data/interactables/index.yaml")),
             objectiveSets = parseObjectiveSetSchemas(loadYamlMap("/data/objectives/index.yaml")),
             difficulties = parseDifficultySchemas(loadYamlMap("/data/difficulties/index.yaml")),
@@ -647,10 +672,99 @@ class DataLoader(
                 specialMechanics = zone.optionalStringList("specialMechanics"),
                 tilesetKey = zone.requiredString("tilesetKey"),
                 ambientProfile = zone.requiredString("ambientProfile"),
+                worldRole = zone.requiredString("worldRole"),
                 monsterPools = zone.optionalStringList("monsterPools"),
                 elitePools = zone.optionalStringList("elitePools"),
                 bossEncounterId = zone.optionalString("bossEncounterId"),
                 objectiveSetId = zone.optionalString("objectiveSetId"),
+                shopNodeId = zone.optionalString("shopNodeId"),
+                uniqueContentTag = zone.optionalString("uniqueContentTag"),
+            )
+        }
+
+    private fun parseWorldGraphSchema(root: Map<String, Any?>): WorldGraphSchemaV2 {
+        val world = root.requiredMap("worldGraph")
+        return WorldGraphSchemaV2(
+            startZoneId = world.requiredString("startZoneId"),
+            connections =
+                world.requiredList("connections").map { entry ->
+                    val connection = entry.requiredMap()
+                    ZoneConnectionSchemaV2(
+                        id = connection.requiredString("id"),
+                        fromZoneId = connection.requiredString("fromZoneId"),
+                        toZoneId = connection.requiredString("toZoneId"),
+                        isBidirectional = connection.optionalBoolean("isBidirectional", default = true),
+                        gate =
+                            GateCondition(
+                                requiredQuestId = connection.optionalString("requiredQuestId"),
+                                requiredWorldFlag = connection.optionalString("requiredWorldFlag"),
+                                requiredBossKill = connection.optionalString("requiredBossKill"),
+                            ),
+                    )
+                },
+        )
+    }
+
+    private fun parseRouteRewardSchemas(root: Map<String, Any?>): List<RouteRewardSchemaV2> =
+        root.optionalList("routeRewards").map { entry ->
+            val reward = entry.requiredMap()
+            RouteRewardSchemaV2(
+                routeId = reward.requiredString("routeId"),
+                claimPolicy = reward.requiredString("claimPolicy"),
+                levelBandRef = reward.requiredString("levelBandRef"),
+                shardReward = reward.requiredInt("shardReward"),
+                guaranteedDropIds = reward.optionalStringList("guaranteedDropIds"),
+                rescueTags = reward.optionalStringList("rescueTags"),
+            )
+        }
+
+    private fun parseQuestProgressSchemas(root: Map<String, Any?>): List<QuestProgressSchemaV2> =
+        root.requiredList("quests").map { entry ->
+            val quest = entry.requiredMap()
+            QuestProgressSchemaV2(
+                questId = quest.requiredString("questId"),
+                objectiveStates =
+                    quest.optionalMap("objectiveStates")
+                        ?.entries
+                        ?.associate { (objectiveId, state) -> objectiveId.toString() to state.toString() }
+                        .orEmpty(),
+                completionFlags = quest.optionalStringList("completionFlags"),
+            )
+        }
+
+    private fun parseShopNodeSchemas(root: Map<String, Any?>): List<ShopNodeSchemaV2> =
+        root.requiredList("shops").map { entry ->
+            val shop = entry.requiredMap()
+            ShopNodeSchemaV2(
+                id = shop.requiredString("id"),
+                zoneId = shop.requiredString("zoneId"),
+                nameKey = shop.requiredString("nameKey"),
+                inventory =
+                    shop.requiredList("inventory").map { rawOffer ->
+                        val offer = rawOffer.requiredMap()
+                        ShopOfferSchemaV2(
+                            id = offer.requiredString("id"),
+                            itemBaseId = offer.optionalString("itemBaseId"),
+                            inscriptionId = offer.optionalString("inscriptionId"),
+                            price = offer.requiredInt("price"),
+                            tags = offer.optionalStringList("tags"),
+                        )
+                    },
+                rescuePolicy =
+                    shop.requiredMap("rescuePolicy").let { policy ->
+                        RescueInventoryPolicySchemaV2(
+                            guaranteedTags = policy.optionalStringList("guaranteedTags"),
+                            affordability =
+                                policy.requiredMap("affordability").let { affordability ->
+                                    AffordableRescueSlotPolicySchemaV2(
+                                        checkpointId = affordability.requiredString("checkpointId"),
+                                        expectedShardBudgetByCheckpoint = affordability.requiredInt("expectedShardBudgetByCheckpoint"),
+                                        mandatoryAffordableItemCount = affordability.requiredInt("mandatoryAffordableItemCount"),
+                                        requiredAffordableTags = affordability.optionalStringList("requiredAffordableTags"),
+                                    )
+                                },
+                        )
+                    },
             )
         }
 
@@ -690,6 +804,8 @@ class DataLoader(
                         )
                     },
                 completionRule = objective.requiredString("completionRule"),
+                linkedQuestId = objective.optionalString("linkedQuestId"),
+                questObjectiveId = objective.optionalString("questObjectiveId"),
             )
         }
 
@@ -938,8 +1054,11 @@ class DataLoader(
                     schemaVersion = affix.requiredInt("schemaVersion"),
                     tags = affix.optionalStringList("tags"),
                     type = AffixType.valueOf(affix.requiredString("type")),
+                    equipType = AffixEquipType.valueOf(affix.requiredString("equipType")),
+                    tier = affix.requiredInt("tier"),
                     minFloor = affix.requiredInt("minFloor"),
                     stats = affix.requiredMap("stats").toSchemaStatModifier(),
+                    blacklistTags = affix.optionalStringList("blacklistTags"),
                 )
             },
             items = root.requiredList("items").map { entry ->
@@ -1101,6 +1220,7 @@ class DataLoader(
             name = localizer.text(nameKey),
             type = type,
             slot = slot,
+            tags = tags.toSet(),
             glyph = glyph,
             colorHex = colorHex,
             baseStats = baseStats,
@@ -1164,8 +1284,79 @@ class DataLoader(
             id = id,
             name = localizer.text(nameKey),
             type = type,
+            equipType = equipType,
+            tier = tier,
             statModifiers = stats.toRuntimeStatModifier(),
             minFloor = minFloor,
+            tags = tags.toSet(),
+            blacklistTags = blacklistTags.toSet(),
+        )
+
+    private fun WorldGraphSchemaV2.toRuntime(): WorldGraph =
+        WorldGraph(
+            startZoneId = startZoneId,
+            connections = connections.map { connection -> connection.toRuntime() },
+        )
+
+    private fun ZoneConnectionSchemaV2.toRuntime(): ZoneConnection =
+        ZoneConnection(
+            id = id,
+            fromZoneId = fromZoneId,
+            toZoneId = toZoneId,
+            isBidirectional = isBidirectional,
+            gate = gate,
+        )
+
+    private fun RouteRewardSchemaV2.toRuntime(): RouteReward =
+        RouteReward(
+            routeId = routeId,
+            claimPolicy = RewardClaimPolicy.valueOf(claimPolicy),
+            levelBandRef = levelBandRef,
+            shardReward = shardReward,
+            guaranteedDropIds = guaranteedDropIds,
+            rescueTags = rescueTags.toSet(),
+        )
+
+    private fun QuestProgressSchemaV2.toRuntime(): QuestProgress =
+        QuestProgress(
+            questId = questId,
+            objectiveStates =
+                objectiveStates.mapValues { (_, stateId) ->
+                    ObjectiveState.valueOf(stateId)
+                },
+            completionFlags = completionFlags.toSet(),
+        )
+
+    private fun ShopNodeSchemaV2.toRuntime(): ShopNode =
+        ShopNode(
+            id = id,
+            zoneId = zoneId,
+            nameKey = nameKey,
+            inventory = inventory.map { offer -> offer.toRuntime() },
+            rescuePolicy = rescuePolicy.toRuntime(),
+        )
+
+    private fun ShopOfferSchemaV2.toRuntime(): ShopOffer =
+        ShopOffer(
+            id = id,
+            itemBaseId = itemBaseId,
+            inscriptionId = inscriptionId,
+            price = price,
+            tags = tags.toSet(),
+        )
+
+    private fun RescueInventoryPolicySchemaV2.toRuntime(): RescueInventoryPolicy =
+        RescueInventoryPolicy(
+            guaranteedTags = guaranteedTags.toSet(),
+            affordability = affordability.toRuntime(),
+        )
+
+    private fun AffordableRescueSlotPolicySchemaV2.toRuntime(): AffordableRescueSlotPolicy =
+        AffordableRescueSlotPolicy(
+            checkpointId = checkpointId,
+            expectedShardBudgetByCheckpoint = expectedShardBudgetByCheckpoint,
+            mandatoryAffordableItemCount = mandatoryAffordableItemCount,
+            requiredAffordableTags = requiredAffordableTags.toSet(),
         )
 
     private fun TalentSchemaV2.toRuntimeTalent(defaultRestoreResourceType: ResourceType?): TalentDef =

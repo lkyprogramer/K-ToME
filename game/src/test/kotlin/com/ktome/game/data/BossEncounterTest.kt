@@ -27,6 +27,20 @@ class BossEncounterTest {
     }
 
     @Test
+    fun `abyssal guardian encounter keeps finale specific telegraph ai and reward ids`() {
+        val encounter = DataLoader().loadSchemaCatalog().bossEncounters.first { it.id == "abyssal_guardian_encounter" }
+        val phase = encounter.phases.first { it.id == "phase_abyssal" }
+
+        assertEquals("arena.abyssal_heart.boss", encounter.arenaId)
+        assertEquals("ai.boss.abyssal_guardian.phase_abyssal", phase.aiProfileId)
+        assertEquals(
+            "abyssal_guardian_phase_warning",
+            phase.onEnter.first { event -> event.type == BossPhaseEventType.TELEGRAPH }.telegraphSpecId,
+        )
+        assertEquals(listOf("loot.abyssal_heart.reward"), encounter.rewards)
+    }
+
+    @Test
     fun `loader rejects telegraph boss events without telegraph spec id`() {
         val loader = DataLoader()
         val parseMethod =

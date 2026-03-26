@@ -7,7 +7,14 @@ import java.nio.file.StandardCopyOption.ATOMIC_MOVE
 import java.nio.file.StandardCopyOption.REPLACE_EXISTING
 import kotlin.io.path.writeText
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.decodeFromJsonElement
+import kotlinx.serialization.json.intOrNull
+import kotlinx.serialization.json.jsonPrimitive
 
 class ProfileManager(
     private val profileDir: Path,
@@ -49,12 +56,81 @@ class ProfileCodec(
     private val json: Json =
         Json {
             prettyPrint = true
+            encodeDefaults = true
             explicitNulls = false
         },
 ) {
     fun encode(profile: ProfileData): String = json.encodeToString(ProfileData.serializer(), profile)
 
-    fun decode(payload: String): ProfileData = json.decodeFromString(ProfileData.serializer(), payload)
+    fun decode(payload: String): ProfileData {
+        val rootElement =
+            try {
+                json.parseToJsonElement(payload)
+            } catch (exception: SerializationException) {
+                throw IllegalArgumentException("Profile file is not valid JSON.", exception)
+            }
+        val root = rootElement as? JsonObject ?: throw IllegalArgumentException("Profile file root must be a JSON object.")
+        requireFields(root, REQUIRED_PROFILE_FIELDS, context = "Profile file")
+        val profileVersion = root.getValue("profileVersion").jsonPrimitive.intOrNull
+            ?: throw IllegalArgumentException("Profile file field 'profileVersion' must be an integer.")
+        require(profileVersion == ProfileData.CURRENT_PROFILE_VERSION) {
+            "Unsupported profile version $profileVersion. Expected ${ProfileData.CURRENT_PROFILE_VERSION}."
+        }
+        val runHistory =
+            root["runHistory"] as? JsonArray
+                ?: throw IllegalArgumentException("Profile file field 'runHistory' must be a JSON array.")
+        runHistory.forEachIndexed { index, element ->
+            val summary =
+                element as? JsonObject
+                    ?: throw IllegalArgumentException("Profile file runHistory[$index] must be a JSON object.")
+            requireFields(summary, REQUIRED_RUN_SUMMARY_FIELDS, context = "Profile file runHistory[$index]")
+        }
+        return try {
+            json.decodeFromJsonElement(ProfileData.serializer(), root)
+        } catch (exception: SerializationException) {
+            throw IllegalArgumentException("Profile file does not match the current profile schema.", exception)
+        } catch (exception: IllegalArgumentException) {
+            throw IllegalArgumentException("Profile file failed validation: ${exception.message}", exception)
+        }
+    }
+
+    private fun requireFields(
+        root: JsonObject,
+        requiredFields: Set<String>,
+        context: String,
+    ) {
+        val missing = requiredFields.filterNot(root::containsKey)
+        if (missing.isNotEmpty()) {
+            throw IllegalArgumentException("$context is missing required fields: ${missing.joinToString()}")
+        }
+    }
+
+    private companion object {
+        private val REQUIRED_PROFILE_FIELDS =
+            setOf(
+                "profileVersion",
+                "releaseUnlockedClasses",
+                "runHistory",
+            )
+        private val REQUIRED_RUN_SUMMARY_FIELDS =
+            setOf(
+                "seed",
+                "finishedAtEpochMillis",
+                "classId",
+                "raceId",
+                "finalZoneId",
+                "turnCount",
+                "headlessTurnEquivalent",
+                "zoneRouteHash",
+                "zonePath",
+                "defeatedBossIds",
+                "claimedRouteRewardIds",
+                "shardBalance",
+                "buildHash",
+                "rulesetVersion",
+                "victory",
+            )
+    }
 }
 
 @Serializable

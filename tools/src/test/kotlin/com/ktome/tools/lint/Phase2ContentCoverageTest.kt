@@ -13,6 +13,13 @@ import org.junit.jupiter.api.Test
 class Phase2ContentCoverageTest {
     private val catalog = DataLoader().loadSchemaCatalog()
     private val assets = ClientAssetBundleLoader.load()
+    private val phase2RouteZoneIds: List<String> =
+        listOf(
+            "shattered_outpost",
+            "greenwood_fringe",
+            "deep_iron_pit",
+            "grey_gate_depths",
+        )
     private val expectedObjectiveSetByZone =
         linkedMapOf(
             "shattered_outpost" to "shattered_outpost_breach",
@@ -34,7 +41,7 @@ class Phase2ContentCoverageTest {
             setOf("vanguard", "arcanist", "rogue", "templar", "berserker", "spellblade", "shadowblade", "warden"),
             professionById.keys,
         )
-        assertEquals(FOUNDATION_ZONE_ROUTE.toSet(), zoneById.keys)
+        assertTrue(zoneById.keys.containsAll(FOUNDATION_ZONE_ROUTE), "Foundation route zones must remain present in the Phase 3 catalog.")
         assertTrue(catalog.monsters.size >= 24, "Expected at least 24 monsters, got ${catalog.monsters.size}.")
         assertTrue(catalog.itemBundle.items.size >= 24, "Expected at least 24 items, got ${catalog.itemBundle.items.size}.")
         assertTrue(catalog.itemBundle.items.count { item -> "weapon" in item.tags } >= 6, "Expected at least 6 weapons.")
@@ -81,13 +88,17 @@ class Phase2ContentCoverageTest {
             }
         }
 
-        assertEquals(FOUNDATION_ZONE_ROUTE, catalog.zones.map { it.id }, "Zones should stay aligned with the official route order.")
         assertEquals(
-            FOUNDATION_ZONE_ROUTE,
-            expectedObjectiveSetByZone.keys.toList(),
-            "The frozen phase2 route objective map must stay aligned with FOUNDATION_ZONE_ROUTE.",
+            phase2RouteZoneIds,
+            catalog.zones.map { it.id }.filter(phase2RouteZoneIds::contains),
+            "Phase 2 route zones should stay aligned in their frozen order within the expanded Phase 3 catalog.",
         )
-        FOUNDATION_ZONE_ROUTE.forEach { zoneId ->
+        assertEquals(
+            phase2RouteZoneIds,
+            expectedObjectiveSetByZone.keys.toList(),
+            "The frozen Phase 2 route objective map must stay aligned with the Phase 2 route zones.",
+        )
+        phase2RouteZoneIds.forEach { zoneId ->
             val zone = requireNotNull(zoneById[zoneId]) { "Missing route zone $zoneId." }
             val expectedObjectiveId = requireNotNull(expectedObjectiveSetByZone[zoneId]) { "Missing expected objective binding for $zoneId." }
             assertEquals(expectedObjectiveId, zone.objectiveSetId, "Route zone ${zone.id} must stay bound to the official objective set.")

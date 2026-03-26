@@ -31,6 +31,27 @@ class ScenarioModelsTest {
     }
 
     @Test
+    fun `reach zone or terminal accepts reaching target zone while run is in progress`() {
+        val goal = ScenarioGoal.ReachZoneAtLeastOrTerminal("abyssal_heart")
+
+        assertTrue(goal.isSatisfied(observation(zoneId = "abyssal_heart", floor = 1, runOutcome = RunOutcome.InProgress)))
+    }
+
+    @Test
+    fun `reach zone or terminal accepts victory before target zone`() {
+        val goal = ScenarioGoal.ReachZoneAtLeastOrTerminal("abyssal_heart")
+
+        assertTrue(goal.isSatisfied(observation(zoneId = "abyssal_temple", floor = 1, runOutcome = RunOutcome.Victory(floor = 1))))
+    }
+
+    @Test
+    fun `reach zone or terminal rejects defeat before target zone`() {
+        val goal = ScenarioGoal.ReachZoneAtLeastOrTerminal("abyssal_heart")
+
+        assertFalse(goal.isSatisfied(observation(zoneId = "abyssal_temple", floor = 1, runOutcome = RunOutcome.Defeat(floor = 1))))
+    }
+
+    @Test
     fun `scenario report does not treat normal defeat without harness errors as crash or stall`() {
         val report =
             report(
@@ -49,17 +70,19 @@ class ScenarioModelsTest {
                 success = false,
                 goalReached = false,
                 outcome = RunOutcome.Defeat(floor = 2),
-                failureReason = "Turn budget exhausted.",
+                failureReason = "Command rejected: Move",
             )
 
         assertTrue(report.crashedOrStalled())
     }
 
     private fun observation(
+        zoneId: String = "shattered_outpost",
         floor: Int,
         runOutcome: RunOutcome,
     ): RunObservation =
         RunObservation(
+            zoneId = zoneId,
             floor = floor,
             turnIndex = 0,
             playerStatus =

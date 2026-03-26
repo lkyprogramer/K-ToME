@@ -4,6 +4,8 @@ import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.decodeFromJsonElement
 
@@ -72,6 +74,15 @@ class SaveCodec(
         if (!contract.isSupported()) {
             throw UnsupportedSaveContractVersionException(found = contract)
         }
+        requireFields(root, REQUIRED_TOP_LEVEL_FIELDS, context = "Save file")
+        val worldProgressElement = root.getValue("worldProgress")
+        val worldProgress =
+            worldProgressElement as? JsonObject
+                ?: throw InvalidSaveException("Save file field 'worldProgress' must be a JSON object.")
+        requireFields(worldProgress, REQUIRED_WORLD_PROGRESS_FIELDS, context = "Save file worldProgress")
+        requireArray(root["shopStates"], fieldName = "shopStates")
+        requireArray(root["zoneRoute"], fieldName = "zoneRoute")
+        requireArray(root["floors"], fieldName = "floors")
 
         val snapshot =
             try {
@@ -88,5 +99,62 @@ class SaveCodec(
             throw InvalidSaveException("Save file failed validation: ${exception.message}", exception)
         }
         return snapshot
+    }
+
+    private fun requireFields(
+        root: JsonObject,
+        requiredFields: Set<String>,
+        context: String,
+    ) {
+        val missing = requiredFields.filterNot(root::containsKey)
+        if (missing.isNotEmpty()) {
+            throw InvalidSaveException("$context is missing required fields: ${missing.joinToString()}")
+        }
+    }
+
+    private fun requireArray(
+        element: JsonElement?,
+        fieldName: String,
+    ) {
+        if (element !is JsonArray) {
+            throw InvalidSaveException("Save file field '$fieldName' must be a JSON array.")
+        }
+    }
+
+    private companion object {
+        private val REQUIRED_TOP_LEVEL_FIELDS =
+            setOf(
+                "schemaVersion",
+                "saveContractVersion",
+                "buildMetadata",
+                "timestampEpochMillis",
+                "worldSeed",
+                "currentZoneId",
+                "zoneRoute",
+                "routeIndex",
+                "worldProgress",
+                "shardBalance",
+                "shopStates",
+                "floorIndex",
+                "mapWidth",
+                "mapHeight",
+                "fovRadius",
+                "messageLogSize",
+                "playerProfessionId",
+                "playerRaceId",
+                "maxFloor",
+                "turnCount",
+                "headlessTurnEquivalent",
+                "player",
+                "floors",
+            )
+        private val REQUIRED_WORLD_PROGRESS_FIELDS =
+            setOf(
+                "questStates",
+                "worldFlags",
+                "unlockedRoutes",
+                "defeatedBossIds",
+                "claimedRouteRewards",
+            )
     }
 }

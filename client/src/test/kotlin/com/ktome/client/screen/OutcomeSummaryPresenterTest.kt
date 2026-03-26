@@ -3,7 +3,7 @@ package com.ktome.client.screen
 import com.ktome.client.GameApp
 import com.ktome.core.run.RunOutcome
 import com.ktome.core.snapshot.RenderTextTokenSnapshot
-import com.ktome.game.RunSummary
+import com.ktome.game.OutcomeSummary
 import com.ktome.game.i18n.GameLocale
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -14,7 +14,7 @@ class OutcomeSummaryPresenterTest {
     fun `defeat presenter renders killer zone resource and last events from typed summary`() {
         val app = GameApp(renderEnabled = false, initialLocale = GameLocale.EN_US)
         val summary =
-            RunSummary(
+            OutcomeSummary(
                 outcome = RunOutcome.Defeat(floor = 2),
                 floorReached = 2,
                 maxFloor = 4,
@@ -45,7 +45,7 @@ class OutcomeSummaryPresenterTest {
     fun `victory presenter omits defeat specific line`() {
         val app = GameApp(renderEnabled = false, initialLocale = GameLocale.EN_US)
         val summary =
-            RunSummary(
+            OutcomeSummary(
                 outcome = RunOutcome.Victory(floor = 4),
                 floorReached = 4,
                 maxFloor = 4,

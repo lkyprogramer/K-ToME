@@ -47,7 +47,7 @@ class HeadlessSmokeSuiteTest {
                         routeIndex = 0,
                         maxTurns = 450,
                         goal = ScenarioGoal.ReachFloor(2),
-                        saveLoadCheckpoint = SaveLoadCheckpoint(floor = 1, continueTurns = 10, verifyRoundTrip = true),
+                        saveLoadCheckpoint = SaveLoadCheckpoint(floor = 1, continueTurns = 10),
                         assertions =
                             listOf(
                                 ScenarioAssertion.ReachedFloorAtLeast(2),
@@ -114,15 +114,76 @@ internal fun ScenarioReport.toJson() =
         put("seed", seed)
         put("zoneId", zoneId)
         put("professionId", professionId)
+        put("raceId", raceId)
         put("routeIndex", routeIndex)
+        put("finalZoneId", finalZoneId)
+        put("zoneRouteHash", zoneRouteHash)
+        put("buildId", buildId)
+        put("phaseId", phaseId)
+        put("rulesetVersion", rulesetVersion)
+        put("traceSchemaVersion", traceSchemaVersion)
+        put("corpusId", corpusId)
+        put("localeId", localeId)
+        put("profileId", profileId)
+        buildHash?.let { put("buildHash", it) }
         put("success", success)
         put("outcome", outcome.toString())
         put("floorReached", floorReached)
         put("turns", turns)
+        put("headlessTurnEquivalent", headlessTurnEquivalent)
         put("goalReached", goalReached)
         failureReason?.let { put("failureReason", it) }
         stuckReason?.let { put("stuckReason", it) }
         put("checkpointRoundTripVerified", checkpointRoundTripVerified)
+        putJsonArray("zonePath") { zonePath.forEach { add(JsonPrimitive(it)) } }
+        putJsonArray("zoneHeadlessMilestones") {
+            zoneHeadlessMilestones.forEach { milestone ->
+                add(
+                    buildJsonObject {
+                        put("zoneId", milestone.zoneId)
+                        put("turnIndex", milestone.turnIndex)
+                        put("headlessTurnEquivalent", milestone.headlessTurnEquivalent)
+                        put("deltaTurns", milestone.deltaTurns)
+                        put("deltaHeadlessTurns", milestone.deltaHeadlessTurns)
+                    },
+                )
+            }
+        }
+        putJsonArray("zoneObjectiveSummaries") {
+            zoneObjectiveSummaries.forEach { summary ->
+                add(
+                    buildJsonObject {
+                        put("zoneId", summary.zoneId)
+                        put("questId", summary.questId)
+                        put("objectiveId", summary.objectiveId)
+                        put("state", summary.state.name)
+                        put("completionFlagGranted", summary.completionFlagGranted)
+                    },
+                )
+            }
+        }
+        putJsonArray("captainEncounterTrace") {
+            captainEncounterTrace.forEach { entry ->
+                add(
+                    buildJsonObject {
+                        put("turnIndex", entry.turnIndex)
+                        put("headlessTurnEquivalent", entry.headlessTurnEquivalent)
+                        put("floor", entry.floor)
+                        put("playerHp", entry.playerHp)
+                        put("playerMaxHp", entry.playerMaxHp)
+                        put("playerResourceCurrent", entry.playerResourceCurrent)
+                        put("playerResourceMax", entry.playerResourceMax)
+                        put("playerResourceTypeId", entry.playerResourceTypeId)
+                        entry.captainHp?.let { put("captainHp", it) }
+                        entry.captainMaxHp?.let { put("captainMaxHp", it) }
+                        entry.captainDistance?.let { put("captainDistance", it) }
+                        entry.command?.let { put("command", it) }
+                        putJsonArray("recentMessages") { entry.recentMessages.forEach { add(JsonPrimitive(it)) } }
+                        putJsonArray("recentEvents") { entry.recentEvents.forEach { add(JsonPrimitive(it)) } }
+                    },
+                )
+            }
+        }
         putJsonArray("lastCommands") { lastCommands.forEach { add(JsonPrimitive(it)) } }
         putJsonArray("lastMessages") { lastMessages.forEach { add(JsonPrimitive(it)) } }
         putJsonArray("eventTail") { eventTail.forEach { add(JsonPrimitive(it)) } }

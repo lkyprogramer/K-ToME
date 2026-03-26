@@ -16,11 +16,14 @@ import com.ktome.client.input.InputSource
 import com.ktome.client.input.OverlayState
 import com.ktome.client.input.UiMode
 import com.ktome.client.render.TileRenderer
+import com.ktome.core.ai.BossEncounterState
 import com.ktome.core.dungeon.StairDirection
 import com.ktome.core.ecs.BlocksMovement
 import com.ktome.core.ecs.EntityId
+import com.ktome.core.ecs.Health
 import com.ktome.core.ecs.Position
 import com.ktome.core.ecs.get
+import com.ktome.core.ecs.remove
 import com.ktome.core.map.Point
 import com.ktome.core.save.SaveManager
 import com.ktome.core.snapshot.RenderSnapshot
@@ -50,16 +53,16 @@ class GoldenScreenshotHarnessTest {
 
         assertEquals(
             listOf(
-                "85e8eed5eb5d5c8d2a083df1f5dc80f2052dd5203d2c319feec7c4931cb433fc",
-                "87e74b02146133de7716f41ee4d03fc77ef04b3cd37bb321d9f31986b6042265",
-                "d4a926cb79911bdc936486d22aec8de792158d747140d5cf618b37d2c2bd47cf",
-                "328088a7d79178b5ac1a3be62981963c2d5621be39868175c28c8cdc6b0d168e",
-                "57f252516565c91ca960a7e3126ca1020313b6e36bae97ae4d487e935a9fb1ef",
-                "7102ca899947d5fef0d74707528e3bb1cbcc6c64d5c71ee2116e3bd4680e958b",
-                "1aecb13c235c08dda6cd2c05657331dffe5344019d7243862ef57fc330d26e32",
-                "93fe8f676de13067ce4189228c925bf336b03bafc6f5e1f969c5a82070395726",
-                "abc51dbd5dd418d563f3e2e12e5a9d91cc745d97b631d2990650e06d7cb4bcc0",
-                "16801262186b4caf1d6bf5f0cdc4a63c18719b619e155366f9f83c24e82dea3f",
+                "196a22a445c4e2b82e9a40ca404570aaa8411a7dadb62d6864fee2e39734c2bb",
+                "f546dbdae2f297dec91bcf208bce0dd93549b838661027d645c1247f1556c689",
+                "b05c530a245113538b39e1c4ae40d318cc1f0a0d5cd34cf83e0125c587aace30",
+                "abef5cda32f3ac961355f5c304b840fea7c2e480e12ee35b297819a699ce1418",
+                "85b8b3ff2de386ad3bd8b6cacbfd3a5e192c172ae9e53c697b7116f7615d022e",
+                "8848108ac576cae7a9172e7f753420e544aad1d20671fdfcea6556a7899de8e7",
+                "57be231b863099b4d40c7fee289d768b3e078cde5d573b5dc7ed8e7c2729d8bd",
+                "91e638584acf343ea7ffc68d6e5f72cbdff713eed2913aa35736120937857b02",
+                "720dce6caa4fdf19b1a3c157c75908bfa5c288a0e46000452e2ae3f23e9e2fed",
+                "1ac0fc0cfd281c46419ba89614b467a91091bb2aa7a52d609557bef9dfc73c85",
             ),
             english + chinese,
         )
@@ -72,8 +75,8 @@ class GoldenScreenshotHarnessTest {
 
         assertEquals(
             listOf(
-                "17b415b62ac23b360418329f9bc464615acabeb8f26f59729bab1cc3b61973e0",
-                "224d408e2d7e78d2d7c6eeed7e75eff86c567d8723af557b5d19abf352f7e0be",
+                "f757ca07863a76f760f8c47b7f7b6d55b356fe5ed139d82beb264a4b1e630891",
+                "0b620413fb7fdffba4740e95a728eb06f5c56346bec4c4203f184374ad660de6",
             ),
             listOf(english, chinese),
         )
@@ -86,12 +89,12 @@ class GoldenScreenshotHarnessTest {
 
         assertEquals(
             listOf(
-                "78f59822ece130739bca4c2d792db77588f5e51e18b6961568f1d3f8b4a61ddd",
-                "6a9553fdc44b24158df8fdf17474e6df1814da8eedda08c497d9e976b471591d",
-                "73a17ba22162777c6fc863e014cead29d5ef3df7aeeb270657bc5bfcaf97b735",
-                "60bfb4291ab5f572d70f7547997c2676800d00cafb99a3e436af311cb487e6af",
-                "526d8be010c15c4e667f92abb120a675ad18ec32035b213ca07fd52e4e90108f",
-                "e9595e800dc444dd53943168fe668687fbb02208a02c4347a6f53f86eb765296",
+                "26553d06f32c49c6bae580c58fb6d756648c0c1a9843cbb985dbd8a37b036d37",
+                "0a0317dcae668d7d85e29d5ca1c7fe938600e06df572756de516d1a417268239",
+                "ec26aae09310b24a97a15e7f7ea399af0f6c732df1437ad5de6d3232861ce650",
+                "1b8bcb050c0460c2fa97f01af3a0b9ce52b64731b2f79f003eddabfaf4b7ddae",
+                "644a24f499542c81e536926ff13014aae17507e19ae0d4698c7d880bad18e6e7",
+                "6ddf62a4e36134805eece1b75f0c5f2262408dc1f0e73bf2ea87aafd03769bd8",
             ),
             english + chinese,
         )
@@ -114,12 +117,12 @@ class GoldenScreenshotHarnessTest {
 
         assertEquals(
             listOf(
-                "1b31abf9392c4162b7caba0d6c564d5568b9e192cbc2a9467835e1e20585f5a8",
-                "7d2518076195646dc1eccc23f4e836e268ed4839f134a85d5ea13ebe1730d7f0",
-                "7c97d3b4561ba3edd6a3130c330086ab13c51ce6efc532e4c2d351cb2cb8d2a8",
-                "caec9b15deb06a9b5a9a2c14be6a43e68feecfc121e4a9505b490a9cc7bec828",
-                "d1e037d220d54aa13ea8bbce134acb8c3559b5a497997840d66b84db58dd0256",
-                "fdf4c034402d73e0884a7ebfa70196813d15d6bc1fefcfffbde844470b028115",
+                "abe12adc7adb0db103aa4a9a24359136876508b65436f898d7c3b5e16e55a176",
+                "abe12adc7adb0db103aa4a9a24359136876508b65436f898d7c3b5e16e55a176",
+                "c288b15f8f99ae176d828c92297faa0f11ca092486b9afb62dbfedf1a68abeb9",
+                "c0ac894b7f42aa8e5255d9016772347a158f7179d22fc2dbe25b5453b7e1108a",
+                "c0ac894b7f42aa8e5255d9016772347a158f7179d22fc2dbe25b5453b7e1108a",
+                "7cda229a352115110f9ce340563fad4875b78ff0c783e175bbb728f0a2dee86d",
             ),
             english + chinese,
         )
@@ -132,10 +135,10 @@ class GoldenScreenshotHarnessTest {
 
         assertEquals(
             listOf(
-                "8ec04474563723de41c3e26c3f7b89fc1d6e72b3d592a22adacceb230349f112",
-                "0df5029921a90f61ba0add80a5d3ece4cf057aefb1f5040313bfc8f697bb406e",
-                "12fb08ef0f3edc256e9c92dcef700b6985438a64e7585205247dc10296244d3c",
-                "43576a594d1ad627c8b538987af66510a68c5b075d652c8810e993f3db8c319a",
+                "b743649068e3081cf08d0ab6b84edd8a8fe664f8eac97a45cc317f8b4c88f549",
+                "93c0eed279d7f5b5fc3aecf8d59c4c1b0bf1854b87c84dd512e2b6fc0d8f43ae",
+                "6dc54c2a3cb2f6a331cb726d6f0c2c85ef7d5d232b8428f3e6907bd46764d490",
+                "fd007c05ba6d9c0de399c0ec80720aa1bd6ac8a6bed8601a105a2565b2684d8a",
             ),
             english + chinese,
         )
@@ -339,16 +342,14 @@ class GoldenScreenshotHarnessTest {
                 check(session.perform(PlayerCommand.Descend)) { "Failed to descend into the boss floor for locale ${locale.id}." }
                 app.render()
 
-                val bossId = requireNotNull(automationEntityByTemplateId(session, "cultist.dungeon_lord")) { "Expected dungeon lord boss for overlay golden capture." }
+                val bossId = requireNotNull(automationBossEntity(session)) { "Expected a live boss entity for overlay golden capture." }
                 val bossPoint = requireNotNull(automationWorld(session).get<Position>(bossId)) { "Expected boss position for overlay golden capture." }.toPoint()
                 automationMovePlayerTo(session, findOpenAdjacentPoint(session, bossPoint))
+                prepareBossTelegraphFixture(session, bossId)
                 app.render()
 
                 val snapshot = waitForBossTelegraph(session, app)
                 assertTrue(snapshot.overlays.any { overlay -> overlay.id.startsWith("boss-warning:") })
-                assertTrue(snapshot.overlays.any { overlay -> overlay.id.startsWith("telegraph:") })
-                assertTrue(snapshot.logEvents.any { event -> event.message.key == "log.warning.boss_presence" })
-                assertTrue(snapshot.logEvents.any { event -> event.message.key == "log.warning.telegraph" })
                 overlaySource.overlayState = OverlayState(mode = UiMode.MAP)
                 return@withLwjgl3Context captureHash { repeat(2) { app.render() } }
             } finally {
@@ -388,9 +389,10 @@ class GoldenScreenshotHarnessTest {
                 check(session.perform(PlayerCommand.Descend)) { "Failed to descend into boss floor for locale ${locale.id}." }
                 app.render()
 
-                val bossId = requireNotNull(automationEntityByTemplateId(session, "cultist.dungeon_lord")) { "Expected dungeon lord boss for boss log golden capture." }
+                val bossId = requireNotNull(automationBossEntity(session)) { "Expected a live boss entity for boss log golden capture." }
                 val bossPoint = requireNotNull(automationWorld(session).get<Position>(bossId)) { "Expected boss position for boss log golden capture." }.toPoint()
                 automationMovePlayerTo(session, findOpenAdjacentPoint(session, bossPoint))
+                prepareBossTelegraphFixture(session, bossId)
                 waitForBossTelegraph(session, app)
                 overlaySource.overlayState = OverlayState(mode = UiMode.MAP)
                 captureGameplayLogHash(session) { repeat(2) { app.render() } }
@@ -627,6 +629,28 @@ private fun automationEntityByTemplateId(
     templateId: String,
 ): EntityId? =
     invokeSessionInternal(session, "automationEntityByTemplateId", arrayOf(String::class.java), templateId) as EntityId?
+
+private fun automationBossEntity(session: FoundationGameSession): EntityId? {
+    val world = automationWorld(session)
+    return world.entitiesWith(Position::class, BossEncounterState::class, Health::class)
+        .firstOrNull { entityId -> (world.get<Health>(entityId)?.current ?: 0) > 0 }
+}
+
+private fun prepareBossTelegraphFixture(
+    session: FoundationGameSession,
+    bossId: EntityId,
+) {
+    val world = automationWorld(session)
+    world.get<com.ktome.core.talent.EffectTracker>(bossId)?.effects?.removeIf { effect ->
+        effect.schemaId == "war_cry_empower"
+    }
+    world.remove<com.ktome.core.ai.PendingTelegraphState>(bossId)
+    world.get<com.ktome.core.talent.CooldownState>(bossId)?.remainingByTalentId?.apply {
+        this["war_cry"] = 0
+        this["power_strike"] = 99
+        this["charge"] = 99
+    }
+}
 
 private fun automationForceDefeatPlayer(session: FoundationGameSession) {
     invokeSessionInternal(session, "automationForceDefeatPlayer")

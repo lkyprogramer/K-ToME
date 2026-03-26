@@ -24,6 +24,14 @@ sealed interface PlayerCommand {
 
     data object SaveGame : PlayerCommand
 
+    data object CloseShop : PlayerCommand
+
+    data class BuyShopOffer(val index: Int) : PlayerCommand
+
+    data class SellInventoryItem(val index: Int) : PlayerCommand
+
+    data class SelectRoute(val index: Int) : PlayerCommand
+
     data class ActivateInventoryItem(val index: Int) : PlayerCommand
 
     data class UseInscription(
@@ -164,13 +172,17 @@ data class TalentReserveView(
     val hasPendingAllocation: Boolean = false,
 )
 
-data class RunSummary(
+data class OutcomeSummary(
     val outcome: RunOutcome,
     val floorReached: Int,
     val maxFloor: Int,
     val turns: Int,
+    val headlessTurnEquivalent: Int = turns,
     val playerLevel: Int,
     val zoneNameKey: String,
+    val zonePath: List<String> = emptyList(),
+    val shardBalance: Int = 0,
+    val defeatedBossIds: List<String> = emptyList(),
     val outcomeReasonKey: String,
     val killerNameKey: String?,
     val killerTemplateId: String?,

@@ -14,6 +14,8 @@ import com.ktome.game.PlayerCommand
 
 enum class UiMode {
     MAP,
+    SHOP,
+    WORLD_MAP,
     INVENTORY,
     LOADOUT_EDIT,
     TARGETING,
@@ -27,9 +29,17 @@ enum class TalentAssignFocus {
     RESERVE,
 }
 
+enum class ShopFocus {
+    BUY,
+    SELL,
+}
+
 data class OverlayState(
     val mode: UiMode,
     val inventorySelection: Int = 0,
+    val shopOfferSelection: Int = 0,
+    val routeSelection: Int = 0,
+    val shopFocus: ShopFocus = ShopFocus.BUY,
     val loadoutSlotSelection: Int = 1,
     val loadoutReserveSelection: Int = 0,
     val talentAssignFocus: TalentAssignFocus = TalentAssignFocus.ACTIVE,
@@ -75,6 +85,9 @@ class InputHandler(
     private val waitBindings = listOf(Keys.PERIOD, Keys.SPACE, Keys.NUMPAD_5)
     private var mode: UiMode = UiMode.MAP
     private var inventorySelection: Int = 0
+    private var shopOfferSelection: Int = 0
+    private var routeSelection: Int = 0
+    private var shopFocus: ShopFocus = ShopFocus.BUY
     private var loadoutSlotSelection: Int = 1
     private var loadoutReserveSelection: Int = 0
     private var talentAssignFocus: TalentAssignFocus = TalentAssignFocus.ACTIVE
@@ -91,6 +104,9 @@ class InputHandler(
         OverlayState(
             mode = mode,
             inventorySelection = inventorySelection,
+            shopOfferSelection = shopOfferSelection,
+            routeSelection = routeSelection,
+            shopFocus = shopFocus,
             loadoutSlotSelection = loadoutSlotSelection,
             loadoutReserveSelection = loadoutReserveSelection,
             talentAssignFocus = talentAssignFocus,
@@ -117,6 +133,8 @@ class InputHandler(
         }
         return when (mode) {
             UiMode.MAP -> pollMapCommand(snapshot)
+            UiMode.SHOP -> pollShopCommand(snapshot)
+            UiMode.WORLD_MAP -> pollWorldMapCommand(snapshot)
             UiMode.INVENTORY -> pollInventoryCommand(snapshot)
             UiMode.LOADOUT_EDIT -> pollLoadoutCommand(snapshot)
             UiMode.TARGETING -> pollTargetingCommand(snapshot)
@@ -182,6 +200,27 @@ class InputHandler(
     }
 
     private fun reconcileMode(snapshot: RenderSnapshot) {
+        val activeRouteSelection = snapshot.uiState.activeRouteSelection
+        if (activeRouteSelection != null) {
+            mode = UiMode.WORLD_MAP
+            routeSelection = routeSelection.coerceIn(0, (activeRouteSelection.options.size - 1).coerceAtLeast(0))
+            return
+        }
+        if (mode == UiMode.WORLD_MAP) {
+            mode = UiMode.MAP
+        }
+
+        val activeShop = snapshot.uiState.activeShop
+        if (activeShop != null) {
+            if (mode == UiMode.MAP || mode == UiMode.SHOP) {
+                mode = UiMode.SHOP
+            }
+            shopOfferSelection = shopOfferSelection.coerceIn(0, (activeShop.offers.size - 1).coerceAtLeast(0))
+            inventorySelection = inventorySelection.coerceIn(0, (activeShop.sellEntries.size - 1).coerceAtLeast(0))
+        } else if (mode == UiMode.SHOP) {
+            mode = UiMode.MAP
+        }
+
         when (mode) {
             UiMode.STAT_ASSIGN -> {
                 if (!hasPendingStatAllocation(snapshot)) {
@@ -206,7 +245,13 @@ class InputHandler(
                 }
             }
 
-            else -> Unit
+            UiMode.SHOP,
+            UiMode.WORLD_MAP,
+            UiMode.MAP,
+            UiMode.INVENTORY,
+            UiMode.TARGETING,
+            UiMode.INSPECT,
+            -> Unit
         }
 
         if (hasPendingStatAllocation(snapshot) && mode == UiMode.MAP) {
@@ -283,6 +328,85 @@ class InputHandler(
             resetMovementRepeat()
         }
 
+        return null
+    }
+
+    private fun pollShopCommand(snapshot: RenderSnapshot): PlayerCommand? {
+        val shop = snapshot.uiState.activeShop ?: return null
+        if (input.isKeyJustPressed(Keys.ESCAPE) || input.isKeyJustPressed(Keys.I)) {
+            return PlayerCommand.CloseShop
+        }
+        if (
+            input.isKeyJustPressed(Keys.LEFT) ||
+            input.isKeyJustPressed(Keys.RIGHT) ||
+            input.isKeyJustPressed(Keys.TAB) ||
+            input.isKeyJustPressed(Keys.A) ||
+            input.isKeyJustPressed(Keys.D)
+        ) {
+            shopFocus = if (shopFocus == ShopFocus.BUY) ShopFocus.SELL else ShopFocus.BUY
+            return null
+        }
+        if (shopFocus == ShopFocus.BUY) {
+            if (input.isKeyJustPressed(Keys.UP) || input.isKeyJustPressed(Keys.W)) {
+                shopOfferSelection = (shopOfferSelection - 1).coerceAtLeast(0)
+                return null
+            }
+            if (input.isKeyJustPressed(Keys.DOWN) || input.isKeyJustPressed(Keys.X)) {
+                shopOfferSelection = (shopOfferSelection + 1).coerceAtMost((shop.offers.size - 1).coerceAtLeast(0))
+                return null
+            }
+            if (
+                input.isKeyJustPressed(Keys.ENTER) ||
+                input.isKeyJustPressed(Keys.SPACE) ||
+                input.isKeyJustPressed(Keys.E)
+            ) {
+                return PlayerCommand.BuyShopOffer(shopOfferSelection)
+            }
+            return null
+        }
+
+        if (input.isKeyJustPressed(Keys.UP) || input.isKeyJustPressed(Keys.W)) {
+            inventorySelection = (inventorySelection - 1).coerceAtLeast(0)
+            return null
+        }
+        if (input.isKeyJustPressed(Keys.DOWN) || input.isKeyJustPressed(Keys.X)) {
+            inventorySelection = (inventorySelection + 1).coerceAtMost((shop.sellEntries.size - 1).coerceAtLeast(0))
+            return null
+        }
+        if (
+            input.isKeyJustPressed(Keys.ENTER) ||
+            input.isKeyJustPressed(Keys.SPACE) ||
+            input.isKeyJustPressed(Keys.E)
+        ) {
+            val sellEntry = shop.sellEntries.getOrNull(inventorySelection) ?: return null
+            return PlayerCommand.SellInventoryItem(sellEntry.inventoryIndex)
+        }
+        return null
+    }
+
+    private fun pollWorldMapCommand(snapshot: RenderSnapshot): PlayerCommand? {
+        val routePanel = snapshot.uiState.activeRouteSelection ?: return null
+        if (input.isKeyJustPressed(Keys.UP) || input.isKeyJustPressed(Keys.W) || input.isKeyJustPressed(Keys.LEFT) || input.isKeyJustPressed(Keys.A)) {
+            routeSelection = (routeSelection - 1).coerceAtLeast(0)
+            return null
+        }
+        if (input.isKeyJustPressed(Keys.DOWN) || input.isKeyJustPressed(Keys.X) || input.isKeyJustPressed(Keys.RIGHT) || input.isKeyJustPressed(Keys.D)) {
+            routeSelection = (routeSelection + 1).coerceAtMost((routePanel.options.size - 1).coerceAtLeast(0))
+            return null
+        }
+        when {
+            input.isKeyJustPressed(Keys.NUM_1) -> return PlayerCommand.SelectRoute(0)
+            input.isKeyJustPressed(Keys.NUM_2) -> return PlayerCommand.SelectRoute(1)
+            input.isKeyJustPressed(Keys.NUM_3) -> return PlayerCommand.SelectRoute(2)
+            input.isKeyJustPressed(Keys.NUM_4) -> return PlayerCommand.SelectRoute(3)
+        }
+        if (
+            input.isKeyJustPressed(Keys.ENTER) ||
+            input.isKeyJustPressed(Keys.SPACE) ||
+            input.isKeyJustPressed(Keys.E)
+        ) {
+            return PlayerCommand.SelectRoute(routeSelection)
+        }
         return null
     }
 

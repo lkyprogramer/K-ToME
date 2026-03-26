@@ -1,5 +1,6 @@
 package com.ktome.game.data
 
+import com.ktome.core.ai.AIActionType
 import com.ktome.core.ai.AICondition
 import com.ktome.core.ai.AIProfile
 import com.ktome.core.ai.AISelectionPolicy
@@ -114,9 +115,39 @@ class AIProfileDslTest {
         val profile = DataLoader(GameLocale.EN_US).loadSchemaCatalog().aiProfiles.first { it.id == "ai.boss.dungeon_lord.phase_full" }
         val guardAction = profile.actions.first { action -> action.id == "war_cry" }
         val condition = requireNotNull(guardAction.condition) as AICondition.And
+        val targetVisibleGuard = condition.conditions.first()
         val notGuard = condition.conditions.last()
 
+        assertTrue(targetVisibleGuard is AICondition.TargetVisible)
         assertTrue(notGuard is AICondition.Not)
         assertTrue((notGuard as AICondition.Not).condition is AICondition.HasStatus)
+        assertTrue(profile.actions.any { action -> action.id == "strike" && action.type == AIActionType.ATTACK_TARGET })
+    }
+
+    @Test
+    fun `dungeon lord enraged profile keeps melee fallback`() {
+        val profile = DataLoader(GameLocale.EN_US).loadSchemaCatalog().aiProfiles.first { it.id == "ai.boss.dungeon_lord.phase_enraged" }
+
+        assertTrue(profile.actions.any { action -> action.id == "close_quarters" && action.type == AIActionType.ATTACK_TARGET })
+    }
+
+    @Test
+    fun `abyssal guardian profiles stay distinct from dungeon lord ids and action mix`() {
+        val fullProfile = DataLoader(GameLocale.EN_US).loadSchemaCatalog().aiProfiles.first { it.id == "ai.boss.abyssal_guardian.phase_full" }
+        val abyssalProfile = DataLoader(GameLocale.EN_US).loadSchemaCatalog().aiProfiles.first { it.id == "ai.boss.abyssal_guardian.phase_abyssal" }
+
+        assertTrue(fullProfile.actions.any { action -> action.id == "abyssal_roar" && action.abilityId == "war_cry" })
+        assertTrue(fullProfile.actions.any { action -> action.id == "abyssal_charge" && action.abilityId == "charge" })
+        assertTrue(abyssalProfile.actions.any { action -> action.id == "collapse_charge" && action.abilityId == "charge" })
+        assertTrue(abyssalProfile.actions.any { action -> action.id == "void_breach" && action.abilityId == "power_strike" })
+    }
+
+    @Test
+    fun `forge guard battle cry only triggers on visible target`() {
+        val profile = DataLoader(GameLocale.EN_US).loadSchemaCatalog().aiProfiles.first { it.id == "ai.elite.forge_guard" }
+        val battleCry = profile.actions.first { action -> action.id == "battle_cry" }
+        val condition = requireNotNull(battleCry.condition) as AICondition.And
+
+        assertTrue(condition.conditions.first() is AICondition.TargetVisible)
     }
 }

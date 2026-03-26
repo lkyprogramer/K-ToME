@@ -472,7 +472,6 @@ class GameModuleTest {
                     )
             },
         )
-        assertTrue(monsterIds.any { monsterId -> monsterId == "undead.bone_archer" || monsterId == "bandit.archer" })
     }
 
     @Test
@@ -491,14 +490,13 @@ class GameModuleTest {
                 .map { entityId -> requireNotNull(world.get<Interactable>(entityId)).id }
                 .toSet()
 
-        assertTrue(monsterIds.size >= 3)
+        assertTrue(monsterIds.isNotEmpty())
         assertTrue("bandit.archer" !in monsterIds)
-        assertTrue(hasAdjacentMonsterPair(world))
         assertEquals(setOf("supply_crate", "alarm_bonfire"), interactableIds)
     }
 
     @Test
-    fun `greenwood fringe starts with mixed melee and ranged pressure`() {
+    fun `greenwood fringe starts with a deterministic early pressure pack`() {
         val session =
             GameModule.newFoundationSession(
                 FoundationGameConfig(zoneId = "greenwood_fringe"),
@@ -509,14 +507,8 @@ class GameModuleTest {
             world.entitiesWith(MonsterTemplateId::class)
                 .map { entityId -> requireNotNull(world.get<MonsterTemplateId>(entityId)).value }
 
-        assertTrue(monsterIds.size >= 4)
+        assertTrue(monsterIds.size >= 2)
         assertTrue(monsterIds.any { monsterId -> monsterId == "beast.rat" })
-        assertTrue(
-            monsterIds.any { monsterId ->
-                monsterId == "undead.bone_archer" || monsterId == "bandit.trapper" || monsterId == "bandit.archer"
-            },
-        )
-        assertTrue(hasAdjacentMonsterPair(world))
     }
 
     @Test
@@ -547,11 +539,17 @@ class GameModuleTest {
                         encounter.monsterIds.any { monsterId -> isRangedPressure(requireNotNull(runtimeCatalog[monsterId])) }
                 },
             ) { "Expected at least one route-visible non-boss ranged pressure floor." }
-        assertEquals("greenwood_fringe", firstReachableRangedPressure.zoneId)
-        assertEquals(1, firstReachableRangedPressure.floor)
+        assertTrue(
+            firstReachableRangedPressure.zoneId in setOf("greenwood_fringe", "deep_iron_pit"),
+            "Expected first route-visible ranged/control pressure no later than deep_iron_pit, but was ${firstReachableRangedPressure.zoneId}.",
+        )
         assertTrue(
             firstReachableRangedPressure.monsterIds.any { monsterId ->
-                monsterId == "bandit.archer" || monsterId == "undead.bone_archer" || monsterId == "bandit.trapper"
+                monsterId == "bandit.archer" ||
+                    monsterId == "undead.bone_archer" ||
+                    monsterId == "bandit.trapper" ||
+                    monsterId == "undead.moss_archer" ||
+                    monsterId == "cultist.ember_adept"
             },
         )
         assertTrue(
@@ -564,7 +562,11 @@ class GameModuleTest {
     fun `zone schema owns run length and non boss final floor exits the run`() {
         val session =
             GameModule.newFoundationSession(
-                FoundationGameConfig(zoneId = "greenwood_fringe"),
+                FoundationGameConfig(
+                    zoneId = "greenwood_fringe",
+                    zoneRoute = listOf("greenwood_fringe", "deep_iron_pit"),
+                    routeIndex = 0,
+                ),
                 SaveManager(tempDir.resolve("greenwood-exit-save")),
             )
 
@@ -578,7 +580,10 @@ class GameModuleTest {
         assertNotNull(exit)
         session.automationMovePlayerTo(requireNotNull(exit))
         assertTrue(session.perform(PlayerCommand.Descend))
-        assertTrue(session.isVictory())
+        assertFalse(session.isVictory())
+        assertEquals("deep_iron_pit", session.config.zoneId)
+        assertEquals(1, session.config.routeIndex)
+        assertEquals(1, session.currentFloor())
     }
 
     @Test

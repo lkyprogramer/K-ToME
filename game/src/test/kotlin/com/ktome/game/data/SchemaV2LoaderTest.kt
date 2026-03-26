@@ -58,10 +58,26 @@ class SchemaV2LoaderTest {
                 ),
             ),
         )
-        assertEquals(setOf("shattered_outpost", "greenwood_fringe", "deep_iron_pit", "grey_gate_depths"), catalog.zones.map { it.id }.toSet())
+        assertEquals(
+            setOf(
+                "shattered_outpost",
+                "greenwood_fringe",
+                "bandit_camp",
+                "elven_ruins",
+                "deep_iron_pit",
+                "molten_core",
+                "grey_gate_depths",
+                "underground_river",
+                "crystal_cavern",
+                "abyssal_temple",
+                "abyssal_heart",
+            ),
+            catalog.zones.map { it.id }.toSet(),
+        )
         assertEquals(
             setOf(
                 "armory_gate",
+                "merchant_stall",
                 "supply_crate",
                 "alarm_bonfire",
                 "trail_cache",
@@ -73,11 +89,18 @@ class SchemaV2LoaderTest {
                 "seal_cache",
                 "ritual_altar",
                 "shadow_brazier",
+                "bandit_cache",
+                "elven_wardstone",
+                "molten_pressure_valve",
+                "crystal_resonance_node",
+                "river_ferry_anchor",
+                "temple_ward_reliquary",
+                "heart_ward_focus",
             ),
             catalog.interactables.map { it.id }.toSet(),
         )
         assertEquals(3, catalog.professions.first { it.id == "vanguard" }.combatProfile.baseDefense)
-        assertEquals(102, catalog.professions.first { it.id == "arcanist" }.combatProfile.baseSpeed)
+        assertEquals(103, catalog.professions.first { it.id == "arcanist" }.combatProfile.baseSpeed)
         assertEquals(listOf("backstab", "poison_blade", "deathblow", "execution"), catalog.talentTrees.first { it.id == "rogue_assassination" }.nodes)
         assertEquals(listOf("holy_light", "holy_shield", "purify"), catalog.talentTrees.first { it.id == "templar_grace" }.nodes)
         assertEquals(3, catalog.talents.first { it.id == "charge" }.unlockLevel)
@@ -102,17 +125,43 @@ class SchemaV2LoaderTest {
         assertEquals("audio.talent.shadowstep", catalog.talents.first { it.id == "shadowstep" }.audioProfile)
         assertEquals("icon.skill.templar.holy_shield", catalog.talents.first { it.id == "holy_shield" }.iconKey)
         assertEquals(
-            setOf("shattered_outpost_breach", "greenwood_signal_hunt", "deep_iron_pit_forge_run", "grey_gate_seal_rite"),
+            setOf(
+                "shattered_outpost_breach",
+                "greenwood_signal_hunt",
+                "bandit_camp_cache_raid",
+                "deep_iron_pit_forge_run",
+                "elven_ruins_relic_ward",
+                "grey_gate_seal_rite",
+                "molten_core_pressure",
+                "underground_river_crossing",
+                "crystal_cavern_resonance",
+                "abyssal_temple_sanctum",
+                "abyssal_heart_finale",
+            ),
             catalog.objectiveSets.map { it.id }.toSet(),
         )
+        assertEquals("shattered_outpost", catalog.worldGraph.startZoneId)
+        assertEquals(10, catalog.worldGraph.connections.size)
+        assertEquals(10, catalog.routeRewards.size)
+        assertEquals(2, catalog.shopNodes.size)
         assertEquals(4, catalog.objectiveSets.single { it.id == "shattered_outpost_breach" }.placements.size)
         assertEquals(
             setOf("room_center", "boss_entry", "stairs_up", "player_start"),
             catalog.objectiveSets.single { it.id == "shattered_outpost_breach" }.placements.map { it.anchor }.toSet(),
         )
+        assertEquals(listOf("river_ferry_anchor"), catalog.objectiveSets.single { it.id == "underground_river_crossing" }.interactables)
+        assertEquals(listOf("temple_ward_reliquary"), catalog.objectiveSets.single { it.id == "abyssal_temple_sanctum" }.interactables)
+        assertEquals("quest.bandit_camp", catalog.objectiveSets.single { it.id == "bandit_camp_cache_raid" }.linkedQuestId)
+        assertEquals("cache_raid", catalog.objectiveSets.single { it.id == "bandit_camp_cache_raid" }.questObjectiveId)
+        assertEquals("quest.elven_ruins", catalog.objectiveSets.single { it.id == "elven_ruins_relic_ward" }.linkedQuestId)
+        assertEquals("relic_ward", catalog.objectiveSets.single { it.id == "elven_ruins_relic_ward" }.questObjectiveId)
+        assertEquals("quest.molten_core", catalog.objectiveSets.single { it.id == "molten_core_pressure" }.linkedQuestId)
+        assertEquals("pressure", catalog.objectiveSets.single { it.id == "molten_core_pressure" }.questObjectiveId)
+        assertEquals("quest.crystal_cavern", catalog.objectiveSets.single { it.id == "crystal_cavern_resonance" }.linkedQuestId)
+        assertEquals("resonance", catalog.objectiveSets.single { it.id == "crystal_cavern_resonance" }.questObjectiveId)
         assertEquals(setOf("normal"), catalog.difficulties.map { it.id }.toSet())
-        assertEquals(25, catalog.monsters.size)
-        assertEquals(24, catalog.itemBundle.items.size)
+        assertEquals(26, catalog.monsters.size)
+        assertEquals(25, catalog.itemBundle.items.size)
         assertTrue(catalog.itemBundle.items.count { item -> "weapon" in item.tags } >= 6)
         assertTrue(catalog.itemBundle.items.count { item -> "armor" in item.tags && "accessory" !in item.tags } >= 6)
         assertTrue(catalog.itemBundle.items.count { item -> "accessory" in item.tags } >= 4)
@@ -158,16 +207,22 @@ class SchemaV2LoaderTest {
             catalog.lootProfiles.first { it.id == "loot.foundation.boss" }.itemIds,
         )
         assertTrue(catalog.lootProfiles.first { it.id == "loot.foundation.boss" }.itemIds.contains("shadow_cloak"))
+        assertEquals(
+            listOf("abyssal_heartstone"),
+            catalog.lootProfiles.first { it.id == "loot.abyssal_heart.reward" }.itemIds,
+        )
         val banditCaptainAi = catalog.aiProfiles.first { it.id == "ai.boss.bandit_captain.phase_full" }
         assertEquals(AISelectionPolicy.WEIGHTED_RANDOM, banditCaptainAi.selectionPolicy)
-        assertEquals("shield_bash", banditCaptainAi.actions.first().abilityId)
+        assertEquals("strike", banditCaptainAi.actions.first().id)
         assertEquals("ai.boss.dungeon_lord.phase_enraged", catalog.aiProfiles.first { it.id == "ai.boss.dungeon_lord.phase_enraged" }.id)
         assertTrue(catalog.telegraphSpecs.any { spec -> spec.id == "molten_giant_phase_warning" })
+        assertTrue(catalog.telegraphSpecs.any { spec -> spec.id == "abyssal_guardian_phase_warning" })
         assertTrue(catalog.threatProfiles.any { profile -> profile.id == "threat.frontliner.mid" })
         assertEquals("molten_giant_encounter", catalog.zones.first { it.id == "deep_iron_pit" }.bossEncounterId)
         assertEquals(2, catalog.bossEncounters.first { it.id == "dungeon_lord_encounter" }.phases.size)
         assertTrue(catalog.arenas.any { it.id == "arena.shattered_outpost.boss" })
         assertTrue(catalog.arenas.any { it.id == "arena.deep_iron_pit.boss" })
+        assertTrue(catalog.arenas.any { it.id == "arena.abyssal_heart.boss" })
     }
 
     @Test
@@ -266,6 +321,25 @@ class SchemaV2LoaderTest {
 
         assertEquals("ai.boss.bandit_captain.phase_full", boss.aiProfileId)
         assertEquals("arena.shattered_outpost.boss", encounter.arenaId)
+    }
+
+    @Test
+    fun `abyssal guardian keeps dedicated finale routing ids`() {
+        val boss =
+            DataLoader(GameLocale.EN_US)
+                .loadMonsterCatalog()
+                .monsters
+                .first { monster -> monster.id == "abyssal.guardian" }
+        val encounter =
+            DataLoader(GameLocale.EN_US)
+                .loadSchemaCatalog()
+                .bossEncounters
+                .first { schema -> schema.id == "abyssal_guardian_encounter" }
+
+        assertEquals("ai.boss.abyssal_guardian.phase_full", boss.aiProfileId)
+        assertEquals("loot.abyssal_heart.reward", boss.lootProfileId)
+        assertEquals("arena.abyssal_heart.boss", encounter.arenaId)
+        assertEquals("ai.boss.abyssal_guardian.phase_abyssal", encounter.phases.last().aiProfileId)
     }
 
     @Test

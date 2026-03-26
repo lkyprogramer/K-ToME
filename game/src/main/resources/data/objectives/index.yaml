@@ -23,6 +23,8 @@ objectiveSets:
         anchor: stairs_up
         offset: { x: 1, y: 0 }
     completionRule: defeat_zone_boss
+    linkedQuestId: quest.shattered_outpost
+    questObjectiveId: breach
   - id: greenwood_signal_hunt
     nameKey: objective.greenwood_signal_hunt.name
     descKey: objective.greenwood_signal_hunt.desc
@@ -43,6 +45,22 @@ objectiveSets:
         anchor: stairs_up
         offset: { x: 1, y: 0 }
     completionRule: explore_floor_pair
+    linkedQuestId: quest.greenwood_path
+    questObjectiveId: scout
+  - id: bandit_camp_cache_raid
+    nameKey: objective.bandit_camp_cache_raid.name
+    descKey: objective.bandit_camp_cache_raid.desc
+    schemaVersion: 2
+    tags: [objective, optional, route]
+    interactables: [bandit_cache]
+    placements:
+      - interactableId: bandit_cache
+        floor: 1
+        anchor: room_center
+        offset: { x: 0, y: 0 }
+    completionRule: explore_floor_pair
+    linkedQuestId: quest.bandit_camp
+    questObjectiveId: cache_raid
   - id: deep_iron_pit_forge_run
     nameKey: objective.deep_iron_pit_forge_run.name
     descKey: objective.deep_iron_pit_forge_run.desc
@@ -63,6 +81,22 @@ objectiveSets:
         anchor: stairs_up
         offset: { x: 1, y: 0 }
     completionRule: secure_forge_path
+    linkedQuestId: quest.deep_iron_pit
+    questObjectiveId: forge
+  - id: elven_ruins_relic_ward
+    nameKey: objective.elven_ruins_relic_ward.name
+    descKey: objective.elven_ruins_relic_ward.desc
+    schemaVersion: 2
+    tags: [objective, optional, route]
+    interactables: [elven_wardstone]
+    placements:
+      - interactableId: elven_wardstone
+        floor: 1
+        anchor: room_center
+        offset: { x: 0, y: 0 }
+    completionRule: explore_floor_pair
+    linkedQuestId: quest.elven_ruins
+    questObjectiveId: relic_ward
   - id: grey_gate_seal_rite
     nameKey: objective.grey_gate_seal_rite.name
     descKey: objective.grey_gate_seal_rite.desc
@@ -83,3 +117,75 @@ objectiveSets:
         anchor: boss_entry
         offset: { x: 0, y: 0 }
     completionRule: defeat_zone_boss
+    linkedQuestId: quest.grey_gate_depths
+    questObjectiveId: seal
+  - id: molten_core_pressure
+    nameKey: objective.molten_core_pressure.name
+    descKey: objective.molten_core_pressure.desc
+    schemaVersion: 2
+    tags: [objective, optional, route]
+    interactables: [molten_pressure_valve]
+    placements:
+      - interactableId: molten_pressure_valve
+        floor: 2
+        anchor: room_center
+        offset: { x: 0, y: 0 }
+    completionRule: secure_forge_path
+    linkedQuestId: quest.molten_core
+    questObjectiveId: pressure
+  - id: underground_river_crossing
+    nameKey: objective.underground_river_crossing.name
+    descKey: objective.underground_river_crossing.desc
+    schemaVersion: 2
+    tags: [objective, route]
+    interactables: [river_ferry_anchor]
+    placements:
+      - interactableId: river_ferry_anchor
+        floor: 1
+        anchor: room_center
+        offset: { x: 0, y: 0 }
+    completionRule: explore_floor_pair
+    linkedQuestId: quest.underground_river
+    questObjectiveId: crossing
+  - id: crystal_cavern_resonance
+    nameKey: objective.crystal_cavern_resonance.name
+    descKey: objective.crystal_cavern_resonance.desc
+    schemaVersion: 2
+    tags: [objective, optional, route]
+    interactables: [crystal_resonance_node]
+    placements:
+      - interactableId: crystal_resonance_node
+        floor: 1
+        anchor: room_center
+        offset: { x: 0, y: 0 }
+    completionRule: explore_floor_pair
+    linkedQuestId: quest.crystal_cavern
+    questObjectiveId: resonance
+  - id: abyssal_temple_sanctum
+    nameKey: objective.abyssal_temple_sanctum.name
+    descKey: objective.abyssal_temple_sanctum.desc
+    schemaVersion: 2
+    tags: [objective, route]
+    interactables: [temple_ward_reliquary]
+    placements:
+      - interactableId: temple_ward_reliquary
+        floor: 1
+        anchor: room_center
+        offset: { x: 0, y: 0 }
+    completionRule: explore_floor_pair
+    linkedQuestId: quest.abyssal_temple
+    questObjectiveId: sanctum
+  - id: abyssal_heart_finale
+    nameKey: objective.abyssal_heart_finale.name
+    descKey: objective.abyssal_heart_finale.desc
+    schemaVersion: 2
+    tags: [objective, route, finale]
+    interactables: [heart_ward_focus]
+    placements:
+      - interactableId: heart_ward_focus
+        floor: 1
+        anchor: room_center
+        offset: { x: 0, y: 0 }
+    completionRule: defeat_zone_boss
+    linkedQuestId: quest.abyssal_heart
+    questObjectiveId: heart

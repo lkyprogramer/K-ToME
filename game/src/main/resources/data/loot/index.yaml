@@ -23,3 +23,7 @@ lootProfiles:
     schemaVersion: 2
     tags: [loot, reward, grey_gate]
     itemIds: [seal_reliquary, shadow_cloak, sanctified_seal, consecrated_oil]
+  - id: loot.abyssal_heart.reward
+    schemaVersion: 2
+    tags: [loot, reward, abyssal, finale]
+    itemIds: [abyssal_heartstone]

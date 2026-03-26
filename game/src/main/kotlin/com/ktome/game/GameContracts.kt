@@ -13,4 +13,7 @@ val FOUNDATION_ZONE_ROUTE: List<String> =
         "greenwood_fringe",
         "deep_iron_pit",
         "grey_gate_depths",
+        "underground_river",
+        "abyssal_temple",
+        "abyssal_heart",
     )

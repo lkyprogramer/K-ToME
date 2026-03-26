@@ -16,7 +16,7 @@ professions:
         regen: { type: PER_TURN, amount: 3 }
     primarySpendAxis: STAMINA
     baseStats: { str: 12, dex: 8, con: 11, wil: 7 }
-    combatProfile: { baseAttack: 5, baseDefense: 3, baseAccuracy: 10, baseEvasion: 5, baseSpeed: 98, baseHp: 54, baseStamina: 44, baseHpRegen: 1.2 }
+    combatProfile: { baseAttack: 6, baseDefense: 3, baseAccuracy: 10, baseEvasion: 5, baseSpeed: 101, baseHp: 54, baseStamina: 44, baseHpRegen: 1.2 }
     statGrowth: { str: 3, dex: 2, con: 3, wil: 1 }
     talentTrees: [vanguard_arms, vanguard_shield, vanguard_warcry]
     startingTalents: [power_strike, shield_bash, guard_stance, war_cry]
@@ -46,7 +46,7 @@ professions:
         regen: { type: PER_TURN, amount: 2 }
     primarySpendAxis: MANA
     baseStats: { str: 6, dex: 8, con: 7, wil: 14 }
-    combatProfile: { baseAttack: 4, baseDefense: 1, baseAccuracy: 11, baseEvasion: 6, baseSpeed: 102, baseHp: 46, baseStamina: 34, baseHpRegen: 1.0 }
+    combatProfile: { baseAttack: 5, baseDefense: 3, baseAccuracy: 11, baseEvasion: 6, baseSpeed: 103, baseHp: 54, baseStamina: 34, baseHpRegen: 1.0 }
     statGrowth: { str: 1, dex: 2, con: 1, wil: 4 }
     talentTrees: [arcanist_flame, arcanist_frost, arcanist_arcane]
     startingTalents: [fireball, ice_bolt, blink, arcane_shield]
@@ -80,7 +80,7 @@ professions:
             - { type: ON_HIT, amount: 8 }
     primarySpendAxis: ENERGY
     baseStats: { str: 8, dex: 13, con: 8, wil: 7 }
-    combatProfile: { baseAttack: 5, baseDefense: 2, baseAccuracy: 12, baseEvasion: 8, baseSpeed: 108, baseHp: 48, baseStamina: 40, baseHpRegen: 1.0 }
+    combatProfile: { baseAttack: 8, baseDefense: 3, baseAccuracy: 12, baseEvasion: 8, baseSpeed: 112, baseHp: 52, baseStamina: 40, baseHpRegen: 1.0 }
     statGrowth: { str: 2, dex: 4, con: 2, wil: 1 }
     talentTrees: [rogue_assassination, rogue_subtlety, rogue_agility]
     startingTalents: [backstab, poison_blade, stealth, roll]
@@ -105,7 +105,7 @@ professions:
     tier: BASE
     resourceProfiles:
       - axis: POSITIVE_ENERGY
-        initialCurrent: 0
+        initialCurrent: 32
         max: 100
         regen:
           type: COMPOSITE
@@ -115,7 +115,7 @@ professions:
             - { type: DECAY, amountPerTurn: 5, outOfCombatOnly: true }
     primarySpendAxis: POSITIVE_ENERGY
     baseStats: { str: 10, dex: 7, con: 10, wil: 12 }
-    combatProfile: { baseAttack: 6, baseDefense: 5, baseAccuracy: 11, baseEvasion: 5, baseSpeed: 102, baseHp: 58, baseStamina: 42, baseHpRegen: 1.2 }
+    combatProfile: { baseAttack: 8, baseDefense: 6, baseAccuracy: 13, baseEvasion: 5, baseSpeed: 102, baseHp: 60, baseStamina: 42, baseHpRegen: 1.2 }
     statGrowth: { str: 2, dex: 1, con: 2, wil: 3 }
     talentTrees: [templar_smite, templar_grace, templar_faith]
     startingTalents: [holy_strike, holy_light, holy_shield, devotion]

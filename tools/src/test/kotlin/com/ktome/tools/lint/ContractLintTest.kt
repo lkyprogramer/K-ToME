@@ -3,6 +3,7 @@ package com.ktome.tools.lint
 import com.ktome.client.assets.ClientAssetBundleLoader
 import com.ktome.core.ai.AIActionType
 import com.ktome.core.talent.KeywordRegistry
+import com.ktome.game.FOUNDATION_ZONE_ROUTE
 import com.ktome.game.data.DataLoader
 import com.ktome.game.i18n.GameLocale
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -13,6 +14,14 @@ import org.junit.jupiter.api.Test
 
 @Tag("contractLint")
 class ContractLintTest {
+    private val phase2RouteZoneIds: List<String> =
+        listOf(
+            "shattered_outpost",
+            "greenwood_fringe",
+            "deep_iron_pit",
+            "grey_gate_depths",
+        )
+
     @Test
     fun `schema v2 contracts resolve all mandatory cross references`() {
         val catalog = DataLoader().loadSchemaCatalog()
@@ -210,8 +219,11 @@ class ContractLintTest {
             assertEquals(2, objective.schemaVersion)
             assertEquals("objective.${objective.id}.name", objective.nameKey)
             assertEquals("objective.${objective.id}.desc", objective.descKey)
-            assertTrue(objective.interactables.isNotEmpty(), "Objective ${objective.id} must reference at least one interactable.")
-            assertTrue(objective.placements.isNotEmpty(), "Objective ${objective.id} must define interactable placements.")
+            assertEquals(
+                objective.interactables.isEmpty(),
+                objective.placements.isEmpty(),
+                "Objective ${objective.id} must not declare empty interactables with non-empty placements, or vice versa.",
+            )
             objective.interactables.forEach { interactableId ->
                 assertTrue(interactableIds.contains(interactableId), "Unknown objective interactable $interactableId")
             }
@@ -274,12 +286,19 @@ class ContractLintTest {
     @Test
     fun `phase2 skeleton ids and family namespaces stay frozen`() {
         val catalog = DataLoader().loadSchemaCatalog()
+        val zoneById = catalog.zones.associateBy { it.id }
+        val frozenRouteZones = phase2RouteZoneIds.associateWith { zoneId -> requireNotNull(zoneById[zoneId]) { "Missing frozen route zone $zoneId." } }
 
         assertEquals(
             setOf("vanguard", "arcanist", "rogue", "templar", "berserker", "spellblade", "shadowblade", "warden"),
             catalog.professions.map { it.id }.toSet(),
         )
-        assertEquals(setOf("shattered_outpost", "greenwood_fringe", "deep_iron_pit", "grey_gate_depths"), catalog.zones.map { it.id }.toSet())
+        assertTrue(catalog.zones.map { it.id }.containsAll(FOUNDATION_ZONE_ROUTE), "Foundation route zones must all remain present.")
+        assertEquals(
+            phase2RouteZoneIds,
+            catalog.zones.map { it.id }.filter(phase2RouteZoneIds::contains),
+            "Phase 2 route zones must remain in frozen order within the expanded Phase 3 catalog.",
+        )
         assertEquals(
             mapOf(
                 "shattered_outpost" to 2,
@@ -287,7 +306,7 @@ class ContractLintTest {
                 "deep_iron_pit" to 2,
                 "grey_gate_depths" to 2,
             ),
-            catalog.zones.associate { zone -> zone.id to zone.floorCount },
+            frozenRouteZones.mapValues { (_, zone) -> zone.floorCount },
         )
         assertEquals(
             mapOf(
@@ -296,7 +315,7 @@ class ContractLintTest {
                 "deep_iron_pit" to "molten_giant_encounter",
                 "grey_gate_depths" to "dungeon_lord_encounter",
             ),
-            catalog.zones.associate { zone -> zone.id to zone.bossEncounterId },
+            frozenRouteZones.mapValues { (_, zone) -> zone.bossEncounterId },
         )
         assertEquals(setOf("normal"), catalog.difficulties.map { it.id }.toSet())
         assertTrue(

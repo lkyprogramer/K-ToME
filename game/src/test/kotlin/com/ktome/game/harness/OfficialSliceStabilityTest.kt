@@ -91,7 +91,7 @@ class OfficialSliceStabilityTest {
         var bossWarningTurn: Int? = null
         var failureReason: String? = null
 
-        while (turns < OFFICIAL_SLICE_MAX_TURNS && !session.runOutcome().isTerminal) {
+        while (turns < OFFICIAL_SLICE_MAX_TURNS && session.config.zoneId == "shattered_outpost" && !session.runOutcome().isTerminal) {
             val snapshot = session.renderSnapshot()
             if (floor2Turn == null && session.currentFloor() >= 2) {
                 floor2Turn = turns
@@ -102,10 +102,6 @@ class OfficialSliceStabilityTest {
 
             val observation = RunObservationCapture.capture(session, turns)
             val command = bot.decide(observation)
-            if (command == null) {
-                failureReason = "SmokeBot returned no command."
-                break
-            }
             val renderedCommand = renderCommand(command)
             commandTrace += renderedCommand
             if (!session.perform(command)) {
@@ -128,8 +124,9 @@ class OfficialSliceStabilityTest {
         val bossEncounterTurns = bossWarningTurn?.let { warningTurn -> turns - warningTurn }
         val reasons = mutableListOf<String>()
         failureReason?.let(reasons::add)
-        if (session.runOutcome() !is RunOutcome.Victory) {
-            reasons += "Expected Victory but got ${session.runOutcome()}."
+        val sliceCleared = session.config.zoneId != "shattered_outpost"
+        if (!sliceCleared && session.runOutcome() !is RunOutcome.Victory) {
+            reasons += "Expected slice clear into greenwood or terminal victory but got zone=${session.config.zoneId}, outcome=${session.runOutcome()}."
         }
         if (turns < OFFICIAL_SLICE_MIN_TURNS) {
             reasons += "Slice finished too quickly: turns=$turns < $OFFICIAL_SLICE_MIN_TURNS."
@@ -146,6 +143,14 @@ class OfficialSliceStabilityTest {
             reasons += "Boss encounter duration could not be derived."
         } else if (bossEncounterTurns > OFFICIAL_SLICE_MAX_BOSS_ENCOUNTER_TURNS) {
             reasons += "Boss encounter too slow: bossEncounterTurns=$bossEncounterTurns > $OFFICIAL_SLICE_MAX_BOSS_ENCOUNTER_TURNS."
+        }
+        if (sliceCleared) {
+            if (session.config.zoneId != "greenwood_fringe") {
+                reasons += "Expected shattered_outpost slice to advance into greenwood_fringe but got ${session.config.zoneId}."
+            }
+            if (session.currentFloor() != 1) {
+                reasons += "Expected slice checkpoint to restart on floor 1 after route advance, got floor=${session.currentFloor()}."
+            }
         }
 
         return OfficialSliceStabilityReport(
@@ -181,6 +186,10 @@ class OfficialSliceStabilityTest {
             PlayerCommand.Ascend -> "Ascend"
             PlayerCommand.Descend -> "Descend"
             PlayerCommand.SaveGame -> "SaveGame"
+            PlayerCommand.CloseShop -> "CloseShop"
+            is PlayerCommand.BuyShopOffer -> "BuyShopOffer(${command.index})"
+            is PlayerCommand.SellInventoryItem -> "SellInventoryItem(${command.index})"
+            is PlayerCommand.SelectRoute -> "SelectRoute(${command.index})"
             is PlayerCommand.ActivateInventoryItem -> "ActivateInventoryItem(${command.index})"
             is PlayerCommand.UseInscription -> "UseInscription(${command.hotkey})"
             is PlayerCommand.UseTalent ->

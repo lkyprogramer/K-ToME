@@ -213,6 +213,7 @@ class SessionSnapshotMapperTest {
                     ),
                 currentFloor = 1,
                 turnCount = 12,
+                headlessTurnEquivalent = 21,
                 player = player,
                 floors = floors,
                 combatRandomState = null,
@@ -278,6 +279,7 @@ class SessionSnapshotMapperTest {
         assertEquals("rogue", restored.config.playerProfessionId)
         assertEquals(FOUNDATION_ZONE_ROUTE, restored.config.zoneRoute)
         assertEquals(1, restored.config.routeIndex)
+        assertEquals(10, restored.headlessTurnEquivalent)
     }
 
     @Test

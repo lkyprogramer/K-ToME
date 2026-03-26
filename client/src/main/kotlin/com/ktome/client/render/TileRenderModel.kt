@@ -292,6 +292,7 @@ internal object TileRenderModelBuilder {
                 snapshot.metadata.zoneDescKey?.let { descKey ->
                     rows += TileTextRow(localizer.text(descKey), TileTextTone.LIGHT_GRAY)
                 }
+                rows += TileTextRow(localizer.text("ui.sidebar.shards", "value" to snapshot.uiState.shardBalance), TileTextTone.GOLD)
                 if (snapshot.overlays.isNotEmpty()) {
                     rows += TileTextRow(localizer.text("ui.sidebar.warnings"), TileTextTone.GOLD)
                     rows += TelegraphRenderer.tileRows(localizer, snapshot)
@@ -361,6 +362,82 @@ internal object TileRenderModelBuilder {
                 if (snapshot.uiState.playerStatus.statPoints > 0) {
                     rows += TileTextRow(localizer.text("ui.controls.map.spend_stat"), TileTextTone.LIGHT_GRAY)
                 }
+            }
+
+            UiMode.SHOP -> {
+                val shop = snapshot.uiState.activeShop
+                rows += TileTextRow(localizer.text("ui.sidebar.shards", "value" to snapshot.uiState.shardBalance), TileTextTone.GOLD)
+                if (shop == null) {
+                    rows += TileTextRow(localizer.text("ui.sidebar.empty"), TileTextTone.GRAY)
+                } else {
+                    rows += TileTextRow(localizer.text("ui.shop.buy"), if (overlayState.shopFocus == com.ktome.client.input.ShopFocus.BUY) TileTextTone.GOLD else TileTextTone.WHITE)
+                    if (shop.offers.isEmpty()) {
+                        rows += TileTextRow(localizer.text("ui.sidebar.empty"), TileTextTone.GRAY)
+                    } else {
+                        shop.offers.forEach { offer ->
+                            rows +=
+                                TileTextRow(
+                                    text = "${offer.index + 1}. ${localizer.text(offer.labelKey)} (${offer.price})",
+                                    tone = if (overlayState.shopFocus == com.ktome.client.input.ShopFocus.BUY && overlayState.shopOfferSelection == offer.index) TileTextTone.CYAN else TileTextTone.WHITE,
+                                    selected = overlayState.shopFocus == com.ktome.client.input.ShopFocus.BUY && overlayState.shopOfferSelection == offer.index,
+                                )
+                        }
+                    }
+                    rows += TileTextRow(localizer.text("ui.shop.sell"), if (overlayState.shopFocus == com.ktome.client.input.ShopFocus.SELL) TileTextTone.GOLD else TileTextTone.WHITE)
+                    if (shop.sellEntries.isEmpty()) {
+                        rows += TileTextRow(localizer.text("ui.sidebar.empty"), TileTextTone.GRAY)
+                    } else {
+                        shop.sellEntries.forEachIndexed { displayIndex, sellEntry ->
+                            val inventoryEntry = snapshot.uiState.inventory.firstOrNull { entry -> entry.index == sellEntry.inventoryIndex }
+                            val itemLabel = inventoryEntry?.item?.let { item -> renderItemDisplay(localizer, item) } ?: localizer.text("ui.sidebar.empty")
+                            rows +=
+                                TileTextRow(
+                                    text = "${displayIndex + 1}. $itemLabel (${sellEntry.price})",
+                                    tone = if (overlayState.shopFocus == com.ktome.client.input.ShopFocus.SELL && overlayState.inventorySelection == displayIndex) TileTextTone.CYAN else TileTextTone.WHITE,
+                                    selected = overlayState.shopFocus == com.ktome.client.input.ShopFocus.SELL && overlayState.inventorySelection == displayIndex,
+                                )
+                        }
+                    }
+                }
+                rows += TileTextRow(localizer.text("ui.controls.shop"), TileTextTone.LIGHT_GRAY)
+            }
+
+            UiMode.WORLD_MAP -> {
+                val routePanel = snapshot.uiState.activeRouteSelection
+                if (routePanel == null) {
+                    rows += TileTextRow(localizer.text("ui.sidebar.empty"), TileTextTone.GRAY)
+                } else {
+                    rows += TileTextRow(localizer.text("ui.world_map.current_zone", "zone" to localizer.text(routePanel.currentZoneNameKey)), TileTextTone.GOLD)
+                    routePanel.options.forEach { option ->
+                        val rewardPreview =
+                            buildString {
+                                append(option.levelBandRef)
+                                append(" / ")
+                                append(option.shardReward)
+                                if (option.isReturnPath) {
+                                    append(" / ")
+                                    append(localizer.text("ui.world_map.return_path"))
+                                }
+                            }
+                        rows +=
+                            TileTextRow(
+                                text = "${option.index + 1}. ${localizer.text(option.destinationZoneNameKey)}",
+                                tone = if (overlayState.routeSelection == option.index) TileTextTone.CYAN else TileTextTone.WHITE,
+                                selected = overlayState.routeSelection == option.index,
+                            )
+                        option.destinationZoneDescKey?.let { descKey ->
+                            rows += TileTextRow(localizer.text(descKey), TileTextTone.LIGHT_GRAY)
+                        }
+                        rows += TileTextRow(rewardPreview, TileTextTone.LIGHT_GRAY)
+                        if (option.rewardItemNameKeys.isNotEmpty()) {
+                            rows += TileTextRow(option.rewardItemNameKeys.joinToString(separator = ", ") { key -> localizer.text(key) }, TileTextTone.GREEN)
+                        }
+                        if (option.rescueTags.isNotEmpty()) {
+                            rows += TileTextRow(option.rescueTags.joinToString(separator = " / "), TileTextTone.BLUE)
+                        }
+                    }
+                }
+                rows += TileTextRow(localizer.text("ui.controls.world_map"), TileTextTone.LIGHT_GRAY)
             }
 
             UiMode.INVENTORY -> {

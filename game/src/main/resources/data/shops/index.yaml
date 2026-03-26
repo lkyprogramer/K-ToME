@@ -1,0 +1,63 @@
+shops:
+  - id: greenwood_supply_post
+    zoneId: greenwood_fringe
+    nameKey: shop.greenwood_supply_post.name
+    inventory:
+      - id: offer.healing_potion
+        itemBaseId: healing_potion
+        price: 18
+        tags: [RECOVERY]
+      - id: offer.controlled_phase
+        inscriptionId: controlled_phase
+        price: 42
+        tags: [MOVEMENT]
+      - id: offer.iron_shield
+        inscriptionId: iron_shield
+        price: 38
+        tags: [PROTECTION]
+      - id: offer.short_sword
+        itemBaseId: short_sword
+        price: 30
+        tags: [OFFENSE]
+      - id: offer.leather_armor
+        itemBaseId: leather_armor
+        price: 32
+        tags: [PROTECTION]
+    rescuePolicy:
+      guaranteedTags: [RECOVERY, PROTECTION]
+      affordability:
+        checkpointId: greenwood_fringe
+        expectedShardBudgetByCheckpoint: 45
+        mandatoryAffordableItemCount: 1
+        requiredAffordableTags: [RECOVERY, PROTECTION]
+  - id: deep_iron_pit_waystation
+    zoneId: deep_iron_pit
+    nameKey: shop.deep_iron_pit_waystation.name
+    inventory:
+      - id: offer.phase_door
+        inscriptionId: phase_door
+        price: 46
+        tags: [MOVEMENT]
+      - id: offer.purge
+        inscriptionId: purge
+        price: 44
+        tags: [CLEANSING]
+      - id: offer.chain_mail
+        itemBaseId: chain_mail
+        price: 50
+        tags: [PROTECTION]
+      - id: offer.mana_potion
+        itemBaseId: mana_potion
+        price: 28
+        tags: [RECOVERY]
+      - id: offer.hunter_bow
+        itemBaseId: hunter_bow
+        price: 46
+        tags: [OFFENSE]
+    rescuePolicy:
+      guaranteedTags: [MOVEMENT, CLEANSING, PROTECTION]
+      affordability:
+        checkpointId: deep_iron_pit
+        expectedShardBudgetByCheckpoint: 80
+        mandatoryAffordableItemCount: 2
+        requiredAffordableTags: [MOVEMENT, CLEANSING, PROTECTION]

@@ -1,0 +1,45 @@
+quests:
+  - questId: quest.shattered_outpost
+    objectiveStates:
+      breach: AVAILABLE
+    completionFlags: [quest.shattered_outpost.cleared]
+  - questId: quest.greenwood_path
+    objectiveStates:
+      scout: AVAILABLE
+    completionFlags: [quest.greenwood_path.cleared]
+  - questId: quest.deep_iron_pit
+    objectiveStates:
+      forge: AVAILABLE
+    completionFlags: [quest.deep_iron_pit.cleared]
+  - questId: quest.grey_gate_depths
+    objectiveStates:
+      seal: AVAILABLE
+    completionFlags: [quest.grey_gate_depths.cleared]
+  - questId: quest.bandit_camp
+    objectiveStates:
+      cache_raid: AVAILABLE
+    completionFlags: [quest.bandit_camp.cleared]
+  - questId: quest.elven_ruins
+    objectiveStates:
+      relic_ward: AVAILABLE
+    completionFlags: [quest.elven_ruins.cleared]
+  - questId: quest.molten_core
+    objectiveStates:
+      pressure: AVAILABLE
+    completionFlags: [quest.molten_core.cleared]
+  - questId: quest.underground_river
+    objectiveStates:
+      crossing: AVAILABLE
+    completionFlags: [quest.underground_river.cleared]
+  - questId: quest.crystal_cavern
+    objectiveStates:
+      resonance: AVAILABLE
+    completionFlags: [quest.crystal_cavern.cleared]
+  - questId: quest.abyssal_temple
+    objectiveStates:
+      sanctum: AVAILABLE
+    completionFlags: [quest.abyssal_temple.cleared]
+  - questId: quest.abyssal_heart
+    objectiveStates:
+      heart: AVAILABLE
+    completionFlags: [quest.abyssal_heart.cleared]

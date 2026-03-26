@@ -68,6 +68,60 @@ class LoadoutPlannerTest {
         assertEquals(PlayerCommand.EquipTalentToSlot(4, "ice_bolt"), LoadoutPlanner.preferredLoadoutCommand(observation))
     }
 
+    @Test
+    fun `spellblade loadout prefers spellblade core kit over generic mana order`() {
+        val observation =
+            RunObservation(
+                floor = 1,
+                turnIndex = 10,
+                playerStatus =
+                    PlayerStatus(
+                        currentHp = 30,
+                        maxHp = 30,
+                        level = 1,
+                        currentExperience = 0,
+                        nextLevelRequirement = 10,
+                        statPoints = 0,
+                        talentPoints = 0,
+                        attack = 6,
+                        defense = 4,
+                        accuracy = 5,
+                        evasion = 3,
+                        speed = 100,
+                    ),
+                playerResource = PlayerResourceView(current = 20, max = 20, typeId = "MANA"),
+                playerPosition = Point(1, 0),
+                map = map,
+                visibleTiles = map.floorPoints().toSet(),
+                exploredTiles = map.floorPoints().toSet(),
+                visibleHostilePositions = emptyList(),
+                visibleBlockingPositions = emptySet(),
+                visibleGroundItemPositions = emptyList(),
+                visibleInteractables = emptyList(),
+                knownDownstairsPositions = emptyList(),
+                inventoryItems = emptyList(),
+                talentSlots =
+                    listOf(
+                        talentSlot(slot = 1, talentId = "arcane_edge", requiresTarget = true),
+                        talentSlot(slot = 2, talentId = "mana_lunge", requiresTarget = true),
+                        talentSlot(slot = 3, talentId = "flux_anchor"),
+                        talentSlot(slot = 4, talentId = "spell_rend", requiresTarget = true),
+                    ),
+                reserveTalents =
+                    listOf(
+                        reserveTalent(talentId = "spell_parry"),
+                        reserveTalent(talentId = "flux_burst"),
+                    ),
+                canAscend = false,
+                canDescend = false,
+                runOutcome = RunOutcome.InProgress,
+                messageLogTail = emptyList(),
+                eventTail = emptyList(),
+            )
+
+        assertEquals(PlayerCommand.EquipTalentToSlot(3, "spell_parry"), LoadoutPlanner.preferredLoadoutCommand(observation))
+    }
+
     private fun talentSlot(
         slot: Int,
         talentId: String,

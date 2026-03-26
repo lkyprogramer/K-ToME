@@ -1,0 +1,109 @@
+worldGraph:
+  startZoneId: shattered_outpost
+  connections:
+    - id: route.shattered_outpost.greenwood_fringe
+      fromZoneId: shattered_outpost
+      toZoneId: greenwood_fringe
+      isBidirectional: true
+    - id: route.greenwood_fringe.elven_ruins
+      fromZoneId: greenwood_fringe
+      toZoneId: elven_ruins
+      isBidirectional: true
+    - id: route.greenwood_fringe.bandit_camp
+      fromZoneId: greenwood_fringe
+      toZoneId: bandit_camp
+      isBidirectional: true
+    - id: route.greenwood_fringe.deep_iron_pit
+      fromZoneId: greenwood_fringe
+      toZoneId: deep_iron_pit
+      isBidirectional: true
+    - id: route.deep_iron_pit.molten_core
+      fromZoneId: deep_iron_pit
+      toZoneId: molten_core
+      isBidirectional: true
+    - id: route.deep_iron_pit.grey_gate_depths
+      fromZoneId: deep_iron_pit
+      toZoneId: grey_gate_depths
+      isBidirectional: true
+      requiredBossKill: orc.molten_giant
+    - id: route.grey_gate_depths.underground_river
+      fromZoneId: grey_gate_depths
+      toZoneId: underground_river
+      isBidirectional: true
+      requiredBossKill: cultist.dungeon_lord
+    - id: route.underground_river.crystal_cavern
+      fromZoneId: underground_river
+      toZoneId: crystal_cavern
+      isBidirectional: true
+    - id: route.underground_river.abyssal_temple
+      fromZoneId: underground_river
+      toZoneId: abyssal_temple
+      isBidirectional: true
+      requiredQuestId: quest.underground_river
+    - id: route.abyssal_temple.abyssal_heart
+      fromZoneId: abyssal_temple
+      toZoneId: abyssal_heart
+      isBidirectional: true
+      requiredQuestId: quest.abyssal_temple
+
+routeRewards:
+  - routeId: route.shattered_outpost.greenwood_fringe
+    claimPolicy: ON_FIRST_ROUTE_CLEAR
+    levelBandRef: lv1_4
+    shardReward: 35
+    guaranteedDropIds: [healing_potion]
+    rescueTags: [RECOVERY]
+  - routeId: route.greenwood_fringe.elven_ruins
+    claimPolicy: ON_ROUTE_UNLOCK
+    levelBandRef: lv5_7
+    shardReward: 25
+    guaranteedDropIds: [emerald_charm]
+    rescueTags: [ARCANE]
+  - routeId: route.greenwood_fringe.bandit_camp
+    claimPolicy: ON_ROUTE_UNLOCK
+    levelBandRef: lv3_5
+    shardReward: 20
+    guaranteedDropIds: [bandit_trophy]
+    rescueTags: [MOVEMENT]
+  - routeId: route.greenwood_fringe.deep_iron_pit
+    claimPolicy: ON_FIRST_ROUTE_CLEAR
+    levelBandRef: lv5_8
+    shardReward: 60
+    guaranteedDropIds: [basic_shield]
+    rescueTags: [PROTECTION]
+  - routeId: route.deep_iron_pit.molten_core
+    claimPolicy: ON_ROUTE_UNLOCK
+    levelBandRef: lv7_9
+    shardReward: 30
+    guaranteedDropIds: [furnace_talisman]
+    rescueTags: [FIRE]
+  - routeId: route.deep_iron_pit.grey_gate_depths
+    claimPolicy: ON_FIRST_ROUTE_CLEAR
+    levelBandRef: lv7_10
+    shardReward: 75
+    guaranteedDropIds: [forgebreaker_pick]
+    rescueTags: [MOVEMENT, CLEANSING]
+  - routeId: route.grey_gate_depths.underground_river
+    claimPolicy: ON_FIRST_ROUTE_CLEAR
+    levelBandRef: lv10_12
+    shardReward: 90
+    guaranteedDropIds: [seal_reliquary]
+    rescueTags: [CLEANSING]
+  - routeId: route.underground_river.crystal_cavern
+    claimPolicy: ON_ROUTE_UNLOCK
+    levelBandRef: lv11_13
+    shardReward: 35
+    guaranteedDropIds: [mana_potion]
+    rescueTags: [ARCANE]
+  - routeId: route.underground_river.abyssal_temple
+    claimPolicy: ON_FIRST_ROUTE_CLEAR
+    levelBandRef: lv12_15
+    shardReward: 110
+    guaranteedDropIds: [sanctified_seal]
+    rescueTags: [PROTECTION]
+  - routeId: route.abyssal_temple.abyssal_heart
+    claimPolicy: ON_FIRST_ROUTE_CLEAR
+    levelBandRef: lv15
+    shardReward: 150
+    guaranteedDropIds: [shadow_cloak]
+    rescueTags: [MOVEMENT, PROTECTION]

@@ -16,7 +16,7 @@ data class ProfileData(
     }
 
     companion object {
-        const val CURRENT_PROFILE_VERSION: Int = 1
+        const val CURRENT_PROFILE_VERSION: Int = 2
     }
 }
 
@@ -30,6 +30,10 @@ data class RunSummary(
     val turnCount: Int,
     val headlessTurnEquivalent: Int,
     val zoneRouteHash: String,
+    val zonePath: List<String> = emptyList(),
+    val defeatedBossIds: List<String> = emptyList(),
+    val claimedRouteRewardIds: List<String> = emptyList(),
+    val shardBalance: Int = 0,
     val buildHash: String,
     val rulesetVersion: String,
     val victory: Boolean,
@@ -40,6 +44,10 @@ data class RunSummary(
         require(raceId.isNotBlank()) { "RunSummary.raceId must not be blank." }
         require(finalZoneId.isNotBlank()) { "RunSummary.finalZoneId must not be blank." }
         require(zoneRouteHash.isNotBlank()) { "RunSummary.zoneRouteHash must not be blank." }
+        require(zonePath.none(String::isBlank)) { "RunSummary.zonePath must not contain blank zone ids." }
+        require(defeatedBossIds.none(String::isBlank)) { "RunSummary.defeatedBossIds must not contain blank ids." }
+        require(claimedRouteRewardIds.none(String::isBlank)) { "RunSummary.claimedRouteRewardIds must not contain blank ids." }
+        require(shardBalance >= 0) { "RunSummary.shardBalance must not be negative." }
         require(buildHash.isNotBlank()) { "RunSummary.buildHash must not be blank." }
         require(rulesetVersion.isNotBlank()) { "RunSummary.rulesetVersion must not be blank." }
         require(turnCount >= 0) { "RunSummary.turnCount must not be negative." }

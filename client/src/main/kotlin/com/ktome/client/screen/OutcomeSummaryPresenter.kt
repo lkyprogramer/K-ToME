@@ -1,12 +1,12 @@
 package com.ktome.client.screen
 
 import com.ktome.client.GameApp
-import com.ktome.game.RunSummary
+import com.ktome.game.OutcomeSummary
 
 internal object OutcomeSummaryPresenter {
     fun bodyLines(
         app: GameApp,
-        summary: RunSummary,
+        summary: OutcomeSummary,
         isVictory: Boolean,
     ): List<String> =
         buildList {
@@ -19,7 +19,12 @@ internal object OutcomeSummaryPresenter {
             )
             add(app.text("ui.summary.zone", "zone" to app.text(summary.zoneNameKey)))
             add(app.text("ui.summary.turns_taken", "turns" to summary.turns))
+            add(app.text("ui.summary.headless_turn_equivalent", "turns" to summary.headlessTurnEquivalent))
             add(app.text("ui.summary.final_level", "level" to summary.playerLevel))
+            add(app.text("ui.summary.shards", "amount" to summary.shardBalance))
+            if (summary.zonePath.isNotEmpty()) {
+                add(app.text("ui.summary.route_path", "path" to summary.zonePath.joinToString(" -> ")))
+            }
             add(app.text("ui.summary.final_hp", "current" to summary.finalHpCurrent, "max" to summary.finalHpMax))
             add(
                 app.text(

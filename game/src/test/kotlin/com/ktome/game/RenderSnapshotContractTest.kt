@@ -252,7 +252,7 @@ class RenderSnapshotContractTest {
 
         assertEquals("POSITIVE_ENERGY", status.resourceTypeId)
         assertEquals("ui.hud.positive_energy.short", status.resourceLabelKey)
-        assertEquals(0, status.currentResource)
+        assertEquals(32, status.currentResource)
         assertEquals(100, status.maxResource)
 
         PlayerResourceService.onDamageTaken(world, playerId, profession, damage = 20)
@@ -260,8 +260,8 @@ class RenderSnapshotContractTest {
         PlayerResourceService.onTurnStart(world, playerId, profession, inCombat = false)
         session.automationMovePlayerTo(session.playerPosition())
 
-        assertEquals(1, positive.current)
-        assertEquals(1, session.renderSnapshot().uiState.playerStatus.currentResource)
+        assertEquals(33, positive.current)
+        assertEquals(33, session.renderSnapshot().uiState.playerStatus.currentResource)
     }
 
     @Test
@@ -427,17 +427,22 @@ class RenderSnapshotContractTest {
         val world = session.automationWorld()
         val bossPoint = requireNotNull(world.get<Position>(bossId)).toPoint()
         session.automationMovePlayerTo(findOpenAdjacentPoint(session, bossPoint))
+        val holyStrikeSlot = session.talentSlots().first { slot -> slot.talentId == "holy_strike" }.slot
         val bossHealth = requireNotNull(world.get<com.ktome.core.ecs.Health>(bossId))
-        bossHealth.current = bossHealth.max * 2 / 5
-
-        assertTrue(session.perform(PlayerCommand.Wait))
+        bossHealth.current = bossHealth.max / 2
+        assertTrue(session.perform(PlayerCommand.UseTalent(slot = holyStrikeSlot, target = bossPoint)))
 
         val overlay =
-            requireNotNull(
+            generateSequence(0) { turn -> turn + 1 }
+                .map {
+                assertTrue(session.perform(PlayerCommand.Wait))
                 session.renderSnapshot().overlays.singleOrNull { candidate ->
                     candidate.id.startsWith("telegraph:${bossId.value}:dungeon_lord_phase_warning")
-                },
-            )
+                }
+                }.take(4)
+                .firstOrNull()
+
+        requireNotNull(overlay)
         assertEquals(OverlayShapeSnapshot.LINE, overlay.shape)
         assertTrue(overlay.cells.size > 1)
         assertTrue(overlay.cells.any { cell -> cell.x != bossPoint.x || cell.y != bossPoint.y })

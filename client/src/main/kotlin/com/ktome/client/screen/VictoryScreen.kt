@@ -12,11 +12,11 @@ import com.ktome.client.GameApp
 import com.ktome.client.input.GdxInputSource
 import com.ktome.client.input.InputSource
 import com.ktome.client.render.KtomeFonts
-import com.ktome.game.RunSummary
+import com.ktome.game.OutcomeSummary
 
 class VictoryScreen(
     private val app: GameApp,
-    private val summary: RunSummary,
+    private val summary: OutcomeSummary,
     private val inputSource: InputSource = GdxInputSource,
     private val renderEnabled: Boolean = true,
 ) : ScreenAdapter() {
