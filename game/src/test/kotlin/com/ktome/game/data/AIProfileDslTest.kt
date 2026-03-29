@@ -113,7 +113,7 @@ class AIProfileDslTest {
     @Test
     fun `official boss profile keeps nested not status guards`() {
         val profile = DataLoader(GameLocale.EN_US).loadSchemaCatalog().aiProfiles.first { it.id == "ai.boss.dungeon_lord.phase_full" }
-        val guardAction = profile.actions.first { action -> action.id == "war_cry" }
+        val guardAction = profile.actions.first { action -> action.id == "battlefield_command" }
         val condition = requireNotNull(guardAction.condition) as AICondition.And
         val targetVisibleGuard = condition.conditions.first()
         val notGuard = condition.conditions.last()
@@ -136,10 +136,11 @@ class AIProfileDslTest {
         val fullProfile = DataLoader(GameLocale.EN_US).loadSchemaCatalog().aiProfiles.first { it.id == "ai.boss.abyssal_guardian.phase_full" }
         val abyssalProfile = DataLoader(GameLocale.EN_US).loadSchemaCatalog().aiProfiles.first { it.id == "ai.boss.abyssal_guardian.phase_abyssal" }
 
-        assertTrue(fullProfile.actions.any { action -> action.id == "abyssal_roar" && action.abilityId == "war_cry" })
-        assertTrue(fullProfile.actions.any { action -> action.id == "abyssal_charge" && action.abilityId == "charge" })
-        assertTrue(abyssalProfile.actions.any { action -> action.id == "collapse_charge" && action.abilityId == "charge" })
-        assertTrue(abyssalProfile.actions.any { action -> action.id == "void_breach" && action.abilityId == "power_strike" })
+        assertTrue(fullProfile.actions.any { action -> action.id == "arcane_shield" && action.abilityId == "arcane_shield" })
+        assertTrue(fullProfile.actions.any { action -> action.id == "void_breach" && action.abilityId == "void_breach" })
+        assertTrue(abyssalProfile.actions.any { action -> action.id == "abyssal_consecration" && action.abilityId == "consecration" })
+        assertTrue(abyssalProfile.actions.any { action -> action.id == "press_abyss" && action.type == AIActionType.MOVE_TOWARD_TARGET })
+        assertTrue(abyssalProfile.actions.none { action -> action.id in setOf("battlefield_command", "shadow_bind", "ritual_break") })
     }
 
     @Test
