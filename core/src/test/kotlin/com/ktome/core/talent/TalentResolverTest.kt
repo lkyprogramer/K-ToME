@@ -481,6 +481,31 @@ class TalentResolverTest {
                         damageType = com.ktome.core.combat.DamageType.SHADOW,
                     ),
                     TalentDef(
+                        id = "crippling_strike",
+                        name = "致残打击",
+                        description = "",
+                        resourceCosts = mapOf(ResourceType.ENERGY to 10),
+                        cooldown = 6,
+                        range = 1,
+                        levelEffects =
+                            mapOf(
+                                1 to
+                                    TalentLevelEffect(
+                                        damageMultiplier = 1.25,
+                                        associatedEffects =
+                                            listOf(
+                                                hostileOnHitEffect(
+                                                    effectId = "crippling_strike_weaken",
+                                                    statusId = StatusEffectType.WEAKEN.schemaId,
+                                                    duration = 3,
+                                                    saveDimension = SaveDimension.PHYSICAL,
+                                                    magnitude = 0.12,
+                                                ),
+                                            ),
+                                    ),
+                            ),
+                    ),
+                    TalentDef(
                         id = "roll",
                         name = "翻滚",
                         description = "",
@@ -834,6 +859,21 @@ class TalentResolverTest {
     }
 
     @Test
+    fun `crippling strike applies weaken and spends energy`() {
+        val world = baseWorld()
+        val player = createPlayer(world, cooldown = 0, levelOverrides = mapOf("crippling_strike" to 1))
+        val monster = createMonster(world, Point(2, 2))
+        val loadout = requireNotNull(world.get<TalentLoadout>(player))
+        loadout.slotToTalentId[27] = "crippling_strike"
+
+        val result = resolver().resolve(world, map, player, "crippling_strike", Point(2, 2))
+
+        assertTrue(result is TalentUseResult.Success)
+        assertTrue(requireNotNull(world.get<com.ktome.core.talent.EffectTracker>(monster)).has(StatusEffectType.WEAKEN))
+        assertEquals(50, requireNotNull(world.get<ResourcePools>(player)).pool(ResourceType.ENERGY)?.current)
+    }
+
+    @Test
     fun `roll repositions user with energy cost`() {
         val world = baseWorld()
         val player = createPlayer(world, cooldown = 0)
@@ -1032,6 +1072,17 @@ class TalentResolverTest {
                             uniquenessKey = "war_cry_shaken",
                             sourceScopedUnique = true,
                             statModifier = StatModifier(defenseMultiplierBonus = -1.0),
+                        ),
+                        StatusEffectDef(
+                            id = StatusEffectType.WEAKEN.schemaId,
+                            type = StatusEffectType.WEAKEN,
+                            category = EffectCategory.DEBUFF,
+                            nameKey = "status.weaken",
+                            stackingRule = StackingRule.REFRESH_DURATION,
+                            replacePolicy = ReplacePolicy.KEEP_STRONGEST,
+                            uniquenessKey = StatusEffectType.WEAKEN.schemaId,
+                            sourceScopedUnique = true,
+                            statModifier = StatModifier(attackMultiplierBonus = -0.12),
                         ),
                     ),
                 ),

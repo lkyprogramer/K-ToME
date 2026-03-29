@@ -835,7 +835,9 @@ class TalentResolver(
                 resolveDamage(world, user, targetEntity, definition.damageType, effect.damageMultiplier, effects, abilityId = definition.id)
             }
 
-            "poison_blade" -> {
+            "poison_blade",
+            "crippling_strike",
+            -> {
                 val targetEntity = requireNotNull(hostileTargetAt(world, user, requireNotNull(target)))
                 targets += targetEntity
                 val damageResult =
