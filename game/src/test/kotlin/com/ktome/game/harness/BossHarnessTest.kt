@@ -52,7 +52,7 @@ class BossHarnessTest {
                     appendLine("- scriptVersion: boss-harness-v2")
                     reports.forEach { report ->
                         appendLine(
-                            "- boss=${report.templateId}, zone=${report.zoneId}, seed=${report.seed}, locale=${report.localeId}, success=${report.success}, telegraph=${report.telegraphKey}, phase=${report.phaseId}, expectedAction=${report.expectedSelectedActionId ?: "none"}, selectedActions=${if (report.selectedActionIds.isEmpty()) "none" else report.selectedActionIds}, observedAiTraceCount=${report.observedAiTraceCount}/${report.requiredAiTraceCount}, bossTraceCount=${report.bossTraceCount}, aiTraceHash=${report.aiTraceHash}, bossTraceHash=${report.bossTraceHash}",
+                            "- boss=${report.templateId}, zone=${report.zoneId}, seed=${report.seed}, locale=${report.localeId}, success=${report.success}, telegraph=${report.telegraphKey}, phase=${report.phaseId}, expectedActions=${if (report.expectedSelectedActions.isEmpty()) "none" else report.expectedSelectedActions}, selectedActions=${if (report.selectedActionIds.isEmpty()) "none" else report.selectedActionIds}, observedAiTraceCount=${report.observedAiTraceCount}/${report.requiredAiTraceCount}, bossTraceCount=${report.bossTraceCount}, aiTraceHash=${report.aiTraceHash}, bossTraceHash=${report.bossTraceHash}",
                         )
                     }
                 },
@@ -81,10 +81,16 @@ class BossHarnessTest {
             requireNotNull(world.get<com.ktome.core.ecs.Health>(bossId)).max * 49 / 100
         assertTrue(session.perform(PlayerCommand.Wait))
         val phaseTelegraph = world.get<PendingTelegraphState>(bossId)
-        waitForPhaseActionTrace(session, "crushing_strike")
+        waitForPhaseActionTrace(
+            session = session,
+            bossActorId = bossId.value,
+            expectedPhaseId = "phase_enraged",
+            expectedActionIds = setOf("earthshaker"),
+        )
 
         return buildReport(
             session = session,
+            bossActorId = bossId.value,
             seed = seed,
             zoneId = "deep_iron_pit",
             templateId = "orc.molten_giant",
@@ -92,7 +98,7 @@ class BossHarnessTest {
             phaseState = world.get<BossEncounterState>(bossId),
             expectedTelegraphKey = "molten_giant_phase_warning",
             expectedPhaseId = "phase_enraged",
-            expectedSelectedActionId = "crushing_strike",
+            expectedSelectedActionIds = setOf("earthshaker"),
             expectedBossTracePhaseId = "phase_enraged",
             expectedBossTraceSideEffect = "TELEGRAPH:molten_giant_phase_warning",
         )
@@ -108,17 +114,23 @@ class BossHarnessTest {
         val bossId = requireNotNull(session.automationEntityByTemplateId("cultist.dungeon_lord"))
         val world = session.automationWorld()
         val bossPoint = requireNotNull(world.get<Position>(bossId)).toPoint()
-        session.automationMovePlayerTo(findOpenAdjacentPoint(session, bossPoint))
+        session.automationMovePlayerTo(findOpenPointAtDistance(session, bossPoint, minDistance = 5, maxDistance = 8))
 
         assertTrue(session.perform(PlayerCommand.Wait))
         requireNotNull(world.get<com.ktome.core.ecs.Health>(bossId)).current =
             requireNotNull(world.get<com.ktome.core.ecs.Health>(bossId)).max * 40 / 100
         assertTrue(session.perform(PlayerCommand.Wait))
         val phaseTelegraph = world.get<PendingTelegraphState>(bossId)
-        waitForPhaseActionTrace(session, "finishing_strike")
+        waitForPhaseActionTrace(
+            session = session,
+            bossActorId = bossId.value,
+            expectedPhaseId = "phase_desperate",
+            expectedActionIds = setOf("arcane_shield"),
+        )
 
         return buildReport(
             session = session,
+            bossActorId = bossId.value,
             seed = seed,
             zoneId = "grey_gate_depths",
             templateId = "cultist.dungeon_lord",
@@ -126,7 +138,7 @@ class BossHarnessTest {
             phaseState = world.get<BossEncounterState>(bossId),
             expectedTelegraphKey = "dungeon_lord_phase_warning",
             expectedPhaseId = "phase_desperate",
-            expectedSelectedActionId = "finishing_strike",
+            expectedSelectedActionIds = setOf("arcane_shield"),
             expectedBossTracePhaseId = "phase_desperate",
             expectedBossTraceSideEffect = "TELEGRAPH:dungeon_lord_phase_warning",
         )
@@ -148,10 +160,16 @@ class BossHarnessTest {
             requireNotNull(world.get<com.ktome.core.ecs.Health>(bossId)).max * 35 / 100
         assertTrue(session.perform(PlayerCommand.Wait))
         val phaseTelegraph = world.get<PendingTelegraphState>(bossId)
-        waitForPhaseActionTrace(session, "void_breach")
+        waitForPhaseActionTrace(
+            session = session,
+            bossActorId = bossId.value,
+            expectedPhaseId = "phase_abyssal",
+            expectedActionIds = setOf("abyssal_consecration", "press_abyss"),
+        )
 
         return buildReport(
             session = session,
+            bossActorId = bossId.value,
             seed = seed,
             zoneId = "abyssal_heart",
             templateId = "abyssal.guardian",
@@ -159,7 +177,7 @@ class BossHarnessTest {
             phaseState = world.get<BossEncounterState>(bossId),
             expectedTelegraphKey = "abyssal_guardian_phase_warning",
             expectedPhaseId = "phase_abyssal",
-            expectedSelectedActionId = "void_breach",
+            expectedSelectedActionIds = setOf("abyssal_consecration", "press_abyss"),
             expectedBossTracePhaseId = "phase_abyssal",
             expectedBossTraceSideEffect = "TELEGRAPH:abyssal_guardian_phase_warning",
         )
@@ -167,6 +185,7 @@ class BossHarnessTest {
 
     private fun buildReport(
         session: FoundationGameSession,
+        bossActorId: Int,
         seed: Long,
         zoneId: String,
         templateId: String,
@@ -174,28 +193,35 @@ class BossHarnessTest {
         phaseState: BossEncounterState?,
         expectedTelegraphKey: String,
         expectedPhaseId: String,
-        expectedSelectedActionId: String? = null,
+        expectedSelectedActionIds: Set<String> = emptySet(),
         expectedBossTracePhaseId: String? = null,
         expectedBossTraceSideEffect: String? = null,
     ): BossHarnessReport {
-        val aiTraces = session.recentAIDecisionTraces()
-        val bossTraces = session.recentBossTraces()
-        val aiJson = Json.encodeToString(aiTraces)
+        val aiTraces = session.recentAIDecisionTraces().filter { trace -> trace.actorId == bossActorId }
+        val bossTraces = session.recentBossTraces().filter { trace -> trace.actorId == bossActorId }
         val bossJson = Json.encodeToString(bossTraces)
-        val decodedAi = Json.decodeFromString<List<AIDecisionTrace>>(aiJson)
+        val decodedAi = Json.decodeFromString<List<AIDecisionTrace>>(Json.encodeToString(aiTraces))
         val decodedBoss = Json.decodeFromString<List<BossTrace>>(bossJson)
+        val phaseTransitionTurnId = decodedBoss.lastOrNull { trace -> trace.toPhase == expectedPhaseId }?.turnId
+        val phaseScopedAi =
+            phaseTransitionTurnId?.let { turnId ->
+                decodedAi.filter { trace -> trace.turnId >= turnId }
+            } ?: decodedAi
+        val aiJson = Json.encodeToString(phaseScopedAi)
         val aiTraceHash = sha256(aiJson)
         val bossTraceHash = sha256(bossJson)
-        val traceRoundTripMatches = decodedAi == aiTraces && decodedBoss == bossTraces
-        val selectedActionIds = decodedAi.mapNotNull(AIDecisionTrace::selectedActionId).distinct().sorted()
+        val traceRoundTripMatches =
+            Json.decodeFromString<List<AIDecisionTrace>>(aiJson) == phaseScopedAi &&
+                decodedBoss == bossTraces
+        val selectedActionIds = phaseScopedAi.mapNotNull(AIDecisionTrace::selectedActionId).distinct().sorted()
         val telegraphMatches =
             telegraph != null &&
                 (telegraph.sourceAbilityId == expectedTelegraphKey || telegraph.telegraphSpecId == expectedTelegraphKey)
-        val aiTraceRequired = expectedSelectedActionId != null
+        val aiTraceRequired = expectedSelectedActionIds.isNotEmpty()
         val bossTraceRequired = expectedBossTracePhaseId != null || expectedBossTraceSideEffect != null
         val expectedActionPresent =
-            expectedSelectedActionId == null ||
-                decodedAi.any { trace -> trace.selectedActionId == expectedSelectedActionId }
+            expectedSelectedActionIds.isEmpty() ||
+                phaseScopedAi.any { trace -> trace.selectedActionId in expectedSelectedActionIds }
         val expectedBossPhaseTracePresent =
             expectedBossTracePhaseId == null ||
                 decodedBoss.any { trace -> trace.toPhase == expectedBossTracePhaseId }
@@ -208,7 +234,7 @@ class BossHarnessTest {
         val success =
             telegraphMatches &&
                 phaseState?.currentPhaseId == expectedPhaseId &&
-                (!aiTraceRequired || decodedAi.isNotEmpty()) &&
+                (!aiTraceRequired || phaseScopedAi.isNotEmpty()) &&
                 (!bossTraceRequired || decodedBoss.isNotEmpty()) &&
                 traceRoundTripMatches &&
                 expectedActionPresent &&
@@ -219,10 +245,10 @@ class BossHarnessTest {
                 telegraph == null -> "Missing pending telegraph."
                 !telegraphMatches -> "Expected telegraph '$expectedTelegraphKey' but got ${telegraph.sourceAbilityId}/${telegraph.telegraphSpecId}."
                 phaseState?.currentPhaseId != expectedPhaseId -> "Expected phase $expectedPhaseId but got ${phaseState?.currentPhaseId}."
-                aiTraceRequired && decodedAi.isEmpty() -> "Missing AI decision traces."
+                aiTraceRequired && phaseScopedAi.isEmpty() -> "Missing AI decision traces after phase transition."
                 bossTraceRequired && decodedBoss.isEmpty() -> "Missing boss traces."
                 !traceRoundTripMatches -> "Trace payload changed after JSON round trip."
-                !expectedActionPresent -> "Missing expected AI action trace '$expectedSelectedActionId'."
+                !expectedActionPresent -> "Missing expected AI action trace after phase transition in ${expectedSelectedActionIds.sorted()}."
                 !expectedBossPhaseTracePresent -> "Missing boss phase trace '$expectedBossTracePhaseId'."
                 !expectedBossSideEffectPresent -> "Missing boss trace side effect '$expectedBossTraceSideEffect'."
                 else -> null
@@ -235,11 +261,11 @@ class BossHarnessTest {
             success = success,
             phaseId = phaseState?.currentPhaseId,
             telegraphKey = telegraph?.sourceAbilityId ?: telegraph?.telegraphSpecId,
-            expectedSelectedActionId = expectedSelectedActionId,
+            expectedSelectedActions = expectedSelectedActionIds.sorted(),
             selectedActionIds = selectedActionIds,
             requiredAiTraceCount = if (aiTraceRequired) 1 else 0,
-            observedAiTraceCount = decodedAi.size,
-            aiTraceCount = decodedAi.size,
+            observedAiTraceCount = phaseScopedAi.size,
+            aiTraceCount = phaseScopedAi.size,
             bossTraceCount = decodedBoss.size,
             aiTraceHash = aiTraceHash,
             bossTraceHash = bossTraceHash,
@@ -270,12 +296,48 @@ class BossHarnessTest {
             }
     }
 
+    private fun findOpenPointAtDistance(
+        session: FoundationGameSession,
+        center: Point,
+        minDistance: Int,
+        maxDistance: Int,
+    ): Point {
+        val world = session.automationWorld()
+        val occupied = world.entitiesWith(Position::class).mapTo(linkedSetOf()) { entityId -> requireNotNull(world.get<Position>(entityId)).toPoint() }
+        return (0 until session.map.height).asSequence()
+            .flatMap { y -> (0 until session.map.width).asSequence().map { x -> Point(x, y) } }
+            .filter { point ->
+                point.chebyshevDistanceTo(center) in minDistance..maxDistance &&
+                    session.map.isInBounds(point.x, point.y) &&
+                    !session.map[point].blocksMovement &&
+                    point !in occupied
+            }
+            .sortedWith(compareByDescending<Point> { point -> point.chebyshevDistanceTo(center) }.thenBy(Point::y).thenBy(Point::x))
+            .first()
+    }
+
     private fun waitForPhaseActionTrace(
         session: FoundationGameSession,
-        expectedActionId: String,
+        bossActorId: Int,
+        expectedPhaseId: String,
+        expectedActionIds: Set<String>,
     ) {
-        repeat(6) {
-            if (session.recentAIDecisionTraces().any { trace -> trace.selectedActionId == expectedActionId }) {
+        repeat(20) {
+            val transitionTurnId =
+                session
+                    .recentBossTraces()
+                    .lastOrNull { trace -> trace.actorId == bossActorId && trace.toPhase == expectedPhaseId }
+                    ?.turnId
+            if (
+                transitionTurnId != null &&
+                session
+                    .recentAIDecisionTraces()
+                    .any { trace ->
+                        trace.actorId == bossActorId &&
+                            trace.turnId >= transitionTurnId &&
+                            trace.selectedActionId in expectedActionIds
+                    }
+            ) {
                 return
             }
             if (session.runOutcome().isTerminal) {
@@ -294,7 +356,7 @@ private data class BossHarnessReport(
     val success: Boolean,
     val phaseId: String?,
     val telegraphKey: String?,
-    val expectedSelectedActionId: String?,
+    val expectedSelectedActions: List<String>,
     val selectedActionIds: List<String>,
     val requiredAiTraceCount: Int,
     val observedAiTraceCount: Int,
@@ -315,7 +377,7 @@ private data class BossHarnessReport(
             put("success", success)
             phaseId?.let { put("phaseId", it) }
             telegraphKey?.let { put("telegraphKey", it) }
-            expectedSelectedActionId?.let { put("expectedSelectedActionId", it) }
+            putJsonArray("expectedSelectedActions") { expectedSelectedActions.forEach { actionId -> add(JsonPrimitive(actionId)) } }
             putJsonArray("selectedActionIds") { selectedActionIds.forEach { actionId -> add(JsonPrimitive(actionId)) } }
             put("requiredAiTraceCount", requiredAiTraceCount)
             put("observedAiTraceCount", observedAiTraceCount)

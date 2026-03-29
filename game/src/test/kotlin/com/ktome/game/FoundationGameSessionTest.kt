@@ -2148,22 +2148,22 @@ class FoundationGameSessionTest {
         val bossPoint = requireNotNull(world.get<Position>(bossId)).toPoint()
         movePlayerTo(session, findOpenAdjacentPoint(session, bossPoint))
         requireNotNull(world.get<com.ktome.core.talent.CooldownState>(bossId)).remainingByTalentId.apply {
-            this["war_cry"] = 99
-            this["power_strike"] = 0
-            this["charge"] = 99
+            this["battlefield_command"] = 0
+            this["shadow_bind"] = 99
+            this["ritual_break"] = 99
         }
 
         var queuedTelegraph: PendingTelegraphState? = null
         for (attempt in 0 until 6) {
             assertTrue(session.perform(PlayerCommand.Wait))
             val candidate = world.get<PendingTelegraphState>(bossId)
-            if (candidate?.sourceAbilityId == "power_strike") {
+            if (candidate?.sourceAbilityId == "battlefield_command") {
                 queuedTelegraph = candidate
                 break
             }
         }
         queuedTelegraph = requireNotNull(queuedTelegraph)
-        assertEquals("power_strike", queuedTelegraph.sourceAbilityId)
+        assertEquals("battlefield_command", queuedTelegraph.sourceAbilityId)
 
         val bossHealth = requireNotNull(world.get<Health>(bossId))
         bossHealth.current = bossHealth.max * 2 / 5
@@ -2175,7 +2175,7 @@ class FoundationGameSessionTest {
         assertEquals("phase_desperate", requireNotNull(world.get<BossEncounterState>(bossId)).currentPhaseId)
         assertEquals("dungeon_lord_phase_warning", replacementTelegraph.telegraphSpecId)
         assertEquals("dungeon_lord_phase_warning", replacementTelegraph.sourceAbilityId)
-        assertNotEquals("power_strike", replacementTelegraph.sourceAbilityId)
+        assertNotEquals("battlefield_command", replacementTelegraph.sourceAbilityId)
         assertEquals("hp_threshold", trace.trigger)
         assertTrue(trace.sideEffects.contains("CLEAR_PENDING_TELEGRAPH"))
         assertTrue(trace.sideEffects.contains("TELEGRAPH:dungeon_lord_phase_warning"))

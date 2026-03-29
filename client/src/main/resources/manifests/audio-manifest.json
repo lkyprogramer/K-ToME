@@ -129,6 +129,18 @@
       ]
     },
     {
+      "key": "audio.boss.abyssal.guardian",
+      "cueFamily": "boss",
+      "eventId": "audio.boss.abyssal.guardian",
+      "sourcePath": "audio/boss/abyssal_guardian.ogg",
+      "tags": [
+        "phase3",
+        "followup",
+        "boss",
+        "abyssal"
+      ]
+    },
+    {
       "key": "audio.boss.bandit_captain",
       "cueFamily": "boss",
       "eventId": "audio.boss.bandit_captain",
@@ -147,8 +159,22 @@
       "eventId": "audio.boss.cultist.dungeon_lord",
       "sourcePath": "audio/boss/cultist_dungeon_lord.ogg",
       "tags": [
-        "placeholder",
-        "phase2"
+        "phase2",
+        "p2-c",
+        "boss",
+        "official_slice"
+      ]
+    },
+    {
+      "key": "audio.boss.orc.molten_giant",
+      "cueFamily": "boss",
+      "eventId": "audio.boss.orc.molten_giant",
+      "sourcePath": "audio/boss/orc_molten_giant.ogg",
+      "tags": [
+        "phase3",
+        "followup",
+        "boss",
+        "orc"
       ]
     },
     {
@@ -161,516 +187,6 @@
         "p2-b",
         "boss-warning",
         "official_slice"
-      ]
-    },
-    {
-      "key": "audio.difficulty.normal",
-      "cueFamily": "difficulty",
-      "eventId": "audio.difficulty.normal",
-      "sourcePath": "audio/ui/confirm.ogg",
-      "tags": [
-        "phase2",
-        "p2-opt",
-        "difficulty"
-      ]
-    },
-    {
-      "key": "audio.fallback.silence",
-      "cueFamily": "silence",
-      "eventId": "silence.default",
-      "sourcePath": "audio/fallback/silence.ogg",
-      "tags": [
-        "fallback",
-        "phase2"
-      ]
-    },
-    {
-      "key": "audio.footstep.default",
-      "cueFamily": "footstep",
-      "eventId": "footstep.default",
-      "sourcePath": "audio/footstep/default.ogg",
-      "tags": [
-        "placeholder",
-        "phase2",
-        "footstep"
-      ]
-    },
-    {
-      "key": "audio.interactable.open",
-      "cueFamily": "interactable",
-      "eventId": "interactable.open",
-      "sourcePath": "audio/interactable/open.ogg",
-      "tags": [
-        "phase2",
-        "p2-b",
-        "interactable",
-        "official_slice"
-      ]
-    },
-    {
-      "key": "audio.interactable.stairs",
-      "cueFamily": "interactable",
-      "eventId": "interactable.stairs",
-      "sourcePath": "audio/interactable/stairs.ogg",
-      "tags": [
-        "phase2",
-        "p2-b",
-        "interactable",
-        "official_slice"
-      ]
-    },
-    {
-      "key": "audio.item.battle_axe",
-      "cueFamily": "item",
-      "eventId": "audio.item.battle_axe",
-      "sourcePath": "audio/item/short_sword.ogg",
-      "tags": [
-        "phase2",
-        "item",
-        "loot",
-        "sprint1"
-      ]
-    },
-    {
-      "key": "audio.item.chain_mail",
-      "cueFamily": "item",
-      "eventId": "audio.item.chain_mail",
-      "sourcePath": "audio/item/chain_mail.ogg",
-      "tags": [
-        "phase2",
-        "item",
-        "starter_kit",
-        "official_slice"
-      ]
-    },
-    {
-      "key": "audio.item.basic_shield",
-      "cueFamily": "item",
-      "eventId": "audio.item.basic_shield",
-      "sourcePath": "audio/item/basic_shield.ogg",
-      "tags": [
-        "phase2",
-        "item",
-        "starter_kit",
-        "official_slice"
-      ]
-    },
-    {
-      "key": "audio.item.healing_potion",
-      "cueFamily": "item",
-      "eventId": "audio.item.healing_potion",
-      "sourcePath": "audio/item/healing_potion.ogg",
-      "tags": [
-        "phase2",
-        "item",
-        "starter_kit",
-        "official_slice"
-      ]
-    },
-    {
-      "key": "audio.item.leather_armor",
-      "cueFamily": "item",
-      "eventId": "audio.item.leather_armor",
-      "sourcePath": "audio/item/chain_mail.ogg",
-      "tags": [
-        "phase2",
-        "item",
-        "loot",
-        "sprint1"
-      ]
-    },
-    {
-      "key": "audio.item.mana_potion",
-      "cueFamily": "item",
-      "eventId": "audio.item.mana_potion",
-      "sourcePath": "audio/item/mana_potion.ogg",
-      "tags": [
-        "phase2",
-        "item",
-        "starter_kit",
-        "official_slice"
-      ]
-    },
-    {
-      "key": "audio.item.arcane_staff",
-      "cueFamily": "item",
-      "eventId": "audio.item.arcane_staff",
-      "sourcePath": "audio/item/arcane_staff.ogg",
-      "tags": [
-        "phase2",
-        "item",
-        "starter_kit",
-        "official_slice"
-      ]
-    },
-    {
-      "key": "audio.item.apprentice_robe",
-      "cueFamily": "item",
-      "eventId": "audio.item.apprentice_robe",
-      "sourcePath": "audio/item/apprentice_robe.ogg",
-      "tags": [
-        "phase2",
-        "item",
-        "starter_kit",
-        "official_slice"
-      ]
-    },
-    {
-      "key": "audio.item.long_sword",
-      "cueFamily": "item",
-      "eventId": "audio.item.long_sword",
-      "sourcePath": "audio/item/short_sword.ogg",
-      "tags": [
-        "phase2",
-        "item",
-        "loot",
-        "sprint1"
-      ]
-    },
-    {
-      "key": "audio.item.plate_armor",
-      "cueFamily": "item",
-      "eventId": "audio.item.plate_armor",
-      "sourcePath": "audio/item/chain_mail.ogg",
-      "tags": [
-        "phase2",
-        "item",
-        "loot",
-        "sprint1"
-      ]
-    },
-    {
-      "key": "audio.item.scroll_teleport",
-      "cueFamily": "item",
-      "eventId": "audio.item.scroll_teleport",
-      "sourcePath": "audio/talent/blink.ogg",
-      "tags": [
-        "phase2",
-        "item",
-        "reward",
-        "sprint1"
-      ]
-    },
-    {
-      "key": "audio.item.short_sword",
-      "cueFamily": "item",
-      "eventId": "audio.item.short_sword",
-      "sourcePath": "audio/item/short_sword.ogg",
-      "tags": [
-        "phase2",
-        "item",
-        "starter_kit",
-        "official_slice"
-      ]
-    },
-    {
-      "key": "audio.resource.mana.restore",
-      "cueFamily": "resource",
-      "eventId": "resource.mana.restore",
-      "sourcePath": "audio/resource/mana_restore.ogg",
-      "tags": [
-        "phase2",
-        "p2-c",
-        "resource"
-      ]
-    },
-    {
-      "key": "audio.resource.mana.spend",
-      "cueFamily": "resource",
-      "eventId": "resource.mana.spend",
-      "sourcePath": "audio/resource/mana_spend.ogg",
-      "tags": [
-        "phase2",
-        "p2-c",
-        "resource"
-      ]
-    },
-    {
-      "key": "audio.resource.stamina.restore",
-      "cueFamily": "resource",
-      "eventId": "resource.stamina.restore",
-      "sourcePath": "audio/resource/stamina_restore.ogg",
-      "tags": [
-        "phase2",
-        "p2-c",
-        "resource"
-      ]
-    },
-    {
-      "key": "audio.resource.stamina.spend",
-      "cueFamily": "resource",
-      "eventId": "resource.stamina.spend",
-      "sourcePath": "audio/resource/stamina_spend.ogg",
-      "tags": [
-        "phase2",
-        "p2-c",
-        "resource"
-      ]
-    },
-    {
-      "key": "audio.resource.energy.restore",
-      "cueFamily": "resource",
-      "eventId": "resource.energy.restore",
-      "sourcePath": "audio/resource/energy_restore.ogg",
-      "tags": [
-        "phase2",
-        "p2-c",
-        "resource"
-      ]
-    },
-    {
-      "key": "audio.resource.energy.spend",
-      "cueFamily": "resource",
-      "eventId": "resource.energy.spend",
-      "sourcePath": "audio/resource/energy_spend.ogg",
-      "tags": [
-        "phase2",
-        "p2-c",
-        "resource"
-      ]
-    },
-    {
-      "key": "audio.resource.positive_energy.restore",
-      "cueFamily": "resource",
-      "eventId": "resource.positive_energy.restore",
-      "sourcePath": "audio/resource/positive_energy_restore.ogg",
-      "tags": [
-        "phase2",
-        "p2-c",
-        "resource"
-      ]
-    },
-    {
-      "key": "audio.resource.positive_energy.spend",
-      "cueFamily": "resource",
-      "eventId": "resource.positive_energy.spend",
-      "sourcePath": "audio/resource/positive_energy_spend.ogg",
-      "tags": [
-        "phase2",
-        "p2-c",
-        "resource"
-      ]
-    },
-    {
-      "key": "audio.material.adamantite",
-      "cueFamily": "material",
-      "eventId": "audio.material.adamantite",
-      "sourcePath": "audio/item/basic_shield.ogg",
-      "tags": [
-        "phase2",
-        "p2-opt",
-        "material",
-        "adamantite"
-      ]
-    },
-    {
-      "key": "audio.material.iron",
-      "cueFamily": "material",
-      "eventId": "audio.material.iron",
-      "sourcePath": "audio/item/short_sword.ogg",
-      "tags": [
-        "phase2",
-        "p2-opt",
-        "material",
-        "iron"
-      ]
-    },
-    {
-      "key": "audio.material.mithril",
-      "cueFamily": "material",
-      "eventId": "audio.material.mithril",
-      "sourcePath": "audio/item/arcane_staff.ogg",
-      "tags": [
-        "phase2",
-        "p2-opt",
-        "material",
-        "mithril"
-      ]
-    },
-    {
-      "key": "audio.material.steel",
-      "cueFamily": "material",
-      "eventId": "audio.material.steel",
-      "sourcePath": "audio/item/chain_mail.ogg",
-      "tags": [
-        "phase2",
-        "p2-opt",
-        "material",
-        "steel"
-      ]
-    },
-    {
-      "key": "audio.melee.default",
-      "cueFamily": "melee",
-      "eventId": "melee.default",
-      "sourcePath": "audio/melee/default.ogg",
-      "tags": [
-        "placeholder",
-        "phase2",
-        "melee"
-      ]
-    },
-    {
-      "key": "audio.melee.light",
-      "cueFamily": "melee",
-      "eventId": "melee.light",
-      "sourcePath": "audio/melee/light.ogg",
-      "tags": [
-        "placeholder",
-        "phase2",
-        "melee"
-      ]
-    },
-    {
-      "key": "audio.monster.bandit.captain",
-      "cueFamily": "monster",
-      "eventId": "audio.monster.bandit.captain",
-      "sourcePath": "audio/monster/bandit_captain.ogg",
-      "tags": [
-        "phase2",
-        "p2-b",
-        "monster",
-        "bandit",
-        "official_slice"
-      ]
-    },
-    {
-      "key": "audio.monster.bandit.sentry",
-      "cueFamily": "monster",
-      "eventId": "audio.monster.bandit.sentry",
-      "sourcePath": "audio/monster/bandit_alert.ogg",
-      "tags": [
-        "placeholder",
-        "phase2",
-        "bandit-alert"
-      ]
-    },
-    {
-      "key": "audio.monster.beast.rat",
-      "cueFamily": "monster",
-      "eventId": "audio.monster.beast.rat",
-      "sourcePath": "audio/monster/default.ogg",
-      "tags": [
-        "placeholder",
-        "phase2"
-      ]
-    },
-    {
-      "key": "audio.monster.cultist.dungeon_lord",
-      "cueFamily": "monster",
-      "eventId": "audio.monster.cultist.dungeon_lord",
-      "sourcePath": "audio/monster/default.ogg",
-      "tags": [
-        "placeholder",
-        "phase2"
-      ]
-    },
-    {
-      "key": "audio.monster.default",
-      "cueFamily": "monster",
-      "eventId": "monster.default",
-      "sourcePath": "audio/monster/default.ogg",
-      "tags": [
-        "placeholder",
-        "phase2",
-        "monster"
-      ]
-    },
-    {
-      "key": "audio.monster.orc.raider",
-      "cueFamily": "monster",
-      "eventId": "audio.monster.orc.raider",
-      "sourcePath": "audio/monster/default.ogg",
-      "tags": [
-        "placeholder",
-        "phase2"
-      ]
-    },
-    {
-      "key": "audio.monster.undead.bone_archer",
-      "cueFamily": "monster",
-      "eventId": "audio.monster.undead.bone_archer",
-      "sourcePath": "audio/monster/default.ogg",
-      "tags": [
-        "placeholder",
-        "phase2"
-      ]
-    },
-    {
-      "key": "audio.music.menu",
-      "cueFamily": "music",
-      "eventId": "music.menu",
-      "sourcePath": "audio/music/menu.ogg",
-      "tags": [
-        "placeholder",
-        "phase2",
-        "music"
-      ]
-    },
-    {
-      "key": "audio.profession.arcanist",
-      "cueFamily": "profession",
-      "eventId": "profession.arcanist",
-      "sourcePath": "audio/professions/arcanist.ogg",
-      "tags": [
-        "phase2",
-        "profession",
-        "p2-b",
-        "official_slice"
-      ]
-    },
-    {
-      "key": "audio.profession.rogue",
-      "cueFamily": "profession",
-      "eventId": "profession.rogue",
-      "sourcePath": "audio/professions/rogue.ogg",
-      "tags": [
-        "phase2",
-        "profession"
-      ]
-    },
-    {
-      "key": "audio.profession.templar",
-      "cueFamily": "profession",
-      "eventId": "profession.templar",
-      "sourcePath": "audio/professions/templar.ogg",
-      "tags": [
-        "phase2",
-        "profession"
-      ]
-    },
-    {
-      "key": "audio.profession.vanguard",
-      "cueFamily": "profession",
-      "eventId": "profession.vanguard",
-      "sourcePath": "audio/professions/vanguard.ogg",
-      "tags": [
-        "phase2",
-        "profession",
-        "p2-b",
-        "official_slice"
-      ]
-    },
-    {
-      "key": "audio.spell.basic",
-      "cueFamily": "spell",
-      "eventId": "spell.basic",
-      "sourcePath": "audio/spell/basic.ogg",
-      "tags": [
-        "placeholder",
-        "phase2",
-        "spell"
-      ]
-    },
-    {
-      "key": "audio.spell.default",
-      "cueFamily": "spell",
-      "eventId": "spell.default",
-      "sourcePath": "audio/spell/default.ogg",
-      "tags": [
-        "placeholder",
-        "phase2",
-        "spell"
       ]
     },
     {
@@ -740,6 +256,664 @@
       ]
     },
     {
+      "key": "audio.difficulty.normal",
+      "cueFamily": "difficulty",
+      "eventId": "audio.difficulty.normal",
+      "sourcePath": "audio/ui/confirm.ogg",
+      "tags": [
+        "phase2",
+        "p2-opt",
+        "difficulty"
+      ]
+    },
+    {
+      "key": "audio.fallback.silence",
+      "cueFamily": "silence",
+      "eventId": "silence.default",
+      "sourcePath": "audio/fallback/silence.ogg",
+      "tags": [
+        "fallback",
+        "phase2"
+      ]
+    },
+    {
+      "key": "audio.footstep.default",
+      "cueFamily": "footstep",
+      "eventId": "footstep.default",
+      "sourcePath": "audio/footstep/default.ogg",
+      "tags": [
+        "phase2",
+        "footstep"
+      ]
+    },
+    {
+      "key": "audio.interactable.open",
+      "cueFamily": "interactable",
+      "eventId": "interactable.open",
+      "sourcePath": "audio/interactable/open.ogg",
+      "tags": [
+        "phase2",
+        "p2-b",
+        "interactable",
+        "official_slice"
+      ]
+    },
+    {
+      "key": "audio.interactable.stairs",
+      "cueFamily": "interactable",
+      "eventId": "interactable.stairs",
+      "sourcePath": "audio/interactable/stairs.ogg",
+      "tags": [
+        "phase2",
+        "p2-b",
+        "interactable",
+        "official_slice"
+      ]
+    },
+    {
+      "key": "audio.item.apprentice_robe",
+      "cueFamily": "item",
+      "eventId": "audio.item.apprentice_robe",
+      "sourcePath": "audio/item/apprentice_robe.ogg",
+      "tags": [
+        "phase2",
+        "item",
+        "starter_kit",
+        "official_slice"
+      ]
+    },
+    {
+      "key": "audio.item.arcane_staff",
+      "cueFamily": "item",
+      "eventId": "audio.item.arcane_staff",
+      "sourcePath": "audio/item/arcane_staff.ogg",
+      "tags": [
+        "phase2",
+        "item",
+        "starter_kit",
+        "official_slice"
+      ]
+    },
+    {
+      "key": "audio.item.basic_shield",
+      "cueFamily": "item",
+      "eventId": "audio.item.basic_shield",
+      "sourcePath": "audio/item/basic_shield.ogg",
+      "tags": [
+        "phase2",
+        "item",
+        "starter_kit",
+        "official_slice"
+      ]
+    },
+    {
+      "key": "audio.item.battle_axe",
+      "cueFamily": "item",
+      "eventId": "audio.item.battle_axe",
+      "sourcePath": "audio/item/short_sword.ogg",
+      "tags": [
+        "phase2",
+        "item",
+        "loot",
+        "sprint1"
+      ]
+    },
+    {
+      "key": "audio.item.chain_mail",
+      "cueFamily": "item",
+      "eventId": "audio.item.chain_mail",
+      "sourcePath": "audio/item/chain_mail.ogg",
+      "tags": [
+        "phase2",
+        "item",
+        "starter_kit",
+        "official_slice"
+      ]
+    },
+    {
+      "key": "audio.item.healing_potion",
+      "cueFamily": "item",
+      "eventId": "audio.item.healing_potion",
+      "sourcePath": "audio/item/healing_potion.ogg",
+      "tags": [
+        "phase2",
+        "item",
+        "starter_kit",
+        "official_slice"
+      ]
+    },
+    {
+      "key": "audio.item.leather_armor",
+      "cueFamily": "item",
+      "eventId": "audio.item.leather_armor",
+      "sourcePath": "audio/item/chain_mail.ogg",
+      "tags": [
+        "phase2",
+        "item",
+        "loot",
+        "sprint1"
+      ]
+    },
+    {
+      "key": "audio.item.long_sword",
+      "cueFamily": "item",
+      "eventId": "audio.item.long_sword",
+      "sourcePath": "audio/item/short_sword.ogg",
+      "tags": [
+        "phase2",
+        "item",
+        "loot",
+        "sprint1"
+      ]
+    },
+    {
+      "key": "audio.item.mana_potion",
+      "cueFamily": "item",
+      "eventId": "audio.item.mana_potion",
+      "sourcePath": "audio/item/mana_potion.ogg",
+      "tags": [
+        "phase2",
+        "item",
+        "starter_kit",
+        "official_slice"
+      ]
+    },
+    {
+      "key": "audio.item.plate_armor",
+      "cueFamily": "item",
+      "eventId": "audio.item.plate_armor",
+      "sourcePath": "audio/item/chain_mail.ogg",
+      "tags": [
+        "phase2",
+        "item",
+        "loot",
+        "sprint1"
+      ]
+    },
+    {
+      "key": "audio.item.scroll_teleport",
+      "cueFamily": "item",
+      "eventId": "audio.item.scroll_teleport",
+      "sourcePath": "audio/talent/blink.ogg",
+      "tags": [
+        "phase2",
+        "item",
+        "reward",
+        "sprint1"
+      ]
+    },
+    {
+      "key": "audio.item.short_sword",
+      "cueFamily": "item",
+      "eventId": "audio.item.short_sword",
+      "sourcePath": "audio/item/short_sword.ogg",
+      "tags": [
+        "phase2",
+        "item",
+        "starter_kit",
+        "official_slice"
+      ]
+    },
+    {
+      "key": "audio.material.adamantite",
+      "cueFamily": "material",
+      "eventId": "audio.material.adamantite",
+      "sourcePath": "audio/item/basic_shield.ogg",
+      "tags": [
+        "phase2",
+        "p2-opt",
+        "material",
+        "adamantite"
+      ]
+    },
+    {
+      "key": "audio.material.iron",
+      "cueFamily": "material",
+      "eventId": "audio.material.iron",
+      "sourcePath": "audio/item/short_sword.ogg",
+      "tags": [
+        "phase2",
+        "p2-opt",
+        "material",
+        "iron"
+      ]
+    },
+    {
+      "key": "audio.material.mithril",
+      "cueFamily": "material",
+      "eventId": "audio.material.mithril",
+      "sourcePath": "audio/item/arcane_staff.ogg",
+      "tags": [
+        "phase2",
+        "p2-opt",
+        "material",
+        "mithril"
+      ]
+    },
+    {
+      "key": "audio.material.steel",
+      "cueFamily": "material",
+      "eventId": "audio.material.steel",
+      "sourcePath": "audio/item/chain_mail.ogg",
+      "tags": [
+        "phase2",
+        "p2-opt",
+        "material",
+        "steel"
+      ]
+    },
+    {
+      "key": "audio.melee.default",
+      "cueFamily": "melee",
+      "eventId": "melee.default",
+      "sourcePath": "audio/melee/default.ogg",
+      "tags": [
+        "phase2",
+        "melee"
+      ]
+    },
+    {
+      "key": "audio.melee.light",
+      "cueFamily": "melee",
+      "eventId": "melee.light",
+      "sourcePath": "audio/melee/light.ogg",
+      "tags": [
+        "phase2",
+        "melee"
+      ]
+    },
+    {
+      "key": "audio.monster.abyssal.guardian",
+      "cueFamily": "monster",
+      "eventId": "audio.monster.abyssal.guardian",
+      "sourcePath": "audio/monster/abyssal_guardian.ogg",
+      "tags": [
+        "phase3",
+        "followup",
+        "monster",
+        "abyssal"
+      ]
+    },
+    {
+      "key": "audio.monster.abyssal_family",
+      "cueFamily": "monster",
+      "eventId": "audio.monster.abyssal_family",
+      "sourcePath": "audio/monster/abyssal_family.ogg",
+      "tags": [
+        "phase3",
+        "followup",
+        "monster",
+        "abyssal_family"
+      ]
+    },
+    {
+      "key": "audio.monster.bandit.captain",
+      "cueFamily": "monster",
+      "eventId": "audio.monster.bandit.captain",
+      "sourcePath": "audio/monster/bandit_captain.ogg",
+      "tags": [
+        "phase2",
+        "p2-b",
+        "monster",
+        "bandit",
+        "official_slice"
+      ]
+    },
+    {
+      "key": "audio.monster.bandit.sentry",
+      "cueFamily": "monster",
+      "eventId": "audio.monster.bandit.sentry",
+      "sourcePath": "audio/monster/bandit_alert.ogg",
+      "tags": [
+        "phase2",
+        "p2-b",
+        "monster",
+        "bandit",
+        "official_slice"
+      ]
+    },
+    {
+      "key": "audio.monster.bandit_family",
+      "cueFamily": "monster",
+      "eventId": "audio.monster.bandit_family",
+      "sourcePath": "audio/monster/bandit_family.ogg",
+      "tags": [
+        "phase3",
+        "followup",
+        "monster",
+        "bandit_family"
+      ]
+    },
+    {
+      "key": "audio.monster.beast.rat",
+      "cueFamily": "monster",
+      "eventId": "audio.monster.beast.rat",
+      "sourcePath": "audio/monster/beast_rat.ogg",
+      "tags": [
+        "phase2",
+        "p2-b",
+        "monster",
+        "official_slice"
+      ]
+    },
+    {
+      "key": "audio.monster.crystal_family",
+      "cueFamily": "monster",
+      "eventId": "audio.monster.crystal_family",
+      "sourcePath": "audio/monster/crystal_family.ogg",
+      "tags": [
+        "phase3",
+        "followup",
+        "monster",
+        "crystal_family"
+      ]
+    },
+    {
+      "key": "audio.monster.cultist.dungeon_lord",
+      "cueFamily": "monster",
+      "eventId": "audio.monster.cultist.dungeon_lord",
+      "sourcePath": "audio/monster/cultist_dungeon_lord.ogg",
+      "tags": [
+        "phase2",
+        "p2-c",
+        "monster",
+        "official_slice"
+      ]
+    },
+    {
+      "key": "audio.monster.default",
+      "cueFamily": "monster",
+      "eventId": "monster.default",
+      "sourcePath": "audio/monster/default.ogg",
+      "tags": [
+        "phase2",
+        "monster"
+      ]
+    },
+    {
+      "key": "audio.monster.forge_family",
+      "cueFamily": "monster",
+      "eventId": "audio.monster.forge_family",
+      "sourcePath": "audio/monster/forge_family.ogg",
+      "tags": [
+        "phase3",
+        "followup",
+        "monster",
+        "forge_family"
+      ]
+    },
+    {
+      "key": "audio.monster.orc.molten_giant",
+      "cueFamily": "monster",
+      "eventId": "audio.monster.orc.molten_giant",
+      "sourcePath": "audio/monster/orc_molten_giant.ogg",
+      "tags": [
+        "phase3",
+        "followup",
+        "monster",
+        "orc"
+      ]
+    },
+    {
+      "key": "audio.monster.orc.raider",
+      "cueFamily": "monster",
+      "eventId": "audio.monster.orc.raider",
+      "sourcePath": "audio/monster/orc_raider.ogg",
+      "tags": [
+        "phase2",
+        "p2-c",
+        "monster",
+        "orc",
+        "official_slice"
+      ]
+    },
+    {
+      "key": "audio.monster.river_family",
+      "cueFamily": "monster",
+      "eventId": "audio.monster.river_family",
+      "sourcePath": "audio/monster/river_family.ogg",
+      "tags": [
+        "phase3",
+        "followup",
+        "monster",
+        "river_family"
+      ]
+    },
+    {
+      "key": "audio.monster.undead.bone_archer",
+      "cueFamily": "monster",
+      "eventId": "audio.monster.undead.bone_archer",
+      "sourcePath": "audio/monster/undead_bone_archer.ogg",
+      "tags": [
+        "phase2",
+        "p2-b",
+        "monster",
+        "official_slice"
+      ]
+    },
+    {
+      "key": "audio.monster.warded_ruin_family",
+      "cueFamily": "monster",
+      "eventId": "audio.monster.warded_ruin_family",
+      "sourcePath": "audio/monster/warded_ruin_family.ogg",
+      "tags": [
+        "phase3",
+        "followup",
+        "monster",
+        "warded_ruin_family"
+      ]
+    },
+    {
+      "key": "audio.music.menu",
+      "cueFamily": "music",
+      "eventId": "music.menu",
+      "sourcePath": "audio/music/menu.ogg",
+      "tags": [
+        "phase2",
+        "music"
+      ]
+    },
+    {
+      "key": "audio.objective.progress",
+      "cueFamily": "ui",
+      "eventId": "objective.progress",
+      "sourcePath": "audio/ui/hover.ogg",
+      "tags": [
+        "phase2",
+        "p2-c",
+        "objective",
+        "route"
+      ]
+    },
+    {
+      "key": "audio.profession.arcanist",
+      "cueFamily": "profession",
+      "eventId": "profession.arcanist",
+      "sourcePath": "audio/professions/arcanist.ogg",
+      "tags": [
+        "phase2",
+        "profession",
+        "p2-b",
+        "official_slice"
+      ]
+    },
+    {
+      "key": "audio.profession.rogue",
+      "cueFamily": "profession",
+      "eventId": "profession.rogue",
+      "sourcePath": "audio/professions/rogue.ogg",
+      "tags": [
+        "phase2",
+        "profession"
+      ]
+    },
+    {
+      "key": "audio.profession.templar",
+      "cueFamily": "profession",
+      "eventId": "profession.templar",
+      "sourcePath": "audio/professions/templar.ogg",
+      "tags": [
+        "phase2",
+        "profession"
+      ]
+    },
+    {
+      "key": "audio.profession.vanguard",
+      "cueFamily": "profession",
+      "eventId": "profession.vanguard",
+      "sourcePath": "audio/professions/vanguard.ogg",
+      "tags": [
+        "phase2",
+        "profession",
+        "p2-b",
+        "official_slice"
+      ]
+    },
+    {
+      "key": "audio.resource.energy.restore",
+      "cueFamily": "resource",
+      "eventId": "resource.energy.restore",
+      "sourcePath": "audio/resource/energy_restore.ogg",
+      "tags": [
+        "phase2",
+        "p2-c",
+        "resource"
+      ]
+    },
+    {
+      "key": "audio.resource.energy.spend",
+      "cueFamily": "resource",
+      "eventId": "resource.energy.spend",
+      "sourcePath": "audio/resource/energy_spend.ogg",
+      "tags": [
+        "phase2",
+        "p2-c",
+        "resource"
+      ]
+    },
+    {
+      "key": "audio.resource.mana.restore",
+      "cueFamily": "resource",
+      "eventId": "resource.mana.restore",
+      "sourcePath": "audio/resource/mana_restore.ogg",
+      "tags": [
+        "phase2",
+        "p2-c",
+        "resource"
+      ]
+    },
+    {
+      "key": "audio.resource.mana.spend",
+      "cueFamily": "resource",
+      "eventId": "resource.mana.spend",
+      "sourcePath": "audio/resource/mana_spend.ogg",
+      "tags": [
+        "phase2",
+        "p2-c",
+        "resource"
+      ]
+    },
+    {
+      "key": "audio.resource.positive_energy.restore",
+      "cueFamily": "resource",
+      "eventId": "resource.positive_energy.restore",
+      "sourcePath": "audio/resource/positive_energy_restore.ogg",
+      "tags": [
+        "phase2",
+        "p2-c",
+        "resource"
+      ]
+    },
+    {
+      "key": "audio.resource.positive_energy.spend",
+      "cueFamily": "resource",
+      "eventId": "resource.positive_energy.spend",
+      "sourcePath": "audio/resource/positive_energy_spend.ogg",
+      "tags": [
+        "phase2",
+        "p2-c",
+        "resource"
+      ]
+    },
+    {
+      "key": "audio.resource.stamina.restore",
+      "cueFamily": "resource",
+      "eventId": "resource.stamina.restore",
+      "sourcePath": "audio/resource/stamina_restore.ogg",
+      "tags": [
+        "phase2",
+        "p2-c",
+        "resource"
+      ]
+    },
+    {
+      "key": "audio.resource.stamina.spend",
+      "cueFamily": "resource",
+      "eventId": "resource.stamina.spend",
+      "sourcePath": "audio/resource/stamina_spend.ogg",
+      "tags": [
+        "phase2",
+        "p2-c",
+        "resource"
+      ]
+    },
+    {
+      "key": "audio.route.complete",
+      "cueFamily": "ui",
+      "eventId": "route.complete",
+      "sourcePath": "audio/ui/confirm.ogg",
+      "tags": [
+        "phase2",
+        "p2-c",
+        "route",
+        "completion"
+      ]
+    },
+    {
+      "key": "audio.route.transition",
+      "cueFamily": "interactable",
+      "eventId": "route.transition",
+      "sourcePath": "audio/interactable/stairs.ogg",
+      "tags": [
+        "phase2",
+        "p2-c",
+        "route",
+        "transition"
+      ]
+    },
+    {
+      "key": "audio.spell.basic",
+      "cueFamily": "spell",
+      "eventId": "spell.basic",
+      "sourcePath": "audio/spell/basic.ogg",
+      "tags": [
+        "phase2",
+        "spell"
+      ]
+    },
+    {
+      "key": "audio.spell.default",
+      "cueFamily": "spell",
+      "eventId": "spell.default",
+      "sourcePath": "audio/spell/default.ogg",
+      "tags": [
+        "phase2",
+        "spell"
+      ]
+    },
+    {
+      "key": "audio.talent.absolution",
+      "cueFamily": "talent",
+      "eventId": "audio.talent.absolution",
+      "sourcePath": "audio/talent/absolution.ogg",
+      "tags": [
+        "phase3",
+        "followup",
+        "talent",
+        "templar"
+      ]
+    },
+    {
       "key": "audio.talent.arcane_shield",
       "cueFamily": "talent",
       "eventId": "audio.talent.arcane_shield",
@@ -749,6 +923,54 @@
         "p2-b",
         "talent",
         "arcanist"
+      ]
+    },
+    {
+      "key": "audio.talent.backstab",
+      "cueFamily": "talent",
+      "eventId": "audio.talent.backstab",
+      "sourcePath": "audio/talent/power_strike.ogg",
+      "tags": [
+        "phase2",
+        "p2-c",
+        "talent",
+        "rogue"
+      ]
+    },
+    {
+      "key": "audio.talent.battlefield_command",
+      "cueFamily": "talent",
+      "eventId": "audio.talent.battlefield_command",
+      "sourcePath": "audio/talent/battlefield_command.ogg",
+      "tags": [
+        "phase3",
+        "followup",
+        "talent",
+        "vanguard"
+      ]
+    },
+    {
+      "key": "audio.talent.beacon_of_zeal",
+      "cueFamily": "talent",
+      "eventId": "audio.talent.beacon_of_zeal",
+      "sourcePath": "audio/talent/beacon_of_zeal.ogg",
+      "tags": [
+        "phase3",
+        "followup",
+        "talent",
+        "templar"
+      ]
+    },
+    {
+      "key": "audio.talent.blade_flurry",
+      "cueFamily": "talent",
+      "eventId": "audio.talent.blade_flurry",
+      "sourcePath": "audio/talent/sweeping_strike.ogg",
+      "tags": [
+        "phase2",
+        "p2-c",
+        "talent",
+        "rogue"
       ]
     },
     {
@@ -764,6 +986,18 @@
       ]
     },
     {
+      "key": "audio.talent.bulwark_march",
+      "cueFamily": "talent",
+      "eventId": "audio.talent.bulwark_march",
+      "sourcePath": "audio/talent/bulwark_march.ogg",
+      "tags": [
+        "phase3",
+        "followup",
+        "talent",
+        "vanguard"
+      ]
+    },
+    {
       "key": "audio.talent.charge",
       "cueFamily": "talent",
       "eventId": "audio.talent.charge",
@@ -773,6 +1007,114 @@
         "p2-b",
         "talent",
         "vanguard"
+      ]
+    },
+    {
+      "key": "audio.talent.cinder_burst",
+      "cueFamily": "talent",
+      "eventId": "audio.talent.cinder_burst",
+      "sourcePath": "audio/talent/cinder_burst.ogg",
+      "tags": [
+        "phase3",
+        "followup",
+        "talent",
+        "arcanist"
+      ]
+    },
+    {
+      "key": "audio.talent.consecration",
+      "cueFamily": "talent",
+      "eventId": "audio.talent.consecration",
+      "sourcePath": "audio/talent/consecration.ogg",
+      "tags": [
+        "phase3",
+        "followup",
+        "talent",
+        "templar"
+      ]
+    },
+    {
+      "key": "audio.talent.crippling_strike",
+      "cueFamily": "talent",
+      "eventId": "audio.talent.crippling_strike",
+      "sourcePath": "audio/talent/crippling_strike.ogg",
+      "tags": [
+        "phase3",
+        "followup",
+        "talent",
+        "rogue"
+      ]
+    },
+    {
+      "key": "audio.talent.deathblow",
+      "cueFamily": "talent",
+      "eventId": "audio.talent.deathblow",
+      "sourcePath": "audio/talent/power_strike.ogg",
+      "tags": [
+        "phase2",
+        "p2-c",
+        "talent",
+        "rogue"
+      ]
+    },
+    {
+      "key": "audio.talent.devotion",
+      "cueFamily": "talent",
+      "eventId": "audio.talent.devotion",
+      "sourcePath": "audio/talent/mana_surge.ogg",
+      "tags": [
+        "phase2",
+        "p2-c",
+        "talent",
+        "templar"
+      ]
+    },
+    {
+      "key": "audio.talent.divine_intervention",
+      "cueFamily": "talent",
+      "eventId": "audio.talent.divine_intervention",
+      "sourcePath": "audio/talent/unyielding.ogg",
+      "tags": [
+        "phase2",
+        "p2-c",
+        "talent",
+        "templar"
+      ]
+    },
+    {
+      "key": "audio.talent.dusk_shroud",
+      "cueFamily": "talent",
+      "eventId": "audio.talent.dusk_shroud",
+      "sourcePath": "audio/talent/dusk_shroud.ogg",
+      "tags": [
+        "phase3",
+        "followup",
+        "talent",
+        "rogue"
+      ]
+    },
+    {
+      "key": "audio.talent.earthshaker",
+      "cueFamily": "talent",
+      "eventId": "audio.talent.earthshaker",
+      "sourcePath": "audio/talent/earthshaker.ogg",
+      "tags": [
+        "phase3",
+        "followup",
+        "talent",
+        "vanguard"
+      ]
+    },
+    {
+      "key": "audio.talent.eviscerate",
+      "cueFamily": "talent",
+      "eventId": "audio.talent.eviscerate",
+      "sourcePath": "audio/talent/eviscerate.ogg",
+      "tags": [
+        "phase3",
+        "followup",
+        "talent",
+        "rogue"
       ]
     },
     {
@@ -812,6 +1154,18 @@
       ]
     },
     {
+      "key": "audio.talent.glacial_seal",
+      "cueFamily": "talent",
+      "eventId": "audio.talent.glacial_seal",
+      "sourcePath": "audio/talent/glacial_seal.ogg",
+      "tags": [
+        "phase3",
+        "followup",
+        "talent",
+        "arcanist"
+      ]
+    },
+    {
       "key": "audio.talent.guard_stance",
       "cueFamily": "talent",
       "eventId": "audio.talent.guard_stance",
@@ -824,166 +1178,10 @@
       ]
     },
     {
-      "key": "audio.talent.ice_bolt",
+      "key": "audio.talent.holy_aura",
       "cueFamily": "talent",
-      "eventId": "audio.talent.ice_bolt",
-      "sourcePath": "audio/talent/ice_bolt.ogg",
-      "tags": [
-        "phase2",
-        "p2-b",
-        "talent",
-        "arcanist"
-      ]
-    },
-    {
-      "key": "audio.talent.ice_prison",
-      "cueFamily": "talent",
-      "eventId": "audio.talent.ice_prison",
-      "sourcePath": "audio/talent/ice_prison.ogg",
-      "tags": [
-        "phase2",
-        "p2-b",
-        "talent",
-        "arcanist"
-      ]
-    },
-    {
-      "key": "audio.talent.intimidation",
-      "cueFamily": "talent",
-      "eventId": "audio.talent.intimidation",
-      "sourcePath": "audio/talent/intimidation.ogg",
-      "tags": [
-        "phase2",
-        "p2-b",
-        "talent",
-        "vanguard"
-      ]
-    },
-    {
-      "key": "audio.talent.mana_surge",
-      "cueFamily": "talent",
-      "eventId": "audio.talent.mana_surge",
-      "sourcePath": "audio/talent/mana_surge.ogg",
-      "tags": [
-        "phase2",
-        "p2-b",
-        "talent",
-        "arcanist"
-      ]
-    },
-    {
-      "key": "audio.talent.backstab",
-      "cueFamily": "talent",
-      "eventId": "audio.talent.backstab",
-      "sourcePath": "audio/talent/power_strike.ogg",
-      "tags": [
-        "phase2",
-        "p2-c",
-        "talent",
-        "rogue"
-      ]
-    },
-    {
-      "key": "audio.talent.poison_blade",
-      "cueFamily": "talent",
-      "eventId": "audio.talent.poison_blade",
-      "sourcePath": "audio/talent/sunder_armor.ogg",
-      "tags": [
-        "phase2",
-        "p2-c",
-        "talent",
-        "rogue"
-      ]
-    },
-    {
-      "key": "audio.talent.stealth",
-      "cueFamily": "talent",
-      "eventId": "audio.talent.stealth",
-      "sourcePath": "audio/talent/blink.ogg",
-      "tags": [
-        "phase2",
-        "p2-c",
-        "talent",
-        "rogue"
-      ]
-    },
-    {
-      "key": "audio.talent.smoke_bomb",
-      "cueFamily": "talent",
-      "eventId": "audio.talent.smoke_bomb",
-      "sourcePath": "audio/talent/intimidation.ogg",
-      "tags": [
-        "phase2",
-        "p2-c",
-        "talent",
-        "rogue"
-      ]
-    },
-    {
-      "key": "audio.talent.roll",
-      "cueFamily": "talent",
-      "eventId": "audio.talent.roll",
-      "sourcePath": "audio/talent/blink.ogg",
-      "tags": [
-        "phase2",
-        "p2-c",
-        "talent",
-        "rogue"
-      ]
-    },
-    {
-      "key": "audio.talent.blade_flurry",
-      "cueFamily": "talent",
-      "eventId": "audio.talent.blade_flurry",
-      "sourcePath": "audio/talent/sweeping_strike.ogg",
-      "tags": [
-        "phase2",
-        "p2-c",
-        "talent",
-        "rogue"
-      ]
-    },
-    {
-      "key": "audio.talent.shadowstep",
-      "cueFamily": "talent",
-      "eventId": "audio.talent.shadowstep",
-      "sourcePath": "audio/talent/blink.ogg",
-      "tags": [
-        "phase2",
-        "p2-c",
-        "talent",
-        "rogue"
-      ]
-    },
-    {
-      "key": "audio.talent.deathblow",
-      "cueFamily": "talent",
-      "eventId": "audio.talent.deathblow",
-      "sourcePath": "audio/talent/power_strike.ogg",
-      "tags": [
-        "phase2",
-        "p2-c",
-        "talent",
-        "rogue"
-      ]
-    },
-    {
-      "key": "audio.talent.holy_strike",
-      "cueFamily": "talent",
-      "eventId": "audio.talent.holy_strike",
-      "sourcePath": "audio/talent/power_strike.ogg",
-      "tags": [
-        "phase2",
-        "p2-c",
-        "talent",
-        "templar"
-      ]
-    },
-    {
-      "key": "audio.talent.judgment_hammer",
-      "cueFamily": "talent",
-      "eventId": "audio.talent.judgment_hammer",
-      "sourcePath": "audio/talent/shield_bash.ogg",
+      "eventId": "audio.talent.holy_aura",
+      "sourcePath": "audio/talent/war_cry.ogg",
       "tags": [
         "phase2",
         "p2-c",
@@ -1016,51 +1214,111 @@
       ]
     },
     {
-      "key": "audio.talent.devotion",
+      "key": "audio.talent.holy_strike",
       "cueFamily": "talent",
-      "eventId": "audio.talent.devotion",
+      "eventId": "audio.talent.holy_strike",
+      "sourcePath": "audio/talent/power_strike.ogg",
+      "tags": [
+        "phase2",
+        "p2-c",
+        "talent",
+        "templar"
+      ]
+    },
+    {
+      "key": "audio.talent.ice_bolt",
+      "cueFamily": "talent",
+      "eventId": "audio.talent.ice_bolt",
+      "sourcePath": "audio/talent/ice_bolt.ogg",
+      "tags": [
+        "phase2",
+        "p2-b",
+        "talent",
+        "arcanist"
+      ]
+    },
+    {
+      "key": "audio.talent.ice_prison",
+      "cueFamily": "talent",
+      "eventId": "audio.talent.ice_prison",
+      "sourcePath": "audio/talent/ice_prison.ogg",
+      "tags": [
+        "phase2",
+        "p2-b",
+        "talent",
+        "arcanist"
+      ]
+    },
+    {
+      "key": "audio.talent.inferno_orb",
+      "cueFamily": "talent",
+      "eventId": "audio.talent.inferno_orb",
+      "sourcePath": "audio/talent/inferno_orb.ogg",
+      "tags": [
+        "phase3",
+        "followup",
+        "talent",
+        "arcanist"
+      ]
+    },
+    {
+      "key": "audio.talent.intimidation",
+      "cueFamily": "talent",
+      "eventId": "audio.talent.intimidation",
+      "sourcePath": "audio/talent/intimidation.ogg",
+      "tags": [
+        "phase2",
+        "p2-b",
+        "talent",
+        "vanguard"
+      ]
+    },
+    {
+      "key": "audio.talent.judgment_hammer",
+      "cueFamily": "talent",
+      "eventId": "audio.talent.judgment_hammer",
+      "sourcePath": "audio/talent/shield_bash.ogg",
+      "tags": [
+        "phase2",
+        "p2-c",
+        "talent",
+        "templar"
+      ]
+    },
+    {
+      "key": "audio.talent.linebreaker",
+      "cueFamily": "talent",
+      "eventId": "audio.talent.linebreaker",
+      "sourcePath": "audio/talent/linebreaker.ogg",
+      "tags": [
+        "phase3",
+        "followup",
+        "talent",
+        "vanguard"
+      ]
+    },
+    {
+      "key": "audio.talent.mana_surge",
+      "cueFamily": "talent",
+      "eventId": "audio.talent.mana_surge",
       "sourcePath": "audio/talent/mana_surge.ogg",
       "tags": [
         "phase2",
-        "p2-c",
+        "p2-b",
         "talent",
-        "templar"
+        "arcanist"
       ]
     },
     {
-      "key": "audio.talent.holy_aura",
+      "key": "audio.talent.poison_blade",
       "cueFamily": "talent",
-      "eventId": "audio.talent.holy_aura",
-      "sourcePath": "audio/talent/war_cry.ogg",
+      "eventId": "audio.talent.poison_blade",
+      "sourcePath": "audio/talent/sunder_armor.ogg",
       "tags": [
         "phase2",
         "p2-c",
         "talent",
-        "templar"
-      ]
-    },
-    {
-      "key": "audio.talent.purify",
-      "cueFamily": "talent",
-      "eventId": "audio.talent.purify",
-      "sourcePath": "audio/talent/mana_surge.ogg",
-      "tags": [
-        "phase2",
-        "p2-c",
-        "talent",
-        "templar"
-      ]
-    },
-    {
-      "key": "audio.talent.divine_intervention",
-      "cueFamily": "talent",
-      "eventId": "audio.talent.divine_intervention",
-      "sourcePath": "audio/talent/unyielding.ogg",
-      "tags": [
-        "phase2",
-        "p2-c",
-        "talent",
-        "templar"
+        "rogue"
       ]
     },
     {
@@ -1076,6 +1334,114 @@
       ]
     },
     {
+      "key": "audio.talent.purify",
+      "cueFamily": "talent",
+      "eventId": "audio.talent.purify",
+      "sourcePath": "audio/talent/mana_surge.ogg",
+      "tags": [
+        "phase2",
+        "p2-c",
+        "talent",
+        "templar"
+      ]
+    },
+    {
+      "key": "audio.talent.radiant_lance",
+      "cueFamily": "talent",
+      "eventId": "audio.talent.radiant_lance",
+      "sourcePath": "audio/talent/radiant_lance.ogg",
+      "tags": [
+        "phase3",
+        "followup",
+        "talent",
+        "templar"
+      ]
+    },
+    {
+      "key": "audio.talent.ricochet_knives",
+      "cueFamily": "talent",
+      "eventId": "audio.talent.ricochet_knives",
+      "sourcePath": "audio/talent/ricochet_knives.ogg",
+      "tags": [
+        "phase3",
+        "followup",
+        "talent",
+        "rogue"
+      ]
+    },
+    {
+      "key": "audio.talent.ritual_break",
+      "cueFamily": "talent",
+      "eventId": "audio.talent.ritual_break",
+      "sourcePath": "audio/talent/ritual_break.ogg",
+      "tags": [
+        "phase3",
+        "followup",
+        "talent",
+        "templar"
+      ]
+    },
+    {
+      "key": "audio.talent.roll",
+      "cueFamily": "talent",
+      "eventId": "audio.talent.roll",
+      "sourcePath": "audio/talent/blink.ogg",
+      "tags": [
+        "phase2",
+        "p2-c",
+        "talent",
+        "rogue"
+      ]
+    },
+    {
+      "key": "audio.talent.sanctuary",
+      "cueFamily": "talent",
+      "eventId": "audio.talent.sanctuary",
+      "sourcePath": "audio/talent/sanctuary.ogg",
+      "tags": [
+        "phase3",
+        "followup",
+        "talent",
+        "templar"
+      ]
+    },
+    {
+      "key": "audio.talent.shadow_bind",
+      "cueFamily": "talent",
+      "eventId": "audio.talent.shadow_bind",
+      "sourcePath": "audio/talent/shadow_bind.ogg",
+      "tags": [
+        "phase3",
+        "followup",
+        "talent",
+        "rogue"
+      ]
+    },
+    {
+      "key": "audio.talent.shadowstep",
+      "cueFamily": "talent",
+      "eventId": "audio.talent.shadowstep",
+      "sourcePath": "audio/talent/blink.ogg",
+      "tags": [
+        "phase2",
+        "p2-c",
+        "talent",
+        "rogue"
+      ]
+    },
+    {
+      "key": "audio.talent.shard_storm",
+      "cueFamily": "talent",
+      "eventId": "audio.talent.shard_storm",
+      "sourcePath": "audio/talent/shard_storm.ogg",
+      "tags": [
+        "phase3",
+        "followup",
+        "talent",
+        "arcanist"
+      ]
+    },
+    {
       "key": "audio.talent.shield_bash",
       "cueFamily": "talent",
       "eventId": "audio.talent.shield_bash",
@@ -1085,6 +1451,30 @@
         "p2-b",
         "talent",
         "vanguard"
+      ]
+    },
+    {
+      "key": "audio.talent.smoke_bomb",
+      "cueFamily": "talent",
+      "eventId": "audio.talent.smoke_bomb",
+      "sourcePath": "audio/talent/intimidation.ogg",
+      "tags": [
+        "phase2",
+        "p2-c",
+        "talent",
+        "rogue"
+      ]
+    },
+    {
+      "key": "audio.talent.stealth",
+      "cueFamily": "talent",
+      "eventId": "audio.talent.stealth",
+      "sourcePath": "audio/talent/blink.ogg",
+      "tags": [
+        "phase2",
+        "p2-c",
+        "talent",
+        "rogue"
       ]
     },
     {
@@ -1121,6 +1511,18 @@
         "p2-b",
         "talent",
         "vanguard"
+      ]
+    },
+    {
+      "key": "audio.talent.void_breach",
+      "cueFamily": "talent",
+      "eventId": "audio.talent.void_breach",
+      "sourcePath": "audio/talent/void_breach.ogg",
+      "tags": [
+        "phase3",
+        "followup",
+        "talent",
+        "arcanist"
       ]
     },
     {
@@ -1291,7 +1693,6 @@
       "eventId": "ui.cancel",
       "sourcePath": "audio/ui/cancel.ogg",
       "tags": [
-        "placeholder",
         "phase2",
         "ui"
       ]
@@ -1302,7 +1703,6 @@
       "eventId": "ui.confirm",
       "sourcePath": "audio/ui/confirm.ogg",
       "tags": [
-        "placeholder",
         "phase2",
         "ui"
       ]
@@ -1313,7 +1713,6 @@
       "eventId": "ui.hover",
       "sourcePath": "audio/ui/hover.ogg",
       "tags": [
-        "placeholder",
         "phase2",
         "ui"
       ]
@@ -1340,42 +1739,6 @@
         "p2-c",
         "ui",
         "progression"
-      ]
-    },
-    {
-      "key": "audio.objective.progress",
-      "cueFamily": "ui",
-      "eventId": "objective.progress",
-      "sourcePath": "audio/ui/hover.ogg",
-      "tags": [
-        "phase2",
-        "p2-c",
-        "objective",
-        "route"
-      ]
-    },
-    {
-      "key": "audio.route.complete",
-      "cueFamily": "ui",
-      "eventId": "route.complete",
-      "sourcePath": "audio/ui/confirm.ogg",
-      "tags": [
-        "phase2",
-        "p2-c",
-        "route",
-        "completion"
-      ]
-    },
-    {
-      "key": "audio.route.transition",
-      "cueFamily": "interactable",
-      "eventId": "route.transition",
-      "sourcePath": "audio/interactable/stairs.ogg",
-      "tags": [
-        "phase2",
-        "p2-c",
-        "route",
-        "transition"
       ]
     },
     {

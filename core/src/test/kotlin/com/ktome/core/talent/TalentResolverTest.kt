@@ -481,6 +481,31 @@ class TalentResolverTest {
                         damageType = com.ktome.core.combat.DamageType.SHADOW,
                     ),
                     TalentDef(
+                        id = "crippling_strike",
+                        name = "致残打击",
+                        description = "",
+                        resourceCosts = mapOf(ResourceType.ENERGY to 10),
+                        cooldown = 6,
+                        range = 1,
+                        levelEffects =
+                            mapOf(
+                                1 to
+                                    TalentLevelEffect(
+                                        damageMultiplier = 1.25,
+                                        associatedEffects =
+                                            listOf(
+                                                hostileOnHitEffect(
+                                                    effectId = "crippling_strike_weaken",
+                                                    statusId = StatusEffectType.WEAKEN.schemaId,
+                                                    duration = 3,
+                                                    saveDimension = SaveDimension.PHYSICAL,
+                                                    magnitude = 0.12,
+                                                ),
+                                            ),
+                                    ),
+                            ),
+                    ),
+                    TalentDef(
                         id = "roll",
                         name = "翻滚",
                         description = "",
@@ -834,6 +859,21 @@ class TalentResolverTest {
     }
 
     @Test
+    fun `crippling strike applies weaken and spends energy`() {
+        val world = baseWorld()
+        val player = createPlayer(world, cooldown = 0, levelOverrides = mapOf("crippling_strike" to 1))
+        val monster = createMonster(world, Point(2, 2))
+        val loadout = requireNotNull(world.get<TalentLoadout>(player))
+        loadout.slotToTalentId[27] = "crippling_strike"
+
+        val result = resolver().resolve(world, map, player, "crippling_strike", Point(2, 2))
+
+        assertTrue(result is TalentUseResult.Success)
+        assertTrue(requireNotNull(world.get<com.ktome.core.talent.EffectTracker>(monster)).has(StatusEffectType.WEAKEN))
+        assertEquals(50, requireNotNull(world.get<ResourcePools>(player)).pool(ResourceType.ENERGY)?.current)
+    }
+
+    @Test
     fun `roll repositions user with energy cost`() {
         val world = baseWorld()
         val player = createPlayer(world, cooldown = 0)
@@ -895,6 +935,85 @@ class TalentResolverTest {
     }
 
     @Test
+    fun `linebreaker damages knocks back and applies armor break`() {
+        registry.register(
+            TalentDef(
+                id = "linebreaker",
+                name = "破阵",
+                description = "",
+                resourceCosts = staminaCosts(12),
+                cooldown = 6,
+                range = 1,
+                areaRadius = 0,
+                levelEffects =
+                    mapOf(
+                        1 to
+                            TalentLevelEffect(
+                                damageMultiplier = 1.4,
+                                knockback = 1,
+                                associatedEffects =
+                                    listOf(
+                                        hostileOnHitEffect(
+                                            effectId = "linebreaker_armor_break",
+                                            statusId = StatusEffectType.ARMOR_BREAK.schemaId,
+                                            duration = 2,
+                                            saveDimension = SaveDimension.PHYSICAL,
+                                        ),
+                                    ),
+                            ),
+                    ),
+            ),
+        )
+        val world = baseWorld()
+        val player = createPlayer(world, cooldown = 0, levelOverrides = mapOf("linebreaker" to 1))
+        val monster = createMonster(world, Point(2, 2))
+
+        val result = resolver().resolve(world, map, player, "linebreaker", Point(2, 2))
+
+        assertTrue(result is TalentUseResult.Success)
+        assertEquals(Point(3, 2), requireNotNull(world.get<Position>(monster)).toPoint())
+        assertTrue(requireNotNull(world.get<com.ktome.core.talent.EffectTracker>(monster)).has(StatusEffectType.ARMOR_BREAK))
+        assertEquals(28, requireNotNull(world.get<ResourcePools>(player)).pool(ResourceType.STAMINA)?.current)
+        assertEquals(6, requireNotNull(world.get<CooldownState>(player)).remainingByTalentId["linebreaker"])
+    }
+
+    @Test
+    fun `inferno orb hits clustered enemies and spends mana`() {
+        registry.register(
+            TalentDef(
+                id = "inferno_orb",
+                name = "炼狱法球",
+                description = "",
+                resourceCosts = mapOf(ResourceType.MANA to 12),
+                cooldown = 5,
+                range = 5,
+                minRange = 1,
+                areaRadius = 1,
+                levelEffects =
+                    mapOf(
+                        1 to
+                            TalentLevelEffect(
+                                damageMultiplier = 1.2,
+                                knockback = 1,
+                            ),
+                    ),
+            ),
+        )
+        val world = baseWorld()
+        val player = createPlayer(world, cooldown = 0, levelOverrides = mapOf("inferno_orb" to 1))
+        val first = createMonster(world, Point(4, 2))
+        val second = createMonster(world, Point(4, 3))
+
+        val result = resolver().resolve(world, map, player, "inferno_orb", Point(4, 2))
+
+        assertTrue(result is TalentUseResult.Success)
+        assertTrue(requireNotNull(world.get<Health>(first)).current < 40)
+        assertTrue(requireNotNull(world.get<Health>(second)).current < 40)
+        assertEquals(88, requireNotNull(world.get<ResourcePools>(player)).pool(ResourceType.MANA)?.current)
+        assertEquals(5, requireNotNull(world.get<CooldownState>(player)).remainingByTalentId["inferno_orb"])
+    }
+
+    @Test
     fun `unsupported talent fails without spending stamina or cooldown`() {
         val world = baseWorld()
         val player = createPlayer(world, cooldown = 0)
@@ -953,6 +1072,17 @@ class TalentResolverTest {
                             uniquenessKey = "war_cry_shaken",
                             sourceScopedUnique = true,
                             statModifier = StatModifier(defenseMultiplierBonus = -1.0),
+                        ),
+                        StatusEffectDef(
+                            id = StatusEffectType.WEAKEN.schemaId,
+                            type = StatusEffectType.WEAKEN,
+                            category = EffectCategory.DEBUFF,
+                            nameKey = "status.weaken",
+                            stackingRule = StackingRule.REFRESH_DURATION,
+                            replacePolicy = ReplacePolicy.KEEP_STRONGEST,
+                            uniquenessKey = StatusEffectType.WEAKEN.schemaId,
+                            sourceScopedUnique = true,
+                            statModifier = StatModifier(attackMultiplierBonus = -0.12),
                         ),
                     ),
                 ),

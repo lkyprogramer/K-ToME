@@ -156,7 +156,7 @@ class ContractLintTest {
         ThreatProfileLint.validate(catalog)
 
         catalog.monsters.forEach { monster ->
-            assertEquals(2, monster.schemaVersion)
+            assertTrue(monster.schemaVersion in setOf(2, 3), "Unsupported monster schemaVersion ${monster.schemaVersion} for ${monster.id}")
             assertTrue(monster.id.contains('.'), "Monster id must use family namespace: ${monster.id}")
             assertTrue(monster.nameKey.startsWith("monster.${monster.id}."), "Monster key must follow monster.<family>.<id> namespace: ${monster.nameKey}")
             assertExactVisualKey(monster.visualKey)

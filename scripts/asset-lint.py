@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Lint the Phase 2 image asset plan."""
+"""Lint the primary image asset plan plus optional extra Gemini plans."""
 
 from __future__ import annotations
 
@@ -27,6 +27,7 @@ from asset_pipeline_common import (
 
 
 ASSET_ID_RE = re.compile(r"^phase2_[a-z0-9_]+$")
+GENERIC_ASSET_ID_RE = re.compile(r"^[a-z0-9_]+$")
 
 
 def parse_args() -> argparse.Namespace:
@@ -40,6 +41,12 @@ def parse_args() -> argparse.Namespace:
         "--report-dir",
         default="assets-src/image/manifests",
         help="Directory containing Gemini generation report JSONL files.",
+    )
+    parser.add_argument(
+        "--extra-plan",
+        action="append",
+        default=[],
+        help="Additional Gemini image plan YAML paths that must also be covered by asset lint.",
     )
     return parser.parse_args()
 
@@ -75,30 +82,41 @@ def load_generation_entries(report_dir: pathlib.Path, errors: list[str]) -> list
     return entries
 
 
-def validate_plan(plan_path: pathlib.Path, report_dir: pathlib.Path) -> list[str]:
-    plan = load_yaml(plan_path)
-    errors: list[str] = []
-    generation_entries = load_generation_entries(report_dir, errors)
-
+def validate_root_plan(plan: dict, errors: list[str], label: str) -> None:
     if str(plan.get("styleTag", "")).strip() != EXPECTED_STYLE_TAG:
         errors.append(
-            f"styleTag must be '{EXPECTED_STYLE_TAG}', got '{plan.get('styleTag', '')}'."
+            f"{label}: styleTag must be '{EXPECTED_STYLE_TAG}', got '{plan.get('styleTag', '')}'."
         )
     if not str(plan.get("artStyleBible", "")).strip():
-        errors.append("artStyleBible is required.")
+        errors.append(f"{label}: artStyleBible is required.")
     if not str(plan.get("stylePrompt", "")).strip():
-        errors.append("stylePrompt is required.")
+        errors.append(f"{label}: stylePrompt is required.")
 
     defaults = plan.get("defaults")
     if not isinstance(defaults, dict):
-        errors.append("defaults must be a mapping.")
-    else:
-        if not str(defaults.get("imageAspectRatio", "")).strip():
-            errors.append("defaults.imageAspectRatio is required.")
-        if not str(defaults.get("imageSize", "")).strip():
-            errors.append("defaults.imageSize is required.")
-        if not normalize_list(defaults.get("negativeConstraints")):
-            errors.append("defaults.negativeConstraints must be a non-empty list.")
+        errors.append(f"{label}: defaults must be a mapping.")
+        return
+    if not str(defaults.get("imageAspectRatio", "")).strip():
+        errors.append(f"{label}: defaults.imageAspectRatio is required.")
+    if not str(defaults.get("imageSize", "")).strip():
+        errors.append(f"{label}: defaults.imageSize is required.")
+    if not normalize_list(defaults.get("negativeConstraints")):
+        errors.append(f"{label}: defaults.negativeConstraints must be a non-empty list.")
+
+
+def validate_plan(
+    plan_path: pathlib.Path,
+    report_dir: pathlib.Path,
+    extra_plan_paths: list[pathlib.Path],
+) -> list[str]:
+    plan = load_yaml(plan_path)
+    extra_plans = [load_yaml(path) for path in extra_plan_paths]
+    errors: list[str] = []
+    generation_entries = load_generation_entries(report_dir, errors)
+
+    validate_root_plan(plan, errors, str(plan_path))
+    for extra_plan_path, extra_plan in zip(extra_plan_paths, extra_plans):
+        validate_root_plan(extra_plan, errors, str(extra_plan_path))
 
     grouped = grouped_assets(plan)
     missing_gates = [gate for gate in REQUIRED_GATES if gate not in grouped]
@@ -201,6 +219,55 @@ def validate_plan(plan_path: pathlib.Path, report_dir: pathlib.Path) -> list[str
                     f"outputName='{output_name}'."
                 )
 
+    for extra_plan_path, extra_plan in zip(extra_plan_paths, extra_plans):
+        extra_assets = collect_assets(extra_plan)
+        if not extra_assets:
+            errors.append(f"{extra_plan_path}: extra asset plan must contain at least one asset.")
+            continue
+        for asset in extra_assets:
+            gate_id = asset["_gateId"]
+            asset_id = str(asset.get("id", "")).strip()
+            category = str(asset.get("category", "")).strip()
+            visual_key = str(asset.get("visualKey", "")).strip()
+            output_name = str(asset.get("outputName", "")).strip()
+            subject = str(asset.get("subject", "")).strip()
+            constraints = normalize_list(asset.get("constraints"))
+            material_tags = normalize_list(asset.get("materialTags"))
+            mood_tags = normalize_list(asset.get("moodTags"))
+
+            id_counter[asset_id] += 1
+            visual_key_counter[visual_key] += 1
+
+            if not GENERIC_ASSET_ID_RE.match(asset_id):
+                errors.append(f"[{gate_id}] invalid asset id '{asset_id}'.")
+            if category not in ALLOWED_CATEGORIES:
+                errors.append(f"[{gate_id}] asset '{asset_id}' has unsupported category '{category}'.")
+            if "." not in visual_key:
+                errors.append(f"[{gate_id}] asset '{asset_id}' visualKey must be dot-delimited.")
+            if not output_name.endswith(".png"):
+                errors.append(f"[{gate_id}] asset '{asset_id}' outputName must end with .png.")
+            if output_name.startswith("/") or output_name.startswith("\\"):
+                errors.append(f"[{gate_id}] asset '{asset_id}' outputName must be a relative path.")
+            if not output_name.startswith("phase3/"):
+                errors.append(f"[{gate_id}] asset '{asset_id}' outputName must stay under the phase3 runtime root.")
+            if not subject:
+                errors.append(f"[{gate_id}] asset '{asset_id}' subject is required.")
+            if not constraints:
+                errors.append(f"[{gate_id}] asset '{asset_id}' must define at least one constraint.")
+            if not material_tags and not mood_tags:
+                errors.append(
+                    f"[{gate_id}] asset '{asset_id}' must define materialTags or moodTags."
+                )
+            if asset.get("geminiKeyRequired") is not True:
+                errors.append(f"[{gate_id}] asset '{asset_id}' must set geminiKeyRequired: true.")
+
+            normalized_output_name = normalize_report_path(output_name)
+            if not any(path.endswith(normalized_output_name) for path in generation_output_paths):
+                errors.append(
+                    f"[{gate_id}] asset '{asset_id}' missing Gemini generation trace for "
+                    f"outputName='{output_name}'."
+                )
+
     for key, count in id_counter.items():
         if key and count > 1:
             errors.append(f"Duplicate asset id: '{key}'.")
@@ -225,7 +292,8 @@ def main() -> int:
     args = parse_args()
     plan_path = pathlib.Path(args.plan)
     report_dir = pathlib.Path(args.report_dir)
-    errors = validate_plan(plan_path, report_dir)
+    extra_plan_paths = [pathlib.Path(path) for path in args.extra_plan]
+    errors = validate_plan(plan_path, report_dir, extra_plan_paths)
     if errors:
         return print_errors(errors)
 
@@ -238,7 +306,7 @@ def main() -> int:
         "asset-lint OK: "
         f"total={total}, gates={counts}, requiredVisualKeys={required_counts}, "
         f"requiredVisualKeyTotal={len(flatten_required_keys(PHASE2_REQUIRED_VISUAL_KEYS))}, "
-        f"plan={plan_path}, reportDir={report_dir}"
+        f"plan={plan_path}, extraPlans={extra_plan_paths}, reportDir={report_dir}"
     )
     return 0
 

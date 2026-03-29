@@ -59,8 +59,8 @@ zones:
     tilesetKey: tileset.forest_edge
     ambientProfile: ambient.greenwood_fringe
     worldRole: optional
-    monsterPools: [bandit.raider, bandit.archer, bandit.trapper, goblin.scout]
-    elitePools: [bandit.wild_huntmaster]
+    monsterPools: [bandit.raider, bandit.archer, bandit.trapper, goblin.scout, bandit.cutthroat, bandit.slingshotter, bandit.pillager, bandit.banner_guard]
+    elitePools: [bandit.wild_huntmaster, bandit.cache_overseer]
     bossEncounterId:
     objectiveSetId: bandit_camp_cache_raid
     uniqueContentTag: optional.bandit_camp.cache
@@ -81,8 +81,8 @@ zones:
     tilesetKey: tileset.ruins
     ambientProfile: ambient.greenwood_fringe
     worldRole: optional
-    monsterPools: [undead.bone_archer, undead.moss_archer, cultist.shadow_priest]
-    elitePools: [cultist.ashgate_warden]
+    monsterPools: [undead.bone_archer, undead.moss_archer, cultist.shadow_priest, warded_ruin.relic_guard, warded_ruin.cleanse_adept, warded_ruin.shard_archivist, warded_ruin.vault_watcher]
+    elitePools: [cultist.ashgate_warden, warded_ruin.ward_lancer]
     bossEncounterId:
     objectiveSetId: elven_ruins_relic_ward
     uniqueContentTag: optional.elven_ruins.relic
@@ -125,8 +125,8 @@ zones:
     tilesetKey: tileset.mine
     ambientProfile: ambient.deep_iron_pit
     worldRole: optional
-    monsterPools: [cultist.ember_adept, undead.ash_wraith, orc.forge_guard]
-    elitePools: [orc.forge_guard]
+    monsterPools: [cultist.ember_adept, undead.ash_wraith, orc.forge_guard, forge.slag_tender, forge.heat_channeler, forge.chain_overseer, forge.anvil_guard]
+    elitePools: [orc.forge_guard, forge.crucible_knight]
     bossEncounterId:
     objectiveSetId: molten_core_pressure
     uniqueContentTag: optional.molten_core.relic
@@ -168,8 +168,8 @@ zones:
     tilesetKey: tileset.shadow_depths
     ambientProfile: ambient.grey_gate_depths
     worldRole: mandatory
-    monsterPools: [undead.chain_thrall, cultist.shadow_priest, beast.rat, undead.moss_archer]
-    elitePools: [cultist.ashgate_warden]
+    monsterPools: [undead.chain_thrall, cultist.shadow_priest, beast.rat, undead.moss_archer, river.hook_lurker, river.drowned_stalker, river.tide_mender, river.ferry_raider, river.silt_shaman, river.undertow_brute]
+    elitePools: [cultist.ashgate_warden, river.current_reaver]
     bossEncounterId:
     objectiveSetId: underground_river_crossing
   - id: crystal_cavern
@@ -189,8 +189,8 @@ zones:
     tilesetKey: tileset.shadow_depths
     ambientProfile: ambient.grey_gate_depths
     worldRole: optional
-    monsterPools: [cultist.shadow_priest, undead.chain_thrall, beast.thorn_stalker]
-    elitePools: [cultist.ashgate_warden]
+    monsterPools: [cultist.shadow_priest, undead.chain_thrall, beast.thorn_stalker, crystal.shardling, crystal.prism_weaver, crystal.seal_keeper, crystal.beam_savant]
+    elitePools: [cultist.ashgate_warden, crystal.resonant_colossus]
     bossEncounterId:
     objectiveSetId: crystal_cavern_resonance
     uniqueContentTag: optional.crystal_cavern.node
@@ -211,8 +211,8 @@ zones:
     tilesetKey: tileset.shadow_depths
     ambientProfile: ambient.grey_gate_depths
     worldRole: mandatory
-    monsterPools: [cultist.shadow_priest, undead.chain_thrall, cultist.ember_adept]
-    elitePools: [cultist.ashgate_warden, orc.forge_guard]
+    monsterPools: [cultist.shadow_priest, undead.chain_thrall, cultist.ember_adept, abyssal.ward_breaker, abyssal.ritual_binder, abyssal.cleanse_hunter, abyssal.void_preacher, abyssal.null_lancer]
+    elitePools: [cultist.ashgate_warden, orc.forge_guard, abyssal.reliquary_guard, abyssal.eclipsed_seraph]
     bossEncounterId:
     objectiveSetId: abyssal_temple_sanctum
   - id: abyssal_heart
@@ -232,7 +232,7 @@ zones:
     tilesetKey: tileset.shadow_depths
     ambientProfile: ambient.grey_gate_depths
     worldRole: mandatory
-    monsterPools: [cultist.shadow_priest, undead.chain_thrall]
-    elitePools: [cultist.ashgate_warden]
+    monsterPools: [cultist.shadow_priest, undead.chain_thrall, abyssal.null_lancer, abyssal.void_preacher]
+    elitePools: [cultist.ashgate_warden, abyssal.eclipsed_seraph]
     bossEncounterId: abyssal_guardian_encounter
     objectiveSetId: abyssal_heart_finale

@@ -45,7 +45,10 @@ internal object LoadoutPlanner {
                 listOf(
                     "power_strike",
                     "shield_bash",
+                    "linebreaker",
+                    "earthshaker",
                     "charge",
+                    "battlefield_command",
                     "war_cry",
                     "guard_stance",
                     "sweeping_strike",
@@ -59,7 +62,10 @@ internal object LoadoutPlanner {
                     "fireball",
                     "blink",
                     "arcane_shield",
+                    "void_breach",
                     "ice_bolt",
+                    "glacial_seal",
+                    "inferno_orb",
                     "mana_surge",
                     "ice_prison",
                     "frost_nova",
@@ -69,20 +75,27 @@ internal object LoadoutPlanner {
             observation.playerResource.typeId == "ENERGY" ->
                 listOf(
                     "backstab",
-                    "poison_blade",
-                    "shadowstep",
+                    "shadow_bind",
                     "roll",
+                    "eviscerate",
+                    "shadowstep",
                     "stealth",
+                    "poison_blade",
+                    "ricochet_knives",
                     "smoke_bomb",
-                    "blade_flurry",
                     "deathblow",
+                    "blade_flurry",
+                    "dusk_shroud",
                 )
 
             observation.playerResource.typeId == "POSITIVE_ENERGY" ->
                 listOf(
                     "holy_strike",
                     "holy_light",
+                    "consecration",
+                    "sanctuary",
                     "judgment_hammer",
+                    "ritual_break",
                     "holy_shield",
                     "devotion",
                     "holy_aura",

@@ -423,6 +423,40 @@ def add_profile(samples: list[float], sample_rate: int, profile: str, rng: rando
         mix_tone(samples, sample_rate, 0.0, 0.18, 0.16, 980.0, 740.0, waveform="square", attack=0.0, release=0.08)
         mix_noise(samples, sample_rate, 0.16, 0.18, 0.05, rng, attack=0.0, release=0.1, smooth=0.18)
         return
+    if profile == "monster_beast_rat":
+        for start_s, amplitude in ((0.0, 0.07), (0.07, 0.06), (0.15, 0.05)):
+            mix_click(samples, sample_rate, start_s, amplitude)
+            mix_tone(
+                samples,
+                sample_rate,
+                start_s,
+                0.08,
+                amplitude,
+                1_520.0,
+                1_060.0,
+                waveform="square",
+                attack=0.0,
+                release=0.05,
+            )
+        mix_noise(samples, sample_rate, 0.0, 0.24, 0.03, rng, attack=0.0, release=0.12, smooth=0.14)
+        return
+    if profile == "monster_cultist_dungeon_lord":
+        mix_tone(samples, sample_rate, 0.0, 0.54, 0.13, note(45), note(38), waveform="triangle", attack=0.03, release=0.28)
+        mix_shimmer(samples, sample_rate, 0.1, 0.34, note(62), 0.05)
+        mix_noise(samples, sample_rate, 0.06, 0.26, 0.04, rng, attack=0.0, release=0.14, smooth=0.24)
+        return
+    if profile == "monster_orc_raider":
+        mix_whoosh(samples, sample_rate, 0.0, 0.2, 0.18, rng)
+        mix_tone(samples, sample_rate, 0.04, 0.26, 0.14, note(50), note(41), waveform="saw", attack=0.0, release=0.16)
+        mix_impact(samples, sample_rate, 0.18, 0.22, rng, heavy=False)
+        return
+    if profile == "monster_undead_bone_archer":
+        for start_s, amplitude in ((0.0, 0.06), (0.08, 0.07), (0.18, 0.05)):
+            mix_click(samples, sample_rate, start_s, amplitude)
+            mix_noise(samples, sample_rate, start_s, 0.05, amplitude * 0.3, rng, attack=0.0, release=0.03, smooth=0.22)
+        mix_tone(samples, sample_rate, 0.05, 0.26, 0.09, 920.0, 540.0, waveform="triangle", attack=0.0, release=0.16)
+        mix_shimmer(samples, sample_rate, 0.14, 0.18, note(81), 0.04)
+        return
     if profile == "boss_bandit_captain":
         mix_impact(samples, sample_rate, 0.0, 0.18, rng, heavy=True)
         mix_tone(samples, sample_rate, 0.08, 0.52, 0.16, note(45), note(52), waveform="saw", attack=0.02, release=0.26)

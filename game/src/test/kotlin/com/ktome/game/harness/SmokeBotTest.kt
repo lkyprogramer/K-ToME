@@ -346,6 +346,39 @@ class SmokeBotTest {
     }
 
     @Test
+    fun `visible hostiles do not block zero cost loadout reconfiguration`() {
+        val command =
+            bot.decide(
+                observation(
+                    inventoryItems = emptyList(),
+                    playerStatus = healthyStatus(),
+                    playerResource = PlayerResourceView(current = 20, max = 20, typeId = "STAMINA"),
+                    visibleHostilePositions = listOf(Point(3, 1)),
+                    visibleTiles = setOf(Point(1, 1), Point(2, 1), Point(3, 1)),
+                    exploredTiles = setOf(Point(1, 1), Point(2, 1), Point(3, 1)),
+                    talentSlots =
+                        listOf(
+                            talentSlot(slot = 1, talentId = "power_strike", resourceTypeId = "STAMINA", resourceCost = 8, range = 1, requiresTarget = true),
+                            talentSlot(slot = 2, talentId = "shield_bash", resourceTypeId = "STAMINA", resourceCost = 8, range = 1, requiresTarget = true),
+                            talentSlot(slot = 3, talentId = "war_cry", resourceTypeId = "STAMINA", resourceCost = 0, range = 0, requiresTarget = false),
+                            talentSlot(slot = 4, talentId = "guard_stance", resourceTypeId = "STAMINA", resourceCost = 0, range = 0, requiresTarget = false),
+                        ),
+                    reserveTalents =
+                        listOf(
+                            reserveTalentView(talentId = "linebreaker").copy(
+                                resourceTypeId = "STAMINA",
+                                resourceCost = 10,
+                                range = 1,
+                                requiresTarget = true,
+                            ),
+                        ),
+                ),
+            )
+
+        assertEquals(PlayerCommand.EquipTalentToSlot(3, "linebreaker"), command)
+    }
+
+    @Test
     fun `talent upgrade priority can target reserve talents directly`() {
         val command =
             bot.decide(

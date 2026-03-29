@@ -246,6 +246,22 @@ entries:
     cueFamily: monster
     eventId: audio.monster.bandit.sentry
     sourcePath: audio/monster/bandit_alert.ogg
+  - key: audio.monster.beast.rat
+    cueFamily: monster
+    eventId: audio.monster.beast.rat
+    sourcePath: audio/monster/beast_rat.ogg
+  - key: audio.monster.cultist.dungeon_lord
+    cueFamily: monster
+    eventId: audio.monster.cultist.dungeon_lord
+    sourcePath: audio/monster/cultist_dungeon_lord.ogg
+  - key: audio.monster.orc.raider
+    cueFamily: monster
+    eventId: audio.monster.orc.raider
+    sourcePath: audio/monster/orc_raider.ogg
+  - key: audio.monster.undead.bone_archer
+    cueFamily: monster
+    eventId: audio.monster.undead.bone_archer
+    sourcePath: audio/monster/undead_bone_archer.ogg
   - key: audio.boss.warning
     cueFamily: boss
     eventId: audio.boss.warning

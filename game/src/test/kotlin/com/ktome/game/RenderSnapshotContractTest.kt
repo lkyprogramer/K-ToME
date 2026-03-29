@@ -342,9 +342,9 @@ class RenderSnapshotContractTest {
         }
         session.automationWorld().remove<com.ktome.core.ai.PendingTelegraphState>(bossId)
         requireNotNull(session.automationWorld().get<com.ktome.core.talent.CooldownState>(bossId)).remainingByTalentId.apply {
-            this["war_cry"] = 0
-            this["power_strike"] = 99
-            this["charge"] = 99
+            this["battlefield_command"] = 0
+            this["shadow_bind"] = 99
+            this["ritual_break"] = 99
         }
 
         val initialSnapshot = session.renderSnapshot()
@@ -360,7 +360,7 @@ class RenderSnapshotContractTest {
         var telegraphSnapshot = session.renderSnapshot()
         var initialTelegraph =
             telegraphSnapshot.overlays.singleOrNull { candidate ->
-                candidate.id.startsWith("telegraph:${bossId.value}:") && candidate.sourceAbilityId == "war_cry"
+                candidate.id.startsWith("telegraph:${bossId.value}:") && candidate.sourceAbilityId == "battlefield_command"
             }
         for (attempt in 0 until 5) {
             if (initialTelegraph != null) {
@@ -370,11 +370,11 @@ class RenderSnapshotContractTest {
             telegraphSnapshot = session.renderSnapshot()
             initialTelegraph =
                 telegraphSnapshot.overlays.singleOrNull { candidate ->
-                    candidate.id.startsWith("telegraph:${bossId.value}:") && candidate.sourceAbilityId == "war_cry"
+                    candidate.id.startsWith("telegraph:${bossId.value}:") && candidate.sourceAbilityId == "battlefield_command"
                 }
         }
         initialTelegraph = requireNotNull(initialTelegraph)
-        assertEquals("war_cry", session.recentAIDecisionTraces().last { trace -> trace.actorId == bossId.value }.selectedActionId)
+        assertEquals("battlefield_command", session.recentAIDecisionTraces().last { trace -> trace.actorId == bossId.value }.selectedActionId)
         assertEquals("log.warning.telegraph", initialTelegraph.warningMessage?.key)
         assertEquals(OverlayShapeSnapshot.RING, initialTelegraph.shape)
         assertEquals(1, initialTelegraph.previewTurns)
@@ -384,14 +384,14 @@ class RenderSnapshotContractTest {
         assertNull(session.renderSnapshot().overlays.firstOrNull { candidate -> candidate.id.startsWith("telegraph:${bossId.value}:") })
 
         requireNotNull(session.automationWorld().get<com.ktome.core.talent.CooldownState>(bossId)).remainingByTalentId.apply {
-            this["war_cry"] = 99
-            this["power_strike"] = 0
+            this["battlefield_command"] = 99
+            this["ritual_break"] = 0
         }
 
         var followUpSnapshot = session.renderSnapshot()
         var followUpTelegraph =
             followUpSnapshot.overlays.singleOrNull { candidate ->
-                candidate.id.startsWith("telegraph:${bossId.value}:") && candidate.sourceAbilityId == "power_strike"
+                candidate.id.startsWith("telegraph:${bossId.value}:") && candidate.sourceAbilityId == "ritual_break"
             }
         for (attempt in 0 until 6) {
             if (followUpTelegraph != null) {
@@ -401,12 +401,12 @@ class RenderSnapshotContractTest {
             followUpSnapshot = session.renderSnapshot()
             followUpTelegraph =
                 followUpSnapshot.overlays.singleOrNull { candidate ->
-                    candidate.id.startsWith("telegraph:${bossId.value}:") && candidate.sourceAbilityId == "power_strike"
+                    candidate.id.startsWith("telegraph:${bossId.value}:") && candidate.sourceAbilityId == "ritual_break"
                 }
         }
         followUpTelegraph = requireNotNull(followUpTelegraph)
-        assertEquals("power_strike", session.recentAIDecisionTraces().last { trace -> trace.actorId == bossId.value }.selectedActionId)
-        assertEquals("power_strike", followUpTelegraph.sourceAbilityId)
+        assertEquals("ritual_break", session.recentAIDecisionTraces().last { trace -> trace.actorId == bossId.value }.selectedActionId)
+        assertEquals("ritual_break", followUpTelegraph.sourceAbilityId)
         assertEquals(OverlayShapeSnapshot.RING, followUpTelegraph.shape)
         assertTrue(followUpTelegraph.previewTurns >= 1)
         assertTrue(followUpTelegraph.cells.isNotEmpty())

@@ -178,6 +178,10 @@ class TalentResolver(
             "guard_stance",
             "intimidation",
             "unyielding",
+            "linebreaker",
+            "earthshaker",
+            "bulwark_march",
+            "battlefield_command",
             "fireball",
             "flame_wall",
             "ice_bolt",
@@ -186,6 +190,11 @@ class TalentResolver(
             "arcane_shield",
             "blink",
             "mana_surge",
+            "cinder_burst",
+            "inferno_orb",
+            "glacial_seal",
+            "shard_storm",
+            "void_breach",
             "backstab",
             "poison_blade",
             "stealth",
@@ -194,6 +203,11 @@ class TalentResolver(
             "blade_flurry",
             "shadowstep",
             "deathblow",
+            "crippling_strike",
+            "eviscerate",
+            "shadow_bind",
+            "dusk_shroud",
+            "ricochet_knives",
             "holy_strike",
             "judgment_hammer",
             "holy_light",
@@ -202,6 +216,12 @@ class TalentResolver(
             "holy_aura",
             "purify",
             "divine_intervention",
+            "radiant_lance",
+            "consecration",
+            "sanctuary",
+            "absolution",
+            "beacon_of_zeal",
+            "ritual_break",
             "blood_rush",
             "savage_hew",
             "reckless_slam",
@@ -460,7 +480,48 @@ class TalentResolver(
                 )
             }
 
+            "linebreaker" -> {
+                val center = requireNotNull(target)
+                val hitTargets = hostileTargetsWithin(world, user, center, definition.areaRadius).ifEmpty {
+                    listOfNotNull(hostileTargetAt(world, user, center))
+                }
+                hitTargets.forEach { targetEntity ->
+                    targets += targetEntity
+                    val damageResult =
+                        resolveDamage(world, user, targetEntity, definition.damageType, effect.damageMultiplier, effects, abilityId = definition.id)
+                    if (damageResult.hit && effect.knockback > 0) {
+                        knockback(world, map, user, targetEntity, effect.knockback)?.let(effects::add)
+                    }
+                    applyConfiguredEffects(
+                        world = world,
+                        user = user,
+                        definition = definition,
+                        effect = effect,
+                        trigger = EffectTrigger.ON_HIT,
+                        primaryTarget = targetEntity,
+                        areaTargets = listOf(targetEntity),
+                        hitSucceeded = damageResult.hit,
+                        effects = effects,
+                    )
+                }
+            }
+
             "war_cry" -> {
+                val nearbyTargets = hostileTargetsWithin(world, user, requireNotNull(world.get<Position>(user)).toPoint(), definition.areaRadius)
+                targets += user
+                targets += nearbyTargets
+                applyConfiguredEffects(
+                    world = world,
+                    user = user,
+                    definition = definition,
+                    effect = effect,
+                    trigger = EffectTrigger.ON_CAST,
+                    areaTargets = nearbyTargets,
+                    effects = effects,
+                )
+            }
+
+            "battlefield_command" -> {
                 val nearbyTargets = hostileTargetsWithin(world, user, requireNotNull(world.get<Position>(user)).toPoint(), definition.areaRadius)
                 targets += user
                 targets += nearbyTargets
@@ -511,6 +572,18 @@ class TalentResolver(
             }
 
             "guard_stance" -> {
+                targets += user
+                applyConfiguredEffects(
+                    world = world,
+                    user = user,
+                    definition = definition,
+                    effect = effect,
+                    trigger = EffectTrigger.ON_CAST,
+                    effects = effects,
+                )
+            }
+
+            "bulwark_march" -> {
                 targets += user
                 applyConfiguredEffects(
                     world = world,
@@ -576,7 +649,60 @@ class TalentResolver(
                 }
             }
 
+            "inferno_orb",
+            "shard_storm",
+            "ricochet_knives",
+            -> {
+                val center = requireNotNull(target)
+                val hitTargets = hostileTargetsWithin(world, user, center, definition.areaRadius).ifEmpty {
+                    listOfNotNull(hostileTargetAt(world, user, center))
+                }
+                hitTargets.forEach { targetEntity ->
+                    targets += targetEntity
+                    val damageResult =
+                        resolveDamage(world, user, targetEntity, definition.damageType, effect.damageMultiplier, effects, abilityId = definition.id)
+                    if (damageResult.hit && effect.knockback > 0) {
+                        knockback(world, map, user, targetEntity, effect.knockback)?.let(effects::add)
+                    }
+                    applyConfiguredEffects(
+                        world = world,
+                        user = user,
+                        definition = definition,
+                        effect = effect,
+                        trigger = EffectTrigger.ON_HIT,
+                        primaryTarget = targetEntity,
+                        areaTargets = listOf(targetEntity),
+                        hitSucceeded = damageResult.hit,
+                        effects = effects,
+                    )
+                }
+            }
+
             "ice_bolt" -> {
+                val targetEntity = requireNotNull(hostileTargetAt(world, user, requireNotNull(target)))
+                targets += targetEntity
+                val damageResult =
+                    resolveDamage(world, user, targetEntity, definition.damageType, effect.damageMultiplier, effects, abilityId = definition.id)
+                applyConfiguredEffects(
+                    world = world,
+                    user = user,
+                    definition = definition,
+                    effect = effect,
+                    trigger = EffectTrigger.ON_HIT,
+                    primaryTarget = targetEntity,
+                    areaTargets = listOf(targetEntity),
+                    hitSucceeded = damageResult.hit,
+                    effects = effects,
+                )
+            }
+
+            "cinder_burst",
+            "glacial_seal",
+            "void_breach",
+            "shadow_bind",
+            "radiant_lance",
+            "ritual_break",
+            -> {
                 val targetEntity = requireNotNull(hostileTargetAt(world, user, requireNotNull(target)))
                 targets += targetEntity
                 val damageResult =
@@ -600,6 +726,31 @@ class TalentResolver(
                     targets += targetEntity
                     val damageResult =
                         resolveDamage(world, user, targetEntity, definition.damageType, effect.damageMultiplier, effects, abilityId = definition.id)
+                    applyConfiguredEffects(
+                        world = world,
+                        user = user,
+                        definition = definition,
+                        effect = effect,
+                        trigger = EffectTrigger.ON_HIT,
+                        primaryTarget = targetEntity,
+                        areaTargets = listOf(targetEntity),
+                        hitSucceeded = damageResult.hit,
+                        effects = effects,
+                    )
+                }
+            }
+
+            "earthshaker",
+            "consecration",
+            -> {
+                val origin = requireNotNull(world.get<Position>(user)).toPoint()
+                hostileTargetsWithin(world, user, origin, definition.areaRadius).forEach { targetEntity ->
+                    targets += targetEntity
+                    val damageResult =
+                        resolveDamage(world, user, targetEntity, definition.damageType, effect.damageMultiplier, effects, abilityId = definition.id)
+                    if (damageResult.hit && effect.knockback > 0) {
+                        knockback(world, map, user, targetEntity, effect.knockback)?.let(effects::add)
+                    }
                     applyConfiguredEffects(
                         world = world,
                         user = user,
@@ -684,7 +835,9 @@ class TalentResolver(
                 resolveDamage(world, user, targetEntity, definition.damageType, effect.damageMultiplier, effects, abilityId = definition.id)
             }
 
-            "poison_blade" -> {
+            "poison_blade",
+            "crippling_strike",
+            -> {
                 val targetEntity = requireNotNull(hostileTargetAt(world, user, requireNotNull(target)))
                 targets += targetEntity
                 val damageResult =
@@ -703,6 +856,18 @@ class TalentResolver(
             }
 
             "stealth" -> {
+                targets += user
+                applyConfiguredEffects(
+                    world = world,
+                    user = user,
+                    definition = definition,
+                    effect = effect,
+                    trigger = EffectTrigger.ON_CAST,
+                    effects = effects,
+                )
+            }
+
+            "dusk_shroud" -> {
                 targets += user
                 applyConfiguredEffects(
                     world = world,
@@ -769,6 +934,16 @@ class TalentResolver(
                 }
             }
 
+            "eviscerate" -> {
+                val targetEntity = requireNotNull(hostileTargetAt(world, user, requireNotNull(target)))
+                targets += targetEntity
+                val damageResult =
+                    resolveDamage(world, user, targetEntity, definition.damageType, effect.damageMultiplier, effects, abilityId = definition.id)
+                if (damageResult.hit) {
+                    restoreConfiguredResource(world, user, definition, effect, effects)
+                }
+            }
+
             "holy_strike" -> {
                 val targetEntity = requireNotNull(hostileTargetAt(world, user, requireNotNull(target)))
                 targets += targetEntity
@@ -806,6 +981,8 @@ class TalentResolver(
             "holy_shield",
             "spell_parry",
             "dwarf_forge_heart",
+            "sanctuary",
+            "beacon_of_zeal",
             -> {
                 targets += user
                 applyConfiguredEffects(
@@ -855,6 +1032,19 @@ class TalentResolver(
             }
 
             "purify" -> {
+                applyConfiguredEffects(
+                    world = world,
+                    user = user,
+                    definition = definition,
+                    effect = effect,
+                    trigger = EffectTrigger.ON_CAST,
+                    effects = effects,
+                )
+                healTarget(world, user, effect, effects)
+                targets += user
+            }
+
+            "absolution" -> {
                 applyConfiguredEffects(
                     world = world,
                     user = user,

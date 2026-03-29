@@ -1,0 +1,23 @@
+packId: phase3-audio-placeholder-cleanup-v1
+sampleRate: 44100
+targets:
+  - id: phase3_monster_beast_rat
+    key: audio.monster.beast.rat
+    sourcePath: audio/monster/beast_rat.ogg
+    profile: monster_beast_rat
+    durationSeconds: 0.30
+  - id: phase3_monster_cultist_dungeon_lord
+    key: audio.monster.cultist.dungeon_lord
+    sourcePath: audio/monster/cultist_dungeon_lord.ogg
+    profile: monster_cultist_dungeon_lord
+    durationSeconds: 0.58
+  - id: phase3_monster_orc_raider
+    key: audio.monster.orc.raider
+    sourcePath: audio/monster/orc_raider.ogg
+    profile: monster_orc_raider
+    durationSeconds: 0.44
+  - id: phase3_monster_undead_bone_archer
+    key: audio.monster.undead.bone_archer
+    sourcePath: audio/monster/undead_bone_archer.ogg
+    profile: monster_undead_bone_archer
+    durationSeconds: 0.42

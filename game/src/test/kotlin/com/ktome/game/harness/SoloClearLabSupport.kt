@@ -27,6 +27,7 @@ import com.ktome.core.save.SaveManager
 import com.ktome.core.snapshot.RenderLogEventSnapshot
 import com.ktome.core.snapshot.RenderTextTokenSnapshot
 import com.ktome.core.talent.TalentDef
+import com.ktome.core.talent.TalentLoadout
 import com.ktome.core.talent.TalentRegistry
 import com.ktome.game.FoundationGameConfig
 import com.ktome.game.FoundationGameSession
@@ -34,6 +35,7 @@ import com.ktome.game.GameContent
 import com.ktome.game.PlayerCommand
 import com.ktome.game.PlayerResourceService
 import com.ktome.game.SessionSnapshotMapper
+import com.ktome.game.TalentProgression
 import com.ktome.game.data.DataLoader
 import com.ktome.game.data.schema.ProfessionSchemaV2
 import com.ktome.game.factory.BossFactory
@@ -50,7 +52,7 @@ import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
 import kotlinx.serialization.json.putJsonObject
 
-internal const val SOLO_CLEAR_SCRIPT_VERSION: String = "solo-clear-lab-v4"
+internal const val SOLO_CLEAR_SCRIPT_VERSION: String = "solo-clear-lab-v5"
 internal const val SOLO_CLEAR_BOSS_TELEGRAPH_WAIT_TURNS: Int = 3
 internal val SOLO_CLEAR_PROFESSIONS: List<String> =
     listOf(
@@ -319,6 +321,7 @@ internal class SoloClearLabHarness(
             )
 
         installScenarioLevel(world, playerId, scenario.level)
+        seedScenarioTalents(world, playerId, professionId, scenario)
         installBlueGear(world, playerId, professionId)
         PlayerResourceService.ensureInitialized(world, playerId, profession)
         setInitialResource(world, playerId, professionId)
@@ -522,6 +525,76 @@ internal class SoloClearLabHarness(
         experience.unspentStatPoints = 0
         experience.unspentTalentPoints = 0
     }
+
+    private fun seedScenarioTalents(
+        world: World,
+        playerId: EntityId,
+        professionId: String,
+        scenario: SoloClearScenario,
+    ) {
+        val profession = requireNotNull(professionsById[professionId]) { "Unknown profession '$professionId'." }
+        val loadout = requireNotNull(world.get<TalentLoadout>(playerId)) { "Missing TalentLoadout for $playerId." }
+        TalentProgression
+            .unlockedTalentIds(
+                schemaCatalog = content.schemaCatalog,
+                profession = profession,
+                level = scenario.level,
+            ).forEach { talentId ->
+                loadout.talentLevels.putIfAbsent(talentId, 1)
+            }
+
+        val desiredActiveTalents =
+            preferredScenarioTalentOrder(professionId = professionId, scenario = scenario)
+                .filter(loadout.talentLevels::containsKey)
+
+        val activeTalentIds =
+            linkedSetOf<String>().apply {
+                desiredActiveTalents.forEach(::add)
+                profession.startingTalents.filter(loadout.talentLevels::containsKey).forEach(::add)
+                loadout.talentLevels.keys.forEach(::add)
+            }.take(4)
+
+        loadout.slotToTalentId.clear()
+        activeTalentIds.forEachIndexed { index, talentId ->
+            loadout.slotToTalentId[index + 1] = talentId
+        }
+    }
+
+    private fun preferredScenarioTalentOrder(
+        professionId: String,
+        scenario: SoloClearScenario,
+    ): List<String> =
+        when (professionId) {
+            "vanguard" ->
+                when (scenario) {
+                    SoloClearScenario.BOSS -> listOf("power_strike", "linebreaker", "earthshaker", "battlefield_command")
+                    SoloClearScenario.MOB_PACK -> listOf("sweeping_strike", "earthshaker", "battlefield_command", "linebreaker")
+                    SoloClearScenario.ELITE -> listOf("power_strike", "linebreaker", "battlefield_command", "earthshaker")
+                }
+
+            "arcanist" ->
+                when (scenario) {
+                    SoloClearScenario.BOSS -> listOf("fireball", "void_breach", "inferno_orb", "glacial_seal")
+                    SoloClearScenario.MOB_PACK -> listOf("fireball", "inferno_orb", "frost_nova", "glacial_seal")
+                    SoloClearScenario.ELITE -> listOf("fireball", "blink", "arcane_shield", "void_breach")
+                }
+
+            "rogue" ->
+                when (scenario) {
+                    SoloClearScenario.BOSS -> listOf("backstab", "shadow_bind", "eviscerate", "deathblow")
+                    SoloClearScenario.MOB_PACK -> listOf("ricochet_knives", "smoke_bomb", "shadow_bind", "blade_flurry")
+                    SoloClearScenario.ELITE -> listOf("poison_blade", "shadow_bind", "backstab", "eviscerate")
+                }
+
+            "templar" ->
+                when (scenario) {
+                    SoloClearScenario.BOSS -> listOf("holy_strike", "consecration", "ritual_break", "sanctuary")
+                    SoloClearScenario.MOB_PACK -> listOf("judgment_hammer", "consecration", "holy_aura", "sanctuary")
+                    SoloClearScenario.ELITE -> listOf("holy_strike", "judgment_hammer", "consecration", "sanctuary")
+                }
+
+            else -> emptyList()
+        }
 
     private fun installBlueGear(
         world: World,
@@ -950,7 +1023,7 @@ private class SoloClearScriptBot : RunBot {
         observation.visibleBossPositions.isEmpty() && observation.visibleHostilePositions.size >= 4
 
     private fun usesSpecializedPackLoadout(observation: RunObservation): Boolean =
-        observation.playerResource.typeId in setOf("MANA", "ENERGY", "POSITIVE_ENERGY", "HATE")
+        observation.playerResource.typeId in setOf("STAMINA", "MANA", "ENERGY", "POSITIVE_ENERGY", "HATE")
 
     private fun preferredCombatLoadoutCommand(observation: RunObservation): PlayerCommand? {
         if (!usesSpecializedPackLoadout(observation)) {
@@ -963,6 +1036,14 @@ private class SoloClearScriptBot : RunBot {
             }
         val desiredOrder =
             when (observation.playerResource.typeId) {
+                "STAMINA" ->
+                    if (observation.visibleBossPositions.isNotEmpty()) {
+                        listOf("power_strike", "linebreaker", "earthshaker", "guard_stance", "battlefield_command", "shield_bash")
+                    } else if (isDensePackScenario(observation)) {
+                        listOf("sweeping_strike", "earthshaker", "battlefield_command", "shield_bash", "linebreaker", "war_cry")
+                    } else {
+                        listOf("power_strike", "shield_bash", "linebreaker", "earthshaker", "battlefield_command", "charge")
+                    }
                 "MANA" ->
                     if (listOf("arcane_edge", "mana_lunge", "spell_parry", "spell_rend", "flux_burst", "flux_anchor").any(unlockedTalentIds::contains)) {
                         if (observation.visibleBossPositions.isNotEmpty()) {
@@ -973,10 +1054,30 @@ private class SoloClearScriptBot : RunBot {
                             listOf("arcane_edge", "mana_lunge", "spell_parry", "flux_anchor", "spell_rend", "flux_burst")
                         }
                     } else {
-                        listOf("fireball", "blink", "arcane_shield", "frost_nova", "mana_surge", "flame_wall")
+                        if (observation.visibleBossPositions.isNotEmpty()) {
+                            listOf("fireball", "void_breach", "blink", "arcane_shield", "inferno_orb", "glacial_seal")
+                        } else if (isDensePackScenario(observation)) {
+                            listOf("fireball", "inferno_orb", "frost_nova", "glacial_seal", "blink", "arcane_shield")
+                        } else {
+                            listOf("fireball", "blink", "arcane_shield", "void_breach", "glacial_seal", "mana_surge")
+                        }
                     }
-                "ENERGY" -> listOf("poison_blade", "shadowstep", "smoke_bomb", "blade_flurry", "deathblow", "stealth")
-                "POSITIVE_ENERGY" -> listOf("holy_strike", "judgment_hammer", "holy_shield", "holy_aura", "holy_light", "divine_intervention")
+                "ENERGY" ->
+                    if (observation.visibleBossPositions.isNotEmpty()) {
+                        listOf("backstab", "shadow_bind", "eviscerate", "deathblow", "dusk_shroud", "shadowstep")
+                    } else if (isDensePackScenario(observation)) {
+                        listOf("ricochet_knives", "smoke_bomb", "shadow_bind", "blade_flurry", "eviscerate", "stealth")
+                    } else {
+                        listOf("poison_blade", "shadow_bind", "backstab", "eviscerate", "roll", "stealth")
+                    }
+                "POSITIVE_ENERGY" ->
+                    if (observation.visibleBossPositions.isNotEmpty()) {
+                        listOf("holy_strike", "consecration", "ritual_break", "sanctuary", "judgment_hammer", "holy_shield")
+                    } else if (isDensePackScenario(observation)) {
+                        listOf("judgment_hammer", "consecration", "holy_aura", "holy_strike", "sanctuary", "holy_light")
+                    } else {
+                        listOf("holy_strike", "judgment_hammer", "consecration", "holy_shield", "holy_light", "sanctuary")
+                    }
                 "HATE" ->
                     if (observation.visibleBossPositions.isNotEmpty()) {
                         listOf("savage_hew", "rupture_wave", "kill_frenzy", "last_stand", "reckless_slam")
@@ -1071,6 +1172,8 @@ private class SoloClearScriptBot : RunBot {
         val lowHealth = observation.playerStatus.currentHp * 100 <= observation.playerStatus.maxHp * 70
 
         if (adjacentHostiles >= 2) {
+            availableTalent(observation, "earthshaker")?.let { return PlayerCommand.UseTalent(it.slot) }
+            availableTalent(observation, "consecration")?.let { return PlayerCommand.UseTalent(it.slot) }
             availableTalent(observation, "blade_flurry")?.let { return PlayerCommand.UseTalent(it.slot, nearest) }
             availableTalent(observation, "reckless_slam")?.let { return PlayerCommand.UseTalent(it.slot) }
             availableTalent(observation, "flux_burst")?.let { return PlayerCommand.UseTalent(it.slot) }
@@ -1079,6 +1182,8 @@ private class SoloClearScriptBot : RunBot {
             availableTalent(observation, "frost_nova")?.let { return PlayerCommand.UseTalent(it.slot) }
         }
         if (nearbyHostiles >= 2) {
+            availableTalent(observation, "battlefield_command")?.let { return PlayerCommand.UseTalent(it.slot) }
+            availableTalent(observation, "beacon_of_zeal")?.let { return PlayerCommand.UseTalent(it.slot) }
             availableTalent(observation, "smoke_bomb")?.let { return PlayerCommand.UseTalent(it.slot) }
             availableTalent(observation, "war_cry")?.let { return PlayerCommand.UseTalent(it.slot) }
             availableTalent(observation, "intimidation")?.let { return PlayerCommand.UseTalent(it.slot) }
@@ -1091,10 +1196,22 @@ private class SoloClearScriptBot : RunBot {
             availableTalent(observation, "arcane_shield")?.let { return PlayerCommand.UseTalent(it.slot) }
         }
         if (nearbyHostiles >= 1) {
+            availableTalent(observation, "bulwark_march")?.let { return PlayerCommand.UseTalent(it.slot) }
+            availableTalent(observation, "sanctuary")?.let { return PlayerCommand.UseTalent(it.slot) }
+            availableTalent(observation, "dusk_shroud")?.let { return PlayerCommand.UseTalent(it.slot) }
             availableTalent(observation, "devotion")?.let { return PlayerCommand.UseTalent(it.slot) }
             availableTalent(observation, "holy_shield")?.let { return PlayerCommand.UseTalent(it.slot) }
             availableTalent(observation, "stealth")?.let { return PlayerCommand.UseTalent(it.slot) }
         }
+        availableTargetedTalent(observation, nearest, "shadow_bind")?.let { return it }
+        availableTargetedTalent(observation, nearest, "ritual_break")?.let { return it }
+        availableTargetedTalent(observation, nearest, "radiant_lance")?.let { return it }
+        availableTargetedTalent(observation, nearest, "glacial_seal")?.let { return it }
+        availableTargetedTalent(observation, nearest, "void_breach")?.let { return it }
+        availableTargetedTalent(observation, nearest, "linebreaker")?.let { return it }
+        availableTargetedTalent(observation, nearest, "crippling_strike")?.let { return it }
+        availableTargetedTalent(observation, nearest, "eviscerate")?.let { return it }
+        availableTargetedTalent(observation, nearest, "cinder_burst")?.let { return it }
         availableTargetedTalent(observation, nearest, "arcane_edge")?.let { return it }
         availableTargetedTalent(observation, nearest, "savage_hew")?.let { return it }
         availableTargetedTalent(observation, nearest, "spell_rend")?.let { return it }
@@ -1113,6 +1230,15 @@ private class SoloClearScriptBot : RunBot {
         availableTargetedTalent(observation, nearest, "rupture_wave")?.let { return it }
         if (nearbyHostiles >= 2) {
             clusterTarget(observation)?.let { cluster ->
+                availableTalent(observation, "inferno_orb")
+                    ?.takeIf { slot -> cluster.isWithin(slot, observation.playerPosition) }
+                    ?.let { slot -> return PlayerCommand.UseTalent(slot.slot, cluster) }
+                availableTalent(observation, "shard_storm")
+                    ?.takeIf { slot -> cluster.isWithin(slot, observation.playerPosition) }
+                    ?.let { slot -> return PlayerCommand.UseTalent(slot.slot, cluster) }
+                availableTalent(observation, "ricochet_knives")
+                    ?.takeIf { slot -> cluster.isWithin(slot, observation.playerPosition) }
+                    ?.let { slot -> return PlayerCommand.UseTalent(slot.slot, cluster) }
                 availableTalent(observation, "flame_wall")
                     ?.takeIf { slot -> cluster.isWithin(slot, observation.playerPosition) }
                     ?.let { slot -> return PlayerCommand.UseTalent(slot.slot, cluster) }

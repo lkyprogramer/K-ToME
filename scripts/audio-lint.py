@@ -41,8 +41,13 @@ REQUIRED_AUDIBLE_KEY_PATHS = {
     "audio.spell.basic": "audio/spell/basic.ogg",
     "audio.monster.default": "audio/monster/default.ogg",
     "audio.monster.bandit.sentry": "audio/monster/bandit_alert.ogg",
+    "audio.monster.beast.rat": "audio/monster/beast_rat.ogg",
+    "audio.monster.cultist.dungeon_lord": "audio/monster/cultist_dungeon_lord.ogg",
+    "audio.monster.orc.raider": "audio/monster/orc_raider.ogg",
+    "audio.monster.undead.bone_archer": "audio/monster/undead_bone_archer.ogg",
     "audio.interactable.stairs": "audio/interactable/stairs.ogg",
     "audio.boss.warning": "audio/boss/warning.ogg",
+    "audio.boss.cultist.dungeon_lord": "audio/boss/cultist_dungeon_lord.ogg",
     "ambient.shattered_outpost": "audio/ambient/shattered_outpost.ogg",
     "ambient.greenwood_fringe": "audio/ambient/greenwood_fringe.ogg",
     "ambient.deep_iron_pit": "audio/ambient/deep_iron_pit.ogg",
@@ -69,6 +74,12 @@ def parse_args() -> argparse.Namespace:
         "--plan",
         default="assets-src/audio/specs/phase2-audio-plan.yaml",
         help="Path to the phase2 audio plan YAML",
+    )
+    parser.add_argument(
+        "--extra-plan",
+        action="append",
+        default=[],
+        help="Additional audio plan YAML paths whose entries must also be covered by the manifest.",
     )
     parser.add_argument(
         "--manifest",
@@ -120,14 +131,23 @@ def load_bundled_specs(path: pathlib.Path, errors: list[str]) -> dict[str, dict]
     return bundled_by_key
 
 
+def placeholder_tagged_keys(entries_by_key: dict[str, dict]) -> list[str]:
+    return sorted(
+        key
+        for key, entry in entries_by_key.items()
+        if "placeholder" in {str(tag).strip() for tag in entry.get("tags", []) if str(tag).strip()}
+    )
+
+
 def validate(
-    plan_path: pathlib.Path,
+    plan_paths: list[pathlib.Path],
     manifest_path: pathlib.Path,
     runtime_manifest_path: pathlib.Path,
     runtime_root: pathlib.Path,
     bundled_spec_path: pathlib.Path,
 ) -> list[str]:
-    plan = load_yaml(plan_path)
+    plans = [load_yaml(path) for path in plan_paths]
+    plan = plans[0]
     manifest = load_json(manifest_path)
     runtime_manifest = load_json(runtime_manifest_path)
     errors: list[str] = []
@@ -169,7 +189,15 @@ def validate(
     if missing_families:
         errors.append(f"Missing required cue families: {', '.join(missing_families)}.")
 
-    plan_entries = plan.get("entries")
+    plan_entries = list(plan.get("entries") or [])
+    for extra_plan in plans[1:]:
+        extra_entries = extra_plan.get("entries")
+        if extra_entries is None:
+            continue
+        if not isinstance(extra_entries, list):
+            errors.append("extra audio plan entries must be a list when provided.")
+            continue
+        plan_entries.extend(extra_entries)
     manifest_entries = manifest.get("entries")
     runtime_entries = runtime_manifest.get("entries")
     if not isinstance(plan_entries, list) or not plan_entries:
@@ -216,6 +244,28 @@ def validate(
 
     manifest_keys = set(manifest_by_key)
     runtime_keys = set(runtime_by_key)
+    manifest_placeholder_keys = placeholder_tagged_keys(manifest_by_key)
+    if manifest_placeholder_keys:
+        errors.append(
+            "canonical audio manifest must not contain placeholder-tagged entries: "
+            + ", ".join(manifest_placeholder_keys)
+            + "."
+        )
+    runtime_placeholder_keys = placeholder_tagged_keys(runtime_by_key)
+    if runtime_placeholder_keys:
+        errors.append(
+            "runtime audio manifest must not contain placeholder-tagged entries: "
+            + ", ".join(runtime_placeholder_keys)
+            + "."
+        )
+    bundled_placeholder_keys = placeholder_tagged_keys(bundled_by_key)
+    if bundled_placeholder_keys:
+        errors.append(
+            "bundled audio spec catalog must not contain placeholder-tagged entries: "
+            + ", ".join(bundled_placeholder_keys)
+            + "."
+        )
+
     missing_runtime = sorted(manifest_keys - runtime_keys)
     extra_runtime = sorted(runtime_keys - manifest_keys)
     if missing_runtime:
@@ -388,7 +438,7 @@ def validate(
 def main() -> int:
     args = parse_args()
     errors = validate(
-        pathlib.Path(args.plan),
+        [pathlib.Path(args.plan), *[pathlib.Path(path) for path in args.extra_plan]],
         pathlib.Path(args.manifest),
         pathlib.Path(args.runtime_manifest),
         pathlib.Path(args.runtime_root),
