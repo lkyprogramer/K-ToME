@@ -239,6 +239,518 @@ aiProfiles:
         orderKey: 20
         condition:
           type: TARGET_VISIBLE
+  - id: ai.bandit.cutthroat
+    schemaVersion: 2
+    perceptionRange: 9
+    useLastKnownPosition: true
+    defaultBehavior: PATROL
+    selectionPolicy: DETERMINISTIC_PRIORITY
+    actions:
+      - id: crippling_strike
+        type: USE_ABILITY
+        orderKey: 10
+        abilityId: crippling_strike
+        condition:
+          type: AND
+          conditions:
+            - type: TARGET_DISTANCE_LESS_THAN
+              distance: 2
+            - type: TALENT_READY
+              talentId: crippling_strike
+      - id: shadow_bind
+        type: USE_ABILITY
+        orderKey: 20
+        abilityId: shadow_bind
+        condition:
+          type: AND
+          conditions:
+            - type: TARGET_DISTANCE_BETWEEN
+              minDistance: 2
+              maxDistance: 4
+            - type: TALENT_READY
+              talentId: shadow_bind
+      - id: strike
+        type: ATTACK_TARGET
+        orderKey: 30
+        condition:
+          type: TARGET_DISTANCE_LESS_THAN
+          distance: 2
+      - id: flank
+        type: MOVE_TOWARD_TARGET
+        orderKey: 40
+        condition:
+          type: TARGET_VISIBLE
+  - id: ai.bandit.banner_guard
+    schemaVersion: 2
+    perceptionRange: 8
+    useLastKnownPosition: true
+    defaultBehavior: PATROL
+    selectionPolicy: DETERMINISTIC_PRIORITY
+    actions:
+      - id: battlefield_command
+        type: USE_ABILITY
+        orderKey: 10
+        abilityId: battlefield_command
+        condition:
+          type: AND
+          conditions:
+            - type: TARGET_VISIBLE
+            - type: TALENT_READY
+              talentId: battlefield_command
+            - type: NOT
+              condition:
+                type: HAS_STATUS
+                scope: SELF
+                statusId: war_cry_empower
+      - id: strike
+        type: ATTACK_TARGET
+        orderKey: 20
+        condition:
+          type: TARGET_DISTANCE_LESS_THAN
+          distance: 2
+      - id: guard_line
+        type: MOVE_TOWARD_TARGET
+        orderKey: 30
+        condition:
+          type: TARGET_VISIBLE
+  - id: ai.bandit.cache_overseer
+    schemaVersion: 2
+    perceptionRange: 8
+    useLastKnownPosition: true
+    defaultBehavior: CHASE
+    selectionPolicy: DETERMINISTIC_PRIORITY
+    actions:
+      - id: bulwark_march
+        type: USE_ABILITY
+        orderKey: 10
+        abilityId: bulwark_march
+        condition:
+          type: AND
+          conditions:
+            - type: TARGET_VISIBLE
+            - type: TALENT_READY
+              talentId: bulwark_march
+            - type: NOT
+              condition:
+                type: HAS_STATUS
+                scope: SELF
+                statusId: GUARD
+      - id: linebreaker
+        type: USE_ABILITY
+        orderKey: 20
+        abilityId: linebreaker
+        condition:
+          type: AND
+          conditions:
+            - type: TARGET_DISTANCE_LESS_THAN
+              distance: 2
+            - type: TALENT_READY
+              talentId: linebreaker
+      - id: strike
+        type: ATTACK_TARGET
+        orderKey: 30
+        condition:
+          type: TARGET_DISTANCE_LESS_THAN
+          distance: 2
+      - id: advance
+        type: MOVE_TOWARD_TARGET
+        orderKey: 40
+        condition:
+          type: TARGET_VISIBLE
+  - id: ai.warded_ruin.cleanser
+    schemaVersion: 2
+    perceptionRange: 9
+    useLastKnownPosition: true
+    defaultBehavior: KITE
+    selectionPolicy: DETERMINISTIC_PRIORITY
+    actions:
+      - id: absolution
+        type: USE_ABILITY
+        orderKey: 10
+        abilityId: absolution
+        condition:
+          type: AND
+          conditions:
+            - type: HP_BELOW
+              threshold: 0.65
+            - type: TALENT_READY
+              talentId: absolution
+      - id: radiant_lance
+        type: USE_ABILITY
+        orderKey: 20
+        abilityId: radiant_lance
+        condition:
+          type: AND
+          conditions:
+            - type: TARGET_DISTANCE_BETWEEN
+              minDistance: 2
+              maxDistance: 5
+            - type: TALENT_READY
+              talentId: radiant_lance
+      - id: retreat
+        type: RETREAT_FROM_TARGET
+        orderKey: 30
+        condition:
+          type: TARGET_DISTANCE_LESS_THAN
+          distance: 2
+      - id: pressure
+        type: MOVE_TOWARD_TARGET
+        orderKey: 40
+        condition:
+          type: TARGET_VISIBLE
+  - id: ai.warded_ruin.sentinel
+    schemaVersion: 2
+    perceptionRange: 9
+    useLastKnownPosition: true
+    defaultBehavior: CHASE
+    selectionPolicy: DETERMINISTIC_PRIORITY
+    actions:
+      - id: sanctuary
+        type: USE_ABILITY
+        orderKey: 10
+        abilityId: sanctuary
+        condition:
+          type: AND
+          conditions:
+            - type: TARGET_VISIBLE
+            - type: TALENT_READY
+              talentId: sanctuary
+            - type: NOT
+              condition:
+                type: HAS_STATUS
+                scope: SELF
+                statusId: SHIELD
+      - id: ritual_break
+        type: USE_ABILITY
+        orderKey: 20
+        abilityId: ritual_break
+        condition:
+          type: AND
+          conditions:
+            - type: TARGET_DISTANCE_BETWEEN
+              minDistance: 1
+              maxDistance: 4
+            - type: TALENT_READY
+              talentId: ritual_break
+      - id: strike
+        type: ATTACK_TARGET
+        orderKey: 30
+        condition:
+          type: TARGET_DISTANCE_LESS_THAN
+          distance: 2
+      - id: close
+        type: MOVE_TOWARD_TARGET
+        orderKey: 40
+        condition:
+          type: TARGET_VISIBLE
+  - id: ai.forge.channeler
+    schemaVersion: 2
+    perceptionRange: 9
+    useLastKnownPosition: true
+    defaultBehavior: KITE
+    selectionPolicy: DETERMINISTIC_PRIORITY
+    actions:
+      - id: inferno_orb
+        type: USE_ABILITY
+        orderKey: 10
+        abilityId: inferno_orb
+        condition:
+          type: AND
+          conditions:
+            - type: TARGET_DISTANCE_BETWEEN
+              minDistance: 2
+              maxDistance: 5
+            - type: TALENT_READY
+              talentId: inferno_orb
+      - id: cinder_burst
+        type: USE_ABILITY
+        orderKey: 20
+        abilityId: cinder_burst
+        condition:
+          type: AND
+          conditions:
+            - type: TARGET_DISTANCE_BETWEEN
+              minDistance: 2
+              maxDistance: 6
+            - type: TALENT_READY
+              talentId: cinder_burst
+      - id: retreat
+        type: RETREAT_FROM_TARGET
+        orderKey: 30
+        condition:
+          type: TARGET_DISTANCE_LESS_THAN
+          distance: 2
+      - id: pressure
+        type: MOVE_TOWARD_TARGET
+        orderKey: 40
+        condition:
+          type: TARGET_VISIBLE
+  - id: ai.forge.guard
+    schemaVersion: 2
+    perceptionRange: 8
+    useLastKnownPosition: true
+    defaultBehavior: CHASE
+    selectionPolicy: DETERMINISTIC_PRIORITY
+    actions:
+      - id: earthshaker
+        type: USE_ABILITY
+        orderKey: 10
+        abilityId: earthshaker
+        condition:
+          type: AND
+          conditions:
+            - type: TARGET_DISTANCE_LESS_THAN
+              distance: 2
+            - type: TALENT_READY
+              talentId: earthshaker
+      - id: linebreaker
+        type: USE_ABILITY
+        orderKey: 20
+        abilityId: linebreaker
+        condition:
+          type: AND
+          conditions:
+            - type: TARGET_DISTANCE_LESS_THAN
+              distance: 2
+            - type: TALENT_READY
+              talentId: linebreaker
+      - id: strike
+        type: ATTACK_TARGET
+        orderKey: 30
+        condition:
+          type: TARGET_DISTANCE_LESS_THAN
+          distance: 2
+      - id: advance
+        type: MOVE_TOWARD_TARGET
+        orderKey: 40
+        condition:
+          type: TARGET_VISIBLE
+  - id: ai.crystal.weaver
+    schemaVersion: 2
+    perceptionRange: 10
+    useLastKnownPosition: true
+    defaultBehavior: KITE
+    selectionPolicy: DETERMINISTIC_PRIORITY
+    actions:
+      - id: shard_storm
+        type: USE_ABILITY
+        orderKey: 10
+        abilityId: shard_storm
+        condition:
+          type: AND
+          conditions:
+            - type: TARGET_DISTANCE_BETWEEN
+              minDistance: 2
+              maxDistance: 5
+            - type: TALENT_READY
+              talentId: shard_storm
+      - id: glacial_seal
+        type: USE_ABILITY
+        orderKey: 20
+        abilityId: glacial_seal
+        condition:
+          type: AND
+          conditions:
+            - type: TARGET_DISTANCE_BETWEEN
+              minDistance: 2
+              maxDistance: 6
+            - type: TALENT_READY
+              talentId: glacial_seal
+      - id: retreat
+        type: RETREAT_FROM_TARGET
+        orderKey: 30
+        condition:
+          type: TARGET_DISTANCE_LESS_THAN
+          distance: 2
+      - id: reposition
+        type: MOVE_TOWARD_TARGET
+        orderKey: 40
+        condition:
+          type: TARGET_VISIBLE
+  - id: ai.crystal.sentinel
+    schemaVersion: 2
+    perceptionRange: 9
+    useLastKnownPosition: true
+    defaultBehavior: CHASE
+    selectionPolicy: DETERMINISTIC_PRIORITY
+    actions:
+      - id: arcane_shield
+        type: USE_ABILITY
+        orderKey: 10
+        abilityId: arcane_shield
+        condition:
+          type: AND
+          conditions:
+            - type: TARGET_VISIBLE
+            - type: TALENT_READY
+              talentId: arcane_shield
+            - type: NOT
+              condition:
+                type: HAS_STATUS
+                scope: SELF
+                statusId: ARCANE_SHIELD_BUFF
+      - id: strike
+        type: ATTACK_TARGET
+        orderKey: 20
+        condition:
+          type: TARGET_DISTANCE_LESS_THAN
+          distance: 2
+      - id: advance
+        type: MOVE_TOWARD_TARGET
+        orderKey: 30
+        condition:
+          type: TARGET_VISIBLE
+  - id: ai.river.lurker
+    schemaVersion: 2
+    perceptionRange: 9
+    useLastKnownPosition: true
+    defaultBehavior: PATROL
+    selectionPolicy: DETERMINISTIC_PRIORITY
+    actions:
+      - id: shadow_bind
+        type: USE_ABILITY
+        orderKey: 10
+        abilityId: shadow_bind
+        condition:
+          type: AND
+          conditions:
+            - type: TARGET_DISTANCE_BETWEEN
+              minDistance: 2
+              maxDistance: 4
+            - type: TALENT_READY
+              talentId: shadow_bind
+      - id: strike
+        type: ATTACK_TARGET
+        orderKey: 20
+        condition:
+          type: TARGET_DISTANCE_LESS_THAN
+          distance: 2
+      - id: close
+        type: MOVE_TOWARD_TARGET
+        orderKey: 30
+        condition:
+          type: TARGET_VISIBLE
+  - id: ai.river.reaver
+    schemaVersion: 2
+    perceptionRange: 9
+    useLastKnownPosition: true
+    defaultBehavior: CHASE
+    selectionPolicy: DETERMINISTIC_PRIORITY
+    actions:
+      - id: ricochet_knives
+        type: USE_ABILITY
+        orderKey: 10
+        abilityId: ricochet_knives
+        condition:
+          type: AND
+          conditions:
+            - type: TARGET_DISTANCE_BETWEEN
+              minDistance: 2
+              maxDistance: 4
+            - type: TALENT_READY
+              talentId: ricochet_knives
+      - id: eviscerate
+        type: USE_ABILITY
+        orderKey: 20
+        abilityId: eviscerate
+        condition:
+          type: AND
+          conditions:
+            - type: TARGET_DISTANCE_LESS_THAN
+              distance: 2
+            - type: TALENT_READY
+              talentId: eviscerate
+      - id: strike
+        type: ATTACK_TARGET
+        orderKey: 30
+        condition:
+          type: TARGET_DISTANCE_LESS_THAN
+          distance: 2
+      - id: pursue
+        type: MOVE_TOWARD_TARGET
+        orderKey: 40
+        condition:
+          type: TARGET_VISIBLE
+  - id: ai.abyssal.ritualist
+    schemaVersion: 2
+    perceptionRange: 10
+    useLastKnownPosition: true
+    defaultBehavior: CHASE
+    selectionPolicy: DETERMINISTIC_PRIORITY
+    actions:
+      - id: ritual_break
+        type: USE_ABILITY
+        orderKey: 10
+        abilityId: ritual_break
+        condition:
+          type: AND
+          conditions:
+            - type: TARGET_DISTANCE_BETWEEN
+              minDistance: 1
+              maxDistance: 4
+            - type: TALENT_READY
+              talentId: ritual_break
+      - id: void_breach
+        type: USE_ABILITY
+        orderKey: 20
+        abilityId: void_breach
+        condition:
+          type: AND
+          conditions:
+            - type: TARGET_DISTANCE_BETWEEN
+              minDistance: 2
+              maxDistance: 6
+            - type: TALENT_READY
+              talentId: void_breach
+      - id: advance
+        type: MOVE_TOWARD_TARGET
+        orderKey: 30
+        condition:
+          type: TARGET_VISIBLE
+  - id: ai.abyssal.guard
+    schemaVersion: 2
+    perceptionRange: 9
+    useLastKnownPosition: true
+    defaultBehavior: CHASE
+    selectionPolicy: DETERMINISTIC_PRIORITY
+    actions:
+      - id: sanctuary
+        type: USE_ABILITY
+        orderKey: 10
+        abilityId: sanctuary
+        condition:
+          type: AND
+          conditions:
+            - type: TARGET_VISIBLE
+            - type: TALENT_READY
+              talentId: sanctuary
+            - type: NOT
+              condition:
+                type: HAS_STATUS
+                scope: SELF
+                statusId: SHIELD
+      - id: linebreaker
+        type: USE_ABILITY
+        orderKey: 20
+        abilityId: linebreaker
+        condition:
+          type: AND
+          conditions:
+            - type: TARGET_DISTANCE_LESS_THAN
+              distance: 2
+            - type: TALENT_READY
+              talentId: linebreaker
+      - id: strike
+        type: ATTACK_TARGET
+        orderKey: 30
+        condition:
+          type: TARGET_DISTANCE_LESS_THAN
+          distance: 2
+      - id: advance
+        type: MOVE_TOWARD_TARGET
+        orderKey: 40
+        condition:
+          type: TARGET_VISIBLE
   - id: ai.boss.bandit_captain.phase_full
     schemaVersion: 2
     perceptionRange: 9
@@ -266,23 +778,36 @@ aiProfiles:
     defaultBehavior: CHASE
     selectionPolicy: WEIGHTED_RANDOM
     actions:
-      - id: power_strike
+      - id: inferno_orb
         type: USE_ABILITY
         orderKey: 10
-        weight: 35
-        abilityId: power_strike
+        weight: 28
+        abilityId: inferno_orb
+        condition:
+          type: AND
+          conditions:
+            - type: TARGET_DISTANCE_BETWEEN
+              minDistance: 2
+              maxDistance: 5
+            - type: TALENT_READY
+              talentId: inferno_orb
+      - id: linebreaker
+        type: USE_ABILITY
+        orderKey: 20
+        weight: 38
+        abilityId: linebreaker
         condition:
           type: AND
           conditions:
             - type: TARGET_DISTANCE_LESS_THAN
               distance: 2
             - type: TALENT_READY
-              talentId: power_strike
-      - id: charge
+              talentId: linebreaker
+      - id: cinder_burst
         type: USE_ABILITY
-        orderKey: 20
-        weight: 15
-        abilityId: charge
+        orderKey: 25
+        weight: 22
+        abilityId: cinder_burst
         condition:
           type: AND
           conditions:
@@ -290,7 +815,7 @@ aiProfiles:
               minDistance: 2
               maxDistance: 6
             - type: TALENT_READY
-              talentId: charge
+              talentId: cinder_burst
       - id: advance
         type: MOVE_TOWARD_TARGET
         orderKey: 30
@@ -304,31 +829,30 @@ aiProfiles:
     defaultBehavior: CHASE
     selectionPolicy: WEIGHTED_RANDOM
     actions:
-      - id: enraged_charge
+      - id: earthshaker
         type: USE_ABILITY
         orderKey: 10
-        weight: 35
-        abilityId: charge
-        condition:
-          type: AND
-          conditions:
-            - type: TARGET_DISTANCE_BETWEEN
-              minDistance: 2
-              maxDistance: 6
-            - type: TALENT_READY
-              talentId: charge
-      - id: crushing_strike
-        type: USE_ABILITY
-        orderKey: 20
-        weight: 45
-        abilityId: power_strike
+        weight: 42
+        abilityId: earthshaker
         condition:
           type: AND
           conditions:
             - type: TARGET_DISTANCE_LESS_THAN
               distance: 2
             - type: TALENT_READY
-              talentId: power_strike
+              talentId: earthshaker
+      - id: linebreaker
+        type: USE_ABILITY
+        orderKey: 20
+        weight: 38
+        abilityId: linebreaker
+        condition:
+          type: AND
+          conditions:
+            - type: TARGET_DISTANCE_LESS_THAN
+              distance: 2
+            - type: TALENT_READY
+              talentId: linebreaker
       - id: strike
         type: ATTACK_TARGET
         orderKey: 30
@@ -349,47 +873,48 @@ aiProfiles:
     defaultBehavior: CHASE
     selectionPolicy: WEIGHTED_RANDOM
     actions:
-      - id: war_cry
+      - id: battlefield_command
         type: USE_ABILITY
         orderKey: 10
-        weight: 20
-        abilityId: war_cry
+        weight: 22
+        abilityId: battlefield_command
         condition:
           type: AND
           conditions:
             - type: TARGET_VISIBLE
             - type: TALENT_READY
-              talentId: war_cry
+              talentId: battlefield_command
             - type: NOT
               condition:
                 type: HAS_STATUS
                 scope: SELF
                 statusId: war_cry_empower
-      - id: power_strike
+      - id: shadow_bind
         type: USE_ABILITY
         orderKey: 20
         weight: 30
-        abilityId: power_strike
-        condition:
-          type: AND
-          conditions:
-            - type: TARGET_DISTANCE_LESS_THAN
-              distance: 2
-            - type: TALENT_READY
-              talentId: power_strike
-      - id: charge
-        type: USE_ABILITY
-        orderKey: 30
-        weight: 35
-        abilityId: charge
+        abilityId: shadow_bind
         condition:
           type: AND
           conditions:
             - type: TARGET_DISTANCE_BETWEEN
               minDistance: 2
-              maxDistance: 6
+              maxDistance: 5
             - type: TALENT_READY
-              talentId: charge
+              talentId: shadow_bind
+      - id: ritual_break
+        type: USE_ABILITY
+        orderKey: 30
+        weight: 36
+        abilityId: ritual_break
+        condition:
+          type: AND
+          conditions:
+            - type: TARGET_DISTANCE_BETWEEN
+              minDistance: 1
+              maxDistance: 4
+            - type: TALENT_READY
+              talentId: ritual_break
       - id: strike
         type: ATTACK_TARGET
         orderKey: 35
@@ -410,31 +935,35 @@ aiProfiles:
     defaultBehavior: CHASE
     selectionPolicy: WEIGHTED_RANDOM
     actions:
-      - id: desperate_charge
+      - id: ritual_break
         type: USE_ABILITY
         orderKey: 10
         weight: 40
-        abilityId: charge
+        abilityId: ritual_break
         condition:
           type: AND
           conditions:
             - type: TARGET_DISTANCE_BETWEEN
-              minDistance: 2
-              maxDistance: 6
+              minDistance: 1
+              maxDistance: 4
             - type: TALENT_READY
-              talentId: charge
-      - id: finishing_strike
+              talentId: ritual_break
+      - id: arcane_shield
         type: USE_ABILITY
         orderKey: 20
-        weight: 40
-        abilityId: power_strike
+        weight: 28
+        abilityId: arcane_shield
         condition:
           type: AND
           conditions:
-            - type: TARGET_DISTANCE_LESS_THAN
-              distance: 2
+            - type: TARGET_VISIBLE
             - type: TALENT_READY
-              talentId: power_strike
+              talentId: arcane_shield
+            - type: NOT
+              condition:
+                type: HAS_STATUS
+                scope: SELF
+                statusId: ARCANE_SHIELD_BUFF
       - id: close_quarters
         type: ATTACK_TARGET
         orderKey: 25
@@ -455,47 +984,47 @@ aiProfiles:
     defaultBehavior: CHASE
     selectionPolicy: WEIGHTED_RANDOM
     actions:
-      - id: abyssal_roar
+      - id: arcane_shield
         type: USE_ABILITY
         orderKey: 10
-        weight: 28
-        abilityId: war_cry
+        weight: 24
+        abilityId: arcane_shield
         condition:
           type: AND
           conditions:
             - type: TARGET_VISIBLE
             - type: TALENT_READY
-              talentId: war_cry
+              talentId: arcane_shield
             - type: NOT
               condition:
                 type: HAS_STATUS
                 scope: SELF
-                statusId: war_cry_empower
-      - id: abyssal_charge
+                statusId: ARCANE_SHIELD_BUFF
+      - id: void_breach
         type: USE_ABILITY
         orderKey: 20
         weight: 36
-        abilityId: charge
+        abilityId: void_breach
         condition:
           type: AND
           conditions:
             - type: TARGET_DISTANCE_BETWEEN
               minDistance: 2
-              maxDistance: 7
+              maxDistance: 6
             - type: TALENT_READY
-              talentId: charge
-      - id: anchor_strike
+              talentId: void_breach
+      - id: linebreaker
         type: USE_ABILITY
         orderKey: 25
         weight: 26
-        abilityId: power_strike
+        abilityId: linebreaker
         condition:
           type: AND
           conditions:
             - type: TARGET_DISTANCE_LESS_THAN
               distance: 2
             - type: TALENT_READY
-              talentId: power_strike
+              talentId: linebreaker
       - id: abyssal_strike
         type: ATTACK_TARGET
         orderKey: 30
@@ -518,47 +1047,43 @@ aiProfiles:
     defaultBehavior: CHASE
     selectionPolicy: WEIGHTED_RANDOM
     actions:
-      - id: collapse_charge
+      - id: void_breach
         type: USE_ABILITY
         orderKey: 10
         weight: 44
-        abilityId: charge
+        abilityId: void_breach
         condition:
           type: AND
           conditions:
             - type: TARGET_DISTANCE_BETWEEN
               minDistance: 2
-              maxDistance: 7
+              maxDistance: 6
             - type: TALENT_READY
-              talentId: charge
-      - id: void_breach
+              talentId: void_breach
+      - id: abyssal_consecration
         type: USE_ABILITY
         orderKey: 20
-        weight: 42
-        abilityId: power_strike
+        weight: 34
+        abilityId: consecration
         condition:
           type: AND
           conditions:
             - type: TARGET_DISTANCE_LESS_THAN
               distance: 2
             - type: TALENT_READY
-              talentId: power_strike
-      - id: abyssal_howl
+              talentId: consecration
+      - id: linebreaker
         type: USE_ABILITY
         orderKey: 25
         weight: 22
-        abilityId: war_cry
+        abilityId: linebreaker
         condition:
           type: AND
           conditions:
-            - type: TARGET_VISIBLE
+            - type: TARGET_DISTANCE_LESS_THAN
+              distance: 2
             - type: TALENT_READY
-              talentId: war_cry
-            - type: NOT
-              condition:
-                type: HAS_STATUS
-                scope: SELF
-                statusId: war_cry_empower
+              talentId: linebreaker
       - id: relentless_strike
         type: ATTACK_TARGET
         orderKey: 30

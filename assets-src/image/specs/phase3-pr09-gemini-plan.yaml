@@ -1,0 +1,2614 @@
+styleTag: ktome-middle-fantasy-painterly-tile-v1
+artStyleBible: docs/2026-03-13-art-style-bible.md
+stylePrompt: 'Classical high fantasy in a Middle-earth inspired mode. A world soaked
+  in age, iron, moss, flame, and old oaths. Weathered stone, forged iron, old timber,
+  cracked leather, coarse wool — every surface shows the weight of centuries.
+
+  Rendering style: painterly concept-art finish with visible brushwork and clear material
+  differentiation. NOT photorealistic, NOT pixel art, NOT cel-shaded, NOT glossy mobile-game
+  aesthetic. Slight impasto texture on metals and stone; soft dry-brush edges on cloth
+  and organic surfaces. Never anime. Never sci-fi.
+
+  Color palette: dark foundation of charcoal black, iron blue-grey, damp stone green,
+  deep brown wood. Warm accents of torch orange, molten-iron red, dry leather brown,
+  old gold — used sparingly for focal points. Cold light accents of moonlight blue,
+  frost cyan, lightning white-blue, faint holy pale-gold — reserved for magic and
+  interaction cues. Overall low saturation; high brightness only on interactive elements,
+  magic cores, boss telegraphs, and key pickups.
+
+  Lighting: low-key illumination. Primary light from upper-left at roughly 45 degrees.
+  Warm firelight and cool ambient fill coexist. Shadows are clear but not crushed
+  to pure black. Rim light is allowed on character shoulder-lines, weapon edges, and
+  interactable prop edges — but always restrained. No bloom-heavy haze, no full-screen
+  volumetric light, no dreamy ethereal glow.
+
+  Material priority: weathered stone > black iron / forged iron > old wood > leather
+  > wool / coarse cloth > bone, antler, dead branch > rune stone > forge embers. Forbidden
+  materials: modern plastic, mirror sci-fi alloy, neon glass, oversaturated fluorescent
+  liquid, pristine white ceramic or silver-white.
+
+  '
+defaults:
+  imageAspectRatio: '1:1'
+  imageSize: 1K
+  negativeConstraints:
+  - no modern clothing
+  - no modern clothing or equipment
+  - no firearms
+  - no firearms or gunpowder weapons
+  - no sci-fi materials
+  - no sci-fi materials, chrome, or glass surfaces
+  - no cyberpunk or neon lighting
+  - no anime proportions
+  - no anime proportions or cel-shading
+  - no floating text, watermark or logo
+  - no floating text, watermark, logo, or UI elements baked into image
+  - no busy detailed background — transparent or clean only
+  - no recognizable franchise emblems (no White Tree of Gondor, no Eye of Sauron,
+    no specific movie/game iconography)
+  - no bloom-heavy magical glow or oversaturated light effects
+  - no chibi or super-deformed proportions
+  - no pixel art style
+  - no photorealistic skin pore detail
+  - no glossy mobile-game icon aesthetic
+  categoryPromptTemplates:
+    tile_ground: 'Top-down square floor tile for an orthogonal grid game. The tile
+      must fill the ENTIRE square canvas edge-to-edge with NO rounded corners and
+      NO circular crop. Edges must allow seamless tiling when placed adjacent to identical
+      tiles. Painterly hand-painted surface texture with bold readable shapes. Viewed
+      from directly above. No perspective distortion. Muted color palette, low saturation.
+      Subtle material variation across the surface.
+
+      '
+    tile_wall: 'Top-down wall tile for an orthogonal grid game, viewed from directly
+      above. The tile must fill the full square canvas. Clear upper edge distinguishes
+      wall from floor. Painterly stone/wood/material texture, readable shapes, thick
+      visual mass. No perspective, no 3D extrusion. Flat top-down representation with
+      shading to imply height.
+
+      '
+    actor_sprite: 'Full-body character sprite on transparent background, standing
+      in a neutral-ready combat pose. Painterly concept-art rendering with visible
+      brushwork, NOT pixel art, NOT cel-shaded. Strong readable silhouette — the character''s
+      profession and role must be identifiable from outline alone. Proportions are
+      realistic adult, no chibi, no anime. Lit from upper-left with warm side light
+      and cool ambient fill. Armor and equipment show wear, scratches, patina — nothing
+      is factory-new.
+
+      '
+    portrait: 'Chest-up character portrait on transparent background, 3/4 angle facing
+      slightly left. Painterly concept-art rendering with visible brushwork and material
+      texture. Expression is restrained and serious — no exaggerated emotion, no smile.
+      Face emphasizes character and profession identity, NOT idealized beauty. Lighting:
+      warm key light from upper-left, cool ambient fill, subtle rim light on shoulder/helmet
+      edge. Armor/clothing shows use and age. Muted earth tones dominate.
+
+      '
+    icon: 'Game UI icon on transparent background. Single centered subject with bold
+      silhouette, painterly rendering and high readability at small size. Use restrained
+      detail, strong outline separation, and one clear focal shape suitable for profession
+      or tree identity.
+
+      '
+    icon_skill: 'Game skill ability icon on transparent background. SINGLE focused
+      subject centered in frame, occupying 65-75% of the canvas. Bold simplified shapes
+      with thick dark outlines for readability at small sizes. Painterly rendering
+      but with iconic clarity — this is a UI element, not a scene illustration. NO
+      hands, NO arms, NO character parts unless the skill IS about the body part.
+      Restrained color: 1-2 dominant hues plus neutral darks. No excessive glow or
+      bloom.
+
+      '
+    icon_status: 'Game status effect icon on transparent background. Single symbolic
+      shape centered in frame, 65-75% canvas occupancy. Must be instantly readable
+      at small display sizes — favor bold geometric forms over fine detail. Painterly
+      but simplified. Thick outlines. 1-2 color accents on dark neutral base.
+
+      '
+    icon_damage_type: 'Game damage type icon on transparent background. Single symbolic
+      elemental or martial mark centered in frame, 65-75% canvas occupancy. Must read
+      instantly at hotbar and inspect sizes — bold silhouette first, material detail
+      second. Painterly but simplified. Thick outlines. One dominant hue per damage
+      channel on a dark neutral base. Avoid text, numerals, weapon hands, or busy
+      scenery. This is a semantic combat marker, not a scene illustration.
+
+      '
+    icon_item: 'Game item icon on transparent background. Single object centered in
+      frame, 65-75% canvas occupancy, slight 3/4 angle. Painterly rendering with material
+      texture (glass, metal, leather, wood). Object shows age and use — no pristine
+      surfaces. Muted palette with one color accent.
+
+      '
+    icon_quest: 'Game quest item icon on transparent background. Single key/artifact/token
+      centered in frame, 65-75% canvas occupancy. Painterly rendering. Object has
+      narrative weight — it looks important and old. Iron, bronze, stone, or bone
+      materials. Subtle rune or insignia detail.
+
+      '
+    prop_interactable: 'Game prop object on transparent background, viewed from a
+      slightly elevated 3/4 angle. Clear base footprint visible. Object has obvious
+      interactive affordance (handle, lock, opening). Painterly concept-art rendering.
+      Materials show age and heavy use. Bold silhouette readable at small game scale.
+      No background scene elements.
+
+      '
+    prop_environment: 'Game environment prop on transparent background, viewed from
+      slightly elevated 3/4 angle. Clear base footprint. Painterly rendering with
+      strong material texture. Object tells a story through wear and damage. Integrated
+      into the world''s visual language.
+
+      '
+    vfx_plate: 'Visual effect overlay plate on transparent background. Abstract magical/energy
+      pattern with clean readable geometry. Painterly with controlled glow — luminous
+      elements are restrained, not bloom-heavy. Suitable for compositing over game
+      scenes.
+
+      '
+  biomeAtmosphere:
+    RUINS: 'Setting: a crumbling frontier outpost long past its prime. Collapsed stone
+      walls, broken pillars, charred timber beams, moss creeping through mortar joints,
+      scattered rubble and old weapon fragments. Cold grey stone with patches of damp
+      green moss. Dust and ash in the crevices.
+
+      '
+    FOREST_EDGE: 'Setting: the cold fringe of an ancient northern forest. Dark fir
+      trees, persistent low fog between trunks, carpet of dead brown leaves, old overgrown
+      hunter trails, abandoned campfire stones. Muted greens and browns, cold blue-grey
+      atmosphere.
+
+      '
+    MINE: 'Setting: an exhausted iron mine with remnants of forced labor. Rough-hewn
+      stone corridors, rusted iron rail segments, collapsed timber supports, soot-blackened
+      walls, forge-glow from deep vents, copper-green patina on metal fixtures. Palette:
+      dark stone, warm ember orange accents, oxidized metals.
+
+      '
+    SHADOW_DEPTHS: 'Setting: a sealed ritual crypt beneath the earth. Black volcanic
+      stone, cracked sacrificial altars, defaced holy statues, shadow-filled alcoves,
+      faint purple-black energy seeping from wall fractures. Palette: near-black stone,
+      cold ash grey, restrained dark purple-blue accents.
+
+      '
+  factionStyle:
+    bandit: 'Scavenged, mismatched equipment. Rusted iron, patched leather, torn cloth.
+      No uniform — each piece looted from different sources. Desperate and brutal.
+
+      '
+    undead: 'Ancient burial remains reanimated. Cracked yellowed bones, rotting cloth
+      scraps, corroded bronze and iron grave goods. Pale blue-grey bone, dark earth
+      stains.
+
+      '
+    orc: 'Crude heavy iron, furnace soot, brutalist construction. Red-copper and black
+      stone aesthetic. Broad, heavy proportions. Industrial and savage.
+
+      '
+    cultist: 'Dark ritual vestments. Bone-white and ash-black robes, ritual scars,
+      pale fire, sacrificial implements. Ascetic and disturbing.
+
+      '
+    boss: 'Exaggerated scale and visual weight. Elite materials — sacred bronze, ancient
+      iron, ceremonial elements. Must read as a tier above normal enemies in silhouette
+      mass.
+
+      '
+phase2AssetGates:
+  P3-PR09:
+    description: Regenerate all PR-09 Phase 3 follow-up visuals through the existing
+      Gemini asset pipeline.
+    assets:
+    - id: phase3_pr09_actor_abyssal_cleanse_hunter
+      category: actor_sprite
+      visualKey: actor.abyssal.cleanse_hunter
+      outputName: phase3/p3-followup/actor_abyssal_cleanse_hunter.png
+      subject: Abyssal Cleanse Hunter. A late-game abyssal temple foe, void-touched
+        ritual armor, severe silhouette, relic steel, dark cloth, and restrained occult
+        glow.
+      biome: SHADOW_DEPTHS
+      faction: cultist
+      materialTags:
+      - abyssal
+      - phase3
+      - followup
+      moodTags:
+      - combat-ready
+      - readable silhouette
+      constraints:
+      - full-body isolated sprite on clean light background for pipeline background
+        removal
+      - single character only, no scenery, no text
+      - clear silhouette readable at small runtime scale
+      geminiKeyRequired: true
+    - id: phase3_pr09_actor_abyssal_eclipsed_seraph
+      category: actor_sprite
+      visualKey: actor.abyssal.eclipsed_seraph
+      outputName: phase3/p3-followup/actor_abyssal_eclipsed_seraph.png
+      subject: Abyssal Eclipsed Seraph. A late-game abyssal temple foe, void-touched
+        ritual armor, severe silhouette, relic steel, dark cloth, and restrained occult
+        glow.
+      biome: SHADOW_DEPTHS
+      faction: cultist
+      materialTags:
+      - abyssal
+      - phase3
+      - followup
+      moodTags:
+      - combat-ready
+      - readable silhouette
+      constraints:
+      - full-body isolated sprite on clean light background for pipeline background
+        removal
+      - single character only, no scenery, no text
+      - clear silhouette readable at small runtime scale
+      geminiKeyRequired: true
+    - id: phase3_pr09_actor_abyssal_guardian
+      category: actor_sprite
+      visualKey: actor.abyssal.guardian
+      outputName: phase3/p3-followup/actor_abyssal_guardian.png
+      subject: Abyssal Guardian. A late-game abyssal temple foe, void-touched ritual
+        armor, severe silhouette, relic steel, dark cloth, and restrained occult glow.
+      biome: SHADOW_DEPTHS
+      faction: cultist
+      materialTags:
+      - abyssal
+      - phase3
+      - followup
+      moodTags:
+      - combat-ready
+      - readable silhouette
+      constraints:
+      - full-body isolated sprite on clean light background for pipeline background
+        removal
+      - single character only, no scenery, no text
+      - clear silhouette readable at small runtime scale
+      geminiKeyRequired: true
+    - id: phase3_pr09_actor_abyssal_null_lancer
+      category: actor_sprite
+      visualKey: actor.abyssal.null_lancer
+      outputName: phase3/p3-followup/actor_abyssal_null_lancer.png
+      subject: Abyssal Null Lancer. A late-game abyssal temple foe, void-touched ritual
+        armor, severe silhouette, relic steel, dark cloth, and restrained occult glow.
+      biome: SHADOW_DEPTHS
+      faction: cultist
+      materialTags:
+      - abyssal
+      - phase3
+      - followup
+      moodTags:
+      - combat-ready
+      - readable silhouette
+      constraints:
+      - full-body isolated sprite on clean light background for pipeline background
+        removal
+      - single character only, no scenery, no text
+      - clear silhouette readable at small runtime scale
+      geminiKeyRequired: true
+    - id: phase3_pr09_actor_abyssal_reliquary_guard
+      category: actor_sprite
+      visualKey: actor.abyssal.reliquary_guard
+      outputName: phase3/p3-followup/actor_abyssal_reliquary_guard.png
+      subject: Abyssal Reliquary Guard. A late-game abyssal temple foe, void-touched
+        ritual armor, severe silhouette, relic steel, dark cloth, and restrained occult
+        glow.
+      biome: SHADOW_DEPTHS
+      faction: cultist
+      materialTags:
+      - abyssal
+      - phase3
+      - followup
+      moodTags:
+      - combat-ready
+      - readable silhouette
+      constraints:
+      - full-body isolated sprite on clean light background for pipeline background
+        removal
+      - single character only, no scenery, no text
+      - clear silhouette readable at small runtime scale
+      geminiKeyRequired: true
+    - id: phase3_pr09_actor_abyssal_ritual_binder
+      category: actor_sprite
+      visualKey: actor.abyssal.ritual_binder
+      outputName: phase3/p3-followup/actor_abyssal_ritual_binder.png
+      subject: Abyssal Ritual Binder. A late-game abyssal temple foe, void-touched
+        ritual armor, severe silhouette, relic steel, dark cloth, and restrained occult
+        glow.
+      biome: SHADOW_DEPTHS
+      faction: cultist
+      materialTags:
+      - abyssal
+      - phase3
+      - followup
+      moodTags:
+      - combat-ready
+      - readable silhouette
+      constraints:
+      - full-body isolated sprite on clean light background for pipeline background
+        removal
+      - single character only, no scenery, no text
+      - clear silhouette readable at small runtime scale
+      geminiKeyRequired: true
+    - id: phase3_pr09_actor_abyssal_void_preacher
+      category: actor_sprite
+      visualKey: actor.abyssal.void_preacher
+      outputName: phase3/p3-followup/actor_abyssal_void_preacher.png
+      subject: Abyssal Void Preacher. A late-game abyssal temple foe, void-touched
+        ritual armor, severe silhouette, relic steel, dark cloth, and restrained occult
+        glow.
+      biome: SHADOW_DEPTHS
+      faction: cultist
+      materialTags:
+      - abyssal
+      - phase3
+      - followup
+      moodTags:
+      - combat-ready
+      - readable silhouette
+      constraints:
+      - full-body isolated sprite on clean light background for pipeline background
+        removal
+      - single character only, no scenery, no text
+      - clear silhouette readable at small runtime scale
+      geminiKeyRequired: true
+    - id: phase3_pr09_actor_abyssal_ward_breaker
+      category: actor_sprite
+      visualKey: actor.abyssal.ward_breaker
+      outputName: phase3/p3-followup/actor_abyssal_ward_breaker.png
+      subject: Abyssal Ward Breaker. A late-game abyssal temple foe, void-touched
+        ritual armor, severe silhouette, relic steel, dark cloth, and restrained occult
+        glow.
+      biome: SHADOW_DEPTHS
+      faction: cultist
+      materialTags:
+      - abyssal
+      - phase3
+      - followup
+      moodTags:
+      - combat-ready
+      - readable silhouette
+      constraints:
+      - full-body isolated sprite on clean light background for pipeline background
+        removal
+      - single character only, no scenery, no text
+      - clear silhouette readable at small runtime scale
+      geminiKeyRequired: true
+    - id: phase3_pr09_actor_bandit_banner_guard
+      category: actor_sprite
+      visualKey: actor.bandit.banner_guard
+      outputName: phase3/p3-followup/actor_bandit_banner_guard.png
+      subject: Bandit Banner Guard. A ruthless frontier bandit from a forest-edge
+        ambush camp, travel-worn leather, scavenged iron, agile posture, and a silhouette
+        readable as a dangerous opportunist.
+      biome: FOREST_EDGE
+      faction: bandit
+      materialTags:
+      - bandit
+      - phase3
+      - followup
+      moodTags:
+      - combat-ready
+      - readable silhouette
+      constraints:
+      - full-body isolated sprite on clean light background for pipeline background
+        removal
+      - single character only, no scenery, no text
+      - clear silhouette readable at small runtime scale
+      geminiKeyRequired: true
+    - id: phase3_pr09_actor_bandit_cache_overseer
+      category: actor_sprite
+      visualKey: actor.bandit.cache_overseer
+      outputName: phase3/p3-followup/actor_bandit_cache_overseer.png
+      subject: Bandit Cache Overseer. A ruthless frontier bandit from a forest-edge
+        ambush camp, travel-worn leather, scavenged iron, agile posture, and a silhouette
+        readable as a dangerous opportunist.
+      biome: FOREST_EDGE
+      faction: bandit
+      materialTags:
+      - bandit
+      - phase3
+      - followup
+      moodTags:
+      - combat-ready
+      - readable silhouette
+      constraints:
+      - full-body isolated sprite on clean light background for pipeline background
+        removal
+      - single character only, no scenery, no text
+      - clear silhouette readable at small runtime scale
+      geminiKeyRequired: true
+    - id: phase3_pr09_actor_bandit_cutthroat
+      category: actor_sprite
+      visualKey: actor.bandit.cutthroat
+      outputName: phase3/p3-followup/actor_bandit_cutthroat.png
+      subject: Cutthroat. A ruthless frontier bandit from a forest-edge ambush camp,
+        travel-worn leather, scavenged iron, agile posture, and a silhouette readable
+        as a dangerous opportunist.
+      biome: FOREST_EDGE
+      faction: bandit
+      materialTags:
+      - bandit
+      - phase3
+      - followup
+      moodTags:
+      - combat-ready
+      - readable silhouette
+      constraints:
+      - full-body isolated sprite on clean light background for pipeline background
+        removal
+      - single character only, no scenery, no text
+      - clear silhouette readable at small runtime scale
+      geminiKeyRequired: true
+    - id: phase3_pr09_actor_bandit_pillager
+      category: actor_sprite
+      visualKey: actor.bandit.pillager
+      outputName: phase3/p3-followup/actor_bandit_pillager.png
+      subject: Pillager. A ruthless frontier bandit from a forest-edge ambush camp,
+        travel-worn leather, scavenged iron, agile posture, and a silhouette readable
+        as a dangerous opportunist.
+      biome: FOREST_EDGE
+      faction: bandit
+      materialTags:
+      - bandit
+      - phase3
+      - followup
+      moodTags:
+      - combat-ready
+      - readable silhouette
+      constraints:
+      - full-body isolated sprite on clean light background for pipeline background
+        removal
+      - single character only, no scenery, no text
+      - clear silhouette readable at small runtime scale
+      geminiKeyRequired: true
+    - id: phase3_pr09_actor_bandit_slingshotter
+      category: actor_sprite
+      visualKey: actor.bandit.slingshotter
+      outputName: phase3/p3-followup/actor_bandit_slingshotter.png
+      subject: Slingshotter. A ruthless frontier bandit from a forest-edge ambush
+        camp, travel-worn leather, scavenged iron, agile posture, and a silhouette
+        readable as a dangerous opportunist.
+      biome: FOREST_EDGE
+      faction: bandit
+      materialTags:
+      - bandit
+      - phase3
+      - followup
+      moodTags:
+      - combat-ready
+      - readable silhouette
+      constraints:
+      - full-body isolated sprite on clean light background for pipeline background
+        removal
+      - single character only, no scenery, no text
+      - clear silhouette readable at small runtime scale
+      geminiKeyRequired: true
+    - id: phase3_pr09_actor_crystal_beam_savant
+      category: actor_sprite
+      visualKey: actor.crystal.beam_savant
+      outputName: phase3/p3-followup/actor_crystal_beam_savant.png
+      subject: Crystal Beam Savant. A crystal-cavern enemy shaped by prism shards
+        and cold cavern light, with sharp readable geometry and mineral growth replacing
+        ordinary ornament.
+      biome: SHADOW_DEPTHS
+      faction: null
+      materialTags:
+      - crystal
+      - phase3
+      - followup
+      moodTags:
+      - combat-ready
+      - readable silhouette
+      constraints:
+      - full-body isolated sprite on clean light background for pipeline background
+        removal
+      - single character only, no scenery, no text
+      - clear silhouette readable at small runtime scale
+      geminiKeyRequired: true
+    - id: phase3_pr09_actor_crystal_prism_weaver
+      category: actor_sprite
+      visualKey: actor.crystal.prism_weaver
+      outputName: phase3/p3-followup/actor_crystal_prism_weaver.png
+      subject: Crystal Prism Weaver. A crystal-cavern enemy shaped by prism shards
+        and cold cavern light, with sharp readable geometry and mineral growth replacing
+        ordinary ornament.
+      biome: SHADOW_DEPTHS
+      faction: null
+      materialTags:
+      - crystal
+      - phase3
+      - followup
+      moodTags:
+      - combat-ready
+      - readable silhouette
+      constraints:
+      - full-body isolated sprite on clean light background for pipeline background
+        removal
+      - single character only, no scenery, no text
+      - clear silhouette readable at small runtime scale
+      geminiKeyRequired: true
+    - id: phase3_pr09_actor_crystal_resonant_colossus
+      category: actor_sprite
+      visualKey: actor.crystal.resonant_colossus
+      outputName: phase3/p3-followup/actor_crystal_resonant_colossus.png
+      subject: Crystal Resonant Colossus. A crystal-cavern enemy shaped by prism shards
+        and cold cavern light, with sharp readable geometry and mineral growth replacing
+        ordinary ornament.
+      biome: SHADOW_DEPTHS
+      faction: null
+      materialTags:
+      - crystal
+      - phase3
+      - followup
+      moodTags:
+      - combat-ready
+      - readable silhouette
+      constraints:
+      - full-body isolated sprite on clean light background for pipeline background
+        removal
+      - single character only, no scenery, no text
+      - clear silhouette readable at small runtime scale
+      geminiKeyRequired: true
+    - id: phase3_pr09_actor_crystal_seal_keeper
+      category: actor_sprite
+      visualKey: actor.crystal.seal_keeper
+      outputName: phase3/p3-followup/actor_crystal_seal_keeper.png
+      subject: Crystal Seal Keeper. A crystal-cavern enemy shaped by prism shards
+        and cold cavern light, with sharp readable geometry and mineral growth replacing
+        ordinary ornament.
+      biome: SHADOW_DEPTHS
+      faction: null
+      materialTags:
+      - crystal
+      - phase3
+      - followup
+      moodTags:
+      - combat-ready
+      - readable silhouette
+      constraints:
+      - full-body isolated sprite on clean light background for pipeline background
+        removal
+      - single character only, no scenery, no text
+      - clear silhouette readable at small runtime scale
+      geminiKeyRequired: true
+    - id: phase3_pr09_actor_crystal_shardling
+      category: actor_sprite
+      visualKey: actor.crystal.shardling
+      outputName: phase3/p3-followup/actor_crystal_shardling.png
+      subject: Shardling. A crystal-cavern enemy shaped by prism shards and cold cavern
+        light, with sharp readable geometry and mineral growth replacing ordinary
+        ornament.
+      biome: SHADOW_DEPTHS
+      faction: null
+      materialTags:
+      - crystal
+      - phase3
+      - followup
+      moodTags:
+      - combat-ready
+      - readable silhouette
+      constraints:
+      - full-body isolated sprite on clean light background for pipeline background
+        removal
+      - single character only, no scenery, no text
+      - clear silhouette readable at small runtime scale
+      geminiKeyRequired: true
+    - id: phase3_pr09_actor_forge_anvil_guard
+      category: actor_sprite
+      visualKey: actor.forge.anvil_guard
+      outputName: phase3/p3-followup/actor_forge_anvil_guard.png
+      subject: Forge Anvil Guard. A furnace-forged warrior from a molten industrial
+        stronghold, heavy iron plates, soot, chain, slag scars, and heat-stressed
+        metal accents.
+      biome: MINE
+      faction: null
+      materialTags:
+      - forge
+      - phase3
+      - followup
+      moodTags:
+      - combat-ready
+      - readable silhouette
+      constraints:
+      - full-body isolated sprite on clean light background for pipeline background
+        removal
+      - single character only, no scenery, no text
+      - clear silhouette readable at small runtime scale
+      geminiKeyRequired: true
+    - id: phase3_pr09_actor_forge_chain_overseer
+      category: actor_sprite
+      visualKey: actor.forge.chain_overseer
+      outputName: phase3/p3-followup/actor_forge_chain_overseer.png
+      subject: Forge Chain Overseer. A furnace-forged warrior from a molten industrial
+        stronghold, heavy iron plates, soot, chain, slag scars, and heat-stressed
+        metal accents.
+      biome: MINE
+      faction: null
+      materialTags:
+      - forge
+      - phase3
+      - followup
+      moodTags:
+      - combat-ready
+      - readable silhouette
+      constraints:
+      - full-body isolated sprite on clean light background for pipeline background
+        removal
+      - single character only, no scenery, no text
+      - clear silhouette readable at small runtime scale
+      geminiKeyRequired: true
+    - id: phase3_pr09_actor_forge_crucible_knight
+      category: actor_sprite
+      visualKey: actor.forge.crucible_knight
+      outputName: phase3/p3-followup/actor_forge_crucible_knight.png
+      subject: Forge Crucible Knight. A furnace-forged warrior from a molten industrial
+        stronghold, heavy iron plates, soot, chain, slag scars, and heat-stressed
+        metal accents.
+      biome: MINE
+      faction: null
+      materialTags:
+      - forge
+      - phase3
+      - followup
+      moodTags:
+      - combat-ready
+      - readable silhouette
+      constraints:
+      - full-body isolated sprite on clean light background for pipeline background
+        removal
+      - single character only, no scenery, no text
+      - clear silhouette readable at small runtime scale
+      geminiKeyRequired: true
+    - id: phase3_pr09_actor_forge_heat_channeler
+      category: actor_sprite
+      visualKey: actor.forge.heat_channeler
+      outputName: phase3/p3-followup/actor_forge_heat_channeler.png
+      subject: Forge Heat Channeler. A furnace-forged warrior from a molten industrial
+        stronghold, heavy iron plates, soot, chain, slag scars, and heat-stressed
+        metal accents.
+      biome: MINE
+      faction: null
+      materialTags:
+      - forge
+      - phase3
+      - followup
+      moodTags:
+      - combat-ready
+      - readable silhouette
+      constraints:
+      - full-body isolated sprite on clean light background for pipeline background
+        removal
+      - single character only, no scenery, no text
+      - clear silhouette readable at small runtime scale
+      geminiKeyRequired: true
+    - id: phase3_pr09_actor_forge_slag_tender
+      category: actor_sprite
+      visualKey: actor.forge.slag_tender
+      outputName: phase3/p3-followup/actor_forge_slag_tender.png
+      subject: Forge Slag Tender. A furnace-forged warrior from a molten industrial
+        stronghold, heavy iron plates, soot, chain, slag scars, and heat-stressed
+        metal accents.
+      biome: MINE
+      faction: null
+      materialTags:
+      - forge
+      - phase3
+      - followup
+      moodTags:
+      - combat-ready
+      - readable silhouette
+      constraints:
+      - full-body isolated sprite on clean light background for pipeline background
+        removal
+      - single character only, no scenery, no text
+      - clear silhouette readable at small runtime scale
+      geminiKeyRequired: true
+    - id: phase3_pr09_actor_orc_molten_giant
+      category: actor_sprite
+      visualKey: actor.orc.molten_giant
+      outputName: phase3/p3-followup/actor_orc_molten_giant.png
+      subject: Orc Molten Giant. A furnace tyrant or brutal war-forged orc, massive
+        frame, scorched iron, forge fire accents, and overwhelming battlefield presence.
+      biome: MINE
+      faction: orc
+      materialTags:
+      - orc
+      - phase3
+      - followup
+      moodTags:
+      - combat-ready
+      - readable silhouette
+      constraints:
+      - full-body isolated sprite on clean light background for pipeline background
+        removal
+      - single character only, no scenery, no text
+      - clear silhouette readable at small runtime scale
+      geminiKeyRequired: true
+    - id: phase3_pr09_actor_river_current_reaver
+      category: actor_sprite
+      visualKey: actor.river.current_reaver
+      outputName: phase3/p3-followup/actor_river_current_reaver.png
+      subject: River Current Reaver. An underground-river raider or stalker, soaked
+        fabrics, hook, rope, driftwood and silt-stained armor, reading as wet, mobile,
+        and predatory.
+      biome: SHADOW_DEPTHS
+      faction: null
+      materialTags:
+      - river
+      - phase3
+      - followup
+      moodTags:
+      - combat-ready
+      - readable silhouette
+      constraints:
+      - full-body isolated sprite on clean light background for pipeline background
+        removal
+      - single character only, no scenery, no text
+      - clear silhouette readable at small runtime scale
+      geminiKeyRequired: true
+    - id: phase3_pr09_actor_river_drowned_stalker
+      category: actor_sprite
+      visualKey: actor.river.drowned_stalker
+      outputName: phase3/p3-followup/actor_river_drowned_stalker.png
+      subject: River Drowned Stalker. An underground-river raider or stalker, soaked
+        fabrics, hook, rope, driftwood and silt-stained armor, reading as wet, mobile,
+        and predatory.
+      biome: SHADOW_DEPTHS
+      faction: null
+      materialTags:
+      - river
+      - phase3
+      - followup
+      moodTags:
+      - combat-ready
+      - readable silhouette
+      constraints:
+      - full-body isolated sprite on clean light background for pipeline background
+        removal
+      - single character only, no scenery, no text
+      - clear silhouette readable at small runtime scale
+      geminiKeyRequired: true
+    - id: phase3_pr09_actor_river_ferry_raider
+      category: actor_sprite
+      visualKey: actor.river.ferry_raider
+      outputName: phase3/p3-followup/actor_river_ferry_raider.png
+      subject: River Ferry Raider. An underground-river raider or stalker, soaked
+        fabrics, hook, rope, driftwood and silt-stained armor, reading as wet, mobile,
+        and predatory.
+      biome: SHADOW_DEPTHS
+      faction: null
+      materialTags:
+      - river
+      - phase3
+      - followup
+      moodTags:
+      - combat-ready
+      - readable silhouette
+      constraints:
+      - full-body isolated sprite on clean light background for pipeline background
+        removal
+      - single character only, no scenery, no text
+      - clear silhouette readable at small runtime scale
+      geminiKeyRequired: true
+    - id: phase3_pr09_actor_river_hook_lurker
+      category: actor_sprite
+      visualKey: actor.river.hook_lurker
+      outputName: phase3/p3-followup/actor_river_hook_lurker.png
+      subject: River Hook Lurker. An underground-river raider or stalker, soaked fabrics,
+        hook, rope, driftwood and silt-stained armor, reading as wet, mobile, and
+        predatory.
+      biome: SHADOW_DEPTHS
+      faction: null
+      materialTags:
+      - river
+      - phase3
+      - followup
+      moodTags:
+      - combat-ready
+      - readable silhouette
+      constraints:
+      - full-body isolated sprite on clean light background for pipeline background
+        removal
+      - single character only, no scenery, no text
+      - clear silhouette readable at small runtime scale
+      geminiKeyRequired: true
+    - id: phase3_pr09_actor_river_silt_shaman
+      category: actor_sprite
+      visualKey: actor.river.silt_shaman
+      outputName: phase3/p3-followup/actor_river_silt_shaman.png
+      subject: River Silt Shaman. An underground-river raider or stalker, soaked fabrics,
+        hook, rope, driftwood and silt-stained armor, reading as wet, mobile, and
+        predatory.
+      biome: SHADOW_DEPTHS
+      faction: null
+      materialTags:
+      - river
+      - phase3
+      - followup
+      moodTags:
+      - combat-ready
+      - readable silhouette
+      constraints:
+      - full-body isolated sprite on clean light background for pipeline background
+        removal
+      - single character only, no scenery, no text
+      - clear silhouette readable at small runtime scale
+      geminiKeyRequired: true
+    - id: phase3_pr09_actor_river_tide_mender
+      category: actor_sprite
+      visualKey: actor.river.tide_mender
+      outputName: phase3/p3-followup/actor_river_tide_mender.png
+      subject: River Tide Mender. An underground-river raider or stalker, soaked fabrics,
+        hook, rope, driftwood and silt-stained armor, reading as wet, mobile, and
+        predatory.
+      biome: SHADOW_DEPTHS
+      faction: null
+      materialTags:
+      - river
+      - phase3
+      - followup
+      moodTags:
+      - combat-ready
+      - readable silhouette
+      constraints:
+      - full-body isolated sprite on clean light background for pipeline background
+        removal
+      - single character only, no scenery, no text
+      - clear silhouette readable at small runtime scale
+      geminiKeyRequired: true
+    - id: phase3_pr09_actor_river_undertow_brute
+      category: actor_sprite
+      visualKey: actor.river.undertow_brute
+      outputName: phase3/p3-followup/actor_river_undertow_brute.png
+      subject: River Undertow Brute. An underground-river raider or stalker, soaked
+        fabrics, hook, rope, driftwood and silt-stained armor, reading as wet, mobile,
+        and predatory.
+      biome: SHADOW_DEPTHS
+      faction: null
+      materialTags:
+      - river
+      - phase3
+      - followup
+      moodTags:
+      - combat-ready
+      - readable silhouette
+      constraints:
+      - full-body isolated sprite on clean light background for pipeline background
+        removal
+      - single character only, no scenery, no text
+      - clear silhouette readable at small runtime scale
+      geminiKeyRequired: true
+    - id: phase3_pr09_actor_warded_ruin_cleanse_adept
+      category: actor_sprite
+      visualKey: actor.warded_ruin.cleanse_adept
+      outputName: phase3/p3-followup/actor_warded_ruin_cleanse_adept.png
+      subject: Warded Ruin Cleanse Adept. A dark fantasy combatant with a clean readable
+        silhouette for a roguelike actor sprite.
+      biome: null
+      faction: null
+      materialTags:
+      - warded
+      - phase3
+      - followup
+      moodTags:
+      - combat-ready
+      - readable silhouette
+      constraints:
+      - full-body isolated sprite on clean light background for pipeline background
+        removal
+      - single character only, no scenery, no text
+      - clear silhouette readable at small runtime scale
+      geminiKeyRequired: true
+    - id: phase3_pr09_actor_warded_ruin_relic_guard
+      category: actor_sprite
+      visualKey: actor.warded_ruin.relic_guard
+      outputName: phase3/p3-followup/actor_warded_ruin_relic_guard.png
+      subject: Warded Ruin Relic Guard. A dark fantasy combatant with a clean readable
+        silhouette for a roguelike actor sprite.
+      biome: null
+      faction: null
+      materialTags:
+      - warded
+      - phase3
+      - followup
+      moodTags:
+      - combat-ready
+      - readable silhouette
+      constraints:
+      - full-body isolated sprite on clean light background for pipeline background
+        removal
+      - single character only, no scenery, no text
+      - clear silhouette readable at small runtime scale
+      geminiKeyRequired: true
+    - id: phase3_pr09_actor_warded_ruin_shard_archivist
+      category: actor_sprite
+      visualKey: actor.warded_ruin.shard_archivist
+      outputName: phase3/p3-followup/actor_warded_ruin_shard_archivist.png
+      subject: Warded Ruin Shard Archivist. A dark fantasy combatant with a clean
+        readable silhouette for a roguelike actor sprite.
+      biome: null
+      faction: null
+      materialTags:
+      - warded
+      - phase3
+      - followup
+      moodTags:
+      - combat-ready
+      - readable silhouette
+      constraints:
+      - full-body isolated sprite on clean light background for pipeline background
+        removal
+      - single character only, no scenery, no text
+      - clear silhouette readable at small runtime scale
+      geminiKeyRequired: true
+    - id: phase3_pr09_actor_warded_ruin_vault_watcher
+      category: actor_sprite
+      visualKey: actor.warded_ruin.vault_watcher
+      outputName: phase3/p3-followup/actor_warded_ruin_vault_watcher.png
+      subject: Warded Ruin Vault Watcher. A dark fantasy combatant with a clean readable
+        silhouette for a roguelike actor sprite.
+      biome: null
+      faction: null
+      materialTags:
+      - warded
+      - phase3
+      - followup
+      moodTags:
+      - combat-ready
+      - readable silhouette
+      constraints:
+      - full-body isolated sprite on clean light background for pipeline background
+        removal
+      - single character only, no scenery, no text
+      - clear silhouette readable at small runtime scale
+      geminiKeyRequired: true
+    - id: phase3_pr09_actor_warded_ruin_ward_lancer
+      category: actor_sprite
+      visualKey: actor.warded_ruin.ward_lancer
+      outputName: phase3/p3-followup/actor_warded_ruin_ward_lancer.png
+      subject: Warded Ruin Ward Lancer. A dark fantasy combatant with a clean readable
+        silhouette for a roguelike actor sprite.
+      biome: null
+      faction: null
+      materialTags:
+      - warded
+      - phase3
+      - followup
+      moodTags:
+      - combat-ready
+      - readable silhouette
+      constraints:
+      - full-body isolated sprite on clean light background for pipeline background
+        removal
+      - single character only, no scenery, no text
+      - clear silhouette readable at small runtime scale
+      geminiKeyRequired: true
+    - id: phase3_pr09_boss_abyssal_guardian_visual
+      category: actor_sprite
+      visualKey: boss.abyssal.guardian.visual
+      outputName: phase3/p3-followup/boss_abyssal_guardian_visual.png
+      subject: A Phase 3 final abyssal guardian, relic sentinel silhouette, void-lit
+        armor seams, pale stone and black iron, disciplined apocalyptic presence.
+      faction: boss
+      materialTags:
+      - boss
+      - phase3
+      - followup
+      moodTags:
+      - boss
+      - imposing
+      - signature silhouette
+      constraints:
+      - single boss character or boss bust motif only, clean removable background
+      - must read as distinct Phase 3 boss identity, not a generic monster
+      - no text and no environment scene
+      geminiKeyRequired: true
+    - id: phase3_pr09_boss_orc_molten_giant_visual
+      category: actor_sprite
+      visualKey: boss.orc.molten_giant.visual
+      outputName: phase3/p3-followup/boss_orc_molten_giant_visual.png
+      subject: orc molten giant
+      faction: boss
+      materialTags:
+      - boss
+      - phase3
+      - followup
+      moodTags:
+      - boss
+      - imposing
+      - signature silhouette
+      constraints:
+      - single boss character or boss bust motif only, clean removable background
+      - must read as distinct Phase 3 boss identity, not a generic monster
+      - no text and no environment scene
+      geminiKeyRequired: true
+    - id: phase3_pr09_icon_boss_abyssal_guardian
+      category: icon
+      visualKey: boss.abyssal.guardian.icon
+      outputName: phase3/p3-followup/icon_boss_abyssal_guardian.png
+      subject: Boss icon for A Phase 3 final abyssal guardian, relic sentinel silhouette,
+        void-lit armor seams, pale stone and black iron, disciplined apocalyptic presence.
+        in simplified UI-readable form.
+      faction: boss
+      materialTags:
+      - boss
+      - icon
+      moodTags:
+      - imposing
+      - readable
+      constraints:
+      - single centered boss icon with one dominant silhouette
+      - clear separation from normal monster icons
+      - no text, no scenery
+      geminiKeyRequired: true
+    - id: phase3_pr09_icon_boss_orc_molten_giant
+      category: icon
+      visualKey: boss.orc.molten_giant.icon
+      outputName: phase3/p3-followup/icon_boss_orc_molten_giant.png
+      subject: Boss icon for orc molten giant in simplified UI-readable form.
+      faction: boss
+      materialTags:
+      - boss
+      - icon
+      moodTags:
+      - imposing
+      - readable
+      constraints:
+      - single centered boss icon with one dominant silhouette
+      - clear separation from normal monster icons
+      - no text, no scenery
+      geminiKeyRequired: true
+    - id: phase3_pr09_icon_monster_abyssal_cleanse_hunter
+      category: icon
+      visualKey: icon.monster.abyssal.cleanse_hunter
+      outputName: phase3/p3-followup/icon_monster_abyssal_cleanse_hunter.png
+      subject: Game monster icon for Abyssal Cleanse Hunter. Condense the creature
+        into one bold emblematic focal shape while preserving A late-game abyssal
+        temple foe, void-touched ritual armor, severe silhouette, relic steel, dark
+        cloth, and restrained occult glow. in icon form.
+      biome: SHADOW_DEPTHS
+      faction: cultist
+      materialTags:
+      - abyssal
+      - icon
+      moodTags:
+      - readable
+      - threatening
+      constraints:
+      - single centered monster icon on transparent-friendly clean background
+      - high readability at small UI size
+      - no text, no UI frame, no scenery
+      geminiKeyRequired: true
+    - id: phase3_pr09_icon_monster_abyssal_eclipsed_seraph
+      category: icon
+      visualKey: icon.monster.abyssal.eclipsed_seraph
+      outputName: phase3/p3-followup/icon_monster_abyssal_eclipsed_seraph.png
+      subject: Game monster icon for Abyssal Eclipsed Seraph. Condense the creature
+        into one bold emblematic focal shape while preserving A late-game abyssal
+        temple foe, void-touched ritual armor, severe silhouette, relic steel, dark
+        cloth, and restrained occult glow. in icon form.
+      biome: SHADOW_DEPTHS
+      faction: cultist
+      materialTags:
+      - abyssal
+      - icon
+      moodTags:
+      - readable
+      - threatening
+      constraints:
+      - single centered monster icon on transparent-friendly clean background
+      - high readability at small UI size
+      - no text, no UI frame, no scenery
+      geminiKeyRequired: true
+    - id: phase3_pr09_icon_monster_abyssal_guardian
+      category: icon
+      visualKey: icon.monster.abyssal.guardian
+      outputName: phase3/p3-followup/icon_monster_abyssal_guardian.png
+      subject: Game monster icon for Abyssal Guardian. Condense the creature into
+        one bold emblematic focal shape while preserving A late-game abyssal temple
+        foe, void-touched ritual armor, severe silhouette, relic steel, dark cloth,
+        and restrained occult glow. in icon form.
+      biome: SHADOW_DEPTHS
+      faction: cultist
+      materialTags:
+      - abyssal
+      - icon
+      moodTags:
+      - readable
+      - threatening
+      constraints:
+      - single centered monster icon on transparent-friendly clean background
+      - high readability at small UI size
+      - no text, no UI frame, no scenery
+      geminiKeyRequired: true
+    - id: phase3_pr09_icon_monster_abyssal_null_lancer
+      category: icon
+      visualKey: icon.monster.abyssal.null_lancer
+      outputName: phase3/p3-followup/icon_monster_abyssal_null_lancer.png
+      subject: Game monster icon for Abyssal Null Lancer. Condense the creature into
+        one bold emblematic focal shape while preserving A late-game abyssal temple
+        foe, void-touched ritual armor, severe silhouette, relic steel, dark cloth,
+        and restrained occult glow. in icon form.
+      biome: SHADOW_DEPTHS
+      faction: cultist
+      materialTags:
+      - abyssal
+      - icon
+      moodTags:
+      - readable
+      - threatening
+      constraints:
+      - single centered monster icon on transparent-friendly clean background
+      - high readability at small UI size
+      - no text, no UI frame, no scenery
+      geminiKeyRequired: true
+    - id: phase3_pr09_icon_monster_abyssal_reliquary_guard
+      category: icon
+      visualKey: icon.monster.abyssal.reliquary_guard
+      outputName: phase3/p3-followup/icon_monster_abyssal_reliquary_guard.png
+      subject: Game monster icon for Abyssal Reliquary Guard. Condense the creature
+        into one bold emblematic focal shape while preserving A late-game abyssal
+        temple foe, void-touched ritual armor, severe silhouette, relic steel, dark
+        cloth, and restrained occult glow. in icon form.
+      biome: SHADOW_DEPTHS
+      faction: cultist
+      materialTags:
+      - abyssal
+      - icon
+      moodTags:
+      - readable
+      - threatening
+      constraints:
+      - single centered monster icon on transparent-friendly clean background
+      - high readability at small UI size
+      - no text, no UI frame, no scenery
+      geminiKeyRequired: true
+    - id: phase3_pr09_icon_monster_abyssal_ritual_binder
+      category: icon
+      visualKey: icon.monster.abyssal.ritual_binder
+      outputName: phase3/p3-followup/icon_monster_abyssal_ritual_binder.png
+      subject: Game monster icon for Abyssal Ritual Binder. Condense the creature
+        into one bold emblematic focal shape while preserving A late-game abyssal
+        temple foe, void-touched ritual armor, severe silhouette, relic steel, dark
+        cloth, and restrained occult glow. in icon form.
+      biome: SHADOW_DEPTHS
+      faction: cultist
+      materialTags:
+      - abyssal
+      - icon
+      moodTags:
+      - readable
+      - threatening
+      constraints:
+      - single centered monster icon on transparent-friendly clean background
+      - high readability at small UI size
+      - no text, no UI frame, no scenery
+      geminiKeyRequired: true
+    - id: phase3_pr09_icon_monster_abyssal_void_preacher
+      category: icon
+      visualKey: icon.monster.abyssal.void_preacher
+      outputName: phase3/p3-followup/icon_monster_abyssal_void_preacher.png
+      subject: Game monster icon for Abyssal Void Preacher. Condense the creature
+        into one bold emblematic focal shape while preserving A late-game abyssal
+        temple foe, void-touched ritual armor, severe silhouette, relic steel, dark
+        cloth, and restrained occult glow. in icon form.
+      biome: SHADOW_DEPTHS
+      faction: cultist
+      materialTags:
+      - abyssal
+      - icon
+      moodTags:
+      - readable
+      - threatening
+      constraints:
+      - single centered monster icon on transparent-friendly clean background
+      - high readability at small UI size
+      - no text, no UI frame, no scenery
+      geminiKeyRequired: true
+    - id: phase3_pr09_icon_monster_abyssal_ward_breaker
+      category: icon
+      visualKey: icon.monster.abyssal.ward_breaker
+      outputName: phase3/p3-followup/icon_monster_abyssal_ward_breaker.png
+      subject: Game monster icon for Abyssal Ward Breaker. Condense the creature into
+        one bold emblematic focal shape while preserving A late-game abyssal temple
+        foe, void-touched ritual armor, severe silhouette, relic steel, dark cloth,
+        and restrained occult glow. in icon form.
+      biome: SHADOW_DEPTHS
+      faction: cultist
+      materialTags:
+      - abyssal
+      - icon
+      moodTags:
+      - readable
+      - threatening
+      constraints:
+      - single centered monster icon on transparent-friendly clean background
+      - high readability at small UI size
+      - no text, no UI frame, no scenery
+      geminiKeyRequired: true
+    - id: phase3_pr09_icon_monster_bandit_banner_guard
+      category: icon
+      visualKey: icon.monster.bandit.banner_guard
+      outputName: phase3/p3-followup/icon_monster_bandit_banner_guard.png
+      subject: Game monster icon for Bandit Banner Guard. Condense the creature into
+        one bold emblematic focal shape while preserving A ruthless frontier bandit
+        from a forest-edge ambush camp, travel-worn leather, scavenged iron, agile
+        posture, and a silhouette readable as a dangerous opportunist. in icon form.
+      biome: FOREST_EDGE
+      faction: bandit
+      materialTags:
+      - bandit
+      - icon
+      moodTags:
+      - readable
+      - threatening
+      constraints:
+      - single centered monster icon on transparent-friendly clean background
+      - high readability at small UI size
+      - no text, no UI frame, no scenery
+      geminiKeyRequired: true
+    - id: phase3_pr09_icon_monster_bandit_cache_overseer
+      category: icon
+      visualKey: icon.monster.bandit.cache_overseer
+      outputName: phase3/p3-followup/icon_monster_bandit_cache_overseer.png
+      subject: Game monster icon for Bandit Cache Overseer. Condense the creature
+        into one bold emblematic focal shape while preserving A ruthless frontier
+        bandit from a forest-edge ambush camp, travel-worn leather, scavenged iron,
+        agile posture, and a silhouette readable as a dangerous opportunist. in icon
+        form.
+      biome: FOREST_EDGE
+      faction: bandit
+      materialTags:
+      - bandit
+      - icon
+      moodTags:
+      - readable
+      - threatening
+      constraints:
+      - single centered monster icon on transparent-friendly clean background
+      - high readability at small UI size
+      - no text, no UI frame, no scenery
+      geminiKeyRequired: true
+    - id: phase3_pr09_icon_monster_bandit_cutthroat
+      category: icon
+      visualKey: icon.monster.bandit.cutthroat
+      outputName: phase3/p3-followup/icon_monster_bandit_cutthroat.png
+      subject: Game monster icon for Cutthroat. Condense the creature into one bold
+        emblematic focal shape while preserving A ruthless frontier bandit from a
+        forest-edge ambush camp, travel-worn leather, scavenged iron, agile posture,
+        and a silhouette readable as a dangerous opportunist. in icon form.
+      biome: FOREST_EDGE
+      faction: bandit
+      materialTags:
+      - bandit
+      - icon
+      moodTags:
+      - readable
+      - threatening
+      constraints:
+      - single centered monster icon on transparent-friendly clean background
+      - high readability at small UI size
+      - no text, no UI frame, no scenery
+      geminiKeyRequired: true
+    - id: phase3_pr09_icon_monster_bandit_pillager
+      category: icon
+      visualKey: icon.monster.bandit.pillager
+      outputName: phase3/p3-followup/icon_monster_bandit_pillager.png
+      subject: Game monster icon for Pillager. Condense the creature into one bold
+        emblematic focal shape while preserving A ruthless frontier bandit from a
+        forest-edge ambush camp, travel-worn leather, scavenged iron, agile posture,
+        and a silhouette readable as a dangerous opportunist. in icon form.
+      biome: FOREST_EDGE
+      faction: bandit
+      materialTags:
+      - bandit
+      - icon
+      moodTags:
+      - readable
+      - threatening
+      constraints:
+      - single centered monster icon on transparent-friendly clean background
+      - high readability at small UI size
+      - no text, no UI frame, no scenery
+      geminiKeyRequired: true
+    - id: phase3_pr09_icon_monster_bandit_slingshotter
+      category: icon
+      visualKey: icon.monster.bandit.slingshotter
+      outputName: phase3/p3-followup/icon_monster_bandit_slingshotter.png
+      subject: Game monster icon for Slingshotter. Condense the creature into one
+        bold emblematic focal shape while preserving A ruthless frontier bandit from
+        a forest-edge ambush camp, travel-worn leather, scavenged iron, agile posture,
+        and a silhouette readable as a dangerous opportunist. in icon form.
+      biome: FOREST_EDGE
+      faction: bandit
+      materialTags:
+      - bandit
+      - icon
+      moodTags:
+      - readable
+      - threatening
+      constraints:
+      - single centered monster icon on transparent-friendly clean background
+      - high readability at small UI size
+      - no text, no UI frame, no scenery
+      geminiKeyRequired: true
+    - id: phase3_pr09_icon_monster_crystal_beam_savant
+      category: icon
+      visualKey: icon.monster.crystal.beam_savant
+      outputName: phase3/p3-followup/icon_monster_crystal_beam_savant.png
+      subject: Game monster icon for Crystal Beam Savant. Condense the creature into
+        one bold emblematic focal shape while preserving A crystal-cavern enemy shaped
+        by prism shards and cold cavern light, with sharp readable geometry and mineral
+        growth replacing ordinary ornament. in icon form.
+      biome: SHADOW_DEPTHS
+      faction: null
+      materialTags:
+      - crystal
+      - icon
+      moodTags:
+      - readable
+      - threatening
+      constraints:
+      - single centered monster icon on transparent-friendly clean background
+      - high readability at small UI size
+      - no text, no UI frame, no scenery
+      geminiKeyRequired: true
+    - id: phase3_pr09_icon_monster_crystal_prism_weaver
+      category: icon
+      visualKey: icon.monster.crystal.prism_weaver
+      outputName: phase3/p3-followup/icon_monster_crystal_prism_weaver.png
+      subject: Game monster icon for Crystal Prism Weaver. Condense the creature into
+        one bold emblematic focal shape while preserving A crystal-cavern enemy shaped
+        by prism shards and cold cavern light, with sharp readable geometry and mineral
+        growth replacing ordinary ornament. in icon form.
+      biome: SHADOW_DEPTHS
+      faction: null
+      materialTags:
+      - crystal
+      - icon
+      moodTags:
+      - readable
+      - threatening
+      constraints:
+      - single centered monster icon on transparent-friendly clean background
+      - high readability at small UI size
+      - no text, no UI frame, no scenery
+      geminiKeyRequired: true
+    - id: phase3_pr09_icon_monster_crystal_resonant_colossus
+      category: icon
+      visualKey: icon.monster.crystal.resonant_colossus
+      outputName: phase3/p3-followup/icon_monster_crystal_resonant_colossus.png
+      subject: Game monster icon for Crystal Resonant Colossus. Condense the creature
+        into one bold emblematic focal shape while preserving A crystal-cavern enemy
+        shaped by prism shards and cold cavern light, with sharp readable geometry
+        and mineral growth replacing ordinary ornament. in icon form.
+      biome: SHADOW_DEPTHS
+      faction: null
+      materialTags:
+      - crystal
+      - icon
+      moodTags:
+      - readable
+      - threatening
+      constraints:
+      - single centered monster icon on transparent-friendly clean background
+      - high readability at small UI size
+      - no text, no UI frame, no scenery
+      geminiKeyRequired: true
+    - id: phase3_pr09_icon_monster_crystal_seal_keeper
+      category: icon
+      visualKey: icon.monster.crystal.seal_keeper
+      outputName: phase3/p3-followup/icon_monster_crystal_seal_keeper.png
+      subject: Game monster icon for Crystal Seal Keeper. Condense the creature into
+        one bold emblematic focal shape while preserving A crystal-cavern enemy shaped
+        by prism shards and cold cavern light, with sharp readable geometry and mineral
+        growth replacing ordinary ornament. in icon form.
+      biome: SHADOW_DEPTHS
+      faction: null
+      materialTags:
+      - crystal
+      - icon
+      moodTags:
+      - readable
+      - threatening
+      constraints:
+      - single centered monster icon on transparent-friendly clean background
+      - high readability at small UI size
+      - no text, no UI frame, no scenery
+      geminiKeyRequired: true
+    - id: phase3_pr09_icon_monster_crystal_shardling
+      category: icon
+      visualKey: icon.monster.crystal.shardling
+      outputName: phase3/p3-followup/icon_monster_crystal_shardling.png
+      subject: Game monster icon for Shardling. Condense the creature into one bold
+        emblematic focal shape while preserving A crystal-cavern enemy shaped by prism
+        shards and cold cavern light, with sharp readable geometry and mineral growth
+        replacing ordinary ornament. in icon form.
+      biome: SHADOW_DEPTHS
+      faction: null
+      materialTags:
+      - crystal
+      - icon
+      moodTags:
+      - readable
+      - threatening
+      constraints:
+      - single centered monster icon on transparent-friendly clean background
+      - high readability at small UI size
+      - no text, no UI frame, no scenery
+      geminiKeyRequired: true
+    - id: phase3_pr09_icon_monster_forge_anvil_guard
+      category: icon
+      visualKey: icon.monster.forge.anvil_guard
+      outputName: phase3/p3-followup/icon_monster_forge_anvil_guard.png
+      subject: Game monster icon for Forge Anvil Guard. Condense the creature into
+        one bold emblematic focal shape while preserving A furnace-forged warrior
+        from a molten industrial stronghold, heavy iron plates, soot, chain, slag
+        scars, and heat-stressed metal accents. in icon form.
+      biome: MINE
+      faction: null
+      materialTags:
+      - forge
+      - icon
+      moodTags:
+      - readable
+      - threatening
+      constraints:
+      - single centered monster icon on transparent-friendly clean background
+      - high readability at small UI size
+      - no text, no UI frame, no scenery
+      geminiKeyRequired: true
+    - id: phase3_pr09_icon_monster_forge_chain_overseer
+      category: icon
+      visualKey: icon.monster.forge.chain_overseer
+      outputName: phase3/p3-followup/icon_monster_forge_chain_overseer.png
+      subject: Game monster icon for Forge Chain Overseer. Condense the creature into
+        one bold emblematic focal shape while preserving A furnace-forged warrior
+        from a molten industrial stronghold, heavy iron plates, soot, chain, slag
+        scars, and heat-stressed metal accents. in icon form.
+      biome: MINE
+      faction: null
+      materialTags:
+      - forge
+      - icon
+      moodTags:
+      - readable
+      - threatening
+      constraints:
+      - single centered monster icon on transparent-friendly clean background
+      - high readability at small UI size
+      - no text, no UI frame, no scenery
+      geminiKeyRequired: true
+    - id: phase3_pr09_icon_monster_forge_crucible_knight
+      category: icon
+      visualKey: icon.monster.forge.crucible_knight
+      outputName: phase3/p3-followup/icon_monster_forge_crucible_knight.png
+      subject: Game monster icon for Forge Crucible Knight. Condense the creature
+        into one bold emblematic focal shape while preserving A furnace-forged warrior
+        from a molten industrial stronghold, heavy iron plates, soot, chain, slag
+        scars, and heat-stressed metal accents. in icon form.
+      biome: MINE
+      faction: null
+      materialTags:
+      - forge
+      - icon
+      moodTags:
+      - readable
+      - threatening
+      constraints:
+      - single centered monster icon on transparent-friendly clean background
+      - high readability at small UI size
+      - no text, no UI frame, no scenery
+      geminiKeyRequired: true
+    - id: phase3_pr09_icon_monster_forge_heat_channeler
+      category: icon
+      visualKey: icon.monster.forge.heat_channeler
+      outputName: phase3/p3-followup/icon_monster_forge_heat_channeler.png
+      subject: Game monster icon for Forge Heat Channeler. Condense the creature into
+        one bold emblematic focal shape while preserving A furnace-forged warrior
+        from a molten industrial stronghold, heavy iron plates, soot, chain, slag
+        scars, and heat-stressed metal accents. in icon form.
+      biome: MINE
+      faction: null
+      materialTags:
+      - forge
+      - icon
+      moodTags:
+      - readable
+      - threatening
+      constraints:
+      - single centered monster icon on transparent-friendly clean background
+      - high readability at small UI size
+      - no text, no UI frame, no scenery
+      geminiKeyRequired: true
+    - id: phase3_pr09_icon_monster_forge_slag_tender
+      category: icon
+      visualKey: icon.monster.forge.slag_tender
+      outputName: phase3/p3-followup/icon_monster_forge_slag_tender.png
+      subject: Game monster icon for Forge Slag Tender. Condense the creature into
+        one bold emblematic focal shape while preserving A furnace-forged warrior
+        from a molten industrial stronghold, heavy iron plates, soot, chain, slag
+        scars, and heat-stressed metal accents. in icon form.
+      biome: MINE
+      faction: null
+      materialTags:
+      - forge
+      - icon
+      moodTags:
+      - readable
+      - threatening
+      constraints:
+      - single centered monster icon on transparent-friendly clean background
+      - high readability at small UI size
+      - no text, no UI frame, no scenery
+      geminiKeyRequired: true
+    - id: phase3_pr09_icon_monster_orc_molten_giant
+      category: icon
+      visualKey: icon.monster.orc.molten_giant
+      outputName: phase3/p3-followup/icon_monster_orc_molten_giant.png
+      subject: Game monster icon for Orc Molten Giant. Condense the creature into
+        one bold emblematic focal shape while preserving A furnace tyrant or brutal
+        war-forged orc, massive frame, scorched iron, forge fire accents, and overwhelming
+        battlefield presence. in icon form.
+      biome: MINE
+      faction: orc
+      materialTags:
+      - orc
+      - icon
+      moodTags:
+      - readable
+      - threatening
+      constraints:
+      - single centered monster icon on transparent-friendly clean background
+      - high readability at small UI size
+      - no text, no UI frame, no scenery
+      geminiKeyRequired: true
+    - id: phase3_pr09_icon_monster_river_current_reaver
+      category: icon
+      visualKey: icon.monster.river.current_reaver
+      outputName: phase3/p3-followup/icon_monster_river_current_reaver.png
+      subject: Game monster icon for River Current Reaver. Condense the creature into
+        one bold emblematic focal shape while preserving An underground-river raider
+        or stalker, soaked fabrics, hook, rope, driftwood and silt-stained armor,
+        reading as wet, mobile, and predatory. in icon form.
+      biome: SHADOW_DEPTHS
+      faction: null
+      materialTags:
+      - river
+      - icon
+      moodTags:
+      - readable
+      - threatening
+      constraints:
+      - single centered monster icon on transparent-friendly clean background
+      - high readability at small UI size
+      - no text, no UI frame, no scenery
+      geminiKeyRequired: true
+    - id: phase3_pr09_icon_monster_river_drowned_stalker
+      category: icon
+      visualKey: icon.monster.river.drowned_stalker
+      outputName: phase3/p3-followup/icon_monster_river_drowned_stalker.png
+      subject: Game monster icon for River Drowned Stalker. Condense the creature
+        into one bold emblematic focal shape while preserving An underground-river
+        raider or stalker, soaked fabrics, hook, rope, driftwood and silt-stained
+        armor, reading as wet, mobile, and predatory. in icon form.
+      biome: SHADOW_DEPTHS
+      faction: null
+      materialTags:
+      - river
+      - icon
+      moodTags:
+      - readable
+      - threatening
+      constraints:
+      - single centered monster icon on transparent-friendly clean background
+      - high readability at small UI size
+      - no text, no UI frame, no scenery
+      geminiKeyRequired: true
+    - id: phase3_pr09_icon_monster_river_ferry_raider
+      category: icon
+      visualKey: icon.monster.river.ferry_raider
+      outputName: phase3/p3-followup/icon_monster_river_ferry_raider.png
+      subject: Game monster icon for River Ferry Raider. Condense the creature into
+        one bold emblematic focal shape while preserving An underground-river raider
+        or stalker, soaked fabrics, hook, rope, driftwood and silt-stained armor,
+        reading as wet, mobile, and predatory. in icon form.
+      biome: SHADOW_DEPTHS
+      faction: null
+      materialTags:
+      - river
+      - icon
+      moodTags:
+      - readable
+      - threatening
+      constraints:
+      - single centered monster icon on transparent-friendly clean background
+      - high readability at small UI size
+      - no text, no UI frame, no scenery
+      geminiKeyRequired: true
+    - id: phase3_pr09_icon_monster_river_hook_lurker
+      category: icon
+      visualKey: icon.monster.river.hook_lurker
+      outputName: phase3/p3-followup/icon_monster_river_hook_lurker.png
+      subject: Game monster icon for River Hook Lurker. Condense the creature into
+        one bold emblematic focal shape while preserving An underground-river raider
+        or stalker, soaked fabrics, hook, rope, driftwood and silt-stained armor,
+        reading as wet, mobile, and predatory. in icon form.
+      biome: SHADOW_DEPTHS
+      faction: null
+      materialTags:
+      - river
+      - icon
+      moodTags:
+      - readable
+      - threatening
+      constraints:
+      - single centered monster icon on transparent-friendly clean background
+      - high readability at small UI size
+      - no text, no UI frame, no scenery
+      geminiKeyRequired: true
+    - id: phase3_pr09_icon_monster_river_silt_shaman
+      category: icon
+      visualKey: icon.monster.river.silt_shaman
+      outputName: phase3/p3-followup/icon_monster_river_silt_shaman.png
+      subject: Game monster icon for River Silt Shaman. Condense the creature into
+        one bold emblematic focal shape while preserving An underground-river raider
+        or stalker, soaked fabrics, hook, rope, driftwood and silt-stained armor,
+        reading as wet, mobile, and predatory. in icon form.
+      biome: SHADOW_DEPTHS
+      faction: null
+      materialTags:
+      - river
+      - icon
+      moodTags:
+      - readable
+      - threatening
+      constraints:
+      - single centered monster icon on transparent-friendly clean background
+      - high readability at small UI size
+      - no text, no UI frame, no scenery
+      geminiKeyRequired: true
+    - id: phase3_pr09_icon_monster_river_tide_mender
+      category: icon
+      visualKey: icon.monster.river.tide_mender
+      outputName: phase3/p3-followup/icon_monster_river_tide_mender.png
+      subject: Game monster icon for River Tide Mender. Condense the creature into
+        one bold emblematic focal shape while preserving An underground-river raider
+        or stalker, soaked fabrics, hook, rope, driftwood and silt-stained armor,
+        reading as wet, mobile, and predatory. in icon form.
+      biome: SHADOW_DEPTHS
+      faction: null
+      materialTags:
+      - river
+      - icon
+      moodTags:
+      - readable
+      - threatening
+      constraints:
+      - single centered monster icon on transparent-friendly clean background
+      - high readability at small UI size
+      - no text, no UI frame, no scenery
+      geminiKeyRequired: true
+    - id: phase3_pr09_icon_monster_river_undertow_brute
+      category: icon
+      visualKey: icon.monster.river.undertow_brute
+      outputName: phase3/p3-followup/icon_monster_river_undertow_brute.png
+      subject: Game monster icon for River Undertow Brute. Condense the creature into
+        one bold emblematic focal shape while preserving An underground-river raider
+        or stalker, soaked fabrics, hook, rope, driftwood and silt-stained armor,
+        reading as wet, mobile, and predatory. in icon form.
+      biome: SHADOW_DEPTHS
+      faction: null
+      materialTags:
+      - river
+      - icon
+      moodTags:
+      - readable
+      - threatening
+      constraints:
+      - single centered monster icon on transparent-friendly clean background
+      - high readability at small UI size
+      - no text, no UI frame, no scenery
+      geminiKeyRequired: true
+    - id: phase3_pr09_icon_monster_warded_ruin_cleanse_adept
+      category: icon
+      visualKey: icon.monster.warded_ruin.cleanse_adept
+      outputName: phase3/p3-followup/icon_monster_warded_ruin_cleanse_adept.png
+      subject: Game monster icon for Warded Ruin Cleanse Adept. Condense the creature
+        into one bold emblematic focal shape while preserving dark fantasy creature
+        identity in icon form.
+      biome: null
+      faction: null
+      materialTags:
+      - warded
+      - icon
+      moodTags:
+      - readable
+      - threatening
+      constraints:
+      - single centered monster icon on transparent-friendly clean background
+      - high readability at small UI size
+      - no text, no UI frame, no scenery
+      geminiKeyRequired: true
+    - id: phase3_pr09_icon_monster_warded_ruin_relic_guard
+      category: icon
+      visualKey: icon.monster.warded_ruin.relic_guard
+      outputName: phase3/p3-followup/icon_monster_warded_ruin_relic_guard.png
+      subject: Game monster icon for Warded Ruin Relic Guard. Condense the creature
+        into one bold emblematic focal shape while preserving dark fantasy creature
+        identity in icon form.
+      biome: null
+      faction: null
+      materialTags:
+      - warded
+      - icon
+      moodTags:
+      - readable
+      - threatening
+      constraints:
+      - single centered monster icon on transparent-friendly clean background
+      - high readability at small UI size
+      - no text, no UI frame, no scenery
+      geminiKeyRequired: true
+    - id: phase3_pr09_icon_monster_warded_ruin_shard_archivist
+      category: icon
+      visualKey: icon.monster.warded_ruin.shard_archivist
+      outputName: phase3/p3-followup/icon_monster_warded_ruin_shard_archivist.png
+      subject: Game monster icon for Warded Ruin Shard Archivist. Condense the creature
+        into one bold emblematic focal shape while preserving dark fantasy creature
+        identity in icon form.
+      biome: null
+      faction: null
+      materialTags:
+      - warded
+      - icon
+      moodTags:
+      - readable
+      - threatening
+      constraints:
+      - single centered monster icon on transparent-friendly clean background
+      - high readability at small UI size
+      - no text, no UI frame, no scenery
+      geminiKeyRequired: true
+    - id: phase3_pr09_icon_monster_warded_ruin_vault_watcher
+      category: icon
+      visualKey: icon.monster.warded_ruin.vault_watcher
+      outputName: phase3/p3-followup/icon_monster_warded_ruin_vault_watcher.png
+      subject: Game monster icon for Warded Ruin Vault Watcher. Condense the creature
+        into one bold emblematic focal shape while preserving dark fantasy creature
+        identity in icon form.
+      biome: null
+      faction: null
+      materialTags:
+      - warded
+      - icon
+      moodTags:
+      - readable
+      - threatening
+      constraints:
+      - single centered monster icon on transparent-friendly clean background
+      - high readability at small UI size
+      - no text, no UI frame, no scenery
+      geminiKeyRequired: true
+    - id: phase3_pr09_icon_monster_warded_ruin_ward_lancer
+      category: icon
+      visualKey: icon.monster.warded_ruin.ward_lancer
+      outputName: phase3/p3-followup/icon_monster_warded_ruin_ward_lancer.png
+      subject: Game monster icon for Warded Ruin Ward Lancer. Condense the creature
+        into one bold emblematic focal shape while preserving dark fantasy creature
+        identity in icon form.
+      biome: null
+      faction: null
+      materialTags:
+      - warded
+      - icon
+      moodTags:
+      - readable
+      - threatening
+      constraints:
+      - single centered monster icon on transparent-friendly clean background
+      - high readability at small UI size
+      - no text, no UI frame, no scenery
+      geminiKeyRequired: true
+    - id: phase3_pr09_icon_skill_arcanist_cinder_burst
+      category: icon_skill
+      visualKey: icon.skill.arcanist.cinder_burst
+      outputName: phase3/p3-followup/icon_skill_arcanist_cinder_burst.png
+      subject: UI skill icon for Cinder Burst. Depict a focused fire projectile exploding
+        into cinders and lingering burn using concise iconography for disciplined
+        battlefield sorcery, runic precision, and elemental control.
+      profession: arcanist
+      materialTags:
+      - arcanist
+      - talent
+      - icon
+      moodTags:
+      - ui-readable
+      - iconic
+      constraints:
+      - single centered icon subject only
+      - very clear silhouette and color separation at small size
+      - no text, no character portrait, no scenery
+      geminiKeyRequired: true
+    - id: phase3_pr09_icon_skill_arcanist_glacial_seal
+      category: icon_skill
+      visualKey: icon.skill.arcanist.glacial_seal
+      outputName: phase3/p3-followup/icon_skill_arcanist_glacial_seal.png
+      subject: UI skill icon for Glacial Seal. Depict a cold binding sigil sealing
+        a target in brittle frost and control magic using concise iconography for
+        disciplined battlefield sorcery, runic precision, and elemental control.
+      profession: arcanist
+      materialTags:
+      - arcanist
+      - talent
+      - icon
+      moodTags:
+      - ui-readable
+      - iconic
+      constraints:
+      - single centered icon subject only
+      - very clear silhouette and color separation at small size
+      - no text, no character portrait, no scenery
+      geminiKeyRequired: true
+    - id: phase3_pr09_icon_skill_arcanist_inferno_orb
+      category: icon_skill
+      visualKey: icon.skill.arcanist.inferno_orb
+      outputName: phase3/p3-followup/icon_skill_arcanist_inferno_orb.png
+      subject: UI skill icon for Inferno Orb. Depict a molten fire orb detonating
+        into a wide burning blast zone using concise iconography for disciplined battlefield
+        sorcery, runic precision, and elemental control.
+      profession: arcanist
+      materialTags:
+      - arcanist
+      - talent
+      - icon
+      moodTags:
+      - ui-readable
+      - iconic
+      constraints:
+      - single centered icon subject only
+      - very clear silhouette and color separation at small size
+      - no text, no character portrait, no scenery
+      geminiKeyRequired: true
+    - id: phase3_pr09_icon_skill_arcanist_shard_storm
+      category: icon_skill
+      visualKey: icon.skill.arcanist.shard_storm
+      outputName: phase3/p3-followup/icon_skill_arcanist_shard_storm.png
+      subject: UI skill icon for Shard Storm. Depict a storm of frozen crystal shards
+        cutting across a clustered target area using concise iconography for disciplined
+        battlefield sorcery, runic precision, and elemental control.
+      profession: arcanist
+      materialTags:
+      - arcanist
+      - talent
+      - icon
+      moodTags:
+      - ui-readable
+      - iconic
+      constraints:
+      - single centered icon subject only
+      - very clear silhouette and color separation at small size
+      - no text, no character portrait, no scenery
+      geminiKeyRequired: true
+    - id: phase3_pr09_icon_skill_arcanist_void_breach
+      category: icon_skill
+      visualKey: icon.skill.arcanist.void_breach
+      outputName: phase3/p3-followup/icon_skill_arcanist_void_breach.png
+      subject: UI skill icon for Void Breach. Depict a violent arcane breach of lightning
+        and void pressure aimed at one target using concise iconography for disciplined
+        battlefield sorcery, runic precision, and elemental control.
+      profession: arcanist
+      materialTags:
+      - arcanist
+      - talent
+      - icon
+      moodTags:
+      - ui-readable
+      - iconic
+      constraints:
+      - single centered icon subject only
+      - very clear silhouette and color separation at small size
+      - no text, no character portrait, no scenery
+      geminiKeyRequired: true
+    - id: phase3_pr09_icon_skill_rogue_crippling_strike
+      category: icon_skill
+      visualKey: icon.skill.rogue.crippling_strike
+      outputName: phase3/p3-followup/icon_skill_rogue_crippling_strike.png
+      subject: UI skill icon for Crippling Strike. Depict a precise rogue strike that
+        maims mobility and punishes openings using concise iconography for covert
+        skirmisher lethality, shadow, motion, and opportunistic precision.
+      profession: rogue
+      materialTags:
+      - rogue
+      - talent
+      - icon
+      moodTags:
+      - ui-readable
+      - iconic
+      constraints:
+      - single centered icon subject only
+      - very clear silhouette and color separation at small size
+      - no text, no character portrait, no scenery
+      geminiKeyRequired: true
+    - id: phase3_pr09_icon_skill_rogue_dusk_shroud
+      category: icon_skill
+      visualKey: icon.skill.rogue.dusk_shroud
+      outputName: phase3/p3-followup/icon_skill_rogue_dusk_shroud.png
+      subject: UI skill icon for Dusk Shroud. Depict a panic escape shroud of stealth
+        and speed wrapped in dusk-shadow using concise iconography for covert skirmisher
+        lethality, shadow, motion, and opportunistic precision.
+      profession: rogue
+      materialTags:
+      - rogue
+      - talent
+      - icon
+      moodTags:
+      - ui-readable
+      - iconic
+      constraints:
+      - single centered icon subject only
+      - very clear silhouette and color separation at small size
+      - no text, no character portrait, no scenery
+      geminiKeyRequired: true
+    - id: phase3_pr09_icon_skill_rogue_eviscerate
+      category: icon_skill
+      visualKey: icon.skill.rogue.eviscerate
+      outputName: phase3/p3-followup/icon_skill_rogue_eviscerate.png
+      subject: UI skill icon for Eviscerate. Depict a ruthless rogue finisher tearing
+        through a wounded target using concise iconography for covert skirmisher lethality,
+        shadow, motion, and opportunistic precision.
+      profession: rogue
+      materialTags:
+      - rogue
+      - talent
+      - icon
+      moodTags:
+      - ui-readable
+      - iconic
+      constraints:
+      - single centered icon subject only
+      - very clear silhouette and color separation at small size
+      - no text, no character portrait, no scenery
+      geminiKeyRequired: true
+    - id: phase3_pr09_icon_skill_rogue_ricochet_knives
+      category: icon_skill
+      visualKey: icon.skill.rogue.ricochet_knives
+      outputName: phase3/p3-followup/icon_skill_rogue_ricochet_knives.png
+      subject: UI skill icon for Ricochet Knives. Depict a fan of throwing knives
+        ricocheting through a tight cluster of enemies using concise iconography for
+        covert skirmisher lethality, shadow, motion, and opportunistic precision.
+      profession: rogue
+      materialTags:
+      - rogue
+      - talent
+      - icon
+      moodTags:
+      - ui-readable
+      - iconic
+      constraints:
+      - single centered icon subject only
+      - very clear silhouette and color separation at small size
+      - no text, no character portrait, no scenery
+      geminiKeyRequired: true
+    - id: phase3_pr09_icon_skill_rogue_shadow_bind
+      category: icon_skill
+      visualKey: icon.skill.rogue.shadow_bind
+      outputName: phase3/p3-followup/icon_skill_rogue_shadow_bind.png
+      subject: UI skill icon for Shadow Bind. Depict a shadow curse projectile pinning
+        a target in place with dark restraint using concise iconography for covert
+        skirmisher lethality, shadow, motion, and opportunistic precision.
+      profession: rogue
+      materialTags:
+      - rogue
+      - talent
+      - icon
+      moodTags:
+      - ui-readable
+      - iconic
+      constraints:
+      - single centered icon subject only
+      - very clear silhouette and color separation at small size
+      - no text, no character portrait, no scenery
+      geminiKeyRequired: true
+    - id: phase3_pr09_icon_skill_templar_absolution
+      category: icon_skill
+      visualKey: icon.skill.templar.absolution
+      outputName: phase3/p3-followup/icon_skill_templar_absolution.png
+      subject: UI skill icon for Absolution. Depict a holy absolution rite combining
+        healing mercy and cleansing light using concise iconography for restrained
+        holy warfare, oathbound steel, radiant judgment, and protection.
+      profession: templar
+      materialTags:
+      - templar
+      - talent
+      - icon
+      moodTags:
+      - ui-readable
+      - iconic
+      constraints:
+      - single centered icon subject only
+      - very clear silhouette and color separation at small size
+      - no text, no character portrait, no scenery
+      geminiKeyRequired: true
+    - id: phase3_pr09_icon_skill_templar_beacon_of_zeal
+      category: icon_skill
+      visualKey: icon.skill.templar.beacon_of_zeal
+      outputName: phase3/p3-followup/icon_skill_templar_beacon_of_zeal.png
+      subject: UI skill icon for Beacon of Zeal. Depict a zeal beacon of disciplined
+        holy resolve and frontline encouragement using concise iconography for restrained
+        holy warfare, oathbound steel, radiant judgment, and protection.
+      profession: templar
+      materialTags:
+      - templar
+      - talent
+      - icon
+      moodTags:
+      - ui-readable
+      - iconic
+      constraints:
+      - single centered icon subject only
+      - very clear silhouette and color separation at small size
+      - no text, no character portrait, no scenery
+      geminiKeyRequired: true
+    - id: phase3_pr09_icon_skill_templar_consecration
+      category: icon_skill
+      visualKey: icon.skill.templar.consecration
+      outputName: phase3/p3-followup/icon_skill_templar_consecration.png
+      subject: UI skill icon for Consecration. Depict a holy consecrated ground burst
+        punishing nearby foes with radiant force using concise iconography for restrained
+        holy warfare, oathbound steel, radiant judgment, and protection.
+      profession: templar
+      materialTags:
+      - templar
+      - talent
+      - icon
+      moodTags:
+      - ui-readable
+      - iconic
+      constraints:
+      - single centered icon subject only
+      - very clear silhouette and color separation at small size
+      - no text, no character portrait, no scenery
+      geminiKeyRequired: true
+    - id: phase3_pr09_icon_skill_templar_radiant_lance
+      category: icon_skill
+      visualKey: icon.skill.templar.radiant_lance
+      outputName: phase3/p3-followup/icon_skill_templar_radiant_lance.png
+      subject: UI skill icon for Radiant Lance. Depict a focused radiant lance striking
+        a marked target with holy judgment using concise iconography for restrained
+        holy warfare, oathbound steel, radiant judgment, and protection.
+      profession: templar
+      materialTags:
+      - templar
+      - talent
+      - icon
+      moodTags:
+      - ui-readable
+      - iconic
+      constraints:
+      - single centered icon subject only
+      - very clear silhouette and color separation at small size
+      - no text, no character portrait, no scenery
+      geminiKeyRequired: true
+    - id: phase3_pr09_icon_skill_templar_ritual_break
+      category: icon_skill
+      visualKey: icon.skill.templar.ritual_break
+      outputName: phase3/p3-followup/icon_skill_templar_ritual_break.png
+      subject: UI skill icon for Ritual Break. Depict a holy disruption strike that
+        breaks hostile ritual power and control using concise iconography for restrained
+        holy warfare, oathbound steel, radiant judgment, and protection.
+      profession: templar
+      materialTags:
+      - templar
+      - talent
+      - icon
+      moodTags:
+      - ui-readable
+      - iconic
+      constraints:
+      - single centered icon subject only
+      - very clear silhouette and color separation at small size
+      - no text, no character portrait, no scenery
+      geminiKeyRequired: true
+    - id: phase3_pr09_icon_skill_templar_sanctuary
+      category: icon_skill
+      visualKey: icon.skill.templar.sanctuary
+      outputName: phase3/p3-followup/icon_skill_templar_sanctuary.png
+      subject: UI skill icon for Sanctuary. Depict a sanctuary shield sigil, sheltering
+        grace, and durable holy protection using concise iconography for restrained
+        holy warfare, oathbound steel, radiant judgment, and protection.
+      profession: templar
+      materialTags:
+      - templar
+      - talent
+      - icon
+      moodTags:
+      - ui-readable
+      - iconic
+      constraints:
+      - single centered icon subject only
+      - very clear silhouette and color separation at small size
+      - no text, no character portrait, no scenery
+      geminiKeyRequired: true
+    - id: phase3_pr09_icon_skill_vanguard_battlefield_command
+      category: icon_skill
+      visualKey: icon.skill.vanguard.battlefield_command
+      outputName: phase3/p3-followup/icon_skill_vanguard_battlefield_command.png
+      subject: UI skill icon for Battlefield Command. Depict a battlefield command
+        emblem radiating tactical authority, morale pressure, and enemy disruption
+        using concise iconography for martial vanguard discipline, iron, shieldcraft,
+        and practical battlefield command.
+      profession: vanguard
+      materialTags:
+      - vanguard
+      - talent
+      - icon
+      moodTags:
+      - ui-readable
+      - iconic
+      constraints:
+      - single centered icon subject only
+      - very clear silhouette and color separation at small size
+      - no text, no character portrait, no scenery
+      geminiKeyRequired: true
+    - id: phase3_pr09_icon_skill_vanguard_bulwark_march
+      category: icon_skill
+      visualKey: icon.skill.vanguard.bulwark_march
+      outputName: phase3/p3-followup/icon_skill_vanguard_bulwark_march.png
+      subject: UI skill icon for Bulwark March. Depict a defensive advance sigil,
+        shield-led momentum, steadfast guard, and forward pressure using concise iconography
+        for martial vanguard discipline, iron, shieldcraft, and practical battlefield
+        command.
+      profession: vanguard
+      materialTags:
+      - vanguard
+      - talent
+      - icon
+      moodTags:
+      - ui-readable
+      - iconic
+      constraints:
+      - single centered icon subject only
+      - very clear silhouette and color separation at small size
+      - no text, no character portrait, no scenery
+      geminiKeyRequired: true
+    - id: phase3_pr09_icon_skill_vanguard_earthshaker
+      category: icon_skill
+      visualKey: icon.skill.vanguard.earthshaker
+      outputName: phase3/p3-followup/icon_skill_vanguard_earthshaker.png
+      subject: UI skill icon for Earthshaker. Depict a brutal shockwave slam that
+        cracks the ground and stuns nearby enemies using concise iconography for martial
+        vanguard discipline, iron, shieldcraft, and practical battlefield command.
+      profession: vanguard
+      materialTags:
+      - vanguard
+      - talent
+      - icon
+      moodTags:
+      - ui-readable
+      - iconic
+      constraints:
+      - single centered icon subject only
+      - very clear silhouette and color separation at small size
+      - no text, no character portrait, no scenery
+      geminiKeyRequired: true
+    - id: phase3_pr09_icon_skill_vanguard_linebreaker
+      category: icon_skill
+      visualKey: icon.skill.vanguard.linebreaker
+      outputName: phase3/p3-followup/icon_skill_vanguard_linebreaker.png
+      subject: UI skill icon for Linebreaker. Depict a heavy martial breakthrough
+        strike, weapon wedge smashing through a battle line with controlled force
+        and disciplined momentum using concise iconography for martial vanguard discipline,
+        iron, shieldcraft, and practical battlefield command.
+      profession: vanguard
+      materialTags:
+      - vanguard
+      - talent
+      - icon
+      moodTags:
+      - ui-readable
+      - iconic
+      constraints:
+      - single centered icon subject only
+      - very clear silhouette and color separation at small size
+      - no text, no character portrait, no scenery
+      geminiKeyRequired: true
+    - id: phase3_pr09_talent_arcanist_cinder_burst_visual
+      category: icon_skill
+      visualKey: talent.arcanist.cinder_burst.visual
+      outputName: phase3/p3-followup/talent_arcanist_cinder_burst_visual.png
+      subject: Cinder Burst. Skill visual for disciplined battlefield sorcery, runic
+        precision, and elemental control. Depict a focused fire projectile exploding
+        into cinders and lingering burn.
+      profession: arcanist
+      materialTags:
+      - arcanist
+      - talent
+      moodTags:
+      - iconic
+      - combat
+      - readable
+      constraints:
+      - single focused ability subject only
+      - clear skill silhouette readable at small UI size
+      - no character portrait, no text, no scenery background
+      geminiKeyRequired: true
+    - id: phase3_pr09_talent_arcanist_glacial_seal_visual
+      category: icon_skill
+      visualKey: talent.arcanist.glacial_seal.visual
+      outputName: phase3/p3-followup/talent_arcanist_glacial_seal_visual.png
+      subject: Glacial Seal. Skill visual for disciplined battlefield sorcery, runic
+        precision, and elemental control. Depict a cold binding sigil sealing a target
+        in brittle frost and control magic.
+      profession: arcanist
+      materialTags:
+      - arcanist
+      - talent
+      moodTags:
+      - iconic
+      - combat
+      - readable
+      constraints:
+      - single focused ability subject only
+      - clear skill silhouette readable at small UI size
+      - no character portrait, no text, no scenery background
+      geminiKeyRequired: true
+    - id: phase3_pr09_talent_arcanist_inferno_orb_visual
+      category: icon_skill
+      visualKey: talent.arcanist.inferno_orb.visual
+      outputName: phase3/p3-followup/talent_arcanist_inferno_orb_visual.png
+      subject: Inferno Orb. Skill visual for disciplined battlefield sorcery, runic
+        precision, and elemental control. Depict a molten fire orb detonating into
+        a wide burning blast zone.
+      profession: arcanist
+      materialTags:
+      - arcanist
+      - talent
+      moodTags:
+      - iconic
+      - combat
+      - readable
+      constraints:
+      - single focused ability subject only
+      - clear skill silhouette readable at small UI size
+      - no character portrait, no text, no scenery background
+      geminiKeyRequired: true
+    - id: phase3_pr09_talent_arcanist_shard_storm_visual
+      category: icon_skill
+      visualKey: talent.arcanist.shard_storm.visual
+      outputName: phase3/p3-followup/talent_arcanist_shard_storm_visual.png
+      subject: Shard Storm. Skill visual for disciplined battlefield sorcery, runic
+        precision, and elemental control. Depict a storm of frozen crystal shards
+        cutting across a clustered target area.
+      profession: arcanist
+      materialTags:
+      - arcanist
+      - talent
+      moodTags:
+      - iconic
+      - combat
+      - readable
+      constraints:
+      - single focused ability subject only
+      - clear skill silhouette readable at small UI size
+      - no character portrait, no text, no scenery background
+      geminiKeyRequired: true
+    - id: phase3_pr09_talent_arcanist_void_breach_visual
+      category: icon_skill
+      visualKey: talent.arcanist.void_breach.visual
+      outputName: phase3/p3-followup/talent_arcanist_void_breach_visual.png
+      subject: Void Breach. Skill visual for disciplined battlefield sorcery, runic
+        precision, and elemental control. Depict a violent arcane breach of lightning
+        and void pressure aimed at one target.
+      profession: arcanist
+      materialTags:
+      - arcanist
+      - talent
+      moodTags:
+      - iconic
+      - combat
+      - readable
+      constraints:
+      - single focused ability subject only
+      - clear skill silhouette readable at small UI size
+      - no character portrait, no text, no scenery background
+      geminiKeyRequired: true
+    - id: phase3_pr09_talent_rogue_crippling_strike_visual
+      category: icon_skill
+      visualKey: talent.rogue.crippling_strike.visual
+      outputName: phase3/p3-followup/talent_rogue_crippling_strike_visual.png
+      subject: Crippling Strike. Skill visual for covert skirmisher lethality, shadow,
+        motion, and opportunistic precision. Depict a precise rogue strike that maims
+        mobility and punishes openings.
+      profession: rogue
+      materialTags:
+      - rogue
+      - talent
+      moodTags:
+      - iconic
+      - combat
+      - readable
+      constraints:
+      - single focused ability subject only
+      - clear skill silhouette readable at small UI size
+      - no character portrait, no text, no scenery background
+      geminiKeyRequired: true
+    - id: phase3_pr09_talent_rogue_dusk_shroud_visual
+      category: icon_skill
+      visualKey: talent.rogue.dusk_shroud.visual
+      outputName: phase3/p3-followup/talent_rogue_dusk_shroud_visual.png
+      subject: Dusk Shroud. Skill visual for covert skirmisher lethality, shadow,
+        motion, and opportunistic precision. Depict a panic escape shroud of stealth
+        and speed wrapped in dusk-shadow.
+      profession: rogue
+      materialTags:
+      - rogue
+      - talent
+      moodTags:
+      - iconic
+      - combat
+      - readable
+      constraints:
+      - single focused ability subject only
+      - clear skill silhouette readable at small UI size
+      - no character portrait, no text, no scenery background
+      geminiKeyRequired: true
+    - id: phase3_pr09_talent_rogue_eviscerate_visual
+      category: icon_skill
+      visualKey: talent.rogue.eviscerate.visual
+      outputName: phase3/p3-followup/talent_rogue_eviscerate_visual.png
+      subject: Eviscerate. Skill visual for covert skirmisher lethality, shadow, motion,
+        and opportunistic precision. Depict a ruthless rogue finisher tearing through
+        a wounded target.
+      profession: rogue
+      materialTags:
+      - rogue
+      - talent
+      moodTags:
+      - iconic
+      - combat
+      - readable
+      constraints:
+      - single focused ability subject only
+      - clear skill silhouette readable at small UI size
+      - no character portrait, no text, no scenery background
+      geminiKeyRequired: true
+    - id: phase3_pr09_talent_rogue_ricochet_knives_visual
+      category: icon_skill
+      visualKey: talent.rogue.ricochet_knives.visual
+      outputName: phase3/p3-followup/talent_rogue_ricochet_knives_visual.png
+      subject: Ricochet Knives. Skill visual for covert skirmisher lethality, shadow,
+        motion, and opportunistic precision. Depict a fan of throwing knives ricocheting
+        through a tight cluster of enemies.
+      profession: rogue
+      materialTags:
+      - rogue
+      - talent
+      moodTags:
+      - iconic
+      - combat
+      - readable
+      constraints:
+      - single focused ability subject only
+      - clear skill silhouette readable at small UI size
+      - no character portrait, no text, no scenery background
+      geminiKeyRequired: true
+    - id: phase3_pr09_talent_rogue_shadow_bind_visual
+      category: icon_skill
+      visualKey: talent.rogue.shadow_bind.visual
+      outputName: phase3/p3-followup/talent_rogue_shadow_bind_visual.png
+      subject: Shadow Bind. Skill visual for covert skirmisher lethality, shadow,
+        motion, and opportunistic precision. Depict a shadow curse projectile pinning
+        a target in place with dark restraint.
+      profession: rogue
+      materialTags:
+      - rogue
+      - talent
+      moodTags:
+      - iconic
+      - combat
+      - readable
+      constraints:
+      - single focused ability subject only
+      - clear skill silhouette readable at small UI size
+      - no character portrait, no text, no scenery background
+      geminiKeyRequired: true
+    - id: phase3_pr09_talent_templar_absolution_visual
+      category: icon_skill
+      visualKey: talent.templar.absolution.visual
+      outputName: phase3/p3-followup/talent_templar_absolution_visual.png
+      subject: Absolution. Skill visual for restrained holy warfare, oathbound steel,
+        radiant judgment, and protection. Depict a holy absolution rite combining
+        healing mercy and cleansing light.
+      profession: templar
+      materialTags:
+      - templar
+      - talent
+      moodTags:
+      - iconic
+      - combat
+      - readable
+      constraints:
+      - single focused ability subject only
+      - clear skill silhouette readable at small UI size
+      - no character portrait, no text, no scenery background
+      geminiKeyRequired: true
+    - id: phase3_pr09_talent_templar_beacon_of_zeal_visual
+      category: icon_skill
+      visualKey: talent.templar.beacon_of_zeal.visual
+      outputName: phase3/p3-followup/talent_templar_beacon_of_zeal_visual.png
+      subject: Beacon of Zeal. Skill visual for restrained holy warfare, oathbound
+        steel, radiant judgment, and protection. Depict a zeal beacon of disciplined
+        holy resolve and frontline encouragement.
+      profession: templar
+      materialTags:
+      - templar
+      - talent
+      moodTags:
+      - iconic
+      - combat
+      - readable
+      constraints:
+      - single focused ability subject only
+      - clear skill silhouette readable at small UI size
+      - no character portrait, no text, no scenery background
+      geminiKeyRequired: true
+    - id: phase3_pr09_talent_templar_consecration_visual
+      category: icon_skill
+      visualKey: talent.templar.consecration.visual
+      outputName: phase3/p3-followup/talent_templar_consecration_visual.png
+      subject: Consecration. Skill visual for restrained holy warfare, oathbound steel,
+        radiant judgment, and protection. Depict a holy consecrated ground burst punishing
+        nearby foes with radiant force.
+      profession: templar
+      materialTags:
+      - templar
+      - talent
+      moodTags:
+      - iconic
+      - combat
+      - readable
+      constraints:
+      - single focused ability subject only
+      - clear skill silhouette readable at small UI size
+      - no character portrait, no text, no scenery background
+      geminiKeyRequired: true
+    - id: phase3_pr09_talent_templar_radiant_lance_visual
+      category: icon_skill
+      visualKey: talent.templar.radiant_lance.visual
+      outputName: phase3/p3-followup/talent_templar_radiant_lance_visual.png
+      subject: Radiant Lance. Skill visual for restrained holy warfare, oathbound
+        steel, radiant judgment, and protection. Depict a focused radiant lance striking
+        a marked target with holy judgment.
+      profession: templar
+      materialTags:
+      - templar
+      - talent
+      moodTags:
+      - iconic
+      - combat
+      - readable
+      constraints:
+      - single focused ability subject only
+      - clear skill silhouette readable at small UI size
+      - no character portrait, no text, no scenery background
+      geminiKeyRequired: true
+    - id: phase3_pr09_talent_templar_ritual_break_visual
+      category: icon_skill
+      visualKey: talent.templar.ritual_break.visual
+      outputName: phase3/p3-followup/talent_templar_ritual_break_visual.png
+      subject: Ritual Break. Skill visual for restrained holy warfare, oathbound steel,
+        radiant judgment, and protection. Depict a holy disruption strike that breaks
+        hostile ritual power and control.
+      profession: templar
+      materialTags:
+      - templar
+      - talent
+      moodTags:
+      - iconic
+      - combat
+      - readable
+      constraints:
+      - single focused ability subject only
+      - clear skill silhouette readable at small UI size
+      - no character portrait, no text, no scenery background
+      geminiKeyRequired: true
+    - id: phase3_pr09_talent_templar_sanctuary_visual
+      category: icon_skill
+      visualKey: talent.templar.sanctuary.visual
+      outputName: phase3/p3-followup/talent_templar_sanctuary_visual.png
+      subject: Sanctuary. Skill visual for restrained holy warfare, oathbound steel,
+        radiant judgment, and protection. Depict a sanctuary shield sigil, sheltering
+        grace, and durable holy protection.
+      profession: templar
+      materialTags:
+      - templar
+      - talent
+      moodTags:
+      - iconic
+      - combat
+      - readable
+      constraints:
+      - single focused ability subject only
+      - clear skill silhouette readable at small UI size
+      - no character portrait, no text, no scenery background
+      geminiKeyRequired: true
+    - id: phase3_pr09_talent_vanguard_battlefield_command_visual
+      category: icon_skill
+      visualKey: talent.vanguard.battlefield_command.visual
+      outputName: phase3/p3-followup/talent_vanguard_battlefield_command_visual.png
+      subject: Battlefield Command. Skill visual for martial vanguard discipline,
+        iron, shieldcraft, and practical battlefield command. Depict a battlefield
+        command emblem radiating tactical authority, morale pressure, and enemy disruption.
+      profession: vanguard
+      materialTags:
+      - vanguard
+      - talent
+      moodTags:
+      - iconic
+      - combat
+      - readable
+      constraints:
+      - single focused ability subject only
+      - clear skill silhouette readable at small UI size
+      - no character portrait, no text, no scenery background
+      geminiKeyRequired: true
+    - id: phase3_pr09_talent_vanguard_bulwark_march_visual
+      category: icon_skill
+      visualKey: talent.vanguard.bulwark_march.visual
+      outputName: phase3/p3-followup/talent_vanguard_bulwark_march_visual.png
+      subject: Bulwark March. Skill visual for martial vanguard discipline, iron,
+        shieldcraft, and practical battlefield command. Depict a defensive advance
+        sigil, shield-led momentum, steadfast guard, and forward pressure.
+      profession: vanguard
+      materialTags:
+      - vanguard
+      - talent
+      moodTags:
+      - iconic
+      - combat
+      - readable
+      constraints:
+      - single focused ability subject only
+      - clear skill silhouette readable at small UI size
+      - no character portrait, no text, no scenery background
+      geminiKeyRequired: true
+    - id: phase3_pr09_talent_vanguard_earthshaker_visual
+      category: icon_skill
+      visualKey: talent.vanguard.earthshaker.visual
+      outputName: phase3/p3-followup/talent_vanguard_earthshaker_visual.png
+      subject: Earthshaker. Skill visual for martial vanguard discipline, iron, shieldcraft,
+        and practical battlefield command. Depict a brutal shockwave slam that cracks
+        the ground and stuns nearby enemies.
+      profession: vanguard
+      materialTags:
+      - vanguard
+      - talent
+      moodTags:
+      - iconic
+      - combat
+      - readable
+      constraints:
+      - single focused ability subject only
+      - clear skill silhouette readable at small UI size
+      - no character portrait, no text, no scenery background
+      geminiKeyRequired: true
+    - id: phase3_pr09_talent_vanguard_linebreaker_visual
+      category: icon_skill
+      visualKey: talent.vanguard.linebreaker.visual
+      outputName: phase3/p3-followup/talent_vanguard_linebreaker_visual.png
+      subject: Linebreaker. Skill visual for martial vanguard discipline, iron, shieldcraft,
+        and practical battlefield command. Depict a heavy martial breakthrough strike,
+        weapon wedge smashing through a battle line with controlled force and disciplined
+        momentum.
+      profession: vanguard
+      materialTags:
+      - vanguard
+      - talent
+      moodTags:
+      - iconic
+      - combat
+      - readable
+      constraints:
+      - single focused ability subject only
+      - clear skill silhouette readable at small UI size
+      - no character portrait, no text, no scenery background
+      geminiKeyRequired: true

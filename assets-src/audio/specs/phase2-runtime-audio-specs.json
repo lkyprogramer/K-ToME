@@ -98,16 +98,6 @@
       ]
     },
     {
-      "key": "audio.boss.cultist.dungeon_lord",
-      "cueFamily": "boss",
-      "eventId": "audio.boss.cultist.dungeon_lord",
-      "sourcePath": "audio/boss/cultist_dungeon_lord.ogg",
-      "tags": [
-        "placeholder",
-        "phase2"
-      ]
-    },
-    {
       "key": "audio.difficulty.normal",
       "cueFamily": "difficulty",
       "eventId": "audio.difficulty.normal",
@@ -321,46 +311,6 @@
         "monster",
         "bandit",
         "official_slice"
-      ]
-    },
-    {
-      "key": "audio.monster.beast.rat",
-      "cueFamily": "monster",
-      "eventId": "audio.monster.beast.rat",
-      "sourcePath": "audio/monster/default.ogg",
-      "tags": [
-        "placeholder",
-        "phase2"
-      ]
-    },
-    {
-      "key": "audio.monster.cultist.dungeon_lord",
-      "cueFamily": "monster",
-      "eventId": "audio.monster.cultist.dungeon_lord",
-      "sourcePath": "audio/monster/default.ogg",
-      "tags": [
-        "placeholder",
-        "phase2"
-      ]
-    },
-    {
-      "key": "audio.monster.orc.raider",
-      "cueFamily": "monster",
-      "eventId": "audio.monster.orc.raider",
-      "sourcePath": "audio/monster/default.ogg",
-      "tags": [
-        "placeholder",
-        "phase2"
-      ]
-    },
-    {
-      "key": "audio.monster.undead.bone_archer",
-      "cueFamily": "monster",
-      "eventId": "audio.monster.undead.bone_archer",
-      "sourcePath": "audio/monster/default.ogg",
-      "tags": [
-        "placeholder",
-        "phase2"
       ]
     },
     {

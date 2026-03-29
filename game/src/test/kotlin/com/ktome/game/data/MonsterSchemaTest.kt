@@ -44,15 +44,24 @@ class MonsterSchemaTest {
                     "cultist.ember_adept",
                     "cultist.shadow_priest",
                     "cultist.ashgate_warden",
+                    "bandit.cutthroat",
+                    "warded_ruin.relic_guard",
+                    "forge.slag_tender",
+                    "crystal.shardling",
+                    "river.hook_lurker",
+                    "abyssal.ward_breaker",
+                    "abyssal.eclipsed_seraph",
+                    "abyssal.guardian",
                 ),
             ),
         )
-        assertEquals(26, schemaCatalog.monsters.size)
+        assertTrue(schemaCatalog.monsters.size >= 60, "Phase 3 monster roster floor must reach at least 60 templates.")
         assertEquals(4, schemaCatalog.monsters.count { monster -> "boss" in monster.tags })
-        assertEquals(4, schemaCatalog.monsters.count { monster -> "elite" in monster.tags || monster.lootProfileId.endsWith(".elite") })
-        assertEquals(18, schemaCatalog.monsters.count { monster -> "boss" !in monster.tags && "elite" !in monster.tags && !monster.lootProfileId.endsWith(".elite") })
-        assertTrue(setOf("beast", "bandit", "undead", "orc", "cultist", "goblin").all(familyTags::contains))
-        setOf("bandit", "undead", "orc", "cultist", "goblin").forEach { family ->
+        assertTrue(schemaCatalog.monsters.count { monster -> "elite" in monster.tags || monster.lootProfileId.endsWith(".elite") } >= 11)
+        assertTrue(schemaCatalog.monsters.count { monster -> "boss" !in monster.tags && "elite" !in monster.tags && !monster.lootProfileId.endsWith(".elite") } >= 45)
+        assertTrue(schemaCatalog.monsters.count { monster -> monster.talents.isNotEmpty() } >= 16)
+        assertTrue(setOf("beast", "bandit", "undead", "orc", "cultist", "goblin", "warded_ruin", "forge", "crystal", "river", "abyssal").all(familyTags::contains))
+        setOf("bandit", "undead", "orc", "cultist", "goblin", "warded_ruin", "forge", "crystal", "river", "abyssal").forEach { family ->
             assertTrue(
                 runtimeCatalog.values
                     .filter { monster -> family in monster.tags }

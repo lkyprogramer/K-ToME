@@ -151,12 +151,14 @@ tasks.register("bossHarness") {
 
 tasks.register<Exec>("assetLint") {
     group = LifecycleBasePlugin.VERIFICATION_GROUP
-    description = "Validates the Phase 2 image asset plan."
+    description = "Validates the primary image asset plan plus PR-09 Gemini additions."
     commandLine(
         "python3",
         "scripts/asset-lint.py",
         "--plan",
         "assets-src/image/specs/phase2-asset-plan.yaml",
+        "--extra-plan",
+        "assets-src/image/specs/phase3-pr09-gemini-plan.yaml",
         "--report-dir",
         "assets-src/image/manifests",
     )
@@ -164,8 +166,15 @@ tasks.register<Exec>("assetLint") {
 
 tasks.register<Exec>("styleLint") {
     group = LifecycleBasePlugin.VERIFICATION_GROUP
-    description = "Validates the Phase 2 art style contract bindings."
-    commandLine("python3", "scripts/style-lint.py", "--plan", "assets-src/image/specs/phase2-asset-plan.yaml")
+    description = "Validates the primary art style contract bindings plus PR-09 Gemini additions."
+    commandLine(
+        "python3",
+        "scripts/style-lint.py",
+        "--plan",
+        "assets-src/image/specs/phase2-asset-plan.yaml",
+        "--extra-plan",
+        "assets-src/image/specs/phase3-pr09-gemini-plan.yaml",
+    )
 }
 
 tasks.register<Exec>("audioLint") {
@@ -177,6 +186,8 @@ tasks.register<Exec>("audioLint") {
         "scripts/audio-lint.py",
         "--plan",
         "assets-src/audio/specs/phase2-audio-plan.yaml",
+        "--extra-plan",
+        "assets-src/audio/specs/phase3-pr09-audio-plan.yaml",
         "--manifest",
         "assets-src/audio/manifests/phase2-audio-manifest.json",
         "--runtime-manifest",
@@ -220,6 +231,10 @@ tasks.register<Exec>("manifestLint") {
         "scripts/manifest-lint.py",
         "--plan",
         "assets-src/image/specs/phase2-asset-plan.yaml",
+        "--extra-plan",
+        "assets-src/image/specs/phase3-pr09-gemini-plan.yaml",
+        "--extra-plan",
+        "assets-src/image/specs/phase3-pr09-visual-alias-plan.yaml",
         "--manifest",
         "assets-src/image/manifests/phase2-visual-manifest.json",
         "--runtime-manifest",

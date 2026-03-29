@@ -26,6 +26,12 @@ def parse_args() -> argparse.Namespace:
         help="Path to the phase2 image asset plan YAML",
     )
     parser.add_argument(
+        "--extra-plan",
+        action="append",
+        default=[],
+        help="Additional asset plan YAML paths whose visual keys must also be covered by the manifest.",
+    )
+    parser.add_argument(
         "--manifest",
         default="assets-src/image/manifests/phase2-visual-manifest.json",
         help="Path to the canonical phase2 visual manifest JSON",
@@ -129,7 +135,7 @@ def load_bundled_specs(path: pathlib.Path, errors: list[str]) -> dict[str, dict]
 
 
 def validate_manifest(
-    plan_path: pathlib.Path,
+    plan_paths: list[pathlib.Path],
     manifest_path: pathlib.Path,
     runtime_manifest_path: pathlib.Path,
     runtime_root: pathlib.Path,
@@ -137,7 +143,8 @@ def validate_manifest(
     asset_root: pathlib.Path,
     require_files: bool,
 ) -> list[str]:
-    plan = load_yaml(plan_path)
+    plans = [load_yaml(path) for path in plan_paths]
+    plan = plans[0]
     manifest = load_json(manifest_path)
     runtime_manifest = load_json(runtime_manifest_path)
     errors: list[str] = []
@@ -149,7 +156,12 @@ def validate_manifest(
     if runtime_manifest.get("manifestVersion") != manifest_version:
         errors.append("runtime visual manifest manifestVersion must match canonical visual manifest.")
 
-    plan_style_tag = str(plan.get("styleTag", "")).strip()
+    plan_style_tags = {str(candidate.get("styleTag", "")).strip() for candidate in plans}
+    if "" in plan_style_tags:
+        errors.append("All visual asset plans must define styleTag.")
+    if len(plan_style_tags - {""}) > 1:
+        errors.append(f"All visual asset plans must share the same styleTag, got {sorted(plan_style_tags - {''})}.")
+    plan_style_tag = next(iter(plan_style_tags - {""}), "")
     manifest_style_tag = str(manifest.get("styleTag", "")).strip()
     runtime_style_tag = str(runtime_manifest.get("styleTag", "")).strip()
     if manifest_style_tag != plan_style_tag:
@@ -228,29 +240,30 @@ def validate_manifest(
     compare_entries(source_by_key, runtime_by_key, runtime_root, errors)
 
     plan_by_key: dict[str, dict] = {}
-    for asset in collect_assets(plan):
-        visual_key = str(asset.get("visualKey", "")).strip()
-        output_name = str(asset.get("outputName", "")).strip()
-        category = str(asset.get("category", "")).strip()
-        plan_by_key[visual_key] = asset
-        source_entry = source_by_key.get(visual_key)
-        if source_entry is None:
-            errors.append(f"canonical visual manifest is missing plan visualKey '{visual_key}'.")
-            continue
-        if str(source_entry.get("category", "")).strip() != category:
-            errors.append(
-                f"canonical visual manifest category mismatch for '{visual_key}': "
-                f"plan='{category}' source='{source_entry.get('category')}'."
-            )
-        if str(source_entry.get("rawOutputPath", "")).strip() != output_name:
-            errors.append(
-                f"canonical visual manifest rawOutputPath mismatch for '{visual_key}': "
-                f"plan='{output_name}' source='{source_entry.get('rawOutputPath')}'."
-            )
-        if require_files:
-            candidate = asset_root / output_name
-            if not candidate.is_file():
-                errors.append(f"generated raw file not found for plan visualKey '{visual_key}': {candidate}.")
+    for candidate_plan in plans:
+        for asset in collect_assets(candidate_plan):
+            visual_key = str(asset.get("visualKey", "")).strip()
+            output_name = str(asset.get("outputName", "")).strip()
+            category = str(asset.get("category", "")).strip()
+            plan_by_key[visual_key] = asset
+            source_entry = source_by_key.get(visual_key)
+            if source_entry is None:
+                errors.append(f"canonical visual manifest is missing plan visualKey '{visual_key}'.")
+                continue
+            if str(source_entry.get("category", "")).strip() != category:
+                errors.append(
+                    f"canonical visual manifest category mismatch for '{visual_key}': "
+                    f"plan='{category}' source='{source_entry.get('category')}'."
+                )
+            if str(source_entry.get("rawOutputPath", "")).strip() != output_name:
+                errors.append(
+                    f"canonical visual manifest rawOutputPath mismatch for '{visual_key}': "
+                    f"plan='{output_name}' source='{source_entry.get('rawOutputPath')}'."
+                )
+            if require_files:
+                candidate = asset_root / output_name
+                if not candidate.is_file():
+                    errors.append(f"generated raw file not found for plan visualKey '{visual_key}': {candidate}.")
 
     expected_spec_keys = set(plan_by_key) | set(bundled_by_key)
     missing_spec_keys = sorted(source_by_key.keys() - expected_spec_keys)
@@ -284,7 +297,7 @@ def validate_manifest(
 def main() -> int:
     args = parse_args()
     errors = validate_manifest(
-        pathlib.Path(args.plan),
+        [pathlib.Path(args.plan), *[pathlib.Path(path) for path in args.extra_plan]],
         pathlib.Path(args.manifest),
         pathlib.Path(args.runtime_manifest),
         pathlib.Path(args.runtime_root),

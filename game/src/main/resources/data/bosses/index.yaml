@@ -18,9 +18,9 @@ bossEncounters:
   - id: molten_giant_encounter
     nameKey: boss.orc.molten_giant.name
     descKey: boss.orc.molten_giant.desc
-    visualKey: actor.orc.raider
-    iconKey: icon.monster.orc.raider
-    audioProfile: audio.monster.orc.raider
+    visualKey: boss.orc.molten_giant.visual
+    iconKey: boss.orc.molten_giant.icon
+    audioProfile: audio.boss.orc.molten_giant
     schemaVersion: 2
     tags: [boss, phase3]
     templateId: orc.molten_giant
@@ -73,9 +73,9 @@ bossEncounters:
   - id: abyssal_guardian_encounter
     nameKey: boss.abyssal.guardian.name
     descKey: boss.abyssal.guardian.desc
-    visualKey: boss.cultist.dungeon_lord.visual
-    iconKey: boss.cultist.dungeon_lord.icon
-    audioProfile: audio.boss.cultist.dungeon_lord
+    visualKey: boss.abyssal.guardian.visual
+    iconKey: boss.abyssal.guardian.icon
+    audioProfile: audio.boss.abyssal.guardian
     schemaVersion: 2
     tags: [boss, phase3, finale]
     templateId: abyssal.guardian

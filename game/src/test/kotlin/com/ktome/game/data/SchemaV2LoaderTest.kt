@@ -39,15 +39,19 @@ class SchemaV2LoaderTest {
                 setOf(
                     "power_strike",
                     "charge",
+                    "linebreaker",
                     "shield_bash",
                     "war_cry",
                     "fireball",
+                    "void_breach",
                     "blink",
                     "backstab",
+                    "shadow_bind",
                     "poison_blade",
                     "stealth",
                     "roll",
                     "holy_strike",
+                    "consecration",
                     "holy_light",
                     "holy_shield",
                     "devotion",
@@ -101,8 +105,8 @@ class SchemaV2LoaderTest {
         )
         assertEquals(3, catalog.professions.first { it.id == "vanguard" }.combatProfile.baseDefense)
         assertEquals(103, catalog.professions.first { it.id == "arcanist" }.combatProfile.baseSpeed)
-        assertEquals(listOf("backstab", "poison_blade", "deathblow", "execution"), catalog.talentTrees.first { it.id == "rogue_assassination" }.nodes)
-        assertEquals(listOf("holy_light", "holy_shield", "purify"), catalog.talentTrees.first { it.id == "templar_grace" }.nodes)
+        assertEquals(listOf("backstab", "poison_blade", "deathblow", "execution", "crippling_strike", "eviscerate"), catalog.talentTrees.first { it.id == "rogue_assassination" }.nodes)
+        assertEquals(listOf("holy_light", "holy_shield", "purify", "sanctuary", "absolution"), catalog.talentTrees.first { it.id == "templar_grace" }.nodes)
         assertEquals(3, catalog.talents.first { it.id == "charge" }.unlockLevel)
         assertEquals("charge_lane", catalog.talents.first { it.id == "charge" }.telegraphRef)
         assertEquals(4, catalog.talents.first { it.id == "blink" }.levelEffects.getValue(5).rangeBonus)
@@ -160,7 +164,7 @@ class SchemaV2LoaderTest {
         assertEquals("quest.crystal_cavern", catalog.objectiveSets.single { it.id == "crystal_cavern_resonance" }.linkedQuestId)
         assertEquals("resonance", catalog.objectiveSets.single { it.id == "crystal_cavern_resonance" }.questObjectiveId)
         assertEquals(setOf("normal"), catalog.difficulties.map { it.id }.toSet())
-        assertEquals(26, catalog.monsters.size)
+        assertEquals(60, catalog.monsters.size)
         assertEquals(25, catalog.itemBundle.items.size)
         assertTrue(catalog.itemBundle.items.count { item -> "weapon" in item.tags } >= 6)
         assertTrue(catalog.itemBundle.items.count { item -> "armor" in item.tags && "accessory" !in item.tags } >= 6)
@@ -183,12 +187,22 @@ class SchemaV2LoaderTest {
         assertTrue(catalog.visualKeys.contains("icon.skill.templar.divine_intervention"))
         assertTrue(catalog.visualKeys.contains("actor.orc.miner"))
         assertTrue(catalog.visualKeys.contains("actor.cultist.shadow_priest"))
+        assertTrue(catalog.visualKeys.contains("actor.orc.molten_giant"))
+        assertTrue(catalog.visualKeys.contains("actor.abyssal.guardian"))
+        assertTrue(catalog.visualKeys.contains("boss.orc.molten_giant.visual"))
+        assertTrue(catalog.visualKeys.contains("boss.abyssal.guardian.visual"))
+        assertTrue(catalog.visualKeys.contains("talent.vanguard.linebreaker.visual"))
+        assertTrue(catalog.visualKeys.contains("icon.skill.templar.ritual_break"))
         assertTrue(catalog.visualKeys.contains("prop.mine_furnace"))
         assertTrue(catalog.visualKeys.contains("prop.ritual_altar"))
         assertTrue(catalog.audioProfiles.contains("audio.talent.power_strike"))
         assertTrue(catalog.audioProfiles.contains("audio.talent.mana_surge"))
         assertTrue(catalog.audioProfiles.contains("audio.talent.backstab"))
         assertTrue(catalog.audioProfiles.contains("audio.talent.holy_light"))
+        assertTrue(catalog.audioProfiles.contains("audio.talent.linebreaker"))
+        assertTrue(catalog.audioProfiles.contains("audio.talent.void_breach"))
+        assertTrue(catalog.audioProfiles.contains("audio.monster.bandit_family"))
+        assertTrue(catalog.audioProfiles.contains("audio.boss.orc.molten_giant"))
         assertTrue(catalog.audioProfiles.contains("audio.monster.default"))
         assertEquals(
             listOf("healing_potion", "short_sword", "leather_armor", "bandit_trophy", "stamina_draught", "hunter_bow"),
@@ -214,7 +228,9 @@ class SchemaV2LoaderTest {
         val banditCaptainAi = catalog.aiProfiles.first { it.id == "ai.boss.bandit_captain.phase_full" }
         assertEquals(AISelectionPolicy.WEIGHTED_RANDOM, banditCaptainAi.selectionPolicy)
         assertEquals("strike", banditCaptainAi.actions.first().id)
-        assertEquals("ai.boss.dungeon_lord.phase_enraged", catalog.aiProfiles.first { it.id == "ai.boss.dungeon_lord.phase_enraged" }.id)
+        assertEquals("earthshaker", catalog.aiProfiles.first { it.id == "ai.boss.molten_giant.phase_enraged" }.actions.first().id)
+        assertEquals("ritual_break", catalog.aiProfiles.first { it.id == "ai.boss.dungeon_lord.phase_enraged" }.actions.first().id)
+        assertEquals("void_breach", catalog.aiProfiles.first { it.id == "ai.boss.abyssal_guardian.phase_abyssal" }.actions.first().id)
         assertTrue(catalog.telegraphSpecs.any { spec -> spec.id == "molten_giant_phase_warning" })
         assertTrue(catalog.telegraphSpecs.any { spec -> spec.id == "abyssal_guardian_phase_warning" })
         assertTrue(catalog.threatProfiles.any { profile -> profile.id == "threat.frontliner.mid" })
@@ -297,7 +313,7 @@ class SchemaV2LoaderTest {
         assertEquals("audio.monster.cultist.dungeon_lord", boss.audioProfile)
         assertEquals("ai.boss.dungeon_lord.phase_full", boss.aiProfileId)
         assertEquals("loot.foundation.boss", boss.lootProfileId)
-        assertEquals(mapOf("war_cry" to 3, "power_strike" to 4, "charge" to 2), boss.talentLevels)
+        assertEquals(mapOf("battlefield_command" to 3, "shadow_bind" to 3, "ritual_break" to 4, "arcane_shield" to 3), boss.talentLevels)
         val huntmaster =
             DataLoader(GameLocale.EN_US)
                 .loadMonsterCatalog()

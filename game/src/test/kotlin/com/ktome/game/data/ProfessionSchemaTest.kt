@@ -35,6 +35,14 @@ class ProfessionSchemaTest {
             profession.startingTalents.forEach { talentId -> assertTrue(talentIds.contains(talentId), "Unknown starter talent $talentId") }
             profession.startingKit.forEach { itemId -> assertTrue(itemIds.contains(itemId), "Unknown starter item $itemId") }
         }
+        listOf("vanguard", "arcanist", "rogue", "templar").forEach { professionId ->
+            val profession = catalog.professions.first { it.id == professionId }
+            val nodeCount =
+                profession.talentTrees.sumOf { treeId ->
+                    requireNotNull(catalog.talentTrees.firstOrNull { tree -> tree.id == treeId }) { "Missing talent tree $treeId" }.nodes.size
+                }
+            assertTrue(nodeCount >= 16, "Base profession '$professionId' must expose at least 16 formal talents, actual=$nodeCount")
+        }
         assertEquals(2, catalog.professions.first { it.id == "spellblade" }.resourceProfiles.size)
         assertEquals("DEV_UNLOCKED", catalog.professions.first { it.id == "berserker" }.initialUnlockState.name)
         assertEquals("LOCKED", catalog.professions.first { it.id == "shadowblade" }.initialUnlockState.name)

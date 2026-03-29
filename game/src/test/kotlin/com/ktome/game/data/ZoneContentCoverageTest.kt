@@ -53,6 +53,38 @@ class ZoneContentCoverageTest {
     }
 
     @Test
+    fun `optional and late phase three zones carry unique roster anchors instead of mirrored shells`() {
+        val catalog = DataLoader(GameLocale.EN_US).loadSchemaCatalog()
+        val zonesById = catalog.zones.associateBy { zone -> zone.id }
+        val uniqueRosterExpectations =
+            listOf(
+                Triple("bandit_camp", "greenwood_fringe", setOf("bandit.cutthroat", "bandit.banner_guard", "bandit.cache_overseer")),
+                Triple("elven_ruins", "greenwood_fringe", setOf("warded_ruin.relic_guard", "warded_ruin.cleanse_adept", "warded_ruin.ward_lancer")),
+                Triple("molten_core", "deep_iron_pit", setOf("forge.slag_tender", "forge.heat_channeler", "forge.crucible_knight")),
+                Triple("crystal_cavern", "underground_river", setOf("crystal.shardling", "crystal.prism_weaver", "crystal.resonant_colossus")),
+                Triple("underground_river", "grey_gate_depths", setOf("river.hook_lurker", "river.tide_mender", "river.current_reaver")),
+                Triple("abyssal_temple", "underground_river", setOf("abyssal.ward_breaker", "abyssal.void_preacher", "abyssal.eclipsed_seraph")),
+                Triple("abyssal_heart", "abyssal_temple", setOf("abyssal_guardian_encounter")),
+            )
+
+        uniqueRosterExpectations.forEach { (zoneId, baselineZoneId, expectedAnchorIds) ->
+            val zone = requireNotNull(zonesById[zoneId]) { "Missing zone '$zoneId'." }
+            val baseline = requireNotNull(zonesById[baselineZoneId]) { "Missing baseline zone '$baselineZoneId'." }
+            val rosterIds = (zone.monsterPools + zone.elitePools + listOfNotNull(zone.bossEncounterId)).toSet()
+            val baselineIds = (baseline.monsterPools + baseline.elitePools + listOfNotNull(baseline.bossEncounterId)).toSet()
+
+            assertTrue(
+                rosterIds.any(expectedAnchorIds::contains),
+                "Zone '$zoneId' must expose at least one PR-09 unique roster anchor from $expectedAnchorIds.",
+            )
+            assertTrue(
+                (rosterIds - baselineIds).isNotEmpty(),
+                "Zone '$zoneId' must keep at least one roster entry not shared with '$baselineZoneId'.",
+            )
+        }
+    }
+
+    @Test
     fun `shop rescue policies satisfy checkpoint affordability contract`() {
         val catalog = DataLoader(GameLocale.EN_US).loadSchemaCatalog()
         val shops = catalog.shopNodes.associateBy { shop -> shop.id }

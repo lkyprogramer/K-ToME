@@ -94,6 +94,9 @@ class EntityFactoryTest {
         val monsterId = factory.createMonster(world = world, template = template, position = Point(6, 7))
 
         assertNotNull(requireNotNull(world.get<ResourcePools>(monsterId)).pool(ResourceType.STAMINA))
+        assertNotNull(requireNotNull(world.get<ResourcePools>(monsterId)).pool(ResourceType.MANA))
+        assertNotNull(requireNotNull(world.get<ResourcePools>(monsterId)).pool(ResourceType.ENERGY))
+        assertNotNull(requireNotNull(world.get<ResourcePools>(monsterId)).pool(ResourceType.POSITIVE_ENERGY))
         assertEquals(template.talentLevels, requireNotNull(world.get<TalentLoadout>(monsterId)).talentLevels)
         assertNotNull(world.get<CooldownState>(monsterId))
         assertNotNull(world.get<AiTriggerTracker>(monsterId))

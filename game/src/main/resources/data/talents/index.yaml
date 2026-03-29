@@ -9,7 +9,7 @@ talentTrees:
     schemaVersion: 2
     tags: [tree, vanguard]
     layout: foundation_grid
-    nodes: [power_strike, charge, sweeping_strike, sunder_armor]
+    nodes: [power_strike, charge, sweeping_strike, sunder_armor, linebreaker, earthshaker]
   - id: vanguard_shield
     professionId: vanguard
     nameKey: talent_tree.vanguard_shield.name
@@ -20,7 +20,7 @@ talentTrees:
     schemaVersion: 2
     tags: [tree, vanguard]
     layout: foundation_grid
-    nodes: [shield_bash, guard_stance, taunt, iron_wall]
+    nodes: [shield_bash, guard_stance, taunt, iron_wall, bulwark_march]
   - id: vanguard_warcry
     professionId: vanguard
     nameKey: talent_tree.vanguard_warcry.name
@@ -31,7 +31,7 @@ talentTrees:
     schemaVersion: 2
     tags: [tree, vanguard]
     layout: foundation_grid
-    nodes: [war_cry, intimidation, rallying_banner, unyielding]
+    nodes: [war_cry, intimidation, rallying_banner, unyielding, battlefield_command]
   - id: arcanist_flame
     professionId: arcanist
     nameKey: talent_tree.arcanist_flame.name
@@ -42,7 +42,7 @@ talentTrees:
     schemaVersion: 2
     tags: [tree, arcanist]
     layout: foundation_grid
-    nodes: [fireball, flame_wall, immolate, meteor]
+    nodes: [fireball, flame_wall, immolate, meteor, cinder_burst, inferno_orb]
   - id: arcanist_frost
     professionId: arcanist
     nameKey: talent_tree.arcanist_frost.name
@@ -53,7 +53,7 @@ talentTrees:
     schemaVersion: 2
     tags: [tree, arcanist]
     layout: foundation_grid
-    nodes: [ice_bolt, frost_nova, ice_prison]
+    nodes: [ice_bolt, frost_nova, ice_prison, glacial_seal, shard_storm]
   - id: arcanist_arcane
     professionId: arcanist
     nameKey: talent_tree.arcanist_arcane.name
@@ -64,7 +64,7 @@ talentTrees:
     schemaVersion: 2
     tags: [tree, arcanist]
     layout: foundation_grid
-    nodes: [arcane_shield, blink, mana_surge, arcane_overload]
+    nodes: [arcane_shield, blink, mana_surge, arcane_overload, void_breach]
   - id: rogue_assassination
     professionId: rogue
     nameKey: talent_tree.rogue_assassination.name
@@ -75,7 +75,7 @@ talentTrees:
     schemaVersion: 2
     tags: [tree, rogue]
     layout: foundation_grid
-    nodes: [backstab, poison_blade, deathblow, execution]
+    nodes: [backstab, poison_blade, deathblow, execution, crippling_strike, eviscerate]
   - id: rogue_subtlety
     professionId: rogue
     nameKey: talent_tree.rogue_subtlety.name
@@ -86,7 +86,7 @@ talentTrees:
     schemaVersion: 2
     tags: [tree, rogue]
     layout: foundation_grid
-    nodes: [stealth, smoke_bomb, shadowstep]
+    nodes: [stealth, smoke_bomb, shadowstep, shadow_bind, dusk_shroud]
   - id: rogue_agility
     professionId: rogue
     nameKey: talent_tree.rogue_agility.name
@@ -97,7 +97,7 @@ talentTrees:
     schemaVersion: 2
     tags: [tree, rogue]
     layout: foundation_grid
-    nodes: [roll, blade_flurry, killer_instinct, vanish]
+    nodes: [roll, blade_flurry, killer_instinct, vanish, ricochet_knives]
   - id: templar_smite
     professionId: templar
     nameKey: talent_tree.templar_smite.name
@@ -108,7 +108,7 @@ talentTrees:
     schemaVersion: 2
     tags: [tree, templar]
     layout: foundation_grid
-    nodes: [holy_strike, judgment_hammer, holy_mark, heavens_judgment]
+    nodes: [holy_strike, judgment_hammer, holy_mark, heavens_judgment, radiant_lance, consecration]
   - id: templar_grace
     professionId: templar
     nameKey: talent_tree.templar_grace.name
@@ -119,7 +119,7 @@ talentTrees:
     schemaVersion: 2
     tags: [tree, templar]
     layout: foundation_grid
-    nodes: [holy_light, holy_shield, purify]
+    nodes: [holy_light, holy_shield, purify, sanctuary, absolution]
   - id: templar_faith
     professionId: templar
     nameKey: talent_tree.templar_faith.name
@@ -130,7 +130,7 @@ talentTrees:
     schemaVersion: 2
     tags: [tree, templar]
     layout: foundation_grid
-    nodes: [devotion, holy_aura, divine_intervention]
+    nodes: [devotion, holy_aura, divine_intervention, beacon_of_zeal, ritual_break]
   - id: berserker_wrath
     professionId: berserker
     nameKey: talent_tree.berserker_wrath.name
@@ -605,7 +605,7 @@ talents:
     minRange: 0
     areaRadius: 0
     resourceCosts: { STAMINA: 12 }
-    unlockLevel: 4
+    unlockLevel: 3
     targeting: SINGLE_TARGET
     callbacks: []
     telegraphRef: melee_single
@@ -749,7 +749,7 @@ talents:
     minRange: 0
     areaRadius: 4
     resourceCosts: { STAMINA: 10 }
-    unlockLevel: 4
+    unlockLevel: 3
     targeting: RADIUS_SELF
     callbacks: []
     telegraphRef: self_buff_aura
@@ -2739,6 +2739,1590 @@ talents:
       3: { damageMultiplier: 2.2 }
       4: { damageMultiplier: 2.4 }
       5: { damageMultiplier: 2.7 }
+  - id: linebreaker
+    nameKey: talent.vanguard.linebreaker.name
+    descKey: talent.vanguard.linebreaker.desc
+    visualKey: talent.vanguard.linebreaker.visual
+    iconKey: talent.vanguard.linebreaker.icon
+    audioProfile: audio.talent.linebreaker
+    schemaVersion: 3
+    tags: [talent, vanguard, melee]
+    maxPoints: 5
+    category: ACTIVE
+    damageType: PHYSICAL
+    powerDimension: PHYSICAL
+    kind: ACTIVE
+    cooldown: 6
+    castTime: STANDARD
+    range: 1
+    minRange: 0
+    areaRadius: 1
+    resourceCosts: { STAMINA: 10 }
+    unlockLevel: 3
+    targeting: RADIUS_TARGET
+    callbacks: []
+    telegraphRef: melee_single
+    treeId: vanguard_arms
+    requirements:
+      talentPrereqs:
+        - talentId: sweeping_strike
+          minRank: 1
+    keywords: [damage, area, knockback]
+    levelEffects:
+      1: { damageMultiplier: 1.15, knockback: 1 }
+      2: { damageMultiplier: 1.25, knockback: 1 }
+      3: { damageMultiplier: 1.35, knockback: 1 }
+      4: { damageMultiplier: 1.45, knockback: 1 }
+      5:
+        damageMultiplier: 1.55
+        knockback: 1
+        associatedEffects:
+          - effectId: linebreaker_armor_break
+            effectType: ARMOR_BREAK
+            trigger: ON_HIT
+            targetScope: PRIMARY_TARGET
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: PHYSICAL
+            duration: 3
+  - id: earthshaker
+    nameKey: talent.vanguard.earthshaker.name
+    descKey: talent.vanguard.earthshaker.desc
+    visualKey: talent.vanguard.earthshaker.visual
+    iconKey: talent.vanguard.earthshaker.icon
+    audioProfile: audio.talent.earthshaker
+    schemaVersion: 3
+    tags: [talent, vanguard, control]
+    maxPoints: 5
+    category: ACTIVE
+    damageType: PHYSICAL
+    powerDimension: PHYSICAL
+    kind: ACTIVE
+    cooldown: 9
+    castTime: HEAVY
+    range: 0
+    minRange: 0
+    areaRadius: 2
+    resourceCosts: { STAMINA: 14 }
+    unlockLevel: 6
+    targeting: RADIUS_SELF
+    callbacks: []
+    telegraphRef: charge_lane
+    treeId: vanguard_arms
+    requirements:
+      talentPrereqs:
+        - talentId: linebreaker
+          minRank: 1
+    keywords: [damage, area, stun]
+    levelEffects:
+      1:
+        damageMultiplier: 0.95
+        associatedEffects:
+          - effectId: earthshaker_stun
+            effectType: STUN
+            trigger: ON_HIT
+            targetScope: HOSTILES_IN_RADIUS
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: PHYSICAL
+            duration: 1
+      2:
+        damageMultiplier: 1.05
+        associatedEffects:
+          - effectId: earthshaker_stun
+            effectType: STUN
+            trigger: ON_HIT
+            targetScope: HOSTILES_IN_RADIUS
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: PHYSICAL
+            duration: 1
+      3:
+        damageMultiplier: 1.15
+        associatedEffects:
+          - effectId: earthshaker_stun
+            effectType: STUN
+            trigger: ON_HIT
+            targetScope: HOSTILES_IN_RADIUS
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: PHYSICAL
+            duration: 1
+      4:
+        damageMultiplier: 1.25
+        associatedEffects:
+          - effectId: earthshaker_stun
+            effectType: STUN
+            trigger: ON_HIT
+            targetScope: HOSTILES_IN_RADIUS
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: PHYSICAL
+            duration: 2
+      5:
+        damageMultiplier: 1.40
+        associatedEffects:
+          - effectId: earthshaker_stun
+            effectType: STUN
+            trigger: ON_HIT
+            targetScope: HOSTILES_IN_RADIUS
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: PHYSICAL
+            duration: 2
+  - id: bulwark_march
+    nameKey: talent.vanguard.bulwark_march.name
+    descKey: talent.vanguard.bulwark_march.desc
+    visualKey: talent.vanguard.bulwark_march.visual
+    iconKey: talent.vanguard.bulwark_march.icon
+    audioProfile: audio.talent.bulwark_march
+    schemaVersion: 3
+    tags: [talent, vanguard, defense]
+    maxPoints: 5
+    category: ACTIVE
+    kind: ACTIVE
+    cooldown: 8
+    castTime: STANDARD
+    range: 0
+    minRange: 0
+    areaRadius: 0
+    resourceCosts: { STAMINA: 10 }
+    unlockLevel: 4
+    targeting: SELF
+    callbacks: []
+    telegraphRef: self_buff_aura
+    treeId: vanguard_shield
+    requirements:
+      talentPrereqs:
+        - talentId: guard_stance
+          minRank: 1
+    keywords: [buff, defense, movement]
+    levelEffects:
+      1:
+        associatedEffects:
+          - effectId: bulwark_march_guard
+            effectType: GUARD
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 4
+            magnitude: 0.18
+      2:
+        associatedEffects:
+          - effectId: bulwark_march_guard
+            effectType: GUARD
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 4
+            magnitude: 0.22
+      3:
+        associatedEffects:
+          - effectId: bulwark_march_guard
+            effectType: GUARD
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 4
+            magnitude: 0.26
+      4:
+        associatedEffects:
+          - effectId: bulwark_march_guard
+            effectType: GUARD
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 5
+            magnitude: 0.30
+      5:
+        associatedEffects:
+          - effectId: bulwark_march_guard
+            effectType: GUARD
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 5
+            magnitude: 0.34
+  - id: battlefield_command
+    nameKey: talent.vanguard.battlefield_command.name
+    descKey: talent.vanguard.battlefield_command.desc
+    visualKey: talent.vanguard.battlefield_command.visual
+    iconKey: talent.vanguard.battlefield_command.icon
+    audioProfile: audio.talent.battlefield_command
+    schemaVersion: 3
+    tags: [talent, vanguard, support]
+    maxPoints: 5
+    category: ACTIVE
+    powerDimension: MENTAL
+    kind: ACTIVE
+    cooldown: 9
+    castTime: STANDARD
+    range: 0
+    minRange: 0
+    areaRadius: 3
+    resourceCosts: { STAMINA: 8 }
+    unlockLevel: 6
+    targeting: RADIUS_SELF
+    callbacks: []
+    telegraphRef: self_buff_aura
+    treeId: vanguard_warcry
+    requirements:
+      talentPrereqs:
+        - talentId: rallying_banner
+          minRank: 1
+    keywords: [buff, debuff, control]
+    levelEffects:
+      1:
+        associatedEffects:
+          - effectId: battlefield_command_empower
+            effectType: war_cry_empower
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 4
+            magnitude: 0.18
+          - effectId: battlefield_command_weaken
+            effectType: WEAKEN
+            trigger: ON_CAST
+            targetScope: HOSTILES_IN_RADIUS
+            applicationPolicy: HOSTILE_SAVE_ONLY
+            saveDimension: MENTAL
+            duration: 3
+            magnitude: 0.12
+      2:
+        associatedEffects:
+          - effectId: battlefield_command_empower
+            effectType: war_cry_empower
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 4
+            magnitude: 0.22
+          - effectId: battlefield_command_weaken
+            effectType: WEAKEN
+            trigger: ON_CAST
+            targetScope: HOSTILES_IN_RADIUS
+            applicationPolicy: HOSTILE_SAVE_ONLY
+            saveDimension: MENTAL
+            duration: 3
+            magnitude: 0.14
+      3:
+        associatedEffects:
+          - effectId: battlefield_command_empower
+            effectType: war_cry_empower
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 4
+            magnitude: 0.26
+          - effectId: battlefield_command_weaken
+            effectType: WEAKEN
+            trigger: ON_CAST
+            targetScope: HOSTILES_IN_RADIUS
+            applicationPolicy: HOSTILE_SAVE_ONLY
+            saveDimension: MENTAL
+            duration: 3
+            magnitude: 0.16
+      4:
+        associatedEffects:
+          - effectId: battlefield_command_empower
+            effectType: war_cry_empower
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 5
+            magnitude: 0.30
+          - effectId: battlefield_command_weaken
+            effectType: WEAKEN
+            trigger: ON_CAST
+            targetScope: HOSTILES_IN_RADIUS
+            applicationPolicy: HOSTILE_SAVE_ONLY
+            saveDimension: MENTAL
+            duration: 4
+            magnitude: 0.18
+      5:
+        associatedEffects:
+          - effectId: battlefield_command_empower
+            effectType: war_cry_empower
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 5
+            magnitude: 0.34
+          - effectId: battlefield_command_weaken
+            effectType: WEAKEN
+            trigger: ON_CAST
+            targetScope: HOSTILES_IN_RADIUS
+            applicationPolicy: HOSTILE_SAVE_ONLY
+            saveDimension: MENTAL
+            duration: 4
+            magnitude: 0.20
+  - id: cinder_burst
+    nameKey: talent.arcanist.cinder_burst.name
+    descKey: talent.arcanist.cinder_burst.desc
+    visualKey: talent.arcanist.cinder_burst.visual
+    iconKey: talent.arcanist.cinder_burst.icon
+    audioProfile: audio.talent.cinder_burst
+    schemaVersion: 3
+    tags: [talent, arcanist, spell]
+    maxPoints: 5
+    category: ACTIVE
+    damageType: FIRE
+    powerDimension: SPELL
+    kind: ACTIVE
+    cooldown: 5
+    castTime: STANDARD
+    range: 6
+    minRange: 1
+    areaRadius: 0
+    resourceCosts: { MANA: 14 }
+    unlockLevel: 4
+    targeting: SINGLE_TARGET
+    callbacks: []
+    telegraphRef: melee_single
+    treeId: arcanist_flame
+    requirements:
+      talentPrereqs:
+        - talentId: flame_wall
+          minRank: 1
+    keywords: [damage, burn, ranged]
+    levelEffects:
+      1:
+        damageMultiplier: 1.45
+        associatedEffects:
+          - effectId: cinder_burst_burn
+            effectType: BURN
+            trigger: ON_HIT
+            targetScope: PRIMARY_TARGET
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: SPELL
+            duration: 2
+            magnitude: 0.12
+      2:
+        damageMultiplier: 1.60
+        associatedEffects:
+          - effectId: cinder_burst_burn
+            effectType: BURN
+            trigger: ON_HIT
+            targetScope: PRIMARY_TARGET
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: SPELL
+            duration: 2
+            magnitude: 0.14
+      3:
+        damageMultiplier: 1.75
+        associatedEffects:
+          - effectId: cinder_burst_burn
+            effectType: BURN
+            trigger: ON_HIT
+            targetScope: PRIMARY_TARGET
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: SPELL
+            duration: 3
+            magnitude: 0.16
+      4:
+        damageMultiplier: 1.90
+        associatedEffects:
+          - effectId: cinder_burst_burn
+            effectType: BURN
+            trigger: ON_HIT
+            targetScope: PRIMARY_TARGET
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: SPELL
+            duration: 3
+            magnitude: 0.18
+      5:
+        damageMultiplier: 2.10
+        associatedEffects:
+          - effectId: cinder_burst_burn
+            effectType: BURN
+            trigger: ON_HIT
+            targetScope: PRIMARY_TARGET
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: SPELL
+            duration: 3
+            magnitude: 0.20
+  - id: inferno_orb
+    nameKey: talent.arcanist.inferno_orb.name
+    descKey: talent.arcanist.inferno_orb.desc
+    visualKey: talent.arcanist.inferno_orb.visual
+    iconKey: talent.arcanist.inferno_orb.icon
+    audioProfile: audio.talent.inferno_orb
+    schemaVersion: 3
+    tags: [talent, arcanist, spell]
+    maxPoints: 5
+    category: ACTIVE
+    damageType: FIRE
+    powerDimension: SPELL
+    kind: ACTIVE
+    cooldown: 8
+    castTime: HEAVY
+    range: 5
+    minRange: 2
+    areaRadius: 2
+    resourceCosts: { MANA: 20 }
+    unlockLevel: 6
+    targeting: GROUND_TARGET
+    callbacks: []
+    telegraphRef: charge_lane
+    treeId: arcanist_flame
+    requirements:
+      talentPrereqs:
+        - talentId: cinder_burst
+          minRank: 1
+    keywords: [damage, area, burn]
+    levelEffects:
+      1:
+        damageMultiplier: 1.20
+        associatedEffects:
+          - effectId: inferno_orb_burn
+            effectType: BURN
+            trigger: ON_HIT
+            targetScope: HOSTILES_IN_RADIUS
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: SPELL
+            duration: 2
+            magnitude: 0.10
+      2:
+        damageMultiplier: 1.35
+        associatedEffects:
+          - effectId: inferno_orb_burn
+            effectType: BURN
+            trigger: ON_HIT
+            targetScope: HOSTILES_IN_RADIUS
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: SPELL
+            duration: 2
+            magnitude: 0.12
+      3:
+        damageMultiplier: 1.50
+        associatedEffects:
+          - effectId: inferno_orb_burn
+            effectType: BURN
+            trigger: ON_HIT
+            targetScope: HOSTILES_IN_RADIUS
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: SPELL
+            duration: 3
+            magnitude: 0.14
+      4:
+        damageMultiplier: 1.65
+        associatedEffects:
+          - effectId: inferno_orb_burn
+            effectType: BURN
+            trigger: ON_HIT
+            targetScope: HOSTILES_IN_RADIUS
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: SPELL
+            duration: 3
+            magnitude: 0.16
+      5:
+        damageMultiplier: 1.80
+        associatedEffects:
+          - effectId: inferno_orb_burn
+            effectType: BURN
+            trigger: ON_HIT
+            targetScope: HOSTILES_IN_RADIUS
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: SPELL
+            duration: 3
+            magnitude: 0.18
+  - id: glacial_seal
+    nameKey: talent.arcanist.glacial_seal.name
+    descKey: talent.arcanist.glacial_seal.desc
+    visualKey: talent.arcanist.glacial_seal.visual
+    iconKey: talent.arcanist.glacial_seal.icon
+    audioProfile: audio.talent.glacial_seal
+    schemaVersion: 3
+    tags: [talent, arcanist, spell]
+    maxPoints: 5
+    category: ACTIVE
+    damageType: COLD
+    powerDimension: SPELL
+    kind: ACTIVE
+    cooldown: 7
+    castTime: STANDARD
+    range: 6
+    minRange: 1
+    areaRadius: 0
+    resourceCosts: { MANA: 14 }
+    unlockLevel: 4
+    targeting: SINGLE_TARGET
+    callbacks: []
+    telegraphRef: melee_single
+    treeId: arcanist_frost
+    requirements:
+      talentPrereqs:
+        - talentId: ice_prison
+          minRank: 1
+    keywords: [damage, freeze, control]
+    levelEffects:
+      1:
+        damageMultiplier: 1.05
+        associatedEffects:
+          - effectId: glacial_seal_freeze
+            effectType: FREEZE
+            trigger: ON_HIT
+            targetScope: PRIMARY_TARGET
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: SPELL
+            duration: 1
+      2:
+        damageMultiplier: 1.20
+        associatedEffects:
+          - effectId: glacial_seal_freeze
+            effectType: FREEZE
+            trigger: ON_HIT
+            targetScope: PRIMARY_TARGET
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: SPELL
+            duration: 1
+      3:
+        damageMultiplier: 1.35
+        associatedEffects:
+          - effectId: glacial_seal_freeze
+            effectType: FREEZE
+            trigger: ON_HIT
+            targetScope: PRIMARY_TARGET
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: SPELL
+            duration: 2
+      4:
+        damageMultiplier: 1.50
+        associatedEffects:
+          - effectId: glacial_seal_freeze
+            effectType: FREEZE
+            trigger: ON_HIT
+            targetScope: PRIMARY_TARGET
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: SPELL
+            duration: 2
+      5:
+        damageMultiplier: 1.70
+        associatedEffects:
+          - effectId: glacial_seal_freeze
+            effectType: FREEZE
+            trigger: ON_HIT
+            targetScope: PRIMARY_TARGET
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: SPELL
+            duration: 2
+  - id: shard_storm
+    nameKey: talent.arcanist.shard_storm.name
+    descKey: talent.arcanist.shard_storm.desc
+    visualKey: talent.arcanist.shard_storm.visual
+    iconKey: talent.arcanist.shard_storm.icon
+    audioProfile: audio.talent.shard_storm
+    schemaVersion: 3
+    tags: [talent, arcanist, spell]
+    maxPoints: 5
+    category: ACTIVE
+    damageType: COLD
+    powerDimension: SPELL
+    kind: ACTIVE
+    cooldown: 8
+    castTime: STANDARD
+    range: 5
+    minRange: 1
+    areaRadius: 1
+    resourceCosts: { MANA: 16 }
+    unlockLevel: 6
+    targeting: RADIUS_TARGET
+    callbacks: []
+    telegraphRef: charge_lane
+    treeId: arcanist_frost
+    requirements:
+      talentPrereqs:
+        - talentId: glacial_seal
+          minRank: 1
+    keywords: [damage, area, slow]
+    levelEffects:
+      1:
+        damageMultiplier: 1.00
+        associatedEffects:
+          - effectId: shard_storm_slow
+            effectType: SLOW
+            trigger: ON_HIT
+            targetScope: HOSTILES_IN_RADIUS
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: SPELL
+            duration: 3
+            magnitude: 0.18
+      2:
+        damageMultiplier: 1.15
+        associatedEffects:
+          - effectId: shard_storm_slow
+            effectType: SLOW
+            trigger: ON_HIT
+            targetScope: HOSTILES_IN_RADIUS
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: SPELL
+            duration: 3
+            magnitude: 0.21
+      3:
+        damageMultiplier: 1.30
+        associatedEffects:
+          - effectId: shard_storm_slow
+            effectType: SLOW
+            trigger: ON_HIT
+            targetScope: HOSTILES_IN_RADIUS
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: SPELL
+            duration: 3
+            magnitude: 0.24
+      4:
+        damageMultiplier: 1.45
+        associatedEffects:
+          - effectId: shard_storm_slow
+            effectType: SLOW
+            trigger: ON_HIT
+            targetScope: HOSTILES_IN_RADIUS
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: SPELL
+            duration: 4
+            magnitude: 0.27
+      5:
+        damageMultiplier: 1.60
+        associatedEffects:
+          - effectId: shard_storm_slow
+            effectType: SLOW
+            trigger: ON_HIT
+            targetScope: HOSTILES_IN_RADIUS
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: SPELL
+            duration: 4
+            magnitude: 0.30
+  - id: void_breach
+    nameKey: talent.arcanist.void_breach.name
+    descKey: talent.arcanist.void_breach.desc
+    visualKey: talent.arcanist.void_breach.visual
+    iconKey: talent.arcanist.void_breach.icon
+    audioProfile: audio.talent.void_breach
+    schemaVersion: 3
+    tags: [talent, arcanist, utility]
+    maxPoints: 5
+    category: ACTIVE
+    damageType: LIGHTNING
+    powerDimension: SPELL
+    kind: ACTIVE
+    cooldown: 9
+    castTime: STANDARD
+    range: 6
+    minRange: 1
+    areaRadius: 0
+    resourceCosts: { MANA: 18 }
+    unlockLevel: 6
+    targeting: SINGLE_TARGET
+    callbacks: []
+    telegraphRef: melee_single
+    treeId: arcanist_arcane
+    requirements:
+      talentPrereqs:
+        - talentId: arcane_overload
+          minRank: 1
+    keywords: [damage, burst, boss]
+    levelEffects:
+      1:
+        damageMultiplier: 1.60
+        associatedEffects:
+          - effectId: void_breach_overcharge
+            effectType: OVERCHARGE
+            trigger: ON_HIT
+            targetScope: PRIMARY_TARGET
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: SPELL
+            duration: 2
+            magnitude: 0.25
+      2:
+        damageMultiplier: 1.75
+        associatedEffects:
+          - effectId: void_breach_overcharge
+            effectType: OVERCHARGE
+            trigger: ON_HIT
+            targetScope: PRIMARY_TARGET
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: SPELL
+            duration: 2
+            magnitude: 0.25
+      3:
+        damageMultiplier: 1.90
+        associatedEffects:
+          - effectId: void_breach_overcharge
+            effectType: OVERCHARGE
+            trigger: ON_HIT
+            targetScope: PRIMARY_TARGET
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: SPELL
+            duration: 2
+            magnitude: 0.25
+      4:
+        damageMultiplier: 2.05
+        associatedEffects:
+          - effectId: void_breach_overcharge
+            effectType: OVERCHARGE
+            trigger: ON_HIT
+            targetScope: PRIMARY_TARGET
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: SPELL
+            duration: 3
+            magnitude: 0.25
+      5:
+        damageMultiplier: 2.20
+        associatedEffects:
+          - effectId: void_breach_overcharge
+            effectType: OVERCHARGE
+            trigger: ON_HIT
+            targetScope: PRIMARY_TARGET
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: SPELL
+            duration: 3
+            magnitude: 0.25
+  - id: crippling_strike
+    nameKey: talent.rogue.crippling_strike.name
+    descKey: talent.rogue.crippling_strike.desc
+    visualKey: talent.rogue.crippling_strike.visual
+    iconKey: talent.rogue.crippling_strike.icon
+    audioProfile: audio.talent.crippling_strike
+    schemaVersion: 3
+    tags: [talent, rogue, melee]
+    maxPoints: 5
+    category: ACTIVE
+    damageType: PHYSICAL
+    powerDimension: PHYSICAL
+    kind: ACTIVE
+    cooldown: 6
+    castTime: STANDARD
+    range: 1
+    minRange: 0
+    areaRadius: 0
+    resourceCosts: { ENERGY: 10 }
+    unlockLevel: 4
+    targeting: SINGLE_TARGET
+    callbacks: []
+    telegraphRef: melee_single
+    treeId: rogue_assassination
+    requirements:
+      talentPrereqs:
+        - talentId: poison_blade
+          minRank: 1
+    keywords: [damage, debuff, control]
+    levelEffects:
+      1:
+        damageMultiplier: 1.25
+        associatedEffects:
+          - effectId: crippling_strike_weaken
+            effectType: WEAKEN
+            trigger: ON_HIT
+            targetScope: PRIMARY_TARGET
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: PHYSICAL
+            duration: 3
+            magnitude: 0.12
+      2:
+        damageMultiplier: 1.40
+        associatedEffects:
+          - effectId: crippling_strike_weaken
+            effectType: WEAKEN
+            trigger: ON_HIT
+            targetScope: PRIMARY_TARGET
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: PHYSICAL
+            duration: 3
+            magnitude: 0.14
+      3:
+        damageMultiplier: 1.55
+        associatedEffects:
+          - effectId: crippling_strike_weaken
+            effectType: WEAKEN
+            trigger: ON_HIT
+            targetScope: PRIMARY_TARGET
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: PHYSICAL
+            duration: 3
+            magnitude: 0.16
+      4:
+        damageMultiplier: 1.70
+        associatedEffects:
+          - effectId: crippling_strike_weaken
+            effectType: WEAKEN
+            trigger: ON_HIT
+            targetScope: PRIMARY_TARGET
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: PHYSICAL
+            duration: 4
+            magnitude: 0.18
+      5:
+        damageMultiplier: 1.85
+        associatedEffects:
+          - effectId: crippling_strike_weaken
+            effectType: WEAKEN
+            trigger: ON_HIT
+            targetScope: PRIMARY_TARGET
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: PHYSICAL
+            duration: 4
+            magnitude: 0.20
+  - id: eviscerate
+    nameKey: talent.rogue.eviscerate.name
+    descKey: talent.rogue.eviscerate.desc
+    visualKey: talent.rogue.eviscerate.visual
+    iconKey: talent.rogue.eviscerate.icon
+    audioProfile: audio.talent.eviscerate
+    schemaVersion: 3
+    tags: [talent, rogue, melee]
+    maxPoints: 5
+    category: ACTIVE
+    damageType: PHYSICAL
+    powerDimension: PHYSICAL
+    kind: ACTIVE
+    cooldown: 8
+    castTime: STANDARD
+    range: 1
+    minRange: 0
+    areaRadius: 0
+    resourceCosts: { ENERGY: 18 }
+    unlockLevel: 6
+    targeting: SINGLE_TARGET
+    callbacks: []
+    telegraphRef: melee_single
+    treeId: rogue_assassination
+    requirements:
+      talentPrereqs:
+        - talentId: execution
+          minRank: 1
+    keywords: [damage, finisher, boss]
+    levelEffects:
+      1: { damageMultiplier: 1.85, resourceRestoreFraction: 0.08 }
+      2: { damageMultiplier: 2.05, resourceRestoreFraction: 0.10 }
+      3: { damageMultiplier: 2.25, resourceRestoreFraction: 0.12 }
+      4: { damageMultiplier: 2.50, resourceRestoreFraction: 0.14 }
+      5: { damageMultiplier: 2.80, resourceRestoreFraction: 0.16 }
+  - id: shadow_bind
+    nameKey: talent.rogue.shadow_bind.name
+    descKey: talent.rogue.shadow_bind.desc
+    visualKey: talent.rogue.shadow_bind.visual
+    iconKey: talent.rogue.shadow_bind.icon
+    audioProfile: audio.talent.shadow_bind
+    schemaVersion: 3
+    tags: [talent, rogue, control]
+    maxPoints: 5
+    category: ACTIVE
+    damageType: SHADOW
+    powerDimension: MENTAL
+    kind: ACTIVE
+    cooldown: 7
+    castTime: STANDARD
+    range: 4
+    minRange: 1
+    areaRadius: 0
+    resourceCosts: { ENERGY: 12 }
+    unlockLevel: 4
+    targeting: SINGLE_TARGET
+    callbacks: []
+    telegraphRef: melee_single
+    treeId: rogue_subtlety
+    requirements:
+      talentPrereqs:
+        - talentId: shadowstep
+          minRank: 1
+    keywords: [control, curse, ranged]
+    levelEffects:
+      1:
+        damageMultiplier: 0.85
+        associatedEffects:
+          - effectId: shadow_bind_root
+            effectType: ROOT
+            trigger: ON_HIT
+            targetScope: PRIMARY_TARGET
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: MENTAL
+            duration: 2
+      2:
+        damageMultiplier: 1.00
+        associatedEffects:
+          - effectId: shadow_bind_root
+            effectType: ROOT
+            trigger: ON_HIT
+            targetScope: PRIMARY_TARGET
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: MENTAL
+            duration: 2
+      3:
+        damageMultiplier: 1.15
+        associatedEffects:
+          - effectId: shadow_bind_root
+            effectType: ROOT
+            trigger: ON_HIT
+            targetScope: PRIMARY_TARGET
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: MENTAL
+            duration: 3
+      4:
+        damageMultiplier: 1.30
+        associatedEffects:
+          - effectId: shadow_bind_root
+            effectType: ROOT
+            trigger: ON_HIT
+            targetScope: PRIMARY_TARGET
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: MENTAL
+            duration: 3
+      5:
+        damageMultiplier: 1.45
+        associatedEffects:
+          - effectId: shadow_bind_root
+            effectType: ROOT
+            trigger: ON_HIT
+            targetScope: PRIMARY_TARGET
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: MENTAL
+            duration: 4
+  - id: dusk_shroud
+    nameKey: talent.rogue.dusk_shroud.name
+    descKey: talent.rogue.dusk_shroud.desc
+    visualKey: talent.rogue.dusk_shroud.visual
+    iconKey: talent.rogue.dusk_shroud.icon
+    audioProfile: audio.talent.dusk_shroud
+    schemaVersion: 3
+    tags: [talent, rogue, support]
+    maxPoints: 5
+    category: ACTIVE
+    kind: ACTIVE
+    cooldown: 10
+    castTime: QUICK
+    range: 0
+    minRange: 0
+    areaRadius: 0
+    resourceCosts: { ENERGY: 12 }
+    unlockLevel: 6
+    targeting: SELF
+    callbacks: []
+    telegraphRef: self_buff_aura
+    treeId: rogue_subtlety
+    requirements:
+      talentPrereqs:
+        - talentId: shadow_bind
+          minRank: 1
+    keywords: [stealth, panic, buff]
+    levelEffects:
+      1:
+        associatedEffects:
+          - effectId: dusk_shroud_stealth
+            effectType: STEALTH
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 2
+          - effectId: dusk_shroud_haste
+            effectType: HASTE
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 2
+            magnitude: 0.10
+      2:
+        associatedEffects:
+          - effectId: dusk_shroud_stealth
+            effectType: STEALTH
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 2
+          - effectId: dusk_shroud_haste
+            effectType: HASTE
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 2
+            magnitude: 0.12
+      3:
+        associatedEffects:
+          - effectId: dusk_shroud_stealth
+            effectType: STEALTH
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 3
+          - effectId: dusk_shroud_haste
+            effectType: HASTE
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 2
+            magnitude: 0.14
+      4:
+        associatedEffects:
+          - effectId: dusk_shroud_stealth
+            effectType: STEALTH
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 3
+          - effectId: dusk_shroud_haste
+            effectType: HASTE
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 3
+            magnitude: 0.16
+      5:
+        associatedEffects:
+          - effectId: dusk_shroud_stealth
+            effectType: STEALTH
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 3
+          - effectId: dusk_shroud_haste
+            effectType: HASTE
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 3
+            magnitude: 0.18
+  - id: ricochet_knives
+    nameKey: talent.rogue.ricochet_knives.name
+    descKey: talent.rogue.ricochet_knives.desc
+    visualKey: talent.rogue.ricochet_knives.visual
+    iconKey: talent.rogue.ricochet_knives.icon
+    audioProfile: audio.talent.ricochet_knives
+    schemaVersion: 3
+    tags: [talent, rogue, control]
+    maxPoints: 5
+    category: ACTIVE
+    damageType: PHYSICAL
+    powerDimension: PHYSICAL
+    kind: ACTIVE
+    cooldown: 7
+    castTime: STANDARD
+    range: 4
+    minRange: 1
+    areaRadius: 1
+    resourceCosts: { ENERGY: 16 }
+    unlockLevel: 4
+    targeting: RADIUS_TARGET
+    callbacks: []
+    telegraphRef: charge_lane
+    treeId: rogue_agility
+    requirements:
+      talentPrereqs:
+        - talentId: blade_flurry
+          minRank: 1
+    keywords: [damage, area, ranged]
+    levelEffects:
+      1:
+        damageMultiplier: 0.95
+        associatedEffects:
+          - effectId: ricochet_knives_mark
+            effectType: MARKED
+            trigger: ON_HIT
+            targetScope: HOSTILES_IN_RADIUS
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: PHYSICAL
+            duration: 2
+      2:
+        damageMultiplier: 1.10
+        associatedEffects:
+          - effectId: ricochet_knives_mark
+            effectType: MARKED
+            trigger: ON_HIT
+            targetScope: HOSTILES_IN_RADIUS
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: PHYSICAL
+            duration: 2
+      3:
+        damageMultiplier: 1.25
+        associatedEffects:
+          - effectId: ricochet_knives_mark
+            effectType: MARKED
+            trigger: ON_HIT
+            targetScope: HOSTILES_IN_RADIUS
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: PHYSICAL
+            duration: 3
+      4:
+        damageMultiplier: 1.40
+        associatedEffects:
+          - effectId: ricochet_knives_mark
+            effectType: MARKED
+            trigger: ON_HIT
+            targetScope: HOSTILES_IN_RADIUS
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: PHYSICAL
+            duration: 3
+      5:
+        damageMultiplier: 1.55
+        associatedEffects:
+          - effectId: ricochet_knives_mark
+            effectType: MARKED
+            trigger: ON_HIT
+            targetScope: HOSTILES_IN_RADIUS
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: PHYSICAL
+            duration: 4
+  - id: radiant_lance
+    nameKey: talent.templar.radiant_lance.name
+    descKey: talent.templar.radiant_lance.desc
+    visualKey: talent.templar.radiant_lance.visual
+    iconKey: talent.templar.radiant_lance.icon
+    audioProfile: audio.talent.radiant_lance
+    schemaVersion: 3
+    tags: [talent, templar, holy]
+    maxPoints: 5
+    category: ACTIVE
+    damageType: HOLY
+    powerDimension: SPELL
+    kind: ACTIVE
+    cooldown: 5
+    castTime: STANDARD
+    range: 5
+    minRange: 1
+    areaRadius: 0
+    resourceCosts: { POSITIVE_ENERGY: 10 }
+    unlockLevel: 4
+    targeting: SINGLE_TARGET
+    callbacks: []
+    telegraphRef: melee_single
+    treeId: templar_smite
+    requirements:
+      talentPrereqs:
+        - talentId: holy_mark
+          minRank: 1
+    keywords: [holy, ranged, mark]
+    levelEffects:
+      1:
+        damageMultiplier: 1.35
+        associatedEffects:
+          - effectId: radiant_lance_bane
+            effectType: BANE
+            trigger: ON_HIT
+            targetScope: PRIMARY_TARGET
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: SPELL
+            duration: 2
+            magnitude: 0.14
+      2:
+        damageMultiplier: 1.50
+        associatedEffects:
+          - effectId: radiant_lance_bane
+            effectType: BANE
+            trigger: ON_HIT
+            targetScope: PRIMARY_TARGET
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: SPELL
+            duration: 2
+            magnitude: 0.16
+      3:
+        damageMultiplier: 1.65
+        associatedEffects:
+          - effectId: radiant_lance_bane
+            effectType: BANE
+            trigger: ON_HIT
+            targetScope: PRIMARY_TARGET
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: SPELL
+            duration: 3
+            magnitude: 0.18
+      4:
+        damageMultiplier: 1.80
+        associatedEffects:
+          - effectId: radiant_lance_bane
+            effectType: BANE
+            trigger: ON_HIT
+            targetScope: PRIMARY_TARGET
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: SPELL
+            duration: 3
+            magnitude: 0.20
+      5:
+        damageMultiplier: 2.00
+        associatedEffects:
+          - effectId: radiant_lance_bane
+            effectType: BANE
+            trigger: ON_HIT
+            targetScope: PRIMARY_TARGET
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: SPELL
+            duration: 4
+            magnitude: 0.22
+  - id: consecration
+    nameKey: talent.templar.consecration.name
+    descKey: talent.templar.consecration.desc
+    visualKey: talent.templar.consecration.visual
+    iconKey: talent.templar.consecration.icon
+    audioProfile: audio.talent.consecration
+    schemaVersion: 3
+    tags: [talent, templar, holy]
+    maxPoints: 5
+    category: ACTIVE
+    damageType: HOLY
+    powerDimension: SPELL
+    kind: ACTIVE
+    cooldown: 8
+    castTime: STANDARD
+    range: 0
+    minRange: 0
+    areaRadius: 2
+    resourceCosts: { POSITIVE_ENERGY: 16 }
+    unlockLevel: 6
+    targeting: RADIUS_SELF
+    callbacks: []
+    telegraphRef: self_buff_aura
+    treeId: templar_smite
+    requirements:
+      talentPrereqs:
+        - talentId: radiant_lance
+          minRank: 1
+    keywords: [holy, area, control]
+    levelEffects:
+      1:
+        damageMultiplier: 0.85
+        associatedEffects:
+          - effectId: consecration_bane
+            effectType: BANE
+            trigger: ON_HIT
+            targetScope: HOSTILES_IN_RADIUS
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: SPELL
+            duration: 2
+            magnitude: 0.12
+      2:
+        damageMultiplier: 0.95
+        associatedEffects:
+          - effectId: consecration_bane
+            effectType: BANE
+            trigger: ON_HIT
+            targetScope: HOSTILES_IN_RADIUS
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: SPELL
+            duration: 2
+            magnitude: 0.14
+      3:
+        damageMultiplier: 1.05
+        associatedEffects:
+          - effectId: consecration_bane
+            effectType: BANE
+            trigger: ON_HIT
+            targetScope: HOSTILES_IN_RADIUS
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: SPELL
+            duration: 3
+            magnitude: 0.16
+      4:
+        damageMultiplier: 1.15
+        associatedEffects:
+          - effectId: consecration_bane
+            effectType: BANE
+            trigger: ON_HIT
+            targetScope: HOSTILES_IN_RADIUS
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: SPELL
+            duration: 3
+            magnitude: 0.18
+      5:
+        damageMultiplier: 1.25
+        associatedEffects:
+          - effectId: consecration_bane
+            effectType: BANE
+            trigger: ON_HIT
+            targetScope: HOSTILES_IN_RADIUS
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: SPELL
+            duration: 4
+            magnitude: 0.20
+  - id: sanctuary
+    nameKey: talent.templar.sanctuary.name
+    descKey: talent.templar.sanctuary.desc
+    visualKey: talent.templar.sanctuary.visual
+    iconKey: talent.templar.sanctuary.icon
+    audioProfile: audio.talent.sanctuary
+    schemaVersion: 3
+    tags: [talent, templar, holy]
+    maxPoints: 5
+    category: ACTIVE
+    kind: ACTIVE
+    cooldown: 8
+    castTime: STANDARD
+    range: 0
+    minRange: 0
+    areaRadius: 0
+    resourceCosts: { POSITIVE_ENERGY: 14 }
+    unlockLevel: 4
+    targeting: SELF
+    callbacks: []
+    telegraphRef: self_buff_aura
+    treeId: templar_grace
+    requirements:
+      talentPrereqs:
+        - talentId: holy_shield
+          minRank: 1
+    keywords: [shield, buff, defense]
+    levelEffects:
+      1:
+        associatedEffects:
+          - effectId: sanctuary_shield
+            effectType: SHIELD
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 4
+            magnitude: 0.18
+      2:
+        associatedEffects:
+          - effectId: sanctuary_shield
+            effectType: SHIELD
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 4
+            magnitude: 0.22
+      3:
+        associatedEffects:
+          - effectId: sanctuary_shield
+            effectType: SHIELD
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 4
+            magnitude: 0.26
+      4:
+        associatedEffects:
+          - effectId: sanctuary_shield
+            effectType: SHIELD
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 5
+            magnitude: 0.30
+      5:
+        associatedEffects:
+          - effectId: sanctuary_shield
+            effectType: SHIELD
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 5
+            magnitude: 0.34
+  - id: absolution
+    nameKey: talent.templar.absolution.name
+    descKey: talent.templar.absolution.desc
+    visualKey: talent.templar.absolution.visual
+    iconKey: talent.templar.absolution.icon
+    audioProfile: audio.talent.absolution
+    schemaVersion: 3
+    tags: [talent, templar, holy]
+    maxPoints: 5
+    category: ACTIVE
+    kind: ACTIVE
+    cooldown: 9
+    castTime: QUICK
+    range: 0
+    minRange: 0
+    areaRadius: 0
+    resourceCosts: { POSITIVE_ENERGY: 16 }
+    unlockLevel: 6
+    targeting: SELF
+    callbacks: []
+    telegraphRef: self_buff_aura
+    treeId: templar_grace
+    requirements:
+      talentPrereqs:
+        - talentId: sanctuary
+          minRank: 1
+    keywords: [heal, cleanse, panic]
+    levelEffects:
+      1:
+        healFraction: 0.12
+        cleanseEffect:
+          effectId: absolution_cleanse
+          trigger: ON_CAST
+          targetScope: SELF
+          applicationPolicy: INSTANT_ACTION
+          maxEffectsRemoved: 1
+      2:
+        healFraction: 0.14
+        cleanseEffect:
+          effectId: absolution_cleanse
+          trigger: ON_CAST
+          targetScope: SELF
+          applicationPolicy: INSTANT_ACTION
+          maxEffectsRemoved: 1
+      3:
+        healFraction: 0.16
+        cleanseEffect:
+          effectId: absolution_cleanse
+          trigger: ON_CAST
+          targetScope: SELF
+          applicationPolicy: INSTANT_ACTION
+          maxEffectsRemoved: 1
+      4:
+        healFraction: 0.19
+        cleanseEffect:
+          effectId: absolution_cleanse
+          trigger: ON_CAST
+          targetScope: SELF
+          applicationPolicy: INSTANT_ACTION
+          maxEffectsRemoved: 1
+      5:
+        healFraction: 0.22
+        cleanseEffect:
+          effectId: absolution_cleanse
+          trigger: ON_CAST
+          targetScope: SELF
+          applicationPolicy: INSTANT_ACTION
+          maxEffectsRemoved: 2
+  - id: beacon_of_zeal
+    nameKey: talent.templar.beacon_of_zeal.name
+    descKey: talent.templar.beacon_of_zeal.desc
+    visualKey: talent.templar.beacon_of_zeal.visual
+    iconKey: talent.templar.beacon_of_zeal.icon
+    audioProfile: audio.talent.beacon_of_zeal
+    schemaVersion: 3
+    tags: [talent, templar, holy]
+    maxPoints: 5
+    category: ACTIVE
+    kind: ACTIVE
+    cooldown: 8
+    castTime: STANDARD
+    range: 0
+    minRange: 0
+    areaRadius: 2
+    resourceCosts: { POSITIVE_ENERGY: 12 }
+    unlockLevel: 4
+    targeting: RADIUS_SELF
+    callbacks: []
+    telegraphRef: self_buff_aura
+    treeId: templar_faith
+    requirements:
+      talentPrereqs:
+        - talentId: devotion
+          minRank: 1
+    keywords: [buff, holy, defense]
+    levelEffects:
+      1:
+        associatedEffects:
+          - effectId: beacon_of_zeal_devotion
+            effectType: DEVOTION_BUFF
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 4
+            magnitude: 0.18
+      2:
+        associatedEffects:
+          - effectId: beacon_of_zeal_devotion
+            effectType: DEVOTION_BUFF
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 4
+            magnitude: 0.22
+      3:
+        associatedEffects:
+          - effectId: beacon_of_zeal_devotion
+            effectType: DEVOTION_BUFF
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 4
+            magnitude: 0.26
+      4:
+        associatedEffects:
+          - effectId: beacon_of_zeal_devotion
+            effectType: DEVOTION_BUFF
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 5
+            magnitude: 0.30
+      5:
+        associatedEffects:
+          - effectId: beacon_of_zeal_devotion
+            effectType: DEVOTION_BUFF
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 5
+            magnitude: 0.34
+  - id: ritual_break
+    nameKey: talent.templar.ritual_break.name
+    descKey: talent.templar.ritual_break.desc
+    visualKey: talent.templar.ritual_break.visual
+    iconKey: talent.templar.ritual_break.icon
+    audioProfile: audio.talent.ritual_break
+    schemaVersion: 3
+    tags: [talent, templar, holy]
+    maxPoints: 5
+    category: ACTIVE
+    damageType: HOLY
+    powerDimension: SPELL
+    kind: ACTIVE
+    cooldown: 7
+    castTime: STANDARD
+    range: 4
+    minRange: 1
+    areaRadius: 0
+    resourceCosts: { POSITIVE_ENERGY: 18 }
+    unlockLevel: 6
+    targeting: SINGLE_TARGET
+    callbacks: []
+    telegraphRef: melee_single
+    treeId: templar_faith
+    requirements:
+      talentPrereqs:
+        - talentId: beacon_of_zeal
+          minRank: 1
+    keywords: [holy, boss, debuff]
+    levelEffects:
+      1:
+        damageMultiplier: 1.45
+        associatedEffects:
+          - effectId: ritual_break_bane
+            effectType: BANE
+            trigger: ON_HIT
+            targetScope: PRIMARY_TARGET
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: SPELL
+            duration: 2
+            magnitude: 0.14
+      2:
+        damageMultiplier: 1.60
+        associatedEffects:
+          - effectId: ritual_break_bane
+            effectType: BANE
+            trigger: ON_HIT
+            targetScope: PRIMARY_TARGET
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: SPELL
+            duration: 2
+            magnitude: 0.16
+      3:
+        damageMultiplier: 1.75
+        associatedEffects:
+          - effectId: ritual_break_bane
+            effectType: BANE
+            trigger: ON_HIT
+            targetScope: PRIMARY_TARGET
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: SPELL
+            duration: 3
+            magnitude: 0.18
+      4:
+        damageMultiplier: 1.90
+        associatedEffects:
+          - effectId: ritual_break_bane
+            effectType: BANE
+            trigger: ON_HIT
+            targetScope: PRIMARY_TARGET
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: SPELL
+            duration: 3
+            magnitude: 0.20
+      5:
+        damageMultiplier: 2.10
+        associatedEffects:
+          - effectId: ritual_break_bane
+            effectType: BANE
+            trigger: ON_HIT
+            targetScope: PRIMARY_TARGET
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: SPELL
+            duration: 4
+            magnitude: 0.22
   - id: blood_rush
     nameKey: talent.berserker.blood_rush.name
     descKey: talent.berserker.blood_rush.desc

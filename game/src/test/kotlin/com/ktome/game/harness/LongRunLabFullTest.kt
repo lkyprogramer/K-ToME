@@ -60,11 +60,23 @@ class LongRunLabFullTest {
                 "abyssal_temple",
                 "abyssal_heart",
             )
+        val moltenRoute =
+            listOf(
+                "shattered_outpost",
+                "greenwood_fringe",
+                "deep_iron_pit",
+                "molten_core",
+                "deep_iron_pit",
+                "grey_gate_depths",
+                "underground_river",
+                "abyssal_temple",
+                "abyssal_heart",
+            )
         val scenarioStarts =
             mapOf(
                 "vanguard:human" to RouteStartSpec(zoneId = FOUNDATION_ZONE_ROUTE.first(), zoneRoute = FOUNDATION_ZONE_ROUTE, routeIndex = 0),
                 "vanguard:elf" to RouteStartSpec(zoneId = FOUNDATION_ZONE_ROUTE.first(), zoneRoute = FOUNDATION_ZONE_ROUTE, routeIndex = 0),
-                "vanguard:dwarf" to RouteStartSpec(zoneId = "bandit_camp", zoneRoute = banditRoute, routeIndex = 2),
+                "vanguard:dwarf" to RouteStartSpec(zoneId = "molten_core", zoneRoute = moltenRoute, routeIndex = 3),
                 "arcanist:human" to RouteStartSpec(zoneId = "crystal_cavern", zoneRoute = crystalRoute, routeIndex = 5),
                 "arcanist:elf" to RouteStartSpec(zoneId = FOUNDATION_ZONE_ROUTE.first(), zoneRoute = FOUNDATION_ZONE_ROUTE, routeIndex = 0),
                 "arcanist:dwarf" to RouteStartSpec(zoneId = "underground_river", zoneRoute = FOUNDATION_ZONE_ROUTE, routeIndex = 4),

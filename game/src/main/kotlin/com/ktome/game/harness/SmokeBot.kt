@@ -50,7 +50,7 @@ class SmokeBot : RunBot {
         if (observation.playerStatus.talentPoints > 0) {
             preferredTalentUpgrade(observation)?.let { talent -> return PlayerCommand.AssignTalent(talent.talentId) }
         }
-        if (observation.visibleHostilePositions.isEmpty() && observation.visibleBossPositions.isEmpty()) {
+        if (shouldRefreshLoadout(observation)) {
             LoadoutPlanner.preferredLoadoutCommand(observation)?.let { return it }
         }
         if (observation.inventoryItems.size < SMOKE_BOT_INVENTORY_CAPACITY && observation.visibleGroundItemPositions.any { it == observation.playerPosition }) {
@@ -69,6 +69,30 @@ class SmokeBot : RunBot {
     private fun hasPendingTalentDraft(observation: RunObservation): Boolean =
         observation.talentSlots.any(TalentSlotView::hasPendingAllocation) ||
             observation.reserveTalents.any { talent -> talent.hasPendingAllocation }
+
+    private fun shouldRefreshLoadout(observation: RunObservation): Boolean {
+        if (observation.visibleHostilePositions.isEmpty() && observation.visibleBossPositions.isEmpty()) {
+            return true
+        }
+        val lowHealth = observation.playerStatus.currentHp * 100 <= observation.playerStatus.maxHp * 60
+        if (lowHealth) {
+            return false
+        }
+        if (hostilesWithin(observation, 1) > 0) {
+            return false
+        }
+        if (hostilesWithin(observation, 2) >= 2) {
+            return false
+        }
+        val nearestBossDistance =
+            observation.visibleBossPositions.minOfOrNull { boss ->
+                boss.chebyshevDistanceTo(observation.playerPosition)
+            }
+        if (nearestBossDistance != null && nearestBossDistance <= 3) {
+            return false
+        }
+        return true
+    }
 
     private fun preferredStat(observation: RunObservation): PrimaryStat =
         when (observation.playerResource.typeId) {
@@ -877,15 +901,19 @@ class SmokeBot : RunBot {
             "power_strike", "fireball", "ice_bolt" -> 100
             "backstab", "holy_strike", "holy_light" -> 100
             "arcane_edge", "mana_lunge" -> 100
+            "linebreaker", "void_breach", "shadow_bind", "consecration" -> 95
             "shield_bash", "frost_nova", "arcane_shield" -> 90
             "judgment_hammer", "poison_blade", "holy_shield" -> 90
+            "earthshaker", "inferno_orb", "eviscerate", "ritual_break" -> 85
             "spell_parry" -> 90
             "dwarf_grit", "elf_scouting" -> 85
             "guard_stance", "unyielding", "blink" -> 80
             "stealth", "shadowstep", "devotion" -> 80
+            "battlefield_command", "glacial_seal", "sanctuary", "ricochet_knives", "radiant_lance" -> 75
             "human_resolve", "dwarf_forge_heart", "elf_glade_step" -> 75
             "sweeping_strike", "flame_wall", "ice_prison" -> 70
             "blade_flurry", "holy_aura", "deathblow" -> 70
+            "cinder_burst", "shard_storm", "bulwark_march", "absolution", "beacon_of_zeal" -> 70
             "spell_rend", "flux_burst" -> 70
             "human_mastery" -> 65
             "war_cry", "intimidation", "sunder_armor", "mana_surge" -> 60
@@ -905,17 +933,26 @@ class SmokeBot : RunBot {
         } else if (observation.playerResource.typeId == "MANA") {
             listOf(
                 "fireball",
+                "void_breach",
+                "inferno_orb",
                 "ice_bolt",
+                "glacial_seal",
                 "ice_prison",
-                "charge",
+                "shard_storm",
             )
         } else {
             listOf(
                 "ice_prison",
+                "shadow_bind",
+                "linebreaker",
                 "shadowstep",
+                "consecration",
                 "judgment_hammer",
                 "shield_bash",
+                "ritual_break",
+                "earthshaker",
                 "deathblow",
+                "eviscerate",
                 "poison_blade",
                 "backstab",
                 "holy_strike",
@@ -965,7 +1002,7 @@ class SmokeBot : RunBot {
     private companion object {
         const val SMOKE_BOT_INVENTORY_CAPACITY: Int = 12
         const val RECENT_POSITION_WINDOW: Int = 8
-        const val MAX_ITEM_DETOUR_DISTANCE: Int = 4
+        const val MAX_ITEM_DETOUR_DISTANCE: Int = 3
         const val NAVIGATION_REPEAT_THRESHOLD: Int = 2
         const val BOSS_MEMORY_CONFIRM_RADIUS: Int = 2
 

@@ -29,12 +29,27 @@ class SoloClearLabV2Test {
         )
 
         val bossReports = reports.filter { it.scenarioId == SoloClearScenario.BOSS.name.lowercase() }
+        val pr09TalentsByProfession =
+            mapOf(
+                "vanguard" to setOf("linebreaker", "earthshaker", "battlefield_command"),
+                "arcanist" to setOf("glacial_seal", "inferno_orb", "void_breach"),
+                "rogue" to setOf("shadow_bind", "eviscerate", "ricochet_knives"),
+                "templar" to setOf("consecration", "sanctuary", "ritual_break"),
+            )
         assertTrue(
             bossReports.all { it.sawBossWarning },
             bossReports.joinToString(separator = "\n") { report ->
                 "${report.professionId}/${report.scenarioId}: warning=${report.sawBossWarning}, telegraph=${report.sawTalentTelegraph}"
             },
         )
+        pr09TalentsByProfession.forEach { (professionId, talentIds) ->
+            assertTrue(
+                reports
+                    .filter { report -> report.professionId == professionId }
+                    .any { report -> report.executedTalentIds.any(talentIds::contains) },
+                "Expected solo clear lab to execute at least one PR-09 talent for $professionId, requiredAnyOf=$talentIds",
+            )
+        }
         assertTrue(
             reports.all { it.success },
             reports.joinToString(separator = "\n") { report ->

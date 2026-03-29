@@ -1,0 +1,278 @@
+styleTag: ktome-middle-fantasy-painterly-tile-v1
+artStyleBible: docs/2026-03-13-art-style-bible.md
+stylePrompt: 'Classical high fantasy in a Middle-earth inspired mode. A world soaked
+  in age, iron, moss, flame, and old oaths. Weathered stone, forged iron, old timber,
+  cracked leather, coarse wool — every surface shows the weight of centuries.
+
+  Rendering style: painterly concept-art finish with visible brushwork and clear material
+  differentiation. NOT photorealistic, NOT pixel art, NOT cel-shaded, NOT glossy mobile-game
+  aesthetic. Slight impasto texture on metals and stone; soft dry-brush edges on cloth
+  and organic surfaces. Never anime. Never sci-fi.
+
+  Color palette: dark foundation of charcoal black, iron blue-grey, damp stone green,
+  deep brown wood. Warm accents of torch orange, molten-iron red, dry leather brown,
+  old gold — used sparingly for focal points. Cold light accents of moonlight blue,
+  frost cyan, lightning white-blue, faint holy pale-gold — reserved for magic and
+  interaction cues. Overall low saturation; high brightness only on interactive elements,
+  magic cores, boss telegraphs, and key pickups.
+
+  Lighting: low-key illumination. Primary light from upper-left at roughly 45 degrees.
+  Warm firelight and cool ambient fill coexist. Shadows are clear but not crushed
+  to pure black. Rim light is allowed on character shoulder-lines, weapon edges, and
+  interactable prop edges — but always restrained. No bloom-heavy haze, no full-screen
+  volumetric light, no dreamy ethereal glow.
+
+  Material priority: weathered stone > black iron / forged iron > old wood > leather
+  > wool / coarse cloth > bone, antler, dead branch > rune stone > forge embers. Forbidden
+  materials: modern plastic, mirror sci-fi alloy, neon glass, oversaturated fluorescent
+  liquid, pristine white ceramic or silver-white.
+
+  '
+defaults:
+  imageAspectRatio: '1:1'
+  imageSize: 1K
+  negativeConstraints:
+  - no modern clothing
+  - no modern clothing or equipment
+  - no firearms
+  - no firearms or gunpowder weapons
+  - no sci-fi materials
+  - no sci-fi materials, chrome, or glass surfaces
+  - no cyberpunk or neon lighting
+  - no anime proportions
+  - no anime proportions or cel-shading
+  - no floating text, watermark or logo
+  - no floating text, watermark, logo, or UI elements baked into image
+  - no busy detailed background — transparent or clean only
+  - no recognizable franchise emblems (no White Tree of Gondor, no Eye of Sauron,
+    no specific movie/game iconography)
+  - no bloom-heavy magical glow or oversaturated light effects
+  - no chibi or super-deformed proportions
+  - no pixel art style
+  - no photorealistic skin pore detail
+  - no glossy mobile-game icon aesthetic
+  categoryPromptTemplates:
+    tile_ground: 'Top-down square floor tile for an orthogonal grid game. The tile
+      must fill the ENTIRE square canvas edge-to-edge with NO rounded corners and
+      NO circular crop. Edges must allow seamless tiling when placed adjacent to identical
+      tiles. Painterly hand-painted surface texture with bold readable shapes. Viewed
+      from directly above. No perspective distortion. Muted color palette, low saturation.
+      Subtle material variation across the surface.
+
+      '
+    tile_wall: 'Top-down wall tile for an orthogonal grid game, viewed from directly
+      above. The tile must fill the full square canvas. Clear upper edge distinguishes
+      wall from floor. Painterly stone/wood/material texture, readable shapes, thick
+      visual mass. No perspective, no 3D extrusion. Flat top-down representation with
+      shading to imply height.
+
+      '
+    actor_sprite: 'Full-body character sprite on transparent background, standing
+      in a neutral-ready combat pose. Painterly concept-art rendering with visible
+      brushwork, NOT pixel art, NOT cel-shaded. Strong readable silhouette — the character''s
+      profession and role must be identifiable from outline alone. Proportions are
+      realistic adult, no chibi, no anime. Lit from upper-left with warm side light
+      and cool ambient fill. Armor and equipment show wear, scratches, patina — nothing
+      is factory-new.
+
+      '
+    portrait: 'Chest-up character portrait on transparent background, 3/4 angle facing
+      slightly left. Painterly concept-art rendering with visible brushwork and material
+      texture. Expression is restrained and serious — no exaggerated emotion, no smile.
+      Face emphasizes character and profession identity, NOT idealized beauty. Lighting:
+      warm key light from upper-left, cool ambient fill, subtle rim light on shoulder/helmet
+      edge. Armor/clothing shows use and age. Muted earth tones dominate.
+
+      '
+    icon: 'Game UI icon on transparent background. Single centered subject with bold
+      silhouette, painterly rendering and high readability at small size. Use restrained
+      detail, strong outline separation, and one clear focal shape suitable for profession
+      or tree identity.
+
+      '
+    icon_skill: 'Game skill ability icon on transparent background. SINGLE focused
+      subject centered in frame, occupying 65-75% of the canvas. Bold simplified shapes
+      with thick dark outlines for readability at small sizes. Painterly rendering
+      but with iconic clarity — this is a UI element, not a scene illustration. NO
+      hands, NO arms, NO character parts unless the skill IS about the body part.
+      Restrained color: 1-2 dominant hues plus neutral darks. No excessive glow or
+      bloom.
+
+      '
+    icon_status: 'Game status effect icon on transparent background. Single symbolic
+      shape centered in frame, 65-75% canvas occupancy. Must be instantly readable
+      at small display sizes — favor bold geometric forms over fine detail. Painterly
+      but simplified. Thick outlines. 1-2 color accents on dark neutral base.
+
+      '
+    icon_damage_type: 'Game damage type icon on transparent background. Single symbolic
+      elemental or martial mark centered in frame, 65-75% canvas occupancy. Must read
+      instantly at hotbar and inspect sizes — bold silhouette first, material detail
+      second. Painterly but simplified. Thick outlines. One dominant hue per damage
+      channel on a dark neutral base. Avoid text, numerals, weapon hands, or busy
+      scenery. This is a semantic combat marker, not a scene illustration.
+
+      '
+    icon_item: 'Game item icon on transparent background. Single object centered in
+      frame, 65-75% canvas occupancy, slight 3/4 angle. Painterly rendering with material
+      texture (glass, metal, leather, wood). Object shows age and use — no pristine
+      surfaces. Muted palette with one color accent.
+
+      '
+    icon_quest: 'Game quest item icon on transparent background. Single key/artifact/token
+      centered in frame, 65-75% canvas occupancy. Painterly rendering. Object has
+      narrative weight — it looks important and old. Iron, bronze, stone, or bone
+      materials. Subtle rune or insignia detail.
+
+      '
+    prop_interactable: 'Game prop object on transparent background, viewed from a
+      slightly elevated 3/4 angle. Clear base footprint visible. Object has obvious
+      interactive affordance (handle, lock, opening). Painterly concept-art rendering.
+      Materials show age and heavy use. Bold silhouette readable at small game scale.
+      No background scene elements.
+
+      '
+    prop_environment: 'Game environment prop on transparent background, viewed from
+      slightly elevated 3/4 angle. Clear base footprint. Painterly rendering with
+      strong material texture. Object tells a story through wear and damage. Integrated
+      into the world''s visual language.
+
+      '
+    vfx_plate: 'Visual effect overlay plate on transparent background. Abstract magical/energy
+      pattern with clean readable geometry. Painterly with controlled glow — luminous
+      elements are restrained, not bloom-heavy. Suitable for compositing over game
+      scenes.
+
+      '
+  biomeAtmosphere:
+    RUINS: 'Setting: a crumbling frontier outpost long past its prime. Collapsed stone
+      walls, broken pillars, charred timber beams, moss creeping through mortar joints,
+      scattered rubble and old weapon fragments. Cold grey stone with patches of damp
+      green moss. Dust and ash in the crevices.
+
+      '
+    FOREST_EDGE: 'Setting: the cold fringe of an ancient northern forest. Dark fir
+      trees, persistent low fog between trunks, carpet of dead brown leaves, old overgrown
+      hunter trails, abandoned campfire stones. Muted greens and browns, cold blue-grey
+      atmosphere.
+
+      '
+    MINE: 'Setting: an exhausted iron mine with remnants of forced labor. Rough-hewn
+      stone corridors, rusted iron rail segments, collapsed timber supports, soot-blackened
+      walls, forge-glow from deep vents, copper-green patina on metal fixtures. Palette:
+      dark stone, warm ember orange accents, oxidized metals.
+
+      '
+    SHADOW_DEPTHS: 'Setting: a sealed ritual crypt beneath the earth. Black volcanic
+      stone, cracked sacrificial altars, defaced holy statues, shadow-filled alcoves,
+      faint purple-black energy seeping from wall fractures. Palette: near-black stone,
+      cold ash grey, restrained dark purple-blue accents.
+
+      '
+  factionStyle:
+    bandit: 'Scavenged, mismatched equipment. Rusted iron, patched leather, torn cloth.
+      No uniform — each piece looted from different sources. Desperate and brutal.
+
+      '
+    undead: 'Ancient burial remains reanimated. Cracked yellowed bones, rotting cloth
+      scraps, corroded bronze and iron grave goods. Pale blue-grey bone, dark earth
+      stains.
+
+      '
+    orc: 'Crude heavy iron, furnace soot, brutalist construction. Red-copper and black
+      stone aesthetic. Broad, heavy proportions. Industrial and savage.
+
+      '
+    cultist: 'Dark ritual vestments. Bone-white and ash-black robes, ritual scars,
+      pale fire, sacrificial implements. Ascetic and disturbing.
+
+      '
+    boss: 'Exaggerated scale and visual weight. Elite materials — sacred bronze, ancient
+      iron, ceremonial elements. Must read as a tier above normal enemies in silhouette
+      mass.
+
+      '
+phase2AssetGates:
+  P3-PR09-ALIASES:
+    description: Phase 3 PR-09 talent icon alias coverage for manifest lint.
+    assets:
+    - id: talent_arcanist_cinder_burst_icon
+      category: icon
+      visualKey: talent.arcanist.cinder_burst.icon
+      outputName: phase3/p3-followup/icon_skill_arcanist_cinder_burst.png
+    - id: talent_arcanist_glacial_seal_icon
+      category: icon
+      visualKey: talent.arcanist.glacial_seal.icon
+      outputName: phase3/p3-followup/icon_skill_arcanist_glacial_seal.png
+    - id: talent_arcanist_inferno_orb_icon
+      category: icon
+      visualKey: talent.arcanist.inferno_orb.icon
+      outputName: phase3/p3-followup/icon_skill_arcanist_inferno_orb.png
+    - id: talent_arcanist_shard_storm_icon
+      category: icon
+      visualKey: talent.arcanist.shard_storm.icon
+      outputName: phase3/p3-followup/icon_skill_arcanist_shard_storm.png
+    - id: talent_arcanist_void_breach_icon
+      category: icon
+      visualKey: talent.arcanist.void_breach.icon
+      outputName: phase3/p3-followup/icon_skill_arcanist_void_breach.png
+    - id: talent_rogue_crippling_strike_icon
+      category: icon
+      visualKey: talent.rogue.crippling_strike.icon
+      outputName: phase3/p3-followup/icon_skill_rogue_crippling_strike.png
+    - id: talent_rogue_dusk_shroud_icon
+      category: icon
+      visualKey: talent.rogue.dusk_shroud.icon
+      outputName: phase3/p3-followup/icon_skill_rogue_dusk_shroud.png
+    - id: talent_rogue_eviscerate_icon
+      category: icon
+      visualKey: talent.rogue.eviscerate.icon
+      outputName: phase3/p3-followup/icon_skill_rogue_eviscerate.png
+    - id: talent_rogue_ricochet_knives_icon
+      category: icon
+      visualKey: talent.rogue.ricochet_knives.icon
+      outputName: phase3/p3-followup/icon_skill_rogue_ricochet_knives.png
+    - id: talent_rogue_shadow_bind_icon
+      category: icon
+      visualKey: talent.rogue.shadow_bind.icon
+      outputName: phase3/p3-followup/icon_skill_rogue_shadow_bind.png
+    - id: talent_templar_absolution_icon
+      category: icon
+      visualKey: talent.templar.absolution.icon
+      outputName: phase3/p3-followup/icon_skill_templar_absolution.png
+    - id: talent_templar_beacon_of_zeal_icon
+      category: icon
+      visualKey: talent.templar.beacon_of_zeal.icon
+      outputName: phase3/p3-followup/icon_skill_templar_beacon_of_zeal.png
+    - id: talent_templar_consecration_icon
+      category: icon
+      visualKey: talent.templar.consecration.icon
+      outputName: phase3/p3-followup/icon_skill_templar_consecration.png
+    - id: talent_templar_radiant_lance_icon
+      category: icon
+      visualKey: talent.templar.radiant_lance.icon
+      outputName: phase3/p3-followup/icon_skill_templar_radiant_lance.png
+    - id: talent_templar_ritual_break_icon
+      category: icon
+      visualKey: talent.templar.ritual_break.icon
+      outputName: phase3/p3-followup/icon_skill_templar_ritual_break.png
+    - id: talent_templar_sanctuary_icon
+      category: icon
+      visualKey: talent.templar.sanctuary.icon
+      outputName: phase3/p3-followup/icon_skill_templar_sanctuary.png
+    - id: talent_vanguard_battlefield_command_icon
+      category: icon
+      visualKey: talent.vanguard.battlefield_command.icon
+      outputName: phase3/p3-followup/icon_skill_vanguard_battlefield_command.png
+    - id: talent_vanguard_bulwark_march_icon
+      category: icon
+      visualKey: talent.vanguard.bulwark_march.icon
+      outputName: phase3/p3-followup/icon_skill_vanguard_bulwark_march.png
+    - id: talent_vanguard_earthshaker_icon
+      category: icon
+      visualKey: talent.vanguard.earthshaker.icon
+      outputName: phase3/p3-followup/icon_skill_vanguard_earthshaker.png
+    - id: talent_vanguard_linebreaker_icon
+      category: icon
+      visualKey: talent.vanguard.linebreaker.icon
+      outputName: phase3/p3-followup/icon_skill_vanguard_linebreaker.png

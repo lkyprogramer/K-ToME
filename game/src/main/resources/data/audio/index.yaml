@@ -88,3 +88,33 @@ audioProfiles:
   - id: audio.item.mana_potion
   - id: audio.item.arcane_staff
   - id: audio.item.apprentice_robe
+  - id: audio.talent.linebreaker
+  - id: audio.talent.earthshaker
+  - id: audio.talent.bulwark_march
+  - id: audio.talent.battlefield_command
+  - id: audio.talent.cinder_burst
+  - id: audio.talent.inferno_orb
+  - id: audio.talent.glacial_seal
+  - id: audio.talent.shard_storm
+  - id: audio.talent.void_breach
+  - id: audio.talent.crippling_strike
+  - id: audio.talent.eviscerate
+  - id: audio.talent.shadow_bind
+  - id: audio.talent.dusk_shroud
+  - id: audio.talent.ricochet_knives
+  - id: audio.talent.radiant_lance
+  - id: audio.talent.consecration
+  - id: audio.talent.sanctuary
+  - id: audio.talent.absolution
+  - id: audio.talent.beacon_of_zeal
+  - id: audio.talent.ritual_break
+  - id: audio.monster.bandit_family
+  - id: audio.monster.warded_ruin_family
+  - id: audio.monster.forge_family
+  - id: audio.monster.crystal_family
+  - id: audio.monster.river_family
+  - id: audio.monster.abyssal_family
+  - id: audio.monster.orc.molten_giant
+  - id: audio.monster.abyssal.guardian
+  - id: audio.boss.orc.molten_giant
+  - id: audio.boss.abyssal.guardian

@@ -23,10 +23,14 @@ import com.ktome.core.ecs.ResistanceProfile
 import com.ktome.core.ecs.Stats
 import com.ktome.core.ecs.World
 import com.ktome.core.ecs.add
+import com.ktome.core.ecs.get
 import com.ktome.core.item.Equipment
 import com.ktome.core.item.Inventory
 import com.ktome.core.map.Point
 import com.ktome.core.race.RaceTalentPointBank
+import com.ktome.core.resource.ResourcePool
+import com.ktome.core.resource.ResourcePools
+import com.ktome.core.resource.ResourceType
 import com.ktome.core.resource.StaminaPools
 import com.ktome.core.stats.StatsCalculator
 import com.ktome.core.talent.CooldownState
@@ -125,7 +129,12 @@ class EntityFactory {
         world.add(monsterId, ExperienceReward(template.expReward))
         world.add(monsterId, EffectTracker(ownerId = monsterId))
         if (template.talentLevels.isNotEmpty()) {
+            val pools = world.get<ResourcePools>(monsterId) ?: ResourcePools().also { resourcePools -> world.add(monsterId, resourcePools) }
             StaminaPools.ensurePool(world, monsterId, current = derivedStats.maxStamina, max = derivedStats.maxStamina)
+            ensureMonsterTalentPools(
+                pools = pools,
+                staminaMax = derivedStats.maxStamina,
+            )
             world.add(monsterId, CooldownState())
             world.add(
                 monsterId,
@@ -152,5 +161,35 @@ class EntityFactory {
         patrolRoute?.let { world.add(monsterId, it) }
 
         return monsterId
+    }
+
+    private fun ensureMonsterTalentPools(
+        pools: ResourcePools,
+        staminaMax: Int,
+    ) {
+        val defaults =
+            linkedMapOf(
+                ResourceType.STAMINA to staminaMax,
+                ResourceType.MANA to 120,
+                ResourceType.ENERGY to 100,
+                ResourceType.POSITIVE_ENERGY to 100,
+                ResourceType.HATE to 100,
+                ResourceType.EQUILIBRIUM to 100,
+            )
+        defaults.forEach { (type, max) ->
+            if (pools.pool(type) == null) {
+                val initialCurrent =
+                    when (type) {
+                        ResourceType.EQUILIBRIUM -> max / 2
+                        else -> max
+                    }
+                pools.entries[type] =
+                    ResourcePool(
+                        type = type,
+                        current = initialCurrent,
+                        max = max,
+                    )
+            }
+        }
     }
 }
