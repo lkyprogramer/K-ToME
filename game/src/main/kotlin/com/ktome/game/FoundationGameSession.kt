@@ -6543,6 +6543,10 @@ class FoundationGameSession internal constructor(
     }
 
     private fun recordCombatFeedback(event: GameEvent) {
+        val target = combatFeedbackTarget(event) ?: return
+        if (!shouldProjectCombatFeedback(target)) {
+            return
+        }
         when (event) {
             is DamageDealtEvent ->
                 enqueueCombatFeedback(
@@ -6593,6 +6597,25 @@ class FoundationGameSession internal constructor(
 
             else -> Unit
         }
+    }
+
+    private fun combatFeedbackTarget(event: GameEvent): EntityId? =
+        when (event) {
+            is DamageDealtEvent -> event.target
+            is HealEvent -> event.target
+            is MissEvent -> event.target
+            is StatusAppliedEvent -> event.target
+            is StatusCleanseEvent -> event.target
+            is StatusRemovedEvent -> event.target
+            else -> null
+        }
+
+    private fun shouldProjectCombatFeedback(target: EntityId): Boolean {
+        if (target == playerId) {
+            return true
+        }
+        val position = world.get<Position>(target)?.toPoint() ?: return false
+        return position in visibleTiles
     }
 
     private fun enqueueCombatFeedback(

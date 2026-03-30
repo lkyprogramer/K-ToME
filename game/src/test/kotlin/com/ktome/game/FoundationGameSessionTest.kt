@@ -3022,7 +3022,34 @@ class FoundationGameSessionTest {
                 SaveManager(tempDir.resolve("combat-feedback-anchor")),
             )
         clearMonsters(session)
-        val monsterId = installCombatDummy(session, id = "combat_feedback_anchor_dummy", position = Point(3, 1))
+        val occupiedPoints =
+            runtimeWorld(session).entitiesWith(Position::class).mapTo(linkedSetOf()) { entityId ->
+                requireNotNull(runtimeWorld(session).get<Position>(entityId)).toPoint()
+            }
+        val candidateOffsets = listOf(Point(1, 0), Point(-1, 0), Point(0, 1), Point(0, -1))
+        val anchorStart =
+            session.visibleTiles()
+                .filter { point -> point !in occupiedPoints }
+                .sortedWith(compareBy<Point>(Point::y).thenBy(Point::x))
+                .first { point ->
+                    candidateOffsets.any { offset ->
+                        val candidate = point + offset
+                        candidate in session.visibleTiles() &&
+                            candidate in session.map.floorPoints() &&
+                            candidate !in occupiedPoints &&
+                            candidate != session.playerPosition()
+                    }
+                }
+        val anchorEnd =
+            candidateOffsets
+                .map { offset -> anchorStart + offset }
+                .first { point ->
+                    point in session.visibleTiles() &&
+                        point in session.map.floorPoints() &&
+                        point !in occupiedPoints &&
+                        point != session.playerPosition()
+                }
+        val monsterId = createTargetDummy(session, anchorStart)
         val method = FoundationGameSession::class.java.getDeclaredMethod("logEvent", GameEvent::class.java)
         method.isAccessible = true
 
@@ -3036,11 +3063,52 @@ class FoundationGameSessionTest {
                 damageType = DamageType.PHYSICAL,
             ),
         )
-        requireNotNull(runtimeWorld(session).get<Position>(monsterId)).moveTo(Point(4, 1))
+        requireNotNull(runtimeWorld(session).get<Position>(monsterId)).moveTo(anchorEnd)
 
         val anchoredFeedback = session.renderSnapshot().combatFeedbackEvents.single()
-        assertEquals(4, anchoredFeedback.x)
-        assertEquals(1, anchoredFeedback.y)
+        assertEquals(anchorEnd.x, anchoredFeedback.x)
+        assertEquals(anchorEnd.y, anchoredFeedback.y)
+    }
+
+    @Test
+    fun `expired statuses on hidden actors do not project combat feedback`() {
+        val session =
+            GameModule.newFoundationSession(
+                FoundationGameConfig(seed = 20260324L, zoneId = "shattered_outpost", playerProfessionId = "vanguard"),
+                SaveManager(tempDir.resolve("combat-feedback-hidden-expire")),
+            )
+        clearMonsters(session)
+        val occupiedPoints =
+            runtimeWorld(session).entitiesWith(Position::class).mapTo(linkedSetOf()) { entityId ->
+                requireNotNull(runtimeWorld(session).get<Position>(entityId)).toPoint()
+            }
+        val hiddenPoint =
+            session.map.floorPoints()
+                .first { point -> point !in session.visibleTiles() && point !in occupiedPoints }
+        val hiddenActorId = createTargetDummy(session, hiddenPoint)
+        val finishActorTurn =
+            FoundationGameSession::class.java.declaredMethods.first { method ->
+                (method.name == "finishActorTurn" || method.name.startsWith("finishActorTurn-")) && method.parameterCount == 1
+            }
+        finishActorTurn.isAccessible = true
+
+        assertFalse(hiddenPoint in session.visibleTiles())
+        StatusLifecycle.applyEffect(
+            requireNotNull(runtimeWorld(session).get<EffectTracker>(hiddenActorId)),
+            StatusLifecycle.createInstance(
+                type = StatusEffectType.STUN,
+                effectId = "hidden_expiring_status",
+                duration = 1,
+            ),
+        )
+
+        finishActorTurn.invoke(session, hiddenActorId.value)
+
+        assertTrue(
+            session.renderSnapshot().combatFeedbackEvents.none { event ->
+                event.type == CombatFeedbackTypeSnapshot.STATUS_REMOVED && event.targetEntityId == hiddenActorId.value
+            },
+        )
     }
 
     @Test
