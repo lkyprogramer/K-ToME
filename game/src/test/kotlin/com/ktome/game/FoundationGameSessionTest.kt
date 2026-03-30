@@ -179,6 +179,36 @@ class FoundationGameSessionTest {
     }
 
     @Test
+    fun `revisiting a cleared floor does not grant cadence fallback twice`() {
+        val session =
+            GameModule.newFoundationSession(
+                config =
+                    FoundationGameConfig(
+                        seed = 20260331L,
+                        zoneId = "greenwood_fringe",
+                        playerProfessionId = "rogue",
+                        zoneRoute = listOf("shattered_outpost", "greenwood_fringe"),
+                        routeIndex = 1,
+                    ),
+                saveManager = SaveManager(tempDir.resolve("cadence-floor-revisit-save")),
+            )
+
+        movePlayerTo(session, stairPoint(session, StairDirection.DOWN))
+        assertTrue(session.perform(PlayerCommand.Descend))
+        assertEquals(1, session.currentCadenceRewardCount())
+
+        movePlayerTo(session, stairPoint(session, StairDirection.UP))
+        assertTrue(session.perform(PlayerCommand.Ascend))
+        assertEquals(1, session.currentFloor())
+
+        movePlayerTo(session, stairPoint(session, StairDirection.DOWN))
+        assertTrue(session.perform(PlayerCommand.Descend))
+
+        assertEquals(2, session.currentFloor())
+        assertEquals(1, session.currentCadenceRewardCount())
+    }
+
+    @Test
     fun `player kill grants experience and level up`() {
         val map = GameMap.fromAscii(
             rows = listOf(
@@ -1225,6 +1255,7 @@ class FoundationGameSessionTest {
         assertTrue(recentEventSummaries(session).any { event -> event.startsWith("status_tick:${session.playerId.value}:") })
     }
 
+    @Test
     fun `mana potion restores arcanist mana from starter kit`() {
         val session =
             GameModule.newFoundationSession(

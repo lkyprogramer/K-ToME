@@ -17,6 +17,7 @@ import com.ktome.core.save.AreaEffectEmitterSnapshot
 import com.ktome.core.save.AiTriggerTrackerSnapshot
 import com.ktome.core.save.EntitySnapshot
 import com.ktome.core.save.EquipmentSnapshot
+import com.ktome.core.save.FloorRewardStateSnapshot
 import com.ktome.core.save.InventorySnapshot
 import com.ktome.core.save.ItemSnapshot
 import com.ktome.core.save.PlayerSnapshot
@@ -193,6 +194,11 @@ class SessionSnapshotMapperTest {
                         FloorRuntimeState(
                             map = GameMap.fromAscii(rows = List(5) { "....." }, playerStart = Point(1, 1)),
                             stairsDown = Point(4, 4),
+                            rewardState =
+                                FloorRewardStateSnapshot(
+                                    meaningfulRewardSeenThisFloor = true,
+                                    cadenceRewardGrantedThisFloor = true,
+                                ),
                             exploredTiles = linkedSetOf(Point(3, 1), Point(1, 0), Point(1, 1)),
                             entities =
                                 mutableListOf(
@@ -253,6 +259,14 @@ class SessionSnapshotMapperTest {
         assertEquals(listOf("alpha", "zeta"), snapshot.player.entity.effects?.map(ActiveEffectSnapshot::id))
         assertEquals(listOf("alpha", "zeta"), snapshot.player.carriedEntities.first().itemState?.affixIds)
         assertEquals(listOf(PointSnapshot(1, 0), PointSnapshot(1, 1), PointSnapshot(3, 1)), snapshot.floors.single().exploredTiles)
+        assertEquals(
+            FloorRewardStateSnapshot(
+                meaningfulRewardSeenThisFloor = true,
+                cadenceRewardGrantedThisFloor = true,
+            ),
+            snapshot.currentFloorRewardState,
+        )
+        assertEquals(snapshot.currentFloorRewardState, snapshot.floors.single().rewardState)
         assertEquals(listOf(7, 9, 11), snapshot.floors.single().entities.map(EntitySnapshot::id))
         assertEquals("supply_crate", snapshot.floors.single().entities.last().interactableId)
         assertEquals(milestoneRewards, snapshot.milestoneRewards)
@@ -276,6 +290,11 @@ class SessionSnapshotMapperTest {
                 playerRaceId = "human",
                 maxFloor = 2,
                 turnCount = 10,
+                currentFloorRewardState =
+                    FloorRewardStateSnapshot(
+                        meaningfulRewardSeenThisFloor = true,
+                        cadenceRewardGrantedThisFloor = true,
+                    ),
                 milestoneRewards =
                     listOf(
                         MilestoneRewardSummary(
@@ -315,6 +334,7 @@ class SessionSnapshotMapperTest {
         assertEquals(1, restored.config.routeIndex)
         assertEquals(10, restored.headlessTurnEquivalent)
         assertEquals(snapshot.milestoneRewards, restored.milestoneRewards)
+        assertEquals(snapshot.currentFloorRewardState, restored.floors.single().payload.rewardState)
     }
 
     @Test

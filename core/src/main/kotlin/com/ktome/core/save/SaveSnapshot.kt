@@ -140,6 +140,7 @@ data class FloorSnapshot(
     val map: MapSnapshot,
     val stairsUp: PointSnapshot? = null,
     val stairsDown: PointSnapshot? = null,
+    val rewardState: FloorRewardStateSnapshot = FloorRewardStateSnapshot(),
     val exploredTiles: List<PointSnapshot> = emptyList(),
     val entities: List<EntitySnapshot> = emptyList(),
 ) {

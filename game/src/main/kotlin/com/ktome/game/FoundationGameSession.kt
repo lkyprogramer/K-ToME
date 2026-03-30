@@ -239,7 +239,6 @@ class FoundationGameSession internal constructor(
     private var shardBalance: Int = 0,
     private var shopStates: MutableMap<String, ShopInventoryState> = linkedMapOf(),
     private var cadenceRewardCount: Int = 0,
-    private var currentFloorRewardState: FloorRewardStateSnapshot = FloorRewardStateSnapshot(),
     restoredMilestoneRewardSummaries: List<MilestoneRewardSummary> = emptyList(),
     private val inventoryManager: InventoryManager = InventoryManager(),
     private val combatRandomSource: RandomSource = defaultCombatRandomSource(config, turnCount),
@@ -346,6 +345,11 @@ class FoundationGameSession internal constructor(
     private var pendingRouteSelection: List<RouteAdvanceOption> = emptyList()
     private val playerBaseResistanceValues: Map<DamageType, Int> =
         world.get<ResistanceProfile>(playerId)?.values?.toMap(linkedMapOf()) ?: emptyMap()
+    private var currentFloorRewardState: FloorRewardStateSnapshot
+        get() = activeFloorState.rewardState
+        set(value) {
+            activeFloorState.rewardState = value
+        }
 
     init {
         talentResolver.damageMultiplierResolver =
@@ -3019,10 +3023,6 @@ class FoundationGameSession internal constructor(
         }
     }
 
-    private fun resetCurrentFloorRewardState() {
-        currentFloorRewardState = FloorRewardStateSnapshot()
-    }
-
     private fun isCurrentFloorBossFloor(): Boolean = currentFloor() == config.maxFloor && activeBossDefinition() != null
 
     private fun cadenceFallbackProfileIds(): List<String> {
@@ -5365,7 +5365,6 @@ class FoundationGameSession internal constructor(
         world = SessionSnapshotMapper.restoreWorld(content, playerSnapshot, activeFloorState)
         pendingActions.clear()
         activeTurnActor = null
-        resetCurrentFloorRewardState()
         refreshFov()
         announceZoneMechanicFloorEntryIfNeeded()
 
@@ -5415,7 +5414,6 @@ class FoundationGameSession internal constructor(
                 shardBalance = shardBalance,
                 shopStates = shopStates(),
                 cadenceRewardCount = cadenceRewardCount,
-                currentFloorRewardState = currentFloorRewardState,
                 combatRandomState = (combatRandomSource as? StatefulRandomSource)?.snapshotState(),
                 sessionRandomState = (sessionRandom as? StatefulRandomSource)?.snapshotState(),
                 milestoneRewards = persistedMilestoneRewardSummaries(),
@@ -5509,7 +5507,6 @@ class FoundationGameSession internal constructor(
         pendingActions.clear()
         activeTurnActor = null
         activeShopId = null
-        resetCurrentFloorRewardState()
         nextRuntime.initialMessages.forEach(::addMessage)
         checkpointRequested = true
         refreshFov()
@@ -5651,6 +5648,7 @@ class FoundationGameSession internal constructor(
                 map = map,
                 stairsUp = activeFloorState.stairsUp,
                 stairsDown = activeFloorState.stairsDown,
+                rewardState = currentFloorRewardState,
                 exploredTiles = exploredTiles,
                 world = world,
                 excludedEntities = excludedEntities,
