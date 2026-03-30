@@ -68,7 +68,13 @@
 1. 不重做 `abyssal_guardian` Boss 设计
 2. 不新增第二个 finale Boss
 3. 不做 Phase 4 级 hidden event
-4. 不新增 raw art / raw audio
+4. 不新增第二套 Boss raw art / raw audio
+5. 但必须补终线区段最小 identity pack：
+   - `2` 个 zone card
+   - `2` 个 finale interactable prop
+   - `1` 个 void-pressure overlay
+   - `2` 组 ambience/zone cue
+   - `2` 个 interactable cue
 
 ## 4. 技术方案
 
@@ -136,6 +142,36 @@ game/src/test/kotlin/com/ktome/game/harness/BossHarnessTest.kt
    - Boss 前后 telegraph / pressure / focus hook 不互相打架
 2. `bossHarness` 不需要扩成第二套 finale harness，但要至少覆盖：
    - finale pre-hook 不会破坏 `abyssal_guardian` 的 phase trace
+
+### 4.4 [W17d] Asset And Audio Identity Pack
+
+建议文件：
+
+```text
+assets-src/image/specs/phase3-v3-pr17-gemini-plan.yaml
+assets-src/audio/specs/phase3-v3-pr17-audio-plan.yaml
+game/src/main/resources/data/visuals/index.yaml
+game/src/main/resources/data/audio/index.yaml
+game/src/main/resources/data/ambient/index.yaml
+client/src/main/resources/manifests/visual-manifest.json
+client/src/main/resources/manifests/audio-manifest.json
+build.gradle.kts
+```
+
+冻结口径：
+
+1. 这批资源只服务：
+   - `zone.abyssal_temple.*`
+   - `zone.abyssal_heart.*`
+   - `prop.temple_ward_reliquary`
+   - `prop.heart_ward_focus`
+   - `vfx.zone.effect.void_pressure_01`
+   - `ambient.* / audio.zone.* / audio.interactable.*` 对应新 key
+2. `void_pressure / void_eruption` 的 warning cue 继续复用 `audio.boss.warning`。
+3. `abyssal_guardian` 的 Boss cue 和 Boss 图不在本 PR 里重做。
+4. `PR-19` 的 late-run shard spend 必须直接复用 `prop.temple_ward_reliquary` 与对应 audio，不再另开第二套 reliquary 资源。
+5. 详细 asset/audio 表、prompt 方向和命令模板见 companion 文档：
+   - `docs/review/phase3/v3/2026-03-30-phase3-v3-pr15-pr20-asset-and-audio-assessment.md`
 
 ## 5. 推荐改动面
 

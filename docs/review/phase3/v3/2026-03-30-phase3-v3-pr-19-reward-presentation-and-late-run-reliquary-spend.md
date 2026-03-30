@@ -51,7 +51,8 @@
 3. 若要新增 spend 节点，优先绑定：
    - `temple_ward_reliquary`
    - 必要时可考虑 `river_ferry_anchor`
-4. 本 PR 默认不新增 raw art / raw audio。
+4. 本 PR 不再单独新增 raw art / raw audio。
+   `temple_ward_reliquary` 的 prop/audio 应直接复用 `PR-17` companion pack，不得再开第二套 reliquary 资源。
 5. 本 PR 不引入第二货币，不引入 crafting，不引入 reforge。
 
 ## 3. 范围与非目标

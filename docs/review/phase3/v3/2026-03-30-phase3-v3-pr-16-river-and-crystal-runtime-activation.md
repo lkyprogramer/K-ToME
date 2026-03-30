@@ -48,10 +48,18 @@
    - 已有 interactable/objective runtime
 3. 本 PR 不引入 Phase 4 级复杂 ProcGen，也不加新脚本系统。
 4. 若现有 carrier 能表达，就不新增第二套 runtime 容器。
-5. 本 PR 默认不新增 raw image / raw audio，优先复用：
+5. `telegraph` 通用提示继续复用：
    - `audio.boss.warning`
    - 现有 warning overlay
-   - 现有 prop 视觉
+6. 但 `river / crystal` 的 zone/interactable 身份不能继续完全复用 `grey_gate / ritual_altar / armory_gate`。
+   本 PR 需要补一组最小资源 companion：
+   - `2` 个 zone card
+   - `2` 个 interactable prop
+   - `2` 个 mechanic overlay
+   - `2` 组 ambience/zone cue
+   - `2` 个 interactable cue
+7. 详细资源方案见：
+   - `docs/review/phase3/v3/2026-03-30-phase3-v3-pr15-pr20-asset-and-audio-assessment.md`
 
 ## 3. 范围与非目标
 
@@ -135,6 +143,39 @@ game/src/test/kotlin/com/ktome/game/harness/LongRunLabFullTest.kt
    - `crystal_shards` telegraph / resolution 断言
    - `resonance_node` 交互后行为变化断言
 3. `longRunLabFullTest` 至少补 1 条经过这两个 zone 的 branch 样本。
+
+### 4.4 [W16d] Asset And Audio Identity Pack
+
+建议文件：
+
+```text
+assets-src/image/specs/phase3-v3-pr16-gemini-plan.yaml
+assets-src/audio/specs/phase3-v3-pr16-audio-plan.yaml
+game/src/main/resources/data/visuals/index.yaml
+game/src/main/resources/data/audio/index.yaml
+game/src/main/resources/data/ambient/index.yaml
+client/src/main/resources/manifests/visual-manifest.json
+client/src/main/resources/manifests/audio-manifest.json
+build.gradle.kts
+```
+
+冻结口径：
+
+1. 这不是大资源包，只补：
+   - `zone.underground_river.*`
+   - `zone.crystal_cavern.*`
+   - `prop.river_ferry_anchor`
+   - `prop.crystal_resonance_node`
+   - `vfx.zone.effect.current_lane_01`
+   - `vfx.zone.effect.crystal_shard_01`
+   - `ambient.* / audio.zone.* / audio.interactable.*` 对应新 key
+2. `currents / crystal_shards` 的 warning cue 继续复用 `audio.boss.warning`，不再新增第二套 warning 音。
+3. 资源生成必须复用现有脚本：
+   - 图片：`scripts/generate_assets.sh`
+   - 音频：`scripts/process_audio.py`
+4. 执行图片批量生成前，必须先向用户索取 `GEMINI_API_KEY`。
+5. 详细 asset/audio 表、prompt 方向和命令模板见 companion 文档：
+   - `docs/review/phase3/v3/2026-03-30-phase3-v3-pr15-pr20-asset-and-audio-assessment.md`
 
 ## 5. 推荐改动面
 

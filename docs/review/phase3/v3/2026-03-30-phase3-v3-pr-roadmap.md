@@ -90,6 +90,18 @@ PR-18 + PR-19
 2. 可尽量复用现有 profile
 3. 失败时容易回滚，不会污染其他 P0/P1 主链
 
+### 4.4 资源补充结论
+
+`PR-15 ~ PR-20` 不需要平均摊资源包。
+
+1. `PR-16 / PR-17` 需要补最小 `zone/interactable/audio identity pack`
+2. `PR-19` 不再单独新增 raw 资源，直接复用 `PR-17` 的 reliquary 资源
+3. `PR-15 / PR-18 / PR-20` 不应掺资源生产范围
+
+详细方案见：
+
+`docs/review/phase3/v3/2026-03-30-phase3-v3-pr15-pr20-asset-and-audio-assessment.md`
+
 ## 5. 本轮不单独晋升为 PR 的事项
 
 以下问题暂不单独立 PR，而是作为后续候选：
