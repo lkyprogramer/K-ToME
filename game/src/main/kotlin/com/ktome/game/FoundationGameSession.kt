@@ -121,10 +121,12 @@ import com.ktome.core.run.RunOutcome
 import com.ktome.core.save.PlayerSnapshot
 import com.ktome.core.save.PointSnapshot
 import com.ktome.core.save.SaveManager
+import com.ktome.core.save.FloorRewardStateSnapshot
 import com.ktome.core.economy.ShopInventoryState
 import com.ktome.core.economy.ShardEconomy
 import com.ktome.core.economy.ShopNode
 import com.ktome.core.economy.ShopOffer
+import com.ktome.core.economy.ShopServiceType
 import com.ktome.core.snapshot.ActorRenderSnapshot
 import com.ktome.core.snapshot.ActorRoleKindSnapshot
 import com.ktome.core.snapshot.CellVisibilitySnapshot
@@ -236,6 +238,7 @@ class FoundationGameSession internal constructor(
     private var worldProgress: WorldProgressDef = WorldProgressDef(),
     private var shardBalance: Int = 0,
     private var shopStates: MutableMap<String, ShopInventoryState> = linkedMapOf(),
+    private var cadenceRewardCount: Int = 0,
     restoredMilestoneRewardSummaries: List<MilestoneRewardSummary> = emptyList(),
     private val inventoryManager: InventoryManager = InventoryManager(),
     private val combatRandomSource: RandomSource = defaultCombatRandomSource(config, turnCount),
@@ -342,6 +345,11 @@ class FoundationGameSession internal constructor(
     private var pendingRouteSelection: List<RouteAdvanceOption> = emptyList()
     private val playerBaseResistanceValues: Map<DamageType, Int> =
         world.get<ResistanceProfile>(playerId)?.values?.toMap(linkedMapOf()) ?: emptyMap()
+    private var currentFloorRewardState: FloorRewardStateSnapshot
+        get() = activeFloorState.rewardState
+        set(value) {
+            activeFloorState.rewardState = value
+        }
 
     init {
         talentResolver.damageMultiplierResolver =
@@ -409,6 +417,16 @@ class FoundationGameSession internal constructor(
     fun currentShardBalance(): Int = shardBalance
 
     fun shopStates(): List<ShopInventoryState> = shopStates.values.sortedBy(ShopInventoryState::shopId)
+
+    fun currentCadenceRewardCount(): Int = cadenceRewardCount
+
+    fun currentShopRefreshPurchaseCount(): Int =
+        content.schemaCatalog.shopNodes.count { shop ->
+            val refreshOfferId =
+                shop.inventory.firstOrNull { offer -> offer.serviceType == ShopServiceType.REFRESH_STOCK }?.id
+                    ?: return@count false
+            refreshOfferId in shopStates[shop.id]?.purchasedOfferIds.orEmpty()
+        }
 
     fun maxFloor(): Int = config.maxFloor
 
@@ -617,6 +635,8 @@ class FoundationGameSession internal constructor(
 
     internal fun automationCanPurchaseShopOffer(index: Int): Boolean =
         availableShopOffers().getOrNull(index)?.let(::canPurchaseShopOffer) == true
+
+    internal fun automationVisibleShopOffers(): List<ShopOffer> = availableShopOffers()
 
     internal fun automationForceDefeatPlayer() {
         handleDeath(playerId, null)
@@ -2053,10 +2073,97 @@ class FoundationGameSession internal constructor(
     private fun activeShopState(): ShopInventoryState? =
         currentShopNode()?.let { shop -> shopStates[shop.id] }
 
+    private fun shopStateFor(shop: ShopNode): ShopInventoryState =
+        shopStates.getOrPut(shop.id) { ShopInventoryState(shopId = shop.id) }
+
+    private fun mandatoryRescueOfferIds(shop: ShopNode): Set<String> {
+        val nonServiceOffers = shop.inventory.filter { offer -> offer.serviceType == null }
+        val selected = linkedSetOf<String>()
+        shop.rescuePolicy.guaranteedTags
+            .sorted()
+            .forEach { tag ->
+                nonServiceOffers
+                    .filter { offer -> tag in offer.tags }
+                    .minWithOrNull(compareBy<ShopOffer>(ShopOffer::price).thenBy(ShopOffer::id))
+                    ?.let { offer -> selected += offer.id }
+            }
+        if (selected.size >= shop.rescuePolicy.affordability.mandatoryAffordableItemCount) {
+            return selected
+        }
+        nonServiceOffers
+            .filter { offer -> offer.tags.any(shop.rescuePolicy.affordability.requiredAffordableTags::contains) }
+            .sortedWith(compareBy<ShopOffer>(ShopOffer::price).thenBy(ShopOffer::id))
+            .forEach { offer ->
+                if (selected.size < shop.rescuePolicy.affordability.mandatoryAffordableItemCount) {
+                    selected += offer.id
+                }
+            }
+        return selected
+    }
+
+    private fun baseRefreshableOffers(shop: ShopNode): List<ShopOffer> {
+        val mandatoryIds = mandatoryRescueOfferIds(shop)
+        return shop.inventory.filter { offer ->
+            offer.serviceType == null && offer.id !in mandatoryIds
+        }
+    }
+
+    private fun currentRefreshableOffers(
+        shop: ShopNode,
+        state: ShopInventoryState,
+    ): List<ShopOffer> = if (state.activeRefreshableOffers.isEmpty()) baseRefreshableOffers(shop) else state.activeRefreshableOffers
+
     private fun availableShopOffers(): List<ShopOffer> {
         val shop = currentShopNode() ?: return emptyList()
-        val purchasedIds = shopStates[shop.id]?.purchasedOfferIds.orEmpty()
-        return shop.inventory.filterNot { offer -> offer.id in purchasedIds }
+        val state = shopStateFor(shop)
+        val purchasedIds = state.purchasedOfferIds
+        val mandatoryIds = mandatoryRescueOfferIds(shop)
+        return buildList {
+            shop.inventory.forEach { offer ->
+                if (offer.id in mandatoryIds && offer.id !in purchasedIds) {
+                    add(offer)
+                }
+            }
+            currentRefreshableOffers(shop, state)
+                .filterNot { offer -> offer.id in purchasedIds }
+                .forEach(::add)
+            shop.inventory
+                .filter { offer -> offer.serviceType != null && offer.id !in purchasedIds }
+                .forEach(::add)
+        }
+    }
+
+    private fun refreshableOfferCandidates(
+        shop: ShopNode,
+        state: ShopInventoryState,
+    ): List<ShopOffer> {
+        val purchasedIds = state.purchasedOfferIds
+        return currentRefreshableOffers(shop, state).filterNot { offer -> offer.id in purchasedIds }
+    }
+
+    private fun replaceActiveRefreshableOffers(shop: ShopNode): Boolean {
+        val state = shopStateFor(shop)
+        val purchasedIds = state.purchasedOfferIds
+        val replacementCount = refreshableOfferCandidates(shop, state).size
+        if (replacementCount == 0) {
+            return false
+        }
+        val activeIds =
+            linkedSetOf<String>().apply {
+                addAll(shop.inventory.map(ShopOffer::id))
+                addAll(state.activeRefreshableOffers.map(ShopOffer::id))
+            }
+        val replacementOffers =
+            shop.refreshInventory.filter { offer ->
+                offer.serviceType == null &&
+                    offer.id !in purchasedIds &&
+                    offer.id !in activeIds
+            }.take(replacementCount)
+        if (replacementOffers.size != replacementCount) {
+            return false
+        }
+        shopStates[shop.id] = state.copy(activeRefreshableOffers = replacementOffers)
+        return true
     }
 
     private fun routeRewardFor(routeId: String): RouteReward? =
@@ -2158,7 +2265,11 @@ class FoundationGameSession internal constructor(
                 requireNotNull(content.inscriptions.firstOrNull { inscription -> inscription.id == offer.inscriptionId }) {
                     "Unknown shop inscription '${offer.inscriptionId}'."
                 }.nameKey
-            else -> error("Shop offer '${offer.id}' is missing both itemBaseId and inscriptionId.")
+            offer.serviceType != null ->
+                when (requireNotNull(offer.serviceType)) {
+                    ShopServiceType.REFRESH_STOCK -> "shop.service.refresh_stock.name"
+                }
+            else -> error("Shop offer '${offer.id}' is missing itemBaseId, inscriptionId, and serviceType.")
         }
 
     private fun activeBossEncounterSchema() =
@@ -2378,6 +2489,7 @@ class FoundationGameSession internal constructor(
         profileIds: List<String>,
         fallbackBaseId: String,
         rewardContext: RewardGenerationContext,
+        randomSource: RandomSource = sessionRandom,
     ): ItemInstance {
         val candidateIds =
             profileIds
@@ -2392,7 +2504,7 @@ class FoundationGameSession internal constructor(
                 ?: requireNotNull(itemBaseDef(effectiveFallbackBaseId)) {
                     "Missing fallback milestone reward item '$effectiveFallbackBaseId'."
                 }
-        return ItemGenerator(content.itemBundle, sessionRandom).generate(
+        return ItemGenerator(content.itemBundle, randomSource).generate(
             base = base,
             floor = rewardContext.floor,
             affixContext = milestoneAffixContext(rewardContext),
@@ -2586,10 +2698,30 @@ class FoundationGameSession internal constructor(
             MilestoneRewardSource.CACHE -> setOf("reward", "cache")
         }
 
+    private fun rewardCountsAsMeaningful(reward: ItemInstance): Boolean =
+        reward.slot != null || reward.quality.ordinal >= ItemQuality.MAGIC.ordinal
+
+    private fun markMeaningfulRewardSeenThisFloor() {
+        if (!currentFloorRewardState.meaningfulRewardSeenThisFloor) {
+            currentFloorRewardState = currentFloorRewardState.copy(meaningfulRewardSeenThisFloor = true)
+        }
+    }
+
+    private fun observeRewardItem(reward: ItemInstance) {
+        if (rewardCountsAsMeaningful(reward)) {
+            markMeaningfulRewardSeenThisFloor()
+        }
+    }
+
+    private fun observeRewardInscription() {
+        markMeaningfulRewardSeenThisFloor()
+    }
+
     private fun grantRewardItem(
         reward: ItemInstance,
         dropPoint: Point,
     ): Boolean {
+        observeRewardItem(reward)
         val inventory = requireNotNull(world.get<Inventory>(playerId)) { "Missing Inventory for $playerId" }
         if (inventory.itemIds.size < inventory.capacity) {
             inventory.itemIds += ItemFactory().createCarriedItem(world, reward)
@@ -2603,11 +2735,13 @@ class FoundationGameSession internal constructor(
         profileIds: List<String>,
         fallbackBaseId: String,
         rewardContext: RewardGenerationContext,
+        randomSource: RandomSource = sessionRandom,
     ): ItemInstance =
         milestoneRewardItemFromProfiles(
             profileIds = profileIds,
             fallbackBaseId = fallbackBaseId,
             rewardContext = rewardContext,
+            randomSource = randomSource,
         )
 
     private fun activeBossRewardItem(): ItemInstance =
@@ -2827,6 +2961,7 @@ class FoundationGameSession internal constructor(
         spec: RewardSpec,
     ) {
         val reward = groundRewardItemFor(schema.id, spec)
+        observeRewardItem(reward)
         ItemFactory().createGroundItem(world, reward, position)
         if (spec.profileIds.isNotEmpty()) {
             recordMilestoneReward(
@@ -2886,6 +3021,97 @@ class FoundationGameSession internal constructor(
         if (restored > 0) {
             addMessage("log.interactable.support.resupply", literalArg("amount", restored))
         }
+    }
+
+    private fun isCurrentFloorBossFloor(): Boolean = currentFloor() == config.maxFloor && activeBossDefinition() != null
+
+    private fun cadenceFallbackProfileIds(): List<String> {
+        val zoneSpecificProfileId = "loot.${currentZoneSchema().id}.cadence"
+        if (lootProfile(zoneSpecificProfileId) != null) {
+            return listOf(zoneSpecificProfileId)
+        }
+        val zoneRewardProfileId = "loot.${currentZoneSchema().id}.reward"
+        return listOfNotNull(
+            zoneRewardProfileId.takeIf(::hasLootProfile),
+            "loot.foundation.common".takeIf(::hasLootProfile),
+        )
+    }
+
+    private fun hasLootProfile(profileId: String): Boolean = lootProfile(profileId) != null
+
+    private fun cadenceFallbackBaseId(): String =
+        cadenceFallbackProfileIds()
+            .asSequence()
+            .flatMap { profileId -> lootProfile(profileId)?.itemIds.orEmpty().asSequence() }
+            .firstOrNull()
+            ?: defaultMilestoneFallbackBaseId(
+                RewardGenerationContext(
+                    rewardSource = MilestoneRewardSource.CACHE,
+                    sourceId = "cadence.${config.zoneId}.floor${currentFloor()}",
+                    floor = itemFloorForRecommendedLevel(currentZoneSchema().recommendedLevel.max),
+                    qualityFloor = ItemQuality.MAGIC,
+                    minAffixCount = 1,
+                    routeBiasTags = routeRewardBiasTags(currentZoneSchema().rewardBiasTags()),
+                    occupiedSlots = currentEquippedSlots(),
+                ),
+            )
+
+    private fun cadenceFallbackRewardItem(): ItemInstance? {
+        val profileIds = cadenceFallbackProfileIds()
+        if (profileIds.isEmpty()) {
+            return null
+        }
+        return zoneRewardItem(
+            profileIds = profileIds,
+            fallbackBaseId = cadenceFallbackBaseId(),
+            rewardContext =
+                RewardGenerationContext(
+                    rewardSource = MilestoneRewardSource.CACHE,
+                    sourceId = "cadence.${config.zoneId}.floor${currentFloor()}",
+                    floor = itemFloorForRecommendedLevel(currentZoneSchema().recommendedLevel.max),
+                    qualityFloor = ItemQuality.MAGIC,
+                    minAffixCount = 1,
+                    routeBiasTags = routeRewardBiasTags(currentZoneSchema().rewardBiasTags()),
+                    occupiedSlots = currentEquippedSlots(),
+                ),
+            randomSource = cadenceRewardRandomSource(),
+        )
+    }
+
+    private fun cadenceRewardRandomSource(): RandomSource =
+        SplitMix64RandomSource.fromSeed(
+            config.seed xor
+                (config.zoneId.hashCode().toLong() shl 32) xor
+                currentFloor().toLong() xor
+                0x0CADEF00DL,
+        )
+
+    private fun grantCadenceRewardIfNeeded(dropPoint: Point) {
+        if (isCurrentFloorBossFloor()) {
+            return
+        }
+        if (currentFloorRewardState.meaningfulRewardSeenThisFloor || currentFloorRewardState.cadenceRewardGrantedThisFloor) {
+            return
+        }
+        val reward = cadenceFallbackRewardItem() ?: return
+        val stored = grantRewardItem(reward, dropPoint)
+        cadenceRewardCount += 1
+        currentFloorRewardState =
+            currentFloorRewardState.copy(
+                meaningfulRewardSeenThisFloor = true,
+                cadenceRewardGrantedThisFloor = true,
+            )
+        val rewardSchema = requireNotNull(itemSchemaFor(reward.baseId)) {
+            "Unknown cadence reward item '${reward.baseId}'."
+        }
+        addMessage(
+            if (stored) {
+                "log.reward.cadence.claimed"
+            } else {
+                "log.reward.cadence.dropped"
+            },
+            keyArg("item", rewardSchema.nameKey),
+        )
     }
 
     private fun alertCurrentFloorHostiles(): Int {
@@ -3761,12 +3987,34 @@ class FoundationGameSession internal constructor(
                     return CommandResolution.rejected()
                 }
                 InscriptionManager.equip(loadout, equippedDefinitions, definition)
+                observeRewardInscription()
                 shardBalance -= offer.price
                 markShopOfferPurchased(shop.id, offer.id)
                 addMessage(
                     "log.shop.buy.inscription",
                     keyArg("shop", shop.nameKey),
                     keyArg("inscription", definition.nameKey),
+                    literalArg("price", offer.price),
+                )
+                return CommandResolution(accepted = true, consumesTurn = false)
+            }
+
+            offer.serviceType != null -> {
+                val serviceType = requireNotNull(offer.serviceType)
+                val refreshed =
+                    when (serviceType) {
+                        ShopServiceType.REFRESH_STOCK -> replaceActiveRefreshableOffers(shop)
+                    }
+                if (!refreshed) {
+                    addMessage("log.shop.refresh_stock.unavailable", keyArg("shop", shop.nameKey))
+                    return CommandResolution.rejected()
+                }
+                shardBalance -= offer.price
+                markShopOfferPurchased(shop.id, offer.id)
+                addMessage(
+                    "log.shop.buy.service",
+                    keyArg("shop", shop.nameKey),
+                    keyArg("service", shopOfferLabelKey(offer)),
                     literalArg("price", offer.price),
                 )
                 return CommandResolution(accepted = true, consumesTurn = false)
@@ -3795,6 +4043,13 @@ class FoundationGameSession internal constructor(
                     }
                 InscriptionManager.canEquip(loadout, equippedDefinitions, definition)
             }
+            offer.serviceType != null ->
+                when (requireNotNull(offer.serviceType)) {
+                    ShopServiceType.REFRESH_STOCK -> {
+                        val shop = currentShopNode() ?: return false
+                        refreshableOfferCandidates(shop, shopStateFor(shop)).isNotEmpty()
+                    }
+                }
             else -> false
         }
     }
@@ -4894,6 +5149,7 @@ class FoundationGameSession internal constructor(
             grantShards(shardRewardForKill(isBoss = isBoss))
         }
         if (deathPoint != null && droppedLoot != null) {
+            observeRewardItem(droppedLoot)
             ItemFactory().createGroundItem(world, droppedLoot, deathPoint)
             addMessage(
                 "log.loot.monster_drop_quality",
@@ -5076,6 +5332,10 @@ class FoundationGameSession internal constructor(
             return TransitionOutcome.REJECTED
         }
 
+        if (direction == StairDirection.DOWN) {
+            grantCadenceRewardIfNeeded(playerPosition())
+        }
+
         if (direction == StairDirection.DOWN && currentFloor() == config.maxFloor && activeBossDefinition() == null) {
             val objectiveCompleted = completeCurrentZoneQuest(ObjectiveCompletionTrigger.ZONE_EXIT)
             if (objectiveCompleted) {
@@ -5153,6 +5413,7 @@ class FoundationGameSession internal constructor(
                 worldProgress = worldProgress,
                 shardBalance = shardBalance,
                 shopStates = shopStates(),
+                cadenceRewardCount = cadenceRewardCount,
                 combatRandomState = (combatRandomSource as? StatefulRandomSource)?.snapshotState(),
                 sessionRandomState = (sessionRandom as? StatefulRandomSource)?.snapshotState(),
                 milestoneRewards = persistedMilestoneRewardSummaries(),
@@ -5387,6 +5648,7 @@ class FoundationGameSession internal constructor(
                 map = map,
                 stairsUp = activeFloorState.stairsUp,
                 stairsDown = activeFloorState.stairsDown,
+                rewardState = currentFloorRewardState,
                 exploredTiles = exploredTiles,
                 world = world,
                 excludedEntities = excludedEntities,

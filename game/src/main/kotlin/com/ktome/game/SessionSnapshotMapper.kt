@@ -70,6 +70,7 @@ import com.ktome.core.save.CombatProfileSnapshot
 import com.ktome.core.save.EntitySnapshot
 import com.ktome.core.save.EquipmentSnapshot
 import com.ktome.core.save.ExperienceSnapshot
+import com.ktome.core.save.FloorRewardStateSnapshot
 import com.ktome.core.save.FloorSnapshot
 import com.ktome.core.save.FurnacePressureStateSnapshot
 import com.ktome.core.save.InscriptionLoadoutSnapshot
@@ -113,6 +114,7 @@ internal data class FloorRuntimeState(
     val map: GameMap,
     val stairsUp: Point? = null,
     val stairsDown: Point? = null,
+    var rewardState: FloorRewardStateSnapshot = FloorRewardStateSnapshot(),
     val exploredTiles: LinkedHashSet<Point> = linkedSetOf(),
     val entities: MutableList<EntitySnapshot> = mutableListOf(),
 )
@@ -127,6 +129,7 @@ internal data class RestoredRunState(
     val worldProgress: WorldProgressDef = WorldProgressDef(),
     val shardBalance: Int = 0,
     val shopStates: List<ShopInventoryState> = emptyList(),
+    val cadenceRewardCount: Int = 0,
     val combatRandomState: Long? = null,
     val sessionRandomState: Long? = null,
     val milestoneRewards: List<MilestoneRewardSummary> = emptyList(),
@@ -159,6 +162,7 @@ internal object SessionSnapshotMapper {
         map: GameMap,
         stairsUp: Point?,
         stairsDown: Point?,
+        rewardState: FloorRewardStateSnapshot = FloorRewardStateSnapshot(),
         exploredTiles: Set<Point>,
         world: World,
         excludedEntities: Set<EntityId>,
@@ -167,6 +171,7 @@ internal object SessionSnapshotMapper {
             map = map,
             stairsUp = stairsUp,
             stairsDown = stairsDown,
+            rewardState = rewardState,
             exploredTiles = linkedSetOf<Point>().apply { addAll(exploredTiles) },
             entities =
                 world.entitiesWith()
@@ -221,6 +226,7 @@ internal object SessionSnapshotMapper {
         worldProgress: WorldProgressDef = WorldProgressDef(),
         shardBalance: Int = 0,
         shopStates: List<ShopInventoryState> = emptyList(),
+        cadenceRewardCount: Int = 0,
         combatRandomState: Long?,
         sessionRandomState: Long?,
         milestoneRewards: List<MilestoneRewardSummary> = emptyList(),
@@ -236,6 +242,10 @@ internal object SessionSnapshotMapper {
             worldProgress = worldProgress,
             shardBalance = shardBalance,
             shopStates = shopStates.sortedBy(ShopInventoryState::shopId),
+            cadenceRewardCount = cadenceRewardCount,
+            currentFloorRewardState =
+                floors.firstOrNull { floorState -> floorState.floor == currentFloor }?.payload?.rewardState
+                    ?: FloorRewardStateSnapshot(),
             floorIndex = currentFloor,
             mapWidth = config.width,
             mapHeight = config.height,
@@ -263,6 +273,7 @@ internal object SessionSnapshotMapper {
                             ),
                         stairsUp = floorState.stairsUp?.let(PointSnapshot::from),
                         stairsDown = floorState.stairsDown?.let(PointSnapshot::from),
+                        rewardState = floorState.payload.rewardState,
                         exploredTiles = floorState.payload.exploredTiles.sortedCanonicalPoints().map(PointSnapshot::from),
                         entities = floorState.payload.entities.map(::canonicalizeEntitySnapshot).sortedBy(EntitySnapshot::id),
                     )
@@ -293,6 +304,7 @@ internal object SessionSnapshotMapper {
             worldProgress = snapshot.worldProgress,
             shardBalance = snapshot.shardBalance,
             shopStates = snapshot.shopStates.sortedBy(ShopInventoryState::shopId),
+            cadenceRewardCount = snapshot.cadenceRewardCount,
             combatRandomState = snapshot.combatRandomState,
             sessionRandomState = snapshot.sessionRandomState,
             milestoneRewards = snapshot.milestoneRewards,
@@ -309,6 +321,13 @@ internal object SessionSnapshotMapper {
                                 map = GameMap.fromAscii(rows = floor.map.rows, playerStart = floor.map.playerStart.toPoint()),
                                 stairsUp = floor.stairsUp?.toPoint(),
                                 stairsDown = floor.stairsDown?.toPoint(),
+                                rewardState =
+                                    // Older saves only persisted the active floor reward state at the top level.
+                                    if (floor.floorIndex == snapshot.floorIndex && floor.rewardState == FloorRewardStateSnapshot()) {
+                                        snapshot.currentFloorRewardState
+                                    } else {
+                                        floor.rewardState
+                                    },
                                 exploredTiles = linkedSetOf<Point>().apply { addAll(floor.exploredTiles.map(PointSnapshot::toPoint)) },
                                 entities = floor.entities.map(::canonicalizeEntitySnapshot).sortedBy(EntitySnapshot::id).toMutableList(),
                             ),

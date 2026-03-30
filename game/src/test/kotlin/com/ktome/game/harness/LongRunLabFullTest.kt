@@ -146,6 +146,8 @@ class LongRunLabFullTest {
         val deathDistribution = nonVictoryReports.groupingBy(ScenarioReport::finalZoneId).eachCount().toSortedMap()
         val routeHashDistribution = reports.groupingBy(ScenarioReport::zoneRouteHash).eachCount().toSortedMap()
         val milestoneRewards = reports.flatMap(ScenarioReport::milestoneRewards)
+        val cadenceRewardCount = reports.sumOf(ScenarioReport::cadenceRewardCount)
+        val shopRefreshPurchaseCount = reports.sumOf(ScenarioReport::shopRefreshPurchaseCount)
         val milestoneRewardQualityDistribution = milestoneRewards.groupingBy { it.qualityTier.name }.eachCount().toSortedMap()
         val milestoneAffixCountDistribution = milestoneRewards.groupingBy { it.affixIds.size.toString() }.eachCount().toSortedMap()
         val milestoneRewardAdoptionDistribution =
@@ -186,6 +188,8 @@ class LongRunLabFullTest {
                     }
                     put("averageTurns", averageTurns)
                     put("averageHeadlessTurns", averageHeadlessTurns)
+                    put("cadenceRewardCount", cadenceRewardCount)
+                    put("shopRefreshPurchaseCount", shopRefreshPurchaseCount)
                     putJsonObject("deathDistribution") {
                         deathDistribution.forEach { (zoneId, count) -> put(zoneId, count) }
                     }
@@ -229,6 +233,8 @@ class LongRunLabFullTest {
                     appendLine("- afterDeepIronRatio: ${afterDeepIronRatio ?: "N/A"}")
                     appendLine("- averageTurns: $averageTurns")
                     appendLine("- averageHeadlessTurns: $averageHeadlessTurns")
+                    appendLine("- cadenceRewardCount: $cadenceRewardCount")
+                    appendLine("- shopRefreshPurchaseCount: $shopRefreshPurchaseCount")
                     appendLine("- deathDistribution: ${if (deathDistribution.isEmpty()) "none" else deathDistribution}")
                     appendLine("- zoneRouteHashDistribution: ${if (routeHashDistribution.isEmpty()) "none" else routeHashDistribution}")
                     appendLine("- milestoneRewardQualityDistribution: ${if (milestoneRewardQualityDistribution.isEmpty()) "none" else milestoneRewardQualityDistribution}")
@@ -246,7 +252,7 @@ class LongRunLabFullTest {
                                 "${reward.rewardSource}:${reward.baseItemId}:${reward.equipSlot.name}:before=${reward.equippedBaseItemIdBeforeReward ?: "empty"}:final=${reward.equippedBaseItemIdAtRunEnd ?: "empty"}:adopted=${reward.adoptedInFinalBuild}:${reward.qualityTier.name}:${if (reward.affixIds.isEmpty()) "none" else reward.affixIds.joinToString("+")}"
                             }
                         appendLine(
-                            "- class=${report.professionId}, race=${report.raceId}, seed=${report.seed}, finalZone=${report.finalZoneId}, turns=${report.turns}, headless=${report.headlessTurnEquivalent}, routeHash=${report.zoneRouteHash}, route=${report.zonePath.joinToString(" -> ")}, objectives=${if (objectiveSummary.isBlank()) "none" else objectiveSummary}, buildHash=${report.buildHash ?: "unknown"}, milestoneRewards=${if (milestoneSummary.isBlank()) "none" else milestoneSummary}, outcome=${report.outcome}, crashedOrStalled=${report.crashedOrStalled()}",
+                            "- class=${report.professionId}, race=${report.raceId}, seed=${report.seed}, finalZone=${report.finalZoneId}, turns=${report.turns}, headless=${report.headlessTurnEquivalent}, routeHash=${report.zoneRouteHash}, route=${report.zonePath.joinToString(" -> ")}, objectives=${if (objectiveSummary.isBlank()) "none" else objectiveSummary}, buildHash=${report.buildHash ?: "unknown"}, cadence=${report.cadenceRewardCount}, refresh=${report.shopRefreshPurchaseCount}, milestoneRewards=${if (milestoneSummary.isBlank()) "none" else milestoneSummary}, outcome=${report.outcome}, crashedOrStalled=${report.crashedOrStalled()}",
                         )
                         if (report.headlessTurnEquivalent > 2900 || report.outcome !is RunOutcome.Victory) {
                             val zoneHeadlessSummary =

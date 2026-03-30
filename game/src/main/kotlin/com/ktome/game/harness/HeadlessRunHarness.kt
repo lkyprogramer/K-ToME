@@ -157,6 +157,8 @@ class HeadlessRunHarness(
                 profileId = HarnessMetadata.PROFILE_ID,
                 buildHash = session.currentBuildHash(),
                 milestoneRewards = session.milestoneRewardSummaries(),
+                cadenceRewardCount = session.currentCadenceRewardCount(),
+                shopRefreshPurchaseCount = session.currentShopRefreshPurchaseCount(),
                 goalReached = goalSatisfied(spec, observation, checkpointTurn),
                 failureReason = failureReason,
                 stuckReason = stuckReason,

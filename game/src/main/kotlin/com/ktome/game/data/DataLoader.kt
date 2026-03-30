@@ -42,6 +42,7 @@ import com.ktome.core.economy.AffordableRescueSlotPolicy
 import com.ktome.core.economy.RescueInventoryPolicy
 import com.ktome.core.economy.ShopNode
 import com.ktome.core.economy.ShopOffer
+import com.ktome.core.economy.ShopServiceType
 import com.ktome.core.profession.ProfessionTier
 import com.ktome.core.profession.ReleaseUnlockCondition
 import com.ktome.core.profession.SoloContractDef
@@ -748,14 +749,11 @@ class DataLoader(
                 nameKey = shop.requiredString("nameKey"),
                 inventory =
                     shop.requiredList("inventory").map { rawOffer ->
-                        val offer = rawOffer.requiredMap()
-                        ShopOfferSchemaV2(
-                            id = offer.requiredString("id"),
-                            itemBaseId = offer.optionalString("itemBaseId"),
-                            inscriptionId = offer.optionalString("inscriptionId"),
-                            price = offer.requiredInt("price"),
-                            tags = offer.optionalStringList("tags"),
-                        )
+                        rawOffer.requiredMap().toShopOfferSchema()
+                    },
+                refreshInventory =
+                    shop.optionalList("refreshInventory").map { rawOffer ->
+                        rawOffer.requiredMap().toShopOfferSchema()
                     },
                 rescuePolicy =
                     shop.requiredMap("rescuePolicy").let { policy ->
@@ -774,6 +772,16 @@ class DataLoader(
                     },
             )
         }
+
+    private fun Map<*, *>.toShopOfferSchema(): ShopOfferSchemaV2 =
+        ShopOfferSchemaV2(
+            id = requiredString("id"),
+            itemBaseId = optionalString("itemBaseId"),
+            inscriptionId = optionalString("inscriptionId"),
+            serviceType = optionalString("serviceType"),
+            price = requiredInt("price"),
+            tags = optionalStringList("tags"),
+        )
 
     private fun parseInteractableSchemas(root: Map<String, Any?>): List<InteractableSchemaV2> =
         root.requiredList("interactables").map { entry ->
@@ -1341,6 +1349,7 @@ class DataLoader(
             zoneId = zoneId,
             nameKey = nameKey,
             inventory = inventory.map { offer -> offer.toRuntime() },
+            refreshInventory = refreshInventory.map { offer -> offer.toRuntime() },
             rescuePolicy = rescuePolicy.toRuntime(),
         )
 
@@ -1349,6 +1358,7 @@ class DataLoader(
             id = id,
             itemBaseId = itemBaseId,
             inscriptionId = inscriptionId,
+            serviceType = serviceType?.let(ShopServiceType::valueOf),
             price = price,
             tags = tags.toSet(),
         )

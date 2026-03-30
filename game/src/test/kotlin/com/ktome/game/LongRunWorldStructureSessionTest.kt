@@ -5,6 +5,8 @@ import com.ktome.core.ecs.EntityId
 import com.ktome.core.ecs.Interactable
 import com.ktome.core.ecs.Position
 import com.ktome.core.ecs.get
+import com.ktome.core.economy.ShardEconomy
+import com.ktome.core.economy.ShopServiceType
 import com.ktome.core.item.EquipSlot
 import com.ktome.core.item.Inventory
 import com.ktome.core.item.ItemInstance
@@ -14,8 +16,11 @@ import com.ktome.core.save.SaveManager
 import com.ktome.core.world.ObjectiveState
 import com.ktome.game.data.DataLoader
 import com.ktome.game.factory.ItemFactory
+import com.ktome.game.harness.RunObservationCapture
+import com.ktome.game.harness.SmokeBot
 import com.ktome.game.i18n.GameLocale
 import java.nio.file.Path
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -296,6 +301,103 @@ class LongRunWorldStructureSessionTest {
     }
 
     @Test
+    fun `refresh stock service replaces unpurchased stock and keeps rescue offers affordable`() {
+        val saveManager = SaveManager(tempDir.resolve("refresh-stock-save"))
+        val baselineSession =
+            GameModule.newFoundationSession(
+                config =
+                    FoundationGameConfig(
+                        seed = 20260331L,
+                        zoneId = "greenwood_fringe",
+                        playerProfessionId = "vanguard",
+                        zoneRoute = listOf("shattered_outpost", "greenwood_fringe"),
+                        routeIndex = 1,
+                    ),
+                saveManager = saveManager,
+            )
+        assertTrue(baselineSession.perform(PlayerCommand.SaveGame))
+        val baseline = requireNotNull(saveManager.load())
+        saveManager.save(baseline.copy(shardBalance = 200))
+        val session = requireNotNull(GameModule.loadFoundationSession(saveManager))
+
+        session.automationMovePlayerTo(interactablePoint(session, "merchant_stall"))
+        assertTrue(session.perform(PlayerCommand.Interact))
+
+        val offensiveOffer = requireNotNull(session.automationVisibleShopOffers().firstOrNull { offer -> "OFFENSE" in offer.tags })
+        val initialServiceOffer =
+            requireNotNull(
+                session.automationVisibleShopOffers().firstOrNull { offer ->
+                    offer.serviceType == ShopServiceType.REFRESH_STOCK
+                },
+            )
+        assertTrue(session.perform(PlayerCommand.BuyShopOffer(indexOfOffer(session, offensiveOffer.id))))
+        val refreshIndex = indexOfOffer(session, initialServiceOffer.id)
+        assertTrue(session.perform(PlayerCommand.BuyShopOffer(refreshIndex)))
+
+        val refreshedOffers = session.automationVisibleShopOffers()
+        assertTrue(refreshedOffers.none { offer -> offer.id == offensiveOffer.id })
+        assertTrue(refreshedOffers.any { offer -> offer.id.startsWith("offer.refresh.") })
+        assertEquals(1, session.currentShopRefreshPurchaseCount())
+
+        val shopState = requireNotNull(session.shopStates().firstOrNull { it.shopId == "greenwood_supply_post" })
+        assertTrue(initialServiceOffer.id in shopState.purchasedOfferIds)
+        assertTrue(shopState.activeRefreshableOffers.isNotEmpty())
+
+        val shopSchema = requireNotNull(DataLoader().loadSchemaCatalog().shopNodes.firstOrNull { shop -> shop.id == "greenwood_supply_post" })
+        val affordableRescue =
+            ShardEconomy.mandatoryAffordableOffers(
+                offers = refreshedOffers,
+                balance = shopSchema.rescuePolicy.affordability.expectedShardBudgetByCheckpoint,
+                requiredTags = shopSchema.rescuePolicy.affordability.requiredAffordableTags,
+            )
+        assertTrue(affordableRescue.size >= shopSchema.rescuePolicy.affordability.mandatoryAffordableItemCount)
+        val affordableTags = affordableRescue.flatMapTo(linkedSetOf()) { offer -> offer.tags }
+        assertTrue("RECOVERY" in affordableTags)
+        assertTrue("PROTECTION" in affordableTags)
+
+        assertFalse(session.perform(PlayerCommand.BuyShopOffer(refreshIndex)))
+    }
+
+    @Test
+    fun `smoke bot can spend extra shards on refresh stock after rescue coverage is satisfied`() {
+        val saveManager = SaveManager(tempDir.resolve("refresh-stock-bot-save"))
+        val baselineSession =
+            GameModule.newFoundationSession(
+                config =
+                    FoundationGameConfig(
+                        seed = 20260331L,
+                        zoneId = "greenwood_fringe",
+                        playerProfessionId = "vanguard",
+                        zoneRoute = listOf("shattered_outpost", "greenwood_fringe"),
+                        routeIndex = 1,
+                    ),
+                saveManager = saveManager,
+            )
+        assertTrue(baselineSession.perform(PlayerCommand.SaveGame))
+        val baseline = requireNotNull(saveManager.load())
+        saveManager.save(baseline.copy(shardBalance = 200))
+        val session = requireNotNull(GameModule.loadFoundationSession(saveManager))
+        val bot = SmokeBot()
+
+        session.automationMovePlayerTo(interactablePoint(session, "merchant_stall"))
+        assertTrue(session.perform(PlayerCommand.Interact))
+
+        repeat(8) { turnIndex ->
+            val activeShop = session.renderSnapshot().uiState.activeShop ?: return@repeat
+            val command = bot.decide(RunObservationCapture.capture(session, turnIndex))
+            assertTrue(
+                command is PlayerCommand.BuyShopOffer || command == PlayerCommand.CloseShop,
+                "Expected a shop command while active shop '${activeShop.shopId}' is open, but got $command.",
+            )
+            assertTrue(session.perform(command))
+        }
+
+        assertEquals(1, session.currentShopRefreshPurchaseCount())
+        val shopState = requireNotNull(session.shopStates().firstOrNull { it.shopId == "greenwood_supply_post" })
+        assertTrue("offer.refresh_stock" in shopState.purchasedOfferIds)
+    }
+
+    @Test
     fun `save load preserves unlocked routes shard balance and headless turn equivalent`() {
         val saveManager = SaveManager(tempDir.resolve("route-roundtrip-save"))
         val session =
@@ -573,6 +675,16 @@ class LongRunWorldStructureSessionTest {
             )
         return requireNotNull(world.get<Position>(entityId)).toPoint()
     }
+
+    private fun indexOfOffer(
+        session: FoundationGameSession,
+        offerId: String,
+    ): Int =
+        requireNotNull(
+            session.automationVisibleShopOffers().indexOfFirst { offer -> offer.id == offerId }.takeIf { index -> index >= 0 },
+        ) {
+            "Expected visible offer '$offerId'."
+        }
 
     private fun invokeHandleDeath(
         session: FoundationGameSession,

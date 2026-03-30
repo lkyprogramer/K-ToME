@@ -126,6 +126,8 @@ internal fun ScenarioReport.toJson() =
         put("localeId", localeId)
         put("profileId", profileId)
         buildHash?.let { put("buildHash", it) }
+        put("cadenceRewardCount", cadenceRewardCount)
+        put("shopRefreshPurchaseCount", shopRefreshPurchaseCount)
         putJsonArray("milestoneRewards") {
             milestoneRewards.forEach { reward ->
                 add(

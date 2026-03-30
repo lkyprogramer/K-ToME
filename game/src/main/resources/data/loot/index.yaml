@@ -11,6 +11,46 @@ lootProfiles:
     schemaVersion: 2
     tags: [loot, boss]
     itemIds: [battle_axe, plate_armor, arcane_staff, scroll_teleport, mana_potion, forgebreaker_pick, sanctified_seal, seal_reliquary, shadow_cloak, consecrated_oil]
+  - id: loot.shattered_outpost.cadence
+    schemaVersion: 2
+    tags: [loot, cadence, shattered_outpost]
+    itemIds: [basic_shield, bandit_trophy, emerald_charm, apprentice_robe]
+  - id: loot.greenwood_fringe.cadence
+    schemaVersion: 2
+    tags: [loot, cadence, greenwood]
+    itemIds: [hunter_bow, emerald_charm, leather_armor, apprentice_robe]
+  - id: loot.bandit_camp.cadence
+    schemaVersion: 2
+    tags: [loot, cadence, bandit_camp]
+    itemIds: [bandit_trophy, hunter_bow, leather_armor, short_sword]
+  - id: loot.elven_ruins.cadence
+    schemaVersion: 2
+    tags: [loot, cadence, elven_ruins]
+    itemIds: [emerald_charm, apprentice_robe, seal_reliquary, sanctified_seal]
+  - id: loot.deep_iron_pit.cadence
+    schemaVersion: 2
+    tags: [loot, cadence, deep_iron_pit]
+    itemIds: [forgebreaker_pick, chain_mail, apprentice_robe, furnace_talisman]
+  - id: loot.molten_core.cadence
+    schemaVersion: 2
+    tags: [loot, cadence, molten_core]
+    itemIds: [war_maul, forgebreaker_pick, furnace_talisman, chain_mail]
+  - id: loot.grey_gate_depths.cadence
+    schemaVersion: 2
+    tags: [loot, cadence, grey_gate]
+    itemIds: [seal_reliquary, shadow_cloak, sanctified_seal, apprentice_robe]
+  - id: loot.underground_river.cadence
+    schemaVersion: 2
+    tags: [loot, cadence, underground_river]
+    itemIds: [seal_reliquary, mana_potion, chain_mail, hunter_bow]
+  - id: loot.crystal_cavern.cadence
+    schemaVersion: 2
+    tags: [loot, cadence, crystal_cavern]
+    itemIds: [emerald_charm, seal_reliquary, arcane_staff, shadow_cloak]
+  - id: loot.abyssal_temple.cadence
+    schemaVersion: 2
+    tags: [loot, cadence, abyssal_temple]
+    itemIds: [sanctified_seal, shadow_cloak, seal_reliquary, consecrated_oil]
   - id: loot.greenwood_fringe.reward
     schemaVersion: 2
     tags: [loot, reward, greenwood]

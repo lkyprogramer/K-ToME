@@ -117,6 +117,98 @@ class FoundationGameSessionTest {
     }
 
     @Test
+    fun `descending a dry non boss floor grants cadence fallback reward once`() {
+        val session =
+            GameModule.newFoundationSession(
+                config =
+                    FoundationGameConfig(
+                        seed = 20260331L,
+                        zoneId = "greenwood_fringe",
+                        playerProfessionId = "rogue",
+                        zoneRoute = listOf("shattered_outpost", "greenwood_fringe"),
+                        routeIndex = 1,
+                    ),
+                saveManager = SaveManager(tempDir.resolve("cadence-dry-floor-save")),
+            )
+
+        movePlayerTo(session, stairPoint(session, StairDirection.DOWN))
+        assertTrue(session.perform(PlayerCommand.Descend))
+
+        assertEquals(1, session.currentCadenceRewardCount())
+        assertNotNull(logEventByKey(session, "log.reward.cadence.claimed") ?: logEventByKey(session, "log.reward.cadence.dropped"))
+    }
+
+    @Test
+    fun `meaningful reward suppresses cadence fallback on the same floor`() {
+        val saveManager = SaveManager(tempDir.resolve("cadence-suppressed-save"))
+        val baselineSession =
+            GameModule.newFoundationSession(
+                config =
+                    FoundationGameConfig(
+                        seed = 20260331L,
+                        zoneId = "greenwood_fringe",
+                        playerProfessionId = "rogue",
+                        zoneRoute = listOf("shattered_outpost", "greenwood_fringe"),
+                        routeIndex = 1,
+                    ),
+                saveManager = saveManager,
+            )
+        assertTrue(baselineSession.perform(PlayerCommand.SaveGame))
+        val baseline = requireNotNull(saveManager.load())
+        saveManager.save(baseline.copy(shardBalance = 200))
+        val session = requireNotNull(GameModule.loadFoundationSession(saveManager))
+
+        movePlayerTo(session, interactablePoint(session, "merchant_stall"))
+        assertTrue(session.perform(PlayerCommand.Interact))
+        val offensiveOfferIndex =
+            requireNotNull(
+                session.renderSnapshot().uiState.activeShop
+                    ?.offers
+                    ?.firstOrNull { offer -> "OFFENSE" in offer.tags }
+                    ?.index,
+            )
+        assertTrue(session.perform(PlayerCommand.BuyShopOffer(offensiveOfferIndex)))
+        assertTrue(session.perform(PlayerCommand.CloseShop))
+
+        movePlayerTo(session, stairPoint(session, StairDirection.DOWN))
+        assertTrue(session.perform(PlayerCommand.Descend))
+
+        assertEquals(0, session.currentCadenceRewardCount())
+        assertNull(logEventByKey(session, "log.reward.cadence.claimed"))
+        assertNull(logEventByKey(session, "log.reward.cadence.dropped"))
+    }
+
+    @Test
+    fun `revisiting a cleared floor does not grant cadence fallback twice`() {
+        val session =
+            GameModule.newFoundationSession(
+                config =
+                    FoundationGameConfig(
+                        seed = 20260331L,
+                        zoneId = "greenwood_fringe",
+                        playerProfessionId = "rogue",
+                        zoneRoute = listOf("shattered_outpost", "greenwood_fringe"),
+                        routeIndex = 1,
+                    ),
+                saveManager = SaveManager(tempDir.resolve("cadence-floor-revisit-save")),
+            )
+
+        movePlayerTo(session, stairPoint(session, StairDirection.DOWN))
+        assertTrue(session.perform(PlayerCommand.Descend))
+        assertEquals(1, session.currentCadenceRewardCount())
+
+        movePlayerTo(session, stairPoint(session, StairDirection.UP))
+        assertTrue(session.perform(PlayerCommand.Ascend))
+        assertEquals(1, session.currentFloor())
+
+        movePlayerTo(session, stairPoint(session, StairDirection.DOWN))
+        assertTrue(session.perform(PlayerCommand.Descend))
+
+        assertEquals(2, session.currentFloor())
+        assertEquals(1, session.currentCadenceRewardCount())
+    }
+
+    @Test
     fun `player kill grants experience and level up`() {
         val map = GameMap.fromAscii(
             rows = listOf(
