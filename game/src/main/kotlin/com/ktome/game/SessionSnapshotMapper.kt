@@ -70,6 +70,7 @@ import com.ktome.core.save.CombatProfileSnapshot
 import com.ktome.core.save.EntitySnapshot
 import com.ktome.core.save.EquipmentSnapshot
 import com.ktome.core.save.ExperienceSnapshot
+import com.ktome.core.save.FloorRewardStateSnapshot
 import com.ktome.core.save.FloorSnapshot
 import com.ktome.core.save.FurnacePressureStateSnapshot
 import com.ktome.core.save.InscriptionLoadoutSnapshot
@@ -127,6 +128,8 @@ internal data class RestoredRunState(
     val worldProgress: WorldProgressDef = WorldProgressDef(),
     val shardBalance: Int = 0,
     val shopStates: List<ShopInventoryState> = emptyList(),
+    val cadenceRewardCount: Int = 0,
+    val currentFloorRewardState: FloorRewardStateSnapshot = FloorRewardStateSnapshot(),
     val combatRandomState: Long? = null,
     val sessionRandomState: Long? = null,
     val milestoneRewards: List<MilestoneRewardSummary> = emptyList(),
@@ -221,6 +224,8 @@ internal object SessionSnapshotMapper {
         worldProgress: WorldProgressDef = WorldProgressDef(),
         shardBalance: Int = 0,
         shopStates: List<ShopInventoryState> = emptyList(),
+        cadenceRewardCount: Int = 0,
+        currentFloorRewardState: FloorRewardStateSnapshot = FloorRewardStateSnapshot(),
         combatRandomState: Long?,
         sessionRandomState: Long?,
         milestoneRewards: List<MilestoneRewardSummary> = emptyList(),
@@ -236,6 +241,8 @@ internal object SessionSnapshotMapper {
             worldProgress = worldProgress,
             shardBalance = shardBalance,
             shopStates = shopStates.sortedBy(ShopInventoryState::shopId),
+            cadenceRewardCount = cadenceRewardCount,
+            currentFloorRewardState = currentFloorRewardState,
             floorIndex = currentFloor,
             mapWidth = config.width,
             mapHeight = config.height,
@@ -293,6 +300,8 @@ internal object SessionSnapshotMapper {
             worldProgress = snapshot.worldProgress,
             shardBalance = snapshot.shardBalance,
             shopStates = snapshot.shopStates.sortedBy(ShopInventoryState::shopId),
+            cadenceRewardCount = snapshot.cadenceRewardCount,
+            currentFloorRewardState = snapshot.currentFloorRewardState,
             combatRandomState = snapshot.combatRandomState,
             sessionRandomState = snapshot.sessionRandomState,
             milestoneRewards = snapshot.milestoneRewards,

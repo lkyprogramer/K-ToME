@@ -132,6 +132,8 @@ data class ScenarioReport(
     val profileId: String = HarnessMetadata.PROFILE_ID,
     val buildHash: String? = null,
     val milestoneRewards: List<MilestoneRewardSummary> = emptyList(),
+    val cadenceRewardCount: Int = 0,
+    val shopRefreshPurchaseCount: Int = 0,
     val goalReached: Boolean,
     val failureReason: String? = null,
     val stuckReason: String? = null,

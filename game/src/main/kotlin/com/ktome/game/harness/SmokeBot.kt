@@ -187,7 +187,17 @@ class SmokeBot : RunBot {
                         .thenBy(ObservedShopOffer::index),
                 )
                 ?.takeIf { offer -> rescueOfferPriority(offer) < Int.MAX_VALUE }
-        return affordableRescueOffer?.let { offer -> PlayerCommand.BuyShopOffer(offer.index) }
+        affordableRescueOffer?.let { offer -> return PlayerCommand.BuyShopOffer(offer.index) }
+        val refreshOffer =
+            observation.activeShopOffers
+                .asSequence()
+                .filter { offer ->
+                    offer.purchasable &&
+                        offer.price <= observation.shardBalance &&
+                        "REFRESH_STOCK" in offer.tags &&
+                        observation.shardBalance >= offer.price + 15
+                }.minWithOrNull(compareBy<ObservedShopOffer>(ObservedShopOffer::price).thenBy(ObservedShopOffer::index))
+        return refreshOffer?.let { offer -> PlayerCommand.BuyShopOffer(offer.index) }
     }
 
     private fun chooseEmergencyTalent(observation: RunObservation): PlayerCommand? {

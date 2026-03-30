@@ -23,6 +23,23 @@ shops:
         itemBaseId: leather_armor
         price: 32
         tags: [PROTECTION]
+      - id: offer.refresh_stock
+        serviceType: REFRESH_STOCK
+        price: 35
+        tags: [SERVICE, REFRESH_STOCK]
+    refreshInventory:
+      - id: offer.refresh.hunter_bow
+        itemBaseId: hunter_bow
+        price: 34
+        tags: [OFFENSE]
+      - id: offer.refresh.emerald_charm
+        itemBaseId: emerald_charm
+        price: 36
+        tags: [ARCANE]
+      - id: offer.refresh.apprentice_robe
+        itemBaseId: apprentice_robe
+        price: 34
+        tags: [ARCANE, PROTECTION]
     rescuePolicy:
       guaranteedTags: [RECOVERY, PROTECTION]
       affordability:
@@ -54,6 +71,23 @@ shops:
         itemBaseId: hunter_bow
         price: 46
         tags: [OFFENSE]
+      - id: offer.refresh_stock.deep_iron
+        serviceType: REFRESH_STOCK
+        price: 60
+        tags: [SERVICE, REFRESH_STOCK]
+    refreshInventory:
+      - id: offer.refresh.war_maul
+        itemBaseId: war_maul
+        price: 58
+        tags: [OFFENSE]
+      - id: offer.refresh.forgebreaker_pick
+        itemBaseId: forgebreaker_pick
+        price: 62
+        tags: [OFFENSE]
+      - id: offer.refresh.apprentice_robe.deep_iron
+        itemBaseId: apprentice_robe
+        price: 42
+        tags: [ARCANE, PROTECTION]
     rescuePolicy:
       guaranteedTags: [MOVEMENT, CLEANSING, PROTECTION]
       affordability:

@@ -486,6 +486,7 @@ data class ShopNodeSchemaV2(
     val zoneId: String,
     val nameKey: String,
     val inventory: List<ShopOfferSchemaV2>,
+    val refreshInventory: List<ShopOfferSchemaV2> = emptyList(),
     val rescuePolicy: RescueInventoryPolicySchemaV2,
 )
 
@@ -493,6 +494,7 @@ data class ShopOfferSchemaV2(
     val id: String,
     val itemBaseId: String? = null,
     val inscriptionId: String? = null,
+    val serviceType: String? = null,
     val price: Int,
     val tags: List<String> = emptyList(),
 )

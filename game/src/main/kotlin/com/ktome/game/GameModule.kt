@@ -223,6 +223,8 @@ object GameModule {
             worldProgress = restored.worldProgress,
             shardBalance = restored.shardBalance,
             shopStates = restored.shopStates.associateByTo(linkedMapOf(), ShopInventoryState::shopId),
+            cadenceRewardCount = restored.cadenceRewardCount,
+            currentFloorRewardState = restored.currentFloorRewardState,
             restoredMilestoneRewardSummaries = restored.milestoneRewards,
             combatRandomSource =
                 restored.combatRandomState?.let(SplitMix64RandomSource::fromState)

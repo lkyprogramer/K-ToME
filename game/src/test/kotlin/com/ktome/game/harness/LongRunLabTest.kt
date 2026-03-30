@@ -143,6 +143,8 @@ class LongRunLabTest {
         val deathDistribution = nonVictoryReports.groupingBy(ScenarioReport::finalZoneId).eachCount().toSortedMap()
         val routeHashDistribution = reports.groupingBy(ScenarioReport::zoneRouteHash).eachCount().toSortedMap()
         val milestoneRewards = reports.flatMap(ScenarioReport::milestoneRewards)
+        val cadenceRewardCount = reports.sumOf(ScenarioReport::cadenceRewardCount)
+        val shopRefreshPurchaseCount = reports.sumOf(ScenarioReport::shopRefreshPurchaseCount)
         val milestoneRewardQualityDistribution = milestoneRewards.groupingBy { it.qualityTier.name }.eachCount().toSortedMap()
         val milestoneAffixCountDistribution = milestoneRewards.groupingBy { it.affixIds.size.toString() }.eachCount().toSortedMap()
         val milestoneRewardAdoptionDistribution =
@@ -185,6 +187,8 @@ class LongRunLabTest {
                 put("routeCoverageSuccesses", routeCoverageReports.count(ScenarioReport::success))
                 put("averageTurns", averageTurns)
                 put("averageHeadlessTurns", averageHeadlessTurns)
+                put("cadenceRewardCount", cadenceRewardCount)
+                put("shopRefreshPurchaseCount", shopRefreshPurchaseCount)
                 putJsonObject("deathDistribution") {
                     deathDistribution.forEach { (zoneId, count) -> put(zoneId, count) }
                 }
@@ -232,6 +236,8 @@ class LongRunLabTest {
                     appendLine("- routeCoverageSuccesses: ${routeCoverageReports.count(ScenarioReport::success)}/${routeCoverageReports.size}")
                     appendLine("- averageTurns: $averageTurns")
                     appendLine("- averageHeadlessTurns: $averageHeadlessTurns")
+                    appendLine("- cadenceRewardCount: $cadenceRewardCount")
+                    appendLine("- shopRefreshPurchaseCount: $shopRefreshPurchaseCount")
                     appendLine("- deathDistribution: ${if (deathDistribution.isEmpty()) "none" else deathDistribution}")
                     appendLine("- zoneRouteHashDistribution: ${if (routeHashDistribution.isEmpty()) "none" else routeHashDistribution}")
                     appendLine("- milestoneRewardQualityDistribution: ${if (milestoneRewardQualityDistribution.isEmpty()) "none" else milestoneRewardQualityDistribution}")
@@ -245,7 +251,7 @@ class LongRunLabTest {
                                 "${reward.rewardSource}:${reward.baseItemId}:${reward.equipSlot.name}:before=${reward.equippedBaseItemIdBeforeReward ?: "empty"}:final=${reward.equippedBaseItemIdAtRunEnd ?: "empty"}:adopted=${reward.adoptedInFinalBuild}:${reward.qualityTier.name}:${if (reward.affixIds.isEmpty()) "none" else reward.affixIds.joinToString("+")}"
                             }
                         appendLine(
-                            "- profession=${report.professionId}, race=${report.raceId}, seed=${report.seed}, zone=${report.zoneId}, routeIndex=${report.routeIndex}, success=${report.success}, floor=${report.floorReached}, turns=${report.turns}, headless=${report.headlessTurnEquivalent}, finalZone=${report.finalZoneId}, routeHash=${report.zoneRouteHash}, buildHash=${report.buildHash ?: "unknown"}, milestoneRewards=${if (milestoneSummary.isBlank()) "none" else milestoneSummary}, outcome=${report.outcome}",
+                            "- profession=${report.professionId}, race=${report.raceId}, seed=${report.seed}, zone=${report.zoneId}, routeIndex=${report.routeIndex}, success=${report.success}, floor=${report.floorReached}, turns=${report.turns}, headless=${report.headlessTurnEquivalent}, finalZone=${report.finalZoneId}, routeHash=${report.zoneRouteHash}, buildHash=${report.buildHash ?: "unknown"}, cadence=${report.cadenceRewardCount}, refresh=${report.shopRefreshPurchaseCount}, milestoneRewards=${if (milestoneSummary.isBlank()) "none" else milestoneSummary}, outcome=${report.outcome}",
                         )
                     }
                 },

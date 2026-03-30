@@ -21,6 +21,8 @@ data class SaveSnapshot(
     val worldProgress: WorldProgressDef = WorldProgressDef(),
     val shardBalance: Int = 0,
     val shopStates: List<ShopInventoryState> = emptyList(),
+    val cadenceRewardCount: Int = 0,
+    val currentFloorRewardState: FloorRewardStateSnapshot = FloorRewardStateSnapshot(),
     val floorIndex: Int,
     val mapWidth: Int,
     val mapHeight: Int,
@@ -62,6 +64,7 @@ data class SaveSnapshot(
         require(shopStates.distinctBy(ShopInventoryState::shopId).size == shopStates.size) {
             "shopStates must not contain duplicate shop ids."
         }
+        require(cadenceRewardCount >= 0) { "cadenceRewardCount must not be negative." }
         require(playerProfessionId.isNotBlank()) { "playerProfessionId must not be blank." }
         require(playerRaceId.isNotBlank()) { "playerRaceId must not be blank." }
         require(mapWidth > 0) { "Map width must be positive." }
@@ -108,10 +111,16 @@ data class SaveSnapshot(
     }
 
     companion object {
-        const val CURRENT_SCHEMA_VERSION: Int = 6
-        const val DEFAULT_BUILD_METADATA: String = "phase3-pr13-dev"
+        const val CURRENT_SCHEMA_VERSION: Int = 7
+        const val DEFAULT_BUILD_METADATA: String = "phase3-pr14-dev"
     }
 }
+
+@Serializable
+data class FloorRewardStateSnapshot(
+    val meaningfulRewardSeenThisFloor: Boolean = false,
+    val cadenceRewardGrantedThisFloor: Boolean = false,
+)
 
 @Serializable
 data class PlayerSnapshot(

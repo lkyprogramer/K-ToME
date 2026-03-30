@@ -1,9 +1,11 @@
 package com.ktome.game
 
 import com.ktome.core.save.SaveManager
+import com.ktome.core.save.FloorRewardStateSnapshot
 import com.ktome.core.world.ObjectiveState
 import com.ktome.core.world.QuestProgress
 import com.ktome.core.world.WorldProgressDef
+import com.ktome.core.economy.ShopOffer
 import java.nio.file.Path
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -71,6 +73,10 @@ class SaveLoadWorldProgressTest {
                 com.ktome.core.economy.ShopInventoryState(
                     shopId = "greenwood_supply_post",
                     purchasedOfferIds = setOf("offer.healing_potion", "offer.iron_shield"),
+                    activeRefreshableOffers =
+                        listOf(
+                            ShopOffer(id = "offer.refresh.hunter_bow", itemBaseId = "hunter_bow", price = 34, tags = setOf("OFFENSE")),
+                        ),
                 ),
             )
         assertTrue(session.perform(PlayerCommand.SaveGame))
@@ -81,6 +87,12 @@ class SaveLoadWorldProgressTest {
                 worldProgress = expectedWorldProgress,
                 shardBalance = 123,
                 shopStates = expectedShopStates,
+                cadenceRewardCount = 2,
+                currentFloorRewardState =
+                    FloorRewardStateSnapshot(
+                        meaningfulRewardSeenThisFloor = true,
+                        cadenceRewardGrantedThisFloor = false,
+                    ),
                 headlessTurnEquivalent = 34,
             ),
         )
@@ -90,6 +102,7 @@ class SaveLoadWorldProgressTest {
         assertEquals(expectedWorldProgress, loaded.worldProgress())
         assertEquals(expectedShopStates, loaded.shopStates())
         assertEquals(123, loaded.currentShardBalance())
+        assertEquals(2, loaded.currentCadenceRewardCount())
         assertEquals(34, loaded.currentHeadlessTurnEquivalent())
         assertEquals(listOf("shattered_outpost", "greenwood_fringe"), loaded.config.zoneRoute)
         assertEquals(1, loaded.config.routeIndex)

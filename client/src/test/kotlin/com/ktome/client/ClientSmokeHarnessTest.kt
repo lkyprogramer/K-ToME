@@ -32,6 +32,7 @@ import com.ktome.core.dungeon.StairDirection
 import com.ktome.core.ecs.BlocksMovement
 import com.ktome.core.ecs.EntityId
 import com.ktome.core.ecs.Health
+import com.ktome.core.ecs.Interactable
 import com.ktome.core.ecs.Position
 import com.ktome.core.ecs.get
 import com.ktome.core.ecs.remove
@@ -256,6 +257,30 @@ class ClientSmokeHarnessTest {
         )
 
         assertTrue(reports.all { it.success }, reports.joinToString(separator = "\n") { "${it.name}: ${it.failureReason}" })
+    }
+
+    @Test
+    @Tag("clientSmoke")
+    fun `shop overlay renders refresh stock service label`() {
+        val session =
+            GameModule.newFoundationSession(
+                config =
+                    FoundationGameConfig(
+                        seed = 20260331L,
+                        zoneId = "greenwood_fringe",
+                        playerProfessionId = "vanguard",
+                        zoneRoute = listOf("shattered_outpost", "greenwood_fringe"),
+                        routeIndex = 1,
+                    ),
+                saveManager = SaveManager(tempDir.resolve("client-shop-refresh-save")),
+            )
+        automationMovePlayerTo(session, interactablePoint(session, "merchant_stall"))
+        assertTrue(session.perform(PlayerCommand.Interact))
+
+        val localizer = session.localizer()
+        val capture = captureOverlay(localizer, session.renderSnapshot(), OverlayState(mode = UiMode.SHOP))
+
+        assertTrue(capture.rows.any { row -> row.contains(localizer.text("shop.service.refresh_stock.name")) })
     }
 
     @Test
@@ -1369,6 +1394,19 @@ private fun automationMovePlayerTo(
     point: Point,
 ) {
     invokeSessionInternal(session, "automationMovePlayerTo", arrayOf(Point::class.java), point)
+}
+
+private fun interactablePoint(
+    session: FoundationGameSession,
+    interactableId: String,
+): Point {
+    val world = automationWorld(session)
+    val entityId =
+        requireNotNull(
+            world.entitiesWith(Position::class, Interactable::class)
+                .firstOrNull { candidate -> world.get<Interactable>(candidate)?.id == interactableId },
+        )
+    return requireNotNull(world.get<Position>(entityId)).toPoint()
 }
 
 private fun automationStairPoint(
