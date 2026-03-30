@@ -16,7 +16,7 @@ import wave
 from dataclasses import dataclass
 from datetime import datetime, timezone
 
-from asset_pipeline_common import load_json
+from asset_pipeline_common import load_json, load_yaml
 
 
 SUPPORTED_RAW_SUFFIXES = (".wav", ".ogg", ".mp3", ".flac", ".aif", ".aiff", ".m4a")
@@ -58,6 +58,10 @@ def parse_args() -> argparse.Namespace:
         "--report",
         default="assets-src/audio/manifests/phase2-processing-report.jsonl",
         help="JSONL report path for processed audio assets",
+    )
+    parser.add_argument(
+        "--filter-plan",
+        help="Optional audio plan YAML used to restrict processing to a subset of manifest entries.",
     )
     parser.add_argument(
         "--skip-existing",
@@ -132,6 +136,40 @@ def parse_manifest(manifest_path: pathlib.Path) -> list[AudioAsset]:
             ),
         )
     return assets
+
+
+def load_plan_source_paths(plan_path: pathlib.Path) -> set[str]:
+    payload = load_yaml(plan_path)
+    entries = payload.get("entries")
+    if not isinstance(entries, list) or not entries:
+        raise ValueError(f"Audio plan entries must be a non-empty list: {plan_path}")
+
+    source_paths: set[str] = set()
+    for entry in entries:
+        if not isinstance(entry, dict):
+            raise ValueError(f"Audio plan entry must be a mapping: {plan_path}")
+        source_path = str(entry.get("sourcePath", "")).strip()
+        key = str(entry.get("key", "")).strip()
+        if not source_path or not key:
+            raise ValueError(f"Audio plan entry must define key/sourcePath: {entry}")
+        source_paths.add(source_path)
+    return source_paths
+
+
+def filter_assets_by_plan(
+    assets: list[AudioAsset],
+    plan_path: pathlib.Path,
+) -> list[AudioAsset]:
+    planned_source_paths = load_plan_source_paths(plan_path)
+    filtered_assets = [asset for asset in assets if asset.source_path in planned_source_paths]
+    matched_source_paths = {asset.source_path for asset in filtered_assets}
+    missing_source_paths = sorted(planned_source_paths - matched_source_paths)
+    if missing_source_paths:
+        raise ValueError(
+            "Audio plan references sourcePath values missing from the runtime manifest: "
+            + ", ".join(missing_source_paths),
+        )
+    return filtered_assets
 
 
 def raw_candidates(raw_dir: pathlib.Path, source_path: str) -> list[pathlib.Path]:
@@ -382,6 +420,7 @@ def main() -> int:
     ffprobe_path = require_tool("ffprobe")
 
     manifest_path = pathlib.Path(args.runtime_manifest).resolve()
+    filter_plan_path = pathlib.Path(args.filter_plan).resolve() if args.filter_plan else None
     raw_dir = pathlib.Path(args.raw_dir).resolve()
     cleaned_dir = pathlib.Path(args.cleaned_dir).resolve()
     runtime_root = pathlib.Path(args.runtime_root).resolve()
@@ -392,6 +431,9 @@ def main() -> int:
     records: list[dict[str, object]] = []
 
     assets = parse_manifest(manifest_path)
+    if filter_plan_path is not None:
+        assets = filter_assets_by_plan(assets, filter_plan_path)
+        print(f"[filter] {filter_plan_path} -> {len(assets)} manifest entries")
     for asset in assets:
         runtime_path = runtime_root / asset.source_path
         cleaned_path = cleaned_dir / asset.source_path

@@ -34,11 +34,33 @@ internal object LoadoutPlanner {
             unlockedTalentIds.any(SPELLBLADE_TALENT_IDS::contains) ->
                 listOf(
                     "arcane_edge",
-                    "mana_lunge",
+                    "runic_edge",
                     "spell_parry",
-                    "flux_anchor",
+                    "blink_strike",
+                    "sunder_sigil",
+                    "balance_point",
+                    "counter_seal",
+                    "flux_reversal",
                     "spell_rend",
                     "flux_burst",
+                    "mana_lunge",
+                    "flux_anchor",
+                )
+
+            observation.playerResource.typeId == "HATE" ->
+                listOf(
+                    "savage_hew",
+                    "fault_line",
+                    "slaughter_drive",
+                    "pursuit_drive",
+                    "riven_edge",
+                    "aftershock",
+                    "kill_frenzy",
+                    "pain_fuel",
+                    "reckless_slam",
+                    "rupture_wave",
+                    "last_stand",
+                    "blood_rush",
                 )
 
             observation.playerResource.typeId == "STAMINA" ->
@@ -109,10 +131,16 @@ internal object LoadoutPlanner {
     private val SPELLBLADE_TALENT_IDS =
         setOf(
             "arcane_edge",
+            "runic_edge",
+            "sunder_sigil",
+            "balance_point",
+            "flux_reversal",
             "spell_rend",
             "flux_anchor",
             "flux_burst",
             "mana_lunge",
             "spell_parry",
+            "blink_strike",
+            "counter_seal",
         )
 }

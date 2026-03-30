@@ -230,6 +230,9 @@ class SmokeBot : RunBot {
             availableTalent(observation, "spell_parry")
                 ?.takeUnless { hasPlayerStatus(observation, "HOLY_SHIELD_BUFF") }
                 ?.let { slot -> return PlayerCommand.UseTalent(slot.slot) }
+            availableTalent(observation, "counter_seal")
+                ?.takeUnless { hasPlayerStatus(observation, "HOLY_SHIELD_BUFF") }
+                ?.let { slot -> return PlayerCommand.UseTalent(slot.slot) }
             availableTalent(observation, "holy_shield")
                 ?.takeUnless { hasPlayerStatus(observation, "HOLY_SHIELD_BUFF") }
                 ?.let { slot -> return PlayerCommand.UseTalent(slot.slot) }
@@ -310,7 +313,13 @@ class SmokeBot : RunBot {
             availableTalent(observation, "spell_parry")
                 ?.takeUnless { hasPlayerStatus(observation, "HOLY_SHIELD_BUFF") }
                 ?.let { slot -> return PlayerCommand.UseTalent(slot.slot) }
+            availableTalent(observation, "counter_seal")
+                ?.takeUnless { hasPlayerStatus(observation, "HOLY_SHIELD_BUFF") }
+                ?.let { slot -> return PlayerCommand.UseTalent(slot.slot) }
             availableTalent(observation, "arcane_shield")
+                ?.takeUnless { hasPlayerStatus(observation, "ARCANE_SHIELD_BUFF") }
+                ?.let { slot -> return PlayerCommand.UseTalent(slot.slot) }
+            availableTalent(observation, "flux_reversal")
                 ?.takeUnless { hasPlayerStatus(observation, "ARCANE_SHIELD_BUFF") }
                 ?.let { slot -> return PlayerCommand.UseTalent(slot.slot) }
             availableTalent(observation, "holy_shield")
@@ -329,11 +338,15 @@ class SmokeBot : RunBot {
         availableTalent(observation, "unyielding")
             ?.takeUnless { hasPlayerStatus(observation, "UNYIELDING_BUFF") }
             ?.let { slot -> return PlayerCommand.UseTalent(slot.slot) }
+        availableTalent(observation, "pain_fuel")
+            ?.takeUnless { hasPlayerStatus(observation, "war_cry_empower") }
+            ?.let { slot -> return PlayerCommand.UseTalent(slot.slot) }
 
         if (adjacentHostiles >= 2) {
             availableTalent(observation, "smoke_bomb")?.let { slot -> return PlayerCommand.UseTalent(slot.slot) }
             availableTalent(observation, "holy_aura")?.let { slot -> return PlayerCommand.UseTalent(slot.slot) }
             availableTalent(observation, "frost_nova")?.let { slot -> return PlayerCommand.UseTalent(slot.slot) }
+            availableTalent(observation, "aftershock")?.let { slot -> return PlayerCommand.UseTalent(slot.slot) }
             val adjacentTarget = nearestHostile(observation)?.takeIf { hostile -> hostile.chebyshevDistanceTo(observation.playerPosition) <= 1 }
             if (adjacentTarget != null) {
                 availableTalent(observation, "blade_flurry")?.let { slot -> return PlayerCommand.UseTalent(slot.slot, adjacentTarget) }
@@ -400,6 +413,7 @@ class SmokeBot : RunBot {
         }
         if (lowMana) {
             availableTalent(observation, "flux_anchor")?.let { slot -> return PlayerCommand.UseTalent(slot.slot) }
+            availableTalent(observation, "balance_point")?.let { slot -> return PlayerCommand.UseTalent(slot.slot) }
             availableTalent(observation, "mana_surge")
                 ?.takeUnless { hasPlayerStatus(observation, "MANA_SURGE_BUFF") }
                 ?.let { slot -> return PlayerCommand.UseTalent(slot.slot) }
@@ -783,6 +797,7 @@ class SmokeBot : RunBot {
         return observation.visibleTiles
             .asSequence()
             .filter { point ->
+                point != observation.playerPosition &&
                 !observation.map.blocksMovement(point.x, point.y) &&
                     point !in observation.visibleBlockingPositions &&
                     point.isWithin(slot, observation.playerPosition)
@@ -862,6 +877,7 @@ class SmokeBot : RunBot {
 
     private fun visibleThreatPositions(observation: RunObservation): List<Point> =
         (observation.visibleHostilePositions + observation.visibleBossPositions)
+            .filterNot { point -> point == observation.playerPosition }
             .distinct()
             .sortedWith(compareBy<Point> { it.chebyshevDistanceTo(observation.playerPosition) }.thenBy(Point::y).thenBy(Point::x))
 
@@ -901,15 +917,20 @@ class SmokeBot : RunBot {
             "power_strike", "fireball", "ice_bolt" -> 100
             "backstab", "holy_strike", "holy_light" -> 100
             "arcane_edge", "mana_lunge" -> 100
+            "runic_edge", "blink_strike" -> 98
+            "fault_line", "pain_fuel" -> 97
+            "riven_edge", "sunder_sigil" -> 96
             "linebreaker", "void_breach", "shadow_bind", "consecration" -> 95
             "shield_bash", "frost_nova", "arcane_shield" -> 90
             "judgment_hammer", "poison_blade", "holy_shield" -> 90
             "earthshaker", "inferno_orb", "eviscerate", "ritual_break" -> 85
+            "aftershock", "flux_reversal" -> 84
             "spell_parry" -> 90
             "dwarf_grit", "elf_scouting" -> 85
             "guard_stance", "unyielding", "blink" -> 80
             "stealth", "shadowstep", "devotion" -> 80
             "battlefield_command", "glacial_seal", "sanctuary", "ricochet_knives", "radiant_lance" -> 75
+            "slaughter_drive", "balance_point", "pursuit_drive", "counter_seal" -> 74
             "human_resolve", "dwarf_forge_heart", "elf_glade_step" -> 75
             "sweeping_strike", "flame_wall", "ice_prison" -> 70
             "blade_flurry", "holy_aura", "deathblow" -> 70
@@ -925,10 +946,25 @@ class SmokeBot : RunBot {
     private fun offensiveTalentOrder(observation: RunObservation): List<String> =
         if (isSpellblade(observation)) {
             listOf(
+                "sunder_sigil",
+                "runic_edge",
+                "blink_strike",
+                "counter_seal",
                 "spell_rend",
                 "arcane_edge",
                 "mana_lunge",
                 "flux_burst",
+            )
+        } else if (observation.playerResource.typeId == "HATE") {
+            listOf(
+                "riven_edge",
+                "fault_line",
+                "aftershock",
+                "pursuit_drive",
+                "savage_hew",
+                "rupture_wave",
+                "reckless_slam",
+                "blood_rush",
             )
         } else if (observation.playerResource.typeId == "MANA") {
             listOf(
@@ -1009,11 +1045,17 @@ class SmokeBot : RunBot {
         val SPELLBLADE_TALENT_IDS: Set<String> =
             setOf(
                 "arcane_edge",
+                "runic_edge",
+                "sunder_sigil",
+                "balance_point",
+                "flux_reversal",
                 "spell_rend",
                 "flux_anchor",
                 "flux_burst",
                 "mana_lunge",
                 "spell_parry",
+                "blink_strike",
+                "counter_seal",
             )
     }
 }

@@ -1047,11 +1047,11 @@ private class SoloClearScriptBot : RunBot {
                 "MANA" ->
                     if (listOf("arcane_edge", "mana_lunge", "spell_parry", "spell_rend", "flux_burst", "flux_anchor").any(unlockedTalentIds::contains)) {
                         if (observation.visibleBossPositions.isNotEmpty()) {
-                            listOf("arcane_edge", "mana_lunge", "spell_parry", "spell_rend", "flux_anchor", "flux_burst")
+                            listOf("sunder_sigil", "arcane_edge", "blink_strike", "spell_parry", "balance_point", "spell_rend")
                         } else if (isDensePackScenario(observation)) {
-                            listOf("arcane_edge", "mana_lunge", "flux_burst", "spell_parry", "flux_anchor", "spell_rend")
+                            listOf("runic_edge", "flux_burst", "blink_strike", "flux_reversal", "balance_point", "mana_lunge")
                         } else {
-                            listOf("arcane_edge", "mana_lunge", "spell_parry", "flux_anchor", "spell_rend", "flux_burst")
+                            listOf("arcane_edge", "runic_edge", "spell_parry", "balance_point", "blink_strike", "flux_reversal")
                         }
                     } else {
                         if (observation.visibleBossPositions.isNotEmpty()) {
@@ -1080,11 +1080,11 @@ private class SoloClearScriptBot : RunBot {
                     }
                 "HATE" ->
                     if (observation.visibleBossPositions.isNotEmpty()) {
-                        listOf("savage_hew", "rupture_wave", "kill_frenzy", "last_stand", "reckless_slam")
+                        listOf("riven_edge", "savage_hew", "fault_line", "slaughter_drive", "last_stand", "aftershock")
                     } else if (isDensePackScenario(observation)) {
-                        listOf("reckless_slam", "savage_hew", "kill_frenzy", "rupture_wave", "last_stand")
+                        listOf("aftershock", "reckless_slam", "slaughter_drive", "pain_fuel", "fault_line", "kill_frenzy")
                     } else {
-                        listOf("savage_hew", "reckless_slam", "rupture_wave", "kill_frenzy", "last_stand")
+                        listOf("savage_hew", "pursuit_drive", "pain_fuel", "slaughter_drive", "fault_line", "kill_frenzy")
                     }
                 else -> emptyList()
             }
@@ -1134,9 +1134,12 @@ private class SoloClearScriptBot : RunBot {
             return null
         }
         availableTalent(observation, "last_stand")?.let { return PlayerCommand.UseTalent(it.slot) }
+        availableTalent(observation, "slaughter_drive")?.let { return PlayerCommand.UseTalent(it.slot) }
         availableTalent(observation, "spell_parry")?.let { return PlayerCommand.UseTalent(it.slot) }
+        availableTalent(observation, "flux_reversal")?.let { return PlayerCommand.UseTalent(it.slot) }
         availableTalent(observation, "kill_frenzy")?.let { return PlayerCommand.UseTalent(it.slot) }
         availableTalent(observation, "flux_anchor")?.let { return PlayerCommand.UseTalent(it.slot) }
+        availableTalent(observation, "balance_point")?.let { return PlayerCommand.UseTalent(it.slot) }
         availableTalent(observation, "holy_light")?.let { return PlayerCommand.UseTalent(it.slot) }
         availableTalent(observation, "divine_intervention")?.let { return PlayerCommand.UseTalent(it.slot) }
         availableTalent(observation, "holy_shield")?.let { return PlayerCommand.UseTalent(it.slot) }
@@ -1145,11 +1148,6 @@ private class SoloClearScriptBot : RunBot {
         availableTalent(observation, "arcane_shield")?.let { return PlayerCommand.UseTalent(it.slot) }
         availableTalent(observation, "guard_stance")?.let { return PlayerCommand.UseTalent(it.slot) }
         availableTalent(observation, "blink")?.let { slot ->
-            retreatPoint(observation, slot)?.let { target ->
-                return PlayerCommand.UseTalent(slot.slot, target)
-            }
-        }
-        availableTalent(observation, "mana_lunge")?.let { slot ->
             retreatPoint(observation, slot)?.let { target ->
                 return PlayerCommand.UseTalent(slot.slot, target)
             }
@@ -1188,6 +1186,8 @@ private class SoloClearScriptBot : RunBot {
             availableTalent(observation, "war_cry")?.let { return PlayerCommand.UseTalent(it.slot) }
             availableTalent(observation, "intimidation")?.let { return PlayerCommand.UseTalent(it.slot) }
             availableTalent(observation, "kill_frenzy")?.let { return PlayerCommand.UseTalent(it.slot) }
+            availableTalent(observation, "balance_point")?.let { return PlayerCommand.UseTalent(it.slot) }
+            availableTalent(observation, "slaughter_drive")?.let { return PlayerCommand.UseTalent(it.slot) }
         }
         if (observation.playerResource.typeId == "MANA" && observation.playerResource.current * 100 <= observation.playerResource.max * 40) {
             availableTalent(observation, "mana_surge")?.let { return PlayerCommand.UseTalent(it.slot) }
@@ -1209,12 +1209,16 @@ private class SoloClearScriptBot : RunBot {
         availableTargetedTalent(observation, nearest, "glacial_seal")?.let { return it }
         availableTargetedTalent(observation, nearest, "void_breach")?.let { return it }
         availableTargetedTalent(observation, nearest, "linebreaker")?.let { return it }
+        availableTargetedTalent(observation, nearest, "riven_edge")?.let { return it }
+        availableTargetedTalent(observation, nearest, "runic_edge")?.let { return it }
+        availableTargetedTalent(observation, nearest, "sunder_sigil")?.let { return it }
         availableTargetedTalent(observation, nearest, "crippling_strike")?.let { return it }
         availableTargetedTalent(observation, nearest, "eviscerate")?.let { return it }
         availableTargetedTalent(observation, nearest, "cinder_burst")?.let { return it }
         availableTargetedTalent(observation, nearest, "arcane_edge")?.let { return it }
         availableTargetedTalent(observation, nearest, "savage_hew")?.let { return it }
         availableTargetedTalent(observation, nearest, "spell_rend")?.let { return it }
+        availableTargetedTalent(observation, nearest, "blink_strike")?.let { return it }
         availableTargetedTalent(observation, nearest, "mana_lunge")?.let { return it }
         availableTargetedTalent(observation, nearest, "shadowstep")?.let { return it }
         availableTargetedTalent(observation, nearest, "judgment_hammer")?.let { return it }
@@ -1255,6 +1259,9 @@ private class SoloClearScriptBot : RunBot {
         talentId: String,
     ): PlayerCommand? {
         val slot = availableTalent(observation, talentId) ?: return null
+        if (target == observation.playerPosition) {
+            return null
+        }
         if (!target.isWithin(slot, observation.playerPosition)) {
             return null
         }
@@ -1296,30 +1303,41 @@ private class SoloClearScriptBot : RunBot {
         }
 
     private fun nearestHostile(observation: RunObservation): Point? =
-        observation.visibleHostilePositions.minByOrNull { hostile -> hostile.chebyshevDistanceTo(observation.playerPosition) }
+        observation.visibleHostilePositions
+            .filterNot { hostile -> hostile == observation.playerPosition }
+            .minByOrNull { hostile -> hostile.chebyshevDistanceTo(observation.playerPosition) }
 
     private fun preferredOffensiveTarget(observation: RunObservation): Point? {
+        val visibleHostiles = observation.visibleHostilePositions.filterNot { hostile -> hostile == observation.playerPosition }
+        if (visibleHostiles.isEmpty()) {
+            return null
+        }
         if (isDensePackScenario(observation) && observation.playerResource.typeId in setOf("MANA", "POSITIVE_ENERGY", "HATE")) {
-            return observation.visibleHostilePositions.maxWithOrNull(
+            return visibleHostiles.maxWithOrNull(
                 compareBy<Point> { hostile -> hostile.chebyshevDistanceTo(observation.playerPosition) }
                     .thenByDescending { hostile -> hostile.y }
                     .thenByDescending { hostile -> hostile.x },
             )
         }
-        return nearestHostile(observation)
+        return visibleHostiles.minByOrNull { hostile -> hostile.chebyshevDistanceTo(observation.playerPosition) }
     }
 
     private fun clusterTarget(observation: RunObservation): Point? =
-        observation.visibleHostilePositions.maxWithOrNull(
+        observation.visibleHostilePositions
+            .filterNot { hostile -> hostile == observation.playerPosition }
+            .maxWithOrNull(
             compareBy<Point> { center ->
-                observation.visibleHostilePositions.count { hostile -> hostile.chebyshevDistanceTo(center) <= 1 }
+                observation.visibleHostilePositions.count { hostile -> hostile != observation.playerPosition && hostile.chebyshevDistanceTo(center) <= 1 }
             }.thenByDescending { point -> point.chebyshevDistanceTo(observation.playerPosition) },
         )
 
     private fun hostilesWithin(
         observation: RunObservation,
         radius: Int,
-    ): Int = observation.visibleHostilePositions.count { hostile -> hostile.chebyshevDistanceTo(observation.playerPosition) <= radius }
+    ): Int =
+        observation.visibleHostilePositions.count { hostile ->
+            hostile != observation.playerPosition && hostile.chebyshevDistanceTo(observation.playerPosition) <= radius
+        }
 
     private fun retreatPoint(
         observation: RunObservation,
@@ -1328,6 +1346,7 @@ private class SoloClearScriptBot : RunBot {
         observation.visibleTiles
             .asSequence()
             .filter { point ->
+                point != observation.playerPosition &&
                 !observation.map.blocksMovement(point.x, point.y) &&
                     point !in observation.visibleBlockingPositions &&
                     point.isWithin(slot, observation.playerPosition)
@@ -1349,19 +1368,31 @@ private class SoloClearScriptBot : RunBot {
 private val BERSERKER_TALENT_IDS: Set<String> =
     setOf(
         "blood_rush",
+        "pursuit_drive",
         "savage_hew",
+        "riven_edge",
         "reckless_slam",
         "rupture_wave",
+        "fault_line",
+        "aftershock",
         "kill_frenzy",
+        "pain_fuel",
+        "slaughter_drive",
         "last_stand",
     )
 
 private val SPELLBLADE_TALENT_IDS: Set<String> =
     setOf(
         "arcane_edge",
+        "runic_edge",
+        "sunder_sigil",
         "spell_rend",
         "flux_anchor",
+        "balance_point",
+        "flux_reversal",
         "flux_burst",
         "mana_lunge",
+        "blink_strike",
         "spell_parry",
+        "counter_seal",
     )

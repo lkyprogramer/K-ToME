@@ -2112,6 +2112,90 @@
       ]
     },
     {
+      "key": "icon.skill.berserker.aftershock",
+      "category": "icon_skill",
+      "rawOutputPath": "phase3/p3-followup/icon_skill_berserker_aftershock.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase3",
+        "followup",
+        "talent",
+        "berserker"
+      ]
+    },
+    {
+      "key": "icon.skill.berserker.fault_line",
+      "category": "icon_skill",
+      "rawOutputPath": "phase3/p3-followup/icon_skill_berserker_fault_line.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase3",
+        "followup",
+        "talent",
+        "berserker"
+      ]
+    },
+    {
+      "key": "icon.skill.berserker.pain_fuel",
+      "category": "icon_skill",
+      "rawOutputPath": "phase3/p3-followup/icon_skill_berserker_pain_fuel.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase3",
+        "followup",
+        "talent",
+        "berserker"
+      ]
+    },
+    {
+      "key": "icon.skill.berserker.pursuit_drive",
+      "category": "icon_skill",
+      "rawOutputPath": "phase3/p3-followup/icon_skill_berserker_pursuit_drive.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase3",
+        "followup",
+        "talent",
+        "berserker"
+      ]
+    },
+    {
+      "key": "icon.skill.berserker.riven_edge",
+      "category": "icon_skill",
+      "rawOutputPath": "phase3/p3-followup/icon_skill_berserker_riven_edge.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase3",
+        "followup",
+        "talent",
+        "berserker"
+      ]
+    },
+    {
+      "key": "icon.skill.berserker.slaughter_drive",
+      "category": "icon_skill",
+      "rawOutputPath": "phase3/p3-followup/icon_skill_berserker_slaughter_drive.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase3",
+        "followup",
+        "talent",
+        "berserker"
+      ]
+    },
+    {
       "key": "icon.skill.rogue.backstab",
       "category": "icon_skill",
       "rawOutputPath": "phase2/p2-c/icon_skill_rogue_mark_prey.png",
@@ -2314,6 +2398,90 @@
         "icon",
         "skill",
         "rogue"
+      ]
+    },
+    {
+      "key": "icon.skill.spellblade.balance_point",
+      "category": "icon_skill",
+      "rawOutputPath": "phase3/p3-followup/icon_skill_spellblade_balance_point.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase3",
+        "followup",
+        "talent",
+        "spellblade"
+      ]
+    },
+    {
+      "key": "icon.skill.spellblade.blink_strike",
+      "category": "icon_skill",
+      "rawOutputPath": "phase3/p3-followup/icon_skill_spellblade_blink_strike.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase3",
+        "followup",
+        "talent",
+        "spellblade"
+      ]
+    },
+    {
+      "key": "icon.skill.spellblade.counter_seal",
+      "category": "icon_skill",
+      "rawOutputPath": "phase3/p3-followup/icon_skill_spellblade_counter_seal.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase3",
+        "followup",
+        "talent",
+        "spellblade"
+      ]
+    },
+    {
+      "key": "icon.skill.spellblade.flux_reversal",
+      "category": "icon_skill",
+      "rawOutputPath": "phase3/p3-followup/icon_skill_spellblade_flux_reversal.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase3",
+        "followup",
+        "talent",
+        "spellblade"
+      ]
+    },
+    {
+      "key": "icon.skill.spellblade.runic_edge",
+      "category": "icon_skill",
+      "rawOutputPath": "phase3/p3-followup/icon_skill_spellblade_runic_edge.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase3",
+        "followup",
+        "talent",
+        "spellblade"
+      ]
+    },
+    {
+      "key": "icon.skill.spellblade.sunder_sigil",
+      "category": "icon_skill",
+      "rawOutputPath": "phase3/p3-followup/icon_skill_spellblade_sunder_sigil.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase3",
+        "followup",
+        "talent",
+        "spellblade"
       ]
     },
     {
@@ -3968,6 +4136,174 @@
       ]
     },
     {
+      "key": "talent.berserker.aftershock.icon",
+      "category": "icon",
+      "rawOutputPath": "phase3/p3-followup/icon_skill_berserker_aftershock.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase3",
+        "followup",
+        "talent",
+        "berserker"
+      ]
+    },
+    {
+      "key": "talent.berserker.aftershock.visual",
+      "category": "icon_skill",
+      "rawOutputPath": "phase3/p3-followup/talent_berserker_aftershock_visual.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase3",
+        "followup",
+        "talent",
+        "berserker"
+      ]
+    },
+    {
+      "key": "talent.berserker.fault_line.icon",
+      "category": "icon",
+      "rawOutputPath": "phase3/p3-followup/icon_skill_berserker_fault_line.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase3",
+        "followup",
+        "talent",
+        "berserker"
+      ]
+    },
+    {
+      "key": "talent.berserker.fault_line.visual",
+      "category": "icon_skill",
+      "rawOutputPath": "phase3/p3-followup/talent_berserker_fault_line_visual.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase3",
+        "followup",
+        "talent",
+        "berserker"
+      ]
+    },
+    {
+      "key": "talent.berserker.pain_fuel.icon",
+      "category": "icon",
+      "rawOutputPath": "phase3/p3-followup/icon_skill_berserker_pain_fuel.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase3",
+        "followup",
+        "talent",
+        "berserker"
+      ]
+    },
+    {
+      "key": "talent.berserker.pain_fuel.visual",
+      "category": "icon_skill",
+      "rawOutputPath": "phase3/p3-followup/talent_berserker_pain_fuel_visual.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase3",
+        "followup",
+        "talent",
+        "berserker"
+      ]
+    },
+    {
+      "key": "talent.berserker.pursuit_drive.icon",
+      "category": "icon",
+      "rawOutputPath": "phase3/p3-followup/icon_skill_berserker_pursuit_drive.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase3",
+        "followup",
+        "talent",
+        "berserker"
+      ]
+    },
+    {
+      "key": "talent.berserker.pursuit_drive.visual",
+      "category": "icon_skill",
+      "rawOutputPath": "phase3/p3-followup/talent_berserker_pursuit_drive_visual.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase3",
+        "followup",
+        "talent",
+        "berserker"
+      ]
+    },
+    {
+      "key": "talent.berserker.riven_edge.icon",
+      "category": "icon",
+      "rawOutputPath": "phase3/p3-followup/icon_skill_berserker_riven_edge.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase3",
+        "followup",
+        "talent",
+        "berserker"
+      ]
+    },
+    {
+      "key": "talent.berserker.riven_edge.visual",
+      "category": "icon_skill",
+      "rawOutputPath": "phase3/p3-followup/talent_berserker_riven_edge_visual.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase3",
+        "followup",
+        "talent",
+        "berserker"
+      ]
+    },
+    {
+      "key": "talent.berserker.slaughter_drive.icon",
+      "category": "icon",
+      "rawOutputPath": "phase3/p3-followup/icon_skill_berserker_slaughter_drive.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase3",
+        "followup",
+        "talent",
+        "berserker"
+      ]
+    },
+    {
+      "key": "talent.berserker.slaughter_drive.visual",
+      "category": "icon_skill",
+      "rawOutputPath": "phase3/p3-followup/talent_berserker_slaughter_drive_visual.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase3",
+        "followup",
+        "talent",
+        "berserker"
+      ]
+    },
+    {
       "key": "talent.rogue.crippling_strike.icon",
       "category": "icon",
       "rawOutputPath": "phase3/p3-followup/icon_skill_rogue_crippling_strike.png",
@@ -4105,6 +4441,174 @@
         "followup",
         "talent",
         "rogue"
+      ]
+    },
+    {
+      "key": "talent.spellblade.balance_point.icon",
+      "category": "icon",
+      "rawOutputPath": "phase3/p3-followup/icon_skill_spellblade_balance_point.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase3",
+        "followup",
+        "talent",
+        "spellblade"
+      ]
+    },
+    {
+      "key": "talent.spellblade.balance_point.visual",
+      "category": "icon_skill",
+      "rawOutputPath": "phase3/p3-followup/talent_spellblade_balance_point_visual.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase3",
+        "followup",
+        "talent",
+        "spellblade"
+      ]
+    },
+    {
+      "key": "talent.spellblade.blink_strike.icon",
+      "category": "icon",
+      "rawOutputPath": "phase3/p3-followup/icon_skill_spellblade_blink_strike.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase3",
+        "followup",
+        "talent",
+        "spellblade"
+      ]
+    },
+    {
+      "key": "talent.spellblade.blink_strike.visual",
+      "category": "icon_skill",
+      "rawOutputPath": "phase3/p3-followup/talent_spellblade_blink_strike_visual.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase3",
+        "followup",
+        "talent",
+        "spellblade"
+      ]
+    },
+    {
+      "key": "talent.spellblade.counter_seal.icon",
+      "category": "icon",
+      "rawOutputPath": "phase3/p3-followup/icon_skill_spellblade_counter_seal.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase3",
+        "followup",
+        "talent",
+        "spellblade"
+      ]
+    },
+    {
+      "key": "talent.spellblade.counter_seal.visual",
+      "category": "icon_skill",
+      "rawOutputPath": "phase3/p3-followup/talent_spellblade_counter_seal_visual.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase3",
+        "followup",
+        "talent",
+        "spellblade"
+      ]
+    },
+    {
+      "key": "talent.spellblade.flux_reversal.icon",
+      "category": "icon",
+      "rawOutputPath": "phase3/p3-followup/icon_skill_spellblade_flux_reversal.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase3",
+        "followup",
+        "talent",
+        "spellblade"
+      ]
+    },
+    {
+      "key": "talent.spellblade.flux_reversal.visual",
+      "category": "icon_skill",
+      "rawOutputPath": "phase3/p3-followup/talent_spellblade_flux_reversal_visual.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase3",
+        "followup",
+        "talent",
+        "spellblade"
+      ]
+    },
+    {
+      "key": "talent.spellblade.runic_edge.icon",
+      "category": "icon",
+      "rawOutputPath": "phase3/p3-followup/icon_skill_spellblade_runic_edge.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase3",
+        "followup",
+        "talent",
+        "spellblade"
+      ]
+    },
+    {
+      "key": "talent.spellblade.runic_edge.visual",
+      "category": "icon_skill",
+      "rawOutputPath": "phase3/p3-followup/talent_spellblade_runic_edge_visual.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase3",
+        "followup",
+        "talent",
+        "spellblade"
+      ]
+    },
+    {
+      "key": "talent.spellblade.sunder_sigil.icon",
+      "category": "icon",
+      "rawOutputPath": "phase3/p3-followup/icon_skill_spellblade_sunder_sigil.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase3",
+        "followup",
+        "talent",
+        "spellblade"
+      ]
+    },
+    {
+      "key": "talent.spellblade.sunder_sigil.visual",
+      "category": "icon_skill",
+      "rawOutputPath": "phase3/p3-followup/talent_spellblade_sunder_sigil_visual.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase3",
+        "followup",
+        "talent",
+        "spellblade"
       ]
     },
     {

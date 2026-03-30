@@ -223,17 +223,29 @@ class TalentResolver(
             "beacon_of_zeal",
             "ritual_break",
             "blood_rush",
+            "pursuit_drive",
             "savage_hew",
+            "riven_edge",
             "reckless_slam",
             "rupture_wave",
+            "fault_line",
+            "aftershock",
             "kill_frenzy",
+            "pain_fuel",
+            "slaughter_drive",
             "last_stand",
             "arcane_edge",
+            "runic_edge",
             "spell_rend",
+            "sunder_sigil",
             "flux_anchor",
+            "balance_point",
+            "flux_reversal",
             "flux_burst",
             "mana_lunge",
+            "blink_strike",
             "spell_parry",
+            "counter_seal",
             "human_resolve",
             "human_mastery",
             "elf_scouting",
@@ -407,13 +419,22 @@ class TalentResolver(
         when (talentId) {
             "power_strike",
             "savage_hew",
+            "riven_edge",
             "arcane_edge",
+            "runic_edge",
             "spell_rend",
+            "sunder_sigil",
             -> {
                 val targetEntity = requireNotNull(hostileTargetAt(world, user, requireNotNull(target)))
                 targets += targetEntity
                 val damageResult =
                     resolveDamage(world, user, targetEntity, definition.damageType, effect.damageMultiplier, effects, abilityId = definition.id)
+                if (damageResult.hit && effect.healFraction > 0.0) {
+                    healTarget(world, user, effect, effects)
+                }
+                if (damageResult.hit && effect.resourceRestoreFraction > 0.0) {
+                    restoreConfiguredResource(world, user, definition, effect, effects)
+                }
                 if (damageResult.hit && effect.knockback > 0) {
                     knockback(world, map, user, targetEntity, effect.knockback)?.let(effects::add)
                 }
@@ -433,6 +454,8 @@ class TalentResolver(
             "charge",
             "blood_rush",
             "mana_lunge",
+            "pursuit_drive",
+            "blink_strike",
             -> {
                 val targetPoint = requireNotNull(target)
                 val targetEntity = requireNotNull(hostileTargetAt(world, user, targetPoint))
@@ -443,8 +466,11 @@ class TalentResolver(
                 effects += TalentEffectResult.Movement(user, from, destination)
                 val damageResult =
                     resolveDamage(world, user, targetEntity, definition.damageType, effect.damageMultiplier, effects, abilityId = definition.id)
-                if (talentId == "blood_rush" && damageResult.hit) {
+                if (damageResult.hit && effect.healFraction > 0.0) {
                     healTarget(world, user, effect, effects)
+                }
+                if (damageResult.hit && effect.resourceRestoreFraction > 0.0) {
+                    restoreConfiguredResource(world, user, definition, effect, effects)
                 }
                 applyConfiguredEffects(
                     world = world,
@@ -481,6 +507,32 @@ class TalentResolver(
             }
 
             "linebreaker" -> {
+                val center = requireNotNull(target)
+                val hitTargets = hostileTargetsWithin(world, user, center, definition.areaRadius).ifEmpty {
+                    listOfNotNull(hostileTargetAt(world, user, center))
+                }
+                hitTargets.forEach { targetEntity ->
+                    targets += targetEntity
+                    val damageResult =
+                        resolveDamage(world, user, targetEntity, definition.damageType, effect.damageMultiplier, effects, abilityId = definition.id)
+                    if (damageResult.hit && effect.knockback > 0) {
+                        knockback(world, map, user, targetEntity, effect.knockback)?.let(effects::add)
+                    }
+                    applyConfiguredEffects(
+                        world = world,
+                        user = user,
+                        definition = definition,
+                        effect = effect,
+                        trigger = EffectTrigger.ON_HIT,
+                        primaryTarget = targetEntity,
+                        areaTargets = listOf(targetEntity),
+                        hitSucceeded = damageResult.hit,
+                        effects = effects,
+                    )
+                }
+            }
+
+            "fault_line" -> {
                 val center = requireNotNull(target)
                 val hitTargets = hostileTargetsWithin(world, user, center, definition.areaRadius).ifEmpty {
                     listOfNotNull(hostileTargetAt(world, user, center))
@@ -816,6 +868,10 @@ class TalentResolver(
             "mana_surge",
             "kill_frenzy",
             "flux_anchor",
+            "slaughter_drive",
+            "balance_point",
+            "flux_reversal",
+            "counter_seal",
             -> {
                 applyConfiguredEffects(
                     world = world,
@@ -1010,6 +1066,7 @@ class TalentResolver(
             "holy_aura",
             "reckless_slam",
             "flux_burst",
+            "aftershock",
             -> {
                 targets += user
                 applyConfiguredEffects(
@@ -1028,6 +1085,17 @@ class TalentResolver(
                     if (damageResult.hit && effect.knockback > 0) {
                         knockback(world, map, user, enemy, effect.knockback)?.let(effects::add)
                     }
+                    applyConfiguredEffects(
+                        world = world,
+                        user = user,
+                        definition = definition,
+                        effect = effect,
+                        trigger = EffectTrigger.ON_HIT,
+                        primaryTarget = enemy,
+                        areaTargets = listOf(enemy),
+                        hitSucceeded = damageResult.hit,
+                        effects = effects,
+                    )
                 }
             }
 
@@ -1059,6 +1127,7 @@ class TalentResolver(
 
             "divine_intervention",
             "last_stand",
+            "pain_fuel",
             -> {
                 healTarget(world, user, effect, effects)
                 targets += user
@@ -1717,6 +1786,6 @@ class TalentResolver(
 
     private companion object {
         val BLINK_STYLE_TALENTS: Set<String> = setOf("blink", "roll", "elf_scouting", "elf_glade_step")
-        val CHARGE_STYLE_TALENTS: Set<String> = setOf("charge", "blood_rush", "mana_lunge")
+        val CHARGE_STYLE_TALENTS: Set<String> = setOf("charge", "blood_rush", "mana_lunge", "pursuit_drive", "blink_strike")
     }
 }

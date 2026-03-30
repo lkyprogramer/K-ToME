@@ -56,7 +56,19 @@ class SchemaV2LoaderTest {
                     "holy_shield",
                     "devotion",
                     "blood_rush",
+                    "riven_edge",
+                    "pursuit_drive",
+                    "fault_line",
+                    "aftershock",
+                    "pain_fuel",
+                    "slaughter_drive",
                     "spell_parry",
+                    "runic_edge",
+                    "sunder_sigil",
+                    "balance_point",
+                    "flux_reversal",
+                    "blink_strike",
+                    "counter_seal",
                     "human_resolve",
                     "dwarf_forge_heart",
                 ),
@@ -107,6 +119,12 @@ class SchemaV2LoaderTest {
         assertEquals(103, catalog.professions.first { it.id == "arcanist" }.combatProfile.baseSpeed)
         assertEquals(listOf("backstab", "poison_blade", "deathblow", "execution", "crippling_strike", "eviscerate"), catalog.talentTrees.first { it.id == "rogue_assassination" }.nodes)
         assertEquals(listOf("holy_light", "holy_shield", "purify", "sanctuary", "absolution"), catalog.talentTrees.first { it.id == "templar_grace" }.nodes)
+        assertEquals(listOf("blood_rush", "savage_hew", "riven_edge", "pursuit_drive"), catalog.talentTrees.first { it.id == "berserker_wrath" }.nodes)
+        assertEquals(listOf("reckless_slam", "rupture_wave", "fault_line", "aftershock"), catalog.talentTrees.first { it.id == "berserker_ruin" }.nodes)
+        assertEquals(listOf("kill_frenzy", "last_stand", "pain_fuel", "slaughter_drive"), catalog.talentTrees.first { it.id == "berserker_bloodwar" }.nodes)
+        assertEquals(listOf("arcane_edge", "spell_rend", "runic_edge", "sunder_sigil"), catalog.talentTrees.first { it.id == "spellblade_enchanted_blade" }.nodes)
+        assertEquals(listOf("flux_anchor", "flux_burst", "balance_point", "flux_reversal"), catalog.talentTrees.first { it.id == "spellblade_elemental_flux" }.nodes)
+        assertEquals(listOf("mana_lunge", "spell_parry", "blink_strike", "counter_seal"), catalog.talentTrees.first { it.id == "spellblade_battle_spell" }.nodes)
         assertEquals(3, catalog.talents.first { it.id == "charge" }.unlockLevel)
         assertEquals("charge_lane", catalog.talents.first { it.id == "charge" }.telegraphRef)
         assertEquals(4, catalog.talents.first { it.id == "blink" }.levelEffects.getValue(5).rangeBonus)
@@ -193,6 +211,10 @@ class SchemaV2LoaderTest {
         assertTrue(catalog.visualKeys.contains("boss.abyssal.guardian.visual"))
         assertTrue(catalog.visualKeys.contains("talent.vanguard.linebreaker.visual"))
         assertTrue(catalog.visualKeys.contains("icon.skill.templar.ritual_break"))
+        assertTrue(catalog.visualKeys.contains("talent.berserker.riven_edge.visual"))
+        assertTrue(catalog.visualKeys.contains("talent.spellblade.runic_edge.visual"))
+        assertTrue(catalog.visualKeys.contains("icon.skill.berserker.fault_line"))
+        assertTrue(catalog.visualKeys.contains("icon.skill.spellblade.counter_seal"))
         assertTrue(catalog.visualKeys.contains("prop.mine_furnace"))
         assertTrue(catalog.visualKeys.contains("prop.ritual_altar"))
         assertTrue(catalog.audioProfiles.contains("audio.talent.power_strike"))
@@ -201,6 +223,8 @@ class SchemaV2LoaderTest {
         assertTrue(catalog.audioProfiles.contains("audio.talent.holy_light"))
         assertTrue(catalog.audioProfiles.contains("audio.talent.linebreaker"))
         assertTrue(catalog.audioProfiles.contains("audio.talent.void_breach"))
+        assertTrue(catalog.audioProfiles.contains("audio.talent.riven_edge"))
+        assertTrue(catalog.audioProfiles.contains("audio.talent.runic_edge"))
         assertTrue(catalog.audioProfiles.contains("audio.monster.bandit_family"))
         assertTrue(catalog.audioProfiles.contains("audio.boss.orc.molten_giant"))
         assertTrue(catalog.audioProfiles.contains("audio.monster.default"))

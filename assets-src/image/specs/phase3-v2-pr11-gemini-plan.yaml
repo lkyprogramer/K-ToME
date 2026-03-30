@@ -1,0 +1,340 @@
+styleTag: ktome-middle-fantasy-painterly-tile-v1
+artStyleBible: docs/2026-03-13-art-style-bible.md
+stylePrompt: >
+  Classical high fantasy in a Middle-earth inspired mode with painterly readable
+  silhouettes. Never anime, never sci-fi. Focus on worn iron, leather, rune-carved
+  steel, restrained elemental glow, and bold icon readability for gameplay-first
+  combat skills.
+defaults:
+  imageAspectRatio: "1:1"
+  imageSize: 1K
+  negativeConstraints:
+    - no modern clothing
+    - no firearms
+    - no sci-fi materials
+    - no anime proportions
+    - no floating text, watermark or logo
+  categoryPromptTemplates:
+    icon_skill: >
+      Game skill ability icon on transparent background. Single focused subject
+      centered in frame, 65-75% of the canvas, painterly but highly readable at
+      small size with strong silhouette separation and restrained detail.
+phase2AssetGates:
+  P3-PR11A:
+    description: Berserker talent icon and visual pack for Phase 3 PR-11.
+    assets:
+      - id: phase3_pr11_icon_skill_berserker_riven_edge
+        category: icon_skill
+        profession: berserker
+        visualKey: icon.skill.berserker.riven_edge
+        outputName: phase3/p3-followup/icon_skill_berserker_riven_edge.png
+        subject: Skill icon for Riven Edge, a brutal berserker execution cut splitting armor with a serrated black-iron cleaver and crimson fracture trail.
+        materialTags: [black_iron, serrated_blade, crimson_rift]
+        moodTags: [berserker, execution, severe]
+        constraints:
+          - single centered skill icon subject only
+          - transparent or clean isolated background for pipeline removal
+          - bold silhouette readable at small hotbar size
+        geminiKeyRequired: true
+      - id: phase3_pr11_talent_berserker_riven_edge_visual
+        category: icon_skill
+        profession: berserker
+        visualKey: talent.berserker.riven_edge.visual
+        outputName: phase3/p3-followup/talent_berserker_riven_edge_visual.png
+        subject: Talent visual for Riven Edge, a berserker cleaving downward with a jagged hate-fed edge that tears open armor in a crimson-black burst.
+        materialTags: [black_iron, cleaver, crimson_energy]
+        moodTags: [berserker, impact, execution]
+        constraints:
+          - single focused action motif, no full character scene
+          - transparent or clean isolated background for pipeline removal
+          - readable as a talent visual plate at small size
+        geminiKeyRequired: true
+      - id: phase3_pr11_icon_skill_berserker_pursuit_drive
+        category: icon_skill
+        profession: berserker
+        visualKey: icon.skill.berserker.pursuit_drive
+        outputName: phase3/p3-followup/icon_skill_berserker_pursuit_drive.png
+        subject: Skill icon for Pursuit Drive, a berserker surge marked by a forward-leaning horned helm, broken chain links, and a blood-red momentum streak.
+        materialTags: [war_helm, broken_chain, crimson_velocity]
+        moodTags: [berserker, pursuit, mobility]
+        constraints:
+          - single centered skill icon subject only
+          - transparent or clean isolated background for pipeline removal
+          - bold silhouette readable at small hotbar size
+        geminiKeyRequired: true
+      - id: phase3_pr11_talent_berserker_pursuit_drive_visual
+        category: icon_skill
+        profession: berserker
+        visualKey: talent.berserker.pursuit_drive.visual
+        outputName: phase3/p3-followup/talent_berserker_pursuit_drive_visual.png
+        subject: Talent visual for Pursuit Drive, a berserker lunging through the lane with a hooked axe and dragging a violent crimson wake.
+        materialTags: [war_axe, crimson_wake, iron_boots]
+        moodTags: [berserker, charge, pursuit]
+        constraints:
+          - single focused action motif, no full character scene
+          - transparent or clean isolated background for pipeline removal
+          - readable as a talent visual plate at small size
+        geminiKeyRequired: true
+      - id: phase3_pr11_icon_skill_berserker_fault_line
+        category: icon_skill
+        profession: berserker
+        visualKey: icon.skill.berserker.fault_line
+        outputName: phase3/p3-followup/icon_skill_berserker_fault_line.png
+        subject: Skill icon for Fault Line, a cracked iron battlefield seam erupting with stone shards and red pressure lines.
+        materialTags: [cracked_stone, iron_seam, red_pressure]
+        moodTags: [berserker, rupture, area]
+        constraints:
+          - single centered skill icon subject only
+          - transparent or clean isolated background for pipeline removal
+          - bold silhouette readable at small hotbar size
+        geminiKeyRequired: true
+      - id: phase3_pr11_talent_berserker_fault_line_visual
+        category: icon_skill
+        profession: berserker
+        visualKey: talent.berserker.fault_line.visual
+        outputName: phase3/p3-followup/talent_berserker_fault_line_visual.png
+        subject: Talent visual for Fault Line, a berserker splitting the ground around a marked target with a lane-breaking rupture and flying debris.
+        materialTags: [ruptured_ground, iron_shards, crimson_pressure]
+        moodTags: [berserker, formation_break, impact]
+        constraints:
+          - single focused action motif, no full character scene
+          - transparent or clean isolated background for pipeline removal
+          - readable as a talent visual plate at small size
+        geminiKeyRequired: true
+      - id: phase3_pr11_icon_skill_berserker_aftershock
+        category: icon_skill
+        profession: berserker
+        visualKey: icon.skill.berserker.aftershock
+        outputName: phase3/p3-followup/icon_skill_berserker_aftershock.png
+        subject: Skill icon for Aftershock, a brutal maul impact ring sending concentric dust-and-crimson shockwaves through stone.
+        materialTags: [maul_head, shockwave_ring, broken_stone]
+        moodTags: [berserker, quake, area]
+        constraints:
+          - single centered skill icon subject only
+          - transparent or clean isolated background for pipeline removal
+          - bold silhouette readable at small hotbar size
+        geminiKeyRequired: true
+      - id: phase3_pr11_talent_berserker_aftershock_visual
+        category: icon_skill
+        profession: berserker
+        visualKey: talent.berserker.aftershock.visual
+        outputName: phase3/p3-followup/talent_berserker_aftershock_visual.png
+        subject: Talent visual for Aftershock, a berserker driving a second quake into the ground as a circular concussion wave expands from the impact.
+        materialTags: [hammer_impact, quake_ring, stone_dust]
+        moodTags: [berserker, quake, follow_up]
+        constraints:
+          - single focused action motif, no full character scene
+          - transparent or clean isolated background for pipeline removal
+          - readable as a talent visual plate at small size
+        geminiKeyRequired: true
+      - id: phase3_pr11_icon_skill_berserker_pain_fuel
+        category: icon_skill
+        profession: berserker
+        visualKey: icon.skill.berserker.pain_fuel
+        outputName: phase3/p3-followup/icon_skill_berserker_pain_fuel.png
+        subject: Skill icon for Pain Fuel, a scarred iron heart wrapped in crimson bindings and a retaliatory ember glow.
+        materialTags: [iron_heart, scar_bindings, crimson_heat]
+        moodTags: [berserker, sustain, retaliation]
+        constraints:
+          - single centered skill icon subject only
+          - transparent or clean isolated background for pipeline removal
+          - bold silhouette readable at small hotbar size
+        geminiKeyRequired: true
+      - id: phase3_pr11_talent_berserker_pain_fuel_visual
+        category: icon_skill
+        profession: berserker
+        visualKey: talent.berserker.pain_fuel.visual
+        outputName: phase3/p3-followup/talent_berserker_pain_fuel_visual.png
+        subject: Talent visual for Pain Fuel, a berserker re-lighting through fresh wounds with a tight crimson counterattack aura.
+        materialTags: [scarred_armor, crimson_aura, iron_spikes]
+        moodTags: [berserker, pain, retaliation]
+        constraints:
+          - single focused action motif, no full character scene
+          - transparent or clean isolated background for pipeline removal
+          - readable as a talent visual plate at small size
+        geminiKeyRequired: true
+      - id: phase3_pr11_icon_skill_berserker_slaughter_drive
+        category: icon_skill
+        profession: berserker
+        visualKey: icon.skill.berserker.slaughter_drive
+        outputName: phase3/p3-followup/icon_skill_berserker_slaughter_drive.png
+        subject: Skill icon for Slaughter Drive, a blood-dark battle standard driving forward through hooked chains and a hot crimson spiral.
+        materialTags: [war_standard, hooked_chain, blood_spiral]
+        moodTags: [berserker, momentum, kill_chain]
+        constraints:
+          - single centered skill icon subject only
+          - transparent or clean isolated background for pipeline removal
+          - bold silhouette readable at small hotbar size
+        geminiKeyRequired: true
+      - id: phase3_pr11_talent_berserker_slaughter_drive_visual
+        category: icon_skill
+        profession: berserker
+        visualKey: talent.berserker.slaughter_drive.visual
+        outputName: phase3/p3-followup/talent_berserker_slaughter_drive_visual.png
+        subject: Talent visual for Slaughter Drive, a berserker leaning into a kill-chain with chained momentum, hot crimson wake, and renewed fury.
+        materialTags: [chain_links, crimson_spiral, war_iron]
+        moodTags: [berserker, momentum, sustain]
+        constraints:
+          - single focused action motif, no full character scene
+          - transparent or clean isolated background for pipeline removal
+          - readable as a talent visual plate at small size
+        geminiKeyRequired: true
+  P3-PR11B:
+    description: Spellblade talent icon and visual pack for Phase 3 PR-11.
+    assets:
+      - id: phase3_pr11_icon_skill_spellblade_runic_edge
+        category: icon_skill
+        profession: spellblade
+        visualKey: icon.skill.spellblade.runic_edge
+        outputName: phase3/p3-followup/icon_skill_spellblade_runic_edge.png
+        subject: Skill icon for Runic Edge, a rune-etched duelist blade wrapped in blue-white arcane current.
+        materialTags: [etched_blade, arcane_rune, blue_white_current]
+        moodTags: [spellblade, hybrid, precision]
+        constraints:
+          - single centered skill icon subject only
+          - transparent or clean isolated background for pipeline removal
+          - bold silhouette readable at small hotbar size
+        geminiKeyRequired: true
+      - id: phase3_pr11_talent_spellblade_runic_edge_visual
+        category: icon_skill
+        profession: spellblade
+        visualKey: talent.spellblade.runic_edge.visual
+        outputName: phase3/p3-followup/talent_spellblade_runic_edge_visual.png
+        subject: Talent visual for Runic Edge, a spellblade carving forward with a rune-lit sword and tight lightning arc along the strike.
+        materialTags: [rune_blade, lightning_arc, duelist_guard]
+        moodTags: [spellblade, arcane, melee]
+        constraints:
+          - single focused action motif, no full character scene
+          - transparent or clean isolated background for pipeline removal
+          - readable as a talent visual plate at small size
+        geminiKeyRequired: true
+      - id: phase3_pr11_icon_skill_spellblade_sunder_sigil
+        category: icon_skill
+        profession: spellblade
+        visualKey: icon.skill.spellblade.sunder_sigil
+        outputName: phase3/p3-followup/icon_skill_spellblade_sunder_sigil.png
+        subject: Skill icon for Sunder Sigil, a broken warding seal split by a bright spellblade edge.
+        materialTags: [broken_sigil, rune_shards, arcane_steel]
+        moodTags: [spellblade, boss, breach]
+        constraints:
+          - single centered skill icon subject only
+          - transparent or clean isolated background for pipeline removal
+          - bold silhouette readable at small hotbar size
+        geminiKeyRequired: true
+      - id: phase3_pr11_talent_spellblade_sunder_sigil_visual
+        category: icon_skill
+        profession: spellblade
+        visualKey: talent.spellblade.sunder_sigil.visual
+        outputName: phase3/p3-followup/talent_spellblade_sunder_sigil_visual.png
+        subject: Talent visual for Sunder Sigil, a spellblade raking across a target as ward-runes shatter into bright fragments.
+        materialTags: [shattered_runes, duelist_blade, pale_arcane]
+        moodTags: [spellblade, breach, boss_pressure]
+        constraints:
+          - single focused action motif, no full character scene
+          - transparent or clean isolated background for pipeline removal
+          - readable as a talent visual plate at small size
+        geminiKeyRequired: true
+      - id: phase3_pr11_icon_skill_spellblade_balance_point
+        category: icon_skill
+        profession: spellblade
+        visualKey: icon.skill.spellblade.balance_point
+        outputName: phase3/p3-followup/icon_skill_spellblade_balance_point.png
+        subject: Skill icon for Balance Point, a centered dueling sigil between warm ember and cold arcane blue halves.
+        materialTags: [duel_sigil, ember_half, arcane_half]
+        moodTags: [spellblade, control, balance]
+        constraints:
+          - single centered skill icon subject only
+          - transparent or clean isolated background for pipeline removal
+          - bold silhouette readable at small hotbar size
+        geminiKeyRequired: true
+      - id: phase3_pr11_talent_spellblade_balance_point_visual
+        category: icon_skill
+        profession: spellblade
+        visualKey: talent.spellblade.balance_point.visual
+        outputName: phase3/p3-followup/talent_spellblade_balance_point_visual.png
+        subject: Talent visual for Balance Point, a spellblade holding a centered stance between warm and cool magical currents.
+        materialTags: [balanced_sigil, warm_cool_currents, duelist_pose]
+        moodTags: [spellblade, balance, focus]
+        constraints:
+          - single focused action motif, no full character scene
+          - transparent or clean isolated background for pipeline removal
+          - readable as a talent visual plate at small size
+        geminiKeyRequired: true
+      - id: phase3_pr11_icon_skill_spellblade_flux_reversal
+        category: icon_skill
+        profession: spellblade
+        visualKey: icon.skill.spellblade.flux_reversal
+        outputName: phase3/p3-followup/icon_skill_spellblade_flux_reversal.png
+        subject: Skill icon for Flux Reversal, a drifting arcane spiral pulled back toward a centered ward ring.
+        materialTags: [recentered_spiral, ward_ring, arcane_glass]
+        moodTags: [spellblade, rescue, control]
+        constraints:
+          - single centered skill icon subject only
+          - transparent or clean isolated background for pipeline removal
+          - bold silhouette readable at small hotbar size
+        geminiKeyRequired: true
+      - id: phase3_pr11_talent_spellblade_flux_reversal_visual
+        category: icon_skill
+        profession: spellblade
+        visualKey: talent.spellblade.flux_reversal.visual
+        outputName: phase3/p3-followup/talent_spellblade_flux_reversal_visual.png
+        subject: Talent visual for Flux Reversal, a spellblade drawing unstable energy back into a tight defensive centerline.
+        materialTags: [arcane_spiral, ward_arc, centered_duel]
+        moodTags: [spellblade, rescue, defense]
+        constraints:
+          - single focused action motif, no full character scene
+          - transparent or clean isolated background for pipeline removal
+          - readable as a talent visual plate at small size
+        geminiKeyRequired: true
+      - id: phase3_pr11_icon_skill_spellblade_blink_strike
+        category: icon_skill
+        profession: spellblade
+        visualKey: icon.skill.spellblade.blink_strike
+        outputName: phase3/p3-followup/icon_skill_spellblade_blink_strike.png
+        subject: Skill icon for Blink Strike, a duelist blade cutting through a short blue-white teleport tear.
+        materialTags: [duelist_blade, teleport_tear, arcane_flash]
+        moodTags: [spellblade, mobility, melee_spell]
+        constraints:
+          - single centered skill icon subject only
+          - transparent or clean isolated background for pipeline removal
+          - bold silhouette readable at small hotbar size
+        geminiKeyRequired: true
+      - id: phase3_pr11_talent_spellblade_blink_strike_visual
+        category: icon_skill
+        profession: spellblade
+        visualKey: talent.spellblade.blink_strike.visual
+        outputName: phase3/p3-followup/talent_spellblade_blink_strike_visual.png
+        subject: Talent visual for Blink Strike, a spellblade blinking into point-blank range and landing a bright arcane impact slash.
+        materialTags: [teleport_flash, arcane_blade, impact_line]
+        moodTags: [spellblade, mobility, impact]
+        constraints:
+          - single focused action motif, no full character scene
+          - transparent or clean isolated background for pipeline removal
+          - readable as a talent visual plate at small size
+        geminiKeyRequired: true
+      - id: phase3_pr11_icon_skill_spellblade_counter_seal
+        category: icon_skill
+        profession: spellblade
+        visualKey: icon.skill.spellblade.counter_seal
+        outputName: phase3/p3-followup/icon_skill_spellblade_counter_seal.png
+        subject: Skill icon for Counter Seal, a compact defensive sigil with crossed blade-and-rune geometry.
+        materialTags: [counter_sigil, crossed_blade, pale_blue_ward]
+        moodTags: [spellblade, defense, counter]
+        constraints:
+          - single centered skill icon subject only
+          - transparent or clean isolated background for pipeline removal
+          - bold silhouette readable at small hotbar size
+        geminiKeyRequired: true
+      - id: phase3_pr11_talent_spellblade_counter_seal_visual
+        category: icon_skill
+        profession: spellblade
+        visualKey: talent.spellblade.counter_seal.visual
+        outputName: phase3/p3-followup/talent_spellblade_counter_seal_visual.png
+        subject: Talent visual for Counter Seal, a spellblade catching an incoming exchange behind a crisp layered ward and ready blade.
+        materialTags: [ward_layers, duelist_blade, pale_blue_arc]
+        moodTags: [spellblade, counter, defense]
+        constraints:
+          - single focused action motif, no full character scene
+          - transparent or clean isolated background for pipeline removal
+          - readable as a talent visual plate at small size
+        geminiKeyRequired: true

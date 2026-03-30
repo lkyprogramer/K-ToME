@@ -93,6 +93,30 @@ visuals:
   - id: talent.templar.holy_aura.visual
   - id: talent.templar.purify.visual
   - id: talent.templar.divine_intervention.visual
+  - id: talent.berserker.riven_edge.visual
+  - id: talent.berserker.riven_edge.icon
+  - id: talent.berserker.pursuit_drive.visual
+  - id: talent.berserker.pursuit_drive.icon
+  - id: talent.berserker.fault_line.visual
+  - id: talent.berserker.fault_line.icon
+  - id: talent.berserker.aftershock.visual
+  - id: talent.berserker.aftershock.icon
+  - id: talent.berserker.pain_fuel.visual
+  - id: talent.berserker.pain_fuel.icon
+  - id: talent.berserker.slaughter_drive.visual
+  - id: talent.berserker.slaughter_drive.icon
+  - id: talent.spellblade.runic_edge.visual
+  - id: talent.spellblade.runic_edge.icon
+  - id: talent.spellblade.sunder_sigil.visual
+  - id: talent.spellblade.sunder_sigil.icon
+  - id: talent.spellblade.balance_point.visual
+  - id: talent.spellblade.balance_point.icon
+  - id: talent.spellblade.flux_reversal.visual
+  - id: talent.spellblade.flux_reversal.icon
+  - id: talent.spellblade.blink_strike.visual
+  - id: talent.spellblade.blink_strike.icon
+  - id: talent.spellblade.counter_seal.visual
+  - id: talent.spellblade.counter_seal.icon
   - id: icon.skill.vanguard.guard_stance
   - id: icon.skill.vanguard.power_strike
   - id: icon.skill.vanguard.shield_bash
@@ -115,6 +139,18 @@ visuals:
   - id: icon.skill.templar.holy_aura
   - id: icon.skill.templar.purify
   - id: icon.skill.templar.divine_intervention
+  - id: icon.skill.berserker.riven_edge
+  - id: icon.skill.berserker.pursuit_drive
+  - id: icon.skill.berserker.fault_line
+  - id: icon.skill.berserker.aftershock
+  - id: icon.skill.berserker.pain_fuel
+  - id: icon.skill.berserker.slaughter_drive
+  - id: icon.skill.spellblade.runic_edge
+  - id: icon.skill.spellblade.sunder_sigil
+  - id: icon.skill.spellblade.balance_point
+  - id: icon.skill.spellblade.flux_reversal
+  - id: icon.skill.spellblade.blink_strike
+  - id: icon.skill.spellblade.counter_seal
   - id: icon.monster.bandit.captain
   - id: prop.alarm_bonfire
   - id: prop.armory_gate
