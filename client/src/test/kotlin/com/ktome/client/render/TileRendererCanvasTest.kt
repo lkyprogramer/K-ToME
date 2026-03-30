@@ -17,6 +17,7 @@ import com.ktome.core.snapshot.CombatFeedbackTypeSnapshot
 import com.ktome.core.snapshot.DescriptionModelSnapshot
 import com.ktome.core.snapshot.DescriptionValueSnapshot
 import com.ktome.core.snapshot.GridPointSnapshot
+import com.ktome.core.snapshot.InventoryEntrySnapshot
 import com.ktome.core.snapshot.ItemRenderSnapshot
 import com.ktome.core.snapshot.MapCellSnapshot
 import com.ktome.core.snapshot.OverlayRenderSnapshot
@@ -585,7 +586,7 @@ class TileRendererCanvasTest {
         assertTrue(model.sidebar.rows.any { row -> row.text == "Reserve Talents" })
         assertTrue(model.sidebar.rows.any { row -> row.text.contains("Charge 1/5") })
         assertTrue(model.sidebar.rows.any { row -> row.text.contains("Rush a foe from 1 to 3 tiles away for 120% Damage.") })
-        assertTrue(model.sidebar.rows.any { row -> row.text == "1-4 choose slot  W/X move reserve  E equip  L/Esc close" })
+        assertTrue(model.sidebar.rows.any { row -> row.text == "1-4 choose slot  W/X move reserve  E equip  F close" })
     }
 
     @Test
@@ -715,6 +716,54 @@ class TileRendererCanvasTest {
         assertTrue(model.sidebar.rows.any { row -> row.text == "Rare Mithril Short Sword" })
     }
 
+    @Test
+    fun `inventory sidebar localizes off hand slot and monster tag labels in chinese`() {
+        val localizer = LocalizationBundle.load().translator(GameLocale.ZH_CN)
+        val item =
+            ItemRenderSnapshot(
+                baseItemId = "bandit_trophy",
+                nameKey = "item.bandit_trophy.name",
+                typeId = "ARMOR",
+                slotId = "OFF_HAND",
+                passiveDescriptions =
+                    listOf(
+                        RenderTextTokenSnapshot(
+                            key = "ui.inspect.passive.damage_vs_tag",
+                            arguments =
+                                listOf(
+                                    RenderTextArgumentSnapshot(name = "amount", value = "10"),
+                                    RenderTextArgumentSnapshot(name = "tag", valueKey = "monster.tag.undead"),
+                                ),
+                        ),
+                    ),
+            )
+
+        val model =
+            TileRenderer.buildRenderModel(
+                localizer = localizer,
+                visualResolver = sampleResolver(),
+                snapshot =
+                    sampleSnapshot(
+                        inventory =
+                            listOf(
+                                InventoryEntrySnapshot(
+                                    index = 0,
+                                    item = item,
+                                    equippedSlotId = "OFF_HAND",
+                                ),
+                            ),
+                    ),
+                overlayState = OverlayState(mode = UiMode.INVENTORY, inventorySelection = 0),
+            )
+
+        val sidebarTexts = model.sidebar.rows.map(TileTextRow::text)
+        assertTrue(sidebarTexts.contains("1. 强盗战利徽记 [副手]"))
+        assertTrue(sidebarTexts.contains("槽位 副手"))
+        assertTrue(sidebarTexts.contains("对亡灵额外造成 +10% 伤害"))
+        assertFalse(sidebarTexts.any { text -> "OFF_HAND" in text })
+        assertFalse(sidebarTexts.any { text -> "undead" in text })
+    }
+
     private fun sampleResolver(): VisualManifestResolver =
         VisualManifestResolver(
             manifest =
@@ -756,6 +805,7 @@ class TileRendererCanvasTest {
         playerStatusEffects: List<StatusEffectRenderSnapshot> = emptyList(),
         talents: List<TalentSlotSnapshot> = emptyList(),
         reserveTalents: List<TalentReserveSnapshot> = emptyList(),
+        inventory: List<InventoryEntrySnapshot> = emptyList(),
         logEvents: List<RenderLogEventSnapshot> = emptyList(),
         combatFeedbackEvents: List<CombatFeedbackSnapshot> = emptyList(),
     ): RenderSnapshot =
@@ -837,7 +887,7 @@ class TileRendererCanvasTest {
                     equipment = emptyList(),
                     talents = talents,
                     reserveTalents = reserveTalents,
-                    inventory = emptyList(),
+                    inventory = inventory,
                     targetablePositions = listOf(GridPointSnapshot(0, 0)),
                 ),
             logEvents = logEvents,

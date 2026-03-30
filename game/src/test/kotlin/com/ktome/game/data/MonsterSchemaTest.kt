@@ -60,6 +60,20 @@ class MonsterSchemaTest {
         assertTrue(schemaCatalog.monsters.count { monster -> "elite" in monster.tags || monster.lootProfileId.endsWith(".elite") } >= 11)
         assertTrue(schemaCatalog.monsters.count { monster -> "boss" !in monster.tags && "elite" !in monster.tags && !monster.lootProfileId.endsWith(".elite") } >= 45)
         assertTrue(schemaCatalog.monsters.count { monster -> monster.talents.isNotEmpty() } >= 16)
+        val basicProfileMonsterIds =
+            schemaCatalog.monsters
+                .filter { monster -> monster.aiProfileId in setOf("ai.chase.basic", "ai.kite.basic", "ai.patrol.basic") }
+                .map { monster -> monster.id }
+                .toSet()
+        assertTrue(
+            basicProfileMonsterIds.size <= 4,
+            "Basic AI tail must stay at <= 4 templates, actual=$basicProfileMonsterIds",
+        )
+        assertEquals(
+            setOf("beast.rat", "beast.rat_scavenger", "goblin.scout", "undead.restless_skeleton"),
+            basicProfileMonsterIds,
+            "Remaining basic AI templates must stay on tutorial or low-threat filler roles only.",
+        )
         assertTrue(setOf("beast", "bandit", "undead", "orc", "cultist", "goblin", "warded_ruin", "forge", "crystal", "river", "abyssal").all(familyTags::contains))
         setOf("bandit", "undead", "orc", "cultist", "goblin", "warded_ruin", "forge", "crystal", "river", "abyssal").forEach { family ->
             assertTrue(

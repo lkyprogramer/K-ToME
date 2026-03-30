@@ -78,6 +78,113 @@ aiProfiles:
         orderKey: 20
         condition:
           type: TARGET_VISIBLE
+  - id: ai.sentinel.rally
+    schemaVersion: 2
+    perceptionRange: 8
+    useLastKnownPosition: true
+    defaultBehavior: PATROL
+    selectionPolicy: DETERMINISTIC_PRIORITY
+    actions:
+      - id: rally
+        type: USE_ABILITY
+        orderKey: 10
+        abilityId: war_cry
+        condition:
+          type: AND
+          conditions:
+            - type: TARGET_VISIBLE
+            - type: TALENT_READY
+              talentId: war_cry
+            - type: NOT
+              condition:
+                type: HAS_STATUS
+                scope: SELF
+                statusId: war_cry_empower
+      - id: strike
+        type: ATTACK_TARGET
+        orderKey: 20
+        condition:
+          type: TARGET_DISTANCE_LESS_THAN
+          distance: 2
+      - id: guard_line
+        type: MOVE_TOWARD_TARGET
+        orderKey: 30
+        condition:
+          type: TARGET_VISIBLE
+  - id: ai.artillery.volley
+    schemaVersion: 2
+    perceptionRange: 9
+    useLastKnownPosition: true
+    defaultBehavior: KITE
+    selectionPolicy: DETERMINISTIC_PRIORITY
+    actions:
+      - id: suppressive_volley
+        type: USE_ABILITY
+        orderKey: 10
+        abilityId: ricochet_knives
+        condition:
+          type: AND
+          conditions:
+            - type: TARGET_DISTANCE_BETWEEN
+              minDistance: 2
+              maxDistance: 4
+            - type: TALENT_READY
+              talentId: ricochet_knives
+      - id: cut_down
+        type: USE_ABILITY
+        orderKey: 20
+        abilityId: eviscerate
+        condition:
+          type: AND
+          conditions:
+            - type: HP_BELOW
+              threshold: 0.7
+            - type: TARGET_DISTANCE_LESS_THAN
+              distance: 2
+            - type: TALENT_READY
+              talentId: eviscerate
+      - id: retreat
+        type: RETREAT_FROM_TARGET
+        orderKey: 30
+        condition:
+          type: TARGET_DISTANCE_LESS_THAN
+          distance: 2
+      - id: pressure
+        type: MOVE_TOWARD_TARGET
+        orderKey: 40
+        condition:
+          type: TARGET_VISIBLE
+  - id: ai.brute.breaker
+    schemaVersion: 2
+    perceptionRange: 8
+    useLastKnownPosition: true
+    defaultBehavior: CHASE
+    selectionPolicy: DETERMINISTIC_PRIORITY
+    actions:
+      - id: strike
+        type: ATTACK_TARGET
+        orderKey: 10
+        condition:
+          type: TARGET_DISTANCE_LESS_THAN
+          distance: 2
+      - id: linebreaker
+        type: USE_ABILITY
+        orderKey: 20
+        abilityId: linebreaker
+        condition:
+          type: AND
+          conditions:
+            - type: HP_BELOW
+              threshold: 0.75
+            - type: TARGET_DISTANCE_LESS_THAN
+              distance: 2
+            - type: TALENT_READY
+              talentId: linebreaker
+      - id: advance
+        type: MOVE_TOWARD_TARGET
+        orderKey: 30
+        condition:
+          type: TARGET_VISIBLE
   - id: ai.skirmisher.flank
     schemaVersion: 2
     perceptionRange: 8

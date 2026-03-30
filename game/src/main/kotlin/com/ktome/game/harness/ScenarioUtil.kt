@@ -309,6 +309,7 @@ fun PlayerCommand.consumesTurn(): Boolean =
         -> true
 
         PlayerCommand.CloseShop,
+        is PlayerCommand.DropInventoryItem,
         is PlayerCommand.BuyShopOffer,
         is PlayerCommand.SellInventoryItem,
         is PlayerCommand.SelectRoute,

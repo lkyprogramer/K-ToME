@@ -61,6 +61,7 @@ import com.ktome.core.resource.ResourceType
 import com.ktome.core.profile.MilestoneRewardSummary
 import com.ktome.core.save.AIBehaviorSnapshot
 import com.ktome.core.save.AIPerceptionSnapshot
+import com.ktome.core.save.AmbushLaneTriggerSnapshot
 import com.ktome.core.save.AiTriggerTrackerSnapshot
 import com.ktome.core.save.ActiveEffectSnapshot
 import com.ktome.core.save.AreaEffectEmitterSnapshot
@@ -70,6 +71,7 @@ import com.ktome.core.save.EntitySnapshot
 import com.ktome.core.save.EquipmentSnapshot
 import com.ktome.core.save.ExperienceSnapshot
 import com.ktome.core.save.FloorSnapshot
+import com.ktome.core.save.FurnacePressureStateSnapshot
 import com.ktome.core.save.InscriptionLoadoutSnapshot
 import com.ktome.core.save.InscriptionSlotSaveSnapshot
 import com.ktome.core.save.InventorySnapshot
@@ -78,6 +80,7 @@ import com.ktome.core.save.ItemSnapshot
 import com.ktome.core.save.MapSnapshot
 import com.ktome.core.save.PendingTelegraphSnapshot
 import com.ktome.core.save.PatrolRouteSnapshot
+import com.ktome.core.save.PatrolPressureStateSnapshot
 import com.ktome.core.save.PlayerSnapshot
 import com.ktome.core.save.PointSnapshot
 import com.ktome.core.save.SaveSnapshot
@@ -386,6 +389,40 @@ internal object SessionSnapshotMapper {
                         phaseTurnCount = bossState.phaseTurnCount,
                     )
                 },
+            patrolPressureState =
+                world.get<PatrolPressureRuntimeState>(entityId)?.let { state ->
+                    PatrolPressureStateSnapshot(
+                        spawnTemplateIds = state.spawnTemplateIds.toList(),
+                        maxHostiles = state.maxHostiles,
+                        waveLimit = state.waveLimit,
+                        checkIntervalTurns = state.checkIntervalTurns,
+                        spawnSeed = state.spawnSeed,
+                        nextCheckHeadlessTurn = state.nextCheckHeadlessTurn,
+                        wavesSpawned = state.wavesSpawned,
+                        floorHintShown = state.floorHintShown,
+                    )
+                },
+            ambushLaneTrigger =
+                world.get<AmbushLaneTriggerState>(entityId)?.let { state ->
+                    AmbushLaneTriggerSnapshot(
+                        triggerId = state.triggerId,
+                        spawnTemplateIds = state.spawnTemplateIds.toList(),
+                        spawnPoints = state.spawnPoints.map(PointSnapshot::from),
+                    )
+                },
+            furnacePressureState =
+                world.get<FurnacePressureRuntimeState>(entityId)?.let { state ->
+                    FurnacePressureStateSnapshot(
+                        hazardCells = state.hazardCells.map(PointSnapshot::from),
+                        cycleIntervalTurns = state.cycleIntervalTurns,
+                        telegraphTurns = state.telegraphTurns,
+                        activeTurns = state.activeTurns,
+                        damagePerTick = state.damagePerTick,
+                        nextCycleTurn = state.nextCycleTurn,
+                        phase = state.phase.name,
+                        phaseTurnsRemaining = state.phaseTurnsRemaining,
+                    )
+                },
             resourcePools =
                 world.get<ResourcePools>(entityId)?.entries
                     ?.values
@@ -539,6 +576,46 @@ internal object SessionSnapshotMapper {
                 ),
             )
         }
+        snapshot.patrolPressureState?.let { state ->
+            world.add(
+                entityId,
+                PatrolPressureRuntimeState(
+                    spawnTemplateIds = state.spawnTemplateIds,
+                    maxHostiles = state.maxHostiles,
+                    waveLimit = state.waveLimit,
+                    checkIntervalTurns = state.checkIntervalTurns,
+                    spawnSeed = state.spawnSeed,
+                    nextCheckHeadlessTurn = state.nextCheckHeadlessTurn,
+                    wavesSpawned = state.wavesSpawned,
+                    floorHintShown = state.floorHintShown,
+                ),
+            )
+        }
+        snapshot.ambushLaneTrigger?.let { state ->
+            world.add(
+                entityId,
+                AmbushLaneTriggerState(
+                    triggerId = state.triggerId,
+                    spawnTemplateIds = state.spawnTemplateIds,
+                    spawnPoints = state.spawnPoints.map(PointSnapshot::toPoint),
+                ),
+            )
+        }
+        snapshot.furnacePressureState?.let { state ->
+            world.add(
+                entityId,
+                FurnacePressureRuntimeState(
+                    hazardCells = state.hazardCells.map(PointSnapshot::toPoint),
+                    cycleIntervalTurns = state.cycleIntervalTurns,
+                    telegraphTurns = state.telegraphTurns,
+                    activeTurns = state.activeTurns,
+                    damagePerTick = state.damagePerTick,
+                    nextCycleTurn = state.nextCycleTurn,
+                    phase = parseEnumFromSave<FurnacePressurePhase>(state.phase, "furnace pressure phase"),
+                    phaseTurnsRemaining = state.phaseTurnsRemaining,
+                ),
+            )
+        }
         if (snapshot.resourcePools.isNotEmpty()) {
             world.add(
                 entityId,
@@ -652,6 +729,9 @@ internal object SessionSnapshotMapper {
         val talentAllocationDraft = snapshot.talentAllocationDraft
         val aiTriggerTracker = snapshot.aiTriggerTracker
         val inscriptionLoadout = snapshot.inscriptionLoadout
+        val patrolPressureState = snapshot.patrolPressureState
+        val ambushLaneTrigger = snapshot.ambushLaneTrigger
+        val furnacePressureState = snapshot.furnacePressureState
 
         return snapshot.copy(
             position = snapshot.position?.copy(),
@@ -690,6 +770,19 @@ internal object SessionSnapshotMapper {
                     )
                 },
             bossEncounterState = snapshot.bossEncounterState?.copy(),
+            patrolPressureState =
+                patrolPressureState?.copy(
+                    spawnTemplateIds = patrolPressureState.spawnTemplateIds.toList(),
+                ),
+            ambushLaneTrigger =
+                ambushLaneTrigger?.copy(
+                    spawnTemplateIds = ambushLaneTrigger.spawnTemplateIds.toList(),
+                    spawnPoints = ambushLaneTrigger.spawnPoints.map { point -> point.copy() },
+                ),
+            furnacePressureState =
+                furnacePressureState?.copy(
+                    hazardCells = furnacePressureState.hazardCells.map { point -> point.copy() },
+                ),
             resourcePools = snapshot.resourcePools.sortedBy(ResourcePoolSnapshot::type),
             inscriptionLoadout =
                 inscriptionLoadout?.copy(

@@ -196,10 +196,15 @@ class SmokeBot : RunBot {
         val bossVisible = observation.visibleBossPositions.isNotEmpty()
         val bossClose = observation.visibleBossPositions.any { boss -> boss.chebyshevDistanceTo(observation.playerPosition) <= 3 }
         val earlyBossPressure = observation.zoneId == "shattered_outpost" && observation.floor >= 2 && bossVisible
-        val lowHealthThreshold = if (bossVisible) 80 else 65
+        val lowHealthThreshold =
+            when (observation.playerResource.typeId) {
+                "ENERGY" -> if (bossVisible) 40 else 55
+                else -> if (bossVisible) 80 else 65
+            }
         val lowHealth = observation.playerStatus.currentHp * 100 <= observation.playerStatus.maxHp * lowHealthThreshold
         val criticalHealthThreshold =
             when (observation.playerResource.typeId) {
+                "ENERGY" -> if (bossVisible) 28 else 35
                 "MANA" -> if (bossVisible) 55 else 45
                 else -> if (bossVisible) 65 else 50
             }
@@ -301,7 +306,7 @@ class SmokeBot : RunBot {
             lowHealth ||
                 adjacentHostiles > 0 ||
                 nearbyHostiles >= 2 ||
-                earlyBossPressure ||
+                (earlyBossPressure && observation.playerResource.typeId != "ENERGY") ||
                 (bossVisible && observation.playerResource.typeId == "POSITIVE_ENERGY")
         if (proactiveDefensePressure) {
             availableTalent(observation, "dwarf_forge_heart")
@@ -328,7 +333,7 @@ class SmokeBot : RunBot {
             availableTalent(observation, "guard_stance")
                 ?.takeUnless { hasPlayerStatus(observation, "GUARD_STANCE_BUFF") }
                 ?.let { slot -> return PlayerCommand.UseTalent(slot.slot) }
-            if (lowHealth || nearbyHostiles >= 2 || earlyBossPressure) {
+            if (lowHealth || nearbyHostiles >= 2 || (earlyBossPressure && observation.playerResource.typeId != "ENERGY")) {
                 availableTalent(observation, "stealth")
                     ?.takeUnless { hasPlayerStatus(observation, "STEALTH") }
                     ?.let { slot -> return PlayerCommand.UseTalent(slot.slot) }
@@ -363,10 +368,21 @@ class SmokeBot : RunBot {
         val adjacentHostiles = hostilesWithin(observation, 1)
         val nearbyHostiles = hostilesWithin(observation, 3)
         val bossVisible = observation.visibleBossPositions.isNotEmpty()
+        val bossClose = observation.visibleBossPositions.any { boss -> boss.chebyshevDistanceTo(observation.playerPosition) <= 3 }
         val earlyBossPressure = observation.zoneId == "shattered_outpost" && observation.floor >= 2 && bossVisible
         val lowMana = observation.playerResource.typeId == "MANA" && observation.playerResource.current * 100 <= observation.playerResource.max * 50
-        val lowHealthThreshold = if (bossVisible) 80 else 65
+        val lowHealthThreshold =
+            when (observation.playerResource.typeId) {
+                "ENERGY" -> if (bossVisible) 40 else 55
+                else -> if (bossVisible) 80 else 65
+            }
         val lowHealth = observation.playerStatus.currentHp * 100 <= observation.playerStatus.maxHp * lowHealthThreshold
+        val criticalHealthThreshold =
+            when (observation.playerResource.typeId) {
+                "ENERGY" -> if (bossVisible) 28 else 35
+                else -> if (bossVisible) 65 else 50
+            }
+        val criticalHealth = observation.playerStatus.currentHp * 100 <= observation.playerStatus.maxHp * criticalHealthThreshold
 
         if (nearbyHostiles >= 2) {
             availableTalent(observation, "smoke_bomb")?.let { slot -> return PlayerCommand.UseTalent(slot.slot) }
@@ -382,7 +398,7 @@ class SmokeBot : RunBot {
             lowHealth ||
                 adjacentHostiles > 0 ||
                 nearbyHostiles >= 2 ||
-                earlyBossPressure ||
+                (earlyBossPressure && observation.playerResource.typeId != "ENERGY") ||
                 (bossVisible && observation.playerResource.typeId == "POSITIVE_ENERGY")
         if (proactiveDefensePressure) {
             availableTalent(observation, "dwarf_forge_heart")
@@ -405,7 +421,7 @@ class SmokeBot : RunBot {
                     ?.takeUnless { hasPlayerStatus(observation, "DEVOTION_BUFF") }
                     ?.let { slot -> return PlayerCommand.UseTalent(slot.slot) }
             }
-            if (lowHealth || nearbyHostiles >= 2 || earlyBossPressure) {
+            if (lowHealth || nearbyHostiles >= 2 || (earlyBossPressure && observation.playerResource.typeId != "ENERGY")) {
                 availableTalent(observation, "stealth")
                     ?.takeUnless { hasPlayerStatus(observation, "STEALTH") }
                     ?.let { slot -> return PlayerCommand.UseTalent(slot.slot) }
@@ -432,6 +448,9 @@ class SmokeBot : RunBot {
                 return PlayerCommand.UseTalent(slot.slot, clusterTarget)
             }
         }
+        if (observation.playerResource.typeId == "ENERGY" && criticalHealth && bossVisible) {
+            return null
+        }
 
         offensiveTalentOrder(observation).forEach { talentId ->
             val slot = availableTalent(observation, talentId) ?: return@forEach
@@ -452,16 +471,41 @@ class SmokeBot : RunBot {
         val pursuingBoss =
             hostile in observation.visibleBossPositions ||
                 (rememberedThreat != null && hostile == rememberedThreat && lastThreatWasBoss)
-        val hasOffensiveTalent = offensiveTalentOrder(observation).any { talentId -> availableTalent(observation, talentId) != null }
-        val lowHealth = observation.playerStatus.currentHp * 100 <= observation.playerStatus.maxHp * 65
+        if (
+            rememberedThreat != null &&
+            hostile == rememberedThreat &&
+            !pursuingBoss &&
+            shouldAbandonRememberedThreat(observation)
+        ) {
+            lastThreatPosition = null
+            lastThreatWasBoss = false
+            return null
+        }
         val adjacentHostiles = hostilesWithin(observation, 1)
         val nearbyHostiles = hostilesWithin(observation, 3)
         val bossVisible = observation.visibleBossPositions.isNotEmpty()
+        val lowHealthThreshold =
+            when (observation.playerResource.typeId) {
+                "ENERGY" -> if (bossVisible) 40 else 55
+                else -> 65
+            }
+        val hasOffensiveTalent = offensiveTalentOrder(observation).any { talentId -> availableTalent(observation, talentId) != null }
+        val lowHealth = observation.playerStatus.currentHp * 100 <= observation.playerStatus.maxHp * lowHealthThreshold
+        val criticalHealthThreshold =
+            when (observation.playerResource.typeId) {
+                "ENERGY" -> if (bossVisible) 28 else 35
+                else -> 50
+            }
+        val criticalHealth = observation.playerStatus.currentHp * 100 <= observation.playerStatus.maxHp * criticalHealthThreshold
+        val isolatedBossPressure = bossVisible && adjacentHostiles == 0 && nearbyHostiles == 1
         val shouldRetreat =
             when (observation.playerResource.typeId) {
                 "MANA" -> lowHealth && distance <= 2
                 "POSITIVE_ENERGY" -> lowHealth && distance <= 2 && nearbyHostiles >= 2
-                "ENERGY" -> lowHealth && adjacentHostiles > 0 && nearbyHostiles >= 2
+                "ENERGY" -> {
+                    val retreatHealth = if (isolatedBossPressure) criticalHealth else lowHealth
+                    retreatHealth && (adjacentHostiles > 0 || nearbyHostiles >= 2)
+                }
                 else -> false
             }
         if (shouldRetreat) {
@@ -587,8 +631,27 @@ class SmokeBot : RunBot {
                         .thenByDescending { it.x },
                 )
                 .toList()
+        val loopBreakCandidates =
+            if (recentLoopDetected()) {
+                val recentSet = recentPositions.toSet()
+                observation.map.floorPoints()
+                    .asSequence()
+                    .filter { point ->
+                        point != observation.playerPosition &&
+                            !observation.map.blocksMovement(point.x, point.y) &&
+                            point !in recentSet
+                    }.sortedWith(
+                        compareByDescending<Point> { point -> point.chebyshevDistanceTo(observation.playerPosition) }
+                            .thenByDescending { point -> adjacentUnexploredCount(observation, point) }
+                            .thenBy(Point::y)
+                            .thenBy(Point::x),
+                    ).toList()
+            } else {
+                emptyList()
+            }
         val explorationTarget =
-            firstReachableTarget(observation, roomCenterCandidates, avoidImmediateBacktrack = true)
+            firstReachableTarget(observation, loopBreakCandidates, avoidImmediateBacktrack = true)
+                ?: firstReachableTarget(observation, roomCenterCandidates, avoidImmediateBacktrack = true)
                 ?: firstReachableTarget(observation, frontierCandidates, avoidImmediateBacktrack = true)
                 ?: firstReachableTarget(observation, unexploredCandidates, avoidImmediateBacktrack = true)
                 ?: firstReachableTarget(observation, patrolCandidates, avoidImmediateBacktrack = true)
@@ -703,6 +766,18 @@ class SmokeBot : RunBot {
     ): Boolean =
         !lastThreatWasBoss ||
             observation.playerPosition.chebyshevDistanceTo(remembered) <= BOSS_MEMORY_CONFIRM_RADIUS
+
+    private fun shouldAbandonRememberedThreat(observation: RunObservation): Boolean {
+        if (lastThreatWasBoss || observation.visibleHostilePositions.isNotEmpty()) {
+            return false
+        }
+        return recentLoopDetected()
+    }
+
+    private fun recentLoopDetected(): Boolean {
+        val recentTail = recentPositions.toList().takeLast(8)
+        return recentTail.size >= 8 && recentTail.distinct().size <= 4
+    }
 
     private fun recentVisitCount(position: Point): Int = recentPositions.count { recent -> recent == position }
 

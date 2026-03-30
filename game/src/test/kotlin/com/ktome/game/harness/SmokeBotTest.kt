@@ -445,6 +445,52 @@ class SmokeBotTest {
     }
 
     @Test
+    fun `low health rogue retreats from adjacent boss even when it is the only nearby threat`() {
+        val observation =
+            observation(
+                inventoryItems = emptyList(),
+                playerStatus = healthyStatus().copy(currentHp = 18, maxHp = 100),
+                playerResource = PlayerResourceView(current = 20, max = 20, typeId = "ENERGY"),
+                map = corridorMap,
+                playerPosition = Point(3, 0),
+                visibleHostilePositions = listOf(Point(4, 0)),
+                visibleBossPositions = listOf(Point(4, 0)),
+                visibleTiles = corridorMap.floorPoints().toSet(),
+                exploredTiles = corridorMap.floorPoints().toSet(),
+                knownDownstairsPositions = listOf(Point(0, 0)),
+                talentSlots =
+                    listOf(
+                        talentSlot(slot = 1, talentId = "backstab", resourceTypeId = "ENERGY", resourceCost = 8, range = 1, requiresTarget = true),
+                    ),
+            )
+
+        assertEquals(PlayerCommand.Move(Point(-1, 0)), bot.decide(observation))
+    }
+
+    @Test
+    fun `moderately low health rogue keeps pressure on an isolated boss instead of kiting at range three`() {
+        val observation =
+            observation(
+                inventoryItems = emptyList(),
+                playerStatus = healthyStatus().copy(currentHp = 38, maxHp = 100),
+                playerResource = PlayerResourceView(current = 20, max = 20, typeId = "ENERGY"),
+                map = longCorridorMap,
+                playerPosition = Point(4, 0),
+                visibleHostilePositions = listOf(Point(7, 0)),
+                visibleBossPositions = listOf(Point(7, 0)),
+                visibleTiles = longCorridorMap.floorPoints().toSet(),
+                exploredTiles = longCorridorMap.floorPoints().toSet(),
+                knownDownstairsPositions = listOf(Point(0, 0)),
+                talentSlots =
+                    listOf(
+                        talentSlot(slot = 1, talentId = "backstab", resourceTypeId = "ENERGY", resourceCost = 8, range = 1, requiresTarget = true),
+                    ),
+            )
+
+        assertEquals(PlayerCommand.Move(Point(1, 0)), bot.decide(observation))
+    }
+
+    @Test
     fun `visible boss without hostile snapshot is still pursued`() {
         val observation =
             observation(
@@ -995,6 +1041,60 @@ class SmokeBotTest {
             )
 
         assertEquals(PlayerCommand.Move(Point(-1, 0)), bot.decide(searchedObservation))
+    }
+
+    @Test
+    fun `non boss remembered threat is dropped after repeated navigation loops`() {
+        val pursuitTalents =
+            listOf(
+                talentSlot(slot = 1, talentId = "power_strike", resourceTypeId = "STAMINA", resourceCost = 8, range = 1, requiresTarget = true),
+            )
+        val initialObservation =
+            observation(
+                inventoryItems = emptyList(),
+                playerStatus = healthyStatus(),
+                playerResource = PlayerResourceView(current = 20, max = 20, typeId = "STAMINA"),
+                map = longCorridorMap,
+                playerPosition = Point(4, 0),
+                visibleHostilePositions = listOf(Point(8, 0)),
+                visibleTiles = longCorridorMap.floorPoints().toSet(),
+                exploredTiles = longCorridorMap.floorPoints().toSet(),
+                knownDownstairsPositions = listOf(Point(0, 0)),
+                talentSlots = pursuitTalents,
+            )
+        assertEquals(PlayerCommand.Move(Point(1, 0)), bot.decide(initialObservation))
+
+        val loopPositions = listOf(Point(5, 0), Point(4, 0), Point(5, 0), Point(4, 0), Point(5, 0), Point(4, 0), Point(5, 0))
+        loopPositions.dropLast(1).forEach { position ->
+            bot.decide(
+                observation(
+                    inventoryItems = emptyList(),
+                    playerStatus = healthyStatus(),
+                    playerResource = PlayerResourceView(current = 20, max = 20, typeId = "STAMINA"),
+                    map = longCorridorMap,
+                    playerPosition = position,
+                    visibleTiles = longCorridorMap.floorPoints().toSet(),
+                    exploredTiles = longCorridorMap.floorPoints().toSet(),
+                    knownDownstairsPositions = listOf(Point(0, 0)),
+                    talentSlots = pursuitTalents,
+                ),
+            )
+        }
+
+        val releaseObservation =
+            observation(
+                inventoryItems = emptyList(),
+                playerStatus = healthyStatus(),
+                playerResource = PlayerResourceView(current = 20, max = 20, typeId = "STAMINA"),
+                map = longCorridorMap,
+                playerPosition = loopPositions.last(),
+                visibleTiles = longCorridorMap.floorPoints().toSet(),
+                exploredTiles = longCorridorMap.floorPoints().toSet(),
+                knownDownstairsPositions = listOf(Point(0, 0)),
+                talentSlots = pursuitTalents,
+            )
+
+        assertEquals(PlayerCommand.Move(Point(-1, 0)), bot.decide(releaseObservation))
     }
 
     private fun observation(

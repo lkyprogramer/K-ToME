@@ -174,7 +174,7 @@ internal object AsciiRenderModelBuilder {
         lines += AsciiTextLine(localizer.text("ui.sidebar.equipment"), AsciiTextTone.GOLD)
         snapshot.uiState.equipment.forEach { equipment ->
             val itemName = equipment.item?.let { item -> renderItemDisplay(localizer, item) } ?: "-"
-            lines += AsciiTextLine("${slotLabel(localizer, equipment.slotId)}: $itemName", AsciiTextTone.WHITE)
+            lines += AsciiTextLine("${equipmentSlotLabel(localizer, equipment.slotId)}: $itemName", AsciiTextTone.WHITE)
         }
 
         lines += blankLine()
@@ -304,7 +304,7 @@ internal object AsciiRenderModelBuilder {
                 lines += blankLine()
                 lines += AsciiTextLine(AsciiRenderer.sidebarTitle(localizer, UiMode.INVENTORY), AsciiTextTone.GOLD)
                 snapshot.uiState.inventory.forEach { item ->
-                    val equipped = item.equippedSlotId?.let { slotId -> " [${slotLabel(localizer, slotId)}]" } ?: ""
+                    val equipped = item.equippedSlotId?.let { slotId -> " [${equipmentSlotLabel(localizer, slotId)}]" } ?: ""
                     lines += AsciiTextLine(
                         "${item.index + 1}. ${renderItemDisplay(localizer, item.item)}$equipped",
                         if (item.index == overlayState.inventorySelection) AsciiTextTone.CYAN else AsciiTextTone.WHITE,
@@ -787,7 +787,7 @@ internal object AsciiRenderModelBuilder {
     ): List<String> =
         buildList {
             item.slotId?.let { slotId ->
-                add(localizer.text("ui.inspect.slot", "slot" to slotLabel(localizer, slotId)))
+                add(localizer.text("ui.inspect.slot", "slot" to equipmentSlotLabel(localizer, slotId)))
             }
             item.qualityNameKey?.let { qualityNameKey ->
                 add(localizer.text("ui.inspect.quality", "quality" to localizer.text(qualityNameKey)))
@@ -879,16 +879,6 @@ internal object AsciiRenderModelBuilder {
             CellVisibilitySnapshot.VISIBLE -> localizer.text("ui.inspect.visible")
             CellVisibilitySnapshot.EXPLORED -> localizer.text("ui.inspect.explored")
             CellVisibilitySnapshot.HIDDEN -> localizer.text("ui.inspect.hidden")
-        }
-
-    private fun slotLabel(
-        localizer: Localizer,
-        slotId: String,
-    ): String =
-        when (slotId) {
-            "WEAPON" -> localizer.text("ui.sidebar.weapon")
-            "ARMOR" -> localizer.text("ui.sidebar.armor")
-            else -> slotId
         }
 
     private fun blankLine(): AsciiTextLine = AsciiTextLine("", AsciiTextTone.WHITE)

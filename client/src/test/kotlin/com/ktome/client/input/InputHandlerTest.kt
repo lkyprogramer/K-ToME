@@ -8,7 +8,9 @@ import com.ktome.core.ecs.get
 import com.ktome.core.map.Point
 import com.ktome.core.save.SaveManager
 import com.ktome.core.snapshot.CellVisibilitySnapshot
+import com.ktome.core.snapshot.InventoryEntrySnapshot
 import com.ktome.core.snapshot.InscriptionSlotSnapshot
+import com.ktome.core.snapshot.ItemRenderSnapshot
 import com.ktome.core.snapshot.MapCellSnapshot
 import com.ktome.core.snapshot.PlayerStatusSnapshot
 import com.ktome.core.snapshot.PropRenderSnapshot
@@ -199,7 +201,7 @@ class InputHandlerTest {
         assertEquals(UiMode.LOADOUT_EDIT, handler.overlayState().mode)
         input.clear()
 
-        input.frame(justPressed = setOf(Keys.ESCAPE))
+        input.frame(justPressed = setOf(Keys.F))
         assertNull(handler.pollCommand(snapshot))
         assertEquals(UiMode.MAP, handler.overlayState().mode)
 
@@ -235,6 +237,45 @@ class InputHandlerTest {
             ),
             handler.pollCommand(snapshot),
         )
+    }
+
+    @Test
+    fun `inventory mode maps drop command and closes with f instead of escape`() {
+        val input = ReplayInputSource()
+        val handler = InputHandler(input)
+        val snapshot =
+            snapshotWithLoadout(
+                inventory =
+                    listOf(
+                        InventoryEntrySnapshot(
+                            index = 0,
+                            item = ItemRenderSnapshot(baseItemId = "long_sword", nameKey = "item.long_sword.name", typeId = "WEAPON"),
+                        ),
+                        InventoryEntrySnapshot(
+                            index = 1,
+                            item = ItemRenderSnapshot(baseItemId = "healing_potion", nameKey = "item.healing_potion.name", typeId = "CONSUMABLE"),
+                        ),
+                    ),
+            )
+
+        input.frame(justPressed = setOf(Keys.I))
+        assertNull(handler.pollCommand(snapshot))
+        assertEquals(UiMode.INVENTORY, handler.overlayState().mode)
+        input.clear()
+
+        input.frame(justPressed = setOf(Keys.D))
+        assertEquals(PlayerCommand.DropInventoryItem(0), handler.pollCommand(snapshot))
+        assertEquals(UiMode.INVENTORY, handler.overlayState().mode)
+        input.clear()
+
+        input.frame(justPressed = setOf(Keys.ESCAPE))
+        assertNull(handler.pollCommand(snapshot))
+        assertEquals(UiMode.INVENTORY, handler.overlayState().mode)
+        input.clear()
+
+        input.frame(justPressed = setOf(Keys.F))
+        assertNull(handler.pollCommand(snapshot))
+        assertEquals(UiMode.MAP, handler.overlayState().mode)
     }
 
     @Test
@@ -494,6 +535,7 @@ class InputHandlerTest {
         talentPoints: Int = 0,
         reserveTalents: List<TalentReserveSnapshot> = emptyList(),
         inscriptions: List<InscriptionSlotSnapshot> = emptyList(),
+        inventory: List<InventoryEntrySnapshot> = emptyList(),
     ): RenderSnapshot =
         RenderSnapshot(
             metadata =
@@ -553,7 +595,7 @@ class InputHandlerTest {
                         ),
                     reserveTalents = reserveTalents,
                     inscriptions = inscriptions,
-                    inventory = emptyList(),
+                    inventory = inventory,
                     targetablePositions = emptyList(),
                 ),
         )

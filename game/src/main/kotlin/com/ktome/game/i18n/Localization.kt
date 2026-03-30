@@ -40,8 +40,7 @@ class LocalizationBundle private constructor(
 
         fun load(
             resourceLoader: (String) -> String = { path ->
-                LocalizationBundle::class.java.getResource(path)?.readText()
-                    ?: error("Localization resource not found: $path")
+                ClasspathTextResources.read(LocalizationBundle::class.java, path)
             },
         ): LocalizationBundle =
             LocalizationBundle(

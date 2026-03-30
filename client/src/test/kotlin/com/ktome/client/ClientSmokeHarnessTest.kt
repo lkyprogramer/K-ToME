@@ -292,7 +292,7 @@ class ClientSmokeHarnessTest {
     @Tag("clientSmoke")
     fun `client smoke covers audio enabled formal path`() {
         withLwjgl3Gdx(enableAudio = true) {
-            val smokeSource = SmokeCommandSource(overlayInput = ScriptedInputSource(Keys.L, Keys.ESCAPE, Keys.I, Keys.DOWN, Keys.ESCAPE, Keys.X, Keys.ESCAPE))
+            val smokeSource = SmokeCommandSource(overlayInput = ScriptedInputSource(Keys.L, Keys.F, Keys.I, Keys.DOWN, Keys.F, Keys.X, Keys.F))
             val audioHarness = RecordingAudioHarness.withGdxDelegates()
             val app =
                 GameApp(
@@ -438,8 +438,7 @@ class ClientSmokeHarnessTest {
             val initialSession = awaitActiveSession(app)
             initialSession?.let(::installProfessionReserveTalent)
             val initialUi = initialSession?.let { session -> captureUiSnapshot(app, smokeSource, session) }
-            repeat(180) { app.render() }
-            val session = app.activeSessionOrNull()
+            val session = initialSession?.let { awaitStableGameplaySession(app, smokeSource) }
             val finalSnapshot = session?.renderSnapshot()
             val localeId = session?.localizer()?.locale?.id
             val zoneId = finalSnapshot?.metadata?.zoneId
@@ -486,8 +485,10 @@ class ClientSmokeHarnessTest {
                 inspectTitle = initialUi?.inspectTitle,
                 firstMessage = initialUi?.firstMessage,
                 failureReason =
-                    if (session == null) {
+                    if (initialSession == null) {
                         "Session was not created from main menu."
+                    } else if (session == null) {
+                        "Session did not remain active through the smoke gameplay window."
                     } else if (zoneId != FOUNDATION_ZONE_ID) {
                         "Expected zone $FOUNDATION_ZONE_ID, got $zoneId."
                     } else if (professionId != defaultConfig.playerProfessionId) {
@@ -576,17 +577,15 @@ class ClientSmokeHarnessTest {
             val initialLoaded = awaitActiveSession(app)
             initialLoaded?.let(::installProfessionReserveTalent)
             val initialUi = initialLoaded?.let { loadedSession -> captureUiSnapshot(app, smokeSource, loadedSession) }
-            repeat(180) { app.render() }
-            val loaded = app.activeSessionOrNull()
-            val observedSession = loaded ?: initialLoaded
-            val localeId = observedSession?.localizer()?.locale?.id
-            val finalSnapshot = observedSession?.renderSnapshot()
+            val loaded = initialLoaded?.let { awaitStableGameplaySession(app, smokeSource) }
+            val localeId = loaded?.localizer()?.locale?.id
+            val finalSnapshot = loaded?.renderSnapshot()
             val zoneId = finalSnapshot?.metadata?.zoneId
-            val professionId = observedSession?.config?.playerProfessionId
+            val professionId = loaded?.config?.playerProfessionId
             ClientSmokeReport(
                 name = name,
                 success =
-                    initialLoaded != null &&
+                    loaded != null &&
                         localeId == expectedLocale.id &&
                         zoneId == expectedZoneId &&
                         professionId == expectedProfessionId &&
@@ -610,8 +609,8 @@ class ClientSmokeHarnessTest {
                 localeId = localeId,
                 zoneId = zoneId,
                 professionId = professionId,
-                floorReached = observedSession?.currentFloor(),
-                turns = observedSession?.currentTurnCount(),
+                floorReached = loaded?.currentFloor(),
+                turns = loaded?.currentTurnCount(),
                 menuSubtitle = menuSnapshot.subtitle,
                 menuLanguage = menuSnapshot.language,
                 issuedCommands = smokeSource.issuedCommands,
@@ -627,6 +626,8 @@ class ClientSmokeHarnessTest {
                 failureReason =
                     if (initialLoaded == null) {
                         "Continue did not load a session."
+                    } else if (loaded == null) {
+                        "Continue session did not remain active through the smoke gameplay window."
                     } else if (localeId != expectedLocale.id) {
                         "Expected locale ${expectedLocale.id}, got $localeId."
                     } else if (zoneId != expectedZoneId) {
@@ -727,6 +728,26 @@ class ClientSmokeHarnessTest {
             enteredInventory = smokeSource.entered(UiMode.INVENTORY),
             enteredInspect = smokeSource.entered(UiMode.INSPECT),
         )
+    }
+
+    private fun awaitStableGameplaySession(
+        app: GameApp,
+        smokeSource: SmokeCommandSource,
+        frameBudget: Int = 40,
+        minimumConsumedCommands: Int = 12,
+    ): FoundationGameSession? {
+        repeat(frameBudget) {
+            val session = app.activeSessionOrNull() ?: return null
+            if (smokeSource.consumedCommands >= minimumConsumedCommands && smokeSource.overlayState().mode == UiMode.MAP) {
+                return session
+            }
+            app.render()
+        }
+        val session = app.activeSessionOrNull() ?: return null
+        return session.takeIf {
+            smokeSource.consumedCommands >= minimumConsumedCommands &&
+                smokeSource.overlayState().mode == UiMode.MAP
+        }
     }
 
     private fun assertRenderPath(
@@ -1121,7 +1142,7 @@ private class BotCommandSource(
 
 private class SmokeCommandSource(
     private val botSource: BotCommandSource = BotCommandSource(),
-    overlayInput: ScriptedInputSource = ScriptedInputSource(Keys.L, Keys.ESCAPE, Keys.I, Keys.ESCAPE, Keys.X, Keys.ESCAPE),
+    overlayInput: ScriptedInputSource = ScriptedInputSource(Keys.L, Keys.F, Keys.I, Keys.F, Keys.X, Keys.F),
 ) : CommandSource, AudioRouterAwareCommandSource {
     private val uiSource =
         InputHandlerCommandSource(

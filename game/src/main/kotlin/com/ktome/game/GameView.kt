@@ -30,6 +30,8 @@ sealed interface PlayerCommand {
 
     data class SellInventoryItem(val index: Int) : PlayerCommand
 
+    data class DropInventoryItem(val index: Int) : PlayerCommand
+
     data class SelectRoute(val index: Int) : PlayerCommand
 
     data class ActivateInventoryItem(val index: Int) : PlayerCommand

@@ -376,6 +376,7 @@ object GameModule {
         val affixBuildContext = professionAffixBuildContext(content.schemaCatalog, profession)
         val monsterRandom = Random(floorSeed(config.seed, floor, 0x63AF))
         val bossDefinition = if (floor == config.maxFloor) resolveBossDefinition(content, zone) else null
+        val zoneMonsterCatalog = resolveZoneMonsterCatalog(content, zone, floor)
         val stairsUp = if (floor > 1) map.playerStart else null
         val stairsDown =
             when {
@@ -410,20 +411,20 @@ object GameModule {
                 world = world,
                 map = map,
                 floor = floor,
-                catalog = resolveZoneMonsterCatalog(content, zone, floor),
+                catalog = zoneMonsterCatalog,
                 occupiedPoints = occupiedPoints,
                 random = monsterRandom,
                 desiredCount = zoneMonsterSpawnCount(zone, floor, map.rooms.size),
             )
-        spawnItems(
-            itemFactory = itemFactory,
-            itemGenerator = itemGenerator,
-            affixContext = affixBuildContext,
-            world = world,
-            map = map,
-            floor = floor,
-            occupiedPoints = occupiedPoints,
-        )
+            spawnItems(
+                itemFactory = itemFactory,
+                itemGenerator = itemGenerator,
+                affixContext = affixBuildContext,
+                world = world,
+                map = map,
+                floor = floor,
+                occupiedPoints = occupiedPoints,
+            )
         }
         createObjectiveInteractables(
             world = world,
@@ -444,6 +445,15 @@ object GameModule {
             content = content,
             occupiedPoints = occupiedPoints,
             stairsUp = stairsUp,
+        )
+        ZoneMechanicRuntime.installFloorRuntime(
+            config = config,
+            zone = zone,
+            floor = floor,
+            map = map,
+            world = world,
+            occupiedPoints = occupiedPoints,
+            catalog = zoneMonsterCatalog,
         )
 
         return FloorState(

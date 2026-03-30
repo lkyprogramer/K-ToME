@@ -109,7 +109,7 @@ data class SaveSnapshot(
 
     companion object {
         const val CURRENT_SCHEMA_VERSION: Int = 6
-        const val DEFAULT_BUILD_METADATA: String = "phase3-pr06-dev"
+        const val DEFAULT_BUILD_METADATA: String = "phase3-pr13-dev"
     }
 }
 
@@ -192,6 +192,9 @@ data class EntitySnapshot(
     val aiPerception: AIPerceptionSnapshot? = null,
     val pendingTelegraph: PendingTelegraphSnapshot? = null,
     val bossEncounterState: BossEncounterStateSnapshot? = null,
+    val patrolPressureState: PatrolPressureStateSnapshot? = null,
+    val ambushLaneTrigger: AmbushLaneTriggerSnapshot? = null,
+    val furnacePressureState: FurnacePressureStateSnapshot? = null,
     val resourcePools: List<ResourcePoolSnapshot> = emptyList(),
     val equilibriumLastAffinity: String? = null,
     val raceTalentPoints: Int? = null,
@@ -239,6 +242,9 @@ data class EntitySnapshot(
         aiPerception?.validateOrThrow()
         pendingTelegraph?.validateOrThrow()
         bossEncounterState?.validateOrThrow()
+        patrolPressureState?.validateOrThrow()
+        ambushLaneTrigger?.validateOrThrow()
+        furnacePressureState?.validateOrThrow()
         effects?.forEach(ActiveEffectSnapshot::validateOrThrow)
         areaEffectEmitter?.validateOrThrow()
         worldEffect?.validateOrThrow()
@@ -301,6 +307,65 @@ data class BossEncounterStateSnapshot(
         require(encounterId.isNotBlank()) { "Boss encounter id must not be blank." }
         require(encounterTurnCount >= 0) { "Boss encounter turn count must not be negative." }
         require(phaseTurnCount >= 0) { "Boss phase turn count must not be negative." }
+    }
+}
+
+@Serializable
+data class PatrolPressureStateSnapshot(
+    val spawnTemplateIds: List<String> = emptyList(),
+    val maxHostiles: Int,
+    val waveLimit: Int,
+    val checkIntervalTurns: Int,
+    val spawnSeed: Long,
+    val nextCheckHeadlessTurn: Int,
+    val wavesSpawned: Int = 0,
+    val floorHintShown: Boolean = false,
+) {
+    fun validateOrThrow() {
+        require(spawnTemplateIds.all(String::isNotBlank)) { "Patrol pressure spawn templates must not be blank." }
+        require(spawnTemplateIds.isNotEmpty()) { "Patrol pressure runtime must declare at least one spawn template." }
+        require(maxHostiles > 0) { "Patrol pressure maxHostiles must be positive." }
+        require(waveLimit > 0) { "Patrol pressure waveLimit must be positive." }
+        require(checkIntervalTurns > 0) { "Patrol pressure checkIntervalTurns must be positive." }
+        require(nextCheckHeadlessTurn >= 0) { "Patrol pressure nextCheckHeadlessTurn must not be negative." }
+        require(wavesSpawned >= 0) { "Patrol pressure wavesSpawned must not be negative." }
+    }
+}
+
+@Serializable
+data class AmbushLaneTriggerSnapshot(
+    val triggerId: String,
+    val spawnTemplateIds: List<String> = emptyList(),
+    val spawnPoints: List<PointSnapshot> = emptyList(),
+) {
+    fun validateOrThrow() {
+        require(triggerId.isNotBlank()) { "Ambush trigger id must not be blank." }
+        require(spawnTemplateIds.all(String::isNotBlank)) { "Ambush trigger spawn templates must not be blank." }
+        require(spawnTemplateIds.isNotEmpty()) { "Ambush trigger must declare at least one spawn template." }
+        require(spawnPoints.isNotEmpty()) { "Ambush trigger must declare at least one spawn point." }
+    }
+}
+
+@Serializable
+data class FurnacePressureStateSnapshot(
+    val hazardCells: List<PointSnapshot> = emptyList(),
+    val cycleIntervalTurns: Int,
+    val telegraphTurns: Int,
+    val activeTurns: Int,
+    val damagePerTick: Int,
+    val nextCycleTurn: Int,
+    val phase: String,
+    val phaseTurnsRemaining: Int = 0,
+) {
+    fun validateOrThrow() {
+        require(hazardCells.isNotEmpty()) { "Furnace pressure hazardCells must not be empty." }
+        require(cycleIntervalTurns > 0) { "Furnace pressure cycleIntervalTurns must be positive." }
+        require(telegraphTurns > 0) { "Furnace pressure telegraphTurns must be positive." }
+        require(activeTurns > 0) { "Furnace pressure activeTurns must be positive." }
+        require(damagePerTick > 0) { "Furnace pressure damagePerTick must be positive." }
+        require(nextCycleTurn >= 0) { "Furnace pressure nextCycleTurn must not be negative." }
+        require(phase.isNotBlank()) { "Furnace pressure phase must not be blank." }
+        require(phaseTurnsRemaining >= 0) { "Furnace pressure phaseTurnsRemaining must not be negative." }
     }
 }
 
