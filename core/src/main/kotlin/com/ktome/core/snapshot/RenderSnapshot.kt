@@ -3,6 +3,8 @@ package com.ktome.core.snapshot
 import com.ktome.core.talent.TalentTreeOwnerType
 import kotlinx.serialization.Serializable
 
+const val COMBAT_FEEDBACK_EVENT_LIMIT: Int = 12
+
 @Serializable
 data class RenderSnapshot(
     val metadata: RenderMetadataSnapshot,
@@ -12,6 +14,7 @@ data class RenderSnapshot(
     val overlays: List<OverlayRenderSnapshot> = emptyList(),
     val uiState: RenderUiStateSnapshot,
     val logEvents: List<RenderLogEventSnapshot> = emptyList(),
+    val combatFeedbackEvents: List<CombatFeedbackSnapshot> = emptyList(),
 )
 
 @Serializable
@@ -133,6 +136,28 @@ data class OverlayRenderSnapshot(
     val sourceAbilityId: String,
     val cells: List<GridPointSnapshot>,
     val warningMessage: RenderTextTokenSnapshot? = null,
+)
+
+@Serializable
+enum class CombatFeedbackTypeSnapshot {
+    DAMAGE,
+    HEAL,
+    MISS,
+    STATUS_APPLIED,
+    STATUS_REMOVED,
+}
+
+@Serializable
+data class CombatFeedbackSnapshot(
+    val targetEntityId: Int?,
+    val sourceEntityId: Int? = null,
+    val x: Int,
+    val y: Int,
+    val type: CombatFeedbackTypeSnapshot,
+    val amount: Int? = null,
+    val damageTypeId: String? = null,
+    val statusNameKey: String? = null,
+    val critical: Boolean = false,
 )
 
 @Serializable

@@ -17,6 +17,8 @@ import com.ktome.client.ui.talent.DescriptionPresenter
 import com.ktome.core.snapshot.ActorRenderSnapshot
 import com.ktome.core.snapshot.ActorRoleKindSnapshot
 import com.ktome.core.snapshot.CellVisibilitySnapshot
+import com.ktome.core.snapshot.CombatFeedbackSnapshot
+import com.ktome.core.snapshot.CombatFeedbackTypeSnapshot
 import com.ktome.core.snapshot.InventoryEntrySnapshot
 import com.ktome.core.snapshot.ItemRenderSnapshot
 import com.ktome.core.snapshot.ItemStatModifierSnapshot
@@ -67,6 +69,15 @@ internal data class TileTextRow(
 internal data class TileMessageLine(
     val text: String,
     val tone: TileTextTone,
+)
+
+internal data class TileCombatFeedbackModel(
+    val x: Int,
+    val y: Int,
+    val text: String,
+    val tone: TileTextTone,
+    val stackIndex: Int,
+    val horizontalOffsetCells: Int = 0,
 )
 
 internal data class TileGaugeModel(
@@ -127,6 +138,7 @@ internal data class TileRenderModel(
     val inspectCursor: com.ktome.core.map.Point?,
     val hud: TileHudModel,
     val messageLines: List<TileMessageLine>,
+    val combatFeedback: List<TileCombatFeedbackModel>,
     val sidebar: TileSidebarModel,
 )
 
@@ -181,6 +193,7 @@ internal object TileRenderModelBuilder {
                     )
                 }
             }
+        val overlayCells = snapshot.overlays.flatMap { overlay -> overlay.cells }.map { cell -> cell.x to cell.y }.toSet()
         val actorTiles =
             snapshot.actors
                 .sortedBy { actor -> if (actor.isPlayer) 1 else 0 }
@@ -208,6 +221,7 @@ internal object TileRenderModelBuilder {
                         tone = messageTone(event.message.key),
                     )
                 },
+            combatFeedback = buildCombatFeedback(localizer, snapshot.metadata.width, overlayCells, snapshot.combatFeedbackEvents),
             sidebar = buildSidebar(localizer, visualResolver, snapshot, overlayState, player, actorById, cellByPoint),
         )
     }
@@ -691,6 +705,75 @@ internal object TileRenderModelBuilder {
             messageKey.startsWith("log.level_up") -> TileTextTone.GOLD
             messageKey == "log.zone.enter" -> TileTextTone.CYAN
             messageKey.startsWith("log.boss.") -> TileTextTone.RED
+            else -> TileTextTone.WHITE
+        }
+
+    private fun buildCombatFeedback(
+        localizer: Localizer,
+        mapWidth: Int,
+        overlayCells: Set<Pair<Int, Int>>,
+        feedbackEvents: List<CombatFeedbackSnapshot>,
+    ): List<TileCombatFeedbackModel> {
+        val stackCounts = mutableMapOf<Pair<Int, Int>, Int>()
+        return feedbackEvents.map { event ->
+            val key = event.x to event.y
+            val stackIndex = stackCounts.getOrDefault(key, 0)
+            stackCounts[key] = stackIndex + 1
+            val horizontalOffsetCells =
+                if (key in overlayCells) {
+                    if (event.x >= mapWidth - 1) {
+                        -1
+                    } else {
+                        1
+                    }
+                } else {
+                    0
+                }
+            TileCombatFeedbackModel(
+                x = event.x,
+                y = event.y,
+                text = combatFeedbackText(localizer, event),
+                tone = combatFeedbackTone(event),
+                stackIndex = stackIndex,
+                horizontalOffsetCells = horizontalOffsetCells,
+            )
+        }
+    }
+
+    private fun combatFeedbackText(
+        localizer: Localizer,
+        event: CombatFeedbackSnapshot,
+    ): String =
+        when (event.type) {
+            CombatFeedbackTypeSnapshot.DAMAGE -> "${event.amount ?: 0}${if (event.critical) "!" else ""}"
+            CombatFeedbackTypeSnapshot.HEAL -> "+${event.amount ?: 0}"
+            CombatFeedbackTypeSnapshot.MISS -> localizer.text("ui.combat_feedback.miss")
+            CombatFeedbackTypeSnapshot.STATUS_APPLIED -> "+${event.statusNameKey?.let(localizer::text).orEmpty()}"
+            CombatFeedbackTypeSnapshot.STATUS_REMOVED -> "-${event.statusNameKey?.let(localizer::text).orEmpty()}"
+        }
+
+    private fun combatFeedbackTone(event: CombatFeedbackSnapshot): TileTextTone =
+        when (event.type) {
+            CombatFeedbackTypeSnapshot.DAMAGE ->
+                if (event.critical) {
+                    TileTextTone.GOLD
+                } else {
+                    damageTone(event.damageTypeId)
+                }
+
+            CombatFeedbackTypeSnapshot.HEAL -> TileTextTone.GREEN
+            CombatFeedbackTypeSnapshot.MISS -> TileTextTone.LIGHT_GRAY
+            CombatFeedbackTypeSnapshot.STATUS_APPLIED -> TileTextTone.CYAN
+            CombatFeedbackTypeSnapshot.STATUS_REMOVED -> TileTextTone.GRAY
+        }
+
+    private fun damageTone(damageTypeId: String?): TileTextTone =
+        when (damageTypeId) {
+            "FIRE" -> TileTextTone.RED
+            "COLD" -> TileTextTone.CYAN
+            "LIGHTNING" -> TileTextTone.GOLD
+            "HOLY" -> TileTextTone.GOLD
+            "SHADOW" -> TileTextTone.MAGENTA
             else -> TileTextTone.WHITE
         }
 

@@ -630,13 +630,19 @@ object StatusLifecycle {
     }
 
     fun decayEndOfTurn(tracker: StatusTracker): Boolean {
-        return decayEndOfTurn(tracker.effects)
+        return decayEndOfTurnRemoved(tracker).isNotEmpty()
     }
 
-    fun decayEndOfTurn(carrier: PersistentEffect): Boolean = decayEndOfTurn(carrier.effects)
+    fun decayEndOfTurn(carrier: PersistentEffect): Boolean = decayEndOfTurnRemoved(carrier).isNotEmpty()
 
-    fun decayEndOfTurn(effects: MutableList<StatusInstance>): Boolean {
-        var changed = false
+    fun decayEndOfTurn(effects: MutableList<StatusInstance>): Boolean = decayEndOfTurnRemoved(effects).isNotEmpty()
+
+    fun decayEndOfTurnRemoved(tracker: StatusTracker): List<StatusInstance> = decayEndOfTurnRemoved(tracker.effects)
+
+    fun decayEndOfTurnRemoved(carrier: PersistentEffect): List<StatusInstance> = decayEndOfTurnRemoved(carrier.effects)
+
+    fun decayEndOfTurnRemoved(effects: MutableList<StatusInstance>): List<StatusInstance> {
+        val removed = mutableListOf<StatusInstance>()
         val iterator = effects.iterator()
         while (iterator.hasNext()) {
             val effect = iterator.next()
@@ -647,10 +653,10 @@ object StatusLifecycle {
             effect.remainingTurns -= 1
             if (effect.remainingTurns <= 0) {
                 iterator.remove()
-                changed = true
+                removed += effect
             }
         }
-        return changed
+        return removed
     }
 
     fun cleanse(

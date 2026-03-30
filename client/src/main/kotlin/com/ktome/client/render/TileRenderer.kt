@@ -263,6 +263,7 @@ class TileRenderer(
                 drawPlacement(canvas, placement, mapHeight, layout.mapOffsetY, cellWidth, cellHeight)
             }
             drawFogOverlays(canvas, model.fogTiles, mapHeight, layout.mapOffsetY, cellWidth, cellHeight)
+            drawCombatFeedback(canvas, model.combatFeedback, mapHeight, layout.mapOffsetY, cellWidth, cellHeight)
 
             model.targetCursor?.let { cursor ->
                 drawCursor(canvas, cursor.x, cursor.y, mapHeight, layout.mapOffsetY, cellWidth, cellHeight, color("FFA500"))
@@ -442,6 +443,29 @@ class TileRenderer(
                     layout.logX + 12f,
                     topY - index * 26f,
                     tone(line.tone),
+                )
+            }
+        }
+
+        private fun drawCombatFeedback(
+            canvas: TileCanvas,
+            combatFeedback: List<TileCombatFeedbackModel>,
+            mapHeight: Int,
+            mapOffsetY: Float,
+            cellWidth: Float,
+            cellHeight: Float,
+        ) {
+            combatFeedback.forEach { feedback ->
+                val worldX = feedback.x * cellWidth + 4f + feedback.horizontalOffsetCells * (cellWidth + 6f)
+                val worldY = mapOffsetY + (mapHeight - feedback.y - 1) * cellHeight + cellHeight - 2f + feedback.stackIndex * 15f
+                val backgroundWidth = (feedback.text.length * 11f).coerceAtLeast(28f)
+                canvas.drawRect(worldX - 2f, worldY - 16f, backgroundWidth, 18f, color("0B0D12", 0.82f))
+                canvas.drawText(
+                    TileTextStyle.SMALL,
+                    feedback.text,
+                    worldX,
+                    worldY - 2f,
+                    tone(feedback.tone),
                 )
             }
         }

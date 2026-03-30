@@ -12,11 +12,15 @@ import com.ktome.client.input.UiMode
 import com.ktome.core.snapshot.ActorRenderSnapshot
 import com.ktome.core.snapshot.ActorRoleKindSnapshot
 import com.ktome.core.snapshot.CellVisibilitySnapshot
+import com.ktome.core.snapshot.CombatFeedbackSnapshot
+import com.ktome.core.snapshot.CombatFeedbackTypeSnapshot
 import com.ktome.core.snapshot.DescriptionModelSnapshot
 import com.ktome.core.snapshot.DescriptionValueSnapshot
 import com.ktome.core.snapshot.GridPointSnapshot
 import com.ktome.core.snapshot.ItemRenderSnapshot
 import com.ktome.core.snapshot.MapCellSnapshot
+import com.ktome.core.snapshot.OverlayRenderSnapshot
+import com.ktome.core.snapshot.OverlayShapeSnapshot
 import com.ktome.core.snapshot.PlayerStatusSnapshot
 import com.ktome.core.snapshot.RenderLogEventSnapshot
 import com.ktome.core.snapshot.RenderMetadataSnapshot
@@ -362,6 +366,90 @@ class TileRendererCanvasTest {
     }
 
     @Test
+    fun `render model surfaces typed combat feedback for tile overlays`() {
+        val localizer = LocalizationBundle.load().translator(GameLocale.EN_US)
+        val model =
+            TileRenderer.buildRenderModel(
+                localizer = localizer,
+                visualResolver = sampleResolver(),
+                snapshot =
+                    sampleSnapshot(
+                        combatFeedbackEvents =
+                            listOf(
+                                CombatFeedbackSnapshot(
+                                    targetEntityId = 2,
+                                    sourceEntityId = 1,
+                                    x = 0,
+                                    y = 0,
+                                    type = CombatFeedbackTypeSnapshot.DAMAGE,
+                                    amount = 24,
+                                    damageTypeId = "FIRE",
+                                    critical = true,
+                                ),
+                                CombatFeedbackSnapshot(
+                                    targetEntityId = 2,
+                                    x = 0,
+                                    y = 0,
+                                    type = CombatFeedbackTypeSnapshot.STATUS_APPLIED,
+                                    statusNameKey = "status.stun",
+                                ),
+                            ),
+                    ),
+                overlayState = OverlayState(mode = UiMode.MAP),
+            )
+
+        assertEquals(2, model.combatFeedback.size)
+        assertEquals("24!", model.combatFeedback.first().text)
+        assertEquals(TileTextTone.GOLD, model.combatFeedback.first().tone)
+        assertEquals("+Stunned", model.combatFeedback.last().text)
+        assertEquals(1, model.combatFeedback.last().stackIndex)
+    }
+
+    @Test
+    fun `render canvas offsets combat feedback away from telegraph cells`() {
+        val canvas = RecordingTileCanvas()
+
+        TileRenderer.renderToCanvas(
+            localizer = LocalizationBundle.load().translator(GameLocale.EN_US),
+            visualResolver = sampleResolver(),
+            snapshot =
+                sampleSnapshot(
+                    width = 2,
+                    overlays =
+                        listOf(
+                            OverlayRenderSnapshot(
+                                id = "telegraph:test",
+                                visualKey = "missing_visual",
+                                previewTurns = 1,
+                                dangerLevel = 2,
+                                shape = OverlayShapeSnapshot.SINGLE_TILE,
+                                sourceAbilityId = "telegraph.test",
+                                cells = listOf(GridPointSnapshot(0, 0)),
+                            ),
+                        ),
+                    combatFeedbackEvents =
+                        listOf(
+                            CombatFeedbackSnapshot(
+                                targetEntityId = 2,
+                                sourceEntityId = 1,
+                                x = 0,
+                                y = 0,
+                                type = CombatFeedbackTypeSnapshot.DAMAGE,
+                                amount = 24,
+                            ),
+                        ),
+                ),
+            overlayState = OverlayState(mode = UiMode.MAP),
+            canvas = canvas,
+            cellWidth = 32f,
+            cellHeight = 32f,
+        )
+
+        val feedbackDraw = canvas.textDraws.first { draw -> draw.text == "24" }
+        assertTrue(feedbackDraw.x > 32f)
+    }
+
+    @Test
     fun `render model keeps player status turns visible in hud badges`() {
         val localizer = LocalizationBundle.load().translator(GameLocale.EN_US)
         val model =
@@ -664,10 +752,12 @@ class TileRendererCanvasTest {
         width: Int = 1,
         height: Int = 1,
         cells: List<MapCellSnapshot>? = null,
+        overlays: List<OverlayRenderSnapshot> = emptyList(),
         playerStatusEffects: List<StatusEffectRenderSnapshot> = emptyList(),
         talents: List<TalentSlotSnapshot> = emptyList(),
         reserveTalents: List<TalentReserveSnapshot> = emptyList(),
         logEvents: List<RenderLogEventSnapshot> = emptyList(),
+        combatFeedbackEvents: List<CombatFeedbackSnapshot> = emptyList(),
     ): RenderSnapshot =
         RenderSnapshot(
             metadata =
@@ -698,6 +788,7 @@ class TileRendererCanvasTest {
                             terrainVisualKey = "tileset.test.ground_01",
                         ),
                     ),
+            overlays = overlays,
             actors =
                 listOf(
                     ActorRenderSnapshot(
@@ -750,6 +841,7 @@ class TileRendererCanvasTest {
                     targetablePositions = listOf(GridPointSnapshot(0, 0)),
                 ),
             logEvents = logEvents,
+            combatFeedbackEvents = combatFeedbackEvents,
         )
 }
 

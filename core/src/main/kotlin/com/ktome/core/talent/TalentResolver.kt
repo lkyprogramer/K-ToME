@@ -104,6 +104,7 @@ sealed interface TalentEffectResult {
         val damageType: DamageType = DamageType.PHYSICAL,
         val resistanceValue: Int = 0,
         val stealthBroken: Boolean = false,
+        val removedStatusTypes: List<StatusEffectType> = emptyList(),
     ) : TalentEffectResult
 
     data class Heal(
@@ -1534,6 +1535,7 @@ class TalentResolver(
                 damageType = damage.type,
                 resistanceValue = damage.resistanceValue,
                 stealthBroken = StatusEffectType.STEALTH in result.removedStatusTypes,
+                removedStatusTypes = result.removedStatusTypes.toList(),
             )
         return DamageResolution(
             hit = true,

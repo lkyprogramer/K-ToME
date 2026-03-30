@@ -37,6 +37,8 @@ import com.ktome.core.ecs.get
 import com.ktome.core.ecs.remove
 import com.ktome.core.map.Point
 import com.ktome.core.ai.PendingTelegraphState
+import com.ktome.core.resource.ResourcePools
+import com.ktome.core.resource.ResourceType
 import com.ktome.core.talent.CooldownState
 import com.ktome.core.talent.EffectTracker
 import com.ktome.core.ai.BossEncounterState
@@ -379,6 +381,22 @@ class ClientSmokeHarnessTest {
                 assertTrue(
                     audioHarness.cueEvents.contains("audio.boss.warning"),
                     "Expected boss warning cue, got ${audioHarness.cueEvents}.",
+                )
+                triggerTemplarHealFeedback(session)
+                app.render()
+                val combinedSnapshot = session.renderSnapshot()
+                assertTrue(
+                    combinedSnapshot.overlays.any { overlay ->
+                        overlay.id.startsWith("telegraph:") || overlay.id.startsWith("boss-warning:")
+                    },
+                    "Expected boss telegraph overlay to remain visible while feedback is rendered.",
+                )
+                assertTrue(
+                    combinedSnapshot.combatFeedbackEvents.any { event ->
+                        event.type == com.ktome.core.snapshot.CombatFeedbackTypeSnapshot.HEAL &&
+                            event.targetEntityId == session.playerId.value
+                    },
+                    "Expected typed combat feedback while boss telegraph is visible.",
                 )
             } finally {
                 app.dispose()
@@ -826,6 +844,21 @@ class ClientSmokeHarnessTest {
             app.render()
         }
         return session.renderSnapshot()
+    }
+
+    private fun triggerTemplarHealFeedback(session: FoundationGameSession) {
+        val world = automationWorld(session)
+        val playerHealth = requireNotNull(world.get<Health>(session.playerId))
+        playerHealth.current = (playerHealth.max / 2).coerceAtLeast(1)
+        val positiveEnergyPool =
+            requireNotNull(requireNotNull(world.get<ResourcePools>(session.playerId)).pool(ResourceType.POSITIVE_ENERGY)) {
+                "Expected templar positive energy pool for client smoke feedback."
+            }
+        positiveEnergyPool.current = positiveEnergyPool.max
+        val holyLightSlot = requireNotNull(session.talentSlots().firstOrNull { slot -> slot.talentId == "holy_light" }) {
+            "Expected holy_light slot for client smoke feedback."
+        }.slot
+        check(session.perform(PlayerCommand.UseTalent(slot = holyLightSlot))) { "Expected holy_light to consume a turn during boss warning smoke." }
     }
 
     internal data class ClientSmokeReport(

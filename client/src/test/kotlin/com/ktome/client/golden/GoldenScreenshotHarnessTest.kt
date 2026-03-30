@@ -25,6 +25,8 @@ import com.ktome.core.ecs.Position
 import com.ktome.core.ecs.get
 import com.ktome.core.ecs.remove
 import com.ktome.core.map.Point
+import com.ktome.core.resource.ResourcePools
+import com.ktome.core.resource.ResourceType
 import com.ktome.core.save.SaveManager
 import com.ktome.core.snapshot.RenderSnapshot
 import com.ktome.game.FOUNDATION_ZONE_ROUTE
@@ -55,14 +57,14 @@ class GoldenScreenshotHarnessTest {
             listOf(
                 "36fffb5f8ea3ff2f78486ee5d520278135f39f61a44a7cb9d4cf60317a607ade",
                 "f546dbdae2f297dec91bcf208bce0dd93549b838661027d645c1247f1556c689",
-                "b05c530a245113538b39e1c4ae40d318cc1f0a0d5cd34cf83e0125c587aace30",
+                "52dd435a05989c6c7ef5093f8b21b8295e02341e04ca123cb20a3a25551a2125",
                 "abef5cda32f3ac961355f5c304b840fea7c2e480e12ee35b297819a699ce1418",
                 "5aeff5b93db2e3c223c904d1b2d93d9193be7a202b627aade23c714fe3eb309e",
                 "511542b3a7dafb4fe22de3f96e5ced6bbf18ab3246b9eb8de55dff01fd8924a2",
-                "3dc6f81fb0cd25157b7cd136f07369c0a0b409c48d835890a2bd1dc67750e665",
-                "251cbe638cf136ea34304bf783b0c35aaecd72d2232e2d47cbcf1dbf6cedc1d4",
-                "968365b22f8acfa13173e7ce5bdd8863b626f85d883ad87c3d03e467b095cd72",
-                "5b3ffebcdf1eb5f90c49ff57358f592e2ed88f4ceed151fbdd326625ef80d9de",
+                "6a23d819aacdbde00486732d33e00795ab24e3aea49d7c677c327d298647b3f6",
+                "656add6a69f441cb5e8bdbdad04d1e47595176c0984333729bdc307b6a7b0796",
+                "12c50878bf9b81f6443b9deee37553f568853054805cf366e2d59f3d90a9fe43",
+                "20d60f426fb3ae6ed45af4ef97813f4e6c60f3cde71d56ecb6036e1b9bdb0ef3",
             ),
             english + chinese,
         )
@@ -75,8 +77,8 @@ class GoldenScreenshotHarnessTest {
 
         assertEquals(
             listOf(
-                "f757ca07863a76f760f8c47b7f7b6d55b356fe5ed139d82beb264a4b1e630891",
-                "92afdfc8a62862c77849d456b72a26e109ad70709515cd661b97bb72794b9cc2",
+                "b5b3a47edf01e9d124dce809f636dc84a4c306b91a9d699e310674f07613d651",
+                "0005ef524b58f28b855fb2ae9346990437573af7575db9ec94e20c21e8391211",
             ),
             listOf(english, chinese),
         )
@@ -92,9 +94,9 @@ class GoldenScreenshotHarnessTest {
                 "26553d06f32c49c6bae580c58fb6d756648c0c1a9843cbb985dbd8a37b036d37",
                 "0a0317dcae668d7d85e29d5ca1c7fe938600e06df572756de516d1a417268239",
                 "ec26aae09310b24a97a15e7f7ea399af0f6c732df1437ad5de6d3232861ce650",
-                "b5d34d446f868cc5e4c20c80bd7bf6af840ea36c2be204da8afcb9b5e3de33f5",
-                "5ccfebfdd521ab35d2166cdef9abe8a0fe248b1685a10dcdcd5b5a81973811e0",
-                "44ab6bcafdabf75353e9be1681610714ea6cd6b873d0bb45bdc33a6f7a4ec1a6",
+                "ab6f90fa6136ad4ace172ed24a142ba7e2defea8aab0a492bd337982046ecf8a",
+                "8e4e1aa93f3baa91865a470d2b865824f08dafcd6dbb05eef920b021cbb0a9ab",
+                "8238b40334078d97207974e32ca37179d328c525eeeece8c4c697d7205bcb942",
             ),
             english + chinese,
         )
@@ -120,8 +122,8 @@ class GoldenScreenshotHarnessTest {
                 "abe12adc7adb0db103aa4a9a24359136876508b65436f898d7c3b5e16e55a176",
                 "abe12adc7adb0db103aa4a9a24359136876508b65436f898d7c3b5e16e55a176",
                 "c288b15f8f99ae176d828c92297faa0f11ca092486b9afb62dbfedf1a68abeb9",
-                "d3dcf30b0032892079b55da37123cd0b40e4f440e9fbd1dbe2fc201c995a13ee",
-                "d3dcf30b0032892079b55da37123cd0b40e4f440e9fbd1dbe2fc201c995a13ee",
+                "c0ac894b7f42aa8e5255d9016772347a158f7179d22fc2dbe25b5453b7e1108a",
+                "c0ac894b7f42aa8e5255d9016772347a158f7179d22fc2dbe25b5453b7e1108a",
                 "a16d5095aa24074e7ddb5bb2dff91594cb1f88194f3fd0f52e14011008f5c1cf",
             ),
             english + chinese,
@@ -136,9 +138,9 @@ class GoldenScreenshotHarnessTest {
         assertEquals(
             listOf(
                 "55683f80a0503d814dc5eff2301bc78886ad147c88c0105ca249cfbe5956e3d4",
-                "93c0eed279d7f5b5fc3aecf8d59c4c1b0bf1854b87c84dd512e2b6fc0d8f43ae",
+                "26bf2b7cc3003ce5c93a4b3375ca252ecb5c56ff980dff86bf4b427b249b975c",
                 "383f3bd35049724c9260f72b6bf2b9f29627ff63a67acd59d0519a2322a207de",
-                "27daed77d378cc1f4cfd807fae6eb6a3a365879896c8f7b2fb1ce87a22ae9833",
+                "0497a2914977917dc0477cc8b9ce1800842fb2112c8d0f9a8fcc0e5cb38d0ed7",
             ),
             english + chinese,
         )
@@ -350,6 +352,14 @@ class GoldenScreenshotHarnessTest {
 
                 val snapshot = waitForBossTelegraph(session, app)
                 assertTrue(snapshot.overlays.any { overlay -> overlay.id.startsWith("boss-warning:") })
+                triggerTemplarHealFeedback(session)
+                val combinedSnapshot = session.renderSnapshot()
+                assertTrue(
+                    combinedSnapshot.combatFeedbackEvents.any { event ->
+                        event.type == com.ktome.core.snapshot.CombatFeedbackTypeSnapshot.HEAL &&
+                            event.targetEntityId == session.playerId.value
+                    },
+                )
                 overlaySource.overlayState = OverlayState(mode = UiMode.MAP)
                 return@withLwjgl3Context captureHash { repeat(2) { app.render() } }
             } finally {
@@ -510,6 +520,21 @@ class GoldenScreenshotHarnessTest {
         return MessageDigest.getInstance("SHA-256")
             .digest(bytes)
             .joinToString(separator = "") { byte -> "%02x".format(byte) }
+    }
+
+    private fun triggerTemplarHealFeedback(session: FoundationGameSession) {
+        val world = automationWorld(session)
+        val playerHealth = requireNotNull(world.get<Health>(session.playerId))
+        playerHealth.current = (playerHealth.max / 2).coerceAtLeast(1)
+        val positiveEnergyPool =
+            requireNotNull(requireNotNull(world.get<ResourcePools>(session.playerId)).pool(ResourceType.POSITIVE_ENERGY)) {
+                "Expected templar positive energy pool for boss warning golden."
+            }
+        positiveEnergyPool.current = positiveEnergyPool.max
+        val holyLightSlot = requireNotNull(session.talentSlots().firstOrNull { slot -> slot.talentId == "holy_light" }) {
+            "Expected holy_light slot for boss warning golden."
+        }.slot
+        check(session.perform(PlayerCommand.UseTalent(slot = holyLightSlot))) { "Expected holy_light to consume a turn during boss warning golden capture." }
     }
 
     private fun <T> withLwjgl3Context(
