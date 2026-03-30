@@ -5,6 +5,7 @@ import com.ktome.core.ecs.add
 import com.ktome.core.ecs.get
 import com.ktome.core.map.Point
 import com.ktome.core.resource.ResourceType
+import com.ktome.core.talent.TalentLoadout
 import java.nio.file.Path
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -41,6 +42,34 @@ class ClassFormalizationRuntimeContractTest {
         val manaLungeSlot = ClassFormalizationTestSupport.talentSlot(session, "mana_lunge")
 
         assertFalse(session.perform(PlayerCommand.UseTalent(manaLungeSlot, targetPoint)))
+        assertEquals(playerPoint, session.playerPosition())
+    }
+
+    @Test
+    fun `pursuit drive fails cleanly when no charge landing tile exists`() {
+        val session = ClassFormalizationTestSupport.newSession(tempDir, professionId = "berserker")
+        val playerPoint = session.playerPosition()
+        val targetPoint = chargeTargetPoint(session)
+        ClassFormalizationTestSupport.installCombatDummy(session, position = targetPoint)
+        surroundTargetWithBlockingDummies(session, targetPoint)
+
+        val pursuitDriveSlot = ensureTalentEquipped(session, "pursuit_drive")
+
+        assertFalse(session.perform(PlayerCommand.UseTalent(pursuitDriveSlot, targetPoint)))
+        assertEquals(playerPoint, session.playerPosition())
+    }
+
+    @Test
+    fun `blink strike fails cleanly when no charge landing tile exists`() {
+        val session = ClassFormalizationTestSupport.newSession(tempDir, professionId = "spellblade")
+        val playerPoint = session.playerPosition()
+        val targetPoint = chargeTargetPoint(session)
+        ClassFormalizationTestSupport.installCombatDummy(session, position = targetPoint)
+        surroundTargetWithBlockingDummies(session, targetPoint)
+
+        val blinkStrikeSlot = ensureTalentEquipped(session, "blink_strike")
+
+        assertFalse(session.perform(PlayerCommand.UseTalent(blinkStrikeSlot, targetPoint)))
         assertEquals(playerPoint, session.playerPosition())
     }
 
@@ -186,6 +215,8 @@ class ClassFormalizationRuntimeContractTest {
         session.talentSlots().firstOrNull { talent -> talent.talentId == talentId }?.let { talent ->
             return talent.slot
         }
+        val loadout = requireNotNull(ClassFormalizationTestSupport.runtimeWorld(session).get<TalentLoadout>(session.playerId))
+        loadout.talentLevels.putIfAbsent(talentId, 1)
         check(session.perform(PlayerCommand.EquipTalentToSlot(slot = slot, talentId = talentId))) {
             "Failed to equip talent '$talentId' into slot $slot."
         }

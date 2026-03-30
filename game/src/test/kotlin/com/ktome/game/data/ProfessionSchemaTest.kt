@@ -44,6 +44,20 @@ class ProfessionSchemaTest {
             assertTrue(nodeCount >= 16, "Base profession '$professionId' must expose at least 16 formal talents, actual=$nodeCount")
         }
         assertEquals(2, catalog.professions.first { it.id == "spellblade" }.resourceProfiles.size)
+        assertEquals(
+            12,
+            catalog.talentTrees.first { tree -> tree.id == "berserker_wrath" }.nodes.size +
+                catalog.talentTrees.first { tree -> tree.id == "berserker_ruin" }.nodes.size +
+                catalog.talentTrees.first { tree -> tree.id == "berserker_bloodwar" }.nodes.size,
+        )
+        assertEquals(
+            12,
+            catalog.talentTrees.first { tree -> tree.id == "spellblade_enchanted_blade" }.nodes.size +
+                catalog.talentTrees.first { tree -> tree.id == "spellblade_elemental_flux" }.nodes.size +
+                catalog.talentTrees.first { tree -> tree.id == "spellblade_battle_spell" }.nodes.size,
+        )
+        assertEquals(0, catalog.talentTrees.first { tree -> tree.id == "shadowblade_assassination_plus" }.nodes.size)
+        assertEquals(0, catalog.talentTrees.first { tree -> tree.id == "warden_nature_guard" }.nodes.size)
         assertEquals("DEV_UNLOCKED", catalog.professions.first { it.id == "berserker" }.initialUnlockState.name)
         assertEquals("LOCKED", catalog.professions.first { it.id == "shadowblade" }.initialUnlockState.name)
         assertEquals(

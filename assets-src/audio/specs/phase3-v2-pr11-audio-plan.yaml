@@ -1,0 +1,51 @@
+manifestVersion: 1
+fallbackKey: audio.fallback.silence
+entries:
+  - key: audio.talent.riven_edge
+    cueFamily: talent
+    eventId: audio.talent.riven_edge
+    sourcePath: audio/talent/riven_edge.ogg
+  - key: audio.talent.pursuit_drive
+    cueFamily: talent
+    eventId: audio.talent.pursuit_drive
+    sourcePath: audio/talent/pursuit_drive.ogg
+  - key: audio.talent.fault_line
+    cueFamily: talent
+    eventId: audio.talent.fault_line
+    sourcePath: audio/talent/fault_line.ogg
+  - key: audio.talent.aftershock
+    cueFamily: talent
+    eventId: audio.talent.aftershock
+    sourcePath: audio/talent/aftershock.ogg
+  - key: audio.talent.pain_fuel
+    cueFamily: talent
+    eventId: audio.talent.pain_fuel
+    sourcePath: audio/talent/pain_fuel.ogg
+  - key: audio.talent.slaughter_drive
+    cueFamily: talent
+    eventId: audio.talent.slaughter_drive
+    sourcePath: audio/talent/slaughter_drive.ogg
+  - key: audio.talent.runic_edge
+    cueFamily: talent
+    eventId: audio.talent.runic_edge
+    sourcePath: audio/talent/runic_edge.ogg
+  - key: audio.talent.sunder_sigil
+    cueFamily: talent
+    eventId: audio.talent.sunder_sigil
+    sourcePath: audio/talent/sunder_sigil.ogg
+  - key: audio.talent.balance_point
+    cueFamily: talent
+    eventId: audio.talent.balance_point
+    sourcePath: audio/talent/balance_point.ogg
+  - key: audio.talent.flux_reversal
+    cueFamily: talent
+    eventId: audio.talent.flux_reversal
+    sourcePath: audio/talent/flux_reversal.ogg
+  - key: audio.talent.blink_strike
+    cueFamily: talent
+    eventId: audio.talent.blink_strike
+    sourcePath: audio/talent/blink_strike.ogg
+  - key: audio.talent.counter_seal
+    cueFamily: talent
+    eventId: audio.talent.counter_seal
+    sourcePath: audio/talent/counter_seal.ogg

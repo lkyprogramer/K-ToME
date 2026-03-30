@@ -65,6 +65,7 @@ class KeywordRegistry(
                         KeywordSemantic("buff", KeywordSemanticType.DEFENSE, "keyword.buff.name", "keyword.buff.tooltip"),
                         KeywordSemantic("cleave", KeywordSemanticType.OFFENSE, "keyword.cleave.name", "keyword.cleave.tooltip"),
                         KeywordSemantic("control", KeywordSemanticType.CONTROL, "keyword.control.name", "keyword.control.tooltip"),
+                        KeywordSemantic("counter", KeywordSemanticType.DEFENSE, "keyword.counter.name", "keyword.counter.tooltip"),
                         KeywordSemantic("curse", KeywordSemanticType.CONTROL, "keyword.curse.name", "keyword.curse.tooltip"),
                         KeywordSemantic("debuff", KeywordSemanticType.CONTROL, "keyword.debuff.name", "keyword.debuff.tooltip"),
                         KeywordSemantic("defense", KeywordSemanticType.DEFENSE, "keyword.defense.name", "keyword.defense.tooltip"),

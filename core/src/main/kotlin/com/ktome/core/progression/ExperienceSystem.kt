@@ -12,7 +12,20 @@ data class ExperienceGainResult(
 )
 
 object ExperienceSystem {
+    private const val LEVEL_CAP: Int = 20
+    private const val STAT_POINTS_PER_LEVEL: Int = 2
+
     fun nextLevelExp(level: Int): Int = level * 100 + 50
+
+    fun statPointsGrantedForLevel(level: Int): Int {
+        require(level in 2..LEVEL_CAP) { "Stat point grant is only defined for levels 2..$LEVEL_CAP, got $level." }
+        return STAT_POINTS_PER_LEVEL
+    }
+
+    fun talentPointsGrantedForLevel(level: Int): Int {
+        require(level in 2..LEVEL_CAP) { "Talent point grant is only defined for levels 2..$LEVEL_CAP, got $level." }
+        return 1
+    }
 
     fun applyReward(
         experience: Experience,
@@ -26,17 +39,17 @@ object ExperienceSystem {
         var restored = false
 
         experience.current += reward
-        while (experience.level < 20 && experience.current >= nextLevelExp(experience.level)) {
+        while (experience.level < LEVEL_CAP && experience.current >= nextLevelExp(experience.level)) {
             experience.current -= nextLevelExp(experience.level)
             experience.level += 1
-            experience.unspentStatPoints += 2
+            val grantedStatPoints = statPointsGrantedForLevel(experience.level)
+            experience.unspentStatPoints += grantedStatPoints
             totalLevelsGained += 1
-            totalStatPoints += 2
+            totalStatPoints += grantedStatPoints
 
-            if (experience.level % 2 == 1) {
-                experience.unspentTalentPoints += 1
-                totalTalentPoints += 1
-            }
+            val grantedTalentPoints = talentPointsGrantedForLevel(experience.level)
+            experience.unspentTalentPoints += grantedTalentPoints
+            totalTalentPoints += grantedTalentPoints
         }
 
         restored = totalLevelsGained > 0

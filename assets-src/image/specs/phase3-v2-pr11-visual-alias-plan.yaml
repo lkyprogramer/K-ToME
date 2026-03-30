@@ -1,0 +1,72 @@
+styleTag: ktome-middle-fantasy-painterly-tile-v1
+artStyleBible: docs/2026-03-13-art-style-bible.md
+stylePrompt: >
+  Classical high fantasy in a Middle-earth inspired mode with painterly readable
+  silhouettes. Never anime, never sci-fi. Focus on worn iron, leather, rune-carved
+  steel, restrained elemental glow, and bold icon readability for gameplay-first
+  combat skills.
+defaults:
+  imageAspectRatio: "1:1"
+  imageSize: 1K
+  negativeConstraints:
+    - no modern clothing
+    - no firearms
+    - no sci-fi materials
+    - no anime proportions
+    - no floating text, watermark or logo
+  categoryPromptTemplates:
+    icon: >
+      Game UI icon on transparent background. Single centered subject with bold
+      silhouette and high readability at small size.
+phase2AssetGates:
+  P3-PR11-ALIASES:
+    description: Phase 3 PR-11 talent icon alias coverage for manifest lint.
+    assets:
+      - id: talent_berserker_riven_edge_icon
+        category: icon
+        visualKey: talent.berserker.riven_edge.icon
+        outputName: phase3/p3-followup/icon_skill_berserker_riven_edge.png
+      - id: talent_berserker_pursuit_drive_icon
+        category: icon
+        visualKey: talent.berserker.pursuit_drive.icon
+        outputName: phase3/p3-followup/icon_skill_berserker_pursuit_drive.png
+      - id: talent_berserker_fault_line_icon
+        category: icon
+        visualKey: talent.berserker.fault_line.icon
+        outputName: phase3/p3-followup/icon_skill_berserker_fault_line.png
+      - id: talent_berserker_aftershock_icon
+        category: icon
+        visualKey: talent.berserker.aftershock.icon
+        outputName: phase3/p3-followup/icon_skill_berserker_aftershock.png
+      - id: talent_berserker_pain_fuel_icon
+        category: icon
+        visualKey: talent.berserker.pain_fuel.icon
+        outputName: phase3/p3-followup/icon_skill_berserker_pain_fuel.png
+      - id: talent_berserker_slaughter_drive_icon
+        category: icon
+        visualKey: talent.berserker.slaughter_drive.icon
+        outputName: phase3/p3-followup/icon_skill_berserker_slaughter_drive.png
+      - id: talent_spellblade_runic_edge_icon
+        category: icon
+        visualKey: talent.spellblade.runic_edge.icon
+        outputName: phase3/p3-followup/icon_skill_spellblade_runic_edge.png
+      - id: talent_spellblade_sunder_sigil_icon
+        category: icon
+        visualKey: talent.spellblade.sunder_sigil.icon
+        outputName: phase3/p3-followup/icon_skill_spellblade_sunder_sigil.png
+      - id: talent_spellblade_balance_point_icon
+        category: icon
+        visualKey: talent.spellblade.balance_point.icon
+        outputName: phase3/p3-followup/icon_skill_spellblade_balance_point.png
+      - id: talent_spellblade_flux_reversal_icon
+        category: icon
+        visualKey: talent.spellblade.flux_reversal.icon
+        outputName: phase3/p3-followup/icon_skill_spellblade_flux_reversal.png
+      - id: talent_spellblade_blink_strike_icon
+        category: icon
+        visualKey: talent.spellblade.blink_strike.icon
+        outputName: phase3/p3-followup/icon_skill_spellblade_blink_strike.png
+      - id: talent_spellblade_counter_seal_icon
+        category: icon
+        visualKey: talent.spellblade.counter_seal.icon
+        outputName: phase3/p3-followup/icon_skill_spellblade_counter_seal.png

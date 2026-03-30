@@ -1014,6 +1014,125 @@ class TalentResolverTest {
     }
 
     @Test
+    fun `fault line hits clustered enemies applies weaken and spends hate`() {
+        registry.register(
+            TalentDef(
+                id = "fault_line",
+                name = "断层",
+                description = "",
+                resourceCosts = mapOf(ResourceType.HATE to 20),
+                cooldown = 7,
+                range = 2,
+                areaRadius = 1,
+                levelEffects =
+                    mapOf(
+                        1 to
+                            TalentLevelEffect(
+                                damageMultiplier = 1.2,
+                                knockback = 1,
+                                associatedEffects =
+                                    listOf(
+                                        hostileOnHitEffect(
+                                            effectId = "fault_line_weaken",
+                                            statusId = StatusEffectType.WEAKEN.schemaId,
+                                            duration = 2,
+                                            saveDimension = SaveDimension.PHYSICAL,
+                                            magnitude = 0.10,
+                                        ),
+                                    ),
+                            ),
+                    ),
+            ),
+        )
+        val world = baseWorld()
+        val player = createPlayer(world, cooldown = 0, hate = 40, levelOverrides = mapOf("fault_line" to 1))
+        val first = createMonster(world, Point(3, 2))
+        val second = createMonster(world, Point(3, 3))
+
+        val result = resolver().resolve(world, map, player, "fault_line", Point(3, 2))
+
+        assertTrue(result is TalentUseResult.Success)
+        assertTrue(requireNotNull(world.get<Health>(first)).current < 40)
+        assertTrue(requireNotNull(world.get<Health>(second)).current < 40)
+        assertTrue(requireNotNull(world.get<com.ktome.core.talent.EffectTracker>(first)).has(StatusEffectType.WEAKEN))
+        assertTrue(requireNotNull(world.get<com.ktome.core.talent.EffectTracker>(second)).has(StatusEffectType.WEAKEN))
+        assertEquals(20, requireNotNull(world.get<ResourcePools>(player)).pool(ResourceType.HATE)?.current)
+    }
+
+    @Test
+    fun `pain fuel heals the user and applies empower buff`() {
+        registry.register(
+            TalentDef(
+                id = "pain_fuel",
+                name = "痛燃",
+                description = "",
+                resourceCosts = mapOf(ResourceType.HATE to 6),
+                cooldown = 9,
+                range = 0,
+                levelEffects =
+                    mapOf(
+                        1 to
+                            TalentLevelEffect(
+                                healFraction = 0.10,
+                                associatedEffects =
+                                    listOf(
+                                        selfEffect("pain_fuel_empower", "war_cry_empower", duration = 2, magnitude = 0.10),
+                                    ),
+                            ),
+                    ),
+            ),
+        )
+        val world = baseWorld()
+        val player = createPlayer(world, cooldown = 0, hate = 26, levelOverrides = mapOf("pain_fuel" to 1))
+        requireNotNull(world.get<Health>(player)).current = 20
+
+        val result = resolver().resolve(world, map, player, "pain_fuel", null)
+
+        assertTrue(result is TalentUseResult.Success)
+        assertTrue(requireNotNull(world.get<Health>(player)).current > 20)
+        assertTrue(requireNotNull(world.get<com.ktome.core.talent.EffectTracker>(player)).activeEffects().any { effect -> effect.schemaId == "war_cry_empower" })
+        assertEquals(20, requireNotNull(world.get<ResourcePools>(player)).pool(ResourceType.HATE)?.current)
+    }
+
+    @Test
+    fun `flux reversal restores mana and applies a defensive buff`() {
+        registry.register(
+            TalentDef(
+                id = "flux_reversal",
+                name = "回流逆转",
+                description = "",
+                resourceCosts = mapOf(ResourceType.MANA to 8),
+                cooldown = 7,
+                range = 0,
+                levelEffects =
+                    mapOf(
+                        1 to
+                            TalentLevelEffect(
+                                resourceRestoreFraction = 0.15,
+                                associatedEffects =
+                                    listOf(
+                                        selfEffect(
+                                            "flux_reversal_guard",
+                                            StatusEffectType.GUARD_STANCE_BUFF.schemaId,
+                                            duration = 2,
+                                            magnitude = 0.10,
+                                        ),
+                                    ),
+                            ),
+                    ),
+            ),
+        )
+        val world = baseWorld()
+        val player = createPlayer(world, cooldown = 0, mana = 20, levelOverrides = mapOf("flux_reversal" to 1))
+
+        val result = resolver().resolve(world, map, player, "flux_reversal", null)
+
+        assertTrue(result is TalentUseResult.Success)
+        assertTrue(requireNotNull(world.get<com.ktome.core.talent.EffectTracker>(player)).has(StatusEffectType.GUARD_STANCE_BUFF))
+        assertEquals(27, requireNotNull(world.get<ResourcePools>(player)).pool(ResourceType.MANA)?.current)
+    }
+
+    @Test
     fun `unsupported talent fails without spending stamina or cooldown`() {
         val world = baseWorld()
         val player = createPlayer(world, cooldown = 0)
@@ -1093,6 +1212,7 @@ class TalentResolverTest {
         stamina: Int = 40,
         mana: Int = 100,
         energy: Int = 60,
+        hate: Int = 40,
         positiveEnergy: Int = 30,
         cooldown: Int = 3,
         levelOverrides: Map<String, Int> = emptyMap(),
@@ -1190,6 +1310,7 @@ class TalentResolverTest {
                     ResourceType.STAMINA to ResourcePool(type = ResourceType.STAMINA, current = stamina, max = derived.maxStamina),
                     ResourceType.MANA to ResourcePool(type = ResourceType.MANA, current = mana, max = 100),
                     ResourceType.ENERGY to ResourcePool(type = ResourceType.ENERGY, current = energy, max = 100),
+                    ResourceType.HATE to ResourcePool(type = ResourceType.HATE, current = hate, max = 100),
                     ResourceType.POSITIVE_ENERGY to ResourcePool(type = ResourceType.POSITIVE_ENERGY, current = positiveEnergy, max = 100),
                 ),
             ),

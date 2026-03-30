@@ -109,6 +109,7 @@ class LoadoutPlannerTest {
                     ),
                 reserveTalents =
                     listOf(
+                        reserveTalent(talentId = "runic_edge", requiresTarget = true),
                         reserveTalent(talentId = "spell_parry"),
                         reserveTalent(talentId = "flux_burst"),
                     ),
@@ -119,7 +120,47 @@ class LoadoutPlannerTest {
                 eventTail = emptyList(),
             )
 
-        assertEquals(PlayerCommand.EquipTalentToSlot(3, "spell_parry"), LoadoutPlanner.preferredLoadoutCommand(observation))
+        assertEquals(PlayerCommand.EquipTalentToSlot(2, "runic_edge"), LoadoutPlanner.preferredLoadoutCommand(observation))
+    }
+
+    @Test
+    fun `berserker loadout promotes pr11 talent depth into active slots`() {
+        val observation =
+            RunObservation(
+                floor = 1,
+                turnIndex = 14,
+                playerStatus = healthyStatus(),
+                playerResource = PlayerResourceView(current = 44, max = 100, typeId = "HATE"),
+                playerPosition = Point(1, 0),
+                map = map,
+                visibleTiles = map.floorPoints().toSet(),
+                exploredTiles = map.floorPoints().toSet(),
+                visibleHostilePositions = emptyList(),
+                visibleBlockingPositions = emptySet(),
+                visibleGroundItemPositions = emptyList(),
+                visibleInteractables = emptyList(),
+                knownDownstairsPositions = emptyList(),
+                inventoryItems = emptyList(),
+                talentSlots =
+                    listOf(
+                        talentSlot(slot = 1, talentId = "savage_hew", resourceTypeId = "HATE", requiresTarget = true),
+                        talentSlot(slot = 2, talentId = "blood_rush", resourceTypeId = "HATE", requiresTarget = true),
+                        talentSlot(slot = 3, talentId = "kill_frenzy", resourceTypeId = "HATE"),
+                        talentSlot(slot = 4, talentId = "last_stand", resourceTypeId = "HATE"),
+                    ),
+                reserveTalents =
+                    listOf(
+                        reserveTalent(talentId = "fault_line", resourceTypeId = "HATE", requiresTarget = true),
+                        reserveTalent(talentId = "slaughter_drive", resourceTypeId = "HATE"),
+                    ),
+                canAscend = false,
+                canDescend = false,
+                runOutcome = RunOutcome.InProgress,
+                messageLogTail = emptyList(),
+                eventTail = emptyList(),
+            )
+
+        assertEquals(PlayerCommand.EquipTalentToSlot(2, "fault_line"), LoadoutPlanner.preferredLoadoutCommand(observation))
     }
 
     @Test

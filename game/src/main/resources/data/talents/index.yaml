@@ -141,7 +141,7 @@ talentTrees:
     schemaVersion: 3
     tags: [tree, berserker]
     layout: foundation_grid
-    nodes: [blood_rush, savage_hew]
+    nodes: [blood_rush, savage_hew, riven_edge, pursuit_drive]
   - id: berserker_ruin
     professionId: berserker
     nameKey: talent_tree.berserker_ruin.name
@@ -152,7 +152,7 @@ talentTrees:
     schemaVersion: 3
     tags: [tree, berserker]
     layout: foundation_grid
-    nodes: [reckless_slam, rupture_wave]
+    nodes: [reckless_slam, rupture_wave, fault_line, aftershock]
   - id: berserker_bloodwar
     professionId: berserker
     nameKey: talent_tree.berserker_bloodwar.name
@@ -163,7 +163,7 @@ talentTrees:
     schemaVersion: 3
     tags: [tree, berserker]
     layout: foundation_grid
-    nodes: [kill_frenzy, last_stand]
+    nodes: [kill_frenzy, last_stand, pain_fuel, slaughter_drive]
   - id: spellblade_enchanted_blade
     professionId: spellblade
     nameKey: talent_tree.spellblade_enchanted_blade.name
@@ -174,7 +174,7 @@ talentTrees:
     schemaVersion: 3
     tags: [tree, spellblade]
     layout: foundation_grid
-    nodes: [arcane_edge, spell_rend]
+    nodes: [arcane_edge, spell_rend, runic_edge, sunder_sigil]
   - id: spellblade_elemental_flux
     professionId: spellblade
     nameKey: talent_tree.spellblade_elemental_flux.name
@@ -185,7 +185,7 @@ talentTrees:
     schemaVersion: 3
     tags: [tree, spellblade]
     layout: foundation_grid
-    nodes: [flux_anchor, flux_burst]
+    nodes: [flux_anchor, flux_burst, balance_point, flux_reversal]
   - id: spellblade_battle_spell
     professionId: spellblade
     nameKey: talent_tree.spellblade_battle_spell.name
@@ -196,7 +196,7 @@ talentTrees:
     schemaVersion: 3
     tags: [tree, spellblade]
     layout: foundation_grid
-    nodes: [mana_lunge, spell_parry]
+    nodes: [mana_lunge, spell_parry, blink_strike, counter_seal]
   - id: shadowblade_assassination_plus
     professionId: shadowblade
     nameKey: talent_tree.shadowblade_assassination_plus.name
@@ -4823,6 +4823,804 @@ talents:
             applicationPolicy: SELF_AUTO
             duration: 4
             magnitude: 0.20
+  - id: riven_edge
+    nameKey: talent.berserker.riven_edge.name
+    descKey: talent.berserker.riven_edge.desc
+    visualKey: talent.berserker.riven_edge.visual
+    iconKey: talent.berserker.riven_edge.icon
+    audioProfile: audio.talent.riven_edge
+    schemaVersion: 3
+    tags: [talent, berserker, boss]
+    maxPoints: 5
+    category: ACTIVE
+    damageType: PHYSICAL
+    powerDimension: PHYSICAL
+    kind: ACTIVE
+    cooldown: 6
+    castTime: STANDARD
+    range: 1
+    minRange: 0
+    areaRadius: 0
+    resourceCosts: { HATE: 18 }
+    unlockLevel: 3
+    targeting: SINGLE_TARGET
+    callbacks: []
+    telegraphRef: melee_single
+    treeId: berserker_wrath
+    keywords: [damage, boss]
+    levelEffects:
+      1:
+        damageMultiplier: 1.65
+        associatedEffects:
+          - effectId: riven_edge_break
+            effectType: ARMOR_BREAK
+            trigger: ON_HIT
+            targetScope: PRIMARY_TARGET
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: PHYSICAL
+            duration: 2
+            magnitude: 1.0
+      2:
+        damageMultiplier: 1.80
+        associatedEffects:
+          - effectId: riven_edge_break
+            effectType: ARMOR_BREAK
+            trigger: ON_HIT
+            targetScope: PRIMARY_TARGET
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: PHYSICAL
+            duration: 2
+            magnitude: 1.0
+      3:
+        damageMultiplier: 1.95
+        associatedEffects:
+          - effectId: riven_edge_break
+            effectType: ARMOR_BREAK
+            trigger: ON_HIT
+            targetScope: PRIMARY_TARGET
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: PHYSICAL
+            duration: 3
+            magnitude: 1.0
+      4:
+        damageMultiplier: 2.10
+        associatedEffects:
+          - effectId: riven_edge_break
+            effectType: ARMOR_BREAK
+            trigger: ON_HIT
+            targetScope: PRIMARY_TARGET
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: PHYSICAL
+            duration: 3
+            magnitude: 1.0
+      5:
+        damageMultiplier: 2.25
+        associatedEffects:
+          - effectId: riven_edge_break
+            effectType: ARMOR_BREAK
+            trigger: ON_HIT
+            targetScope: PRIMARY_TARGET
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: PHYSICAL
+            duration: 4
+            magnitude: 1.0
+  - id: pursuit_drive
+    nameKey: talent.berserker.pursuit_drive.name
+    descKey: talent.berserker.pursuit_drive.desc
+    visualKey: talent.berserker.pursuit_drive.visual
+    iconKey: talent.berserker.pursuit_drive.icon
+    audioProfile: audio.talent.pursuit_drive
+    schemaVersion: 3
+    tags: [talent, berserker, mobility]
+    maxPoints: 5
+    category: ACTIVE
+    damageType: PHYSICAL
+    powerDimension: PHYSICAL
+    kind: ACTIVE
+    cooldown: 5
+    castTime: STANDARD
+    range: 4
+    minRange: 1
+    areaRadius: 0
+    resourceCosts: { HATE: 12 }
+    unlockLevel: 5
+    targeting: SINGLE_TARGET
+    callbacks: []
+    telegraphRef: charge_lane
+    treeId: berserker_wrath
+    keywords: [mobility, burst]
+    levelEffects:
+      1: { damageMultiplier: 1.15, healFraction: 0.05, resourceRestoreFraction: 0.06 }
+      2: { damageMultiplier: 1.25, healFraction: 0.07, resourceRestoreFraction: 0.08 }
+      3: { damageMultiplier: 1.35, healFraction: 0.09, resourceRestoreFraction: 0.10 }
+      4: { damageMultiplier: 1.45, healFraction: 0.11, resourceRestoreFraction: 0.12 }
+      5: { damageMultiplier: 1.55, healFraction: 0.13, resourceRestoreFraction: 0.14 }
+  - id: fault_line
+    nameKey: talent.berserker.fault_line.name
+    descKey: talent.berserker.fault_line.desc
+    visualKey: talent.berserker.fault_line.visual
+    iconKey: talent.berserker.fault_line.icon
+    audioProfile: audio.talent.fault_line
+    schemaVersion: 3
+    tags: [talent, berserker, area]
+    maxPoints: 5
+    category: ACTIVE
+    damageType: PHYSICAL
+    powerDimension: PHYSICAL
+    kind: ACTIVE
+    cooldown: 7
+    castTime: STANDARD
+    range: 2
+    minRange: 0
+    areaRadius: 1
+    resourceCosts: { HATE: 20 }
+    unlockLevel: 6
+    targeting: RADIUS_TARGET
+    callbacks: []
+    telegraphRef: charge_lane
+    treeId: berserker_ruin
+    keywords: [damage, area, control]
+    levelEffects:
+      1:
+        damageMultiplier: 1.20
+        knockback: 1
+        associatedEffects:
+          - effectId: fault_line_weaken
+            effectType: WEAKEN
+            trigger: ON_HIT
+            targetScope: PRIMARY_TARGET
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: PHYSICAL
+            duration: 2
+            magnitude: 0.08
+      2:
+        damageMultiplier: 1.35
+        knockback: 1
+        associatedEffects:
+          - effectId: fault_line_weaken
+            effectType: WEAKEN
+            trigger: ON_HIT
+            targetScope: PRIMARY_TARGET
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: PHYSICAL
+            duration: 2
+            magnitude: 0.10
+      3:
+        damageMultiplier: 1.50
+        knockback: 1
+        associatedEffects:
+          - effectId: fault_line_weaken
+            effectType: WEAKEN
+            trigger: ON_HIT
+            targetScope: PRIMARY_TARGET
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: PHYSICAL
+            duration: 3
+            magnitude: 0.12
+      4:
+        damageMultiplier: 1.65
+        knockback: 2
+        associatedEffects:
+          - effectId: fault_line_weaken
+            effectType: WEAKEN
+            trigger: ON_HIT
+            targetScope: PRIMARY_TARGET
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: PHYSICAL
+            duration: 3
+            magnitude: 0.14
+      5:
+        damageMultiplier: 1.80
+        knockback: 2
+        associatedEffects:
+          - effectId: fault_line_weaken
+            effectType: WEAKEN
+            trigger: ON_HIT
+            targetScope: PRIMARY_TARGET
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: PHYSICAL
+            duration: 4
+            magnitude: 0.16
+  - id: aftershock
+    nameKey: talent.berserker.aftershock.name
+    descKey: talent.berserker.aftershock.desc
+    visualKey: talent.berserker.aftershock.visual
+    iconKey: talent.berserker.aftershock.icon
+    audioProfile: audio.talent.aftershock
+    schemaVersion: 3
+    tags: [talent, berserker, area]
+    maxPoints: 5
+    category: ACTIVE
+    damageType: PHYSICAL
+    powerDimension: PHYSICAL
+    kind: ACTIVE
+    cooldown: 8
+    castTime: STANDARD
+    range: 0
+    minRange: 0
+    areaRadius: 2
+    resourceCosts: { HATE: 24 }
+    unlockLevel: 8
+    targeting: RADIUS_SELF
+    callbacks: []
+    telegraphRef: self_buff_aura
+    treeId: berserker_ruin
+    keywords: [damage, area]
+    levelEffects:
+      1: { damageMultiplier: 0.95, knockback: 1 }
+      2: { damageMultiplier: 1.10, knockback: 1 }
+      3: { damageMultiplier: 1.25, knockback: 1 }
+      4: { damageMultiplier: 1.40, knockback: 1 }
+      5: { damageMultiplier: 1.55, knockback: 2 }
+  - id: pain_fuel
+    nameKey: talent.berserker.pain_fuel.name
+    descKey: talent.berserker.pain_fuel.desc
+    visualKey: talent.berserker.pain_fuel.visual
+    iconKey: talent.berserker.pain_fuel.icon
+    audioProfile: audio.talent.pain_fuel
+    schemaVersion: 3
+    tags: [talent, berserker, sustain]
+    maxPoints: 5
+    category: ACTIVE
+    kind: ACTIVE
+    cooldown: 9
+    castTime: STANDARD
+    range: 0
+    minRange: 0
+    areaRadius: 0
+    resourceCosts: { HATE: 6 }
+    unlockLevel: 4
+    targeting: SELF
+    callbacks: []
+    telegraphRef: self_buff_aura
+    treeId: berserker_bloodwar
+    keywords: [panic, buff]
+    levelEffects:
+      1:
+        healFraction: 0.08
+        associatedEffects:
+          - effectId: pain_fuel_empower
+            effectType: war_cry_empower
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 2
+            magnitude: 0.08
+      2:
+        healFraction: 0.10
+        associatedEffects:
+          - effectId: pain_fuel_empower
+            effectType: war_cry_empower
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 2
+            magnitude: 0.10
+      3:
+        healFraction: 0.12
+        associatedEffects:
+          - effectId: pain_fuel_empower
+            effectType: war_cry_empower
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 3
+            magnitude: 0.12
+      4:
+        healFraction: 0.14
+        associatedEffects:
+          - effectId: pain_fuel_empower
+            effectType: war_cry_empower
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 3
+            magnitude: 0.14
+      5:
+        healFraction: 0.16
+        associatedEffects:
+          - effectId: pain_fuel_empower
+            effectType: war_cry_empower
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 4
+            magnitude: 0.16
+  - id: slaughter_drive
+    nameKey: talent.berserker.slaughter_drive.name
+    descKey: talent.berserker.slaughter_drive.desc
+    visualKey: talent.berserker.slaughter_drive.visual
+    iconKey: talent.berserker.slaughter_drive.icon
+    audioProfile: audio.talent.slaughter_drive
+    schemaVersion: 3
+    tags: [talent, berserker, support]
+    maxPoints: 5
+    category: ACTIVE
+    kind: ACTIVE
+    cooldown: 6
+    castTime: STANDARD
+    range: 0
+    minRange: 0
+    areaRadius: 0
+    resourceCosts: { HATE: 0 }
+    unlockLevel: 7
+    targeting: SELF
+    callbacks: []
+    telegraphRef: self_buff_aura
+    treeId: berserker_bloodwar
+    keywords: [resource, buff]
+    levelEffects:
+      1:
+        resourceRestoreFraction: 0.10
+        associatedEffects:
+          - effectId: slaughter_drive_empower
+            effectType: war_cry_empower
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 2
+            magnitude: 0.06
+      2:
+        resourceRestoreFraction: 0.12
+        associatedEffects:
+          - effectId: slaughter_drive_empower
+            effectType: war_cry_empower
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 2
+            magnitude: 0.08
+      3:
+        resourceRestoreFraction: 0.14
+        associatedEffects:
+          - effectId: slaughter_drive_empower
+            effectType: war_cry_empower
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 3
+            magnitude: 0.10
+      4:
+        resourceRestoreFraction: 0.16
+        associatedEffects:
+          - effectId: slaughter_drive_empower
+            effectType: war_cry_empower
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 3
+            magnitude: 0.12
+      5:
+        resourceRestoreFraction: 0.18
+        associatedEffects:
+          - effectId: slaughter_drive_empower
+            effectType: war_cry_empower
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 4
+            magnitude: 0.14
+  - id: runic_edge
+    nameKey: talent.spellblade.runic_edge.name
+    descKey: talent.spellblade.runic_edge.desc
+    visualKey: talent.spellblade.runic_edge.visual
+    iconKey: talent.spellblade.runic_edge.icon
+    audioProfile: audio.talent.runic_edge
+    schemaVersion: 3
+    tags: [talent, spellblade, hybrid]
+    maxPoints: 5
+    category: ACTIVE
+    damageType: LIGHTNING
+    powerDimension: SPELL
+    kind: ACTIVE
+    cooldown: 5
+    castTime: STANDARD
+    range: 1
+    minRange: 0
+    areaRadius: 0
+    resourceCosts: { MANA: 12 }
+    unlockLevel: 2
+    targeting: SINGLE_TARGET
+    callbacks: []
+    telegraphRef: melee_single
+    equilibriumAffinity: ARCANE
+    treeId: spellblade_enchanted_blade
+    keywords: [damage, hybrid]
+    levelEffects:
+      1:
+        damageMultiplier: 1.35
+        associatedEffects:
+          - effectId: runic_edge_charge
+            effectType: OVERCHARGE
+            trigger: ON_HIT
+            targetScope: PRIMARY_TARGET
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: SPELL
+            duration: 2
+            magnitude: 0.25
+      2:
+        damageMultiplier: 1.50
+        associatedEffects:
+          - effectId: runic_edge_charge
+            effectType: OVERCHARGE
+            trigger: ON_HIT
+            targetScope: PRIMARY_TARGET
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: SPELL
+            duration: 2
+            magnitude: 0.25
+      3:
+        damageMultiplier: 1.65
+        associatedEffects:
+          - effectId: runic_edge_charge
+            effectType: OVERCHARGE
+            trigger: ON_HIT
+            targetScope: PRIMARY_TARGET
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: SPELL
+            duration: 3
+            magnitude: 0.25
+      4:
+        damageMultiplier: 1.80
+        associatedEffects:
+          - effectId: runic_edge_charge
+            effectType: OVERCHARGE
+            trigger: ON_HIT
+            targetScope: PRIMARY_TARGET
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: SPELL
+            duration: 3
+            magnitude: 0.25
+      5:
+        damageMultiplier: 1.95
+        associatedEffects:
+          - effectId: runic_edge_charge
+            effectType: OVERCHARGE
+            trigger: ON_HIT
+            targetScope: PRIMARY_TARGET
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: SPELL
+            duration: 4
+            magnitude: 0.25
+  - id: sunder_sigil
+    nameKey: talent.spellblade.sunder_sigil.name
+    descKey: talent.spellblade.sunder_sigil.desc
+    visualKey: talent.spellblade.sunder_sigil.visual
+    iconKey: talent.spellblade.sunder_sigil.icon
+    audioProfile: audio.talent.sunder_sigil
+    schemaVersion: 3
+    tags: [talent, spellblade, boss]
+    maxPoints: 5
+    category: ACTIVE
+    damageType: LIGHTNING
+    powerDimension: SPELL
+    kind: ACTIVE
+    cooldown: 7
+    castTime: STANDARD
+    range: 1
+    minRange: 0
+    areaRadius: 0
+    resourceCosts: { MANA: 16 }
+    unlockLevel: 6
+    targeting: SINGLE_TARGET
+    callbacks: []
+    telegraphRef: melee_single
+    equilibriumAffinity: ARCANE
+    treeId: spellblade_enchanted_blade
+    keywords: [damage, boss]
+    levelEffects:
+      1:
+        damageMultiplier: 1.45
+        associatedEffects:
+          - effectId: sunder_sigil_break
+            effectType: ARMOR_BREAK
+            trigger: ON_HIT
+            targetScope: PRIMARY_TARGET
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: SPELL
+            duration: 2
+            magnitude: 1.0
+      2:
+        damageMultiplier: 1.60
+        associatedEffects:
+          - effectId: sunder_sigil_break
+            effectType: ARMOR_BREAK
+            trigger: ON_HIT
+            targetScope: PRIMARY_TARGET
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: SPELL
+            duration: 2
+            magnitude: 1.0
+      3:
+        damageMultiplier: 1.75
+        associatedEffects:
+          - effectId: sunder_sigil_break
+            effectType: ARMOR_BREAK
+            trigger: ON_HIT
+            targetScope: PRIMARY_TARGET
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: SPELL
+            duration: 3
+            magnitude: 1.0
+      4:
+        damageMultiplier: 1.90
+        associatedEffects:
+          - effectId: sunder_sigil_break
+            effectType: ARMOR_BREAK
+            trigger: ON_HIT
+            targetScope: PRIMARY_TARGET
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: SPELL
+            duration: 3
+            magnitude: 1.0
+      5:
+        damageMultiplier: 2.05
+        associatedEffects:
+          - effectId: sunder_sigil_break
+            effectType: ARMOR_BREAK
+            trigger: ON_HIT
+            targetScope: PRIMARY_TARGET
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: SPELL
+            duration: 4
+            magnitude: 1.0
+  - id: balance_point
+    nameKey: talent.spellblade.balance_point.name
+    descKey: talent.spellblade.balance_point.desc
+    visualKey: talent.spellblade.balance_point.visual
+    iconKey: talent.spellblade.balance_point.icon
+    audioProfile: audio.talent.balance_point
+    schemaVersion: 3
+    tags: [talent, spellblade, utility]
+    maxPoints: 5
+    category: ACTIVE
+    kind: ACTIVE
+    cooldown: 6
+    castTime: STANDARD
+    range: 0
+    minRange: 0
+    areaRadius: 0
+    resourceCosts: { MANA: 6 }
+    unlockLevel: 3
+    targeting: SELF
+    callbacks: []
+    telegraphRef: self_buff_aura
+    equilibriumAffinity: NEUTRAL
+    treeId: spellblade_elemental_flux
+    keywords: [buff, resource]
+    levelEffects:
+      1:
+        resourceRestoreFraction: 0.08
+        associatedEffects:
+          - effectId: balance_point_focus
+            effectType: MANA_SURGE_BUFF
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 2
+            magnitude: 0.08
+      2:
+        resourceRestoreFraction: 0.10
+        associatedEffects:
+          - effectId: balance_point_focus
+            effectType: MANA_SURGE_BUFF
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 2
+            magnitude: 0.10
+      3:
+        resourceRestoreFraction: 0.12
+        associatedEffects:
+          - effectId: balance_point_focus
+            effectType: MANA_SURGE_BUFF
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 3
+            magnitude: 0.12
+      4:
+        resourceRestoreFraction: 0.14
+        associatedEffects:
+          - effectId: balance_point_focus
+            effectType: MANA_SURGE_BUFF
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 3
+            magnitude: 0.14
+      5:
+        resourceRestoreFraction: 0.16
+        associatedEffects:
+          - effectId: balance_point_focus
+            effectType: MANA_SURGE_BUFF
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 4
+            magnitude: 0.16
+  - id: flux_reversal
+    nameKey: talent.spellblade.flux_reversal.name
+    descKey: talent.spellblade.flux_reversal.desc
+    visualKey: talent.spellblade.flux_reversal.visual
+    iconKey: talent.spellblade.flux_reversal.icon
+    audioProfile: audio.talent.flux_reversal
+    schemaVersion: 3
+    tags: [talent, spellblade, utility]
+    maxPoints: 5
+    category: ACTIVE
+    kind: ACTIVE
+    cooldown: 9
+    castTime: STANDARD
+    range: 0
+    minRange: 0
+    areaRadius: 0
+    resourceCosts: { MANA: 4 }
+    unlockLevel: 7
+    targeting: SELF
+    callbacks: []
+    telegraphRef: self_buff_aura
+    equilibriumAffinity: NEUTRAL
+    treeId: spellblade_elemental_flux
+    keywords: [resource, defense]
+    levelEffects:
+      1:
+        resourceRestoreFraction: 0.05
+        associatedEffects:
+          - effectId: flux_reversal_guard
+            effectType: ARCANE_SHIELD_BUFF
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 2
+            magnitude: 0.10
+      2:
+        resourceRestoreFraction: 0.07
+        associatedEffects:
+          - effectId: flux_reversal_guard
+            effectType: ARCANE_SHIELD_BUFF
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 2
+            magnitude: 0.12
+      3:
+        resourceRestoreFraction: 0.09
+        associatedEffects:
+          - effectId: flux_reversal_guard
+            effectType: ARCANE_SHIELD_BUFF
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 3
+            magnitude: 0.14
+      4:
+        resourceRestoreFraction: 0.11
+        associatedEffects:
+          - effectId: flux_reversal_guard
+            effectType: ARCANE_SHIELD_BUFF
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 3
+            magnitude: 0.16
+      5:
+        resourceRestoreFraction: 0.13
+        associatedEffects:
+          - effectId: flux_reversal_guard
+            effectType: ARCANE_SHIELD_BUFF
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 4
+            magnitude: 0.18
+  - id: blink_strike
+    nameKey: talent.spellblade.blink_strike.name
+    descKey: talent.spellblade.blink_strike.desc
+    visualKey: talent.spellblade.blink_strike.visual
+    iconKey: talent.spellblade.blink_strike.icon
+    audioProfile: audio.talent.blink_strike
+    schemaVersion: 3
+    tags: [talent, spellblade, mobility]
+    maxPoints: 5
+    category: ACTIVE
+    damageType: LIGHTNING
+    powerDimension: SPELL
+    kind: ACTIVE
+    cooldown: 6
+    castTime: STANDARD
+    range: 4
+    minRange: 1
+    areaRadius: 0
+    resourceCosts: { MANA: 12 }
+    unlockLevel: 4
+    targeting: SINGLE_TARGET
+    callbacks: []
+    telegraphRef: charge_lane
+    equilibriumAffinity: ARCANE
+    treeId: spellblade_battle_spell
+    keywords: [mobility, hybrid]
+    levelEffects:
+      1: { damageMultiplier: 1.15 }
+      2: { damageMultiplier: 1.30 }
+      3: { damageMultiplier: 1.45 }
+      4: { damageMultiplier: 1.60 }
+      5: { damageMultiplier: 1.75 }
+  - id: counter_seal
+    nameKey: talent.spellblade.counter_seal.name
+    descKey: talent.spellblade.counter_seal.desc
+    visualKey: talent.spellblade.counter_seal.visual
+    iconKey: talent.spellblade.counter_seal.icon
+    audioProfile: audio.talent.counter_seal
+    schemaVersion: 3
+    tags: [talent, spellblade, defense]
+    maxPoints: 5
+    category: ACTIVE
+    kind: ACTIVE
+    cooldown: 7
+    castTime: QUICK
+    range: 0
+    minRange: 0
+    areaRadius: 0
+    resourceCosts: { MANA: 8 }
+    unlockLevel: 5
+    targeting: SELF
+    callbacks: []
+    telegraphRef: self_buff_aura
+    equilibriumAffinity: NEUTRAL
+    treeId: spellblade_battle_spell
+    keywords: [defense, counter]
+    levelEffects:
+      1:
+        resourceRestoreFraction: 0.05
+        associatedEffects:
+          - effectId: counter_seal_guard
+            effectType: HOLY_SHIELD_BUFF
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 2
+            magnitude: 0.14
+      2:
+        resourceRestoreFraction: 0.07
+        associatedEffects:
+          - effectId: counter_seal_guard
+            effectType: HOLY_SHIELD_BUFF
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 2
+            magnitude: 0.16
+      3:
+        resourceRestoreFraction: 0.09
+        associatedEffects:
+          - effectId: counter_seal_guard
+            effectType: HOLY_SHIELD_BUFF
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 3
+            magnitude: 0.18
+      4:
+        resourceRestoreFraction: 0.11
+        associatedEffects:
+          - effectId: counter_seal_guard
+            effectType: HOLY_SHIELD_BUFF
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 3
+            magnitude: 0.20
+      5:
+        resourceRestoreFraction: 0.13
+        associatedEffects:
+          - effectId: counter_seal_guard
+            effectType: HOLY_SHIELD_BUFF
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 4
+            magnitude: 0.22
   - id: human_resolve
     nameKey: talent.race.human.resolve.name
     descKey: talent.race.human.resolve.desc

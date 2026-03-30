@@ -159,6 +159,8 @@ tasks.register<Exec>("assetLint") {
         "assets-src/image/specs/phase2-asset-plan.yaml",
         "--extra-plan",
         "assets-src/image/specs/phase3-pr09-gemini-plan.yaml",
+        "--extra-plan",
+        "assets-src/image/specs/phase3-v2-pr11-gemini-plan.yaml",
         "--report-dir",
         "assets-src/image/manifests",
     )
@@ -174,6 +176,8 @@ tasks.register<Exec>("styleLint") {
         "assets-src/image/specs/phase2-asset-plan.yaml",
         "--extra-plan",
         "assets-src/image/specs/phase3-pr09-gemini-plan.yaml",
+        "--extra-plan",
+        "assets-src/image/specs/phase3-v2-pr11-gemini-plan.yaml",
     )
 }
 
@@ -188,6 +192,8 @@ tasks.register<Exec>("audioLint") {
         "assets-src/audio/specs/phase2-audio-plan.yaml",
         "--extra-plan",
         "assets-src/audio/specs/phase3-pr09-audio-plan.yaml",
+        "--extra-plan",
+        "assets-src/audio/specs/phase3-v2-pr11-audio-plan.yaml",
         "--manifest",
         "assets-src/audio/manifests/phase2-audio-manifest.json",
         "--runtime-manifest",
@@ -235,6 +241,10 @@ tasks.register<Exec>("manifestLint") {
         "assets-src/image/specs/phase3-pr09-gemini-plan.yaml",
         "--extra-plan",
         "assets-src/image/specs/phase3-pr09-visual-alias-plan.yaml",
+        "--extra-plan",
+        "assets-src/image/specs/phase3-v2-pr11-gemini-plan.yaml",
+        "--extra-plan",
+        "assets-src/image/specs/phase3-v2-pr11-visual-alias-plan.yaml",
         "--manifest",
         "assets-src/image/manifests/phase2-visual-manifest.json",
         "--runtime-manifest",

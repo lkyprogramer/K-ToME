@@ -164,10 +164,10 @@ professions:
     soloContract:
       offenseTags: [rage, burst, cleave]
       defenseTags: [lifesteal, grit]
-      mobilityTags: [rush, slam]
-      aoeAnswerTags: [reckless_slam, rupture_wave]
-      bossAnswerTags: [savage_hew, rupture_wave]
-      panicAnswerTags: [last_stand, blood_rush]
+      mobilityTags: [rush, slam, pursuit]
+      aoeAnswerTags: [reckless_slam, rupture_wave, fault_line, aftershock]
+      bossAnswerTags: [savage_hew, riven_edge, rupture_wave]
+      panicAnswerTags: [last_stand, pain_fuel, pursuit_drive]
   - id: spellblade
     nameKey: profession.spellblade.name
     descKey: profession.spellblade.desc
@@ -204,9 +204,9 @@ professions:
       offenseTags: [hybrid, arcane, melee]
       defenseTags: [parry, ward]
       mobilityTags: [lunge, blink_strike]
-      aoeAnswerTags: [arcane_wave, flux_burst]
-      bossAnswerTags: [arcane_edge, spell_rend]
-      panicAnswerTags: [spell_parry, flux_anchor]
+      aoeAnswerTags: [flux_burst, blink_strike]
+      bossAnswerTags: [arcane_edge, spell_rend, sunder_sigil]
+      panicAnswerTags: [spell_parry, counter_seal, flux_reversal]
   - id: shadowblade
     nameKey: profession.shadowblade.name
     descKey: profession.shadowblade.desc

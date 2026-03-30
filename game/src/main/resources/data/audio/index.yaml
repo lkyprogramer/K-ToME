@@ -108,6 +108,18 @@ audioProfiles:
   - id: audio.talent.absolution
   - id: audio.talent.beacon_of_zeal
   - id: audio.talent.ritual_break
+  - id: audio.talent.riven_edge
+  - id: audio.talent.pursuit_drive
+  - id: audio.talent.fault_line
+  - id: audio.talent.aftershock
+  - id: audio.talent.pain_fuel
+  - id: audio.talent.slaughter_drive
+  - id: audio.talent.runic_edge
+  - id: audio.talent.sunder_sigil
+  - id: audio.talent.balance_point
+  - id: audio.talent.flux_reversal
+  - id: audio.talent.blink_strike
+  - id: audio.talent.counter_seal
   - id: audio.monster.bandit_family
   - id: audio.monster.warded_ruin_family
   - id: audio.monster.forge_family
