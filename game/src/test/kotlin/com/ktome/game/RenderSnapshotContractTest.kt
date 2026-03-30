@@ -170,10 +170,27 @@ class RenderSnapshotContractTest {
                         passive = EquipmentPassive.DamageVsTag("bandit", 0.15),
                     ),
             )
+        inventory.itemIds +=
+            itemFactory.createCarriedItem(
+                world = world,
+                item =
+                    ItemInstance(
+                        baseId = "long_sword",
+                        name = "Long Sword",
+                        type = ItemType.WEAPON,
+                        slot = com.ktome.core.item.EquipSlot.WEAPON,
+                        glyph = ')',
+                        colorHex = "#C0C0C0",
+                        quality = ItemQuality.COMMON,
+                        stats = StatModifier(attack = 8),
+                        passive = EquipmentPassive.DamageVsTag("undead", 0.10),
+                    ),
+            )
 
         val snapshot = session.renderSnapshot()
         val rareWeapon = snapshot.uiState.inventory.first { entry -> entry.item.baseItemId == "battle_axe" }.item
         val passiveReward = snapshot.uiState.inventory.first { entry -> entry.item.baseItemId == "bandit_trophy" }.item
+        val undeadSlayer = snapshot.uiState.inventory.first { entry -> entry.item.baseItemId == "long_sword" }.item
         val rareWeaponDisplayName = requireNotNull(rareWeapon.displayName)
 
         assertEquals("item.quality.rare", rareWeapon.qualityNameKey)
@@ -189,6 +206,15 @@ class RenderSnapshotContractTest {
             requireNotNull(rareWeaponDisplayName.arguments.first { argument -> argument.name == "material" }.valueToken).key,
         )
         assertEquals("ui.inspect.passive.damage_vs_tag", passiveReward.passiveDescriptions.single().key)
+        assertEquals(
+            "monster.tag.bandit",
+            passiveReward.passiveDescriptions.single().arguments.first { argument -> argument.name == "tag" }.valueKey,
+        )
+        assertEquals("ui.inspect.passive.damage_vs_tag", undeadSlayer.passiveDescriptions.single().key)
+        assertEquals(
+            "monster.tag.undead",
+            undeadSlayer.passiveDescriptions.single().arguments.first { argument -> argument.name == "tag" }.valueKey,
+        )
     }
 
     @Test

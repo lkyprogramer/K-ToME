@@ -142,7 +142,7 @@ import org.yaml.snakeyaml.Yaml
 
 class DataLoader(
     private val locale: GameLocale = GameLocale.EN_US,
-    private val localizationBundle: LocalizationBundle = LocalizationBundle.load(),
+    localizationBundleProvider: () -> LocalizationBundle = LocalizationBundle::load,
 ) {
     private companion object {
         val REMOVED_LEGACY_EFFECT_FIELDS =
@@ -156,7 +156,13 @@ class DataLoader(
             )
     }
 
-    val localizer: Localizer = localizationBundle.translator(locale)
+    private val localizerDelegate: Lazy<Localizer> =
+        lazy(LazyThreadSafetyMode.NONE) {
+            localizationBundleProvider().translator(locale)
+        }
+
+    val localizer: Localizer
+        get() = localizerDelegate.value
 
     fun loadSchemaCatalog(): SchemaCatalog {
         val telegraphSpecs = parseTelegraphSpecs(loadYamlMap("/data/telegraph/index.yaml"))

@@ -52,7 +52,7 @@ import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
 import kotlinx.serialization.json.putJsonObject
 
-internal const val SOLO_CLEAR_SCRIPT_VERSION: String = "solo-clear-lab-v5"
+internal const val SOLO_CLEAR_SCRIPT_VERSION: String = "solo-clear-lab-v6"
 internal const val SOLO_CLEAR_BOSS_TELEGRAPH_WAIT_TURNS: Int = 3
 internal val SOLO_CLEAR_PROFESSIONS: List<String> =
     listOf(
@@ -458,8 +458,13 @@ internal class SoloClearLabHarness(
 
         if (runtime.professionId == "templar" && runtime.scenario == SoloClearScenario.MOB_PACK) {
             val peak = resourceTimeline.maxOrNull() ?: runtime.initialResource
-            if (peak <= runtime.initialResource) {
-                return "Templar POSITIVE_ENERGY never increased during combat."
+            val spentResource = resourceTimeline.zipWithNext().any { (before, after) -> after < before }
+            val restoredResource = resourceTimeline.zipWithNext().any { (before, after) -> after > before }
+            if (!spentResource) {
+                return "Templar POSITIVE_ENERGY was never spent during combat."
+            }
+            if (!restoredResource) {
+                return "Templar POSITIVE_ENERGY never restored during combat."
             }
             val peakIndex = resourceTimeline.indexOfFirst { value -> value == peak }
             val decayedAfterPeak = resourceTimeline.drop(peakIndex + 1).any { value -> value < peak }
@@ -788,7 +793,7 @@ internal class SoloClearLabHarness(
             "spellblade" -> pools.pool(ResourceType.MANA)?.syncTo(nextCurrent = 160, nextMax = 160)
             "arcanist" -> pools.pool(ResourceType.MANA)?.syncTo(nextCurrent = 160, nextMax = 160)
             "rogue" -> pools.pool(ResourceType.ENERGY)?.syncTo(nextCurrent = 60, nextMax = 100)
-            "templar" -> pools.pool(ResourceType.POSITIVE_ENERGY)?.syncTo(nextCurrent = 12, nextMax = 100)
+            "templar" -> pools.pool(ResourceType.POSITIVE_ENERGY)?.syncTo(nextCurrent = 24, nextMax = 100)
             else -> Unit
         }
     }
@@ -914,6 +919,7 @@ internal class SoloClearLabHarness(
             PlayerCommand.CloseShop -> "CloseShop"
             is PlayerCommand.BuyShopOffer -> "BuyShopOffer(${command.index})"
             is PlayerCommand.SellInventoryItem -> "SellInventoryItem(${command.index})"
+            is PlayerCommand.DropInventoryItem -> "DropInventoryItem(${command.index})"
             is PlayerCommand.SelectRoute -> "SelectRoute(${command.index})"
             is PlayerCommand.ActivateInventoryItem -> "ActivateInventoryItem(${command.index})"
             is PlayerCommand.UseInscription -> "UseInscription(${command.hotkey})"

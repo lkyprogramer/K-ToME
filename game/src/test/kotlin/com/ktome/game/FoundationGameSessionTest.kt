@@ -1057,6 +1057,113 @@ class FoundationGameSessionTest {
     }
 
     @Test
+    fun `patrol pressure spawns an off screen reinforcement wave after the fixed threshold`() {
+        val session =
+            GameModule.newFoundationSession(
+                FoundationGameConfig(seed = 20260318L, zoneId = "shattered_outpost", playerProfessionId = "vanguard"),
+                SaveManager(tempDir.resolve("patrol-pressure-save")),
+            )
+        clearMonsters(session)
+
+        repeat(19) {
+            assertTrue(session.perform(PlayerCommand.Wait))
+        }
+
+        assertEquals(1, session.renderSnapshot().actors.count { actor -> actor.isPlayer })
+        assertTrue(session.renderSnapshot().actors.none { actor -> !actor.isPlayer })
+
+        assertTrue(session.perform(PlayerCommand.Wait))
+
+        val world = session.automationWorld()
+        val spawnedMonsters =
+            world.entitiesWith(MonsterTemplateId::class, Health::class)
+                .filter { entityId -> requireNotNull(world.get<Health>(entityId)).current > 0 }
+        assertTrue(spawnedMonsters.isNotEmpty())
+        assertEquals(1, session.renderSnapshot().actors.count { actor -> actor.isPlayer })
+        assertTrue(session.renderSnapshot().actors.none { actor -> !actor.isPlayer })
+        assertTrue(session.renderSnapshot().logEvents.any { event -> event.message.key == "log.zone.patrol_pressure.wave" })
+    }
+
+    @Test
+    fun `patrol pressure floor entry hint is emitted exactly once on initial load`() {
+        val session =
+            GameModule.newFoundationSession(
+                FoundationGameConfig(seed = 20260318L, zoneId = "shattered_outpost", playerProfessionId = "vanguard"),
+                SaveManager(tempDir.resolve("patrol-pressure-hint-save")),
+            )
+
+        val patrolHints =
+            session.renderSnapshot().logEvents.filter { event ->
+                event.message.key == "log.zone.mechanic_hint" &&
+                    event.message.arguments.any { argument ->
+                        argument.name == "hint" && argument.valueKey == "zone.mechanic_hint.patrol_pressure"
+                    }
+            }
+
+        assertEquals(1, patrolHints.size)
+    }
+
+    @Test
+    fun `ambush lane trigger only fires once and forces spawned group into pursuit`() {
+        val session =
+            GameModule.newFoundationSession(
+                FoundationGameConfig(seed = 20260318L, zoneId = "bandit_camp", playerProfessionId = "rogue"),
+                SaveManager(tempDir.resolve("ambush-lane-save")),
+            )
+        clearMonsters(session)
+        val world = session.automationWorld()
+        val triggerEntity = world.entitiesWith(Position::class, AmbushLaneTriggerState::class).sortedBy(EntityId::value).first()
+        val triggerPoint = requireNotNull(world.get<Position>(triggerEntity)).toPoint()
+        val stagingPoint = adjacentWalkablePoint(session, triggerPoint)
+        val beforeIds = world.entitiesWith(MonsterTemplateId::class).map(EntityId::value).toSet()
+
+        session.automationMovePlayerTo(stagingPoint)
+
+        assertTrue(session.perform(PlayerCommand.Move(triggerPoint - stagingPoint)))
+
+        val afterIds = world.entitiesWith(MonsterTemplateId::class).map(EntityId::value).toSet()
+        val spawnedIds = (afterIds - beforeIds).map(::EntityId)
+        assertTrue(spawnedIds.isNotEmpty())
+        assertTrue(world.entitiesWith(AmbushLaneTriggerState::class).none { entityId -> entityId == triggerEntity })
+        spawnedIds.forEach { monsterId ->
+            assertEquals(AIType.CHASE, requireNotNull(world.get<AIBehavior>(monsterId)).type)
+        }
+        assertTrue(session.renderSnapshot().logEvents.any { event -> event.message.key == "log.zone.ambush_lane.triggered" })
+    }
+
+    @Test
+    fun `furnace pressure telegraphs before it starts dealing fire ticks`() {
+        val session =
+            GameModule.newFoundationSession(
+                FoundationGameConfig(seed = 20260318L, zoneId = "deep_iron_pit", floor = 2, playerProfessionId = "vanguard"),
+                SaveManager(tempDir.resolve("furnace-pressure-runtime-save")),
+            )
+        clearMonsters(session)
+        val world = session.automationWorld()
+        val furnaceEntity = world.entitiesWith(FurnacePressureRuntimeState::class).single()
+        val state = requireNotNull(world.get<FurnacePressureRuntimeState>(furnaceEntity))
+        state.nextCycleTurn = 1
+        val hazardPoint = state.hazardCells.first()
+
+        session.automationMovePlayerTo(hazardPoint)
+
+        assertTrue(session.perform(PlayerCommand.Wait))
+        assertEquals(FurnacePressurePhase.TELEGRAPH, state.phase)
+        assertTrue(session.renderSnapshot().overlays.any { overlay -> overlay.id.startsWith("furnace-pressure:") })
+        assertTrue(session.renderSnapshot().logEvents.any { event -> event.message.key == "log.zone.furnace_pressure.telegraph" })
+
+        assertTrue(session.perform(PlayerCommand.Wait))
+        assertEquals(FurnacePressurePhase.ACTIVE, state.phase)
+
+        val healthBeforeTick = requireNotNull(world.get<Health>(session.playerId)).current
+
+        assertTrue(session.perform(PlayerCommand.Wait))
+
+        assertTrue(requireNotNull(world.get<Health>(session.playerId)).current < healthBeforeTick)
+        assertTrue(recentEventSummaries(session).any { event -> event.startsWith("status_tick:${session.playerId.value}:") })
+    }
+
+    @Test
     fun `mana potion restores arcanist mana from starter kit`() {
         val session =
             GameModule.newFoundationSession(
@@ -1070,6 +1177,27 @@ class FoundationGameSessionTest {
         assertTrue(potionIndex >= 0)
         assertTrue(session.perform(PlayerCommand.ActivateInventoryItem(potionIndex)))
         assertEquals(42, session.playerResourceView().current)
+    }
+
+    @Test
+    fun `dropping an equipped inventory item places it on the floor and clears the equipment slot`() {
+        val session =
+            GameModule.newFoundationSession(
+                FoundationGameConfig(seed = 20260318L, zoneId = "shattered_outpost", playerProfessionId = "vanguard"),
+                SaveManager(tempDir.resolve("drop-equipped-item-save")),
+            )
+        val world = runtimeWorld(session)
+        val attackBefore = requireNotNull(world.get<DerivedStats>(session.playerId)).attack
+        val weaponIndex = inventoryIndexOfBaseId(session, "long_sword")
+
+        assertTrue(session.perform(PlayerCommand.DropInventoryItem(weaponIndex)))
+
+        val groundItems = groundItemsAt(session, session.playerPosition()).map(ItemInstance::baseId)
+        assertTrue("long_sword" in groundItems)
+        assertEquals(null, session.equipmentSlots().first { slot -> slot.slot == EquipSlot.WEAPON }.itemName)
+        assertTrue(session.inventoryItems().none { item -> inventoryBaseIdAt(session, item.index) == "long_sword" })
+        assertTrue(requireNotNull(world.get<DerivedStats>(session.playerId)).attack < attackBefore)
+        assertTrue(session.renderSnapshot().logEvents.any { event -> event.message.key == "log.inventory.drop" })
     }
 
     @Test
@@ -3682,6 +3810,27 @@ class FoundationGameSessionTest {
             world.entitiesWith(Position::class, Interactable::class)
                 .first { candidate -> requireNotNull(world.get<Interactable>(candidate)).id == interactableId }
         return requireNotNull(world.get<Position>(entityId)).toPoint()
+    }
+
+    private fun adjacentWalkablePoint(
+        session: FoundationGameSession,
+        target: Point,
+    ): Point {
+        val world = runtimeWorld(session)
+        val occupied =
+            world.entitiesWith(Position::class, BlocksMovement::class)
+                .filter { entityId -> entityId != session.playerId }
+                .map { entityId -> requireNotNull(world.get<Position>(entityId)).toPoint() }
+                .toSet()
+        return Point.CARDINAL_DIRECTIONS
+            .asSequence()
+            .map { delta -> target - delta }
+            .filter { point ->
+                session.map.isInBounds(point.x, point.y) &&
+                    !session.map[point].blocksMovement &&
+                    point !in occupied
+            }.sortedWith(compareBy<Point> { it.chebyshevDistanceTo(session.playerPosition()) }.thenBy(Point::y).thenBy(Point::x))
+            .first()
     }
 
     private fun inventoryBaseIds(session: FoundationGameSession): List<String> {

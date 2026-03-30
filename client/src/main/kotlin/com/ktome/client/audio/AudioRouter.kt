@@ -228,6 +228,7 @@ class AudioRouter(
             is PlayerCommand.UseTalent -> talentCueKeys(previousSnapshot, currentSnapshot, command.slot).forEach(::play)
             is PlayerCommand.UseInscription -> play("audio.ui.confirm")
             is PlayerCommand.ActivateInventoryItem,
+            is PlayerCommand.DropInventoryItem,
             PlayerCommand.Interact,
             PlayerCommand.PickUp,
             -> play("audio.interactable.open")

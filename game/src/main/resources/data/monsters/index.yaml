@@ -39,9 +39,9 @@ monsters:
     baseDefense: 1
     speed: 100
     ai: KITE
-    aiProfileId: ai.kite.basic
+    aiProfileId: ai.artillery.volley
     lootProfileId: loot.foundation.common
-    talents: {}
+    talents: { ricochet_knives: 1, eviscerate: 1 }
     expReward: 35
     spawnFloors: [1, 2, 3]
     spawnWeight: 7
@@ -62,9 +62,9 @@ monsters:
     baseDefense: 2
     speed: 95
     ai: PATROL
-    aiProfileId: ai.patrol.basic
+    aiProfileId: ai.sentinel.rally
     lootProfileId: loot.foundation.common
-    talents: {}
+    talents: { war_cry: 1 }
     expReward: 28
     spawnFloors: [1, 2]
     spawnWeight: 8
@@ -85,9 +85,9 @@ monsters:
     baseDefense: 5
     speed: 90
     ai: CHASE
-    aiProfileId: ai.chase.basic
+    aiProfileId: ai.forge.guard
     lootProfileId: loot.foundation.elite
-    talents: {}
+    talents: { earthshaker: 1, linebreaker: 1 }
     expReward: 60
     spawnFloors: [2, 3, 4]
     spawnWeight: 5
@@ -178,9 +178,9 @@ monsters:
     baseDefense: 2
     speed: 96
     ai: CHASE
-    aiProfileId: ai.chase.basic
+    aiProfileId: ai.brute.breaker
     lootProfileId: loot.foundation.common
-    talents: {}
+    talents: { linebreaker: 1 }
     expReward: 32
     spawnFloors: [1, 2]
     spawnWeight: 8
@@ -201,10 +201,10 @@ monsters:
     baseDefense: 1
     speed: 100
     ai: KITE
-    aiProfileId: ai.kite.basic
+    aiProfileId: ai.artillery.volley
     lootProfileId: loot.foundation.common
     resistances: { FIRE: -10 }
-    talents: {}
+    talents: { ricochet_knives: 1, eviscerate: 1 }
     expReward: 34
     spawnFloors: [1, 2]
     spawnWeight: 5
@@ -224,8 +224,8 @@ monsters:
     baseAttack: 6
     baseDefense: 2
     speed: 92
-    ai: CHASE
-    aiProfileId: ai.chase.basic
+    ai: PATROL
+    aiProfileId: ai.patrol.basic
     lootProfileId: loot.foundation.common
     resistances: { SHADOW: 15 }
     talents: {}
@@ -249,10 +249,10 @@ monsters:
     baseDefense: 4
     speed: 90
     ai: CHASE
-    aiProfileId: ai.chase.basic
+    aiProfileId: ai.forge.guard
     lootProfileId: loot.foundation.elite
     resistances: { SHADOW: 15 }
-    talents: {}
+    talents: { earthshaker: 1, linebreaker: 1 }
     expReward: 48
     spawnFloors: [2]
     spawnWeight: 5
@@ -400,10 +400,10 @@ monsters:
     baseEvasion: 7
     speed: 100
     ai: KITE
-    aiProfileId: ai.kite.basic
+    aiProfileId: ai.artillery.volley
     lootProfileId: loot.foundation.common
     resistances: { SHADOW: 10 }
-    talents: {}
+    talents: { ricochet_knives: 1, eviscerate: 1 }
     expReward: 32
     spawnFloors: [2, 3]
     spawnWeight: 6
@@ -504,9 +504,9 @@ monsters:
     baseEvasion: 7
     speed: 98
     ai: KITE
-    aiProfileId: ai.kite.basic
+    aiProfileId: ai.forge.channeler
     lootProfileId: loot.foundation.common
-    talents: {}
+    talents: { cinder_burst: 1, inferno_orb: 1 }
     expReward: 42
     spawnFloors: [3, 4]
     spawnWeight: 5
@@ -685,10 +685,10 @@ monsters:
     baseEvasion: 7
     speed: 101
     ai: KITE
-    aiProfileId: ai.kite.basic
+    aiProfileId: ai.artillery.volley
     lootProfileId: loot.foundation.common
     resistances: { FIRE: -10 }
-    talents: {}
+    talents: { ricochet_knives: 1, eviscerate: 1 }
     expReward: 34
     spawnFloors: [1, 2]
     spawnWeight: 6
@@ -711,10 +711,10 @@ monsters:
     baseEvasion: 6
     speed: 95
     ai: CHASE
-    aiProfileId: ai.chase.basic
+    aiProfileId: ai.forge.guard
     lootProfileId: loot.foundation.common
     resistances: { FIRE: -5 }
-    talents: {}
+    talents: { earthshaker: 1, linebreaker: 1 }
     expReward: 38
     spawnFloors: [1, 2]
     spawnWeight: 6

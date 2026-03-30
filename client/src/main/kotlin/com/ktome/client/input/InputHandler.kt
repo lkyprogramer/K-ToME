@@ -52,6 +52,7 @@ data class OverlayState(
 class InputHandler(
     private val input: InputSource = GdxInputSource,
 ) {
+    private val overlayCloseBindings = listOf(Keys.F)
     private val repeatInitialDelayFrames = 12
     private val repeatIntervalFrames = 3
     private val movementBindings =
@@ -333,7 +334,7 @@ class InputHandler(
 
     private fun pollShopCommand(snapshot: RenderSnapshot): PlayerCommand? {
         val shop = snapshot.uiState.activeShop ?: return null
-        if (input.isKeyJustPressed(Keys.ESCAPE) || input.isKeyJustPressed(Keys.I)) {
+        if (isOverlayCloseBinding() || input.isKeyJustPressed(Keys.I)) {
             return PlayerCommand.CloseShop
         }
         if (
@@ -411,7 +412,7 @@ class InputHandler(
     }
 
     private fun pollLoadoutCommand(snapshot: RenderSnapshot): PlayerCommand? {
-        if (input.isKeyJustPressed(Keys.ESCAPE) || input.isKeyJustPressed(Keys.L)) {
+        if (isOverlayCloseBinding() || input.isKeyJustPressed(Keys.L)) {
             clearLoadoutEdit()
             return null
         }
@@ -451,7 +452,7 @@ class InputHandler(
     }
 
     private fun pollInspectCommand(snapshot: RenderSnapshot): PlayerCommand? {
-        if (input.isKeyJustPressed(Keys.ESCAPE) || input.isKeyJustPressed(Keys.X)) {
+        if (isOverlayCloseBinding() || input.isKeyJustPressed(Keys.X)) {
             clearInspect()
             return null
         }
@@ -470,7 +471,7 @@ class InputHandler(
 
     private fun pollInventoryCommand(snapshot: RenderSnapshot): PlayerCommand? {
         val inventorySize = snapshot.uiState.inventory.size
-        if (input.isKeyJustPressed(Keys.ESCAPE) || input.isKeyJustPressed(Keys.I)) {
+        if (isOverlayCloseBinding() || input.isKeyJustPressed(Keys.I)) {
             mode = UiMode.MAP
             resetMovementRepeat()
             return null
@@ -498,11 +499,15 @@ class InputHandler(
             return PlayerCommand.ActivateInventoryItem(inventorySelection)
         }
 
+        if (input.isKeyJustPressed(Keys.D)) {
+            return PlayerCommand.DropInventoryItem(inventorySelection)
+        }
+
         return null
     }
 
     private fun pollTargetingCommand(snapshot: RenderSnapshot): PlayerCommand? {
-        if (input.isKeyJustPressed(Keys.ESCAPE)) {
+        if (isOverlayCloseBinding()) {
             clearTargeting()
             return null
         }
@@ -544,7 +549,7 @@ class InputHandler(
     }
 
     private fun pollTalentAssignCommand(snapshot: RenderSnapshot): PlayerCommand? {
-        if (input.isKeyJustPressed(Keys.ESCAPE) || input.isKeyJustPressed(Keys.T)) {
+        if (isOverlayCloseBinding() || input.isKeyJustPressed(Keys.T)) {
             mode = UiMode.MAP
             return null
         }
@@ -788,4 +793,6 @@ class InputHandler(
         propTypeId != "stairs" && x == point.x && y == point.y
 
     private fun GridPointSnapshot.toPoint(): Point = Point(x, y)
+
+    private fun isOverlayCloseBinding(): Boolean = overlayCloseBindings.any(input::isKeyJustPressed)
 }

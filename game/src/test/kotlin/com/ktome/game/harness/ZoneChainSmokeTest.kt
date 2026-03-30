@@ -156,6 +156,7 @@ class ZoneChainSmokeTest {
             PlayerCommand.CloseShop -> "CloseShop"
             is PlayerCommand.BuyShopOffer -> "BuyShopOffer(${command.index})"
             is PlayerCommand.SellInventoryItem -> "SellInventoryItem(${command.index})"
+            is PlayerCommand.DropInventoryItem -> "DropInventoryItem(${command.index})"
             is PlayerCommand.SelectRoute -> "SelectRoute(${command.index})"
             is PlayerCommand.ActivateInventoryItem -> "ActivateInventoryItem(${command.index})"
             is PlayerCommand.UseInscription -> "UseInscription(${command.hotkey})"

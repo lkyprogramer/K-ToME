@@ -1,11 +1,13 @@
 package com.ktome.game.data
 
 import com.ktome.core.economy.ShardEconomy
+import com.ktome.core.item.EquipmentPassive
 import com.ktome.core.economy.ShopNode
 import com.ktome.core.item.AffixEquipType
 import com.ktome.core.item.AffixType
 import com.ktome.game.ZoneMechanicRuntime
 import com.ktome.game.i18n.GameLocale
+import com.ktome.game.i18n.LocalizationBundle
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -144,6 +146,26 @@ class ZoneContentCoverageTest {
             8,
             itemBundle.affixes.count { affix -> affix.equipType == AffixEquipType.ARMOR && affix.type == AffixType.SUFFIX },
         )
+    }
+
+    @Test
+    fun `damage versus tag items stay backed by localized monster tag labels`() {
+        val bundle = LocalizationBundle.load()
+        val english = bundle.translator(GameLocale.EN_US)
+        val chinese = bundle.translator(GameLocale.ZH_CN)
+        val passiveTags =
+            DataLoader(GameLocale.EN_US)
+                .loadItemBundle()
+                .baseItems
+                .mapNotNull { item -> (item.passive as? EquipmentPassive.DamageVsTag)?.tag }
+                .toSet()
+
+        assertEquals(setOf("bandit", "undead"), passiveTags)
+        passiveTags.forEach { tag ->
+            val key = "monster.tag.$tag"
+            assertTrue(english.text(key) != "!!$key!!", "English bundle is missing monster tag key '$key'.")
+            assertTrue(chinese.text(key) != "!!$key!!", "Chinese bundle is missing monster tag key '$key'.")
+        }
     }
 
     private fun assertGuaranteedTagsPresent(shop: ShopNode) {

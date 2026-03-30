@@ -9,9 +9,7 @@ object UiGlyphCatalog {
 
     fun requiredGlyphs(
         resourceLoader: (String) -> String = { path ->
-            checkNotNull(UiGlyphCatalog::class.java.getResource(path)) {
-                "UI glyph resource is missing at $path."
-            }.readText()
+            ClasspathTextResources.read(UiGlyphCatalog::class.java, path)
         },
     ): LinkedHashSet<Char> =
         linkedSetOf<Char>().apply {
@@ -31,9 +29,7 @@ object UiGlyphCatalog {
 
     fun requiredGlyphString(
         resourceLoader: (String) -> String = { path ->
-            checkNotNull(UiGlyphCatalog::class.java.getResource(path)) {
-                "UI glyph resource is missing at $path."
-            }.readText()
+            ClasspathTextResources.read(UiGlyphCatalog::class.java, path)
         },
     ): String = requiredGlyphs(resourceLoader).joinToString(separator = "")
 }

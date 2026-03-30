@@ -362,6 +362,7 @@ class FoundationGameSession internal constructor(
         syncPlayerResistanceProfile()
         restorePendingZoneAdvanceIfNeeded()
         refreshFov()
+        announceZoneMechanicFloorEntryIfNeeded()
     }
 
     internal constructor(
@@ -1073,45 +1074,47 @@ class FoundationGameSession internal constructor(
             }.sortedWith(compareBy<ActorRenderSnapshot> { it.y }.thenBy { it.x }.thenBy(ActorRenderSnapshot::entityId))
 
     private fun buildOverlaySnapshots(): List<OverlayRenderSnapshot> {
-        return world.entitiesWith(Position::class, Health::class, MonsterTemplateId::class)
-            .flatMap { entityId ->
-                val health = requireNotNull(world.get<Health>(entityId))
-                if (health.current <= 0) {
-                    return@flatMap emptyList()
-                }
-                val templateId = requireNotNull(world.get<MonsterTemplateId>(entityId)).value
-                val position = requireNotNull(world.get<Position>(entityId)).toPoint()
-                buildList {
-                    if (templateId in content.bossTemplateIds() && position in visibleTiles) {
-                        val behavior = world.get<AIBehavior>(entityId)
-                        val perceptionRange = monsterPerceptionRange(entityId, behavior)
-                        val effectiveTargetId = effectiveTargetIdFor(entityId)
-                        val targetVisible = targetVisibleFor(entityId, effectiveTargetId, position, perceptionRange)
-                        if (targetVisible) {
-                            add(
-                                OverlayRenderSnapshot(
-                                    id = "boss-warning:${entityId.value}",
-                                    visualKey = "vfx.boss.warning.sigil_01",
-                                    audioProfile = "audio.boss.warning",
-                                    previewTurns = 1,
-                                    dangerLevel = DangerLevel.HIGH.overlaySeverity,
-                                    shape = OverlayShapeSnapshot.SINGLE_TILE,
-                                    sourceAbilityId = bossDefinitionByTemplateId(templateId)?.encounterId ?: "boss.warning.presence",
-                                    cells = listOf(GridPointSnapshot(position.x, position.y)),
-                                    warningMessage =
-                                        RenderTextTokenSnapshot(
-                                            "log.warning.boss_presence",
-                                            listOf(entityArg("boss", entityId)),
-                                        ),
-                                ),
-                            )
+        val bossAndTelegraphOverlays =
+            world.entitiesWith(Position::class, Health::class, MonsterTemplateId::class)
+                .flatMap { entityId ->
+                    val health = requireNotNull(world.get<Health>(entityId))
+                    if (health.current <= 0) {
+                        return@flatMap emptyList()
+                    }
+                    val templateId = requireNotNull(world.get<MonsterTemplateId>(entityId)).value
+                    val position = requireNotNull(world.get<Position>(entityId)).toPoint()
+                    buildList {
+                        if (templateId in content.bossTemplateIds() && position in visibleTiles) {
+                            val behavior = world.get<AIBehavior>(entityId)
+                            val perceptionRange = monsterPerceptionRange(entityId, behavior)
+                            val effectiveTargetId = effectiveTargetIdFor(entityId)
+                            val targetVisible = targetVisibleFor(entityId, effectiveTargetId, position, perceptionRange)
+                            if (targetVisible) {
+                                add(
+                                    OverlayRenderSnapshot(
+                                        id = "boss-warning:${entityId.value}",
+                                        visualKey = "vfx.boss.warning.sigil_01",
+                                        audioProfile = "audio.boss.warning",
+                                        previewTurns = 1,
+                                        dangerLevel = DangerLevel.HIGH.overlaySeverity,
+                                        shape = OverlayShapeSnapshot.SINGLE_TILE,
+                                        sourceAbilityId = bossDefinitionByTemplateId(templateId)?.encounterId ?: "boss.warning.presence",
+                                        cells = listOf(GridPointSnapshot(position.x, position.y)),
+                                        warningMessage =
+                                            RenderTextTokenSnapshot(
+                                                "log.warning.boss_presence",
+                                                listOf(entityArg("boss", entityId)),
+                                            ),
+                                    ),
+                                )
+                            }
+                        }
+                        world.get<PendingTelegraphState>(entityId)?.let { pending ->
+                            overlayForPendingTelegraph(entityId, position, pending)?.let(::add)
                         }
                     }
-                    world.get<PendingTelegraphState>(entityId)?.let { pending ->
-                        overlayForPendingTelegraph(entityId, position, pending)?.let(::add)
-                    }
                 }
-            }.sortedBy(OverlayRenderSnapshot::id)
+        return (bossAndTelegraphOverlays + furnacePressureOverlaySnapshots()).sortedBy(OverlayRenderSnapshot::id)
     }
 
     private fun overlayForPendingTelegraph(
@@ -1154,6 +1157,268 @@ class FoundationGameSession internal constructor(
                 },
         )
     }
+
+    private fun furnacePressureOverlaySnapshots(): List<OverlayRenderSnapshot> =
+        world.entitiesWith(FurnacePressureRuntimeState::class)
+            .mapNotNull { entityId ->
+                val state = requireNotNull(world.get<FurnacePressureRuntimeState>(entityId))
+                val visibleCells =
+                    state.hazardCells
+                        .filter(visibleTiles::contains)
+                        .map { point -> GridPointSnapshot(point.x, point.y) }
+                if (visibleCells.isEmpty() || state.phase == FurnacePressurePhase.IDLE) {
+                    return@mapNotNull null
+                }
+                OverlayRenderSnapshot(
+                    id = "furnace-pressure:${entityId.value}:${state.phase.name.lowercase()}",
+                    visualKey = "vfx.telegraph.warning.sigil_01",
+                    audioProfile = "audio.boss.warning",
+                    previewTurns = state.phaseTurnsRemaining.coerceAtLeast(1),
+                    dangerLevel =
+                        when (state.phase) {
+                            FurnacePressurePhase.TELEGRAPH -> DangerLevel.MODERATE.overlaySeverity
+                            FurnacePressurePhase.ACTIVE -> DangerLevel.HIGH.overlaySeverity
+                            FurnacePressurePhase.IDLE -> DangerLevel.LOW.overlaySeverity
+                        },
+                    shape = OverlayShapeSnapshot.CUSTOM,
+                    sourceAbilityId = "zone.furnace_pressure",
+                    cells = visibleCells,
+                    warningMessage = null,
+                )
+            }
+
+    private fun announceZoneMechanicFloorEntryIfNeeded() {
+        world.entitiesWith(PatrolPressureRuntimeState::class).forEach { entityId ->
+            val state = requireNotNull(world.get<PatrolPressureRuntimeState>(entityId))
+            if (state.floorHintShown) {
+                return@forEach
+            }
+            addMessage(
+                "log.zone.mechanic_hint",
+                keyArg("hint", "zone.mechanic_hint.patrol_pressure"),
+            )
+            state.floorHintShown = true
+        }
+    }
+
+    private fun advanceZoneMechanicsAfterTurn(actorId: EntityId) {
+        maybeSpawnPatrolPressureWave()
+        if (actorId == playerId) {
+            advanceFurnacePressureCycle()
+        }
+    }
+
+    private fun maybeSpawnPatrolPressureWave() {
+        world.entitiesWith(PatrolPressureRuntimeState::class).forEach { entityId ->
+            val state = requireNotNull(world.get<PatrolPressureRuntimeState>(entityId))
+            while (headlessTurnEquivalent >= state.nextCheckHeadlessTurn) {
+                if (
+                    state.wavesSpawned < state.waveLimit &&
+                    activeHostileCount() < state.maxHostiles &&
+                    !isBossEncounterFloorActive()
+                ) {
+                    val spawned = spawnPatrolPressureWave(state)
+                    if (spawned > 0) {
+                        state.wavesSpawned += 1
+                        addMessage("log.zone.patrol_pressure.wave", literalArg("count", spawned))
+                    }
+                }
+                state.nextCheckHeadlessTurn += state.checkIntervalTurns
+            }
+        }
+    }
+
+    private fun spawnPatrolPressureWave(state: PatrolPressureRuntimeState): Int {
+        val templates =
+            state.spawnTemplateIds
+                .mapNotNull { templateId -> content.monsterCatalog.firstOrNull { template -> template.id == templateId } }
+        if (templates.isEmpty()) {
+            return 0
+        }
+        val occupied = occupiedBlockingTiles(excluding = playerId)
+        val candidates =
+            ZoneMechanicRuntime.orderedPoints(
+                seed = state.spawnSeed + state.wavesSpawned,
+                points =
+                    map.floorPoints().filter { point ->
+                        point !in visibleTiles &&
+                            point != playerPosition() &&
+                            point !in occupied &&
+                            interactableEntityAt(point) == null &&
+                            point.chebyshevDistanceTo(playerPosition()) >= 4
+                    },
+            )
+        if (candidates.isEmpty()) {
+            return 0
+        }
+        val factory = EntityFactory()
+        val spawnedIds =
+            templates
+                .zip(candidates)
+                .map { (template, spawnPoint) ->
+                    factory.createMonster(world = world, template = template, position = spawnPoint)
+                }
+        spawnedIds.forEach { monsterId ->
+            alertSpawnedHostile(monsterId)
+            world.get<Energy>(monsterId)?.current = maxOf(requireNotNull(world.get<Energy>(monsterId)).current, 100)
+            if (monsterId !in pendingActions) {
+                pendingActions.addLast(monsterId)
+            }
+        }
+        return spawnedIds.size
+    }
+
+    private fun advanceFurnacePressureCycle() {
+        world.entitiesWith(FurnacePressureRuntimeState::class).forEach { entityId ->
+            val state = requireNotNull(world.get<FurnacePressureRuntimeState>(entityId))
+            when (state.phase) {
+                FurnacePressurePhase.IDLE -> {
+                    if (turnCount >= state.nextCycleTurn) {
+                        state.phase = FurnacePressurePhase.TELEGRAPH
+                        state.phaseTurnsRemaining = state.telegraphTurns
+                        addMessage("log.zone.furnace_pressure.telegraph")
+                    }
+                }
+
+                FurnacePressurePhase.TELEGRAPH -> {
+                    state.phaseTurnsRemaining = (state.phaseTurnsRemaining - 1).coerceAtLeast(0)
+                    if (state.phaseTurnsRemaining == 0) {
+                        state.phase = FurnacePressurePhase.ACTIVE
+                        state.phaseTurnsRemaining = state.activeTurns
+                        addMessage("log.zone.furnace_pressure.active")
+                    }
+                }
+
+                FurnacePressurePhase.ACTIVE -> {
+                    state.phaseTurnsRemaining = (state.phaseTurnsRemaining - 1).coerceAtLeast(0)
+                    if (state.phaseTurnsRemaining == 0) {
+                        state.phase = FurnacePressurePhase.IDLE
+                        state.nextCycleTurn = turnCount + state.cycleIntervalTurns
+                        world.remove<WorldEffect>(entityId)
+                    }
+                }
+            }
+        }
+    }
+
+    private fun syncZoneMechanicEffectsFor(actorId: EntityId) {
+        syncFurnacePressureEffectsFor(actorId)
+    }
+
+    private fun syncFurnacePressureEffectsFor(actorId: EntityId) {
+        val actorPosition = world.get<Position>(actorId)?.toPoint()
+        world.entitiesWith(FurnacePressureRuntimeState::class).forEach { entityId ->
+            val state = requireNotNull(world.get<FurnacePressureRuntimeState>(entityId))
+            if (state.phase != FurnacePressurePhase.ACTIVE || actorPosition == null || actorPosition !in state.hazardCells) {
+                world.remove<WorldEffect>(entityId)
+                return@forEach
+            }
+            world.add(
+                entityId,
+                WorldEffect(
+                    effectId = "zone.furnace_pressure:${entityId.value}",
+                    affectedActorIds = setOf(actorId),
+                    effects =
+                        mutableListOf(
+                            StatusLifecycle.createInstance(
+                                type = StatusEffectType.BURN,
+                                effectId = "zone.furnace_pressure.tick:${entityId.value}:$actorId:$turnCount",
+                                duration = 1,
+                                tickDamageOverride = state.damagePerTick,
+                            ),
+                        ),
+                ),
+            )
+        }
+    }
+
+    private fun triggerAmbushLaneIfNeeded(playerDestination: Point) {
+        val triggeredIds =
+            world.entitiesWith(Position::class, AmbushLaneTriggerState::class)
+                .filter { entityId -> requireNotNull(world.get<Position>(entityId)).toPoint() == playerDestination }
+                .sortedBy(EntityId::value)
+        triggeredIds.forEach { entityId ->
+            val state = requireNotNull(world.get<AmbushLaneTriggerState>(entityId))
+            val spawned = spawnAmbushLaneGroup(state)
+            world.destroyEntity(entityId)
+            if (spawned > 0) {
+                addMessage("log.zone.ambush_lane.triggered", literalArg("count", spawned))
+            }
+        }
+    }
+
+    private fun spawnAmbushLaneGroup(state: AmbushLaneTriggerState): Int {
+        val templates =
+            state.spawnTemplateIds
+                .mapNotNull { templateId -> content.monsterCatalog.firstOrNull { template -> template.id == templateId } }
+        if (templates.isEmpty()) {
+            return 0
+        }
+        val spawnPoints =
+            state.spawnPoints.mapNotNull { preferred ->
+                availableSpawnPointNear(preferred)
+            }
+        if (spawnPoints.isEmpty()) {
+            return 0
+        }
+        val factory = EntityFactory()
+        val spawnedIds =
+            templates
+                .zip(spawnPoints)
+                .map { (template, spawnPoint) ->
+                    factory.createMonster(world = world, template = template, position = spawnPoint)
+                }
+        spawnedIds.forEach { monsterId ->
+            alertSpawnedHostile(monsterId)
+            world.get<Energy>(monsterId)?.current = maxOf(requireNotNull(world.get<Energy>(monsterId)).current, 100)
+            if (monsterId !in pendingActions) {
+                pendingActions.addLast(monsterId)
+            }
+        }
+        return spawnedIds.size
+    }
+
+    private fun alertSpawnedHostile(monsterId: EntityId) {
+        world.get<AIBehavior>(monsterId)?.let { behavior ->
+            world.add(
+                monsterId,
+                behavior.copy(
+                    type = AIType.CHASE,
+                    sightRadius = maxOf(behavior.sightRadius, 12),
+                ),
+            )
+        }
+        world.get<AIPerceptionState>(monsterId)?.lastKnownTargetPosition = playerPosition()
+    }
+
+    private fun availableSpawnPointNear(preferred: Point): Point? {
+        val occupied = occupiedBlockingTiles(excluding = playerId)
+        return sequenceOf(preferred)
+            .plus(Point.ALL_DIRECTIONS.asSequence().map { delta -> preferred + delta })
+            .filter { point ->
+                map.isInBounds(point.x, point.y) &&
+                    !map[point].blocksMovement &&
+                    point !in occupied &&
+                    point != playerPosition()
+            }.firstOrNull()
+    }
+
+    private fun activeHostileCount(): Int {
+        val playerFaction = world.get<FactionTag>(playerId)?.value
+        return world.entitiesWith(FactionTag::class, Health::class)
+            .count { entityId ->
+                val faction = world.get<FactionTag>(entityId)?.value
+                val health = world.get<Health>(entityId)
+                entityId != playerId &&
+                    playerFaction != null &&
+                    faction != null &&
+                    faction != playerFaction &&
+                    health != null &&
+                    health.current > 0
+            }
+    }
+
+    private fun isBossEncounterFloorActive(): Boolean = currentFloor() == config.maxFloor && activeBossDefinition() != null
 
     private fun bossDefinitionByTemplateId(templateId: String): BossDefinition? =
         content.bossDefinitions.values.firstOrNull { definition -> definition.template.id == templateId }
@@ -2843,6 +3108,7 @@ class FoundationGameSession internal constructor(
             activeTurnActor = null
             turnCount += 1
             headlessTurnEquivalent += 1
+            advanceZoneMechanicsAfterTurn(actorId = playerId)
             advanceUntilPlayerTurn()
             maybePersistCheckpoint(resolution)
         }
@@ -2905,6 +3171,7 @@ class FoundationGameSession internal constructor(
             finishActorTurn(nextActor)
             activeTurnActor = null
             headlessTurnEquivalent += 1
+            advanceZoneMechanicsAfterTurn(actorId = nextActor)
         }
     }
 
@@ -2924,6 +3191,7 @@ class FoundationGameSession internal constructor(
             }
         }
 
+        syncZoneMechanicEffectsFor(actorId)
         if (!applyTurnStartStatusEffects(actorId)) {
             activeTurnActor = null
             return false
@@ -3155,6 +3423,8 @@ class FoundationGameSession internal constructor(
             is PlayerCommand.BuyShopOffer -> buyShopOffer(command.index)
 
             is PlayerCommand.SellInventoryItem -> sellInventoryItem(command.index)
+
+            is PlayerCommand.DropInventoryItem -> dropInventoryItem(command.index)
 
             is PlayerCommand.SelectRoute -> selectRoute(command.index)
 
@@ -3392,6 +3662,7 @@ class FoundationGameSession internal constructor(
                         val result = MovementRules.attemptMove(map, from, command.delta)
                         if (result.moved) {
                             requireNotNull(world.get<Position>(playerId)).moveTo(result.destination)
+                            triggerAmbushLaneIfNeeded(result.destination)
                             CommandResolution.accepted()
                         } else {
                             addMessage("log.move.cannot_move")
@@ -4835,6 +5106,7 @@ class FoundationGameSession internal constructor(
         pendingActions.clear()
         activeTurnActor = null
         refreshFov()
+        announceZoneMechanicFloorEntryIfNeeded()
 
         addMessage(
             when (direction) {
@@ -4977,6 +5249,7 @@ class FoundationGameSession internal constructor(
         nextRuntime.initialMessages.forEach(::addMessage)
         checkpointRequested = true
         refreshFov()
+        announceZoneMechanicFloorEntryIfNeeded()
     }
 
     private fun finalizeVictory() {
@@ -5961,6 +6234,7 @@ class FoundationGameSession internal constructor(
     private fun monsterTagLabelKeyOrNull(tag: String): String? =
         when (tag) {
             "bandit" -> "monster.tag.bandit"
+            "undead" -> "monster.tag.undead"
             else -> null
         }
 
@@ -6253,6 +6527,22 @@ class FoundationGameSession internal constructor(
                     else -> error("Unsupported inventory failure code ${result.code}.")
                 }
         }
+
+    private fun dropInventoryItem(index: Int): CommandResolution {
+        val itemView = inventoryItems().getOrNull(index)
+        if (itemView == null) {
+            addMessage("log.inventory.slot_empty")
+            return CommandResolution.rejected()
+        }
+        val result = inventoryManager.drop(world, playerId, index, playerPosition())
+        if (result.success && itemView.equippedSlot != null) {
+            StatsCalculator.recalculateAndStore(world, playerId)
+            ensurePlayerResourcePools()
+            syncPlayerResistanceProfile()
+        }
+        addInventoryMessage(result)
+        return CommandResolution(result.success, consumesTurn = false)
+    }
 
     private fun inventoryItemMessage(
         key: String,

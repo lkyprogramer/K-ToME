@@ -316,7 +316,7 @@ internal object TileRenderModelBuilder {
                     val item = equipment.item
                     rows +=
                         TileTextRow(
-                            text = "${slotLabel(localizer, equipment.slotId)}: ${item?.let { renderItemDisplay(localizer, it) } ?: "-"}",
+                            text = "${equipmentSlotLabel(localizer, equipment.slotId)}: ${item?.let { renderItemDisplay(localizer, it) } ?: "-"}",
                             tone = TileTextTone.WHITE,
                             icon = item?.iconKey?.let { resolveVisual(visualResolver, it) },
                         )
@@ -450,7 +450,7 @@ internal object TileRenderModelBuilder {
             UiMode.INVENTORY -> {
                 snapshot.uiState.inventory.forEach { entry ->
                     val label = "${entry.index + 1}. ${renderItemDisplay(localizer, entry.item)}"
-                    val equipped = entry.equippedSlotId?.let { slotId -> " [${slotLabel(localizer, slotId)}]" }.orEmpty()
+                    val equipped = entry.equippedSlotId?.let { slotId -> " [${equipmentSlotLabel(localizer, slotId)}]" }.orEmpty()
                     rows +=
                         TileTextRow(
                             text = label + equipped,
@@ -953,7 +953,7 @@ internal object TileRenderModelBuilder {
     ): List<String> =
         buildList {
             item.slotId?.let { slotId ->
-                add(localizer.text("ui.inspect.slot", "slot" to slotLabel(localizer, slotId)))
+                add(localizer.text("ui.inspect.slot", "slot" to equipmentSlotLabel(localizer, slotId)))
             }
             item.qualityNameKey?.let { qualityNameKey ->
                 add(localizer.text("ui.inspect.quality", "quality" to localizer.text(qualityNameKey)))
@@ -1051,16 +1051,6 @@ internal object TileRenderModelBuilder {
             CellVisibilitySnapshot.VISIBLE -> localizer.text("ui.inspect.visible")
             CellVisibilitySnapshot.EXPLORED -> localizer.text("ui.inspect.explored")
             CellVisibilitySnapshot.HIDDEN -> localizer.text("ui.inspect.hidden")
-        }
-
-    private fun slotLabel(
-        localizer: Localizer,
-        slotId: String,
-    ): String =
-        when (slotId) {
-            "WEAPON" -> localizer.text("ui.sidebar.weapon")
-            "ARMOR" -> localizer.text("ui.sidebar.armor")
-            else -> slotId
         }
 
     private fun point(
