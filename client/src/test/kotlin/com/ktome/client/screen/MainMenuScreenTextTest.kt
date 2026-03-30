@@ -49,7 +49,39 @@ class MainMenuScreenTextTest {
         val zhLocalizer = LocalizationBundle.load().translator(GameLocale.ZH_CN)
         val enLocalizer = LocalizationBundle.load().translator(GameLocale.EN_US)
 
-        assertEquals("Status: PLAYABLE", selectionStateText(enLocalizer, com.ktome.core.profile.ClassPlayabilityState.PLAYABLE))
+        assertEquals("Status: Ready to start", selectionStateText(enLocalizer, com.ktome.core.profile.ClassPlayabilityState.PLAYABLE))
         assertEquals("状态：锁定", selectionStateText(zhLocalizer, com.ktome.core.profile.ClassPlayabilityState.LOCKED))
+    }
+
+    @Test
+    fun `discovered unavailable note uses player facing names instead of availability enums`() {
+        val zhLocalizer = LocalizationBundle.load().translator(GameLocale.ZH_CN)
+        val enLocalizer = LocalizationBundle.load().translator(GameLocale.EN_US)
+
+        val enNote =
+            discoveredUnavailableNoteText(
+                localizer = enLocalizer,
+                noteKey = "ui.menu.profession_discovered_unavailable",
+                optionNameKeys = listOf("profession.berserker.name", "profession.spellblade.name"),
+            )
+        val zhNote =
+            discoveredUnavailableNoteText(
+                localizer = zhLocalizer,
+                noteKey = "ui.menu.profession_discovered_unavailable",
+                optionNameKeys = listOf("profession.berserker.name"),
+            )
+
+        assertTrue(enNote!!.contains("Berserker"))
+        assertTrue(enNote.contains("Berserker, Spellblade"))
+        assertFalse(enNote.contains("UNLOCKED_BUT_UNAVAILABLE"))
+        assertTrue(zhNote!!.contains("狂战士"))
+        assertTrue(
+            discoveredUnavailableNoteText(
+                localizer = zhLocalizer,
+                noteKey = "ui.menu.profession_discovered_unavailable",
+                optionNameKeys = listOf("profession.berserker.name", "profession.spellblade.name"),
+            )!!.contains("狂战士、咒剑士")
+        )
+        assertFalse(zhNote.contains("开发验证"))
     }
 }

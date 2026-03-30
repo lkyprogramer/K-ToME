@@ -79,59 +79,42 @@ class MainMenuControllerTest {
     }
 
     @Test
-    fun `start new game is rejected for locked or unavailable professions and races`() {
-        val lockedInput = QueueInputSource(Keys.ENTER)
-        val lockedController =
+    fun `default player creation carousel skips locked and unavailable options`() {
+        val professionInput = QueueInputSource(Keys.RIGHT)
+        val professionController =
             MainMenuController(
-                input = lockedInput,
+                input = professionInput,
                 playerCreationState =
                     PlayerCreationState(
-                        professionOptions = mixedProfessionOptions(),
-                        raceOptions = playableState().raceOptions.take(2),
-                        selection = PlayerCreationSelection(professionId = "arcanist", raceId = "human"),
-                    ),
-            )
-
-        val lockedResult = lockedController.pollAction(hasSave = false)
-        assertEquals(null, lockedResult.action)
-        assertEquals("arcanist", lockedResult.selection.professionId)
-        assertEquals("human", lockedResult.selection.raceId)
-        assertTrue(lockedResult.rejected)
-
-        val unavailableInput = QueueInputSource(Keys.ENTER)
-        val unavailableController =
-            MainMenuController(
-                input = unavailableInput,
-                playerCreationState =
-                    PlayerCreationState(
-                        professionOptions = mixedProfessionOptions(),
+                        professionOptions = carouselProfessionOptions(),
                         raceOptions = playableState().raceOptions.take(2),
                         selection = PlayerCreationSelection(professionId = "rogue", raceId = "human"),
                     ),
             )
 
-        val unavailableResult = unavailableController.pollAction(hasSave = false)
-        assertEquals(null, unavailableResult.action)
-        assertEquals("rogue", unavailableResult.selection.professionId)
-        assertEquals("human", unavailableResult.selection.raceId)
-        assertTrue(unavailableResult.rejected)
+        assertEquals("vanguard", professionController.currentSelection().professionId)
+        val professionResult = professionController.pollAction(hasSave = false)
+        assertEquals("templar", professionResult.selection.professionId)
+        assertTrue(professionResult.professionChanged)
+        assertFalse(professionResult.rejected)
 
-        val lockedRaceInput = QueueInputSource(Keys.ENTER)
-        val lockedRaceController =
+        val raceInput = QueueInputSource(Keys.E)
+        val raceController =
             MainMenuController(
-                input = lockedRaceInput,
+                input = raceInput,
                 playerCreationState =
                     PlayerCreationState(
                         professionOptions = playableState().professionOptions.take(2),
-                        raceOptions = mixedRaceOptions(),
-                        selection = PlayerCreationSelection(professionId = "vanguard", raceId = "orc"),
+                        raceOptions = carouselRaceOptions(),
+                        selection = PlayerCreationSelection(professionId = "vanguard", raceId = "seer"),
                     ),
             )
 
-        val lockedRaceResult = lockedRaceController.pollAction(hasSave = false)
-        assertEquals(null, lockedRaceResult.action)
-        assertEquals("orc", lockedRaceResult.selection.raceId)
-        assertTrue(lockedRaceResult.rejected)
+        assertEquals("human", raceController.currentSelection().raceId)
+        val raceResult = raceController.pollAction(hasSave = false)
+        assertEquals("dwarf", raceResult.selection.raceId)
+        assertTrue(raceResult.raceChanged)
+        assertFalse(raceResult.rejected)
     }
 
     private fun playableState(): PlayerCreationState =
@@ -152,17 +135,20 @@ class MainMenuControllerTest {
             selection = PlayerCreationSelection(professionId = "vanguard", raceId = "human"),
         )
 
-    private fun mixedProfessionOptions(): List<ProfessionPlayerCreationOption> =
+    private fun carouselProfessionOptions(): List<ProfessionPlayerCreationOption> =
         listOf(
             professionOption("vanguard", ClassPlayabilityState.PLAYABLE),
             professionOption("arcanist", ClassPlayabilityState.LOCKED),
             professionOption("rogue", ClassPlayabilityState.UNLOCKED_BUT_UNAVAILABLE),
+            professionOption("templar", ClassPlayabilityState.PLAYABLE),
         )
 
-    private fun mixedRaceOptions(): List<RacePlayerCreationOption> =
+    private fun carouselRaceOptions(): List<RacePlayerCreationOption> =
         listOf(
             raceOption("human", ClassPlayabilityState.PLAYABLE),
             raceOption("orc", ClassPlayabilityState.LOCKED),
+            raceOption("seer", ClassPlayabilityState.UNLOCKED_BUT_UNAVAILABLE),
+            raceOption("dwarf", ClassPlayabilityState.PLAYABLE),
         )
 
     private fun professionOption(

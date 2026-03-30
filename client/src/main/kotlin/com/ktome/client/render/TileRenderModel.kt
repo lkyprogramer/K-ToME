@@ -409,16 +409,6 @@ internal object TileRenderModelBuilder {
                 } else {
                     rows += TileTextRow(localizer.text("ui.world_map.current_zone", "zone" to localizer.text(routePanel.currentZoneNameKey)), TileTextTone.GOLD)
                     routePanel.options.forEach { option ->
-                        val rewardPreview =
-                            buildString {
-                                append(option.levelBandRef)
-                                append(" / ")
-                                append(option.shardReward)
-                                if (option.isReturnPath) {
-                                    append(" / ")
-                                    append(localizer.text("ui.world_map.return_path"))
-                                }
-                            }
                         rows +=
                             TileTextRow(
                                 text = "${option.index + 1}. ${localizer.text(option.destinationZoneNameKey)}",
@@ -428,12 +418,15 @@ internal object TileRenderModelBuilder {
                         option.destinationZoneDescKey?.let { descKey ->
                             rows += TileTextRow(localizer.text(descKey), TileTextTone.LIGHT_GRAY)
                         }
-                        rows += TileTextRow(rewardPreview, TileTextTone.LIGHT_GRAY)
-                        if (option.rewardItemNameKeys.isNotEmpty()) {
-                            rows += TileTextRow(option.rewardItemNameKeys.joinToString(separator = ", ") { key -> localizer.text(key) }, TileTextTone.GREEN)
+                        rows += TileTextRow(RoutePreviewText.summaryLine(localizer, option), TileTextTone.LIGHT_GRAY)
+                        RoutePreviewText.rewardLine(localizer, option)?.let { rewardPreview ->
+                            rows += TileTextRow(rewardPreview, TileTextTone.GREEN)
                         }
-                        if (option.rescueTags.isNotEmpty()) {
-                            rows += TileTextRow(option.rescueTags.joinToString(separator = " / "), TileTextTone.BLUE)
+                        RoutePreviewText.traitLine(localizer, option)?.let { traits ->
+                            rows += TileTextRow(traits, TileTextTone.BLUE)
+                        }
+                        RoutePreviewText.mechanicLine(localizer, option)?.let { hint ->
+                            rows += TileTextRow(hint, TileTextTone.LIGHT_GRAY)
                         }
                     }
                 }

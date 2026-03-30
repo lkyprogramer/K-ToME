@@ -12,6 +12,8 @@ import com.ktome.client.audio.AudioRouter
 import com.ktome.client.input.GdxInputSource
 import com.ktome.client.input.InputSource
 import com.ktome.client.render.KtomeFonts
+import com.ktome.client.text.LocalizedTextSeparator
+import com.ktome.client.text.joinLocalizedKeys
 import com.ktome.client.ui.creation.PlayerCreationPanel
 import com.ktome.client.ui.creation.PlayerCreationSectionModel
 import com.ktome.core.profile.ClassPlayabilityState
@@ -41,9 +43,11 @@ internal data class MainMenuTextSnapshot(
     val professionState: String,
     val professionDescription: String,
     val professionResourceHint: String,
+    val professionNote: String? = null,
     val race: String,
     val raceState: String,
     val raceDescription: String,
+    val raceNote: String? = null,
     val entries: List<String>,
     val language: String,
     val controls: String,
@@ -66,6 +70,15 @@ class MainMenuScreen(
             input = inputSource,
             playerCreationState = playerCreationState,
         )
+    private val playerCreationState = playerCreationState
+    private val professionUnavailableNameKeys =
+        playerCreationState.professionOptions
+            .filter { option -> option.playabilityState == ClassPlayabilityState.UNLOCKED_BUT_UNAVAILABLE }
+            .map { option -> option.displayNameKey }
+    private val raceUnavailableNameKeys =
+        playerCreationState.raceOptions
+            .filter { option -> option.playabilityState == ClassPlayabilityState.UNLOCKED_BUT_UNAVAILABLE }
+            .map { option -> option.displayNameKey }
     private val audioRouter: AudioRouter? = app.audioRouterOrNull()
 
     override fun show() {
@@ -130,12 +143,14 @@ class MainMenuScreen(
                         state = text.professionState,
                         description = text.professionDescription,
                         detail = text.professionResourceHint,
+                        note = text.professionNote,
                     ),
                 raceSection =
                     PlayerCreationSectionModel(
                         title = text.race,
                         state = text.raceState,
                         description = text.raceDescription,
+                        note = text.raceNote,
                     ),
                 focusedAxis = controller.currentFocus(),
                 entries = entries,
@@ -192,25 +207,37 @@ class MainMenuScreen(
     }
 
     internal fun textSnapshot(): MainMenuTextSnapshot =
-        MainMenuTextSnapshot(
-            title = app.text("ui.menu.title"),
-            subtitle = app.text("ui.menu.subtitle"),
-            profession = selectionLabel(app.localizer(), "ui.menu.profession", controller.currentProfessionOption().displayNameKey),
-            professionState = selectionStateText(app.localizer(), controller.currentProfessionOption().playabilityState),
-            professionDescription = app.text(controller.currentProfessionOption().descriptionKey),
-            professionResourceHint =
-                resourceHintText(
-                    app.localizer(),
-                    controller.currentProfessionOption().resourceHintKey,
-                ),
-            race = selectionLabel(app.localizer(), "ui.menu.race", controller.currentRaceOption().displayNameKey),
-            raceState = selectionStateText(app.localizer(), controller.currentRaceOption().playabilityState),
-            raceDescription = app.text(controller.currentRaceOption().descriptionKey),
-            entries = controller.entries(continueEnabled).map { entry -> app.text(entry.labelKey) },
-            language = app.text("ui.menu.language", "value" to app.localizer().localeLabel()),
-            controls = app.text("ui.menu.controls"),
-            notice = notice?.takeIf(String::isNotBlank),
-        )
+        app.localizer().let { localizer ->
+            val professionOption = controller.currentProfessionOption()
+            val raceOption = controller.currentRaceOption()
+            MainMenuTextSnapshot(
+                title = app.text("ui.menu.title"),
+                subtitle = app.text("ui.menu.subtitle"),
+                profession = selectionLabel(localizer, "ui.menu.profession", professionOption.displayNameKey),
+                professionState = selectionStateText(localizer, professionOption.playabilityState),
+                professionDescription = app.text(professionOption.descriptionKey),
+                professionResourceHint = resourceHintText(localizer, professionOption.resourceHintKey),
+                professionNote =
+                    discoveredUnavailableNoteText(
+                        localizer = localizer,
+                        noteKey = "ui.menu.profession_discovered_unavailable",
+                        optionNameKeys = professionUnavailableNameKeys,
+                    ),
+                race = selectionLabel(localizer, "ui.menu.race", raceOption.displayNameKey),
+                raceState = selectionStateText(localizer, raceOption.playabilityState),
+                raceDescription = app.text(raceOption.descriptionKey),
+                raceNote =
+                    discoveredUnavailableNoteText(
+                        localizer = localizer,
+                        noteKey = "ui.menu.race_discovered_unavailable",
+                        optionNameKeys = raceUnavailableNameKeys,
+                    ),
+                entries = controller.entries(continueEnabled).map { entry -> app.text(entry.labelKey) },
+                language = app.text("ui.menu.language", "value" to localizer.localeLabel()),
+                controls = app.text("ui.menu.controls"),
+                notice = notice?.takeIf(String::isNotBlank),
+            )
+        }
 
     private fun selectionStateColor(state: ClassPlayabilityState): Color =
         when (state) {
@@ -242,3 +269,14 @@ internal fun selectionStateText(
             ClassPlayabilityState.LOCKED -> "ui.menu.selection_state.locked"
         },
     )
+
+internal fun discoveredUnavailableNoteText(
+    localizer: Localizer,
+    noteKey: String,
+    optionNameKeys: List<String>,
+): String? =
+    optionNameKeys
+        .distinct()
+        .takeIf(List<String>::isNotEmpty)
+        ?.let { nameKeys -> localizer.joinLocalizedKeys(LocalizedTextSeparator.LIST, nameKeys) }
+        ?.let { items -> localizer.text(noteKey, "items" to items) }

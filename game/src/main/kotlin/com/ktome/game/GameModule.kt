@@ -1249,7 +1249,9 @@ object GameModule {
         options: List<PlayerCreationOption>,
     ): String =
         previousId
-            ?.takeIf { optionId -> options.any { option -> option.id == optionId } }
+            ?.let { optionId -> options.firstOrNull { option -> option.id == optionId } }
+            ?.takeIf { option -> option.playabilityState == ClassPlayabilityState.PLAYABLE }
+            ?.id
             ?: options.firstOrNull { option -> option.playabilityState == ClassPlayabilityState.PLAYABLE }?.id
             ?: options.first().id
 

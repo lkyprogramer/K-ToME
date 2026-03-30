@@ -273,12 +273,15 @@ internal object AsciiRenderModelBuilder {
                         option.destinationZoneDescKey?.let { descKey ->
                             lines += AsciiTextLine(localizer.text(descKey), AsciiTextTone.LIGHT_GRAY)
                         }
-                        lines += AsciiTextLine("${option.levelBandRef} / ${option.shardReward}", AsciiTextTone.LIGHT_GRAY)
-                        if (option.rewardItemNameKeys.isNotEmpty()) {
-                            lines += AsciiTextLine(option.rewardItemNameKeys.joinToString(separator = ", ") { key -> localizer.text(key) }, AsciiTextTone.GREEN)
+                        lines += AsciiTextLine(RoutePreviewText.summaryLine(localizer, option), AsciiTextTone.LIGHT_GRAY)
+                        RoutePreviewText.rewardLine(localizer, option)?.let { rewardPreview ->
+                            lines += AsciiTextLine(rewardPreview, AsciiTextTone.GREEN)
                         }
-                        if (option.rescueTags.isNotEmpty()) {
-                            lines += AsciiTextLine(option.rescueTags.joinToString(separator = " / "), AsciiTextTone.LIGHT_GRAY)
+                        RoutePreviewText.traitLine(localizer, option)?.let { traits ->
+                            lines += AsciiTextLine(traits, AsciiTextTone.LIGHT_GRAY)
+                        }
+                        RoutePreviewText.mechanicLine(localizer, option)?.let { hint ->
+                            lines += AsciiTextLine(hint, AsciiTextTone.LIGHT_GRAY)
                         }
                     }
                 }

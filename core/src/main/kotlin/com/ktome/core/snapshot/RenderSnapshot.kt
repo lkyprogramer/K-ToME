@@ -331,10 +331,12 @@ data class RouteOptionSnapshot(
     val destinationZoneId: String,
     val destinationZoneNameKey: String,
     val destinationZoneDescKey: String? = null,
-    val levelBandRef: String,
+    val recommendedLevelMin: Int,
+    val recommendedLevelMax: Int,
     val shardReward: Int,
     val rewardItemNameKeys: List<String> = emptyList(),
-    val rescueTags: List<String> = emptyList(),
+    val rescueHintLabelKeys: List<String> = emptyList(),
+    val mechanicHintKey: String? = null,
     val isReturnPath: Boolean = false,
 )
 

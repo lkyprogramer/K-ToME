@@ -19,6 +19,7 @@ internal data class PlayerCreationSectionModel(
     val state: String,
     val description: String,
     val detail: String? = null,
+    val note: String? = null,
 )
 
 internal data class PlayerCreationPanelModel(
@@ -107,6 +108,9 @@ internal object PlayerCreationPanel {
         font.draw(batch, model.description, x, topY - 56f)
         model.detail?.takeIf(String::isNotBlank)?.let { detail ->
             font.draw(batch, detail, x, topY - 84f)
+        }
+        model.note?.takeIf(String::isNotBlank)?.let { note ->
+            font.draw(batch, note, x, topY - 108f)
         }
     }
 }
