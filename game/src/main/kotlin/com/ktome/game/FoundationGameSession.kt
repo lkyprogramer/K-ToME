@@ -1863,22 +1863,6 @@ class FoundationGameSession internal constructor(
             content.schemaCatalog.bossEncounters.firstOrNull { schema -> schema.id == encounterId }
         }
 
-    private fun routeRescueHintLabelKeys(rescueTags: Set<String>): List<String> =
-        rescueTags
-            .mapNotNull(::routeRescueHintLabelKey)
-            .distinct()
-
-    private fun routeRescueHintLabelKey(rescueTag: String): String? =
-        when (rescueTag.trim().uppercase()) {
-            "MOVEMENT" -> "ui.world_map.route_trait.movement"
-            "RECOVERY" -> "ui.world_map.route_trait.recovery"
-            "PROTECTION" -> "ui.world_map.route_trait.protection"
-            "CLEANSING" -> "ui.world_map.route_trait.cleansing"
-            "ARCANE" -> "ui.world_map.route_trait.arcane"
-            "FIRE" -> "ui.world_map.route_trait.fire"
-            else -> null
-        }
-
     private fun zoneNameKeyFor(zoneId: String): String? =
         content.schemaCatalog.zones.firstOrNull { zone -> zone.id == zoneId }?.nameKey
 
@@ -6683,3 +6667,24 @@ class FoundationGameSession internal constructor(
     }
 
 }
+
+internal fun routeRescueHintLabelKeys(rescueTags: Set<String>): List<String> =
+    rescueTags
+        .asSequence()
+        .map(String::trim)
+        .filter(String::isNotEmpty)
+        .sortedBy(String::uppercase)
+        .mapNotNull(::routeRescueHintLabelKey)
+        .distinct()
+        .toList()
+
+internal fun routeRescueHintLabelKey(rescueTag: String): String? =
+    when (rescueTag.trim().uppercase()) {
+        "MOVEMENT" -> "ui.world_map.route_trait.movement"
+        "RECOVERY" -> "ui.world_map.route_trait.recovery"
+        "PROTECTION" -> "ui.world_map.route_trait.protection"
+        "CLEANSING" -> "ui.world_map.route_trait.cleansing"
+        "ARCANE" -> "ui.world_map.route_trait.arcane"
+        "FIRE" -> "ui.world_map.route_trait.fire"
+        else -> null
+    }

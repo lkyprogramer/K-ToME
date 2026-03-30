@@ -92,6 +92,27 @@ class FoundationGameSessionTest {
     private val itemBasesById = dataLoader.loadItemBundle().baseItems.associateBy { item -> item.id }
 
     @Test
+    fun `route rescue hint labels keep deterministic sorted order`() {
+        assertEquals(
+            listOf(
+                "ui.world_map.route_trait.arcane",
+                "ui.world_map.route_trait.movement",
+                "ui.world_map.route_trait.protection",
+                "ui.world_map.route_trait.recovery",
+            ),
+            routeRescueHintLabelKeys(
+                linkedSetOf(
+                    " recovery ",
+                    "PROTECTION",
+                    "movement",
+                    "UNKNOWN",
+                    "ARCANE",
+                ),
+            ),
+        )
+    }
+
+    @Test
     fun `player kill grants experience and level up`() {
         val map = GameMap.fromAscii(
             rows = listOf(
