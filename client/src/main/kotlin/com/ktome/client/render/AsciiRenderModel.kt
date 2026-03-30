@@ -13,6 +13,8 @@ import com.ktome.client.ui.talent.DescriptionPresenter
 import com.ktome.core.snapshot.ActorRenderSnapshot
 import com.ktome.core.snapshot.ActorRoleKindSnapshot
 import com.ktome.core.snapshot.CellVisibilitySnapshot
+import com.ktome.core.snapshot.CombatFeedbackSnapshot
+import com.ktome.core.snapshot.CombatFeedbackTypeSnapshot
 import com.ktome.core.snapshot.InventoryEntrySnapshot
 import com.ktome.core.snapshot.ItemRenderSnapshot
 import com.ktome.core.snapshot.ItemStatModifierSnapshot
@@ -155,6 +157,16 @@ internal object AsciiRenderModelBuilder {
             if (snapshot.overlays.isNotEmpty()) {
                 lines += AsciiTextLine(localizer.text("ui.sidebar.warnings"), AsciiTextTone.GOLD)
                 lines += TelegraphRenderer.asciiLines(localizer, snapshot)
+                lines += blankLine()
+            }
+            if (snapshot.combatFeedbackEvents.isNotEmpty()) {
+                lines += AsciiTextLine(localizer.text("ui.sidebar.combat_feedback"), AsciiTextTone.GOLD)
+                lines += snapshot.combatFeedbackEvents.takeLast(5).map { event ->
+                    AsciiTextLine(
+                        text = combatFeedbackText(localizer, event),
+                        tone = combatFeedbackTone(event),
+                    )
+                }
                 lines += blankLine()
             }
         }
@@ -645,6 +657,40 @@ internal object AsciiRenderModelBuilder {
             DescriptionLineKind.KEYWORD,
             DescriptionLineKind.STATE,
             -> AsciiTextTone.LIGHT_GRAY
+        }
+
+    private fun combatFeedbackText(
+        localizer: Localizer,
+        event: CombatFeedbackSnapshot,
+    ): String =
+        when (event.type) {
+            CombatFeedbackTypeSnapshot.DAMAGE -> "${event.amount ?: 0}${if (event.critical) "!" else ""}"
+            CombatFeedbackTypeSnapshot.HEAL -> "+${event.amount ?: 0}"
+            CombatFeedbackTypeSnapshot.MISS -> localizer.text("ui.combat_feedback.miss")
+            CombatFeedbackTypeSnapshot.STATUS_APPLIED -> "+${event.statusNameKey?.let(localizer::text).orEmpty()}"
+            CombatFeedbackTypeSnapshot.STATUS_REMOVED -> "-${event.statusNameKey?.let(localizer::text).orEmpty()}"
+        }
+
+    private fun combatFeedbackTone(event: CombatFeedbackSnapshot): AsciiTextTone =
+        when (event.type) {
+            CombatFeedbackTypeSnapshot.DAMAGE ->
+                if (event.critical) {
+                    AsciiTextTone.GOLD
+                } else {
+                    when (event.damageTypeId) {
+                        "FIRE" -> AsciiTextTone.RED
+                        "COLD" -> AsciiTextTone.CYAN
+                        "LIGHTNING" -> AsciiTextTone.GOLD
+                        "HOLY" -> AsciiTextTone.GOLD
+                        "SHADOW" -> AsciiTextTone.MAGENTA
+                        else -> AsciiTextTone.WHITE
+                    }
+                }
+
+            CombatFeedbackTypeSnapshot.HEAL -> AsciiTextTone.GREEN
+            CombatFeedbackTypeSnapshot.MISS -> AsciiTextTone.LIGHT_GRAY
+            CombatFeedbackTypeSnapshot.STATUS_APPLIED -> AsciiTextTone.CYAN
+            CombatFeedbackTypeSnapshot.STATUS_REMOVED -> AsciiTextTone.GRAY
         }
 
     private fun renderLogEvent(

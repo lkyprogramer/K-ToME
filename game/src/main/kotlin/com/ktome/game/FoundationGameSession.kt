@@ -60,12 +60,16 @@ import com.ktome.core.effect.AreaEffectEmitter
 import com.ktome.core.effect.WorldEffect
 import com.ktome.core.event.DamageDealtEvent
 import com.ktome.core.event.EntityDeathEvent
+import com.ktome.core.event.GameEvent
 import com.ktome.core.event.ExperienceGainedEvent
+import com.ktome.core.event.HealEvent
 import com.ktome.core.event.LevelUpEvent
 import com.ktome.core.event.MissEvent
+import com.ktome.core.event.MovementBlockedEvent
 import com.ktome.core.event.StatusAppliedEvent
 import com.ktome.core.event.StatusCleanseEvent
 import com.ktome.core.event.StatusInteractionEvent
+import com.ktome.core.event.StatusRemovedEvent
 import com.ktome.core.event.StatusTickEvent
 import com.ktome.core.event.StealthBrokenEvent
 import com.ktome.core.event.TauntOverrideEvent
@@ -124,6 +128,9 @@ import com.ktome.core.economy.ShopOffer
 import com.ktome.core.snapshot.ActorRenderSnapshot
 import com.ktome.core.snapshot.ActorRoleKindSnapshot
 import com.ktome.core.snapshot.CellVisibilitySnapshot
+import com.ktome.core.snapshot.COMBAT_FEEDBACK_EVENT_LIMIT
+import com.ktome.core.snapshot.CombatFeedbackSnapshot
+import com.ktome.core.snapshot.CombatFeedbackTypeSnapshot
 import com.ktome.core.snapshot.DescriptionModelSnapshot
 import com.ktome.core.snapshot.DescriptionValueSnapshot
 import com.ktome.core.snapshot.EquipmentSlotSnapshot
@@ -295,11 +302,23 @@ class FoundationGameSession internal constructor(
         val replacementSlot: EquipSlot? = null,
     )
 
+    private data class PendingCombatFeedback(
+        val targetEntityId: EntityId,
+        val sourceEntityId: EntityId? = null,
+        val fallbackPosition: Point,
+        val type: CombatFeedbackTypeSnapshot,
+        val amount: Int? = null,
+        val damageTypeId: String? = null,
+        val statusNameKey: String? = null,
+        val critical: Boolean = false,
+    )
+
     var config: FoundationGameConfig = config
         private set
     private val messageLog = ArrayDeque<SessionLogEntry>()
     private val recentEvents = ArrayDeque<String>()
     private val recentSummaryEvents = ArrayDeque<RenderTextTokenSnapshot>()
+    private val pendingCombatFeedbackEvents = ArrayDeque<PendingCombatFeedback>()
     private val pendingActions = ArrayDeque<EntityId>()
     private var activeTurnActor: EntityId? = null
     private var runOutcome: RunOutcome = RunOutcome.InProgress
@@ -879,6 +898,8 @@ class FoundationGameSession internal constructor(
         ensurePlayerResourcePools()
         val zone = currentZoneSchema()
         val overlays = buildOverlaySnapshots()
+        val combatFeedbackEvents = resolvePendingCombatFeedbackEvents()
+        pendingCombatFeedbackEvents.clear()
         return RenderSnapshot(
             metadata =
                 RenderMetadataSnapshot(
@@ -903,8 +924,25 @@ class FoundationGameSession internal constructor(
             overlays = overlays,
             uiState = buildRenderUiState(),
             logEvents = buildVisibleLogEvents(overlays),
+            combatFeedbackEvents = combatFeedbackEvents,
         )
     }
+
+    private fun resolvePendingCombatFeedbackEvents(): List<CombatFeedbackSnapshot> =
+        pendingCombatFeedbackEvents.map { pending ->
+            val resolvedPosition = world.get<Position>(pending.targetEntityId)?.toPoint() ?: pending.fallbackPosition
+            CombatFeedbackSnapshot(
+                targetEntityId = pending.targetEntityId.value,
+                sourceEntityId = pending.sourceEntityId?.value,
+                x = resolvedPosition.x,
+                y = resolvedPosition.y,
+                type = pending.type,
+                amount = pending.amount,
+                damageTypeId = pending.damageTypeId,
+                statusNameKey = pending.statusNameKey,
+                critical = pending.critical,
+            )
+        }
 
     private fun buildVisibleLogEvents(overlays: List<OverlayRenderSnapshot>): List<RenderLogEventSnapshot> =
         messageLog.map(SessionLogEntry::snapshot) +
@@ -2914,11 +2952,21 @@ class FoundationGameSession internal constructor(
 
     private fun finishActorTurn(actorId: EntityId) {
         val tracker = world.get<EffectTracker>(actorId)
-        val changed = tracker?.let(StatusLifecycle::decayEndOfTurn) == true
+        val removedStatuses = tracker?.let(StatusLifecycle::decayEndOfTurnRemoved).orEmpty()
         decayAreaEffectEmitters(actorId)
         decayWorldEffects(actorId)
 
-        if (changed) {
+        removedStatuses.forEach { removed ->
+            logEvent(
+                StatusRemovedEvent(
+                    target = actorId,
+                    statusType = removed.type,
+                    statusId = removed.schemaId,
+                    reason = "EXPIRED",
+                ),
+            )
+        }
+        if (removedStatuses.isNotEmpty()) {
             StatsCalculator.recalculateAndStore(world, actorId)
         }
         if (actorId == playerId) {
@@ -2986,7 +3034,15 @@ class FoundationGameSession internal constructor(
             )
         val finalDamage = result.damage.finalDamage
 
-        logEvent(DamageDealtEvent(dueEffect.sourceEntityId ?: actorId, actorId, finalDamage, crit = false))
+        logEvent(
+            DamageDealtEvent(
+                attacker = dueEffect.sourceEntityId ?: actorId,
+                target = actorId,
+                damage = finalDamage,
+                crit = false,
+                damageType = damageType,
+            ),
+        )
         logEvent(
             StatusTickEvent(
                 target = actorId,
@@ -3004,6 +3060,16 @@ class FoundationGameSession internal constructor(
         )
         tracker?.let { activeTracker ->
             val removed = StatusLifecycle.breakOnDamage(activeTracker, finalDamage)
+            removed.forEach { effect ->
+                logEvent(
+                    StatusRemovedEvent(
+                        target = actorId,
+                        statusType = effect.type,
+                        statusId = effect.schemaId,
+                        reason = "BROKEN_ON_DAMAGE",
+                    ),
+                )
+            }
             if (removed.any { effect -> effect.type == StatusEffectType.STEALTH }) {
                 logStealthBroken(actorId, finalDamage)
             }
@@ -3612,7 +3678,11 @@ class FoundationGameSession internal constructor(
                     ).coerceAtLeast(0)
                 val before = health.current
                 health.current = (health.current + amount).coerceAtMost(health.max)
-                addMessage("log.inscription.heal", literalArg("amount", health.current - before))
+                val restored = health.current - before
+                if (restored > 0) {
+                    logEvent(HealEvent(source = playerId, target = playerId, amount = restored))
+                }
+                addMessage("log.inscription.heal", literalArg("amount", restored))
                 true
             }
 
@@ -3634,18 +3704,30 @@ class FoundationGameSession internal constructor(
             }
 
             is InscriptionEffect.Shield -> {
-                StatusLifecycle.applyEffect(
-                    world,
-                    playerId,
-                    StatusLifecycle.createInstance(
-                        type = StatusEffectType.HOLY_SHIELD_BUFF,
-                        effectId = "inscription:${definition.id}:$turnCount",
-                        duration = effect.duration,
-                        magnitude = (effect.amount.toDouble() / 100.0).coerceAtLeast(0.1),
-                        sourceEntityId = playerId,
-                        appliedTurn = turnCount,
-                    ),
-                )
+                val result =
+                    StatusLifecycle.applyEffect(
+                        world,
+                        playerId,
+                        StatusLifecycle.createInstance(
+                            type = StatusEffectType.HOLY_SHIELD_BUFF,
+                            effectId = "inscription:${definition.id}:$turnCount",
+                            duration = effect.duration,
+                            magnitude = (effect.amount.toDouble() / 100.0).coerceAtLeast(0.1),
+                            sourceEntityId = playerId,
+                            appliedTurn = turnCount,
+                        ),
+                    )
+                if (result.applied) {
+                    logEvent(
+                        StatusAppliedEvent(
+                            target = playerId,
+                            statusType = StatusEffectType.HOLY_SHIELD_BUFF,
+                            statusId = StatusEffectType.HOLY_SHIELD_BUFF.schemaId,
+                            source = playerId,
+                            remainingTurns = effect.duration,
+                        ),
+                    )
+                }
                 StatsCalculator.recalculateAndStore(world, playerId)
                 syncPlayerResistanceProfile()
                 addMessage("log.inscription.shield", literalArg("turns", effect.duration))
@@ -3655,10 +3737,27 @@ class FoundationGameSession internal constructor(
             is InscriptionEffect.Cleanse -> {
                 val tracker = world.get<EffectTracker>(playerId)
                 val removed = tracker?.let { activeTracker -> StatusLifecycle.cleanse(activeTracker, effect.count) }.orEmpty()
-                if (effect.alsoHeal > 0) {
-                    world.get<Health>(playerId)?.let { health ->
-                        health.current = (health.current + effect.alsoHeal).coerceAtMost(health.max)
+                val restored =
+                    if (effect.alsoHeal > 0) {
+                        world.get<Health>(playerId)?.let { health ->
+                            val before = health.current
+                            health.current = (health.current + effect.alsoHeal).coerceAtMost(health.max)
+                            health.current - before
+                        } ?: 0
+                    } else {
+                        0
                     }
+                removed.forEach { removedEffect ->
+                    logEvent(
+                        StatusCleanseEvent(
+                            target = playerId,
+                            statusType = removedEffect.type,
+                            statusId = removedEffect.schemaId,
+                        ),
+                    )
+                }
+                if (restored > 0) {
+                    logEvent(HealEvent(source = playerId, target = playerId, amount = restored))
                 }
                 if (removed.isNotEmpty()) {
                     addMessage("log.inscription.cleanse", literalArg("count", removed.size))
@@ -3668,18 +3767,30 @@ class FoundationGameSession internal constructor(
             }
 
             is InscriptionEffect.DamageBoost -> {
-                StatusLifecycle.applyEffect(
-                    world,
-                    playerId,
-                    StatusLifecycle.createInstance(
-                        type = StatusEffectType.MANA_SURGE_BUFF,
-                        effectId = "inscription:${definition.id}:$turnCount",
-                        duration = effect.duration,
-                        magnitude = (effect.multiplier - 1.0).coerceAtLeast(0.0),
-                        sourceEntityId = playerId,
-                        appliedTurn = turnCount,
-                    ),
-                )
+                val result =
+                    StatusLifecycle.applyEffect(
+                        world,
+                        playerId,
+                        StatusLifecycle.createInstance(
+                            type = StatusEffectType.MANA_SURGE_BUFF,
+                            effectId = "inscription:${definition.id}:$turnCount",
+                            duration = effect.duration,
+                            magnitude = (effect.multiplier - 1.0).coerceAtLeast(0.0),
+                            sourceEntityId = playerId,
+                            appliedTurn = turnCount,
+                        ),
+                    )
+                if (result.applied) {
+                    logEvent(
+                        StatusAppliedEvent(
+                            target = playerId,
+                            statusType = StatusEffectType.MANA_SURGE_BUFF,
+                            statusId = StatusEffectType.MANA_SURGE_BUFF.schemaId,
+                            source = playerId,
+                            remainingTurns = effect.duration,
+                        ),
+                    )
+                }
                 StatsCalculator.recalculateAndStore(world, playerId)
                 addMessage("log.inscription.buff", literalArg("turns", effect.duration))
                 true
@@ -3921,7 +4032,8 @@ class FoundationGameSession internal constructor(
         turns: Int,
     ) {
         val tracker = world.get<EffectTracker>(monsterId) ?: return
-        StatusLifecycle.applyEffect(
+        val result =
+            StatusLifecycle.applyEffect(
             tracker,
             StatusLifecycle.createInstance(
                 type = StatusEffectType.INVULNERABLE,
@@ -3930,6 +4042,17 @@ class FoundationGameSession internal constructor(
                 sourceEntityId = monsterId,
             ),
         )
+        if (result.applied) {
+            logEvent(
+                StatusAppliedEvent(
+                    target = monsterId,
+                    statusType = StatusEffectType.INVULNERABLE,
+                    statusId = StatusEffectType.INVULNERABLE.schemaId,
+                    source = monsterId,
+                    remainingTurns = turns,
+                ),
+            )
+        }
     }
 
     private fun advancePendingTelegraph(monsterId: EntityId): Boolean {
@@ -4403,7 +4526,15 @@ class FoundationGameSession internal constructor(
         if (attacker == playerId) {
             recordSuccessfulPlayerAffinity(EquilibriumAffinity.PHYSICAL)
         }
-        logEvent(DamageDealtEvent(attacker, target, result.finalDamage, result.critical))
+        logEvent(
+            DamageDealtEvent(
+                attacker = attacker,
+                target = target,
+                damage = result.finalDamage,
+                crit = result.critical,
+                damageType = DamageType.PHYSICAL,
+            ),
+        )
         logTriggeredDamagePassives(attacker = attacker, sources = damageAdjustment.sources)
         addMessage(
             if (result.critical) {
@@ -4415,6 +4546,21 @@ class FoundationGameSession internal constructor(
             entityArg("target", target),
             literalArg("damage", result.finalDamage),
         )
+        result.removedStatusTypes.forEach { removedType ->
+            logEvent(
+                StatusRemovedEvent(
+                    target = target,
+                    statusType = removedType,
+                    statusId = removedType.schemaId,
+                    reason =
+                        if (removedType == StatusEffectType.OVERCHARGE) {
+                            "CONSUMED_ON_DAMAGE"
+                        } else {
+                            "BROKEN_ON_DAMAGE"
+                        },
+                ),
+            )
+        }
         if (StatusEffectType.STEALTH in result.removedStatusTypes) {
             logStealthBroken(target, result.finalDamage)
         }
@@ -5389,6 +5535,15 @@ class FoundationGameSession internal constructor(
                 }
 
                 is com.ktome.core.talent.TalentEffectResult.Damage -> {
+                    logEvent(
+                        DamageDealtEvent(
+                            attacker = result.user,
+                            target = effect.target,
+                            damage = effect.amount,
+                            crit = effect.crit,
+                            damageType = effect.damageType,
+                        ),
+                    )
                     addMessage(
                         if (effect.crit) {
                             "log.talent.damage_crit"
@@ -5411,12 +5566,28 @@ class FoundationGameSession internal constructor(
                             literalArg("amount", abs(effect.resistanceValue)),
                         )
                     }
+                    effect.removedStatusTypes.forEach { removedType ->
+                        logEvent(
+                            StatusRemovedEvent(
+                                target = effect.target,
+                                statusType = removedType,
+                                statusId = removedType.schemaId,
+                                reason =
+                                    if (removedType == StatusEffectType.OVERCHARGE) {
+                                        "CONSUMED_ON_DAMAGE"
+                                    } else {
+                                        "BROKEN_ON_DAMAGE"
+                                    },
+                            ),
+                        )
+                    }
                     if (effect.stealthBroken) {
                         logStealthBroken(effect.target, effect.amount)
                     }
                 }
 
                 is com.ktome.core.talent.TalentEffectResult.Heal -> {
+                    logEvent(HealEvent(source = result.user, target = effect.target, amount = effect.amount))
                     addMessage(
                         "log.talent.heal",
                         entityArg("target", effect.target),
@@ -5429,6 +5600,7 @@ class FoundationGameSession internal constructor(
                 }
 
                 is com.ktome.core.talent.TalentEffectResult.Miss -> {
+                    logEvent(MissEvent(attacker = result.user, target = effect.target))
                     addMessage(
                         "log.talent.miss",
                         keyArg("talent", talentNameKey(result.talentId)),
@@ -5521,6 +5693,16 @@ class FoundationGameSession internal constructor(
             }
 
             else -> {
+                statusRemovedByInteraction(interactionId)?.let { removedType ->
+                    logEvent(
+                        StatusRemovedEvent(
+                            target = target,
+                            statusType = removedType,
+                            statusId = removedType.schemaId,
+                            reason = interactionId,
+                        ),
+                    )
+                }
                 logEvent(
                     StatusInteractionEvent(
                         target = target,
@@ -5533,6 +5715,13 @@ class FoundationGameSession internal constructor(
             }
         }
     }
+
+    private fun statusRemovedByInteraction(interactionId: String): StatusEffectType? =
+        when (interactionId) {
+            "FREEZE_OVERWRITTEN_BY_BURN" -> StatusEffectType.FREEZE
+            "BURN_OVERWRITTEN_BY_FREEZE" -> StatusEffectType.BURN
+            else -> null
+        }
 
     private fun addStatusInteractionMessage(
         target: EntityId,
@@ -6345,27 +6534,110 @@ class FoundationGameSession internal constructor(
             talentPower = talentPower,
         )
 
-    private fun logEvent(event: Any) {
+    private fun logEvent(event: GameEvent) {
         if (recentEvents.size == 20) {
             recentEvents.removeFirst()
         }
         recentEvents += summarizeEvent(event)
+        recordCombatFeedback(event)
     }
 
-    private fun summarizeEvent(event: Any): String =
+    private fun recordCombatFeedback(event: GameEvent) {
         when (event) {
-            is DamageDealtEvent -> "damage:${event.attacker.value}->${event.target.value}:${event.damage}${if (event.crit) ":crit" else ""}"
+            is DamageDealtEvent ->
+                enqueueCombatFeedback(
+                    target = event.target,
+                    source = event.attacker,
+                    type = CombatFeedbackTypeSnapshot.DAMAGE,
+                    amount = event.damage,
+                    damageTypeId = event.damageType.name,
+                    critical = event.crit,
+                )
+
+            is HealEvent ->
+                enqueueCombatFeedback(
+                    target = event.target,
+                    source = event.source,
+                    type = CombatFeedbackTypeSnapshot.HEAL,
+                    amount = event.amount,
+                )
+
+            is MissEvent ->
+                enqueueCombatFeedback(
+                    target = event.target,
+                    source = event.attacker,
+                    type = CombatFeedbackTypeSnapshot.MISS,
+                )
+
+            is StatusAppliedEvent ->
+                enqueueCombatFeedback(
+                    target = event.target,
+                    source = event.source,
+                    type = CombatFeedbackTypeSnapshot.STATUS_APPLIED,
+                    statusNameKey = statusNameKey(event.statusId),
+                )
+
+            is StatusCleanseEvent ->
+                enqueueCombatFeedback(
+                    target = event.target,
+                    type = CombatFeedbackTypeSnapshot.STATUS_REMOVED,
+                    statusNameKey = statusNameKey(event.statusId),
+                )
+
+            is StatusRemovedEvent ->
+                enqueueCombatFeedback(
+                    target = event.target,
+                    type = CombatFeedbackTypeSnapshot.STATUS_REMOVED,
+                    statusNameKey = statusNameKey(event.statusId),
+                )
+
+            else -> Unit
+        }
+    }
+
+    private fun enqueueCombatFeedback(
+        target: EntityId,
+        source: EntityId? = null,
+        type: CombatFeedbackTypeSnapshot,
+        amount: Int? = null,
+        damageTypeId: String? = null,
+        statusNameKey: String? = null,
+        critical: Boolean = false,
+    ) {
+        val position = world.get<Position>(target) ?: return
+        if (pendingCombatFeedbackEvents.size == COMBAT_FEEDBACK_EVENT_LIMIT) {
+            pendingCombatFeedbackEvents.removeFirst()
+        }
+        pendingCombatFeedbackEvents +=
+            PendingCombatFeedback(
+                targetEntityId = target,
+                sourceEntityId = source,
+                fallbackPosition = position.toPoint(),
+                type = type,
+                amount = amount,
+                damageTypeId = damageTypeId,
+                statusNameKey = statusNameKey,
+                critical = critical,
+            )
+        invalidateRenderSnapshot()
+    }
+
+    private fun summarizeEvent(event: GameEvent): String =
+        when (event) {
+            is DamageDealtEvent -> "damage:${event.attacker.value}->${event.target.value}:${event.damage}${if (event.crit) ":crit" else ""}:${event.damageType.name}"
+            is HealEvent -> "heal:${event.source?.value ?: "none"}->${event.target.value}:${event.amount}"
             is MissEvent -> "miss:${event.attacker.value}->${event.target.value}"
+            is MovementBlockedEvent -> "move_blocked:${event.entity.value}:${event.reason}"
             is EntityDeathEvent -> "death:${event.entity.value}:${event.killer?.value ?: "none"}"
             is ExperienceGainedEvent -> "xp:${event.entity.value}:${event.amount}"
             is LevelUpEvent -> "level:${event.entity.value}:${event.newLevel}"
             is StatusAppliedEvent -> "status_apply:${event.target.value}:${event.statusId}:${event.remainingTurns}"
             is StatusCleanseEvent -> "status_cleanse:${event.target.value}:${event.statusId}:${event.reason}"
+            is StatusRemovedEvent -> "status_remove:${event.target.value}:${event.statusId}:${event.reason}"
             is StatusTickEvent -> "status_tick:${event.target.value}:${event.statusId}:${event.damage}:${event.carrierKind.name}"
             is StatusInteractionEvent -> "status_interaction:${event.target.value}:${event.statusId}:${event.interactionId}"
             is TauntOverrideEvent -> "taunt_override:${event.target.value}:${event.statusId}:${event.newSource?.value ?: "none"}"
             is StealthBrokenEvent -> "stealth_break:${event.target.value}:${event.statusId}:${event.damage}"
-            else -> event::class.simpleName ?: "UnknownEvent"
         }
 
     private fun activeBossDefinition(): BossDefinition? = content.bossDefinitionForZone(config.zoneId)

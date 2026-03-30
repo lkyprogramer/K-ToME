@@ -7,7 +7,10 @@ import com.ktome.core.ai.PendingTelegraphState
 import com.ktome.core.ecs.Position
 import com.ktome.core.ecs.get
 import com.ktome.core.map.Point
+import com.ktome.core.resource.ResourcePools
+import com.ktome.core.resource.ResourceType
 import com.ktome.core.save.SaveManager
+import com.ktome.core.snapshot.CombatFeedbackTypeSnapshot
 import com.ktome.game.FoundationGameConfig
 import com.ktome.game.FoundationGameSession
 import com.ktome.game.GameModule
@@ -62,6 +65,44 @@ class BossHarnessTest {
             reports.all { report -> report.success },
             reports.joinToString(separator = "\n") { report -> "${report.templateId}: ${report.failureReason ?: "unknown failure"}" },
         )
+    }
+
+    @Test
+    @Tag("bossHarness")
+    fun `boss harness keeps telegraph and combat feedback visible in the same snapshot`() {
+        val session =
+            GameModule.newFoundationSession(
+                config = FoundationGameConfig(seed = 20260326L, zoneId = "grey_gate_depths", playerProfessionId = "templar"),
+                saveManager = SaveManager(tempDir.resolve("boss-feedback-coexist")),
+            )
+        descendToBossFloor(session)
+        val bossId = requireNotNull(session.automationEntityByTemplateId("cultist.dungeon_lord"))
+        val world = session.automationWorld()
+        val bossPoint = requireNotNull(world.get<Position>(bossId)).toPoint()
+        session.automationMovePlayerTo(findOpenPointAtDistance(session, bossPoint, minDistance = 5, maxDistance = 8))
+
+        assertTrue(session.perform(PlayerCommand.Wait))
+        requireNotNull(world.get<com.ktome.core.ecs.Health>(bossId)).current =
+            requireNotNull(world.get<com.ktome.core.ecs.Health>(bossId)).max * 40 / 100
+        assertTrue(session.perform(PlayerCommand.Wait))
+        val telegraph = requireNotNull(world.get<PendingTelegraphState>(bossId))
+
+        triggerTemplarHealFeedback(session)
+        val snapshot = session.renderSnapshot()
+
+        assertTrue(
+            snapshot.overlays.any { overlay ->
+                overlay.id.startsWith("telegraph:") || overlay.id.startsWith("boss-warning:")
+            },
+        )
+        assertTrue(
+            snapshot.combatFeedbackEvents.any { event ->
+                event.type == CombatFeedbackTypeSnapshot.HEAL &&
+                    event.targetEntityId == session.playerId.value &&
+                    (event.amount ?: 0) > 0
+            },
+        )
+        assertTrue(telegraph.sourceAbilityId == "dungeon_lord_phase_warning" || telegraph.telegraphSpecId == "dungeon_lord_phase_warning")
     }
 
     private fun runMoltenGiantHarness(seed: Long): BossHarnessReport {
@@ -279,6 +320,21 @@ class BossHarnessTest {
         val stairsDown = requireNotNull(session.automationStairPoint(com.ktome.core.dungeon.StairDirection.DOWN))
         session.automationMovePlayerTo(stairsDown)
         assertTrue(session.perform(PlayerCommand.Descend))
+    }
+
+    private fun triggerTemplarHealFeedback(session: FoundationGameSession) {
+        val world = session.automationWorld()
+        val playerHealth = requireNotNull(world.get<com.ktome.core.ecs.Health>(session.playerId))
+        playerHealth.current = (playerHealth.max / 2).coerceAtLeast(1)
+        val positiveEnergyPool =
+            requireNotNull(requireNotNull(world.get<ResourcePools>(session.playerId)).pool(ResourceType.POSITIVE_ENERGY)) {
+                "Expected templar positive energy pool for feedback harness."
+            }
+        positiveEnergyPool.current = positiveEnergyPool.max
+        val holyLightSlot = requireNotNull(session.talentSlots().firstOrNull { slot -> slot.talentId == "holy_light" }) {
+            "Expected templar holy_light slot for feedback harness."
+        }.slot
+        assertTrue(session.perform(PlayerCommand.UseTalent(slot = holyLightSlot)))
     }
 
     private fun findOpenAdjacentPoint(

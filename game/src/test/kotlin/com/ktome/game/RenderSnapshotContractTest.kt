@@ -83,6 +83,7 @@ class RenderSnapshotContractTest {
         assertEquals(session.playerResourceView().max, snapshot.uiState.playerStatus.maxResource)
         assertTrue(snapshot.props.any { prop -> prop.propTypeId == "supply_crate" })
         assertTrue(snapshot.props.any { prop -> prop.propTypeId == "alarm_bonfire" })
+        assertTrue(snapshot.combatFeedbackEvents.isEmpty())
         val zoneEnter = requireNotNull(snapshot.logEvents.firstOrNull { event -> event.message.key == "log.zone.enter" })
         assertEquals("zone.shattered_outpost.name", zoneEnter.message.arguments.first { argument -> argument.name == "zone" }.valueKey)
         assertEquals("zone.shattered_outpost.desc", zoneEnter.message.arguments.first { argument -> argument.name == "desc" }.valueKey)

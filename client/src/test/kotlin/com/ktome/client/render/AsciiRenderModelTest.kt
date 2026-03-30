@@ -10,6 +10,8 @@ import com.ktome.client.input.UiMode
 import com.ktome.core.snapshot.ActorRenderSnapshot
 import com.ktome.core.snapshot.ActorRoleKindSnapshot
 import com.ktome.core.snapshot.CellVisibilitySnapshot
+import com.ktome.core.snapshot.CombatFeedbackSnapshot
+import com.ktome.core.snapshot.CombatFeedbackTypeSnapshot
 import com.ktome.core.snapshot.GridPointSnapshot
 import com.ktome.core.snapshot.MapCellSnapshot
 import com.ktome.core.snapshot.PlayerStatusSnapshot
@@ -22,6 +24,7 @@ import com.ktome.core.snapshot.RenderUiStateSnapshot
 import com.ktome.game.i18n.GameLocale
 import com.ktome.game.i18n.LocalizationBundle
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class AsciiRenderModelTest {
@@ -69,6 +72,42 @@ class AsciiRenderModelTest {
         )
     }
 
+    @Test
+    fun `ascii render model includes compact combat feedback sidebar lines`() {
+        val localizer = LocalizationBundle.load().translator(GameLocale.EN_US)
+        val model =
+            AsciiRenderer.buildRenderModel(
+                localizer = localizer,
+                visualResolver = sampleResolver(),
+                snapshot =
+                    sampleSnapshot(
+                        logEvents = emptyList(),
+                        combatFeedbackEvents =
+                            listOf(
+                                CombatFeedbackSnapshot(
+                                    targetEntityId = 1,
+                                    x = 0,
+                                    y = 0,
+                                    type = CombatFeedbackTypeSnapshot.HEAL,
+                                    amount = 12,
+                                ),
+                                CombatFeedbackSnapshot(
+                                    targetEntityId = 1,
+                                    x = 0,
+                                    y = 0,
+                                    type = CombatFeedbackTypeSnapshot.MISS,
+                                ),
+                            ),
+                    ),
+                overlayState = OverlayState(mode = UiMode.MAP),
+            )
+
+        val sidebarTexts = model.sidebarLines.map { line -> line.text }
+        assertTrue(sidebarTexts.contains("Combat Feedback"))
+        assertTrue(sidebarTexts.contains("+12"))
+        assertTrue(sidebarTexts.contains("MISS"))
+    }
+
     private fun sampleResolver(): VisualManifestResolver =
         VisualManifestResolver(
             manifest =
@@ -104,6 +143,7 @@ class AsciiRenderModelTest {
 
     private fun sampleSnapshot(
         logEvents: List<RenderLogEventSnapshot>,
+        combatFeedbackEvents: List<CombatFeedbackSnapshot> = emptyList(),
     ): RenderSnapshot =
         RenderSnapshot(
             metadata =
@@ -173,5 +213,6 @@ class AsciiRenderModelTest {
                     targetablePositions = listOf(GridPointSnapshot(0, 0)),
                 ),
             logEvents = logEvents,
+            combatFeedbackEvents = combatFeedbackEvents,
         )
 }

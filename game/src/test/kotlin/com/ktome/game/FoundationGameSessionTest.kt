@@ -30,6 +30,9 @@ import com.ktome.core.ecs.World
 import com.ktome.core.ecs.add
 import com.ktome.core.ecs.get
 import com.ktome.core.ecs.remove
+import com.ktome.core.event.DamageDealtEvent
+import com.ktome.core.event.GameEvent
+import com.ktome.core.event.MissEvent
 import com.ktome.core.effect.AreaEffectEmitter
 import com.ktome.core.effect.WorldEffect
 import com.ktome.core.inscription.InscriptionCooldownState
@@ -54,6 +57,7 @@ import com.ktome.core.resource.ResourceType
 import com.ktome.core.resource.StaminaPools
 import com.ktome.core.save.SaveManager
 import com.ktome.core.save.SaveRestoreException
+import com.ktome.core.snapshot.CombatFeedbackTypeSnapshot
 import com.ktome.core.stats.StatsCalculator
 import com.ktome.core.talent.ActiveEffect
 import com.ktome.core.talent.EffectTracker
@@ -1199,6 +1203,9 @@ class FoundationGameSessionTest {
         assertTrue(session.perform(PlayerCommand.UseTalent(slot = holyLightSlot)))
         assertTrue(session.playerStatus().currentHp > 20)
         assertTrue(session.renderSnapshot().logEvents.any { event -> event.message.key == "log.talent.heal" })
+        val healFeedback = requireNotNull(session.renderSnapshot().combatFeedbackEvents.lastOrNull { event -> event.type == CombatFeedbackTypeSnapshot.HEAL })
+        assertEquals(session.playerId.value, healFeedback.targetEntityId)
+        assertTrue((healFeedback.amount ?: 0) > 0)
     }
 
     @Test
@@ -1275,6 +1282,13 @@ class FoundationGameSessionTest {
                 .statusEffects
                 .first { it.typeId == StatusEffectType.STUN.schemaId }
         assertEquals("icon.status.stunned", stunnedEffect.iconKey)
+        assertTrue(
+            session.renderSnapshot().combatFeedbackEvents.any { event ->
+                event.type == CombatFeedbackTypeSnapshot.STATUS_APPLIED &&
+                    event.targetEntityId == monsterId.value &&
+                    event.statusNameKey == "status.stun"
+            },
+        )
     }
 
     @Test
@@ -2965,6 +2979,99 @@ class FoundationGameSessionTest {
         assertNotNull(logEventByKey(session, "log.status.stealth_broken"))
         assertFalse(requireNotNull(runtimeWorld(session).get<EffectTracker>(monsterId)).has(StatusEffectType.STEALTH))
         assertTrue(recentEventSummaries(session).any { summary -> summary.contains("stealth_break:${monsterId.value}:") })
+        assertTrue(
+            session.renderSnapshot().combatFeedbackEvents.any { event ->
+                event.type == CombatFeedbackTypeSnapshot.DAMAGE &&
+                    event.targetEntityId == monsterId.value &&
+                    (event.amount ?: 0) > 0
+            },
+        )
+        assertTrue(
+            session.renderSnapshot().combatFeedbackEvents.any { event ->
+                event.type == CombatFeedbackTypeSnapshot.STATUS_REMOVED &&
+                    event.targetEntityId == monsterId.value &&
+                    event.statusNameKey == "status.stealth"
+            },
+        )
+    }
+
+    @Test
+    fun `miss events are projected into combat feedback snapshots`() {
+        val session =
+            GameModule.newFoundationSession(
+                FoundationGameConfig(seed = 20260324L, zoneId = "shattered_outpost", playerProfessionId = "vanguard"),
+                SaveManager(tempDir.resolve("combat-feedback-miss")),
+            )
+        clearMonsters(session)
+        val monsterId = installCombatDummy(session, id = "miss_feedback_dummy")
+        val method = FoundationGameSession::class.java.getDeclaredMethod("logEvent", GameEvent::class.java)
+        method.isAccessible = true
+
+        method.invoke(session, MissEvent(attacker = session.playerId, target = monsterId))
+
+        val missFeedback = session.renderSnapshot().combatFeedbackEvents.single()
+        assertEquals(CombatFeedbackTypeSnapshot.MISS, missFeedback.type)
+        assertEquals(monsterId.value, missFeedback.targetEntityId)
+    }
+
+    @Test
+    fun `combat feedback anchors follow the target position resolved at snapshot build`() {
+        val session =
+            GameModule.newFoundationSession(
+                FoundationGameConfig(seed = 20260324L, zoneId = "shattered_outpost", playerProfessionId = "vanguard"),
+                SaveManager(tempDir.resolve("combat-feedback-anchor")),
+            )
+        clearMonsters(session)
+        val monsterId = installCombatDummy(session, id = "combat_feedback_anchor_dummy", position = Point(3, 1))
+        val method = FoundationGameSession::class.java.getDeclaredMethod("logEvent", GameEvent::class.java)
+        method.isAccessible = true
+
+        method.invoke(
+            session,
+            DamageDealtEvent(
+                attacker = session.playerId,
+                target = monsterId,
+                damage = 11,
+                crit = false,
+                damageType = DamageType.PHYSICAL,
+            ),
+        )
+        requireNotNull(runtimeWorld(session).get<Position>(monsterId)).moveTo(Point(4, 1))
+
+        val anchoredFeedback = session.renderSnapshot().combatFeedbackEvents.single()
+        assertEquals(4, anchoredFeedback.x)
+        assertEquals(1, anchoredFeedback.y)
+    }
+
+    @Test
+    fun `combat feedback queue keeps the last twelve events`() {
+        val session =
+            GameModule.newFoundationSession(
+                FoundationGameConfig(seed = 20260324L, zoneId = "shattered_outpost", playerProfessionId = "vanguard"),
+                SaveManager(tempDir.resolve("combat-feedback-limit")),
+            )
+        clearMonsters(session)
+        val monsterId = installCombatDummy(session, id = "combat_feedback_limit_dummy")
+        val method = FoundationGameSession::class.java.getDeclaredMethod("logEvent", GameEvent::class.java)
+        method.isAccessible = true
+
+        repeat(14) { index ->
+            method.invoke(
+                session,
+                DamageDealtEvent(
+                    attacker = session.playerId,
+                    target = monsterId,
+                    damage = index + 1,
+                    crit = false,
+                    damageType = DamageType.PHYSICAL,
+                ),
+            )
+        }
+
+        val feedback = session.renderSnapshot().combatFeedbackEvents
+        assertEquals(12, feedback.size)
+        assertEquals(3, feedback.first().amount)
+        assertEquals(14, feedback.last().amount)
     }
 
     @Test

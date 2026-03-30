@@ -1,6 +1,7 @@
 package com.ktome.core.event
 
 import com.ktome.core.ecs.EntityId
+import com.ktome.core.combat.DamageType
 import com.ktome.core.movement.MoveBlockReason
 import com.ktome.core.status.EffectCarrierKind
 import com.ktome.core.status.StatusEffectType
@@ -12,6 +13,7 @@ data class DamageDealtEvent(
     val target: EntityId,
     val damage: Int,
     val crit: Boolean,
+    val damageType: DamageType = DamageType.PHYSICAL,
     val ranged: Boolean = false,
 ) : GameEvent
 
@@ -19,6 +21,12 @@ data class MissEvent(
     val attacker: EntityId,
     val target: EntityId,
     val ranged: Boolean = false,
+) : GameEvent
+
+data class HealEvent(
+    val source: EntityId?,
+    val target: EntityId,
+    val amount: Int,
 ) : GameEvent
 
 data class EntityDeathEvent(
