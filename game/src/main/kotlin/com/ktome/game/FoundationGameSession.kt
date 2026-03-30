@@ -477,6 +477,7 @@ class FoundationGameSession internal constructor(
         } else {
             val health = requireNotNull(world.get<Health>(playerId)) { "Missing Health for $playerId." }
             val resource = resolvePlayerResourceView()
+            val progressStageNameKey = outcomeProgressStageNameKey()
             OutcomeSummary(
                 outcome = runOutcome,
                 floorReached = currentFloor(),
@@ -485,10 +486,15 @@ class FoundationGameSession internal constructor(
                 headlessTurnEquivalent = headlessTurnEquivalent,
                 playerLevel = playerStatus().level,
                 zoneNameKey = currentZoneSchema().nameKey,
+                progressStageNameKey = progressStageNameKey,
                 zonePath = config.zoneRoute,
+                zonePathNameKeys = config.zoneRoute.mapNotNull(::zoneNameKeyFor),
                 shardBalance = shardBalance,
                 defeatedBossIds = worldProgress.defeatedBossIds.sorted(),
+                defeatedBossNameKeys = defeatedBossNameKeys(),
+                claimedRouteRewardNameKeys = claimedRouteRewardNameKeys(),
                 outcomeReasonKey = runOutcomeReasonKey(runOutcome),
+                failureSummaryKey = outcomeFailureSummaryKey(progressStageNameKey),
                 killerNameKey = terminalKillerNameKey,
                 killerTemplateId = terminalKillerTemplateId,
                 finalHpCurrent = health.current.coerceAtLeast(0),
@@ -1400,14 +1406,16 @@ class FoundationGameSession internal constructor(
                         destinationZoneId = destinationZone.id,
                         destinationZoneNameKey = destinationZone.nameKey,
                         destinationZoneDescKey = destinationZone.descKey,
-                        levelBandRef = option.reward?.levelBandRef ?: destinationZone.toLevelBandRef(),
+                        recommendedLevelMin = destinationZone.recommendedLevel.min,
+                        recommendedLevelMax = destinationZone.recommendedLevel.max,
                         shardReward = option.reward?.shardReward ?: 0,
                         rewardItemNameKeys =
                             option.reward
                                 ?.guaranteedUtilityDropIds
                                 ?.mapNotNull { baseId -> itemSchemaFor(baseId)?.nameKey }
                                 .orEmpty(),
-                        rescueTags = option.reward?.rescueTags?.sorted().orEmpty(),
+                        rescueHintLabelKeys = routeRescueHintLabelKeys(option.reward?.rescueTags.orEmpty()),
+                        mechanicHintKey = ZoneMechanicRuntime.introHintKey(destinationZone),
                         isReturnPath = option.destinationZoneId == config.zoneRoute.getOrNull(config.routeIndex - 1),
                     )
                 },
@@ -1850,11 +1858,71 @@ class FoundationGameSession internal constructor(
             else -> error("Shop offer '${offer.id}' is missing both itemBaseId and inscriptionId.")
         }
 
-    private fun ZoneSchemaV2.toLevelBandRef(): String = "lv${recommendedLevel.min}_${recommendedLevel.max}"
-
     private fun activeBossEncounterSchema() =
         activeBossDefinition()?.encounterId?.let { encounterId ->
             content.schemaCatalog.bossEncounters.firstOrNull { schema -> schema.id == encounterId }
+        }
+
+    private fun zoneNameKeyFor(zoneId: String): String? =
+        content.schemaCatalog.zones.firstOrNull { zone -> zone.id == zoneId }?.nameKey
+
+    private fun bossNameKeyFor(templateId: String): String? =
+        bossDefinitionByTemplateId(templateId)?.nameKey
+            ?: content.schemaCatalog.monsters.firstOrNull { schema -> schema.id == templateId }?.nameKey
+
+    private fun defeatedBossNameKeys(): List<String> {
+        val defeatedBossIds = worldProgress.defeatedBossIds
+        return linkedSetOf<String>().apply {
+            config.zoneRoute.forEach { zoneId ->
+                content
+                    .bossDefinitionForZone(zoneId)
+                    ?.takeIf { definition -> definition.template.id in defeatedBossIds }
+                    ?.nameKey
+                    ?.let(::add)
+            }
+            defeatedBossIds.sorted().forEach { bossId ->
+                bossNameKeyFor(bossId)?.let(::add)
+            }
+        }.toList()
+    }
+
+    private fun claimedRouteRewardNameKeys(): List<String> {
+        val routeRewardNameKeys =
+            worldProgress.claimedRouteRewards
+                .sorted()
+                .flatMap { routeId -> routeRewardFor(routeId)?.guaranteedUtilityDropIds.orEmpty() }
+                .mapNotNull { baseItemId -> itemSchemaFor(baseItemId) }
+                .map { schema -> schema.nameKey }
+        val routeMilestoneNameKeys =
+            milestoneRewardSummaries()
+                .asSequence()
+                .filter { reward -> reward.rewardSource == MilestoneRewardSource.ROUTE }
+                .mapNotNull { reward -> itemSchemaFor(reward.baseItemId)?.nameKey }
+                .toList()
+        return (routeRewardNameKeys + routeMilestoneNameKeys).distinct()
+    }
+
+    private fun outcomeProgressStageNameKey(): String {
+        val zone = currentZoneSchema()
+        return when {
+            zone.id == "abyssal_temple" || zone.id == "abyssal_heart" -> "ui.summary.stage.finale"
+            zone.recommendedLevel.max <= 6 -> "ui.summary.stage.early"
+            zone.recommendedLevel.max <= 10 -> "ui.summary.stage.mid"
+            else -> "ui.summary.stage.late"
+        }
+    }
+
+    private fun outcomeFailureSummaryKey(progressStageNameKey: String): String? =
+        when (runOutcome) {
+            is RunOutcome.Defeat ->
+                when (progressStageNameKey) {
+                    "ui.summary.stage.early" -> "ui.summary.failure_recap.early"
+                    "ui.summary.stage.mid" -> "ui.summary.failure_recap.mid"
+                    "ui.summary.stage.late" -> "ui.summary.failure_recap.late"
+                    else -> "ui.summary.failure_recap.finale"
+                }
+
+            else -> null
         }
 
     private fun interactableSchemaFor(interactableId: String) =
@@ -6599,3 +6667,24 @@ class FoundationGameSession internal constructor(
     }
 
 }
+
+internal fun routeRescueHintLabelKeys(rescueTags: Set<String>): List<String> =
+    rescueTags
+        .asSequence()
+        .map(String::trim)
+        .filter(String::isNotEmpty)
+        .sortedBy(String::uppercase)
+        .mapNotNull(::routeRescueHintLabelKey)
+        .distinct()
+        .toList()
+
+internal fun routeRescueHintLabelKey(rescueTag: String): String? =
+    when (rescueTag.trim().uppercase()) {
+        "MOVEMENT" -> "ui.world_map.route_trait.movement"
+        "RECOVERY" -> "ui.world_map.route_trait.recovery"
+        "PROTECTION" -> "ui.world_map.route_trait.protection"
+        "CLEANSING" -> "ui.world_map.route_trait.cleansing"
+        "ARCANE" -> "ui.world_map.route_trait.arcane"
+        "FIRE" -> "ui.world_map.route_trait.fire"
+        else -> null
+    }

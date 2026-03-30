@@ -92,6 +92,27 @@ class FoundationGameSessionTest {
     private val itemBasesById = dataLoader.loadItemBundle().baseItems.associateBy { item -> item.id }
 
     @Test
+    fun `route rescue hint labels keep deterministic sorted order`() {
+        assertEquals(
+            listOf(
+                "ui.world_map.route_trait.arcane",
+                "ui.world_map.route_trait.movement",
+                "ui.world_map.route_trait.protection",
+                "ui.world_map.route_trait.recovery",
+            ),
+            routeRescueHintLabelKeys(
+                linkedSetOf(
+                    " recovery ",
+                    "PROTECTION",
+                    "movement",
+                    "UNKNOWN",
+                    "ARCANE",
+                ),
+            ),
+        )
+    }
+
+    @Test
     fun `player kill grants experience and level up`() {
         val map = GameMap.fromAscii(
             rows = listOf(
@@ -2783,12 +2804,16 @@ class FoundationGameSessionTest {
 
         val summary = requireNotNull(session.outcomeSummary())
         assertEquals("zone.shattered_outpost.name", summary.zoneNameKey)
+        assertEquals("ui.summary.stage.early", summary.progressStageNameKey)
+        assertEquals(listOf("zone.shattered_outpost.name"), summary.zonePathNameKeys)
         assertEquals("ui.summary.reason.player_died", summary.outcomeReasonKey)
+        assertEquals("ui.summary.failure_recap.early", summary.failureSummaryKey)
         assertEquals("monster.bandit.raider.name", summary.killerNameKey)
         assertEquals("bandit.raider", summary.killerTemplateId)
         assertEquals(0, summary.finalHpCurrent)
         assertEquals("STAMINA", summary.finalResourceTypeId)
         assertEquals("ui.hud.stamina.short", summary.finalResourceLabelKey)
+        assertTrue(summary.claimedRouteRewardNameKeys.isEmpty())
         assertTrue(summary.lastEvents.isNotEmpty())
         assertEquals("log.player.death", summary.lastEvents.last().key)
         assertTrue(summary.lastEvents.any { event -> event.key == "log.attack.hit" || event.key == "log.attack.crit" })

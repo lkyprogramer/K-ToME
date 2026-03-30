@@ -149,7 +149,7 @@ class GameModuleTest {
     }
 
     @Test
-    fun `player creation state preserves valid selection and falls back invalid entries to playable defaults`() {
+    fun `player creation state preserves playable selection and rewrites hidden defaults to playable options`() {
         val preserved =
             GameModule.playerCreationState(
                 previousSelection = PlayerCreationSelection(professionId = "templar", raceId = "dwarf"),
@@ -160,12 +160,12 @@ class GameModuleTest {
 
         val fallback =
             GameModule.playerCreationState(
-                previousSelection = PlayerCreationSelection(professionId = "missing", raceId = "orc"),
+                previousSelection = PlayerCreationSelection(professionId = "spellblade", raceId = "orc"),
             )
 
         assertEquals("vanguard", fallback.selection.professionId)
-        assertEquals("orc", fallback.selection.raceId)
-        assertFalse(fallback.canStartNewGame())
+        assertEquals("human", fallback.selection.raceId)
+        assertTrue(fallback.canStartNewGame())
     }
 
     @Test

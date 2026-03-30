@@ -53,16 +53,16 @@ class GoldenScreenshotHarnessTest {
 
         assertEquals(
             listOf(
-                "196a22a445c4e2b82e9a40ca404570aaa8411a7dadb62d6864fee2e39734c2bb",
+                "36fffb5f8ea3ff2f78486ee5d520278135f39f61a44a7cb9d4cf60317a607ade",
                 "f546dbdae2f297dec91bcf208bce0dd93549b838661027d645c1247f1556c689",
                 "b05c530a245113538b39e1c4ae40d318cc1f0a0d5cd34cf83e0125c587aace30",
                 "abef5cda32f3ac961355f5c304b840fea7c2e480e12ee35b297819a699ce1418",
                 "85b8b3ff2de386ad3bd8b6cacbfd3a5e192c172ae9e53c697b7116f7615d022e",
-                "8848108ac576cae7a9172e7f753420e544aad1d20671fdfcea6556a7899de8e7",
-                "6d2d31e5abab4658139f4093dafb723f530469a793add6603467be9f73661a29",
-                "c14c38c402e2017e876445ea527d14b78132ce2d5e03aff8c5343b344d3c0d2f",
-                "f0adc7412ff79f52d81ed4daab2ea9543bbe601be4a1bea49a64fc27aacacf2c",
-                "9780fd7bffe353f34c05e0189fca389fb4be2ffd9111e24d205a40f3d9c5cd06",
+                "511542b3a7dafb4fe22de3f96e5ced6bbf18ab3246b9eb8de55dff01fd8924a2",
+                "eae92521df2e5b24cf84cb8da1c286ce5540fae98726456e7efb848171b7aac1",
+                "bead8ac42a35815e0b1f2a3a939925f516c3decf3144ddb3ecbaf4f30c24770e",
+                "0174fa7be36fdfdfeaae95705ce51088b12dccd7e69d7fd1ed00020e3502d845",
+                "d7a65adf4004b9c684cf41d673290ddfcaacce7fedd6ba4906ee0c52a8c8ef34",
             ),
             english + chinese,
         )
@@ -76,7 +76,7 @@ class GoldenScreenshotHarnessTest {
         assertEquals(
             listOf(
                 "f757ca07863a76f760f8c47b7f7b6d55b356fe5ed139d82beb264a4b1e630891",
-                "25682f1d6e80d5e0f372c33cd46e96c397dcd334346c232e01df562dd85dcc20",
+                "02edf38fc8f727d0fb95e0df7589aa60463ac22112670079ee632073e3969328",
             ),
             listOf(english, chinese),
         )
@@ -92,9 +92,9 @@ class GoldenScreenshotHarnessTest {
                 "26553d06f32c49c6bae580c58fb6d756648c0c1a9843cbb985dbd8a37b036d37",
                 "0a0317dcae668d7d85e29d5ca1c7fe938600e06df572756de516d1a417268239",
                 "ec26aae09310b24a97a15e7f7ea399af0f6c732df1437ad5de6d3232861ce650",
-                "0786b2b3bc6af4dd57c9b226f0813a9500b5316f0a07eac4d70f064926effad2",
-                "8d86d9c34c2c6193c7082bdaeda0f57c39a2af0f429d24f6e680f49c37f04d66",
-                "a7d5cfc68e208f44f3a726d01991c30e224306255b4d1b24946b2f4f98def44e",
+                "186f8a3edf4e1c0d3a1e5c8ab200d67e93707903986073464f8b9ff347ebd9fb",
+                "efa73a76c5d0f590bb4ea9dd9a993b75e23608fa4fd92acd87e31dfcc3effa46",
+                "511dfabb26a5fe54507cc3d4c63412974ee29f8beeaa9c175b7049812e361bdb",
             ),
             english + chinese,
         )
@@ -122,7 +122,7 @@ class GoldenScreenshotHarnessTest {
                 "c288b15f8f99ae176d828c92297faa0f11ca092486b9afb62dbfedf1a68abeb9",
                 "d3dcf30b0032892079b55da37123cd0b40e4f440e9fbd1dbe2fc201c995a13ee",
                 "d3dcf30b0032892079b55da37123cd0b40e4f440e9fbd1dbe2fc201c995a13ee",
-                "7cda229a352115110f9ce340563fad4875b78ff0c783e175bbb728f0a2dee86d",
+                "a16d5095aa24074e7ddb5bb2dff91594cb1f88194f3fd0f52e14011008f5c1cf",
             ),
             english + chinese,
         )
@@ -135,10 +135,10 @@ class GoldenScreenshotHarnessTest {
 
         assertEquals(
             listOf(
-                "b743649068e3081cf08d0ab6b84edd8a8fe664f8eac97a45cc317f8b4c88f549",
+                "55683f80a0503d814dc5eff2301bc78886ad147c88c0105ca249cfbe5956e3d4",
                 "93c0eed279d7f5b5fc3aecf8d59c4c1b0bf1854b87c84dd512e2b6fc0d8f43ae",
-                "6dc54c2a3cb2f6a331cb726d6f0c2c85ef7d5d232b8428f3e6907bd46764d490",
-                "bada1189c001de3f34c49283071422ed9be23001583bed205c8e99984375cd7b",
+                "383f3bd35049724c9260f72b6bf2b9f29627ff63a67acd59d0519a2322a207de",
+                "c229bdff6b7fc9ed7fbc2e00337c0a5e60ab95db67ba4c71f241e18407446df7",
             ),
             english + chinese,
         )

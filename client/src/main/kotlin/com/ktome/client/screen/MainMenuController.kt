@@ -38,10 +38,18 @@ internal class MainMenuController(
     playerCreationState: PlayerCreationState,
 ) {
     private val playerCreationState = playerCreationState
+    private val browseableProfessionOptions =
+        playerCreationState.professionOptions
+            .filter { option -> option.playabilityState == ClassPlayabilityState.PLAYABLE }
+            .ifEmpty { playerCreationState.professionOptions }
+    private val browseableRaceOptions =
+        playerCreationState.raceOptions
+            .filter { option -> option.playabilityState == ClassPlayabilityState.PLAYABLE }
+            .ifEmpty { playerCreationState.raceOptions }
     private var selectedIndex: Int = 0
     private var focusedAxis: PlayerCreationFocus = PlayerCreationFocus.PROFESSION
-    private var selectedProfessionIndex: Int = professionOptions().indexOfFirst { option -> option.id == playerCreationState.selection.professionId }.takeIf { it >= 0 } ?: 0
-    private var selectedRaceIndex: Int = raceOptions().indexOfFirst { option -> option.id == playerCreationState.selection.raceId }.takeIf { it >= 0 } ?: 0
+    private var selectedProfessionIndex: Int = browseableProfessionOptions.indexOfFirst { option -> option.id == playerCreationState.selection.professionId }.takeIf { it >= 0 } ?: 0
+    private var selectedRaceIndex: Int = browseableRaceOptions.indexOfFirst { option -> option.id == playerCreationState.selection.raceId }.takeIf { it >= 0 } ?: 0
 
     fun selectedIndex(): Int = selectedIndex
 
@@ -144,9 +152,9 @@ internal class MainMenuController(
         currentProfessionOption().playabilityState == ClassPlayabilityState.PLAYABLE &&
             currentRaceOption().playabilityState == ClassPlayabilityState.PLAYABLE
 
-    private fun professionOptions() = playerCreationState.professionOptions
+    private fun professionOptions() = browseableProfessionOptions
 
-    private fun raceOptions() = playerCreationState.raceOptions
+    private fun raceOptions() = browseableRaceOptions
 
     internal data class MenuEntry(
         val labelKey: String,
