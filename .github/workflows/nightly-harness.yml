@@ -25,7 +25,7 @@ jobs:
           java-version: "21"
 
       - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v5
+        uses: gradle/actions/setup-gradle@v6
 
       - name: Run long-run lab
         run: ./gradlew --no-daemon longRunLab
