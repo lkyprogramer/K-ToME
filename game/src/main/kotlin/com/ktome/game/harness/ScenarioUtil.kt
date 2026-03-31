@@ -281,7 +281,7 @@ fun routeProgressCommand(
 internal fun preferredRouteIndex(routeSelection: RouteSelectionSnapshot): Int {
     val mainlineOption =
         routeSelection.options.firstOrNull { option ->
-            !option.isReturnPath && option.destinationZoneId !in OPTIONAL_ZONE_IDS
+            !option.isReturnPath && option.destinationZoneId !in OPTIONAL_ROUTE_ZONE_IDS
         }
     if (mainlineOption != null) {
         return mainlineOption.index
@@ -290,8 +290,6 @@ internal fun preferredRouteIndex(routeSelection: RouteSelectionSnapshot): Int {
     val branchOption = routeSelection.options.firstOrNull { option -> !option.isReturnPath }
     return branchOption?.index ?: routeSelection.options.firstOrNull()?.index ?: 0
 }
-
-private val OPTIONAL_ZONE_IDS = setOf("bandit_camp", "elven_ruins", "molten_core", "crystal_cavern")
 
 fun PlayerCommand.commandName(): String = this::class.simpleName ?: "UnknownCommand"
 

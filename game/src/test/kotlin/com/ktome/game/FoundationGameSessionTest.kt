@@ -1036,6 +1036,7 @@ class FoundationGameSessionTest {
         session.automationMovePlayerTo(gatePoint)
 
         assertTrue(session.perform(PlayerCommand.Interact))
+        val gateRewardSourceId = cacheRewardSourceId(session.config.zoneId, session.currentFloor(), "armory_gate", gatePoint)
         assertTrue(session.inventoryItems().size >= baselineInventoryCount + 1)
         assertTrue(session.playerResourceView().current > 5)
         assertTrue(session.renderSnapshot().logEvents.any { event -> event.message.key == "log.objective.progress" })
@@ -1043,7 +1044,7 @@ class FoundationGameSessionTest {
             requireNotNull(
                 session.milestoneRewardSummaries().firstOrNull { reward ->
                     reward.rewardSource == MilestoneRewardSource.CACHE &&
-                        reward.sourceId == "armory_gate" &&
+                        reward.sourceId == gateRewardSourceId &&
                         reward.qualityTier.ordinal >= ItemQuality.MAGIC.ordinal &&
                         reward.affixIds.isNotEmpty()
                 },
@@ -1060,7 +1061,7 @@ class FoundationGameSessionTest {
             requireNotNull(
                 session.milestoneRewardSummaries().firstOrNull { reward ->
                     reward.rewardSource == MilestoneRewardSource.CACHE &&
-                        reward.sourceId == "armory_gate"
+                        reward.sourceId == gateRewardSourceId
                 },
             )
         assertEquals(rewardSummary.baseItemId, adoptedSummary.equippedBaseItemIdAtRunEnd)
@@ -1082,13 +1083,14 @@ class FoundationGameSessionTest {
         session.automationMovePlayerTo(gatePoint)
 
         assertTrue(session.perform(PlayerCommand.Interact))
+        val gateRewardSourceId = cacheRewardSourceId(session.config.zoneId, session.currentFloor(), "armory_gate", gatePoint)
         assertEquals(1, inventoryBaseIds(session).count { baseId -> baseId == "basic_shield" })
         assertEquals(1, inventoryBaseIds(session).count { baseId -> baseId == "chain_mail" })
         assertTrue(inventoryBaseIds(session).count { baseId -> baseId == "healing_potion" } >= 1)
         assertTrue(
             session.milestoneRewardSummaries().any { reward ->
                 reward.rewardSource == MilestoneRewardSource.CACHE &&
-                    reward.sourceId == "armory_gate" &&
+                    reward.sourceId == gateRewardSourceId &&
                     reward.affixIds.isNotEmpty()
             },
         )
@@ -1106,6 +1108,7 @@ class FoundationGameSessionTest {
         session.automationMovePlayerTo(cachePoint)
 
         assertTrue(session.perform(PlayerCommand.Interact))
+        val cacheRewardSourceId = cacheRewardSourceId(session.config.zoneId, session.currentFloor(), "trail_cache", cachePoint)
 
         val world = session.automationWorld()
         val groundItems =
@@ -1119,7 +1122,7 @@ class FoundationGameSessionTest {
         assertTrue(
             session.milestoneRewardSummaries().any { reward ->
                 reward.rewardSource == MilestoneRewardSource.CACHE &&
-                    reward.sourceId == "trail_cache" &&
+                    reward.sourceId == cacheRewardSourceId &&
                     reward.qualityTier.ordinal >= ItemQuality.MAGIC.ordinal &&
                     reward.affixIds.isNotEmpty()
             },

@@ -6,9 +6,92 @@ import com.ktome.core.run.RunOutcome
 import com.ktome.game.PlayerStatus
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.Test
 
 class ScenarioModelsTest {
+    @Test
+    fun `scenario spec infers full route only for canonical shattered outpost mainline start`() {
+        val spec =
+            ScenarioSpec(
+                name = "full-route",
+                seed = 1L,
+                zoneId = "shattered_outpost",
+                zoneRoute = listOf(
+                    "shattered_outpost",
+                    "greenwood_fringe",
+                    "deep_iron_pit",
+                    "grey_gate_depths",
+                    "underground_river",
+                    "abyssal_temple",
+                    "abyssal_heart",
+                ),
+                routeIndex = 0,
+                maxTurns = 1,
+                goal = ScenarioGoal.ReachFloor(1),
+            )
+
+        assertTrue(spec.scenarioType == ScenarioType.FULL_ROUTE)
+    }
+
+    @Test
+    fun `scenario spec infers branch inclusive when route starts at shattered outpost and enters optional zone`() {
+        val spec =
+            ScenarioSpec(
+                name = "branch-inclusive",
+                seed = 1L,
+                zoneId = "shattered_outpost",
+                zoneRoute = listOf(
+                    "shattered_outpost",
+                    "greenwood_fringe",
+                    "bandit_camp",
+                    "greenwood_fringe",
+                    "deep_iron_pit",
+                    "grey_gate_depths",
+                    "underground_river",
+                    "abyssal_temple",
+                    "abyssal_heart",
+                ),
+                routeIndex = 0,
+                maxTurns = 1,
+                goal = ScenarioGoal.ReachFloor(1),
+            )
+
+        assertTrue(spec.scenarioType == ScenarioType.BRANCH_INCLUSIVE)
+    }
+
+    @Test
+    fun `scenario spec infers late route probe for abyssal temple starts`() {
+        val spec =
+            ScenarioSpec(
+                name = "late-route",
+                seed = 1L,
+                zoneId = "abyssal_temple",
+                zoneRoute = listOf("abyssal_temple", "abyssal_heart"),
+                routeIndex = 0,
+                maxTurns = 1,
+                goal = ScenarioGoal.ReachFloor(1),
+            )
+
+        assertTrue(spec.scenarioType == ScenarioType.LATE_ROUTE_PROBE)
+    }
+
+    @Test
+    fun `scenario spec rejects mismatched full route declaration`() {
+        assertThrows<IllegalArgumentException> {
+            ScenarioSpec(
+                name = "invalid-full-route",
+                seed = 1L,
+                zoneId = "deep_iron_pit",
+                zoneRoute = listOf("deep_iron_pit", "grey_gate_depths"),
+                routeIndex = 2,
+                scenarioType = ScenarioType.FULL_ROUTE,
+                maxTurns = 1,
+                goal = ScenarioGoal.ReachFloor(1),
+            )
+        }
+    }
+
     @Test
     fun `reach floor or terminal accepts victory before target floor`() {
         val goal = ScenarioGoal.ReachFloorOrTerminal(5)
@@ -74,6 +157,23 @@ class ScenarioModelsTest {
             )
 
         assertTrue(report.crashedOrStalled())
+    }
+
+    @Test
+    fun `visited zone assertion requires exact branch visit instead of depth only`() {
+        val report =
+            report(
+                success = true,
+                goalReached = true,
+                outcome = RunOutcome.InProgress,
+            ).copy(
+                zonePath = listOf("shattered_outpost", "greenwood_fringe", "elven_ruins"),
+                finalZoneId = "elven_ruins",
+            )
+
+        val error = ScenarioAssertion.VisitedZone("bandit_camp").verify(report)
+
+        assertTrue(error != null)
     }
 
     private fun observation(

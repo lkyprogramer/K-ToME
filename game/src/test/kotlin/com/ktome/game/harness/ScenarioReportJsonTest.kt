@@ -23,6 +23,7 @@ class ScenarioReportJsonTest {
                 seed = 20260360L,
                 professionId = "templar",
                 raceId = "human",
+                scenarioType = ScenarioType.FULL_ROUTE,
                 success = false,
                 outcome = RunOutcome.Defeat(floor = 2),
                 floorReached = 2,
@@ -97,6 +98,8 @@ class ScenarioReportJsonTest {
         assertEquals(HarnessMetadata.PHASE_ID, json.requiredString("phaseId"))
         assertEquals(HarnessMetadata.LONG_RUN_FULL_CORPUS_ID, json.requiredString("corpusId"))
         assertEquals("templar#human#build", json.requiredString("buildHash"))
+        assertEquals("full_route", json.requiredString("scenarioType"))
+        assertEquals("true", json.requiredString("isFullRoute"))
         val milestoneRewards = json.requiredArray("milestoneRewards")
         assertEquals(1, milestoneRewards.size)
         assertEquals("ROUTE", milestoneRewards.single().jsonObject.requiredString("rewardSource"))
