@@ -246,6 +246,12 @@ class LongRunLabFullTest {
             "Expected branch-inclusive probe matrix to exercise at least 3 distinct route hashes, actual=$branchRouteHashDistribution",
         )
         assertTrue(
+            branchInclusiveReports.any { report ->
+                report.zonePath.contains("underground_river") && report.zonePath.contains("crystal_cavern")
+            },
+            "Expected branch-inclusive matrix to keep at least one routed sample through underground_river -> crystal_cavern.",
+        )
+        assertTrue(
             reachedTempleCount >= 8,
             "Expected at least 8/12 full-route matrix runs to reach abyssal_temple or deeper, actual=$reachedTempleCount/${fullRouteReports.size}",
         )

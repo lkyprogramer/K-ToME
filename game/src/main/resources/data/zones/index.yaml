@@ -154,9 +154,9 @@ zones:
   - id: underground_river
     nameKey: zone.underground_river.name
     descKey: zone.underground_river.desc
-    visualKey: zone.grey_gate_depths.visual
-    iconKey: zone.grey_gate_depths.icon
-    audioProfile: audio.zone.grey_gate_depths
+    visualKey: zone.underground_river.visual
+    iconKey: zone.underground_river.icon
+    audioProfile: audio.zone.underground_river
     schemaVersion: 2
     tags: [zone, mandatory]
     biome: cavern
@@ -166,7 +166,7 @@ zones:
     environmentTheme: sealed_depths
     specialMechanics: [currents, ferry_crossing, drowned_ambush]
     tilesetKey: tileset.shadow_depths
-    ambientProfile: ambient.grey_gate_depths
+    ambientProfile: ambient.underground_river
     worldRole: mandatory
     monsterPools: [undead.chain_thrall, cultist.shadow_priest, beast.rat, undead.moss_archer, river.hook_lurker, river.drowned_stalker, river.tide_mender, river.ferry_raider, river.silt_shaman, river.undertow_brute]
     elitePools: [cultist.ashgate_warden, river.current_reaver]
@@ -175,9 +175,9 @@ zones:
   - id: crystal_cavern
     nameKey: zone.crystal_cavern.name
     descKey: zone.crystal_cavern.desc
-    visualKey: zone.grey_gate_depths.visual
-    iconKey: zone.grey_gate_depths.icon
-    audioProfile: audio.zone.grey_gate_depths
+    visualKey: zone.crystal_cavern.visual
+    iconKey: zone.crystal_cavern.icon
+    audioProfile: audio.zone.crystal_cavern
     schemaVersion: 2
     tags: [zone, optional]
     biome: cavern
@@ -187,7 +187,7 @@ zones:
     environmentTheme: sealed_depths
     specialMechanics: [crystal_shards, resonance_cache]
     tilesetKey: tileset.shadow_depths
-    ambientProfile: ambient.grey_gate_depths
+    ambientProfile: ambient.crystal_cavern
     worldRole: optional
     monsterPools: [cultist.shadow_priest, undead.chain_thrall, beast.thorn_stalker, crystal.shardling, crystal.prism_weaver, crystal.seal_keeper, crystal.beam_savant]
     elitePools: [cultist.ashgate_warden, crystal.resonant_colossus]

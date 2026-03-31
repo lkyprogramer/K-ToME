@@ -72,6 +72,7 @@ import com.ktome.core.save.EquipmentSnapshot
 import com.ktome.core.save.ExperienceSnapshot
 import com.ktome.core.save.FloorRewardStateSnapshot
 import com.ktome.core.save.FloorSnapshot
+import com.ktome.core.save.CrystalShardPressureStateSnapshot
 import com.ktome.core.save.FurnacePressureStateSnapshot
 import com.ktome.core.save.InscriptionLoadoutSnapshot
 import com.ktome.core.save.InscriptionSlotSaveSnapshot
@@ -84,6 +85,7 @@ import com.ktome.core.save.PatrolRouteSnapshot
 import com.ktome.core.save.PatrolPressureStateSnapshot
 import com.ktome.core.save.PlayerSnapshot
 import com.ktome.core.save.PointSnapshot
+import com.ktome.core.save.RiverCurrentStateSnapshot
 import com.ktome.core.save.SaveSnapshot
 import com.ktome.core.save.SaveRestoreException
 import com.ktome.core.save.StairSnapshot
@@ -442,6 +444,29 @@ internal object SessionSnapshotMapper {
                         phaseTurnsRemaining = state.phaseTurnsRemaining,
                     )
                 },
+            riverCurrentState =
+                world.get<RiverCurrentRuntimeState>(entityId)?.let { state ->
+                    RiverCurrentStateSnapshot(
+                        laneCells = state.laneCells.map(PointSnapshot::from),
+                        approachCells = state.approachCells.map(PointSnapshot::from),
+                        safeCells = state.safeCells.map(PointSnapshot::from),
+                        pushDx = state.pushDx,
+                        pushDy = state.pushDy,
+                    )
+                },
+            crystalShardPressureState =
+                world.get<CrystalShardRuntimeState>(entityId)?.let { state ->
+                    CrystalShardPressureStateSnapshot(
+                        hazardCells = state.hazardCells.map(PointSnapshot::from),
+                        cycleIntervalTurns = state.cycleIntervalTurns,
+                        telegraphTurns = state.telegraphTurns,
+                        activeTurns = state.activeTurns,
+                        damagePerTick = state.damagePerTick,
+                        nextCycleTurn = state.nextCycleTurn,
+                        phase = state.phase.name,
+                        phaseTurnsRemaining = state.phaseTurnsRemaining,
+                    )
+                },
             resourcePools =
                 world.get<ResourcePools>(entityId)?.entries
                     ?.values
@@ -635,6 +660,33 @@ internal object SessionSnapshotMapper {
                 ),
             )
         }
+        snapshot.riverCurrentState?.let { state ->
+            world.add(
+                entityId,
+                RiverCurrentRuntimeState(
+                    laneCells = state.laneCells.map(PointSnapshot::toPoint),
+                    approachCells = state.approachCells.map(PointSnapshot::toPoint),
+                    safeCells = state.safeCells.map(PointSnapshot::toPoint),
+                    pushDx = state.pushDx,
+                    pushDy = state.pushDy,
+                ),
+            )
+        }
+        snapshot.crystalShardPressureState?.let { state ->
+            world.add(
+                entityId,
+                CrystalShardRuntimeState(
+                    hazardCells = state.hazardCells.map(PointSnapshot::toPoint),
+                    cycleIntervalTurns = state.cycleIntervalTurns,
+                    telegraphTurns = state.telegraphTurns,
+                    activeTurns = state.activeTurns,
+                    damagePerTick = state.damagePerTick,
+                    nextCycleTurn = state.nextCycleTurn,
+                    phase = parseEnumFromSave<CrystalShardPhase>(state.phase, "crystal shard phase"),
+                    phaseTurnsRemaining = state.phaseTurnsRemaining,
+                ),
+            )
+        }
         if (snapshot.resourcePools.isNotEmpty()) {
             world.add(
                 entityId,
@@ -751,6 +803,8 @@ internal object SessionSnapshotMapper {
         val patrolPressureState = snapshot.patrolPressureState
         val ambushLaneTrigger = snapshot.ambushLaneTrigger
         val furnacePressureState = snapshot.furnacePressureState
+        val riverCurrentState = snapshot.riverCurrentState
+        val crystalShardPressureState = snapshot.crystalShardPressureState
 
         return snapshot.copy(
             position = snapshot.position?.copy(),
@@ -801,6 +855,16 @@ internal object SessionSnapshotMapper {
             furnacePressureState =
                 furnacePressureState?.copy(
                     hazardCells = furnacePressureState.hazardCells.map { point -> point.copy() },
+                ),
+            riverCurrentState =
+                riverCurrentState?.copy(
+                    laneCells = riverCurrentState.laneCells.map { point -> point.copy() },
+                    approachCells = riverCurrentState.approachCells.map { point -> point.copy() },
+                    safeCells = riverCurrentState.safeCells.map { point -> point.copy() },
+                ),
+            crystalShardPressureState =
+                crystalShardPressureState?.copy(
+                    hazardCells = crystalShardPressureState.hazardCells.map { point -> point.copy() },
                 ),
             resourcePools = snapshot.resourcePools.sortedBy(ResourcePoolSnapshot::type),
             inscriptionLoadout =

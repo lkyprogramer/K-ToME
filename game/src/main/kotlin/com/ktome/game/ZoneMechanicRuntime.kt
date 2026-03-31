@@ -1,15 +1,18 @@
 package com.ktome.game
 
+import com.ktome.core.dungeon.StairDirection
 import com.ktome.core.ecs.Interactable
 import com.ktome.core.ecs.Position
+import com.ktome.core.ecs.Stair
 import com.ktome.core.ecs.World
 import com.ktome.core.ecs.add
 import com.ktome.core.ecs.get
 import com.ktome.core.map.GameMap
 import com.ktome.core.map.Point
+import com.ktome.core.pathfinding.AStar
 import com.ktome.game.data.schema.ZoneSchemaV2
 import com.ktome.game.model.MonsterTemplate
-import java.util.Random
+import kotlin.math.abs
 
 internal data class PatrolPressureRuntimeState(
     val spawnTemplateIds: List<String>,
@@ -42,6 +45,31 @@ internal data class FurnacePressureRuntimeState(
     val damagePerTick: Int,
     var nextCycleTurn: Int,
     var phase: FurnacePressurePhase = FurnacePressurePhase.IDLE,
+    var phaseTurnsRemaining: Int = 0,
+)
+
+internal data class RiverCurrentRuntimeState(
+    val laneCells: List<Point>,
+    val approachCells: List<Point>,
+    val safeCells: List<Point>,
+    val pushDx: Int,
+    val pushDy: Int,
+)
+
+internal enum class CrystalShardPhase {
+    IDLE,
+    TELEGRAPH,
+    ACTIVE,
+}
+
+internal data class CrystalShardRuntimeState(
+    val hazardCells: List<Point>,
+    val cycleIntervalTurns: Int,
+    val telegraphTurns: Int,
+    val activeTurns: Int,
+    val damagePerTick: Int,
+    var nextCycleTurn: Int,
+    var phase: CrystalShardPhase = CrystalShardPhase.IDLE,
     var phaseTurnsRemaining: Int = 0,
 )
 
@@ -79,12 +107,30 @@ private data class FurnacePressureSpec(
     val damagePerTick: Int,
 )
 
+private data class RiverCurrentSpec(
+    val laneCells: List<Point>,
+    val approachCells: List<Point>,
+    val safeCells: List<Point>,
+    val pushDx: Int,
+    val pushDy: Int,
+)
+
+private data class CrystalShardSpec(
+    val hazardCells: List<Point>,
+    val cycleIntervalTurns: Int,
+    val telegraphTurns: Int,
+    val activeTurns: Int,
+    val damagePerTick: Int,
+)
+
 internal object ZoneMechanicRuntime {
     private const val DEFAULT_PATROL_MAX_HOSTILES: Int = 4
     private const val DEFAULT_PATROL_WAVE_LIMIT: Int = 3
     private const val DEFAULT_PATROL_INTERVAL_TURNS: Int = 20
     private const val DEFAULT_FURNACE_INTERVAL_TURNS: Int = 30
     private const val DEFAULT_FURNACE_DAMAGE_PER_TICK: Int = 6
+    private const val DEFAULT_CRYSTAL_INTERVAL_TURNS: Int = 8
+    private const val DEFAULT_CRYSTAL_DAMAGE_PER_TICK: Int = 6
     private val FURNACE_ANCHOR_INTERACTABLE_IDS: Set<String> =
         setOf(
             "mine_furnace",
@@ -184,6 +230,47 @@ internal object ZoneMechanicRuntime {
             world.add(
                 entityId,
                 FurnacePressureRuntimeState(
+                    hazardCells = spec.hazardCells,
+                    cycleIntervalTurns = spec.cycleIntervalTurns,
+                    telegraphTurns = spec.telegraphTurns,
+                    activeTurns = spec.activeTurns,
+                    damagePerTick = spec.damagePerTick,
+                    nextCycleTurn = spec.cycleIntervalTurns,
+                ),
+            )
+        }
+
+        buildRiverCurrentSpec(
+            config = config,
+            zone = zone,
+            floor = floor,
+            map = map,
+            world = world,
+        )?.let { spec ->
+            val entityId = world.createEntity()
+            world.add(
+                entityId,
+                RiverCurrentRuntimeState(
+                    laneCells = spec.laneCells,
+                    approachCells = spec.approachCells,
+                    safeCells = spec.safeCells,
+                    pushDx = spec.pushDx,
+                    pushDy = spec.pushDy,
+                ),
+            )
+        }
+
+        buildCrystalShardSpec(
+            config = config,
+            zone = zone,
+            floor = floor,
+            map = map,
+            world = world,
+        )?.let { spec ->
+            val entityId = world.createEntity()
+            world.add(
+                entityId,
+                CrystalShardRuntimeState(
                     hazardCells = spec.hazardCells,
                     cycleIntervalTurns = spec.cycleIntervalTurns,
                     telegraphTurns = spec.telegraphTurns,
@@ -445,6 +532,117 @@ internal object ZoneMechanicRuntime {
         )
     }
 
+    private fun buildRiverCurrentSpec(
+        config: FoundationGameConfig,
+        zone: ZoneSchemaV2,
+        floor: Int,
+        map: GameMap,
+        world: World,
+    ): RiverCurrentSpec? {
+        if ("currents" !in zone.specialMechanics) {
+            return null
+        }
+        val routeStart = map.playerStart
+        val routeEnd = riverRouteExitPoint(world = world, map = map, routeStart = routeStart)
+        val anchor = interactablePoint(world, RiverCrystalRuntimeKeys.River.INTERACTABLE_ID) ?: midpoint(routeStart, routeEnd)
+        // Current pressure should read as "sideways drag" relative to the player's approach to the ferry anchor.
+        // Using the full stair-to-stair delta can align the push with the objective path and make the anchor unreachable.
+        val horizontalBand = abs(anchor.y - routeStart.y) >= abs(anchor.x - routeStart.x)
+        val laneCells =
+            orderedPoints(
+                seed = mechanicSeed(config = config, zone = zone, floor = floor, salt = 0xC011),
+                points =
+                    routeBandCells(
+                        map = map,
+                        anchor = anchor,
+                        routeStart = routeStart,
+                        routeEnd = routeEnd,
+                        horizontalBand = horizontalBand,
+                    ),
+            )
+        if (laneCells.isEmpty()) {
+            return null
+        }
+        val pathToAnchor = routePath(map = map, start = routeStart, goal = anchor)
+        val pathToExit = routePath(map = map, start = anchor, goal = routeEnd)
+        val safeCells =
+            riverSafeCells(
+                laneCells = laneCells,
+                pathToAnchor = pathToAnchor,
+                pathToExit = pathToExit,
+                anchor = anchor,
+                horizontalBand = horizontalBand,
+            )
+        val approachCells =
+            riverApproachCells(
+                safeCells = safeCells,
+                pathToAnchor = pathToAnchor,
+            )
+        val pushDx =
+            if (horizontalBand) {
+                nonZeroSign(routeEnd.x - routeStart.x, fallback = seededDirection(config, zone, floor, salt = 0xC0DE))
+            } else {
+                0
+            }
+        val pushDy =
+            if (horizontalBand) {
+                0
+            } else {
+                nonZeroSign(routeEnd.y - routeStart.y, fallback = seededDirection(config, zone, floor, salt = 0xCAFE))
+            }
+        val normalizedSafeCells = safeCells.ifEmpty { laneCells.take(1) }
+        val normalizedApproachCells = approachCells.ifEmpty { normalizedSafeCells.take(1) }
+        return RiverCurrentSpec(
+            laneCells = laneCells,
+            approachCells = normalizedApproachCells,
+            safeCells = normalizedSafeCells,
+            pushDx = pushDx,
+            pushDy = pushDy,
+        )
+    }
+
+    private fun buildCrystalShardSpec(
+        config: FoundationGameConfig,
+        zone: ZoneSchemaV2,
+        floor: Int,
+        map: GameMap,
+        world: World,
+    ): CrystalShardSpec? {
+        if ("crystal_shards" !in zone.specialMechanics) {
+            return null
+        }
+        val nodePoint = interactablePoint(world, RiverCrystalRuntimeKeys.Crystal.INTERACTABLE_ID)
+        val anchor = nodePoint ?: fallbackRouteAnchor(map)
+        val roomAnchors =
+            map.rooms
+                .map(RoomLike::fromRoom)
+                .sortedWith(
+                    compareByDescending<RoomLike> { room -> room.center.chebyshevDistanceTo(anchor) }
+                        .thenBy { room -> room.center.y }
+                        .thenBy { room -> room.center.x },
+                ).take(2)
+                .map(RoomLike::center)
+        val candidates =
+            orderedPoints(
+                seed = mechanicSeed(config = config, zone = zone, floor = floor, salt = 0x5344),
+                points =
+                    crystalHazardCells(
+                        map = map,
+                        anchors = listOf(anchor) + roomAnchors,
+                    ),
+            )
+        if (candidates.isEmpty()) {
+            return null
+        }
+        return CrystalShardSpec(
+            hazardCells = candidates.take(14),
+            cycleIntervalTurns = DEFAULT_CRYSTAL_INTERVAL_TURNS,
+            telegraphTurns = 1,
+            activeTurns = 2,
+            damagePerTick = maxOf(DEFAULT_CRYSTAL_DAMAGE_PER_TICK, zone.recommendedLevel.min / 2),
+        )
+    }
+
     private fun furnaceCellsAroundAnchors(
         map: GameMap,
         anchors: List<Point>,
@@ -486,6 +684,184 @@ internal object ZoneMechanicRuntime {
         val seed = zone.id.hashCode().toLong() xor (floor.toLong() shl 8) xor 0xFACE
         return orderedPoints(seed = seed, points = cells).take(6)
     }
+
+    private fun stairPoint(
+        world: World,
+        direction: StairDirection,
+    ): Point? =
+        world.entitiesWith(Position::class, Stair::class)
+            .firstOrNull { entityId -> world.get<Stair>(entityId)?.direction == direction }
+            ?.let { entityId -> requireNotNull(world.get<Position>(entityId)).toPoint() }
+
+    private fun riverRouteExitPoint(
+        world: World,
+        map: GameMap,
+        routeStart: Point,
+    ): Point =
+        stairPoint(world = world, direction = StairDirection.DOWN)
+            ?: stairPoint(world = world, direction = StairDirection.UP)?.takeIf { point -> point != routeStart }
+            ?: fallbackRouteAnchor(map)
+
+    private fun interactablePoint(
+        world: World,
+        interactableId: String,
+    ): Point? =
+        world.entitiesWith(Position::class, Interactable::class)
+            .firstOrNull { entityId -> world.get<Interactable>(entityId)?.id == interactableId }
+            ?.let { entityId -> requireNotNull(world.get<Position>(entityId)).toPoint() }
+
+    private fun routeBandCells(
+        map: GameMap,
+        anchor: Point,
+        routeStart: Point,
+        routeEnd: Point,
+        horizontalBand: Boolean,
+    ): List<Point> {
+        val blockedOrigins = setOf(routeStart, routeEnd, map.playerStart)
+        return map.floorPoints()
+            .filter { point ->
+                isPassable(map, point) &&
+                    point !in blockedOrigins &&
+                    blockedOrigins.none { origin -> origin.chebyshevDistanceTo(point) <= 2 } &&
+                    if (horizontalBand) {
+                        abs(point.y - anchor.y) <= 1
+                    } else {
+                        abs(point.x - anchor.x) <= 1
+                    }
+            }.ifEmpty {
+                riverFallbackCells(map, anchor, horizontalBand)
+            }
+    }
+
+    private fun riverFallbackCells(
+        map: GameMap,
+        anchor: Point,
+        horizontalBand: Boolean,
+    ): List<Point> =
+        buildList {
+            for (offset in -4..4) {
+                val point =
+                    if (horizontalBand) {
+                        Point(anchor.x + offset, anchor.y)
+                    } else {
+                        Point(anchor.x, anchor.y + offset)
+                    }
+                if (isPassable(map, point)) {
+                    add(point)
+                }
+            }
+        }
+
+    private fun riverSafeCells(
+        laneCells: List<Point>,
+        pathToAnchor: List<Point>,
+        pathToExit: List<Point>,
+        anchor: Point,
+        horizontalBand: Boolean,
+    ): List<Point> {
+        val laneSet = laneCells.toSet()
+        val routedCells =
+            (pathToAnchor + pathToExit)
+                .filter(laneSet::contains)
+                .distinct()
+        if (routedCells.isNotEmpty()) {
+            return routedCells
+        }
+        return laneCells.filter { point ->
+            if (horizontalBand) {
+                abs(point.x - anchor.x) <= 1
+            } else {
+                abs(point.y - anchor.y) <= 1
+            }
+        }.ifEmpty {
+            laneCells
+                .sortedWith(
+                    compareBy<Point> { point -> point.chebyshevDistanceTo(anchor) }
+                        .thenBy(Point::y)
+                        .thenBy(Point::x),
+                ).take(3)
+        }
+    }
+
+    private fun riverApproachCells(
+        safeCells: List<Point>,
+        pathToAnchor: List<Point>,
+    ): List<Point> {
+        val safeSet = safeCells.toSet()
+        val routedApproach =
+            pathToAnchor
+                .filter(safeSet::contains)
+                .distinct()
+        if (routedApproach.isNotEmpty()) {
+            return routedApproach
+        }
+        if (safeCells.isEmpty()) {
+            return emptyList()
+        }
+        return safeCells.take((safeCells.size / 2).coerceAtLeast(1))
+    }
+
+    private fun routePath(
+        map: GameMap,
+        start: Point,
+        goal: Point,
+    ): List<Point> =
+        AStar.findPath(
+            map = map,
+            start = start,
+            goal = goal,
+            blocked = emptySet(),
+        )
+
+    private fun crystalHazardCells(
+        map: GameMap,
+        anchors: List<Point>,
+    ): List<Point> =
+        anchors
+            .flatMap { anchor ->
+                buildList {
+                    add(anchor)
+                    Point.CARDINAL_DIRECTIONS.forEach { delta ->
+                        add(anchor + delta)
+                    }
+                    Point.CARDINAL_DIRECTIONS.forEach { delta ->
+                        add(anchor + Point(delta.x * 2, delta.y * 2))
+                    }
+                }
+            }.filter { point ->
+                isPassable(map, point) &&
+                    point.chebyshevDistanceTo(map.playerStart) > 2
+            }.distinct()
+
+    private fun fallbackRouteAnchor(map: GameMap): Point =
+        map.rooms
+            .sortedWith(compareBy<com.ktome.core.map.Room> { room -> room.center.chebyshevDistanceTo(map.playerStart) }.thenBy { room -> room.center.y }.thenBy { room -> room.center.x })
+            .drop(1)
+            .firstOrNull()
+            ?.center
+            ?: map.playerStart
+
+    private fun midpoint(
+        start: Point,
+        end: Point,
+    ): Point = Point(x = (start.x + end.x) / 2, y = (start.y + end.y) / 2)
+
+    private fun seededDirection(
+        config: FoundationGameConfig,
+        zone: ZoneSchemaV2,
+        floor: Int,
+        salt: Int,
+    ): Int = if ((mechanicSeed(config = config, zone = zone, floor = floor, salt = salt) and 1L) == 0L) 1 else -1
+
+    private fun nonZeroSign(
+        value: Int,
+        fallback: Int,
+    ): Int =
+        when {
+            value > 0 -> 1
+            value < 0 -> -1
+            else -> fallback
+        }
 
     private fun isPassable(
         map: GameMap,

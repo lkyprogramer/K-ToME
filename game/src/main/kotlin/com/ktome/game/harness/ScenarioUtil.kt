@@ -219,6 +219,7 @@ fun routeProgressCommand(
             .filter { entityId -> entityId != session.playerId }
             .map { entityId -> requireNotNull(session.automationWorld().get<Position>(entityId)).toPoint() }
             .toSet()
+    val hazardTiles = session.automationZoneHazardPoints() - observation.playerPosition
 
     val canPursueObjectiveHook =
         observation.visibleBossPositions.isEmpty() &&
@@ -235,7 +236,7 @@ fun routeProgressCommand(
                     map = session.map,
                     start = observation.playerPosition,
                     goal = objectivePoint,
-                    blocked = occupiedTiles - objectivePoint,
+                    blocked = (occupiedTiles + hazardTiles) - objectivePoint,
                 )
             path.getOrNull(1)?.let { nextStep ->
                 return PlayerCommand.Move(nextStep.deltaFrom(observation.playerPosition))
@@ -257,7 +258,7 @@ fun routeProgressCommand(
                 map = session.map,
                 start = observation.playerPosition,
                 goal = stairsDown,
-                blocked = occupiedTiles - stairsDown,
+                blocked = (occupiedTiles + hazardTiles) - stairsDown,
             )
         val nextStep = path.getOrNull(1) ?: return null
         return PlayerCommand.Move(nextStep.deltaFrom(observation.playerPosition))
@@ -270,7 +271,7 @@ fun routeProgressCommand(
                 map = session.map,
                 start = observation.playerPosition,
                 goal = bossPoint,
-                blocked = occupiedTiles - bossPoint,
+                blocked = (occupiedTiles + hazardTiles) - bossPoint,
             )
         val nextStep = path.getOrNull(1) ?: return null
         return PlayerCommand.Move(nextStep.deltaFrom(observation.playerPosition))

@@ -130,16 +130,16 @@ interactables:
   - id: crystal_resonance_node
     nameKey: interactable.crystal_resonance_node.name
     descKey: interactable.crystal_resonance_node.desc
-    visualKey: prop.ritual_altar
-    audioProfile: audio.interactable.open
+    visualKey: prop.crystal_resonance_node
+    audioProfile: audio.interactable.crystal_resonance_node
     schemaVersion: 2
     tags: [interactable, support, optional]
     interactionTags: [support, objective]
   - id: river_ferry_anchor
     nameKey: interactable.river_ferry_anchor.name
     descKey: interactable.river_ferry_anchor.desc
-    visualKey: prop.armory_gate
-    audioProfile: audio.interactable.open
+    visualKey: prop.river_ferry_anchor
+    audioProfile: audio.interactable.river_ferry_anchor
     schemaVersion: 2
     tags: [interactable, support, route]
     interactionTags: [support, objective]

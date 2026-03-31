@@ -257,7 +257,11 @@ class DataLoader(
     }
 
     private fun loadYamlMap(resourcePath: String): Map<String, Any?> {
-        val stream = javaClass.getResourceAsStream(resourcePath)
+        val normalizedPath = resourcePath.removePrefix("/")
+        val stream =
+            javaClass.getResourceAsStream(resourcePath)
+                ?: javaClass.classLoader.getResourceAsStream(normalizedPath)
+                ?: Thread.currentThread().contextClassLoader?.getResourceAsStream(normalizedPath)
             ?: error("YAML resource not found: $resourcePath")
         val root = stream.use { input -> Yaml().load<Map<String, Any?>>(input) }
         return root ?: error("YAML root must not be null: $resourcePath")
