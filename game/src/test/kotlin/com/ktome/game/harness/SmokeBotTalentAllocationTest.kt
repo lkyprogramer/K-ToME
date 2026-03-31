@@ -50,8 +50,83 @@ class SmokeBotTalentAllocationTest {
         assertEquals(PlayerCommand.AssignTalent("human_resolve"), command)
     }
 
+    @Test
+    fun `smoke bot prioritizes documented foundation breakpoint talents once they are available`() {
+        val cases =
+            listOf(
+                Triple(
+                    "STAMINA",
+                    listOf(
+                        talentSlot(slot = 1, talentId = "power_strike", ownerType = TalentTreeOwnerType.PROFESSION),
+                        talentSlot(slot = 2, talentId = "guard_stance", ownerType = TalentTreeOwnerType.PROFESSION),
+                    ),
+                    "guard_stance",
+                ),
+                Triple(
+                    "MANA",
+                    listOf(
+                        talentSlot(slot = 1, talentId = "fireball", ownerType = TalentTreeOwnerType.PROFESSION),
+                        talentSlot(slot = 2, talentId = "blink", ownerType = TalentTreeOwnerType.PROFESSION),
+                    ),
+                    "blink",
+                ),
+                Triple(
+                    "ENERGY",
+                    listOf(
+                        talentSlot(slot = 1, talentId = "backstab", ownerType = TalentTreeOwnerType.PROFESSION),
+                        talentSlot(slot = 2, talentId = "shadow_bind", ownerType = TalentTreeOwnerType.PROFESSION),
+                    ),
+                    "shadow_bind",
+                ),
+                Triple(
+                    "POSITIVE_ENERGY",
+                    listOf(
+                        talentSlot(slot = 1, talentId = "holy_strike", ownerType = TalentTreeOwnerType.PROFESSION),
+                        talentSlot(slot = 2, talentId = "holy_mark", ownerType = TalentTreeOwnerType.PROFESSION),
+                    ),
+                    "holy_mark",
+                ),
+            )
+
+        cases.forEach { (resourceTypeId, talentSlots, expectedTalentId) ->
+            val command =
+                bot.decide(
+                    observation(
+                        playerStatus = healthyStatus(talentPoints = 1, raceTalentPoints = 0),
+                        playerResource = PlayerResourceView(current = 40, max = 100, typeId = resourceTypeId),
+                        talentSlots = talentSlots,
+                    ),
+                )
+
+            assertEquals(PlayerCommand.AssignTalent(expectedTalentId), command)
+        }
+    }
+
+    @Test
+    fun `smoke bot unlocks rogue shadowstep before spending filler points when shadow bind path is gated`() {
+        val command =
+            bot.decide(
+                observation(
+                    playerStatus = healthyStatus(talentPoints = 1, raceTalentPoints = 0),
+                    playerResource = PlayerResourceView(current = 40, max = 100, typeId = "ENERGY"),
+                    talentSlots =
+                        listOf(
+                            talentSlot(slot = 1, talentId = "backstab", ownerType = TalentTreeOwnerType.PROFESSION),
+                        ),
+                    reserveTalents =
+                        listOf(
+                            reserveTalent(talentId = "shadowstep", ownerType = TalentTreeOwnerType.PROFESSION),
+                            reserveTalent(talentId = "poison_blade", ownerType = TalentTreeOwnerType.PROFESSION),
+                        ),
+                ),
+            )
+
+        assertEquals(PlayerCommand.AssignTalent("shadowstep"), command)
+    }
+
     private fun observation(
         playerStatus: PlayerStatus,
+        playerResource: PlayerResourceView = PlayerResourceView(current = 40, max = 100, typeId = "HATE"),
         talentSlots: List<TalentSlotView>,
         reserveTalents: List<TalentReserveView> = emptyList(),
     ): RunObservation =
@@ -59,7 +134,7 @@ class SmokeBotTalentAllocationTest {
             floor = 1,
             turnIndex = 10,
             playerStatus = playerStatus,
-            playerResource = PlayerResourceView(current = 40, max = 100, typeId = "HATE"),
+            playerResource = playerResource,
             playerPosition = Point.ZERO,
             map = map,
             visibleTiles = setOf(Point.ZERO),
@@ -113,6 +188,25 @@ class SmokeBotTalentAllocationTest {
             maxLevel = 5,
             resourceCost = 0,
             resourceTypeId = "HATE",
+            range = 1,
+            minRange = 0,
+            currentCooldown = 0,
+            maxCooldown = 6,
+            requiresTarget = false,
+        )
+
+    private fun reserveTalent(
+        talentId: String,
+        ownerType: TalentTreeOwnerType,
+    ): TalentReserveView =
+        TalentReserveView(
+            talentId = talentId,
+            name = talentId,
+            ownerType = ownerType,
+            level = 0,
+            maxLevel = 5,
+            resourceCost = 0,
+            resourceTypeId = "ENERGY",
             range = 1,
             minRange = 0,
             currentCooldown = 0,

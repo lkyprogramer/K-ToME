@@ -204,6 +204,46 @@ class LoadoutPlannerTest {
     }
 
     @Test
+    fun `stamina loadout keeps guard stance in the first four slots for breakpoint payoff runs`() {
+        val observation =
+            RunObservation(
+                floor = 1,
+                turnIndex = 12,
+                playerStatus = healthyStatus(),
+                playerResource = PlayerResourceView(current = 36, max = 44, typeId = "STAMINA"),
+                playerPosition = Point(1, 0),
+                map = map,
+                visibleTiles = map.floorPoints().toSet(),
+                exploredTiles = map.floorPoints().toSet(),
+                visibleHostilePositions = emptyList(),
+                visibleBlockingPositions = emptySet(),
+                visibleGroundItemPositions = emptyList(),
+                visibleInteractables = emptyList(),
+                knownDownstairsPositions = emptyList(),
+                inventoryItems = emptyList(),
+                talentSlots =
+                    listOf(
+                        talentSlot(slot = 1, talentId = "power_strike", resourceTypeId = "STAMINA", requiresTarget = true),
+                        talentSlot(slot = 2, talentId = "shield_bash", resourceTypeId = "STAMINA", requiresTarget = true),
+                        talentSlot(slot = 3, talentId = "charge", resourceTypeId = "STAMINA", requiresTarget = true),
+                        talentSlot(slot = 4, talentId = "war_cry", resourceTypeId = "STAMINA"),
+                    ),
+                reserveTalents =
+                    listOf(
+                        reserveTalent(talentId = "guard_stance", resourceTypeId = "STAMINA"),
+                        reserveTalent(talentId = "taunt", resourceTypeId = "STAMINA"),
+                    ),
+                canAscend = false,
+                canDescend = false,
+                runOutcome = RunOutcome.InProgress,
+                messageLogTail = emptyList(),
+                eventTail = emptyList(),
+            )
+
+        assertEquals(PlayerCommand.EquipTalentToSlot(3, "guard_stance"), LoadoutPlanner.preferredLoadoutCommand(observation))
+    }
+
+    @Test
     fun `energy loadout slots pr09 finisher ahead of legacy utility`() {
         val observation =
             RunObservation(
@@ -281,6 +321,46 @@ class LoadoutPlannerTest {
             )
 
         assertEquals(PlayerCommand.EquipTalentToSlot(3, "consecration"), LoadoutPlanner.preferredLoadoutCommand(observation))
+    }
+
+    @Test
+    fun `positive energy loadout keeps holy mark online for breakpoint payoff runs`() {
+        val observation =
+            RunObservation(
+                floor = 1,
+                turnIndex = 18,
+                playerStatus = healthyStatus(),
+                playerResource = PlayerResourceView(current = 48, max = 100, typeId = "POSITIVE_ENERGY"),
+                playerPosition = Point(1, 0),
+                map = map,
+                visibleTiles = map.floorPoints().toSet(),
+                exploredTiles = map.floorPoints().toSet(),
+                visibleHostilePositions = emptyList(),
+                visibleBlockingPositions = emptySet(),
+                visibleGroundItemPositions = emptyList(),
+                visibleInteractables = emptyList(),
+                knownDownstairsPositions = emptyList(),
+                inventoryItems = emptyList(),
+                talentSlots =
+                    listOf(
+                        talentSlot(slot = 1, talentId = "holy_strike", resourceTypeId = "POSITIVE_ENERGY", requiresTarget = true),
+                        talentSlot(slot = 2, talentId = "holy_light", resourceTypeId = "POSITIVE_ENERGY"),
+                        talentSlot(slot = 3, talentId = "judgment_hammer", resourceTypeId = "POSITIVE_ENERGY", requiresTarget = true),
+                        talentSlot(slot = 4, talentId = "holy_shield", resourceTypeId = "POSITIVE_ENERGY"),
+                    ),
+                reserveTalents =
+                    listOf(
+                        reserveTalent(talentId = "holy_mark", resourceTypeId = "POSITIVE_ENERGY", requiresTarget = true),
+                        reserveTalent(talentId = "consecration", resourceTypeId = "POSITIVE_ENERGY"),
+                    ),
+                canAscend = false,
+                canDescend = false,
+                runOutcome = RunOutcome.InProgress,
+                messageLogTail = emptyList(),
+                eventTail = emptyList(),
+            )
+
+        assertEquals(PlayerCommand.EquipTalentToSlot(3, "holy_mark"), LoadoutPlanner.preferredLoadoutCommand(observation))
     }
 
     private fun healthyStatus(): PlayerStatus =

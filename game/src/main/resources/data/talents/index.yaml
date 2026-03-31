@@ -327,7 +327,7 @@ talents:
     iconKey: talent.vanguard.power_strike.icon
     audioProfile: audio.talent.power_strike
     schemaVersion: 2
-    tags: [talent, vanguard, melee]
+    tags: [talent, vanguard, melee, armor_break]
     maxPoints: 5
     category: ACTIVE
     damageType: PHYSICAL
@@ -669,7 +669,7 @@ talents:
     iconKey: talent.vanguard.guard_stance.icon
     audioProfile: audio.talent.guard_stance
     schemaVersion: 2
-    tags: [talent, vanguard, defense]
+    tags: [talent, vanguard, defense, guard, hold_line]
     maxPoints: 5
     category: ACTIVE
     kind: ACTIVE
@@ -684,7 +684,10 @@ talents:
     callbacks: []
     telegraphRef: self_buff_aura
     treeId: vanguard_shield
-    keywords: [buff, defense]
+    keywords: [buff, defense, guard, hold_line]
+    breakpoints:
+      - atRank: 4
+        descriptionAddendumKey: talent.breakpoint.vanguard.guard_stance.hold_line
     levelEffects:
       1:
         associatedEffects:
@@ -722,6 +725,13 @@ talents:
             applicationPolicy: SELF_AUTO
             duration: 5
             magnitude: 0.18
+          - effectId: guard_stance_guard
+            effectType: GUARD
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 2
+            magnitude: 0.15
       5:
         associatedEffects:
           - effectId: guard_stance_buff
@@ -731,6 +741,13 @@ talents:
             applicationPolicy: SELF_AUTO
             duration: 5
             magnitude: 0.22
+          - effectId: guard_stance_guard
+            effectType: GUARD
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 2
+            magnitude: 0.18
   - id: intimidation
     nameKey: talent.vanguard.intimidation.name
     descKey: talent.vanguard.intimidation.desc
@@ -923,7 +940,7 @@ talents:
     minRange: 1
     areaRadius: 1
     resourceCosts: { MANA: 14 }
-    unlockLevel: 4
+    unlockLevel: 2
     targeting: SINGLE_TARGET
     callbacks: []
     telegraphRef: charge_lane
@@ -1134,7 +1151,7 @@ talents:
     iconKey: talent.arcanist.arcane_shield.icon
     audioProfile: audio.talent.arcane_shield
     schemaVersion: 2
-    tags: [talent, arcanist, utility]
+    tags: [talent, arcanist, utility, teleport, mana_tempo]
     maxPoints: 5
     category: ACTIVE
     kind: ACTIVE
@@ -1218,13 +1235,16 @@ talents:
     callbacks: []
     telegraphRef: charge_lane
     treeId: arcanist_arcane
-    keywords: [movement]
+    keywords: [movement, teleport, mana_tempo]
+    breakpoints:
+      - atRank: 4
+        descriptionAddendumKey: talent.breakpoint.arcanist.blink.mana_tempo
     levelEffects:
       1: { rangeBonus: 0 }
       2: { rangeBonus: 1 }
       3: { rangeBonus: 2 }
-      4: { rangeBonus: 3 }
-      5: { rangeBonus: 4 }
+      4: { rangeBonus: 3, resourceRestoreFraction: 0.10 }
+      5: { rangeBonus: 4, resourceRestoreFraction: 0.14 }
   - id: mana_surge
     nameKey: talent.arcanist.mana_surge.name
     descKey: talent.arcanist.mana_surge.desc
@@ -1486,7 +1506,7 @@ talents:
     iconKey: icon.skill.rogue.smoke_bomb
     audioProfile: audio.talent.smoke_bomb
     schemaVersion: 2
-    tags: [talent, rogue, control]
+    tags: [talent, rogue, control, marked]
     maxPoints: 5
     category: ACTIVE
     damageType: SHADOW
@@ -1632,18 +1652,57 @@ talents:
     minRange: 2
     areaRadius: 0
     resourceCosts: { ENERGY: 20 }
-    unlockLevel: 4
+    unlockLevel: 2
     targeting: SINGLE_TARGET
     callbacks: []
     telegraphRef: charge_lane
     treeId: rogue_subtlety
-    keywords: [movement, damage]
+    keywords: [movement, damage, marked]
+    breakpoints:
+      - atRank: 2
+        descriptionAddendumKey: talent.breakpoint.rogue.shadowstep.marked
     levelEffects:
       1: { damageMultiplier: 1.20 }
-      2: { damageMultiplier: 1.35 }
-      3: { damageMultiplier: 1.50 }
-      4: { damageMultiplier: 1.65 }
-      5: { damageMultiplier: 1.80 }
+      2:
+        damageMultiplier: 1.35
+        associatedEffects:
+          - effectId: shadowstep_marked
+            effectType: MARKED
+            trigger: ON_HIT
+            targetScope: PRIMARY_TARGET
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: MENTAL
+            duration: 2
+      3:
+        damageMultiplier: 1.50
+        associatedEffects:
+          - effectId: shadowstep_marked
+            effectType: MARKED
+            trigger: ON_HIT
+            targetScope: PRIMARY_TARGET
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: MENTAL
+            duration: 2
+      4:
+        damageMultiplier: 1.65
+        associatedEffects:
+          - effectId: shadowstep_marked
+            effectType: MARKED
+            trigger: ON_HIT
+            targetScope: PRIMARY_TARGET
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: MENTAL
+            duration: 3
+      5:
+        damageMultiplier: 1.80
+        associatedEffects:
+          - effectId: shadowstep_marked
+            effectType: MARKED
+            trigger: ON_HIT
+            targetScope: PRIMARY_TARGET
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: MENTAL
+            duration: 3
   - id: deathblow
     nameKey: talent.rogue.deathblow.name
     descKey: talent.rogue.deathblow.desc
@@ -1681,7 +1740,7 @@ talents:
     iconKey: icon.skill.templar.holy_strike
     audioProfile: audio.talent.holy_strike
     schemaVersion: 2
-    tags: [talent, templar, holy]
+    tags: [talent, templar, holy, bane]
     maxPoints: 5
     category: ACTIVE
     damageType: HOLY
@@ -1816,7 +1875,7 @@ talents:
     iconKey: icon.skill.templar.holy_shield
     audioProfile: audio.talent.holy_shield
     schemaVersion: 2
-    tags: [talent, templar, defense]
+    tags: [talent, templar, defense, holy_shield]
     maxPoints: 5
     category: ACTIVE
     kind: ACTIVE
@@ -1885,7 +1944,7 @@ talents:
     iconKey: icon.skill.templar.devotion
     audioProfile: audio.talent.devotion
     schemaVersion: 2
-    tags: [talent, templar, support]
+    tags: [talent, templar, support, cleanse, sustain]
     maxPoints: 5
     category: ACTIVE
     kind: ACTIVE
@@ -2044,7 +2103,10 @@ talents:
     callbacks: []
     telegraphRef: self_buff_aura
     treeId: templar_grace
-    keywords: [heal, cleanse]
+    keywords: [heal, cleanse, shield]
+    breakpoints:
+      - atRank: 4
+        descriptionAddendumKey: talent.breakpoint.templar.purify.holy_shield
     levelEffects:
       1:
         healFraction: 0.10
@@ -2072,6 +2134,14 @@ talents:
           maxEffectsRemoved: 1
       4:
         healFraction: 0.18
+        associatedEffects:
+          - effectId: purify_holy_shield
+            effectType: HOLY_SHIELD_BUFF
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 2
+            magnitude: 0.10
         cleanseEffect:
           effectId: purify_cleanse
           trigger: ON_CAST
@@ -2080,6 +2150,14 @@ talents:
           maxEffectsRemoved: 1
       5:
         healFraction: 0.22
+        associatedEffects:
+          - effectId: purify_holy_shield
+            effectType: HOLY_SHIELD_BUFF
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 3
+            magnitude: 0.14
         cleanseEffect:
           effectId: purify_cleanse
           trigger: ON_CAST
@@ -2167,7 +2245,7 @@ talents:
     iconKey: talent.vanguard.war_cry.icon
     audioProfile: audio.talent.war_cry
     schemaVersion: 3
-    tags: [talent, vanguard, control]
+    tags: [talent, vanguard, control, taunt]
     maxPoints: 5
     category: ACTIVE
     powerDimension: MENTAL
@@ -2183,7 +2261,10 @@ talents:
     callbacks: []
     telegraphRef: self_buff_aura
     treeId: vanguard_shield
-    keywords: [control, taunt]
+    keywords: [control, taunt, guard]
+    breakpoints:
+      - atRank: 4
+        descriptionAddendumKey: talent.breakpoint.vanguard.taunt.guard
     levelEffects:
       1:
         associatedEffects:
@@ -2221,6 +2302,13 @@ talents:
             applicationPolicy: HOSTILE_SAVE_ONLY
             saveDimension: MENTAL
             duration: 3
+          - effectId: taunt_guard
+            effectType: GUARD
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 2
+            magnitude: 0.10
       5:
         associatedEffects:
           - effectId: taunt_debuff
@@ -2230,6 +2318,13 @@ talents:
             applicationPolicy: HOSTILE_SAVE_ONLY
             saveDimension: MENTAL
             duration: 4
+          - effectId: taunt_guard
+            effectType: GUARD
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 3
+            magnitude: 0.14
   - id: iron_wall
     nameKey: talent.vanguard.iron_wall.name
     descKey: talent.vanguard.iron_wall.desc
@@ -2471,7 +2566,7 @@ talents:
     iconKey: icon.skill.rogue.backstab
     audioProfile: audio.talent.backstab
     schemaVersion: 3
-    tags: [talent, rogue, melee]
+    tags: [talent, rogue, melee, execute]
     maxPoints: 5
     category: ACTIVE
     damageType: PHYSICAL
@@ -2501,7 +2596,7 @@ talents:
     iconKey: icon.skill.rogue.backstab
     audioProfile: audio.talent.backstab
     schemaVersion: 3
-    tags: [talent, rogue, utility]
+    tags: [talent, rogue, utility, crit]
     maxPoints: 5
     category: ACTIVE
     kind: ACTIVE
@@ -2570,7 +2665,7 @@ talents:
     iconKey: icon.skill.rogue.stealth
     audioProfile: audio.talent.stealth
     schemaVersion: 3
-    tags: [talent, rogue, panic]
+    tags: [talent, rogue, panic, stealth]
     maxPoints: 5
     category: ACTIVE
     kind: ACTIVE
@@ -2656,7 +2751,10 @@ talents:
     callbacks: []
     telegraphRef: melee_single
     treeId: templar_smite
-    keywords: [damage, mark]
+    keywords: [damage, mark, bane]
+    breakpoints:
+      - atRank: 3
+        descriptionAddendumKey: talent.breakpoint.templar.holy_mark.bane
     levelEffects:
       1:
         damageMultiplier: 1.1
@@ -2688,6 +2786,14 @@ talents:
             applicationPolicy: HOSTILE_HIT_THEN_SAVE
             saveDimension: SPELL
             duration: 3
+          - effectId: holy_mark_bane
+            effectType: BANE
+            trigger: ON_HIT
+            targetScope: PRIMARY_TARGET
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: SPELL
+            duration: 2
+            magnitude: 0.12
       4:
         damageMultiplier: 1.4
         associatedEffects:
@@ -2698,6 +2804,14 @@ talents:
             applicationPolicy: HOSTILE_HIT_THEN_SAVE
             saveDimension: SPELL
             duration: 3
+          - effectId: holy_mark_bane
+            effectType: BANE
+            trigger: ON_HIT
+            targetScope: PRIMARY_TARGET
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: SPELL
+            duration: 2
+            magnitude: 0.16
       5:
         damageMultiplier: 1.5
         associatedEffects:
@@ -2708,6 +2822,14 @@ talents:
             applicationPolicy: HOSTILE_HIT_THEN_SAVE
             saveDimension: SPELL
             duration: 4
+          - effectId: holy_mark_bane
+            effectType: BANE
+            trigger: ON_HIT
+            targetScope: PRIMARY_TARGET
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: SPELL
+            duration: 3
+            magnitude: 0.18
   - id: heavens_judgment
     nameKey: talent.templar.heavens_judgment.name
     descKey: talent.templar.heavens_judgment.desc
@@ -3610,7 +3732,7 @@ talents:
     minRange: 1
     areaRadius: 0
     resourceCosts: { ENERGY: 12 }
-    unlockLevel: 4
+    unlockLevel: 3
     targeting: SINGLE_TARGET
     callbacks: []
     telegraphRef: melee_single
@@ -3619,7 +3741,10 @@ talents:
       talentPrereqs:
         - talentId: shadowstep
           minRank: 1
-    keywords: [control, curse, ranged]
+    keywords: [control, curse, ranged, marked]
+    breakpoints:
+      - atRank: 4
+        descriptionAddendumKey: talent.breakpoint.rogue.shadow_bind.marked
     levelEffects:
       1:
         damageMultiplier: 0.85
@@ -3661,11 +3786,25 @@ talents:
             applicationPolicy: HOSTILE_HIT_THEN_SAVE
             saveDimension: MENTAL
             duration: 3
+          - effectId: shadow_bind_marked
+            effectType: MARKED
+            trigger: ON_HIT
+            targetScope: PRIMARY_TARGET
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: MENTAL
+            duration: 3
       5:
         damageMultiplier: 1.45
         associatedEffects:
           - effectId: shadow_bind_root
             effectType: ROOT
+            trigger: ON_HIT
+            targetScope: PRIMARY_TARGET
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: MENTAL
+            duration: 4
+          - effectId: shadow_bind_marked
+            effectType: MARKED
             trigger: ON_HIT
             targetScope: PRIMARY_TARGET
             applicationPolicy: HOSTILE_HIT_THEN_SAVE

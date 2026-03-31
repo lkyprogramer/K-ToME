@@ -1,6 +1,8 @@
 package com.ktome.game.harness
 
 import com.ktome.core.item.ConsumableEffect
+import com.ktome.core.item.EquipSlot
+import com.ktome.core.item.ItemQuality
 import com.ktome.core.item.ItemType
 import com.ktome.core.map.GameMap
 import com.ktome.core.map.Point
@@ -122,6 +124,180 @@ class SmokeBotTest {
             )
 
         assertEquals(PlayerCommand.ActivateInventoryItem(0), bot.decide(observation))
+    }
+
+    @Test
+    fun `gear management replaces equipped weapon when a synergy affix upgrade appears`() {
+        val observation =
+            observation(
+                inventoryItems =
+                    listOf(
+                        InventoryItemView(
+                            index = 0,
+                            name = "Short Sword",
+                            baseItemId = "short_sword",
+                            type = ItemType.WEAPON,
+                            slot = EquipSlot.WEAPON,
+                            equippedSlot = EquipSlot.WEAPON,
+                            quality = ItemQuality.COMMON,
+                        ),
+                        InventoryItemView(
+                            index = 1,
+                            name = "Short Sword of Shadow",
+                            baseItemId = "short_sword",
+                            type = ItemType.WEAPON,
+                            slot = EquipSlot.WEAPON,
+                            quality = ItemQuality.MAGIC,
+                            affixIds = listOf("of_shadow"),
+                        ),
+                    ),
+                playerResource = PlayerResourceView(current = 60, max = 100, typeId = "ENERGY"),
+            )
+
+        assertEquals(PlayerCommand.ActivateInventoryItem(1), bot.decide(observation))
+    }
+
+    @Test
+    fun `inventory cleanup does not immediately pick up the just dropped item`() {
+        val crowdedInventory =
+            listOf(
+                InventoryItemView(index = 0, name = "Arcane Staff", baseItemId = "arcane_staff", type = ItemType.WEAPON, slot = EquipSlot.WEAPON, equippedSlot = EquipSlot.WEAPON, quality = ItemQuality.COMMON),
+                InventoryItemView(index = 1, name = "Mana Potion A", type = ItemType.CONSUMABLE, effect = ConsumableEffect.RESTORE_RESOURCE, resourceTypeId = "MANA"),
+                InventoryItemView(index = 2, name = "Mana Potion B", type = ItemType.CONSUMABLE, effect = ConsumableEffect.RESTORE_RESOURCE, resourceTypeId = "MANA"),
+                InventoryItemView(index = 3, name = "Mana Potion C", type = ItemType.CONSUMABLE, effect = ConsumableEffect.RESTORE_RESOURCE, resourceTypeId = "MANA"),
+                InventoryItemView(index = 4, name = "Healing Potion A", type = ItemType.CONSUMABLE, effect = ConsumableEffect.HEAL),
+                InventoryItemView(index = 5, name = "Healing Potion B", type = ItemType.CONSUMABLE, effect = ConsumableEffect.HEAL),
+                InventoryItemView(index = 6, name = "Healing Potion C", type = ItemType.CONSUMABLE, effect = ConsumableEffect.HEAL),
+                InventoryItemView(index = 7, name = "Teleport Scroll A", type = ItemType.CONSUMABLE, effect = ConsumableEffect.TELEPORT),
+                InventoryItemView(index = 8, name = "Teleport Scroll B", type = ItemType.CONSUMABLE, effect = ConsumableEffect.TELEPORT),
+                InventoryItemView(index = 9, name = "Teleport Scroll C", type = ItemType.CONSUMABLE, effect = ConsumableEffect.TELEPORT),
+                InventoryItemView(index = 10, name = "Battle Axe", baseItemId = "battle_axe", type = ItemType.WEAPON, slot = EquipSlot.WEAPON, quality = ItemQuality.COMMON),
+            )
+
+        val dropObservation =
+            observation(
+                inventoryItems = crowdedInventory,
+                playerStatus = healthyStatus(),
+                playerResource = PlayerResourceView(current = 20, max = 20, typeId = "MANA"),
+                turnIndex = 10,
+            )
+
+        val firstCommand = bot.decide(dropObservation)
+        assertTrue(firstCommand is PlayerCommand.DropInventoryItem, "Expected crowded inventory to be pruned, but got $firstCommand.")
+
+        val pickupLoopObservation =
+            observation(
+                inventoryItems = crowdedInventory.dropLast(1),
+                playerStatus = healthyStatus(),
+                playerResource = PlayerResourceView(current = 20, max = 20, typeId = "MANA"),
+                visibleGroundItemPositions = listOf(Point(1, 1)),
+                turnIndex = 11,
+            )
+
+        assertFalse(
+            bot.decide(pickupLoopObservation) is PlayerCommand.PickUp,
+            "Bot should not immediately pick up the same item it just dropped.",
+        )
+    }
+
+    @Test
+    fun `inventory at pickup cap prunes gear before skipping visible loot`() {
+        val cappedInventory =
+            listOf(
+                InventoryItemView(index = 0, name = "Arcane Staff", baseItemId = "arcane_staff", type = ItemType.WEAPON, slot = EquipSlot.WEAPON, equippedSlot = EquipSlot.WEAPON, quality = ItemQuality.RARE, affixIds = listOf("of_flames")),
+                InventoryItemView(index = 1, name = "Chain Mail", baseItemId = "chain_mail", type = ItemType.ARMOR, slot = EquipSlot.ARMOR, equippedSlot = EquipSlot.ARMOR),
+                InventoryItemView(index = 2, name = "Battle Axe A", baseItemId = "battle_axe", type = ItemType.WEAPON, slot = EquipSlot.WEAPON, quality = ItemQuality.COMMON),
+                InventoryItemView(index = 3, name = "Battle Axe B", baseItemId = "battle_axe", type = ItemType.WEAPON, slot = EquipSlot.WEAPON, quality = ItemQuality.COMMON),
+                InventoryItemView(index = 4, name = "Chain Mail A", baseItemId = "chain_mail", type = ItemType.ARMOR, slot = EquipSlot.ARMOR, quality = ItemQuality.COMMON),
+                InventoryItemView(index = 5, name = "Chain Mail B", baseItemId = "chain_mail", type = ItemType.ARMOR, slot = EquipSlot.ARMOR, quality = ItemQuality.COMMON),
+                InventoryItemView(index = 6, name = "Mana Potion", type = ItemType.CONSUMABLE, effect = ConsumableEffect.RESTORE_RESOURCE, resourceTypeId = "MANA"),
+                InventoryItemView(index = 7, name = "Healing Potion", type = ItemType.CONSUMABLE, effect = ConsumableEffect.HEAL),
+                InventoryItemView(index = 8, name = "Teleport Scroll", type = ItemType.CONSUMABLE, effect = ConsumableEffect.TELEPORT),
+                InventoryItemView(index = 9, name = "Battle Axe C", baseItemId = "battle_axe", type = ItemType.WEAPON, slot = EquipSlot.WEAPON, quality = ItemQuality.COMMON),
+            )
+
+        val command =
+            bot.decide(
+                observation(
+                    inventoryItems = cappedInventory,
+                    playerStatus = healthyStatus(),
+                    playerResource = PlayerResourceView(current = 20, max = 20, typeId = "MANA"),
+                    visibleGroundItemPositions = listOf(Point(1, 1)),
+                ),
+            )
+
+        assertTrue(
+            command is PlayerCommand.DropInventoryItem,
+            "Expected capped inventory to prune before leaving visible loot behind, actual=$command.",
+        )
+    }
+
+    @Test
+    fun `inventory housekeeping drops low value unequipped gear before boss reward windows close`() {
+        val inventoryItems =
+            buildList {
+                add(
+                    InventoryItemView(
+                        index = 0,
+                        name = "Templar Sword",
+                        baseItemId = "long_sword",
+                        type = ItemType.WEAPON,
+                        slot = EquipSlot.WEAPON,
+                        equippedSlot = EquipSlot.WEAPON,
+                        quality = ItemQuality.RARE,
+                        affixIds = listOf("sanctified", "of_strength"),
+                    ),
+                )
+                add(
+                    InventoryItemView(
+                        index = 1,
+                        name = "Sanctified Seal",
+                        baseItemId = "sanctified_seal",
+                        type = ItemType.ARMOR,
+                        slot = EquipSlot.OFF_HAND,
+                        equippedSlot = EquipSlot.OFF_HAND,
+                        quality = ItemQuality.RARE,
+                        affixIds = listOf("emberguard", "of_cleansing"),
+                    ),
+                )
+                addAll(
+                    listOf(
+                        InventoryItemView(
+                            index = 2,
+                            name = "Chain Mail",
+                            baseItemId = "chain_mail",
+                            type = ItemType.ARMOR,
+                            slot = EquipSlot.ARMOR,
+                            equippedSlot = EquipSlot.ARMOR,
+                            quality = ItemQuality.RARE,
+                            affixIds = listOf("emberguard", "of_life"),
+                        )
+                    ),
+                )
+                addAll(
+                    (3..11).map { index ->
+                        InventoryItemView(
+                            index = index,
+                            name = "Stock Item $index",
+                            baseItemId = if (index % 2 == 0) "battle_axe" else "chain_mail",
+                            type = if (index % 2 == 0) ItemType.WEAPON else ItemType.ARMOR,
+                            slot = if (index % 2 == 0) EquipSlot.WEAPON else EquipSlot.ARMOR,
+                            quality = ItemQuality.COMMON,
+                        )
+                    },
+                )
+            }
+        val observation =
+            observation(
+                inventoryItems = inventoryItems,
+                playerStatus = healthyStatus(),
+                playerResource = PlayerResourceView(current = 60, max = 100, typeId = "POSITIVE_ENERGY"),
+                visibleBossPositions = listOf(Point(4, 1)),
+                visibleTiles = setOf(Point(1, 1), Point(2, 1), Point(3, 1), Point(4, 1)),
+                exploredTiles = setOf(Point(1, 1), Point(2, 1), Point(3, 1), Point(4, 1)),
+            )
+
+        assertEquals(PlayerCommand.DropInventoryItem(3), bot.decide(observation))
     }
 
     @Test
@@ -375,7 +551,7 @@ class SmokeBotTest {
                 ),
             )
 
-        assertEquals(PlayerCommand.EquipTalentToSlot(3, "linebreaker"), command)
+        assertEquals(PlayerCommand.EquipTalentToSlot(3, "guard_stance"), command)
     }
 
     @Test
@@ -1100,6 +1276,7 @@ class SmokeBotTest {
     private fun observation(
         inventoryItems: List<InventoryItemView>,
         zoneId: String = "shattered_outpost",
+        turnIndex: Int = 10,
         playerStatus: PlayerStatus =
             PlayerStatus(
                 currentHp = 10,
@@ -1135,7 +1312,7 @@ class SmokeBotTest {
         RunObservation(
             zoneId = zoneId,
             floor = 1,
-            turnIndex = 10,
+            turnIndex = turnIndex,
             playerStatus = playerStatus,
             playerResource = playerResource,
             shardBalance = shardBalance,

@@ -75,7 +75,7 @@ class TalentResolverTest {
         statusId: String,
         duration: Int,
         saveDimension: SaveDimension,
-        magnitude: Double,
+        magnitude: Double = 0.0,
     ): AssociatedStatusEffect =
         AssociatedStatusEffect(
             effectId = effectId,
@@ -176,6 +176,43 @@ class TalentResolverTest {
                                                     duration = 2,
                                                     saveDimension = SaveDimension.PHYSICAL,
                                                 ),
+                                            ),
+                                    ),
+                            ),
+                    ),
+                    TalentDef(
+                        id = "taunt",
+                        name = "嘲讽",
+                        description = "",
+                        resourceCosts = staminaCosts(10),
+                        cooldown = 9,
+                        range = 0,
+                        areaRadius = 3,
+                        levelEffects =
+                            mapOf(
+                                1 to
+                                    TalentLevelEffect(
+                                        associatedEffects =
+                                            listOf(
+                                                hostileSaveOnlyEffect(
+                                                    effectId = "taunt_debuff",
+                                                    statusId = StatusEffectType.TAUNT.schemaId,
+                                                    duration = 2,
+                                                    saveDimension = SaveDimension.MENTAL,
+                                                ),
+                                            ),
+                                    ),
+                                4 to
+                                    TalentLevelEffect(
+                                        associatedEffects =
+                                            listOf(
+                                                hostileSaveOnlyEffect(
+                                                    effectId = "taunt_debuff",
+                                                    statusId = StatusEffectType.TAUNT.schemaId,
+                                                    duration = 3,
+                                                    saveDimension = SaveDimension.MENTAL,
+                                                ),
+                                                selfEffect("taunt_guard", StatusEffectType.GUARD.schemaId, duration = 2, magnitude = 0.10),
                                             ),
                                     ),
                             ),
@@ -406,7 +443,11 @@ class TalentResolverTest {
                         cooldown = 6,
                         range = 5,
                         minRange = 2,
-                        levelEffects = mapOf(1 to TalentLevelEffect()),
+                        levelEffects =
+                            mapOf(
+                                1 to TalentLevelEffect(),
+                                4 to TalentLevelEffect(resourceRestoreFraction = 0.10),
+                            ),
                     ),
                     TalentDef(
                         id = "arcane_shield",
@@ -523,7 +564,23 @@ class TalentResolverTest {
                         cooldown = 7,
                         range = 5,
                         minRange = 2,
-                        levelEffects = mapOf(1 to TalentLevelEffect(damageMultiplier = 1.20)),
+                        levelEffects =
+                            mapOf(
+                                1 to TalentLevelEffect(damageMultiplier = 1.20),
+                                2 to
+                                    TalentLevelEffect(
+                                        damageMultiplier = 1.25,
+                                        associatedEffects =
+                                            listOf(
+                                                hostileOnHitEffect(
+                                                    effectId = "shadowstep_marked",
+                                                    statusId = StatusEffectType.MARKED.schemaId,
+                                                    duration = 2,
+                                                    saveDimension = SaveDimension.MENTAL,
+                                                ),
+                                            ),
+                                    ),
+                            ),
                         damageType = com.ktome.core.combat.DamageType.SHADOW,
                     ),
                     TalentDef(
@@ -543,6 +600,52 @@ class TalentResolverTest {
                         cooldown = 3,
                         range = 1,
                         levelEffects = mapOf(1 to TalentLevelEffect(damageMultiplier = 1.30)),
+                        damageType = com.ktome.core.combat.DamageType.HOLY,
+                    ),
+                    TalentDef(
+                        id = "holy_mark",
+                        name = "圣印",
+                        description = "",
+                        resourceCosts = mapOf(ResourceType.POSITIVE_ENERGY to 10),
+                        cooldown = 5,
+                        range = 4,
+                        minRange = 1,
+                        levelEffects =
+                            mapOf(
+                                1 to
+                                    TalentLevelEffect(
+                                        damageMultiplier = 1.10,
+                                        associatedEffects =
+                                            listOf(
+                                                hostileOnHitEffect(
+                                                    effectId = "holy_mark_marked",
+                                                    statusId = StatusEffectType.MARKED.schemaId,
+                                                    duration = 2,
+                                                    saveDimension = SaveDimension.SPELL,
+                                                ),
+                                            ),
+                                    ),
+                                3 to
+                                    TalentLevelEffect(
+                                        damageMultiplier = 1.30,
+                                        associatedEffects =
+                                            listOf(
+                                                hostileOnHitEffect(
+                                                    effectId = "holy_mark_marked",
+                                                    statusId = StatusEffectType.MARKED.schemaId,
+                                                    duration = 3,
+                                                    saveDimension = SaveDimension.SPELL,
+                                                ),
+                                                hostileOnHitEffect(
+                                                    effectId = "holy_mark_bane",
+                                                    statusId = StatusEffectType.BANE.schemaId,
+                                                    duration = 2,
+                                                    saveDimension = SaveDimension.SPELL,
+                                                    magnitude = 0.12,
+                                                ),
+                                            ),
+                                    ),
+                            ),
                         damageType = com.ktome.core.combat.DamageType.HOLY,
                     ),
                     TalentDef(
@@ -886,6 +989,18 @@ class TalentResolverTest {
     }
 
     @Test
+    fun `blink restores mana at breakpoint rank`() {
+        val world = baseWorld()
+        val player = createPlayer(world, cooldown = 0, mana = 100, levelOverrides = mapOf("blink" to 4))
+
+        val result = resolver().resolve(world, map, player, "blink", Point(4, 2))
+
+        assertTrue(result is TalentUseResult.Success)
+        assertEquals(Point(4, 2), requireNotNull(world.get<Position>(player)).toPoint())
+        assertEquals(96, requireNotNull(world.get<ResourcePools>(player)).pool(ResourceType.MANA)?.current)
+    }
+
+    @Test
     fun `shadowstep lands adjacent to target and deals shadow damage`() {
         val world = baseWorld()
         val player = createPlayer(world, cooldown = 0)
@@ -896,6 +1011,18 @@ class TalentResolverTest {
         assertTrue(result is TalentUseResult.Success)
         assertEquals(1, requireNotNull(world.get<Position>(player)).toPoint().chebyshevDistanceTo(Point(5, 2)))
         assertTrue(requireNotNull(world.get<Health>(monster)).current < 40)
+    }
+
+    @Test
+    fun `shadowstep applies marked at breakpoint rank`() {
+        val world = baseWorld()
+        val player = createPlayer(world, cooldown = 0, levelOverrides = mapOf("shadowstep" to 2))
+        val monster = createMonster(world, Point(5, 2))
+
+        val result = resolver().resolve(world, map, player, "shadowstep", Point(5, 2))
+
+        assertTrue(result is TalentUseResult.Success)
+        assertTrue(requireNotNull(world.get<com.ktome.core.talent.EffectTracker>(monster)).has(StatusEffectType.MARKED))
     }
 
     @Test
@@ -932,6 +1059,32 @@ class TalentResolverTest {
 
         assertTrue(result is TalentUseResult.Success)
         assertTrue(requireNotNull(world.get<com.ktome.core.talent.EffectTracker>(player)).has(StatusEffectType.HOLY_SHIELD_BUFF))
+    }
+
+    @Test
+    fun `taunt applies area taunt and breakpoint guard`() {
+        val world = baseWorld()
+        val player = createPlayer(world, cooldown = 0, stamina = 40, levelOverrides = mapOf("taunt" to 4))
+        val monster = createMonster(world, Point(3, 2))
+
+        val result = resolver().resolve(world, map, player, "taunt", null)
+
+        assertTrue(result is TalentUseResult.Success)
+        assertTrue(requireNotNull(world.get<com.ktome.core.talent.EffectTracker>(monster)).has(StatusEffectType.TAUNT))
+        assertTrue(requireNotNull(world.get<com.ktome.core.talent.EffectTracker>(player)).has(StatusEffectType.GUARD))
+    }
+
+    @Test
+    fun `holy mark applies marked and bane at breakpoint rank`() {
+        val world = baseWorld()
+        val player = createPlayer(world, cooldown = 0, positiveEnergy = 40, levelOverrides = mapOf("holy_mark" to 3))
+        val monster = createMonster(world, Point(4, 2))
+
+        val result = resolver().resolve(world, map, player, "holy_mark", Point(4, 2))
+
+        assertTrue(result is TalentUseResult.Success)
+        assertTrue(requireNotNull(world.get<com.ktome.core.talent.EffectTracker>(monster)).has(StatusEffectType.MARKED))
+        assertTrue(requireNotNull(world.get<com.ktome.core.talent.EffectTracker>(monster)).has(StatusEffectType.BANE))
     }
 
     @Test
@@ -1231,35 +1384,38 @@ class TalentResolverTest {
                         1 to "power_strike",
                         2 to "charge",
                         3 to "shield_bash",
-                        4 to "war_cry",
-                        5 to "sweeping_strike",
-                        6 to "sunder_armor",
-                        7 to "guard_stance",
-                        8 to "intimidation",
-                        9 to "unyielding",
-                        10 to "fireball",
-                        11 to "flame_wall",
-                        12 to "ice_bolt",
-                        13 to "frost_nova",
-                        14 to "ice_prison",
-                        15 to "blink",
-                        16 to "arcane_shield",
-                        17 to "mana_surge",
-                        18 to "backstab",
-                        19 to "poison_blade",
-                        20 to "roll",
-                        21 to "shadowstep",
-                        22 to "deathblow",
-                        23 to "holy_strike",
-                        24 to "judgment_hammer",
-                        25 to "holy_light",
-                        26 to "holy_shield",
+                        4 to "taunt",
+                        5 to "war_cry",
+                        6 to "sweeping_strike",
+                        7 to "sunder_armor",
+                        8 to "guard_stance",
+                        9 to "intimidation",
+                        10 to "unyielding",
+                        11 to "fireball",
+                        12 to "flame_wall",
+                        13 to "ice_bolt",
+                        14 to "frost_nova",
+                        15 to "ice_prison",
+                        16 to "blink",
+                        17 to "arcane_shield",
+                        18 to "mana_surge",
+                        19 to "backstab",
+                        20 to "poison_blade",
+                        21 to "roll",
+                        22 to "shadowstep",
+                        23 to "deathblow",
+                        24 to "holy_strike",
+                        25 to "holy_mark",
+                        26 to "judgment_hammer",
+                        27 to "holy_light",
+                        28 to "holy_shield",
                     ),
                 talentLevels =
                     linkedMapOf(
                         "power_strike" to 1,
                         "charge" to 1,
                         "shield_bash" to 1,
+                        "taunt" to 1,
                         "war_cry" to 5,
                         "sweeping_strike" to 1,
                         "sunder_armor" to 1,
@@ -1280,6 +1436,7 @@ class TalentResolverTest {
                         "shadowstep" to 1,
                         "deathblow" to 1,
                         "holy_strike" to 1,
+                        "holy_mark" to 1,
                         "judgment_hammer" to 1,
                         "holy_light" to 1,
                         "holy_shield" to 1,

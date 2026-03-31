@@ -3,7 +3,9 @@ package com.ktome.game.harness
 import com.ktome.game.FOUNDATION_PROFESSION_ID
 import com.ktome.game.FOUNDATION_ZONE_ID
 import com.ktome.game.FOUNDATION_ZONE_ROUTE
+import com.ktome.game.PlayerCommand
 import java.nio.file.Path
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
@@ -13,6 +15,7 @@ import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
+import kotlinx.serialization.json.putJsonObject
 
 class HeadlessSmokeSuiteTest {
     @TempDir
@@ -106,6 +109,39 @@ class HeadlessSmokeSuiteTest {
 
         assertTrue(reports.all { it.success }, reports.joinToString(separator = "\n") { "${it.name}: ${it.failureReason ?: it.stuckReason ?: it.assertionFailures.joinToString()}" })
     }
+
+    @Test
+    fun `harness reports invalid talent commands instead of masking them`() {
+        val harness =
+            HeadlessRunHarness(
+                rootDir = tempDir,
+                bot =
+                    object : RunBot {
+                        override fun decide(observation: RunObservation): PlayerCommand = PlayerCommand.UseTalent(slot = 99)
+                    },
+            )
+
+        val report =
+            harness.run(
+                ScenarioSpec(
+                    name = "invalid-talent-fallback",
+                    seed = 20260312L,
+                    zoneId = FOUNDATION_ZONE_ID,
+                    professionId = FOUNDATION_PROFESSION_ID,
+                    zoneRoute = FOUNDATION_ZONE_ROUTE,
+                    routeIndex = 0,
+                    maxTurns = 1,
+                    goal = ScenarioGoal.SurviveTurns(1),
+                    assertions = listOf(ScenarioAssertion.NoStall),
+                ),
+            )
+
+        assertFalse(report.success, "Expected invalid talent command to fail the harness gate.")
+        assertTrue(
+            report.failureReason?.startsWith("Command rejected: UseTalent(99)") == true,
+            "Expected harness to surface the rejected invalid talent command, actual=${report.failureReason}",
+        )
+    }
 }
 
 internal fun ScenarioReport.toJson() =
@@ -128,8 +164,49 @@ internal fun ScenarioReport.toJson() =
         put("localeId", localeId)
         put("profileId", profileId)
         buildHash?.let { put("buildHash", it) }
+        putJsonArray("breakpointPayoffs") {
+            breakpointPayoffs.forEach { payoff ->
+                add(
+                    buildJsonObject {
+                        put("talentId", payoff.talentId)
+                        put("treeId", payoff.treeId)
+                        put("achievedRank", payoff.achievedRank)
+                        put("breakpointRank", payoff.breakpointRank)
+                        putJsonArray("unlockedEffectKinds") {
+                            payoff.unlockedEffectKinds.forEach { effectKind -> add(JsonPrimitive(effectKind)) }
+                        }
+                    },
+                )
+            }
+        }
+        putJsonArray("breakpointPayoffObservations") {
+            breakpointPayoffObservations.forEach { observation ->
+                add(
+                    buildJsonObject {
+                        put("talentId", observation.talentId)
+                        put("treeId", observation.treeId)
+                        put("achievedRank", observation.achievedRank)
+                        put("breakpointRank", observation.breakpointRank)
+                        put("turnIndex", observation.turnIndex)
+                        put("headlessTurnEquivalent", observation.headlessTurnEquivalent)
+                        put("buildHashBeforeUnlock", observation.buildHashBeforeUnlock)
+                        put("buildHashAfterUnlock", observation.buildHashAfterUnlock)
+                        put("buildHashChanged", observation.buildHashChanged)
+                        putJsonArray("unlockedEffectKinds") {
+                            observation.unlockedEffectKinds.forEach { effectKind -> add(JsonPrimitive(effectKind)) }
+                        }
+                    },
+                )
+            }
+        }
         put("cadenceRewardCount", cadenceRewardCount)
         put("shopRefreshPurchaseCount", shopRefreshPurchaseCount)
+        put("affixSynergyActivationCount", affixSynergyActivationCount)
+        putJsonObject("affixSynergyActivationDistribution") {
+            affixSynergyActivationDistribution.forEach { (affixId, count) ->
+                put(affixId, count)
+            }
+        }
         putJsonArray("milestoneRewards") {
             milestoneRewards.forEach { reward ->
                 add(

@@ -35,6 +35,9 @@ class AffixBlacklist {
         selected: List<AffixDef>,
         context: AffixSelectionContext,
     ): Boolean {
+        if (affix.passive != null && selected.any { chosen -> chosen.passive != null }) {
+            return true
+        }
         val selectedFamilies = selected.mapTo(linkedSetOf(), AffixDef::familyId)
         if (affix.familyId() in selectedFamilies || affix.familyId() in context.blacklistFamilies) {
             return true

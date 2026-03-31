@@ -1,5 +1,6 @@
 package com.ktome.core.item
 
+import com.ktome.core.combat.DamageType
 import com.ktome.core.random.RandomSource
 import com.ktome.core.support.TestRandomSource
 import kotlin.random.Random
@@ -151,5 +152,50 @@ class ItemGeneratorTest {
 
         assertEquals(listOf("stormforged"), withBuildTags.affixes.map(AffixDef::id))
         assertEquals(listOf("brutal"), withoutBuildTags.affixes.map(AffixDef::id))
+    }
+
+    @Test
+    fun `generator keeps affix passives on selected affixes without overwriting base passive`() {
+        val base =
+            ItemBaseDef(
+                id = "templar_blade",
+                name = "Templar Blade",
+                type = ItemType.WEAPON,
+                slot = EquipSlot.WEAPON,
+                glyph = ')',
+                colorHex = "#FFFFFF",
+                dropFloors = listOf(4),
+                passive = EquipmentPassive.DamageTypeBonus(type = DamageType.HOLY, bonusPercent = 0.10),
+            )
+        val affixBundle =
+            ItemDataBundle(
+                baseItems = listOf(base),
+                materials = emptyList(),
+                affixes =
+                    listOf(
+                        AffixDef(
+                            id = "of_smite",
+                            name = "of Smite",
+                            type = AffixType.PREFIX,
+                            statModifiers = StatModifier(attack = 2),
+                            minFloor = 4,
+                            passive = EquipmentPassive.DamageVsStatus(statusId = "BANE", bonusPercent = 0.12),
+                        ),
+                    ),
+            )
+
+        val generated =
+            ItemGenerator(
+                affixBundle,
+                TestRandomSource(ints = listOf(0, 0, 0)),
+            ).generate(
+                base = base,
+                floor = 4,
+                affixContext = AffixSelectionContext(minAffixCount = 1),
+            )
+
+        assertEquals("of_smite", generated.affixes.single().id)
+        assertTrue(generated.passive is EquipmentPassive.DamageTypeBonus)
+        assertTrue(generated.affixes.single().passive is EquipmentPassive.DamageVsStatus)
     }
 }

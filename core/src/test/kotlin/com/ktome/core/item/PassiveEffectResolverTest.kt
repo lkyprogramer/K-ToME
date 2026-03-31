@@ -28,6 +28,7 @@ class PassiveEffectResolverTest {
             PassiveEffectResolver.resolveDamageAdjustment(
                 passives = PassiveEffectResolver.equippedPassives(world, actor),
                 targetTags = setOf("bandit", "humanoid"),
+                targetStatusIds = emptySet(),
                 damageType = DamageType.PHYSICAL,
             )
 
@@ -54,12 +55,14 @@ class PassiveEffectResolverTest {
             PassiveEffectResolver.resolveDamageAdjustment(
                 passives = PassiveEffectResolver.equippedPassives(world, actor),
                 targetTags = emptySet(),
+                targetStatusIds = emptySet(),
                 damageType = DamageType.FIRE,
             )
         val coldAdjustment =
             PassiveEffectResolver.resolveDamageAdjustment(
                 passives = PassiveEffectResolver.equippedPassives(world, actor),
                 targetTags = emptySet(),
+                targetStatusIds = emptySet(),
                 damageType = DamageType.COLD,
             )
 
@@ -79,6 +82,36 @@ class PassiveEffectResolverTest {
         )
 
         assertEquals(2, PassiveEffectResolver.hpRegenPerTurn(PassiveEffectResolver.equippedPassives(world, actor)))
+    }
+
+    @Test
+    fun `damage vs status passive increases multiplier for matching target status`() {
+        val world = World()
+        val actor = world.createEntity()
+        equip(
+            world = world,
+            actor = actor,
+            slot = EquipSlot.WEAPON,
+            item = item(baseId = "of_smite", passive = EquipmentPassive.DamageVsStatus(statusId = "BANE", bonusPercent = 0.12)),
+        )
+
+        val matching =
+            PassiveEffectResolver.resolveDamageAdjustment(
+                passives = PassiveEffectResolver.equippedPassives(world, actor),
+                targetTags = emptySet(),
+                targetStatusIds = setOf("BANE"),
+                damageType = DamageType.HOLY,
+            )
+        val nonMatching =
+            PassiveEffectResolver.resolveDamageAdjustment(
+                passives = PassiveEffectResolver.equippedPassives(world, actor),
+                targetTags = emptySet(),
+                targetStatusIds = setOf("MARKED"),
+                damageType = DamageType.HOLY,
+            )
+
+        assertEquals(1.12, matching.multiplier, 0.0001)
+        assertEquals(1.0, nonMatching.multiplier, 0.0001)
     }
 
     @Test
@@ -102,6 +135,43 @@ class PassiveEffectResolverTest {
 
         assertEquals(15, bonuses[DamageType.SHADOW])
         assertTrue(DamageType.FIRE !in bonuses)
+    }
+
+    @Test
+    fun `equipped passives include affix granted passives on the same item`() {
+        val world = World()
+        val actor = world.createEntity()
+        equip(
+            world = world,
+            actor = actor,
+            slot = EquipSlot.WEAPON,
+            item =
+                ItemInstance(
+                    baseId = "templar_blade",
+                    name = "Templar Blade",
+                    type = ItemType.WEAPON,
+                    slot = EquipSlot.WEAPON,
+                    glyph = ')',
+                    colorHex = "#FFFFFF",
+                    affixes =
+                        listOf(
+                            AffixDef(
+                                id = "of_smite",
+                                name = "of Smite",
+                                type = AffixType.SUFFIX,
+                                statModifiers = StatModifier(attack = 2),
+                                passive = EquipmentPassive.DamageVsStatus(statusId = "BANE", bonusPercent = 0.15),
+                            ),
+                        ),
+                    passive = EquipmentPassive.DamageTypeBonus(type = DamageType.HOLY, bonusPercent = 0.10),
+                ),
+        )
+
+        val passives = PassiveEffectResolver.equippedPassives(world, actor)
+
+        assertEquals(2, passives.size)
+        assertTrue(passives.any { source -> source.passive is EquipmentPassive.DamageTypeBonus })
+        assertTrue(passives.any { source -> source.passive is EquipmentPassive.DamageVsStatus && source.passive.statusId == "BANE" })
     }
 
     private fun equip(

@@ -43,6 +43,11 @@ sealed interface EquipmentPassive {
         val bonusPercent: Double,
     ) : EquipmentPassive
 
+    data class DamageVsStatus(
+        val statusId: String,
+        val bonusPercent: Double,
+    ) : EquipmentPassive
+
     data class HpRegenPerTurn(
         val amount: Int,
     ) : EquipmentPassive
@@ -113,6 +118,7 @@ data class AffixDef(
     val minFloor: Int = 1,
     val tags: Set<String> = emptySet(),
     val blacklistTags: Set<String> = emptySet(),
+    val passive: EquipmentPassive? = null,
 )
 
 data class MaterialDef(

@@ -67,6 +67,7 @@ internal object LintFixtures {
         schemaResources.flatMapTo(linkedSetOf()) { resource ->
             extractFieldValues(loadYaml(resource), "nameKey") +
                 extractFieldValues(loadYaml(resource), "descKey") +
+                extractFieldValues(loadYaml(resource), "descriptionAddendumKey") +
                 extractFieldValues(loadYaml(resource), "resourceHintKey") +
                 extractFieldValues(loadYaml(resource), "postMessageKey") +
                 extractFieldValues(loadYaml(resource), "messageKey")

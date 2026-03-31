@@ -450,6 +450,7 @@ data class AffixSchemaV2(
     val minFloor: Int,
     val stats: SchemaStatModifier,
     val blacklistTags: List<String> = emptyList(),
+    val passive: EquipmentPassiveSchemaV2? = null,
 )
 
 data class WorldGraphSchemaV2(
@@ -514,6 +515,7 @@ data class AffordableRescueSlotPolicySchemaV2(
 data class EquipmentPassiveSchemaV2(
     val kind: String,
     val tag: String? = null,
+    val statusId: String? = null,
     val damageType: String? = null,
     val bonusPercent: Double = 0.0,
     val amount: Int = 0,

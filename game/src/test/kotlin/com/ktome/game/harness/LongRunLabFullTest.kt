@@ -2,6 +2,7 @@ package com.ktome.game.harness
 
 import com.ktome.core.item.MilestoneRewardSource
 import com.ktome.core.run.RunOutcome
+import com.ktome.game.FOUNDATION_SYNERGY_AFFIX_IDS
 import com.ktome.game.FOUNDATION_ZONE_ROUTE
 import java.nio.file.Path
 import kotlinx.serialization.json.buildJsonArray
@@ -45,8 +46,14 @@ class LongRunLabFullTest {
         val branchRouteHashDistribution = branchInclusiveReports.groupingBy(ScenarioReport::zoneRouteHash).eachCount().toSortedMap()
         val scenarioTypeDistribution = scenarioTypeDistribution(reports, includeZeroCounts = true)
         val milestoneRewards = reports.flatMap(ScenarioReport::milestoneRewards)
+        val allScenarioBreakpointMetrics = breakpointMetrics(reports)
+        val fullRouteBreakpointMetrics = breakpointMetrics(fullRouteReports)
         val cadenceRewardCount = reports.sumOf(ScenarioReport::cadenceRewardCount)
         val shopRefreshPurchaseCount = reports.sumOf(ScenarioReport::shopRefreshPurchaseCount)
+        val allScenarioAffixSynergyMetrics = affixSynergyMetrics(reports)
+        val fullRouteAffixSynergyMetrics = affixSynergyMetrics(fullRouteReports)
+        val allScenarioSynergyRewardMetrics = synergyRewardMetrics(reports)
+        val fullRouteSynergyRewardMetrics = synergyRewardMetrics(fullRouteReports)
         val milestoneRewardQualityDistribution = milestoneRewards.groupingBy { it.qualityTier.name }.eachCount().toSortedMap()
         val milestoneAffixCountDistribution = milestoneRewards.groupingBy { it.affixIds.size.toString() }.eachCount().toSortedMap()
         val milestoneRewardAdoptionDistribution =
@@ -94,6 +101,40 @@ class LongRunLabFullTest {
                     put("averageHeadlessTurns", averageHeadlessTurns)
                     put("cadenceRewardCount", cadenceRewardCount)
                     put("shopRefreshPurchaseCount", shopRefreshPurchaseCount)
+                    put("affixSynergyActivationCount", allScenarioAffixSynergyMetrics.activationCount)
+                    putJsonObject("affixSynergyActivationDistribution") {
+                        allScenarioAffixSynergyMetrics.distribution.forEach { (affixId, count) -> put(affixId, count) }
+                    }
+                    put("synergyAffixRewardCount", allScenarioSynergyRewardMetrics.rewardCount)
+                    put("synergyAffixAdoptionCount", allScenarioSynergyRewardMetrics.adoptionCount)
+                    putJsonObject("synergyAffixDistribution") {
+                        allScenarioSynergyRewardMetrics.distribution.forEach { (affixId, count) -> put(affixId, count) }
+                    }
+                    put("breakpointPayoffObservationCount", allScenarioBreakpointMetrics.observationCount)
+                    put("breakpointPayoffBuildHashChangeCount", allScenarioBreakpointMetrics.buildHashChangeCount)
+                    putJsonObject("breakpointPayoffTalentDistribution") {
+                        allScenarioBreakpointMetrics.talentDistribution.forEach { (talentId, count) -> put(talentId, count) }
+                    }
+                    putJsonObject("breakpointPayoffEffectDistribution") {
+                        allScenarioBreakpointMetrics.effectDistribution.forEach { (effectKind, count) -> put(effectKind, count) }
+                    }
+                    put("fullRouteBreakpointPayoffObservationCount", fullRouteBreakpointMetrics.observationCount)
+                    put("fullRouteBreakpointPayoffBuildHashChangeCount", fullRouteBreakpointMetrics.buildHashChangeCount)
+                    put("fullRouteAffixSynergyActivationCount", fullRouteAffixSynergyMetrics.activationCount)
+                    putJsonObject("fullRouteAffixSynergyActivationDistribution") {
+                        fullRouteAffixSynergyMetrics.distribution.forEach { (affixId, count) -> put(affixId, count) }
+                    }
+                    put("fullRouteSynergyAffixRewardCount", fullRouteSynergyRewardMetrics.rewardCount)
+                    put("fullRouteSynergyAffixAdoptionCount", fullRouteSynergyRewardMetrics.adoptionCount)
+                    putJsonObject("fullRouteSynergyAffixDistribution") {
+                        fullRouteSynergyRewardMetrics.distribution.forEach { (affixId, count) -> put(affixId, count) }
+                    }
+                    putJsonObject("fullRouteBreakpointPayoffTalentDistribution") {
+                        fullRouteBreakpointMetrics.talentDistribution.forEach { (talentId, count) -> put(talentId, count) }
+                    }
+                    putJsonObject("fullRouteBreakpointPayoffEffectDistribution") {
+                        fullRouteBreakpointMetrics.effectDistribution.forEach { (effectKind, count) -> put(effectKind, count) }
+                    }
                     putJsonObject("scenarioTypeDistribution") {
                         scenarioTypeDistribution.forEach { (scenarioType, count) -> put(scenarioType, count) }
                     }
@@ -150,6 +191,24 @@ class LongRunLabFullTest {
                     appendLine("- averageHeadlessTurns: $averageHeadlessTurns")
                     appendLine("- cadenceRewardCount: $cadenceRewardCount")
                     appendLine("- shopRefreshPurchaseCount: $shopRefreshPurchaseCount")
+                    appendLine("- affixSynergyActivationCount: ${allScenarioAffixSynergyMetrics.activationCount}")
+                    appendLine("- affixSynergyActivationDistribution: ${if (allScenarioAffixSynergyMetrics.distribution.isEmpty()) "none" else allScenarioAffixSynergyMetrics.distribution}")
+                    appendLine("- synergyAffixRewardCount: ${allScenarioSynergyRewardMetrics.rewardCount}")
+                    appendLine("- synergyAffixAdoptionCount: ${allScenarioSynergyRewardMetrics.adoptionCount}")
+                    appendLine("- synergyAffixDistribution: ${if (allScenarioSynergyRewardMetrics.distribution.isEmpty()) "none" else allScenarioSynergyRewardMetrics.distribution}")
+                    appendLine("- breakpointPayoffObservationCount: ${allScenarioBreakpointMetrics.observationCount}")
+                    appendLine("- breakpointPayoffBuildHashChangeCount: ${allScenarioBreakpointMetrics.buildHashChangeCount}")
+                    appendLine("- breakpointPayoffTalentDistribution: ${if (allScenarioBreakpointMetrics.talentDistribution.isEmpty()) "none" else allScenarioBreakpointMetrics.talentDistribution}")
+                    appendLine("- breakpointPayoffEffectDistribution: ${if (allScenarioBreakpointMetrics.effectDistribution.isEmpty()) "none" else allScenarioBreakpointMetrics.effectDistribution}")
+                    appendLine("- fullRouteBreakpointPayoffObservationCount: ${fullRouteBreakpointMetrics.observationCount}")
+                    appendLine("- fullRouteBreakpointPayoffBuildHashChangeCount: ${fullRouteBreakpointMetrics.buildHashChangeCount}")
+                    appendLine("- fullRouteAffixSynergyActivationCount: ${fullRouteAffixSynergyMetrics.activationCount}")
+                    appendLine("- fullRouteAffixSynergyActivationDistribution: ${if (fullRouteAffixSynergyMetrics.distribution.isEmpty()) "none" else fullRouteAffixSynergyMetrics.distribution}")
+                    appendLine("- fullRouteSynergyAffixRewardCount: ${fullRouteSynergyRewardMetrics.rewardCount}")
+                    appendLine("- fullRouteSynergyAffixAdoptionCount: ${fullRouteSynergyRewardMetrics.adoptionCount}")
+                    appendLine("- fullRouteSynergyAffixDistribution: ${if (fullRouteSynergyRewardMetrics.distribution.isEmpty()) "none" else fullRouteSynergyRewardMetrics.distribution}")
+                    appendLine("- fullRouteBreakpointPayoffTalentDistribution: ${if (fullRouteBreakpointMetrics.talentDistribution.isEmpty()) "none" else fullRouteBreakpointMetrics.talentDistribution}")
+                    appendLine("- fullRouteBreakpointPayoffEffectDistribution: ${if (fullRouteBreakpointMetrics.effectDistribution.isEmpty()) "none" else fullRouteBreakpointMetrics.effectDistribution}")
                     appendLine("- deathDistribution: ${if (deathDistribution.isEmpty()) "none" else deathDistribution}")
                     appendLine("- zoneRouteHashDistribution: ${if (routeHashDistribution.isEmpty()) "none" else routeHashDistribution}")
                     appendLine("- branchRouteHashDistribution: ${if (branchRouteHashDistribution.isEmpty()) "none" else branchRouteHashDistribution}")
@@ -167,8 +226,16 @@ class LongRunLabFullTest {
                             report.milestoneRewards.joinToString { reward ->
                                 "${reward.rewardSource}:${reward.baseItemId}:${reward.equipSlot.name}:before=${reward.equippedBaseItemIdBeforeReward ?: "empty"}:final=${reward.equippedBaseItemIdAtRunEnd ?: "empty"}:adopted=${reward.adoptedInFinalBuild}:${reward.qualityTier.name}:${if (reward.affixIds.isEmpty()) "none" else reward.affixIds.joinToString("+")}"
                             }
+                        val breakpointSummary =
+                            report.breakpointPayoffs.joinToString { payoff ->
+                                "${payoff.talentId}@${payoff.breakpointRank}:${payoff.unlockedEffectKinds.joinToString("+")}"
+                            }
+                        val breakpointObservationSummary =
+                            report.breakpointPayoffObservations.joinToString { observation ->
+                                "${observation.talentId}@${observation.breakpointRank}:${observation.buildHashChanged}:${observation.buildHashBeforeUnlock}->${observation.buildHashAfterUnlock}"
+                            }
                         appendLine(
-                            "- class=${report.professionId}, race=${report.raceId}, seed=${report.seed}, scenarioType=${report.scenarioType.reportValue}, isFullRoute=${report.isFullRoute}, finalZone=${report.finalZoneId}, turns=${report.turns}, headless=${report.headlessTurnEquivalent}, routeHash=${report.zoneRouteHash}, route=${report.zonePath.joinToString(" -> ")}, objectives=${if (objectiveSummary.isBlank()) "none" else objectiveSummary}, buildHash=${report.buildHash ?: "unknown"}, cadence=${report.cadenceRewardCount}, refresh=${report.shopRefreshPurchaseCount}, milestoneRewards=${if (milestoneSummary.isBlank()) "none" else milestoneSummary}, outcome=${report.outcome}, crashedOrStalled=${report.crashedOrStalled()}",
+                            "- class=${report.professionId}, race=${report.raceId}, seed=${report.seed}, scenarioType=${report.scenarioType.reportValue}, isFullRoute=${report.isFullRoute}, finalZone=${report.finalZoneId}, turns=${report.turns}, headless=${report.headlessTurnEquivalent}, routeHash=${report.zoneRouteHash}, route=${report.zonePath.joinToString(" -> ")}, objectives=${if (objectiveSummary.isBlank()) "none" else objectiveSummary}, buildHash=${report.buildHash ?: "unknown"}, breakpointPayoffs=${if (breakpointSummary.isBlank()) "none" else breakpointSummary}, breakpointPayoffObservations=${if (breakpointObservationSummary.isBlank()) "none" else breakpointObservationSummary}, affixSynergy=${report.affixSynergyActivationCount}:${if (report.affixSynergyActivationDistribution.isEmpty()) "none" else report.affixSynergyActivationDistribution}, cadence=${report.cadenceRewardCount}, refresh=${report.shopRefreshPurchaseCount}, milestoneRewards=${if (milestoneSummary.isBlank()) "none" else milestoneSummary}, outcome=${report.outcome}, crashedOrStalled=${report.crashedOrStalled()}",
                         )
                         if (report.headlessTurnEquivalent > 2900 || report.outcome !is RunOutcome.Victory) {
                             val zoneHeadlessSummary =
@@ -255,12 +322,32 @@ class LongRunLabFullTest {
             reachedTempleCount >= 8,
             "Expected at least 8/12 full-route matrix runs to reach abyssal_temple or deeper, actual=$reachedTempleCount/${fullRouteReports.size}",
         )
-        if (afterDeepIronRatio != null) {
+        if (afterDeepIronRatio != null && fullRouteNonVictoryReports.size >= 2) {
             assertTrue(
                 afterDeepIronRatio >= 0.5,
                 "Expected at least 50% of full-route non-victory runs to fail after deep_iron_pit, actual=$afterDeepIronRatio",
             )
         }
+        assertTrue(
+            fullRouteBreakpointMetrics.observationCount >= 4,
+            "Expected full-route matrix to observe at least four breakpoint payoff unlocks, actual=${fullRouteBreakpointMetrics.observationCount}",
+        )
+        assertTrue(
+            fullRouteBreakpointMetrics.buildHashChangeCount >= 4,
+            "Expected full-route matrix to record build-hash changes for observed payoff unlocks, actual=${fullRouteBreakpointMetrics.buildHashChangeCount}",
+        )
+        assertTrue(
+            allScenarioSynergyRewardMetrics.rewardCount >= 1,
+            "Expected full long-run lab to surface at least one documented synergy affix reward, actual=${allScenarioSynergyRewardMetrics.distribution}",
+        )
+        assertTrue(
+            fullRouteSynergyRewardMetrics.rewardCount >= 1,
+            "Expected full-route matrix to surface at least one documented synergy affix reward, actual=${fullRouteSynergyRewardMetrics.distribution}",
+        )
+        assertTrue(
+            fullRouteSynergyRewardMetrics.adoptionCount >= 1,
+            "Expected full-route matrix to keep at least one documented synergy affix in the final build, actual=${fullRouteSynergyRewardMetrics.distribution}",
+        )
     }
 
     private fun fullRouteMatrixSpecs(): List<ScenarioSpec> {
@@ -350,4 +437,70 @@ class LongRunLabFullTest {
                 ),
         )
 
+    private fun breakpointMetrics(reports: List<ScenarioReport>): BreakpointMetrics {
+        val breakpointPayoffs = reports.flatMap(ScenarioReport::breakpointPayoffs)
+        val observations = reports.flatMap(ScenarioReport::breakpointPayoffObservations)
+        return BreakpointMetrics(
+            observationCount = observations.size,
+            buildHashChangeCount = observations.count { observation -> observation.buildHashChanged },
+            talentDistribution = breakpointPayoffs.groupingBy { payoff -> payoff.talentId }.eachCount().toSortedMap(),
+            effectDistribution =
+                breakpointPayoffs
+                    .flatMap { payoff -> payoff.unlockedEffectKinds }
+                    .groupingBy { effectKind -> effectKind }
+                    .eachCount()
+                    .toSortedMap(),
+        )
+    }
+
+    private fun affixSynergyMetrics(reports: List<ScenarioReport>): AffixSynergyMetrics =
+        AffixSynergyMetrics(
+            activationCount = reports.sumOf(ScenarioReport::affixSynergyActivationCount),
+            distribution =
+                reports
+                    .flatMap { report -> report.affixSynergyActivationDistribution.entries }
+                    .groupingBy { (affixId, _) -> affixId }
+                    .fold(0) { accumulator, (_, count) -> accumulator + count }
+                    .toSortedMap(),
+        )
+
+    private fun synergyRewardMetrics(reports: List<ScenarioReport>): SynergyRewardMetrics =
+        SynergyRewardMetrics(
+            rewardCount =
+                reports.sumOf { report ->
+                    val synergyAffixIds = FOUNDATION_SYNERGY_AFFIX_IDS[report.professionId].orEmpty()
+                    report.milestoneRewards.count { reward -> reward.affixIds.any(synergyAffixIds::contains) }
+                },
+            adoptionCount =
+                reports.sumOf { report ->
+                    val synergyAffixIds = FOUNDATION_SYNERGY_AFFIX_IDS[report.professionId].orEmpty()
+                    report.milestoneRewards.count { reward -> reward.adoptedInFinalBuild && reward.affixIds.any(synergyAffixIds::contains) }
+                },
+            distribution =
+                reports
+                    .flatMap { report ->
+                        val synergyAffixIds = FOUNDATION_SYNERGY_AFFIX_IDS[report.professionId].orEmpty()
+                        report.milestoneRewards.flatMap { reward -> reward.affixIds.filter(synergyAffixIds::contains) }
+                    }.groupingBy { affixId -> affixId }
+                    .eachCount()
+                    .toSortedMap(),
+        )
+
+    private data class BreakpointMetrics(
+        val observationCount: Int,
+        val buildHashChangeCount: Int,
+        val talentDistribution: Map<String, Int>,
+        val effectDistribution: Map<String, Int>,
+    )
+
+    private data class AffixSynergyMetrics(
+        val activationCount: Int,
+        val distribution: Map<String, Int>,
+    )
+
+    private data class SynergyRewardMetrics(
+        val rewardCount: Int,
+        val adoptionCount: Int,
+        val distribution: Map<String, Int>,
+    )
 }

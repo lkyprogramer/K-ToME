@@ -471,6 +471,165 @@ class FoundationGameSessionTest {
     }
 
     @Test
+    fun `build hash and talent snapshot reflect blink breakpoint payoff at rank four`() {
+        val session =
+            GameModule.newFoundationSession(
+                FoundationGameConfig(seed = 20260331L, zoneId = "shattered_outpost", playerProfessionId = "arcanist"),
+                SaveManager(tempDir.resolve("blink-breakpoint-payoff-save")),
+            )
+        clearMonsters(session)
+        val dummyId = installExperienceDummy(session, id = "blink_breakpoint_dummy", expReward = 1500)
+        val dummyPosition = requireNotNull(runtimeWorld(session).get<Position>(dummyId)).toPoint()
+        assertTrue(session.perform(PlayerCommand.Move(dummyPosition - session.playerPosition())))
+
+        val beforeHash = session.currentBuildHash()
+
+        repeat(3) { assertTrue(session.perform(PlayerCommand.AssignTalent("blink"))) }
+        assertTrue(session.perform(PlayerCommand.ConfirmTalentDraft))
+
+        assertNotEquals(beforeHash, session.currentBuildHash())
+        val reserveBlink = session.renderSnapshot().uiState.reserveTalents.firstOrNull { it.talentId == "blink" }
+        val activeBlink = session.renderSnapshot().uiState.talents.firstOrNull { it.talentId == "blink" }
+        val afterBlinkDescription =
+            reserveBlink?.descriptionModel
+                ?: requireNotNull(activeBlink) { "Blink should remain visible in either active or reserve talent lists." }.descriptionModel
+        assertEquals(
+            com.ktome.core.snapshot.DescriptionValueSnapshot.IntValue(10),
+            afterBlinkDescription?.placeholders?.get("resourceRestorePercent"),
+        )
+    }
+
+    @Test
+    fun `base class breakpoint payoff summaries expose documented gameplay pivots`() {
+        FOUNDATION_BREAKPOINT_PAYOFF_CONTRACTS.forEachIndexed { index, contract ->
+            val session =
+                GameModule.newFoundationSession(
+                    FoundationGameConfig(seed = 20260401L + index, zoneId = "shattered_outpost", playerProfessionId = contract.professionId),
+                    SaveManager(tempDir.resolve("breakpoint-payoff-${contract.professionId}")),
+                )
+            val loadout = requireNotNull(runtimeWorld(session).get<com.ktome.core.talent.TalentLoadout>(session.playerId))
+            loadout.talentLevels[contract.talentId] = contract.breakpointRank
+
+            val summary = session.currentBreakpointPayoffSummaries().firstOrNull { payoff -> payoff.talentId == contract.talentId }
+
+            assertNotNull(summary, "Expected payoff summary for ${contract.professionId}/${contract.talentId}")
+            assertEquals(contract.breakpointRank, summary?.breakpointRank)
+            assertTrue(
+                summary?.unlockedEffectKinds?.contains(contract.summaryEffectKind) == true,
+                "Expected ${contract.talentId} to expose ${contract.summaryEffectKind}, actual=${summary?.unlockedEffectKinds}",
+            )
+        }
+    }
+
+    @Test
+    fun `affix passives enter damage adjustment when target carries matching status tags`() {
+        val map = GameMap.fromAscii(rows = listOf(".....", ".....", "....."), playerStart = Point(1, 1))
+        val world = World()
+        val factory = EntityFactory()
+        val playerId = factory.createPlayer(world, Point(1, 1), talents)
+        val inventory = requireNotNull(world.get<com.ktome.core.item.Inventory>(playerId))
+        val equipment = requireNotNull(world.get<com.ktome.core.item.Equipment>(playerId))
+        val itemId =
+            ItemFactory().createCarriedItem(
+                world = world,
+                item =
+                    ItemInstance(
+                        baseId = "battle_axe",
+                        name = "Battle Axe of Piercing",
+                        type = ItemType.WEAPON,
+                        slot = EquipSlot.WEAPON,
+                        glyph = ')',
+                        colorHex = "#C0C0C0",
+                        quality = ItemQuality.MAGIC,
+                        affixes =
+                            listOf(
+                                AffixDef(
+                                    id = "of_piercing",
+                                    name = "of Piercing",
+                                    type = AffixType.SUFFIX,
+                                    statModifiers = StatModifier(attack = 3),
+                                    passive = EquipmentPassive.DamageVsStatus(statusId = StatusEffectType.ARMOR_BREAK.schemaId, bonusPercent = 0.12),
+                                ),
+                            ),
+                        stats = StatModifier(attack = 12),
+                    ),
+            )
+        inventory.itemIds += itemId
+        equipment.slots[EquipSlot.WEAPON] = itemId
+
+        val session = session(world, map, playerId)
+        val targetId = installCombatDummy(session, id = "affix_passive_target")
+        val tracker = requireNotNull(runtimeWorld(session).get<EffectTracker>(targetId))
+        StatusLifecycle.applyEffect(
+            tracker,
+            StatusLifecycle.createInstance(
+                type = StatusEffectType.ARMOR_BREAK,
+                effectId = "affix_passive_armor_break",
+                duration = 3,
+            ),
+        )
+
+        val adjustment = invokeResolveDamageAdjustment(session, session.playerId, targetId, DamageType.PHYSICAL)
+
+        assertEquals(1.12, adjustment.multiplier, 0.0001)
+    }
+
+    @Test
+    fun `session records affix synergy activations when status damage passive actually triggers`() {
+        val map = GameMap.fromAscii(rows = listOf(".....", ".....", "....."), playerStart = Point(1, 1))
+        val world = World()
+        val factory = EntityFactory()
+        val playerId = factory.createPlayer(world, Point(1, 1), talents)
+        val inventory = requireNotNull(world.get<com.ktome.core.item.Inventory>(playerId))
+        val equipment = requireNotNull(world.get<com.ktome.core.item.Equipment>(playerId))
+        val itemId =
+            ItemFactory().createCarriedItem(
+                world = world,
+                item =
+                    ItemInstance(
+                        baseId = "long_sword",
+                        name = "Long Sword of Piercing",
+                        type = ItemType.WEAPON,
+                        slot = EquipSlot.WEAPON,
+                        glyph = ')',
+                        colorHex = "#C0C0C0",
+                        quality = ItemQuality.MAGIC,
+                        affixes =
+                            listOf(
+                                AffixDef(
+                                    id = "of_piercing",
+                                    name = "of Piercing",
+                                    type = AffixType.SUFFIX,
+                                    statModifiers = StatModifier(attack = 3),
+                                    passive = EquipmentPassive.DamageVsStatus(statusId = StatusEffectType.ARMOR_BREAK.schemaId, bonusPercent = 0.12),
+                                ),
+                            ),
+                        stats = StatModifier(attack = 10),
+                    ),
+            )
+        inventory.itemIds += itemId
+        equipment.slots[EquipSlot.WEAPON] = itemId
+
+        val session = session(world, map, playerId)
+        val targetId = installCombatDummy(session, id = "affix_synergy_activation_target")
+        val tracker = requireNotNull(runtimeWorld(session).get<EffectTracker>(targetId))
+        StatusLifecycle.applyEffect(
+            tracker,
+            StatusLifecycle.createInstance(
+                type = StatusEffectType.ARMOR_BREAK,
+                effectId = "affix_synergy_activation_armor_break",
+                duration = 3,
+            ),
+        )
+
+        val adjustment = invokeResolveDamageAdjustment(session, session.playerId, targetId, DamageType.PHYSICAL)
+        invokeLogTriggeredDamagePassives(session, session.playerId, adjustment.sources)
+
+        assertEquals(1, session.currentAffixSynergyActivationCount())
+        assertEquals(1, session.currentAffixSynergyActivationDistribution()["of_piercing"])
+    }
+
+    @Test
     fun `rollback only removes the most recent pending talent step even after save load`() {
         val saveManager = SaveManager(tempDir.resolve("talent-draft-rollback-history-save"))
         val session =
@@ -3202,9 +3361,9 @@ class FoundationGameSessionTest {
                         reward.affixIds.isNotEmpty()
                 },
             )
-        assertEquals(EquipSlot.OFF_HAND, rewardSummary.equipSlot)
-        assertEquals(EquipSlot.OFF_HAND, requireNotNull(itemBasesById[rewardSummary.baseItemId]).slot)
-        assertEquals("basic_shield", rewardSummary.equippedBaseItemIdBeforeReward)
+        assertEquals(EquipSlot.WEAPON, rewardSummary.equipSlot)
+        assertEquals(EquipSlot.WEAPON, requireNotNull(itemBasesById[rewardSummary.baseItemId]).slot)
+        assertEquals("long_sword", rewardSummary.equippedBaseItemIdBeforeReward)
         assertTrue("route.shattered_outpost.greenwood_fringe" in session.worldProgress().claimedRouteRewards)
         assertTrue(saveManager.hasSave())
     }
@@ -3532,7 +3691,13 @@ class FoundationGameSessionTest {
         val anchorStart =
             session.visibleTiles()
                 .filter { point -> point !in occupiedPoints }
-                .sortedWith(compareBy<Point>(Point::y).thenBy(Point::x))
+                .sortedWith { left, right ->
+                    if (left.y != right.y) {
+                        left.y.compareTo(right.y)
+                    } else {
+                        left.x.compareTo(right.x)
+                    }
+                }
                 .first { point ->
                     candidateOffsets.any { offset ->
                         val candidate = point + offset
@@ -3900,6 +4065,47 @@ class FoundationGameSessionTest {
         val acceptedField = result.javaClass.getDeclaredField("accepted")
         acceptedField.isAccessible = true
         assertTrue(acceptedField.getBoolean(result))
+    }
+
+    private fun invokeResolveDamageAdjustment(
+        session: FoundationGameSession,
+        attacker: EntityId,
+        target: EntityId,
+        damageType: DamageType,
+    ): com.ktome.core.item.PassiveDamageAdjustment {
+        val method =
+            FoundationGameSession::class.java.declaredMethods.first { declared ->
+                declared.name.startsWith("resolveDamageAdjustment") &&
+                    declared.parameterTypes.contentEquals(
+                        arrayOf(
+                            Int::class.javaPrimitiveType,
+                            Int::class.javaPrimitiveType,
+                            DamageType::class.java,
+                        ),
+                    )
+            }
+        method.isAccessible = true
+        @Suppress("UNCHECKED_CAST")
+        return method.invoke(session, attacker.value, target.value, damageType) as com.ktome.core.item.PassiveDamageAdjustment
+    }
+
+    private fun invokeLogTriggeredDamagePassives(
+        session: FoundationGameSession,
+        attacker: EntityId,
+        sources: List<com.ktome.core.item.EquippedPassiveSource>,
+    ) {
+        val method =
+            FoundationGameSession::class.java.declaredMethods.first { declared ->
+                declared.name.startsWith("logTriggeredDamagePassives") &&
+                    declared.parameterTypes.contentEquals(
+                        arrayOf(
+                            Int::class.javaPrimitiveType,
+                            List::class.java,
+                        ),
+                    )
+            }
+        method.isAccessible = true
+        method.invoke(session, attacker.value, sources)
     }
 
     private fun recentEventSummaries(session: FoundationGameSession): List<String> {

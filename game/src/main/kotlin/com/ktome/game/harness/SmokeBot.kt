@@ -1,10 +1,14 @@
 package com.ktome.game.harness
 
 import com.ktome.core.item.ConsumableEffect
+import com.ktome.core.item.EquipSlot
+import com.ktome.core.item.ItemQuality
+import com.ktome.core.item.ItemType
 import com.ktome.core.map.Point
 import com.ktome.core.pathfinding.AStar
 import com.ktome.core.talent.TalentTreeOwnerType
 import com.ktome.game.AbyssalRuntimeKeys
+import com.ktome.game.InventoryItemView
 import com.ktome.game.PlayerCommand
 import com.ktome.game.PrimaryStat
 import com.ktome.game.TalentReserveView
@@ -30,6 +34,7 @@ class SmokeBot : RunBot {
     private var lastThreatFloor: Int? = null
     private var lastThreatPosition: Point? = null
     private var lastThreatWasBoss: Boolean = false
+    private val recentDroppedPositions = linkedMapOf<Point, Int>()
     private val visitedShopZones = linkedSetOf<String>()
     private val recentPositions = ArrayDeque<Point>()
 
@@ -46,6 +51,7 @@ class SmokeBot : RunBot {
         if (hasPendingTalentDraft(observation)) {
             return PlayerCommand.ConfirmTalentDraft
         }
+        expireRecentDroppedPositions(observation)
         if (observation.playerStatus.statPoints > 0) {
             return PlayerCommand.AssignStat(preferredStat(observation))
         }
@@ -58,7 +64,11 @@ class SmokeBot : RunBot {
         if (shouldRefreshLoadout(observation)) {
             LoadoutPlanner.preferredLoadoutCommand(observation)?.let { return it }
         }
-        if (observation.inventoryItems.size < SMOKE_BOT_INVENTORY_CAPACITY && observation.visibleGroundItemPositions.any { it == observation.playerPosition }) {
+        if (
+            observation.inventoryItems.size < SMOKE_BOT_AUTO_PICKUP_LIMIT &&
+            observation.visibleGroundItemPositions.any { it == observation.playerPosition } &&
+            !shouldSkipFreshDropPickup(observation)
+        ) {
             return PlayerCommand.PickUp
         }
         preferredInventoryAction(observation)?.let { return it }
@@ -114,7 +124,7 @@ class SmokeBot : RunBot {
         (observation.talentSlots.map(::TalentUpgradeCandidate) + observation.reserveTalents.map(::TalentUpgradeCandidate))
             .filter { talent -> talent.ownerType == ownerType && talent.level < talent.maxLevel }
             .maxWithOrNull(
-                compareBy<TalentUpgradeCandidate> { talentUpgradePriority(it.talentId) }
+                compareBy<TalentUpgradeCandidate> { talentUpgradePriority(observation, it) }
                     .thenBy { -it.level }
                     .thenBy { it.sourcePriority },
             )
@@ -167,21 +177,203 @@ class SmokeBot : RunBot {
             return PlayerCommand.ActivateInventoryItem(resourceRestoreIndex)
         }
 
-        val equippedSlots =
+        inventoryCleanupCandidateIndex(observation)?.let { index ->
+            recentDroppedPositions[observation.playerPosition] = observation.turnIndex
+            return PlayerCommand.DropInventoryItem(index)
+        }
+
+        val equippedItemsBySlot =
             observation.inventoryItems
-                .mapNotNull { item -> item.equippedSlot }
-                .toSet()
-        val gearIndex =
-            observation.inventoryItems.indexOfFirst { item ->
-                val targetSlot = item.slot
-                targetSlot != null &&
-                    item.equippedSlot == null &&
-                    targetSlot !in equippedSlots
-            }
-        if (gearIndex >= 0) {
-            return PlayerCommand.ActivateInventoryItem(gearIndex)
+                .mapNotNull { item -> item.equippedSlot?.let { slot -> slot to item } }
+                .toMap()
+        val gearCandidate =
+            observation.inventoryItems
+                .asSequence()
+                .filter { item ->
+                    val targetSlot = item.slot
+                    targetSlot != null &&
+                        item.equippedSlot == null &&
+                        shouldEquipGearItem(
+                            observation = observation,
+                            candidate = item,
+                            equipped = equippedItemsBySlot[targetSlot],
+                        )
+                }.maxWithOrNull(
+                    compareBy<InventoryItemView> { item -> gearEquipPriority(observation, item) }
+                        .thenBy(InventoryItemView::index),
+                )
+        if (gearCandidate != null) {
+            return PlayerCommand.ActivateInventoryItem(gearCandidate.index)
         }
         return null
+    }
+
+    private fun shouldEquipGearItem(
+        observation: RunObservation,
+        candidate: InventoryItemView,
+        equipped: InventoryItemView?,
+    ): Boolean {
+        if (candidate.slot == null) {
+            return false
+        }
+        if (equipped == null) {
+            return true
+        }
+        val replacementThreshold =
+            when (candidate.slot) {
+                EquipSlot.WEAPON -> 80
+                EquipSlot.OFF_HAND,
+                EquipSlot.ARMOR,
+                -> 40
+            }
+        return gearEquipPriority(observation, candidate) >= gearEquipPriority(observation, equipped) + replacementThreshold
+    }
+
+    private fun gearEquipPriority(
+        observation: RunObservation,
+        item: InventoryItemView,
+    ): Int {
+        val qualityScore =
+            when (item.quality) {
+                ItemQuality.COMMON -> 0
+                ItemQuality.MAGIC -> 30
+                ItemQuality.RARE -> 60
+            }
+        val desiredAffixes = desiredSynergyAffixIds(observation)
+        val synergyMatchCount = item.affixIds.count(desiredAffixes::contains)
+        val sustainMatchCount = item.affixIds.count(SUSTAIN_AFFIX_IDS::contains)
+        val slotScore =
+            when (item.slot) {
+                EquipSlot.WEAPON -> if (synergyMatchCount > 0) 240 else 40
+                EquipSlot.OFF_HAND -> 50
+                EquipSlot.ARMOR -> 35
+                null -> 0
+            }
+        return slotScore + qualityScore + item.affixIds.size * 10 + synergyMatchCount * 120 + sustainMatchCount * 15
+    }
+
+    private fun desiredSynergyAffixIds(observation: RunObservation): Set<String> =
+        when (observation.playerResource.typeId) {
+            "STAMINA" -> setOf("of_piercing")
+            "MANA" -> setOf("of_flames", "of_frost")
+            "ENERGY" -> setOf("of_precision", "of_shadow")
+            "POSITIVE_ENERGY" -> setOf("of_smite")
+            else -> emptySet()
+        }
+
+    private fun inventoryCleanupCandidateIndex(observation: RunObservation): Int? {
+        if (!shouldPruneInventory(observation)) {
+            return null
+        }
+        val extraConsumableIndex = extraConsumableDropIndex(observation)
+        if (extraConsumableIndex != null) {
+            return extraConsumableIndex
+        }
+        return observation.inventoryItems
+            .asSequence()
+            .filter { item -> item.equippedSlot == null && item.slot != null }
+            .minWithOrNull(
+                compareBy<InventoryItemView> { item -> gearKeepPriority(observation, item) }
+                    .thenBy(InventoryItemView::index),
+            )?.index
+    }
+
+    private fun shouldPruneInventory(observation: RunObservation): Boolean {
+        if (observation.inventoryItems.size < INVENTORY_PRUNE_TRIGGER_SIZE) {
+            return false
+        }
+        if (hostilesWithin(observation, 1) > 0) {
+            return false
+        }
+        val nearestBossDistance =
+            observation.visibleBossPositions.minOfOrNull { boss ->
+                boss.chebyshevDistanceTo(observation.playerPosition)
+            }
+        return nearestBossDistance == null || nearestBossDistance > 2
+    }
+
+    private fun extraConsumableDropIndex(observation: RunObservation): Int? {
+        val keepBySignature =
+            linkedMapOf<Pair<ConsumableEffect?, String?>, Int>().apply {
+                put(ConsumableEffect.HEAL to null, 1)
+                put(ConsumableEffect.TELEPORT to null, 1)
+                put(ConsumableEffect.RESTORE_RESOURCE to observation.playerResource.typeId, 1)
+            }
+        val seenBySignature = linkedMapOf<Pair<ConsumableEffect?, String?>, Int>()
+        observation.inventoryItems
+            .asSequence()
+            .filter { item -> item.equippedSlot == null && item.type == ItemType.CONSUMABLE }
+            .sortedBy { item -> consumableKeepPriority(observation, item) }
+            .forEach { item ->
+                val signature = item.effect to item.resourceTypeId
+                val kept = seenBySignature[signature] ?: 0
+                val keepLimit = keepBySignature[signature] ?: 0
+                if (kept >= keepLimit) {
+                    return item.index
+                }
+                seenBySignature[signature] = kept + 1
+            }
+        return null
+    }
+
+    private fun gearKeepPriority(
+        observation: RunObservation,
+        item: InventoryItemView,
+    ): Int {
+        val desiredAffixes = desiredSynergyAffixIds(observation)
+        val synergyMatchCount = item.affixIds.count(desiredAffixes::contains)
+        val sustainMatchCount = item.affixIds.count(SUSTAIN_AFFIX_IDS::contains)
+        val professionBaseScore =
+            if (item.baseItemId in preferredWeaponBaseIds(observation)) {
+                40
+            } else {
+                0
+            }
+        return gearEquipPriority(observation, item) + professionBaseScore + synergyMatchCount * 80 + sustainMatchCount * 20
+    }
+
+    private fun consumableKeepPriority(
+        observation: RunObservation,
+        item: InventoryItemView,
+    ): Int =
+        when (item.effect) {
+            ConsumableEffect.HEAL -> 300
+            ConsumableEffect.TELEPORT -> 260
+            ConsumableEffect.RESTORE_RESOURCE ->
+                if (item.resourceTypeId == observation.playerResource.typeId) {
+                    240
+                } else {
+                    40
+                }
+            null -> 0
+        }
+
+    private fun preferredWeaponBaseIds(observation: RunObservation): Set<String> =
+        when (observation.playerResource.typeId) {
+            "STAMINA" -> setOf("forgebreaker_pick", "long_sword")
+            "MANA" -> setOf("arcane_staff")
+            "ENERGY" -> setOf("short_sword", "hunter_bow")
+            "POSITIVE_ENERGY" -> setOf("long_sword", "war_maul")
+            else -> emptySet()
+        }
+
+    private fun shouldSkipFreshDropPickup(observation: RunObservation): Boolean =
+        recentDroppedPositions[observation.playerPosition]?.let { droppedAtTurn ->
+            observation.turnIndex <= droppedAtTurn + RECENT_DROP_PICKUP_COOLDOWN_TURNS
+        } == true
+
+    private fun shouldAvoidDroppedGroundItem(
+        observation: RunObservation,
+        point: Point,
+    ): Boolean =
+        recentDroppedPositions[point]?.let { droppedAtTurn ->
+            observation.turnIndex <= droppedAtTurn + RECENT_DROP_PICKUP_COOLDOWN_TURNS
+        } == true
+
+    private fun expireRecentDroppedPositions(observation: RunObservation) {
+        recentDroppedPositions.entries.removeIf { (_, droppedAtTurn) ->
+            observation.turnIndex > droppedAtTurn + RECENT_DROP_PICKUP_COOLDOWN_TURNS
+        }
     }
 
     private fun preferredShopAction(observation: RunObservation): PlayerCommand? {
@@ -404,6 +596,7 @@ class SmokeBot : RunBot {
 
         if (nearbyHostiles >= 2) {
             availableTalent(observation, "smoke_bomb")?.let { slot -> return PlayerCommand.UseTalent(slot.slot) }
+            availableTalent(observation, "taunt")?.let { slot -> return PlayerCommand.UseTalent(slot.slot) }
             availableTalent(observation, "war_cry")
                 ?.takeUnless { hasPlayerStatus(observation, "war_cry_empower") }
                 ?.let { slot -> return PlayerCommand.UseTalent(slot.slot) }
@@ -560,7 +753,7 @@ class SmokeBot : RunBot {
     }
 
     private fun chooseGroundItemPath(observation: RunObservation): PlayerCommand? {
-        if (observation.inventoryItems.size >= SMOKE_BOT_INVENTORY_CAPACITY) {
+        if (observation.inventoryItems.size >= SMOKE_BOT_AUTO_PICKUP_LIMIT) {
             return null
         }
         val target =
@@ -568,6 +761,7 @@ class SmokeBot : RunBot {
                 observation,
                 observation.visibleGroundItemPositions
                     .filter { itemPosition ->
+                        !shouldAvoidDroppedGroundItem(observation, itemPosition) &&
                         itemPosition.chebyshevDistanceTo(observation.playerPosition) <= MAX_ITEM_DETOUR_DISTANCE
                     }.sortedBy { it.chebyshevDistanceTo(observation.playerPosition) },
             ) ?: return null
@@ -1010,7 +1204,80 @@ class SmokeBot : RunBot {
             else -> Int.MAX_VALUE
         }
 
-    private fun talentUpgradePriority(talentId: String): Int =
+    private fun talentUpgradePriority(
+        observation: RunObservation,
+        talent: TalentUpgradeCandidate,
+    ): Int =
+        when (observation.playerResource.typeId) {
+            "STAMINA" ->
+                when (talent.talentId) {
+                    "guard_stance" -> 120
+                    "taunt" -> 96
+                    "power_strike" -> 88
+                    else -> baseTalentUpgradePriority(talent.talentId)
+                }
+
+            "MANA" ->
+                when (talent.talentId) {
+                    "blink" -> 120
+                    "fireball" -> 88
+                    else -> baseTalentUpgradePriority(talent.talentId)
+                }
+
+            "ENERGY" ->
+                if (currentTalentLevel(observation, "shadow_bind") < 4) {
+                    when (talent.talentId) {
+                        "shadow_bind" -> 130
+                        "shadowstep" -> if (currentTalentLevel(observation, "shadowstep") == 0) 129 else 72
+                        "backstab" -> 34
+                        "roll", "stealth", "poison_blade" -> 30
+                        else -> 24
+                    }
+                } else {
+                    when (talent.talentId) {
+                        "shadow_bind" -> 120
+                        "shadowstep" -> if (talent.level == 0) 118 else 72
+                        "backstab" -> 74
+                        "roll", "stealth", "poison_blade" -> 70
+                        else -> baseTalentUpgradePriority(talent.talentId)
+                    }
+                }
+
+            "POSITIVE_ENERGY" ->
+                if (currentTalentLevel(observation, "holy_mark") < 4) {
+                    when (talent.talentId) {
+                        "holy_mark" -> 130
+                        "holy_light" -> 94
+                        "holy_strike" -> 42
+                        "judgment_hammer" -> 38
+                        "holy_shield", "devotion" -> 34
+                        "purify" -> if (talent.level == 0) 32 else 28
+                        else -> 24
+                    }
+                } else {
+                    when (talent.talentId) {
+                        "holy_mark" -> 120
+                        "holy_light" -> 96
+                        "holy_strike" -> 84
+                        "judgment_hammer" -> 78
+                        "holy_shield", "devotion" -> 74
+                        "purify" -> if (talent.level == 0) 90 else 68
+                        else -> baseTalentUpgradePriority(talent.talentId)
+                    }
+                }
+
+            else -> baseTalentUpgradePriority(talent.talentId)
+        }
+
+    private fun currentTalentLevel(
+        observation: RunObservation,
+        talentId: String,
+    ): Int =
+        observation.talentSlots.firstOrNull { slot -> slot.talentId == talentId }?.level
+            ?: observation.reserveTalents.firstOrNull { talent -> talent.talentId == talentId }?.level
+            ?: 0
+
+    private fun baseTalentUpgradePriority(talentId: String): Int =
         when (talentId) {
             "power_strike", "fireball", "ice_bolt" -> 100
             "backstab", "holy_strike", "holy_light" -> 100
@@ -1026,7 +1293,7 @@ class SmokeBot : RunBot {
             "spell_parry" -> 90
             "dwarf_grit", "elf_scouting" -> 85
             "guard_stance", "unyielding", "blink" -> 80
-            "stealth", "shadowstep", "devotion" -> 80
+            "stealth", "shadowstep", "devotion", "holy_mark" -> 80
             "battlefield_command", "glacial_seal", "sanctuary", "ricochet_knives", "radiant_lance" -> 75
             "slaughter_drive", "balance_point", "pursuit_drive", "counter_seal" -> 74
             "human_resolve", "dwarf_forge_heart", "elf_glade_step" -> 75
@@ -1073,6 +1340,35 @@ class SmokeBot : RunBot {
                 "glacial_seal",
                 "ice_prison",
                 "shard_storm",
+            )
+        } else if (observation.playerResource.typeId == "STAMINA") {
+            listOf(
+                "linebreaker",
+                "shield_bash",
+                "power_strike",
+                "taunt",
+                "charge",
+                "sunder_armor",
+                "earthshaker",
+            )
+        } else if (observation.playerResource.typeId == "ENERGY") {
+            listOf(
+                "shadow_bind",
+                "shadowstep",
+                "eviscerate",
+                "deathblow",
+                "poison_blade",
+                "backstab",
+                "blade_flurry",
+            )
+        } else if (observation.playerResource.typeId == "POSITIVE_ENERGY") {
+            listOf(
+                "holy_mark",
+                "judgment_hammer",
+                "consecration",
+                "holy_strike",
+                "ritual_break",
+                "holy_aura",
             )
         } else {
             listOf(
@@ -1137,11 +1433,14 @@ class SmokeBot : RunBot {
     }
 
     private companion object {
-        const val SMOKE_BOT_INVENTORY_CAPACITY: Int = 12
         const val RECENT_POSITION_WINDOW: Int = 8
         const val MAX_ITEM_DETOUR_DISTANCE: Int = 3
         const val NAVIGATION_REPEAT_THRESHOLD: Int = 2
         const val BOSS_MEMORY_CONFIRM_RADIUS: Int = 2
+        const val SMOKE_BOT_AUTO_PICKUP_LIMIT: Int = 10
+        const val INVENTORY_PRUNE_TRIGGER_SIZE: Int = SMOKE_BOT_AUTO_PICKUP_LIMIT
+        const val RECENT_DROP_PICKUP_COOLDOWN_TURNS: Int = 12
+        val SUSTAIN_AFFIX_IDS: Set<String> = setOf("of_life", "of_regeneration", "of_cleansing")
 
         val SPELLBLADE_TALENT_IDS: Set<String> =
             setOf(

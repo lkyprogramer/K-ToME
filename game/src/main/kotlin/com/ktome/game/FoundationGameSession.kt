@@ -361,6 +361,7 @@ class FoundationGameSession internal constructor(
     private val recordedMilestoneRewardKeys =
         restoredMilestoneRewardSummaries
             .mapTo(linkedSetOf()) { summary -> summary.rewardSource to summary.sourceId }
+    private val affixSynergyActivationCounts = linkedMapOf<String, Int>()
     private val respecManager: RespecManager = RespecManager()
     private var activeShopId: String? = null
     private var pendingRouteSelection: List<RouteAdvanceOption> = emptyList()
@@ -490,7 +491,7 @@ class FoundationGameSession internal constructor(
 
     fun currentHeadlessTurnEquivalent(): Int = headlessTurnEquivalent
 
-    fun currentBuildHash(): String {
+    fun currentBuildHash(includePendingTalentDrafts: Boolean = true): String {
         val equipmentHash =
             EquipSlot.entries.joinToString(separator = "|") { slot ->
                 val equipped = equippedItemFor(slot)
@@ -500,10 +501,23 @@ class FoundationGameSession internal constructor(
                     "${slot.name}:${equipped.baseId}:${equipped.materialId ?: "-"}:${equipped.affixes.joinToString(separator = "+", transform = com.ktome.core.item.AffixDef::id)}"
                 }
             }
+        val loadout = world.get<TalentLoadout>(playerId)
+        val effectiveRanks = loadout?.let(::effectiveTalentRanks).orEmpty()
         val talentHash =
-            talentSlots()
-                .sortedBy { slot -> slot.slot }
-                .joinToString(separator = "|") { slot -> "${slot.slot}:${slot.talentId}:${slot.level}" }
+            loadout
+                ?.let(::activeTalentMappings)
+                .orEmpty()
+                .sortedBy { (slot, _) -> slot }
+                .joinToString(separator = "|") { (slot, talentId) ->
+                    val committedLevel = loadout?.levelOf(talentId)?.coerceAtLeast(1) ?: 1
+                    val level =
+                        if (includePendingTalentDrafts) {
+                            (effectiveRanks[talentId] ?: committedLevel).coerceAtLeast(1)
+                        } else {
+                            committedLevel
+                        }
+                    "$slot:$talentId:$level"
+                }
         val inscriptionHash =
             buildInscriptionSnapshots()
                 .sortedBy(InscriptionSlotSnapshot::hotkey)
@@ -517,8 +531,37 @@ class FoundationGameSession internal constructor(
         ).joinToString(separator = "#")
     }
 
+    fun currentCommittedBuildHash(): String = currentBuildHash(includePendingTalentDrafts = false)
+
+    fun currentBreakpointPayoffSummaries(): List<BreakpointPayoffSummary> {
+        val loadout = world.get<TalentLoadout>(playerId) ?: return emptyList()
+        return loadout.talentLevels.entries
+            .mapNotNull { (talentId, rank) ->
+                val talent = talentRegistry.get(talentId) ?: return@mapNotNull null
+                val unlockedBreakpoints = talent.breakpoints.filter { breakpoint -> breakpoint.atRank in 2..4 && rank >= breakpoint.atRank }
+                if (unlockedBreakpoints.isEmpty()) {
+                    return@mapNotNull null
+                }
+                BreakpointPayoffSummary(
+                    talentId = talentId,
+                    treeId = talent.treeId,
+                    achievedRank = rank,
+                    breakpointRank = unlockedBreakpoints.maxOf { breakpoint -> breakpoint.atRank },
+                    unlockedEffectKinds =
+                        unlockedBreakpoints
+                            .flatMap { breakpoint -> breakpoint.unlockedEffects }
+                            .map(::breakpointEffectKind)
+                            .distinct(),
+                )
+            }.sortedWith(compareBy(BreakpointPayoffSummary::treeId, BreakpointPayoffSummary::talentId))
+    }
+
     fun milestoneRewardSummaries(): List<MilestoneRewardSummary> =
         recordedMilestoneRewardSummaries.map(::finalizeMilestoneRewardSummary)
+
+    fun currentAffixSynergyActivationCount(): Int = affixSynergyActivationCounts.values.sum()
+
+    fun currentAffixSynergyActivationDistribution(): Map<String, Int> = affixSynergyActivationCounts.toMap(linkedMapOf())
 
     private fun persistedMilestoneRewardSummaries(): List<MilestoneRewardSummary> = recordedMilestoneRewardSummaries.toList()
 
@@ -664,6 +707,20 @@ class FoundationGameSession internal constructor(
     internal fun automationCanPurchaseShopOffer(index: Int): Boolean =
         availableShopOffers().getOrNull(index)?.let(::canPurchaseShopOffer) == true
 
+    internal fun automationTalentFailureReason(
+        slot: Int,
+        target: Point? = null,
+    ): String? {
+        val loadout = world.get<TalentLoadout>(playerId) ?: return "Missing TalentLoadout."
+        val talentId = loadout.talentIdAt(slot) ?: return "Talent slot $slot is empty."
+        return talentResolver.canUse(world, map, playerId, talentId, target)
+    }
+
+    internal fun automationCanUseTalent(
+        slot: Int,
+        target: Point? = null,
+    ): Boolean = automationTalentFailureReason(slot = slot, target = target) == null
+
     internal fun automationVisibleShopOffers(): List<ShopOffer> = availableShopOffers()
 
     internal fun automationForceDefeatPlayer() {
@@ -796,9 +853,12 @@ class FoundationGameSession internal constructor(
             InventoryItemView(
                 index = index,
                 name = item.name,
+                baseItemId = item.baseId,
                 type = item.type,
                 slot = item.slot,
                 equippedSlot = inventoryManager.equippedSlotOf(world, playerId, itemId),
+                quality = item.quality,
+                affixIds = item.affixes.map(com.ktome.core.item.AffixDef::id),
                 effect = item.effect,
                 resourceTypeId = item.resourceTypeId,
                 magnitude = item.magnitude,
@@ -2429,12 +2489,18 @@ class FoundationGameSession internal constructor(
             qualityNameKey = qualityLabelKey(item.quality),
             materialNameKey = materialNameKey,
             affixNameKeys = affixNameKeys,
-            passiveDescriptions = item.passive?.let(::passiveDescriptionToken)?.let(::listOf).orEmpty(),
+            passiveDescriptions = itemPassiveDescriptions(item),
             stats = item.stats.toSnapshot(),
             effectTypeId = item.effect?.name,
             magnitude = item.magnitude,
         )
     }
+
+    private fun itemPassiveDescriptions(item: ItemInstance): List<RenderTextTokenSnapshot> =
+        buildList {
+            item.passive?.let { passive -> add(passiveDescriptionToken(passive)) }
+            item.affixes.mapNotNullTo(this) { affix -> affix.passive?.let(::passiveDescriptionToken) }
+        }
 
     private fun currentZoneSchema(): ZoneSchemaV2 =
         requireNotNull(content.schemaCatalog.zones.firstOrNull { zone -> zone.id == config.zoneId }) {
@@ -3046,13 +3112,20 @@ class FoundationGameSession internal constructor(
         candidateIds: List<String>,
         rewardContext: RewardGenerationContext,
     ): EquipSlot? =
-        MILESTONE_REPLACEMENT_SLOT_PRIORITY.firstOrNull { candidateSlot ->
+        milestoneReplacementSlotPriority().firstOrNull { candidateSlot ->
             candidateSlot in rewardContext.occupiedSlots &&
                 candidateSlot !in rewardContext.reservedSlots &&
                 strictMilestoneRewardCandidateIds(
                     candidateIds = candidateIds,
                     rewardContext = rewardContext.copy(replacementSlot = candidateSlot),
                 ).isNotEmpty()
+        }
+
+    private fun milestoneReplacementSlotPriority(): List<EquipSlot> =
+        if (config.playerProfessionId in FOUNDATION_AFFIX_WEAPON_PRIORITY_PROFESSION_IDS) {
+            listOf(EquipSlot.WEAPON, EquipSlot.OFF_HAND, EquipSlot.ARMOR)
+        } else {
+            MILESTONE_REPLACEMENT_SLOT_PRIORITY
         }
 
     private fun isMilestoneRewardBaseAllowed(
@@ -3065,6 +3138,14 @@ class FoundationGameSession internal constructor(
             return false
         }
         if (!isRewardSuitableForCurrentProfession(baseItemId)) {
+            return false
+        }
+        val hasUsableMaterial =
+            base.allowedMaterials.isEmpty() ||
+                content.itemBundle.materials.any { material ->
+                    material.id in base.allowedMaterials && rewardContext.floor >= material.minFloor
+                }
+        if (!hasUsableMaterial) {
             return false
         }
         if (slot in rewardContext.reservedSlots) {
@@ -3106,6 +3187,7 @@ class FoundationGameSession internal constructor(
                 add("spell")
             }
             when (val passive = base.passive) {
+                is EquipmentPassive.DamageVsStatus -> add("offense")
                 is EquipmentPassive.DamageTypeBonus -> {
                     add(passive.type.name.lowercase())
                     add("offense")
@@ -3164,10 +3246,10 @@ class FoundationGameSession internal constructor(
 
     private fun rewardPreferenceOrder(): List<String> =
         when (config.playerProfessionId) {
-            "vanguard" -> listOf("abyssal_heartstone", "forgebreaker_pick", "basic_shield", "chain_mail", "war_maul", "healing_potion", "scroll_teleport")
-            "arcanist" -> listOf("abyssal_heartstone", "seal_reliquary", "emerald_charm", "mana_potion", "apprentice_robe", "scroll_teleport", "healing_potion")
-            "rogue" -> listOf("abyssal_heartstone", "bandit_trophy", "hunter_bow", "leather_armor", "energy_tonic", "scroll_teleport", "healing_potion")
-            "templar" -> listOf("abyssal_heartstone", "sanctified_seal", "long_sword", "basic_shield", "chain_mail", "consecrated_oil", "healing_potion")
+            "vanguard" -> listOf("abyssal_heartstone", "forgebreaker_pick", "long_sword", "basic_shield", "chain_mail", "war_maul", "healing_potion", "scroll_teleport")
+            "arcanist" -> listOf("abyssal_heartstone", "arcane_staff", "emerald_charm", "seal_reliquary", "mana_potion", "apprentice_robe", "scroll_teleport", "healing_potion")
+            "rogue" -> listOf("abyssal_heartstone", "short_sword", "hunter_bow", "bandit_trophy", "leather_armor", "energy_tonic", "scroll_teleport", "healing_potion")
+            "templar" -> listOf("abyssal_heartstone", "long_sword", "basic_shield", "sanctified_seal", "chain_mail", "consecrated_oil", "healing_potion")
             else -> listOf("healing_potion", "scroll_teleport")
         }
 
@@ -5352,8 +5434,8 @@ class FoundationGameSession internal constructor(
             item.affixes.forEach { affix ->
                 add(tr("ui.inspect.affix", "affix" to affix.name))
             }
-            item.passive?.let { passive ->
-                add(render(passiveDescriptionToken(passive)))
+            itemPassiveDescriptions(item).forEach { passiveDescription ->
+                add(render(passiveDescription))
             }
         }
 
@@ -6344,6 +6426,7 @@ class FoundationGameSession internal constructor(
                     }
                 }
 
+                is EquipmentPassive.DamageVsStatus,
                 is EquipmentPassive.DamageTypeBonus,
                 is EquipmentPassive.DamageVsTag,
                 is EquipmentPassive.ResistanceBonus,
@@ -6382,10 +6465,16 @@ class FoundationGameSession internal constructor(
         damageType: DamageType,
     ): PassiveDamageAdjustment {
         val targetTags = targetTagsFor(target)
+        val targetStatusIds =
+            world.get<com.ktome.core.status.StatusTracker>(target)
+                ?.activeEffects()
+                ?.mapTo(linkedSetOf()) { effect -> effect.schemaId }
+                .orEmpty()
         val passiveAdjustment =
             PassiveEffectResolver.resolveDamageAdjustment(
                 passives = PassiveEffectResolver.equippedPassives(world, attacker),
                 targetTags = targetTags,
+                targetStatusIds = targetStatusIds,
                 damageType = damageType,
             )
         val holyTagMultiplier = DamageFormula.tagDamageMultiplier(damageType, targetTags)
@@ -6464,12 +6553,23 @@ class FoundationGameSession internal constructor(
     }
 
     private fun targetTagsFor(target: EntityId): Set<String> {
-        val templateId = world.get<MonsterTemplateId>(target)?.value ?: return emptySet()
-        return content.allMonsterTemplates()
-            .firstOrNull { template -> template.id == templateId }
-            ?.tags
-            ?.toSet()
-            .orEmpty()
+        val templateId = world.get<MonsterTemplateId>(target)?.value
+        val monsterTags =
+            if (templateId == null) {
+                emptySet()
+            } else {
+                content.allMonsterTemplates()
+                    .firstOrNull { template -> template.id == templateId }
+                    ?.tags
+                    ?.toSet()
+                    .orEmpty()
+            }
+        val statusTags =
+            world.get<com.ktome.core.status.StatusTracker>(target)
+                ?.activeEffects()
+                ?.mapTo(linkedSetOf()) { effect -> effect.schemaId.lowercase() }
+                .orEmpty()
+        return monsterTags + statusTags
     }
 
     private fun logTriggeredDamagePassives(
@@ -6479,32 +6579,48 @@ class FoundationGameSession internal constructor(
         if (attacker != playerId || sources.isEmpty()) {
             return
         }
-        sources
-            .distinctBy { source -> source.item.baseId to source.passive }
-            .forEach { source ->
-                val itemArgument = itemDisplayArgument("item", source.item)
-                when (val passive = source.passive) {
-                    is EquipmentPassive.DamageVsTag ->
-                        addMessage(
-                            "log.passive.damage_bonus_vs_tag",
-                            itemArgument,
-                            monsterTagArg("tag", passive.tag),
-                            literalArg("amount", (passive.bonusPercent * 100).toInt()),
-                        )
+        val distinctSources = sources.distinctBy { source -> source.item.baseId to source.passive }
+        recordAffixSynergyActivations(distinctSources)
+        distinctSources.forEach { source ->
+            val itemArgument = itemDisplayArgument("item", source.item)
+            when (val passive = source.passive) {
+                is EquipmentPassive.DamageVsTag ->
+                    addMessage(
+                        "log.passive.damage_bonus_vs_tag",
+                        itemArgument,
+                        monsterTagArg("tag", passive.tag),
+                        literalArg("amount", (passive.bonusPercent * 100).toInt()),
+                    )
 
-                    is EquipmentPassive.DamageTypeBonus ->
-                        addMessage(
-                            "log.passive.damage_bonus_type",
-                            itemArgument,
-                            keyArg("damageType", damageTypeLabelKey(passive.type)),
-                            literalArg("amount", (passive.bonusPercent * 100).toInt()),
-                        )
+                is EquipmentPassive.DamageVsStatus ->
+                    addMessage(
+                        "log.passive.damage_bonus_vs_status",
+                        itemArgument,
+                        keyArg("status", statusNameKey(passive.statusId)),
+                        literalArg("amount", (passive.bonusPercent * 100).toInt()),
+                    )
 
-                    is EquipmentPassive.HpRegenPerTurn,
-                    is EquipmentPassive.ResistanceBonus,
-                    -> Unit
-                }
+                is EquipmentPassive.DamageTypeBonus ->
+                    addMessage(
+                        "log.passive.damage_bonus_type",
+                        itemArgument,
+                        keyArg("damageType", damageTypeLabelKey(passive.type)),
+                        literalArg("amount", (passive.bonusPercent * 100).toInt()),
+                    )
+
+                is EquipmentPassive.HpRegenPerTurn,
+                is EquipmentPassive.ResistanceBonus,
+                -> Unit
             }
+        }
+    }
+
+    private fun recordAffixSynergyActivations(sources: List<EquippedPassiveSource>) {
+        sources.forEach { source ->
+            val passive = source.passive as? EquipmentPassive.DamageVsStatus ?: return@forEach
+            val affixId = source.item.affixes.firstOrNull { affix -> affix.passive == passive }?.id ?: return@forEach
+            affixSynergyActivationCounts[affixId] = (affixSynergyActivationCounts[affixId] ?: 0) + 1
+        }
     }
 
     private fun logTriggeredTalentDamagePassives(result: com.ktome.core.talent.TalentResult) {
@@ -7141,6 +7257,15 @@ class FoundationGameSession internal constructor(
                     ),
                 )
 
+            is EquipmentPassive.DamageVsStatus ->
+                RenderTextTokenSnapshot(
+                    "ui.inspect.passive.damage_vs_status",
+                    listOf(
+                        literalArg("amount", (passive.bonusPercent * 100).toInt()),
+                        keyArg("status", statusNameKey(passive.statusId)),
+                    ),
+                )
+
             is EquipmentPassive.HpRegenPerTurn ->
                 RenderTextTokenSnapshot(
                     "ui.inspect.passive.hp_regen_turn",
@@ -7180,7 +7305,23 @@ class FoundationGameSession internal constructor(
         when (tag) {
             "bandit" -> "monster.tag.bandit"
             "undead" -> "monster.tag.undead"
+            "armor_break" -> "status.armor_break"
+            "bane" -> "status.bane"
+            "burn" -> "status.burn"
+            "freeze" -> "status.freeze"
+            "guard" -> "status.guard"
+            "marked" -> "status.marked"
             else -> null
+        }
+
+    private fun breakpointEffectKind(effect: com.ktome.core.talent.EffectOp): String =
+        when (effect) {
+            is com.ktome.core.talent.EffectOp.ApplyStatus -> "apply_status:${effect.statusId.lowercase()}"
+            is com.ktome.core.talent.EffectOp.Damage -> "damage:${effect.damageType?.name?.lowercase() ?: "default"}"
+            is com.ktome.core.talent.EffectOp.Displacement -> "displacement:${effect.type.name.lowercase()}"
+            is com.ktome.core.talent.EffectOp.Heal -> "heal"
+            is com.ktome.core.talent.EffectOp.ResourceRestore -> "resource_restore:${effect.type.name.lowercase()}"
+            is com.ktome.core.talent.EffectOp.StatModifier -> "stat_modifier"
         }
 
     private fun ItemBaseDef.toRuntimeItem(): ItemInstance =
@@ -7709,11 +7850,10 @@ class FoundationGameSession internal constructor(
     private fun currentAffixBuildContext(): AffixSelectionContext {
         val profession = currentProfessionSchema() ?: return AffixSelectionContext()
         val loadout = world.get<TalentLoadout>(playerId)
-        val unlockedTalentIds = loadout?.let(::orderedUnlockedTalentIds)?.toSet() ?: profession.startingTalents.toSet()
         return professionAffixBuildContext(
             schemaCatalog = content.schemaCatalog,
             profession = profession,
-            unlockedTalentIds = unlockedTalentIds,
+            talentRanks = loadout?.talentLevels?.toMap() ?: profession.startingTalents.associateWith { 1 },
         )
     }
 
@@ -8189,6 +8329,8 @@ class FoundationGameSession internal constructor(
 
         private val MILESTONE_REPLACEMENT_SLOT_PRIORITY: List<EquipSlot> =
             listOf(EquipSlot.OFF_HAND, EquipSlot.ARMOR, EquipSlot.WEAPON)
+        private val FOUNDATION_AFFIX_WEAPON_PRIORITY_PROFESSION_IDS: Set<String> =
+            setOf("vanguard", "arcanist", "rogue", "templar")
 
         private data object UntrackedRandomSource : RandomSource {
             override fun nextDouble(): Double = 0.0

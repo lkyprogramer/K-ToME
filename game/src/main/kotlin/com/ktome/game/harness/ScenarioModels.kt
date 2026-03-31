@@ -6,6 +6,8 @@ import com.ktome.core.profile.MilestoneRewardSummary
 import com.ktome.core.run.RunOutcome
 import com.ktome.core.snapshot.RouteSelectionSnapshot
 import com.ktome.core.world.ObjectiveState
+import com.ktome.game.BreakpointPayoffObservation
+import com.ktome.game.BreakpointPayoffSummary
 import com.ktome.game.FOUNDATION_ZONE_ID
 import com.ktome.game.FOUNDATION_PROFESSION_ID
 import com.ktome.game.FOUNDATION_RACE_ID
@@ -153,9 +155,13 @@ data class ScenarioReport(
     val localeId: String = "headless",
     val profileId: String = HarnessMetadata.PROFILE_ID,
     val buildHash: String? = null,
+    val breakpointPayoffs: List<BreakpointPayoffSummary> = emptyList(),
+    val breakpointPayoffObservations: List<BreakpointPayoffObservation> = emptyList(),
     val milestoneRewards: List<MilestoneRewardSummary> = emptyList(),
     val cadenceRewardCount: Int = 0,
     val shopRefreshPurchaseCount: Int = 0,
+    val affixSynergyActivationCount: Int = 0,
+    val affixSynergyActivationDistribution: Map<String, Int> = emptyMap(),
     val goalReached: Boolean,
     val failureReason: String? = null,
     val stuckReason: String? = null,

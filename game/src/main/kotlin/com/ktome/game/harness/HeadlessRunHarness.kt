@@ -6,6 +6,8 @@ import com.ktome.core.ecs.get
 import com.ktome.core.profile.AvailabilityContext
 import com.ktome.core.save.SaveManager
 import com.ktome.core.world.ObjectiveState
+import com.ktome.game.BreakpointPayoffObservation
+import com.ktome.game.BreakpointPayoffSummary
 import com.ktome.game.FoundationGameConfig
 import com.ktome.game.FoundationGameSession
 import com.ktome.game.GameModule
@@ -33,6 +35,10 @@ class HeadlessRunHarness(
         val zoneHeadlessMilestones = mutableListOf<ZoneHeadlessMilestone>()
         val visitedZonePath = mutableListOf<String>()
         val captainEncounterTrace = ArrayDeque<CaptainEncounterTraceEntry>()
+        val breakpointPayoffObservations = mutableListOf<BreakpointPayoffObservation>()
+        val seenBreakpointPayoffKeys = linkedSetOf<String>()
+        val affixSynergyActivationTotals = linkedMapOf<String, Int>()
+        var previousAffixSynergySnapshot = emptyMap<String, Int>()
         val stallDetector = StallDetector(maxRepeats = stallRepeats)
         var turnCount = 0
         var checkpointVerified = false
@@ -41,6 +47,7 @@ class HeadlessRunHarness(
         var failureReason: String? = null
         var stuckReason: String? = null
         var observation = RunObservationCapture.capture(session, turnCount)
+        var previousBuildHash = session.currentCommittedBuildHash()
         appendVisitedZone(visitedZonePath, session.config.zoneId)
         appendZoneMilestone(
             milestones = zoneHeadlessMilestones,
@@ -53,6 +60,23 @@ class HeadlessRunHarness(
             session = session,
             observation = observation,
             commandName = null,
+        )
+        recordNewBreakpointPayoffObservations(
+            session = session,
+            observations = breakpointPayoffObservations,
+            seenKeys = seenBreakpointPayoffKeys,
+            buildHashBefore = previousBuildHash,
+            turnIndex = turnCount,
+        )
+        previousAffixSynergySnapshot =
+            accumulateAffixSynergyActivationDelta(
+                current = session.currentAffixSynergyActivationDistribution(),
+                previous = previousAffixSynergySnapshot,
+                totals = affixSynergyActivationTotals,
+            )
+        refreshDeferredBreakpointPayoffBuildHashChanges(
+            session = session,
+            observations = breakpointPayoffObservations,
         )
 
         while (turnCount < spec.maxTurns && !observation.runOutcome.isTerminal && !goalSatisfied(spec, observation, checkpointTurn)) {
@@ -81,6 +105,25 @@ class HeadlessRunHarness(
                     observation = observation,
                     commandName = "CheckpointReload",
                 )
+                previousBuildHash = session.currentCommittedBuildHash()
+                recordNewBreakpointPayoffObservations(
+                    session = session,
+                    observations = breakpointPayoffObservations,
+                    seenKeys = seenBreakpointPayoffKeys,
+                    buildHashBefore = previousBuildHash,
+                    turnIndex = turnCount,
+                )
+                previousAffixSynergySnapshot = emptyMap()
+                previousAffixSynergySnapshot =
+                    accumulateAffixSynergyActivationDelta(
+                        current = session.currentAffixSynergyActivationDistribution(),
+                        previous = previousAffixSynergySnapshot,
+                        totals = affixSynergyActivationTotals,
+                    )
+                refreshDeferredBreakpointPayoffBuildHashChanges(
+                    session = session,
+                    observations = breakpointPayoffObservations,
+                )
                 stallDetector.reset()
             }
 
@@ -92,15 +135,28 @@ class HeadlessRunHarness(
                     failureReason = "Bot returned no command."
                     break
                 }
+            val renderedCommand = renderCommand(command)
             commandStats[command.commandName()] = (commandStats[command.commandName()] ?: 0) + 1
-            commandTail.addLast(command.commandName())
+            commandTail.addLast(renderedCommand)
             while (commandTail.size > 12) {
                 commandTail.removeFirst()
             }
+            val buildHashBeforeCommand = session.currentCommittedBuildHash()
 
             val accepted = session.perform(command)
             if (!accepted) {
-                failureReason = "Command rejected: ${command.commandName()}"
+                failureReason =
+                    buildString {
+                        append("Command rejected: ")
+                        append(renderedCommand)
+                        if (command is PlayerCommand.UseTalent) {
+                            session.automationTalentFailureReason(slot = command.slot, target = command.target)?.let { reason ->
+                                append(" (")
+                                append(reason)
+                                append(')')
+                            }
+                        }
+                    }
                 break
             }
 
@@ -120,7 +176,24 @@ class HeadlessRunHarness(
                 trace = captainEncounterTrace,
                 session = session,
                 observation = observation,
-                commandName = command.commandName(),
+                commandName = renderedCommand,
+            )
+            recordNewBreakpointPayoffObservations(
+                session = session,
+                observations = breakpointPayoffObservations,
+                seenKeys = seenBreakpointPayoffKeys,
+                buildHashBefore = buildHashBeforeCommand,
+                turnIndex = turnCount,
+            )
+            previousAffixSynergySnapshot =
+                accumulateAffixSynergyActivationDelta(
+                    current = session.currentAffixSynergyActivationDistribution(),
+                    previous = previousAffixSynergySnapshot,
+                    totals = affixSynergyActivationTotals,
+                )
+            refreshDeferredBreakpointPayoffBuildHashChanges(
+                session = session,
+                observations = breakpointPayoffObservations,
             )
             stallDetector.observe(observation)?.let { reason ->
                 stuckReason = reason
@@ -157,9 +230,13 @@ class HeadlessRunHarness(
                 localeId = session.localizer().locale.id,
                 profileId = HarnessMetadata.PROFILE_ID,
                 buildHash = session.currentBuildHash(),
+                breakpointPayoffs = session.currentBreakpointPayoffSummaries(),
+                breakpointPayoffObservations = breakpointPayoffObservations.toList(),
                 milestoneRewards = session.milestoneRewardSummaries(),
                 cadenceRewardCount = session.currentCadenceRewardCount(),
                 shopRefreshPurchaseCount = session.currentShopRefreshPurchaseCount(),
+                affixSynergyActivationCount = affixSynergyActivationTotals.values.sum(),
+                affixSynergyActivationDistribution = affixSynergyActivationTotals.toMap(linkedMapOf()),
                 goalReached = goalSatisfied(spec, observation, checkpointTurn),
                 failureReason = failureReason,
                 stuckReason = stuckReason,
@@ -181,6 +258,73 @@ class HeadlessRunHarness(
             assertionFailures = assertionFailures,
         )
     }
+
+    private fun recordNewBreakpointPayoffObservations(
+        session: FoundationGameSession,
+        observations: MutableList<BreakpointPayoffObservation>,
+        seenKeys: MutableSet<String>,
+        buildHashBefore: String,
+        turnIndex: Int,
+    ) {
+        val buildHashAfter = session.currentCommittedBuildHash()
+        session.currentBreakpointPayoffSummaries().forEach { summary ->
+            if (!seenKeys.add(summary.observationKey())) {
+                return@forEach
+            }
+            observations +=
+                BreakpointPayoffObservation(
+                    talentId = summary.talentId,
+                    treeId = summary.treeId,
+                    achievedRank = summary.achievedRank,
+                    breakpointRank = summary.breakpointRank,
+                    unlockedEffectKinds = summary.unlockedEffectKinds,
+                    turnIndex = turnIndex,
+                    headlessTurnEquivalent = session.currentHeadlessTurnEquivalent(),
+                    buildHashBeforeUnlock = buildHashBefore,
+                    buildHashAfterUnlock = buildHashAfter,
+                    buildHashChanged = buildHashBefore != buildHashAfter,
+                )
+        }
+    }
+
+    private fun refreshDeferredBreakpointPayoffBuildHashChanges(
+        session: FoundationGameSession,
+        observations: MutableList<BreakpointPayoffObservation>,
+    ) {
+        val currentBuildHash = session.currentCommittedBuildHash()
+        val activeTalentIds = session.talentSlots().mapTo(linkedSetOf()) { slot -> slot.talentId }
+        observations.indices.forEach { index ->
+            val observation = observations[index]
+            if (observation.buildHashChanged || observation.talentId !in activeTalentIds) {
+                return@forEach
+            }
+            if (currentBuildHash == observation.buildHashBeforeUnlock) {
+                return@forEach
+            }
+            observations[index] =
+                observation.copy(
+                    buildHashAfterUnlock = currentBuildHash,
+                    buildHashChanged = true,
+                )
+        }
+    }
+
+    private fun accumulateAffixSynergyActivationDelta(
+        current: Map<String, Int>,
+        previous: Map<String, Int>,
+        totals: MutableMap<String, Int>,
+    ): Map<String, Int> {
+        current.forEach { (affixId, count) ->
+            val delta = count - (previous[affixId] ?: 0)
+            if (delta > 0) {
+                totals[affixId] = (totals[affixId] ?: 0) + delta
+            }
+        }
+        return current.toMap(linkedMapOf())
+    }
+
+    private fun BreakpointPayoffSummary.observationKey(): String =
+        "$talentId@$breakpointRank:${unlockedEffectKinds.sorted().joinToString(separator = "+")}"
 
     private fun goalSatisfied(
         spec: ScenarioSpec,

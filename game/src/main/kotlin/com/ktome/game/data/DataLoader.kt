@@ -1078,6 +1078,7 @@ class DataLoader(
                     minFloor = affix.requiredInt("minFloor"),
                     stats = affix.requiredMap("stats").toSchemaStatModifier(),
                     blacklistTags = affix.optionalStringList("blacklistTags"),
+                    passive = affix.optionalMap("passive")?.toEquipmentPassiveSchema(),
                 )
             },
             items = root.requiredList("items").map { entry ->
@@ -1257,6 +1258,7 @@ class DataLoader(
         EquipmentPassiveSchemaV2(
             kind = requiredString("kind"),
             tag = optionalString("tag"),
+            statusId = optionalString("statusId"),
             damageType = optionalString("damageType"),
             bonusPercent = optionalDouble("bonusPercent", 0.0),
             amount = optionalInt("amount"),
@@ -1267,6 +1269,12 @@ class DataLoader(
             "DamageVsTag" ->
                 EquipmentPassive.DamageVsTag(
                     tag = requireNotNull(tag) { "DamageVsTag passive requires 'tag'." },
+                    bonusPercent = bonusPercent,
+                )
+
+            "DamageVsStatus" ->
+                EquipmentPassive.DamageVsStatus(
+                    statusId = canonicalStatusId(requireNotNull(statusId) { "DamageVsStatus passive requires 'statusId'." }),
                     bonusPercent = bonusPercent,
                 )
 
@@ -1309,6 +1317,7 @@ class DataLoader(
             minFloor = minFloor,
             tags = tags.toSet(),
             blacklistTags = blacklistTags.toSet(),
+            passive = passive?.toRuntimePassive(),
         )
 
     private fun WorldGraphSchemaV2.toRuntime(): WorldGraph =
