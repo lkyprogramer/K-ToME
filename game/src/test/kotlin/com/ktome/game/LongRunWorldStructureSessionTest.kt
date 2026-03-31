@@ -6,7 +6,6 @@ import com.ktome.core.ecs.Position
 import com.ktome.core.ecs.get
 import com.ktome.core.economy.ShardEconomy
 import com.ktome.core.economy.ShopServiceType
-import com.ktome.core.status.StatusEffectType
 import com.ktome.core.item.EquipSlot
 import com.ktome.core.item.Inventory
 import com.ktome.core.item.ItemInstance
@@ -591,7 +590,11 @@ class LongRunWorldStructureSessionTest {
             ObjectiveState.IN_PROGRESS,
             session.worldProgress().questStates[AbyssalRuntimeKeys.Finale.QUEST_ID]?.objectiveStates?.get(AbyssalRuntimeKeys.Finale.OBJECTIVE_ID),
         )
-        assertTrue(requireNotNull(session.automationWorld().get<EffectTracker>(session.playerId)).has(StatusEffectType.HOLY_SHIELD_BUFF))
+        assertTrue(
+            requireNotNull(session.automationWorld().get<EffectTracker>(session.playerId))
+                .activeEffects()
+                .any { effect -> effect.schemaId in AbyssalRuntimeKeys.WARD_STATUS_IDS },
+        )
         val eruptionEntity = session.automationWorld().entitiesWith(VoidEruptionRuntimeState::class).single()
         assertTrue(requireNotNull(session.automationWorld().get<VoidEruptionRuntimeState>(eruptionEntity)).stabilizedTurnsRemaining > 0)
 

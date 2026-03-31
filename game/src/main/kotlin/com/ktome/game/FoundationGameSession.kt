@@ -164,6 +164,7 @@ import com.ktome.core.snapshot.TalentReserveSnapshot
 import com.ktome.core.snapshot.TalentSlotSnapshot
 import com.ktome.core.status.EffectCategory
 import com.ktome.core.status.EffectCarrierKind
+import com.ktome.core.status.StatusEffectDef
 import com.ktome.core.status.StatusDefinitions
 import com.ktome.core.status.StatusLifecycle
 import com.ktome.core.status.StatusTickResolver
@@ -1802,6 +1803,18 @@ class FoundationGameSession internal constructor(
                     effects =
                         mutableListOf(
                             StatusLifecycle.createInstance(
+                                type = StatusEffectType.POISON,
+                                effectId =
+                                    zoneRuntimeTurnEffectId(
+                                        sourceAbilityId = AbyssalRuntimeKeys.Finale.SOURCE_ABILITY_ID,
+                                        suffix = "tick",
+                                        entityId = entityId,
+                                        actorId = actorId,
+                                    ),
+                                duration = 1,
+                                tickDamageOverride = state.damagePerTick,
+                            ),
+                            StatusLifecycle.createInstance(
                                 type = StatusEffectType.WEAKEN,
                                 effectId =
                                     zoneRuntimeTurnEffectId(
@@ -3383,10 +3396,26 @@ class FoundationGameSession internal constructor(
         }
 
     private fun hasAbyssalWardProtection(actorId: EntityId): Boolean =
-        world.get<EffectTracker>(actorId)?.has(StatusEffectType.HOLY_SHIELD_BUFF) == true
+        world
+            .get<EffectTracker>(actorId)
+            ?.activeEffects()
+            ?.any { effect -> effect.schemaId in AbyssalRuntimeKeys.WARD_STATUS_IDS } == true
+
+    private fun abyssalWardProtectionStatusId(sourceAbilityId: String): String =
+        when (sourceAbilityId) {
+            AbyssalRuntimeKeys.Temple.SOURCE_ABILITY_ID -> AbyssalRuntimeKeys.Temple.WARD_STATUS_ID
+            AbyssalRuntimeKeys.Finale.SOURCE_ABILITY_ID -> AbyssalRuntimeKeys.Finale.WARD_STATUS_ID
+            else -> "$sourceAbilityId.ward_protection"
+        }
+
+    private fun abyssalWardProtectionDefinition(sourceAbilityId: String): StatusEffectDef =
+        StatusDefinitions
+            .definitionFor(StatusEffectType.HOLY_SHIELD_BUFF)
+            .copy(id = abyssalWardProtectionStatusId(sourceAbilityId))
 
     private fun grantAbyssalWardProtection(
         actorId: EntityId,
+        sourceAbilityId: String,
         effectId: String,
         sourceEntityId: EntityId = actorId,
     ) {
@@ -3395,7 +3424,7 @@ class FoundationGameSession internal constructor(
                 world,
                 actorId,
                 StatusLifecycle.createInstance(
-                    type = StatusEffectType.HOLY_SHIELD_BUFF,
+                    definition = abyssalWardProtectionDefinition(sourceAbilityId),
                     effectId = effectId,
                     duration = ABYSSAL_WARD_PROTECTION_TURNS,
                     magnitude = ABYSSAL_WARD_PROTECTION_MAGNITUDE,
@@ -3414,7 +3443,7 @@ class FoundationGameSession internal constructor(
             StatusAppliedEvent(
                 target = actorId,
                 statusType = StatusEffectType.HOLY_SHIELD_BUFF,
-                statusId = StatusEffectType.HOLY_SHIELD_BUFF.schemaId,
+                statusId = abyssalWardProtectionStatusId(sourceAbilityId),
                 source = sourceEntityId,
                 remainingTurns = ABYSSAL_WARD_PROTECTION_TURNS,
             ),
@@ -3439,6 +3468,7 @@ class FoundationGameSession internal constructor(
         addMessage(AbyssalRuntimeKeys.Temple.STABILIZED_LOG_KEY)
         grantAbyssalWardProtection(
             actorId = playerId,
+            sourceAbilityId = AbyssalRuntimeKeys.Temple.SOURCE_ABILITY_ID,
             effectId = zoneWardProtectionEffectId(AbyssalRuntimeKeys.Temple.SOURCE_ABILITY_ID),
         )
         world.entitiesWith(AbyssalTemplePressureRuntimeState::class).forEach { runtimeId ->
@@ -3452,6 +3482,7 @@ class FoundationGameSession internal constructor(
         addMessage(AbyssalRuntimeKeys.Finale.STABILIZED_LOG_KEY)
         grantAbyssalWardProtection(
             actorId = playerId,
+            sourceAbilityId = AbyssalRuntimeKeys.Finale.SOURCE_ABILITY_ID,
             effectId = zoneWardProtectionEffectId(AbyssalRuntimeKeys.Finale.SOURCE_ABILITY_ID),
         )
         world.entitiesWith(VoidEruptionRuntimeState::class).forEach { runtimeId ->
@@ -7320,13 +7351,17 @@ class FoundationGameSession internal constructor(
             }
 
     private fun statusNameKey(statusId: String): String =
-        content.statusSchemaFor(statusId)?.nameKey
-            ?: content.statusCatalog.definitionOrNull(statusId)?.nameKey
-            ?: if (StatusEffectType.fromSchemaId(statusId) == StatusEffectType.CUSTOM) {
-                "status.custom"
-            } else {
-                statusEffectNameKey(StatusEffectType.fromSchemaId(statusId))
-            }
+        when (statusId) {
+            in AbyssalRuntimeKeys.WARD_STATUS_IDS -> StatusDefinitions.nameKey(StatusEffectType.HOLY_SHIELD_BUFF)
+            else ->
+                content.statusSchemaFor(statusId)?.nameKey
+                    ?: content.statusCatalog.definitionOrNull(statusId)?.nameKey
+                    ?: if (StatusEffectType.fromSchemaId(statusId) == StatusEffectType.CUSTOM) {
+                        "status.custom"
+                    } else {
+                        statusEffectNameKey(StatusEffectType.fromSchemaId(statusId))
+                    }
+        }
 
     private fun EffectCategory.toSnapshotCategory(): StatusEffectCategorySnapshot =
         when (this) {

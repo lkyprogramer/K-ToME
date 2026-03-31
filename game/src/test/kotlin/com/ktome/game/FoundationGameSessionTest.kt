@@ -1409,7 +1409,7 @@ class FoundationGameSessionTest {
         assertEquals(ObjectiveState.IN_PROGRESS, session.worldProgress().questStates[AbyssalRuntimeKeys.Temple.QUEST_ID]?.objectiveStates?.get(AbyssalRuntimeKeys.Temple.OBJECTIVE_ID))
         assertTrue(state.suppressionTurnsRemaining > 0)
         assertEquals(VoidPressurePhase.IDLE, state.phase)
-        assertTrue(requireNotNull(world.get<EffectTracker>(session.playerId)).has(StatusEffectType.HOLY_SHIELD_BUFF))
+        assertTrue(hasAbyssalWardProtection(world, session.playerId))
         assertTrue(session.renderSnapshot().logEvents.any { event -> event.message.key == AbyssalRuntimeKeys.Temple.STABILIZED_LOG_KEY })
 
         state.nextCycleTurn = session.currentTurnCount()
@@ -1452,7 +1452,7 @@ class FoundationGameSessionTest {
         assertEquals(ObjectiveState.IN_PROGRESS, session.worldProgress().questStates[AbyssalRuntimeKeys.Finale.QUEST_ID]?.objectiveStates?.get(AbyssalRuntimeKeys.Finale.OBJECTIVE_ID))
         assertTrue(state.stabilizedTurnsRemaining > 0)
         assertEquals(VoidPressurePhase.IDLE, state.phase)
-        assertTrue(requireNotNull(world.get<EffectTracker>(session.playerId)).has(StatusEffectType.HOLY_SHIELD_BUFF))
+        assertTrue(hasAbyssalWardProtection(world, session.playerId))
         assertTrue(session.renderSnapshot().logEvents.any { event -> event.message.key == AbyssalRuntimeKeys.Finale.STABILIZED_LOG_KEY })
 
         state.nextCycleTurn = session.currentTurnCount()
@@ -1461,6 +1461,80 @@ class FoundationGameSessionTest {
         }
 
         assertTrue(session.renderSnapshot().overlays.none { overlay -> overlay.id.startsWith("void-eruption:") })
+    }
+
+    @Test
+    fun `generic holy shield does not suppress abyssal temple void pressure`() {
+        val session =
+            GameModule.newFoundationSession(
+                FoundationGameConfig(seed = 20260331L, zoneId = "abyssal_temple", playerProfessionId = "templar"),
+                SaveManager(tempDir.resolve("abyssal-temple-generic-holy-shield-save")),
+            )
+        clearMonsters(session)
+        val world = runtimeWorld(session)
+        val pressureEntity = world.entitiesWith(AbyssalTemplePressureRuntimeState::class).single()
+        val state = requireNotNull(world.get<AbyssalTemplePressureRuntimeState>(pressureEntity))
+        state.nextCycleTurn = 1
+        val hazardPoint = state.laneCells.first()
+
+        movePlayerTo(session, hazardPoint)
+        StatusLifecycle.applyEffect(
+            world,
+            session.playerId,
+            StatusLifecycle.createInstance(
+                type = StatusEffectType.HOLY_SHIELD_BUFF,
+                effectId = "test.generic_holy_shield",
+                duration = 3,
+                magnitude = 0.2,
+                sourceEntityId = session.playerId,
+                appliedTurn = session.currentTurnCount(),
+            ),
+        )
+
+        assertTrue(session.perform(PlayerCommand.Wait))
+        assertEquals(VoidPressurePhase.TELEGRAPH, state.phase)
+        val healthBeforeTick = requireNotNull(world.get<Health>(session.playerId)).current
+
+        assertTrue(session.perform(PlayerCommand.Wait))
+        assertEquals(VoidPressurePhase.ACTIVE, state.phase)
+        assertTrue(session.perform(PlayerCommand.Wait))
+
+        val healthAfterTick = requireNotNull(world.get<Health>(session.playerId)).current
+        assertTrue(healthAfterTick < healthBeforeTick)
+        assertFalse(hasAbyssalWardProtection(world, session.playerId))
+    }
+
+    @Test
+    fun `void eruption active phase consumes configured damage per tick and applies weaken`() {
+        val session =
+            GameModule.newFoundationSession(
+                FoundationGameConfig(seed = 20260331L, zoneId = "abyssal_heart", playerProfessionId = "rogue"),
+                SaveManager(tempDir.resolve("abyssal-heart-void-eruption-damage-save")),
+            )
+        clearMonsters(session)
+        val world = runtimeWorld(session)
+        val eruptionEntity = world.entitiesWith(VoidEruptionRuntimeState::class).single()
+        val state = requireNotNull(world.get<VoidEruptionRuntimeState>(eruptionEntity))
+        state.nextCycleTurn = 1
+        val hazardPoint = state.hazardCells.first()
+
+        movePlayerTo(session, hazardPoint)
+
+        assertTrue(session.perform(PlayerCommand.Wait))
+        assertEquals(VoidPressurePhase.TELEGRAPH, state.phase)
+        val healthBeforeTick = requireNotNull(world.get<Health>(session.playerId)).current
+
+        assertTrue(session.perform(PlayerCommand.Wait))
+        assertEquals(VoidPressurePhase.ACTIVE, state.phase)
+        assertTrue(session.perform(PlayerCommand.Wait))
+
+        val healthAfterTick = requireNotNull(world.get<Health>(session.playerId)).current
+        assertEquals(healthBeforeTick - state.damagePerTick, healthAfterTick)
+        assertTrue(
+            requireNotNull(world.get<EffectTracker>(session.playerId))
+                .activeEffects()
+                .any { effect -> effect.schemaId == StatusEffectType.WEAKEN.schemaId },
+        )
     }
 
     @Test
@@ -3841,6 +3915,14 @@ class FoundationGameSessionTest {
     ) {
         requireNotNull(runtimeWorld(session).get<Position>(session.playerId)).moveTo(point)
     }
+
+    private fun hasAbyssalWardProtection(
+        world: World,
+        actorId: EntityId,
+    ): Boolean =
+        requireNotNull(world.get<EffectTracker>(actorId))
+            .activeEffects()
+            .any { effect -> effect.schemaId in AbyssalRuntimeKeys.WARD_STATUS_IDS }
 
     private fun stairPoint(
         session: FoundationGameSession,
