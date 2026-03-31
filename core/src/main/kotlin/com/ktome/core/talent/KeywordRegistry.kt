@@ -40,9 +40,12 @@ class KeywordRegistry(
                         KeywordSemantic("bleed", KeywordSemanticType.OFFENSE, "keyword.bleed.name", "keyword.bleed.tooltip"),
                         KeywordSemantic("burst", KeywordSemanticType.OFFENSE, "keyword.burst.name", "keyword.burst.tooltip"),
                         KeywordSemantic("burn", KeywordSemanticType.OFFENSE, "keyword.burn.name", "keyword.burn.tooltip"),
+                        KeywordSemantic("bane", KeywordSemanticType.CONTROL, "keyword.bane.name", "keyword.bane.tooltip"),
                         KeywordSemantic("freeze", KeywordSemanticType.CONTROL, "keyword.freeze.name", "keyword.freeze.tooltip"),
+                        KeywordSemantic("guard", KeywordSemanticType.DEFENSE, "keyword.guard.name", "keyword.guard.tooltip"),
                         KeywordSemantic("stun", KeywordSemanticType.CONTROL, "keyword.stun.name", "keyword.stun.tooltip"),
                         KeywordSemantic("shield", KeywordSemanticType.DEFENSE, "keyword.shield.name", "keyword.shield.tooltip"),
+                        KeywordSemantic("hold_line", KeywordSemanticType.DEFENSE, "keyword.hold_line.name", "keyword.hold_line.tooltip"),
                         KeywordSemantic("penetration", KeywordSemanticType.OFFENSE, "keyword.penetration.name", "keyword.penetration.tooltip"),
                         KeywordSemantic(
                             "diminishing_returns",
@@ -75,6 +78,8 @@ class KeywordRegistry(
                         KeywordSemantic("hybrid", KeywordSemanticType.UTILITY, "keyword.hybrid.name", "keyword.hybrid.tooltip"),
                         KeywordSemantic("knockback", KeywordSemanticType.CONTROL, "keyword.knockback.name", "keyword.knockback.tooltip"),
                         KeywordSemantic("mark", KeywordSemanticType.CONTROL, "keyword.mark.name", "keyword.mark.tooltip"),
+                        KeywordSemantic("marked", KeywordSemanticType.CONTROL, "keyword.marked.name", "keyword.marked.tooltip"),
+                        KeywordSemantic("mana_tempo", KeywordSemanticType.RESOURCE, "keyword.mana_tempo.name", "keyword.mana_tempo.tooltip"),
                         KeywordSemantic("mobility", KeywordSemanticType.MOBILITY, "keyword.mobility.name", "keyword.mobility.tooltip"),
                         KeywordSemantic("panic", KeywordSemanticType.DEFENSE, "keyword.panic.name", "keyword.panic.tooltip"),
                         KeywordSemantic("ranged", KeywordSemanticType.TARGETING, "keyword.ranged.name", "keyword.ranged.tooltip"),
@@ -83,6 +88,7 @@ class KeywordRegistry(
                         KeywordSemantic("slow", KeywordSemanticType.CONTROL, "keyword.slow.name", "keyword.slow.tooltip"),
                         KeywordSemantic("stealth", KeywordSemanticType.MOBILITY, "keyword.stealth.name", "keyword.stealth.tooltip"),
                         KeywordSemantic("taunt", KeywordSemanticType.CONTROL, "keyword.taunt.name", "keyword.taunt.tooltip"),
+                        KeywordSemantic("teleport", KeywordSemanticType.MOBILITY, "keyword.teleport.name", "keyword.teleport.tooltip"),
                     ).associateBy(KeywordSemantic::id),
             )
     }

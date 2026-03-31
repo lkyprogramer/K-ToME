@@ -62,7 +62,7 @@ affixes:
     iconKey: affix.sharp.icon
     audioProfile: audio.affix.sharp
     schemaVersion: 2
-    tags: [affix, weapon, offense, fire, arcanist]
+    tags: [affix, weapon, offense, fire, burn, arcanist]
     type: PREFIX
     equipType: WEAPON
     tier: 2
@@ -76,7 +76,7 @@ affixes:
     iconKey: affix.sharp.icon
     audioProfile: audio.affix.sharp
     schemaVersion: 2
-    tags: [affix, weapon, offense, cold, control, arcanist]
+    tags: [affix, weapon, offense, cold, freeze, control, arcanist]
     type: PREFIX
     equipType: WEAPON
     tier: 2
@@ -118,7 +118,7 @@ affixes:
     iconKey: affix.sharp.icon
     audioProfile: audio.affix.sharp
     schemaVersion: 2
-    tags: [affix, weapon, offense, shadow, rogue]
+    tags: [affix, weapon, offense, shadow, rogue, stealth]
     type: PREFIX
     equipType: WEAPON
     tier: 2
@@ -146,7 +146,7 @@ affixes:
     iconKey: affix.sharp.icon
     audioProfile: audio.affix.sharp
     schemaVersion: 2
-    tags: [affix, weapon, offense, precision, rogue]
+    tags: [affix, weapon, offense, precision, crit, marked, rogue]
     type: PREFIX
     equipType: WEAPON
     tier: 1
@@ -160,7 +160,7 @@ affixes:
     iconKey: affix.sharp.icon
     audioProfile: audio.affix.sharp
     schemaVersion: 2
-    tags: [affix, weapon, offense, defense, vanguard]
+    tags: [affix, weapon, offense, defense, vanguard, guard, hold_line]
     type: PREFIX
     equipType: WEAPON
     tier: 3
@@ -216,7 +216,7 @@ affixes:
     iconKey: affix.sturdy.icon
     audioProfile: audio.affix.sturdy
     schemaVersion: 2
-    tags: [affix, armor, protection, arcane]
+    tags: [affix, armor, protection, arcane, mana_tempo, teleport]
     type: PREFIX
     equipType: ARMOR
     tier: 2
@@ -272,7 +272,7 @@ affixes:
     iconKey: affix.sturdy.icon
     audioProfile: audio.affix.sturdy
     schemaVersion: 2
-    tags: [affix, armor, holy, protection, templar]
+    tags: [affix, armor, holy, protection, holy_shield, cleanse, templar]
     type: PREFIX
     equipType: ARMOR
     tier: 3
@@ -286,7 +286,7 @@ affixes:
     iconKey: affix.sturdy.icon
     audioProfile: audio.affix.sturdy
     schemaVersion: 2
-    tags: [affix, armor, shadow, mobility, rogue]
+    tags: [affix, armor, shadow, mobility, stealth, rogue]
     type: PREFIX
     equipType: ARMOR
     tier: 3
@@ -328,7 +328,7 @@ affixes:
     iconKey: affix.sturdy.icon
     audioProfile: audio.affix.sturdy
     schemaVersion: 2
-    tags: [affix, armor, defense, control, vanguard]
+    tags: [affix, armor, defense, control, vanguard, guard, taunt, hold_line]
     type: PREFIX
     equipType: ARMOR
     tier: 3
@@ -384,13 +384,14 @@ affixes:
     iconKey: affix.of_strength.icon
     audioProfile: audio.affix.of_strength
     schemaVersion: 2
-    tags: [affix, weapon, accuracy, rogue]
+    tags: [affix, weapon, accuracy, rogue, crit, marked, execute]
     type: SUFFIX
     equipType: WEAPON
     tier: 2
     minFloor: 2
     stats: { accuracy: 4, evasion: 1 }
     blacklistTags: [brutal]
+    passive: { kind: DamageVsStatus, statusId: MARKED, bonusPercent: 0.15 }
   - id: of_life
     nameKey: affix.of_life.name
     descKey: affix.of_life.desc
@@ -412,7 +413,7 @@ affixes:
     iconKey: affix.of_fortitude.icon
     audioProfile: audio.affix.of_fortitude
     schemaVersion: 2
-    tags: [affix, armor, defense, vanguard]
+    tags: [affix, armor, defense, guard, hold_line, vanguard]
     type: SUFFIX
     equipType: ARMOR
     tier: 2
@@ -440,13 +441,14 @@ affixes:
     iconKey: affix.of_speed.icon
     audioProfile: audio.affix.of_speed
     schemaVersion: 2
-    tags: [affix, weapon, offense, armor_break]
+    tags: [affix, weapon, offense, armor_break, vanguard]
     type: SUFFIX
     equipType: WEAPON
     tier: 3
     minFloor: 3
     stats: { attack: 3, accuracy: 2 }
     blacklistTags: []
+    passive: { kind: DamageVsStatus, statusId: ARMOR_BREAK, bonusPercent: 0.12 }
   - id: of_flames
     nameKey: affix.of_flames.name
     descKey: affix.of_flames.desc
@@ -454,13 +456,14 @@ affixes:
     iconKey: affix.of_speed.icon
     audioProfile: audio.affix.of_speed
     schemaVersion: 2
-    tags: [affix, weapon, fire, arcanist]
+    tags: [affix, weapon, fire, arcanist, burn]
     type: SUFFIX
     equipType: WEAPON
     tier: 3
     minFloor: 3
     stats: { attack: 2, talentPower: 0.04 }
     blacklistTags: [cold]
+    passive: { kind: DamageVsStatus, statusId: BURN, bonusPercent: 0.12 }
   - id: of_frost
     nameKey: affix.of_frost.name
     descKey: affix.of_frost.desc
@@ -468,13 +471,14 @@ affixes:
     iconKey: affix.of_speed.icon
     audioProfile: audio.affix.of_speed
     schemaVersion: 2
-    tags: [affix, weapon, cold, arcanist]
+    tags: [affix, weapon, cold, control, arcanist, freeze]
     type: SUFFIX
     equipType: WEAPON
     tier: 3
     minFloor: 3
     stats: { accuracy: 2, talentPower: 0.04 }
     blacklistTags: [fire]
+    passive: { kind: DamageVsStatus, statusId: FREEZE, bonusPercent: 0.12 }
   - id: of_storms
     nameKey: affix.of_storms.name
     descKey: affix.of_storms.desc
@@ -496,13 +500,14 @@ affixes:
     iconKey: affix.of_speed.icon
     audioProfile: audio.affix.of_speed
     schemaVersion: 2
-    tags: [affix, weapon, holy, templar]
+    tags: [affix, weapon, holy, templar, bane]
     type: SUFFIX
     equipType: WEAPON
     tier: 3
     minFloor: 4
     stats: { attack: 3, wil: 1 }
     blacklistTags: [shadow]
+    passive: { kind: DamageVsStatus, statusId: BANE, bonusPercent: 0.15 }
   - id: of_shadow
     nameKey: affix.of_shadow.name
     descKey: affix.of_shadow.desc
@@ -510,13 +515,14 @@ affixes:
     iconKey: affix.of_speed.icon
     audioProfile: audio.affix.of_speed
     schemaVersion: 2
-    tags: [affix, weapon, shadow, rogue]
+    tags: [affix, weapon, shadow, stealth, crit, marked, rogue]
     type: SUFFIX
     equipType: WEAPON
     tier: 3
     minFloor: 4
     stats: { attack: 2, evasion: 2, speed: 4 }
     blacklistTags: [holy]
+    passive: { kind: DamageVsStatus, statusId: MARKED, bonusPercent: 0.12 }
   - id: of_regeneration
     nameKey: affix.of_regeneration.name
     descKey: affix.of_regeneration.desc
@@ -538,7 +544,7 @@ affixes:
     iconKey: affix.of_life.icon
     audioProfile: audio.affix.of_life
     schemaVersion: 2
-    tags: [affix, armor, spell, templar, arcanist]
+    tags: [affix, armor, spell, mana_tempo, teleport, templar, arcanist]
     type: SUFFIX
     equipType: ARMOR
     tier: 2
@@ -594,13 +600,14 @@ affixes:
     iconKey: affix.of_fortitude.icon
     audioProfile: audio.affix.of_fortitude
     schemaVersion: 2
-    tags: [affix, armor, rescue, cleansing, templar]
+    tags: [affix, armor, rescue, cleansing, cleanse, holy_shield, sustain, templar]
     type: SUFFIX
     equipType: ARMOR
     tier: 3
     minFloor: 4
     stats: { defense: 2, wil: 1, maxHp: 4 }
     blacklistTags: []
+    passive: { kind: HpRegenPerTurn, amount: 1 }
 
 items:
   - id: short_sword

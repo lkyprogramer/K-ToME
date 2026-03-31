@@ -5,6 +5,8 @@ import com.ktome.core.item.MilestoneRewardSource
 import com.ktome.core.item.EquipSlot
 import com.ktome.core.profile.MilestoneRewardSummary
 import com.ktome.core.run.RunOutcome
+import com.ktome.game.BreakpointPayoffObservation
+import com.ktome.game.BreakpointPayoffSummary
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonArray
@@ -32,6 +34,31 @@ class ScenarioReportJsonTest {
                 corpusId = HarnessMetadata.LONG_RUN_FULL_CORPUS_ID,
                 localeId = "en-US",
                 buildHash = "templar#human#build",
+                breakpointPayoffs =
+                    listOf(
+                        BreakpointPayoffSummary(
+                            talentId = "holy_mark",
+                            treeId = "templar_smite",
+                            achievedRank = 4,
+                            breakpointRank = 4,
+                            unlockedEffectKinds = listOf("apply_status:bane"),
+                        ),
+                    ),
+                breakpointPayoffObservations =
+                    listOf(
+                        BreakpointPayoffObservation(
+                            talentId = "holy_mark",
+                            treeId = "templar_smite",
+                            achievedRank = 4,
+                            breakpointRank = 4,
+                            unlockedEffectKinds = listOf("apply_status:bane"),
+                            turnIndex = 88,
+                            headlessTurnEquivalent = 190,
+                            buildHashBeforeUnlock = "templar#human#pre-payoff",
+                            buildHashAfterUnlock = "templar#human#build",
+                            buildHashChanged = true,
+                        ),
+                    ),
                 milestoneRewards =
                     listOf(
                         MilestoneRewardSummary(
@@ -47,6 +74,12 @@ class ScenarioReportJsonTest {
                             equippedBaseItemIdAtRunEnd = "forgebreaker_pick",
                             adoptedInFinalBuild = true,
                         ),
+                    ),
+                affixSynergyActivationCount = 3,
+                affixSynergyActivationDistribution =
+                    linkedMapOf(
+                        "of_smite" to 2,
+                        "of_cleansing" to 1,
                     ),
                 goalReached = true,
                 zonePath = listOf("shattered_outpost"),
@@ -100,6 +133,21 @@ class ScenarioReportJsonTest {
         assertEquals("templar#human#build", json.requiredString("buildHash"))
         assertEquals("full_route", json.requiredString("scenarioType"))
         assertEquals("true", json.requiredString("isFullRoute"))
+        assertEquals("3", json.requiredString("affixSynergyActivationCount"))
+        val affixActivations = json.requiredObject("affixSynergyActivationDistribution")
+        assertEquals("2", affixActivations.requiredString("of_smite"))
+        assertEquals("1", affixActivations.requiredString("of_cleansing"))
+        val breakpointPayoffs = json.requiredArray("breakpointPayoffs")
+        assertEquals(1, breakpointPayoffs.size)
+        assertEquals("holy_mark", breakpointPayoffs.single().jsonObject.requiredString("talentId"))
+        assertEquals("apply_status:bane", breakpointPayoffs.single().jsonObject.requiredArray("unlockedEffectKinds").single().jsonPrimitive.content)
+        val breakpointObservations = json.requiredArray("breakpointPayoffObservations")
+        assertEquals(1, breakpointObservations.size)
+        val breakpointObservation = breakpointObservations.single().jsonObject
+        assertEquals("holy_mark", breakpointObservation.requiredString("talentId"))
+        assertEquals("templar#human#pre-payoff", breakpointObservation.requiredString("buildHashBeforeUnlock"))
+        assertEquals("templar#human#build", breakpointObservation.requiredString("buildHashAfterUnlock"))
+        assertEquals("true", breakpointObservation.requiredString("buildHashChanged"))
         val milestoneRewards = json.requiredArray("milestoneRewards")
         assertEquals(1, milestoneRewards.size)
         assertEquals("ROUTE", milestoneRewards.single().jsonObject.requiredString("rewardSource"))
@@ -126,4 +174,6 @@ class ScenarioReportJsonTest {
     private fun JsonObject.requiredString(key: String): String = getValue(key).jsonPrimitive.content
 
     private fun JsonObject.requiredArray(key: String): JsonArray = getValue(key).jsonArray
+
+    private fun JsonObject.requiredObject(key: String): JsonObject = getValue(key).jsonObject
 }

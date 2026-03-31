@@ -67,12 +67,13 @@ internal object LoadoutPlanner {
                 listOf(
                     "power_strike",
                     "shield_bash",
+                    "guard_stance",
                     "linebreaker",
-                    "earthshaker",
+                    "taunt",
                     "charge",
+                    "earthshaker",
                     "battlefield_command",
                     "war_cry",
-                    "guard_stance",
                     "sweeping_strike",
                     "sunder_armor",
                     "intimidation",
@@ -98,9 +99,9 @@ internal object LoadoutPlanner {
                 listOf(
                     "backstab",
                     "shadow_bind",
-                    "roll",
-                    "eviscerate",
                     "shadowstep",
+                    "eviscerate",
+                    "roll",
                     "stealth",
                     "poison_blade",
                     "ricochet_knives",
@@ -114,15 +115,16 @@ internal object LoadoutPlanner {
                 listOf(
                     "holy_strike",
                     "holy_light",
+                    "holy_mark",
                     "consecration",
-                    "sanctuary",
                     "judgment_hammer",
+                    "sanctuary",
                     "ritual_break",
                     "holy_shield",
+                    "purify",
                     "devotion",
                     "holy_aura",
                     "divine_intervention",
-                    "purify",
                 )
 
             else -> emptyList()

@@ -21,9 +21,9 @@ object PassiveEffectResolver {
         entity: EntityId,
     ): List<EquippedPassiveSource> =
         world.get<Equipment>(entity)?.slots?.values
-            ?.mapNotNull { itemId ->
-                val item = world.get<ItemInstance>(itemId) ?: return@mapNotNull null
-                item.passive?.let { passive ->
+            ?.flatMap { itemId ->
+                val item = world.get<ItemInstance>(itemId) ?: return@flatMap emptyList()
+                itemPassives(item).map { passive ->
                     EquippedPassiveSource(
                         item = item,
                         passive = passive,
@@ -35,12 +35,14 @@ object PassiveEffectResolver {
     fun resolveDamageAdjustment(
         passives: List<EquippedPassiveSource>,
         targetTags: Set<String>,
+        targetStatusIds: Set<String>,
         damageType: DamageType,
     ): PassiveDamageAdjustment {
         val sources =
             passives.filter { source ->
                 when (val passive = source.passive) {
                     is EquipmentPassive.DamageVsTag -> passive.tag in targetTags
+                    is EquipmentPassive.DamageVsStatus -> passive.statusId in targetStatusIds
                     is EquipmentPassive.DamageTypeBonus -> passive.type == damageType
                     is EquipmentPassive.HpRegenPerTurn,
                     is EquipmentPassive.ResistanceBonus,
@@ -51,6 +53,7 @@ object PassiveEffectResolver {
             sources.sumOf { source ->
                 when (val passive = source.passive) {
                     is EquipmentPassive.DamageVsTag -> passive.bonusPercent
+                    is EquipmentPassive.DamageVsStatus -> passive.bonusPercent
                     is EquipmentPassive.DamageTypeBonus -> passive.bonusPercent
                     is EquipmentPassive.HpRegenPerTurn,
                     is EquipmentPassive.ResistanceBonus,
@@ -66,6 +69,7 @@ object PassiveEffectResolver {
     fun hpRegenPerTurn(passives: List<EquippedPassiveSource>): Int =
         passives.sumOf { source ->
             when (val passive = source.passive) {
+                is EquipmentPassive.DamageVsStatus -> 0
                 is EquipmentPassive.HpRegenPerTurn -> passive.amount
                 is EquipmentPassive.DamageTypeBonus,
                 is EquipmentPassive.DamageVsTag,
@@ -82,11 +86,18 @@ object PassiveEffectResolver {
                         put(passive.damageType, (get(passive.damageType) ?: 0) + passive.amount)
                     }
 
+                    is EquipmentPassive.DamageVsStatus,
                     is EquipmentPassive.DamageTypeBonus,
                     is EquipmentPassive.DamageVsTag,
                     is EquipmentPassive.HpRegenPerTurn,
                     -> Unit
                 }
             }
+        }
+
+    private fun itemPassives(item: ItemInstance): List<EquipmentPassive> =
+        buildList {
+            item.passive?.let(::add)
+            item.affixes.mapNotNullTo(this, AffixDef::passive)
         }
 }

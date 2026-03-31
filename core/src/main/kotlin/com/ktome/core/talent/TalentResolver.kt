@@ -173,6 +173,7 @@ class TalentResolver(
             "power_strike",
             "charge",
             "shield_bash",
+            "taunt",
             "war_cry",
             "sweeping_strike",
             "sunder_armor",
@@ -210,6 +211,7 @@ class TalentResolver(
             "dusk_shroud",
             "ricochet_knives",
             "holy_strike",
+            "holy_mark",
             "judgment_hammer",
             "holy_light",
             "holy_shield",
@@ -676,6 +678,21 @@ class TalentResolver(
                 )
             }
 
+            "taunt" -> {
+                val nearbyTargets = hostileTargetsWithin(world, user, requireNotNull(world.get<Position>(user)).toPoint(), definition.areaRadius)
+                targets += user
+                targets += nearbyTargets
+                applyConfiguredEffects(
+                    world = world,
+                    user = user,
+                    definition = definition,
+                    effect = effect,
+                    trigger = EffectTrigger.ON_CAST,
+                    areaTargets = nearbyTargets,
+                    effects = effects,
+                )
+            }
+
             "unyielding" -> {
                 targets += user
                 applyConfiguredEffects(
@@ -842,6 +859,17 @@ class TalentResolver(
                 requireNotNull(world.get<Position>(user)).moveTo(destination)
                 effects += TalentEffectResult.Movement(user, from, destination)
                 targets += user
+                if (effect.resourceRestoreFraction > 0.0) {
+                    restoreConfiguredResource(world, user, definition, effect, effects)
+                }
+                applyConfiguredEffects(
+                    world = world,
+                    user = user,
+                    definition = definition,
+                    effect = effect,
+                    trigger = EffectTrigger.ON_CAST,
+                    effects = effects,
+                )
             }
 
             "elf_scouting",
@@ -978,7 +1006,19 @@ class TalentResolver(
                 effects += TalentEffectResult.Movement(user, from, destination)
                 targets += user
                 targets += targetEntity
-                resolveDamage(world, user, targetEntity, definition.damageType, effect.damageMultiplier, effects, abilityId = definition.id)
+                val damageResult =
+                    resolveDamage(world, user, targetEntity, definition.damageType, effect.damageMultiplier, effects, abilityId = definition.id)
+                applyConfiguredEffects(
+                    world = world,
+                    user = user,
+                    definition = definition,
+                    effect = effect,
+                    trigger = EffectTrigger.ON_HIT,
+                    primaryTarget = targetEntity,
+                    areaTargets = listOf(targetEntity),
+                    hitSucceeded = damageResult.hit,
+                    effects = effects,
+                )
             }
 
             "deathblow" -> {
@@ -1005,6 +1045,24 @@ class TalentResolver(
                 val targetEntity = requireNotNull(hostileTargetAt(world, user, requireNotNull(target)))
                 targets += targetEntity
                 resolveDamage(world, user, targetEntity, definition.damageType, effect.damageMultiplier, effects, abilityId = definition.id)
+            }
+
+            "holy_mark" -> {
+                val targetEntity = requireNotNull(hostileTargetAt(world, user, requireNotNull(target)))
+                targets += targetEntity
+                val damageResult =
+                    resolveDamage(world, user, targetEntity, definition.damageType, effect.damageMultiplier, effects, abilityId = definition.id)
+                applyConfiguredEffects(
+                    world = world,
+                    user = user,
+                    definition = definition,
+                    effect = effect,
+                    trigger = EffectTrigger.ON_HIT,
+                    primaryTarget = targetEntity,
+                    areaTargets = listOf(targetEntity),
+                    hitSucceeded = damageResult.hit,
+                    effects = effects,
+                )
             }
 
             "judgment_hammer" -> {

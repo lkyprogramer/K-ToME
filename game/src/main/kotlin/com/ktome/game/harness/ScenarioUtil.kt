@@ -294,6 +294,25 @@ internal fun preferredRouteIndex(routeSelection: RouteSelectionSnapshot): Int {
 
 fun PlayerCommand.commandName(): String = this::class.simpleName ?: "UnknownCommand"
 
+fun renderCommand(command: PlayerCommand): String =
+    when (command) {
+        is PlayerCommand.Move -> "Move(${command.delta.x},${command.delta.y})"
+        is PlayerCommand.UseTalent ->
+            command.target?.let { target -> "UseTalent(${command.slot},${target.x},${target.y})" } ?: "UseTalent(${command.slot})"
+        is PlayerCommand.UseInscription ->
+            command.target?.let { target -> "UseInscription(${command.hotkey},${target.x},${target.y})" } ?: "UseInscription(${command.hotkey})"
+        is PlayerCommand.ActivateInventoryItem -> "ActivateInventoryItem(${command.index})"
+        is PlayerCommand.DropInventoryItem -> "DropInventoryItem(${command.index})"
+        is PlayerCommand.BuyShopOffer -> "BuyShopOffer(${command.index})"
+        is PlayerCommand.SellInventoryItem -> "SellInventoryItem(${command.index})"
+        is PlayerCommand.SelectRoute -> "SelectRoute(${command.index})"
+        is PlayerCommand.EquipTalentToSlot -> "EquipTalentToSlot(${command.slot},${command.talentId})"
+        is PlayerCommand.AssignStat -> "AssignStat(${command.stat.name})"
+        is PlayerCommand.AssignTalent -> "AssignTalent(${command.talentId})"
+        is PlayerCommand.RespecTalentTree -> "RespecTalentTree(${command.ownerType},${command.treeOwnerId})"
+        else -> command.commandName()
+    }
+
 fun PlayerCommand.consumesTurn(): Boolean =
     when (this) {
         PlayerCommand.Wait,

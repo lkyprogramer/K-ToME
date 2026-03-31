@@ -27,7 +27,9 @@ import kotlin.random.Random
 class SchemaV2LoaderTest {
     @Test
     fun `schema v2 loader reads full content catalog`() {
-        val catalog = DataLoader(GameLocale.EN_US).loadSchemaCatalog()
+        val loader = DataLoader(GameLocale.EN_US)
+        val catalog = loader.loadSchemaCatalog()
+        val runtimeTalentsById = loader.loadTalentDefinitions().associateBy(TalentDef::id)
 
         assertEquals(
             setOf("vanguard", "arcanist", "rogue", "templar", "berserker", "spellblade", "shadowblade", "warden"),
@@ -126,8 +128,32 @@ class SchemaV2LoaderTest {
         assertEquals(listOf("flux_anchor", "flux_burst", "balance_point", "flux_reversal"), catalog.talentTrees.first { it.id == "spellblade_elemental_flux" }.nodes)
         assertEquals(listOf("mana_lunge", "spell_parry", "blink_strike", "counter_seal"), catalog.talentTrees.first { it.id == "spellblade_battle_spell" }.nodes)
         assertEquals(3, catalog.talents.first { it.id == "charge" }.unlockLevel)
+        assertEquals(2, catalog.talents.first { it.id == "shadowstep" }.unlockLevel)
+        assertEquals(3, catalog.talents.first { it.id == "shadow_bind" }.unlockLevel)
         assertEquals("charge_lane", catalog.talents.first { it.id == "charge" }.telegraphRef)
         assertEquals(4, catalog.talents.first { it.id == "blink" }.levelEffects.getValue(5).rangeBonus)
+        assertEquals(4, catalog.talents.first { it.id == "blink" }.breakpoints.single().atRank)
+        assertEquals(4, catalog.talents.first { it.id == "guard_stance" }.breakpoints.single().atRank)
+        assertEquals(4, catalog.talents.first { it.id == "taunt" }.breakpoints.single().atRank)
+        assertEquals(2, catalog.talents.first { it.id == "shadowstep" }.breakpoints.single().atRank)
+        assertEquals(4, catalog.talents.first { it.id == "shadow_bind" }.breakpoints.single().atRank)
+        assertEquals(3, catalog.talents.first { it.id == "holy_mark" }.breakpoints.single().atRank)
+        assertEquals(4, catalog.talents.first { it.id == "purify" }.breakpoints.single().atRank)
+        assertTrue(
+            requireNotNull(runtimeTalentsById["taunt"]).breakpoints.single().unlockedEffects.any { effect ->
+                effect is EffectOp.ApplyStatus && effect.statusId == StatusEffectType.GUARD.schemaId
+            },
+        )
+        assertTrue(
+            requireNotNull(runtimeTalentsById["shadowstep"]).breakpoints.single().unlockedEffects.any { effect ->
+                effect is EffectOp.ApplyStatus && effect.statusId == StatusEffectType.MARKED.schemaId
+            },
+        )
+        assertTrue(
+            requireNotNull(runtimeTalentsById["purify"]).breakpoints.single().unlockedEffects.any { effect ->
+                effect is EffectOp.ApplyStatus && effect.statusId == StatusEffectType.HOLY_SHIELD_BUFF.schemaId
+            },
+        )
         assertEquals("PHYSICAL", catalog.talents.first { it.id == "power_strike" }.powerDimension)
         assertEquals(
             "HOSTILE_HIT_THEN_SAVE",
@@ -199,6 +225,9 @@ class SchemaV2LoaderTest {
         assertEquals("DamageVsTag", catalog.itemBundle.items.first { item -> item.id == "long_sword" }.passive?.kind)
         assertEquals("ResistanceBonus", catalog.itemBundle.items.first { item -> item.id == "chain_mail" }.passive?.kind)
         assertEquals("ResistanceBonus", catalog.itemBundle.items.first { item -> item.id == "shadow_cloak" }.passive?.kind)
+        assertEquals("DamageVsStatus", catalog.itemBundle.affixes.first { affix -> affix.id == "of_piercing" }.passive?.kind)
+        assertEquals("DamageVsStatus", catalog.itemBundle.affixes.first { affix -> affix.id == "of_shadow" }.passive?.kind)
+        assertEquals("HpRegenPerTurn", catalog.itemBundle.affixes.first { affix -> affix.id == "of_cleansing" }.passive?.kind)
         assertTrue(catalog.visualKeys.contains("actor.vanguard"))
         assertTrue(catalog.visualKeys.contains("talent.arcanist.mana_surge.icon"))
         assertTrue(catalog.visualKeys.contains("icon.skill.rogue.backstab"))
@@ -315,11 +344,41 @@ class SchemaV2LoaderTest {
         )
         assertEquals(0.10, enLoader.loadTalentDefinitions().first { it.id == "mana_surge" }.levelEffects.getValue(1).resourceRestoreFraction)
         assertEquals(0.18, enLoader.loadTalentDefinitions().first { it.id == "holy_light" }.levelEffects.getValue(1).healFraction)
+        assertTrue(
+            enLoader.loadTalentDefinitions().first { it.id == "blink" }
+                .breakpoints
+                .single()
+                .unlockedEffects
+                .any { effect -> effect is EffectOp.ResourceRestore },
+        )
+        assertTrue(
+            enLoader.loadTalentDefinitions().first { it.id == "guard_stance" }
+                .breakpoints
+                .single()
+                .unlockedEffects
+                .any { effect -> effect is EffectOp.ApplyStatus && effect.statusId == StatusEffectType.GUARD.schemaId },
+        )
+        assertTrue(
+            enLoader.loadTalentDefinitions().first { it.id == "shadow_bind" }
+                .breakpoints
+                .single()
+                .unlockedEffects
+                .any { effect -> effect is EffectOp.ApplyStatus && effect.statusId == StatusEffectType.MARKED.schemaId },
+        )
+        assertTrue(
+            enLoader.loadTalentDefinitions().first { it.id == "holy_mark" }
+                .breakpoints
+                .single()
+                .unlockedEffects
+                .any { effect -> effect is EffectOp.ApplyStatus && effect.statusId == StatusEffectType.BANE.schemaId },
+        )
         assertTrue(enLoader.loadItemBundle().baseItems.first { it.id == "emerald_charm" }.passive is EquipmentPassive.HpRegenPerTurn)
         assertTrue(enLoader.loadItemBundle().baseItems.first { it.id == "hunter_bow" }.passive is EquipmentPassive.DamageVsTag)
         assertTrue(enLoader.loadItemBundle().baseItems.first { it.id == "long_sword" }.passive is EquipmentPassive.DamageVsTag)
         assertTrue(enLoader.loadItemBundle().baseItems.first { it.id == "chain_mail" }.passive is EquipmentPassive.ResistanceBonus)
         assertTrue(enLoader.loadItemBundle().baseItems.first { it.id == "shadow_cloak" }.passive is EquipmentPassive.ResistanceBonus)
+        assertTrue(enLoader.loadItemBundle().affixes.first { it.id == "of_smite" }.passive is EquipmentPassive.DamageVsStatus)
+        assertTrue(enLoader.loadItemBundle().affixes.first { it.id == "of_cleansing" }.passive is EquipmentPassive.HpRegenPerTurn)
         assertEquals(4, enLoader.loadTalentDefinitions().first { it.id == "blink" }.levelEffects.getValue(5).rangeBonus)
     }
 

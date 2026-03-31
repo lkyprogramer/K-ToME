@@ -1,18 +1,20 @@
 package com.ktome.game
 
 import com.ktome.core.item.AffixSelectionContext
+import com.ktome.core.status.StatusEffectType
 import com.ktome.game.data.schema.ProfessionSchemaV2
 import com.ktome.game.data.schema.SchemaCatalog
+import com.ktome.game.data.schema.TalentLevelEffectSchemaV2
 import com.ktome.game.data.schema.TalentSchemaV2
 import com.ktome.game.data.schema.TalentTreeSchemaV2
 
 internal fun professionAffixBuildContext(
     schemaCatalog: SchemaCatalog,
     profession: ProfessionSchemaV2,
-    unlockedTalentIds: Set<String> = profession.startingTalents.toSet(),
+    talentRanks: Map<String, Int> = profession.startingTalents.associateWith { 1 },
 ): AffixSelectionContext =
     AffixSelectionContext(
-        buildTags = professionAffixBuildTags(schemaCatalog, profession, unlockedTalentIds),
+        buildTags = professionAffixBuildTags(schemaCatalog, profession, talentRanks),
     )
 
 internal fun routeRewardBiasTags(rescueTags: Set<String>): Set<String> =
@@ -37,7 +39,7 @@ internal fun routeRewardBiasTags(rescueTags: Set<String>): Set<String> =
 internal fun professionAffixBuildTags(
     schemaCatalog: SchemaCatalog,
     profession: ProfessionSchemaV2,
-    unlockedTalentIds: Set<String> = profession.startingTalents.toSet(),
+    talentRanks: Map<String, Int> = profession.startingTalents.associateWith { 1 },
 ): Set<String> {
     val talentTreesById = schemaCatalog.talentTrees.associateBy(TalentTreeSchemaV2::id)
     val talentsById = schemaCatalog.talents.associateBy(TalentSchemaV2::id)
@@ -56,13 +58,14 @@ internal fun professionAffixBuildTags(
                 tree.tags.forEach(::addMeaningfulTag)
             }
         }
-        unlockedTalentIds.forEach { talentId ->
+        talentRanks.forEach { (talentId, currentRank) ->
             talentId.semanticTokens().forEach(::addMeaningfulTag)
             talentsById[talentId]?.let { talent ->
                 talent.tags.forEach(::addMeaningfulTag)
                 talent.damageType?.let(::addTag)
                 talent.powerDimension?.let(::addTag)
                 talent.keywords.forEach(::addMeaningfulTag)
+                talent.levelEffects[currentRank.coerceIn(1, talent.maxPoints)]?.let(::addEffectSemanticTags)
             }
         }
         profession.soloContract.offenseTags.forEach(::addMeaningfulTag)
@@ -74,8 +77,26 @@ internal fun professionAffixBuildTags(
     }
 }
 
+private fun MutableSet<String>.addEffectSemanticTags(effect: TalentLevelEffectSchemaV2) {
+    effect.associatedEffects.forEach { associatedEffect ->
+        statusSemanticTags(associatedEffect.effectType).forEach(::addMeaningfulTag)
+    }
+    effect.cleanseEffect?.let {
+        addMeaningfulTag("cleanse")
+        addMeaningfulTag("sustain")
+    }
+    if (effect.resourceRestoreFraction > 0.0) {
+        addMeaningfulTag("resource")
+        addMeaningfulTag("tempo")
+    }
+    if (effect.healFraction > 0.0) {
+        addMeaningfulTag("heal")
+        addMeaningfulTag("sustain")
+    }
+}
+
 private fun MutableSet<String>.addMeaningfulTag(tag: String) {
-    val normalized = tag.trim().lowercase()
+    val normalized = normalizeBuildTag(tag)
     if (normalized.isBlank() || normalized in NON_SIGNAL_BUILD_TAGS) {
         return
     }
@@ -83,7 +104,7 @@ private fun MutableSet<String>.addMeaningfulTag(tag: String) {
 }
 
 private fun MutableSet<String>.addTag(tag: String) {
-    val normalized = tag.trim().lowercase()
+    val normalized = normalizeBuildTag(tag)
     if (normalized.isNotBlank()) {
         add(normalized)
     }
@@ -105,3 +126,30 @@ private fun String.semanticTokens(): List<String> =
     split('_', '-')
         .map(String::trim)
         .filter(String::isNotBlank)
+
+private fun normalizeBuildTag(tag: String): String =
+    when (val normalized = tag.trim().lowercase()) {
+        "mark" -> "marked"
+        "cleansing" -> "cleanse"
+        else -> normalized
+    }
+
+private fun statusSemanticTags(effectType: String): Set<String> {
+    val canonical = StatusEffectType.fromSchemaId(effectType).schemaId.lowercase()
+    return linkedSetOf<String>().apply {
+        add(canonical)
+        when (canonical) {
+            "armor_break" -> add("guard")
+            "bane" -> add("holy")
+            "burn" -> add("fire")
+            "freeze" -> add("cold")
+            "guard",
+            "guard_stance_buff",
+            -> addAll(listOf("guard", "hold_line"))
+            "holy_shield_buff" -> addAll(listOf("holy_shield", "sustain"))
+            "mana_surge_buff" -> addAll(listOf("mana_tempo", "teleport"))
+            "marked" -> addAll(listOf("marked", "crit", "execute"))
+            "stealth" -> addAll(listOf("stealth", "crit"))
+        }
+    }
+}
