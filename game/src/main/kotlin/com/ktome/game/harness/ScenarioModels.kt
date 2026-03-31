@@ -9,11 +9,25 @@ import com.ktome.core.world.ObjectiveState
 import com.ktome.game.FOUNDATION_ZONE_ID
 import com.ktome.game.FOUNDATION_PROFESSION_ID
 import com.ktome.game.FOUNDATION_RACE_ID
+import com.ktome.game.FOUNDATION_ZONE_ROUTE
 import com.ktome.game.InventoryItemView
 import com.ktome.game.PlayerResourceView
 import com.ktome.game.PlayerStatus
 import com.ktome.game.TalentReserveView
 import com.ktome.game.TalentSlotView
+
+enum class ScenarioType(
+    val reportValue: String,
+) {
+    FULL_ROUTE("full_route"),
+    BRANCH_INCLUSIVE("branch_inclusive"),
+    ROUTE_PROBE("route_probe"),
+    LATE_ROUTE_PROBE("late_route_probe"),
+    ;
+
+    val isFullRoute: Boolean
+        get() = this == FULL_ROUTE
+}
 
 data class ScenarioSpec(
     val name: String,
@@ -23,12 +37,19 @@ data class ScenarioSpec(
     val raceId: String = FOUNDATION_RACE_ID,
     val zoneRoute: List<String> = listOf(zoneId),
     val routeIndex: Int = 0,
+    val scenarioType: ScenarioType = inferScenarioType(zoneId = zoneId, zoneRoute = zoneRoute, routeIndex = routeIndex),
     val corpusId: String = HarnessMetadata.DEFAULT_CORPUS_ID,
     val maxTurns: Int,
     val goal: ScenarioGoal,
     val saveLoadCheckpoint: SaveLoadCheckpoint? = null,
     val assertions: List<ScenarioAssertion> = emptyList(),
-)
+) {
+    init {
+        require(isCompatibleScenarioType(scenarioType = scenarioType, zoneId = zoneId, zoneRoute = zoneRoute, routeIndex = routeIndex)) {
+            "Scenario '$name' uses incompatible scenarioType=${scenarioType.reportValue} for zoneId=$zoneId, routeIndex=$routeIndex, zoneRoute=$zoneRoute."
+        }
+    }
+}
 
 sealed interface ScenarioGoal {
     fun isSatisfied(observation: RunObservation): Boolean
@@ -118,6 +139,7 @@ data class ScenarioReport(
     val finalZoneId: String = zoneId,
     val zoneRouteHash: String = zoneId,
     val zonePath: List<String> = listOf(zoneId),
+    val scenarioType: ScenarioType = inferScenarioType(zoneId = zoneId, zoneRoute = zonePath, routeIndex = routeIndex),
     val success: Boolean,
     val outcome: RunOutcome,
     val floorReached: Int,
@@ -147,6 +169,9 @@ data class ScenarioReport(
     val lastMessages: List<String> = emptyList(),
     val eventTail: List<String> = emptyList(),
 ) {
+    val isFullRoute: Boolean
+        get() = scenarioType.isFullRoute
+
     /**
      * Normal defeats should not be treated as harness crashes/stalls by acceptance labs that
      * separately track progression thresholds.
@@ -196,6 +221,17 @@ sealed interface ScenarioAssertion {
                 "Expected final zone >= $zoneId but was ${report.finalZoneId}."
             }
     }
+
+    data class VisitedZone(
+        val zoneId: String,
+    ) : ScenarioAssertion {
+        override fun verify(report: ScenarioReport): String? =
+            if (report.zonePath.contains(zoneId)) {
+                null
+            } else {
+                "Expected route to visit $zoneId but path was ${report.zonePath}."
+            }
+    }
 }
 
 internal fun zoneDepth(zoneId: String): Int =
@@ -213,6 +249,123 @@ internal fun zoneDepth(zoneId: String): Int =
         "abyssal_heart" -> 10
         else -> -1
     }
+
+internal val OPTIONAL_ROUTE_ZONE_IDS: Set<String> =
+    setOf(
+        "bandit_camp",
+        "elven_ruins",
+        "molten_core",
+        "crystal_cavern",
+    )
+
+internal val FOUNDATION_BANDIT_ROUTE: List<String> =
+    listOf(
+        "shattered_outpost",
+        "greenwood_fringe",
+        "bandit_camp",
+        "greenwood_fringe",
+        "deep_iron_pit",
+        "grey_gate_depths",
+        "underground_river",
+        "abyssal_temple",
+        "abyssal_heart",
+    )
+
+internal val FOUNDATION_ELVEN_ROUTE: List<String> =
+    listOf(
+        "shattered_outpost",
+        "greenwood_fringe",
+        "elven_ruins",
+        "greenwood_fringe",
+        "deep_iron_pit",
+        "grey_gate_depths",
+        "underground_river",
+        "abyssal_temple",
+        "abyssal_heart",
+    )
+
+internal val FOUNDATION_MOLTEN_ROUTE: List<String> =
+    listOf(
+        "shattered_outpost",
+        "greenwood_fringe",
+        "deep_iron_pit",
+        "molten_core",
+        "deep_iron_pit",
+        "grey_gate_depths",
+        "underground_river",
+        "abyssal_temple",
+        "abyssal_heart",
+    )
+
+internal val FOUNDATION_CRYSTAL_ROUTE: List<String> =
+    listOf(
+        "shattered_outpost",
+        "greenwood_fringe",
+        "deep_iron_pit",
+        "grey_gate_depths",
+        "underground_river",
+        "crystal_cavern",
+        "underground_river",
+        "abyssal_temple",
+        "abyssal_heart",
+    )
+
+internal fun scenarioTypeDistribution(
+    reports: List<ScenarioReport>,
+    includeZeroCounts: Boolean = false,
+): Map<String, Int> =
+    buildMap {
+        ScenarioType.entries.forEach { scenarioType ->
+            val count = reports.count { report -> report.scenarioType == scenarioType }
+            if (includeZeroCounts || count > 0) {
+                put(scenarioType.reportValue, count)
+            }
+        }
+    }
+
+internal fun inferScenarioType(
+    zoneId: String,
+    zoneRoute: List<String>,
+    routeIndex: Int,
+): ScenarioType =
+    when {
+        isFormalFullRouteStart(zoneId = zoneId, zoneRoute = zoneRoute, routeIndex = routeIndex) -> ScenarioType.FULL_ROUTE
+        isBranchInclusiveStart(zoneId = zoneId, zoneRoute = zoneRoute, routeIndex = routeIndex) -> ScenarioType.BRANCH_INCLUSIVE
+        zoneDepth(zoneId) >= zoneDepth("abyssal_temple") -> ScenarioType.LATE_ROUTE_PROBE
+        else -> ScenarioType.ROUTE_PROBE
+    }
+
+private fun isCompatibleScenarioType(
+    scenarioType: ScenarioType,
+    zoneId: String,
+    zoneRoute: List<String>,
+    routeIndex: Int,
+): Boolean =
+    when (scenarioType) {
+        ScenarioType.FULL_ROUTE -> isFormalFullRouteStart(zoneId = zoneId, zoneRoute = zoneRoute, routeIndex = routeIndex)
+        ScenarioType.BRANCH_INCLUSIVE -> isBranchInclusiveStart(zoneId = zoneId, zoneRoute = zoneRoute, routeIndex = routeIndex)
+        ScenarioType.ROUTE_PROBE -> true
+        ScenarioType.LATE_ROUTE_PROBE -> zoneDepth(zoneId) >= zoneDepth("abyssal_temple")
+    }
+
+private fun isFormalFullRouteStart(
+    zoneId: String,
+    zoneRoute: List<String>,
+    routeIndex: Int,
+): Boolean =
+    zoneId == FOUNDATION_ZONE_ID &&
+        routeIndex == 0 &&
+        zoneRoute == FOUNDATION_ZONE_ROUTE
+
+private fun isBranchInclusiveStart(
+    zoneId: String,
+    zoneRoute: List<String>,
+    routeIndex: Int,
+): Boolean =
+    zoneId == FOUNDATION_ZONE_ID &&
+        routeIndex == 0 &&
+        zoneRoute.firstOrNull() == FOUNDATION_ZONE_ID &&
+        zoneRoute.any(OPTIONAL_ROUTE_ZONE_IDS::contains)
 
 data class RunObservation(
     val zoneId: String = FOUNDATION_ZONE_ID,

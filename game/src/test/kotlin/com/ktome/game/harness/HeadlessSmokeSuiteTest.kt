@@ -116,6 +116,8 @@ internal fun ScenarioReport.toJson() =
         put("professionId", professionId)
         put("raceId", raceId)
         put("routeIndex", routeIndex)
+        put("scenarioType", scenarioType.reportValue)
+        put("isFullRoute", isFullRoute)
         put("finalZoneId", finalZoneId)
         put("zoneRouteHash", zoneRouteHash)
         put("buildId", buildId)

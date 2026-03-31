@@ -226,6 +226,13 @@ internal data class ZoneRuntimeBundle(
 private const val SUMMARY_EVENT_LIMIT: Int = 5
 private const val AI_TRACE_LIMIT: Int = 64
 
+internal fun cacheRewardSourceId(
+    zoneId: String,
+    floor: Int,
+    interactableId: String,
+    position: Point,
+): String = "cache.$zoneId.floor$floor.$interactableId.${position.x}_${position.y}"
+
 class FoundationGameSession internal constructor(
     config: FoundationGameConfig,
     private val content: GameContent,
@@ -267,6 +274,7 @@ class FoundationGameSession internal constructor(
         val talentId: String,
         val name: String,
         val descKey: String?,
+        val ownerType: TalentTreeOwnerType,
         val level: Int,
         val committedLevel: Int,
         val maxLevel: Int,
@@ -340,6 +348,9 @@ class FoundationGameSession internal constructor(
     private val recentAiDecisionTraces = ArrayDeque<AIDecisionTrace>()
     private val recentBossTraces = ArrayDeque<BossTrace>()
     private val recordedMilestoneRewardSummaries = restoredMilestoneRewardSummaries.toMutableList()
+    private val recordedMilestoneRewardKeys =
+        restoredMilestoneRewardSummaries
+            .mapTo(linkedSetOf()) { summary -> summary.rewardSource to summary.sourceId }
     private val respecManager: RespecManager = RespecManager()
     private var activeShopId: String? = null
     private var pendingRouteSelection: List<RouteAdvanceOption> = emptyList()
@@ -799,6 +810,7 @@ class FoundationGameSession internal constructor(
                 talentId = details.talentId,
                 name = details.name,
                 descKey = details.descKey,
+                ownerType = details.ownerType,
                 level = details.level,
                 committedLevel = details.committedLevel,
                 maxLevel = details.maxLevel,
@@ -825,6 +837,7 @@ class FoundationGameSession internal constructor(
                 talentId = details.talentId,
                 name = details.name,
                 descKey = details.descKey,
+                ownerType = details.ownerType,
                 level = details.level,
                 committedLevel = details.committedLevel,
                 maxLevel = details.maxLevel,
@@ -871,6 +884,7 @@ class FoundationGameSession internal constructor(
     ): TalentUiDetails? {
         val definition = talentRegistry.get(talentId) ?: return null
         val schema = talentSchemaFor(talentId)
+        val ownerType = schema?.let(talentTreeOwnerResolver::ownerForTalent)?.ownerType ?: TalentTreeOwnerType.PROFESSION
         val committedLevel = loadout.levelOf(talentId).coerceIn(1, definition.maxLevel)
         val level = (effectiveTalentRanks(loadout)[talentId] ?: committedLevel).coerceIn(1, definition.maxLevel)
         val schemaResource = schema?.resourceCosts?.firstOrNull()
@@ -883,6 +897,7 @@ class FoundationGameSession internal constructor(
             talentId = talentId,
             name = tr(definition.nameKey),
             descKey = definition.descriptionTemplateKey,
+            ownerType = ownerType,
             level = level,
             committedLevel = committedLevel,
             maxLevel = definition.maxLevel,
@@ -2822,6 +2837,10 @@ class FoundationGameSession internal constructor(
         sourceId: String,
         reward: ItemInstance,
     ) {
+        val rewardKey = rewardSource to sourceId
+        if (!recordedMilestoneRewardKeys.add(rewardKey)) {
+            return
+        }
         val equipSlot = requireNotNull(reward.slot) {
             "Milestone reward '${reward.baseId}' from $rewardSource:$sourceId must be equippable."
         }
@@ -2838,6 +2857,17 @@ class FoundationGameSession internal constructor(
                 equippedBaseItemIdBeforeReward = equippedBaseItemIdFor(equipSlot),
             )
     }
+
+    private fun interactableRewardSourceId(
+        interactableId: String,
+        position: Point,
+    ): String =
+        cacheRewardSourceId(
+            zoneId = config.zoneId,
+            floor = currentFloor(),
+            interactableId = interactableId,
+            position = position,
+        )
 
     private fun finalizeMilestoneRewardSummary(summary: MilestoneRewardSummary): MilestoneRewardSummary {
         val equippedBaseItemIdAtRunEnd = equippedBaseItemIdFor(summary.equipSlot)
@@ -2933,7 +2963,7 @@ class FoundationGameSession internal constructor(
         }
 
     private fun groundRewardItemFor(
-        interactableId: String,
+        sourceId: String,
         spec: RewardSpec,
     ): ItemInstance =
         if (spec.profileIds.isEmpty()) {
@@ -2945,7 +2975,7 @@ class FoundationGameSession internal constructor(
                 rewardContext =
                     RewardGenerationContext(
                         rewardSource = MilestoneRewardSource.CACHE,
-                        sourceId = interactableId,
+                        sourceId = sourceId,
                         floor = itemFloorForRecommendedLevel(currentZoneSchema().recommendedLevel.max),
                         qualityFloor = ItemQuality.MAGIC,
                         minAffixCount = 1,
@@ -2960,13 +2990,14 @@ class FoundationGameSession internal constructor(
         position: Point,
         spec: RewardSpec,
     ) {
-        val reward = groundRewardItemFor(schema.id, spec)
+        val sourceId = interactableRewardSourceId(schema.id, position)
+        val reward = groundRewardItemFor(sourceId, spec)
         observeRewardItem(reward)
         ItemFactory().createGroundItem(world, reward, position)
         if (spec.profileIds.isNotEmpty()) {
             recordMilestoneReward(
                 rewardSource = MilestoneRewardSource.CACHE,
-                sourceId = schema.id,
+                sourceId = sourceId,
                 reward = reward,
             )
         }
@@ -2985,6 +3016,7 @@ class FoundationGameSession internal constructor(
         position: Point,
         spec: RewardSpec,
     ) {
+        val sourceId = interactableRewardSourceId(schema.id, position)
         val reward =
             zoneRewardItem(
                 profileIds = spec.profileIds,
@@ -2992,7 +3024,7 @@ class FoundationGameSession internal constructor(
                 rewardContext =
                     RewardGenerationContext(
                         rewardSource = MilestoneRewardSource.CACHE,
-                        sourceId = schema.id,
+                        sourceId = sourceId,
                         floor = itemFloorForRecommendedLevel(currentZoneSchema().recommendedLevel.max),
                         qualityFloor = ItemQuality.MAGIC,
                         minAffixCount = 1,
@@ -3004,7 +3036,7 @@ class FoundationGameSession internal constructor(
         if (spec.profileIds.isNotEmpty()) {
             recordMilestoneReward(
                 rewardSource = MilestoneRewardSource.CACHE,
-                sourceId = schema.id,
+                sourceId = sourceId,
                 reward = reward,
             )
         }

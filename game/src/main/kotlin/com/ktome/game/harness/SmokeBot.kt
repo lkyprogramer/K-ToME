@@ -3,6 +3,7 @@ package com.ktome.game.harness
 import com.ktome.core.item.ConsumableEffect
 import com.ktome.core.map.Point
 import com.ktome.core.pathfinding.AStar
+import com.ktome.core.talent.TalentTreeOwnerType
 import com.ktome.game.PlayerCommand
 import com.ktome.game.PrimaryStat
 import com.ktome.game.TalentReserveView
@@ -48,7 +49,10 @@ class SmokeBot : RunBot {
             return PlayerCommand.AssignStat(preferredStat(observation))
         }
         if (observation.playerStatus.talentPoints > 0) {
-            preferredTalentUpgrade(observation)?.let { talent -> return PlayerCommand.AssignTalent(talent.talentId) }
+            preferredTalentUpgrade(observation, TalentTreeOwnerType.PROFESSION)?.let { talent -> return PlayerCommand.AssignTalent(talent.talentId) }
+        }
+        if (observation.playerStatus.raceTalentPoints > 0) {
+            preferredTalentUpgrade(observation, TalentTreeOwnerType.RACE)?.let { talent -> return PlayerCommand.AssignTalent(talent.talentId) }
         }
         if (shouldRefreshLoadout(observation)) {
             LoadoutPlanner.preferredLoadoutCommand(observation)?.let { return it }
@@ -102,9 +106,12 @@ class SmokeBot : RunBot {
             else -> PrimaryStat.STR
         }
 
-    private fun preferredTalentUpgrade(observation: RunObservation): TalentUpgradeCandidate? =
+    private fun preferredTalentUpgrade(
+        observation: RunObservation,
+        ownerType: TalentTreeOwnerType,
+    ): TalentUpgradeCandidate? =
         (observation.talentSlots.map(::TalentUpgradeCandidate) + observation.reserveTalents.map(::TalentUpgradeCandidate))
-            .filter { talent -> talent.level < talent.maxLevel }
+            .filter { talent -> talent.ownerType == ownerType && talent.level < talent.maxLevel }
             .maxWithOrNull(
                 compareBy<TalentUpgradeCandidate> { talentUpgradePriority(it.talentId) }
                     .thenBy { -it.level }
@@ -1101,12 +1108,14 @@ class SmokeBot : RunBot {
 
     private data class TalentUpgradeCandidate(
         val talentId: String,
+        val ownerType: TalentTreeOwnerType,
         val level: Int,
         val maxLevel: Int,
         val sourcePriority: Int,
     ) {
         constructor(slot: TalentSlotView) : this(
             talentId = slot.talentId,
+            ownerType = slot.ownerType,
             level = slot.level,
             maxLevel = slot.maxLevel,
             sourcePriority = -slot.slot,
@@ -1114,6 +1123,7 @@ class SmokeBot : RunBot {
 
         constructor(talent: TalentReserveView) : this(
             talentId = talent.talentId,
+            ownerType = talent.ownerType,
             level = talent.level,
             maxLevel = talent.maxLevel,
             sourcePriority = Int.MIN_VALUE,

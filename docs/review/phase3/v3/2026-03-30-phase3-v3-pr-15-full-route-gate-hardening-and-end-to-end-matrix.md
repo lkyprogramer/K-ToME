@@ -184,8 +184,8 @@ game/src/main/kotlin/com/ktome/game/harness/ScenarioModels.kt
 ### 6.3 自动化命令
 
 ```bash
-./gradlew :game:test --tests "com.ktome.game.harness.LongRunLabTest"
-./gradlew :game:test --tests "com.ktome.game.harness.LongRunLabFullTest"
+./gradlew :game:longRunLab --tests "com.ktome.game.harness.LongRunLabTest"
+./gradlew :game:longRunLab --tests "com.ktome.game.harness.LongRunLabFullTest"
 ./gradlew longRunLab
 ./gradlew check
 ```
