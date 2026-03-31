@@ -62,6 +62,7 @@ class LongRunLabFullTest {
                 .groupingBy { it }
                 .eachCount()
                 .toSortedMap()
+        val failingReports = reports.filterNot(ScenarioReport::success)
 
         HarnessReportWriter.writeJsonAndMarkdown(
             fileStem = "long-run-full",
@@ -191,6 +192,13 @@ class LongRunLabFullTest {
             reports.none(ScenarioReport::crashedOrStalled),
             reports.filter(ScenarioReport::crashedOrStalled).joinToString(separator = "\n") { report ->
                 "${report.professionId}/${report.raceId}/${report.seed}/${report.scenarioType.reportValue}: ${report.failureReason ?: report.stuckReason ?: "unknown"}"
+            },
+        )
+        assertTrue(
+            failingReports.isEmpty(),
+            failingReports.joinToString(separator = "\n") { report ->
+                val tail = (report.assertionFailures + listOfNotNull(report.failureReason, report.stuckReason)).joinToString()
+                "${report.professionId}/${report.raceId}/${report.seed}/${report.scenarioType.reportValue}: ${tail.ifBlank { report.outcome.toString() }}"
             },
         )
         assertTrue(
