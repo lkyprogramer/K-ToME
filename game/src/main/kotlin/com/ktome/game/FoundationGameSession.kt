@@ -164,6 +164,7 @@ import com.ktome.core.snapshot.TalentReserveSnapshot
 import com.ktome.core.snapshot.TalentSlotSnapshot
 import com.ktome.core.status.EffectCategory
 import com.ktome.core.status.EffectCarrierKind
+import com.ktome.core.status.StatusEffectDef
 import com.ktome.core.status.StatusDefinitions
 import com.ktome.core.status.StatusLifecycle
 import com.ktome.core.status.StatusTickResolver
@@ -229,6 +230,11 @@ internal data class ZoneRuntimeBundle(
 
 private const val SUMMARY_EVENT_LIMIT: Int = 5
 private const val AI_TRACE_LIMIT: Int = 64
+private const val ABYSSAL_WARD_PROTECTION_TURNS: Int = 4
+private const val ABYSSAL_WARD_PROTECTION_MAGNITUDE: Double = 0.12
+private const val VOID_ERUPTION_WEAKEN_MAGNITUDE: Double = 0.12
+private const val ABYSSAL_OVERLAY_VISUAL_KEY: String = "vfx.zone.effect.void_pressure_01"
+private const val ABYSSAL_WARNING_AUDIO_PROFILE: String = "audio.boss.warning"
 
 internal fun cacheRewardSourceId(
     zoneId: String,
@@ -1164,7 +1170,9 @@ class FoundationGameSession internal constructor(
             bossAndTelegraphOverlays +
                 furnacePressureOverlaySnapshots() +
                 riverCurrentOverlaySnapshots() +
-                crystalShardOverlaySnapshots()
+                crystalShardOverlaySnapshots() +
+                abyssalTemplePressureOverlaySnapshots() +
+                voidEruptionOverlaySnapshots()
         ).sortedBy(OverlayRenderSnapshot::id)
     }
 
@@ -1299,6 +1307,82 @@ class FoundationGameSession internal constructor(
                 )
             }
 
+    private fun abyssalTemplePressureOverlaySnapshots(): List<OverlayRenderSnapshot> =
+        world.entitiesWith(AbyssalTemplePressureRuntimeState::class)
+            .mapNotNull { entityId ->
+                val state = requireNotNull(world.get<AbyssalTemplePressureRuntimeState>(entityId))
+                if (state.phase == VoidPressurePhase.IDLE || state.suppressionTurnsRemaining > 0) {
+                    return@mapNotNull null
+                }
+                val visibleCells =
+                    templeVoidPressureCells(state)
+                        .filter(visibleTiles::contains)
+                        .map { point -> GridPointSnapshot(point.x, point.y) }
+                if (visibleCells.isEmpty()) {
+                    return@mapNotNull null
+                }
+                abyssalOverlaySnapshot(
+                    id = "void-pressure:${entityId.value}:${state.phase.name.lowercase()}",
+                    sourceAbilityId = AbyssalRuntimeKeys.Temple.SOURCE_ABILITY_ID,
+                    cells = visibleCells,
+                    phase = state.phase,
+                    previewTurns = state.phaseTurnsRemaining,
+                )
+            }
+
+    private fun voidEruptionOverlaySnapshots(): List<OverlayRenderSnapshot> =
+        if (!isFinaleRuntimeZone()) {
+            emptyList()
+        } else {
+            world.entitiesWith(VoidEruptionRuntimeState::class)
+                .mapNotNull { entityId ->
+                    val state = requireNotNull(world.get<VoidEruptionRuntimeState>(entityId))
+                    if (state.phase == VoidPressurePhase.IDLE || state.stabilizedTurnsRemaining > 0) {
+                        return@mapNotNull null
+                    }
+                    val visibleCells =
+                        state.hazardCells
+                            .filter(visibleTiles::contains)
+                            .map { point -> GridPointSnapshot(point.x, point.y) }
+                    if (visibleCells.isEmpty()) {
+                        return@mapNotNull null
+                    }
+                    abyssalOverlaySnapshot(
+                        id = "void-eruption:${entityId.value}:${state.phase.name.lowercase()}",
+                        sourceAbilityId = AbyssalRuntimeKeys.Finale.SOURCE_ABILITY_ID,
+                        cells = visibleCells,
+                        phase = state.phase,
+                        previewTurns = state.phaseTurnsRemaining,
+                    )
+                }
+        }
+
+    private fun abyssalOverlaySnapshot(
+        id: String,
+        sourceAbilityId: String,
+        cells: List<GridPointSnapshot>,
+        phase: VoidPressurePhase,
+        previewTurns: Int,
+    ): OverlayRenderSnapshot =
+        OverlayRenderSnapshot(
+            id = id,
+            visualKey = ABYSSAL_OVERLAY_VISUAL_KEY,
+            audioProfile = ABYSSAL_WARNING_AUDIO_PROFILE,
+            previewTurns = previewTurns.coerceAtLeast(1),
+            dangerLevel = abyssalOverlayDangerLevel(phase),
+            shape = OverlayShapeSnapshot.CUSTOM,
+            sourceAbilityId = sourceAbilityId,
+            cells = cells,
+            warningMessage = null,
+        )
+
+    private fun abyssalOverlayDangerLevel(phase: VoidPressurePhase): Int =
+        when (phase) {
+            VoidPressurePhase.TELEGRAPH -> DangerLevel.MODERATE.overlaySeverity
+            VoidPressurePhase.ACTIVE -> DangerLevel.HIGH.overlaySeverity
+            VoidPressurePhase.IDLE -> DangerLevel.LOW.overlaySeverity
+        }
+
     private fun announceZoneMechanicFloorEntryIfNeeded() {
         world.entitiesWith(PatrolPressureRuntimeState::class).forEach { entityId ->
             val state = requireNotNull(world.get<PatrolPressureRuntimeState>(entityId))
@@ -1318,6 +1402,8 @@ class FoundationGameSession internal constructor(
         if (actorId == playerId) {
             advanceCrystalShardCycle()
             advanceFurnacePressureCycle()
+            advanceAbyssalTemplePressureCycle()
+            advanceVoidEruptionCycle()
         }
     }
 
@@ -1418,6 +1504,8 @@ class FoundationGameSession internal constructor(
         applyRiverCurrentPressure(actorId)
         syncCrystalShardEffectsFor(actorId)
         syncFurnacePressureEffectsFor(actorId)
+        syncAbyssalTemplePressureEffectsFor(actorId)
+        syncVoidEruptionEffectsFor(actorId)
     }
 
     private fun applyRiverCurrentPressure(actorId: EntityId) {
@@ -1535,6 +1623,208 @@ class FoundationGameSession internal constructor(
                                 effectId = "zone.furnace_pressure.tick:${entityId.value}:$actorId:$turnCount",
                                 duration = 1,
                                 tickDamageOverride = state.damagePerTick,
+                            ),
+                        ),
+                ),
+            )
+        }
+    }
+
+    private fun advanceAbyssalTemplePressureCycle() {
+        world.entitiesWith(AbyssalTemplePressureRuntimeState::class).forEach { entityId ->
+            val state = requireNotNull(world.get<AbyssalTemplePressureRuntimeState>(entityId))
+            if (state.suppressionTurnsRemaining > 0) {
+                state.suppressionTurnsRemaining = (state.suppressionTurnsRemaining - 1).coerceAtLeast(0)
+                state.phase = VoidPressurePhase.IDLE
+                state.phaseTurnsRemaining = 0
+                world.remove<WorldEffect>(entityId)
+                if (state.suppressionTurnsRemaining == 0) {
+                    state.nextCycleTurn = turnCount + state.cycleIntervalTurns
+                }
+                return@forEach
+            }
+            when (state.phase) {
+                VoidPressurePhase.IDLE -> {
+                    if (turnCount >= state.nextCycleTurn && templeVoidPressureCells(state).isNotEmpty()) {
+                        state.phase = VoidPressurePhase.TELEGRAPH
+                        state.phaseTurnsRemaining = state.telegraphTurns
+                        addMessage(AbyssalRuntimeKeys.Temple.TELEGRAPH_LOG_KEY)
+                    }
+                }
+
+                VoidPressurePhase.TELEGRAPH -> {
+                    state.phaseTurnsRemaining = (state.phaseTurnsRemaining - 1).coerceAtLeast(0)
+                    if (state.phaseTurnsRemaining == 0) {
+                        state.phase = VoidPressurePhase.ACTIVE
+                        state.phaseTurnsRemaining = state.activeTurns
+                        addMessage(AbyssalRuntimeKeys.Temple.ACTIVE_LOG_KEY)
+                    }
+                }
+
+                VoidPressurePhase.ACTIVE -> {
+                    state.phaseTurnsRemaining = (state.phaseTurnsRemaining - 1).coerceAtLeast(0)
+                    if (state.phaseTurnsRemaining == 0) {
+                        state.phase = VoidPressurePhase.IDLE
+                        state.nextCycleTurn = turnCount + state.cycleIntervalTurns
+                        world.remove<WorldEffect>(entityId)
+                    }
+                }
+            }
+        }
+    }
+
+    private fun settleAbyssalTemplePressure(
+        state: AbyssalTemplePressureRuntimeState,
+        entityId: EntityId,
+    ) {
+        state.phase = VoidPressurePhase.IDLE
+        state.phaseTurnsRemaining = 0
+        state.suppressionTurnsRemaining = maxOf(state.suppressionTurnsRemaining, state.suppressionTurnsOnStabilize)
+        world.remove<WorldEffect>(entityId)
+    }
+
+    private fun syncAbyssalTemplePressureEffectsFor(actorId: EntityId) {
+        val actorPosition = world.get<Position>(actorId)?.toPoint()
+        world.entitiesWith(AbyssalTemplePressureRuntimeState::class).forEach { entityId ->
+            val state = requireNotNull(world.get<AbyssalTemplePressureRuntimeState>(entityId))
+            val activeCells = templeVoidPressureCells(state)
+            if (
+                state.phase != VoidPressurePhase.ACTIVE ||
+                actorPosition == null ||
+                actorPosition !in activeCells ||
+                hasAbyssalWardProtection(actorId)
+            ) {
+                world.remove<WorldEffect>(entityId)
+                return@forEach
+            }
+            world.add(
+                entityId,
+                WorldEffect(
+                    effectId = zoneRuntimeEffectId(AbyssalRuntimeKeys.Temple.SOURCE_ABILITY_ID, entityId),
+                    affectedActorIds = setOf(actorId),
+                    effects =
+                        mutableListOf(
+                            StatusLifecycle.createInstance(
+                                type = StatusEffectType.POISON,
+                                effectId =
+                                    zoneRuntimeTurnEffectId(
+                                        sourceAbilityId = AbyssalRuntimeKeys.Temple.SOURCE_ABILITY_ID,
+                                        suffix = "tick",
+                                        entityId = entityId,
+                                        actorId = actorId,
+                                    ),
+                                duration = 1,
+                                tickDamageOverride = state.damagePerTick,
+                            ),
+                        ),
+                ),
+            )
+        }
+    }
+
+    private fun advanceVoidEruptionCycle() {
+        if (!isFinaleRuntimeZone()) {
+            return
+        }
+        world.entitiesWith(VoidEruptionRuntimeState::class).forEach { entityId ->
+            val state = requireNotNull(world.get<VoidEruptionRuntimeState>(entityId))
+            if (state.stabilizedTurnsRemaining > 0) {
+                state.stabilizedTurnsRemaining = (state.stabilizedTurnsRemaining - 1).coerceAtLeast(0)
+                state.phase = VoidPressurePhase.IDLE
+                state.phaseTurnsRemaining = 0
+                world.remove<WorldEffect>(entityId)
+                if (state.stabilizedTurnsRemaining == 0) {
+                    state.nextCycleTurn = turnCount + state.cycleIntervalTurns
+                }
+                return@forEach
+            }
+            when (state.phase) {
+                VoidPressurePhase.IDLE -> {
+                    if (turnCount >= state.nextCycleTurn) {
+                        state.phase = VoidPressurePhase.TELEGRAPH
+                        state.phaseTurnsRemaining = state.telegraphTurns
+                        addMessage(AbyssalRuntimeKeys.Finale.TELEGRAPH_LOG_KEY)
+                    }
+                }
+
+                VoidPressurePhase.TELEGRAPH -> {
+                    state.phaseTurnsRemaining = (state.phaseTurnsRemaining - 1).coerceAtLeast(0)
+                    if (state.phaseTurnsRemaining == 0) {
+                        state.phase = VoidPressurePhase.ACTIVE
+                        state.phaseTurnsRemaining = state.activeTurns
+                        addMessage(AbyssalRuntimeKeys.Finale.ACTIVE_LOG_KEY)
+                    }
+                }
+
+                VoidPressurePhase.ACTIVE -> {
+                    state.phaseTurnsRemaining = (state.phaseTurnsRemaining - 1).coerceAtLeast(0)
+                    if (state.phaseTurnsRemaining == 0) {
+                        state.phase = VoidPressurePhase.IDLE
+                        state.nextCycleTurn = turnCount + state.cycleIntervalTurns
+                        world.remove<WorldEffect>(entityId)
+                    }
+                }
+            }
+        }
+    }
+
+    private fun settleVoidEruption(
+        state: VoidEruptionRuntimeState,
+        entityId: EntityId,
+    ) {
+        state.phase = VoidPressurePhase.IDLE
+        state.phaseTurnsRemaining = 0
+        state.stabilizedTurnsRemaining = maxOf(state.stabilizedTurnsRemaining, state.stabilizedTurnsOnFocus)
+        world.remove<WorldEffect>(entityId)
+    }
+
+    private fun syncVoidEruptionEffectsFor(actorId: EntityId) {
+        if (!isFinaleRuntimeZone()) {
+            return
+        }
+        val actorPosition = world.get<Position>(actorId)?.toPoint()
+        world.entitiesWith(VoidEruptionRuntimeState::class).forEach { entityId ->
+            val state = requireNotNull(world.get<VoidEruptionRuntimeState>(entityId))
+            if (
+                state.phase != VoidPressurePhase.ACTIVE ||
+                state.stabilizedTurnsRemaining > 0 ||
+                actorPosition == null ||
+                actorPosition !in state.hazardCells ||
+                hasAbyssalWardProtection(actorId)
+            ) {
+                world.remove<WorldEffect>(entityId)
+                return@forEach
+            }
+            world.add(
+                entityId,
+                WorldEffect(
+                    effectId = zoneRuntimeEffectId(AbyssalRuntimeKeys.Finale.SOURCE_ABILITY_ID, entityId),
+                    affectedActorIds = setOf(actorId),
+                    effects =
+                        mutableListOf(
+                            StatusLifecycle.createInstance(
+                                type = StatusEffectType.POISON,
+                                effectId =
+                                    zoneRuntimeTurnEffectId(
+                                        sourceAbilityId = AbyssalRuntimeKeys.Finale.SOURCE_ABILITY_ID,
+                                        suffix = "tick",
+                                        entityId = entityId,
+                                        actorId = actorId,
+                                    ),
+                                duration = 1,
+                                tickDamageOverride = state.damagePerTick,
+                            ),
+                            StatusLifecycle.createInstance(
+                                type = StatusEffectType.WEAKEN,
+                                effectId =
+                                    zoneRuntimeTurnEffectId(
+                                        sourceAbilityId = AbyssalRuntimeKeys.Finale.SOURCE_ABILITY_ID,
+                                        suffix = "weaken",
+                                        entityId = entityId,
+                                        actorId = actorId,
+                                    ),
+                                duration = 1,
+                                magnitude = VOID_ERUPTION_WEAKEN_MAGNITUDE,
                             ),
                         ),
                 ),
@@ -3088,6 +3378,120 @@ class FoundationGameSession internal constructor(
             objectiveId = RiverCrystalRuntimeKeys.Crystal.OBJECTIVE_ID,
         ) in setOf(ObjectiveState.IN_PROGRESS, ObjectiveState.COMPLETED)
 
+    private fun isAbyssalTempleWardClaimed(): Boolean =
+        currentQuestObjectiveState(
+            questId = AbyssalRuntimeKeys.Temple.QUEST_ID,
+            objectiveId = AbyssalRuntimeKeys.Temple.OBJECTIVE_ID,
+        ) in setOf(ObjectiveState.IN_PROGRESS, ObjectiveState.COMPLETED)
+
+    private fun isFinaleRuntimeZone(): Boolean = "finale" in currentZoneSchema().tags
+
+    private fun templeVoidPressureCells(state: AbyssalTemplePressureRuntimeState): Set<Point> =
+        if (state.suppressionTurnsRemaining > 0) {
+            emptySet()
+        } else if (isAbyssalTempleWardClaimed()) {
+            state.laneCells.toSet() - state.corridorCells.toSet()
+        } else {
+            state.laneCells.toSet()
+        }
+
+    private fun hasAbyssalWardProtection(actorId: EntityId): Boolean =
+        world
+            .get<EffectTracker>(actorId)
+            ?.activeEffects()
+            ?.any { effect -> effect.schemaId in AbyssalRuntimeKeys.WARD_STATUS_IDS } == true
+
+    private fun abyssalWardProtectionStatusId(sourceAbilityId: String): String =
+        when (sourceAbilityId) {
+            AbyssalRuntimeKeys.Temple.SOURCE_ABILITY_ID -> AbyssalRuntimeKeys.Temple.WARD_STATUS_ID
+            AbyssalRuntimeKeys.Finale.SOURCE_ABILITY_ID -> AbyssalRuntimeKeys.Finale.WARD_STATUS_ID
+            else -> "$sourceAbilityId.ward_protection"
+        }
+
+    private fun abyssalWardProtectionDefinition(sourceAbilityId: String): StatusEffectDef =
+        StatusDefinitions
+            .definitionFor(StatusEffectType.HOLY_SHIELD_BUFF)
+            .copy(id = abyssalWardProtectionStatusId(sourceAbilityId))
+
+    private fun grantAbyssalWardProtection(
+        actorId: EntityId,
+        sourceAbilityId: String,
+        effectId: String,
+        sourceEntityId: EntityId = actorId,
+    ) {
+        val result =
+            StatusLifecycle.applyEffect(
+                world,
+                actorId,
+                StatusLifecycle.createInstance(
+                    definition = abyssalWardProtectionDefinition(sourceAbilityId),
+                    effectId = effectId,
+                    duration = ABYSSAL_WARD_PROTECTION_TURNS,
+                    magnitude = ABYSSAL_WARD_PROTECTION_MAGNITUDE,
+                    sourceEntityId = sourceEntityId,
+                    appliedTurn = turnCount,
+                ),
+            )
+        if (!result.applied) {
+            return
+        }
+        StatsCalculator.recalculateAndStore(world, actorId)
+        if (actorId == playerId) {
+            syncPlayerResistanceProfile()
+        }
+        logEvent(
+            StatusAppliedEvent(
+                target = actorId,
+                statusType = StatusEffectType.HOLY_SHIELD_BUFF,
+                statusId = abyssalWardProtectionStatusId(sourceAbilityId),
+                source = sourceEntityId,
+                remainingTurns = ABYSSAL_WARD_PROTECTION_TURNS,
+            ),
+        )
+    }
+
+    private fun zoneRuntimeEffectId(
+        sourceAbilityId: String,
+        entityId: EntityId,
+    ): String = "$sourceAbilityId:${entityId.value}"
+
+    private fun zoneRuntimeTurnEffectId(
+        sourceAbilityId: String,
+        suffix: String,
+        entityId: EntityId,
+        actorId: EntityId,
+    ): String = "$sourceAbilityId.$suffix:${entityId.value}:$actorId:$turnCount"
+
+    private fun zoneWardProtectionEffectId(sourceAbilityId: String): String = "$sourceAbilityId.ward:${turnCount}:${playerId.value}"
+
+    private fun stabilizeTempleWardReliquary() {
+        addMessage(AbyssalRuntimeKeys.Temple.STABILIZED_LOG_KEY)
+        grantAbyssalWardProtection(
+            actorId = playerId,
+            sourceAbilityId = AbyssalRuntimeKeys.Temple.SOURCE_ABILITY_ID,
+            effectId = zoneWardProtectionEffectId(AbyssalRuntimeKeys.Temple.SOURCE_ABILITY_ID),
+        )
+        world.entitiesWith(AbyssalTemplePressureRuntimeState::class).forEach { runtimeId ->
+            val state = requireNotNull(world.get<AbyssalTemplePressureRuntimeState>(runtimeId))
+            state.suppressionTurnsRemaining = state.suppressionTurnsOnStabilize
+            settleAbyssalTemplePressure(state, runtimeId)
+        }
+    }
+
+    private fun stabilizeHeartWardFocus() {
+        addMessage(AbyssalRuntimeKeys.Finale.STABILIZED_LOG_KEY)
+        grantAbyssalWardProtection(
+            actorId = playerId,
+            sourceAbilityId = AbyssalRuntimeKeys.Finale.SOURCE_ABILITY_ID,
+            effectId = zoneWardProtectionEffectId(AbyssalRuntimeKeys.Finale.SOURCE_ABILITY_ID),
+        )
+        world.entitiesWith(VoidEruptionRuntimeState::class).forEach { runtimeId ->
+            val state = requireNotNull(world.get<VoidEruptionRuntimeState>(runtimeId))
+            state.stabilizedTurnsRemaining = state.stabilizedTurnsOnFocus
+            settleVoidEruption(state, runtimeId)
+        }
+    }
+
     private fun isRiverCurrentPressureActive(): Boolean =
         !isRiverCrossingSecured() && turnCount % 2 == 0
 
@@ -3133,8 +3537,16 @@ class FoundationGameSession internal constructor(
                     RiverCrystalRuntimeKeys.River.PROGRESS_TOKEN,
                     RiverCrystalRuntimeKeys.River.PROGRESS_STEP_KEY,
                 )
-            "temple_ward_reliquary" -> ObjectiveProgressSpec("abyssal_temple.ward_reliquary_claimed", "objective.abyssal_temple_sanctum.step.ward_reliquary_claimed")
-            "heart_ward_focus" -> ObjectiveProgressSpec("abyssal_heart.ward_stabilized", "objective.abyssal_heart_finale.step.ward_stabilized")
+            AbyssalRuntimeKeys.Temple.INTERACTABLE_ID ->
+                ObjectiveProgressSpec(
+                    AbyssalRuntimeKeys.Temple.PROGRESS_TOKEN,
+                    AbyssalRuntimeKeys.Temple.PROGRESS_STEP_KEY,
+                )
+            AbyssalRuntimeKeys.Finale.INTERACTABLE_ID ->
+                ObjectiveProgressSpec(
+                    AbyssalRuntimeKeys.Finale.PROGRESS_TOKEN,
+                    AbyssalRuntimeKeys.Finale.PROGRESS_STEP_KEY,
+                )
             else -> null
         }
 
@@ -3177,8 +3589,8 @@ class FoundationGameSession internal constructor(
             RiverCrystalRuntimeKeys.Crystal.INTERACTABLE_ID -> optionalZoneRewardSpec()
             RiverCrystalRuntimeKeys.River.INTERACTABLE_ID ->
                 RewardSpec(listOf("loot.foundation.common", "loot.grey_gate_depths.reward"), "scroll_teleport")
-            "temple_ward_reliquary" -> RewardSpec(listOf("loot.foundation.boss", "loot.grey_gate_depths.reward"), "sanctified_seal")
-            "heart_ward_focus" -> RewardSpec(listOf("loot.foundation.boss"), "abyssal_heartstone")
+            AbyssalRuntimeKeys.Temple.INTERACTABLE_ID -> RewardSpec(listOf("loot.foundation.boss", "loot.grey_gate_depths.reward"), "sanctified_seal")
+            AbyssalRuntimeKeys.Finale.INTERACTABLE_ID -> RewardSpec(listOf("loot.foundation.boss"), "abyssal_heartstone")
             else -> null
         }
 
@@ -3630,13 +4042,13 @@ class FoundationGameSession internal constructor(
 
             val nextActor = pendingActions.firstOrNull() ?: break
             if (!world.isAlive(nextActor)) {
-                pendingActions.removeFirst()
+                pendingActions.removeFirstOrNull()
                 activeTurnActor = null
                 continue
             }
 
             if (!prepareActorTurn(nextActor)) {
-                pendingActions.removeFirst()
+                pendingActions.removeFirstOrNull()
                 activeTurnActor = null
                 continue
             }
@@ -3644,7 +4056,7 @@ class FoundationGameSession internal constructor(
                 break
             }
 
-            pendingActions.removeFirst()
+            pendingActions.removeFirstOrNull()
             executeMonsterTurn(nextActor)
             finishActorTurn(nextActor)
             activeTurnActor = null
@@ -6260,8 +6672,8 @@ class FoundationGameSession internal constructor(
                 "molten_pressure_valve",
                 RiverCrystalRuntimeKeys.Crystal.INTERACTABLE_ID,
                 RiverCrystalRuntimeKeys.River.INTERACTABLE_ID,
-                "temple_ward_reliquary",
-                "heart_ward_focus",
+                AbyssalRuntimeKeys.Temple.INTERACTABLE_ID,
+                AbyssalRuntimeKeys.Finale.INTERACTABLE_ID,
             ) -> {
                 val rewardSpec = requireNotNull(supportRewardSpecFor(interactable.id)) {
                     "Missing support reward spec for interactable '${interactable.id}'."
@@ -6281,6 +6693,12 @@ class FoundationGameSession internal constructor(
                                 entityId = runtimeId,
                             )
                         }
+                    }
+                    AbyssalRuntimeKeys.Temple.INTERACTABLE_ID -> {
+                        stabilizeTempleWardReliquary()
+                    }
+                    AbyssalRuntimeKeys.Finale.INTERACTABLE_ID -> {
+                        stabilizeHeartWardFocus()
                     }
                 }
                 if (interactable.id in setOf("armory_gate", "hunter_snare", "mine_furnace", "ritual_altar")) {
@@ -6933,13 +7351,17 @@ class FoundationGameSession internal constructor(
             }
 
     private fun statusNameKey(statusId: String): String =
-        content.statusSchemaFor(statusId)?.nameKey
-            ?: content.statusCatalog.definitionOrNull(statusId)?.nameKey
-            ?: if (StatusEffectType.fromSchemaId(statusId) == StatusEffectType.CUSTOM) {
-                "status.custom"
-            } else {
-                statusEffectNameKey(StatusEffectType.fromSchemaId(statusId))
-            }
+        when (statusId) {
+            in AbyssalRuntimeKeys.WARD_STATUS_IDS -> StatusDefinitions.nameKey(StatusEffectType.HOLY_SHIELD_BUFF)
+            else ->
+                content.statusSchemaFor(statusId)?.nameKey
+                    ?: content.statusCatalog.definitionOrNull(statusId)?.nameKey
+                    ?: if (StatusEffectType.fromSchemaId(statusId) == StatusEffectType.CUSTOM) {
+                        "status.custom"
+                    } else {
+                        statusEffectNameKey(StatusEffectType.fromSchemaId(statusId))
+                    }
+        }
 
     private fun EffectCategory.toSnapshotCategory(): StatusEffectCategorySnapshot =
         when (this) {

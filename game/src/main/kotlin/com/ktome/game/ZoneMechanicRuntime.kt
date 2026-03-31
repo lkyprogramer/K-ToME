@@ -73,6 +73,39 @@ internal data class CrystalShardRuntimeState(
     var phaseTurnsRemaining: Int = 0,
 )
 
+internal enum class VoidPressurePhase {
+    IDLE,
+    TELEGRAPH,
+    ACTIVE,
+}
+
+internal data class AbyssalTemplePressureRuntimeState(
+    val laneCells: List<Point>,
+    val corridorCells: List<Point>,
+    val cycleIntervalTurns: Int,
+    val telegraphTurns: Int,
+    val activeTurns: Int,
+    val damagePerTick: Int,
+    val suppressionTurnsOnStabilize: Int,
+    var nextCycleTurn: Int,
+    var phase: VoidPressurePhase = VoidPressurePhase.IDLE,
+    var phaseTurnsRemaining: Int = 0,
+    var suppressionTurnsRemaining: Int = 0,
+)
+
+internal data class VoidEruptionRuntimeState(
+    val hazardCells: List<Point>,
+    val cycleIntervalTurns: Int,
+    val telegraphTurns: Int,
+    val activeTurns: Int,
+    val damagePerTick: Int,
+    val stabilizedTurnsOnFocus: Int,
+    var nextCycleTurn: Int,
+    var phase: VoidPressurePhase = VoidPressurePhase.IDLE,
+    var phaseTurnsRemaining: Int = 0,
+    var stabilizedTurnsRemaining: Int = 0,
+)
+
 private data class PatrolPressureSpec(
     val spawnTemplateIds: List<String>,
     val maxHostiles: Int,
@@ -123,6 +156,25 @@ private data class CrystalShardSpec(
     val damagePerTick: Int,
 )
 
+private data class AbyssalTemplePressureSpec(
+    val laneCells: List<Point>,
+    val corridorCells: List<Point>,
+    val cycleIntervalTurns: Int,
+    val telegraphTurns: Int,
+    val activeTurns: Int,
+    val damagePerTick: Int,
+    val suppressionTurnsOnStabilize: Int,
+)
+
+private data class VoidEruptionSpec(
+    val hazardCells: List<Point>,
+    val cycleIntervalTurns: Int,
+    val telegraphTurns: Int,
+    val activeTurns: Int,
+    val damagePerTick: Int,
+    val stabilizedTurnsOnFocus: Int,
+)
+
 internal object ZoneMechanicRuntime {
     private const val DEFAULT_PATROL_MAX_HOSTILES: Int = 4
     private const val DEFAULT_PATROL_WAVE_LIMIT: Int = 3
@@ -131,6 +183,12 @@ internal object ZoneMechanicRuntime {
     private const val DEFAULT_FURNACE_DAMAGE_PER_TICK: Int = 6
     private const val DEFAULT_CRYSTAL_INTERVAL_TURNS: Int = 8
     private const val DEFAULT_CRYSTAL_DAMAGE_PER_TICK: Int = 6
+    private const val DEFAULT_VOID_PRESSURE_INTERVAL_TURNS: Int = 6
+    private const val DEFAULT_VOID_PRESSURE_DAMAGE_PER_TICK: Int = 7
+    private const val DEFAULT_VOID_PRESSURE_SUPPRESSION_TURNS: Int = 4
+    private const val DEFAULT_VOID_ERUPTION_INTERVAL_TURNS: Int = 5
+    private const val DEFAULT_VOID_ERUPTION_DAMAGE_PER_TICK: Int = 5
+    private const val DEFAULT_FINALE_STABILIZED_TURNS: Int = 6
     private val FURNACE_ANCHOR_INTERACTABLE_IDS: Set<String> =
         setOf(
             "mine_furnace",
@@ -276,6 +334,51 @@ internal object ZoneMechanicRuntime {
                     telegraphTurns = spec.telegraphTurns,
                     activeTurns = spec.activeTurns,
                     damagePerTick = spec.damagePerTick,
+                    nextCycleTurn = spec.cycleIntervalTurns,
+                ),
+            )
+        }
+
+        buildAbyssalTemplePressureSpec(
+            config = config,
+            zone = zone,
+            floor = floor,
+            map = map,
+            world = world,
+        )?.let { spec ->
+            val entityId = world.createEntity()
+            world.add(
+                entityId,
+                AbyssalTemplePressureRuntimeState(
+                    laneCells = spec.laneCells,
+                    corridorCells = spec.corridorCells,
+                    cycleIntervalTurns = spec.cycleIntervalTurns,
+                    telegraphTurns = spec.telegraphTurns,
+                    activeTurns = spec.activeTurns,
+                    damagePerTick = spec.damagePerTick,
+                    suppressionTurnsOnStabilize = spec.suppressionTurnsOnStabilize,
+                    nextCycleTurn = spec.cycleIntervalTurns,
+                ),
+            )
+        }
+
+        buildVoidEruptionSpec(
+            config = config,
+            zone = zone,
+            floor = floor,
+            map = map,
+            world = world,
+        )?.let { spec ->
+            val entityId = world.createEntity()
+            world.add(
+                entityId,
+                VoidEruptionRuntimeState(
+                    hazardCells = spec.hazardCells,
+                    cycleIntervalTurns = spec.cycleIntervalTurns,
+                    telegraphTurns = spec.telegraphTurns,
+                    activeTurns = spec.activeTurns,
+                    damagePerTick = spec.damagePerTick,
+                    stabilizedTurnsOnFocus = spec.stabilizedTurnsOnFocus,
                     nextCycleTurn = spec.cycleIntervalTurns,
                 ),
             )
@@ -643,6 +746,113 @@ internal object ZoneMechanicRuntime {
         )
     }
 
+    private fun buildAbyssalTemplePressureSpec(
+        config: FoundationGameConfig,
+        zone: ZoneSchemaV2,
+        floor: Int,
+        map: GameMap,
+        world: World,
+    ): AbyssalTemplePressureSpec? {
+        if ("void_pressure" !in zone.specialMechanics) {
+            return null
+        }
+        val routeStart = map.playerStart
+        val routeEnd = riverRouteExitPoint(world = world, map = map, routeStart = routeStart)
+        val reliquaryPoint = interactablePoint(world, AbyssalRuntimeKeys.Temple.INTERACTABLE_ID)
+        val anchor =
+            reliquaryPoint
+                ?.takeIf { point -> isPassable(map, point) }
+                ?: fallbackRouteAnchor(map)
+        val horizontalBand = abs(anchor.y - routeStart.y) >= abs(anchor.x - routeStart.x)
+        val laneCandidates =
+            routeBandCells(
+                map = map,
+                anchor = anchor,
+                routeStart = routeStart,
+                routeEnd = routeEnd,
+                horizontalBand = horizontalBand,
+            ).ifEmpty {
+                templeFallbackCells(map = map, anchor = anchor)
+            }
+        val laneCells =
+            orderedPoints(
+                seed = mechanicSeed(config = config, zone = zone, floor = floor, salt = 0xAB17),
+                points = laneCandidates,
+            )
+        if (laneCells.isEmpty()) {
+            return null
+        }
+        val laneSet = laneCells.toSet()
+        val corridorCells =
+            ((routePath(map = map, start = routeStart, goal = anchor) + routePath(map = map, start = anchor, goal = routeEnd)).distinct())
+                .filter(laneSet::contains)
+                .ifEmpty {
+                    laneCells
+                        .sortedWith(
+                            compareBy<Point> { point -> point.chebyshevDistanceTo(anchor) }
+                                .thenBy(Point::y)
+                                .thenBy(Point::x),
+                        ).take(4)
+                }
+        return AbyssalTemplePressureSpec(
+            laneCells = laneCells,
+            corridorCells = corridorCells,
+            cycleIntervalTurns = DEFAULT_VOID_PRESSURE_INTERVAL_TURNS,
+            telegraphTurns = 1,
+            activeTurns = 2,
+            damagePerTick = maxOf(DEFAULT_VOID_PRESSURE_DAMAGE_PER_TICK, zone.recommendedLevel.min / 2),
+            suppressionTurnsOnStabilize = DEFAULT_VOID_PRESSURE_SUPPRESSION_TURNS,
+        )
+    }
+
+    private fun buildVoidEruptionSpec(
+        config: FoundationGameConfig,
+        zone: ZoneSchemaV2,
+        floor: Int,
+        map: GameMap,
+        world: World,
+    ): VoidEruptionSpec? {
+        if ("void_eruption" !in zone.specialMechanics) {
+            return null
+        }
+        val focusPoint =
+            interactablePoint(world, AbyssalRuntimeKeys.Finale.INTERACTABLE_ID)
+                ?.takeIf { point -> isPassable(map, point) }
+                ?: fallbackRouteAnchor(map)
+        val roomAnchors =
+            map.rooms
+                .map(RoomLike::fromRoom)
+                .sortedWith(
+                    compareByDescending<RoomLike> { room -> room.center.chebyshevDistanceTo(map.playerStart) }
+                        .thenBy { room -> room.center.y }
+                        .thenBy { room -> room.center.x },
+                ).take(2)
+                .map(RoomLike::center)
+        val candidates =
+            orderedPoints(
+                seed = mechanicSeed(config = config, zone = zone, floor = floor, salt = 0xF117),
+                points =
+                    crystalHazardCells(
+                        map = map,
+                        anchors = listOf(focusPoint) + roomAnchors,
+                    ).filterNot { point -> point.chebyshevDistanceTo(focusPoint) <= 1 }
+                        .ifEmpty {
+                            voidEruptionFallbackCells(map = map, focusPoint = focusPoint)
+                        },
+            )
+        if (candidates.isEmpty()) {
+            return null
+        }
+        return VoidEruptionSpec(
+            hazardCells = candidates.take(10),
+            cycleIntervalTurns = DEFAULT_VOID_ERUPTION_INTERVAL_TURNS,
+            telegraphTurns = 1,
+            activeTurns = 1,
+            damagePerTick = maxOf(DEFAULT_VOID_ERUPTION_DAMAGE_PER_TICK, zone.recommendedLevel.min / 3),
+            stabilizedTurnsOnFocus = DEFAULT_FINALE_STABILIZED_TURNS,
+        )
+    }
+
     private fun furnaceCellsAroundAnchors(
         map: GameMap,
         anchors: List<Point>,
@@ -751,6 +961,37 @@ internal object ZoneMechanicRuntime {
                 }
             }
         }
+
+    private fun templeFallbackCells(
+        map: GameMap,
+        anchor: Point,
+    ): List<Point> =
+        buildList {
+            add(anchor)
+            Point.CARDINAL_DIRECTIONS.forEach { delta ->
+                add(anchor + delta)
+                add(anchor + Point(delta.x * 2, delta.y * 2))
+            }
+        }.filter { point -> isPassable(map, point) }
+
+    private fun voidEruptionFallbackCells(
+        map: GameMap,
+        focusPoint: Point,
+    ): List<Point> =
+        buildList {
+            Point.CARDINAL_DIRECTIONS.forEach { delta ->
+                add(focusPoint + Point(delta.x * 2, delta.y * 2))
+                add(focusPoint + Point(delta.x * 3, delta.y * 3))
+            }
+            listOf(
+                Point(-1, -1),
+                Point(1, -1),
+                Point(-1, 1),
+                Point(1, 1),
+            ).forEach { delta ->
+                add(focusPoint + Point(delta.x * 2, delta.y * 2))
+            }
+        }.filter { point -> isPassable(map, point) }
 
     private fun riverSafeCells(
         laneCells: List<Point>,

@@ -155,12 +155,14 @@ visuals:
   - id: prop.alarm_bonfire
   - id: prop.armory_gate
   - id: prop.crystal_resonance_node
+  - id: prop.heart_ward_focus
   - id: prop.mine_furnace
   - id: prop.river_ferry_anchor
   - id: prop.ritual_altar
   - id: prop.stairs.down
   - id: prop.stairs.up
   - id: prop.supply_crate
+  - id: prop.temple_ward_reliquary
   - id: icon.monster.beast.rat
   - id: icon.monster.undead.bone_archer
   - id: icon.monster.bandit.sentry
@@ -172,6 +174,10 @@ visuals:
   - id: zone.shattered_outpost.icon
   - id: zone.greenwood_fringe.visual
   - id: zone.greenwood_fringe.icon
+  - id: zone.abyssal_temple.visual
+  - id: zone.abyssal_temple.icon
+  - id: zone.abyssal_heart.visual
+  - id: zone.abyssal_heart.icon
   - id: zone.underground_river.visual
   - id: zone.underground_river.icon
   - id: zone.crystal_cavern.visual
@@ -182,6 +188,7 @@ visuals:
   - id: zone.grey_gate_depths.icon
   - id: vfx.zone.effect.current_lane_01
   - id: vfx.zone.effect.crystal_shard_01
+  - id: vfx.zone.effect.void_pressure_01
   - id: difficulty.normal.visual
   - id: difficulty.normal.icon
   - id: material.iron.visual

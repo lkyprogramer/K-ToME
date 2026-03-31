@@ -33,6 +33,30 @@
       ]
     },
     {
+      "key": "ambient.abyssal_temple",
+      "cueFamily": "ambience",
+      "eventId": "ambient.abyssal_temple",
+      "sourcePath": "audio/ambient/abyssal_temple.ogg",
+      "tags": [
+        "phase3",
+        "followup",
+        "ambience",
+        "abyssal"
+      ]
+    },
+    {
+      "key": "ambient.abyssal_heart",
+      "cueFamily": "ambience",
+      "eventId": "ambient.abyssal_heart",
+      "sourcePath": "audio/ambient/abyssal_heart.ogg",
+      "tags": [
+        "phase3",
+        "followup",
+        "ambience",
+        "abyssal"
+      ]
+    },
+    {
       "key": "ambient.underground_river",
       "cueFamily": "ambience",
       "eventId": "ambient.underground_river",
@@ -332,6 +356,30 @@
         "followup",
         "interactable",
         "river"
+      ]
+    },
+    {
+      "key": "audio.interactable.temple_ward_reliquary",
+      "cueFamily": "interactable",
+      "eventId": "audio.interactable.temple_ward_reliquary",
+      "sourcePath": "audio/interactable/temple_ward_reliquary.ogg",
+      "tags": [
+        "phase3",
+        "followup",
+        "interactable",
+        "abyssal"
+      ]
+    },
+    {
+      "key": "audio.interactable.heart_ward_focus",
+      "cueFamily": "interactable",
+      "eventId": "audio.interactable.heart_ward_focus",
+      "sourcePath": "audio/interactable/heart_ward_focus.ogg",
+      "tags": [
+        "phase3",
+        "followup",
+        "interactable",
+        "abyssal"
       ]
     },
     {
@@ -1979,6 +2027,30 @@
         "followup",
         "zone",
         "river"
+      ]
+    },
+    {
+      "key": "audio.zone.abyssal_temple",
+      "cueFamily": "zone",
+      "eventId": "audio.zone.abyssal_temple",
+      "sourcePath": "audio/ambient/abyssal_temple.ogg",
+      "tags": [
+        "phase3",
+        "followup",
+        "zone",
+        "abyssal"
+      ]
+    },
+    {
+      "key": "audio.zone.abyssal_heart",
+      "cueFamily": "zone",
+      "eventId": "audio.zone.abyssal_heart",
+      "sourcePath": "audio/ambient/abyssal_heart.ogg",
+      "tags": [
+        "phase3",
+        "followup",
+        "zone",
+        "abyssal"
       ]
     },
     {

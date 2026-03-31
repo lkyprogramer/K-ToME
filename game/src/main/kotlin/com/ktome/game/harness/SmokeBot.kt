@@ -4,6 +4,7 @@ import com.ktome.core.item.ConsumableEffect
 import com.ktome.core.map.Point
 import com.ktome.core.pathfinding.AStar
 import com.ktome.core.talent.TalentTreeOwnerType
+import com.ktome.game.AbyssalRuntimeKeys
 import com.ktome.game.PlayerCommand
 import com.ktome.game.PrimaryStat
 import com.ktome.game.TalentReserveView
@@ -844,7 +845,12 @@ class SmokeBot : RunBot {
     private fun hasPlayerStatus(
         observation: RunObservation,
         statusTypeId: String,
-    ): Boolean = statusTypeId in observation.playerStatusTypeIds
+    ): Boolean =
+        statusTypeId in observation.playerStatusTypeIds ||
+            (
+                statusTypeId == "HOLY_SHIELD_BUFF" &&
+                    observation.playerStatusTypeIds.any { statusId -> statusId in AbyssalRuntimeKeys.WARD_STATUS_IDS }
+            )
 
     private fun availableTalent(
         observation: RunObservation,

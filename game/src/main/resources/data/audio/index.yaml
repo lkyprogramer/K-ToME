@@ -1,8 +1,10 @@
 audioProfiles:
   - id: audio.interactable.crystal_resonance_node
+  - id: audio.interactable.heart_ward_focus
   - id: audio.interactable.open
   - id: audio.interactable.river_ferry_anchor
   - id: audio.interactable.stairs
+  - id: audio.interactable.temple_ward_reliquary
   - id: audio.profession.vanguard
   - id: audio.profession.arcanist
   - id: audio.profession.rogue
@@ -64,6 +66,8 @@ audioProfiles:
   - id: audio.boss.bandit_captain
   - id: audio.zone.shattered_outpost
   - id: audio.zone.greenwood_fringe
+  - id: audio.zone.abyssal_temple
+  - id: audio.zone.abyssal_heart
   - id: audio.zone.underground_river
   - id: audio.zone.crystal_cavern
   - id: audio.zone.deep_iron_pit

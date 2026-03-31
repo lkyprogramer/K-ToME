@@ -197,9 +197,9 @@ zones:
   - id: abyssal_temple
     nameKey: zone.abyssal_temple.name
     descKey: zone.abyssal_temple.desc
-    visualKey: zone.grey_gate_depths.visual
-    iconKey: zone.grey_gate_depths.icon
-    audioProfile: audio.zone.grey_gate_depths
+    visualKey: zone.abyssal_temple.visual
+    iconKey: zone.abyssal_temple.icon
+    audioProfile: audio.zone.abyssal_temple
     schemaVersion: 2
     tags: [zone, mandatory]
     biome: temple
@@ -209,7 +209,7 @@ zones:
     environmentTheme: sealed_depths
     specialMechanics: [abyssal_ward, prayer_hall, void_pressure]
     tilesetKey: tileset.shadow_depths
-    ambientProfile: ambient.grey_gate_depths
+    ambientProfile: ambient.abyssal_temple
     worldRole: mandatory
     monsterPools: [cultist.shadow_priest, undead.chain_thrall, cultist.ember_adept, abyssal.ward_breaker, abyssal.ritual_binder, abyssal.cleanse_hunter, abyssal.void_preacher, abyssal.null_lancer]
     elitePools: [cultist.ashgate_warden, orc.forge_guard, abyssal.reliquary_guard, abyssal.eclipsed_seraph]
@@ -218,9 +218,9 @@ zones:
   - id: abyssal_heart
     nameKey: zone.abyssal_heart.name
     descKey: zone.abyssal_heart.desc
-    visualKey: zone.grey_gate_depths.visual
-    iconKey: zone.grey_gate_depths.icon
-    audioProfile: audio.zone.grey_gate_depths
+    visualKey: zone.abyssal_heart.visual
+    iconKey: zone.abyssal_heart.icon
+    audioProfile: audio.zone.abyssal_heart
     schemaVersion: 2
     tags: [zone, mandatory, finale]
     biome: temple
@@ -230,7 +230,7 @@ zones:
     environmentTheme: sealed_depths
     specialMechanics: [finale, void_eruption, heart_ward]
     tilesetKey: tileset.shadow_depths
-    ambientProfile: ambient.grey_gate_depths
+    ambientProfile: ambient.abyssal_heart
     worldRole: mandatory
     monsterPools: [cultist.shadow_priest, undead.chain_thrall, abyssal.null_lancer, abyssal.void_preacher]
     elitePools: [cultist.ashgate_warden, abyssal.eclipsed_seraph]

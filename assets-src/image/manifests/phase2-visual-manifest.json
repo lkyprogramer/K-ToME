@@ -3756,6 +3756,38 @@
       "asciiColorHex": "#D7F0FF"
     },
     {
+      "key": "prop.temple_ward_reliquary",
+      "category": "prop_interactable",
+      "rawOutputPath": "phase3/p3-followup/prop_temple_ward_reliquary.png",
+      "footprint": "1x1",
+      "pivotX": 0.5,
+      "pivotY": 0.08,
+      "tags": [
+        "phase3",
+        "followup",
+        "abyssal",
+        "interactable"
+      ],
+      "asciiGlyph": "+",
+      "asciiColorHex": "#E7E0C1"
+    },
+    {
+      "key": "prop.heart_ward_focus",
+      "category": "prop_interactable",
+      "rawOutputPath": "phase3/p3-followup/prop_heart_ward_focus.png",
+      "footprint": "1x1",
+      "pivotX": 0.5,
+      "pivotY": 0.08,
+      "tags": [
+        "phase3",
+        "followup",
+        "abyssal",
+        "interactable"
+      ],
+      "asciiGlyph": "+",
+      "asciiColorHex": "#C8B8FF"
+    },
+    {
       "key": "prop.stairs.down",
       "category": "prop_interactable",
       "rawOutputPath": "phase2/p2-b/prop_stairs_down.png",
@@ -5601,6 +5633,22 @@
       "asciiColorHex": "#E7FDFF"
     },
     {
+      "key": "vfx.zone.effect.void_pressure_01",
+      "category": "tile_decal",
+      "rawOutputPath": "phase3/p3-followup/vfx_zone_effect_void_pressure_01.png",
+      "footprint": "1x1",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase3",
+        "followup",
+        "abyssal",
+        "zone-effect"
+      ],
+      "asciiGlyph": "*",
+      "asciiColorHex": "#7E6B9A"
+    },
+    {
       "key": "zone.deep_iron_pit.icon",
       "category": "icon_quest",
       "rawOutputPath": "phase2/p2-c/zone_deep_iron_pit_icon.png",
@@ -5728,6 +5776,62 @@
         "followup",
         "zone",
         "crystal"
+      ]
+    },
+    {
+      "key": "zone.abyssal_temple.icon",
+      "category": "icon_quest",
+      "rawOutputPath": "phase3/p3-followup/zone_abyssal_temple_icon.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase3",
+        "followup",
+        "zone",
+        "abyssal"
+      ]
+    },
+    {
+      "key": "zone.abyssal_temple.visual",
+      "category": "portrait",
+      "rawOutputPath": "phase3/p3-followup/zone_abyssal_temple_visual.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase3",
+        "followup",
+        "zone",
+        "abyssal"
+      ]
+    },
+    {
+      "key": "zone.abyssal_heart.icon",
+      "category": "icon_quest",
+      "rawOutputPath": "phase3/p3-followup/zone_abyssal_heart_icon.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase3",
+        "followup",
+        "zone",
+        "abyssal"
+      ]
+    },
+    {
+      "key": "zone.abyssal_heart.visual",
+      "category": "portrait",
+      "rawOutputPath": "phase3/p3-followup/zone_abyssal_heart_visual.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase3",
+        "followup",
+        "zone",
+        "abyssal"
       ]
     },
     {

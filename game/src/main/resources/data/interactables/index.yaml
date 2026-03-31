@@ -146,16 +146,16 @@ interactables:
   - id: temple_ward_reliquary
     nameKey: interactable.temple_ward_reliquary.name
     descKey: interactable.temple_ward_reliquary.desc
-    visualKey: prop.ritual_altar
-    audioProfile: audio.interactable.open
+    visualKey: prop.temple_ward_reliquary
+    audioProfile: audio.interactable.temple_ward_reliquary
     schemaVersion: 2
     tags: [interactable, support, route]
     interactionTags: [support, objective]
   - id: heart_ward_focus
     nameKey: interactable.heart_ward_focus.name
     descKey: interactable.heart_ward_focus.desc
-    visualKey: prop.ritual_altar
-    audioProfile: audio.interactable.open
+    visualKey: prop.heart_ward_focus
+    audioProfile: audio.interactable.heart_ward_focus
     schemaVersion: 2
     tags: [interactable, support, finale]
     interactionTags: [support, objective]

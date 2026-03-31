@@ -93,6 +93,8 @@ import com.ktome.core.save.StatModifierSnapshot
 import com.ktome.core.save.TalentAllocationDraftSnapshot
 import com.ktome.core.save.StatsSnapshot
 import com.ktome.core.save.TalentLoadoutSnapshot
+import com.ktome.core.save.AbyssalTemplePressureStateSnapshot
+import com.ktome.core.save.VoidEruptionStateSnapshot
 import com.ktome.core.save.WorldEffectSnapshot
 import com.ktome.core.stats.StatsCalculator
 import com.ktome.core.talent.ActiveEffect
@@ -102,6 +104,7 @@ import com.ktome.core.talent.TalentAllocationDraft
 import com.ktome.core.talent.TalentLoadout
 import com.ktome.core.talent.TalentTreeOwnerType
 import com.ktome.core.status.StatusDefinitions
+import com.ktome.core.status.StatusEffectDef
 import com.ktome.core.status.StatusEffectType
 import com.ktome.core.status.StatusLifecycle
 import com.ktome.core.economy.ShopInventoryState
@@ -467,6 +470,37 @@ internal object SessionSnapshotMapper {
                         phaseTurnsRemaining = state.phaseTurnsRemaining,
                     )
                 },
+            abyssalTemplePressureState =
+                world.get<AbyssalTemplePressureRuntimeState>(entityId)?.let { state ->
+                    AbyssalTemplePressureStateSnapshot(
+                        laneCells = state.laneCells.map(PointSnapshot::from),
+                        corridorCells = state.corridorCells.map(PointSnapshot::from),
+                        cycleIntervalTurns = state.cycleIntervalTurns,
+                        telegraphTurns = state.telegraphTurns,
+                        activeTurns = state.activeTurns,
+                        damagePerTick = state.damagePerTick,
+                        suppressionTurnsOnStabilize = state.suppressionTurnsOnStabilize,
+                        nextCycleTurn = state.nextCycleTurn,
+                        phase = state.phase.name,
+                        phaseTurnsRemaining = state.phaseTurnsRemaining,
+                        suppressionTurnsRemaining = state.suppressionTurnsRemaining,
+                    )
+                },
+            voidEruptionState =
+                world.get<VoidEruptionRuntimeState>(entityId)?.let { state ->
+                    VoidEruptionStateSnapshot(
+                        hazardCells = state.hazardCells.map(PointSnapshot::from),
+                        cycleIntervalTurns = state.cycleIntervalTurns,
+                        telegraphTurns = state.telegraphTurns,
+                        activeTurns = state.activeTurns,
+                        damagePerTick = state.damagePerTick,
+                        stabilizedTurnsOnFocus = state.stabilizedTurnsOnFocus,
+                        nextCycleTurn = state.nextCycleTurn,
+                        phase = state.phase.name,
+                        phaseTurnsRemaining = state.phaseTurnsRemaining,
+                        stabilizedTurnsRemaining = state.stabilizedTurnsRemaining,
+                    )
+                },
             resourcePools =
                 world.get<ResourcePools>(entityId)?.entries
                     ?.values
@@ -684,6 +718,41 @@ internal object SessionSnapshotMapper {
                     nextCycleTurn = state.nextCycleTurn,
                     phase = parseEnumFromSave<CrystalShardPhase>(state.phase, "crystal shard phase"),
                     phaseTurnsRemaining = state.phaseTurnsRemaining,
+                ),
+            )
+        }
+        snapshot.abyssalTemplePressureState?.let { state ->
+            world.add(
+                entityId,
+                AbyssalTemplePressureRuntimeState(
+                    laneCells = state.laneCells.map(PointSnapshot::toPoint),
+                    corridorCells = state.corridorCells.map(PointSnapshot::toPoint),
+                    cycleIntervalTurns = state.cycleIntervalTurns,
+                    telegraphTurns = state.telegraphTurns,
+                    activeTurns = state.activeTurns,
+                    damagePerTick = state.damagePerTick,
+                    suppressionTurnsOnStabilize = state.suppressionTurnsOnStabilize,
+                    nextCycleTurn = state.nextCycleTurn,
+                    phase = parseEnumFromSave<VoidPressurePhase>(state.phase, "abyssal temple pressure phase"),
+                    phaseTurnsRemaining = state.phaseTurnsRemaining,
+                    suppressionTurnsRemaining = state.suppressionTurnsRemaining,
+                ),
+            )
+        }
+        snapshot.voidEruptionState?.let { state ->
+            world.add(
+                entityId,
+                VoidEruptionRuntimeState(
+                    hazardCells = state.hazardCells.map(PointSnapshot::toPoint),
+                    cycleIntervalTurns = state.cycleIntervalTurns,
+                    telegraphTurns = state.telegraphTurns,
+                    activeTurns = state.activeTurns,
+                    damagePerTick = state.damagePerTick,
+                    stabilizedTurnsOnFocus = state.stabilizedTurnsOnFocus,
+                    nextCycleTurn = state.nextCycleTurn,
+                    phase = parseEnumFromSave<VoidPressurePhase>(state.phase, "void eruption phase"),
+                    phaseTurnsRemaining = state.phaseTurnsRemaining,
+                    stabilizedTurnsRemaining = state.stabilizedTurnsRemaining,
                 ),
             )
         }
@@ -1036,10 +1105,7 @@ internal object SessionSnapshotMapper {
         snapshot: ActiveEffectSnapshot,
         content: GameContent,
     ): ActiveEffect {
-        val definition =
-            content.statusCatalog.definitionOrNull(snapshot.type)
-                ?: StatusDefinitions.definitionForSchemaId(snapshot.type)
-                ?: StatusDefinitions.definitionFor(StatusEffectType.fromSchemaId(snapshot.type))
+        val definition = restoreActiveEffectDefinition(snapshot.type, content)
         return StatusLifecycle.createInstance(
             definition = definition,
             effectId = snapshot.id,
@@ -1053,6 +1119,19 @@ internal object SessionSnapshotMapper {
             effect.stackCount = snapshot.stackCount
         }
     }
+
+    private fun restoreActiveEffectDefinition(
+        statusId: String,
+        content: GameContent,
+    ): StatusEffectDef =
+        content.statusCatalog.definitionOrNull(statusId)
+            ?: StatusDefinitions.definitionForSchemaId(statusId)
+            ?: when (statusId) {
+                in AbyssalRuntimeKeys.WARD_STATUS_IDS ->
+                    StatusDefinitions.definitionFor(StatusEffectType.HOLY_SHIELD_BUFF).copy(id = statusId)
+
+                else -> StatusDefinitions.definitionFor(StatusEffectType.fromSchemaId(statusId))
+            }
 
     private fun restoreAreaEffectEmitter(
         snapshot: AreaEffectEmitterSnapshot,

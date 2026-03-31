@@ -208,6 +208,8 @@ data class EntitySnapshot(
     val furnacePressureState: FurnacePressureStateSnapshot? = null,
     val riverCurrentState: RiverCurrentStateSnapshot? = null,
     val crystalShardPressureState: CrystalShardPressureStateSnapshot? = null,
+    val abyssalTemplePressureState: AbyssalTemplePressureStateSnapshot? = null,
+    val voidEruptionState: VoidEruptionStateSnapshot? = null,
     val resourcePools: List<ResourcePoolSnapshot> = emptyList(),
     val equilibriumLastAffinity: String? = null,
     val raceTalentPoints: Int? = null,
@@ -260,6 +262,8 @@ data class EntitySnapshot(
         furnacePressureState?.validateOrThrow()
         riverCurrentState?.validateOrThrow()
         crystalShardPressureState?.validateOrThrow()
+        abyssalTemplePressureState?.validateOrThrow()
+        voidEruptionState?.validateOrThrow()
         effects?.forEach(ActiveEffectSnapshot::validateOrThrow)
         areaEffectEmitter?.validateOrThrow()
         worldEffect?.validateOrThrow()
@@ -419,6 +423,62 @@ data class CrystalShardPressureStateSnapshot(
         require(nextCycleTurn >= 0) { "Crystal shard nextCycleTurn must not be negative." }
         require(phase.isNotBlank()) { "Crystal shard phase must not be blank." }
         require(phaseTurnsRemaining >= 0) { "Crystal shard phaseTurnsRemaining must not be negative." }
+    }
+}
+
+@Serializable
+data class AbyssalTemplePressureStateSnapshot(
+    val laneCells: List<PointSnapshot> = emptyList(),
+    val corridorCells: List<PointSnapshot> = emptyList(),
+    val cycleIntervalTurns: Int,
+    val telegraphTurns: Int,
+    val activeTurns: Int,
+    val damagePerTick: Int,
+    val suppressionTurnsOnStabilize: Int,
+    val nextCycleTurn: Int,
+    val phase: String,
+    val phaseTurnsRemaining: Int = 0,
+    val suppressionTurnsRemaining: Int = 0,
+) {
+    fun validateOrThrow() {
+        require(laneCells.isNotEmpty()) { "Abyssal temple laneCells must not be empty." }
+        require(corridorCells.isNotEmpty()) { "Abyssal temple corridorCells must not be empty." }
+        require(cycleIntervalTurns > 0) { "Abyssal temple cycleIntervalTurns must be positive." }
+        require(telegraphTurns > 0) { "Abyssal temple telegraphTurns must be positive." }
+        require(activeTurns > 0) { "Abyssal temple activeTurns must be positive." }
+        require(damagePerTick > 0) { "Abyssal temple damagePerTick must be positive." }
+        require(suppressionTurnsOnStabilize > 0) { "Abyssal temple suppressionTurnsOnStabilize must be positive." }
+        require(nextCycleTurn >= 0) { "Abyssal temple nextCycleTurn must not be negative." }
+        require(phase.isNotBlank()) { "Abyssal temple phase must not be blank." }
+        require(phaseTurnsRemaining >= 0) { "Abyssal temple phaseTurnsRemaining must not be negative." }
+        require(suppressionTurnsRemaining >= 0) { "Abyssal temple suppressionTurnsRemaining must not be negative." }
+    }
+}
+
+@Serializable
+data class VoidEruptionStateSnapshot(
+    val hazardCells: List<PointSnapshot> = emptyList(),
+    val cycleIntervalTurns: Int,
+    val telegraphTurns: Int,
+    val activeTurns: Int,
+    val damagePerTick: Int,
+    val stabilizedTurnsOnFocus: Int,
+    val nextCycleTurn: Int,
+    val phase: String,
+    val phaseTurnsRemaining: Int = 0,
+    val stabilizedTurnsRemaining: Int = 0,
+) {
+    fun validateOrThrow() {
+        require(hazardCells.isNotEmpty()) { "Void eruption hazardCells must not be empty." }
+        require(cycleIntervalTurns > 0) { "Void eruption cycleIntervalTurns must be positive." }
+        require(telegraphTurns > 0) { "Void eruption telegraphTurns must be positive." }
+        require(activeTurns > 0) { "Void eruption activeTurns must be positive." }
+        require(damagePerTick > 0) { "Void eruption damagePerTick must be positive." }
+        require(stabilizedTurnsOnFocus > 0) { "Void eruption stabilizedTurnsOnFocus must be positive." }
+        require(nextCycleTurn >= 0) { "Void eruption nextCycleTurn must not be negative." }
+        require(phase.isNotBlank()) { "Void eruption phase must not be blank." }
+        require(phaseTurnsRemaining >= 0) { "Void eruption phaseTurnsRemaining must not be negative." }
+        require(stabilizedTurnsRemaining >= 0) { "Void eruption stabilizedTurnsRemaining must not be negative." }
     }
 }
 
