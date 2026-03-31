@@ -1,5 +1,6 @@
 package com.ktome.game
 
+import com.ktome.core.dungeon.StairDirection
 import com.ktome.core.ecs.Interactable
 import com.ktome.core.ecs.Position
 import com.ktome.core.ecs.Stair
@@ -541,9 +542,8 @@ internal object ZoneMechanicRuntime {
         if ("currents" !in zone.specialMechanics) {
             return null
         }
-        val stairs = stairPoints(world)
-        val routeStart = stairs.values.sortedWith(compareBy(Point::y).thenBy(Point::x)).firstOrNull() ?: map.playerStart
-        val routeEnd = stairs.values.sortedWith(compareByDescending<Point> { it.chebyshevDistanceTo(routeStart) }.thenBy(Point::y).thenBy(Point::x)).firstOrNull() ?: fallbackRouteAnchor(map)
+        val routeStart = map.playerStart
+        val routeEnd = riverRouteExitPoint(world = world, map = map, routeStart = routeStart)
         val anchor = interactablePoint(world, RiverCrystalRuntimeKeys.River.INTERACTABLE_ID) ?: midpoint(routeStart, routeEnd)
         // Current pressure should read as "sideways drag" relative to the player's approach to the ferry anchor.
         // Using the full stair-to-stair delta can align the push with the objective path and make the anchor unreachable.
@@ -685,12 +685,22 @@ internal object ZoneMechanicRuntime {
         return orderedPoints(seed = seed, points = cells).take(6)
     }
 
-    private fun stairPoints(world: World): Map<String, Point> =
+    private fun stairPoint(
+        world: World,
+        direction: StairDirection,
+    ): Point? =
         world.entitiesWith(Position::class, Stair::class)
-            .associate { entityId ->
-                val direction = requireNotNull(world.get<Stair>(entityId)).direction.name
-                direction to requireNotNull(world.get<Position>(entityId)).toPoint()
-            }
+            .firstOrNull { entityId -> world.get<Stair>(entityId)?.direction == direction }
+            ?.let { entityId -> requireNotNull(world.get<Position>(entityId)).toPoint() }
+
+    private fun riverRouteExitPoint(
+        world: World,
+        map: GameMap,
+        routeStart: Point,
+    ): Point =
+        stairPoint(world = world, direction = StairDirection.DOWN)
+            ?: stairPoint(world = world, direction = StairDirection.UP)?.takeIf { point -> point != routeStart }
+            ?: fallbackRouteAnchor(map)
 
     private fun interactablePoint(
         world: World,

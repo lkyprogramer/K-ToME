@@ -1298,6 +1298,34 @@ class FoundationGameSessionTest {
     }
 
     @Test
+    fun `underground river floor one safe cells keep a crossing lane toward downstairs`() {
+        val session =
+            GameModule.newFoundationSession(
+                FoundationGameConfig(seed = 20260331L, zoneId = "underground_river", floor = 1, playerProfessionId = "rogue"),
+                SaveManager(tempDir.resolve("river-current-floor-one-save")),
+            )
+        clearMonsters(session)
+        val world = runtimeWorld(session)
+        val currentEntity = world.entitiesWith(RiverCurrentRuntimeState::class).single()
+        val state = requireNotNull(world.get<RiverCurrentRuntimeState>(currentEntity))
+        val anchor = interactablePoint(session, RiverCrystalRuntimeKeys.River.INTERACTABLE_ID)
+        val downstairs = stairPoint(session, StairDirection.DOWN)
+        val exitPath =
+            AStar.findPath(
+                map = session.map,
+                start = anchor,
+                goal = downstairs,
+                blocked = emptySet(),
+            )
+
+        assertNotEquals(session.map.playerStart, downstairs)
+        assertTrue(
+            state.safeCells.any { cell -> cell != anchor && cell in exitPath },
+            "river current safe cells should preserve at least one anchor-to-downstairs crossing cell on floor one",
+        )
+    }
+
+    @Test
     fun `crystal shard pressure telegraphs, bleeds active cells, and settles after attuning the node`() {
         val session =
             GameModule.newFoundationSession(
