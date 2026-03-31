@@ -5,6 +5,7 @@ internal object AbyssalRuntimeKeys {
         const val QUEST_ID: String = "quest.abyssal_temple"
         const val OBJECTIVE_ID: String = "sanctum"
         const val INTERACTABLE_ID: String = "temple_ward_reliquary"
+        const val SHOP_NODE_ID: String = "abyssal_reliquary_post"
         const val SOURCE_ABILITY_ID: String = "zone.void_pressure"
         const val WARD_STATUS_ID: String = "zone.void_pressure.ward_protection"
         const val PROGRESS_TOKEN: String = "abyssal_temple.ward_reliquary_claimed"

@@ -95,3 +95,51 @@ shops:
         expectedShardBudgetByCheckpoint: 80
         mandatoryAffordableItemCount: 2
         requiredAffordableTags: [MOVEMENT, CLEANSING, PROTECTION]
+  - id: abyssal_reliquary_post
+    zoneId: abyssal_temple
+    nameKey: shop.abyssal_reliquary_post.name
+    inventory:
+      - id: offer.reliquary.purge
+        inscriptionId: purge
+        price: 74
+        tags: [CLEANSING, RELIQUARY, INSCRIPTION]
+      - id: offer.reliquary.sanctified_seal
+        itemBaseId: sanctified_seal
+        price: 78
+        tags: [PROTECTION, RELIQUARY]
+      - id: offer.reliquary.shadow_cloak
+        itemBaseId: shadow_cloak
+        price: 82
+        tags: [OFFENSE, RELIQUARY]
+      - id: offer.reliquary.consecrated_oil
+        itemBaseId: consecrated_oil
+        price: 72
+        tags: [OFFENSE, RELIQUARY]
+      - id: offer.reliquary.refresh_stock
+        serviceType: REFRESH_STOCK
+        price: 96
+        tags: [SERVICE, REFRESH_STOCK, RELIQUARY]
+    refreshInventory:
+      - id: offer.reliquary.refresh.seal_reliquary
+        itemBaseId: seal_reliquary
+        price: 86
+        tags: [PROTECTION, RELIQUARY]
+      - id: offer.reliquary.refresh.apprentice_robe
+        itemBaseId: apprentice_robe
+        price: 80
+        tags: [PROTECTION, ARCANE, RELIQUARY]
+      - id: offer.reliquary.refresh.phase_door
+        inscriptionId: phase_door
+        price: 88
+        tags: [MOVEMENT, RELIQUARY, INSCRIPTION]
+      - id: offer.reliquary.refresh.arcane_staff
+        itemBaseId: arcane_staff
+        price: 84
+        tags: [OFFENSE, ARCANE, RELIQUARY]
+    rescuePolicy:
+      guaranteedTags: [CLEANSING, PROTECTION]
+      affordability:
+        checkpointId: abyssal_temple
+        expectedShardBudgetByCheckpoint: 120
+        mandatoryAffordableItemCount: 1
+        requiredAffordableTags: [CLEANSING, PROTECTION]

@@ -150,7 +150,8 @@ interactables:
     audioProfile: audio.interactable.temple_ward_reliquary
     schemaVersion: 2
     tags: [interactable, support, route]
-    interactionTags: [support, objective]
+    interactionTags: [support, objective, shop]
+    shopNodeId: abyssal_reliquary_post
   - id: heart_ward_focus
     nameKey: interactable.heart_ward_focus.name
     descKey: interactable.heart_ward_focus.desc

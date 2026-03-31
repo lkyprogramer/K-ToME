@@ -553,6 +553,8 @@ class LongRunWorldStructureSessionTest {
             ObjectiveState.IN_PROGRESS,
             unlockedSession.worldProgress().questStates[AbyssalRuntimeKeys.Temple.QUEST_ID]?.objectiveStates?.get(AbyssalRuntimeKeys.Temple.OBJECTIVE_ID),
         )
+        assertEquals(AbyssalRuntimeKeys.Temple.SHOP_NODE_ID, requireNotNull(unlockedSession.renderSnapshot().uiState.activeShop).shopId)
+        assertTrue(unlockedSession.perform(PlayerCommand.CloseShop))
         movePlayerTo(unlockedSession, stairPoint(unlockedSession, StairDirection.DOWN))
         assertTrue(unlockedSession.perform(PlayerCommand.Descend))
         movePlayerTo(unlockedSession, stairPoint(unlockedSession, StairDirection.DOWN))
@@ -567,6 +569,55 @@ class LongRunWorldStructureSessionTest {
             unlockedSession.worldProgress().questStates[AbyssalRuntimeKeys.Temple.QUEST_ID]?.objectiveStates?.get(AbyssalRuntimeKeys.Temple.OBJECTIVE_ID),
         )
         assertTrue("${AbyssalRuntimeKeys.Temple.QUEST_ID}.cleared" in unlockedSession.worldProgress().worldFlags)
+    }
+
+    @Test
+    fun `abyssal reliquary post spends shards without breaking abyssal heart access`() {
+        val session =
+            GameModule.newFoundationSession(
+                config =
+                    FoundationGameConfig(
+                        seed = 20260325L,
+                        zoneId = "abyssal_temple",
+                        playerProfessionId = "templar",
+                        zoneRoute =
+                            listOf(
+                                "shattered_outpost",
+                                "greenwood_fringe",
+                                "deep_iron_pit",
+                                "grey_gate_depths",
+                                "underground_river",
+                                "abyssal_temple",
+                            ),
+                        routeIndex = 5,
+                    ),
+                saveManager = SaveManager(tempDir.resolve("abyssal-reliquary-post-save")),
+            )
+
+        setShardBalance(session, 220)
+        session.automationMovePlayerTo(interactablePoint(session, AbyssalRuntimeKeys.Temple.INTERACTABLE_ID))
+        assertTrue(session.perform(PlayerCommand.Interact))
+        assertEquals(AbyssalRuntimeKeys.Temple.SHOP_NODE_ID, requireNotNull(session.renderSnapshot().uiState.activeShop).shopId)
+        assertTrue(session.perform(PlayerCommand.BuyShopOffer(indexOfOffer(session, "offer.reliquary.sanctified_seal"))))
+        assertEquals(1, session.currentLateRunReliquaryPurchaseCount())
+        assertEquals(1, session.currentLateRunReliquaryVisitCount())
+        assertEquals(1, session.currentLateRunReliquaryItemPurchaseCount())
+        assertEquals(0, session.currentLateRunReliquaryRefreshCount())
+        assertEquals(0, session.currentLateRunReliquaryNonMandatoryPurchaseCount())
+        assertEquals(78, session.currentLateRunReliquaryShardSpent())
+        assertEquals(mapOf("PROTECTION" to 1), session.currentLateRunReliquaryPurchaseTagDistribution())
+        assertTrue(session.perform(PlayerCommand.CloseShop))
+
+        movePlayerTo(session, stairPoint(session, StairDirection.DOWN))
+        assertTrue(session.perform(PlayerCommand.Descend))
+        movePlayerTo(session, stairPoint(session, StairDirection.DOWN))
+        assertTrue(session.perform(PlayerCommand.Descend))
+
+        val routeSelection = session.renderSnapshot().uiState.activeRouteSelection
+        assertTrue(
+            session.config.zoneId == "abyssal_heart" ||
+                routeSelection?.options?.any { option -> option.destinationZoneId == "abyssal_heart" } == true,
+        )
     }
 
     @Test

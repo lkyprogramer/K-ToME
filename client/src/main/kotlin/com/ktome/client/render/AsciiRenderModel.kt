@@ -24,6 +24,7 @@ import com.ktome.core.snapshot.RenderLogEventSnapshot
 import com.ktome.core.snapshot.RenderSnapshot
 import com.ktome.core.snapshot.RenderTextArgumentSnapshot
 import com.ktome.core.snapshot.RenderTextTokenSnapshot
+import com.ktome.core.snapshot.RewardPresentationSourceSnapshot
 import com.ktome.core.snapshot.StatusEffectRenderSnapshot
 import com.ktome.core.snapshot.TalentReserveSnapshot
 import com.ktome.core.snapshot.TalentSlotSnapshot
@@ -240,11 +241,17 @@ internal object AsciiRenderModelBuilder {
             UiMode.SHOP -> {
                 lines += blankLine()
                 lines += AsciiTextLine(localizer.text("ui.sidebar.shards", "value" to snapshot.uiState.shardBalance), AsciiTextTone.GOLD)
+                snapshot.uiState.activeShop?.let { shop ->
+                    lines += AsciiTextLine(localizer.text(shop.shopNameKey), AsciiTextTone.GOLD)
+                    shop.hintLabelKeys.forEach { hintLabelKey ->
+                        lines += AsciiTextLine(localizer.text(hintLabelKey), AsciiTextTone.LIGHT_GRAY)
+                    }
+                }
                 lines += AsciiTextLine(localizer.text("ui.shop.buy"), if (overlayState.shopFocus == com.ktome.client.input.ShopFocus.BUY) AsciiTextTone.GOLD else AsciiTextTone.WHITE)
                 snapshot.uiState.activeShop?.offers?.forEach { offer ->
                     lines +=
                         AsciiTextLine(
-                            "${offer.index + 1}. ${localizer.text(offer.labelKey)} (${offer.price})",
+                            shopOfferText(localizer, offer),
                             if (overlayState.shopFocus == com.ktome.client.input.ShopFocus.BUY && overlayState.shopOfferSelection == offer.index) AsciiTextTone.CYAN else AsciiTextTone.WHITE,
                         )
                 }
@@ -286,8 +293,11 @@ internal object AsciiRenderModelBuilder {
                             lines += AsciiTextLine(localizer.text(descKey), AsciiTextTone.LIGHT_GRAY)
                         }
                         lines += AsciiTextLine(RoutePreviewText.summaryLine(localizer, option), AsciiTextTone.LIGHT_GRAY)
-                        RoutePreviewText.rewardLine(localizer, option)?.let { rewardPreview ->
+                        RoutePreviewText.guaranteedRewardLine(localizer, option)?.let { rewardPreview ->
                             lines += AsciiTextLine(rewardPreview, AsciiTextTone.GREEN)
+                        }
+                        RoutePreviewText.milestoneRewardLine(localizer, option)?.let { rewardPreview ->
+                            lines += AsciiTextLine(rewardPreview, AsciiTextTone.GOLD)
                         }
                         RoutePreviewText.traitLine(localizer, option)?.let { traits ->
                             lines += AsciiTextLine(traits, AsciiTextTone.LIGHT_GRAY)
@@ -527,8 +537,32 @@ internal object AsciiRenderModelBuilder {
             }
         }
 
+        if (overlayState.mode in recentRewardPresentationModes && snapshot.uiState.recentRewards.isNotEmpty()) {
+            lines += blankLine()
+            lines += AsciiTextLine(localizer.text("ui.sidebar.recent_rewards"), AsciiTextTone.GOLD)
+            snapshot.uiState.recentRewards.asReversed().forEach { entry ->
+                lines +=
+                    AsciiTextLine(
+                        recentRewardText(
+                            sourceLabel = localizer.text(entry.sourceLabelKey),
+                            itemDisplayName = renderTextToken(localizer, entry.itemDisplayName),
+                        ),
+                        rewardPresentationTone(entry.source),
+                    )
+            }
+        }
+
         return lines
     }
+
+    private fun rewardPresentationTone(source: RewardPresentationSourceSnapshot): AsciiTextTone =
+        when (source) {
+            RewardPresentationSourceSnapshot.CADENCE -> AsciiTextTone.GOLD
+            RewardPresentationSourceSnapshot.ROUTE -> AsciiTextTone.GREEN
+            RewardPresentationSourceSnapshot.BOSS -> AsciiTextTone.RED
+            RewardPresentationSourceSnapshot.CACHE -> AsciiTextTone.CYAN
+            RewardPresentationSourceSnapshot.SUPPORT -> AsciiTextTone.LIGHT_GRAY
+        }
 
     private fun terrainPresentation(
         visualResolver: VisualManifestResolver,
@@ -645,6 +679,7 @@ internal object AsciiRenderModelBuilder {
             messageKey == "log.talent.damage_vulnerable" -> AsciiTextTone.RED
             messageKey.startsWith("log.passive.") -> AsciiTextTone.GREEN
             messageKey.startsWith("log.level_up") -> AsciiTextTone.GOLD
+            messageKey.startsWith("log.reward.") -> AsciiTextTone.GOLD
             messageKey == "log.zone.enter" -> AsciiTextTone.CYAN
             messageKey.startsWith("log.boss.") -> AsciiTextTone.RED
             else -> AsciiTextTone.WHITE

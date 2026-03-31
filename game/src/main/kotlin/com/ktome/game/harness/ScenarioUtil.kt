@@ -209,6 +209,10 @@ fun routeProgressCommand(
     session: FoundationGameSession,
     observation: RunObservation,
 ): PlayerCommand? {
+    if (observation.activeShopId != null) {
+        return null
+    }
+
     session.renderSnapshot().uiState.activeRouteSelection?.let { routeSelection ->
         return PlayerCommand.SelectRoute(preferredRouteIndex(routeSelection))
     }

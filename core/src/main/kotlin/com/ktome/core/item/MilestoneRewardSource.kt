@@ -4,4 +4,5 @@ enum class MilestoneRewardSource {
     ROUTE,
     BOSS,
     CACHE,
+    SUPPORT,
 }

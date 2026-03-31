@@ -146,6 +146,8 @@ import com.ktome.core.snapshot.OverlayRenderSnapshot
 import com.ktome.core.snapshot.OverlayShapeSnapshot
 import com.ktome.core.snapshot.PlayerStatusSnapshot
 import com.ktome.core.snapshot.PropRenderSnapshot
+import com.ktome.core.snapshot.RewardPresentationEntrySnapshot
+import com.ktome.core.snapshot.RewardPresentationSourceSnapshot
 import com.ktome.core.snapshot.RenderLogEventSnapshot
 import com.ktome.core.snapshot.RenderMetadataSnapshot
 import com.ktome.core.snapshot.RenderSnapshot
@@ -229,12 +231,29 @@ internal data class ZoneRuntimeBundle(
 )
 
 private const val SUMMARY_EVENT_LIMIT: Int = 5
+private const val RECENT_REWARD_LIMIT: Int = 5
 private const val AI_TRACE_LIMIT: Int = 64
 private const val ABYSSAL_WARD_PROTECTION_TURNS: Int = 4
 private const val ABYSSAL_WARD_PROTECTION_MAGNITUDE: Double = 0.12
 private const val VOID_ERUPTION_WEAKEN_MAGNITUDE: Double = 0.12
 private const val ABYSSAL_OVERLAY_VISUAL_KEY: String = "vfx.zone.effect.void_pressure_01"
 private const val ABYSSAL_WARNING_AUDIO_PROFILE: String = "audio.boss.warning"
+private val CACHE_REWARD_INTERACTABLE_IDS: Set<String> = setOf("supply_crate", "trail_cache", "ore_stash", "seal_cache", "bandit_cache")
+private val ALERT_INTERACTABLE_IDS: Set<String> = setOf("warden_beacon", "slag_valve", "shadow_brazier")
+private val SUPPORT_REWARD_INTERACTABLE_IDS: Set<String> =
+    setOf(
+        "armory_gate",
+        "hunter_snare",
+        "mine_furnace",
+        "ritual_altar",
+        "elven_wardstone",
+        "molten_pressure_valve",
+        RiverCrystalRuntimeKeys.Crystal.INTERACTABLE_ID,
+        RiverCrystalRuntimeKeys.River.INTERACTABLE_ID,
+        AbyssalRuntimeKeys.Temple.INTERACTABLE_ID,
+        AbyssalRuntimeKeys.Finale.INTERACTABLE_ID,
+    )
+private val OBJECTIVE_ADVANCE_INTERACTABLE_IDS: Set<String> = setOf("armory_gate", "hunter_snare", "mine_furnace", "ritual_altar")
 
 internal fun cacheRewardSourceId(
     zoneId: String,
@@ -323,6 +342,11 @@ class FoundationGameSession internal constructor(
         val replacementSlot: EquipSlot? = null,
     )
 
+    private data class RecentRewardPresentationEntry(
+        val source: RewardPresentationSourceSnapshot,
+        val itemDisplayName: RenderTextTokenSnapshot,
+    )
+
     private data class PendingCombatFeedback(
         val targetEntityId: EntityId,
         val sourceEntityId: EntityId? = null,
@@ -339,6 +363,7 @@ class FoundationGameSession internal constructor(
     private val messageLog = ArrayDeque<SessionLogEntry>()
     private val recentEvents = ArrayDeque<String>()
     private val recentSummaryEvents = ArrayDeque<RenderTextTokenSnapshot>()
+    private val recentRewardEntries = ArrayDeque<RecentRewardPresentationEntry>()
     private val pendingCombatFeedbackEvents = ArrayDeque<PendingCombatFeedback>()
     private val pendingActions = ArrayDeque<EntityId>()
     private var activeTurnActor: EntityId? = null
@@ -449,6 +474,34 @@ class FoundationGameSession internal constructor(
                     ?: return@count false
             refreshOfferId in shopStates[shop.id]?.purchasedOfferIds.orEmpty()
         }
+
+    fun currentLateRunReliquaryPurchaseCount(): Int =
+        currentLateRunReliquaryItemPurchaseCount() + currentLateRunReliquaryRefreshCount()
+
+    fun currentLateRunReliquaryVisitCount(): Int =
+        shopStates[AbyssalRuntimeKeys.Temple.SHOP_NODE_ID]?.visitCount ?: 0
+
+    fun currentLateRunReliquaryRefreshCount(): Int =
+        lateRunReliquaryPurchasedOffers().count { offer -> offer.serviceType == ShopServiceType.REFRESH_STOCK }
+
+    fun currentLateRunReliquaryItemPurchaseCount(): Int =
+        lateRunReliquaryPurchasedOffers().count { offer -> offer.itemBaseId != null || offer.inscriptionId != null }
+
+    fun currentLateRunReliquaryNonMandatoryPurchaseCount(): Int {
+        val shop = lateRunReliquaryShopNode() ?: return 0
+        val mandatoryOfferIds = mandatoryRescueOfferIds(shop)
+        return lateRunReliquaryPurchasedOffers(shop).count { offer -> offer.id !in mandatoryOfferIds }
+    }
+
+    fun currentLateRunReliquaryShardSpent(): Int =
+        lateRunReliquaryPurchasedOffers().sumOf(ShopOffer::price)
+
+    fun currentLateRunReliquaryPurchaseTagDistribution(): Map<String, Int> =
+        lateRunReliquaryPurchasedOffers()
+            .flatMap(::playerFacingReliquaryTelemetryTags)
+            .groupingBy { it }
+            .eachCount()
+            .toSortedMap()
 
     fun maxFloor(): Int = config.maxFloor
 
@@ -2220,11 +2273,21 @@ class FoundationGameSession internal constructor(
             reserveTalents = buildReserveTalentSnapshots(),
             inscriptions = buildInscriptionSnapshots(),
             inventory = buildInventoryEntries(),
+            recentRewards = buildRecentRewardSnapshots(),
             targetablePositions = targetableHostilePositions().map { point -> GridPointSnapshot(point.x, point.y) },
             shardBalance = shardBalance,
             activeShop = buildShopPanelSnapshot(),
             activeRouteSelection = buildRouteSelectionSnapshot(),
         )
+
+    private fun buildRecentRewardSnapshots(): List<RewardPresentationEntrySnapshot> =
+        recentRewardEntries.map { entry ->
+            RewardPresentationEntrySnapshot(
+                source = entry.source,
+                sourceLabelKey = rewardPresentationSourceLabelKey(entry.source),
+                itemDisplayName = entry.itemDisplayName,
+            )
+        }
 
     private fun buildShopPanelSnapshot(): ShopPanelSnapshot? {
         val shop = currentShopNode() ?: return null
@@ -2234,6 +2297,7 @@ class FoundationGameSession internal constructor(
         return ShopPanelSnapshot(
             shopId = shop.id,
             shopNameKey = shop.nameKey,
+            hintLabelKeys = shopPanelHintLabelKeys(shop),
             offers =
                 availableShopOffers().mapIndexed { index, offer ->
                     ShopOfferSnapshot(
@@ -2241,6 +2305,7 @@ class FoundationGameSession internal constructor(
                         labelKey = shopOfferLabelKey(offer),
                         price = offer.price,
                         tags = offer.tags.sorted(),
+                        tagLabelKeys = shopOfferTagLabelKeys(shop = shop, offer = offer),
                     )
                 },
             sellEntries =
@@ -2272,11 +2337,12 @@ class FoundationGameSession internal constructor(
                         recommendedLevelMin = destinationZone.recommendedLevel.min,
                         recommendedLevelMax = destinationZone.recommendedLevel.max,
                         shardReward = option.reward?.shardReward ?: 0,
-                        rewardItemNameKeys =
+                        guaranteedRewardItemNameKeys =
                             option.reward
                                 ?.guaranteedUtilityDropIds
                                 ?.mapNotNull { baseId -> itemSchemaFor(baseId)?.nameKey }
                                 .orEmpty(),
+                        milestoneRewardLabelKey = routeMilestoneRewardLabelKey(option.reward),
                         rescueHintLabelKeys = routeRescueHintLabelKeys(option.reward?.rescueTags.orEmpty()),
                         mechanicHintKey = ZoneMechanicRuntime.introHintKey(destinationZone),
                         isReturnPath = option.destinationZoneId == config.zoneRoute.getOrNull(config.routeIndex - 1),
@@ -2518,14 +2584,28 @@ class FoundationGameSession internal constructor(
     private fun currentRaceSchema() =
         content.schemaCatalog.races.firstOrNull { race -> race.id == config.playerRaceId }
 
+    private fun shopNodeById(shopId: String): ShopNode =
+        requireNotNull(content.schemaCatalog.shopNodes.firstOrNull { shop -> shop.id == shopId }) {
+            "Unknown shop '$shopId'."
+        }
+
     private fun currentShopNode(): ShopNode? =
         activeShopId?.let { shopId ->
-            content.schemaCatalog.shopNodes.firstOrNull { shop -> shop.id == shopId }
+            shopNodeById(shopId)
         }
 
     private fun configuredShopNode(): ShopNode? =
         currentZoneSchema().shopNodeId?.let { shopId ->
-            content.schemaCatalog.shopNodes.firstOrNull { shop -> shop.id == shopId }
+            shopNodeById(shopId)
+        }
+
+    private fun interactableShopNode(schema: InteractableSchemaV2): ShopNode? =
+        schema.shopNodeId?.let { shopId ->
+            shopNodeById(shopId).also { shop ->
+                require(shop.zoneId == config.zoneId) {
+                    "Interactable '${schema.id}' in zone '${config.zoneId}' references shop '${shop.id}' for zone '${shop.zoneId}'."
+                }
+            }
         }
 
     private fun currentObjectiveSetSchema() =
@@ -2778,15 +2858,17 @@ class FoundationGameSession internal constructor(
         grantShards(reward.shardReward)
         dropPoint?.let { point ->
             guaranteedRewards.forEach { rewardItem ->
-                grantRewardItem(rewardItem, point)
+                val stored = grantRewardItem(rewardItem, point)
+                logRouteRewardGrant(option = option, reward = rewardItem, stored = stored)
             }
             milestoneReward?.let { rewardItem ->
-                grantRewardItem(rewardItem, point)
+                val stored = grantRewardItem(rewardItem, point)
                 recordMilestoneReward(
                     rewardSource = MilestoneRewardSource.ROUTE,
                     sourceId = reward.routeId,
                     reward = rewardItem,
                 )
+                logRouteRewardGrant(option = option, reward = rewardItem, stored = stored)
             }
         }
         worldProgress = worldProgress.withClaimedRouteReward(reward.routeId)
@@ -2817,6 +2899,53 @@ class FoundationGameSession internal constructor(
                 }
             else -> error("Shop offer '${offer.id}' is missing itemBaseId, inscriptionId, and serviceType.")
         }
+
+    private fun shopPanelHintLabelKeys(shop: ShopNode): List<String> =
+        if (shop.id == AbyssalRuntimeKeys.Temple.SHOP_NODE_ID) {
+            listOf(
+                "ui.shop.hint.reliquary_stock",
+                "ui.shop.hint.reliquary_refresh_once",
+            )
+        } else {
+            emptyList()
+        }
+
+    private fun shopOfferTagLabelKeys(
+        shop: ShopNode,
+        offer: ShopOffer,
+    ): List<String> =
+        buildList {
+            if ("RELIQUARY" in offer.tags && shop.id == AbyssalRuntimeKeys.Temple.SHOP_NODE_ID) {
+                add("ui.shop.tag.reliquary")
+            }
+            if ("CLEANSING" in offer.tags) {
+                add("ui.shop.tag.cleansing")
+            }
+            if ("PROTECTION" in offer.tags) {
+                add("ui.shop.tag.protection")
+            }
+            if ("OFFENSE" in offer.tags) {
+                add("ui.shop.tag.offense")
+            }
+            if ("MOVEMENT" in offer.tags) {
+                add("ui.shop.tag.movement")
+            }
+            if ("INSCRIPTION" in offer.tags) {
+                add("ui.shop.tag.inscription")
+            }
+            if ("ARCANE" in offer.tags) {
+                add("ui.shop.tag.arcane")
+            }
+            if (offer.serviceType == ShopServiceType.REFRESH_STOCK) {
+                add("ui.shop.tag.once")
+            }
+        }
+
+    private fun routeMilestoneRewardLabelKey(reward: RouteReward?): String? =
+        reward
+            ?.milestoneRewardProfileIds
+            ?.takeIf(List<String>::isNotEmpty)
+            ?.let { "ui.world_map.milestone_reward.affix" }
 
     private fun activeBossEncounterSchema() =
         activeBossDefinition()?.encounterId?.let { encounterId ->
@@ -3258,10 +3387,44 @@ class FoundationGameSession internal constructor(
             MilestoneRewardSource.ROUTE -> setOf("reward", "route")
             MilestoneRewardSource.BOSS -> setOf("reward", "boss", "elite")
             MilestoneRewardSource.CACHE -> setOf("reward", "cache")
+            MilestoneRewardSource.SUPPORT -> setOf("reward", "cache", "support")
         }
 
     private fun rewardCountsAsMeaningful(reward: ItemInstance): Boolean =
         reward.slot != null || reward.quality.ordinal >= ItemQuality.MAGIC.ordinal
+
+    private fun rewardItemNameKey(
+        reward: ItemInstance,
+        rewardContext: String,
+    ): String =
+        requireNotNull(itemSchemaFor(reward.baseId)) {
+            "Unknown $rewardContext reward item '${reward.baseId}'."
+        }.nameKey
+
+    private fun rewardPresentationSourceLabelKey(source: RewardPresentationSourceSnapshot): String =
+        when (source) {
+            RewardPresentationSourceSnapshot.CADENCE -> "ui.reward.source.cadence"
+            RewardPresentationSourceSnapshot.ROUTE -> "ui.reward.source.route"
+            RewardPresentationSourceSnapshot.BOSS -> "ui.reward.source.boss"
+            RewardPresentationSourceSnapshot.CACHE -> "ui.reward.source.cache"
+            RewardPresentationSourceSnapshot.SUPPORT -> "ui.reward.source.support"
+        }
+
+    private fun recordRecentRewardPresentation(
+        source: RewardPresentationSourceSnapshot,
+        reward: ItemInstance,
+        includeQuality: Boolean = true,
+    ) {
+        val displayName = itemDisplayToken(reward, includeQuality = includeQuality) ?: return
+        if (recentRewardEntries.size == RECENT_REWARD_LIMIT) {
+            recentRewardEntries.removeFirst()
+        }
+        recentRewardEntries +=
+            RecentRewardPresentationEntry(
+                source = source,
+                itemDisplayName = displayName,
+            )
+    }
 
     private fun markMeaningfulRewardSeenThisFloor() {
         if (!currentFloorRewardState.meaningfulRewardSeenThisFloor) {
@@ -3291,6 +3454,53 @@ class FoundationGameSession internal constructor(
         }
         ItemFactory().createGroundItem(world, reward, dropPoint)
         return false
+    }
+
+    private fun logRouteRewardGrant(
+        option: RouteAdvanceOption,
+        reward: ItemInstance,
+        stored: Boolean,
+    ) {
+        recordRecentRewardPresentation(
+            source = RewardPresentationSourceSnapshot.ROUTE,
+            reward = reward,
+        )
+        addMessage(
+            if (stored) "log.reward.route.claimed" else "log.reward.route.dropped",
+            keyArg("zone", zoneSchemaFor(option.destinationZoneId).nameKey),
+            keyArg("item", rewardItemNameKey(reward, "route")),
+        )
+    }
+
+    private fun logCacheRewardGrant(
+        schema: InteractableSchemaV2,
+        reward: ItemInstance,
+    ) {
+        recordRecentRewardPresentation(
+            source = RewardPresentationSourceSnapshot.CACHE,
+            reward = reward,
+        )
+        addMessage(
+            "log.reward.cache.claimed",
+            keyArg("interactable", schema.nameKey),
+            keyArg("item", rewardItemNameKey(reward, "cache")),
+        )
+    }
+
+    private fun logSupportRewardGrant(
+        schema: InteractableSchemaV2,
+        reward: ItemInstance,
+        stored: Boolean,
+    ) {
+        recordRecentRewardPresentation(
+            source = RewardPresentationSourceSnapshot.SUPPORT,
+            reward = reward,
+        )
+        addMessage(
+            if (stored) "log.reward.support.claimed" else "log.reward.support.dropped",
+            keyArg("interactable", schema.nameKey),
+            keyArg("item", rewardItemNameKey(reward, "support")),
+        )
     }
 
     private fun zoneRewardItem(
@@ -3688,7 +3898,7 @@ class FoundationGameSession internal constructor(
                 fallbackBaseId = spec.fallbackBaseId,
                 rewardContext =
                     RewardGenerationContext(
-                        rewardSource = MilestoneRewardSource.CACHE,
+                        rewardSource = MilestoneRewardSource.SUPPORT,
                         sourceId = sourceId,
                         floor = itemFloorForRecommendedLevel(currentZoneSchema().recommendedLevel.max),
                         qualityFloor = ItemQuality.MAGIC,
@@ -3715,14 +3925,7 @@ class FoundationGameSession internal constructor(
                 reward = reward,
             )
         }
-        val rewardSchema = requireNotNull(itemSchemaFor(reward.baseId)) {
-            "Unknown item schema '${reward.baseId}'."
-        }
-        addMessage(
-            "log.interactable.supply_crate",
-            keyArg("interactable", schema.nameKey),
-            keyArg("item", rewardSchema.nameKey),
-        )
+        logCacheRewardGrant(schema = schema, reward = reward)
     }
 
     private fun grantSupportRewardFromInteractable(
@@ -3737,7 +3940,7 @@ class FoundationGameSession internal constructor(
                 fallbackBaseId = spec.fallbackBaseId,
                 rewardContext =
                     RewardGenerationContext(
-                        rewardSource = MilestoneRewardSource.CACHE,
+                        rewardSource = MilestoneRewardSource.SUPPORT,
                         sourceId = sourceId,
                         floor = itemFloorForRecommendedLevel(currentZoneSchema().recommendedLevel.max),
                         qualityFloor = ItemQuality.MAGIC,
@@ -3746,23 +3949,16 @@ class FoundationGameSession internal constructor(
                         occupiedSlots = currentEquippedSlots(),
                     ),
             )
-        grantRewardItem(reward, position)
+        val stored = grantRewardItem(reward, position)
         if (spec.profileIds.isNotEmpty()) {
             recordMilestoneReward(
-                rewardSource = MilestoneRewardSource.CACHE,
+                rewardSource = MilestoneRewardSource.SUPPORT,
                 sourceId = sourceId,
                 reward = reward,
             )
         }
-        val rewardSchema = requireNotNull(itemSchemaFor(reward.baseId)) {
-            "Unknown support reward item '${reward.baseId}'."
-        }
         addMessage("log.interactable.support", keyArg("interactable", schema.nameKey))
-        addMessage(
-            "log.interactable.support.reward",
-            keyArg("interactable", schema.nameKey),
-            keyArg("item", rewardSchema.nameKey),
-        )
+        logSupportRewardGrant(schema = schema, reward = reward, stored = stored)
         val restored = restoreArmorySupplies()
         if (restored > 0) {
             addMessage("log.interactable.support.resupply", literalArg("amount", restored))
@@ -3847,16 +4043,17 @@ class FoundationGameSession internal constructor(
                 meaningfulRewardSeenThisFloor = true,
                 cadenceRewardGrantedThisFloor = true,
             )
-        val rewardSchema = requireNotNull(itemSchemaFor(reward.baseId)) {
-            "Unknown cadence reward item '${reward.baseId}'."
-        }
+        recordRecentRewardPresentation(
+            source = RewardPresentationSourceSnapshot.CADENCE,
+            reward = reward,
+        )
         addMessage(
             if (stored) {
                 "log.reward.cadence.claimed"
             } else {
                 "log.reward.cadence.dropped"
             },
-            keyArg("item", rewardSchema.nameKey),
+            keyArg("item", rewardItemNameKey(reward, "cadence")),
         )
     }
 
@@ -4849,6 +5046,11 @@ class FoundationGameSession internal constructor(
     ) {
         val state = shopStates[shopId] ?: ShopInventoryState(shopId = shopId)
         shopStates[shopId] = state.copy(purchasedOfferIds = state.purchasedOfferIds + offerId)
+    }
+
+    private fun markShopVisited(shopId: String) {
+        val state = shopStates[shopId] ?: ShopInventoryState(shopId = shopId)
+        shopStates[shopId] = state.copy(visitCount = state.visitCount + 1)
     }
 
     private fun equippedSlotForItem(itemId: EntityId): EquipSlot? =
@@ -5917,16 +6119,17 @@ class FoundationGameSession internal constructor(
                     sourceId = activeBossEncounterSchema()?.id ?: currentZoneSchema().id,
                     reward = bossReward,
                 )
-                val rewardSchema = requireNotNull(itemSchemaFor(bossReward.baseId)) {
-                    "Unknown boss reward item '${bossReward.baseId}'."
-                }
+                recordRecentRewardPresentation(
+                    source = RewardPresentationSourceSnapshot.BOSS,
+                    reward = bossReward,
+                )
                 addMessage(
                     if (stored) {
                         "log.boss.reward.claimed"
                     } else {
                         "log.boss.reward.dropped"
                     },
-                    keyArg("item", rewardSchema.nameKey),
+                    keyArg("item", rewardItemNameKey(bossReward, "boss")),
                 )
             }
             if (objectiveCompleted) {
@@ -6713,6 +6916,57 @@ class FoundationGameSession internal constructor(
             .sortedBy(EntityId::value)
             .firstOrNull { entityId -> requireNotNull(world.get<Position>(entityId)).toPoint() == point }
 
+    private fun canOpenReliquaryShopSafely(): Boolean = targetableHostilePositions().isEmpty()
+
+    private fun lateRunReliquaryShopNode(): ShopNode? =
+        content.schemaCatalog.shopNodes.firstOrNull { shop -> shop.id == AbyssalRuntimeKeys.Temple.SHOP_NODE_ID }
+
+    private fun lateRunReliquaryPurchasedOffers(): List<ShopOffer> {
+        val shop = lateRunReliquaryShopNode() ?: return emptyList()
+        return lateRunReliquaryPurchasedOffers(shop)
+    }
+
+    private fun lateRunReliquaryPurchasedOffers(shop: ShopNode): List<ShopOffer> {
+        val purchasedOfferIds = shopStates[shop.id]?.purchasedOfferIds.orEmpty()
+        if (purchasedOfferIds.isEmpty()) {
+            return emptyList()
+        }
+        val offersById = (shop.inventory + shop.refreshInventory).associateBy(ShopOffer::id)
+        return purchasedOfferIds.mapNotNull { offerId -> offersById[offerId] }
+    }
+
+    private fun playerFacingReliquaryTelemetryTags(offer: ShopOffer): List<String> =
+        buildList {
+            if ("CLEANSING" in offer.tags) {
+                add("CLEANSING")
+            }
+            if ("PROTECTION" in offer.tags) {
+                add("PROTECTION")
+            }
+            if ("OFFENSE" in offer.tags) {
+                add("OFFENSE")
+            }
+            if ("MOVEMENT" in offer.tags) {
+                add("MOVEMENT")
+            }
+            if ("INSCRIPTION" in offer.tags) {
+                add("INSCRIPTION")
+            }
+            if (offer.serviceType != null) {
+                add("SERVICE")
+            }
+        }
+
+    private fun openShop(
+        shop: ShopNode,
+        consumesTurn: Boolean,
+    ): CommandResolution {
+        markShopVisited(shop.id)
+        activeShopId = shop.id
+        addMessage("log.shop.open", keyArg("shop", shop.nameKey))
+        return CommandResolution(accepted = true, consumesTurn = consumesTurn)
+    }
+
     private fun interactAtPlayerPosition(): CommandResolution {
         val entityId = interactableEntityAt(playerPosition())
         if (entityId == null) {
@@ -6725,6 +6979,17 @@ class FoundationGameSession internal constructor(
             "Unknown interactable '${interactable.id}'."
         }
         val position = requireNotNull(world.get<Position>(entityId)).toPoint()
+        val interactableShop = interactableShopNode(schema)
+        if (interactable.id == AbyssalRuntimeKeys.Temple.INTERACTABLE_ID && isAbyssalTempleWardClaimed() && interactableShop != null) {
+            if (!canOpenReliquaryShopSafely()) {
+                addMessage("log.shop.threatened")
+                return CommandResolution.rejected()
+            }
+            return openShop(interactableShop, consumesTurn = false)
+        }
+        var consumeInteractable = true
+        var shopToOpen: ShopNode? = null
+        var shopOpenConsumesTurn = false
 
         when (interactable.id) {
             "merchant_stall" -> {
@@ -6733,12 +6998,10 @@ class FoundationGameSession internal constructor(
                     addMessage("log.interactable.none")
                     return CommandResolution.rejected()
                 }
-                activeShopId = shop.id
-                addMessage("log.shop.open", keyArg("shop", shop.nameKey))
-                return CommandResolution(accepted = true, consumesTurn = false)
+                return openShop(shop, consumesTurn = false)
             }
 
-            in setOf("supply_crate", "trail_cache", "ore_stash", "seal_cache", "bandit_cache") -> {
+            in CACHE_REWARD_INTERACTABLE_IDS -> {
                 val rewardSpec = requireNotNull(groundRewardSpecFor(interactable.id)) {
                     "Missing ground reward spec for interactable '${interactable.id}'."
                 }
@@ -6762,10 +7025,7 @@ class FoundationGameSession internal constructor(
                 }
             }
 
-            "warden_beacon",
-            "slag_valve",
-            "shadow_brazier",
-            -> {
+            in ALERT_INTERACTABLE_IDS -> {
                 addMessage("log.interactable.alarm_bonfire", keyArg("interactable", schema.nameKey))
                 val alerted = alertCurrentFloorHostiles()
                 if (alerted > 0) {
@@ -6779,18 +7039,7 @@ class FoundationGameSession internal constructor(
                 }
             }
 
-            in setOf(
-                "armory_gate",
-                "hunter_snare",
-                "mine_furnace",
-                "ritual_altar",
-                "elven_wardstone",
-                "molten_pressure_valve",
-                RiverCrystalRuntimeKeys.Crystal.INTERACTABLE_ID,
-                RiverCrystalRuntimeKeys.River.INTERACTABLE_ID,
-                AbyssalRuntimeKeys.Temple.INTERACTABLE_ID,
-                AbyssalRuntimeKeys.Finale.INTERACTABLE_ID,
-            ) -> {
+            in SUPPORT_REWARD_INTERACTABLE_IDS -> {
                 val rewardSpec = requireNotNull(supportRewardSpecFor(interactable.id)) {
                     "Missing support reward spec for interactable '${interactable.id}'."
                 }
@@ -6817,8 +7066,17 @@ class FoundationGameSession internal constructor(
                         stabilizeHeartWardFocus()
                     }
                 }
-                if (interactable.id in setOf("armory_gate", "hunter_snare", "mine_furnace", "ritual_altar")) {
+                if (interactable.id in OBJECTIVE_ADVANCE_INTERACTABLE_IDS) {
                     addMessage("log.objective.advance")
+                }
+                if (interactable.id == AbyssalRuntimeKeys.Temple.INTERACTABLE_ID && interactableShop != null) {
+                    consumeInteractable = false
+                    if (canOpenReliquaryShopSafely()) {
+                        shopToOpen = interactableShop
+                        shopOpenConsumesTurn = true
+                    } else {
+                        addMessage("log.shop.threatened")
+                    }
                 }
             }
 
@@ -6828,7 +7086,12 @@ class FoundationGameSession internal constructor(
             }
         }
 
-        world.destroyEntity(entityId)
+        if (consumeInteractable) {
+            world.destroyEntity(entityId)
+        }
+        shopToOpen?.let { shop ->
+            return openShop(shop, consumesTurn = shopOpenConsumesTurn)
+        }
         return CommandResolution.accepted()
     }
 

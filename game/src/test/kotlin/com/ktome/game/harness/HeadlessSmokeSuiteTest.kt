@@ -201,6 +201,17 @@ internal fun ScenarioReport.toJson() =
         }
         put("cadenceRewardCount", cadenceRewardCount)
         put("shopRefreshPurchaseCount", shopRefreshPurchaseCount)
+        put("lateRunReliquaryPurchaseCount", lateRunReliquaryPurchaseCount)
+        put("lateRunReliquaryVisitCount", lateRunReliquaryVisitCount)
+        put("lateRunReliquaryRefreshCount", lateRunReliquaryRefreshCount)
+        put("lateRunReliquaryItemPurchaseCount", lateRunReliquaryItemPurchaseCount)
+        put("lateRunReliquaryNonMandatoryPurchaseCount", lateRunReliquaryNonMandatoryPurchaseCount)
+        put("lateRunReliquaryShardSpent", lateRunReliquaryShardSpent)
+        putJsonObject("lateRunReliquaryTagDistribution") {
+            lateRunReliquaryTagDistribution.forEach { (tag, count) ->
+                put(tag, count)
+            }
+        }
         put("affixSynergyActivationCount", affixSynergyActivationCount)
         putJsonObject("affixSynergyActivationDistribution") {
             affixSynergyActivationDistribution.forEach { (affixId, count) ->

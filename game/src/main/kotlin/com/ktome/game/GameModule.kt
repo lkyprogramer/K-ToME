@@ -1437,6 +1437,7 @@ object GameModule {
             }
         }
 
+        val interactablesById = schemaCatalog.interactables.associateBy { interactable -> interactable.id }
         schemaCatalog.zones.forEach { zone ->
             val objective =
                 zone.objectiveSetId?.let { objectiveSetId ->
@@ -1471,6 +1472,19 @@ object GameModule {
                     }
                     require(placement.floor in 1..zone.floorCount) {
                         "Objective '${objectiveSet.id}' placement floor ${placement.floor} exceeds zone '${zone.id}' floorCount ${zone.floorCount}."
+                    }
+                }
+                objectiveSet.interactables.forEach { interactableId ->
+                    val interactable = requireNotNull(interactablesById[interactableId]) {
+                        "Objective '${objectiveSet.id}' references unknown interactable '$interactableId'."
+                    }
+                    interactable.shopNodeId?.let { shopNodeId ->
+                        val shop = requireNotNull(shopsById[shopNodeId]) {
+                            "Interactable '$interactableId' references unknown shop '$shopNodeId'."
+                        }
+                        require(shop.zoneId == zone.id) {
+                            "Interactable '$interactableId' in zone '${zone.id}' references shop '$shopNodeId', but the shop belongs to zone '${shop.zoneId}'."
+                        }
                     }
                 }
             }
