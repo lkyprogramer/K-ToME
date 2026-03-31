@@ -1526,15 +1526,15 @@ class FoundationGameSessionTest {
 
         assertTrue(session.perform(PlayerCommand.Wait))
         assertEquals(VoidPressurePhase.ACTIVE, state.phase)
+        assertTrue(
+            requireNotNull(world.get<WorldEffect>(eruptionEntity))
+                .effects
+                .any { effect -> effect.schemaId == StatusEffectType.WEAKEN.schemaId },
+        )
         assertTrue(session.perform(PlayerCommand.Wait))
 
         val healthAfterTick = requireNotNull(world.get<Health>(session.playerId)).current
         assertEquals(healthBeforeTick - state.damagePerTick, healthAfterTick)
-        assertTrue(
-            requireNotNull(world.get<EffectTracker>(session.playerId))
-                .activeEffects()
-                .any { effect -> effect.schemaId == StatusEffectType.WEAKEN.schemaId },
-        )
     }
 
     @Test

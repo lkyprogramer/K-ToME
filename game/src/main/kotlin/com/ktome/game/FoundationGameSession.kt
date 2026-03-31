@@ -4042,13 +4042,13 @@ class FoundationGameSession internal constructor(
 
             val nextActor = pendingActions.firstOrNull() ?: break
             if (!world.isAlive(nextActor)) {
-                pendingActions.removeFirst()
+                pendingActions.removeFirstOrNull()
                 activeTurnActor = null
                 continue
             }
 
             if (!prepareActorTurn(nextActor)) {
-                pendingActions.removeFirst()
+                pendingActions.removeFirstOrNull()
                 activeTurnActor = null
                 continue
             }
@@ -4056,7 +4056,7 @@ class FoundationGameSession internal constructor(
                 break
             }
 
-            pendingActions.removeFirst()
+            pendingActions.removeFirstOrNull()
             executeMonsterTurn(nextActor)
             finishActorTurn(nextActor)
             activeTurnActor = null
