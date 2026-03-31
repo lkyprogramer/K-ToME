@@ -1,0 +1,136 @@
+styleTag: ktome-middle-fantasy-painterly-tile-v1
+artStyleBible: docs/2026-03-13-art-style-bible.md
+stylePrompt: >
+  Classical high fantasy in a Middle-earth inspired mode with painterly readable
+  silhouettes. Never anime, never sci-fi. Focus on worn iron, wet stone, cracked
+  crystal, restrained magical glow, and gameplay-first readability for zone identity
+  props and overlays.
+defaults:
+  imageAspectRatio: "1:1"
+  imageSize: 1K
+  negativeConstraints:
+    - no modern clothing
+    - no firearms
+    - no sci-fi materials
+    - no anime proportions
+    - no floating text, watermark or logo
+  categoryPromptTemplates:
+    icon_quest: >
+      Game quest or zone icon on transparent background. Single centered subject
+      occupying 65-75% of the canvas. Painterly, old-world materials, highly readable
+      at small route-selection size with a strong silhouette and one dominant focal
+      motif.
+    portrait: >
+      Game location card art with a focused environmental composition. Painterly,
+      readable, atmospheric, and gameplay-facing rather than cinematic. Prioritize
+      one memorable landmark silhouette and keep the scene grounded in worn stone,
+      iron, wood, and restrained magical light.
+    prop_interactable: >
+      Game prop object on transparent background, slightly elevated 3/4 angle. Clear
+      base footprint and obvious interaction affordance. Painterly, readable at small
+      scale, with heavy use, age, and specific material story.
+    tile_decal: >
+      Gameplay-first tile overlay on transparent background. Directional or hazard
+      pattern only, no scenery. Painterly but abstract enough to composite over tiles.
+      Readability and threat communication are more important than illustration detail.
+phase2AssetGates:
+  P3-PR16:
+    description: River and crystal runtime identity pack for Phase 3 v3 PR-16.
+    assets:
+      - id: phase3_v3_pr16_zone_underground_river_icon
+        category: icon_quest
+        visualKey: zone.underground_river.icon
+        outputName: phase3/p3-followup/zone_underground_river_icon.png
+        subject: Underground River zone icon showing a rusted ferry anchor, heavy chain, broken timber crossing, and cold blue current swirl carved into wet stone.
+        materialTags: [rusted_iron, soaked_timber, cold_water, cavern_stone]
+        moodTags: [river, crossing, late_zone]
+        constraints:
+          - bold icon silhouette readable on route selection UI
+          - clear ferry-anchor identity, not a generic crypt icon
+          - no character figures, no scene background
+        geminiKeyRequired: true
+      - id: phase3_v3_pr16_zone_underground_river_visual
+        category: portrait
+        visualKey: zone.underground_river.visual
+        outputName: phase3/p3-followup/zone_underground_river_visual.png
+        subject: Underground River zone card art showing a wet subterranean channel, broken ferry planks, chain-bound anchor base, slick rock walls, and cold blue reflections on dark water.
+        materialTags: [wet_stone, ferry_planks, iron_chain, cold_reflection]
+        moodTags: [river, oppressive, late_zone]
+        constraints:
+          - emphasize the crossing landmark and current pressure
+          - no full battle scene, no generic grey crypt backdrop
+          - no title plaque, no inset frame label, and no readable text anywhere in the image
+          - readable as a zone inspection card at medium size
+        geminiKeyRequired: true
+      - id: phase3_v3_pr16_zone_crystal_cavern_icon
+        category: icon_quest
+        visualKey: zone.crystal_cavern.icon
+        outputName: phase3/p3-followup/zone_crystal_cavern_icon.png
+        subject: Crystal Cavern zone icon showing faceted crystal clusters, a ringed resonance node, and a cold white shard fissure.
+        materialTags: [faceted_crystal, bronze_ring, white_glow, stone_crack]
+        moodTags: [crystal, resonance, optional_zone]
+        constraints:
+          - bold icon silhouette readable on route selection UI
+          - clear resonance-node identity, not a generic altar icon
+          - no character figures, no background scene clutter
+        geminiKeyRequired: true
+      - id: phase3_v3_pr16_zone_crystal_cavern_visual
+        category: portrait
+        visualKey: zone.crystal_cavern.visual
+        outputName: phase3/p3-followup/zone_crystal_cavern_visual.png
+        subject: Crystal Cavern zone card art with towering crystal columns, fractured resonance node rings, cold white refraction, and shard growths pushing into the walking lane.
+        materialTags: [crystal_spires, resonance_rings, cold_refraction, fractured_stone]
+        moodTags: [crystal, tension, optional_zone]
+        constraints:
+          - the resonance node or shard pressure landmark must be legible
+          - no sci-fi glass lab feeling, keep it ancient fantasy cavern
+          - readable as a zone inspection card at medium size
+        geminiKeyRequired: true
+      - id: phase3_v3_pr16_prop_river_ferry_anchor
+        category: prop_interactable
+        visualKey: prop.river_ferry_anchor
+        outputName: phase3/p3-followup/prop_river_ferry_anchor.png
+        subject: Interactable ferry anchor prop with a heavy rusted anchor base, thick chain, soaked wood lockplate, and a release assembly that clearly looks like it can be fixed or dropped into place.
+        materialTags: [rusted_anchor, heavy_chain, soaked_wood, lockplate]
+        moodTags: [river, interactable, utility]
+        constraints:
+          - obvious fix-and-secure affordance
+          - transparent background and clean object footprint
+          - clearly distinct from the existing armory gate silhouette
+        geminiKeyRequired: true
+      - id: phase3_v3_pr16_prop_crystal_resonance_node
+        category: prop_interactable
+        visualKey: prop.crystal_resonance_node
+        outputName: phase3/p3-followup/prop_crystal_resonance_node.png
+        subject: Interactable resonance node prop built from mounted crystal clusters, bronze tuning rings, and a cold white pulse channel that suggests touch and attunement.
+        materialTags: [mounted_crystal, bronze_ring, white_pulse, stone_pedestal]
+        moodTags: [crystal, interactable, attunement]
+        constraints:
+          - obvious tune-and-stabilize affordance
+          - transparent background and clean object footprint
+          - clearly distinct from the existing ritual altar silhouette
+        geminiKeyRequired: true
+      - id: phase3_v3_pr16_vfx_zone_effect_current_lane_01
+        category: tile_decal
+        visualKey: vfx.zone.effect.current_lane_01
+        outputName: phase3/p3-followup/vfx_zone_effect_current_lane_01.png
+        subject: Directional water-current overlay with slanted flow lines, cold blue foam streaks, and subtle spray indicating sideways pull across a lane.
+        materialTags: [cold_water, foam, flow_lines]
+        moodTags: [river, hazard, direction]
+        constraints:
+          - strong directionality at a glance
+          - transparent background, no frame or scenery
+          - readable on top of dark dungeon tiles
+        geminiKeyRequired: true
+      - id: phase3_v3_pr16_vfx_zone_effect_crystal_shard_01
+        category: tile_decal
+        visualKey: vfx.zone.effect.crystal_shard_01
+        outputName: phase3/p3-followup/vfx_zone_effect_crystal_shard_01.png
+        subject: Crystal shard hazard overlay showing cracked stone, cold white shard tips, and a sharp upward threat silhouette seconds before eruption.
+        materialTags: [cracked_stone, shard_tips, white_glow]
+        moodTags: [crystal, hazard, eruption]
+        constraints:
+          - danger must read instantly even at tile scale
+          - transparent background, no scene illustration
+          - readable on top of dark dungeon tiles without neon overglow
+        geminiKeyRequired: true

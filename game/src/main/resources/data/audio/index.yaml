@@ -1,5 +1,7 @@
 audioProfiles:
+  - id: audio.interactable.crystal_resonance_node
   - id: audio.interactable.open
+  - id: audio.interactable.river_ferry_anchor
   - id: audio.interactable.stairs
   - id: audio.profession.vanguard
   - id: audio.profession.arcanist
@@ -62,6 +64,8 @@ audioProfiles:
   - id: audio.boss.bandit_captain
   - id: audio.zone.shattered_outpost
   - id: audio.zone.greenwood_fringe
+  - id: audio.zone.underground_river
+  - id: audio.zone.crystal_cavern
   - id: audio.zone.deep_iron_pit
   - id: audio.zone.grey_gate_depths
   - id: audio.difficulty.normal

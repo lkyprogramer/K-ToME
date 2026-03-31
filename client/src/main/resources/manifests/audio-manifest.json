@@ -33,6 +33,30 @@
       ]
     },
     {
+      "key": "ambient.underground_river",
+      "cueFamily": "ambience",
+      "eventId": "ambient.underground_river",
+      "sourcePath": "audio/ambient/underground_river.ogg",
+      "tags": [
+        "phase3",
+        "followup",
+        "ambience",
+        "river"
+      ]
+    },
+    {
+      "key": "ambient.crystal_cavern",
+      "cueFamily": "ambience",
+      "eventId": "ambient.crystal_cavern",
+      "sourcePath": "audio/ambient/crystal_cavern.ogg",
+      "tags": [
+        "phase3",
+        "followup",
+        "ambience",
+        "crystal"
+      ]
+    },
+    {
       "key": "ambient.shattered_outpost",
       "cueFamily": "ambience",
       "eventId": "ambient.shattered_outpost",
@@ -296,6 +320,30 @@
         "p2-b",
         "interactable",
         "official_slice"
+      ]
+    },
+    {
+      "key": "audio.interactable.river_ferry_anchor",
+      "cueFamily": "interactable",
+      "eventId": "audio.interactable.river_ferry_anchor",
+      "sourcePath": "audio/interactable/river_ferry_anchor.ogg",
+      "tags": [
+        "phase3",
+        "followup",
+        "interactable",
+        "river"
+      ]
+    },
+    {
+      "key": "audio.interactable.crystal_resonance_node",
+      "cueFamily": "interactable",
+      "eventId": "audio.interactable.crystal_resonance_node",
+      "sourcePath": "audio/interactable/crystal_resonance_node.ogg",
+      "tags": [
+        "phase3",
+        "followup",
+        "interactable",
+        "crystal"
       ]
     },
     {
@@ -1919,6 +1967,30 @@
         "p2-c",
         "zone",
         "route"
+      ]
+    },
+    {
+      "key": "audio.zone.underground_river",
+      "cueFamily": "zone",
+      "eventId": "audio.zone.underground_river",
+      "sourcePath": "audio/ambient/underground_river.ogg",
+      "tags": [
+        "phase3",
+        "followup",
+        "zone",
+        "river"
+      ]
+    },
+    {
+      "key": "audio.zone.crystal_cavern",
+      "cueFamily": "zone",
+      "eventId": "audio.zone.crystal_cavern",
+      "sourcePath": "audio/ambient/crystal_cavern.ogg",
+      "tags": [
+        "phase3",
+        "followup",
+        "zone",
+        "crystal"
       ]
     },
     {

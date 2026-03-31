@@ -1,0 +1,27 @@
+manifestVersion: 1
+fallbackKey: audio.fallback.silence
+entries:
+  - key: ambient.underground_river
+    cueFamily: ambience
+    eventId: ambient.underground_river
+    sourcePath: audio/ambient/underground_river.ogg
+  - key: audio.zone.underground_river
+    cueFamily: zone
+    eventId: audio.zone.underground_river
+    sourcePath: audio/ambient/underground_river.ogg
+  - key: ambient.crystal_cavern
+    cueFamily: ambience
+    eventId: ambient.crystal_cavern
+    sourcePath: audio/ambient/crystal_cavern.ogg
+  - key: audio.zone.crystal_cavern
+    cueFamily: zone
+    eventId: audio.zone.crystal_cavern
+    sourcePath: audio/ambient/crystal_cavern.ogg
+  - key: audio.interactable.river_ferry_anchor
+    cueFamily: interactable
+    eventId: audio.interactable.river_ferry_anchor
+    sourcePath: audio/interactable/river_ferry_anchor.ogg
+  - key: audio.interactable.crystal_resonance_node
+    cueFamily: interactable
+    eventId: audio.interactable.crystal_resonance_node
+    sourcePath: audio/interactable/crystal_resonance_node.ogg

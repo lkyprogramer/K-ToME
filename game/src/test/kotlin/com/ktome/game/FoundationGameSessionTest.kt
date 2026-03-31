@@ -1259,6 +1259,92 @@ class FoundationGameSessionTest {
     }
 
     @Test
+    fun `underground river currents drag the player until the ferry anchor stabilizes the crossing`() {
+        val session =
+            GameModule.newFoundationSession(
+                FoundationGameConfig(seed = 20260331L, zoneId = "underground_river", playerProfessionId = "rogue"),
+                SaveManager(tempDir.resolve("river-current-runtime-save")),
+            )
+        clearMonsters(session)
+        val world = runtimeWorld(session)
+        val currentEntity = world.entitiesWith(RiverCurrentRuntimeState::class).single()
+        val state = requireNotNull(world.get<RiverCurrentRuntimeState>(currentEntity))
+        val pushDelta = Point(state.pushDx, state.pushDy)
+        val hazardPoint =
+            state.laneCells.first { point ->
+                point !in state.safeCells &&
+                    session.map.isInBounds(point.x + pushDelta.x, point.y + pushDelta.y) &&
+                    !session.map[point + pushDelta].blocksMovement
+            }
+        movePlayerTo(session, hazardPoint)
+
+        invokeSyncZoneMechanicsFor(session, session.playerId)
+        assertEquals(hazardPoint + pushDelta, session.playerPosition())
+        assertTrue(session.renderSnapshot().overlays.any { overlay -> overlay.visualKey == "vfx.zone.effect.current_lane_01" })
+
+        val anchorApproachPoint = state.safeCells.first()
+        movePlayerTo(session, anchorApproachPoint)
+        invokeSyncZoneMechanicsFor(session, session.playerId)
+        assertEquals(anchorApproachPoint, session.playerPosition())
+
+        movePlayerTo(session, interactablePoint(session, "river_ferry_anchor"))
+        invokeInteractAtPlayerPosition(session)
+        assertTrue(session.renderSnapshot().logEvents.any { event -> event.message.key == "log.zone.currents.safe_lane" })
+
+        movePlayerTo(session, hazardPoint)
+        invokeSyncZoneMechanicsFor(session, session.playerId)
+        assertEquals(hazardPoint, session.playerPosition())
+        assertTrue(session.renderSnapshot().overlays.none { overlay -> overlay.id.startsWith("river-current:") })
+    }
+
+    @Test
+    fun `crystal shard pressure telegraphs, bleeds active cells, and settles after attuning the node`() {
+        val session =
+            GameModule.newFoundationSession(
+                FoundationGameConfig(seed = 20260331L, zoneId = "crystal_cavern", playerProfessionId = "arcanist"),
+                SaveManager(tempDir.resolve("crystal-shard-runtime-save")),
+            )
+        clearMonsters(session)
+        val world = runtimeWorld(session)
+        val shardEntity = world.entitiesWith(CrystalShardRuntimeState::class).single()
+        val state = requireNotNull(world.get<CrystalShardRuntimeState>(shardEntity))
+        state.nextCycleTurn = 1
+        val hazardPoint = state.hazardCells.first()
+
+        movePlayerTo(session, hazardPoint)
+
+        assertTrue(session.perform(PlayerCommand.Wait))
+        assertEquals(CrystalShardPhase.TELEGRAPH, state.phase)
+        assertTrue(session.renderSnapshot().overlays.any { overlay -> overlay.visualKey == "vfx.zone.effect.crystal_shard_01" })
+        assertTrue(session.renderSnapshot().logEvents.any { event -> event.message.key == "log.zone.crystal_shards.telegraph" })
+
+        assertTrue(session.perform(PlayerCommand.Wait))
+        assertEquals(CrystalShardPhase.ACTIVE, state.phase)
+
+        val healthBeforeTick = requireNotNull(world.get<Health>(session.playerId)).current
+
+        assertTrue(session.perform(PlayerCommand.Wait))
+        assertTrue(requireNotNull(world.get<Health>(session.playerId)).current < healthBeforeTick)
+        assertTrue(recentEventSummaries(session).any { event -> event.startsWith("status_tick:${session.playerId.value}:") })
+
+        movePlayerTo(session, interactablePoint(session, "crystal_resonance_node"))
+        assertTrue(session.perform(PlayerCommand.Interact))
+        assertEquals(CrystalShardPhase.IDLE, state.phase)
+        assertTrue(session.renderSnapshot().logEvents.any { event -> event.message.key == "log.zone.crystal_shards.settled" })
+
+        state.nextCycleTurn = session.currentTurnCount()
+        val stabilizedHealth = requireNotNull(world.get<Health>(session.playerId)).current
+        movePlayerTo(session, hazardPoint)
+
+        repeat(2) {
+            assertTrue(session.perform(PlayerCommand.Wait))
+        }
+
+        assertEquals(stabilizedHealth, requireNotNull(world.get<Health>(session.playerId)).current)
+        assertTrue(session.renderSnapshot().overlays.none { overlay -> overlay.id.startsWith("crystal-shards:") })
+    }
+
+    @Test
     fun `mana potion restores arcanist mana from starter kit`() {
         val session =
             GameModule.newFoundationSession(
@@ -3599,6 +3685,28 @@ class FoundationGameSessionTest {
         val turnCountField = FoundationGameSession::class.java.getDeclaredField("turnCount").apply { isAccessible = true }
         val combatTurnField = FoundationGameSession::class.java.getDeclaredField("lastPlayerCombatTurn").apply { isAccessible = true }
         combatTurnField.setInt(session, turnCountField.getInt(session))
+    }
+
+    private fun invokeSyncZoneMechanicsFor(
+        session: FoundationGameSession,
+        actorId: EntityId,
+    ) {
+        val method =
+            FoundationGameSession::class.java.declaredMethods
+                .first { declared -> declared.name.startsWith("syncZoneMechanicEffectsFor") && declared.parameterCount == 1 }
+        method.isAccessible = true
+        method.invoke(session, actorId.value)
+    }
+
+    private fun invokeInteractAtPlayerPosition(session: FoundationGameSession) {
+        val method =
+            FoundationGameSession::class.java.declaredMethods
+                .first { declared -> declared.name == "interactAtPlayerPosition" && declared.parameterCount == 0 }
+        method.isAccessible = true
+        val result = method.invoke(session)
+        val acceptedField = result.javaClass.getDeclaredField("accepted")
+        acceptedField.isAccessible = true
+        assertTrue(acceptedField.getBoolean(result))
     }
 
     private fun recentEventSummaries(session: FoundationGameSession): List<String> {

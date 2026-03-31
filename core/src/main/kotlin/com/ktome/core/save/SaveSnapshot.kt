@@ -7,6 +7,7 @@ import com.ktome.core.profile.MilestoneRewardSummary
 import com.ktome.core.resource.ResourcePoolSnapshot
 import com.ktome.core.world.WorldProgressDef
 import kotlinx.serialization.Serializable
+import kotlin.math.abs
 
 @Serializable
 data class SaveSnapshot(
@@ -205,6 +206,8 @@ data class EntitySnapshot(
     val patrolPressureState: PatrolPressureStateSnapshot? = null,
     val ambushLaneTrigger: AmbushLaneTriggerSnapshot? = null,
     val furnacePressureState: FurnacePressureStateSnapshot? = null,
+    val riverCurrentState: RiverCurrentStateSnapshot? = null,
+    val crystalShardPressureState: CrystalShardPressureStateSnapshot? = null,
     val resourcePools: List<ResourcePoolSnapshot> = emptyList(),
     val equilibriumLastAffinity: String? = null,
     val raceTalentPoints: Int? = null,
@@ -255,6 +258,8 @@ data class EntitySnapshot(
         patrolPressureState?.validateOrThrow()
         ambushLaneTrigger?.validateOrThrow()
         furnacePressureState?.validateOrThrow()
+        riverCurrentState?.validateOrThrow()
+        crystalShardPressureState?.validateOrThrow()
         effects?.forEach(ActiveEffectSnapshot::validateOrThrow)
         areaEffectEmitter?.validateOrThrow()
         worldEffect?.validateOrThrow()
@@ -376,6 +381,44 @@ data class FurnacePressureStateSnapshot(
         require(nextCycleTurn >= 0) { "Furnace pressure nextCycleTurn must not be negative." }
         require(phase.isNotBlank()) { "Furnace pressure phase must not be blank." }
         require(phaseTurnsRemaining >= 0) { "Furnace pressure phaseTurnsRemaining must not be negative." }
+    }
+}
+
+@Serializable
+data class RiverCurrentStateSnapshot(
+    val laneCells: List<PointSnapshot> = emptyList(),
+    val approachCells: List<PointSnapshot> = emptyList(),
+    val safeCells: List<PointSnapshot> = emptyList(),
+    val pushDx: Int,
+    val pushDy: Int,
+) {
+    fun validateOrThrow() {
+        require(laneCells.isNotEmpty()) { "River current laneCells must not be empty." }
+        require(approachCells.isNotEmpty()) { "River current approachCells must not be empty." }
+        require(abs(pushDx) + abs(pushDy) == 1) { "River current push vector must be cardinal." }
+    }
+}
+
+@Serializable
+data class CrystalShardPressureStateSnapshot(
+    val hazardCells: List<PointSnapshot> = emptyList(),
+    val cycleIntervalTurns: Int,
+    val telegraphTurns: Int,
+    val activeTurns: Int,
+    val damagePerTick: Int,
+    val nextCycleTurn: Int,
+    val phase: String,
+    val phaseTurnsRemaining: Int = 0,
+) {
+    fun validateOrThrow() {
+        require(hazardCells.isNotEmpty()) { "Crystal shard hazardCells must not be empty." }
+        require(cycleIntervalTurns > 0) { "Crystal shard cycleIntervalTurns must be positive." }
+        require(telegraphTurns > 0) { "Crystal shard telegraphTurns must be positive." }
+        require(activeTurns > 0) { "Crystal shard activeTurns must be positive." }
+        require(damagePerTick > 0) { "Crystal shard damagePerTick must be positive." }
+        require(nextCycleTurn >= 0) { "Crystal shard nextCycleTurn must not be negative." }
+        require(phase.isNotBlank()) { "Crystal shard phase must not be blank." }
+        require(phaseTurnsRemaining >= 0) { "Crystal shard phaseTurnsRemaining must not be negative." }
     }
 }
 

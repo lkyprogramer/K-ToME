@@ -213,6 +213,10 @@ import com.ktome.game.i18n.LocalizationBundle
 import com.ktome.game.i18n.Localizer
 import com.ktome.game.model.BossDefinition
 import com.ktome.game.model.MonsterTemplate
+import com.ktome.game.PLAYER_ACTIVE_TALENT_SLOT_COUNT
+import com.ktome.game.professionAffixBuildContext
+import com.ktome.game.routeRewardBiasTags
+import com.ktome.game.zoneRouteHash
 import java.nio.file.Files
 import kotlin.math.abs
 import kotlin.math.roundToInt
@@ -640,6 +644,13 @@ class FoundationGameSession internal constructor(
             .mapNotNull { entityId -> world.get<Position>(entityId)?.toPoint() }
             .minWithOrNull(compareBy<Point> { point -> point.chebyshevDistanceTo(playerPosition()) }.thenBy(Point::y).thenBy(Point::x))
     }
+
+    internal fun automationZoneHazardPoints(): Set<Point> =
+        buildSet {
+            world.entitiesWith(RiverCurrentRuntimeState::class).forEach { entityId ->
+                addAll(riverHazardCells(requireNotNull(world.get<RiverCurrentRuntimeState>(entityId))))
+            }
+        }
 
     internal fun automationInteractableTags(interactableId: String): Set<String> =
         interactableSchemaFor(interactableId)?.interactionTags?.toSet().orEmpty()
@@ -1149,7 +1160,12 @@ class FoundationGameSession internal constructor(
                         }
                     }
                 }
-        return (bossAndTelegraphOverlays + furnacePressureOverlaySnapshots()).sortedBy(OverlayRenderSnapshot::id)
+        return (
+            bossAndTelegraphOverlays +
+                furnacePressureOverlaySnapshots() +
+                riverCurrentOverlaySnapshots() +
+                crystalShardOverlaySnapshots()
+        ).sortedBy(OverlayRenderSnapshot::id)
     }
 
     private fun overlayForPendingTelegraph(
@@ -1222,6 +1238,67 @@ class FoundationGameSession internal constructor(
                 )
             }
 
+    private fun riverCurrentOverlaySnapshots(): List<OverlayRenderSnapshot> =
+        world.entitiesWith(RiverCurrentRuntimeState::class)
+            .mapNotNull { entityId ->
+                val state = requireNotNull(world.get<RiverCurrentRuntimeState>(entityId))
+                val visibleCells =
+                    riverHazardCells(state)
+                        .filter(visibleTiles::contains)
+                        .map { point -> GridPointSnapshot(point.x, point.y) }
+                if (visibleCells.isEmpty()) {
+                    return@mapNotNull null
+                }
+                OverlayRenderSnapshot(
+                    id = "river-current:${entityId.value}",
+                    visualKey = "vfx.zone.effect.current_lane_01",
+                    audioProfile = null,
+                    previewTurns = 1,
+                    dangerLevel =
+                        if (isRiverCrossingSecured()) {
+                            DangerLevel.LOW.overlaySeverity
+                        } else {
+                            DangerLevel.MODERATE.overlaySeverity
+                        },
+                    shape = OverlayShapeSnapshot.CUSTOM,
+                    sourceAbilityId = RiverCrystalRuntimeKeys.River.SOURCE_ABILITY_ID,
+                    cells = visibleCells,
+                    warningMessage = null,
+                )
+            }
+
+    private fun crystalShardOverlaySnapshots(): List<OverlayRenderSnapshot> =
+        world.entitiesWith(CrystalShardRuntimeState::class)
+            .mapNotNull { entityId ->
+                val state = requireNotNull(world.get<CrystalShardRuntimeState>(entityId))
+                if (isCrystalResonanceSettled() || state.phase == CrystalShardPhase.IDLE) {
+                    return@mapNotNull null
+                }
+                val visibleCells =
+                    state.hazardCells
+                        .filter(visibleTiles::contains)
+                        .map { point -> GridPointSnapshot(point.x, point.y) }
+                if (visibleCells.isEmpty()) {
+                    return@mapNotNull null
+                }
+                OverlayRenderSnapshot(
+                    id = "crystal-shards:${entityId.value}:${state.phase.name.lowercase()}",
+                    visualKey = "vfx.zone.effect.crystal_shard_01",
+                    audioProfile = "audio.boss.warning",
+                    previewTurns = state.phaseTurnsRemaining.coerceAtLeast(1),
+                    dangerLevel =
+                        when (state.phase) {
+                            CrystalShardPhase.TELEGRAPH -> DangerLevel.MODERATE.overlaySeverity
+                            CrystalShardPhase.ACTIVE -> DangerLevel.HIGH.overlaySeverity
+                            CrystalShardPhase.IDLE -> DangerLevel.LOW.overlaySeverity
+                        },
+                    shape = OverlayShapeSnapshot.CUSTOM,
+                    sourceAbilityId = RiverCrystalRuntimeKeys.Crystal.SOURCE_ABILITY_ID,
+                    cells = visibleCells,
+                    warningMessage = null,
+                )
+            }
+
     private fun announceZoneMechanicFloorEntryIfNeeded() {
         world.entitiesWith(PatrolPressureRuntimeState::class).forEach { entityId ->
             val state = requireNotNull(world.get<PatrolPressureRuntimeState>(entityId))
@@ -1239,6 +1316,7 @@ class FoundationGameSession internal constructor(
     private fun advanceZoneMechanicsAfterTurn(actorId: EntityId) {
         maybeSpawnPatrolPressureWave()
         if (actorId == playerId) {
+            advanceCrystalShardCycle()
             advanceFurnacePressureCycle()
         }
     }
@@ -1337,7 +1415,104 @@ class FoundationGameSession internal constructor(
     }
 
     private fun syncZoneMechanicEffectsFor(actorId: EntityId) {
+        applyRiverCurrentPressure(actorId)
+        syncCrystalShardEffectsFor(actorId)
         syncFurnacePressureEffectsFor(actorId)
+    }
+
+    private fun applyRiverCurrentPressure(actorId: EntityId) {
+        if (!isRiverCurrentPressureActive()) {
+            return
+        }
+        val actorPosition = world.get<Position>(actorId)?.toPoint() ?: return
+        world.entitiesWith(RiverCurrentRuntimeState::class).forEach { entityId ->
+            val state = requireNotNull(world.get<RiverCurrentRuntimeState>(entityId))
+            if (actorPosition !in riverHazardCells(state)) {
+                return@forEach
+            }
+            val destination = actorPosition + Point(state.pushDx, state.pushDy)
+            if (!canForceMoveActorTo(actorId, destination)) {
+                return@forEach
+            }
+            requireNotNull(world.get<Position>(actorId)).moveTo(destination)
+            if (actorId == playerId) {
+                addMessage(RiverCrystalRuntimeKeys.River.DRAG_LOG_KEY)
+            }
+        }
+    }
+
+    private fun advanceCrystalShardCycle() {
+        world.entitiesWith(CrystalShardRuntimeState::class).forEach { entityId ->
+            val state = requireNotNull(world.get<CrystalShardRuntimeState>(entityId))
+            if (isCrystalResonanceSettled()) {
+                settleCrystalShardPressure(state, entityId)
+                return@forEach
+            }
+            when (state.phase) {
+                CrystalShardPhase.IDLE -> {
+                    if (turnCount >= state.nextCycleTurn) {
+                        state.phase = CrystalShardPhase.TELEGRAPH
+                        state.phaseTurnsRemaining = state.telegraphTurns
+                        addMessage(RiverCrystalRuntimeKeys.Crystal.TELEGRAPH_LOG_KEY)
+                    }
+                }
+
+                CrystalShardPhase.TELEGRAPH -> {
+                    state.phaseTurnsRemaining = (state.phaseTurnsRemaining - 1).coerceAtLeast(0)
+                    if (state.phaseTurnsRemaining == 0) {
+                        state.phase = CrystalShardPhase.ACTIVE
+                        state.phaseTurnsRemaining = state.activeTurns
+                        addMessage(RiverCrystalRuntimeKeys.Crystal.ACTIVE_LOG_KEY)
+                    }
+                }
+
+                CrystalShardPhase.ACTIVE -> {
+                    state.phaseTurnsRemaining = (state.phaseTurnsRemaining - 1).coerceAtLeast(0)
+                    if (state.phaseTurnsRemaining == 0) {
+                        state.phase = CrystalShardPhase.IDLE
+                        state.nextCycleTurn = turnCount + state.cycleIntervalTurns
+                        world.remove<WorldEffect>(entityId)
+                    }
+                }
+            }
+        }
+    }
+
+    private fun settleCrystalShardPressure(
+        state: CrystalShardRuntimeState,
+        entityId: EntityId,
+    ) {
+        state.phase = CrystalShardPhase.IDLE
+        state.phaseTurnsRemaining = 0
+        state.nextCycleTurn = turnCount + state.cycleIntervalTurns
+        world.remove<WorldEffect>(entityId)
+    }
+
+    private fun syncCrystalShardEffectsFor(actorId: EntityId) {
+        val actorPosition = world.get<Position>(actorId)?.toPoint()
+        world.entitiesWith(CrystalShardRuntimeState::class).forEach { entityId ->
+            val state = requireNotNull(world.get<CrystalShardRuntimeState>(entityId))
+            if (isCrystalResonanceSettled() || state.phase != CrystalShardPhase.ACTIVE || actorPosition == null || actorPosition !in state.hazardCells) {
+                world.remove<WorldEffect>(entityId)
+                return@forEach
+            }
+            world.add(
+                entityId,
+                WorldEffect(
+                    effectId = "zone.crystal_shards:${entityId.value}",
+                    affectedActorIds = setOf(actorId),
+                    effects =
+                        mutableListOf(
+                            StatusLifecycle.createInstance(
+                                type = StatusEffectType.BLEED,
+                                effectId = "zone.crystal_shards.tick:${entityId.value}:$actorId:$turnCount",
+                                duration = 1,
+                                tickDamageOverride = state.damagePerTick,
+                            ),
+                        ),
+                ),
+            )
+        }
     }
 
     private fun syncFurnacePressureEffectsFor(actorId: EntityId) {
@@ -2896,6 +3071,42 @@ class FoundationGameSession internal constructor(
         val fallbackBaseId: String,
     )
 
+    private fun currentQuestObjectiveState(
+        questId: String,
+        objectiveId: String,
+    ): ObjectiveState? = worldProgress.questStates[questId]?.objectiveStates?.get(objectiveId)
+
+    private fun isRiverCrossingSecured(): Boolean =
+        currentQuestObjectiveState(
+            questId = RiverCrystalRuntimeKeys.River.QUEST_ID,
+            objectiveId = RiverCrystalRuntimeKeys.River.OBJECTIVE_ID,
+        ) in setOf(ObjectiveState.IN_PROGRESS, ObjectiveState.COMPLETED)
+
+    private fun isCrystalResonanceSettled(): Boolean =
+        currentQuestObjectiveState(
+            questId = RiverCrystalRuntimeKeys.Crystal.QUEST_ID,
+            objectiveId = RiverCrystalRuntimeKeys.Crystal.OBJECTIVE_ID,
+        ) in setOf(ObjectiveState.IN_PROGRESS, ObjectiveState.COMPLETED)
+
+    private fun isRiverCurrentPressureActive(): Boolean =
+        !isRiverCrossingSecured() && turnCount % 2 == 0
+
+    private fun riverHazardCells(state: RiverCurrentRuntimeState): Set<Point> =
+        if (isRiverCrossingSecured()) {
+            emptySet()
+        } else {
+            state.laneCells.toSet() - state.safeCells.toSet()
+        }
+
+    private fun canForceMoveActorTo(
+        actorId: EntityId,
+        destination: Point,
+    ): Boolean =
+        map.isInBounds(destination.x, destination.y) &&
+            !map[destination].blocksMovement &&
+            blockerAt(destination) == null &&
+            destination != playerPosition().takeIf { actorId != playerId }
+
     private fun objectiveProgressSpecFor(interactableId: String): ObjectiveProgressSpec? =
         when (interactableId) {
             "trail_cache" -> ObjectiveProgressSpec("greenwood.trail_cache", "objective.greenwood_signal_hunt.step.trail_cache_opened")
@@ -2912,8 +3123,16 @@ class FoundationGameSession internal constructor(
             "bandit_cache" -> ObjectiveProgressSpec("bandit_camp.cache_raided", "objective.bandit_camp_cache_raid.step.cache_raided")
             "elven_wardstone" -> ObjectiveProgressSpec("elven_ruins.wardstone_claimed", "objective.elven_ruins_relic_ward.step.wardstone_claimed")
             "molten_pressure_valve" -> ObjectiveProgressSpec("molten_core.pressure_stabilized", "objective.molten_core_pressure.step.pressure_stabilized")
-            "crystal_resonance_node" -> ObjectiveProgressSpec("crystal_cavern.node_attuned", "objective.crystal_cavern_resonance.step.node_attuned")
-            "river_ferry_anchor" -> ObjectiveProgressSpec("underground_river.ferry_anchor_secured", "objective.underground_river_crossing.step.ferry_anchor_secured")
+            RiverCrystalRuntimeKeys.Crystal.INTERACTABLE_ID ->
+                ObjectiveProgressSpec(
+                    RiverCrystalRuntimeKeys.Crystal.PROGRESS_TOKEN,
+                    RiverCrystalRuntimeKeys.Crystal.PROGRESS_STEP_KEY,
+                )
+            RiverCrystalRuntimeKeys.River.INTERACTABLE_ID ->
+                ObjectiveProgressSpec(
+                    RiverCrystalRuntimeKeys.River.PROGRESS_TOKEN,
+                    RiverCrystalRuntimeKeys.River.PROGRESS_STEP_KEY,
+                )
             "temple_ward_reliquary" -> ObjectiveProgressSpec("abyssal_temple.ward_reliquary_claimed", "objective.abyssal_temple_sanctum.step.ward_reliquary_claimed")
             "heart_ward_focus" -> ObjectiveProgressSpec("abyssal_heart.ward_stabilized", "objective.abyssal_heart_finale.step.ward_stabilized")
             else -> null
@@ -2955,8 +3174,9 @@ class FoundationGameSession internal constructor(
             "ritual_altar" -> RewardSpec(listOf("loot.grey_gate_depths.reward", "loot.foundation.boss"), "sanctified_seal")
             "elven_wardstone" -> optionalZoneRewardSpec()
             "molten_pressure_valve" -> optionalZoneRewardSpec()
-            "crystal_resonance_node" -> optionalZoneRewardSpec()
-            "river_ferry_anchor" -> RewardSpec(listOf("loot.foundation.common", "loot.grey_gate_depths.reward"), "scroll_teleport")
+            RiverCrystalRuntimeKeys.Crystal.INTERACTABLE_ID -> optionalZoneRewardSpec()
+            RiverCrystalRuntimeKeys.River.INTERACTABLE_ID ->
+                RewardSpec(listOf("loot.foundation.common", "loot.grey_gate_depths.reward"), "scroll_teleport")
             "temple_ward_reliquary" -> RewardSpec(listOf("loot.foundation.boss", "loot.grey_gate_depths.reward"), "sanctified_seal")
             "heart_ward_focus" -> RewardSpec(listOf("loot.foundation.boss"), "abyssal_heartstone")
             else -> null
@@ -4945,10 +5165,7 @@ class FoundationGameSession internal constructor(
         val threatProfile = content.threatProfileRegistry.require(telegraphSpec.threatProfileId)
         val loadout = world.get<TalentLoadout>(monsterId)
         val rank = loadout?.talentLevels?.get(abilityId) ?: 1
-        val levelEffect =
-            talentSchema.levelEffects[rank]
-                ?: talentSchema.levelEffects.entries.maxByOrNull { (resolvedRank, _) -> resolvedRank }?.value
-                ?: TalentLevelEffectSchemaV2()
+        val levelEffect = talentSchema.levelEffects[rank] ?: fallbackTalentLevelEffect(talentSchema)
         val assessment =
             ThreatRatingResolver.assess(
                 telegraphSpec = telegraphSpec,
@@ -4970,6 +5187,9 @@ class FoundationGameSession internal constructor(
             ),
         )
     }
+
+    private fun fallbackTalentLevelEffect(talentSchema: TalentSchemaV2): TalentLevelEffectSchemaV2 =
+        talentSchema.levelEffects.entries.maxByOrNull { (resolvedRank, _) -> resolvedRank }?.value ?: TalentLevelEffectSchemaV2()
 
     private fun executeDefaultBehavior(
         monsterId: EntityId,
@@ -6038,8 +6258,8 @@ class FoundationGameSession internal constructor(
                 "ritual_altar",
                 "elven_wardstone",
                 "molten_pressure_valve",
-                "crystal_resonance_node",
-                "river_ferry_anchor",
+                RiverCrystalRuntimeKeys.Crystal.INTERACTABLE_ID,
+                RiverCrystalRuntimeKeys.River.INTERACTABLE_ID,
                 "temple_ward_reliquary",
                 "heart_ward_focus",
             ) -> {
@@ -6049,6 +6269,19 @@ class FoundationGameSession internal constructor(
                 grantSupportRewardFromInteractable(schema, position, rewardSpec)
                 objectiveProgressSpecFor(interactable.id)?.let { progress ->
                     recordObjectiveProgress(token = progress.token, stepKey = progress.stepKey)
+                }
+                when (interactable.id) {
+                    RiverCrystalRuntimeKeys.River.INTERACTABLE_ID ->
+                        addMessage(RiverCrystalRuntimeKeys.River.SAFE_LANE_LOG_KEY)
+                    RiverCrystalRuntimeKeys.Crystal.INTERACTABLE_ID -> {
+                        addMessage(RiverCrystalRuntimeKeys.Crystal.SETTLED_LOG_KEY)
+                        world.entitiesWith(CrystalShardRuntimeState::class).forEach { runtimeId ->
+                            settleCrystalShardPressure(
+                                state = requireNotNull(world.get<CrystalShardRuntimeState>(runtimeId)),
+                                entityId = runtimeId,
+                            )
+                        }
+                    }
                 }
                 if (interactable.id in setOf("armory_gate", "hunter_snare", "mine_furnace", "ritual_altar")) {
                     addMessage("log.objective.advance")

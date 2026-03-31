@@ -3,6 +3,10 @@ ambientProfiles:
     schemaVersion: 2
   - id: ambient.greenwood_fringe
     schemaVersion: 2
+  - id: ambient.underground_river
+    schemaVersion: 2
+  - id: ambient.crystal_cavern
+    schemaVersion: 2
   - id: ambient.deep_iron_pit
     schemaVersion: 2
   - id: ambient.grey_gate_depths

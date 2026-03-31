@@ -3692,6 +3692,22 @@
       "asciiColorHex": "#FFFFFF"
     },
     {
+      "key": "prop.crystal_resonance_node",
+      "category": "prop_interactable",
+      "rawOutputPath": "phase3/p3-followup/prop_crystal_resonance_node.png",
+      "footprint": "1x1",
+      "pivotX": 0.5,
+      "pivotY": 0.08,
+      "tags": [
+        "phase3",
+        "followup",
+        "crystal",
+        "interactable"
+      ],
+      "asciiGlyph": "+",
+      "asciiColorHex": "#F4FDFF"
+    },
+    {
       "key": "prop.mine_furnace",
       "category": "prop_environment",
       "rawOutputPath": "phase2/p2-c/prop_mine_furnace.png",
@@ -3722,6 +3738,22 @@
       ],
       "asciiGlyph": "+",
       "asciiColorHex": "#FFFFFF"
+    },
+    {
+      "key": "prop.river_ferry_anchor",
+      "category": "prop_interactable",
+      "rawOutputPath": "phase3/p3-followup/prop_river_ferry_anchor.png",
+      "footprint": "1x1",
+      "pivotX": 0.5,
+      "pivotY": 0.08,
+      "tags": [
+        "phase3",
+        "followup",
+        "river",
+        "interactable"
+      ],
+      "asciiGlyph": "+",
+      "asciiColorHex": "#D7F0FF"
     },
     {
       "key": "prop.stairs.down",
@@ -5537,6 +5569,38 @@
       "asciiColorHex": "#FFF4B0"
     },
     {
+      "key": "vfx.zone.effect.current_lane_01",
+      "category": "tile_decal",
+      "rawOutputPath": "phase3/p3-followup/vfx_zone_effect_current_lane_01.png",
+      "footprint": "1x1",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase3",
+        "followup",
+        "river",
+        "zone-effect"
+      ],
+      "asciiGlyph": "~",
+      "asciiColorHex": "#8FD9FF"
+    },
+    {
+      "key": "vfx.zone.effect.crystal_shard_01",
+      "category": "tile_decal",
+      "rawOutputPath": "phase3/p3-followup/vfx_zone_effect_crystal_shard_01.png",
+      "footprint": "1x1",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase3",
+        "followup",
+        "crystal",
+        "zone-effect"
+      ],
+      "asciiGlyph": "^",
+      "asciiColorHex": "#E7FDFF"
+    },
+    {
       "key": "zone.deep_iron_pit.icon",
       "category": "icon_quest",
       "rawOutputPath": "phase2/p2-c/zone_deep_iron_pit_icon.png",
@@ -5608,6 +5672,62 @@
         "p2-c",
         "zone",
         "shadow-depths"
+      ]
+    },
+    {
+      "key": "zone.underground_river.icon",
+      "category": "icon_quest",
+      "rawOutputPath": "phase3/p3-followup/zone_underground_river_icon.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase3",
+        "followup",
+        "zone",
+        "river"
+      ]
+    },
+    {
+      "key": "zone.underground_river.visual",
+      "category": "portrait",
+      "rawOutputPath": "phase3/p3-followup/zone_underground_river_visual.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase3",
+        "followup",
+        "zone",
+        "river"
+      ]
+    },
+    {
+      "key": "zone.crystal_cavern.icon",
+      "category": "icon_quest",
+      "rawOutputPath": "phase3/p3-followup/zone_crystal_cavern_icon.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase3",
+        "followup",
+        "zone",
+        "crystal"
+      ]
+    },
+    {
+      "key": "zone.crystal_cavern.visual",
+      "category": "portrait",
+      "rawOutputPath": "phase3/p3-followup/zone_crystal_cavern_visual.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase3",
+        "followup",
+        "zone",
+        "crystal"
       ]
     },
     {
