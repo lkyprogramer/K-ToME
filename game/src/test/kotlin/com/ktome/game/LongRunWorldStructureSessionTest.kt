@@ -2,17 +2,18 @@ package com.ktome.game
 
 import com.ktome.core.dungeon.StairDirection
 import com.ktome.core.ecs.EntityId
-import com.ktome.core.ecs.Interactable
 import com.ktome.core.ecs.Position
 import com.ktome.core.ecs.get
 import com.ktome.core.economy.ShardEconomy
 import com.ktome.core.economy.ShopServiceType
+import com.ktome.core.status.StatusEffectType
 import com.ktome.core.item.EquipSlot
 import com.ktome.core.item.Inventory
 import com.ktome.core.item.ItemInstance
 import com.ktome.core.item.ItemQuality
 import com.ktome.core.item.MilestoneRewardSource
 import com.ktome.core.save.SaveManager
+import com.ktome.core.talent.EffectTracker
 import com.ktome.core.world.ObjectiveState
 import com.ktome.game.data.DataLoader
 import com.ktome.game.factory.ItemFactory
@@ -522,9 +523,9 @@ class LongRunWorldStructureSessionTest {
         assertTrue(lockedSession.renderSnapshot().uiState.activeRouteSelection == null)
         assertEquals(
             ObjectiveState.AVAILABLE,
-            lockedSession.worldProgress().questStates["quest.abyssal_temple"]?.objectiveStates?.get("sanctum"),
+            lockedSession.worldProgress().questStates[AbyssalRuntimeKeys.Temple.QUEST_ID]?.objectiveStates?.get(AbyssalRuntimeKeys.Temple.OBJECTIVE_ID),
         )
-        assertTrue("quest.abyssal_temple.cleared" !in lockedSession.worldProgress().worldFlags)
+        assertTrue("${AbyssalRuntimeKeys.Temple.QUEST_ID}.cleared" !in lockedSession.worldProgress().worldFlags)
 
         val unlockedSession =
             GameModule.newFoundationSession(
@@ -547,11 +548,11 @@ class LongRunWorldStructureSessionTest {
                 saveManager = SaveManager(tempDir.resolve("abyssal-temple-unlocked-save")),
             )
 
-        unlockedSession.automationMovePlayerTo(interactablePoint(unlockedSession, "temple_ward_reliquary"))
+        unlockedSession.automationMovePlayerTo(interactablePoint(unlockedSession, AbyssalRuntimeKeys.Temple.INTERACTABLE_ID))
         assertTrue(unlockedSession.perform(PlayerCommand.Interact))
         assertEquals(
             ObjectiveState.IN_PROGRESS,
-            unlockedSession.worldProgress().questStates["quest.abyssal_temple"]?.objectiveStates?.get("sanctum"),
+            unlockedSession.worldProgress().questStates[AbyssalRuntimeKeys.Temple.QUEST_ID]?.objectiveStates?.get(AbyssalRuntimeKeys.Temple.OBJECTIVE_ID),
         )
         movePlayerTo(unlockedSession, stairPoint(unlockedSession, StairDirection.DOWN))
         assertTrue(unlockedSession.perform(PlayerCommand.Descend))
@@ -564,9 +565,45 @@ class LongRunWorldStructureSessionTest {
         )
         assertEquals(
             ObjectiveState.COMPLETED,
-            unlockedSession.worldProgress().questStates["quest.abyssal_temple"]?.objectiveStates?.get("sanctum"),
+            unlockedSession.worldProgress().questStates[AbyssalRuntimeKeys.Temple.QUEST_ID]?.objectiveStates?.get(AbyssalRuntimeKeys.Temple.OBJECTIVE_ID),
         )
-        assertTrue("quest.abyssal_temple.cleared" in unlockedSession.worldProgress().worldFlags)
+        assertTrue("${AbyssalRuntimeKeys.Temple.QUEST_ID}.cleared" in unlockedSession.worldProgress().worldFlags)
+    }
+
+    @Test
+    fun `heart ward focus marks finale objective in progress before abyssal guardian defeat`() {
+        val session =
+            GameModule.newFoundationSession(
+                config =
+                    FoundationGameConfig(
+                        seed = 20260331L,
+                        zoneId = "abyssal_heart",
+                        playerProfessionId = "templar",
+                        zoneRoute = listOf("shattered_outpost", "greenwood_fringe", "deep_iron_pit", "grey_gate_depths", "underground_river", "abyssal_temple", "abyssal_heart"),
+                        routeIndex = 6,
+                    ),
+                saveManager = SaveManager(tempDir.resolve("abyssal-heart-focus-objective-save")),
+            )
+
+        session.automationMovePlayerTo(interactablePoint(session, AbyssalRuntimeKeys.Finale.INTERACTABLE_ID))
+        assertTrue(session.perform(PlayerCommand.Interact))
+        assertEquals(
+            ObjectiveState.IN_PROGRESS,
+            session.worldProgress().questStates[AbyssalRuntimeKeys.Finale.QUEST_ID]?.objectiveStates?.get(AbyssalRuntimeKeys.Finale.OBJECTIVE_ID),
+        )
+        assertTrue(requireNotNull(session.automationWorld().get<EffectTracker>(session.playerId)).has(StatusEffectType.HOLY_SHIELD_BUFF))
+        val eruptionEntity = session.automationWorld().entitiesWith(VoidEruptionRuntimeState::class).single()
+        assertTrue(requireNotNull(session.automationWorld().get<VoidEruptionRuntimeState>(eruptionEntity)).stabilizedTurnsRemaining > 0)
+
+        val bossId = requireNotNull(session.automationEntityByTemplateId("abyssal.guardian"))
+        invokeHandleDeath(session, EntityId(bossId.value), session.playerId)
+
+        assertTrue(session.isVictory())
+        assertEquals(
+            ObjectiveState.COMPLETED,
+            session.worldProgress().questStates[AbyssalRuntimeKeys.Finale.QUEST_ID]?.objectiveStates?.get(AbyssalRuntimeKeys.Finale.OBJECTIVE_ID),
+        )
+        assertTrue("${AbyssalRuntimeKeys.Finale.QUEST_ID}.cleared" in session.worldProgress().worldFlags)
     }
 
     @Test
@@ -662,19 +699,6 @@ class LongRunWorldStructureSessionTest {
         direction: StairDirection,
     ): com.ktome.core.map.Point =
         requireNotNull(session.automationStairPoint(direction))
-
-    private fun interactablePoint(
-        session: FoundationGameSession,
-        interactableId: String,
-    ): com.ktome.core.map.Point {
-        val world = session.automationWorld()
-        val entityId =
-            requireNotNull(
-                world.entitiesWith(Position::class, Interactable::class)
-                    .firstOrNull { candidate -> world.get<Interactable>(candidate)?.id == interactableId },
-            )
-        return requireNotNull(world.get<Position>(entityId)).toPoint()
-    }
 
     private fun indexOfOffer(
         session: FoundationGameSession,

@@ -1,0 +1,27 @@
+manifestVersion: 1
+fallbackKey: audio.fallback.silence
+entries:
+  - key: ambient.abyssal_temple
+    cueFamily: ambience
+    eventId: ambient.abyssal_temple
+    sourcePath: audio/ambient/abyssal_temple.ogg
+  - key: audio.zone.abyssal_temple
+    cueFamily: zone
+    eventId: audio.zone.abyssal_temple
+    sourcePath: audio/ambient/abyssal_temple.ogg
+  - key: ambient.abyssal_heart
+    cueFamily: ambience
+    eventId: ambient.abyssal_heart
+    sourcePath: audio/ambient/abyssal_heart.ogg
+  - key: audio.zone.abyssal_heart
+    cueFamily: zone
+    eventId: audio.zone.abyssal_heart
+    sourcePath: audio/ambient/abyssal_heart.ogg
+  - key: audio.interactable.temple_ward_reliquary
+    cueFamily: interactable
+    eventId: audio.interactable.temple_ward_reliquary
+    sourcePath: audio/interactable/temple_ward_reliquary.ogg
+  - key: audio.interactable.heart_ward_focus
+    cueFamily: interactable
+    eventId: audio.interactable.heart_ward_focus
+    sourcePath: audio/interactable/heart_ward_focus.ogg

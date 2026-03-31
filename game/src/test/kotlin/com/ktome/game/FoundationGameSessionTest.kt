@@ -70,6 +70,7 @@ import com.ktome.core.talent.TalentResolver
 import com.ktome.core.talent.TalentRegistry
 import com.ktome.core.talent.TalentTreeOwnerType
 import com.ktome.core.status.StatusLifecycle
+import com.ktome.core.world.ObjectiveState
 import com.ktome.game.data.DataLoader
 import com.ktome.game.factory.EntityFactory
 import com.ktome.game.factory.ItemFactory
@@ -1370,6 +1371,96 @@ class FoundationGameSessionTest {
 
         assertEquals(stabilizedHealth, requireNotNull(world.get<Health>(session.playerId)).current)
         assertTrue(session.renderSnapshot().overlays.none { overlay -> overlay.id.startsWith("crystal-shards:") })
+    }
+
+    @Test
+    fun `abyssal temple reliquary opens a safer corridor and suppresses void pressure`() {
+        val session =
+            GameModule.newFoundationSession(
+                FoundationGameConfig(seed = 20260331L, zoneId = "abyssal_temple", playerProfessionId = "templar"),
+                SaveManager(tempDir.resolve("abyssal-temple-pressure-runtime-save")),
+            )
+        clearMonsters(session)
+        val world = runtimeWorld(session)
+        val pressureEntity = world.entitiesWith(AbyssalTemplePressureRuntimeState::class).single()
+        val state = requireNotNull(world.get<AbyssalTemplePressureRuntimeState>(pressureEntity))
+        state.nextCycleTurn = 1
+        val hazardPoint = state.laneCells.first { point -> point !in state.corridorCells }
+        val corridorPoint = state.corridorCells.first()
+
+        movePlayerTo(session, hazardPoint)
+
+        assertTrue(session.perform(PlayerCommand.Wait))
+        assertEquals(VoidPressurePhase.TELEGRAPH, state.phase)
+        assertTrue(session.renderSnapshot().overlays.any { overlay -> overlay.id.startsWith("void-pressure:") })
+        assertTrue(session.renderSnapshot().logEvents.any { event -> event.message.key == AbyssalRuntimeKeys.Temple.TELEGRAPH_LOG_KEY })
+
+        assertTrue(session.perform(PlayerCommand.Wait))
+        assertEquals(VoidPressurePhase.ACTIVE, state.phase)
+        val healthBeforeTick = requireNotNull(world.get<Health>(session.playerId)).current
+
+        assertTrue(session.perform(PlayerCommand.Wait))
+        val healthAfterTick = requireNotNull(world.get<Health>(session.playerId)).current
+        assertTrue(healthAfterTick <= healthBeforeTick)
+        assertTrue(healthAfterTick < healthBeforeTick || requireNotNull(world.get<EffectTracker>(session.playerId)).has(StatusEffectType.CURSE))
+
+        movePlayerTo(session, interactablePoint(session, AbyssalRuntimeKeys.Temple.INTERACTABLE_ID))
+        assertTrue(session.perform(PlayerCommand.Interact))
+        assertEquals(ObjectiveState.IN_PROGRESS, session.worldProgress().questStates[AbyssalRuntimeKeys.Temple.QUEST_ID]?.objectiveStates?.get(AbyssalRuntimeKeys.Temple.OBJECTIVE_ID))
+        assertTrue(state.suppressionTurnsRemaining > 0)
+        assertEquals(VoidPressurePhase.IDLE, state.phase)
+        assertTrue(requireNotNull(world.get<EffectTracker>(session.playerId)).has(StatusEffectType.HOLY_SHIELD_BUFF))
+        assertTrue(session.renderSnapshot().logEvents.any { event -> event.message.key == AbyssalRuntimeKeys.Temple.STABILIZED_LOG_KEY })
+
+        state.nextCycleTurn = session.currentTurnCount()
+        movePlayerTo(session, corridorPoint)
+        repeat(2) {
+            assertTrue(session.perform(PlayerCommand.Wait))
+        }
+
+        assertTrue(
+            session.renderSnapshot().overlays.none { overlay ->
+                overlay.id.startsWith("void-pressure:") &&
+                    overlay.cells.any { cell -> cell.x == corridorPoint.x && cell.y == corridorPoint.y }
+            },
+        )
+    }
+
+    @Test
+    fun `heart ward focus grants a pre boss stabilizer window before void eruptions return`() {
+        val session =
+            GameModule.newFoundationSession(
+                FoundationGameConfig(seed = 20260331L, zoneId = "abyssal_heart", playerProfessionId = "rogue"),
+                SaveManager(tempDir.resolve("abyssal-heart-focus-runtime-save")),
+            )
+        clearMonsters(session)
+        val world = runtimeWorld(session)
+        val eruptionEntity = world.entitiesWith(VoidEruptionRuntimeState::class).single()
+        val state = requireNotNull(world.get<VoidEruptionRuntimeState>(eruptionEntity))
+        state.nextCycleTurn = 1
+        val hazardPoint = state.hazardCells.first()
+
+        movePlayerTo(session, hazardPoint)
+
+        assertTrue(session.perform(PlayerCommand.Wait))
+        assertEquals(VoidPressurePhase.TELEGRAPH, state.phase)
+        assertTrue(session.renderSnapshot().overlays.any { overlay -> overlay.id.startsWith("void-eruption:") })
+        assertTrue(session.renderSnapshot().logEvents.any { event -> event.message.key == AbyssalRuntimeKeys.Finale.TELEGRAPH_LOG_KEY })
+
+        movePlayerTo(session, interactablePoint(session, AbyssalRuntimeKeys.Finale.INTERACTABLE_ID))
+        assertTrue(session.perform(PlayerCommand.Interact))
+        assertEquals(ObjectiveState.IN_PROGRESS, session.worldProgress().questStates[AbyssalRuntimeKeys.Finale.QUEST_ID]?.objectiveStates?.get(AbyssalRuntimeKeys.Finale.OBJECTIVE_ID))
+        assertTrue(state.stabilizedTurnsRemaining > 0)
+        assertEquals(VoidPressurePhase.IDLE, state.phase)
+        assertTrue(requireNotNull(world.get<EffectTracker>(session.playerId)).has(StatusEffectType.HOLY_SHIELD_BUFF))
+        assertTrue(session.renderSnapshot().logEvents.any { event -> event.message.key == AbyssalRuntimeKeys.Finale.STABILIZED_LOG_KEY })
+
+        state.nextCycleTurn = session.currentTurnCount()
+        repeat(2) {
+            assertTrue(session.perform(PlayerCommand.Wait))
+        }
+
+        assertTrue(session.renderSnapshot().overlays.none { overlay -> overlay.id.startsWith("void-eruption:") })
     }
 
     @Test
@@ -4030,17 +4121,6 @@ class FoundationGameSessionTest {
                     point !in occupied
             }.sortedWith(compareByDescending<Point> { point -> point.chebyshevDistanceTo(awayFrom) }.thenBy(Point::y).thenBy(Point::x))
             .first()
-    }
-
-    private fun interactablePoint(
-        session: FoundationGameSession,
-        interactableId: String,
-    ): Point {
-        val world = runtimeWorld(session)
-        val entityId =
-            world.entitiesWith(Position::class, Interactable::class)
-                .first { candidate -> requireNotNull(world.get<Interactable>(candidate)).id == interactableId }
-        return requireNotNull(world.get<Position>(entityId)).toPoint()
     }
 
     private fun adjacentWalkablePoint(

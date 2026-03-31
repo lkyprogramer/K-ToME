@@ -11,10 +11,12 @@ import com.ktome.core.resource.ResourcePools
 import com.ktome.core.resource.ResourceType
 import com.ktome.core.save.SaveManager
 import com.ktome.core.snapshot.CombatFeedbackTypeSnapshot
+import com.ktome.game.AbyssalRuntimeKeys
 import com.ktome.game.FoundationGameConfig
 import com.ktome.game.FoundationGameSession
 import com.ktome.game.GameModule
 import com.ktome.game.PlayerCommand
+import com.ktome.game.interactablePoint
 import java.nio.file.Path
 import java.security.MessageDigest
 import kotlinx.serialization.encodeToString
@@ -191,6 +193,8 @@ class BossHarnessTest {
                 config = FoundationGameConfig(seed = seed, zoneId = "abyssal_heart", playerProfessionId = "vanguard"),
                 saveManager = SaveManager(tempDir.resolve("boss-abyssal-$seed")),
             )
+        session.automationMovePlayerTo(interactablePoint(session, AbyssalRuntimeKeys.Finale.INTERACTABLE_ID))
+        assertTrue(session.perform(PlayerCommand.Interact))
         val bossId = requireNotNull(session.automationEntityByTemplateId("abyssal.guardian"))
         val world = session.automationWorld()
         val bossPoint = requireNotNull(world.get<Position>(bossId)).toPoint()

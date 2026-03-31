@@ -3,6 +3,10 @@ ambientProfiles:
     schemaVersion: 2
   - id: ambient.greenwood_fringe
     schemaVersion: 2
+  - id: ambient.abyssal_temple
+    schemaVersion: 2
+  - id: ambient.abyssal_heart
+    schemaVersion: 2
   - id: ambient.underground_river
     schemaVersion: 2
   - id: ambient.crystal_cavern

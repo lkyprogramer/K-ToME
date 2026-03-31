@@ -1,0 +1,124 @@
+styleTag: ktome-middle-fantasy-painterly-tile-v1
+artStyleBible: docs/2026-03-13-art-style-bible.md
+stylePrompt: >
+  Classical high fantasy in a Middle-earth inspired painterly mode with readable
+  silhouettes and old-world material weight. Never anime, never sci-fi, never neon,
+  and never glossy futurism. Favor worn stone, black iron, broken sanctified metal,
+  abyssal cracks, restrained holy glows, and gameplay-first clarity for zone cards,
+  interactable props, and danger overlays.
+defaults:
+  imageAspectRatio: "1:1"
+  imageSize: 1K
+  negativeConstraints:
+    - no modern clothing
+    - no firearms
+    - no sci-fi materials
+    - no anime proportions
+    - no floating text, watermark or logo
+  categoryPromptTemplates:
+    icon_quest: >
+      Game quest or zone icon on transparent background. Single centered subject occupying
+      65-75% of the canvas. Painterly, old-world materials, highly readable at small
+      route-selection size with a strong silhouette and one dominant focal motif.
+    portrait: >
+      Game location card art with a focused environmental composition. Painterly, readable,
+      atmospheric, and gameplay-facing rather than cinematic. Prioritize one memorable
+      landmark silhouette and keep the scene grounded in worn stone, iron, void cracks,
+      relic architecture, and restrained magical light.
+    prop_interactable: >
+      Game prop object on transparent background, slightly elevated 3/4 angle. Clear base
+      footprint and obvious interaction affordance. Painterly, readable at small scale,
+      with heavy use, age, and specific material story.
+    tile_decal: >
+      Gameplay-first tile overlay on transparent background. Hazard pattern only, no scenery.
+      Painterly but abstract enough to composite over tiles. Readability and threat
+      communication are more important than illustration detail.
+phase2AssetGates:
+  P3-PR17:
+    description: Abyssal ward and finale runtime identity pack for Phase 3 v3 PR-17.
+    assets:
+      - id: phase3_v3_pr17_zone_abyssal_temple_icon
+        category: icon_quest
+        visualKey: zone.abyssal_temple.icon
+        outputName: phase3/p3-followup/zone_abyssal_temple_icon.png
+        subject: Abyssal Temple zone icon showing a broken ward reliquary, fractured sanctum seal, and a dark abyssal fissure pressing through old temple metalwork.
+        materialTags: [broken_seal, black_iron, sanctified_metal, abyssal_crack]
+        moodTags: [finale, temple, ward]
+        constraints:
+          - bold icon silhouette readable on route selection UI
+          - clear reliquary and ward identity, not a generic crypt icon
+          - no character figures and no scene background
+        geminiKeyRequired: true
+      - id: phase3_v3_pr17_zone_abyssal_temple_visual
+        category: portrait
+        visualKey: zone.abyssal_temple.visual
+        outputName: phase3/p3-followup/zone_abyssal_temple_visual.png
+        subject: Abyssal Temple zone card art showing a collapsed prayer hall, warded corridor broken by dark fissures, reliquary alcoves, and polluted sanctum light leaking through the last stable lane.
+        materialTags: [collapsed_stone, reliquary_alcove, ward_chain, void_fissure]
+        moodTags: [temple, oppressive, finale]
+        constraints:
+          - emphasize a temple lane under pressure rather than a generic cave
+          - show surviving order under corruption, not full chaos
+          - no readable text anywhere in the image
+          - readable as a zone inspection card at medium size
+        geminiKeyRequired: true
+      - id: phase3_v3_pr17_zone_abyssal_heart_icon
+        category: icon_quest
+        visualKey: zone.abyssal_heart.icon
+        outputName: phase3/p3-followup/zone_abyssal_heart_icon.png
+        subject: Abyssal Heart zone icon showing a dark heart core, broken ward ring, and a narrowed final seal channel gathering pressure inward.
+        materialTags: [heart_core, broken_ring, obsidian, ward_glow]
+        moodTags: [finale, heart, seal]
+        constraints:
+          - bold icon silhouette readable on route selection UI
+          - read as a final chamber icon, not a boss portrait
+          - no character figures and no background scene clutter
+        geminiKeyRequired: true
+      - id: phase3_v3_pr17_zone_abyssal_heart_visual
+        category: portrait
+        visualKey: zone.abyssal_heart.visual
+        outputName: phase3/p3-followup/zone_abyssal_heart_visual.png
+        subject: Abyssal Heart zone card art with an obsidian heart chamber, broken ward rings, converging void light, and the arena antechamber leading into the final guardian space.
+        materialTags: [obsidian, broken_ward_ring, abyssal_glow, sanctum_floor]
+        moodTags: [heart, finale, pressure]
+        constraints:
+          - frame the chamber as the final seal site, not a new boss illustration
+          - the ward focus landmark or heart pressure silhouette must be legible
+          - readable as a zone inspection card at medium size
+        geminiKeyRequired: true
+      - id: phase3_v3_pr17_prop_temple_ward_reliquary
+        category: prop_interactable
+        visualKey: prop.temple_ward_reliquary
+        outputName: phase3/p3-followup/prop_temple_ward_reliquary.png
+        subject: Interactable temple ward reliquary prop built as a corrupted sanctum cabinet with broken seal plates, saintly fragments, a locking ward clasp, and a clearly touchable activation face.
+        materialTags: [sanctum_cabinet, broken_seal_plate, relic_fragments, ward_clasp]
+        moodTags: [temple, interactable, ward]
+        constraints:
+          - obvious stabilize-and-unlock affordance
+          - transparent background and clean 1x1 footprint
+          - clearly distinct from the existing ritual altar silhouette
+        geminiKeyRequired: true
+      - id: phase3_v3_pr17_prop_heart_ward_focus
+        category: prop_interactable
+        visualKey: prop.heart_ward_focus
+        outputName: phase3/p3-followup/prop_heart_ward_focus.png
+        subject: Interactable heart ward focus prop with an obsidian pedestal, a broken ward ring, and a narrow converging light channel that reads as a stabilizer for the final sanctum.
+        materialTags: [obsidian_base, broken_ring, converging_light, focus_channel]
+        moodTags: [heart, interactable, stabilizer]
+        constraints:
+          - obvious stabilize-and-focus affordance
+          - transparent background and clean 1x1 footprint
+          - clearly distinct from both ritual altar and temple reliquary
+        geminiKeyRequired: true
+      - id: phase3_v3_pr17_vfx_zone_effect_void_pressure_01
+        category: tile_decal
+        visualKey: vfx.zone.effect.void_pressure_01
+        outputName: phase3/p3-followup/vfx_zone_effect_void_pressure_01.png
+        subject: Void pressure hazard overlay with dark fractured lines, inward-pulsing abyssal ripples, and muted violet-black pressure arcs readable on dark dungeon tiles.
+        materialTags: [void_crack, pressure_ripple, dark_energy]
+        moodTags: [void, hazard, finale]
+        constraints:
+          - danger must read instantly at tile scale
+          - transparent background, no scenery or frame
+          - readable on dark dungeon tiles without neon overglow
+        geminiKeyRequired: true
