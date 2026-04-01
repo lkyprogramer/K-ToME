@@ -91,6 +91,7 @@ import com.ktome.core.save.PatrolPressureStateSnapshot
 import com.ktome.core.save.PlayerSnapshot
 import com.ktome.core.save.PointSnapshot
 import com.ktome.core.save.RiverCurrentStateSnapshot
+import com.ktome.core.save.SaveLoadException
 import com.ktome.core.save.SaveSnapshot
 import com.ktome.core.save.SaveRestoreException
 import com.ktome.core.save.StairSnapshot
@@ -434,18 +435,32 @@ internal object SessionSnapshotMapper {
         }
 
         val regenerated =
-            mapgenPipeline.run(
-                MapgenRequest(
-                    zoneId = floor.zoneId,
-                    floorIndex = floor.floorIndex,
-                    seed = floor.floorSeed,
-                    targetWidth = snapshot.mapWidth,
-                    targetHeight = snapshot.mapHeight,
-                ),
-            )
+            try {
+                mapgenPipeline.run(
+                    MapgenRequest(
+                        zoneId = floor.zoneId,
+                        floorIndex = floor.floorIndex,
+                        seed = floor.floorSeed,
+                        targetWidth = snapshot.mapWidth,
+                        targetHeight = snapshot.mapHeight,
+                    ),
+                )
+            } catch (exception: SaveLoadException) {
+                throw exception
+            } catch (exception: Exception) {
+                throw InvalidSaveException(
+                    "Saved floor ${floor.zoneId}#${floor.floorIndex} failed regeneration. Start a new run.",
+                    exception,
+                )
+            }
         if (regenerated.map.asGlyphRows() != savedMap.asGlyphRows()) {
             throw InvalidSaveException(
                 "Saved floor ${floor.zoneId}#${floor.floorIndex} no longer matches the regenerated map contract. Start a new run.",
+            )
+        }
+        if (regenerated.map.playerStart != savedMap.playerStart) {
+            throw InvalidSaveException(
+                "Saved floor ${floor.zoneId}#${floor.floorIndex} no longer matches the regenerated player-start contract. Start a new run.",
             )
         }
         if (floor.topologyFingerprint.isNotBlank() && TopologyFingerprinting.fingerprint(regenerated.topology) != floor.topologyFingerprint) {

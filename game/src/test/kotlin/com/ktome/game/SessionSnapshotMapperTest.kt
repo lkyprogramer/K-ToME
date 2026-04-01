@@ -24,6 +24,7 @@ import com.ktome.core.save.AiTriggerTrackerSnapshot
 import com.ktome.core.save.EntitySnapshot
 import com.ktome.core.save.EquipmentSnapshot
 import com.ktome.core.save.FloorRewardStateSnapshot
+import com.ktome.core.save.InvalidSaveException
 import com.ktome.core.save.InventorySnapshot
 import com.ktome.core.save.ItemSnapshot
 import com.ktome.core.save.PlayerSnapshot
@@ -35,6 +36,8 @@ import com.ktome.core.save.WorldEffectSnapshot
 import com.ktome.core.talent.TalentRegistry
 import com.ktome.game.data.DataLoader
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNotNull
+import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
@@ -426,6 +429,64 @@ class SessionSnapshotMapperTest {
     }
 
     @Test
+    fun `from save snapshot wraps regeneration failures as invalid save`() {
+        val savedMap = GameMap.fromAscii(rows = listOf(".....", ".....", "....."), playerStart = Point(1, 1))
+        val generatedFloor =
+            GeneratedFloor.compatibility(
+                zoneId = "broken_zone",
+                floorIndex = 1,
+                seed = 42L,
+                map = savedMap,
+            )
+        val snapshot = phase4Snapshot(generatedFloor = generatedFloor)
+        val pipeline =
+            object : com.ktome.core.mapgen.MapgenPipeline {
+                override fun run(request: com.ktome.core.mapgen.MapgenRequest): GeneratedFloor {
+                    throw IllegalArgumentException("unknown zone")
+                }
+            }
+
+        val exception =
+            assertThrows(InvalidSaveException::class.java) {
+                SessionSnapshotMapper.fromSaveSnapshot(snapshot, mapgenPipeline = pipeline)
+            }
+
+        assertTrue(requireNotNull(exception.message).contains("broken_zone#1"))
+        assertNotNull(exception.cause)
+        assertEquals("unknown zone", exception.cause?.message)
+    }
+
+    @Test
+    fun `from save snapshot rejects regenerated player start mismatch`() {
+        val savedMap = GameMap.fromAscii(rows = listOf(".....", ".....", "....."), playerStart = Point(1, 1))
+        val generatedFloor =
+            GeneratedFloor.compatibility(
+                zoneId = "greenwood_fringe",
+                floorIndex = 1,
+                seed = 99L,
+                map = savedMap,
+            )
+        val snapshot = phase4Snapshot(generatedFloor = generatedFloor)
+        val pipeline =
+            object : com.ktome.core.mapgen.MapgenPipeline {
+                override fun run(request: com.ktome.core.mapgen.MapgenRequest): GeneratedFloor =
+                    GeneratedFloor.compatibility(
+                        zoneId = request.zoneId,
+                        floorIndex = request.floorIndex,
+                        seed = request.seed,
+                        map = GameMap.fromAscii(rows = savedMap.asGlyphRows(), playerStart = Point(2, 1)),
+                    )
+            }
+
+        val exception =
+            assertThrows(InvalidSaveException::class.java) {
+                SessionSnapshotMapper.fromSaveSnapshot(snapshot, mapgenPipeline = pipeline)
+            }
+
+        assertTrue(requireNotNull(exception.message).contains("player-start"))
+    }
+
+    @Test
     fun `restore item instance derives passive from base item schema instead of save payload`() {
         val content = content()
         val player =
@@ -513,6 +574,43 @@ class SessionSnapshotMapperTest {
             bossDefinitions = loader.loadBossDefinitions(),
             schemaCatalog = schemaCatalog,
             localizer = loader.localizer,
+        )
+    }
+
+    private fun phase4Snapshot(generatedFloor: GeneratedFloor): SaveSnapshot {
+        val player =
+            PlayerSnapshot(
+                entity = EntitySnapshot(id = 1, position = PointSnapshot.from(generatedFloor.map.playerStart), isPlayerControlled = true),
+            )
+        val floors =
+            listOf(
+                FloorState(
+                    floor = generatedFloor.floorIndex,
+                    payload =
+                        FloorRuntimeState(
+                            generatedFloor = generatedFloor,
+                            entities = mutableListOf(),
+                        ),
+                ),
+            )
+
+        return SessionSnapshotMapper.toSaveSnapshot(
+            config =
+                FoundationGameConfig(
+                    width = generatedFloor.map.width,
+                    height = generatedFloor.map.height,
+                    zoneId = generatedFloor.zoneId,
+                    playerProfessionId = "vanguard",
+                ),
+            currentFloor = generatedFloor.floorIndex,
+            turnCount = 1,
+            headlessTurnEquivalent = 1,
+            player = player,
+            floors = floors,
+            combatRandomState = null,
+            sessionRandomState = null,
+            pendingActionIds = listOf(1),
+            activeTurnActorId = 1,
         )
     }
 }
