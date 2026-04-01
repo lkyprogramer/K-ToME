@@ -2,6 +2,10 @@ package com.ktome.game
 
 import com.ktome.core.ai.AIProfile
 import com.ktome.core.inscription.InscriptionDef
+import com.ktome.core.mapgen.BspBackedMapgenPipeline
+import com.ktome.core.mapgen.MapgenPipeline
+import com.ktome.core.mapgen.ZoneMapgenProfile
+import com.ktome.core.mapgen.ZoneMapgenProfileResolver
 import com.ktome.core.race.RaceDef
 import com.ktome.core.talent.TalentDef
 import com.ktome.core.talent.TalentRegistry
@@ -14,6 +18,18 @@ import com.ktome.game.model.BossDefinition
 import com.ktome.game.model.MonsterTemplate
 import com.ktome.game.telegraph.TelegraphRegistry
 import com.ktome.game.telegraph.ThreatProfileRegistry
+
+private object EmptyZoneMapgenProfileResolver : ZoneMapgenProfileResolver {
+    override fun resolve(zoneId: String): ZoneMapgenProfile =
+        ZoneMapgenProfile(
+            zoneId = zoneId,
+            allowedBiomeFamilies = emptySet(),
+            loopCountRange = 0..0,
+            vaultPool = emptySet(),
+            terrainTagWeights = emptyMap(),
+            roomTagFilter = emptySet(),
+        )
+}
 
 internal data class GameContent(
     val talents: List<TalentDef>,
@@ -29,6 +45,8 @@ internal data class GameContent(
     val localizer: Localizer,
     val telegraphRegistry: TelegraphRegistry = TelegraphRegistry(schemaCatalog.telegraphSpecs.associateBy { spec -> spec.id }),
     val threatProfileRegistry: ThreatProfileRegistry = ThreatProfileRegistry(schemaCatalog.threatProfiles.associateBy { profile -> profile.id }),
+    val zoneMapgenProfileResolver: ZoneMapgenProfileResolver = EmptyZoneMapgenProfileResolver,
+    val mapgenPipeline: MapgenPipeline = BspBackedMapgenPipeline(profileResolver = zoneMapgenProfileResolver),
 ) {
     val aiProfilesById: Map<String, AIProfile> = schemaCatalog.aiProfiles.associateBy(AIProfile::id)
     val racesById: Map<String, RaceDef> = races.associateBy(RaceDef::id)

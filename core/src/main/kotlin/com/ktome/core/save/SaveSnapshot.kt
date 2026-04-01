@@ -1,5 +1,7 @@
 package com.ktome.core.save
 
+import com.ktome.core.phase.PackId
+import com.ktome.core.phase.Phase4ContractVersions
 import com.ktome.core.map.GameMap
 import com.ktome.core.map.Point
 import com.ktome.core.economy.ShopInventoryState
@@ -14,6 +16,17 @@ data class SaveSnapshot(
     val schemaVersion: Int = CURRENT_SCHEMA_VERSION,
     val saveContractVersion: SaveContractVersion = SaveContractVersion.CURRENT,
     val buildMetadata: String = DEFAULT_BUILD_METADATA,
+    val buildId: String = buildMetadata,
+    val contentSchemaVersion: Int = Phase4ContractVersions.CONTENT_SCHEMA_VERSION,
+    val activePackIds: List<PackId> = emptyList(),
+    val activePackManifestVersions: Map<PackId, String> = emptyMap(),
+    val topologyFingerprintVersion: Int = Phase4ContractVersions.TOPOLOGY_FINGERPRINT_VERSION,
+    val rewardLedgerVersion: Int = Phase4ContractVersions.REWARD_LEDGER_VERSION,
+    val lootFormulaVersion: Int = Phase4ContractVersions.LOOT_FORMULA_VERSION,
+    val specialTierEligibilityVersion: Int = Phase4ContractVersions.SPECIAL_TIER_ELIGIBILITY_VERSION,
+    val searchRuleVersion: Int = Phase4ContractVersions.SEARCH_RULE_VERSION,
+    val secretRuleVersion: Int = Phase4ContractVersions.SECRET_RULE_VERSION,
+    val overlayContractVersion: Int = Phase4ContractVersions.OVERLAY_CONTRACT_VERSION,
     val timestampEpochMillis: Long,
     val worldSeed: Long,
     val currentZoneId: String,
@@ -54,6 +67,22 @@ data class SaveSnapshot(
             "Save contract version must be ${SaveContractVersion.CURRENT}."
         }
         require(buildMetadata.isNotBlank()) { "buildMetadata must not be blank." }
+        require(buildId.isNotBlank()) { "buildId must not be blank." }
+        require(buildId == buildMetadata) { "buildId must match buildMetadata during the compatibility bridge window." }
+        require(contentSchemaVersion > 0) { "contentSchemaVersion must be positive." }
+        require(activePackIds.distinct().size == activePackIds.size) {
+            "activePackIds must not contain duplicates."
+        }
+        require(activePackManifestVersions.values.all(String::isNotBlank)) {
+            "activePackManifestVersions must not contain blank manifest versions."
+        }
+        require(topologyFingerprintVersion > 0) { "topologyFingerprintVersion must be positive." }
+        require(rewardLedgerVersion > 0) { "rewardLedgerVersion must be positive." }
+        require(lootFormulaVersion > 0) { "lootFormulaVersion must be positive." }
+        require(specialTierEligibilityVersion > 0) { "specialTierEligibilityVersion must be positive." }
+        require(searchRuleVersion > 0) { "searchRuleVersion must be positive." }
+        require(secretRuleVersion > 0) { "secretRuleVersion must be positive." }
+        require(overlayContractVersion > 0) { "overlayContractVersion must be positive." }
         require(currentZoneId.isNotBlank()) { "currentZoneId must not be blank." }
         require(zoneRoute.isNotEmpty()) { "zoneRoute must not be empty." }
         require(zoneRoute.all(String::isNotBlank)) { "zoneRoute must not contain blank zone ids." }
@@ -112,8 +141,8 @@ data class SaveSnapshot(
     }
 
     companion object {
-        const val CURRENT_SCHEMA_VERSION: Int = 7
-        const val DEFAULT_BUILD_METADATA: String = "phase3-pr14-dev"
+        const val CURRENT_SCHEMA_VERSION: Int = 8
+        const val DEFAULT_BUILD_METADATA: String = "phase4-pr01-dev"
     }
 }
 
@@ -138,6 +167,10 @@ data class PlayerSnapshot(
 @Serializable
 data class FloorSnapshot(
     val floorIndex: Int,
+    val zoneId: String = "legacy.zone",
+    val floorSeed: Long = 0L,
+    val topologyFingerprint: String = "",
+    val terrainTagHash: String = "",
     val map: MapSnapshot,
     val stairsUp: PointSnapshot? = null,
     val stairsDown: PointSnapshot? = null,
@@ -151,6 +184,7 @@ data class FloorSnapshot(
 
     fun validateOrThrow() {
         require(floorIndex > 0) { "Floor numbers must be positive." }
+        require(zoneId.isNotBlank()) { "FloorSnapshot.zoneId must not be blank." }
         map.validateOrThrow()
         entities.forEach(EntitySnapshot::validateOrThrow)
     }

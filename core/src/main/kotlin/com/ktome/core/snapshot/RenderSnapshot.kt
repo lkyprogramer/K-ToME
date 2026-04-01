@@ -49,6 +49,7 @@ data class MapCellSnapshot(
     val visibility: CellVisibilitySnapshot,
     val terrainTypeId: String,
     val terrainVisualKey: String,
+    val terrainTags: List<String> = emptyList(),
     val stairDirectionId: String? = null,
     val actorEntityId: Int? = null,
     val items: List<ItemRenderSnapshot> = emptyList(),

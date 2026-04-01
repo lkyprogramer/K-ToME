@@ -19,10 +19,10 @@ import com.ktome.core.economy.ShopInventoryState
 import com.ktome.core.economy.ShopNode
 import com.ktome.core.fov.Shadowcasting
 import com.ktome.core.item.AffixSelectionContext
-import com.ktome.core.map.BspConfig
-import com.ktome.core.map.BspGenerator
 import com.ktome.core.map.Point
 import com.ktome.core.map.Room
+import com.ktome.core.mapgen.BspBackedMapgenPipeline
+import com.ktome.core.mapgen.MapgenRequest
 import com.ktome.core.random.SplitMix64RandomSource
 import com.ktome.core.resource.ResourceType
 import com.ktome.core.save.InvalidSaveException
@@ -41,6 +41,7 @@ import com.ktome.game.i18n.GameLocale
 import com.ktome.game.factory.BossFactory
 import com.ktome.game.factory.EntityFactory
 import com.ktome.game.factory.ItemFactory
+import com.ktome.game.mapgen.SchemaZoneMapgenProfileResolver
 import com.ktome.game.model.BossDefinition
 import com.ktome.game.model.MonsterTemplate
 import com.ktome.game.telegraph.TelegraphRegistry
@@ -179,8 +180,8 @@ object GameModule {
     ): FoundationGameSession? {
         val snapshot = saveManager.load() ?: return null
         val loader = DataLoader(locale)
-        val restored = SessionSnapshotMapper.fromSaveSnapshot(snapshot)
         val content = buildContent(loader)
+        val restored = SessionSnapshotMapper.fromSaveSnapshot(snapshot, mapgenPipeline = content.mapgenPipeline)
         val schemaCatalog = content.schemaCatalog
         validateLoadedSessionConfig(restored.config, schemaCatalog)
         val profession = resolveProfession(schemaCatalog, restored.config.playerProfessionId)
@@ -273,6 +274,7 @@ object GameModule {
         val schemaCatalog = loader.loadSchemaCatalog()
         val talents = loader.loadTalentDefinitions()
         val statusCatalog = loader.loadStatusCatalog()
+        val zoneMapgenProfileResolver = SchemaZoneMapgenProfileResolver(schemaCatalog.zones)
         return GameContent(
             talents = talents,
             statuses = schemaCatalog.statuses,
@@ -287,6 +289,8 @@ object GameModule {
             localizer = loader.localizer,
             telegraphRegistry = TelegraphRegistry(schemaCatalog.telegraphSpecs.associateBy { spec -> spec.id }),
             threatProfileRegistry = ThreatProfileRegistry(schemaCatalog.threatProfiles.associateBy { profile -> profile.id }),
+            zoneMapgenProfileResolver = zoneMapgenProfileResolver,
+            mapgenPipeline = BspBackedMapgenPipeline(profileResolver = zoneMapgenProfileResolver),
         ).also { content ->
             validateAiProfileContracts(content)
             validateWorldStructureContracts(content)
@@ -362,11 +366,17 @@ object GameModule {
         zone: ZoneSchemaV2,
         floor: Int,
     ): FloorState<FloorRuntimeState> {
-        val map =
-            BspGenerator(
-                seed = floorSeed(config.seed, floor, 0x44A1),
-                config = BspConfig(width = config.width, height = config.height),
-            ).generate()
+        val generatedFloor =
+            content.mapgenPipeline.run(
+                MapgenRequest(
+                    zoneId = zone.id,
+                    floorIndex = floor,
+                    seed = floorSeed(config.seed, floor, 0x44A1),
+                    targetWidth = config.width,
+                    targetHeight = config.height,
+                ),
+            )
+        val map = generatedFloor.map
         val world = World()
         reserveEntityRange(world, config.routeIndex, floor)
         val factory = EntityFactory()
@@ -463,7 +473,7 @@ object GameModule {
             stairsDown = stairsDown,
             payload =
                 SessionSnapshotMapper.captureFloor(
-                    map = map,
+                    generatedFloor = generatedFloor,
                     stairsUp = stairsUp,
                     stairsDown = stairsDown,
                     exploredTiles = emptySet(),

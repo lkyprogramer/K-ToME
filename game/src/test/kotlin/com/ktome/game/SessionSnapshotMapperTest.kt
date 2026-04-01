@@ -10,6 +10,12 @@ import com.ktome.core.item.ItemQuality
 import com.ktome.core.item.MilestoneRewardSource
 import com.ktome.core.map.GameMap
 import com.ktome.core.map.Point
+import com.ktome.core.mapgen.BspBackedMapgenPipeline
+import com.ktome.core.mapgen.GeneratedFloor
+import com.ktome.core.mapgen.TerrainTag
+import com.ktome.core.mapgen.TopologyFingerprinting
+import com.ktome.core.mapgen.ZoneMapgenProfile
+import com.ktome.core.mapgen.ZoneMapgenProfileResolver
 import com.ktome.core.profile.MilestoneRewardSummary
 import com.ktome.core.resource.ResourcePoolSnapshot
 import com.ktome.core.save.ActiveEffectSnapshot
@@ -192,7 +198,14 @@ class SessionSnapshotMapperTest {
                     stairsDown = Point(4, 4),
                     payload =
                         FloorRuntimeState(
-                            map = GameMap.fromAscii(rows = List(5) { "....." }, playerStart = Point(1, 1)),
+                            generatedFloor =
+                                GeneratedFloor.compatibility(
+                                    zoneId = "greenwood_fringe",
+                                    floorIndex = 1,
+                                    seed = 2026040101L,
+                                    map = GameMap.fromAscii(rows = List(5) { "....." }, playerStart = Point(1, 1)),
+                                    terrainTags = mapOf(Point(3, 1) to setOf(TerrainTag.WATER)),
+                                ),
                             stairsDown = Point(4, 4),
                             rewardState =
                                 FloorRewardStateSnapshot(
@@ -269,6 +282,16 @@ class SessionSnapshotMapperTest {
         assertEquals(snapshot.currentFloorRewardState, snapshot.floors.single().rewardState)
         assertEquals(listOf(7, 9, 11), snapshot.floors.single().entities.map(EntitySnapshot::id))
         assertEquals("supply_crate", snapshot.floors.single().entities.last().interactableId)
+        assertEquals("greenwood_fringe", snapshot.floors.single().zoneId)
+        assertEquals(2026040101L, snapshot.floors.single().floorSeed)
+        assertEquals(
+            TopologyFingerprinting.fingerprint(floors.single().payload.generatedFloor.topology),
+            snapshot.floors.single().topologyFingerprint,
+        )
+        assertEquals(
+            TopologyFingerprinting.terrainTagHash(floors.single().payload.generatedFloor.terrainTags),
+            snapshot.floors.single().terrainTagHash,
+        )
         assertEquals(milestoneRewards, snapshot.milestoneRewards)
     }
 
@@ -335,6 +358,71 @@ class SessionSnapshotMapperTest {
         assertEquals(10, restored.headlessTurnEquivalent)
         assertEquals(snapshot.milestoneRewards, restored.milestoneRewards)
         assertEquals(snapshot.currentFloorRewardState, restored.floors.single().payload.rewardState)
+    }
+
+    @Test
+    fun `from save snapshot regenerates generated floor metadata when phase4 metadata is present`() {
+        val resolver =
+            object : ZoneMapgenProfileResolver {
+                override fun resolve(zoneId: String): ZoneMapgenProfile =
+                    ZoneMapgenProfile(
+                        zoneId = zoneId,
+                        allowedBiomeFamilies = setOf("family.test"),
+                        loopCountRange = 0..0,
+                        vaultPool = emptySet(),
+                        terrainTagWeights = mapOf(TerrainTag.WATER to 1.0f),
+                        roomTagFilter = setOf("test_room"),
+                    )
+            }
+        val pipeline = BspBackedMapgenPipeline(profileResolver = resolver)
+        val generatedFloor = pipeline.run(com.ktome.core.mapgen.MapgenRequest(zoneId = "greenwood_fringe", floorIndex = 1, seed = 2026040102L, targetWidth = 32, targetHeight = 24))
+        val player =
+            PlayerSnapshot(
+                entity = EntitySnapshot(id = 1, position = PointSnapshot.from(generatedFloor.map.playerStart), isPlayerControlled = true),
+            )
+        val floors =
+            listOf(
+                FloorState(
+                    floor = 1,
+                    payload =
+                        FloorRuntimeState(
+                            generatedFloor = generatedFloor,
+                            entities = mutableListOf(),
+                        ),
+                ),
+            )
+
+        val snapshot =
+            SessionSnapshotMapper.toSaveSnapshot(
+                config =
+                    FoundationGameConfig(
+                        width = 32,
+                        height = 24,
+                        zoneId = "greenwood_fringe",
+                        playerProfessionId = "vanguard",
+                    ),
+                currentFloor = 1,
+                turnCount = 5,
+                headlessTurnEquivalent = 5,
+                player = player,
+                floors = floors,
+                combatRandomState = null,
+                sessionRandomState = null,
+                pendingActionIds = listOf(1),
+                activeTurnActorId = 1,
+            )
+
+        val restored = SessionSnapshotMapper.fromSaveSnapshot(snapshot, mapgenPipeline = pipeline)
+
+        assertEquals(generatedFloor.seed, restored.floors.single().payload.generatedFloor.seed)
+        assertEquals(
+            TopologyFingerprinting.fingerprint(generatedFloor.topology),
+            restored.floors.single().payload.topologyFingerprint,
+        )
+        assertEquals(
+            TopologyFingerprinting.terrainTagHash(generatedFloor.terrainTags),
+            restored.floors.single().payload.terrainTagHash,
+        )
     }
 
     @Test

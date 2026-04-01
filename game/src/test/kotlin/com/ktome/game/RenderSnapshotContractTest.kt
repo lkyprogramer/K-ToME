@@ -14,6 +14,7 @@ import com.ktome.core.item.ItemInstance
 import com.ktome.core.item.ItemQuality
 import com.ktome.core.item.ItemType
 import com.ktome.core.item.StatModifier
+import com.ktome.core.map.Point
 import com.ktome.core.resource.ResourceType
 import com.ktome.core.save.SaveManager
 import com.ktome.core.snapshot.CellVisibilitySnapshot
@@ -215,6 +216,26 @@ class RenderSnapshotContractTest {
             "monster.tag.undead",
             undeadSlayer.passiveDescriptions.single().arguments.first { argument -> argument.name == "tag" }.valueKey,
         )
+    }
+
+    @Test
+    fun `render snapshot exposes visible terrain tags without reconstructing map semantics in client`() {
+        val session =
+            GameModule.newFoundationSession(
+                config = FoundationGameConfig(seed = 2026040103L, zoneId = "underground_river", playerProfessionId = "templar"),
+                saveManager = SaveManager(tempDir.resolve("terrain-tag-render")),
+            )
+        val taggedPoint = requireNotNull(session.automationTerrainTags().keys.sortedWith(compareBy<Point>(Point::y).thenBy(Point::x)).firstOrNull())
+
+        session.automationMovePlayerTo(taggedPoint)
+        val snapshot = session.renderSnapshot()
+        val cell = snapshot.mapCells.first { mapCell -> mapCell.x == taggedPoint.x && mapCell.y == taggedPoint.y }
+
+        assertEquals(
+            session.automationTerrainTags().getValue(taggedPoint).map { tag -> tag.name }.sorted(),
+            cell.terrainTags,
+        )
+        assertTrue(cell.visibility != CellVisibilitySnapshot.HIDDEN)
     }
 
     @Test

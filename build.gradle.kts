@@ -72,7 +72,7 @@ subprojects {
         useJUnitPlatform()
         if (name == "test") {
             useJUnitPlatform {
-                excludeTags("headlessSmoke", "clientSmoke", "longRunLab", "soloClearLab")
+                excludeTags("headlessSmoke", "clientSmoke", "longRunLab", "soloClearLab", "mapgenSmoke", "solvabilityHarness")
             }
         }
         testLogging {
@@ -147,6 +147,18 @@ tasks.register("bossHarness") {
     group = LifecycleBasePlugin.VERIFICATION_GROUP
     description = "Runs the Phase 3 boss encounter stability harness."
     dependsOn(":game:bossHarness")
+}
+
+tasks.register("mapgenSmoke") {
+    group = LifecycleBasePlugin.VERIFICATION_GROUP
+    description = "Runs the Phase 4 map generation smoke baseline and writes fixed reports."
+    dependsOn(":tools:mapgenSmoke")
+}
+
+tasks.register("solvabilityHarness") {
+    group = LifecycleBasePlugin.VERIFICATION_GROUP
+    description = "Runs the Phase 4 solvability harness skeleton until PR-03 lands."
+    dependsOn(":tools:solvabilityHarness")
 }
 
 tasks.register<Exec>("assetLint") {

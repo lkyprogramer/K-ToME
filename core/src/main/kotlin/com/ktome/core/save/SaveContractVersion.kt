@@ -17,6 +17,6 @@ data class SaveContractVersion(
     fun isSupported(): Boolean = this == CURRENT
 
     companion object {
-        val CURRENT: SaveContractVersion = SaveContractVersion(3, 3)
+        val CURRENT: SaveContractVersion = SaveContractVersion(4, 0)
     }
 }

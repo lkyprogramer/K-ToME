@@ -58,6 +58,7 @@ tasks.named<JacocoCoverageVerification>("jacocoTestCoverageVerification") {
             "com.ktome.core.item.*",
             "com.ktome.core.talent.*",
             "com.ktome.core.dungeon.*",
+            "com.ktome.core.mapgen.*",
             "com.ktome.core.run.*",
             "com.ktome.core.save.*",
         ).forEach { packagePattern ->

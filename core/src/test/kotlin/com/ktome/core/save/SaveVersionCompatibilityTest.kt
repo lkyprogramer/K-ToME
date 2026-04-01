@@ -21,7 +21,7 @@ class SaveVersionCompatibilityTest {
     fun `unsupported save contract version fails fast`() {
         val encoded =
             codec.encode(SaveFixtures.emptyScene())
-                .replace("\"major\": 3", "\"major\": 99")
+                .replace("\"major\": ${SaveContractVersion.CURRENT.major}", "\"major\": 99")
 
         val exception =
             assertThrows(UnsupportedSaveContractVersionException::class.java) {
@@ -35,7 +35,7 @@ class SaveVersionCompatibilityTest {
     fun `invalid save contract payload is normalized to invalid save exception`() {
         val encoded =
             codec.encode(SaveFixtures.emptyScene())
-                .replace("\"major\": 3", "\"major\": 0")
+                .replace("\"major\": ${SaveContractVersion.CURRENT.major}", "\"major\": 0")
 
         val exception =
             assertThrows(InvalidSaveException::class.java) {
@@ -51,7 +51,7 @@ class SaveVersionCompatibilityTest {
             SaveContractVersion(0, 0)
         }
         assertThrows(IllegalArgumentException::class.java) {
-            SaveContractVersion(3, -1)
+            SaveContractVersion(SaveContractVersion.CURRENT.major, -1)
         }
     }
 
