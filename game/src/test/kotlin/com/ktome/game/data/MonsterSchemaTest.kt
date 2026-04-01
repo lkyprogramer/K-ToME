@@ -13,6 +13,8 @@ class MonsterSchemaTest {
     fun `monster skeletons cover required family namespaces and combat contracts`() {
         val schemaCatalog = DataLoader().loadSchemaCatalog()
         val runtimeCatalog = DataLoader().loadMonsterCatalog().monsters.associateBy { monster -> monster.id }
+        val monsterSchemasById = schemaCatalog.monsters.associateBy { monster -> monster.id }
+        val aiProfilesById = schemaCatalog.aiProfiles.associateBy { profile -> profile.id }
         val monsterIds = schemaCatalog.monsters.map { it.id }.toSet()
         val familyTags = schemaCatalog.monsters.flatMap { it.tags }.toSet()
 
@@ -60,6 +62,81 @@ class MonsterSchemaTest {
         assertTrue(schemaCatalog.monsters.count { monster -> "elite" in monster.tags || monster.lootProfileId.endsWith(".elite") } >= 11)
         assertTrue(schemaCatalog.monsters.count { monster -> "boss" !in monster.tags && "elite" !in monster.tags && !monster.lootProfileId.endsWith(".elite") } >= 45)
         assertTrue(schemaCatalog.monsters.count { monster -> monster.talents.isNotEmpty() } >= 16)
+        val guardProfileTighteningAssignments =
+            schemaCatalog.monsters
+                .filter { monster ->
+                    monster.id in
+                        setOf(
+                            "goblin.scrapper",
+                            "orc.miner",
+                            "undead.chain_thrall",
+                            "warded_ruin.vault_watcher",
+                            "forge.slag_tender",
+                            "river.undertow_brute",
+                        )
+                }.associate { monster -> monster.id to monster.aiProfileId }
+        assertEquals(
+            mapOf(
+                "goblin.scrapper" to "ai.guard.basic",
+                "orc.miner" to "ai.forge.guard",
+                "undead.chain_thrall" to "ai.warded_ruin.sentinel",
+                "warded_ruin.vault_watcher" to "ai.warded_ruin.sentinel",
+                "forge.slag_tender" to "ai.forge.channeler",
+                "river.undertow_brute" to "ai.river.lurker",
+            ),
+            guardProfileTighteningAssignments,
+            "PR-20 guard-profile tightening drifted away from the frozen monster/profile mapping.",
+        )
+        assertTrue(
+            guardProfileTighteningAssignments
+                .filterKeys { monsterId -> monsterId != "goblin.scrapper" }
+                .values
+                .none { profileId -> profileId == "ai.guard.basic" },
+            "PR-20 only permits goblin.scrapper to remain on ai.guard.basic as the explicit tutorial exception.",
+        )
+        val goblinScrapper = requireNotNull(monsterSchemasById["goblin.scrapper"]) { "Missing goblin.scrapper schema." }
+        assertTrue(
+            goblinScrapper.spawnFloors.maxOrNull() ?: 0 <= 2,
+            "goblin.scrapper may keep ai.guard.basic only while it stays on the early/tutorial transition floors.",
+        )
+        val guardProfileTighteningTalentAssignments =
+            mapOf(
+                "orc.miner" to setOf("earthshaker", "linebreaker"),
+                "undead.chain_thrall" to setOf("sanctuary", "ritual_break"),
+                "warded_ruin.vault_watcher" to setOf("sanctuary", "ritual_break"),
+                "forge.slag_tender" to setOf("cinder_burst", "inferno_orb"),
+                "river.undertow_brute" to setOf("shadow_bind"),
+            )
+        guardProfileTighteningTalentAssignments.forEach { (monsterId, expectedTalentIds) ->
+            val monster = requireNotNull(monsterSchemasById[monsterId]) { "Missing monster schema for '$monsterId'." }
+            assertEquals(
+                expectedTalentIds,
+                monster.talents.keys,
+                "PR-20 frozen talent hook drifted for '$monsterId'.",
+            )
+            val profileId = guardProfileTighteningAssignments.getValue(monsterId)
+            val abilityIds =
+                requireNotNull(aiProfilesById[profileId]) {
+                    "Missing AI profile '$profileId'."
+                }.actions
+                    .mapNotNull { action -> action.abilityId }
+                    .toSet()
+            assertEquals(
+                expectedTalentIds,
+                abilityIds,
+                "PR-20 profile '$profileId' drifted away from the frozen monster talent contract for '$monsterId'.",
+            )
+        }
+        val guardBasicMonsterIds =
+            schemaCatalog.monsters
+                .filter { monster -> monster.aiProfileId == "ai.guard.basic" }
+                .map { monster -> monster.id }
+                .toSet()
+        assertEquals(
+            setOf("goblin.scrapper"),
+            guardBasicMonsterIds,
+            "ai.guard.basic must stay limited to the explicit tutorial exception after PR-20.",
+        )
         val basicProfileMonsterIds =
             schemaCatalog.monsters
                 .filter { monster -> monster.aiProfileId in setOf("ai.chase.basic", "ai.kite.basic", "ai.patrol.basic") }

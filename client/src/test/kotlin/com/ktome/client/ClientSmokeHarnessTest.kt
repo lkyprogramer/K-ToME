@@ -281,6 +281,21 @@ class ClientSmokeHarnessTest {
         val capture = captureOverlay(localizer, session.renderSnapshot(), OverlayState(mode = UiMode.SHOP))
 
         assertTrue(capture.rows.any { row -> row.contains(localizer.text("shop.service.refresh_stock.name")) })
+        assertTrue(capture.rows.any { row -> row == localizer.text("ui.controls.shop.close_hint") })
+    }
+
+    @Test
+    @Tag("clientSmoke")
+    fun `inventory overlay renders explicit close hint`() {
+        val session =
+            GameModule.newFoundationSession(
+                saveManager = SaveManager(tempDir.resolve("client-inventory-close-hint-save")),
+            )
+
+        val localizer = session.localizer()
+        val capture = captureOverlay(localizer, session.renderSnapshot(), OverlayState(mode = UiMode.INVENTORY))
+
+        assertTrue(capture.rows.any { row -> row == localizer.text("ui.controls.inventory.close_hint") })
     }
 
     @Test

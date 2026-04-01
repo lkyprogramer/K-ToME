@@ -247,6 +247,7 @@ internal object AsciiRenderModelBuilder {
                         lines += AsciiTextLine(localizer.text(hintLabelKey), AsciiTextTone.LIGHT_GRAY)
                     }
                 }
+                lines += AsciiTextLine(localizer.text("ui.controls.shop.close_hint"), AsciiTextTone.LIGHT_GRAY)
                 lines += AsciiTextLine(localizer.text("ui.shop.buy"), if (overlayState.shopFocus == com.ktome.client.input.ShopFocus.BUY) AsciiTextTone.GOLD else AsciiTextTone.WHITE)
                 snapshot.uiState.activeShop?.offers?.forEach { offer ->
                     lines +=
@@ -313,6 +314,7 @@ internal object AsciiRenderModelBuilder {
             UiMode.INVENTORY -> {
                 lines += blankLine()
                 lines += AsciiTextLine(AsciiRenderer.sidebarTitle(localizer, UiMode.INVENTORY), AsciiTextTone.GOLD)
+                lines += AsciiTextLine(localizer.text("ui.controls.inventory.close_hint"), AsciiTextTone.LIGHT_GRAY)
                 snapshot.uiState.inventory.forEach { item ->
                     val equipped = item.equippedSlotId?.let { slotId -> " [${equipmentSlotLabel(localizer, slotId)}]" } ?: ""
                     lines += AsciiTextLine(
