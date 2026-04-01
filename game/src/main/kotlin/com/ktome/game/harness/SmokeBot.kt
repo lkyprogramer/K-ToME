@@ -36,6 +36,7 @@ class SmokeBot : RunBot {
     private var lastThreatWasBoss: Boolean = false
     private val recentDroppedPositions = linkedMapOf<Point, Int>()
     private val visitedShopZones = linkedSetOf<String>()
+    private val visitedSpecialShopIds = linkedSetOf<String>()
     private val recentPositions = ArrayDeque<Point>()
 
     private fun pickImmediateAction(observation: RunObservation): PlayerCommand? {
@@ -44,7 +45,11 @@ class SmokeBot : RunBot {
         }
         if (observation.activeShopId != null) {
             return preferredShopAction(observation) ?: run {
-                visitedShopZones += observation.zoneId
+                if (observation.activeShopId == AbyssalRuntimeKeys.Temple.SHOP_NODE_ID) {
+                    visitedSpecialShopIds += observation.activeShopId
+                } else {
+                    visitedShopZones += observation.zoneId
+                }
                 PlayerCommand.CloseShop
             }
         }
@@ -1143,6 +1148,10 @@ class SmokeBot : RunBot {
         interactable: ObservedInteractable,
     ): Boolean =
         when {
+            interactable.id == AbyssalRuntimeKeys.Temple.INTERACTABLE_ID ->
+                observation.visibleHostilePositions.isEmpty() &&
+                    observation.visibleBossPositions.isEmpty() &&
+                    AbyssalRuntimeKeys.Temple.SHOP_NODE_ID !in visitedSpecialShopIds
             interactable.id == "merchant_stall" ->
                 observation.zoneId !in visitedShopZones &&
                     observation.visibleHostilePositions.isEmpty() &&

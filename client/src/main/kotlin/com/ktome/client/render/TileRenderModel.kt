@@ -28,6 +28,7 @@ import com.ktome.core.snapshot.RenderLogEventSnapshot
 import com.ktome.core.snapshot.RenderSnapshot
 import com.ktome.core.snapshot.RenderTextArgumentSnapshot
 import com.ktome.core.snapshot.RenderTextTokenSnapshot
+import com.ktome.core.snapshot.RewardPresentationSourceSnapshot
 import com.ktome.core.snapshot.StatusEffectRenderSnapshot
 import com.ktome.core.snapshot.TalentReserveSnapshot
 import com.ktome.core.snapshot.TalentSlotSnapshot
@@ -384,6 +385,10 @@ internal object TileRenderModelBuilder {
                 if (shop == null) {
                     rows += TileTextRow(localizer.text("ui.sidebar.empty"), TileTextTone.GRAY)
                 } else {
+                    rows += TileTextRow(localizer.text(shop.shopNameKey), TileTextTone.GOLD)
+                    shop.hintLabelKeys.forEach { hintLabelKey ->
+                        rows += TileTextRow(localizer.text(hintLabelKey), TileTextTone.LIGHT_GRAY)
+                    }
                     rows += TileTextRow(localizer.text("ui.shop.buy"), if (overlayState.shopFocus == com.ktome.client.input.ShopFocus.BUY) TileTextTone.GOLD else TileTextTone.WHITE)
                     if (shop.offers.isEmpty()) {
                         rows += TileTextRow(localizer.text("ui.sidebar.empty"), TileTextTone.GRAY)
@@ -391,7 +396,7 @@ internal object TileRenderModelBuilder {
                         shop.offers.forEach { offer ->
                             rows +=
                                 TileTextRow(
-                                    text = "${offer.index + 1}. ${localizer.text(offer.labelKey)} (${offer.price})",
+                                    text = shopOfferText(localizer, offer),
                                     tone = if (overlayState.shopFocus == com.ktome.client.input.ShopFocus.BUY && overlayState.shopOfferSelection == offer.index) TileTextTone.CYAN else TileTextTone.WHITE,
                                     selected = overlayState.shopFocus == com.ktome.client.input.ShopFocus.BUY && overlayState.shopOfferSelection == offer.index,
                                 )
@@ -433,8 +438,11 @@ internal object TileRenderModelBuilder {
                             rows += TileTextRow(localizer.text(descKey), TileTextTone.LIGHT_GRAY)
                         }
                         rows += TileTextRow(RoutePreviewText.summaryLine(localizer, option), TileTextTone.LIGHT_GRAY)
-                        RoutePreviewText.rewardLine(localizer, option)?.let { rewardPreview ->
+                        RoutePreviewText.guaranteedRewardLine(localizer, option)?.let { rewardPreview ->
                             rows += TileTextRow(rewardPreview, TileTextTone.GREEN)
+                        }
+                        RoutePreviewText.milestoneRewardLine(localizer, option)?.let { rewardPreview ->
+                            rows += TileTextRow(rewardPreview, TileTextTone.GOLD)
                         }
                         RoutePreviewText.traitLine(localizer, option)?.let { traits ->
                             rows += TileTextRow(traits, TileTextTone.BLUE)
@@ -670,8 +678,31 @@ internal object TileRenderModelBuilder {
             }
         }
 
+        if (overlayState.mode in recentRewardPresentationModes && snapshot.uiState.recentRewards.isNotEmpty()) {
+            rows += TileTextRow(localizer.text("ui.sidebar.recent_rewards"), TileTextTone.GOLD)
+            snapshot.uiState.recentRewards.asReversed().forEach { entry ->
+                rows +=
+                    TileTextRow(
+                        recentRewardText(
+                            sourceLabel = localizer.text(entry.sourceLabelKey),
+                            itemDisplayName = renderTextToken(localizer, entry.itemDisplayName),
+                        ),
+                        rewardPresentationTone(entry.source),
+                    )
+            }
+        }
+
         return TileSidebarModel(title = title, rows = rows)
     }
+
+    private fun rewardPresentationTone(source: RewardPresentationSourceSnapshot): TileTextTone =
+        when (source) {
+            RewardPresentationSourceSnapshot.CADENCE -> TileTextTone.GOLD
+            RewardPresentationSourceSnapshot.ROUTE -> TileTextTone.GREEN
+            RewardPresentationSourceSnapshot.BOSS -> TileTextTone.RED
+            RewardPresentationSourceSnapshot.CACHE -> TileTextTone.CYAN
+            RewardPresentationSourceSnapshot.SUPPORT -> TileTextTone.BLUE
+        }
 
     private fun focusedActor(
         snapshot: RenderSnapshot,
@@ -703,6 +734,7 @@ internal object TileRenderModelBuilder {
             messageKey == "log.talent.damage_vulnerable" -> TileTextTone.RED
             messageKey.startsWith("log.passive.") -> TileTextTone.GREEN
             messageKey.startsWith("log.level_up") -> TileTextTone.GOLD
+            messageKey.startsWith("log.reward.") -> TileTextTone.GOLD
             messageKey == "log.zone.enter" -> TileTextTone.CYAN
             messageKey.startsWith("log.boss.") -> TileTextTone.RED
             else -> TileTextTone.WHITE

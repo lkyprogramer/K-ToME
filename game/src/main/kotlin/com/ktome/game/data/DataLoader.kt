@@ -799,6 +799,7 @@ class DataLoader(
                 schemaVersion = interactable.requiredInt("schemaVersion"),
                 tags = interactable.optionalStringList("tags"),
                 interactionTags = interactable.optionalStringList("interactionTags"),
+                shopNodeId = interactable.optionalString("shopNodeId"),
             )
         }
 

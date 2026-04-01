@@ -128,6 +128,7 @@ private fun rewardSourceBiasTags(source: MilestoneRewardSource?): Set<String> =
         MilestoneRewardSource.ROUTE -> setOf("reward", "route")
         MilestoneRewardSource.BOSS -> setOf("boss", "elite", "reward")
         MilestoneRewardSource.CACHE -> setOf("cache", "reward")
+        MilestoneRewardSource.SUPPORT -> setOf("support", "cache", "reward")
         null -> emptySet()
     }
 

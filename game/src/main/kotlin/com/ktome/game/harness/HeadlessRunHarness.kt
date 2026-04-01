@@ -6,6 +6,7 @@ import com.ktome.core.ecs.get
 import com.ktome.core.profile.AvailabilityContext
 import com.ktome.core.save.SaveManager
 import com.ktome.core.world.ObjectiveState
+import com.ktome.game.AbyssalRuntimeKeys
 import com.ktome.game.BreakpointPayoffObservation
 import com.ktome.game.BreakpointPayoffSummary
 import com.ktome.game.FoundationGameConfig
@@ -235,6 +236,13 @@ class HeadlessRunHarness(
                 milestoneRewards = session.milestoneRewardSummaries(),
                 cadenceRewardCount = session.currentCadenceRewardCount(),
                 shopRefreshPurchaseCount = session.currentShopRefreshPurchaseCount(),
+                lateRunReliquaryPurchaseCount = session.currentLateRunReliquaryPurchaseCount(),
+                lateRunReliquaryVisitCount = session.currentLateRunReliquaryVisitCount(),
+                lateRunReliquaryRefreshCount = session.currentLateRunReliquaryRefreshCount(),
+                lateRunReliquaryItemPurchaseCount = session.currentLateRunReliquaryItemPurchaseCount(),
+                lateRunReliquaryNonMandatoryPurchaseCount = session.currentLateRunReliquaryNonMandatoryPurchaseCount(),
+                lateRunReliquaryShardSpent = session.currentLateRunReliquaryShardSpent(),
+                lateRunReliquaryTagDistribution = session.currentLateRunReliquaryPurchaseTagDistribution(),
                 affixSynergyActivationCount = affixSynergyActivationTotals.values.sum(),
                 affixSynergyActivationDistribution = affixSynergyActivationTotals.toMap(linkedMapOf()),
                 goalReached = goalSatisfied(spec, observation, checkpointTurn),
@@ -343,20 +351,25 @@ class HeadlessRunHarness(
         spec: ScenarioSpec,
         observation: RunObservation,
     ): Boolean =
-        when (spec.goal) {
-            ScenarioGoal.ReachTerminal,
-            ScenarioGoal.Victory,
-            -> true
+        when {
+            observation.activeShopId != null -> false
 
-            is ScenarioGoal.ReachFloor,
-            is ScenarioGoal.ReachFloorOrTerminal,
-            is ScenarioGoal.ReachZoneAtLeastOrTerminal,
-            -> !observation.runOutcome.isTerminal
+            else ->
+                when (spec.goal) {
+                    ScenarioGoal.ReachTerminal,
+                    ScenarioGoal.Victory,
+                    -> true
 
-            is ScenarioGoal.SurviveTurns ->
-                spec.assertions
-                    .filterIsInstance<ScenarioAssertion.FinalZoneAtLeast>()
-                    .any { assertion -> zoneDepth(observation.zoneId) < zoneDepth(assertion.zoneId) }
+                    is ScenarioGoal.ReachFloor,
+                    is ScenarioGoal.ReachFloorOrTerminal,
+                    is ScenarioGoal.ReachZoneAtLeastOrTerminal,
+                    -> !observation.runOutcome.isTerminal
+
+                    is ScenarioGoal.SurviveTurns ->
+                        spec.assertions
+                            .filterIsInstance<ScenarioAssertion.FinalZoneAtLeast>()
+                            .any { assertion -> zoneDepth(observation.zoneId) < zoneDepth(assertion.zoneId) }
+                }
         }
 
     private fun newSession(

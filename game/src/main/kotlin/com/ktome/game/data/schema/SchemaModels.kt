@@ -373,6 +373,7 @@ data class InteractableSchemaV2(
     val schemaVersion: Int,
     val tags: List<String>,
     val interactionTags: List<String>,
+    val shopNodeId: String? = null,
 )
 
 data class ObjectiveSetSchemaV2(

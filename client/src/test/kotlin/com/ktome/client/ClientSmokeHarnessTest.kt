@@ -285,6 +285,96 @@ class ClientSmokeHarnessTest {
 
     @Test
     @Tag("clientSmoke")
+    fun `world map overlay labels route rewards`() {
+        val session =
+            GameModule.newFoundationSession(
+                config =
+                    FoundationGameConfig(
+                        seed = 20260331L,
+                        zoneId = "greenwood_fringe",
+                        playerProfessionId = "vanguard",
+                        zoneRoute = listOf("shattered_outpost", "greenwood_fringe"),
+                        routeIndex = 1,
+                    ),
+                saveManager = SaveManager(tempDir.resolve("client-route-reward-save")),
+        )
+        automationMovePlayerTo(session, requireNotNull(automationStairPoint(session, StairDirection.DOWN)))
+        assertTrue(session.perform(PlayerCommand.Descend))
+        automationMovePlayerTo(session, requireNotNull(automationStairPoint(session, StairDirection.DOWN)))
+        assertTrue(session.perform(PlayerCommand.Descend))
+
+        val localizer = session.localizer()
+        val capture = captureOverlay(localizer, session.renderSnapshot(), OverlayState(mode = UiMode.WORLD_MAP))
+        val guaranteedRewardLabelPrefix = localizer.text("ui.world_map.guaranteed_reward", "rewards" to "TEST").substringBefore("TEST")
+        val milestoneRewardLabelPrefix = localizer.text("ui.world_map.milestone_reward", "reward" to "TEST").substringBefore("TEST")
+
+        assertTrue(capture.rows.any { row -> row.startsWith(guaranteedRewardLabelPrefix) })
+        assertTrue(capture.rows.any { row -> row.startsWith(milestoneRewardLabelPrefix) })
+    }
+
+    @Test
+    @Tag("clientSmoke")
+    fun `late run reliquary shop overlay renders reliquary post name`() {
+        val session =
+            GameModule.newFoundationSession(
+                config =
+                    FoundationGameConfig(
+                        seed = 20260331L,
+                        zoneId = "abyssal_temple",
+                        playerProfessionId = "templar",
+                        zoneRoute =
+                            listOf(
+                                "shattered_outpost",
+                                "greenwood_fringe",
+                                "deep_iron_pit",
+                                "grey_gate_depths",
+                                "underground_river",
+                                "abyssal_temple",
+                            ),
+                        routeIndex = 5,
+                    ),
+                saveManager = SaveManager(tempDir.resolve("client-reliquary-shop-save")),
+            )
+        automationMovePlayerTo(session, interactablePoint(session, "temple_ward_reliquary"))
+        assertTrue(session.perform(PlayerCommand.Interact))
+
+        val localizer = session.localizer()
+        val capture = captureOverlay(localizer, session.renderSnapshot(), OverlayState(mode = UiMode.SHOP))
+
+        assertTrue(capture.rows.any { row -> row == localizer.text("shop.abyssal_reliquary_post.name") })
+        assertTrue(capture.rows.any { row -> row == localizer.text("ui.shop.hint.reliquary_stock") })
+        assertTrue(capture.rows.any { row -> row.contains(localizer.text("shop.service.refresh_stock.name")) })
+        assertTrue(capture.rows.any { row -> row.contains(localizer.text("ui.shop.tag.reliquary")) })
+        assertTrue(capture.rows.any { row -> row.contains(localizer.text("ui.shop.tag.once")) })
+    }
+
+    @Test
+    @Tag("clientSmoke")
+    fun `client smoke renders cadence reward source label in sidebar`() {
+        val session =
+            GameModule.newFoundationSession(
+                config =
+                    FoundationGameConfig(
+                        seed = 20260331L,
+                        zoneId = "greenwood_fringe",
+                        playerProfessionId = "rogue",
+                        zoneRoute = listOf("shattered_outpost", "greenwood_fringe"),
+                        routeIndex = 1,
+                    ),
+                saveManager = SaveManager(tempDir.resolve("client-cadence-reward-sidebar-save")),
+            )
+        automationMovePlayerTo(session, requireNotNull(automationStairPoint(session, StairDirection.DOWN)))
+        assertTrue(session.perform(PlayerCommand.Descend))
+
+        val localizer = session.localizer()
+        val capture = captureOverlay(localizer, session.renderSnapshot(), OverlayState(mode = UiMode.MAP))
+
+        assertTrue(capture.rows.any { row -> row.contains(localizer.text("ui.reward.source.cadence")) })
+        assertEquals(1, capture.rows.count { row -> row == localizer.text("ui.sidebar.recent_rewards") })
+    }
+
+    @Test
+    @Tag("clientSmoke")
     fun `client smoke covers render enabled tile path`() {
         withLwjgl3Gdx(enableAudio = false) {
             val smokeSource = SmokeCommandSource()

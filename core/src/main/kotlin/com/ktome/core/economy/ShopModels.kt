@@ -82,11 +82,13 @@ data class AffordableRescueSlotPolicy(
 @Serializable
 data class ShopInventoryState(
     val shopId: String,
+    val visitCount: Int = 0,
     val purchasedOfferIds: Set<String> = emptySet(),
     val activeRefreshableOffers: List<ShopOffer> = emptyList(),
 ) {
     init {
         require(shopId.isNotBlank()) { "ShopInventoryState.shopId must not be blank." }
+        require(visitCount >= 0) { "ShopInventoryState.visitCount must not be negative." }
         require(purchasedOfferIds.none(String::isBlank)) { "ShopInventoryState.purchasedOfferIds must not contain blank values." }
         require(activeRefreshableOffers.distinctBy(ShopOffer::id).size == activeRefreshableOffers.size) {
             "ShopInventoryState.activeRefreshableOffers must not contain duplicate offer ids."

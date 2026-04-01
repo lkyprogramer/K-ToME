@@ -50,6 +50,13 @@ class LongRunLabFullTest {
         val fullRouteBreakpointMetrics = breakpointMetrics(fullRouteReports)
         val cadenceRewardCount = reports.sumOf(ScenarioReport::cadenceRewardCount)
         val shopRefreshPurchaseCount = reports.sumOf(ScenarioReport::shopRefreshPurchaseCount)
+        val lateRunReliquaryPurchaseCount = reports.sumOf(ScenarioReport::lateRunReliquaryPurchaseCount)
+        val lateRunReliquaryVisitCount = reports.sumOf(ScenarioReport::lateRunReliquaryVisitCount)
+        val lateRunReliquaryRefreshCount = reports.sumOf(ScenarioReport::lateRunReliquaryRefreshCount)
+        val lateRunReliquaryItemPurchaseCount = reports.sumOf(ScenarioReport::lateRunReliquaryItemPurchaseCount)
+        val lateRunReliquaryNonMandatoryPurchaseCount = reports.sumOf(ScenarioReport::lateRunReliquaryNonMandatoryPurchaseCount)
+        val lateRunReliquaryShardSpent = reports.sumOf(ScenarioReport::lateRunReliquaryShardSpent)
+        val lateRunReliquaryTagDistribution = aggregateReliquaryTagDistribution(reports)
         val allScenarioAffixSynergyMetrics = affixSynergyMetrics(reports)
         val fullRouteAffixSynergyMetrics = affixSynergyMetrics(fullRouteReports)
         val allScenarioSynergyRewardMetrics = synergyRewardMetrics(reports)
@@ -101,6 +108,15 @@ class LongRunLabFullTest {
                     put("averageHeadlessTurns", averageHeadlessTurns)
                     put("cadenceRewardCount", cadenceRewardCount)
                     put("shopRefreshPurchaseCount", shopRefreshPurchaseCount)
+                    put("lateRunReliquaryPurchaseCount", lateRunReliquaryPurchaseCount)
+                    put("lateRunReliquaryVisitCount", lateRunReliquaryVisitCount)
+                    put("lateRunReliquaryRefreshCount", lateRunReliquaryRefreshCount)
+                    put("lateRunReliquaryItemPurchaseCount", lateRunReliquaryItemPurchaseCount)
+                    put("lateRunReliquaryNonMandatoryPurchaseCount", lateRunReliquaryNonMandatoryPurchaseCount)
+                    put("lateRunReliquaryShardSpent", lateRunReliquaryShardSpent)
+                    putJsonObject("lateRunReliquaryTagDistribution") {
+                        lateRunReliquaryTagDistribution.forEach { (tag, count) -> put(tag, count) }
+                    }
                     put("affixSynergyActivationCount", allScenarioAffixSynergyMetrics.activationCount)
                     putJsonObject("affixSynergyActivationDistribution") {
                         allScenarioAffixSynergyMetrics.distribution.forEach { (affixId, count) -> put(affixId, count) }
@@ -191,6 +207,13 @@ class LongRunLabFullTest {
                     appendLine("- averageHeadlessTurns: $averageHeadlessTurns")
                     appendLine("- cadenceRewardCount: $cadenceRewardCount")
                     appendLine("- shopRefreshPurchaseCount: $shopRefreshPurchaseCount")
+                    appendLine("- lateRunReliquaryPurchaseCount: $lateRunReliquaryPurchaseCount")
+                    appendLine("- lateRunReliquaryVisitCount: $lateRunReliquaryVisitCount")
+                    appendLine("- lateRunReliquaryRefreshCount: $lateRunReliquaryRefreshCount")
+                    appendLine("- lateRunReliquaryItemPurchaseCount: $lateRunReliquaryItemPurchaseCount")
+                    appendLine("- lateRunReliquaryNonMandatoryPurchaseCount: $lateRunReliquaryNonMandatoryPurchaseCount")
+                    appendLine("- lateRunReliquaryShardSpent: $lateRunReliquaryShardSpent")
+                    appendLine("- lateRunReliquaryTagDistribution: ${if (lateRunReliquaryTagDistribution.isEmpty()) "none" else lateRunReliquaryTagDistribution}")
                     appendLine("- affixSynergyActivationCount: ${allScenarioAffixSynergyMetrics.activationCount}")
                     appendLine("- affixSynergyActivationDistribution: ${if (allScenarioAffixSynergyMetrics.distribution.isEmpty()) "none" else allScenarioAffixSynergyMetrics.distribution}")
                     appendLine("- synergyAffixRewardCount: ${allScenarioSynergyRewardMetrics.rewardCount}")
@@ -235,7 +258,7 @@ class LongRunLabFullTest {
                                 "${observation.talentId}@${observation.breakpointRank}:${observation.buildHashChanged}:${observation.buildHashBeforeUnlock}->${observation.buildHashAfterUnlock}"
                             }
                         appendLine(
-                            "- class=${report.professionId}, race=${report.raceId}, seed=${report.seed}, scenarioType=${report.scenarioType.reportValue}, isFullRoute=${report.isFullRoute}, finalZone=${report.finalZoneId}, turns=${report.turns}, headless=${report.headlessTurnEquivalent}, routeHash=${report.zoneRouteHash}, route=${report.zonePath.joinToString(" -> ")}, objectives=${if (objectiveSummary.isBlank()) "none" else objectiveSummary}, buildHash=${report.buildHash ?: "unknown"}, breakpointPayoffs=${if (breakpointSummary.isBlank()) "none" else breakpointSummary}, breakpointPayoffObservations=${if (breakpointObservationSummary.isBlank()) "none" else breakpointObservationSummary}, affixSynergy=${report.affixSynergyActivationCount}:${if (report.affixSynergyActivationDistribution.isEmpty()) "none" else report.affixSynergyActivationDistribution}, cadence=${report.cadenceRewardCount}, refresh=${report.shopRefreshPurchaseCount}, milestoneRewards=${if (milestoneSummary.isBlank()) "none" else milestoneSummary}, outcome=${report.outcome}, crashedOrStalled=${report.crashedOrStalled()}",
+                            "- class=${report.professionId}, race=${report.raceId}, seed=${report.seed}, scenarioType=${report.scenarioType.reportValue}, isFullRoute=${report.isFullRoute}, finalZone=${report.finalZoneId}, turns=${report.turns}, headless=${report.headlessTurnEquivalent}, routeHash=${report.zoneRouteHash}, route=${report.zonePath.joinToString(" -> ")}, objectives=${if (objectiveSummary.isBlank()) "none" else objectiveSummary}, buildHash=${report.buildHash ?: "unknown"}, breakpointPayoffs=${if (breakpointSummary.isBlank()) "none" else breakpointSummary}, breakpointPayoffObservations=${if (breakpointObservationSummary.isBlank()) "none" else breakpointObservationSummary}, affixSynergy=${report.affixSynergyActivationCount}:${if (report.affixSynergyActivationDistribution.isEmpty()) "none" else report.affixSynergyActivationDistribution}, cadence=${report.cadenceRewardCount}, refresh=${report.shopRefreshPurchaseCount}, reliquary={visits=${report.lateRunReliquaryVisitCount}, purchases=${report.lateRunReliquaryPurchaseCount}, items=${report.lateRunReliquaryItemPurchaseCount}, refreshes=${report.lateRunReliquaryRefreshCount}, nonMandatory=${report.lateRunReliquaryNonMandatoryPurchaseCount}, spent=${report.lateRunReliquaryShardSpent}, tags=${if (report.lateRunReliquaryTagDistribution.isEmpty()) "none" else report.lateRunReliquaryTagDistribution}}, milestoneRewards=${if (milestoneSummary.isBlank()) "none" else milestoneSummary}, outcome=${report.outcome}, crashedOrStalled=${report.crashedOrStalled()}",
                         )
                         if (report.headlessTurnEquivalent > 2900 || report.outcome !is RunOutcome.Victory) {
                             val zoneHeadlessSummary =
@@ -347,6 +370,14 @@ class LongRunLabFullTest {
         assertTrue(
             fullRouteSynergyRewardMetrics.adoptionCount >= 1,
             "Expected full-route matrix to keep at least one documented synergy affix in the final build, actual=${fullRouteSynergyRewardMetrics.distribution}",
+        )
+        assertTrue(
+            fullRouteReports.any { report -> report.lateRunReliquaryShardSpent > 0 },
+            "Expected at least one full-route matrix run to spend shards at abyssal_reliquary_post, actual=${fullRouteReports.map { report -> "${report.professionId}/${report.raceId}:spent=${report.lateRunReliquaryShardSpent},visits=${report.lateRunReliquaryVisitCount},purchases=${report.lateRunReliquaryPurchaseCount}" }}",
+        )
+        assertTrue(
+            fullRouteReports.any { report -> report.lateRunReliquaryRefreshCount > 0 || report.lateRunReliquaryNonMandatoryPurchaseCount > 0 },
+            "Expected at least one full-route matrix run to make a non-mandatory or refresh reliquary spend, actual=${fullRouteReports.map { report -> "${report.professionId}/${report.raceId}:refresh=${report.lateRunReliquaryRefreshCount},nonMandatory=${report.lateRunReliquaryNonMandatoryPurchaseCount},tags=${report.lateRunReliquaryTagDistribution}" }}",
         )
     }
 
@@ -485,6 +516,13 @@ class LongRunLabFullTest {
                     .eachCount()
                     .toSortedMap(),
         )
+
+    private fun aggregateReliquaryTagDistribution(reports: List<ScenarioReport>): Map<String, Int> =
+        reports
+            .flatMap { report -> report.lateRunReliquaryTagDistribution.entries }
+            .groupingBy { entry -> entry.key }
+            .fold(0) { accumulator, entry -> accumulator + entry.value }
+            .toSortedMap()
 
     private data class BreakpointMetrics(
         val observationCount: Int,

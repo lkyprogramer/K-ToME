@@ -58,6 +58,7 @@ import com.ktome.core.resource.StaminaPools
 import com.ktome.core.save.SaveManager
 import com.ktome.core.save.SaveRestoreException
 import com.ktome.core.snapshot.CombatFeedbackTypeSnapshot
+import com.ktome.core.snapshot.RewardPresentationSourceSnapshot
 import com.ktome.core.stats.StatsCalculator
 import com.ktome.core.talent.ActiveEffect
 import com.ktome.core.talent.EffectTracker
@@ -137,6 +138,10 @@ class FoundationGameSessionTest {
 
         assertEquals(1, session.currentCadenceRewardCount())
         assertNotNull(logEventByKey(session, "log.reward.cadence.claimed") ?: logEventByKey(session, "log.reward.cadence.dropped"))
+        assertEquals(
+            RewardPresentationSourceSnapshot.CADENCE,
+            requireNotNull(session.renderSnapshot().uiState.recentRewards.lastOrNull()).source,
+        )
     }
 
     @Test
@@ -1200,10 +1205,11 @@ class FoundationGameSessionTest {
         assertTrue(session.inventoryItems().size >= baselineInventoryCount + 1)
         assertTrue(session.playerResourceView().current > 5)
         assertTrue(session.renderSnapshot().logEvents.any { event -> event.message.key == "log.objective.progress" })
+        assertTrue(session.renderSnapshot().logEvents.any { event -> event.message.key == "log.reward.support.claimed" })
         val rewardSummary =
             requireNotNull(
                 session.milestoneRewardSummaries().firstOrNull { reward ->
-                    reward.rewardSource == MilestoneRewardSource.CACHE &&
+                    reward.rewardSource == MilestoneRewardSource.SUPPORT &&
                         reward.sourceId == gateRewardSourceId &&
                         reward.qualityTier.ordinal >= ItemQuality.MAGIC.ordinal &&
                         reward.affixIds.isNotEmpty()
@@ -1220,7 +1226,7 @@ class FoundationGameSessionTest {
         val adoptedSummary =
             requireNotNull(
                 session.milestoneRewardSummaries().firstOrNull { reward ->
-                    reward.rewardSource == MilestoneRewardSource.CACHE &&
+                    reward.rewardSource == MilestoneRewardSource.SUPPORT &&
                         reward.sourceId == gateRewardSourceId
                 },
             )
@@ -1249,7 +1255,7 @@ class FoundationGameSessionTest {
         assertTrue(inventoryBaseIds(session).count { baseId -> baseId == "healing_potion" } >= 1)
         assertTrue(
             session.milestoneRewardSummaries().any { reward ->
-                reward.rewardSource == MilestoneRewardSource.CACHE &&
+                reward.rewardSource == MilestoneRewardSource.SUPPORT &&
                     reward.sourceId == gateRewardSourceId &&
                     reward.affixIds.isNotEmpty()
             },
@@ -1279,6 +1285,11 @@ class FoundationGameSessionTest {
 
         assertTrue(groundItems.any { itemId -> itemId in setOf("bandit_trophy", "emerald_charm", "hunter_bow", "stamina_draught") })
         assertTrue(session.renderSnapshot().logEvents.any { event -> event.message.key == "log.objective.progress" })
+        assertTrue(session.renderSnapshot().logEvents.any { event -> event.message.key == "log.reward.cache.claimed" })
+        assertEquals(
+            RewardPresentationSourceSnapshot.CACHE,
+            requireNotNull(session.renderSnapshot().uiState.recentRewards.lastOrNull()).source,
+        )
         assertTrue(
             session.milestoneRewardSummaries().any { reward ->
                 reward.rewardSource == MilestoneRewardSource.CACHE &&
@@ -1309,6 +1320,16 @@ class FoundationGameSessionTest {
         assertTrue(session.inventoryItems().size >= baselineInventoryCount + 1)
         assertTrue(session.playerResourceView().current > 5)
         assertTrue(session.renderSnapshot().logEvents.any { event -> event.message.key == "log.objective.progress" })
+        assertEquals(
+            RewardPresentationSourceSnapshot.SUPPORT,
+            requireNotNull(session.renderSnapshot().uiState.recentRewards.lastOrNull()).source,
+        )
+        assertTrue(
+            session.milestoneRewardSummaries().any { reward ->
+                reward.rewardSource == MilestoneRewardSource.SUPPORT &&
+                    reward.sourceId == cacheRewardSourceId(session.config.zoneId, session.currentFloor(), "mine_furnace", furnacePoint)
+            },
+        )
     }
 
     @Test
@@ -1570,6 +1591,24 @@ class FoundationGameSessionTest {
         assertEquals(VoidPressurePhase.IDLE, state.phase)
         assertTrue(hasAbyssalWardProtection(world, session.playerId))
         assertTrue(session.renderSnapshot().logEvents.any { event -> event.message.key == AbyssalRuntimeKeys.Temple.STABILIZED_LOG_KEY })
+        assertTrue(
+            world.entitiesWith(Position::class, Interactable::class).any { entityId ->
+                world.get<Interactable>(entityId)?.id == AbyssalRuntimeKeys.Temple.INTERACTABLE_ID
+            },
+        )
+
+        setShardBalance(session, 200)
+        val reliquaryShop = requireNotNull(session.renderSnapshot().uiState.activeShop)
+        assertEquals(AbyssalRuntimeKeys.Temple.SHOP_NODE_ID, reliquaryShop.shopId)
+        assertTrue(session.perform(PlayerCommand.BuyShopOffer(1)))
+        assertEquals(1, session.currentLateRunReliquaryPurchaseCount())
+        assertEquals(1, session.currentLateRunReliquaryVisitCount())
+        assertEquals(1, session.currentLateRunReliquaryItemPurchaseCount())
+        assertEquals(0, session.currentLateRunReliquaryRefreshCount())
+        assertEquals(0, session.currentLateRunReliquaryNonMandatoryPurchaseCount())
+        assertEquals(78, session.currentLateRunReliquaryShardSpent())
+        assertEquals(mapOf("PROTECTION" to 1), session.currentLateRunReliquaryPurchaseTagDistribution())
+        assertTrue(session.perform(PlayerCommand.CloseShop))
 
         state.nextCycleTurn = session.currentTurnCount()
         movePlayerTo(session, corridorPoint)
@@ -1583,6 +1622,35 @@ class FoundationGameSessionTest {
                     overlay.cells.any { cell -> cell.x == corridorPoint.x && cell.y == corridorPoint.y }
             },
         )
+    }
+
+    @Test
+    fun `claimed reliquary refuses to reopen shop while threats are visible`() {
+        val session =
+            GameModule.newFoundationSession(
+                FoundationGameConfig(seed = 20260331L, zoneId = "abyssal_temple", playerProfessionId = "templar"),
+                SaveManager(tempDir.resolve("abyssal-temple-reliquary-threat-gate-save")),
+            )
+        clearMonsters(session)
+        val reliquaryPoint = interactablePoint(session, AbyssalRuntimeKeys.Temple.INTERACTABLE_ID)
+        movePlayerTo(session, reliquaryPoint)
+
+        assertTrue(session.perform(PlayerCommand.Interact))
+        assertEquals(AbyssalRuntimeKeys.Temple.SHOP_NODE_ID, requireNotNull(session.renderSnapshot().uiState.activeShop).shopId)
+        assertTrue(session.perform(PlayerCommand.CloseShop))
+
+        installAiMonster(
+            session = session,
+            id = "reliquary_guard",
+            position = findOpenAdjacentPoint(session, reliquaryPoint),
+        )
+        assertFalse(session.perform(PlayerCommand.Interact))
+        assertNull(session.renderSnapshot().uiState.activeShop)
+        assertTrue(session.renderSnapshot().logEvents.any { event -> event.message.key == "log.shop.threatened" })
+
+        clearMonsters(session)
+        assertTrue(session.perform(PlayerCommand.Interact))
+        assertEquals(AbyssalRuntimeKeys.Temple.SHOP_NODE_ID, requireNotNull(session.renderSnapshot().uiState.activeShop).shopId)
     }
 
     @Test
@@ -3318,6 +3386,7 @@ class FoundationGameSessionTest {
                 snapshot.message.arguments.first { argument -> argument.name == "item" }.valueKey,
             )
         }
+        assertTrue(session.renderSnapshot().uiState.recentRewards.any { entry -> entry.source == RewardPresentationSourceSnapshot.BOSS })
     }
 
     @Test
@@ -3366,6 +3435,12 @@ class FoundationGameSessionTest {
         assertEquals("long_sword", rewardSummary.equippedBaseItemIdBeforeReward)
         assertTrue("route.shattered_outpost.greenwood_fringe" in session.worldProgress().claimedRouteRewards)
         assertTrue(saveManager.hasSave())
+        val routeRewardLog = requireNotNull(logEventByKey(session, "log.reward.route.claimed"))
+        assertEquals(
+            "zone.greenwood_fringe.name",
+            routeRewardLog.message.arguments.first { argument -> argument.name == "zone" }.valueKey,
+        )
+        assertTrue(session.renderSnapshot().uiState.recentRewards.any { entry -> entry.source == RewardPresentationSourceSnapshot.ROUTE })
     }
 
     @Test
@@ -3399,6 +3474,7 @@ class FoundationGameSessionTest {
                 snapshot.message.arguments.first { argument -> argument.name == "item" }.valueKey,
             )
         }
+        assertTrue(session.renderSnapshot().uiState.recentRewards.any { entry -> entry.source == RewardPresentationSourceSnapshot.BOSS })
     }
 
     @Test

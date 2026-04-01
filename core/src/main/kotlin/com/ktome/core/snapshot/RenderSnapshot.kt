@@ -168,6 +168,7 @@ data class RenderUiStateSnapshot(
     val reserveTalents: List<TalentReserveSnapshot> = emptyList(),
     val inscriptions: List<InscriptionSlotSnapshot> = emptyList(),
     val inventory: List<InventoryEntrySnapshot>,
+    val recentRewards: List<RewardPresentationEntrySnapshot> = emptyList(),
     val targetablePositions: List<GridPointSnapshot>,
     val shardBalance: Int = 0,
     val activeShop: ShopPanelSnapshot? = null,
@@ -322,9 +323,26 @@ data class InventoryEntrySnapshot(
 )
 
 @Serializable
+enum class RewardPresentationSourceSnapshot {
+    CADENCE,
+    ROUTE,
+    BOSS,
+    CACHE,
+    SUPPORT,
+}
+
+@Serializable
+data class RewardPresentationEntrySnapshot(
+    val source: RewardPresentationSourceSnapshot,
+    val sourceLabelKey: String,
+    val itemDisplayName: RenderTextTokenSnapshot,
+)
+
+@Serializable
 data class ShopPanelSnapshot(
     val shopId: String,
     val shopNameKey: String,
+    val hintLabelKeys: List<String> = emptyList(),
     val offers: List<ShopOfferSnapshot>,
     val sellEntries: List<ShopSellEntrySnapshot> = emptyList(),
 )
@@ -335,6 +353,7 @@ data class ShopOfferSnapshot(
     val labelKey: String,
     val price: Int,
     val tags: List<String> = emptyList(),
+    val tagLabelKeys: List<String> = emptyList(),
 )
 
 @Serializable
@@ -359,7 +378,8 @@ data class RouteOptionSnapshot(
     val recommendedLevelMin: Int,
     val recommendedLevelMax: Int,
     val shardReward: Int,
-    val rewardItemNameKeys: List<String> = emptyList(),
+    val guaranteedRewardItemNameKeys: List<String> = emptyList(),
+    val milestoneRewardLabelKey: String? = null,
     val rescueHintLabelKeys: List<String> = emptyList(),
     val mechanicHintKey: String? = null,
     val isReturnPath: Boolean = false,

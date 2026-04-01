@@ -191,7 +191,7 @@ class SchemaV2LoaderTest {
         assertEquals("shattered_outpost", catalog.worldGraph.startZoneId)
         assertEquals(10, catalog.worldGraph.connections.size)
         assertEquals(10, catalog.routeRewards.size)
-        assertEquals(2, catalog.shopNodes.size)
+        assertEquals(3, catalog.shopNodes.size)
         assertEquals(4, catalog.objectiveSets.single { it.id == "shattered_outpost_breach" }.placements.size)
         assertEquals(
             setOf("room_center", "boss_entry", "stairs_up", "player_start"),
@@ -199,6 +199,10 @@ class SchemaV2LoaderTest {
         )
         assertEquals(listOf("river_ferry_anchor"), catalog.objectiveSets.single { it.id == "underground_river_crossing" }.interactables)
         assertEquals(listOf("temple_ward_reliquary"), catalog.objectiveSets.single { it.id == "abyssal_temple_sanctum" }.interactables)
+        assertEquals(
+            "abyssal_reliquary_post",
+            catalog.interactables.single { it.id == "temple_ward_reliquary" }.shopNodeId,
+        )
         assertEquals("quest.bandit_camp", catalog.objectiveSets.single { it.id == "bandit_camp_cache_raid" }.linkedQuestId)
         assertEquals("cache_raid", catalog.objectiveSets.single { it.id == "bandit_camp_cache_raid" }.questObjectiveId)
         assertEquals("quest.elven_ruins", catalog.objectiveSets.single { it.id == "elven_ruins_relic_ward" }.linkedQuestId)

@@ -36,13 +36,22 @@ internal object RoutePreviewText {
             localizer.text("ui.world_map.route_note", "hint" to localizer.text(hintKey))
         }
 
-    fun rewardLine(
+    fun guaranteedRewardLine(
         localizer: Localizer,
         option: RouteOptionSnapshot,
     ): String? =
-        option.rewardItemNameKeys
+        option.guaranteedRewardItemNameKeys
             .takeIf(List<String>::isNotEmpty)
             ?.let { rewardNameKeys -> localizer.joinLocalizedKeys(LocalizedTextSeparator.LIST, rewardNameKeys) }
+            ?.let { rewards -> localizer.text("ui.world_map.guaranteed_reward", "rewards" to rewards) }
+
+    fun milestoneRewardLine(
+        localizer: Localizer,
+        option: RouteOptionSnapshot,
+    ): String? =
+        option.milestoneRewardLabelKey?.let { rewardLabelKey ->
+            localizer.text("ui.world_map.milestone_reward", "reward" to localizer.text(rewardLabelKey))
+        }
 
     private fun recommendedLevelText(
         localizer: Localizer,

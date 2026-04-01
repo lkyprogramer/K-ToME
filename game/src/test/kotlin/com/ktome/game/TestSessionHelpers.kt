@@ -19,3 +19,12 @@ internal fun interactablePoint(
         }
     return requireNotNull(world.get<Position>(entityId)).toPoint()
 }
+
+internal fun setShardBalance(
+    session: FoundationGameSession,
+    amount: Int,
+) {
+    val field = FoundationGameSession::class.java.getDeclaredField("shardBalance")
+    field.isAccessible = true
+    field.setInt(session, amount)
+}

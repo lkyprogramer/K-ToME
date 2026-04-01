@@ -32,10 +32,22 @@ class RoutePreviewTextTest {
         val mechanic = RoutePreviewText.mechanicLine(enLocalizer, option)
         val zhSummary = RoutePreviewText.summaryLine(zhLocalizer, option)
         val zhTraits = RoutePreviewText.traitLine(zhLocalizer, option)
+        val guaranteedRewardLine =
+            RoutePreviewText.guaranteedRewardLine(
+                enLocalizer,
+                option.copy(guaranteedRewardItemNameKeys = listOf("item.healing_potion.name", "item.bandit_trophy.name")),
+            )
+        val milestoneRewardLine =
+            RoutePreviewText.milestoneRewardLine(
+                enLocalizer,
+                option.copy(milestoneRewardLabelKey = "ui.world_map.milestone_reward.affix"),
+            )
 
         assertTrue(summary.contains("Recommended level 3-5"))
         assertTrue(summary.contains("Shards +20"))
         assertFalse(summary.contains("lv3_5"))
+        assertTrue(guaranteedRewardLine!!.contains("Guaranteed utility"))
+        assertTrue(milestoneRewardLine!!.contains("Milestone reward"))
         assertTrue(traits!!.contains("Route traits"))
         assertTrue(traits.contains("Mobility"))
         assertTrue(traits.contains("Cleanse"))
