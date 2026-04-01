@@ -10,6 +10,7 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
 import kotlinx.serialization.json.putJsonObject
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
@@ -341,6 +342,29 @@ class LongRunLabFullTest {
             },
             "Expected branch-inclusive matrix to keep at least one routed sample through underground_river -> crystal_cavern.",
         )
+        val expectedGuardProfileZoneCoverage =
+            mapOf(
+                "elven_ruins" to setOf("long-run-branch-elven-rogue-elf"),
+                "molten_core" to setOf("long-run-branch-molten-vanguard-dwarf"),
+                "underground_river" to
+                    (
+                        fullRouteReports.map(ScenarioReport::name).toSet() +
+                            setOf("long-run-branch-crystal-arcanist-human")
+                    ),
+            )
+        expectedGuardProfileZoneCoverage.forEach { (zoneId, expectedScenarioNames) ->
+            val zoneReports = reports.filter { report -> zoneId in report.zonePath }
+            val actualScenarioNames = zoneReports.map(ScenarioReport::name).toSet()
+            assertEquals(
+                expectedScenarioNames,
+                actualScenarioNames,
+                "Expected PR-20 focus zone '$zoneId' to keep its frozen long-run coverage set.",
+            )
+            assertTrue(
+                zoneReports.all { report -> report.success && !report.crashedOrStalled() },
+                "Expected PR-20 focus zone '$zoneId' to remain stable under long-run coverage, actual=${zoneReports.map { report -> "${report.name}:${report.zonePath}:${report.failureReason ?: report.stuckReason ?: report.outcome}" }}",
+            )
+        }
         assertTrue(
             reachedTempleCount >= 8,
             "Expected at least 8/12 full-route matrix runs to reach abyssal_temple or deeper, actual=$reachedTempleCount/${fullRouteReports.size}",

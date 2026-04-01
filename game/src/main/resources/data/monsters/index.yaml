@@ -323,6 +323,8 @@ monsters:
     baseEvasion: 6
     speed: 102
     ai: CHASE
+    # PR-20 guard-profile tightening keeps one explicit early/tutorial exception instead of
+    # pretending the onboarding lane needs the same tail cleanup as mid/late combat.
     aiProfileId: ai.guard.basic
     lootProfileId: loot.foundation.common
     resistances: { FIRE: -10, SHADOW: 10 }
@@ -452,10 +454,10 @@ monsters:
     baseEvasion: 5
     speed: 92
     ai: CHASE
-    aiProfileId: ai.guard.basic
+    aiProfileId: ai.forge.guard
     lootProfileId: loot.foundation.common
     resistances: { FIRE: 15, COLD: -10 }
-    talents: {}
+    talents: { earthshaker: 1, linebreaker: 1 }
     expReward: 46
     spawnFloors: [1, 2]
     spawnWeight: 7
@@ -607,10 +609,10 @@ monsters:
     baseEvasion: 6
     speed: 90
     ai: CHASE
-    aiProfileId: ai.guard.basic
+    aiProfileId: ai.warded_ruin.sentinel
     lootProfileId: loot.foundation.common
     resistances: { SHADOW: 15 }
-    talents: {}
+    talents: { sanctuary: 1, ritual_break: 1 }
     expReward: 50
     spawnFloors: [1, 2]
     spawnWeight: 6
@@ -867,10 +869,10 @@ monsters:
     baseEvasion: 5
     speed: 92
     ai: CHASE
-    aiProfileId: ai.guard.basic
+    aiProfileId: ai.warded_ruin.sentinel
     lootProfileId: loot.foundation.common
     resistances: { HOLY: 10, SHADOW: 10 }
-    talents: {}
+    talents: { sanctuary: 1, ritual_break: 1 }
     expReward: 48
     spawnFloors: [1, 2]
     spawnWeight: 4
@@ -918,11 +920,11 @@ monsters:
     baseAccuracy: 11
     baseEvasion: 5
     speed: 90
-    ai: CHASE
-    aiProfileId: ai.guard.basic
+    ai: KITE
+    aiProfileId: ai.forge.channeler
     lootProfileId: loot.foundation.common
     resistances: { FIRE: 15, COLD: -10 }
-    talents: {}
+    talents: { cinder_burst: 1, inferno_orb: 1 }
     expReward: 48
     spawnFloors: [1, 2]
     spawnWeight: 5
@@ -1334,11 +1336,11 @@ monsters:
     baseAccuracy: 12
     baseEvasion: 5
     speed: 91
-    ai: CHASE
-    aiProfileId: ai.guard.basic
+    ai: PATROL
+    aiProfileId: ai.river.lurker
     lootProfileId: loot.foundation.common
     resistances: { COLD: 10, SHADOW: 10 }
-    talents: {}
+    talents: { shadow_bind: 1 }
     expReward: 62
     spawnFloors: [1, 2]
     spawnWeight: 3

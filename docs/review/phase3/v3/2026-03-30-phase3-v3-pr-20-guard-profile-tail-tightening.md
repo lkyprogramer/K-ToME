@@ -157,7 +157,7 @@ game/src/test/kotlin/com/ktome/game/harness/LongRunLabFullTest.kt
 
 ```bash
 ./gradlew :game:test --tests "com.ktome.game.data.MonsterSchemaTest"
-./gradlew :game:test --tests "com.ktome.game.harness.LongRunLabFullTest"
+./gradlew :game:longRunLab --tests "*LongRunLabFullTest"
 ./gradlew longRunLab
 ./gradlew check
 ```

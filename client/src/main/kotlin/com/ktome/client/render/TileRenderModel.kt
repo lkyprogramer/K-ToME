@@ -389,6 +389,9 @@ internal object TileRenderModelBuilder {
                     shop.hintLabelKeys.forEach { hintLabelKey ->
                         rows += TileTextRow(localizer.text(hintLabelKey), TileTextTone.LIGHT_GRAY)
                     }
+                }
+                rows += TileTextRow(localizer.text("ui.controls.shop.close_hint"), TileTextTone.LIGHT_GRAY)
+                if (shop != null) {
                     rows += TileTextRow(localizer.text("ui.shop.buy"), if (overlayState.shopFocus == com.ktome.client.input.ShopFocus.BUY) TileTextTone.GOLD else TileTextTone.WHITE)
                     if (shop.offers.isEmpty()) {
                         rows += TileTextRow(localizer.text("ui.sidebar.empty"), TileTextTone.GRAY)
@@ -456,6 +459,7 @@ internal object TileRenderModelBuilder {
             }
 
             UiMode.INVENTORY -> {
+                rows += TileTextRow(localizer.text("ui.controls.inventory.close_hint"), TileTextTone.LIGHT_GRAY)
                 snapshot.uiState.inventory.forEach { entry ->
                     val label = "${entry.index + 1}. ${renderItemDisplay(localizer, entry.item)}"
                     val equipped = entry.equippedSlotId?.let { slotId -> " [${equipmentSlotLabel(localizer, slotId)}]" }.orEmpty()
