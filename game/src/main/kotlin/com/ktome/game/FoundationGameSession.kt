@@ -3898,7 +3898,7 @@ class FoundationGameSession internal constructor(
                 fallbackBaseId = spec.fallbackBaseId,
                 rewardContext =
                     RewardGenerationContext(
-                        rewardSource = MilestoneRewardSource.SUPPORT,
+                        rewardSource = MilestoneRewardSource.CACHE,
                         sourceId = sourceId,
                         floor = itemFloorForRecommendedLevel(currentZoneSchema().recommendedLevel.max),
                         qualityFloor = ItemQuality.MAGIC,
