@@ -704,6 +704,8 @@ class FoundationGameSession internal constructor(
 
     internal fun automationWorld(): World = world
 
+    internal fun automationTerrainTags(): Map<Point, Set<com.ktome.core.mapgen.TerrainTag>> = activeFloorState.terrainTags
+
     internal fun automationMovePlayerTo(point: Point) {
         require(map.isInBounds(point.x, point.y)) { "Point $point is outside the current map." }
         requireNotNull(world.get<Position>(playerId)).moveTo(point)
@@ -1139,6 +1141,7 @@ class FoundationGameSession internal constructor(
                                     visibility = visibility,
                                     terrainTypeId = terrainTypeId(tile),
                                     terrainVisualKey = terrainVisualKey(zone, tile),
+                                    terrainTags = activeFloorState.terrainTags[point]?.map { tag -> tag.name }?.sorted().orEmpty(),
                                     stairDirectionId = stairDirectionAt(point)?.name,
                                     actorEntityId =
                                         if (visibility == CellVisibilitySnapshot.VISIBLE) {
@@ -6594,7 +6597,7 @@ class FoundationGameSession internal constructor(
             }
         activeFloorState =
             SessionSnapshotMapper.captureFloor(
-                map = map,
+                generatedFloor = activeFloorState.generatedFloor,
                 stairsUp = activeFloorState.stairsUp,
                 stairsDown = activeFloorState.stairsDown,
                 rewardState = currentFloorRewardState,

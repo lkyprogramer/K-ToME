@@ -1,0 +1,19 @@
+{
+  "pipelineId": "minimal_topology",
+  "zoneId": "bandit_camp",
+  "floorIndex": 1,
+  "seed": 776323661,
+  "criticalPathReachable": true,
+  "topologyFingerprint": "62651036c95d59270f52351ab58a7582e20daa47d9dabdb6470d4c6a1dea8d4f",
+  "topologySummary": {
+    "nodeCount": 4,
+    "edgeCount": 4,
+    "primaryPathLength": 3,
+    "optionalLoopCount": 1,
+    "pathClassCounts": {
+      "CRITICAL_PATH": 3,
+      "OPTIONAL": 1
+    }
+  },
+  "terrainTagDistribution": {}
+}

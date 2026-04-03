@@ -52,6 +52,11 @@ import com.ktome.core.item.MaterialDef
 import com.ktome.core.item.StatModifier
 import com.ktome.core.map.GameMap
 import com.ktome.core.map.Point
+import com.ktome.core.mapgen.GeneratedFloor
+import com.ktome.core.mapgen.MapgenPipeline
+import com.ktome.core.mapgen.MapgenRequest
+import com.ktome.core.mapgen.TerrainTag
+import com.ktome.core.mapgen.TopologyFingerprinting
 import com.ktome.core.race.RaceTalentPointBank
 import com.ktome.core.resource.EquilibriumAffinity
 import com.ktome.core.resource.EquilibriumState
@@ -86,6 +91,7 @@ import com.ktome.core.save.PatrolPressureStateSnapshot
 import com.ktome.core.save.PlayerSnapshot
 import com.ktome.core.save.PointSnapshot
 import com.ktome.core.save.RiverCurrentStateSnapshot
+import com.ktome.core.save.SaveLoadException
 import com.ktome.core.save.SaveSnapshot
 import com.ktome.core.save.SaveRestoreException
 import com.ktome.core.save.StairSnapshot
@@ -114,15 +120,54 @@ import com.ktome.game.model.MonsterTemplate
 private const val HERO_GLYPH: Char = '@'
 private const val HERO_COLOR_HEX: String = "#FFD700"
 private const val STAIR_COLOR_HEX: String = "#D7E7FF"
+private const val LEGACY_FLOOR_ZONE_ID: String = "legacy.zone"
+private const val LEGACY_FLOOR_INDEX: Int = 1
+private const val LEGACY_FLOOR_SEED: Long = 0L
+
+private fun legacyGeneratedFloor(map: GameMap): GeneratedFloor =
+    GeneratedFloor.compatibility(
+        zoneId = LEGACY_FLOOR_ZONE_ID,
+        floorIndex = LEGACY_FLOOR_INDEX,
+        seed = LEGACY_FLOOR_SEED,
+        map = map,
+    )
 
 internal data class FloorRuntimeState(
-    val map: GameMap,
+    val generatedFloor: GeneratedFloor,
     val stairsUp: Point? = null,
     val stairsDown: Point? = null,
     var rewardState: FloorRewardStateSnapshot = FloorRewardStateSnapshot(),
     val exploredTiles: LinkedHashSet<Point> = linkedSetOf(),
     val entities: MutableList<EntitySnapshot> = mutableListOf(),
-)
+) {
+    val map: GameMap
+        get() = generatedFloor.map
+
+    val terrainTags: Map<Point, Set<TerrainTag>>
+        get() = generatedFloor.terrainTags
+
+    val topologyFingerprint: String
+        get() = TopologyFingerprinting.fingerprint(generatedFloor.topology)
+
+    val terrainTagHash: String
+        get() = TopologyFingerprinting.terrainTagHash(generatedFloor.terrainTags)
+
+    constructor(
+        map: GameMap,
+        stairsUp: Point? = null,
+        stairsDown: Point? = null,
+        rewardState: FloorRewardStateSnapshot = FloorRewardStateSnapshot(),
+        exploredTiles: LinkedHashSet<Point> = linkedSetOf(),
+        entities: MutableList<EntitySnapshot> = mutableListOf(),
+    ) : this(
+        generatedFloor = legacyGeneratedFloor(map),
+        stairsUp = stairsUp,
+        stairsDown = stairsDown,
+        rewardState = rewardState,
+        exploredTiles = exploredTiles,
+        entities = entities,
+    )
+}
 
 internal data class RestoredRunState(
     val config: FoundationGameConfig,
@@ -164,7 +209,7 @@ internal object SessionSnapshotMapper {
     }
 
     fun captureFloor(
-        map: GameMap,
+        generatedFloor: GeneratedFloor,
         stairsUp: Point?,
         stairsDown: Point?,
         rewardState: FloorRewardStateSnapshot = FloorRewardStateSnapshot(),
@@ -173,7 +218,7 @@ internal object SessionSnapshotMapper {
         excludedEntities: Set<EntityId>,
     ): FloorRuntimeState =
         FloorRuntimeState(
-            map = map,
+            generatedFloor = generatedFloor,
             stairsUp = stairsUp,
             stairsDown = stairsDown,
             rewardState = rewardState,
@@ -183,6 +228,25 @@ internal object SessionSnapshotMapper {
                     .filter { entityId -> entityId !in excludedEntities }
                     .map { entityId -> captureEntity(world, entityId) }
                     .toMutableList(),
+        )
+
+    fun captureFloor(
+        map: GameMap,
+        stairsUp: Point?,
+        stairsDown: Point?,
+        rewardState: FloorRewardStateSnapshot = FloorRewardStateSnapshot(),
+        exploredTiles: Set<Point>,
+        world: World,
+        excludedEntities: Set<EntityId>,
+    ): FloorRuntimeState =
+        captureFloor(
+            generatedFloor = legacyGeneratedFloor(map),
+            stairsUp = stairsUp,
+            stairsDown = stairsDown,
+            rewardState = rewardState,
+            exploredTiles = exploredTiles,
+            world = world,
+            excludedEntities = excludedEntities,
         )
 
     fun restoreWorld(
@@ -271,6 +335,10 @@ internal object SessionSnapshotMapper {
                 floors.sortedBy(FloorState<FloorRuntimeState>::floor).map { floorState ->
                     FloorSnapshot(
                         floorIndex = floorState.floor,
+                        zoneId = floorState.payload.generatedFloor.zoneId,
+                        floorSeed = floorState.payload.generatedFloor.seed,
+                        topologyFingerprint = floorState.payload.topologyFingerprint,
+                        terrainTagHash = floorState.payload.terrainTagHash,
                         map =
                             MapSnapshot(
                                 rows = floorState.payload.map.asGlyphRows(),
@@ -286,6 +354,12 @@ internal object SessionSnapshotMapper {
         )
 
     fun fromSaveSnapshot(snapshot: SaveSnapshot): RestoredRunState =
+        fromSaveSnapshot(snapshot = snapshot, mapgenPipeline = null)
+
+    fun fromSaveSnapshot(
+        snapshot: SaveSnapshot,
+        mapgenPipeline: MapgenPipeline?,
+    ): RestoredRunState =
         RestoredRunState(
             config =
                 FoundationGameConfig(
@@ -317,13 +391,14 @@ internal object SessionSnapshotMapper {
             activeTurnActorId = snapshot.activeTurnActorId,
             floors =
                 snapshot.floors.map { floor ->
+                    val generatedFloor = restoreGeneratedFloor(snapshot = snapshot, floor = floor, mapgenPipeline = mapgenPipeline)
                     FloorState(
                         floor = floor.floorIndex,
                         stairsUp = floor.stairsUp?.toPoint(),
                         stairsDown = floor.stairsDown?.toPoint(),
                         payload =
                             FloorRuntimeState(
-                                map = GameMap.fromAscii(rows = floor.map.rows, playerStart = floor.map.playerStart.toPoint()),
+                                generatedFloor = generatedFloor,
                                 stairsUp = floor.stairsUp?.toPoint(),
                                 stairsDown = floor.stairsDown?.toPoint(),
                                 rewardState =
@@ -339,6 +414,67 @@ internal object SessionSnapshotMapper {
                     )
                 },
         )
+
+    private fun restoreGeneratedFloor(
+        snapshot: SaveSnapshot,
+        floor: FloorSnapshot,
+        mapgenPipeline: MapgenPipeline?,
+    ): GeneratedFloor {
+        val savedMap = GameMap.fromAscii(rows = floor.map.rows, playerStart = floor.map.playerStart.toPoint())
+        val hasPhase4Metadata =
+            floor.floorSeed != 0L ||
+                floor.topologyFingerprint.isNotBlank() ||
+                floor.terrainTagHash.isNotBlank()
+        if (!hasPhase4Metadata || mapgenPipeline == null) {
+            return GeneratedFloor.compatibility(
+                zoneId = floor.zoneId,
+                floorIndex = floor.floorIndex,
+                seed = floor.floorSeed,
+                map = savedMap,
+            )
+        }
+
+        val regenerated =
+            try {
+                mapgenPipeline.run(
+                    MapgenRequest(
+                        zoneId = floor.zoneId,
+                        floorIndex = floor.floorIndex,
+                        seed = floor.floorSeed,
+                        targetWidth = snapshot.mapWidth,
+                        targetHeight = snapshot.mapHeight,
+                    ),
+                )
+            } catch (exception: SaveLoadException) {
+                throw exception
+            } catch (exception: Exception) {
+                throw InvalidSaveException(
+                    "Saved floor ${floor.zoneId}#${floor.floorIndex} failed regeneration. Start a new run.",
+                    exception,
+                )
+            }
+        if (regenerated.map.asGlyphRows() != savedMap.asGlyphRows()) {
+            throw InvalidSaveException(
+                "Saved floor ${floor.zoneId}#${floor.floorIndex} no longer matches the regenerated map contract. Start a new run.",
+            )
+        }
+        if (regenerated.map.playerStart != savedMap.playerStart) {
+            throw InvalidSaveException(
+                "Saved floor ${floor.zoneId}#${floor.floorIndex} no longer matches the regenerated player-start contract. Start a new run.",
+            )
+        }
+        if (floor.topologyFingerprint.isNotBlank() && TopologyFingerprinting.fingerprint(regenerated.topology) != floor.topologyFingerprint) {
+            throw InvalidSaveException(
+                "Saved floor ${floor.zoneId}#${floor.floorIndex} failed topology fingerprint verification. Start a new run.",
+            )
+        }
+        if (floor.terrainTagHash.isNotBlank() && TopologyFingerprinting.terrainTagHash(regenerated.terrainTags) != floor.terrainTagHash) {
+            throw InvalidSaveException(
+                "Saved floor ${floor.zoneId}#${floor.floorIndex} failed terrain-tag hash verification. Start a new run.",
+            )
+        }
+        return regenerated
+    }
 
     private fun captureEntity(
         world: World,

@@ -1,0 +1,21 @@
+{
+  "pipelineId": "bsp_compat",
+  "zoneId": "crystal_cavern",
+  "floorIndex": 1,
+  "seed": 2042817317,
+  "criticalPathReachable": true,
+  "topologyFingerprint": "056d37668455cf361f1c1e76537f6c290f133dfacac3c0a68700910c8c5ca19e",
+  "topologySummary": {
+    "nodeCount": 13,
+    "edgeCount": 12,
+    "primaryPathLength": 13,
+    "optionalLoopCount": 0,
+    "pathClassCounts": {
+      "CRITICAL_PATH": 13
+    }
+  },
+  "terrainTagDistribution": {
+    "ICE": 35,
+    "WATER": 60
+  }
+}
