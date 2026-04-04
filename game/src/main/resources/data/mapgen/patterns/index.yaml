@@ -1,0 +1,41 @@
+patternRooms:
+  - id: pattern.greenwood.cross_clearing
+    baseRoomId: room.forest.glade
+    patternId: cross_pillars
+    requiredTags: [forest, sightline]
+    spawnWeight: 4
+  - id: pattern.greenwood.boardwalk
+    baseRoomId: room.bog.boardwalk
+    patternId: boardwalk_lane
+    requiredTags: [bog, bridge]
+    spawnWeight: 5
+  - id: pattern.deep_iron.split_gallery
+    baseRoomId: room.mine.gallery
+    patternId: split_hall
+    requiredTags: [mine, sightline]
+    spawnWeight: 4
+  - id: pattern.deep_iron.forge_aisles
+    baseRoomId: room.forge.works
+    patternId: forge_aisles
+    requiredTags: [forge]
+    spawnWeight: 5
+  - id: pattern.underground_river.channels
+    baseRoomId: room.river.basin
+    patternId: shallow_channels
+    requiredTags: [bridge]
+    spawnWeight: 4
+  - id: pattern.underground_river.crystal_ring
+    baseRoomId: room.crystal.bank
+    patternId: ring_walk
+    requiredTags: [shrine]
+    spawnWeight: 3
+  - id: pattern.abyssal_temple.sanctum
+    baseRoomId: room.ruin.sanctum
+    patternId: sanctum_ring
+    requiredTags: [shrine, ritual]
+    spawnWeight: 5
+  - id: pattern.abyssal_temple.catacomb_cells
+    baseRoomId: room.oil.catacomb
+    patternId: cell_blocks
+    requiredTags: [ritual]
+    spawnWeight: 4

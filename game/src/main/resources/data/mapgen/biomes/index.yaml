@@ -1,0 +1,50 @@
+biomeFamilies:
+  - id: forest
+    primaryTileSet: tileset.forest_edge
+    secondaryTileSet:
+    terrainTagWeights:
+      WATER: 0.06
+    allowedRoomTags: [forest, sightline, hidden_cache, ambush, general]
+  - id: bog
+    primaryTileSet: tileset.forest_edge
+    secondaryTileSet: tileset.shadow_depths
+    terrainTagWeights:
+      WATER: 0.18
+    allowedRoomTags: [bog, bridge, hidden_cache, ambush, general]
+  - id: mine
+    primaryTileSet: tileset.mine
+    secondaryTileSet:
+    terrainTagWeights:
+      OIL: 0.10
+    allowedRoomTags: [mine, sightline, forge, hidden_cache, general]
+  - id: forge
+    primaryTileSet: tileset.mine
+    secondaryTileSet: tileset.shadow_depths
+    terrainTagWeights:
+      OIL: 0.18
+    allowedRoomTags: [forge, sightline, hidden_cache, shrine, general]
+  - id: flooded_cavern
+    primaryTileSet: tileset.shadow_depths
+    secondaryTileSet:
+    terrainTagWeights:
+      WATER: 0.22
+    allowedRoomTags: [flooded_cavern, bridge, hidden_cache, ambush, general]
+  - id: crystal_bank
+    primaryTileSet: tileset.shadow_depths
+    secondaryTileSet: tileset.ruins
+    terrainTagWeights:
+      WATER: 0.10
+      ICE: 0.16
+    allowedRoomTags: [crystal_bank, shrine, sightline, hidden_cache, general]
+  - id: ruin
+    primaryTileSet: tileset.ruins
+    secondaryTileSet:
+    terrainTagWeights:
+      OIL: 0.06
+    allowedRoomTags: [ruin, shrine, ritual, hidden_cache, general]
+  - id: oil_catacomb
+    primaryTileSet: tileset.shadow_depths
+    secondaryTileSet: tileset.ruins
+    terrainTagWeights:
+      OIL: 0.20
+    allowedRoomTags: [oil_catacomb, ritual, hidden_cache, ambush, general]

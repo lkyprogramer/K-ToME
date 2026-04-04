@@ -21,7 +21,7 @@ import com.ktome.core.fov.Shadowcasting
 import com.ktome.core.item.AffixSelectionContext
 import com.ktome.core.map.Point
 import com.ktome.core.map.Room
-import com.ktome.core.mapgen.BspBackedMapgenPipeline
+import com.ktome.core.mapgen.HybridTopologyMapgenPipeline
 import com.ktome.core.mapgen.MapgenRequest
 import com.ktome.core.random.SplitMix64RandomSource
 import com.ktome.core.resource.ResourceType
@@ -41,7 +41,10 @@ import com.ktome.game.i18n.GameLocale
 import com.ktome.game.factory.BossFactory
 import com.ktome.game.factory.EntityFactory
 import com.ktome.game.factory.ItemFactory
+import com.ktome.game.mapgen.SchemaMapgenContentCatalogFactory
 import com.ktome.game.mapgen.SchemaZoneMapgenProfileResolver
+import com.ktome.game.mapgen.SchemaZoneRewardProfileResolver
+import com.ktome.core.mapgen.BspBackedMapgenPipeline
 import com.ktome.game.model.BossDefinition
 import com.ktome.game.model.MonsterTemplate
 import com.ktome.game.telegraph.TelegraphRegistry
@@ -274,7 +277,17 @@ object GameModule {
         val schemaCatalog = loader.loadSchemaCatalog()
         val talents = loader.loadTalentDefinitions()
         val statusCatalog = loader.loadStatusCatalog()
-        val zoneMapgenProfileResolver = SchemaZoneMapgenProfileResolver(schemaCatalog.zones)
+        val mapgenContentCatalog = SchemaMapgenContentCatalogFactory.from(schemaCatalog)
+        val zoneMapgenProfileResolver =
+            SchemaZoneMapgenProfileResolver(
+                zones = schemaCatalog.zones,
+                profiles = schemaCatalog.zoneMapgenProfiles,
+            )
+        val zoneRewardProfileResolver =
+            SchemaZoneRewardProfileResolver(
+                zones = schemaCatalog.zones,
+                profiles = schemaCatalog.zoneRewardProfiles,
+            )
         return GameContent(
             talents = talents,
             statuses = schemaCatalog.statuses,
@@ -290,7 +303,18 @@ object GameModule {
             telegraphRegistry = TelegraphRegistry(schemaCatalog.telegraphSpecs.associateBy { spec -> spec.id }),
             threatProfileRegistry = ThreatProfileRegistry(schemaCatalog.threatProfiles.associateBy { profile -> profile.id }),
             zoneMapgenProfileResolver = zoneMapgenProfileResolver,
-            mapgenPipeline = BspBackedMapgenPipeline(profileResolver = zoneMapgenProfileResolver),
+            zoneRewardProfileResolver = zoneRewardProfileResolver,
+            mapgenContentCatalog = mapgenContentCatalog,
+            mapgenPipeline =
+                RoutedMapgenPipeline(
+                    zones = schemaCatalog.zones,
+                    migratedZonePipeline =
+                        HybridTopologyMapgenPipeline(
+                            profileResolver = zoneMapgenProfileResolver,
+                            contentCatalog = mapgenContentCatalog,
+                        ),
+                    compatibilityPipeline = BspBackedMapgenPipeline(profileResolver = zoneMapgenProfileResolver),
+                ),
         ).also { content ->
             validateAiProfileContracts(content)
             validateWorldStructureContracts(content)
@@ -517,7 +541,7 @@ object GameModule {
                         world = world,
                         template = template,
                         position = spawnPoint,
-                        patrolRoute = if (resolveAiType(template) == AIType.PATROL) buildPatrolRoute(room) else null,
+                        patrolRoute = if (resolveAiType(template) == AIType.PATROL) buildPatrolRoute(room = room, map = map) else null,
                     )
                     occupiedPoints += spawnPoint
                 }
@@ -762,15 +786,10 @@ object GameModule {
         return result.ifEmpty { listOf(room.center) }.take(count)
     }
 
-    private fun buildPatrolRoute(room: Room): PatrolRoute {
-        val points = listOf(
-            Point(room.left + 1, room.top + 1),
-            Point(room.right - 1, room.top + 1),
-            Point(room.right - 1, room.bottom - 1),
-            Point(room.left + 1, room.bottom - 1),
-        ).distinct()
-        return PatrolRoute(points)
-    }
+    private fun buildPatrolRoute(
+        room: Room,
+        map: com.ktome.core.map.GameMap,
+    ): PatrolRoute = PatrolRoute(buildPatrolWaypoints(room = room, map = map))
 
     private fun chooseDownstairs(
         map: com.ktome.core.map.GameMap,
@@ -1671,4 +1690,34 @@ object GameModule {
         )
 
     private fun defaultSaveDir(): Path = Path.of(System.getProperty("user.home"), ".ktome")
+}
+
+internal fun buildPatrolWaypoints(
+    room: Room,
+    map: com.ktome.core.map.GameMap,
+): List<Point> {
+    val perimeterPoints =
+        listOf(
+            Point(room.left + 1, room.top + 1),
+            Point(room.right - 1, room.top + 1),
+            Point(room.right - 1, room.bottom - 1),
+            Point(room.left + 1, room.bottom - 1),
+        ).filter { point ->
+            room.contains(point) &&
+                map.isInBounds(point.x, point.y) &&
+                !map[point].blocksMovement
+        }
+    if (perimeterPoints.isNotEmpty()) {
+        return perimeterPoints.distinct()
+    }
+    return buildList {
+        for (y in room.top + 1 until room.bottom) {
+            for (x in room.left + 1 until room.right) {
+                val point = Point(x, y)
+                if (map.isInBounds(x, y) && !map[point].blocksMovement) {
+                    add(point)
+                }
+            }
+        }
+    }.distinct().ifEmpty { listOf(room.center) }
 }

@@ -5,6 +5,14 @@ import com.ktome.core.ai.BossPhaseDef
 import com.ktome.core.ai.TelegraphSpec
 import com.ktome.core.ai.ThreatProfileDef
 import com.ktome.core.inscription.InscriptionDef
+import com.ktome.core.mapgen.BiomeFamilyDef
+import com.ktome.core.mapgen.PatternRoomDef
+import com.ktome.core.mapgen.PatternTemplateDef
+import com.ktome.core.mapgen.RoomDef
+import com.ktome.core.mapgen.VaultDef
+import com.ktome.core.mapgen.VaultTemplateDef
+import com.ktome.core.mapgen.ZoneMapgenProfile
+import com.ktome.core.mapgen.ZoneRewardProfile
 import com.ktome.core.economy.AffordableRescueSlotPolicy
 import com.ktome.core.economy.RescueInventoryPolicy
 import com.ktome.core.economy.ShopNode
@@ -54,6 +62,14 @@ data class SchemaCatalog(
     val aiProfiles: List<AIProfile>,
     val arenas: List<NamedSchemaRef>,
     val ambientProfiles: List<NamedSchemaRef>,
+    val roomDefs: List<RoomDef> = emptyList(),
+    val patternTemplates: List<PatternTemplateDef> = emptyList(),
+    val patternRooms: List<PatternRoomDef> = emptyList(),
+    val vaultTemplates: List<VaultTemplateDef> = emptyList(),
+    val vaults: List<VaultDef> = emptyList(),
+    val biomeFamilies: List<BiomeFamilyDef> = emptyList(),
+    val zoneMapgenProfiles: List<ZoneMapgenProfile> = emptyList(),
+    val zoneRewardProfiles: List<ZoneRewardProfile> = emptyList(),
     val visualKeys: Set<String>,
     val audioProfiles: Set<String>,
 )
@@ -362,6 +378,8 @@ data class ZoneSchemaV2(
     val objectiveSetId: String?,
     val shopNodeId: String? = null,
     val uniqueContentTag: String? = null,
+    val mapgenProfileId: String? = null,
+    val rewardProfileId: String? = null,
 )
 
 data class InteractableSchemaV2(

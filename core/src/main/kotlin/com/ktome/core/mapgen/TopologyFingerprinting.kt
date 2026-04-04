@@ -17,7 +17,7 @@ object TopologyFingerprinting {
                     topology.nodes
                         .sortedBy { node -> node.id.value }
                         .joinToString(separator = ";") { node ->
-                            "${node.id.value}:${node.roomDefId}:${node.pathClass.name}:${node.tags.sorted().joinToString(",")}"
+                            "${node.id.value}:${node.roomDefId}:${node.pathClass.name}:${node.biomeFamilyId ?: "-"}:${node.tags.sorted().joinToString(",")}"
                         },
                 )
                 append("|edges=")

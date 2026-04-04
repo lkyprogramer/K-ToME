@@ -782,18 +782,16 @@ internal object ZoneMechanicRuntime {
         if (laneCells.isEmpty()) {
             return null
         }
-        val laneSet = laneCells.toSet()
+        val pathToAnchor = routePath(map = map, start = routeStart, goal = anchor)
+        val pathToExit = routePath(map = map, start = anchor, goal = routeEnd)
         val corridorCells =
-            ((routePath(map = map, start = routeStart, goal = anchor) + routePath(map = map, start = anchor, goal = routeEnd)).distinct())
-                .filter(laneSet::contains)
-                .ifEmpty {
-                    laneCells
-                        .sortedWith(
-                            compareBy<Point> { point -> point.chebyshevDistanceTo(anchor) }
-                                .thenBy(Point::y)
-                                .thenBy(Point::x),
-                        ).take(4)
-                }
+            templeCorridorCells(
+                laneCells = laneCells,
+                pathToAnchor = pathToAnchor,
+                pathToExit = pathToExit,
+                anchor = anchor,
+                horizontalBand = horizontalBand,
+            )
         return AbyssalTemplePressureSpec(
             laneCells = laneCells,
             corridorCells = corridorCells,
@@ -1040,6 +1038,49 @@ internal object ZoneMechanicRuntime {
             return emptyList()
         }
         return safeCells.take((safeCells.size / 2).coerceAtLeast(1))
+    }
+
+    private fun templeCorridorCells(
+        laneCells: List<Point>,
+        pathToAnchor: List<Point>,
+        pathToExit: List<Point>,
+        anchor: Point,
+        horizontalBand: Boolean,
+    ): List<Point> {
+        val laneSet = laneCells.toSet()
+        val routedCells =
+            (pathToAnchor + pathToExit)
+                .filter(laneSet::contains)
+                .distinct()
+        val fallbackCells =
+            laneCells.filter { point ->
+                if (horizontalBand) {
+                    abs(point.x - anchor.x) <= 1
+                } else {
+                    abs(point.y - anchor.y) <= 1
+                }
+            }
+        val sortedLaneCells =
+            laneCells.sortedWith(
+                compareBy<Point> { point -> point.chebyshevDistanceTo(anchor) }
+                    .thenBy(Point::y)
+                    .thenBy(Point::x),
+            )
+        val corridorSeed =
+            when {
+                routedCells.isNotEmpty() && routedCells.size < laneSet.size -> routedCells
+                fallbackCells.isNotEmpty() && fallbackCells.toSet().size < laneSet.size -> fallbackCells
+                else -> sortedLaneCells.take((laneSet.size / 2).coerceAtLeast(1))
+            }
+        val normalized = corridorSeed.distinct()
+        if (laneSet.size <= 1) {
+            return normalized.take(1)
+        }
+        return if (normalized.toSet().size < laneSet.size) {
+            normalized
+        } else {
+            sortedLaneCells.take(laneSet.size - 1)
+        }
     }
 
     private fun routePath(

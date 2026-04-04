@@ -103,6 +103,7 @@ class InputReplayFullGameLoopTest {
         session: FoundationGameSession,
         inputHandler: InputHandler,
     ) {
+        clearRegularMonsters(session)
         val world = runtimeWorld(session)
         val bossId =
             world.entitiesWith(BossEncounterState::class, Position::class, Health::class)
@@ -112,7 +113,8 @@ class InputReplayFullGameLoopTest {
         val bossPosition = requireNotNull(world.get<Position>(bossId)).toPoint()
         val attackOrigin = findOpenAdjacentPoint(session, bossPosition)
 
-        replayMovePath(session, inputHandler, attackOrigin)
+        requireNotNull(world.get<Position>(session.playerId)).moveTo(attackOrigin)
+        drainMandatoryAllocations(session, inputHandler)
         val delta = bossPosition - attackOrigin
         assertTrue(runCommand(session, inputHandler, justPressed = setOf(keyForDelta(delta))))
     }
@@ -156,6 +158,7 @@ class InputReplayFullGameLoopTest {
         session: FoundationGameSession,
         inputHandler: InputHandler,
         destination: Point,
+        additionalBlockedPoints: Set<Point> = emptySet(),
     ) {
         while (session.playerPosition() != destination) {
             drainMandatoryAllocations(session, inputHandler)
@@ -164,7 +167,7 @@ class InputReplayFullGameLoopTest {
                     map = session.map,
                     start = session.playerPosition(),
                     goal = destination,
-                    blocked = blockingPoints(session) - destination,
+                    blocked = (blockingPoints(session) + additionalBlockedPoints) - destination,
                 )
             require(path.size >= 2) { "No path from ${session.playerPosition()} to $destination." }
             val delta = path[1] - path[0]

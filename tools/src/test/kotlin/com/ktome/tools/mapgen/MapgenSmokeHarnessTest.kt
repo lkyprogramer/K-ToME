@@ -23,7 +23,15 @@ class MapgenSmokeHarnessTest {
         assertTrue(Files.exists(run.summaryPath), "Expected summary report at ${run.summaryPath}")
         assertTrue(Files.exists(run.seedsPath), "Expected per-seed report at ${run.seedsPath}")
         val payload = Json.parseToJsonElement(Files.readString(run.summaryPath)).jsonObject
-        assertEquals(run.distinctSeedCount, payload.getValue("summary").jsonObject.getValue("distinctSeedCount").jsonPrimitive.content.toInt())
+        val summary = payload.getValue("summary").jsonObject
+        assertEquals(run.distinctSeedCount, summary.getValue("distinctSeedCount").jsonPrimitive.content.toInt())
         assertEquals("zh-CN", payload.getValue("header").jsonObject.getValue("locale").jsonPrimitive.content)
+        assertTrue(summary.containsKey("vaultRewardBudgetBuckets"), "Summary should expose vault reward budget buckets.")
+        assertTrue(summary.containsKey("vaultThreatBudgetBuckets"), "Summary should expose vault threat budget buckets.")
+        assertTrue(summary.containsKey("biomeFamilyUsage"), "Summary should expose biome family usage.")
+        assertTrue(summary.containsKey("biomeMixCounts"), "Summary should expose biome family mix counts.")
+        assertTrue(summary.containsKey("maxLoopEdgeRatio"), "Summary should expose loop edge ratio statistics.")
+        assertTrue(summary.containsKey("averageLoopEdgeRatio"), "Summary should expose average loop edge ratio statistics.")
+        assertTrue(summary.getValue("casesWithVaults").jsonPrimitive.content.toInt() > 0, "Hybrid planner should place at least one vault across the smoke corpus.")
     }
 }

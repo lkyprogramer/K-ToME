@@ -57,12 +57,12 @@ class GoldenScreenshotHarnessTest {
             listOf(
                 "36fffb5f8ea3ff2f78486ee5d520278135f39f61a44a7cb9d4cf60317a607ade",
                 "38c2efe56098462e01a8dd93999413b837058cb8591cc49a5de2b93023817ff9",
-                "6bef8b38011311a9da86b222dd9287c97eb0c0306234d5e3adef3e1fca35d109",
+                "26423e8f7a0559861408bd249ac36e70089d9154c98cb0ceffbea134009e7b84",
                 "d6762902f95528e8f8d67e2b95ea9f55aa4a00def3ffc298b3673be75d8b98f4",
                 "aefc22e5976562bc54fd611c36c53035fea53edf1ed224bba01338f1f9e71fe3",
                 "511542b3a7dafb4fe22de3f96e5ced6bbf18ab3246b9eb8de55dff01fd8924a2",
                 "a296b1f167e7c94bd49822d0c8a4d7547575d168fdf2853f514bed49e16d5abf",
-                "085b1ebf2833b19dc7299c1aac6c3b5e91da89c082bdb4b5e84fad5d4ea48d7d",
+                "74dfcd1b17aba4877014df03fb033d5e8384069f8c55dd0367b9ec003c34c0e1",
                 "602c45c56328319836afec010e8e0043cc1645518da8eb66442358aaab6a0179",
                 "e7bbe99fee278f0604f99649ea8d350298df0d2dd573a5b86311912f66ebe923",
             ),
@@ -92,10 +92,10 @@ class GoldenScreenshotHarnessTest {
         assertEquals(
             listOf(
                 "01b9b888cb9ddd700152299645d99fbc31ef6a682938368bece8d21bd138f521",
-                "b9650bcd565c3ff93bc21a69f8dd1cff7f98e280b70ee5165776cffda6087595",
+                "c6ff0f73187d2791080e22f88e8a9bbd42bdb68c316f7ed597bac2a7815668d9",
                 "ef919e196b92e50815a0266d09fff7963269fab812c7ef60c15043d0f3773422",
                 "ac0e06b55ba244e1a47bd0a10622d4649699d93f909429f63c7d9bdc514c04f4",
-                "9b32e5149b4b39643aaaf9d591bed494df321f1273cf78c341eef45b33029674",
+                "a3e30dfdc59fab2dfb7caf36c8a9b09b7e1b23a7b0663ebdd013af10465a1795",
                 "befd2af7f6cc3322ede402ad65342db3dbe6fae49cfbb97b84c0e2549ad1611a",
             ),
             english + chinese,

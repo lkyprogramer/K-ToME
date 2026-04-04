@@ -1,0 +1,57 @@
+vaults:
+  - id: vault.greenwood.briar_cache
+    templateId: briar_cache
+    pathClass: OPTIONAL
+    threatBudget: 4
+    rewardBudget: 6
+    allowOnBiomeFamilies: [forest, bog]
+    requiredTerrainTags: []
+  - id: vault.greenwood.smuggler_cache
+    templateId: smuggler_cache
+    pathClass: OPTIONAL
+    threatBudget: 5
+    rewardBudget: 7
+    allowOnBiomeFamilies: [forest, bog]
+    requiredTerrainTags: [WATER]
+  - id: vault.deep_iron.slag_armory
+    templateId: slag_armory
+    pathClass: OPTIONAL
+    threatBudget: 6
+    rewardBudget: 7
+    allowOnBiomeFamilies: [mine, forge]
+    requiredTerrainTags: [OIL]
+  - id: vault.deep_iron.forge_lockbox
+    templateId: smuggler_cache
+    pathClass: OPTIONAL
+    threatBudget: 5
+    rewardBudget: 6
+    allowOnBiomeFamilies: [mine, forge]
+    requiredTerrainTags: [OIL]
+  - id: vault.underground_river.sunken_reliquary
+    templateId: sunken_reliquary
+    pathClass: OPTIONAL
+    threatBudget: 7
+    rewardBudget: 6
+    allowOnBiomeFamilies: [flooded_cavern, crystal_bank]
+    requiredTerrainTags: [WATER, ICE]
+  - id: vault.underground_river.crystal_cache
+    templateId: crystal_cache
+    pathClass: OPTIONAL
+    threatBudget: 6
+    rewardBudget: 8
+    allowOnBiomeFamilies: [crystal_bank]
+    requiredTerrainTags: [ICE]
+  - id: vault.abyssal_temple.oil_reliquary
+    templateId: oil_reliquary
+    pathClass: OPTIONAL
+    threatBudget: 8
+    rewardBudget: 8
+    allowOnBiomeFamilies: [ruin, oil_catacomb]
+    requiredTerrainTags: [OIL]
+  - id: vault.abyssal_temple.warded_archive
+    templateId: crystal_cache
+    pathClass: OPTIONAL
+    threatBudget: 7
+    rewardBudget: 6
+    allowOnBiomeFamilies: [ruin, oil_catacomb]
+    requiredTerrainTags: [OIL]

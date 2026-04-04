@@ -13,14 +13,25 @@ class BspBackedMapgenPipeline(
                 seed = request.seed,
                 config = BspConfig(width = request.targetWidth, height = request.targetHeight),
             ).generate()
-        return GeneratedFloor(
+        val topology = LinearTopologyProjector.project(map)
+        val rooms = CompatibilityRoomProjector.project(map = map, topology = topology)
+        val terrainTags =
+            TerrainTagPainter.paint(
+                map = map,
+                profile = profile,
+                seed = request.seed,
+                rooms = rooms,
+                biomeFamilies = emptyMap(),
+                seededTags = emptyMap(),
+            )
+        return GeneratedFloor.compatibility(
             zoneId = request.zoneId,
             floorIndex = request.floorIndex,
             seed = request.seed,
-            topology = LinearTopologyProjector.project(map),
-            terrainTags = TerrainTagPainter.paint(map = map, profile = profile, seed = request.seed),
-            entrances = emptyList(),
             map = map,
+            terrainTags = terrainTags,
+            topology = topology,
+            biomeFamilyIds = profile.allowedBiomeFamilies.sorted().take(2),
         )
     }
 }

@@ -408,11 +408,11 @@ class LongRunLabFullTest {
     private fun fullRouteMatrixSpecs(): List<ScenarioSpec> {
         val professions = listOf("vanguard", "arcanist", "rogue", "templar")
         val races = listOf("human", "elf", "dwarf")
-        return professions.flatMapIndexed { professionIndex, professionId ->
-            races.mapIndexed { raceIndex, raceId ->
+        return professions.flatMap { professionId ->
+            races.map { raceId ->
                 ScenarioSpec(
                     name = "long-run-full-$professionId-$raceId",
-                    seed = 20260330L + professionIndex * 10L + raceIndex,
+                    seed = LongRunLabSeedBank.fullRouteMatrixSeed(professionId = professionId, raceId = raceId),
                     professionId = professionId,
                     raceId = raceId,
                     zoneId = FOUNDATION_ZONE_ROUTE.first(),
