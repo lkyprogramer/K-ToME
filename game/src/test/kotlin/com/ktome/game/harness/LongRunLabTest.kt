@@ -49,8 +49,8 @@ class LongRunLabTest {
                     professionId = "rogue",
                 ),
                 fullRouteSmokeSpec(
-                    name = "long-run-templar-20260315",
-                    seed = 20260315L,
+                    name = "long-run-templar-20260360",
+                    seed = LongRunLabSeedBank.fullRouteMatrixSeed(professionId = "templar", raceId = "human"),
                     professionId = "templar",
                 ),
             ).map(harness::run)
