@@ -185,6 +185,24 @@ build.gradle.kts
 2. 凡新增表现必须复用正式 `nameKey / descKey / visualKey / audioProfile`。
 3. 为 `SearchAction` 提供最小反馈链路：输入提示、尝试结果、reveal 后状态切换。
 
+### 5.4 `tools / white-box` 补充改造
+
+1. `hiddenContentHarness` 继续作为业务主 alias，同时新增或内联输出统一 white-box 报告；正式 domain 名称固定为 `whiteBoxHiddenContent`。
+2. `whiteBoxHiddenContent` 必须加入：
+   - `whiteBoxVerify`
+   - `phase4Report`
+3. 该 domain 的 case artifact 至少包括：
+   - trigger timeline
+   - `SearchAction` 结果表
+   - secret zone entry / return bridge proof
+   - reward bridge 摘要
+4. aggregate rule 至少覆盖：
+   - `>=30%` run 触发 hidden event
+   - `>=10%` run 发现 secret zone
+   - 每个 target zone 非零触发
+   - hidden content 不承载主线硬门槛
+5. `hiddenContentHarness` 与 `whiteBoxHiddenContent` 可以复用同一 runner，但不得形成“统计报告一套、AI artifact 一套”的双重真源。
+
 ## 6. 测试与自证
 
 ### 6.1 必测行为
@@ -201,6 +219,9 @@ build.gradle.kts
 ```bash
 ./gradlew :core:test
 ./gradlew hiddenContentHarness
+./gradlew whiteBoxHiddenContent
+./gradlew whiteBoxVerify
+./gradlew phase4Report
 ./gradlew clientSmoke
 ./gradlew goldenScreenshot
 ```
@@ -211,6 +232,26 @@ build.gradle.kts
 2. 至少进入一次 secret zone 并确认能回主线。
 3. 检查 log / inspect / route 文本可读，不暴露内部 id。
 4. 至少手动执行一次 `SearchAction`，确认失败反馈、成功反馈和 reveal 后状态变化都清晰可见。
+
+### 6.4 统一白盒框架验证
+
+1. `whiteBoxHiddenContent` 必须自动断言：
+   - hidden event 默认只出现在 `OPTIONAL / SECRET`
+   - secret zone 至少包含正式奖励节点
+   - reward bridge 不绕过 `LootBudget`
+   - `SearchAction` 失败不阻断主线
+   - `resolvedReturnBridgeNodeId` 与 `SolvabilityProof` 一致
+2. AI triage 入口固定为：
+   - `whitebox-hidden-content-summary.json`
+   - `whitebox-hidden-content-cases.jsonl`
+   - per-case artifacts
+3. 失败 case 必须能反查：
+   - `zoneId`
+   - seed
+   - `searchBindingId`
+   - `entranceBindingId`
+   - `resolvedReturnBridgeNodeId`
+   - `searchActionResult`
 
 ## 7. 资源生成计划
 
@@ -249,3 +290,4 @@ build.gradle.kts
 3. client 可读性满足白盒验证，不再依赖作者记忆触发路径。
 4. hidden content 不再只是“被动偶遇”，至少有一条正式的主动搜索路径。
 5. 静态 schema 不再直接持有 runtime node id；return bridge 通过 anchor/policy 绑定再实例化。
+6. `whiteBoxHiddenContent` 已接入统一白盒框架，可作为 `PR-07` 的 AI 主验证入口。

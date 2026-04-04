@@ -261,6 +261,18 @@ data class ZoneRewardProfile(
 2. monster / boss / chest 掉落入口改为传入 `LootRollContext`。
 3. 保持现有 `lootProfiles` registry，但让其消费基础 `RarityTier` 结果与 special tier eligibility，而不是直接决定 quality。
 
+### 5.3 `tools / white-box` 补充改造
+
+1. 本 PR 不直接交付 `whiteBoxLoot` root alias，但必须把 `PR-05` 会消费的 white-box 输入合同先冻结。
+2. `LootRollContext / LootBudget / RarityTier / SpecialTierEligibility / PityTracker` 必须都能稳定映射到结构化 `JsonObject`，供后续 `WhiteBoxCaseReport.facts` 与 `WhiteBoxAggregateReport.metrics` 直接复用。
+3. `HarnessReportHeader -> VerificationReportHeader` 的映射链必须保留：
+   - `lootFormulaVersion`
+   - `specialTierEligibilityVersion`
+   - `activePackIds`
+   - `activePackManifestVersions`
+4. 任何新的 loot trace、golden 或 batch 输出都必须沿用 `seed + zoneId + floorIndex` 可 join 键，不能再发明只在 loot 域内部可读的局部 key。
+5. 本 PR 结束时，`PR-05` 不应再需要从 runtime 对象临时反推 budget/rarity 语义；它应能直接消费这里冻结好的 typed DTO 与报告字段。
+
 ## 6. 测试与自证
 
 ### 6.1 必测行为
@@ -283,9 +295,23 @@ data class ZoneRewardProfile(
 1. `lootBalanceLab` 的正式 root alias 和 batch 报告在 `PR-05` 落地。
 2. 本 PR 至少要把 `PR-05` 将要消费的 `LootRollContext / LootBudget` 输入输出 contract 固定下来。
 
+### 6.3 统一白盒框架预埋验证
+
+1. `:core:test` 必须额外覆盖：
+   - `LootBudgetResolver` 的确定性
+   - `RarityTier -> ItemQuality` 兼容映射
+   - `magicFind` clamp 边界
+   - `PityTracker` 重置条件
+2. 需补一组 contract 级测试，确保后续 `whiteBoxLoot` 可以直接消费：
+   - `LootRollContext` 序列化 shape 稳定
+   - `LootBudget` / `SpecialTierEligibility` 字段不漂移
+   - `lootFormulaVersion / specialTierEligibilityVersion` 能进入统一报告头
+3. 本 PR 虽不要求 `whiteBoxLoot` 任务落地，但必须让 `PR-05` 无需反改预算公式就能把这些字段接进统一 white-box 报告。
+
 ## 7. 出口门禁
 
 1. `LootBudget`、`RarityTier`、`ZoneRewardProfile` 与 `SpecialTierEligibility` 口径冻结。
 2. 当前掉落主路径已切到 budget 驱动。
 3. 旧 `ItemQuality` 仍兼容 save/client，但不再作为规则层真源。
 4. `PR-05` 可以直接追加 affix cost、unique/artifact 与实验室验证，而不需要再改预算公式。
+5. `PR-05` 所需 white-box 输入合同已经在本 PR 冻结，不再允许后续为工具侧便利重命名或补第二套字段。

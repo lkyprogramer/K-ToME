@@ -188,6 +188,20 @@ data class BossVariantDef(
 1. mutation icon、名称、inspect 信息读取正式 key。
 2. 若引入新 overlay/tint，必须能通过现有 render path 消费，不另建 client-only 规则。
 
+### 5.4 `tools / white-box` 补充改造
+
+1. 本 PR 不强制额外新建独立 `whiteBoxTerrain` root alias；优先要求 `terrainInteractionBatch` 与 `bossHarness` 直接补齐统一 white-box artifact/report contract。
+2. 两个现有任务至少要能输出 AI 可读 artifact：
+   - terrain interaction trace matrix
+   - `TerrainTag -> ElementInteractionRule` provenance table
+   - elite mutation 兼容性与来源表
+   - boss variant `threatCost / lootProfileOverride / phase graph` 摘要
+3. 若后续场景矩阵扩大到超出 `terrainInteractionBatch + bossHarness` 现有边界，再单独抽 `whiteBoxTerrain` 或等价 fixed-scenario domain；本 PR 不允许为“框架整洁”强行复制第二套 runner。
+4. `phase4Report` 至少要能聚合：
+   - `terrainInteractionBatch`
+   - `bossHarness`
+   - 上述两个任务新增的结构化 artifact / metrics
+
 ## 6. 测试与自证
 
 ### 6.1 必测行为
@@ -208,6 +222,7 @@ data class BossVariantDef(
 ./gradlew bossHarness
 ./gradlew clientSmoke
 ./gradlew goldenScreenshot
+./gradlew phase4Report
 ```
 
 说明：
@@ -215,6 +230,16 @@ data class BossVariantDef(
 1. `terrainInteractionBatch` 是本 PR 的地形交互主验证入口。
 2. `bossHarness` 是 Boss variant 的主验证入口。
 3. `hiddenContentHarness` 在本 PR 只允许作为补充回归，不再承担 terrain/mutation/boss variant 的主验证职责。
+
+### 6.3 统一白盒框架验证
+
+1. `terrainInteractionBatch` 必须提供可被 AI 直接读取的结构化 case 数据，而不只是一段控制台日志。
+2. `bossHarness` 对本 PR 新增内容至少要补出：
+   - variant id
+   - `threatCost`
+   - `lootProfileOverride`
+   - phase graph 未变化的证明
+3. 本 PR 的 white-box 目标不是替代 `bossHarness`，而是把它和 `terrainInteractionBatch` 的证据面收口到统一 artifact/report contract 中，方便 `phase4Report` 与后续 AI triage。
 
 ## 7. 资源生成计划
 
@@ -253,3 +278,4 @@ data class BossVariantDef(
 3. client 可稳定读出 mutation 来源和对应表现资源。
 4. 本 PR 能在 `PR-02` 完成后独立推进，不被 `PR-07` 反向卡住。
 5. `threatCost` 和 `lootProfileOverride` 已接入统一 reward/threat ledger，不再是局部私有强度字段。
+6. `terrainInteractionBatch / bossHarness` 的新增 artifact 已接入统一 white-box 报告消费面。

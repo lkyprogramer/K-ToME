@@ -8,15 +8,17 @@
    - 阶段划分、工作包、预算、出口门禁的执行权威
 2. [2026-03-13-core-systems-design-and-phase-supplements.md](./2026-03-13-core-systems-design-and-phase-supplements.md)
    - 公式、数据结构、系统内部规则与阶段补充的设计权威
-3. `docs/phase2/*` `docs/phase3/*` `docs/phase4/*` `docs/phase5/*`
+3. [2026-04-04-unified-white-box-verification-framework.md](./2026-04-04-unified-white-box-verification-framework.md)
+   - 统一白盒验证框架、AI 消费合同、artifact/report 合同与人工一致性策略的设计权威
+4. `docs/phase2/*` `docs/phase3/*` `docs/phase4/*` `docs/phase5/*`
    - 各阶段的执行说明、PR/工作包文档与 checklist
-4. [2026-03-13-phase2-5-review-and-recommendations.md](./2026-03-13-phase2-5-review-and-recommendations.md)
+5. [2026-03-13-phase2-5-review-and-recommendations.md](./2026-03-13-phase2-5-review-and-recommendations.md)
    - 审阅参考与缺口说明，不直接覆盖路线图
-5. [K-ToME_Phase2_to_Phase5_PR_Development_Guide_v2_SinglePlayer_Tile_i18n.md](./K-ToME_Phase2_to_Phase5_PR_Development_Guide_v2_SinglePlayer_Tile_i18n.md)
+6. [K-ToME_Phase2_to_Phase5_PR_Development_Guide_v2_SinglePlayer_Tile_i18n.md](./K-ToME_Phase2_to_Phase5_PR_Development_Guide_v2_SinglePlayer_Tile_i18n.md)
    - 历史参考，旧 `PR01 ~ PR12` 编号只作背景材料
-6. [Roguelike 游戏开发指导文档.md](./Roguelike%20游戏开发指导文档.md)
+7. [Roguelike 游戏开发指导文档.md](./Roguelike%20游戏开发指导文档.md)
    - 技术参考和算法思路来源
-7. [2026-03-13-art-style-bible.md](./2026-03-13-art-style-bible.md)
+8. [2026-03-13-art-style-bible.md](./2026-03-13-art-style-bible.md)
    - 美术风格、style tag 和图片生成约束的权威参考
 
 ## 2. 执行编号
@@ -38,3 +40,5 @@
    - Phase 2 入口： [phase2/roadmap.md](./phase2/roadmap.md)
 4. 想看某个工作包如何验收：
    - 看对应阶段 checklist
+5. 想看统一白盒验证、AI 如何消费报告、以及自动化白盒如何与人工体验对齐：
+   - 看 [2026-04-04-unified-white-box-verification-framework.md](./2026-04-04-unified-white-box-verification-framework.md)

@@ -1304,15 +1304,14 @@ data class HarnessReportHeader(
 ./gradlew phase4Report
 ```
 
-4. `phase4Report` 顺序调用：
+4. 当前主干上的 `phase4Report` 已聚合：
    - `mapgenSmoke`
    - `solvabilityHarness`
-   - `lootBalanceLab`
-   - `terrainInteractionBatch`
    - `bossHarness`
-   - `hiddenContentHarness`
-   - `contentPackHarness`
-5. 聚合输出落到 `tools/build/reports/phase4/phase4-summary.json`。
+   - `whiteBoxMapgen`
+   - `whiteBoxSolvability`
+5. 后续随着 `lootBalanceLab / terrainInteractionBatch / hiddenContentHarness / contentPackHarness` 落地，再继续并入同一聚合入口。
+6. 聚合输出落到 `tools/build/reports/phase4/phase4-summary.json`。
 
 ## 6. 测试与自证
 

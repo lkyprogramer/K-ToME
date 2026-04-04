@@ -213,6 +213,21 @@ data class ContentPackHarnessSpec(
    - 双 pack 或冲突 fixture：验证 `REPLACE / APPEND / DENY`
 5. harness seed 与 fixture 顺序从 `ContentPackHarnessSpec` 读取，而不是从 runtime manifest 读取。
 
+### 5.3 `tools / white-box` 补充改造
+
+1. `contentPackHarness` 设计时必须直接兼容统一 white-box 报告合同，而不是等 `PR-09` 再补 adapter。
+2. 正式 white-box domain 名称固定为 `whiteBoxContentPack`；若不单独暴露新 task，也必须保证 `contentPackHarness` 内核可直接被 `whiteBoxContentPack` thin wrapper 复用。
+3. white-box artifact 至少包括：
+   - manifest diff / merge trace
+   - precedence matrix
+   - lint diagnostics
+   - dependency / version / namespace failure table
+4. AI 消费优先级固定为：
+   - summary
+   - cases
+   - artifacts
+5. `APPEND / DENY` 即使只在 fixture/harness 层验证，也必须进入 white-box 结构化报告，不能只在 prose 里描述“人工看过了”。
+
 ## 6. 测试与自证
 
 ### 6.1 必测行为
@@ -230,8 +245,27 @@ data class ContentPackHarnessSpec(
 
 ```bash
 ./gradlew contentPackHarness
+./gradlew whiteBoxContentPack
+./gradlew whiteBoxVerify
+./gradlew phase4Report
 ./gradlew clientSmoke
 ```
+
+### 6.3 统一白盒框架验证
+
+1. `whiteBoxContentPack` 或其等价 adapter 必须自动断言：
+   - schemaVersion 不匹配 fail-fast
+   - `REPLACE` 缺失的重复 ID 被拒绝
+   - pack 禁用后回落到 base
+   - 双 pack precedence / conflict 可解释
+   - 非白名单 `APPEND / DENY` 进入 runtime path 时 fail-fast
+2. 失败 case 必须能反查：
+   - `packId`
+   - `activePackIds`
+   - `activePackManifestVersions`
+   - fixture id
+   - seedList
+3. `phase4Report` 后续接线时，`contentPackHarness` 与 `whiteBoxContentPack` 不得重复统计同一组 business metric；二者必须共享同一底层结果模型。
 
 ## 7. 出口门禁
 
@@ -241,3 +275,4 @@ data class ContentPackHarnessSpec(
 4. `Phase 4` 的最小可行切片是“sample pack 验证 `ADD` + fixture 验证其他 op”，不是要求一个 sample pack 演完全部 overlay 语义。
 5. runtime manifest 与 harness sidecar 的边界冻结，`tools` 元数据不再侵入 `game` runtime contract。
 6. 官方 runtime merge 白名单已经收窄到 `ADD / REPLACE`，不会在 `Phase 4` 意外演变成通用 patch DSL。
+7. `whiteBoxContentPack` 所需的 artifact / report contract 已在本 PR 冻结，`PR-09` 只填 sample pack 与 fixture，不再反改 white-box 输出模型。

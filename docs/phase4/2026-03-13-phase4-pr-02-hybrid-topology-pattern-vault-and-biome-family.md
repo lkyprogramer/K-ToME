@@ -216,6 +216,10 @@ data class BiomeFamilyDef(
 
 ### 6.3 白盒验证
 
+本 PR 的 mapgen 差异性白盒验证，最终正式落点是项目级统一框架中的 `whiteBoxMapgen` pilot。统一架构、artifact/report 合同、AI 消费协议与人工一致性策略，以 [../2026-04-04-unified-white-box-verification-framework.md](../2026-04-04-unified-white-box-verification-framework.md) 为权威。
+
+在 `whiteBoxMapgen` 正式落地前，本 PR 的最低人工抽样口径如下：
+
 1. 连续开 `5` 个不同 seed 的 `greenwood_fringe / deep_iron_pit / underground_river` run，人工确认至少出现 `3` 类可感知差异：
    - 主路径/环路形态差异
    - vault 或 pattern room 出现差异

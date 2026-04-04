@@ -15,6 +15,7 @@ import com.ktome.core.mapgen.loopEdgeCount
 import com.ktome.core.mapgen.loopEdgeRatio
 import com.ktome.core.pathfinding.AStar
 import com.ktome.game.data.DataLoader
+import com.ktome.game.data.schema.SchemaCatalog
 import com.ktome.game.data.schema.ZoneSchemaV2
 import com.ktome.game.mapgen.SchemaMapgenContentCatalogFactory
 import com.ktome.game.mapgen.SchemaZoneMapgenProfileResolver
@@ -55,13 +56,8 @@ object MapgenSmokeRunner {
         val reportDir = reportDir()
         Files.createDirectories(reportDir)
 
-        val loader = DataLoader()
-        val schemaCatalog = loader.loadSchemaCatalog()
-        val contentCatalog = SchemaMapgenContentCatalogFactory.from(schemaCatalog)
-        val profileResolver = SchemaZoneMapgenProfileResolver(zones = schemaCatalog.zones, profiles = schemaCatalog.zoneMapgenProfiles)
-        val rewardResolver = SchemaZoneRewardProfileResolver(zones = schemaCatalog.zones, profiles = schemaCatalog.zoneRewardProfiles)
-        val pipeline = HybridTopologyMapgenPipeline(profileResolver = profileResolver, contentCatalog = contentCatalog)
-        val cases = buildCases(schemaCatalog.zones)
+        val executionContext = loadExecutionContext()
+        val cases = buildCases(executionContext.schemaCatalog.zones)
         val distinctSeedList = cases.map { case -> case.request.seed }.distinct()
         require(distinctSeedList.size == cases.size) {
             "mapgenSmoke cases must keep a one-to-one seed corpus; got ${distinctSeedList.size} distinct seeds for ${cases.size} cases."
@@ -69,69 +65,7 @@ object MapgenSmokeRunner {
 
         val results =
             cases.map { case ->
-                val rewardProfile = rewardResolver.resolve(case.request.zoneId)
-                val startedAt = System.nanoTime()
-                try {
-                    val generatedFloor = pipeline.run(case.request)
-                    val durationMillis = (System.nanoTime() - startedAt) / 1_000_000
-                    MapgenCaseResult(
-                        pipelineId = case.pipelineId,
-                        zoneId = case.request.zoneId,
-                        floorIndex = case.request.floorIndex,
-                        seed = case.request.seed,
-                        durationMillis = durationMillis,
-                        emptyMap = generatedFloor.map.floorPoints().isEmpty(),
-                        criticalPathReachable = isPrimaryPathWalkable(generatedFloor),
-                        topologyFingerprint = TopologyFingerprinting.fingerprint(generatedFloor.topology),
-                        topologySummary =
-                            TopologySummary(
-                                nodeCount = generatedFloor.topology.nodes.size,
-                                edgeCount = generatedFloor.topology.edges.size,
-                                primaryPathLength = generatedFloor.topology.primaryPathNodeIds.size,
-                                optionalLoopCount = generatedFloor.topology.optionalLoopCount,
-                                loopEdgeCount = generatedFloor.topology.loopEdgeCount(),
-                                loopEdgeRatio = generatedFloor.topology.loopEdgeRatio(),
-                                roomCount = generatedFloor.rooms.size,
-                                patternRoomCount = generatedFloor.rooms.count { room -> room.patternId != null },
-                                vaultPlacementCount = generatedFloor.vaultPlacements.size,
-                                pathClassCounts = countPathClasses(generatedFloor.topology.nodes.map { node -> node.pathClass }),
-                            ),
-                        biomeFamilies = generatedFloor.biomeFamilyIds.sorted(),
-                        terrainTagDistribution = countTerrainTags(generatedFloor.terrainTags),
-                        vaultPlacements = generatedFloor.vaultPlacements.map(::toVaultPlacementSnapshot).sortedBy(VaultPlacementSnapshot::vaultId),
-                        rewardProfile =
-                            RewardProfileSnapshot(
-                                id = rewardProfile.id,
-                                rarityBonus = rewardProfile.rarityBonus,
-                                qualityBonus = rewardProfile.qualityBonus,
-                                baseRewardBudget = rewardProfile.baseRewardBudget,
-                            ),
-                        error = null,
-                    )
-                } catch (ex: Exception) {
-                    MapgenCaseResult(
-                        pipelineId = case.pipelineId,
-                        zoneId = case.request.zoneId,
-                        floorIndex = case.request.floorIndex,
-                        seed = case.request.seed,
-                        durationMillis = 0,
-                        emptyMap = true,
-                        criticalPathReachable = false,
-                        topologyFingerprint = "",
-                        topologySummary = TopologySummary(),
-                        biomeFamilies = emptyList(),
-                        terrainTagDistribution = emptyMap(),
-                        vaultPlacements = emptyList(),
-                        rewardProfile =
-                            RewardProfileSnapshot(
-                                id = rewardProfile.id,
-                                rarityBonus = rewardProfile.rarityBonus,
-                                qualityBonus = rewardProfile.qualityBonus,
-                                baseRewardBudget = rewardProfile.baseRewardBudget,
-                            ),
-                        error = ex.message ?: ex::class.simpleName.orEmpty(),
-                    )
-                }
+                executeCase(executionContext, case).toCaseResult()
             }
 
         val header = phase4HarnessHeader(harnessId = HARNESS_ID, seedList = distinctSeedList)
@@ -181,13 +115,30 @@ object MapgenSmokeRunner {
         )
     }
 
-    private fun buildCases(zones: List<ZoneSchemaV2>): List<MapgenCase> =
+    internal fun loadExecutionContext(): MapgenExecutionContext {
+        val loader = DataLoader()
+        val schemaCatalog = loader.loadSchemaCatalog()
+        val contentCatalog = SchemaMapgenContentCatalogFactory.from(schemaCatalog)
+        val profileResolver = SchemaZoneMapgenProfileResolver(zones = schemaCatalog.zones, profiles = schemaCatalog.zoneMapgenProfiles)
+        val rewardResolver = SchemaZoneRewardProfileResolver(zones = schemaCatalog.zones, profiles = schemaCatalog.zoneRewardProfiles)
+        val pipeline = HybridTopologyMapgenPipeline(profileResolver = profileResolver, contentCatalog = contentCatalog)
+        return MapgenExecutionContext(
+            schemaCatalog = schemaCatalog,
+            pipeline = pipeline,
+            rewardResolver = rewardResolver,
+        )
+    }
+
+    internal fun buildCases(
+        zones: List<ZoneSchemaV2>,
+        seedsPerFloor: Int = SEEDS_PER_FLOOR,
+    ): List<MapgenCase> =
         buildList {
             zones.sortedBy(ZoneSchemaV2::id)
                 .withIndex()
                 .forEach { (zoneOrdinal, zone) ->
                     (1..zone.floorCount).forEach { floorIndex ->
-                        repeat(SEEDS_PER_FLOOR) { seedOrdinal ->
+                        repeat(seedsPerFloor) { seedOrdinal ->
                             add(
                                 MapgenCase(
                                     pipelineId = HYBRID_PIPELINE_ID,
@@ -210,6 +161,40 @@ object MapgenSmokeRunner {
                     }
                 }
         }
+
+    internal fun executeCase(
+        executionContext: MapgenExecutionContext,
+        case: MapgenCase,
+    ): MapgenExecutedCase {
+        val rewardProfile = executionContext.rewardResolver.resolve(case.request.zoneId)
+        val rewardSnapshot =
+            RewardProfileSnapshot(
+                id = rewardProfile.id,
+                rarityBonus = rewardProfile.rarityBonus,
+                qualityBonus = rewardProfile.qualityBonus,
+                baseRewardBudget = rewardProfile.baseRewardBudget,
+            )
+        val startedAt = System.nanoTime()
+        return try {
+            val generatedFloor = executionContext.pipeline.run(case.request)
+            val durationMillis = (System.nanoTime() - startedAt) / 1_000_000
+            MapgenExecutedCase(
+                testCase = case,
+                generatedFloor = generatedFloor,
+                rewardProfile = rewardSnapshot,
+                durationMillis = durationMillis,
+                error = null,
+            )
+        } catch (ex: Exception) {
+            MapgenExecutedCase(
+                testCase = case,
+                generatedFloor = null,
+                rewardProfile = rewardSnapshot,
+                durationMillis = 0,
+                error = ex.message ?: ex::class.simpleName.orEmpty(),
+            )
+        }
+    }
 
     private fun buildSummaryPayload(
         header: HarnessReportHeader,
@@ -334,21 +319,21 @@ object MapgenSmokeRunner {
             error?.let { put("error", it) }
         }
 
-    private fun countTerrainTags(terrainTags: Map<com.ktome.core.map.Point, Set<com.ktome.core.mapgen.TerrainTag>>): Map<String, Int> =
+    internal fun countTerrainTags(terrainTags: Map<com.ktome.core.map.Point, Set<com.ktome.core.mapgen.TerrainTag>>): Map<String, Int> =
         buildMap {
             terrainTags.values.flatten().groupingBy { tag -> tag.name }.eachCount()
                 .toSortedMap()
                 .forEach { (tag, count) -> put(tag, count) }
         }
 
-    private fun countPathClasses(pathClasses: List<PathClass>): Map<String, Int> =
+    internal fun countPathClasses(pathClasses: List<PathClass>): Map<String, Int> =
         buildMap {
             pathClasses.groupingBy(PathClass::name).eachCount()
                 .toSortedMap()
                 .forEach { (pathClass, count) -> put(pathClass, count) }
         }
 
-    private fun isPrimaryPathWalkable(generatedFloor: GeneratedFloor): Boolean {
+    internal fun isPrimaryPathWalkable(generatedFloor: GeneratedFloor): Boolean {
         if (!generatedFloor.topology.isPrimaryPathReachable()) {
             return false
         }
@@ -385,7 +370,7 @@ object MapgenSmokeRunner {
             else -> "6+"
         }
 
-    private fun toVaultPlacementSnapshot(placement: VaultPlacement): VaultPlacementSnapshot =
+    internal fun toVaultPlacementSnapshot(placement: VaultPlacement): VaultPlacementSnapshot =
         VaultPlacementSnapshot(
             vaultId = placement.vaultId,
             pathClass = placement.pathClass.name,
@@ -404,6 +389,70 @@ object MapgenSmokeRunner {
     }
 }
 
+internal data class MapgenExecutionContext(
+    val schemaCatalog: SchemaCatalog,
+    val pipeline: HybridTopologyMapgenPipeline,
+    val rewardResolver: SchemaZoneRewardProfileResolver,
+)
+
+internal data class MapgenExecutedCase(
+    val testCase: MapgenCase,
+    val generatedFloor: GeneratedFloor?,
+    val rewardProfile: RewardProfileSnapshot,
+    val durationMillis: Long,
+    val error: String?,
+) {
+    fun toCaseResult(): MapgenCaseResult {
+        val floor = generatedFloor
+        if (floor == null) {
+            return MapgenCaseResult(
+                pipelineId = testCase.pipelineId,
+                zoneId = testCase.request.zoneId,
+                floorIndex = testCase.request.floorIndex,
+                seed = testCase.request.seed,
+                durationMillis = durationMillis,
+                emptyMap = true,
+                criticalPathReachable = false,
+                topologyFingerprint = "",
+                topologySummary = TopologySummary(),
+                biomeFamilies = emptyList(),
+                terrainTagDistribution = emptyMap(),
+                vaultPlacements = emptyList(),
+                rewardProfile = rewardProfile,
+                error = error,
+            )
+        }
+        return MapgenCaseResult(
+            pipelineId = testCase.pipelineId,
+            zoneId = testCase.request.zoneId,
+            floorIndex = testCase.request.floorIndex,
+            seed = testCase.request.seed,
+            durationMillis = durationMillis,
+            emptyMap = floor.map.floorPoints().isEmpty(),
+            criticalPathReachable = MapgenSmokeRunner.isPrimaryPathWalkable(floor),
+            topologyFingerprint = TopologyFingerprinting.fingerprint(floor.topology),
+            topologySummary =
+                TopologySummary(
+                    nodeCount = floor.topology.nodes.size,
+                    edgeCount = floor.topology.edges.size,
+                    primaryPathLength = floor.topology.primaryPathNodeIds.size,
+                    optionalLoopCount = floor.topology.optionalLoopCount,
+                    loopEdgeCount = floor.topology.loopEdgeCount(),
+                    loopEdgeRatio = floor.topology.loopEdgeRatio(),
+                    roomCount = floor.rooms.size,
+                    patternRoomCount = floor.rooms.count { room -> room.patternId != null },
+                    vaultPlacementCount = floor.vaultPlacements.size,
+                    pathClassCounts = MapgenSmokeRunner.countPathClasses(floor.topology.nodes.map { node -> node.pathClass }),
+                ),
+            biomeFamilies = floor.biomeFamilyIds.sorted(),
+            terrainTagDistribution = MapgenSmokeRunner.countTerrainTags(floor.terrainTags),
+            vaultPlacements = floor.vaultPlacements.map(MapgenSmokeRunner::toVaultPlacementSnapshot).sortedBy(VaultPlacementSnapshot::vaultId),
+            rewardProfile = rewardProfile,
+            error = error,
+        )
+    }
+}
+
 private fun Iterable<Double>.averageOrZero(): Double {
     val values = toList()
     return if (values.isEmpty()) {
@@ -413,12 +462,12 @@ private fun Iterable<Double>.averageOrZero(): Double {
     }
 }
 
-private data class MapgenCase(
+internal data class MapgenCase(
     val pipelineId: String,
     val request: MapgenRequest,
 )
 
-private data class MapgenCaseResult(
+internal data class MapgenCaseResult(
     val pipelineId: String,
     val zoneId: String,
     val floorIndex: Int,
@@ -435,14 +484,14 @@ private data class MapgenCaseResult(
     val error: String?,
 )
 
-private data class RewardProfileSnapshot(
+internal data class RewardProfileSnapshot(
     val id: String,
     val rarityBonus: Float,
     val qualityBonus: Int,
     val baseRewardBudget: Int,
 )
 
-private data class VaultPlacementSnapshot(
+internal data class VaultPlacementSnapshot(
     val vaultId: String,
     val pathClass: String,
     val rewardBudget: Int,
@@ -450,7 +499,7 @@ private data class VaultPlacementSnapshot(
     val requiredTerrainTags: List<String>,
 )
 
-private data class TopologySummary(
+internal data class TopologySummary(
     val nodeCount: Int = 0,
     val edgeCount: Int = 0,
     val primaryPathLength: Int = 0,
