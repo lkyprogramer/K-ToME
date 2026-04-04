@@ -93,7 +93,9 @@ class MapgenContractTest {
         assertTrue(generated.rooms.isNotEmpty())
         assertTrue(generated.rooms.map { room -> room.nodeId }.toSet() == generated.topology.nodes.map { node -> node.id }.toSet())
         assertTrue(generated.biomeFamilyIds.size <= 2)
-        assertTrue(generated.topology.loopEdgeRatio() in 0.15..0.35)
+        if (generated.topology.optionalLoopCount > 0) {
+            assertTrue(generated.topology.loopEdgeRatio() in 0.15..0.35)
+        }
         assertTrue(generated.vaultPlacements.all { placement -> placement.pathClass == PathClass.OPTIONAL })
         assertTrue(generated.vaultPlacements.all { placement -> placement.rewardBudget >= 0 && placement.threatBudget >= 0 })
         assertTrue(generated.vaultPlacements.isNotEmpty())

@@ -9,30 +9,6 @@ import kotlin.math.min
 import kotlin.math.roundToInt
 import kotlin.random.Random
 
-object MapgenTemplateCatalog {
-    val supportedPatternIds: Set<String> =
-        setOf(
-            "cross_pillars",
-            "boardwalk_lane",
-            "split_hall",
-            "forge_aisles",
-            "ring_walk",
-            "sanctum_ring",
-            "cell_blocks",
-            "shallow_channels",
-        )
-
-    val supportedVaultTemplateIds: Set<String> =
-        setOf(
-            "briar_cache",
-            "smuggler_cache",
-            "slag_armory",
-            "crystal_cache",
-            "sunken_reliquary",
-            "oil_reliquary",
-        )
-}
-
 class HybridTopologyPlanner(
     private val roomDefsById: Map<String, RoomDef>,
     private val biomeFamiliesById: Map<String, BiomeFamilyDef>,

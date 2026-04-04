@@ -56,6 +56,13 @@ enum class TerrainTag {
     ICE,
 }
 
+val ALLOWED_VAULT_REQUIRED_TERRAIN_TAGS: Set<TerrainTag> =
+    setOf(
+        TerrainTag.WATER,
+        TerrainTag.OIL,
+        TerrainTag.ICE,
+    )
+
 enum class RoomShape {
     RECT,
     L_SHAPE,
@@ -115,6 +122,9 @@ data class VaultDef(
         require(rewardBudget >= 0) { "VaultDef.rewardBudget must not be negative." }
         require(allowOnBiomeFamilies.all(String::isNotBlank)) {
             "VaultDef.allowOnBiomeFamilies must not contain blank ids."
+        }
+        require(requiredTerrainTags.all(ALLOWED_VAULT_REQUIRED_TERRAIN_TAGS::contains)) {
+            "VaultDef.requiredTerrainTags must stay within the supported vault terrain contract."
         }
         require(pathClass != PathClass.CRITICAL_PATH || rewardBudget == 0) {
             "CRITICAL_PATH vaults must keep rewardBudget at 0."

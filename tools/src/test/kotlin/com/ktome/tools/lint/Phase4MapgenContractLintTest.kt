@@ -1,8 +1,7 @@
 package com.ktome.tools.lint
 
-import com.ktome.core.mapgen.MapgenTemplateCatalog
+import com.ktome.core.mapgen.ALLOWED_VAULT_REQUIRED_TERRAIN_TAGS
 import com.ktome.core.mapgen.PathClass
-import com.ktome.core.mapgen.TerrainTag
 import com.ktome.game.data.DataLoader
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -25,7 +24,6 @@ class Phase4MapgenContractLintTest {
         catalog.patternRooms.forEach { patternRoom ->
             assertTrue(patternRoom.baseRoomId in roomIds, "Pattern room ${patternRoom.id} references unknown base room ${patternRoom.baseRoomId}.")
             assertTrue(patternRoom.patternId in patternTemplateIds, "Pattern room ${patternRoom.id} references unknown pattern template ${patternRoom.patternId}.")
-            assertTrue(patternRoom.patternId in MapgenTemplateCatalog.supportedPatternIds, "Pattern room ${patternRoom.id} uses unsupported runtime pattern ${patternRoom.patternId}.")
         }
         val patternTemplatesById = catalog.patternTemplates.associateBy { template -> template.id }
         assertTrue(patternTemplatesById.getValue("boardwalk_lane").rows.any { row -> '~' in row })
@@ -36,10 +34,9 @@ class Phase4MapgenContractLintTest {
 
         catalog.vaults.forEach { vault ->
             assertTrue(vault.templateId in vaultTemplateIds, "Vault ${vault.id} references unknown vault template ${vault.templateId}.")
-            assertTrue(vault.templateId in MapgenTemplateCatalog.supportedVaultTemplateIds, "Vault ${vault.id} uses unsupported runtime vault template ${vault.templateId}.")
             assertTrue(vault.allowOnBiomeFamilies.isNotEmpty(), "Vault ${vault.id} must allow at least one biome family.")
             assertTrue(vault.allowOnBiomeFamilies.all(biomeFamilyIds::contains), "Vault ${vault.id} references unknown biome family.")
-            assertTrue(vault.requiredTerrainTags.all { tag -> tag in setOf(TerrainTag.WATER, TerrainTag.OIL, TerrainTag.ICE) })
+            assertTrue(vault.requiredTerrainTags.all(ALLOWED_VAULT_REQUIRED_TERRAIN_TAGS::contains))
             assertTrue(vault.rewardBudget >= 0, "Vault ${vault.id} must not have a negative reward budget.")
             if (vault.pathClass == PathClass.CRITICAL_PATH) {
                 assertEquals(0, vault.rewardBudget, "Critical-path vault ${vault.id} must not inject optional reward budget.")
