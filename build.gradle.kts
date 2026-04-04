@@ -157,7 +157,7 @@ tasks.register("mapgenSmoke") {
 
 tasks.register("solvabilityHarness") {
     group = LifecycleBasePlugin.VERIFICATION_GROUP
-    description = "Runs the Phase 4 solvability harness skeleton until PR-03 lands."
+    description = "Runs the Phase 4 solvability proof harness and writes structured reports."
     dependsOn(":tools:solvabilityHarness")
 }
 

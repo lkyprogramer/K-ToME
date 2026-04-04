@@ -19,6 +19,8 @@ sealed interface PlayerCommand {
 
     data object Interact : PlayerCommand
 
+    data object Search : PlayerCommand
+
     data object Ascend : PlayerCommand
 
     data object Descend : PlayerCommand

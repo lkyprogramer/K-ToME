@@ -12,8 +12,16 @@ import com.ktome.core.map.GameMap
 import com.ktome.core.map.Point
 import com.ktome.core.mapgen.BspBackedMapgenPipeline
 import com.ktome.core.mapgen.GeneratedFloor
+import com.ktome.core.mapgen.GeneratedEntrance
+import com.ktome.core.mapgen.NodeId
+import com.ktome.core.mapgen.PathClass
+import com.ktome.core.mapgen.RoomInstance
+import com.ktome.core.mapgen.RoomShape
 import com.ktome.core.mapgen.TerrainTag
+import com.ktome.core.mapgen.TopologyEdge
+import com.ktome.core.mapgen.TopologyGraph
 import com.ktome.core.mapgen.TopologyFingerprinting
+import com.ktome.core.mapgen.TopologyNode
 import com.ktome.core.mapgen.ZoneMapgenProfile
 import com.ktome.core.mapgen.ZoneMapgenProfileResolver
 import com.ktome.core.profile.MilestoneRewardSummary
@@ -23,10 +31,12 @@ import com.ktome.core.save.AreaEffectEmitterSnapshot
 import com.ktome.core.save.AiTriggerTrackerSnapshot
 import com.ktome.core.save.EntitySnapshot
 import com.ktome.core.save.EquipmentSnapshot
+import com.ktome.core.save.FloorSnapshot
 import com.ktome.core.save.FloorRewardStateSnapshot
 import com.ktome.core.save.InvalidSaveException
 import com.ktome.core.save.InventorySnapshot
 import com.ktome.core.save.ItemSnapshot
+import com.ktome.core.save.MapSnapshot
 import com.ktome.core.save.PlayerSnapshot
 import com.ktome.core.save.PointSnapshot
 import com.ktome.core.save.SaveSnapshot
@@ -34,6 +44,15 @@ import com.ktome.core.save.StatModifierSnapshot
 import com.ktome.core.save.TalentLoadoutSnapshot
 import com.ktome.core.save.WorldEffectSnapshot
 import com.ktome.core.talent.TalentRegistry
+import com.ktome.core.world.solvability.ContentRef
+import com.ktome.core.world.solvability.DiscoveryPredicate
+import com.ktome.core.world.solvability.DiscoveryPredicateType
+import com.ktome.core.world.solvability.DiscoveryRule
+import com.ktome.core.world.solvability.NodeAnchorId
+import com.ktome.core.world.solvability.RegistryId
+import com.ktome.core.world.solvability.SearchActionResult
+import com.ktome.core.world.solvability.SearchBindingId
+import com.ktome.core.world.solvability.SearchStateEntry
 import com.ktome.game.data.DataLoader
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -42,6 +61,25 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class SessionSnapshotMapperTest {
+    @Test
+    fun `floor snapshot rejects mismatched revealed entrance ids and search state`() {
+        assertThrows(IllegalArgumentException::class.java) {
+            FloorSnapshot(
+                floorIndex = 1,
+                zoneId = "greenwood_fringe",
+                revealedEntranceIds = setOf(SearchBindingId("search.greenwood.secret_entrance")),
+                searchState =
+                    listOf(
+                        SearchStateEntry(
+                            bindingId = SearchBindingId("search.greenwood.secret_entrance"),
+                            result = SearchActionResult.FAILED_CHECK,
+                        ),
+                    ),
+                map = MapSnapshot(rows = listOf(".....", ".....", "....."), playerStart = PointSnapshot(1, 1)),
+            )
+        }
+    }
+
     @Test
     fun `restore world preserves stamina resource pool current`() {
         val content = content()
@@ -488,6 +526,29 @@ class SessionSnapshotMapperTest {
     }
 
     @Test
+    fun `from save snapshot rejects hidden entrance binding drift`() {
+        val generatedFloor = phase4HiddenEntranceFloor(bindingId = SearchBindingId("search.greenwood.hidden_cache"))
+        val snapshot = phase4Snapshot(generatedFloor = generatedFloor)
+        val pipeline =
+            object : com.ktome.core.mapgen.MapgenPipeline {
+                override fun run(request: com.ktome.core.mapgen.MapgenRequest): GeneratedFloor =
+                    phase4HiddenEntranceFloor(
+                        bindingId = SearchBindingId("search.greenwood.hidden_cache_v2"),
+                        zoneId = request.zoneId,
+                        floorIndex = request.floorIndex,
+                        seed = request.seed,
+                    )
+            }
+
+        val exception =
+            assertThrows(InvalidSaveException::class.java) {
+                SessionSnapshotMapper.fromSaveSnapshot(snapshot, mapgenPipeline = pipeline)
+            }
+
+        assertTrue(requireNotNull(exception.message).contains("hidden-entrance binding"))
+    }
+
+    @Test
     fun `restore item instance derives passive from base item schema instead of save payload`() {
         val content = content()
         val player =
@@ -612,6 +673,86 @@ class SessionSnapshotMapperTest {
             sessionRandomState = null,
             pendingActionIds = listOf(1),
             activeTurnActorId = 1,
+        )
+    }
+
+    private fun phase4HiddenEntranceFloor(
+        bindingId: SearchBindingId,
+        zoneId: String = "greenwood_fringe",
+        floorIndex: Int = 1,
+        seed: Long = 42L,
+    ): GeneratedFloor {
+        val map = GameMap.fromAscii(rows = List(5) { "....." }, playerStart = Point(2, 2))
+        val startNodeId = NodeId("start")
+        val secretNodeId = NodeId("secret")
+        val entranceAnchorId = NodeAnchorId("critical.start")
+        val targetAnchorId = NodeAnchorId("secret.greenwood.hidden_cache")
+        val topology =
+            TopologyGraph(
+                nodes =
+                    listOf(
+                        TopologyNode(
+                            id = startNodeId,
+                            anchorId = entranceAnchorId,
+                            roomDefId = "room.start",
+                            pathClass = PathClass.CRITICAL_PATH,
+                            tags = setOf("start"),
+                        ),
+                        TopologyNode(
+                            id = secretNodeId,
+                            anchorId = targetAnchorId,
+                            roomDefId = "room.secret",
+                            pathClass = PathClass.SECRET,
+                            tags = setOf("secret"),
+                        ),
+                    ),
+                edges = listOf(TopologyEdge(from = startNodeId, to = secretNodeId)),
+                primaryPathNodeIds = listOf(startNodeId),
+                optionalLoopCount = 0,
+            )
+        return GeneratedFloor.compatibility(
+            zoneId = zoneId,
+            floorIndex = floorIndex,
+            seed = seed,
+            map = map,
+            topology = topology,
+            rooms =
+                listOf(
+                    RoomInstance(
+                        nodeId = startNodeId,
+                        anchorId = entranceAnchorId,
+                        roomDefId = "room.start",
+                        x = 1,
+                        y = 1,
+                        width = 3,
+                        height = 3,
+                        shape = RoomShape.RECT,
+                        pathClass = PathClass.CRITICAL_PATH,
+                        tags = setOf("start"),
+                    ),
+                ),
+            entrances =
+                listOf(
+                    GeneratedEntrance(
+                        bindingId = bindingId,
+                        fromNodeId = startNodeId,
+                        targetNodeId = secretNodeId,
+                        entranceAnchorId = entranceAnchorId,
+                        targetAnchorId = targetAnchorId,
+                        pathClass = PathClass.SECRET,
+                        discoveryRule =
+                            DiscoveryRule(
+                                predicates =
+                                    listOf(
+                                        DiscoveryPredicate(
+                                            type = DiscoveryPredicateType.PERCEPTION_CHECK,
+                                            difficulty = 8,
+                                        ),
+                                    ),
+                            ),
+                        targetSecretZoneId = ContentRef(registry = RegistryId("secret_zone"), id = "greenwood_hidden_cache_stub"),
+                    ),
+                ),
         )
     }
 }

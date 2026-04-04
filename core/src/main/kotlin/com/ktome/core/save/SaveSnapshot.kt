@@ -7,6 +7,11 @@ import com.ktome.core.map.Point
 import com.ktome.core.economy.ShopInventoryState
 import com.ktome.core.profile.MilestoneRewardSummary
 import com.ktome.core.resource.ResourcePoolSnapshot
+import com.ktome.core.world.solvability.ContentRef
+import com.ktome.core.world.solvability.ResolvedEntranceBinding
+import com.ktome.core.world.solvability.SearchBindingId
+import com.ktome.core.world.solvability.SearchStateEntry
+import com.ktome.core.world.solvability.revealedBindingIds
 import com.ktome.core.world.WorldProgressDef
 import kotlinx.serialization.Serializable
 import kotlin.math.abs
@@ -141,8 +146,8 @@ data class SaveSnapshot(
     }
 
     companion object {
-        const val CURRENT_SCHEMA_VERSION: Int = 8
-        const val DEFAULT_BUILD_METADATA: String = "phase4-pr01-dev"
+        const val CURRENT_SCHEMA_VERSION: Int = 9
+        const val DEFAULT_BUILD_METADATA: String = "phase4-pr03-dev"
     }
 }
 
@@ -171,6 +176,10 @@ data class FloorSnapshot(
     val floorSeed: Long = 0L,
     val topologyFingerprint: String = "",
     val terrainTagHash: String = "",
+    val resolvedHiddenEntranceBindings: List<ResolvedEntranceBinding> = emptyList(),
+    val revealedEntranceIds: Set<SearchBindingId> = emptySet(),
+    val visitedSecretZoneIds: Set<ContentRef> = emptySet(),
+    val searchState: List<SearchStateEntry> = emptyList(),
     val map: MapSnapshot,
     val stairsUp: PointSnapshot? = null,
     val stairsDown: PointSnapshot? = null,
@@ -185,6 +194,15 @@ data class FloorSnapshot(
     fun validateOrThrow() {
         require(floorIndex > 0) { "Floor numbers must be positive." }
         require(zoneId.isNotBlank()) { "FloorSnapshot.zoneId must not be blank." }
+        require(resolvedHiddenEntranceBindings.distinctBy(ResolvedEntranceBinding::searchBindingId).size == resolvedHiddenEntranceBindings.size) {
+            "FloorSnapshot.resolvedHiddenEntranceBindings must not contain duplicate binding ids."
+        }
+        require(searchState.distinctBy(SearchStateEntry::bindingId).size == searchState.size) {
+            "FloorSnapshot.searchState must not contain duplicate binding ids."
+        }
+        require(revealedEntranceIds == searchState.revealedBindingIds()) {
+            "FloorSnapshot.revealedEntranceIds must match REVEALED searchState entries."
+        }
         map.validateOrThrow()
         entities.forEach(EntitySnapshot::validateOrThrow)
     }

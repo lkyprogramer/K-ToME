@@ -212,6 +212,7 @@ class AudioRouter(
                 is PlayerCommand.ActivateInventoryItem,
                 is PlayerCommand.EquipTalentToSlot,
                 PlayerCommand.Interact,
+                PlayerCommand.Search,
                 is PlayerCommand.UseTalent,
                 PlayerCommand.Ascend,
                 PlayerCommand.Descend,
@@ -230,6 +231,7 @@ class AudioRouter(
             is PlayerCommand.ActivateInventoryItem,
             is PlayerCommand.DropInventoryItem,
             PlayerCommand.Interact,
+            PlayerCommand.Search,
             PlayerCommand.PickUp,
             -> play("audio.interactable.open")
 

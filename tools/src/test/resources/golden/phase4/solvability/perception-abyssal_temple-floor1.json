@@ -1,0 +1,61 @@
+{
+    "zoneId": "abyssal_temple",
+    "floorIndex": 1,
+    "seed": 20260404010201,
+    "criticalPathReachable": true,
+    "visitedNodes": [
+        "primary-0",
+        "primary-1",
+        "primary-2",
+        "primary-3",
+        "optional-1",
+        "optional-0",
+        "primary-4"
+    ],
+    "acquiredKeys": [
+        "BOSS_SIGIL:abyssal_temple_sigil"
+    ],
+    "unresolvedRequirements": [],
+    "optionalPathCount": 2,
+    "secretPathCount": 0,
+    "totalReachableNodes": 7,
+    "reachabilityRatio": 0.875,
+    "topologySummary": {
+        "nodeCount": 8,
+        "edgeCount": 8,
+        "primaryPathLength": 5,
+        "optionalLoopCount": 2,
+        "loopEdgeCount": 2,
+        "loopEdgeRatio": 0.25,
+        "roomCount": 7,
+        "patternRoomCount": 0,
+        "vaultPlacementCount": 2,
+        "pathClassCounts": {
+            "CRITICAL_PATH": 5,
+            "OPTIONAL": 2,
+            "SECRET": 1
+        }
+    },
+    "searchActionCount": 1,
+    "searchRevealCount": 0,
+    "searchFailCount": 1,
+    "searchStates": {
+        "search.abyssal_temple.warded_archive": "FAILED_CHECK"
+    },
+    "secretProofs": [
+        {
+            "bindingId": "search.abyssal_temple.warded_archive",
+            "entranceAnchorId": "optional.branch.1",
+            "targetNodeId": "secret-0",
+            "resolved": false,
+            "result": "FAILED_CHECK"
+        }
+    ],
+    "resolvedEntranceBindings": [
+        {
+            "bindingId": "search.abyssal_temple.warded_archive",
+            "entranceAnchorId": "optional.branch.1",
+            "targetNodeId": "secret-0"
+        }
+    ]
+}

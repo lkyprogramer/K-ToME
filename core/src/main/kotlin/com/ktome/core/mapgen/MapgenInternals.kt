@@ -3,6 +3,7 @@ package com.ktome.core.mapgen
 import com.ktome.core.map.GameMap
 import com.ktome.core.map.Point
 import com.ktome.core.map.Room
+import com.ktome.core.world.solvability.NodeAnchorId
 import kotlin.math.roundToInt
 import kotlin.random.Random
 
@@ -17,6 +18,7 @@ internal object LinearTopologyProjector {
                     listOf(
                         TopologyNode(
                             id = syntheticId,
+                            anchorId = NodeAnchorId("legacy.start"),
                             roomDefId = "legacy.synthetic.start",
                             pathClass = PathClass.CRITICAL_PATH,
                             tags = setOf("legacy", "synthetic", "start"),
@@ -32,6 +34,7 @@ internal object LinearTopologyProjector {
             map.rooms.mapIndexed { index, room ->
                 TopologyNode(
                     id = NodeId("room-${index.toString().padStart(2, '0')}"),
+                    anchorId = NodeAnchorId("legacy.room.${index.toString().padStart(2, '0')}"),
                     roomDefId = "bsp.rect.standard",
                     pathClass = PathClass.CRITICAL_PATH,
                     tags = setOf("bsp", "room", if (index == 0) "start" else "primary"),
@@ -62,6 +65,7 @@ internal object CompatibilityRoomProjector {
             return topology.primaryPathNodeIds.take(1).map { nodeId ->
                 RoomInstance(
                     nodeId = nodeId,
+                    anchorId = NodeAnchorId("legacy.synthetic.room"),
                     roomDefId = "legacy.synthetic.room",
                     x = syntheticRoom.x,
                     y = syntheticRoom.y,
@@ -82,6 +86,7 @@ internal object CompatibilityRoomProjector {
             val node = topologyNodeById[nodeId]
             RoomInstance(
                 nodeId = nodeId,
+                anchorId = node?.anchorId ?: NodeAnchorId("legacy.room.${index.toString().padStart(2, '0')}"),
                 roomDefId = node?.roomDefId ?: "legacy.room",
                 x = room.x,
                 y = room.y,
