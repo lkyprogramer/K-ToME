@@ -12,6 +12,28 @@ import org.junit.jupiter.api.Test
 
 class WhiteBoxMapgenHarnessTest {
     @Test
+    fun `white-box mapgen corpus stays aligned with the full mapgenSmoke seed space`() {
+        val executionContext = MapgenSmokeRunner.loadExecutionContext()
+        val smokeCases = MapgenSmokeRunner.buildCases(executionContext.schemaCatalog.zones)
+        val pilotCases = WhiteBoxMapgenRunner.buildPilotCases(executionContext.schemaCatalog.zones)
+        val expectedPilotSeeds =
+            smokeCases
+                .groupBy { case -> case.request.zoneId to case.request.floorIndex }
+                .filterKeys { (zoneId, _) -> executionContext.schemaCatalog.zones.any { zone -> zone.id == zoneId && zone.isPhase4Upgraded() } }
+                .toSortedMap(compareBy<Pair<String, Int>> { pair -> pair.first }.thenBy { pair -> pair.second })
+                .values
+                .flatMap { cases -> cases.take(5) }
+                .map { case -> Triple(case.request.zoneId, case.request.floorIndex, case.request.seed) }
+
+        val actualPilotSeeds =
+            pilotCases.map { case ->
+                Triple(case.request.zoneId, case.request.floorIndex, case.request.seed)
+            }
+
+        assertEquals(expectedPilotSeeds, actualPilotSeeds)
+    }
+
+    @Test
     @Tag("whiteBoxMapgen")
     fun `white-box mapgen pilot writes standard reports for the PR-03 corpus`() {
         val run = WhiteBoxMapgenRunner.run()

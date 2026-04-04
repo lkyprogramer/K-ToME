@@ -175,8 +175,7 @@ object WhiteBoxMapgenRunner {
         Files.createDirectories(outputDir)
 
         val executionContext = MapgenSmokeRunner.loadExecutionContext()
-        val upgradedZones = executionContext.schemaCatalog.zones.filter(ZoneSchemaV2::isPhase4Upgraded).sortedBy(ZoneSchemaV2::id)
-        val cases = MapgenSmokeRunner.buildCases(upgradedZones, seedsPerFloor = SEEDS_PER_FLOOR)
+        val cases = buildPilotCases(executionContext.schemaCatalog.zones)
         val distinctSeedList = cases.map { case -> case.request.seed }.distinct()
         require(distinctSeedList.size == cases.size) {
             "whiteBoxMapgen corpus must keep a one-to-one seed corpus; got ${distinctSeedList.size} distinct seeds for ${cases.size} cases."
@@ -187,7 +186,7 @@ object WhiteBoxMapgenRunner {
         val corpus =
             WhiteBoxCorpusSpec(
                 corpusId = CORPUS_ID,
-                description = "First 5 deterministic mapgen seeds per floor for the 4 Phase 4 upgraded zones after PR-03.",
+                description = "First 5 deterministic mapgenSmoke seeds per floor for the 4 Phase 4 upgraded zones after PR-03.",
                 sampleCount = cases.size,
             )
 
@@ -247,6 +246,17 @@ object WhiteBoxMapgenRunner {
             casesPath = writeResult.casesPath,
             reportPath = writeResult.reportPath,
         )
+    }
+
+    internal fun buildPilotCases(zones: List<ZoneSchemaV2>): List<MapgenCase> {
+        val upgradedZoneIds = zones.filter(ZoneSchemaV2::isPhase4Upgraded).map(ZoneSchemaV2::id).toSet()
+        return MapgenSmokeRunner.buildCases(zones)
+            .asSequence()
+            .filter { case -> case.request.zoneId in upgradedZoneIds }
+            .groupBy { case -> case.request.zoneId to case.request.floorIndex }
+            .toSortedMap(compareBy<Pair<String, Int>> { pair -> pair.first }.thenBy { pair -> pair.second })
+            .values
+            .flatMap { groupedCases -> groupedCases.take(SEEDS_PER_FLOOR) }
     }
 
     private fun caseAssertions(caseData: WhiteBoxMapgenCaseData): List<WhiteBoxAssertionResult> =
