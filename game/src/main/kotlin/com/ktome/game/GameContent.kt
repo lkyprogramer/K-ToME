@@ -22,6 +22,7 @@ import com.ktome.game.model.BossDefinition
 import com.ktome.game.model.MonsterTemplate
 import com.ktome.game.telegraph.TelegraphRegistry
 import com.ktome.game.telegraph.ThreatProfileRegistry
+import com.ktome.game.data.schema.ZoneSchemaV2
 
 private object EmptyZoneMapgenProfileResolver : ZoneMapgenProfileResolver {
     override fun resolve(zoneId: String): ZoneMapgenProfile =
@@ -47,6 +48,25 @@ private object EmptyZoneRewardProfileResolver : ZoneRewardProfileResolver {
         )
 }
 
+internal class RoutedMapgenPipeline(
+    zones: Collection<ZoneSchemaV2>,
+    private val migratedZonePipeline: MapgenPipeline,
+    private val compatibilityPipeline: MapgenPipeline,
+) : MapgenPipeline {
+    private val migratedZoneIds: Set<String> =
+        zones.asSequence()
+            .filter { zone -> zone.mapgenProfileId != null }
+            .map(ZoneSchemaV2::id)
+            .toSet()
+
+    override fun run(request: com.ktome.core.mapgen.MapgenRequest): com.ktome.core.mapgen.GeneratedFloor =
+        if (request.zoneId in migratedZoneIds) {
+            migratedZonePipeline.run(request)
+        } else {
+            compatibilityPipeline.run(request)
+        }
+}
+
 internal data class GameContent(
     val talents: List<TalentDef>,
     val statuses: List<StatusSchemaV2>,
@@ -66,9 +86,14 @@ internal data class GameContent(
     val mapgenContentCatalog: MapgenContentCatalog? = null,
     val mapgenPipeline: MapgenPipeline =
         mapgenContentCatalog?.let { catalog ->
-            HybridTopologyMapgenPipeline(
-                profileResolver = zoneMapgenProfileResolver,
-                contentCatalog = catalog,
+            RoutedMapgenPipeline(
+                zones = schemaCatalog.zones,
+                migratedZonePipeline =
+                    HybridTopologyMapgenPipeline(
+                        profileResolver = zoneMapgenProfileResolver,
+                        contentCatalog = catalog,
+                    ),
+                compatibilityPipeline = BspBackedMapgenPipeline(profileResolver = zoneMapgenProfileResolver),
             )
         } ?: BspBackedMapgenPipeline(profileResolver = zoneMapgenProfileResolver),
 ) {

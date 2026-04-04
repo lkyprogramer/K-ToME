@@ -44,6 +44,7 @@ import com.ktome.game.factory.ItemFactory
 import com.ktome.game.mapgen.SchemaMapgenContentCatalogFactory
 import com.ktome.game.mapgen.SchemaZoneMapgenProfileResolver
 import com.ktome.game.mapgen.SchemaZoneRewardProfileResolver
+import com.ktome.core.mapgen.BspBackedMapgenPipeline
 import com.ktome.game.model.BossDefinition
 import com.ktome.game.model.MonsterTemplate
 import com.ktome.game.telegraph.TelegraphRegistry
@@ -305,9 +306,14 @@ object GameModule {
             zoneRewardProfileResolver = zoneRewardProfileResolver,
             mapgenContentCatalog = mapgenContentCatalog,
             mapgenPipeline =
-                HybridTopologyMapgenPipeline(
-                    profileResolver = zoneMapgenProfileResolver,
-                    contentCatalog = mapgenContentCatalog,
+                RoutedMapgenPipeline(
+                    zones = schemaCatalog.zones,
+                    migratedZonePipeline =
+                        HybridTopologyMapgenPipeline(
+                            profileResolver = zoneMapgenProfileResolver,
+                            contentCatalog = mapgenContentCatalog,
+                        ),
+                    compatibilityPipeline = BspBackedMapgenPipeline(profileResolver = zoneMapgenProfileResolver),
                 ),
         ).also { content ->
             validateAiProfileContracts(content)
