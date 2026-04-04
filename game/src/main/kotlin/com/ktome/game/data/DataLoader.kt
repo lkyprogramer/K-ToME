@@ -49,6 +49,15 @@ import com.ktome.core.mapgen.VaultDef
 import com.ktome.core.mapgen.VaultTemplateDef
 import com.ktome.core.mapgen.ZoneMapgenProfile
 import com.ktome.core.mapgen.ZoneRewardProfile
+import com.ktome.core.world.solvability.ContentRef
+import com.ktome.core.world.solvability.DiscoveryPredicate
+import com.ktome.core.world.solvability.DiscoveryPredicateType
+import com.ktome.core.world.solvability.DiscoveryRule
+import com.ktome.core.world.solvability.KeyType
+import com.ktome.core.world.solvability.NodeAnchorId
+import com.ktome.core.world.solvability.RegistryId
+import com.ktome.core.world.solvability.RuleCombinator
+import com.ktome.core.world.solvability.SearchBindingId
 import com.ktome.core.economy.AffordableRescueSlotPolicy
 import com.ktome.core.economy.RescueInventoryPolicy
 import com.ktome.core.economy.ShopNode
@@ -805,6 +814,35 @@ class DataLoader(
                         }
                         ?: emptyMap(),
                 roomTagFilter = profile.optionalStringList("roomTagFilter").toSet(),
+                keyGatePlans =
+                    profile.optionalList("keyGatePlans").map { gateEntry ->
+                        val gate = gateEntry.requiredMap()
+                        com.ktome.core.mapgen.KeyGatePlan(
+                            id = gate.requiredString("id"),
+                            fromAnchorId = NodeAnchorId(gate.requiredString("fromAnchorId")),
+                            toAnchorId = NodeAnchorId(gate.requiredString("toAnchorId")),
+                            grantedByAnchorId = NodeAnchorId(gate.requiredString("grantedByAnchorId")),
+                            keyType = KeyType.valueOf(gate.requiredString("keyType").uppercase()),
+                            keyId = gate.requiredString("keyId"),
+                        )
+                    },
+                hiddenEntrancePlans =
+                    profile.optionalList("hiddenEntrancePlans").map { entranceEntry ->
+                        val entrance = entranceEntry.requiredMap()
+                        com.ktome.core.mapgen.HiddenEntrancePlan(
+                            bindingId = SearchBindingId(entrance.requiredString("bindingId")),
+                            sourceAnchorId = NodeAnchorId(entrance.requiredString("sourceAnchorId")),
+                            entranceAnchorId = NodeAnchorId(entrance.requiredString("entranceAnchorId")),
+                            targetAnchorId = NodeAnchorId(entrance.requiredString("targetAnchorId")),
+                            targetSecretZoneId = entrance.requiredMap("targetSecretZoneId").toContentRef(),
+                            discoveryRule = entrance.requiredMap("discoveryRule").toDiscoveryRule(),
+                            pathClass =
+                                entrance.optionalString("pathClass")
+                                    ?.uppercase()
+                                    ?.let(PathClass::valueOf)
+                                    ?: PathClass.SECRET,
+                        )
+                    },
             )
         }
 
@@ -819,6 +857,28 @@ class DataLoader(
                 baseRewardBudget = profile.requiredInt("baseRewardBudget"),
             )
         }
+
+    private fun Map<*, *>.toDiscoveryRule(): DiscoveryRule =
+        DiscoveryRule(
+            combinator = optionalString("combinator")?.uppercase()?.let(RuleCombinator::valueOf) ?: RuleCombinator.AND,
+            predicates =
+                requiredList("predicates").map { predicateEntry ->
+                    predicateEntry.requiredMap().toDiscoveryPredicate()
+                },
+        )
+
+    private fun Map<*, *>.toDiscoveryPredicate(): DiscoveryPredicate =
+        DiscoveryPredicate(
+            type = DiscoveryPredicateType.valueOf(requiredString("type").uppercase()),
+            difficulty = optionalNullableInt("difficulty"),
+            requiredTag = optionalString("requiredTag"),
+        )
+
+    private fun Map<*, *>.toContentRef(): ContentRef =
+        ContentRef(
+            registry = RegistryId(requiredString("registry")),
+            id = requiredString("id"),
+        )
 
     private fun loadMapgenTemplateRows(
         resourcePath: String,

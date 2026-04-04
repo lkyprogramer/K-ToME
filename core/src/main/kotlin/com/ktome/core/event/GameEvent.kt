@@ -5,6 +5,8 @@ import com.ktome.core.combat.DamageType
 import com.ktome.core.movement.MoveBlockReason
 import com.ktome.core.status.EffectCarrierKind
 import com.ktome.core.status.StatusEffectType
+import com.ktome.core.world.solvability.SearchActionResult
+import com.ktome.core.world.solvability.SearchBindingId
 
 sealed interface GameEvent
 
@@ -49,6 +51,14 @@ data class LevelUpEvent(
 data class MovementBlockedEvent(
     val entity: EntityId,
     val reason: MoveBlockReason,
+) : GameEvent
+
+data class SearchResolvedEvent(
+    val actor: EntityId,
+    val bindingId: SearchBindingId?,
+    val result: SearchActionResult,
+    val perceptionTotal: Int,
+    val difficulty: Int? = null,
 ) : GameEvent
 
 sealed interface StatusEvent : GameEvent {

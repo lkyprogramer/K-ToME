@@ -322,6 +322,7 @@ fun PlayerCommand.consumesTurn(): Boolean =
         PlayerCommand.Wait,
         is PlayerCommand.Move,
         PlayerCommand.Interact,
+        PlayerCommand.Search,
         PlayerCommand.PickUp,
         PlayerCommand.Ascend,
         PlayerCommand.Descend,

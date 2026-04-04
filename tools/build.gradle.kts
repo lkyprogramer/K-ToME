@@ -20,6 +20,9 @@ tasks.withType<Test>().configureEach {
     providers.systemProperty("ktome.updateMapgenGolden").orNull?.let { value ->
         systemProperty("ktome.updateMapgenGolden", value)
     }
+    providers.systemProperty("ktome.updateSolvabilityGolden").orNull?.let { value ->
+        systemProperty("ktome.updateSolvabilityGolden", value)
+    }
 }
 
 tasks.register<Test>("combatTraceGolden") {
@@ -72,7 +75,7 @@ tasks.register<Test>("mapgenSmoke") {
 
 tasks.register<Test>("solvabilityHarness") {
     group = "verification"
-    description = "Runs the Phase 4 solvability harness skeleton until PR-03 lands."
+    description = "Runs the Phase 4 solvability proof harness and writes structured reports."
     testClassesDirs = sourceSets.test.get().output.classesDirs
     classpath = sourceSets.test.get().runtimeClasspath
     useJUnitPlatform {

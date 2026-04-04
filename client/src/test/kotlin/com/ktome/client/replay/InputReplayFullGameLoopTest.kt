@@ -1,6 +1,9 @@
 package com.ktome.client.replay
 
 import com.badlogic.gdx.Input.Keys
+import com.ktome.client.automationGeneratedFloor
+import com.ktome.client.automationWorld
+import com.ktome.client.fixtureAutomationMovePlayerTo
 import com.ktome.client.input.InputHandler
 import com.ktome.client.screen.MainMenuAction
 import com.ktome.client.screen.MainMenuController
@@ -10,10 +13,10 @@ import com.ktome.core.ecs.AIType
 import com.ktome.core.ecs.BlocksMovement
 import com.ktome.core.ecs.Health
 import com.ktome.core.ecs.Position
-import com.ktome.core.ecs.World
 import com.ktome.core.ecs.get
 import com.ktome.core.ecs.remove
 import com.ktome.core.map.Point
+import com.ktome.core.mapgen.center
 import com.ktome.core.pathfinding.AStar
 import com.ktome.core.run.RunOutcome
 import com.ktome.core.save.SaveManager
@@ -99,12 +102,31 @@ class InputReplayFullGameLoopTest {
         assertNull(GameModule.loadFoundationSession(saveManager))
     }
 
+    @Test
+    fun `replay input can issue search commands and preserve the resolved result semantics`() {
+        val saveManager = SaveManager(tempDir.resolve("replay-search-save"))
+        val session =
+            GameModule.newFoundationSession(
+                FoundationGameConfig(seed = 20260331L, zoneId = "greenwood_fringe", playerProfessionId = "arcanist"),
+                saveManager,
+            )
+        val inputHandler = InputHandler(ReplayInputSource())
+        clearRegularMonsters(session)
+        fixtureAutomationMovePlayerTo(session, hiddenEntranceSearchPoint(session))
+
+        assertTrue(runCommand(session, inputHandler, justPressed = setOf(Keys.R)))
+        assertTrue(session.renderSnapshot().logEvents.any { event -> event.message.key == "log.search.revealed" })
+
+        assertFalse(runCommand(session, inputHandler, justPressed = setOf(Keys.R)))
+        assertTrue(session.renderSnapshot().logEvents.any { event -> event.message.key == "log.search.already_resolved" })
+    }
+
     private fun killBossByReplay(
         session: FoundationGameSession,
         inputHandler: InputHandler,
     ) {
         clearRegularMonsters(session)
-        val world = runtimeWorld(session)
+        val world = automationWorld(session)
         val bossId =
             world.entitiesWith(BossEncounterState::class, Position::class, Health::class)
                 .single { entityId -> (requireNotNull(world.get<Health>(entityId)).current) > 0 }
@@ -123,7 +145,7 @@ class InputReplayFullGameLoopTest {
         session: FoundationGameSession,
         inputHandler: InputHandler,
     ) {
-        val world = runtimeWorld(session)
+        val world = automationWorld(session)
         val playerPosition = session.playerPosition()
         EntityFactory().createMonster(
             world = world,
@@ -221,14 +243,14 @@ class InputReplayFullGameLoopTest {
     }
 
     private fun clearRegularMonsters(session: FoundationGameSession) {
-        val world = runtimeWorld(session)
+        val world = automationWorld(session)
         world.entitiesWith(Health::class)
             .filter { entityId -> world.get<BossEncounterState>(entityId) == null && entityId != session.playerId }
             .forEach(world::destroyEntity)
     }
 
     private fun blockingPoints(session: FoundationGameSession): Set<Point> {
-        val world = runtimeWorld(session)
+        val world = automationWorld(session)
         return world.entitiesWith(Position::class, BlocksMovement::class)
             .filter { entityId -> entityId != session.playerId }
             .map { entityId -> requireNotNull(world.get<Position>(entityId)).toPoint() }
@@ -249,6 +271,12 @@ class InputReplayFullGameLoopTest {
             } ?: error("No open adjacent point around $center.")
     }
 
+    private fun hiddenEntranceSearchPoint(session: FoundationGameSession): Point {
+        val generatedFloor = automationGeneratedFloor(session)
+        val entrance = generatedFloor.entrances.sortedBy { candidate -> candidate.bindingId.value }.first()
+        return requireNotNull(generatedFloor.roomForEntrance(entrance)) { "Expected room for hidden entrance ${entrance.bindingId.value}." }.center
+    }
+
     private fun keyForDelta(delta: Point): Int =
         when (delta) {
             Point(0, -1) -> Keys.UP
@@ -261,12 +289,6 @@ class InputReplayFullGameLoopTest {
             Point(-1, -1) -> Keys.Q
             else -> error("Unsupported movement delta $delta.")
         }
-
-    private fun runtimeWorld(session: FoundationGameSession): World {
-        val field = FoundationGameSession::class.java.getDeclaredField("world")
-        field.isAccessible = true
-        return field.get(session) as World
-    }
 
     private fun extractReplayInput(inputHandler: InputHandler): ReplayInputSource {
         val field = InputHandler::class.java.getDeclaredField("input")

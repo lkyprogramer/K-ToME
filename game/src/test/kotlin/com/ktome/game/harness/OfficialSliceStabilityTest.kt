@@ -183,6 +183,7 @@ class OfficialSliceStabilityTest {
             PlayerCommand.Wait -> "Wait"
             PlayerCommand.PickUp -> "PickUp"
             PlayerCommand.Interact -> "Interact"
+            PlayerCommand.Search -> "Search"
             PlayerCommand.Ascend -> "Ascend"
             PlayerCommand.Descend -> "Descend"
             PlayerCommand.SaveGame -> "SaveGame"

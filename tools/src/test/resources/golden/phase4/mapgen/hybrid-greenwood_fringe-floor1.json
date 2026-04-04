@@ -4,9 +4,9 @@
     "floorIndex": 1,
     "seed": 20260403010101,
     "criticalPathReachable": true,
-    "topologyFingerprint": "45fcc4d560d5c47093b30ba598b1de606805956392eec1e76019232a32088b9c",
+    "topologyFingerprint": "601bd3a9b88daeb3de6f62db1a4aa3a9ad926bbafd4c63ff122757c0a714b93a",
     "topologySummary": {
-        "nodeCount": 6,
+        "nodeCount": 7,
         "edgeCount": 7,
         "primaryPathLength": 4,
         "optionalLoopCount": 2,
@@ -17,7 +17,8 @@
         "vaultPlacementCount": 2,
         "pathClassCounts": {
             "CRITICAL_PATH": 4,
-            "OPTIONAL": 2
+            "OPTIONAL": 2,
+            "SECRET": 1
         }
     },
     "biomeFamilies": [

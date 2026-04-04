@@ -271,6 +271,10 @@ class InputHandler(
             }
         }
 
+        if (input.isKeyJustPressed(Keys.R)) {
+            return PlayerCommand.Search
+        }
+
         if (isDescendBinding()) {
             return PlayerCommand.Descend
         }

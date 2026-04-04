@@ -50,6 +50,7 @@ import com.ktome.core.item.MilestoneRewardSource
 import com.ktome.core.item.StatModifier
 import com.ktome.core.map.GameMap
 import com.ktome.core.map.Point
+import com.ktome.core.mapgen.center
 import com.ktome.core.pathfinding.AStar
 import com.ktome.core.random.RandomSource
 import com.ktome.core.resource.ResourcePools
@@ -71,6 +72,10 @@ import com.ktome.core.talent.TalentResolver
 import com.ktome.core.talent.TalentRegistry
 import com.ktome.core.talent.TalentTreeOwnerType
 import com.ktome.core.status.StatusLifecycle
+import com.ktome.core.world.solvability.DiscoveryPredicate
+import com.ktome.core.world.solvability.DiscoveryPredicateType
+import com.ktome.core.world.solvability.DiscoveryRule
+import com.ktome.core.world.solvability.SearchActionResult
 import com.ktome.core.world.ObjectiveState
 import com.ktome.game.data.DataLoader
 import com.ktome.game.factory.EntityFactory
@@ -116,6 +121,150 @@ class FoundationGameSessionTest {
                 ),
             ),
         )
+    }
+
+    @Test
+    fun `search without a target emits no target event without consuming a turn`() {
+        val session =
+            GameModule.newFoundationSession(
+                config = FoundationGameConfig(seed = 20260331L, zoneId = "greenwood_fringe", playerProfessionId = "vanguard"),
+                saveManager = SaveManager(tempDir.resolve("search-no-target-save")),
+            )
+        clearMonsters(session)
+        val turnBeforeSearch = session.currentTurnCount()
+
+        assertFalse(session.perform(PlayerCommand.Search))
+        assertEquals(turnBeforeSearch, session.currentTurnCount())
+        assertNotNull(logEventByKey(session, "log.search.no_target"))
+        assertTrue(
+            recentEventSummaries(session).any { summary ->
+                summary.startsWith("search:${session.playerId.value}:-:NO_TARGET:")
+            },
+        )
+    }
+
+    @Test
+    fun `searching a hidden entrance consumes a turn and persists the revealed binding`() {
+        val saveManager = SaveManager(tempDir.resolve("search-hidden-entrance-save"))
+        val session =
+            GameModule.newFoundationSession(
+                config = FoundationGameConfig(seed = 20260331L, zoneId = "greenwood_fringe", playerProfessionId = "arcanist"),
+                saveManager = saveManager,
+            )
+        clearMonsters(session)
+        val entrance = hiddenEntranceForCurrentFloor(session)
+        movePlayerTo(session, hiddenEntranceSearchPoint(session, entrance.bindingId))
+        val turnBeforeSearch = session.currentTurnCount()
+
+        assertTrue(session.perform(PlayerCommand.Search))
+        assertEquals(turnBeforeSearch + 1, session.currentTurnCount())
+        assertTrue(activeFloorState(session).revealedEntranceIds.contains(entrance.bindingId))
+        assertEquals(SearchActionResult.REVEALED, activeFloorState(session).searchState.single().result)
+        assertNotNull(logEventByKey(session, "log.search.revealed"))
+        assertTrue(
+            recentEventSummaries(session).any { summary ->
+                summary.startsWith("search:${session.playerId.value}:${entrance.bindingId.value}:REVEALED:")
+            },
+        )
+
+        assertTrue(session.perform(PlayerCommand.SaveGame))
+        val savedFloor = requireNotNull(saveManager.load()).floors.single()
+        assertEquals(setOf(entrance.bindingId), savedFloor.revealedEntranceIds)
+        assertEquals(listOf(entrance.bindingId), savedFloor.searchState.map { entry -> entry.bindingId })
+        assertEquals(listOf(SearchActionResult.REVEALED), savedFloor.searchState.map { entry -> entry.result })
+
+        val loaded = requireNotNull(GameModule.loadFoundationSession(saveManager))
+        val loadedEntrance = hiddenEntranceForCurrentFloor(loaded)
+        movePlayerTo(loaded, hiddenEntranceSearchPoint(loaded, loadedEntrance.bindingId))
+        val loadedTurnBeforeSearch = loaded.currentTurnCount()
+
+        assertFalse(loaded.perform(PlayerCommand.Search))
+        assertEquals(loadedTurnBeforeSearch, loaded.currentTurnCount())
+        assertNotNull(logEventByKey(loaded, "log.search.already_resolved"))
+    }
+
+    @Test
+    fun `failed hidden entrance search is cached and repeated attempts do not reroll`() {
+        val session =
+            GameModule.newFoundationSession(
+                config = FoundationGameConfig(seed = 20260331L, zoneId = "abyssal_temple", playerProfessionId = "templar"),
+                saveManager = SaveManager(tempDir.resolve("failed-hidden-search-save")),
+            )
+        clearMonsters(session)
+        setPlayerMentalPower(session, mentalPower = 0)
+        val entrance = hiddenEntranceForCurrentFloor(session)
+        movePlayerTo(session, hiddenEntranceSearchPoint(session, entrance.bindingId))
+        val turnBeforeFirstSearch = session.currentTurnCount()
+
+        assertTrue(session.perform(PlayerCommand.Search))
+        assertEquals(turnBeforeFirstSearch + 1, session.currentTurnCount())
+        assertEquals(emptySet<com.ktome.core.world.solvability.SearchBindingId>(), activeFloorState(session).revealedEntranceIds)
+        assertEquals(listOf(SearchActionResult.FAILED_CHECK), activeFloorState(session).searchState.map { entry -> entry.result })
+        assertNotNull(logEventByKey(session, "log.search.failed_check"))
+        assertEquals(
+            1,
+            recentEventSummaries(session).count { summary ->
+                summary.startsWith("search:${session.playerId.value}:${entrance.bindingId.value}:FAILED_CHECK:")
+            },
+        )
+
+        val turnBeforeSecondSearch = session.currentTurnCount()
+        assertFalse(session.perform(PlayerCommand.Search))
+        assertEquals(turnBeforeSecondSearch, session.currentTurnCount())
+        assertNotNull(logEventByKey(session, "log.search.already_resolved"))
+        assertEquals(
+            1,
+            recentEventSummaries(session).count { summary ->
+                summary.startsWith("search:${session.playerId.value}:${entrance.bindingId.value}:FAILED_CHECK:")
+            },
+        )
+        assertEquals(
+            1,
+            recentEventSummaries(session).count { summary ->
+                summary.startsWith("search:${session.playerId.value}:${entrance.bindingId.value}:ALREADY_RESOLVED:")
+            },
+        )
+    }
+
+    @Test
+    fun `search runtime evaluates required tag predicates from the searched room tags`() {
+        val session =
+            GameModule.newFoundationSession(
+                config = FoundationGameConfig(seed = 20260331L, zoneId = "greenwood_fringe", playerProfessionId = "vanguard"),
+                saveManager = SaveManager(tempDir.resolve("required-tag-search-save")),
+            )
+        clearMonsters(session)
+        val entrance = hiddenEntranceForCurrentFloor(session)
+        replaceGeneratedFloor(
+            session = session,
+            generatedFloor =
+                activeFloorState(session).generatedFloor.copy(
+                entrances =
+                    activeFloorState(session).generatedFloor.entrances.map { candidate ->
+                        if (candidate.bindingId != entrance.bindingId) {
+                            candidate
+                        } else {
+                            candidate.copy(
+                                discoveryRule =
+                                    DiscoveryRule(
+                                        predicates =
+                                            listOf(
+                                                DiscoveryPredicate(
+                                                    type = DiscoveryPredicateType.REQUIRED_TAG,
+                                                    requiredTag = "optional",
+                                                ),
+                                            ),
+                                    ),
+                            )
+                        }
+                    },
+                ),
+        )
+        movePlayerTo(session, hiddenEntranceSearchPoint(session, entrance.bindingId))
+
+        assertTrue(session.perform(PlayerCommand.Search))
+        assertEquals(SearchActionResult.REVEALED, activeFloorState(session).searchState.single().result)
+        assertNotNull(logEventByKey(session, "log.search.revealed_tag"))
     }
 
     @Test
@@ -4088,6 +4237,22 @@ class FoundationGameSessionTest {
         return field.get(session) as World
     }
 
+    private fun activeFloorState(session: FoundationGameSession): FloorRuntimeState {
+        val field = FoundationGameSession::class.java.getDeclaredField("activeFloorState")
+        field.isAccessible = true
+        return field.get(session) as FloorRuntimeState
+    }
+
+    private fun replaceGeneratedFloor(
+        session: FoundationGameSession,
+        generatedFloor: com.ktome.core.mapgen.GeneratedFloor,
+    ) {
+        val field = FoundationGameSession::class.java.getDeclaredField("activeFloorState")
+        field.isAccessible = true
+        val current = field.get(session) as FloorRuntimeState
+        field.set(session, current.copy(generatedFloor = generatedFloor))
+    }
+
     private fun sessionContent(session: FoundationGameSession): GameContent {
         val field = FoundationGameSession::class.java.getDeclaredField("content")
         field.isAccessible = true
@@ -4194,8 +4359,27 @@ class FoundationGameSessionTest {
     private fun movePlayerTo(
         session: FoundationGameSession,
         point: Point,
+    ) = session.automationMovePlayerTo(point)
+
+    private fun hiddenEntranceForCurrentFloor(session: FoundationGameSession): com.ktome.core.mapgen.GeneratedEntrance =
+        activeFloorState(session).generatedFloor.entrances.sortedBy { entrance -> entrance.bindingId.value }.first()
+
+    private fun hiddenEntranceSearchPoint(
+        session: FoundationGameSession,
+        bindingId: com.ktome.core.world.solvability.SearchBindingId,
+    ): Point {
+        val generatedFloor = activeFloorState(session).generatedFloor
+        val entrance = requireNotNull(generatedFloor.entranceByBinding(bindingId))
+        return requireNotNull(generatedFloor.roomForEntrance(entrance)).center
+    }
+
+    private fun setPlayerMentalPower(
+        session: FoundationGameSession,
+        mentalPower: Int,
     ) {
-        requireNotNull(runtimeWorld(session).get<Position>(session.playerId)).moveTo(point)
+        val world = runtimeWorld(session)
+        val current = requireNotNull(world.get<DerivedStats>(session.playerId))
+        world.add(session.playerId, current.copy(powerSave = current.powerSave.copy(mentalPower = mentalPower)))
     }
 
     private fun hasAbyssalWardProtection(

@@ -2,6 +2,14 @@ package com.ktome.core.mapgen
 
 import com.ktome.core.map.GameMap
 import com.ktome.core.map.Point
+import com.ktome.core.world.solvability.ContentRef
+import com.ktome.core.world.solvability.DiscoveryPredicate
+import com.ktome.core.world.solvability.DiscoveryPredicateType
+import com.ktome.core.world.solvability.DiscoveryRule
+import com.ktome.core.world.solvability.KeyType
+import com.ktome.core.world.solvability.NodeAnchorId
+import com.ktome.core.world.solvability.RegistryId
+import com.ktome.core.world.solvability.SearchBindingId
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -183,6 +191,142 @@ class MapgenContractTest {
                 .toSet()
 
         assertEquals(setOf("bog", "forest"), optionalFamilies)
+    }
+
+    @Test
+    fun `hybrid planner unions multiple gate requirements on the same edge`() {
+        val planner =
+            HybridTopologyPlanner(
+                roomDefsById =
+                    listOf(
+                        RoomDef("room.primary", RoomShape.RECT, 8..9, 7..8, setOf("general", "start", "route", "hub", "goal")),
+                        RoomDef("room.optional", RoomShape.RECT, 8..9, 7..8, setOf("general", "optional")),
+                    ).associateBy(RoomDef::id),
+                biomeFamiliesById =
+                    mapOf(
+                        "family.test" to BiomeFamilyDef("family.test", "tileset.test", null, emptyMap(), setOf("general")),
+                    ),
+            )
+
+        val topology =
+            planner.plan(
+                profile =
+                    ZoneMapgenProfile(
+                        id = "multi-gate.zone",
+                        zoneId = "multi_gate_zone",
+                        allowedBiomeFamilies = setOf("family.test"),
+                        loopCountRange = 1..1,
+                        vaultPool = emptySet(),
+                        terrainTagWeights = emptyMap(),
+                        roomTagFilter = emptySet(),
+                        keyGatePlans =
+                            listOf(
+                                KeyGatePlan(
+                                    id = "gate.alpha",
+                                    fromAnchorId = NodeAnchorId("critical.hub"),
+                                    toAnchorId = NodeAnchorId("critical.goal"),
+                                    grantedByAnchorId = NodeAnchorId("optional.branch.1"),
+                                    keyType = KeyType.KEY_ITEM,
+                                    keyId = "alpha",
+                                ),
+                                KeyGatePlan(
+                                    id = "gate.beta",
+                                    fromAnchorId = NodeAnchorId("critical.hub"),
+                                    toAnchorId = NodeAnchorId("critical.goal"),
+                                    grantedByAnchorId = NodeAnchorId("optional.branch.1"),
+                                    keyType = KeyType.SWITCH,
+                                    keyId = "beta",
+                                ),
+                            ),
+                    ),
+                request = MapgenRequest(zoneId = "multi_gate_zone", floorIndex = 1, seed = 2026040501L, targetWidth = 72, targetHeight = 46),
+            )
+
+        val gateEdge =
+            topology.edges.single { edge ->
+                val anchors =
+                    topology.nodes
+                        .filter { node -> node.id == edge.from || node.id == edge.to }
+                        .map(TopologyNode::anchorId)
+                        .toSet()
+                anchors == setOf(NodeAnchorId("critical.hub"), NodeAnchorId("critical.goal"))
+            }
+
+        assertEquals(
+            setOf(RequirementRef("KEY_ITEM:alpha"), RequirementRef("SWITCH:beta")),
+            gateEdge.requiredKeys,
+        )
+    }
+
+    @Test
+    fun `hybrid planner propagates gated critical path requirements onto reconnecting optional loops`() {
+        val planner =
+            HybridTopologyPlanner(
+                roomDefsById =
+                    listOf(
+                        RoomDef("room.primary", RoomShape.RECT, 8..9, 7..8, setOf("general", "start", "route", "hub", "goal")),
+                        RoomDef("room.optional", RoomShape.RECT, 8..9, 7..8, setOf("general", "optional")),
+                    ).associateBy(RoomDef::id),
+                biomeFamiliesById =
+                    mapOf(
+                        "family.test" to BiomeFamilyDef("family.test", "tileset.test", null, emptyMap(), setOf("general")),
+                    ),
+            )
+
+        val topology =
+            planner.plan(
+                profile =
+                    ZoneMapgenProfile(
+                        id = "loop-gate.zone",
+                        zoneId = "loop_gate_zone",
+                        allowedBiomeFamilies = setOf("family.test"),
+                        loopCountRange = 2..2,
+                        vaultPool = emptySet(),
+                        terrainTagWeights = emptyMap(),
+                        roomTagFilter = emptySet(),
+                        keyGatePlans =
+                            listOf(
+                                KeyGatePlan(
+                                    id = "gate.final",
+                                    fromAnchorId = NodeAnchorId("critical.hub"),
+                                    toAnchorId = NodeAnchorId("critical.goal"),
+                                    grantedByAnchorId = NodeAnchorId("optional.branch.1"),
+                                    keyType = KeyType.KEY_ITEM,
+                                    keyId = "final_key",
+                                ),
+                            ),
+                    ),
+                request = MapgenRequest(zoneId = "loop_gate_zone", floorIndex = 1, seed = 2026040502L, targetWidth = 72, targetHeight = 46),
+            )
+
+        val goalLoopEdges =
+            topology.edges.filter { edge ->
+                edge.isLoop &&
+                    topology.nodes
+                        .filter { node -> node.id == edge.from || node.id == edge.to }
+                        .map(TopologyNode::anchorId)
+                        .contains(NodeAnchorId("critical.goal"))
+            }
+
+        assertEquals(2, goalLoopEdges.size)
+        assertTrue(goalLoopEdges.all { edge -> RequirementRef("KEY_ITEM:final_key") in edge.requiredKeys })
+    }
+
+    @Test
+    fun `hidden entrance plan fails fast when entrance anchor drifts away from source anchor`() {
+        assertThrows(IllegalArgumentException::class.java) {
+            HiddenEntrancePlan(
+                bindingId = SearchBindingId("search.test.hidden"),
+                sourceAnchorId = NodeAnchorId("optional.branch.1"),
+                entranceAnchorId = NodeAnchorId("critical.hub"),
+                targetAnchorId = NodeAnchorId("secret.test.hidden"),
+                targetSecretZoneId = ContentRef(registry = RegistryId("secret_zone"), id = "hidden_stub"),
+                discoveryRule =
+                    DiscoveryRule(
+                        predicates = listOf(DiscoveryPredicate(type = DiscoveryPredicateType.PERCEPTION_CHECK, difficulty = 8)),
+                    ),
+            )
+        }
     }
 
     @Test

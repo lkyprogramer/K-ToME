@@ -63,6 +63,12 @@ import com.ktome.core.resource.EquilibriumState
 import com.ktome.core.resource.ResourcePoolSnapshot
 import com.ktome.core.resource.ResourcePools
 import com.ktome.core.resource.ResourceType
+import com.ktome.core.world.solvability.ContentRef
+import com.ktome.core.world.solvability.ResolvedEntranceBinding
+import com.ktome.core.world.solvability.SearchBindingId
+import com.ktome.core.world.solvability.SearchActionResult
+import com.ktome.core.world.solvability.SearchStateEntry
+import com.ktome.core.world.solvability.revealedBindingIds
 import com.ktome.core.profile.MilestoneRewardSummary
 import com.ktome.core.save.AIBehaviorSnapshot
 import com.ktome.core.save.AIPerceptionSnapshot
@@ -139,18 +145,51 @@ internal data class FloorRuntimeState(
     var rewardState: FloorRewardStateSnapshot = FloorRewardStateSnapshot(),
     val exploredTiles: LinkedHashSet<Point> = linkedSetOf(),
     val entities: MutableList<EntitySnapshot> = mutableListOf(),
+    val revealedEntranceIds: LinkedHashSet<SearchBindingId> = linkedSetOf(),
+    val visitedSecretZoneIds: LinkedHashSet<ContentRef> = linkedSetOf(),
+    val searchState: MutableList<SearchStateEntry> = mutableListOf(),
 ) {
+    init {
+        validateSearchStateConsistency()
+    }
+
     val map: GameMap
         get() = generatedFloor.map
 
     val terrainTags: Map<Point, Set<TerrainTag>>
         get() = generatedFloor.terrainTags
 
+    val resolvedHiddenEntranceBindings: List<ResolvedEntranceBinding>
+        get() = generatedFloor.resolvedEntranceBindings()
+
     val topologyFingerprint: String
         get() = TopologyFingerprinting.fingerprint(generatedFloor.topology)
 
     val terrainTagHash: String
         get() = TopologyFingerprinting.terrainTagHash(generatedFloor.terrainTags)
+
+    fun searchStateFor(bindingId: SearchBindingId): SearchStateEntry? =
+        searchState.firstOrNull { entry -> entry.bindingId == bindingId }
+
+    fun recordSearchResolution(
+        bindingId: SearchBindingId,
+        result: SearchActionResult,
+    ) {
+        searchState.removeAll { entry -> entry.bindingId == bindingId }
+        searchState += SearchStateEntry(bindingId = bindingId, result = result)
+        if (result == SearchActionResult.REVEALED) {
+            revealedEntranceIds += bindingId
+        } else {
+            revealedEntranceIds -= bindingId
+        }
+        validateSearchStateConsistency()
+    }
+
+    private fun validateSearchStateConsistency() {
+        require(revealedEntranceIds == searchState.revealedBindingIds()) {
+            "FloorRuntimeState.revealedEntranceIds must match REVEALED searchState entries."
+        }
+    }
 
     constructor(
         map: GameMap,
@@ -159,6 +198,9 @@ internal data class FloorRuntimeState(
         rewardState: FloorRewardStateSnapshot = FloorRewardStateSnapshot(),
         exploredTiles: LinkedHashSet<Point> = linkedSetOf(),
         entities: MutableList<EntitySnapshot> = mutableListOf(),
+        revealedEntranceIds: LinkedHashSet<SearchBindingId> = linkedSetOf(),
+        visitedSecretZoneIds: LinkedHashSet<ContentRef> = linkedSetOf(),
+        searchState: MutableList<SearchStateEntry> = mutableListOf(),
     ) : this(
         generatedFloor = legacyGeneratedFloor(map),
         stairsUp = stairsUp,
@@ -166,6 +208,9 @@ internal data class FloorRuntimeState(
         rewardState = rewardState,
         exploredTiles = exploredTiles,
         entities = entities,
+        revealedEntranceIds = revealedEntranceIds,
+        visitedSecretZoneIds = visitedSecretZoneIds,
+        searchState = searchState,
     )
 }
 
@@ -216,6 +261,9 @@ internal object SessionSnapshotMapper {
         exploredTiles: Set<Point>,
         world: World,
         excludedEntities: Set<EntityId>,
+        revealedEntranceIds: Set<SearchBindingId> = emptySet(),
+        visitedSecretZoneIds: Set<ContentRef> = emptySet(),
+        searchState: List<SearchStateEntry> = emptyList(),
     ): FloorRuntimeState =
         FloorRuntimeState(
             generatedFloor = generatedFloor,
@@ -228,6 +276,9 @@ internal object SessionSnapshotMapper {
                     .filter { entityId -> entityId !in excludedEntities }
                     .map { entityId -> captureEntity(world, entityId) }
                     .toMutableList(),
+            revealedEntranceIds = linkedSetOf<SearchBindingId>().apply { addAll(revealedEntranceIds) },
+            visitedSecretZoneIds = linkedSetOf<ContentRef>().apply { addAll(visitedSecretZoneIds) },
+            searchState = searchState.toMutableList(),
         )
 
     fun captureFloor(
@@ -339,6 +390,10 @@ internal object SessionSnapshotMapper {
                         floorSeed = floorState.payload.generatedFloor.seed,
                         topologyFingerprint = floorState.payload.topologyFingerprint,
                         terrainTagHash = floorState.payload.terrainTagHash,
+                        resolvedHiddenEntranceBindings = floorState.payload.resolvedHiddenEntranceBindings,
+                        revealedEntranceIds = floorState.payload.revealedEntranceIds.toSet(),
+                        visitedSecretZoneIds = floorState.payload.visitedSecretZoneIds.toSet(),
+                        searchState = floorState.payload.searchState.toList(),
                         map =
                             MapSnapshot(
                                 rows = floorState.payload.map.asGlyphRows(),
@@ -410,6 +465,9 @@ internal object SessionSnapshotMapper {
                                     },
                                 exploredTiles = linkedSetOf<Point>().apply { addAll(floor.exploredTiles.map(PointSnapshot::toPoint)) },
                                 entities = floor.entities.map(::canonicalizeEntitySnapshot).sortedBy(EntitySnapshot::id).toMutableList(),
+                                revealedEntranceIds = linkedSetOf<SearchBindingId>().apply { addAll(floor.revealedEntranceIds) },
+                                visitedSecretZoneIds = linkedSetOf<ContentRef>().apply { addAll(floor.visitedSecretZoneIds) },
+                                searchState = floor.searchState.toMutableList(),
                             ),
                     )
                 },
@@ -473,8 +531,16 @@ internal object SessionSnapshotMapper {
                 "Saved floor ${floor.zoneId}#${floor.floorIndex} failed terrain-tag hash verification. Start a new run.",
             )
         }
+        if (canonicalEntranceBindings(regenerated.resolvedEntranceBindings()) != canonicalEntranceBindings(floor.resolvedHiddenEntranceBindings)) {
+            throw InvalidSaveException(
+                "Saved floor ${floor.zoneId}#${floor.floorIndex} failed hidden-entrance binding verification. Start a new run.",
+            )
+        }
         return regenerated
     }
+
+    private fun canonicalEntranceBindings(bindings: List<ResolvedEntranceBinding>): List<ResolvedEntranceBinding> =
+        bindings.sortedBy { binding -> binding.searchBindingId.value }
 
     private fun captureEntity(
         world: World,

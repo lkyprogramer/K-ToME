@@ -186,6 +186,18 @@ class AudioRouterTest {
     }
 
     @Test
+    fun `search command reuses interactable cues without introducing a dedicated audio key`() {
+        val sink = RecordingAudioCueSink()
+        val router = AudioRouter(AudioManifestResolver(AudioManifestResourceLoader.load()), sink)
+        val snapshot = sampleSnapshot()
+
+        router.onCommandResolved(snapshot, snapshot, PlayerCommand.Search, consumed = true)
+        router.onCommandResolved(snapshot, snapshot, PlayerCommand.Search, consumed = false)
+
+        assertEquals(listOf("audio.interactable.open", "audio.ui.cancel"), sink.events)
+    }
+
+    @Test
     fun `snapshot log and resource changes emit progression and restore cues`() {
         val sink = RecordingAudioCueSink()
         val router = AudioRouter(AudioManifestResolver(AudioManifestResourceLoader.load()), sink)

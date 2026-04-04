@@ -1,0 +1,60 @@
+{
+    "zoneId": "greenwood_fringe",
+    "floorIndex": 1,
+    "seed": 20260404010101,
+    "criticalPathReachable": true,
+    "visitedNodes": [
+        "primary-0",
+        "primary-1",
+        "primary-2",
+        "optional-0",
+        "primary-3",
+        "secret-0"
+    ],
+    "acquiredKeys": [
+        "KEY_ITEM:greenwood_final_path_key"
+    ],
+    "unresolvedRequirements": [],
+    "optionalPathCount": 1,
+    "secretPathCount": 1,
+    "totalReachableNodes": 6,
+    "reachabilityRatio": 1.0,
+    "topologySummary": {
+        "nodeCount": 6,
+        "edgeCount": 5,
+        "primaryPathLength": 4,
+        "optionalLoopCount": 1,
+        "loopEdgeCount": 1,
+        "loopEdgeRatio": 0.2,
+        "roomCount": 5,
+        "patternRoomCount": 0,
+        "vaultPlacementCount": 1,
+        "pathClassCounts": {
+            "CRITICAL_PATH": 4,
+            "OPTIONAL": 1,
+            "SECRET": 1
+        }
+    },
+    "searchActionCount": 1,
+    "searchRevealCount": 1,
+    "searchFailCount": 0,
+    "searchStates": {
+        "search.greenwood.hidden_cache": "REVEALED"
+    },
+    "secretProofs": [
+        {
+            "bindingId": "search.greenwood.hidden_cache",
+            "entranceAnchorId": "optional.branch.1",
+            "targetNodeId": "secret-0",
+            "resolved": true,
+            "result": "REVEALED"
+        }
+    ],
+    "resolvedEntranceBindings": [
+        {
+            "bindingId": "search.greenwood.hidden_cache",
+            "entranceAnchorId": "optional.branch.1",
+            "targetNodeId": "secret-0"
+        }
+    ]
+}

@@ -2,7 +2,14 @@ package com.ktome.core.mapgen
 
 import com.ktome.core.map.GameMap
 import com.ktome.core.map.Point
+import com.ktome.core.world.solvability.ContentRef
+import com.ktome.core.world.solvability.DiscoveryRule
+import com.ktome.core.world.solvability.KeyType
+import com.ktome.core.world.solvability.NodeAnchorId
+import com.ktome.core.world.solvability.ResolvedEntranceBinding
+import com.ktome.core.world.solvability.SearchBindingId
 import kotlinx.serialization.Serializable
+import kotlin.math.max
 
 @Serializable
 @JvmInline
@@ -163,6 +170,8 @@ data class ZoneMapgenProfile(
     val vaultPool: Set<String>,
     val terrainTagWeights: Map<TerrainTag, Float>,
     val roomTagFilter: Set<String>,
+    val keyGatePlans: List<KeyGatePlan> = emptyList(),
+    val hiddenEntrancePlans: List<HiddenEntrancePlan> = emptyList(),
 ) {
     init {
         require(zoneId.isNotBlank()) { "ZoneMapgenProfile.zoneId must not be blank." }
@@ -176,6 +185,42 @@ data class ZoneMapgenProfile(
         }
         require(terrainTagWeights.values.all { weight -> weight >= 0f }) {
             "terrainTagWeights must not contain negative weights."
+        }
+    }
+}
+
+data class KeyGatePlan(
+    val id: String,
+    val fromAnchorId: NodeAnchorId,
+    val toAnchorId: NodeAnchorId,
+    val grantedByAnchorId: NodeAnchorId,
+    val keyType: KeyType,
+    val keyId: String,
+) {
+    init {
+        require(id.isNotBlank()) { "KeyGatePlan.id must not be blank." }
+        require(keyId.isNotBlank()) { "KeyGatePlan.keyId must not be blank." }
+    }
+
+    val requirementRef: RequirementRef
+        get() = RequirementRef("${keyType.name}:$keyId")
+}
+
+data class HiddenEntrancePlan(
+    val bindingId: SearchBindingId,
+    val sourceAnchorId: NodeAnchorId,
+    val entranceAnchorId: NodeAnchorId,
+    val targetAnchorId: NodeAnchorId,
+    val targetSecretZoneId: ContentRef,
+    val discoveryRule: DiscoveryRule,
+    val pathClass: PathClass = PathClass.SECRET,
+) {
+    init {
+        require(pathClass == PathClass.SECRET) {
+            "HiddenEntrancePlan.pathClass must remain SECRET in PR-03."
+        }
+        require(sourceAnchorId == entranceAnchorId) {
+            "HiddenEntrancePlan.entranceAnchorId must match sourceAnchorId in PR-03."
         }
     }
 }
@@ -198,14 +243,19 @@ data class ZoneRewardProfile(
 
 data class TopologyNode(
     val id: NodeId,
+    val anchorId: NodeAnchorId,
     val roomDefId: String,
     val pathClass: PathClass,
     val tags: Set<String>,
+    val grants: Set<RequirementRef> = emptySet(),
     val biomeFamilyId: String? = null,
 ) {
     init {
         require(roomDefId.isNotBlank()) { "TopologyNode.roomDefId must not be blank." }
         require(tags.all(String::isNotBlank)) { "TopologyNode.tags must not contain blank entries." }
+        require(grants.all { grant -> grant.value.isNotBlank() }) {
+            "TopologyNode.grants must not contain blank requirement refs."
+        }
         require(biomeFamilyId == null || biomeFamilyId.isNotBlank()) {
             "TopologyNode.biomeFamilyId must not be blank when present."
         }
@@ -250,18 +300,25 @@ data class TopologyGraph(
 }
 
 data class GeneratedEntrance(
-    val id: String,
+    val bindingId: SearchBindingId,
     val fromNodeId: NodeId,
     val targetNodeId: NodeId,
+    val entranceAnchorId: NodeAnchorId,
+    val targetAnchorId: NodeAnchorId,
+    val pathClass: PathClass,
+    val discoveryRule: DiscoveryRule,
+    val targetSecretZoneId: ContentRef,
+    val resolvedReturnBridgeNodeId: NodeId = fromNodeId,
 ) {
     init {
-        require(id.isNotBlank()) { "GeneratedEntrance.id must not be blank." }
         require(fromNodeId != targetNodeId) { "GeneratedEntrance must connect two distinct nodes." }
+        require(pathClass == PathClass.SECRET) { "GeneratedEntrance.pathClass must remain SECRET." }
     }
 }
 
 data class RoomInstance(
     val nodeId: NodeId,
+    val anchorId: NodeAnchorId,
     val roomDefId: String,
     val x: Int,
     val y: Int,
@@ -284,6 +341,41 @@ data class RoomInstance(
         }
     }
 }
+
+val RoomInstance.center: Point
+    get() = Point(x + (width / 2), y + (height / 2))
+
+fun RoomInstance.contains(point: Point): Boolean =
+    when (shape) {
+        RoomShape.RECT -> point.x in x until x + width && point.y in y until y + height
+        RoomShape.L_SHAPE -> {
+            val splitX = x + max(2, width / 2)
+            val inVerticalArm = point.x in x until splitX && point.y in y until y + height
+            val inHorizontalArm = point.x in x until x + width && point.y in y + height / 2 until y + height
+            inVerticalArm || inHorizontalArm
+        }
+
+        RoomShape.ROUND -> {
+            val centerX = x + width / 2.0
+            val centerY = y + height / 2.0
+            val radiusX = max(1.5, width / 2.2)
+            val radiusY = max(1.5, height / 2.2)
+            val normalizedX = ((point.x + 0.5) - centerX) / radiusX
+            val normalizedY = ((point.y + 0.5) - centerY) / radiusY
+            (normalizedX * normalizedX) + (normalizedY * normalizedY) <= 1.0
+        }
+
+        RoomShape.IRREGULAR -> {
+            point.x in x until x + width &&
+                point.y in y until y + height &&
+                point !in listOf(
+                    Point(x + 1, y + 1),
+                    Point(x + width - 2, y + 1),
+                    Point(x + 1, y + height - 2),
+                    Point(x + width - 2, y + height - 2),
+                )
+        }
+    }
 
 data class VaultPlacement(
     val vaultId: String,
@@ -318,6 +410,8 @@ data class GeneratedFloor(
 ) {
     init {
         val topologyNodeIds = topology.nodes.map(TopologyNode::id).toSet()
+        val topologyAnchorIds = topology.nodes.map(TopologyNode::anchorId).toSet()
+        val roomAnchorIds = rooms.map(RoomInstance::anchorId).toSet()
         require(zoneId.isNotBlank()) { "GeneratedFloor.zoneId must not be blank." }
         require(floorIndex > 0) { "GeneratedFloor.floorIndex must be positive." }
         require(biomeFamilyIds.all(String::isNotBlank)) { "GeneratedFloor.biomeFamilyIds must not contain blank ids." }
@@ -342,6 +436,15 @@ data class GeneratedFloor(
         }
         require(vaultPlacements.all { placement -> placement.nodeId in topologyNodeIds }) {
             "GeneratedFloor.vaultPlacements must reference declared topology nodes."
+        }
+        require(entrances.all { entrance -> entrance.fromNodeId in topologyNodeIds && entrance.targetNodeId in topologyNodeIds }) {
+            "GeneratedFloor.entrances must reference declared topology nodes."
+        }
+        require(entrances.all { entrance -> entrance.entranceAnchorId in roomAnchorIds }) {
+            "GeneratedFloor.entrances must bind to an instantiated room anchor."
+        }
+        require(entrances.all { entrance -> entrance.targetAnchorId in topologyAnchorIds }) {
+            "GeneratedFloor.entrances must reference declared topology anchors."
         }
     }
 
@@ -376,6 +479,31 @@ data class GeneratedFloor(
             topology: TopologyGraph,
         ): List<RoomInstance> = CompatibilityRoomProjector.project(map = map, topology = topology)
     }
+
+    fun resolvedEntranceBindings(): List<ResolvedEntranceBinding> =
+        entrances.map { entrance ->
+            ResolvedEntranceBinding(
+                searchBindingId = entrance.bindingId,
+                entranceAnchorId = entrance.entranceAnchorId,
+                resolvedTargetNodeId = entrance.targetNodeId,
+            )
+        }
+
+    fun roomAt(point: Point): RoomInstance? = rooms.firstOrNull { room -> room.contains(point) }
+
+    fun roomByAnchor(anchorId: NodeAnchorId): RoomInstance? {
+        val matches = rooms.filter { room -> room.anchorId == anchorId }
+        require(matches.size <= 1) { "GeneratedFloor.roomByAnchor must not resolve duplicate room anchors '$anchorId'." }
+        return matches.firstOrNull()
+    }
+
+    fun entranceByBinding(bindingId: SearchBindingId): GeneratedEntrance? {
+        val matches = entrances.filter { entrance -> entrance.bindingId == bindingId }
+        require(matches.size <= 1) { "GeneratedFloor.entranceByBinding must not resolve duplicate binding ids '$bindingId'." }
+        return matches.firstOrNull()
+    }
+
+    fun roomForEntrance(entrance: GeneratedEntrance): RoomInstance? = roomByAnchor(entrance.entranceAnchorId)
 }
 
 interface ZoneMapgenProfileResolver {

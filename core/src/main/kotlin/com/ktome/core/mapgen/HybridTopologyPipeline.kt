@@ -4,6 +4,7 @@ import com.ktome.core.map.GameMap
 import com.ktome.core.map.Point
 import com.ktome.core.map.Room
 import com.ktome.core.map.TileType
+import com.ktome.core.world.solvability.NodeAnchorId
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
@@ -52,6 +53,7 @@ class HybridTopologyPlanner(
                 val candidateTags = resolveCandidateRoomTags(profile = profile, biomeFamilyId = nodeBiomeFamilyId)
                 TopologyNode(
                     id = NodeId("primary-$index"),
+                    anchorId = primaryAnchorId(roleTag = roleTag, ordinal = index),
                     roomDefId =
                         chooseRoomDefId(
                             biomeFamilyId = nodeBiomeFamilyId,
@@ -84,6 +86,7 @@ class HybridTopologyPlanner(
                 val candidateTags = resolveCandidateRoomTags(profile = profile, biomeFamilyId = nodeBiomeFamilyId)
                 TopologyNode(
                     id = NodeId("optional-$index"),
+                    anchorId = optionalAnchorId(index),
                     roomDefId =
                         chooseRoomDefId(
                             biomeFamilyId = nodeBiomeFamilyId,
@@ -103,25 +106,89 @@ class HybridTopologyPlanner(
                 )
             }
 
-        val edges =
+        val requirementRefsByAnchorId =
+            profile.keyGatePlans
+                .groupBy { plan -> plan.grantedByAnchorId }
+                .mapValues { (_, plans) -> plans.map(KeyGatePlan::requirementRef).toSet() }
+
+        val primaryNodesWithGrants =
+            primaryNodes.map { node ->
+                node.copy(grants = requirementRefsByAnchorId[node.anchorId].orEmpty())
+            }
+        val optionalNodesWithGrants =
+            optionalNodes.map { node ->
+                node.copy(grants = requirementRefsByAnchorId[node.anchorId].orEmpty())
+            }
+        val accessibleNodes = primaryNodesWithGrants + optionalNodesWithGrants
+        val accessibleNodesByAnchorId = accessibleNodes.associateBy(TopologyNode::anchorId)
+        profile.keyGatePlans.forEach { plan ->
+            val grantNode = requireNotNull(accessibleNodesByAnchorId[plan.grantedByAnchorId]) {
+                "KeyGatePlan '${plan.id}' references unknown grantedByAnchorId '${plan.grantedByAnchorId.value}'."
+            }
+            require(grantNode.pathClass != PathClass.SECRET) {
+                "KeyGatePlan '${plan.id}' must not grant a requirement from SECRET anchor '${plan.grantedByAnchorId.value}'."
+            }
+        }
+        val secretNodes =
+            profile.hiddenEntrancePlans.mapIndexed { index, plan ->
+                require(plan.sourceAnchorId in accessibleNodesByAnchorId) {
+                    "HiddenEntrancePlan '${plan.bindingId.value}' references unknown source anchor '${plan.sourceAnchorId.value}'."
+                }
+                require(plan.targetAnchorId !in accessibleNodesByAnchorId) {
+                    "HiddenEntrancePlan '${plan.bindingId.value}' target anchor '${plan.targetAnchorId.value}' must be unique."
+                }
+                val sourceNode = accessibleNodesByAnchorId.getValue(plan.sourceAnchorId)
+                val nodeBiomeFamilyId = sourceNode.biomeFamilyId ?: selectedFamilies.first()
+                val candidateTags = resolveCandidateRoomTags(profile = profile, biomeFamilyId = nodeBiomeFamilyId)
+                TopologyNode(
+                    id = NodeId("secret-$index"),
+                    anchorId = plan.targetAnchorId,
+                    roomDefId =
+                        chooseRoomDefId(
+                            biomeFamilyId = nodeBiomeFamilyId,
+                            pathClass = PathClass.SECRET,
+                            roleTag = "optional",
+                            candidateTags = candidateTags,
+                            seed = request.seed,
+                            salt = "secret-$index",
+                        ),
+                    pathClass = PathClass.SECRET,
+                    tags = buildSet {
+                        add("secret")
+                        add("hidden_cache")
+                    },
+                    biomeFamilyId = nodeBiomeFamilyId,
+                )
+            }
+        val nodes = accessibleNodes + secretNodes
+        val nodesByAnchorId = nodes.associateBy(TopologyNode::anchorId)
+
+        val baseEdges =
             buildList {
-                primaryNodes.zipWithNext { left, right ->
+                primaryNodesWithGrants.zipWithNext { left, right ->
                     add(TopologyEdge(from = left.id, to = right.id))
                 }
-                optionalNodes.forEachIndexed { index, node ->
-                    val attachIndex = (primaryNodes.lastIndex - 1 - index).coerceAtLeast(1)
-                    val attachNode = primaryNodes[attachIndex]
-                    val reconnectNode = primaryNodes.last()
+                optionalNodesWithGrants.forEachIndexed { index, node ->
+                    val attachIndex = (primaryNodesWithGrants.lastIndex - 1 - index).coerceAtLeast(1)
+                    val attachNode = primaryNodesWithGrants[attachIndex]
+                    val reconnectNode = primaryNodesWithGrants.last()
                     add(TopologyEdge(from = attachNode.id, to = node.id))
                     add(TopologyEdge(from = node.id, to = reconnectNode.id, isLoop = true))
                 }
             }
+        val edges =
+            applyKeyGatePlans(
+                edges = baseEdges,
+                primaryPathNodeIds = primaryNodesWithGrants.map(TopologyNode::id),
+                nodesByAnchorId = nodesByAnchorId,
+                keyGatePlans = profile.keyGatePlans,
+            )
 
         return TopologyGraph(
-            nodes = primaryNodes + optionalNodes,
+            nodes = nodes,
             edges = edges,
-            primaryPathNodeIds = primaryNodes.map(TopologyNode::id),
-            optionalLoopCount = optionalNodes.size,
+            primaryPathNodeIds = primaryNodesWithGrants.map(TopologyNode::id),
+            optionalLoopCount = optionalNodesWithGrants.size,
         )
     }
 
@@ -154,7 +221,7 @@ class HybridTopologyPlanner(
         val roleCandidates =
             roomDefsById.values
                 .filter { roomDef ->
-                    roleTag in roomDef.tags || "general" in roomDef.tags || (pathClass == PathClass.OPTIONAL && "optional" in roomDef.tags)
+                    roleTag in roomDef.tags || "general" in roomDef.tags || (pathClass != PathClass.CRITICAL_PATH && "optional" in roomDef.tags)
                 }
                 .filter { roomDef -> roomDefMatchesBiomeFamily(roomDef = roomDef, biomeFamilyId = biomeFamilyId) }
                 .filter { roomDef -> roomDef.tags.any(candidateTags::contains) }
@@ -183,6 +250,114 @@ class HybridTopologyPlanner(
         } else {
             setOf(biomeFamilyId)
         }
+
+    private fun applyKeyGatePlans(
+        edges: List<TopologyEdge>,
+        primaryPathNodeIds: List<NodeId>,
+        nodesByAnchorId: Map<NodeAnchorId, TopologyNode>,
+        keyGatePlans: List<KeyGatePlan>,
+    ): List<TopologyEdge> {
+        val plansByEndpoints =
+            keyGatePlans.groupBy { plan ->
+                val from = requireNotNull(nodesByAnchorId[plan.fromAnchorId]) {
+                    "KeyGatePlan '${plan.id}' references unknown fromAnchorId '${plan.fromAnchorId.value}'."
+                }
+                val to = requireNotNull(nodesByAnchorId[plan.toAnchorId]) {
+                    "KeyGatePlan '${plan.id}' references unknown toAnchorId '${plan.toAnchorId.value}'."
+                }
+                setOf(from.id, to.id)
+            }
+        val gatedEdges =
+            edges.map { edge ->
+                val plans = plansByEndpoints[setOf(edge.from, edge.to)].orEmpty()
+                if (plans.isEmpty()) {
+                    return@map edge
+                }
+                edge.copy(requiredKeys = edge.requiredKeys + plans.map(KeyGatePlan::requirementRef))
+            }
+        val primaryPathIndexByNodeId = primaryPathNodeIds.withIndex().associate { (index, nodeId) -> nodeId to index }
+        val primaryPathRequirementsByEndpoints =
+            gatedEdges
+                .filter { edge ->
+                    val fromIndex = primaryPathIndexByNodeId[edge.from]
+                    val toIndex = primaryPathIndexByNodeId[edge.to]
+                    fromIndex != null && toIndex != null && kotlin.math.abs(fromIndex - toIndex) == 1
+                }.associate { edge -> setOf(edge.from, edge.to) to edge.requiredKeys }
+        val attachPrimaryNodeIdByOptionalNodeId =
+            gatedEdges
+                .asSequence()
+                .filterNot(TopologyEdge::isLoop)
+                .mapNotNull { edge ->
+                    val fromIndex = primaryPathIndexByNodeId[edge.from]
+                    val toIndex = primaryPathIndexByNodeId[edge.to]
+                    when {
+                        fromIndex != null && toIndex == null -> edge.to to edge.from
+                        fromIndex == null && toIndex != null -> edge.from to edge.to
+                        else -> null
+                    }
+                }.toMap()
+        return gatedEdges.map { edge ->
+            if (!edge.isLoop) {
+                return@map edge
+            }
+            val fromPrimaryIndex = primaryPathIndexByNodeId[edge.from]
+            val toPrimaryIndex = primaryPathIndexByNodeId[edge.to]
+            val optionalNodeId =
+                when {
+                    fromPrimaryIndex == null && toPrimaryIndex != null -> edge.from
+                    fromPrimaryIndex != null && toPrimaryIndex == null -> edge.to
+                    else -> return@map edge
+                }
+            val reconnectPrimaryNodeId =
+                when {
+                    fromPrimaryIndex != null -> edge.from
+                    toPrimaryIndex != null -> edge.to
+                    else -> return@map edge
+                }
+            val attachPrimaryNodeId = attachPrimaryNodeIdByOptionalNodeId[optionalNodeId] ?: return@map edge
+            val attachIndex = primaryPathIndexByNodeId.getValue(attachPrimaryNodeId)
+            val reconnectIndex = primaryPathIndexByNodeId.getValue(reconnectPrimaryNodeId)
+            val crossedRequirements =
+                requirementsAlongPrimarySegment(
+                    primaryPathNodeIds = primaryPathNodeIds,
+                    startIndex = attachIndex,
+                    endIndex = reconnectIndex,
+                    primaryPathRequirementsByEndpoints = primaryPathRequirementsByEndpoints,
+                )
+            if (crossedRequirements.isEmpty()) {
+                return@map edge
+            }
+            edge.copy(requiredKeys = edge.requiredKeys + crossedRequirements)
+        }.also { updatedEdges ->
+            keyGatePlans.forEach { plan ->
+                val from = nodesByAnchorId.getValue(plan.fromAnchorId)
+                val to = nodesByAnchorId.getValue(plan.toAnchorId)
+                require(updatedEdges.any { edge -> setOf(edge.from, edge.to) == setOf(from.id, to.id) }) {
+                    "KeyGatePlan '${plan.id}' could not resolve an edge between '${plan.fromAnchorId.value}' and '${plan.toAnchorId.value}'."
+                }
+            }
+        }
+    }
+
+    private fun requirementsAlongPrimarySegment(
+        primaryPathNodeIds: List<NodeId>,
+        startIndex: Int,
+        endIndex: Int,
+        primaryPathRequirementsByEndpoints: Map<Set<NodeId>, Set<RequirementRef>>,
+    ): Set<RequirementRef> {
+        if (startIndex == endIndex) {
+            return emptySet()
+        }
+        val segmentStart = min(startIndex, endIndex)
+        val segmentEndExclusive = max(startIndex, endIndex)
+        return (segmentStart until segmentEndExclusive)
+            .asSequence()
+            .flatMap { index ->
+                primaryPathRequirementsByEndpoints[setOf(primaryPathNodeIds[index], primaryPathNodeIds[index + 1])]
+                    .orEmpty()
+                    .asSequence()
+            }.toSet()
+    }
 }
 
 class HybridTopologyMapgenPipeline(
@@ -233,6 +408,7 @@ class HybridTopologyMapgenPipeline(
         val profile = profileResolver.resolve(request.zoneId)
         val topology = planner.plan(profile = profile, request = request)
         val roomInstances = instantiateRooms(topology = topology, request = request)
+        val nodesByAnchorId = topology.nodes.associateBy(TopologyNode::anchorId)
         val builder = GameMap.Builder(request.targetWidth, request.targetHeight)
         roomInstances.forEach { room -> carveRoomShape(builder = builder, room = room, shape = roomDefsById.getValue(room.roomDefId).shape) }
         val roomBoundsByNodeId = roomInstances.associate { room -> room.nodeId to Room(room.x, room.y, room.width, room.height) }
@@ -270,6 +446,12 @@ class HybridTopologyMapgenPipeline(
                 vaultPlacements = vaultPlacements,
                 request = request,
             )
+        val entrances =
+            buildGeneratedEntrances(
+                hiddenEntrancePlans = profile.hiddenEntrancePlans,
+                nodesByAnchorId = nodesByAnchorId,
+                roomsByAnchorId = patternedRooms.associateBy(RoomInstance::anchorId),
+            )
         return GeneratedFloor(
             zoneId = request.zoneId,
             floorIndex = request.floorIndex,
@@ -279,7 +461,7 @@ class HybridTopologyMapgenPipeline(
             terrainTags = terrainTags,
             biomeFamilyIds = patternedRooms.mapNotNull(RoomInstance::biomeFamilyId).distinct(),
             vaultPlacements = vaultPlacements,
-            entrances = emptyList(),
+            entrances = entrances,
             map = map,
         )
     }
@@ -305,6 +487,7 @@ class HybridTopologyMapgenPipeline(
             rooms +=
                 RoomInstance(
                     nodeId = node.id,
+                    anchorId = node.anchorId,
                     roomDefId = node.roomDefId,
                     x = x,
                     y = y,
@@ -318,7 +501,7 @@ class HybridTopologyMapgenPipeline(
         }
 
         topology.nodes
-            .filterNot { node -> node.id in topology.primaryPathNodeIds }
+            .filter { node -> node.pathClass != PathClass.SECRET && node.id !in topology.primaryPathNodeIds }
             .sortedBy { node -> node.id.value }
             .forEachIndexed { index, node ->
                 val anchorRoom = rooms[(rooms.lastIndex - 1 - index).coerceAtLeast(1)]
@@ -340,6 +523,7 @@ class HybridTopologyMapgenPipeline(
                         candidate =
                             RoomInstance(
                                 nodeId = node.id,
+                                anchorId = node.anchorId,
                                 roomDefId = node.roomDefId,
                                 x = candidateX,
                                 y = boundedY,
@@ -356,6 +540,37 @@ class HybridTopologyMapgenPipeline(
             }
         return rooms
     }
+
+    private fun buildGeneratedEntrances(
+        hiddenEntrancePlans: List<HiddenEntrancePlan>,
+        nodesByAnchorId: Map<NodeAnchorId, TopologyNode>,
+        roomsByAnchorId: Map<NodeAnchorId, RoomInstance>,
+    ): List<GeneratedEntrance> =
+        hiddenEntrancePlans.map { plan ->
+            val sourceNode = requireNotNull(nodesByAnchorId[plan.sourceAnchorId]) {
+                "HiddenEntrancePlan '${plan.bindingId.value}' references unknown source anchor '${plan.sourceAnchorId.value}'."
+            }
+            val entranceRoom = requireNotNull(roomsByAnchorId[plan.entranceAnchorId]) {
+                "HiddenEntrancePlan '${plan.bindingId.value}' entrance anchor '${plan.entranceAnchorId.value}' must resolve to an instantiated room."
+            }
+            val targetNode = requireNotNull(nodesByAnchorId[plan.targetAnchorId]) {
+                "HiddenEntrancePlan '${plan.bindingId.value}' references unknown target anchor '${plan.targetAnchorId.value}'."
+            }
+            require(entranceRoom.nodeId == sourceNode.id) {
+                "HiddenEntrancePlan '${plan.bindingId.value}' entrance anchor '${plan.entranceAnchorId.value}' must resolve to source node '${sourceNode.id.value}'."
+            }
+            GeneratedEntrance(
+                bindingId = plan.bindingId,
+                fromNodeId = entranceRoom.nodeId,
+                targetNodeId = targetNode.id,
+                entranceAnchorId = plan.entranceAnchorId,
+                targetAnchorId = plan.targetAnchorId,
+                pathClass = plan.pathClass,
+                discoveryRule = plan.discoveryRule,
+                targetSecretZoneId = plan.targetSecretZoneId,
+                resolvedReturnBridgeNodeId = entranceRoom.nodeId,
+            )
+        }
 
     private fun applyPatternRooms(
         builder: GameMap.Builder,
@@ -444,7 +659,8 @@ class HybridTopologyMapgenPipeline(
     ) {
         val roomsByNodeId = rooms.associate { room -> room.nodeId to Room(room.x, room.y, room.width, room.height) }
         topology.nodes.forEach { node ->
-            val center = roomsByNodeId.getValue(node.id).center
+            val room = roomsByNodeId[node.id] ?: return@forEach
+            val center = room.center
             builder.setTile(center, TileType.FLOOR)
             listOf(
                 Point(center.x + 1, center.y),
@@ -575,7 +791,7 @@ class HybridTopologyMapgenPipeline(
         for (dy in 0 until innerHeight) {
             for (dx in 0 until innerWidth) {
                 val point = Point(room.x + 1 + dx, room.y + 1 + dy)
-                if (!roomContainsPoint(room = room, point = point)) {
+                if (!room.contains(point)) {
                     continue
                 }
                 val glyph = templateGlyph(rows = rows, x = dx, y = dy, width = innerWidth, height = innerHeight)
@@ -711,41 +927,6 @@ class HybridTopologyMapgenPipeline(
     }
 }
 
-private fun roomContainsPoint(
-    room: RoomInstance,
-    point: Point,
-): Boolean =
-    when (room.shape) {
-        RoomShape.RECT -> point.x in room.x until room.x + room.width && point.y in room.y until room.y + room.height
-        RoomShape.L_SHAPE -> {
-            val splitX = room.x + max(2, room.width / 2)
-            val inVerticalArm = point.x in room.x until splitX && point.y in room.y until room.y + room.height
-            val inHorizontalArm = point.x in room.x until room.x + room.width && point.y in room.y + room.height / 2 until room.y + room.height
-            inVerticalArm || inHorizontalArm
-        }
-
-        RoomShape.ROUND -> {
-            val centerX = room.x + room.width / 2.0
-            val centerY = room.y + room.height / 2.0
-            val radiusX = max(1.5, room.width / 2.2)
-            val radiusY = max(1.5, room.height / 2.2)
-            val normalizedX = ((point.x + 0.5) - centerX) / radiusX
-            val normalizedY = ((point.y + 0.5) - centerY) / radiusY
-            (normalizedX * normalizedX) + (normalizedY * normalizedY) <= 1.0
-        }
-
-        RoomShape.IRREGULAR -> {
-            point.x in room.x until room.x + room.width &&
-                point.y in room.y until room.y + room.height &&
-                point !in listOf(
-                    Point(room.x + 1, room.y + 1),
-                    Point(room.x + room.width - 2, room.y + 1),
-                    Point(room.x + 1, room.y + room.height - 2),
-                    Point(room.x + room.width - 2, room.y + room.height - 2),
-                )
-        }
-    }
-
 private fun templateGlyph(
     rows: List<String>,
     x: Int,
@@ -818,6 +999,19 @@ private fun selectNodeBiomeFamily(
         else -> selectedFamilies[ordinal % selectedFamilies.size]
     }
 }
+
+private fun primaryAnchorId(
+    roleTag: String,
+    ordinal: Int,
+): NodeAnchorId =
+    when (roleTag) {
+        "start" -> NodeAnchorId("critical.start")
+        "goal" -> NodeAnchorId("critical.goal")
+        "hub" -> NodeAnchorId("critical.hub")
+        else -> NodeAnchorId("critical.route.$ordinal")
+    }
+
+private fun optionalAnchorId(index: Int): NodeAnchorId = NodeAnchorId("optional.branch.${index + 1}")
 
 private fun adjustPlacement(
     existingRooms: List<RoomInstance>,

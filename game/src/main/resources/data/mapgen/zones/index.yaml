@@ -7,6 +7,26 @@ zoneMapgenProfiles:
     terrainTagWeights:
       WATER: 0.22
     roomTagFilter: [forest, bog, sightline, bridge, hidden_cache, ambush]
+    keyGatePlans:
+      - id: gate.greenwood.final_path
+        fromAnchorId: critical.hub
+        toAnchorId: critical.goal
+        grantedByAnchorId: optional.branch.1
+        keyType: KEY_ITEM
+        keyId: greenwood_final_path_key
+    hiddenEntrancePlans:
+      - bindingId: search.greenwood.hidden_cache
+        sourceAnchorId: optional.branch.1
+        entranceAnchorId: optional.branch.1
+        targetAnchorId: secret.greenwood.hidden_cache
+        targetSecretZoneId:
+          registry: secret_zone
+          id: greenwood_hidden_cache_stub
+        discoveryRule:
+          combinator: AND
+          predicates:
+            - type: PERCEPTION_CHECK
+              difficulty: 8
   - id: zone_mapgen.deep_iron_pit.phase4
     zoneId: deep_iron_pit
     allowedBiomeFamilies: [mine, forge]
@@ -15,6 +35,26 @@ zoneMapgenProfiles:
     terrainTagWeights:
       OIL: 0.24
     roomTagFilter: [mine, forge, sightline, hidden_cache, shrine]
+    keyGatePlans:
+      - id: gate.deep_iron.final_path
+        fromAnchorId: critical.route.3
+        toAnchorId: critical.goal
+        grantedByAnchorId: optional.branch.1
+        keyType: SWITCH
+        keyId: deep_iron_forge_switch
+    hiddenEntrancePlans:
+      - bindingId: search.deep_iron.slag_cache
+        sourceAnchorId: optional.branch.1
+        entranceAnchorId: optional.branch.1
+        targetAnchorId: secret.deep_iron.slag_cache
+        targetSecretZoneId:
+          registry: secret_zone
+          id: deep_iron_slag_cache_stub
+        discoveryRule:
+          combinator: AND
+          predicates:
+            - type: PERCEPTION_CHECK
+              difficulty: 12
   - id: zone_mapgen.underground_river.phase4
     zoneId: underground_river
     allowedBiomeFamilies: [flooded_cavern, crystal_bank]
@@ -24,6 +64,26 @@ zoneMapgenProfiles:
       WATER: 0.28
       ICE: 0.16
     roomTagFilter: [flooded_cavern, crystal_bank, bridge, shrine, hidden_cache]
+    keyGatePlans:
+      - id: gate.underground_river.final_path
+        fromAnchorId: critical.route.3
+        toAnchorId: critical.goal
+        grantedByAnchorId: optional.branch.1
+        keyType: QUEST_FLAG
+        keyId: underground_river_ferry_mark
+    hiddenEntrancePlans:
+      - bindingId: search.underground_river.crystal_rift
+        sourceAnchorId: optional.branch.1
+        entranceAnchorId: optional.branch.1
+        targetAnchorId: secret.underground_river.crystal_rift
+        targetSecretZoneId:
+          registry: secret_zone
+          id: underground_river_crystal_rift_stub
+        discoveryRule:
+          combinator: AND
+          predicates:
+            - type: PERCEPTION_CHECK
+              difficulty: 16
   - id: zone_mapgen.abyssal_temple.phase4
     zoneId: abyssal_temple
     allowedBiomeFamilies: [ruin, oil_catacomb]
@@ -32,6 +92,26 @@ zoneMapgenProfiles:
     terrainTagWeights:
       OIL: 0.20
     roomTagFilter: [ruin, oil_catacomb, ritual, shrine, hidden_cache, ambush]
+    keyGatePlans:
+      - id: gate.abyssal_temple.final_path
+        fromAnchorId: critical.route.3
+        toAnchorId: critical.goal
+        grantedByAnchorId: optional.branch.1
+        keyType: BOSS_SIGIL
+        keyId: abyssal_temple_sigil
+    hiddenEntrancePlans:
+      - bindingId: search.abyssal_temple.warded_archive
+        sourceAnchorId: optional.branch.1
+        entranceAnchorId: optional.branch.1
+        targetAnchorId: secret.abyssal_temple.warded_archive
+        targetSecretZoneId:
+          registry: secret_zone
+          id: abyssal_temple_warded_archive_stub
+        discoveryRule:
+          combinator: AND
+          predicates:
+            - type: PERCEPTION_CHECK
+              difficulty: 20
 
 zoneRewardProfiles:
   - id: zone_reward.greenwood_fringe.phase4

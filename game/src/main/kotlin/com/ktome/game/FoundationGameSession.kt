@@ -66,6 +66,7 @@ import com.ktome.core.event.HealEvent
 import com.ktome.core.event.LevelUpEvent
 import com.ktome.core.event.MissEvent
 import com.ktome.core.event.MovementBlockedEvent
+import com.ktome.core.event.SearchResolvedEvent
 import com.ktome.core.event.StatusAppliedEvent
 import com.ktome.core.event.StatusCleanseEvent
 import com.ktome.core.event.StatusInteractionEvent
@@ -191,6 +192,9 @@ import com.ktome.core.talent.TalentTreeOwnerType
 import com.ktome.core.talent.TalentUseResult
 import com.ktome.core.turn.TurnActorState
 import com.ktome.core.turn.TurnScheduler
+import com.ktome.core.world.solvability.PerceptionScore
+import com.ktome.core.world.solvability.SearchAction
+import com.ktome.core.world.solvability.SearchActionResult
 import com.ktome.core.world.WorldProgressDef
 import com.ktome.core.world.ObjectiveState
 import com.ktome.core.world.QuestProgress
@@ -4572,6 +4576,8 @@ class FoundationGameSession internal constructor(
 
             PlayerCommand.Interact -> interactAtPlayerPosition()
 
+            PlayerCommand.Search -> searchAtPlayerPosition()
+
             PlayerCommand.Ascend -> resolveStairCommand(StairDirection.UP)
 
             PlayerCommand.Descend -> resolveStairCommand(StairDirection.DOWN)
@@ -6604,6 +6610,9 @@ class FoundationGameSession internal constructor(
                 exploredTiles = exploredTiles,
                 world = world,
                 excludedEntities = excludedEntities,
+                revealedEntranceIds = activeFloorState.revealedEntranceIds,
+                visitedSecretZoneIds = activeFloorState.visitedSecretZoneIds,
+                searchState = activeFloorState.searchState,
             )
         dungeonManager.replaceCurrentState(
             FloorState(
@@ -6970,6 +6979,91 @@ class FoundationGameSession internal constructor(
         return CommandResolution(accepted = true, consumesTurn = consumesTurn)
     }
 
+    private fun searchAtPlayerPosition(): CommandResolution {
+        val searchTarget = searchableEntranceAtPlayerPosition()
+        if (searchTarget == null) {
+            logEvent(
+                SearchResolvedEvent(
+                    actor = playerId,
+                    bindingId = null,
+                    result = SearchActionResult.NO_TARGET,
+                    perceptionTotal = perceptionScoreForSearch().total,
+                    difficulty = null,
+                ),
+            )
+            addMessage("log.search.no_target")
+            return CommandResolution.rejected()
+        }
+
+        val entrance = searchTarget.entrance
+        val searchAction = SearchAction(bindingId = entrance.bindingId, actorId = playerId)
+        val searchDifficulty = entrance.discoveryRule.perceptionDifficulty()
+        if (activeFloorState.searchStateFor(searchAction.bindingId) != null) {
+            logEvent(
+                SearchResolvedEvent(
+                    actor = playerId,
+                    bindingId = searchAction.bindingId,
+                    result = SearchActionResult.ALREADY_RESOLVED,
+                    perceptionTotal = perceptionScoreForSearch().total,
+                    difficulty = searchDifficulty,
+                ),
+            )
+            addMessage("log.search.already_resolved")
+            return CommandResolution.rejected()
+        }
+
+        val perceptionScore = perceptionScoreForSearch()
+        val result =
+            if (
+                entrance.discoveryRule.evaluate(
+                    perceptionScore = perceptionScore,
+                    providedTags = searchContextTags(searchTarget),
+                )
+            ) {
+                SearchActionResult.REVEALED
+            } else {
+                SearchActionResult.FAILED_CHECK
+            }
+        activeFloorState.recordSearchResolution(bindingId = searchAction.bindingId, result = result)
+        logEvent(
+            SearchResolvedEvent(
+                actor = playerId,
+                bindingId = searchAction.bindingId,
+                result = result,
+                perceptionTotal = perceptionScore.total,
+                difficulty = searchDifficulty,
+            ),
+        )
+        when (result) {
+            SearchActionResult.REVEALED ->
+                if (searchDifficulty != null) {
+                    addMessage(
+                        "log.search.revealed",
+                        literalArg("perception", perceptionScore.total),
+                        literalArg("difficulty", searchDifficulty),
+                    )
+                } else {
+                    addMessage("log.search.revealed_tag")
+                }
+
+            SearchActionResult.FAILED_CHECK ->
+                if (searchDifficulty != null) {
+                    addMessage(
+                        "log.search.failed_check",
+                        literalArg("perception", perceptionScore.total),
+                        literalArg("difficulty", searchDifficulty),
+                    )
+                } else {
+                    addMessage("log.search.failed_tag")
+                }
+
+            SearchActionResult.NO_TARGET,
+            SearchActionResult.ALREADY_RESOLVED,
+            -> Unit
+        }
+        return CommandResolution(accepted = true, consumesTurn = true)
+    }
+
     private fun interactAtPlayerPosition(): CommandResolution {
         val entityId = interactableEntityAt(playerPosition())
         if (entityId == null) {
@@ -7097,6 +7191,33 @@ class FoundationGameSession internal constructor(
         }
         return CommandResolution.accepted()
     }
+
+    private fun searchableEntranceAtPlayerPosition(): SearchTarget? {
+        val room = currentRoomInstanceAt(playerPosition()) ?: return null
+        val roomEntrances =
+            activeFloorState.generatedFloor.entrances
+                .filter { entrance -> entrance.entranceAnchorId == room.anchorId }
+                .sortedBy { entrance -> entrance.bindingId.value }
+        val entrance =
+            roomEntrances.firstOrNull { candidate -> activeFloorState.searchStateFor(candidate.bindingId) == null }
+                ?: roomEntrances.firstOrNull()
+        return entrance?.let { candidate -> SearchTarget(entrance = candidate, room = room) }
+    }
+
+    private fun currentRoomInstanceAt(point: Point): com.ktome.core.mapgen.RoomInstance? =
+        activeFloorState.generatedFloor.roomAt(point)
+
+    private fun searchContextTags(searchTarget: SearchTarget): Set<String> = searchTarget.room.tags
+
+    private fun perceptionScoreForSearch(): PerceptionScore =
+        PerceptionScore(
+            baseMentalPower = requireNotNull(world.get<DerivedStats>(playerId)).powerSave.mentalPower,
+        )
+
+    private data class SearchTarget(
+        val entrance: com.ktome.core.mapgen.GeneratedEntrance,
+        val room: com.ktome.core.mapgen.RoomInstance,
+    )
 
     private fun addInventoryMessage(result: InventoryOperationResult) {
         addMessage(inventoryMessage(result))
@@ -8306,6 +8427,7 @@ class FoundationGameSession internal constructor(
             is StatusInteractionEvent -> "status_interaction:${event.target.value}:${event.statusId}:${event.interactionId}"
             is TauntOverrideEvent -> "taunt_override:${event.target.value}:${event.statusId}:${event.newSource?.value ?: "none"}"
             is StealthBrokenEvent -> "stealth_break:${event.target.value}:${event.statusId}:${event.damage}"
+            is SearchResolvedEvent -> "search:${event.actor.value}:${event.bindingId?.value ?: "-"}:${event.result.name}:${event.perceptionTotal}:${event.difficulty ?: "-"}"
         }
 
     private fun activeBossDefinition(): BossDefinition? = content.bossDefinitionForZone(config.zoneId)

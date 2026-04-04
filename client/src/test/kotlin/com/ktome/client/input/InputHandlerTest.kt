@@ -101,6 +101,26 @@ class InputHandlerTest {
     }
 
     @Test
+    fun `r triggers search only in map mode`() {
+        val input = ReplayInputSource()
+        val handler = InputHandler(input)
+        val snapshot = snapshotWithLoadout()
+
+        input.frame(justPressed = setOf(Keys.R))
+        assertEquals(PlayerCommand.Search, handler.pollCommand(snapshot))
+        input.clear()
+
+        input.frame(justPressed = setOf(Keys.I))
+        assertNull(handler.pollCommand(snapshot))
+        assertEquals(UiMode.INVENTORY, handler.overlayState().mode)
+        input.clear()
+
+        input.frame(justPressed = setOf(Keys.R))
+        assertNull(handler.pollCommand(snapshot))
+        assertEquals(UiMode.INVENTORY, handler.overlayState().mode)
+    }
+
+    @Test
     fun `controlled inscription hotkey enters targeting mode and confirms targeted use`() {
         val input = ReplayInputSource()
         val handler = InputHandler(input)
