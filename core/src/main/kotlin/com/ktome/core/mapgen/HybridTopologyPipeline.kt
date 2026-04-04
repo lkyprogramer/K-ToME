@@ -839,7 +839,6 @@ private fun selectNodeBiomeFamily(
     require(selectedFamilies.isNotEmpty()) { "Hybrid topology nodes require at least one biome family." }
     return when {
         selectedFamilies.size == 1 -> selectedFamilies.first()
-        pathClass == PathClass.OPTIONAL -> selectedFamilies.last()
         else -> selectedFamilies[ordinal % selectedFamilies.size]
     }
 }

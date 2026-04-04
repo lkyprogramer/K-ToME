@@ -4,7 +4,7 @@
     "floorIndex": 1,
     "seed": 20260403010101,
     "criticalPathReachable": true,
-    "topologyFingerprint": "1bffe9f87df22e6f8862ffa288a0215c5c38bfae71764b54362dbbfec6d0168f",
+    "topologyFingerprint": "45fcc4d560d5c47093b30ba598b1de606805956392eec1e76019232a32088b9c",
     "topologySummary": {
         "nodeCount": 6,
         "edgeCount": 7,
@@ -39,7 +39,7 @@
         }
     ],
     "terrainTagDistribution": {
-        "WATER": 67
+        "WATER": 70
     },
     "rewardProfile": {
         "id": "zone_reward.greenwood_fringe.phase4",

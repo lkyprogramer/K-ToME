@@ -142,6 +142,48 @@ class MapgenContractTest {
     }
 
     @Test
+    fun `hybrid planner rotates optional node biome families instead of pinning them to one family`() {
+        val planner =
+            HybridTopologyPlanner(
+                roomDefsById =
+                    listOf(
+                        RoomDef("room.bog.primary", RoomShape.RECT, 8..9, 7..8, setOf("general", "bog", "start", "route", "hub", "goal")),
+                        RoomDef("room.forest.primary", RoomShape.RECT, 8..9, 7..8, setOf("general", "forest", "start", "route", "hub", "goal")),
+                        RoomDef("room.bog.optional", RoomShape.RECT, 8..9, 7..8, setOf("general", "bog", "optional")),
+                        RoomDef("room.forest.optional", RoomShape.RECT, 8..9, 7..8, setOf("general", "forest", "optional")),
+                    ).associateBy(RoomDef::id),
+                biomeFamiliesById =
+                    mapOf(
+                        "bog" to BiomeFamilyDef("bog", "tileset.bog", null, emptyMap(), setOf("bog", "general")),
+                        "forest" to BiomeFamilyDef("forest", "tileset.forest", null, emptyMap(), setOf("forest", "general")),
+                    ),
+            )
+
+        val topology =
+            planner.plan(
+                profile =
+                    ZoneMapgenProfile(
+                        id = "mixed.zone.optional",
+                        zoneId = "mixed_zone",
+                        allowedBiomeFamilies = setOf("forest", "bog"),
+                        loopCountRange = 2..2,
+                        vaultPool = emptySet(),
+                        terrainTagWeights = emptyMap(),
+                        roomTagFilter = emptySet(),
+                    ),
+                request = MapgenRequest(zoneId = "mixed_zone", floorIndex = 1, seed = 2026040105L, targetWidth = 84, targetHeight = 52),
+            )
+
+        val optionalFamilies =
+            topology.nodes
+                .filter { node -> node.pathClass == PathClass.OPTIONAL }
+                .mapNotNull(TopologyNode::biomeFamilyId)
+                .toSet()
+
+        assertEquals(setOf("bog", "forest"), optionalFamilies)
+    }
+
+    @Test
     fun `hybrid planner fails fast when zone room tag filter drifts outside biome contract`() {
         val planner =
             HybridTopologyPlanner(

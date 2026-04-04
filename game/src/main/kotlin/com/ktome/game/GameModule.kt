@@ -541,7 +541,7 @@ object GameModule {
                         world = world,
                         template = template,
                         position = spawnPoint,
-                        patrolRoute = if (resolveAiType(template) == AIType.PATROL) buildPatrolRoute(room) else null,
+                        patrolRoute = if (resolveAiType(template) == AIType.PATROL) buildPatrolRoute(room = room, map = map) else null,
                     )
                     occupiedPoints += spawnPoint
                 }
@@ -786,15 +786,10 @@ object GameModule {
         return result.ifEmpty { listOf(room.center) }.take(count)
     }
 
-    private fun buildPatrolRoute(room: Room): PatrolRoute {
-        val points = listOf(
-            Point(room.left + 1, room.top + 1),
-            Point(room.right - 1, room.top + 1),
-            Point(room.right - 1, room.bottom - 1),
-            Point(room.left + 1, room.bottom - 1),
-        ).distinct()
-        return PatrolRoute(points)
-    }
+    private fun buildPatrolRoute(
+        room: Room,
+        map: com.ktome.core.map.GameMap,
+    ): PatrolRoute = PatrolRoute(buildPatrolWaypoints(room = room, map = map))
 
     private fun chooseDownstairs(
         map: com.ktome.core.map.GameMap,
@@ -1695,4 +1690,34 @@ object GameModule {
         )
 
     private fun defaultSaveDir(): Path = Path.of(System.getProperty("user.home"), ".ktome")
+}
+
+internal fun buildPatrolWaypoints(
+    room: Room,
+    map: com.ktome.core.map.GameMap,
+): List<Point> {
+    val perimeterPoints =
+        listOf(
+            Point(room.left + 1, room.top + 1),
+            Point(room.right - 1, room.top + 1),
+            Point(room.right - 1, room.bottom - 1),
+            Point(room.left + 1, room.bottom - 1),
+        ).filter { point ->
+            room.contains(point) &&
+                map.isInBounds(point.x, point.y) &&
+                !map[point].blocksMovement
+        }
+    if (perimeterPoints.isNotEmpty()) {
+        return perimeterPoints.distinct()
+    }
+    return buildList {
+        for (y in room.top + 1 until room.bottom) {
+            for (x in room.left + 1 until room.right) {
+                val point = Point(x, y)
+                if (map.isInBounds(x, y) && !map[point].blocksMovement) {
+                    add(point)
+                }
+            }
+        }
+    }.distinct().ifEmpty { listOf(room.center) }
 }
