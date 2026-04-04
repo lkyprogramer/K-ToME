@@ -369,6 +369,7 @@ class SessionSnapshotMapperTest {
             object : ZoneMapgenProfileResolver {
                 override fun resolve(zoneId: String): ZoneMapgenProfile =
                     ZoneMapgenProfile(
+                        id = "$zoneId.test",
                         zoneId = zoneId,
                         allowedBiomeFamilies = setOf("family.test"),
                         loopCountRange = 0..0,

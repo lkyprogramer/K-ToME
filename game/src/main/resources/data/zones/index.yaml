@@ -29,6 +29,8 @@ zones:
     schemaVersion: 2
     tags: [zone, foundation, mandatory]
     biome: forest
+    mapgenProfileId: zone_mapgen.greenwood_fringe.phase4
+    rewardProfileId: zone_reward.greenwood_fringe.phase4
     floorCount: 2
     mapSize: { width: 70, height: 45 }
     recommendedLevel: { min: 3, max: 6 }
@@ -95,6 +97,8 @@ zones:
     schemaVersion: 2
     tags: [zone, mandatory]
     biome: mine
+    mapgenProfileId: zone_mapgen.deep_iron_pit.phase4
+    rewardProfileId: zone_reward.deep_iron_pit.phase4
     floorCount: 2
     mapSize: { width: 80, height: 50 }
     recommendedLevel: { min: 5, max: 8 }
@@ -160,6 +164,8 @@ zones:
     schemaVersion: 2
     tags: [zone, mandatory]
     biome: cavern
+    mapgenProfileId: zone_mapgen.underground_river.phase4
+    rewardProfileId: zone_reward.underground_river.phase4
     floorCount: 2
     mapSize: { width: 84, height: 52 }
     recommendedLevel: { min: 10, max: 12 }
@@ -203,6 +209,8 @@ zones:
     schemaVersion: 2
     tags: [zone, mandatory]
     biome: temple
+    mapgenProfileId: zone_mapgen.abyssal_temple.phase4
+    rewardProfileId: zone_reward.abyssal_temple.phase4
     floorCount: 2
     mapSize: { width: 86, height: 54 }
     recommendedLevel: { min: 12, max: 15 }

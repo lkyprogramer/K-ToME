@@ -17,6 +17,9 @@ dependencies {
 
 tasks.withType<Test>().configureEach {
     systemProperty("ktome.repo.root", rootProject.projectDir.absolutePath)
+    providers.systemProperty("ktome.updateMapgenGolden").orNull?.let { value ->
+        systemProperty("ktome.updateMapgenGolden", value)
+    }
 }
 
 tasks.register<Test>("combatTraceGolden") {

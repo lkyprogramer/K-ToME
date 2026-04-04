@@ -1,0 +1,51 @@
+rooms:
+  - id: room.forest.glade
+    shape: RECT
+    widthRange: { start: 10, endInclusive: 14 }
+    heightRange: { start: 8, endInclusive: 10 }
+    tags: [general, forest, sightline, start, route, hidden_cache]
+  - id: room.bog.boardwalk
+    shape: IRREGULAR
+    widthRange: { start: 10, endInclusive: 13 }
+    heightRange: { start: 8, endInclusive: 10 }
+    tags: [general, bog, bridge, optional, hidden_cache]
+  - id: room.mine.gallery
+    shape: L_SHAPE
+    widthRange: { start: 10, endInclusive: 14 }
+    heightRange: { start: 8, endInclusive: 10 }
+    tags: [general, mine, sightline, route, ambush]
+  - id: room.forge.works
+    shape: RECT
+    widthRange: { start: 9, endInclusive: 13 }
+    heightRange: { start: 8, endInclusive: 10 }
+    tags: [general, forge, hub, route, forge]
+  - id: room.river.basin
+    shape: ROUND
+    widthRange: { start: 11, endInclusive: 15 }
+    heightRange: { start: 9, endInclusive: 11 }
+    tags: [general, flooded_cavern, bridge, route, hidden_cache]
+  - id: room.crystal.bank
+    shape: IRREGULAR
+    widthRange: { start: 10, endInclusive: 14 }
+    heightRange: { start: 8, endInclusive: 10 }
+    tags: [general, crystal_bank, shrine, route, sightline]
+  - id: room.ruin.sanctum
+    shape: RECT
+    widthRange: { start: 10, endInclusive: 14 }
+    heightRange: { start: 9, endInclusive: 11 }
+    tags: [general, ruin, shrine, goal, ritual]
+  - id: room.oil.catacomb
+    shape: IRREGULAR
+    widthRange: { start: 9, endInclusive: 13 }
+    heightRange: { start: 8, endInclusive: 10 }
+    tags: [general, oil_catacomb, ritual, optional, hidden_cache]
+  - id: room.route.crossroads
+    shape: RECT
+    widthRange: { start: 9, endInclusive: 12 }
+    heightRange: { start: 8, endInclusive: 10 }
+    tags: [general, hub, route, ambush, sightline]
+  - id: room.route.hideout
+    shape: L_SHAPE
+    widthRange: { start: 9, endInclusive: 12 }
+    heightRange: { start: 8, endInclusive: 10 }
+    tags: [general, optional, hidden_cache, ambush]

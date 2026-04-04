@@ -1,0 +1,50 @@
+{
+    "pipelineId": "hybrid_topology",
+    "zoneId": "greenwood_fringe",
+    "floorIndex": 1,
+    "seed": 20260403010101,
+    "criticalPathReachable": true,
+    "topologyFingerprint": "1bffe9f87df22e6f8862ffa288a0215c5c38bfae71764b54362dbbfec6d0168f",
+    "topologySummary": {
+        "nodeCount": 6,
+        "edgeCount": 7,
+        "primaryPathLength": 4,
+        "optionalLoopCount": 2,
+        "loopEdgeCount": 2,
+        "loopEdgeRatio": 0.2857142857142857,
+        "roomCount": 6,
+        "patternRoomCount": 1,
+        "vaultPlacementCount": 2,
+        "pathClassCounts": {
+            "CRITICAL_PATH": 4,
+            "OPTIONAL": 2
+        }
+    },
+    "biomeFamilies": [
+        "bog",
+        "forest"
+    ],
+    "vaultPlacements": [
+        {
+            "vaultId": "vault.greenwood.briar_cache",
+            "pathClass": "OPTIONAL",
+            "rewardBudget": 6,
+            "threatBudget": 4
+        },
+        {
+            "vaultId": "vault.greenwood.smuggler_cache",
+            "pathClass": "OPTIONAL",
+            "rewardBudget": 7,
+            "threatBudget": 5
+        }
+    ],
+    "terrainTagDistribution": {
+        "WATER": 67
+    },
+    "rewardProfile": {
+        "id": "zone_reward.greenwood_fringe.phase4",
+        "rarityBonus": 0.0,
+        "qualityBonus": 0,
+        "baseRewardBudget": 6
+    }
+}

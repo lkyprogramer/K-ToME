@@ -3,9 +3,13 @@ package com.ktome.game
 import com.ktome.core.ai.AIProfile
 import com.ktome.core.inscription.InscriptionDef
 import com.ktome.core.mapgen.BspBackedMapgenPipeline
+import com.ktome.core.mapgen.HybridTopologyMapgenPipeline
+import com.ktome.core.mapgen.MapgenContentCatalog
 import com.ktome.core.mapgen.MapgenPipeline
 import com.ktome.core.mapgen.ZoneMapgenProfile
 import com.ktome.core.mapgen.ZoneMapgenProfileResolver
+import com.ktome.core.mapgen.ZoneRewardProfile
+import com.ktome.core.mapgen.ZoneRewardProfileResolver
 import com.ktome.core.race.RaceDef
 import com.ktome.core.talent.TalentDef
 import com.ktome.core.talent.TalentRegistry
@@ -22,12 +26,24 @@ import com.ktome.game.telegraph.ThreatProfileRegistry
 private object EmptyZoneMapgenProfileResolver : ZoneMapgenProfileResolver {
     override fun resolve(zoneId: String): ZoneMapgenProfile =
         ZoneMapgenProfile(
+            id = "$zoneId.compatibility",
             zoneId = zoneId,
-            allowedBiomeFamilies = emptySet(),
+            allowedBiomeFamilies = setOf("fallback.compatibility"),
             loopCountRange = 0..0,
             vaultPool = emptySet(),
             terrainTagWeights = emptyMap(),
             roomTagFilter = emptySet(),
+        )
+}
+
+private object EmptyZoneRewardProfileResolver : ZoneRewardProfileResolver {
+    override fun resolve(zoneId: String): ZoneRewardProfile =
+        ZoneRewardProfile(
+            id = "$zoneId.compatibility",
+            zoneId = zoneId,
+            rarityBonus = 0.0f,
+            qualityBonus = 0,
+            baseRewardBudget = 0,
         )
 }
 
@@ -46,7 +62,15 @@ internal data class GameContent(
     val telegraphRegistry: TelegraphRegistry = TelegraphRegistry(schemaCatalog.telegraphSpecs.associateBy { spec -> spec.id }),
     val threatProfileRegistry: ThreatProfileRegistry = ThreatProfileRegistry(schemaCatalog.threatProfiles.associateBy { profile -> profile.id }),
     val zoneMapgenProfileResolver: ZoneMapgenProfileResolver = EmptyZoneMapgenProfileResolver,
-    val mapgenPipeline: MapgenPipeline = BspBackedMapgenPipeline(profileResolver = zoneMapgenProfileResolver),
+    val zoneRewardProfileResolver: ZoneRewardProfileResolver = EmptyZoneRewardProfileResolver,
+    val mapgenContentCatalog: MapgenContentCatalog? = null,
+    val mapgenPipeline: MapgenPipeline =
+        mapgenContentCatalog?.let { catalog ->
+            HybridTopologyMapgenPipeline(
+                profileResolver = zoneMapgenProfileResolver,
+                contentCatalog = catalog,
+            )
+        } ?: BspBackedMapgenPipeline(profileResolver = zoneMapgenProfileResolver),
 ) {
     val aiProfilesById: Map<String, AIProfile> = schemaCatalog.aiProfiles.associateBy(AIProfile::id)
     val racesById: Map<String, RaceDef> = races.associateBy(RaceDef::id)

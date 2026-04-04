@@ -1,0 +1,56 @@
+zoneMapgenProfiles:
+  - id: zone_mapgen.greenwood_fringe.phase4
+    zoneId: greenwood_fringe
+    allowedBiomeFamilies: [forest, bog]
+    loopCountRange: { start: 1, endInclusive: 2 }
+    vaultPool: [vault.greenwood.briar_cache, vault.greenwood.smuggler_cache]
+    terrainTagWeights:
+      WATER: 0.22
+    roomTagFilter: [forest, bog, sightline, bridge, hidden_cache, ambush]
+  - id: zone_mapgen.deep_iron_pit.phase4
+    zoneId: deep_iron_pit
+    allowedBiomeFamilies: [mine, forge]
+    loopCountRange: { start: 1, endInclusive: 2 }
+    vaultPool: [vault.deep_iron.slag_armory, vault.deep_iron.forge_lockbox]
+    terrainTagWeights:
+      OIL: 0.24
+    roomTagFilter: [mine, forge, sightline, hidden_cache, shrine]
+  - id: zone_mapgen.underground_river.phase4
+    zoneId: underground_river
+    allowedBiomeFamilies: [flooded_cavern, crystal_bank]
+    loopCountRange: { start: 1, endInclusive: 2 }
+    vaultPool: [vault.underground_river.sunken_reliquary, vault.underground_river.crystal_cache]
+    terrainTagWeights:
+      WATER: 0.28
+      ICE: 0.16
+    roomTagFilter: [flooded_cavern, crystal_bank, bridge, shrine, hidden_cache]
+  - id: zone_mapgen.abyssal_temple.phase4
+    zoneId: abyssal_temple
+    allowedBiomeFamilies: [ruin, oil_catacomb]
+    loopCountRange: { start: 1, endInclusive: 2 }
+    vaultPool: [vault.abyssal_temple.oil_reliquary, vault.abyssal_temple.warded_archive]
+    terrainTagWeights:
+      OIL: 0.20
+    roomTagFilter: [ruin, oil_catacomb, ritual, shrine, hidden_cache, ambush]
+
+zoneRewardProfiles:
+  - id: zone_reward.greenwood_fringe.phase4
+    zoneId: greenwood_fringe
+    rarityBonus: 0.00
+    qualityBonus: 0
+    baseRewardBudget: 6
+  - id: zone_reward.deep_iron_pit.phase4
+    zoneId: deep_iron_pit
+    rarityBonus: 0.05
+    qualityBonus: 1
+    baseRewardBudget: 8
+  - id: zone_reward.underground_river.phase4
+    zoneId: underground_river
+    rarityBonus: 0.08
+    qualityBonus: 1
+    baseRewardBudget: 10
+  - id: zone_reward.abyssal_temple.phase4
+    zoneId: abyssal_temple
+    rarityBonus: 0.12
+    qualityBonus: 2
+    baseRewardBudget: 12

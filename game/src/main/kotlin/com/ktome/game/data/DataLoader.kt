@@ -38,6 +38,17 @@ import com.ktome.core.item.ItemDataBundle
 import com.ktome.core.item.ItemType
 import com.ktome.core.item.MaterialDef
 import com.ktome.core.item.StatModifier
+import com.ktome.core.mapgen.BiomeFamilyDef
+import com.ktome.core.mapgen.PathClass
+import com.ktome.core.mapgen.PatternRoomDef
+import com.ktome.core.mapgen.PatternTemplateDef
+import com.ktome.core.mapgen.RoomDef
+import com.ktome.core.mapgen.RoomShape
+import com.ktome.core.mapgen.TerrainTag
+import com.ktome.core.mapgen.VaultDef
+import com.ktome.core.mapgen.VaultTemplateDef
+import com.ktome.core.mapgen.ZoneMapgenProfile
+import com.ktome.core.mapgen.ZoneRewardProfile
 import com.ktome.core.economy.AffordableRescueSlotPolicy
 import com.ktome.core.economy.RescueInventoryPolicy
 import com.ktome.core.economy.ShopNode
@@ -170,6 +181,13 @@ class DataLoader(
         val telegraphIds = telegraphSpecs.map(TelegraphSpec::id).toSet()
         val threatProfiles = parseThreatProfiles(loadYamlMap("/data/telegraph/threat_profiles/index.yaml"))
         val worldGraphSchema = parseWorldGraphSchema(loadYamlMap("/data/world/world_graph.yaml"))
+        val roomDefs = parseRoomDefs(loadYamlMap("/data/mapgen/rooms/index.yaml"))
+        val patternTemplatesAndRooms = parsePatternTemplatesAndRooms(loadYamlMap("/data/mapgen/patterns/index.yaml"))
+        val vaultTemplatesAndVaults = parseVaultTemplatesAndVaults(loadYamlMap("/data/mapgen/vaults/index.yaml"))
+        val biomeFamilies = parseBiomeFamilies(loadYamlMap("/data/mapgen/biomes/index.yaml"))
+        val zoneMapgenRoot = loadYamlMap("/data/mapgen/zones/index.yaml")
+        val zoneMapgenProfiles = parseZoneMapgenProfiles(zoneMapgenRoot)
+        val zoneRewardProfiles = parseZoneRewardProfiles(zoneMapgenRoot)
         return SchemaCatalog(
             professions = parseProfessionSchemas(loadYamlMap("/data/professions/index.yaml")),
             races = parseRaceDefs(loadYamlMap("/data/races/index.yaml")),
@@ -195,6 +213,14 @@ class DataLoader(
             aiProfiles = parseAiProfiles(loadYamlMap("/data/ai/index.yaml")),
             arenas = parseNamedSchemaRefs(loadYamlMap("/data/arenas/index.yaml"), "arenas"),
             ambientProfiles = parseNamedSchemaRefs(loadYamlMap("/data/ambient/index.yaml"), "ambientProfiles"),
+            roomDefs = roomDefs,
+            patternTemplates = patternTemplatesAndRooms.first,
+            patternRooms = patternTemplatesAndRooms.second,
+            vaultTemplates = vaultTemplatesAndVaults.first,
+            vaults = vaultTemplatesAndVaults.second,
+            biomeFamilies = biomeFamilies,
+            zoneMapgenProfiles = zoneMapgenProfiles,
+            zoneRewardProfiles = zoneRewardProfiles,
             visualKeys = parseStringIdSet(loadYamlMap("/data/visuals/index.yaml"), "visuals"),
             audioProfiles = parseStringIdSet(loadYamlMap("/data/audio/index.yaml"), "audioProfiles"),
         )
@@ -676,6 +702,8 @@ class DataLoader(
                 schemaVersion = zone.requiredInt("schemaVersion"),
                 tags = zone.optionalStringList("tags"),
                 biome = zone.requiredString("biome"),
+                mapgenProfileId = zone.optionalString("mapgenProfileId"),
+                rewardProfileId = zone.optionalString("rewardProfileId"),
                 floorCount = zone.requiredInt("floorCount"),
                 mapSize = zone.requiredMap("mapSize").toSchemaMapSize(),
                 recommendedLevel = zone.requiredMap("recommendedLevel").toSchemaLevelRange(),
@@ -692,6 +720,134 @@ class DataLoader(
                 uniqueContentTag = zone.optionalString("uniqueContentTag"),
             )
         }
+
+    private fun parseRoomDefs(root: Map<String, Any?>): List<RoomDef> =
+        root.requiredList("rooms").map { entry ->
+            val room = entry.requiredMap()
+            RoomDef(
+                id = room.requiredString("id"),
+                shape = RoomShape.valueOf(room.requiredString("shape")),
+                widthRange = room.requiredMap("widthRange").toIntRange(),
+                heightRange = room.requiredMap("heightRange").toIntRange(),
+                tags = room.optionalStringList("tags").toSet(),
+            )
+        }
+
+    private fun parsePatternTemplatesAndRooms(root: Map<String, Any?>): Pair<List<PatternTemplateDef>, List<PatternRoomDef>> {
+        val patternRooms =
+            root.requiredList("patternRooms").map { entry ->
+                val pattern = entry.requiredMap()
+                PatternRoomDef(
+                    id = pattern.requiredString("id"),
+                    baseRoomId = pattern.requiredString("baseRoomId"),
+                    patternId = pattern.requiredString("patternId"),
+                    requiredTags = pattern.optionalStringList("requiredTags").toSet(),
+                    spawnWeight = pattern.requiredInt("spawnWeight"),
+                )
+            }
+        val templates = loadMapgenTemplates(ids = patternRooms.map(PatternRoomDef::patternId), resourceDirectory = "/data/mapgen/patterns", factory = ::PatternTemplateDef)
+        return templates to patternRooms
+    }
+
+    private fun parseVaultTemplatesAndVaults(root: Map<String, Any?>): Pair<List<VaultTemplateDef>, List<VaultDef>> {
+        val vaults =
+            root.requiredList("vaults").map { entry ->
+                val vault = entry.requiredMap()
+                VaultDef(
+                    id = vault.requiredString("id"),
+                    templateId = vault.requiredString("templateId"),
+                    pathClass = PathClass.valueOf(vault.requiredString("pathClass")),
+                    threatBudget = vault.requiredInt("threatBudget"),
+                    rewardBudget = vault.requiredInt("rewardBudget"),
+                    allowOnBiomeFamilies = vault.requiredStringList("allowOnBiomeFamilies").toSet(),
+                    requiredTerrainTags =
+                        vault.optionalStringList("requiredTerrainTags")
+                            .map(TerrainTag::valueOf)
+                            .toSet(),
+                )
+            }
+        val templates = loadMapgenTemplates(ids = vaults.map(VaultDef::templateId), resourceDirectory = "/data/mapgen/vaults", factory = ::VaultTemplateDef)
+        return templates to vaults
+    }
+
+    private fun parseBiomeFamilies(root: Map<String, Any?>): List<BiomeFamilyDef> =
+        root.requiredList("biomeFamilies").map { entry ->
+            val biome = entry.requiredMap()
+            BiomeFamilyDef(
+                id = biome.requiredString("id"),
+                primaryTileSet = biome.requiredString("primaryTileSet"),
+                secondaryTileSet = biome.optionalString("secondaryTileSet"),
+                terrainTagWeights =
+                    biome.optionalMap("terrainTagWeights")
+                        ?.entries
+                        ?.associate { (tag, value) ->
+                            TerrainTag.valueOf(tag.toString()) to value.requiredFloat()
+                        }
+                        ?: emptyMap(),
+                allowedRoomTags = biome.requiredStringList("allowedRoomTags").toSet(),
+            )
+        }
+
+    private fun parseZoneMapgenProfiles(root: Map<String, Any?>): List<ZoneMapgenProfile> =
+        root.requiredList("zoneMapgenProfiles").map { entry ->
+            val profile = entry.requiredMap()
+            ZoneMapgenProfile(
+                id = profile.requiredString("id"),
+                zoneId = profile.requiredString("zoneId"),
+                allowedBiomeFamilies = profile.requiredStringList("allowedBiomeFamilies").toSet(),
+                loopCountRange = profile.requiredMap("loopCountRange").toIntRange(),
+                vaultPool = profile.optionalStringList("vaultPool").toSet(),
+                terrainTagWeights =
+                    profile.optionalMap("terrainTagWeights")
+                        ?.entries
+                        ?.associate { (tag, value) ->
+                            TerrainTag.valueOf(tag.toString()) to value.requiredFloat()
+                        }
+                        ?: emptyMap(),
+                roomTagFilter = profile.optionalStringList("roomTagFilter").toSet(),
+            )
+        }
+
+    private fun parseZoneRewardProfiles(root: Map<String, Any?>): List<ZoneRewardProfile> =
+        root.requiredList("zoneRewardProfiles").map { entry ->
+            val profile = entry.requiredMap()
+            ZoneRewardProfile(
+                id = profile.requiredString("id"),
+                zoneId = profile.requiredString("zoneId"),
+                rarityBonus = profile.requiredFloat("rarityBonus"),
+                qualityBonus = profile.requiredInt("qualityBonus"),
+                baseRewardBudget = profile.requiredInt("baseRewardBudget"),
+            )
+        }
+
+    private fun loadMapgenTemplateRows(
+        resourcePath: String,
+        expectedId: String,
+    ): List<String> {
+        val template = loadYamlMap(resourcePath)
+        val actualId = template.requiredString("id")
+        require(actualId == expectedId) {
+            "Mapgen template file '$resourcePath' declared id '$actualId', expected '$expectedId'."
+        }
+        return template.requiredStringList("rows")
+    }
+
+    private fun <T> loadMapgenTemplates(
+        ids: List<String>,
+        resourceDirectory: String,
+        factory: (String, List<String>) -> T,
+    ): List<T> =
+        ids
+            .distinct()
+            .map { templateId ->
+                factory(
+                    templateId,
+                    loadMapgenTemplateRows(
+                        resourcePath = "$resourceDirectory/$templateId.yaml",
+                        expectedId = templateId,
+                    ),
+                )
+            }
 
     private fun parseWorldGraphSchema(root: Map<String, Any?>): WorldGraphSchemaV2 {
         val world = root.requiredMap("worldGraph")
@@ -1798,6 +1954,29 @@ private fun Map<*, *>.requiredDouble(key: String): Double =
         is Number -> value.toDouble()
         is String -> value.toDouble()
         else -> error("Missing numeric entry '$key'")
+    }
+
+private fun Map<*, *>.requiredFloat(key: String): Float =
+    requiredDouble(key).toFloat()
+
+private fun Any?.requiredFloat(): Float =
+    when (this) {
+        is Float -> this
+        is Double -> this.toFloat()
+        is Number -> this.toFloat()
+        is String -> this.toFloat()
+        else -> error("Entry must be numeric.")
+    }
+
+private fun Map<*, *>.toIntRange(): IntRange =
+    when {
+        containsKey("start") && containsKey("endInclusive") ->
+            requiredInt("start")..requiredInt("endInclusive")
+
+        containsKey("min") && containsKey("max") ->
+            requiredInt("min")..requiredInt("max")
+
+        else -> error("Range map must contain either start/endInclusive or min/max.")
     }
 
 private fun Map<*, *>.optionalDouble(
