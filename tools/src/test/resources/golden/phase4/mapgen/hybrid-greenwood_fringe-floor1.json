@@ -4,7 +4,7 @@
     "floorIndex": 1,
     "seed": 20260403010101,
     "criticalPathReachable": true,
-    "topologyFingerprint": "ddf61afaaa40858bc836bb73a3ae1e28a5314470176ed827fc5e6f3fa2d0d669",
+    "topologyFingerprint": "601bd3a9b88daeb3de6f62db1a4aa3a9ad926bbafd4c63ff122757c0a714b93a",
     "topologySummary": {
         "nodeCount": 7,
         "edgeCount": 7,

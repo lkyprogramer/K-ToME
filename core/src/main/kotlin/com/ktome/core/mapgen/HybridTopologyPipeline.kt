@@ -179,6 +179,7 @@ class HybridTopologyPlanner(
         val edges =
             applyKeyGatePlans(
                 edges = baseEdges,
+                primaryPathNodeIds = primaryNodesWithGrants.map(TopologyNode::id),
                 nodesByAnchorId = nodesByAnchorId,
                 keyGatePlans = profile.keyGatePlans,
             )
@@ -252,12 +253,10 @@ class HybridTopologyPlanner(
 
     private fun applyKeyGatePlans(
         edges: List<TopologyEdge>,
+        primaryPathNodeIds: List<NodeId>,
         nodesByAnchorId: Map<NodeAnchorId, TopologyNode>,
         keyGatePlans: List<KeyGatePlan>,
     ): List<TopologyEdge> {
-        if (keyGatePlans.isEmpty()) {
-            return edges
-        }
         val plansByEndpoints =
             keyGatePlans.groupBy { plan ->
                 val from = requireNotNull(nodesByAnchorId[plan.fromAnchorId]) {
@@ -268,12 +267,67 @@ class HybridTopologyPlanner(
                 }
                 setOf(from.id, to.id)
             }
-        return edges.map { edge ->
-            val plans = plansByEndpoints[setOf(edge.from, edge.to)].orEmpty()
-            if (plans.isEmpty()) {
+        val gatedEdges =
+            edges.map { edge ->
+                val plans = plansByEndpoints[setOf(edge.from, edge.to)].orEmpty()
+                if (plans.isEmpty()) {
+                    return@map edge
+                }
+                edge.copy(requiredKeys = edge.requiredKeys + plans.map(KeyGatePlan::requirementRef))
+            }
+        val primaryPathIndexByNodeId = primaryPathNodeIds.withIndex().associate { (index, nodeId) -> nodeId to index }
+        val primaryPathRequirementsByEndpoints =
+            gatedEdges
+                .filter { edge ->
+                    val fromIndex = primaryPathIndexByNodeId[edge.from]
+                    val toIndex = primaryPathIndexByNodeId[edge.to]
+                    fromIndex != null && toIndex != null && kotlin.math.abs(fromIndex - toIndex) == 1
+                }.associate { edge -> setOf(edge.from, edge.to) to edge.requiredKeys }
+        val attachPrimaryNodeIdByOptionalNodeId =
+            gatedEdges
+                .asSequence()
+                .filterNot(TopologyEdge::isLoop)
+                .mapNotNull { edge ->
+                    val fromIndex = primaryPathIndexByNodeId[edge.from]
+                    val toIndex = primaryPathIndexByNodeId[edge.to]
+                    when {
+                        fromIndex != null && toIndex == null -> edge.to to edge.from
+                        fromIndex == null && toIndex != null -> edge.from to edge.to
+                        else -> null
+                    }
+                }.toMap()
+        return gatedEdges.map { edge ->
+            if (!edge.isLoop) {
                 return@map edge
             }
-            edge.copy(requiredKeys = edge.requiredKeys + plans.map(KeyGatePlan::requirementRef))
+            val fromPrimaryIndex = primaryPathIndexByNodeId[edge.from]
+            val toPrimaryIndex = primaryPathIndexByNodeId[edge.to]
+            val optionalNodeId =
+                when {
+                    fromPrimaryIndex == null && toPrimaryIndex != null -> edge.from
+                    fromPrimaryIndex != null && toPrimaryIndex == null -> edge.to
+                    else -> return@map edge
+                }
+            val reconnectPrimaryNodeId =
+                when {
+                    fromPrimaryIndex != null -> edge.from
+                    toPrimaryIndex != null -> edge.to
+                    else -> return@map edge
+                }
+            val attachPrimaryNodeId = attachPrimaryNodeIdByOptionalNodeId[optionalNodeId] ?: return@map edge
+            val attachIndex = primaryPathIndexByNodeId.getValue(attachPrimaryNodeId)
+            val reconnectIndex = primaryPathIndexByNodeId.getValue(reconnectPrimaryNodeId)
+            val crossedRequirements =
+                requirementsAlongPrimarySegment(
+                    primaryPathNodeIds = primaryPathNodeIds,
+                    startIndex = attachIndex,
+                    endIndex = reconnectIndex,
+                    primaryPathRequirementsByEndpoints = primaryPathRequirementsByEndpoints,
+                )
+            if (crossedRequirements.isEmpty()) {
+                return@map edge
+            }
+            edge.copy(requiredKeys = edge.requiredKeys + crossedRequirements)
         }.also { updatedEdges ->
             keyGatePlans.forEach { plan ->
                 val from = nodesByAnchorId.getValue(plan.fromAnchorId)
@@ -283,6 +337,26 @@ class HybridTopologyPlanner(
                 }
             }
         }
+    }
+
+    private fun requirementsAlongPrimarySegment(
+        primaryPathNodeIds: List<NodeId>,
+        startIndex: Int,
+        endIndex: Int,
+        primaryPathRequirementsByEndpoints: Map<Set<NodeId>, Set<RequirementRef>>,
+    ): Set<RequirementRef> {
+        if (startIndex == endIndex) {
+            return emptySet()
+        }
+        val segmentStart = min(startIndex, endIndex)
+        val segmentEndExclusive = max(startIndex, endIndex)
+        return (segmentStart until segmentEndExclusive)
+            .asSequence()
+            .flatMap { index ->
+                primaryPathRequirementsByEndpoints[setOf(primaryPathNodeIds[index], primaryPathNodeIds[index + 1])]
+                    .orEmpty()
+                    .asSequence()
+            }.toSet()
     }
 }
 

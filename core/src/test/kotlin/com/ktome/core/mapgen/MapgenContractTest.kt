@@ -259,6 +259,60 @@ class MapgenContractTest {
     }
 
     @Test
+    fun `hybrid planner propagates gated critical path requirements onto reconnecting optional loops`() {
+        val planner =
+            HybridTopologyPlanner(
+                roomDefsById =
+                    listOf(
+                        RoomDef("room.primary", RoomShape.RECT, 8..9, 7..8, setOf("general", "start", "route", "hub", "goal")),
+                        RoomDef("room.optional", RoomShape.RECT, 8..9, 7..8, setOf("general", "optional")),
+                    ).associateBy(RoomDef::id),
+                biomeFamiliesById =
+                    mapOf(
+                        "family.test" to BiomeFamilyDef("family.test", "tileset.test", null, emptyMap(), setOf("general")),
+                    ),
+            )
+
+        val topology =
+            planner.plan(
+                profile =
+                    ZoneMapgenProfile(
+                        id = "loop-gate.zone",
+                        zoneId = "loop_gate_zone",
+                        allowedBiomeFamilies = setOf("family.test"),
+                        loopCountRange = 2..2,
+                        vaultPool = emptySet(),
+                        terrainTagWeights = emptyMap(),
+                        roomTagFilter = emptySet(),
+                        keyGatePlans =
+                            listOf(
+                                KeyGatePlan(
+                                    id = "gate.final",
+                                    fromAnchorId = NodeAnchorId("critical.hub"),
+                                    toAnchorId = NodeAnchorId("critical.goal"),
+                                    grantedByAnchorId = NodeAnchorId("optional.branch.1"),
+                                    keyType = KeyType.KEY_ITEM,
+                                    keyId = "final_key",
+                                ),
+                            ),
+                    ),
+                request = MapgenRequest(zoneId = "loop_gate_zone", floorIndex = 1, seed = 2026040502L, targetWidth = 72, targetHeight = 46),
+            )
+
+        val goalLoopEdges =
+            topology.edges.filter { edge ->
+                edge.isLoop &&
+                    topology.nodes
+                        .filter { node -> node.id == edge.from || node.id == edge.to }
+                        .map(TopologyNode::anchorId)
+                        .contains(NodeAnchorId("critical.goal"))
+            }
+
+        assertEquals(2, goalLoopEdges.size)
+        assertTrue(goalLoopEdges.all { edge -> RequirementRef("KEY_ITEM:final_key") in edge.requiredKeys })
+    }
+
+    @Test
     fun `hidden entrance plan fails fast when entrance anchor drifts away from source anchor`() {
         assertThrows(IllegalArgumentException::class.java) {
             HiddenEntrancePlan(
