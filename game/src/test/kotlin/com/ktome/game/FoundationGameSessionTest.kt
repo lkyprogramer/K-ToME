@@ -2467,7 +2467,7 @@ class FoundationGameSessionTest {
                 SaveManager(tempDir.resolve("floor-source-level-save")),
             )
 
-        assertEquals(1, invokeCurrentZoneSourceLevel(session))
+        assertEquals(2, invokeCurrentZoneSourceLevel(session))
         movePlayerTo(session, stairPoint(session, StairDirection.DOWN))
         assertTrue(session.perform(PlayerCommand.Descend))
         assertEquals(4, invokeCurrentZoneSourceLevel(session))

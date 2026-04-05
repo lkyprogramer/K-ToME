@@ -281,9 +281,9 @@ internal fun recommendedLevelForFloor(
     if (floorCount == 1 || levelRange.min >= levelRange.max) {
         return levelRange.max.coerceAtLeast(levelRange.min)
     }
-    val delta = levelRange.max - levelRange.min
-    val scaledDelta = delta * (clampedFloor - 1) / (floorCount - 1)
-    return (levelRange.min + scaledDelta).coerceIn(levelRange.min, levelRange.max)
+    val width = levelRange.max - levelRange.min + 1
+    val scaledUpperBound = (width * clampedFloor + floorCount - 1) / floorCount
+    return (levelRange.min + scaledUpperBound - 1).coerceIn(levelRange.min, levelRange.max)
 }
 
 internal fun recommendedLevelForZoneFloor(
@@ -3061,8 +3061,6 @@ class FoundationGameSession internal constructor(
 
     private fun currentZoneSourceLevel(): Int = recommendedLevelForZoneFloor(currentZoneSchema(), currentFloor())
 
-    private fun currentZoneLegacyFloorBand(): Int = itemFloorForRecommendedLevel(currentZoneSourceLevel())
-
     private fun currentFloorRewardBudget(): com.ktome.core.loot.FloorRewardBudget =
         com.ktome.core.loot.FloorRewardBudget(
             zoneId = currentZoneSchema().id,
@@ -4038,8 +4036,8 @@ class FoundationGameSession internal constructor(
                     RewardGenerationContext(
                         rewardSource = MilestoneRewardSource.CACHE,
                         sourceId = sourceId,
-                        sourceLevel = currentZoneSourceLevel(),
-                        floor = currentZoneLegacyFloorBand(),
+                        sourceLevel = currentZoneSchema().recommendedLevel.max,
+                        floor = itemFloorForRecommendedLevel(currentZoneSchema().recommendedLevel.max),
                         qualityFloor = RarityTier.MAGIC,
                         minAffixCount = 1,
                         routeBiasTags = routeRewardBiasTags(currentZoneSchema().rewardBiasTags()),
@@ -4081,8 +4079,8 @@ class FoundationGameSession internal constructor(
                     RewardGenerationContext(
                         rewardSource = MilestoneRewardSource.SUPPORT,
                         sourceId = sourceId,
-                        sourceLevel = currentZoneSourceLevel(),
-                        floor = currentZoneLegacyFloorBand(),
+                        sourceLevel = currentZoneSchema().recommendedLevel.max,
+                        floor = itemFloorForRecommendedLevel(currentZoneSchema().recommendedLevel.max),
                         qualityFloor = RarityTier.MAGIC,
                         minAffixCount = 1,
                         routeBiasTags = routeRewardBiasTags(currentZoneSchema().rewardBiasTags()),
@@ -4130,8 +4128,8 @@ class FoundationGameSession internal constructor(
                 RewardGenerationContext(
                     rewardSource = MilestoneRewardSource.CACHE,
                     sourceId = "cadence.${config.zoneId}.floor${currentFloor()}",
-                    sourceLevel = currentZoneSourceLevel(),
-                    floor = currentZoneLegacyFloorBand(),
+                    sourceLevel = currentZoneSchema().recommendedLevel.max,
+                    floor = itemFloorForRecommendedLevel(currentZoneSchema().recommendedLevel.max),
                     qualityFloor = RarityTier.MAGIC,
                     minAffixCount = 1,
                     routeBiasTags = routeRewardBiasTags(currentZoneSchema().rewardBiasTags()),
@@ -4151,8 +4149,8 @@ class FoundationGameSession internal constructor(
                 RewardGenerationContext(
                     rewardSource = MilestoneRewardSource.CACHE,
                     sourceId = "cadence.${config.zoneId}.floor${currentFloor()}",
-                    sourceLevel = currentZoneSourceLevel(),
-                    floor = currentZoneLegacyFloorBand(),
+                    sourceLevel = currentZoneSchema().recommendedLevel.max,
+                    floor = itemFloorForRecommendedLevel(currentZoneSchema().recommendedLevel.max),
                     qualityFloor = RarityTier.MAGIC,
                     minAffixCount = 1,
                     routeBiasTags = routeRewardBiasTags(currentZoneSchema().rewardBiasTags()),

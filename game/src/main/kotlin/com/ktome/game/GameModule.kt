@@ -749,7 +749,6 @@ object GameModule {
         occupiedPoints: MutableSet<Point>,
     ) {
         val itemRooms = map.rooms.drop(1).take(4)
-        val floorRecommendedLevel = recommendedLevelForZoneFloor(zone, floor)
         itemRooms.forEach { room ->
             val spawnPoint = findSpawnPoints(room, map, occupiedPoints).first()
             itemFactory.createGroundItem(
@@ -757,10 +756,10 @@ object GameModule {
                 itemGenerator.generate(
                     context =
                         com.ktome.core.loot.LootRollContext(
-                            sourceLevel = floorRecommendedLevel,
+                            sourceLevel = zone.recommendedLevel.max,
                             sourceTier = com.ktome.core.loot.SourceTier.NORMAL,
                             zoneId = zone.id,
-                            playerLevel = floorRecommendedLevel,
+                            playerLevel = zone.recommendedLevel.max,
                             magicFindBonus = 0.0f,
                             seed = floorSeed(seed, floor, 0x91F3 + room.center.x + room.center.y),
                         ),

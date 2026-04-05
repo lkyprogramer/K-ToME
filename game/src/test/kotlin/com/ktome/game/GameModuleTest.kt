@@ -46,11 +46,11 @@ class GameModuleTest {
     fun `recommended level for floor tracks zone floor progression conservatively`() {
         val zone = DataLoader().loadSchemaCatalog().zones.first { schema -> schema.id == "shattered_outpost" }
 
-        assertEquals(1, recommendedLevelForZoneFloor(zone, 1))
+        assertEquals(2, recommendedLevelForZoneFloor(zone, 1))
         assertEquals(4, recommendedLevelForZoneFloor(zone, 2))
-        assertEquals(2, recommendedLevelForFloor(SchemaLevelRange(min = 2, max = 8), floorIndex = 1, floorCount = 4))
-        assertEquals(4, recommendedLevelForFloor(SchemaLevelRange(min = 2, max = 8), floorIndex = 2, floorCount = 4))
-        assertEquals(6, recommendedLevelForFloor(SchemaLevelRange(min = 2, max = 8), floorIndex = 3, floorCount = 4))
+        assertEquals(3, recommendedLevelForFloor(SchemaLevelRange(min = 2, max = 8), floorIndex = 1, floorCount = 4))
+        assertEquals(5, recommendedLevelForFloor(SchemaLevelRange(min = 2, max = 8), floorIndex = 2, floorCount = 4))
+        assertEquals(7, recommendedLevelForFloor(SchemaLevelRange(min = 2, max = 8), floorIndex = 3, floorCount = 4))
         assertEquals(8, recommendedLevelForFloor(SchemaLevelRange(min = 2, max = 8), floorIndex = 4, floorCount = 4))
     }
 
