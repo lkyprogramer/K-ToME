@@ -15,7 +15,7 @@ Phase 4 的主题是把“可完成的长局”升级成“重复游玩差异明
 | `P4-X` | 横切合同收口 | save/replay、reward/threat ledger、`SearchAction`、pack runtime/test split | `Phase 3` 出口满足 | `PR-01 ~ PR-09` 可共享同一套横切 contract |
 | `P4-A` | ProcGen 与可解性 | `MapgenPipeline`、`TerrainTag`、`SolvabilityGraph`、mapgen/solvability harness | `Phase 3` 出口满足 | 多 seed 地图差异明显且主线 `100%` 可达 |
 | `P4-B` | Loot 与遭遇生态 | `LootBudget`、affix/unique/artifact、elite mutation、hidden event、secret zone | `P4-A` contract 稳定 | 掉落与遭遇差异可感知且可量化 |
-| `P4-C` | Content Pack | `ContentPackManifest`、overlay、schema lint、headless harness、示例 pack | `P4-B` schema 稳定 | 外部 pack 能在不改 `core` 的前提下装载并验证 |
+| `P4-C` | Content Pack | `ContentPackManifest`、overlay、schema lint、headless harness、示例 pack + precedence fixture | `P4-B` schema 稳定 | 外部 pack 能以 `ADD + whole-entry REPLACE` 主路径在不改 `core` 的前提下装载并验证 |
 
 ## 3. 并行开发线
 
@@ -66,7 +66,7 @@ Phase 4 的主题是把“可完成的长局”升级成“重复游玩差异明
 4. `P4-W4` 的奖励、事件和 secret zone 不得绕过 `LootBudget / FloorRewardBudget` 与 `SolvabilityGraph`。
 5. `P4-W5` 的 loader / lint 可以在 `P4-X + P4-W3` 稳定后起步，但 headless harness 依赖 `P4-W4` 的 hidden content registry 完整。
 6. `PR-06` 的 terrain/mutation/boss variant 可以在 `PR-02` 完成后并行推进；验证主线优先挂在 `terrainInteractionBatch + bossHarness`，`hiddenContentHarness` 只消费其结果。
-7. `P4-C` 以最小可行切片为目标：sample pack 必须验证 `ADD` 主路径，`APPEND / DENY` 默认停在 fixture/lint 层，除非后续单独冻结 allowed-target 表。
+7. `P4-C` 以最小可行切片为目标：runtime 正式支持 `ADD + whole-entry REPLACE`；sample pack 以 `ADD` 为主验证路径，precedence / conflict 由第二夹具覆盖；`APPEND / DENY` 默认停在 fixture/lint 层，除非后续单独冻结 allowed-target 表。
 
 ### PR 级执行文档落位
 

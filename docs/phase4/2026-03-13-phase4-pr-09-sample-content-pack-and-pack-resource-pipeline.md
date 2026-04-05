@@ -30,7 +30,7 @@
 
 1. 没有示例 pack，无法验证 overlay precedence 和 key 解析是否真的可用。
 2. 没有 pack 资源计划，容易让 sample pack 变成“只有 YAML/JSON，没有可见内容”的空壳。
-3. 若 sample pack 不走现有 canonical schema 和资源管线，会立即出现第三套格式。
+3. 若 sample pack 不走现有 runtime JSON manifest schema 和资源管线，会立即出现第三套格式。
 
 ### 2.1 本 PR 必须冻结的口径
 
@@ -106,7 +106,7 @@ examples/content-packs/sample.flooded_relics/
 2. pack 禁用时回落到 base
 3. `tools/src/main/resources/fixtures/content-packs/<packId>.yaml` 中声明的 seed 下 headless run 全通过
 4. pack-local i18n / visual / audio key 可解析
-5. 双 pack precedence 或 conflict 场景可稳定复现，且至少覆盖一种非 `ADD` 语义
+5. 双 pack precedence 或 conflict 场景可稳定复现，且至少覆盖一种非 `ADD` 语义；`REPLACE / APPEND / DENY` 的工程验证以第二夹具或模拟双包场景为主，不强制都落到 official sample pack 主入口
 
 ## 5. 推荐改动面
 
@@ -204,7 +204,7 @@ examples/content-packs/sample.flooded_relics/
 
 1. pack-local `visual-manifest.json` 和 `audio-manifest.json` 必须复用 canonical runtime schema。
 2. pack-local i18n JSON 必须复用 base `LocalizationBundle` 的 key/value 结构。
-3. 若 client 当前仍依赖 canonical manifest 预热路径，sample pack 需要在 harness 中验证 merge 后的 resolver 结果，而不是新起第二套 resolver。
+3. sample pack 的 visual/audio/i18n merge 结果必须继续喂给现有单一 resolver 接口；harness 负责验证 merge 后结果，不能为 pack 单独新起第二套 resolver。
 4. `gemini` 仅表示图片 plan 文件命名约定，不能被实现方当成 pack schema 或 manifest version 的一部分。
 5. `harnessSeeds`、dual-pack fixture 顺序和预期 op 结果只允许出现在 `tools/src/main/resources/fixtures/content-packs/*.yaml` / `ContentPackHarnessSpec`，不允许回流到 runtime manifest。
 6. `packId / namespace / 资源 key prefix` 的规则固定为：

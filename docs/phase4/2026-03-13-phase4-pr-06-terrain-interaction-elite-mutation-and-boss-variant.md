@@ -147,24 +147,23 @@ data class BossVariantDef(
 1. `baseEncounterId` 必须已存在。
 2. `grantedMutations` 必须引用 `EliteMutationDef`。
 3. `actionWeightProfileId` 只允许覆写既有 encounter 内已经暴露给 variant 的少量候选动作权重，不得新增 phase、删除 phase 或改 phase 跳转条件。
-4. 若需要改 phase graph 或 phase 参数结构，退回 `Phase 3` encounter 文档处理，不在本 PR 偷做。
+4. 若后续确实需要增强变体感知度，只允许在单独文档中讨论既有 phase 参数覆盖；本 PR 不引入 phase graph overlay，也不新增/删除 phase。
 5. `lootProfileOverride` 必须进入统一 `FloorRewardBudget` 记账；`threatCost` 必须进入 `EncounterThreatBudget`，两者都不能绕开横切总账。
 
 ### 4.4 并行执行边界
 
-本 PR 的真正上游是 `PR-02` 提供的 `TerrainTag`、biome/zone contract 和基础 report 字段，不需要等待 hidden content 或完整 loot 实现全部结束。
+本 PR 的依赖声明固定为：
 
-执行边界固定为：
-
-1. 可先并行完成：
+1. 上游依赖：
+   - `PR-02`：`TerrainTag` 枚举、biome/zone contract、基础 report 字段
+   - `PR-04 / PR-05`：`LootBudget`、模板来源、inspect key
+   - `PR-03`：proof / log 字段命名一致性
+2. 可并行落地：
    - `core` 的 `CombatPipeline step 9`
    - `game` 的 `EliteMutationDef / BossVariantDef` registry
    - `client` 的 mutation / boss variant 可读性接线
-2. 需要在合入前对齐但不阻塞开发启动的依赖：
-   - `PR-04/05` 的 `LootBudget`、模板来源和 inspect key
-   - `PR-03` 的 proof/log 字段命名一致性
-   - `P4-X` 的 reward/threat ledger 版本字段
-3. `PR-07` 的 hidden reward/secret zone 只消费这里冻结好的 mutation/boss/terrain contract，不得反向改写本 PR 结构。
+3. 下游消费者：
+   - `PR-07` 只消费这里冻结好的 mutation / boss / terrain contract，不得反向改写本 PR 结构。
 
 ## 5. 推荐改动面
 
