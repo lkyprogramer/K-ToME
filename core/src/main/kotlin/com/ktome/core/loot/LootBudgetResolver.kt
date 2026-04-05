@@ -11,6 +11,9 @@ private const val RARE_PITY_THRESHOLD: Int = 20
 private const val RARE_PITY_MULTIPLIER: Float = 2.0f
 private const val SPECIAL_PITY_THRESHOLD: Int = 50
 private const val UNIQUE_PITY_MULTIPLIER: Float = 3.0f
+private const val SPECIAL_NO_UPGRADE_WEIGHT: Int = 39
+private const val UNIQUE_UPGRADE_WEIGHT: Int = 2
+private const val ARTIFACT_UPGRADE_WEIGHT: Int = 1
 
 class LootBudgetResolver(
     private val random: RandomSource,
@@ -47,6 +50,7 @@ class LootBudgetResolver(
                 pityTracker.eligibleSpecialRollsSinceLastUnique >= SPECIAL_PITY_THRESHOLD
         val upgradedSpecialTier =
             rollSpecialTier(
+                sourceTier = context.sourceTier,
                 specialTierEligibility = specialTierEligibility,
                 specialPityApplied = specialPityApplied,
             )
@@ -132,6 +136,7 @@ class LootBudgetResolver(
     }
 
     private fun rollSpecialTier(
+        sourceTier: SourceTier,
         specialTierEligibility: SpecialTierEligibility,
         specialPityApplied: Boolean,
     ): SpecialTier? {
@@ -145,30 +150,43 @@ class LootBudgetResolver(
         val uniqueWeight =
             if (SpecialTier.UNIQUE in specialTierEligibility.availableSpecialTiers) {
                 if (specialPityApplied) {
-                    scaledWeight(baseWeight = 1, multiplier = UNIQUE_PITY_MULTIPLIER)
+                    scaledWeight(baseWeight = UNIQUE_UPGRADE_WEIGHT, multiplier = UNIQUE_PITY_MULTIPLIER)
                 } else {
-                    1
+                    UNIQUE_UPGRADE_WEIGHT
                 }
             } else {
                 0
             }
         val artifactWeight =
             if (SpecialTier.ARTIFACT in specialTierEligibility.availableSpecialTiers) {
-                1
+                ARTIFACT_UPGRADE_WEIGHT
             } else {
                 0
             }
-        val totalWeight = uniqueWeight + artifactWeight
-        if (totalWeight == 0) {
+        val noUpgradeWeight =
+            when (sourceTier) {
+                SourceTier.NORMAL -> 0
+                SourceTier.ELITE,
+                SourceTier.CHEST,
+                SourceTier.BOSS,
+                SourceTier.SECRET_ZONE,
+                -> SPECIAL_NO_UPGRADE_WEIGHT
+            }
+        val totalWeight = uniqueWeight + artifactWeight + noUpgradeWeight
+        if (uniqueWeight == 0 && artifactWeight == 0) {
             return null
         }
 
-        val roll = random.nextInt(fromInclusive = 0, untilExclusive = totalWeight)
-        return if (roll < uniqueWeight) {
-            SpecialTier.UNIQUE
-        } else {
-            SpecialTier.ARTIFACT
+        var roll = random.nextInt(fromInclusive = 0, untilExclusive = totalWeight)
+        roll -= uniqueWeight
+        if (roll < 0) {
+            return SpecialTier.UNIQUE
         }
+        roll -= artifactWeight
+        if (roll < 0) {
+            return SpecialTier.ARTIFACT
+        }
+        return null
     }
 
     private fun nextPityTracker(
@@ -207,6 +225,7 @@ class LootBudgetResolver(
                 SourceTier.ELITE -> SpecialTierEligibility(availableSpecialTiers = setOf(SpecialTier.UNIQUE))
                 SourceTier.BOSS -> SpecialTierEligibility(availableSpecialTiers = setOf(SpecialTier.UNIQUE, SpecialTier.ARTIFACT))
                 SourceTier.CHEST -> SpecialTierEligibility(availableSpecialTiers = setOf(SpecialTier.UNIQUE))
+                SourceTier.SECRET_ZONE -> SpecialTierEligibility(availableSpecialTiers = setOf(SpecialTier.UNIQUE, SpecialTier.ARTIFACT))
             }
     }
 }

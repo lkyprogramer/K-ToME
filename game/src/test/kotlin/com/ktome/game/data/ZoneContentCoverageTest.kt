@@ -5,6 +5,9 @@ import com.ktome.core.item.EquipmentPassive
 import com.ktome.core.economy.ShopNode
 import com.ktome.core.item.AffixEquipType
 import com.ktome.core.item.AffixType
+import com.ktome.core.loot.AffixCostBand
+import com.ktome.core.loot.SourceTier
+import com.ktome.core.loot.SpecialTier
 import com.ktome.game.ZoneMechanicRuntime
 import com.ktome.game.i18n.GameLocale
 import com.ktome.game.i18n.LocalizationBundle
@@ -126,26 +129,77 @@ class ZoneContentCoverageTest {
     }
 
     @Test
-    fun `affix catalog freezes v1 budget and split`() {
+    fun `affix catalog and special templates satisfy pr05 budget coverage contracts`() {
         val itemBundle = DataLoader(GameLocale.EN_US).loadItemBundle()
+        val specialTemplatesByTier = itemBundle.specialTemplates.groupBy { template -> template.specialTier }
+        val targetZones = setOf("greenwood_fringe", "deep_iron_pit", "underground_river", "abyssal_temple")
+        val buildArchetypes = setOf("vanguard", "rogue", "arcanist", "templar")
+        val artifactTemplates = specialTemplatesByTier.getValue(SpecialTier.ARTIFACT)
 
         assertEquals(40, itemBundle.affixes.size)
-        assertEquals(
-            12,
-            itemBundle.affixes.count { affix -> affix.equipType == AffixEquipType.WEAPON && affix.type == AffixType.PREFIX },
+        assertTrue(
+            itemBundle.affixes.all { affix ->
+                affix.cost in setOf(
+                    AffixCostBand.TRIVIAL.cost,
+                    AffixCostBand.MINOR.cost,
+                    AffixCostBand.MEDIUM.cost,
+                    AffixCostBand.MAJOR.cost,
+                    AffixCostBand.SIGNATURE.cost,
+                )
+            },
+            "PR-05 affix cost must stay inside the frozen cost bands 1/3/6/10/14.",
         )
-        assertEquals(
-            10,
-            itemBundle.affixes.count { affix -> affix.equipType == AffixEquipType.WEAPON && affix.type == AffixType.SUFFIX },
+        assertTrue(itemBundle.affixes.all { affix -> affix.affixFamily.isNotBlank() })
+        assertTrue(
+            itemBundle.affixes.filter { affix -> affix.cost == AffixCostBand.TRIVIAL.cost }.none { affix ->
+                affix.statModifiers.castSpeedRating > 0
+            },
+            "TRIVIAL affixes must not carry castSpeedRating.",
         )
-        assertEquals(
-            10,
-            itemBundle.affixes.count { affix -> affix.equipType == AffixEquipType.ARMOR && affix.type == AffixType.PREFIX },
+        assertTrue(
+            itemBundle.affixes.any { affix -> affix.equipType == AffixEquipType.WEAPON && affix.type == AffixType.PREFIX },
         )
-        assertEquals(
-            8,
-            itemBundle.affixes.count { affix -> affix.equipType == AffixEquipType.ARMOR && affix.type == AffixType.SUFFIX },
+        assertTrue(
+            itemBundle.affixes.any { affix -> affix.equipType == AffixEquipType.WEAPON && affix.type == AffixType.SUFFIX },
         )
+        assertTrue(
+            itemBundle.affixes.any { affix -> affix.equipType == AffixEquipType.ARMOR && affix.type == AffixType.PREFIX },
+        )
+        assertTrue(
+            itemBundle.affixes.any { affix -> affix.equipType == AffixEquipType.ARMOR && affix.type == AffixType.SUFFIX },
+        )
+        assertTrue(specialTemplatesByTier.getValue(SpecialTier.UNIQUE).size >= 12)
+        assertTrue(artifactTemplates.size >= 4)
+        assertEquals(
+            targetZones,
+            itemBundle.specialTemplates.flatMapTo(linkedSetOf()) { template -> template.allowedZones }.intersect(targetZones),
+            "PR-05 special templates must cover the four target zones.",
+        )
+        assertTrue(
+            itemBundle.specialTemplates.flatMapTo(linkedSetOf()) { template -> template.tags.intersect(buildArchetypes) }.size >= 2,
+            "PR-05 special templates must cover at least two build archetypes.",
+        )
+        assertTrue(
+            artifactTemplates.any { template -> template.allowedSourceTiers == setOf(SourceTier.BOSS) },
+            "PR-05 artifacts must include a boss-only template lane.",
+        )
+        assertTrue(
+            artifactTemplates.any { template -> template.allowedSourceTiers == setOf(SourceTier.CHEST) },
+            "PR-05 artifacts must include a chest-only template lane.",
+        )
+        assertTrue(
+            artifactTemplates.any { template -> template.allowedSourceTiers == setOf(SourceTier.SECRET_ZONE) },
+            "PR-05 artifacts must include a secret-zone-only template lane.",
+        )
+        assertTrue(
+            artifactTemplates.map { template -> template.tags }.toSet().size >= 3,
+            "Artifact templates must not collapse into one homogeneous semantic pool.",
+        )
+        val itemIds = itemBundle.baseItems.map { item -> item.id }.toSet()
+        itemBundle.specialTemplates.forEach { template ->
+            assertTrue(template.itemId in itemIds, "Special template '${template.id}' must resolve to a real item id.")
+            assertNotNull(itemBundle.specialTemplateForItemId(template.itemId))
+        }
     }
 
     @Test

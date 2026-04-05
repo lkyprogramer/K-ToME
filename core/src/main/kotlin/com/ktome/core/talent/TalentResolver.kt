@@ -3,9 +3,11 @@ package com.ktome.core.talent
 import com.ktome.core.combat.ApplicationPolicy
 import com.ktome.core.combat.CombatResolver
 import com.ktome.core.combat.DamageType
+import com.ktome.core.combat.DiminishingReturns
 import com.ktome.core.combat.SaveDimension
 import com.ktome.core.combat.StatusApplicationRequest
 import com.ktome.core.ecs.BlocksMovement
+import com.ktome.core.ecs.DerivedStats
 import com.ktome.core.ecs.EntityId
 import com.ktome.core.ecs.FactionTag
 import com.ktome.core.ecs.Health
@@ -417,7 +419,12 @@ class TalentResolver(
         }
 
         spendResources(world, user, definition)
-        cooldowns.remainingByTalentId[talentId] = definition.cooldown
+        val effectiveCastSpeed = world.get<DerivedStats>(user)?.effectiveCastSpeed ?: 0.0
+        cooldowns.remainingByTalentId[talentId] =
+            DiminishingReturns.adjustedCooldownTurns(
+                baseCooldown = definition.cooldown,
+                effectiveCastSpeed = effectiveCastSpeed,
+            )
 
         when (talentId) {
             "power_strike",

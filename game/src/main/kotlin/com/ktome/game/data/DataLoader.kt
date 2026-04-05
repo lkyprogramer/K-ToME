@@ -37,7 +37,10 @@ import com.ktome.core.item.ItemBaseDef
 import com.ktome.core.item.ItemDataBundle
 import com.ktome.core.item.ItemType
 import com.ktome.core.item.MaterialDef
+import com.ktome.core.item.SpecialItemTemplate
 import com.ktome.core.item.StatModifier
+import com.ktome.core.loot.SourceTier
+import com.ktome.core.loot.SpecialTier
 import com.ktome.core.mapgen.BiomeFamilyDef
 import com.ktome.core.mapgen.PathClass
 import com.ktome.core.mapgen.PatternRoomDef
@@ -138,6 +141,7 @@ import com.ktome.game.data.schema.SchemaStatModifier
 import com.ktome.game.data.schema.SchemaStats
 import com.ktome.game.data.schema.ShopNodeSchemaV2
 import com.ktome.game.data.schema.ShopOfferSchemaV2
+import com.ktome.game.data.schema.SpecialItemTemplateSchemaV2
 import com.ktome.game.data.schema.StatusSchemaV2
 import com.ktome.game.data.schema.AssociatedStatusEffectSchemaV2
 import com.ktome.game.data.schema.CleanseEffectSchemaV2
@@ -248,6 +252,9 @@ class DataLoader(
             baseItems = catalog.itemBundle.items.map { schema -> schema.toRuntimeItem(localizer) },
             materials = catalog.itemBundle.materials.map { schema -> schema.toRuntimeMaterial(localizer) },
             affixes = catalog.itemBundle.affixes.map { schema -> schema.toRuntimeAffix(localizer) },
+            specialTemplates =
+                (catalog.itemBundle.uniqueTemplates + catalog.itemBundle.artifactTemplates)
+                    .map { schema -> schema.toRuntimeSpecialItemTemplate() },
         )
     }
 
@@ -1292,6 +1299,9 @@ class DataLoader(
                     type = AffixType.valueOf(affix.requiredString("type")),
                     equipType = AffixEquipType.valueOf(affix.requiredString("equipType")),
                     tier = affix.requiredInt("tier"),
+                    cost = affix.requiredInt("cost"),
+                    affixFamily = affix.requiredString("affixFamily"),
+                    exclusiveGroup = affix.optionalString("exclusiveGroup"),
                     minFloor = affix.requiredInt("minFloor"),
                     stats = affix.requiredMap("stats").toSchemaStatModifier(),
                     blacklistTags = affix.optionalStringList("blacklistTags"),
@@ -1325,6 +1335,14 @@ class DataLoader(
                     passive = item.optionalMap("passive")?.toEquipmentPassiveSchema(),
                 )
             },
+            uniqueTemplates =
+                root.optionalList("uniqueTemplates").map { entry ->
+                    entry.requiredMap().toSpecialItemTemplateSchema(SpecialTier.UNIQUE)
+                },
+            artifactTemplates =
+                root.optionalList("artifactTemplates").map { entry ->
+                    entry.requiredMap().toSpecialItemTemplateSchema(SpecialTier.ARTIFACT)
+                },
         )
 
     private fun parseNamedSchemaRefs(
@@ -1530,11 +1548,32 @@ class DataLoader(
             type = type,
             equipType = equipType,
             tier = tier,
+            cost = cost,
+            affixFamily = affixFamily,
+            exclusiveGroup = exclusiveGroup,
             statModifiers = stats.toRuntimeStatModifier(),
             minFloor = minFloor,
             tags = tags.toSet(),
             blacklistTags = blacklistTags.toSet(),
             passive = passive?.toRuntimePassive(),
+        )
+
+    private fun SpecialItemTemplateSchemaV2.toRuntimeSpecialItemTemplate(): SpecialItemTemplate =
+        SpecialItemTemplate(
+            id = id,
+            itemId = itemId,
+            specialTier = specialTier,
+            nameKey = nameKey,
+            descKey = descKey,
+            visualKey = visualKey,
+            iconKey = iconKey,
+            audioProfile = audioProfile,
+            schemaVersion = schemaVersion,
+            tags = tags.toSet(),
+            allowedSourceTiers = allowedSourceTiers.toSet(),
+            allowedZones = allowedZones.toSet(),
+            fixedAffixIds = fixedAffixIds,
+            fixedMaterialId = fixedMaterialId,
         )
 
     private fun WorldGraphSchemaV2.toRuntime(): WorldGraph =
@@ -1867,6 +1906,7 @@ class DataLoader(
             accuracy = accuracy,
             evasion = evasion,
             speed = speed,
+            castSpeedRating = castSpeedRating,
             maxHp = maxHp,
             maxStamina = maxStamina,
             hpRegen = hpRegen,
@@ -1896,6 +1936,7 @@ class DataLoader(
             accuracy = optionalInt("accuracy"),
             evasion = optionalInt("evasion"),
             speed = optionalInt("speed"),
+            castSpeedRating = optionalInt("castSpeedRating"),
             maxHp = optionalInt("maxHp"),
             maxStamina = optionalInt("maxStamina"),
             hpRegen = optionalDouble("hpRegen", 0.0),
@@ -1904,6 +1945,27 @@ class DataLoader(
             talentPower = optionalDouble("talentPower", 0.0),
             attackMultiplierBonus = optionalDouble("attackMultiplierBonus", 0.0),
             defenseMultiplierBonus = optionalDouble("defenseMultiplierBonus", 0.0),
+        )
+
+    private fun Map<*, *>.toSpecialItemTemplateSchema(specialTier: SpecialTier): SpecialItemTemplateSchemaV2 =
+        SpecialItemTemplateSchemaV2(
+            id = requiredString("id"),
+            itemId = requiredString("itemId"),
+            specialTier = specialTier,
+            nameKey = requiredString("nameKey"),
+            descKey = requiredString("descKey"),
+            visualKey = requiredString("visualKey"),
+            iconKey = requiredString("iconKey"),
+            audioProfile = requiredString("audioProfile"),
+            schemaVersion = requiredInt("schemaVersion"),
+            tags = optionalStringList("tags"),
+            allowedSourceTiers =
+                requiredList("allowedSourceTiers").map { raw ->
+                    SourceTier.valueOf(raw.toString())
+                },
+            allowedZones = requiredList("allowedZones").map { raw -> raw.toString() },
+            fixedAffixIds = optionalStringList("fixedAffixIds"),
+            fixedMaterialId = optionalString("fixedMaterialId"),
         )
 
     private fun Map<*, *>.toSchemaMapSize(): SchemaMapSize =

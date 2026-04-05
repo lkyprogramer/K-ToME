@@ -149,8 +149,8 @@ data class SaveSnapshot(
     }
 
     companion object {
-        const val CURRENT_SCHEMA_VERSION: Int = 10
-        const val DEFAULT_BUILD_METADATA: String = "phase4-pr04-dev"
+        const val CURRENT_SCHEMA_VERSION: Int = 11
+        const val DEFAULT_BUILD_METADATA: String = "phase4-pr05-dev"
     }
 }
 
@@ -762,6 +762,7 @@ data class StatModifierSnapshot(
     val accuracy: Int = 0,
     val evasion: Int = 0,
     val speed: Int = 0,
+    val castSpeedRating: Int = 0,
     val maxHp: Int = 0,
     val maxStamina: Int = 0,
     val hpRegen: Double = 0.0,

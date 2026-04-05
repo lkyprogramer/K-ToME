@@ -79,7 +79,9 @@ subprojects {
                     "soloClearLab",
                     "mapgenSmoke",
                     "solvabilityHarness",
+                    "lootBalanceLab",
                     "whiteBoxMapgen",
+                    "whiteBoxLoot",
                     "whiteBoxSolvability",
                     "phase4Report",
                 )
@@ -186,12 +188,24 @@ tasks.register("whiteBoxSolvability") {
 tasks.register("whiteBoxVerify") {
     group = LifecycleBasePlugin.VERIFICATION_GROUP
     description = "Runs all currently registered unified white-box verification pilots."
-    dependsOn("whiteBoxMapgen", "whiteBoxSolvability")
+    dependsOn("whiteBoxMapgen", "whiteBoxSolvability", "whiteBoxLoot")
+}
+
+tasks.register("lootBalanceLab") {
+    group = LifecycleBasePlugin.VERIFICATION_GROUP
+    description = "Runs the Phase 4 loot balance lab and writes structured reports."
+    dependsOn(":tools:lootBalanceLab")
+}
+
+tasks.register("whiteBoxLoot") {
+    group = LifecycleBasePlugin.VERIFICATION_GROUP
+    description = "Runs the Phase 4 unified white-box loot domain."
+    dependsOn(":tools:whiteBoxLoot")
 }
 
 tasks.register("phase4Report") {
     group = LifecycleBasePlugin.VERIFICATION_GROUP
-    description = "Aggregates currently landed Phase 4 verification tasks into tools/build/reports/phase4/phase4-summary.json."
+    description = "Aggregates current Phase 4 verification tasks, including loot, into tools/build/reports/phase4/phase4-summary.json."
     dependsOn(":tools:phase4Report")
 }
 
@@ -211,6 +225,8 @@ tasks.register<Exec>("assetLint") {
         "assets-src/image/specs/phase3-v3-pr16-gemini-plan.yaml",
         "--extra-plan",
         "assets-src/image/specs/phase3-v3-pr17-gemini-plan.yaml",
+        "--extra-plan",
+        "assets-src/image/specs/phase4-pr05-gemini-plan.yaml",
         "--report-dir",
         "assets-src/image/manifests",
     )
@@ -232,6 +248,8 @@ tasks.register<Exec>("styleLint") {
         "assets-src/image/specs/phase3-v3-pr16-gemini-plan.yaml",
         "--extra-plan",
         "assets-src/image/specs/phase3-v3-pr17-gemini-plan.yaml",
+        "--extra-plan",
+        "assets-src/image/specs/phase4-pr05-gemini-plan.yaml",
     )
 }
 
@@ -252,6 +270,8 @@ tasks.register<Exec>("audioLint") {
         "assets-src/audio/specs/phase3-v3-pr16-audio-plan.yaml",
         "--extra-plan",
         "assets-src/audio/specs/phase3-v3-pr17-audio-plan.yaml",
+        "--extra-plan",
+        "assets-src/audio/specs/phase4-pr05-audio-plan.yaml",
         "--manifest",
         "assets-src/audio/manifests/phase2-audio-manifest.json",
         "--runtime-manifest",
@@ -307,6 +327,8 @@ tasks.register<Exec>("manifestLint") {
         "assets-src/image/specs/phase3-v3-pr16-gemini-plan.yaml",
         "--extra-plan",
         "assets-src/image/specs/phase3-v3-pr17-gemini-plan.yaml",
+        "--extra-plan",
+        "assets-src/image/specs/phase4-pr05-gemini-plan.yaml",
         "--manifest",
         "assets-src/image/manifests/phase2-visual-manifest.json",
         "--runtime-manifest",

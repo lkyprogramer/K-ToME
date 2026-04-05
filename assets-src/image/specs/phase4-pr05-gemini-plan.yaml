@@ -1,0 +1,580 @@
+styleTag: ktome-middle-fantasy-painterly-tile-v1
+artStyleBible: docs/2026-03-13-art-style-bible.md
+stylePrompt: >-
+  Classical high fantasy in a middle-earth inspired mode for K-ToME special loot item icons.
+  Painterly concept-art finish with visible brushwork, weathered materials, bold silhouettes,
+  and restrained color accents. Keep every icon readable at small size, never anime, and
+  never sci-fi.
+defaults:
+  imageAspectRatio: '1:1'
+  imageSize: 1K
+  negativeConstraints:
+    - no modern clothing
+    - no firearms
+    - no sci-fi materials
+    - no anime proportions
+    - no floating text, watermark or logo
+phase2AssetGates:
+  P4-PR05:
+    description: Formal icon plan for Phase 4 PR-05 unique and artifact loot.
+    assets:
+      - id: phase4_pr05_icon_unique_greenwood_watcher_blade
+        category: icon
+        visualKey: item.unique.greenwood_watcher_blade.icon
+        outputName: phase4/pr05/icon_item_unique_greenwood_watcher_blade.png
+        subject: steel sword icon for the greenwood watcher blade
+        materialTags:
+        - phase4
+        - pr05
+        - unique
+        - greenwood_fringe
+        - holy
+        - vanguard
+        constraints:
+        - single centered item only on transparent or clean background
+        - readable at small inventory sizes
+        - preserve worn fantasy materials and restrained color accents
+        geminiKeyRequired: true
+      - id: phase4_pr05_icon_unique_briarbound_bow
+        category: icon
+        visualKey: item.unique.briarbound_bow.icon
+        outputName: phase4/pr05/icon_item_unique_briarbound_bow.png
+        subject: living thorn bow icon for the briarbound bow
+        materialTags:
+        - phase4
+        - pr05
+        - unique
+        - greenwood_fringe
+        - rogue
+        - precision
+        constraints:
+        - single centered item only on transparent or clean background
+        - readable at small inventory sizes
+        - preserve worn fantasy materials and restrained color accents
+        geminiKeyRequired: true
+      - id: phase4_pr05_icon_unique_warden_barkmail
+        category: icon
+        visualKey: item.unique.warden_barkmail.icon
+        outputName: phase4/pr05/icon_item_unique_warden_barkmail.png
+        subject: layered barkmail icon for the warden barkmail
+        materialTags:
+        - phase4
+        - pr05
+        - unique
+        - greenwood_fringe
+        - templar
+        - protection
+        constraints:
+        - single centered item only on transparent or clean background
+        - readable at small inventory sizes
+        - preserve worn fantasy materials and restrained color accents
+        geminiKeyRequired: true
+      - id: phase4_pr05_icon_unique_slagbreaker_pick
+        category: icon
+        visualKey: item.unique.slagbreaker_pick.icon
+        outputName: phase4/pr05/icon_item_unique_slagbreaker_pick.png
+        subject: heavy mine pick icon for the slagbreaker pick
+        materialTags:
+        - phase4
+        - pr05
+        - unique
+        - deep_iron_pit
+        - vanguard
+        - mine
+        constraints:
+        - single centered item only on transparent or clean background
+        - readable at small inventory sizes
+        - preserve worn fantasy materials and restrained color accents
+        geminiKeyRequired: true
+      - id: phase4_pr05_icon_unique_furnace_plate
+        category: icon
+        visualKey: item.unique.furnace_plate.icon
+        outputName: phase4/pr05/icon_item_unique_furnace_plate.png
+        subject: forgemaster plate icon for the furnace plate
+        materialTags:
+        - phase4
+        - pr05
+        - unique
+        - deep_iron_pit
+        - vanguard
+        - fire
+        constraints:
+        - single centered item only on transparent or clean background
+        - readable at small inventory sizes
+        - preserve worn fantasy materials and restrained color accents
+        geminiKeyRequired: true
+      - id: phase4_pr05_icon_unique_coal_ward_talisman
+        category: icon
+        visualKey: item.unique.coal_ward_talisman.icon
+        outputName: phase4/pr05/icon_item_unique_coal_ward_talisman.png
+        subject: smelter talisman icon for the coal ward talisman
+        materialTags:
+        - phase4
+        - pr05
+        - unique
+        - deep_iron_pit
+        - arcanist
+        - fire
+        constraints:
+        - single centered item only on transparent or clean background
+        - readable at small inventory sizes
+        - preserve worn fantasy materials and restrained color accents
+        geminiKeyRequired: true
+      - id: phase4_pr05_icon_unique_tideglass_staff
+        category: icon
+        visualKey: item.unique.tideglass_staff.icon
+        outputName: phase4/pr05/icon_item_unique_tideglass_staff.png
+        subject: river glass staff icon for the tideglass staff
+        materialTags:
+        - phase4
+        - pr05
+        - unique
+        - underground_river
+        - arcanist
+        - lightning
+        constraints:
+        - single centered item only on transparent or clean background
+        - readable at small inventory sizes
+        - preserve worn fantasy materials and restrained color accents
+        geminiKeyRequired: true
+      - id: phase4_pr05_icon_unique_currentstrider_cloak
+        category: icon
+        visualKey: item.unique.currentstrider_cloak.icon
+        outputName: phase4/pr05/icon_item_unique_currentstrider_cloak.png
+        subject: currentstrider cloak icon for the currentstrider cloak
+        materialTags:
+        - phase4
+        - pr05
+        - unique
+        - underground_river
+        - rogue
+        - mobility
+        constraints:
+        - single centered item only on transparent or clean background
+        - readable at small inventory sizes
+        - preserve worn fantasy materials and restrained color accents
+        geminiKeyRequired: true
+      - id: phase4_pr05_icon_unique_ferrywarden_lantern
+        category: icon
+        visualKey: item.unique.ferrywarden_lantern.icon
+        outputName: phase4/pr05/icon_item_unique_ferrywarden_lantern.png
+        subject: lantern reliquary icon for the ferrywarden lantern
+        materialTags:
+        - phase4
+        - pr05
+        - unique
+        - underground_river
+        - templar
+        - rescue
+        constraints:
+        - single centered item only on transparent or clean background
+        - readable at small inventory sizes
+        - preserve worn fantasy materials and restrained color accents
+        geminiKeyRequired: true
+      - id: phase4_pr05_icon_unique_voidlit_seal
+        category: icon
+        visualKey: item.unique.voidlit_seal.icon
+        outputName: phase4/pr05/icon_item_unique_voidlit_seal.png
+        subject: voidlit seal icon for the voidlit seal
+        materialTags:
+        - phase4
+        - pr05
+        - unique
+        - abyssal_temple
+        - templar
+        - holy
+        constraints:
+        - single centered item only on transparent or clean background
+        - readable at small inventory sizes
+        - preserve worn fantasy materials and restrained color accents
+        geminiKeyRequired: true
+      - id: phase4_pr05_icon_unique_eclipse_mail
+        category: icon
+        visualKey: item.unique.eclipse_mail.icon
+        outputName: phase4/pr05/icon_item_unique_eclipse_mail.png
+        subject: eclipse mail icon for the eclipse mail
+        materialTags:
+        - phase4
+        - pr05
+        - unique
+        - abyssal_temple
+        - templar
+        - protection
+        constraints:
+        - single centered item only on transparent or clean background
+        - readable at small inventory sizes
+        - preserve worn fantasy materials and restrained color accents
+        geminiKeyRequired: true
+      - id: phase4_pr05_icon_unique_sanctum_lance
+        category: icon
+        visualKey: item.unique.sanctum_lance.icon
+        outputName: phase4/pr05/icon_item_unique_sanctum_lance.png
+        subject: sanctum lance icon for the sanctum lance
+        materialTags:
+        - phase4
+        - pr05
+        - unique
+        - abyssal_temple
+        - vanguard
+        - holy
+        constraints:
+        - single centered item only on transparent or clean background
+        - readable at small inventory sizes
+        - preserve worn fantasy materials and restrained color accents
+        geminiKeyRequired: true
+      - id: phase4_pr05_icon_artifact_briar_heart
+        category: icon
+        visualKey: item.artifact.briar_heart.icon
+        outputName: phase4/pr05/icon_item_artifact_briar_heart.png
+        subject: thorn-bound artifact core icon for the briar heart
+        materialTags:
+        - phase4
+        - pr05
+        - artifact
+        - greenwood_fringe
+        - rogue
+        - artifact
+        constraints:
+        - single centered item only on transparent or clean background
+        - readable at small inventory sizes
+        - preserve worn fantasy materials and restrained color accents
+        geminiKeyRequired: true
+      - id: phase4_pr05_icon_artifact_forge_oath
+        category: icon
+        visualKey: item.artifact.forge_oath.icon
+        outputName: phase4/pr05/icon_item_artifact_forge_oath.png
+        subject: oath-forged artifact hammer icon for the forge oath
+        materialTags:
+        - phase4
+        - pr05
+        - artifact
+        - deep_iron_pit
+        - vanguard
+        - artifact
+        constraints:
+        - single centered item only on transparent or clean background
+        - readable at small inventory sizes
+        - preserve worn fantasy materials and restrained color accents
+        geminiKeyRequired: true
+      - id: phase4_pr05_icon_artifact_river_echo
+        category: icon
+        visualKey: item.artifact.river_echo.icon
+        outputName: phase4/pr05/icon_item_artifact_river_echo.png
+        subject: river echo artifact staff icon for the river echo
+        materialTags:
+        - phase4
+        - pr05
+        - artifact
+        - underground_river
+        - arcanist
+        - artifact
+        constraints:
+        - single centered item only on transparent or clean background
+        - readable at small inventory sizes
+        - preserve worn fantasy materials and restrained color accents
+        geminiKeyRequired: true
+      - id: phase4_pr05_icon_artifact_eclipsed_relic
+        category: icon
+        visualKey: item.artifact.eclipsed_relic.icon
+        outputName: phase4/pr05/icon_item_artifact_eclipsed_relic.png
+        subject: eclipsed reliquary icon for the eclipsed relic
+        materialTags:
+        - phase4
+        - pr05
+        - artifact
+        - abyssal_temple
+        - templar
+        - artifact
+        constraints:
+        - single centered item only on transparent or clean background
+        - readable at small inventory sizes
+        - preserve worn fantasy materials and restrained color accents
+        geminiKeyRequired: true
+      - id: phase4_pr05_visual_unique_greenwood_watcher_blade
+        category: icon
+        visualKey: item.unique.greenwood_watcher_blade.visual
+        outputName: phase4/pr05/icon_item_unique_greenwood_watcher_blade.png
+        subject: >-
+          Finalized PR-05 special loot visual coverage for greenwood_watcher_blade.
+          Reuse the approved runtime artwork so inspect and ground-render visual keys resolve through the image asset plan.
+        materialTags:
+        - phase4
+        - pr05
+        - unique
+        - greenwood_fringe
+        - holy
+        - vanguard
+        constraints:
+        - single focused asset with strong small-size readability
+        - reuse the approved finalized runtime artwork for this visual key
+        geminiKeyRequired: true
+      - id: phase4_pr05_visual_unique_briarbound_bow
+        category: icon
+        visualKey: item.unique.briarbound_bow.visual
+        outputName: phase4/pr05/icon_item_unique_briarbound_bow.png
+        subject: >-
+          Finalized PR-05 special loot visual coverage for briarbound_bow.
+          Reuse the approved runtime artwork so inspect and ground-render visual keys resolve through the image asset plan.
+        materialTags:
+        - phase4
+        - pr05
+        - unique
+        - greenwood_fringe
+        - rogue
+        - precision
+        constraints:
+        - single focused asset with strong small-size readability
+        - reuse the approved finalized runtime artwork for this visual key
+        geminiKeyRequired: true
+      - id: phase4_pr05_visual_unique_warden_barkmail
+        category: icon
+        visualKey: item.unique.warden_barkmail.visual
+        outputName: phase4/pr05/icon_item_unique_warden_barkmail.png
+        subject: >-
+          Finalized PR-05 special loot visual coverage for warden_barkmail.
+          Reuse the approved runtime artwork so inspect and ground-render visual keys resolve through the image asset plan.
+        materialTags:
+        - phase4
+        - pr05
+        - unique
+        - greenwood_fringe
+        - templar
+        - protection
+        constraints:
+        - single focused asset with strong small-size readability
+        - reuse the approved finalized runtime artwork for this visual key
+        geminiKeyRequired: true
+      - id: phase4_pr05_visual_unique_slagbreaker_pick
+        category: icon
+        visualKey: item.unique.slagbreaker_pick.visual
+        outputName: phase4/pr05/icon_item_unique_slagbreaker_pick.png
+        subject: >-
+          Finalized PR-05 special loot visual coverage for slagbreaker_pick.
+          Reuse the approved runtime artwork so inspect and ground-render visual keys resolve through the image asset plan.
+        materialTags:
+        - phase4
+        - pr05
+        - unique
+        - deep_iron_pit
+        - vanguard
+        - mine
+        constraints:
+        - single focused asset with strong small-size readability
+        - reuse the approved finalized runtime artwork for this visual key
+        geminiKeyRequired: true
+      - id: phase4_pr05_visual_unique_furnace_plate
+        category: icon
+        visualKey: item.unique.furnace_plate.visual
+        outputName: phase4/pr05/icon_item_unique_furnace_plate.png
+        subject: >-
+          Finalized PR-05 special loot visual coverage for furnace_plate.
+          Reuse the approved runtime artwork so inspect and ground-render visual keys resolve through the image asset plan.
+        materialTags:
+        - phase4
+        - pr05
+        - unique
+        - deep_iron_pit
+        - vanguard
+        - fire
+        constraints:
+        - single focused asset with strong small-size readability
+        - reuse the approved finalized runtime artwork for this visual key
+        geminiKeyRequired: true
+      - id: phase4_pr05_visual_unique_coal_ward_talisman
+        category: icon
+        visualKey: item.unique.coal_ward_talisman.visual
+        outputName: phase4/pr05/icon_item_unique_coal_ward_talisman.png
+        subject: >-
+          Finalized PR-05 special loot visual coverage for coal_ward_talisman.
+          Reuse the approved runtime artwork so inspect and ground-render visual keys resolve through the image asset plan.
+        materialTags:
+        - phase4
+        - pr05
+        - unique
+        - deep_iron_pit
+        - arcanist
+        - fire
+        constraints:
+        - single focused asset with strong small-size readability
+        - reuse the approved finalized runtime artwork for this visual key
+        geminiKeyRequired: true
+      - id: phase4_pr05_visual_unique_tideglass_staff
+        category: icon
+        visualKey: item.unique.tideglass_staff.visual
+        outputName: phase4/pr05/icon_item_unique_tideglass_staff.png
+        subject: >-
+          Finalized PR-05 special loot visual coverage for tideglass_staff.
+          Reuse the approved runtime artwork so inspect and ground-render visual keys resolve through the image asset plan.
+        materialTags:
+        - phase4
+        - pr05
+        - unique
+        - underground_river
+        - arcanist
+        - lightning
+        constraints:
+        - single focused asset with strong small-size readability
+        - reuse the approved finalized runtime artwork for this visual key
+        geminiKeyRequired: true
+      - id: phase4_pr05_visual_unique_currentstrider_cloak
+        category: icon
+        visualKey: item.unique.currentstrider_cloak.visual
+        outputName: phase4/pr05/icon_item_unique_currentstrider_cloak.png
+        subject: >-
+          Finalized PR-05 special loot visual coverage for currentstrider_cloak.
+          Reuse the approved runtime artwork so inspect and ground-render visual keys resolve through the image asset plan.
+        materialTags:
+        - phase4
+        - pr05
+        - unique
+        - underground_river
+        - rogue
+        - mobility
+        constraints:
+        - single focused asset with strong small-size readability
+        - reuse the approved finalized runtime artwork for this visual key
+        geminiKeyRequired: true
+      - id: phase4_pr05_visual_unique_ferrywarden_lantern
+        category: icon
+        visualKey: item.unique.ferrywarden_lantern.visual
+        outputName: phase4/pr05/icon_item_unique_ferrywarden_lantern.png
+        subject: >-
+          Finalized PR-05 special loot visual coverage for ferrywarden_lantern.
+          Reuse the approved runtime artwork so inspect and ground-render visual keys resolve through the image asset plan.
+        materialTags:
+        - phase4
+        - pr05
+        - unique
+        - underground_river
+        - templar
+        - rescue
+        constraints:
+        - single focused asset with strong small-size readability
+        - reuse the approved finalized runtime artwork for this visual key
+        geminiKeyRequired: true
+      - id: phase4_pr05_visual_unique_voidlit_seal
+        category: icon
+        visualKey: item.unique.voidlit_seal.visual
+        outputName: phase4/pr05/icon_item_unique_voidlit_seal.png
+        subject: >-
+          Finalized PR-05 special loot visual coverage for voidlit_seal.
+          Reuse the approved runtime artwork so inspect and ground-render visual keys resolve through the image asset plan.
+        materialTags:
+        - phase4
+        - pr05
+        - unique
+        - abyssal_temple
+        - templar
+        - holy
+        constraints:
+        - single focused asset with strong small-size readability
+        - reuse the approved finalized runtime artwork for this visual key
+        geminiKeyRequired: true
+      - id: phase4_pr05_visual_unique_eclipse_mail
+        category: icon
+        visualKey: item.unique.eclipse_mail.visual
+        outputName: phase4/pr05/icon_item_unique_eclipse_mail.png
+        subject: >-
+          Finalized PR-05 special loot visual coverage for eclipse_mail.
+          Reuse the approved runtime artwork so inspect and ground-render visual keys resolve through the image asset plan.
+        materialTags:
+        - phase4
+        - pr05
+        - unique
+        - abyssal_temple
+        - templar
+        - protection
+        constraints:
+        - single focused asset with strong small-size readability
+        - reuse the approved finalized runtime artwork for this visual key
+        geminiKeyRequired: true
+      - id: phase4_pr05_visual_unique_sanctum_lance
+        category: icon
+        visualKey: item.unique.sanctum_lance.visual
+        outputName: phase4/pr05/icon_item_unique_sanctum_lance.png
+        subject: >-
+          Finalized PR-05 special loot visual coverage for sanctum_lance.
+          Reuse the approved runtime artwork so inspect and ground-render visual keys resolve through the image asset plan.
+        materialTags:
+        - phase4
+        - pr05
+        - unique
+        - abyssal_temple
+        - vanguard
+        - holy
+        constraints:
+        - single focused asset with strong small-size readability
+        - reuse the approved finalized runtime artwork for this visual key
+        geminiKeyRequired: true
+      - id: phase4_pr05_visual_artifact_briar_heart
+        category: icon
+        visualKey: item.artifact.briar_heart.visual
+        outputName: phase4/pr05/icon_item_artifact_briar_heart.png
+        subject: >-
+          Finalized PR-05 special loot visual coverage for briar_heart.
+          Reuse the approved runtime artwork so inspect and ground-render visual keys resolve through the image asset plan.
+        materialTags:
+        - phase4
+        - pr05
+        - artifact
+        - greenwood_fringe
+        - rogue
+        - artifact
+        constraints:
+        - single focused asset with strong small-size readability
+        - reuse the approved finalized runtime artwork for this visual key
+        geminiKeyRequired: true
+      - id: phase4_pr05_visual_artifact_forge_oath
+        category: icon
+        visualKey: item.artifact.forge_oath.visual
+        outputName: phase4/pr05/icon_item_artifact_forge_oath.png
+        subject: >-
+          Finalized PR-05 special loot visual coverage for forge_oath.
+          Reuse the approved runtime artwork so inspect and ground-render visual keys resolve through the image asset plan.
+        materialTags:
+        - phase4
+        - pr05
+        - artifact
+        - deep_iron_pit
+        - vanguard
+        - artifact
+        constraints:
+        - single focused asset with strong small-size readability
+        - reuse the approved finalized runtime artwork for this visual key
+        geminiKeyRequired: true
+      - id: phase4_pr05_visual_artifact_river_echo
+        category: icon
+        visualKey: item.artifact.river_echo.visual
+        outputName: phase4/pr05/icon_item_artifact_river_echo.png
+        subject: >-
+          Finalized PR-05 special loot visual coverage for river_echo.
+          Reuse the approved runtime artwork so inspect and ground-render visual keys resolve through the image asset plan.
+        materialTags:
+        - phase4
+        - pr05
+        - artifact
+        - underground_river
+        - arcanist
+        - artifact
+        constraints:
+        - single focused asset with strong small-size readability
+        - reuse the approved finalized runtime artwork for this visual key
+        geminiKeyRequired: true
+      - id: phase4_pr05_visual_artifact_eclipsed_relic
+        category: icon
+        visualKey: item.artifact.eclipsed_relic.visual
+        outputName: phase4/pr05/icon_item_artifact_eclipsed_relic.png
+        subject: >-
+          Finalized PR-05 special loot visual coverage for eclipsed_relic.
+          Reuse the approved runtime artwork so inspect and ground-render visual keys resolve through the image asset plan.
+        materialTags:
+        - phase4
+        - pr05
+        - artifact
+        - abyssal_temple
+        - templar
+        - artifact
+        constraints:
+        - single focused asset with strong small-size readability
+        - reuse the approved finalized runtime artwork for this visual key
+        geminiKeyRequired: true

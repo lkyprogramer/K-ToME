@@ -1,8 +1,11 @@
 package com.ktome.core.item
 
+import com.ktome.core.loot.LootBudget
 import com.ktome.core.loot.LootRollContext
+import com.ktome.core.loot.LootRollResult
 import com.ktome.core.loot.RarityTier
 import com.ktome.core.loot.SourceTier
+import com.ktome.core.loot.SpecialTierEligibility
 import com.ktome.core.mapgen.ZoneRewardProfile
 import com.ktome.core.support.TestRandomSource
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -22,12 +25,11 @@ class MilestoneRewardGenerationTest {
 
     @Test
     fun `milestone quality floor upgrades common rolls to magic`() {
-        val generator = ItemGenerator(bundle = weaponBundle(), random = TestRandomSource(ints = listOf(0, 0, 0, 0, 0)))
+        val generator = ItemGenerator(bundle = weaponBundle(), random = TestRandomSource(ints = listOf(0)))
 
         val reward =
-            generator.generate(
-                context = lootRollContext(sourceLevel = 7),
-                zoneRewardProfile = zoneRewardProfile,
+            generator.generateRoll(
+                lootRoll = lootRollResult(rarityTier = RarityTier.NORMAL, affixBudget = 6),
                 base = rewardWeaponBase(),
                 affixContext =
                     AffixSelectionContext(
@@ -37,19 +39,19 @@ class MilestoneRewardGenerationTest {
                     ),
             )
 
-        assertEquals(RarityTier.MAGIC, reward.quality)
-        assertEquals(1, reward.affixes.size)
-        assertEquals(listOf("flaming"), reward.affixes.map(AffixDef::id))
+        assertEquals(RarityTier.MAGIC, reward.item.quality)
+        assertEquals(listOf("flaming"), reward.item.affixes.map(AffixDef::id))
+        assertEquals(6, reward.trace.affixBudgetConsumed)
+        assertEquals(0, reward.trace.affixBudgetDeviation)
     }
 
     @Test
     fun `milestone affix generation honors blacklist families and route bias`() {
-        val generator = ItemGenerator(bundle = weaponBundle(), random = TestRandomSource(ints = listOf(0, 0, 0, 0, 0, 0, 0)))
+        val generator = ItemGenerator(bundle = weaponBundle(), random = TestRandomSource(ints = listOf(0, 0, 0)))
 
         val reward =
-            generator.generate(
-                context = lootRollContext(sourceLevel = 13),
-                zoneRewardProfile = zoneRewardProfile,
+            generator.generateRoll(
+                lootRoll = lootRollResult(qLvl = 13, rarityTier = RarityTier.RARE, affixBudget = 15),
                 base = rewardWeaponBase(),
                 affixContext =
                     AffixSelectionContext(
@@ -61,10 +63,9 @@ class MilestoneRewardGenerationTest {
                     ),
             )
 
-        assertEquals(RarityTier.RARE, reward.quality)
-        assertEquals(3, reward.affixes.size)
-        assertFalse(reward.affixes.any { affix -> affix.id == "flaming" })
-        assertEquals(listOf("shadowed", "swift", "striking"), reward.affixes.map(AffixDef::id))
+        assertEquals(RarityTier.RARE, reward.item.quality)
+        assertEquals(listOf("shadowed", "swift", "striking"), reward.item.affixes.map(AffixDef::id))
+        assertFalse(reward.item.affixes.any { affix -> affix.id == "flaming" })
     }
 
     @Test
@@ -75,22 +76,20 @@ class MilestoneRewardGenerationTest {
                 materials = emptyList(),
                 affixes =
                     listOf(
-                        AffixDef(
+                        affix(
                             id = "single_prefix",
-                            name = "Single Prefix",
-                            type = AffixType.PREFIX,
-                            equipType = AffixEquipType.WEAPON,
+                            family = "physical",
+                            cost = 6,
                             statModifiers = StatModifier(attack = 2),
                             tags = setOf("weapon", "physical"),
                         ),
                     ),
             )
-        val generator = ItemGenerator(bundle = bundle, random = TestRandomSource(ints = listOf(0, 0, 0)))
+        val generator = ItemGenerator(bundle = bundle, random = TestRandomSource(ints = listOf(0)))
 
         assertThrows(IllegalArgumentException::class.java) {
             generator.generate(
-                context = lootRollContext(sourceLevel = 13),
-                zoneRewardProfile = zoneRewardProfile,
+                lootRoll = lootRollResult(qLvl = 13, rarityTier = RarityTier.RARE, affixBudget = 6),
                 base = rewardWeaponBase(),
                 affixContext =
                     AffixSelectionContext(
@@ -102,25 +101,24 @@ class MilestoneRewardGenerationTest {
     }
 
     @Test
-    fun `affix generator reports impossible affix counts before item generation`() {
+    fun `affix generator reports impossible budget constrained generation before item generation`() {
         val affixGenerator =
             AffixGenerator(
                 pool =
                     AffixPool(
                         listOf(
-                            AffixDef(
+                            affix(
                                 id = "single_prefix",
-                                name = "Single Prefix",
-                                type = AffixType.PREFIX,
-                                equipType = AffixEquipType.WEAPON,
+                                family = "physical",
+                                cost = 6,
                                 statModifiers = StatModifier(attack = 2),
                                 tags = setOf("weapon", "physical"),
                             ),
-                            AffixDef(
+                            affix(
                                 id = "single_suffix",
-                                name = "Single Suffix",
+                                family = "mobility",
                                 type = AffixType.SUFFIX,
-                                equipType = AffixEquipType.WEAPON,
+                                cost = 6,
                                 statModifiers = StatModifier(speed = 4),
                                 tags = setOf("weapon", "mobility"),
                             ),
@@ -132,7 +130,8 @@ class MilestoneRewardGenerationTest {
         assertFalse(
             affixGenerator.canGenerate(
                 floor = 5,
-                count = 3,
+                budget = 6,
+                rarityTier = RarityTier.RARE,
                 equipType = AffixEquipType.WEAPON,
                 context = AffixSelectionContext(itemTags = setOf("weapon")),
             ),
@@ -146,36 +145,33 @@ class MilestoneRewardGenerationTest {
                 pool =
                     AffixPool(
                         listOf(
-                            AffixDef(
+                            affix(
                                 id = "dead_end_prefix",
-                                name = "Dead End",
-                                type = AffixType.PREFIX,
-                                equipType = AffixEquipType.WEAPON,
+                                family = "trap",
+                                cost = 10,
                                 statModifiers = StatModifier(attack = 2),
                                 tags = setOf("weapon", "trap"),
                             ),
-                            AffixDef(
+                            affix(
                                 id = "safe_prefix_one",
-                                name = "Safe One",
-                                type = AffixType.PREFIX,
-                                equipType = AffixEquipType.WEAPON,
+                                family = "offense",
+                                cost = 6,
                                 statModifiers = StatModifier(attack = 1),
                                 tags = setOf("weapon", "offense"),
                             ),
-                            AffixDef(
+                            affix(
                                 id = "safe_suffix",
-                                name = "Safe Suffix",
+                                family = "mobility",
                                 type = AffixType.SUFFIX,
-                                equipType = AffixEquipType.WEAPON,
+                                cost = 3,
                                 statModifiers = StatModifier(speed = 4),
                                 tags = setOf("weapon", "mobility"),
                                 blacklistTags = setOf("trap"),
                             ),
-                            AffixDef(
+                            affix(
                                 id = "safe_prefix_two",
-                                name = "Safe Two",
-                                type = AffixType.PREFIX,
-                                equipType = AffixEquipType.WEAPON,
+                                family = "precision",
+                                cost = 6,
                                 statModifiers = StatModifier(attack = 1),
                                 tags = setOf("weapon", "precision"),
                             ),
@@ -184,18 +180,36 @@ class MilestoneRewardGenerationTest {
                 random = TestRandomSource(ints = listOf(0, 0, 0)),
             )
 
-        val affixes =
+        val selection =
             affixGenerator.generate(
                 floor = 5,
-                count = 3,
+                budget = 15,
+                rarityTier = RarityTier.RARE,
                 equipType = AffixEquipType.WEAPON,
                 context = AffixSelectionContext(itemTags = setOf("weapon")),
             )
 
-        assertEquals(3, affixes.size)
-        assertEquals("safe_prefix_one", affixes.first().id)
-        assertEquals("safe_suffix", affixes[1].id)
+        assertEquals(listOf("safe_prefix_one", "safe_suffix", "safe_prefix_two"), selection.affixes.map(AffixDef::id))
     }
+
+    private fun lootRollResult(
+        qLvl: Int = 7,
+        rarityTier: RarityTier,
+        affixBudget: Int,
+    ): LootRollResult =
+        LootRollResult(
+            context = lootRollContext(sourceLevel = qLvl),
+            budget =
+                LootBudget(
+                    iLvl = qLvl,
+                    qLvl = qLvl,
+                    rarityTier = rarityTier,
+                    rarityScore = 0.0f,
+                    affixBudget = affixBudget,
+                    specialTierEligibility = SpecialTierEligibility(availableSpecialTiers = emptySet()),
+                ),
+            rolledRarityTier = rarityTier,
+        )
 
     private fun lootRollContext(
         sourceLevel: Int,
@@ -217,47 +231,65 @@ class MilestoneRewardGenerationTest {
             materials = emptyList(),
             affixes =
                 listOf(
-                    AffixDef(
+                    affix(
                         id = "flaming",
-                        name = "Flaming",
-                        type = AffixType.PREFIX,
-                        equipType = AffixEquipType.WEAPON,
+                        family = "fire",
+                        cost = 6,
                         statModifiers = StatModifier(attack = 2),
                         tags = setOf("weapon", "fire", "offense"),
                     ),
-                    AffixDef(
+                    affix(
                         id = "shadowed",
-                        name = "Shadowed",
-                        type = AffixType.PREFIX,
-                        equipType = AffixEquipType.WEAPON,
+                        family = "shadow",
+                        cost = 6,
                         statModifiers = StatModifier(attack = 2),
                         tags = setOf("weapon", "shadow", "offense"),
                     ),
-                    AffixDef(
+                    affix(
                         id = "striking",
-                        name = "Striking",
-                        type = AffixType.PREFIX,
-                        equipType = AffixEquipType.WEAPON,
+                        family = "physical",
+                        cost = 6,
                         statModifiers = StatModifier(attack = 1),
                         tags = setOf("weapon", "physical", "strength"),
                     ),
-                    AffixDef(
+                    affix(
                         id = "swift",
-                        name = "Swift",
+                        family = "mobility",
                         type = AffixType.SUFFIX,
-                        equipType = AffixEquipType.WEAPON,
+                        cost = 3,
                         statModifiers = StatModifier(speed = 8),
                         tags = setOf("weapon", "mobility"),
                     ),
-                    AffixDef(
+                    affix(
                         id = "warded",
-                        name = "Warded",
+                        family = "protection",
                         type = AffixType.SUFFIX,
-                        equipType = AffixEquipType.WEAPON,
+                        cost = 3,
                         statModifiers = StatModifier(defense = 2),
                         tags = setOf("weapon", "protection"),
                     ),
                 ),
+        )
+
+    private fun affix(
+        id: String,
+        family: String,
+        cost: Int,
+        type: AffixType = AffixType.PREFIX,
+        statModifiers: StatModifier,
+        tags: Set<String> = emptySet(),
+        blacklistTags: Set<String> = emptySet(),
+    ): AffixDef =
+        AffixDef(
+            id = id,
+            name = id,
+            type = type,
+            equipType = AffixEquipType.WEAPON,
+            cost = cost,
+            affixFamily = family,
+            statModifiers = statModifiers,
+            tags = tags,
+            blacklistTags = blacklistTags,
         )
 
     private fun rewardWeaponBase(): ItemBaseDef =

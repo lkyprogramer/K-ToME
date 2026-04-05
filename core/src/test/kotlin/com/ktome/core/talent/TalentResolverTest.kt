@@ -14,6 +14,10 @@ import com.ktome.core.ecs.Stats
 import com.ktome.core.ecs.World
 import com.ktome.core.ecs.add
 import com.ktome.core.ecs.get
+import com.ktome.core.item.EquipSlot
+import com.ktome.core.item.Equipment
+import com.ktome.core.item.ItemInstance
+import com.ktome.core.item.ItemType
 import com.ktome.core.item.StatModifier
 import com.ktome.core.map.GameMap
 import com.ktome.core.map.Point
@@ -753,6 +757,18 @@ class TalentResolverTest {
     }
 
     @Test
+    fun `power strike cooldown start uses effective cast speed`() {
+        val world = baseWorld()
+        val player = createPlayer(world, cooldown = 0, equipmentModifier = StatModifier(castSpeedRating = 100))
+        createMonster(world, Point(2, 2))
+
+        val result = resolver().resolve(world, map, player, "power_strike", Point(2, 2))
+
+        assertTrue(result is TalentUseResult.Success)
+        assertEquals(2, requireNotNull(world.get<CooldownState>(player)).remainingByTalentId["power_strike"])
+    }
+
+    @Test
     fun `charge requires minimum range and moves user adjacent to target`() {
         val world = baseWorld()
         val player = createPlayer(world, cooldown = 0)
@@ -1369,6 +1385,7 @@ class TalentResolverTest {
         positiveEnergy: Int = 30,
         cooldown: Int = 3,
         levelOverrides: Map<String, Int> = emptyMap(),
+        equipmentModifier: StatModifier = StatModifier.ZERO,
     ): com.ktome.core.ecs.EntityId {
         val player = world.createEntity()
         world.add(player, Position(1, 2))
@@ -1457,6 +1474,22 @@ class TalentResolverTest {
             ),
         )
         world.add(player, com.ktome.core.talent.EffectTracker())
+        if (equipmentModifier != StatModifier.ZERO) {
+            val equipmentItem = world.createEntity()
+            world.add(
+                equipmentItem,
+                ItemInstance(
+                    baseId = "test.focus",
+                    name = "Test Focus",
+                    type = ItemType.WEAPON,
+                    slot = EquipSlot.WEAPON,
+                    glyph = ')',
+                    colorHex = "#FFFFFF",
+                    stats = equipmentModifier,
+                ),
+            )
+            world.add(player, Equipment(slots = linkedMapOf(EquipSlot.WEAPON to equipmentItem)))
+        }
         val derived = StatsCalculator.calculate(world, player)
         world.add(player, derived)
         world.add(player, Health(current = derived.maxHp, max = derived.maxHp))

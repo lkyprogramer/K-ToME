@@ -3198,6 +3198,150 @@
       ]
     },
     {
+      "key": "item.artifact.briar_heart.icon",
+      "category": "icon",
+      "rawOutputPath": "phase4/pr05/icon_item_artifact_briar_heart.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "pr05",
+        "item",
+        "special",
+        "artifact",
+        "greenwood_fringe",
+        "rogue",
+        "artifact"
+      ]
+    },
+    {
+      "key": "item.artifact.briar_heart.visual",
+      "category": "icon",
+      "rawOutputPath": "phase4/pr05/icon_item_artifact_briar_heart.png",
+      "footprint": "1x1",
+      "pivotX": 0.5,
+      "pivotY": 0.08,
+      "tags": [
+        "phase4",
+        "pr05",
+        "item",
+        "special",
+        "artifact",
+        "greenwood_fringe",
+        "rogue",
+        "artifact"
+      ]
+    },
+    {
+      "key": "item.artifact.eclipsed_relic.icon",
+      "category": "icon",
+      "rawOutputPath": "phase4/pr05/icon_item_artifact_eclipsed_relic.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "pr05",
+        "item",
+        "special",
+        "artifact",
+        "abyssal_temple",
+        "templar",
+        "artifact"
+      ]
+    },
+    {
+      "key": "item.artifact.eclipsed_relic.visual",
+      "category": "icon",
+      "rawOutputPath": "phase4/pr05/icon_item_artifact_eclipsed_relic.png",
+      "footprint": "1x1",
+      "pivotX": 0.5,
+      "pivotY": 0.08,
+      "tags": [
+        "phase4",
+        "pr05",
+        "item",
+        "special",
+        "artifact",
+        "abyssal_temple",
+        "templar",
+        "artifact"
+      ]
+    },
+    {
+      "key": "item.artifact.forge_oath.icon",
+      "category": "icon",
+      "rawOutputPath": "phase4/pr05/icon_item_artifact_forge_oath.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "pr05",
+        "item",
+        "special",
+        "artifact",
+        "deep_iron_pit",
+        "vanguard",
+        "artifact"
+      ]
+    },
+    {
+      "key": "item.artifact.forge_oath.visual",
+      "category": "icon",
+      "rawOutputPath": "phase4/pr05/icon_item_artifact_forge_oath.png",
+      "footprint": "1x1",
+      "pivotX": 0.5,
+      "pivotY": 0.08,
+      "tags": [
+        "phase4",
+        "pr05",
+        "item",
+        "special",
+        "artifact",
+        "deep_iron_pit",
+        "vanguard",
+        "artifact"
+      ]
+    },
+    {
+      "key": "item.artifact.river_echo.icon",
+      "category": "icon",
+      "rawOutputPath": "phase4/pr05/icon_item_artifact_river_echo.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "pr05",
+        "item",
+        "special",
+        "artifact",
+        "underground_river",
+        "arcanist",
+        "artifact"
+      ]
+    },
+    {
+      "key": "item.artifact.river_echo.visual",
+      "category": "icon",
+      "rawOutputPath": "phase4/pr05/icon_item_artifact_river_echo.png",
+      "footprint": "1x1",
+      "pivotX": 0.5,
+      "pivotY": 0.08,
+      "tags": [
+        "phase4",
+        "pr05",
+        "item",
+        "special",
+        "artifact",
+        "underground_river",
+        "arcanist",
+        "artifact"
+      ]
+    },
+    {
       "key": "item.basic_shield.icon",
       "category": "icon",
       "rawOutputPath": "phase2/p2-b/icon_item_basic_shield.png",
@@ -3478,6 +3622,438 @@
       ]
     },
     {
+      "key": "item.unique.briarbound_bow.icon",
+      "category": "icon",
+      "rawOutputPath": "phase4/pr05/icon_item_unique_briarbound_bow.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "pr05",
+        "item",
+        "special",
+        "unique",
+        "greenwood_fringe",
+        "rogue",
+        "precision"
+      ]
+    },
+    {
+      "key": "item.unique.briarbound_bow.visual",
+      "category": "icon",
+      "rawOutputPath": "phase4/pr05/icon_item_unique_briarbound_bow.png",
+      "footprint": "1x1",
+      "pivotX": 0.5,
+      "pivotY": 0.08,
+      "tags": [
+        "phase4",
+        "pr05",
+        "item",
+        "special",
+        "unique",
+        "greenwood_fringe",
+        "rogue",
+        "precision"
+      ]
+    },
+    {
+      "key": "item.unique.coal_ward_talisman.icon",
+      "category": "icon",
+      "rawOutputPath": "phase4/pr05/icon_item_unique_coal_ward_talisman.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "pr05",
+        "item",
+        "special",
+        "unique",
+        "deep_iron_pit",
+        "arcanist",
+        "fire"
+      ]
+    },
+    {
+      "key": "item.unique.coal_ward_talisman.visual",
+      "category": "icon",
+      "rawOutputPath": "phase4/pr05/icon_item_unique_coal_ward_talisman.png",
+      "footprint": "1x1",
+      "pivotX": 0.5,
+      "pivotY": 0.08,
+      "tags": [
+        "phase4",
+        "pr05",
+        "item",
+        "special",
+        "unique",
+        "deep_iron_pit",
+        "arcanist",
+        "fire"
+      ]
+    },
+    {
+      "key": "item.unique.currentstrider_cloak.icon",
+      "category": "icon",
+      "rawOutputPath": "phase4/pr05/icon_item_unique_currentstrider_cloak.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "pr05",
+        "item",
+        "special",
+        "unique",
+        "underground_river",
+        "rogue",
+        "mobility"
+      ]
+    },
+    {
+      "key": "item.unique.currentstrider_cloak.visual",
+      "category": "icon",
+      "rawOutputPath": "phase4/pr05/icon_item_unique_currentstrider_cloak.png",
+      "footprint": "1x1",
+      "pivotX": 0.5,
+      "pivotY": 0.08,
+      "tags": [
+        "phase4",
+        "pr05",
+        "item",
+        "special",
+        "unique",
+        "underground_river",
+        "rogue",
+        "mobility"
+      ]
+    },
+    {
+      "key": "item.unique.eclipse_mail.icon",
+      "category": "icon",
+      "rawOutputPath": "phase4/pr05/icon_item_unique_eclipse_mail.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "pr05",
+        "item",
+        "special",
+        "unique",
+        "abyssal_temple",
+        "templar",
+        "protection"
+      ]
+    },
+    {
+      "key": "item.unique.eclipse_mail.visual",
+      "category": "icon",
+      "rawOutputPath": "phase4/pr05/icon_item_unique_eclipse_mail.png",
+      "footprint": "1x1",
+      "pivotX": 0.5,
+      "pivotY": 0.08,
+      "tags": [
+        "phase4",
+        "pr05",
+        "item",
+        "special",
+        "unique",
+        "abyssal_temple",
+        "templar",
+        "protection"
+      ]
+    },
+    {
+      "key": "item.unique.ferrywarden_lantern.icon",
+      "category": "icon",
+      "rawOutputPath": "phase4/pr05/icon_item_unique_ferrywarden_lantern.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "pr05",
+        "item",
+        "special",
+        "unique",
+        "underground_river",
+        "templar",
+        "rescue"
+      ]
+    },
+    {
+      "key": "item.unique.ferrywarden_lantern.visual",
+      "category": "icon",
+      "rawOutputPath": "phase4/pr05/icon_item_unique_ferrywarden_lantern.png",
+      "footprint": "1x1",
+      "pivotX": 0.5,
+      "pivotY": 0.08,
+      "tags": [
+        "phase4",
+        "pr05",
+        "item",
+        "special",
+        "unique",
+        "underground_river",
+        "templar",
+        "rescue"
+      ]
+    },
+    {
+      "key": "item.unique.furnace_plate.icon",
+      "category": "icon",
+      "rawOutputPath": "phase4/pr05/icon_item_unique_furnace_plate.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "pr05",
+        "item",
+        "special",
+        "unique",
+        "deep_iron_pit",
+        "vanguard",
+        "fire"
+      ]
+    },
+    {
+      "key": "item.unique.furnace_plate.visual",
+      "category": "icon",
+      "rawOutputPath": "phase4/pr05/icon_item_unique_furnace_plate.png",
+      "footprint": "1x1",
+      "pivotX": 0.5,
+      "pivotY": 0.08,
+      "tags": [
+        "phase4",
+        "pr05",
+        "item",
+        "special",
+        "unique",
+        "deep_iron_pit",
+        "vanguard",
+        "fire"
+      ]
+    },
+    {
+      "key": "item.unique.greenwood_watcher_blade.icon",
+      "category": "icon",
+      "rawOutputPath": "phase4/pr05/icon_item_unique_greenwood_watcher_blade.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "pr05",
+        "item",
+        "special",
+        "unique",
+        "greenwood_fringe",
+        "holy",
+        "vanguard"
+      ]
+    },
+    {
+      "key": "item.unique.greenwood_watcher_blade.visual",
+      "category": "icon",
+      "rawOutputPath": "phase4/pr05/icon_item_unique_greenwood_watcher_blade.png",
+      "footprint": "1x1",
+      "pivotX": 0.5,
+      "pivotY": 0.08,
+      "tags": [
+        "phase4",
+        "pr05",
+        "item",
+        "special",
+        "unique",
+        "greenwood_fringe",
+        "holy",
+        "vanguard"
+      ]
+    },
+    {
+      "key": "item.unique.sanctum_lance.icon",
+      "category": "icon",
+      "rawOutputPath": "phase4/pr05/icon_item_unique_sanctum_lance.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "pr05",
+        "item",
+        "special",
+        "unique",
+        "abyssal_temple",
+        "vanguard",
+        "holy"
+      ]
+    },
+    {
+      "key": "item.unique.sanctum_lance.visual",
+      "category": "icon",
+      "rawOutputPath": "phase4/pr05/icon_item_unique_sanctum_lance.png",
+      "footprint": "1x1",
+      "pivotX": 0.5,
+      "pivotY": 0.08,
+      "tags": [
+        "phase4",
+        "pr05",
+        "item",
+        "special",
+        "unique",
+        "abyssal_temple",
+        "vanguard",
+        "holy"
+      ]
+    },
+    {
+      "key": "item.unique.slagbreaker_pick.icon",
+      "category": "icon",
+      "rawOutputPath": "phase4/pr05/icon_item_unique_slagbreaker_pick.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "pr05",
+        "item",
+        "special",
+        "unique",
+        "deep_iron_pit",
+        "vanguard",
+        "mine"
+      ]
+    },
+    {
+      "key": "item.unique.slagbreaker_pick.visual",
+      "category": "icon",
+      "rawOutputPath": "phase4/pr05/icon_item_unique_slagbreaker_pick.png",
+      "footprint": "1x1",
+      "pivotX": 0.5,
+      "pivotY": 0.08,
+      "tags": [
+        "phase4",
+        "pr05",
+        "item",
+        "special",
+        "unique",
+        "deep_iron_pit",
+        "vanguard",
+        "mine"
+      ]
+    },
+    {
+      "key": "item.unique.tideglass_staff.icon",
+      "category": "icon",
+      "rawOutputPath": "phase4/pr05/icon_item_unique_tideglass_staff.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "pr05",
+        "item",
+        "special",
+        "unique",
+        "underground_river",
+        "arcanist",
+        "lightning"
+      ]
+    },
+    {
+      "key": "item.unique.tideglass_staff.visual",
+      "category": "icon",
+      "rawOutputPath": "phase4/pr05/icon_item_unique_tideglass_staff.png",
+      "footprint": "1x1",
+      "pivotX": 0.5,
+      "pivotY": 0.08,
+      "tags": [
+        "phase4",
+        "pr05",
+        "item",
+        "special",
+        "unique",
+        "underground_river",
+        "arcanist",
+        "lightning"
+      ]
+    },
+    {
+      "key": "item.unique.voidlit_seal.icon",
+      "category": "icon",
+      "rawOutputPath": "phase4/pr05/icon_item_unique_voidlit_seal.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "pr05",
+        "item",
+        "special",
+        "unique",
+        "abyssal_temple",
+        "templar",
+        "holy"
+      ]
+    },
+    {
+      "key": "item.unique.voidlit_seal.visual",
+      "category": "icon",
+      "rawOutputPath": "phase4/pr05/icon_item_unique_voidlit_seal.png",
+      "footprint": "1x1",
+      "pivotX": 0.5,
+      "pivotY": 0.08,
+      "tags": [
+        "phase4",
+        "pr05",
+        "item",
+        "special",
+        "unique",
+        "abyssal_temple",
+        "templar",
+        "holy"
+      ]
+    },
+    {
+      "key": "item.unique.warden_barkmail.icon",
+      "category": "icon",
+      "rawOutputPath": "phase4/pr05/icon_item_unique_warden_barkmail.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "pr05",
+        "item",
+        "special",
+        "unique",
+        "greenwood_fringe",
+        "templar",
+        "protection"
+      ]
+    },
+    {
+      "key": "item.unique.warden_barkmail.visual",
+      "category": "icon",
+      "rawOutputPath": "phase4/pr05/icon_item_unique_warden_barkmail.png",
+      "footprint": "1x1",
+      "pivotX": 0.5,
+      "pivotY": 0.08,
+      "tags": [
+        "phase4",
+        "pr05",
+        "item",
+        "special",
+        "unique",
+        "greenwood_fringe",
+        "templar",
+        "protection"
+      ]
+    },
+    {
       "key": "material.adamantite.icon",
       "category": "icon",
       "rawOutputPath": "phase2/p2-c/icon_item_battle_axe.png",
@@ -3708,6 +4284,22 @@
       "asciiColorHex": "#F4FDFF"
     },
     {
+      "key": "prop.heart_ward_focus",
+      "category": "prop_interactable",
+      "rawOutputPath": "phase3/p3-followup/prop_heart_ward_focus.png",
+      "footprint": "1x1",
+      "pivotX": 0.5,
+      "pivotY": 0.08,
+      "tags": [
+        "phase3",
+        "followup",
+        "abyssal",
+        "interactable"
+      ],
+      "asciiGlyph": "+",
+      "asciiColorHex": "#C8B8FF"
+    },
+    {
       "key": "prop.mine_furnace",
       "category": "prop_environment",
       "rawOutputPath": "phase2/p2-c/prop_mine_furnace.png",
@@ -3756,38 +4348,6 @@
       "asciiColorHex": "#D7F0FF"
     },
     {
-      "key": "prop.temple_ward_reliquary",
-      "category": "prop_interactable",
-      "rawOutputPath": "phase3/p3-followup/prop_temple_ward_reliquary.png",
-      "footprint": "1x1",
-      "pivotX": 0.5,
-      "pivotY": 0.08,
-      "tags": [
-        "phase3",
-        "followup",
-        "abyssal",
-        "interactable"
-      ],
-      "asciiGlyph": "+",
-      "asciiColorHex": "#E7E0C1"
-    },
-    {
-      "key": "prop.heart_ward_focus",
-      "category": "prop_interactable",
-      "rawOutputPath": "phase3/p3-followup/prop_heart_ward_focus.png",
-      "footprint": "1x1",
-      "pivotX": 0.5,
-      "pivotY": 0.08,
-      "tags": [
-        "phase3",
-        "followup",
-        "abyssal",
-        "interactable"
-      ],
-      "asciiGlyph": "+",
-      "asciiColorHex": "#C8B8FF"
-    },
-    {
       "key": "prop.stairs.down",
       "category": "prop_interactable",
       "rawOutputPath": "phase2/p2-b/prop_stairs_down.png",
@@ -3834,6 +4394,22 @@
       ],
       "asciiGlyph": "+",
       "asciiColorHex": "#FFFFFF"
+    },
+    {
+      "key": "prop.temple_ward_reliquary",
+      "category": "prop_interactable",
+      "rawOutputPath": "phase3/p3-followup/prop_temple_ward_reliquary.png",
+      "footprint": "1x1",
+      "pivotX": 0.5,
+      "pivotY": 0.08,
+      "tags": [
+        "phase3",
+        "followup",
+        "abyssal",
+        "interactable"
+      ],
+      "asciiGlyph": "+",
+      "asciiColorHex": "#E7E0C1"
     },
     {
       "key": "talent.arcanist.arcane_shield.icon",
@@ -5585,20 +6161,20 @@
       "asciiColorHex": "#FFA500"
     },
     {
-      "key": "vfx.zone.effect.ward_seal_01",
+      "key": "vfx.zone.effect.crystal_shard_01",
       "category": "tile_decal",
-      "rawOutputPath": "phase2/p2-b/vfx_zone_effect_ward_seal_01.png",
-      "footprint": "overlay",
+      "rawOutputPath": "phase3/p3-followup/vfx_zone_effect_crystal_shard_01.png",
+      "footprint": "1x1",
       "pivotX": 0.5,
       "pivotY": 0.5,
       "tags": [
-        "phase2",
-        "p2-b",
-        "vfx",
+        "phase3",
+        "followup",
+        "crystal",
         "zone-effect"
       ],
-      "asciiGlyph": "*",
-      "asciiColorHex": "#FFF4B0"
+      "asciiGlyph": "^",
+      "asciiColorHex": "#E7FDFF"
     },
     {
       "key": "vfx.zone.effect.current_lane_01",
@@ -5617,22 +6193,6 @@
       "asciiColorHex": "#8FD9FF"
     },
     {
-      "key": "vfx.zone.effect.crystal_shard_01",
-      "category": "tile_decal",
-      "rawOutputPath": "phase3/p3-followup/vfx_zone_effect_crystal_shard_01.png",
-      "footprint": "1x1",
-      "pivotX": 0.5,
-      "pivotY": 0.5,
-      "tags": [
-        "phase3",
-        "followup",
-        "crystal",
-        "zone-effect"
-      ],
-      "asciiGlyph": "^",
-      "asciiColorHex": "#E7FDFF"
-    },
-    {
       "key": "vfx.zone.effect.void_pressure_01",
       "category": "tile_decal",
       "rawOutputPath": "phase3/p3-followup/vfx_zone_effect_void_pressure_01.png",
@@ -5647,6 +6207,106 @@
       ],
       "asciiGlyph": "*",
       "asciiColorHex": "#7E6B9A"
+    },
+    {
+      "key": "vfx.zone.effect.ward_seal_01",
+      "category": "tile_decal",
+      "rawOutputPath": "phase2/p2-b/vfx_zone_effect_ward_seal_01.png",
+      "footprint": "overlay",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase2",
+        "p2-b",
+        "vfx",
+        "zone-effect"
+      ],
+      "asciiGlyph": "*",
+      "asciiColorHex": "#FFF4B0"
+    },
+    {
+      "key": "zone.abyssal_heart.icon",
+      "category": "icon_quest",
+      "rawOutputPath": "phase3/p3-followup/zone_abyssal_heart_icon.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase3",
+        "followup",
+        "zone",
+        "abyssal"
+      ]
+    },
+    {
+      "key": "zone.abyssal_heart.visual",
+      "category": "portrait",
+      "rawOutputPath": "phase3/p3-followup/zone_abyssal_heart_visual.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase3",
+        "followup",
+        "zone",
+        "abyssal"
+      ]
+    },
+    {
+      "key": "zone.abyssal_temple.icon",
+      "category": "icon_quest",
+      "rawOutputPath": "phase3/p3-followup/zone_abyssal_temple_icon.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase3",
+        "followup",
+        "zone",
+        "abyssal"
+      ]
+    },
+    {
+      "key": "zone.abyssal_temple.visual",
+      "category": "portrait",
+      "rawOutputPath": "phase3/p3-followup/zone_abyssal_temple_visual.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase3",
+        "followup",
+        "zone",
+        "abyssal"
+      ]
+    },
+    {
+      "key": "zone.crystal_cavern.icon",
+      "category": "icon_quest",
+      "rawOutputPath": "phase3/p3-followup/zone_crystal_cavern_icon.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase3",
+        "followup",
+        "zone",
+        "crystal"
+      ]
+    },
+    {
+      "key": "zone.crystal_cavern.visual",
+      "category": "portrait",
+      "rawOutputPath": "phase3/p3-followup/zone_crystal_cavern_visual.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase3",
+        "followup",
+        "zone",
+        "crystal"
+      ]
     },
     {
       "key": "zone.deep_iron_pit.icon",
@@ -5723,118 +6383,6 @@
       ]
     },
     {
-      "key": "zone.underground_river.icon",
-      "category": "icon_quest",
-      "rawOutputPath": "phase3/p3-followup/zone_underground_river_icon.png",
-      "footprint": "ui",
-      "pivotX": 0.5,
-      "pivotY": 0.5,
-      "tags": [
-        "phase3",
-        "followup",
-        "zone",
-        "river"
-      ]
-    },
-    {
-      "key": "zone.underground_river.visual",
-      "category": "portrait",
-      "rawOutputPath": "phase3/p3-followup/zone_underground_river_visual.png",
-      "footprint": "ui",
-      "pivotX": 0.5,
-      "pivotY": 0.5,
-      "tags": [
-        "phase3",
-        "followup",
-        "zone",
-        "river"
-      ]
-    },
-    {
-      "key": "zone.crystal_cavern.icon",
-      "category": "icon_quest",
-      "rawOutputPath": "phase3/p3-followup/zone_crystal_cavern_icon.png",
-      "footprint": "ui",
-      "pivotX": 0.5,
-      "pivotY": 0.5,
-      "tags": [
-        "phase3",
-        "followup",
-        "zone",
-        "crystal"
-      ]
-    },
-    {
-      "key": "zone.crystal_cavern.visual",
-      "category": "portrait",
-      "rawOutputPath": "phase3/p3-followup/zone_crystal_cavern_visual.png",
-      "footprint": "ui",
-      "pivotX": 0.5,
-      "pivotY": 0.5,
-      "tags": [
-        "phase3",
-        "followup",
-        "zone",
-        "crystal"
-      ]
-    },
-    {
-      "key": "zone.abyssal_temple.icon",
-      "category": "icon_quest",
-      "rawOutputPath": "phase3/p3-followup/zone_abyssal_temple_icon.png",
-      "footprint": "ui",
-      "pivotX": 0.5,
-      "pivotY": 0.5,
-      "tags": [
-        "phase3",
-        "followup",
-        "zone",
-        "abyssal"
-      ]
-    },
-    {
-      "key": "zone.abyssal_temple.visual",
-      "category": "portrait",
-      "rawOutputPath": "phase3/p3-followup/zone_abyssal_temple_visual.png",
-      "footprint": "ui",
-      "pivotX": 0.5,
-      "pivotY": 0.5,
-      "tags": [
-        "phase3",
-        "followup",
-        "zone",
-        "abyssal"
-      ]
-    },
-    {
-      "key": "zone.abyssal_heart.icon",
-      "category": "icon_quest",
-      "rawOutputPath": "phase3/p3-followup/zone_abyssal_heart_icon.png",
-      "footprint": "ui",
-      "pivotX": 0.5,
-      "pivotY": 0.5,
-      "tags": [
-        "phase3",
-        "followup",
-        "zone",
-        "abyssal"
-      ]
-    },
-    {
-      "key": "zone.abyssal_heart.visual",
-      "category": "portrait",
-      "rawOutputPath": "phase3/p3-followup/zone_abyssal_heart_visual.png",
-      "footprint": "ui",
-      "pivotX": 0.5,
-      "pivotY": 0.5,
-      "tags": [
-        "phase3",
-        "followup",
-        "zone",
-        "abyssal"
-      ]
-    },
-    {
       "key": "zone.grey_gate_depths.visual",
       "category": "prop_environment",
       "rawOutputPath": "phase2/p2-c/zone_grey_gate_depths_visual.png",
@@ -5879,6 +6427,34 @@
       ],
       "asciiGlyph": "+",
       "asciiColorHex": "#FFFFFF"
+    },
+    {
+      "key": "zone.underground_river.icon",
+      "category": "icon_quest",
+      "rawOutputPath": "phase3/p3-followup/zone_underground_river_icon.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase3",
+        "followup",
+        "zone",
+        "river"
+      ]
+    },
+    {
+      "key": "zone.underground_river.visual",
+      "category": "portrait",
+      "rawOutputPath": "phase3/p3-followup/zone_underground_river_visual.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase3",
+        "followup",
+        "zone",
+        "river"
+      ]
     }
   ],
   "prefixRules": [

@@ -16,7 +16,7 @@ class Phase4ReportRunnerTest {
     fun `phase4 report aggregates currently landed phase4 verification tasks`() {
         val run = Phase4ReportRunner.run()
 
-        assertEquals(5, run.taskCount)
+        assertEquals(7, run.taskCount)
         assertEquals(0, run.failedTaskCount, "phase4Report recorded failed tasks; inspect ${run.summaryPath}")
         assertTrue(Files.exists(run.summaryPath), "Expected phase4 summary report at ${run.summaryPath}")
         assertTrue(Files.exists(run.markdownPath), "Expected phase4 markdown report at ${run.markdownPath}")
@@ -28,11 +28,11 @@ class Phase4ReportRunnerTest {
             tasks.first { element -> element.jsonObject.getValue("taskId").jsonPrimitive.content == "solvabilityHarness" }.jsonObject
 
         assertEquals("P4", payload.getValue("phaseId").jsonPrimitive.content)
-        assertEquals("5", payload.getValue("taskCount").jsonPrimitive.content)
+        assertEquals("7", payload.getValue("taskCount").jsonPrimitive.content)
         assertEquals("0", payload.getValue("failedTaskCount").jsonPrimitive.content)
         assertEquals("1000", solvabilityTask.getValue("metrics").jsonObject.getValue("distinctSeedCount").jsonPrimitive.content)
         assertEquals(
-            setOf("mapgenSmoke", "solvabilityHarness", "bossHarness", "whiteBoxMapgen", "whiteBoxSolvability"),
+            setOf("mapgenSmoke", "solvabilityHarness", "bossHarness", "whiteBoxMapgen", "whiteBoxSolvability", "lootBalanceLab", "whiteBoxLoot"),
             taskIds,
         )
     }

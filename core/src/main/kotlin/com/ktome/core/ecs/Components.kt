@@ -71,6 +71,8 @@ data class DerivedStats(
     val staminaRegen: Double,
     val talentPower: Double,
     val powerSave: PowerSaveStats = PowerSaveStats(),
+    val castSpeedRating: Int = 0,
+    val effectiveCastSpeed: Double = 0.0,
 )
 
 data class Health(

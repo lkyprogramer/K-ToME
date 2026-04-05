@@ -81,6 +81,14 @@ object Phase4ReportRunner {
                 relativeSourcePath = "tools/build/reports/phase4/whitebox/solvability/whitebox-solvability-summary.json",
                 reader = ::readWhiteBoxSolvability,
             ),
+            Phase4TaskDescriptor(
+                relativeSourcePath = "tools/build/reports/phase4/loot/loot-balance-summary.json",
+                reader = ::readLootBalanceLab,
+            ),
+            Phase4TaskDescriptor(
+                relativeSourcePath = "tools/build/reports/phase4/whitebox/loot/whitebox-loot-summary.json",
+                reader = ::readWhiteBoxLoot,
+            ),
         )
 
     fun run(): Phase4ReportRun {
@@ -229,6 +237,62 @@ object Phase4ReportRunner {
         val failedAssertions = summary.intValue("failedAssertions")
         return Phase4TaskAggregate(
             taskId = "whiteBoxSolvability",
+            status = if (failedAssertions == 0) "PASS" else "FAIL",
+            sourcePath = relativize(repoRoot, sourcePath),
+            buildId = header.stringValue("buildId"),
+            locale = header.stringValue("locale"),
+            metrics =
+                buildJsonObject {
+                    put("caseCount", summary.intValue("caseCount"))
+                    put("aggregateCount", summary.intValue("aggregateCount"))
+                    put("failedAssertions", failedAssertions)
+                    put("artifactCount", summary.intValue("artifactCount"))
+                },
+        )
+    }
+
+    private fun readLootBalanceLab(
+        repoRoot: Path,
+        sourcePath: Path,
+        payload: JsonObject,
+    ): Phase4TaskAggregate {
+        val header = payload.getValue("header").jsonObject
+        val summary = payload.getValue("summary").jsonObject
+        val clamp = payload.getValue("magicFindClampComparison").jsonObject
+        val failedExpectationCount = summary.intValue("failedExpectationCount")
+        return Phase4TaskAggregate(
+            taskId = "lootBalanceLab",
+            status = if (failedExpectationCount == 0 && clamp.getValue("withinTolerance").jsonPrimitive.content.toBooleanStrict()) "PASS" else "FAIL",
+            sourcePath = relativize(repoRoot, sourcePath),
+            buildId = header.stringValue("buildId"),
+            locale = header.stringValue("locale"),
+            metrics =
+                buildJsonObject {
+                    put("matrixCount", summary.intValue("matrixCount"))
+                    put("totalRolls", summary.intValue("totalRolls"))
+                    put("failedExpectationCount", failedExpectationCount)
+                    put("rarePityActivations", summary.intValue("rarePityActivations"))
+                    put("uniquePityActivations", summary.intValue("uniquePityActivations"))
+                    put("maxMagicRateDrift", summary.getValue("maxMagicRateDrift").jsonPrimitive.content.toDouble())
+                    put("maxRareRateDrift", summary.getValue("maxRareRateDrift").jsonPrimitive.content.toDouble())
+                    put("maxUniqueRelativeError", summary.getValue("maxUniqueRelativeError").jsonPrimitive.content.toDouble())
+                    put("maxArtifactRelativeError", summary.getValue("maxArtifactRelativeError").jsonPrimitive.content.toDouble())
+                    put("clampWithinTolerance", clamp.getValue("withinTolerance").jsonPrimitive.content.toBooleanStrict())
+                    put("clampMaxDistributionDelta", clamp.getValue("maxDistributionDelta").jsonPrimitive.content.toDouble())
+                },
+        )
+    }
+
+    private fun readWhiteBoxLoot(
+        repoRoot: Path,
+        sourcePath: Path,
+        payload: JsonObject,
+    ): Phase4TaskAggregate {
+        val header = payload.getValue("header").jsonObject
+        val summary = payload.getValue("summary").jsonObject
+        val failedAssertions = summary.intValue("failedAssertions")
+        return Phase4TaskAggregate(
+            taskId = "whiteBoxLoot",
             status = if (failedAssertions == 0) "PASS" else "FAIL",
             sourcePath = relativize(repoRoot, sourcePath),
             buildId = header.stringValue("buildId"),

@@ -57,14 +57,14 @@ class GoldenScreenshotHarnessTest {
             listOf(
                 "36fffb5f8ea3ff2f78486ee5d520278135f39f61a44a7cb9d4cf60317a607ade",
                 "38c2efe56098462e01a8dd93999413b837058cb8591cc49a5de2b93023817ff9",
-                "be583fcf3253d13516aa0ebc365a24eafece7c0234a2b9ec7847c64fe7cd0ec0",
-                "d6762902f95528e8f8d67e2b95ea9f55aa4a00def3ffc298b3673be75d8b98f4",
-                "aefc22e5976562bc54fd611c36c53035fea53edf1ed224bba01338f1f9e71fe3",
+                "baf81c651d314d59dc946bcbd1fe53f3bf7e9024ebf055e7efa66f129bd0c5c6",
+                "b8ec1e164fdf5eb9578b2b4f980af9ddd98cb47aa050e89727bfa55be38b4bd0",
+                "c8ef1c9ab76f4118caf7ae0b7724c7448838a3fb90267c1a277d568fc4c6573d",
                 "511542b3a7dafb4fe22de3f96e5ced6bbf18ab3246b9eb8de55dff01fd8924a2",
-                "a296b1f167e7c94bd49822d0c8a4d7547575d168fdf2853f514bed49e16d5abf",
-                "03668744cbdfc2ce5a7ec157403c015dfc849ff8efb4c422a79a0fd194b1623f",
-                "602c45c56328319836afec010e8e0043cc1645518da8eb66442358aaab6a0179",
-                "e7bbe99fee278f0604f99649ea8d350298df0d2dd573a5b86311912f66ebe923",
+                "f718787c67dda89d047e30c134988ff5313473189a223ba688bd541b435fedfb",
+                "feddffa9bd7ff6ca246813e9e32886574348de4eba257be9cbc2979e568440dc",
+                "75c127a45dcc5e41de9f0ea31c8b9f3f0fc9d474eb7523914c6af4235e40775a",
+                "25e0505a1aa20a949a84ad6d2f0950b4f76ed8cfb0c647947127ea94a9d68f28",
             ),
             english + chinese,
         )
@@ -77,8 +77,8 @@ class GoldenScreenshotHarnessTest {
 
         assertEquals(
             listOf(
-                "4e837679a161e3a1db6fcac0d571e2e26d0d4c61507fada6ce1e9e58216cfbfd",
-                "9b84d227bec9f101dc8493612d3ffd0d74c7df1eea28c68bdcc51d20e888e1b8",
+                "0216d61ae316114906ea1969c9af6637b2726aac8ea72b11c9285c46b18e23d0",
+                "db9c2b3cc9e60ec7b85a885d9c0948221afc07a5f79182abb9c3f1bfc15e9a97",
             ),
             listOf(english, chinese),
         )
@@ -94,9 +94,9 @@ class GoldenScreenshotHarnessTest {
                 "bb8a77cc46ef4b3943a4a48f7e16d8f80e5dff166f2e6839cc31f77a34c96840",
                 "eb670f1379cd7843b4846c67e22218654e8c0e396ce85af1180aee0c1de50f6a",
                 "ef919e196b92e50815a0266d09fff7963269fab812c7ef60c15043d0f3773422",
-                "ac0e06b55ba244e1a47bd0a10622d4649699d93f909429f63c7d9bdc514c04f4",
-                "a3e30dfdc59fab2dfb7caf36c8a9b09b7e1b23a7b0663ebdd013af10465a1795",
-                "befd2af7f6cc3322ede402ad65342db3dbe6fae49cfbb97b84c0e2549ad1611a",
+                "e1a6b56f8b92c1087c0b8b6bccf5d160c0c8dd7e6556fc4d7a97d929d8226b4b",
+                "3ebe41a9c662ace96e62ccab6b43527c7984528810ed656fb3dd193c60178744",
+                "2a140ae92e0a182c0d1c8ec98475e83d85eb7f5636b97bb640729be7b8375a35",
             ),
             english + chinese,
         )
@@ -121,10 +121,10 @@ class GoldenScreenshotHarnessTest {
             listOf(
                 "abe12adc7adb0db103aa4a9a24359136876508b65436f898d7c3b5e16e55a176",
                 "abe12adc7adb0db103aa4a9a24359136876508b65436f898d7c3b5e16e55a176",
-                "c288b15f8f99ae176d828c92297faa0f11ca092486b9afb62dbfedf1a68abeb9",
+                "1b25c0447e658d70499ad6e84822d3e27a0ebb5fb2bf0c73a9f50d7bbb81a867",
                 "c0ac894b7f42aa8e5255d9016772347a158f7179d22fc2dbe25b5453b7e1108a",
                 "c0ac894b7f42aa8e5255d9016772347a158f7179d22fc2dbe25b5453b7e1108a",
-                "a16d5095aa24074e7ddb5bb2dff91594cb1f88194f3fd0f52e14011008f5c1cf",
+                "87afdd020a933fb119c1b67454f4e13ac7bcf485a2b5d4777880305e6624ebfa",
             ),
             english + chinese,
         )
@@ -138,9 +138,9 @@ class GoldenScreenshotHarnessTest {
         assertEquals(
             listOf(
                 "450e7caf5c08a15a48c92829f8bdfbacd38b2f5291fb61f4696ec0d325e53633",
-                "b4388ae96ece049715de87724347e4b3ef60aade53bcbbcca99bdc93d917cb24",
+                "e535ded122b49bd67cd7e45787cd60180fb3591ff3b40ebba40302f6b32e943f",
                 "1b2502c2e7fd673dde69ef26ed55b91ba246883c2a10d3a470e74a9c7853647a",
-                "9eb0f44db7fe8b8d40e886cde5c0fb44735a7a068a108ed2848bcafc07a82497",
+                "27bc5d4d26948dd0638618e7475623ea40201d6005f84055f79ce83871d4efe6",
             ),
             english + chinese,
         )

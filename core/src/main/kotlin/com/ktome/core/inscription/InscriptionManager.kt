@@ -1,5 +1,7 @@
 package com.ktome.core.inscription
 
+import com.ktome.core.combat.DiminishingReturns
+
 object InscriptionManager {
     fun canEquip(
         loadout: InscriptionLoadout,
@@ -29,8 +31,13 @@ object InscriptionManager {
     fun startCooldown(
         cooldowns: InscriptionCooldownState,
         inscription: InscriptionDef,
+        effectiveCastSpeed: Double = 0.0,
     ) {
-        cooldowns.remainingByInscriptionId[inscription.id] = inscription.cooldown
+        cooldowns.remainingByInscriptionId[inscription.id] =
+            DiminishingReturns.adjustedCooldownTurns(
+                baseCooldown = inscription.cooldown,
+                effectiveCastSpeed = effectiveCastSpeed,
+            )
     }
 
     fun isOnCooldown(

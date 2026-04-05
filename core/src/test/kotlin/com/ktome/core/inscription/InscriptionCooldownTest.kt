@@ -1,5 +1,6 @@
 package com.ktome.core.inscription
 
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -41,5 +42,26 @@ class InscriptionCooldownTest {
         InscriptionManager.tickCooldowns(cooldowns)
         InscriptionManager.tickCooldowns(cooldowns)
         assertFalse(InscriptionManager.isOnCooldown(cooldowns, healing.id))
+    }
+
+    @Test
+    fun `inscription cooldown start consumes effective cast speed`() {
+        val inscription =
+            InscriptionDef(
+                id = "phase_door",
+                nameKey = "inscription.phase_door.name",
+                descKey = "inscription.phase_door.desc",
+                iconKey = "icon.phase_door",
+                category = InscriptionCategory.MOVEMENT,
+                cooldown = 5,
+                effect = InscriptionEffect.Teleport(range = 8),
+                tier = 1,
+            )
+        val cooldowns = InscriptionCooldownState()
+
+        InscriptionManager.startCooldown(cooldowns, inscription, effectiveCastSpeed = 50.0)
+
+        assertTrue(InscriptionManager.isOnCooldown(cooldowns, inscription.id))
+        assertEquals(4, cooldowns.remainingByInscriptionId[inscription.id])
     }
 }
