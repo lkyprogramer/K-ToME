@@ -3057,6 +3057,7 @@ class FoundationGameSession internal constructor(
 
     private fun monsterSourceTier(template: MonsterTemplate): com.ktome.core.loot.SourceTier =
         when {
+            "boss" in template.tags || template.lootProfileId.endsWith(".boss") -> com.ktome.core.loot.SourceTier.BOSS
             "elite" in template.tags || template.lootProfileId.endsWith(".elite") -> com.ktome.core.loot.SourceTier.ELITE
             else -> com.ktome.core.loot.SourceTier.NORMAL
         }
@@ -8353,7 +8354,9 @@ class FoundationGameSession internal constructor(
                 pityTracker = pityTracker,
                 base = chooseWeightedLootItem(floorCandidates),
             )
-        pityTracker = generated.rollResult.resultingPityTracker
+        if (generated.item.type != ItemType.CONSUMABLE) {
+            pityTracker = generated.rollResult.resultingPityTracker
+        }
         return generated.item
     }
 
