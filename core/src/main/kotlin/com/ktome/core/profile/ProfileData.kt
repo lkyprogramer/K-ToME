@@ -1,8 +1,8 @@
 package com.ktome.core.profile
 
-import com.ktome.core.item.ItemQuality
 import com.ktome.core.item.MilestoneRewardSource
 import com.ktome.core.item.EquipSlot
+import com.ktome.core.loot.RarityTier
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -30,7 +30,7 @@ data class MilestoneRewardSummary(
     val zoneId: String,
     val baseItemId: String,
     val equipSlot: EquipSlot,
-    val qualityTier: ItemQuality,
+    val qualityTier: RarityTier,
     val buildHashAtGrant: String,
     val affixIds: List<String> = emptyList(),
     val equippedBaseItemIdBeforeReward: String? = null,

@@ -11,7 +11,7 @@ import com.ktome.core.item.AffixDef
 import com.ktome.core.item.AffixType
 import com.ktome.core.item.EquipmentPassive
 import com.ktome.core.item.ItemInstance
-import com.ktome.core.item.ItemQuality
+import com.ktome.core.loot.RarityTier
 import com.ktome.core.item.ItemType
 import com.ktome.core.item.StatModifier
 import com.ktome.core.map.Point
@@ -148,7 +148,7 @@ class RenderSnapshotContractTest {
                         slot = com.ktome.core.item.EquipSlot.WEAPON,
                         glyph = ')',
                         colorHex = "#C0C0C0",
-                        quality = ItemQuality.RARE,
+                        quality = RarityTier.RARE,
                         materialId = "MITHRIL",
                         materialName = "Mithril",
                         affixes = listOf(AffixDef(id = "of_speed", name = "of Speed", type = AffixType.SUFFIX, statModifiers = StatModifier(speed = 15))),
@@ -166,7 +166,7 @@ class RenderSnapshotContractTest {
                         slot = com.ktome.core.item.EquipSlot.OFF_HAND,
                         glyph = ']',
                         colorHex = "#8A7148",
-                        quality = ItemQuality.COMMON,
+                        quality = RarityTier.NORMAL,
                         stats = StatModifier(dex = 1),
                         passive = EquipmentPassive.DamageVsTag("bandit", 0.15),
                     ),
@@ -182,7 +182,7 @@ class RenderSnapshotContractTest {
                         slot = com.ktome.core.item.EquipSlot.WEAPON,
                         glyph = ')',
                         colorHex = "#C0C0C0",
-                        quality = ItemQuality.COMMON,
+                        quality = RarityTier.NORMAL,
                         stats = StatModifier(attack = 8),
                         passive = EquipmentPassive.DamageVsTag("undead", 0.10),
                     ),

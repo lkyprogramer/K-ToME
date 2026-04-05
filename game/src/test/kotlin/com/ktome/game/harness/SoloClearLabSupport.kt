@@ -16,7 +16,7 @@ import com.ktome.core.item.EquipSlot
 import com.ktome.core.item.Inventory
 import com.ktome.core.item.InventoryManager
 import com.ktome.core.item.ItemInstance
-import com.ktome.core.item.ItemQuality
+import com.ktome.core.loot.RarityTier
 import com.ktome.core.item.ItemType
 import com.ktome.core.item.StatModifier
 import com.ktome.core.map.GameMap
@@ -642,7 +642,7 @@ internal class SoloClearLabHarness(
                     slot = EquipSlot.WEAPON,
                     glyph = ')',
                     colorHex = "#4B6DFF",
-                    quality = ItemQuality.RARE,
+                    quality = RarityTier.RARE,
                     materialId = "MITHRIL",
                     materialName = "Mithril",
                     stats = StatModifier(str = 6, con = 2, attack = 13, accuracy = 4, critChance = 0.06),
@@ -656,7 +656,7 @@ internal class SoloClearLabHarness(
                     slot = EquipSlot.WEAPON,
                     glyph = ')',
                     colorHex = "#4B6DFF",
-                    quality = ItemQuality.RARE,
+                    quality = RarityTier.RARE,
                     materialId = "MITHRIL",
                     materialName = "Mithril",
                     stats = StatModifier(wil = 4, attack = 9, accuracy = 6, talentPower = 0.18),
@@ -670,7 +670,7 @@ internal class SoloClearLabHarness(
                     slot = EquipSlot.WEAPON,
                     glyph = ')',
                     colorHex = "#4B6DFF",
-                    quality = ItemQuality.RARE,
+                    quality = RarityTier.RARE,
                     materialId = "MITHRIL",
                     materialName = "Mithril",
                     stats = StatModifier(wil = 5, attack = 10, accuracy = 5, talentPower = 0.20),
@@ -684,7 +684,7 @@ internal class SoloClearLabHarness(
                     slot = EquipSlot.WEAPON,
                     glyph = ')',
                     colorHex = "#4B6DFF",
-                    quality = ItemQuality.RARE,
+                    quality = RarityTier.RARE,
                     materialId = "MITHRIL",
                     materialName = "Mithril",
                     stats = StatModifier(str = 2, dex = 3, attack = 10, accuracy = 5, speed = 8, critChance = 0.08),
@@ -698,7 +698,7 @@ internal class SoloClearLabHarness(
                     slot = EquipSlot.WEAPON,
                     glyph = ')',
                     colorHex = "#4B6DFF",
-                    quality = ItemQuality.RARE,
+                    quality = RarityTier.RARE,
                     materialId = "MITHRIL",
                     materialName = "Mithril",
                     stats = StatModifier(str = 3, wil = 1, attack = 11, accuracy = 4),
@@ -717,7 +717,7 @@ internal class SoloClearLabHarness(
             slot = EquipSlot.ARMOR,
             glyph = '[',
             colorHex = "#4B6DFF",
-            quality = ItemQuality.RARE,
+            quality = RarityTier.RARE,
             stats =
                 when (professionId) {
                     "berserker" -> StatModifier(defense = 16, maxHp = 88, con = 4, str = 2)
@@ -739,7 +739,7 @@ internal class SoloClearLabHarness(
                     slot = EquipSlot.OFF_HAND,
                     glyph = ']',
                     colorHex = "#4B6DFF",
-                    quality = ItemQuality.RARE,
+                    quality = RarityTier.RARE,
                     stats = StatModifier(defense = 2, evasion = 2, maxHp = 18, wil = 1),
                 )
 
@@ -751,7 +751,7 @@ internal class SoloClearLabHarness(
                     slot = EquipSlot.OFF_HAND,
                     glyph = ']',
                     colorHex = "#4B6DFF",
-                    quality = ItemQuality.RARE,
+                    quality = RarityTier.RARE,
                     stats = StatModifier(defense = 2, evasion = 2, maxHp = 18, wil = 1),
                 )
 
@@ -763,7 +763,7 @@ internal class SoloClearLabHarness(
                     slot = EquipSlot.OFF_HAND,
                     glyph = ']',
                     colorHex = "#4B6DFF",
-                    quality = ItemQuality.RARE,
+                    quality = RarityTier.RARE,
                     stats = StatModifier(defense = 3, maxHp = 22, wil = 1),
                 )
 
@@ -777,7 +777,7 @@ internal class SoloClearLabHarness(
             type = ItemType.CONSUMABLE,
             glyph = '!',
             colorHex = "#FF0000",
-            quality = ItemQuality.MAGIC,
+            quality = RarityTier.MAGIC,
             effect = ConsumableEffect.HEAL,
             magnitude = 45,
         )

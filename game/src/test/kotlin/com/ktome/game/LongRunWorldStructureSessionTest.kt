@@ -9,7 +9,7 @@ import com.ktome.core.economy.ShopServiceType
 import com.ktome.core.item.EquipSlot
 import com.ktome.core.item.Inventory
 import com.ktome.core.item.ItemInstance
-import com.ktome.core.item.ItemQuality
+import com.ktome.core.loot.RarityTier
 import com.ktome.core.item.MilestoneRewardSource
 import com.ktome.core.save.SaveManager
 import com.ktome.core.talent.EffectTracker
@@ -138,7 +138,7 @@ class LongRunWorldStructureSessionTest {
             firstClearSession.milestoneRewardSummaries().firstOrNull { reward ->
                 reward.rewardSource == MilestoneRewardSource.ROUTE &&
                     reward.sourceId == "route.greenwood_fringe.deep_iron_pit" &&
-                    reward.qualityTier.ordinal >= ItemQuality.MAGIC.ordinal &&
+                    reward.qualityTier.ordinal >= RarityTier.MAGIC.ordinal &&
                     reward.affixIds.isNotEmpty()
             },
         )
@@ -712,7 +712,7 @@ class LongRunWorldStructureSessionTest {
                 session.milestoneRewardSummaries().firstOrNull { reward ->
                     reward.rewardSource == MilestoneRewardSource.ROUTE &&
                         reward.sourceId == "route.shattered_outpost.greenwood_fringe" &&
-                        reward.qualityTier.ordinal >= ItemQuality.MAGIC.ordinal &&
+                        reward.qualityTier.ordinal >= RarityTier.MAGIC.ordinal &&
                         reward.affixIds.isNotEmpty()
                 },
             )

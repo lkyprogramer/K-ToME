@@ -45,6 +45,7 @@ import com.ktome.game.mapgen.SchemaMapgenContentCatalogFactory
 import com.ktome.game.mapgen.SchemaZoneMapgenProfileResolver
 import com.ktome.game.mapgen.SchemaZoneRewardProfileResolver
 import com.ktome.core.mapgen.BspBackedMapgenPipeline
+import com.ktome.core.mapgen.ZoneRewardProfile
 import com.ktome.game.model.BossDefinition
 import com.ktome.game.model.MonsterTemplate
 import com.ktome.game.telegraph.TelegraphRegistry
@@ -228,6 +229,7 @@ object GameModule {
             shardBalance = restored.shardBalance,
             shopStates = restored.shopStates.associateByTo(linkedMapOf(), ShopInventoryState::shopId),
             cadenceRewardCount = restored.cadenceRewardCount,
+            restoredPityTracker = restored.pityTracker,
             restoredMilestoneRewardSummaries = restored.milestoneRewards,
             combatRandomSource =
                 restored.combatRandomState?.let(SplitMix64RandomSource::fromState)
@@ -457,7 +459,10 @@ object GameModule {
                 affixContext = affixBuildContext,
                 world = world,
                 map = map,
+                zone = zone,
+                zoneRewardProfile = content.zoneRewardProfileResolver.resolve(zone.id),
                 floor = floor,
+                seed = config.seed,
                 occupiedPoints = occupiedPoints,
             )
         }
@@ -737,13 +742,32 @@ object GameModule {
         affixContext: AffixSelectionContext,
         world: World,
         map: com.ktome.core.map.GameMap,
+        zone: ZoneSchemaV2,
+        zoneRewardProfile: ZoneRewardProfile,
         floor: Int,
+        seed: Long,
         occupiedPoints: MutableSet<Point>,
     ) {
         val itemRooms = map.rooms.drop(1).take(4)
         itemRooms.forEach { room ->
             val spawnPoint = findSpawnPoints(room, map, occupiedPoints).first()
-            itemFactory.createGroundItem(world, itemGenerator.generate(floor, affixContext), spawnPoint)
+            itemFactory.createGroundItem(
+                world,
+                itemGenerator.generate(
+                    context =
+                        com.ktome.core.loot.LootRollContext(
+                            sourceLevel = zone.recommendedLevel.max,
+                            sourceTier = com.ktome.core.loot.SourceTier.NORMAL,
+                            zoneId = zone.id,
+                            playerLevel = zone.recommendedLevel.max,
+                            magicFindBonus = 0.0f,
+                            seed = floorSeed(seed, floor, 0x91F3 + room.center.x + room.center.y),
+                        ),
+                    zoneRewardProfile = zoneRewardProfile,
+                    affixContext = affixContext,
+                ),
+                spawnPoint,
+            )
             occupiedPoints += spawnPoint
         }
     }

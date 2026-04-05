@@ -82,6 +82,9 @@ import com.ktome.core.inscription.InscriptionEffect
 import com.ktome.core.inscription.InscriptionLoadout
 import com.ktome.core.inscription.InscriptionManager
 import com.ktome.core.item.AffixSelectionContext
+import com.ktome.core.item.AffixEquipType
+import com.ktome.core.item.AffixGenerator
+import com.ktome.core.item.AffixPool
 import com.ktome.core.item.AffixType
 import com.ktome.core.item.EquipSlot
 import com.ktome.core.item.Equipment
@@ -95,13 +98,15 @@ import com.ktome.core.item.InventoryManager
 import com.ktome.core.item.InventoryOperationCode
 import com.ktome.core.item.InventoryOperationResult
 import com.ktome.core.item.ItemInstance
-import com.ktome.core.item.ItemQuality
 import com.ktome.core.item.ItemType
 import com.ktome.core.item.MaterialDef
 import com.ktome.core.item.MilestoneRewardSource
 import com.ktome.core.item.PassiveDamageAdjustment
 import com.ktome.core.item.PassiveEffectResolver
 import com.ktome.core.item.StatModifier
+import com.ktome.core.item.defaultAffixCount
+import com.ktome.core.loot.PityTracker
+import com.ktome.core.loot.RarityTier
 import com.ktome.core.map.GameMap
 import com.ktome.core.map.Point
 import com.ktome.core.movement.MovementRules
@@ -279,6 +284,7 @@ class FoundationGameSession internal constructor(
     private var shardBalance: Int = 0,
     private var shopStates: MutableMap<String, ShopInventoryState> = linkedMapOf(),
     private var cadenceRewardCount: Int = 0,
+    restoredPityTracker: PityTracker = PityTracker(),
     restoredMilestoneRewardSummaries: List<MilestoneRewardSummary> = emptyList(),
     private val inventoryManager: InventoryManager = InventoryManager(),
     private val combatRandomSource: RandomSource = defaultCombatRandomSource(config, turnCount),
@@ -337,8 +343,9 @@ class FoundationGameSession internal constructor(
     private data class RewardGenerationContext(
         val rewardSource: MilestoneRewardSource,
         val sourceId: String,
+        val sourceLevel: Int,
         val floor: Int,
-        val qualityFloor: ItemQuality,
+        val qualityFloor: RarityTier,
         val minAffixCount: Int,
         val routeBiasTags: Set<String> = emptySet(),
         val reservedSlots: Set<EquipSlot> = emptySet(),
@@ -372,6 +379,7 @@ class FoundationGameSession internal constructor(
     private val pendingActions = ArrayDeque<EntityId>()
     private var activeTurnActor: EntityId? = null
     private var runOutcome: RunOutcome = RunOutcome.InProgress
+    private var pityTracker: PityTracker = restoredPityTracker
     private var dungeonManager: DungeonManager<FloorRuntimeState> = dungeonManager
     private var activeFloorState: FloorRuntimeState = dungeonManager.currentState().payload
     private var world: World = SessionSnapshotMapper.restoreWorld(content, playerSnapshot, activeFloorState)
@@ -3027,6 +3035,43 @@ class FoundationGameSession internal constructor(
     private fun lootProfile(profileId: String) =
         content.schemaCatalog.lootProfiles.firstOrNull { profile -> profile.id == profileId }
 
+    private fun currentZoneRewardProfile() = content.zoneRewardProfileResolver.resolve(currentZoneSchema().id)
+
+    private fun currentMagicFindBonus(): Float = 0.0f
+
+    private fun currentFloorRewardBudget(): com.ktome.core.loot.FloorRewardBudget =
+        com.ktome.core.loot.FloorRewardBudget(
+            zoneId = currentZoneSchema().id,
+            floorIndex = currentFloor(),
+            baseBudget = currentZoneRewardProfile().baseRewardBudget,
+        )
+
+    private fun rewardSourceTier(source: MilestoneRewardSource): com.ktome.core.loot.SourceTier =
+        when (source) {
+            MilestoneRewardSource.ROUTE,
+            MilestoneRewardSource.CACHE,
+            MilestoneRewardSource.SUPPORT,
+            -> com.ktome.core.loot.SourceTier.CHEST
+            MilestoneRewardSource.BOSS -> com.ktome.core.loot.SourceTier.BOSS
+        }
+
+    private fun monsterSourceTier(template: MonsterTemplate): com.ktome.core.loot.SourceTier =
+        when {
+            "boss" in template.tags || template.lootProfileId.endsWith(".boss") -> com.ktome.core.loot.SourceTier.BOSS
+            "elite" in template.tags || template.lootProfileId.endsWith(".elite") -> com.ktome.core.loot.SourceTier.ELITE
+            else -> com.ktome.core.loot.SourceTier.NORMAL
+        }
+
+    private fun rewardLootRollContext(rewardContext: RewardGenerationContext): com.ktome.core.loot.LootRollContext =
+        com.ktome.core.loot.LootRollContext(
+            sourceLevel = rewardContext.sourceLevel,
+            sourceTier = rewardSourceTier(rewardContext.rewardSource),
+            zoneId = currentZoneSchema().id,
+            playerLevel = playerStatus().level,
+            magicFindBonus = currentMagicFindBonus(),
+            seed = (sessionRandom as? StatefulRandomSource)?.snapshotState() ?: config.seed,
+        )
+
     private fun resolvePlayerResourceView(): PlayerResourceView {
         val schema = currentProfessionSchema()
         val primaryResourceType =
@@ -3186,11 +3231,16 @@ class FoundationGameSession internal constructor(
                 ?: requireNotNull(itemBaseDef(effectiveFallbackBaseId)) {
                     "Missing fallback milestone reward item '$effectiveFallbackBaseId'."
                 }
-        return ItemGenerator(content.itemBundle, randomSource).generate(
-            base = base,
-            floor = rewardContext.floor,
-            affixContext = milestoneAffixContext(rewardContext),
-        )
+        val generated =
+            ItemGenerator(content.itemBundle, randomSource).rollAndGenerate(
+                context = rewardLootRollContext(rewardContext),
+                zoneRewardProfile = currentZoneRewardProfile(),
+                affixContext = milestoneAffixContext(rewardContext),
+                pityTracker = pityTracker,
+                base = base,
+            )
+        pityTracker = generated.rollResult.resultingPityTracker
+        return generated.item
     }
 
     private fun currentOwnedItemBaseIds(): Set<String> {
@@ -3270,7 +3320,11 @@ class FoundationGameSession internal constructor(
     ): Boolean {
         val base = itemBaseDef(baseItemId) ?: return false
         val slot = base.slot ?: return false
+        val effectiveFloorBand = previewRewardLegacyFloorBand(rewardContext)
         if (base.type == ItemType.CONSUMABLE || base.id in DETERMINISTIC_RESCUE_UTILITY_BASE_IDS) {
+            return false
+        }
+        if (effectiveFloorBand !in base.dropFloors) {
             return false
         }
         if (!isRewardSuitableForCurrentProfession(baseItemId)) {
@@ -3279,15 +3333,51 @@ class FoundationGameSession internal constructor(
         val hasUsableMaterial =
             base.allowedMaterials.isEmpty() ||
                 content.itemBundle.materials.any { material ->
-                    material.id in base.allowedMaterials && rewardContext.floor >= material.minFloor
+                    material.id in base.allowedMaterials && effectiveFloorBand >= material.minFloor
                 }
         if (!hasUsableMaterial) {
+            return false
+        }
+        if (!canMilestoneRewardBaseSatisfyAffixes(base, rewardContext, effectiveFloorBand)) {
             return false
         }
         if (slot in rewardContext.reservedSlots) {
             return false
         }
         return slot !in rewardContext.occupiedSlots || slot == rewardContext.replacementSlot
+    }
+
+    private fun canMilestoneRewardBaseSatisfyAffixes(
+        base: ItemBaseDef,
+        rewardContext: RewardGenerationContext,
+        effectiveFloorBand: Int,
+    ): Boolean {
+        val equipType =
+            when (base.type) {
+                ItemType.WEAPON -> AffixEquipType.WEAPON
+                ItemType.ARMOR -> AffixEquipType.ARMOR
+                ItemType.CONSUMABLE -> return true
+            }
+        val requiredAffixCount =
+            maxOf(
+                rewardContext.qualityFloor.defaultAffixCount(),
+                rewardContext.minAffixCount,
+            )
+        if (requiredAffixCount <= 0) {
+            return true
+        }
+        val baseAffixContext = milestoneAffixContext(rewardContext)
+        val affixContext =
+            baseAffixContext.copy(
+                itemTags = baseAffixContext.itemTags + base.tags,
+                minAffixCount = requiredAffixCount,
+            )
+        return AffixGenerator(AffixPool(content.itemBundle.affixes), sessionRandom).canGenerate(
+            floor = effectiveFloorBand,
+            count = requiredAffixCount,
+            equipType = equipType,
+            context = affixContext,
+        )
     }
 
     private fun milestoneRewardBaseScore(
@@ -3398,7 +3488,7 @@ class FoundationGameSession internal constructor(
         }
 
     private fun rewardCountsAsMeaningful(reward: ItemInstance): Boolean =
-        reward.slot != null || reward.quality.ordinal >= ItemQuality.MAGIC.ordinal
+        reward.slot != null || reward.quality.ordinal >= RarityTier.MAGIC.ordinal
 
     private fun rewardItemNameKey(
         reward: ItemInstance,
@@ -3530,8 +3620,9 @@ class FoundationGameSession internal constructor(
                 RewardGenerationContext(
                     rewardSource = MilestoneRewardSource.BOSS,
                     sourceId = activeBossEncounterSchema()?.id ?: currentZoneSchema().id,
+                    sourceLevel = currentZoneSchema().recommendedLevel.max,
                     floor = itemFloorForRecommendedLevel(currentZoneSchema().recommendedLevel.max),
-                    qualityFloor = ItemQuality.RARE,
+                    qualityFloor = RarityTier.RARE,
                     minAffixCount =
                         if (activeBossEncounterSchema()?.tags?.contains("finale") == true) {
                             3
@@ -3545,8 +3636,9 @@ class FoundationGameSession internal constructor(
                 RewardGenerationContext(
                     rewardSource = MilestoneRewardSource.BOSS,
                     sourceId = activeBossEncounterSchema()?.id ?: currentZoneSchema().id,
+                    sourceLevel = currentZoneSchema().recommendedLevel.max,
                     floor = itemFloorForRecommendedLevel(currentZoneSchema().recommendedLevel.max),
-                    qualityFloor = ItemQuality.RARE,
+                    qualityFloor = RarityTier.RARE,
                     minAffixCount =
                         if (activeBossEncounterSchema()?.tags?.contains("finale") == true) {
                             3
@@ -3574,8 +3666,9 @@ class FoundationGameSession internal constructor(
                         RewardGenerationContext(
                             rewardSource = MilestoneRewardSource.ROUTE,
                             sourceId = reward.routeId,
+                            sourceLevel = levelBandMaxLevel(reward.levelBandRef),
                             floor = itemFloorForLevelBand(reward.levelBandRef),
-                            qualityFloor = ItemQuality.MAGIC,
+                            qualityFloor = RarityTier.MAGIC,
                             minAffixCount = 1,
                             routeBiasTags = routeRewardBiasTags(reward.rescueTags),
                             reservedSlots = reservedSlots,
@@ -3586,8 +3679,9 @@ class FoundationGameSession internal constructor(
                 RewardGenerationContext(
                     rewardSource = MilestoneRewardSource.ROUTE,
                     sourceId = reward.routeId,
+                    sourceLevel = levelBandMaxLevel(reward.levelBandRef),
                     floor = itemFloorForLevelBand(reward.levelBandRef),
-                    qualityFloor = ItemQuality.MAGIC,
+                    qualityFloor = RarityTier.MAGIC,
                     minAffixCount = 1,
                     routeBiasTags = routeRewardBiasTags(reward.rescueTags),
                     reservedSlots = reservedSlots,
@@ -3642,9 +3736,22 @@ class FoundationGameSession internal constructor(
     }
 
     private fun itemFloorForLevelBand(levelBandRef: String): Int {
+        return itemFloorForRecommendedLevel(levelBandMaxLevel(levelBandRef))
+    }
+
+    private fun levelBandMaxLevel(levelBandRef: String): Int {
         val normalized = levelBandRef.removePrefix("lv")
-        val maxLevel = normalized.substringAfter('_', normalized).toIntOrNull() ?: 1
-        return itemFloorForRecommendedLevel(maxLevel)
+        return normalized.substringAfter('_', normalized).toIntOrNull() ?: 1
+    }
+
+    private fun previewRewardLegacyFloorBand(rewardContext: RewardGenerationContext): Int {
+        val previewItemLevel =
+            (rewardContext.sourceLevel + rewardSourceTier(rewardContext.rewardSource).itemLevelBonus)
+                .coerceIn(1, playerStatus().level + 3)
+        val previewQualityLevel =
+            (previewItemLevel + rewardContext.qualityFloor.qualityBonus + currentZoneRewardProfile().qualityBonus)
+                .coerceIn(previewItemLevel, previewItemLevel + 6)
+        return ((previewQualityLevel - 1) / 3 + 1).coerceIn(1, 5)
     }
 
     private fun itemFloorForRecommendedLevel(maxLevel: Int): Int =
@@ -3907,8 +4014,9 @@ class FoundationGameSession internal constructor(
                     RewardGenerationContext(
                         rewardSource = MilestoneRewardSource.CACHE,
                         sourceId = sourceId,
+                        sourceLevel = currentZoneSchema().recommendedLevel.max,
                         floor = itemFloorForRecommendedLevel(currentZoneSchema().recommendedLevel.max),
-                        qualityFloor = ItemQuality.MAGIC,
+                        qualityFloor = RarityTier.MAGIC,
                         minAffixCount = 1,
                         routeBiasTags = routeRewardBiasTags(currentZoneSchema().rewardBiasTags()),
                         occupiedSlots = currentEquippedSlots(),
@@ -3949,8 +4057,9 @@ class FoundationGameSession internal constructor(
                     RewardGenerationContext(
                         rewardSource = MilestoneRewardSource.SUPPORT,
                         sourceId = sourceId,
+                        sourceLevel = currentZoneSchema().recommendedLevel.max,
                         floor = itemFloorForRecommendedLevel(currentZoneSchema().recommendedLevel.max),
-                        qualityFloor = ItemQuality.MAGIC,
+                        qualityFloor = RarityTier.MAGIC,
                         minAffixCount = 1,
                         routeBiasTags = routeRewardBiasTags(currentZoneSchema().rewardBiasTags()),
                         occupiedSlots = currentEquippedSlots(),
@@ -3997,8 +4106,9 @@ class FoundationGameSession internal constructor(
                 RewardGenerationContext(
                     rewardSource = MilestoneRewardSource.CACHE,
                     sourceId = "cadence.${config.zoneId}.floor${currentFloor()}",
+                    sourceLevel = currentZoneSchema().recommendedLevel.max,
                     floor = itemFloorForRecommendedLevel(currentZoneSchema().recommendedLevel.max),
-                    qualityFloor = ItemQuality.MAGIC,
+                    qualityFloor = RarityTier.MAGIC,
                     minAffixCount = 1,
                     routeBiasTags = routeRewardBiasTags(currentZoneSchema().rewardBiasTags()),
                     occupiedSlots = currentEquippedSlots(),
@@ -4017,8 +4127,9 @@ class FoundationGameSession internal constructor(
                 RewardGenerationContext(
                     rewardSource = MilestoneRewardSource.CACHE,
                     sourceId = "cadence.${config.zoneId}.floor${currentFloor()}",
+                    sourceLevel = currentZoneSchema().recommendedLevel.max,
                     floor = itemFloorForRecommendedLevel(currentZoneSchema().recommendedLevel.max),
-                    qualityFloor = ItemQuality.MAGIC,
+                    qualityFloor = RarityTier.MAGIC,
                     minAffixCount = 1,
                     routeBiasTags = routeRewardBiasTags(currentZoneSchema().rewardBiasTags()),
                     occupiedSlots = currentEquippedSlots(),
@@ -5085,9 +5196,9 @@ class FoundationGameSession internal constructor(
             }
         val qualityPrice =
             when (item.quality) {
-                ItemQuality.COMMON -> 0
-                ItemQuality.MAGIC -> 14
-                ItemQuality.RARE -> 30
+                RarityTier.NORMAL -> 0
+                RarityTier.MAGIC -> 14
+                RarityTier.RARE -> 30
             }
         val affixPrice = item.affixes.sumOf { affix -> affix.tier * 8 }
         val magnitudePrice = (item.magnitude / 4).coerceAtLeast(0)
@@ -6372,6 +6483,7 @@ class FoundationGameSession internal constructor(
                 shardBalance = shardBalance,
                 shopStates = shopStates(),
                 cadenceRewardCount = cadenceRewardCount,
+                pityTracker = pityTracker,
                 combatRandomState = (combatRandomSource as? StatefulRandomSource)?.snapshotState(),
                 sessionRandomState = (sessionRandom as? StatefulRandomSource)?.snapshotState(),
                 milestoneRewards = persistedMilestoneRewardSummaries(),
@@ -7609,11 +7721,11 @@ class FoundationGameSession internal constructor(
             valueToken = valueToken,
         )
 
-    private fun qualityLabelKey(quality: ItemQuality): String =
+    private fun qualityLabelKey(quality: RarityTier): String =
         when (quality) {
-            ItemQuality.COMMON -> "item.quality.common"
-            ItemQuality.MAGIC -> "item.quality.magic"
-            ItemQuality.RARE -> "item.quality.rare"
+            RarityTier.NORMAL -> "item.quality.normal"
+            RarityTier.MAGIC -> "item.quality.magic"
+            RarityTier.RARE -> "item.quality.rare"
         }
 
     private fun runOutcomeReasonKey(outcome: RunOutcome): String =
@@ -8051,7 +8163,7 @@ class FoundationGameSession internal constructor(
         key: String,
         itemBaseId: String?,
         itemName: String?,
-        itemQuality: ItemQuality?,
+        itemQuality: RarityTier?,
         itemMaterialId: String?,
         itemAffixIds: List<String>,
     ): RenderLogEventSnapshot =
@@ -8101,7 +8213,7 @@ class FoundationGameSession internal constructor(
         name: String,
         itemBaseId: String?,
         fallbackName: String?,
-        itemQuality: ItemQuality?,
+        itemQuality: RarityTier?,
         itemMaterialId: String?,
         itemAffixIds: List<String>,
         includeQuality: Boolean = true,
@@ -8129,7 +8241,7 @@ class FoundationGameSession internal constructor(
 
     private fun itemDisplayToken(
         itemBaseId: String?,
-        itemQuality: ItemQuality?,
+        itemQuality: RarityTier?,
         itemMaterialId: String?,
         itemAffixIds: List<String>,
         includeQuality: Boolean,
@@ -8155,11 +8267,11 @@ class FoundationGameSession internal constructor(
 
     private fun itemDisplayQualityArg(
         name: String,
-        itemQuality: ItemQuality?,
+        itemQuality: RarityTier?,
         includeQuality: Boolean,
     ): RenderTextArgumentSnapshot =
         itemQuality
-            ?.takeIf { includeQuality && it != ItemQuality.COMMON }
+            ?.takeIf { includeQuality && it != RarityTier.NORMAL }
             ?.let(::qualityLabelKey)
             ?.let { qualityNameKey ->
                 tokenArg(
@@ -8215,23 +8327,37 @@ class FoundationGameSession internal constructor(
 
     private fun lootItemForMonsterDeath(target: EntityId): ItemInstance? {
         val templateId = world.get<MonsterTemplateId>(target)?.value ?: return null
-        val profileId =
+        val template =
             content.allMonsterTemplates()
-                .firstOrNull { template -> template.id == templateId }
-                ?.lootProfileId
-                ?.takeIf(String::isNotBlank)
+                .firstOrNull { candidate -> candidate.id == templateId }
                 ?: return null
+        val profileId = template.lootProfileId.takeIf(String::isNotBlank) ?: return null
         val profile = lootProfile(profileId) ?: return null
         val candidateItems = profile.itemIds.mapNotNull(::itemBaseDef)
         if (candidateItems.isEmpty()) {
             return null
         }
         val floorCandidates = candidateItems.filter { item -> currentFloor() in item.dropFloors }.ifEmpty { candidateItems }
-        return ItemGenerator(content.itemBundle, sessionRandom).generate(
-            base = chooseWeightedLootItem(floorCandidates),
-            floor = currentFloor(),
-            affixContext = currentAffixBuildContext(),
-        )
+        val generated =
+            ItemGenerator(content.itemBundle, sessionRandom).rollAndGenerate(
+                context =
+                    com.ktome.core.loot.LootRollContext(
+                        sourceLevel = currentZoneSchema().recommendedLevel.max,
+                        sourceTier = monsterSourceTier(template),
+                        zoneId = currentZoneSchema().id,
+                        playerLevel = playerStatus().level,
+                        magicFindBonus = currentMagicFindBonus(),
+                        seed = (sessionRandom as? StatefulRandomSource)?.snapshotState() ?: config.seed,
+                    ),
+                zoneRewardProfile = currentZoneRewardProfile(),
+                affixContext = currentAffixBuildContext(),
+                pityTracker = pityTracker,
+                base = chooseWeightedLootItem(floorCandidates),
+            )
+        if (generated.item.type != ItemType.CONSUMABLE) {
+            pityTracker = generated.rollResult.resultingPityTracker
+        }
+        return generated.item
     }
 
     private fun currentAffixBuildContext(): AffixSelectionContext {

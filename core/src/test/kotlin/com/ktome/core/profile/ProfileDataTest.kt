@@ -1,6 +1,6 @@
 package com.ktome.core.profile
 
-import com.ktome.core.item.ItemQuality
+import com.ktome.core.loot.RarityTier
 import com.ktome.core.item.MilestoneRewardSource
 import com.ktome.core.item.EquipSlot
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -40,7 +40,7 @@ class ProfileDataTest {
                                         zoneId = "greenwood_fringe",
                                         baseItemId = "forgebreaker_pick",
                                         equipSlot = EquipSlot.WEAPON,
-                                        qualityTier = ItemQuality.MAGIC,
+                                        qualityTier = RarityTier.MAGIC,
                                         buildHashAtGrant = "grant-build",
                                         affixIds = listOf("flaming"),
                                         equippedBaseItemIdBeforeReward = "arcane_staff",

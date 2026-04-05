@@ -2,6 +2,7 @@ package com.ktome.core.item
 
 import com.ktome.core.combat.DamageType
 import com.ktome.core.ecs.EntityId
+import com.ktome.core.loot.RarityTier
 
 enum class EquipSlot {
     WEAPON,
@@ -23,12 +24,6 @@ enum class AffixType {
 enum class AffixEquipType {
     WEAPON,
     ARMOR,
-}
-
-enum class ItemQuality(val affixCount: Int) {
-    COMMON(0),
-    MAGIC(1),
-    RARE(2),
 }
 
 enum class ConsumableEffect {
@@ -159,7 +154,7 @@ data class ItemInstance(
     val slot: EquipSlot? = null,
     val glyph: Char,
     val colorHex: String,
-    val quality: ItemQuality = ItemQuality.COMMON,
+    val quality: RarityTier = RarityTier.NORMAL,
     val materialId: String? = null,
     val materialName: String? = null,
     val affixes: List<AffixDef> = emptyList(),
@@ -169,6 +164,13 @@ data class ItemInstance(
     val magnitude: Int = 0,
     val passive: EquipmentPassive? = null,
 )
+
+fun RarityTier.defaultAffixCount(): Int =
+    when (this) {
+        RarityTier.NORMAL -> 0
+        RarityTier.MAGIC -> 1
+        RarityTier.RARE -> 2
+    }
 
 data class Inventory(
     val capacity: Int = 12,

@@ -1,7 +1,7 @@
 package com.ktome.core.save
 
 import com.ktome.core.item.EquipSlot
-import com.ktome.core.item.ItemQuality
+import com.ktome.core.loot.RarityTier
 import com.ktome.core.item.MilestoneRewardSource
 import com.ktome.core.profile.MilestoneRewardSummary
 import com.ktome.core.resource.ResourcePoolSnapshot
@@ -125,7 +125,7 @@ internal object SaveFixtures {
                         zoneId = "greenwood_fringe",
                         baseItemId = "forgebreaker_pick",
                         equipSlot = EquipSlot.WEAPON,
-                        qualityTier = ItemQuality.MAGIC,
+                        qualityTier = RarityTier.MAGIC,
                         buildHashAtGrant = "vanguard#human#grant",
                         affixIds = listOf("sharp"),
                         equippedBaseItemIdBeforeReward = "short_sword",

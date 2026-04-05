@@ -127,6 +127,7 @@ class SaveCodec(
                 "schemaVersion",
                 "saveContractVersion",
                 "buildMetadata",
+                "phase4RunState",
                 "timestampEpochMillis",
                 "worldSeed",
                 "currentZoneId",

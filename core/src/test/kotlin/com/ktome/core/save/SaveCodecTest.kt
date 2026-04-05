@@ -1,5 +1,11 @@
 package com.ktome.core.save
 
+import com.ktome.core.loot.PityTracker
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.jsonObject
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -14,10 +20,37 @@ class SaveCodecTest {
 
         assertTrue(encoded.contains("\"saveContractVersion\""))
         assertTrue(encoded.contains("\"schemaVersion\""))
+        assertTrue(encoded.contains("\"phase4RunState\""))
         assertFalse(encoded.contains("glyph"))
         assertFalse(encoded.contains("colorHex"))
         assertFalse(encoded.contains("\"messageLog\""))
         assertFalse(encoded.contains("\"name\""))
+    }
+
+    @Test
+    fun `save codec round trip preserves phase4 run state`() {
+        val snapshot =
+            SaveFixtures.resourceHeavyScene().copy(
+                phase4RunState =
+                    Phase4RunStateSnapshot(
+                        pityTracker = PityTracker(rollsSinceLastRare = 6, eligibleSpecialRollsSinceLastUnique = 14),
+                    ),
+            )
+
+        val restored = codec.decode(codec.encode(snapshot))
+
+        assertEquals(snapshot.phase4RunState, restored.phase4RunState)
+    }
+
+    @Test
+    fun `decode rejects save payloads missing phase4 run state`() {
+        val json = Json { prettyPrint = true }
+        val root = json.parseToJsonElement(codec.encode(SaveFixtures.emptyScene())).jsonObject
+        val corrupted = JsonObject(root.filterKeys { key -> key != "phase4RunState" })
+
+        assertThrows(InvalidSaveException::class.java) {
+            codec.decode(json.encodeToString(JsonObject.serializer(), corrupted))
+        }
     }
 
     @Test

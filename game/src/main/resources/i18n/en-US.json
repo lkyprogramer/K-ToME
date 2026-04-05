@@ -701,7 +701,7 @@
   "affix.of_speed.desc": "A suffix that grants speed.",
   "monster.tag.bandit": "Bandits",
   "monster.tag.undead": "Undead",
-  "item.quality.common": "Common",
+  "item.quality.normal": "Normal",
   "item.quality.magic": "Magic",
   "item.quality.rare": "Rare",
   "item.display.composed": "{quality}{prefix1}{prefix2}{material}{base}{suffix1}{suffix2}",

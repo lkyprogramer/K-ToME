@@ -44,7 +44,9 @@ import com.ktome.core.item.ConsumableEffect
 import com.ktome.core.item.EquipmentPassive
 import com.ktome.core.item.EquipSlot
 import com.ktome.core.item.ItemInstance
-import com.ktome.core.item.ItemQuality
+import com.ktome.core.loot.PityTracker
+import com.ktome.core.loot.RarityTier
+import com.ktome.core.loot.SourceTier
 import com.ktome.core.item.ItemType
 import com.ktome.core.item.MilestoneRewardSource
 import com.ktome.core.item.StatModifier
@@ -694,7 +696,7 @@ class FoundationGameSessionTest {
                         slot = EquipSlot.WEAPON,
                         glyph = ')',
                         colorHex = "#C0C0C0",
-                        quality = ItemQuality.MAGIC,
+                        quality = RarityTier.MAGIC,
                         affixes =
                             listOf(
                                 AffixDef(
@@ -747,7 +749,7 @@ class FoundationGameSessionTest {
                         slot = EquipSlot.WEAPON,
                         glyph = ')',
                         colorHex = "#C0C0C0",
-                        quality = ItemQuality.MAGIC,
+                        quality = RarityTier.MAGIC,
                         affixes =
                             listOf(
                                 AffixDef(
@@ -1097,7 +1099,7 @@ class FoundationGameSessionTest {
                     slot = EquipSlot.WEAPON,
                     glyph = ')',
                     colorHex = "#C0C0C0",
-                    quality = ItemQuality.RARE,
+                    quality = RarityTier.RARE,
                     materialId = "MITHRIL",
                     materialName = "Mithril",
                     affixes = listOf(AffixDef(id = "of_speed", name = "of Speed", type = AffixType.SUFFIX, statModifiers = StatModifier(speed = 15))),
@@ -1148,7 +1150,7 @@ class FoundationGameSessionTest {
                         slot = EquipSlot.OFF_HAND,
                         glyph = ']',
                         colorHex = "#4F8F6B",
-                        quality = ItemQuality.COMMON,
+                        quality = RarityTier.NORMAL,
                         stats = StatModifier(wil = 1),
                         passive = EquipmentPassive.HpRegenPerTurn(amount = 2),
                     ),
@@ -1360,7 +1362,7 @@ class FoundationGameSessionTest {
                 session.milestoneRewardSummaries().firstOrNull { reward ->
                     reward.rewardSource == MilestoneRewardSource.SUPPORT &&
                         reward.sourceId == gateRewardSourceId &&
-                        reward.qualityTier.ordinal >= ItemQuality.MAGIC.ordinal &&
+                        reward.qualityTier.ordinal >= RarityTier.MAGIC.ordinal &&
                         reward.affixIds.isNotEmpty()
                 },
             )
@@ -1443,7 +1445,7 @@ class FoundationGameSessionTest {
             session.milestoneRewardSummaries().any { reward ->
                 reward.rewardSource == MilestoneRewardSource.CACHE &&
                     reward.sourceId == cacheRewardSourceId &&
-                    reward.qualityTier.ordinal >= ItemQuality.MAGIC.ordinal &&
+                    reward.qualityTier.ordinal >= RarityTier.MAGIC.ordinal &&
                     reward.affixIds.isNotEmpty()
             },
         )
@@ -2449,14 +2451,134 @@ class FoundationGameSessionTest {
                 baseId in setOf("basic_shield", "mana_potion", "chain_mail", "apprentice_robe", "long_sword")
             },
         )
-        val droppedItems = groundItemsAt(session, deathPoint)
-        assertTrue(droppedItems.any { item -> item.quality != ItemQuality.COMMON })
+        val droppedItem = groundItemsAt(session, deathPoint).single()
         val dropLog = requireNotNull(logEventByKey(session, "log.loot.monster_drop_quality"))
         assertTrue(
             dropLog.message.arguments.any { argument ->
-                argument.name == "quality" && argument.valueKey in setOf("item.quality.magic", "item.quality.rare")
+                argument.name == "quality" && argument.valueKey == qualityLabelKey(droppedItem.quality)
             },
         )
+    }
+
+    @Test
+    fun `monster source tier treats boss tags and boss loot profiles as boss tier`() {
+        val session =
+            GameModule.newFoundationSession(
+                FoundationGameConfig(seed = 20260318L, zoneId = "shattered_outpost", playerProfessionId = "vanguard"),
+                SaveManager(tempDir.resolve("boss-source-tier-save")),
+            )
+
+        assertEquals(
+            SourceTier.BOSS,
+            invokeMonsterSourceTier(
+                session = session,
+                template =
+                    MonsterTemplate(
+                        id = "boss.profile.only",
+                        name = "Boss Profile Only",
+                        glyph = 'b',
+                        colorHex = "#AA5500",
+                        stats = com.ktome.core.ecs.Stats(str = 8, dex = 8, con = 8, wil = 8),
+                        baseHp = 20,
+                        baseAttack = 4,
+                        baseDefense = 2,
+                        speed = 90,
+                        ai = AIType.CHASE,
+                        expReward = 0,
+                        spawnFloors = listOf(1),
+                        spawnWeight = 1,
+                        lootProfileId = "loot.foundation.boss",
+                    ),
+            ),
+        )
+        assertEquals(
+            SourceTier.BOSS,
+            invokeMonsterSourceTier(
+                session = session,
+                template =
+                    MonsterTemplate(
+                        id = "boss.tag.only",
+                        name = "Boss Tag Only",
+                        glyph = 'b',
+                        colorHex = "#AA5500",
+                        stats = com.ktome.core.ecs.Stats(str = 8, dex = 8, con = 8, wil = 8),
+                        baseHp = 20,
+                        baseAttack = 4,
+                        baseDefense = 2,
+                        speed = 90,
+                        ai = AIType.CHASE,
+                        expReward = 0,
+                        spawnFloors = listOf(1),
+                        spawnWeight = 1,
+                        tags = listOf("monster", "boss"),
+                    ),
+            ),
+        )
+    }
+
+    @Test
+    fun `consumable-only monster drops do not advance pity tracker`() {
+        val saveManager = SaveManager(tempDir.resolve("consumable-only-pity-save"))
+        val session =
+            GameModule.newFoundationSession(
+                config = FoundationGameConfig(seed = 20260318L, zoneId = "shattered_outpost", playerProfessionId = "vanguard"),
+                saveManager = saveManager,
+            )
+        clearMonsters(session)
+        setSessionPityTracker(session, PityTracker(rollsSinceLastRare = 7, eligibleSpecialRollsSinceLastUnique = 11))
+
+        val customMonster =
+            MonsterTemplate(
+                id = "test.consumable_drop",
+                name = "Consumable Dropper",
+                glyph = 'c',
+                colorHex = "#33AA66",
+                stats = com.ktome.core.ecs.Stats(str = 4, dex = 4, con = 4, wil = 4),
+                baseHp = 8,
+                baseAttack = 2,
+                baseDefense = 0,
+                speed = 90,
+                ai = AIType.CHASE,
+                expReward = 0,
+                spawnFloors = listOf(1),
+                spawnWeight = 1,
+                lootProfileId = "loot.test.consumable_only",
+            )
+        val existingContent = sessionContent(session)
+        replaceContent(
+            session = session,
+            content =
+                existingContent.copy(
+                    monsterCatalog = existingContent.monsterCatalog + customMonster,
+                    schemaCatalog =
+                        existingContent.schemaCatalog.copy(
+                            lootProfiles =
+                                existingContent.schemaCatalog.lootProfiles +
+                                    com.ktome.game.data.schema.LootProfileSchemaV2(
+                                        id = "loot.test.consumable_only",
+                                        schemaVersion = 2,
+                                        tags = listOf("loot", "test", "consumable"),
+                                        itemIds = listOf("healing_potion"),
+                                    ),
+                        ),
+                ),
+        )
+
+        val world = runtimeWorld(session)
+        val monsterPoint = findOpenAdjacentPoint(session, session.playerPosition())
+        val monsterId = EntityFactory().createMonster(world = world, template = customMonster, position = monsterPoint)
+        world.remove<AIBehavior>(monsterId)
+        requireNotNull(world.get<Health>(monsterId)).current = 1
+        val attackOrigin = findOpenAdjacentPoint(session, monsterPoint)
+        movePlayerTo(session, attackOrigin)
+
+        assertTrue(session.perform(PlayerCommand.Move(monsterPoint - attackOrigin)))
+        assertEquals(listOf("healing_potion"), groundItemBaseIdsAt(session, monsterPoint))
+        assertTrue(session.perform(PlayerCommand.SaveGame))
+
+        val pityAfterDrop = requireNotNull(saveManager.load()).phase4RunState.pityTracker
+        assertEquals(7, pityAfterDrop.rollsSinceLastRare)
+        assertEquals(11, pityAfterDrop.eligibleSpecialRollsSinceLastUnique)
     }
 
     @Test
@@ -3494,6 +3616,7 @@ class FoundationGameSessionTest {
                     ),
                 saveManager = saveManager,
             )
+        setPlayerLevelToZoneRecommendedMax(session)
 
         repeat(1) {
             movePlayerTo(session, stairPoint(session, com.ktome.core.dungeon.StairDirection.DOWN))
@@ -3523,7 +3646,7 @@ class FoundationGameSessionTest {
                 session.milestoneRewardSummaries().firstOrNull { reward ->
                     reward.rewardSource == MilestoneRewardSource.BOSS &&
                         reward.sourceId == "dungeon_lord_encounter" &&
-                        reward.qualityTier == ItemQuality.RARE &&
+                        reward.qualityTier == RarityTier.RARE &&
                         reward.affixIds.size >= 2
                 },
             )
@@ -3535,6 +3658,7 @@ class FoundationGameSessionTest {
                 snapshot.message.arguments.first { argument -> argument.name == "item" }.valueKey,
             )
         }
+        assertNull(logEventByKey(session, "log.loot.monster_drop_quality"))
         assertTrue(session.renderSnapshot().uiState.recentRewards.any { entry -> entry.source == RewardPresentationSourceSnapshot.BOSS })
     }
 
@@ -3575,7 +3699,7 @@ class FoundationGameSessionTest {
                 session.milestoneRewardSummaries().firstOrNull { reward ->
                     reward.rewardSource == MilestoneRewardSource.ROUTE &&
                         reward.sourceId == "route.shattered_outpost.greenwood_fringe" &&
-                        reward.qualityTier.ordinal >= ItemQuality.MAGIC.ordinal &&
+                        reward.qualityTier.ordinal >= RarityTier.MAGIC.ordinal &&
                         reward.affixIds.isNotEmpty()
                 },
             )
@@ -3600,6 +3724,7 @@ class FoundationGameSessionTest {
                 config = FoundationGameConfig(seed = 20260328L, zoneId = "abyssal_heart", playerProfessionId = "rogue"),
                 saveManager = saveManager,
             )
+        setPlayerLevelToZoneRecommendedMax(session)
 
         val world = runtimeWorld(session)
         val bossId = requireNotNull(entityByTemplateId(session, "abyssal.guardian"))
@@ -3612,7 +3737,7 @@ class FoundationGameSessionTest {
             session.milestoneRewardSummaries().any { reward ->
                 reward.rewardSource == MilestoneRewardSource.BOSS &&
                     reward.sourceId == "abyssal_guardian_encounter" &&
-                    reward.qualityTier == ItemQuality.RARE &&
+                    reward.qualityTier == RarityTier.RARE &&
                     reward.affixIds.size >= 3
             },
         )
@@ -3623,6 +3748,7 @@ class FoundationGameSessionTest {
                 snapshot.message.arguments.first { argument -> argument.name == "item" }.valueKey,
             )
         }
+        assertNull(logEventByKey(session, "log.loot.monster_drop_quality"))
         assertTrue(session.renderSnapshot().uiState.recentRewards.any { entry -> entry.source == RewardPresentationSourceSnapshot.BOSS })
     }
 
@@ -3764,7 +3890,7 @@ class FoundationGameSessionTest {
                     slot = EquipSlot.WEAPON,
                     glyph = ')',
                     colorHex = "#E0E0E0",
-                    quality = ItemQuality.MAGIC,
+                    quality = RarityTier.MAGIC,
                     materialId = "MITHRIL",
                     materialName = "Mithril",
                     affixes = listOf(AffixDef(id = "of_speed", name = "of Speed", type = AffixType.SUFFIX, statModifiers = StatModifier(speed = 1))),
@@ -4268,6 +4394,15 @@ class FoundationGameSessionTest {
         field.set(session, content)
     }
 
+    private fun setSessionPityTracker(
+        session: FoundationGameSession,
+        pityTracker: PityTracker,
+    ) {
+        val field = FoundationGameSession::class.java.getDeclaredField("pityTracker")
+        field.isAccessible = true
+        field.set(session, pityTracker)
+    }
+
     private fun invokeHandleDeath(
         session: FoundationGameSession,
         target: EntityId,
@@ -4278,6 +4413,17 @@ class FoundationGameSessionTest {
                 .first { declared -> declared.name.startsWith("handleDeath-") && declared.parameterCount == 2 }
         method.isAccessible = true
         method.invoke(session, target.value, killer)
+    }
+
+    private fun invokeMonsterSourceTier(
+        session: FoundationGameSession,
+        template: MonsterTemplate,
+    ): SourceTier {
+        val method =
+            FoundationGameSession::class.java.declaredMethods
+                .first { declared -> declared.name == "monsterSourceTier" && declared.parameterCount == 1 }
+        method.isAccessible = true
+        return method.invoke(session, template) as SourceTier
     }
 
     private fun forcePlayerInCombat(session: FoundationGameSession) {
@@ -4575,6 +4721,21 @@ class FoundationGameSessionTest {
         return dummyId
     }
 
+    private fun setPlayerLevelToZoneRecommendedMax(session: FoundationGameSession) {
+        val targetLevel =
+            dataLoader.loadSchemaCatalog().zones
+                .first { zone -> zone.id == session.config.zoneId }
+                .recommendedLevel.max
+        requireNotNull(runtimeWorld(session).get<Experience>(session.playerId)).level = targetLevel
+    }
+
+    private fun qualityLabelKey(quality: RarityTier): String =
+        when (quality) {
+            RarityTier.NORMAL -> "item.quality.normal"
+            RarityTier.MAGIC -> "item.quality.magic"
+            RarityTier.RARE -> "item.quality.rare"
+        }
+
     private fun monsterHp(
         session: FoundationGameSession,
         entityId: com.ktome.core.ecs.EntityId,
@@ -4760,7 +4921,7 @@ class FoundationGameSessionTest {
             slot = base.slot,
             glyph = base.glyph,
             colorHex = base.colorHex,
-            quality = ItemQuality.COMMON,
+            quality = RarityTier.NORMAL,
             stats = base.baseStats.copy(),
             effect = base.effect,
             resourceTypeId = base.resourceTypeId,

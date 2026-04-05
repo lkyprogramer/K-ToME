@@ -1,6 +1,10 @@
 package com.ktome.core.item
 
 import com.ktome.core.combat.DamageType
+import com.ktome.core.loot.LootRollContext
+import com.ktome.core.loot.RarityTier
+import com.ktome.core.loot.SourceTier
+import com.ktome.core.mapgen.ZoneRewardProfile
 import com.ktome.core.random.RandomSource
 import com.ktome.core.support.TestRandomSource
 import kotlin.random.Random
@@ -9,6 +13,15 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class ItemGeneratorTest {
+    private val zoneRewardProfile =
+        ZoneRewardProfile(
+            id = "zone.reward.test",
+            zoneId = "zone.reward.test",
+            rarityBonus = 0.0f,
+            qualityBonus = 0,
+            baseRewardBudget = 0,
+        )
+
     private val bundle =
         ItemDataBundle(
             baseItems =
@@ -51,17 +64,32 @@ class ItemGeneratorTest {
 
     @Test
     fun `seed determinism yields identical items`() {
-        val first = ItemGenerator(bundle, RandomSource.from(Random(42))).generate(2)
-        val second = ItemGenerator(bundle, RandomSource.from(Random(42))).generate(2)
+        val first =
+            ItemGenerator(bundle, RandomSource.from(Random(42))).generate(
+                context = lootRollContext(sourceLevel = 4, seed = 42L),
+                zoneRewardProfile = zoneRewardProfile,
+                base = shortSwordBase(),
+            )
+        val second =
+            ItemGenerator(bundle, RandomSource.from(Random(42))).generate(
+                context = lootRollContext(sourceLevel = 4, seed = 42L),
+                zoneRewardProfile = zoneRewardProfile,
+                base = shortSwordBase(),
+            )
 
         assertEquals(first, second)
     }
 
     @Test
     fun `higher floors unlock stronger materials`() {
-        val generator = ItemGenerator(bundle, TestRandomSource(ints = listOf(0, 1, 1)))
+        val generator = ItemGenerator(bundle, TestRandomSource(ints = listOf(0, 0, 1)))
 
-        val generated = generator.generate(2)
+        val generated =
+            generator.generate(
+                context = lootRollContext(sourceLevel = 4),
+                zoneRewardProfile = zoneRewardProfile,
+                base = shortSwordBase(),
+            )
 
         assertEquals("STEEL", generated.materialId)
         assertTrue(generated.stats.attack >= 8)
@@ -73,26 +101,36 @@ class ItemGeneratorTest {
             ItemGenerator(
                 bundle,
                 TestRandomSource(
-                    ints = listOf(0, 99, 0, 0, 0),
+                    ints = listOf(0, 980, 0, 0, 0),
                     defaultInt = 0,
                     defaultDouble = 0.95,
                 ),
             )
 
-        val generated = generator.generate(3)
+        val generated =
+            generator.generate(
+                context = lootRollContext(sourceLevel = 7),
+                zoneRewardProfile = zoneRewardProfile,
+                base = shortSwordBase(),
+            )
 
-        assertEquals(ItemQuality.RARE, generated.quality)
+        assertEquals(RarityTier.RARE, generated.quality)
         assertEquals(2, generated.affixes.size)
     }
 
     @Test
     fun `consumables bypass material and affix generation`() {
-        val generator = ItemGenerator(bundle, TestRandomSource(ints = listOf(14)))
+        val generator = ItemGenerator(bundle, TestRandomSource(ints = listOf(0, 0)))
 
-        val generated = generator.generate(1)
+        val generated =
+            generator.generate(
+                context = lootRollContext(sourceLevel = 1),
+                zoneRewardProfile = zoneRewardProfile,
+                base = healingPotionBase(),
+            )
 
         assertEquals(ItemType.CONSUMABLE, generated.type)
-        assertEquals(ItemQuality.COMMON, generated.quality)
+        assertEquals(RarityTier.NORMAL, generated.quality)
         assertTrue(generated.affixes.isEmpty())
         assertEquals(null, generated.materialId)
     }
@@ -135,19 +173,21 @@ class ItemGeneratorTest {
         val withBuildTags =
             ItemGenerator(
                 affixBundle,
-                TestRandomSource(ints = listOf(50, 1)),
+                TestRandomSource(ints = listOf(0, 800, 1)),
             ).generate(
+                context = lootRollContext(sourceLevel = 7),
+                zoneRewardProfile = zoneRewardProfile,
                 base = base,
-                floor = 3,
                 affixContext = AffixSelectionContext(buildTags = setOf("arcanist")),
             )
         val withoutBuildTags =
             ItemGenerator(
                 affixBundle,
-                TestRandomSource(ints = listOf(50, 1)),
+                TestRandomSource(ints = listOf(0, 800, 1)),
             ).generate(
+                context = lootRollContext(sourceLevel = 7),
+                zoneRewardProfile = zoneRewardProfile,
                 base = base,
-                floor = 3,
             )
 
         assertEquals(listOf("stormforged"), withBuildTags.affixes.map(AffixDef::id))
@@ -187,10 +227,11 @@ class ItemGeneratorTest {
         val generated =
             ItemGenerator(
                 affixBundle,
-                TestRandomSource(ints = listOf(0, 0, 0)),
+                TestRandomSource(ints = listOf(0, 800, 0)),
             ).generate(
+                context = lootRollContext(sourceLevel = 10),
+                zoneRewardProfile = zoneRewardProfile,
                 base = base,
-                floor = 4,
                 affixContext = AffixSelectionContext(minAffixCount = 1),
             )
 
@@ -198,4 +239,22 @@ class ItemGeneratorTest {
         assertTrue(generated.passive is EquipmentPassive.DamageTypeBonus)
         assertTrue(generated.affixes.single().passive is EquipmentPassive.DamageVsStatus)
     }
+
+    private fun shortSwordBase(): ItemBaseDef = requireNotNull(bundle.baseItems.firstOrNull { it.id == "short_sword" })
+
+    private fun healingPotionBase(): ItemBaseDef = requireNotNull(bundle.baseItems.firstOrNull { it.id == "healing_potion" })
+
+    private fun lootRollContext(
+        sourceLevel: Int,
+        playerLevel: Int = sourceLevel,
+        seed: Long = 42L,
+    ): LootRollContext =
+        LootRollContext(
+            sourceLevel = sourceLevel,
+            sourceTier = SourceTier.NORMAL,
+            zoneId = zoneRewardProfile.zoneId,
+            playerLevel = playerLevel,
+            magicFindBonus = 0.0f,
+            seed = seed,
+        )
 }
