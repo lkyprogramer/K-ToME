@@ -1,5 +1,6 @@
 package com.ktome.core.save
 
+import com.ktome.core.loot.PityTracker
 import com.ktome.core.phase.PackId
 import com.ktome.core.phase.Phase4ContractVersions
 import com.ktome.core.map.GameMap
@@ -32,6 +33,7 @@ data class SaveSnapshot(
     val searchRuleVersion: Int = Phase4ContractVersions.SEARCH_RULE_VERSION,
     val secretRuleVersion: Int = Phase4ContractVersions.SECRET_RULE_VERSION,
     val overlayContractVersion: Int = Phase4ContractVersions.OVERLAY_CONTRACT_VERSION,
+    val phase4RunState: Phase4RunStateSnapshot = Phase4RunStateSnapshot(),
     val timestampEpochMillis: Long,
     val worldSeed: Long,
     val currentZoneId: String,
@@ -73,7 +75,7 @@ data class SaveSnapshot(
         }
         require(buildMetadata.isNotBlank()) { "buildMetadata must not be blank." }
         require(buildId.isNotBlank()) { "buildId must not be blank." }
-        require(buildId == buildMetadata) { "buildId must match buildMetadata during the compatibility bridge window." }
+        require(buildId == buildMetadata) { "buildId must match buildMetadata." }
         require(contentSchemaVersion > 0) { "contentSchemaVersion must be positive." }
         require(activePackIds.distinct().size == activePackIds.size) {
             "activePackIds must not contain duplicates."
@@ -88,6 +90,7 @@ data class SaveSnapshot(
         require(searchRuleVersion > 0) { "searchRuleVersion must be positive." }
         require(secretRuleVersion > 0) { "secretRuleVersion must be positive." }
         require(overlayContractVersion > 0) { "overlayContractVersion must be positive." }
+        phase4RunState.validateOrThrow()
         require(currentZoneId.isNotBlank()) { "currentZoneId must not be blank." }
         require(zoneRoute.isNotEmpty()) { "zoneRoute must not be empty." }
         require(zoneRoute.all(String::isNotBlank)) { "zoneRoute must not contain blank zone ids." }
@@ -146,8 +149,17 @@ data class SaveSnapshot(
     }
 
     companion object {
-        const val CURRENT_SCHEMA_VERSION: Int = 9
-        const val DEFAULT_BUILD_METADATA: String = "phase4-pr03-dev"
+        const val CURRENT_SCHEMA_VERSION: Int = 10
+        const val DEFAULT_BUILD_METADATA: String = "phase4-pr04-dev"
+    }
+}
+
+@Serializable
+data class Phase4RunStateSnapshot(
+    val pityTracker: PityTracker = PityTracker(),
+) {
+    fun validateOrThrow() {
+        // Construction already validates PityTracker invariants.
     }
 }
 

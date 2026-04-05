@@ -9,7 +9,14 @@
 **阶段**: `Phase 4 / P4-B / P4-W3a`  
 **优先级**: `P0`  
 **前置条件**: `Phase 3` 出口全部满足  
-**对应问题**: 当前 `core.item` 仍以 `COMMON / MAGIC / RARE + affixCount` 的旧模型生成物品，zone 和 source tier 也没有正式影响 `iLvl / qLvl / rarityScore`。如果不先做 contract 和过渡桥，`PR-05` 的 affix cost、unique/artifact 模板会直接压在旧掉落模型上。
+**对应问题**: 当前 `core.item` 仍以 `COMMON / MAGIC / RARE + affixCount` 的旧模型生成物品，zone 和 source tier 也没有正式影响 `iLvl / qLvl / rarityScore`。如果不先做 contract 收口，`PR-05` 的 affix cost、unique/artifact 模板会直接压在旧掉落模型上。
+
+> 2026-04-05 实现对账补充：
+> 当前主干已按最新执行口径落地为“无兼容包袱版”。
+> 1. 不保留旧 `ItemQuality`、旧 `COMMON` token、旧 save/snapshot/client 兼容。
+> 2. `RarityTier` 已成为 runtime/save/client 的唯一正式口径。
+> 3. 旧存档默认 fail fast；本 PR 已直接 bump `SaveSnapshot.CURRENT_SCHEMA_VERSION`，不做读取兼容。
+> 4. 下文所有“兼容桥 / 过渡表面”表述，均以下面的更新内容为准。
 
 ---
 
@@ -21,7 +28,7 @@
 
 1. `LootRollContext / SourceTier / RarityTier / SpecialTierEligibility / LootBudget / ZoneRewardProfile` 进入正式词汇。
 2. 当前掉落入口从“按 floor 直接选 quality”切到“先算 budget，再决定 rarity / qLvl”。
-3. 旧 `ItemQuality` 保留为过渡表面，不再作为正式概率模型真源。
+3. `ItemQuality` 从正式 contract 中移除，`RarityTier` 成为唯一掉落稀有度真源。
 4. `MAGIC / RARE` 基础 rarity roll 先落地，`UNIQUE / ARTIFACT` 进入 eligibility + upgrade 流程，模板池留给 `PR-05`。
 5. run-scoped pity contract 在本 PR 冻结，`PR-05` 负责结合模板池做 end-to-end 验证。
 
@@ -29,16 +36,13 @@
 
 1. `ItemGenerator.chooseQuality()` 仍按 `floor` 直接给 `COMMON / MAGIC / RARE` 权重。
 2. zone 侧虽然有 `lootProfiles`，但没有正式的 `ZoneRewardProfile` 参与预算运算。
-3. `ItemQuality` 和 `Phase 4` 文档里的 `RarityTier` 不一致，若不先桥接会污染 save / snapshot / client。
+3. 旧 `ItemQuality` 体系与 `RarityTier` 双轨并存会污染 save / snapshot / client，必须在 `PR-04` 一次性收口。
 4. 当前掉落没有任何 pity / rescue 机制，长局中存在长时间 0 件高质量装备的尾部体验风险。
 
 ### 2.1 本 PR 必须冻结的口径
 
 1. `RarityTier` 取代 `ItemQuality` 成为规则层掉落数学模型真源。
-2. `ItemQuality` 在过渡期只用于现有 save/client 兼容映射：
-   - `COMMON -> NORMAL`
-   - `MAGIC -> MAGIC`
-   - `RARE -> RARE`
+2. 当前实现不再保留 `ItemQuality` 兼容映射；save/snapshot/client 统一直接消费 `RarityTier.NORMAL / MAGIC / RARE`。
 3. `UNIQUE / ARTIFACT` 不再进入基础 rarity roll，而是通过 `SpecialTierEligibility + upgrade roll` 进入候选流程；直到 `PR-05` 才允许正式产出模板物品。
 4. `magicFindBonus` 只影响 rarity，不直接影响 `iLvl`。
 5. `ZoneRewardProfile` 由 zone 内容稳定声明，不允许运行时随机摇点。
@@ -52,7 +56,7 @@
 1. 新建 `core.loot` budget / rarity contract。
 2. zone schema 增加 `ZoneRewardProfile` 数据入口。
 3. 重构掉落入口，先算 `LootBudget` 再进入物品生成。
-4. 保留旧 `ItemQuality` 到 save/snapshot/client 的兼容桥。
+4. 直接移除旧 `ItemQuality` 在 save/snapshot/client 中的正式 contract 地位。
 
 ### 3.2 非目标
 
@@ -67,7 +71,7 @@
 建议文件：
 
 ```text
-core/src/main/kotlin/com/ktome/core/loot/LootBudgetModels.kt
+core/src/main/kotlin/com/ktome/core/loot/LootModels.kt
 core/src/main/kotlin/com/ktome/core/loot/LootBudgetResolver.kt
 core/src/test/kotlin/com/ktome/core/loot/*
 ```
@@ -112,8 +116,14 @@ enum class SpecialTier {
 
 data class SpecialTierEligibility(
     val availableSpecialTiers: Set<SpecialTier>,
+    val availableTemplateIds: Set<String> = emptySet(),
 )
 ```
+
+实现补充：
+
+1. `availableTemplateIds` 已在 `PR-04` 一并冻结，但当前实现固定为空集合。
+2. `PR-05` 只允许在不改这个结构名称的前提下接通模板池。
 
 ### 4.2 正式公式
 
@@ -151,8 +161,8 @@ data class SpecialTierEligibility(
 建议文件：
 
 ```text
-core/src/main/kotlin/com/ktome/core/loot/PityTracker.kt
-core/src/test/kotlin/com/ktome/core/loot/PityTrackerTest.kt
+core/src/main/kotlin/com/ktome/core/loot/LootModels.kt
+core/src/test/kotlin/com/ktome/core/loot/*
 ```
 
 冻结口径：
@@ -188,13 +198,15 @@ data class PityTracker(
 2. run save / replay header
 3. 相关 golden / batch 元数据
 
-### 4.4 旧 `ItemQuality` 过渡桥
+### 4.4 `ItemQuality` 移除与不兼容改造说明
 
-过渡策略：
+当前主干实现已明确放弃兼容桥，按一次性收口方案执行：
 
-1. `ItemGenerator` 内部先改为消费 `LootBudget`。
-2. 产物上的旧 `ItemQuality` 仍由 `RarityTier` 映射生成，直到 `PR-05` 扩展 snapshot/save/client。
-3. `UNIQUE / ARTIFACT` 在本 PR 不进入实际发放路径；只有当 `SpecialTierEligibility` 为真且 `PR-05` 模板池已接通时，才允许真正产出。
+1. `ItemGenerator` 内部直接消费 `LootBudget / LootRollResult`。
+2. `ItemInstance.quality`、snapshot/save/client 展示层统一改为 `RarityTier`。
+3. `item.quality.common` 已移除，统一改为 `item.quality.normal`。
+4. 旧存档、旧 snapshot、旧 client token 不做 restore 兼容；失败时按版本纪律直接 fail fast。
+5. `UNIQUE / ARTIFACT` 在本 PR 仍不进入实际模板发放路径；只有 `SpecialTierEligibility` 与后续 `PR-05` 模板池同时接通后才允许产出。
 
 ### 4.5 save / replay 最小状态
 
@@ -214,6 +226,12 @@ data class PityTracker(
 2. `lootFormulaVersion` 与 `specialTierEligibilityVersion` 必须跟着 replay header 与 batch 报告一起输出，供 `PR-05` 和后续 `DeathAnalysis` 对账。
 3. `activePackIds / activePackManifestVersions` 在 save/replay 与 batch report 中按全局 typed `PackId` 口径输出，不再单独定义 loot 层字符串版字段。
 4. pack 环境不匹配时，不允许重放或读取旧 loot 状态后静默回退。
+
+实现补充：
+
+1. 当前仓库尚无正式 replay subsystem；本 PR 实际冻结到了 `SaveSnapshot + SessionSnapshotMapper + HarnessReportHeader -> VerificationReportHeader` 这条链。
+2. 后续 replay header/frame 如果落地，必须直接复用这里已经冻结的字段名与版本号，不能再发明第二套 loot persistence 口径。
+3. 本 PR 已直接 bump `SaveSnapshot.CURRENT_SCHEMA_VERSION`，并把 `DEFAULT_BUILD_METADATA` 收口到 `phase4-pr04-dev`。
 
 ### 4.6 `magicFind` clamp 语义
 
@@ -252,7 +270,7 @@ data class ZoneRewardProfile(
 
 1. 新建 `core.loot` package。
 2. 把 `ItemGenerator.chooseQuality()` 替换为 `LootBudgetResolver`。
-3. 为 `RarityTier -> ItemQuality` 兼容映射补单测。
+3. 为 `LootRollContext / LootBudget / SpecialTierEligibility / PityTracker / LootRollResult` 的结构化输出补稳定 shape 测试。
 4. 引入 `SpecialTierEligibility` 和 upgrade 预检查入口。
 
 ### 5.2 `game`
@@ -282,24 +300,28 @@ data class ZoneRewardProfile(
 3. `SourceTier` 不同会影响 `iLvl / rarityScore / affixBudget`。
 4. `UNIQUE / ARTIFACT` 在本 PR 只通过 eligibility 预检查进入 trace，不会生成半成品。
 5. pity 计数只在真正发出 `RARE+` / `UNIQUE+` 奖励时重置，不存在“命中后降级导致误清零”的主路径。
+6. `RarityTier` 是 save/snapshot/client 唯一正式稀有度字段，不再存在 `ItemQuality` 兼容桥。
 
 ### 6.2 自动化命令
 
 ```bash
 ./gradlew :core:test
-./gradlew lootBalanceLab
+./gradlew :game:test
+./gradlew :game:longRunLab
+./gradlew jacocoTestReport
 ```
 
 说明：
 
-1. `lootBalanceLab` 的正式 root alias 和 batch 报告在 `PR-05` 落地。
+1. `lootBalanceLab` 的正式 root alias 和 batch 报告仍在 `PR-05` 落地，本 PR 不以该任务作为现实门禁。
 2. 本 PR 至少要把 `PR-05` 将要消费的 `LootRollContext / LootBudget` 输入输出 contract 固定下来。
+3. 当前实现收尾必须通过 `:game:test`、`:game:longRunLab` 与 `jacocoTestReport`，因为长局 harness 已经成为 PR-04 的现实回归门禁。
 
 ### 6.3 统一白盒框架预埋验证
 
 1. `:core:test` 必须额外覆盖：
    - `LootBudgetResolver` 的确定性
-   - `RarityTier -> ItemQuality` 兼容映射
+   - `RarityTier` 序列化 / snapshot / client shape 稳定
    - `magicFind` clamp 边界
    - `PityTracker` 重置条件
 2. 需补一组 contract 级测试，确保后续 `whiteBoxLoot` 可以直接消费：
@@ -312,6 +334,6 @@ data class ZoneRewardProfile(
 
 1. `LootBudget`、`RarityTier`、`ZoneRewardProfile` 与 `SpecialTierEligibility` 口径冻结。
 2. 当前掉落主路径已切到 budget 驱动。
-3. 旧 `ItemQuality` 仍兼容 save/client，但不再作为规则层真源。
+3. `ItemQuality` 已从正式 save/snapshot/client contract 中移除；旧版本数据不做兼容恢复。
 4. `PR-05` 可以直接追加 affix cost、unique/artifact 与实验室验证，而不需要再改预算公式。
 5. `PR-05` 所需 white-box 输入合同已经在本 PR 冻结，不再允许后续为工具侧便利重命名或补第二套字段。

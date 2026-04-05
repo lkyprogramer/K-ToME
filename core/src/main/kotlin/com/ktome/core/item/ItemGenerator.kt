@@ -1,24 +1,27 @@
 package com.ktome.core.item
 
+import com.ktome.core.loot.LootBudgetResolver
+import com.ktome.core.loot.LootRollContext
+import com.ktome.core.loot.LootRollResult
+import com.ktome.core.loot.PityTracker
+import com.ktome.core.loot.RarityTier
 import com.ktome.core.random.RandomSource
-import kotlin.random.Random
+import com.ktome.core.mapgen.ZoneRewardProfile
+
+data class GeneratedItemRoll(
+    val item: ItemInstance,
+    val rollResult: LootRollResult,
+)
 
 class ItemGenerator(
     private val bundle: ItemDataBundle,
     private val random: RandomSource,
     private val affixGenerator: AffixGenerator = AffixGenerator(AffixPool(bundle.affixes), random),
+    private val lootBudgetResolver: LootBudgetResolver = LootBudgetResolver(random),
 ) {
     fun generate(
-        floor: Int,
-        affixContext: AffixSelectionContext = AffixSelectionContext(),
-    ): ItemInstance {
-        val base = chooseBaseItem(floor)
-        return generate(base, floor, affixContext)
-    }
-
-    fun generate(
+        lootRoll: LootRollResult,
         base: ItemBaseDef,
-        floor: Int,
         affixContext: AffixSelectionContext = AffixSelectionContext(),
     ): ItemInstance {
         if (base.type == ItemType.CONSUMABLE) {
@@ -29,7 +32,7 @@ class ItemGenerator(
                 slot = null,
                 glyph = base.glyph,
                 colorHex = base.colorHex,
-                quality = ItemQuality.COMMON,
+                quality = RarityTier.NORMAL,
                 stats = base.baseStats,
                 effect = base.effect,
                 resourceTypeId = base.resourceTypeId,
@@ -38,9 +41,9 @@ class ItemGenerator(
             )
         }
 
-        val quality = chooseQuality(floor = floor, qualityFloor = affixContext.qualityFloor)
-        val material = chooseMaterial(base, floor)
-        val requiredAffixCount = maxOf(quality.affixCount, affixContext.minAffixCount)
+        val quality = affixContext.qualityFloor?.takeIf { minimum -> minimum.ordinal > lootRoll.resolvedRarityTier.ordinal } ?: lootRoll.resolvedRarityTier
+        val material = chooseMaterial(base, lootRoll.budget.qLvl)
+        val requiredAffixCount = maxOf(quality.defaultAffixCount(), affixContext.minAffixCount)
         val resolvedAffixContext =
             affixContext.copy(
                 itemTags = affixContext.itemTags + base.tags,
@@ -50,7 +53,7 @@ class ItemGenerator(
         val affixes =
             resolveEquipType(base)?.let { equipType ->
                 affixGenerator.generate(
-                    floor = floor,
+                    floor = legacyFloorBandForItemLevel(lootRoll.budget.qLvl),
                     count = requiredAffixCount,
                     equipType = equipType,
                     context = resolvedAffixContext,
@@ -82,44 +85,60 @@ class ItemGenerator(
         )
     }
 
-    fun generate(
-        floor: Int,
-        seed: Long,
-    ): ItemInstance = ItemGenerator(bundle, RandomSource.from(Random(seed))).generate(floor)
-
-    private fun chooseBaseItem(floor: Int): ItemBaseDef {
-        val candidates = bundle.baseItems.filter { floor in it.dropFloors }
-        require(candidates.isNotEmpty()) { "No base items are configured for floor $floor." }
-        return chooseWeighted(candidates) { it.dropWeight }
+    fun rollAndGenerate(
+        context: LootRollContext,
+        zoneRewardProfile: ZoneRewardProfile,
+        affixContext: AffixSelectionContext = AffixSelectionContext(),
+        pityTracker: PityTracker = PityTracker(),
+        base: ItemBaseDef? = null,
+    ): GeneratedItemRoll {
+        val rollResult =
+            lootBudgetResolver.roll(
+                context = context,
+                zoneRewardProfile = zoneRewardProfile,
+                pityTracker = pityTracker,
+                minimumRarityTier = affixContext.qualityFloor,
+            )
+        val resolvedBase = base ?: chooseBaseItem(rollResult.budget.iLvl)
+        return GeneratedItemRoll(
+            item = generate(lootRoll = rollResult, base = resolvedBase, affixContext = affixContext),
+            rollResult = rollResult,
+        )
     }
 
-    private fun chooseQuality(
-        floor: Int,
-        qualityFloor: ItemQuality? = null,
-    ): ItemQuality {
-        val commonWeight = (60 - floor * 5).coerceAtLeast(20)
-        val magicWeight = 30 + floor * 3
-        val rareWeight = 10 + floor * 2
-        val roll = random.nextInt(0, commonWeight + magicWeight + rareWeight)
-        val rolled =
-            when {
-            roll < commonWeight -> ItemQuality.COMMON
-            roll < commonWeight + magicWeight -> ItemQuality.MAGIC
-            else -> ItemQuality.RARE
-        }
-        return if (qualityFloor == null || rolled.ordinal >= qualityFloor.ordinal) rolled else qualityFloor
+    fun generate(
+        context: LootRollContext,
+        zoneRewardProfile: ZoneRewardProfile,
+        affixContext: AffixSelectionContext = AffixSelectionContext(),
+        pityTracker: PityTracker = PityTracker(),
+        base: ItemBaseDef? = null,
+    ): ItemInstance =
+        rollAndGenerate(
+            context = context,
+            zoneRewardProfile = zoneRewardProfile,
+            affixContext = affixContext,
+            pityTracker = pityTracker,
+            base = base,
+        ).item
+
+    private fun chooseBaseItem(itemLevel: Int): ItemBaseDef {
+        val floorBand = legacyFloorBandForItemLevel(itemLevel)
+        val candidates = bundle.baseItems.filter { floorBand in it.dropFloors }
+        require(candidates.isNotEmpty()) { "No base items are configured for floor band $floorBand (itemLevel=$itemLevel)." }
+        return chooseWeighted(candidates) { it.dropWeight }
     }
 
     private fun chooseMaterial(
         base: ItemBaseDef,
-        floor: Int,
+        itemLevel: Int,
     ): MaterialDef? {
         if (base.allowedMaterials.isEmpty()) {
             return null
         }
 
-        val candidates = bundle.materials.filter { it.id in base.allowedMaterials && floor >= it.minFloor }
-        require(candidates.isNotEmpty()) { "No materials are configured for ${base.id} on floor $floor." }
+        val floorBand = legacyFloorBandForItemLevel(itemLevel)
+        val candidates = bundle.materials.filter { it.id in base.allowedMaterials && floorBand >= it.minFloor }
+        require(candidates.isNotEmpty()) { "No materials are configured for ${base.id} on floor band $floorBand (itemLevel=$itemLevel)." }
         return candidates[random.nextInt(0, candidates.size)]
     }
 
@@ -169,4 +188,7 @@ class ItemGenerator(
         }
         return values.last()
     }
+
+    private fun legacyFloorBandForItemLevel(itemLevel: Int): Int =
+        ((itemLevel - 1) / 3 + 1).coerceIn(1, 5)
 }

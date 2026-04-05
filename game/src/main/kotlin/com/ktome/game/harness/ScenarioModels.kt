@@ -402,6 +402,7 @@ data class RunObservation(
     val activeShopId: String? = null,
     val activeShopOffers: List<ObservedShopOffer> = emptyList(),
     val inventoryItems: List<InventoryItemView>,
+    val inscriptions: List<ObservedInscription> = emptyList(),
     val talentSlots: List<TalentSlotView>,
     val reserveTalents: List<TalentReserveView> = emptyList(),
     val canAscend: Boolean,
@@ -422,4 +423,11 @@ data class ObservedShopOffer(
     val price: Int,
     val tags: Set<String> = emptySet(),
     val purchasable: Boolean = true,
+)
+
+data class ObservedInscription(
+    val hotkey: Int,
+    val inscriptionId: String,
+    val cooldownRemaining: Int,
+    val requiresTarget: Boolean = false,
 )

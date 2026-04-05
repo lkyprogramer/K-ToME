@@ -44,7 +44,7 @@ import com.ktome.core.item.ConsumableEffect
 import com.ktome.core.item.EquipmentPassive
 import com.ktome.core.item.EquipSlot
 import com.ktome.core.item.ItemInstance
-import com.ktome.core.item.ItemQuality
+import com.ktome.core.loot.RarityTier
 import com.ktome.core.item.ItemType
 import com.ktome.core.item.MilestoneRewardSource
 import com.ktome.core.item.StatModifier
@@ -694,7 +694,7 @@ class FoundationGameSessionTest {
                         slot = EquipSlot.WEAPON,
                         glyph = ')',
                         colorHex = "#C0C0C0",
-                        quality = ItemQuality.MAGIC,
+                        quality = RarityTier.MAGIC,
                         affixes =
                             listOf(
                                 AffixDef(
@@ -747,7 +747,7 @@ class FoundationGameSessionTest {
                         slot = EquipSlot.WEAPON,
                         glyph = ')',
                         colorHex = "#C0C0C0",
-                        quality = ItemQuality.MAGIC,
+                        quality = RarityTier.MAGIC,
                         affixes =
                             listOf(
                                 AffixDef(
@@ -1097,7 +1097,7 @@ class FoundationGameSessionTest {
                     slot = EquipSlot.WEAPON,
                     glyph = ')',
                     colorHex = "#C0C0C0",
-                    quality = ItemQuality.RARE,
+                    quality = RarityTier.RARE,
                     materialId = "MITHRIL",
                     materialName = "Mithril",
                     affixes = listOf(AffixDef(id = "of_speed", name = "of Speed", type = AffixType.SUFFIX, statModifiers = StatModifier(speed = 15))),
@@ -1148,7 +1148,7 @@ class FoundationGameSessionTest {
                         slot = EquipSlot.OFF_HAND,
                         glyph = ']',
                         colorHex = "#4F8F6B",
-                        quality = ItemQuality.COMMON,
+                        quality = RarityTier.NORMAL,
                         stats = StatModifier(wil = 1),
                         passive = EquipmentPassive.HpRegenPerTurn(amount = 2),
                     ),
@@ -1360,7 +1360,7 @@ class FoundationGameSessionTest {
                 session.milestoneRewardSummaries().firstOrNull { reward ->
                     reward.rewardSource == MilestoneRewardSource.SUPPORT &&
                         reward.sourceId == gateRewardSourceId &&
-                        reward.qualityTier.ordinal >= ItemQuality.MAGIC.ordinal &&
+                        reward.qualityTier.ordinal >= RarityTier.MAGIC.ordinal &&
                         reward.affixIds.isNotEmpty()
                 },
             )
@@ -1443,7 +1443,7 @@ class FoundationGameSessionTest {
             session.milestoneRewardSummaries().any { reward ->
                 reward.rewardSource == MilestoneRewardSource.CACHE &&
                     reward.sourceId == cacheRewardSourceId &&
-                    reward.qualityTier.ordinal >= ItemQuality.MAGIC.ordinal &&
+                    reward.qualityTier.ordinal >= RarityTier.MAGIC.ordinal &&
                     reward.affixIds.isNotEmpty()
             },
         )
@@ -2449,12 +2449,11 @@ class FoundationGameSessionTest {
                 baseId in setOf("basic_shield", "mana_potion", "chain_mail", "apprentice_robe", "long_sword")
             },
         )
-        val droppedItems = groundItemsAt(session, deathPoint)
-        assertTrue(droppedItems.any { item -> item.quality != ItemQuality.COMMON })
+        val droppedItem = groundItemsAt(session, deathPoint).single()
         val dropLog = requireNotNull(logEventByKey(session, "log.loot.monster_drop_quality"))
         assertTrue(
             dropLog.message.arguments.any { argument ->
-                argument.name == "quality" && argument.valueKey in setOf("item.quality.magic", "item.quality.rare")
+                argument.name == "quality" && argument.valueKey == qualityLabelKey(droppedItem.quality)
             },
         )
     }
@@ -3494,6 +3493,7 @@ class FoundationGameSessionTest {
                     ),
                 saveManager = saveManager,
             )
+        setPlayerLevelToZoneRecommendedMax(session)
 
         repeat(1) {
             movePlayerTo(session, stairPoint(session, com.ktome.core.dungeon.StairDirection.DOWN))
@@ -3523,7 +3523,7 @@ class FoundationGameSessionTest {
                 session.milestoneRewardSummaries().firstOrNull { reward ->
                     reward.rewardSource == MilestoneRewardSource.BOSS &&
                         reward.sourceId == "dungeon_lord_encounter" &&
-                        reward.qualityTier == ItemQuality.RARE &&
+                        reward.qualityTier == RarityTier.RARE &&
                         reward.affixIds.size >= 2
                 },
             )
@@ -3535,6 +3535,7 @@ class FoundationGameSessionTest {
                 snapshot.message.arguments.first { argument -> argument.name == "item" }.valueKey,
             )
         }
+        assertNull(logEventByKey(session, "log.loot.monster_drop_quality"))
         assertTrue(session.renderSnapshot().uiState.recentRewards.any { entry -> entry.source == RewardPresentationSourceSnapshot.BOSS })
     }
 
@@ -3575,7 +3576,7 @@ class FoundationGameSessionTest {
                 session.milestoneRewardSummaries().firstOrNull { reward ->
                     reward.rewardSource == MilestoneRewardSource.ROUTE &&
                         reward.sourceId == "route.shattered_outpost.greenwood_fringe" &&
-                        reward.qualityTier.ordinal >= ItemQuality.MAGIC.ordinal &&
+                        reward.qualityTier.ordinal >= RarityTier.MAGIC.ordinal &&
                         reward.affixIds.isNotEmpty()
                 },
             )
@@ -3600,6 +3601,7 @@ class FoundationGameSessionTest {
                 config = FoundationGameConfig(seed = 20260328L, zoneId = "abyssal_heart", playerProfessionId = "rogue"),
                 saveManager = saveManager,
             )
+        setPlayerLevelToZoneRecommendedMax(session)
 
         val world = runtimeWorld(session)
         val bossId = requireNotNull(entityByTemplateId(session, "abyssal.guardian"))
@@ -3612,7 +3614,7 @@ class FoundationGameSessionTest {
             session.milestoneRewardSummaries().any { reward ->
                 reward.rewardSource == MilestoneRewardSource.BOSS &&
                     reward.sourceId == "abyssal_guardian_encounter" &&
-                    reward.qualityTier == ItemQuality.RARE &&
+                    reward.qualityTier == RarityTier.RARE &&
                     reward.affixIds.size >= 3
             },
         )
@@ -3623,6 +3625,7 @@ class FoundationGameSessionTest {
                 snapshot.message.arguments.first { argument -> argument.name == "item" }.valueKey,
             )
         }
+        assertNull(logEventByKey(session, "log.loot.monster_drop_quality"))
         assertTrue(session.renderSnapshot().uiState.recentRewards.any { entry -> entry.source == RewardPresentationSourceSnapshot.BOSS })
     }
 
@@ -3764,7 +3767,7 @@ class FoundationGameSessionTest {
                     slot = EquipSlot.WEAPON,
                     glyph = ')',
                     colorHex = "#E0E0E0",
-                    quality = ItemQuality.MAGIC,
+                    quality = RarityTier.MAGIC,
                     materialId = "MITHRIL",
                     materialName = "Mithril",
                     affixes = listOf(AffixDef(id = "of_speed", name = "of Speed", type = AffixType.SUFFIX, statModifiers = StatModifier(speed = 1))),
@@ -4575,6 +4578,21 @@ class FoundationGameSessionTest {
         return dummyId
     }
 
+    private fun setPlayerLevelToZoneRecommendedMax(session: FoundationGameSession) {
+        val targetLevel =
+            dataLoader.loadSchemaCatalog().zones
+                .first { zone -> zone.id == session.config.zoneId }
+                .recommendedLevel.max
+        requireNotNull(runtimeWorld(session).get<Experience>(session.playerId)).level = targetLevel
+    }
+
+    private fun qualityLabelKey(quality: RarityTier): String =
+        when (quality) {
+            RarityTier.NORMAL -> "item.quality.normal"
+            RarityTier.MAGIC -> "item.quality.magic"
+            RarityTier.RARE -> "item.quality.rare"
+        }
+
     private fun monsterHp(
         session: FoundationGameSession,
         entityId: com.ktome.core.ecs.EntityId,
@@ -4760,7 +4778,7 @@ class FoundationGameSessionTest {
             slot = base.slot,
             glyph = base.glyph,
             colorHex = base.colorHex,
-            quality = ItemQuality.COMMON,
+            quality = RarityTier.NORMAL,
             stats = base.baseStats.copy(),
             effect = base.effect,
             resourceTypeId = base.resourceTypeId,

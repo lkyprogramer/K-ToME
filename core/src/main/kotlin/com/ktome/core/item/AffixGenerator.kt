@@ -1,5 +1,6 @@
 package com.ktome.core.item
 
+import com.ktome.core.loot.RarityTier
 import com.ktome.core.random.RandomSource
 
 data class AffixSelectionContext(
@@ -7,7 +8,7 @@ data class AffixSelectionContext(
     val buildTags: Set<String> = emptySet(),
     val routeBiasTags: Set<String> = emptySet(),
     val rewardSource: MilestoneRewardSource? = null,
-    val qualityFloor: ItemQuality? = null,
+    val qualityFloor: RarityTier? = null,
     val minAffixCount: Int = 0,
     val blacklistFamilies: Set<String> = emptySet(),
 ) {
@@ -72,6 +73,26 @@ class AffixGenerator(
     private val weighting: AffixTagWeighting = AffixTagWeighting(),
     private val blacklist: AffixBlacklist = AffixBlacklist(),
 ) {
+    fun canGenerate(
+        floor: Int,
+        count: Int,
+        equipType: AffixEquipType,
+        context: AffixSelectionContext = AffixSelectionContext(),
+    ): Boolean {
+        if (count <= 0) {
+            return true
+        }
+        return canFillSlots(
+            slotOrder = slotOrderFor(count),
+            slotIndex = 0,
+            floor = floor,
+            equipType = equipType,
+            context = context,
+            selected = emptyList(),
+            selectedIds = emptySet(),
+        )
+    }
+
     fun generate(
         floor: Int,
         count: Int,
@@ -81,33 +102,57 @@ class AffixGenerator(
         if (count <= 0) {
             return emptyList()
         }
-        val selected = mutableListOf<AffixDef>()
-        val slotOrder =
-            buildList {
-                if (count >= 1) add(AffixType.PREFIX)
-                if (count >= 2) add(AffixType.SUFFIX)
-                if (count >= 3) add(AffixType.PREFIX)
-                if (count >= 4) add(AffixType.SUFFIX)
-            }
-        slotOrder.forEach { slotType ->
-            chooseSingle(
-                candidates = pool.candidates(floor = floor, equipType = equipType, slotType = slotType),
-                selected = selected,
-                context = context,
-            )?.let(selected::add)
+        val slotOrder = slotOrderFor(count)
+        return selectAffixes(
+            slotOrder = slotOrder,
+            slotIndex = 0,
+            floor = floor,
+            equipType = equipType,
+            context = context,
+            selected = emptyList(),
+            selectedIds = emptySet(),
+        ).orEmpty()
+    }
+
+    private fun canFillSlots(
+        slotOrder: List<AffixType>,
+        slotIndex: Int,
+        floor: Int,
+        equipType: AffixEquipType,
+        context: AffixSelectionContext,
+        selected: List<AffixDef>,
+        selectedIds: Set<String>,
+    ): Boolean {
+        if (slotIndex >= slotOrder.size) {
+            return true
         }
-        return selected
+        val eligible =
+            pool.candidates(floor = floor, equipType = equipType, slotType = slotOrder[slotIndex])
+                .filter { candidate -> isEligibleCandidate(candidate, selectedIds, selected, context) }
+        if (eligible.isEmpty()) {
+            return false
+        }
+        return eligible.any { candidate ->
+            canFillSlots(
+                slotOrder = slotOrder,
+                slotIndex = slotIndex + 1,
+                floor = floor,
+                equipType = equipType,
+                context = context,
+                selected = selected + candidate,
+                selectedIds = selectedIds + candidate.id,
+            )
+        }
     }
 
     private fun chooseSingle(
         candidates: List<AffixDef>,
         selected: List<AffixDef>,
+        selectedIds: Set<String>,
         context: AffixSelectionContext,
     ): AffixDef? {
         val eligible =
-            candidates.filterNot { candidate ->
-                candidate.id in selected.map(AffixDef::id) || blacklist.rejects(candidate, selected, context)
-            }
+            candidates.filter { candidate -> isEligibleCandidate(candidate, selectedIds, selected, context) }
         if (eligible.isEmpty()) {
             return null
         }
@@ -121,6 +166,69 @@ class AffixGenerator(
         }
         return eligible.last()
     }
+
+    private fun selectAffixes(
+        slotOrder: List<AffixType>,
+        slotIndex: Int,
+        floor: Int,
+        equipType: AffixEquipType,
+        context: AffixSelectionContext,
+        selected: List<AffixDef>,
+        selectedIds: Set<String>,
+    ): List<AffixDef>? {
+        if (slotIndex >= slotOrder.size) {
+            return selected
+        }
+        val candidates = pool.candidates(floor = floor, equipType = equipType, slotType = slotOrder[slotIndex])
+        val eligible =
+            candidates.filter { candidate -> isEligibleCandidate(candidate, selectedIds, selected, context) }
+        val viable =
+            eligible.filter { candidate ->
+                canFillSlots(
+                    slotOrder = slotOrder,
+                    slotIndex = slotIndex + 1,
+                    floor = floor,
+                    equipType = equipType,
+                    context = context,
+                    selected = selected + candidate,
+                    selectedIds = selectedIds + candidate.id,
+                )
+            }
+        if (viable.isEmpty()) {
+            return null
+        }
+        val next =
+            chooseSingle(
+                candidates = viable,
+                selected = selected,
+                selectedIds = selectedIds,
+                context = context,
+            ) ?: return null
+        return selectAffixes(
+            slotOrder = slotOrder,
+            slotIndex = slotIndex + 1,
+            floor = floor,
+            equipType = equipType,
+            context = context,
+            selected = selected + next,
+            selectedIds = selectedIds + next.id,
+        )
+    }
+
+    private fun slotOrderFor(count: Int): List<AffixType> =
+        buildList {
+            if (count >= 1) add(AffixType.PREFIX)
+            if (count >= 2) add(AffixType.SUFFIX)
+            if (count >= 3) add(AffixType.PREFIX)
+            if (count >= 4) add(AffixType.SUFFIX)
+        }
+
+    private fun isEligibleCandidate(
+        candidate: AffixDef,
+        selectedIds: Set<String>,
+        selected: List<AffixDef>,
+        context: AffixSelectionContext,
+    ): Boolean = candidate.id !in selectedIds && !blacklist.rejects(candidate, selected, context)
 }
 
 private fun rewardSourceBiasTags(source: MilestoneRewardSource?): Set<String> =

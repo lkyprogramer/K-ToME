@@ -134,6 +134,15 @@ object RunObservationCapture {
                         )
                     }.orEmpty(),
             inventoryItems = session.inventoryItems(),
+            inscriptions =
+                session.renderSnapshot().uiState.inscriptions.map { inscription ->
+                    ObservedInscription(
+                        hotkey = inscription.hotkey,
+                        inscriptionId = inscription.inscriptionId,
+                        cooldownRemaining = inscription.cooldownRemaining,
+                        requiresTarget = inscription.requiresTarget,
+                    )
+                },
             talentSlots = session.talentSlots(),
             reserveTalents = session.reserveTalentSlots(),
             canAscend = session.canAscend(),

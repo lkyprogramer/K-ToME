@@ -3,8 +3,8 @@ package com.ktome.game
 import com.ktome.core.ecs.EntityId
 import com.ktome.core.item.ConsumableEffect
 import com.ktome.core.item.EquipSlot
-import com.ktome.core.item.ItemQuality
 import com.ktome.core.item.ItemType
+import com.ktome.core.loot.RarityTier
 import com.ktome.core.map.Point
 import com.ktome.core.run.RunOutcome
 import com.ktome.core.snapshot.RenderTextTokenSnapshot
@@ -129,7 +129,7 @@ data class InventoryItemView(
     val type: ItemType,
     val slot: EquipSlot? = null,
     val equippedSlot: EquipSlot? = null,
-    val quality: ItemQuality = ItemQuality.COMMON,
+    val quality: RarityTier = RarityTier.NORMAL,
     val affixIds: List<String> = emptyList(),
     val effect: ConsumableEffect? = null,
     val resourceTypeId: String? = null,

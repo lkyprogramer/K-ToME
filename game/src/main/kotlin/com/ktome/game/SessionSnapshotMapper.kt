@@ -46,10 +46,10 @@ import com.ktome.core.item.Inventory
 import com.ktome.core.item.ItemBaseDef
 import com.ktome.core.item.ItemDataBundle
 import com.ktome.core.item.ItemInstance
-import com.ktome.core.item.ItemQuality
 import com.ktome.core.item.ItemType
 import com.ktome.core.item.MaterialDef
 import com.ktome.core.item.StatModifier
+import com.ktome.core.loot.RarityTier
 import com.ktome.core.map.GameMap
 import com.ktome.core.map.Point
 import com.ktome.core.mapgen.GeneratedFloor
@@ -57,6 +57,7 @@ import com.ktome.core.mapgen.MapgenPipeline
 import com.ktome.core.mapgen.MapgenRequest
 import com.ktome.core.mapgen.TerrainTag
 import com.ktome.core.mapgen.TopologyFingerprinting
+import com.ktome.core.loot.PityTracker
 import com.ktome.core.race.RaceTalentPointBank
 import com.ktome.core.resource.EquilibriumAffinity
 import com.ktome.core.resource.EquilibriumState
@@ -92,6 +93,7 @@ import com.ktome.core.save.InvalidSaveException
 import com.ktome.core.save.ItemSnapshot
 import com.ktome.core.save.MapSnapshot
 import com.ktome.core.save.PendingTelegraphSnapshot
+import com.ktome.core.save.Phase4RunStateSnapshot
 import com.ktome.core.save.PatrolRouteSnapshot
 import com.ktome.core.save.PatrolPressureStateSnapshot
 import com.ktome.core.save.PlayerSnapshot
@@ -225,6 +227,7 @@ internal data class RestoredRunState(
     val shardBalance: Int = 0,
     val shopStates: List<ShopInventoryState> = emptyList(),
     val cadenceRewardCount: Int = 0,
+    val pityTracker: PityTracker = PityTracker(),
     val combatRandomState: Long? = null,
     val sessionRandomState: Long? = null,
     val milestoneRewards: List<MilestoneRewardSummary> = emptyList(),
@@ -347,6 +350,7 @@ internal object SessionSnapshotMapper {
         shardBalance: Int = 0,
         shopStates: List<ShopInventoryState> = emptyList(),
         cadenceRewardCount: Int = 0,
+        pityTracker: PityTracker = PityTracker(),
         combatRandomState: Long?,
         sessionRandomState: Long?,
         milestoneRewards: List<MilestoneRewardSummary> = emptyList(),
@@ -363,6 +367,7 @@ internal object SessionSnapshotMapper {
             shardBalance = shardBalance,
             shopStates = shopStates.sortedBy(ShopInventoryState::shopId),
             cadenceRewardCount = cadenceRewardCount,
+            phase4RunState = Phase4RunStateSnapshot(pityTracker = pityTracker),
             currentFloorRewardState =
                 floors.firstOrNull { floorState -> floorState.floor == currentFloor }?.payload?.rewardState
                     ?: FloorRewardStateSnapshot(),
@@ -439,6 +444,7 @@ internal object SessionSnapshotMapper {
             shardBalance = snapshot.shardBalance,
             shopStates = snapshot.shopStates.sortedBy(ShopInventoryState::shopId),
             cadenceRewardCount = snapshot.cadenceRewardCount,
+            pityTracker = snapshot.phase4RunState.pityTracker,
             combatRandomState = snapshot.combatRandomState,
             sessionRandomState = snapshot.sessionRandomState,
             milestoneRewards = snapshot.milestoneRewards,
@@ -1386,7 +1392,7 @@ internal object SessionSnapshotMapper {
             slot = snapshot.slot?.let { slot -> parseEnumFromSave<EquipSlot>(value = slot, label = "item slot") } ?: base.slot,
             glyph = base.glyph,
             colorHex = base.colorHex,
-            quality = parseEnumFromSave<ItemQuality>(value = snapshot.quality, label = "item quality"),
+            quality = parseEnumFromSave<RarityTier>(value = snapshot.quality, label = "item rarity tier"),
             materialId = snapshot.materialId,
             materialName = material?.name,
             affixes = affixes,

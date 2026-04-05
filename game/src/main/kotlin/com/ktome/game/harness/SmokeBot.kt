@@ -2,8 +2,8 @@ package com.ktome.game.harness
 
 import com.ktome.core.item.ConsumableEffect
 import com.ktome.core.item.EquipSlot
-import com.ktome.core.item.ItemQuality
 import com.ktome.core.item.ItemType
+import com.ktome.core.loot.RarityTier
 import com.ktome.core.map.Point
 import com.ktome.core.pathfinding.AStar
 import com.ktome.core.talent.TalentTreeOwnerType
@@ -72,7 +72,8 @@ class SmokeBot : RunBot {
         if (
             observation.inventoryItems.size < SMOKE_BOT_AUTO_PICKUP_LIMIT &&
             observation.visibleGroundItemPositions.any { it == observation.playerPosition } &&
-            !shouldSkipFreshDropPickup(observation)
+            !shouldSkipFreshDropPickup(observation) &&
+            canManageInventorySafely(observation)
         ) {
             return PlayerCommand.PickUp
         }
@@ -104,10 +105,7 @@ class SmokeBot : RunBot {
         if (hostilesWithin(observation, 2) >= 2) {
             return false
         }
-        val nearestBossDistance =
-            observation.visibleBossPositions.minOfOrNull { boss ->
-                boss.chebyshevDistanceTo(observation.playerPosition)
-            }
+        val nearestBossDistance = nearestBossDistance(observation)
         if (nearestBossDistance != null && nearestBossDistance <= 3) {
             return false
         }
@@ -136,7 +134,8 @@ class SmokeBot : RunBot {
 
     private fun preferredInventoryAction(observation: RunObservation): PlayerCommand? {
         val bossVisible = observation.visibleBossPositions.isNotEmpty()
-        val bossThreatClose = observation.visibleBossPositions.any { boss -> boss.chebyshevDistanceTo(observation.playerPosition) <= 3 }
+        val nearestBossDistance = nearestBossDistance(observation)
+        val bossThreatClose = nearestBossDistance != null && nearestBossDistance <= 3
         val lowHealthThreshold =
             when (observation.playerResource.typeId) {
                 "MANA" -> if (bossVisible) 92 else 85
@@ -156,6 +155,20 @@ class SmokeBot : RunBot {
         if (escapeIndex >= 0) {
             return PlayerCommand.ActivateInventoryItem(escapeIndex)
         }
+        availableInscription(observation, "phase_door")
+            ?.takeIf { !it.requiresTarget }
+            ?.takeIf {
+                lowHealth && (adjacentHostiles > 0 || bossThreatClose) ||
+                    (
+                        observation.playerResource.typeId == "STAMINA" &&
+                            bossVisible &&
+                            nearestBossDistance != null &&
+                            nearestBossDistance in 2..6 &&
+                            observation.playerStatus.currentHp < observation.playerStatus.maxHp
+                    )
+            }?.let { inscription ->
+                return PlayerCommand.UseInscription(inscription.hotkey)
+            }
         val consumableIndex =
             observation.inventoryItems.indexOfFirst { item ->
                 lowHealth &&
@@ -180,6 +193,10 @@ class SmokeBot : RunBot {
             }
         if (resourceRestoreIndex >= 0) {
             return PlayerCommand.ActivateInventoryItem(resourceRestoreIndex)
+        }
+
+        if (!canManageInventorySafely(observation)) {
+            return null
         }
 
         inventoryCleanupCandidateIndex(observation)?.let { index ->
@@ -240,9 +257,9 @@ class SmokeBot : RunBot {
     ): Int {
         val qualityScore =
             when (item.quality) {
-                ItemQuality.COMMON -> 0
-                ItemQuality.MAGIC -> 30
-                ItemQuality.RARE -> 60
+                RarityTier.NORMAL -> 0
+                RarityTier.MAGIC -> 30
+                RarityTier.RARE -> 60
             }
         val desiredAffixes = desiredSynergyAffixIds(observation)
         val synergyMatchCount = item.affixIds.count(desiredAffixes::contains)
@@ -290,10 +307,7 @@ class SmokeBot : RunBot {
         if (hostilesWithin(observation, 1) > 0) {
             return false
         }
-        val nearestBossDistance =
-            observation.visibleBossPositions.minOfOrNull { boss ->
-                boss.chebyshevDistanceTo(observation.playerPosition)
-            }
+        val nearestBossDistance = nearestBossDistance(observation)
         return nearestBossDistance == null || nearestBossDistance > 2
     }
 
@@ -410,7 +424,8 @@ class SmokeBot : RunBot {
         val nearbyHostiles = hostilesWithin(observation, 3)
         val bossVisible = observation.visibleBossPositions.isNotEmpty()
         val bossClose = observation.visibleBossPositions.any { boss -> boss.chebyshevDistanceTo(observation.playerPosition) <= 3 }
-        val earlyBossPressure = observation.zoneId == "shattered_outpost" && observation.floor >= 2 && bossVisible
+        val nearestBossDistance = nearestBossDistance(observation)
+        val earlyBossPressure = hasEarlyBossPressure(observation, nearestBossDistance)
         val lowHealthThreshold =
             when (observation.playerResource.typeId) {
                 "ENERGY" -> if (bossVisible) 40 else 55
@@ -584,7 +599,8 @@ class SmokeBot : RunBot {
         val nearbyHostiles = hostilesWithin(observation, 3)
         val bossVisible = observation.visibleBossPositions.isNotEmpty()
         val bossClose = observation.visibleBossPositions.any { boss -> boss.chebyshevDistanceTo(observation.playerPosition) <= 3 }
-        val earlyBossPressure = observation.zoneId == "shattered_outpost" && observation.floor >= 2 && bossVisible
+        val nearestBossDistance = nearestBossDistance(observation)
+        val earlyBossPressure = hasEarlyBossPressure(observation, nearestBossDistance)
         val lowMana = observation.playerResource.typeId == "MANA" && observation.playerResource.current * 100 <= observation.playerResource.max * 50
         val lowHealthThreshold =
             when (observation.playerResource.typeId) {
@@ -714,6 +730,17 @@ class SmokeBot : RunBot {
             }
         val criticalHealth = observation.playerStatus.currentHp * 100 <= observation.playerStatus.maxHp * criticalHealthThreshold
         val isolatedBossPressure = bossVisible && adjacentHostiles == 0 && nearbyHostiles == 1
+        val shouldSkirtTrashThreats =
+            shouldPreserveRouteProgress(observation) &&
+                !pursuingBoss &&
+                distance <= 1 &&
+                adjacentHostiles <= 1 &&
+                nearbyHostiles <= 2 &&
+                !lowHealth &&
+                !criticalHealth
+        if (shouldSkirtTrashThreats) {
+            return null
+        }
         val shouldRetreat =
             when (observation.playerResource.typeId) {
                 "MANA" -> lowHealth && distance <= 2
@@ -758,6 +785,15 @@ class SmokeBot : RunBot {
     }
 
     private fun chooseGroundItemPath(observation: RunObservation): PlayerCommand? {
+        if (!shouldDetourForGroundItems(observation)) {
+            return null
+        }
+        val maxDetourDistance =
+            if (shouldPreserveRouteProgress(observation) || observation.zoneId == "shattered_outpost") {
+                1
+            } else {
+                MAX_ITEM_DETOUR_DISTANCE
+            }
         if (observation.inventoryItems.size >= SMOKE_BOT_AUTO_PICKUP_LIMIT) {
             return null
         }
@@ -767,7 +803,7 @@ class SmokeBot : RunBot {
                 observation.visibleGroundItemPositions
                     .filter { itemPosition ->
                         !shouldAvoidDroppedGroundItem(observation, itemPosition) &&
-                        itemPosition.chebyshevDistanceTo(observation.playerPosition) <= MAX_ITEM_DETOUR_DISTANCE
+                        itemPosition.chebyshevDistanceTo(observation.playerPosition) <= maxDetourDistance
                     }.sortedBy { it.chebyshevDistanceTo(observation.playerPosition) },
             ) ?: return null
         val nextStep = navigationStepToward(observation, target) ?: return null
@@ -1063,6 +1099,29 @@ class SmokeBot : RunBot {
                     slot.resourceCost <= observation.playerResource.current
             }
 
+    private fun availableInscription(
+        observation: RunObservation,
+        inscriptionId: String,
+    ): ObservedInscription? =
+        observation.inscriptions.firstOrNull { inscription ->
+            inscription.inscriptionId == inscriptionId &&
+                inscription.cooldownRemaining <= 0
+        }
+
+    private fun nearestBossDistance(observation: RunObservation): Int? =
+        observation.visibleBossPositions.minOfOrNull { boss ->
+            boss.chebyshevDistanceTo(observation.playerPosition)
+        }
+
+    private fun hasEarlyBossPressure(
+        observation: RunObservation,
+        nearestBossDistance: Int? = nearestBossDistance(observation),
+    ): Boolean =
+        observation.zoneId == "shattered_outpost" &&
+            observation.floor >= 2 &&
+            nearestBossDistance != null &&
+            nearestBossDistance <= 4
+
     private fun hostilesWithin(
         observation: RunObservation,
         radius: Int,
@@ -1166,6 +1225,28 @@ class SmokeBot : RunBot {
         observation.playerResource.typeId == "POSITIVE_ENERGY" &&
             observation.visibleBossPositions.isEmpty() &&
             !(lastThreatWasBoss && rememberedThreatPosition(observation) != null)
+
+    private fun canManageInventorySafely(observation: RunObservation): Boolean {
+        if (hostilesWithin(observation, 1) > 0) {
+            return false
+        }
+        if (hostilesWithin(observation, 2) >= 2) {
+            return false
+        }
+        return observation.visibleBossPositions.none { boss ->
+            boss.chebyshevDistanceTo(observation.playerPosition) <= 4
+        }
+    }
+
+    private fun shouldDetourForGroundItems(observation: RunObservation): Boolean {
+        if (!canManageInventorySafely(observation)) {
+            return false
+        }
+        if (observation.visibleHostilePositions.isNotEmpty() && shouldPreserveRouteProgress(observation)) {
+            return false
+        }
+        return true
+    }
 
     private fun unlockedTalentIds(observation: RunObservation): Set<String> =
         buildSet {

@@ -1,6 +1,6 @@
 package com.ktome.game.harness
 
-import com.ktome.core.item.ItemQuality
+import com.ktome.core.loot.RarityTier
 import com.ktome.core.item.MilestoneRewardSource
 import com.ktome.core.item.EquipSlot
 import com.ktome.core.profile.MilestoneRewardSummary
@@ -67,7 +67,7 @@ class ScenarioReportJsonTest {
                             zoneId = "greenwood_fringe",
                             baseItemId = "forgebreaker_pick",
                             equipSlot = EquipSlot.WEAPON,
-                            qualityTier = ItemQuality.MAGIC,
+                            qualityTier = RarityTier.MAGIC,
                             buildHashAtGrant = "templar#human#grant",
                             affixIds = listOf("flaming", "fortified"),
                             equippedBaseItemIdBeforeReward = "long_sword",

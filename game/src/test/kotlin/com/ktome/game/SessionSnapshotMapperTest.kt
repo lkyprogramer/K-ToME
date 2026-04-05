@@ -6,7 +6,7 @@ import com.ktome.core.effect.WorldEffect
 import com.ktome.core.ecs.get
 import com.ktome.core.item.EquipmentPassive
 import com.ktome.core.item.EquipSlot
-import com.ktome.core.item.ItemQuality
+import com.ktome.core.loot.RarityTier
 import com.ktome.core.item.MilestoneRewardSource
 import com.ktome.core.map.GameMap
 import com.ktome.core.map.Point
@@ -24,6 +24,7 @@ import com.ktome.core.mapgen.TopologyFingerprinting
 import com.ktome.core.mapgen.TopologyNode
 import com.ktome.core.mapgen.ZoneMapgenProfile
 import com.ktome.core.mapgen.ZoneMapgenProfileResolver
+import com.ktome.core.loot.PityTracker
 import com.ktome.core.profile.MilestoneRewardSummary
 import com.ktome.core.resource.ResourcePoolSnapshot
 import com.ktome.core.save.ActiveEffectSnapshot
@@ -271,7 +272,7 @@ class SessionSnapshotMapperTest {
                     zoneId = "greenwood_fringe",
                     baseItemId = "forgebreaker_pick",
                     equipSlot = EquipSlot.WEAPON,
-                    qualityTier = ItemQuality.MAGIC,
+                    qualityTier = RarityTier.MAGIC,
                     buildHashAtGrant = "vanguard#human#grant",
                     affixIds = listOf("alpha"),
                     equippedBaseItemIdBeforeReward = "short_sword",
@@ -367,7 +368,7 @@ class SessionSnapshotMapperTest {
                             zoneId = "greenwood_fringe",
                             baseItemId = "seal_reliquary",
                             equipSlot = EquipSlot.OFF_HAND,
-                            qualityTier = ItemQuality.RARE,
+                            qualityTier = RarityTier.RARE,
                             buildHashAtGrant = "rogue#human#grant",
                             affixIds = listOf("shadowed"),
                             equippedBaseItemIdBeforeReward = "basic_shield",
@@ -569,7 +570,7 @@ class SessionSnapshotMapperTest {
                                     baseId = "bandit_trophy",
                                     type = "ARMOR",
                                     slot = "OFF_HAND",
-                                    quality = "COMMON",
+                                    quality = "NORMAL",
                                     stats = StatModifierSnapshot(dex = 1, accuracy = 1),
                                 ),
                         ),
@@ -620,6 +621,25 @@ class SessionSnapshotMapperTest {
 
         assertTrue(tracker.engagedInCombat)
         assertEquals(setOf("dungeon_lord_opening_war_cry"), tracker.consumedTriggerIds)
+    }
+
+    @Test
+    fun `save snapshot round trip preserves phase4 pity tracker state`() {
+        val snapshot =
+            phase4Snapshot(
+                generatedFloor = phase4HiddenEntranceFloor(bindingId = SearchBindingId("search.greenwood.secret_entrance")),
+            ).copy(
+                phase4RunState = com.ktome.core.save.Phase4RunStateSnapshot(
+                    pityTracker = PityTracker(rollsSinceLastRare = 7, eligibleSpecialRollsSinceLastUnique = 19),
+                ),
+            )
+
+        val restored = SessionSnapshotMapper.fromSaveSnapshot(snapshot)
+
+        assertEquals(7, restored.pityTracker.rollsSinceLastRare)
+        assertEquals(19, restored.pityTracker.eligibleSpecialRollsSinceLastUnique)
+        assertEquals(snapshot.lootFormulaVersion, phase4Snapshot(phase4HiddenEntranceFloor(bindingId = SearchBindingId("search.greenwood.secret_entrance"))).lootFormulaVersion)
+        assertEquals(snapshot.specialTierEligibilityVersion, phase4Snapshot(phase4HiddenEntranceFloor(bindingId = SearchBindingId("search.greenwood.secret_entrance"))).specialTierEligibilityVersion)
     }
 
     private fun content(): GameContent {

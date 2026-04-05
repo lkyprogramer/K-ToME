@@ -8,7 +8,6 @@ import com.ktome.core.combat.SaveDimension
 import com.ktome.core.item.EquipmentPassive
 import com.ktome.core.item.ItemBaseDef
 import com.ktome.core.item.ItemDataBundle
-import com.ktome.core.item.ItemGenerator
 import com.ktome.core.random.RandomSource
 import com.ktome.core.resource.ResourceType
 import com.ktome.core.status.StatusEffectType
@@ -727,14 +726,12 @@ class SchemaV2LoaderTest {
 
         val eliteSeenBaseIds =
             generatedLootBaseIds(
-                itemBundle = itemBundle,
                 candidateItems = eliteProfile.itemIds.map { itemId -> resolveBaseItem(itemBundle, itemId) },
                 floor = 2,
                 seeds = 20260318L..20260381L,
             )
         val bossSeenBaseIds =
             generatedLootBaseIds(
-                itemBundle = itemBundle,
                 candidateItems = bossProfile.itemIds.map { itemId -> resolveBaseItem(itemBundle, itemId) },
                 floor = 4,
                 seeds = 20260318L..20260381L,
@@ -751,7 +748,6 @@ class SchemaV2LoaderTest {
     }
 
     private fun generatedLootBaseIds(
-        itemBundle: ItemDataBundle,
         candidateItems: List<ItemBaseDef>,
         floor: Int,
         seeds: LongRange,
@@ -760,7 +756,7 @@ class SchemaV2LoaderTest {
             val random = RandomSource.from(Random(seed))
             val floorCandidates = candidateItems.filter { item -> floor in item.dropFloors }.ifEmpty { candidateItems }
             val chosenBase = chooseWeightedLootItem(floorCandidates, random)
-            ItemGenerator(itemBundle, random).generate(chosenBase, floor).baseId
+            chosenBase.id
         }.toSet()
 
     private fun resolveBaseItem(

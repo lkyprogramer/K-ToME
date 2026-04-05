@@ -8,6 +8,7 @@ import com.ktome.core.ecs.add
 import com.ktome.core.ecs.get
 import com.ktome.core.ecs.has
 import com.ktome.core.ecs.remove
+import com.ktome.core.loot.RarityTier
 import com.ktome.core.map.Point
 import com.ktome.core.resource.ResourcePools
 import com.ktome.core.resource.ResourceType
@@ -22,7 +23,7 @@ sealed interface InventoryOperationResult {
         override val message: String,
         val itemId: EntityId,
         val itemName: String,
-        val itemQuality: ItemQuality? = null,
+        val itemQuality: RarityTier? = null,
         val itemBaseId: String? = null,
         val itemMaterialId: String? = null,
         val itemAffixIds: List<String> = emptyList(),
@@ -35,7 +36,7 @@ sealed interface InventoryOperationResult {
         override val code: InventoryOperationCode,
         override val message: String,
         val itemName: String? = null,
-        val itemQuality: ItemQuality? = null,
+        val itemQuality: RarityTier? = null,
         val itemBaseId: String? = null,
         val itemMaterialId: String? = null,
         val itemAffixIds: List<String> = emptyList(),

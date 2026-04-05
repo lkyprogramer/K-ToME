@@ -701,7 +701,7 @@
   "affix.of_speed.desc": "提高速度的后缀。",
   "monster.tag.bandit": "强盗",
   "monster.tag.undead": "亡灵",
-  "item.quality.common": "普通",
+  "item.quality.normal": "普通",
   "item.quality.magic": "魔法",
   "item.quality.rare": "稀有",
   "item.display.composed": "{quality}{prefix1}{prefix2}{material}{suffix1}{suffix2}{base}",
