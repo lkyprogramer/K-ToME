@@ -23,6 +23,7 @@ import com.ktome.core.save.FloorSnapshot
 import com.ktome.core.save.MapSnapshot
 import com.ktome.core.resource.ResourcePoolSnapshot
 import com.ktome.game.data.DataLoader
+import com.ktome.game.data.schema.SchemaLevelRange
 import com.ktome.game.model.MonsterTemplate
 import org.junit.jupiter.api.Assertions.assertEquals
 import java.nio.file.Files
@@ -40,6 +41,18 @@ import kotlin.io.path.writeText
 class GameModuleTest {
     @TempDir
     lateinit var tempDir: Path
+
+    @Test
+    fun `recommended level for floor tracks zone floor progression conservatively`() {
+        val zone = DataLoader().loadSchemaCatalog().zones.first { schema -> schema.id == "shattered_outpost" }
+
+        assertEquals(1, recommendedLevelForZoneFloor(zone, 1))
+        assertEquals(4, recommendedLevelForZoneFloor(zone, 2))
+        assertEquals(2, recommendedLevelForFloor(SchemaLevelRange(min = 2, max = 8), floorIndex = 1, floorCount = 4))
+        assertEquals(4, recommendedLevelForFloor(SchemaLevelRange(min = 2, max = 8), floorIndex = 2, floorCount = 4))
+        assertEquals(6, recommendedLevelForFloor(SchemaLevelRange(min = 2, max = 8), floorIndex = 3, floorCount = 4))
+        assertEquals(8, recommendedLevelForFloor(SchemaLevelRange(min = 2, max = 8), floorIndex = 4, floorCount = 4))
+    }
 
     @Test
     fun `items spawn on tiles not occupied by monsters`() {

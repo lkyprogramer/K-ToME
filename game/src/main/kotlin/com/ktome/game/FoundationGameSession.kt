@@ -271,6 +271,26 @@ internal fun cacheRewardSourceId(
     position: Point,
 ): String = "cache.$zoneId.floor$floor.$interactableId.${position.x}_${position.y}"
 
+internal fun recommendedLevelForFloor(
+    levelRange: SchemaLevelRange,
+    floorIndex: Int,
+    floorCount: Int,
+): Int {
+    require(floorCount > 0) { "floorCount must be positive." }
+    val clampedFloor = floorIndex.coerceIn(1, floorCount)
+    if (floorCount == 1 || levelRange.min >= levelRange.max) {
+        return levelRange.max.coerceAtLeast(levelRange.min)
+    }
+    val delta = levelRange.max - levelRange.min
+    val scaledDelta = delta * (clampedFloor - 1) / (floorCount - 1)
+    return (levelRange.min + scaledDelta).coerceIn(levelRange.min, levelRange.max)
+}
+
+internal fun recommendedLevelForZoneFloor(
+    zone: ZoneSchemaV2,
+    floorIndex: Int,
+): Int = recommendedLevelForFloor(zone.recommendedLevel, floorIndex, zone.floorCount)
+
 class FoundationGameSession internal constructor(
     config: FoundationGameConfig,
     private val content: GameContent,
@@ -3039,6 +3059,10 @@ class FoundationGameSession internal constructor(
 
     private fun currentMagicFindBonus(): Float = 0.0f
 
+    private fun currentZoneSourceLevel(): Int = recommendedLevelForZoneFloor(currentZoneSchema(), currentFloor())
+
+    private fun currentZoneLegacyFloorBand(): Int = itemFloorForRecommendedLevel(currentZoneSourceLevel())
+
     private fun currentFloorRewardBudget(): com.ktome.core.loot.FloorRewardBudget =
         com.ktome.core.loot.FloorRewardBudget(
             zoneId = currentZoneSchema().id,
@@ -4014,8 +4038,8 @@ class FoundationGameSession internal constructor(
                     RewardGenerationContext(
                         rewardSource = MilestoneRewardSource.CACHE,
                         sourceId = sourceId,
-                        sourceLevel = currentZoneSchema().recommendedLevel.max,
-                        floor = itemFloorForRecommendedLevel(currentZoneSchema().recommendedLevel.max),
+                        sourceLevel = currentZoneSourceLevel(),
+                        floor = currentZoneLegacyFloorBand(),
                         qualityFloor = RarityTier.MAGIC,
                         minAffixCount = 1,
                         routeBiasTags = routeRewardBiasTags(currentZoneSchema().rewardBiasTags()),
@@ -4057,8 +4081,8 @@ class FoundationGameSession internal constructor(
                     RewardGenerationContext(
                         rewardSource = MilestoneRewardSource.SUPPORT,
                         sourceId = sourceId,
-                        sourceLevel = currentZoneSchema().recommendedLevel.max,
-                        floor = itemFloorForRecommendedLevel(currentZoneSchema().recommendedLevel.max),
+                        sourceLevel = currentZoneSourceLevel(),
+                        floor = currentZoneLegacyFloorBand(),
                         qualityFloor = RarityTier.MAGIC,
                         minAffixCount = 1,
                         routeBiasTags = routeRewardBiasTags(currentZoneSchema().rewardBiasTags()),
@@ -4106,8 +4130,8 @@ class FoundationGameSession internal constructor(
                 RewardGenerationContext(
                     rewardSource = MilestoneRewardSource.CACHE,
                     sourceId = "cadence.${config.zoneId}.floor${currentFloor()}",
-                    sourceLevel = currentZoneSchema().recommendedLevel.max,
-                    floor = itemFloorForRecommendedLevel(currentZoneSchema().recommendedLevel.max),
+                    sourceLevel = currentZoneSourceLevel(),
+                    floor = currentZoneLegacyFloorBand(),
                     qualityFloor = RarityTier.MAGIC,
                     minAffixCount = 1,
                     routeBiasTags = routeRewardBiasTags(currentZoneSchema().rewardBiasTags()),
@@ -4127,8 +4151,8 @@ class FoundationGameSession internal constructor(
                 RewardGenerationContext(
                     rewardSource = MilestoneRewardSource.CACHE,
                     sourceId = "cadence.${config.zoneId}.floor${currentFloor()}",
-                    sourceLevel = currentZoneSchema().recommendedLevel.max,
-                    floor = itemFloorForRecommendedLevel(currentZoneSchema().recommendedLevel.max),
+                    sourceLevel = currentZoneSourceLevel(),
+                    floor = currentZoneLegacyFloorBand(),
                     qualityFloor = RarityTier.MAGIC,
                     minAffixCount = 1,
                     routeBiasTags = routeRewardBiasTags(currentZoneSchema().rewardBiasTags()),
@@ -8342,7 +8366,7 @@ class FoundationGameSession internal constructor(
             ItemGenerator(content.itemBundle, sessionRandom).rollAndGenerate(
                 context =
                     com.ktome.core.loot.LootRollContext(
-                        sourceLevel = currentZoneSchema().recommendedLevel.max,
+                        sourceLevel = currentZoneSourceLevel(),
                         sourceTier = monsterSourceTier(template),
                         zoneId = currentZoneSchema().id,
                         playerLevel = playerStatus().level,
