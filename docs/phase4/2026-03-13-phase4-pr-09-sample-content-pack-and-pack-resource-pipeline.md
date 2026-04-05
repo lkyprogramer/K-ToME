@@ -130,12 +130,29 @@ examples/content-packs/sample.flooded_relics/
 2. 若需要截图对比，补 `goldenScreenshot` 或手动白盒步骤。
 3. 无论第二夹具是目录还是模拟输入，都不要求 client 做完整白盒展示；它只需要在 harness 中证明 precedence 正确。
 
+### 5.4 `tools / white-box` 补充改造
+
+1. `PR-08` 冻结好的 `whiteBoxContentPack` contract 在本 PR 必须被真实 sample pack 与 precedence fixture 消费，不允许只用 prose 假设“理论上可接”。
+2. `contentPackHarness` 和 `whiteBoxContentPack` 至少要覆盖：
+   - official sample pack 开启
+   - official sample pack 禁用回落
+   - 第二夹具或模拟双包 precedence
+3. sample pack 相关 artifact 至少包括：
+   - pack-local manifest resolve 结果
+   - merged i18n / visual / audio key 摘要
+   - fixed-seed headless run 摘要
+   - precedence fixture 解析结果
+4. `phase4Report` 中 content pack 侧的 AI 主入口默认指向 `whiteBoxContentPack`，而不是只让 AI grep `contentPackHarness` 的控制台结果。
+
 ## 6. 测试与自证
 
 ### 6.1 自动化命令
 
 ```bash
 ./gradlew contentPackHarness
+./gradlew whiteBoxContentPack
+./gradlew whiteBoxVerify
+./gradlew phase4Report
 ./gradlew clientSmoke
 ./gradlew goldenScreenshot
 ```
@@ -147,6 +164,17 @@ examples/content-packs/sample.flooded_relics/
 3. 人工确认新增内容的名称、图标、音频和日志文本全部带 namespace 且可读。
 4. 若第二夹具为目录型 pack，再跑一次双包顺序验证；若为模拟输入，则保留 `contentPackHarness` 报告截图或摘要作为证据。
 5. 确认 official sample pack 目录和 fixture pack 目录职责清晰，没有把测试专用资源误放进官方演示 pack。
+
+### 6.3 统一白盒框架验证
+
+1. `whiteBoxContentPack` 必须能把 sample pack 与 fixture pack 的结果区分建模，而不是混在一个“全部通过”的 summary 里。
+2. AI case 读取时至少要能反查：
+   - `packId`
+   - fixture id
+   - `activePackIds`
+   - `activePackManifestVersions`
+   - seed 或 harness case id
+3. precedence / conflict 的失败诊断必须以结构化字段进入 case facts / artifacts，不接受只留一张截图或一句“人工确认有问题”。
 
 ## 7. 资源生成计划
 
@@ -192,3 +220,4 @@ examples/content-packs/sample.flooded_relics/
 3. `Phase 4` 的 content pack 能力从“接口存在”升级为“示例可用”。
 4. precedence / conflict 至少有一个第二夹具或模拟双包场景可以复现，避免只验证单包 happy path。
 5. official sample pack 与 regression fixture pack 的职责分离清晰，不再混成一个“什么都想证明”的大而杂样例。
+6. `whiteBoxContentPack` 已能在 sample pack 与 precedence fixture 上产出 AI 可读报告，不再依赖人工翻 pack 目录定位问题。

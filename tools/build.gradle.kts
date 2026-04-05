@@ -85,3 +85,43 @@ tasks.register<Test>("solvabilityHarness") {
     systemProperty("ktome.phase4.solvability.reportDir", reportDir.get().asFile.absolutePath)
     outputs.dir(reportDir)
 }
+
+tasks.register<Test>("whiteBoxMapgen") {
+    group = "verification"
+    description = "Runs the Phase 4 unified white-box mapgen pilot and writes standard reports."
+    testClassesDirs = sourceSets.test.get().output.classesDirs
+    classpath = sourceSets.test.get().runtimeClasspath
+    useJUnitPlatform {
+        includeTags("whiteBoxMapgen")
+    }
+    val reportDir = layout.buildDirectory.dir("reports/phase4/whitebox/mapgen")
+    systemProperty("ktome.phase4.whitebox.mapgen.reportDir", reportDir.get().asFile.absolutePath)
+    outputs.dir(reportDir)
+}
+
+tasks.register<Test>("whiteBoxSolvability") {
+    group = "verification"
+    description = "Runs the Phase 4 unified white-box solvability pilot and writes standard reports."
+    testClassesDirs = sourceSets.test.get().output.classesDirs
+    classpath = sourceSets.test.get().runtimeClasspath
+    useJUnitPlatform {
+        includeTags("whiteBoxSolvability")
+    }
+    val reportDir = layout.buildDirectory.dir("reports/phase4/whitebox/solvability")
+    systemProperty("ktome.phase4.whitebox.solvability.reportDir", reportDir.get().asFile.absolutePath)
+    outputs.dir(reportDir)
+}
+
+tasks.register<Test>("phase4Report") {
+    group = "verification"
+    description = "Aggregates the currently landed Phase 4 verification reports into a single phase summary."
+    testClassesDirs = sourceSets.test.get().output.classesDirs
+    classpath = sourceSets.test.get().runtimeClasspath
+    useJUnitPlatform {
+        includeTags("phase4Report")
+    }
+    dependsOn(":tools:mapgenSmoke", ":tools:solvabilityHarness", ":tools:whiteBoxMapgen", ":tools:whiteBoxSolvability", ":game:bossHarness")
+    val reportDir = layout.buildDirectory.dir("reports/phase4")
+    systemProperty("ktome.phase4.reportDir", reportDir.get().asFile.absolutePath)
+    outputs.dir(reportDir)
+}

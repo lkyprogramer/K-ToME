@@ -122,6 +122,10 @@
 
 ## 3. Manual White-Box Steps
 
+统一白盒验证框架架构、artifact/report 合同、AI 消费协议与人工一致性策略，以 [../2026-04-04-unified-white-box-verification-framework.md](../2026-04-04-unified-white-box-verification-framework.md) 为权威。
+
+本节只保留 `Phase 5` 封版前必须人工校准的玩家路径动作。`Phase 5` 的战术 AI、replay、perf、soak、localization、accessibility 等 domain 属于固定场景域，正式自动化主路径使用 scenario corpus，不套用 `5 seed / >=3 类差异` 规则。
+
 1. 从安装包启动游戏，完成一次新开局。
 2. 进入一场中后期 Boss 战，确认：
    - 战术 AI 的走位、留技能、换目标可感知提升

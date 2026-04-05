@@ -7,21 +7,26 @@
 ./gradlew :core:test
 ./gradlew mapgenSmoke
 ./gradlew solvabilityHarness
+./gradlew whiteBoxMapgen
+./gradlew whiteBoxSolvability
+./gradlew whiteBoxVerify
+./gradlew phase4Report
 ./gradlew lootBalanceLab
 ./gradlew terrainInteractionBatch
 ./gradlew bossHarness
 ./gradlew hiddenContentHarness
 ./gradlew contentPackHarness
-./gradlew phase4Report
 ./gradlew jacocoTestReport
 ./gradlew :core:jacocoTestCoverageVerification
 ```
 
 说明：
 
-1. `phase4Report` 是 Phase 4 的聚合入口，负责顺序执行全部正式 harness 并产出 `tools/build/reports/phase4/phase4-summary.json`。
-2. 单个 harness 仍保留独立命令，便于局部回归和 PR 级收口。
-3. `terrainInteractionBatch + bossHarness` 是 `PR-06` 的主验证入口；`hiddenContentHarness` 只消费 terrain/mutation/boss 的结果，不承担其主验证职责。
+1. 当前主干已经落地 `whiteBoxMapgen`、`whiteBoxSolvability`、`whiteBoxVerify` 与 `phase4Report`。
+2. 当前 `phase4Report` 聚合的是已落地主线任务：`mapgenSmoke`、`solvabilityHarness`、`bossHarness`、`whiteBoxMapgen`、`whiteBoxSolvability`。
+3. `lootBalanceLab`、`terrainInteractionBatch`、`hiddenContentHarness`、`contentPackHarness` 在各自实现落地后继续并入 `phase4Report`。
+4. 单个 harness 仍保留独立命令，便于局部回归和 PR 级收口。
+5. `terrainInteractionBatch + bossHarness` 是 `PR-06` 的主验证入口；`hiddenContentHarness` 只消费 terrain/mutation/boss 的结果，不承担其主验证职责。
 
 ### 必须检查的结果
 
@@ -33,14 +38,27 @@
    - 单层生成 `P95 < 2s`
 2. `solvabilityHarness`
    - 至少覆盖 `1000` 个 seed
+   - `summary.header.seedList` 必须与 `summary.totalCases` 一一对应，不允许 seed collision
    - `CRITICAL_PATH` 可达率 `100%`
    - `OPTIONAL / SECRET` 失败不计入主线失败，但必须保留 proof
-3. `lootBalanceLab`
+3. `whiteBoxMapgen`
+   - 当前 pilot corpus 固定为 `4 zone × 2 floor × 5 seed = 40` case
+   - `0` failed assertion
+   - 每个 upgraded zone 的差异类别数至少为 `3`
+   - 必须产出 `summary.json / cases.jsonl / report.md / artifacts/`
+4. `whiteBoxSolvability`
+   - 当前 pilot corpus 固定为 `4 zone × 2 floor × 5 seed = 40` case
+   - `0` failed assertion
+   - corpus 必须同时包含 reveal-success 与 reveal-fail case
+   - corpus 至少保留 `1` 个 backtrack proof case；不要求每个 sampled seed 都发生回溯
+   - 每个 `zone/floor` 都必须保留可解释 proof，且 `criticalPathFailureCount = 0`
+   - `PR-03` 的 white-box 自动签收以该任务为主入口
+5. `lootBalanceLab`
    - 每组上下文至少 `10000` 次 roll
    - `MAGIC / RARE` 分布偏离公式预期不超过 `±5%`
    - `UNIQUE / ARTIFACT` 分布偏离不超过 `±25%` 相对误差
    - `affixBudget` 平均偏离不超过 `±5%`，`P95` 不超过 `±12%`
-4. `hiddenContentHarness`
+6. `hiddenContentHarness`
    - 至少覆盖 `500` 个 seed
    - 至少 `30%` 的 run 触发 `1` 个 hidden event
    - 至少 `10%` 的 run 发现 `1` 个 secret zone
@@ -48,15 +66,15 @@
    - 设计理据：
      - `30%` 保证平均每 `3~4` 局至少出现一次显式隐藏发现
      - `10%` 保持 secret zone 的稀缺感，但不会在长期游玩中完全不可见
-5. `terrainInteractionBatch`
+7. `terrainInteractionBatch`
    - 五种地形交互都能在 isolated batch 中稳定复现
    - `0` unresolved interaction rule
    - trace 必须进入 `CombatPipeline step 9`
-6. `bossHarness`
+8. `bossHarness`
    - 至少覆盖 base boss + variant boss 对照样本
    - `actionWeightProfileId` 不得改变 phase graph 结构
    - `threatCost` 汇总必须可追溯
-7. `contentPackHarness`
+9. `contentPackHarness`
    - 示例 pack `0` schema error
    - `0` unresolved i18n key
    - `0` unresolved visual/audio key
@@ -91,6 +109,7 @@
    - `OPTIONAL / SECRET` 的返回主线桥接
    - `optionalPathCount / secretPathCount / totalReachableNodes / reachabilityRatio`
 3. 检查：
+   - `summary.header.seedList` 中的 seed 不允许重复
    - Boss 门后不存在主线必需钥匙
    - `PERCEPTION_REVEAL` 失败不会阻断主线
    - secret zone 从不承载主线硬门槛
@@ -190,7 +209,14 @@
 
 ## 3. Manual White-Box Verification
 
-1. 连续开 `3` 个不同 seed 的 run，人工确认地图差异明显。
+统一白盒验证框架架构、artifact/report 合同、AI 消费协议与人工一致性策略，以 [../2026-04-04-unified-white-box-verification-framework.md](../2026-04-04-unified-white-box-verification-framework.md) 为权威。
+
+本节只保留 `Phase 4` 当前仍需人工抽样确认的体验项。对差异性域，抽样口径统一为固定 `5` seed；对固定场景域，不强行套用 seed 差异门槛。`PR-03` 的自动白盒签收以 `whiteBoxSolvability` 为主，`whiteBoxMapgen` 提供其上游拓扑与可感知差异证据。
+
+1. 连续开 `5` 个不同 seed 的 run，人工确认至少存在 `3` 类可感知差异：
+   - 主路径 / 环路形态差异
+   - vault / pattern room / hidden entrance 出现差异
+   - biome family 混合、terrain tag 痕迹或奖励/遭遇差异
 2. 至少触发一次隐藏入口或 secret event，并确认发现逻辑清楚。
 3. 在至少两个不同 zone 中观察 `WATER / OIL / ICE` 的表现与规则一致。
 4. 用装有示例 content pack 的客户端进入一局，确认新增内容真实可见。

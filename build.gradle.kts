@@ -72,7 +72,17 @@ subprojects {
         useJUnitPlatform()
         if (name == "test") {
             useJUnitPlatform {
-                excludeTags("headlessSmoke", "clientSmoke", "longRunLab", "soloClearLab", "mapgenSmoke", "solvabilityHarness")
+                excludeTags(
+                    "headlessSmoke",
+                    "clientSmoke",
+                    "longRunLab",
+                    "soloClearLab",
+                    "mapgenSmoke",
+                    "solvabilityHarness",
+                    "whiteBoxMapgen",
+                    "whiteBoxSolvability",
+                    "phase4Report",
+                )
             }
         }
         testLogging {
@@ -159,6 +169,30 @@ tasks.register("solvabilityHarness") {
     group = LifecycleBasePlugin.VERIFICATION_GROUP
     description = "Runs the Phase 4 solvability proof harness and writes structured reports."
     dependsOn(":tools:solvabilityHarness")
+}
+
+tasks.register("whiteBoxMapgen") {
+    group = LifecycleBasePlugin.VERIFICATION_GROUP
+    description = "Runs the Phase 4 unified white-box mapgen pilot."
+    dependsOn(":tools:whiteBoxMapgen")
+}
+
+tasks.register("whiteBoxSolvability") {
+    group = LifecycleBasePlugin.VERIFICATION_GROUP
+    description = "Runs the Phase 4 unified white-box solvability pilot."
+    dependsOn(":tools:whiteBoxSolvability")
+}
+
+tasks.register("whiteBoxVerify") {
+    group = LifecycleBasePlugin.VERIFICATION_GROUP
+    description = "Runs all currently registered unified white-box verification pilots."
+    dependsOn("whiteBoxMapgen", "whiteBoxSolvability")
+}
+
+tasks.register("phase4Report") {
+    group = LifecycleBasePlugin.VERIFICATION_GROUP
+    description = "Aggregates currently landed Phase 4 verification tasks into tools/build/reports/phase4/phase4-summary.json."
+    dependsOn(":tools:phase4Report")
 }
 
 tasks.register<Exec>("assetLint") {

@@ -29,6 +29,8 @@
    - `perfSmoke`
    - `soakRun`
    - `BalanceLab`
+   - `phase5Report` 或等价聚合入口
+   - 统一白盒验证框架接入（`whiteBoxTacticalAi`、`whiteBoxReplay`、`whiteBoxPerf`、`whiteBoxSoak` 等）
 3. `Release Lane`
    - Localization QA
    - Accessibility QA
@@ -64,10 +66,12 @@
 1. 战术 AI、感知/潜行和 replay/死因分析都有固定 schema 与 harness。
 2. perf/soak、Localization QA、Accessibility QA 和 content pack compatibility 全部通过。
 3. 安装包、已知问题、操作说明、验证说明和 release notes 齐全。
+4. `Phase 5` 的固定场景域白盒验证统一接入项目级 white-box framework，并保留最小人工校准动作。
 
 ## 6. 文档索引
 
 1. [2026-03-13-phase5-tactical-ai-stability-and-release.md](./2026-03-13-phase5-tactical-ai-stability-and-release.md)
 2. [2026-03-13-phase5-regression-checklist.md](./2026-03-13-phase5-regression-checklist.md)
-3. [../2026-03-13-phase2-to-phase5-final-roadmap.md](../2026-03-13-phase2-to-phase5-final-roadmap.md)
-4. [../2026-03-13-core-systems-design-and-phase-supplements.md](../2026-03-13-core-systems-design-and-phase-supplements.md)
+3. [../2026-04-04-unified-white-box-verification-framework.md](../2026-04-04-unified-white-box-verification-framework.md)
+4. [../2026-03-13-phase2-to-phase5-final-roadmap.md](../2026-03-13-phase2-to-phase5-final-roadmap.md)
+5. [../2026-03-13-core-systems-design-and-phase-supplements.md](../2026-03-13-core-systems-design-and-phase-supplements.md)

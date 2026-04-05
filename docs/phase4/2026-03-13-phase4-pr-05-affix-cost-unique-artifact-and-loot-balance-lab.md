@@ -195,6 +195,28 @@ build.gradle.kts
 3. 保存 summary JSON 和 per-roll JSONL。
 4. 在 summary 中显式输出 pity 触发、模板缺失降级与 `magicFind` clamp 边界统计。
 
+### 5.4 `tools / white-box` 补充改造
+
+1. `lootBalanceLab` 除现有 batch summary 之外，还必须通过统一 white-box 框架输出标准四件套：
+   - `tools/build/reports/phase4/whitebox/loot/whitebox-loot-summary.json`
+   - `tools/build/reports/phase4/whitebox/loot/whitebox-loot-cases.jsonl`
+   - `tools/build/reports/phase4/whitebox/loot/whitebox-loot-report.md`
+   - `tools/build/reports/phase4/whitebox/loot/artifacts/`
+2. 正式 domain 名称固定为 `whiteBoxLoot`，并加入：
+   - `whiteBoxVerify`
+   - `phase4Report`
+3. `whiteBoxLoot` 的 case artifact 至少包括：
+   - rarity table
+   - affix cost breakdown
+   - special-tier eligibility / upgrade trace
+   - pity timeline
+   - `castSpeed` DR 结果表
+4. AI 读取顺序固定为：
+   - 先读 `whitebox-loot-summary.json`
+   - 再按 join key 读 `whitebox-loot-cases.jsonl`
+   - 最后跳转到对应 artifact
+5. `lootBalanceLab` 与 `whiteBoxLoot` 可以复用同一 runner 内核，但不得形成“实验室一套口径、white-box 一套口径”的双报告模型。
+
 ## 6. 测试与自证
 
 ### 6.1 必测行为
@@ -212,6 +234,9 @@ build.gradle.kts
 ```bash
 ./gradlew :core:test
 ./gradlew lootBalanceLab
+./gradlew whiteBoxLoot
+./gradlew whiteBoxVerify
+./gradlew phase4Report
 ```
 
 ### 6.3 白盒验证
@@ -219,6 +244,28 @@ build.gradle.kts
 1. 至少观察一次 `UNIQUE` 掉落和一次 `ARTIFACT` 奖励。
 2. 人工核对 inspect 面板的模板描述、icon 和音频 cue 是否匹配模板来源。
 3. 人工抽查一次 pity 生效后的掉落日志，确认报告字段、实际结果和 pity 重置时机一致。
+
+### 6.4 统一白盒框架验证
+
+1. `whiteBoxLoot` 必须自动断言：
+   - `MAGIC / RARE / UNIQUE / ARTIFACT` 分布满足 checklist 容差
+   - `UNIQUE / ARTIFACT` 只出现在允许来源
+   - `magicFind=1.50` 与 `magicFind=1.00` 在 clamp 后分布一致到统计容差内
+   - pity 激活与重置逻辑可追溯
+   - `castSpeed` affix 经过 DR 后不线性越界
+2. aggregate report 至少输出：
+   - `rarityTierDistribution`
+   - `affixBudgetDeviation`
+   - `specialTierEligibilityRate`
+   - `rarePityActivations / uniquePityActivations`
+   - `pitySuppressedByMissingTemplates`
+3. `whiteBoxLoot` 的失败 case 必须能反查到：
+   - `sourceLevel`
+   - `sourceTier`
+   - `zoneId`
+   - `playerLevel`
+   - `magicFind`
+   - seed 或 corpus entry id
 
 ## 7. 资源生成计划
 
@@ -265,3 +312,4 @@ build.gradle.kts
 2. `UNIQUE / ARTIFACT` 可生成、可验证、可追溯。
 3. 资源计划与现有 manifest/lint/process 管线对齐。
 4. pity、模板缺失降级和 `magicFind` clamp 都能在实验室报告里直接解释。
+5. `whiteBoxLoot` 已接入统一 white-box 框架，并能被 AI 与人类共同消费。

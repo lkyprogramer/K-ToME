@@ -36,12 +36,16 @@ Phase 4 的主题是把“可完成的长局”升级成“重复游玩差异明
 4. `Tools/QA Lane`
    - `mapgenSmoke`
    - `solvabilityHarness`
+   - `whiteBoxMapgen`
+   - `whiteBoxSolvability`
+   - `whiteBoxVerify`
    - `lootBalanceLab`
    - `terrainInteractionBatch`
    - `bossHarness`（沿用 Phase 3 主 harness，扩展 variant/threat 汇总）
    - `hiddenContentHarness`
    - `contentPackHarness`
-   - `phase4Report`
+   - `phase4Report`（当前聚合 `mapgenSmoke / solvabilityHarness / bossHarness / whiteBoxMapgen / whiteBoxSolvability`，后续继续扩域）
+   - 统一白盒验证框架后续扩域（`whiteBoxLoot`、`whiteBoxHiddenContent`、`whiteBoxContentPack`）
 
 ## 4. 工作包与依赖
 
@@ -91,20 +95,22 @@ Phase 4 的主题是把“可完成的长局”升级成“重复游玩差异明
 2. loot 预算和阶段匹配通过实验室验收。
 3. elite mutation、hidden event、secret zone 都可被自动化与白盒验证。
 4. 示例 content pack 可在不改 `core` 的前提下装载和验证。
+5. 差异性域的白盒验证和 AI 可读报告合同统一收口到项目级 white-box framework。
 
 ## 6. 文档索引
 
 1. [2026-03-13-phase4-procgen-loot-and-content-pack.md](./2026-03-13-phase4-procgen-loot-and-content-pack.md)
 2. [2026-03-13-phase4-cross-cutting-contracts.md](./2026-03-13-phase4-cross-cutting-contracts.md)
 3. [2026-03-13-phase4-verification-checklist.md](./2026-03-13-phase4-verification-checklist.md)
-4. [2026-03-13-phase4-pr-01-mapgen-contract-and-smoke-baseline.md](./2026-03-13-phase4-pr-01-mapgen-contract-and-smoke-baseline.md)
-5. [2026-03-13-phase4-pr-02-hybrid-topology-pattern-vault-and-biome-family.md](./2026-03-13-phase4-pr-02-hybrid-topology-pattern-vault-and-biome-family.md)
-6. [2026-03-13-phase4-pr-03-solvability-graph-hidden-entrance-and-harness.md](./2026-03-13-phase4-pr-03-solvability-graph-hidden-entrance-and-harness.md)
-7. [2026-03-13-phase4-pr-04-loot-budget-v2-and-rarity-pipeline.md](./2026-03-13-phase4-pr-04-loot-budget-v2-and-rarity-pipeline.md)
-8. [2026-03-13-phase4-pr-05-affix-cost-unique-artifact-and-loot-balance-lab.md](./2026-03-13-phase4-pr-05-affix-cost-unique-artifact-and-loot-balance-lab.md)
-9. [2026-03-13-phase4-pr-06-terrain-interaction-elite-mutation-and-boss-variant.md](./2026-03-13-phase4-pr-06-terrain-interaction-elite-mutation-and-boss-variant.md)
-10. [2026-03-13-phase4-pr-07-hidden-event-secret-zone-and-client-readability.md](./2026-03-13-phase4-pr-07-hidden-event-secret-zone-and-client-readability.md)
-11. [2026-03-13-phase4-pr-08-content-pack-overlay-loader-and-pack-lint.md](./2026-03-13-phase4-pr-08-content-pack-overlay-loader-and-pack-lint.md)
-12. [2026-03-13-phase4-pr-09-sample-content-pack-and-pack-resource-pipeline.md](./2026-03-13-phase4-pr-09-sample-content-pack-and-pack-resource-pipeline.md)
-13. [../2026-03-13-phase2-to-phase5-final-roadmap.md](../2026-03-13-phase2-to-phase5-final-roadmap.md)
-14. [../2026-03-13-core-systems-design-and-phase-supplements.md](../2026-03-13-core-systems-design-and-phase-supplements.md)
+4. [../2026-04-04-unified-white-box-verification-framework.md](../2026-04-04-unified-white-box-verification-framework.md)
+5. [2026-03-13-phase4-pr-01-mapgen-contract-and-smoke-baseline.md](./2026-03-13-phase4-pr-01-mapgen-contract-and-smoke-baseline.md)
+6. [2026-03-13-phase4-pr-02-hybrid-topology-pattern-vault-and-biome-family.md](./2026-03-13-phase4-pr-02-hybrid-topology-pattern-vault-and-biome-family.md)
+7. [2026-03-13-phase4-pr-03-solvability-graph-hidden-entrance-and-harness.md](./2026-03-13-phase4-pr-03-solvability-graph-hidden-entrance-and-harness.md)
+8. [2026-03-13-phase4-pr-04-loot-budget-v2-and-rarity-pipeline.md](./2026-03-13-phase4-pr-04-loot-budget-v2-and-rarity-pipeline.md)
+9. [2026-03-13-phase4-pr-05-affix-cost-unique-artifact-and-loot-balance-lab.md](./2026-03-13-phase4-pr-05-affix-cost-unique-artifact-and-loot-balance-lab.md)
+10. [2026-03-13-phase4-pr-06-terrain-interaction-elite-mutation-and-boss-variant.md](./2026-03-13-phase4-pr-06-terrain-interaction-elite-mutation-and-boss-variant.md)
+11. [2026-03-13-phase4-pr-07-hidden-event-secret-zone-and-client-readability.md](./2026-03-13-phase4-pr-07-hidden-event-secret-zone-and-client-readability.md)
+12. [2026-03-13-phase4-pr-08-content-pack-overlay-loader-and-pack-lint.md](./2026-03-13-phase4-pr-08-content-pack-overlay-loader-and-pack-lint.md)
+13. [2026-03-13-phase4-pr-09-sample-content-pack-and-pack-resource-pipeline.md](./2026-03-13-phase4-pr-09-sample-content-pack-and-pack-resource-pipeline.md)
+14. [../2026-03-13-phase2-to-phase5-final-roadmap.md](../2026-03-13-phase2-to-phase5-final-roadmap.md)
+15. [../2026-03-13-core-systems-design-and-phase-supplements.md](../2026-03-13-core-systems-design-and-phase-supplements.md)

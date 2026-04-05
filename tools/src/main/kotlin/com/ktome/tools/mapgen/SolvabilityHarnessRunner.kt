@@ -6,12 +6,11 @@ import com.ktome.core.mapgen.HybridTopologyMapgenPipeline
 import com.ktome.core.mapgen.MapgenRequest
 import com.ktome.core.mapgen.PathClass
 import com.ktome.core.world.solvability.PerceptionScore
+import com.ktome.core.world.solvability.SolvabilityGraph
 import com.ktome.core.world.solvability.SolvabilityGraphBuilder
+import com.ktome.core.world.solvability.SolvabilityProof
 import com.ktome.core.world.solvability.SolvabilityProver
-import com.ktome.game.data.DataLoader
 import com.ktome.game.data.schema.ZoneSchemaV2
-import com.ktome.game.mapgen.SchemaMapgenContentCatalogFactory
-import com.ktome.game.mapgen.SchemaZoneMapgenProfileResolver
 import java.nio.file.Files
 import java.nio.file.Path
 import kotlinx.serialization.json.Json
@@ -36,121 +35,26 @@ object SolvabilityHarnessRunner {
     private const val PROOFS_FILE: String = "solvability-proofs.jsonl"
     private const val SEEDS_PER_FLOOR: Int = 125
     private const val SEED_BASE: Long = 20260404010000L
-    private const val ZONE_SEED_BLOCK: Long = 1_000L
-    private const val FLOOR_SEED_BLOCK: Long = 100L
+    private const val ZONE_SEED_BLOCK: Long = 1_000_000L
+    private const val FLOOR_SEED_BLOCK: Long = 10_000L
     private val harnessPerceptionScore: PerceptionScore = PerceptionScore(baseMentalPower = 12)
 
     fun run(): SolvabilityHarnessRun {
         val reportDir = reportDir()
         Files.createDirectories(reportDir)
 
-        val loader = DataLoader()
-        val schemaCatalog = loader.loadSchemaCatalog()
-        val upgradedZones = schemaCatalog.zones.filter(ZoneSchemaV2::isPhase4Upgraded).sortedBy(ZoneSchemaV2::id)
-        val profileResolver = SchemaZoneMapgenProfileResolver(zones = schemaCatalog.zones, profiles = schemaCatalog.zoneMapgenProfiles)
-        val contentCatalog = SchemaMapgenContentCatalogFactory.from(schemaCatalog)
-        val pipeline = HybridTopologyMapgenPipeline(profileResolver = profileResolver, contentCatalog = contentCatalog)
+        val executionContext = MapgenSmokeRunner.loadExecutionContext()
+        val upgradedZones = executionContext.schemaCatalog.zones.filter(ZoneSchemaV2::isPhase4Upgraded).sortedBy(ZoneSchemaV2::id)
         val cases = buildCases(upgradedZones)
-        val seedList = cases.map { case -> case.request.seed }
-        val header = phase4HarnessHeader(harnessId = HARNESS_ID, seedList = seedList)
+        val distinctSeedList = cases.map { case -> case.request.seed }.distinct()
+        require(distinctSeedList.size == cases.size) {
+            "solvabilityHarness cases must keep a one-to-one seed corpus; got ${distinctSeedList.size} distinct seeds for ${cases.size} cases."
+        }
+        val header = phase4HarnessHeader(harnessId = HARNESS_ID, seedList = distinctSeedList)
 
         val results =
             cases.map { testCase ->
-                try {
-                    val generatedFloor = pipeline.run(testCase.request)
-                    val graph = SolvabilityGraphBuilder.build(generatedFloor)
-                    val proof = SolvabilityProver.prove(graph = graph, perceptionScore = harnessPerceptionScore)
-                    val visitedNodeIds = proof.visitedNodes.mapTo(linkedSetOf()) { nodeId -> nodeId.value }
-                    val criticalGateRequirements =
-                        graph.edges
-                            .filter { edge ->
-                                edge.requiredKeys.isNotEmpty() &&
-                                    graph.nodes
-                                        .filter { node -> node.pathClass == PathClass.CRITICAL_PATH }
-                                        .map { node -> node.id }
-                                        .contains(edge.to)
-                            }.flatMap { edge -> edge.requiredKeys }
-                            .toSet()
-                    val optionalRequirementProviders =
-                        graph.nodes
-                            .filter { node -> node.pathClass == PathClass.OPTIONAL }
-                            .flatMap { node -> node.grants }
-                            .toSet()
-                    val searchStatesByBindingId =
-                        proof.searchStates.associate { entry ->
-                            entry.bindingId.value to entry.result.name
-                        }
-                    SolvabilityCaseResult(
-                        zoneId = testCase.request.zoneId,
-                        floorIndex = testCase.request.floorIndex,
-                        seed = testCase.request.seed,
-                        criticalPathReachable = proof.criticalPathReachable,
-                        visitedNodes = proof.visitedNodes.map { nodeId -> nodeId.value },
-                        acquiredKeys = proof.acquiredKeys.map { requirement -> requirement.value },
-                        unresolvedRequirements = proof.unresolvedRequirements.map { requirement -> requirement.value },
-                        optionalPathCount = proof.optionalPathCount,
-                        secretPathCount = proof.secretPathCount,
-                        totalReachableNodes = proof.totalReachableNodes,
-                        reachabilityRatio = proof.reachabilityRatio,
-                        topologySummary = topologySummary(generatedFloor),
-                        searchActionCount = proof.searchActionCount,
-                        searchRevealCount = proof.searchRevealCount,
-                        searchFailCount = proof.searchFailCount,
-                        searchStates = searchStatesByBindingId,
-                        secretProofs =
-                            generatedFloor.entrances
-                                .sortedBy { entrance -> entrance.bindingId.value }
-                                .map { entrance ->
-                                    SecretProofSnapshot(
-                                        bindingId = entrance.bindingId.value,
-                                        entranceAnchorId = entrance.entranceAnchorId.value,
-                                        targetNodeId = entrance.targetNodeId.value,
-                                        resolved = entrance.targetNodeId.value in visitedNodeIds,
-                                        result = searchStatesByBindingId[entrance.bindingId.value],
-                                    )
-                                },
-                        resolvedEntranceBindings =
-                            generatedFloor.resolvedEntranceBindings().map { binding ->
-                                ResolvedEntranceBindingSnapshot(
-                                    bindingId = binding.searchBindingId.value,
-                                    entranceAnchorId = binding.entranceAnchorId.value,
-                                    targetNodeId = binding.resolvedTargetNodeId.value,
-                                )
-                            },
-                        resolvedReturnBridgeNodeIds =
-                            generatedFloor.entrances.associate { entrance ->
-                                entrance.bindingId.value to entrance.resolvedReturnBridgeNodeId.value
-                            },
-                        backtrackSatisfied =
-                            criticalGateRequirements.any(optionalRequirementProviders::contains) &&
-                                proof.criticalPathReachable,
-                        error = null,
-                    )
-                } catch (exception: Exception) {
-                    SolvabilityCaseResult(
-                        zoneId = testCase.request.zoneId,
-                        floorIndex = testCase.request.floorIndex,
-                        seed = testCase.request.seed,
-                        criticalPathReachable = false,
-                        visitedNodes = emptyList(),
-                        acquiredKeys = emptyList(),
-                        unresolvedRequirements = emptyList(),
-                        optionalPathCount = 0,
-                        secretPathCount = 0,
-                        totalReachableNodes = 0,
-                        reachabilityRatio = 0f,
-                        topologySummary = TopologySummarySnapshot(),
-                        searchActionCount = 0,
-                        searchRevealCount = 0,
-                        searchFailCount = 0,
-                        searchStates = emptyMap(),
-                        secretProofs = emptyList(),
-                        resolvedEntranceBindings = emptyList(),
-                        resolvedReturnBridgeNodeIds = emptyMap(),
-                        backtrackSatisfied = false,
-                        error = exception.message ?: exception::class.simpleName.orEmpty(),
-                    )
-                }
+                executeCase(executionContext, testCase).toCaseResult()
             }
 
         val summaryPath = reportDir.resolve(SUMMARY_FILE)
@@ -159,7 +63,11 @@ object SolvabilityHarnessRunner {
             summaryPath,
             Json { prettyPrint = true }.encodeToString(
                 JsonElement.serializer(),
-                buildSummaryPayload(header = header, results = results),
+                buildSummaryPayload(
+                    header = header,
+                    results = results,
+                    distinctSeedCount = distinctSeedList.size,
+                ),
             ),
         )
         Files.writeString(
@@ -176,11 +84,14 @@ object SolvabilityHarnessRunner {
         )
     }
 
-    private fun buildCases(upgradedZones: List<ZoneSchemaV2>): List<SolvabilityCase> =
+    internal fun buildCases(
+        upgradedZones: List<ZoneSchemaV2>,
+        seedsPerFloor: Int = SEEDS_PER_FLOOR,
+    ): List<SolvabilityCase> =
         buildList {
             upgradedZones.withIndex().forEach { (zoneOrdinal, zone) ->
                 (1..zone.floorCount).forEach { floorIndex ->
-                    repeat(SEEDS_PER_FLOOR) { seedOrdinal ->
+                    repeat(seedsPerFloor) { seedOrdinal ->
                         add(
                             SolvabilityCase(
                                 request =
@@ -198,14 +109,41 @@ object SolvabilityHarnessRunner {
             }
         }
 
+    internal fun executeCase(
+        executionContext: MapgenExecutionContext,
+        testCase: SolvabilityCase,
+    ): SolvabilityExecutedCase =
+        try {
+            val generatedFloor = executionContext.pipeline.run(testCase.request)
+            val graph = SolvabilityGraphBuilder.build(generatedFloor)
+            val proof = SolvabilityProver.prove(graph = graph, perceptionScore = harnessPerceptionScore)
+            SolvabilityExecutedCase(
+                testCase = testCase,
+                generatedFloor = generatedFloor,
+                graph = graph,
+                proof = proof,
+                error = null,
+            )
+        } catch (exception: Exception) {
+            SolvabilityExecutedCase(
+                testCase = testCase,
+                generatedFloor = null,
+                graph = null,
+                proof = null,
+                error = exception.message ?: exception::class.simpleName.orEmpty(),
+            )
+        }
+
     private fun buildSummaryPayload(
         header: HarnessReportHeader,
         results: List<SolvabilityCaseResult>,
+        distinctSeedCount: Int,
     ): JsonObject =
         buildJsonObject {
             put("header", header.toJson())
             putJsonObject("summary") {
                 put("totalCases", results.size)
+                put("distinctSeedCount", distinctSeedCount)
                 put("failureCount", results.count { result -> result.error != null || !result.criticalPathReachable })
                 put("criticalPathFailureCount", results.count { result -> !result.criticalPathReachable })
                 put("errorCount", results.count { result -> result.error != null })
@@ -312,7 +250,7 @@ object SolvabilityHarnessRunner {
             (floorIndex.toLong() * FLOOR_SEED_BLOCK) +
             seedOrdinal.toLong()
 
-    private fun topologySummary(generatedFloor: com.ktome.core.mapgen.GeneratedFloor): TopologySummarySnapshot =
+    internal fun topologySummary(generatedFloor: com.ktome.core.mapgen.GeneratedFloor): TopologySummarySnapshot =
         TopologySummarySnapshot(
             nodeCount = generatedFloor.topology.nodes.size,
             edgeCount = generatedFloor.topology.edges.size,
@@ -335,11 +273,116 @@ object SolvabilityHarnessRunner {
         )
 }
 
-private data class SolvabilityCase(
+internal data class SolvabilityExecutedCase(
+    val testCase: SolvabilityCase,
+    val generatedFloor: com.ktome.core.mapgen.GeneratedFloor?,
+    val graph: SolvabilityGraph?,
+    val proof: SolvabilityProof?,
+    val error: String?,
+) {
+    fun toCaseResult(): SolvabilityCaseResult {
+        val floor = generatedFloor
+        val solvabilityGraph = graph
+        val solvabilityProof = proof
+        if (floor == null || solvabilityGraph == null || solvabilityProof == null) {
+            return SolvabilityCaseResult(
+                zoneId = testCase.request.zoneId,
+                floorIndex = testCase.request.floorIndex,
+                seed = testCase.request.seed,
+                criticalPathReachable = false,
+                visitedNodes = emptyList(),
+                acquiredKeys = emptyList(),
+                unresolvedRequirements = emptyList(),
+                optionalPathCount = 0,
+                secretPathCount = 0,
+                totalReachableNodes = 0,
+                reachabilityRatio = 0f,
+                topologySummary = TopologySummarySnapshot(),
+                searchActionCount = 0,
+                searchRevealCount = 0,
+                searchFailCount = 0,
+                searchStates = emptyMap(),
+                secretProofs = emptyList(),
+                resolvedEntranceBindings = emptyList(),
+                resolvedReturnBridgeNodeIds = emptyMap(),
+                backtrackSatisfied = false,
+                error = error,
+            )
+        }
+        val visitedNodeIds = solvabilityProof.visitedNodes.mapTo(linkedSetOf()) { nodeId -> nodeId.value }
+        val criticalGateRequirements =
+            solvabilityGraph.edges
+                .filter { edge ->
+                    edge.requiredKeys.isNotEmpty() &&
+                        solvabilityGraph.nodes
+                            .filter { node -> node.pathClass == PathClass.CRITICAL_PATH }
+                            .map { node -> node.id }
+                            .contains(edge.to)
+                }.flatMap { edge -> edge.requiredKeys }
+                .toSet()
+        val optionalRequirementProviders =
+            solvabilityGraph.nodes
+                .filter { node -> node.pathClass == PathClass.OPTIONAL }
+                .flatMap { node -> node.grants }
+                .toSet()
+        val searchStatesByBindingId =
+            solvabilityProof.searchStates.associate { entry ->
+                entry.bindingId.value to entry.result.name
+            }
+        return SolvabilityCaseResult(
+            zoneId = testCase.request.zoneId,
+            floorIndex = testCase.request.floorIndex,
+            seed = testCase.request.seed,
+            criticalPathReachable = solvabilityProof.criticalPathReachable,
+            visitedNodes = solvabilityProof.visitedNodes.map { nodeId -> nodeId.value },
+            acquiredKeys = solvabilityProof.acquiredKeys.map { requirement -> requirement.value },
+            unresolvedRequirements = solvabilityProof.unresolvedRequirements.map { requirement -> requirement.value },
+            optionalPathCount = solvabilityProof.optionalPathCount,
+            secretPathCount = solvabilityProof.secretPathCount,
+            totalReachableNodes = solvabilityProof.totalReachableNodes,
+            reachabilityRatio = solvabilityProof.reachabilityRatio,
+            topologySummary = SolvabilityHarnessRunner.topologySummary(floor),
+            searchActionCount = solvabilityProof.searchActionCount,
+            searchRevealCount = solvabilityProof.searchRevealCount,
+            searchFailCount = solvabilityProof.searchFailCount,
+            searchStates = searchStatesByBindingId,
+            secretProofs =
+                floor.entrances
+                    .sortedBy { entrance -> entrance.bindingId.value }
+                    .map { entrance ->
+                        SecretProofSnapshot(
+                            bindingId = entrance.bindingId.value,
+                            entranceAnchorId = entrance.entranceAnchorId.value,
+                            targetNodeId = entrance.targetNodeId.value,
+                            resolved = entrance.targetNodeId.value in visitedNodeIds,
+                            result = searchStatesByBindingId[entrance.bindingId.value],
+                        )
+                    },
+            resolvedEntranceBindings =
+                floor.resolvedEntranceBindings().map { binding ->
+                    ResolvedEntranceBindingSnapshot(
+                        bindingId = binding.searchBindingId.value,
+                        entranceAnchorId = binding.entranceAnchorId.value,
+                        targetNodeId = binding.resolvedTargetNodeId.value,
+                    )
+                },
+            resolvedReturnBridgeNodeIds =
+                floor.entrances.associate { entrance ->
+                    entrance.bindingId.value to entrance.resolvedReturnBridgeNodeId.value
+                },
+            backtrackSatisfied =
+                criticalGateRequirements.any(optionalRequirementProviders::contains) &&
+                    solvabilityProof.criticalPathReachable,
+            error = error,
+        )
+    }
+}
+
+internal data class SolvabilityCase(
     val request: MapgenRequest,
 )
 
-private data class SolvabilityCaseResult(
+internal data class SolvabilityCaseResult(
     val zoneId: String,
     val floorIndex: Int,
     val seed: Long,
@@ -363,7 +406,7 @@ private data class SolvabilityCaseResult(
     val error: String?,
 )
 
-private data class TopologySummarySnapshot(
+internal data class TopologySummarySnapshot(
     val nodeCount: Int = 0,
     val edgeCount: Int = 0,
     val primaryPathLength: Int = 0,
@@ -376,7 +419,7 @@ private data class TopologySummarySnapshot(
     val pathClassCounts: Map<String, Int> = emptyMap(),
 )
 
-private data class SecretProofSnapshot(
+internal data class SecretProofSnapshot(
     val bindingId: String,
     val entranceAnchorId: String,
     val targetNodeId: String,
@@ -384,10 +427,10 @@ private data class SecretProofSnapshot(
     val result: String?,
 )
 
-private data class ResolvedEntranceBindingSnapshot(
+internal data class ResolvedEntranceBindingSnapshot(
     val bindingId: String,
     val entranceAnchorId: String,
     val targetNodeId: String,
 )
 
-private fun ZoneSchemaV2.isPhase4Upgraded(): Boolean = mapgenProfileId != null
+internal fun ZoneSchemaV2.isPhase4Upgraded(): Boolean = mapgenProfileId != null
