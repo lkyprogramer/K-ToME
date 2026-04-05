@@ -224,6 +224,7 @@ enum class SearchActionResult {
 3. `Phase 4` 统一使用 sidecar：
    - `tools/src/main/resources/fixtures/content-packs/<packId>.yaml`
 4. `contentPackHarness` 只读取 sidecar 测试元数据，不要求 runtime loader 了解测试字段。
+5. pack-local `i18n / visual / audio` 的 merge 结果必须继续喂给现有单一 resolver / manifest 消费接口，不额外引入 pack-only resolver。
 
 建议结构：
 
@@ -268,7 +269,8 @@ data class DualPackScenario(
    - `mergePolicy`
    - `dedupeKey`
 4. `DENY` 只允许作用于明确标记为 optional 的 registry entry，不允许删除主线必需内容。
-5. loader/lint/harness 对以下失败面必须输出可读诊断：
+5. official sample pack 负责证明 `ADD` 的玩家可见路径；`REPLACE / APPEND / DENY / precedence / conflict` 由 fixture/harness 覆盖，不要求在一个 sample pack 中演完全部语义。
+6. loader/lint/harness 对以下失败面必须输出可读诊断：
    - 缺失依赖
    - 依赖环
    - `versionRange` 冲突
@@ -336,6 +338,9 @@ data class ContentRef(
    - search / reveal / secret zone 状态进入 run save / replay
 6. `PR-08 / PR-09`
    - runtime manifest 与 harness spec 分层
+   - runtime 主路径固定为 `ADD + whole-entry REPLACE`
+   - sample pack 与 fixture pack 的职责必须分层
+   - pack-local manifest merge 结果必须继续走现有 resolver / validation path
    - loader 失败诊断和 deterministic pack order 必须写实
 
 ## 4. 出口门禁

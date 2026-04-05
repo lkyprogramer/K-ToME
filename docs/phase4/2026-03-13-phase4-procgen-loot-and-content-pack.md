@@ -23,7 +23,7 @@
 1. 混合拓扑地图、pattern room、vault、环路和 biome family 进入正式主线。
 2. `lock-key DAG`、隐藏入口、任务拓扑具备自动化可解性验证。
 3. `affix / unique / artifact / elite mutation / hidden event / secret zone` 形成成体系掉落与遭遇生态。
-4. `content pack overlay + schema lint + harness` 能在不改 `core` 的前提下装载新增内容。
+4. `content pack overlay + schema lint + harness` 能以 `ADD + whole-entry REPLACE` 主路径在不改 `core` 的前提下装载新增内容；`APPEND / DENY` 保持在 fixture/lint/harness 边界。
 5. `Phase 4` 的地图、掉落、事件和内容包合同能直接作为 `Phase 5` soak、性能和 QA 的输入，而不是在 `Phase 5` 再返工。
 
 ### 1.1 体验差异预算与最小可感知差异
@@ -119,6 +119,10 @@
    - hidden entrance / secret zone 的表现约定
    - content pack 加载后的可见内容验证
 4. `Tools/QA Lane`
+   - `whiteBoxMapgen`
+   - `whiteBoxSolvability`
+   - `whiteBoxVerify`
+   - `phase4Report`
    - `mapgenSmoke`
    - `solvabilityHarness`
    - `lootBalanceLab`
@@ -135,7 +139,7 @@
 4. `P4-W4` 必须建立在 `P4-W2 + P4-W3` 的正式 contract 上；hidden reward 不能绕过 `LootBudget / FloorRewardBudget`，secret zone 不能绕过 solvability。
 5. `P4-W5` 的 loader / lint 可以在 `P4-X + P4-W3` 的 schema 稳定后起稿，但 headless harness 依赖 `P4-W4` 的 hidden content registry 完整；overlay 不能一边跟着 schema 漂移一边实现 loader。
 6. 对应 PR 级拆分时，`terrain interaction + elite mutation + Boss variant` 可在 `P4-W1` contract 稳定后先行并行推进；验证主线优先挂在 `terrainInteractionBatch + bossHarness`，`hiddenContentHarness` 只消费其结果。
-7. `P4-C` 的实现优先级是最小可行切片：示例 pack 必须完整验证 `ADD` 主路径；`APPEND / DENY` 默认停在 parse/lint/harness fixture 级验证，除非后续单独冻结 allowed-target 表。
+7. `P4-C` 的实现优先级是最小可行切片：runtime 正式支持 `ADD + whole-entry REPLACE`；示例 pack 以 `ADD` 为主验证路径，第二夹具负责 precedence / conflict 与非 `ADD` 语义；`APPEND / DENY` 默认停在 parse/lint/harness fixture 级验证，除非后续单独冻结 allowed-target 表。
 
 ### 3.4 工作量与人力建议
 
@@ -1095,7 +1099,7 @@ overlay 语义固定为：
 | op | 含义 | 允许范围 |
 | --- | --- | --- |
 | `ADD` | 新增 registry entry | 新怪物、新事件、新 item、新 vault |
-| `REPLACE` | 显式替换同 ID 内容定义 | 只能替换 `game` registry 层内容，不得改 `core` 规则常量 |
+| `REPLACE` | 显式替换同 ID 内容定义 | 只允许 whole-entry 替换 `game` registry 层内容，不得改 `core` 规则常量 |
 | `APPEND` | Phase 4 仅保留在 fixture/lint 层 | 若未来进入 runtime，必须先补 `allowed targets / fieldPath / mergePolicy / dedupeKey` |
 | `DENY` | Phase 4 仅保留在 fixture/lint 层 | 不允许删除主线必需 entry，也不作为官方 sample pack 主路径 |
 
@@ -1188,13 +1192,15 @@ runtime / test metadata 分层：
 实现路径约束：
 
 1. official registry assembly 与 pack overlay merge 必须尽量共享 resolver / validation path。
-2. 即使 `Phase 4` 不把官方内容完全建模成 `base pack`，也不允许出现“官方内容一套 loader、外部 pack 另一套 loader”的长期双轨。
+2. pack-local `i18n / visual / audio` merge 结果必须继续进入当前单一 resolver / manifest 消费接口，不允许为 sample pack 单独再起一套资源解析器。
+3. 即使 `Phase 4` 不把官方内容完全建模成 `base pack`，也不允许出现“官方内容一套 loader、外部 pack 另一套 loader”的长期双轨。
 
 实现优先级说明：
 
 1. `Phase 4` 的 sample pack 以 `ADD` 为主验证路径。
-2. `REPLACE / APPEND / DENY` 在 `Phase 4` 至少完成 parse/lint/harness fixture 级验证，不要求示例 pack 同时覆盖四种 op。
-3. 官方 sample pack 与 loader 回归 fixture 默认分开，不允许一个 pack 同时承担全部玩家演示和全部工程失败面验证。
+2. `REPLACE` 在 `Phase 4` 进入 runtime 主路径，但优先由第二夹具验证 precedence / conflict，不要求 sample pack 把所有非 `ADD` 场景都做成玩家主入口。
+3. `APPEND / DENY` 在 `Phase 4` 至少完成 parse/lint/harness fixture 级验证，不要求示例 pack 同时覆盖四种 op。
+4. 官方 sample pack 与 loader 回归 fixture 默认分开，不允许一个 pack 同时承担全部玩家演示和全部工程失败面验证。
 
 最小 pack 示例：
 

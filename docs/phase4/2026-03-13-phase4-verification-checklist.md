@@ -79,6 +79,8 @@
    - `0` unresolved i18n key
    - `0` unresolved visual/audio key
    - 固定 seed headless run 全通过
+   - official sample pack 只要求证明 `ADD` 主路径
+   - 第二夹具或模拟双包场景必须覆盖 `REPLACE / APPEND / DENY / precedence / conflict`
 
 ## 2. Fixed-Seed / Batch Verification
 
@@ -203,6 +205,8 @@
    - pack namespace 唯一
    - 未声明 `REPLACE` 的重复 ID 会被 lint 拒绝
    - 禁用示例 pack 后能回落到 base manifest
+   - runtime 主路径固定为 `ADD + whole-entry REPLACE`
+   - official sample pack 只承担 `ADD` 的玩家可见验证；非 `ADD` 语义由第二夹具或模拟双包场景覆盖
    - 第二 pack fixture 或模拟双 pack 场景下，loader precedence 与 conflict 处理符合文档约定
    - `harnessSeeds` 只能来自 sidecar harness spec，不得出现在 runtime manifest
    - 缺失依赖、依赖环、`versionRange` 冲突和 namespace 冲突都有结构化失败诊断

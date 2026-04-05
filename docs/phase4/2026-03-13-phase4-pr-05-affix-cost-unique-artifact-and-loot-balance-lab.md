@@ -33,7 +33,7 @@
 ### 2.1 本 PR 必须冻结的口径
 
 1. `MAGIC` 允许 `1~2` affix，`RARE` 允许 `2~4` affix，总成本不得超过 `affixBudget`。
-2. `UNIQUE / ARTIFACT` 只能来自 `SpecialTierEligibility + upgrade roll + 模板池`，不做二次随机 affix 拼装，也不再走“命中后降级”的主路径。
+2. `UNIQUE / ARTIFACT` 只能来自 `SpecialTierEligibility + upgrade roll + 模板池`，不做二次随机 affix 拼装。运行时不存在“命中后再因模板缺失降级”的主路径；模板完整性由数据门禁与实验室验证保证。
 3. `ARTIFACT` 只允许来自 `BOSS / SECRET_ZONE / special reward chest`。
 4. `castSpeed` 词条只允许通过正式 `DR_CAST_SPEED_C` 生效。
 5. root alias `./gradlew lootBalanceLab` 必须建立，并固定报告路径：
@@ -54,7 +54,7 @@
 ### 3.2 非目标
 
 1. 不在本 PR 引入 elite mutation 或 hidden reward。
-2. 不在本 PR 重写整个 item schema；只在现有 item/affix schema 上补正式预算字段和模板路径。
+2. 不在本 PR 推翻既有 `ItemSchemaV2` 基线或另起第二套 item runtime；只在现有 item/affix 正式模型上补预算语义、模板入口和约束字段。
 
 ## 4. 技术方案
 
@@ -110,7 +110,7 @@ data class AffixCost(
 4. 模板池最低规模：
    - `UNIQUE >= 12`
    - `ARTIFACT >= 4`
-5. 最低规模是 Phase 4 主线门槛；若不满足，则对应 special tier 不进入 eligibility，且不能重置 pity 状态。
+5. 最低规模与覆盖门槛是 `game data + lootBalanceLab + lint/harness` 的正式门槛；不允许依赖运行时降级路径掩盖模板池不足。
 6. 覆盖门槛与数量门槛同时成立：
    - 四个 target zone 至少都各有 `1` 个可见差异模板入口
    - 至少覆盖 `2` 类不同 build archetype
@@ -159,7 +159,6 @@ build.gradle.kts
 10. `specialTierEligibilityRate`
 11. `rarePityActivations`
 12. `uniquePityActivations`
-13. `pitySuppressedByMissingTemplates`
 14. `castSpeedPostDrP50`
 15. `castSpeedPostDrP95`
 
@@ -185,7 +184,7 @@ build.gradle.kts
 1. 扩展 item/affix YAML。
 2. 引入 `unique` 和 `artifact` 注册表或目录。
 3. zone/boss/reward chest 接到允许的 source tier。
-4. 补齐最低模板量，并为模板缺失场景声明显式降级策略。
+4. 补齐最低模板量，并把模板池“数量 + 覆盖”做成正式数据门槛，不再声明运行时降级策略。
 5. 模板池必须满足“数量 + 覆盖”双门槛，不允许只用大量同质化 stat stick 充数。
 
 ### 5.3 `tools`
@@ -193,7 +192,7 @@ build.gradle.kts
 1. 新建 `lootBalanceLab` runner。
 2. root `build.gradle.kts` 暴露 alias。
 3. 保存 summary JSON 和 per-roll JSONL。
-4. 在 summary 中显式输出 pity 触发、模板缺失降级与 `magicFind` clamp 边界统计。
+4. 在 summary 中显式输出 pity 触发、模板池门槛断言与 `magicFind` clamp 边界统计。
 
 ### 5.4 `tools / white-box` 补充改造
 
@@ -225,7 +224,7 @@ build.gradle.kts
 2. `UNIQUE / ARTIFACT` 只在允许来源出现。
 3. `magicFind > 1.0` 被 clamp，且 `1.50` 与 `1.00` 的分布差异落在 checklist 容忍区间内。
 4. `castSpeed` affix 经过 DR 后仍在合理区间。
-5. pity 只在达到阈值且最终成功产出目标稀有度时重置；模板缺失降级不重置。
+5. pity 只在达到阈值且最终成功产出目标稀有度时重置；模板池完整性不足应由 lint/lab 直接判失败，运行时不存在“模板缺失降级但不重置”的分支。
 6. `TRIVIAL` 只承担预算尾差，不出现双 `TRIVIAL` 叠加逃逸。
 7. `exclusiveGroup` 冲突不会在最终结果阶段被动裁剪，而是在候选集阶段被排除。
 
@@ -258,7 +257,6 @@ build.gradle.kts
    - `affixBudgetDeviation`
    - `specialTierEligibilityRate`
    - `rarePityActivations / uniquePityActivations`
-   - `pitySuppressedByMissingTemplates`
 3. `whiteBoxLoot` 的失败 case 必须能反查到：
    - `sourceLevel`
    - `sourceTier`

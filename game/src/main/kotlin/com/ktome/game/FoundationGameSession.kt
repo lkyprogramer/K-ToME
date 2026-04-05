@@ -271,6 +271,26 @@ internal fun cacheRewardSourceId(
     position: Point,
 ): String = "cache.$zoneId.floor$floor.$interactableId.${position.x}_${position.y}"
 
+internal fun recommendedLevelForFloor(
+    levelRange: SchemaLevelRange,
+    floorIndex: Int,
+    floorCount: Int,
+): Int {
+    require(floorCount > 0) { "floorCount must be positive." }
+    val clampedFloor = floorIndex.coerceIn(1, floorCount)
+    if (floorCount == 1 || levelRange.min >= levelRange.max) {
+        return levelRange.max.coerceAtLeast(levelRange.min)
+    }
+    val width = levelRange.max - levelRange.min + 1
+    val scaledUpperBound = (width * clampedFloor + floorCount - 1) / floorCount
+    return (levelRange.min + scaledUpperBound - 1).coerceIn(levelRange.min, levelRange.max)
+}
+
+internal fun recommendedLevelForZoneFloor(
+    zone: ZoneSchemaV2,
+    floorIndex: Int,
+): Int = recommendedLevelForFloor(zone.recommendedLevel, floorIndex, zone.floorCount)
+
 class FoundationGameSession internal constructor(
     config: FoundationGameConfig,
     private val content: GameContent,
@@ -3038,6 +3058,8 @@ class FoundationGameSession internal constructor(
     private fun currentZoneRewardProfile() = content.zoneRewardProfileResolver.resolve(currentZoneSchema().id)
 
     private fun currentMagicFindBonus(): Float = 0.0f
+
+    private fun currentZoneSourceLevel(): Int = recommendedLevelForZoneFloor(currentZoneSchema(), currentFloor())
 
     private fun currentFloorRewardBudget(): com.ktome.core.loot.FloorRewardBudget =
         com.ktome.core.loot.FloorRewardBudget(
@@ -8342,7 +8364,7 @@ class FoundationGameSession internal constructor(
             ItemGenerator(content.itemBundle, sessionRandom).rollAndGenerate(
                 context =
                     com.ktome.core.loot.LootRollContext(
-                        sourceLevel = currentZoneSchema().recommendedLevel.max,
+                        sourceLevel = currentZoneSourceLevel(),
                         sourceTier = monsterSourceTier(template),
                         zoneId = currentZoneSchema().id,
                         playerLevel = playerStatus().level,

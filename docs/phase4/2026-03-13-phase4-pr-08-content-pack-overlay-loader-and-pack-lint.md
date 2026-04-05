@@ -20,10 +20,10 @@
 完成标准：
 
 1. `ContentPackManifest / OverlayEntry / OverlayOp` 进入正式 runtime contract。
-2. pack loader 的官方 runtime 主路径固定支持 `ADD / REPLACE`；`APPEND / DENY` 只要求 fixture/lint/harness 级可验证。
+2. pack loader 的官方 runtime 主路径固定支持 `ADD / whole-entry REPLACE`；`APPEND / DENY` 只要求 fixture/lint/harness 级可验证。
 3. pack lint 能检查 schemaVersion、gameVersionRange、namespace、overlay 冲突和 i18n/visual/audio key。
 4. `contentPackHarness` root alias 建立，并输出 pack-manifest + seed-list + report 三件套。
-5. `Phase 4` 仅要求 sample pack 正式证明 `ADD` 路径；`REPLACE / APPEND / DENY` 至少要有 fixture/harness 级覆盖，不强制都落到正式 sample pack。
+5. `Phase 4` 仅要求 sample pack 正式证明 `ADD` 路径；`REPLACE / APPEND / DENY` 由第二夹具或 fixture/harness 覆盖，不强制都落到正式 sample pack。
 
 ## 2. 当前问题
 
@@ -146,7 +146,7 @@ data class ContentPackHarnessSpec(
 1. `manifest.yaml` 只承载 pack 元数据。
 2. i18n 继续复用现有 JSON bundle 格式。
 3. visual/audio 继续复用当前 runtime JSON manifest schema，不创建第二套 YAML-only 表现资源路径。
-4. loader 在内存中把 pack-local manifest merge 成与 canonical runtime manifest 同构的 resolver 输入。
+4. loader 在内存中把 pack-local manifest merge 成与当前 bundled runtime manifest 同构的 resolver 输入；不得为 pack 单独再起一套资源解析器。
 5. `PR-09` 的最小可行切片固定为 `ADD` 主路径；其他 op 通过 fixture 或双包场景覆盖，避免把 sample pack 复杂度做成主线阻塞项。
 6. `ContentPackHarnessSpec` 固定放在：
    - `tools/src/main/resources/fixtures/content-packs/<packId>.yaml`
@@ -210,7 +210,7 @@ data class ContentPackHarnessSpec(
 3. 报告格式按 `pack-manifest + seed-list + report` 固定。
 4. 夹具分层明确区分：
    - 正式 sample pack fixture：验证 `ADD`
-   - 双 pack 或冲突 fixture：验证 `REPLACE / APPEND / DENY`
+   - 双 pack 或冲突 fixture：验证 `whole-entry REPLACE / APPEND / DENY / precedence / conflict`
 5. harness seed 与 fixture 顺序从 `ContentPackHarnessSpec` 读取，而不是从 runtime manifest 读取。
 
 ### 5.3 `tools / white-box` 补充改造
@@ -272,7 +272,7 @@ data class ContentPackHarnessSpec(
 1. loader/lint/harness contract 冻结。
 2. pack-local JSON i18n / manifest 口径冻结，不再引入第二套格式。
 3. `PR-09` 只需要填示例 pack，不需要再改 loader 语义。
-4. `Phase 4` 的最小可行切片是“sample pack 验证 `ADD` + fixture 验证其他 op”，不是要求一个 sample pack 演完全部 overlay 语义。
+4. `Phase 4` 的最小可行切片是“sample pack 验证 `ADD` + fixture 验证 `REPLACE / APPEND / DENY / precedence / conflict`”，不是要求一个 sample pack 演完全部 overlay 语义。
 5. runtime manifest 与 harness sidecar 的边界冻结，`tools` 元数据不再侵入 `game` runtime contract。
-6. 官方 runtime merge 白名单已经收窄到 `ADD / REPLACE`，不会在 `Phase 4` 意外演变成通用 patch DSL。
+6. 官方 runtime merge 白名单已经收窄到 `ADD / whole-entry REPLACE`，不会在 `Phase 4` 意外演变成通用 patch DSL。
 7. `whiteBoxContentPack` 所需的 artifact / report contract 已在本 PR 冻结，`PR-09` 只填 sample pack 与 fixture，不再反改 white-box 输出模型。

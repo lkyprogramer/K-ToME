@@ -39,7 +39,7 @@
 4. root alias `./gradlew hiddenContentHarness` 必须建立，并固定报告路径：
    - `tools/build/reports/phase4/hidden/hidden-content-summary.json`
    - `tools/build/reports/phase4/hidden/hidden-content-events.jsonl`
-5. 至少一条 hidden content 路径必须依赖玩家主动行为，不允许全部退化为纯被动感知。
+5. 至少一条 hidden content 路径必须依赖显式 `SearchAction`，不允许全部退化为纯被动感知。
 
 ## 3. 范围与非目标
 
@@ -113,7 +113,7 @@ enum class ReturnBridgePolicy {
 1. 每个 target zone 至少允许一种“非纯事件链”的 hidden content 路径。
 2. 整个 Phase 4 主线至少存在一条必须先执行 `SearchAction` 才能 reveal 的 hidden content 路径，用于证明玩家主动探索是正式 contract，而不是附带 UI 按钮。
 3. 主动搜索一律复用 `PR-03` 已冻结的 `SearchAction + DiscoveryRule(predicates + combinator)` 合同，不得再造第二套搜索 trigger 枚举。
-4. 脚本揭示仍允许作为 hidden event reward 或 scripted reveal 路径存在，但它属于 reward / event 解释层，不再进入 `HiddenTriggerType` 的第二套发现 taxonomy。
+4. 脚本揭示若存在，只能作为 `HiddenEventReward(REVEAL_SECRET_ZONE)` 的 payload 解释层语义；它不是独立触发类型，也不进入 `HiddenTriggerType` 的第二套 taxonomy。
 
 ### 4.2 奖励桥接
 
@@ -150,7 +150,7 @@ build.gradle.kts
 3. `>=10%` run 发现 `1` 个 secret zone
 4. hidden event / secret zone 不承载主线必需钥匙
 5. 每个 target zone 都必须有非零触发记录；若某个 zone 的 hidden event 或 secret zone 命中率为 `0`，直接判失败。
-6. 报告中必须记录 `secretRuleVersion`、`triggerType`、`searchBindingId`、`entranceBindingId`、`resolvedReturnBridgeNodeId`、`zoneId`、`searchActionResult`，方便同时和 `SearchAction` / `SolvabilityProof` 对账。
+6. 报告中必须记录 `secretRuleVersion`、`triggerType`、`searchBindingId`、`resolvedReturnBridgeNodeId`、`zoneId`、`searchActionResult`，方便同时和 `SearchAction` / `SolvabilityProof` 对账；如需额外记录入口锚点，统一按 `NodeAnchorId` 口径命名。
 
 ### 4.4 client 可读性
 

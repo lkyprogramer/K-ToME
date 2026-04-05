@@ -1401,16 +1401,15 @@ class FoundationGameSessionTest {
 
         assertTrue(session.perform(PlayerCommand.Interact))
         val gateRewardSourceId = cacheRewardSourceId(session.config.zoneId, session.currentFloor(), "armory_gate", gatePoint)
-        assertEquals(1, inventoryBaseIds(session).count { baseId -> baseId == "basic_shield" })
-        assertEquals(1, inventoryBaseIds(session).count { baseId -> baseId == "chain_mail" })
-        assertTrue(inventoryBaseIds(session).count { baseId -> baseId == "healing_potion" } >= 1)
-        assertTrue(
-            session.milestoneRewardSummaries().any { reward ->
-                reward.rewardSource == MilestoneRewardSource.SUPPORT &&
-                    reward.sourceId == gateRewardSourceId &&
-                    reward.affixIds.isNotEmpty()
-            },
-        )
+        val rewardSummary =
+            requireNotNull(
+                session.milestoneRewardSummaries().firstOrNull { reward ->
+                    reward.rewardSource == MilestoneRewardSource.SUPPORT &&
+                        reward.sourceId == gateRewardSourceId
+                },
+            )
+        assertNotEquals("basic_shield", rewardSummary.baseItemId)
+        assertTrue(rewardSummary.affixIds.isNotEmpty())
     }
 
     @Test
@@ -2458,6 +2457,20 @@ class FoundationGameSessionTest {
                 argument.name == "quality" && argument.valueKey == qualityLabelKey(droppedItem.quality)
             },
         )
+    }
+
+    @Test
+    fun `current zone source level follows floor progression inside the zone`() {
+        val session =
+            GameModule.newFoundationSession(
+                FoundationGameConfig(seed = 20260318L, zoneId = "shattered_outpost", playerProfessionId = "vanguard"),
+                SaveManager(tempDir.resolve("floor-source-level-save")),
+            )
+
+        assertEquals(2, invokeCurrentZoneSourceLevel(session))
+        movePlayerTo(session, stairPoint(session, StairDirection.DOWN))
+        assertTrue(session.perform(PlayerCommand.Descend))
+        assertEquals(4, invokeCurrentZoneSourceLevel(session))
     }
 
     @Test
@@ -3692,7 +3705,6 @@ class FoundationGameSessionTest {
         assertFalse(session.isVictory())
         assertEquals("greenwood_fringe", session.config.zoneId)
         assertEquals(1, session.config.routeIndex)
-        assertEquals(1, inventoryBaseIds(session).count { baseId -> baseId == "basic_shield" })
         assertTrue(inventoryBaseIds(session).count { baseId -> baseId == "healing_potion" } >= 2)
         val rewardSummary =
             requireNotNull(
@@ -4424,6 +4436,14 @@ class FoundationGameSessionTest {
                 .first { declared -> declared.name == "monsterSourceTier" && declared.parameterCount == 1 }
         method.isAccessible = true
         return method.invoke(session, template) as SourceTier
+    }
+
+    private fun invokeCurrentZoneSourceLevel(session: FoundationGameSession): Int {
+        val method =
+            FoundationGameSession::class.java.declaredMethods
+                .first { declared -> declared.name == "currentZoneSourceLevel" && declared.parameterCount == 0 }
+        method.isAccessible = true
+        return method.invoke(session) as Int
     }
 
     private fun forcePlayerInCombat(session: FoundationGameSession) {
