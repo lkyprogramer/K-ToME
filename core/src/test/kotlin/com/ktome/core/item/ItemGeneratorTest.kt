@@ -123,7 +123,7 @@ class ItemGeneratorTest {
                         audioProfile = "audio.item.artifact.river_echo",
                         schemaVersion = 2,
                         tags = setOf("secret_zone", "arcanist"),
-                        allowedSourceTiers = setOf(SourceTier.SECRET_ZONE),
+                        allowedSourceTiers = setOf(SourceTier.CHEST, SourceTier.SECRET_ZONE),
                         allowedZones = setOf(zoneRewardProfile.zoneId),
                         fixedAffixIds = listOf("of_haste"),
                         fixedMaterialId = "STEEL",
@@ -183,6 +183,21 @@ class ItemGeneratorTest {
         val generated =
             ItemGenerator(bundle, TestRandomSource(ints = listOf(0, 0, 0))).rollAndGenerate(
                 context = lootRollContext(sourceLevel = 8, sourceTier = SourceTier.SECRET_ZONE),
+                zoneRewardProfile = zoneRewardProfile,
+                specialTierEligibility = SpecialTierEligibility(availableSpecialTiers = setOf(SpecialTier.UNIQUE, SpecialTier.ARTIFACT)),
+            )
+
+        assertEquals(setOf("artifact.river_echo"), generated.rollResult.budget.specialTierEligibility.availableTemplateIds)
+        assertEquals(SpecialTier.ARTIFACT, generated.trace.specialTier)
+        assertEquals("artifact.river_echo", generated.trace.specialTemplateId)
+        assertEquals("river_echo_artifact", generated.item.baseId)
+    }
+
+    @Test
+    fun `chest source tier keeps river echo artifact reachable in live reward paths`() {
+        val generated =
+            ItemGenerator(bundle, TestRandomSource(ints = listOf(0, 0, 0))).rollAndGenerate(
+                context = lootRollContext(sourceLevel = 8, sourceTier = SourceTier.CHEST),
                 zoneRewardProfile = zoneRewardProfile,
                 specialTierEligibility = SpecialTierEligibility(availableSpecialTiers = setOf(SpecialTier.UNIQUE, SpecialTier.ARTIFACT)),
             )

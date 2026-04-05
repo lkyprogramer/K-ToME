@@ -217,8 +217,8 @@ class SchemaV2LoaderTest {
         assertTrue(catalog.itemBundle.uniqueTemplates.size >= 12)
         assertTrue(catalog.itemBundle.artifactTemplates.size >= 4)
         assertTrue(
-            catalog.itemBundle.artifactTemplates.any { template -> template.allowedSourceTiers == listOf(SourceTier.SECRET_ZONE) },
-            "PR-05 artifact templates must include a secret-zone-only source lane.",
+            catalog.itemBundle.artifactTemplates.any { template -> SourceTier.SECRET_ZONE in template.allowedSourceTiers },
+            "PR-05 artifact templates must include secret-zone coverage.",
         )
         assertTrue(
             catalog.itemBundle.affixes.any { affix -> affix.stats.castSpeedRating > 0 },

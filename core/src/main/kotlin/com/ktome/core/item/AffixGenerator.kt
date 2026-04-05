@@ -111,13 +111,13 @@ class AffixGenerator(
         equipType: AffixEquipType,
         context: AffixSelectionContext = AffixSelectionContext(),
     ): Boolean =
-        generate(
+        findFeasibleSelection(
             floor = floor,
             budget = budget,
             rarityTier = rarityTier,
             equipType = equipType,
             context = context,
-        ).affixes.size >= requiredAffixCount(rarityTier = rarityTier, context = context)
+        ) != null
 
     fun generate(
         floor: Int,
@@ -146,25 +146,14 @@ class AffixGenerator(
                 equipType = equipType,
                 context = context,
             )
-        val bestSelections = mutableListOf<SelectionCandidate>()
-        for (count in minimumCount..maximumCount) {
-            val slotOrder = slotOrderFor(count)
-            val selection =
-                selectBestAffixes(
-                    slotOrder = slotOrder,
-                    slotIndex = 0,
-                    floor = floor,
-                    budget = budget,
-                    equipType = equipType,
-                    context = context,
-                    selected = emptyList(),
-                    selectedIds = emptySet(),
-                    trivialCount = 0,
-                )
-            selection?.let { candidate ->
-                collectBestSelection(bestSelections, candidate)
-            }
-        }
+        val bestSelections =
+            findBestSelections(
+                floor = floor,
+                budget = budget,
+                rarityTier = rarityTier,
+                equipType = equipType,
+                context = context,
+            )
         chooseSelection(bestSelections)?.let { selection ->
             val costBreakdown = selection.affixes.map(AffixDef::toAffixCost)
             val budgetConsumed = costBreakdown.sumOf(AffixCost::cost)
@@ -248,6 +237,119 @@ class AffixGenerator(
         return true
     }
 
+    private fun findFeasibleSelection(
+        floor: Int,
+        budget: Int,
+        rarityTier: RarityTier,
+        equipType: AffixEquipType,
+        context: AffixSelectionContext,
+    ): List<AffixDef>? {
+        if (budget <= 0 || rarityTier == RarityTier.NORMAL) {
+            return if (requiredAffixCount(rarityTier = rarityTier, context = context) == 0) emptyList() else null
+        }
+        val minimumCount = requiredAffixCount(rarityTier = rarityTier, context = context)
+        val maximumCount = rarityTier.maximumAffixCount().coerceAtLeast(minimumCount)
+        for (count in minimumCount..maximumCount) {
+            val selection =
+                findFeasibleSelection(
+                    slotOrder = slotOrderFor(count),
+                    slotIndex = 0,
+                    floor = floor,
+                    budget = budget,
+                    equipType = equipType,
+                    context = context,
+                    selected = emptyList(),
+                    selectedIds = emptySet(),
+                    trivialCount = 0,
+                )
+            if (selection != null) {
+                return selection
+            }
+        }
+        return null
+    }
+
+    private fun findFeasibleSelection(
+        slotOrder: List<AffixType>,
+        slotIndex: Int,
+        floor: Int,
+        budget: Int,
+        equipType: AffixEquipType,
+        context: AffixSelectionContext,
+        selected: List<AffixDef>,
+        selectedIds: Set<String>,
+        trivialCount: Int,
+    ): List<AffixDef>? {
+        if (slotIndex >= slotOrder.size) {
+            return selected
+        }
+        val remainingBudget = budget - selected.sumOf(AffixDef::cost)
+        if (remainingBudget <= 0) {
+            return null
+        }
+        val eligible =
+            eligibleCandidates(
+                slotOrder = slotOrder,
+                slotIndex = slotIndex,
+                floor = floor,
+                equipType = equipType,
+                context = context,
+                selected = selected,
+                selectedIds = selectedIds,
+                remainingBudget = remainingBudget,
+                trivialCount = trivialCount,
+            )
+        eligible.forEach { candidate ->
+            val resolved =
+                findFeasibleSelection(
+                    slotOrder = slotOrder,
+                    slotIndex = slotIndex + 1,
+                    floor = floor,
+                    budget = budget,
+                    equipType = equipType,
+                    context = context,
+                    selected = selected + candidate,
+                    selectedIds = selectedIds + candidate.id,
+                    trivialCount = trivialCount + trivialIncrement(candidate),
+                )
+            if (resolved != null) {
+                return resolved
+            }
+        }
+        return null
+    }
+
+    private fun findBestSelections(
+        floor: Int,
+        budget: Int,
+        rarityTier: RarityTier,
+        equipType: AffixEquipType,
+        context: AffixSelectionContext,
+    ): List<SelectionCandidate> {
+        val minimumCount = requiredAffixCount(rarityTier = rarityTier, context = context)
+        val maximumCount = rarityTier.maximumAffixCount().coerceAtLeast(minimumCount)
+        val bestSelections = mutableListOf<SelectionCandidate>()
+        for (count in minimumCount..maximumCount) {
+            val slotOrder = slotOrderFor(count)
+            val selection =
+                selectBestAffixes(
+                    slotOrder = slotOrder,
+                    slotIndex = 0,
+                    floor = floor,
+                    budget = budget,
+                    equipType = equipType,
+                    context = context,
+                    selected = emptyList(),
+                    selectedIds = emptySet(),
+                    trivialCount = 0,
+                )
+            selection?.let { candidate ->
+                collectBestSelection(bestSelections, candidate)
+            }
+        }
+        return bestSelections
+    }
+
     private fun selectBestAffixes(
         slotOrder: List<AffixType>,
         slotIndex: Int,
@@ -275,32 +377,18 @@ class AffixGenerator(
             return null
         }
 
-        val rawCandidates = pool.candidates(floor = floor, equipType = equipType, slotType = slotOrder[slotIndex])
         val eligible =
-            rawCandidates.filter { candidate ->
-                isEligibleCandidate(
-                    candidate = candidate,
-                    selectedIds = selectedIds,
-                    selected = selected,
-                    context = context,
-                    remainingBudget = remainingBudget,
-                    trivialCount = trivialCount,
-                    isPrimarySlot = slotIndex == 0,
-                    hasHighValuePrimary = rawCandidates.any { raw ->
-                        raw.cost >= AffixCostBand.MEDIUM.cost &&
-                            isEligibleCandidate(
-                                candidate = raw,
-                                selectedIds = selectedIds,
-                                selected = selected,
-                                context = context,
-                                remainingBudget = remainingBudget,
-                                trivialCount = trivialCount,
-                                isPrimarySlot = false,
-                                hasHighValuePrimary = false,
-                            )
-                    },
-                )
-            }
+            eligibleCandidates(
+                slotOrder = slotOrder,
+                slotIndex = slotIndex,
+                floor = floor,
+                equipType = equipType,
+                context = context,
+                selected = selected,
+                selectedIds = selectedIds,
+                remainingBudget = remainingBudget,
+                trivialCount = trivialCount,
+            )
         if (eligible.isEmpty()) {
             return null
         }
@@ -324,6 +412,47 @@ class AffixGenerator(
             }
         }
         return chooseSelection(bestSelections)
+    }
+
+    private fun eligibleCandidates(
+        slotOrder: List<AffixType>,
+        slotIndex: Int,
+        floor: Int,
+        equipType: AffixEquipType,
+        context: AffixSelectionContext,
+        selected: List<AffixDef>,
+        selectedIds: Set<String>,
+        remainingBudget: Int,
+        trivialCount: Int,
+    ): List<AffixDef> {
+        val rawCandidates = pool.candidates(floor = floor, equipType = equipType, slotType = slotOrder[slotIndex])
+        val hasHighValuePrimary =
+            slotIndex == 0 &&
+                rawCandidates.any { raw ->
+                    raw.cost >= AffixCostBand.MEDIUM.cost &&
+                        isEligibleCandidate(
+                            candidate = raw,
+                            selectedIds = selectedIds,
+                            selected = selected,
+                            context = context,
+                            remainingBudget = remainingBudget,
+                            trivialCount = trivialCount,
+                            isPrimarySlot = false,
+                            hasHighValuePrimary = false,
+                        )
+                }
+        return rawCandidates.filter { candidate ->
+            isEligibleCandidate(
+                candidate = candidate,
+                selectedIds = selectedIds,
+                selected = selected,
+                context = context,
+                remainingBudget = remainingBudget,
+                trivialCount = trivialCount,
+                isPrimarySlot = slotIndex == 0,
+                hasHighValuePrimary = hasHighValuePrimary,
+            )
+        }
     }
 
     private fun isEligibleCandidate(

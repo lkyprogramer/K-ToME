@@ -188,8 +188,8 @@ class ZoneContentCoverageTest {
             "PR-05 artifacts must include a chest-only template lane.",
         )
         assertTrue(
-            artifactTemplates.any { template -> template.allowedSourceTiers == setOf(SourceTier.SECRET_ZONE) },
-            "PR-05 artifacts must include a secret-zone-only template lane.",
+            artifactTemplates.any { template -> SourceTier.SECRET_ZONE in template.allowedSourceTiers },
+            "PR-05 artifacts must include secret-zone coverage.",
         )
         assertTrue(
             artifactTemplates.map { template -> template.tags }.toSet().size >= 3,

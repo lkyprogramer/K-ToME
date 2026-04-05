@@ -894,7 +894,7 @@ artifactTemplates:
     audioProfile: audio.item.artifact.river_echo
     schemaVersion: 2
     tags: [underground_river, arcanist, secret_zone]
-    allowedSourceTiers: [SECRET_ZONE]
+    allowedSourceTiers: [CHEST, SECRET_ZONE]
     allowedZones: [underground_river]
     fixedAffixIds: [stormforged, of_focus]
     fixedMaterialId: STEEL

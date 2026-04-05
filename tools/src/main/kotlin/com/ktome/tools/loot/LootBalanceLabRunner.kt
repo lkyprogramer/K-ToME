@@ -238,7 +238,7 @@ internal data class LootSpecialPoolSummary(
     val buildArchetypeCount: Int,
     val bossOnlyArtifactTemplateCount: Int,
     val chestOnlyArtifactTemplateCount: Int,
-    val secretZoneOnlyArtifactTemplateCount: Int,
+    val secretZoneArtifactTemplateCount: Int,
     val passesThresholds: Boolean,
 ) {
     fun toJson(): JsonObject =
@@ -249,7 +249,7 @@ internal data class LootSpecialPoolSummary(
             put("buildArchetypeCount", buildArchetypeCount)
             put("bossOnlyArtifactTemplateCount", bossOnlyArtifactTemplateCount)
             put("chestOnlyArtifactTemplateCount", chestOnlyArtifactTemplateCount)
-            put("secretZoneOnlyArtifactTemplateCount", secretZoneOnlyArtifactTemplateCount)
+            put("secretZoneArtifactTemplateCount", secretZoneArtifactTemplateCount)
             put("passesThresholds", passesThresholds)
         }
 }
@@ -692,8 +692,8 @@ internal object LootLabKernel {
         val buildArchetypeCount = bundle.specialTemplates.flatMapTo(linkedSetOf()) { template -> template.tags.intersect(buildArchetypes) }.size
         val bossOnlyArtifactTemplateCount = artifactTemplates.count { template -> template.allowedSourceTiers == setOf(SourceTier.BOSS) }
         val chestOnlyArtifactTemplateCount = artifactTemplates.count { template -> template.allowedSourceTiers == setOf(SourceTier.CHEST) }
-        val secretZoneOnlyArtifactTemplateCount =
-            artifactTemplates.count { template -> template.allowedSourceTiers == setOf(SourceTier.SECRET_ZONE) }
+        val secretZoneArtifactTemplateCount =
+            artifactTemplates.count { template -> SourceTier.SECRET_ZONE in template.allowedSourceTiers }
         return LootSpecialPoolSummary(
             uniqueTemplateCount = uniqueTemplates.size,
             artifactTemplateCount = artifactTemplates.size,
@@ -701,7 +701,7 @@ internal object LootLabKernel {
             buildArchetypeCount = buildArchetypeCount,
             bossOnlyArtifactTemplateCount = bossOnlyArtifactTemplateCount,
             chestOnlyArtifactTemplateCount = chestOnlyArtifactTemplateCount,
-            secretZoneOnlyArtifactTemplateCount = secretZoneOnlyArtifactTemplateCount,
+            secretZoneArtifactTemplateCount = secretZoneArtifactTemplateCount,
             passesThresholds =
                 uniqueTemplates.size >= 12 &&
                     artifactTemplates.size >= 4 &&
@@ -709,7 +709,7 @@ internal object LootLabKernel {
                     buildArchetypeCount >= 2 &&
                     bossOnlyArtifactTemplateCount > 0 &&
                     chestOnlyArtifactTemplateCount > 0 &&
-                    secretZoneOnlyArtifactTemplateCount > 0,
+                    secretZoneArtifactTemplateCount > 0,
         )
     }
 

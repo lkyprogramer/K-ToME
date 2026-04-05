@@ -1,8 +1,10 @@
 package com.ktome.core.item
 
 import com.ktome.core.loot.RarityTier
+import com.ktome.core.random.SplitMix64RandomSource
 import com.ktome.core.random.RandomSource
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
@@ -257,6 +259,43 @@ class AffixGeneratorTest {
         assertEquals(12, first.budgetConsumed)
         assertEquals(12, second.budgetConsumed)
         assertTrue(first.affixes.map(AffixDef::id) != second.affixes.map(AffixDef::id))
+    }
+
+    @Test
+    fun `canGenerate does not advance random state during feasibility checks`() {
+        val random = SplitMix64RandomSource.fromSeed(42L)
+        val generator =
+            AffixGenerator(
+                pool =
+                    AffixPool(
+                        listOf(
+                            affix(id = "ember", family = "weapon_fire", cost = 6, statModifiers = StatModifier(attack = 2)),
+                            affix(id = "fury", family = "suffix_fury", type = AffixType.SUFFIX, cost = 6, statModifiers = StatModifier(speed = 3)),
+                        ),
+                    ),
+                random = random,
+            )
+
+        val before = random.snapshotState()
+        assertTrue(
+            generator.canGenerate(
+                floor = 3,
+                budget = 12,
+                rarityTier = RarityTier.MAGIC,
+                equipType = AffixEquipType.WEAPON,
+            ),
+        )
+        assertEquals(before, random.snapshotState())
+
+        assertFalse(
+            generator.canGenerate(
+                floor = 3,
+                budget = 5,
+                rarityTier = RarityTier.RARE,
+                equipType = AffixEquipType.WEAPON,
+            ),
+        )
+        assertEquals(before, random.snapshotState())
     }
 
     @Test

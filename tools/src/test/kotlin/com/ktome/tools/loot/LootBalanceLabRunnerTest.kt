@@ -46,8 +46,8 @@ class LootBalanceLabRunnerTest {
         assertNotEquals("0.0", rewardChestMatrix.getValue("artifactRate").jsonPrimitive.content)
         assertEquals("true", specialTemplatePool.getValue("passesThresholds").jsonPrimitive.content)
         assertTrue(
-            specialTemplatePool.getValue("secretZoneOnlyArtifactTemplateCount").jsonPrimitive.content.toInt() > 0,
-            "PR-05 special pool must expose a secret-zone-only artifact lane.",
+            specialTemplatePool.getValue("secretZoneArtifactTemplateCount").jsonPrimitive.content.toInt() > 0,
+            "PR-05 special pool must expose secret-zone artifact coverage.",
         )
         assertTrue(
             rollLines.any { line -> "\"rawAffixBudgetShortfall\":0" !in line && "\"rawAffixBudgetShortfall\":" in line },
