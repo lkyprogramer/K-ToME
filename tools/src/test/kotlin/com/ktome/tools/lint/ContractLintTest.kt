@@ -39,6 +39,10 @@ class ContractLintTest {
         val inscriptionIds = catalog.inscriptions.map { it.id }
         val uniqueInscriptionIds = inscriptionIds.toSet()
         val lootIds = catalog.lootProfiles.map { it.id }.toSet()
+        val statusIds = catalog.statuses.map { it.id }.toSet()
+        val mutationModifierIds = catalog.mutationStatModifiers.map { it.id }.toSet()
+        val mutationIds = catalog.eliteMutations.map { it.id }.toSet()
+        val actionWeightProfileIds = catalog.actionWeightProfiles.map { it.id }.toSet()
         val tilesetIds = catalog.tilesets.map { it.id }.toSet()
         val aiIds = catalog.aiProfiles.map { it.id }.toSet()
         val telegraphIds = catalog.telegraphSpecs.map { it.id }.toSet()
@@ -150,6 +154,47 @@ class ContractLintTest {
                 if (action.type == AIActionType.USE_ABILITY) {
                     assertTrue(action.abilityId in talentIds, "Unknown AI ability ${action.abilityId} in profile ${aiProfile.id}")
                 }
+            }
+        }
+
+        assertEquals(2, catalog.eliteMutationConfig.maxMutationsPerElite, "Elite mutation cap must stay frozen at 2.")
+        catalog.eliteMutations.forEach { mutation ->
+            assertTrue(mutation.id.startsWith("elite."), "Elite mutation id must use elite.* namespace: ${mutation.id}")
+            val mutationLeafId = mutation.id.removePrefix("elite.")
+            assertEquals("mutation.$mutationLeafId.name", mutation.nameKey)
+            assertExactVisualKey(mutation.iconKey)
+            assertExactAudioKey("audio.mutation.$mutationLeafId")
+            assertTrue(mutation.applyToTags.isNotEmpty(), "Elite mutation ${mutation.id} must target at least one tag.")
+            mutation.statModifiers.forEach { ref ->
+                assertTrue(ref.modifierId in mutationModifierIds, "Unknown mutation stat modifier ${ref.modifierId}")
+            }
+            mutation.grantedTalents.forEach { ref ->
+                assertTrue(ref.talentId in talentIds, "Unknown mutation granted talent ${ref.talentId}")
+            }
+            mutation.aiProfileOverlay?.let { overlayId ->
+                assertTrue(overlayId in aiIds, "Unknown mutation AI overlay $overlayId")
+            }
+            mutation.incompatibleWith.forEach { incompatibleId ->
+                assertTrue(incompatibleId in mutationIds, "Unknown incompatible mutation $incompatibleId")
+            }
+            mutation.auraStatusId?.let { auraStatusId ->
+                assertTrue(auraStatusId in statusIds, "Unknown mutation aura status $auraStatusId")
+            }
+        }
+        catalog.bossVariants.forEach { variant ->
+            assertTrue(variant.id.startsWith("boss.variant."), "Boss variant id must use boss.variant.* namespace: ${variant.id}")
+            assertTrue(variant.baseEncounterId in bossIds, "Unknown boss variant base encounter ${variant.baseEncounterId}")
+            val variantLeafId = variant.id.removePrefix("boss.variant.")
+            assertExactAudioKey("audio.boss.variant.$variantLeafId")
+            variant.grantedMutations.forEach { ref ->
+                assertTrue(ref.mutationId in mutationIds, "Unknown boss variant mutation ${ref.mutationId}")
+            }
+            variant.lootProfileOverride?.let { lootProfileId ->
+                assertTrue(lootProfileId in lootIds, "Unknown boss variant loot override $lootProfileId")
+            }
+            variant.visualTintKey?.let(::assertExactVisualKey)
+            variant.actionWeightProfileId?.let { profileId ->
+                assertTrue(profileId in actionWeightProfileIds, "Unknown boss variant action weight profile $profileId")
             }
         }
 

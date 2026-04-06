@@ -52,6 +52,7 @@ class LocaleLintTest {
                 "item.",
                 "interactable.",
                 "objective.",
+                "mutation.",
                 "keyword.",
             )
         en.keys.forEach { key ->
