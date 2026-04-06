@@ -123,9 +123,14 @@ internal class EncounterDecorationService(
             return null
         }
         request.preferredBossVariantId?.let { preferredVariantId ->
-            return requireNotNull(content.bossVariantRegistry.resolve(preferredVariantId)) {
-                "Preferred boss variant '$preferredVariantId' is not registered."
+            val preferredVariant =
+                requireNotNull(content.bossVariantRegistry.resolve(preferredVariantId)) {
+                    "Preferred boss variant '$preferredVariantId' is not registered."
+                }
+            require(preferredVariant.baseEncounterId == baseEncounterId) {
+                "Preferred boss variant '$preferredVariantId' belongs to '${preferredVariant.baseEncounterId}', not '$baseEncounterId'."
             }
+            return preferredVariant
         }
         val variants = content.bossVariantRegistry.variantsFor(baseEncounterId)
         if (variants.isEmpty()) {
@@ -145,13 +150,22 @@ internal class EncounterDecorationService(
         entityId: EntityId,
         mutation: EliteMutationDef,
     ) {
-        mutation.statModifiers.forEach { modifierRef ->
-            val modifier = requireNotNull(content.eliteMutationRegistry.modifier(modifierRef.modifierId)) {
-                "Missing mutation stat modifier '${modifierRef.modifierId}'."
+        val resolvedModifiers =
+            mutation.statModifiers.map { modifierRef ->
+                requireNotNull(content.eliteMutationRegistry.modifier(modifierRef.modifierId)) {
+                    "Missing mutation stat modifier '${modifierRef.modifierId}'."
+                }
             }
-            applyPermanentMutationModifier(world, entityId, mutation, modifier.statModifier)
-            if (modifier.resistances.isNotEmpty()) {
-                val resistanceProfile = world.get<ResistanceProfile>(entityId) ?: ResistanceProfile().also { profile -> world.add(entityId, profile) }
+        val combinedStatModifier =
+            resolvedModifiers.fold(StatModifier.ZERO) { aggregate, modifier ->
+                aggregate + modifier.statModifier
+            }
+        if (combinedStatModifier != StatModifier.ZERO) {
+            applyPermanentMutationModifier(world, entityId, mutation, combinedStatModifier)
+        }
+        if (resolvedModifiers.any { modifier -> modifier.resistances.isNotEmpty() }) {
+            val resistanceProfile = world.get<ResistanceProfile>(entityId) ?: ResistanceProfile().also { profile -> world.add(entityId, profile) }
+            resolvedModifiers.forEach { modifier ->
                 modifier.resistances.forEach { (damageType, amount) ->
                     resistanceProfile.values[damageType] = (resistanceProfile.values[damageType] ?: 0) + amount
                 }

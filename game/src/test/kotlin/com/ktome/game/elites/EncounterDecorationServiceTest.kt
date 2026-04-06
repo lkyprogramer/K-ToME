@@ -1,0 +1,129 @@
+package com.ktome.game.elites
+
+import com.ktome.core.combat.DamageType
+import com.ktome.core.ecs.ResistanceProfile
+import com.ktome.core.ecs.World
+import com.ktome.core.ecs.get
+import com.ktome.core.item.StatModifier
+import com.ktome.core.talent.EffectTracker
+import com.ktome.core.talent.TalentRegistry
+import com.ktome.game.GameContent
+import com.ktome.game.data.DataLoader
+import com.ktome.game.data.schema.SchemaCatalog
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertThrows
+import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Test
+
+class EncounterDecorationServiceTest {
+    private val loader = DataLoader()
+    private val baseSchemaCatalog = loader.loadSchemaCatalog()
+    private val talents = loader.loadTalentDefinitions()
+
+    @Test
+    fun `preferred boss variant must match requested base encounter`() {
+        val content = newContent(baseSchemaCatalog)
+        val service = EncounterDecorationService(content)
+        val preferredVariant = content.bossVariantRegistry.resolve("boss.variant.grey_crown")
+        val request =
+            SpawnDecorationRequest(
+                zoneId = "deep_iron_pit",
+                floorIndex = 4,
+                template = content.bossDefinitions.getValue("molten_giant_encounter").template,
+                bossEncounterId = "molten_giant_encounter",
+                preferredBossVariantId = requireNotNull(preferredVariant).id,
+                bossVariantSelectionMode = BossVariantSelectionMode.FORCE_AVAILABLE,
+            )
+
+        val ex =
+            assertThrows(IllegalArgumentException::class.java) {
+                service.selectDecoration(request) { 0 }
+            }
+
+        assertTrue(ex.message.orEmpty().contains("belongs to 'dungeon_lord_encounter'"))
+    }
+
+    @Test
+    fun `multiple mutation stat modifiers are merged into one permanent effect`() {
+        val compositeMutation = "elite.test.composite"
+        val content =
+            newContent(
+                baseSchemaCatalog.copy(
+                    mutationStatModifiers =
+                        baseSchemaCatalog.mutationStatModifiers +
+                            listOf(
+                                MutationStatModifierDef(
+                                    id = "mod.test.composite.alpha",
+                                    statModifier = StatModifier(attack = 3, defense = 2),
+                                    resistances = mapOf(DamageType.FIRE to 10),
+                                ),
+                                MutationStatModifierDef(
+                                    id = "mod.test.composite.beta",
+                                    statModifier = StatModifier(speed = 5, maxHp = 12),
+                                    resistances = mapOf(DamageType.COLD to 7),
+                                ),
+                            ),
+                    eliteMutations =
+                        baseSchemaCatalog.eliteMutations +
+                            EliteMutationDef(
+                                id = compositeMutation,
+                                kind = MutationKind.STAT_PACKAGE,
+                                tier = MutationTier.MAJOR,
+                                threatCost = 3,
+                                nameKey = "mutation.stonehide.name",
+                                iconKey = "icon.mutation.stonehide",
+                                applyToTags = setOf("elite"),
+                                minFloor = 1,
+                                maxFloor = null,
+                                allowedZones = emptySet(),
+                                statModifiers =
+                                    listOf(
+                                        StatModifierRef("mod.test.composite.alpha"),
+                                        StatModifierRef("mod.test.composite.beta"),
+                                    ),
+                                grantedTalents = emptyList(),
+                                aiProfileOverlay = null,
+                                incompatibleWith = emptySet(),
+                            ),
+                ),
+            )
+        val service = EncounterDecorationService(content)
+        val world = World()
+        val entityId = world.createEntity()
+
+        service.applyDecoration(
+            world = world,
+            entityId = entityId,
+            decoration =
+                EncounterDecoration(
+                    mutations = listOf(requireNotNull(content.eliteMutationRegistry.resolve(compositeMutation))),
+                ),
+        )
+
+        val tracker = requireNotNull(world.get<EffectTracker>(entityId))
+        val activeEffects = tracker.activeEffects()
+        val appliedEffect = activeEffects.single()
+        val resistances = requireNotNull(world.get<ResistanceProfile>(entityId))
+
+        assertEquals("mutation:$compositeMutation", appliedEffect.schemaId)
+        assertEquals(3, appliedEffect.statModifiers.attack)
+        assertEquals(2, appliedEffect.statModifiers.defense)
+        assertEquals(5, appliedEffect.statModifiers.speed)
+        assertEquals(12, appliedEffect.statModifiers.maxHp)
+        assertEquals(10, resistances.valueFor(DamageType.FIRE))
+        assertEquals(7, resistances.valueFor(DamageType.COLD))
+    }
+
+    private fun newContent(schemaCatalog: SchemaCatalog): GameContent =
+        GameContent(
+            talents = talents,
+            statuses = schemaCatalog.statuses,
+            statusCatalog = loader.loadStatusCatalog(),
+            talentRegistry = TalentRegistry().apply { registerAll(talents) },
+            monsterCatalog = loader.loadMonsterCatalog().monsters,
+            itemBundle = loader.loadItemBundle(),
+            bossDefinitions = loader.loadBossDefinitions(),
+            schemaCatalog = schemaCatalog,
+            localizer = loader.localizer,
+        )
+}
