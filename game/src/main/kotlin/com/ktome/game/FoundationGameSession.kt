@@ -28,17 +28,25 @@ import com.ktome.core.combat.CombatRuleset
 import com.ktome.core.combat.CombatResolver
 import com.ktome.core.combat.DamageFormula
 import com.ktome.core.combat.DamageType
+import com.ktome.core.combat.ElementInteractionRegistry
+import com.ktome.core.combat.ElementInteractionResolution
+import com.ktome.core.combat.TerrainInteractionContext
+import com.ktome.core.combat.TerrainInteractionContextResolver
+import com.ktome.core.combat.TerrainInteractionTarget
 import com.ktome.core.dungeon.DungeonManager
 import com.ktome.core.dungeon.FloorState
 import com.ktome.core.dungeon.StairDirection
 import com.ktome.core.ecs.AIBehavior
 import com.ktome.core.ecs.AIType
 import com.ktome.core.ecs.AiTriggerTracker
+import com.ktome.core.ecs.AiProfileOverride
 import com.ktome.core.ecs.BlocksMovement
+import com.ktome.core.ecs.BossVariantRuntime
 import com.ktome.core.ecs.DerivedStats
 import com.ktome.core.ecs.DisplayColor
 import com.ktome.core.ecs.Energy
 import com.ktome.core.ecs.EntityId
+import com.ktome.core.ecs.EliteMutationLoadout
 import com.ktome.core.ecs.Experience
 import com.ktome.core.ecs.ExperienceReward
 import com.ktome.core.ecs.FactionTag
@@ -111,6 +119,8 @@ import com.ktome.core.loot.SpecialTier
 import com.ktome.core.loot.SpecialTierEligibility
 import com.ktome.core.map.GameMap
 import com.ktome.core.map.Point
+import com.ktome.core.mapgen.TerrainOverride
+import com.ktome.core.mapgen.TerrainTag
 import com.ktome.core.movement.MovementRules
 import com.ktome.core.progression.ExperienceSystem
 import com.ktome.core.profile.RunSummary as ProfileRunSummary
@@ -136,7 +146,9 @@ import com.ktome.core.economy.ShopNode
 import com.ktome.core.economy.ShopOffer
 import com.ktome.core.economy.ShopServiceType
 import com.ktome.core.snapshot.ActorRenderSnapshot
+import com.ktome.core.snapshot.ActorMutationRenderSnapshot
 import com.ktome.core.snapshot.ActorRoleKindSnapshot
+import com.ktome.core.snapshot.BossVariantRenderSnapshot
 import com.ktome.core.snapshot.CellVisibilitySnapshot
 import com.ktome.core.snapshot.COMBAT_FEEDBACK_EVENT_LIMIT
 import com.ktome.core.snapshot.CombatFeedbackSnapshot
@@ -172,6 +184,7 @@ import com.ktome.core.snapshot.StatusEffectRenderSnapshot
 import com.ktome.core.snapshot.TalentBreakpointPreviewSnapshot
 import com.ktome.core.snapshot.TalentReserveSnapshot
 import com.ktome.core.snapshot.TalentSlotSnapshot
+import com.ktome.core.snapshot.TerrainOverrideRenderSnapshot
 import com.ktome.core.status.EffectCategory
 import com.ktome.core.status.EffectCarrierKind
 import com.ktome.core.status.StatusEffectDef
@@ -216,6 +229,7 @@ import com.ktome.game.data.schema.SchemaMapSize
 import com.ktome.game.data.schema.TalentLevelEffectSchemaV2
 import com.ktome.game.data.schema.TalentSchemaV2
 import com.ktome.game.data.schema.ZoneSchemaV2
+import com.ktome.game.elites.EncounterDecorationService
 import com.ktome.game.factory.EntityFactory
 import com.ktome.game.factory.ItemFactory
 import com.ktome.game.i18n.GameLocale
@@ -422,6 +436,7 @@ class FoundationGameSession internal constructor(
             .mapTo(linkedSetOf()) { summary -> summary.rewardSource to summary.sourceId }
     private val affixSynergyActivationCounts = linkedMapOf<String, Int>()
     private val respecManager: RespecManager = RespecManager()
+    private val encounterDecorationService: EncounterDecorationService = EncounterDecorationService(content)
     private var activeShopId: String? = null
     private var pendingRouteSelection: List<RouteAdvanceOption> = emptyList()
     private val playerBaseResistanceValues: Map<DamageType, Int> =
@@ -440,6 +455,15 @@ class FoundationGameSession internal constructor(
                     target = target,
                     damageType = damageType,
                     baseMultiplier = baseMultiplier,
+                )
+            }
+        combatResolver.terrainInteractionContextResolver =
+            TerrainInteractionContextResolver { _, attacker, target, damageType, interactionDepth ->
+                resolveTerrainInteractionContext(
+                    attacker = attacker,
+                    target = target,
+                    damageType = damageType,
+                    interactionDepth = interactionDepth,
                 )
             }
         initialMessageLog.forEach(::addMessage)
@@ -740,6 +764,10 @@ class FoundationGameSession internal constructor(
 
     internal fun automationTerrainTags(): Map<Point, Set<com.ktome.core.mapgen.TerrainTag>> = activeFloorState.terrainTags
 
+    internal fun automationTerrainTagsAt(point: Point): Set<com.ktome.core.mapgen.TerrainTag> = activeFloorState.terrainTagsAt(point)
+
+    internal fun automationTerrainStateHash(): String = "${activeFloorState.terrainTagHash}:${activeFloorState.terrainOverrideHash}"
+
     internal fun automationMovePlayerTo(point: Point) {
         require(map.isInBounds(point.x, point.y)) { "Point $point is outside the current map." }
         requireNotNull(world.get<Position>(playerId)).moveTo(point)
@@ -815,6 +843,46 @@ class FoundationGameSession internal constructor(
     internal fun automationForceDefeatPlayer() {
         handleDeath(playerId, null)
     }
+
+    internal fun automationTerrainOverrideAt(point: Point): TerrainOverride? = activeFloorState.terrainOverrideAt(point)
+
+    internal fun automationSetTerrainOverride(
+        point: Point,
+        terrainOverride: TerrainOverride,
+    ) {
+        activeFloorState.setTerrainOverride(point, terrainOverride)
+        invalidateRenderSnapshot()
+    }
+
+    internal fun automationResolveTriggeredDamage(
+        source: EntityId,
+        target: EntityId,
+        damageType: DamageType,
+        rawDamage: Int,
+        traceId: String,
+        abilityId: String,
+        interactionDepth: Int = 1,
+    ) = combatResolver.resolveTriggeredDamage(
+        world = world,
+        source = source,
+        target = target,
+        damageType = damageType,
+        rawDamage = rawDamage,
+        traceId = traceId,
+        abilityId = abilityId,
+        interactionDepth = interactionDepth,
+    ).also { result ->
+        applyTerrainInteraction(attacker = source, target = target, interaction = result.terrainInteraction)
+        if (result.targetKilled) {
+            handleDeath(target, source)
+        }
+        invalidateRenderSnapshot()
+    }
+
+    internal fun automationEncounterThreatBudget(entityId: EntityId): com.ktome.core.loot.EncounterThreatBudget =
+        currentEncounterThreatBudget(entityId)
+
+    internal fun automationFloorRewardBudget(): com.ktome.core.loot.FloorRewardBudget = currentFloorRewardBudget()
 
     private fun talentDraft(): TalentAllocationDraft? = world.get(playerId)
 
@@ -1150,7 +1218,54 @@ class FoundationGameSession internal constructor(
 
     private fun buildVisibleLogEvents(overlays: List<OverlayRenderSnapshot>): List<RenderLogEventSnapshot> =
         messageLog.map(SessionLogEntry::snapshot) +
+            visibleEncounterReadabilityEvents() +
             overlays.mapNotNull { overlay -> overlay.warningMessage?.let(::RenderLogEventSnapshot) }
+
+    private fun visibleEncounterReadabilityEvents(): List<RenderLogEventSnapshot> =
+        world.entitiesWith(Position::class, Health::class, Name::class)
+            .asSequence()
+            .filter { entityId ->
+                val health = world.get<Health>(entityId)
+                val position = world.get<Position>(entityId)?.toPoint()
+                health != null && health.current > 0 && position in visibleTiles
+            }.sortedBy(EntityId::value)
+            .flatMap { entityId ->
+                sequence {
+                    world.get<BossVariantRuntime>(entityId)?.let { runtime ->
+                        yield(
+                            RenderLogEventSnapshot(
+                                message =
+                                    RenderTextTokenSnapshot(
+                                        key = "log.boss.variant.applied",
+                                        arguments =
+                                            listOf(
+                                                entityArg("boss", entityId),
+                                                keyArg("variant", bossVariantNameKey(runtime.variantId)),
+                                            ),
+                                    ),
+                            ),
+                        )
+                    }
+                    world.get<EliteMutationLoadout>(entityId)
+                        ?.mutationIds
+                        ?.mapNotNull(content.eliteMutationRegistry::resolve)
+                        ?.forEach { mutation ->
+                            yield(
+                                RenderLogEventSnapshot(
+                                    message =
+                                        RenderTextTokenSnapshot(
+                                            key = "log.mutation.applied",
+                                            arguments =
+                                                listOf(
+                                                    entityArg("target", entityId),
+                                                    keyArg("mutation", mutation.nameKey),
+                                                ),
+                                        ),
+                                ),
+                            )
+                        }
+                }
+            }.toList()
 
     private fun buildMapCells(zone: ZoneSchemaV2): List<MapCellSnapshot> =
         buildList(capacity = map.width * map.height) {
@@ -1171,13 +1286,17 @@ class FoundationGameSession internal constructor(
 
                             else -> {
                                 val tile = map[point]
+                                val terrainTags = activeFloorState.terrainTagsAt(point)
+                                val terrainOverride = activeFloorState.terrainOverrideAt(point)
                                 MapCellSnapshot(
                                     x = x,
                                     y = y,
                                     visibility = visibility,
-                                    terrainTypeId = terrainTypeId(tile),
-                                    terrainVisualKey = terrainVisualKey(zone, tile),
-                                    terrainTags = activeFloorState.terrainTags[point]?.map { tag -> tag.name }?.sorted().orEmpty(),
+                                    terrainTypeId = terrainTypeId(tile, terrainTags),
+                                    terrainVisualKey = terrainVisualKey(zone, tile, terrainTags, terrainOverride),
+                                    terrainTags = terrainTags.map { tag -> tag.name }.sorted(),
+                                    terrainAudioProfile = terrainAudioProfile(terrainTags, terrainOverride),
+                                    terrainOverride = terrainOverride?.toRenderSnapshot(),
                                     stairDirectionId = stairDirectionAt(point)?.name,
                                     actorEntityId =
                                         if (visibility == CellVisibilitySnapshot.VISIBLE) {
@@ -1252,6 +1371,8 @@ class FoundationGameSession internal constructor(
                 val stats = requireNotNull(world.get<Stats>(entityId))
                 val derived = requireNotNull(world.get<DerivedStats>(entityId))
                 val behavior = world.get<AIBehavior>(entityId)
+                val mutations = actorMutationSnapshots(entityId)
+                val bossVariant = actorBossVariantSnapshot(entityId)
                 ActorRenderSnapshot(
                     entityId = entityId.value,
                     x = position.x,
@@ -1262,6 +1383,9 @@ class FoundationGameSession internal constructor(
                     isPlayer = entityId == playerId,
                     roleKind = actorRoleKind(entityId, behavior),
                     aiTypeId = behavior?.type?.name,
+                    displayTintColorHex = null,
+                    mutations = mutations,
+                    bossVariant = bossVariant,
                     currentHp = health.current,
                     maxHp = health.max,
                     attack = derived.attack,
@@ -1276,6 +1400,42 @@ class FoundationGameSession internal constructor(
                     statusEffects = activeStatusEffectSnapshots(entityId),
                 )
             }.sortedWith(compareBy<ActorRenderSnapshot> { it.y }.thenBy { it.x }.thenBy(ActorRenderSnapshot::entityId))
+
+    private fun TerrainOverride.toRenderSnapshot(): TerrainOverrideRenderSnapshot =
+        TerrainOverrideRenderSnapshot(
+            sourceRuleId = sourceRuleId,
+            ruleNameKey = terrainRuleNameKey(sourceRuleId),
+            remainingTurns = remainingTurns,
+            conductsLightning = conductsLightning,
+            tickDamageTypeId = tickDamageType?.name,
+            tickDamage = tickDamage,
+        )
+
+    private fun actorMutationSnapshots(entityId: EntityId): List<ActorMutationRenderSnapshot> =
+        world.get<EliteMutationLoadout>(entityId)
+            ?.mutationIds
+            ?.mapNotNull(content.eliteMutationRegistry::resolve)
+            ?.map { mutation ->
+                ActorMutationRenderSnapshot(
+                    mutationId = mutation.id,
+                    nameKey = mutation.nameKey,
+                    iconKey = mutation.iconKey,
+                    audioProfile = mutationAudioProfile(mutation.id),
+                    kindId = mutation.kind.name,
+                    tierId = mutation.tier.name,
+                    summary = mutationSummaryToken(mutation),
+                )
+            }.orEmpty()
+
+    private fun actorBossVariantSnapshot(entityId: EntityId): BossVariantRenderSnapshot? =
+        world.get<BossVariantRuntime>(entityId)?.let { runtime ->
+            BossVariantRenderSnapshot(
+                variantId = runtime.variantId,
+                nameKey = bossVariantNameKey(runtime.variantId),
+                visualTintKey = runtime.visualTintKey,
+                audioProfile = bossVariantAudioProfile(runtime.variantId),
+            )
+        }
 
     private fun buildOverlaySnapshots(): List<OverlayRenderSnapshot> {
         val bossAndTelegraphOverlays =
@@ -1579,6 +1739,50 @@ class FoundationGameSession internal constructor(
         }
     }
 
+    private fun spawnDecoratedMonster(
+        template: MonsterTemplate,
+        spawnPoint: Point,
+        patrolRoute: PatrolRoute? = null,
+        allowDoubleMutation: Boolean = false,
+    ): EntityId {
+        val monsterId = EntityFactory().createMonster(world = world, template = template, position = spawnPoint, patrolRoute = patrolRoute)
+        val decoration =
+            encounterDecorationService.selectDecoration(
+                request =
+                    com.ktome.game.elites.SpawnDecorationRequest(
+                        zoneId = currentZoneSchema().id,
+                        floorIndex = currentFloor(),
+                        template = template,
+                        allowDoubleMutation = allowDoubleMutation,
+                    ),
+                nextIndex = { bound -> sessionRandom.nextInt(0, bound) },
+            )
+        encounterDecorationService.applyDecoration(world = world, entityId = monsterId, decoration = decoration)
+        StatsCalculator.recalculateAndStore(world, monsterId)
+        logDecorationMessages(monsterId, decoration)
+        return monsterId
+    }
+
+    private fun logDecorationMessages(
+        entityId: EntityId,
+        decoration: com.ktome.game.elites.EncounterDecoration,
+    ) {
+        decoration.mutations.forEach { mutation ->
+            addMessage(
+                "log.mutation.applied",
+                entityArg("target", entityId),
+                keyArg("mutation", mutation.nameKey),
+            )
+        }
+        decoration.bossVariant?.let { variant ->
+            addMessage(
+                "log.boss.variant.applied",
+                entityArg("boss", entityId),
+                keyArg("variant", bossVariantNameKey(variant.id)),
+            )
+        }
+    }
+
     private fun spawnPatrolPressureWave(state: PatrolPressureRuntimeState): Int {
         val templates =
             state.spawnTemplateIds
@@ -1602,12 +1806,11 @@ class FoundationGameSession internal constructor(
         if (candidates.isEmpty()) {
             return 0
         }
-        val factory = EntityFactory()
         val spawnedIds =
             templates
                 .zip(candidates)
                 .map { (template, spawnPoint) ->
-                    factory.createMonster(world = world, template = template, position = spawnPoint)
+                    spawnDecoratedMonster(template = template, spawnPoint = spawnPoint)
                 }
         spawnedIds.forEach { monsterId ->
             alertSpawnedHostile(monsterId)
@@ -2013,12 +2216,11 @@ class FoundationGameSession internal constructor(
         if (spawnPoints.isEmpty()) {
             return 0
         }
-        val factory = EntityFactory()
         val spawnedIds =
             templates
                 .zip(spawnPoints)
                 .map { (template, spawnPoint) ->
-                    factory.createMonster(world = world, template = template, position = spawnPoint)
+                    spawnDecoratedMonster(template = template, spawnPoint = spawnPoint, allowDoubleMutation = true)
                 }
         spawnedIds.forEach { monsterId ->
             alertSpawnedHostile(monsterId)
@@ -2077,15 +2279,23 @@ class FoundationGameSession internal constructor(
 
     private fun activeAiProfileFor(monsterId: EntityId): com.ktome.core.ai.AIProfile? {
         val bossState = world.get<BossEncounterState>(monsterId)
+        val bossVariant = world.get<BossVariantRuntime>(monsterId)
         if (bossState != null) {
             val encounter = bossEncounterFor(monsterId) ?: return null
             val activePhase =
                 bossState.currentPhaseId?.let { phaseId ->
                     encounter.phases.firstOrNull { phase -> phase.id == phaseId }
                 } ?: encounter.phases.firstOrNull()
-            return content.aiProfile(activePhase?.aiProfileId)
+            return applyActionWeightProfile(
+                profile = content.aiProfile(activePhase?.aiProfileId),
+                actionWeightProfileId = bossVariant?.actionWeightProfileId,
+            )
         }
-        return content.aiProfile(monsterAiProfileId(monsterId))
+        val profileId = world.get<AiProfileOverride>(monsterId)?.profileId ?: monsterAiProfileId(monsterId)
+        return applyActionWeightProfile(
+            profile = content.aiProfile(profileId),
+            actionWeightProfileId = bossVariant?.actionWeightProfileId,
+        )
     }
 
     private fun bossEncounterFor(monsterId: EntityId): com.ktome.core.ai.BossEncounter? {
@@ -2098,6 +2308,23 @@ class FoundationGameSession internal constructor(
         return content.allMonsterTemplates()
             .firstOrNull { template -> template.id == templateId }
             ?.aiProfileId
+    }
+
+    private fun applyActionWeightProfile(
+        profile: com.ktome.core.ai.AIProfile?,
+        actionWeightProfileId: String?,
+    ): com.ktome.core.ai.AIProfile? {
+        val resolvedProfile = profile ?: return null
+        val weightProfileId = actionWeightProfileId ?: return resolvedProfile
+        val weightProfile = content.actionWeightProfilesById[weightProfileId] ?: return resolvedProfile
+        return resolvedProfile.copy(
+            actions =
+                resolvedProfile.actions.map { action ->
+                    weightProfile.actionWeights[action.id]?.let { overriddenWeight ->
+                        action.copy(weight = overriddenWeight)
+                    } ?: action
+                },
+        )
     }
 
     private fun telegraphShape(shape: com.ktome.core.ai.TelegraphShape): OverlayShapeSnapshot =
@@ -3058,8 +3285,7 @@ class FoundationGameSession internal constructor(
     private fun interactableSchemaFor(interactableId: String) =
         content.schemaCatalog.interactables.firstOrNull { interactable -> interactable.id == interactableId }
 
-    private fun lootProfile(profileId: String) =
-        content.schemaCatalog.lootProfiles.firstOrNull { profile -> profile.id == profileId }
+    private fun lootProfile(profileId: String) = content.lootProfile(profileId)
 
     private fun currentZoneRewardProfile() = content.zoneRewardProfileResolver.resolve(currentZoneSchema().id)
 
@@ -3072,7 +3298,50 @@ class FoundationGameSession internal constructor(
             zoneId = currentZoneSchema().id,
             floorIndex = currentFloor(),
             baseBudget = currentZoneRewardProfile().baseRewardBudget,
+            rewardDeltas =
+                world.entitiesWith(BossVariantRuntime::class)
+                    .mapNotNull { entityId ->
+                        world.get<BossVariantRuntime>(entityId)?.lootProfileOverride?.let { lootProfileOverride ->
+                            val rewardBudget =
+                                requireNotNull(content.lootProfile(lootProfileOverride)) {
+                                    "Boss variant loot profile '$lootProfileOverride' is not registered."
+                                }.rewardBudget
+                            com.ktome.core.loot.RewardDelta(
+                                source = "bossVariant:${requireNotNull(world.get<BossVariantRuntime>(entityId)).variantId}",
+                                amount = rewardBudget,
+                            )
+                        }
+                    }.distinctBy(com.ktome.core.loot.RewardDelta::source),
         )
+
+    private fun currentEncounterThreatBudget(entityId: EntityId): com.ktome.core.loot.EncounterThreatBudget {
+        val encounterId =
+            world.get<BossEncounterState>(entityId)?.encounterId
+                ?: world.get<MonsterTemplateId>(entityId)?.value
+                ?: "unknown.encounter"
+        val mutationDeltas =
+            world.get<EliteMutationLoadout>(entityId)
+                ?.mutationIds
+                ?.mapNotNull(content.eliteMutationRegistry::resolve)
+                ?.map { mutation ->
+                    com.ktome.core.loot.ThreatDelta(
+                        source = "eliteMutation:${mutation.id}",
+                        amount = mutation.threatCost,
+                    )
+                }.orEmpty()
+        val bossVariantDelta =
+            world.get<BossVariantRuntime>(entityId)?.let { variant ->
+                com.ktome.core.loot.ThreatDelta(
+                    source = "bossVariant:${variant.variantId}",
+                    amount = variant.threatCost,
+                )
+            }
+        return com.ktome.core.loot.EncounterThreatBudget(
+            encounterId = encounterId,
+            baseBudget = 0,
+            threatDeltas = mutationDeltas + listOfNotNull(bossVariantDelta),
+        )
+    }
 
     private fun rewardSourceTier(source: MilestoneRewardSource): com.ktome.core.loot.SourceTier =
         when (source) {
@@ -3191,6 +3460,96 @@ class FoundationGameSession internal constructor(
             DamageType.HOLY -> "damage_type.holy.name"
             DamageType.SHADOW -> "damage_type.shadow.name"
         }
+
+    private fun terrainNameFor(
+        tile: com.ktome.core.map.TileType,
+        terrainTags: Set<TerrainTag>,
+    ): String =
+        when {
+            TerrainTag.ICE in terrainTags -> tr("tile.ice.name")
+            TerrainTag.WATER in terrainTags -> tr("tile.water.name")
+            TerrainTag.OIL in terrainTags -> tr("tile.oil.name")
+            else -> tileName(tile)
+        }
+
+    private fun terrainAudioProfile(
+        terrainTags: Set<TerrainTag>,
+        terrainOverride: TerrainOverride?,
+    ): String? =
+        when {
+            terrainOverride?.tickDamage ?: 0 > 0 -> "audio.terrain.oil_burning"
+            TerrainTag.ICE in terrainTags -> "audio.terrain.ice"
+            TerrainTag.WATER in terrainTags -> "audio.terrain.water"
+            TerrainTag.OIL in terrainTags -> "audio.terrain.oil"
+            else -> null
+        }
+
+    private fun terrainRuleNameKey(ruleId: String): String =
+        when (ruleId) {
+            "terrain_lightning_water_chain" -> "terrain.rule.lightning_water_chain"
+            "terrain_fire_oil_ignite" -> "terrain.rule.fire_oil_ignite"
+            "terrain_cold_water_freeze" -> "terrain.rule.cold_water_freeze"
+            "terrain_fire_ice_melt" -> "terrain.rule.fire_ice_melt"
+            "terrain_physical_ice_slip" -> "terrain.rule.physical_ice_slip"
+            else -> "terrain.rule.unknown"
+        }
+
+    private fun bossVariantNameKey(variantId: String): String =
+        if (variantId.startsWith("boss.variant.")) {
+            "$variantId.name"
+        } else {
+            "boss.variant.unknown.name"
+        }
+
+    private fun mutationAudioProfile(mutationId: String): String? =
+        mutationId
+            .removePrefix("elite.")
+            .takeIf(String::isNotBlank)
+            ?.let { suffix -> "audio.mutation.$suffix" }
+
+    private fun bossVariantAudioProfile(variantId: String): String? =
+        variantId
+            .removePrefix("boss.variant.")
+            .takeIf(String::isNotBlank)
+            ?.let { suffix -> "audio.boss.variant.$suffix" }
+
+    private fun mutationSummaryToken(mutation: com.ktome.game.elites.EliteMutationDef): RenderTextTokenSnapshot? {
+        val firstTalentId = mutation.grantedTalents.firstOrNull()?.talentId
+        return when {
+            mutation.auraStatusId != null ->
+                RenderTextTokenSnapshot(
+                    key = "ui.inspect.mutation.summary.aura",
+                    arguments =
+                        listOf(
+                            keyArg("status", statusNameKey(mutation.auraStatusId)),
+                            literalArg("radius", mutation.auraRadius),
+                        ),
+                )
+
+            firstTalentId != null && mutation.kind == com.ktome.game.elites.MutationKind.ELEMENT_PACKAGE ->
+                RenderTextTokenSnapshot(
+                    key = "ui.inspect.mutation.summary.element_package",
+                    arguments = listOf(keyArg("talent", talentNameKey(firstTalentId))),
+                )
+
+            firstTalentId != null ->
+                RenderTextTokenSnapshot(
+                    key = "ui.inspect.mutation.summary.granted_talent",
+                    arguments = listOf(keyArg("talent", talentNameKey(firstTalentId))),
+                )
+
+            mutation.aiProfileOverlay != null ->
+                RenderTextTokenSnapshot(
+                    key = "ui.inspect.mutation.summary.ai_shift",
+                    arguments = listOf(literalArg("profile", mutation.aiProfileOverlay)),
+                )
+
+            mutation.kind == com.ktome.game.elites.MutationKind.STAT_PACKAGE ->
+                RenderTextTokenSnapshot(key = "ui.inspect.mutation.summary.stat_package")
+
+            else -> null
+        }
+    }
 
     private fun damageTypeIconKey(damageTypeId: String): String =
         when (damageTypeId) {
@@ -4335,7 +4694,7 @@ class FoundationGameSession internal constructor(
     private fun spawnAlarmReinforcement(origin: Point): EntityId? {
         val template = reinforcementTemplateForAlarm() ?: return null
         val spawnPoint = reinforcementSpawnPoint(origin) ?: return null
-        return EntityFactory().createMonster(world = world, template = template, position = spawnPoint)
+        return spawnDecoratedMonster(template = template, spawnPoint = spawnPoint)
     }
 
     private fun cellVisibility(point: Point): CellVisibilitySnapshot =
@@ -4348,15 +4707,33 @@ class FoundationGameSession internal constructor(
     private fun terrainVisualKey(
         zone: ZoneSchemaV2,
         tile: com.ktome.core.map.TileType,
+        terrainTags: Set<TerrainTag>,
+        terrainOverride: TerrainOverride?,
     ): String =
         when (tile) {
-            com.ktome.core.map.TileType.FLOOR -> "${zone.tilesetKey}.ground_01"
+            com.ktome.core.map.TileType.FLOOR ->
+                when {
+                    terrainOverride?.tickDamage ?: 0 > 0 -> "vfx.terrain.interaction.oil_burning"
+                    TerrainTag.ICE in terrainTags -> "vfx.terrain.interaction.ice"
+                    TerrainTag.WATER in terrainTags -> "vfx.terrain.interaction.water"
+                    TerrainTag.OIL in terrainTags -> "vfx.terrain.interaction.oil"
+                    else -> "${zone.tilesetKey}.ground_01"
+                }
             com.ktome.core.map.TileType.WALL -> "${zone.tilesetKey}.wall_01"
         }
 
-    private fun terrainTypeId(tile: com.ktome.core.map.TileType): String =
+    private fun terrainTypeId(
+        tile: com.ktome.core.map.TileType,
+        terrainTags: Set<TerrainTag>,
+    ): String =
         when (tile) {
-            com.ktome.core.map.TileType.FLOOR -> "floor"
+            com.ktome.core.map.TileType.FLOOR ->
+                when {
+                    TerrainTag.ICE in terrainTags -> "ice"
+                    TerrainTag.WATER in terrainTags -> "water"
+                    TerrainTag.OIL in terrainTags -> "oil"
+                    else -> "floor"
+                }
             com.ktome.core.map.TileType.WALL -> "wall"
         }
 
@@ -4415,7 +4792,8 @@ class FoundationGameSession internal constructor(
         return InspectView(
             point = point,
             visibility = visibility,
-            terrainName = tileName(map[point]),
+            terrainName = tileNameAt(point),
+            terrainDetails = terrainInspectDetails(point),
             actor =
                 if (visibility == TileVisibility.VISIBLE) {
                     actorAt(point)?.let(::inspectActorView)
@@ -4544,6 +4922,11 @@ class FoundationGameSession internal constructor(
         }
 
         syncZoneMechanicEffectsFor(actorId)
+        if (!applyTerrainOverrideTurnStart(actorId)) {
+            activeTurnActor = null
+            return false
+        }
+        syncMutationAurasFor(actorId)
         if (!applyTurnStartStatusEffects(actorId)) {
             activeTurnActor = null
             return false
@@ -4575,6 +4958,7 @@ class FoundationGameSession internal constructor(
         val removedStatuses = tracker?.let(StatusLifecycle::decayEndOfTurnRemoved).orEmpty()
         decayAreaEffectEmitters(actorId)
         decayWorldEffects(actorId)
+        advanceTerrainOverridesAfterTurn()
 
         removedStatuses.forEach { removed ->
             logEvent(
@@ -5041,6 +5425,7 @@ class FoundationGameSession internal constructor(
 
                         is TalentUseResult.Success -> {
                             applyTalentResourceReactions(result.result)
+                            applyTalentTerrainInteractions(result.result)
                             if (result.result.hasConfirmedResolutionSuccess()) {
                                 recordSuccessfulPlayerAffinity(talentId)
                             }
@@ -5732,6 +6117,7 @@ class FoundationGameSession internal constructor(
             is TalentUseResult.Failure -> return true
             is TalentUseResult.Success -> {
                 applyTalentResourceReactions(result.result)
+                applyTalentTerrainInteractions(result.result)
                 logTalentResult(result.result)
                 logTriggeredTalentDamagePassives(result.result)
                 handleTalentDeaths(result.result.targets, monsterId)
@@ -5786,6 +6172,8 @@ class FoundationGameSession internal constructor(
             constitution = stats.con,
             willpower = stats.wil,
             statusEffects = activeStatusEffects(entityId),
+            mutations = inspectMutations(entityId),
+            bossVariant = inspectBossVariant(entityId),
         )
     }
 
@@ -5901,6 +6289,51 @@ class FoundationGameSession internal constructor(
                 )
             }
             .orEmpty()
+
+    private fun inspectMutations(entityId: EntityId): List<InspectMutationView> =
+        world.get<EliteMutationLoadout>(entityId)
+            ?.mutationIds
+            ?.mapNotNull(content.eliteMutationRegistry::resolve)
+            ?.map { mutation ->
+                InspectMutationView(
+                    id = mutation.id,
+                    name = tr(mutation.nameKey),
+                    iconKey = mutation.iconKey,
+                    summary = mutationSummaryToken(mutation)?.let(::render),
+                )
+            }.orEmpty()
+
+    private fun inspectBossVariant(entityId: EntityId): InspectBossVariantView? =
+        world.get<BossVariantRuntime>(entityId)?.let { runtime ->
+            InspectBossVariantView(
+                id = runtime.variantId,
+                name = tr(bossVariantNameKey(runtime.variantId)),
+                visualTintKey = runtime.visualTintKey,
+            )
+        }
+
+    private fun terrainInspectDetails(point: Point): List<String> {
+        val terrainOverride = activeFloorState.terrainOverrideAt(point) ?: return emptyList()
+        return buildList {
+            add(tr("ui.inspect.terrain.rule", "rule" to tr(terrainRuleNameKey(terrainOverride.sourceRuleId))))
+            add(tr("ui.inspect.terrain.turns", "turns" to terrainOverride.remainingTurns))
+            if (terrainOverride.conductsLightning) {
+                add(tr("ui.inspect.terrain.conducts_lightning"))
+            }
+            val tickDamageType = terrainOverride.tickDamageType
+            if (terrainOverride.tickDamage > 0 && tickDamageType != null) {
+                add(
+                    tr(
+                        "ui.inspect.terrain.tick_damage",
+                        "amount" to terrainOverride.tickDamage,
+                        "damageType" to tr(damageTypeLabelKey(tickDamageType)),
+                    ),
+                )
+            }
+        }
+    }
+
+    private fun tileNameAt(point: Point): String = terrainNameFor(tile = map[point], terrainTags = activeFloorState.terrainTagsAt(point))
 
     private fun statusStackSuffix(
         stackCount: Int,
@@ -6162,6 +6595,328 @@ class FoundationGameSession internal constructor(
         }
     }
 
+    private fun resolveTerrainInteractionContext(
+        attacker: EntityId,
+        target: EntityId,
+        damageType: DamageType,
+        interactionDepth: Int,
+    ): TerrainInteractionContext? {
+        val targetPosition = world.get<Position>(target)?.toPoint() ?: return null
+        val targetTerrainTags = activeFloorState.terrainTagsAt(targetPosition)
+        if (targetTerrainTags.isEmpty()) {
+            return null
+        }
+        val adjacentTargets =
+            world.entitiesWith(Position::class, Health::class)
+                .filter { entityId ->
+                    entityId != target &&
+                        world.isAlive(entityId) &&
+                        requireNotNull(world.get<Position>(entityId)).toPoint().isAdjacentTo(targetPosition)
+                }.sortedBy(EntityId::value)
+                .map { entityId ->
+                    val entityPosition = requireNotNull(world.get<Position>(entityId)).toPoint()
+                    TerrainInteractionTarget(
+                        entityId = entityId,
+                        terrainTags = activeFloorState.terrainTagsAt(entityPosition),
+                    )
+                }
+        return TerrainInteractionContext(
+            targetTerrainTags = targetTerrainTags,
+            adjacentTargets = adjacentTargets,
+            interactionDepth = interactionDepth,
+            sourceTags = terrainInteractionSourceTags(attacker, damageType),
+        )
+    }
+
+    private fun terrainInteractionSourceTags(
+        attacker: EntityId,
+        damageType: DamageType,
+    ): Set<String> =
+        buildSet {
+            add("damage:${damageType.name.lowercase()}")
+            world.get<MonsterTemplateId>(attacker)?.value?.let { templateId ->
+                add("template:$templateId")
+            }
+            world.get<EliteMutationLoadout>(attacker)?.mutationIds?.forEach { mutationId ->
+                add("mutation:$mutationId")
+            }
+        }
+
+    private fun applyTerrainInteraction(
+        attacker: EntityId,
+        target: EntityId,
+        interaction: ElementInteractionResolution?,
+    ) {
+        if (interaction == null) {
+            return
+        }
+        val targetPosition = world.get<Position>(target)?.toPoint() ?: return
+        interaction.removedStatusIds.forEach { statusId ->
+            removeTerrainInteractionStatus(target = target, statusId = statusId)
+        }
+        interaction.slip?.let { slip ->
+            applyTerrainSlip(attacker = attacker, target = target, slip = slip, ruleId = interaction.ruleId)
+        }
+        interaction.terrainTransform?.let { terrainTransform ->
+            applyTerrainTransform(targetPosition, terrainTransform, interaction.ruleId)
+        }
+        listOfNotNull(interaction.bonusTargetTrace).forEach { childTrace ->
+            applyTerrainChildTrace(
+                attacker = attacker,
+                childTrace = childTrace,
+                damageType = interaction.triggerDamageType,
+                ruleId = interaction.ruleId,
+                interactionDepth = interaction.interactionDepth + 1,
+            )
+        }
+        interaction.chainTargets.forEach { childTrace ->
+            applyTerrainChildTrace(
+                attacker = attacker,
+                childTrace = childTrace,
+                damageType = interaction.triggerDamageType,
+                ruleId = interaction.ruleId,
+                interactionDepth = interaction.interactionDepth + 1,
+            )
+        }
+    }
+
+    private fun removeTerrainInteractionStatus(
+        target: EntityId,
+        statusId: String,
+    ) {
+        val tracker = world.get<EffectTracker>(target) ?: return
+        val removed =
+            tracker.effects.filter { effect ->
+                effect.schemaId == statusId || effect.id == statusId || effect.type.schemaId == statusId
+            }
+        if (removed.isEmpty()) {
+            return
+        }
+        tracker.effects.removeAll(removed.toSet())
+        removed.forEach { effect ->
+            logEvent(
+                StatusRemovedEvent(
+                    target = target,
+                    statusType = effect.type,
+                    statusId = effect.schemaId,
+                    reason = "TERRAIN_INTERACTION",
+                ),
+            )
+        }
+        StatsCalculator.recalculateAndStore(world, target)
+    }
+
+    private fun applyTerrainSlip(
+        attacker: EntityId,
+        target: EntityId,
+        slip: com.ktome.core.combat.TerrainSlipPlan,
+        ruleId: String,
+    ) {
+        val statusType = StatusEffectType.fromSchemaId(slip.statusId)
+        val result =
+            StatusLifecycle.applyEffect(
+                world,
+                target,
+                StatusLifecycle.createInstance(
+                    type = statusType,
+                    effectId = "terrain:$ruleId:${target.value}:$turnCount",
+                    duration = slip.durationTurns,
+                    sourceEntityId = attacker,
+                    appliedTurn = turnCount,
+                ),
+            )
+        if (!result.applied) {
+            return
+        }
+        logEvent(
+            StatusAppliedEvent(
+                target = target,
+                statusType = statusType,
+                statusId = slip.statusId,
+                source = attacker,
+                remainingTurns = slip.durationTurns,
+            ),
+        )
+        addMessage(
+            "log.terrain.slip",
+            entityArg("target", target),
+            keyArg("rule", terrainRuleNameKey(ruleId)),
+            keyArg("status", statusEffectNameKey(statusType)),
+        )
+        StatsCalculator.recalculateAndStore(world, target)
+    }
+
+    private fun applyTerrainTransform(
+        point: Point,
+        terrainTransform: com.ktome.core.combat.TerrainTransformPlan,
+        ruleId: String,
+    ) {
+        activeFloorState.setTerrainOverride(
+            point = point,
+            terrainOverride =
+                TerrainOverride(
+                    terrainTags = terrainTransform.targetTerrainTags,
+                    sourceRuleId = ruleId,
+                    remainingTurns = terrainTransform.durationTurns,
+                    conductsLightning = terrainTransform.conductsLightning,
+                    tickDamageType = terrainTransform.tickDamageType,
+                    tickDamage = terrainTransform.tickDamage,
+                ),
+        )
+        addMessage(
+            "log.terrain.transform",
+            keyArg("rule", terrainRuleNameKey(ruleId)),
+            literalArg("terrain", terrainNameFor(map[point], terrainTransform.targetTerrainTags)),
+            literalArg("turns", terrainTransform.durationTurns),
+        )
+    }
+
+    private fun applyTerrainChildTrace(
+        attacker: EntityId,
+        childTrace: com.ktome.core.combat.TerrainInteractionChildTrace,
+        damageType: DamageType,
+        ruleId: String,
+        interactionDepth: Int,
+    ) {
+        if (!world.isAlive(childTrace.targetId)) {
+            return
+        }
+        val result =
+            combatResolver.resolveTriggeredDamage(
+                world = world,
+                source = attacker,
+                target = childTrace.targetId,
+                damageType = damageType,
+                rawDamage = childTrace.rawDamage,
+                traceId = childTrace.traceId,
+                abilityId = "terrain_interaction:$ruleId",
+                interactionDepth = interactionDepth,
+            )
+        if (!result.hit || result.finalDamage <= 0) {
+            return
+        }
+        logEvent(
+            DamageDealtEvent(
+                attacker = attacker,
+                target = childTrace.targetId,
+                damage = result.finalDamage,
+                crit = result.critical,
+                damageType = damageType,
+            ),
+        )
+        applyTerrainInteraction(attacker = attacker, target = childTrace.targetId, interaction = result.terrainInteraction)
+        if (result.targetKilled) {
+            handleDeath(childTrace.targetId, attacker)
+        }
+    }
+
+    private fun applyTerrainOverrideTurnStart(actorId: EntityId): Boolean {
+        val actorPosition = world.get<Position>(actorId)?.toPoint() ?: return world.isAlive(actorId)
+        val terrainOverride = activeFloorState.terrainOverrideAt(actorPosition) ?: return world.isAlive(actorId)
+        val damageType = terrainOverride.tickDamageType ?: return world.isAlive(actorId)
+        if (terrainOverride.tickDamage <= 0) {
+            return world.isAlive(actorId)
+        }
+        val result =
+            combatResolver.resolveTriggeredDamage(
+                world = world,
+                source = actorId,
+                target = actorId,
+                damageType = damageType,
+                rawDamage = terrainOverride.tickDamage,
+                traceId = "terrain-override:${terrainOverride.sourceRuleId}:${actorId.value}:$turnCount",
+                abilityId = "terrain_override:${terrainOverride.sourceRuleId}",
+                interactionDepth = ElementInteractionRegistry.MAX_INTERACTION_DEPTH,
+            )
+        if (result.finalDamage > 0) {
+            logEvent(
+                DamageDealtEvent(
+                    attacker = actorId,
+                    target = actorId,
+                    damage = result.finalDamage,
+                    crit = false,
+                    damageType = damageType,
+                ),
+            )
+            addMessage(
+                "log.terrain.tick",
+                entityArg("target", actorId),
+                keyArg("rule", terrainRuleNameKey(terrainOverride.sourceRuleId)),
+                literalArg("amount", result.finalDamage),
+            )
+        }
+        return if (result.targetKilled) {
+            handleDeath(actorId, actorId)
+            false
+        } else {
+            true
+        }
+    }
+
+    private fun syncMutationAurasFor(actorId: EntityId) {
+        val actorPosition = world.get<Position>(actorId)?.toPoint() ?: return
+        world.entitiesWith(EliteMutationLoadout::class, Position::class).forEach { ownerId ->
+            val ownerPosition = world.get<Position>(ownerId)?.toPoint() ?: return@forEach
+            val auraMutations =
+                world.get<EliteMutationLoadout>(ownerId)
+                    ?.mutationIds
+                    ?.mapNotNull(content.eliteMutationRegistry::resolve)
+                    ?.filter { mutation ->
+                        mutation.kind == com.ktome.game.elites.MutationKind.AURA &&
+                            mutation.auraStatusId != null &&
+                            mutation.auraRadius > 0 &&
+                            ownerId != actorId &&
+                            actorPosition.chebyshevDistanceTo(ownerPosition) <= mutation.auraRadius &&
+                            areHostile(ownerId, actorId)
+                    }.orEmpty()
+            if (auraMutations.isEmpty()) {
+                world.remove<AreaEffectEmitter>(ownerId)
+                return@forEach
+            }
+            world.add(
+                ownerId,
+                AreaEffectEmitter(
+                    emitterId = "mutation.aura:${ownerId.value}",
+                    sourceEntityId = ownerId,
+                    affectedActorIds = setOf(actorId),
+                    effects =
+                        auraMutations.map { mutation ->
+                            StatusLifecycle.createInstance(
+                                type = StatusEffectType.fromSchemaId(requireNotNull(mutation.auraStatusId)),
+                                effectId = "mutation.aura:${mutation.id}:${ownerId.value}:${actorId.value}:$turnCount",
+                                duration = mutation.auraDuration,
+                                magnitude = mutation.auraMagnitude,
+                                sourceEntityId = ownerId,
+                                appliedTurn = turnCount,
+                            )
+                        }.toMutableList(),
+                ),
+            )
+        }
+    }
+
+    private fun areHostile(
+        source: EntityId,
+        target: EntityId,
+    ): Boolean {
+        val sourceFaction = world.get<FactionTag>(source)?.value ?: return source != target
+        val targetFaction = world.get<FactionTag>(target)?.value ?: return source != target
+        return sourceFaction != targetFaction
+    }
+
+    private fun advanceTerrainOverridesAfterTurn() {
+        val expiredPoints = mutableListOf<Point>()
+        activeFloorState.terrainOverrides.forEach { (point, terrainOverride) ->
+            if (terrainOverride.remainingTurns > 0) {
+                terrainOverride.remainingTurns = (terrainOverride.remainingTurns - 1).coerceAtLeast(0)
+            }
+            if (terrainOverride.isExpired) {
+                expiredPoints += point
+            }
+        }
+        expiredPoints.forEach(activeFloorState::clearTerrainOverride)
+    }
+
     private fun resolveAttack(
         attacker: EntityId,
         target: EntityId,
@@ -6187,6 +6942,7 @@ class FoundationGameSession internal constructor(
         }
 
         applyDamageResourceReactions(attacker, target, result.finalDamage)
+        applyTerrainInteraction(attacker = attacker, target = target, interaction = result.terrainInteraction)
         if (attacker == playerId) {
             recordSuccessfulPlayerAffinity(EquilibriumAffinity.PHYSICAL)
         }
@@ -6789,6 +7545,7 @@ class FoundationGameSession internal constructor(
                 stairsUp = activeFloorState.stairsUp,
                 stairsDown = activeFloorState.stairsDown,
                 rewardState = currentFloorRewardState,
+                terrainOverrides = activeFloorState.runtimeTerrainOverrides,
                 exploredTiles = exploredTiles,
                 world = world,
                 excludedEntities = excludedEntities,
@@ -7063,6 +7820,18 @@ class FoundationGameSession internal constructor(
         result.effects.forEach { effect ->
             if (effect is com.ktome.core.talent.TalentEffectResult.Damage && effect.amount > 0) {
                 applyDamageResourceReactions(attacker = result.user, target = effect.target, damage = effect.amount)
+            }
+        }
+    }
+
+    private fun applyTalentTerrainInteractions(result: com.ktome.core.talent.TalentResult) {
+        result.effects.forEach { effect ->
+            if (effect is com.ktome.core.talent.TalentEffectResult.Damage) {
+                applyTerrainInteraction(
+                    attacker = result.user,
+                    target = effect.target,
+                    interaction = effect.terrainInteraction,
+                )
             }
         }
     }
@@ -8401,7 +9170,10 @@ class FoundationGameSession internal constructor(
             content.allMonsterTemplates()
                 .firstOrNull { candidate -> candidate.id == templateId }
                 ?: return null
-        val profileId = template.lootProfileId.takeIf(String::isNotBlank) ?: return null
+        val profileId =
+            world.get<BossVariantRuntime>(target)?.lootProfileOverride?.takeIf(String::isNotBlank)
+                ?: template.lootProfileId.takeIf(String::isNotBlank)
+                ?: return null
         val profile = lootProfile(profileId) ?: return null
         val candidateItems = profile.itemIds.mapNotNull(::itemBaseDef)
         if (candidateItems.isEmpty()) {
@@ -8413,7 +9185,12 @@ class FoundationGameSession internal constructor(
                 context =
                     com.ktome.core.loot.LootRollContext(
                         sourceLevel = currentZoneSourceLevel(),
-                        sourceTier = monsterSourceTier(template),
+                        sourceTier =
+                            when {
+                                world.get<BossVariantRuntime>(target) != null -> com.ktome.core.loot.SourceTier.BOSS
+                                world.get<EliteMutationLoadout>(target)?.mutationIds?.isNotEmpty() == true -> com.ktome.core.loot.SourceTier.ELITE
+                                else -> monsterSourceTier(template)
+                            },
                         zoneId = currentZoneSchema().id,
                         playerLevel = playerStatus().level,
                         magicFindBonus = currentMagicFindBonus(),

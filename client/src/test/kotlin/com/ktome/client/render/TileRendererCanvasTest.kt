@@ -11,6 +11,7 @@ import com.ktome.client.input.OverlayState
 import com.ktome.client.input.UiMode
 import com.ktome.core.snapshot.ActorRenderSnapshot
 import com.ktome.core.snapshot.ActorRoleKindSnapshot
+import com.ktome.core.snapshot.BossVariantRenderSnapshot
 import com.ktome.core.snapshot.CellVisibilitySnapshot
 import com.ktome.core.snapshot.CombatFeedbackSnapshot
 import com.ktome.core.snapshot.CombatFeedbackTypeSnapshot
@@ -152,6 +153,63 @@ class TileRendererCanvasTest {
 
         assertTrue(topGauge.y + topGauge.height <= subtitleDraw.y)
         assertTrue(subtitleDraw.y - (topGauge.y + topGauge.height) >= 4f)
+    }
+
+    @Test
+    fun `render canvas derives boss variant tint from visual manifest metadata`() {
+        val canvas = RecordingTileCanvas()
+        val baseSnapshot = sampleSnapshot(width = 2, height = 1)
+        val snapshot =
+            baseSnapshot.copy(
+                metadata = baseSnapshot.metadata.copy(width = 2, height = 1),
+                mapCells =
+                    listOf(
+                        MapCellSnapshot(
+                            x = 0,
+                            y = 0,
+                            visibility = CellVisibilitySnapshot.VISIBLE,
+                            terrainTypeId = "floor",
+                            terrainVisualKey = "tileset.test.ground_01",
+                        ),
+                        MapCellSnapshot(
+                            x = 1,
+                            y = 0,
+                            visibility = CellVisibilitySnapshot.VISIBLE,
+                            terrainTypeId = "floor",
+                            terrainVisualKey = "tileset.test.ground_01",
+                        ),
+                    ),
+                actors =
+                    baseSnapshot.actors +
+                        ActorRenderSnapshot(
+                            entityId = 2,
+                            x = 1,
+                            y = 0,
+                            visualKey = "actor.vanguard",
+                            nameKey = "boss.test.name",
+                            isPlayer = false,
+                            roleKind = ActorRoleKindSnapshot.BOSS,
+                            bossVariant =
+                                BossVariantRenderSnapshot(
+                                    variantId = "boss.variant.molten_glass",
+                                    nameKey = "boss.variant.molten_glass.name",
+                                    visualTintKey = "vfx.boss.variant.molten_glass",
+                                ),
+                        ),
+            )
+
+        TileRenderer.renderToCanvas(
+            localizer = LocalizationBundle.load().translator(GameLocale.EN_US),
+            visualResolver = sampleResolver(),
+            snapshot = snapshot,
+            overlayState = OverlayState(mode = UiMode.MAP),
+            canvas = canvas,
+            cellWidth = 32f,
+            cellHeight = 32f,
+        )
+
+        val actorDraw = canvas.assetDraws.single { draw -> draw.asset.resolvedKey == "actor.vanguard" && draw.tintColorHex != null }
+        assertEquals("#FF7A3C", actorDraw.tintColorHex)
     }
 
     @Test
@@ -791,6 +849,13 @@ class TileRendererCanvasTest {
                                 rawOutputPath = "phase2/p2-b/actor_vanguard.png",
                                 footprint = "2x1",
                             ),
+                            VisualManifestEntry(
+                                key = "vfx.boss.variant.molten_glass",
+                                category = "vfx_overlay",
+                                rawOutputPath = "phase4/pr06/boss_variant_molten_glass.png",
+                                footprint = "1x1",
+                                asciiColorHex = "#FF7A3C",
+                            ),
                         ),
                     prefixRules = listOf(ManifestPrefixRule(prefix = "icon.", targetKey = "missing_visual")),
                 ),
@@ -903,6 +968,7 @@ private class RecordingTileCanvas : TileCanvas {
         val width: Float,
         val height: Float,
         val alpha: Float,
+        val tintColorHex: String?,
     )
 
     data class RectDraw(
@@ -942,8 +1008,9 @@ private class RecordingTileCanvas : TileCanvas {
         width: Float,
         height: Float,
         alpha: Float,
+        tintColorHex: String?,
     ) {
-        assetDraws += AssetDraw(asset, x, y, width, height, alpha)
+        assetDraws += AssetDraw(asset, x, y, width, height, alpha, tintColorHex)
     }
 
     override fun drawText(

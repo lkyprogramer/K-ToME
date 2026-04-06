@@ -50,9 +50,21 @@ data class MapCellSnapshot(
     val terrainTypeId: String,
     val terrainVisualKey: String,
     val terrainTags: List<String> = emptyList(),
+    val terrainAudioProfile: String? = null,
+    val terrainOverride: TerrainOverrideRenderSnapshot? = null,
     val stairDirectionId: String? = null,
     val actorEntityId: Int? = null,
     val items: List<ItemRenderSnapshot> = emptyList(),
+)
+
+@Serializable
+data class TerrainOverrideRenderSnapshot(
+    val sourceRuleId: String,
+    val ruleNameKey: String,
+    val remainingTurns: Int,
+    val conductsLightning: Boolean,
+    val tickDamageTypeId: String? = null,
+    val tickDamage: Int = 0,
 )
 
 @Serializable
@@ -103,6 +115,9 @@ data class ActorRenderSnapshot(
     val isPlayer: Boolean,
     val roleKind: ActorRoleKindSnapshot? = null,
     val aiTypeId: String? = null,
+    val displayTintColorHex: String? = null,
+    val mutations: List<ActorMutationRenderSnapshot> = emptyList(),
+    val bossVariant: BossVariantRenderSnapshot? = null,
     val currentHp: Int? = null,
     val maxHp: Int? = null,
     val attack: Int? = null,
@@ -115,6 +130,25 @@ data class ActorRenderSnapshot(
     val constitution: Int? = null,
     val willpower: Int? = null,
     val statusEffects: List<StatusEffectRenderSnapshot> = emptyList(),
+)
+
+@Serializable
+data class ActorMutationRenderSnapshot(
+    val mutationId: String,
+    val nameKey: String,
+    val iconKey: String,
+    val audioProfile: String? = null,
+    val kindId: String,
+    val tierId: String,
+    val summary: RenderTextTokenSnapshot? = null,
+)
+
+@Serializable
+data class BossVariantRenderSnapshot(
+    val variantId: String,
+    val nameKey: String,
+    val visualTintKey: String? = null,
+    val audioProfile: String? = null,
 )
 
 @Serializable

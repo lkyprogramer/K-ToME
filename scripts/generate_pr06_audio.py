@@ -419,6 +419,72 @@ def add_profile(samples: list[float], sample_rate: int, profile: str, rng: rando
         mix_tone(samples, sample_rate, 0.04, 0.42, 0.12, 640.0, 220.0, waveform="triangle", attack=0.0, release=0.2)
         mix_click(samples, sample_rate, 0.18, 0.14)
         return
+    if profile == "mutation_stonehide":
+        mix_impact(samples, sample_rate, 0.02, 0.34, rng, heavy=True)
+        mix_tone(samples, sample_rate, 0.0, 0.78, 0.12, note(40), note(45), waveform="triangle", attack=0.03, release=0.38)
+        mix_noise(samples, sample_rate, 0.12, 0.28, 0.05, rng, attack=0.0, release=0.14, smooth=0.48)
+        return
+    if profile == "mutation_battle_drill":
+        for start_s in (0.0, 0.16, 0.32):
+            mix_impact(samples, sample_rate, start_s, 0.18, rng, heavy=False)
+            mix_click(samples, sample_rate, start_s + 0.03, 0.09)
+        mix_whoosh(samples, sample_rate, 0.02, 0.46, 0.18, rng)
+        return
+    if profile == "mutation_dread_aura":
+        mix_tone(samples, sample_rate, 0.0, 1.0, 0.16, note(34), note(28), waveform="saw", attack=0.04, release=0.44)
+        mix_noise(samples, sample_rate, 0.08, 0.74, 0.06, rng, attack=0.02, release=0.24, smooth=0.18)
+        mix_shimmer(samples, sample_rate, 0.28, 0.42, note(52), 0.05)
+        return
+    if profile == "mutation_hunt_protocol":
+        for start_s, freq in ((0.0, 880.0), (0.14, 760.0), (0.28, 980.0)):
+            mix_click(samples, sample_rate, start_s, 0.1)
+            mix_tone(samples, sample_rate, start_s, 0.12, 0.08, freq, freq * 0.84, waveform="square", attack=0.0, release=0.05)
+        mix_whoosh(samples, sample_rate, 0.22, 0.22, 0.12, rng, bright=True)
+        return
+    if profile == "mutation_emberblood":
+        mix_tone(samples, sample_rate, 0.0, 0.48, 0.14, 320.0, 920.0, waveform="saw", attack=0.0, release=0.18)
+        mix_noise(samples, sample_rate, 0.06, 0.44, 0.09, rng, attack=0.0, release=0.16, smooth=0.28)
+        mix_impact(samples, sample_rate, 0.18, 0.2, rng, heavy=False)
+        return
+    if profile == "mutation_tidebound":
+        mix_shimmer(samples, sample_rate, 0.0, 0.68, note(64), 0.12)
+        mix_tone(samples, sample_rate, 0.08, 0.52, 0.08, 540.0, 240.0, waveform="triangle", attack=0.02, release=0.24)
+        mix_noise(samples, sample_rate, 0.18, 0.22, 0.04, rng, attack=0.0, release=0.1, smooth=0.7)
+        return
+    if profile == "terrain_water":
+        mix_noise(samples, sample_rate, 0.0, 0.54, 0.05, rng, attack=0.0, release=0.16, smooth=0.76)
+        mix_tone(samples, sample_rate, 0.04, 0.34, 0.07, 420.0, 280.0, waveform="triangle", attack=0.01, release=0.18)
+        return
+    if profile == "terrain_oil":
+        mix_noise(samples, sample_rate, 0.0, 0.56, 0.07, rng, attack=0.0, release=0.22, smooth=0.52)
+        mix_tone(samples, sample_rate, 0.06, 0.42, 0.08, 140.0, 88.0, waveform="triangle", attack=0.0, release=0.24)
+        return
+    if profile == "terrain_ice":
+        mix_chime(samples, sample_rate, 0.0, 0.18, note(90), 0.12)
+        mix_click(samples, sample_rate, 0.1, 0.09)
+        mix_tone(samples, sample_rate, 0.12, 0.24, 0.08, 960.0, 420.0, waveform="triangle", attack=0.0, release=0.12)
+        return
+    if profile == "terrain_oil_burning":
+        mix_noise(samples, sample_rate, 0.0, 0.6, 0.08, rng, attack=0.0, release=0.18, smooth=0.32)
+        mix_tone(samples, sample_rate, 0.0, 0.42, 0.13, 280.0, 860.0, waveform="saw", attack=0.0, release=0.14)
+        mix_impact(samples, sample_rate, 0.16, 0.16, rng, heavy=False)
+        return
+    if profile == "boss_variant_molten_glass":
+        mix_impact(samples, sample_rate, 0.0, 0.18, rng, heavy=True)
+        mix_tone(samples, sample_rate, 0.02, 0.68, 0.16, note(70), note(55), waveform="triangle", attack=0.0, release=0.22)
+        mix_shimmer(samples, sample_rate, 0.18, 0.36, note(82), 0.06)
+        mix_noise(samples, sample_rate, 0.1, 0.24, 0.04, rng, attack=0.0, release=0.08, smooth=0.2)
+        return
+    if profile == "boss_variant_grey_crown":
+        mix_shimmer(samples, sample_rate, 0.0, 0.72, note(62), 0.14)
+        mix_tone(samples, sample_rate, 0.06, 0.58, 0.1, note(50), note(42), waveform="triangle", attack=0.03, release=0.22)
+        mix_click(samples, sample_rate, 0.22, 0.08)
+        return
+    if profile == "boss_variant_abyssal_eclipse":
+        mix_tone(samples, sample_rate, 0.0, 0.82, 0.18, note(36), note(31), waveform="saw", attack=0.02, release=0.28)
+        mix_noise(samples, sample_rate, 0.08, 0.48, 0.06, rng, attack=0.0, release=0.18, smooth=0.2)
+        mix_shimmer(samples, sample_rate, 0.18, 0.44, note(58), 0.05)
+        return
     if profile == "monster_bandit_captain":
         mix_tone(samples, sample_rate, 0.0, 0.18, 0.16, 980.0, 740.0, waveform="square", attack=0.0, release=0.08)
         mix_noise(samples, sample_rate, 0.16, 0.18, 0.05, rng, attack=0.0, release=0.1, smooth=0.18)

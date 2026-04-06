@@ -67,6 +67,8 @@ data class DamageRequest(
     val shieldPoints: Int = 0,
     val statusApplication: StatusApplicationRequest? = null,
     val elementalInteraction: ElementalInteraction? = null,
+    val terrainInteractionContext: TerrainInteractionContext? = null,
+    val forceHit: Boolean = false,
     val callbacks: List<PipelineCallback> = emptyList(),
     val envelope: TraceEnvelope = CombatRuleset.formulaEnvelope(),
 )
@@ -80,6 +82,7 @@ data class DamageOutcome(
     val trace: CombatResolutionTrace,
     val envelope: TraceEnvelope,
     val statusApplication: StatusApplicationResolution? = null,
+    val terrainInteraction: ElementInteractionResolution? = null,
 ) {
     val finalDamage: Int
         get() = packet.finalDamage
@@ -109,6 +112,7 @@ class MutableCombatContext(
     var postReductionModifier: Int = 0
     var deathPrevented: Boolean = false
     var statusResolution: StatusApplicationResolution? = null
+    var terrainInteraction: ElementInteractionResolution? = null
     val childTraceIds: MutableList<String> = mutableListOf()
 }
 
@@ -124,9 +128,16 @@ class CombatPipeline(
 
         val preHitCallbacks = invokeCallbacks(CombatCallbackPhase.PRE_HIT_CHECK, context)
         val effectiveEvasion = DiminishingReturns.effectiveEvasion(context.evasion)
-        val hitChance = HitFormula.sigmoidHitChance(context.accuracy.toDouble(), effectiveEvasion)
-        val hitRoll = random.nextDouble()
-        val hit = hitRoll < hitChance
+        val hitChance = if (request.forceHit) 1.0 else HitFormula.sigmoidHitChance(context.accuracy.toDouble(), effectiveEvasion)
+        val hitRoll = if (request.forceHit) 0.0 else random.nextDouble()
+        val hit = request.forceHit || hitRoll < hitChance
+        val hitFlags = linkedSetOf<String>()
+        if (request.forceHit) {
+            hitFlags += "FORCE_HIT"
+        }
+        if (!hit) {
+            hitFlags += "MISS"
+        }
         steps +=
             ResolutionStep(
                 stepIndex = 1,
@@ -143,8 +154,9 @@ class CombatPipeline(
                         "hitChance" to hitChance.asString(),
                         "roll" to hitRoll.asString(),
                         "hit" to hit.asString(),
+                        "forceHit" to request.forceHit.asString(),
                     ),
-                flags = if (hit) emptySet() else linkedSetOf("MISS"),
+                flags = hitFlags,
                 callbacks = preHitCallbacks.records,
             )
         if (!hit) {
@@ -408,6 +420,15 @@ class CombatPipeline(
             context = context,
             hitSucceeded = true,
         )
+        context.terrainInteraction =
+            request.terrainInteractionContext?.let { terrainContext ->
+                ElementInteractionRegistry.resolve(
+                    request = request,
+                    finalDamage = context.finalDamage,
+                    terrainContext = terrainContext,
+                )
+            }
+        context.terrainInteraction?.childTraceIds?.forEach(context.childTraceIds::add)
         request.elementalInteraction
             ?.takeIf(ElementalInteraction::triggered)
             ?.childTraceId
@@ -415,6 +436,9 @@ class CombatPipeline(
         val onDamageFlags = linkedSetOf<String>()
         if (request.elementalInteraction?.triggered == true) {
             onDamageFlags += "ELEMENTAL_INTERACTION"
+        }
+        if (context.terrainInteraction != null) {
+            onDamageFlags += "TERRAIN_INTERACTION"
         }
         steps +=
             ResolutionStep(
@@ -430,6 +454,10 @@ class CombatPipeline(
                         "statusReason" to context.statusResolution?.reasonTag,
                         "elementalInteractionId" to request.elementalInteraction?.interactionId,
                         "childTraceId" to request.elementalInteraction?.childTraceId,
+                        "terrainInteractionRuleId" to context.terrainInteraction?.ruleId,
+                        "terrainInteractionChildTraceIds" to context.terrainInteraction?.childTraceIds?.joinToString(","),
+                        "terrainInteractionRemovedStatusIds" to context.terrainInteraction?.removedStatusIds?.joinToString(","),
+                        "terrainInteractionAppliedStatusIds" to context.terrainInteraction?.appliedStatusIds?.joinToString(","),
                     ),
                 flags = onDamageFlags,
                 callbacks = onDamageTakenCallbacks.records,
@@ -583,6 +611,7 @@ class CombatPipeline(
             trace = trace,
             envelope = request.envelope,
             statusApplication = context.statusResolution,
+            terrainInteraction = context.terrainInteraction,
         )
     }
 

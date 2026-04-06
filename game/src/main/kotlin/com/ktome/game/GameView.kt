@@ -222,10 +222,24 @@ data class InspectView(
     val point: Point,
     val visibility: TileVisibility,
     val terrainName: String,
+    val terrainDetails: List<String> = emptyList(),
     val actor: InspectActorView? = null,
     val items: List<InspectItemView> = emptyList(),
     val stairLabel: String? = null,
     val stairDirectionId: String? = null,
+)
+
+data class InspectMutationView(
+    val id: String,
+    val name: String,
+    val iconKey: String,
+    val summary: String? = null,
+)
+
+data class InspectBossVariantView(
+    val id: String,
+    val name: String,
+    val visualTintKey: String? = null,
 )
 
 data class InspectActorView(
@@ -243,6 +257,8 @@ data class InspectActorView(
     val constitution: Int,
     val willpower: Int,
     val statusEffects: List<String> = emptyList(),
+    val mutations: List<InspectMutationView> = emptyList(),
+    val bossVariant: InspectBossVariantView? = null,
 )
 
 data class InspectItemView(

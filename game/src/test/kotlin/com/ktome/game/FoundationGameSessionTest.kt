@@ -54,6 +54,8 @@ import com.ktome.core.item.MilestoneRewardSource
 import com.ktome.core.item.StatModifier
 import com.ktome.core.map.GameMap
 import com.ktome.core.map.Point
+import com.ktome.core.mapgen.TerrainOverride
+import com.ktome.core.mapgen.TerrainTag
 import com.ktome.core.mapgen.center
 import com.ktome.core.pathfinding.AStar
 import com.ktome.core.random.RandomSource
@@ -228,6 +230,41 @@ class FoundationGameSessionTest {
                 summary.startsWith("search:${session.playerId.value}:${entrance.bindingId.value}:ALREADY_RESOLVED:")
             },
         )
+    }
+
+    @Test
+    fun `save and load preserve runtime terrain overrides`() {
+        val saveManager = SaveManager(tempDir.resolve("terrain-override-save"))
+        val session =
+            GameModule.newFoundationSession(
+                config = FoundationGameConfig(seed = 20260406L, zoneId = "underground_river", playerProfessionId = "arcanist"),
+                saveManager = saveManager,
+            )
+        val overridePoint = findOpenAdjacentPoint(session, session.playerPosition())
+        session.automationSetTerrainOverride(
+            point = overridePoint,
+            terrainOverride =
+                TerrainOverride(
+                    terrainTags = setOf(TerrainTag.ICE),
+                    sourceRuleId = "terrain_cold_water_freeze",
+                    remainingTurns = 3,
+                ),
+        )
+
+        assertTrue(session.perform(PlayerCommand.SaveGame))
+
+        val snapshot = requireNotNull(saveManager.load())
+        val savedFloor = snapshot.floors.first { floor -> floor.floorIndex == session.currentFloor() }
+        val savedOverride = savedFloor.terrainOverrides.single { entry -> entry.point.x == overridePoint.x && entry.point.y == overridePoint.y }
+        assertEquals(setOf("ICE"), savedOverride.terrainTags)
+        assertEquals("terrain_cold_water_freeze", savedOverride.sourceRuleId)
+        assertEquals(3, savedOverride.remainingTurns)
+
+        val restored = requireNotNull(GameModule.loadFoundationSession(saveManager))
+        val restoredOverride = requireNotNull(restored.automationTerrainOverrideAt(overridePoint))
+        assertEquals(setOf(TerrainTag.ICE), restoredOverride.terrainTags)
+        assertEquals("terrain_cold_water_freeze", restoredOverride.sourceRuleId)
+        assertEquals(3, restoredOverride.remainingTurns)
     }
 
     @Test
@@ -2610,6 +2647,7 @@ class FoundationGameSessionTest {
                                         schemaVersion = 2,
                                         tags = listOf("loot", "test", "consumable"),
                                         itemIds = listOf("healing_potion"),
+                                        rewardBudget = 1,
                                     ),
                         ),
                 ),
@@ -4373,6 +4411,7 @@ class FoundationGameSessionTest {
                         professions = listOf(professionSchema),
                         talents = listOf(professionTalentSchema.copy(treeId = "profession_tree"), raceTalentSchema),
                         talentTrees = listOf(professionTree, raceTree),
+                        bossVariants = emptyList(),
                     ),
                 localizer = dataLoader.localizer,
             )

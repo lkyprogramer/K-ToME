@@ -19,6 +19,10 @@ object Phase4ContractVersions {
     const val CONTENT_SCHEMA_VERSION: Int = 2
     const val TOPOLOGY_FINGERPRINT_VERSION: Int = 2
     const val REWARD_LEDGER_VERSION: Int = 1
+    const val ELEMENT_INTERACTION_REGISTRY_VERSION: Int = 1
+    const val TERRAIN_OVERRIDE_VERSION: Int = 1
+    const val ELITE_MUTATION_REGISTRY_VERSION: Int = 1
+    const val BOSS_VARIANT_OVERLAY_VERSION: Int = 1
     const val LOOT_FORMULA_VERSION: Int = 2
     const val SPECIAL_TIER_ELIGIBILITY_VERSION: Int = 2
     const val SEARCH_RULE_VERSION: Int = 1

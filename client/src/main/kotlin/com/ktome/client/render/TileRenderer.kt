@@ -37,6 +37,7 @@ internal interface TileCanvas {
         width: Float,
         height: Float,
         alpha: Float = 1f,
+        tintColorHex: String? = null,
     )
 
     fun drawText(
@@ -64,6 +65,7 @@ internal object NoOpTileCanvas : TileCanvas {
         width: Float,
         height: Float,
         alpha: Float,
+        tintColorHex: String?,
     ) = Unit
 
     override fun drawText(
@@ -154,10 +156,14 @@ class TileRenderer(
             width: Float,
             height: Float,
             alpha: Float,
+            tintColorHex: String?,
         ) {
             val texture = textureRepository.textureFor(asset)
             val previous = Color(batch.color)
-            batch.color = Color(1f, 1f, 1f, alpha)
+            batch.color =
+                tintColorHex
+                    ?.let { tint -> Color.valueOf(tint.removePrefix("#")).also { color -> color.a = alpha } }
+                    ?: Color(1f, 1f, 1f, alpha)
             batch.draw(texture, x, y, width, height)
             batch.color = previous
         }
@@ -551,7 +557,7 @@ class TileRenderer(
             val anchorY = cellBottom + cellHeight * placement.asset.entry.pivotY.toFloat()
             val drawX = anchorX - width * placement.asset.entry.pivotX.toFloat()
             val drawY = anchorY - height * placement.asset.entry.pivotY.toFloat()
-            canvas.drawAsset(placement.asset, drawX, drawY, width, height, placement.alpha)
+            canvas.drawAsset(placement.asset, drawX, drawY, width, height, placement.alpha, placement.tintColorHex)
         }
 
         private fun drawFogOverlays(

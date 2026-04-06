@@ -4,16 +4,20 @@ import com.ktome.core.ai.AIPerceptionState
 import com.ktome.core.ai.BossEncounterState
 import com.ktome.core.ai.DangerLevel
 import com.ktome.core.ai.PendingTelegraphState
+import com.ktome.core.combat.DamageType
 import com.ktome.core.dungeon.FloorState
 import com.ktome.core.dungeon.StairDirection
 import com.ktome.core.ecs.AIBehavior
 import com.ktome.core.ecs.AIType
 import com.ktome.core.ecs.AiTriggerTracker
+import com.ktome.core.ecs.AiProfileOverride
 import com.ktome.core.ecs.BlocksMovement
+import com.ktome.core.ecs.BossVariantRuntime
 import com.ktome.core.ecs.CombatProfile
 import com.ktome.core.ecs.DisplayColor
 import com.ktome.core.ecs.Energy
 import com.ktome.core.ecs.EntityId
+import com.ktome.core.ecs.EliteMutationLoadout
 import com.ktome.core.ecs.Experience
 import com.ktome.core.ecs.ExperienceReward
 import com.ktome.core.ecs.Faction
@@ -56,6 +60,7 @@ import com.ktome.core.mapgen.GeneratedFloor
 import com.ktome.core.mapgen.MapgenPipeline
 import com.ktome.core.mapgen.MapgenRequest
 import com.ktome.core.mapgen.TerrainTag
+import com.ktome.core.mapgen.TerrainOverride
 import com.ktome.core.mapgen.TopologyFingerprinting
 import com.ktome.core.loot.PityTracker
 import com.ktome.core.race.RaceTalentPointBank
@@ -77,6 +82,7 @@ import com.ktome.core.save.AmbushLaneTriggerSnapshot
 import com.ktome.core.save.AiTriggerTrackerSnapshot
 import com.ktome.core.save.ActiveEffectSnapshot
 import com.ktome.core.save.AreaEffectEmitterSnapshot
+import com.ktome.core.save.BossVariantRuntimeSnapshot
 import com.ktome.core.save.BossEncounterStateSnapshot
 import com.ktome.core.save.CombatProfileSnapshot
 import com.ktome.core.save.EntitySnapshot
@@ -104,6 +110,8 @@ import com.ktome.core.save.SaveSnapshot
 import com.ktome.core.save.SaveRestoreException
 import com.ktome.core.save.StairSnapshot
 import com.ktome.core.save.StatModifierSnapshot
+import com.ktome.core.save.StatusEffectDefinitionSnapshot
+import com.ktome.core.save.TerrainOverrideSnapshot
 import com.ktome.core.save.TalentAllocationDraftSnapshot
 import com.ktome.core.save.StatsSnapshot
 import com.ktome.core.save.TalentLoadoutSnapshot
@@ -145,6 +153,7 @@ internal data class FloorRuntimeState(
     val stairsUp: Point? = null,
     val stairsDown: Point? = null,
     var rewardState: FloorRewardStateSnapshot = FloorRewardStateSnapshot(),
+    val terrainOverrides: LinkedHashMap<Point, TerrainOverride> = linkedMapOf(),
     val exploredTiles: LinkedHashSet<Point> = linkedSetOf(),
     val entities: MutableList<EntitySnapshot> = mutableListOf(),
     val revealedEntranceIds: LinkedHashSet<SearchBindingId> = linkedSetOf(),
@@ -159,7 +168,16 @@ internal data class FloorRuntimeState(
         get() = generatedFloor.map
 
     val terrainTags: Map<Point, Set<TerrainTag>>
-        get() = generatedFloor.terrainTags
+        get() =
+            buildMap {
+                putAll(generatedFloor.terrainTags)
+                terrainOverrides.forEach { (point, terrainOverride) ->
+                    put(point, terrainOverride.terrainTags)
+                }
+            }
+
+    val runtimeTerrainOverrides: Map<Point, TerrainOverride>
+        get() = terrainOverrides.toMap()
 
     val resolvedHiddenEntranceBindings: List<ResolvedEntranceBinding>
         get() = generatedFloor.resolvedEntranceBindings()
@@ -169,6 +187,24 @@ internal data class FloorRuntimeState(
 
     val terrainTagHash: String
         get() = TopologyFingerprinting.terrainTagHash(generatedFloor.terrainTags)
+
+    val terrainOverrideHash: String
+        get() = TopologyFingerprinting.terrainOverrideHash(terrainOverrides)
+
+    fun terrainTagsAt(point: Point): Set<TerrainTag> = terrainOverrides[point]?.terrainTags ?: generatedFloor.terrainTags[point].orEmpty()
+
+    fun terrainOverrideAt(point: Point): TerrainOverride? = terrainOverrides[point]
+
+    fun setTerrainOverride(
+        point: Point,
+        terrainOverride: TerrainOverride,
+    ) {
+        terrainOverrides[point] = terrainOverride
+    }
+
+    fun clearTerrainOverride(point: Point) {
+        terrainOverrides.remove(point)
+    }
 
     fun searchStateFor(bindingId: SearchBindingId): SearchStateEntry? =
         searchState.firstOrNull { entry -> entry.bindingId == bindingId }
@@ -198,6 +234,7 @@ internal data class FloorRuntimeState(
         stairsUp: Point? = null,
         stairsDown: Point? = null,
         rewardState: FloorRewardStateSnapshot = FloorRewardStateSnapshot(),
+        terrainOverrides: LinkedHashMap<Point, TerrainOverride> = linkedMapOf(),
         exploredTiles: LinkedHashSet<Point> = linkedSetOf(),
         entities: MutableList<EntitySnapshot> = mutableListOf(),
         revealedEntranceIds: LinkedHashSet<SearchBindingId> = linkedSetOf(),
@@ -208,6 +245,7 @@ internal data class FloorRuntimeState(
         stairsUp = stairsUp,
         stairsDown = stairsDown,
         rewardState = rewardState,
+        terrainOverrides = terrainOverrides,
         exploredTiles = exploredTiles,
         entities = entities,
         revealedEntranceIds = revealedEntranceIds,
@@ -261,6 +299,7 @@ internal object SessionSnapshotMapper {
         stairsUp: Point?,
         stairsDown: Point?,
         rewardState: FloorRewardStateSnapshot = FloorRewardStateSnapshot(),
+        terrainOverrides: Map<Point, TerrainOverride> = emptyMap(),
         exploredTiles: Set<Point>,
         world: World,
         excludedEntities: Set<EntityId>,
@@ -273,6 +312,7 @@ internal object SessionSnapshotMapper {
             stairsUp = stairsUp,
             stairsDown = stairsDown,
             rewardState = rewardState,
+            terrainOverrides = linkedMapOf<Point, TerrainOverride>().apply { putAll(terrainOverrides.toSortedTerrainOverrides()) },
             exploredTiles = linkedSetOf<Point>().apply { addAll(exploredTiles) },
             entities =
                 world.entitiesWith()
@@ -289,6 +329,7 @@ internal object SessionSnapshotMapper {
         stairsUp: Point?,
         stairsDown: Point?,
         rewardState: FloorRewardStateSnapshot = FloorRewardStateSnapshot(),
+        terrainOverrides: Map<Point, TerrainOverride> = emptyMap(),
         exploredTiles: Set<Point>,
         world: World,
         excludedEntities: Set<EntityId>,
@@ -298,6 +339,7 @@ internal object SessionSnapshotMapper {
             stairsUp = stairsUp,
             stairsDown = stairsDown,
             rewardState = rewardState,
+            terrainOverrides = terrainOverrides,
             exploredTiles = exploredTiles,
             world = world,
             excludedEntities = excludedEntities,
@@ -395,6 +437,8 @@ internal object SessionSnapshotMapper {
                         floorSeed = floorState.payload.generatedFloor.seed,
                         topologyFingerprint = floorState.payload.topologyFingerprint,
                         terrainTagHash = floorState.payload.terrainTagHash,
+                        terrainOverrideHash = floorState.payload.terrainOverrideHash,
+                        terrainOverrides = captureTerrainOverrides(floorState.payload),
                         resolvedHiddenEntranceBindings = floorState.payload.resolvedHiddenEntranceBindings,
                         revealedEntranceIds = floorState.payload.revealedEntranceIds.toSet(),
                         visitedSecretZoneIds = floorState.payload.visitedSecretZoneIds.toSet(),
@@ -453,6 +497,12 @@ internal object SessionSnapshotMapper {
             floors =
                 snapshot.floors.map { floor ->
                     val generatedFloor = restoreGeneratedFloor(snapshot = snapshot, floor = floor, mapgenPipeline = mapgenPipeline)
+                    val terrainOverrides = restoreTerrainOverrides(floor.terrainOverrides)
+                    if (floor.terrainOverrideHash.isNotBlank() && TopologyFingerprinting.terrainOverrideHash(terrainOverrides) != floor.terrainOverrideHash) {
+                        throw InvalidSaveException(
+                            "Saved floor ${floor.zoneId}#${floor.floorIndex} failed terrain-override hash verification. Start a new run.",
+                        )
+                    }
                     FloorState(
                         floor = floor.floorIndex,
                         stairsUp = floor.stairsUp?.toPoint(),
@@ -469,6 +519,7 @@ internal object SessionSnapshotMapper {
                                     } else {
                                         floor.rewardState
                                     },
+                                terrainOverrides = linkedMapOf<Point, TerrainOverride>().apply { putAll(terrainOverrides) },
                                 exploredTiles = linkedSetOf<Point>().apply { addAll(floor.exploredTiles.map(PointSnapshot::toPoint)) },
                                 entities = floor.entities.map(::canonicalizeEntitySnapshot).sortedBy(EntitySnapshot::id).toMutableList(),
                                 revealedEntranceIds = linkedSetOf<SearchBindingId>().apply { addAll(floor.revealedEntranceIds) },
@@ -548,6 +599,36 @@ internal object SessionSnapshotMapper {
     private fun canonicalEntranceBindings(bindings: List<ResolvedEntranceBinding>): List<ResolvedEntranceBinding> =
         bindings.sortedBy { binding -> binding.searchBindingId.value }
 
+    private fun captureTerrainOverrides(floor: FloorRuntimeState): List<TerrainOverrideSnapshot> =
+        floor.runtimeTerrainOverrides.entries
+            .sortedWith(compareBy<Map.Entry<Point, TerrainOverride>> { it.key.y }.thenBy { it.key.x })
+            .map { (point, terrainOverride) ->
+                TerrainOverrideSnapshot(
+                    point = PointSnapshot.from(point),
+                    terrainTags = terrainOverride.terrainTags.map(TerrainTag::name).toSortedSet(),
+                    sourceRuleId = terrainOverride.sourceRuleId,
+                    remainingTurns = terrainOverride.remainingTurns,
+                    conductsLightning = terrainOverride.conductsLightning,
+                    tickDamageType = terrainOverride.tickDamageType?.name,
+                    tickDamage = terrainOverride.tickDamage,
+                )
+            }
+
+    private fun restoreTerrainOverrides(snapshots: List<TerrainOverrideSnapshot>): Map<Point, TerrainOverride> =
+        snapshots
+            .sortedWith(compareBy<TerrainOverrideSnapshot> { it.point.y }.thenBy { it.point.x })
+            .associateTo(linkedMapOf()) { snapshot ->
+                snapshot.point.toPoint() to
+                    TerrainOverride(
+                        terrainTags = snapshot.terrainTags.mapTo(linkedSetOf(), TerrainTag::valueOf),
+                        sourceRuleId = snapshot.sourceRuleId,
+                        remainingTurns = snapshot.remainingTurns,
+                        conductsLightning = snapshot.conductsLightning,
+                        tickDamageType = snapshot.tickDamageType?.let(DamageType::valueOf),
+                        tickDamage = snapshot.tickDamage,
+                    )
+            }
+
     private fun captureEntity(
         world: World,
         entityId: EntityId,
@@ -619,6 +700,19 @@ internal object SessionSnapshotMapper {
                         currentPhaseId = bossState.currentPhaseId,
                         encounterTurnCount = bossState.encounterTurnCount,
                         phaseTurnCount = bossState.phaseTurnCount,
+                    )
+                },
+            eliteMutations = world.get<EliteMutationLoadout>(entityId)?.mutationIds?.sorted().orEmpty(),
+            aiProfileOverrideId = world.get<AiProfileOverride>(entityId)?.profileId,
+            bossVariant =
+                world.get<BossVariantRuntime>(entityId)?.let { variant ->
+                    BossVariantRuntimeSnapshot(
+                        variantId = variant.variantId,
+                        baseEncounterId = variant.baseEncounterId,
+                        threatCost = variant.threatCost,
+                        lootProfileOverride = variant.lootProfileOverride,
+                        visualTintKey = variant.visualTintKey,
+                        actionWeightProfileId = variant.actionWeightProfileId,
                     )
                 },
             patrolPressureState =
@@ -859,6 +953,28 @@ internal object SessionSnapshotMapper {
                     currentPhaseId = bossState.currentPhaseId,
                     encounterTurnCount = bossState.encounterTurnCount,
                     phaseTurnCount = bossState.phaseTurnCount,
+                ),
+            )
+        }
+        if (snapshot.eliteMutations.isNotEmpty()) {
+            world.add(
+                entityId,
+                EliteMutationLoadout(snapshot.eliteMutations.toMutableList()),
+            )
+        }
+        snapshot.aiProfileOverrideId?.let { profileId ->
+            world.add(entityId, AiProfileOverride(profileId))
+        }
+        snapshot.bossVariant?.let { variant ->
+            world.add(
+                entityId,
+                BossVariantRuntime(
+                    variantId = variant.variantId,
+                    baseEncounterId = variant.baseEncounterId,
+                    threatCost = variant.threatCost,
+                    lootProfileOverride = variant.lootProfileOverride,
+                    visualTintKey = variant.visualTintKey,
+                    actionWeightProfileId = variant.actionWeightProfileId,
                 ),
             )
         }
@@ -1120,6 +1236,8 @@ internal object SessionSnapshotMapper {
                     )
                 },
             bossEncounterState = snapshot.bossEncounterState?.copy(),
+            eliteMutations = snapshot.eliteMutations.sorted(),
+            bossVariant = snapshot.bossVariant?.copy(),
             patrolPressureState =
                 patrolPressureState?.copy(
                     spawnTemplateIds = patrolPressureState.spawnTemplateIds.toList(),
@@ -1191,6 +1309,12 @@ internal object SessionSnapshotMapper {
         )
 
     private fun copyActiveEffectSnapshot(snapshot: ActiveEffectSnapshot): ActiveEffectSnapshot =
+        snapshot.copy(
+            statModifiers = snapshot.statModifiers.copy(),
+            customDefinition = snapshot.customDefinition?.let(::copyStatusEffectDefinitionSnapshot),
+        )
+
+    private fun copyStatusEffectDefinitionSnapshot(snapshot: StatusEffectDefinitionSnapshot): StatusEffectDefinitionSnapshot =
         snapshot.copy(
             statModifiers = snapshot.statModifiers.copy(),
         )
@@ -1285,12 +1409,46 @@ internal object SessionSnapshotMapper {
             type = effect.schemaId,
             remainingTurns = effect.remainingTurns,
             statModifiers = toStatModifierSnapshot(effect.statModifiers),
+            customDefinition = effect.toStatusEffectDefinitionSnapshot(),
             skipNextDecay = effect.skipNextDecay,
             stackCount = effect.stackCount,
             appliedTurn = effect.appliedTurn,
             sourceEntityId = effect.sourceEntityId?.value,
             magnitude = effect.magnitude,
         )
+
+    private fun ActiveEffect.toStatusEffectDefinitionSnapshot(): StatusEffectDefinitionSnapshot? {
+        val hasStaticDefinition = StatusDefinitions.definitionForSchemaId(schemaId) != null
+        if (hasStaticDefinition && schemaId == type.schemaId) {
+            return null
+        }
+        return StatusEffectDefinitionSnapshot(
+            id = schemaId,
+            type = type,
+            category = category,
+            nameKey = requireNotNull(nameKey) {
+                "Custom effect '$schemaId' is missing nameKey and cannot be persisted."
+            },
+            iconKey = iconKey,
+            stackingRule = stackingRule,
+            stackCap = stackCap,
+            replacePolicy = replacePolicy,
+            uniquenessKey = uniquenessKey,
+            exclusiveGroup = exclusiveGroup,
+            sourceScopedUnique = sourceScopedUnique,
+            dispellable = dispellable,
+            remoteRemovalPolicy = remoteRemovalPolicy,
+            tickTiming = tickTiming,
+            tickPriority = tickPriority,
+            tickDamageType = tickDamageType,
+            tickDamage = tickDamage,
+            statModifiers = toStatModifierSnapshot(statModifiers),
+            carrierKind = carrierKind,
+            breaksOnActualDamage = breaksOnActualDamage,
+            consumedOnDamageType = consumedOnDamageType,
+            consumedDamageMultiplier = consumedDamageMultiplier,
+        )
+    }
 
     private fun toAreaEffectEmitterSnapshot(emitter: AreaEffectEmitter): AreaEffectEmitterSnapshot =
         AreaEffectEmitterSnapshot(
@@ -1313,7 +1471,7 @@ internal object SessionSnapshotMapper {
         snapshot: ActiveEffectSnapshot,
         content: GameContent,
     ): ActiveEffect {
-        val definition = restoreActiveEffectDefinition(snapshot.type, content)
+        val definition = restoreActiveEffectDefinition(snapshot, content)
         return StatusLifecycle.createInstance(
             definition = definition,
             effectId = snapshot.id,
@@ -1329,17 +1487,44 @@ internal object SessionSnapshotMapper {
     }
 
     private fun restoreActiveEffectDefinition(
-        statusId: String,
+        snapshot: ActiveEffectSnapshot,
         content: GameContent,
     ): StatusEffectDef =
-        content.statusCatalog.definitionOrNull(statusId)
-            ?: StatusDefinitions.definitionForSchemaId(statusId)
-            ?: when (statusId) {
+        snapshot.customDefinition?.let(::toStatusEffectDef)
+            ?: content.statusCatalog.definitionOrNull(snapshot.type)
+            ?: StatusDefinitions.definitionForSchemaId(snapshot.type)
+            ?: when (snapshot.type) {
                 in AbyssalRuntimeKeys.WARD_STATUS_IDS ->
-                    StatusDefinitions.definitionFor(StatusEffectType.HOLY_SHIELD_BUFF).copy(id = statusId)
+                    StatusDefinitions.definitionFor(StatusEffectType.HOLY_SHIELD_BUFF).copy(id = snapshot.type)
 
-                else -> StatusDefinitions.definitionFor(StatusEffectType.fromSchemaId(statusId))
+                else -> StatusDefinitions.definitionFor(StatusEffectType.fromSchemaId(snapshot.type))
             }
+
+    private fun toStatusEffectDef(snapshot: StatusEffectDefinitionSnapshot): StatusEffectDef =
+        StatusEffectDef(
+            id = snapshot.id,
+            type = snapshot.type,
+            category = snapshot.category,
+            nameKey = snapshot.nameKey,
+            iconKey = snapshot.iconKey,
+            stackingRule = snapshot.stackingRule,
+            stackCap = snapshot.stackCap,
+            replacePolicy = snapshot.replacePolicy,
+            uniquenessKey = snapshot.uniquenessKey,
+            exclusiveGroup = snapshot.exclusiveGroup,
+            sourceScopedUnique = snapshot.sourceScopedUnique,
+            dispellable = snapshot.dispellable,
+            remoteRemovalPolicy = snapshot.remoteRemovalPolicy,
+            tickTiming = snapshot.tickTiming,
+            tickPriority = snapshot.tickPriority,
+            tickDamageType = snapshot.tickDamageType,
+            tickDamage = snapshot.tickDamage,
+            statModifier = toStatModifier(snapshot.statModifiers),
+            carrierKind = snapshot.carrierKind,
+            breaksOnActualDamage = snapshot.breaksOnActualDamage,
+            consumedOnDamageType = snapshot.consumedOnDamageType,
+            consumedDamageMultiplier = snapshot.consumedDamageMultiplier,
+        )
 
     private fun restoreAreaEffectEmitter(
         snapshot: AreaEffectEmitterSnapshot,
@@ -1611,4 +1796,9 @@ internal object SessionSnapshotMapper {
 
     private fun Iterable<Point>.sortedCanonicalPoints(): List<Point> =
         sortedWith(compareBy<Point> { it.y }.thenBy { it.x })
+
+    private fun Map<Point, TerrainOverride>.toSortedTerrainOverrides(): Map<Point, TerrainOverride> =
+        entries
+            .sortedWith(compareBy<Map.Entry<Point, TerrainOverride>> { it.key.y }.thenBy { it.key.x })
+            .associateTo(linkedMapOf()) { (point, terrainOverride) -> point to terrainOverride }
 }

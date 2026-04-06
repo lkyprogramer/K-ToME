@@ -101,6 +101,11 @@ def parse_args() -> argparse.Namespace:
         default="assets-src/audio/specs/phase2-runtime-audio-specs.json",
         help="Path to the bundled placeholder/debug audio spec catalog JSON",
     )
+    parser.add_argument(
+        "--content-index",
+        default="game/src/main/resources/data/audio/index.yaml",
+        help="Path to the gameplay content audio index YAML that must stay aligned with formal-path audio keys.",
+    )
     return parser.parse_args()
 
 
@@ -139,12 +144,35 @@ def placeholder_tagged_keys(entries_by_key: dict[str, dict]) -> list[str]:
     )
 
 
+def load_content_audio_keys(path: pathlib.Path, errors: list[str]) -> set[str]:
+    payload = load_yaml(path)
+    profiles = payload.get("audioProfiles")
+    if not isinstance(profiles, list):
+        errors.append("content audio index audioProfiles must be a list.")
+        return set()
+
+    keys: set[str] = set()
+    for entry in profiles:
+        if not isinstance(entry, dict):
+            errors.append("content audio index entries must be mappings.")
+            continue
+        key = str(entry.get("id", "")).strip()
+        if not key:
+            errors.append("content audio index entry id is required.")
+            continue
+        if key in keys:
+            errors.append(f"Duplicate content audio index id '{key}'.")
+        keys.add(key)
+    return keys
+
+
 def validate(
     plan_paths: list[pathlib.Path],
     manifest_path: pathlib.Path,
     runtime_manifest_path: pathlib.Path,
     runtime_root: pathlib.Path,
     bundled_spec_path: pathlib.Path,
+    content_index_path: pathlib.Path,
 ) -> list[str]:
     plans = [load_yaml(path) for path in plan_paths]
     plan = plans[0]
@@ -152,6 +180,7 @@ def validate(
     runtime_manifest = load_json(runtime_manifest_path)
     errors: list[str] = []
     bundled_by_key = load_bundled_specs(bundled_spec_path, errors)
+    content_audio_keys = load_content_audio_keys(content_index_path, errors)
 
     if plan.get("manifestVersion") != manifest.get("manifestVersion"):
         errors.append("plan manifestVersion must match audio manifest manifestVersion.")
@@ -273,6 +302,14 @@ def validate(
     if extra_runtime:
         errors.append(f"runtime audio manifest has non-canonical keys: {', '.join(extra_runtime)}.")
 
+    missing_manifest_from_content = sorted(content_audio_keys - manifest_keys)
+    if missing_manifest_from_content:
+        errors.append(
+            "content audio index defines ids absent from the canonical audio manifest: "
+            + ", ".join(missing_manifest_from_content)
+            + "."
+        )
+
     for key in sorted(manifest_keys & runtime_keys):
         manifest_entry = manifest_by_key[key]
         runtime_entry = runtime_by_key[key]
@@ -388,6 +425,27 @@ def validate(
                 f"audio plan required audible key '{key}' must point to '{expected_path}', got '{plan_source_path}'."
             )
 
+    formal_content_audio_prefixes = (
+        "audio.mutation.",
+        "audio.terrain.",
+        "audio.boss.variant.",
+    )
+    required_content_audio_keys = sorted(
+        {
+            str(entry.get("key", "")).strip()
+            for entry in plan_entries
+            if isinstance(entry, dict)
+            and any(str(entry.get("key", "")).strip().startswith(prefix) for prefix in formal_content_audio_prefixes)
+        }
+    )
+    missing_content_audio_keys = [key for key in required_content_audio_keys if key not in content_audio_keys]
+    if missing_content_audio_keys:
+        errors.append(
+            "content audio index is missing formal-path gameplay audio keys: "
+            + ", ".join(missing_content_audio_keys)
+            + "."
+        )
+
     expected_spec_keys = {str(entry.get("key", "")).strip() for entry in plan_entries if isinstance(entry, dict)} | set(bundled_by_key)
     missing_spec_keys = sorted(manifest_keys - expected_spec_keys)
     extra_spec_keys = sorted(expected_spec_keys - manifest_keys)
@@ -443,6 +501,7 @@ def main() -> int:
         pathlib.Path(args.runtime_manifest),
         pathlib.Path(args.runtime_root),
         pathlib.Path(args.bundled_spec),
+        pathlib.Path(args.content_index),
     )
     if errors:
         return print_errors(errors)

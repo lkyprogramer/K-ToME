@@ -161,6 +161,12 @@ tasks.register("bossHarness") {
     dependsOn(":game:bossHarness")
 }
 
+tasks.register("terrainInteractionBatch") {
+    group = LifecycleBasePlugin.VERIFICATION_GROUP
+    description = "Runs the PR-06 terrain interaction batch and writes unified white-box reports."
+    dependsOn(":game:terrainInteractionBatch")
+}
+
 tasks.register("mapgenSmoke") {
     group = LifecycleBasePlugin.VERIFICATION_GROUP
     description = "Runs the Phase 4 map generation smoke baseline and writes fixed reports."
@@ -227,6 +233,8 @@ tasks.register<Exec>("assetLint") {
         "assets-src/image/specs/phase3-v3-pr17-gemini-plan.yaml",
         "--extra-plan",
         "assets-src/image/specs/phase4-pr05-gemini-plan.yaml",
+        "--extra-plan",
+        "assets-src/image/specs/phase4-pr06-gemini-plan.yaml",
         "--report-dir",
         "assets-src/image/manifests",
     )
@@ -250,6 +258,8 @@ tasks.register<Exec>("styleLint") {
         "assets-src/image/specs/phase3-v3-pr17-gemini-plan.yaml",
         "--extra-plan",
         "assets-src/image/specs/phase4-pr05-gemini-plan.yaml",
+        "--extra-plan",
+        "assets-src/image/specs/phase4-pr06-gemini-plan.yaml",
     )
 }
 
@@ -272,6 +282,8 @@ tasks.register<Exec>("audioLint") {
         "assets-src/audio/specs/phase3-v3-pr17-audio-plan.yaml",
         "--extra-plan",
         "assets-src/audio/specs/phase4-pr05-audio-plan.yaml",
+        "--extra-plan",
+        "assets-src/audio/specs/phase4-pr06-audio-plan.yaml",
         "--manifest",
         "assets-src/audio/manifests/phase2-audio-manifest.json",
         "--runtime-manifest",
@@ -329,6 +341,8 @@ tasks.register<Exec>("manifestLint") {
         "assets-src/image/specs/phase3-v3-pr17-gemini-plan.yaml",
         "--extra-plan",
         "assets-src/image/specs/phase4-pr05-gemini-plan.yaml",
+        "--extra-plan",
+        "assets-src/image/specs/phase4-pr06-gemini-plan.yaml",
         "--manifest",
         "assets-src/image/manifests/phase2-visual-manifest.json",
         "--runtime-manifest",

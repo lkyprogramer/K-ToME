@@ -2,6 +2,9 @@ package com.ktome.client.audio
 
 import com.ktome.client.assets.AudioManifestResourceLoader
 import com.ktome.client.assets.AudioManifestResolver
+import com.ktome.core.snapshot.ActorMutationRenderSnapshot
+import com.ktome.core.snapshot.ActorRenderSnapshot
+import com.ktome.core.snapshot.BossVariantRenderSnapshot
 import com.ktome.core.snapshot.CellVisibilitySnapshot
 import com.ktome.core.snapshot.InventoryEntrySnapshot
 import com.ktome.core.snapshot.ItemRenderSnapshot
@@ -135,6 +138,36 @@ class AudioRouterTest {
     }
 
     @Test
+    fun `movement prefers terrain cue when the player steps onto formal terrain audio`() {
+        val sink = RecordingAudioCueSink()
+        val router = AudioRouter(AudioManifestResolver(AudioManifestResourceLoader.load()), sink)
+        val previous = sampleSnapshot()
+        val current =
+            previous.copy(
+                metadata =
+                    previous.metadata.copy(
+                        playerX = 1,
+                        playerY = 0,
+                    ),
+                mapCells =
+                    listOf(
+                        MapCellSnapshot(
+                            x = 1,
+                            y = 0,
+                            visibility = CellVisibilitySnapshot.VISIBLE,
+                            terrainTypeId = "water",
+                            terrainVisualKey = "vfx.terrain.interaction.water",
+                            terrainAudioProfile = "audio.terrain.water",
+                        ),
+                    ),
+            )
+
+        router.onCommandResolved(previous, current, PlayerCommand.Move(com.ktome.core.map.Point(1, 0)), consumed = true)
+
+        assertEquals(listOf("audio.terrain.water"), sink.events)
+    }
+
+    @Test
     fun `talent miss keeps cast audio but suppresses hit cue`() {
         val sink = RecordingAudioCueSink()
         val router = AudioRouter(AudioManifestResolver(AudioManifestResourceLoader.load()), sink)
@@ -226,6 +259,113 @@ class AudioRouterTest {
             listOf("audio.ui.level_up", "audio.ui.talent_unlock", "audio.resource.stamina.restore"),
             sink.events,
         )
+    }
+
+    @Test
+    fun `snapshot transitions emit mutation variant and terrain audio cues`() {
+        val sink = RecordingAudioCueSink()
+        val router = AudioRouter(AudioManifestResolver(AudioManifestResourceLoader.load()), sink)
+        val previous =
+            sampleSnapshot().copy(
+                mapCells =
+                    listOf(
+                        MapCellSnapshot(
+                            x = 0,
+                            y = 1,
+                            visibility = CellVisibilitySnapshot.VISIBLE,
+                            terrainTypeId = "water",
+                            terrainVisualKey = "vfx.terrain.interaction.water",
+                            terrainAudioProfile = "audio.terrain.water",
+                        ),
+                    ),
+            )
+        val current =
+            previous.copy(
+                mapCells =
+                    listOf(
+                        MapCellSnapshot(
+                            x = 0,
+                            y = 1,
+                            visibility = CellVisibilitySnapshot.VISIBLE,
+                            terrainTypeId = "ice",
+                            terrainVisualKey = "vfx.terrain.interaction.ice",
+                            terrainAudioProfile = "audio.terrain.ice",
+                        ),
+                    ),
+                actors =
+                    listOf(
+                        ActorRenderSnapshot(
+                            entityId = 7,
+                            x = 1,
+                            y = 1,
+                            visualKey = "actor.bandit.captain",
+                            nameKey = "monster.bandit.captain.name",
+                            isPlayer = false,
+                            mutations =
+                                listOf(
+                                    ActorMutationRenderSnapshot(
+                                        mutationId = "elite.stonehide",
+                                        nameKey = "mutation.stonehide.name",
+                                        iconKey = "icon.mutation.stonehide",
+                                        audioProfile = "audio.mutation.stonehide",
+                                        kindId = "STAT_PACKAGE",
+                                        tierId = "MINOR",
+                                    ),
+                                ),
+                            bossVariant =
+                                BossVariantRenderSnapshot(
+                                    variantId = "boss.variant.grey_crown",
+                                    nameKey = "boss.variant.grey_crown.name",
+                                    visualTintKey = "vfx.boss.variant.grey_crown",
+                                    audioProfile = "audio.boss.variant.grey_crown",
+                                ),
+                        ),
+                    ),
+            )
+
+        router.onSnapshotUpdated(previous, current)
+
+        assertEquals(
+            listOf("audio.mutation.stonehide", "audio.boss.variant.grey_crown", "audio.terrain.ice"),
+            sink.events,
+        )
+    }
+
+    @Test
+    fun `revealing static terrain does not emit a terrain cue`() {
+        val sink = RecordingAudioCueSink()
+        val router = AudioRouter(AudioManifestResolver(AudioManifestResourceLoader.load()), sink)
+        val previous =
+            sampleSnapshot().copy(
+                mapCells =
+                    listOf(
+                        MapCellSnapshot(
+                            x = 0,
+                            y = 1,
+                            visibility = CellVisibilitySnapshot.HIDDEN,
+                            terrainTypeId = "hidden",
+                            terrainVisualKey = "tile.hidden",
+                        ),
+                    ),
+            )
+        val current =
+            previous.copy(
+                mapCells =
+                    listOf(
+                        MapCellSnapshot(
+                            x = 0,
+                            y = 1,
+                            visibility = CellVisibilitySnapshot.VISIBLE,
+                            terrainTypeId = "water",
+                            terrainVisualKey = "vfx.terrain.interaction.water",
+                            terrainAudioProfile = "audio.terrain.water",
+                        ),
+                    ),
+            )
+
+        router.onSnapshotUpdated(previous, current)
+
+        assertEquals(emptyList<String>(), sink.events)
     }
 
     @Test

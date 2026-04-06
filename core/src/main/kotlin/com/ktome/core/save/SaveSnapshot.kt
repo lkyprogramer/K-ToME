@@ -1,13 +1,22 @@
 package com.ktome.core.save
 
+import com.ktome.core.combat.DamageType
 import com.ktome.core.loot.PityTracker
-import com.ktome.core.phase.PackId
-import com.ktome.core.phase.Phase4ContractVersions
 import com.ktome.core.map.GameMap
 import com.ktome.core.map.Point
 import com.ktome.core.economy.ShopInventoryState
+import com.ktome.core.phase.PackId
+import com.ktome.core.phase.Phase4ContractVersions
 import com.ktome.core.profile.MilestoneRewardSummary
 import com.ktome.core.resource.ResourcePoolSnapshot
+import com.ktome.core.status.EffectCategory
+import com.ktome.core.status.EffectCarrierKind
+import com.ktome.core.status.RemoteRemovalPolicy
+import com.ktome.core.status.ReplacePolicy
+import com.ktome.core.status.StackingRule
+import com.ktome.core.status.StatusEffectType
+import com.ktome.core.status.StatusTickPriority
+import com.ktome.core.status.StatusTickTiming
 import com.ktome.core.world.solvability.ContentRef
 import com.ktome.core.world.solvability.ResolvedEntranceBinding
 import com.ktome.core.world.solvability.SearchBindingId
@@ -149,17 +158,18 @@ data class SaveSnapshot(
     }
 
     companion object {
-        const val CURRENT_SCHEMA_VERSION: Int = 11
-        const val DEFAULT_BUILD_METADATA: String = "phase4-pr05-dev"
+        const val CURRENT_SCHEMA_VERSION: Int = 12
+        const val DEFAULT_BUILD_METADATA: String = "phase4-pr06-dev"
     }
 }
 
 @Serializable
 data class Phase4RunStateSnapshot(
     val pityTracker: PityTracker = PityTracker(),
+    val terrainOverrideVersion: Int = Phase4ContractVersions.TERRAIN_OVERRIDE_VERSION,
 ) {
     fun validateOrThrow() {
-        // Construction already validates PityTracker invariants.
+        require(terrainOverrideVersion > 0) { "terrainOverrideVersion must be positive." }
     }
 }
 
@@ -188,6 +198,8 @@ data class FloorSnapshot(
     val floorSeed: Long = 0L,
     val topologyFingerprint: String = "",
     val terrainTagHash: String = "",
+    val terrainOverrideHash: String = "",
+    val terrainOverrides: List<TerrainOverrideSnapshot> = emptyList(),
     val resolvedHiddenEntranceBindings: List<ResolvedEntranceBinding> = emptyList(),
     val revealedEntranceIds: Set<SearchBindingId> = emptySet(),
     val visitedSecretZoneIds: Set<ContentRef> = emptySet(),
@@ -206,6 +218,7 @@ data class FloorSnapshot(
     fun validateOrThrow() {
         require(floorIndex > 0) { "Floor numbers must be positive." }
         require(zoneId.isNotBlank()) { "FloorSnapshot.zoneId must not be blank." }
+        terrainOverrides.forEach(TerrainOverrideSnapshot::validateOrThrow)
         require(resolvedHiddenEntranceBindings.distinctBy(ResolvedEntranceBinding::searchBindingId).size == resolvedHiddenEntranceBindings.size) {
             "FloorSnapshot.resolvedHiddenEntranceBindings must not contain duplicate binding ids."
         }
@@ -267,6 +280,9 @@ data class EntitySnapshot(
     val aiPerception: AIPerceptionSnapshot? = null,
     val pendingTelegraph: PendingTelegraphSnapshot? = null,
     val bossEncounterState: BossEncounterStateSnapshot? = null,
+    val eliteMutations: List<String> = emptyList(),
+    val aiProfileOverrideId: String? = null,
+    val bossVariant: BossVariantRuntimeSnapshot? = null,
     val patrolPressureState: PatrolPressureStateSnapshot? = null,
     val ambushLaneTrigger: AmbushLaneTriggerSnapshot? = null,
     val furnacePressureState: FurnacePressureStateSnapshot? = null,
@@ -300,6 +316,9 @@ data class EntitySnapshot(
         require(resourcePools.distinctBy(ResourcePoolSnapshot::type).size == resourcePools.size) {
             "Resource pools must not contain duplicate types."
         }
+        require(eliteMutations.all(String::isNotBlank)) { "eliteMutations must not contain blank ids." }
+        require(eliteMutations.distinct().size == eliteMutations.size) { "eliteMutations must not contain duplicates." }
+        require(aiProfileOverrideId == null || aiProfileOverrideId.isNotBlank()) { "aiProfileOverrideId must not be blank." }
         require(raceTalentPoints == null || raceTalentPoints >= 0) {
             "raceTalentPoints must not be negative."
         }
@@ -321,6 +340,7 @@ data class EntitySnapshot(
         aiPerception?.validateOrThrow()
         pendingTelegraph?.validateOrThrow()
         bossEncounterState?.validateOrThrow()
+        bossVariant?.validateOrThrow()
         patrolPressureState?.validateOrThrow()
         ambushLaneTrigger?.validateOrThrow()
         furnacePressureState?.validateOrThrow()
@@ -332,6 +352,52 @@ data class EntitySnapshot(
         areaEffectEmitter?.validateOrThrow()
         worldEffect?.validateOrThrow()
         resourcePools.forEach(ResourcePoolSnapshot::validate)
+    }
+}
+
+@Serializable
+data class TerrainOverrideSnapshot(
+    val point: PointSnapshot,
+    val terrainTags: Set<String>,
+    val sourceRuleId: String,
+    val remainingTurns: Int,
+    val conductsLightning: Boolean = false,
+    val tickDamageType: String? = null,
+    val tickDamage: Int = 0,
+) {
+    fun validateOrThrow() {
+        require(terrainTags.all(String::isNotBlank)) { "TerrainOverrideSnapshot.terrainTags must not contain blanks." }
+        require(sourceRuleId.isNotBlank()) { "TerrainOverrideSnapshot.sourceRuleId must not be blank." }
+        require(remainingTurns >= 0) { "TerrainOverrideSnapshot.remainingTurns must not be negative." }
+        require(tickDamage >= 0) { "TerrainOverrideSnapshot.tickDamage must not be negative." }
+        require(tickDamageType == null || tickDamageType.isNotBlank()) {
+            "TerrainOverrideSnapshot.tickDamageType must not be blank when present."
+        }
+    }
+}
+
+@Serializable
+data class BossVariantRuntimeSnapshot(
+    val variantId: String,
+    val baseEncounterId: String,
+    val threatCost: Int = 0,
+    val lootProfileOverride: String? = null,
+    val visualTintKey: String? = null,
+    val actionWeightProfileId: String? = null,
+) {
+    fun validateOrThrow() {
+        require(variantId.isNotBlank()) { "BossVariantRuntimeSnapshot.variantId must not be blank." }
+        require(baseEncounterId.isNotBlank()) { "BossVariantRuntimeSnapshot.baseEncounterId must not be blank." }
+        require(threatCost >= 0) { "BossVariantRuntimeSnapshot.threatCost must not be negative." }
+        require(lootProfileOverride == null || lootProfileOverride.isNotBlank()) {
+            "BossVariantRuntimeSnapshot.lootProfileOverride must not be blank when present."
+        }
+        require(visualTintKey == null || visualTintKey.isNotBlank()) {
+            "BossVariantRuntimeSnapshot.visualTintKey must not be blank when present."
+        }
+        require(actionWeightProfileId == null || actionWeightProfileId.isNotBlank()) {
+            "BossVariantRuntimeSnapshot.actionWeightProfileId must not be blank when present."
+        }
     }
 }
 
@@ -686,6 +752,7 @@ data class ActiveEffectSnapshot(
     val type: String,
     val remainingTurns: Int,
     val statModifiers: StatModifierSnapshot = StatModifierSnapshot(),
+    val customDefinition: StatusEffectDefinitionSnapshot? = null,
     val skipNextDecay: Boolean = false,
     val stackCount: Int = 1,
     val appliedTurn: Int = 0,
@@ -697,6 +764,44 @@ data class ActiveEffectSnapshot(
         require(type.isNotBlank()) { "Effect types must not be blank." }
         require(remainingTurns >= 0) { "remainingTurns must not be negative." }
         require(stackCount > 0) { "stackCount must be positive." }
+        customDefinition?.validateOrThrow()
+    }
+}
+
+@Serializable
+data class StatusEffectDefinitionSnapshot(
+    val id: String,
+    val type: StatusEffectType = StatusEffectType.CUSTOM,
+    val category: EffectCategory = type.category,
+    val nameKey: String,
+    val iconKey: String? = null,
+    val stackingRule: StackingRule = StackingRule.REFRESH_DURATION,
+    val stackCap: Int = 1,
+    val replacePolicy: ReplacePolicy = ReplacePolicy.REFRESH_DURATION,
+    val uniquenessKey: String? = null,
+    val exclusiveGroup: String? = null,
+    val sourceScopedUnique: Boolean = false,
+    val dispellable: Boolean = type.dispellable,
+    val remoteRemovalPolicy: RemoteRemovalPolicy = RemoteRemovalPolicy.ACTOR_CLEANSE_REMOVABLE,
+    val tickTiming: StatusTickTiming = StatusTickTiming.NONE,
+    val tickPriority: Int = StatusTickPriority.DEFAULT,
+    val tickDamageType: DamageType? = null,
+    val tickDamage: Int = 0,
+    val statModifiers: StatModifierSnapshot = StatModifierSnapshot(),
+    val carrierKind: EffectCarrierKind = EffectCarrierKind.ACTOR,
+    val breaksOnActualDamage: Boolean = false,
+    val consumedOnDamageType: DamageType? = null,
+    val consumedDamageMultiplier: Double = 1.0,
+) {
+    fun validateOrThrow() {
+        require(id.isNotBlank()) { "Status effect definition ids must not be blank." }
+        require(nameKey.isNotBlank()) { "Status effect definition nameKey must not be blank." }
+        require(stackCap > 0) { "Status effect definition stackCap must be positive." }
+        require(tickPriority >= 0) { "Status effect definition tickPriority must not be negative." }
+        require(tickDamage >= 0) { "Status effect definition tickDamage must not be negative." }
+        require(consumedDamageMultiplier >= 0.0) {
+            "Status effect definition consumedDamageMultiplier must not be negative."
+        }
     }
 }
 

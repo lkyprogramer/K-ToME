@@ -1,0 +1,38 @@
+actionWeightProfiles:
+  - id: boss.variant.weight.molten_glass
+    actionWeights:
+      earthshaker: 2.4
+      linebreaker: 1.5
+  - id: boss.variant.weight.grey_crown
+    actionWeights:
+      arcane_shield: 2.3
+      ritual_break: 1.6
+  - id: boss.variant.weight.abyssal_eclipse
+    actionWeights:
+      abyssal_consecration: 2.2
+      press_abyss: 1.8
+
+bossVariants:
+  - id: boss.variant.molten_glass
+    baseEncounterId: molten_giant_encounter
+    grantedMutations: [elite.stonehide, elite.emberblood]
+    threatCost: 5
+    lootProfileOverride: loot.deep_iron_pit.reward
+    visualTintKey: vfx.boss.variant.molten_glass
+    actionWeightProfileId: boss.variant.weight.molten_glass
+
+  - id: boss.variant.grey_crown
+    baseEncounterId: dungeon_lord_encounter
+    grantedMutations: [elite.dread_aura]
+    threatCost: 3
+    lootProfileOverride: loot.grey_gate_depths.reward
+    visualTintKey: vfx.boss.variant.grey_crown
+    actionWeightProfileId: boss.variant.weight.grey_crown
+
+  - id: boss.variant.abyssal_eclipse
+    baseEncounterId: abyssal_guardian_encounter
+    grantedMutations: [elite.emberblood, elite.dread_aura]
+    threatCost: 6
+    lootProfileOverride: loot.abyssal_heart.reward
+    visualTintKey: vfx.boss.variant.abyssal_eclipse
+    actionWeightProfileId: boss.variant.weight.abyssal_eclipse
