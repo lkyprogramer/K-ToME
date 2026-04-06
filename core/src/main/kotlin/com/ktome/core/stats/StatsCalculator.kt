@@ -1,5 +1,6 @@
 package com.ktome.core.stats
 
+import com.ktome.core.combat.DiminishingReturns
 import com.ktome.core.combat.PowerSaveFormula
 import com.ktome.core.ecs.CombatProfile
 import com.ktome.core.ecs.DerivedStats
@@ -92,6 +93,7 @@ object StatsCalculator {
         val accuracyBase = profile.baseAccuracy + effectiveStats.dex + modifiers.accuracy
         val evasionBase = profile.baseEvasion + effectiveStats.dex + modifiers.evasion
         val speedBase = profile.baseSpeed + effectiveStats.dex / 2 + modifiers.speed
+        val castSpeedRating = modifiers.castSpeedRating
 
         return DerivedStats(
             attack = applyMultiplier(attackBase, modifiers.attackMultiplierBonus),
@@ -107,6 +109,8 @@ object StatsCalculator {
             staminaRegen = 3.0 + modifiers.staminaRegen,
             talentPower = 1.0 + effectiveStats.wil * 0.01 + modifiers.talentPower,
             powerSave = PowerSaveFormula.calculate(effectiveStats, level),
+            castSpeedRating = castSpeedRating,
+            effectiveCastSpeed = DiminishingReturns.effectiveCastSpeed(castSpeedRating),
         )
     }
 

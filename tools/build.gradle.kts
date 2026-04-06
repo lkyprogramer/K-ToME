@@ -112,6 +112,32 @@ tasks.register<Test>("whiteBoxSolvability") {
     outputs.dir(reportDir)
 }
 
+tasks.register<Test>("lootBalanceLab") {
+    group = "verification"
+    description = "Runs the Phase 4 loot balance lab and writes structured reports."
+    testClassesDirs = sourceSets.test.get().output.classesDirs
+    classpath = sourceSets.test.get().runtimeClasspath
+    useJUnitPlatform {
+        includeTags("lootBalanceLab")
+    }
+    val reportDir = layout.buildDirectory.dir("reports/phase4/loot")
+    systemProperty("ktome.phase4.loot.reportDir", reportDir.get().asFile.absolutePath)
+    outputs.dir(reportDir)
+}
+
+tasks.register<Test>("whiteBoxLoot") {
+    group = "verification"
+    description = "Runs the Phase 4 unified white-box loot pilot and writes standard reports."
+    testClassesDirs = sourceSets.test.get().output.classesDirs
+    classpath = sourceSets.test.get().runtimeClasspath
+    useJUnitPlatform {
+        includeTags("whiteBoxLoot")
+    }
+    val reportDir = layout.buildDirectory.dir("reports/phase4/whitebox/loot")
+    systemProperty("ktome.phase4.whitebox.loot.reportDir", reportDir.get().asFile.absolutePath)
+    outputs.dir(reportDir)
+}
+
 tasks.register<Test>("phase4Report") {
     group = "verification"
     description = "Aggregates the currently landed Phase 4 verification reports into a single phase summary."
@@ -120,7 +146,15 @@ tasks.register<Test>("phase4Report") {
     useJUnitPlatform {
         includeTags("phase4Report")
     }
-    dependsOn(":tools:mapgenSmoke", ":tools:solvabilityHarness", ":tools:whiteBoxMapgen", ":tools:whiteBoxSolvability", ":game:bossHarness")
+    dependsOn(
+        ":tools:mapgenSmoke",
+        ":tools:solvabilityHarness",
+        ":tools:lootBalanceLab",
+        ":tools:whiteBoxMapgen",
+        ":tools:whiteBoxSolvability",
+        ":tools:whiteBoxLoot",
+        ":game:bossHarness",
+    )
     val reportDir = layout.buildDirectory.dir("reports/phase4")
     systemProperty("ktome.phase4.reportDir", reportDir.get().asFile.absolutePath)
     outputs.dir(reportDir)

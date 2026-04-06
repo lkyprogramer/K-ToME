@@ -1,0 +1,83 @@
+packId: phase4-pr05-item-audio-v1
+sampleRate: 44100
+targets:
+  - id: phase4_pr05_item_unique_greenwood_watcher_blade
+    key: audio.item.unique.greenwood_watcher_blade
+    sourcePath: audio/item/unique_greenwood_watcher_blade.ogg
+    profile: item_unique_greenwood_watcher_blade
+    durationSeconds: 0.38
+  - id: phase4_pr05_item_unique_briarbound_bow
+    key: audio.item.unique.briarbound_bow
+    sourcePath: audio/item/unique_briarbound_bow.ogg
+    profile: item_unique_briarbound_bow
+    durationSeconds: 0.48
+  - id: phase4_pr05_item_unique_warden_barkmail
+    key: audio.item.unique.warden_barkmail
+    sourcePath: audio/item/unique_warden_barkmail.ogg
+    profile: item_unique_warden_barkmail
+    durationSeconds: 0.52
+  - id: phase4_pr05_item_unique_slagbreaker_pick
+    key: audio.item.unique.slagbreaker_pick
+    sourcePath: audio/item/unique_slagbreaker_pick.ogg
+    profile: item_unique_slagbreaker_pick
+    durationSeconds: 0.40
+  - id: phase4_pr05_item_unique_furnace_plate
+    key: audio.item.unique.furnace_plate
+    sourcePath: audio/item/unique_furnace_plate.ogg
+    profile: item_unique_furnace_plate
+    durationSeconds: 0.56
+  - id: phase4_pr05_item_unique_coal_ward_talisman
+    key: audio.item.unique.coal_ward_talisman
+    sourcePath: audio/item/unique_coal_ward_talisman.ogg
+    profile: item_unique_coal_ward_talisman
+    durationSeconds: 0.58
+  - id: phase4_pr05_item_unique_tideglass_staff
+    key: audio.item.unique.tideglass_staff
+    sourcePath: audio/item/unique_tideglass_staff.ogg
+    profile: item_unique_tideglass_staff
+    durationSeconds: 0.62
+  - id: phase4_pr05_item_unique_currentstrider_cloak
+    key: audio.item.unique.currentstrider_cloak
+    sourcePath: audio/item/unique_currentstrider_cloak.ogg
+    profile: item_unique_currentstrider_cloak
+    durationSeconds: 0.46
+  - id: phase4_pr05_item_unique_ferrywarden_lantern
+    key: audio.item.unique.ferrywarden_lantern
+    sourcePath: audio/item/unique_ferrywarden_lantern.ogg
+    profile: item_unique_ferrywarden_lantern
+    durationSeconds: 0.54
+  - id: phase4_pr05_item_unique_voidlit_seal
+    key: audio.item.unique.voidlit_seal
+    sourcePath: audio/item/unique_voidlit_seal.ogg
+    profile: item_unique_voidlit_seal
+    durationSeconds: 0.52
+  - id: phase4_pr05_item_unique_eclipse_mail
+    key: audio.item.unique.eclipse_mail
+    sourcePath: audio/item/unique_eclipse_mail.ogg
+    profile: item_unique_eclipse_mail
+    durationSeconds: 0.56
+  - id: phase4_pr05_item_unique_sanctum_lance
+    key: audio.item.unique.sanctum_lance
+    sourcePath: audio/item/unique_sanctum_lance.ogg
+    profile: item_unique_sanctum_lance
+    durationSeconds: 0.40
+  - id: phase4_pr05_item_artifact_briar_heart
+    key: audio.item.artifact.briar_heart
+    sourcePath: audio/item/artifact_briar_heart.ogg
+    profile: item_artifact_briar_heart
+    durationSeconds: 0.66
+  - id: phase4_pr05_item_artifact_forge_oath
+    key: audio.item.artifact.forge_oath
+    sourcePath: audio/item/artifact_forge_oath.ogg
+    profile: item_artifact_forge_oath
+    durationSeconds: 0.64
+  - id: phase4_pr05_item_artifact_river_echo
+    key: audio.item.artifact.river_echo
+    sourcePath: audio/item/artifact_river_echo.ogg
+    profile: item_artifact_river_echo
+    durationSeconds: 0.72
+  - id: phase4_pr05_item_artifact_eclipsed_relic
+    key: audio.item.artifact.eclipsed_relic
+    sourcePath: audio/item/artifact_eclipsed_relic.ogg
+    profile: item_artifact_eclipsed_relic
+    durationSeconds: 0.68

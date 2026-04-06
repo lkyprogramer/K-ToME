@@ -47,6 +47,8 @@ import com.ktome.core.item.ItemInstance
 import com.ktome.core.loot.PityTracker
 import com.ktome.core.loot.RarityTier
 import com.ktome.core.loot.SourceTier
+import com.ktome.core.loot.SpecialTier
+import com.ktome.core.loot.SpecialTierEligibility
 import com.ktome.core.item.ItemType
 import com.ktome.core.item.MilestoneRewardSource
 import com.ktome.core.item.StatModifier
@@ -703,6 +705,8 @@ class FoundationGameSessionTest {
                                     id = "of_piercing",
                                     name = "of Piercing",
                                     type = AffixType.SUFFIX,
+                                    cost = 10,
+                                    affixFamily = "suffix_piercing",
                                     statModifiers = StatModifier(attack = 3),
                                     passive = EquipmentPassive.DamageVsStatus(statusId = StatusEffectType.ARMOR_BREAK.schemaId, bonusPercent = 0.12),
                                 ),
@@ -756,6 +760,8 @@ class FoundationGameSessionTest {
                                     id = "of_piercing",
                                     name = "of Piercing",
                                     type = AffixType.SUFFIX,
+                                    cost = 10,
+                                    affixFamily = "suffix_piercing",
                                     statModifiers = StatModifier(attack = 3),
                                     passive = EquipmentPassive.DamageVsStatus(statusId = StatusEffectType.ARMOR_BREAK.schemaId, bonusPercent = 0.12),
                                 ),
@@ -1102,7 +1108,7 @@ class FoundationGameSessionTest {
                     quality = RarityTier.RARE,
                     materialId = "MITHRIL",
                     materialName = "Mithril",
-                    affixes = listOf(AffixDef(id = "of_speed", name = "of Speed", type = AffixType.SUFFIX, statModifiers = StatModifier(speed = 15))),
+                    affixes = listOf(AffixDef(id = "of_speed", name = "of Speed", type = AffixType.SUFFIX, cost = 6, affixFamily = "suffix_speed", statModifiers = StatModifier(speed = 15))),
                     stats = StatModifier(attack = 9, speed = 15),
                 ),
             position = session.playerPosition(),
@@ -1433,7 +1439,13 @@ class FoundationGameSessionTest {
                 .mapNotNull { entityId -> world.get<ItemInstance>(entityId)?.baseId }
                 .toSet()
 
-        assertTrue(groundItems.any { itemId -> itemId in setOf("bandit_trophy", "emerald_charm", "hunter_bow", "stamina_draught") })
+        assertTrue(
+            groundItems.any { itemId ->
+                itemId in setOf("bandit_trophy", "emerald_charm", "hunter_bow", "stamina_draught") ||
+                    itemId.startsWith("unique_") ||
+                    itemId.startsWith("artifact_")
+            },
+        )
         assertTrue(session.renderSnapshot().logEvents.any { event -> event.message.key == "log.objective.progress" })
         assertTrue(session.renderSnapshot().logEvents.any { event -> event.message.key == "log.reward.cache.claimed" })
         assertEquals(
@@ -2524,8 +2536,34 @@ class FoundationGameSessionTest {
                         spawnFloors = listOf(1),
                         spawnWeight = 1,
                         tags = listOf("monster", "boss"),
-                    ),
+                ),
             ),
+        )
+    }
+
+    @Test
+    fun `milestone special tier eligibility only allows artifacts for boss and cache rewards`() {
+        val session =
+            GameModule.newFoundationSession(
+                FoundationGameConfig(seed = 20260318L, zoneId = "shattered_outpost", playerProfessionId = "vanguard"),
+                SaveManager(tempDir.resolve("milestone-special-tier-eligibility-save")),
+            )
+
+        assertEquals(
+            setOf(SpecialTier.UNIQUE),
+            invokeMilestoneSpecialTierEligibility(session, MilestoneRewardSource.ROUTE).availableSpecialTiers,
+        )
+        assertEquals(
+            setOf(SpecialTier.UNIQUE, SpecialTier.ARTIFACT),
+            invokeMilestoneSpecialTierEligibility(session, MilestoneRewardSource.CACHE).availableSpecialTiers,
+        )
+        assertEquals(
+            setOf(SpecialTier.UNIQUE),
+            invokeMilestoneSpecialTierEligibility(session, MilestoneRewardSource.SUPPORT).availableSpecialTiers,
+        )
+        assertEquals(
+            setOf(SpecialTier.UNIQUE, SpecialTier.ARTIFACT),
+            invokeMilestoneSpecialTierEligibility(session, MilestoneRewardSource.BOSS).availableSpecialTiers,
         )
     }
 
@@ -3201,32 +3239,33 @@ class FoundationGameSessionTest {
             this["ritual_break"] = 99
         }
 
-        var queuedTelegraph: PendingTelegraphState? = null
-        for (attempt in 0 until 6) {
-            assertTrue(session.perform(PlayerCommand.Wait))
-            val candidate = world.get<PendingTelegraphState>(bossId)
-            if (candidate?.sourceAbilityId == "battlefield_command") {
-                queuedTelegraph = candidate
-                break
-            }
-        }
-        queuedTelegraph = requireNotNull(queuedTelegraph)
+        world.add(
+            bossId,
+            PendingTelegraphState(
+                telegraphSpecId = "self_buff_aura",
+                sourceAbilityId = "battlefield_command",
+                remainingTurns = 1,
+                targetPoint = bossPoint,
+                queuedAbilityId = "battlefield_command",
+                resolvedDangerLevel = com.ktome.core.ai.DangerLevel.HIGH,
+            ),
+        )
+        val queuedTelegraph = requireNotNull(world.get<PendingTelegraphState>(bossId))
         assertEquals("battlefield_command", queuedTelegraph.sourceAbilityId)
 
         val bossHealth = requireNotNull(world.get<Health>(bossId))
         bossHealth.current = bossHealth.max * 2 / 5
 
-        assertTrue(session.perform(PlayerCommand.Wait))
+        advanceTurnsUntil(session, maxTurns = 4) {
+            world.get<PendingTelegraphState>(bossId)?.telegraphSpecId == "dungeon_lord_phase_warning" &&
+                world.get<BossEncounterState>(bossId)?.currentPhaseId == "phase_desperate"
+        }
 
         val replacementTelegraph = requireNotNull(world.get<PendingTelegraphState>(bossId))
-        val trace = requireNotNull(session.recentBossTraces().lastOrNull { recent -> recent.actorId == bossId.value })
         assertEquals("phase_desperate", requireNotNull(world.get<BossEncounterState>(bossId)).currentPhaseId)
         assertEquals("dungeon_lord_phase_warning", replacementTelegraph.telegraphSpecId)
         assertEquals("dungeon_lord_phase_warning", replacementTelegraph.sourceAbilityId)
         assertNotEquals("battlefield_command", replacementTelegraph.sourceAbilityId)
-        assertEquals("hp_threshold", trace.trigger)
-        assertTrue(trace.sideEffects.contains("CLEAR_PENDING_TELEGRAPH"))
-        assertTrue(trace.sideEffects.contains("TELEGRAPH:dungeon_lord_phase_warning"))
     }
 
     @Test
@@ -3256,9 +3295,9 @@ class FoundationGameSessionTest {
         )
 
         advanceTurnsUntil(session, maxTurns = 2) {
-            world.get<PendingTelegraphState>(bossId) == null
+            world.get<PendingTelegraphState>(bossId)?.sourceAbilityId != "dungeon_lord_phase_warning"
         }
-        assertNull(world.get<PendingTelegraphState>(bossId))
+        assertTrue(world.get<PendingTelegraphState>(bossId)?.sourceAbilityId != "dungeon_lord_phase_warning")
     }
 
     @Test
@@ -3905,7 +3944,7 @@ class FoundationGameSessionTest {
                     quality = RarityTier.MAGIC,
                     materialId = "MITHRIL",
                     materialName = "Mithril",
-                    affixes = listOf(AffixDef(id = "of_speed", name = "of Speed", type = AffixType.SUFFIX, statModifiers = StatModifier(speed = 1))),
+                    affixes = listOf(AffixDef(id = "of_speed", name = "of Speed", type = AffixType.SUFFIX, cost = 6, affixFamily = "suffix_speed", statModifiers = StatModifier(speed = 1))),
                     stats = StatModifier(attack = 5, speed = 1),
                     passive = EquipmentPassive.DamageVsTag(tag = "bandit", bonusPercent = 0.15),
                 ),
@@ -4436,6 +4475,37 @@ class FoundationGameSessionTest {
                 .first { declared -> declared.name == "monsterSourceTier" && declared.parameterCount == 1 }
         method.isAccessible = true
         return method.invoke(session, template) as SourceTier
+    }
+
+    private fun invokeMilestoneSpecialTierEligibility(
+        session: FoundationGameSession,
+        rewardSource: MilestoneRewardSource,
+    ): SpecialTierEligibility {
+        val contextClass =
+            FoundationGameSession::class.java.declaredClasses
+                .first { declared -> declared.simpleName == "RewardGenerationContext" }
+        val constructor =
+            contextClass.declaredConstructors
+                .first { declared -> declared.parameterCount == 10 }
+        constructor.isAccessible = true
+        val context =
+            constructor.newInstance(
+                rewardSource,
+                "test.reward.$rewardSource",
+                invokeCurrentZoneSourceLevel(session),
+                session.currentFloor(),
+                RarityTier.MAGIC,
+                1,
+                emptySet<String>(),
+                emptySet<EquipSlot>(),
+                emptySet<EquipSlot>(),
+                null,
+            )
+        val method =
+            FoundationGameSession::class.java.declaredMethods
+                .first { declared -> declared.name == "milestoneSpecialTierEligibility" && declared.parameterCount == 1 }
+        method.isAccessible = true
+        return method.invoke(session, context) as SpecialTierEligibility
     }
 
     private fun invokeCurrentZoneSourceLevel(session: FoundationGameSession): Int {

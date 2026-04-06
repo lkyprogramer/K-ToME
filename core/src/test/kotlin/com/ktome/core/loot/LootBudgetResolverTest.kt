@@ -90,6 +90,25 @@ class LootBudgetResolverTest {
     }
 
     @Test
+    fun `special tier upgrade roll can miss without resetting pity`() {
+        val result =
+            LootBudgetResolver(TestRandomSource(ints = listOf(0, 0, 40)))
+                .roll(
+                    context = context(sourceTier = SourceTier.ELITE),
+                    zoneRewardProfile = zoneRewardProfile,
+                    specialTierEligibility =
+                        SpecialTierEligibility(
+                            availableSpecialTiers = setOf(SpecialTier.UNIQUE),
+                            availableTemplateIds = setOf("unique.test_blade"),
+                        ),
+                )
+
+        assertTrue(result.specialUpgradeAttempted)
+        assertNull(result.upgradedSpecialTier)
+        assertEquals(1, result.resultingPityTracker.eligibleSpecialRollsSinceLastUnique)
+    }
+
+    @Test
     fun `rare pity doubles rare weight and resets on rare outcome`() {
         val result =
             LootBudgetResolver(TestRandomSource(ints = listOf(0, 1000)))
@@ -186,6 +205,17 @@ class LootBudgetResolverTest {
             pityJson.getValue("rollsSinceLastRare").jsonPrimitive.content,
         )
         assertEquals(result.rolledRarityTier.name, resultJson.getValue("rolledRarityTier").jsonPrimitive.content)
+    }
+
+    @Test
+    fun `secret zone source tier keeps artifact lane inside formal eligibility`() {
+        val eligibility = LootBudgetResolver.defaultSpecialTierEligibility(SourceTier.SECRET_ZONE)
+
+        assertEquals(
+            setOf(SpecialTier.UNIQUE, SpecialTier.ARTIFACT),
+            eligibility.availableSpecialTiers,
+        )
+        assertTrue(eligibility.availableTemplateIds.isEmpty())
     }
 
     private fun rarityDistribution(magicFindBonus: Float): Map<RarityTier, Int> {

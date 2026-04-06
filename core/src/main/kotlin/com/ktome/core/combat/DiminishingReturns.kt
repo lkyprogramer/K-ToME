@@ -25,6 +25,18 @@ object DiminishingReturns {
 
     fun effectiveHpRegen(rawHpRegen: Double): Double = hyperbolic(rawHpRegen, DR_HP_REGEN_C)
 
+    fun adjustedCooldownTurns(
+        baseCooldown: Int,
+        effectiveCastSpeed: Double,
+    ): Int {
+        require(baseCooldown >= 0) { "Base cooldown must not be negative." }
+        if (baseCooldown == 0) {
+            return 0
+        }
+        val hasteMultiplier = 1.0 + (effectiveCastSpeed.coerceAtLeast(0.0) / 100.0)
+        return kotlin.math.ceil(baseCooldown / hasteMultiplier).toInt().coerceAtLeast(1)
+    }
+
     fun marginalValue(
         rawValue: Double,
         halfValueConstant: Double,

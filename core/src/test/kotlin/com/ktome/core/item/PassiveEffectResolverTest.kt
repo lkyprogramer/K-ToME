@@ -159,6 +159,8 @@ class PassiveEffectResolverTest {
                                 id = "of_smite",
                                 name = "of Smite",
                                 type = AffixType.SUFFIX,
+                                cost = 10,
+                                affixFamily = "holy_smite",
                                 statModifiers = StatModifier(attack = 2),
                                 passive = EquipmentPassive.DamageVsStatus(statusId = "BANE", bonusPercent = 0.15),
                             ),

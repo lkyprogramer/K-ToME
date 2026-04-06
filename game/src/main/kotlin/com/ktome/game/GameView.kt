@@ -92,6 +92,8 @@ data class PlayerStatus(
     val accuracy: Int,
     val evasion: Int,
     val speed: Int,
+    val castSpeedRating: Int = 0,
+    val effectiveCastSpeed: Double = 0.0,
 )
 
 data class PlayerResourceView(

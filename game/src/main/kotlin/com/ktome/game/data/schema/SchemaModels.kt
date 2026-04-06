@@ -31,6 +31,8 @@ import com.ktome.core.item.AffixType
 import com.ktome.core.item.ConsumableEffect
 import com.ktome.core.item.EquipSlot
 import com.ktome.core.item.ItemType
+import com.ktome.core.loot.SourceTier
+import com.ktome.core.loot.SpecialTier
 import com.ktome.core.world.GateCondition
 import com.ktome.core.world.QuestProgress
 import com.ktome.core.world.RouteReward
@@ -439,6 +441,8 @@ data class ItemBundleSchemaV2(
     val materials: List<MaterialSchemaV2>,
     val affixes: List<AffixSchemaV2>,
     val items: List<ItemSchemaV2>,
+    val uniqueTemplates: List<SpecialItemTemplateSchemaV2> = emptyList(),
+    val artifactTemplates: List<SpecialItemTemplateSchemaV2> = emptyList(),
 )
 
 data class MaterialSchemaV2(
@@ -466,10 +470,30 @@ data class AffixSchemaV2(
     val type: AffixType,
     val equipType: AffixEquipType,
     val tier: Int,
+    val cost: Int,
+    val affixFamily: String,
+    val exclusiveGroup: String? = null,
     val minFloor: Int,
     val stats: SchemaStatModifier,
     val blacklistTags: List<String> = emptyList(),
     val passive: EquipmentPassiveSchemaV2? = null,
+)
+
+data class SpecialItemTemplateSchemaV2(
+    val id: String,
+    val itemId: String,
+    val specialTier: SpecialTier,
+    val nameKey: String,
+    val descKey: String,
+    val visualKey: String,
+    val iconKey: String,
+    val audioProfile: String,
+    val schemaVersion: Int,
+    val tags: List<String>,
+    val allowedSourceTiers: List<SourceTier>,
+    val allowedZones: List<String>,
+    val fixedAffixIds: List<String> = emptyList(),
+    val fixedMaterialId: String? = null,
 )
 
 data class WorldGraphSchemaV2(
@@ -582,6 +606,7 @@ data class SchemaStatModifier(
     val accuracy: Int = 0,
     val evasion: Int = 0,
     val speed: Int = 0,
+    val castSpeedRating: Int = 0,
     val maxHp: Int = 0,
     val maxStamina: Int = 0,
     val hpRegen: Double = 0.0,

@@ -8,6 +8,7 @@ import com.ktome.core.combat.SaveDimension
 import com.ktome.core.item.EquipmentPassive
 import com.ktome.core.item.ItemBaseDef
 import com.ktome.core.item.ItemDataBundle
+import com.ktome.core.loot.SourceTier
 import com.ktome.core.random.RandomSource
 import com.ktome.core.resource.ResourceType
 import com.ktome.core.status.StatusEffectType
@@ -212,7 +213,25 @@ class SchemaV2LoaderTest {
         assertEquals("resonance", catalog.objectiveSets.single { it.id == "crystal_cavern_resonance" }.questObjectiveId)
         assertEquals(setOf("normal"), catalog.difficulties.map { it.id }.toSet())
         assertEquals(60, catalog.monsters.size)
-        assertEquals(25, catalog.itemBundle.items.size)
+        assertEquals(41, catalog.itemBundle.items.size)
+        assertTrue(catalog.itemBundle.uniqueTemplates.size >= 12)
+        assertTrue(catalog.itemBundle.artifactTemplates.size >= 4)
+        assertTrue(
+            catalog.itemBundle.artifactTemplates.any { template -> SourceTier.SECRET_ZONE in template.allowedSourceTiers },
+            "PR-05 artifact templates must include secret-zone coverage.",
+        )
+        assertTrue(
+            catalog.itemBundle.affixes.any { affix -> affix.stats.castSpeedRating > 0 },
+            "PR-05 must ship at least one formal castSpeedRating affix.",
+        )
+        assertTrue(
+            setOf("greenwood_fringe", "deep_iron_pit", "underground_river", "abyssal_temple")
+                .all { zoneId ->
+                    catalog.itemBundle.uniqueTemplates.any { template -> zoneId in template.allowedZones } ||
+                        catalog.itemBundle.artifactTemplates.any { template -> zoneId in template.allowedZones }
+                },
+            "PR-05 special template coverage must include the four target zones.",
+        )
         assertTrue(catalog.itemBundle.items.count { item -> "weapon" in item.tags } >= 6)
         assertTrue(catalog.itemBundle.items.count { item -> "armor" in item.tags && "accessory" !in item.tags } >= 6)
         assertTrue(catalog.itemBundle.items.count { item -> "accessory" in item.tags } >= 4)

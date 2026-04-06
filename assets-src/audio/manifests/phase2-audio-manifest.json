@@ -3,6 +3,42 @@
   "fallbackKey": "audio.fallback.silence",
   "entries": [
     {
+      "key": "ambient.abyssal_heart",
+      "cueFamily": "ambience",
+      "eventId": "ambient.abyssal_heart",
+      "sourcePath": "audio/ambient/abyssal_heart.ogg",
+      "tags": [
+        "phase3",
+        "followup",
+        "ambience",
+        "abyssal"
+      ]
+    },
+    {
+      "key": "ambient.abyssal_temple",
+      "cueFamily": "ambience",
+      "eventId": "ambient.abyssal_temple",
+      "sourcePath": "audio/ambient/abyssal_temple.ogg",
+      "tags": [
+        "phase3",
+        "followup",
+        "ambience",
+        "abyssal"
+      ]
+    },
+    {
+      "key": "ambient.crystal_cavern",
+      "cueFamily": "ambience",
+      "eventId": "ambient.crystal_cavern",
+      "sourcePath": "audio/ambient/crystal_cavern.ogg",
+      "tags": [
+        "phase3",
+        "followup",
+        "ambience",
+        "crystal"
+      ]
+    },
+    {
       "key": "ambient.deep_iron_pit",
       "cueFamily": "ambience",
       "eventId": "ambient.deep_iron_pit",
@@ -33,27 +69,15 @@
       ]
     },
     {
-      "key": "ambient.abyssal_temple",
+      "key": "ambient.shattered_outpost",
       "cueFamily": "ambience",
-      "eventId": "ambient.abyssal_temple",
-      "sourcePath": "audio/ambient/abyssal_temple.ogg",
+      "eventId": "ambient.shattered_outpost",
+      "sourcePath": "audio/ambient/shattered_outpost.ogg",
       "tags": [
-        "phase3",
-        "followup",
+        "phase2",
         "ambience",
-        "abyssal"
-      ]
-    },
-    {
-      "key": "ambient.abyssal_heart",
-      "cueFamily": "ambience",
-      "eventId": "ambient.abyssal_heart",
-      "sourcePath": "audio/ambient/abyssal_heart.ogg",
-      "tags": [
-        "phase3",
-        "followup",
-        "ambience",
-        "abyssal"
+        "p2-b",
+        "official_slice"
       ]
     },
     {
@@ -66,30 +90,6 @@
         "followup",
         "ambience",
         "river"
-      ]
-    },
-    {
-      "key": "ambient.crystal_cavern",
-      "cueFamily": "ambience",
-      "eventId": "ambient.crystal_cavern",
-      "sourcePath": "audio/ambient/crystal_cavern.ogg",
-      "tags": [
-        "phase3",
-        "followup",
-        "ambience",
-        "crystal"
-      ]
-    },
-    {
-      "key": "ambient.shattered_outpost",
-      "cueFamily": "ambience",
-      "eventId": "ambient.shattered_outpost",
-      "sourcePath": "audio/ambient/shattered_outpost.ogg",
-      "tags": [
-        "phase2",
-        "ambience",
-        "p2-b",
-        "official_slice"
       ]
     },
     {
@@ -335,6 +335,30 @@
       ]
     },
     {
+      "key": "audio.interactable.crystal_resonance_node",
+      "cueFamily": "interactable",
+      "eventId": "audio.interactable.crystal_resonance_node",
+      "sourcePath": "audio/interactable/crystal_resonance_node.ogg",
+      "tags": [
+        "phase3",
+        "followup",
+        "interactable",
+        "crystal"
+      ]
+    },
+    {
+      "key": "audio.interactable.heart_ward_focus",
+      "cueFamily": "interactable",
+      "eventId": "audio.interactable.heart_ward_focus",
+      "sourcePath": "audio/interactable/heart_ward_focus.ogg",
+      "tags": [
+        "phase3",
+        "followup",
+        "interactable",
+        "abyssal"
+      ]
+    },
+    {
       "key": "audio.interactable.open",
       "cueFamily": "interactable",
       "eventId": "interactable.open",
@@ -359,42 +383,6 @@
       ]
     },
     {
-      "key": "audio.interactable.temple_ward_reliquary",
-      "cueFamily": "interactable",
-      "eventId": "audio.interactable.temple_ward_reliquary",
-      "sourcePath": "audio/interactable/temple_ward_reliquary.ogg",
-      "tags": [
-        "phase3",
-        "followup",
-        "interactable",
-        "abyssal"
-      ]
-    },
-    {
-      "key": "audio.interactable.heart_ward_focus",
-      "cueFamily": "interactable",
-      "eventId": "audio.interactable.heart_ward_focus",
-      "sourcePath": "audio/interactable/heart_ward_focus.ogg",
-      "tags": [
-        "phase3",
-        "followup",
-        "interactable",
-        "abyssal"
-      ]
-    },
-    {
-      "key": "audio.interactable.crystal_resonance_node",
-      "cueFamily": "interactable",
-      "eventId": "audio.interactable.crystal_resonance_node",
-      "sourcePath": "audio/interactable/crystal_resonance_node.ogg",
-      "tags": [
-        "phase3",
-        "followup",
-        "interactable",
-        "crystal"
-      ]
-    },
-    {
       "key": "audio.interactable.stairs",
       "cueFamily": "interactable",
       "eventId": "interactable.stairs",
@@ -404,6 +392,18 @@
         "p2-b",
         "interactable",
         "official_slice"
+      ]
+    },
+    {
+      "key": "audio.interactable.temple_ward_reliquary",
+      "cueFamily": "interactable",
+      "eventId": "audio.interactable.temple_ward_reliquary",
+      "sourcePath": "audio/interactable/temple_ward_reliquary.ogg",
+      "tags": [
+        "phase3",
+        "followup",
+        "interactable",
+        "abyssal"
       ]
     },
     {
@@ -428,6 +428,70 @@
         "item",
         "starter_kit",
         "official_slice"
+      ]
+    },
+    {
+      "key": "audio.item.artifact.briar_heart",
+      "cueFamily": "item",
+      "eventId": "audio.item.artifact.briar_heart",
+      "sourcePath": "audio/item/artifact_briar_heart.ogg",
+      "tags": [
+        "phase4",
+        "pr05",
+        "item",
+        "special",
+        "artifact",
+        "greenwood_fringe",
+        "rogue",
+        "artifact"
+      ]
+    },
+    {
+      "key": "audio.item.artifact.eclipsed_relic",
+      "cueFamily": "item",
+      "eventId": "audio.item.artifact.eclipsed_relic",
+      "sourcePath": "audio/item/artifact_eclipsed_relic.ogg",
+      "tags": [
+        "phase4",
+        "pr05",
+        "item",
+        "special",
+        "artifact",
+        "abyssal_temple",
+        "templar",
+        "artifact"
+      ]
+    },
+    {
+      "key": "audio.item.artifact.forge_oath",
+      "cueFamily": "item",
+      "eventId": "audio.item.artifact.forge_oath",
+      "sourcePath": "audio/item/artifact_forge_oath.ogg",
+      "tags": [
+        "phase4",
+        "pr05",
+        "item",
+        "special",
+        "artifact",
+        "deep_iron_pit",
+        "vanguard",
+        "artifact"
+      ]
+    },
+    {
+      "key": "audio.item.artifact.river_echo",
+      "cueFamily": "item",
+      "eventId": "audio.item.artifact.river_echo",
+      "sourcePath": "audio/item/artifact_river_echo.ogg",
+      "tags": [
+        "phase4",
+        "pr05",
+        "item",
+        "special",
+        "artifact",
+        "underground_river",
+        "arcanist",
+        "artifact"
       ]
     },
     {
@@ -548,6 +612,198 @@
         "item",
         "starter_kit",
         "official_slice"
+      ]
+    },
+    {
+      "key": "audio.item.unique.briarbound_bow",
+      "cueFamily": "item",
+      "eventId": "audio.item.unique.briarbound_bow",
+      "sourcePath": "audio/item/unique_briarbound_bow.ogg",
+      "tags": [
+        "phase4",
+        "pr05",
+        "item",
+        "special",
+        "unique",
+        "greenwood_fringe",
+        "rogue",
+        "precision"
+      ]
+    },
+    {
+      "key": "audio.item.unique.coal_ward_talisman",
+      "cueFamily": "item",
+      "eventId": "audio.item.unique.coal_ward_talisman",
+      "sourcePath": "audio/item/unique_coal_ward_talisman.ogg",
+      "tags": [
+        "phase4",
+        "pr05",
+        "item",
+        "special",
+        "unique",
+        "deep_iron_pit",
+        "arcanist",
+        "fire"
+      ]
+    },
+    {
+      "key": "audio.item.unique.currentstrider_cloak",
+      "cueFamily": "item",
+      "eventId": "audio.item.unique.currentstrider_cloak",
+      "sourcePath": "audio/item/unique_currentstrider_cloak.ogg",
+      "tags": [
+        "phase4",
+        "pr05",
+        "item",
+        "special",
+        "unique",
+        "underground_river",
+        "rogue",
+        "mobility"
+      ]
+    },
+    {
+      "key": "audio.item.unique.eclipse_mail",
+      "cueFamily": "item",
+      "eventId": "audio.item.unique.eclipse_mail",
+      "sourcePath": "audio/item/unique_eclipse_mail.ogg",
+      "tags": [
+        "phase4",
+        "pr05",
+        "item",
+        "special",
+        "unique",
+        "abyssal_temple",
+        "templar",
+        "protection"
+      ]
+    },
+    {
+      "key": "audio.item.unique.ferrywarden_lantern",
+      "cueFamily": "item",
+      "eventId": "audio.item.unique.ferrywarden_lantern",
+      "sourcePath": "audio/item/unique_ferrywarden_lantern.ogg",
+      "tags": [
+        "phase4",
+        "pr05",
+        "item",
+        "special",
+        "unique",
+        "underground_river",
+        "templar",
+        "rescue"
+      ]
+    },
+    {
+      "key": "audio.item.unique.furnace_plate",
+      "cueFamily": "item",
+      "eventId": "audio.item.unique.furnace_plate",
+      "sourcePath": "audio/item/unique_furnace_plate.ogg",
+      "tags": [
+        "phase4",
+        "pr05",
+        "item",
+        "special",
+        "unique",
+        "deep_iron_pit",
+        "vanguard",
+        "fire"
+      ]
+    },
+    {
+      "key": "audio.item.unique.greenwood_watcher_blade",
+      "cueFamily": "item",
+      "eventId": "audio.item.unique.greenwood_watcher_blade",
+      "sourcePath": "audio/item/unique_greenwood_watcher_blade.ogg",
+      "tags": [
+        "phase4",
+        "pr05",
+        "item",
+        "special",
+        "unique",
+        "greenwood_fringe",
+        "holy",
+        "vanguard"
+      ]
+    },
+    {
+      "key": "audio.item.unique.sanctum_lance",
+      "cueFamily": "item",
+      "eventId": "audio.item.unique.sanctum_lance",
+      "sourcePath": "audio/item/unique_sanctum_lance.ogg",
+      "tags": [
+        "phase4",
+        "pr05",
+        "item",
+        "special",
+        "unique",
+        "abyssal_temple",
+        "vanguard",
+        "holy"
+      ]
+    },
+    {
+      "key": "audio.item.unique.slagbreaker_pick",
+      "cueFamily": "item",
+      "eventId": "audio.item.unique.slagbreaker_pick",
+      "sourcePath": "audio/item/unique_slagbreaker_pick.ogg",
+      "tags": [
+        "phase4",
+        "pr05",
+        "item",
+        "special",
+        "unique",
+        "deep_iron_pit",
+        "vanguard",
+        "mine"
+      ]
+    },
+    {
+      "key": "audio.item.unique.tideglass_staff",
+      "cueFamily": "item",
+      "eventId": "audio.item.unique.tideglass_staff",
+      "sourcePath": "audio/item/unique_tideglass_staff.ogg",
+      "tags": [
+        "phase4",
+        "pr05",
+        "item",
+        "special",
+        "unique",
+        "underground_river",
+        "arcanist",
+        "lightning"
+      ]
+    },
+    {
+      "key": "audio.item.unique.voidlit_seal",
+      "cueFamily": "item",
+      "eventId": "audio.item.unique.voidlit_seal",
+      "sourcePath": "audio/item/unique_voidlit_seal.ogg",
+      "tags": [
+        "phase4",
+        "pr05",
+        "item",
+        "special",
+        "unique",
+        "abyssal_temple",
+        "templar",
+        "holy"
+      ]
+    },
+    {
+      "key": "audio.item.unique.warden_barkmail",
+      "cueFamily": "item",
+      "eventId": "audio.item.unique.warden_barkmail",
+      "sourcePath": "audio/item/unique_warden_barkmail.ogg",
+      "tags": [
+        "phase4",
+        "pr05",
+        "item",
+        "special",
+        "unique",
+        "greenwood_fringe",
+        "templar",
+        "protection"
       ]
     },
     {
@@ -1010,6 +1266,18 @@
       ]
     },
     {
+      "key": "audio.talent.aftershock",
+      "cueFamily": "talent",
+      "eventId": "audio.talent.aftershock",
+      "sourcePath": "audio/talent/aftershock.ogg",
+      "tags": [
+        "phase3",
+        "followup",
+        "talent",
+        "berserker"
+      ]
+    },
+    {
       "key": "audio.talent.arcane_shield",
       "cueFamily": "talent",
       "eventId": "audio.talent.arcane_shield",
@@ -1031,6 +1299,18 @@
         "p2-c",
         "talent",
         "rogue"
+      ]
+    },
+    {
+      "key": "audio.talent.balance_point",
+      "cueFamily": "talent",
+      "eventId": "audio.talent.balance_point",
+      "sourcePath": "audio/talent/balance_point.ogg",
+      "tags": [
+        "phase3",
+        "followup",
+        "talent",
+        "spellblade"
       ]
     },
     {
@@ -1082,6 +1362,18 @@
       ]
     },
     {
+      "key": "audio.talent.blink_strike",
+      "cueFamily": "talent",
+      "eventId": "audio.talent.blink_strike",
+      "sourcePath": "audio/talent/blink_strike.ogg",
+      "tags": [
+        "phase3",
+        "followup",
+        "talent",
+        "spellblade"
+      ]
+    },
+    {
       "key": "audio.talent.bulwark_march",
       "cueFamily": "talent",
       "eventId": "audio.talent.bulwark_march",
@@ -1127,6 +1419,18 @@
         "followup",
         "talent",
         "templar"
+      ]
+    },
+    {
+      "key": "audio.talent.counter_seal",
+      "cueFamily": "talent",
+      "eventId": "audio.talent.counter_seal",
+      "sourcePath": "audio/talent/counter_seal.ogg",
+      "tags": [
+        "phase3",
+        "followup",
+        "talent",
+        "spellblade"
       ]
     },
     {
@@ -1214,6 +1518,18 @@
       ]
     },
     {
+      "key": "audio.talent.fault_line",
+      "cueFamily": "talent",
+      "eventId": "audio.talent.fault_line",
+      "sourcePath": "audio/talent/fault_line.ogg",
+      "tags": [
+        "phase3",
+        "followup",
+        "talent",
+        "berserker"
+      ]
+    },
+    {
       "key": "audio.talent.fireball",
       "cueFamily": "talent",
       "eventId": "audio.talent.fireball",
@@ -1235,6 +1551,18 @@
         "p2-b",
         "talent",
         "arcanist"
+      ]
+    },
+    {
+      "key": "audio.talent.flux_reversal",
+      "cueFamily": "talent",
+      "eventId": "audio.talent.flux_reversal",
+      "sourcePath": "audio/talent/flux_reversal.ogg",
+      "tags": [
+        "phase3",
+        "followup",
+        "talent",
+        "spellblade"
       ]
     },
     {
@@ -1406,6 +1734,18 @@
       ]
     },
     {
+      "key": "audio.talent.pain_fuel",
+      "cueFamily": "talent",
+      "eventId": "audio.talent.pain_fuel",
+      "sourcePath": "audio/talent/pain_fuel.ogg",
+      "tags": [
+        "phase3",
+        "followup",
+        "talent",
+        "berserker"
+      ]
+    },
+    {
       "key": "audio.talent.poison_blade",
       "cueFamily": "talent",
       "eventId": "audio.talent.poison_blade",
@@ -1439,6 +1779,18 @@
         "p2-c",
         "talent",
         "templar"
+      ]
+    },
+    {
+      "key": "audio.talent.pursuit_drive",
+      "cueFamily": "talent",
+      "eventId": "audio.talent.pursuit_drive",
+      "sourcePath": "audio/talent/pursuit_drive.ogg",
+      "tags": [
+        "phase3",
+        "followup",
+        "talent",
+        "berserker"
       ]
     },
     {
@@ -1490,63 +1842,15 @@
       ]
     },
     {
-      "key": "audio.talent.pursuit_drive",
+      "key": "audio.talent.roll",
       "cueFamily": "talent",
-      "eventId": "audio.talent.pursuit_drive",
-      "sourcePath": "audio/talent/pursuit_drive.ogg",
+      "eventId": "audio.talent.roll",
+      "sourcePath": "audio/talent/blink.ogg",
       "tags": [
-        "phase3",
-        "followup",
+        "phase2",
+        "p2-c",
         "talent",
-        "berserker"
-      ]
-    },
-    {
-      "key": "audio.talent.fault_line",
-      "cueFamily": "talent",
-      "eventId": "audio.talent.fault_line",
-      "sourcePath": "audio/talent/fault_line.ogg",
-      "tags": [
-        "phase3",
-        "followup",
-        "talent",
-        "berserker"
-      ]
-    },
-    {
-      "key": "audio.talent.aftershock",
-      "cueFamily": "talent",
-      "eventId": "audio.talent.aftershock",
-      "sourcePath": "audio/talent/aftershock.ogg",
-      "tags": [
-        "phase3",
-        "followup",
-        "talent",
-        "berserker"
-      ]
-    },
-    {
-      "key": "audio.talent.pain_fuel",
-      "cueFamily": "talent",
-      "eventId": "audio.talent.pain_fuel",
-      "sourcePath": "audio/talent/pain_fuel.ogg",
-      "tags": [
-        "phase3",
-        "followup",
-        "talent",
-        "berserker"
-      ]
-    },
-    {
-      "key": "audio.talent.slaughter_drive",
-      "cueFamily": "talent",
-      "eventId": "audio.talent.slaughter_drive",
-      "sourcePath": "audio/talent/slaughter_drive.ogg",
-      "tags": [
-        "phase3",
-        "followup",
-        "talent",
-        "berserker"
+        "rogue"
       ]
     },
     {
@@ -1559,78 +1863,6 @@
         "followup",
         "talent",
         "spellblade"
-      ]
-    },
-    {
-      "key": "audio.talent.sunder_sigil",
-      "cueFamily": "talent",
-      "eventId": "audio.talent.sunder_sigil",
-      "sourcePath": "audio/talent/sunder_sigil.ogg",
-      "tags": [
-        "phase3",
-        "followup",
-        "talent",
-        "spellblade"
-      ]
-    },
-    {
-      "key": "audio.talent.balance_point",
-      "cueFamily": "talent",
-      "eventId": "audio.talent.balance_point",
-      "sourcePath": "audio/talent/balance_point.ogg",
-      "tags": [
-        "phase3",
-        "followup",
-        "talent",
-        "spellblade"
-      ]
-    },
-    {
-      "key": "audio.talent.flux_reversal",
-      "cueFamily": "talent",
-      "eventId": "audio.talent.flux_reversal",
-      "sourcePath": "audio/talent/flux_reversal.ogg",
-      "tags": [
-        "phase3",
-        "followup",
-        "talent",
-        "spellblade"
-      ]
-    },
-    {
-      "key": "audio.talent.blink_strike",
-      "cueFamily": "talent",
-      "eventId": "audio.talent.blink_strike",
-      "sourcePath": "audio/talent/blink_strike.ogg",
-      "tags": [
-        "phase3",
-        "followup",
-        "talent",
-        "spellblade"
-      ]
-    },
-    {
-      "key": "audio.talent.counter_seal",
-      "cueFamily": "talent",
-      "eventId": "audio.talent.counter_seal",
-      "sourcePath": "audio/talent/counter_seal.ogg",
-      "tags": [
-        "phase3",
-        "followup",
-        "talent",
-        "spellblade"
-      ]
-    },
-    {
-      "key": "audio.talent.roll",
-      "cueFamily": "talent",
-      "eventId": "audio.talent.roll",
-      "sourcePath": "audio/talent/blink.ogg",
-      "tags": [
-        "phase2",
-        "p2-c",
-        "talent",
-        "rogue"
       ]
     },
     {
@@ -1694,6 +1926,18 @@
       ]
     },
     {
+      "key": "audio.talent.slaughter_drive",
+      "cueFamily": "talent",
+      "eventId": "audio.talent.slaughter_drive",
+      "sourcePath": "audio/talent/slaughter_drive.ogg",
+      "tags": [
+        "phase3",
+        "followup",
+        "talent",
+        "berserker"
+      ]
+    },
+    {
       "key": "audio.talent.smoke_bomb",
       "cueFamily": "talent",
       "eventId": "audio.talent.smoke_bomb",
@@ -1727,6 +1971,18 @@
         "p2-b",
         "talent",
         "vanguard"
+      ]
+    },
+    {
+      "key": "audio.talent.sunder_sigil",
+      "cueFamily": "talent",
+      "eventId": "audio.talent.sunder_sigil",
+      "sourcePath": "audio/talent/sunder_sigil.ogg",
+      "tags": [
+        "phase3",
+        "followup",
+        "talent",
+        "spellblade"
       ]
     },
     {
@@ -1982,6 +2238,42 @@
       ]
     },
     {
+      "key": "audio.zone.abyssal_heart",
+      "cueFamily": "zone",
+      "eventId": "audio.zone.abyssal_heart",
+      "sourcePath": "audio/ambient/abyssal_heart.ogg",
+      "tags": [
+        "phase3",
+        "followup",
+        "zone",
+        "abyssal"
+      ]
+    },
+    {
+      "key": "audio.zone.abyssal_temple",
+      "cueFamily": "zone",
+      "eventId": "audio.zone.abyssal_temple",
+      "sourcePath": "audio/ambient/abyssal_temple.ogg",
+      "tags": [
+        "phase3",
+        "followup",
+        "zone",
+        "abyssal"
+      ]
+    },
+    {
+      "key": "audio.zone.crystal_cavern",
+      "cueFamily": "zone",
+      "eventId": "audio.zone.crystal_cavern",
+      "sourcePath": "audio/ambient/crystal_cavern.ogg",
+      "tags": [
+        "phase3",
+        "followup",
+        "zone",
+        "crystal"
+      ]
+    },
+    {
       "key": "audio.zone.deep_iron_pit",
       "cueFamily": "zone",
       "eventId": "audio.zone.deep_iron_pit",
@@ -2018,54 +2310,6 @@
       ]
     },
     {
-      "key": "audio.zone.underground_river",
-      "cueFamily": "zone",
-      "eventId": "audio.zone.underground_river",
-      "sourcePath": "audio/ambient/underground_river.ogg",
-      "tags": [
-        "phase3",
-        "followup",
-        "zone",
-        "river"
-      ]
-    },
-    {
-      "key": "audio.zone.abyssal_temple",
-      "cueFamily": "zone",
-      "eventId": "audio.zone.abyssal_temple",
-      "sourcePath": "audio/ambient/abyssal_temple.ogg",
-      "tags": [
-        "phase3",
-        "followup",
-        "zone",
-        "abyssal"
-      ]
-    },
-    {
-      "key": "audio.zone.abyssal_heart",
-      "cueFamily": "zone",
-      "eventId": "audio.zone.abyssal_heart",
-      "sourcePath": "audio/ambient/abyssal_heart.ogg",
-      "tags": [
-        "phase3",
-        "followup",
-        "zone",
-        "abyssal"
-      ]
-    },
-    {
-      "key": "audio.zone.crystal_cavern",
-      "cueFamily": "zone",
-      "eventId": "audio.zone.crystal_cavern",
-      "sourcePath": "audio/ambient/crystal_cavern.ogg",
-      "tags": [
-        "phase3",
-        "followup",
-        "zone",
-        "crystal"
-      ]
-    },
-    {
       "key": "audio.zone.shattered_outpost",
       "cueFamily": "zone",
       "eventId": "audio.zone.shattered_outpost",
@@ -2075,6 +2319,18 @@
         "p2-b",
         "zone",
         "official_slice"
+      ]
+    },
+    {
+      "key": "audio.zone.underground_river",
+      "cueFamily": "zone",
+      "eventId": "audio.zone.underground_river",
+      "sourcePath": "audio/ambient/underground_river.ogg",
+      "tags": [
+        "phase3",
+        "followup",
+        "zone",
+        "river"
       ]
     }
   ],

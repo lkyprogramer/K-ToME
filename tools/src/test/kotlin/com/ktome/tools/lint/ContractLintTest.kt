@@ -265,12 +265,33 @@ class ContractLintTest {
         }
         catalog.itemBundle.items.forEach { item ->
             assertEquals(2, item.schemaVersion)
-            assertEquals("item.${item.id}.name", item.nameKey)
-            assertEquals("item.${item.id}.desc", item.descKey)
+            val expectedItemKeyBase =
+                when {
+                    item.id.startsWith("unique_") -> "item.unique.${item.id.removePrefix("unique_")}"
+                    item.id.startsWith("artifact_") -> "item.artifact.${item.id.removePrefix("artifact_")}"
+                    else -> "item.${item.id}"
+                }
+            assertEquals("$expectedItemKeyBase.name", item.nameKey)
+            assertEquals("$expectedItemKeyBase.desc", item.descKey)
             assertExactVisualKey(item.visualKey)
             assertExactVisualKey(item.iconKey)
             assertExactAudioKey(item.audioProfile)
             item.materials.forEach { materialId -> assertTrue(catalog.itemBundle.materials.any { it.id == materialId }, "Unknown material $materialId") }
+        }
+        (catalog.itemBundle.uniqueTemplates + catalog.itemBundle.artifactTemplates).forEach { template ->
+            val item = catalog.itemBundle.items.firstOrNull { candidate -> candidate.id == template.itemId }
+            assertTrue(item != null, "Special template ${template.id} must resolve to a real item ${template.itemId}")
+            assertExactVisualKey(template.visualKey)
+            assertExactVisualKey(template.iconKey)
+            assertExactAudioKey(template.audioProfile)
+            assertEquals(2, template.schemaVersion)
+            item?.let { resolvedItem ->
+                assertEquals(resolvedItem.nameKey, template.nameKey)
+                assertEquals(resolvedItem.descKey, template.descKey)
+                assertEquals(resolvedItem.visualKey, template.visualKey)
+                assertEquals(resolvedItem.iconKey, template.iconKey)
+                assertEquals(resolvedItem.audioProfile, template.audioProfile)
+            }
         }
 
         catalog.difficulties.forEach { difficulty ->

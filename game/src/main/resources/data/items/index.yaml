@@ -52,6 +52,8 @@ affixes:
     type: PREFIX
     equipType: WEAPON
     tier: 1
+    cost: 1
+    affixFamily: weapon_edge
     minFloor: 1
     stats: { attack: 3 }
     blacklistTags: []
@@ -66,6 +68,9 @@ affixes:
     type: PREFIX
     equipType: WEAPON
     tier: 2
+    cost: 6
+    affixFamily: weapon_fire
+    exclusiveGroup: weapon_element_prefix
     minFloor: 2
     stats: { attack: 2, talentPower: 0.05 }
     blacklistTags: [cold]
@@ -80,6 +85,9 @@ affixes:
     type: PREFIX
     equipType: WEAPON
     tier: 2
+    cost: 6
+    affixFamily: weapon_cold
+    exclusiveGroup: weapon_element_prefix
     minFloor: 2
     stats: { attack: 2, accuracy: 2 }
     blacklistTags: [fire]
@@ -94,6 +102,9 @@ affixes:
     type: PREFIX
     equipType: WEAPON
     tier: 2
+    cost: 6
+    affixFamily: weapon_lightning
+    exclusiveGroup: weapon_element_prefix
     minFloor: 3
     stats: { attack: 3, speed: 5 }
     blacklistTags: []
@@ -108,6 +119,9 @@ affixes:
     type: PREFIX
     equipType: WEAPON
     tier: 2
+    cost: 10
+    affixFamily: weapon_holy
+    exclusiveGroup: weapon_alignment_prefix
     minFloor: 3
     stats: { attack: 3, wil: 1 }
     blacklistTags: [shadow]
@@ -122,6 +136,9 @@ affixes:
     type: PREFIX
     equipType: WEAPON
     tier: 2
+    cost: 10
+    affixFamily: weapon_shadow
+    exclusiveGroup: weapon_alignment_prefix
     minFloor: 3
     stats: { attack: 3, evasion: 2 }
     blacklistTags: [holy]
@@ -136,6 +153,9 @@ affixes:
     type: PREFIX
     equipType: WEAPON
     tier: 2
+    cost: 6
+    affixFamily: weapon_brutality
+    exclusiveGroup: weapon_style_prefix
     minFloor: 2
     stats: { attack: 4, accuracy: -1 }
     blacklistTags: [precision]
@@ -150,6 +170,9 @@ affixes:
     type: PREFIX
     equipType: WEAPON
     tier: 1
+    cost: 3
+    affixFamily: weapon_precision
+    exclusiveGroup: weapon_style_prefix
     minFloor: 1
     stats: { accuracy: 4, evasion: 1 }
     blacklistTags: [brutal]
@@ -164,6 +187,8 @@ affixes:
     type: PREFIX
     equipType: WEAPON
     tier: 3
+    cost: 10
+    affixFamily: weapon_guard
     minFloor: 4
     stats: { attack: 3, defense: 2 }
     blacklistTags: []
@@ -178,6 +203,8 @@ affixes:
     type: PREFIX
     equipType: WEAPON
     tier: 2
+    cost: 6
+    affixFamily: weapon_duelist
     minFloor: 2
     stats: { accuracy: 2, speed: 8 }
     blacklistTags: []
@@ -192,6 +219,9 @@ affixes:
     type: PREFIX
     equipType: WEAPON
     tier: 3
+    cost: 14
+    affixFamily: weapon_vampiric
+    exclusiveGroup: weapon_alignment_prefix
     minFloor: 4
     stats: { attack: 3, maxHp: 8 }
     blacklistTags: [holy]
@@ -206,6 +236,8 @@ affixes:
     type: PREFIX
     equipType: ARMOR
     tier: 1
+    cost: 1
+    affixFamily: armor_plate
     minFloor: 1
     stats: { defense: 2 }
     blacklistTags: []
@@ -220,6 +252,8 @@ affixes:
     type: PREFIX
     equipType: ARMOR
     tier: 2
+    cost: 6
+    affixFamily: armor_spellguard
     minFloor: 2
     stats: { defense: 2, wil: 1 }
     blacklistTags: []
@@ -234,6 +268,9 @@ affixes:
     type: PREFIX
     equipType: ARMOR
     tier: 2
+    cost: 6
+    affixFamily: armor_fire_guard
+    exclusiveGroup: armor_element_prefix
     minFloor: 2
     stats: { defense: 1, wil: 1 }
     blacklistTags: [cold]
@@ -248,6 +285,9 @@ affixes:
     type: PREFIX
     equipType: ARMOR
     tier: 2
+    cost: 6
+    affixFamily: armor_cold_guard
+    exclusiveGroup: armor_element_prefix
     minFloor: 2
     stats: { defense: 1, evasion: 2 }
     blacklistTags: [fire]
@@ -262,6 +302,9 @@ affixes:
     type: PREFIX
     equipType: ARMOR
     tier: 2
+    cost: 6
+    affixFamily: armor_storm_guard
+    exclusiveGroup: armor_element_prefix
     minFloor: 3
     stats: { defense: 1, speed: 5 }
     blacklistTags: []
@@ -276,6 +319,9 @@ affixes:
     type: PREFIX
     equipType: ARMOR
     tier: 3
+    cost: 10
+    affixFamily: armor_holy_guard
+    exclusiveGroup: armor_alignment_prefix
     minFloor: 3
     stats: { defense: 2, maxHp: 6 }
     blacklistTags: [shadow]
@@ -290,6 +336,9 @@ affixes:
     type: PREFIX
     equipType: ARMOR
     tier: 3
+    cost: 10
+    affixFamily: armor_shadow_weave
+    exclusiveGroup: armor_alignment_prefix
     minFloor: 3
     stats: { defense: 1, evasion: 3, speed: 4 }
     blacklistTags: [holy]
@@ -304,6 +353,8 @@ affixes:
     type: PREFIX
     equipType: ARMOR
     tier: 2
+    cost: 6
+    affixFamily: armor_tempered
     minFloor: 3
     stats: { defense: 3 }
     blacklistTags: []
@@ -318,6 +369,8 @@ affixes:
     type: PREFIX
     equipType: ARMOR
     tier: 1
+    cost: 3
+    affixFamily: armor_nimble
     minFloor: 1
     stats: { evasion: 3, speed: 6 }
     blacklistTags: []
@@ -332,6 +385,8 @@ affixes:
     type: PREFIX
     equipType: ARMOR
     tier: 3
+    cost: 14
+    affixFamily: armor_sentinel
     minFloor: 4
     stats: { defense: 4, maxHp: 10 }
     blacklistTags: []
@@ -346,6 +401,8 @@ affixes:
     type: PREFIX
     equipType: WEAPON
     tier: 1
+    cost: 3
+    affixFamily: weapon_swiftness
     minFloor: 2
     stats: { speed: 10 }
     blacklistTags: []
@@ -360,6 +417,8 @@ affixes:
     type: SUFFIX
     equipType: WEAPON
     tier: 1
+    cost: 3
+    affixFamily: suffix_strength
     minFloor: 1
     stats: { str: 1, attack: 2 }
     blacklistTags: []
@@ -374,6 +433,8 @@ affixes:
     type: SUFFIX
     equipType: WEAPON
     tier: 2
+    cost: 6
+    affixFamily: suffix_fury
     minFloor: 2
     stats: { attack: 3, speed: 4 }
     blacklistTags: []
@@ -388,6 +449,8 @@ affixes:
     type: SUFFIX
     equipType: WEAPON
     tier: 2
+    cost: 6
+    affixFamily: suffix_precision
     minFloor: 2
     stats: { accuracy: 4, evasion: 1 }
     blacklistTags: [brutal]
@@ -403,6 +466,8 @@ affixes:
     type: SUFFIX
     equipType: ARMOR
     tier: 1
+    cost: 3
+    affixFamily: suffix_life
     minFloor: 1
     stats: { maxHp: 15 }
     blacklistTags: []
@@ -417,6 +482,8 @@ affixes:
     type: SUFFIX
     equipType: ARMOR
     tier: 2
+    cost: 6
+    affixFamily: suffix_fortitude
     minFloor: 2
     stats: { defense: 3 }
     blacklistTags: []
@@ -431,6 +498,8 @@ affixes:
     type: SUFFIX
     equipType: WEAPON
     tier: 2
+    cost: 6
+    affixFamily: suffix_speed
     minFloor: 2
     stats: { speed: 15 }
     blacklistTags: []
@@ -445,6 +514,8 @@ affixes:
     type: SUFFIX
     equipType: WEAPON
     tier: 3
+    cost: 10
+    affixFamily: suffix_piercing
     minFloor: 3
     stats: { attack: 3, accuracy: 2 }
     blacklistTags: []
@@ -460,6 +531,9 @@ affixes:
     type: SUFFIX
     equipType: WEAPON
     tier: 3
+    cost: 10
+    affixFamily: suffix_fire
+    exclusiveGroup: weapon_element_suffix
     minFloor: 3
     stats: { attack: 2, talentPower: 0.04 }
     blacklistTags: [cold]
@@ -475,6 +549,9 @@ affixes:
     type: SUFFIX
     equipType: WEAPON
     tier: 3
+    cost: 10
+    affixFamily: suffix_cold
+    exclusiveGroup: weapon_element_suffix
     minFloor: 3
     stats: { accuracy: 2, talentPower: 0.04 }
     blacklistTags: [fire]
@@ -490,6 +567,9 @@ affixes:
     type: SUFFIX
     equipType: WEAPON
     tier: 3
+    cost: 10
+    affixFamily: suffix_lightning
+    exclusiveGroup: weapon_element_suffix
     minFloor: 3
     stats: { speed: 8, accuracy: 2 }
     blacklistTags: []
@@ -504,6 +584,9 @@ affixes:
     type: SUFFIX
     equipType: WEAPON
     tier: 3
+    cost: 10
+    affixFamily: suffix_holy
+    exclusiveGroup: weapon_alignment_suffix
     minFloor: 4
     stats: { attack: 3, wil: 1 }
     blacklistTags: [shadow]
@@ -519,6 +602,9 @@ affixes:
     type: SUFFIX
     equipType: WEAPON
     tier: 3
+    cost: 10
+    affixFamily: suffix_shadow
+    exclusiveGroup: weapon_alignment_suffix
     minFloor: 4
     stats: { attack: 2, evasion: 2, speed: 4 }
     blacklistTags: [holy]
@@ -534,6 +620,8 @@ affixes:
     type: SUFFIX
     equipType: ARMOR
     tier: 2
+    cost: 6
+    affixFamily: suffix_regeneration
     minFloor: 2
     stats: { hpRegen: 1.0, maxHp: 6 }
     blacklistTags: []
@@ -548,8 +636,10 @@ affixes:
     type: SUFFIX
     equipType: ARMOR
     tier: 2
+    cost: 10
+    affixFamily: suffix_cast_focus
     minFloor: 2
-    stats: { wil: 1, talentPower: 0.04 }
+    stats: { wil: 1, talentPower: 0.04, castSpeedRating: 12 }
     blacklistTags: []
   - id: of_resistance
     nameKey: affix.of_resistance.name
@@ -562,6 +652,8 @@ affixes:
     type: SUFFIX
     equipType: ARMOR
     tier: 3
+    cost: 10
+    affixFamily: suffix_resistance
     minFloor: 3
     stats: { defense: 2, maxHp: 6 }
     blacklistTags: []
@@ -576,6 +668,8 @@ affixes:
     type: SUFFIX
     equipType: ARMOR
     tier: 2
+    cost: 6
+    affixFamily: suffix_resolve
     minFloor: 3
     stats: { wil: 2, defense: 1 }
     blacklistTags: []
@@ -590,6 +684,8 @@ affixes:
     type: SUFFIX
     equipType: ARMOR
     tier: 2
+    cost: 6
+    affixFamily: suffix_motion
     minFloor: 2
     stats: { speed: 10, evasion: 2 }
     blacklistTags: []
@@ -604,10 +700,216 @@ affixes:
     type: SUFFIX
     equipType: ARMOR
     tier: 3
+    cost: 14
+    affixFamily: suffix_cleansing
     minFloor: 4
     stats: { defense: 2, wil: 1, maxHp: 4 }
     blacklistTags: []
     passive: { kind: HpRegenPerTurn, amount: 1 }
+
+uniqueTemplates:
+  - id: unique.greenwood_watcher_blade
+    itemId: unique_greenwood_watcher_blade
+    nameKey: item.unique.greenwood_watcher_blade.name
+    descKey: item.unique.greenwood_watcher_blade.desc
+    visualKey: item.unique.greenwood_watcher_blade.visual
+    iconKey: item.unique.greenwood_watcher_blade.icon
+    audioProfile: audio.item.unique.greenwood_watcher_blade
+    schemaVersion: 2
+    tags: [greenwood_fringe, vanguard, holy]
+    allowedSourceTiers: [ELITE, BOSS]
+    allowedZones: [greenwood_fringe]
+    fixedAffixIds: [sanctified, of_precision]
+    fixedMaterialId: STEEL
+  - id: unique.briarbound_bow
+    itemId: unique_briarbound_bow
+    nameKey: item.unique.briarbound_bow.name
+    descKey: item.unique.briarbound_bow.desc
+    visualKey: item.unique.briarbound_bow.visual
+    iconKey: item.unique.briarbound_bow.icon
+    audioProfile: audio.item.unique.briarbound_bow
+    schemaVersion: 2
+    tags: [greenwood_fringe, rogue, precision]
+    allowedSourceTiers: [CHEST, ELITE]
+    allowedZones: [greenwood_fringe]
+    fixedAffixIds: [precise, of_shadow]
+    fixedMaterialId: STEEL
+  - id: unique.warden_barkmail
+    itemId: unique_warden_barkmail
+    nameKey: item.unique.warden_barkmail.name
+    descKey: item.unique.warden_barkmail.desc
+    visualKey: item.unique.warden_barkmail.visual
+    iconKey: item.unique.warden_barkmail.icon
+    audioProfile: audio.item.unique.warden_barkmail
+    schemaVersion: 2
+    tags: [greenwood_fringe, templar, protection]
+    allowedSourceTiers: [CHEST]
+    allowedZones: [greenwood_fringe]
+    fixedAffixIds: [hallowed, of_regeneration]
+  - id: unique.slagbreaker_pick
+    itemId: unique_slagbreaker_pick
+    nameKey: item.unique.slagbreaker_pick.name
+    descKey: item.unique.slagbreaker_pick.desc
+    visualKey: item.unique.slagbreaker_pick.visual
+    iconKey: item.unique.slagbreaker_pick.icon
+    audioProfile: audio.item.unique.slagbreaker_pick
+    schemaVersion: 2
+    tags: [deep_iron_pit, vanguard, mine]
+    allowedSourceTiers: [ELITE, BOSS]
+    allowedZones: [deep_iron_pit]
+    fixedAffixIds: [warforged, of_piercing]
+    fixedMaterialId: STEEL
+  - id: unique.furnace_plate
+    itemId: unique_furnace_plate
+    nameKey: item.unique.furnace_plate.name
+    descKey: item.unique.furnace_plate.desc
+    visualKey: item.unique.furnace_plate.visual
+    iconKey: item.unique.furnace_plate.icon
+    audioProfile: audio.item.unique.furnace_plate
+    schemaVersion: 2
+    tags: [deep_iron_pit, vanguard, fire]
+    allowedSourceTiers: [BOSS, CHEST]
+    allowedZones: [deep_iron_pit]
+    fixedAffixIds: [emberguard, of_fortitude]
+  - id: unique.coal_ward_talisman
+    itemId: unique_coal_ward_talisman
+    nameKey: item.unique.coal_ward_talisman.name
+    descKey: item.unique.coal_ward_talisman.desc
+    visualKey: item.unique.coal_ward_talisman.visual
+    iconKey: item.unique.coal_ward_talisman.icon
+    audioProfile: audio.item.unique.coal_ward_talisman
+    schemaVersion: 2
+    tags: [deep_iron_pit, arcanist, fire]
+    allowedSourceTiers: [CHEST]
+    allowedZones: [deep_iron_pit]
+    fixedAffixIds: [burning, of_focus]
+  - id: unique.tideglass_staff
+    itemId: unique_tideglass_staff
+    nameKey: item.unique.tideglass_staff.name
+    descKey: item.unique.tideglass_staff.desc
+    visualKey: item.unique.tideglass_staff.visual
+    iconKey: item.unique.tideglass_staff.icon
+    audioProfile: audio.item.unique.tideglass_staff
+    schemaVersion: 2
+    tags: [underground_river, arcanist, lightning]
+    allowedSourceTiers: [ELITE, BOSS]
+    allowedZones: [underground_river]
+    fixedAffixIds: [stormforged, of_focus]
+    fixedMaterialId: MITHRIL
+  - id: unique.currentstrider_cloak
+    itemId: unique_currentstrider_cloak
+    nameKey: item.unique.currentstrider_cloak.name
+    descKey: item.unique.currentstrider_cloak.desc
+    visualKey: item.unique.currentstrider_cloak.visual
+    iconKey: item.unique.currentstrider_cloak.icon
+    audioProfile: audio.item.unique.currentstrider_cloak
+    schemaVersion: 2
+    tags: [underground_river, rogue, mobility]
+    allowedSourceTiers: [CHEST, ELITE]
+    allowedZones: [underground_river]
+    fixedAffixIds: [duskwoven, of_motion]
+  - id: unique.ferrywarden_lantern
+    itemId: unique_ferrywarden_lantern
+    nameKey: item.unique.ferrywarden_lantern.name
+    descKey: item.unique.ferrywarden_lantern.desc
+    visualKey: item.unique.ferrywarden_lantern.visual
+    iconKey: item.unique.ferrywarden_lantern.icon
+    audioProfile: audio.item.unique.ferrywarden_lantern
+    schemaVersion: 2
+    tags: [underground_river, templar, rescue]
+    allowedSourceTiers: [CHEST]
+    allowedZones: [underground_river]
+    fixedAffixIds: [warded, of_cleansing]
+  - id: unique.voidlit_seal
+    itemId: unique_voidlit_seal
+    nameKey: item.unique.voidlit_seal.name
+    descKey: item.unique.voidlit_seal.desc
+    visualKey: item.unique.voidlit_seal.visual
+    iconKey: item.unique.voidlit_seal.icon
+    audioProfile: audio.item.unique.voidlit_seal
+    schemaVersion: 2
+    tags: [abyssal_temple, templar, holy]
+    allowedSourceTiers: [ELITE, BOSS]
+    allowedZones: [abyssal_temple]
+    fixedAffixIds: [sanctified, of_smite]
+  - id: unique.eclipse_mail
+    itemId: unique_eclipse_mail
+    nameKey: item.unique.eclipse_mail.name
+    descKey: item.unique.eclipse_mail.desc
+    visualKey: item.unique.eclipse_mail.visual
+    iconKey: item.unique.eclipse_mail.icon
+    audioProfile: audio.item.unique.eclipse_mail
+    schemaVersion: 2
+    tags: [abyssal_temple, templar, protection]
+    allowedSourceTiers: [BOSS]
+    allowedZones: [abyssal_temple]
+    fixedAffixIds: [hallowed, of_resistance]
+  - id: unique.sanctum_lance
+    itemId: unique_sanctum_lance
+    nameKey: item.unique.sanctum_lance.name
+    descKey: item.unique.sanctum_lance.desc
+    visualKey: item.unique.sanctum_lance.visual
+    iconKey: item.unique.sanctum_lance.icon
+    audioProfile: audio.item.unique.sanctum_lance
+    schemaVersion: 2
+    tags: [abyssal_temple, vanguard, holy]
+    allowedSourceTiers: [CHEST, BOSS]
+    allowedZones: [abyssal_temple]
+    fixedAffixIds: [warforged, of_smite]
+    fixedMaterialId: STEEL
+
+artifactTemplates:
+  - id: artifact.briar_heart
+    itemId: artifact_briar_heart
+    nameKey: item.artifact.briar_heart.name
+    descKey: item.artifact.briar_heart.desc
+    visualKey: item.artifact.briar_heart.visual
+    iconKey: item.artifact.briar_heart.icon
+    audioProfile: audio.item.artifact.briar_heart
+    schemaVersion: 2
+    tags: [greenwood_fringe, rogue, special_chest]
+    allowedSourceTiers: [CHEST]
+    allowedZones: [greenwood_fringe]
+    fixedAffixIds: [vampiric, of_shadow]
+    fixedMaterialId: STEEL
+  - id: artifact.forge_oath
+    itemId: artifact_forge_oath
+    nameKey: item.artifact.forge_oath.name
+    descKey: item.artifact.forge_oath.desc
+    visualKey: item.artifact.forge_oath.visual
+    iconKey: item.artifact.forge_oath.icon
+    audioProfile: audio.item.artifact.forge_oath
+    schemaVersion: 2
+    tags: [deep_iron_pit, vanguard, boss]
+    allowedSourceTiers: [BOSS]
+    allowedZones: [deep_iron_pit]
+    fixedAffixIds: [burning, of_fury]
+    fixedMaterialId: STEEL
+  - id: artifact.river_echo
+    itemId: artifact_river_echo
+    nameKey: item.artifact.river_echo.name
+    descKey: item.artifact.river_echo.desc
+    visualKey: item.artifact.river_echo.visual
+    iconKey: item.artifact.river_echo.icon
+    audioProfile: audio.item.artifact.river_echo
+    schemaVersion: 2
+    tags: [underground_river, arcanist, secret_zone]
+    allowedSourceTiers: [CHEST, SECRET_ZONE]
+    allowedZones: [underground_river]
+    fixedAffixIds: [stormforged, of_focus]
+    fixedMaterialId: STEEL
+  - id: artifact.eclipsed_relic
+    itemId: artifact_eclipsed_relic
+    nameKey: item.artifact.eclipsed_relic.name
+    descKey: item.artifact.eclipsed_relic.desc
+    visualKey: item.artifact.eclipsed_relic.visual
+    iconKey: item.artifact.eclipsed_relic.icon
+    audioProfile: audio.item.artifact.eclipsed_relic
+    schemaVersion: 2
+    tags: [abyssal_temple, templar, boss, secret_zone]
+    allowedSourceTiers: [BOSS, CHEST, SECRET_ZONE]
+    allowedZones: [abyssal_temple]
+    fixedAffixIds: [sanctified, of_cleansing]
 
 items:
   - id: short_sword
@@ -851,7 +1153,7 @@ items:
     stats: { str: 1, attack: 2, accuracy: 1 }
     dropFloors: [4, 5]
     dropWeight: 1
-    materials: [MITHRIL, ADAMANTITE]
+    materials: [STEEL, MITHRIL]
   - id: shadow_cloak
     nameKey: item.shadow_cloak.name
     descKey: item.shadow_cloak.desc
@@ -1018,3 +1320,280 @@ items:
     magnitude: 18
     dropFloors: [3, 4, 5]
     dropWeight: 6
+  - id: unique_greenwood_watcher_blade
+    nameKey: item.unique.greenwood_watcher_blade.name
+    descKey: item.unique.greenwood_watcher_blade.desc
+    visualKey: item.unique.greenwood_watcher_blade.visual
+    iconKey: item.unique.greenwood_watcher_blade.icon
+    audioProfile: audio.item.unique.greenwood_watcher_blade
+    schemaVersion: 2
+    tags: [item, weapon, unique, greenwood_fringe, vanguard, holy]
+    type: WEAPON
+    slot: WEAPON
+    glyph: ")"
+    color: "#D7C67A"
+    baseAttack: 9
+    passive: { kind: DamageTypeBonus, damageType: HOLY, bonusPercent: 0.12 }
+    dropWeight: 0
+    dropFloors: []
+    materials: [STEEL, MITHRIL]
+  - id: unique_briarbound_bow
+    nameKey: item.unique.briarbound_bow.name
+    descKey: item.unique.briarbound_bow.desc
+    visualKey: item.unique.briarbound_bow.visual
+    iconKey: item.unique.briarbound_bow.icon
+    audioProfile: audio.item.unique.briarbound_bow
+    schemaVersion: 2
+    tags: [item, weapon, unique, greenwood_fringe, rogue, precision]
+    type: WEAPON
+    slot: WEAPON
+    glyph: ")"
+    color: "#6C8A54"
+    baseAttack: 8
+    stats: { dex: 1, accuracy: 2 }
+    passive: { kind: DamageVsTag, tag: bandit, bonusPercent: 0.12 }
+    dropWeight: 0
+    dropFloors: []
+    materials: [STEEL, MITHRIL]
+  - id: unique_warden_barkmail
+    nameKey: item.unique.warden_barkmail.name
+    descKey: item.unique.warden_barkmail.desc
+    visualKey: item.unique.warden_barkmail.visual
+    iconKey: item.unique.warden_barkmail.icon
+    audioProfile: audio.item.unique.warden_barkmail
+    schemaVersion: 2
+    tags: [item, armor, unique, greenwood_fringe, templar, protection]
+    type: ARMOR
+    slot: ARMOR
+    glyph: "["
+    color: "#5E7246"
+    baseDefense: 6
+    stats: { con: 1, maxHp: 10 }
+    passive: { kind: ResistanceBonus, damageType: HOLY, amount: 10 }
+    dropWeight: 0
+    dropFloors: []
+  - id: unique_slagbreaker_pick
+    nameKey: item.unique.slagbreaker_pick.name
+    descKey: item.unique.slagbreaker_pick.desc
+    visualKey: item.unique.slagbreaker_pick.visual
+    iconKey: item.unique.slagbreaker_pick.icon
+    audioProfile: audio.item.unique.slagbreaker_pick
+    schemaVersion: 2
+    tags: [item, weapon, unique, deep_iron_pit, vanguard, mine]
+    type: WEAPON
+    slot: WEAPON
+    glyph: ")"
+    color: "#9B7348"
+    baseAttack: 13
+    stats: { str: 1, attack: 1, accuracy: 1 }
+    dropWeight: 0
+    dropFloors: []
+    materials: [STEEL, MITHRIL]
+  - id: unique_furnace_plate
+    nameKey: item.unique.furnace_plate.name
+    descKey: item.unique.furnace_plate.desc
+    visualKey: item.unique.furnace_plate.visual
+    iconKey: item.unique.furnace_plate.icon
+    audioProfile: audio.item.unique.furnace_plate
+    schemaVersion: 2
+    tags: [item, armor, unique, deep_iron_pit, vanguard, fire]
+    type: ARMOR
+    slot: ARMOR
+    glyph: "["
+    color: "#90573F"
+    baseDefense: 10
+    stats: { con: 1, defense: 1, maxHp: 8 }
+    passive: { kind: ResistanceBonus, damageType: FIRE, amount: 12 }
+    dropWeight: 0
+    dropFloors: []
+  - id: unique_coal_ward_talisman
+    nameKey: item.unique.coal_ward_talisman.name
+    descKey: item.unique.coal_ward_talisman.desc
+    visualKey: item.unique.coal_ward_talisman.visual
+    iconKey: item.unique.coal_ward_talisman.icon
+    audioProfile: audio.item.unique.coal_ward_talisman
+    schemaVersion: 2
+    tags: [item, armor, accessory, unique, deep_iron_pit, arcanist, fire]
+    type: ARMOR
+    slot: OFF_HAND
+    glyph: "]"
+    color: "#8C5D37"
+    baseDefense: 2
+    stats: { wil: 2, talentPower: 0.06 }
+    dropWeight: 0
+    dropFloors: []
+  - id: unique_tideglass_staff
+    nameKey: item.unique.tideglass_staff.name
+    descKey: item.unique.tideglass_staff.desc
+    visualKey: item.unique.tideglass_staff.visual
+    iconKey: item.unique.tideglass_staff.icon
+    audioProfile: audio.item.unique.tideglass_staff
+    schemaVersion: 2
+    tags: [item, weapon, unique, underground_river, arcanist, lightning]
+    type: WEAPON
+    slot: WEAPON
+    glyph: ")"
+    color: "#4F82A1"
+    baseAttack: 6
+    stats: { wil: 2, attack: 2 }
+    passive: { kind: DamageTypeBonus, damageType: LIGHTNING, bonusPercent: 0.12 }
+    dropWeight: 0
+    dropFloors: []
+    materials: [MITHRIL, ADAMANTITE]
+  - id: unique_currentstrider_cloak
+    nameKey: item.unique.currentstrider_cloak.name
+    descKey: item.unique.currentstrider_cloak.desc
+    visualKey: item.unique.currentstrider_cloak.visual
+    iconKey: item.unique.currentstrider_cloak.icon
+    audioProfile: audio.item.unique.currentstrider_cloak
+    schemaVersion: 2
+    tags: [item, armor, unique, underground_river, rogue, mobility]
+    type: ARMOR
+    slot: ARMOR
+    glyph: "["
+    color: "#56788A"
+    baseDefense: 5
+    stats: { dex: 2, evasion: 2, speed: 4 }
+    passive: { kind: ResistanceBonus, damageType: COLD, amount: 10 }
+    dropWeight: 0
+    dropFloors: []
+  - id: unique_ferrywarden_lantern
+    nameKey: item.unique.ferrywarden_lantern.name
+    descKey: item.unique.ferrywarden_lantern.desc
+    visualKey: item.unique.ferrywarden_lantern.visual
+    iconKey: item.unique.ferrywarden_lantern.icon
+    audioProfile: audio.item.unique.ferrywarden_lantern
+    schemaVersion: 2
+    tags: [item, armor, accessory, unique, underground_river, templar, rescue]
+    type: ARMOR
+    slot: OFF_HAND
+    glyph: "]"
+    color: "#6F96A4"
+    baseDefense: 2
+    stats: { wil: 1, maxHp: 8 }
+    passive: { kind: HpRegenPerTurn, amount: 2 }
+    dropWeight: 0
+    dropFloors: []
+  - id: unique_voidlit_seal
+    nameKey: item.unique.voidlit_seal.name
+    descKey: item.unique.voidlit_seal.desc
+    visualKey: item.unique.voidlit_seal.visual
+    iconKey: item.unique.voidlit_seal.icon
+    audioProfile: audio.item.unique.voidlit_seal
+    schemaVersion: 2
+    tags: [item, armor, accessory, unique, abyssal_temple, templar, holy]
+    type: ARMOR
+    slot: OFF_HAND
+    glyph: "]"
+    color: "#C6B17A"
+    baseDefense: 3
+    stats: { wil: 2, defense: 1 }
+    passive: { kind: ResistanceBonus, damageType: SHADOW, amount: 12 }
+    dropWeight: 0
+    dropFloors: []
+  - id: unique_eclipse_mail
+    nameKey: item.unique.eclipse_mail.name
+    descKey: item.unique.eclipse_mail.desc
+    visualKey: item.unique.eclipse_mail.visual
+    iconKey: item.unique.eclipse_mail.icon
+    audioProfile: audio.item.unique.eclipse_mail
+    schemaVersion: 2
+    tags: [item, armor, unique, abyssal_temple, templar, protection]
+    type: ARMOR
+    slot: ARMOR
+    glyph: "["
+    color: "#6A617E"
+    baseDefense: 11
+    stats: { con: 1, wil: 1, maxHp: 10 }
+    passive: { kind: ResistanceBonus, damageType: HOLY, amount: 10 }
+    dropWeight: 0
+    dropFloors: []
+  - id: unique_sanctum_lance
+    nameKey: item.unique.sanctum_lance.name
+    descKey: item.unique.sanctum_lance.desc
+    visualKey: item.unique.sanctum_lance.visual
+    iconKey: item.unique.sanctum_lance.icon
+    audioProfile: audio.item.unique.sanctum_lance
+    schemaVersion: 2
+    tags: [item, weapon, unique, abyssal_temple, vanguard, holy]
+    type: WEAPON
+    slot: WEAPON
+    glyph: ")"
+    color: "#C9B78A"
+    baseAttack: 14
+    stats: { attack: 1, accuracy: 1 }
+    passive: { kind: DamageTypeBonus, damageType: HOLY, bonusPercent: 0.15 }
+    dropWeight: 0
+    dropFloors: []
+    materials: [STEEL, MITHRIL]
+  - id: artifact_briar_heart
+    nameKey: item.artifact.briar_heart.name
+    descKey: item.artifact.briar_heart.desc
+    visualKey: item.artifact.briar_heart.visual
+    iconKey: item.artifact.briar_heart.icon
+    audioProfile: audio.item.artifact.briar_heart
+    schemaVersion: 2
+    tags: [item, armor, accessory, artifact, greenwood_fringe, rogue, special_chest]
+    type: ARMOR
+    slot: OFF_HAND
+    glyph: "]"
+    color: "#7A5E6F"
+    baseDefense: 3
+    stats: { dex: 2, critChance: 0.05, maxHp: 10 }
+    passive: { kind: ResistanceBonus, damageType: SHADOW, amount: 14 }
+    dropWeight: 0
+    dropFloors: []
+    materials: [STEEL]
+  - id: artifact_forge_oath
+    nameKey: item.artifact.forge_oath.name
+    descKey: item.artifact.forge_oath.desc
+    visualKey: item.artifact.forge_oath.visual
+    iconKey: item.artifact.forge_oath.icon
+    audioProfile: audio.item.artifact.forge_oath
+    schemaVersion: 2
+    tags: [item, weapon, artifact, deep_iron_pit, vanguard, boss]
+    type: WEAPON
+    slot: WEAPON
+    glyph: ")"
+    color: "#B86A3B"
+    baseAttack: 16
+    stats: { str: 2, attack: 3 }
+    passive: { kind: DamageTypeBonus, damageType: FIRE, bonusPercent: 0.18 }
+    dropWeight: 0
+    dropFloors: []
+    materials: [STEEL, MITHRIL]
+  - id: artifact_river_echo
+    nameKey: item.artifact.river_echo.name
+    descKey: item.artifact.river_echo.desc
+    visualKey: item.artifact.river_echo.visual
+    iconKey: item.artifact.river_echo.icon
+    audioProfile: audio.item.artifact.river_echo
+    schemaVersion: 2
+    tags: [item, weapon, artifact, underground_river, arcanist, special_chest]
+    type: WEAPON
+    slot: WEAPON
+    glyph: ")"
+    color: "#5D8FB3"
+    baseAttack: 8
+    stats: { wil: 3, talentPower: 0.08 }
+    passive: { kind: DamageTypeBonus, damageType: LIGHTNING, bonusPercent: 0.18 }
+    dropWeight: 0
+    dropFloors: []
+    materials: [STEEL, MITHRIL]
+  - id: artifact_eclipsed_relic
+    nameKey: item.artifact.eclipsed_relic.name
+    descKey: item.artifact.eclipsed_relic.desc
+    visualKey: item.artifact.eclipsed_relic.visual
+    iconKey: item.artifact.eclipsed_relic.icon
+    audioProfile: audio.item.artifact.eclipsed_relic
+    schemaVersion: 2
+    tags: [item, armor, accessory, artifact, abyssal_temple, templar, boss]
+    type: ARMOR
+    slot: OFF_HAND
+    glyph: "]"
+    color: "#8C789B"
+    baseDefense: 4
+    stats: { wil: 2, maxHp: 14 }
+    passive: { kind: HpRegenPerTurn, amount: 3 }
+    dropWeight: 0
+    dropFloors: []

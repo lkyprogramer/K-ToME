@@ -107,6 +107,8 @@ import com.ktome.core.item.StatModifier
 import com.ktome.core.item.defaultAffixCount
 import com.ktome.core.loot.PityTracker
 import com.ktome.core.loot.RarityTier
+import com.ktome.core.loot.SpecialTier
+import com.ktome.core.loot.SpecialTierEligibility
 import com.ktome.core.map.GameMap
 import com.ktome.core.map.Point
 import com.ktome.core.movement.MovementRules
@@ -928,6 +930,8 @@ class FoundationGameSession internal constructor(
             accuracy = derivedStats.accuracy,
             evasion = derivedStats.evasion,
             speed = derivedStats.speed,
+            castSpeedRating = derivedStats.castSpeedRating,
+            effectiveCastSpeed = derivedStats.effectiveCastSpeed,
         )
     }
 
@@ -2415,6 +2419,8 @@ class FoundationGameSession internal constructor(
             accuracy = status.accuracy,
             evasion = status.evasion,
             speed = status.speed,
+            castSpeedRating = status.castSpeedRating,
+            effectiveCastSpeed = status.effectiveCastSpeed,
         )
     }
 
@@ -3094,6 +3100,26 @@ class FoundationGameSession internal constructor(
             seed = (sessionRandom as? StatefulRandomSource)?.snapshotState() ?: config.seed,
         )
 
+    private fun milestoneSpecialTierEligibility(rewardContext: RewardGenerationContext): SpecialTierEligibility =
+        when (rewardContext.rewardSource) {
+            MilestoneRewardSource.ROUTE ->
+                SpecialTierEligibility(
+                    availableSpecialTiers = setOf(SpecialTier.UNIQUE),
+                )
+
+            MilestoneRewardSource.BOSS,
+            MilestoneRewardSource.CACHE,
+            ->
+                SpecialTierEligibility(
+                    availableSpecialTiers = setOf(SpecialTier.UNIQUE, SpecialTier.ARTIFACT),
+                )
+
+            MilestoneRewardSource.SUPPORT ->
+                SpecialTierEligibility(
+                    availableSpecialTiers = setOf(SpecialTier.UNIQUE),
+                )
+        }
+
     private fun resolvePlayerResourceView(): PlayerResourceView {
         val schema = currentProfessionSchema()
         val primaryResourceType =
@@ -3260,6 +3286,7 @@ class FoundationGameSession internal constructor(
                 affixContext = milestoneAffixContext(rewardContext),
                 pityTracker = pityTracker,
                 base = base,
+                specialTierEligibility = milestoneSpecialTierEligibility(rewardContext),
             )
         pityTracker = generated.rollResult.resultingPityTracker
         return generated.item
@@ -3394,9 +3421,11 @@ class FoundationGameSession internal constructor(
                 itemTags = baseAffixContext.itemTags + base.tags,
                 minAffixCount = requiredAffixCount,
             )
+        val previewAffixBudget = previewRewardAffixBudget(rewardContext)
         return AffixGenerator(AffixPool(content.itemBundle.affixes), sessionRandom).canGenerate(
             floor = effectiveFloorBand,
-            count = requiredAffixCount,
+            budget = previewAffixBudget,
+            rarityTier = rewardContext.qualityFloor,
             equipType = equipType,
             context = affixContext,
         )
@@ -3767,14 +3796,28 @@ class FoundationGameSession internal constructor(
     }
 
     private fun previewRewardLegacyFloorBand(rewardContext: RewardGenerationContext): Int {
-        val previewItemLevel =
-            (rewardContext.sourceLevel + rewardSourceTier(rewardContext.rewardSource).itemLevelBonus)
-                .coerceIn(1, playerStatus().level + 3)
-        val previewQualityLevel =
-            (previewItemLevel + rewardContext.qualityFloor.qualityBonus + currentZoneRewardProfile().qualityBonus)
-                .coerceIn(previewItemLevel, previewItemLevel + 6)
+        val previewItemLevel = previewRewardItemLevel(rewardContext)
+        val previewQualityLevel = previewRewardQualityLevel(rewardContext, previewItemLevel)
         return ((previewQualityLevel - 1) / 3 + 1).coerceIn(1, 5)
     }
+
+    private fun previewRewardAffixBudget(rewardContext: RewardGenerationContext): Int {
+        val sourceTier = rewardSourceTier(rewardContext.rewardSource)
+        val previewItemLevel = previewRewardItemLevel(rewardContext)
+        val previewQualityLevel = previewRewardQualityLevel(rewardContext, previewItemLevel)
+        return previewQualityLevel * 2 + rewardContext.qualityFloor.baseBudget + sourceTier.affixBudgetBonus
+    }
+
+    private fun previewRewardItemLevel(rewardContext: RewardGenerationContext): Int =
+        (rewardContext.sourceLevel + rewardSourceTier(rewardContext.rewardSource).itemLevelBonus)
+            .coerceIn(1, playerStatus().level + 3)
+
+    private fun previewRewardQualityLevel(
+        rewardContext: RewardGenerationContext,
+        previewItemLevel: Int,
+    ): Int =
+        (previewItemLevel + rewardContext.qualityFloor.qualityBonus + currentZoneRewardProfile().qualityBonus)
+            .coerceIn(previewItemLevel, previewItemLevel + 6)
 
     private fun itemFloorForRecommendedLevel(maxLevel: Int): Int =
         ((maxLevel - 1) / 3 + 1).coerceIn(1, 5)
@@ -5275,7 +5318,11 @@ class FoundationGameSession internal constructor(
         if (!applyInscriptionEffect(definition, target)) {
             return false
         }
-        InscriptionManager.startCooldown(cooldowns, definition)
+        InscriptionManager.startCooldown(
+            cooldowns = cooldowns,
+            inscription = definition,
+            effectiveCastSpeed = world.get<DerivedStats>(playerId)?.effectiveCastSpeed ?: 0.0,
+        )
         addMessage("log.inscription.use", keyArg("inscription", definition.nameKey))
         return true
     }
@@ -5794,6 +5841,7 @@ class FoundationGameSession internal constructor(
             addModifier(tr("ui.hud.accuracy.short"), modifier.accuracy)
             addModifier(tr("ui.hud.evasion.short"), modifier.evasion)
             addModifier(tr("ui.hud.speed.short"), modifier.speed)
+            addModifier(tr("ui.inspect.mod.cast_speed"), modifier.castSpeedRating)
             addModifier(tr("ui.hud.hp.short"), modifier.maxHp)
             addModifier(tr("ui.hud.stamina.short"), modifier.maxStamina)
             addDecimalModifier(tr("ui.inspect.mod.hp_regen"), modifier.hpRegen)
@@ -8440,6 +8488,7 @@ class FoundationGameSession internal constructor(
             accuracy = accuracy,
             evasion = evasion,
             speed = speed,
+            castSpeedRating = castSpeedRating,
             maxHp = maxHp,
             maxStamina = maxStamina,
             hpRegen = hpRegen,

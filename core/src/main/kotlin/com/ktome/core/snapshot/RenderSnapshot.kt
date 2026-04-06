@@ -238,6 +238,8 @@ data class PlayerStatusSnapshot(
     val accuracy: Int,
     val evasion: Int,
     val speed: Int,
+    val castSpeedRating: Int = 0,
+    val effectiveCastSpeed: Double = 0.0,
 )
 
 @Serializable
@@ -417,6 +419,7 @@ data class ItemStatModifierSnapshot(
     val accuracy: Int = 0,
     val evasion: Int = 0,
     val speed: Int = 0,
+    val castSpeedRating: Int = 0,
     val maxHp: Int = 0,
     val maxStamina: Int = 0,
     val hpRegen: Double = 0.0,

@@ -248,8 +248,10 @@ def validate_plan(
                 errors.append(f"[{gate_id}] asset '{asset_id}' outputName must end with .png.")
             if output_name.startswith("/") or output_name.startswith("\\"):
                 errors.append(f"[{gate_id}] asset '{asset_id}' outputName must be a relative path.")
-            if not output_name.startswith("phase3/"):
-                errors.append(f"[{gate_id}] asset '{asset_id}' outputName must stay under the phase3 runtime root.")
+            if not (output_name.startswith("phase3/") or output_name.startswith("phase4/")):
+                errors.append(
+                    f"[{gate_id}] asset '{asset_id}' outputName must stay under the phase3/phase4 runtime root."
+                )
             if not subject:
                 errors.append(f"[{gate_id}] asset '{asset_id}' subject is required.")
             if not constraints:

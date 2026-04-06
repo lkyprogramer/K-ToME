@@ -1,0 +1,147 @@
+manifestVersion: 1
+fallbackKey: audio.fallback.silence
+entries:
+- key: audio.item.unique.greenwood_watcher_blade
+  cueFamily: item
+  eventId: audio.item.unique.greenwood_watcher_blade
+  sourcePath: audio/item/unique_greenwood_watcher_blade.ogg
+  tags:
+    - phase4
+    - pr05
+    - unique
+    - greenwood_fringe
+- key: audio.item.unique.briarbound_bow
+  cueFamily: item
+  eventId: audio.item.unique.briarbound_bow
+  sourcePath: audio/item/unique_briarbound_bow.ogg
+  tags:
+    - phase4
+    - pr05
+    - unique
+    - greenwood_fringe
+- key: audio.item.unique.warden_barkmail
+  cueFamily: item
+  eventId: audio.item.unique.warden_barkmail
+  sourcePath: audio/item/unique_warden_barkmail.ogg
+  tags:
+    - phase4
+    - pr05
+    - unique
+    - greenwood_fringe
+- key: audio.item.unique.slagbreaker_pick
+  cueFamily: item
+  eventId: audio.item.unique.slagbreaker_pick
+  sourcePath: audio/item/unique_slagbreaker_pick.ogg
+  tags:
+    - phase4
+    - pr05
+    - unique
+    - deep_iron_pit
+- key: audio.item.unique.furnace_plate
+  cueFamily: item
+  eventId: audio.item.unique.furnace_plate
+  sourcePath: audio/item/unique_furnace_plate.ogg
+  tags:
+    - phase4
+    - pr05
+    - unique
+    - deep_iron_pit
+- key: audio.item.unique.coal_ward_talisman
+  cueFamily: item
+  eventId: audio.item.unique.coal_ward_talisman
+  sourcePath: audio/item/unique_coal_ward_talisman.ogg
+  tags:
+    - phase4
+    - pr05
+    - unique
+    - deep_iron_pit
+- key: audio.item.unique.tideglass_staff
+  cueFamily: item
+  eventId: audio.item.unique.tideglass_staff
+  sourcePath: audio/item/unique_tideglass_staff.ogg
+  tags:
+    - phase4
+    - pr05
+    - unique
+    - underground_river
+- key: audio.item.unique.currentstrider_cloak
+  cueFamily: item
+  eventId: audio.item.unique.currentstrider_cloak
+  sourcePath: audio/item/unique_currentstrider_cloak.ogg
+  tags:
+    - phase4
+    - pr05
+    - unique
+    - underground_river
+- key: audio.item.unique.ferrywarden_lantern
+  cueFamily: item
+  eventId: audio.item.unique.ferrywarden_lantern
+  sourcePath: audio/item/unique_ferrywarden_lantern.ogg
+  tags:
+    - phase4
+    - pr05
+    - unique
+    - underground_river
+- key: audio.item.unique.voidlit_seal
+  cueFamily: item
+  eventId: audio.item.unique.voidlit_seal
+  sourcePath: audio/item/unique_voidlit_seal.ogg
+  tags:
+    - phase4
+    - pr05
+    - unique
+    - abyssal_temple
+- key: audio.item.unique.eclipse_mail
+  cueFamily: item
+  eventId: audio.item.unique.eclipse_mail
+  sourcePath: audio/item/unique_eclipse_mail.ogg
+  tags:
+    - phase4
+    - pr05
+    - unique
+    - abyssal_temple
+- key: audio.item.unique.sanctum_lance
+  cueFamily: item
+  eventId: audio.item.unique.sanctum_lance
+  sourcePath: audio/item/unique_sanctum_lance.ogg
+  tags:
+    - phase4
+    - pr05
+    - unique
+    - abyssal_temple
+- key: audio.item.artifact.briar_heart
+  cueFamily: item
+  eventId: audio.item.artifact.briar_heart
+  sourcePath: audio/item/artifact_briar_heart.ogg
+  tags:
+    - phase4
+    - pr05
+    - artifact
+    - greenwood_fringe
+- key: audio.item.artifact.forge_oath
+  cueFamily: item
+  eventId: audio.item.artifact.forge_oath
+  sourcePath: audio/item/artifact_forge_oath.ogg
+  tags:
+    - phase4
+    - pr05
+    - artifact
+    - deep_iron_pit
+- key: audio.item.artifact.river_echo
+  cueFamily: item
+  eventId: audio.item.artifact.river_echo
+  sourcePath: audio/item/artifact_river_echo.ogg
+  tags:
+    - phase4
+    - pr05
+    - artifact
+    - underground_river
+- key: audio.item.artifact.eclipsed_relic
+  cueFamily: item
+  eventId: audio.item.artifact.eclipsed_relic
+  sourcePath: audio/item/artifact_eclipsed_relic.ogg
+  tags:
+    - phase4
+    - pr05
+    - artifact
+    - abyssal_temple

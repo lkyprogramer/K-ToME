@@ -34,6 +34,7 @@ enum class SourceTier(
     ELITE(1, 0.15f, 2),
     BOSS(2, 0.40f, 4),
     CHEST(1, 0.10f, 1),
+    SECRET_ZONE(1, 0.10f, 1),
 }
 
 @Serializable
