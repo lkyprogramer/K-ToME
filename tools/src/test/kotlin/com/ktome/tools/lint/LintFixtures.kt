@@ -24,10 +24,10 @@ internal object LintFixtures {
             },
         )
     private val localeKeyCallPattern =
-        """(?:\btr|(?:\b[A-Za-z_][A-Za-z0-9_.]*\.)?text|MenuEntry|RenderTextTokenSnapshot)\s*\(\s*(?:[A-Za-z_][A-Za-z0-9_]*\s*=\s*)?"((?:ui|log|tile|actor|stairs|status|ai|profession|race|inscription|talent_tree|talent|monster|boss|zone|shop|difficulty|material|affix|item|interactable|objective|mutation)\.[A-Za-z0-9_.-]+)""""
+        """(?:\btr|(?:\b[A-Za-z_][A-Za-z0-9_.]*\.)?text|MenuEntry|RenderTextTokenSnapshot)\s*\(\s*(?:[A-Za-z_][A-Za-z0-9_]*\s*=\s*)?"((?:ui|log|tile|terrain|actor|stairs|status|ai|profession|race|inscription|talent_tree|talent|monster|boss|zone|shop|difficulty|material|affix|item|interactable|objective|mutation)\.[A-Za-z0-9_.-]+)""""
             .toRegex()
     private val directLocaleLiteralPattern =
-        """"((?:ui|log|stairs|status|ai|damage_type)\.[A-Za-z0-9_.-]+|(?:actor|profession|race|inscription|talent_tree|talent|monster|boss|shop|difficulty|material|affix|interactable)\.[A-Za-z0-9_.-]+\.(?:name|desc|role|resource_hint)|mutation\.[A-Za-z0-9_.-]+\.(?:name|desc)|zone\.[A-Za-z0-9_.-]+\.(?:name|desc|role)|zone\.mechanic_hint\.[A-Za-z0-9_.-]+|objective\.[A-Za-z0-9_.-]+\.(?:name|desc|role)|objective\.[A-Za-z0-9_.-]+\.step\.[A-Za-z0-9_.-]+|item\.[A-Za-z0-9_.-]+\.(?:name|desc|role)|item\.(?:quality|display)\.[A-Za-z0-9_.-]+|monster\.tag\.[A-Za-z0-9_.-]+)""""
+        """"((?:ui|log|stairs|status|ai|damage_type|terrain)\.[A-Za-z0-9_.-]+|(?:actor|profession|race|inscription|talent_tree|talent|monster|boss|shop|difficulty|material|affix|interactable)\.[A-Za-z0-9_.-]+\.(?:name|desc|role|resource_hint)|mutation\.[A-Za-z0-9_.-]+\.(?:name|desc)|zone\.[A-Za-z0-9_.-]+\.(?:name|desc|role)|zone\.mechanic_hint\.[A-Za-z0-9_.-]+|objective\.[A-Za-z0-9_.-]+\.(?:name|desc|role)|objective\.[A-Za-z0-9_.-]+\.step\.[A-Za-z0-9_.-]+|item\.[A-Za-z0-9_.-]+\.(?:name|desc|role)|item\.(?:quality|display)\.[A-Za-z0-9_.-]+|monster\.tag\.[A-Za-z0-9_.-]+)""""
             .toRegex()
     private val keywordMarkupPattern = Regex("\\[\\[([a-z0-9_]+)]]")
 
@@ -113,6 +113,7 @@ internal object LintFixtures {
                 add(keyword.tooltipKey)
             }
             addAll(DynamicDescriptionResolver.BREAKPOINT_TEMPLATE_KEYS)
+            addAll(bossVariantLocaleKeys())
         }
     }
 
@@ -170,4 +171,16 @@ internal object LintFixtures {
             is List<*> -> value.flatMap(::extractFormalObjects)
             else -> emptyList()
         }
+
+    private fun bossVariantLocaleKeys(): Set<String> {
+        val root = loadYaml("/data/boss-variants/index.yaml")
+        val variants = root["bossVariants"] as? List<*> ?: return setOf("boss.variant.unknown.name")
+        return buildSet {
+            variants.forEach { entry ->
+                val id = (entry as? Map<*, *>)?.get("id")?.toString()?.takeIf(String::isNotBlank) ?: return@forEach
+                add("$id.name")
+            }
+            add("boss.variant.unknown.name")
+        }
+    }
 }

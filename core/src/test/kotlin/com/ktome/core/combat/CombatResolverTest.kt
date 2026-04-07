@@ -3,10 +3,12 @@ package com.ktome.core.combat
 import com.ktome.core.ecs.CombatProfile
 import com.ktome.core.ecs.EntityId
 import com.ktome.core.ecs.Health
+import com.ktome.core.ecs.ResistanceProfile
 import com.ktome.core.ecs.Stats
 import com.ktome.core.ecs.World
 import com.ktome.core.ecs.add
 import com.ktome.core.ecs.get
+import com.ktome.core.mapgen.TerrainTag
 import com.ktome.core.random.RandomSource
 import com.ktome.core.support.TestRandomSource
 import kotlin.random.Random
@@ -268,5 +270,50 @@ class CombatResolverTest {
         assertTrue(result.hit)
         val expectedTentativeHealth = (30 - result.finalDamage).coerceAtLeast(0)
         assertEquals(expectedTentativeHealth + 5, requireNotNull(world.get<Health>(target)).current)
+    }
+
+    @Test
+    fun `triggered damage consumes terrain interaction context through the world resolver`() {
+        val resolver = CombatResolver(TestRandomSource())
+        val world = World()
+        val source = world.createEntity()
+        val target = world.createEntity()
+        val adjacent = world.createEntity()
+        world.add(target, Stats(str = 10, dex = 10, con = 10, wil = 10))
+        world.add(target, CombatProfile(baseAttack = 4, baseDefense = 0, baseAccuracy = 0, baseEvasion = 0, baseHp = 20))
+        world.add(target, Health(current = 20, max = 20))
+        world.add(target, ResistanceProfile())
+        world.add(adjacent, Stats(str = 8, dex = 8, con = 8, wil = 8))
+        world.add(adjacent, CombatProfile(baseAttack = 3, baseDefense = 0, baseAccuracy = 0, baseEvasion = 0, baseHp = 16))
+        world.add(adjacent, Health(current = 16, max = 16))
+        world.add(adjacent, ResistanceProfile())
+        resolver.terrainInteractionContextResolver =
+            TerrainInteractionContextResolver { _, attacker, requestedTarget, damageType, interactionDepth ->
+                assertEquals(source, attacker)
+                assertEquals(target, requestedTarget)
+                assertEquals(DamageType.LIGHTNING, damageType)
+                TerrainInteractionContext(
+                    targetTerrainTags = setOf(TerrainTag.WATER),
+                    adjacentTargets = listOf(TerrainInteractionTarget(adjacent, setOf(TerrainTag.WATER))),
+                    interactionDepth = interactionDepth,
+                )
+            }
+
+        val result =
+            resolver.resolveTriggeredDamage(
+                world = world,
+                source = source,
+                target = target,
+                damageType = DamageType.LIGHTNING,
+                rawDamage = 8,
+                traceId = "triggered-lightning",
+                abilityId = "storm_arc",
+            )
+
+        assertTrue(result.hit)
+        assertEquals(8, result.finalDamage)
+        assertEquals(12, requireNotNull(world.get<Health>(target)).current)
+        assertEquals(ElementInteractionRegistry.TERRAIN_LIGHTNING_WATER_CHAIN, requireNotNull(result.terrainInteraction).ruleId)
+        assertEquals(listOf(adjacent), requireNotNull(result.terrainInteraction).chainTargets.map(TerrainInteractionChildTrace::targetId))
     }
 }

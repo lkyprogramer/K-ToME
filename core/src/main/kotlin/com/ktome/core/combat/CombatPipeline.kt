@@ -154,7 +154,7 @@ class CombatPipeline(
                         "hitChance" to hitChance.asString(),
                         "roll" to hitRoll.asString(),
                         "hit" to hit.asString(),
-                        "forceHit" to request.forceHit.asString(),
+                        "forceHit" to request.forceHit.asString().takeIf { request.forceHit },
                     ),
                 flags = hitFlags,
                 callbacks = preHitCallbacks.records,
