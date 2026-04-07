@@ -50,6 +50,16 @@ class LocalizationBundle private constructor(
                     },
             )
 
+        fun fromMaps(
+            bundles: Map<GameLocale, Map<String, String>>,
+        ): LocalizationBundle =
+            LocalizationBundle(
+                bundles =
+                    GameLocale.entries.associateWith { locale ->
+                        bundles[locale].orEmpty()
+                    },
+            )
+
         private fun parseBundle(content: String): Map<String, String> =
             json.parseToJsonElement(content).jsonObject.mapValues { (_, value) -> value.jsonPrimitive.content }
     }

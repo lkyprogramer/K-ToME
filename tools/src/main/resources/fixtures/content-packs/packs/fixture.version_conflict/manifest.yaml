@@ -1,0 +1,14 @@
+id: fixture.version_conflict
+version: 1.0.0
+schemaVersion: 1
+gameVersionRange: ">=0.1.0 <0.2.0"
+namespace: fixture_version_conflict
+dependencies:
+  - id: fixture.add_monster
+    versionRange: ">=9.0.0 <10.0.0"
+overlays:
+  - targetRef:
+      registry: monster
+      id: fixture.version_conflict.watcher
+    op: ADD
+    sourceFile: data/monsters/fixture.version_conflict.watcher.yaml

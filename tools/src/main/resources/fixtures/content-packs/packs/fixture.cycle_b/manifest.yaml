@@ -1,0 +1,14 @@
+id: fixture.cycle_b
+version: 1.0.0
+schemaVersion: 1
+gameVersionRange: ">=0.1.0 <0.2.0"
+namespace: fixture_cycle_b
+dependencies:
+  - id: fixture.cycle_a
+    versionRange: ">=1.0.0 <2.0.0"
+overlays:
+  - targetRef:
+      registry: monster
+      id: fixture.cycle_b.watcher
+    op: ADD
+    sourceFile: data/monsters/fixture.cycle_b.watcher.yaml

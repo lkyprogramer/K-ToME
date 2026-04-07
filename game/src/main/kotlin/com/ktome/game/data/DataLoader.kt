@@ -24,6 +24,7 @@ import com.ktome.core.combat.DamageType
 import com.ktome.core.combat.SaveDimension
 import com.ktome.core.ecs.AIType
 import com.ktome.core.ecs.Stats
+import com.ktome.core.phase.PackId
 import com.ktome.core.inscription.InscriptionCategory
 import com.ktome.core.inscription.InscriptionDef
 import com.ktome.core.inscription.InscriptionEffect
@@ -157,6 +158,13 @@ import com.ktome.game.data.schema.TalentTreeSchemaV2
 import com.ktome.game.data.schema.WorldGraphSchemaV2
 import com.ktome.game.data.schema.ZoneSchemaV2
 import com.ktome.game.data.schema.ZoneConnectionSchemaV2
+import com.ktome.game.contentpack.ContentPackResources
+import com.ktome.game.contentpack.ContentPackLoadException
+import com.ktome.game.contentpack.ContentPackRuntimeResolver
+import com.ktome.game.contentpack.ContentPackSelection
+import com.ktome.game.contentpack.OverlayOp
+import com.ktome.game.contentpack.ResolvedContentPack
+import com.ktome.game.contentpack.ResolvedContentPackSelection
 import com.ktome.game.elites.ActionWeightProfileDef
 import com.ktome.game.elites.BossVariantDef
 import com.ktome.game.elites.EliteMutationConfig
@@ -182,13 +190,28 @@ import com.ktome.game.hidden.SecretZoneDef
 import com.ktome.game.model.BossDefinition
 import com.ktome.game.model.MonsterCatalog
 import com.ktome.game.model.MonsterTemplate
+import java.nio.file.Files
+import java.nio.file.Path
 import org.yaml.snakeyaml.Yaml
 
 class DataLoader(
     private val locale: GameLocale = GameLocale.EN_US,
-    localizationBundleProvider: () -> LocalizationBundle = LocalizationBundle::load,
+    private val packSelection: ContentPackSelection = ContentPackSelection.EMPTY,
+    private val preResolvedContentPackSelection: ResolvedContentPackSelection? = null,
+    localizationBundleProvider: (() -> LocalizationBundle)? = null,
 ) {
-    private companion object {
+    @Deprecated("Binary compatibility bridge for cached legacy DataLoader call sites.", level = DeprecationLevel.HIDDEN)
+    constructor(
+        locale: GameLocale = GameLocale.EN_US,
+        localizationBundleProvider: () -> LocalizationBundle = { LocalizationBundle.load() },
+    ) : this(
+        locale = locale,
+        packSelection = ContentPackSelection.EMPTY,
+        preResolvedContentPackSelection = ResolvedContentPackSelection.EMPTY,
+        localizationBundleProvider = localizationBundleProvider,
+    )
+
+    companion object {
         val REMOVED_LEGACY_EFFECT_FIELDS =
             setOf(
                 "stunDuration",
@@ -198,17 +221,68 @@ class DataLoader(
                 "debuffMagnitude",
                 "debuffDuration",
             )
+
+        internal fun loadBaseSchemaCatalogForContentPackLint(
+            locale: GameLocale = GameLocale.EN_US,
+        ): SchemaCatalog =
+            // Content-pack lint must snapshot only the base catalog; resolving packs here would recurse back into the resolver.
+            DataLoader(
+                locale = locale,
+                packSelection = ContentPackSelection.EMPTY,
+                preResolvedContentPackSelection = ResolvedContentPackSelection.EMPTY,
+            ).loadBaseSchemaCatalog()
     }
 
+    private val resolvedContentPackSelectionDelegate: Lazy<ResolvedContentPackSelection> =
+        lazy(LazyThreadSafetyMode.NONE) {
+            if (preResolvedContentPackSelection != null) {
+                preResolvedContentPackSelection
+            } else if (packSelection.isEmpty) {
+                ResolvedContentPackSelection.EMPTY
+            } else {
+                ContentPackRuntimeResolver.resolve(packSelection)
+            }
+        }
+    private val localizationBundleProviderDelegate: Lazy<() -> LocalizationBundle> =
+        lazy(LazyThreadSafetyMode.NONE) {
+            localizationBundleProvider ?: {
+                if (resolvedContentPackSelection.isEmpty()) {
+                    LocalizationBundle.load()
+                } else {
+                    ContentPackResources.loadMergedLocalizationBundle(
+                        selection = resolvedContentPackSelection,
+                        resourceLoader = { path -> com.ktome.game.i18n.ClasspathTextResources.read(LocalizationBundle::class.java, path) },
+                    )
+                }
+            }
+        }
     private val localizerDelegate: Lazy<Localizer> =
         lazy(LazyThreadSafetyMode.NONE) {
-            localizationBundleProvider().translator(locale)
+            localizationBundleProviderDelegate.value().translator(locale)
         }
 
     val localizer: Localizer
         get() = localizerDelegate.value
 
+    val activePackIds: List<PackId>
+        get() = resolvedContentPackSelection.activePackIds
+
+    val activePackManifestVersions: Map<PackId, String>
+        get() = resolvedContentPackSelection.activePackManifestVersions
+
+    private val resolvedContentPackSelection: ResolvedContentPackSelection
+        get() = resolvedContentPackSelectionDelegate.value
+
     fun loadSchemaCatalog(): SchemaCatalog {
+        val baseCatalog = loadBaseSchemaCatalog()
+        val resolvedSelection = resolvedContentPackSelection
+        if (resolvedSelection.isEmpty()) {
+            return baseCatalog
+        }
+        return applyContentPackOverlays(baseCatalog, resolvedSelection)
+    }
+
+    private fun loadBaseSchemaCatalog(): SchemaCatalog {
         val telegraphSpecs = parseTelegraphSpecs(loadYamlMap("/data/telegraph/index.yaml"))
         val telegraphIds = telegraphSpecs.map(TelegraphSpec::id).toSet()
         val threatProfiles = parseThreatProfiles(loadYamlMap("/data/telegraph/threat_profiles/index.yaml"))
@@ -272,6 +346,517 @@ class DataLoader(
             visualKeys = parseStringIdSet(loadYamlMap("/data/visuals/index.yaml"), "visuals"),
             audioProfiles = parseStringIdSet(loadYamlMap("/data/audio/index.yaml"), "audioProfiles"),
         )
+    }
+
+    private fun applyContentPackOverlays(
+        baseCatalog: SchemaCatalog,
+        selection: ResolvedContentPackSelection,
+    ): SchemaCatalog {
+        val hiddenEventsById = baseCatalog.hiddenEvents.associateByTo(linkedMapOf(), HiddenEventDef::id)
+        val secretZonesById = baseCatalog.secretZones.associateByTo(linkedMapOf()) { secretZone -> secretZone.id.id }
+        val lootProfilesById = baseCatalog.lootProfiles.associateByTo(linkedMapOf(), LootProfileSchemaV2::id)
+        val monstersById = baseCatalog.monsters.associateByTo(linkedMapOf(), MonsterSchemaV2::id)
+        val itemsById = baseCatalog.itemBundle.items.associateByTo(linkedMapOf(), ItemSchemaV2::id)
+        val materialsById = baseCatalog.itemBundle.materials.associateByTo(linkedMapOf(), MaterialSchemaV2::id)
+        val affixesById = baseCatalog.itemBundle.affixes.associateByTo(linkedMapOf(), AffixSchemaV2::id)
+        val specialTemplatesById =
+            (baseCatalog.itemBundle.uniqueTemplates + baseCatalog.itemBundle.artifactTemplates)
+                .associateByTo(linkedMapOf(), SpecialItemTemplateSchemaV2::id)
+        val mutationStatModifiersById =
+            baseCatalog.mutationStatModifiers.associateByTo(linkedMapOf(), MutationStatModifierDef::id)
+        val eliteMutationsById = baseCatalog.eliteMutations.associateByTo(linkedMapOf(), EliteMutationDef::id)
+        val bossVariantsById = baseCatalog.bossVariants.associateByTo(linkedMapOf(), BossVariantDef::id)
+        val actionWeightProfilesById =
+            baseCatalog.actionWeightProfiles.associateByTo(linkedMapOf(), ActionWeightProfileDef::id)
+
+        selection.orderedPacks.forEach { pack ->
+            pack.manifest.overlays.forEach { overlay ->
+                when (val payload = parsePackOverlayPayload(pack = pack, overlay = overlay)) {
+                    is ParsedPackOverlayPayload.HiddenEvent ->
+                        applyMapOverlay(
+                            pack = pack,
+                            overlay = overlay,
+                            entryId = payload.entry.id,
+                            entries = hiddenEventsById,
+                            entry = payload.entry,
+                        )
+
+                    is ParsedPackOverlayPayload.SecretZone ->
+                        applyMapOverlay(
+                            pack = pack,
+                            overlay = overlay,
+                            entryId = payload.entry.id.id,
+                            entries = secretZonesById,
+                            entry = payload.entry,
+                        )
+
+                    is ParsedPackOverlayPayload.LootProfile ->
+                        applyMapOverlay(
+                            pack = pack,
+                            overlay = overlay,
+                            entryId = payload.entry.id,
+                            entries = lootProfilesById,
+                            entry = payload.entry,
+                        )
+
+                    is ParsedPackOverlayPayload.Monster ->
+                        applyMapOverlay(
+                            pack = pack,
+                            overlay = overlay,
+                            entryId = payload.entry.id,
+                            entries = monstersById,
+                            entry = payload.entry,
+                        )
+
+                    is ParsedPackOverlayPayload.Item ->
+                        applyMapOverlay(
+                            pack = pack,
+                            overlay = overlay,
+                            entryId = payload.entry.id,
+                            entries = itemsById,
+                            entry = payload.entry,
+                        )
+
+                    is ParsedPackOverlayPayload.Material ->
+                        applyMapOverlay(
+                            pack = pack,
+                            overlay = overlay,
+                            entryId = payload.entry.id,
+                            entries = materialsById,
+                            entry = payload.entry,
+                        )
+
+                    is ParsedPackOverlayPayload.Affix ->
+                        applyMapOverlay(
+                            pack = pack,
+                            overlay = overlay,
+                            entryId = payload.entry.id,
+                            entries = affixesById,
+                            entry = payload.entry,
+                        )
+
+                    is ParsedPackOverlayPayload.SpecialItemTemplate ->
+                        applyMapOverlay(
+                            pack = pack,
+                            overlay = overlay,
+                            entryId = payload.entry.id,
+                            entries = specialTemplatesById,
+                            entry = payload.entry,
+                        )
+
+                    is ParsedPackOverlayPayload.MutationStatModifier ->
+                        applyMapOverlay(
+                            pack = pack,
+                            overlay = overlay,
+                            entryId = payload.entry.id,
+                            entries = mutationStatModifiersById,
+                            entry = payload.entry,
+                        )
+
+                    is ParsedPackOverlayPayload.EliteMutation ->
+                        applyMapOverlay(
+                            pack = pack,
+                            overlay = overlay,
+                            entryId = payload.entry.id,
+                            entries = eliteMutationsById,
+                            entry = payload.entry,
+                        )
+
+                    is ParsedPackOverlayPayload.BossVariant ->
+                        applyMapOverlay(
+                            pack = pack,
+                            overlay = overlay,
+                            entryId = payload.entry.id,
+                            entries = bossVariantsById,
+                            entry = payload.entry,
+                        )
+
+                    is ParsedPackOverlayPayload.ActionWeightProfile ->
+                        applyMapOverlay(
+                            pack = pack,
+                            overlay = overlay,
+                            entryId = payload.entry.id,
+                            entries = actionWeightProfilesById,
+                            entry = payload.entry,
+                        )
+                }
+            }
+        }
+
+        val mergedVisualKeys = linkedSetOf<String>().apply { addAll(baseCatalog.visualKeys); addAll(ContentPackResources.collectVisualKeys(selection)) }
+        val mergedAudioProfiles = linkedSetOf<String>().apply { addAll(baseCatalog.audioProfiles); addAll(ContentPackResources.collectAudioKeys(selection)) }
+        val mergedItemBundle =
+            ItemBundleSchemaV2(
+                materials = materialsById.values.toList(),
+                affixes = affixesById.values.toList(),
+                items = itemsById.values.toList(),
+                uniqueTemplates =
+                    specialTemplatesById.values
+                        .filter { template -> template.specialTier == SpecialTier.UNIQUE },
+                artifactTemplates =
+                    specialTemplatesById.values
+                        .filter { template -> template.specialTier == SpecialTier.ARTIFACT },
+            )
+        return baseCatalog.copy(
+            hiddenEvents = hiddenEventsById.values.toList(),
+            secretZones = secretZonesById.values.toList(),
+            lootProfiles = lootProfilesById.values.toList(),
+            monsters = monstersById.values.toList(),
+            itemBundle = mergedItemBundle,
+            mutationStatModifiers = mutationStatModifiersById.values.toList(),
+            eliteMutations = eliteMutationsById.values.toList(),
+            bossVariants = bossVariantsById.values.toList(),
+            actionWeightProfiles = actionWeightProfilesById.values.toList(),
+            visualKeys = mergedVisualKeys,
+            audioProfiles = mergedAudioProfiles,
+        )
+    }
+
+    private fun parsePackOverlayPayload(
+        pack: ResolvedContentPack,
+        overlay: com.ktome.game.contentpack.OverlayEntry,
+    ): ParsedPackOverlayPayload {
+        if (overlay.op == OverlayOp.APPEND || overlay.op == OverlayOp.DENY) {
+            throw packLoadException(
+                code = "content-pack.overlay.runtime-op-forbidden",
+                message = "Runtime overlay path only supports ADD and REPLACE; got ${overlay.op.name}.",
+                pack = pack,
+                overlay = overlay,
+            )
+        }
+        val sourcePath = pack.resolvePath(overlay.sourceFile)
+        val root = loadYamlMap(sourcePath)
+        return when (overlay.targetRef.registry.value) {
+            "hidden_event" ->
+                ParsedPackOverlayPayload.HiddenEvent(
+                    entry =
+                        requireSinglePackEntry(
+                            pack = pack,
+                            overlay = overlay,
+                            sourcePath = sourcePath,
+                            entries = parseHiddenEventDefs(root),
+                            idOf = HiddenEventDef::id,
+                        ),
+                )
+
+            "secret_zone" ->
+                ParsedPackOverlayPayload.SecretZone(
+                    entry =
+                        requireSinglePackEntry(
+                            pack = pack,
+                            overlay = overlay,
+                            sourcePath = sourcePath,
+                            entries = parseSecretZoneDefs(root),
+                            idOf = { secretZone -> secretZone.id.id },
+                        ),
+                )
+
+            "loot_profile" ->
+                ParsedPackOverlayPayload.LootProfile(
+                    entry =
+                        requireSinglePackEntry(
+                            pack = pack,
+                            overlay = overlay,
+                            sourcePath = sourcePath,
+                            entries = parseLootProfileSchemas(root),
+                            idOf = LootProfileSchemaV2::id,
+                        ),
+                )
+
+            "monster" ->
+                ParsedPackOverlayPayload.Monster(
+                    entry =
+                        requireSinglePackEntry(
+                            pack = pack,
+                            overlay = overlay,
+                            sourcePath = sourcePath,
+                            entries = parseMonsterSchemas(root),
+                            idOf = MonsterSchemaV2::id,
+                        ),
+                )
+
+            "item" ->
+                ParsedPackOverlayPayload.Item(
+                    entry = requireSingleItemBundleEntry(pack, overlay, sourcePath, root, ItemBundleSection.ITEM),
+                )
+
+            "material" ->
+                ParsedPackOverlayPayload.Material(
+                    entry = requireSingleItemBundleEntry(pack, overlay, sourcePath, root, ItemBundleSection.MATERIAL),
+                )
+
+            "affix" ->
+                ParsedPackOverlayPayload.Affix(
+                    entry = requireSingleItemBundleEntry(pack, overlay, sourcePath, root, ItemBundleSection.AFFIX),
+                )
+
+            "special_item_template" ->
+                ParsedPackOverlayPayload.SpecialItemTemplate(
+                    entry = requireSingleItemBundleEntry(pack, overlay, sourcePath, root, ItemBundleSection.SPECIAL_TEMPLATE),
+                )
+
+            "mutation_stat_modifier" ->
+                ParsedPackOverlayPayload.MutationStatModifier(
+                    entry =
+                        requireSinglePackEntry(
+                            pack = pack,
+                            overlay = overlay,
+                            sourcePath = sourcePath,
+                            entries = parseMutationStatModifierDefs(root),
+                            idOf = MutationStatModifierDef::id,
+                        ),
+                )
+
+            "elite_mutation" ->
+                ParsedPackOverlayPayload.EliteMutation(
+                    entry =
+                        requireSinglePackEntry(
+                            pack = pack,
+                            overlay = overlay,
+                            sourcePath = sourcePath,
+                            entries = parseEliteMutationDefs(root),
+                            idOf = EliteMutationDef::id,
+                        ),
+                )
+
+            "boss_variant" ->
+                ParsedPackOverlayPayload.BossVariant(
+                    entry =
+                        requireSinglePackEntry(
+                            pack = pack,
+                            overlay = overlay,
+                            sourcePath = sourcePath,
+                            entries = parseBossVariants(root),
+                            idOf = BossVariantDef::id,
+                        ),
+                )
+
+            "action_weight_profile" ->
+                ParsedPackOverlayPayload.ActionWeightProfile(
+                    entry =
+                        requireSinglePackEntry(
+                            pack = pack,
+                            overlay = overlay,
+                            sourcePath = sourcePath,
+                            entries = parseActionWeightProfiles(root),
+                            idOf = ActionWeightProfileDef::id,
+                        ),
+                )
+
+            else ->
+                throw packLoadException(
+                    code = "content-pack.overlay.registry-unsupported",
+                    message = "Registry '${overlay.targetRef.registry.value}' is not supported by the Phase 4 runtime loader.",
+                    pack = pack,
+                    overlay = overlay,
+                    sourcePath = sourcePath,
+                )
+        }
+    }
+
+    private fun <T> requireSinglePackEntry(
+        pack: ResolvedContentPack,
+        overlay: com.ktome.game.contentpack.OverlayEntry,
+        sourcePath: Path,
+        entries: List<T>,
+        idOf: (T) -> String,
+    ): T {
+        if (entries.size != 1) {
+            throw packLoadException(
+                code = "content-pack.overlay.source-entry-count",
+                message = "Pack overlay sources must declare exactly one formal entry; found ${entries.size}.",
+                pack = pack,
+                overlay = overlay,
+                sourcePath = sourcePath,
+            )
+        }
+        val entry = entries.single()
+        if (idOf(entry) != overlay.targetRef.id) {
+            throw packLoadException(
+                code = "content-pack.overlay.source-id-mismatch",
+                message = "Overlay source id '${idOf(entry)}' must match targetRef id '${overlay.targetRef.id}'.",
+                pack = pack,
+                overlay = overlay,
+                sourcePath = sourcePath,
+            )
+        }
+        return entry
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    private fun <T> requireSingleItemBundleEntry(
+        pack: ResolvedContentPack,
+        overlay: com.ktome.game.contentpack.OverlayEntry,
+        sourcePath: Path,
+        root: Map<String, Any?>,
+        section: ItemBundleSection,
+    ): T {
+        val bundle = parseItemBundleSchemas(root)
+        val entryCount =
+            bundle.materials.size +
+                bundle.affixes.size +
+                bundle.items.size +
+                bundle.uniqueTemplates.size +
+                bundle.artifactTemplates.size
+        if (entryCount != 1) {
+            throw packLoadException(
+                code = "content-pack.overlay.item-bundle-entry-count",
+                message = "Pack item-bundle sources must declare exactly one formal entry; found $entryCount.",
+                pack = pack,
+                overlay = overlay,
+                sourcePath = sourcePath,
+            )
+        }
+        val entry: Any =
+            when (section) {
+                ItemBundleSection.ITEM -> bundle.items.singleOrNull()
+                ItemBundleSection.MATERIAL -> bundle.materials.singleOrNull()
+                ItemBundleSection.AFFIX -> bundle.affixes.singleOrNull()
+                ItemBundleSection.SPECIAL_TEMPLATE -> (bundle.uniqueTemplates + bundle.artifactTemplates).singleOrNull()
+            } ?: throw packLoadException(
+                code = "content-pack.overlay.item-bundle-section",
+                message = "Overlay registry '${overlay.targetRef.registry.value}' must declare exactly one matching item-bundle entry.",
+                pack = pack,
+                overlay = overlay,
+                sourcePath = sourcePath,
+            )
+        val entryId =
+            when (entry) {
+                is ItemSchemaV2 -> entry.id
+                is MaterialSchemaV2 -> entry.id
+                is AffixSchemaV2 -> entry.id
+                is SpecialItemTemplateSchemaV2 -> entry.id
+                else -> error("Unsupported item-bundle entry type '${entry::class.simpleName}'.")
+            }
+        if (entryId != overlay.targetRef.id) {
+            throw packLoadException(
+                code = "content-pack.overlay.source-id-mismatch",
+                message = "Overlay source id '$entryId' must match targetRef id '${overlay.targetRef.id}'.",
+                pack = pack,
+                overlay = overlay,
+                sourcePath = sourcePath,
+            )
+        }
+        return entry as T
+    }
+
+    private fun <T> applyMapOverlay(
+        pack: ResolvedContentPack,
+        overlay: com.ktome.game.contentpack.OverlayEntry,
+        entryId: String,
+        entries: LinkedHashMap<String, T>,
+        entry: T,
+    ) {
+        when (overlay.op) {
+            OverlayOp.ADD -> {
+                if (entries.containsKey(entryId)) {
+                    throw packLoadException(
+                        code = "content-pack.overlay.add-conflict",
+                        message = "ADD overlay for '${overlay.targetRef.registry.value}:$entryId' conflicts with an existing entry. Use REPLACE explicitly.",
+                        pack = pack,
+                        overlay = overlay,
+                    )
+                }
+                entries[entryId] = entry
+            }
+
+            OverlayOp.REPLACE -> {
+                if (!entries.containsKey(entryId)) {
+                    throw packLoadException(
+                        code = "content-pack.overlay.replace-missing-target",
+                        message = "REPLACE overlay for '${overlay.targetRef.registry.value}:$entryId' requires an existing entry.",
+                        pack = pack,
+                        overlay = overlay,
+                    )
+                }
+                entries[entryId] = entry
+            }
+
+            OverlayOp.APPEND,
+            OverlayOp.DENY,
+            -> throw packLoadException(
+                code = "content-pack.overlay.runtime-op-forbidden",
+                message = "Runtime overlay path only supports ADD and REPLACE; got ${overlay.op.name}.",
+                pack = pack,
+                overlay = overlay,
+            )
+        }
+    }
+
+    private fun packLoadException(
+        code: String,
+        message: String,
+        pack: ResolvedContentPack,
+        overlay: com.ktome.game.contentpack.OverlayEntry,
+        sourcePath: Path? = null,
+    ): ContentPackLoadException =
+        ContentPackLoadException(
+            listOf(
+                com.ktome.game.contentpack.ContentPackDiagnostic(
+                    code = code,
+                    message = message,
+                    packId = pack.id,
+                    targetRef = overlay.targetRef,
+                    sourcePath = sourcePath?.toString() ?: pack.manifestPath.toString(),
+                ),
+            ),
+        )
+
+    private sealed interface ParsedPackOverlayPayload {
+        data class HiddenEvent(
+            val entry: com.ktome.game.hidden.HiddenEventDef,
+        ) : ParsedPackOverlayPayload
+
+        data class SecretZone(
+            val entry: com.ktome.game.hidden.SecretZoneDef,
+        ) : ParsedPackOverlayPayload
+
+        data class LootProfile(
+            val entry: LootProfileSchemaV2,
+        ) : ParsedPackOverlayPayload
+
+        data class Monster(
+            val entry: MonsterSchemaV2,
+        ) : ParsedPackOverlayPayload
+
+        data class Item(
+            val entry: ItemSchemaV2,
+        ) : ParsedPackOverlayPayload
+
+        data class Material(
+            val entry: MaterialSchemaV2,
+        ) : ParsedPackOverlayPayload
+
+        data class Affix(
+            val entry: AffixSchemaV2,
+        ) : ParsedPackOverlayPayload
+
+        data class SpecialItemTemplate(
+            val entry: SpecialItemTemplateSchemaV2,
+        ) : ParsedPackOverlayPayload
+
+        data class MutationStatModifier(
+            val entry: MutationStatModifierDef,
+        ) : ParsedPackOverlayPayload
+
+        data class EliteMutation(
+            val entry: EliteMutationDef,
+        ) : ParsedPackOverlayPayload
+
+        data class BossVariant(
+            val entry: BossVariantDef,
+        ) : ParsedPackOverlayPayload
+
+        data class ActionWeightProfile(
+            val entry: ActionWeightProfileDef,
+        ) : ParsedPackOverlayPayload
+    }
+
+    private enum class ItemBundleSection {
+        ITEM,
+        MATERIAL,
+        AFFIX,
+        SPECIAL_TEMPLATE,
     }
 
     fun loadMonsterCatalog(): MonsterCatalog {
@@ -341,6 +926,11 @@ class DataLoader(
                 ?: Thread.currentThread().contextClassLoader?.getResourceAsStream(normalizedPath)
             ?: error("YAML resource not found: $resourcePath")
         val root = stream.use { input -> Yaml().load<Map<String, Any?>>(input) }
+        return root ?: error("YAML root must not be null: $resourcePath")
+    }
+
+    private fun loadYamlMap(resourcePath: Path): Map<String, Any?> {
+        val root = Files.newBufferedReader(resourcePath).use { reader -> Yaml().load<Map<String, Any?>>(reader) }
         return root ?: error("YAML root must not be null: $resourcePath")
     }
 

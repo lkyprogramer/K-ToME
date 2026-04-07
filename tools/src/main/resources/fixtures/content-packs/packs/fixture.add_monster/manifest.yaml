@@ -1,0 +1,17 @@
+id: fixture.add_monster
+version: 1.0.0
+schemaVersion: 1
+gameVersionRange: ">=0.1.0 <0.2.0"
+namespace: fixture_add_monster
+dependencies: []
+localeBundles:
+  - i18n/en-US.json
+  - i18n/zh-CN.json
+visualManifest: visual/visual-manifest.json
+audioManifest: audio/audio-manifest.json
+overlays:
+  - targetRef:
+      registry: monster
+      id: fixture.add_monster.flooded_rat
+    op: ADD
+    sourceFile: data/monsters/fixture.add_monster.flooded_rat.yaml

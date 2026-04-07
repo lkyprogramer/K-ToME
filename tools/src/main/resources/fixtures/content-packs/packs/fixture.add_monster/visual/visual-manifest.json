@@ -1,0 +1,30 @@
+{
+  "manifestVersion": 1,
+  "styleTag": "ktome-middle-fantasy-painterly-tile-v1",
+  "fallbackKey": "missing_visual",
+  "entries": [
+    {
+      "key": "fixture_add_monster.actor.flooded_rat",
+      "category": "actor_sprite",
+      "rawOutputPath": "packs/fixture_add_monster/actor_flooded_rat.png",
+      "footprint": "1x1",
+      "pivotX": 0.5,
+      "pivotY": 0.08,
+      "tags": ["fixture", "content-pack", "monster"],
+      "asciiGlyph": "r",
+      "asciiColorHex": "#4FA3D9"
+    },
+    {
+      "key": "fixture_add_monster.icon.flooded_rat",
+      "category": "icon",
+      "rawOutputPath": "packs/fixture_add_monster/icon_flooded_rat.png",
+      "footprint": "1x1",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": ["fixture", "content-pack", "icon"],
+      "asciiGlyph": "r",
+      "asciiColorHex": "#4FA3D9"
+    }
+  ],
+  "prefixRules": []
+}

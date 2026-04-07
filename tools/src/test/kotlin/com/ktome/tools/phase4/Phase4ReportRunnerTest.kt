@@ -16,7 +16,7 @@ class Phase4ReportRunnerTest {
     fun `phase4 report aggregates currently landed phase4 verification tasks`() {
         val run = Phase4ReportRunner.run()
 
-        assertEquals(10, run.taskCount)
+        assertEquals(12, run.taskCount)
         assertEquals(0, run.failedTaskCount, "phase4Report recorded failed tasks; inspect ${run.summaryPath}")
         assertTrue(Files.exists(run.summaryPath), "Expected phase4 summary report at ${run.summaryPath}")
         assertTrue(Files.exists(run.markdownPath), "Expected phase4 markdown report at ${run.markdownPath}")
@@ -30,18 +30,22 @@ class Phase4ReportRunnerTest {
             tasks.first { element -> element.jsonObject.getValue("taskId").jsonPrimitive.content == "bossHarness" }.jsonObject
         val terrainTask =
             tasks.first { element -> element.jsonObject.getValue("taskId").jsonPrimitive.content == "terrainInteractionBatch" }.jsonObject
+        val contentPackTask =
+            tasks.first { element -> element.jsonObject.getValue("taskId").jsonPrimitive.content == "contentPackHarness" }.jsonObject
 
         assertEquals("P4", payload.getValue("phaseId").jsonPrimitive.content)
-        assertEquals("10", payload.getValue("taskCount").jsonPrimitive.content)
+        assertEquals("12", payload.getValue("taskCount").jsonPrimitive.content)
         assertEquals("0", payload.getValue("failedTaskCount").jsonPrimitive.content)
         assertEquals("1000", solvabilityTask.getValue("metrics").jsonObject.getValue("distinctSeedCount").jsonPrimitive.content)
         assertTrue(bossTask.getValue("metrics").jsonObject.getValue("whiteBoxSummaryPath").jsonPrimitive.content.contains("whitebox/boss"))
         assertTrue(terrainTask.getValue("sourcePath").jsonPrimitive.content.contains("whitebox/terrain"))
+        assertEquals("11", contentPackTask.getValue("metrics").jsonObject.getValue("totalCases").jsonPrimitive.content)
         assertEquals(
             setOf(
                 "mapgenSmoke",
                 "solvabilityHarness",
                 "hiddenContentHarness",
+                "contentPackHarness",
                 "bossHarness",
                 "terrainInteractionBatch",
                 "whiteBoxMapgen",
@@ -49,6 +53,7 @@ class Phase4ReportRunnerTest {
                 "lootBalanceLab",
                 "whiteBoxLoot",
                 "whiteBoxHiddenContent",
+                "whiteBoxContentPack",
             ),
             taskIds,
         )

@@ -1,0 +1,13 @@
+events:
+  - id: hidden.event.greenwood.hidden_cache.reward
+    triggerType: INTERACT_TILE
+    optionalOnly: true
+    conditions:
+      - key: SECRET_ZONE_ID
+        expectedValue: greenwood_hidden_cache
+    rewards:
+      - key: LOOT_PROFILE
+        payload:
+          lootProfileRef:
+            registry: loot_profile
+            id: loot.greenwood_hidden_cache.secret

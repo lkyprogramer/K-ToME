@@ -1,0 +1,12 @@
+id: fixture.duplicate_base_monster
+version: 1.0.0
+schemaVersion: 1
+gameVersionRange: ">=0.1.0 <0.2.0"
+namespace: fixture_duplicate_base_monster
+dependencies: []
+overlays:
+  - targetRef:
+      registry: monster
+      id: beast.rat
+    op: ADD
+    sourceFile: data/monsters/beast.rat.yaml

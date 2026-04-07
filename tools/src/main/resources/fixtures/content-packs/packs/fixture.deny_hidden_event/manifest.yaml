@@ -1,0 +1,12 @@
+id: fixture.deny_hidden_event
+version: 1.0.0
+schemaVersion: 1
+gameVersionRange: ">=0.1.0 <0.2.0"
+namespace: fixture_deny_hidden_event
+dependencies: []
+overlays:
+  - targetRef:
+      registry: hidden_event
+      id: hidden.event.greenwood.hidden_cache.reward
+    op: DENY
+    sourceFile: data/events/hidden.event.greenwood.hidden_cache.reward.yaml

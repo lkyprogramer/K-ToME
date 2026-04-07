@@ -1,0 +1,12 @@
+id: fixture.same_priority_right
+version: 1.0.0
+schemaVersion: 1
+gameVersionRange: ">=0.1.0 <0.2.0"
+namespace: fixture_same_priority_right
+dependencies: []
+overlays:
+  - targetRef:
+      registry: monster
+      id: fixture.same_priority.shared_guard
+    op: ADD
+    sourceFile: data/monsters/fixture.same_priority.shared_guard.yaml

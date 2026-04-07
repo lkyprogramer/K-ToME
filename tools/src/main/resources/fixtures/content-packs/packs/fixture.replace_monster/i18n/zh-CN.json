@@ -1,0 +1,4 @@
+{
+  "fixture_replace_monster.monster.flooded_rat.name": "积水鼠老兵",
+  "fixture_replace_monster.monster.flooded_rat.desc": "一条被整条替换的怪物定义，用于验证 whole-entry REPLACE 优先级。"
+}

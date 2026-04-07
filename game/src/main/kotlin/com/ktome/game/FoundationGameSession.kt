@@ -7487,6 +7487,8 @@ class FoundationGameSession internal constructor(
                 milestoneRewards = persistedMilestoneRewardSummaries(),
                 pendingActionIds = serializedPendingActionIds,
                 activeTurnActorId = activeTurnActor?.value?.takeIf { actorId -> actorId in serializedPendingActionIds },
+                activePackIds = content.activePackIds,
+                activePackManifestVersions = content.activePackManifestVersions,
             ),
         )
     }

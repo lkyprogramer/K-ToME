@@ -1,0 +1,4 @@
+{
+  "fixture_add_monster.monster.flooded_rat.name": "积水鼠",
+  "fixture_add_monster.monster.flooded_rat.desc": "一只被水泡透的拾荒鼠，用于验证 Phase 4 的 ADD 主路径。"
+}

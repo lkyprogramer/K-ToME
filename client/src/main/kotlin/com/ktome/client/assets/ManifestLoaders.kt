@@ -1,5 +1,9 @@
 package com.ktome.client.assets
 
+import com.ktome.game.contentpack.ContentPackRuntimeResolver
+import com.ktome.game.contentpack.ContentPackSelection
+import com.ktome.game.contentpack.ResolvedContentPackSelection
+import java.nio.file.Files
 import java.io.InputStream
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
@@ -21,16 +25,53 @@ object VisualManifestResourceLoader {
         return stream.decode(path)
     }
 
-    private fun InputStream.decode(path: String): VisualManifest =
-        use { input ->
-            try {
-                json.decodeFromString<VisualManifest>(input.readBytes().decodeToString())
-            } catch (exception: SerializationException) {
-                throw ManifestLoadException("Visual manifest is invalid: $path", exception)
-            } catch (exception: IllegalArgumentException) {
-                throw ManifestLoadException("Visual manifest is invalid: $path", exception)
-            }
+    fun loadMerged(
+        contentPackSelection: ContentPackSelection,
+        path: String = resourcePath,
+        resourceLoader: (String) -> InputStream? = { candidate -> VisualManifestResourceLoader::class.java.getResourceAsStream(candidate) },
+    ): VisualManifest {
+        if (contentPackSelection.isEmpty) {
+            return load(path = path, resourceLoader = resourceLoader)
         }
+        return loadMerged(
+            resolvedContentPackSelection = ContentPackRuntimeResolver.resolve(contentPackSelection),
+            path = path,
+            resourceLoader = resourceLoader,
+        )
+    }
+
+    fun loadMerged(
+        resolvedContentPackSelection: ResolvedContentPackSelection,
+        path: String = resourcePath,
+        resourceLoader: (String) -> InputStream? = { candidate -> VisualManifestResourceLoader::class.java.getResourceAsStream(candidate) },
+    ): VisualManifest {
+        val baseManifest = load(path = path, resourceLoader = resourceLoader)
+        if (resolvedContentPackSelection.isEmpty()) {
+            return baseManifest
+        }
+        val additionalManifests =
+            resolvedContentPackSelection.orderedPacks.mapNotNull { pack ->
+                pack.manifest.visualManifest?.let { relativePath ->
+                    decode(Files.readString(pack.resolvePath(relativePath)), pack.resolvePath(relativePath).toString())
+                }
+            }
+        return additionalManifests.fold(baseManifest, ::mergeVisualManifest)
+    }
+
+    internal fun decode(
+        content: String,
+        path: String,
+    ): VisualManifest =
+        try {
+            json.decodeFromString<VisualManifest>(content)
+        } catch (exception: SerializationException) {
+            throw ManifestLoadException("Visual manifest is invalid: $path", exception)
+        } catch (exception: IllegalArgumentException) {
+            throw ManifestLoadException("Visual manifest is invalid: $path", exception)
+        }
+
+    private fun InputStream.decode(path: String): VisualManifest =
+        use { input -> decode(input.readBytes().decodeToString(), path) }
 }
 
 object AudioManifestResourceLoader {
@@ -45,16 +86,53 @@ object AudioManifestResourceLoader {
         return stream.decode(path)
     }
 
-    private fun InputStream.decode(path: String): AudioManifest =
-        use { input ->
-            try {
-                json.decodeFromString<AudioManifest>(input.readBytes().decodeToString())
-            } catch (exception: SerializationException) {
-                throw ManifestLoadException("Audio manifest is invalid: $path", exception)
-            } catch (exception: IllegalArgumentException) {
-                throw ManifestLoadException("Audio manifest is invalid: $path", exception)
-            }
+    fun loadMerged(
+        contentPackSelection: ContentPackSelection,
+        path: String = resourcePath,
+        resourceLoader: (String) -> InputStream? = { candidate -> AudioManifestResourceLoader::class.java.getResourceAsStream(candidate) },
+    ): AudioManifest {
+        if (contentPackSelection.isEmpty) {
+            return load(path = path, resourceLoader = resourceLoader)
         }
+        return loadMerged(
+            resolvedContentPackSelection = ContentPackRuntimeResolver.resolve(contentPackSelection),
+            path = path,
+            resourceLoader = resourceLoader,
+        )
+    }
+
+    fun loadMerged(
+        resolvedContentPackSelection: ResolvedContentPackSelection,
+        path: String = resourcePath,
+        resourceLoader: (String) -> InputStream? = { candidate -> AudioManifestResourceLoader::class.java.getResourceAsStream(candidate) },
+    ): AudioManifest {
+        val baseManifest = load(path = path, resourceLoader = resourceLoader)
+        if (resolvedContentPackSelection.isEmpty()) {
+            return baseManifest
+        }
+        val additionalManifests =
+            resolvedContentPackSelection.orderedPacks.mapNotNull { pack ->
+                pack.manifest.audioManifest?.let { relativePath ->
+                    decode(Files.readString(pack.resolvePath(relativePath)), pack.resolvePath(relativePath).toString())
+                }
+            }
+        return additionalManifests.fold(baseManifest, ::mergeAudioManifest)
+    }
+
+    internal fun decode(
+        content: String,
+        path: String,
+    ): AudioManifest =
+        try {
+            json.decodeFromString<AudioManifest>(content)
+        } catch (exception: SerializationException) {
+            throw ManifestLoadException("Audio manifest is invalid: $path", exception)
+        } catch (exception: IllegalArgumentException) {
+            throw ManifestLoadException("Audio manifest is invalid: $path", exception)
+        }
+
+    private fun InputStream.decode(path: String): AudioManifest =
+        use { input -> decode(input.readBytes().decodeToString(), path) }
 }
 
 object ClientAssetBundleLoader {
@@ -77,4 +155,50 @@ object ClientAssetBundleLoader {
             throw ManifestLoadException("Client asset bundle is invalid.", exception)
         }
     }
+
+    fun load(
+        contentPackSelection: ContentPackSelection,
+        logSink: ManifestLogSink = ManifestLogSink { message -> System.err.println(message) },
+    ): ClientAssetBundle {
+        if (contentPackSelection.isEmpty) {
+            return load(logSink = logSink)
+        }
+        return load(
+            resolvedContentPackSelection = ContentPackRuntimeResolver.resolve(contentPackSelection),
+            logSink = logSink,
+        )
+    }
+
+    fun load(
+        resolvedContentPackSelection: ResolvedContentPackSelection,
+        logSink: ManifestLogSink = ManifestLogSink { message -> System.err.println(message) },
+    ): ClientAssetBundle =
+        load(
+            visualManifestProvider = { VisualManifestResourceLoader.loadMerged(resolvedContentPackSelection) },
+            audioManifestProvider = { AudioManifestResourceLoader.loadMerged(resolvedContentPackSelection) },
+            logSink = logSink,
+        )
 }
+
+private fun mergeVisualManifest(
+    base: VisualManifest,
+    overlay: VisualManifest,
+): VisualManifest =
+    VisualManifest(
+        manifestVersion = base.manifestVersion,
+        styleTag = base.styleTag,
+        fallbackKey = base.fallbackKey,
+        entries = base.entries + overlay.entries,
+        prefixRules = base.prefixRules + overlay.prefixRules,
+    )
+
+private fun mergeAudioManifest(
+    base: AudioManifest,
+    overlay: AudioManifest,
+): AudioManifest =
+    AudioManifest(
+        manifestVersion = base.manifestVersion,
+        fallbackKey = base.fallbackKey,
+        entries = base.entries + overlay.entries,
+        prefixRules = base.prefixRules + overlay.prefixRules,
+    )

@@ -74,6 +74,10 @@ object Phase4ReportRunner {
                 reader = ::readHiddenContentHarness,
             ),
             Phase4TaskDescriptor(
+                relativeSourcePath = "tools/build/reports/phase4/content-pack/content-pack-summary.json",
+                reader = ::readContentPackHarness,
+            ),
+            Phase4TaskDescriptor(
                 relativeSourcePath = "build/reports/harness/boss-harness.json",
                 reader = ::readBossHarness,
             ),
@@ -100,6 +104,10 @@ object Phase4ReportRunner {
             Phase4TaskDescriptor(
                 relativeSourcePath = "tools/build/reports/phase4/whitebox/hidden/whitebox-hidden-content-summary.json",
                 reader = ::readWhiteBoxHiddenContent,
+            ),
+            Phase4TaskDescriptor(
+                relativeSourcePath = "tools/build/reports/phase4/whitebox/content-pack/whitebox-content-pack-summary.json",
+                reader = ::readWhiteBoxContentPack,
             ),
         )
 
@@ -382,6 +390,39 @@ object Phase4ReportRunner {
         )
     }
 
+    private fun readContentPackHarness(
+        repoRoot: Path,
+        sourcePath: Path,
+        payload: JsonObject,
+    ): Phase4TaskAggregate {
+        val header = payload.getValue("header").jsonObject
+        val summary = payload.getValue("summary").jsonObject
+        val failureCount = summary.intValue("failureCount")
+        return Phase4TaskAggregate(
+            taskId = "contentPackHarness",
+            status = if (failureCount == 0) "PASS" else "FAIL",
+            sourcePath = relativize(repoRoot, sourcePath),
+            buildId = header.stringValue("buildId"),
+            locale = header.stringValue("locale"),
+            metrics =
+                buildJsonObject {
+                    put("totalCases", summary.intValue("totalCases"))
+                    put("failureCount", failureCount)
+                    put("caseFailureCount", summary.intValue("caseFailureCount"))
+                    put("aggregateFailureCount", summary.intValue("aggregateFailureCount"))
+                    put("successfulRuntimeCaseCount", summary.intValue("successfulRuntimeCaseCount"))
+                    put("expectedFailureCaseCount", summary.intValue("expectedFailureCaseCount"))
+                    put("diagnosticMismatchCount", summary.intValue("diagnosticMismatchCount"))
+                    put("localeResolutionFailureCount", summary.intValue("localeResolutionFailureCount"))
+                    put("visualResolutionFailureCount", summary.intValue("visualResolutionFailureCount"))
+                    put("audioResolutionFailureCount", summary.intValue("audioResolutionFailureCount"))
+                    put("headlessRunFailureCount", summary.intValue("headlessRunFailureCount"))
+                    put("fallbackFailureCount", summary.intValue("fallbackFailureCount"))
+                    put("precedenceFailureCount", summary.intValue("precedenceFailureCount"))
+                },
+        )
+    }
+
     private fun readWhiteBoxLoot(
         repoRoot: Path,
         sourcePath: Path,
@@ -402,6 +443,33 @@ object Phase4ReportRunner {
                     put("aggregateCount", summary.intValue("aggregateCount"))
                     put("failedAssertions", failedAssertions)
                     put("artifactCount", summary.intValue("artifactCount"))
+                },
+        )
+    }
+
+    private fun readWhiteBoxContentPack(
+        repoRoot: Path,
+        sourcePath: Path,
+        payload: JsonObject,
+    ): Phase4TaskAggregate {
+        val header = payload.getValue("header").jsonObject
+        val summary = payload.getValue("summary").jsonObject
+        val failedAssertions = summary.intValue("failedAssertions")
+        return Phase4TaskAggregate(
+            taskId = "whiteBoxContentPack",
+            status = if (failedAssertions == 0) "PASS" else "FAIL",
+            sourcePath = relativize(repoRoot, sourcePath),
+            buildId = header.stringValue("buildId"),
+            locale = header.stringValue("locale"),
+            metrics =
+                buildJsonObject {
+                    put("caseCount", summary.intValue("caseCount"))
+                    put("aggregateCount", summary.intValue("aggregateCount"))
+                    put("failedAssertions", failedAssertions)
+                    put("artifactCount", summary.intValue("artifactCount"))
+                    put("failedCaseCount", payload.intValue("failedCaseCount"))
+                    put("failedAggregateCount", payload.intValue("failedAggregateCount"))
+                    payload["firstFailedJoinKey"]?.let { joinKey -> put("firstFailedJoinKey", joinKey.toString()) }
                 },
         )
     }
