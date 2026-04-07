@@ -1,11 +1,12 @@
 styleTag: ktome-middle-fantasy-painterly-tile-v1
 artStyleBible: docs/2026-03-13-art-style-bible.md
 stylePrompt: >-
-  High fantasy painterly production pass for Phase 4 PR-07 hidden entrances and
-  secret zones. Hidden entrances must read clearly on the tactical grid, secret
-  zone portraits and icons must feel discoverable rather than debug-like, and
-  every asset must stay grounded in the established K-ToME palette and material
-  language, never anime and never sci-fi.
+  High fantasy, middle-earth inspired painterly production pass for Phase 4
+  PR-07 hidden entrances and secret zones. Hidden entrances must read clearly
+  on the tactical grid, secret zone portraits and icons must feel discoverable
+  rather than debug-like, and every asset must stay grounded in the
+  established K-ToME palette and material language, never anime and never
+  sci-fi.
 defaults:
   imageAspectRatio: "1:1"
   imageSize: "1K"
