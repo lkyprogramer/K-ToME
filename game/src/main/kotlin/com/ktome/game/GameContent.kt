@@ -15,17 +15,25 @@ import com.ktome.core.talent.TalentDef
 import com.ktome.core.talent.TalentRegistry
 import com.ktome.core.item.ItemDataBundle
 import com.ktome.core.status.StatusCatalog
-import com.ktome.game.data.schema.SchemaCatalog
 import com.ktome.game.data.schema.LootProfileSchemaV2
+import com.ktome.game.data.schema.SchemaCatalog
 import com.ktome.game.data.schema.StatusSchemaV2
+import com.ktome.game.data.schema.ZoneSchemaV2
 import com.ktome.game.i18n.Localizer
 import com.ktome.game.elites.BossVariantRegistry
 import com.ktome.game.elites.EliteMutationRegistry
+import com.ktome.game.hidden.HiddenContentMapgenPipeline
+import com.ktome.game.hidden.HiddenEventRegistry
+import com.ktome.game.hidden.HiddenConditionKey
+import com.ktome.game.hidden.HiddenEventRewardPayload
+import com.ktome.game.hidden.LOOT_PROFILE_REGISTRY_ID
+import com.ktome.game.hidden.MONSTER_REGISTRY_ID
+import com.ktome.game.hidden.STATUS_REGISTRY_ID
+import com.ktome.game.hidden.SecretZoneRegistry
 import com.ktome.game.model.BossDefinition
 import com.ktome.game.model.MonsterTemplate
 import com.ktome.game.telegraph.TelegraphRegistry
 import com.ktome.game.telegraph.ThreatProfileRegistry
-import com.ktome.game.data.schema.ZoneSchemaV2
 
 private object EmptyZoneMapgenProfileResolver : ZoneMapgenProfileResolver {
     override fun resolve(zoneId: String): ZoneMapgenProfile =
@@ -88,17 +96,21 @@ internal data class GameContent(
     val zoneRewardProfileResolver: ZoneRewardProfileResolver = EmptyZoneRewardProfileResolver,
     val mapgenContentCatalog: MapgenContentCatalog? = null,
     val mapgenPipeline: MapgenPipeline =
-        mapgenContentCatalog?.let { catalog ->
-            RoutedMapgenPipeline(
-                zones = schemaCatalog.zones,
-                migratedZonePipeline =
-                    HybridTopologyMapgenPipeline(
-                        profileResolver = zoneMapgenProfileResolver,
-                        contentCatalog = catalog,
-                    ),
-                compatibilityPipeline = BspBackedMapgenPipeline(profileResolver = zoneMapgenProfileResolver),
-            )
-        } ?: BspBackedMapgenPipeline(profileResolver = zoneMapgenProfileResolver),
+        HiddenContentMapgenPipeline(
+            delegate =
+                mapgenContentCatalog?.let { catalog ->
+                    RoutedMapgenPipeline(
+                        zones = schemaCatalog.zones,
+                        migratedZonePipeline =
+                            HybridTopologyMapgenPipeline(
+                                profileResolver = zoneMapgenProfileResolver,
+                                contentCatalog = catalog,
+                            ),
+                        compatibilityPipeline = BspBackedMapgenPipeline(profileResolver = zoneMapgenProfileResolver),
+                    )
+                } ?: BspBackedMapgenPipeline(profileResolver = zoneMapgenProfileResolver),
+            secretZoneRegistry = SecretZoneRegistry(schemaCatalog.secretZones.associateBy { zone -> zone.id.id }),
+        ),
 ) {
     val aiProfilesById: Map<String, AIProfile> = schemaCatalog.aiProfiles.associateBy(AIProfile::id)
     val racesById: Map<String, RaceDef> = races.associateBy(RaceDef::id)
@@ -114,8 +126,14 @@ internal data class GameContent(
             variantsByBaseEncounterId = schemaCatalog.bossVariants.groupBy { variant -> variant.baseEncounterId },
             variantsById = schemaCatalog.bossVariants.associateBy { variant -> variant.id },
         )
+    val hiddenEventRegistry: HiddenEventRegistry =
+        HiddenEventRegistry(schemaCatalog.hiddenEvents.associateBy { event -> event.id })
+    val secretZoneRegistry: SecretZoneRegistry =
+        SecretZoneRegistry(schemaCatalog.secretZones.associateBy { zone -> zone.id.id })
     val actionWeightProfilesById: Map<String, com.ktome.game.elites.ActionWeightProfileDef> =
         schemaCatalog.actionWeightProfiles.associateBy { profile -> profile.id }
+    val monsterTemplatesById: Map<String, MonsterTemplate> =
+        (monsterCatalog + bossDefinitions.values.map(BossDefinition::template)).associateBy(MonsterTemplate::id)
 
     init {
         schemaCatalog.bossVariants.forEach { variant ->
@@ -144,6 +162,96 @@ internal data class GameContent(
                 }
             }
         }
+        val hiddenEntrancePlans = schemaCatalog.zoneMapgenProfiles.flatMap { profile -> profile.hiddenEntrancePlans }
+        val hiddenEntrancePlansByBindingId = hiddenEntrancePlans.associateBy { plan -> plan.bindingId }
+        val hiddenEntrancePlansBySecretZoneId = hiddenEntrancePlans.associateBy { plan -> plan.targetSecretZoneId.id }
+        require(hiddenEntrancePlansBySecretZoneId.size == hiddenEntrancePlans.size) {
+            "Each hidden entrance plan must target a unique secret zone id."
+        }
+        schemaCatalog.secretZones.forEach { secretZone ->
+            val hiddenEntrancePlan = requireNotNull(hiddenEntrancePlansBySecretZoneId[secretZone.id.id]) {
+                "Secret zone '${secretZone.id.id}' is not targeted by any hidden entrance plan."
+            }
+            require(hiddenEntrancePlan.targetSecretZoneId == secretZone.id) {
+                "Secret zone '${secretZone.id.id}' must be targeted by hidden entrance '${hiddenEntrancePlan.bindingId.value}'."
+            }
+            require(secretZone.entranceBindingId == hiddenEntrancePlan.entranceAnchorId) {
+                "Secret zone '${secretZone.id.id}' must bind to hidden entrance anchor '${hiddenEntrancePlan.entranceAnchorId.value}'."
+            }
+            require(secretZone.entryRule == hiddenEntrancePlan.discoveryRule) {
+                "Secret zone '${secretZone.id.id}' entryRule must match hidden entrance discoveryRule '${hiddenEntrancePlan.bindingId.value}'."
+            }
+            require(lootProfilesById.containsKey(secretZone.rewardProfileId.id)) {
+                "Secret zone '${secretZone.id.id}' references unknown reward profile '${secretZone.rewardProfileId.id}'."
+            }
+            secretZone.guaranteedContent.forEach { contentRef ->
+                when (contentRef.registry.value) {
+                    "hidden_event" ->
+                        require(hiddenEventRegistry.resolve(contentRef.id) != null) {
+                            "Secret zone '${secretZone.id.id}' guaranteed content references unknown hidden event '${contentRef.id}'."
+                        }
+
+                    "monster" ->
+                        require(monsterTemplatesById.containsKey(contentRef.id)) {
+                            "Secret zone '${secretZone.id.id}' guaranteed content references unknown monster '${contentRef.id}'."
+                        }
+
+                    else -> error("Secret zone '${secretZone.id.id}' guaranteed content registry '${contentRef.registry.value}' is unsupported.")
+                }
+            }
+        }
+        schemaCatalog.hiddenEvents.forEach { hiddenEvent ->
+            hiddenEvent.conditions.forEach { condition ->
+                when (condition.key) {
+                    HiddenConditionKey.SEARCH_BINDING_ID ->
+                        require(hiddenEntrancePlansByBindingId.keys.any { bindingId -> bindingId.value == condition.expectedValue }) {
+                            "Hidden event '${hiddenEvent.id}' references unknown search binding '${condition.expectedValue}'."
+                        }
+
+                    HiddenConditionKey.SECRET_ZONE_ID ->
+                        require(secretZoneRegistry.resolve(condition.expectedValue) != null) {
+                            "Hidden event '${hiddenEvent.id}' references unknown secret zone '${condition.expectedValue}'."
+                        }
+
+                    else -> Unit
+                }
+            }
+            hiddenEvent.rewards.forEach { reward ->
+                when (val payload = reward.payload) {
+                    is HiddenEventRewardPayload.RevealSecretZone ->
+                        require(hiddenEntrancePlansByBindingId.containsKey(payload.bindingId)) {
+                            "Hidden event '${hiddenEvent.id}' reveal payload references unknown search binding '${payload.bindingId.value}'."
+                        }
+
+                    is HiddenEventRewardPayload.GrantBuff -> {
+                        require(payload.statusRef.registry.value == STATUS_REGISTRY_ID) {
+                            "Hidden event '${hiddenEvent.id}' buff payload must use registry '$STATUS_REGISTRY_ID'."
+                        }
+                        require(statusSchemaFor(payload.statusRef.id) != null) {
+                            "Hidden event '${hiddenEvent.id}' references unknown status '${payload.statusRef.id}'."
+                        }
+                    }
+
+                    is HiddenEventRewardPayload.LootProfile -> {
+                        require(payload.lootProfileRef.registry.value == LOOT_PROFILE_REGISTRY_ID) {
+                            "Hidden event '${hiddenEvent.id}' loot payload must use registry '$LOOT_PROFILE_REGISTRY_ID'."
+                        }
+                        require(lootProfilesById.containsKey(payload.lootProfileRef.id)) {
+                            "Hidden event '${hiddenEvent.id}' references unknown loot profile '${payload.lootProfileRef.id}'."
+                        }
+                    }
+
+                    is HiddenEventRewardPayload.TriggerEncounter -> {
+                        require(payload.encounterRef.registry.value == MONSTER_REGISTRY_ID) {
+                            "Hidden event '${hiddenEvent.id}' encounter payload must use registry '$MONSTER_REGISTRY_ID'."
+                        }
+                        require(monsterTemplatesById.containsKey(payload.encounterRef.id)) {
+                            "Hidden event '${hiddenEvent.id}' references unknown monster '${payload.encounterRef.id}'."
+                        }
+                    }
+                }
+            }
+        }
     }
 
     fun bossDefinitionForZone(zoneId: String): BossDefinition? =
@@ -166,6 +274,8 @@ internal data class GameContent(
         profileId?.let(aiProfilesById::get)
 
     fun lootProfile(profileId: String): LootProfileSchemaV2? = lootProfilesById[profileId]
+
+    fun secretZone(contentRef: com.ktome.core.world.solvability.ContentRef) = secretZoneRegistry.resolve(contentRef)
 
     private fun baseEncounterActionIds(baseEncounterId: String): Set<String> =
         schemaCatalog.bossEncounters

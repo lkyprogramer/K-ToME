@@ -1,10 +1,12 @@
 audioProfiles:
   - id: audio.interactable.crystal_resonance_node
   - id: audio.interactable.heart_ward_focus
+  - id: audio.interactable.hidden_return
   - id: audio.interactable.open
   - id: audio.interactable.river_ferry_anchor
   - id: audio.interactable.stairs
   - id: audio.interactable.temple_ward_reliquary
+  - id: audio.hidden.reveal.secret_entrance
   - id: audio.profession.vanguard
   - id: audio.profession.arcanist
   - id: audio.profession.rogue
@@ -72,6 +74,10 @@ audioProfiles:
   - id: audio.zone.crystal_cavern
   - id: audio.zone.deep_iron_pit
   - id: audio.zone.grey_gate_depths
+  - id: audio.secret_zone.greenwood_hidden_cache
+  - id: audio.secret_zone.deep_iron_slag_cache
+  - id: audio.secret_zone.underground_river_crystal_rift
+  - id: audio.secret_zone.abyssal_temple_warded_archive
   - id: audio.difficulty.normal
   - id: audio.material.iron
   - id: audio.material.steel

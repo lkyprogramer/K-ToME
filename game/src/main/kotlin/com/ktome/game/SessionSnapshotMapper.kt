@@ -108,6 +108,7 @@ import com.ktome.core.save.RiverCurrentStateSnapshot
 import com.ktome.core.save.SaveLoadException
 import com.ktome.core.save.SaveSnapshot
 import com.ktome.core.save.SaveRestoreException
+import com.ktome.core.save.SecretEncounterRuntimeSnapshot
 import com.ktome.core.save.StairSnapshot
 import com.ktome.core.save.StatModifierSnapshot
 import com.ktome.core.save.StatusEffectDefinitionSnapshot
@@ -132,6 +133,7 @@ import com.ktome.core.status.StatusLifecycle
 import com.ktome.core.economy.ShopInventoryState
 import com.ktome.core.world.WorldProgressDef
 import com.ktome.game.model.MonsterTemplate
+import com.ktome.game.hidden.SecretEncounterRuntime
 
 private const val HERO_GLYPH: Char = '@'
 private const val HERO_COLOR_HEX: String = "#FFD700"
@@ -158,6 +160,7 @@ internal data class FloorRuntimeState(
     val entities: MutableList<EntitySnapshot> = mutableListOf(),
     val revealedEntranceIds: LinkedHashSet<SearchBindingId> = linkedSetOf(),
     val visitedSecretZoneIds: LinkedHashSet<ContentRef> = linkedSetOf(),
+    val consumedHiddenEventIds: LinkedHashSet<String> = linkedSetOf(),
     val searchState: MutableList<SearchStateEntry> = mutableListOf(),
 ) {
     init {
@@ -223,6 +226,13 @@ internal data class FloorRuntimeState(
         validateSearchStateConsistency()
     }
 
+    fun hasConsumedHiddenEvent(hiddenEventId: String): Boolean = hiddenEventId in consumedHiddenEventIds
+
+    fun markHiddenEventConsumed(hiddenEventId: String) {
+        require(hiddenEventId.isNotBlank()) { "Hidden event id must not be blank." }
+        consumedHiddenEventIds += hiddenEventId
+    }
+
     private fun validateSearchStateConsistency() {
         require(revealedEntranceIds == searchState.revealedBindingIds()) {
             "FloorRuntimeState.revealedEntranceIds must match REVEALED searchState entries."
@@ -239,6 +249,7 @@ internal data class FloorRuntimeState(
         entities: MutableList<EntitySnapshot> = mutableListOf(),
         revealedEntranceIds: LinkedHashSet<SearchBindingId> = linkedSetOf(),
         visitedSecretZoneIds: LinkedHashSet<ContentRef> = linkedSetOf(),
+        consumedHiddenEventIds: LinkedHashSet<String> = linkedSetOf(),
         searchState: MutableList<SearchStateEntry> = mutableListOf(),
     ) : this(
         generatedFloor = legacyGeneratedFloor(map),
@@ -250,6 +261,7 @@ internal data class FloorRuntimeState(
         entities = entities,
         revealedEntranceIds = revealedEntranceIds,
         visitedSecretZoneIds = visitedSecretZoneIds,
+        consumedHiddenEventIds = consumedHiddenEventIds,
         searchState = searchState,
     )
 }
@@ -305,6 +317,7 @@ internal object SessionSnapshotMapper {
         excludedEntities: Set<EntityId>,
         revealedEntranceIds: Set<SearchBindingId> = emptySet(),
         visitedSecretZoneIds: Set<ContentRef> = emptySet(),
+        consumedHiddenEventIds: Set<String> = emptySet(),
         searchState: List<SearchStateEntry> = emptyList(),
     ): FloorRuntimeState =
         FloorRuntimeState(
@@ -321,6 +334,7 @@ internal object SessionSnapshotMapper {
                     .toMutableList(),
             revealedEntranceIds = linkedSetOf<SearchBindingId>().apply { addAll(revealedEntranceIds) },
             visitedSecretZoneIds = linkedSetOf<ContentRef>().apply { addAll(visitedSecretZoneIds) },
+            consumedHiddenEventIds = linkedSetOf<String>().apply { addAll(consumedHiddenEventIds) },
             searchState = searchState.toMutableList(),
         )
 
@@ -442,6 +456,7 @@ internal object SessionSnapshotMapper {
                         resolvedHiddenEntranceBindings = floorState.payload.resolvedHiddenEntranceBindings,
                         revealedEntranceIds = floorState.payload.revealedEntranceIds.toSet(),
                         visitedSecretZoneIds = floorState.payload.visitedSecretZoneIds.toSet(),
+                        consumedHiddenEventIds = floorState.payload.consumedHiddenEventIds.toSet(),
                         searchState = floorState.payload.searchState.toList(),
                         map =
                             MapSnapshot(
@@ -524,6 +539,7 @@ internal object SessionSnapshotMapper {
                                 entities = floor.entities.map(::canonicalizeEntitySnapshot).sortedBy(EntitySnapshot::id).toMutableList(),
                                 revealedEntranceIds = linkedSetOf<SearchBindingId>().apply { addAll(floor.revealedEntranceIds) },
                                 visitedSecretZoneIds = linkedSetOf<ContentRef>().apply { addAll(floor.visitedSecretZoneIds) },
+                                consumedHiddenEventIds = linkedSetOf<String>().apply { addAll(floor.consumedHiddenEventIds) },
                                 searchState = floor.searchState.toMutableList(),
                             ),
                     )
@@ -700,6 +716,14 @@ internal object SessionSnapshotMapper {
                         currentPhaseId = bossState.currentPhaseId,
                         encounterTurnCount = bossState.encounterTurnCount,
                         phaseTurnCount = bossState.phaseTurnCount,
+                    )
+                },
+            secretEncounter =
+                world.get<SecretEncounterRuntime>(entityId)?.let { encounter ->
+                    SecretEncounterRuntimeSnapshot(
+                        encounterId = encounter.encounterId,
+                        secretZoneId = encounter.secretZoneId,
+                        threatCost = encounter.threatCost,
                     )
                 },
             eliteMutations = world.get<EliteMutationLoadout>(entityId)?.mutationIds?.sorted().orEmpty(),
@@ -953,6 +977,16 @@ internal object SessionSnapshotMapper {
                     currentPhaseId = bossState.currentPhaseId,
                     encounterTurnCount = bossState.encounterTurnCount,
                     phaseTurnCount = bossState.phaseTurnCount,
+                ),
+            )
+        }
+        snapshot.secretEncounter?.let { encounter ->
+            world.add(
+                entityId,
+                SecretEncounterRuntime(
+                    encounterId = encounter.encounterId,
+                    secretZoneId = encounter.secretZoneId,
+                    threatCost = encounter.threatCost,
                 ),
             )
         }
@@ -1236,6 +1270,7 @@ internal object SessionSnapshotMapper {
                     )
                 },
             bossEncounterState = snapshot.bossEncounterState?.copy(),
+            secretEncounter = snapshot.secretEncounter?.copy(),
             eliteMutations = snapshot.eliteMutations.sorted(),
             bossVariant = snapshot.bossVariant?.copy(),
             patrolPressureState =

@@ -314,6 +314,7 @@ internal object TileRenderModelBuilder {
         val rows = mutableListOf<TileTextRow>()
         val title = TileRenderer.sidebarTitle(localizer, overlayState.mode)
         val playerCell = requireNotNull(cellByPoint[point(snapshot.metadata.playerX, snapshot.metadata.playerY)])
+        val propByPoint = snapshot.props.associateBy { prop -> point(prop.x, prop.y) }
 
         when (overlayState.mode) {
             UiMode.MAP -> {
@@ -362,8 +363,11 @@ internal object TileRenderModelBuilder {
                                 text = renderItemDisplay(localizer, item),
                                 tone = TileTextTone.WHITE,
                                 icon = item.iconKey?.let { resolveVisual(visualResolver, it) },
-                            )
+                        )
                     }
+                }
+                snapshot.uiState.searchPromptLabelKey?.let { labelKey ->
+                    rows += TileTextRow(localizer.text(labelKey), TileTextTone.CYAN)
                 }
                 rows += TileTextRow(localizer.text("ui.controls.map.inventory"), TileTextTone.LIGHT_GRAY)
                 rows += TileTextRow(localizer.text("ui.controls.map.pick_up"), TileTextTone.LIGHT_GRAY)
@@ -551,6 +555,7 @@ internal object TileRenderModelBuilder {
                 val cursor = overlayState.inspectCursor ?: point(snapshot.metadata.playerX, snapshot.metadata.playerY)
                 val cell = requireNotNull(cellByPoint[cursor])
                 val actor = cell.actorEntityId?.let(actorById::get)
+                val prop = propByPoint[cursor]
 
                 rows += TileTextRow(localizer.text("ui.inspect.cursor", "x" to cursor.x, "y" to cursor.y), TileTextTone.WHITE)
                 rows += TileTextRow("${visibilityLabel(localizer, cell.visibility)} ${terrainName(localizer, cell)}", TileTextTone.WHITE)
@@ -632,6 +637,20 @@ internal object TileRenderModelBuilder {
                         }
                     }
                 }
+                prop?.nameKey?.let { nameKey ->
+                    rows +=
+                        TileTextRow(
+                            text = localizer.text(nameKey),
+                            tone = TileTextTone.GOLD,
+                            icon = resolveVisual(visualResolver, prop.visualKey),
+                        )
+                    prop.stateLabelKey?.let { stateLabelKey ->
+                        rows += TileTextRow(localizer.text(stateLabelKey), TileTextTone.CYAN)
+                    }
+                    prop.descKey?.let { descKey ->
+                        rows += TileTextRow(localizer.text(descKey), TileTextTone.LIGHT_GRAY)
+                    }
+                }
                 cell.stairDirectionId?.let { directionId ->
                     rows +=
                         TileTextRow(
@@ -640,7 +659,7 @@ internal object TileRenderModelBuilder {
                             icon = resolveVisual(visualResolver, stairVisualKey(directionId)),
                         )
                 }
-                if (actor == null && cell.items.isEmpty() && cell.stairDirectionId == null) {
+                if (actor == null && cell.items.isEmpty() && cell.stairDirectionId == null && prop == null) {
                     rows +=
                         TileTextRow(
                             text =
@@ -765,6 +784,8 @@ internal object TileRenderModelBuilder {
             RewardPresentationSourceSnapshot.BOSS -> TileTextTone.RED
             RewardPresentationSourceSnapshot.CACHE -> TileTextTone.CYAN
             RewardPresentationSourceSnapshot.SUPPORT -> TileTextTone.BLUE
+            RewardPresentationSourceSnapshot.HIDDEN_EVENT -> TileTextTone.MAGENTA
+            RewardPresentationSourceSnapshot.SECRET_ZONE -> TileTextTone.GREEN
         }
 
     private fun focusedActor(

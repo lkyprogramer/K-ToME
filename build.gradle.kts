@@ -79,10 +79,12 @@ subprojects {
                     "soloClearLab",
                     "mapgenSmoke",
                     "solvabilityHarness",
+                    "hiddenContentHarness",
                     "lootBalanceLab",
                     "whiteBoxMapgen",
                     "whiteBoxLoot",
                     "whiteBoxSolvability",
+                    "whiteBoxHiddenContent",
                     "phase4Report",
                 )
             }
@@ -179,6 +181,12 @@ tasks.register("solvabilityHarness") {
     dependsOn(":tools:solvabilityHarness")
 }
 
+tasks.register("hiddenContentHarness") {
+    group = LifecycleBasePlugin.VERIFICATION_GROUP
+    description = "Runs the Phase 4 hidden-content harness and writes structured reports."
+    dependsOn(":tools:hiddenContentHarness")
+}
+
 tasks.register("whiteBoxMapgen") {
     group = LifecycleBasePlugin.VERIFICATION_GROUP
     description = "Runs the Phase 4 unified white-box mapgen pilot."
@@ -191,10 +199,16 @@ tasks.register("whiteBoxSolvability") {
     dependsOn(":tools:whiteBoxSolvability")
 }
 
+tasks.register("whiteBoxHiddenContent") {
+    group = LifecycleBasePlugin.VERIFICATION_GROUP
+    description = "Runs the Phase 4 unified white-box hidden-content domain."
+    dependsOn(":tools:whiteBoxHiddenContent")
+}
+
 tasks.register("whiteBoxVerify") {
     group = LifecycleBasePlugin.VERIFICATION_GROUP
     description = "Runs all currently registered unified white-box verification pilots."
-    dependsOn("whiteBoxMapgen", "whiteBoxSolvability", "whiteBoxLoot")
+    dependsOn("whiteBoxMapgen", "whiteBoxSolvability", "whiteBoxLoot", "whiteBoxHiddenContent")
 }
 
 tasks.register("lootBalanceLab") {
@@ -211,7 +225,7 @@ tasks.register("whiteBoxLoot") {
 
 tasks.register("phase4Report") {
     group = LifecycleBasePlugin.VERIFICATION_GROUP
-    description = "Aggregates current Phase 4 verification tasks, including loot, into tools/build/reports/phase4/phase4-summary.json."
+    description = "Aggregates current Phase 4 verification tasks, including hidden content, into tools/build/reports/phase4/phase4-summary.json."
     dependsOn(":tools:phase4Report")
 }
 
@@ -235,6 +249,8 @@ tasks.register<Exec>("assetLint") {
         "assets-src/image/specs/phase4-pr05-gemini-plan.yaml",
         "--extra-plan",
         "assets-src/image/specs/phase4-pr06-gemini-plan.yaml",
+        "--extra-plan",
+        "assets-src/image/specs/phase4-pr07-gemini-plan.yaml",
         "--report-dir",
         "assets-src/image/manifests",
     )
@@ -260,6 +276,8 @@ tasks.register<Exec>("styleLint") {
         "assets-src/image/specs/phase4-pr05-gemini-plan.yaml",
         "--extra-plan",
         "assets-src/image/specs/phase4-pr06-gemini-plan.yaml",
+        "--extra-plan",
+        "assets-src/image/specs/phase4-pr07-gemini-plan.yaml",
     )
 }
 
@@ -284,6 +302,8 @@ tasks.register<Exec>("audioLint") {
         "assets-src/audio/specs/phase4-pr05-audio-plan.yaml",
         "--extra-plan",
         "assets-src/audio/specs/phase4-pr06-audio-plan.yaml",
+        "--extra-plan",
+        "assets-src/audio/specs/phase4-pr07-audio-plan.yaml",
         "--manifest",
         "assets-src/audio/manifests/phase2-audio-manifest.json",
         "--runtime-manifest",
@@ -343,6 +363,8 @@ tasks.register<Exec>("manifestLint") {
         "assets-src/image/specs/phase4-pr05-gemini-plan.yaml",
         "--extra-plan",
         "assets-src/image/specs/phase4-pr06-gemini-plan.yaml",
+        "--extra-plan",
+        "assets-src/image/specs/phase4-pr07-gemini-plan.yaml",
         "--manifest",
         "assets-src/image/manifests/phase2-visual-manifest.json",
         "--runtime-manifest",

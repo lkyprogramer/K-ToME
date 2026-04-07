@@ -21,6 +21,7 @@ import com.ktome.core.fov.Shadowcasting
 import com.ktome.core.item.AffixSelectionContext
 import com.ktome.core.map.Point
 import com.ktome.core.map.Room
+import com.ktome.core.pathfinding.AStar
 import com.ktome.core.mapgen.HybridTopologyMapgenPipeline
 import com.ktome.core.mapgen.MapgenRequest
 import com.ktome.core.random.SplitMix64RandomSource
@@ -853,14 +854,19 @@ object GameModule {
         map: com.ktome.core.map.GameMap,
         upstairs: Point?,
     ): Point {
-        val candidates = map.rooms.asReversed().map(Room::center) + map.floorPoints()
+        val reachable = reachablePassablePoints(map = map, start = upstairs ?: map.playerStart)
+        val candidates = map.rooms.asReversed().map(Room::center).filter(reachable::contains) + map.floorPoints().filter(reachable::contains)
         return candidates.first { point -> point != upstairs }
     }
 
     private fun chooseBossPosition(
         map: com.ktome.core.map.GameMap,
         occupiedPoints: Set<Point>,
-    ): Point = map.rooms.asReversed().map(Room::center).firstOrNull { it !in occupiedPoints } ?: map.floorPoints().first { it !in occupiedPoints }
+    ): Point {
+        val reachable = reachablePassablePoints(map = map, start = map.playerStart)
+        return map.rooms.asReversed().map(Room::center).firstOrNull { it !in occupiedPoints && it in reachable }
+            ?: map.floorPoints().first { it !in occupiedPoints && it in reachable }
+    }
 
     private fun createObjectiveInteractables(
         world: World,
@@ -930,16 +936,51 @@ object GameModule {
         bossPosition: Point?,
     ): Point {
         val routeSeed = stairsUp ?: map.playerStart
+        val visibleRoomCenterAnchor = routeVisibleAnchor(map, routeSeed, fallbackRoomCenter(map))
+        val roomCenterAnchor =
+            if (stairsDown != null && !pathExists(map = map, start = visibleRoomCenterAnchor, goal = stairsDown)) {
+                connectedRoomCenterAnchor(map = map, routeSeed = routeSeed, routeTarget = stairsDown)
+            } else {
+                visibleRoomCenterAnchor
+            }
         val anchor =
             when (placement.anchor.lowercase()) {
                 "player_start" -> map.playerStart
                 "stairs_up" -> stairsUp ?: map.playerStart
                 "stairs_down" -> stairsDown ?: fallbackRoomCenter(map)
-                "room_center" -> routeVisibleAnchor(map, routeSeed, fallbackRoomCenter(map))
+                "room_center" -> roomCenterAnchor
                 "boss_entry" -> routeVisibleAnchor(map, routeSeed, bossEntryPoint(map, bossPosition))
                 else -> error("Unsupported interactable placement anchor '${placement.anchor}'.")
             }
         return anchor + Point(placement.offset.x, placement.offset.y)
+    }
+
+    private fun connectedRoomCenterAnchor(
+        map: com.ktome.core.map.GameMap,
+        routeSeed: Point,
+        routeTarget: Point?,
+    ): Point {
+        val fallback = fallbackRoomCenter(map)
+        routeTarget?.let { target ->
+            val route = AStar.findPath(map = map, start = routeSeed, goal = target, blocked = emptySet())
+            val interior = route.drop(1).dropLast(1)
+            if (interior.isNotEmpty()) {
+                return interior[interior.size / 2]
+            }
+        }
+        val focusPoint = routeTarget?.let { target -> Point((routeSeed.x + target.x) / 2, (routeSeed.y + target.y) / 2) } ?: fallback
+        return map.rooms
+            .asSequence()
+            .map(Room::center)
+            .filter { point -> point != routeSeed && !map[point].blocksMovement }
+            .filter { point -> pathExists(map = map, start = routeSeed, goal = point) }
+            .filter { point -> routeTarget == null || pathExists(map = map, start = point, goal = routeTarget) }
+            .minWithOrNull(
+                compareBy<Point> { point -> point.chebyshevDistanceTo(focusPoint) }
+                    .thenBy { point -> point.chebyshevDistanceTo(routeSeed) }
+                    .thenBy(Point::y)
+                    .thenBy(Point::x),
+            ) ?: fallback
     }
 
     private fun fallbackRoomCenter(map: com.ktome.core.map.GameMap): Point =
@@ -1008,6 +1049,46 @@ object GameModule {
                 point !in occupiedPoints &&
                 point != map.playerStart
         }
+    }
+
+    private fun pathExists(
+        map: com.ktome.core.map.GameMap,
+        start: Point,
+        goal: Point,
+    ): Boolean =
+        AStar.findPath(
+            map = map,
+            start = start,
+            goal = goal,
+            blocked = emptySet(),
+        ).isNotEmpty()
+
+    private fun reachablePassablePoints(
+        map: com.ktome.core.map.GameMap,
+        start: Point,
+    ): Set<Point> {
+        if (map[start].blocksMovement) {
+            return emptySet()
+        }
+        val visited = linkedSetOf(start)
+        val queue = ArrayDeque<Point>()
+        queue += start
+        while (queue.isNotEmpty()) {
+            val current = queue.removeFirst()
+            Point.CARDINAL_DIRECTIONS
+                .asSequence()
+                .map { delta -> current + delta }
+                .filter { point ->
+                    map.isInBounds(point.x, point.y) &&
+                        !map[point].blocksMovement &&
+                        point !in visited
+                }.sortedWith(compareBy<Point>(Point::y).thenBy(Point::x))
+                .forEach { point ->
+                    visited += point
+                    queue += point
+                }
+        }
+        return visited
     }
 
     private fun createStair(

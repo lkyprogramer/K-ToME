@@ -158,8 +158,8 @@ data class SaveSnapshot(
     }
 
     companion object {
-        const val CURRENT_SCHEMA_VERSION: Int = 12
-        const val DEFAULT_BUILD_METADATA: String = "phase4-pr06-dev"
+        const val CURRENT_SCHEMA_VERSION: Int = 13
+        const val DEFAULT_BUILD_METADATA: String = "phase4-pr07-dev"
     }
 }
 
@@ -203,6 +203,7 @@ data class FloorSnapshot(
     val resolvedHiddenEntranceBindings: List<ResolvedEntranceBinding> = emptyList(),
     val revealedEntranceIds: Set<SearchBindingId> = emptySet(),
     val visitedSecretZoneIds: Set<ContentRef> = emptySet(),
+    val consumedHiddenEventIds: Set<String> = emptySet(),
     val searchState: List<SearchStateEntry> = emptyList(),
     val map: MapSnapshot,
     val stairsUp: PointSnapshot? = null,
@@ -224,6 +225,9 @@ data class FloorSnapshot(
         }
         require(searchState.distinctBy(SearchStateEntry::bindingId).size == searchState.size) {
             "FloorSnapshot.searchState must not contain duplicate binding ids."
+        }
+        require(consumedHiddenEventIds.all(String::isNotBlank)) {
+            "FloorSnapshot.consumedHiddenEventIds must not contain blank ids."
         }
         require(revealedEntranceIds == searchState.revealedBindingIds()) {
             "FloorSnapshot.revealedEntranceIds must match REVEALED searchState entries."
@@ -280,6 +284,7 @@ data class EntitySnapshot(
     val aiPerception: AIPerceptionSnapshot? = null,
     val pendingTelegraph: PendingTelegraphSnapshot? = null,
     val bossEncounterState: BossEncounterStateSnapshot? = null,
+    val secretEncounter: SecretEncounterRuntimeSnapshot? = null,
     val eliteMutations: List<String> = emptyList(),
     val aiProfileOverrideId: String? = null,
     val bossVariant: BossVariantRuntimeSnapshot? = null,
@@ -340,6 +345,7 @@ data class EntitySnapshot(
         aiPerception?.validateOrThrow()
         pendingTelegraph?.validateOrThrow()
         bossEncounterState?.validateOrThrow()
+        secretEncounter?.validateOrThrow()
         bossVariant?.validateOrThrow()
         patrolPressureState?.validateOrThrow()
         ambushLaneTrigger?.validateOrThrow()
@@ -352,6 +358,19 @@ data class EntitySnapshot(
         areaEffectEmitter?.validateOrThrow()
         worldEffect?.validateOrThrow()
         resourcePools.forEach(ResourcePoolSnapshot::validate)
+    }
+}
+
+@Serializable
+data class SecretEncounterRuntimeSnapshot(
+    val encounterId: String,
+    val secretZoneId: String,
+    val threatCost: Int = 0,
+) {
+    fun validateOrThrow() {
+        require(encounterId.isNotBlank()) { "SecretEncounterRuntimeSnapshot.encounterId must not be blank." }
+        require(secretZoneId.isNotBlank()) { "SecretEncounterRuntimeSnapshot.secretZoneId must not be blank." }
+        require(threatCost >= 0) { "SecretEncounterRuntimeSnapshot.threatCost must not be negative." }
     }
 }
 

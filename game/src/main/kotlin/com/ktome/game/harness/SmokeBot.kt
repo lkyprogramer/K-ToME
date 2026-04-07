@@ -1128,13 +1128,32 @@ class SmokeBot : RunBot {
     ): Int = visibleThreatPositions(observation).count { hostile -> hostile.chebyshevDistanceTo(observation.playerPosition) <= radius }
 
     private fun clusterTarget(observation: RunObservation): Point? =
-        visibleThreatPositions(observation)
-            .maxWithOrNull(
-                compareBy<Point> { hostilesAround(it, visibleThreatPositions(observation), 1) }
-                    .thenByDescending { it.chebyshevDistanceTo(observation.playerPosition) }
-                    .thenByDescending { it.y }
-                    .thenByDescending { it.x },
-            )
+        visibleThreatPositions(observation).bestClusterTarget(playerPosition = observation.playerPosition)
+
+    private fun List<Point>.bestClusterTarget(playerPosition: Point): Point? {
+        var bestPoint: Point? = null
+        var bestHostileCount = Int.MIN_VALUE
+        var bestDistance = Int.MIN_VALUE
+        var bestY = Int.MIN_VALUE
+        var bestX = Int.MIN_VALUE
+        for (candidate in this) {
+            val hostileCount = hostilesAround(candidate, this, 1)
+            val distance = candidate.chebyshevDistanceTo(playerPosition)
+            if (
+                hostileCount > bestHostileCount ||
+                (hostileCount == bestHostileCount && distance > bestDistance) ||
+                (hostileCount == bestHostileCount && distance == bestDistance && candidate.y > bestY) ||
+                (hostileCount == bestHostileCount && distance == bestDistance && candidate.y == bestY && candidate.x > bestX)
+            ) {
+                bestPoint = candidate
+                bestHostileCount = hostileCount
+                bestDistance = distance
+                bestY = candidate.y
+                bestX = candidate.x
+            }
+        }
+        return bestPoint
+    }
 
     private fun hostilesAround(
         center: Point,

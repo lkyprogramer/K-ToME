@@ -76,6 +76,9 @@ data class PropRenderSnapshot(
     val stairDirectionId: String? = null,
     val visualKey: String,
     val audioProfile: String? = null,
+    val nameKey: String? = null,
+    val descKey: String? = null,
+    val stateLabelKey: String? = null,
 )
 
 @Serializable
@@ -205,6 +208,7 @@ data class RenderUiStateSnapshot(
     val inventory: List<InventoryEntrySnapshot>,
     val recentRewards: List<RewardPresentationEntrySnapshot> = emptyList(),
     val targetablePositions: List<GridPointSnapshot>,
+    val searchPromptLabelKey: String? = null,
     val shardBalance: Int = 0,
     val activeShop: ShopPanelSnapshot? = null,
     val activeRouteSelection: RouteSelectionSnapshot? = null,
@@ -366,6 +370,8 @@ enum class RewardPresentationSourceSnapshot {
     BOSS,
     CACHE,
     SUPPORT,
+    HIDDEN_EVENT,
+    SECRET_ZONE,
 }
 
 @Serializable

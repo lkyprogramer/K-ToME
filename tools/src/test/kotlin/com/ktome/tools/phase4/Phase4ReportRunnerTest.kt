@@ -16,7 +16,7 @@ class Phase4ReportRunnerTest {
     fun `phase4 report aggregates currently landed phase4 verification tasks`() {
         val run = Phase4ReportRunner.run()
 
-        assertEquals(8, run.taskCount)
+        assertEquals(10, run.taskCount)
         assertEquals(0, run.failedTaskCount, "phase4Report recorded failed tasks; inspect ${run.summaryPath}")
         assertTrue(Files.exists(run.summaryPath), "Expected phase4 summary report at ${run.summaryPath}")
         assertTrue(Files.exists(run.markdownPath), "Expected phase4 markdown report at ${run.markdownPath}")
@@ -32,13 +32,24 @@ class Phase4ReportRunnerTest {
             tasks.first { element -> element.jsonObject.getValue("taskId").jsonPrimitive.content == "terrainInteractionBatch" }.jsonObject
 
         assertEquals("P4", payload.getValue("phaseId").jsonPrimitive.content)
-        assertEquals("8", payload.getValue("taskCount").jsonPrimitive.content)
+        assertEquals("10", payload.getValue("taskCount").jsonPrimitive.content)
         assertEquals("0", payload.getValue("failedTaskCount").jsonPrimitive.content)
         assertEquals("1000", solvabilityTask.getValue("metrics").jsonObject.getValue("distinctSeedCount").jsonPrimitive.content)
         assertTrue(bossTask.getValue("metrics").jsonObject.getValue("whiteBoxSummaryPath").jsonPrimitive.content.contains("whitebox/boss"))
         assertTrue(terrainTask.getValue("sourcePath").jsonPrimitive.content.contains("whitebox/terrain"))
         assertEquals(
-            setOf("mapgenSmoke", "solvabilityHarness", "bossHarness", "terrainInteractionBatch", "whiteBoxMapgen", "whiteBoxSolvability", "lootBalanceLab", "whiteBoxLoot"),
+            setOf(
+                "mapgenSmoke",
+                "solvabilityHarness",
+                "hiddenContentHarness",
+                "bossHarness",
+                "terrainInteractionBatch",
+                "whiteBoxMapgen",
+                "whiteBoxSolvability",
+                "lootBalanceLab",
+                "whiteBoxLoot",
+                "whiteBoxHiddenContent",
+            ),
             taskIds,
         )
     }

@@ -4348,6 +4348,38 @@
       "asciiColorHex": "#D7F0FF"
     },
     {
+      "key": "prop.hidden_entrance.revealed",
+      "category": "prop_interactable",
+      "rawOutputPath": "phase4/pr07/prop_hidden_entrance_revealed.png",
+      "footprint": "1x1",
+      "pivotX": 0.5,
+      "pivotY": 0.08,
+      "tags": [
+        "phase4",
+        "pr07",
+        "hidden",
+        "entrance"
+      ],
+      "asciiGlyph": "+",
+      "asciiColorHex": "#CFE5B6"
+    },
+    {
+      "key": "prop.hidden_entrance.return_bridge",
+      "category": "prop_interactable",
+      "rawOutputPath": "phase4/pr07/prop_hidden_entrance_return_bridge.png",
+      "footprint": "1x1",
+      "pivotX": 0.5,
+      "pivotY": 0.08,
+      "tags": [
+        "phase4",
+        "pr07",
+        "hidden",
+        "return"
+      ],
+      "asciiGlyph": "<",
+      "asciiColorHex": "#D7E7FF"
+    },
+    {
       "key": "prop.stairs.down",
       "category": "prop_interactable",
       "rawOutputPath": "phase2/p2-b/prop_stairs_down.png",
@@ -6454,6 +6486,126 @@
         "followup",
         "zone",
         "river"
+      ]
+    },
+    {
+      "key": "zone.secret.greenwood_hidden_cache.icon",
+      "category": "icon_quest",
+      "rawOutputPath": "phase4/pr07/zone_secret_greenwood_hidden_cache_icon.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "pr07",
+        "zone",
+        "greenwood",
+        "secret"
+      ]
+    },
+    {
+      "key": "zone.secret.greenwood_hidden_cache.visual",
+      "category": "portrait",
+      "rawOutputPath": "phase4/pr07/zone_secret_greenwood_hidden_cache_visual.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "pr07",
+        "zone",
+        "greenwood",
+        "secret"
+      ]
+    },
+    {
+      "key": "zone.secret.deep_iron_slag_cache.icon",
+      "category": "icon_quest",
+      "rawOutputPath": "phase4/pr07/zone_secret_deep_iron_slag_cache_icon.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "pr07",
+        "zone",
+        "mine",
+        "secret"
+      ]
+    },
+    {
+      "key": "zone.secret.deep_iron_slag_cache.visual",
+      "category": "portrait",
+      "rawOutputPath": "phase4/pr07/zone_secret_deep_iron_slag_cache_visual.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "pr07",
+        "zone",
+        "mine",
+        "secret"
+      ]
+    },
+    {
+      "key": "zone.secret.underground_river_crystal_rift.icon",
+      "category": "icon_quest",
+      "rawOutputPath": "phase4/pr07/zone_secret_underground_river_crystal_rift_icon.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "pr07",
+        "zone",
+        "river",
+        "secret"
+      ]
+    },
+    {
+      "key": "zone.secret.underground_river_crystal_rift.visual",
+      "category": "portrait",
+      "rawOutputPath": "phase4/pr07/zone_secret_underground_river_crystal_rift_visual.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "pr07",
+        "zone",
+        "river",
+        "secret"
+      ]
+    },
+    {
+      "key": "zone.secret.abyssal_temple_warded_archive.icon",
+      "category": "icon_quest",
+      "rawOutputPath": "phase4/pr07/zone_secret_abyssal_temple_warded_archive_icon.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "pr07",
+        "zone",
+        "abyssal",
+        "secret"
+      ]
+    },
+    {
+      "key": "zone.secret.abyssal_temple_warded_archive.visual",
+      "category": "portrait",
+      "rawOutputPath": "phase4/pr07/zone_secret_abyssal_temple_warded_archive_visual.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "pr07",
+        "zone",
+        "abyssal",
+        "secret"
       ]
     },
     {

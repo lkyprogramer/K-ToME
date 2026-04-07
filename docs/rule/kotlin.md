@@ -95,7 +95,22 @@ val player = requireNotNull(world.get<Player>(playerId)) { "Missing Player for $
 - Use mutable collections internally only when mutation is intentional and ownership is clear
 - Use `asSequence()` only when it measurably helps or clearly improves a long transformation pipeline
 - Prefer a simple loop when it is easier to read than a chain of collection operators
+- In harness, bot, replay, and other long-lived verification paths, prefer explicit loops or named comparators over long `compareBy` / `thenBy` / `sortedBy` chains when the ordering logic is central to behavior
+- Do not rely on compiler-generated anonymous comparator classes for critical decision paths when a small explicit ranking loop is clearer and more stable under Gradle test execution, incremental compilation, and classloader isolation
 - Use scope functions sparingly; if `let`/`also`/`apply`/`run` hides intent, write the control flow out directly
+
+```kotlin
+var bestTarget: Point? = null
+var bestScore = Int.MIN_VALUE
+
+for (candidate in hostilePositions) {
+    val score = scoreCluster(candidate)
+    if (score > bestScore) {
+        bestTarget = candidate
+        bestScore = score
+    }
+}
+```
 
 ## Constants And Literals
 
@@ -142,6 +157,7 @@ val player = requireNotNull(world.get<Player>(playerId)) { "Missing Player for $
 - Prefer assertions on behavior and contract, not incidental implementation detail
 - Keep test names descriptive enough to explain the invariant being protected
 - When a design choice is non-obvious, add a short comment explaining why, not what
+- If a runtime, harness, or bot decision depends on non-trivial ranking or tie-breaking, add a focused test that locks the ordering rule so future refactors do not silently change behavior
 
 ## Heuristics For Review
 

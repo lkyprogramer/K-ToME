@@ -268,6 +268,12 @@ class SchemaV2LoaderTest {
         assertTrue(catalog.visualKeys.contains("icon.skill.spellblade.counter_seal"))
         assertTrue(catalog.visualKeys.contains("prop.mine_furnace"))
         assertTrue(catalog.visualKeys.contains("prop.ritual_altar"))
+        assertTrue(catalog.visualKeys.contains("prop.hidden_entrance.revealed"))
+        assertTrue(catalog.visualKeys.contains("prop.hidden_entrance.return_bridge"))
+        assertTrue(catalog.visualKeys.contains("zone.secret.greenwood_hidden_cache.visual"))
+        assertTrue(catalog.visualKeys.contains("zone.secret.deep_iron_slag_cache.icon"))
+        assertTrue(catalog.visualKeys.contains("zone.secret.underground_river_crystal_rift.visual"))
+        assertTrue(catalog.visualKeys.contains("zone.secret.abyssal_temple_warded_archive.icon"))
         assertTrue(catalog.audioProfiles.contains("audio.talent.power_strike"))
         assertTrue(catalog.audioProfiles.contains("audio.talent.mana_surge"))
         assertTrue(catalog.audioProfiles.contains("audio.talent.backstab"))
@@ -279,6 +285,33 @@ class SchemaV2LoaderTest {
         assertTrue(catalog.audioProfiles.contains("audio.monster.bandit_family"))
         assertTrue(catalog.audioProfiles.contains("audio.boss.orc.molten_giant"))
         assertTrue(catalog.audioProfiles.contains("audio.monster.default"))
+        assertTrue(catalog.audioProfiles.contains("audio.hidden.reveal.secret_entrance"))
+        assertTrue(catalog.audioProfiles.contains("audio.interactable.hidden_return"))
+        assertTrue(catalog.audioProfiles.contains("audio.secret_zone.greenwood_hidden_cache"))
+        assertTrue(catalog.audioProfiles.contains("audio.secret_zone.abyssal_temple_warded_archive"))
+        assertEquals(8, catalog.hiddenEvents.size)
+        assertEquals(
+            setOf(
+                "greenwood_hidden_cache",
+                "deep_iron_slag_cache",
+                "underground_river_crystal_rift",
+                "abyssal_temple_warded_archive",
+            ),
+            catalog.secretZones.map { secretZone -> secretZone.id.id }.toSet(),
+        )
+        assertEquals(setOf("optional.branch.1"), catalog.secretZones.map { secretZone -> secretZone.entranceBindingId.value }.toSet())
+        assertTrue(
+            catalog.hiddenEvents
+                .flatMap { hiddenEvent -> hiddenEvent.rewards.map { reward -> reward.key.name } }
+                .toSet()
+                .containsAll(setOf("REVEAL_SECRET_ZONE", "GRANT_BUFF", "LOOT_PROFILE", "TRIGGER_ENCOUNTER")),
+        )
+        assertTrue(
+            catalog.zoneMapgenProfiles
+                .flatMap { profile -> profile.hiddenEntrancePlans }
+                .none { entrance -> entrance.targetSecretZoneId.id.endsWith("_stub") },
+            "PR-07 must replace all secret-zone stub ids with formal ids.",
+        )
         assertEquals(
             listOf("healing_potion", "short_sword", "leather_armor", "bandit_trophy", "stamina_draught", "hunter_bow"),
             catalog.lootProfiles.first { it.id == "loot.foundation.common" }.itemIds,
