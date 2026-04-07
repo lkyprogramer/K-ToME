@@ -1,0 +1,98 @@
+secretZones:
+  - id:
+      registry: secret_zone
+      id: greenwood_hidden_cache
+    nameKey: zone.secret.greenwood_hidden_cache.name
+    descKey: zone.secret.greenwood_hidden_cache.desc
+    visualKey: zone.secret.greenwood_hidden_cache.visual
+    iconKey: zone.secret.greenwood_hidden_cache.icon
+    audioProfile: audio.secret_zone.greenwood_hidden_cache
+    schemaVersion: 1
+    tags: [secret_zone, greenwood, optional]
+    entryRule:
+      combinator: AND
+      predicates:
+        - type: PERCEPTION_CHECK
+          difficulty: 8
+    pathClass: SECRET
+    rewardProfileId:
+      registry: loot_profile
+      id: loot.greenwood_hidden_cache.secret
+    guaranteedContent:
+      - registry: hidden_event
+        id: hidden.event.greenwood.hidden_cache.reward
+    entranceBindingId: optional.branch.1
+    returnBridgePolicy: LAST_MAINLINE_BRANCH
+  - id:
+      registry: secret_zone
+      id: deep_iron_slag_cache
+    nameKey: zone.secret.deep_iron_slag_cache.name
+    descKey: zone.secret.deep_iron_slag_cache.desc
+    visualKey: zone.secret.deep_iron_slag_cache.visual
+    iconKey: zone.secret.deep_iron_slag_cache.icon
+    audioProfile: audio.secret_zone.deep_iron_slag_cache
+    schemaVersion: 1
+    tags: [secret_zone, deep_iron, optional]
+    entryRule:
+      combinator: AND
+      predicates:
+        - type: PERCEPTION_CHECK
+          difficulty: 12
+    pathClass: SECRET
+    rewardProfileId:
+      registry: loot_profile
+      id: loot.deep_iron_slag_cache.secret
+    guaranteedContent:
+      - registry: hidden_event
+        id: hidden.event.deep_iron.slag_cache.reward
+    entranceBindingId: optional.branch.1
+    returnBridgePolicy: NEAREST_OPTIONAL_ANCHOR
+  - id:
+      registry: secret_zone
+      id: underground_river_crystal_rift
+    nameKey: zone.secret.underground_river_crystal_rift.name
+    descKey: zone.secret.underground_river_crystal_rift.desc
+    visualKey: zone.secret.underground_river_crystal_rift.visual
+    iconKey: zone.secret.underground_river_crystal_rift.icon
+    audioProfile: audio.secret_zone.underground_river_crystal_rift
+    schemaVersion: 1
+    tags: [secret_zone, river, optional]
+    entryRule:
+      combinator: AND
+      predicates:
+        - type: PERCEPTION_CHECK
+          difficulty: 16
+    pathClass: SECRET
+    rewardProfileId:
+      registry: loot_profile
+      id: loot.underground_river_crystal_rift.secret
+    guaranteedContent:
+      - registry: hidden_event
+        id: hidden.event.underground_river.crystal_rift.reward
+    entranceBindingId: optional.branch.1
+    returnBridgePolicy: EXPLICIT_ANCHOR
+    returnBridgeAnchorTag: hub
+  - id:
+      registry: secret_zone
+      id: abyssal_temple_warded_archive
+    nameKey: zone.secret.abyssal_temple_warded_archive.name
+    descKey: zone.secret.abyssal_temple_warded_archive.desc
+    visualKey: zone.secret.abyssal_temple_warded_archive.visual
+    iconKey: zone.secret.abyssal_temple_warded_archive.icon
+    audioProfile: audio.secret_zone.abyssal_temple_warded_archive
+    schemaVersion: 1
+    tags: [secret_zone, abyssal, optional]
+    entryRule:
+      combinator: AND
+      predicates:
+        - type: PERCEPTION_CHECK
+          difficulty: 20
+    pathClass: SECRET
+    rewardProfileId:
+      registry: loot_profile
+      id: loot.abyssal_temple_warded_archive.secret
+    guaranteedContent:
+      - registry: hidden_event
+        id: hidden.event.abyssal_temple.warded_archive.reward
+    entranceBindingId: optional.branch.1
+    returnBridgePolicy: NEAREST_OPTIONAL_ANCHOR

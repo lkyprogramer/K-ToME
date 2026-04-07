@@ -12,7 +12,7 @@
         "optionalLoopCount": 2,
         "loopEdgeCount": 2,
         "loopEdgeRatio": 0.2857142857142857,
-        "roomCount": 6,
+        "roomCount": 7,
         "patternRoomCount": 1,
         "vaultPlacementCount": 2,
         "pathClassCounts": {
@@ -40,7 +40,7 @@
         }
     ],
     "terrainTagDistribution": {
-        "WATER": 70
+        "WATER": 81
     },
     "rewardProfile": {
         "id": "zone_reward.greenwood_fringe.phase4",

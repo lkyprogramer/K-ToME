@@ -21,7 +21,7 @@ zoneMapgenProfiles:
         targetAnchorId: secret.greenwood.hidden_cache
         targetSecretZoneId:
           registry: secret_zone
-          id: greenwood_hidden_cache_stub
+          id: greenwood_hidden_cache
         discoveryRule:
           combinator: AND
           predicates:
@@ -49,7 +49,7 @@ zoneMapgenProfiles:
         targetAnchorId: secret.deep_iron.slag_cache
         targetSecretZoneId:
           registry: secret_zone
-          id: deep_iron_slag_cache_stub
+          id: deep_iron_slag_cache
         discoveryRule:
           combinator: AND
           predicates:
@@ -78,7 +78,7 @@ zoneMapgenProfiles:
         targetAnchorId: secret.underground_river.crystal_rift
         targetSecretZoneId:
           registry: secret_zone
-          id: underground_river_crystal_rift_stub
+          id: underground_river_crystal_rift
         discoveryRule:
           combinator: AND
           predicates:
@@ -106,7 +106,7 @@ zoneMapgenProfiles:
         targetAnchorId: secret.abyssal_temple.warded_archive
         targetSecretZoneId:
           registry: secret_zone
-          id: abyssal_temple_warded_archive_stub
+          id: abyssal_temple_warded_archive
         discoveryRule:
           combinator: AND
           predicates:

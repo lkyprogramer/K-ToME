@@ -26,7 +26,7 @@
         "optionalLoopCount": 1,
         "loopEdgeCount": 1,
         "loopEdgeRatio": 0.2,
-        "roomCount": 5,
+        "roomCount": 6,
         "patternRoomCount": 0,
         "vaultPlacementCount": 1,
         "pathClassCounts": {

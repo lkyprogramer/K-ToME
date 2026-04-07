@@ -170,6 +170,15 @@ import com.ktome.game.elites.TalentGrantRef
 import com.ktome.game.i18n.GameLocale
 import com.ktome.game.i18n.LocalizationBundle
 import com.ktome.game.i18n.Localizer
+import com.ktome.game.hidden.HiddenConditionKey
+import com.ktome.game.hidden.HiddenEventCondition
+import com.ktome.game.hidden.HiddenEventDef
+import com.ktome.game.hidden.HiddenEventReward
+import com.ktome.game.hidden.HiddenEventRewardKey
+import com.ktome.game.hidden.HiddenEventRewardPayload
+import com.ktome.game.hidden.HiddenTriggerType
+import com.ktome.game.hidden.ReturnBridgePolicy
+import com.ktome.game.hidden.SecretZoneDef
 import com.ktome.game.model.BossDefinition
 import com.ktome.game.model.MonsterCatalog
 import com.ktome.game.model.MonsterTemplate
@@ -206,6 +215,8 @@ class DataLoader(
         val worldGraphSchema = parseWorldGraphSchema(loadYamlMap("/data/world/world_graph.yaml"))
         val eliteRoot = loadYamlMap("/data/elites/index.yaml")
         val bossVariantRoot = loadYamlMap("/data/boss-variants/index.yaml")
+        val hiddenEventRoot = loadYamlMap("/data/events/index.yaml")
+        val secretZoneRoot = loadYamlMap("/data/secret-zones/index.yaml")
         val roomDefs = parseRoomDefs(loadYamlMap("/data/mapgen/rooms/index.yaml"))
         val patternTemplatesAndRooms = parsePatternTemplatesAndRooms(loadYamlMap("/data/mapgen/patterns/index.yaml"))
         val vaultTemplatesAndVaults = parseVaultTemplatesAndVaults(loadYamlMap("/data/mapgen/vaults/index.yaml"))
@@ -244,6 +255,8 @@ class DataLoader(
             eliteMutations = eliteMutations,
             bossVariants = bossVariants,
             actionWeightProfiles = actionWeightProfiles,
+            hiddenEvents = parseHiddenEventDefs(hiddenEventRoot),
+            secretZones = parseSecretZoneDefs(secretZoneRoot),
             tilesets = parseNamedSchemaRefs(loadYamlMap("/data/tilesets/index.yaml"), "tilesets"),
             aiProfiles = parseAiProfiles(loadYamlMap("/data/ai/index.yaml")),
             arenas = parseNamedSchemaRefs(loadYamlMap("/data/arenas/index.yaml"), "arenas"),
@@ -884,6 +897,88 @@ class DataLoader(
                 rarityBonus = profile.requiredFloat("rarityBonus"),
                 qualityBonus = profile.requiredInt("qualityBonus"),
                 baseRewardBudget = profile.requiredInt("baseRewardBudget"),
+            )
+        }
+
+    private fun parseHiddenEventDefs(root: Map<String, Any?>): List<HiddenEventDef> =
+        root.requiredList("events").map { entry ->
+            val event = entry.requiredMap()
+            HiddenEventDef(
+                id = event.requiredString("id"),
+                triggerType = HiddenTriggerType.valueOf(event.requiredString("triggerType").uppercase()),
+                conditions =
+                    event.requiredList("conditions").map { conditionEntry ->
+                        val condition = conditionEntry.requiredMap()
+                        HiddenEventCondition(
+                            key = HiddenConditionKey.valueOf(condition.requiredString("key").uppercase()),
+                            expectedValue = condition.requiredString("expectedValue"),
+                        )
+                    },
+                rewards =
+                    event.requiredList("rewards").map { rewardEntry ->
+                        val reward = rewardEntry.requiredMap()
+                        val key = HiddenEventRewardKey.valueOf(reward.requiredString("key").uppercase())
+                        HiddenEventReward(
+                            key = key,
+                            payload = parseHiddenEventRewardPayload(key = key, reward = reward.requiredMap("payload")),
+                        )
+                    },
+                optionalOnly = event.optionalBoolean("optionalOnly", default = true),
+            )
+        }
+
+    private fun parseHiddenEventRewardPayload(
+        key: HiddenEventRewardKey,
+        reward: Map<*, *>,
+    ): HiddenEventRewardPayload =
+        when (key) {
+            HiddenEventRewardKey.REVEAL_SECRET_ZONE ->
+                HiddenEventRewardPayload.RevealSecretZone(
+                    bindingId = SearchBindingId(reward.requiredString("bindingId")),
+                )
+
+            HiddenEventRewardKey.GRANT_BUFF ->
+                HiddenEventRewardPayload.GrantBuff(
+                    statusRef = reward.requiredMap("statusRef").toContentRef(),
+                    durationTurns = reward.requiredInt("durationTurns"),
+                    magnitude = reward.optionalDouble("magnitude", 0.0),
+                )
+
+            HiddenEventRewardKey.LOOT_PROFILE ->
+                HiddenEventRewardPayload.LootProfile(
+                    lootProfileRef = reward.requiredMap("lootProfileRef").toContentRef(),
+                )
+
+            HiddenEventRewardKey.TRIGGER_ENCOUNTER ->
+                HiddenEventRewardPayload.TriggerEncounter(
+                    encounterRef = reward.requiredMap("encounterRef").toContentRef(),
+                    threatCost = reward.optionalInt("threatCost"),
+                )
+        }
+
+    private fun parseSecretZoneDefs(root: Map<String, Any?>): List<SecretZoneDef> =
+        root.requiredList("secretZones").map { entry ->
+            val zone = entry.requiredMap()
+            SecretZoneDef(
+                id = zone.requiredMap("id").toContentRef(),
+                nameKey = zone.requiredString("nameKey"),
+                descKey = zone.requiredString("descKey"),
+                visualKey = zone.requiredString("visualKey"),
+                iconKey = zone.requiredString("iconKey"),
+                audioProfile = zone.requiredString("audioProfile"),
+                schemaVersion = zone.requiredInt("schemaVersion"),
+                tags = zone.optionalStringList("tags"),
+                entryRule = zone.requiredMap("entryRule").toDiscoveryRule(),
+                pathClass =
+                    zone.optionalString("pathClass")
+                        ?.uppercase()
+                        ?.let(PathClass::valueOf)
+                        ?: PathClass.SECRET,
+                rewardProfileId = zone.requiredMap("rewardProfileId").toContentRef(),
+                guaranteedContent = zone.optionalList("guaranteedContent").map { contentEntry -> contentEntry.requiredMap().toContentRef() },
+                entranceBindingId = NodeAnchorId(zone.requiredString("entranceBindingId")),
+                returnBridgePolicy = ReturnBridgePolicy.valueOf(zone.requiredString("returnBridgePolicy").uppercase()),
+                returnBridgeAnchorTag = zone.optionalString("returnBridgeAnchorTag"),
             )
         }
 

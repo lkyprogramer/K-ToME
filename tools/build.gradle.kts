@@ -86,6 +86,19 @@ tasks.register<Test>("solvabilityHarness") {
     outputs.dir(reportDir)
 }
 
+tasks.register<Test>("hiddenContentHarness") {
+    group = "verification"
+    description = "Runs the Phase 4 hidden-content harness and writes structured reports."
+    testClassesDirs = sourceSets.test.get().output.classesDirs
+    classpath = sourceSets.test.get().runtimeClasspath
+    useJUnitPlatform {
+        includeTags("hiddenContentHarness")
+    }
+    val reportDir = layout.buildDirectory.dir("reports/phase4/hidden")
+    systemProperty("ktome.phase4.hidden.reportDir", reportDir.get().asFile.absolutePath)
+    outputs.dir(reportDir)
+}
+
 tasks.register<Test>("whiteBoxMapgen") {
     group = "verification"
     description = "Runs the Phase 4 unified white-box mapgen pilot and writes standard reports."
@@ -138,6 +151,19 @@ tasks.register<Test>("whiteBoxLoot") {
     outputs.dir(reportDir)
 }
 
+tasks.register<Test>("whiteBoxHiddenContent") {
+    group = "verification"
+    description = "Runs the Phase 4 unified white-box hidden-content domain and writes standard reports."
+    testClassesDirs = sourceSets.test.get().output.classesDirs
+    classpath = sourceSets.test.get().runtimeClasspath
+    useJUnitPlatform {
+        includeTags("whiteBoxHiddenContent")
+    }
+    val reportDir = layout.buildDirectory.dir("reports/phase4/whitebox/hidden")
+    systemProperty("ktome.phase4.hidden.reportDir", layout.buildDirectory.dir("reports/phase4/hidden").get().asFile.absolutePath)
+    outputs.dir(reportDir)
+}
+
 tasks.register<Test>("phase4Report") {
     group = "verification"
     description = "Aggregates the currently landed Phase 4 verification reports into a single phase summary."
@@ -149,10 +175,12 @@ tasks.register<Test>("phase4Report") {
     dependsOn(
         ":tools:mapgenSmoke",
         ":tools:solvabilityHarness",
+        ":tools:hiddenContentHarness",
         ":tools:lootBalanceLab",
         ":tools:whiteBoxMapgen",
         ":tools:whiteBoxSolvability",
         ":tools:whiteBoxLoot",
+        ":tools:whiteBoxHiddenContent",
         ":game:terrainInteractionBatch",
         ":game:bossHarness",
     )

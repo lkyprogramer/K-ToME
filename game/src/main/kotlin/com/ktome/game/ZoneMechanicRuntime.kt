@@ -647,7 +647,13 @@ internal object ZoneMechanicRuntime {
         }
         val routeStart = map.playerStart
         val routeEnd = riverRouteExitPoint(world = world, map = map, routeStart = routeStart)
-        val anchor = interactablePoint(world, RiverCrystalRuntimeKeys.River.INTERACTABLE_ID) ?: midpoint(routeStart, routeEnd)
+        val anchor =
+            routeConnectedAnchor(
+                map = map,
+                routeStart = routeStart,
+                routeEnd = routeEnd,
+                preferred = interactablePoint(world, RiverCrystalRuntimeKeys.River.INTERACTABLE_ID),
+            )
         // Current pressure should read as "sideways drag" relative to the player's approach to the ferry anchor.
         // Using the full stair-to-stair delta can align the push with the objective path and make the anchor unreachable.
         val horizontalBand = abs(anchor.y - routeStart.y) >= abs(anchor.x - routeStart.x)
@@ -760,9 +766,12 @@ internal object ZoneMechanicRuntime {
         val routeEnd = riverRouteExitPoint(world = world, map = map, routeStart = routeStart)
         val reliquaryPoint = interactablePoint(world, AbyssalRuntimeKeys.Temple.INTERACTABLE_ID)
         val anchor =
-            reliquaryPoint
-                ?.takeIf { point -> isPassable(map, point) }
-                ?: fallbackRouteAnchor(map)
+            routeConnectedAnchor(
+                map = map,
+                routeStart = routeStart,
+                routeEnd = routeEnd,
+                preferred = reliquaryPoint?.takeIf { point -> isPassable(map, point) },
+            )
         val horizontalBand = abs(anchor.y - routeStart.y) >= abs(anchor.x - routeStart.x)
         val laneCandidates =
             routeBandCells(
@@ -926,9 +935,13 @@ internal object ZoneMechanicRuntime {
         horizontalBand: Boolean,
     ): List<Point> {
         val blockedOrigins = setOf(routeStart, routeEnd, map.playerStart)
+        val reachableFromStart = reachablePassableCells(map = map, start = routeStart)
+        val reachableFromEnd = reachablePassableCells(map = map, start = routeEnd)
         return map.floorPoints()
             .filter { point ->
                 isPassable(map, point) &&
+                    point in reachableFromStart &&
+                    point in reachableFromEnd &&
                     point !in blockedOrigins &&
                     blockedOrigins.none { origin -> origin.chebyshevDistanceTo(point) <= 2 } &&
                     if (horizontalBand) {
@@ -1094,6 +1107,47 @@ internal object ZoneMechanicRuntime {
             goal = goal,
             blocked = emptySet(),
         )
+
+    private fun routeConnectedAnchor(
+        map: GameMap,
+        routeStart: Point,
+        routeEnd: Point,
+        preferred: Point?,
+    ): Point {
+        if (preferred != null && routePath(map = map, start = routeStart, goal = preferred).isNotEmpty() && routePath(map = map, start = preferred, goal = routeEnd).isNotEmpty()) {
+            return preferred
+        }
+        val route = routePath(map = map, start = routeStart, goal = routeEnd)
+        val interior = route.drop(1).dropLast(1)
+        return interior.getOrNull(interior.size / 2)
+            ?: route.lastOrNull { point -> point != routeStart }
+            ?: fallbackRouteAnchor(map)
+    }
+
+    private fun reachablePassableCells(
+        map: GameMap,
+        start: Point,
+    ): Set<Point> {
+        if (!isPassable(map, start)) {
+            return emptySet()
+        }
+        val visited = linkedSetOf(start)
+        val queue = ArrayDeque<Point>()
+        queue += start
+        while (queue.isNotEmpty()) {
+            val current = queue.removeFirst()
+            Point.CARDINAL_DIRECTIONS
+                .asSequence()
+                .map { delta -> current + delta }
+                .filter { point -> isPassable(map, point) && point !in visited }
+                .sortedWith(compareBy<Point>(Point::y).thenBy(Point::x))
+                .forEach { point ->
+                    visited += point
+                    queue += point
+                }
+        }
+        return visited
+    }
 
     private fun crystalHazardCells(
         map: GameMap,

@@ -8,6 +8,7 @@ import com.ktome.core.inscription.InscriptionDef
 import com.ktome.core.mapgen.BiomeFamilyDef
 import com.ktome.core.mapgen.PatternRoomDef
 import com.ktome.core.mapgen.PatternTemplateDef
+import com.ktome.core.mapgen.PathClass
 import com.ktome.core.mapgen.RoomDef
 import com.ktome.core.mapgen.VaultDef
 import com.ktome.core.mapgen.VaultTemplateDef
@@ -38,11 +39,17 @@ import com.ktome.core.world.QuestProgress
 import com.ktome.core.world.RouteReward
 import com.ktome.core.world.WorldGraph
 import com.ktome.core.world.ZoneConnection
+import com.ktome.core.world.solvability.ContentRef
+import com.ktome.core.world.solvability.DiscoveryRule
+import com.ktome.core.world.solvability.SearchBindingId
 import com.ktome.game.elites.ActionWeightProfileDef
 import com.ktome.game.elites.BossVariantDef
 import com.ktome.game.elites.EliteMutationConfig
 import com.ktome.game.elites.EliteMutationDef
 import com.ktome.game.elites.MutationStatModifierDef
+import com.ktome.game.hidden.HiddenEventDef
+import com.ktome.game.hidden.ReturnBridgePolicy
+import com.ktome.game.hidden.SecretZoneDef
 
 data class SchemaCatalog(
     val professions: List<ProfessionSchemaV2>,
@@ -70,6 +77,8 @@ data class SchemaCatalog(
     val eliteMutations: List<EliteMutationDef> = emptyList(),
     val bossVariants: List<BossVariantDef> = emptyList(),
     val actionWeightProfiles: List<ActionWeightProfileDef> = emptyList(),
+    val hiddenEvents: List<HiddenEventDef> = emptyList(),
+    val secretZones: List<SecretZoneDef> = emptyList(),
     val tilesets: List<NamedSchemaRef>,
     val aiProfiles: List<AIProfile>,
     val arenas: List<NamedSchemaRef>,

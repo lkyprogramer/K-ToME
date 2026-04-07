@@ -1,0 +1,102 @@
+events:
+  - id: hidden.event.greenwood.hidden_cache.reveal
+    triggerType: PERCEPTION_REVEAL
+    optionalOnly: true
+    conditions:
+      - key: SEARCH_BINDING_ID
+        expectedValue: search.greenwood.hidden_cache
+    rewards:
+      - key: REVEAL_SECRET_ZONE
+        payload:
+          bindingId: search.greenwood.hidden_cache
+  - id: hidden.event.greenwood.hidden_cache.reward
+    triggerType: INTERACT_TILE
+    optionalOnly: true
+    conditions:
+      - key: SECRET_ZONE_ID
+        expectedValue: greenwood_hidden_cache
+    rewards:
+      - key: LOOT_PROFILE
+        payload:
+          lootProfileRef:
+            registry: loot_profile
+            id: loot.greenwood_hidden_cache.secret
+  - id: hidden.event.deep_iron.slag_cache.reveal
+    triggerType: PERCEPTION_REVEAL
+    optionalOnly: true
+    conditions:
+      - key: SEARCH_BINDING_ID
+        expectedValue: search.deep_iron.slag_cache
+    rewards:
+      - key: REVEAL_SECRET_ZONE
+        payload:
+          bindingId: search.deep_iron.slag_cache
+  - id: hidden.event.deep_iron.slag_cache.reward
+    triggerType: INTERACT_TILE
+    optionalOnly: true
+    conditions:
+      - key: SECRET_ZONE_ID
+        expectedValue: deep_iron_slag_cache
+    rewards:
+      - key: GRANT_BUFF
+        payload:
+          statusRef:
+            registry: status
+            id: GUARD_STANCE_BUFF
+          durationTurns: 5
+          magnitude: 0.20
+      - key: LOOT_PROFILE
+        payload:
+          lootProfileRef:
+            registry: loot_profile
+            id: loot.deep_iron_slag_cache.secret
+  - id: hidden.event.underground_river.crystal_rift.reveal
+    triggerType: PERCEPTION_REVEAL
+    optionalOnly: true
+    conditions:
+      - key: SEARCH_BINDING_ID
+        expectedValue: search.underground_river.crystal_rift
+    rewards:
+      - key: REVEAL_SECRET_ZONE
+        payload:
+          bindingId: search.underground_river.crystal_rift
+  - id: hidden.event.underground_river.crystal_rift.reward
+    triggerType: INTERACT_TILE
+    optionalOnly: true
+    conditions:
+      - key: SECRET_ZONE_ID
+        expectedValue: underground_river_crystal_rift
+    rewards:
+      - key: TRIGGER_ENCOUNTER
+        payload:
+          encounterRef:
+            registry: monster
+            id: undead.bone_archer
+          threatCost: 4
+      - key: LOOT_PROFILE
+        payload:
+          lootProfileRef:
+            registry: loot_profile
+            id: loot.underground_river_crystal_rift.secret
+  - id: hidden.event.abyssal_temple.warded_archive.reveal
+    triggerType: PERCEPTION_REVEAL
+    optionalOnly: true
+    conditions:
+      - key: SEARCH_BINDING_ID
+        expectedValue: search.abyssal_temple.warded_archive
+    rewards:
+      - key: REVEAL_SECRET_ZONE
+        payload:
+          bindingId: search.abyssal_temple.warded_archive
+  - id: hidden.event.abyssal_temple.warded_archive.reward
+    triggerType: INTERACT_TILE
+    optionalOnly: true
+    conditions:
+      - key: SECRET_ZONE_ID
+        expectedValue: abyssal_temple_warded_archive
+    rewards:
+      - key: LOOT_PROFILE
+        payload:
+          lootProfileRef:
+            registry: loot_profile
+            id: loot.abyssal_temple_warded_archive.secret

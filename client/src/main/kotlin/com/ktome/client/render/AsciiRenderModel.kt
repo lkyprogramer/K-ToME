@@ -150,6 +150,7 @@ internal object AsciiRenderModelBuilder {
     ): List<AsciiTextLine> {
         val lines = mutableListOf<AsciiTextLine>()
         val playerCell = requireNotNull(cellByPoint[point(snapshot.metadata.playerX, snapshot.metadata.playerY)])
+        val propByPoint = snapshot.props.associateBy { prop -> point(prop.x, prop.y) }
         if (overlayState.mode == UiMode.MAP) {
             snapshot.metadata.zoneDescKey?.let { descKey ->
                 lines += AsciiTextLine(localizer.text(descKey), AsciiTextTone.LIGHT_GRAY)
@@ -211,6 +212,9 @@ internal object AsciiRenderModelBuilder {
             UiMode.MAP -> {
                 lines += blankLine()
                 lines += AsciiTextLine(localizer.text("ui.sidebar.shards", "value" to snapshot.uiState.shardBalance), AsciiTextTone.GOLD)
+                snapshot.uiState.searchPromptLabelKey?.let { labelKey ->
+                    lines += AsciiTextLine(localizer.text(labelKey), AsciiTextTone.CYAN)
+                }
                 lines += AsciiTextLine(localizer.text("ui.controls.map.pick_up"), AsciiTextTone.LIGHT_GRAY)
                 lines += AsciiTextLine(localizer.text("ui.controls.map.inventory"), AsciiTextTone.LIGHT_GRAY)
                 lines += AsciiTextLine(localizer.text("ui.controls.map.save"), AsciiTextTone.LIGHT_GRAY)
@@ -377,6 +381,7 @@ internal object AsciiRenderModelBuilder {
                 val cursor = overlayState.inspectCursor ?: point(snapshot.metadata.playerX, snapshot.metadata.playerY)
                 val cell = requireNotNull(cellByPoint[cursor])
                 val actor = cell.actorEntityId?.let(actorById::get)
+                val prop = propByPoint[cursor]
 
                 lines += AsciiTextLine(AsciiRenderer.sidebarTitle(localizer, UiMode.INSPECT), AsciiTextTone.GOLD)
                 lines += AsciiTextLine(localizer.text("ui.inspect.cursor", "x" to cursor.x, "y" to cursor.y), AsciiTextTone.WHITE)
@@ -451,6 +456,15 @@ internal object AsciiRenderModelBuilder {
                         }
                     }
                 }
+                prop?.nameKey?.let { nameKey ->
+                    lines += AsciiTextLine(localizer.text(nameKey), AsciiTextTone.GOLD)
+                    prop.stateLabelKey?.let { stateLabelKey ->
+                        lines += AsciiTextLine(localizer.text(stateLabelKey), AsciiTextTone.CYAN)
+                    }
+                    prop.descKey?.let { descKey ->
+                        lines += AsciiTextLine(localizer.text(descKey), AsciiTextTone.LIGHT_GRAY)
+                    }
+                }
 
                 if (snapshot.uiState.inscriptions.isNotEmpty()) {
                     lines += AsciiTextLine(localizer.text("ui.sidebar.inscriptions"), AsciiTextTone.GOLD)
@@ -473,7 +487,7 @@ internal object AsciiRenderModelBuilder {
                     lines += AsciiTextLine(stairName(localizer, directionId), AsciiTextTone.LIGHT_GRAY)
                 }
 
-                if (actor == null && cell.items.isEmpty() && cell.stairDirectionId == null) {
+                if (actor == null && cell.items.isEmpty() && cell.stairDirectionId == null && prop == null) {
                     lines += AsciiTextLine(
                         when (cell.visibility) {
                             CellVisibilitySnapshot.VISIBLE -> localizer.text("ui.inspect.no_visible_target")
@@ -592,6 +606,8 @@ internal object AsciiRenderModelBuilder {
             RewardPresentationSourceSnapshot.BOSS -> AsciiTextTone.RED
             RewardPresentationSourceSnapshot.CACHE -> AsciiTextTone.CYAN
             RewardPresentationSourceSnapshot.SUPPORT -> AsciiTextTone.LIGHT_GRAY
+            RewardPresentationSourceSnapshot.HIDDEN_EVENT -> AsciiTextTone.MAGENTA
+            RewardPresentationSourceSnapshot.SECRET_ZONE -> AsciiTextTone.GREEN
         }
 
     private fun terrainPresentation(

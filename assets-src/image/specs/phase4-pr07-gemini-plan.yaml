@@ -1,0 +1,102 @@
+styleTag: ktome-middle-fantasy-painterly-tile-v1
+artStyleBible: docs/2026-03-13-art-style-bible.md
+stylePrompt: >-
+  High fantasy, middle-earth inspired painterly production pass for Phase 4
+  PR-07 hidden entrances and secret zones. Hidden entrances must read clearly
+  on the tactical grid, secret zone portraits and icons must feel discoverable
+  rather than debug-like, and every asset must stay grounded in the
+  established K-ToME palette and material language, never anime and never
+  sci-fi.
+defaults:
+  imageAspectRatio: "1:1"
+  imageSize: "1K"
+  negativeConstraints:
+    - no modern clothing
+    - no firearms
+    - no sci-fi materials
+    - no anime proportions
+    - no floating text, watermark or logo
+phase2AssetGates:
+  P4-PR07:
+    description: Formal PR-07 visual plan for hidden entrances, return bridges, and secret-zone readability.
+    assets:
+      - id: phase4_pr07_prop_hidden_entrance_revealed
+        category: prop_interactable
+        visualKey: prop.hidden_entrance.revealed
+        outputName: phase4/pr07/prop_hidden_entrance_revealed.png
+        subject: revealed hidden entrance marker with carved stone seam and subtle light spill
+        materialTags: [phase4, pr07, hidden, entrance]
+        constraints: [grid-readable, single centered prop, readable at tactical size]
+        geminiKeyRequired: true
+      - id: phase4_pr07_prop_hidden_return_bridge
+        category: prop_interactable
+        visualKey: prop.hidden_entrance.return_bridge
+        outputName: phase4/pr07/prop_hidden_entrance_return_bridge.png
+        subject: return bridge marker for a secret route back to the mainline
+        materialTags: [phase4, pr07, hidden, return]
+        constraints: [grid-readable, single centered prop, readable at tactical size]
+        geminiKeyRequired: true
+      - id: phase4_pr07_zone_greenwood_hidden_cache_icon
+        category: icon_quest
+        visualKey: zone.secret.greenwood_hidden_cache.icon
+        outputName: phase4/pr07/zone_secret_greenwood_hidden_cache_icon.png
+        subject: forest cache secret-zone icon with briar and lantern motif
+        materialTags: [phase4, pr07, zone, greenwood, secret]
+        constraints: [ui-readable icon, clean silhouette]
+        geminiKeyRequired: true
+      - id: phase4_pr07_zone_greenwood_hidden_cache_visual
+        category: portrait
+        visualKey: zone.secret.greenwood_hidden_cache.visual
+        outputName: phase4/pr07/zone_secret_greenwood_hidden_cache_visual.png
+        subject: hidden woodland cache portrait tucked behind thorn cover
+        materialTags: [phase4, pr07, zone, greenwood, secret]
+        constraints: [portrait composition, atmospheric but readable]
+        geminiKeyRequired: true
+      - id: phase4_pr07_zone_deep_iron_slag_cache_icon
+        category: icon_quest
+        visualKey: zone.secret.deep_iron_slag_cache.icon
+        outputName: phase4/pr07/zone_secret_deep_iron_slag_cache_icon.png
+        subject: mine slag cache secret-zone icon with furnace ash motif
+        materialTags: [phase4, pr07, zone, mine, secret]
+        constraints: [ui-readable icon, clean silhouette]
+        geminiKeyRequired: true
+      - id: phase4_pr07_zone_deep_iron_slag_cache_visual
+        category: portrait
+        visualKey: zone.secret.deep_iron_slag_cache.visual
+        outputName: phase4/pr07/zone_secret_deep_iron_slag_cache_visual.png
+        subject: hidden slag cache portrait with soot-blackened masonry and reserve crates
+        materialTags: [phase4, pr07, zone, mine, secret]
+        constraints: [portrait composition, atmospheric but readable]
+        geminiKeyRequired: true
+      - id: phase4_pr07_zone_underground_river_crystal_rift_icon
+        category: icon_quest
+        visualKey: zone.secret.underground_river_crystal_rift.icon
+        outputName: phase4/pr07/zone_secret_underground_river_crystal_rift_icon.png
+        subject: crystal rift secret-zone icon with river current and shard motif
+        materialTags: [phase4, pr07, zone, river, secret]
+        constraints: [ui-readable icon, clean silhouette]
+        geminiKeyRequired: true
+      - id: phase4_pr07_zone_underground_river_crystal_rift_visual
+        category: portrait
+        visualKey: zone.secret.underground_river_crystal_rift.visual
+        outputName: phase4/pr07/zone_secret_underground_river_crystal_rift_visual.png
+        subject: hidden crystal rift portrait suspended above the dark river
+        materialTags: [phase4, pr07, zone, river, secret]
+        constraints: [portrait composition, atmospheric but readable]
+        geminiKeyRequired: true
+      - id: phase4_pr07_zone_abyssal_temple_warded_archive_icon
+        category: icon_quest
+        visualKey: zone.secret.abyssal_temple_warded_archive.icon
+        outputName: phase4/pr07/zone_secret_abyssal_temple_warded_archive_icon.png
+        subject: warded archive secret-zone icon with seal and reliquary motif
+        materialTags: [phase4, pr07, zone, abyssal, secret]
+        constraints: [ui-readable icon, clean silhouette]
+        geminiKeyRequired: true
+      - id: phase4_pr07_zone_abyssal_temple_warded_archive_visual
+        category: portrait
+        visualKey: zone.secret.abyssal_temple_warded_archive.visual
+        outputName: phase4/pr07/zone_secret_abyssal_temple_warded_archive_visual.png
+        subject: warded archive portrait behind abyssal temple seals
+        materialTags: [phase4, pr07, zone, abyssal, secret]
+        constraints: [portrait composition, atmospheric but readable]
+        geminiKeyRequired: true

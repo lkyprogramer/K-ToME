@@ -159,6 +159,8 @@ visuals:
   - id: prop.mine_furnace
   - id: prop.river_ferry_anchor
   - id: prop.ritual_altar
+  - id: prop.hidden_entrance.revealed
+  - id: prop.hidden_entrance.return_bridge
   - id: prop.stairs.down
   - id: prop.stairs.up
   - id: prop.supply_crate
@@ -174,16 +176,24 @@ visuals:
   - id: zone.shattered_outpost.icon
   - id: zone.greenwood_fringe.visual
   - id: zone.greenwood_fringe.icon
+  - id: zone.secret.greenwood_hidden_cache.visual
+  - id: zone.secret.greenwood_hidden_cache.icon
   - id: zone.abyssal_temple.visual
   - id: zone.abyssal_temple.icon
+  - id: zone.secret.abyssal_temple_warded_archive.visual
+  - id: zone.secret.abyssal_temple_warded_archive.icon
   - id: zone.abyssal_heart.visual
   - id: zone.abyssal_heart.icon
   - id: zone.underground_river.visual
   - id: zone.underground_river.icon
+  - id: zone.secret.underground_river_crystal_rift.visual
+  - id: zone.secret.underground_river_crystal_rift.icon
   - id: zone.crystal_cavern.visual
   - id: zone.crystal_cavern.icon
   - id: zone.deep_iron_pit.visual
   - id: zone.deep_iron_pit.icon
+  - id: zone.secret.deep_iron_slag_cache.visual
+  - id: zone.secret.deep_iron_slag_cache.icon
   - id: zone.grey_gate_depths.visual
   - id: zone.grey_gate_depths.icon
   - id: vfx.zone.effect.current_lane_01

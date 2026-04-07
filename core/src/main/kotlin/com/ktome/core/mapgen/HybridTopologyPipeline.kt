@@ -407,7 +407,12 @@ class HybridTopologyMapgenPipeline(
     override fun run(request: MapgenRequest): GeneratedFloor {
         val profile = profileResolver.resolve(request.zoneId)
         val topology = planner.plan(profile = profile, request = request)
-        val roomInstances = instantiateRooms(topology = topology, request = request)
+        val roomInstances =
+            instantiateRooms(
+                topology = topology,
+                hiddenEntrancePlans = profile.hiddenEntrancePlans,
+                request = request,
+            )
         val nodesByAnchorId = topology.nodes.associateBy(TopologyNode::anchorId)
         val builder = GameMap.Builder(request.targetWidth, request.targetHeight)
         roomInstances.forEach { room -> carveRoomShape(builder = builder, room = room, shape = roomDefsById.getValue(room.roomDefId).shape) }
@@ -468,6 +473,7 @@ class HybridTopologyMapgenPipeline(
 
     private fun instantiateRooms(
         topology: TopologyGraph,
+        hiddenEntrancePlans: List<HiddenEntrancePlan>,
         request: MapgenRequest,
     ): List<RoomInstance> {
         val nodesById = topology.nodes.associateBy(TopologyNode::id)
@@ -538,6 +544,63 @@ class HybridTopologyMapgenPipeline(
                         maxHeight = request.targetHeight,
                     )
             }
+
+        val roomsByAnchorId = rooms.associateBy(RoomInstance::anchorId)
+        hiddenEntrancePlans.forEach { plan ->
+            val node = requireNotNull(nodesById[topology.nodes.first { candidate -> candidate.anchorId == plan.targetAnchorId }.id]) {
+                "HiddenEntrancePlan '${plan.bindingId.value}' target anchor '${plan.targetAnchorId.value}' must resolve to a secret node."
+            }
+            val sourceRoom = requireNotNull(roomsByAnchorId[plan.entranceAnchorId]) {
+                "HiddenEntrancePlan '${plan.bindingId.value}' entrance anchor '${plan.entranceAnchorId.value}' must resolve to an instantiated room."
+            }
+            val roomDef = roomDefsById.getValue(node.roomDefId)
+            val width =
+                sampleDimension(
+                    roomDef.widthRange,
+                    maxValue = (request.targetWidth / 5).coerceAtLeast(roomDef.widthRange.first),
+                    random = stableRandom(request.seed, "width:${node.id.value}"),
+                )
+            val height =
+                sampleDimension(
+                    roomDef.heightRange,
+                    maxValue = (request.targetHeight / 4).coerceAtLeast(roomDef.heightRange.first),
+                    random = stableRandom(request.seed, "height:${node.id.value}"),
+                )
+            val branchUp = stableRandom(request.seed, "secret-branch:${node.id.value}").nextBoolean()
+            val horizontalOffset =
+                stableRandom(request.seed, "secret-x:${node.id.value}")
+                    .nextInt(-max(2, width / 3), max(3, width / 3) + 1)
+            val candidateX =
+                (sourceRoom.x + (sourceRoom.width / 2) - (width / 2) + horizontalOffset)
+                    .coerceIn(2, request.targetWidth - width - 2)
+            val candidateY =
+                if (branchUp) {
+                    sourceRoom.y - height - 8
+                } else {
+                    sourceRoom.y + sourceRoom.height + 8
+                }
+            val boundedY = candidateY.coerceIn(2, request.targetHeight - height - 2)
+            rooms +=
+                adjustPlacement(
+                    existingRooms = rooms,
+                    candidate =
+                        RoomInstance(
+                            nodeId = node.id,
+                            anchorId = node.anchorId,
+                            roomDefId = node.roomDefId,
+                            x = candidateX,
+                            y = boundedY,
+                            width = width,
+                            height = height,
+                            shape = roomDef.shape,
+                            pathClass = node.pathClass,
+                            tags = node.tags,
+                            biomeFamilyId = node.biomeFamilyId,
+                        ),
+                    maxWidth = request.targetWidth,
+                    maxHeight = request.targetHeight,
+                )
+        }
         return rooms
     }
 

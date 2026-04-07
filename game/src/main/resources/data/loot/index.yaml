@@ -84,3 +84,23 @@ lootProfiles:
     tags: [loot, reward, abyssal, finale]
     rewardBudget: 1
     itemIds: [abyssal_heartstone]
+  - id: loot.greenwood_hidden_cache.secret
+    schemaVersion: 2
+    tags: [loot, secret, greenwood]
+    rewardBudget: 5
+    itemIds: [hunter_bow, bandit_trophy, emerald_charm, stamina_draught]
+  - id: loot.deep_iron_slag_cache.secret
+    schemaVersion: 2
+    tags: [loot, secret, deep_iron]
+    rewardBudget: 6
+    itemIds: [forgebreaker_pick, furnace_talisman, energy_tonic, chain_mail]
+  - id: loot.underground_river_crystal_rift.secret
+    schemaVersion: 2
+    tags: [loot, secret, underground_river]
+    rewardBudget: 6
+    itemIds: [seal_reliquary, mana_potion, chain_mail, arcane_staff]
+  - id: loot.abyssal_temple_warded_archive.secret
+    schemaVersion: 2
+    tags: [loot, secret, abyssal_temple]
+    rewardBudget: 7
+    itemIds: [sanctified_seal, shadow_cloak, consecrated_oil, seal_reliquary]

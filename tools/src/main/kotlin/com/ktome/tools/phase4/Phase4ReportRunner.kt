@@ -70,6 +70,10 @@ object Phase4ReportRunner {
                 reader = ::readSolvabilityHarness,
             ),
             Phase4TaskDescriptor(
+                relativeSourcePath = "tools/build/reports/phase4/hidden/hidden-content-summary.json",
+                reader = ::readHiddenContentHarness,
+            ),
+            Phase4TaskDescriptor(
                 relativeSourcePath = "build/reports/harness/boss-harness.json",
                 reader = ::readBossHarness,
             ),
@@ -92,6 +96,10 @@ object Phase4ReportRunner {
             Phase4TaskDescriptor(
                 relativeSourcePath = "tools/build/reports/phase4/whitebox/loot/whitebox-loot-summary.json",
                 reader = ::readWhiteBoxLoot,
+            ),
+            Phase4TaskDescriptor(
+                relativeSourcePath = "tools/build/reports/phase4/whitebox/hidden/whitebox-hidden-content-summary.json",
+                reader = ::readWhiteBoxHiddenContent,
             ),
         )
 
@@ -177,6 +185,47 @@ object Phase4ReportRunner {
                     put("casesWithBacktrackProof", summary.intValue("casesWithBacktrackProof"))
                     put("casesWithSecretReveal", summary.intValue("casesWithSecretReveal"))
                     put("casesWithSearchFailure", summary.intValue("casesWithSearchFailure"))
+                },
+        )
+    }
+
+    private fun readHiddenContentHarness(
+        repoRoot: Path,
+        sourcePath: Path,
+        payload: JsonObject,
+    ): Phase4TaskAggregate {
+        val header = payload.getValue("header").jsonObject
+        val summary = payload.getValue("summary").jsonObject
+        val failureCount = summary.intValue("failureCount")
+        return Phase4TaskAggregate(
+            taskId = "hiddenContentHarness",
+            status = if (failureCount == 0) "PASS" else "FAIL",
+            sourcePath = relativize(repoRoot, sourcePath),
+            buildId = header.stringValue("buildId"),
+            locale = header.stringValue("locale"),
+            metrics =
+                buildJsonObject {
+                    put("totalCases", summary.intValue("totalCases"))
+                    put("distinctSeedCount", summary.intValue("distinctSeedCount"))
+                    put("failureCount", failureCount)
+                    put("caseFailureCount", summary.intValue("caseFailureCount"))
+                    put("aggregateFailureCount", summary.intValue("aggregateFailureCount"))
+                    put("hiddenEventTriggerCount", summary.intValue("hiddenEventTriggerCount"))
+                    put("hiddenEventTriggerRate", summary.doubleValue("hiddenEventTriggerRate"))
+                    put("secretZoneDiscoveryCount", summary.intValue("secretZoneDiscoveryCount"))
+                    put("secretZoneDiscoveryRate", summary.doubleValue("secretZoneDiscoveryRate"))
+                    put("explicitSearchRevealCount", summary.intValue("explicitSearchRevealCount"))
+                    put("searchFailureCount", summary.intValue("searchFailureCount"))
+                    put("zeroHiddenEventZoneCount", summary.intValue("zeroHiddenEventZoneCount"))
+                    put("zeroSecretZoneZoneCount", summary.intValue("zeroSecretZoneZoneCount"))
+                    put("criticalPathFailureCount", summary.intValue("criticalPathFailureCount"))
+                    put("triggerContextFailureCount", summary.intValue("triggerContextFailureCount"))
+                    put("secretRewardNodeMissingCount", summary.intValue("secretRewardNodeMissingCount"))
+                    put("rewardBudgetFailureCount", summary.intValue("rewardBudgetFailureCount"))
+                    put("threatBudgetFailureCount", summary.intValue("threatBudgetFailureCount"))
+                    put("searchFailureBlockingCount", summary.intValue("searchFailureBlockingCount"))
+                    put("proofMismatchCount", summary.intValue("proofMismatchCount"))
+                    put("runtimeReturnDestinationMismatchCount", summary.intValue("runtimeReturnDestinationMismatchCount"))
                 },
         )
     }
@@ -357,6 +406,33 @@ object Phase4ReportRunner {
         )
     }
 
+    private fun readWhiteBoxHiddenContent(
+        repoRoot: Path,
+        sourcePath: Path,
+        payload: JsonObject,
+    ): Phase4TaskAggregate {
+        val header = payload.getValue("header").jsonObject
+        val summary = payload.getValue("summary").jsonObject
+        val failedAssertions = summary.intValue("failedAssertions")
+        return Phase4TaskAggregate(
+            taskId = "whiteBoxHiddenContent",
+            status = if (failedAssertions == 0) "PASS" else "FAIL",
+            sourcePath = relativize(repoRoot, sourcePath),
+            buildId = header.stringValue("buildId"),
+            locale = header.stringValue("locale"),
+            metrics =
+                buildJsonObject {
+                    put("caseCount", summary.intValue("caseCount"))
+                    put("aggregateCount", summary.intValue("aggregateCount"))
+                    put("failedAssertions", failedAssertions)
+                    put("artifactCount", summary.intValue("artifactCount"))
+                    put("failedCaseCount", payload.intValue("failedCaseCount"))
+                    put("failedAggregateCount", payload.intValue("failedAggregateCount"))
+                    payload["firstFailedJoinKey"]?.let { joinKey -> put("firstFailedJoinKey", joinKey.toString()) }
+                },
+        )
+    }
+
     private fun renderMarkdown(report: Phase4AggregateReport): String =
         buildString {
             appendLine("# Phase 4 Report")
@@ -430,5 +506,7 @@ private fun readPhase4Json(path: Path): JsonObject {
 }
 
 private fun JsonObject.intValue(key: String): Int = (getValue(key) as JsonPrimitive).content.toInt()
+
+private fun JsonObject.doubleValue(key: String): Double = (getValue(key) as JsonPrimitive).content.toDouble()
 
 private fun JsonObject.stringValue(key: String): String = (getValue(key) as JsonPrimitive).content

@@ -1,0 +1,66 @@
+manifestVersion: 1
+fallbackKey: audio.fallback.silence
+packId: phase4-pr07-audio-generation-v1
+sampleRate: 44100
+entries:
+  - key: audio.hidden.reveal.secret_entrance
+    cueFamily: interactable
+    eventId: audio.hidden.reveal.secret_entrance
+    sourcePath: audio/phase4/pr07/hidden_reveal_secret_entrance.ogg
+    tags: [phase4, pr07, hidden, reveal]
+  - key: audio.interactable.hidden_return
+    cueFamily: interactable
+    eventId: audio.interactable.hidden_return
+    sourcePath: audio/phase4/pr07/interactable_hidden_return.ogg
+    tags: [phase4, pr07, hidden, return]
+  - key: audio.secret_zone.greenwood_hidden_cache
+    cueFamily: zone
+    eventId: audio.secret_zone.greenwood_hidden_cache
+    sourcePath: audio/phase4/pr07/secret_zone_greenwood_hidden_cache.ogg
+    tags: [phase4, pr07, hidden, zone, greenwood]
+  - key: audio.secret_zone.deep_iron_slag_cache
+    cueFamily: zone
+    eventId: audio.secret_zone.deep_iron_slag_cache
+    sourcePath: audio/phase4/pr07/secret_zone_deep_iron_slag_cache.ogg
+    tags: [phase4, pr07, hidden, zone, mine]
+  - key: audio.secret_zone.underground_river_crystal_rift
+    cueFamily: zone
+    eventId: audio.secret_zone.underground_river_crystal_rift
+    sourcePath: audio/phase4/pr07/secret_zone_underground_river_crystal_rift.ogg
+    tags: [phase4, pr07, hidden, zone, river]
+  - key: audio.secret_zone.abyssal_temple_warded_archive
+    cueFamily: zone
+    eventId: audio.secret_zone.abyssal_temple_warded_archive
+    sourcePath: audio/phase4/pr07/secret_zone_abyssal_temple_warded_archive.ogg
+    tags: [phase4, pr07, hidden, zone, abyssal]
+targets:
+  - id: phase4_pr07_hidden_reveal_secret_entrance
+    key: audio.hidden.reveal.secret_entrance
+    sourcePath: audio/phase4/pr07/hidden_reveal_secret_entrance.ogg
+    profile: hidden_reveal_secret_entrance
+    durationSeconds: 0.82
+  - id: phase4_pr07_interactable_hidden_return
+    key: audio.interactable.hidden_return
+    sourcePath: audio/phase4/pr07/interactable_hidden_return.ogg
+    profile: interactable_hidden_return
+    durationSeconds: 0.78
+  - id: phase4_pr07_secret_zone_greenwood_hidden_cache
+    key: audio.secret_zone.greenwood_hidden_cache
+    sourcePath: audio/phase4/pr07/secret_zone_greenwood_hidden_cache.ogg
+    profile: secret_zone_greenwood_hidden_cache
+    durationSeconds: 5.4
+  - id: phase4_pr07_secret_zone_deep_iron_slag_cache
+    key: audio.secret_zone.deep_iron_slag_cache
+    sourcePath: audio/phase4/pr07/secret_zone_deep_iron_slag_cache.ogg
+    profile: secret_zone_deep_iron_slag_cache
+    durationSeconds: 4.8
+  - id: phase4_pr07_secret_zone_underground_river_crystal_rift
+    key: audio.secret_zone.underground_river_crystal_rift
+    sourcePath: audio/phase4/pr07/secret_zone_underground_river_crystal_rift.ogg
+    profile: secret_zone_underground_river_crystal_rift
+    durationSeconds: 5.0
+  - id: phase4_pr07_secret_zone_abyssal_temple_warded_archive
+    key: audio.secret_zone.abyssal_temple_warded_archive
+    sourcePath: audio/phase4/pr07/secret_zone_abyssal_temple_warded_archive.ogg
+    profile: secret_zone_abyssal_temple_warded_archive
+    durationSeconds: 5.2

@@ -52,6 +52,7 @@ class LocaleLintTest {
                 "affix.",
                 "item.",
                 "interactable.",
+                "prop.",
                 "objective.",
                 "mutation.",
                 "keyword.",

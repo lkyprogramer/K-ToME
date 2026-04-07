@@ -223,10 +223,16 @@ data class InspectView(
     val visibility: TileVisibility,
     val terrainName: String,
     val terrainDetails: List<String> = emptyList(),
+    val prop: InspectPropView? = null,
     val actor: InspectActorView? = null,
     val items: List<InspectItemView> = emptyList(),
     val stairLabel: String? = null,
     val stairDirectionId: String? = null,
+)
+
+data class InspectPropView(
+    val name: String,
+    val details: List<String> = emptyList(),
 )
 
 data class InspectMutationView(
