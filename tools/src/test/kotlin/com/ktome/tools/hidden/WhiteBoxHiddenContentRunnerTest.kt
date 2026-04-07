@@ -29,6 +29,26 @@ class WhiteBoxHiddenContentRunnerTest {
         val aggregates = payload.getValue("aggregates").jsonArray
         val firstCase =
             Json.parseToJsonElement(Files.readAllLines(run.casesPath).first { line -> line.isNotBlank() }).jsonObject
+        val corpusAggregate =
+            aggregates.first { aggregate -> aggregate.jsonObject.getValue("groupId").jsonPrimitive.content == "corpus" }.jsonObject
+        val aggregateRuleIds =
+            corpusAggregate
+                .getValue("assertions")
+                .jsonArray
+                .map { assertion -> assertion.jsonObject.getValue("ruleId").jsonPrimitive.content }
+                .toSet()
+        val caseRuleIds =
+            firstCase
+                .getValue("assertions")
+                .jsonArray
+                .map { assertion -> assertion.jsonObject.getValue("ruleId").jsonPrimitive.content }
+                .toSet()
+        val artifactIds =
+            firstCase
+                .getValue("artifacts")
+                .jsonArray
+                .map { artifact -> artifact.jsonObject.getValue("artifactId").jsonPrimitive.content }
+                .toSet()
 
         assertEquals("hidden-content", payload.getValue("domainId").jsonPrimitive.content)
         assertEquals("PASS", payload.getValue("verdict").jsonPrimitive.content)
@@ -42,26 +62,28 @@ class WhiteBoxHiddenContentRunnerTest {
             },
         )
         assertTrue(
-            aggregates
-                .first { aggregate -> aggregate.jsonObject.getValue("groupId").jsonPrimitive.content == "corpus" }
-                .jsonObject
-                .getValue("assertions")
-                .jsonArray
-                .any { assertion ->
-                    assertion.jsonObject.getValue("ruleId").jsonPrimitive.content ==
-                        "hidden-content.aggregate.explicit_search_reveal_present"
-                },
-        )
-        assertEquals(4, firstCase.getValue("artifacts").jsonArray.size)
-        assertTrue(
-            firstCase.getValue("assertions").jsonArray.any { assertion ->
-                assertion.jsonObject.getValue("ruleId").jsonPrimitive.content == "hidden-content.case.hidden_events_optional_or_secret_only"
-            },
+            setOf(
+                "hidden-content.aggregate.explicit_search_reveal_present",
+                "hidden-content.aggregate.hidden_events_optional_or_secret_only",
+                "hidden-content.aggregate.secret_reward_node_present",
+                "hidden-content.aggregate.reward_bridge_backed_by_loot_budget",
+                "hidden-content.aggregate.search_failure_non_blocking",
+                "hidden-content.aggregate.return_bridge_proof_consistency",
+            ).all(aggregateRuleIds::contains),
         )
         assertTrue(
-            firstCase.getValue("artifacts").jsonArray.any { artifact ->
-                artifact.jsonObject.getValue("artifactId").jsonPrimitive.content == "return-bridge-proof"
-            },
+            setOf(
+                "hidden-content.case.hidden_events_optional_or_secret_only",
+                "hidden-content.case.secret_reward_node_present",
+                "hidden-content.case.reward_bridge_backed_by_loot_budget",
+                "hidden-content.case.search_failure_keeps_mainline_reachable",
+                "hidden-content.case.solvability_proof_matches_search_result",
+                "hidden-content.case.solvability_proof_covers_return_bridge",
+            ).all(caseRuleIds::contains),
+        )
+        assertEquals(
+            setOf("trigger-timeline", "search-action-results", "return-bridge-proof", "reward-bridge-summary"),
+            artifactIds,
         )
         assertEquals(500, Files.readAllLines(run.casesPath).count { line -> line.isNotBlank() })
     }

@@ -44,6 +44,48 @@ class HiddenContentMapgenPipelineTest {
     }
 
     @Test
+    fun `nearest optional anchor fails when resolved optional node cannot reach exit`() {
+        val pipeline =
+            pipeline(
+                secretZone(returnBridgePolicy = ReturnBridgePolicy.NEAREST_OPTIONAL_ANCHOR),
+                floor =
+                    testFloor(
+                        edges =
+                            listOf(
+                                TopologyEdge(from = START_NODE_ID, to = HUB_NODE_ID),
+                                TopologyEdge(from = HUB_NODE_ID, to = EXIT_NODE_ID),
+                                TopologyEdge(from = OPTIONAL_NODE_ID, to = SECRET_NODE_ID),
+                            ),
+                    ),
+            )
+
+        assertThrows<IllegalArgumentException> {
+            pipeline.run(request())
+        }
+    }
+
+    @Test
+    fun `last mainline branch fails when entrance branch is disconnected from mainline`() {
+        val pipeline =
+            pipeline(
+                secretZone(returnBridgePolicy = ReturnBridgePolicy.LAST_MAINLINE_BRANCH),
+                floor =
+                    testFloor(
+                        edges =
+                            listOf(
+                                TopologyEdge(from = START_NODE_ID, to = HUB_NODE_ID),
+                                TopologyEdge(from = HUB_NODE_ID, to = EXIT_NODE_ID),
+                                TopologyEdge(from = OPTIONAL_NODE_ID, to = SECRET_NODE_ID),
+                            ),
+                    ),
+            )
+
+        assertThrows<IllegalArgumentException> {
+            pipeline.run(request())
+        }
+    }
+
+    @Test
     fun `explicit anchor resolves tagged node`() {
         val pipeline =
             pipeline(
@@ -168,6 +210,14 @@ class HiddenContentMapgenPipelineTest {
         hubTags: Set<String> = setOf("hub"),
         secretTags: Set<String> = setOf("secret"),
         isolatedTags: Set<String> = emptySet(),
+        edges: List<TopologyEdge> =
+            listOf(
+                TopologyEdge(from = START_NODE_ID, to = HUB_NODE_ID),
+                TopologyEdge(from = HUB_NODE_ID, to = OPTIONAL_NODE_ID),
+                TopologyEdge(from = HUB_NODE_ID, to = OPTIONAL_TWO_NODE_ID),
+                TopologyEdge(from = HUB_NODE_ID, to = EXIT_NODE_ID),
+                TopologyEdge(from = OPTIONAL_NODE_ID, to = SECRET_NODE_ID),
+            ),
     ): GeneratedFloor {
         val map = GameMap.fromAscii(rows = List(8) { ".".repeat(32) }, playerStart = Point(1, 1))
         val topology =
@@ -182,14 +232,7 @@ class HiddenContentMapgenPipelineTest {
                         topologyNode(id = EXIT_NODE_ID, anchorId = EXIT_ANCHOR_ID, pathClass = PathClass.CRITICAL_PATH, tags = setOf("exit")),
                         topologyNode(id = ISOLATED_NODE_ID, anchorId = ISOLATED_ANCHOR_ID, pathClass = PathClass.OPTIONAL, tags = isolatedTags),
                     ),
-                edges =
-                    listOf(
-                        TopologyEdge(from = START_NODE_ID, to = HUB_NODE_ID),
-                        TopologyEdge(from = HUB_NODE_ID, to = OPTIONAL_NODE_ID),
-                        TopologyEdge(from = HUB_NODE_ID, to = OPTIONAL_TWO_NODE_ID),
-                        TopologyEdge(from = HUB_NODE_ID, to = EXIT_NODE_ID),
-                        TopologyEdge(from = OPTIONAL_NODE_ID, to = SECRET_NODE_ID),
-                    ),
+                edges = edges,
                 primaryPathNodeIds = listOf(START_NODE_ID, HUB_NODE_ID, EXIT_NODE_ID),
                 optionalLoopCount = 1,
             )
