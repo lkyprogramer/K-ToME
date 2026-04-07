@@ -6455,6 +6455,149 @@
         "zone",
         "river"
       ]
+    },
+    {
+      "key": "icon.mutation.stonehide",
+      "category": "icon_status",
+      "rawOutputPath": "phase4/pr06/icon_mutation_stonehide.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": ["phase4", "pr06", "mutation", "icon"],
+      "asciiGlyph": "S",
+      "asciiColorHex": "#B7B7B7"
+    },
+    {
+      "key": "icon.mutation.battle_drill",
+      "category": "icon_status",
+      "rawOutputPath": "phase4/pr06/icon_mutation_battle_drill.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": ["phase4", "pr06", "mutation", "icon"],
+      "asciiGlyph": "B",
+      "asciiColorHex": "#D4A373"
+    },
+    {
+      "key": "icon.mutation.dread_aura",
+      "category": "icon_status",
+      "rawOutputPath": "phase4/pr06/icon_mutation_dread_aura.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": ["phase4", "pr06", "mutation", "icon"],
+      "asciiGlyph": "D",
+      "asciiColorHex": "#8C6FF7"
+    },
+    {
+      "key": "icon.mutation.hunt_protocol",
+      "category": "icon_status",
+      "rawOutputPath": "phase4/pr06/icon_mutation_hunt_protocol.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": ["phase4", "pr06", "mutation", "icon"],
+      "asciiGlyph": "H",
+      "asciiColorHex": "#88C070"
+    },
+    {
+      "key": "icon.mutation.emberblood",
+      "category": "icon_status",
+      "rawOutputPath": "phase4/pr06/icon_mutation_emberblood.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": ["phase4", "pr06", "mutation", "icon"],
+      "asciiGlyph": "E",
+      "asciiColorHex": "#FF6A3D"
+    },
+    {
+      "key": "icon.mutation.tidebound",
+      "category": "icon_status",
+      "rawOutputPath": "phase4/pr06/icon_mutation_tidebound.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": ["phase4", "pr06", "mutation", "icon"],
+      "asciiGlyph": "T",
+      "asciiColorHex": "#59B7FF"
+    },
+    {
+      "key": "vfx.terrain.interaction.water",
+      "category": "tile_decal",
+      "rawOutputPath": "phase4/pr06/vfx_terrain_water.png",
+      "footprint": "1x1",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": ["phase4", "pr06", "terrain", "water"],
+      "asciiGlyph": "~",
+      "asciiColorHex": "#4FB6FF"
+    },
+    {
+      "key": "vfx.terrain.interaction.oil",
+      "category": "tile_decal",
+      "rawOutputPath": "phase4/pr06/vfx_terrain_oil.png",
+      "footprint": "1x1",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": ["phase4", "pr06", "terrain", "oil"],
+      "asciiGlyph": "o",
+      "asciiColorHex": "#5F5648"
+    },
+    {
+      "key": "vfx.terrain.interaction.ice",
+      "category": "tile_decal",
+      "rawOutputPath": "phase4/pr06/vfx_terrain_ice.png",
+      "footprint": "1x1",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": ["phase4", "pr06", "terrain", "ice"],
+      "asciiGlyph": "*",
+      "asciiColorHex": "#BFE8FF"
+    },
+    {
+      "key": "vfx.terrain.interaction.oil_burning",
+      "category": "tile_decal",
+      "rawOutputPath": "phase4/pr06/vfx_terrain_oil_burning.png",
+      "footprint": "1x1",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": ["phase4", "pr06", "terrain", "oil-burning"],
+      "asciiGlyph": "!",
+      "asciiColorHex": "#FF7A3C"
+    },
+    {
+      "key": "vfx.boss.variant.molten_glass",
+      "category": "tile_decal",
+      "rawOutputPath": "phase4/pr06/vfx_boss_variant_molten_glass.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": ["phase4", "pr06", "boss", "variant"],
+      "asciiGlyph": "M",
+      "asciiColorHex": "#FF7A3C"
+    },
+    {
+      "key": "vfx.boss.variant.grey_crown",
+      "category": "tile_decal",
+      "rawOutputPath": "phase4/pr06/vfx_boss_variant_grey_crown.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": ["phase4", "pr06", "boss", "variant"],
+      "asciiGlyph": "G",
+      "asciiColorHex": "#9BB4D4"
+    },
+    {
+      "key": "vfx.boss.variant.abyssal_eclipse",
+      "category": "tile_decal",
+      "rawOutputPath": "phase4/pr06/vfx_boss_variant_abyssal_eclipse.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": ["phase4", "pr06", "boss", "variant"],
+      "asciiGlyph": "A",
+      "asciiColorHex": "#6AD0C4"
     }
   ],
   "prefixRules": [

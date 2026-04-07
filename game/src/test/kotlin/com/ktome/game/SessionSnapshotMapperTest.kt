@@ -42,8 +42,12 @@ import com.ktome.core.save.PlayerSnapshot
 import com.ktome.core.save.PointSnapshot
 import com.ktome.core.save.SaveSnapshot
 import com.ktome.core.save.StatModifierSnapshot
+import com.ktome.core.save.StatusEffectDefinitionSnapshot
 import com.ktome.core.save.TalentLoadoutSnapshot
 import com.ktome.core.save.WorldEffectSnapshot
+import com.ktome.core.status.EffectCategory
+import com.ktome.core.status.StackingRule
+import com.ktome.core.status.StatusEffectType
 import com.ktome.core.talent.TalentRegistry
 import com.ktome.core.world.solvability.ContentRef
 import com.ktome.core.world.solvability.DiscoveryPredicate
@@ -180,6 +184,63 @@ class SessionSnapshotMapperTest {
         assertEquals("arena_aura", restoredWorld.effectId)
         assertEquals(listOf(com.ktome.core.ecs.EntityId(1)), restoredWorld.affectedActorIds.toList())
         assertEquals("BURN", restoredWorld.effects.single().schemaId)
+    }
+
+    @Test
+    fun `restore world preserves custom active effect definitions`() {
+        val content = content()
+        val player =
+            PlayerSnapshot(
+                entity =
+                    EntitySnapshot(
+                        id = 1,
+                        position = PointSnapshot(1, 1),
+                        stats = com.ktome.core.save.StatsSnapshot(str = 10, dex = 10, con = 10, wil = 10),
+                        combatProfile =
+                            com.ktome.core.save.CombatProfileSnapshot(
+                                baseAttack = 5,
+                                baseDefense = 2,
+                                baseHp = 50,
+                                baseStamina = 40,
+                            ),
+                        effects =
+                            listOf(
+                                ActiveEffectSnapshot(
+                                    id = "mutation:elite.stonehide",
+                                    type = "mutation:elite.stonehide",
+                                    remainingTurns = 9999,
+                                    statModifiers = StatModifierSnapshot(defense = 4, maxHp = 18),
+                                    customDefinition =
+                                        StatusEffectDefinitionSnapshot(
+                                            id = "mutation:elite.stonehide",
+                                            type = StatusEffectType.CUSTOM,
+                                            category = EffectCategory.NEUTRAL,
+                                            nameKey = "mutation.stonehide.name",
+                                            iconKey = "icon.mutation.stonehide",
+                                            stackingRule = StackingRule.REFRESH_DURATION,
+                                            dispellable = false,
+                                        ),
+                                ),
+                            ),
+                        isPlayerControlled = true,
+                    ),
+            )
+        val floor =
+            FloorRuntimeState(
+                map = GameMap.fromAscii(rows = listOf(".....", ".....", "....."), playerStart = Point(1, 1)),
+                stairsDown = Point(4, 1),
+                entities = mutableListOf(),
+            )
+
+        val world = SessionSnapshotMapper.restoreWorld(content, player, floor)
+        val restoredEffect = requireNotNull(world.get<com.ktome.core.talent.EffectTracker>(com.ktome.core.ecs.EntityId(1))).effects.single()
+
+        assertEquals("mutation:elite.stonehide", restoredEffect.schemaId)
+        assertEquals(StatusEffectType.CUSTOM, restoredEffect.type)
+        assertEquals("mutation.stonehide.name", restoredEffect.nameKey)
+        assertEquals("icon.mutation.stonehide", restoredEffect.iconKey)
+        assertEquals(4, restoredEffect.statModifiers.defense)
+        assertEquals(18, restoredEffect.statModifiers.maxHp)
     }
 
     @Test

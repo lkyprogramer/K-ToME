@@ -1,0 +1,104 @@
+eliteConfig:
+  maxMutationsPerElite: 2
+
+mutationStatModifiers:
+  - id: mod.mutation.stonehide
+    stats:
+      defense: 4
+      maxHp: 18
+  - id: mod.mutation.emberblood
+    stats:
+      attack: 3
+      talentPower: 0.10
+    resistances:
+      FIRE: 18
+  - id: mod.mutation.tidebound
+    stats:
+      defense: 2
+      evasion: 3
+    resistances:
+      COLD: 12
+
+eliteMutations:
+  - id: elite.stonehide
+    kind: STAT_PACKAGE
+    tier: MINOR
+    threatCost: 2
+    nameKey: mutation.stonehide.name
+    iconKey: icon.mutation.stonehide
+    applyToTags: [elite]
+    minFloor: 1
+    allowedZones: []
+    statModifiers: [mod.mutation.stonehide]
+    grantedTalents: []
+    incompatibleWith: []
+
+  - id: elite.battle_drill
+    kind: ABILITY_GRANT
+    tier: MAJOR
+    threatCost: 3
+    nameKey: mutation.battle_drill.name
+    iconKey: icon.mutation.battle_drill
+    applyToTags: [elite, bandit, forge, abyssal]
+    minFloor: 2
+    allowedZones: []
+    statModifiers: []
+    grantedTalents: [linebreaker]
+    incompatibleWith: []
+
+  - id: elite.dread_aura
+    kind: AURA
+    tier: MAJOR
+    threatCost: 3
+    nameKey: mutation.dread_aura.name
+    iconKey: icon.mutation.dread_aura
+    applyToTags: [elite, cultist, abyssal]
+    minFloor: 3
+    allowedZones: [grey_gate_depths, abyssal_temple, abyssal_heart]
+    statModifiers: []
+    grantedTalents: []
+    incompatibleWith: [elite.battle_drill]
+    auraStatusId: WEAKEN
+    auraRadius: 1
+    auraDuration: 1
+    auraMagnitude: 0.12
+
+  - id: elite.hunt_protocol
+    kind: AI_SHIFT
+    tier: MAJOR
+    threatCost: 2
+    nameKey: mutation.hunt_protocol.name
+    iconKey: icon.mutation.hunt_protocol
+    applyToTags: [elite, bandit, river]
+    minFloor: 2
+    allowedZones: []
+    statModifiers: []
+    grantedTalents: []
+    aiProfileOverlay: ai.elite.huntmaster
+    incompatibleWith: []
+
+  - id: elite.emberblood
+    kind: ELEMENT_PACKAGE
+    tier: SIGNATURE
+    threatCost: 5
+    nameKey: mutation.emberblood.name
+    iconKey: icon.mutation.emberblood
+    applyToTags: [elite, forge, abyssal]
+    minFloor: 4
+    allowedZones: [deep_iron_pit, molten_core, abyssal_temple, abyssal_heart]
+    statModifiers: [mod.mutation.emberblood]
+    grantedTalents: [cinder_burst]
+    incompatibleWith: [elite.tidebound]
+
+  - id: elite.tidebound
+    kind: ELEMENT_PACKAGE
+    tier: MAJOR
+    threatCost: 4
+    nameKey: mutation.tidebound.name
+    iconKey: icon.mutation.tidebound
+    applyToTags: [elite, river, crystal]
+    minFloor: 4
+    allowedZones: [underground_river, crystal_cavern]
+    statModifiers: [mod.mutation.tidebound]
+    grantedTalents: [glacial_seal]
+    incompatibleWith: [elite.emberblood]

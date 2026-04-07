@@ -12,10 +12,21 @@ import com.ktome.core.status.StatusLifecycle
 import com.ktome.core.status.StatusEffectType
 import kotlin.math.roundToInt
 
+fun interface TerrainInteractionContextResolver {
+    fun resolve(
+        world: World,
+        attacker: EntityId,
+        target: EntityId,
+        damageType: DamageType,
+        interactionDepth: Int,
+    ): TerrainInteractionContext?
+}
+
 class CombatResolver(
     private val random: RandomSource,
 ) {
     private val pipeline = CombatPipeline(random)
+    var terrainInteractionContextResolver: TerrainInteractionContextResolver? = null
 
     fun resolveMelee(
         attackerAttack: Int,
@@ -69,6 +80,7 @@ class CombatResolver(
         damageType: DamageType = DamageType.PHYSICAL,
         damageMultiplier: Double = 1.0,
         abilityId: String = "melee_attack",
+        interactionDepth: Int = 0,
         statusApplication: StatusApplicationRequest? = null,
         callbacks: List<PipelineCallback> = emptyList(),
     ): CombatResult {
@@ -97,6 +109,14 @@ class CombatResolver(
                     targetResistance = targetResistance,
                     damageMultiplier = damageMultiplier,
                     targetCurrentHp = targetHealth.current,
+                    terrainInteractionContext =
+                        terrainInteractionContextResolver?.resolve(
+                            world = world,
+                            attacker = attacker,
+                            target = target,
+                            damageType = damageType,
+                            interactionDepth = interactionDepth,
+                        ),
                     statusApplication = resolvedStatusApplication,
                     callbacks = callbacks + statusCallbacks,
                 ),
@@ -121,6 +141,75 @@ class CombatResolver(
             trace = outcome.trace,
             envelope = outcome.envelope,
             statusApplication = outcome.statusApplication,
+            terrainInteraction = outcome.terrainInteraction,
+            removedStatusTypes = removedStatusTypes,
+        )
+    }
+
+    fun resolveTriggeredDamage(
+        world: World,
+        source: EntityId,
+        target: EntityId,
+        damageType: DamageType,
+        rawDamage: Int,
+        traceId: String,
+        abilityId: String,
+        interactionDepth: Int = 1,
+    ): CombatResult {
+        val targetHealth = requireNotNull(world.get<Health>(target)) { "Missing Health for $target" }
+        val targetEffects = world.get<EffectTracker>(target)
+        val targetDerived = StatsCalculator.calculate(world, target)
+        val targetResistance = world.get<ResistanceProfile>(target)?.valueFor(damageType) ?: 0
+        val outcome =
+            pipeline.resolve(
+                DamageRequest(
+                    attackerId = source,
+                    targetId = target,
+                    abilityId = abilityId,
+                    traceId = traceId,
+                    damageType = damageType,
+                    baseDamage = rawDamage.coerceAtLeast(0),
+                    damageVariance = 0,
+                    attackerAccuracy = Int.MAX_VALUE,
+                    targetEvasion = targetDerived.evasion,
+                    attackerCritChance = 0.0,
+                    targetCritResistance = targetDerived.critResistance,
+                    critMultiplier = 1.0,
+                    targetArmor = targetDerived.defense,
+                    targetResistance = targetResistance,
+                    targetCurrentHp = targetHealth.current,
+                    terrainInteractionContext =
+                        terrainInteractionContextResolver?.resolve(
+                            world = world,
+                            attacker = source,
+                            target = target,
+                            damageType = damageType,
+                            interactionDepth = interactionDepth,
+                        ),
+                    forceHit = true,
+                ),
+                applyDamageHook = { remainingHp -> targetHealth.current = remainingHp.coerceAtLeast(0) },
+            )
+        applyDamageOutcome(targetHealth, outcome)
+        var removedStatusTypes: Set<StatusEffectType> = emptySet()
+        if (targetEffects != null && outcome.hit && outcome.finalDamage > 0) {
+            val removedOvercharge = StatusLifecycle.consumeOnDamage(targetEffects, damageType, outcome.finalDamage)
+            val removedStealth = StatusLifecycle.breakOnDamage(targetEffects, outcome.finalDamage)
+            removedStatusTypes = (removedOvercharge + removedStealth).mapTo(linkedSetOf()) { effect -> effect.type }
+            if (removedOvercharge.isNotEmpty() || removedStealth.isNotEmpty()) {
+                StatsCalculator.recalculateAndStore(world, target)
+            }
+        }
+        return CombatResult(
+            hit = outcome.hit,
+            crit = outcome.critical,
+            packet = outcome.packet,
+            damage = outcome.damage,
+            targetKilled = outcome.targetKilled,
+            trace = outcome.trace,
+            envelope = outcome.envelope,
+            statusApplication = outcome.statusApplication,
+            terrainInteraction = outcome.terrainInteraction,
             removedStatusTypes = removedStatusTypes,
         )
     }

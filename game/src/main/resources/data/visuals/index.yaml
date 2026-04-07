@@ -189,6 +189,19 @@ visuals:
   - id: vfx.zone.effect.current_lane_01
   - id: vfx.zone.effect.crystal_shard_01
   - id: vfx.zone.effect.void_pressure_01
+  - id: icon.mutation.stonehide
+  - id: icon.mutation.battle_drill
+  - id: icon.mutation.dread_aura
+  - id: icon.mutation.hunt_protocol
+  - id: icon.mutation.emberblood
+  - id: icon.mutation.tidebound
+  - id: vfx.terrain.interaction.water
+  - id: vfx.terrain.interaction.oil
+  - id: vfx.terrain.interaction.ice
+  - id: vfx.terrain.interaction.oil_burning
+  - id: vfx.boss.variant.molten_glass
+  - id: vfx.boss.variant.grey_crown
+  - id: vfx.boss.variant.abyssal_eclipse
   - id: difficulty.normal.visual
   - id: difficulty.normal.icon
   - id: material.iron.visual

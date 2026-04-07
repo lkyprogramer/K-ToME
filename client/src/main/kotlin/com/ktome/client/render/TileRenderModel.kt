@@ -52,6 +52,7 @@ internal data class TileVisualPlacement(
     val y: Int,
     val asset: ResolvedVisualAsset,
     val alpha: Float = 1f,
+    val tintColorHex: String? = null,
 )
 
 internal data class TileFogPlacement(
@@ -203,6 +204,7 @@ internal object TileRenderModelBuilder {
                         x = actor.x,
                         y = actor.y,
                         asset = resolveVisual(visualResolver, actor.visualKey),
+                        tintColorHex = actorTintColorHex(visualResolver, actor),
                     )
                 }
 
@@ -263,7 +265,18 @@ internal object TileRenderModelBuilder {
                     actorRole(localizer, actor),
                     "${localizer.text("ui.hud.hp.short")} ${actor.currentHp}/${actor.maxHp}",
                     "${localizer.text("ui.hud.attack.short")} ${actor.attack}  ${localizer.text("ui.hud.defense.short")} ${actor.defense}",
-                ) + actor.statusEffects.map { effect -> StatusHudRenderer.renderTurns(localizer, effect) }
+                ) +
+                    listOfNotNull(
+                        actor.bossVariant?.let { variant ->
+                            localizer.text("ui.inspect.boss_variant", "variant" to localizer.text(variant.nameKey))
+                        },
+                    ) +
+                    actor.mutations.map { mutation ->
+                        mutation.summary?.let { summary ->
+                            "${localizer.text(mutation.nameKey)} · ${renderTextToken(localizer, summary)}"
+                        } ?: localizer.text("ui.inspect.mutation.line", "mutation" to localizer.text(mutation.nameKey))
+                    } +
+                    actor.statusEffects.map { effect -> StatusHudRenderer.renderTurns(localizer, effect) }
             } ?: emptyList()
 
         return TileHudModel(
@@ -541,6 +554,25 @@ internal object TileRenderModelBuilder {
 
                 rows += TileTextRow(localizer.text("ui.inspect.cursor", "x" to cursor.x, "y" to cursor.y), TileTextTone.WHITE)
                 rows += TileTextRow("${visibilityLabel(localizer, cell.visibility)} ${terrainName(localizer, cell)}", TileTextTone.WHITE)
+                cell.terrainOverride?.let { terrainOverride ->
+                    val tickDamageTypeId = terrainOverride.tickDamageTypeId
+                    rows += TileTextRow(localizer.text("ui.inspect.terrain.rule", "rule" to localizer.text(terrainOverride.ruleNameKey)), TileTextTone.LIGHT_GRAY)
+                    rows += TileTextRow(localizer.text("ui.inspect.terrain.turns", "turns" to terrainOverride.remainingTurns), TileTextTone.LIGHT_GRAY)
+                    if (terrainOverride.conductsLightning) {
+                        rows += TileTextRow(localizer.text("ui.inspect.terrain.conducts_lightning"), TileTextTone.CYAN)
+                    }
+                    if (terrainOverride.tickDamage > 0 && tickDamageTypeId != null) {
+                        rows +=
+                            TileTextRow(
+                                localizer.text(
+                                    "ui.inspect.terrain.tick_damage",
+                                    "amount" to terrainOverride.tickDamage,
+                                    "damageType" to localizer.text(damageTypeLabelKey(tickDamageTypeId)),
+                                ),
+                                TileTextTone.RED,
+                            )
+                    }
+                }
                 actor?.let { inspected ->
                     rows +=
                         TileTextRow(
@@ -549,12 +581,31 @@ internal object TileRenderModelBuilder {
                             icon = resolveVisual(visualResolver, inspected.visualKey),
                         )
                     rows += TileTextRow(actorRole(localizer, inspected), TileTextTone.WHITE)
+                    inspected.bossVariant?.let { variant ->
+                        rows +=
+                            TileTextRow(
+                                text = localizer.text("ui.inspect.boss_variant", "variant" to localizer.text(variant.nameKey)),
+                                tone = TileTextTone.MAGENTA,
+                                icon = variant.visualTintKey?.let { resolveVisual(visualResolver, it) },
+                            )
+                    }
                     rows += TileTextRow("${localizer.text("ui.hud.hp.short")} ${inspected.currentHp}/${inspected.maxHp}", TileTextTone.WHITE)
                     rows += TileTextRow("${localizer.text("ui.hud.attack.short")} ${inspected.attack}  ${localizer.text("ui.hud.defense.short")} ${inspected.defense}", TileTextTone.WHITE)
                     rows += TileTextRow("${localizer.text("ui.hud.accuracy.short")} ${inspected.accuracy}  ${localizer.text("ui.hud.evasion.short")} ${inspected.evasion}", TileTextTone.WHITE)
                     rows += TileTextRow("${localizer.text("ui.stat.str")} ${inspected.strength}  ${localizer.text("ui.stat.dex")} ${inspected.dexterity}", TileTextTone.WHITE)
                     rows += TileTextRow("${localizer.text("ui.stat.con")} ${inspected.constitution}  ${localizer.text("ui.stat.wil")} ${inspected.willpower}", TileTextTone.WHITE)
                     rows += TileTextRow("${localizer.text("ui.hud.speed.short")} ${inspected.speed}", TileTextTone.WHITE)
+                    inspected.mutations.forEach { mutation ->
+                        rows +=
+                            TileTextRow(
+                                text = localizer.text("ui.inspect.mutation.line", "mutation" to localizer.text(mutation.nameKey)),
+                                tone = TileTextTone.CYAN,
+                                icon = resolveVisual(visualResolver, mutation.iconKey),
+                            )
+                        mutation.summary?.let { summary ->
+                            rows += TileTextRow(renderTextToken(localizer, summary), TileTextTone.LIGHT_GRAY)
+                        }
+                    }
                     inspected.statusEffects.forEach { effect ->
                         rows +=
                             TileTextRow(
@@ -698,6 +749,14 @@ internal object TileRenderModelBuilder {
 
         return TileSidebarModel(title = title, rows = rows)
     }
+
+    private fun actorTintColorHex(
+        visualResolver: VisualManifestResolver,
+        actor: ActorRenderSnapshot,
+    ): String? =
+        actor.bossVariant?.visualTintKey
+            ?.let { tintKey -> resolveVisual(visualResolver, tintKey).entry.asciiColorHex }
+            ?: actor.displayTintColorHex
 
     private fun rewardPresentationTone(source: RewardPresentationSourceSnapshot): TileTextTone =
         when (source) {
@@ -849,9 +908,23 @@ internal object TileRenderModelBuilder {
         cell: MapCellSnapshot,
     ): String =
         when (cell.terrainTypeId) {
+            "water" -> localizer.text("tile.water.name")
+            "oil" -> localizer.text("tile.oil.name")
+            "ice" -> localizer.text("tile.ice.name")
             "floor" -> localizer.text("tile.floor.name")
             "wall" -> localizer.text("tile.wall.name")
             else -> localizer.text("tile.unknown.name")
+        }
+
+    private fun damageTypeLabelKey(damageTypeId: String): String =
+        when (damageTypeId) {
+            "PHYSICAL" -> "damage_type.physical.name"
+            "FIRE" -> "damage_type.fire.name"
+            "COLD" -> "damage_type.cold.name"
+            "LIGHTNING" -> "damage_type.lightning.name"
+            "HOLY" -> "damage_type.holy.name"
+            "SHADOW" -> "damage_type.shadow.name"
+            else -> "damage_type.physical.name"
         }
 
     private fun actorRole(

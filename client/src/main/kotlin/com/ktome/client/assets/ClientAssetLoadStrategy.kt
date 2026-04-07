@@ -119,6 +119,7 @@ class ClientAssetLoadStrategy(
         snapshot.mapCells.forEach { cell ->
             visualKeys += cell.terrainVisualKey
             terrainVisualKeys += cell.terrainVisualKey
+            cell.terrainAudioProfile?.let(audioKeys::add)
             cell.items.forEach { item -> collectItem(item, visualKeys, audioKeys) }
         }
         snapshot.props.forEach { prop ->
@@ -129,6 +130,13 @@ class ClientAssetLoadStrategy(
             visualKeys += actor.visualKey
             actorVisualKeys += actor.visualKey
             actor.audioProfile?.let(audioKeys::add)
+            actor.bossVariant?.visualTintKey?.let(visualKeys::add)
+            actor.bossVariant?.audioProfile?.let(audioKeys::add)
+            actor.mutations.forEach { mutation ->
+                visualKeys += mutation.iconKey
+                iconVisualKeys += mutation.iconKey
+                mutation.audioProfile?.let(audioKeys::add)
+            }
             actor.statusEffects.forEach { effect ->
                 effect.iconKey?.let {
                     visualKeys += it

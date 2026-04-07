@@ -153,6 +153,7 @@ tasks.register<Test>("phase4Report") {
         ":tools:whiteBoxMapgen",
         ":tools:whiteBoxSolvability",
         ":tools:whiteBoxLoot",
+        ":game:terrainInteractionBatch",
         ":game:bossHarness",
     )
     val reportDir = layout.buildDirectory.dir("reports/phase4")

@@ -9,6 +9,7 @@ import com.ktome.client.input.OverlayState
 import com.ktome.client.input.UiMode
 import com.ktome.core.snapshot.ActorRenderSnapshot
 import com.ktome.core.snapshot.ActorRoleKindSnapshot
+import com.ktome.core.snapshot.BossVariantRenderSnapshot
 import com.ktome.core.snapshot.CellVisibilitySnapshot
 import com.ktome.core.snapshot.CombatFeedbackSnapshot
 import com.ktome.core.snapshot.CombatFeedbackTypeSnapshot
@@ -108,6 +109,40 @@ class AsciiRenderModelTest {
         assertTrue(sidebarTexts.contains("MISS"))
     }
 
+    @Test
+    fun `ascii render model derives boss variant tint from visual manifest metadata`() {
+        val localizer = LocalizationBundle.load().translator(GameLocale.EN_US)
+        val baseSnapshot = sampleSnapshot(logEvents = emptyList())
+        val model =
+            AsciiRenderer.buildRenderModel(
+                localizer = localizer,
+                visualResolver = sampleResolver(),
+                snapshot =
+                    baseSnapshot.copy(
+                        actors =
+                            baseSnapshot.actors +
+                                ActorRenderSnapshot(
+                                    entityId = 2,
+                                    x = 1,
+                                    y = 0,
+                                    visualKey = "actor.vanguard",
+                                    nameKey = "boss.test.name",
+                                    isPlayer = false,
+                                    roleKind = ActorRoleKindSnapshot.BOSS,
+                                    bossVariant =
+                                        BossVariantRenderSnapshot(
+                                            variantId = "boss.variant.molten_glass",
+                                            nameKey = "boss.variant.molten_glass.name",
+                                            visualTintKey = "vfx.boss.variant.molten_glass",
+                                        ),
+                                ),
+                    ),
+                overlayState = OverlayState(mode = UiMode.MAP),
+            )
+
+        assertEquals("#FF7A3C", model.actorGlyphs.single { glyph -> glyph.x == 1 && glyph.y == 0 }.colorHex)
+    }
+
     private fun sampleResolver(): VisualManifestResolver =
         VisualManifestResolver(
             manifest =
@@ -134,6 +169,13 @@ class AsciiRenderModelTest {
                                 category = "actor_sprite",
                                 rawOutputPath = "phase2/p2-b/actor_vanguard.png",
                                 footprint = "2x1",
+                            ),
+                            VisualManifestEntry(
+                                key = "vfx.boss.variant.molten_glass",
+                                category = "vfx_overlay",
+                                rawOutputPath = "phase4/pr06/boss_variant_molten_glass.png",
+                                footprint = "1x1",
+                                asciiColorHex = "#FF7A3C",
                             ),
                         ),
                     prefixRules = listOf(ManifestPrefixRule(prefix = "icon.", targetKey = "missing_visual")),

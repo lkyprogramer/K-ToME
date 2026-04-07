@@ -1,0 +1,125 @@
+styleTag: ktome-middle-fantasy-painterly-tile-v1
+artStyleBible: docs/2026-03-13-art-style-bible.md
+stylePrompt: >-
+  High fantasy, middle-earth inspired painterly production pass for Phase 4 PR-06
+  terrain interaction, elite mutation, and boss variant readability. Keep icons
+  highly legible at small size, terrain decals readable on the tactical grid, and
+  boss variant cues bold but still grounded in the established K-ToME palette,
+  never anime and never sci-fi.
+defaults:
+  imageAspectRatio: "1:1"
+  imageSize: "1K"
+  negativeConstraints:
+    - no modern clothing
+    - no firearms
+    - no sci-fi materials
+    - no anime proportions
+    - no floating text, watermark or logo
+phase2AssetGates:
+  P4-PR06:
+    description: Formal PR-06 visual plan for terrain interaction, elite mutation, and boss variant cues.
+    assets:
+      - id: phase4_pr06_icon_mutation_stonehide
+        category: icon_status
+        visualKey: icon.mutation.stonehide
+        outputName: phase4/pr06/icon_mutation_stonehide.png
+        subject: rugged stone-plated elite mutation icon
+        materialTags: [phase4, pr06, mutation, stone]
+        constraints: [single centered icon, transparent background, readable at UI size]
+        geminiKeyRequired: true
+      - id: phase4_pr06_icon_mutation_battle_drill
+        category: icon_status
+        visualKey: icon.mutation.battle_drill
+        outputName: phase4/pr06/icon_mutation_battle_drill.png
+        subject: martial drill elite mutation icon with disciplined weapon geometry
+        materialTags: [phase4, pr06, mutation, martial]
+        constraints: [single centered icon, transparent background, readable at UI size]
+        geminiKeyRequired: true
+      - id: phase4_pr06_icon_mutation_dread_aura
+        category: icon_status
+        visualKey: icon.mutation.dread_aura
+        outputName: phase4/pr06/icon_mutation_dread_aura.png
+        subject: oppressive cursed elite mutation icon with restrained dark halo
+        materialTags: [phase4, pr06, mutation, curse]
+        constraints: [single centered icon, transparent background, readable at UI size]
+        geminiKeyRequired: true
+      - id: phase4_pr06_icon_mutation_hunt_protocol
+        category: icon_status
+        visualKey: icon.mutation.hunt_protocol
+        outputName: phase4/pr06/icon_mutation_hunt_protocol.png
+        subject: tactical hunt protocol elite mutation icon
+        materialTags: [phase4, pr06, mutation, hunt]
+        constraints: [single centered icon, transparent background, readable at UI size]
+        geminiKeyRequired: true
+      - id: phase4_pr06_icon_mutation_emberblood
+        category: icon_status
+        visualKey: icon.mutation.emberblood
+        outputName: phase4/pr06/icon_mutation_emberblood.png
+        subject: emberblood elite mutation icon with molten core accent
+        materialTags: [phase4, pr06, mutation, fire]
+        constraints: [single centered icon, transparent background, readable at UI size]
+        geminiKeyRequired: true
+      - id: phase4_pr06_icon_mutation_tidebound
+        category: icon_status
+        visualKey: icon.mutation.tidebound
+        outputName: phase4/pr06/icon_mutation_tidebound.png
+        subject: tidebound elite mutation icon with cold current motif
+        materialTags: [phase4, pr06, mutation, cold]
+        constraints: [single centered icon, transparent background, readable at UI size]
+        geminiKeyRequired: true
+      - id: phase4_pr06_vfx_terrain_water
+        category: tile_decal
+        visualKey: vfx.terrain.interaction.water
+        outputName: phase4/pr06/vfx_terrain_water.png
+        subject: shallow energized water terrain decal
+        materialTags: [phase4, pr06, terrain, water]
+        constraints: [grid-readable decal, no busy background]
+        geminiKeyRequired: true
+      - id: phase4_pr06_vfx_terrain_oil
+        category: tile_decal
+        visualKey: vfx.terrain.interaction.oil
+        outputName: phase4/pr06/vfx_terrain_oil.png
+        subject: slick dark oil terrain decal
+        materialTags: [phase4, pr06, terrain, oil]
+        constraints: [grid-readable decal, no busy background]
+        geminiKeyRequired: true
+      - id: phase4_pr06_vfx_terrain_ice
+        category: tile_decal
+        visualKey: vfx.terrain.interaction.ice
+        outputName: phase4/pr06/vfx_terrain_ice.png
+        subject: brittle blue-white ice terrain decal
+        materialTags: [phase4, pr06, terrain, ice]
+        constraints: [grid-readable decal, no busy background]
+        geminiKeyRequired: true
+      - id: phase4_pr06_vfx_terrain_oil_burning
+        category: tile_decal
+        visualKey: vfx.terrain.interaction.oil_burning
+        outputName: phase4/pr06/vfx_terrain_oil_burning.png
+        subject: burning oil terrain decal with controlled flame accent
+        materialTags: [phase4, pr06, terrain, oil, fire]
+        constraints: [grid-readable decal, no busy background]
+        geminiKeyRequired: true
+      - id: phase4_pr06_vfx_boss_variant_molten_glass
+        category: tile_decal
+        visualKey: vfx.boss.variant.molten_glass
+        outputName: phase4/pr06/vfx_boss_variant_molten_glass.png
+        subject: molten glass boss variant cue
+        materialTags: [phase4, pr06, boss, variant, fire]
+        constraints: [ui-readable cue, transparent background]
+        geminiKeyRequired: true
+      - id: phase4_pr06_vfx_boss_variant_grey_crown
+        category: tile_decal
+        visualKey: vfx.boss.variant.grey_crown
+        outputName: phase4/pr06/vfx_boss_variant_grey_crown.png
+        subject: grey crown boss variant cue
+        materialTags: [phase4, pr06, boss, variant, arcane]
+        constraints: [ui-readable cue, transparent background]
+        geminiKeyRequired: true
+      - id: phase4_pr06_vfx_boss_variant_abyssal_eclipse
+        category: tile_decal
+        visualKey: vfx.boss.variant.abyssal_eclipse
+        outputName: phase4/pr06/vfx_boss_variant_abyssal_eclipse.png
+        subject: abyssal eclipse boss variant cue
+        materialTags: [phase4, pr06, boss, variant, abyssal]
+        constraints: [ui-readable cue, transparent background]
+        geminiKeyRequired: true

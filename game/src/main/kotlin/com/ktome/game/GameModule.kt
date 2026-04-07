@@ -38,6 +38,9 @@ import com.ktome.game.data.DataLoader
 import com.ktome.game.data.schema.SchemaCatalog
 import com.ktome.game.data.schema.SchemaCombatProfile
 import com.ktome.game.i18n.GameLocale
+import com.ktome.game.elites.BossVariantSelectionMode
+import com.ktome.game.elites.EncounterDecorationService
+import com.ktome.game.elites.SpawnDecorationRequest
 import com.ktome.game.factory.BossFactory
 import com.ktome.game.factory.EntityFactory
 import com.ktome.game.factory.ItemFactory
@@ -408,6 +411,7 @@ object GameModule {
         val factory = EntityFactory()
         val itemFactory = ItemFactory()
         val bossFactory = BossFactory(factory)
+        val encounterDecorationService = EncounterDecorationService(content)
         val itemGenerator = ItemGenerator(content.itemBundle, com.ktome.core.random.RandomSource.from(Random(floorSeed(config.seed, floor, 0x91F3))))
         val profession = resolveProfession(content.schemaCatalog, config.playerProfessionId)
         val affixBuildContext = professionAffixBuildContext(content.schemaCatalog, profession)
@@ -439,11 +443,27 @@ object GameModule {
 
         if (bossDefinition != null) {
             val resolvedBossPosition = requireNotNull(bossPosition)
-            bossFactory.createBoss(world, bossDefinition, resolvedBossPosition)
+            val bossId = bossFactory.createBoss(world, bossDefinition, resolvedBossPosition)
+            val decoration =
+                encounterDecorationService.selectDecoration(
+                    request =
+                        SpawnDecorationRequest(
+                            zoneId = zone.id,
+                            floorIndex = floor,
+                            template = bossDefinition.template,
+                            bossEncounterId = bossDefinition.encounter.id,
+                            preferredBossVariantId = config.preferredBossVariantId,
+                            bossVariantSelectionMode = config.bossVariantSelectionMode,
+                        ),
+                    nextIndex = { bound -> monsterRandom.nextInt(bound) },
+                )
+            encounterDecorationService.applyDecoration(world = world, entityId = bossId, decoration = decoration)
+            StatsCalculator.recalculateAndStore(world, bossId)
             occupiedPoints += resolvedBossPosition
         } else {
             spawnMonsters(
                 zone = zone,
+                encounterDecorationService = encounterDecorationService,
                 factory = factory,
                 world = world,
                 map = map,
@@ -514,6 +534,7 @@ object GameModule {
 
     private fun spawnMonsters(
         zone: ZoneSchemaV2,
+        encounterDecorationService: EncounterDecorationService,
         factory: EntityFactory,
         world: World,
         map: com.ktome.core.map.GameMap,
@@ -542,12 +563,25 @@ object GameModule {
             .forEach { (room, templates) ->
                 val spawnPoints = findSpawnPoints(room, map, occupiedPoints, templates.size)
                 templates.zip(spawnPoints).forEach { (template, spawnPoint) ->
-                    factory.createMonster(
+                    val monsterId =
+                        factory.createMonster(
                         world = world,
                         template = template,
                         position = spawnPoint,
                         patrolRoute = if (resolveAiType(template) == AIType.PATROL) buildPatrolRoute(room = room, map = map) else null,
                     )
+                    val decoration =
+                        encounterDecorationService.selectDecoration(
+                            request =
+                                SpawnDecorationRequest(
+                                    zoneId = zone.id,
+                                    floorIndex = floor,
+                                    template = template,
+                                ),
+                            nextIndex = { bound -> random.nextInt(bound) },
+                        )
+                    encounterDecorationService.applyDecoration(world = world, entityId = monsterId, decoration = decoration)
+                    StatsCalculator.recalculateAndStore(world, monsterId)
                     occupiedPoints += spawnPoint
                 }
             }

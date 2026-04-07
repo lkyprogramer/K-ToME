@@ -32,6 +32,7 @@ class LocaleLintTest {
                 "ui.",
                 "log.",
                 "tile.",
+                "terrain.",
                 "damage_type.",
                 "actor.",
                 "stairs.",
@@ -52,6 +53,7 @@ class LocaleLintTest {
                 "item.",
                 "interactable.",
                 "objective.",
+                "mutation.",
                 "keyword.",
             )
         en.keys.forEach { key ->

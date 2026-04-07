@@ -38,6 +38,11 @@ import com.ktome.core.world.QuestProgress
 import com.ktome.core.world.RouteReward
 import com.ktome.core.world.WorldGraph
 import com.ktome.core.world.ZoneConnection
+import com.ktome.game.elites.ActionWeightProfileDef
+import com.ktome.game.elites.BossVariantDef
+import com.ktome.game.elites.EliteMutationConfig
+import com.ktome.game.elites.EliteMutationDef
+import com.ktome.game.elites.MutationStatModifierDef
 
 data class SchemaCatalog(
     val professions: List<ProfessionSchemaV2>,
@@ -60,6 +65,11 @@ data class SchemaCatalog(
     val difficulties: List<DifficultySchemaV2>,
     val itemBundle: ItemBundleSchemaV2,
     val lootProfiles: List<LootProfileSchemaV2>,
+    val eliteMutationConfig: EliteMutationConfig = EliteMutationConfig(),
+    val mutationStatModifiers: List<MutationStatModifierDef> = emptyList(),
+    val eliteMutations: List<EliteMutationDef> = emptyList(),
+    val bossVariants: List<BossVariantDef> = emptyList(),
+    val actionWeightProfiles: List<ActionWeightProfileDef> = emptyList(),
     val tilesets: List<NamedSchemaRef>,
     val aiProfiles: List<AIProfile>,
     val arenas: List<NamedSchemaRef>,
@@ -112,7 +122,14 @@ data class LootProfileSchemaV2(
     val schemaVersion: Int,
     val tags: List<String>,
     val itemIds: List<String>,
-)
+    val rewardBudget: Int,
+) {
+    init {
+        require(id.isNotBlank()) { "LootProfileSchemaV2.id must not be blank." }
+        require(schemaVersion > 0) { "LootProfileSchemaV2.schemaVersion must be positive." }
+        require(rewardBudget >= 0) { "LootProfileSchemaV2.rewardBudget must not be negative." }
+    }
+}
 
 data class ProfessionSchemaV2(
     val id: String,

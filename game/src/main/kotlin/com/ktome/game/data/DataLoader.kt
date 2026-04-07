@@ -157,6 +157,16 @@ import com.ktome.game.data.schema.TalentTreeSchemaV2
 import com.ktome.game.data.schema.WorldGraphSchemaV2
 import com.ktome.game.data.schema.ZoneSchemaV2
 import com.ktome.game.data.schema.ZoneConnectionSchemaV2
+import com.ktome.game.elites.ActionWeightProfileDef
+import com.ktome.game.elites.BossVariantDef
+import com.ktome.game.elites.EliteMutationConfig
+import com.ktome.game.elites.EliteMutationDef
+import com.ktome.game.elites.MutationKind
+import com.ktome.game.elites.MutationRef
+import com.ktome.game.elites.MutationStatModifierDef
+import com.ktome.game.elites.MutationTier
+import com.ktome.game.elites.StatModifierRef
+import com.ktome.game.elites.TalentGrantRef
 import com.ktome.game.i18n.GameLocale
 import com.ktome.game.i18n.LocalizationBundle
 import com.ktome.game.i18n.Localizer
@@ -194,6 +204,8 @@ class DataLoader(
         val telegraphIds = telegraphSpecs.map(TelegraphSpec::id).toSet()
         val threatProfiles = parseThreatProfiles(loadYamlMap("/data/telegraph/threat_profiles/index.yaml"))
         val worldGraphSchema = parseWorldGraphSchema(loadYamlMap("/data/world/world_graph.yaml"))
+        val eliteRoot = loadYamlMap("/data/elites/index.yaml")
+        val bossVariantRoot = loadYamlMap("/data/boss-variants/index.yaml")
         val roomDefs = parseRoomDefs(loadYamlMap("/data/mapgen/rooms/index.yaml"))
         val patternTemplatesAndRooms = parsePatternTemplatesAndRooms(loadYamlMap("/data/mapgen/patterns/index.yaml"))
         val vaultTemplatesAndVaults = parseVaultTemplatesAndVaults(loadYamlMap("/data/mapgen/vaults/index.yaml"))
@@ -201,6 +213,11 @@ class DataLoader(
         val zoneMapgenRoot = loadYamlMap("/data/mapgen/zones/index.yaml")
         val zoneMapgenProfiles = parseZoneMapgenProfiles(zoneMapgenRoot)
         val zoneRewardProfiles = parseZoneRewardProfiles(zoneMapgenRoot)
+        val mutationStatModifiers = parseMutationStatModifierDefs(eliteRoot)
+        val eliteMutationConfig = parseEliteMutationConfig(eliteRoot)
+        val eliteMutations = parseEliteMutationDefs(eliteRoot)
+        val actionWeightProfiles = parseActionWeightProfiles(bossVariantRoot)
+        val bossVariants = parseBossVariants(bossVariantRoot)
         return SchemaCatalog(
             professions = parseProfessionSchemas(loadYamlMap("/data/professions/index.yaml")),
             races = parseRaceDefs(loadYamlMap("/data/races/index.yaml")),
@@ -222,6 +239,11 @@ class DataLoader(
             difficulties = parseDifficultySchemas(loadYamlMap("/data/difficulties/index.yaml")),
             itemBundle = parseItemBundleSchemas(loadYamlMap("/data/items/index.yaml")),
             lootProfiles = parseLootProfileSchemas(loadYamlMap("/data/loot/index.yaml")),
+            eliteMutationConfig = eliteMutationConfig,
+            mutationStatModifiers = mutationStatModifiers,
+            eliteMutations = eliteMutations,
+            bossVariants = bossVariants,
+            actionWeightProfiles = actionWeightProfiles,
             tilesets = parseNamedSchemaRefs(loadYamlMap("/data/tilesets/index.yaml"), "tilesets"),
             aiProfiles = parseAiProfiles(loadYamlMap("/data/ai/index.yaml")),
             arenas = parseNamedSchemaRefs(loadYamlMap("/data/arenas/index.yaml"), "arenas"),
@@ -1080,6 +1102,7 @@ class DataLoader(
                 schemaVersion = profile.requiredInt("schemaVersion"),
                 tags = profile.optionalStringList("tags"),
                 itemIds = profile.optionalStringList("itemIds"),
+                rewardBudget = profile.requiredInt("rewardBudget"),
             )
         }
 
@@ -1985,6 +2008,75 @@ class DataLoader(
             x = optionalInt("x"),
             y = optionalInt("y"),
         )
+
+    private fun parseEliteMutationConfig(root: Map<String, Any?>): EliteMutationConfig =
+        EliteMutationConfig(
+            maxMutationsPerElite = root.optionalMap("eliteConfig")?.optionalInt("maxMutationsPerElite", 2) ?: 2,
+        )
+
+    private fun parseMutationStatModifierDefs(root: Map<String, Any?>): List<MutationStatModifierDef> =
+        root.optionalList("mutationStatModifiers").map { raw ->
+            val modifier = raw.requiredMap()
+            MutationStatModifierDef(
+                id = modifier.requiredString("id"),
+                statModifier = modifier.optionalMap("stats")?.toSchemaStatModifier()?.toRuntimeStatModifier() ?: StatModifier.ZERO,
+                resistances =
+                    modifier.optionalIntMap("resistances").entries.associateTo(linkedMapOf()) { (damageType, value) ->
+                        DamageType.valueOf(damageType) to value
+                    },
+            )
+        }
+
+    private fun parseEliteMutationDefs(root: Map<String, Any?>): List<EliteMutationDef> =
+        root.optionalList("eliteMutations").map { raw ->
+            val mutation = raw.requiredMap()
+            EliteMutationDef(
+                id = mutation.requiredString("id"),
+                kind = MutationKind.valueOf(mutation.requiredString("kind")),
+                tier = MutationTier.valueOf(mutation.requiredString("tier")),
+                threatCost = mutation.requiredInt("threatCost"),
+                nameKey = mutation.requiredString("nameKey"),
+                iconKey = mutation.requiredString("iconKey"),
+                applyToTags = mutation.requiredStringList("applyToTags").toSet(),
+                minFloor = mutation.requiredInt("minFloor"),
+                maxFloor = mutation.optionalNullableInt("maxFloor"),
+                allowedZones = mutation.optionalStringList("allowedZones").toSet(),
+                statModifiers = mutation.optionalStringList("statModifiers").map(::StatModifierRef),
+                grantedTalents = mutation.optionalStringList("grantedTalents").map(::TalentGrantRef),
+                aiProfileOverlay = mutation.optionalString("aiProfileOverlay"),
+                incompatibleWith = mutation.optionalStringList("incompatibleWith").toSet(),
+                auraStatusId = mutation.optionalString("auraStatusId"),
+                auraRadius = mutation.optionalInt("auraRadius"),
+                auraDuration = mutation.optionalInt("auraDuration", 1),
+                auraMagnitude = mutation.optionalDouble("auraMagnitude", 0.0),
+            )
+        }
+
+    private fun parseActionWeightProfiles(root: Map<String, Any?>): List<ActionWeightProfileDef> =
+        root.optionalList("actionWeightProfiles").map { raw ->
+            val profile = raw.requiredMap()
+            ActionWeightProfileDef(
+                id = profile.requiredString("id"),
+                actionWeights =
+                    profile.requiredMap("actionWeights").entries.associate { (actionId, weight) ->
+                        actionId.toString() to weight.requiredFloat().toDouble()
+                    },
+            )
+        }
+
+    private fun parseBossVariants(root: Map<String, Any?>): List<BossVariantDef> =
+        root.optionalList("bossVariants").map { raw ->
+            val variant = raw.requiredMap()
+            BossVariantDef(
+                id = variant.requiredString("id"),
+                baseEncounterId = variant.requiredString("baseEncounterId"),
+                grantedMutations = variant.optionalStringList("grantedMutations").map(::MutationRef),
+                threatCost = variant.requiredInt("threatCost"),
+                lootProfileOverride = variant.optionalString("lootProfileOverride"),
+                visualTintKey = variant.optionalString("visualTintKey"),
+                actionWeightProfileId = variant.optionalString("actionWeightProfileId"),
+            )
+        }
 }
 
 private fun Any?.requiredMap(): Map<*, *> =

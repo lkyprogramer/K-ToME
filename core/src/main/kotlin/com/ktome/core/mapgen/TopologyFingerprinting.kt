@@ -51,6 +51,22 @@ object TopologyFingerprinting {
             },
         )
 
+    fun terrainOverrideHash(terrainOverrides: Map<Point, TerrainOverride>): String =
+        sha256(
+            buildString {
+                append("v=")
+                append(VERSION)
+                append("|terrain-overrides=")
+                append(
+                    terrainOverrides.entries
+                        .sortedWith(compareBy<Map.Entry<Point, TerrainOverride>> { it.key.y }.thenBy { it.key.x })
+                        .joinToString(separator = ";") { (point, terrainOverride) ->
+                            "${point.x},${point.y}:${terrainOverride.terrainTags.map(TerrainTag::name).sorted().joinToString(",")}:${terrainOverride.sourceRuleId}:${terrainOverride.remainingTurns}:${terrainOverride.conductsLightning}:${terrainOverride.tickDamageType?.name ?: "-"}:${terrainOverride.tickDamage}"
+                        },
+                )
+            },
+        )
+
     private fun sha256(payload: String): String =
         MessageDigest.getInstance("SHA-256")
             .digest(payload.toByteArray())

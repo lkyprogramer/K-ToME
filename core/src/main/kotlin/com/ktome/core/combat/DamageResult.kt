@@ -36,6 +36,7 @@ data class CombatResult(
     val trace: CombatResolutionTrace? = null,
     val envelope: TraceEnvelope? = null,
     val statusApplication: StatusApplicationResolution? = null,
+    val terrainInteraction: ElementInteractionResolution? = null,
     val removedStatusTypes: Set<StatusEffectType> = emptySet(),
 ) {
     val rawDamage: Int

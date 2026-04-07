@@ -119,6 +119,40 @@ data class AiTriggerTracker(
 
 data class MonsterTemplateId(val value: String)
 
+data class EliteMutationLoadout(
+    val mutationIds: MutableList<String> = mutableListOf(),
+) {
+    init {
+        require(mutationIds.all(String::isNotBlank)) { "EliteMutationLoadout.mutationIds must not contain blanks." }
+    }
+}
+
+data class AiProfileOverride(val profileId: String)
+
+data class BossVariantRuntime(
+    val variantId: String,
+    val baseEncounterId: String,
+    val threatCost: Int = 0,
+    val lootProfileOverride: String? = null,
+    val visualTintKey: String? = null,
+    val actionWeightProfileId: String? = null,
+) {
+    init {
+        require(variantId.isNotBlank()) { "BossVariantRuntime.variantId must not be blank." }
+        require(baseEncounterId.isNotBlank()) { "BossVariantRuntime.baseEncounterId must not be blank." }
+        require(threatCost >= 0) { "BossVariantRuntime.threatCost must not be negative." }
+        require(lootProfileOverride == null || lootProfileOverride.isNotBlank()) {
+            "BossVariantRuntime.lootProfileOverride must not be blank when present."
+        }
+        require(visualTintKey == null || visualTintKey.isNotBlank()) {
+            "BossVariantRuntime.visualTintKey must not be blank when present."
+        }
+        require(actionWeightProfileId == null || actionWeightProfileId.isNotBlank()) {
+            "BossVariantRuntime.actionWeightProfileId must not be blank when present."
+        }
+    }
+}
+
 data class PatrolRoute(
     val waypoints: List<Point>,
     var nextWaypointIndex: Int = 0,

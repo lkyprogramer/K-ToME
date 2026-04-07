@@ -322,6 +322,9 @@ class AudioRouter(
         current: RenderSnapshot,
     ): List<String> {
         val cues = linkedSetOf<String>()
+        newlyAddedMutationAudioProfile(previous, current)?.let(cues::add)
+        newlyAddedBossVariantAudioProfile(previous, current)?.let(cues::add)
+        newlyChangedTerrainAudioProfile(previous, current)?.let(cues::add)
         newlyAddedLogKeys(previous, current)
             .mapNotNull(::logCueKey)
             .forEach(cues::add)
@@ -396,10 +399,42 @@ class AudioRouter(
             previousSnapshot.metadata.playerX != currentSnapshot.metadata.playerX ||
             previousSnapshot.metadata.playerY != currentSnapshot.metadata.playerY
         ) {
-            "audio.footstep.default"
+            currentSnapshot.playerTerrainAudioProfile() ?: "audio.footstep.default"
         } else {
             "audio.melee.light"
         }
+
+    private fun newlyAddedMutationAudioProfile(
+        previous: RenderSnapshot,
+        current: RenderSnapshot,
+    ): String? = firstAddedAudioProfile(previous.actorMutationAudioProfiles(), current.actorMutationAudioProfiles())
+
+    private fun newlyAddedBossVariantAudioProfile(
+        previous: RenderSnapshot,
+        current: RenderSnapshot,
+    ): String? = firstAddedAudioProfile(previous.actorBossVariantAudioProfiles(), current.actorBossVariantAudioProfiles())
+
+    private fun newlyChangedTerrainAudioProfile(
+        previous: RenderSnapshot,
+        current: RenderSnapshot,
+    ): String? {
+        if (previous.metadata.zoneId != current.metadata.zoneId) {
+            return null
+        }
+        if (previous.metadata.width != current.metadata.width || previous.metadata.height != current.metadata.height) {
+            return null
+        }
+        current.mapCells.forEach { currentCell ->
+            val previousCell = previous.mapCellAt(currentCell.x, currentCell.y) ?: return@forEach
+            if (previousCell.visibility == com.ktome.core.snapshot.CellVisibilitySnapshot.HIDDEN) {
+                return@forEach
+            }
+            if (previousCell.terrainAudioProfile != currentCell.terrainAudioProfile) {
+                return currentCell.terrainAudioProfile
+            }
+        }
+        return null
+    }
 
     private fun play(key: String) {
         sink.emit(resolveExact(key))
@@ -428,6 +463,27 @@ class AudioRouter(
             .orEmpty()
             .flatMap { cell -> cell.items }
             .mapNotNull { item -> item.audioProfile }
+
+    private fun RenderSnapshot.actorMutationAudioProfiles(): List<String> =
+        actors
+            .flatMap { actor -> actor.mutations }
+            .mapNotNull { mutation -> mutation.audioProfile }
+
+    private fun RenderSnapshot.actorBossVariantAudioProfiles(): List<String> =
+        actors.mapNotNull { actor -> actor.bossVariant?.audioProfile }
+
+    private fun RenderSnapshot.playerTerrainAudioProfile(): String? =
+        mapCellAt(metadata.playerX, metadata.playerY)?.terrainAudioProfile
+
+    private fun RenderSnapshot.mapCellAt(
+        x: Int,
+        y: Int,
+    ) = if (x !in 0 until metadata.width || y !in 0 until metadata.height) {
+        null
+    } else {
+        mapCells.getOrNull(y * metadata.width + x)?.takeIf { cell -> cell.x == x && cell.y == y }
+            ?: mapCells.firstOrNull { cell -> cell.x == x && cell.y == y }
+    }
 
     private fun firstAddedAudioProfile(
         previous: List<String>,

@@ -283,11 +283,13 @@ class SchemaV2LoaderTest {
             listOf("healing_potion", "short_sword", "leather_armor", "bandit_trophy", "stamina_draught", "hunter_bow"),
             catalog.lootProfiles.first { it.id == "loot.foundation.common" }.itemIds,
         )
+        assertEquals(6, catalog.lootProfiles.first { it.id == "loot.foundation.common" }.rewardBudget)
         assertTrue(catalog.lootProfiles.first { it.id == "loot.foundation.common" }.itemIds.contains("hunter_bow"))
         assertEquals(
             listOf("basic_shield", "mana_potion", "chain_mail", "apprentice_robe", "long_sword", "emerald_charm", "furnace_talisman", "energy_tonic"),
             catalog.lootProfiles.first { it.id == "loot.foundation.elite" }.itemIds,
         )
+        assertEquals(8, catalog.lootProfiles.first { it.id == "loot.foundation.elite" }.rewardBudget)
         assertTrue(
             catalog.lootProfiles.first { it.id == "loot.foundation.elite" }.itemIds.containsAll(listOf("chain_mail", "long_sword")),
         )
@@ -295,11 +297,13 @@ class SchemaV2LoaderTest {
             listOf("battle_axe", "plate_armor", "arcane_staff", "scroll_teleport", "mana_potion", "forgebreaker_pick", "sanctified_seal", "seal_reliquary", "shadow_cloak", "consecrated_oil"),
             catalog.lootProfiles.first { it.id == "loot.foundation.boss" }.itemIds,
         )
+        assertEquals(10, catalog.lootProfiles.first { it.id == "loot.foundation.boss" }.rewardBudget)
         assertTrue(catalog.lootProfiles.first { it.id == "loot.foundation.boss" }.itemIds.contains("shadow_cloak"))
         assertEquals(
             listOf("abyssal_heartstone"),
             catalog.lootProfiles.first { it.id == "loot.abyssal_heart.reward" }.itemIds,
         )
+        assertEquals(1, catalog.lootProfiles.first { it.id == "loot.abyssal_heart.reward" }.rewardBudget)
         val banditCaptainAi = catalog.aiProfiles.first { it.id == "ai.boss.bandit_captain.phase_full" }
         assertEquals(AISelectionPolicy.WEIGHTED_RANDOM, banditCaptainAi.selectionPolicy)
         assertEquals("strike", banditCaptainAi.actions.first().id)

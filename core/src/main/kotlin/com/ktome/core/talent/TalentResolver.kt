@@ -4,6 +4,7 @@ import com.ktome.core.combat.ApplicationPolicy
 import com.ktome.core.combat.CombatResolver
 import com.ktome.core.combat.DamageType
 import com.ktome.core.combat.DiminishingReturns
+import com.ktome.core.combat.ElementInteractionResolution
 import com.ktome.core.combat.SaveDimension
 import com.ktome.core.combat.StatusApplicationRequest
 import com.ktome.core.ecs.BlocksMovement
@@ -105,6 +106,7 @@ sealed interface TalentEffectResult {
         val crit: Boolean,
         val damageType: DamageType = DamageType.PHYSICAL,
         val resistanceValue: Int = 0,
+        val terrainInteraction: ElementInteractionResolution? = null,
         val stealthBroken: Boolean = false,
         val removedStatusTypes: List<StatusEffectType> = emptyList(),
     ) : TalentEffectResult
@@ -1599,6 +1601,7 @@ class TalentResolver(
                 crit = result.critical,
                 damageType = damage.type,
                 resistanceValue = damage.resistanceValue,
+                terrainInteraction = result.terrainInteraction,
                 stealthBroken = StatusEffectType.STEALTH in result.removedStatusTypes,
                 removedStatusTypes = result.removedStatusTypes.toList(),
             )

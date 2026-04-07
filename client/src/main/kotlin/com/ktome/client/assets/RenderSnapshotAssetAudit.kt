@@ -13,6 +13,7 @@ class RenderSnapshotAssetAudit(
 
         snapshot.mapCells.forEach { cell ->
             resolveVisual(cell.terrainVisualKey)
+            resolveAudio(cell.terrainAudioProfile)
             cell.items.forEach { item ->
                 resolveVisual(item.visualKey)
                 resolveVisual(item.iconKey)
@@ -28,6 +29,12 @@ class RenderSnapshotAssetAudit(
         snapshot.actors.forEach { actor ->
             resolveVisual(actor.visualKey)
             resolveAudio(actor.audioProfile)
+            actor.bossVariant?.visualTintKey?.let(::resolveVisual)
+            actor.bossVariant?.audioProfile?.let(::resolveAudio)
+            actor.mutations.forEach { mutation ->
+                resolveVisual(mutation.iconKey)
+                resolveAudio(mutation.audioProfile)
+            }
             actor.statusEffects.forEach { effect ->
                 resolveVisual(effect.iconKey)
             }

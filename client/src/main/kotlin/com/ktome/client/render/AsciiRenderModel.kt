@@ -384,10 +384,32 @@ internal object AsciiRenderModelBuilder {
                     "${visibilityLabel(localizer, cell.visibility)} ${terrainName(localizer, cell)}",
                     AsciiTextTone.WHITE,
                 )
+                cell.terrainOverride?.let { terrainOverride ->
+                    val tickDamageTypeId = terrainOverride.tickDamageTypeId
+                    lines += AsciiTextLine(localizer.text("ui.inspect.terrain.rule", "rule" to localizer.text(terrainOverride.ruleNameKey)), AsciiTextTone.LIGHT_GRAY)
+                    lines += AsciiTextLine(localizer.text("ui.inspect.terrain.turns", "turns" to terrainOverride.remainingTurns), AsciiTextTone.LIGHT_GRAY)
+                    if (terrainOverride.conductsLightning) {
+                        lines += AsciiTextLine(localizer.text("ui.inspect.terrain.conducts_lightning"), AsciiTextTone.CYAN)
+                    }
+                    if (terrainOverride.tickDamage > 0 && tickDamageTypeId != null) {
+                        lines +=
+                            AsciiTextLine(
+                                localizer.text(
+                                    "ui.inspect.terrain.tick_damage",
+                                    "amount" to terrainOverride.tickDamage,
+                                    "damageType" to localizer.text(damageTypeLabelKey(tickDamageTypeId)),
+                                ),
+                                AsciiTextTone.RED,
+                            )
+                    }
+                }
 
                 actor?.let { inspected ->
                     lines += AsciiTextLine(localizer.text(inspected.nameKey), AsciiTextTone.GOLD)
                     lines += AsciiTextLine(actorRole(localizer, inspected), AsciiTextTone.WHITE)
+                    inspected.bossVariant?.let { variant ->
+                        lines += AsciiTextLine(localizer.text("ui.inspect.boss_variant", "variant" to localizer.text(variant.nameKey)), AsciiTextTone.MAGENTA)
+                    }
                     lines += AsciiTextLine(
                         "${localizer.text("ui.hud.hp.short")} ${inspected.currentHp}/${inspected.maxHp}",
                         AsciiTextTone.WHITE,
@@ -409,6 +431,12 @@ internal object AsciiRenderModelBuilder {
                         AsciiTextTone.WHITE,
                     )
                     lines += AsciiTextLine("${localizer.text("ui.hud.speed.short")} ${inspected.speed}", AsciiTextTone.WHITE)
+                    inspected.mutations.forEach { mutation ->
+                        lines += AsciiTextLine(localizer.text("ui.inspect.mutation.line", "mutation" to localizer.text(mutation.nameKey)), AsciiTextTone.CYAN)
+                        mutation.summary?.let { summary ->
+                            lines += AsciiTextLine(renderTextToken(localizer, summary), AsciiTextTone.LIGHT_GRAY)
+                        }
+                    }
                     inspected.statusEffects.forEach { effect ->
                         lines += AsciiTextLine(StatusHudRenderer.renderTurns(localizer, effect), AsciiTextTone.LIGHT_GRAY)
                     }
@@ -616,8 +644,17 @@ internal object AsciiRenderModelBuilder {
                 actor.roleKind == ActorRoleKindSnapshot.MONSTER -> AsciiPresentation('m', "#FFFFFF")
                 else -> AsciiPresentation('?', "#FFFFFF")
             }
-        return presentationFrom(resolveVisual(visualResolver, actor.visualKey), fallback)
+        val presentation = presentationFrom(resolveVisual(visualResolver, actor.visualKey), fallback)
+        return actorTintColorHex(visualResolver, actor)?.let { tint -> presentation.copy(colorHex = tint) } ?: presentation
     }
+
+    private fun actorTintColorHex(
+        visualResolver: VisualManifestResolver,
+        actor: ActorRenderSnapshot,
+    ): String? =
+        actor.bossVariant?.visualTintKey
+            ?.let { tintKey -> resolveVisual(visualResolver, tintKey).entry.asciiColorHex }
+            ?: actor.displayTintColorHex
 
     private fun resolveVisual(
         visualResolver: VisualManifestResolver,
@@ -644,9 +681,23 @@ internal object AsciiRenderModelBuilder {
         cell: MapCellSnapshot,
     ): String =
         when (cell.terrainTypeId) {
+            "water" -> localizer.text("tile.water.name")
+            "oil" -> localizer.text("tile.oil.name")
+            "ice" -> localizer.text("tile.ice.name")
             "floor" -> localizer.text("tile.floor.name")
             "wall" -> localizer.text("tile.wall.name")
             else -> localizer.text("tile.unknown.name")
+        }
+
+    private fun damageTypeLabelKey(damageTypeId: String): String =
+        when (damageTypeId) {
+            "PHYSICAL" -> "damage_type.physical.name"
+            "FIRE" -> "damage_type.fire.name"
+            "COLD" -> "damage_type.cold.name"
+            "LIGHTNING" -> "damage_type.lightning.name"
+            "HOLY" -> "damage_type.holy.name"
+            "SHADOW" -> "damage_type.shadow.name"
+            else -> "damage_type.physical.name"
         }
 
     private fun actorRole(

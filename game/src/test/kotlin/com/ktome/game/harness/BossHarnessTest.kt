@@ -4,27 +4,46 @@ import com.ktome.core.ai.AIDecisionTrace
 import com.ktome.core.ai.BossEncounterState
 import com.ktome.core.ai.BossTrace
 import com.ktome.core.ai.PendingTelegraphState
+import com.ktome.core.ecs.BossVariantRuntime
+import com.ktome.core.ecs.EntityId
+import com.ktome.core.ecs.EliteMutationLoadout
 import com.ktome.core.ecs.Position
 import com.ktome.core.ecs.get
+import com.ktome.core.harness.whitebox.WhiteBoxAggregateReport
+import com.ktome.core.harness.whitebox.WhiteBoxAssertionResult
+import com.ktome.core.harness.whitebox.WhiteBoxCaseReport
+import com.ktome.core.harness.whitebox.WhiteBoxCorpusSpec
+import com.ktome.core.harness.whitebox.WhiteBoxJoinKey
+import com.ktome.core.loot.EncounterThreatBudget
+import com.ktome.core.loot.FloorRewardBudget
 import com.ktome.core.map.Point
+import com.ktome.core.phase.Phase4ContractVersions
 import com.ktome.core.resource.ResourcePools
 import com.ktome.core.resource.ResourceType
 import com.ktome.core.save.SaveManager
 import com.ktome.core.snapshot.CombatFeedbackTypeSnapshot
 import com.ktome.game.AbyssalRuntimeKeys
+import com.ktome.game.data.DataLoader
 import com.ktome.game.FoundationGameConfig
 import com.ktome.game.FoundationGameSession
 import com.ktome.game.GameModule
 import com.ktome.game.PlayerCommand
+import com.ktome.game.elites.BossVariantSelectionMode
 import com.ktome.game.interactablePoint
 import java.nio.file.Path
 import java.security.MessageDigest
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
+import kotlinx.serialization.json.putJsonObject
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
@@ -34,39 +53,86 @@ class BossHarnessTest {
     @TempDir
     lateinit var tempDir: Path
 
+    private val rewardBudgetsByLootProfileId: Map<String, Int> =
+        DataLoader().loadSchemaCatalog().lootProfiles.associate { profile -> profile.id to profile.rewardBudget }
+
     @Test
     @Tag("bossHarness")
     fun `boss harness covers phase three roster with telegraph and trace consistency`() {
-        val reports =
+        val pairReports =
             listOf(
-                runMoltenGiantHarness(seed = 20260325L),
-                runDungeonLordHarness(seed = 20260326L),
-                runAbyssalGuardianHarness(seed = 20260327L),
+                runMoltenGiantPair(seed = 20260325L),
+                runDungeonLordPair(seed = 20260326L),
+                runAbyssalGuardianPair(seed = 20260327L),
             )
+        val reports = pairReports.flatMap { pair -> listOf(pair.baseReport, pair.variantReport) }
 
         HarnessReportWriter.writeJsonAndMarkdown(
             fileStem = "boss-harness",
             payload =
                 buildJsonObject {
-                    put("scriptVersion", "boss-harness-v2")
+                    put("scriptVersion", "boss-harness-v3")
                     putJsonArray("reports") { reports.forEach { report -> add(report.toJson()) } }
+                    putJsonArray("pairReports") { pairReports.forEach { report -> add(report.toJson()) } }
                 },
             markdown =
                 buildString {
                     appendLine("# Boss Harness")
-                    appendLine("- scriptVersion: boss-harness-v2")
+                    appendLine("- scriptVersion: boss-harness-v3")
                     reports.forEach { report ->
                         appendLine(
-                            "- boss=${report.templateId}, zone=${report.zoneId}, seed=${report.seed}, locale=${report.localeId}, success=${report.success}, telegraph=${report.telegraphKey}, phase=${report.phaseId}, expectedActions=${if (report.expectedSelectedActions.isEmpty()) "none" else report.expectedSelectedActions}, selectedActions=${if (report.selectedActionIds.isEmpty()) "none" else report.selectedActionIds}, observedAiTraceCount=${report.observedAiTraceCount}/${report.requiredAiTraceCount}, bossTraceCount=${report.bossTraceCount}, aiTraceHash=${report.aiTraceHash}, bossTraceHash=${report.bossTraceHash}",
+                            "- encounter=${report.encounterId}, template=${report.templateId}, variant=${report.variantId ?: "base"}, " +
+                                "seed=${report.seed}, success=${report.success}, phase=${report.phaseId}, telegraph=${report.telegraphKey}, " +
+                                "selectedActions=${if (report.selectedActionIds.isEmpty()) "none" else report.selectedActionIds}, " +
+                                "threatCost=${report.threatCost}, lootProfileOverride=${report.lootProfileOverride ?: "none"}, " +
+                                "phaseSequence=${report.phaseSequence}, aiTraceHash=${report.aiTraceHash}, bossTraceHash=${report.bossTraceHash}",
+                        )
+                    }
+                    pairReports.forEach { pair ->
+                        appendLine(
+                            "- pair=${pair.joinKey.scenarioId}, success=${pair.success}, phaseGraphUnchanged=${pair.phaseGraphUnchanged}, " +
+                                "structuralDiffCount=${pair.phaseGraphStructuralDiffCount}, inspectReadable=${pair.inspectReadable}, " +
+                                "logReadable=${pair.logReadable}, threatLedgerMatched=${pair.threatLedgerMatched}, rewardLedgerMatched=${pair.rewardLedgerMatched}",
                         )
                     }
                 },
         )
 
-        assertTrue(
-            reports.all { report -> report.success },
-            reports.joinToString(separator = "\n") { report -> "${report.templateId}: ${report.failureReason ?: "unknown failure"}" },
-        )
+        val whiteBoxOutputDir = whiteBoxSummaryReportDir("ktome.phase4.whitebox.boss.reportDir", "boss")
+        val whiteBoxWriteResult =
+            WhiteBoxHarnessWriter.write(
+                WhiteBoxHarnessWriteRequest(
+                    domainId = "boss",
+                    outputDir = whiteBoxOutputDir,
+                    header =
+                        whiteBoxPhase4Header(
+                            harnessId = "bossHarness",
+                            corpusId = "P4_PR06_BOSS_WHITEBOX",
+                            contractVersions =
+                                listOf(
+                                    "bossVariantOverlay" to Phase4ContractVersions.BOSS_VARIANT_OVERLAY_VERSION.toString(),
+                                    "eliteMutationRegistry" to Phase4ContractVersions.ELITE_MUTATION_REGISTRY_VERSION.toString(),
+                                    "rewardLedger" to Phase4ContractVersions.REWARD_LEDGER_VERSION.toString(),
+                                    "bossEncounterPhaseGraph" to "1",
+                                    "visualManifest" to "1",
+                                    "audioManifest" to "1",
+                                ),
+                            seeds = pairReports.flatMap { pair -> listOf(pair.baseReport.seed, pair.variantReport.seed) }.distinct(),
+                        ),
+                    corpus =
+                        WhiteBoxCorpusSpec(
+                            corpusId = "P4_PR06_BOSS_WHITEBOX",
+                            description = "Base-vs-variant PR-06 boss overlay corpus for the three formal boss encounters.",
+                            sampleCount = pairReports.size,
+                        ),
+                    cases = pairReports.map { pair -> pair.toWhiteBoxCase(whiteBoxOutputDir) },
+                    aggregates = bossAggregates(pairReports),
+                ),
+            )
+
+        assertEquals(0, whiteBoxWriteResult.failedAssertions, "bossHarness left failed white-box assertions in ${whiteBoxWriteResult.summaryPath}")
+        assertTrue(reports.all(BossHarnessReport::success), reports.joinToString(separator = "\n") { report -> "${report.templateId}:${report.variantId ?: "base"} ${report.failureReason ?: "unknown"}" })
+        assertTrue(pairReports.all(BossHarnessPairReport::success), pairReports.joinToString(separator = "\n") { pair -> "${pair.joinKey.scenarioId}: ${pair.failureReason ?: "unknown"}" })
     }
 
     @Test
@@ -92,11 +158,7 @@ class BossHarnessTest {
         triggerTemplarHealFeedback(session)
         val snapshot = session.renderSnapshot()
 
-        assertTrue(
-            snapshot.overlays.any { overlay ->
-                overlay.id.startsWith("telegraph:") || overlay.id.startsWith("boss-warning:")
-            },
-        )
+        assertTrue(snapshot.overlays.any { overlay -> overlay.id.startsWith("telegraph:") || overlay.id.startsWith("boss-warning:") })
         assertTrue(
             snapshot.combatFeedbackEvents.any { event ->
                 event.type == CombatFeedbackTypeSnapshot.HEAL &&
@@ -107,11 +169,44 @@ class BossHarnessTest {
         assertTrue(telegraph.sourceAbilityId == "dungeon_lord_phase_warning" || telegraph.telegraphSpecId == "dungeon_lord_phase_warning")
     }
 
-    private fun runMoltenGiantHarness(seed: Long): BossHarnessReport {
+    private fun runMoltenGiantPair(seed: Long): BossHarnessPairReport =
+        buildPairReport(
+            baseReport = runMoltenGiantHarness(seed = seed, preferredVariantId = null),
+            variantReport = runMoltenGiantHarness(seed = seed, preferredVariantId = "boss.variant.molten_glass"),
+        )
+
+    private fun runDungeonLordPair(seed: Long): BossHarnessPairReport =
+        buildPairReport(
+            baseReport = runDungeonLordHarness(seed = seed, preferredVariantId = null),
+            variantReport = runDungeonLordHarness(seed = seed, preferredVariantId = "boss.variant.grey_crown"),
+        )
+
+    private fun runAbyssalGuardianPair(seed: Long): BossHarnessPairReport =
+        buildPairReport(
+            baseReport = runAbyssalGuardianHarness(seed = seed, preferredVariantId = null),
+            variantReport = runAbyssalGuardianHarness(seed = seed, preferredVariantId = "boss.variant.abyssal_eclipse"),
+        )
+
+    private fun runMoltenGiantHarness(
+        seed: Long,
+        preferredVariantId: String?,
+    ): BossHarnessReport {
         val session =
             GameModule.newFoundationSession(
-                config = FoundationGameConfig(seed = seed, zoneId = "deep_iron_pit", playerProfessionId = "vanguard"),
-                saveManager = SaveManager(tempDir.resolve("boss-molten-$seed")),
+                config =
+                    FoundationGameConfig(
+                        seed = seed,
+                        zoneId = "deep_iron_pit",
+                        playerProfessionId = "vanguard",
+                        bossVariantSelectionMode =
+                            if (preferredVariantId == null) {
+                                BossVariantSelectionMode.DISABLED
+                            } else {
+                                BossVariantSelectionMode.FORCE_AVAILABLE
+                            },
+                        preferredBossVariantId = preferredVariantId,
+                    ),
+                saveManager = SaveManager(tempDir.resolve("boss-molten-$seed-${preferredVariantId ?: "base"}")),
             )
         descendToBossFloor(session)
         val bossId = requireNotNull(session.automationEntityByTemplateId("orc.molten_giant"))
@@ -134,6 +229,8 @@ class BossHarnessTest {
         return buildReport(
             session = session,
             bossActorId = bossId.value,
+            bossPoint = bossPoint,
+            encounterId = "molten_giant_encounter",
             seed = seed,
             zoneId = "deep_iron_pit",
             templateId = "orc.molten_giant",
@@ -144,14 +241,30 @@ class BossHarnessTest {
             expectedSelectedActionIds = setOf("earthshaker"),
             expectedBossTracePhaseId = "phase_enraged",
             expectedBossTraceSideEffect = "TELEGRAPH:molten_giant_phase_warning",
+            expectedVariantId = preferredVariantId,
         )
     }
 
-    private fun runDungeonLordHarness(seed: Long): BossHarnessReport {
+    private fun runDungeonLordHarness(
+        seed: Long,
+        preferredVariantId: String?,
+    ): BossHarnessReport {
         val session =
             GameModule.newFoundationSession(
-                config = FoundationGameConfig(seed = seed, zoneId = "grey_gate_depths", playerProfessionId = "templar"),
-                saveManager = SaveManager(tempDir.resolve("boss-dungeon-$seed")),
+                config =
+                    FoundationGameConfig(
+                        seed = seed,
+                        zoneId = "grey_gate_depths",
+                        playerProfessionId = "templar",
+                        bossVariantSelectionMode =
+                            if (preferredVariantId == null) {
+                                BossVariantSelectionMode.DISABLED
+                            } else {
+                                BossVariantSelectionMode.FORCE_AVAILABLE
+                            },
+                        preferredBossVariantId = preferredVariantId,
+                    ),
+                saveManager = SaveManager(tempDir.resolve("boss-dungeon-$seed-${preferredVariantId ?: "base"}")),
             )
         descendToBossFloor(session)
         val bossId = requireNotNull(session.automationEntityByTemplateId("cultist.dungeon_lord"))
@@ -174,6 +287,8 @@ class BossHarnessTest {
         return buildReport(
             session = session,
             bossActorId = bossId.value,
+            bossPoint = bossPoint,
+            encounterId = "dungeon_lord_encounter",
             seed = seed,
             zoneId = "grey_gate_depths",
             templateId = "cultist.dungeon_lord",
@@ -184,14 +299,30 @@ class BossHarnessTest {
             expectedSelectedActionIds = setOf("arcane_shield"),
             expectedBossTracePhaseId = "phase_desperate",
             expectedBossTraceSideEffect = "TELEGRAPH:dungeon_lord_phase_warning",
+            expectedVariantId = preferredVariantId,
         )
     }
 
-    private fun runAbyssalGuardianHarness(seed: Long): BossHarnessReport {
+    private fun runAbyssalGuardianHarness(
+        seed: Long,
+        preferredVariantId: String?,
+    ): BossHarnessReport {
         val session =
             GameModule.newFoundationSession(
-                config = FoundationGameConfig(seed = seed, zoneId = "abyssal_heart", playerProfessionId = "vanguard"),
-                saveManager = SaveManager(tempDir.resolve("boss-abyssal-$seed")),
+                config =
+                    FoundationGameConfig(
+                        seed = seed,
+                        zoneId = "abyssal_heart",
+                        playerProfessionId = "vanguard",
+                        bossVariantSelectionMode =
+                            if (preferredVariantId == null) {
+                                BossVariantSelectionMode.DISABLED
+                            } else {
+                                BossVariantSelectionMode.FORCE_AVAILABLE
+                            },
+                        preferredBossVariantId = preferredVariantId,
+                    ),
+                saveManager = SaveManager(tempDir.resolve("boss-abyssal-$seed-${preferredVariantId ?: "base"}")),
             )
         session.automationMovePlayerTo(interactablePoint(session, AbyssalRuntimeKeys.Finale.INTERACTABLE_ID))
         assertTrue(session.perform(PlayerCommand.Interact))
@@ -215,6 +346,8 @@ class BossHarnessTest {
         return buildReport(
             session = session,
             bossActorId = bossId.value,
+            bossPoint = bossPoint,
+            encounterId = "abyssal_guardian_encounter",
             seed = seed,
             zoneId = "abyssal_heart",
             templateId = "abyssal.guardian",
@@ -225,12 +358,15 @@ class BossHarnessTest {
             expectedSelectedActionIds = setOf("abyssal_consecration", "press_abyss"),
             expectedBossTracePhaseId = "phase_abyssal",
             expectedBossTraceSideEffect = "TELEGRAPH:abyssal_guardian_phase_warning",
+            expectedVariantId = preferredVariantId,
         )
     }
 
     private fun buildReport(
         session: FoundationGameSession,
         bossActorId: Int,
+        bossPoint: Point,
+        encounterId: String,
         seed: Long,
         zoneId: String,
         templateId: String,
@@ -241,7 +377,10 @@ class BossHarnessTest {
         expectedSelectedActionIds: Set<String> = emptySet(),
         expectedBossTracePhaseId: String? = null,
         expectedBossTraceSideEffect: String? = null,
+        expectedVariantId: String?,
     ): BossHarnessReport {
+        val bossId = EntityId(bossActorId)
+        val world = session.automationWorld()
         val aiTraces = session.recentAIDecisionTraces().filter { trace -> trace.actorId == bossActorId }
         val bossTraces = session.recentBossTraces().filter { trace -> trace.actorId == bossActorId }
         val bossJson = Json.encodeToString(bossTraces)
@@ -276,6 +415,36 @@ class BossHarnessTest {
                     (expectedBossTracePhaseId == null || trace.toPhase == expectedBossTracePhaseId) &&
                         expectedBossTraceSideEffect in trace.sideEffects
                 }
+        val variantRuntime = world.get<BossVariantRuntime>(bossId)
+        val mutationLoadout = world.get<EliteMutationLoadout>(bossId)?.mutationIds?.sorted().orEmpty()
+        val inspectPoint = world.get<Position>(bossId)?.toPoint() ?: bossPoint
+        val inspectActor = session.inspectAt(inspectPoint).actor
+        val snapshot = session.renderSnapshot()
+        val inspectReadable =
+            if (expectedVariantId == null) {
+                inspectActor?.bossVariant == null
+            } else {
+                inspectActor?.bossVariant?.id == expectedVariantId &&
+                    inspectActor.mutations.map { mutation -> mutation.id }.sorted() == mutationLoadout
+            }
+        val logReadable =
+            if (expectedVariantId == null) {
+                true
+            } else {
+                snapshot.logEvents.any { event ->
+                    event.message.key == "log.boss.variant.applied" &&
+                        event.message.arguments.any { argument -> argument.valueKey == "$expectedVariantId.name" }
+                }
+            }
+        val phaseSequence = phaseSequence(decodedBoss, phaseState)
+        val phaseTransitionTriggers = decodedBoss.map { trace -> "${trace.fromPhase ?: "START"}->${trace.toPhase}:${trace.trigger}" }.distinct()
+        val encounterThreatBudget = session.automationEncounterThreatBudget(bossId)
+        val floorRewardBudget = session.automationFloorRewardBudget()
+        val variantMatches =
+            when {
+                expectedVariantId == null -> variantRuntime == null
+                else -> variantRuntime?.variantId == expectedVariantId
+            }
         val success =
             telegraphMatches &&
                 phaseState?.currentPhaseId == expectedPhaseId &&
@@ -284,7 +453,10 @@ class BossHarnessTest {
                 traceRoundTripMatches &&
                 expectedActionPresent &&
                 expectedBossPhaseTracePresent &&
-                expectedBossSideEffectPresent
+                expectedBossSideEffectPresent &&
+                variantMatches &&
+                inspectReadable &&
+                logReadable
         val failureReason =
             when {
                 telegraph == null -> "Missing pending telegraph."
@@ -296,6 +468,9 @@ class BossHarnessTest {
                 !expectedActionPresent -> "Missing expected AI action trace after phase transition in ${expectedSelectedActionIds.sorted()}."
                 !expectedBossPhaseTracePresent -> "Missing boss phase trace '$expectedBossTracePhaseId'."
                 !expectedBossSideEffectPresent -> "Missing boss trace side effect '$expectedBossTraceSideEffect'."
+                !variantMatches -> "Expected variant ${expectedVariantId ?: "base"} but got ${variantRuntime?.variantId ?: "base"}."
+                !inspectReadable -> "Inspect view did not expose the expected variant/mutation metadata."
+                !logReadable -> "Render log did not expose the expected boss variant token."
                 else -> null
             }
         return BossHarnessReport(
@@ -303,9 +478,20 @@ class BossHarnessTest {
             localeId = session.localizer().locale.id,
             zoneId = zoneId,
             templateId = templateId,
+            encounterId = encounterId,
+            variantId = variantRuntime?.variantId,
+            grantedMutations = mutationLoadout,
+            threatCost = variantRuntime?.threatCost ?: 0,
+            lootProfileOverride = variantRuntime?.lootProfileOverride,
+            lootProfileRewardBudget = variantRuntime?.lootProfileOverride?.let(rewardBudgetsByLootProfileId::get),
+            actionWeightProfileId = variantRuntime?.actionWeightProfileId,
+            visualTintKey = variantRuntime?.visualTintKey,
+            renderTintColorHex = null,
             success = success,
             phaseId = phaseState?.currentPhaseId,
             telegraphKey = telegraph?.sourceAbilityId ?: telegraph?.telegraphSpecId,
+            phaseSequence = phaseSequence,
+            phaseTransitionTriggers = phaseTransitionTriggers,
             expectedSelectedActions = expectedSelectedActionIds.sorted(),
             selectedActionIds = selectedActionIds,
             requiredAiTraceCount = if (aiTraceRequired) 1 else 0,
@@ -316,9 +502,135 @@ class BossHarnessTest {
             bossTraceHash = bossTraceHash,
             aiTracePayload = Json.parseToJsonElement(aiJson),
             bossTracePayload = Json.parseToJsonElement(bossJson),
+            encounterThreatBudget = encounterThreatBudgetToJson(encounterThreatBudget),
+            floorRewardBudgetDelta = floorRewardBudgetToJson(floorRewardBudget),
+            inspectReadable = inspectReadable,
+            logReadable = logReadable,
             failureReason = failureReason,
         )
     }
+
+    private fun buildPairReport(
+        baseReport: BossHarnessReport,
+        variantReport: BossHarnessReport,
+    ): BossHarnessPairReport {
+        val expectedVariantId = requireNotNull(variantReport.variantId) { "Variant harness report must carry a variant id." }
+        val phaseGraphUnchanged =
+            baseReport.phaseSequence == variantReport.phaseSequence &&
+                baseReport.phaseTransitionTriggers == variantReport.phaseTransitionTriggers
+        val phaseGraphStructuralDiffCount =
+            setOf(baseReport.phaseSequence, variantReport.phaseSequence).size - 1 +
+                setOf(baseReport.phaseTransitionTriggers, variantReport.phaseTransitionTriggers).size - 1
+        val threatLedgerMatched =
+            variantReport.encounterThreatBudget.jsonObject.getValue("threatDeltas").toString().contains("bossVariant:$expectedVariantId") &&
+                variantReport.encounterThreatBudget.jsonObject.getValue("totalBudget").jsonPrimitive.content.toInt() >=
+                variantReport.encounterThreatBudget.jsonObject.getValue("baseBudget").jsonPrimitive.content.toInt() + variantReport.threatCost
+        val rewardLedgerEntry =
+            variantReport.floorRewardBudgetDelta.jsonObject
+                .getValue("rewardDeltas")
+                .jsonArray
+                .firstOrNull { delta ->
+                    delta.jsonObject.getValue("source").jsonPrimitive.content == "bossVariant:$expectedVariantId"
+                }?.jsonObject
+        val rewardLedgerMatched =
+            variantReport.lootProfileOverride == null ||
+                (
+                    rewardLedgerEntry != null &&
+                        rewardLedgerEntry.getValue("amount").jsonPrimitive.content.toInt() == variantReport.lootProfileRewardBudget
+                )
+        val grantedMutationsRegistered = variantReport.grantedMutations.all { mutationId -> mutationId.startsWith("elite.") }
+        val success =
+            baseReport.success &&
+                variantReport.success &&
+                phaseGraphUnchanged &&
+                grantedMutationsRegistered &&
+                threatLedgerMatched &&
+                rewardLedgerMatched &&
+                variantReport.inspectReadable &&
+                variantReport.logReadable
+        val failureReason =
+            when {
+                !baseReport.success -> "Base report failed: ${baseReport.failureReason}"
+                !variantReport.success -> "Variant report failed: ${variantReport.failureReason}"
+                !phaseGraphUnchanged -> "Boss variant changed the phase graph structure."
+                !grantedMutationsRegistered -> "Variant references a non-registry mutation id."
+                !threatLedgerMatched -> "Variant threatCost is missing from the encounter ledger."
+                !rewardLedgerMatched -> "Variant lootProfileOverride is missing from the reward ledger or uses the wrong rewardBudget amount."
+                !variantReport.inspectReadable -> "Variant metadata is not inspect-readable."
+                !variantReport.logReadable -> "Variant metadata is not log-readable."
+                else -> null
+            }
+        return BossHarnessPairReport(
+            joinKey = WhiteBoxJoinKey(scenarioId = "pair:${baseReport.encounterId}:$expectedVariantId"),
+            baseReport = baseReport,
+            variantReport = variantReport,
+            phaseGraphUnchanged = phaseGraphUnchanged,
+            phaseGraphStructuralDiffCount = phaseGraphStructuralDiffCount.coerceAtLeast(0),
+            threatLedgerMatched = threatLedgerMatched,
+            rewardLedgerMatched = rewardLedgerMatched,
+            inspectReadable = variantReport.inspectReadable,
+            logReadable = variantReport.logReadable,
+            success = success,
+            failureReason = failureReason,
+        )
+    }
+
+    private fun bossAggregates(pairReports: List<BossHarnessPairReport>): List<WhiteBoxAggregateReport> =
+        listOf(
+            WhiteBoxAggregateReport(
+                groupId = "per-encounter",
+                sampleCount = pairReports.size,
+                metrics =
+                    buildJsonObject {
+                        put("pairCount", pairReports.size)
+                        put("phaseGraphStructuralDiffCount", pairReports.sumOf(BossHarnessPairReport::phaseGraphStructuralDiffCount))
+                        put("variantCount", pairReports.count { pair -> pair.variantReport.variantId != null })
+                    },
+                assertions =
+                    listOf(
+                        WhiteBoxAssertionResult(
+                            ruleId = "boss.aggregate.base_variant_pairs_present",
+                            passed = pairReports.all { pair -> pair.baseReport.variantId == null && pair.variantReport.variantId != null },
+                            message = "Each PR-06 boss variant has a base-vs-variant contrast sample.",
+                        ),
+                        WhiteBoxAssertionResult(
+                            ruleId = "boss.aggregate.phase_graph_diff_zero",
+                            passed = pairReports.sumOf(BossHarnessPairReport::phaseGraphStructuralDiffCount) == 0,
+                            message = "All boss variants preserve the original phase graph structure.",
+                        ),
+                    ),
+            ),
+            WhiteBoxAggregateReport(
+                groupId = "corpus",
+                sampleCount = pairReports.size,
+                metrics =
+                    buildJsonObject {
+                        put("pairCount", pairReports.size)
+                        put("threatLedgerMatchedCount", pairReports.count(BossHarnessPairReport::threatLedgerMatched))
+                        put("rewardLedgerMatchedCount", pairReports.count(BossHarnessPairReport::rewardLedgerMatched))
+                        put("inspectReadableCount", pairReports.count(BossHarnessPairReport::inspectReadable))
+                        put("logReadableCount", pairReports.count(BossHarnessPairReport::logReadable))
+                    },
+                assertions =
+                    listOf(
+                        WhiteBoxAssertionResult(
+                            ruleId = "boss.aggregate.threat_cost_traceable",
+                            passed = pairReports.all(BossHarnessPairReport::threatLedgerMatched),
+                            message = "Every variant threatCost is traceable in the encounter ledger.",
+                        ),
+                        WhiteBoxAssertionResult(
+                            ruleId = "boss.aggregate.loot_override_traceable",
+                            passed = pairReports.all(BossHarnessPairReport::rewardLedgerMatched),
+                            message = "Every variant lootProfileOverride is traceable in the floor reward ledger.",
+                        ),
+                        WhiteBoxAssertionResult(
+                            ruleId = "boss.aggregate.variant_readability",
+                            passed = pairReports.all { pair -> pair.inspectReadable && pair.logReadable },
+                            message = "Every variant can be traced from inspect/log/visual cue metadata.",
+                        ),
+                    ),
+            ),
+        )
 
     private fun descendToBossFloor(session: FoundationGameSession) {
         val stairsDown = requireNotNull(session.automationStairPoint(com.ktome.core.dungeon.StairDirection.DOWN))
@@ -371,8 +683,7 @@ class BossHarnessTest {
                     session.map.isInBounds(point.x, point.y) &&
                     !session.map[point].blocksMovement &&
                     point !in occupied
-            }
-            .sortedWith(compareByDescending<Point> { point -> point.chebyshevDistanceTo(center) }.thenBy(Point::y).thenBy(Point::x))
+            }.sortedWith(compareByDescending<Point> { point -> point.chebyshevDistanceTo(center) }.thenBy(Point::y).thenBy(Point::x))
             .first()
     }
 
@@ -406,6 +717,53 @@ class BossHarnessTest {
             assertTrue(session.perform(PlayerCommand.Wait))
         }
     }
+
+    private fun phaseSequence(
+        bossTraces: List<BossTrace>,
+        phaseState: BossEncounterState?,
+    ): List<String> =
+        buildList {
+            bossTraces.firstOrNull()?.fromPhase?.let(::add)
+            bossTraces.map(BossTrace::toPhase).forEach { phaseId ->
+                if (phaseId !in this) {
+                    add(phaseId)
+                }
+            }
+            if (isEmpty()) {
+                phaseState?.currentPhaseId?.let(::add)
+            }
+        }
+
+    private fun encounterThreatBudgetToJson(budget: EncounterThreatBudget): JsonElement =
+        buildJsonObject {
+            put("encounterId", budget.encounterId)
+            put("baseBudget", budget.baseBudget)
+            put("totalBudget", budget.totalBudget)
+            putJsonArray("threatDeltas") {
+                budget.threatDeltas.forEach { delta ->
+                    add(buildJsonObject {
+                        put("source", delta.source)
+                        put("amount", delta.amount)
+                    })
+                }
+            }
+        }
+
+    private fun floorRewardBudgetToJson(budget: FloorRewardBudget): JsonElement =
+        buildJsonObject {
+            put("zoneId", budget.zoneId)
+            put("floorIndex", budget.floorIndex)
+            put("baseBudget", budget.baseBudget)
+            put("totalBudget", budget.totalBudget)
+            putJsonArray("rewardDeltas") {
+                budget.rewardDeltas.forEach { delta ->
+                    add(buildJsonObject {
+                        put("source", delta.source)
+                        put("amount", delta.amount)
+                    })
+                }
+            }
+        }
 }
 
 private data class BossHarnessReport(
@@ -413,9 +771,20 @@ private data class BossHarnessReport(
     val localeId: String,
     val zoneId: String,
     val templateId: String,
+    val encounterId: String,
+    val variantId: String?,
+    val grantedMutations: List<String>,
+    val threatCost: Int,
+    val lootProfileOverride: String?,
+    val lootProfileRewardBudget: Int?,
+    val actionWeightProfileId: String?,
+    val visualTintKey: String?,
+    val renderTintColorHex: String?,
     val success: Boolean,
     val phaseId: String?,
     val telegraphKey: String?,
+    val phaseSequence: List<String>,
+    val phaseTransitionTriggers: List<String>,
     val expectedSelectedActions: List<String>,
     val selectedActionIds: List<String>,
     val requiredAiTraceCount: Int,
@@ -424,8 +793,12 @@ private data class BossHarnessReport(
     val bossTraceCount: Int,
     val aiTraceHash: String,
     val bossTraceHash: String,
-    val aiTracePayload: kotlinx.serialization.json.JsonElement,
-    val bossTracePayload: kotlinx.serialization.json.JsonElement,
+    val aiTracePayload: JsonElement,
+    val bossTracePayload: JsonElement,
+    val encounterThreatBudget: JsonElement,
+    val floorRewardBudgetDelta: JsonElement,
+    val inspectReadable: Boolean,
+    val logReadable: Boolean,
     val failureReason: String?,
 ) {
     fun toJson() =
@@ -434,9 +807,14 @@ private data class BossHarnessReport(
             put("localeId", localeId)
             put("zoneId", zoneId)
             put("templateId", templateId)
+            put("encounterId", encounterId)
+            variantId?.let { put("variantId", it) }
             put("success", success)
             phaseId?.let { put("phaseId", it) }
             telegraphKey?.let { put("telegraphKey", it) }
+            putJsonArray("grantedMutations") { grantedMutations.forEach { mutationId -> add(JsonPrimitive(mutationId)) } }
+            putJsonArray("phaseSequence") { phaseSequence.forEach { phase -> add(JsonPrimitive(phase)) } }
+            putJsonArray("phaseTransitionTriggers") { phaseTransitionTriggers.forEach { trigger -> add(JsonPrimitive(trigger)) } }
             putJsonArray("expectedSelectedActions") { expectedSelectedActions.forEach { actionId -> add(JsonPrimitive(actionId)) } }
             putJsonArray("selectedActionIds") { selectedActionIds.forEach { actionId -> add(JsonPrimitive(actionId)) } }
             put("requiredAiTraceCount", requiredAiTraceCount)
@@ -445,6 +823,16 @@ private data class BossHarnessReport(
             put("bossTraceCount", bossTraceCount)
             put("aiTraceHash", aiTraceHash)
             put("bossTraceHash", bossTraceHash)
+            put("threatCost", threatCost)
+            lootProfileOverride?.let { put("lootProfileOverride", it) }
+            lootProfileRewardBudget?.let { put("lootProfileRewardBudget", it) }
+            actionWeightProfileId?.let { put("actionWeightProfileId", it) }
+            visualTintKey?.let { put("visualTintKey", it) }
+            renderTintColorHex?.let { put("renderTintColorHex", it) }
+            put("encounterThreatBudget", encounterThreatBudget)
+            put("floorRewardBudgetDelta", floorRewardBudgetDelta)
+            put("inspectReadable", inspectReadable)
+            put("logReadable", logReadable)
             put("aiTraces", aiTracePayload)
             put("bossTraces", bossTracePayload)
             failureReason?.let { put("failureReason", it) }
@@ -455,8 +843,196 @@ private data class BossHarnessReport(
                 add(JsonPrimitive("aiDecisionTracePayload"))
                 add(JsonPrimitive("phaseSpecificActionTrace"))
                 add(JsonPrimitive("traceHash"))
+                add(JsonPrimitive("variantReadability"))
+                add(JsonPrimitive("threatRewardLedger"))
             }
         }
+}
+
+private data class BossHarnessPairReport(
+    val joinKey: WhiteBoxJoinKey,
+    val baseReport: BossHarnessReport,
+    val variantReport: BossHarnessReport,
+    val phaseGraphUnchanged: Boolean,
+    val phaseGraphStructuralDiffCount: Int,
+    val threatLedgerMatched: Boolean,
+    val rewardLedgerMatched: Boolean,
+    val inspectReadable: Boolean,
+    val logReadable: Boolean,
+    val success: Boolean,
+    val failureReason: String?,
+) {
+    fun toJson() =
+        buildJsonObject {
+            put("joinKey", Json.encodeToJsonElement(WhiteBoxJoinKey.serializer(), joinKey))
+            put("base", baseReport.toJson())
+            put("variant", variantReport.toJson())
+            put("phaseGraphUnchanged", phaseGraphUnchanged)
+            put("phaseGraphStructuralDiffCount", phaseGraphStructuralDiffCount)
+            put("threatLedgerMatched", threatLedgerMatched)
+            put("rewardLedgerMatched", rewardLedgerMatched)
+            put("inspectReadable", inspectReadable)
+            put("logReadable", logReadable)
+            put("success", success)
+            failureReason?.let { put("failureReason", it) }
+        }
+
+    fun toWhiteBoxCase(outputDir: Path): WhiteBoxCaseReport {
+        val variantId = requireNotNull(variantReport.variantId)
+        val assertions =
+            listOf(
+                WhiteBoxAssertionResult(
+                    ruleId = "boss.case.base_encounter_exists",
+                    passed = baseReport.encounterId.isNotBlank(),
+                    message = "Base encounter id is present for the pair.",
+                ),
+                WhiteBoxAssertionResult(
+                    ruleId = "boss.case.variant_mutations_registered",
+                    passed = variantReport.grantedMutations.all { mutationId -> mutationId.startsWith("elite.") },
+                    message = "Variant grantedMutations only reference registered elite mutation ids.",
+                ),
+                WhiteBoxAssertionResult(
+                    ruleId = "boss.case.phase_graph_same_as_base",
+                    passed = phaseGraphUnchanged,
+                    message = "Variant preserves the base phase graph structure.",
+                ),
+                WhiteBoxAssertionResult(
+                    ruleId = "boss.case.action_weight_overlay_only",
+                    passed = variantReport.actionWeightProfileId != null && phaseGraphUnchanged,
+                    message = "actionWeightProfileId only shifts weights and does not alter phase structure.",
+                ),
+                WhiteBoxAssertionResult(
+                    ruleId = "boss.case.threat_cost_in_ledger",
+                    passed = threatLedgerMatched,
+                    message = "Variant threatCost is represented inside EncounterThreatBudget.",
+                ),
+                WhiteBoxAssertionResult(
+                    ruleId = "boss.case.loot_override_in_ledger",
+                    passed = rewardLedgerMatched,
+                    message = "Variant lootProfileOverride is represented inside FloorRewardBudget.",
+                ),
+                WhiteBoxAssertionResult(
+                    ruleId = "boss.case.readability_contract",
+                    passed = inspectReadable && logReadable && variantReport.telegraphKey != null,
+                    message = "Variant remains traceable via telegraph, inspect, and log metadata.",
+                ),
+            )
+        return WhiteBoxCaseReport(
+            joinKey = joinKey,
+            facts =
+                buildJsonObject {
+                    put("baseEncounterId", baseReport.encounterId)
+                    put("variantId", variantId)
+                    putJsonArray("grantedMutations") { variantReport.grantedMutations.forEach { mutationId -> add(JsonPrimitive(mutationId)) } }
+                    put("threatCost", variantReport.threatCost)
+                    variantReport.lootProfileOverride?.let { put("lootProfileOverride", it) }
+                    variantReport.lootProfileRewardBudget?.let { put("lootProfileRewardBudget", it) }
+                    variantReport.actionWeightProfileId?.let { put("actionWeightProfileId", it) }
+                    putJsonArray("phaseSequence") { variantReport.phaseSequence.forEach { phase -> add(JsonPrimitive(phase)) } }
+                    putJsonArray("phaseTransitionTriggers") { variantReport.phaseTransitionTriggers.forEach { trigger -> add(JsonPrimitive(trigger)) } }
+                    putJsonArray("selectedActions") { variantReport.selectedActionIds.forEach { actionId -> add(JsonPrimitive(actionId)) } }
+                    put("aiTraceHash", variantReport.aiTraceHash)
+                    put("bossTraceHash", variantReport.bossTraceHash)
+                    put("encounterThreatBudget", variantReport.encounterThreatBudget)
+                    put("floorRewardBudgetDelta", variantReport.floorRewardBudgetDelta)
+                },
+            fingerprints =
+                linkedMapOf(
+                    "baseAiTraceHash" to baseReport.aiTraceHash,
+                    "variantAiTraceHash" to variantReport.aiTraceHash,
+                    "baseBossTraceHash" to baseReport.bossTraceHash,
+                    "variantBossTraceHash" to variantReport.bossTraceHash,
+                ),
+            assertions = assertions,
+            artifacts = writeArtifacts(outputDir),
+        )
+    }
+
+    private fun writeArtifacts(outputDir: Path) =
+        listOf(
+            WhiteBoxHarnessWriter.writeTextArtifact(
+                outputDir = outputDir,
+                joinKey = joinKey,
+                artifactId = "phase-graph-diff",
+                kind = "phase_graph_diff",
+                fileName = "phase-graph-diff.md",
+                summary = "Base-vs-variant phase graph comparison.",
+                content =
+                    buildString {
+                        appendLine("| side | phaseSequence | transitionTriggers |")
+                        appendLine("| --- | --- | --- |")
+                        appendLine("| base | ${baseReport.phaseSequence.joinToString()} | ${baseReport.phaseTransitionTriggers.joinToString()} |")
+                        appendLine("| variant | ${variantReport.phaseSequence.joinToString()} | ${variantReport.phaseTransitionTriggers.joinToString()} |")
+                        appendLine("| structuralDiffCount | $phaseGraphStructuralDiffCount | ${if (phaseGraphUnchanged) "0" else "1+"} |")
+                    },
+                tags = listOf("phase", "graph"),
+            ),
+            WhiteBoxHarnessWriter.writeTextArtifact(
+                outputDir = outputDir,
+                joinKey = joinKey,
+                artifactId = "ai-candidates",
+                kind = "ai_candidates",
+                fileName = "ai-candidates.md",
+                summary = "Base-vs-variant AI candidate and selected action comparison.",
+                content =
+                    buildString {
+                        appendLine("| side | selectedActions | aiTraceHash |")
+                        appendLine("| --- | --- | --- |")
+                        appendLine("| base | ${baseReport.selectedActionIds.joinToString()} | ${baseReport.aiTraceHash} |")
+                        appendLine("| variant | ${variantReport.selectedActionIds.joinToString()} | ${variantReport.aiTraceHash} |")
+                    },
+                tags = listOf("ai", "actions"),
+            ),
+            WhiteBoxHarnessWriter.writeTextArtifact(
+                outputDir = outputDir,
+                joinKey = joinKey,
+                artifactId = "mutation-source-table",
+                kind = "mutation_source_table",
+                fileName = "mutation-source-table.md",
+                summary = "Mutations granted by the boss variant overlay.",
+                content =
+                    buildString {
+                        appendLine("| variantId | mutationId |")
+                        appendLine("| --- | --- |")
+                        variantReport.grantedMutations.forEach { mutationId ->
+                            appendLine("| ${variantReport.variantId} | $mutationId |")
+                        }
+                    },
+                tags = listOf("mutation", "variant"),
+            ),
+            WhiteBoxHarnessWriter.writeTextArtifact(
+                outputDir = outputDir,
+                joinKey = joinKey,
+                artifactId = "ledger-breakdown",
+                kind = "ledger_breakdown",
+                fileName = "ledger-breakdown.md",
+                summary = "Threat and reward ledger deltas for the variant boss.",
+                content =
+                    buildString {
+                        appendLine("## EncounterThreatBudget")
+                        appendLine(Json.encodeToString(variantReport.encounterThreatBudget))
+                        appendLine()
+                        appendLine("## FloorRewardBudget")
+                        appendLine(Json.encodeToString(variantReport.floorRewardBudgetDelta))
+                    },
+                tags = listOf("ledger", "reward", "threat"),
+            ),
+            WhiteBoxHarnessWriter.writeTextArtifact(
+                outputDir = outputDir,
+                joinKey = joinKey,
+                artifactId = "variant-cue-tint",
+                kind = "variant_cue_tint",
+                fileName = "variant-cue-tint.md",
+                summary = "Variant cue key carried by runtime; tint is resolved client-side from manifest metadata.",
+                content =
+                    buildString {
+                        appendLine("| variantId | visualTintKey |")
+                        appendLine("| --- | --- |")
+                        appendLine("| ${variantReport.variantId} | ${variantReport.visualTintKey ?: "-"} |")
+                    },
+                tags = listOf("visual", "tint"),
+            ),
+        )
 }
 
 private fun sha256(payload: String): String =

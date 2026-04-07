@@ -1,0 +1,68 @@
+manifestVersion: 1
+fallbackKey: audio.fallback.silence
+entries:
+  - key: audio.mutation.stonehide
+    cueFamily: monster
+    eventId: audio.mutation.stonehide
+    sourcePath: audio/phase4/pr06/mutation_stonehide.ogg
+    tags: [phase4, pr06, mutation]
+  - key: audio.mutation.battle_drill
+    cueFamily: monster
+    eventId: audio.mutation.battle_drill
+    sourcePath: audio/phase4/pr06/mutation_battle_drill.ogg
+    tags: [phase4, pr06, mutation]
+  - key: audio.mutation.dread_aura
+    cueFamily: monster
+    eventId: audio.mutation.dread_aura
+    sourcePath: audio/phase4/pr06/mutation_dread_aura.ogg
+    tags: [phase4, pr06, mutation]
+  - key: audio.mutation.hunt_protocol
+    cueFamily: monster
+    eventId: audio.mutation.hunt_protocol
+    sourcePath: audio/phase4/pr06/mutation_hunt_protocol.ogg
+    tags: [phase4, pr06, mutation]
+  - key: audio.mutation.emberblood
+    cueFamily: monster
+    eventId: audio.mutation.emberblood
+    sourcePath: audio/phase4/pr06/mutation_emberblood.ogg
+    tags: [phase4, pr06, mutation]
+  - key: audio.mutation.tidebound
+    cueFamily: monster
+    eventId: audio.mutation.tidebound
+    sourcePath: audio/phase4/pr06/mutation_tidebound.ogg
+    tags: [phase4, pr06, mutation]
+  - key: audio.terrain.water
+    cueFamily: spell
+    eventId: audio.terrain.water
+    sourcePath: audio/phase4/pr06/terrain_water.ogg
+    tags: [phase4, pr06, terrain]
+  - key: audio.terrain.oil
+    cueFamily: spell
+    eventId: audio.terrain.oil
+    sourcePath: audio/phase4/pr06/terrain_oil.ogg
+    tags: [phase4, pr06, terrain]
+  - key: audio.terrain.ice
+    cueFamily: spell
+    eventId: audio.terrain.ice
+    sourcePath: audio/phase4/pr06/terrain_ice.ogg
+    tags: [phase4, pr06, terrain]
+  - key: audio.terrain.oil_burning
+    cueFamily: spell
+    eventId: audio.terrain.oil_burning
+    sourcePath: audio/phase4/pr06/terrain_oil_burning.ogg
+    tags: [phase4, pr06, terrain]
+  - key: audio.boss.variant.molten_glass
+    cueFamily: monster
+    eventId: audio.boss.variant.molten_glass
+    sourcePath: audio/phase4/pr06/boss_variant_molten_glass.ogg
+    tags: [phase4, pr06, boss, variant]
+  - key: audio.boss.variant.grey_crown
+    cueFamily: monster
+    eventId: audio.boss.variant.grey_crown
+    sourcePath: audio/phase4/pr06/boss_variant_grey_crown.ogg
+    tags: [phase4, pr06, boss, variant]
+  - key: audio.boss.variant.abyssal_eclipse
+    cueFamily: monster
+    eventId: audio.boss.variant.abyssal_eclipse
+    sourcePath: audio/phase4/pr06/boss_variant_abyssal_eclipse.ogg
+    tags: [phase4, pr06, boss, variant]

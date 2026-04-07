@@ -16,8 +16,11 @@ import com.ktome.core.talent.TalentRegistry
 import com.ktome.core.item.ItemDataBundle
 import com.ktome.core.status.StatusCatalog
 import com.ktome.game.data.schema.SchemaCatalog
+import com.ktome.game.data.schema.LootProfileSchemaV2
 import com.ktome.game.data.schema.StatusSchemaV2
 import com.ktome.game.i18n.Localizer
+import com.ktome.game.elites.BossVariantRegistry
+import com.ktome.game.elites.EliteMutationRegistry
 import com.ktome.game.model.BossDefinition
 import com.ktome.game.model.MonsterTemplate
 import com.ktome.game.telegraph.TelegraphRegistry
@@ -99,6 +102,49 @@ internal data class GameContent(
 ) {
     val aiProfilesById: Map<String, AIProfile> = schemaCatalog.aiProfiles.associateBy(AIProfile::id)
     val racesById: Map<String, RaceDef> = races.associateBy(RaceDef::id)
+    val lootProfilesById: Map<String, LootProfileSchemaV2> = schemaCatalog.lootProfiles.associateBy(LootProfileSchemaV2::id)
+    val eliteMutationRegistry: EliteMutationRegistry =
+        EliteMutationRegistry(
+            config = schemaCatalog.eliteMutationConfig,
+            statModifiersById = schemaCatalog.mutationStatModifiers.associateBy { modifier -> modifier.id },
+            definitionsById = schemaCatalog.eliteMutations.associateBy { mutation -> mutation.id },
+        )
+    val bossVariantRegistry: BossVariantRegistry =
+        BossVariantRegistry(
+            variantsByBaseEncounterId = schemaCatalog.bossVariants.groupBy { variant -> variant.baseEncounterId },
+            variantsById = schemaCatalog.bossVariants.associateBy { variant -> variant.id },
+        )
+    val actionWeightProfilesById: Map<String, com.ktome.game.elites.ActionWeightProfileDef> =
+        schemaCatalog.actionWeightProfiles.associateBy { profile -> profile.id }
+
+    init {
+        schemaCatalog.bossVariants.forEach { variant ->
+            require(bossDefinitions.containsKey(variant.baseEncounterId)) {
+                "Boss variant '${variant.id}' references unknown base encounter '${variant.baseEncounterId}'."
+            }
+            variant.grantedMutations.forEach { mutationRef ->
+                require(eliteMutationRegistry.resolve(mutationRef.mutationId) != null) {
+                    "Boss variant '${variant.id}' references unknown mutation '${mutationRef.mutationId}'."
+                }
+            }
+            variant.lootProfileOverride?.let { lootProfileId ->
+                require(lootProfileId in lootProfilesById) {
+                    "Boss variant '${variant.id}' references unknown loot profile '$lootProfileId'."
+                }
+            }
+            require(variant.actionWeightProfileId == null || variant.actionWeightProfileId in actionWeightProfilesById) {
+                "Boss variant '${variant.id}' references unknown action-weight profile '${variant.actionWeightProfileId}'."
+            }
+            variant.actionWeightProfileId?.let { actionWeightProfileId ->
+                val weightProfile = requireNotNull(actionWeightProfilesById[actionWeightProfileId])
+                val allowedActionIds = baseEncounterActionIds(variant.baseEncounterId)
+                val unknownActionIds = weightProfile.actionWeights.keys - allowedActionIds
+                require(unknownActionIds.isEmpty()) {
+                    "Boss variant '${variant.id}' action-weight profile '$actionWeightProfileId' references unknown base-encounter actions ${unknownActionIds.sorted()}."
+                }
+            }
+        }
+    }
 
     fun bossDefinitionForZone(zoneId: String): BossDefinition? =
         schemaCatalog.zones.firstOrNull { zone -> zone.id == zoneId }
@@ -118,4 +164,17 @@ internal data class GameContent(
 
     fun aiProfile(profileId: String?): AIProfile? =
         profileId?.let(aiProfilesById::get)
+
+    fun lootProfile(profileId: String): LootProfileSchemaV2? = lootProfilesById[profileId]
+
+    private fun baseEncounterActionIds(baseEncounterId: String): Set<String> =
+        schemaCatalog.bossEncounters
+            .firstOrNull { encounter -> encounter.id == baseEncounterId }
+            ?.phases
+            .orEmpty()
+            .flatMap { phase ->
+                requireNotNull(aiProfilesById[phase.aiProfileId]) {
+                    "Boss phase '${phase.id}' in encounter '$baseEncounterId' references unknown AI profile '${phase.aiProfileId}'."
+                }.actions.map { action -> action.id }
+            }.toSet()
 }

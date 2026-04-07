@@ -138,3 +138,16 @@ audioProfiles:
   - id: audio.monster.abyssal.guardian
   - id: audio.boss.orc.molten_giant
   - id: audio.boss.abyssal.guardian
+  - id: audio.mutation.stonehide
+  - id: audio.mutation.battle_drill
+  - id: audio.mutation.dread_aura
+  - id: audio.mutation.hunt_protocol
+  - id: audio.mutation.emberblood
+  - id: audio.mutation.tidebound
+  - id: audio.terrain.water
+  - id: audio.terrain.oil
+  - id: audio.terrain.ice
+  - id: audio.terrain.oil_burning
+  - id: audio.boss.variant.molten_glass
+  - id: audio.boss.variant.grey_crown
+  - id: audio.boss.variant.abyssal_eclipse

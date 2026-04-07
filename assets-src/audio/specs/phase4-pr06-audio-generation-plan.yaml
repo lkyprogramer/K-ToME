@@ -1,0 +1,68 @@
+packId: phase4-pr06-audio-generation-v1
+sampleRate: 44100
+targets:
+  - id: phase4_pr06_mutation_stonehide
+    key: audio.mutation.stonehide
+    sourcePath: audio/phase4/pr06/mutation_stonehide.ogg
+    profile: mutation_stonehide
+    durationSeconds: 0.88
+  - id: phase4_pr06_mutation_battle_drill
+    key: audio.mutation.battle_drill
+    sourcePath: audio/phase4/pr06/mutation_battle_drill.ogg
+    profile: mutation_battle_drill
+    durationSeconds: 0.74
+  - id: phase4_pr06_mutation_dread_aura
+    key: audio.mutation.dread_aura
+    sourcePath: audio/phase4/pr06/mutation_dread_aura.ogg
+    profile: mutation_dread_aura
+    durationSeconds: 1.08
+  - id: phase4_pr06_mutation_hunt_protocol
+    key: audio.mutation.hunt_protocol
+    sourcePath: audio/phase4/pr06/mutation_hunt_protocol.ogg
+    profile: mutation_hunt_protocol
+    durationSeconds: 0.72
+  - id: phase4_pr06_mutation_emberblood
+    key: audio.mutation.emberblood
+    sourcePath: audio/phase4/pr06/mutation_emberblood.ogg
+    profile: mutation_emberblood
+    durationSeconds: 0.76
+  - id: phase4_pr06_mutation_tidebound
+    key: audio.mutation.tidebound
+    sourcePath: audio/phase4/pr06/mutation_tidebound.ogg
+    profile: mutation_tidebound
+    durationSeconds: 0.84
+  - id: phase4_pr06_terrain_water
+    key: audio.terrain.water
+    sourcePath: audio/phase4/pr06/terrain_water.ogg
+    profile: terrain_water
+    durationSeconds: 0.58
+  - id: phase4_pr06_terrain_oil
+    key: audio.terrain.oil
+    sourcePath: audio/phase4/pr06/terrain_oil.ogg
+    profile: terrain_oil
+    durationSeconds: 0.62
+  - id: phase4_pr06_terrain_ice
+    key: audio.terrain.ice
+    sourcePath: audio/phase4/pr06/terrain_ice.ogg
+    profile: terrain_ice
+    durationSeconds: 0.56
+  - id: phase4_pr06_terrain_oil_burning
+    key: audio.terrain.oil_burning
+    sourcePath: audio/phase4/pr06/terrain_oil_burning.ogg
+    profile: terrain_oil_burning
+    durationSeconds: 0.72
+  - id: phase4_pr06_boss_variant_molten_glass
+    key: audio.boss.variant.molten_glass
+    sourcePath: audio/phase4/pr06/boss_variant_molten_glass.ogg
+    profile: boss_variant_molten_glass
+    durationSeconds: 0.88
+  - id: phase4_pr06_boss_variant_grey_crown
+    key: audio.boss.variant.grey_crown
+    sourcePath: audio/phase4/pr06/boss_variant_grey_crown.ogg
+    profile: boss_variant_grey_crown
+    durationSeconds: 0.86
+  - id: phase4_pr06_boss_variant_abyssal_eclipse
+    key: audio.boss.variant.abyssal_eclipse
+    sourcePath: audio/phase4/pr06/boss_variant_abyssal_eclipse.ogg
+    profile: boss_variant_abyssal_eclipse
+    durationSeconds: 0.96

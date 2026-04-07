@@ -74,6 +74,10 @@ object Phase4ReportRunner {
                 reader = ::readBossHarness,
             ),
             Phase4TaskDescriptor(
+                relativeSourcePath = "tools/build/reports/phase4/whitebox/terrain/whitebox-terrain-summary.json",
+                reader = ::readTerrainInteractionBatch,
+            ),
+            Phase4TaskDescriptor(
                 relativeSourcePath = "tools/build/reports/phase4/whitebox/mapgen/whitebox-mapgen-summary.json",
                 reader = ::readWhiteBoxMapgen,
             ),
@@ -183,22 +187,68 @@ object Phase4ReportRunner {
         payload: JsonObject,
     ): Phase4TaskAggregate {
         val reports = payload.getValue("reports").jsonArray
-        val failureCount = reports.count { element -> !element.jsonObject.getValue("success").jsonPrimitive.content.toBooleanStrict() }
+        val pairReports = payload["pairReports"]?.jsonArray.orEmpty()
+        val whiteBoxSourcePath = repoRoot.resolve("tools/build/reports/phase4/whitebox/boss/whitebox-boss-summary.json")
+        val whiteBoxPayload = readPhase4Json(whiteBoxSourcePath)
+        val whiteBoxSummary = whiteBoxPayload.getValue("summary").jsonObject
+        val whiteBoxFailedAssertions = whiteBoxSummary.intValue("failedAssertions")
+        val whiteBoxFirstFailedJoinKey = whiteBoxPayload["firstFailedJoinKey"]
+        val failureCount =
+            reports.count { element -> !element.jsonObject.getValue("success").jsonPrimitive.content.toBooleanStrict() } +
+                pairReports.count { element -> !element.jsonObject.getValue("success").jsonPrimitive.content.toBooleanStrict() }
         val aiTraceCountTotal = reports.sumOf { element -> element.jsonObject.intValue("aiTraceCount") }
         val bossTraceCountTotal = reports.sumOf { element -> element.jsonObject.intValue("bossTraceCount") }
         val distinctTemplateCount = reports.map { element -> element.jsonObject.stringValue("templateId") }.distinct().size
+        val variantCount = reports.count { element -> "variantId" in element.jsonObject }
+        val phaseGraphStructuralDiffCount = pairReports.sumOf { element -> element.jsonObject.intValue("phaseGraphStructuralDiffCount") }
         return Phase4TaskAggregate(
             taskId = "bossHarness",
-            status = if (failureCount == 0) "PASS" else "FAIL",
+            status = if (failureCount == 0 && whiteBoxFailedAssertions == 0) "PASS" else "FAIL",
             sourcePath = relativize(repoRoot, sourcePath),
             metrics =
                 buildJsonObject {
                     put("scriptVersion", payload.getValue("scriptVersion").jsonPrimitive.content)
                     put("reportCount", reports.size)
+                    put("pairCount", pairReports.size)
                     put("failureCount", failureCount)
                     put("distinctTemplateCount", distinctTemplateCount)
+                    put("variantCount", variantCount)
                     put("aiTraceCountTotal", aiTraceCountTotal)
                     put("bossTraceCountTotal", bossTraceCountTotal)
+                    put("phaseGraphStructuralDiffCount", phaseGraphStructuralDiffCount)
+                    put("whiteBoxFailedAssertions", whiteBoxFailedAssertions)
+                    put("whiteBoxFailedCaseCount", whiteBoxPayload.intValue("failedCaseCount"))
+                    put("whiteBoxFailedAggregateCount", whiteBoxPayload.intValue("failedAggregateCount"))
+                    put("whiteBoxArtifactCount", whiteBoxSummary.intValue("artifactCount"))
+                    put("whiteBoxSummaryPath", relativize(repoRoot, whiteBoxSourcePath))
+                    whiteBoxFirstFailedJoinKey?.let { joinKey -> put("whiteBoxFirstFailedJoinKey", joinKey.toString()) }
+                },
+        )
+    }
+
+    private fun readTerrainInteractionBatch(
+        repoRoot: Path,
+        sourcePath: Path,
+        payload: JsonObject,
+    ): Phase4TaskAggregate {
+        val header = payload.getValue("header").jsonObject
+        val summary = payload.getValue("summary").jsonObject
+        val failedAssertions = summary.intValue("failedAssertions")
+        return Phase4TaskAggregate(
+            taskId = "terrainInteractionBatch",
+            status = if (failedAssertions == 0) "PASS" else "FAIL",
+            sourcePath = relativize(repoRoot, sourcePath),
+            buildId = header.stringValue("buildId"),
+            locale = header.stringValue("locale"),
+            metrics =
+                buildJsonObject {
+                    put("caseCount", summary.intValue("caseCount"))
+                    put("aggregateCount", summary.intValue("aggregateCount"))
+                    put("failedAssertions", failedAssertions)
+                    put("artifactCount", summary.intValue("artifactCount"))
+                    put("failedCaseCount", payload.intValue("failedCaseCount"))
+                    put("failedAggregateCount", payload.intValue("failedAggregateCount"))
+                    payload["firstFailedJoinKey"]?.let { joinKey -> put("firstFailedJoinKey", joinKey.toString()) }
                 },
         )
     }
