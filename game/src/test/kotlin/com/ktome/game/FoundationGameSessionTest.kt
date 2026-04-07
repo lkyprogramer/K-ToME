@@ -82,6 +82,8 @@ import com.ktome.core.status.StatusLifecycle
 import com.ktome.core.world.solvability.DiscoveryPredicate
 import com.ktome.core.world.solvability.DiscoveryPredicateType
 import com.ktome.core.world.solvability.DiscoveryRule
+import com.ktome.core.world.solvability.ContentRef
+import com.ktome.core.world.solvability.RegistryId
 import com.ktome.core.world.solvability.SearchActionResult
 import com.ktome.core.world.ObjectiveState
 import com.ktome.game.data.DataLoader
@@ -373,6 +375,102 @@ class FoundationGameSessionTest {
 
         val returnProp = requireNotNull(propByType(session, "secret_return"))
         movePlayerTo(session, Point(returnProp.x, returnProp.y))
+        assertTrue(session.perform(PlayerCommand.Interact))
+        assertNotEquals(PathClass.SECRET, requireNotNull(activeFloorState(session).generatedFloor.roomAt(session.playerPosition())).pathClass)
+        assertNotNull(logEventByKey(session, "log.hidden.secret_zone.return"))
+    }
+
+    @Test
+    fun `secret zone reward interaction executes monster guaranteed content once`() {
+        val session =
+            GameModule.newFoundationSession(
+                config = FoundationGameConfig(seed = 20260331L, zoneId = "greenwood_fringe", playerProfessionId = "arcanist"),
+                saveManager = SaveManager(tempDir.resolve("secret-zone-monster-guaranteed-content")),
+            )
+        clearMonsters(session)
+        replaceContent(
+            session = session,
+            content =
+                sessionContent(session).let { content ->
+                    content.copy(
+                        schemaCatalog =
+                            content.schemaCatalog.copy(
+                                secretZones =
+                                    content.schemaCatalog.secretZones.map { secretZone ->
+                                        if (secretZone.id.id == "greenwood_hidden_cache") {
+                                            secretZone.copy(
+                                                guaranteedContent =
+                                                    listOf(
+                                                        ContentRef(
+                                                            registry = RegistryId("monster"),
+                                                            id = "bandit.sentry",
+                                                        ),
+                                                    ),
+                                            )
+                                        } else {
+                                            secretZone
+                                        }
+                                    },
+                            ),
+                    )
+                },
+        )
+        revealHiddenEntrance(session)
+
+        val entranceProp = requireNotNull(propByType(session, "hidden_entrance"))
+        movePlayerTo(session, Point(entranceProp.x, entranceProp.y))
+        assertTrue(session.perform(PlayerCommand.Interact))
+
+        val rewardProp = requireNotNull(propByType(session, "secret_reward"))
+        movePlayerTo(session, Point(rewardProp.x, rewardProp.y))
+        assertTrue(session.perform(PlayerCommand.Interact))
+
+        assertNotNull(entityByTemplateId(session, "bandit.sentry"))
+        assertNotNull(logEventByKey(session, "log.hidden.reward.encounter"))
+        assertNull(propByType(session, "secret_reward"))
+        assertTrue(activeFloorState(session).consumedHiddenEventIds.contains("secret_zone:greenwood_hidden_cache:monster:bandit.sentry"))
+    }
+
+    @Test
+    fun `shared reward and return tile still allows exiting secret zone after claiming reward`() {
+        val session =
+            GameModule.newFoundationSession(
+                config = FoundationGameConfig(seed = 20260331L, zoneId = "greenwood_fringe", playerProfessionId = "arcanist"),
+                saveManager = SaveManager(tempDir.resolve("secret-zone-shared-return-anchor")),
+            )
+        clearMonsters(session)
+        val entrance = revealHiddenEntrance(session)
+        val originalFloor = activeFloorState(session).generatedFloor
+        val secretRoom = requireNotNull(originalFloor.roomByAnchor(entrance.targetAnchorId))
+        replaceGeneratedFloor(
+            session = session,
+            generatedFloor =
+                originalFloor.copy(
+                    rooms =
+                        originalFloor.rooms.map { room ->
+                            if (room.anchorId == secretRoom.anchorId) {
+                                room.copy(width = 2, height = 1)
+                            } else {
+                                room
+                            }
+                        },
+                ),
+        )
+
+        val entranceProp = requireNotNull(propByType(session, "hidden_entrance"))
+        movePlayerTo(session, Point(entranceProp.x, entranceProp.y))
+        assertTrue(session.perform(PlayerCommand.Interact))
+
+        val rewardProp = requireNotNull(propByType(session, "secret_reward"))
+        val returnProp = requireNotNull(propByType(session, "secret_return"))
+        assertEquals(Point(rewardProp.x, rewardProp.y), Point(returnProp.x, returnProp.y))
+
+        movePlayerTo(session, Point(rewardProp.x, rewardProp.y))
+        assertTrue(session.perform(PlayerCommand.Interact))
+        assertNull(propByType(session, "secret_reward"))
+        val sharedReturnProp = requireNotNull(propByType(session, "secret_return"))
+        assertEquals(Point(rewardProp.x, rewardProp.y), Point(sharedReturnProp.x, sharedReturnProp.y))
+
         assertTrue(session.perform(PlayerCommand.Interact))
         assertNotEquals(PathClass.SECRET, requireNotNull(activeFloorState(session).generatedFloor.roomAt(session.playerPosition())).pathClass)
         assertNotNull(logEventByKey(session, "log.hidden.secret_zone.return"))

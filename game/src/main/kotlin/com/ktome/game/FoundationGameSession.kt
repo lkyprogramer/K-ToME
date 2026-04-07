@@ -1431,13 +1431,7 @@ class FoundationGameSession internal constructor(
                     .flatMap { context ->
                         val secretZone = requireNotNull(content.secretZone(context.secretZoneId))
                         val anchorPoints = secretZoneAnchorPoints(context.room)
-                        val rewardStillAvailable =
-                            secretZone.guaranteedContent.any { contentRef ->
-                                when (contentRef.registry.value) {
-                                    "hidden_event" -> !activeFloorState.hasConsumedHiddenEvent(contentRef.id)
-                                    else -> true
-                                }
-                            }
+                        val rewardStillAvailable = hasUnclaimedSecretZoneGuaranteedContent(secretZone = secretZone, secretZoneId = context.secretZoneId)
                         buildList {
                             if (rewardStillAvailable && cellVisibility(anchorPoints.reward) != CellVisibilitySnapshot.HIDDEN) {
                                 add(
@@ -8386,9 +8380,31 @@ class FoundationGameSession internal constructor(
         hiddenEvent: HiddenEventDef,
         payload: HiddenEventRewardPayload.TriggerEncounter,
         secretZoneId: ContentRef?,
+    ) = triggerSecretEncounterMonster(
+        monsterTemplateId = payload.encounterRef.id,
+        secretZoneId = secretZoneId,
+        threatCost = payload.threatCost,
+        errorContext = "Hidden event '${hiddenEvent.id}'",
+    )
+
+    private fun triggerSecretZoneMonsterEncounter(
+        secretZoneId: ContentRef,
+        monsterTemplateId: String,
+    ) = triggerSecretEncounterMonster(
+        monsterTemplateId = monsterTemplateId,
+        secretZoneId = secretZoneId,
+        threatCost = 0,
+        errorContext = "Secret zone '${secretZoneId.id}'",
+    )
+
+    private fun triggerSecretEncounterMonster(
+        monsterTemplateId: String,
+        secretZoneId: ContentRef?,
+        threatCost: Int,
+        errorContext: String,
     ) {
-        val template = requireNotNull(content.monsterTemplatesById[payload.encounterRef.id]) {
-            "Hidden event '${hiddenEvent.id}' references unknown encounter monster '${payload.encounterRef.id}'."
+        val template = requireNotNull(content.monsterTemplatesById[monsterTemplateId]) {
+            "$errorContext references unknown encounter monster '$monsterTemplateId'."
         }
         val spawnPoint =
             currentSecretZoneContext()
@@ -8399,9 +8415,9 @@ class FoundationGameSession internal constructor(
         world.add(
             monsterId,
             SecretEncounterRuntime(
-                encounterId = payload.encounterRef.id,
+                encounterId = monsterTemplateId,
                 secretZoneId = secretZoneId?.id ?: "secret.unknown",
-                threatCost = payload.threatCost,
+                threatCost = threatCost,
             ),
         )
         StatsCalculator.recalculateAndStore(world, monsterId)
@@ -8557,34 +8573,80 @@ class FoundationGameSession internal constructor(
         revealedHiddenEntranceAt(point)?.let { entrance ->
             return enterSecretZone(entrance)
         }
-        secretRewardContextAt(point)?.let { context ->
+        val rewardContext = secretRewardContextAt(point)
+        val returnContext = secretReturnContextAt(point)
+        rewardContext?.let { context ->
             val secretZone = requireNotNull(content.secretZone(context.secretZoneId))
-            val claimed =
-                secretZone.guaranteedContent.fold(false) { claimedAny, contentRef ->
-                    claimedAny or
-                        when (contentRef.registry.value) {
-                            "hidden_event" ->
-                                executeHiddenEvents(
-                                    triggerType = HiddenTriggerType.INTERACT_TILE,
-                                    secretZoneId = context.secretZoneId,
-                                    hiddenEventId = contentRef.id,
-                                    rewardPresentationSource = RewardPresentationSourceSnapshot.SECRET_ZONE,
-                                )
-
-                            else -> false
-                        }
-                }
+            val claimed = claimSecretZoneGuaranteedContent(secretZone = secretZone, secretZoneId = context.secretZoneId)
             if (!claimed) {
+                returnContext?.let { sharedContext ->
+                    return returnFromSecretZone(sharedContext)
+                }
                 addMessage("log.hidden.reward.already_claimed", keyArg("zone", secretZone.nameKey))
                 return CommandResolution.rejected()
             }
             return CommandResolution.accepted()
         }
-        secretReturnContextAt(point)?.let { context ->
+        returnContext?.let { context ->
             return returnFromSecretZone(context)
         }
         return null
     }
+
+    private fun hasUnclaimedSecretZoneGuaranteedContent(
+        secretZone: com.ktome.game.hidden.SecretZoneDef,
+        secretZoneId: ContentRef,
+    ): Boolean =
+        secretZone.guaranteedContent.any { contentRef -> !isSecretZoneGuaranteedContentConsumed(secretZoneId = secretZoneId, contentRef = contentRef) }
+
+    private fun claimSecretZoneGuaranteedContent(
+        secretZone: com.ktome.game.hidden.SecretZoneDef,
+        secretZoneId: ContentRef,
+    ): Boolean =
+        secretZone.guaranteedContent.fold(false) { claimedAny, contentRef ->
+            if (isSecretZoneGuaranteedContentConsumed(secretZoneId = secretZoneId, contentRef = contentRef)) {
+                claimedAny
+            } else {
+                claimedAny or executeSecretZoneGuaranteedContent(secretZoneId = secretZoneId, contentRef = contentRef)
+            }
+        }
+
+    private fun isSecretZoneGuaranteedContentConsumed(
+        secretZoneId: ContentRef,
+        contentRef: ContentRef,
+    ): Boolean =
+        when (contentRef.registry.value) {
+            "hidden_event" -> activeFloorState.hasConsumedHiddenEvent(contentRef.id)
+            "monster" -> activeFloorState.hasConsumedHiddenEvent(secretZoneGuaranteedContentConsumptionKey(secretZoneId = secretZoneId, contentRef = contentRef))
+            else -> error("Secret zone '${secretZoneId.id}' guaranteed content registry '${contentRef.registry.value}' is unsupported at runtime.")
+        }
+
+    private fun executeSecretZoneGuaranteedContent(
+        secretZoneId: ContentRef,
+        contentRef: ContentRef,
+    ): Boolean =
+        when (contentRef.registry.value) {
+            "hidden_event" ->
+                executeHiddenEvents(
+                    triggerType = HiddenTriggerType.INTERACT_TILE,
+                    secretZoneId = secretZoneId,
+                    hiddenEventId = contentRef.id,
+                    rewardPresentationSource = RewardPresentationSourceSnapshot.SECRET_ZONE,
+                )
+
+            "monster" -> {
+                triggerSecretZoneMonsterEncounter(secretZoneId = secretZoneId, monsterTemplateId = contentRef.id)
+                activeFloorState.markHiddenEventConsumed(secretZoneGuaranteedContentConsumptionKey(secretZoneId = secretZoneId, contentRef = contentRef))
+                true
+            }
+
+            else -> error("Secret zone '${secretZoneId.id}' guaranteed content registry '${contentRef.registry.value}' is unsupported at runtime.")
+        }
+
+    private fun secretZoneGuaranteedContentConsumptionKey(
+        secretZoneId: ContentRef,
+        contentRef: ContentRef,
+    ): String = "secret_zone:${secretZoneId.id}:${contentRef.registry.value}:${contentRef.id}"
 
     private fun enterSecretZone(entrance: GeneratedEntrance): CommandResolution {
         val context = requireNotNull(secretZoneContextForEntrance(entrance)) {
