@@ -5,11 +5,9 @@ import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Application
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3ApplicationConfiguration
 import com.badlogic.gdx.graphics.Pixmap
-import com.badlogic.gdx.graphics.g2d.SpriteBatch
 import com.badlogic.gdx.graphics.glutils.HdpiMode
 import com.badlogic.gdx.utils.GdxRuntimeException
 import com.badlogic.gdx.utils.ScreenUtils
-import com.ktome.client.assets.ClientAssetBundleLoader
 import com.ktome.client.GameApp
 import com.ktome.client.automationWorld
 import com.ktome.client.installReserveTalent
@@ -51,7 +49,6 @@ import com.ktome.game.FoundationGameSession
 import com.ktome.game.GameModule
 import com.ktome.game.PlayerCommand
 import com.ktome.game.i18n.GameLocale
-import com.ktome.game.i18n.LocalizationBundle
 import java.nio.file.Path
 import java.security.MessageDigest
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -168,7 +165,7 @@ class GoldenScreenshotHarnessTest {
     fun `sample pack golden hash remains stable for filesystem backed content`() {
         val hash = captureSamplePackRuntimeHash()
 
-        assertEquals("73787e74a8ff62e646eb1af7f338c7c353f60b3555d975a53a37d15c0ab1ad1f", hash)
+        assertEquals("d444d192c872d55a81085ed6fa28c93193a70bf4cf0974d4892dbccc48b53907", hash)
     }
 
     private fun captureGoldenSet(
@@ -496,33 +493,35 @@ class GoldenScreenshotHarnessTest {
     private fun captureSamplePackRuntimeHash(): String =
         withLwjgl3Context(width = 1280, height = 800) {
             val selection = samplePackSelection()
-            val session =
-                GameModule.newFoundationSession(
-                    config =
+            val overlaySource = MutableOverlayCommandSource()
+            val app =
+                GameApp(
+                    saveManager = SaveManager(tempDir.resolve("sample-pack-golden")),
+                    defaultConfig =
                         FoundationGameConfig(
                             seed = 20260304L,
                             zoneId = "underground_river",
                             playerProfessionId = "arcanist",
                         ),
-                    saveManager = SaveManager(tempDir.resolve("sample-pack-golden")),
-                    locale = GameLocale.EN_US,
                     contentPackSelection = selection,
+                    menuInputSourceFactory = { NoOpInputSource },
+                    gameCommandSourceFactory = { overlaySource },
+                    outcomeInputSourceFactory = { NoOpInputSource },
+                    renderEnabled = true,
+                    initialLocale = GameLocale.EN_US,
                 )
-            val assets = ClientAssetBundleLoader.load(contentPackSelection = selection)
-            val batch = SpriteBatch()
-            val renderer = TileRenderer(LocalizationBundle.load().translator(GameLocale.EN_US), assets.visualResolver, assets.textureRepository)
 
             try {
+                app.create()
+                app.startNewGame()
+                val session = requireNotNull(app.activeSessionOrNull()) { "Expected active sample-pack session for golden capture." }
                 val inventorySelection = claimSamplePackReward(session)
+                overlaySource.overlayState = OverlayState(mode = UiMode.INVENTORY, inventorySelection = inventorySelection)
                 captureHash {
-                    batch.begin()
-                    renderer.render(batch, session.renderSnapshot(), OverlayState(mode = UiMode.INVENTORY, inventorySelection = inventorySelection))
-                    batch.end()
+                    repeat(2) { app.render() }
                 }
             } finally {
-                renderer.dispose()
-                batch.dispose()
-                assets.dispose()
+                app.dispose()
             }
         }
 

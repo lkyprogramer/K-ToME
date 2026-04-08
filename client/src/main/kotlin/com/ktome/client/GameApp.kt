@@ -38,7 +38,6 @@ import com.ktome.core.snapshot.RenderTextArgumentSnapshot
 import com.ktome.core.snapshot.RenderTextTokenSnapshot
 import com.ktome.game.FoundationGameConfig
 import com.ktome.game.FoundationGameSession
-import com.ktome.game.FOUNDATION_ZONE_ID
 import com.ktome.game.GameModule
 import com.ktome.game.PlayerCreationSelection
 import com.ktome.game.PlayerCreationState
@@ -383,9 +382,6 @@ internal fun newGameConfig(
     raceId: String,
 ): FoundationGameConfig =
     defaultConfig.copy(
-        zoneId = FOUNDATION_ZONE_ID,
-        zoneRoute = listOf(FOUNDATION_ZONE_ID),
-        routeIndex = 0,
         playerProfessionId = professionId,
         playerRaceId = raceId,
     )
