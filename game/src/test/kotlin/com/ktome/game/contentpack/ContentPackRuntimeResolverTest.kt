@@ -235,6 +235,33 @@ class ContentPackRuntimeResolverTest {
     }
 
     @Test
+    fun `resolver rejects manifest resource paths that escape the pack root`() {
+        val packRoot = tempDir.resolve("fixture.path_escape")
+        packRoot.toFile().mkdirs()
+        tempDir.resolve("en-US.json").writeText("""{"fixture.path.escape":"bad"}""")
+        packRoot.resolve("manifest.yaml").writeText(
+            """
+            id: fixture.path_escape
+            version: 1.0.0
+            schemaVersion: 1
+            gameVersionRange: ">=0.1.0 <0.2.0"
+            namespace: fixture_path_escape
+            dependencies: []
+            overlays: []
+            localeBundles:
+              - ../en-US.json
+            """.trimIndent(),
+        )
+
+        val exception =
+            assertThrows<ContentPackLoadException> {
+                ContentPackRuntimeResolver.resolve(ContentPackSelection.of(packRoot))
+            }
+
+        assertEquals(setOf("content-pack.resource.path-outside-pack"), exception.diagnostics.map { diagnostic -> diagnostic.code }.toSet())
+    }
+
+    @Test
     fun `version range parser supports bounded ranges and exact matches`() {
         val bounded = VersionRangeParser.parse(">=0.1.0 <0.2.0")
         val exact = VersionRangeParser.parse("=1.0.0")
@@ -244,5 +271,6 @@ class ContentPackRuntimeResolverTest {
         assertTrue(!bounded.matches(VersionRangeParser.parseVersion("0.2.0")))
         assertTrue(exact.matches(VersionRangeParser.parseVersion("1.0.0")))
         assertTrue(!exact.matches(VersionRangeParser.parseVersion("1.0.1")))
+        assertThrows<IllegalArgumentException> { VersionRangeParser.parseVersion(">=1.0.0") }
     }
 }

@@ -53,6 +53,7 @@ internal data class VersionRange(
 
 internal object VersionRangeParser {
     private val tokenPattern = Regex("""^(<=|>=|<|>|=)?(\d+)\.(\d+)\.(\d+)$""")
+    private val semanticVersionPattern = Regex("""^(\d+)\.(\d+)\.(\d+)$""")
 
     fun parse(raw: String): VersionRange {
         val tokens = raw.trim().split(Regex("\\s+")).filter(String::isNotBlank)
@@ -64,13 +65,13 @@ internal object VersionRangeParser {
     }
 
     fun parseVersion(raw: String): SemanticVersion {
-        val match = requireNotNull(tokenPattern.matchEntire(raw.trim())) {
+        val match = requireNotNull(semanticVersionPattern.matchEntire(raw.trim())) {
             "Semantic version '$raw' must use MAJOR.MINOR.PATCH format."
         }
         return SemanticVersion(
-            major = match.groupValues[2].toInt(),
-            minor = match.groupValues[3].toInt(),
-            patch = match.groupValues[4].toInt(),
+            major = match.groupValues[1].toInt(),
+            minor = match.groupValues[2].toInt(),
+            patch = match.groupValues[3].toInt(),
         )
     }
 

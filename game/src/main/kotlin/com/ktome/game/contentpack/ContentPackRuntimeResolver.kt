@@ -29,7 +29,12 @@ data class ResolvedContentPack(
     val manifestPath: Path
         get() = packRoot.resolve(MANIFEST_FILE_NAME)
 
-    fun resolvePath(relativePath: String): Path = packRoot.resolve(relativePath).normalize()
+    fun resolvePath(relativePath: String): Path =
+        resolvePathInsidePackRoot(
+            packRoot = packRoot,
+            relativePath = relativePath,
+            errorCode = "content-pack.resource.path-outside-pack",
+        )
 
     fun localeBundlePaths(): Map<GameLocale, List<Path>> =
         manifest.localeBundles.groupBy(
@@ -199,7 +204,16 @@ object ContentPackRuntimeResolver {
     ) {
         val manifestPath = packRoot.resolve(ResolvedContentPack.MANIFEST_FILE_NAME)
         manifest.localeBundles.forEach { relativePath ->
-            val resolved = packRoot.resolve(relativePath).normalize()
+            val resolved =
+                validatePackRelativePath(
+                    packRoot = packRoot,
+                    relativePath = relativePath,
+                    diagnostics = diagnostics,
+                    code = "content-pack.resource.path-outside-pack",
+                    message = "Pack '${manifest.id.value}' references locale bundle path '$relativePath' outside the pack root.",
+                    packId = manifest.id,
+                    sourcePath = manifestPath,
+                ) ?: return@forEach
             if (!Files.exists(resolved)) {
                 diagnostics.addDiagnostic(
                     code = "content-pack.resource.locale-missing",
@@ -210,7 +224,16 @@ object ContentPackRuntimeResolver {
             }
         }
         listOfNotNull(manifest.visualManifest, manifest.audioManifest).forEach { relativePath ->
-            val resolved = packRoot.resolve(relativePath).normalize()
+            val resolved =
+                validatePackRelativePath(
+                    packRoot = packRoot,
+                    relativePath = relativePath,
+                    diagnostics = diagnostics,
+                    code = "content-pack.resource.path-outside-pack",
+                    message = "Pack '${manifest.id.value}' references resource manifest path '$relativePath' outside the pack root.",
+                    packId = manifest.id,
+                    sourcePath = manifestPath,
+                ) ?: return@forEach
             if (!Files.exists(resolved)) {
                 diagnostics.addDiagnostic(
                     code = "content-pack.resource.manifest-missing",
@@ -221,7 +244,19 @@ object ContentPackRuntimeResolver {
             }
         }
         manifest.overlays.forEach { overlay ->
-            val resolved = packRoot.resolve(overlay.sourceFile).normalize()
+            val resolved =
+                validatePackRelativePath(
+                    packRoot = packRoot,
+                    relativePath = overlay.sourceFile,
+                    diagnostics = diagnostics,
+                    code = "content-pack.overlay.source-outside-pack",
+                    message =
+                        "Overlay '${overlay.op.name}' for '${overlay.targetRef.registry.value}:${overlay.targetRef.id}' " +
+                            "points outside the pack root via '${overlay.sourceFile}'.",
+                    packId = manifest.id,
+                    targetRef = overlay.targetRef,
+                    sourcePath = manifestPath,
+                ) ?: return@forEach
             if (!Files.exists(resolved)) {
                 diagnostics.addDiagnostic(
                     code = "content-pack.overlay.source-missing",
@@ -367,6 +402,29 @@ object ContentPackRuntimeResolver {
             )
             throwIfErrors(diagnostics)
             error("Unreachable")
+        }
+
+    private fun validatePackRelativePath(
+        packRoot: Path,
+        relativePath: String,
+        diagnostics: MutableList<ContentPackDiagnostic>,
+        code: String,
+        message: String,
+        packId: PackId,
+        targetRef: com.ktome.core.world.solvability.ContentRef? = null,
+        sourcePath: Path? = null,
+    ): Path? =
+        try {
+            resolvePathInsidePackRoot(packRoot = packRoot, relativePath = relativePath, errorCode = code)
+        } catch (exception: IllegalArgumentException) {
+            diagnostics.addDiagnostic(
+                code = code,
+                message = message,
+                packId = packId,
+                targetRef = targetRef,
+                sourcePath = sourcePath,
+            )
+            null
         }
 
     private fun validateManifestCompatibility(
@@ -707,6 +765,19 @@ object ContentPackRuntimeResolver {
         val optional: Boolean,
         val appendAllowedFieldPaths: Set<String> = emptySet(),
     )
+}
+
+private fun resolvePathInsidePackRoot(
+    packRoot: Path,
+    relativePath: String,
+    errorCode: String,
+): Path {
+    val normalizedPackRoot = packRoot.toAbsolutePath().normalize()
+    val resolvedPath = normalizedPackRoot.resolve(relativePath).normalize()
+    require(resolvedPath.startsWith(normalizedPackRoot)) {
+        "$errorCode: path '$relativePath' escapes pack root '$normalizedPackRoot'."
+    }
+    return resolvedPath
 }
 
 private fun Map<String, Any?>.toContentPackManifest(): ContentPackManifest =
