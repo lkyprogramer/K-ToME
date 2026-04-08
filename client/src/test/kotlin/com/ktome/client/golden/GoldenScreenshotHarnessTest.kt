@@ -5,13 +5,16 @@ import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Application
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3ApplicationConfiguration
 import com.badlogic.gdx.graphics.Pixmap
+import com.badlogic.gdx.graphics.g2d.SpriteBatch
 import com.badlogic.gdx.graphics.glutils.HdpiMode
 import com.badlogic.gdx.utils.GdxRuntimeException
 import com.badlogic.gdx.utils.ScreenUtils
+import com.ktome.client.assets.ClientAssetBundleLoader
 import com.ktome.client.GameApp
 import com.ktome.client.automationWorld
 import com.ktome.client.installReserveTalent
 import com.ktome.client.input.CommandSource
+import com.ktome.game.contentpack.ContentPackSelection
 import com.ktome.client.input.InputSource
 import com.ktome.client.input.OverlayState
 import com.ktome.client.input.UiMode
@@ -21,19 +24,34 @@ import com.ktome.core.dungeon.StairDirection
 import com.ktome.core.ecs.BlocksMovement
 import com.ktome.core.ecs.EntityId
 import com.ktome.core.ecs.Health
+import com.ktome.core.ecs.MonsterTemplateId
 import com.ktome.core.ecs.Position
 import com.ktome.core.ecs.get
 import com.ktome.core.ecs.remove
 import com.ktome.core.map.Point
+import com.ktome.core.mapgen.center
 import com.ktome.core.resource.ResourcePools
 import com.ktome.core.resource.ResourceType
 import com.ktome.core.save.SaveManager
+import com.ktome.core.snapshot.ActorRenderSnapshot
+import com.ktome.core.snapshot.ActorRoleKindSnapshot
+import com.ktome.core.snapshot.CellVisibilitySnapshot
+import com.ktome.core.snapshot.InventoryEntrySnapshot
+import com.ktome.core.snapshot.ItemRenderSnapshot
+import com.ktome.core.snapshot.MapCellSnapshot
+import com.ktome.core.snapshot.PlayerStatusSnapshot
+import com.ktome.core.snapshot.PropRenderSnapshot
+import com.ktome.core.snapshot.RenderMetadataSnapshot
 import com.ktome.core.snapshot.RenderSnapshot
+import com.ktome.core.snapshot.RenderTextTokenSnapshot
+import com.ktome.core.snapshot.RenderUiStateSnapshot
 import com.ktome.game.FOUNDATION_ZONE_ROUTE
 import com.ktome.game.FoundationGameConfig
 import com.ktome.game.FoundationGameSession
+import com.ktome.game.GameModule
 import com.ktome.game.PlayerCommand
 import com.ktome.game.i18n.GameLocale
+import com.ktome.game.i18n.LocalizationBundle
 import java.nio.file.Path
 import java.security.MessageDigest
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -144,6 +162,13 @@ class GoldenScreenshotHarnessTest {
             ),
             english + chinese,
         )
+    }
+
+    @Test
+    fun `sample pack golden hash remains stable for filesystem backed content`() {
+        val hash = captureSamplePackRuntimeHash()
+
+        assertEquals("73787e74a8ff62e646eb1af7f338c7c353f60b3555d975a53a37d15c0ab1ad1f", hash)
     }
 
     private fun captureGoldenSet(
@@ -468,6 +493,39 @@ class GoldenScreenshotHarnessTest {
             }
         }
 
+    private fun captureSamplePackRuntimeHash(): String =
+        withLwjgl3Context(width = 1280, height = 800) {
+            val selection = samplePackSelection()
+            val session =
+                GameModule.newFoundationSession(
+                    config =
+                        FoundationGameConfig(
+                            seed = 20260304L,
+                            zoneId = "underground_river",
+                            playerProfessionId = "arcanist",
+                        ),
+                    saveManager = SaveManager(tempDir.resolve("sample-pack-golden")),
+                    locale = GameLocale.EN_US,
+                    contentPackSelection = selection,
+                )
+            val assets = ClientAssetBundleLoader.load(contentPackSelection = selection)
+            val batch = SpriteBatch()
+            val renderer = TileRenderer(LocalizationBundle.load().translator(GameLocale.EN_US), assets.visualResolver, assets.textureRepository)
+
+            try {
+                val inventorySelection = claimSamplePackReward(session)
+                captureHash {
+                    batch.begin()
+                    renderer.render(batch, session.renderSnapshot(), OverlayState(mode = UiMode.INVENTORY, inventorySelection = inventorySelection))
+                    batch.end()
+                }
+            } finally {
+                renderer.dispose()
+                batch.dispose()
+                assets.dispose()
+            }
+        }
+
     private fun captureHash(render: () -> Unit): String {
         render()
         Gdx.gl.glFinish()
@@ -617,6 +675,49 @@ class GoldenScreenshotHarnessTest {
         }
         return session.renderSnapshot()
     }
+
+    private fun samplePackSelection(): ContentPackSelection {
+        val repoRoot = Path.of(System.getProperty("ktome.repo.root", ".")).toAbsolutePath().normalize()
+        return ContentPackSelection.of(repoRoot.resolve("examples/content-packs/sample.flooded_relics"))
+    }
+
+    private fun claimSamplePackReward(session: FoundationGameSession): Int {
+        clearMonsters(session)
+        val generatedFloor = session.automationGeneratedFloor()
+        val entrance = generatedFloor.entrances.sortedBy { candidate -> candidate.bindingId.value }.first()
+        val searchPoint = requireNotNull(generatedFloor.roomForEntrance(entrance)).center
+        automationMovePlayerTo(session, searchPoint)
+        check(session.perform(PlayerCommand.Search)) { "Failed to reveal sample-pack entrance." }
+
+        val entranceProp = requireNotNull(propByType(session, "hidden_entrance")) { "Expected revealed hidden entrance for sample-pack golden capture." }
+        automationMovePlayerTo(session, Point(entranceProp.x, entranceProp.y))
+        check(session.perform(PlayerCommand.Interact)) { "Failed to enter sample-pack secret zone." }
+
+        val rewardProp = requireNotNull(propByType(session, "secret_reward")) { "Expected secret reward node for sample-pack golden capture." }
+        automationMovePlayerTo(session, Point(rewardProp.x, rewardProp.y))
+        check(session.perform(PlayerCommand.Interact)) { "Failed to claim sample-pack reward." }
+        assertEquals("sample_flooded_relics.zone.flooded_reliquary.name", session.renderSnapshot().metadata.zoneNameKey)
+
+        val rewardEntry =
+            requireNotNull(
+                session.renderSnapshot().uiState.inventory.firstOrNull { entry ->
+                    entry.item.nameKey.startsWith("sample_flooded_relics.item.")
+                },
+            ) {
+                "Expected sample-pack reward to be visible in the live inventory snapshot."
+            }
+        return rewardEntry.index
+    }
+
+    private fun clearMonsters(session: FoundationGameSession) {
+        val world = automationWorld(session)
+        world.entitiesWith(MonsterTemplateId::class).forEach(world::destroyEntity)
+    }
+
+    private fun propByType(
+        session: FoundationGameSession,
+        propTypeId: String,
+    ): PropRenderSnapshot? = session.renderSnapshot().props.firstOrNull { prop -> prop.propTypeId == propTypeId }
 
 }
 

@@ -40,6 +40,9 @@ class Phase4ReportRunnerTest {
         assertTrue(bossTask.getValue("metrics").jsonObject.getValue("whiteBoxSummaryPath").jsonPrimitive.content.contains("whitebox/boss"))
         assertTrue(terrainTask.getValue("sourcePath").jsonPrimitive.content.contains("whitebox/terrain"))
         assertEquals("11", contentPackTask.getValue("metrics").jsonObject.getValue("totalCases").jsonPrimitive.content)
+        assertTrue(
+            contentPackTask.getValue("metrics").jsonObject.getValue("whiteBoxSummaryPath").jsonPrimitive.content.contains("whitebox/content-pack"),
+        )
         assertEquals(
             setOf(
                 "mapgenSmoke",

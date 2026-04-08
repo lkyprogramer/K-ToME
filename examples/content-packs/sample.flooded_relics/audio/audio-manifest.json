@@ -1,0 +1,42 @@
+{
+  "manifestVersion": 1,
+  "fallbackKey": "audio.fallback.silence",
+  "entries": [
+    {
+      "key": "sample_flooded_relics.audio.zone.flooded_reliquary",
+      "cueFamily": "zone",
+      "eventId": "sample_flooded_relics_zone_flooded_reliquary",
+      "sourcePath": "audio/phase4/pr09/zone_flooded_reliquary.ogg",
+      "tags": ["content-pack", "sample", "zone", "secret"]
+    },
+    {
+      "key": "sample_flooded_relics.audio.interactable.reliquary_node",
+      "cueFamily": "interactable",
+      "eventId": "sample_flooded_relics_interactable_reliquary_node",
+      "sourcePath": "audio/phase4/pr09/interactable_reliquary_node.ogg",
+      "tags": ["content-pack", "sample", "interactable", "reward"]
+    },
+    {
+      "key": "sample_flooded_relics.audio.interactable.return_bridge",
+      "cueFamily": "interactable",
+      "eventId": "sample_flooded_relics_interactable_return_bridge",
+      "sourcePath": "audio/phase4/pr09/interactable_return_bridge.ogg",
+      "tags": ["content-pack", "sample", "interactable", "return"]
+    },
+    {
+      "key": "sample_flooded_relics.audio.item.floodtide_lantern",
+      "cueFamily": "item",
+      "eventId": "sample_flooded_relics_item_floodtide_lantern",
+      "sourcePath": "audio/phase4/pr09/item_floodtide_lantern.ogg",
+      "tags": ["content-pack", "sample", "item", "unique"]
+    },
+    {
+      "key": "sample_flooded_relics.audio.item.tideglass_echo",
+      "cueFamily": "item",
+      "eventId": "sample_flooded_relics_item_tideglass_echo",
+      "sourcePath": "audio/phase4/pr09/item_tideglass_echo.ogg",
+      "tags": ["content-pack", "sample", "item", "artifact"]
+    }
+  ],
+  "prefixRules": []
+}

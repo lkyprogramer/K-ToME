@@ -307,7 +307,13 @@ internal object HiddenContentHarnessKernel {
                 secretRewardNodePresent = rewardProp != null
                 secretRewardPathClass =
                     rewardProp
-                        ?.let { prop -> generatedFloor.roomAt(Point(prop.x, prop.y))?.pathClass?.name }
+                        ?.let { prop ->
+                            secretZoneAnchorPathClass(
+                                generatedFloor = generatedFloor,
+                                entrance = entrance,
+                                point = Point(prop.x, prop.y),
+                            )
+                        }
                         ?: "UNKNOWN"
                 rewardProp?.let { prop ->
                     session.automationMovePlayerTo(Point(prop.x, prop.y))
@@ -481,6 +487,34 @@ internal object HiddenContentHarnessKernel {
     ): Point =
         roomWalkablePoints(generatedFloor = generatedFloor, room = room).firstOrNull() ?: room.center
 
+    private fun secretZoneAnchorPathClass(
+        generatedFloor: com.ktome.core.mapgen.GeneratedFloor,
+        entrance: com.ktome.core.mapgen.GeneratedEntrance,
+        point: Point,
+    ): String {
+        val secretRoom =
+            generatedFloor.roomByAnchor(entrance.targetAnchorId)
+                ?: generatedFloor.rooms.firstOrNull { room -> room.nodeId == entrance.targetNodeId }
+        if (secretRoom != null) {
+            val anchors = secretZoneAnchorPoints(generatedFloor = generatedFloor, room = secretRoom)
+            if (point == anchors.entry || point == anchors.reward || point == anchors.returnBridge) {
+                return secretRoom.pathClass.name
+            }
+        }
+        return generatedFloor.roomAt(point)?.pathClass?.name ?: "UNKNOWN"
+    }
+
+    private fun secretZoneAnchorPoints(
+        generatedFloor: com.ktome.core.mapgen.GeneratedFloor,
+        room: com.ktome.core.mapgen.RoomInstance,
+    ): SecretZoneAnchorPoints {
+        val points = roomWalkablePoints(generatedFloor = generatedFloor, room = room)
+        val entry = points.firstOrNull() ?: room.center
+        val reward = points.firstOrNull { point -> point != entry } ?: entry
+        val returnBridge = points.firstOrNull { point -> point != entry && point != reward } ?: reward
+        return SecretZoneAnchorPoints(entry = entry, reward = reward, returnBridge = returnBridge)
+    }
+
     private fun roomWalkablePoints(
         generatedFloor: com.ktome.core.mapgen.GeneratedFloor,
         room: com.ktome.core.mapgen.RoomInstance,
@@ -501,6 +535,12 @@ internal object HiddenContentHarnessKernel {
         )
 
     private fun Point.toDebugString(): String = "$x,$y"
+
+    private data class SecretZoneAnchorPoints(
+        val entry: Point,
+        val reward: Point,
+        val returnBridge: Point,
+    )
 }
 
 internal object HiddenContentHarnessAnalysis {

@@ -1,0 +1,17 @@
+materials: []
+affixes: []
+items: []
+artifactTemplates:
+  - id: sample.flooded_relics.artifact.tideglass_echo
+    itemId: artifact_river_echo
+    nameKey: sample_flooded_relics.item.tideglass_echo.name
+    descKey: sample_flooded_relics.item.tideglass_echo.desc
+    visualKey: sample_flooded_relics.item.tideglass_echo.visual
+    iconKey: sample_flooded_relics.item.tideglass_echo.icon
+    audioProfile: sample_flooded_relics.audio.item.tideglass_echo
+    schemaVersion: 2
+    tags: [underground_river, flooded_relics, cache, reward, currents, drowned, ambush, reliquary, arcanist]
+    allowedSourceTiers: [CHEST, SECRET_ZONE]
+    allowedZones: [underground_river]
+    fixedAffixIds: [stormforged, of_focus]
+    fixedMaterialId: STEEL

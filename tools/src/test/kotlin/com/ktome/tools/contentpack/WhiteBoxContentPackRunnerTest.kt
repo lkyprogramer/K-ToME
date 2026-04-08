@@ -33,11 +33,17 @@ class WhiteBoxContentPackRunnerTest {
 
         assertEquals("whiteBoxContentPack", payload.getValue("domainId").jsonPrimitive.content)
         assertEquals("PASS", payload.getValue("verdict").jsonPrimitive.content)
-        assertEquals("P4_PR08_CONTENT_PACK_WHITEBOX", corpus.getValue("corpusId").jsonPrimitive.content)
+        assertEquals("P4_PR09_SAMPLE_CONTENT_PACK_WHITEBOX", corpus.getValue("corpusId").jsonPrimitive.content)
         assertEquals("11", summary.getValue("caseCount").jsonPrimitive.content)
         assertEquals("0", summary.getValue("failedAssertions").jsonPrimitive.content)
         assertEquals(
-            setOf("merge-trace", "precedence-matrix", "lint-diagnostics", "dependency-version-namespace-table"),
+            setOf(
+                "pack-manifest-resolve",
+                "merged-key-summary",
+                "headless-run-summary",
+                "precedence-matrix",
+                "lint-diagnostics",
+            ),
             artifactIds,
         )
     }

@@ -14,7 +14,10 @@ class ContentPackSaveLoadCompatibilityTest {
     fun `save load fails fast when active pack environment changes`() {
         val saveDir = Files.createTempDirectory("ktome-content-pack-save")
         val saveManager = SaveManager(saveDir)
-        val selection = ContentPackFixtureCatalog.availableSelection(listOf(ContentPackFixtureCatalog.addPackId))
+        val selection =
+            ContentPackFixtureCatalog.selection(
+                activePackRoots = listOf(ContentPackFixtureCatalog.samplePackRoot()),
+            )
         try {
             val session =
                 GameModule.newFoundationSession(

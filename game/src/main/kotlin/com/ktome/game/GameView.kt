@@ -128,6 +128,7 @@ data class InventoryItemView(
     val index: Int,
     val name: String,
     val baseItemId: String = "",
+    val specialTemplateId: String? = null,
     val type: ItemType,
     val slot: EquipSlot? = null,
     val equippedSlot: EquipSlot? = null,

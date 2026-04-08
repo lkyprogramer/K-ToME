@@ -24,8 +24,10 @@ class ContentPackHarnessRunnerTest {
         val payload = Json.parseToJsonElement(Files.readString(run.summaryPath)).jsonObject
         val summary = payload.getValue("summary").jsonObject
         val cases = payload.getValue("cases").jsonArray
-        val replaceCase =
-            cases.first { element -> element.jsonObject.getValue("fixtureId").jsonPrimitive.content == "replace_precedence" }.jsonObject
+        val precedenceCase =
+            cases.first { element -> element.jsonObject.getValue("fixtureId").jsonPrimitive.content == "precedence_fixture" }.jsonObject
+        val officialCase =
+            cases.first { element -> element.jsonObject.getValue("fixtureId").jsonPrimitive.content == "official_sample_pack" }.jsonObject
 
         assertEquals("PASS", summary.getValue("verdict").jsonPrimitive.content)
         assertEquals("11", summary.getValue("totalCases").jsonPrimitive.content)
@@ -37,15 +39,26 @@ class ContentPackHarnessRunnerTest {
         assertEquals("0", summary.getValue("visualResolutionFailureCount").jsonPrimitive.content)
         assertEquals("0", summary.getValue("audioResolutionFailureCount").jsonPrimitive.content)
         assertEquals("0", summary.getValue("precedenceFailureCount").jsonPrimitive.content)
+        assertEquals("0", summary.getValue("resourceContractFailureCount").jsonPrimitive.content)
+        assertEquals("0", summary.getValue("generatedTemplateFailureCount").jsonPrimitive.content)
         assertEquals(
-            listOf("valid_add_pack", "disabled_pack_fallback", "replace_precedence"),
+            listOf("official_sample_pack", "disabled_pack_fallback", "precedence_fixture"),
             cases.take(3).map { element -> element.jsonObject.getValue("fixtureId").jsonPrimitive.content },
         )
         assertEquals(
-            listOf("fixture.add_monster", "fixture.replace_monster"),
-            replaceCase.getValue("resolvedOrder").jsonArray.map { value -> value.jsonPrimitive.content },
+            listOf("sample.flooded_relics", "fixture.sample_flooded_relics_override"),
+            precedenceCase.getValue("resolvedOrder").jsonArray.map { value -> value.jsonPrimitive.content },
         )
-        assertEquals(listOf("REPLACE"), replaceCase.getValue("overlayOps").jsonArray.map { value -> value.jsonPrimitive.content }.filter { op -> op != "ADD" })
+        assertEquals(
+            listOf("REPLACE", "REPLACE", "REPLACE"),
+            precedenceCase.getValue("overlayOps").jsonArray.map { value -> value.jsonPrimitive.content }.filter { op -> op != "ADD" },
+        )
+        assertEquals("true", officialCase.getValue("resourceContractVerified").jsonPrimitive.content)
+        assertTrue(
+            officialCase.getValue("generatedSpecialTemplateIds").jsonArray.any { value ->
+                value.jsonPrimitive.content.startsWith("sample.flooded_relics.")
+            },
+        )
         assertEquals(11, Files.readAllLines(run.runsPath).count { line -> line.isNotBlank() })
     }
 }

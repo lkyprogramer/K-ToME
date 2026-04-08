@@ -1,0 +1,19 @@
+events:
+  - id: hidden.event.underground_river.crystal_rift.reward
+    triggerType: INTERACT_TILE
+    optionalOnly: true
+    conditions:
+      - key: SECRET_ZONE_ID
+        expectedValue: underground_river_crystal_rift
+    rewards:
+      - key: TRIGGER_ENCOUNTER
+        payload:
+          encounterRef:
+            registry: monster
+            id: undead.bone_archer
+          threatCost: 4
+      - key: LOOT_PROFILE
+        payload:
+          lootProfileRef:
+            registry: loot_profile
+            id: sample.flooded_relics.loot.flooded_reliquary.secret

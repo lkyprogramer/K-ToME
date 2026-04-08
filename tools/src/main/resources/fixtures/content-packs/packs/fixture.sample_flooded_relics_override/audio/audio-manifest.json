@@ -1,0 +1,14 @@
+{
+  "manifestVersion": 1,
+  "fallbackKey": "audio.fallback.silence",
+  "entries": [
+    {
+      "key": "fixture_sample_flooded_relics_override.audio.zone.flooded_reliquary",
+      "cueFamily": "zone",
+      "eventId": "fixture_sample_flooded_relics_override_zone_flooded_reliquary",
+      "sourcePath": "packs/fixture_sample_flooded_relics_override/zone_flooded_reliquary.ogg",
+      "tags": ["fixture", "content-pack", "precedence"]
+    }
+  ],
+  "prefixRules": []
+}

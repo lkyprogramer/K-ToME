@@ -111,6 +111,7 @@ import com.ktome.core.item.MaterialDef
 import com.ktome.core.item.MilestoneRewardSource
 import com.ktome.core.item.PassiveDamageAdjustment
 import com.ktome.core.item.PassiveEffectResolver
+import com.ktome.core.item.SpecialItemTemplate
 import com.ktome.core.item.StatModifier
 import com.ktome.core.item.defaultAffixCount
 import com.ktome.core.loot.PityTracker
@@ -636,7 +637,7 @@ class FoundationGameSession internal constructor(
                 if (equipped == null) {
                     "${slot.name}:-"
                 } else {
-                    "${slot.name}:${equipped.baseId}:${equipped.materialId ?: "-"}:${equipped.affixes.joinToString(separator = "+", transform = com.ktome.core.item.AffixDef::id)}"
+                    "${slot.name}:${equipped.baseId}:${equipped.specialTemplateId ?: "-"}:${equipped.materialId ?: "-"}:${equipped.affixes.joinToString(separator = "+", transform = com.ktome.core.item.AffixDef::id)}"
                 }
             }
         val loadout = world.get<TalentLoadout>(playerId)
@@ -1058,8 +1059,9 @@ class FoundationGameSession internal constructor(
             val item = world.get<ItemInstance>(itemId) ?: return@mapIndexedNotNull null
             InventoryItemView(
                 index = index,
-                name = item.name,
+                name = itemDisplayName(item, includeQuality = false),
                 baseItemId = item.baseId,
+                specialTemplateId = item.specialTemplateId,
                 type = item.type,
                 slot = item.slot,
                 equippedSlot = inventoryManager.equippedSlotOf(world, playerId, itemId),
@@ -1216,6 +1218,7 @@ class FoundationGameSession internal constructor(
     private fun buildRenderSnapshot(): RenderSnapshot {
         ensurePlayerResourcePools()
         val zone = currentZoneSchema()
+        val zonePresentation = currentZonePresentation()
         val overlays = buildOverlaySnapshots()
         val combatFeedbackEvents = resolvePendingCombatFeedbackEvents()
         pendingCombatFeedbackEvents.clear()
@@ -1224,16 +1227,16 @@ class FoundationGameSession internal constructor(
                 RenderMetadataSnapshot(
                     revision = renderSnapshotRevision,
                     zoneId = zone.id,
-                    zoneNameKey = zone.nameKey,
-                    zoneDescKey = zone.descKey,
+                    zoneNameKey = zonePresentation.nameKey,
+                    zoneDescKey = zonePresentation.descKey,
                     currentFloor = currentFloor(),
                     maxFloor = maxFloor(),
                     width = map.width,
                     height = map.height,
                     playerX = playerPosition().x,
                     playerY = playerPosition().y,
-                    zoneVisualKey = zone.visualKey,
-                    zoneAudioProfile = zone.audioProfile,
+                    zoneVisualKey = zonePresentation.visualKey,
+                    zoneAudioProfile = zonePresentation.audioProfile,
                     tilesetKey = zone.tilesetKey,
                     ambientProfile = zone.ambientProfile,
                 ),
@@ -2917,20 +2920,18 @@ class FoundationGameSession internal constructor(
         world.get<ItemInstance>(itemId)?.let(::toItemRenderSnapshot)
 
     private fun toItemRenderSnapshot(item: ItemInstance): ItemRenderSnapshot {
-        val schema = requireNotNull(itemSchemaFor(item)) {
-            "Unknown item schema '${item.baseId}'."
-        }
+        val presentation = itemPresentationSchema(item)
         val materialNameKey = item.materialId?.let(::materialSchemaFor)?.nameKey
         val affixNameKeys = item.affixes.mapNotNull { affix -> affixSchemaFor(affix.id)?.nameKey }
         return ItemRenderSnapshot(
             baseItemId = item.baseId,
-            nameKey = schema.nameKey,
+            nameKey = presentation.nameKey,
             displayName = itemDisplayToken(item),
-            descKey = schema.descKey,
+            descKey = presentation.descKey,
             typeId = item.type.name,
-            visualKey = schema.visualKey,
-            iconKey = schema.iconKey,
-            audioProfile = schema.audioProfile,
+            visualKey = presentation.visualKey,
+            iconKey = presentation.iconKey,
+            audioProfile = presentation.audioProfile,
             slotId = item.slot?.name,
             qualityNameKey = qualityLabelKey(item.quality),
             materialNameKey = materialNameKey,
@@ -3753,6 +3754,41 @@ class FoundationGameSession internal constructor(
     private fun itemSchemaFor(baseItemId: String) =
         content.schemaCatalog.itemBundle.items.firstOrNull { schema -> schema.id == baseItemId }
 
+    private fun specialTemplateFor(item: ItemInstance): SpecialItemTemplate? =
+        item.specialTemplateId?.let(content.itemBundle::specialTemplate)
+
+    private fun itemPresentationSchema(item: ItemInstance): ItemPresentationSchema {
+        val baseSchema = requireNotNull(itemSchemaFor(item)) {
+            "Unknown item schema '${item.baseId}'."
+        }
+        val specialTemplate = specialTemplateFor(item)
+        return if (specialTemplate == null) {
+            ItemPresentationSchema(
+                nameKey = baseSchema.nameKey,
+                descKey = baseSchema.descKey,
+                visualKey = baseSchema.visualKey,
+                iconKey = baseSchema.iconKey,
+                audioProfile = baseSchema.audioProfile,
+            )
+        } else {
+            ItemPresentationSchema(
+                nameKey = specialTemplate.nameKey,
+                descKey = specialTemplate.descKey,
+                visualKey = specialTemplate.visualKey,
+                iconKey = specialTemplate.iconKey,
+                audioProfile = specialTemplate.audioProfile,
+            )
+        }
+    }
+
+    private data class ItemPresentationSchema(
+        val nameKey: String,
+        val descKey: String,
+        val visualKey: String,
+        val iconKey: String,
+        val audioProfile: String,
+    )
+
     private fun materialSchemaFor(materialId: String) =
         content.schemaCatalog.itemBundle.materials.firstOrNull { schema -> schema.id == materialId }
 
@@ -4059,9 +4095,9 @@ class FoundationGameSession internal constructor(
         reward: ItemInstance,
         rewardContext: String,
     ): String =
-        requireNotNull(itemSchemaFor(reward.baseId)) {
+        requireNotNull(itemNameKeyOrNull(reward)) {
             "Unknown $rewardContext reward item '${reward.baseId}'."
-        }.nameKey
+        }
 
     private fun rewardPresentationSourceLabelKey(source: RewardPresentationSourceSnapshot): String =
         when (source) {
@@ -5747,7 +5783,7 @@ class FoundationGameSession internal constructor(
         addMessage(
             "log.shop.sell",
             keyArg("shop", shop.nameKey),
-            keyArg("item", requireNotNull(itemSchemaFor(item.baseId)).nameKey),
+            keyArg("item", rewardItemNameKey(item, "shop sell")),
             literalArg("price", sellValue),
         )
         return CommandResolution(accepted = true, consumesTurn = false)
@@ -6337,7 +6373,7 @@ class FoundationGameSession internal constructor(
 
     private fun inspectItemView(item: ItemInstance): InspectItemView {
         return InspectItemView(
-            name = item.name,
+            name = itemDisplayName(item, includeQuality = false),
             typeLabel = itemTypeLabel(item.type),
             details = itemDetailLines(item),
         )
@@ -8703,6 +8739,9 @@ class FoundationGameSession internal constructor(
         currentSecretZoneContext(point)?.takeIf { context -> secretZoneAnchorPoints(context.room).returnBridge == point }
 
     private fun currentSecretZoneContext(point: Point = playerPosition()): SecretZoneContext? {
+        secretZoneContextAtAnchor(point)?.let { context ->
+            return context
+        }
         val room = currentRoomInstanceAt(point) ?: return null
         if (room.pathClass != PathClass.SECRET) {
             return null
@@ -8714,6 +8753,15 @@ class FoundationGameSession internal constructor(
                 ?: return null
         return secretZoneContextForEntrance(entrance)
     }
+
+    private fun secretZoneContextAtAnchor(point: Point): SecretZoneContext? =
+        activeFloorState.generatedFloor.entrances
+            .sortedBy { candidate -> candidate.bindingId.value }
+            .mapNotNull(::secretZoneContextForEntrance)
+            .firstOrNull { context ->
+                val anchors = secretZoneAnchorPoints(context.room)
+                point == anchors.entry || point == anchors.reward || point == anchors.returnBridge
+            }
 
     private fun secretZoneContextForEntrance(entrance: GeneratedEntrance): SecretZoneContext? {
         val room =
@@ -8759,8 +8807,35 @@ class FoundationGameSession internal constructor(
 
     private fun currentSecretZoneId(): ContentRef? = currentSecretZoneContext()?.secretZoneId
 
+    private fun currentZonePresentation(): ZonePresentation =
+        currentSecretZoneId()
+            ?.let(content::secretZone)
+            ?.let { secretZone ->
+                ZonePresentation(
+                    nameKey = secretZone.nameKey,
+                    descKey = secretZone.descKey,
+                    visualKey = secretZone.visualKey,
+                    audioProfile = secretZone.audioProfile,
+                )
+            }
+            ?: currentZoneSchema().let { zone ->
+                ZonePresentation(
+                    nameKey = zone.nameKey,
+                    descKey = zone.descKey,
+                    visualKey = zone.visualKey,
+                    audioProfile = zone.audioProfile,
+                )
+            }
+
     private fun secretZoneNameKey(secretZoneId: ContentRef?): String =
         secretZoneId?.let(content::secretZone)?.nameKey ?: currentZoneSchema().nameKey
+
+    private data class ZonePresentation(
+        val nameKey: String,
+        val descKey: String,
+        val visualKey: String,
+        val audioProfile: String,
+    )
 
     private fun searchContextTags(searchTarget: SearchTarget): Set<String> = searchTarget.room.tags
 
@@ -9583,6 +9658,7 @@ class FoundationGameSession internal constructor(
         inventoryItemMessage(
             key = key,
             itemBaseId = result.itemBaseId,
+            itemSpecialTemplateId = result.itemSpecialTemplateId,
             itemName = result.itemName,
             itemQuality = result.itemQuality,
             itemMaterialId = result.itemMaterialId,
@@ -9596,6 +9672,7 @@ class FoundationGameSession internal constructor(
         inventoryItemMessage(
             key = key,
             itemBaseId = result.itemBaseId,
+            itemSpecialTemplateId = result.itemSpecialTemplateId,
             itemName = result.itemName,
             itemQuality = result.itemQuality,
             itemMaterialId = result.itemMaterialId,
@@ -9605,6 +9682,7 @@ class FoundationGameSession internal constructor(
     private fun inventoryItemMessage(
         key: String,
         itemBaseId: String?,
+        itemSpecialTemplateId: String?,
         itemName: String?,
         itemQuality: RarityTier?,
         itemMaterialId: String?,
@@ -9618,6 +9696,7 @@ class FoundationGameSession internal constructor(
                         itemDisplayArgument(
                             name = "item",
                             itemBaseId = itemBaseId,
+                            itemSpecialTemplateId = itemSpecialTemplateId,
                             fallbackName = itemName,
                             itemQuality = itemQuality,
                             itemMaterialId = itemMaterialId,
@@ -9629,11 +9708,10 @@ class FoundationGameSession internal constructor(
 
     private fun itemArg(
         name: String,
-        itemBaseId: String?,
+        itemNameKey: String?,
         fallbackName: String?,
     ): RenderTextArgumentSnapshot =
-        itemBaseId
-            ?.let(::itemNameKeyOrNull)
+        itemNameKey
             ?.let { key -> keyArg(name, key) }
             ?: literalArg(name, fallbackName.orEmpty())
 
@@ -9645,6 +9723,7 @@ class FoundationGameSession internal constructor(
         itemDisplayArgument(
             name = name,
             itemBaseId = item.baseId,
+            itemSpecialTemplateId = item.specialTemplateId,
             fallbackName = item.name,
             itemQuality = item.quality,
             itemMaterialId = item.materialId,
@@ -9655,6 +9734,7 @@ class FoundationGameSession internal constructor(
     private fun itemDisplayArgument(
         name: String,
         itemBaseId: String?,
+        itemSpecialTemplateId: String?,
         fallbackName: String?,
         itemQuality: RarityTier?,
         itemMaterialId: String?,
@@ -9663,33 +9743,54 @@ class FoundationGameSession internal constructor(
     ): RenderTextArgumentSnapshot =
         itemDisplayToken(
             itemBaseId = itemBaseId,
+            itemSpecialTemplateId = itemSpecialTemplateId,
             itemQuality = itemQuality,
             itemMaterialId = itemMaterialId,
             itemAffixIds = itemAffixIds,
             includeQuality = includeQuality,
         )?.let { token -> tokenArg(name, token) }
-            ?: itemArg(name, itemBaseId, fallbackName)
+            ?: itemArg(name, itemNameKeyOrNull(itemBaseId, itemSpecialTemplateId), fallbackName)
 
     private fun itemDisplayToken(
         item: ItemInstance,
         includeQuality: Boolean = true,
     ): RenderTextTokenSnapshot? =
-        itemDisplayToken(
-            itemBaseId = item.baseId,
-            itemQuality = item.quality,
-            itemMaterialId = item.materialId,
-            itemAffixIds = item.affixes.map { affix -> affix.id },
-            includeQuality = includeQuality,
-        )
+        itemNameKeyOrNull(item)?.let { baseNameKey ->
+            itemDisplayTokenForBaseName(
+                baseNameKey = baseNameKey,
+                itemQuality = item.quality,
+                itemMaterialId = item.materialId,
+                itemAffixIds = item.affixes.map { affix -> affix.id },
+                includeQuality = includeQuality,
+            )
+        }
 
     private fun itemDisplayToken(
         itemBaseId: String?,
+        itemSpecialTemplateId: String?,
         itemQuality: RarityTier?,
         itemMaterialId: String?,
         itemAffixIds: List<String>,
         includeQuality: Boolean,
-    ): RenderTextTokenSnapshot? {
-        val baseNameKey = itemBaseId?.let(::itemNameKeyOrNull) ?: return null
+    ): RenderTextTokenSnapshot? =
+        itemNameKeyOrNull(itemBaseId, itemSpecialTemplateId)
+            ?.let { baseNameKey ->
+                itemDisplayTokenForBaseName(
+                    baseNameKey = baseNameKey,
+                    itemQuality = itemQuality,
+                    itemMaterialId = itemMaterialId,
+                    itemAffixIds = itemAffixIds,
+                    includeQuality = includeQuality,
+                )
+            }
+
+    private fun itemDisplayTokenForBaseName(
+        baseNameKey: String,
+        itemQuality: RarityTier?,
+        itemMaterialId: String?,
+        itemAffixIds: List<String>,
+        includeQuality: Boolean,
+    ): RenderTextTokenSnapshot {
         val affixSchemas = itemAffixIds.mapNotNull(::affixSchemaFor)
         val prefixes = affixSchemas.filter { schema -> schema.type == AffixType.PREFIX }
         val suffixes = affixSchemas.filter { schema -> schema.type == AffixType.SUFFIX }
@@ -9707,6 +9808,11 @@ class FoundationGameSession internal constructor(
                 ),
         )
     }
+
+    private fun itemDisplayName(
+        item: ItemInstance,
+        includeQuality: Boolean = true,
+    ): String = itemDisplayToken(item, includeQuality)?.let(::render) ?: item.name
 
     private fun itemDisplayQualityArg(
         name: String,
@@ -9767,6 +9873,14 @@ class FoundationGameSession internal constructor(
 
     private fun itemNameKeyOrNull(baseItemId: String): String? =
         content.schemaCatalog.itemBundle.items.firstOrNull { schema -> schema.id == baseItemId }?.nameKey
+
+    private fun itemNameKeyOrNull(
+        baseItemId: String?,
+        specialTemplateId: String?,
+    ): String? = specialTemplateId?.let(content.itemBundle::specialTemplate)?.nameKey ?: baseItemId?.let(::itemNameKeyOrNull)
+
+    private fun itemNameKeyOrNull(item: ItemInstance): String? =
+        specialTemplateFor(item)?.nameKey ?: itemNameKeyOrNull(item.baseId)
 
     private fun lootItemForMonsterDeath(target: EntityId): ItemInstance? {
         val templateId = world.get<MonsterTemplateId>(target)?.value ?: return null

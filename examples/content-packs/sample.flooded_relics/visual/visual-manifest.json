@@ -1,0 +1,96 @@
+{
+  "manifestVersion": 1,
+  "styleTag": "ktome-middle-fantasy-painterly-tile-v1",
+  "fallbackKey": "missing_visual",
+  "entries": [
+    {
+      "key": "sample_flooded_relics.zone.flooded_reliquary.visual",
+      "category": "portrait",
+      "rawOutputPath": "phase4/pr09/zone_flooded_reliquary_visual.png",
+      "footprint": "1x1",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": ["content-pack", "sample", "zone", "secret"],
+      "asciiGlyph": "~",
+      "asciiColorHex": "#5B8FAF"
+    },
+    {
+      "key": "sample_flooded_relics.zone.flooded_reliquary.icon",
+      "category": "icon_quest",
+      "rawOutputPath": "phase4/pr09/zone_flooded_reliquary_icon.png",
+      "footprint": "1x1",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": ["content-pack", "sample", "zone", "icon"],
+      "asciiGlyph": "~",
+      "asciiColorHex": "#79BEDC"
+    },
+    {
+      "key": "sample_flooded_relics.prop.reliquary_node.visual",
+      "category": "prop_interactable",
+      "rawOutputPath": "phase4/pr09/prop_reliquary_node_visual.png",
+      "footprint": "1x1",
+      "pivotX": 0.5,
+      "pivotY": 0.16,
+      "tags": ["content-pack", "sample", "prop", "reward"],
+      "asciiGlyph": "*",
+      "asciiColorHex": "#A6E2F3"
+    },
+    {
+      "key": "sample_flooded_relics.prop.return_bridge.visual",
+      "category": "prop_interactable",
+      "rawOutputPath": "phase4/pr09/prop_return_bridge_visual.png",
+      "footprint": "1x1",
+      "pivotX": 0.5,
+      "pivotY": 0.18,
+      "tags": ["content-pack", "sample", "prop", "return"],
+      "asciiGlyph": "=",
+      "asciiColorHex": "#88AFC6"
+    },
+    {
+      "key": "sample_flooded_relics.item.floodtide_lantern.visual",
+      "category": "item_sprite",
+      "rawOutputPath": "phase4/pr09/item_floodtide_lantern_visual.png",
+      "footprint": "1x1",
+      "pivotX": 0.5,
+      "pivotY": 0.12,
+      "tags": ["content-pack", "sample", "item", "unique"],
+      "asciiGlyph": "]",
+      "asciiColorHex": "#7FAFBD"
+    },
+    {
+      "key": "sample_flooded_relics.item.floodtide_lantern.icon",
+      "category": "icon",
+      "rawOutputPath": "phase4/pr09/item_floodtide_lantern_icon.png",
+      "footprint": "1x1",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": ["content-pack", "sample", "item", "icon"],
+      "asciiGlyph": "]",
+      "asciiColorHex": "#7FAFBD"
+    },
+    {
+      "key": "sample_flooded_relics.item.tideglass_echo.visual",
+      "category": "item_sprite",
+      "rawOutputPath": "phase4/pr09/item_tideglass_echo_visual.png",
+      "footprint": "1x1",
+      "pivotX": 0.5,
+      "pivotY": 0.12,
+      "tags": ["content-pack", "sample", "item", "artifact"],
+      "asciiGlyph": ")",
+      "asciiColorHex": "#5FA8D2"
+    },
+    {
+      "key": "sample_flooded_relics.item.tideglass_echo.icon",
+      "category": "icon",
+      "rawOutputPath": "phase4/pr09/item_tideglass_echo_icon.png",
+      "footprint": "1x1",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": ["content-pack", "sample", "item", "icon"],
+      "asciiGlyph": ")",
+      "asciiColorHex": "#5FA8D2"
+    }
+  ],
+  "prefixRules": []
+}

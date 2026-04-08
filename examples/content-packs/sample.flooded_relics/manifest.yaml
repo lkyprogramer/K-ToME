@@ -1,0 +1,37 @@
+id: sample.flooded_relics
+version: 1.0.0
+schemaVersion: 1
+gameVersionRange: ">=0.1.0 <0.2.0"
+namespace: sample_flooded_relics
+dependencies: []
+localeBundles:
+  - i18n/en-US.json
+  - i18n/zh-CN.json
+visualManifest: visual/visual-manifest.json
+audioManifest: audio/audio-manifest.json
+overlays:
+  - targetRef:
+      registry: secret_zone
+      id: underground_river_crystal_rift
+    op: REPLACE
+    sourceFile: data/secret-zones/underground_river_crystal_rift.yaml
+  - targetRef:
+      registry: hidden_event
+      id: hidden.event.underground_river.crystal_rift.reward
+    op: REPLACE
+    sourceFile: data/events/hidden.event.underground_river.crystal_rift.reward.yaml
+  - targetRef:
+      registry: loot_profile
+      id: sample.flooded_relics.loot.flooded_reliquary.secret
+    op: ADD
+    sourceFile: data/loot/sample.flooded_relics.loot.flooded_reliquary.secret.yaml
+  - targetRef:
+      registry: special_item_template
+      id: sample.flooded_relics.unique.floodtide_lantern
+    op: ADD
+    sourceFile: data/items/sample.flooded_relics.unique.floodtide_lantern.yaml
+  - targetRef:
+      registry: special_item_template
+      id: sample.flooded_relics.artifact.tideglass_echo
+    op: ADD
+    sourceFile: data/items/sample.flooded_relics.artifact.tideglass_echo.yaml

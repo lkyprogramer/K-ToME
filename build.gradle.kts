@@ -265,6 +265,8 @@ tasks.register<Exec>("assetLint") {
         "assets-src/image/specs/phase4-pr06-gemini-plan.yaml",
         "--extra-plan",
         "assets-src/image/specs/phase4-pr07-gemini-plan.yaml",
+        "--extra-plan",
+        "assets-src/image/specs/phase4-pr09-gemini-plan.yaml",
         "--report-dir",
         "assets-src/image/manifests",
     )
@@ -292,6 +294,8 @@ tasks.register<Exec>("styleLint") {
         "assets-src/image/specs/phase4-pr06-gemini-plan.yaml",
         "--extra-plan",
         "assets-src/image/specs/phase4-pr07-gemini-plan.yaml",
+        "--extra-plan",
+        "assets-src/image/specs/phase4-pr09-gemini-plan.yaml",
     )
 }
 

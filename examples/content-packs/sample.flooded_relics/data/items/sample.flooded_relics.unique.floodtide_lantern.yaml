@@ -1,0 +1,16 @@
+materials: []
+affixes: []
+items: []
+uniqueTemplates:
+  - id: sample.flooded_relics.unique.floodtide_lantern
+    itemId: unique_ferrywarden_lantern
+    nameKey: sample_flooded_relics.item.floodtide_lantern.name
+    descKey: sample_flooded_relics.item.floodtide_lantern.desc
+    visualKey: sample_flooded_relics.item.floodtide_lantern.visual
+    iconKey: sample_flooded_relics.item.floodtide_lantern.icon
+    audioProfile: sample_flooded_relics.audio.item.floodtide_lantern
+    schemaVersion: 2
+    tags: [underground_river, flooded_relics, cache, reward, currents, ferry, crossing, reliquary, templar]
+    allowedSourceTiers: [CHEST, SECRET_ZONE]
+    allowedZones: [underground_river]
+    fixedAffixIds: [warded, of_cleansing]

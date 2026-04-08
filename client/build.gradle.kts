@@ -92,6 +92,7 @@ tasks.named("processResources") {
 }
 
 tasks.withType<Test>().configureEach {
+    systemProperty("ktome.repo.root", rootProject.projectDir.absolutePath)
     if (System.getProperty("os.name").contains("Mac", ignoreCase = true)) {
         jvmArgs("-XstartOnFirstThread")
     }

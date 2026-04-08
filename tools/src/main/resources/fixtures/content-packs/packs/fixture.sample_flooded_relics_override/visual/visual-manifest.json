@@ -1,0 +1,30 @@
+{
+  "manifestVersion": 1,
+  "styleTag": "ktome-middle-fantasy-painterly-tile-v1",
+  "fallbackKey": "missing_visual",
+  "entries": [
+    {
+      "key": "fixture_sample_flooded_relics_override.zone.flooded_reliquary.visual",
+      "category": "portrait",
+      "rawOutputPath": "packs/fixture_sample_flooded_relics_override/zone_flooded_reliquary_visual.png",
+      "footprint": "1x1",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": ["fixture", "content-pack", "precedence"],
+      "asciiGlyph": "~",
+      "asciiColorHex": "#8FB7CC"
+    },
+    {
+      "key": "fixture_sample_flooded_relics_override.zone.flooded_reliquary.icon",
+      "category": "icon_quest",
+      "rawOutputPath": "packs/fixture_sample_flooded_relics_override/zone_flooded_reliquary_icon.png",
+      "footprint": "1x1",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": ["fixture", "content-pack", "precedence", "icon"],
+      "asciiGlyph": "~",
+      "asciiColorHex": "#8FB7CC"
+    }
+  ],
+  "prefixRules": []
+}

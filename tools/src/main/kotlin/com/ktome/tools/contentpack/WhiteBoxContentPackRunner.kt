@@ -13,6 +13,7 @@ import com.ktome.tools.whitebox.WhiteBoxReportWriter
 import com.ktome.tools.whitebox.toVerificationReportHeader
 import java.nio.file.Files
 import java.nio.file.Path
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
@@ -29,7 +30,7 @@ data class WhiteBoxContentPackRun(
 object WhiteBoxContentPackRunner {
     const val HARNESS_ID: String = "whiteBoxContentPack"
     private const val DOMAIN_ID: String = "whiteBoxContentPack"
-    private const val CORPUS_ID: String = "P4_PR08_CONTENT_PACK_WHITEBOX"
+    private const val CORPUS_ID: String = "P4_PR09_SAMPLE_CONTENT_PACK_WHITEBOX"
 
     fun run(): WhiteBoxContentPackRun {
         val kernelRun = ContentPackHarnessRunner.executeKernel()
@@ -48,16 +49,29 @@ object WhiteBoxContentPackRunner {
                         buildJsonObject {
                             put("fixtureId", result.fixtureId)
                             put("packId", result.packId)
-                            putJsonArray("activePackIds") { result.activePackIds.forEach { packId -> add(kotlinx.serialization.json.JsonPrimitive(packId)) } }
+                            putJsonArray("activePackIds") { result.activePackIds.forEach { packId -> add(JsonPrimitive(packId)) } }
                             putJsonObject("activePackManifestVersions") {
                                 result.activePackManifestVersions.forEach { (packId, version) -> put(packId, version) }
                             }
-                            putJsonArray("diagnosticCodes") { result.diagnosticCodes.forEach { code -> add(kotlinx.serialization.json.JsonPrimitive(code)) } }
-                            putJsonArray("resolvedOrder") { result.resolvedOrder.forEach { packId -> add(kotlinx.serialization.json.JsonPrimitive(packId)) } }
-                            putJsonArray("overlayOps") { result.overlayOps.forEach { op -> add(kotlinx.serialization.json.JsonPrimitive(op)) } }
+                            putJsonArray("diagnosticCodes") { result.diagnosticCodes.forEach { code -> add(JsonPrimitive(code)) } }
+                            putJsonArray("resolvedOrder") { result.resolvedOrder.forEach { packId -> add(JsonPrimitive(packId)) } }
+                            putJsonArray("overlayOps") { result.overlayOps.forEach { op -> add(JsonPrimitive(op)) } }
                             put("headlessRunSucceeded", result.headlessRunSucceeded)
                             put("fallbackToBaseVerified", result.fallbackToBaseVerified)
-                            put("registryEntryPresent", result.registryEntryPresent)
+                            put("secretZonePresent", result.secretZonePresent)
+                            put("secretZoneNameKey", result.secretZoneNameKey)
+                            put("secretZoneVisualKey", result.secretZoneVisualKey)
+                            put("secretZoneAudioProfile", result.secretZoneAudioProfile)
+                            put("hiddenEventLootProfileId", result.hiddenEventLootProfileId)
+                            put("lootProfilePresent", result.lootProfilePresent)
+                            putJsonArray("specialTemplateIds") {
+                                result.specialTemplateIds.forEach { templateId -> add(JsonPrimitive(templateId)) }
+                            }
+                            putJsonArray("generatedSpecialTemplateIds") {
+                                result.generatedSpecialTemplateIds.forEach { templateId -> add(JsonPrimitive(templateId)) }
+                            }
+                            put("resourceContractVerified", result.resourceContractVerified)
+                            put("precedenceVerified", result.precedenceVerified)
                         },
                     fingerprints =
                         mapOf(
@@ -79,7 +93,8 @@ object WhiteBoxContentPackRunner {
                     corpus =
                         WhiteBoxCorpusSpec(
                             corpusId = CORPUS_ID,
-                            description = "PR-08 content-pack harness cases covering runtime ADD/REPLACE and structured failure fixtures for APPEND, DENY, dependency, version, namespace, and precedence diagnostics.",
+                            description =
+                                "PR-09 content-pack white-box corpus covering the official sample pack, disabled fallback, precedence fixture, structured failure fixtures, merged asset keys, resource contract checks, and fixed-seed sample reward traces.",
                             sampleCount = kernelRun.results.size,
                         ),
                     cases = caseReports,
@@ -99,18 +114,20 @@ object WhiteBoxContentPackRunner {
                                         put("headlessRunFailureCount", kernelRun.analysis.summary.headlessRunFailureCount)
                                         put("fallbackFailureCount", kernelRun.analysis.summary.fallbackFailureCount)
                                         put("precedenceFailureCount", kernelRun.analysis.summary.precedenceFailureCount)
+                                        put("resourceContractFailureCount", kernelRun.analysis.summary.resourceContractFailureCount)
+                                        put("generatedTemplateFailureCount", kernelRun.analysis.summary.generatedTemplateFailureCount)
                                     },
                                 assertions =
                                     listOf(
                                         WhiteBoxAssertionResult(
                                             ruleId = "content-pack.aggregate.expected_failures_accounted_for",
                                             passed = kernelRun.analysis.summary.diagnosticMismatchCount == 0,
-                                            message = "All failure fixtures emit the exact structured diagnostics expected by PR-08.",
+                                            message = "All PR-09 failure fixtures emit the exact structured diagnostics documented by the content-pack contract.",
                                         ),
                                         WhiteBoxAssertionResult(
-                                            ruleId = "content-pack.aggregate.runtime_add_replace_path",
-                                            passed = kernelRun.analysis.summary.successfulRuntimeCaseCount >= 2,
-                                            message = "Runtime ADD and whole-entry REPLACE both pass through the formal loader path.",
+                                            ruleId = "content-pack.aggregate.runtime_sample_pack_path",
+                                            passed = kernelRun.analysis.summary.successfulRuntimeCaseCount >= 3,
+                                            message = "Official sample pack, disabled fallback, and precedence fixture all execute through the formal loader path.",
                                         ),
                                         WhiteBoxAssertionResult(
                                             ruleId = "content-pack.aggregate.key_resolution_exact",
@@ -118,7 +135,17 @@ object WhiteBoxContentPackRunner {
                                                 kernelRun.analysis.summary.localeResolutionFailureCount == 0 &&
                                                     kernelRun.analysis.summary.visualResolutionFailureCount == 0 &&
                                                     kernelRun.analysis.summary.audioResolutionFailureCount == 0,
-                                            message = "Pack-local i18n / visual / audio keys resolve exactly without fallback or prefix rescue.",
+                                            message = "Merged pack-local i18n / visual / audio keys resolve exactly without fallback or prefix rescue.",
+                                        ),
+                                        WhiteBoxAssertionResult(
+                                            ruleId = "content-pack.aggregate.resource_contract_verified",
+                                            passed = kernelRun.analysis.summary.resourceContractFailureCount == 0,
+                                            message = "PR-09 sample-pack plans, manifests, reports, and pack-root files stay aligned.",
+                                        ),
+                                        WhiteBoxAssertionResult(
+                                            ruleId = "content-pack.aggregate.generated_template_present",
+                                            passed = kernelRun.analysis.summary.generatedTemplateFailureCount == 0,
+                                            message = "Fixed-seed sample reward traces still reach sample_flooded_relics special templates.",
                                         ),
                                         WhiteBoxAssertionResult(
                                             ruleId = "content-pack.aggregate.precedence_verified",
@@ -133,12 +160,12 @@ object WhiteBoxContentPackRunner {
                                         WhiteBoxAssertionResult(
                                             ruleId = "content-pack.aggregate.base_fallback_verified",
                                             passed = kernelRun.analysis.summary.fallbackFailureCount == 0,
-                                            message = "Disabling the pack falls back to the base registry and asset manifests.",
+                                            message = "Disabling the official sample pack falls back to the base underground river secret zone.",
                                         ),
                                         WhiteBoxAssertionResult(
                                             ruleId = "content-pack.aggregate.no_unexpected_failures",
                                             passed = aggregateFailures.isEmpty(),
-                                            message = "No aggregate regressions remain after the PR-08 fixture sweep.",
+                                            message = "No aggregate regressions remain after the PR-09 content-pack sweep.",
                                         ),
                                     ),
                             ),
@@ -160,7 +187,7 @@ object WhiteBoxContentPackRunner {
             WhiteBoxAssertionResult(
                 ruleId = "content-pack.case.expected_outcome_matched",
                 passed = result.success,
-                message = "Harness result matches the expected runtime or failure outcome for this fixture.",
+                message = "Harness result matches the expected runtime or failure outcome for this PR-09 fixture.",
             ),
             WhiteBoxAssertionResult(
                 ruleId = "content-pack.case.precedence_verified",
@@ -183,7 +210,19 @@ object WhiteBoxContentPackRunner {
             WhiteBoxAssertionResult(
                 ruleId = "content-pack.case.base_fallback_verified",
                 passed = !result.failureReasons.contains("case.base_fallback_not_verified"),
-                message = "Fallback behavior stays aligned with the base registry and manifests when the pack is disabled.",
+                message = "Fallback behavior stays aligned with the base secret-zone contract when the pack is disabled.",
+            ),
+            WhiteBoxAssertionResult(
+                ruleId = "content-pack.case.resource_contract_verified",
+                passed = result.resourceContractVerified,
+                message = "Sample-pack plan/manifests/files/reports stay internally consistent for this fixture.",
+            ),
+            WhiteBoxAssertionResult(
+                ruleId = "content-pack.case.generated_template_present",
+                passed =
+                    result.generatedSpecialTemplateIds.isEmpty() ||
+                        result.generatedSpecialTemplateIds.any { templateId -> templateId.startsWith("sample.flooded_relics.") },
+                message = "Sample reward trace reaches at least one sample_flooded_relics special template when requested.",
             ),
             WhiteBoxAssertionResult(
                 ruleId = "content-pack.case.diagnostics_structured",
@@ -201,28 +240,72 @@ object WhiteBoxContentPackRunner {
             WhiteBoxReportWriter.writeTextArtifact(
                 outputDir = outputDir,
                 joinKey = joinKey,
-                artifactId = "merge-trace",
-                kind = "merge_trace",
-                fileName = "merge-trace.md",
-                summary = "Resolved order, active pack versions, registry presence, and exact key resolution facts.",
+                artifactId = "pack-manifest-resolve",
+                kind = "pack_manifest_resolve",
+                fileName = "pack-manifest-resolve.md",
+                summary = "Resolved packs plus merged secret-zone / hidden-event / loot / special-template facts.",
                 content =
                     buildString {
-                        appendLine("# Merge Trace")
+                        appendLine("# Pack Manifest Resolve")
                         appendLine()
                         appendLine("fixtureId: ${result.fixtureId}")
                         appendLine("packId: ${result.packId}")
                         appendLine("activePackIds: ${result.activePackIds}")
+                        appendLine("activePackManifestVersions: ${result.activePackManifestVersions}")
                         appendLine("resolvedOrder: ${result.resolvedOrder}")
                         appendLine("overlayOps: ${result.overlayOps}")
-                        appendLine("registryEntryPresent: ${result.registryEntryPresent}")
-                        appendLine("registryEntryNameKey: ${result.registryEntryNameKey}")
-                        appendLine("registryEntryVisualKey: ${result.registryEntryVisualKey}")
-                        appendLine("registryEntryAudioProfile: ${result.registryEntryAudioProfile}")
+                        appendLine("secretZonePresent: ${result.secretZonePresent}")
+                        appendLine("secretZoneNameKey: ${result.secretZoneNameKey}")
+                        appendLine("secretZoneVisualKey: ${result.secretZoneVisualKey}")
+                        appendLine("secretZoneAudioProfile: ${result.secretZoneAudioProfile}")
+                        appendLine("hiddenEventPresent: ${result.hiddenEventPresent}")
+                        appendLine("hiddenEventLootProfileId: ${result.hiddenEventLootProfileId}")
+                        appendLine("lootProfilePresent: ${result.lootProfilePresent}")
+                        appendLine("lootProfileRewardBudget: ${result.lootProfileRewardBudget}")
+                        appendLine("lootProfileItemIds: ${result.lootProfileItemIds}")
+                        appendLine("specialTemplateIds: ${result.specialTemplateIds}")
+                    },
+                tags = listOf("manifest", "merge", "content-pack"),
+            ),
+            WhiteBoxReportWriter.writeTextArtifact(
+                outputDir = outputDir,
+                joinKey = joinKey,
+                artifactId = "merged-key-summary",
+                kind = "merged_key_summary",
+                fileName = "merged-key-summary.md",
+                summary = "Merged locale/visual/audio key resolution and resource contract details.",
+                content =
+                    buildString {
+                        appendLine("# Merged Key Summary")
+                        appendLine()
                         appendLine("localeKeysResolved: ${result.localeKeysResolved}")
                         appendLine("visualKeysResolved: ${result.visualKeysResolved}")
                         appendLine("audioKeysResolved: ${result.audioKeysResolved}")
+                        appendLine("localeResolutionFailureCount: ${result.localeResolutionFailureCount}")
+                        appendLine("visualResolutionFailureCount: ${result.visualResolutionFailureCount}")
+                        appendLine("audioResolutionFailureCount: ${result.audioResolutionFailureCount}")
+                        appendLine("resourceContractVerified: ${result.resourceContractVerified}")
+                        appendLine("resourceContractDetails: ${result.resourceContractDetails}")
                     },
-                tags = listOf("merge", "content-pack"),
+                tags = listOf("keys", "manifest", "assets"),
+            ),
+            WhiteBoxReportWriter.writeTextArtifact(
+                outputDir = outputDir,
+                joinKey = joinKey,
+                artifactId = "headless-run-summary",
+                kind = "headless_run_summary",
+                fileName = "headless-run-summary.md",
+                summary = "Fixed-seed save/load summary and generated sample reward template ids.",
+                content =
+                    buildString {
+                        appendLine("# Headless Run Summary")
+                        appendLine()
+                        appendLine("seedList: ${result.seedList}")
+                        appendLine("headlessRunSucceeded: ${result.headlessRunSucceeded}")
+                        appendLine("generatedSpecialTemplateIds: ${result.generatedSpecialTemplateIds}")
+                        appendLine("fallbackToBaseVerified: ${result.fallbackToBaseVerified}")
+                    },
+                tags = listOf("headless", "seed", "reward"),
             ),
             WhiteBoxReportWriter.writeTextArtifact(
                 outputDir = outputDir,
@@ -230,7 +313,7 @@ object WhiteBoxContentPackRunner {
                 artifactId = "precedence-matrix",
                 kind = "precedence_matrix",
                 fileName = "precedence-matrix.md",
-                summary = "Pack order and precedence verification for the fixture.",
+                summary = "Pack order, overlay op chain, and precedence verdict for the fixture.",
                 content =
                     buildString {
                         appendLine("# Precedence Matrix")
@@ -248,7 +331,7 @@ object WhiteBoxContentPackRunner {
                 artifactId = "lint-diagnostics",
                 kind = "lint_diagnostics",
                 fileName = "lint-diagnostics.md",
-                summary = "Structured diagnostics and failure reasons for the fixture.",
+                summary = "Expected failure codes, actual diagnostics, and case-level failure reasons.",
                 content =
                     buildString {
                         appendLine("# Lint Diagnostics")
@@ -259,24 +342,6 @@ object WhiteBoxContentPackRunner {
                         appendLine("failureReasons: ${result.failureReasons}")
                     },
                 tags = listOf("diagnostics", "lint"),
-            ),
-            WhiteBoxReportWriter.writeTextArtifact(
-                outputDir = outputDir,
-                joinKey = joinKey,
-                artifactId = "dependency-version-namespace-table",
-                kind = "failure_table",
-                fileName = "dependency-version-namespace-table.md",
-                summary = "Dependency, version, namespace, and fallback state for the fixture.",
-                content =
-                    buildString {
-                        appendLine("# Dependency / Version / Namespace")
-                        appendLine()
-                        appendLine("activePackManifestVersions: ${result.activePackManifestVersions}")
-                        appendLine("seedList: ${result.seedList}")
-                        appendLine("headlessRunSucceeded: ${result.headlessRunSucceeded}")
-                        appendLine("fallbackToBaseVerified: ${result.fallbackToBaseVerified}")
-                    },
-                tags = listOf("dependency", "version", "namespace"),
             ),
         )
 

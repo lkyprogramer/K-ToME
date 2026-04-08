@@ -25,6 +25,7 @@ sealed interface InventoryOperationResult {
         val itemName: String,
         val itemQuality: RarityTier? = null,
         val itemBaseId: String? = null,
+        val itemSpecialTemplateId: String? = null,
         val itemMaterialId: String? = null,
         val itemAffixIds: List<String> = emptyList(),
         val slot: EquipSlot? = null,
@@ -38,6 +39,7 @@ sealed interface InventoryOperationResult {
         val itemName: String? = null,
         val itemQuality: RarityTier? = null,
         val itemBaseId: String? = null,
+        val itemSpecialTemplateId: String? = null,
         val itemMaterialId: String? = null,
         val itemAffixIds: List<String> = emptyList(),
         val slot: EquipSlot? = null,
@@ -84,6 +86,7 @@ class InventoryManager {
                 itemName = itemInstance.name,
                 itemQuality = itemInstance.quality,
                 itemBaseId = itemInstance.baseId,
+                itemSpecialTemplateId = itemInstance.specialTemplateId,
                 itemMaterialId = itemInstance.materialId,
                 itemAffixIds = itemInstance.affixes.map(AffixDef::id),
             )
@@ -105,6 +108,7 @@ class InventoryManager {
             itemName = itemInstance.name,
             itemQuality = itemInstance.quality,
             itemBaseId = itemInstance.baseId,
+            itemSpecialTemplateId = itemInstance.specialTemplateId,
             itemMaterialId = itemInstance.materialId,
             itemAffixIds = itemInstance.affixes.map(AffixDef::id),
         )
@@ -138,6 +142,7 @@ class InventoryManager {
             itemName = item.name,
             itemQuality = item.quality,
             itemBaseId = item.baseId,
+            itemSpecialTemplateId = item.specialTemplateId,
             itemMaterialId = item.materialId,
             itemAffixIds = item.affixes.map(AffixDef::id),
         )
@@ -163,6 +168,7 @@ class InventoryManager {
                     itemName = item.name,
                     itemQuality = item.quality,
                     itemBaseId = item.baseId,
+                    itemSpecialTemplateId = item.specialTemplateId,
                     itemMaterialId = item.materialId,
                     itemAffixIds = item.affixes.map(AffixDef::id),
                 )
@@ -175,6 +181,7 @@ class InventoryManager {
             itemName = item.name,
             itemQuality = item.quality,
             itemBaseId = item.baseId,
+            itemSpecialTemplateId = item.specialTemplateId,
             itemMaterialId = item.materialId,
             itemAffixIds = item.affixes.map(AffixDef::id),
             slot = slot,
@@ -200,6 +207,7 @@ class InventoryManager {
             itemName = item.name,
             itemQuality = item.quality,
             itemBaseId = item.baseId,
+            itemSpecialTemplateId = item.specialTemplateId,
             itemMaterialId = item.materialId,
             itemAffixIds = item.affixes.map(AffixDef::id),
             slot = slot,
@@ -227,6 +235,7 @@ class InventoryManager {
                     itemName = item.name,
                     itemQuality = item.quality,
                     itemBaseId = item.baseId,
+                    itemSpecialTemplateId = item.specialTemplateId,
                     itemMaterialId = item.materialId,
                     itemAffixIds = item.affixes.map(AffixDef::id),
                 )
@@ -257,6 +266,7 @@ class InventoryManager {
                             itemName = item.name,
                             itemQuality = item.quality,
                             itemBaseId = item.baseId,
+                            itemSpecialTemplateId = item.specialTemplateId,
                             itemMaterialId = item.materialId,
                             itemAffixIds = item.affixes.map(AffixDef::id),
                         )
@@ -269,6 +279,7 @@ class InventoryManager {
                             itemName = item.name,
                             itemQuality = item.quality,
                             itemBaseId = item.baseId,
+                            itemSpecialTemplateId = item.specialTemplateId,
                             itemMaterialId = item.materialId,
                             itemAffixIds = item.affixes.map(AffixDef::id),
                         )
@@ -298,6 +309,7 @@ class InventoryManager {
             itemName = item.name,
             itemQuality = item.quality,
             itemBaseId = item.baseId,
+            itemSpecialTemplateId = item.specialTemplateId,
             itemMaterialId = item.materialId,
             itemAffixIds = item.affixes.map(AffixDef::id),
         )

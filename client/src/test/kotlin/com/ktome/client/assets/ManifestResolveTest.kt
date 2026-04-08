@@ -5,6 +5,7 @@ import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.backends.headless.HeadlessApplication
 import com.badlogic.gdx.backends.headless.HeadlessApplicationConfiguration
 import com.badlogic.gdx.graphics.GL20
+import com.ktome.game.contentpack.ContentPackSelection
 import com.ktome.core.snapshot.ActorRenderSnapshot
 import com.ktome.core.snapshot.ActorRoleKindSnapshot
 import com.ktome.core.snapshot.CellVisibilitySnapshot
@@ -18,6 +19,7 @@ import com.ktome.core.snapshot.RenderSnapshot
 import com.ktome.core.snapshot.RenderUiStateSnapshot
 import com.ktome.core.snapshot.TalentSlotSnapshot
 import java.lang.reflect.Proxy
+import java.nio.file.Path
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -156,6 +158,52 @@ class ManifestResolveTest {
                 assertTrue(loadedPaths.contains(assets.visualResolver.resolve(snapshot.mapCells.first().terrainVisualKey).entry.rawOutputPath))
                 assertTrue(loadedPaths.contains(assets.visualResolver.resolve(snapshot.actors.first().visualKey).entry.rawOutputPath))
                 assertTrue(loadedPaths.contains(assets.visualResolver.resolve(snapshot.overlays.first().visualKey).entry.rawOutputPath))
+            } finally {
+                assets.dispose()
+            }
+        }
+    }
+
+    @Test
+    fun `merged sample pack manifests resolve exact keys to absolute filesystem paths`() {
+        val assets = ClientAssetBundleLoader.load(contentPackSelection = samplePackSelection())
+
+        try {
+            val zoneVisual = assets.visualResolver.resolve("sample_flooded_relics.zone.flooded_reliquary.visual")
+            val zoneAudio = assets.audioResolver.resolve("sample_flooded_relics.audio.zone.flooded_reliquary")
+
+            assertEquals("sample_flooded_relics.zone.flooded_reliquary.visual", zoneVisual.resolvedKey)
+            assertFalse(zoneVisual.fallbackUsed)
+            assertFalse(zoneVisual.matchedByPrefix)
+            assertTrue(Path.of(zoneVisual.entry.rawOutputPath).isAbsolute)
+            assertEquals("sample_flooded_relics.audio.zone.flooded_reliquary", zoneAudio.resolvedKey)
+            assertFalse(zoneAudio.fallbackUsed)
+            assertFalse(zoneAudio.matchedByPrefix)
+            assertTrue(Path.of(zoneAudio.entry.sourcePath).isAbsolute)
+        } finally {
+            assets.dispose()
+        }
+    }
+
+    @Test
+    fun `filesystem backed sample pack textures load when gdx is available`() {
+        withHeadlessGdx {
+            val assets = ClientAssetBundleLoader.load(contentPackSelection = samplePackSelection())
+
+            try {
+                listOf(
+                    "sample_flooded_relics.zone.flooded_reliquary.visual",
+                    "sample_flooded_relics.prop.reliquary_node.visual",
+                    "sample_flooded_relics.item.tideglass_echo.visual",
+                ).forEach { key ->
+                    assets.textureRepository.preload(assets.visualResolver.resolve(key))
+                }
+
+                val loadedPaths = assets.textureRepository.loadedPaths()
+                assertTrue(loadedPaths.all { path -> Path.of(path).isAbsolute })
+                assertTrue(loadedPaths.any { path -> path.endsWith("phase4/pr09/zone_flooded_reliquary_visual.png") })
+                assertTrue(loadedPaths.any { path -> path.endsWith("phase4/pr09/prop_reliquary_node_visual.png") })
+                assertTrue(loadedPaths.any { path -> path.endsWith("phase4/pr09/item_tideglass_echo_visual.png") })
             } finally {
                 assets.dispose()
             }
@@ -301,5 +349,11 @@ class ManifestResolveTest {
         } finally {
             backend.exit()
         }
+    }
+
+    private fun samplePackSelection(): ContentPackSelection {
+        val repoRoot = Path.of(System.getProperty("ktome.repo.root", ".")).toAbsolutePath().normalize()
+        val packRoot = repoRoot.resolve("examples/content-packs/sample.flooded_relics")
+        return ContentPackSelection.of(packRoot)
     }
 }
