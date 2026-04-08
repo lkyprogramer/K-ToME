@@ -861,6 +861,7 @@ data class ItemSnapshot(
     val type: String,
     val slot: String? = null,
     val quality: String,
+    val specialTemplateId: String? = null,
     val materialId: String? = null,
     val affixIds: List<String> = emptyList(),
     val stats: StatModifierSnapshot = StatModifierSnapshot(),
@@ -871,6 +872,7 @@ data class ItemSnapshot(
         require(baseId.isNotBlank()) { "Item base ids must not be blank." }
         require(type.isNotBlank()) { "Item types must not be blank." }
         require(quality.isNotBlank()) { "Item quality must not be blank." }
+        require(specialTemplateId?.isNotBlank() != false) { "Item specialTemplateId must not be blank when present." }
         require(affixIds.all(String::isNotBlank)) { "Item affix ids must not be blank." }
     }
 }

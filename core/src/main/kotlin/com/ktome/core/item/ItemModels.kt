@@ -245,6 +245,7 @@ data class ItemInstance(
     val resourceTypeId: String? = null,
     val magnitude: Int = 0,
     val passive: EquipmentPassive? = null,
+    val specialTemplateId: String? = null,
 )
 
 fun RarityTier.defaultAffixCount(): Int =

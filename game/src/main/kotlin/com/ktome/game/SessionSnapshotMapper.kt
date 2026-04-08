@@ -1595,6 +1595,7 @@ internal object SessionSnapshotMapper {
             type = item.type.name,
             slot = item.slot?.name,
             quality = item.quality.name,
+            specialTemplateId = item.specialTemplateId,
             materialId = item.materialId,
             affixIds = item.affixes.map { affix -> affix.id },
             stats = toStatModifierSnapshot(item.stats),
@@ -1607,6 +1608,11 @@ internal object SessionSnapshotMapper {
         bundle: ItemDataBundle,
     ): ItemInstance {
         val base = resolveBaseItem(bundle, snapshot.baseId)
+        snapshot.specialTemplateId?.let { templateId ->
+            requireNotNull(bundle.specialTemplate(templateId)) {
+                throw SaveRestoreException("Save references unknown special item template '$templateId'.")
+            }
+        }
         val material = snapshot.materialId?.let { materialId -> resolveMaterial(bundle, materialId) }
         val affixes = snapshot.affixIds.map { affixId -> resolveAffix(bundle, affixId) }
 
@@ -1629,6 +1635,7 @@ internal object SessionSnapshotMapper {
             resourceTypeId = base.resourceTypeId,
             magnitude = snapshot.magnitude,
             passive = base.passive,
+            specialTemplateId = snapshot.specialTemplateId,
         )
     }
 

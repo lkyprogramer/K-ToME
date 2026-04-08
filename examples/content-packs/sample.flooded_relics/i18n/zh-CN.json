@@ -1,0 +1,12 @@
+{
+  "sample_flooded_relics.zone.flooded_reliquary.name": "洪痕圣匣室",
+  "sample_flooded_relics.zone.flooded_reliquary.desc": "被暗流撕开的圣匣密室悬在河道上方，淹没的祈灯与晶砂在激流里来回漂旋。",
+  "sample_flooded_relics.prop.reliquary_node.name": "洪痕供匣",
+  "sample_flooded_relics.prop.reliquary_node.desc": "半浸在水中的石制供台，堆着用河玻璃封住的残存供物。",
+  "sample_flooded_relics.prop.return_bridge.name": "缚流回桥",
+  "sample_flooded_relics.prop.return_bridge.desc": "用锁链抵住急流的回程桥，能把人重新带回主线河道。",
+  "sample_flooded_relics.item.floodtide_lantern.name": "洪潮誓灯",
+  "sample_flooded_relics.item.floodtide_lantern.desc": "由淹没圣匣的铜件与渡河玻璃重铸而成的守誓提灯。",
+  "sample_flooded_relics.item.tideglass_echo.name": "潮镜回声",
+  "sample_flooded_relics.item.tideglass_echo.desc": "晶脊里封着暗河回响的法杖，能把圣匣残音重新拉回施法者手中。"
+}

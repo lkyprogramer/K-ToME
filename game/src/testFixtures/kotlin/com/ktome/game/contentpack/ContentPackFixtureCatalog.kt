@@ -4,6 +4,8 @@ import com.ktome.core.phase.PackId
 import java.nio.file.Path
 
 object ContentPackFixtureCatalog {
+    val samplePackId: PackId = PackId("sample.flooded_relics")
+    val samplePrecedenceFixturePackId: PackId = PackId("fixture.sample_flooded_relics_override")
     val addPackId: PackId = PackId("fixture.add_monster")
     val replacePackId: PackId = PackId("fixture.replace_monster")
     val appendPackId: PackId = PackId("fixture.append_loot_pool")
@@ -21,6 +23,7 @@ object ContentPackFixtureCatalog {
     val allPackIds: List<PackId> =
         listOf(
             addPackId,
+            samplePrecedenceFixturePackId,
             replacePackId,
             appendPackId,
             denyPackId,
@@ -35,13 +38,27 @@ object ContentPackFixtureCatalog {
             duplicateWithoutReplacePackId,
         )
 
+    fun samplePackRoot(): Path =
+        repoRoot()
+            .resolve("examples/content-packs")
+            .resolve(samplePackId.value)
+
     fun fixturePackRoot(packId: PackId): Path =
         repoRoot()
             .resolve("tools/src/main/resources/fixtures/content-packs/packs")
             .resolve(packId.value)
 
-    fun availableSelection(activePackIds: Iterable<PackId>): ContentPackSelection =
+    fun selection(
+        activePackRoots: List<Path>,
+        availablePackRoots: List<Path> = activePackRoots,
+    ): ContentPackSelection =
         ContentPackSelection(
+            activePackRoots = activePackRoots,
+            availablePackRoots = availablePackRoots,
+        )
+
+    fun availableSelection(activePackIds: Iterable<PackId>): ContentPackSelection =
+        selection(
             activePackRoots = activePackIds.map(::fixturePackRoot),
             availablePackRoots = allPackIds.map(::fixturePackRoot),
         )

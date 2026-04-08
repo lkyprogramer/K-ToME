@@ -1,0 +1,19 @@
+id: fixture.sample_flooded_relics_override
+version: 1.0.0
+schemaVersion: 1
+gameVersionRange: ">=0.1.0 <0.2.0"
+namespace: fixture_sample_flooded_relics_override
+dependencies:
+  - id: sample.flooded_relics
+    versionRange: ">=1.0.0 <2.0.0"
+localeBundles:
+  - i18n/en-US.json
+  - i18n/zh-CN.json
+visualManifest: visual/visual-manifest.json
+audioManifest: audio/audio-manifest.json
+overlays:
+  - targetRef:
+      registry: secret_zone
+      id: underground_river_crystal_rift
+    op: REPLACE
+    sourceFile: data/secret-zones/underground_river_crystal_rift.yaml

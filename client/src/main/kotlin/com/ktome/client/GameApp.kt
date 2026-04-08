@@ -38,10 +38,10 @@ import com.ktome.core.snapshot.RenderTextArgumentSnapshot
 import com.ktome.core.snapshot.RenderTextTokenSnapshot
 import com.ktome.game.FoundationGameConfig
 import com.ktome.game.FoundationGameSession
-import com.ktome.game.FOUNDATION_ZONE_ID
 import com.ktome.game.GameModule
 import com.ktome.game.PlayerCreationSelection
 import com.ktome.game.PlayerCreationState
+import com.ktome.game.contentpack.ContentPackSelection
 import com.ktome.game.i18n.GameLocale
 import com.ktome.game.i18n.LocalizationBundle
 import com.ktome.game.i18n.Localizer
@@ -50,6 +50,7 @@ import java.nio.file.Path
 class GameApp(
     private val saveManager: SaveManager = SaveManager(defaultSaveDir()),
     private val defaultConfig: FoundationGameConfig = FoundationGameConfig(),
+    private val contentPackSelection: ContentPackSelection = ContentPackSelection.EMPTY,
     private val playerCreationStateProvider:
         (GameLocale, ProfileData, PlayerCreationSelection?) -> PlayerCreationState =
             { locale, profile, previousSelection ->
@@ -89,6 +90,16 @@ class GameApp(
             assetVersionProvider = assetVersionProvider,
             visualManifestProvider = visualManifestProvider,
             audioManifestProvider = audioManifestProvider,
+            clientAssetBundleProvider = {
+                if (contentPackSelection.isEmpty) {
+                    ClientAssetBundleLoader.load(
+                        visualManifestProvider = visualManifestProvider,
+                        audioManifestProvider = audioManifestProvider,
+                    )
+                } else {
+                    ClientAssetBundleLoader.load(contentPackSelection = contentPackSelection)
+                }
+            },
             assetVersionGate = assetVersionGate,
         )
     private val localizationBundle = localizationBundle
@@ -124,6 +135,7 @@ class GameApp(
                     config = playerCreationConfig(refreshedState.selection),
                     saveManager = saveManager,
                     locale = currentLocale,
+                    contentPackSelection = contentPackSelection,
                     profile = profileData,
                     availabilityContext = AvailabilityContext.PLAYER_CREATION,
                 )
@@ -139,7 +151,11 @@ class GameApp(
         }
         val session =
             lifecycle.continueSession {
-                GameModule.loadFoundationSession(saveManager, locale = currentLocale)
+                GameModule.loadFoundationSession(
+                    saveManager,
+                    locale = currentLocale,
+                    contentPackSelection = contentPackSelection,
+                )
             } ?: run {
                 showMainMenu(saveCurrent = false, notice = lifecycle.consumeNotice())
                 return
@@ -366,9 +382,6 @@ internal fun newGameConfig(
     raceId: String,
 ): FoundationGameConfig =
     defaultConfig.copy(
-        zoneId = FOUNDATION_ZONE_ID,
-        zoneRoute = listOf(FOUNDATION_ZONE_ID),
-        routeIndex = 0,
         playerProfessionId = professionId,
         playerRaceId = raceId,
     )
@@ -425,6 +438,7 @@ internal class AssetContractCoordinator(
     private val assetVersionProvider: () -> AssetVersionContract,
     private val visualManifestProvider: () -> VisualManifest,
     private val audioManifestProvider: () -> AudioManifest,
+    private val clientAssetBundleProvider: (() -> ClientAssetBundle)? = null,
     private val assetVersionGate: AssetVersionGate = AssetVersionGate(),
 ) {
     private var cachedBundle: ClientAssetBundle? = null
@@ -435,10 +449,11 @@ internal class AssetContractCoordinator(
             dispose()
             assetVersionGate.requireCompatible(assetVersionProvider())
             cachedBundle =
-                ClientAssetBundleLoader.load(
-                    visualManifestProvider = visualManifestProvider,
-                    audioManifestProvider = audioManifestProvider,
-                )
+                clientAssetBundleProvider?.invoke()
+                    ?: ClientAssetBundleLoader.load(
+                        visualManifestProvider = visualManifestProvider,
+                        audioManifestProvider = audioManifestProvider,
+                    )
             loadStrategy = requireNotNull(cachedBundle).let { bundle ->
                 ClientAssetLoadStrategy(bundle).also(ClientAssetLoadStrategy::bootstrapLoad)
             }

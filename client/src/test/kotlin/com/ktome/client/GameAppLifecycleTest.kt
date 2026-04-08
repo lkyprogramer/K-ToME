@@ -276,13 +276,23 @@ class GameAppLifecycleTest {
     fun `new game config copies selected profession and race`() {
         val config =
             newGameConfig(
-                defaultConfig = FoundationGameConfig(playerProfessionId = "vanguard", playerRaceId = "human"),
+                defaultConfig =
+                    FoundationGameConfig(
+                        playerProfessionId = "vanguard",
+                        playerRaceId = "human",
+                        zoneId = "underground_river",
+                        zoneRoute = listOf("underground_river", "flooded_reliquary"),
+                        routeIndex = 1,
+                    ),
                 professionId = "spellblade",
                 raceId = "elf",
             )
 
         assertEquals("spellblade", config.playerProfessionId)
         assertEquals("elf", config.playerRaceId)
+        assertEquals("underground_river", config.zoneId)
+        assertEquals(listOf("underground_river", "flooded_reliquary"), config.zoneRoute)
+        assertEquals(1, config.routeIndex)
     }
 
     @Test

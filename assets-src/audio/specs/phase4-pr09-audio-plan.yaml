@@ -1,0 +1,56 @@
+manifestVersion: 1
+fallbackKey: audio.fallback.silence
+packId: phase4-pr09-sample-content-pack-audio-v1
+sampleRate: 44100
+entries:
+  - key: sample_flooded_relics.audio.zone.flooded_reliquary
+    cueFamily: zone
+    eventId: sample_flooded_relics_zone_flooded_reliquary
+    sourcePath: audio/phase4/pr09/zone_flooded_reliquary.ogg
+    tags: [phase4, pr09, sample_pack, zone, river]
+  - key: sample_flooded_relics.audio.interactable.reliquary_node
+    cueFamily: interactable
+    eventId: sample_flooded_relics_interactable_reliquary_node
+    sourcePath: audio/phase4/pr09/interactable_reliquary_node.ogg
+    tags: [phase4, pr09, sample_pack, interactable, reward]
+  - key: sample_flooded_relics.audio.interactable.return_bridge
+    cueFamily: interactable
+    eventId: sample_flooded_relics_interactable_return_bridge
+    sourcePath: audio/phase4/pr09/interactable_return_bridge.ogg
+    tags: [phase4, pr09, sample_pack, interactable, return]
+  - key: sample_flooded_relics.audio.item.floodtide_lantern
+    cueFamily: item
+    eventId: sample_flooded_relics_item_floodtide_lantern
+    sourcePath: audio/phase4/pr09/item_floodtide_lantern.ogg
+    tags: [phase4, pr09, sample_pack, item, unique]
+  - key: sample_flooded_relics.audio.item.tideglass_echo
+    cueFamily: item
+    eventId: sample_flooded_relics_item_tideglass_echo
+    sourcePath: audio/phase4/pr09/item_tideglass_echo.ogg
+    tags: [phase4, pr09, sample_pack, item, artifact]
+targets:
+  - id: phase4_pr09_zone_flooded_reliquary
+    key: sample_flooded_relics.audio.zone.flooded_reliquary
+    sourcePath: audio/phase4/pr09/zone_flooded_reliquary.ogg
+    profile: zone_flooded_reliquary
+    durationSeconds: 5.4
+  - id: phase4_pr09_interactable_reliquary_node
+    key: sample_flooded_relics.audio.interactable.reliquary_node
+    sourcePath: audio/phase4/pr09/interactable_reliquary_node.ogg
+    profile: interactable_reliquary_node
+    durationSeconds: 0.82
+  - id: phase4_pr09_interactable_return_bridge
+    key: sample_flooded_relics.audio.interactable.return_bridge
+    sourcePath: audio/phase4/pr09/interactable_return_bridge.ogg
+    profile: interactable_return_bridge
+    durationSeconds: 0.78
+  - id: phase4_pr09_item_floodtide_lantern
+    key: sample_flooded_relics.audio.item.floodtide_lantern
+    sourcePath: audio/phase4/pr09/item_floodtide_lantern.ogg
+    profile: item_floodtide_lantern
+    durationSeconds: 1.12
+  - id: phase4_pr09_item_tideglass_echo
+    key: sample_flooded_relics.audio.item.tideglass_echo
+    sourcePath: audio/phase4/pr09/item_tideglass_echo.ogg
+    profile: item_tideglass_echo
+    durationSeconds: 1.26

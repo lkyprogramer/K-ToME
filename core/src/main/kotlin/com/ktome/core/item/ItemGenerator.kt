@@ -237,6 +237,7 @@ class ItemGenerator(
                 affixes = affixes,
                 quality = RarityTier.RARE,
                 name = base.name,
+                specialTemplateId = template.id,
             )
         return GeneratedItemRoll(
             item = item,
@@ -290,6 +291,7 @@ class ItemGenerator(
         affixes: List<AffixDef>,
         quality: RarityTier,
         name: String,
+        specialTemplateId: String? = null,
     ): ItemInstance {
         val stats =
             listOf(base.baseStats, material?.statModifiers ?: StatModifier.ZERO)
@@ -311,6 +313,7 @@ class ItemGenerator(
             resourceTypeId = base.resourceTypeId,
             magnitude = base.magnitude,
             passive = base.passive,
+            specialTemplateId = specialTemplateId,
         )
     }
 

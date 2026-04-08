@@ -1,0 +1,12 @@
+{
+  "sample_flooded_relics.zone.flooded_reliquary.name": "Flooded Reliquary",
+  "sample_flooded_relics.zone.flooded_reliquary.desc": "A reliquary chamber split open by the current, where drowned votive lanterns and crystal silt drift above the river.",
+  "sample_flooded_relics.prop.reliquary_node.name": "Flooded Reliquary Cache",
+  "sample_flooded_relics.prop.reliquary_node.desc": "A half-submerged altar piled with salvage sealed in river-glass.",
+  "sample_flooded_relics.prop.return_bridge.name": "Current-Tether Bridge",
+  "sample_flooded_relics.prop.return_bridge.desc": "A chain bridge pinned against the current for a quick retreat.",
+  "sample_flooded_relics.item.floodtide_lantern.name": "Floodtide Lantern",
+  "sample_flooded_relics.item.floodtide_lantern.desc": "A ward lantern rebuilt from drowned reliquary brass and ferry glass.",
+  "sample_flooded_relics.item.tideglass_echo.name": "Tideglass Echo",
+  "sample_flooded_relics.item.tideglass_echo.desc": "A river-singing staff whose crystal spine stores the pull of the flooded reliquary."
+}

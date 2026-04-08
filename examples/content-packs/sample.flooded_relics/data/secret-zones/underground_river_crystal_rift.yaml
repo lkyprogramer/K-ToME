@@ -1,0 +1,26 @@
+secretZones:
+  - id:
+      registry: secret_zone
+      id: underground_river_crystal_rift
+    nameKey: sample_flooded_relics.zone.flooded_reliquary.name
+    descKey: sample_flooded_relics.zone.flooded_reliquary.desc
+    visualKey: sample_flooded_relics.zone.flooded_reliquary.visual
+    iconKey: sample_flooded_relics.zone.flooded_reliquary.icon
+    audioProfile: sample_flooded_relics.audio.zone.flooded_reliquary
+    schemaVersion: 1
+    tags: [secret_zone, river, optional, flooded_relics, content_pack]
+    entryRule:
+      combinator: AND
+      predicates:
+        - type: PERCEPTION_CHECK
+          difficulty: 16
+    pathClass: SECRET
+    rewardProfileId:
+      registry: loot_profile
+      id: sample.flooded_relics.loot.flooded_reliquary.secret
+    guaranteedContent:
+      - registry: hidden_event
+        id: hidden.event.underground_river.crystal_rift.reward
+    entranceBindingId: optional.branch.1
+    returnBridgePolicy: EXPLICIT_ANCHOR
+    returnBridgeAnchorTag: hub

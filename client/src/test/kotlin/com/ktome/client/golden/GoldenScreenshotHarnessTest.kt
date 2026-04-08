@@ -12,6 +12,7 @@ import com.ktome.client.GameApp
 import com.ktome.client.automationWorld
 import com.ktome.client.installReserveTalent
 import com.ktome.client.input.CommandSource
+import com.ktome.game.contentpack.ContentPackSelection
 import com.ktome.client.input.InputSource
 import com.ktome.client.input.OverlayState
 import com.ktome.client.input.UiMode
@@ -21,17 +22,31 @@ import com.ktome.core.dungeon.StairDirection
 import com.ktome.core.ecs.BlocksMovement
 import com.ktome.core.ecs.EntityId
 import com.ktome.core.ecs.Health
+import com.ktome.core.ecs.MonsterTemplateId
 import com.ktome.core.ecs.Position
 import com.ktome.core.ecs.get
 import com.ktome.core.ecs.remove
 import com.ktome.core.map.Point
+import com.ktome.core.mapgen.center
 import com.ktome.core.resource.ResourcePools
 import com.ktome.core.resource.ResourceType
 import com.ktome.core.save.SaveManager
+import com.ktome.core.snapshot.ActorRenderSnapshot
+import com.ktome.core.snapshot.ActorRoleKindSnapshot
+import com.ktome.core.snapshot.CellVisibilitySnapshot
+import com.ktome.core.snapshot.InventoryEntrySnapshot
+import com.ktome.core.snapshot.ItemRenderSnapshot
+import com.ktome.core.snapshot.MapCellSnapshot
+import com.ktome.core.snapshot.PlayerStatusSnapshot
+import com.ktome.core.snapshot.PropRenderSnapshot
+import com.ktome.core.snapshot.RenderMetadataSnapshot
 import com.ktome.core.snapshot.RenderSnapshot
+import com.ktome.core.snapshot.RenderTextTokenSnapshot
+import com.ktome.core.snapshot.RenderUiStateSnapshot
 import com.ktome.game.FOUNDATION_ZONE_ROUTE
 import com.ktome.game.FoundationGameConfig
 import com.ktome.game.FoundationGameSession
+import com.ktome.game.GameModule
 import com.ktome.game.PlayerCommand
 import com.ktome.game.i18n.GameLocale
 import java.nio.file.Path
@@ -77,8 +92,8 @@ class GoldenScreenshotHarnessTest {
 
         assertEquals(
             listOf(
-                "555c43b12b72619fbf3907ffaf9442c21bf97be5e62dcb406020eac164b97e2b",
-                "a5c1a735a81193d84856adf9cb0848dba768e39c572030e7596bab296041b503",
+                "f92999bf11100c8f98631dc0cd9bb274566f28d5d2508344bfecd10d2988f40e",
+                "4197fa015ac41083c1f23d22d7dbd4cb9d7d50891e5c6abeddfeeaf9de6f99df",
             ),
             listOf(english, chinese),
         )
@@ -91,12 +106,12 @@ class GoldenScreenshotHarnessTest {
 
         assertEquals(
             listOf(
-                "01b9b888cb9ddd700152299645d99fbc31ef6a682938368bece8d21bd138f521",
-                "eb670f1379cd7843b4846c67e22218654e8c0e396ce85af1180aee0c1de50f6a",
-                "ef919e196b92e50815a0266d09fff7963269fab812c7ef60c15043d0f3773422",
-                "f252c629253a36567292b002c0fc1654dd25059d18e3919ae8f424fdbdd20513",
-                "996341cafcc933deb4966ca689c39f3abd60dd8500894622b19336e023a7b875",
-                "8de7333bd69390d808ea5fe23f51e0e044868308be37eec05f82fcb7c5c17652",
+                "47bff4c3f83623494a8bb7a3171e46f95adcbf04516d587fc422a8885bcb11fd",
+                "a623dcb508bf8484ed5e4f2e01359f5e9fdbf8c02ad6298b54f1c96dfd59bd72",
+                "7a15dc65ebf1e49649f5c312f4550e005a81f2ba5d611065f6f0734b552ccd0a",
+                "274a70e6d264bd036b8184f941d6e59f578b5c997958d5bf0816aedbf069fb32",
+                "b7e8395a32aa363824afba2e5bd8df5a920e3762bafbf1bb04a4876cdf9b9937",
+                "added21d2e95b8afb4d21e1de2007c686189694945a13ee1be8a932834092251",
             ),
             english + chinese,
         )
@@ -120,11 +135,11 @@ class GoldenScreenshotHarnessTest {
         assertEquals(
             listOf(
                 "abe12adc7adb0db103aa4a9a24359136876508b65436f898d7c3b5e16e55a176",
-                "abe12adc7adb0db103aa4a9a24359136876508b65436f898d7c3b5e16e55a176",
-                "c288b15f8f99ae176d828c92297faa0f11ca092486b9afb62dbfedf1a68abeb9",
+                "304c84283ffc5132b695cbd13b3878ce6d02e469eea22d6acf8d00734c8b6a20",
+                "b66eae39fd61bd04c1942e2934dae05c5d9065b2b5a4dbece55d3cfd39b9f01d",
                 "d3dcf30b0032892079b55da37123cd0b40e4f440e9fbd1dbe2fc201c995a13ee",
-                "d3dcf30b0032892079b55da37123cd0b40e4f440e9fbd1dbe2fc201c995a13ee",
-                "a16d5095aa24074e7ddb5bb2dff91594cb1f88194f3fd0f52e14011008f5c1cf",
+                "fd0fc7399c4bb0a068da375d51710f64316aeeb40187ba1fa73b2993f5b34a70",
+                "211ac1042a5638ee18c2f4e90164e57aa4af360ee439c040c3bc1f6cf96dac28",
             ),
             english + chinese,
         )
@@ -144,6 +159,13 @@ class GoldenScreenshotHarnessTest {
             ),
             english + chinese,
         )
+    }
+
+    @Test
+    fun `sample pack golden hash remains stable for filesystem backed content`() {
+        val hash = captureSamplePackRuntimeHash()
+
+        assertEquals("d444d192c872d55a81085ed6fa28c93193a70bf4cf0974d4892dbccc48b53907", hash)
     }
 
     private fun captureGoldenSet(
@@ -468,6 +490,41 @@ class GoldenScreenshotHarnessTest {
             }
         }
 
+    private fun captureSamplePackRuntimeHash(): String =
+        withLwjgl3Context(width = 1280, height = 800) {
+            val selection = samplePackSelection()
+            val overlaySource = MutableOverlayCommandSource()
+            val app =
+                GameApp(
+                    saveManager = SaveManager(tempDir.resolve("sample-pack-golden")),
+                    defaultConfig =
+                        FoundationGameConfig(
+                            seed = 20260304L,
+                            zoneId = "underground_river",
+                            playerProfessionId = "arcanist",
+                        ),
+                    contentPackSelection = selection,
+                    menuInputSourceFactory = { NoOpInputSource },
+                    gameCommandSourceFactory = { overlaySource },
+                    outcomeInputSourceFactory = { NoOpInputSource },
+                    renderEnabled = true,
+                    initialLocale = GameLocale.EN_US,
+                )
+
+            try {
+                app.create()
+                app.startNewGame()
+                val session = requireNotNull(app.activeSessionOrNull()) { "Expected active sample-pack session for golden capture." }
+                val inventorySelection = claimSamplePackReward(session)
+                overlaySource.overlayState = OverlayState(mode = UiMode.INVENTORY, inventorySelection = inventorySelection)
+                captureHash {
+                    repeat(2) { app.render() }
+                }
+            } finally {
+                app.dispose()
+            }
+        }
+
     private fun captureHash(render: () -> Unit): String {
         render()
         Gdx.gl.glFinish()
@@ -617,6 +674,49 @@ class GoldenScreenshotHarnessTest {
         }
         return session.renderSnapshot()
     }
+
+    private fun samplePackSelection(): ContentPackSelection {
+        val repoRoot = Path.of(System.getProperty("ktome.repo.root", ".")).toAbsolutePath().normalize()
+        return ContentPackSelection.of(repoRoot.resolve("examples/content-packs/sample.flooded_relics"))
+    }
+
+    private fun claimSamplePackReward(session: FoundationGameSession): Int {
+        clearMonsters(session)
+        val generatedFloor = session.automationGeneratedFloor()
+        val entrance = generatedFloor.entrances.sortedBy { candidate -> candidate.bindingId.value }.first()
+        val searchPoint = requireNotNull(generatedFloor.roomForEntrance(entrance)).center
+        automationMovePlayerTo(session, searchPoint)
+        check(session.perform(PlayerCommand.Search)) { "Failed to reveal sample-pack entrance." }
+
+        val entranceProp = requireNotNull(propByType(session, "hidden_entrance")) { "Expected revealed hidden entrance for sample-pack golden capture." }
+        automationMovePlayerTo(session, Point(entranceProp.x, entranceProp.y))
+        check(session.perform(PlayerCommand.Interact)) { "Failed to enter sample-pack secret zone." }
+
+        val rewardProp = requireNotNull(propByType(session, "secret_reward")) { "Expected secret reward node for sample-pack golden capture." }
+        automationMovePlayerTo(session, Point(rewardProp.x, rewardProp.y))
+        check(session.perform(PlayerCommand.Interact)) { "Failed to claim sample-pack reward." }
+        assertEquals("sample_flooded_relics.zone.flooded_reliquary.name", session.renderSnapshot().metadata.zoneNameKey)
+
+        val rewardEntry =
+            requireNotNull(
+                session.renderSnapshot().uiState.inventory.firstOrNull { entry ->
+                    entry.item.nameKey.startsWith("sample_flooded_relics.item.")
+                },
+            ) {
+                "Expected sample-pack reward to be visible in the live inventory snapshot."
+            }
+        return rewardEntry.index
+    }
+
+    private fun clearMonsters(session: FoundationGameSession) {
+        val world = automationWorld(session)
+        world.entitiesWith(MonsterTemplateId::class).forEach(world::destroyEntity)
+    }
+
+    private fun propByType(
+        session: FoundationGameSession,
+        propTypeId: String,
+    ): PropRenderSnapshot? = session.renderSnapshot().props.firstOrNull { prop -> prop.propTypeId == propTypeId }
 
 }
 

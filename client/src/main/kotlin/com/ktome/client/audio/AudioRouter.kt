@@ -3,6 +3,7 @@ package com.ktome.client.audio
 import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.audio.Music
 import com.badlogic.gdx.audio.Sound
+import com.badlogic.gdx.files.FileHandle
 import com.badlogic.gdx.utils.Disposable
 import com.ktome.client.assets.AudioManifestResolver
 import com.ktome.client.assets.ResolvedAudioCue
@@ -11,6 +12,7 @@ import com.ktome.client.input.UiMode
 import com.ktome.core.snapshot.OverlayRenderSnapshot
 import com.ktome.core.snapshot.RenderSnapshot
 import com.ktome.game.PlayerCommand
+import java.nio.file.Path
 
 fun interface AudioCueSink {
     fun emit(cue: ResolvedAudioCue)
@@ -65,7 +67,7 @@ object GdxAudioCueSink : AudioCueSink, Disposable {
         val audio = Gdx.audio ?: return
         val sound =
             sounds.getOrPut(cue.entry.sourcePath) {
-                audio.newSound(Gdx.files.classpath(cue.entry.sourcePath))
+                audio.newSound(audioFileHandle(cue.entry.sourcePath))
             }
         sound.play(defaultVolume)
     }
@@ -99,7 +101,7 @@ object GdxBackgroundAudioSink : BackgroundAudioSink, Disposable {
         }
 
         val audio = Gdx.audio ?: return
-        val music = audio.newMusic(Gdx.files.classpath(targetPath))
+        val music = audio.newMusic(audioFileHandle(requireNotNull(targetPath)))
         music.isLooping = true
         music.volume = if (cue.entry.cueFamily == "music") musicVolume else ambienceVolume
         music.play()
@@ -524,3 +526,10 @@ class AudioRouter(
         return resolved
     }
 }
+
+private fun audioFileHandle(path: String): FileHandle =
+    if (Path.of(path).isAbsolute) {
+        Gdx.files.absolute(path)
+    } else {
+        Gdx.files.classpath(path)
+    }

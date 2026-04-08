@@ -74,10 +74,6 @@ object Phase4ReportRunner {
                 reader = ::readHiddenContentHarness,
             ),
             Phase4TaskDescriptor(
-                relativeSourcePath = "tools/build/reports/phase4/content-pack/content-pack-summary.json",
-                reader = ::readContentPackHarness,
-            ),
-            Phase4TaskDescriptor(
                 relativeSourcePath = "build/reports/harness/boss-harness.json",
                 reader = ::readBossHarness,
             ),
@@ -108,6 +104,10 @@ object Phase4ReportRunner {
             Phase4TaskDescriptor(
                 relativeSourcePath = "tools/build/reports/phase4/whitebox/content-pack/whitebox-content-pack-summary.json",
                 reader = ::readWhiteBoxContentPack,
+            ),
+            Phase4TaskDescriptor(
+                relativeSourcePath = "tools/build/reports/phase4/content-pack/content-pack-summary.json",
+                reader = ::readContentPackHarness,
             ),
         )
 
@@ -397,10 +397,14 @@ object Phase4ReportRunner {
     ): Phase4TaskAggregate {
         val header = payload.getValue("header").jsonObject
         val summary = payload.getValue("summary").jsonObject
+        val whiteBoxSourcePath = repoRoot.resolve("tools/build/reports/phase4/whitebox/content-pack/whitebox-content-pack-summary.json")
+        val whiteBoxPayload = readPhase4Json(whiteBoxSourcePath)
+        val whiteBoxSummary = whiteBoxPayload.getValue("summary").jsonObject
+        val whiteBoxFailedAssertions = whiteBoxSummary.intValue("failedAssertions")
         val failureCount = summary.intValue("failureCount")
         return Phase4TaskAggregate(
             taskId = "contentPackHarness",
-            status = if (failureCount == 0) "PASS" else "FAIL",
+            status = if (failureCount == 0 && whiteBoxFailedAssertions == 0) "PASS" else "FAIL",
             sourcePath = relativize(repoRoot, sourcePath),
             buildId = header.stringValue("buildId"),
             locale = header.stringValue("locale"),
@@ -419,6 +423,10 @@ object Phase4ReportRunner {
                     put("headlessRunFailureCount", summary.intValue("headlessRunFailureCount"))
                     put("fallbackFailureCount", summary.intValue("fallbackFailureCount"))
                     put("precedenceFailureCount", summary.intValue("precedenceFailureCount"))
+                    put("resourceContractFailureCount", summary.intValue("resourceContractFailureCount"))
+                    put("generatedTemplateFailureCount", summary.intValue("generatedTemplateFailureCount"))
+                    put("whiteBoxFailedAssertions", whiteBoxFailedAssertions)
+                    put("whiteBoxSummaryPath", relativize(repoRoot, whiteBoxSourcePath))
                 },
         )
     }

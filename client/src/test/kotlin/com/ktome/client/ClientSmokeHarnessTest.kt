@@ -49,7 +49,6 @@ import com.ktome.client.screen.MainMenuScreen
 import com.ktome.client.screen.MainMenuTextSnapshot
 import com.ktome.core.save.AssetVersionContract
 import com.ktome.core.save.SaveManager
-import com.ktome.game.FOUNDATION_ZONE_ID
 import com.ktome.game.FOUNDATION_ZONE_ROUTE
 import com.ktome.game.FoundationGameConfig
 import com.ktome.game.FoundationGameSession
@@ -161,7 +160,7 @@ class ClientSmokeHarnessTest {
                     expectedPlayerName = "英雄",
                     expectedPlayerRole = "玩家",
                     expectedHudToken = "层",
-                    expectedZoneDescription = "废弃边境前哨，短局的起点。",
+                    expectedZoneDescription = "有巡逻压力与视野遮挡的林地边缘。",
                     expectedLoadoutTitle = "技能装配",
                     expectedInventoryTitle = "背包",
                     expectedInspectTitle = "检视",
@@ -184,7 +183,7 @@ class ClientSmokeHarnessTest {
                     expectedPlayerName = "Hero",
                     expectedPlayerRole = "Player",
                     expectedHudToken = "FL",
-                    expectedZoneDescription = "A ruined border outpost and the opening stretch of the run.",
+                    expectedZoneDescription = "The sealed descent leading to the short-run boss.",
                     expectedLoadoutTitle = "Loadout",
                     expectedInventoryTitle = "Inventory",
                     expectedInspectTitle = "Inspect",
@@ -577,7 +576,7 @@ class ClientSmokeHarnessTest {
                 name = name,
                 success =
                     session != null &&
-                        zoneId == FOUNDATION_ZONE_ID &&
+                        zoneId == defaultConfig.zoneId &&
                         professionId == defaultConfig.playerProfessionId &&
                         localeId == expectedLocale.id &&
                         menuSnapshot.subtitle == expectedMenuSubtitle &&
@@ -619,8 +618,8 @@ class ClientSmokeHarnessTest {
                         "Session was not created from main menu."
                     } else if (session == null) {
                         "Session did not remain active through the smoke gameplay window."
-                    } else if (zoneId != FOUNDATION_ZONE_ID) {
-                        "Expected zone $FOUNDATION_ZONE_ID, got $zoneId."
+                    } else if (zoneId != defaultConfig.zoneId) {
+                        "Expected zone ${defaultConfig.zoneId}, got $zoneId."
                     } else if (professionId != defaultConfig.playerProfessionId) {
                         "Expected profession ${defaultConfig.playerProfessionId}, got $professionId."
                     } else if (localeId != expectedLocale.id) {

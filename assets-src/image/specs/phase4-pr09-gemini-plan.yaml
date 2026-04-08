@@ -1,0 +1,86 @@
+styleTag: ktome-middle-fantasy-painterly-tile-v1
+artStyleBible: docs/2026-03-13-art-style-bible.md
+stylePrompt: >-
+  High fantasy, middle-earth inspired painterly production pass for Phase 4
+  PR-09 sample content pack visuals. The flooded reliquary pack must read as a
+  formal player-facing content pack rather than a debug fixture: drowned stone,
+  river glass, reliquary brass, and current-torn cloth should stay grounded in
+  the established K-ToME palette and material language, never anime and never
+  sci-fi.
+defaults:
+  imageAspectRatio: "1:1"
+  imageSize: "1K"
+  negativeConstraints:
+    - no modern clothing
+    - no firearms
+    - no sci-fi materials
+    - no anime proportions
+    - no floating text, watermark or logo
+phase2AssetGates:
+  P4-PR09:
+    description: Formal PR-09 sample content-pack visual plan for flooded reliquary zone, prop, and item assets.
+    assets:
+      - id: phase4_pr09_zone_flooded_reliquary_visual
+        category: portrait
+        visualKey: sample_flooded_relics.zone.flooded_reliquary.visual
+        outputName: phase4/pr09/zone_flooded_reliquary_visual.png
+        subject: flooded reliquary portrait above the underground river with broken altars and suspended crystal silt
+        materialTags: [phase4, pr09, sample_pack, zone, river, reliquary]
+        constraints: [portrait composition, atmospheric but readable, hidden-route payoff]
+        geminiKeyRequired: true
+      - id: phase4_pr09_zone_flooded_reliquary_icon
+        category: icon_quest
+        visualKey: sample_flooded_relics.zone.flooded_reliquary.icon
+        outputName: phase4/pr09/zone_flooded_reliquary_icon.png
+        subject: flooded reliquary icon with river current ring and cracked votive glass
+        materialTags: [phase4, pr09, sample_pack, zone, icon]
+        constraints: [ui-readable icon, clean silhouette, clear secret-zone identity]
+        geminiKeyRequired: true
+      - id: phase4_pr09_prop_reliquary_node_visual
+        category: prop_interactable
+        visualKey: sample_flooded_relics.prop.reliquary_node.visual
+        outputName: phase4/pr09/prop_reliquary_node_visual.png
+        subject: flooded reliquary cache node with submerged altar, brass seals, and glowing river-glass offerings
+        materialTags: [phase4, pr09, sample_pack, prop, reward]
+        constraints: [grid-readable, single centered prop, readable at tactical size]
+        geminiKeyRequired: true
+      - id: phase4_pr09_prop_return_bridge_visual
+        category: prop_interactable
+        visualKey: sample_flooded_relics.prop.return_bridge.visual
+        outputName: phase4/pr09/prop_return_bridge_visual.png
+        subject: chained return bridge marker braced against a violent underground current
+        materialTags: [phase4, pr09, sample_pack, prop, return]
+        constraints: [grid-readable, single centered prop, readable at tactical size]
+        geminiKeyRequired: true
+      - id: phase4_pr09_item_floodtide_lantern_visual
+        category: icon_item
+        visualKey: sample_flooded_relics.item.floodtide_lantern.visual
+        outputName: phase4/pr09/item_floodtide_lantern_visual.png
+        subject: ward lantern rebuilt from drowned reliquary brass and ferry glass
+        materialTags: [phase4, pr09, sample_pack, item, unique, lantern]
+        constraints: [single centered item, readable at tactical size, no background clutter]
+        geminiKeyRequired: true
+      - id: phase4_pr09_item_floodtide_lantern_icon
+        category: icon
+        visualKey: sample_flooded_relics.item.floodtide_lantern.icon
+        outputName: phase4/pr09/item_floodtide_lantern_icon.png
+        subject: inventory icon for a reliquary ward lantern with blue river-glass core
+        materialTags: [phase4, pr09, sample_pack, item, icon]
+        constraints: [ui-readable icon, clean silhouette]
+        geminiKeyRequired: true
+      - id: phase4_pr09_item_tideglass_echo_visual
+        category: icon_item
+        visualKey: sample_flooded_relics.item.tideglass_echo.visual
+        outputName: phase4/pr09/item_tideglass_echo_visual.png
+        subject: crystal-backed river staff carrying a bright tideglass spine and worn ritual wraps
+        materialTags: [phase4, pr09, sample_pack, item, artifact, staff]
+        constraints: [single centered item, readable at tactical size, no background clutter]
+        geminiKeyRequired: true
+      - id: phase4_pr09_item_tideglass_echo_icon
+        category: icon
+        visualKey: sample_flooded_relics.item.tideglass_echo.icon
+        outputName: phase4/pr09/item_tideglass_echo_icon.png
+        subject: inventory icon for a tideglass artifact staff with lightning-touched crystal edge
+        materialTags: [phase4, pr09, sample_pack, item, icon]
+        constraints: [ui-readable icon, clean silhouette]
+        geminiKeyRequired: true

@@ -5,6 +5,8 @@ import com.badlogic.gdx.graphics.Pixmap
 import com.badlogic.gdx.graphics.Texture
 import com.badlogic.gdx.graphics.Texture.TextureFilter
 import com.badlogic.gdx.utils.Disposable
+import java.nio.file.Files
+import java.nio.file.Path
 
 class ClientTextureRepository : Disposable {
     private val texturesByPath = linkedMapOf<String, Texture>()
@@ -33,10 +35,18 @@ class ClientTextureRepository : Disposable {
     }
 
     private fun loadTexture(resourcePath: String): Texture {
+        val path = Path.of(resourcePath)
         val bytes =
-            requireNotNull(ClientTextureRepository::class.java.getResourceAsStream("/$resourcePath")) {
-                "Texture resource '/$resourcePath' is missing."
-            }.use { stream -> stream.readBytes() }
+            if (path.isAbsolute) {
+                require(Files.isRegularFile(path)) {
+                    "Texture file '$resourcePath' is missing."
+                }
+                Files.readAllBytes(path)
+            } else {
+                requireNotNull(ClientTextureRepository::class.java.getResourceAsStream("/$resourcePath")) {
+                    "Texture resource '/$resourcePath' is missing."
+                }.use { stream -> stream.readBytes() }
+            }
         val pixmap = Pixmap(bytes, 0, bytes.size)
         return Texture(pixmap).also { texture ->
             texture.setFilter(TextureFilter.Linear, TextureFilter.Linear)

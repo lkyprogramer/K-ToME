@@ -2,6 +2,7 @@ package com.ktome.client.assets
 
 import com.ktome.game.contentpack.ContentPackRuntimeResolver
 import com.ktome.game.contentpack.ContentPackSelection
+import com.ktome.game.contentpack.ResolvedContentPack
 import com.ktome.game.contentpack.ResolvedContentPackSelection
 import java.nio.file.Files
 import java.io.InputStream
@@ -52,7 +53,7 @@ object VisualManifestResourceLoader {
         val additionalManifests =
             resolvedContentPackSelection.orderedPacks.mapNotNull { pack ->
                 pack.manifest.visualManifest?.let { relativePath ->
-                    decode(Files.readString(pack.resolvePath(relativePath)), pack.resolvePath(relativePath).toString())
+                    decodePackVisualManifest(pack = pack, relativePath = relativePath)
                 }
             }
         return additionalManifests.fold(baseManifest, ::mergeVisualManifest)
@@ -113,7 +114,7 @@ object AudioManifestResourceLoader {
         val additionalManifests =
             resolvedContentPackSelection.orderedPacks.mapNotNull { pack ->
                 pack.manifest.audioManifest?.let { relativePath ->
-                    decode(Files.readString(pack.resolvePath(relativePath)), pack.resolvePath(relativePath).toString())
+                    decodePackAudioManifest(pack = pack, relativePath = relativePath)
                 }
             }
         return additionalManifests.fold(baseManifest, ::mergeAudioManifest)
@@ -202,3 +203,31 @@ private fun mergeAudioManifest(
         entries = base.entries + overlay.entries,
         prefixRules = base.prefixRules + overlay.prefixRules,
     )
+
+private fun decodePackVisualManifest(
+    pack: ResolvedContentPack,
+    relativePath: String,
+): VisualManifest {
+    val manifestPath = pack.resolvePath(relativePath)
+    val decoded = VisualManifestResourceLoader.decode(Files.readString(manifestPath), manifestPath.toString())
+    return decoded.copy(
+        entries =
+            decoded.entries.map { entry ->
+                entry.copy(rawOutputPath = pack.resolvePath(entry.rawOutputPath).toString())
+            },
+    )
+}
+
+private fun decodePackAudioManifest(
+    pack: ResolvedContentPack,
+    relativePath: String,
+): AudioManifest {
+    val manifestPath = pack.resolvePath(relativePath)
+    val decoded = AudioManifestResourceLoader.decode(Files.readString(manifestPath), manifestPath.toString())
+    return decoded.copy(
+        entries =
+            decoded.entries.map { entry ->
+                entry.copy(sourcePath = pack.resolvePath(entry.sourcePath).toString())
+            },
+    )
+}
