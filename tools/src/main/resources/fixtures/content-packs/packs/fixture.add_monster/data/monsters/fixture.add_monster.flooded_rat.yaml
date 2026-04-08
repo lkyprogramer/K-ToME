@@ -1,0 +1,24 @@
+monsters:
+  - id: fixture.add_monster.flooded_rat
+    nameKey: fixture_add_monster.monster.flooded_rat.name
+    descKey: fixture_add_monster.monster.flooded_rat.desc
+    visualKey: fixture_add_monster.actor.flooded_rat
+    iconKey: fixture_add_monster.icon.flooded_rat
+    audioProfile: fixture_add_monster.audio.flooded_rat
+    schemaVersion: 2
+    tags: [monster, beast, fixture]
+    archetype: skirmisher
+    glyph: "r"
+    color: "#4FA3D9"
+    stats: { str: 4, dex: 9, con: 5, wil: 2 }
+    baseHp: 16
+    baseAttack: 5
+    baseDefense: 1
+    speed: 112
+    ai: CHASE
+    aiProfileId: ai.chase.basic
+    lootProfileId: loot.foundation.common
+    talents: {}
+    expReward: 22
+    spawnFloors: [1, 2]
+    spawnWeight: 6

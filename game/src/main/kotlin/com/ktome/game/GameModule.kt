@@ -24,6 +24,7 @@ import com.ktome.core.map.Room
 import com.ktome.core.pathfinding.AStar
 import com.ktome.core.mapgen.HybridTopologyMapgenPipeline
 import com.ktome.core.mapgen.MapgenRequest
+import com.ktome.core.phase.PackId
 import com.ktome.core.random.SplitMix64RandomSource
 import com.ktome.core.resource.ResourceType
 import com.ktome.core.save.InvalidSaveException
@@ -35,6 +36,7 @@ import com.ktome.core.snapshot.RenderTextArgumentSnapshot
 import com.ktome.core.snapshot.RenderTextTokenSnapshot
 import com.ktome.core.ai.AIActionType
 import com.ktome.core.ai.AICondition
+import com.ktome.game.contentpack.ContentPackSelection
 import com.ktome.game.data.DataLoader
 import com.ktome.game.data.schema.SchemaCatalog
 import com.ktome.game.data.schema.SchemaCombatProfile
@@ -148,8 +150,9 @@ object GameModule {
         locale: GameLocale = GameLocale.DEFAULT,
         profile: ProfileData = ProfileData(),
         availabilityContext: AvailabilityContext = AvailabilityContext.PLAYER_CREATION,
+        contentPackSelection: ContentPackSelection = ContentPackSelection.EMPTY,
     ): FoundationGameSession {
-        val content = loadContent(locale)
+        val content = loadContent(locale = locale, contentPackSelection = contentPackSelection)
         validateNewSessionConfig(
             config = config,
             schemaCatalog = content.schemaCatalog,
@@ -185,10 +188,12 @@ object GameModule {
     fun loadFoundationSession(
         saveManager: SaveManager,
         locale: GameLocale = GameLocale.DEFAULT,
+        contentPackSelection: ContentPackSelection = ContentPackSelection.EMPTY,
     ): FoundationGameSession? {
         val snapshot = saveManager.load() ?: return null
-        val loader = DataLoader(locale)
+        val loader = DataLoader(locale = locale, packSelection = contentPackSelection)
         val content = buildContent(loader)
+        validateLoadedPackEnvironment(snapshot = snapshot, content = content)
         val restored = SessionSnapshotMapper.fromSaveSnapshot(snapshot, mapgenPipeline = content.mapgenPipeline)
         val schemaCatalog = content.schemaCatalog
         validateLoadedSessionConfig(restored.config, schemaCatalog)
@@ -274,8 +279,11 @@ object GameModule {
         )
     }
 
-    private fun loadContent(locale: GameLocale): GameContent {
-        val loader = DataLoader(locale)
+    private fun loadContent(
+        locale: GameLocale,
+        contentPackSelection: ContentPackSelection,
+    ): GameContent {
+        val loader = DataLoader(locale = locale, packSelection = contentPackSelection)
         return buildContent(loader)
     }
 
@@ -306,6 +314,8 @@ object GameModule {
             bossDefinitions = loader.loadBossDefinitions(),
             schemaCatalog = schemaCatalog,
             localizer = loader.localizer,
+            activePackIds = loader.activePackIds,
+            activePackManifestVersions = loader.activePackManifestVersions,
             telegraphRegistry = TelegraphRegistry(schemaCatalog.telegraphSpecs.associateBy { spec -> spec.id }),
             threatProfileRegistry = ThreatProfileRegistry(schemaCatalog.threatProfiles.associateBy { profile -> profile.id }),
             zoneMapgenProfileResolver = zoneMapgenProfileResolver,
@@ -324,6 +334,29 @@ object GameModule {
         ).also { content ->
             validateAiProfileContracts(content)
             validateWorldStructureContracts(content)
+        }
+    }
+
+    private fun validateLoadedPackEnvironment(
+        snapshot: com.ktome.core.save.SaveSnapshot,
+        content: GameContent,
+    ) {
+        val expectedPackIds = snapshot.activePackIds
+        val actualPackIds = content.activePackIds
+        if (expectedPackIds != actualPackIds) {
+            throw InvalidSaveException(
+                "Save expects activePackIds=${expectedPackIds.map(PackId::value)}, " +
+                    "but loader resolved ${actualPackIds.map(PackId::value)}. Start a new run.",
+            )
+        }
+        if (snapshot.activePackManifestVersions != content.activePackManifestVersions) {
+            throw InvalidSaveException(
+                "Save expects activePackManifestVersions=${
+                    snapshot.activePackManifestVersions.mapKeys { (packId, _) -> packId.value }
+                }, but loader resolved ${
+                    content.activePackManifestVersions.mapKeys { (packId, _) -> packId.value }
+                }. Start a new run.",
+            )
         }
     }
 

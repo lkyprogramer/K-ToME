@@ -1,0 +1,19 @@
+packId: fixture.add_monster
+harnessSeeds: [401, 777, 1407]
+overlayContractVersion: 1
+fixtureOrder:
+  - valid_add_pack
+  - disabled_pack_fallback
+  - replace_precedence
+  - append_runtime_rejected
+  - deny_runtime_rejected
+  - missing_dependency
+  - dependency_cycle
+  - version_range_conflict
+  - namespace_collision
+  - same_priority_duplicate_target
+  - duplicate_without_replace
+dualPackScenarios:
+  - fixturePackId: fixture.replace_monster
+    expectedOrder: [fixture.add_monster, fixture.replace_monster]
+    expectedOps: [REPLACE]

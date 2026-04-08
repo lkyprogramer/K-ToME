@@ -1,7 +1,9 @@
 import org.gradle.api.tasks.testing.Test
+import org.gradle.language.jvm.tasks.ProcessResources
 
 plugins {
     `java-library`
+    `java-test-fixtures`
 }
 
 val harnessReportDir = rootProject.layout.buildDirectory.dir("reports/harness")
@@ -10,6 +12,16 @@ dependencies {
     api(project(":core"))
     implementation("org.yaml:snakeyaml:${rootProject.providers.gradleProperty("snakeyamlVersion").get()}")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json-jvm:${rootProject.providers.gradleProperty("kotlinxSerializationVersion").get()}")
+}
+
+tasks.withType<Test>().configureEach {
+    systemProperty("ktome.repo.root", rootProject.projectDir.absolutePath)
+}
+
+tasks.named<ProcessResources>("processResources") {
+    filesMatching("ktome-build.properties") {
+        expand("version" to project.version.toString())
+    }
 }
 
 tasks.register<Test>("headlessSmoke") {

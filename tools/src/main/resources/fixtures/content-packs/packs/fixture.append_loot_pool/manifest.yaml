@@ -1,0 +1,15 @@
+id: fixture.append_loot_pool
+version: 1.0.0
+schemaVersion: 1
+gameVersionRange: ">=0.1.0 <0.2.0"
+namespace: fixture_append_loot_pool
+dependencies: []
+overlays:
+  - targetRef:
+      registry: loot_profile
+      id: loot.foundation.common
+    op: APPEND
+    sourceFile: data/loot/loot.foundation.common.append.yaml
+    fieldPath: itemIds
+    mergePolicy: APPEND_LIST
+    dedupeKey: itemId

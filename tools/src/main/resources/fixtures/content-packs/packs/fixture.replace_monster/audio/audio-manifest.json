@@ -1,0 +1,14 @@
+{
+  "manifestVersion": 1,
+  "fallbackKey": "audio.fallback.silence",
+  "entries": [
+    {
+      "key": "fixture_replace_monster.audio.flooded_rat",
+      "cueFamily": "fixture_monster",
+      "eventId": "fixture_replace_monster_flooded_rat",
+      "sourcePath": "packs/fixture_replace_monster/flooded_rat.ogg",
+      "tags": ["fixture", "content-pack", "monster", "replace"]
+    }
+  ],
+  "prefixRules": []
+}

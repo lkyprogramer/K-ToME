@@ -81,10 +81,12 @@ subprojects {
                     "solvabilityHarness",
                     "hiddenContentHarness",
                     "lootBalanceLab",
+                    "contentPackHarness",
                     "whiteBoxMapgen",
                     "whiteBoxLoot",
                     "whiteBoxSolvability",
                     "whiteBoxHiddenContent",
+                    "whiteBoxContentPack",
                     "phase4Report",
                 )
             }
@@ -187,6 +189,12 @@ tasks.register("hiddenContentHarness") {
     dependsOn(":tools:hiddenContentHarness")
 }
 
+tasks.register("contentPackHarness") {
+    group = LifecycleBasePlugin.VERIFICATION_GROUP
+    description = "Runs the Phase 4 content-pack harness and writes structured reports."
+    dependsOn(":tools:contentPackHarness")
+}
+
 tasks.register("whiteBoxMapgen") {
     group = LifecycleBasePlugin.VERIFICATION_GROUP
     description = "Runs the Phase 4 unified white-box mapgen pilot."
@@ -205,10 +213,16 @@ tasks.register("whiteBoxHiddenContent") {
     dependsOn(":tools:whiteBoxHiddenContent")
 }
 
+tasks.register("whiteBoxContentPack") {
+    group = LifecycleBasePlugin.VERIFICATION_GROUP
+    description = "Runs the Phase 4 unified white-box content-pack domain."
+    dependsOn(":tools:whiteBoxContentPack")
+}
+
 tasks.register("whiteBoxVerify") {
     group = LifecycleBasePlugin.VERIFICATION_GROUP
     description = "Runs all currently registered unified white-box verification pilots."
-    dependsOn("whiteBoxMapgen", "whiteBoxSolvability", "whiteBoxLoot", "whiteBoxHiddenContent")
+    dependsOn("whiteBoxMapgen", "whiteBoxSolvability", "whiteBoxLoot", "whiteBoxHiddenContent", "whiteBoxContentPack")
 }
 
 tasks.register("lootBalanceLab") {

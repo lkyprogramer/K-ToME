@@ -533,7 +533,12 @@ sdk env
 
 3. 若 `JAVA_HOME`、`java -version` 或 `which java` 与 `.sdkmanrc` 不一致，必须先修正环境，再分析构建或测试失败；禁止把错误 JDK 下的失败结果当成代码问题。
 4. 不要依赖系统 PATH 上的默认 JDK，也不要在仓库内混用 Homebrew JDK、系统 JDK 与 SDKMAN JDK。
-5. 如果后续需要调整 `.sdkmanrc`，必须与对应的构建脚本、`AGENTS.md` 和相关验证记录一起提交，避免仓库工具链口径漂移。
+5. 所有 `./gradlew` 命令必须串行执行；同一时刻只允许一个 Gradle 进程运行，尤其是 `test`、各类 harness、lint、smoke、`clientSmoke`、`whiteBox*`、`phase4Report` 等验证任务，严禁并发跑多个 `./gradlew` 命令。
+6. 若需要执行多个 Gradle 任务，只允许两种方式：
+   - 单次 `./gradlew taskA taskB ...` 串行完成；
+   - 前一条 `./gradlew` 完全退出后，再启动下一条。
+7. 禁止在多个终端、后台作业或 agent 并行执行 Gradle；发现已有 Gradle 进程仍在运行时，必须等待其结束，或先明确中止，再启动新的 Gradle 命令。
+8. 如果后续需要调整 `.sdkmanrc`，必须与对应的构建脚本、`AGENTS.md` 和相关验证记录一起提交，避免仓库工具链口径漂移。
 
 提交前至少执行与本次改动匹配的命令。基础命令为：
 
@@ -580,6 +585,14 @@ sdk env
    - 白盒验证是否实际执行
    - 仍然存在的风险或未覆盖点
 5. 禁止把“理论上应该通过”当作已经验证。
+
+### 8.6 Git 与 GitHub 操作规范
+
+1. 本地已经安装 `gh` CLI 后，所有 Git / GitHub 相关操作默认优先使用 `gh`，尤其是 repository、branch、PR、issue、review、remote、workflow / check 相关动作。
+2. 只有在 `gh` 没有等价能力、无法满足精确代码阅读需求、或明确属于纯本地 plumbing / working-tree 检查时，才回退使用 `git`。
+3. 对代码审查、改动阅读与行级 patch 判断，允许直接使用 `git diff`、`git show`、`git status` 等原生命令；但只要进入 GitHub 协作语义，优先回到 `gh`。
+4. 需要创建、查看、评论、检查、关闭或合并 PR / issue 时，默认先选 `gh pr *`、`gh issue *`、`gh repo *`、`gh run *`，不要先写一套 `git + 浏览器 + 手工链接` 流程。
+5. 该约束只改变工具优先级，不放宽任何既有高风险限制；涉及重写历史、强推、破坏性 checkout/reset 等操作，仍按本文件其他条款执行。
 
 ## 9. 文档同步与高风险红线
 

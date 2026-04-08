@@ -1,0 +1,14 @@
+id: fixture.missing_dependency
+version: 1.0.0
+schemaVersion: 1
+gameVersionRange: ">=0.1.0 <0.2.0"
+namespace: fixture_missing_dependency
+dependencies:
+  - id: fixture.not_available
+    versionRange: ">=1.0.0 <2.0.0"
+overlays:
+  - targetRef:
+      registry: monster
+      id: fixture.missing_dependency.watcher
+    op: ADD
+    sourceFile: data/monsters/fixture.missing_dependency.watcher.yaml

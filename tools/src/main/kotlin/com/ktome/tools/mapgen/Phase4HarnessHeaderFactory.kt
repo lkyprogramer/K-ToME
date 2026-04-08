@@ -1,6 +1,7 @@
 package com.ktome.tools.mapgen
 
 import com.ktome.core.harness.HarnessReportHeader
+import com.ktome.core.phase.PackId
 import com.ktome.core.phase.Phase4ContractVersions
 import com.ktome.core.save.SaveSnapshot
 import com.ktome.game.i18n.GameLocale
@@ -11,6 +12,8 @@ internal fun phase4HarnessHeader(
     seedList: List<Long>,
     timestamp: String = Instant.now().toString(),
     locale: String = GameLocale.DEFAULT.id,
+    activePackIds: List<PackId> = emptyList(),
+    activePackManifestVersions: Map<PackId, String> = emptyMap(),
 ): HarnessReportHeader =
     HarnessReportHeader(
         harnessId = harnessId,
@@ -25,8 +28,8 @@ internal fun phase4HarnessHeader(
         searchRuleVersion = Phase4ContractVersions.SEARCH_RULE_VERSION,
         secretRuleVersion = Phase4ContractVersions.SECRET_RULE_VERSION,
         overlayContractVersion = Phase4ContractVersions.OVERLAY_CONTRACT_VERSION,
-        activePackIds = emptyList(),
-        activePackManifestVersions = emptyMap(),
+        activePackIds = activePackIds,
+        activePackManifestVersions = activePackManifestVersions,
         timestamp = timestamp,
         seedList = seedList,
     )

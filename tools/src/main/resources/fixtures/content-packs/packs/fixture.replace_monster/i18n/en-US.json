@@ -1,0 +1,4 @@
+{
+  "fixture_replace_monster.monster.flooded_rat.name": "Flooded Rat Veteran",
+  "fixture_replace_monster.monster.flooded_rat.desc": "A replaced monster entry that proves whole-entry REPLACE precedence."
+}

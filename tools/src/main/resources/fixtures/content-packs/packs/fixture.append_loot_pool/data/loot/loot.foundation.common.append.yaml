@@ -1,0 +1,6 @@
+lootProfiles:
+  - id: loot.foundation.common
+    schemaVersion: 2
+    tags: [loot, common, fixture]
+    rewardBudget: 6
+    itemIds: [healing_potion]

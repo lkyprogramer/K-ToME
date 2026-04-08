@@ -131,6 +131,7 @@ data class ContentPackHarnessSpec(
     val packId: PackId,
     val harnessSeeds: List<Long>,
     val dualPackScenarios: List<DualPackScenario> = emptyList(),
+    val fixtureOrder: List<String> = emptyList(),
     val overlayContractVersion: Int = 1,
 )
 ```
@@ -138,6 +139,7 @@ data class ContentPackHarnessSpec(
 补充说明：
 
 1. sidecar YAML 中 `packId / fixturePackId / expectedOrder` 仍以字符串序列化，但 loader/lint/harness 的 contract 语义按 `PackId` 处理。
+2. `fixtureOrder` 用于固定 harness / white-box 的 fixture 执行顺序，避免把顺序语义继续塞回 runtime manifest。
 
 ### 4.2 JSON 资源边界
 

@@ -7,11 +7,12 @@ plugins {
 val harnessReportDir = rootProject.layout.buildDirectory.dir("reports/harness")
 
 dependencies {
+    implementation(project(":client"))
     implementation(project(":game"))
+    implementation(testFixtures(project(":game")))
+    implementation("org.yaml:snakeyaml:${rootProject.providers.gradleProperty("snakeyamlVersion").get()}")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json-jvm:${rootProject.providers.gradleProperty("kotlinxSerializationVersion").get()}")
-    testImplementation(project(":client"))
     testImplementation(project(":game"))
-    testImplementation("org.yaml:snakeyaml:${rootProject.providers.gradleProperty("snakeyamlVersion").get()}")
     testImplementation("org.jetbrains.kotlinx:kotlinx-serialization-json-jvm:${rootProject.providers.gradleProperty("kotlinxSerializationVersion").get()}")
 }
 
@@ -99,6 +100,19 @@ tasks.register<Test>("hiddenContentHarness") {
     outputs.dir(reportDir)
 }
 
+tasks.register<Test>("contentPackHarness") {
+    group = "verification"
+    description = "Runs the Phase 4 content-pack harness and writes structured reports."
+    testClassesDirs = sourceSets.test.get().output.classesDirs
+    classpath = sourceSets.test.get().runtimeClasspath
+    useJUnitPlatform {
+        includeTags("contentPackHarness")
+    }
+    val reportDir = layout.buildDirectory.dir("reports/phase4/content-pack")
+    systemProperty("ktome.phase4.contentPack.reportDir", reportDir.get().asFile.absolutePath)
+    outputs.dir(reportDir)
+}
+
 tasks.register<Test>("whiteBoxMapgen") {
     group = "verification"
     description = "Runs the Phase 4 unified white-box mapgen pilot and writes standard reports."
@@ -164,6 +178,20 @@ tasks.register<Test>("whiteBoxHiddenContent") {
     outputs.dir(reportDir)
 }
 
+tasks.register<Test>("whiteBoxContentPack") {
+    group = "verification"
+    description = "Runs the Phase 4 unified white-box content-pack domain and writes standard reports."
+    testClassesDirs = sourceSets.test.get().output.classesDirs
+    classpath = sourceSets.test.get().runtimeClasspath
+    useJUnitPlatform {
+        includeTags("whiteBoxContentPack")
+    }
+    val reportDir = layout.buildDirectory.dir("reports/phase4/whitebox/content-pack")
+    systemProperty("ktome.phase4.whitebox.contentPack.reportDir", reportDir.get().asFile.absolutePath)
+    systemProperty("ktome.phase4.contentPack.reportDir", layout.buildDirectory.dir("reports/phase4/content-pack").get().asFile.absolutePath)
+    outputs.dir(reportDir)
+}
+
 tasks.register<Test>("phase4Report") {
     group = "verification"
     description = "Aggregates the currently landed Phase 4 verification reports into a single phase summary."
@@ -176,11 +204,13 @@ tasks.register<Test>("phase4Report") {
         ":tools:mapgenSmoke",
         ":tools:solvabilityHarness",
         ":tools:hiddenContentHarness",
+        ":tools:contentPackHarness",
         ":tools:lootBalanceLab",
         ":tools:whiteBoxMapgen",
         ":tools:whiteBoxSolvability",
         ":tools:whiteBoxLoot",
         ":tools:whiteBoxHiddenContent",
+        ":tools:whiteBoxContentPack",
         ":game:terrainInteractionBatch",
         ":game:bossHarness",
     )

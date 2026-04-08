@@ -10,6 +10,7 @@ import com.ktome.core.mapgen.ZoneMapgenProfile
 import com.ktome.core.mapgen.ZoneMapgenProfileResolver
 import com.ktome.core.mapgen.ZoneRewardProfile
 import com.ktome.core.mapgen.ZoneRewardProfileResolver
+import com.ktome.core.phase.PackId
 import com.ktome.core.race.RaceDef
 import com.ktome.core.talent.TalentDef
 import com.ktome.core.talent.TalentRegistry
@@ -90,6 +91,8 @@ internal data class GameContent(
     val bossDefinitions: Map<String, BossDefinition>,
     val schemaCatalog: SchemaCatalog,
     val localizer: Localizer,
+    val activePackIds: List<PackId> = emptyList(),
+    val activePackManifestVersions: Map<PackId, String> = emptyMap(),
     val telegraphRegistry: TelegraphRegistry = TelegraphRegistry(schemaCatalog.telegraphSpecs.associateBy { spec -> spec.id }),
     val threatProfileRegistry: ThreatProfileRegistry = ThreatProfileRegistry(schemaCatalog.threatProfiles.associateBy { profile -> profile.id }),
     val zoneMapgenProfileResolver: ZoneMapgenProfileResolver = EmptyZoneMapgenProfileResolver,

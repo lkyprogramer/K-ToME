@@ -76,6 +76,7 @@ import com.ktome.core.world.solvability.SearchActionResult
 import com.ktome.core.world.solvability.SearchStateEntry
 import com.ktome.core.world.solvability.revealedBindingIds
 import com.ktome.core.profile.MilestoneRewardSummary
+import com.ktome.core.phase.PackId
 import com.ktome.core.save.AIBehaviorSnapshot
 import com.ktome.core.save.AIPerceptionSnapshot
 import com.ktome.core.save.AmbushLaneTriggerSnapshot
@@ -412,10 +413,14 @@ internal object SessionSnapshotMapper {
         milestoneRewards: List<MilestoneRewardSummary> = emptyList(),
         pendingActionIds: List<Int>,
         activeTurnActorId: Int?,
+        activePackIds: List<PackId> = emptyList(),
+        activePackManifestVersions: Map<PackId, String> = emptyMap(),
     ): SaveSnapshot =
         SaveSnapshot(
             timestampEpochMillis = System.currentTimeMillis(),
             worldSeed = config.seed,
+            activePackIds = activePackIds,
+            activePackManifestVersions = activePackManifestVersions,
             currentZoneId = config.zoneId,
             zoneRoute = config.zoneRoute,
             routeIndex = config.routeIndex,
