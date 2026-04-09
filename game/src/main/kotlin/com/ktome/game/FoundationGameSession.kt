@@ -271,6 +271,7 @@ internal data class ZoneRuntimeBundle(
 private const val SUMMARY_EVENT_LIMIT: Int = 5
 private const val RECENT_REWARD_LIMIT: Int = 5
 private const val AI_TRACE_LIMIT: Int = 64
+private const val TERRAIN_COMBAT_OBSERVATION_LIMIT: Int = 512
 private const val ABYSSAL_WARD_PROTECTION_TURNS: Int = 4
 private const val ABYSSAL_WARD_PROTECTION_MAGNITUDE: Double = 0.12
 private const val VOID_ERUPTION_WEAKEN_MAGNITUDE: Double = 0.12
@@ -472,7 +473,7 @@ class FoundationGameSession internal constructor(
     private var terminalKillerTemplateId: String? = null
     private val recentAiDecisionTraces = ArrayDeque<AIDecisionTrace>()
     private val recentBossTraces = ArrayDeque<BossTrace>()
-    private val terrainCombatObservations = mutableListOf<TerrainCombatObservation>()
+    private val terrainCombatObservations = ArrayDeque<TerrainCombatObservation>()
     private val recordedMilestoneRewardSummaries = restoredMilestoneRewardSummaries.toMutableList()
     private val recordedMilestoneRewardKeys =
         restoredMilestoneRewardSummaries
@@ -5635,15 +5636,10 @@ class FoundationGameSession internal constructor(
                         }
 
                         is TalentUseResult.Success -> {
-                            applyTalentResourceReactions(result.result)
-                            recordTalentCombatObservations(result.result)
-                            applyTalentTerrainInteractions(result.result)
-                            if (result.result.hasConfirmedResolutionSuccess()) {
-                                recordSuccessfulPlayerAffinity(talentId)
-                            }
-                            logTalentResult(result.result)
-                            logTriggeredTalentDamagePassives(result.result)
-                            handleTalentDeaths(result.result.targets, playerId)
+                            handleResolvedTalentSuccess(
+                                result = result.result,
+                                successfulPlayerAffinityId = talentId,
+                            )
                             CommandResolution.accepted()
                         }
                     }
@@ -6328,12 +6324,7 @@ class FoundationGameSession internal constructor(
         when (val result = talentResolver.resolve(world, map, monsterId, queuedAbilityId, target)) {
             is TalentUseResult.Failure -> return true
             is TalentUseResult.Success -> {
-                applyTalentResourceReactions(result.result)
-                recordTalentCombatObservations(result.result)
-                applyTalentTerrainInteractions(result.result)
-                logTalentResult(result.result)
-                logTriggeredTalentDamagePassives(result.result)
-                handleTalentDeaths(result.result.targets, monsterId)
+                handleResolvedTalentSuccess(result.result)
                 return true
             }
         }
@@ -6687,11 +6678,7 @@ class FoundationGameSession internal constructor(
                     when (val result = talentResolver.resolve(world, map, monsterId, abilityId, targetPoint)) {
                         is TalentUseResult.Failure -> return false
                         is TalentUseResult.Success -> {
-                            applyTalentResourceReactions(result.result)
-                            recordTalentCombatObservations(result.result)
-                            logTalentResult(result.result)
-                            logTriggeredTalentDamagePassives(result.result)
-                            handleTalentDeaths(result.result.targets, monsterId)
+                            handleResolvedTalentSuccess(result.result)
                         }
                     }
                 }
@@ -8105,6 +8092,21 @@ class FoundationGameSession internal constructor(
         }
     }
 
+    private fun handleResolvedTalentSuccess(
+        result: com.ktome.core.talent.TalentResult,
+        successfulPlayerAffinityId: String? = null,
+    ) {
+        applyTalentResourceReactions(result)
+        recordTalentCombatObservations(result)
+        applyTalentTerrainInteractions(result)
+        if (successfulPlayerAffinityId != null && result.hasConfirmedResolutionSuccess()) {
+            recordSuccessfulPlayerAffinity(successfulPlayerAffinityId)
+        }
+        logTalentResult(result)
+        logTriggeredTalentDamagePassives(result)
+        handleTalentDeaths(result.targets, result.user)
+    }
+
     private fun applyTalentTerrainInteractions(result: com.ktome.core.talent.TalentResult) {
         result.effects.forEach { effect ->
             if (effect is com.ktome.core.talent.TalentEffectResult.Damage) {
@@ -8146,6 +8148,9 @@ class FoundationGameSession internal constructor(
                 terrainInteractionTriggered = terrainInteraction != null,
                 terrainInteractionRuleId = terrainInteraction?.ruleId,
             )
+        while (terrainCombatObservations.size > TERRAIN_COMBAT_OBSERVATION_LIMIT) {
+            terrainCombatObservations.removeFirst()
+        }
     }
 
     private fun logPlayerResourceRestore(before: PlayerResourceView) {

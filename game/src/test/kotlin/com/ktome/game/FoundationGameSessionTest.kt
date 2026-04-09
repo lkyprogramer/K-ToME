@@ -8,6 +8,9 @@ import com.ktome.core.ai.PendingTelegraphState
 import com.ktome.core.combat.CombatRuleset
 import com.ktome.core.combat.CombatResolver
 import com.ktome.core.combat.DamageType
+import com.ktome.core.combat.ElementInteractionRegistry
+import com.ktome.core.combat.ElementInteractionResolution
+import com.ktome.core.combat.TerrainTransformPlan
 import com.ktome.core.dungeon.StairDirection
 import com.ktome.core.dungeon.DungeonManager
 import com.ktome.core.dungeon.FloorState
@@ -103,6 +106,10 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 
 class FoundationGameSessionTest {
+    companion object {
+        private const val TERRAIN_COMBAT_OBSERVATION_LIMIT_FOR_TEST: Int = 512
+    }
+
     @TempDir
     lateinit var tempDir: Path
 
@@ -268,6 +275,89 @@ class FoundationGameSessionTest {
         assertEquals(setOf(TerrainTag.ICE), restoredOverride.terrainTags)
         assertEquals("terrain_cold_water_freeze", restoredOverride.sourceRuleId)
         assertEquals(3, restoredOverride.remainingTurns)
+    }
+
+    @Test
+    fun `resolved talent success applies terrain interaction side effects before terrain metrics are consumed`() {
+        val session =
+            GameModule.newFoundationSession(
+                config = FoundationGameConfig(seed = 20260406L, zoneId = "underground_river", playerProfessionId = "arcanist"),
+                saveManager = SaveManager(tempDir.resolve("talent-terrain-observation-save")),
+            )
+        val targetId = installCombatDummy(session, id = "terrain_target_dummy")
+        val targetPoint = requireNotNull(runtimeWorld(session).get<Position>(targetId)).toPoint()
+        session.automationSetTerrainOverride(
+            point = targetPoint,
+            terrainOverride =
+                TerrainOverride(
+                    terrainTags = setOf(TerrainTag.WATER),
+                    sourceRuleId = "seeded.water",
+                    remainingTurns = 1,
+                ),
+        )
+
+        invokeHandleResolvedTalentSuccess(
+            session = session,
+            result =
+                com.ktome.core.talent.TalentResult(
+                    talentId = "ice_bolt",
+                    talentName = "Ice Bolt",
+                    user = session.playerId,
+                    targets = listOf(targetId),
+                    effects =
+                        listOf(
+                            com.ktome.core.talent.TalentEffectResult.Damage(
+                                target = targetId,
+                                amount = 7,
+                                crit = false,
+                                damageType = DamageType.COLD,
+                                terrainInteraction =
+                                    ElementInteractionResolution(
+                                        ruleId = ElementInteractionRegistry.TERRAIN_COLD_WATER_FREEZE,
+                                        triggerDamageType = DamageType.COLD,
+                                        terrainTransform =
+                                            TerrainTransformPlan(
+                                                targetTerrainTags = setOf(TerrainTag.ICE),
+                                                durationTurns = 3,
+                                            ),
+                                    ),
+                            ),
+                        ),
+                ),
+        )
+
+        val override = requireNotNull(session.automationTerrainOverrideAt(targetPoint))
+        assertEquals(setOf(TerrainTag.ICE), override.terrainTags)
+        assertEquals(ElementInteractionRegistry.TERRAIN_COLD_WATER_FREEZE, override.sourceRuleId)
+        val observations = session.automationTerrainCombatObservations()
+        assertEquals(1, observations.size)
+        assertTrue(observations.single().terrainInteractionTriggered)
+        assertEquals(ElementInteractionRegistry.TERRAIN_COLD_WATER_FREEZE, observations.single().terrainInteractionRuleId)
+    }
+
+    @Test
+    fun `terrain combat observations keep a bounded recent buffer`() {
+        val session =
+            GameModule.newFoundationSession(
+                config = FoundationGameConfig(seed = 20260406L, zoneId = "underground_river", playerProfessionId = "arcanist"),
+                saveManager = SaveManager(tempDir.resolve("terrain-observation-limit-save")),
+            )
+        val targetId = installCombatDummy(session, id = "terrain_buffer_dummy")
+        val overflowCount = TERRAIN_COMBAT_OBSERVATION_LIMIT_FOR_TEST + 17
+
+        repeat(overflowCount) { index ->
+            invokeRecordTerrainCombatObservation(
+                session = session,
+                attacker = session.playerId,
+                target = targetId,
+                abilityId = "buffer_$index",
+            )
+        }
+
+        val observations = session.automationTerrainCombatObservations()
+        assertEquals(TERRAIN_COMBAT_OBSERVATION_LIMIT_FOR_TEST, observations.size)
+        assertEquals("buffer_17", observations.first().abilityId)
+        assertEquals("buffer_${overflowCount - 1}", observations.last().abilityId)
     }
 
     @Test
@@ -4705,6 +4795,17 @@ class FoundationGameSessionTest {
         method.invoke(session, target.value, killer)
     }
 
+    private fun invokeHandleResolvedTalentSuccess(
+        session: FoundationGameSession,
+        result: com.ktome.core.talent.TalentResult,
+    ) {
+        val method =
+            FoundationGameSession::class.java.declaredMethods
+                .first { declared -> declared.name == "handleResolvedTalentSuccess" && declared.parameterCount == 2 }
+        method.isAccessible = true
+        method.invoke(session, result, null)
+    }
+
     private fun invokeMonsterSourceTier(
         session: FoundationGameSession,
         template: MonsterTemplate,
@@ -4803,6 +4904,29 @@ class FoundationGameSessionTest {
         method.isAccessible = true
         @Suppress("UNCHECKED_CAST")
         return method.invoke(session, attacker.value, target.value, damageType) as com.ktome.core.item.PassiveDamageAdjustment
+    }
+
+    private fun invokeRecordTerrainCombatObservation(
+        session: FoundationGameSession,
+        attacker: EntityId,
+        target: EntityId,
+        abilityId: String,
+    ) {
+        val method =
+            FoundationGameSession::class.java.declaredMethods
+                .first { declared -> declared.name.startsWith("recordTerrainCombatObservation") && declared.parameterCount == 8 }
+        method.isAccessible = true
+        method.invoke(
+            session,
+            attacker.value,
+            target.value,
+            DamageType.FIRE,
+            "TALENT",
+            abilityId,
+            true,
+            1,
+            null,
+        )
     }
 
     private fun invokeLogTriggeredDamagePassives(
