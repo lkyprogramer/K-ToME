@@ -68,13 +68,14 @@ class TerrainInteractionBatchTest {
     fun `terrain interaction batch writes structured white-box reports`() {
         val isolatedCases = isolatedCases()
         val provenanceCases = provenanceCases()
+        val exposureProbe = runTerrainExposureProbe()
         val allCases = isolatedCases + provenanceCases
         val caseReports = allCases.map(TerrainBatchCaseRecord::report)
         val aggregates =
             listOf(
                 aggregateFor(groupId = "isolated-corpus", cases = isolatedCases),
                 aggregateFor(groupId = "provenance-corpus", cases = provenanceCases),
-                aggregateFor(groupId = "corpus", cases = allCases),
+                aggregateFor(groupId = "corpus", cases = allCases, exposureProbe = exposureProbe),
             )
         val outputDir = whiteBoxSummaryReportDir("ktome.phase4.whitebox.terrain.reportDir", "terrain")
         val writeResult =
@@ -94,12 +95,12 @@ class TerrainInteractionBatchTest {
                                     "visualManifest" to "1",
                                     "audioManifest" to "1",
                                 ),
-                            seeds = provenanceCases.mapNotNull { case -> case.joinKey.seed }.distinct(),
+                            seeds = (provenanceCases.mapNotNull { case -> case.joinKey.seed } + exposureProbe.seeds).distinct(),
                         ),
                     corpus =
                         WhiteBoxCorpusSpec(
                             corpusId = "P4_PR06_TERRAIN_WHITEBOX",
-                            description = "Five isolated rule probes plus three mapgen provenance probes for PR-06 terrain interaction.",
+                            description = "Five isolated rule probes, three mapgen provenance probes, plus a 500-seed terrain exposure baseline for PR-06/OPT PR-01 terrain interaction.",
                             sampleCount = allCases.size,
                         ),
                     cases = caseReports,
@@ -460,6 +461,7 @@ class TerrainInteractionBatchTest {
     private fun aggregateFor(
         groupId: String,
         cases: List<TerrainBatchCaseRecord>,
+        exposureProbe: TerrainExposureProbeSummary? = null,
     ): WhiteBoxAggregateReport {
         val allRuleIds = cases.mapNotNull { record -> record.report.joinKey.scenarioId }.toSet()
         val failedCount = cases.sumOf { case -> failedAssertionCount(case.report.assertions) }
@@ -480,6 +482,30 @@ class TerrainInteractionBatchTest {
                     put("formalSourceTagCount", formalSourceTagCount)
                     putJsonArray("coveredRuleIds") { allRuleIds.sorted().forEach { value -> add(JsonPrimitive(value)) } }
                     putJsonArray("provenanceTerrainTags") { provenanceTags.sorted().forEach { value -> add(JsonPrimitive(value)) } }
+                    exposureProbe?.let { probe ->
+                        put("terrainTaggedCombatExposureRate", probe.terrainTaggedCombatExposureRate)
+                        put("terrainInteractionEncounterRate", probe.terrainInteractionEncounterRate)
+                        put("combatCount", probe.combatCount)
+                        put("taggedCombatCount", probe.taggedCombatCount)
+                        put("triggeredInteractionCombatCount", probe.triggeredInteractionCombatCount)
+                        putJsonObject("terrainCoverageByZone") {
+                            probe.coverageByZone.forEach { (zoneId, coverage) ->
+                                putJsonObject(zoneId) {
+                                    put("combatCount", coverage.combatCount)
+                                    put("taggedCombatCount", coverage.taggedCombatCount)
+                                    put("triggeredInteractionCombatCount", coverage.triggeredInteractionCombatCount)
+                                    put("terrainTaggedCombatExposureRate", coverage.terrainTaggedCombatExposureRate)
+                                    put("terrainInteractionEncounterRate", coverage.terrainInteractionEncounterRate)
+                                    putJsonArray("observedTerrainTags") {
+                                        coverage.observedTerrainTags.sorted().forEach { terrainTag -> add(JsonPrimitive(terrainTag)) }
+                                    }
+                                    putJsonArray("triggeredRuleIds") {
+                                        coverage.triggeredRuleIds.sorted().forEach { ruleId -> add(JsonPrimitive(ruleId)) }
+                                    }
+                                }
+                            }
+                        }
+                    }
                 },
             assertions =
                 listOfNotNull(
@@ -520,7 +546,97 @@ class TerrainInteractionBatchTest {
                     } else {
                         null
                     },
+                    if (groupId == "corpus" && exposureProbe != null) {
+                        WhiteBoxAssertionResult(
+                            ruleId = "terrain.aggregate.exposure_rate",
+                            passed = exposureProbe.terrainTaggedCombatExposureRate >= 0.10,
+                            message = "Terrain-tagged combat exposure stays at or above the OPT PR-01 baseline threshold.",
+                            context =
+                                buildJsonObject {
+                                    put("terrainTaggedCombatExposureRate", exposureProbe.terrainTaggedCombatExposureRate)
+                                    put("combatCount", exposureProbe.combatCount)
+                                    put("taggedCombatCount", exposureProbe.taggedCombatCount)
+                                },
+                        )
+                    } else {
+                        null
+                    },
+                    if (groupId == "corpus" && exposureProbe != null) {
+                        WhiteBoxAssertionResult(
+                            ruleId = "terrain.aggregate.zone_probe_nonempty",
+                            passed = exposureProbe.coverageByZone.values.all { coverage -> coverage.combatCount > 0 },
+                            message = "Each target zone contributes at least one direct-combat observation to the terrain exposure baseline.",
+                            context =
+                                buildJsonObject {
+                                    putJsonObject("combatCountByZone") {
+                                        exposureProbe.coverageByZone.forEach { (zoneId, coverage) ->
+                                            put(zoneId, coverage.combatCount)
+                                        }
+                                    }
+                                },
+                        )
+                    } else {
+                        null
+                    },
                 ),
+        )
+    }
+
+    private fun runTerrainExposureProbe(): TerrainExposureProbeSummary {
+        val observations = mutableListOf<FoundationGameSession.TerrainCombatObservation>()
+        val seeds = mutableListOf<Long>()
+        TERRAIN_EXPOSURE_ZONE_IDS.forEachIndexed { zoneOrdinal, zoneId ->
+            repeat(TERRAIN_EXPOSURE_SEEDS_PER_ZONE) { seedOrdinal ->
+                val seed = TERRAIN_EXPOSURE_SEED_BASE + zoneOrdinal * TERRAIN_EXPOSURE_ZONE_SEED_BLOCK + seedOrdinal
+                seeds += seed
+                val session = newProbeSession(seed = seed, zoneId = zoneId)
+                val bot = SmokeBot()
+                val stallDetector = StallDetector(maxRepeats = 12)
+                var turnIndex = 0
+                var observation = RunObservationCapture.capture(session, turnIndex)
+                while (turnIndex < TERRAIN_EXPOSURE_TURN_BUDGET && !observation.runOutcome.isTerminal && session.currentFloor() <= TERRAIN_EXPOSURE_MAX_FLOOR) {
+                    val command =
+                        routeProgressCommand(session, observation)
+                            .takeIf { shouldPrioritizeTerrainProbeRouteProgress(observation) }
+                            ?: bot.decide(observation)
+                    val accepted = session.perform(command)
+                    if (!accepted) {
+                        break
+                    }
+                    if (command.consumesTurn()) {
+                        turnIndex += 1
+                    }
+                    observation = RunObservationCapture.capture(session, turnIndex)
+                    if (stallDetector.observe(observation) != null) {
+                        break
+                    }
+                }
+                observations += session.automationTerrainCombatObservations()
+            }
+        }
+        val coverageByZone =
+            TERRAIN_EXPOSURE_ZONE_IDS.associateWith { zoneId ->
+                val zoneObservations = observations.filter { observation -> observation.zoneId == zoneId }
+                TerrainZoneExposureSummary(
+                    combatCount = zoneObservations.size,
+                    taggedCombatCount = zoneObservations.count(FoundationGameSession.TerrainCombatObservation::isTerrainTagged),
+                    triggeredInteractionCombatCount = zoneObservations.count(FoundationGameSession.TerrainCombatObservation::terrainInteractionTriggered),
+                    observedTerrainTags =
+                        zoneObservations
+                            .flatMapTo(linkedSetOf()) { observation ->
+                                observation.attackerTerrainTags.map(TerrainTag::name) + observation.targetTerrainTags.map(TerrainTag::name)
+                            },
+                    triggeredRuleIds =
+                        zoneObservations
+                            .mapNotNullTo(linkedSetOf(), FoundationGameSession.TerrainCombatObservation::terrainInteractionRuleId),
+                )
+            }
+        return TerrainExposureProbeSummary(
+            seeds = seeds,
+            combatCount = observations.size,
+            taggedCombatCount = observations.count(FoundationGameSession.TerrainCombatObservation::isTerrainTagged),
+            triggeredInteractionCombatCount = observations.count(FoundationGameSession.TerrainCombatObservation::terrainInteractionTriggered),
+            coverageByZone = coverageByZone,
         )
     }
 
@@ -818,6 +934,15 @@ class TerrainInteractionBatchTest {
             saveManager = SaveManager(tempDir.resolve("terrain-$zoneId-$seed")),
         )
 
+    private fun newProbeSession(
+        seed: Long,
+        zoneId: String,
+    ): FoundationGameSession =
+        GameModule.newFoundationSession(
+            config = FoundationGameConfig(seed = seed, zoneId = zoneId, playerProfessionId = "arcanist"),
+            saveManager = SaveManager(tempDir.resolve("terrain-probe-$zoneId-$seed")),
+        )
+
     private fun sha256(payload: String): String =
         MessageDigest.getInstance("SHA-256")
             .digest(payload.toByteArray())
@@ -850,6 +975,34 @@ private data class TerrainBatchCaseRecord(
     val report: WhiteBoxCaseReport,
 )
 
+private data class TerrainExposureProbeSummary(
+    val seeds: List<Long>,
+    val combatCount: Int,
+    val taggedCombatCount: Int,
+    val triggeredInteractionCombatCount: Int,
+    val coverageByZone: Map<String, TerrainZoneExposureSummary>,
+) {
+    val terrainTaggedCombatExposureRate: Double
+        get() = if (combatCount == 0) 0.0 else taggedCombatCount.toDouble() / combatCount.toDouble()
+
+    val terrainInteractionEncounterRate: Double
+        get() = if (combatCount == 0) 0.0 else triggeredInteractionCombatCount.toDouble() / combatCount.toDouble()
+}
+
+private data class TerrainZoneExposureSummary(
+    val combatCount: Int,
+    val taggedCombatCount: Int,
+    val triggeredInteractionCombatCount: Int,
+    val observedTerrainTags: Set<String>,
+    val triggeredRuleIds: Set<String>,
+) {
+    val terrainTaggedCombatExposureRate: Double
+        get() = if (combatCount == 0) 0.0 else taggedCombatCount.toDouble() / combatCount.toDouble()
+
+    val terrainInteractionEncounterRate: Double
+        get() = if (combatCount == 0) 0.0 else triggeredInteractionCombatCount.toDouble() / combatCount.toDouble()
+}
+
 private enum class TerrainSecondaryEffect {
     CHAIN_DAMAGE,
     IGNITE_OVERRIDE,
@@ -866,3 +1019,27 @@ private fun allTerrainRuleIds(): Set<String> =
         ElementInteractionRegistry.TERRAIN_FIRE_ICE_MELT,
         ElementInteractionRegistry.TERRAIN_PHYSICAL_ICE_SLIP,
     )
+
+private val TERRAIN_EXPOSURE_ZONE_IDS: List<String> =
+    listOf(
+        // The exposure baseline only samples zones that produce repeatable encounter-driven combat in real runs.
+        // abyssal_temple is excluded here because its current runtime is objective/pressure-driven and configures
+        // zero regular monster spawns, which would collapse the "direct combat observation" denominator.
+        "greenwood_fringe",
+        "deep_iron_pit",
+        "underground_river",
+        "crystal_cavern",
+    )
+
+private const val TERRAIN_EXPOSURE_SEED_BASE: Long = 20260409010000L
+private const val TERRAIN_EXPOSURE_ZONE_SEED_BLOCK: Long = 1_000L
+private const val TERRAIN_EXPOSURE_SEEDS_PER_ZONE: Int = 125
+private const val TERRAIN_EXPOSURE_TURN_BUDGET: Int = 36
+private const val TERRAIN_EXPOSURE_MAX_FLOOR: Int = 2
+
+private fun FoundationGameSession.TerrainCombatObservation.isTerrainTagged(): Boolean =
+    attackerTerrainTags.isNotEmpty() || targetTerrainTags.isNotEmpty()
+
+private fun shouldPrioritizeTerrainProbeRouteProgress(observation: RunObservation): Boolean =
+    observation.visibleBossPositions.isEmpty() &&
+        observation.visibleHostilePositions.none { hostile -> hostile.chebyshevDistanceTo(observation.playerPosition) <= 2 }

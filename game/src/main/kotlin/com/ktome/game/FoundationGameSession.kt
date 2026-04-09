@@ -433,6 +433,20 @@ class FoundationGameSession internal constructor(
         val critical: Boolean = false,
     )
 
+    internal data class TerrainCombatObservation(
+        val zoneId: String,
+        val floorIndex: Int,
+        val sourceKind: String,
+        val abilityId: String,
+        val damageType: DamageType?,
+        val hit: Boolean,
+        val damageAmount: Int,
+        val attackerTerrainTags: Set<TerrainTag>,
+        val targetTerrainTags: Set<TerrainTag>,
+        val terrainInteractionTriggered: Boolean,
+        val terrainInteractionRuleId: String?,
+    )
+
     var config: FoundationGameConfig = config
         private set
     private val messageLog = ArrayDeque<SessionLogEntry>()
@@ -458,6 +472,7 @@ class FoundationGameSession internal constructor(
     private var terminalKillerTemplateId: String? = null
     private val recentAiDecisionTraces = ArrayDeque<AIDecisionTrace>()
     private val recentBossTraces = ArrayDeque<BossTrace>()
+    private val terrainCombatObservations = mutableListOf<TerrainCombatObservation>()
     private val recordedMilestoneRewardSummaries = restoredMilestoneRewardSummaries.toMutableList()
     private val recordedMilestoneRewardKeys =
         restoredMilestoneRewardSummaries
@@ -795,6 +810,8 @@ class FoundationGameSession internal constructor(
     internal fun automationTerrainTagsAt(point: Point): Set<com.ktome.core.mapgen.TerrainTag> = activeFloorState.terrainTagsAt(point)
 
     internal fun automationTerrainStateHash(): String = "${activeFloorState.terrainTagHash}:${activeFloorState.terrainOverrideHash}"
+
+    internal fun automationTerrainCombatObservations(): List<TerrainCombatObservation> = terrainCombatObservations.toList()
 
     fun automationMovePlayerTo(point: Point) {
         require(map.isInBounds(point.x, point.y)) { "Point $point is outside the current map." }
@@ -5619,6 +5636,7 @@ class FoundationGameSession internal constructor(
 
                         is TalentUseResult.Success -> {
                             applyTalentResourceReactions(result.result)
+                            recordTalentCombatObservations(result.result)
                             applyTalentTerrainInteractions(result.result)
                             if (result.result.hasConfirmedResolutionSuccess()) {
                                 recordSuccessfulPlayerAffinity(talentId)
@@ -6311,6 +6329,7 @@ class FoundationGameSession internal constructor(
             is TalentUseResult.Failure -> return true
             is TalentUseResult.Success -> {
                 applyTalentResourceReactions(result.result)
+                recordTalentCombatObservations(result.result)
                 applyTalentTerrainInteractions(result.result)
                 logTalentResult(result.result)
                 logTriggeredTalentDamagePassives(result.result)
@@ -6669,6 +6688,7 @@ class FoundationGameSession internal constructor(
                         is TalentUseResult.Failure -> return false
                         is TalentUseResult.Success -> {
                             applyTalentResourceReactions(result.result)
+                            recordTalentCombatObservations(result.result)
                             logTalentResult(result.result)
                             logTriggeredTalentDamagePassives(result.result)
                             handleTalentDeaths(result.result.targets, monsterId)
@@ -7140,6 +7160,16 @@ class FoundationGameSession internal constructor(
             )
 
         if (!result.hit) {
+            recordTerrainCombatObservation(
+                attacker = attacker,
+                target = target,
+                damageType = DamageType.PHYSICAL,
+                sourceKind = "MELEE",
+                abilityId = "basic_attack",
+                hit = false,
+                damageAmount = 0,
+                terrainInteraction = null,
+            )
             logEvent(MissEvent(attacker, target))
             addMessage(
                 "log.attack.miss",
@@ -7149,6 +7179,16 @@ class FoundationGameSession internal constructor(
             return
         }
 
+        recordTerrainCombatObservation(
+            attacker = attacker,
+            target = target,
+            damageType = DamageType.PHYSICAL,
+            sourceKind = "MELEE",
+            abilityId = "basic_attack",
+            hit = true,
+            damageAmount = result.finalDamage,
+            terrainInteraction = result.terrainInteraction,
+        )
         applyDamageResourceReactions(attacker, target, result.finalDamage)
         applyTerrainInteraction(attacker = attacker, target = target, interaction = result.terrainInteraction)
         if (attacker == playerId) {
@@ -8035,6 +8075,36 @@ class FoundationGameSession internal constructor(
         }
     }
 
+    private fun recordTalentCombatObservations(result: com.ktome.core.talent.TalentResult) {
+        result.effects.forEach { effect ->
+            when (effect) {
+                is com.ktome.core.talent.TalentEffectResult.Damage ->
+                    recordTerrainCombatObservation(
+                        attacker = result.user,
+                        target = effect.target,
+                        damageType = effect.damageType,
+                        sourceKind = "TALENT",
+                        abilityId = result.talentId,
+                        hit = true,
+                        damageAmount = effect.amount,
+                        terrainInteraction = effect.terrainInteraction,
+                    )
+                is com.ktome.core.talent.TalentEffectResult.Miss ->
+                    recordTerrainCombatObservation(
+                        attacker = result.user,
+                        target = effect.target,
+                        damageType = null,
+                        sourceKind = "TALENT",
+                        abilityId = result.talentId,
+                        hit = false,
+                        damageAmount = 0,
+                        terrainInteraction = null,
+                    )
+                else -> Unit
+            }
+        }
+    }
+
     private fun applyTalentTerrainInteractions(result: com.ktome.core.talent.TalentResult) {
         result.effects.forEach { effect ->
             if (effect is com.ktome.core.talent.TalentEffectResult.Damage) {
@@ -8049,6 +8119,34 @@ class FoundationGameSession internal constructor(
 
     private fun com.ktome.core.talent.TalentResult.hasConfirmedResolutionSuccess(): Boolean =
         effects.any { effect -> effect !is com.ktome.core.talent.TalentEffectResult.Miss }
+
+    private fun recordTerrainCombatObservation(
+        attacker: EntityId,
+        target: EntityId,
+        damageType: DamageType?,
+        sourceKind: String,
+        abilityId: String,
+        hit: Boolean,
+        damageAmount: Int,
+        terrainInteraction: ElementInteractionResolution?,
+    ) {
+        val attackerTerrainTags = world.get<Position>(attacker)?.toPoint()?.let(activeFloorState::terrainTagsAt).orEmpty()
+        val targetTerrainTags = world.get<Position>(target)?.toPoint()?.let(activeFloorState::terrainTagsAt).orEmpty()
+        terrainCombatObservations +=
+            TerrainCombatObservation(
+                zoneId = currentZoneSchema().id,
+                floorIndex = currentFloor(),
+                sourceKind = sourceKind,
+                abilityId = abilityId,
+                damageType = damageType,
+                hit = hit,
+                damageAmount = damageAmount,
+                attackerTerrainTags = attackerTerrainTags,
+                targetTerrainTags = targetTerrainTags,
+                terrainInteractionTriggered = terrainInteraction != null,
+                terrainInteractionRuleId = terrainInteraction?.ruleId,
+            )
+    }
 
     private fun logPlayerResourceRestore(before: PlayerResourceView) {
         val after = resolvePlayerResourceView()

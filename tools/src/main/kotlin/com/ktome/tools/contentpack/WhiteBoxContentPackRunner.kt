@@ -29,13 +29,14 @@ data class WhiteBoxContentPackRun(
 
 object WhiteBoxContentPackRunner {
     const val HARNESS_ID: String = "whiteBoxContentPack"
-    private const val DOMAIN_ID: String = "whiteBoxContentPack"
+    private const val DOMAIN_ID: String = "content-pack"
     private const val CORPUS_ID: String = "P4_PR09_SAMPLE_CONTENT_PACK_WHITEBOX"
 
     fun run(): WhiteBoxContentPackRun {
         val kernelRun = ContentPackHarnessRunner.executeKernel()
         val outputDir = reportDir()
         Files.createDirectories(outputDir)
+        deleteLegacyArtifacts(outputDir)
         val caseReports =
             kernelRun.results.map { result ->
                 val joinKey =
@@ -350,4 +351,14 @@ object WhiteBoxContentPackRunner {
             System.getProperty("ktome.phase4.whitebox.contentPack.reportDir")
                 ?: repoRoot().resolve("tools/build/reports/phase4/whitebox/content-pack").toString(),
         )
+
+    private fun deleteLegacyArtifacts(outputDir: Path) {
+        listOf(
+            "whitebox-whiteBoxContentPack-summary.json",
+            "whitebox-whiteBoxContentPack-cases.jsonl",
+            "whitebox-whiteBoxContentPack-report.md",
+        ).forEach { fileName ->
+            Files.deleteIfExists(outputDir.resolve(fileName))
+        }
+    }
 }

@@ -2,7 +2,9 @@ package com.ktome.tools.phase4
 
 import java.nio.file.Files
 import java.nio.file.Path
+import java.time.Duration
 import java.time.Instant
+import java.util.Locale
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
@@ -33,6 +35,7 @@ private data class Phase4AggregateReport(
     val passedTaskCount: Int,
     val failedTaskCount: Int,
     val tasks: List<Phase4TaskAggregate>,
+    val experienceMetrics: List<Phase4ExperienceMetric>,
 )
 
 private data class Phase4TaskAggregate(
@@ -42,6 +45,16 @@ private data class Phase4TaskAggregate(
     val buildId: String? = null,
     val locale: String? = null,
     val metrics: JsonObject,
+)
+
+private data class Phase4ExperienceMetric(
+    val metricId: String,
+    val sourceTaskId: String,
+    val currentValue: JsonElement,
+    val currentValueText: String,
+    val target: String,
+    val status: String,
+    val note: String? = null,
 )
 
 private data class Phase4TaskDescriptor(
@@ -58,6 +71,7 @@ private data class Phase4TaskDescriptor(
 object Phase4ReportRunner {
     private const val SUMMARY_FILE: String = "phase4-summary.json"
     private const val MARKDOWN_FILE: String = "phase4-summary.md"
+    private val CONTENT_PACK_ARTIFACT_MAX_SKEW: Duration = Duration.ofMinutes(30)
     private val json: Json = Json { prettyPrint = true }
     private val taskDescriptors: List<Phase4TaskDescriptor> =
         listOf(
@@ -128,6 +142,7 @@ object Phase4ReportRunner {
                 passedTaskCount = taskReports.count { task -> task.status == "PASS" },
                 failedTaskCount = failedTaskCount,
                 tasks = taskReports,
+                experienceMetrics = buildExperienceMetrics(taskReports),
             )
         val summaryPath = outputDir.resolve(SUMMARY_FILE)
         val markdownPath = outputDir.resolve(MARKDOWN_FILE)
@@ -234,6 +249,10 @@ object Phase4ReportRunner {
                     put("searchFailureBlockingCount", summary.intValue("searchFailureBlockingCount"))
                     put("proofMismatchCount", summary.intValue("proofMismatchCount"))
                     put("runtimeReturnDestinationMismatchCount", summary.intValue("runtimeReturnDestinationMismatchCount"))
+                    put("hiddenTriggerTypeCoverage", summary.getValue("hiddenTriggerTypeCoverage"))
+                    put("hiddenTriggerTypeSet", summary.getValue("hiddenTriggerTypeSet"))
+                    put("secretEntranceBindingCoverage", summary.getValue("secretEntranceBindingCoverage"))
+                    put("secretEntranceBindingSet", summary.getValue("secretEntranceBindingSet"))
                 },
         )
     }
@@ -247,9 +266,12 @@ object Phase4ReportRunner {
         val pairReports = payload["pairReports"]?.jsonArray.orEmpty()
         val whiteBoxSourcePath = repoRoot.resolve("tools/build/reports/phase4/whitebox/boss/whitebox-boss-summary.json")
         val whiteBoxPayload = readPhase4Json(whiteBoxSourcePath)
+        val whiteBoxHeader = whiteBoxPayload.getValue("header").jsonObject
         val whiteBoxSummary = whiteBoxPayload.getValue("summary").jsonObject
         val whiteBoxFailedAssertions = whiteBoxSummary.intValue("failedAssertions")
         val whiteBoxFirstFailedJoinKey = whiteBoxPayload["firstFailedJoinKey"]
+        val perEncounterMetrics = aggregateMetrics(whiteBoxPayload, "per-encounter")
+        val corpusMetrics = aggregateMetrics(whiteBoxPayload, "corpus")
         val failureCount =
             reports.count { element -> !element.jsonObject.getValue("success").jsonPrimitive.content.toBooleanStrict() } +
                 pairReports.count { element -> !element.jsonObject.getValue("success").jsonPrimitive.content.toBooleanStrict() }
@@ -262,6 +284,8 @@ object Phase4ReportRunner {
             taskId = "bossHarness",
             status = if (failureCount == 0 && whiteBoxFailedAssertions == 0) "PASS" else "FAIL",
             sourcePath = relativize(repoRoot, sourcePath),
+            buildId = whiteBoxHeader.stringValue("buildId"),
+            locale = whiteBoxHeader.stringValue("locale"),
             metrics =
                 buildJsonObject {
                     put("scriptVersion", payload.getValue("scriptVersion").jsonPrimitive.content)
@@ -278,6 +302,14 @@ object Phase4ReportRunner {
                     put("whiteBoxFailedAggregateCount", whiteBoxPayload.intValue("failedAggregateCount"))
                     put("whiteBoxArtifactCount", whiteBoxSummary.intValue("artifactCount"))
                     put("whiteBoxSummaryPath", relativize(repoRoot, whiteBoxSourcePath))
+                    put("perEncounterAggregateMetrics", perEncounterMetrics)
+                    put("corpusAggregateMetrics", corpusMetrics)
+                    put("perEncounterPairCount", perEncounterMetrics.getValue("pairCount"))
+                    put("perEncounterVariantCount", perEncounterMetrics.getValue("variantCount"))
+                    put("eliteMutationDistinctCount", corpusMetrics.getValue("eliteMutationDistinctCount"))
+                    put("eliteMutationValidPairCount", corpusMetrics.getValue("eliteMutationValidPairCount"))
+                    put("bossVariantCount", corpusMetrics.getValue("bossVariantCount"))
+                    put("mutationTierDistribution", corpusMetrics.getValue("mutationTierDistribution"))
                     whiteBoxFirstFailedJoinKey?.let { joinKey -> put("whiteBoxFirstFailedJoinKey", joinKey.toString()) }
                 },
         )
@@ -290,6 +322,7 @@ object Phase4ReportRunner {
     ): Phase4TaskAggregate {
         val header = payload.getValue("header").jsonObject
         val summary = payload.getValue("summary").jsonObject
+        val corpusMetrics = aggregateMetrics(payload, "corpus")
         val failedAssertions = summary.intValue("failedAssertions")
         return Phase4TaskAggregate(
             taskId = "terrainInteractionBatch",
@@ -305,6 +338,13 @@ object Phase4ReportRunner {
                     put("artifactCount", summary.intValue("artifactCount"))
                     put("failedCaseCount", payload.intValue("failedCaseCount"))
                     put("failedAggregateCount", payload.intValue("failedAggregateCount"))
+                    put("corpusAggregateMetrics", corpusMetrics)
+                    put("terrainTaggedCombatExposureRate", corpusMetrics.getValue("terrainTaggedCombatExposureRate"))
+                    put("terrainInteractionEncounterRate", corpusMetrics.getValue("terrainInteractionEncounterRate"))
+                    put("combatCount", corpusMetrics.getValue("combatCount"))
+                    put("taggedCombatCount", corpusMetrics.getValue("taggedCombatCount"))
+                    put("triggeredInteractionCombatCount", corpusMetrics.getValue("triggeredInteractionCombatCount"))
+                    put("terrainCoverageByZone", corpusMetrics.getValue("terrainCoverageByZone"))
                     payload["firstFailedJoinKey"]?.let { joinKey -> put("firstFailedJoinKey", joinKey.toString()) }
                 },
         )
@@ -380,10 +420,10 @@ object Phase4ReportRunner {
                     put("failedExpectationCount", failedExpectationCount)
                     put("rarePityActivations", summary.intValue("rarePityActivations"))
                     put("uniquePityActivations", summary.intValue("uniquePityActivations"))
-                    put("maxMagicRateDrift", summary.getValue("maxMagicRateDrift").jsonPrimitive.content.toDouble())
-                    put("maxRareRateDrift", summary.getValue("maxRareRateDrift").jsonPrimitive.content.toDouble())
-                    put("maxUniqueRelativeError", summary.getValue("maxUniqueRelativeError").jsonPrimitive.content.toDouble())
-                    put("maxArtifactRelativeError", summary.getValue("maxArtifactRelativeError").jsonPrimitive.content.toDouble())
+                    put("maxMagicRateDrift", summary.doubleValue("maxMagicRateDrift"))
+                    put("maxRareRateDrift", summary.doubleValue("maxRareRateDrift"))
+                    put("maxUniqueRelativeError", summary.doubleValue("maxUniqueRelativeError"))
+                    put("maxArtifactRelativeError", summary.doubleValue("maxArtifactRelativeError"))
                     put("clampWithinTolerance", clamp.getValue("withinTolerance").jsonPrimitive.content.toBooleanStrict())
                     put("clampMaxDistributionDelta", clamp.getValue("maxDistributionDelta").jsonPrimitive.content.toDouble())
                 },
@@ -399,9 +439,17 @@ object Phase4ReportRunner {
         val summary = payload.getValue("summary").jsonObject
         val whiteBoxSourcePath = repoRoot.resolve("tools/build/reports/phase4/whitebox/content-pack/whitebox-content-pack-summary.json")
         val whiteBoxPayload = readPhase4Json(whiteBoxSourcePath)
+        requireFreshnessAligned(
+            primaryPath = sourcePath,
+            primaryPayload = payload,
+            secondaryPath = whiteBoxSourcePath,
+            secondaryPayload = whiteBoxPayload,
+            maxSkew = CONTENT_PACK_ARTIFACT_MAX_SKEW,
+        )
         val whiteBoxSummary = whiteBoxPayload.getValue("summary").jsonObject
         val whiteBoxFailedAssertions = whiteBoxSummary.intValue("failedAssertions")
         val failureCount = summary.intValue("failureCount")
+        val whiteBoxCorpusMetrics = aggregateMetrics(whiteBoxPayload, "corpus")
         return Phase4TaskAggregate(
             taskId = "contentPackHarness",
             status = if (failureCount == 0 && whiteBoxFailedAssertions == 0) "PASS" else "FAIL",
@@ -427,6 +475,9 @@ object Phase4ReportRunner {
                     put("generatedTemplateFailureCount", summary.intValue("generatedTemplateFailureCount"))
                     put("whiteBoxFailedAssertions", whiteBoxFailedAssertions)
                     put("whiteBoxSummaryPath", relativize(repoRoot, whiteBoxSourcePath))
+                    put("whiteBoxCorpusAggregateMetrics", whiteBoxCorpusMetrics)
+                    put("contentPackArtifactTimestamp", payload.getValue("header").jsonObject.getValue("timestamp"))
+                    put("whiteBoxContentPackArtifactTimestamp", whiteBoxPayload.getValue("header").jsonObject.getValue("timestamp"))
                 },
         )
     }
@@ -439,6 +490,7 @@ object Phase4ReportRunner {
         val header = payload.getValue("header").jsonObject
         val summary = payload.getValue("summary").jsonObject
         val failedAssertions = summary.intValue("failedAssertions")
+        val corpusMetrics = aggregateMetrics(payload, "corpus")
         return Phase4TaskAggregate(
             taskId = "whiteBoxLoot",
             status = if (failedAssertions == 0) "PASS" else "FAIL",
@@ -451,6 +503,16 @@ object Phase4ReportRunner {
                     put("aggregateCount", summary.intValue("aggregateCount"))
                     put("failedAssertions", failedAssertions)
                     put("artifactCount", summary.intValue("artifactCount"))
+                    put("corpusAggregateMetrics", corpusMetrics)
+                    put("lootProfileAverageBaseItemOverlap", corpusMetrics.getValue("lootProfileAverageBaseItemOverlap"))
+                    put("lootProfileMaxBaseItemOverlap", corpusMetrics.getValue("lootProfileMaxBaseItemOverlap"))
+                    put("lootProfileDistinctBaseItemCount", corpusMetrics.getValue("lootProfileDistinctBaseItemCount"))
+                    put("lootProfileBaseItemOverlapMatrix", corpusMetrics.getValue("lootProfileBaseItemOverlapMatrix"))
+                    put("affixPassiveCoverage", corpusMetrics.getValue("affixPassiveCoverage"))
+                    put("affixPassiveKinds", corpusMetrics.getValue("affixPassiveKinds"))
+                    put("uniqueArtifactOutcomeCount", corpusMetrics.getValue("uniqueArtifactOutcomeCount"))
+                    put("meaningfulUniqueArtifactSwapCount", corpusMetrics.getValue("meaningfulUniqueArtifactSwapCount"))
+                    put("uniqueArtifactMeaningfulSwapRate", corpusMetrics.getValue("uniqueArtifactMeaningfulSwapRate"))
                 },
         )
     }
@@ -490,6 +552,7 @@ object Phase4ReportRunner {
         val header = payload.getValue("header").jsonObject
         val summary = payload.getValue("summary").jsonObject
         val failedAssertions = summary.intValue("failedAssertions")
+        val corpusMetrics = aggregateMetrics(payload, "corpus")
         return Phase4TaskAggregate(
             taskId = "whiteBoxHiddenContent",
             status = if (failedAssertions == 0) "PASS" else "FAIL",
@@ -504,8 +567,157 @@ object Phase4ReportRunner {
                     put("artifactCount", summary.intValue("artifactCount"))
                     put("failedCaseCount", payload.intValue("failedCaseCount"))
                     put("failedAggregateCount", payload.intValue("failedAggregateCount"))
+                    put("corpusAggregateMetrics", corpusMetrics)
+                    put("hiddenTriggerTypeCoverage", corpusMetrics.getValue("hiddenTriggerTypeCoverage"))
+                    put("hiddenTriggerTypeSet", corpusMetrics.getValue("hiddenTriggerTypeSet"))
+                    put("secretEntranceBindingCoverage", corpusMetrics.getValue("secretEntranceBindingCoverage"))
+                    put("secretEntranceBindingSet", corpusMetrics.getValue("secretEntranceBindingSet"))
                     payload["firstFailedJoinKey"]?.let { joinKey -> put("firstFailedJoinKey", joinKey.toString()) }
                 },
+        )
+    }
+
+    private fun buildExperienceMetrics(tasks: List<Phase4TaskAggregate>): List<Phase4ExperienceMetric> {
+        val tasksById = tasks.associateBy(Phase4TaskAggregate::taskId)
+        val boss = requireTask(tasksById, "bossHarness")
+        val loot = requireTask(tasksById, "whiteBoxLoot")
+        val hidden = requireTask(tasksById, "whiteBoxHiddenContent")
+        val terrain = requireTask(tasksById, "terrainInteractionBatch")
+
+        val lootAverageOverlap = loot.metrics.doubleValue("lootProfileAverageBaseItemOverlap")
+        val lootMaxOverlap = loot.metrics.doubleValue("lootProfileMaxBaseItemOverlap")
+        val lootDistinctBaseItemCount = loot.metrics.intValue("lootProfileDistinctBaseItemCount")
+        val affixCoverage = loot.metrics.doubleValue("affixPassiveCoverage")
+        val affixPassiveKinds = loot.metrics.stringList("affixPassiveKinds")
+        val hiddenTriggerCoverage = hidden.metrics.doubleValue("hiddenTriggerTypeCoverage")
+        val hiddenTriggerTypes = hidden.metrics.stringList("hiddenTriggerTypeSet")
+        val secretBindingCoverage = hidden.metrics.intValue("secretEntranceBindingCoverage")
+        val secretBindingSet = hidden.metrics.stringList("secretEntranceBindingSet")
+        val terrainTaggedExposureRate = terrain.metrics.doubleValue("terrainTaggedCombatExposureRate")
+        val terrainEncounterRate = terrain.metrics.doubleValue("terrainInteractionEncounterRate")
+        val combatCount = terrain.metrics.intValue("combatCount")
+        val taggedCombatCount = terrain.metrics.intValue("taggedCombatCount")
+        val triggeredInteractionCombatCount = terrain.metrics.intValue("triggeredInteractionCombatCount")
+        val uniqueArtifactMeaningfulSwapRate = loot.metrics.doubleValue("uniqueArtifactMeaningfulSwapRate")
+        val uniqueArtifactOutcomeCount = loot.metrics.intValue("uniqueArtifactOutcomeCount")
+        val meaningfulUniqueArtifactSwapCount = loot.metrics.intValue("meaningfulUniqueArtifactSwapCount")
+        return listOf(
+            Phase4ExperienceMetric(
+                metricId = "eliteMutationDistinctCount",
+                sourceTaskId = boss.taskId,
+                currentValue = boss.metrics.getValue("eliteMutationDistinctCount"),
+                currentValueText = boss.metrics.intValue("eliteMutationDistinctCount").toString(),
+                target = ">= 12",
+                status = verdictOf(boss.metrics.intValue("eliteMutationDistinctCount") >= 12),
+            ),
+            Phase4ExperienceMetric(
+                metricId = "eliteMutationValidPairCount",
+                sourceTaskId = boss.taskId,
+                currentValue = boss.metrics.getValue("eliteMutationValidPairCount"),
+                currentValueText = boss.metrics.intValue("eliteMutationValidPairCount").toString(),
+                target = ">= 40",
+                status = verdictOf(boss.metrics.intValue("eliteMutationValidPairCount") >= 40),
+            ),
+            Phase4ExperienceMetric(
+                metricId = "lootProfileBaseItemOverlapMatrix",
+                sourceTaskId = loot.taskId,
+                currentValue =
+                    buildJsonObject {
+                        put("averageOverlap", loot.metrics.getValue("lootProfileAverageBaseItemOverlap"))
+                        put("maxOverlap", loot.metrics.getValue("lootProfileMaxBaseItemOverlap"))
+                        put("matrix", loot.metrics.getValue("lootProfileBaseItemOverlapMatrix"))
+                    },
+                currentValueText = "average=${formatRatio(lootAverageOverlap)}, max=${formatRatio(lootMaxOverlap)}",
+                target = "averageOverlap < 0.30",
+                status = verdictOf(lootAverageOverlap < 0.30),
+                note = "overlap = |A ∩ B| / min(|A|, |B|)",
+            ),
+            Phase4ExperienceMetric(
+                metricId = "lootProfileDistinctBaseItemCount",
+                sourceTaskId = loot.taskId,
+                currentValue = loot.metrics.getValue("lootProfileDistinctBaseItemCount"),
+                currentValueText = lootDistinctBaseItemCount.toString(),
+                target = ">= 35",
+                status = verdictOf(lootDistinctBaseItemCount >= 35),
+            ),
+            Phase4ExperienceMetric(
+                metricId = "affixPassiveCoverage",
+                sourceTaskId = loot.taskId,
+                currentValue =
+                    buildJsonObject {
+                        put("coverageRatio", loot.metrics.getValue("affixPassiveCoverage"))
+                        put("passiveKinds", loot.metrics.getValue("affixPassiveKinds"))
+                    },
+                currentValueText = "${formatPercent(affixCoverage)} (${affixPassiveKinds.joinToString()})",
+                target = ">= 80%",
+                status = verdictOf(affixCoverage >= 0.80),
+            ),
+            Phase4ExperienceMetric(
+                metricId = "hiddenTriggerTypeCoverage",
+                sourceTaskId = hidden.taskId,
+                currentValue =
+                    buildJsonObject {
+                        put("coverageRatio", hidden.metrics.getValue("hiddenTriggerTypeCoverage"))
+                        put("triggerTypes", hidden.metrics.getValue("hiddenTriggerTypeSet"))
+                    },
+                currentValueText = "${formatPercent(hiddenTriggerCoverage)} (${hiddenTriggerTypes.joinToString()})",
+                target = ">= 4/6",
+                status = verdictOf(hiddenTriggerCoverage >= (4.0 / 6.0)),
+            ),
+            Phase4ExperienceMetric(
+                metricId = "secretEntranceBindingCoverage",
+                sourceTaskId = hidden.taskId,
+                currentValue =
+                    buildJsonObject {
+                        put("bindingCount", hidden.metrics.getValue("secretEntranceBindingCoverage"))
+                        put("bindingSet", hidden.metrics.getValue("secretEntranceBindingSet"))
+                    },
+                currentValueText = "$secretBindingCoverage (${secretBindingSet.joinToString()})",
+                target = ">= 3",
+                status = verdictOf(secretBindingCoverage >= 3),
+            ),
+            Phase4ExperienceMetric(
+                metricId = "terrainTaggedCombatExposureRate",
+                sourceTaskId = terrain.taskId,
+                currentValue =
+                    buildJsonObject {
+                        put("rate", terrain.metrics.getValue("terrainTaggedCombatExposureRate"))
+                        put("combatCount", terrain.metrics.getValue("combatCount"))
+                        put("taggedCombatCount", terrain.metrics.getValue("taggedCombatCount"))
+                        put("terrainCoverageByZone", terrain.metrics.getValue("terrainCoverageByZone"))
+                    },
+                currentValueText = "${formatPercent(terrainTaggedExposureRate)} ($taggedCombatCount/$combatCount)",
+                target = ">= 40%",
+                status = verdictOf(terrainTaggedExposureRate >= 0.40),
+            ),
+            Phase4ExperienceMetric(
+                metricId = "terrainInteractionEncounterRate",
+                sourceTaskId = terrain.taskId,
+                currentValue =
+                    buildJsonObject {
+                        put("rate", terrain.metrics.getValue("terrainInteractionEncounterRate"))
+                        put("combatCount", terrain.metrics.getValue("combatCount"))
+                        put("triggeredInteractionCombatCount", terrain.metrics.getValue("triggeredInteractionCombatCount"))
+                        put("terrainCoverageByZone", terrain.metrics.getValue("terrainCoverageByZone"))
+                    },
+                currentValueText = "${formatPercent(terrainEncounterRate)} ($triggeredInteractionCombatCount/$combatCount)",
+                target = ">= 25%",
+                status = verdictOf(terrainEncounterRate >= 0.25),
+            ),
+            Phase4ExperienceMetric(
+                metricId = "uniqueArtifactMeaningfulSwapRate",
+                sourceTaskId = loot.taskId,
+                currentValue =
+                    buildJsonObject {
+                        put("rate", loot.metrics.getValue("uniqueArtifactMeaningfulSwapRate"))
+                        put("uniqueArtifactOutcomeCount", loot.metrics.getValue("uniqueArtifactOutcomeCount"))
+                        put("meaningfulUniqueArtifactSwapCount", loot.metrics.getValue("meaningfulUniqueArtifactSwapCount"))
+                    },
+                currentValueText = "${formatPercent(uniqueArtifactMeaningfulSwapRate)} ($meaningfulUniqueArtifactSwapCount/$uniqueArtifactOutcomeCount)",
+                target = ">= 50%",
+                status = verdictOf(uniqueArtifactMeaningfulSwapRate >= 0.50),
+                note = "meaningful = passive signature set is non-empty and not fully covered by the same-slot rare passive universe",
+            ),
         )
     }
 
@@ -519,6 +731,20 @@ object Phase4ReportRunner {
             appendLine("- taskCount: `${report.taskCount}`")
             appendLine("- passedTaskCount: `${report.passedTaskCount}`")
             appendLine("- failedTaskCount: `${report.failedTaskCount}`")
+            appendLine()
+            appendLine("## 体验度量基线")
+            appendLine("| metricId | current | source | target | status |")
+            appendLine("| --- | --- | --- | --- | --- |")
+            report.experienceMetrics.forEach { metric ->
+                appendLine("| `${metric.metricId}` | ${metric.currentValueText} | `${metric.sourceTaskId}` | `${metric.target}` | ${metric.status} |")
+            }
+            val notedMetrics = report.experienceMetrics.filter { metric -> metric.note != null }
+            if (notedMetrics.isNotEmpty()) {
+                appendLine()
+                notedMetrics.forEach { metric ->
+                    appendLine("- `${metric.metricId}` note: ${metric.note}")
+                }
+            }
             appendLine()
             appendLine("## Tasks")
             report.tasks.forEach { task ->
@@ -562,6 +788,9 @@ private fun Phase4AggregateReport.toJson(): JsonObject =
         putJsonArray("tasks") {
             tasks.forEach { task -> add(task.toJson()) }
         }
+        putJsonArray("experienceMetrics") {
+            experienceMetrics.forEach { metric -> add(metric.toJson()) }
+        }
     }
 
 private fun Phase4TaskAggregate.toJson(): JsonObject =
@@ -576,13 +805,71 @@ private fun Phase4TaskAggregate.toJson(): JsonObject =
         }
     }
 
+private fun Phase4ExperienceMetric.toJson(): JsonObject =
+    buildJsonObject {
+        put("metricId", metricId)
+        put("sourceTaskId", sourceTaskId)
+        put("currentValue", currentValue)
+        put("currentValueText", currentValueText)
+        put("target", target)
+        put("status", status)
+        note?.let { value -> put("note", value) }
+    }
+
+private fun aggregateMetrics(
+    payload: JsonObject,
+    groupId: String,
+): JsonObject =
+    payload.getValue("aggregates").jsonArray
+        .first { aggregate -> aggregate.jsonObject.getValue("groupId").jsonPrimitive.content == groupId }
+        .jsonObject
+        .getValue("metrics")
+        .jsonObject
+
+private fun requireTask(
+    tasksById: Map<String, Phase4TaskAggregate>,
+    taskId: String,
+): Phase4TaskAggregate = checkNotNull(tasksById[taskId]) { "Missing phase4 task aggregate for $taskId." }
+
+private fun requireFreshnessAligned(
+    primaryPath: Path,
+    primaryPayload: JsonObject,
+    secondaryPath: Path,
+    secondaryPayload: JsonObject,
+    maxSkew: Duration,
+) {
+    val primaryBuildId = reportBuildId(primaryPayload)
+    val secondaryBuildId = reportBuildId(secondaryPayload)
+    check(primaryBuildId == secondaryBuildId) {
+        "Mismatched content-pack artifact buildIds: $primaryPath ($primaryBuildId) vs $secondaryPath ($secondaryBuildId)."
+    }
+    val primaryTimestamp = reportTimestamp(primaryPayload)
+    val secondaryTimestamp = reportTimestamp(secondaryPayload)
+    val skew = Duration.between(primaryTimestamp, secondaryTimestamp).abs()
+    check(skew <= maxSkew) {
+        "Stale content-pack artifacts: $primaryPath ($primaryBuildId @ $primaryTimestamp) vs $secondaryPath ($secondaryBuildId @ $secondaryTimestamp), skew=${skew.toMinutes()}m exceeds ${maxSkew.toMinutes()}m."
+    }
+}
+
+private fun verdictOf(passed: Boolean): String = if (passed) "PASS" else "FAIL"
+
+private fun formatPercent(value: Double): String = String.format(Locale.US, "%.1f%%", value * 100.0)
+
+private fun formatRatio(value: Double): String = String.format(Locale.US, "%.3f", value)
+
 private fun readPhase4Json(path: Path): JsonObject {
     check(Files.exists(path)) { "Missing phase4 report source: $path" }
     return phase4Json.parseToJsonElement(Files.readString(path)).jsonObject
 }
 
-private fun JsonObject.intValue(key: String): Int = (getValue(key) as JsonPrimitive).content.toInt()
+private fun reportBuildId(payload: JsonObject): String = payload.getValue("header").jsonObject.stringValue("buildId")
 
-private fun JsonObject.doubleValue(key: String): Double = (getValue(key) as JsonPrimitive).content.toDouble()
+private fun reportTimestamp(payload: JsonObject): Instant = Instant.parse(payload.getValue("header").jsonObject.stringValue("timestamp"))
 
-private fun JsonObject.stringValue(key: String): String = (getValue(key) as JsonPrimitive).content
+private fun JsonObject.intValue(key: String): Int = getValue(key).jsonPrimitive.content.toInt()
+
+private fun JsonObject.doubleValue(key: String): Double = getValue(key).jsonPrimitive.content.toDouble()
+
+private fun JsonObject.stringValue(key: String): String = getValue(key).jsonPrimitive.content
+
+private fun JsonObject.stringList(key: String): List<String> = getValue(key).jsonArray.map { element -> element.jsonPrimitive.content }

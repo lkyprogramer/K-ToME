@@ -1,8 +1,16 @@
 package com.ktome.tools.loot
 
 import com.ktome.core.harness.toJson
+import com.ktome.core.item.AffixDef
+import com.ktome.core.item.AffixEquipType
+import com.ktome.core.item.EquipSlot
+import com.ktome.core.item.EquipmentPassive
 import com.ktome.core.item.GeneratedItemRoll
 import com.ktome.core.item.ItemGenerator
+import com.ktome.core.item.ItemBaseDef
+import com.ktome.core.item.ItemDataBundle
+import com.ktome.core.item.ItemInstance
+import com.ktome.core.item.ItemType
 import com.ktome.core.loot.LootRollContext
 import com.ktome.core.loot.RarityTier
 import com.ktome.core.loot.SourceTier
@@ -67,6 +75,12 @@ internal data class LootRollSample(
     val finalTier: String,
     val specialTier: SpecialTier?,
     val specialTemplateId: String?,
+    val generatedBaseItemId: String,
+    val itemType: ItemType,
+    val equipSlot: EquipSlot?,
+    val specialOrBasePassiveSignatures: Set<String>,
+    val affixPassiveSignatures: Set<String>,
+    val meaningfulUniqueArtifactSwap: Boolean?,
     val specialTierEligibilityCount: Int,
     val rarePityApplied: Boolean,
     val specialPityApplied: Boolean,
@@ -99,6 +113,16 @@ internal data class LootRollSample(
             put("finalTier", finalTier)
             put("specialTier", specialTier?.name)
             put("specialTemplateId", specialTemplateId)
+            put("generatedBaseItemId", generatedBaseItemId)
+            put("itemType", itemType.name)
+            put("equipSlot", equipSlot?.name)
+            putJsonArray("specialOrBasePassiveSignatures") {
+                specialOrBasePassiveSignatures.sorted().forEach { signature -> add(JsonPrimitive(signature)) }
+            }
+            putJsonArray("affixPassiveSignatures") {
+                affixPassiveSignatures.sorted().forEach { signature -> add(JsonPrimitive(signature)) }
+            }
+            put("meaningfulUniqueArtifactSwap", meaningfulUniqueArtifactSwap)
             put("specialTierEligibilityCount", specialTierEligibilityCount)
             put("rarePityApplied", rarePityApplied)
             put("specialPityApplied", specialPityApplied)
@@ -182,6 +206,9 @@ internal data class LootMatrixResult(
     val pityTimeline: List<LootPityEvent>,
     val castSpeedSamples: List<LootCastSpeedSample>,
     val sampleRolls: List<LootRollSample>,
+    val uniqueArtifactOutcomeCount: Int,
+    val meaningfulUniqueArtifactSwapCount: Int,
+    val meaningfulUniqueArtifactSwapRate: Double,
 ) {
     fun toJson(): JsonObject =
         buildJsonObject {
@@ -227,6 +254,45 @@ internal data class LootMatrixResult(
             }
             putJsonObject("topAffixIds") {
                 topAffixIds.forEach { (affixId, count) -> put(affixId, count) }
+            }
+            put("uniqueArtifactOutcomeCount", uniqueArtifactOutcomeCount)
+            put("meaningfulUniqueArtifactSwapCount", meaningfulUniqueArtifactSwapCount)
+            put("meaningfulUniqueArtifactSwapRate", meaningfulUniqueArtifactSwapRate)
+        }
+}
+
+internal data class LootProfileOverlapSummary(
+    val overlapMatrix: Map<String, Map<String, Double>>,
+    val averageOverlap: Double,
+    val maxOverlap: Double,
+    val distinctBaseItemCount: Int,
+) {
+    fun toJson(): JsonObject =
+        buildJsonObject {
+            put("averageOverlap", averageOverlap)
+            put("maxOverlap", maxOverlap)
+            put("distinctBaseItemCount", distinctBaseItemCount)
+            putJsonObject("matrix") {
+                overlapMatrix.toSortedMap().forEach { (profileId, row) ->
+                    putJsonObject(profileId) {
+                        row.toSortedMap().forEach { (candidateId, overlap) ->
+                            put(candidateId, overlap)
+                        }
+                    }
+                }
+            }
+        }
+}
+
+internal data class LootPassiveCoverageSummary(
+    val passiveKinds: Set<String>,
+    val coverageRatio: Double,
+) {
+    fun toJson(): JsonObject =
+        buildJsonObject {
+            put("coverageRatio", coverageRatio)
+            putJsonArray("passiveKinds") {
+                passiveKinds.sorted().forEach { passiveKind -> add(JsonPrimitive(passiveKind)) }
             }
         }
 }
@@ -278,12 +344,28 @@ internal data class LootKernelRun(
     val specialPoolSummary: LootSpecialPoolSummary,
     val clampComparison: LootClampComparison,
     val matrixSeeds: List<Long>,
+    val profileOverlapSummary: LootProfileOverlapSummary,
+    val passiveCoverageSummary: LootPassiveCoverageSummary,
 ) {
     val totalRolls: Int
         get() = matrices.sumOf(LootMatrixResult::totalRolls)
 
     val failedExpectationCount: Int
         get() = matrices.sumOf(LootMatrixResult::failedExpectationCount) + if (specialPoolSummary.passesThresholds && clampComparison.withinTolerance) 0 else 1
+
+    val uniqueArtifactOutcomeCount: Int
+        get() = matrices.sumOf(LootMatrixResult::uniqueArtifactOutcomeCount)
+
+    val meaningfulUniqueArtifactSwapCount: Int
+        get() = matrices.sumOf(LootMatrixResult::meaningfulUniqueArtifactSwapCount)
+
+    val uniqueArtifactMeaningfulSwapRate: Double
+        get() =
+            if (uniqueArtifactOutcomeCount == 0) {
+                0.0
+            } else {
+                meaningfulUniqueArtifactSwapCount.toDouble() / uniqueArtifactOutcomeCount.toDouble()
+            }
 }
 
 private const val ROLLS_PER_MATRIX: Int = 10_000
@@ -293,6 +375,7 @@ private const val AFFIX_BUDGET_AVERAGE_TOLERANCE: Double = 0.05
 private const val AFFIX_BUDGET_P95_TOLERANCE: Double = 0.12
 private const val CLAMP_DISTRIBUTION_TOLERANCE: Double = 0.02
 internal val LOOT_REPORT_LOCALE: GameLocale = GameLocale.EN_US
+private const val EQUIPMENT_PASSIVE_KIND_COUNT: Int = 5
 
 internal object LootLabKernel {
     private val json: Json = Json { prettyPrint = true }
@@ -361,12 +444,14 @@ internal object LootLabKernel {
         val schemaCatalog = loader.loadSchemaCatalog()
         val itemBundle = loader.loadItemBundle()
         val rewardResolver = SchemaZoneRewardProfileResolver(schemaCatalog.zones, schemaCatalog.zoneRewardProfiles)
+        val rarePassiveUniverseBySlot = buildRarePassiveUniverseBySlot(itemBundle)
         val matrices =
             matrixSpecs.map { spec ->
                 executeMatrix(
                     spec = spec,
                     zoneRewardProfile = rewardResolver.resolve(spec.zoneId),
                     itemBundleLoader = { itemBundle },
+                    rarePassiveUniverseBySlot = rarePassiveUniverseBySlot,
                     onRoll = onRoll,
                 )
             }
@@ -377,6 +462,8 @@ internal object LootLabKernel {
             specialPoolSummary = specialPoolSummary,
             clampComparison = clampComparison,
             matrixSeeds = matrixSpecs.map(LootMatrixSpec::seedBase),
+            profileOverlapSummary = summarizeLootProfileOverlap(schemaCatalog.lootProfiles),
+            passiveCoverageSummary = summarizeAffixPassiveCoverage(itemBundle),
         )
     }
 
@@ -384,6 +471,7 @@ internal object LootLabKernel {
         spec: LootMatrixSpec,
         zoneRewardProfile: ZoneRewardProfile,
         itemBundleLoader: () -> com.ktome.core.item.ItemDataBundle,
+        rarePassiveUniverseBySlot: Map<EquipSlot, Set<String>>,
         onRoll: (LootRollSample) -> Unit,
     ): LootMatrixResult {
         val finalTierCounts = linkedMapOf("NORMAL" to 0, "MAGIC" to 0, "RARE" to 0, "UNIQUE" to 0, "ARTIFACT" to 0)
@@ -399,6 +487,8 @@ internal object LootLabKernel {
         var eligibleCount = 0
         var uniqueCount = 0
         var artifactCount = 0
+        var uniqueArtifactOutcomeCount = 0
+        var meaningfulUniqueArtifactSwapCount = 0
         var rarePityActivations = 0
         var uniquePityActivations = 0
         var pityTracker = com.ktome.core.loot.PityTracker()
@@ -427,7 +517,14 @@ internal object LootLabKernel {
                             SpecialTierEligibility(availableSpecialTiers = allowedSpecialTiers)
                         },
                 )
-            val sample = buildRollSample(spec = spec, rollIndex = rollIndex, generated = generated, previousPity = pityTracker)
+            val sample =
+                buildRollSample(
+                    spec = spec,
+                    rollIndex = rollIndex,
+                    generated = generated,
+                    previousPity = pityTracker,
+                    rarePassiveUniverseBySlot = rarePassiveUniverseBySlot,
+                )
             availableSpecialTiers =
                 availableSpecialTiers + generated.rollResult.budget.specialTierEligibility.availableSpecialTiers
             pityTracker = generated.rollResult.resultingPityTracker
@@ -443,6 +540,12 @@ internal object LootLabKernel {
             }
             if (sample.finalTier == SpecialTier.ARTIFACT.name) {
                 artifactCount += 1
+            }
+            if (sample.finalTier == SpecialTier.UNIQUE.name || sample.finalTier == SpecialTier.ARTIFACT.name) {
+                uniqueArtifactOutcomeCount += 1
+                if (sample.meaningfulUniqueArtifactSwap == true) {
+                    meaningfulUniqueArtifactSwapCount += 1
+                }
             }
             if (sample.rarePityApplied) {
                 rarePityActivations += 1
@@ -569,6 +672,14 @@ internal object LootLabKernel {
             pityTimeline = pityTimeline.take(20),
             castSpeedSamples = castSpeedSamples.sortedByDescending(LootCastSpeedSample::rawCastSpeedRating).take(10),
             sampleRolls = sampleRolls.take(16),
+            uniqueArtifactOutcomeCount = uniqueArtifactOutcomeCount,
+            meaningfulUniqueArtifactSwapCount = meaningfulUniqueArtifactSwapCount,
+            meaningfulUniqueArtifactSwapRate =
+                if (uniqueArtifactOutcomeCount == 0) {
+                    0.0
+                } else {
+                    meaningfulUniqueArtifactSwapCount.toDouble() / uniqueArtifactOutcomeCount.toDouble()
+                },
         )
     }
 
@@ -577,8 +688,14 @@ internal object LootLabKernel {
         rollIndex: Int,
         generated: GeneratedItemRoll,
         previousPity: com.ktome.core.loot.PityTracker,
+        rarePassiveUniverseBySlot: Map<EquipSlot, Set<String>>,
     ): LootRollSample {
         val finalTier = generated.trace.specialTier?.name ?: generated.rollResult.resolvedRarityTier.name
+        val specialOrBasePassiveSignatures = generated.item.passive?.let(::passiveSignature)?.let(::setOf).orEmpty()
+        val affixPassiveSignatures =
+            generated.item.affixes
+                .mapNotNull(AffixDef::passive)
+                .mapTo(linkedSetOf(), ::passiveSignature)
         val affixBudgetDeviationRatio =
             generated.rollResult.resolvedRarityTier
                 .takeIf { rarityTier ->
@@ -608,6 +725,22 @@ internal object LootLabKernel {
             finalTier = finalTier,
             specialTier = generated.trace.specialTier,
             specialTemplateId = generated.trace.specialTemplateId,
+            generatedBaseItemId = generated.trace.generatedBaseItemId,
+            itemType = generated.item.type,
+            equipSlot = generated.item.slot,
+            specialOrBasePassiveSignatures = specialOrBasePassiveSignatures,
+            affixPassiveSignatures = affixPassiveSignatures,
+            meaningfulUniqueArtifactSwap =
+                generated.trace.specialTier
+                    ?.takeIf { specialTier -> specialTier == SpecialTier.UNIQUE || specialTier == SpecialTier.ARTIFACT }
+                    ?.let {
+                        isMeaningfulUniqueArtifactSwap(
+                            item = generated.item,
+                            rarePassiveUniverseBySlot = rarePassiveUniverseBySlot,
+                            specialOrBasePassiveSignatures = specialOrBasePassiveSignatures,
+                            affixPassiveSignatures = affixPassiveSignatures,
+                        )
+                    },
             specialTierEligibilityCount = generated.rollResult.budget.specialTierEligibility.availableTemplateIds.size,
             rarePityApplied = generated.rollResult.rarePityApplied,
             specialPityApplied = generated.rollResult.specialPityApplied,
@@ -711,6 +844,87 @@ internal object LootLabKernel {
                     chestOnlyArtifactTemplateCount > 0 &&
                     secretZoneArtifactTemplateCount > 0,
         )
+    }
+
+    private fun summarizeLootProfileOverlap(
+        profiles: List<com.ktome.game.data.schema.LootProfileSchemaV2>,
+    ): LootProfileOverlapSummary {
+        val overlapMatrix =
+            profiles.associate { profile ->
+                val leftItems = profile.itemIds.toSet()
+                profile.id to
+                    profiles
+                        .filterNot { candidate -> candidate.id == profile.id }
+                        .associate { candidate ->
+                            val rightItems = candidate.itemIds.toSet()
+                            val denominator = minOf(leftItems.size, rightItems.size).coerceAtLeast(1)
+                            candidate.id to leftItems.intersect(rightItems).size.toDouble() / denominator.toDouble()
+                        }
+            }
+        val overlapValues = overlapMatrix.values.flatMap { row -> row.values }
+        val distinctBaseItemCount = profiles.flatMapTo(linkedSetOf()) { profile -> profile.itemIds }.size
+        return LootProfileOverlapSummary(
+            overlapMatrix = overlapMatrix,
+            averageOverlap = overlapValues.averageOrZero(),
+            maxOverlap = overlapValues.maxOrNull() ?: 0.0,
+            distinctBaseItemCount = distinctBaseItemCount,
+        )
+    }
+
+    private fun summarizeAffixPassiveCoverage(bundle: ItemDataBundle): LootPassiveCoverageSummary {
+        val passiveKinds =
+            bundle.affixes
+                .mapNotNull(AffixDef::passive)
+                .mapTo(linkedSetOf(), ::passiveKind)
+        return LootPassiveCoverageSummary(
+            passiveKinds = passiveKinds,
+            coverageRatio = passiveKinds.size.toDouble() / EQUIPMENT_PASSIVE_KIND_COUNT.toDouble(),
+        )
+    }
+
+    private fun buildRarePassiveUniverseBySlot(bundle: ItemDataBundle): Map<EquipSlot, Set<String>> {
+        val affixPassiveSignaturesByEquipType =
+            bundle.affixes
+                .asSequence()
+                .filter { affix -> affix.passive != null }
+                .groupBy(AffixDef::equipType)
+                .mapValues { (_, affixes) ->
+                    affixes.mapNotNull(AffixDef::passive).mapTo(linkedSetOf(), ::passiveSignature)
+                }
+        return bundle.baseItems
+            .asSequence()
+            .filter { baseItem -> baseItem.slot != null }
+            .groupBy { baseItem -> requireNotNull(baseItem.slot) }
+            .mapValues { (_, baseItems) ->
+                buildSet {
+                    baseItems.mapNotNull(ItemBaseDef::passive).mapTo(this, ::passiveSignature)
+                    baseItems
+                        .mapNotNull(::equipTypeForBase)
+                        .flatMapTo(this) { equipType -> affixPassiveSignaturesByEquipType[equipType].orEmpty() }
+                }
+            }
+    }
+
+    private fun equipTypeForBase(baseItem: ItemBaseDef): AffixEquipType? =
+        when (baseItem.type) {
+            ItemType.WEAPON -> AffixEquipType.WEAPON
+            ItemType.ARMOR -> AffixEquipType.ARMOR
+            ItemType.CONSUMABLE -> null
+        }
+
+    private fun isMeaningfulUniqueArtifactSwap(
+        item: ItemInstance,
+        rarePassiveUniverseBySlot: Map<EquipSlot, Set<String>>,
+        specialOrBasePassiveSignatures: Set<String>,
+        affixPassiveSignatures: Set<String>,
+    ): Boolean {
+        val equipSlot = item.slot ?: return false
+        val specialPassiveUniverse = specialOrBasePassiveSignatures + affixPassiveSignatures
+        if (specialPassiveUniverse.isEmpty()) {
+            return false
+        }
+        val rareUniverse = rarePassiveUniverseBySlot[equipSlot].orEmpty()
+        return !specialPassiveUniverse.all(rareUniverse::contains)
     }
 
     private fun compareClampBoundary(matrices: List<LootMatrixResult>): LootClampComparison {
@@ -829,6 +1043,24 @@ internal object LootLabKernel {
     }
 
     private fun List<Double>.averageOrZero(): Double = if (isEmpty()) 0.0 else average()
+
+    private fun passiveKind(passive: EquipmentPassive): String =
+        when (passive) {
+            is EquipmentPassive.DamageVsTag -> "DamageVsTag"
+            is EquipmentPassive.DamageVsStatus -> "DamageVsStatus"
+            is EquipmentPassive.HpRegenPerTurn -> "HpRegenPerTurn"
+            is EquipmentPassive.DamageTypeBonus -> "DamageTypeBonus"
+            is EquipmentPassive.ResistanceBonus -> "ResistanceBonus"
+        }
+
+    private fun passiveSignature(passive: EquipmentPassive): String =
+        when (passive) {
+            is EquipmentPassive.DamageVsTag -> "DamageVsTag:${passive.tag}:${passive.bonusPercent}"
+            is EquipmentPassive.DamageVsStatus -> "DamageVsStatus:${passive.statusId}:${passive.bonusPercent}"
+            is EquipmentPassive.HpRegenPerTurn -> "HpRegenPerTurn:${passive.amount}"
+            is EquipmentPassive.DamageTypeBonus -> "DamageTypeBonus:${passive.type.name}:${passive.bonusPercent}"
+            is EquipmentPassive.ResistanceBonus -> "ResistanceBonus:${passive.damageType.name}:${passive.amount}"
+        }
 }
 
 object LootBalanceLabRunner {

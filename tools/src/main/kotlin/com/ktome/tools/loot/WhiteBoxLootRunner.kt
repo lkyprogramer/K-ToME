@@ -15,6 +15,7 @@ import java.nio.file.Path
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
+import kotlinx.serialization.json.putJsonArray
 import kotlinx.serialization.json.putJsonObject
 
 data class WhiteBoxLootRun(
@@ -190,6 +191,18 @@ object WhiteBoxLootRunner {
                 message = "magicFind=1.50 stays distributionally aligned with magicFind=1.00 after clamp.",
                 context = kernelRun.clampComparison.toJson(),
             ),
+            WhiteBoxAssertionResult(
+                ruleId = "loot.aggregate.overlap_below_threshold",
+                passed = kernelRun.profileOverlapSummary.averageOverlap < 0.50,
+                message = "Average loot-profile base item overlap stays below the OPT PR-01 baseline threshold.",
+                context = kernelRun.profileOverlapSummary.toJson(),
+            ),
+            WhiteBoxAssertionResult(
+                ruleId = "loot.aggregate.passive_coverage",
+                passed = kernelRun.passiveCoverageSummary.coverageRatio >= 0.40,
+                message = "Affix passive coverage stays at or above the OPT PR-01 baseline threshold.",
+                context = kernelRun.passiveCoverageSummary.toJson(),
+            ),
         )
 
     private fun caseFacts(matrix: LootMatrixResult): JsonObject =
@@ -213,6 +226,9 @@ object WhiteBoxLootRunner {
             put("uniquePityActivations", matrix.uniquePityActivations)
             put("castSpeedPostDrP50", matrix.castSpeedPostDrP50)
             put("castSpeedPostDrP95", matrix.castSpeedPostDrP95)
+            put("uniqueArtifactOutcomeCount", matrix.uniqueArtifactOutcomeCount)
+            put("meaningfulUniqueArtifactSwapCount", matrix.meaningfulUniqueArtifactSwapCount)
+            put("uniqueArtifactMeaningfulSwapRate", matrix.meaningfulUniqueArtifactSwapRate)
         }
 
     private fun corpusMetrics(kernelRun: LootKernelRun): JsonObject =
@@ -228,6 +244,17 @@ object WhiteBoxLootRunner {
             put("uniquePityActivations", kernelRun.matrices.sumOf(LootMatrixResult::uniquePityActivations))
             put("clampMaxDistributionDelta", kernelRun.clampComparison.maxDistributionDelta)
             put("templatePoolThresholdsPassed", kernelRun.specialPoolSummary.passesThresholds)
+            put("lootProfileAverageBaseItemOverlap", kernelRun.profileOverlapSummary.averageOverlap)
+            put("lootProfileMaxBaseItemOverlap", kernelRun.profileOverlapSummary.maxOverlap)
+            put("lootProfileDistinctBaseItemCount", kernelRun.profileOverlapSummary.distinctBaseItemCount)
+            put("lootProfileBaseItemOverlapMatrix", kernelRun.profileOverlapSummary.toJson().getValue("matrix"))
+            put("affixPassiveCoverage", kernelRun.passiveCoverageSummary.coverageRatio)
+            putJsonArray("affixPassiveKinds") {
+                kernelRun.passiveCoverageSummary.passiveKinds.sorted().forEach { passiveKind -> add(kotlinx.serialization.json.JsonPrimitive(passiveKind)) }
+            }
+            put("uniqueArtifactOutcomeCount", kernelRun.uniqueArtifactOutcomeCount)
+            put("meaningfulUniqueArtifactSwapCount", kernelRun.meaningfulUniqueArtifactSwapCount)
+            put("uniqueArtifactMeaningfulSwapRate", kernelRun.uniqueArtifactMeaningfulSwapRate)
         }
 
     private fun writeArtifacts(

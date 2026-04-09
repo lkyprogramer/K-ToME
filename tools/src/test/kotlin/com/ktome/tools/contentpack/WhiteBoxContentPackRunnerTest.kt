@@ -31,7 +31,7 @@ class WhiteBoxContentPackRunnerTest {
         val artifactIds =
             firstCase.getValue("artifacts").jsonArray.map { artifact -> artifact.jsonObject.getValue("artifactId").jsonPrimitive.content }.toSet()
 
-        assertEquals("whiteBoxContentPack", payload.getValue("domainId").jsonPrimitive.content)
+        assertEquals("content-pack", payload.getValue("domainId").jsonPrimitive.content)
         assertEquals("PASS", payload.getValue("verdict").jsonPrimitive.content)
         assertEquals("P4_PR09_SAMPLE_CONTENT_PACK_WHITEBOX", corpus.getValue("corpusId").jsonPrimitive.content)
         assertEquals("11", summary.getValue("caseCount").jsonPrimitive.content)
