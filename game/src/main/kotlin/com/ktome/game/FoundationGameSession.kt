@@ -2423,10 +2423,69 @@ class FoundationGameSession internal constructor(
                 actionWeightProfileId = bossVariant?.actionWeightProfileId,
             )
         }
-        val profileId = world.get<AiProfileOverride>(monsterId)?.profileId ?: monsterAiProfileId(monsterId)
+        val overlayProfile = combinedAiOverlayProfileFor(monsterId)
         return applyActionWeightProfile(
-            profile = content.aiProfile(profileId),
+            profile = overlayProfile ?: content.aiProfile(monsterAiProfileId(monsterId)),
             actionWeightProfileId = bossVariant?.actionWeightProfileId,
+        )
+    }
+
+    private fun combinedAiOverlayProfileFor(monsterId: EntityId): com.ktome.core.ai.AIProfile? =
+        composeAiOverlayProfile(
+            profileIdPrefix = "ai.overlay",
+            overlayProfiles = resolvedAiOverlayProfilesFor(monsterId),
+        )
+
+    private fun bossAbilityOverlayProfileFor(monsterId: EntityId): com.ktome.core.ai.AIProfile? =
+        composeAiOverlayProfile(
+            profileIdPrefix = "ai.overlay.boss",
+            overlayProfiles = resolvedAiOverlayProfilesFor(monsterId),
+            allowedActionTypes = setOf(AIActionType.USE_ABILITY),
+            forcedDefaultBehavior = com.ktome.core.ai.AIDefaultBehavior.WAIT,
+        )
+
+    private fun resolvedAiOverlayProfilesFor(monsterId: EntityId): List<com.ktome.core.ai.AIProfile> {
+        val overlayIds = linkedSetOf<String>()
+        world.get<EliteMutationLoadout>(monsterId)
+            ?.mutationIds
+            ?.mapNotNull(content.eliteMutationRegistry::resolve)
+            ?.mapNotNullTo(overlayIds) { mutation -> mutation.aiProfileOverlay }
+        world.get<AiProfileOverride>(monsterId)?.profileId?.let(overlayIds::add)
+        return overlayIds.mapNotNull(content::aiProfile)
+    }
+
+    private fun composeAiOverlayProfile(
+        profileIdPrefix: String,
+        overlayProfiles: List<com.ktome.core.ai.AIProfile>,
+        allowedActionTypes: Set<AIActionType>? = null,
+        forcedDefaultBehavior: com.ktome.core.ai.AIDefaultBehavior? = null,
+    ): com.ktome.core.ai.AIProfile? {
+        if (overlayProfiles.isEmpty()) {
+            return null
+        }
+        if (overlayProfiles.size == 1 && allowedActionTypes == null && forcedDefaultBehavior == null) {
+            return overlayProfiles.single()
+        }
+
+        val mergedActions =
+            linkedMapOf<String, com.ktome.core.ai.AIAction>().apply {
+                overlayProfiles.forEach { profile ->
+                    profile.actions
+                        .filter { action -> allowedActionTypes == null || action.type in allowedActionTypes }
+                        .forEach { action -> put(action.id, action) }
+                }
+            }
+        if (mergedActions.isEmpty()) {
+            return null
+        }
+        val firstProfile = overlayProfiles.first()
+        return com.ktome.core.ai.AIProfile(
+            id = "$profileIdPrefix:${overlayProfiles.joinToString(separator = "+") { profile -> profile.id }}",
+            perceptionRange = overlayProfiles.maxOf(com.ktome.core.ai.AIProfile::perceptionRange),
+            useLastKnownPosition = overlayProfiles.any(com.ktome.core.ai.AIProfile::useLastKnownPosition),
+            defaultBehavior = forcedDefaultBehavior ?: firstProfile.defaultBehavior,
+            selectionPolicy = firstProfile.selectionPolicy,
+            actions = mergedActions.values.toList(),
         )
     }
 
@@ -6132,25 +6191,44 @@ class FoundationGameSession internal constructor(
         val perceptionRange = profile?.perceptionRange ?: behavior.sightRadius
         val targetVisible = targetVisibleFor(monsterId, effectiveTargetId, position, perceptionRange)
         syncLastKnownTargetPosition(monsterId, targetPosition, targetVisible)
+        val decisionContext =
+            AIProfileDecisionContext(
+                actorId = monsterId.value,
+                turnId = turnCount,
+                selfHpRatio = healthRatio(monsterId),
+                targetHpRatio = healthRatioOrNull(effectiveTargetId),
+                targetVisible = targetVisible,
+                targetDistance = position.chebyshevDistanceTo(targetPosition),
+                selfStatusIds = activeStatusIds(monsterId),
+                targetStatusIds = activeStatusIds(effectiveTargetId),
+                usableAbilityIds = usableAbilityIdsFor(monsterId, effectiveTargetId, targetVisible, targetPosition),
+                currentEncounterTurn = world.get<BossEncounterState>(monsterId)?.encounterTurnCount ?: 0,
+            )
+
+        if (world.get<BossEncounterState>(monsterId) != null) {
+            val overlayDecision =
+                bossAbilityOverlayProfileFor(monsterId)?.let { overlayProfile ->
+                    AIProfileResolver.decide(
+                        profile = overlayProfile,
+                        context = decisionContext,
+                        randomSource = sessionRandom,
+                    )
+                }
+            val overlayAction = overlayDecision?.selectedAction
+            if (overlayAction != null) {
+                recordAiDecisionTrace(requireNotNull(overlayDecision).trace)
+                if (executeSelectedAiAction(monsterId, overlayAction, effectiveTargetId, targetPosition, targetVisible)) {
+                    return
+                }
+            }
+        }
 
         val selectedAction =
             profile?.let { activeProfile ->
                 val decision =
                     AIProfileResolver.decide(
                         profile = activeProfile,
-                        context =
-                            AIProfileDecisionContext(
-                                actorId = monsterId.value,
-                                turnId = turnCount,
-                                selfHpRatio = healthRatio(monsterId),
-                                targetHpRatio = healthRatioOrNull(effectiveTargetId),
-                                targetVisible = targetVisible,
-                                targetDistance = position.chebyshevDistanceTo(targetPosition),
-                                selfStatusIds = activeStatusIds(monsterId),
-                                targetStatusIds = activeStatusIds(effectiveTargetId),
-                                usableAbilityIds = usableAbilityIdsFor(monsterId, effectiveTargetId, targetVisible, targetPosition),
-                                currentEncounterTurn = world.get<BossEncounterState>(monsterId)?.encounterTurnCount ?: 0,
-                            ),
+                        context = decisionContext,
                         randomSource = sessionRandom,
                     )
                 recordAiDecisionTrace(decision.trace)

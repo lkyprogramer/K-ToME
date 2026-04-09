@@ -1,7 +1,6 @@
 package com.ktome.game.elites
 
 import com.ktome.core.combat.DamageType
-import com.ktome.core.ecs.AiProfileOverride
 import com.ktome.core.ecs.BossVariantRuntime
 import com.ktome.core.ecs.EliteMutationLoadout
 import com.ktome.core.ecs.EntityId
@@ -173,9 +172,6 @@ internal class EncounterDecorationService(
         }
         mutation.grantedTalents.forEach { grantRef ->
             grantTalent(world, entityId, grantRef.talentId)
-        }
-        mutation.aiProfileOverlay?.let { profileId ->
-            world.add(entityId, AiProfileOverride(profileId))
         }
     }
 

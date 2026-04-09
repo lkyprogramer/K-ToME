@@ -4395,6 +4395,80 @@ class FoundationGameSessionTest {
     }
 
     @Test
+    fun `double overlay mutations contribute both action sets to elite ai profile`() {
+        val session =
+            GameModule.newFoundationSession(
+                FoundationGameConfig(seed = 20260409L, zoneId = "shattered_outpost", playerProfessionId = "vanguard"),
+                SaveManager(tempDir.resolve("double-overlay-ai-profile")),
+            )
+        clearMonsters(session)
+        val world = runtimeWorld(session)
+        val monsterId = installCombatDummy(session, id = "double_overlay_dummy")
+        val content = sessionContent(session)
+        EncounterDecorationService(content).applyDecoration(
+            world = world,
+            entityId = monsterId,
+            decoration =
+                EncounterDecoration(
+                    mutations =
+                        listOf(
+                            requireNotNull(content.eliteMutationRegistry.resolve("elite.phase_runner")),
+                            requireNotNull(content.eliteMutationRegistry.resolve("elite.war_caller")),
+                        ),
+                ),
+        )
+
+        val method =
+            requireNotNull(
+                FoundationGameSession::class.java.declaredMethods.firstOrNull { candidate ->
+                    candidate.name.startsWith("activeAiProfileFor")
+                },
+            )
+        method.isAccessible = true
+        val profile = method.invoke(session, monsterId.value) as com.ktome.core.ai.AIProfile
+
+        assertTrue(profile.actions.any { action -> action.id == "phase_step" && action.abilityId == "elite_phase_step" })
+        assertTrue(profile.actions.any { action -> action.id == "war_call" && action.abilityId == "elite_war_call" })
+    }
+
+    @Test
+    fun `grey crown boss can cast elite war call from mutation overlay`() {
+        val session =
+            GameModule.newFoundationSession(
+                FoundationGameConfig(
+                    seed = 20260409L,
+                    zoneId = "grey_gate_depths",
+                    playerProfessionId = "vanguard",
+                    preferredBossVariantId = "boss.variant.grey_crown",
+                ),
+                SaveManager(tempDir.resolve("grey-crown-overlay-war-call")),
+            )
+        movePlayerTo(session, stairPoint(session, StairDirection.DOWN))
+        assertTrue(session.perform(PlayerCommand.Descend))
+        val world = runtimeWorld(session)
+        val bossId = requireNotNull(entityByTemplateId(session, "cultist.dungeon_lord"))
+        val bossPoint = requireNotNull(world.get<Position>(bossId)).toPoint()
+        movePlayerTo(session, findOpenAdjacentPoint(session, bossPoint))
+        requireNotNull(world.get<Health>(bossId)).current = requireNotNull(world.get<Health>(bossId)).max * 3 / 5
+        requireNotNull(world.get<com.ktome.core.talent.CooldownState>(bossId)).remainingByTalentId.apply {
+            this["battlefield_command"] = 99
+            this["shadow_bind"] = 99
+            this["ritual_break"] = 99
+            this["elite_war_call"] = 0
+        }
+
+        advanceTurnsUntil(session, maxTurns = 2) {
+            world.get<PendingTelegraphState>(bossId)?.sourceAbilityId == "elite_war_call"
+        }
+        assertEquals("elite_war_call", requireNotNull(world.get<PendingTelegraphState>(bossId)).sourceAbilityId)
+
+        advanceTurnsUntil(session, maxTurns = 2) {
+            requireNotNull(world.get<EffectTracker>(bossId)).effects.any { effect -> effect.schemaId == "war_cry_empower" }
+        }
+        assertTrue(requireNotNull(world.get<EffectTracker>(bossId)).effects.any { effect -> effect.schemaId == "war_cry_empower" })
+    }
+
+    @Test
     fun `status interactions are surfaced through visible render log messages`() {
         val session =
             GameModule.newFoundationSession(
