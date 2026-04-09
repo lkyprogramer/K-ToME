@@ -82,4 +82,54 @@ class StatusTickResolverTest {
         assertEquals(listOf("bleed_actor", "poison_area", "burn_world"), dueEffects.map { dueEffect -> dueEffect.effect.id })
         assertEquals(EntityId(77), dueEffects.first().sourceEntityId)
     }
+
+    @Test
+    fun `due effects include non damaging area and world carrier statuses`() {
+        val world = World()
+        val actor = world.createEntity()
+        val areaEmitterEntity = world.createEntity()
+        val worldEffectEntity = world.createEntity()
+
+        world.add(
+            areaEmitterEntity,
+            AreaEffectEmitter(
+                emitterId = "armor_break_cloud",
+                sourceEntityId = EntityId(12),
+                affectedActorIds = setOf(actor),
+                effects =
+                    mutableListOf(
+                        StatusLifecycle.createInstance(
+                            type = StatusEffectType.ARMOR_BREAK,
+                            effectId = "armor_break_area",
+                            duration = 2,
+                            appliedTurn = 4,
+                        ),
+                    ),
+            ),
+        )
+        world.add(
+            worldEffectEntity,
+            WorldEffect(
+                effectId = "arcane_field",
+                affectedActorIds = setOf(actor),
+                effects =
+                    mutableListOf(
+                        StatusLifecycle.createInstance(
+                            type = StatusEffectType.ARCANE_SHIELD_BUFF,
+                            effectId = "arcane_shield_world",
+                            duration = 2,
+                            appliedTurn = 5,
+                        ),
+                    ),
+            ),
+        )
+
+        val dueEffects = StatusTickResolver.dueEffects(world, actor)
+
+        assertEquals(listOf("armor_break_area", "arcane_shield_world"), dueEffects.map { dueEffect -> dueEffect.effect.id })
+        assertEquals(
+            listOf(EffectCarrierKind.AREA, EffectCarrierKind.WORLD),
+            dueEffects.map { dueEffect -> dueEffect.carrierKind },
+        )
+    }
 }

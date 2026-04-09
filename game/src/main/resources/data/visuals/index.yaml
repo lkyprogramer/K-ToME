@@ -200,11 +200,17 @@ visuals:
   - id: vfx.zone.effect.crystal_shard_01
   - id: vfx.zone.effect.void_pressure_01
   - id: icon.mutation.stonehide
+  - id: icon.mutation.ironhide
   - id: icon.mutation.battle_drill
   - id: icon.mutation.dread_aura
   - id: icon.mutation.hunt_protocol
+  - id: icon.mutation.phase_runner
+  - id: icon.mutation.war_caller
+  - id: icon.mutation.corrosion_cloud
   - id: icon.mutation.emberblood
+  - id: icon.mutation.frostbound
   - id: icon.mutation.tidebound
+  - id: icon.mutation.void_mirror
   - id: vfx.terrain.interaction.water
   - id: vfx.terrain.interaction.oil
   - id: vfx.terrain.interaction.ice

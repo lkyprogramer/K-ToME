@@ -1,6 +1,8 @@
 package com.ktome.game.elites
 
 import com.ktome.core.combat.DamageType
+import com.ktome.core.ecs.AiProfileOverride
+import com.ktome.core.ecs.EliteMutationLoadout
 import com.ktome.core.ecs.ResistanceProfile
 import com.ktome.core.ecs.World
 import com.ktome.core.ecs.get
@@ -112,6 +114,33 @@ class EncounterDecorationServiceTest {
         assertEquals(12, appliedEffect.statModifiers.maxHp)
         assertEquals(10, resistances.valueFor(DamageType.FIRE))
         assertEquals(7, resistances.valueFor(DamageType.COLD))
+    }
+
+    @Test
+    fun `multiple overlay mutations are preserved in mutation loadout instead of a singleton override`() {
+        val content = newContent(baseSchemaCatalog)
+        val service = EncounterDecorationService(content)
+        val world = World()
+        val entityId = world.createEntity()
+
+        service.applyDecoration(
+            world = world,
+            entityId = entityId,
+            decoration =
+                EncounterDecoration(
+                    mutations =
+                        listOf(
+                            requireNotNull(content.eliteMutationRegistry.resolve("elite.phase_runner")),
+                            requireNotNull(content.eliteMutationRegistry.resolve("elite.war_caller")),
+                        ),
+                ),
+        )
+
+        assertEquals(
+            listOf("elite.phase_runner", "elite.war_caller"),
+            requireNotNull(world.get<EliteMutationLoadout>(entityId)).mutationIds,
+        )
+        assertEquals(null, world.get<AiProfileOverride>(entityId))
     }
 
     private fun newContent(schemaCatalog: SchemaCatalog): GameContent =

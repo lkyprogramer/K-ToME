@@ -145,11 +145,17 @@ audioProfiles:
   - id: audio.boss.orc.molten_giant
   - id: audio.boss.abyssal.guardian
   - id: audio.mutation.stonehide
+  - id: audio.mutation.ironhide
   - id: audio.mutation.battle_drill
   - id: audio.mutation.dread_aura
   - id: audio.mutation.hunt_protocol
+  - id: audio.mutation.phase_runner
+  - id: audio.mutation.war_caller
+  - id: audio.mutation.corrosion_cloud
   - id: audio.mutation.emberblood
+  - id: audio.mutation.frostbound
   - id: audio.mutation.tidebound
+  - id: audio.mutation.void_mirror
   - id: audio.terrain.water
   - id: audio.terrain.oil
   - id: audio.terrain.ice

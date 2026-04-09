@@ -332,6 +332,7 @@ object GameModule {
                     compatibilityPipeline = BspBackedMapgenPipeline(profileResolver = zoneMapgenProfileResolver),
                 ),
         ).also { content ->
+            content.validateEliteMutationContracts()
             validateAiProfileContracts(content)
             validateWorldStructureContracts(content)
         }

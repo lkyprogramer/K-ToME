@@ -1,0 +1,68 @@
+styleTag: ktome-middle-fantasy-painterly-tile-v1
+artStyleBible: docs/2026-03-13-art-style-bible.md
+stylePrompt: >-
+  High fantasy, middle-earth inspired painterly production pass for Phase 4 OPT
+  PR-02 elite mutation differentiation. Keep every mutation icon bold and
+  readable at UI size, grounded in the established K-ToME palette, never anime,
+  never sci-fi, and never overloaded with small decorative noise.
+defaults:
+  imageAspectRatio: "1:1"
+  imageSize: "1K"
+  negativeConstraints:
+    - no modern clothing
+    - no firearms
+    - no sci-fi materials
+    - no anime proportions
+    - no floating text, watermark or logo
+phase2AssetGates:
+  P4-OPT-PR02:
+    description: Formal OPT PR-02 visual plan for the six new elite mutation icons.
+    assets:
+      - id: phase4_opt_pr02_icon_mutation_ironhide
+        category: icon_status
+        visualKey: icon.mutation.ironhide
+        outputName: phase4/opt_pr02/icon_mutation_ironhide.png
+        subject: heavy plated ironhide elite mutation icon with reinforced metal shell
+        materialTags: [phase4, opt, pr02, mutation, iron]
+        constraints: [single centered icon, transparent background, readable at UI size]
+        geminiKeyRequired: true
+      - id: phase4_opt_pr02_icon_mutation_phase_runner
+        category: icon_status
+        visualKey: icon.mutation.phase_runner
+        outputName: phase4/opt_pr02/icon_mutation_phase_runner.png
+        subject: phase runner elite mutation icon with spatial tear and motion streak
+        materialTags: [phase4, opt, pr02, mutation, arcane, movement]
+        constraints: [single centered icon, transparent background, readable at UI size]
+        geminiKeyRequired: true
+      - id: phase4_opt_pr02_icon_mutation_war_caller
+        category: icon_status
+        visualKey: icon.mutation.war_caller
+        outputName: phase4/opt_pr02/icon_mutation_war_caller.png
+        subject: war caller elite mutation icon with battle horn and command aura
+        materialTags: [phase4, opt, pr02, mutation, command]
+        constraints: [single centered icon, transparent background, readable at UI size]
+        geminiKeyRequired: true
+      - id: phase4_opt_pr02_icon_mutation_corrosion_cloud
+        category: icon_status
+        visualKey: icon.mutation.corrosion_cloud
+        outputName: phase4/opt_pr02/icon_mutation_corrosion_cloud.png
+        subject: corrosion cloud elite mutation icon with acidic vapor and tarnished metal
+        materialTags: [phase4, opt, pr02, mutation, corrosion]
+        constraints: [single centered icon, transparent background, readable at UI size]
+        geminiKeyRequired: true
+      - id: phase4_opt_pr02_icon_mutation_frostbound
+        category: icon_status
+        visualKey: icon.mutation.frostbound
+        outputName: phase4/opt_pr02/icon_mutation_frostbound.png
+        subject: frostbound elite mutation icon with cold sigil and layered ice shard
+        materialTags: [phase4, opt, pr02, mutation, frost]
+        constraints: [single centered icon, transparent background, readable at UI size]
+        geminiKeyRequired: true
+      - id: phase4_opt_pr02_icon_mutation_void_mirror
+        category: icon_status
+        visualKey: icon.mutation.void_mirror
+        outputName: phase4/opt_pr02/icon_mutation_void_mirror.png
+        subject: void mirror elite mutation icon with dark reflective sigil and arcane shield motif
+        materialTags: [phase4, opt, pr02, mutation, void, shield]
+        constraints: [single centered icon, transparent background, readable at UI size]
+        geminiKeyRequired: true

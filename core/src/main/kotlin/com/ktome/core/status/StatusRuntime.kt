@@ -971,8 +971,10 @@ object StatusTickResolver {
                     ),
                 ).flatMap { (_, emitter) ->
                     emitter.effects
-                        .filter { effect -> effect.isActive() && effect.tickTiming == StatusTickTiming.TURN_START }
-                        .sortedWith(compareBy<StatusInstance>({ it.tickPriority }, { it.appliedTurn }, { it.id }))
+                        .filter { effect ->
+                            effect.isActive() &&
+                                (effect.tickTiming == StatusTickTiming.TURN_START || effect.tickTiming == StatusTickTiming.NONE)
+                        }.sortedWith(compareBy<StatusInstance>({ it.tickPriority }, { it.appliedTurn }, { it.id }))
                         .map { effect ->
                             CarrierDueEffect(
                                 carrierKind = EffectCarrierKind.AREA,
@@ -1002,8 +1004,10 @@ object StatusTickResolver {
                     ),
                 ).flatMap { (_, worldEffect) ->
                     worldEffect.effects
-                        .filter { effect -> effect.isActive() && effect.tickTiming == StatusTickTiming.TURN_START }
-                        .sortedWith(compareBy<StatusInstance>({ it.tickPriority }, { it.appliedTurn }, { it.id }))
+                        .filter { effect ->
+                            effect.isActive() &&
+                                (effect.tickTiming == StatusTickTiming.TURN_START || effect.tickTiming == StatusTickTiming.NONE)
+                        }.sortedWith(compareBy<StatusInstance>({ it.tickPriority }, { it.appliedTurn }, { it.id }))
                         .map { effect ->
                             CarrierDueEffect(
                                 carrierKind = EffectCarrierKind.WORLD,

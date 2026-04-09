@@ -79,6 +79,12 @@
 3. `elite.void_mirror`
    - 复用现有 `ARCANE_SHIELD_BUFF` status 语义，但 talent/trigger 入口独立命名
 
+补充运行时语义：
+
+1. 对 mutation `AURA`，`DEBUFF` 继续作用于 aura 半径内 hostile。
+2. 对 mutation `AURA`，`BUFF` 不外溢给 hostile；只在 aura 半径内存在 hostile 时刷新到 owner 自身。
+3. 不因此新增新的 `StatusEffectType`，`void_mirror` 直接复用 `ARCANE_SHIELD_BUFF`。
+
 约束：
 
 1. 不新增 `SPELL_REFLECT`
@@ -194,12 +200,14 @@ GEMINI_CONCURRENCY=4 \
 ### 7.2 音频
 
 1. 计划文件：`assets-src/audio/specs/phase4-opt-pr02-audio-plan.yaml`
-2. 覆盖对象：
+2. 生成参数文件：`assets-src/audio/specs/phase4-opt-pr02-audio-generation-plan.yaml`
+3. 覆盖对象：
    - `audio.mutation.*`
-3. 报告文件：
+4. 报告文件：
    - `assets-src/audio/manifests/phase4-opt-pr02-generation-report.jsonl`
    - `assets-src/audio/manifests/phase4-opt-pr02-processing-report.jsonl`
-4. 管线固定为：
+5. `generate_opt_pr02_audio.py` 必须直接接受正式 `audio-plan`；如需显式 profile/duration 覆写，可改传 `phase4-opt-pr02-audio-generation-plan.yaml`
+6. 管线固定为：
 
 ```bash
 python3 scripts/generate_opt_pr02_audio.py \

@@ -284,6 +284,36 @@ aiProfiles:
         orderKey: 30
         condition:
           type: TARGET_VISIBLE
+  - id: ai.elite.phase_runner
+    schemaVersion: 2
+    perceptionRange: 9
+    useLastKnownPosition: true
+    defaultBehavior: PATROL
+    selectionPolicy: DETERMINISTIC_PRIORITY
+    actions:
+      - id: phase_step
+        type: USE_ABILITY
+        orderKey: 10
+        abilityId: elite_phase_step
+        condition:
+          type: AND
+          conditions:
+            - type: TARGET_DISTANCE_BETWEEN
+              minDistance: 2
+              maxDistance: 5
+            - type: TALENT_READY
+              talentId: elite_phase_step
+      - id: strike
+        type: ATTACK_TARGET
+        orderKey: 20
+        condition:
+          type: TARGET_DISTANCE_LESS_THAN
+          distance: 2
+      - id: pursue
+        type: MOVE_TOWARD_TARGET
+        orderKey: 30
+        condition:
+          type: TARGET_VISIBLE
   - id: ai.elite.forge_guard
     schemaVersion: 2
     perceptionRange: 8
@@ -326,6 +356,41 @@ aiProfiles:
       - id: advance
         type: MOVE_TOWARD_TARGET
         orderKey: 40
+        condition:
+          type: TARGET_VISIBLE
+  - id: ai.elite.war_caller
+    schemaVersion: 2
+    perceptionRange: 8
+    useLastKnownPosition: true
+    defaultBehavior: CHASE
+    selectionPolicy: DETERMINISTIC_PRIORITY
+    actions:
+      - id: war_call
+        type: USE_ABILITY
+        orderKey: 10
+        abilityId: elite_war_call
+        condition:
+          type: AND
+          conditions:
+            - type: TARGET_VISIBLE
+            - type: HP_BELOW
+              threshold: 0.65
+            - type: TALENT_READY
+              talentId: elite_war_call
+            - type: NOT
+              condition:
+                type: HAS_STATUS
+                scope: SELF
+                statusId: war_cry_empower
+      - id: strike
+        type: ATTACK_TARGET
+        orderKey: 20
+        condition:
+          type: TARGET_DISTANCE_LESS_THAN
+          distance: 2
+      - id: close
+        type: MOVE_TOWARD_TARGET
+        orderKey: 30
         condition:
           type: TARGET_VISIBLE
   - id: ai.elite.ashgate_warden
@@ -665,6 +730,42 @@ aiProfiles:
               talentId: glacial_seal
       - id: retreat
         type: RETREAT_FROM_TARGET
+        orderKey: 30
+        condition:
+          type: TARGET_DISTANCE_LESS_THAN
+          distance: 2
+      - id: reposition
+        type: MOVE_TOWARD_TARGET
+        orderKey: 40
+        condition:
+          type: TARGET_VISIBLE
+  - id: ai.elite.frostbound
+    schemaVersion: 2
+    perceptionRange: 9
+    useLastKnownPosition: true
+    defaultBehavior: KITE
+    selectionPolicy: DETERMINISTIC_PRIORITY
+    actions:
+      - id: frost_nova
+        type: USE_ABILITY
+        orderKey: 10
+        abilityId: elite_frost_nova
+        condition:
+          type: AND
+          conditions:
+            - type: TARGET_DISTANCE_BETWEEN
+              minDistance: 2
+              maxDistance: 4
+            - type: TALENT_READY
+              talentId: elite_frost_nova
+      - id: retreat
+        type: RETREAT_FROM_TARGET
+        orderKey: 20
+        condition:
+          type: TARGET_DISTANCE_LESS_THAN
+          distance: 2
+      - id: strike
+        type: ATTACK_TARGET
         orderKey: 30
         condition:
           type: TARGET_DISTANCE_LESS_THAN
