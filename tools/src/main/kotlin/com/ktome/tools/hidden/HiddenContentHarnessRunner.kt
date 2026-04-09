@@ -10,6 +10,7 @@ import com.ktome.core.world.solvability.SearchActionResult
 import com.ktome.game.FoundationGameConfig
 import com.ktome.game.GameModule
 import com.ktome.game.PlayerCommand
+import com.ktome.game.data.DataLoader
 import com.ktome.game.hidden.HiddenEventDef
 import com.ktome.game.hidden.HiddenEventRewardKey
 import com.ktome.game.hidden.HiddenEventRewardPayload
@@ -224,6 +225,10 @@ internal data class HiddenContentSummaryMetrics(
     val searchFailureBlockingCount: Int,
     val proofMismatchCount: Int,
     val runtimeReturnDestinationMismatchCount: Int,
+    val hiddenTriggerTypeCoverage: Double,
+    val hiddenTriggerTypeSet: Set<String>,
+    val secretEntranceBindingCoverage: Int,
+    val secretEntranceBindingSet: Set<String>,
 ) {
     val failureCount: Int
         get() = caseFailureCount + aggregateFailureCount
@@ -235,8 +240,31 @@ internal data class HiddenContentAnalysis(
     val aggregateFailures: List<String>,
 )
 
+internal data class HiddenContentRegistryMetrics(
+    val hiddenTriggerTypeSet: Set<String>,
+    val secretEntranceBindingSet: Set<String>,
+) {
+    val hiddenTriggerTypeCoverage: Double
+        get() = hiddenTriggerTypeSet.size.toDouble() / HiddenTriggerType.entries.size.toDouble()
+
+    val secretEntranceBindingCoverage: Int
+        get() = secretEntranceBindingSet.size
+}
+
 internal const val MIN_HIDDEN_EVENT_TRIGGER_RATE: Double = 0.30
 internal const val MIN_SECRET_ZONE_DISCOVERY_RATE: Double = 0.10
+internal const val MIN_HIDDEN_TRIGGER_TYPE_COVERAGE: Double = 2.0 / 6.0
+internal const val MIN_SECRET_ENTRANCE_BINDING_COVERAGE: Int = 1
+
+internal object HiddenContentRegistrySnapshot {
+    fun load(): HiddenContentRegistryMetrics {
+        val catalog = DataLoader(GameLocale.EN_US).loadSchemaCatalog()
+        return HiddenContentRegistryMetrics(
+            hiddenTriggerTypeSet = catalog.hiddenEvents.mapTo(linkedSetOf()) { hiddenEvent -> hiddenEvent.triggerType.name },
+            secretEntranceBindingSet = catalog.secretZones.mapTo(linkedSetOf()) { secretZone -> secretZone.entranceBindingId.value },
+        )
+    }
+}
 
 internal object HiddenContentHarnessKernel {
     private const val FLOOR_INDEX: Int = 1
@@ -545,6 +573,7 @@ internal object HiddenContentHarnessKernel {
 
 internal object HiddenContentHarnessAnalysis {
     fun analyze(results: List<HiddenContentCaseResult>): HiddenContentAnalysis {
+        val registryMetrics = HiddenContentRegistrySnapshot.load()
         val zoneBreakdown =
             results.groupBy(HiddenContentCaseResult::zoneId)
                 .mapValues { (_, zoneResults) ->
@@ -596,6 +625,12 @@ internal object HiddenContentHarnessAnalysis {
                 ) {
                     add("aggregate.return_bridge_or_proof_mismatch")
                 }
+                if (registryMetrics.hiddenTriggerTypeCoverage < MIN_HIDDEN_TRIGGER_TYPE_COVERAGE) {
+                    add("aggregate.hidden_trigger_type_coverage_failed")
+                }
+                if (registryMetrics.secretEntranceBindingCoverage < MIN_SECRET_ENTRANCE_BINDING_COVERAGE) {
+                    add("aggregate.secret_entrance_binding_coverage_failed")
+                }
             }
         val summary =
             HiddenContentSummaryMetrics(
@@ -629,6 +664,10 @@ internal object HiddenContentHarnessAnalysis {
                     results.count { result ->
                         result.secretZoneEntered && !result.returnBridgeMatchesResolvedNodeId
                     },
+                hiddenTriggerTypeCoverage = registryMetrics.hiddenTriggerTypeCoverage,
+                hiddenTriggerTypeSet = registryMetrics.hiddenTriggerTypeSet,
+                secretEntranceBindingCoverage = registryMetrics.secretEntranceBindingCoverage,
+                secretEntranceBindingSet = registryMetrics.secretEntranceBindingSet,
             )
         return HiddenContentAnalysis(summary = summary, zoneBreakdown = zoneBreakdown, aggregateFailures = aggregateFailures)
     }
@@ -698,6 +737,14 @@ object HiddenContentHarnessRunner {
                 put("searchFailureBlockingCount", summary.searchFailureBlockingCount)
                 put("proofMismatchCount", summary.proofMismatchCount)
                 put("runtimeReturnDestinationMismatchCount", summary.runtimeReturnDestinationMismatchCount)
+                put("hiddenTriggerTypeCoverage", summary.hiddenTriggerTypeCoverage)
+                putJsonArray("hiddenTriggerTypeSet") {
+                    summary.hiddenTriggerTypeSet.sorted().forEach { triggerType -> add(JsonPrimitive(triggerType)) }
+                }
+                put("secretEntranceBindingCoverage", summary.secretEntranceBindingCoverage)
+                putJsonArray("secretEntranceBindingSet") {
+                    summary.secretEntranceBindingSet.sorted().forEach { bindingId -> add(JsonPrimitive(bindingId)) }
+                }
             }
             putJsonArray("aggregateFailures") {
                 analysis.aggregateFailures.forEach { failure -> add(JsonPrimitive(failure)) }

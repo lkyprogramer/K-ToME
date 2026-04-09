@@ -26,12 +26,40 @@ class WhiteBoxLootRunnerTest {
         val payload = Json.parseToJsonElement(Files.readString(run.summaryPath)).jsonObject
         val summary = payload.getValue("summary").jsonObject
         val aggregates = payload.getValue("aggregates").jsonArray
+        val corpusAggregate =
+            aggregates.first { aggregate -> aggregate.jsonObject.getValue("groupId").jsonPrimitive.content == "corpus" }.jsonObject
+        val corpusMetrics = corpusAggregate.getValue("metrics").jsonObject
+        val aggregateRuleIds =
+            corpusAggregate
+                .getValue("assertions")
+                .jsonArray
+                .map { assertion -> assertion.jsonObject.getValue("ruleId").jsonPrimitive.content }
+                .toSet()
 
         assertEquals("loot", payload.getValue("domainId").jsonPrimitive.content)
         assertEquals("PASS", payload.getValue("verdict").jsonPrimitive.content)
         assertEquals("6", summary.getValue("caseCount").jsonPrimitive.content)
         assertEquals("0", summary.getValue("failedAssertions").jsonPrimitive.content)
         assertTrue(aggregates.any { aggregate -> aggregate.jsonObject.getValue("groupId").jsonPrimitive.content == "corpus" })
+        assertTrue(
+            setOf(
+                "lootProfileBaseItemOverlapMatrix",
+                "lootProfileAverageBaseItemOverlap",
+                "lootProfileMaxBaseItemOverlap",
+                "lootProfileDistinctBaseItemCount",
+                "affixPassiveCoverage",
+                "affixPassiveKinds",
+                "uniqueArtifactMeaningfulSwapRate",
+            ).all(corpusMetrics::containsKey),
+        )
+        assertTrue(corpusMetrics.getValue("lootProfileBaseItemOverlapMatrix").jsonObject.isNotEmpty())
+        assertTrue(corpusMetrics.getValue("affixPassiveKinds").jsonArray.isNotEmpty())
+        assertTrue(
+            setOf(
+                "loot.aggregate.overlap_below_threshold",
+                "loot.aggregate.passive_coverage",
+            ).all(aggregateRuleIds::contains),
+        )
         assertEquals(6, Files.readAllLines(run.casesPath).count { line -> line.isNotBlank() })
     }
 }

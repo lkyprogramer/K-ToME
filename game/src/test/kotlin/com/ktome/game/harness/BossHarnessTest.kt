@@ -55,6 +55,7 @@ class BossHarnessTest {
 
     private val rewardBudgetsByLootProfileId: Map<String, Int> =
         DataLoader().loadSchemaCatalog().lootProfiles.associate { profile -> profile.id to profile.rewardBudget }
+    private val bossRegistryMetrics: BossRegistryMetrics = BossRegistryMetrics.load()
 
     @Test
     @Tag("bossHarness")
@@ -610,6 +611,14 @@ class BossHarnessTest {
                         put("rewardLedgerMatchedCount", pairReports.count(BossHarnessPairReport::rewardLedgerMatched))
                         put("inspectReadableCount", pairReports.count(BossHarnessPairReport::inspectReadable))
                         put("logReadableCount", pairReports.count(BossHarnessPairReport::logReadable))
+                        put("eliteMutationDistinctCount", bossRegistryMetrics.eliteMutationDistinctCount)
+                        put("eliteMutationValidPairCount", bossRegistryMetrics.eliteMutationValidPairCount)
+                        put("bossVariantCount", bossRegistryMetrics.bossVariantCount)
+                        putJsonObject("mutationTierDistribution") {
+                            bossRegistryMetrics.mutationTierDistribution.forEach { (tierId, count) ->
+                                put(tierId, count)
+                            }
+                        }
                     },
                 assertions =
                     listOf(
@@ -627,6 +636,16 @@ class BossHarnessTest {
                             ruleId = "boss.aggregate.variant_readability",
                             passed = pairReports.all { pair -> pair.inspectReadable && pair.logReadable },
                             message = "Every variant can be traced from inspect/log/visual cue metadata.",
+                        ),
+                        WhiteBoxAssertionResult(
+                            ruleId = "boss.aggregate.mutation_count",
+                            passed = bossRegistryMetrics.eliteMutationDistinctCount >= 6,
+                            message = "Elite mutation registry retains at least the OPT PR-01 baseline count.",
+                        ),
+                        WhiteBoxAssertionResult(
+                            ruleId = "boss.aggregate.tier_balance",
+                            passed = bossRegistryMetrics.mutationTierDistribution.values.all { count -> count >= 1 },
+                            message = "Each mutation tier remains represented in the registry.",
                         ),
                     ),
             ),
@@ -1033,6 +1052,77 @@ private data class BossHarnessPairReport(
                 tags = listOf("visual", "tint"),
             ),
         )
+}
+
+private data class BossRegistryMetrics(
+    val eliteMutationDistinctCount: Int,
+    val eliteMutationValidPairCount: Int,
+    val mutationTierDistribution: Map<String, Int>,
+    val bossVariantCount: Int,
+) {
+    companion object {
+        fun load(): BossRegistryMetrics {
+            val schemaCatalog = DataLoader().loadSchemaCatalog()
+            val allZoneIds = schemaCatalog.zones.mapTo(linkedSetOf()) { zone -> zone.id }
+            val mutations = schemaCatalog.eliteMutations
+            val validPairCount =
+                mutations.indices.sumOf { leftIndex ->
+                    val left = mutations[leftIndex]
+                    mutations
+                        .drop(leftIndex + 1)
+                        .count { right -> mutationsCanCoexist(left = left, right = right, allZoneIds = allZoneIds) }
+                }
+            return BossRegistryMetrics(
+                eliteMutationDistinctCount = mutations.map { mutation -> mutation.id }.distinct().size,
+                eliteMutationValidPairCount = validPairCount,
+                mutationTierDistribution =
+                    mutations
+                        .groupingBy { mutation -> mutation.tier.name }
+                        .eachCount()
+                        .toSortedMap(),
+                bossVariantCount = schemaCatalog.bossVariants.map { variant -> variant.id }.distinct().size,
+            )
+        }
+
+        private fun mutationsCanCoexist(
+            left: com.ktome.game.elites.EliteMutationDef,
+            right: com.ktome.game.elites.EliteMutationDef,
+            allZoneIds: Set<String>,
+        ): Boolean {
+            if (right.id in left.incompatibleWith || left.id in right.incompatibleWith) {
+                return false
+            }
+            if (left.tier.name == "SIGNATURE" && right.tier.name == "SIGNATURE") {
+                return false
+            }
+            val sharedZones = resolveAllowedZones(left.allowedZones, allZoneIds).intersect(resolveAllowedZones(right.allowedZones, allZoneIds))
+            if (sharedZones.isEmpty()) {
+                return false
+            }
+            return floorRangesOverlap(
+                leftMinFloor = left.minFloor,
+                leftMaxFloor = left.maxFloor,
+                rightMinFloor = right.minFloor,
+                rightMaxFloor = right.maxFloor,
+            )
+        }
+
+        private fun resolveAllowedZones(
+            allowedZones: Set<String>,
+            allZoneIds: Set<String>,
+        ): Set<String> = if (allowedZones.isEmpty()) allZoneIds else allowedZones
+
+        private fun floorRangesOverlap(
+            leftMinFloor: Int,
+            leftMaxFloor: Int?,
+            rightMinFloor: Int,
+            rightMaxFloor: Int?,
+        ): Boolean {
+            val effectiveLeftMax = leftMaxFloor ?: Int.MAX_VALUE
+            val effectiveRightMax = rightMaxFloor ?: Int.MAX_VALUE
+            return maxOf(leftMinFloor, rightMinFloor) <= minOf(effectiveLeftMax, effectiveRightMax)
+        }
+    }
 }
 
 private fun sha256(payload: String): String =

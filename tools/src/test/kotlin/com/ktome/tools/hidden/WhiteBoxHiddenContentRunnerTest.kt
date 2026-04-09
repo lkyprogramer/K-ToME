@@ -31,6 +31,7 @@ class WhiteBoxHiddenContentRunnerTest {
             Json.parseToJsonElement(Files.readAllLines(run.casesPath).first { line -> line.isNotBlank() }).jsonObject
         val corpusAggregate =
             aggregates.first { aggregate -> aggregate.jsonObject.getValue("groupId").jsonPrimitive.content == "corpus" }.jsonObject
+        val corpusMetrics = corpusAggregate.getValue("metrics").jsonObject
         val aggregateRuleIds =
             corpusAggregate
                 .getValue("assertions")
@@ -69,8 +70,22 @@ class WhiteBoxHiddenContentRunnerTest {
                 "hidden-content.aggregate.reward_bridge_backed_by_loot_budget",
                 "hidden-content.aggregate.search_failure_non_blocking",
                 "hidden-content.aggregate.return_bridge_proof_consistency",
+                "hidden-content.aggregate.trigger_type_coverage",
+                "hidden-content.aggregate.binding_coverage",
             ).all(aggregateRuleIds::contains),
         )
+        assertTrue(
+            setOf(
+                "hiddenTriggerTypeCoverage",
+                "hiddenTriggerTypeSet",
+                "secretEntranceBindingCoverage",
+                "secretEntranceBindingSet",
+            ).all(corpusMetrics::containsKey),
+        )
+        assertTrue(corpusMetrics.getValue("hiddenTriggerTypeSet").jsonArray.isNotEmpty())
+        assertTrue(corpusMetrics.getValue("secretEntranceBindingSet").jsonArray.isNotEmpty())
+        assertTrue(firstCase.getValue("facts").jsonObject.containsKey("hiddenTriggerTypeSet"))
+        assertTrue(firstCase.getValue("facts").jsonObject.containsKey("secretEntranceBindingSet"))
         assertTrue(
             setOf(
                 "hidden-content.case.hidden_events_optional_or_secret_only",

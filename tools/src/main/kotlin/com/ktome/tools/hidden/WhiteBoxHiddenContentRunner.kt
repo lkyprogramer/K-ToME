@@ -35,6 +35,7 @@ object WhiteBoxHiddenContentRunner {
     fun run(): WhiteBoxHiddenContentRun {
         val kernelRun = HiddenContentHarnessKernel.execute()
         val analysis = HiddenContentHarnessAnalysis.analyze(kernelRun.results)
+        val registryMetrics = HiddenContentRegistrySnapshot.load()
         val outputDir = reportDir().resolveSibling("whitebox").resolve("hidden")
         Files.createDirectories(outputDir)
         val caseReports =
@@ -48,7 +49,7 @@ object WhiteBoxHiddenContentRunner {
                     )
                 WhiteBoxCaseReport(
                     joinKey = joinKey,
-                    facts = caseFacts(result),
+                    facts = caseFacts(result = result, registryMetrics = registryMetrics),
                     fingerprints =
                         mapOf(
                             "searchBindingId" to result.searchBindingId.ifBlank { "missing" },
@@ -173,6 +174,14 @@ object WhiteBoxHiddenContentRunner {
                         put("searchFailureBlockingCount", summary.searchFailureBlockingCount)
                         put("proofMismatchCount", summary.proofMismatchCount)
                         put("zoneCount", analysis.zoneBreakdown.size)
+                        put("hiddenTriggerTypeCoverage", summary.hiddenTriggerTypeCoverage)
+                        putJsonArray("hiddenTriggerTypeSet") {
+                            summary.hiddenTriggerTypeSet.sorted().forEach { triggerType -> add(JsonPrimitive(triggerType)) }
+                        }
+                        put("secretEntranceBindingCoverage", summary.secretEntranceBindingCoverage)
+                        putJsonArray("secretEntranceBindingSet") {
+                            summary.secretEntranceBindingSet.sorted().forEach { bindingId -> add(JsonPrimitive(bindingId)) }
+                        }
                     },
                 assertions =
                     listOf(
@@ -235,6 +244,16 @@ object WhiteBoxHiddenContentRunner {
                             ruleId = "hidden-content.aggregate.return_bridge_proof_consistency",
                             passed = summary.proofMismatchCount == 0,
                             message = "Return bridge facts remain consistent with runtime destination and SolvabilityProof.",
+                        ),
+                        WhiteBoxAssertionResult(
+                            ruleId = "hidden-content.aggregate.trigger_type_coverage",
+                            passed = summary.hiddenTriggerTypeCoverage >= MIN_HIDDEN_TRIGGER_TYPE_COVERAGE,
+                            message = "Hidden event registry covers at least the OPT PR-01 baseline trigger taxonomy.",
+                        ),
+                        WhiteBoxAssertionResult(
+                            ruleId = "hidden-content.aggregate.binding_coverage",
+                            passed = summary.secretEntranceBindingCoverage >= MIN_SECRET_ENTRANCE_BINDING_COVERAGE,
+                            message = "Secret-zone registry covers at least the OPT PR-01 baseline entrance-binding diversity.",
                         ),
                     ),
             ),
@@ -362,7 +381,10 @@ object WhiteBoxHiddenContentRunner {
             appendLine("- encounterBridgeBackedByThreatBudget: `${result.encounterBridgeBackedByThreatBudget}`")
         }
 
-    private fun caseFacts(result: HiddenContentCaseResult): JsonObject =
+    private fun caseFacts(
+        result: HiddenContentCaseResult,
+        registryMetrics: HiddenContentRegistryMetrics,
+    ): JsonObject =
         buildJsonObject {
             put("zoneId", result.zoneId)
             put("floorIndex", result.floorIndex)
@@ -393,8 +415,14 @@ object WhiteBoxHiddenContentRunner {
             putJsonArray("triggerTypes") {
                 result.triggerTypes.forEach { triggerType -> add(JsonPrimitive(triggerType)) }
             }
+            putJsonArray("hiddenTriggerTypeSet") {
+                registryMetrics.hiddenTriggerTypeSet.sorted().forEach { triggerType -> add(JsonPrimitive(triggerType)) }
+            }
             putJsonArray("triggerPathClasses") {
                 result.triggerPathClasses.forEach { pathClass -> add(JsonPrimitive(pathClass)) }
+            }
+            putJsonArray("secretEntranceBindingSet") {
+                registryMetrics.secretEntranceBindingSet.sorted().forEach { bindingId -> add(JsonPrimitive(bindingId)) }
             }
             putJsonArray("rewardSources") {
                 result.rewardSources.forEach { rewardSource -> add(JsonPrimitive(rewardSource)) }
