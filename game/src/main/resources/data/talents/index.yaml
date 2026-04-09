@@ -557,8 +557,8 @@ talents:
             duration: 5
             magnitude: 0.20
   - id: elite_war_call
-    nameKey: talent.elite.war_call.name
-    descKey: talent.elite.war_call.desc
+    nameKey: talent.vanguard.elite_war_call.name
+    descKey: talent.vanguard.elite_war_call.desc
     visualKey: talent.vanguard.war_cry.visual
     iconKey: talent.vanguard.war_cry.icon
     audioProfile: audio.talent.war_cry
@@ -1111,8 +1111,8 @@ talents:
             saveDimension: SPELL
             duration: 2
   - id: elite_frost_nova
-    nameKey: talent.elite.frost_nova.name
-    descKey: talent.elite.frost_nova.desc
+    nameKey: talent.arcanist.elite_frost_nova.name
+    descKey: talent.arcanist.elite_frost_nova.desc
     visualKey: talent.arcanist.frost_nova.visual
     iconKey: talent.arcanist.frost_nova.icon
     audioProfile: audio.talent.frost_nova
@@ -1324,8 +1324,8 @@ talents:
       4: { rangeBonus: 3, resourceRestoreFraction: 0.10 }
       5: { rangeBonus: 4, resourceRestoreFraction: 0.14 }
   - id: elite_phase_step
-    nameKey: talent.elite.phase_step.name
-    descKey: talent.elite.phase_step.desc
+    nameKey: talent.arcanist.elite_phase_step.name
+    descKey: talent.arcanist.elite_phase_step.desc
     visualKey: talent.arcanist.blink.visual
     iconKey: talent.arcanist.blink.icon
     audioProfile: audio.talent.blink

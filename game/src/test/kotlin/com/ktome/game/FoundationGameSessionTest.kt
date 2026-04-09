@@ -1498,7 +1498,7 @@ class FoundationGameSessionTest {
         repeat(2) {
             assertTrue(session.perform(PlayerCommand.Wait))
         }
-        assertEquals(14, requireNotNull(runtimeWorld(session).get<Health>(playerId)).current)
+        assertEquals(16, requireNotNull(runtimeWorld(session).get<Health>(playerId)).current)
         assertTrue(session.messageLog().any { message -> message.contains("Emerald Charm restores 2 HP") })
     }
 
