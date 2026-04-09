@@ -179,6 +179,7 @@ class TalentResolver(
             "shield_bash",
             "taunt",
             "war_cry",
+            "elite_war_call",
             "sweeping_strike",
             "sunder_armor",
             "guard_stance",
@@ -192,9 +193,11 @@ class TalentResolver(
             "flame_wall",
             "ice_bolt",
             "frost_nova",
+            "elite_frost_nova",
             "ice_prison",
             "arcane_shield",
             "blink",
+            "elite_phase_step",
             "mana_surge",
             "cinder_burst",
             "inferno_orb",
@@ -570,7 +573,9 @@ class TalentResolver(
                 }
             }
 
-            "war_cry" -> {
+            "war_cry",
+            "elite_war_call",
+            -> {
                 val nearbyTargets = hostileTargetsWithin(world, user, requireNotNull(world.get<Position>(user)).toPoint(), definition.areaRadius)
                 targets += user
                 targets += nearbyTargets
@@ -799,7 +804,9 @@ class TalentResolver(
                 )
             }
 
-            "frost_nova" -> {
+            "frost_nova",
+            "elite_frost_nova",
+            -> {
                 val origin = requireNotNull(world.get<Position>(user)).toPoint()
                 hostileTargetsWithin(world, user, origin, definition.areaRadius).forEach { targetEntity ->
                     targets += targetEntity
@@ -862,7 +869,9 @@ class TalentResolver(
                 )
             }
 
-            "blink" -> {
+            "blink",
+            "elite_phase_step",
+            -> {
                 val from = requireNotNull(world.get<Position>(user)).toPoint()
                 val destination = requireNotNull(blinkDestination(world, map, from, requireNotNull(target), user))
                 requireNotNull(world.get<Position>(user)).moveTo(destination)
@@ -1855,7 +1864,7 @@ class TalentResolver(
         }
 
     private companion object {
-        val BLINK_STYLE_TALENTS: Set<String> = setOf("blink", "roll", "elf_scouting", "elf_glade_step")
+        val BLINK_STYLE_TALENTS: Set<String> = setOf("blink", "elite_phase_step", "roll", "elf_scouting", "elf_glade_step")
         val CHARGE_STYLE_TALENTS: Set<String> = setOf("charge", "blood_rush", "mana_lunge", "pursuit_drive", "blink_strike")
     }
 }

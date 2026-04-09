@@ -556,6 +556,48 @@ talents:
             saveDimension: MENTAL
             duration: 5
             magnitude: 0.20
+  - id: elite_war_call
+    nameKey: talent.elite.war_call.name
+    descKey: talent.elite.war_call.desc
+    visualKey: talent.vanguard.war_cry.visual
+    iconKey: talent.vanguard.war_cry.icon
+    audioProfile: audio.talent.war_cry
+    schemaVersion: 3
+    tags: [talent, elite_only, monster_only, mutation]
+    maxPoints: 1
+    category: ACTIVE
+    powerDimension: MENTAL
+    kind: ACTIVE
+    cooldown: 8
+    castTime: STANDARD
+    range: 0
+    minRange: 0
+    areaRadius: 3
+    resourceCosts: { STAMINA: 12 }
+    unlockLevel: 1
+    targeting: RADIUS_SELF
+    callbacks: []
+    telegraphRef: self_buff_aura
+    treeId: vanguard_warcry
+    keywords: [buff, debuff]
+    levelEffects:
+      1:
+        associatedEffects:
+          - effectId: elite_war_call_buff
+            effectType: war_cry_empower
+            trigger: ON_CAST
+            targetScope: SELF
+            applicationPolicy: SELF_AUTO
+            duration: 5
+            magnitude: 0.24
+          - effectId: elite_war_call_shaken
+            effectType: war_cry_shaken
+            trigger: ON_CAST
+            targetScope: HOSTILES_IN_RADIUS
+            applicationPolicy: HOSTILE_SAVE_ONLY
+            saveDimension: MENTAL
+            duration: 4
+            magnitude: 0.16
   - id: sweeping_strike
     nameKey: talent.vanguard.sweeping_strike.name
     descKey: talent.vanguard.sweeping_strike.desc
@@ -1068,6 +1110,42 @@ talents:
             applicationPolicy: HOSTILE_HIT_THEN_SAVE
             saveDimension: SPELL
             duration: 2
+  - id: elite_frost_nova
+    nameKey: talent.elite.frost_nova.name
+    descKey: talent.elite.frost_nova.desc
+    visualKey: talent.arcanist.frost_nova.visual
+    iconKey: talent.arcanist.frost_nova.icon
+    audioProfile: audio.talent.frost_nova
+    schemaVersion: 3
+    tags: [talent, elite_only, monster_only, mutation]
+    maxPoints: 1
+    category: ACTIVE
+    damageType: COLD
+    powerDimension: SPELL
+    kind: ACTIVE
+    cooldown: 7
+    castTime: STANDARD
+    range: 0
+    minRange: 0
+    areaRadius: 2
+    resourceCosts: { MANA: 14 }
+    unlockLevel: 1
+    targeting: RADIUS_SELF
+    callbacks: []
+    telegraphRef: self_buff_aura
+    treeId: arcanist_frost
+    keywords: [area, control]
+    levelEffects:
+      1:
+        damageMultiplier: 1.1
+        associatedEffects:
+          - effectId: elite_frost_nova_stun
+            effectType: STUNNED
+            trigger: ON_HIT
+            targetScope: PRIMARY_TARGET
+            applicationPolicy: HOSTILE_HIT_THEN_SAVE
+            saveDimension: SPELL
+            duration: 1
   - id: ice_prison
     nameKey: talent.arcanist.ice_prison.name
     descKey: talent.arcanist.ice_prison.desc
@@ -1245,6 +1323,31 @@ talents:
       3: { rangeBonus: 2 }
       4: { rangeBonus: 3, resourceRestoreFraction: 0.10 }
       5: { rangeBonus: 4, resourceRestoreFraction: 0.14 }
+  - id: elite_phase_step
+    nameKey: talent.elite.phase_step.name
+    descKey: talent.elite.phase_step.desc
+    visualKey: talent.arcanist.blink.visual
+    iconKey: talent.arcanist.blink.icon
+    audioProfile: audio.talent.blink
+    schemaVersion: 3
+    tags: [talent, elite_only, monster_only, mutation]
+    maxPoints: 1
+    category: ACTIVE
+    kind: ACTIVE
+    cooldown: 6
+    castTime: STANDARD
+    range: 5
+    minRange: 2
+    areaRadius: 0
+    resourceCosts: { MANA: 12 }
+    unlockLevel: 1
+    targeting: SINGLE_TARGET
+    callbacks: []
+    telegraphRef: charge_lane
+    treeId: arcanist_arcane
+    keywords: [movement, teleport]
+    levelEffects:
+      1: { rangeBonus: 1 }
   - id: mana_surge
     nameKey: talent.arcanist.mana_surge.name
     descKey: talent.arcanist.mana_surge.desc

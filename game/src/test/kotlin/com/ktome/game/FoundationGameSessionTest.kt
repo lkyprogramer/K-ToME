@@ -90,6 +90,8 @@ import com.ktome.core.world.solvability.RegistryId
 import com.ktome.core.world.solvability.SearchActionResult
 import com.ktome.core.world.ObjectiveState
 import com.ktome.game.data.DataLoader
+import com.ktome.game.elites.EncounterDecoration
+import com.ktome.game.elites.EncounterDecorationService
 import com.ktome.game.factory.EntityFactory
 import com.ktome.game.factory.ItemFactory
 import com.ktome.game.model.MonsterTemplate
@@ -1493,7 +1495,9 @@ class FoundationGameSessionTest {
 
         val session = session(world, map, playerId)
 
-        assertTrue(session.perform(PlayerCommand.Wait))
+        repeat(2) {
+            assertTrue(session.perform(PlayerCommand.Wait))
+        }
         assertEquals(14, requireNotNull(runtimeWorld(session).get<Health>(playerId)).current)
         assertTrue(session.messageLog().any { message -> message.contains("Emerald Charm restores 2 HP") })
     }
@@ -2687,6 +2691,67 @@ class FoundationGameSessionTest {
 
         assertTrue(requireNotNull(world.get<AreaEffectEmitter>(areaEntity)).effects.isEmpty())
         assertTrue(requireNotNull(world.get<WorldEffect>(worldEntity)).effects.isEmpty())
+    }
+
+    @Test
+    fun `corrosion cloud only applies armor break to hostile actors in range`() {
+        val session =
+            GameModule.newFoundationSession(
+                FoundationGameConfig(seed = 20260409L, zoneId = "shattered_outpost", playerProfessionId = "vanguard"),
+                SaveManager(tempDir.resolve("mutation-corrosion-cloud")),
+            )
+        clearMonsters(session)
+        val world = runtimeWorld(session)
+        val monsterId = installCombatDummy(session, id = "corrosion_cloud_dummy")
+        val content = sessionContent(session)
+        EncounterDecorationService(content).applyDecoration(
+            world = world,
+            entityId = monsterId,
+            decoration =
+                EncounterDecoration(
+                    mutations = listOf(requireNotNull(content.eliteMutationRegistry.resolve("elite.corrosion_cloud"))),
+                ),
+        )
+
+        assertTrue(session.perform(PlayerCommand.Wait))
+
+        val auraEmitter = requireNotNull(world.get<AreaEffectEmitter>(monsterId))
+        val playerEffects = requireNotNull(world.get<EffectTracker>(session.playerId)).activeEffects().map { effect -> effect.schemaId }.toSet()
+        val monsterEffects = requireNotNull(world.get<EffectTracker>(monsterId)).activeEffects().map { effect -> effect.schemaId }.toSet()
+
+        assertEquals(setOf(session.playerId), auraEmitter.affectedActorIds)
+        assertTrue(auraEmitter.effects.all { effect -> effect.schemaId == StatusEffectType.ARMOR_BREAK.schemaId })
+        assertTrue(StatusEffectType.ARMOR_BREAK.schemaId in playerEffects)
+        assertFalse(StatusEffectType.ARMOR_BREAK.schemaId in monsterEffects)
+    }
+
+    @Test
+    fun `void mirror refreshes arcane shield on owner instead of hostile target`() {
+        val session =
+            GameModule.newFoundationSession(
+                FoundationGameConfig(seed = 20260409L, zoneId = "shattered_outpost", playerProfessionId = "vanguard"),
+                SaveManager(tempDir.resolve("mutation-void-mirror")),
+            )
+        clearMonsters(session)
+        val world = runtimeWorld(session)
+        val monsterId = installCombatDummy(session, id = "void_mirror_dummy")
+        val content = sessionContent(session)
+        EncounterDecorationService(content).applyDecoration(
+            world = world,
+            entityId = monsterId,
+            decoration =
+                EncounterDecoration(
+                    mutations = listOf(requireNotNull(content.eliteMutationRegistry.resolve("elite.void_mirror"))),
+                ),
+        )
+
+        assertTrue(session.perform(PlayerCommand.Wait))
+
+        val playerEffects = requireNotNull(world.get<EffectTracker>(session.playerId)).activeEffects().map { effect -> effect.schemaId }.toSet()
+        val monsterEffects = requireNotNull(world.get<EffectTracker>(monsterId)).activeEffects().map { effect -> effect.schemaId }.toSet()
+
+        assertFalse(StatusEffectType.ARCANE_SHIELD_BUFF.schemaId in playerEffects)
+        assertTrue(StatusEffectType.ARCANE_SHIELD_BUFF.schemaId in monsterEffects)
     }
 
     @Test
@@ -4298,6 +4363,35 @@ class FoundationGameSessionTest {
         assertTrue(itemInspect.details.contains("+15% damage vs Bandits"))
         assertTrue(itemInspect.details.contains("ATK +5"))
         assertTrue(itemInspect.details.contains("SPD +1"))
+    }
+
+    @Test
+    fun `inspect view renders player facing mutation summary for phase runner`() {
+        val session =
+            GameModule.newFoundationSession(
+                FoundationGameConfig(seed = 20260409L, zoneId = "shattered_outpost", playerProfessionId = "vanguard"),
+                SaveManager(tempDir.resolve("inspect-phase-runner")),
+            )
+        clearMonsters(session)
+        val world = runtimeWorld(session)
+        val monsterId = installCombatDummy(session, id = "phase_runner_dummy")
+        val content = sessionContent(session)
+        EncounterDecorationService(content).applyDecoration(
+            world = world,
+            entityId = monsterId,
+            decoration =
+                EncounterDecoration(
+                    mutations = listOf(requireNotNull(content.eliteMutationRegistry.resolve("elite.phase_runner"))),
+                ),
+        )
+
+        val inspect = session.inspectAt(requireNotNull(world.get<Position>(monsterId)).toPoint())
+        val mutation = requireNotNull(inspect.actor).mutations.single()
+
+        assertEquals("elite.phase_runner", mutation.id)
+        val summary = requireNotNull(mutation.summary)
+        assertTrue(summary.contains("闪现换位") || summary.contains("Phase-steps"))
+        assertFalse(summary.contains("ai.elite.phase_runner"))
     }
 
     @Test

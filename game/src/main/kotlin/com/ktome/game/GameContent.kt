@@ -257,6 +257,26 @@ internal data class GameContent(
         }
     }
 
+    fun validateEliteMutationContracts() {
+        schemaCatalog.eliteMutations.forEach { mutation ->
+            mutation.grantedTalents.forEach { grantedTalent ->
+                require(talentRegistry.get(grantedTalent.talentId) != null) {
+                    "Elite mutation '${mutation.id}' references unknown granted talent '${grantedTalent.talentId}'."
+                }
+            }
+            mutation.aiProfileOverlay?.let { profileId ->
+                require(profileId in aiProfilesById) {
+                    "Elite mutation '${mutation.id}' references unknown AI profile overlay '$profileId'."
+                }
+            }
+            mutation.auraStatusId?.let { statusId ->
+                require(statusSchemaFor(statusId) != null) {
+                    "Elite mutation '${mutation.id}' references unknown aura status '$statusId'."
+                }
+            }
+        }
+    }
+
     fun bossDefinitionForZone(zoneId: String): BossDefinition? =
         schemaCatalog.zones.firstOrNull { zone -> zone.id == zoneId }
             ?.bossEncounterId

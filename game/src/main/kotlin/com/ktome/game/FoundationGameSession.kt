@@ -3700,6 +3700,21 @@ class FoundationGameSession internal constructor(
                         ),
                 )
 
+            mutation.kind == com.ktome.game.elites.MutationKind.AI_SHIFT ->
+                mutationAiShiftSummaryToken(mutation)
+                    ?: firstTalentId?.let { talentId ->
+                        RenderTextTokenSnapshot(
+                            key = "ui.inspect.mutation.summary.granted_talent",
+                            arguments = listOf(keyArg("talent", talentNameKey(talentId))),
+                        )
+                    }
+                    ?: mutation.aiProfileOverlay?.let { profileId ->
+                        RenderTextTokenSnapshot(
+                            key = "ui.inspect.mutation.summary.ai_shift",
+                            arguments = listOf(literalArg("profile", profileId)),
+                        )
+                    }
+
             firstTalentId != null && mutation.kind == com.ktome.game.elites.MutationKind.ELEMENT_PACKAGE ->
                 RenderTextTokenSnapshot(
                     key = "ui.inspect.mutation.summary.element_package",
@@ -3724,6 +3739,15 @@ class FoundationGameSession internal constructor(
             else -> null
         }
     }
+
+    private fun mutationAiShiftSummaryToken(
+        mutation: com.ktome.game.elites.EliteMutationDef,
+    ): RenderTextTokenSnapshot? =
+        when (mutation.id) {
+            "elite.phase_runner" -> RenderTextTokenSnapshot(key = "ui.inspect.mutation.summary.phase_runner")
+            "elite.hunt_protocol" -> RenderTextTokenSnapshot(key = "ui.inspect.mutation.summary.hunt_protocol")
+            else -> null
+        }
 
     private fun damageTypeIconKey(damageTypeId: String): String =
         when (damageTypeId) {
@@ -5231,9 +5255,12 @@ class FoundationGameSession internal constructor(
             return null
         }
 
-        val damageType = dueEffect.effect.tickDamageType ?: return null
+        val damageType = dueEffect.effect.tickDamageType
         val rawDamage = dueEffect.effect.tickDamage
-        if (rawDamage <= 0) {
+        if (damageType == null || rawDamage <= 0) {
+            if (dueEffect.carrierKind != EffectCarrierKind.ACTOR) {
+                applyCarrierStatusEffect(actorId, dueEffect)
+            }
             return null
         }
 
@@ -5292,6 +5319,36 @@ class FoundationGameSession internal constructor(
         }
 
         return if (result.targetKilled) dueEffect.sourceEntityId ?: actorId else null
+    }
+
+    private fun applyCarrierStatusEffect(
+        actorId: EntityId,
+        dueEffect: com.ktome.core.status.CarrierDueEffect,
+    ) {
+        val applied =
+            StatusLifecycle.applyEffect(
+                world,
+                actorId,
+                dueEffect.effect.copy(
+                    id = "carrier:${dueEffect.sourceKey}:${dueEffect.effect.id}:${actorId.value}:$turnCount",
+                    carrierKind = EffectCarrierKind.ACTOR,
+                    sourceEntityId = dueEffect.sourceEntityId,
+                    appliedTurn = turnCount,
+                    skipNextDecay = false,
+                ),
+            )
+        if (!applied.applied) {
+            return
+        }
+        logEvent(
+            StatusAppliedEvent(
+                target = actorId,
+                statusType = dueEffect.effect.type,
+                statusId = dueEffect.effect.schemaId,
+                source = dueEffect.sourceEntityId,
+                remainingTurns = dueEffect.effect.remainingTurns,
+            ),
+        )
     }
 
     private fun decayAreaEffectEmitters(actorId: EntityId) {
@@ -7081,34 +7138,67 @@ class FoundationGameSession internal constructor(
                             mutation.auraStatusId != null &&
                             mutation.auraRadius > 0 &&
                             ownerId != actorId &&
-                            actorPosition.chebyshevDistanceTo(ownerPosition) <= mutation.auraRadius &&
-                            areHostile(ownerId, actorId)
+                            actorPosition.chebyshevDistanceTo(ownerPosition) <= mutation.auraRadius
                     }.orEmpty()
-            if (auraMutations.isEmpty()) {
+            val debuffAuras =
+                auraMutations.filter { mutation ->
+                    mutationAuraCategory(mutation) == EffectCategory.DEBUFF && areHostile(ownerId, actorId)
+                }
+            if (debuffAuras.isEmpty()) {
                 world.remove<AreaEffectEmitter>(ownerId)
-                return@forEach
+            } else {
+                world.add(
+                    ownerId,
+                    AreaEffectEmitter(
+                        emitterId = "mutation.aura:${ownerId.value}",
+                        sourceEntityId = ownerId,
+                        affectedActorIds = setOf(actorId),
+                        effects =
+                            debuffAuras.map { mutation ->
+                                StatusLifecycle.createInstance(
+                                    type = StatusEffectType.fromSchemaId(requireNotNull(mutation.auraStatusId)),
+                                    effectId = "mutation.aura:${mutation.id}:${ownerId.value}:${actorId.value}:$turnCount",
+                                    duration = mutation.auraDuration,
+                                    magnitude = mutation.auraMagnitude,
+                                    sourceEntityId = ownerId,
+                                    appliedTurn = turnCount,
+                                )
+                            }.toMutableList(),
+                    ),
+                )
             }
-            world.add(
-                ownerId,
-                AreaEffectEmitter(
-                    emitterId = "mutation.aura:${ownerId.value}",
-                    sourceEntityId = ownerId,
-                    affectedActorIds = setOf(actorId),
-                    effects =
-                        auraMutations.map { mutation ->
+            val refreshedOwnerBuff =
+                auraMutations
+                    .filter { mutation ->
+                        mutationAuraCategory(mutation) == EffectCategory.BUFF && areHostile(ownerId, actorId)
+                    }.fold(false) { _, mutation ->
+                        StatusLifecycle.applyEffect(
+                            world,
+                            ownerId,
                             StatusLifecycle.createInstance(
                                 type = StatusEffectType.fromSchemaId(requireNotNull(mutation.auraStatusId)),
-                                effectId = "mutation.aura:${mutation.id}:${ownerId.value}:${actorId.value}:$turnCount",
+                                effectId = "mutation.aura:${mutation.id}:${ownerId.value}",
                                 duration = mutation.auraDuration,
                                 magnitude = mutation.auraMagnitude,
                                 sourceEntityId = ownerId,
                                 appliedTurn = turnCount,
-                            )
-                        }.toMutableList(),
-                ),
-            )
+                            ),
+                        )
+                        true
+                    }
+            if (refreshedOwnerBuff) {
+                StatsCalculator.recalculateAndStore(world, ownerId)
+            }
         }
     }
+
+    private fun mutationAuraCategory(mutation: com.ktome.game.elites.EliteMutationDef): EffectCategory =
+        mutation.auraStatusId
+            ?.let(content::statusSchemaFor)
+            ?.category
+            ?.uppercase()
+            ?.let { category -> runCatching { EffectCategory.valueOf(category) }.getOrNull() }
+            ?: StatusEffectType.fromSchemaId(requireNotNull(mutation.auraStatusId)).category
 
     private fun areHostile(
         source: EntityId,

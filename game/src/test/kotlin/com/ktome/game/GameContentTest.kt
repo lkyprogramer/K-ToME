@@ -1,5 +1,7 @@
 package com.ktome.game
 
+import com.ktome.core.ai.AIActionType
+import com.ktome.core.ai.AICondition
 import com.ktome.core.talent.TalentRegistry
 import com.ktome.core.world.solvability.DiscoveryPredicate
 import com.ktome.core.world.solvability.DiscoveryPredicateType
@@ -8,6 +10,7 @@ import com.ktome.core.world.solvability.NodeAnchorId
 import com.ktome.game.data.DataLoader
 import com.ktome.game.data.schema.SchemaCatalog
 import com.ktome.game.hidden.HiddenEventRewardPayload
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -60,6 +63,109 @@ class GameContentTest {
             }
 
         assertTrue(ex.message.orEmpty().contains("unknown base-encounter actions"))
+    }
+
+    @Test
+    fun `elite mutation granted talents must resolve to registered talents`() {
+        val targetMutation = baseSchemaCatalog.eliteMutations.first { mutation -> mutation.grantedTalents.isNotEmpty() }
+        val ex =
+            assertThrows<IllegalArgumentException> {
+                newContent(
+                    baseSchemaCatalog.copy(
+                        eliteMutations =
+                            baseSchemaCatalog.eliteMutations.map { mutation ->
+                                if (mutation.id == targetMutation.id) {
+                                    mutation.copy(
+                                        grantedTalents = listOf(com.ktome.game.elites.TalentGrantRef("elite.missing.talent")),
+                                    )
+                                } else {
+                                    mutation
+                                }
+                            },
+                    ),
+                )
+            }
+
+        assertTrue(ex.message.orEmpty().contains("unknown granted talent"))
+    }
+
+    @Test
+    fun `elite mutation ai profile overlay must resolve to registered profiles`() {
+        val targetMutation = baseSchemaCatalog.eliteMutations.first { mutation -> mutation.aiProfileOverlay != null }
+        val ex =
+            assertThrows<IllegalArgumentException> {
+                newContent(
+                    baseSchemaCatalog.copy(
+                        eliteMutations =
+                            baseSchemaCatalog.eliteMutations.map { mutation ->
+                                if (mutation.id == targetMutation.id) {
+                                    mutation.copy(aiProfileOverlay = "ai.elite.missing_overlay")
+                                } else {
+                                    mutation
+                                }
+                            },
+                    ),
+                )
+            }
+
+        assertTrue(ex.message.orEmpty().contains("unknown AI profile overlay"))
+    }
+
+    @Test
+    fun `elite mutation aura status must resolve to registered status schema`() {
+        val targetMutation = baseSchemaCatalog.eliteMutations.first { mutation -> mutation.auraStatusId != null }
+        val ex =
+            assertThrows<IllegalArgumentException> {
+                newContent(
+                    baseSchemaCatalog.copy(
+                        eliteMutations =
+                            baseSchemaCatalog.eliteMutations.map { mutation ->
+                                if (mutation.id == targetMutation.id) {
+                                    mutation.copy(auraStatusId = "STATUS_MISSING")
+                                } else {
+                                    mutation
+                                }
+                            },
+                    ),
+                )
+            }
+
+        assertTrue(ex.message.orEmpty().contains("unknown aura status"))
+    }
+
+    @Test
+    fun `frostbound overlay keeps retreat and nova control cadence`() {
+        val profile = baseSchemaCatalog.aiProfiles.first { profile -> profile.id == "ai.elite.frostbound" }
+        val retreat = profile.actions.first { action -> action.id == "retreat" }
+        val frostNova = profile.actions.first { action -> action.id == "frost_nova" }
+        val frostNovaCondition = frostNova.condition as? AICondition.And
+
+        assertEquals(AIActionType.RETREAT_FROM_TARGET, retreat.type)
+        assertEquals(AICondition.TargetDistanceLessThan(distance = 2), retreat.condition)
+        assertEquals(AIActionType.USE_ABILITY, frostNova.type)
+        assertEquals("elite_frost_nova", frostNova.abilityId)
+        assertEquals(
+            AICondition.TargetDistanceBetween(minDistance = 2, maxDistance = 4),
+            frostNovaCondition?.conditions?.firstOrNull(),
+        )
+        assertEquals(
+            AICondition.TalentReady(talentId = "elite_frost_nova"),
+            frostNovaCondition?.conditions?.getOrNull(1),
+        )
+    }
+
+    @Test
+    fun `grey crown action weight profile keeps commander emphasis readable in data`() {
+        val variant = baseSchemaCatalog.bossVariants.first { bossVariant -> bossVariant.id == "boss.variant.grey_crown" }
+        val profile =
+            baseSchemaCatalog.actionWeightProfiles.first { actionWeightProfile ->
+                actionWeightProfile.id == requireNotNull(variant.actionWeightProfileId)
+            }
+
+        assertEquals(42.0, profile.actionWeights["battlefield_command"])
+        assertEquals(44.0, profile.actionWeights["arcane_shield"])
+        assertEquals(48.0, profile.actionWeights["ritual_break"])
+        assertEquals(setOf("battlefield_command", "arcane_shield", "ritual_break"), profile.actionWeights.keys)
     }
 
     @Test
@@ -168,5 +274,5 @@ class GameContentTest {
             bossDefinitions = loader.loadBossDefinitions(),
             schemaCatalog = schemaCatalog,
             localizer = loader.localizer,
-        )
+        ).also(GameContent::validateEliteMutationContracts)
 }

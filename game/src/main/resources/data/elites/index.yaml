@@ -6,6 +6,10 @@ mutationStatModifiers:
     stats:
       defense: 4
       maxHp: 18
+  - id: mod.mutation.ironhide
+    stats:
+      defense: 6
+      maxHp: 8
   - id: mod.mutation.emberblood
     stats:
       attack: 3
@@ -18,6 +22,10 @@ mutationStatModifiers:
       evasion: 3
     resistances:
       COLD: 12
+  - id: mod.mutation.frostbound
+    stats:
+      accuracy: 3
+      evasion: 2
 
 eliteMutations:
   - id: elite.stonehide
@@ -33,6 +41,19 @@ eliteMutations:
     grantedTalents: []
     incompatibleWith: []
 
+  - id: elite.ironhide
+    kind: STAT_PACKAGE
+    tier: MINOR
+    threatCost: 2
+    nameKey: mutation.ironhide.name
+    iconKey: icon.mutation.ironhide
+    applyToTags: [elite]
+    minFloor: 1
+    allowedZones: []
+    statModifiers: [mod.mutation.ironhide]
+    grantedTalents: []
+    incompatibleWith: []
+
   - id: elite.battle_drill
     kind: ABILITY_GRANT
     tier: MAJOR
@@ -44,7 +65,7 @@ eliteMutations:
     allowedZones: []
     statModifiers: []
     grantedTalents: [linebreaker]
-    incompatibleWith: []
+    incompatibleWith: [elite.war_caller]
 
   - id: elite.dread_aura
     kind: AURA
@@ -57,7 +78,7 @@ eliteMutations:
     allowedZones: [grey_gate_depths, abyssal_temple, abyssal_heart]
     statModifiers: []
     grantedTalents: []
-    incompatibleWith: [elite.battle_drill]
+    incompatibleWith: [elite.battle_drill, elite.corrosion_cloud, elite.void_mirror]
     auraStatusId: WEAKEN
     auraRadius: 1
     auraDuration: 1
@@ -77,6 +98,51 @@ eliteMutations:
     aiProfileOverlay: ai.elite.huntmaster
     incompatibleWith: []
 
+  - id: elite.phase_runner
+    kind: AI_SHIFT
+    tier: MINOR
+    threatCost: 2
+    nameKey: mutation.phase_runner.name
+    iconKey: icon.mutation.phase_runner
+    applyToTags: [elite, bandit, river, crystal, abyssal]
+    minFloor: 2
+    allowedZones: []
+    statModifiers: []
+    grantedTalents: [elite_phase_step]
+    aiProfileOverlay: ai.elite.phase_runner
+    incompatibleWith: []
+
+  - id: elite.war_caller
+    kind: ABILITY_GRANT
+    tier: MAJOR
+    threatCost: 3
+    nameKey: mutation.war_caller.name
+    iconKey: icon.mutation.war_caller
+    applyToTags: [elite, bandit, cultist, forge, abyssal]
+    minFloor: 2
+    allowedZones: []
+    statModifiers: []
+    grantedTalents: [elite_war_call]
+    aiProfileOverlay: ai.elite.war_caller
+    incompatibleWith: [elite.battle_drill]
+
+  - id: elite.corrosion_cloud
+    kind: AURA
+    tier: MAJOR
+    threatCost: 4
+    nameKey: mutation.corrosion_cloud.name
+    iconKey: icon.mutation.corrosion_cloud
+    applyToTags: [elite, forge, abyssal]
+    minFloor: 3
+    allowedZones: [deep_iron_pit, molten_core]
+    statModifiers: []
+    grantedTalents: []
+    incompatibleWith: [elite.dread_aura, elite.void_mirror]
+    auraStatusId: ARMOR_BREAK
+    auraRadius: 1
+    auraDuration: 2
+    auraMagnitude: 0.10
+
   - id: elite.emberblood
     kind: ELEMENT_PACKAGE
     tier: SIGNATURE
@@ -88,7 +154,21 @@ eliteMutations:
     allowedZones: [deep_iron_pit, molten_core, abyssal_temple, abyssal_heart]
     statModifiers: [mod.mutation.emberblood]
     grantedTalents: [cinder_burst]
-    incompatibleWith: [elite.tidebound]
+    incompatibleWith: [elite.tidebound, elite.frostbound]
+
+  - id: elite.frostbound
+    kind: ELEMENT_PACKAGE
+    tier: MAJOR
+    threatCost: 4
+    nameKey: mutation.frostbound.name
+    iconKey: icon.mutation.frostbound
+    applyToTags: [elite, river, crystal]
+    minFloor: 3
+    allowedZones: [underground_river, crystal_cavern]
+    statModifiers: [mod.mutation.frostbound]
+    grantedTalents: [elite_frost_nova]
+    aiProfileOverlay: ai.elite.frostbound
+    incompatibleWith: [elite.emberblood, elite.tidebound]
 
   - id: elite.tidebound
     kind: ELEMENT_PACKAGE
@@ -101,4 +181,21 @@ eliteMutations:
     allowedZones: [underground_river, crystal_cavern]
     statModifiers: [mod.mutation.tidebound]
     grantedTalents: [glacial_seal]
-    incompatibleWith: [elite.emberblood]
+    incompatibleWith: [elite.emberblood, elite.frostbound]
+
+  - id: elite.void_mirror
+    kind: AURA
+    tier: SIGNATURE
+    threatCost: 5
+    nameKey: mutation.void_mirror.name
+    iconKey: icon.mutation.void_mirror
+    applyToTags: [elite, cultist, abyssal]
+    minFloor: 4
+    allowedZones: [grey_gate_depths, abyssal_temple, abyssal_heart]
+    statModifiers: []
+    grantedTalents: []
+    incompatibleWith: [elite.dread_aura, elite.corrosion_cloud]
+    auraStatusId: ARCANE_SHIELD_BUFF
+    auraRadius: 1
+    auraDuration: 1
+    auraMagnitude: 0.08

@@ -1,0 +1,33 @@
+packId: phase4-opt-pr02-audio-generation-v1
+sampleRate: 44100
+targets:
+  - id: phase4_opt_pr02_mutation_ironhide
+    key: audio.mutation.ironhide
+    sourcePath: audio/phase4/opt_pr02/mutation_ironhide.ogg
+    profile: mutation_ironhide
+    durationSeconds: 0.86
+  - id: phase4_opt_pr02_mutation_phase_runner
+    key: audio.mutation.phase_runner
+    sourcePath: audio/phase4/opt_pr02/mutation_phase_runner.ogg
+    profile: mutation_phase_runner
+    durationSeconds: 0.74
+  - id: phase4_opt_pr02_mutation_war_caller
+    key: audio.mutation.war_caller
+    sourcePath: audio/phase4/opt_pr02/mutation_war_caller.ogg
+    profile: mutation_war_caller
+    durationSeconds: 0.92
+  - id: phase4_opt_pr02_mutation_corrosion_cloud
+    key: audio.mutation.corrosion_cloud
+    sourcePath: audio/phase4/opt_pr02/mutation_corrosion_cloud.ogg
+    profile: mutation_corrosion_cloud
+    durationSeconds: 0.96
+  - id: phase4_opt_pr02_mutation_frostbound
+    key: audio.mutation.frostbound
+    sourcePath: audio/phase4/opt_pr02/mutation_frostbound.ogg
+    profile: mutation_frostbound
+    durationSeconds: 0.88
+  - id: phase4_opt_pr02_mutation_void_mirror
+    key: audio.mutation.void_mirror
+    sourcePath: audio/phase4/opt_pr02/mutation_void_mirror.ogg
+    profile: mutation_void_mirror
+    durationSeconds: 1.02

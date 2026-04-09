@@ -2417,6 +2417,13 @@
       "tags": ["phase4", "pr06", "mutation"]
     },
     {
+      "key": "audio.mutation.ironhide",
+      "cueFamily": "monster",
+      "eventId": "audio.mutation.ironhide",
+      "sourcePath": "audio/phase4/opt_pr02/mutation_ironhide.ogg",
+      "tags": ["phase4", "opt", "pr02", "mutation"]
+    },
+    {
       "key": "audio.mutation.battle_drill",
       "cueFamily": "monster",
       "eventId": "audio.mutation.battle_drill",
@@ -2438,6 +2445,27 @@
       "tags": ["phase4", "pr06", "mutation"]
     },
     {
+      "key": "audio.mutation.phase_runner",
+      "cueFamily": "monster",
+      "eventId": "audio.mutation.phase_runner",
+      "sourcePath": "audio/phase4/opt_pr02/mutation_phase_runner.ogg",
+      "tags": ["phase4", "opt", "pr02", "mutation"]
+    },
+    {
+      "key": "audio.mutation.war_caller",
+      "cueFamily": "monster",
+      "eventId": "audio.mutation.war_caller",
+      "sourcePath": "audio/phase4/opt_pr02/mutation_war_caller.ogg",
+      "tags": ["phase4", "opt", "pr02", "mutation"]
+    },
+    {
+      "key": "audio.mutation.corrosion_cloud",
+      "cueFamily": "monster",
+      "eventId": "audio.mutation.corrosion_cloud",
+      "sourcePath": "audio/phase4/opt_pr02/mutation_corrosion_cloud.ogg",
+      "tags": ["phase4", "opt", "pr02", "mutation"]
+    },
+    {
       "key": "audio.mutation.emberblood",
       "cueFamily": "monster",
       "eventId": "audio.mutation.emberblood",
@@ -2445,11 +2473,25 @@
       "tags": ["phase4", "pr06", "mutation"]
     },
     {
+      "key": "audio.mutation.frostbound",
+      "cueFamily": "monster",
+      "eventId": "audio.mutation.frostbound",
+      "sourcePath": "audio/phase4/opt_pr02/mutation_frostbound.ogg",
+      "tags": ["phase4", "opt", "pr02", "mutation"]
+    },
+    {
       "key": "audio.mutation.tidebound",
       "cueFamily": "monster",
       "eventId": "audio.mutation.tidebound",
       "sourcePath": "audio/phase4/pr06/mutation_tidebound.ogg",
       "tags": ["phase4", "pr06", "mutation"]
+    },
+    {
+      "key": "audio.mutation.void_mirror",
+      "cueFamily": "monster",
+      "eventId": "audio.mutation.void_mirror",
+      "sourcePath": "audio/phase4/opt_pr02/mutation_void_mirror.ogg",
+      "tags": ["phase4", "opt", "pr02", "mutation"]
     },
     {
       "key": "audio.terrain.water",

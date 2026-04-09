@@ -309,7 +309,9 @@ object Phase4ReportRunner {
                     put("eliteMutationDistinctCount", corpusMetrics.getValue("eliteMutationDistinctCount"))
                     put("eliteMutationValidPairCount", corpusMetrics.getValue("eliteMutationValidPairCount"))
                     put("bossVariantCount", corpusMetrics.getValue("bossVariantCount"))
+                    put("bossVariantMutationPairwiseDistinct", corpusMetrics.getValue("bossVariantMutationPairwiseDistinct"))
                     put("mutationTierDistribution", corpusMetrics.getValue("mutationTierDistribution"))
+                    put("bossVariantMutationSets", corpusMetrics.getValue("bossVariantMutationSets"))
                     whiteBoxFirstFailedJoinKey?.let { joinKey -> put("whiteBoxFirstFailedJoinKey", joinKey.toString()) }
                 },
         )

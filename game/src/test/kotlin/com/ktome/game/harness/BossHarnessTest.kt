@@ -614,9 +614,17 @@ class BossHarnessTest {
                         put("eliteMutationDistinctCount", bossRegistryMetrics.eliteMutationDistinctCount)
                         put("eliteMutationValidPairCount", bossRegistryMetrics.eliteMutationValidPairCount)
                         put("bossVariantCount", bossRegistryMetrics.bossVariantCount)
+                        put("bossVariantMutationPairwiseDistinct", bossRegistryMetrics.bossVariantMutationPairwiseDistinct)
                         putJsonObject("mutationTierDistribution") {
                             bossRegistryMetrics.mutationTierDistribution.forEach { (tierId, count) ->
                                 put(tierId, count)
+                            }
+                        }
+                        putJsonObject("bossVariantMutationSets") {
+                            bossRegistryMetrics.bossVariantMutationSets.forEach { (variantId, mutationIds) ->
+                                putJsonArray(variantId) {
+                                    mutationIds.forEach { mutationId -> add(JsonPrimitive(mutationId)) }
+                                }
                             }
                         }
                     },
@@ -639,13 +647,26 @@ class BossHarnessTest {
                         ),
                         WhiteBoxAssertionResult(
                             ruleId = "boss.aggregate.mutation_count",
-                            passed = bossRegistryMetrics.eliteMutationDistinctCount >= 6,
-                            message = "Elite mutation registry retains at least the OPT PR-01 baseline count.",
+                            passed = bossRegistryMetrics.eliteMutationDistinctCount >= 12,
+                            message = "Elite mutation registry reaches the OPT PR-02 target count of at least 12.",
+                        ),
+                        WhiteBoxAssertionResult(
+                            ruleId = "boss.aggregate.valid_pair_count",
+                            passed = bossRegistryMetrics.eliteMutationValidPairCount >= 40,
+                            message = "Elite mutation registry exposes at least 40 valid non-forbidden pairs.",
                         ),
                         WhiteBoxAssertionResult(
                             ruleId = "boss.aggregate.tier_balance",
-                            passed = bossRegistryMetrics.mutationTierDistribution.values.all { count -> count >= 1 },
-                            message = "Each mutation tier remains represented in the registry.",
+                            passed =
+                                bossRegistryMetrics.mutationTierDistribution["MINOR"].orZero() >= 2 &&
+                                    bossRegistryMetrics.mutationTierDistribution["MAJOR"].orZero() >= 5 &&
+                                    bossRegistryMetrics.mutationTierDistribution["SIGNATURE"].orZero() >= 2,
+                            message = "Mutation tier distribution satisfies MINOR >= 2, MAJOR >= 5, SIGNATURE >= 2.",
+                        ),
+                        WhiteBoxAssertionResult(
+                            ruleId = "boss.aggregate.variant_pairwise_distinct",
+                            passed = bossRegistryMetrics.bossVariantMutationPairwiseDistinct,
+                            message = "All formal boss variants keep pairwise-distinct mutation combinations.",
                         ),
                     ),
             ),
@@ -1059,12 +1080,19 @@ private data class BossRegistryMetrics(
     val eliteMutationValidPairCount: Int,
     val mutationTierDistribution: Map<String, Int>,
     val bossVariantCount: Int,
+    val bossVariantMutationPairwiseDistinct: Boolean,
+    val bossVariantMutationSets: Map<String, List<String>>,
 ) {
     companion object {
         fun load(): BossRegistryMetrics {
             val schemaCatalog = DataLoader().loadSchemaCatalog()
             val allZoneIds = schemaCatalog.zones.mapTo(linkedSetOf()) { zone -> zone.id }
             val mutations = schemaCatalog.eliteMutations
+            val bossVariantMutationSets =
+                schemaCatalog.bossVariants
+                    .associate { variant ->
+                        variant.id to variant.grantedMutations.map { mutationRef -> mutationRef.mutationId }.sorted()
+                    }.toSortedMap()
             val validPairCount =
                 mutations.indices.sumOf { leftIndex ->
                     val left = mutations[leftIndex]
@@ -1081,6 +1109,9 @@ private data class BossRegistryMetrics(
                         .eachCount()
                         .toSortedMap(),
                 bossVariantCount = schemaCatalog.bossVariants.map { variant -> variant.id }.distinct().size,
+                bossVariantMutationPairwiseDistinct =
+                    bossVariantMutationSets.values.distinct().size == bossVariantMutationSets.size,
+                bossVariantMutationSets = bossVariantMutationSets,
             )
         }
 
@@ -1124,6 +1155,8 @@ private data class BossRegistryMetrics(
         }
     }
 }
+
+private fun Int?.orZero(): Int = this ?: 0
 
 private fun sha256(payload: String): String =
     MessageDigest.getInstance("SHA-256")

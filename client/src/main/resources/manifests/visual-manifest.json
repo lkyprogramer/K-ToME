@@ -6625,6 +6625,23 @@
       "asciiColorHex": "#B7B7B7"
     },
     {
+      "key": "icon.mutation.ironhide",
+      "category": "icon_status",
+      "rawOutputPath": "phase4/opt_pr02/icon_mutation_ironhide.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "opt",
+        "pr02",
+        "mutation",
+        "icon"
+      ],
+      "asciiGlyph": "I",
+      "asciiColorHex": "#8A939B"
+    },
+    {
       "key": "icon.mutation.battle_drill",
       "category": "icon_status",
       "rawOutputPath": "phase4/pr06/icon_mutation_battle_drill.png",
@@ -6673,6 +6690,57 @@
       "asciiColorHex": "#88C070"
     },
     {
+      "key": "icon.mutation.phase_runner",
+      "category": "icon_status",
+      "rawOutputPath": "phase4/opt_pr02/icon_mutation_phase_runner.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "opt",
+        "pr02",
+        "mutation",
+        "icon"
+      ],
+      "asciiGlyph": "P",
+      "asciiColorHex": "#6FA9FF"
+    },
+    {
+      "key": "icon.mutation.war_caller",
+      "category": "icon_status",
+      "rawOutputPath": "phase4/opt_pr02/icon_mutation_war_caller.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "opt",
+        "pr02",
+        "mutation",
+        "icon"
+      ],
+      "asciiGlyph": "W",
+      "asciiColorHex": "#D8894C"
+    },
+    {
+      "key": "icon.mutation.corrosion_cloud",
+      "category": "icon_status",
+      "rawOutputPath": "phase4/opt_pr02/icon_mutation_corrosion_cloud.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "opt",
+        "pr02",
+        "mutation",
+        "icon"
+      ],
+      "asciiGlyph": "C",
+      "asciiColorHex": "#7E9A52"
+    },
+    {
       "key": "icon.mutation.emberblood",
       "category": "icon_status",
       "rawOutputPath": "phase4/pr06/icon_mutation_emberblood.png",
@@ -6689,6 +6757,23 @@
       "asciiColorHex": "#FF6A3D"
     },
     {
+      "key": "icon.mutation.frostbound",
+      "category": "icon_status",
+      "rawOutputPath": "phase4/opt_pr02/icon_mutation_frostbound.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "opt",
+        "pr02",
+        "mutation",
+        "icon"
+      ],
+      "asciiGlyph": "F",
+      "asciiColorHex": "#8FDBFF"
+    },
+    {
       "key": "icon.mutation.tidebound",
       "category": "icon_status",
       "rawOutputPath": "phase4/pr06/icon_mutation_tidebound.png",
@@ -6703,6 +6788,23 @@
       ],
       "asciiGlyph": "T",
       "asciiColorHex": "#59B7FF"
+    },
+    {
+      "key": "icon.mutation.void_mirror",
+      "category": "icon_status",
+      "rawOutputPath": "phase4/opt_pr02/icon_mutation_void_mirror.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "opt",
+        "pr02",
+        "mutation",
+        "icon"
+      ],
+      "asciiGlyph": "V",
+      "asciiColorHex": "#6D7FD6"
     },
     {
       "key": "vfx.terrain.interaction.water",
