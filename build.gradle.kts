@@ -117,24 +117,42 @@ val test = tasks.register("test") {
     dependsOn(subprojects.map { it.tasks.named("test") })
 }
 
-val verificationGate = tasks.register("verificationGate") {
+val unitAndToolsGate = tasks.register("unitAndToolsGate") {
     group = LifecycleBasePlugin.VERIFICATION_GROUP
-    description = "Runs the CI verification gates without generating the aggregate coverage report."
+    description = "Runs the unit, lint, trace-golden, and core coverage verification gates."
     dependsOn(test)
-    dependsOn("combatTraceGolden")
-    dependsOn("bossHarness")
     dependsOn("localeLint")
     dependsOn("contractLint")
+    dependsOn("combatTraceGolden")
+    dependsOn(":core:jacocoTestCoverageVerification")
+}
+
+val gameHarnessGate = tasks.register("gameHarnessGate") {
+    group = LifecycleBasePlugin.VERIFICATION_GROUP
+    description = "Runs the game harness verification gates."
+    dependsOn("headlessSmoke")
+    dependsOn("soloClearLab")
+    dependsOn("longRunLab")
+    dependsOn("bossHarness")
+}
+
+val clientAndAssetsGate = tasks.register("clientAndAssetsGate") {
+    group = LifecycleBasePlugin.VERIFICATION_GROUP
+    description = "Runs the client, golden screenshot, and asset verification gates."
+    dependsOn("clientSmoke")
+    dependsOn("goldenScreenshot")
     dependsOn("assetLint")
     dependsOn("styleLint")
     dependsOn("audioLint")
     dependsOn("manifestLint")
-    dependsOn("goldenScreenshot")
-    dependsOn("headlessSmoke")
-    dependsOn("soloClearLab")
-    dependsOn("longRunLab")
-    dependsOn("clientSmoke")
-    dependsOn(":core:jacocoTestCoverageVerification")
+}
+
+val verificationGate = tasks.register("verificationGate") {
+    group = LifecycleBasePlugin.VERIFICATION_GROUP
+    description = "Runs all CI verification gates without generating the aggregate coverage report."
+    dependsOn(unitAndToolsGate)
+    dependsOn(gameHarnessGate)
+    dependsOn(clientAndAssetsGate)
 }
 
 val bootstrapOfflineVerify = tasks.register("bootstrapOfflineVerify") {
@@ -509,18 +527,5 @@ tasks.register<JacocoReport>("jacocoTestReport") {
 }
 
 tasks.named("check") {
-    dependsOn(test)
-    dependsOn("localeLint")
-    dependsOn("contractLint")
-    dependsOn("assetLint")
-    dependsOn("styleLint")
-    dependsOn("audioLint")
-    dependsOn("manifestLint")
-    dependsOn("goldenScreenshot")
-    dependsOn("headlessSmoke")
-    dependsOn("soloClearLab")
-    dependsOn("longRunLab")
-    dependsOn("clientSmoke")
-    dependsOn("jacocoTestReport")
-    dependsOn(":core:jacocoTestCoverageVerification")
+    dependsOn(verificationGate)
 }
