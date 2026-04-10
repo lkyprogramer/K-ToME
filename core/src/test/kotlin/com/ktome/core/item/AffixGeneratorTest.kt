@@ -323,6 +323,35 @@ class AffixGeneratorTest {
         assertTrue(weighting.weight(relevant, context) > weighting.weight(irrelevant, context))
     }
 
+    @Test
+    fun `tag weighting uses affix bias without consuming special template bias`() {
+        val weighting = AffixTagWeighting()
+        val affixPreferred =
+            affix(
+                id = "tidal",
+                family = "water",
+                cost = 6,
+                statModifiers = StatModifier(attack = 3),
+                tags = setOf("weapon", "water"),
+            )
+        val specialOnly =
+            affix(
+                id = "radiant",
+                family = "holy",
+                cost = 6,
+                statModifiers = StatModifier(attack = 3),
+                tags = setOf("weapon", "holy"),
+            )
+
+        val context =
+            AffixSelectionContext(
+                affixBiasTags = setOf("water"),
+                specialTemplateBiasTags = setOf("holy"),
+            )
+
+        assertTrue(weighting.weight(affixPreferred, context) > weighting.weight(specialOnly, context))
+    }
+
     private fun affix(
         id: String,
         family: String,

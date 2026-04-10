@@ -70,6 +70,16 @@ data class ResolvedContentPackSelection(
 
 object ContentPackRuntimeResolver {
     private val yaml = Yaml()
+    private val LOOT_PROFILE_APPEND_ALLOWED_FIELD_PATHS: Set<String> =
+        setOf(
+            "itemIds",
+            "itemTagFilter",
+            "excludeIds",
+            "typeWeights",
+            "slotBias",
+            "specialTemplateTagPreference",
+            "affixTagPreference",
+        )
 
     fun resolve(
         selection: ContentPackSelection,
@@ -675,7 +685,7 @@ object ContentPackRuntimeResolver {
                 val lootProfile = root.requiredList("lootProfiles").singleOrNull()?.requiredMap() ?: return null
                 OverlayLintMetadata(
                     optional = "optional" in lootProfile.optionalStringList("tags"),
-                    appendAllowedFieldPaths = setOf("itemIds"),
+                    appendAllowedFieldPaths = LOOT_PROFILE_APPEND_ALLOWED_FIELD_PATHS,
                 )
             }
 
@@ -735,7 +745,7 @@ object ContentPackRuntimeResolver {
                         OverlayTargetKey(registry = "loot_profile", id = lootProfile.id),
                         OverlayLintMetadata(
                             optional = "optional" in lootProfile.tags,
-                            appendAllowedFieldPaths = setOf("itemIds"),
+                            appendAllowedFieldPaths = LOOT_PROFILE_APPEND_ALLOWED_FIELD_PATHS,
                         ),
                     )
                 }

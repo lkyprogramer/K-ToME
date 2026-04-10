@@ -54,9 +54,11 @@ class WhiteBoxLootRunnerTest {
         )
         assertTrue(corpusMetrics.getValue("lootProfileBaseItemOverlapMatrix").jsonObject.isNotEmpty())
         assertTrue(corpusMetrics.getValue("affixPassiveKinds").jsonArray.isNotEmpty())
+        assertTrue(corpusMetrics.getValue("lootProfileMaxBaseItemOverlap").jsonPrimitive.content.toDouble() < 0.95)
         assertTrue(
             setOf(
                 "loot.aggregate.overlap_below_threshold",
+                "loot.aggregate.max_overlap_sanity",
                 "loot.aggregate.passive_coverage",
             ).all(aggregateRuleIds::contains),
         )

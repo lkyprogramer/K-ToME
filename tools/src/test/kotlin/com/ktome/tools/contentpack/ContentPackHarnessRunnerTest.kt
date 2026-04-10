@@ -16,7 +16,7 @@ class ContentPackHarnessRunnerTest {
     fun `content-pack harness writes fixed reports and validates runtime plus failure fixtures`() {
         val run = ContentPackHarnessRunner.run()
 
-        assertEquals(11, run.totalCases)
+        assertEquals(13, run.totalCases)
         assertEquals(0, run.failureCount, "contentPackHarness recorded failures; inspect ${run.summaryPath}")
         assertTrue(Files.exists(run.summaryPath), "Expected summary report at ${run.summaryPath}")
         assertTrue(Files.exists(run.runsPath), "Expected runs report at ${run.runsPath}")
@@ -28,12 +28,18 @@ class ContentPackHarnessRunnerTest {
             cases.first { element -> element.jsonObject.getValue("fixtureId").jsonPrimitive.content == "precedence_fixture" }.jsonObject
         val officialCase =
             cases.first { element -> element.jsonObject.getValue("fixtureId").jsonPrimitive.content == "official_sample_pack" }.jsonObject
+        val splitBiasCase =
+            cases.first { element -> element.jsonObject.getValue("fixtureId").jsonPrimitive.content == "split_bias_fixture" }.jsonObject
+        val legacyRejectCase =
+            cases.first { element ->
+                element.jsonObject.getValue("fixtureId").jsonPrimitive.content == "legacy_v2_loot_profile_rejected"
+            }.jsonObject
 
         assertEquals("PASS", summary.getValue("verdict").jsonPrimitive.content)
-        assertEquals("11", summary.getValue("totalCases").jsonPrimitive.content)
+        assertEquals("13", summary.getValue("totalCases").jsonPrimitive.content)
         assertEquals("0", summary.getValue("failureCount").jsonPrimitive.content)
-        assertEquals("3", summary.getValue("successfulRuntimeCaseCount").jsonPrimitive.content)
-        assertEquals("8", summary.getValue("expectedFailureCaseCount").jsonPrimitive.content)
+        assertEquals("4", summary.getValue("successfulRuntimeCaseCount").jsonPrimitive.content)
+        assertEquals("9", summary.getValue("expectedFailureCaseCount").jsonPrimitive.content)
         assertEquals("0", summary.getValue("diagnosticMismatchCount").jsonPrimitive.content)
         assertEquals("0", summary.getValue("localeResolutionFailureCount").jsonPrimitive.content)
         assertEquals("0", summary.getValue("visualResolutionFailureCount").jsonPrimitive.content)
@@ -41,9 +47,10 @@ class ContentPackHarnessRunnerTest {
         assertEquals("0", summary.getValue("precedenceFailureCount").jsonPrimitive.content)
         assertEquals("0", summary.getValue("resourceContractFailureCount").jsonPrimitive.content)
         assertEquals("0", summary.getValue("generatedTemplateFailureCount").jsonPrimitive.content)
+        assertEquals("1", summary.getValue("legacyLootProfileSchemaRejectCount").jsonPrimitive.content)
         assertEquals(
-            listOf("official_sample_pack", "disabled_pack_fallback", "precedence_fixture"),
-            cases.take(3).map { element -> element.jsonObject.getValue("fixtureId").jsonPrimitive.content },
+            listOf("official_sample_pack", "disabled_pack_fallback", "precedence_fixture", "split_bias_fixture"),
+            cases.take(4).map { element -> element.jsonObject.getValue("fixtureId").jsonPrimitive.content },
         )
         assertEquals(
             listOf("sample.flooded_relics", "fixture.sample_flooded_relics_override"),
@@ -59,6 +66,10 @@ class ContentPackHarnessRunnerTest {
                 value.jsonPrimitive.content.startsWith("sample.flooded_relics.")
             },
         )
-        assertEquals(11, Files.readAllLines(run.runsPath).count { line -> line.isNotBlank() })
+        assertEquals(listOf("underground_river"), splitBiasCase.getValue("lootProfileSpecialTemplateTagPreference").jsonArray.map { value -> value.jsonPrimitive.content })
+        assertEquals(listOf("water"), splitBiasCase.getValue("lootProfileAffixTagPreference").jsonArray.map { value -> value.jsonPrimitive.content })
+        assertEquals("content-pack.loot-profile.schema-version-mismatch", legacyRejectCase.getValue("diagnosticCodes").jsonArray.single().jsonPrimitive.content)
+        assertEquals("loot.foundation.common", legacyRejectCase.getValue("diagnosticDetails").jsonArray.single().jsonObject.getValue("targetProfileId").jsonPrimitive.content)
+        assertEquals(13, Files.readAllLines(run.runsPath).count { line -> line.isNotBlank() })
     }
 }

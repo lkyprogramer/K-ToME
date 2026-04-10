@@ -9,6 +9,8 @@ data class AffixSelectionContext(
     val itemTags: Set<String> = emptySet(),
     val buildTags: Set<String> = emptySet(),
     val routeBiasTags: Set<String> = emptySet(),
+    val affixBiasTags: Set<String> = emptySet(),
+    val specialTemplateBiasTags: Set<String> = emptySet(),
     val rewardSource: MilestoneRewardSource? = null,
     val qualityFloor: RarityTier? = null,
     val minAffixCount: Int = 0,
@@ -16,7 +18,19 @@ data class AffixSelectionContext(
 ) {
     init {
         require(minAffixCount >= 0) { "AffixSelectionContext.minAffixCount must not be negative." }
+        require(itemTags.none(String::isBlank)) { "AffixSelectionContext.itemTags must not contain blanks." }
+        require(buildTags.none(String::isBlank)) { "AffixSelectionContext.buildTags must not contain blanks." }
+        require(routeBiasTags.none(String::isBlank)) { "AffixSelectionContext.routeBiasTags must not contain blanks." }
+        require(affixBiasTags.none(String::isBlank)) { "AffixSelectionContext.affixBiasTags must not contain blanks." }
+        require(specialTemplateBiasTags.none(String::isBlank)) {
+            "AffixSelectionContext.specialTemplateBiasTags must not contain blanks."
+        }
+        require(blacklistFamilies.none(String::isBlank)) { "AffixSelectionContext.blacklistFamilies must not contain blanks." }
     }
+
+    val effectiveAffixBiasTags: Set<String> = routeBiasTags + affixBiasTags
+
+    val effectiveSpecialTemplateBiasTags: Set<String> = routeBiasTags + specialTemplateBiasTags
 }
 
 data class AffixSelectionResult(
@@ -43,7 +57,7 @@ class AffixTagWeighting {
     ): Int {
         val itemMatches = affix.tags.count(context.itemTags::contains)
         val buildMatches = affix.tags.count(context.buildTags::contains)
-        val routeMatches = affix.tags.count(context.routeBiasTags::contains)
+        val routeMatches = affix.tags.count(context.effectiveAffixBiasTags::contains)
         val sourceMatches = affix.tags.count(rewardSourceBiasTags(context.rewardSource)::contains)
         val costBias =
             when (affix.cost) {
@@ -78,7 +92,7 @@ class AffixBlacklist {
         if (affix.blacklistTags.any(selectedTags::contains)) {
             return true
         }
-        val relevantTags = context.itemTags + context.buildTags + context.routeBiasTags
+        val relevantTags = context.itemTags + context.buildTags + context.effectiveAffixBiasTags
         return affix.blacklistTags.any(relevantTags::contains)
     }
 }

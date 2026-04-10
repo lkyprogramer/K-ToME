@@ -1,6 +1,7 @@
 package com.ktome.game.contentpack
 
 import com.ktome.game.data.DataLoader
+import com.ktome.game.data.schema.LootPoolStrategy
 import com.ktome.game.hidden.HiddenEventRewardPayload
 import com.ktome.game.i18n.GameLocale
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -43,6 +44,14 @@ class DataLoaderContentPackTest {
                 .id,
         )
         assertEquals(7, lootProfile.rewardBudget)
+        assertEquals(3, lootProfile.schemaVersion)
+        assertEquals(LootPoolStrategy.TAG_WEIGHTED, lootProfile.poolStrategy)
+        assertEquals(listOf("underground_river"), lootProfile.itemTagFilter)
+        assertEquals(emptyList<String>(), lootProfile.excludeIds)
+        assertEquals(mapOf("WEAPON" to 2, "ARMOR" to 2, "CONSUMABLE" to 1), lootProfile.typeWeights.mapKeys { it.key.name })
+        assertEquals(mapOf("OFF_HAND" to 3, "WEAPON" to 2, "ARMOR" to 1), lootProfile.slotBias.mapKeys { it.key.name })
+        assertEquals(listOf("underground_river"), lootProfile.specialTemplateTagPreference)
+        assertEquals(listOf("underground_river"), lootProfile.affixTagPreference)
         assertEquals(
             setOf(
                 "sample.flooded_relics.unique.floodtide_lantern",
@@ -80,6 +89,29 @@ class DataLoaderContentPackTest {
     }
 
     @Test
+    fun `data loader preserves split special and affix preferences from fixture overlay`() {
+        val loader =
+            DataLoader(
+                locale = GameLocale.EN_US,
+                packSelection =
+                    ContentPackFixtureCatalog.selection(
+                        activePackRoots = listOf(ContentPackFixtureCatalog.fixturePackRoot(ContentPackFixtureCatalog.sampleBiasSplitFixturePackId)),
+                        availablePackRoots =
+                            listOf(
+                                ContentPackFixtureCatalog.samplePackRoot(),
+                                ContentPackFixtureCatalog.fixturePackRoot(ContentPackFixtureCatalog.sampleBiasSplitFixturePackId),
+                            ),
+                    ),
+            )
+
+        val catalog = loader.loadSchemaCatalog()
+        val lootProfile = requireNotNull(catalog.lootProfiles.firstOrNull { profile -> profile.id == "sample.flooded_relics.loot.flooded_reliquary.secret" })
+
+        assertEquals(listOf("underground_river"), lootProfile.specialTemplateTagPreference)
+        assertEquals(listOf("water"), lootProfile.affixTagPreference)
+    }
+
+    @Test
     fun `data loader rejects append runtime path and duplicate add without replace`() {
         val appendException =
             assertThrows(ContentPackLoadException::class.java) {
@@ -99,5 +131,26 @@ class DataLoaderContentPackTest {
 
         assertEquals(setOf("content-pack.overlay.runtime-op-forbidden"), appendException.diagnostics.map { diagnostic -> diagnostic.code }.toSet())
         assertEquals(setOf("content-pack.overlay.add-conflict"), duplicateException.diagnostics.map { diagnostic -> diagnostic.code }.toSet())
+    }
+
+    @Test
+    fun `data loader rejects legacy v2 loot profiles with dedicated structured diagnostic`() {
+        val exception =
+            assertThrows(ContentPackLoadException::class.java) {
+                DataLoader(
+                    locale = GameLocale.EN_US,
+                    packSelection =
+                        ContentPackFixtureCatalog.availableSelection(
+                            listOf(ContentPackFixtureCatalog.legacyV2LootProfilePackId),
+                        ),
+                ).loadSchemaCatalog()
+            }
+
+        assertEquals(setOf("content-pack.loot-profile.schema-version-mismatch"), exception.diagnostics.map { diagnostic -> diagnostic.code }.toSet())
+        val diagnostic = exception.diagnostics.single()
+        assertEquals(ContentPackFixtureCatalog.legacyV2LootProfilePackId.value, diagnostic.details["packId"])
+        assertEquals("loot.foundation.common", diagnostic.details["targetProfileId"])
+        assertEquals("2", diagnostic.details["actualSchemaVersion"])
+        assertEquals("3", diagnostic.details["expectedSchemaVersion"])
     }
 }

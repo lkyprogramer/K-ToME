@@ -71,7 +71,7 @@ data class SchemaCatalog(
     val objectiveSets: List<ObjectiveSetSchemaV2>,
     val difficulties: List<DifficultySchemaV2>,
     val itemBundle: ItemBundleSchemaV2,
-    val lootProfiles: List<LootProfileSchemaV2>,
+    val lootProfiles: List<LootProfileSchemaV3>,
     val eliteMutationConfig: EliteMutationConfig = EliteMutationConfig(),
     val mutationStatModifiers: List<MutationStatModifierDef> = emptyList(),
     val eliteMutations: List<EliteMutationDef> = emptyList(),
@@ -126,17 +126,41 @@ data class NamedSchemaRef(
     val schemaVersion: Int,
 )
 
-data class LootProfileSchemaV2(
+enum class LootPoolStrategy {
+    FIXED_LIST,
+    TAG_WEIGHTED,
+}
+
+data class LootProfileSchemaV3(
     val id: String,
     val schemaVersion: Int,
     val tags: List<String>,
     val itemIds: List<String>,
     val rewardBudget: Int,
+    val poolStrategy: LootPoolStrategy,
+    val itemTagFilter: List<String> = emptyList(),
+    val excludeIds: List<String> = emptyList(),
+    val typeWeights: Map<ItemType, Int> = emptyMap(),
+    val slotBias: Map<EquipSlot, Int> = emptyMap(),
+    val specialTemplateTagPreference: List<String> = emptyList(),
+    val affixTagPreference: List<String> = emptyList(),
 ) {
     init {
-        require(id.isNotBlank()) { "LootProfileSchemaV2.id must not be blank." }
-        require(schemaVersion > 0) { "LootProfileSchemaV2.schemaVersion must be positive." }
-        require(rewardBudget >= 0) { "LootProfileSchemaV2.rewardBudget must not be negative." }
+        require(id.isNotBlank()) { "LootProfileSchemaV3.id must not be blank." }
+        require(schemaVersion > 0) { "LootProfileSchemaV3.schemaVersion must be positive." }
+        require(tags.none(String::isBlank)) { "LootProfileSchemaV3.tags must not contain blanks." }
+        require(itemIds.none(String::isBlank)) { "LootProfileSchemaV3.itemIds must not contain blanks." }
+        require(rewardBudget >= 0) { "LootProfileSchemaV3.rewardBudget must not be negative." }
+        require(itemTagFilter.none(String::isBlank)) { "LootProfileSchemaV3.itemTagFilter must not contain blanks." }
+        require(excludeIds.none(String::isBlank)) { "LootProfileSchemaV3.excludeIds must not contain blanks." }
+        require(typeWeights.values.all { weight -> weight > 0 }) { "LootProfileSchemaV3.typeWeights must be positive." }
+        require(slotBias.values.all { weight -> weight > 0 }) { "LootProfileSchemaV3.slotBias must be positive." }
+        require(specialTemplateTagPreference.none(String::isBlank)) {
+            "LootProfileSchemaV3.specialTemplateTagPreference must not contain blanks."
+        }
+        require(affixTagPreference.none(String::isBlank)) {
+            "LootProfileSchemaV3.affixTagPreference must not contain blanks."
+        }
     }
 }
 

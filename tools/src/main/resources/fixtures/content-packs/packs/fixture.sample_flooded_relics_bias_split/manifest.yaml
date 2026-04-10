@@ -1,0 +1,14 @@
+id: fixture.sample_flooded_relics_bias_split
+version: 1.0.0
+schemaVersion: 1
+gameVersionRange: ">=0.1.0 <0.2.0"
+namespace: fixture_sample_flooded_relics_bias_split
+dependencies:
+  - id: sample.flooded_relics
+    versionRange: ">=1.0.0 <2.0.0"
+overlays:
+  - targetRef:
+      registry: loot_profile
+      id: sample.flooded_relics.loot.flooded_reliquary.secret
+    op: REPLACE
+    sourceFile: data/loot/sample.flooded_relics.loot.flooded_reliquary.secret.yaml

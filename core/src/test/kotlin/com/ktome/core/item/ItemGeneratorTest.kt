@@ -209,6 +209,90 @@ class ItemGeneratorTest {
     }
 
     @Test
+    fun `special template selection honors special template bias independently from affix bias`() {
+        val biasBundle =
+            ItemDataBundle(
+                baseItems =
+                    listOf(
+                        ItemBaseDef(
+                            id = "holy_unique_base",
+                            name = "Holy Base",
+                            type = ItemType.WEAPON,
+                            slot = EquipSlot.WEAPON,
+                            glyph = ')',
+                            colorHex = "#FFF8C4",
+                            dropFloors = listOf(1),
+                        ),
+                        ItemBaseDef(
+                            id = "shadow_unique_base",
+                            name = "Shadow Base",
+                            type = ItemType.WEAPON,
+                            slot = EquipSlot.WEAPON,
+                            glyph = ')',
+                            colorHex = "#8866CC",
+                            dropFloors = listOf(1),
+                        ),
+                    ),
+                materials = emptyList(),
+                affixes = emptyList(),
+                specialTemplates =
+                    listOf(
+                        SpecialItemTemplate(
+                            id = "unique.holy_preference",
+                            itemId = "holy_unique_base",
+                            specialTier = SpecialTier.UNIQUE,
+                            nameKey = "item.unique.holy_preference.name",
+                            descKey = "item.unique.holy_preference.desc",
+                            visualKey = "item.unique.holy_preference",
+                            iconKey = "icon.item.unique.holy_preference",
+                            audioProfile = "audio.item.unique.holy_preference",
+                            schemaVersion = 2,
+                            tags = setOf("holy"),
+                            allowedSourceTiers = setOf(SourceTier.CHEST),
+                            allowedZones = setOf(zoneRewardProfile.zoneId),
+                        ),
+                        SpecialItemTemplate(
+                            id = "unique.shadow_preference",
+                            itemId = "shadow_unique_base",
+                            specialTier = SpecialTier.UNIQUE,
+                            nameKey = "item.unique.shadow_preference.name",
+                            descKey = "item.unique.shadow_preference.desc",
+                            visualKey = "item.unique.shadow_preference",
+                            iconKey = "icon.item.unique.shadow_preference",
+                            audioProfile = "audio.item.unique.shadow_preference",
+                            schemaVersion = 2,
+                            tags = setOf("shadow"),
+                            allowedSourceTiers = setOf(SourceTier.CHEST),
+                            allowedZones = setOf(zoneRewardProfile.zoneId),
+                        ),
+                    ),
+            )
+
+        val generated =
+            ItemGenerator(biasBundle, TestRandomSource(ints = listOf(1))).generateRoll(
+                lootRoll =
+                    lootRollResult(
+                        rarityTier = RarityTier.RARE,
+                        affixBudget = 0,
+                        upgradedSpecialTier = SpecialTier.UNIQUE,
+                        specialTierEligibility =
+                            SpecialTierEligibility(
+                                availableSpecialTiers = setOf(SpecialTier.UNIQUE),
+                                availableTemplateIds = setOf("unique.holy_preference", "unique.shadow_preference"),
+                            ),
+                    ),
+                affixContext =
+                    AffixSelectionContext(
+                        affixBiasTags = setOf("holy"),
+                        specialTemplateBiasTags = setOf("shadow"),
+                    ),
+            )
+
+        assertEquals("unique.shadow_preference", generated.trace.specialTemplateId)
+        assertEquals("shadow_unique_base", generated.item.baseId)
+    }
+
+    @Test
     fun `special tier rolls select template and emit cast speed trace`() {
         val generated =
             ItemGenerator(bundle, TestRandomSource(ints = listOf(0))).generateRoll(

@@ -1,7 +1,6 @@
 lootProfiles:
   - id: loot.foundation.common
-    schemaVersion: 3
-    tags: [loot, common, fixture]
-    poolStrategy: FIXED_LIST
+    schemaVersion: 2
+    tags: [loot, common, legacy_fixture]
     rewardBudget: 6
     itemIds: [healing_potion]

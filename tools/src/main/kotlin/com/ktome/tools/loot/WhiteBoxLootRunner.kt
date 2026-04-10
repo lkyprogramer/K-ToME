@@ -193,8 +193,14 @@ object WhiteBoxLootRunner {
             ),
             WhiteBoxAssertionResult(
                 ruleId = "loot.aggregate.overlap_below_threshold",
-                passed = kernelRun.profileOverlapSummary.averageOverlap < 0.50,
-                message = "Average loot-profile base item overlap stays below the OPT PR-01 baseline threshold.",
+                passed = kernelRun.profileOverlapSummary.averageOverlap < 0.30,
+                message = "Average loot-profile base item overlap stays below the OPT PR-04 exit threshold.",
+                context = kernelRun.profileOverlapSummary.toJson(),
+            ),
+            WhiteBoxAssertionResult(
+                ruleId = "loot.aggregate.max_overlap_sanity",
+                passed = kernelRun.profileOverlapSummary.maxOverlap < 0.95,
+                message = "No loot-profile base item pool remains a near-total subset of another profile.",
                 context = kernelRun.profileOverlapSummary.toJson(),
             ),
             WhiteBoxAssertionResult(

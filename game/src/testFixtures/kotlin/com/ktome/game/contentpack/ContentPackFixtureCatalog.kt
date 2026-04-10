@@ -6,9 +6,11 @@ import java.nio.file.Path
 object ContentPackFixtureCatalog {
     val samplePackId: PackId = PackId("sample.flooded_relics")
     val samplePrecedenceFixturePackId: PackId = PackId("fixture.sample_flooded_relics_override")
+    val sampleBiasSplitFixturePackId: PackId = PackId("fixture.sample_flooded_relics_bias_split")
     val addPackId: PackId = PackId("fixture.add_monster")
     val replacePackId: PackId = PackId("fixture.replace_monster")
     val appendPackId: PackId = PackId("fixture.append_loot_pool")
+    val legacyV2LootProfilePackId: PackId = PackId("fixture.legacy_v2_loot_profile")
     val denyPackId: PackId = PackId("fixture.deny_hidden_event")
     val missingDependencyPackId: PackId = PackId("fixture.missing_dependency")
     val cyclePackAId: PackId = PackId("fixture.cycle_a")
@@ -24,8 +26,10 @@ object ContentPackFixtureCatalog {
         listOf(
             addPackId,
             samplePrecedenceFixturePackId,
+            sampleBiasSplitFixturePackId,
             replacePackId,
             appendPackId,
+            legacyV2LootProfilePackId,
             denyPackId,
             missingDependencyPackId,
             cyclePackAId,

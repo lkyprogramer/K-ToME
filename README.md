@@ -1,233 +1,196 @@
 # K-ToME
 
-K-ToME 是一个使用 `Kotlin + libGDX` 开发的 Roguelike 项目。当前仓库基线已经从 `Phase 1` 的单职业单 `5` 层 MVP，迁移到 `Phase 2` 的 `locale/schema` 正式合同基线：
+K-ToME 是一个使用 `Kotlin + libGDX` 开发的单机 Roguelike。项目当前主线已经从 `Phase 1` 的可玩 MVP，推进到 `Phase 4` 的正式基线：
 
-`Schema V2 + locale 选择 + formal zone/profession + save/load fail-fast + smoke/lint gate`
+`可玩的长局 + 稳定的语义合同 + Tile/i18n 正式路径 + ProcGen/Loot/Hidden Content + Content Pack Overlay`
 
-当前基线的关键特征：
+当前长期路线固定为：
 
-1. 主菜单 locale 选择已经进入正式主路径，并同时影响 `New Game` 与 `Continue`
-2. 首批正式内容对象已切到 `nameKey / descKey / visualKey / iconKey / audioProfile / schemaVersion`
-3. 会话配置由 formal `ZoneSpec / ProfessionDef` 驱动，首批 `Phase 2` zone 采用 `2` 层短局基线
-4. `localeLint / contractLint / headlessSmoke / clientSmoke / preReleaseAcceptance` 已成为正式验证入口
+`Phase 1 可玩基线 -> Phase 2 语义合同与 Tile/i18n -> Phase 3 深层战斗与长局 -> Phase 4 ProcGen/Loot/Content Pack -> Phase 5 Tactical AI/稳定性/发布`
 
-## 项目结构
+## 当前状态
+
+当前主干的重点不是继续堆单点玩法，而是维持一套可运行、可验证、可扩展的正式合同。按当前仓库状态，已经落地的主能力域包括：
+
+1. `core / game / client / tools` 四层边界已经固定，规则、内容装配、表现和验证不再混层。
+2. 正式内容对象已经全面采用 key 驱动 schema 与版本纪律，主路径围绕 `id / nameKey / descKey / visualKey / iconKey / audioProfile / schemaVersion / tags` 展开。
+3. Phase 3 形成了正式的战斗、状态、资源、天赋、Boss、世界路线与长局结构。
+4. Phase 4 已经落地 `MapgenPipeline`、`SolvabilityGraph`、`LootBudget`、affix/unique/artifact、elite mutation、hidden event、secret zone 和 content-pack overlay。
+5. 统一 white-box framework、固定 seed harness 和 `phase4Report` 已经成为正式验证面，而不是一次性脚本。
+6. Phase 5 的目标已明确固定为战术 AI、回放/死因、perf/soak、QA 与发布收口。
+
+## 当前可玩切片
+
+当前仓库已经不只是短局样品，而是一条正式的 run-based 主线：
+
+1. foundation profession 已覆盖 `vanguard / arcanist / rogue / templar`，并且已经有部分 advanced profession 切片进入仓库。
+2. 世界路径从 `shattered_outpost` 延伸到 `abyssal_heart`，中间包含 mandatory zone、optional branch、shop、route reward、hidden content 与 finale。
+3. Phase 4 zone 已接入 biome、vault、pattern room、terrain tag、solvability proof 与 zone reward profile。
+4. 掉落生态已从固定列表演进到 `LootBudget + rarity + affix + special template + unique/artifact` 的正式管线。
+5. 仓库内包含官方 sample content pack：[`examples/content-packs/sample.flooded_relics`](examples/content-packs/sample.flooded_relics)，并由 `contentPackHarness` 验证 overlay、资源与 precedence 行为。
+
+## 模块结构
 
 1. `core`
-   规则真源，保持零引擎依赖，承载 ECS、地图、FOV、移动、战斗、AI、物品、天赋、存档等核心逻辑。
+   - 规则真源。
+   - 承载 ECS、地图、FOV、回合调度、战斗、状态、AI、ProcGen、Loot、Save/Replay DTO 等确定性逻辑。
+   - 保持零引擎依赖。
 2. `game`
-   内容装配层，负责 YAML schema、注册表、locale key、官方内容与会话拼装。
+   - 内容装配层。
+   - 负责 YAML schema、registry、官方 data、content-pack overlay、`DataLoader`、`FoundationGameSession` 与正式运行时拼装。
 3. `client`
-   表现层，负责桌面入口、输入采集、渲染、主菜单 locale、结算画面和检视 UI。
+   - 表现层。
+   - 负责桌面入口、输入、Tile/HUD/UI、audio、locale bundle、manifest 消费和 `RenderSnapshot` 渲染。
 4. `tools`
-   lint、smoke、harness 与回归验证入口，负责把 schema / locale / 合同错误尽量提前到构建阶段暴露。
+   - lint、smoke、harness、lab、white-box、phase report 的 owner。
+   - 负责把 schema、资源、合同和统计回归提前暴露到自动化门禁。
 
-阶段文档见：
+允许的依赖方向固定为：
 
-1. [docs/mvp-development-guide.md](docs/mvp-development-guide.md)
-2. [docs/2026-03-13-phase2-to-phase5-final-roadmap.md](docs/2026-03-13-phase2-to-phase5-final-roadmap.md)
-3. [docs/phase2/roadmap.md](docs/phase2/roadmap.md)
-4. [docs/phase2/2026-03-13-phase2-semantic-contracts-tile-and-i18n.md](docs/phase2/2026-03-13-phase2-semantic-contracts-tile-and-i18n.md)
-5. [docs/phase2/2026-03-13-phase2-pr-03-locale-and-schema-v2.md](docs/phase2/2026-03-13-phase2-pr-03-locale-and-schema-v2.md)
-6. [docs/phase1/2026-03-12-phase1-roadmap.md](docs/phase1/2026-03-12-phase1-roadmap.md)
+1. `game -> core`
+2. `client -> game`
+3. `tools -> core / game / client`
+
+更详细的架构图见：
+
+1. [docs/project-architecture-mermaid.md](docs/project-architecture-mermaid.md)
+2. [docs/project-functional-flow-mermaid.md](docs/project-functional-flow-mermaid.md)
+
+## 仓库热点路径
+
+1. 正式游戏数据：`game/src/main/resources/data`
+2. 示例 content pack：`examples/content-packs/sample.flooded_relics`
+3. 客户端 manifest 与运行时资源：`client/src/main/resources`
+4. 资源规格与离线流水线：`assets-src`
+5. 阶段文档与验证清单：`docs/phase2` ~ `docs/phase5`
+6. 统一白盒与项目级设计权威：`docs/`
 
 ## 环境要求
 
-1. JDK `21`
-2. 仓库自带的 Gradle Wrapper
-3. 桌面图形环境
+仓库工具链以根目录 `.sdkmanrc` 为准：
 
-如果当前机器不能直接拉取依赖，可先执行：
+1. `java=21.0.10-tem`
+2. `kotlin=2.2.21`
+
+开始任何 Gradle 命令前，先执行：
 
 ```bash
-./scripts/bootstrap-deps.sh
+source "$HOME/.sdkman/bin/sdkman-init.sh"
+sdk env
 ```
+
+其他要求：
+
+1. 使用仓库自带 `Gradle Wrapper`
+2. 桌面运行需要图形环境
+3. 若当前机器依赖拉取异常，可先执行 `./scripts/bootstrap-deps.sh`
 
 ## 快速开始
 
-先跑自动化验证：
+最小开发回路：
 
 ```bash
+source "$HOME/.sdkman/bin/sdkman-init.sh"
+sdk env
 ./gradlew test
-./gradlew localeLint
-./gradlew contractLint
-./gradlew headlessSmoke
-./gradlew clientSmoke
-./gradlew jacocoTestReport
-./gradlew :core:jacocoTestCoverageVerification
-```
-
-如果要走发布前整体验收，直接运行：
-
-```bash
-./gradlew preReleaseAcceptance
-```
-
-启动桌面客户端：
-
-```bash
-./gradlew :client:run
-```
-
-客户端会进入主菜单，你可以直接切换语言、开始新游戏或继续已有存档。
-
-## 当前特性
-
-当前 `Phase 2 locale/schema` 基线包含：
-
-1. 固定 seed 的 BSP 地牢生成
-2. formal `ZoneSpec` 驱动的 `2` 层短局与上下楼切换
-3. `vanguard / arcanist / rogue / templar` 四个正式 profession skeleton
-4. `shattered_outpost / greenwood_fringe / deep_iron_pit / grey_gate_depths` 四个正式 zone skeleton
-5. `Schema V2` 内容目录、双语 bundle、`nameKey / descKey / visualKey / iconKey / audioProfile` 正式字段
-6. 主菜单 locale 选择，且局内日志、HUD、背包、检视、楼梯名都按当前 locale 渲染
-7. 单槽 JSON 存档、自动存档、手动 `Ctrl+S`、Continue 重建与 fail-fast 存档合同校验
-8. 回合制移动、近战战斗和 `CHASE / KITE / PATROL` AI，以及 formal `aiProfileId` / `bossEncounterId` 接线
-9. `localeLint / contractLint / headlessSmoke / clientSmoke / preReleaseAcceptance` 回归入口
-10. `x` 检视模式、背包、Victory / Game Over / 主菜单生命周期闭环
-
-## 操作说明
-
-### 主菜单
-
-1. `Up / Down`
-   选择菜单项。
-2. `Enter`
-   确认。
-3. `L`
-   切换当前 locale。
-
-### 地图移动
-
-支持 8 方向移动：
-
-1. `Q W E`
-2. `A S D`
-3. `Z C`
-4. 方向键
-5. `Home / End / PageUp / PageDown`
-6. 小键盘 `1 2 3 4 6 7 8 9`
-
-等待一回合：
-
-1. `.`
-2. `Space`
-3. 小键盘 `5`
-
-### 基础交互
-
-1. `g`
-   拾取脚下物品。
-2. `i`
-   打开或关闭背包。
-3. `x`
-   进入或退出检视模式。
-4. `Ctrl+S`
-   手动存档。
-5. `Shift+,`
-   上楼。
-6. `Shift+.`
-   下楼。
-7. `Esc`
-   关闭当前 UI 模式，或在地图模式返回主菜单。
-
-### 检视模式
-
-进入检视后：
-
-1. 用移动键移动光标。
-2. 右侧侧栏会显示光标所在格子的地形、怪物数值、状态效果、地面物品效果和楼梯信息。
-3. 不可见格子不会泄露实时实体信息。
-
-### 背包界面
-
-打开背包后：
-
-1. `W` 或 `Up`
-   向上选择物品。
-2. `X` 或 `Down`
-   向下选择物品。
-3. `Enter` / `Space` / `E`
-   使用消耗品，或装备/卸下装备。
-4. `Esc` 或 `i`
-   返回地图。
-
-### 天赋热键
-
-默认 `vanguard` 开局会带 4 个基础天赋：
-
-1. `1` 猛击
-2. `2` 冲锋
-3. `3` 盾击
-4. `4` 战吼
-
-有目标技能进入目标模式后：
-
-1. 用移动键移动光标
-2. `Enter` 或 `Space` 确认施放
-3. `Esc` 取消施放
-
-## 开发与验证
-
-常用命令：
-
-```bash
-./gradlew test
-./gradlew localeLint
-./gradlew contractLint
-./gradlew headlessSmoke
-./gradlew clientSmoke
-./gradlew longRunLab
-./gradlew :core:test
 ./gradlew :game:test
-./gradlew :client:test
+./gradlew :tools:test
+```
+
+如果要直接验证当前 Phase 4 聚合状态：
+
+```bash
+source "$HOME/.sdkman/bin/sdkman-init.sh"
+sdk env
+./gradlew phase4Report
+```
+
+Phase 4 报告会输出到：
+
+1. `tools/build/reports/phase4/phase4-summary.json`
+2. `tools/build/reports/phase4/phase4-summary.md`
+
+启动客户端：
+
+```bash
+source "$HOME/.sdkman/bin/sdkman-init.sh"
+sdk env
+./gradlew :client:run
+```
+
+## 当前验证入口
+
+### 通用 gate
+
+```bash
+source "$HOME/.sdkman/bin/sdkman-init.sh"
+sdk env
+./gradlew test
+./gradlew verificationGate
 ./gradlew jacocoTestReport
 ./gradlew :core:jacocoTestCoverageVerification
-./gradlew :client:run
-./gradlew :client:releaseDesktopDist
-./gradlew preReleaseAcceptance
 ```
 
-如果改动涉及依赖、Gradle 配置或 bootstrap 逻辑，再额外执行：
+### Phase 3 / 长局稳定性
 
 ```bash
-./scripts/verify-bootstrap.sh
+source "$HOME/.sdkman/bin/sdkman-init.sh"
+sdk env
+./gradlew headlessSmoke
+./gradlew soloClearLab
+./gradlew longRunLab
+./gradlew combatTraceGolden
+./gradlew bossHarness
 ```
 
-发布前验收与回归模板见：
-
-1. [docs/phase1/2026-03-12-phase1-5.0-regression-checklist.md](docs/phase1/2026-03-12-phase1-5.0-regression-checklist.md)
-2. [docs/releases/v0.1.0-pre-release-acceptance.md](docs/releases/v0.1.0-pre-release-acceptance.md)
-
-`Phase 2` 相关入口见：
-
-1. [docs/phase2/2026-03-13-phase2-pr-03-locale-and-schema-v2.md](docs/phase2/2026-03-13-phase2-pr-03-locale-and-schema-v2.md)
-2. [docs/phase2/2026-03-13-phase2-pr-04-snapshot-and-manifest.md](docs/phase2/2026-03-13-phase2-pr-04-snapshot-and-manifest.md)
-3. [docs/phase2/2026-03-13-phase2-pr-05-minimal-tile-shell.md](docs/phase2/2026-03-13-phase2-pr-05-minimal-tile-shell.md)
-
-## 发布产物
-
-生成桌面分发包：
+### Phase 4 / ProcGen + Loot + Hidden Content + Pack
 
 ```bash
-./gradlew :client:releaseDesktopDist
+source "$HOME/.sdkman/bin/sdkman-init.sh"
+sdk env
+./gradlew mapgenSmoke
+./gradlew solvabilityHarness
+./gradlew lootBalanceLab
+./gradlew terrainInteractionBatch
+./gradlew hiddenContentHarness
+./gradlew contentPackHarness
+./gradlew whiteBoxVerify
+./gradlew phase4Report
 ```
 
-产物位置：
+### 客户端与资源
 
-1. `client/build/release/ktome-v0.1.0-desktop.zip`
+```bash
+source "$HOME/.sdkman/bin/sdkman-init.sh"
+sdk env
+./gradlew clientSmoke
+./gradlew goldenScreenshot
+./gradlew assetLint
+./gradlew styleLint
+./gradlew audioLint
+./gradlew manifestLint
+```
 
-压缩包内包含：
+## 文档导航
 
-1. 可直接启动的桌面脚本与依赖
-2. 当前 README
-3. 回归清单
-4. 已知限制说明
+执行权威与入口优先看这些文档：
 
-已知限制见：
+1. [docs/2026-03-13-phase2-to-phase5-final-roadmap.md](docs/2026-03-13-phase2-to-phase5-final-roadmap.md)
+2. [docs/2026-03-13-core-systems-design-and-phase-supplements.md](docs/2026-03-13-core-systems-design-and-phase-supplements.md)
+3. [docs/phase4/roadmap.md](docs/phase4/roadmap.md)
+4. [docs/phase4/2026-03-13-phase4-verification-checklist.md](docs/phase4/2026-03-13-phase4-verification-checklist.md)
+5. [docs/phase5/roadmap.md](docs/phase5/roadmap.md)
+6. [docs/2026-04-04-unified-white-box-verification-framework.md](docs/2026-04-04-unified-white-box-verification-framework.md)
+7. [docs/project-architecture-mermaid.md](docs/project-architecture-mermaid.md)
+8. [docs/project-functional-flow-mermaid.md](docs/project-functional-flow-mermaid.md)
+9. [docs/INDEX.md](docs/INDEX.md)
 
-1. [docs/releases/v0.1.0-known-limitations.md](docs/releases/v0.1.0-known-limitations.md)
+## 下一阶段
 
-发布前验收口径见：
+当前主线仍以 Phase 4 的收口与一致性维护为主，下一阶段固定为 `Phase 5`：
 
-1. [docs/releases/v0.1.0-pre-release-acceptance.md](docs/releases/v0.1.0-pre-release-acceptance.md)
+1. `TacticalScoringLayer / PerceptionState / HateFocus / TacticalAIDecisionTrace`
+2. `replayHarness / perfSmoke / soakRun / death analysis / run history`
+3. Localization QA、Accessibility QA、`packageRelease` 与发布资料
+
+换句话说，当前仓库已经不是“做不做玩法”的问题，而是“在不破坏既有合同的前提下，把系统推进到发布级”。

@@ -5,6 +5,8 @@ fixtureOrder:
   - official_sample_pack
   - disabled_pack_fallback
   - precedence_fixture
+  - split_bias_fixture
+  - legacy_v2_loot_profile_rejected
   - append_runtime_rejected
   - deny_runtime_rejected
   - missing_dependency

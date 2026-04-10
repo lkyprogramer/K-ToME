@@ -3483,12 +3483,13 @@ class FoundationGameSessionTest {
                         existingContent.schemaCatalog.copy(
                             lootProfiles =
                                 existingContent.schemaCatalog.lootProfiles +
-                                    com.ktome.game.data.schema.LootProfileSchemaV2(
+                                    com.ktome.game.data.schema.LootProfileSchemaV3(
                                         id = "loot.test.consumable_only",
-                                        schemaVersion = 2,
+                                        schemaVersion = 3,
                                         tags = listOf("loot", "test", "consumable"),
                                         itemIds = listOf("healing_potion"),
                                         rewardBudget = 1,
+                                        poolStrategy = com.ktome.game.data.schema.LootPoolStrategy.FIXED_LIST,
                                     ),
                         ),
                 ),

@@ -145,6 +145,47 @@ class ContentPackRuntimeResolverTest {
     }
 
     @Test
+    fun `resolver allows loot profile append against v3 whitelist fields`() {
+        val packRoot = tempDir.resolve("fixture.append_loot_profile_bias")
+        packRoot.resolve("data/loot").toFile().mkdirs()
+        packRoot.resolve("manifest.yaml").writeText(
+            """
+            id: fixture.append_loot_profile_bias
+            version: 1.0.0
+            schemaVersion: 1
+            gameVersionRange: ">=0.1.0 <0.2.0"
+            namespace: fixture_append_loot_profile_bias
+            dependencies: []
+            overlays:
+              - targetRef:
+                  registry: loot_profile
+                  id: loot.foundation.common
+                op: APPEND
+                sourceFile: data/loot/loot.foundation.common.append.yaml
+                fieldPath: itemTagFilter
+                mergePolicy: APPEND_LIST
+                dedupeKey: tag
+            """.trimIndent(),
+        )
+        packRoot.resolve("data/loot/loot.foundation.common.append.yaml").writeText(
+            """
+            lootProfiles:
+              - id: loot.foundation.common
+                schemaVersion: 3
+                tags: [loot, common, optional]
+                poolStrategy: FIXED_LIST
+                rewardBudget: 6
+                itemIds: [healing_potion]
+                itemTagFilter: [greenwood_fringe]
+            """.trimIndent(),
+        )
+
+        val resolved = ContentPackRuntimeResolver.resolve(ContentPackSelection.of(packRoot))
+
+        assertEquals(listOf("fixture.append_loot_profile_bias"), resolved.activePackIds.map(PackId::value))
+    }
+
+    @Test
     fun `resolver rejects deny overlays against non optional targets`() {
         val packRoot = tempDir.resolve("fixture.deny_non_optional")
         packRoot.resolve("data/monsters").toFile().mkdirs()

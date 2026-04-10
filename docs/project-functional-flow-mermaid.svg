@@ -1,0 +1,208 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1109.3238333333331 2144.4559999999997" width="1109.3238333333331" height="2144.4559999999997" style="--bg:#f5f5f5;--fg:#333333;background:var(--bg)">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap');
+  text { font-family: 'Inter', system-ui, sans-serif; }
+  svg {
+    /* Derived from --bg and --fg (overridable via --line, --accent, etc.) */
+    --_text:          var(--fg);
+    --_text-sec:      var(--muted, color-mix(in srgb, var(--fg) 60%, var(--bg)));
+    --_text-muted:    var(--muted, color-mix(in srgb, var(--fg) 40%, var(--bg)));
+    --_text-faint:    color-mix(in srgb, var(--fg) 25%, var(--bg));
+    --_line:          var(--line, color-mix(in srgb, var(--fg) 50%, var(--bg)));
+    --_arrow:         var(--accent, color-mix(in srgb, var(--fg) 85%, var(--bg)));
+    --_node-fill:     var(--surface, color-mix(in srgb, var(--fg) 3%, var(--bg)));
+    --_node-stroke:   var(--border, color-mix(in srgb, var(--fg) 20%, var(--bg)));
+    --_group-fill:    var(--bg);
+    --_group-hdr:     color-mix(in srgb, var(--fg) 5%, var(--bg));
+    --_inner-stroke:  color-mix(in srgb, var(--fg) 12%, var(--bg));
+    --_key-badge:     color-mix(in srgb, var(--fg) 10%, var(--bg));
+  }
+</style>
+<defs>
+  <marker id="arrowhead" markerWidth="8" markerHeight="5" refX="7" refY="2.5" orient="auto">
+    <polygon points="0 0, 8 2.5, 0 5" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+  <marker id="arrowhead-start" markerWidth="8" markerHeight="5" refX="1" refY="2.5" orient="auto-start-reverse">
+    <polygon points="8 0, 0 2.5, 8 5" fill="var(--_arrow)" stroke="var(--_arrow)" stroke-width="0.75" stroke-linejoin="round" />
+  </marker>
+</defs>
+<polyline class="edge" data-from="start" data-to="entry" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="328.27741666666645,76.9 328.27741666666645,124.9" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="entry" data-to="loader" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="328.27741666666645,161.8 328.27741666666645,209.8" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="loader" data-to="packCheck" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="328.27741666666645,263.6 328.27741666666645,311.6" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="packCheck" data-to="catalog" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="否" points="294.0677499999998,482.6483333333333 294.0677499999998,621.1579999999999 218.68216666666657,621.1579999999999 218.68216666666657,922.4259999999999 295.7212499999998,922.4259999999999 295.7212499999998,934.4259999999999" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="packCheck" data-to="manifest" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="是" points="362.4870833333331,482.64833333333337 362.4870833333331,552.858 437.8726666666664,552.858 437.8726666666664,633.1579999999999" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="manifest" data-to="overlay" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="437.8726666666664,686.9579999999999 437.87266666666653,815.7259999999999" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="overlay" data-to="catalog" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="437.87266666666653,886.4259999999999 437.87266666666653,922.4259999999999 360.8335833333331,922.4259999999999 360.8335833333331,934.4259999999999" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="catalog" data-to="session" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="328.27741666666645,971.326 328.27741666666645,1019.326" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="session" data-to="zoneEnter" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="328.27741666666645,1073.126 328.27741666666645,1129.576" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="zoneEnter" data-to="mapgen" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="328.27741666666645,1183.376 328.27741666666645,1231.3759999999997" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="mapgen" data-to="solve" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="328.27741666666645,1285.1759999999997 328.27741666666645,1324.7259999999999" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="solve" data-to="solvable" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="328.27741666666645,1378.5259999999998 328.27741666666645,1415.6404999999997" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="solvable" data-to="failFast" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="否" points="361.49908333333315,1581.748833333333 361.49908333333315,1661.8559999999998 535.1026666666664,1661.8559999999998 535.1026666666666,1762.156" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="solvable" data-to="turnLoop" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="是" points="295.05574999999976,1581.748833333333 295.05574999999976,1637.8559999999998 199.0789999999999,1637.8559999999998 199.0789999999999,1706.1559999999997 194.0323333333332,1706.1559999999997 194.0323333333332,1718.1559999999997" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="turnLoop" data-to="input" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="215.8439999999999,1755.0559999999998 215.84399999999994,1803.0559999999998" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="input" data-to="command" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="215.84399999999994,1839.956 215.8439999999999,1875.956" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="command" data-to="rules" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="215.8439999999999,1912.856 215.8439999999999,1960.856" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="rules" data-to="reward" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="215.8439999999999,2014.656 215.8439999999999,2038.656 568.2984999999998,2038.656 568.2984999999998,2050.656" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="reward" data-to="hiddenCheck" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="688.491833333333,2050.656 688.491833333333,2038.656 1061.3238333333331,2038.656 1061.3238333333331,1126.0259999999998 831.9539166666663,1126.0259999999998 831.9539166666663,950.0339999999999" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="hiddenCheck" data-to="snapshot" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="否" points="688.5699166666664,950.0339999999999 688.5699166666664,1057.7259999999999 587.4969166666664,1057.7259999999999 587.4969166666664,1227.8259999999998 614.8942499999997,1227.8259999999998 614.8942499999997,1231.3759999999997" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="hiddenCheck" data-to="hiddenFlow" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="是" points="760.2619166666664,1021.7259999999998 760.2619166666664,1129.576" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="hiddenFlow" data-to="snapshot" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="760.2619166666664,1183.376 760.2619166666664,1227.8259999999998 732.864583333333,1227.8259999999998 732.864583333333,1231.3759999999997" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="snapshot" data-to="render" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="673.8794166666664,1268.2759999999998 673.8794166666663,1415.6404999999997" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="render" data-to="endCheck" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="673.8794166666663,1452.5404999999998 673.8794166666664,1489.6549999999997" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="endCheck" data-to="turnLoop" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="否" points="649.1792499999997,1613.155833333333 649.1792499999997,1649.8559999999998 392.9057499999998,1649.8559999999998 392.9057499999998,1706.1559999999997 237.65566666666658,1706.1559999999997 237.65566666666658,1718.1559999999997" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="endCheck" data-to="persist" data-style="solid" data-arrow-start="false" data-arrow-end="true" data-label="是" points="698.5795833333331,1613.1558333333332 698.5795833333331,1681.856 864.9584166666664,1681.856 864.9584166666664,1762.156" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="failFast" data-to="verify" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="535.1026666666664,1815.956 535.1026666666664,1845.956 703.6429166666665,1845.956 703.6429166666665,1875.956" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="persist" data-to="verify" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="864.9584166666664,1815.956 864.9584166666664,1845.956 703.6429166666665,1845.956 703.6429166666665,1875.956" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<polyline class="edge" data-from="verify" data-to="nextPhase" data-style="solid" data-arrow-start="false" data-arrow-end="true" points="703.6429166666665,1912.856 703.6429166666665,1960.856" fill="none" stroke="var(--_line)" stroke-width="1" marker-end="url(#arrowhead)" />
+<g class="edge-label" data-from="packCheck" data-to="catalog" data-label="否">
+  <rect x="203.6821666666666" y="861.126" width="29.53" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="218.4471666666666" y="876.276" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">否</text>
+</g>
+<g class="edge-label" data-from="packCheck" data-to="manifest" data-label="是">
+  <rect x="422.8726666666664" y="559.858" width="29.53" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="437.6376666666664" y="575.0079999999999" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">是</text>
+</g>
+<g class="edge-label" data-from="solvable" data-to="failFast" data-label="否">
+  <rect x="520.1026666666664" y="1688.856" width="29.53" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="534.8676666666664" y="1704.006" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">否</text>
+</g>
+<g class="edge-label" data-from="solvable" data-to="turnLoop" data-label="是">
+  <rect x="184.0789999999999" y="1644.8559999999998" width="29.53" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="198.84399999999988" y="1660.0059999999999" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">是</text>
+</g>
+<g class="edge-label" data-from="hiddenCheck" data-to="snapshot" data-label="否">
+  <rect x="572.4969166666664" y="1064.7259999999999" width="29.53" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="587.2619166666664" y="1079.876" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">否</text>
+</g>
+<g class="edge-label" data-from="hiddenCheck" data-to="hiddenFlow" data-label="是">
+  <rect x="745.2619166666664" y="1064.7259999999999" width="29.53" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="760.0269166666664" y="1079.876" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">是</text>
+</g>
+<g class="edge-label" data-from="endCheck" data-to="turnLoop" data-label="否">
+  <rect x="377.9057499999998" y="1668.8559999999998" width="29.53" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="392.67074999999977" y="1684.0059999999999" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">否</text>
+</g>
+<g class="edge-label" data-from="endCheck" data-to="persist" data-label="是">
+  <rect x="849.9584166666664" y="1688.856" width="29.53" height="30.3" rx="2" ry="2" fill="var(--bg)" stroke="var(--_inner-stroke)" stroke-width="1" />
+  <text x="864.7234166666664" y="1704.006" text-anchor="middle" font-size="11" font-weight="400" fill="var(--_text-sec)" dy="3.8499999999999996">是</text>
+</g>
+<g class="node" data-id="start" data-label="启动客户端或 Harness" data-shape="rectangle">
+  <rect x="235.7959166666665" y="40" width="184.96299999999997" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="328.27741666666645" y="58.45" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">启动客户端或 Harness</text>
+</g>
+<g class="node" data-id="entry" data-label="选择 Locale / New Game / Continue / Pack Selection" data-shape="rectangle">
+  <rect x="158.36141666666649" y="124.9" width="339.83199999999994" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="328.27741666666645" y="143.35000000000002" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">选择 Locale / New Game / Continue / Pack Selection</text>
+</g>
+<g class="node" data-id="loader" data-label="DataLoader 载入官方 data
+schema / i18n / visual / audio / registries" data-shape="rectangle">
+  <rect x="194.6704166666665" y="209.8" width="267.21399999999994" height="53.800000000000004" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="328.27741666666645" y="236.70000000000002" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="328.27741666666645" dy="-3.9000000000000012">DataLoader 载入官方 data</tspan><tspan x="328.27741666666645" dy="16.900000000000002">schema / i18n / visual / audio / registries</tspan></text>
+</g>
+<g class="node" data-id="packCheck" data-label="是否启用 Content Pack" data-shape="diamond">
+  <polygon points="328.27741666666645,311.6 430.9064166666665,414.22900000000004 328.27741666666645,516.8580000000001 225.64841666666646,414.22900000000004" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="328.27741666666645" y="414.22900000000004" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">是否启用 Content Pack</text>
+</g>
+<g class="node" data-id="catalog" data-label="构建官方 SchemaCatalog" data-shape="rectangle">
+  <rect x="230.6089166666665" y="934.4259999999999" width="195.33699999999996" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="328.27741666666645" y="952.876" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">构建官方 SchemaCatalog</text>
+</g>
+<g class="node" data-id="manifest" data-label="解析 ContentPackManifest
+namespace / dependency / versionRange / diagnostics" data-shape="rectangle">
+  <rect x="257.2121666666666" y="633.1579999999999" width="361.32099999999986" height="53.800000000000004" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="437.87266666666653" y="660.0579999999999" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="437.87266666666653" dy="-3.9000000000000012">解析 ContentPackManifest</tspan><tspan x="437.87266666666653" dy="16.900000000000002">namespace / dependency / versionRange / diagnostics</tspan></text>
+</g>
+<g class="node" data-id="overlay" data-label="应用 Overlay
+ADD + whole-entry REPLACE
+并产出结构化失败诊断" data-shape="rectangle">
+  <rect x="330.9416666666665" y="815.7259999999999" width="213.86199999999997" height="70.7" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="437.8726666666665" y="851.0759999999999" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="437.8726666666665" dy="-12.350000000000001">应用 Overlay</tspan><tspan x="437.8726666666665" dy="16.900000000000002">ADD + whole-entry REPLACE</tspan><tspan x="437.8726666666665" dy="16.900000000000002">并产出结构化失败诊断</tspan></text>
+</g>
+<g class="node" data-id="session" data-label="FoundationGameSession 组装运行时
+world graph / zone reward / loot profile / registries" data-shape="rectangle">
+  <rect x="163.54841666666653" y="1019.326" width="329.4579999999999" height="53.800000000000004" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="328.27741666666645" y="1046.226" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="328.27741666666645" dy="-3.9000000000000012">FoundationGameSession 组装运行时</tspan><tspan x="328.27741666666645" dy="16.900000000000002">world graph / zone reward / loot profile / registries</tspan></text>
+</g>
+<g class="node" data-id="zoneEnter" data-label="进入 Zone
+选择 route / floor / reward context" data-shape="rectangle">
+  <rect x="210.2314166666665" y="1129.576" width="236.09199999999998" height="53.800000000000004" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="328.27741666666645" y="1156.476" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="328.27741666666645" dy="-3.9000000000000012">进入 Zone</tspan><tspan x="328.27741666666645" dy="16.900000000000002">选择 route / floor / reward context</tspan></text>
+</g>
+<g class="node" data-id="mapgen" data-label="MapgenPipeline 生成地图
+biome / pattern room / vault / terrain tag" data-shape="rectangle">
+  <rect x="197.26391666666652" y="1231.3759999999997" width="262.02699999999993" height="53.800000000000004" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="328.27741666666645" y="1258.2759999999998" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="328.27741666666645" dy="-3.9000000000000012">MapgenPipeline 生成地图</tspan><tspan x="328.27741666666645" dy="16.900000000000002">biome / pattern room / vault / terrain tag</tspan></text>
+</g>
+<g class="node" data-id="solve" data-label="SolvabilityGraph 校验
+critical path / hidden entrance / search proof / return bridge" data-shape="rectangle">
+  <rect x="136.50191666666657" y="1324.7259999999999" width="383.5509999999998" height="53.800000000000004" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="328.27741666666645" y="1351.626" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="328.27741666666645" dy="-3.9000000000000012">SolvabilityGraph 校验</tspan><tspan x="328.27741666666645" dy="16.900000000000002">critical path / hidden entrance / search proof / return bridge</tspan></text>
+</g>
+<g class="node" data-id="solvable" data-label="主线可达且合同成立" data-shape="diamond">
+  <polygon points="328.27741666666645,1415.6404999999997 427.9424166666664,1515.3054999999997 328.27741666666645,1614.9704999999997 228.61241666666646,1515.3054999999997" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="328.27741666666645" y="1515.3054999999997" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">主线可达且合同成立</text>
+</g>
+<g class="node" data-id="failFast" data-label="Fail Fast
+保留 seed / proof / diagnostics / report artifact" data-shape="rectangle">
+  <rect x="381.8591666666665" y="1762.156" width="306.48699999999997" height="53.800000000000004" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="535.1026666666664" y="1789.056" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="535.1026666666664" dy="-3.9000000000000012">Fail Fast</tspan><tspan x="535.1026666666664" dy="16.900000000000002">保留 seed / proof / diagnostics / report artifact</tspan></text>
+</g>
+<g class="node" data-id="turnLoop" data-label="开始回合循环" data-shape="rectangle">
+  <rect x="150.40899999999988" y="1718.1559999999997" width="130.87" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="215.84399999999988" y="1736.6059999999998" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">开始回合循环</text>
+</g>
+<g class="node" data-id="input" data-label="client 输入或 bot command" data-shape="rectangle">
+  <rect x="117.43449999999993" y="1803.0559999999998" width="196.819" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="215.84399999999994" y="1821.5059999999999" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">client 输入或 bot command</text>
+</g>
+<g class="node" data-id="command" data-label="game 将输入翻译成 command / action" data-shape="rectangle">
+  <rect x="83.34849999999993" y="1875.956" width="264.991" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="215.84399999999994" y="1894.406" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">game 将输入翻译成 command / action</text>
+</g>
+<g class="node" data-id="rules" data-label="core 结算
+movement / combat / status / talent / AI / world progress" data-shape="rectangle">
+  <rect x="40" y="1960.856" width="351.6879999999998" height="53.800000000000004" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="215.8439999999999" y="1987.756" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="215.8439999999999" dy="-3.9000000000000012">core 结算</tspan><tspan x="215.8439999999999" dy="16.900000000000002">movement / combat / status / talent / AI / world progress</tspan></text>
+</g>
+<g class="node" data-id="reward" data-label="奖励与遭遇生态
+LootBudget / rarity / affix / unique / artifact / elite mutation" data-shape="rectangle">
+  <rect x="448.1051666666665" y="2050.656" width="360.5799999999998" height="53.800000000000004" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="628.3951666666665" y="2077.556" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="628.3951666666665" dy="-3.9000000000000012">奖励与遭遇生态</tspan><tspan x="628.3951666666665" dy="16.900000000000002">LootBudget / rarity / affix / unique / artifact / elite mutation</tspan></text>
+</g>
+<g class="node" data-id="hiddenCheck" data-label="是否命中 Hidden Event / Secret Zone" data-shape="diamond">
+  <polygon points="760.2619166666664,734.9579999999999 903.6459166666664,878.3419999999999 760.2619166666664,1021.7259999999999 616.8779166666664,878.3419999999999" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="760.2619166666664" y="878.3419999999999" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">是否命中 Hidden Event / Secret Zone</text>
+</g>
+<g class="node" data-id="snapshot" data-label="生成 GameEvent / LogTokenEvent / RenderSnapshot" data-shape="rectangle">
+  <rect x="496.9239166666664" y="1231.3759999999997" width="353.911" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="673.8794166666664" y="1249.8259999999998" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">生成 GameEvent / LogTokenEvent / RenderSnapshot</text>
+</g>
+<g class="node" data-id="hiddenFlow" data-label="执行 discovery rule
+发放 hidden reward / secret zone / return bridge" data-shape="rectangle">
+  <rect x="598.4969166666664" y="1129.576" width="323.5299999999999" height="53.800000000000004" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="760.2619166666664" y="1156.476" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="760.2619166666664" dy="-3.9000000000000012">执行 discovery rule</tspan><tspan x="760.2619166666664" dy="16.900000000000002">发放 hidden reward / secret zone / return bridge</tspan></text>
+</g>
+<g class="node" data-id="render" data-label="client 渲染 HUD / inspect / log / audio" data-shape="rectangle">
+  <rect x="548.0529166666664" y="1415.6404999999997" width="251.65299999999996" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="673.8794166666664" y="1434.0904999999998" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">client 渲染 HUD / inspect / log / audio</text>
+</g>
+<g class="node" data-id="endCheck" data-label="run 是否结束" data-shape="diamond">
+  <polygon points="673.8794166666664,1489.6549999999997 747.9799166666664,1563.7554999999998 673.8794166666664,1637.8559999999998 599.7789166666664,1563.7554999999998" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="673.8794166666664" y="1563.7554999999998" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">run 是否结束</text>
+</g>
+<g class="node" data-id="persist" data-label="保存结果
+Save / Replay / RunSummary / ProfileData" data-shape="rectangle">
+  <rect x="723.5709166666663" y="1762.156" width="282.775" height="53.800000000000004" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="864.9584166666664" y="1789.056" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="864.9584166666664" dy="-3.9000000000000012">保存结果</tspan><tspan x="864.9584166666664" dy="16.900000000000002">Save / Replay / RunSummary / ProfileData</tspan></text>
+</g>
+<g class="node" data-id="verify" data-label="verify" data-shape="rectangle">
+  <rect x="665.6249166666664" y="1875.956" width="76.036" height="36.900000000000006" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="703.6429166666665" y="1894.406" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)" dy="4.55">verify</text>
+</g>
+<g class="node" data-id="nextPhase" data-label="Phase 5 Next
+tacticalAiHarness / replayHarness / perfSmoke / soakRun / packageRelease" data-shape="rectangle">
+  <rect x="459.6269166666665" y="1960.856" width="488.0319999999999" height="53.800000000000004" rx="0" ry="0" fill="var(--_node-fill)" stroke="var(--_node-stroke)" stroke-width="0.75" />
+  <text x="703.6429166666665" y="1987.756" text-anchor="middle" font-size="13" font-weight="500" fill="var(--_text)"><tspan x="703.6429166666665" dy="-3.9000000000000012">Phase 5 Next</tspan><tspan x="703.6429166666665" dy="16.900000000000002">tacticalAiHarness / replayHarness / perfSmoke / soakRun / packageRelease</tspan></text>
+</g>
+</svg>

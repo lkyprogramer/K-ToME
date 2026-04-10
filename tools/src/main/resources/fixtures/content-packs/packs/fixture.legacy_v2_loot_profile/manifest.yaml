@@ -1,0 +1,12 @@
+id: fixture.legacy_v2_loot_profile
+version: 1.0.0
+schemaVersion: 1
+gameVersionRange: ">=0.1.0 <0.2.0"
+namespace: fixture_legacy_v2_loot_profile
+dependencies: []
+overlays:
+  - targetRef:
+      registry: loot_profile
+      id: loot.foundation.common
+    op: REPLACE
+    sourceFile: data/loot/loot.foundation.common.v2.yaml
