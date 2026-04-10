@@ -20,6 +20,14 @@
    - 技术参考和算法思路来源
 8. [2026-03-13-art-style-bible.md](./2026-03-13-art-style-bible.md)
    - 美术风格、style tag 和图片生成约束的权威参考
+9. [project-architecture-mermaid.md](./project-architecture-mermaid.md)
+   - 当前仓库静态架构总览，帮助快速理解 `core / game / client / tools`、official data、pack 与 report 的关系
+   - draw.io 源文件：[project-architecture-drawio.drawio](./project-architecture-drawio.drawio)
+   - 导出预览：[project-architecture-drawio.png](./project-architecture-drawio.png)
+10. [project-functional-flow-mermaid.md](./project-functional-flow-mermaid.md)
+   - 当前主线的动态流程图，覆盖启动、装载、建局、回合循环、隐藏内容、报告与 Phase 5 衔接
+   - draw.io 源文件：[project-functional-flow-drawio.drawio](./project-functional-flow-drawio.drawio)
+   - 导出预览：[project-functional-flow-drawio.png](./project-functional-flow-drawio.png)
 
 ## 2. 执行编号
 
@@ -42,3 +50,8 @@
    - 看对应阶段 checklist
 5. 想看统一白盒验证、AI 如何消费报告、以及自动化白盒如何与人工体验对齐：
    - 看 [2026-04-04-unified-white-box-verification-framework.md](./2026-04-04-unified-white-box-verification-framework.md)
+6. 想快速理解项目全局结构与主流程：
+   - 看 [project-architecture-mermaid.md](./project-architecture-mermaid.md)
+   - 需要可编辑源图时，看 [project-architecture-drawio.drawio](./project-architecture-drawio.drawio)
+   - 看 [project-functional-flow-mermaid.md](./project-functional-flow-mermaid.md)
+   - 需要可编辑源图时，看 [project-functional-flow-drawio.drawio](./project-functional-flow-drawio.drawio)

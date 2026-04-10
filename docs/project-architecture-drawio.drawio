@@ -1,0 +1,263 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="app.diagrams.net" agent="codex-bruce-drawio" version="21.0.0" type="device">
+  <diagram name="project-architecture" id="project-architecture">
+    <mxGraphModel dx="1720" dy="1240" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1720" pageHeight="1240" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="arch-title" value="K-ToME 当前系统架构（基于真实代码入口的 Phase 4 视图）" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=24;fontStyle=1;fontColor=#1f2937;" vertex="1" parent="1">
+          <mxGeometry x="60" y="20" width="1560" height="30" as="geometry" />
+        </mxCell>
+
+        <mxCell id="arch-background" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=none;" vertex="1" parent="1">
+          <mxGeometry x="40" y="60" width="1600" height="1070" as="geometry" />
+        </mxCell>
+
+        <mxCell id="layer-governance-label" value="执行&#xa;权威" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=18;fontStyle=1;verticalAlign=middle;align=center;" vertex="1" parent="1">
+          <mxGeometry x="60" y="90" width="120" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="layer-governance-container" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;opacity=60;" vertex="1" parent="1">
+          <mxGeometry x="200" y="90" width="1120" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="governance-subgroup-docs" value="执行文档" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=16;verticalAlign=top;align=center;spacingTop=8;" vertex="1" parent="1">
+          <mxGeometry x="230" y="100" width="520" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="governance-subgroup-rules" value="协作规则" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=16;verticalAlign=top;align=center;spacingTop=8;" vertex="1" parent="1">
+          <mxGeometry x="770" y="100" width="520" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="governance-roadmap" value="长期路线图" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#999999;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="260" y="140" width="220" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="governance-core-systems" value="核心系统设计" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#999999;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="500" y="140" width="220" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="governance-phase-roadmap" value="Phase Roadmap" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#999999;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="260" y="190" width="220" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="governance-checklist" value="Verification Checklist" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#999999;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="500" y="190" width="220" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="governance-agents" value="AGENTS / Kotlin 规则" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#999999;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="800" y="140" width="220" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="governance-boundaries" value="模块边界" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#999999;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="1040" y="140" width="220" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="governance-frozen" value="冻结合同" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#999999;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="800" y="190" width="220" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="governance-toolchain" value="工具链 / Gradle 纪律" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#999999;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="1040" y="190" width="220" height="40" as="geometry" />
+        </mxCell>
+
+        <mxCell id="layer-inputs-label" value="输入&#xa;资产" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=18;fontStyle=1;verticalAlign=middle;align=center;" vertex="1" parent="1">
+          <mxGeometry x="60" y="260" width="120" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="layer-inputs-container" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;opacity=60;" vertex="1" parent="1">
+          <mxGeometry x="200" y="260" width="1120" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="inputs-subgroup-official" value="官方输入" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=16;verticalAlign=top;align=center;spacingTop=8;" vertex="1" parent="1">
+          <mxGeometry x="230" y="270" width="520" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="inputs-subgroup-assets" value="扩展与资源" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=16;verticalAlign=top;align=center;spacingTop=8;" vertex="1" parent="1">
+          <mxGeometry x="770" y="270" width="520" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="inputs-schema-catalog" value="SchemaCatalog data" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#999999;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="260" y="310" width="220" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="inputs-world-zones" value="world / zones / talents / bosses" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#999999;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="500" y="310" width="220" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="inputs-items-loot" value="items / loot / hidden / elites" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#999999;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="260" y="360" width="220" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="inputs-keyspace" value="visual / audio / locale key space" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#999999;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="500" y="360" width="220" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="inputs-sample-pack" value="sample content pack" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#999999;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="800" y="310" width="220" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="inputs-fixture-pack" value="fixture packs / precedence cases" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#999999;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="1040" y="310" width="220" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="inputs-locale-bundle" value="LocalizationBundle / manifests" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#999999;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="800" y="360" width="220" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="inputs-asset-src" value="assets-src / visual / audio specs" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#999999;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="1040" y="360" width="220" height="40" as="geometry" />
+        </mxCell>
+
+        <mxCell id="layer-assembly-label" value="组装&#xa;与生命周期" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=18;fontStyle=1;verticalAlign=middle;align=center;" vertex="1" parent="1">
+          <mxGeometry x="60" y="430" width="120" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="layer-assembly-container" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;opacity=60;" vertex="1" parent="1">
+          <mxGeometry x="200" y="430" width="1120" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="assembly-subgroup-client" value="客户端协调器" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=16;verticalAlign=top;align=center;spacingTop=8;" vertex="1" parent="1">
+          <mxGeometry x="230" y="440" width="520" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="assembly-subgroup-game" value="内容装配链" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=16;verticalAlign=top;align=center;spacingTop=8;" vertex="1" parent="1">
+          <mxGeometry x="770" y="440" width="520" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="assembly-desktop" value="DesktopLauncher" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#999999;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="260" y="480" width="220" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="assembly-gameapp" value="GameApp" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#999999;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="500" y="480" width="220" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="assembly-lifecycle" value="LifecycleCoordinator" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#999999;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="260" y="530" width="220" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="assembly-assets" value="AssetContractCoordinator" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#999999;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="500" y="530" width="220" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="assembly-pack-resolver" value="ContentPackRuntimeResolver" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#999999;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="800" y="480" width="220" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="assembly-dataloader" value="DataLoader" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#999999;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="1040" y="480" width="220" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="assembly-module" value="GameModule.buildContent" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#999999;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="800" y="530" width="220" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="assembly-content" value="GameContent&#xa;registries / pipelines / active packs" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#999999;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="1040" y="530" width="220" height="40" as="geometry" />
+        </mxCell>
+
+        <mxCell id="layer-runtime-label" value="正式&#xa;运行时" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=18;fontStyle=1;verticalAlign=middle;align=center;" vertex="1" parent="1">
+          <mxGeometry x="60" y="600" width="120" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="layer-runtime-container" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;opacity=60;" vertex="1" parent="1">
+          <mxGeometry x="200" y="600" width="1120" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="runtime-subgroup-session" value="会话状态机" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=16;verticalAlign=top;align=center;spacingTop=8;" vertex="1" parent="1">
+          <mxGeometry x="230" y="610" width="520" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="runtime-subgroup-phase4" value="Phase 4 系统族" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=16;verticalAlign=top;align=center;spacingTop=8;" vertex="1" parent="1">
+          <mxGeometry x="770" y="610" width="520" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="runtime-session" value="FoundationGameSession" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#999999;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="260" y="650" width="220" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="runtime-world" value="World / DungeonManager / FloorState" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#999999;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="500" y="650" width="220" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="runtime-turns" value="TurnScheduler + perform(command)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#999999;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="260" y="700" width="220" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="runtime-persist" value="RunOutcome / save checkpoint / render cache" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#999999;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="500" y="700" width="220" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="runtime-mapgen" value="HiddenContentMapgenPipeline" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#999999;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="800" y="650" width="220" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="runtime-solvability" value="Solvability / SearchAction" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#999999;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="1040" y="650" width="220" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="runtime-loot" value="LootBudget / special template" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#999999;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="800" y="700" width="220" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="runtime-hidden" value="HiddenEvent / SecretZone / BossVariant" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#999999;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="1040" y="700" width="220" height="40" as="geometry" />
+        </mxCell>
+
+        <mxCell id="layer-consumers-label" value="消费者&#xa;与验证者" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=18;fontStyle=1;verticalAlign=middle;align=center;" vertex="1" parent="1">
+          <mxGeometry x="60" y="770" width="120" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="layer-consumers-container" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;opacity=60;" vertex="1" parent="1">
+          <mxGeometry x="200" y="770" width="1120" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="consumers-subgroup-player" value="玩家消费链" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=16;verticalAlign=top;align=center;spacingTop=8;" vertex="1" parent="1">
+          <mxGeometry x="230" y="780" width="520" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="consumers-subgroup-tools" value="自动化消费链" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=16;verticalAlign=top;align=center;spacingTop=8;" vertex="1" parent="1">
+          <mxGeometry x="770" y="780" width="520" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="consumers-screen" value="FoundationGameScreen" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#999999;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="260" y="820" width="220" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="consumers-input" value="CommandSource / InputHandler" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#999999;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="500" y="820" width="220" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="consumers-renderer" value="TileRenderer / AudioRouter" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#999999;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="260" y="870" width="220" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="consumers-outcome" value="Outcome / ProfileProgression" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#999999;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="500" y="870" width="220" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="consumers-headless" value="HeadlessRunHarness" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#999999;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="800" y="820" width="220" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="consumers-mapgen" value="MapgenSmoke / SolvabilityHarness" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#999999;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="1040" y="820" width="220" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="consumers-pack" value="ContentPackHarness / WhiteBox" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#999999;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="800" y="870" width="220" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="consumers-phase4report" value="Phase4ReportRunner" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#999999;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="1040" y="870" width="220" height="40" as="geometry" />
+        </mxCell>
+
+        <mxCell id="layer-output-label" value="产物&#xa;与下一步" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=18;fontStyle=1;verticalAlign=middle;align=center;" vertex="1" parent="1">
+          <mxGeometry x="60" y="940" width="120" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="layer-output-container" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;opacity=60;" vertex="1" parent="1">
+          <mxGeometry x="200" y="940" width="1120" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="output-subgroup-current" value="当前稳定产物" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=16;verticalAlign=top;align=center;spacingTop=8;" vertex="1" parent="1">
+          <mxGeometry x="230" y="950" width="520" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="output-subgroup-next" value="Phase 5 Next" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=16;verticalAlign=top;align=center;spacingTop=8;" vertex="1" parent="1">
+          <mxGeometry x="770" y="950" width="520" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="output-events" value="GameEvent / LogTokenEvent" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#999999;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="260" y="990" width="220" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="output-snapshot" value="RenderSnapshot" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#999999;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="500" y="990" width="220" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="output-save-replay" value="Save / Replay / RunSummary" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#999999;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="260" y="1040" width="220" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="output-artifacts" value="phase4 artifacts / jsonl / markdown" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#999999;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="500" y="1040" width="220" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="next-tactical" value="TacticalScoring / Perception / HateFocus" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#999999;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="800" y="990" width="220" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="next-replay" value="ReplayHarness / Perf / Soak" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#999999;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="1040" y="990" width="220" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="next-qa" value="Localization / Accessibility QA" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#999999;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="800" y="1040" width="220" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="next-release" value="PackageRelease / release docs" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#999999;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="1040" y="1040" width="220" height="40" as="geometry" />
+        </mxCell>
+
+        <mxCell id="arch-sidebar-frame" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=16;verticalAlign=middle;align=center;opacity=30;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="1360" y="160" width="240" height="760" as="geometry" />
+        </mxCell>
+        <mxCell id="arch-sidebar-title" value="横切约束" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=18;fontStyle=1;fontColor=#b85450;" vertex="1" parent="1">
+          <mxGeometry x="1390" y="180" width="180" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="arch-sidebar-determinism" value="确定性&#xa;同 seed + 同输入 = 同输出" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#b85450;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="1385" y="240" width="190" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="arch-sidebar-source" value="单一真源&#xa;规则只在 core，会话只在 Session" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#b85450;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="1385" y="360" width="190" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="arch-sidebar-version" value="版本纪律&#xa;schema / manifest / save fail-fast" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#b85450;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="1385" y="480" width="190" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="arch-sidebar-assets" value="资产合同&#xa;asset version / manifest / warm cache" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#b85450;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="1385" y="600" width="190" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="arch-sidebar-whitebox" value="White-box First&#xa;runner、artifact、report 同时交付" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#b85450;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="1385" y="720" width="190" height="90" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="app.diagrams.net" agent="codex-bruce-drawio" version="21.0.0" type="device">
+  <diagram name="project-functional-flow" id="project-functional-flow">
+    <mxGraphModel dx="1900" dy="1850" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1900" pageHeight="1850" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="flow-title" value="K-ToME 真实运行与验证主流程（共享装配链 + 双消费路径）" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=24;fontStyle=1;fontColor=#1f2937;" vertex="1" parent="1">
+          <mxGeometry x="60" y="20" width="1720" height="30" as="geometry" />
+        </mxCell>
+
+        <mxCell id="flow-background" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=none;" vertex="1" parent="1">
+          <mxGeometry x="40" y="60" width="1820" height="1720" as="geometry" />
+        </mxCell>
+
+        <mxCell id="flow-stage-shared" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;opacity=35;" vertex="1" parent="1">
+          <mxGeometry x="120" y="100" width="1640" height="500" as="geometry" />
+        </mxCell>
+        <mxCell id="flow-stage-shared-title" value="共享入口与装配链" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=18;fontStyle=1;fontColor=#27527d;" vertex="1" parent="1">
+          <mxGeometry x="150" y="110" width="320" height="30" as="geometry" />
+        </mxCell>
+
+        <mxCell id="flow-stage-routing" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;opacity=35;" vertex="1" parent="1">
+          <mxGeometry x="120" y="630" width="1640" height="350" as="geometry" />
+        </mxCell>
+        <mxCell id="flow-stage-routing-title" value="消费方式分流：直接 pipeline 还是 Session" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=18;fontStyle=1;fontColor=#3f6b2a;" vertex="1" parent="1">
+          <mxGeometry x="150" y="640" width="420" height="30" as="geometry" />
+        </mxCell>
+
+        <mxCell id="flow-stage-session" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;opacity=35;" vertex="1" parent="1">
+          <mxGeometry x="120" y="1010" width="1640" height="420" as="geometry" />
+        </mxCell>
+        <mxCell id="flow-stage-session-title" value="同一 FoundationGameSession contract 的两类驱动者" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=18;fontStyle=1;fontColor=#8a6d1f;" vertex="1" parent="1">
+          <mxGeometry x="150" y="1020" width="520" height="30" as="geometry" />
+        </mxCell>
+
+        <mxCell id="flow-stage-aggregate" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;opacity=35;" vertex="1" parent="1">
+          <mxGeometry x="120" y="1460" width="1640" height="260" as="geometry" />
+        </mxCell>
+        <mxCell id="flow-stage-aggregate-title" value="统一 artifact contract、Phase 4 汇总与 Phase 5 输入" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=18;fontStyle=1;fontColor=#6b4b7b;" vertex="1" parent="1">
+          <mxGeometry x="150" y="1470" width="540" height="30" as="geometry" />
+        </mxCell>
+
+        <mxCell id="flow-client-entry" value="DesktopLauncher / GameApp.create&#xa;locale、profile、asset gate、main menu" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#27527d;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="170" y="160" width="420" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="flow-tools-entry" value="root Gradle alias / tools runner&#xa;seed、corpus、fixture、pack selection" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#27527d;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="1290" y="160" width="420" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="flow-context" value="准备执行上下文&#xa;locale / save / seed / pack / harness metadata" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#27527d;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="740" y="280" width="420" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="flow-loader" value="DataLoader + ContentPackRuntimeResolver&#xa;load base data / resolve packs / apply overlays / build SchemaCatalog" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#27527d;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="740" y="390" width="420" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="flow-build-content" value="GameModule.buildContent -&gt; GameContent&#xa;registries / localizer / mapgen pipeline / hidden content / active pack ids" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#27527d;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="740" y="510" width="420" height="90" as="geometry" />
+        </mxCell>
+
+        <mxCell id="flow-consumer-decision" value="直接消费&#xa;pipeline / schema？" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=14;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="820" y="700" width="260" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="flow-direct-runners" value="MapgenSmoke / SolvabilityHarness / LootBalanceLab&#xa;直接消费 GameContent / pipeline / schema" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#4f8a10;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="170" y="700" width="420" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="flow-direct-artifacts" value="per-case JSON / summary / white-box aggregate" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#4f8a10;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="170" y="820" width="420" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="flow-session-create" value="GameModule.new / loadFoundationSession&#xa;new run 或 save snapshot round-trip" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#4f8a10;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="740" y="820" width="420" height="80" as="geometry" />
+        </mxCell>
+
+        <mxCell id="flow-session" value="FoundationGameSession&#xa;world / dungeon / pending actions / renderSnapshot cache / runOutcome" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#8a6d1f;strokeWidth=2;fontSize=14;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="740" y="1050" width="420" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="flow-driver-decision" value="谁来驱动&#xa;同一 Session？" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=14;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="820" y="1170" width="260" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="flow-client-loop" value="FoundationGameScreen&#xa;renderSnapshot -&gt; nextCommand -&gt; session.perform&#xa;TileRenderer / AudioRouter / viewport sync" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#8a6d1f;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="170" y="1160" width="420" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="flow-headless-loop" value="HeadlessRunHarness / ContentPackHarness / WhiteBox&#xa;observation capture -&gt; bot / scripted command -&gt; session.perform" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#8a6d1f;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="1290" y="1160" width="420" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="flow-client-output" value="Save / Continue / Outcome / ProfileProgression" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#8a6d1f;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="170" y="1290" width="420" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="flow-headless-output" value="ScenarioReport / content-pack summary / white-box artifacts" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#8a6d1f;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="1290" y="1290" width="420" height="80" as="geometry" />
+        </mxCell>
+
+        <mxCell id="flow-aggregate" value="统一 artifact contract&#xa;report json / jsonl / markdown / build metadata / join keys" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6b4b7b;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="740" y="1510" width="420" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="flow-phase4-report" value="Phase4ReportRunner&#xa;聚合 mapgen、solvability、hidden、loot、content-pack、white-box、boss" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6b4b7b;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="740" y="1620" width="420" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="flow-phase5" value="Phase 5 输入&#xa;Tactical AI / replay / perf &amp; soak / QA / packageRelease" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6b4b7b;strokeWidth=2;fontSize=14;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="740" y="1740" width="420" height="80" as="geometry" />
+        </mxCell>
+
+        <mxCell id="edge-client-context" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="flow-client-entry" target="flow-context">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-tools-context" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.5;entryX=1;entryY=0.5;" edge="1" parent="1" source="flow-tools-entry" target="flow-context">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-context-loader" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="flow-context" target="flow-loader">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-loader-build" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="flow-loader" target="flow-build-content">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-build-decision" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="flow-build-content" target="flow-consumer-decision">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-decision-direct" value="是" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.5;entryX=1;entryY=0.5;fontSize=14;" edge="1" parent="1" source="flow-consumer-decision" target="flow-direct-runners">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-direct-artifacts" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="flow-direct-runners" target="flow-direct-artifacts">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-decision-session" value="否" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;fontSize=14;" edge="1" parent="1" source="flow-consumer-decision" target="flow-session-create">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-sessioncreate-session" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="flow-session-create" target="flow-session">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-session-driver" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="flow-session" target="flow-driver-decision">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-driver-client" value="client" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.5;entryX=1;entryY=0.5;fontSize=14;" edge="1" parent="1" source="flow-driver-decision" target="flow-client-loop">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-driver-headless" value="headless" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;entryX=0;entryY=0.5;fontSize=14;" edge="1" parent="1" source="flow-driver-decision" target="flow-headless-loop">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-client-output" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="flow-client-loop" target="flow-client-output">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-headless-output" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="flow-headless-loop" target="flow-headless-output">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-direct-aggregate" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="flow-direct-artifacts" target="flow-aggregate">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="620" y="1550" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge-client-aggregate" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="flow-client-output" target="flow-aggregate">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="620" y="1550" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge-headless-aggregate" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.5;entryX=1;entryY=0.5;" edge="1" parent="1" source="flow-headless-output" target="flow-aggregate">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1280" y="1550" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="edge-aggregate-phase4" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="flow-aggregate" target="flow-phase4-report">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge-phase4-phase5" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="flow-phase4-report" target="flow-phase5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
