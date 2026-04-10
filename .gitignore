@@ -21,6 +21,7 @@ bin/
 logs/
 __pycache__/
 *.pyc
+.env
 
 # Runtime saves and local mod sandbox
 saves/

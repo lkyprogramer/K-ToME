@@ -518,6 +518,8 @@ AI 场景矩阵、replay 哈希一致性、perf/soak 预算、Localization/Acces
 
 1. harness/lint 不只是脚本样例，而是正式门禁的一部分。
 2. batch/harness 需要输出可追溯报告，而不是只在控制台打印结论。
+3. 只要改动命中 `trace schema`、golden corpus、snapshot contract、locale key、manifest key、report schema、lint/harness 断言中的任一项，就不能只跑 `:core:test` / `:game:test`；必须补跑对应 `:tools:test` 或其 owner gate。
+4. 对 `tools` 侧失败，优先把问题归类为“合同/基线未同步”还是“运行时逻辑回归”，不要默认认为是 CI 环境噪声。
 
 ### 8.4 构建与基础验证
 
@@ -568,6 +570,16 @@ sdk env
 ```bash
 ./scripts/verify-bootstrap.sh
 ```
+
+### 8.4.1 CI 覆盖经验回写
+
+以下规则来自 `Phase 4 OPT PR-03` 的真实 CI 回归教训，后续按硬约束执行：
+
+1. 修改 `CombatResolutionTrace`、`RenderSnapshot`、golden payload、harness JSON 字段、schema version 或 manifest 结构时，必须补跑对应的 golden / harness suite，并在同一提交中同步 canonical golden 或基线资源；禁止只改运行时代码不改 golden。
+2. 新增或修改代码引用的 i18n key 时，必须补跑 locale lint；`game:test`、`clientSmoke` 或功能链路通过，不能替代 `LocaleLintTest` / `localeLint`。
+3. 只要改动落在 `tools` 所拥有的断言面上，就要把 `:tools:test` 的相关子集纳入本地最小必跑集合；不要把 `tools` suite 留给 CI 首次发现。
+4. 提交前的“最小必要验证”必须覆盖**断言所有者**，而不是只覆盖调用方。例：运行时改动如果会改变 golden 语料或 lint 结果，owner 是 `tools`，不是 `core/game`。
+5. 遇到 GitHub Actions 失败时，先确认失败 run 对应的 `headSha` 与当前提交是否一致，再修问题；旧 run 的失败可能已经被新提交覆盖，但具体 root cause 仍应回收为仓库规则。
 
 ### 8.5 白盒验证与汇报
 

@@ -11,6 +11,7 @@ import com.ktome.core.item.ItemBaseDef
 import com.ktome.core.item.ItemDataBundle
 import com.ktome.core.item.ItemInstance
 import com.ktome.core.item.ItemType
+import com.ktome.core.item.StatModifier
 import com.ktome.core.loot.LootRollContext
 import com.ktome.core.loot.RarityTier
 import com.ktome.core.loot.SourceTier
@@ -298,8 +299,10 @@ internal data class LootPassiveCoverageSummary(
 }
 
 internal data class LootSpecialPoolSummary(
+    val affixCount: Int,
     val uniqueTemplateCount: Int,
     val artifactTemplateCount: Int,
+    val totalCount: Int,
     val targetZoneCoverageCount: Int,
     val buildArchetypeCount: Int,
     val bossOnlyArtifactTemplateCount: Int,
@@ -309,8 +312,10 @@ internal data class LootSpecialPoolSummary(
 ) {
     fun toJson(): JsonObject =
         buildJsonObject {
+            put("affixCount", affixCount)
             put("uniqueTemplateCount", uniqueTemplateCount)
             put("artifactTemplateCount", artifactTemplateCount)
+            put("totalCount", totalCount)
             put("targetZoneCoverageCount", targetZoneCoverageCount)
             put("buildArchetypeCount", buildArchetypeCount)
             put("bossOnlyArtifactTemplateCount", bossOnlyArtifactTemplateCount)
@@ -375,7 +380,7 @@ private const val AFFIX_BUDGET_AVERAGE_TOLERANCE: Double = 0.05
 private const val AFFIX_BUDGET_P95_TOLERANCE: Double = 0.12
 private const val CLAMP_DISTRIBUTION_TOLERANCE: Double = 0.02
 internal val LOOT_REPORT_LOCALE: GameLocale = GameLocale.EN_US
-private const val EQUIPMENT_PASSIVE_KIND_COUNT: Int = 5
+private const val EQUIPMENT_PASSIVE_KIND_COUNT: Int = 9
 
 internal object LootLabKernel {
     private val json: Json = Json { prettyPrint = true }
@@ -819,8 +824,10 @@ internal object LootLabKernel {
         val bundle = itemBundleLoader()
         val targetZones = setOf("greenwood_fringe", "deep_iron_pit", "underground_river", "abyssal_temple")
         val buildArchetypes = setOf("vanguard", "rogue", "arcanist", "templar")
+        val affixCount = bundle.affixes.size
         val uniqueTemplates = bundle.specialTemplates.filter { template -> template.specialTier == SpecialTier.UNIQUE }
         val artifactTemplates = bundle.specialTemplates.filter { template -> template.specialTier == SpecialTier.ARTIFACT }
+        val totalCount = affixCount + uniqueTemplates.size + artifactTemplates.size
         val targetZoneCoverage = bundle.specialTemplates.flatMapTo(linkedSetOf()) { template -> template.allowedZones }.intersect(targetZones).size
         val buildArchetypeCount = bundle.specialTemplates.flatMapTo(linkedSetOf()) { template -> template.tags.intersect(buildArchetypes) }.size
         val bossOnlyArtifactTemplateCount = artifactTemplates.count { template -> template.allowedSourceTiers == setOf(SourceTier.BOSS) }
@@ -828,16 +835,20 @@ internal object LootLabKernel {
         val secretZoneArtifactTemplateCount =
             artifactTemplates.count { template -> SourceTier.SECRET_ZONE in template.allowedSourceTiers }
         return LootSpecialPoolSummary(
+            affixCount = affixCount,
             uniqueTemplateCount = uniqueTemplates.size,
             artifactTemplateCount = artifactTemplates.size,
+            totalCount = totalCount,
             targetZoneCoverageCount = targetZoneCoverage,
             buildArchetypeCount = buildArchetypeCount,
             bossOnlyArtifactTemplateCount = bossOnlyArtifactTemplateCount,
             chestOnlyArtifactTemplateCount = chestOnlyArtifactTemplateCount,
             secretZoneArtifactTemplateCount = secretZoneArtifactTemplateCount,
             passesThresholds =
-                uniqueTemplates.size >= 12 &&
-                    artifactTemplates.size >= 4 &&
+                affixCount >= 75 &&
+                    uniqueTemplates.size >= 20 &&
+                    artifactTemplates.size >= 8 &&
+                    totalCount >= 103 &&
                     targetZoneCoverage == targetZones.size &&
                     buildArchetypeCount >= 2 &&
                     bossOnlyArtifactTemplateCount > 0 &&
@@ -883,6 +894,7 @@ internal object LootLabKernel {
     }
 
     private fun buildRarePassiveUniverseBySlot(bundle: ItemDataBundle): Map<EquipSlot, Set<String>> {
+        val specialItemIds = bundle.specialTemplates.mapTo(linkedSetOf()) { template -> template.itemId }
         val affixPassiveSignaturesByEquipType =
             bundle.affixes
                 .asSequence()
@@ -893,6 +905,7 @@ internal object LootLabKernel {
                 }
         return bundle.baseItems
             .asSequence()
+            .filterNot { baseItem -> baseItem.id in specialItemIds }
             .filter { baseItem -> baseItem.slot != null }
             .groupBy { baseItem -> requireNotNull(baseItem.slot) }
             .mapValues { (_, baseItems) ->
@@ -1046,6 +1059,10 @@ internal object LootLabKernel {
 
     private fun passiveKind(passive: EquipmentPassive): String =
         when (passive) {
+            is EquipmentPassive.OnHitStatusProc -> "OnHitStatusProc"
+            is EquipmentPassive.OnKillResourceRestore -> "OnKillResourceRestore"
+            is EquipmentPassive.ConditionalStatBonus -> "ConditionalStatBonus"
+            is EquipmentPassive.TerrainAffinityBonus -> "TerrainAffinityBonus"
             is EquipmentPassive.DamageVsTag -> "DamageVsTag"
             is EquipmentPassive.DamageVsStatus -> "DamageVsStatus"
             is EquipmentPassive.HpRegenPerTurn -> "HpRegenPerTurn"
@@ -1055,12 +1072,46 @@ internal object LootLabKernel {
 
     private fun passiveSignature(passive: EquipmentPassive): String =
         when (passive) {
+            is EquipmentPassive.OnHitStatusProc ->
+                "OnHitStatusProc:${passive.statusId}:${passive.chance}:${passive.duration}:${passive.magnitude}"
+
+            is EquipmentPassive.OnKillResourceRestore ->
+                "OnKillResourceRestore:${passive.resourceType.name}:${passive.amount}"
+
+            is EquipmentPassive.ConditionalStatBonus ->
+                "ConditionalStatBonus:${passive.condition.name}:${passive.statusId ?: "-"}:${statModifierSignature(passive.statModifier)}"
+
+            is EquipmentPassive.TerrainAffinityBonus ->
+                "TerrainAffinityBonus:${passive.terrainTag.name}:${statModifierSignature(passive.statModifier)}"
+
             is EquipmentPassive.DamageVsTag -> "DamageVsTag:${passive.tag}:${passive.bonusPercent}"
             is EquipmentPassive.DamageVsStatus -> "DamageVsStatus:${passive.statusId}:${passive.bonusPercent}"
             is EquipmentPassive.HpRegenPerTurn -> "HpRegenPerTurn:${passive.amount}"
             is EquipmentPassive.DamageTypeBonus -> "DamageTypeBonus:${passive.type.name}:${passive.bonusPercent}"
             is EquipmentPassive.ResistanceBonus -> "ResistanceBonus:${passive.damageType.name}:${passive.amount}"
         }
+
+    private fun statModifierSignature(modifier: StatModifier): String =
+        listOf(
+            modifier.str,
+            modifier.dex,
+            modifier.con,
+            modifier.wil,
+            modifier.attack,
+            modifier.defense,
+            modifier.accuracy,
+            modifier.evasion,
+            modifier.speed,
+            modifier.castSpeedRating,
+            modifier.maxHp,
+            modifier.maxStamina,
+            modifier.hpRegen,
+            modifier.staminaRegen,
+            modifier.critChance,
+            modifier.talentPower,
+            modifier.attackMultiplierBonus,
+            modifier.defenseMultiplierBonus,
+        ).joinToString(":")
 }
 
 object LootBalanceLabRunner {

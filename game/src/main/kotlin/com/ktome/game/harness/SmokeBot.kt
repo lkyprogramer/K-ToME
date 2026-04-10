@@ -144,13 +144,21 @@ class SmokeBot : RunBot {
             }
         val lowHealth = observation.playerStatus.currentHp * 100 <= observation.playerStatus.maxHp * lowHealthThreshold
         val adjacentHostiles = hostilesWithin(observation, 1)
+        val nearbyHostiles = hostilesWithin(observation, 3)
         val canEmergencyBlink = availableTalent(observation, "blink") != null
+        val staminaSingleBossEscape =
+            observation.playerResource.typeId == "STAMINA" &&
+                bossThreatClose &&
+                nearbyHostiles <= 1 &&
+                observation.playerStatus.currentHp * 100 > observation.playerStatus.maxHp * 50
+        val shouldUseTeleportEscape =
+            lowHealth &&
+                (adjacentHostiles > 0 || bossThreatClose) &&
+                !canEmergencyBlink &&
+                !staminaSingleBossEscape
         val escapeIndex =
             observation.inventoryItems.indexOfFirst { item ->
-                lowHealth &&
-                    (adjacentHostiles > 0 || bossThreatClose) &&
-                    !canEmergencyBlink &&
-                    item.effect == ConsumableEffect.TELEPORT
+                shouldUseTeleportEscape && item.effect == ConsumableEffect.TELEPORT
             }
         if (escapeIndex >= 0) {
             return PlayerCommand.ActivateInventoryItem(escapeIndex)
@@ -158,13 +166,14 @@ class SmokeBot : RunBot {
         availableInscription(observation, "phase_door")
             ?.takeIf { !it.requiresTarget }
             ?.takeIf {
-                lowHealth && (adjacentHostiles > 0 || bossThreatClose) ||
+                (lowHealth && (adjacentHostiles > 0 || bossThreatClose) && !staminaSingleBossEscape) ||
                     (
                         observation.playerResource.typeId == "STAMINA" &&
-                            bossVisible &&
-                            nearestBossDistance != null &&
-                            nearestBossDistance in 2..6 &&
-                            observation.playerStatus.currentHp < observation.playerStatus.maxHp
+                        bossVisible &&
+                        nearestBossDistance != null &&
+                        nearestBossDistance in 2..6 &&
+                        observation.playerStatus.currentHp * 100 <= observation.playerStatus.maxHp * 50 &&
+                        nearbyHostiles >= 2
                     )
             }?.let { inscription ->
                 return PlayerCommand.UseInscription(inscription.hotkey)
@@ -239,11 +248,11 @@ class SmokeBot : RunBot {
             return false
         }
         if (equipped == null) {
-            return true
+            return gearEquipPriority(observation, candidate) >= emptySlotEquipThreshold(observation, candidate)
         }
         val replacementThreshold =
             when (candidate.slot) {
-                EquipSlot.WEAPON -> 80
+                EquipSlot.WEAPON -> 50
                 EquipSlot.OFF_HAND,
                 EquipSlot.ARMOR,
                 -> 40
@@ -267,21 +276,96 @@ class SmokeBot : RunBot {
         val slotScore =
             when (item.slot) {
                 EquipSlot.WEAPON -> if (synergyMatchCount > 0) 240 else 40
-                EquipSlot.OFF_HAND -> 50
+                EquipSlot.OFF_HAND -> offHandSlotScore(observation, item)
                 EquipSlot.ARMOR -> 35
                 null -> 0
             }
-        return slotScore + qualityScore + item.affixIds.size * 10 + synergyMatchCount * 120 + sustainMatchCount * 15
+        return slotScore + qualityScore + item.affixIds.size * 10 + synergyMatchCount * 120 + sustainMatchCount * 15 + preferredWeaponScore(observation, item)
     }
 
     private fun desiredSynergyAffixIds(observation: RunObservation): Set<String> =
         when (observation.playerResource.typeId) {
             "STAMINA" -> setOf("of_piercing")
-            "MANA" -> setOf("of_flames", "of_frost")
+            "MANA" -> setOf("of_flames", "of_frost", "of_blackice")
             "ENERGY" -> setOf("of_precision", "of_shadow")
             "POSITIVE_ENERGY" -> setOf("of_smite")
             else -> emptySet()
         }
+
+    private fun emptySlotEquipThreshold(
+        observation: RunObservation,
+        item: InventoryItemView,
+    ): Int =
+        when (item.slot) {
+            EquipSlot.WEAPON,
+            EquipSlot.ARMOR,
+            -> 0
+            EquipSlot.OFF_HAND ->
+                when (observation.playerResource.typeId) {
+                    "HATE" -> 100
+                    else -> 60
+                }
+            null -> Int.MAX_VALUE
+        }
+
+    private fun offHandSlotScore(
+        observation: RunObservation,
+        item: InventoryItemView,
+    ): Int =
+        when (observation.playerResource.typeId) {
+            "HATE" -> 0
+            "MANA" ->
+                if (item.baseItemId in setOf("emerald_charm", "seal_reliquary", "unique_deepcurrent_lens")) {
+                    70
+                } else {
+                    45
+                }
+            else -> 50
+        }
+
+    private fun preferredWeaponScore(
+        observation: RunObservation,
+        item: InventoryItemView,
+    ): Int {
+        if (item.slot != EquipSlot.WEAPON) {
+            return 0
+        }
+        return when (observation.playerResource.typeId) {
+            "STAMINA" ->
+                when (item.baseItemId) {
+                    "forgebreaker_pick" -> 80
+                    "battle_axe" -> 60
+                    "long_sword" -> 40
+                    else -> 0
+                }
+            "HATE" ->
+                when (item.baseItemId) {
+                    "war_maul" -> 100
+                    "battle_axe" -> 20
+                    else -> 0
+                }
+            "MANA" ->
+                when (item.baseItemId) {
+                    "arcane_staff" -> 80
+                    "battle_axe" -> 40
+                    else -> 0
+                }
+            "ENERGY" ->
+                when (item.baseItemId) {
+                    "short_sword", "hunter_bow" -> 70
+                    "battle_axe" -> 20
+                    else -> 0
+                }
+            "POSITIVE_ENERGY" ->
+                when (item.baseItemId) {
+                    "battle_axe" -> 60
+                    "long_sword" -> 50
+                    "war_maul" -> 40
+                    else -> 0
+                }
+            else -> 0
+        }
+    }
 
     private fun inventoryCleanupCandidateIndex(observation: RunObservation): Int? {
         if (!shouldPruneInventory(observation)) {
@@ -342,12 +426,7 @@ class SmokeBot : RunBot {
         val desiredAffixes = desiredSynergyAffixIds(observation)
         val synergyMatchCount = item.affixIds.count(desiredAffixes::contains)
         val sustainMatchCount = item.affixIds.count(SUSTAIN_AFFIX_IDS::contains)
-        val professionBaseScore =
-            if (item.baseItemId in preferredWeaponBaseIds(observation)) {
-                40
-            } else {
-                0
-            }
+        val professionBaseScore = preferredWeaponScore(observation, item)
         return gearEquipPriority(observation, item) + professionBaseScore + synergyMatchCount * 80 + sustainMatchCount * 20
     }
 
@@ -365,15 +444,6 @@ class SmokeBot : RunBot {
                     40
                 }
             null -> 0
-        }
-
-    private fun preferredWeaponBaseIds(observation: RunObservation): Set<String> =
-        when (observation.playerResource.typeId) {
-            "STAMINA" -> setOf("forgebreaker_pick", "long_sword")
-            "MANA" -> setOf("arcane_staff")
-            "ENERGY" -> setOf("short_sword", "hunter_bow")
-            "POSITIVE_ENERGY" -> setOf("long_sword", "war_maul")
-            else -> emptySet()
         }
 
     private fun shouldSkipFreshDropPickup(observation: RunObservation): Boolean =
@@ -496,7 +566,7 @@ class SmokeBot : RunBot {
             }
         }
 
-        if (observation.playerResource.typeId == "MANA" && criticalHealth && nearbyHostiles >= 2) {
+        if (observation.playerResource.typeId == "MANA" && criticalHealth && nearbyHostiles >= 1) {
             availableTalent(observation, "blink")?.let { slot ->
                 safeBlinkTarget(observation, slot)?.let { target ->
                     return PlayerCommand.UseTalent(slot.slot, target)
@@ -1334,10 +1404,18 @@ class SmokeBot : RunBot {
                 }
 
             "ENERGY" ->
-                if (currentTalentLevel(observation, "shadow_bind") < 4) {
+                if (currentTalentLevel(observation, "shadowstep") < 2) {
+                    when (talent.talentId) {
+                        "shadowstep" -> 132
+                        "shadow_bind" -> 131
+                        "backstab" -> 34
+                        "roll", "stealth", "poison_blade" -> 30
+                        else -> 24
+                    }
+                } else if (currentTalentLevel(observation, "shadow_bind") < 4) {
                     when (talent.talentId) {
                         "shadow_bind" -> 130
-                        "shadowstep" -> if (currentTalentLevel(observation, "shadowstep") == 0) 129 else 72
+                        "shadowstep" -> 72
                         "backstab" -> 34
                         "roll", "stealth", "poison_blade" -> 30
                         else -> 24

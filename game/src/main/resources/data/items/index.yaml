@@ -706,6 +706,663 @@ affixes:
     stats: { defense: 2, wil: 1, maxHp: 4 }
     blacklistTags: []
     passive: { kind: HpRegenPerTurn, amount: 1 }
+  - id: briarhook
+    nameKey: affix.briarhook.name
+    descKey: affix.briarhook.desc
+    visualKey: affix.briarhook.visual
+    iconKey: affix.briarhook.icon
+    audioProfile: audio.affix.sharp
+    schemaVersion: 2
+    tags: [affix, weapon, offense, marked, greenwood]
+    type: PREFIX
+    equipType: WEAPON
+    tier: 2
+    cost: 10
+    affixFamily: weapon_briarhook
+    minFloor: 2
+    stats: { attack: 2, accuracy: 1 }
+    blacklistTags: []
+    passive: { kind: OnHitStatusProc, statusId: MARKED, chance: 0.35, duration: 2 }
+  - id: cindervein
+    nameKey: affix.cindervein.name
+    descKey: affix.cindervein.desc
+    visualKey: affix.cindervein.visual
+    iconKey: affix.cindervein.icon
+    audioProfile: audio.affix.sharp
+    schemaVersion: 2
+    tags: [affix, weapon, offense, fire, burn, deep_iron_pit]
+    type: PREFIX
+    equipType: WEAPON
+    tier: 3
+    cost: 10
+    affixFamily: weapon_cindervein
+    minFloor: 3
+    stats: { attack: 2, talentPower: 0.04 }
+    blacklistTags: []
+    passive: { kind: OnHitStatusProc, statusId: BURN, chance: 0.30, duration: 2 }
+  - id: frostlash
+    nameKey: affix.frostlash.name
+    descKey: affix.frostlash.desc
+    visualKey: affix.frostlash.visual
+    iconKey: affix.frostlash.icon
+    audioProfile: audio.affix.sharp
+    schemaVersion: 2
+    tags: [affix, weapon, offense, cold, freeze, underground_river]
+    type: PREFIX
+    equipType: WEAPON
+    tier: 3
+    cost: 10
+    affixFamily: weapon_frostlash
+    minFloor: 3
+    stats: { attack: 1, accuracy: 2 }
+    blacklistTags: []
+    passive: { kind: OnHitStatusProc, statusId: FREEZE, chance: 0.20, duration: 1 }
+  - id: rendmarked
+    nameKey: affix.rendmarked.name
+    descKey: affix.rendmarked.desc
+    visualKey: affix.honed.visual
+    iconKey: affix.honed.icon
+    audioProfile: audio.affix.sharp
+    schemaVersion: 2
+    tags: [affix, weapon, offense, armor_break, vanguard]
+    type: PREFIX
+    equipType: WEAPON
+    tier: 3
+    cost: 10
+    affixFamily: weapon_rendmarked
+    minFloor: 3
+    stats: { attack: 2, accuracy: 1 }
+    blacklistTags: []
+    passive: { kind: OnHitStatusProc, statusId: ARMOR_BREAK, chance: 0.25, duration: 2 }
+  - id: lucid
+    nameKey: affix.lucid.name
+    descKey: affix.lucid.desc
+    visualKey: affix.lucid.visual
+    iconKey: affix.lucid.icon
+    audioProfile: audio.affix.sturdy
+    schemaVersion: 2
+    tags: [affix, armor, resource, mana, arcanist]
+    type: PREFIX
+    equipType: ARMOR
+    tier: 2
+    cost: 6
+    affixFamily: armor_lucid
+    minFloor: 2
+    stats: { wil: 1, maxHp: 4 }
+    blacklistTags: []
+    passive: { kind: OnKillResourceRestore, resourceType: MANA, amount: 4 }
+  - id: wind_fed
+    nameKey: affix.wind_fed.name
+    descKey: affix.wind_fed.desc
+    visualKey: affix.wind_fed.visual
+    iconKey: affix.wind_fed.icon
+    audioProfile: audio.affix.sturdy
+    schemaVersion: 2
+    tags: [affix, armor, resource, stamina, mobility]
+    type: PREFIX
+    equipType: ARMOR
+    tier: 2
+    cost: 6
+    affixFamily: armor_wind_fed
+    minFloor: 2
+    stats: { dex: 1, speed: 4 }
+    blacklistTags: []
+    passive: { kind: OnKillResourceRestore, resourceType: STAMINA, amount: 4 }
+  - id: zealbound
+    nameKey: affix.zealbound.name
+    descKey: affix.zealbound.desc
+    visualKey: affix.zealbound.visual
+    iconKey: affix.zealbound.icon
+    audioProfile: audio.affix.sturdy
+    schemaVersion: 2
+    tags: [affix, armor, resource, holy, positive_energy, templar]
+    type: PREFIX
+    equipType: ARMOR
+    tier: 3
+    cost: 10
+    affixFamily: armor_zealbound
+    minFloor: 3
+    stats: { wil: 1, defense: 1 }
+    blacklistTags: []
+    passive: { kind: OnKillResourceRestore, resourceType: POSITIVE_ENERGY, amount: 6 }
+  - id: spite_fed
+    nameKey: affix.spite_fed.name
+    descKey: affix.spite_fed.desc
+    visualKey: affix.spite_fed.visual
+    iconKey: affix.spite_fed.icon
+    audioProfile: audio.affix.sturdy
+    schemaVersion: 2
+    tags: [affix, armor, resource, shadow, hate, berserker]
+    type: PREFIX
+    equipType: ARMOR
+    tier: 3
+    cost: 10
+    affixFamily: armor_spite_fed
+    minFloor: 3
+    stats: { str: 1, attack: 1 }
+    blacklistTags: []
+    passive: { kind: OnKillResourceRestore, resourceType: HATE, amount: 6 }
+  - id: lastlight
+    nameKey: affix.lastlight.name
+    descKey: affix.lastlight.desc
+    visualKey: affix.lastlight.visual
+    iconKey: affix.lastlight.icon
+    audioProfile: audio.affix.sturdy
+    schemaVersion: 2
+    tags: [affix, armor, conditional, survival, vanguard]
+    type: PREFIX
+    equipType: ARMOR
+    tier: 3
+    cost: 10
+    affixFamily: armor_lastlight
+    minFloor: 4
+    stats: { maxHp: 8 }
+    blacklistTags: []
+    passive:
+      kind: ConditionalStatBonus
+      condition: HP_BELOW_50
+      statModifier: { attack: 2, defense: 2 }
+  - id: floodtouched
+    nameKey: affix.floodtouched.name
+    descKey: affix.floodtouched.desc
+    visualKey: affix.floodtouched.visual
+    iconKey: affix.floodtouched.icon
+    audioProfile: audio.affix.sturdy
+    schemaVersion: 2
+    tags: [affix, armor, terrain, water, underground_river]
+    type: PREFIX
+    equipType: ARMOR
+    tier: 3
+    cost: 10
+    affixFamily: armor_floodtouched
+    minFloor: 4
+    stats: { evasion: 2 }
+    blacklistTags: []
+    passive:
+      kind: TerrainAffinityBonus
+      terrainTag: WATER
+      statModifier: { speed: 8, evasion: 4 }
+  - id: of_blackice
+    nameKey: affix.of_blackice.name
+    descKey: affix.of_blackice.desc
+    visualKey: affix.frostlash.visual
+    iconKey: affix.frostlash.icon
+    audioProfile: audio.affix.of_strength
+    schemaVersion: 2
+    tags: [affix, weapon, terrain, ice, cold]
+    type: SUFFIX
+    equipType: WEAPON
+    tier: 3
+    cost: 10
+    affixFamily: suffix_blackice
+    minFloor: 3
+    stats: { accuracy: 2 }
+    blacklistTags: []
+    passive:
+      kind: TerrainAffinityBonus
+      terrainTag: ICE
+      statModifier: { critChance: 0.05, accuracy: 4 }
+  - id: of_slagwake
+    nameKey: affix.of_slagwake.name
+    descKey: affix.of_slagwake.desc
+    visualKey: affix.cindervein.visual
+    iconKey: affix.cindervein.icon
+    audioProfile: audio.affix.of_strength
+    schemaVersion: 2
+    tags: [affix, weapon, terrain, oil, fire]
+    type: SUFFIX
+    equipType: WEAPON
+    tier: 3
+    cost: 10
+    affixFamily: suffix_slagwake
+    minFloor: 3
+    stats: { attack: 1 }
+    blacklistTags: []
+    passive:
+      kind: TerrainAffinityBonus
+      terrainTag: OIL
+      statModifier: { attack: 3, talentPower: 0.05 }
+  - id: of_the_current
+    nameKey: affix.of_the_current.name
+    descKey: affix.of_the_current.desc
+    visualKey: affix.floodtouched.visual
+    iconKey: affix.floodtouched.icon
+    audioProfile: audio.affix.of_strength
+    schemaVersion: 2
+    tags: [affix, weapon, terrain, water, mobility]
+    type: SUFFIX
+    equipType: WEAPON
+    tier: 3
+    cost: 10
+    affixFamily: suffix_current
+    minFloor: 3
+    stats: { speed: 4 }
+    blacklistTags: []
+    passive:
+      kind: TerrainAffinityBonus
+      terrainTag: WATER
+      statModifier: { accuracy: 4, speed: 6 }
+  - id: of_last_stand
+    nameKey: affix.of_last_stand.name
+    descKey: affix.of_last_stand.desc
+    visualKey: affix.lastlight.visual
+    iconKey: affix.lastlight.icon
+    audioProfile: audio.affix.of_fortitude
+    schemaVersion: 2
+    tags: [affix, armor, conditional, survival, vanguard]
+    type: SUFFIX
+    equipType: ARMOR
+    tier: 4
+    cost: 14
+    affixFamily: suffix_last_stand
+    minFloor: 4
+    stats: { defense: 1, maxHp: 4 }
+    blacklistTags: []
+    passive:
+      kind: ConditionalStatBonus
+      condition: HP_BELOW_30
+      statModifier: { defense: 4, maxHp: 12 }
+  - id: of_high_guard
+    nameKey: affix.of_high_guard.name
+    descKey: affix.of_high_guard.desc
+    visualKey: affix.zealbound.visual
+    iconKey: affix.zealbound.icon
+    audioProfile: audio.affix.of_fortitude
+    schemaVersion: 2
+    tags: [affix, armor, conditional, guard, templar]
+    type: SUFFIX
+    equipType: ARMOR
+    tier: 3
+    cost: 10
+    affixFamily: suffix_high_guard
+    minFloor: 3
+    stats: { defense: 2 }
+    blacklistTags: []
+    passive:
+      kind: ConditionalStatBonus
+      condition: HP_ABOVE_80
+      statModifier: { defense: 3, accuracy: 3 }
+  - id: of_bulwarked_soul
+    nameKey: affix.of_bulwarked_soul.name
+    descKey: affix.of_bulwarked_soul.desc
+    visualKey: affix.zealbound.visual
+    iconKey: affix.zealbound.icon
+    audioProfile: audio.affix.of_fortitude
+    schemaVersion: 2
+    tags: [affix, armor, conditional, guard, templar]
+    type: SUFFIX
+    equipType: ARMOR
+    tier: 4
+    cost: 14
+    affixFamily: suffix_bulwarked_soul
+    minFloor: 4
+    stats: { wil: 1, defense: 1 }
+    blacklistTags: []
+    passive:
+      kind: ConditionalStatBonus
+      condition: SELF_HAS_STATUS
+      statusId: GUARD
+      statModifier: { defense: 5, maxHp: 10 }
+  - id: of_execution
+    nameKey: affix.of_execution.name
+    descKey: affix.of_execution.desc
+    visualKey: affix.honed.visual
+    iconKey: affix.honed.icon
+    audioProfile: audio.affix.of_strength
+    schemaVersion: 2
+    tags: [affix, weapon, resource, execution, rogue]
+    type: SUFFIX
+    equipType: WEAPON
+    tier: 3
+    cost: 10
+    affixFamily: suffix_execution
+    minFloor: 4
+    stats: { attack: 2 }
+    blacklistTags: []
+    passive: { kind: OnKillResourceRestore, resourceType: ENERGY, amount: 5 }
+  - id: of_hexes
+    nameKey: affix.of_hexes.name
+    descKey: affix.of_hexes.desc
+    visualKey: affix.briarhook.visual
+    iconKey: affix.briarhook.icon
+    audioProfile: audio.affix.of_strength
+    schemaVersion: 2
+    tags: [affix, weapon, status, shadow, abyssal_temple]
+    type: SUFFIX
+    equipType: WEAPON
+    tier: 3
+    cost: 10
+    affixFamily: suffix_hexes
+    minFloor: 4
+    stats: { accuracy: 2 }
+    blacklistTags: []
+    passive: { kind: OnHitStatusProc, statusId: BANE, chance: 0.25, duration: 2 }
+  - id: huntsbane
+    nameKey: affix.huntsbane.name
+    descKey: affix.huntsbane.desc
+    visualKey: affix.briarhook.visual
+    iconKey: affix.briarhook.icon
+    audioProfile: audio.affix.sharp
+    schemaVersion: 2
+    tags: [affix, weapon, offense, bandit, greenwood_fringe]
+    type: PREFIX
+    equipType: WEAPON
+    tier: 2
+    cost: 6
+    affixFamily: weapon_huntsbane
+    minFloor: 2
+    stats: { attack: 2 }
+    blacklistTags: []
+    passive: { kind: DamageVsTag, tag: bandit, bonusPercent: 0.12 }
+  - id: gravehunter
+    nameKey: affix.gravehunter.name
+    descKey: affix.gravehunter.desc
+    visualKey: affix.briarhook.visual
+    iconKey: affix.briarhook.icon
+    audioProfile: audio.affix.sharp
+    schemaVersion: 2
+    tags: [affix, weapon, offense, undead, warded_ruin]
+    type: PREFIX
+    equipType: WEAPON
+    tier: 2
+    cost: 6
+    affixFamily: weapon_gravehunter
+    minFloor: 2
+    stats: { attack: 2 }
+    blacklistTags: []
+    passive: { kind: DamageVsTag, tag: undead, bonusPercent: 0.12 }
+  - id: stormcall
+    nameKey: affix.stormcall.name
+    descKey: affix.stormcall.desc
+    visualKey: affix.starforged.visual
+    iconKey: affix.starforged.icon
+    audioProfile: audio.affix.sharp
+    schemaVersion: 2
+    tags: [affix, weapon, offense, lightning, underground_river]
+    type: PREFIX
+    equipType: WEAPON
+    tier: 3
+    cost: 10
+    affixFamily: weapon_stormcall
+    minFloor: 3
+    stats: { attack: 2, speed: 4 }
+    blacklistTags: []
+    passive: { kind: DamageTypeBonus, damageType: LIGHTNING, bonusPercent: 0.10 }
+  - id: of_cinders
+    nameKey: affix.of_cinders.name
+    descKey: affix.of_cinders.desc
+    visualKey: affix.cindervein.visual
+    iconKey: affix.cindervein.icon
+    audioProfile: audio.affix.of_strength
+    schemaVersion: 2
+    tags: [affix, weapon, offense, fire, deep_iron_pit]
+    type: SUFFIX
+    equipType: WEAPON
+    tier: 3
+    cost: 10
+    affixFamily: suffix_cinders
+    minFloor: 3
+    stats: { attack: 1 }
+    blacklistTags: []
+    passive: { kind: DamageTypeBonus, damageType: FIRE, bonusPercent: 0.10 }
+  - id: ashward
+    nameKey: affix.ashward.name
+    descKey: affix.ashward.desc
+    visualKey: affix.zealbound.visual
+    iconKey: affix.zealbound.icon
+    audioProfile: audio.affix.sturdy
+    schemaVersion: 2
+    tags: [affix, armor, resistance, fire, deep_iron_pit]
+    type: PREFIX
+    equipType: ARMOR
+    tier: 3
+    cost: 10
+    affixFamily: armor_ashward
+    minFloor: 3
+    stats: { defense: 1, maxHp: 4 }
+    blacklistTags: []
+    passive: { kind: ResistanceBonus, damageType: FIRE, amount: 8 }
+  - id: duskward
+    nameKey: affix.duskward.name
+    descKey: affix.duskward.desc
+    visualKey: affix.spite_fed.visual
+    iconKey: affix.spite_fed.icon
+    audioProfile: audio.affix.sturdy
+    schemaVersion: 2
+    tags: [affix, armor, resistance, shadow, abyssal_temple]
+    type: PREFIX
+    equipType: ARMOR
+    tier: 3
+    cost: 10
+    affixFamily: armor_duskward
+    minFloor: 3
+    stats: { defense: 1, wil: 1 }
+    blacklistTags: []
+    passive: { kind: ResistanceBonus, damageType: SHADOW, amount: 8 }
+  - id: honed
+    nameKey: affix.honed.name
+    descKey: affix.honed.desc
+    visualKey: affix.honed.visual
+    iconKey: affix.honed.icon
+    audioProfile: audio.affix.sharp
+    schemaVersion: 2
+    tags: [affix, weapon, offense, precision]
+    type: PREFIX
+    equipType: WEAPON
+    tier: 1
+    cost: 3
+    affixFamily: weapon_honed
+    minFloor: 1
+    stats: { attack: 2, accuracy: 1 }
+    blacklistTags: []
+  - id: raider
+    nameKey: affix.raider.name
+    descKey: affix.raider.desc
+    visualKey: affix.wind_fed.visual
+    iconKey: affix.wind_fed.icon
+    audioProfile: audio.affix.sharp
+    schemaVersion: 2
+    tags: [affix, weapon, offense, mobility, rogue]
+    type: PREFIX
+    equipType: WEAPON
+    tier: 2
+    cost: 6
+    affixFamily: weapon_raider
+    minFloor: 2
+    stats: { speed: 6, attack: 2 }
+    blacklistTags: []
+  - id: runed
+    nameKey: affix.runed.name
+    descKey: affix.runed.desc
+    visualKey: affix.lucid.visual
+    iconKey: affix.lucid.icon
+    audioProfile: audio.affix.sharp
+    schemaVersion: 2
+    tags: [affix, weapon, spell, arcanist]
+    type: PREFIX
+    equipType: WEAPON
+    tier: 2
+    cost: 6
+    affixFamily: weapon_runed
+    minFloor: 2
+    stats: { wil: 1, talentPower: 0.04 }
+    blacklistTags: []
+  - id: ironroot
+    nameKey: affix.ironroot.name
+    descKey: affix.ironroot.desc
+    visualKey: affix.anchored.visual
+    iconKey: affix.anchored.icon
+    audioProfile: audio.affix.sharp
+    schemaVersion: 2
+    tags: [affix, weapon, defense, vanguard]
+    type: PREFIX
+    equipType: WEAPON
+    tier: 2
+    cost: 6
+    affixFamily: weapon_ironroot
+    minFloor: 2
+    stats: { defense: 2, attack: 1 }
+    blacklistTags: []
+  - id: duskstep
+    nameKey: affix.duskstep.name
+    descKey: affix.duskstep.desc
+    visualKey: affix.wind_fed.visual
+    iconKey: affix.wind_fed.icon
+    audioProfile: audio.affix.sharp
+    schemaVersion: 2
+    tags: [affix, weapon, mobility, shadow, rogue]
+    type: PREFIX
+    equipType: WEAPON
+    tier: 2
+    cost: 6
+    affixFamily: weapon_duskstep
+    minFloor: 2
+    stats: { evasion: 2, speed: 6 }
+    blacklistTags: []
+  - id: tidecut
+    nameKey: affix.tidecut.name
+    descKey: affix.tidecut.desc
+    visualKey: affix.floodtouched.visual
+    iconKey: affix.floodtouched.icon
+    audioProfile: audio.affix.sharp
+    schemaVersion: 2
+    tags: [affix, weapon, mobility, water, underground_river]
+    type: PREFIX
+    equipType: WEAPON
+    tier: 2
+    cost: 6
+    affixFamily: weapon_tidecut
+    minFloor: 2
+    stats: { accuracy: 2, speed: 4 }
+    blacklistTags: []
+  - id: starforged
+    nameKey: affix.starforged.name
+    descKey: affix.starforged.desc
+    visualKey: affix.starforged.visual
+    iconKey: affix.starforged.icon
+    audioProfile: audio.affix.sharp
+    schemaVersion: 2
+    tags: [affix, weapon, offense, crit, lightning]
+    type: PREFIX
+    equipType: WEAPON
+    tier: 3
+    cost: 10
+    affixFamily: weapon_starforged
+    minFloor: 3
+    stats: { attack: 3, critChance: 0.04 }
+    blacklistTags: []
+  - id: anchored
+    nameKey: affix.anchored.name
+    descKey: affix.anchored.desc
+    visualKey: affix.anchored.visual
+    iconKey: affix.anchored.icon
+    audioProfile: audio.affix.sturdy
+    schemaVersion: 2
+    tags: [affix, armor, protection, vanguard]
+    type: PREFIX
+    equipType: ARMOR
+    tier: 1
+    cost: 3
+    affixFamily: armor_anchored
+    minFloor: 1
+    stats: { defense: 2, maxHp: 4 }
+    blacklistTags: []
+  - id: pilgrim
+    nameKey: affix.pilgrim.name
+    descKey: affix.pilgrim.desc
+    visualKey: affix.zealbound.visual
+    iconKey: affix.zealbound.icon
+    audioProfile: audio.affix.sturdy
+    schemaVersion: 2
+    tags: [affix, armor, willpower, holy, templar]
+    type: PREFIX
+    equipType: ARMOR
+    tier: 2
+    cost: 6
+    affixFamily: armor_pilgrim
+    minFloor: 2
+    stats: { wil: 2, defense: 1 }
+    blacklistTags: []
+  - id: swiftwoven
+    nameKey: affix.swiftwoven.name
+    descKey: affix.swiftwoven.desc
+    visualKey: affix.wind_fed.visual
+    iconKey: affix.wind_fed.icon
+    audioProfile: audio.affix.sturdy
+    schemaVersion: 2
+    tags: [affix, armor, mobility, rogue]
+    type: PREFIX
+    equipType: ARMOR
+    tier: 2
+    cost: 6
+    affixFamily: armor_swiftwoven
+    minFloor: 2
+    stats: { evasion: 3, speed: 6 }
+    blacklistTags: []
+  - id: riveted
+    nameKey: affix.riveted.name
+    descKey: affix.riveted.desc
+    visualKey: affix.anchored.visual
+    iconKey: affix.anchored.icon
+    audioProfile: audio.affix.sturdy
+    schemaVersion: 2
+    tags: [affix, armor, protection, precision]
+    type: PREFIX
+    equipType: ARMOR
+    tier: 2
+    cost: 6
+    affixFamily: armor_riveted
+    minFloor: 2
+    stats: { defense: 2, accuracy: 1 }
+    blacklistTags: []
+  - id: clearmind
+    nameKey: affix.clearmind.name
+    descKey: affix.clearmind.desc
+    visualKey: affix.lucid.visual
+    iconKey: affix.lucid.icon
+    audioProfile: audio.affix.of_fortitude
+    schemaVersion: 2
+    tags: [affix, armor, spell, arcanist]
+    type: SUFFIX
+    equipType: ARMOR
+    tier: 2
+    cost: 6
+    affixFamily: suffix_clearmind
+    minFloor: 2
+    stats: { wil: 2, maxHp: 4 }
+    blacklistTags: []
+  - id: of_the_fox
+    nameKey: affix.of_the_fox.name
+    descKey: affix.of_the_fox.desc
+    visualKey: affix.wind_fed.visual
+    iconKey: affix.wind_fed.icon
+    audioProfile: audio.affix.of_fortitude
+    schemaVersion: 2
+    tags: [affix, armor, mobility, rogue]
+    type: SUFFIX
+    equipType: ARMOR
+    tier: 2
+    cost: 6
+    affixFamily: suffix_fox
+    minFloor: 2
+    stats: { dex: 2, evasion: 2 }
+    blacklistTags: []
+  - id: of_shelter
+    nameKey: affix.of_shelter.name
+    descKey: affix.of_shelter.desc
+    visualKey: affix.anchored.visual
+    iconKey: affix.anchored.icon
+    audioProfile: audio.affix.of_fortitude
+    schemaVersion: 2
+    tags: [affix, armor, protection, vanguard]
+    type: SUFFIX
+    equipType: ARMOR
+    tier: 3
+    cost: 10
+    affixFamily: suffix_shelter
+    minFloor: 3
+    stats: { defense: 2, maxHp: 10 }
+    blacklistTags: []
 
 uniqueTemplates:
   - id: unique.greenwood_watcher_blade
@@ -795,7 +1452,7 @@ uniqueTemplates:
     allowedSourceTiers: [ELITE, BOSS]
     allowedZones: [underground_river]
     fixedAffixIds: [stormforged, of_focus]
-    fixedMaterialId: MITHRIL
+    fixedMaterialId: STEEL
   - id: unique.currentstrider_cloak
     itemId: unique_currentstrider_cloak
     nameKey: item.unique.currentstrider_cloak.name
@@ -857,6 +1514,106 @@ uniqueTemplates:
     allowedZones: [abyssal_temple]
     fixedAffixIds: [warforged, of_smite]
     fixedMaterialId: STEEL
+  - id: unique.thornpath_crook
+    itemId: unique_thornpath_crook
+    nameKey: item.unique.thornpath_crook.name
+    descKey: item.unique.thornpath_crook.desc
+    visualKey: item.unique.thornpath_crook.visual
+    iconKey: item.unique.thornpath_crook.icon
+    audioProfile: audio.item.unique.thornpath_crook
+    schemaVersion: 2
+    tags: [greenwood_fringe, rogue, marked]
+    allowedSourceTiers: [CHEST, ELITE]
+    allowedZones: [greenwood_fringe]
+    fixedAffixIds: [briarhook, honed]
+    fixedMaterialId: STEEL
+  - id: unique.heartwood_talisman
+    itemId: unique_heartwood_talisman
+    nameKey: item.unique.heartwood_talisman.name
+    descKey: item.unique.heartwood_talisman.desc
+    visualKey: item.unique.heartwood_talisman.visual
+    iconKey: item.unique.heartwood_talisman.icon
+    audioProfile: audio.item.unique.heartwood_talisman
+    schemaVersion: 2
+    tags: [greenwood_fringe, templar, survival]
+    allowedSourceTiers: [CHEST, BOSS]
+    allowedZones: [greenwood_fringe]
+    fixedAffixIds: [lastlight, of_the_fox]
+  - id: unique.quenchbreaker_maul
+    itemId: unique_quenchbreaker_maul
+    nameKey: item.unique.quenchbreaker_maul.name
+    descKey: item.unique.quenchbreaker_maul.desc
+    visualKey: item.unique.quenchbreaker_maul.visual
+    iconKey: item.unique.quenchbreaker_maul.icon
+    audioProfile: audio.item.unique.quenchbreaker_maul
+    schemaVersion: 2
+    tags: [deep_iron_pit, vanguard, oil]
+    allowedSourceTiers: [ELITE, BOSS]
+    allowedZones: [deep_iron_pit]
+    fixedAffixIds: [cindervein, ironroot]
+    fixedMaterialId: STEEL
+  - id: unique.cinderveil_plate
+    itemId: unique_cinderveil_plate
+    nameKey: item.unique.cinderveil_plate.name
+    descKey: item.unique.cinderveil_plate.desc
+    visualKey: item.unique.cinderveil_plate.visual
+    iconKey: item.unique.cinderveil_plate.icon
+    audioProfile: audio.item.unique.cinderveil_plate
+    schemaVersion: 2
+    tags: [deep_iron_pit, arcanist, survival]
+    allowedSourceTiers: [CHEST, BOSS]
+    allowedZones: [deep_iron_pit]
+    fixedAffixIds: [ashward, clearmind]
+  - id: unique.floodglass_rapier
+    itemId: unique_floodglass_rapier
+    nameKey: item.unique.floodglass_rapier.name
+    descKey: item.unique.floodglass_rapier.desc
+    visualKey: item.unique.floodglass_rapier.visual
+    iconKey: item.unique.floodglass_rapier.icon
+    audioProfile: audio.item.unique.floodglass_rapier
+    schemaVersion: 2
+    tags: [underground_river, rogue, water]
+    allowedSourceTiers: [CHEST, ELITE]
+    allowedZones: [underground_river]
+    fixedAffixIds: [tidecut, of_the_current]
+    fixedMaterialId: STEEL
+  - id: unique.deepcurrent_lens
+    itemId: unique_deepcurrent_lens
+    nameKey: item.unique.deepcurrent_lens.name
+    descKey: item.unique.deepcurrent_lens.desc
+    visualKey: item.unique.deepcurrent_lens.visual
+    iconKey: item.unique.deepcurrent_lens.icon
+    audioProfile: audio.item.unique.deepcurrent_lens
+    schemaVersion: 2
+    tags: [underground_river, arcanist, mana]
+    allowedSourceTiers: [CHEST, BOSS]
+    allowedZones: [underground_river]
+    fixedAffixIds: [lucid, clearmind]
+  - id: unique.vesper_chainmail
+    itemId: unique_vesper_chainmail
+    nameKey: item.unique.vesper_chainmail.name
+    descKey: item.unique.vesper_chainmail.desc
+    visualKey: item.unique.vesper_chainmail.visual
+    iconKey: item.unique.vesper_chainmail.icon
+    audioProfile: audio.item.unique.vesper_chainmail
+    schemaVersion: 2
+    tags: [abyssal_temple, templar, survival]
+    allowedSourceTiers: [CHEST, BOSS]
+    allowedZones: [abyssal_temple]
+    fixedAffixIds: [duskward, of_bulwarked_soul]
+  - id: unique.nullwake_blade
+    itemId: unique_nullwake_blade
+    nameKey: item.unique.nullwake_blade.name
+    descKey: item.unique.nullwake_blade.desc
+    visualKey: item.unique.nullwake_blade.visual
+    iconKey: item.unique.nullwake_blade.icon
+    audioProfile: audio.item.unique.nullwake_blade
+    schemaVersion: 2
+    tags: [abyssal_temple, rogue, bane]
+    allowedSourceTiers: [ELITE, BOSS]
+    allowedZones: [abyssal_temple]
+    fixedAffixIds: [of_hexes, starforged]
+    fixedMaterialId: STEEL
 
 artifactTemplates:
   - id: artifact.briar_heart
@@ -870,7 +1627,7 @@ artifactTemplates:
     tags: [greenwood_fringe, rogue, special_chest]
     allowedSourceTiers: [CHEST]
     allowedZones: [greenwood_fringe]
-    fixedAffixIds: [vampiric, of_shadow]
+    fixedAffixIds: [wind_fed, of_last_stand]
     fixedMaterialId: STEEL
   - id: artifact.forge_oath
     itemId: artifact_forge_oath
@@ -883,7 +1640,7 @@ artifactTemplates:
     tags: [deep_iron_pit, vanguard, boss]
     allowedSourceTiers: [BOSS]
     allowedZones: [deep_iron_pit]
-    fixedAffixIds: [burning, of_fury]
+    fixedAffixIds: [cindervein, of_slagwake]
     fixedMaterialId: STEEL
   - id: artifact.river_echo
     itemId: artifact_river_echo
@@ -896,7 +1653,7 @@ artifactTemplates:
     tags: [underground_river, arcanist, secret_zone]
     allowedSourceTiers: [CHEST, SECRET_ZONE]
     allowedZones: [underground_river]
-    fixedAffixIds: [stormforged, of_focus]
+    fixedAffixIds: [stormcall, of_the_current]
     fixedMaterialId: STEEL
   - id: artifact.eclipsed_relic
     itemId: artifact_eclipsed_relic
@@ -909,7 +1666,57 @@ artifactTemplates:
     tags: [abyssal_temple, templar, boss, secret_zone]
     allowedSourceTiers: [BOSS, CHEST, SECRET_ZONE]
     allowedZones: [abyssal_temple]
-    fixedAffixIds: [sanctified, of_cleansing]
+    fixedAffixIds: [lastlight, of_bulwarked_soul]
+  - id: artifact.heartroot_gambit
+    itemId: artifact_heartroot_gambit
+    nameKey: item.artifact.heartroot_gambit.name
+    descKey: item.artifact.heartroot_gambit.desc
+    visualKey: item.artifact.heartroot_gambit.visual
+    iconKey: item.artifact.heartroot_gambit.icon
+    audioProfile: audio.item.artifact.heartroot_gambit
+    schemaVersion: 2
+    tags: [greenwood_fringe, rogue, chest]
+    allowedSourceTiers: [CHEST]
+    allowedZones: [greenwood_fringe]
+    fixedAffixIds: [briarhook, of_execution]
+    fixedMaterialId: STEEL
+  - id: artifact.slag_tyrant_seal
+    itemId: artifact_slag_tyrant_seal
+    nameKey: item.artifact.slag_tyrant_seal.name
+    descKey: item.artifact.slag_tyrant_seal.desc
+    visualKey: item.artifact.slag_tyrant_seal.visual
+    iconKey: item.artifact.slag_tyrant_seal.icon
+    audioProfile: audio.item.artifact.slag_tyrant_seal
+    schemaVersion: 2
+    tags: [deep_iron_pit, vanguard, secret_zone]
+    allowedSourceTiers: [BOSS, SECRET_ZONE]
+    allowedZones: [deep_iron_pit]
+    fixedAffixIds: [cindervein, of_slagwake]
+    fixedMaterialId: STEEL
+  - id: artifact.deepcurrent_crown
+    itemId: artifact_deepcurrent_crown
+    nameKey: item.artifact.deepcurrent_crown.name
+    descKey: item.artifact.deepcurrent_crown.desc
+    visualKey: item.artifact.deepcurrent_crown.visual
+    iconKey: item.artifact.deepcurrent_crown.icon
+    audioProfile: audio.item.artifact.deepcurrent_crown
+    schemaVersion: 2
+    tags: [underground_river, arcanist, secret_zone]
+    allowedSourceTiers: [CHEST, SECRET_ZONE]
+    allowedZones: [underground_river]
+    fixedAffixIds: [floodtouched, clearmind]
+  - id: artifact.vesper_prism
+    itemId: artifact_vesper_prism
+    nameKey: item.artifact.vesper_prism.name
+    descKey: item.artifact.vesper_prism.desc
+    visualKey: item.artifact.vesper_prism.visual
+    iconKey: item.artifact.vesper_prism.icon
+    audioProfile: audio.item.artifact.vesper_prism
+    schemaVersion: 2
+    tags: [abyssal_temple, templar, boss]
+    allowedSourceTiers: [BOSS, CHEST]
+    allowedZones: [abyssal_temple]
+    fixedAffixIds: [lastlight, of_bulwarked_soul]
 
 items:
   - id: short_sword
@@ -1386,6 +2193,7 @@ items:
     color: "#9B7348"
     baseAttack: 13
     stats: { str: 1, attack: 1, accuracy: 1 }
+    passive: { kind: OnHitStatusProc, statusId: ARMOR_BREAK, chance: 0.35, duration: 2 }
     dropWeight: 0
     dropFloors: []
     materials: [STEEL, MITHRIL]
@@ -1420,6 +2228,7 @@ items:
     color: "#8C5D37"
     baseDefense: 2
     stats: { wil: 2, talentPower: 0.06 }
+    passive: { kind: OnKillResourceRestore, resourceType: MANA, amount: 6 }
     dropWeight: 0
     dropFloors: []
   - id: unique_tideglass_staff
@@ -1439,7 +2248,7 @@ items:
     passive: { kind: DamageTypeBonus, damageType: LIGHTNING, bonusPercent: 0.12 }
     dropWeight: 0
     dropFloors: []
-    materials: [MITHRIL, ADAMANTITE]
+    materials: [STEEL, MITHRIL, ADAMANTITE]
   - id: unique_currentstrider_cloak
     nameKey: item.unique.currentstrider_cloak.name
     descKey: item.unique.currentstrider_cloak.desc
@@ -1540,7 +2349,10 @@ items:
     color: "#7A5E6F"
     baseDefense: 3
     stats: { dex: 2, critChance: 0.05, maxHp: 10 }
-    passive: { kind: ResistanceBonus, damageType: SHADOW, amount: 14 }
+    passive:
+      kind: ConditionalStatBonus
+      condition: HP_ABOVE_80
+      statModifier: { critChance: 0.08, evasion: 4 }
     dropWeight: 0
     dropFloors: []
     materials: [STEEL]
@@ -1558,7 +2370,10 @@ items:
     color: "#B86A3B"
     baseAttack: 16
     stats: { str: 2, attack: 3 }
-    passive: { kind: DamageTypeBonus, damageType: FIRE, bonusPercent: 0.18 }
+    passive:
+      kind: TerrainAffinityBonus
+      terrainTag: OIL
+      statModifier: { attack: 4, defense: 2 }
     dropWeight: 0
     dropFloors: []
     materials: [STEEL, MITHRIL]
@@ -1576,7 +2391,7 @@ items:
     color: "#5D8FB3"
     baseAttack: 8
     stats: { wil: 3, talentPower: 0.08 }
-    passive: { kind: DamageTypeBonus, damageType: LIGHTNING, bonusPercent: 0.18 }
+    passive: { kind: OnKillResourceRestore, resourceType: MANA, amount: 8 }
     dropWeight: 0
     dropFloors: []
     materials: [STEEL, MITHRIL]
@@ -1594,6 +2409,237 @@ items:
     color: "#8C789B"
     baseDefense: 4
     stats: { wil: 2, maxHp: 14 }
-    passive: { kind: HpRegenPerTurn, amount: 3 }
+    passive: { kind: OnHitStatusProc, statusId: BANE, chance: 0.40, duration: 3 }
+    dropWeight: 0
+    dropFloors: []
+  - id: unique_thornpath_crook
+    nameKey: item.unique.thornpath_crook.name
+    descKey: item.unique.thornpath_crook.desc
+    visualKey: item.unique.thornpath_crook.visual
+    iconKey: item.unique.thornpath_crook.icon
+    audioProfile: audio.item.unique.thornpath_crook
+    schemaVersion: 2
+    tags: [item, weapon, unique, greenwood_fringe, rogue, marked]
+    type: WEAPON
+    slot: WEAPON
+    glyph: ")"
+    color: "#6F8F4F"
+    baseAttack: 10
+    stats: { dex: 2, accuracy: 2 }
+    passive: { kind: OnHitStatusProc, statusId: MARKED, chance: 0.45, duration: 3 }
+    dropWeight: 0
+    dropFloors: []
+    materials: [STEEL, MITHRIL]
+  - id: unique_heartwood_talisman
+    nameKey: item.unique.heartwood_talisman.name
+    descKey: item.unique.heartwood_talisman.desc
+    visualKey: item.unique.heartwood_talisman.visual
+    iconKey: item.unique.heartwood_talisman.icon
+    audioProfile: audio.item.unique.heartwood_talisman
+    schemaVersion: 2
+    tags: [item, armor, accessory, unique, greenwood_fringe, templar, survival]
+    type: ARMOR
+    slot: OFF_HAND
+    glyph: "]"
+    color: "#7D6F4E"
+    baseDefense: 3
+    stats: { wil: 1, maxHp: 10 }
+    passive: { kind: OnKillResourceRestore, resourceType: STAMINA, amount: 6 }
+    dropWeight: 0
+    dropFloors: []
+  - id: unique_quenchbreaker_maul
+    nameKey: item.unique.quenchbreaker_maul.name
+    descKey: item.unique.quenchbreaker_maul.desc
+    visualKey: item.unique.quenchbreaker_maul.visual
+    iconKey: item.unique.quenchbreaker_maul.icon
+    audioProfile: audio.item.unique.quenchbreaker_maul
+    schemaVersion: 2
+    tags: [item, weapon, unique, deep_iron_pit, vanguard, oil]
+    type: WEAPON
+    slot: WEAPON
+    glyph: ")"
+    color: "#A6693E"
+    baseAttack: 15
+    stats: { str: 2, attack: 2 }
+    passive:
+      kind: TerrainAffinityBonus
+      terrainTag: OIL
+      statModifier: { attack: 4, defense: 2 }
+    dropWeight: 0
+    dropFloors: []
+    materials: [STEEL, MITHRIL]
+  - id: unique_cinderveil_plate
+    nameKey: item.unique.cinderveil_plate.name
+    descKey: item.unique.cinderveil_plate.desc
+    visualKey: item.unique.cinderveil_plate.visual
+    iconKey: item.unique.cinderveil_plate.icon
+    audioProfile: audio.item.unique.cinderveil_plate
+    schemaVersion: 2
+    tags: [item, armor, unique, deep_iron_pit, arcanist, survival]
+    type: ARMOR
+    slot: ARMOR
+    glyph: "["
+    color: "#8E5740"
+    baseDefense: 9
+    stats: { wil: 2, defense: 1, maxHp: 8 }
+    passive:
+      kind: ConditionalStatBonus
+      condition: HP_BELOW_50
+      statModifier: { defense: 3, talentPower: 0.08 }
+    dropWeight: 0
+    dropFloors: []
+  - id: unique_floodglass_rapier
+    nameKey: item.unique.floodglass_rapier.name
+    descKey: item.unique.floodglass_rapier.desc
+    visualKey: item.unique.floodglass_rapier.visual
+    iconKey: item.unique.floodglass_rapier.icon
+    audioProfile: audio.item.unique.floodglass_rapier
+    schemaVersion: 2
+    tags: [item, weapon, unique, underground_river, rogue, water]
+    type: WEAPON
+    slot: WEAPON
+    glyph: ")"
+    color: "#5E96B4"
+    baseAttack: 11
+    stats: { dex: 2, speed: 4 }
+    passive:
+      kind: TerrainAffinityBonus
+      terrainTag: WATER
+      statModifier: { accuracy: 5, speed: 8 }
+    dropWeight: 0
+    dropFloors: []
+    materials: [STEEL, MITHRIL, ADAMANTITE]
+  - id: unique_deepcurrent_lens
+    nameKey: item.unique.deepcurrent_lens.name
+    descKey: item.unique.deepcurrent_lens.desc
+    visualKey: item.unique.deepcurrent_lens.visual
+    iconKey: item.unique.deepcurrent_lens.icon
+    audioProfile: audio.item.unique.deepcurrent_lens
+    schemaVersion: 2
+    tags: [item, armor, accessory, unique, underground_river, arcanist, mana]
+    type: ARMOR
+    slot: OFF_HAND
+    glyph: "]"
+    color: "#6A90A4"
+    baseDefense: 2
+    stats: { wil: 2, talentPower: 0.06 }
+    passive: { kind: OnKillResourceRestore, resourceType: MANA, amount: 6 }
+    dropWeight: 0
+    dropFloors: []
+  - id: unique_vesper_chainmail
+    nameKey: item.unique.vesper_chainmail.name
+    descKey: item.unique.vesper_chainmail.desc
+    visualKey: item.unique.vesper_chainmail.visual
+    iconKey: item.unique.vesper_chainmail.icon
+    audioProfile: audio.item.unique.vesper_chainmail
+    schemaVersion: 2
+    tags: [item, armor, unique, abyssal_temple, templar, survival]
+    type: ARMOR
+    slot: ARMOR
+    glyph: "["
+    color: "#716882"
+    baseDefense: 10
+    stats: { con: 1, wil: 2, maxHp: 12 }
+    passive:
+      kind: ConditionalStatBonus
+      condition: HP_BELOW_30
+      statModifier: { defense: 5, maxHp: 14 }
+    dropWeight: 0
+    dropFloors: []
+  - id: unique_nullwake_blade
+    nameKey: item.unique.nullwake_blade.name
+    descKey: item.unique.nullwake_blade.desc
+    visualKey: item.unique.nullwake_blade.visual
+    iconKey: item.unique.nullwake_blade.icon
+    audioProfile: audio.item.unique.nullwake_blade
+    schemaVersion: 2
+    tags: [item, weapon, unique, abyssal_temple, rogue, bane]
+    type: WEAPON
+    slot: WEAPON
+    glyph: ")"
+    color: "#8B79A8"
+    baseAttack: 14
+    stats: { attack: 2, accuracy: 2 }
+    passive: { kind: OnHitStatusProc, statusId: BANE, chance: 0.40, duration: 3 }
+    dropWeight: 0
+    dropFloors: []
+    materials: [STEEL, MITHRIL, ADAMANTITE]
+  - id: artifact_heartroot_gambit
+    nameKey: item.artifact.heartroot_gambit.name
+    descKey: item.artifact.heartroot_gambit.desc
+    visualKey: item.artifact.heartroot_gambit.visual
+    iconKey: item.artifact.heartroot_gambit.icon
+    audioProfile: audio.item.artifact.heartroot_gambit
+    schemaVersion: 2
+    tags: [item, weapon, artifact, greenwood_fringe, rogue, chest]
+    type: WEAPON
+    slot: WEAPON
+    glyph: ")"
+    color: "#7B5F4A"
+    baseAttack: 13
+    stats: { dex: 3, critChance: 0.08 }
+    passive:
+      kind: ConditionalStatBonus
+      condition: HP_ABOVE_80
+      statModifier: { accuracy: 5, critChance: 0.08 }
+    dropWeight: 0
+    dropFloors: []
+    materials: [STEEL, MITHRIL, ADAMANTITE]
+  - id: artifact_slag_tyrant_seal
+    nameKey: item.artifact.slag_tyrant_seal.name
+    descKey: item.artifact.slag_tyrant_seal.desc
+    visualKey: item.artifact.slag_tyrant_seal.visual
+    iconKey: item.artifact.slag_tyrant_seal.icon
+    audioProfile: audio.item.artifact.slag_tyrant_seal
+    schemaVersion: 2
+    tags: [item, weapon, artifact, deep_iron_pit, vanguard, secret_zone]
+    type: WEAPON
+    slot: WEAPON
+    glyph: ")"
+    color: "#B06A43"
+    baseAttack: 17
+    stats: { str: 2, attack: 3 }
+    passive:
+      kind: TerrainAffinityBonus
+      terrainTag: OIL
+      statModifier: { attack: 5, defense: 3 }
+    dropWeight: 0
+    dropFloors: []
+    materials: [STEEL, MITHRIL, ADAMANTITE]
+  - id: artifact_deepcurrent_crown
+    nameKey: item.artifact.deepcurrent_crown.name
+    descKey: item.artifact.deepcurrent_crown.desc
+    visualKey: item.artifact.deepcurrent_crown.visual
+    iconKey: item.artifact.deepcurrent_crown.icon
+    audioProfile: audio.item.artifact.deepcurrent_crown
+    schemaVersion: 2
+    tags: [item, armor, accessory, artifact, underground_river, arcanist, secret_zone]
+    type: ARMOR
+    slot: OFF_HAND
+    glyph: "]"
+    color: "#4F7FA3"
+    baseDefense: 4
+    stats: { wil: 3, talentPower: 0.10, maxHp: 12 }
+    passive:
+      kind: TerrainAffinityBonus
+      terrainTag: WATER
+      statModifier: { wil: 2, talentPower: 0.10, accuracy: 4 }
+    dropWeight: 0
+    dropFloors: []
+  - id: artifact_vesper_prism
+    nameKey: item.artifact.vesper_prism.name
+    descKey: item.artifact.vesper_prism.desc
+    visualKey: item.artifact.vesper_prism.visual
+    iconKey: item.artifact.vesper_prism.icon
+    audioProfile: audio.item.artifact.vesper_prism
+    schemaVersion: 2
+    tags: [item, armor, accessory, artifact, abyssal_temple, templar, boss]
+    type: ARMOR
+    slot: OFF_HAND
+    glyph: "]"
+    color: "#8B6F9D"
+    baseDefense: 4
+    stats: { wil: 3, defense: 2, maxHp: 12 }
+    passive: { kind: OnHitStatusProc, statusId: BANE, chance: 0.40, duration: 3 }
     dropWeight: 0
     dropFloors: []

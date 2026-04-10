@@ -4,6 +4,7 @@ import com.ktome.core.combat.DiminishingReturns
 import com.ktome.core.combat.PowerSaveFormula
 import com.ktome.core.ecs.CombatProfile
 import com.ktome.core.ecs.DerivedStats
+import com.ktome.core.ecs.EquipmentPassiveStatModifier
 import com.ktome.core.ecs.EntityId
 import com.ktome.core.ecs.Experience
 import com.ktome.core.ecs.Health
@@ -37,6 +38,16 @@ object StatsCalculator {
         return calculate(stats, profile, collectModifiers(world, entity), level)
     }
 
+    fun calculateWithoutEquipmentPassive(
+        world: World,
+        entity: EntityId,
+    ): DerivedStats {
+        val stats = requireNotNull(world.get<Stats>(entity)) { "Missing Stats for $entity" }
+        val profile = requireNotNull(world.get<CombatProfile>(entity)) { "Missing CombatProfile for $entity" }
+        val level = world.get<Experience>(entity)?.level ?: 1
+        return calculate(stats, profile, collectNonPassiveModifiers(world, entity), level)
+    }
+
     fun effectiveStats(
         world: World,
         entity: EntityId,
@@ -65,6 +76,11 @@ object StatsCalculator {
     private fun collectModifiers(
         world: World,
         entity: EntityId,
+    ): StatModifier = collectNonPassiveModifiers(world, entity) + collectPassiveModifiers(world, entity)
+
+    private fun collectNonPassiveModifiers(
+        world: World,
+        entity: EntityId,
     ): StatModifier {
         val equipmentModifiers =
             world.get<Equipment>(entity)?.slots?.values
@@ -79,6 +95,11 @@ object StatsCalculator {
                 ?: StatModifier.ZERO
         return equipmentModifiers + effectModifiers
     }
+
+    private fun collectPassiveModifiers(
+        world: World,
+        entity: EntityId,
+    ): StatModifier = world.get<EquipmentPassiveStatModifier>(entity)?.modifier ?: StatModifier.ZERO
 
     private fun calculateDerived(
         stats: Stats,

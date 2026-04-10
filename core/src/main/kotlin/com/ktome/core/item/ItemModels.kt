@@ -6,6 +6,8 @@ import com.ktome.core.loot.AffixCost
 import com.ktome.core.loot.RarityTier
 import com.ktome.core.loot.SourceTier
 import com.ktome.core.loot.SpecialTier
+import com.ktome.core.mapgen.TerrainTag
+import com.ktome.core.resource.ResourceType
 
 enum class EquipSlot {
     WEAPON,
@@ -36,6 +38,48 @@ enum class ConsumableEffect {
 }
 
 sealed interface EquipmentPassive {
+    data class OnHitStatusProc(
+        val statusId: String,
+        val chance: Double,
+        val duration: Int,
+        val magnitude: Double = 0.0,
+    ) : EquipmentPassive {
+        init {
+            require(statusId.isNotBlank()) { "OnHitStatusProc.statusId must not be blank." }
+            require(chance in 0.0..1.0) { "OnHitStatusProc.chance must be between 0 and 1." }
+            require(duration > 0) { "OnHitStatusProc.duration must be positive." }
+        }
+    }
+
+    data class OnKillResourceRestore(
+        val resourceType: ResourceType,
+        val amount: Int,
+    ) : EquipmentPassive {
+        init {
+            require(amount > 0) { "OnKillResourceRestore.amount must be positive." }
+        }
+    }
+
+    data class ConditionalStatBonus(
+        val condition: PassiveCondition,
+        val statModifier: StatModifier,
+        val statusId: String? = null,
+    ) : EquipmentPassive {
+        init {
+            require(statusId?.isNotBlank() != false) {
+                "ConditionalStatBonus.statusId must not be blank when present."
+            }
+            require(condition != PassiveCondition.SELF_HAS_STATUS || statusId != null) {
+                "ConditionalStatBonus SELF_HAS_STATUS requires statusId."
+            }
+        }
+    }
+
+    data class TerrainAffinityBonus(
+        val terrainTag: TerrainTag,
+        val statModifier: StatModifier,
+    ) : EquipmentPassive
+
     data class DamageVsTag(
         val tag: String,
         val bonusPercent: Double,
@@ -59,6 +103,38 @@ sealed interface EquipmentPassive {
         val damageType: DamageType,
         val amount: Int,
     ) : EquipmentPassive
+}
+
+object EquipmentPassiveKindIds {
+    const val ON_HIT_STATUS_PROC: String = "OnHitStatusProc"
+    const val ON_KILL_RESOURCE_RESTORE: String = "OnKillResourceRestore"
+    const val CONDITIONAL_STAT_BONUS: String = "ConditionalStatBonus"
+    const val TERRAIN_AFFINITY_BONUS: String = "TerrainAffinityBonus"
+    const val DAMAGE_VS_TAG: String = "DamageVsTag"
+    const val DAMAGE_VS_STATUS: String = "DamageVsStatus"
+    const val HP_REGEN_PER_TURN: String = "HpRegenPerTurn"
+    const val DAMAGE_TYPE_BONUS: String = "DamageTypeBonus"
+    const val RESISTANCE_BONUS: String = "ResistanceBonus"
+}
+
+fun EquipmentPassive.kindId(): String =
+    when (this) {
+        is EquipmentPassive.OnHitStatusProc -> EquipmentPassiveKindIds.ON_HIT_STATUS_PROC
+        is EquipmentPassive.OnKillResourceRestore -> EquipmentPassiveKindIds.ON_KILL_RESOURCE_RESTORE
+        is EquipmentPassive.ConditionalStatBonus -> EquipmentPassiveKindIds.CONDITIONAL_STAT_BONUS
+        is EquipmentPassive.TerrainAffinityBonus -> EquipmentPassiveKindIds.TERRAIN_AFFINITY_BONUS
+        is EquipmentPassive.DamageVsTag -> EquipmentPassiveKindIds.DAMAGE_VS_TAG
+        is EquipmentPassive.DamageVsStatus -> EquipmentPassiveKindIds.DAMAGE_VS_STATUS
+        is EquipmentPassive.HpRegenPerTurn -> EquipmentPassiveKindIds.HP_REGEN_PER_TURN
+        is EquipmentPassive.DamageTypeBonus -> EquipmentPassiveKindIds.DAMAGE_TYPE_BONUS
+        is EquipmentPassive.ResistanceBonus -> EquipmentPassiveKindIds.RESISTANCE_BONUS
+    }
+
+enum class PassiveCondition {
+    HP_BELOW_50,
+    HP_BELOW_30,
+    HP_ABOVE_80,
+    SELF_HAS_STATUS,
 }
 
 data class StatModifier(

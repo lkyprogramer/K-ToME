@@ -1,0 +1,403 @@
+styleTag: ktome-middle-fantasy-painterly-tile-v1
+artStyleBible: docs/2026-03-13-art-style-bible.md
+stylePrompt: >-
+  High fantasy, middle-earth inspired painterly production pass for K-ToME Phase 4
+  OPT PR-03 equipment passive expansion. Keep every affix and special loot image bold,
+  readable at UI size, grounded in the established palette, never anime, and never sci-fi.
+defaults:
+  imageAspectRatio: "1:1"
+  imageSize: "1K"
+  negativeConstraints:
+    - no modern clothing
+    - no firearms
+    - no sci-fi materials
+    - no anime proportions
+    - no floating text, watermark or logo
+phase2AssetGates:
+  P4-OPT-PR03:
+    description: Formal OPT PR-03 visual plan for twelve affix families plus twelve new special items.
+    assets:
+      - id: phase4_opt_pr03_icon_affix_briarhook
+        category: icon
+        visualKey: affix.briarhook.icon
+        outputName: phase4/opt_pr03/icon_affix_briarhook.png
+        subject: thorn hooked weapon affix icon for briarhook mark-inflicting strikes
+        materialTags: [phase4, opt, pr03, affix, weapon, greenwood, marked]
+        constraints: [single centered icon, transparent or clean background, readable at UI size]
+        geminiKeyRequired: true
+      - id: phase4_opt_pr03_visual_affix_briarhook
+        category: icon
+        visualKey: affix.briarhook.visual
+        outputName: phase4/opt_pr03/icon_affix_briarhook.png
+        subject: finalized runtime visual coverage for briarhook affix art using the approved thorn hooked strike icon
+        materialTags: [phase4, opt, pr03, affix, weapon, greenwood, marked]
+        constraints: [single focused asset with strong small-size readability, reuse the approved runtime artwork for this visual key]
+        geminiKeyRequired: true
+      - id: phase4_opt_pr03_icon_affix_cindervein
+        category: icon
+        visualKey: affix.cindervein.icon
+        outputName: phase4/opt_pr03/icon_affix_cindervein.png
+        subject: heated slag vein weapon affix icon for cindervein burning hits
+        materialTags: [phase4, opt, pr03, affix, weapon, fire, deep_iron_pit]
+        constraints: [single centered icon, transparent or clean background, readable at UI size]
+        geminiKeyRequired: true
+      - id: phase4_opt_pr03_visual_affix_cindervein
+        category: icon
+        visualKey: affix.cindervein.visual
+        outputName: phase4/opt_pr03/icon_affix_cindervein.png
+        subject: finalized runtime visual coverage for cindervein affix art using the approved heated slag vein icon
+        materialTags: [phase4, opt, pr03, affix, weapon, fire, deep_iron_pit]
+        constraints: [single focused asset with strong small-size readability, reuse the approved runtime artwork for this visual key]
+        geminiKeyRequired: true
+      - id: phase4_opt_pr03_icon_affix_frostlash
+        category: icon
+        visualKey: affix.frostlash.icon
+        outputName: phase4/opt_pr03/icon_affix_frostlash.png
+        subject: frozen lash weapon affix icon for frostlash chilling strikes
+        materialTags: [phase4, opt, pr03, affix, weapon, cold, underground_river]
+        constraints: [single centered icon, transparent or clean background, readable at UI size]
+        geminiKeyRequired: true
+      - id: phase4_opt_pr03_visual_affix_frostlash
+        category: icon
+        visualKey: affix.frostlash.visual
+        outputName: phase4/opt_pr03/icon_affix_frostlash.png
+        subject: finalized runtime visual coverage for frostlash affix art using the approved frozen lash icon
+        materialTags: [phase4, opt, pr03, affix, weapon, cold, underground_river]
+        constraints: [single focused asset with strong small-size readability, reuse the approved runtime artwork for this visual key]
+        geminiKeyRequired: true
+      - id: phase4_opt_pr03_icon_affix_lucid
+        category: icon
+        visualKey: affix.lucid.icon
+        outputName: phase4/opt_pr03/icon_affix_lucid.png
+        subject: clear mana lens affix icon for lucid on-kill mana restoration
+        materialTags: [phase4, opt, pr03, affix, armor, mana, arcanist]
+        constraints: [single centered icon, transparent or clean background, readable at UI size]
+        geminiKeyRequired: true
+      - id: phase4_opt_pr03_visual_affix_lucid
+        category: icon
+        visualKey: affix.lucid.visual
+        outputName: phase4/opt_pr03/icon_affix_lucid.png
+        subject: finalized runtime visual coverage for lucid affix art using the approved clear mana lens icon
+        materialTags: [phase4, opt, pr03, affix, armor, mana, arcanist]
+        constraints: [single focused asset with strong small-size readability, reuse the approved runtime artwork for this visual key]
+        geminiKeyRequired: true
+      - id: phase4_opt_pr03_icon_affix_wind_fed
+        category: icon
+        visualKey: affix.wind_fed.icon
+        outputName: phase4/opt_pr03/icon_affix_wind_fed.png
+        subject: wind swept affix icon for wind fed stamina restoration
+        materialTags: [phase4, opt, pr03, affix, armor, stamina, mobility]
+        constraints: [single centered icon, transparent or clean background, readable at UI size]
+        geminiKeyRequired: true
+      - id: phase4_opt_pr03_visual_affix_wind_fed
+        category: icon
+        visualKey: affix.wind_fed.visual
+        outputName: phase4/opt_pr03/icon_affix_wind_fed.png
+        subject: finalized runtime visual coverage for wind fed affix art using the approved wind swept icon
+        materialTags: [phase4, opt, pr03, affix, armor, stamina, mobility]
+        constraints: [single focused asset with strong small-size readability, reuse the approved runtime artwork for this visual key]
+        geminiKeyRequired: true
+      - id: phase4_opt_pr03_icon_affix_zealbound
+        category: icon
+        visualKey: affix.zealbound.icon
+        outputName: phase4/opt_pr03/icon_affix_zealbound.png
+        subject: radiant reliquary affix icon for zealbound positive energy restoration
+        materialTags: [phase4, opt, pr03, affix, armor, holy, templar]
+        constraints: [single centered icon, transparent or clean background, readable at UI size]
+        geminiKeyRequired: true
+      - id: phase4_opt_pr03_visual_affix_zealbound
+        category: icon
+        visualKey: affix.zealbound.visual
+        outputName: phase4/opt_pr03/icon_affix_zealbound.png
+        subject: finalized runtime visual coverage for zealbound affix art using the approved radiant reliquary icon
+        materialTags: [phase4, opt, pr03, affix, armor, holy, templar]
+        constraints: [single focused asset with strong small-size readability, reuse the approved runtime artwork for this visual key]
+        geminiKeyRequired: true
+      - id: phase4_opt_pr03_icon_affix_spite_fed
+        category: icon
+        visualKey: affix.spite_fed.icon
+        outputName: phase4/opt_pr03/icon_affix_spite_fed.png
+        subject: spite etched affix icon for spite fed hate restoration
+        materialTags: [phase4, opt, pr03, affix, armor, shadow, berserker]
+        constraints: [single centered icon, transparent or clean background, readable at UI size]
+        geminiKeyRequired: true
+      - id: phase4_opt_pr03_visual_affix_spite_fed
+        category: icon
+        visualKey: affix.spite_fed.visual
+        outputName: phase4/opt_pr03/icon_affix_spite_fed.png
+        subject: finalized runtime visual coverage for spite fed affix art using the approved spite etched icon
+        materialTags: [phase4, opt, pr03, affix, armor, shadow, berserker]
+        constraints: [single focused asset with strong small-size readability, reuse the approved runtime artwork for this visual key]
+        geminiKeyRequired: true
+      - id: phase4_opt_pr03_icon_affix_lastlight
+        category: icon
+        visualKey: affix.lastlight.icon
+        outputName: phase4/opt_pr03/icon_affix_lastlight.png
+        subject: battered lantern affix icon for lastlight low-health resolve bonuses
+        materialTags: [phase4, opt, pr03, affix, armor, conditional, survival]
+        constraints: [single centered icon, transparent or clean background, readable at UI size]
+        geminiKeyRequired: true
+      - id: phase4_opt_pr03_visual_affix_lastlight
+        category: icon
+        visualKey: affix.lastlight.visual
+        outputName: phase4/opt_pr03/icon_affix_lastlight.png
+        subject: finalized runtime visual coverage for lastlight affix art using the approved battered lantern icon
+        materialTags: [phase4, opt, pr03, affix, armor, conditional, survival]
+        constraints: [single focused asset with strong small-size readability, reuse the approved runtime artwork for this visual key]
+        geminiKeyRequired: true
+      - id: phase4_opt_pr03_icon_affix_floodtouched
+        category: icon
+        visualKey: affix.floodtouched.icon
+        outputName: phase4/opt_pr03/icon_affix_floodtouched.png
+        subject: river-worn affix icon for floodtouched water affinity defenses
+        materialTags: [phase4, opt, pr03, affix, armor, terrain, water]
+        constraints: [single centered icon, transparent or clean background, readable at UI size]
+        geminiKeyRequired: true
+      - id: phase4_opt_pr03_visual_affix_floodtouched
+        category: icon
+        visualKey: affix.floodtouched.visual
+        outputName: phase4/opt_pr03/icon_affix_floodtouched.png
+        subject: finalized runtime visual coverage for floodtouched affix art using the approved river-worn icon
+        materialTags: [phase4, opt, pr03, affix, armor, terrain, water]
+        constraints: [single focused asset with strong small-size readability, reuse the approved runtime artwork for this visual key]
+        geminiKeyRequired: true
+      - id: phase4_opt_pr03_icon_affix_honed
+        category: icon
+        visualKey: affix.honed.icon
+        outputName: phase4/opt_pr03/icon_affix_honed.png
+        subject: honed edge affix icon for precise martial weapon upgrades
+        materialTags: [phase4, opt, pr03, affix, weapon, precision]
+        constraints: [single centered icon, transparent or clean background, readable at UI size]
+        geminiKeyRequired: true
+      - id: phase4_opt_pr03_visual_affix_honed
+        category: icon
+        visualKey: affix.honed.visual
+        outputName: phase4/opt_pr03/icon_affix_honed.png
+        subject: finalized runtime visual coverage for honed affix art using the approved honed edge icon
+        materialTags: [phase4, opt, pr03, affix, weapon, precision]
+        constraints: [single focused asset with strong small-size readability, reuse the approved runtime artwork for this visual key]
+        geminiKeyRequired: true
+      - id: phase4_opt_pr03_icon_affix_starforged
+        category: icon
+        visualKey: affix.starforged.icon
+        outputName: phase4/opt_pr03/icon_affix_starforged.png
+        subject: starforged blade affix icon with lightning-lit forged edge
+        materialTags: [phase4, opt, pr03, affix, weapon, lightning, crit]
+        constraints: [single centered icon, transparent or clean background, readable at UI size]
+        geminiKeyRequired: true
+      - id: phase4_opt_pr03_visual_affix_starforged
+        category: icon
+        visualKey: affix.starforged.visual
+        outputName: phase4/opt_pr03/icon_affix_starforged.png
+        subject: finalized runtime visual coverage for starforged affix art using the approved lightning-lit forged icon
+        materialTags: [phase4, opt, pr03, affix, weapon, lightning, crit]
+        constraints: [single focused asset with strong small-size readability, reuse the approved runtime artwork for this visual key]
+        geminiKeyRequired: true
+      - id: phase4_opt_pr03_icon_affix_anchored
+        category: icon
+        visualKey: affix.anchored.icon
+        outputName: phase4/opt_pr03/icon_affix_anchored.png
+        subject: anchored armor affix icon with iron mooring weight and defensive straps
+        materialTags: [phase4, opt, pr03, affix, armor, protection, vanguard]
+        constraints: [single centered icon, transparent or clean background, readable at UI size]
+        geminiKeyRequired: true
+      - id: phase4_opt_pr03_visual_affix_anchored
+        category: icon
+        visualKey: affix.anchored.visual
+        outputName: phase4/opt_pr03/icon_affix_anchored.png
+        subject: finalized runtime visual coverage for anchored affix art using the approved iron mooring icon
+        materialTags: [phase4, opt, pr03, affix, armor, protection, vanguard]
+        constraints: [single focused asset with strong small-size readability, reuse the approved runtime artwork for this visual key]
+        geminiKeyRequired: true
+      - id: phase4_opt_pr03_icon_unique_thornpath_crook
+        category: icon
+        visualKey: item.unique.thornpath_crook.icon
+        outputName: phase4/opt_pr03/icon_item_unique_thornpath_crook.png
+        subject: thornbound rogue crook weapon icon for the thornpath crook
+        materialTags: [phase4, opt, pr03, unique, greenwood_fringe, rogue, marked]
+        constraints: [single centered item only on transparent or clean background, readable at small inventory sizes]
+        geminiKeyRequired: true
+      - id: phase4_opt_pr03_visual_unique_thornpath_crook
+        category: icon
+        visualKey: item.unique.thornpath_crook.visual
+        outputName: phase4/opt_pr03/icon_item_unique_thornpath_crook.png
+        subject: finalized runtime visual coverage for the thornpath crook with thorned rogue craftsmanship
+        materialTags: [phase4, opt, pr03, unique, greenwood_fringe, rogue, marked]
+        constraints: [single focused asset with strong small-size readability, reuse the approved runtime artwork for this visual key]
+        geminiKeyRequired: true
+      - id: phase4_opt_pr03_icon_unique_heartwood_talisman
+        category: icon
+        visualKey: item.unique.heartwood_talisman.icon
+        outputName: phase4/opt_pr03/icon_item_unique_heartwood_talisman.png
+        subject: heartwood charm icon for the heartwood talisman
+        materialTags: [phase4, opt, pr03, unique, greenwood_fringe, templar, survival]
+        constraints: [single centered item only on transparent or clean background, readable at small inventory sizes]
+        geminiKeyRequired: true
+      - id: phase4_opt_pr03_visual_unique_heartwood_talisman
+        category: icon
+        visualKey: item.unique.heartwood_talisman.visual
+        outputName: phase4/opt_pr03/icon_item_unique_heartwood_talisman.png
+        subject: finalized runtime visual coverage for the heartwood talisman with sacred bark and embered resin
+        materialTags: [phase4, opt, pr03, unique, greenwood_fringe, templar, survival]
+        constraints: [single focused asset with strong small-size readability, reuse the approved runtime artwork for this visual key]
+        geminiKeyRequired: true
+      - id: phase4_opt_pr03_icon_unique_quenchbreaker_maul
+        category: icon
+        visualKey: item.unique.quenchbreaker_maul.icon
+        outputName: phase4/opt_pr03/icon_item_unique_quenchbreaker_maul.png
+        subject: quenched forge maul icon for the quenchbreaker maul
+        materialTags: [phase4, opt, pr03, unique, deep_iron_pit, vanguard, oil]
+        constraints: [single centered item only on transparent or clean background, readable at small inventory sizes]
+        geminiKeyRequired: true
+      - id: phase4_opt_pr03_visual_unique_quenchbreaker_maul
+        category: icon
+        visualKey: item.unique.quenchbreaker_maul.visual
+        outputName: phase4/opt_pr03/icon_item_unique_quenchbreaker_maul.png
+        subject: finalized runtime visual coverage for the quenchbreaker maul with oil-black iron and forge scars
+        materialTags: [phase4, opt, pr03, unique, deep_iron_pit, vanguard, oil]
+        constraints: [single focused asset with strong small-size readability, reuse the approved runtime artwork for this visual key]
+        geminiKeyRequired: true
+      - id: phase4_opt_pr03_icon_unique_cinderveil_plate
+        category: icon
+        visualKey: item.unique.cinderveil_plate.icon
+        outputName: phase4/opt_pr03/icon_item_unique_cinderveil_plate.png
+        subject: ember-shrouded plate icon for the cinderveil plate
+        materialTags: [phase4, opt, pr03, unique, deep_iron_pit, arcanist, survival]
+        constraints: [single centered item only on transparent or clean background, readable at small inventory sizes]
+        geminiKeyRequired: true
+      - id: phase4_opt_pr03_visual_unique_cinderveil_plate
+        category: icon
+        visualKey: item.unique.cinderveil_plate.visual
+        outputName: phase4/opt_pr03/icon_item_unique_cinderveil_plate.png
+        subject: finalized runtime visual coverage for the cinderveil plate with soot veil and arcane furnace plating
+        materialTags: [phase4, opt, pr03, unique, deep_iron_pit, arcanist, survival]
+        constraints: [single focused asset with strong small-size readability, reuse the approved runtime artwork for this visual key]
+        geminiKeyRequired: true
+      - id: phase4_opt_pr03_icon_unique_floodglass_rapier
+        category: icon
+        visualKey: item.unique.floodglass_rapier.icon
+        outputName: phase4/opt_pr03/icon_item_unique_floodglass_rapier.png
+        subject: river glass rapier icon for the floodglass rapier
+        materialTags: [phase4, opt, pr03, unique, underground_river, rogue, water]
+        constraints: [single centered item only on transparent or clean background, readable at small inventory sizes]
+        geminiKeyRequired: true
+      - id: phase4_opt_pr03_visual_unique_floodglass_rapier
+        category: icon
+        visualKey: item.unique.floodglass_rapier.visual
+        outputName: phase4/opt_pr03/icon_item_unique_floodglass_rapier.png
+        subject: finalized runtime visual coverage for the floodglass rapier with translucent river-forged blade
+        materialTags: [phase4, opt, pr03, unique, underground_river, rogue, water]
+        constraints: [single focused asset with strong small-size readability, reuse the approved runtime artwork for this visual key]
+        geminiKeyRequired: true
+      - id: phase4_opt_pr03_icon_unique_deepcurrent_lens
+        category: icon
+        visualKey: item.unique.deepcurrent_lens.icon
+        outputName: phase4/opt_pr03/icon_item_unique_deepcurrent_lens.png
+        subject: deepcurrent lens icon for the deepcurrent lens focus
+        materialTags: [phase4, opt, pr03, unique, underground_river, arcanist, mana]
+        constraints: [single centered item only on transparent or clean background, readable at small inventory sizes]
+        geminiKeyRequired: true
+      - id: phase4_opt_pr03_visual_unique_deepcurrent_lens
+        category: icon
+        visualKey: item.unique.deepcurrent_lens.visual
+        outputName: phase4/opt_pr03/icon_item_unique_deepcurrent_lens.png
+        subject: finalized runtime visual coverage for the deepcurrent lens with river-lit crystal refraction
+        materialTags: [phase4, opt, pr03, unique, underground_river, arcanist, mana]
+        constraints: [single focused asset with strong small-size readability, reuse the approved runtime artwork for this visual key]
+        geminiKeyRequired: true
+      - id: phase4_opt_pr03_icon_unique_vesper_chainmail
+        category: icon
+        visualKey: item.unique.vesper_chainmail.icon
+        outputName: phase4/opt_pr03/icon_item_unique_vesper_chainmail.png
+        subject: dusk ward chainmail icon for the vesper chainmail
+        materialTags: [phase4, opt, pr03, unique, abyssal_temple, templar, survival]
+        constraints: [single centered item only on transparent or clean background, readable at small inventory sizes]
+        geminiKeyRequired: true
+      - id: phase4_opt_pr03_visual_unique_vesper_chainmail
+        category: icon
+        visualKey: item.unique.vesper_chainmail.visual
+        outputName: phase4/opt_pr03/icon_item_unique_vesper_chainmail.png
+        subject: finalized runtime visual coverage for the vesper chainmail with dusk steel links and ward sigils
+        materialTags: [phase4, opt, pr03, unique, abyssal_temple, templar, survival]
+        constraints: [single focused asset with strong small-size readability, reuse the approved runtime artwork for this visual key]
+        geminiKeyRequired: true
+      - id: phase4_opt_pr03_icon_unique_nullwake_blade
+        category: icon
+        visualKey: item.unique.nullwake_blade.icon
+        outputName: phase4/opt_pr03/icon_item_unique_nullwake_blade.png
+        subject: nullwake duelist blade icon for the nullwake blade
+        materialTags: [phase4, opt, pr03, unique, abyssal_temple, rogue, bane]
+        constraints: [single centered item only on transparent or clean background, readable at small inventory sizes]
+        geminiKeyRequired: true
+      - id: phase4_opt_pr03_visual_unique_nullwake_blade
+        category: icon
+        visualKey: item.unique.nullwake_blade.visual
+        outputName: phase4/opt_pr03/icon_item_unique_nullwake_blade.png
+        subject: finalized runtime visual coverage for the nullwake blade with abyssal cutline and veiled steel
+        materialTags: [phase4, opt, pr03, unique, abyssal_temple, rogue, bane]
+        constraints: [single focused asset with strong small-size readability, reuse the approved runtime artwork for this visual key]
+        geminiKeyRequired: true
+      - id: phase4_opt_pr03_icon_artifact_heartroot_gambit
+        category: icon
+        visualKey: item.artifact.heartroot_gambit.icon
+        outputName: phase4/opt_pr03/icon_item_artifact_heartroot_gambit.png
+        subject: heartroot artifact blade icon for the heartroot gambit
+        materialTags: [phase4, opt, pr03, artifact, greenwood_fringe, rogue, chest]
+        constraints: [single centered item only on transparent or clean background, readable at small inventory sizes]
+        geminiKeyRequired: true
+      - id: phase4_opt_pr03_visual_artifact_heartroot_gambit
+        category: icon
+        visualKey: item.artifact.heartroot_gambit.visual
+        outputName: phase4/opt_pr03/icon_item_artifact_heartroot_gambit.png
+        subject: finalized runtime visual coverage for the heartroot gambit with mythic living wood and hunter edge
+        materialTags: [phase4, opt, pr03, artifact, greenwood_fringe, rogue, chest]
+        constraints: [single focused asset with strong small-size readability, reuse the approved runtime artwork for this visual key]
+        geminiKeyRequired: true
+      - id: phase4_opt_pr03_icon_artifact_slag_tyrant_seal
+        category: icon
+        visualKey: item.artifact.slag_tyrant_seal.icon
+        outputName: phase4/opt_pr03/icon_item_artifact_slag_tyrant_seal.png
+        subject: slag tyrant artifact seal icon with furnace brand and chained iron
+        materialTags: [phase4, opt, pr03, artifact, deep_iron_pit, vanguard, secret_zone]
+        constraints: [single centered item only on transparent or clean background, readable at small inventory sizes]
+        geminiKeyRequired: true
+      - id: phase4_opt_pr03_visual_artifact_slag_tyrant_seal
+        category: icon
+        visualKey: item.artifact.slag_tyrant_seal.visual
+        outputName: phase4/opt_pr03/icon_item_artifact_slag_tyrant_seal.png
+        subject: finalized runtime visual coverage for the slag tyrant seal with tyrant furnace sigil and molten chains
+        materialTags: [phase4, opt, pr03, artifact, deep_iron_pit, vanguard, secret_zone]
+        constraints: [single focused asset with strong small-size readability, reuse the approved runtime artwork for this visual key]
+        geminiKeyRequired: true
+      - id: phase4_opt_pr03_icon_artifact_deepcurrent_crown
+        category: icon
+        visualKey: item.artifact.deepcurrent_crown.icon
+        outputName: phase4/opt_pr03/icon_item_artifact_deepcurrent_crown.png
+        subject: deepcurrent crown icon with river crystal circlet and tide focus
+        materialTags: [phase4, opt, pr03, artifact, underground_river, arcanist, secret_zone]
+        constraints: [single centered item only on transparent or clean background, readable at small inventory sizes]
+        geminiKeyRequired: true
+      - id: phase4_opt_pr03_visual_artifact_deepcurrent_crown
+        category: icon
+        visualKey: item.artifact.deepcurrent_crown.visual
+        outputName: phase4/opt_pr03/icon_item_artifact_deepcurrent_crown.png
+        subject: finalized runtime visual coverage for the deepcurrent crown with submerged crystal channels and river glow
+        materialTags: [phase4, opt, pr03, artifact, underground_river, arcanist, secret_zone]
+        constraints: [single focused asset with strong small-size readability, reuse the approved runtime artwork for this visual key]
+        geminiKeyRequired: true
+      - id: phase4_opt_pr03_icon_artifact_vesper_prism
+        category: icon
+        visualKey: item.artifact.vesper_prism.icon
+        outputName: phase4/opt_pr03/icon_item_artifact_vesper_prism.png
+        subject: vesper prism icon with sanctum crystal reliquary and eclipse facets
+        materialTags: [phase4, opt, pr03, artifact, abyssal_temple, templar, boss]
+        constraints: [single centered item only on transparent or clean background, readable at small inventory sizes]
+        geminiKeyRequired: true
+      - id: phase4_opt_pr03_visual_artifact_vesper_prism
+        category: icon
+        visualKey: item.artifact.vesper_prism.visual
+        outputName: phase4/opt_pr03/icon_item_artifact_vesper_prism.png
+        subject: finalized runtime visual coverage for the vesper prism with relic glass, sanctum silver, and eclipse radiance
+        materialTags: [phase4, opt, pr03, artifact, abyssal_temple, templar, boss]
+        constraints: [single focused asset with strong small-size readability, reuse the approved runtime artwork for this visual key]
+        geminiKeyRequired: true

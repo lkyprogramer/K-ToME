@@ -77,6 +77,12 @@ subprojects {
                     "clientSmoke",
                     "longRunLab",
                     "soloClearLab",
+                    "goldenScreenshot",
+                    "bossHarness",
+                    "terrainInteractionBatch",
+                    "combatTraceGolden",
+                    "localeLint",
+                    "contractLint",
                     "mapgenSmoke",
                     "solvabilityHarness",
                     "hiddenContentHarness",
@@ -109,6 +115,51 @@ val test = tasks.register("test") {
     group = LifecycleBasePlugin.VERIFICATION_GROUP
     description = "Runs tests for all subprojects."
     dependsOn(subprojects.map { it.tasks.named("test") })
+}
+
+val unitAndToolsGate = tasks.register("unitAndToolsGate") {
+    group = LifecycleBasePlugin.VERIFICATION_GROUP
+    description = "Runs the unit, lint, trace-golden, and core coverage verification gates."
+    dependsOn(test)
+    dependsOn("localeLint")
+    dependsOn("contractLint")
+    dependsOn("combatTraceGolden")
+    dependsOn(":core:jacocoTestCoverageVerification")
+}
+
+val gameHarnessGate = tasks.register("gameHarnessGate") {
+    group = LifecycleBasePlugin.VERIFICATION_GROUP
+    description = "Runs the game harness verification gates."
+    dependsOn("headlessSmoke")
+    dependsOn("soloClearLab")
+    dependsOn("longRunLab")
+    dependsOn("bossHarness")
+}
+
+val clientAndAssetsGate = tasks.register("clientAndAssetsGate") {
+    group = LifecycleBasePlugin.VERIFICATION_GROUP
+    description = "Runs the client, golden screenshot, and asset verification gates."
+    dependsOn("clientSmoke")
+    dependsOn("goldenScreenshot")
+    dependsOn("assetLint")
+    dependsOn("styleLint")
+    dependsOn("audioLint")
+    dependsOn("manifestLint")
+}
+
+val verificationGate = tasks.register("verificationGate") {
+    group = LifecycleBasePlugin.VERIFICATION_GROUP
+    description = "Runs all CI verification gates without generating the aggregate coverage report."
+    dependsOn(unitAndToolsGate)
+    dependsOn(gameHarnessGate)
+    dependsOn(clientAndAssetsGate)
+}
+
+val bootstrapOfflineVerify = tasks.register("bootstrapOfflineVerify") {
+    group = LifecycleBasePlugin.VERIFICATION_GROUP
+    description = "Runs the offline bootstrap verification gate without heavyweight harness and report tasks."
+    dependsOn(test)
+    dependsOn(":core:jacocoTestCoverageVerification")
 }
 
 tasks.register("saveSmoke") {
@@ -266,6 +317,8 @@ tasks.register<Exec>("assetLint") {
         "--extra-plan",
         "assets-src/image/specs/phase4-opt-pr02-gemini-plan.yaml",
         "--extra-plan",
+        "assets-src/image/specs/phase4-opt-pr03-gemini-plan.yaml",
+        "--extra-plan",
         "assets-src/image/specs/phase4-pr07-gemini-plan.yaml",
         "--extra-plan",
         "assets-src/image/specs/phase4-pr09-gemini-plan.yaml",
@@ -297,6 +350,8 @@ tasks.register<Exec>("styleLint") {
         "--extra-plan",
         "assets-src/image/specs/phase4-opt-pr02-gemini-plan.yaml",
         "--extra-plan",
+        "assets-src/image/specs/phase4-opt-pr03-gemini-plan.yaml",
+        "--extra-plan",
         "assets-src/image/specs/phase4-pr07-gemini-plan.yaml",
         "--extra-plan",
         "assets-src/image/specs/phase4-pr09-gemini-plan.yaml",
@@ -326,6 +381,8 @@ tasks.register<Exec>("audioLint") {
         "assets-src/audio/specs/phase4-pr06-audio-plan.yaml",
         "--extra-plan",
         "assets-src/audio/specs/phase4-opt-pr02-audio-plan.yaml",
+        "--extra-plan",
+        "assets-src/audio/specs/phase4-opt-pr03-audio-plan.yaml",
         "--extra-plan",
         "assets-src/audio/specs/phase4-pr07-audio-plan.yaml",
         "--manifest",
@@ -389,6 +446,8 @@ tasks.register<Exec>("manifestLint") {
         "assets-src/image/specs/phase4-pr06-gemini-plan.yaml",
         "--extra-plan",
         "assets-src/image/specs/phase4-opt-pr02-gemini-plan.yaml",
+        "--extra-plan",
+        "assets-src/image/specs/phase4-opt-pr03-gemini-plan.yaml",
         "--extra-plan",
         "assets-src/image/specs/phase4-pr07-gemini-plan.yaml",
         "--manifest",
@@ -468,18 +527,5 @@ tasks.register<JacocoReport>("jacocoTestReport") {
 }
 
 tasks.named("check") {
-    dependsOn(test)
-    dependsOn("localeLint")
-    dependsOn("contractLint")
-    dependsOn("assetLint")
-    dependsOn("styleLint")
-    dependsOn("audioLint")
-    dependsOn("manifestLint")
-    dependsOn("goldenScreenshot")
-    dependsOn("headlessSmoke")
-    dependsOn("soloClearLab")
-    dependsOn("longRunLab")
-    dependsOn("clientSmoke")
-    dependsOn("jacocoTestReport")
-    dependsOn(":core:jacocoTestCoverageVerification")
+    dependsOn(verificationGate)
 }

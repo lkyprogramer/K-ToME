@@ -213,9 +213,10 @@ class SchemaV2LoaderTest {
         assertEquals("resonance", catalog.objectiveSets.single { it.id == "crystal_cavern_resonance" }.questObjectiveId)
         assertEquals(setOf("normal"), catalog.difficulties.map { it.id }.toSet())
         assertEquals(60, catalog.monsters.size)
-        assertEquals(41, catalog.itemBundle.items.size)
-        assertTrue(catalog.itemBundle.uniqueTemplates.size >= 12)
-        assertTrue(catalog.itemBundle.artifactTemplates.size >= 4)
+        assertEquals(53, catalog.itemBundle.items.size)
+        assertEquals(78, catalog.itemBundle.affixes.size)
+        assertTrue(catalog.itemBundle.uniqueTemplates.size >= 20)
+        assertTrue(catalog.itemBundle.artifactTemplates.size >= 8)
         assertTrue(
             catalog.itemBundle.artifactTemplates.any { template -> SourceTier.SECRET_ZONE in template.allowedSourceTiers },
             "PR-05 artifact templates must include secret-zone coverage.",
@@ -241,15 +242,34 @@ class SchemaV2LoaderTest {
             catalog.itemBundle.items.count { item -> item.passive != null && "accessory" !in item.tags } >= 4,
             "Phase 2 PR-F4 should expose at least four non-accessory passive items.",
         )
-        assertEquals("DamageVsTag", catalog.itemBundle.items.first { item -> item.id == "bandit_trophy" }.passive?.kind)
-        assertEquals("ResistanceBonus", catalog.itemBundle.items.first { item -> item.id == "seal_reliquary" }.passive?.kind)
-        assertEquals("DamageVsTag", catalog.itemBundle.items.first { item -> item.id == "hunter_bow" }.passive?.kind)
-        assertEquals("DamageVsTag", catalog.itemBundle.items.first { item -> item.id == "long_sword" }.passive?.kind)
-        assertEquals("ResistanceBonus", catalog.itemBundle.items.first { item -> item.id == "chain_mail" }.passive?.kind)
-        assertEquals("ResistanceBonus", catalog.itemBundle.items.first { item -> item.id == "shadow_cloak" }.passive?.kind)
-        assertEquals("DamageVsStatus", catalog.itemBundle.affixes.first { affix -> affix.id == "of_piercing" }.passive?.kind)
-        assertEquals("DamageVsStatus", catalog.itemBundle.affixes.first { affix -> affix.id == "of_shadow" }.passive?.kind)
-        assertEquals("HpRegenPerTurn", catalog.itemBundle.affixes.first { affix -> affix.id == "of_cleansing" }.passive?.kind)
+        val runtimeItemBundle = loader.loadItemBundle()
+        assertEquals(
+            setOf(
+                "ConditionalStatBonus",
+                "DamageTypeBonus",
+                "DamageVsStatus",
+                "DamageVsTag",
+                "HpRegenPerTurn",
+                "OnHitStatusProc",
+                "OnKillResourceRestore",
+                "ResistanceBonus",
+                "TerrainAffinityBonus",
+            ),
+            runtimeItemBundle.affixes.mapNotNull { affix -> affix.passive?.let { passive -> passive::class.simpleName } }.toSet(),
+        )
+        assertEquals("DamageVsTag", runtimeItemBundle.baseItems.first { item -> item.id == "bandit_trophy" }.passive?.let { passive -> passive::class.simpleName })
+        assertEquals("ResistanceBonus", runtimeItemBundle.baseItems.first { item -> item.id == "seal_reliquary" }.passive?.let { passive -> passive::class.simpleName })
+        assertEquals("DamageVsTag", runtimeItemBundle.baseItems.first { item -> item.id == "hunter_bow" }.passive?.let { passive -> passive::class.simpleName })
+        assertEquals("DamageVsTag", runtimeItemBundle.baseItems.first { item -> item.id == "long_sword" }.passive?.let { passive -> passive::class.simpleName })
+        assertEquals("ResistanceBonus", runtimeItemBundle.baseItems.first { item -> item.id == "chain_mail" }.passive?.let { passive -> passive::class.simpleName })
+        assertEquals("ResistanceBonus", runtimeItemBundle.baseItems.first { item -> item.id == "shadow_cloak" }.passive?.let { passive -> passive::class.simpleName })
+        assertEquals("DamageVsStatus", runtimeItemBundle.affixes.first { affix -> affix.id == "of_piercing" }.passive?.let { passive -> passive::class.simpleName })
+        assertEquals("DamageVsStatus", runtimeItemBundle.affixes.first { affix -> affix.id == "of_shadow" }.passive?.let { passive -> passive::class.simpleName })
+        assertEquals("HpRegenPerTurn", runtimeItemBundle.affixes.first { affix -> affix.id == "of_cleansing" }.passive?.let { passive -> passive::class.simpleName })
+        assertEquals("OnHitStatusProc", runtimeItemBundle.affixes.first { affix -> affix.id == "briarhook" }.passive?.let { passive -> passive::class.simpleName })
+        assertEquals("OnKillResourceRestore", runtimeItemBundle.affixes.first { affix -> affix.id == "lucid" }.passive?.let { passive -> passive::class.simpleName })
+        assertEquals("ConditionalStatBonus", runtimeItemBundle.affixes.first { affix -> affix.id == "lastlight" }.passive?.let { passive -> passive::class.simpleName })
+        assertEquals("TerrainAffinityBonus", runtimeItemBundle.affixes.first { affix -> affix.id == "floodtouched" }.passive?.let { passive -> passive::class.simpleName })
         assertTrue(catalog.visualKeys.contains("actor.vanguard"))
         assertTrue(catalog.visualKeys.contains("talent.arcanist.mana_surge.icon"))
         assertTrue(catalog.visualKeys.contains("icon.skill.rogue.backstab"))

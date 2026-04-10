@@ -12,6 +12,29 @@ CONCURRENCY="${GEMINI_CONCURRENCY:-1}"
 PROCESS_AFTER_GENERATE="${PROCESS_ASSETS_AFTER_GENERATE:-1}"
 PROCESSED_DIR="${PROCESSED_ASSET_DIR:-$ROOT_DIR/assets-src/image/processed}"
 RUNTIME_DIR="${RUNTIME_ASSET_DIR:-$ROOT_DIR/client/src/main/resources}"
+ENV_FILE="${GEMINI_ENV_FILE:-$ROOT_DIR/.env}"
+
+load_env_file() {
+  local env_file="$1"
+  [[ -f "$env_file" ]] || return 0
+
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    line="${line#"${line%%[![:space:]]*}"}"
+    [[ -z "$line" || "$line" == \#* ]] && continue
+    [[ "$line" == *=* ]] || continue
+
+    local key="${line%%=*}"
+    local value="${line#*=}"
+    key="${key%"${key##*[![:space:]]}"}"
+    [[ -z "$key" ]] && continue
+
+    if [[ -z "${!key:-}" ]]; then
+      export "$key=$value"
+    fi
+  done < "$env_file"
+}
+
+load_env_file "$ENV_FILE"
 
 if [[ -z "$PROCESS_REPORT_PATH" ]]; then
   if [[ "$REPORT_PATH" == *generation-report.jsonl ]]; then
@@ -22,7 +45,7 @@ if [[ -z "$PROCESS_REPORT_PATH" ]]; then
 fi
 
 if [[ -z "${GEMINI_API_KEY:-}" ]]; then
-  echo "GEMINI_API_KEY is required. Export GEMINI_API_KEY before running Gemini image generation." >&2
+  echo "GEMINI_API_KEY is required. Export it or define it in $ENV_FILE before running Gemini image generation." >&2
   exit 1
 fi
 

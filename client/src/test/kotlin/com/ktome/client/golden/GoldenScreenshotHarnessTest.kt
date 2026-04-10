@@ -26,6 +26,10 @@ import com.ktome.core.ecs.MonsterTemplateId
 import com.ktome.core.ecs.Position
 import com.ktome.core.ecs.get
 import com.ktome.core.ecs.remove
+import com.ktome.core.item.AffixDef
+import com.ktome.core.item.ItemInstance
+import com.ktome.core.item.StatModifier
+import com.ktome.core.loot.RarityTier
 import com.ktome.core.map.Point
 import com.ktome.core.mapgen.center
 import com.ktome.core.resource.ResourcePools
@@ -48,6 +52,8 @@ import com.ktome.game.FoundationGameConfig
 import com.ktome.game.FoundationGameSession
 import com.ktome.game.GameModule
 import com.ktome.game.PlayerCommand
+import com.ktome.game.data.DataLoader
+import com.ktome.game.factory.ItemFactory
 import com.ktome.game.i18n.GameLocale
 import java.nio.file.Path
 import java.security.MessageDigest
@@ -63,6 +69,8 @@ class GoldenScreenshotHarnessTest {
     @TempDir
     lateinit var tempDir: Path
 
+    private val optPr03ItemBundle = DataLoader().loadItemBundle()
+
     @Test
     fun `golden screenshot hashes remain stable for english and chinese formal screens`() {
         val english = captureGoldenSet(GameLocale.EN_US, "en-us")
@@ -71,15 +79,15 @@ class GoldenScreenshotHarnessTest {
         assertEquals(
             listOf(
                 "36fffb5f8ea3ff2f78486ee5d520278135f39f61a44a7cb9d4cf60317a607ade",
-                "76c7d18b72cd829d741dd80c67f50894cd6e3ef07430355e72c8f4d159adc650",
+                "38c2efe56098462e01a8dd93999413b837058cb8591cc49a5de2b93023817ff9",
                 "be583fcf3253d13516aa0ebc365a24eafece7c0234a2b9ec7847c64fe7cd0ec0",
-                "0e674b529aa33d8d71b9340149b39cc64c78cf096a7224577dd9a832a935f577",
+                "b8ec1e164fdf5eb9578b2b4f980af9ddd98cb47aa050e89727bfa55be38b4bd0",
                 "aefc22e5976562bc54fd611c36c53035fea53edf1ed224bba01338f1f9e71fe3",
                 "511542b3a7dafb4fe22de3f96e5ced6bbf18ab3246b9eb8de55dff01fd8924a2",
-                "4d7e3e3d5adc1ce6db185df8df58d7ce37cf94d2e925144c161d7d7c238563ad",
-                "f0d2b3f20feecbd20dffc375e3d2df8dd7b73b3793b6baff02b7ad3908cd61b0",
-                "c6787bcd80a35d289715dea5108707a08e1c6135029c2485e3f89fa59ae2bcf7",
-                "7f7d4c304762fd76e840dc88361fb5d9c1b86494b9c00703cb67695789b15d66",
+                "39b9f1029dbd383ae3a2219709f9b13427805e886ddb584f5bfbd8cad2319a8c",
+                "61f90b2386b956f4e56b598dbe4643bd25d23fc1e206c91b365883d9451569f2",
+                "601eb80cce7a99da20a78616c9b074208e9e6d4035f8613964dd91fb18eedccd",
+                "d8e2fdbd0d3843cb7b6b19bc033f1f8f3d798e2c0f0adce102eab0e3640789cd",
             ),
             english + chinese,
         )
@@ -92,8 +100,8 @@ class GoldenScreenshotHarnessTest {
 
         assertEquals(
             listOf(
-                "022df41b06654b5f61ab411cdc68ff6a2e8c49bc605949208c0df5b0dbac85de",
-                "4197fa015ac41083c1f23d22d7dbd4cb9d7d50891e5c6abeddfeeaf9de6f99df",
+                "62389cc28f98fb559fb695529887f89028b1766fb6b2105e686c25858d6de0b9",
+                "90e5311251cd68508da9c3b49458bdaa8709b296ff3047336f5e664c8453c646",
             ),
             listOf(english, chinese),
         )
@@ -106,12 +114,12 @@ class GoldenScreenshotHarnessTest {
 
         assertEquals(
             listOf(
-                "8e54086e42eb4a14d75b3498fe7fddfa7cc9a643046faccfb8e4e8a04884c109",
+                "48478184c38383d082a52d20076975e98ddd1c3aa9d81c63b0a3319cba420d16",
                 "a623dcb508bf8484ed5e4f2e01359f5e9fdbf8c02ad6298b54f1c96dfd59bd72",
                 "a5a07c8af9b258cd007623c7f6a61981c004630ffc05010bccdd42e69c849aa2",
-                "274a70e6d264bd036b8184f941d6e59f578b5c997958d5bf0816aedbf069fb32",
-                "b7e8395a32aa363824afba2e5bd8df5a920e3762bafbf1bb04a4876cdf9b9937",
-                "added21d2e95b8afb4d21e1de2007c686189694945a13ee1be8a932834092251",
+                "eaf0a1368485cbde4ee83f9fd64190eb60b00a69251180e99ed62e17bcc7dd74",
+                "07112b7b1935f64643c9529b48a4a9200a0b3db902f795caf57a536b946869b9",
+                "f05adef654818c06b22c18a27fb7b8b2bbc94900e80f775ddf748b0b8aa50d5b",
             ),
             english + chinese,
         )
@@ -137,7 +145,7 @@ class GoldenScreenshotHarnessTest {
                 "abe12adc7adb0db103aa4a9a24359136876508b65436f898d7c3b5e16e55a176",
                 "304c84283ffc5132b695cbd13b3878ce6d02e469eea22d6acf8d00734c8b6a20",
                 "b66eae39fd61bd04c1942e2934dae05c5d9065b2b5a4dbece55d3cfd39b9f01d",
-                "c0ac894b7f42aa8e5255d9016772347a158f7179d22fc2dbe25b5453b7e1108a",
+                "d3dcf30b0032892079b55da37123cd0b40e4f440e9fbd1dbe2fc201c995a13ee",
                 "fd0fc7399c4bb0a068da375d51710f64316aeeb40187ba1fa73b2993f5b34a70",
                 "211ac1042a5638ee18c2f4e90164e57aa4af360ee439c040c3bc1f6cf96dac28",
             ),
@@ -153,9 +161,9 @@ class GoldenScreenshotHarnessTest {
         assertEquals(
             listOf(
                 "450e7caf5c08a15a48c92829f8bdfbacd38b2f5291fb61f4696ec0d325e53633",
-                "9a7e641222c1497b28ed77d54803681a9692be4eb94d6554d1ab8118b16516ff",
+                "b4388ae96ece049715de87724347e4b3ef60aade53bcbbcca99bdc93d917cb24",
                 "1b2502c2e7fd673dde69ef26ed55b91ba246883c2a10d3a470e74a9c7853647a",
-                "f9a1a8ffa8bfb9e690b6711644aed85df9c3e71d2062f529706645bcce326199",
+                "07c5e5549b8fb4cf70be16f2284ad95c03b913bcf835c2c2d05c61657b392b37",
             ),
             english + chinese,
         )
@@ -165,7 +173,27 @@ class GoldenScreenshotHarnessTest {
     fun `sample pack golden hash remains stable for filesystem backed content`() {
         val hash = captureSamplePackRuntimeHash()
 
-        assertEquals("d444d192c872d55a81085ed6fa28c93193a70bf4cf0974d4892dbccc48b53907", hash)
+        assertEquals("a5324076178d8a59741e75843294d1432f0e4f68ed88b4cdfdf057f2e87cf71e", hash)
+    }
+
+    @Test
+    fun `opt pr03 inspect golden hashes remain stable for english and chinese`() {
+        val english = captureOptPr03InspectSet(GameLocale.EN_US, "opt-pr03-inspect-en")
+        val chinese = captureOptPr03InspectSet(GameLocale.ZH_CN, "opt-pr03-inspect-zh")
+
+        assertEquals(
+            listOf(
+                "1002257fadf5502cdbdedfdb91d6ecef35c9eeef2b163ff12e3c25e0b14e9356",
+                "b6abde6dc18bdfe91b50df283a70a4630d001d4f38894fa551c076dbf5e39fe9",
+                "e51f92e452c11cbe987514c5f48036ddd067dab68dd33f9abc3f35764ea66724",
+                "e1a284586f0b01b1f918f8b1b6580be908393f76cae276b33d95391fd7ffbf6b",
+                "a618a2289a98eac6582055714d8b44c4bb44a4b0db9b28287e16b508c8e287e1",
+                "536a699539f112e816b31834a4b88bd2e326a3d9fea3aef7fbfb14a8f4d83363",
+                "75f19e88b1b06b36d8835382746593d9d99a1dca6fec6fed7477a7c38aa2443a",
+                "4f5ebd0e7bdf2be856afe7ac09db23de62ddc7b9874890791336f8455cf3d406",
+            ),
+            english + chinese,
+        )
     }
 
     private fun captureGoldenSet(
@@ -525,6 +553,44 @@ class GoldenScreenshotHarnessTest {
             }
         }
 
+    private fun captureOptPr03InspectSet(
+        locale: GameLocale,
+        saveFolderName: String,
+    ): List<String> =
+        withLwjgl3Context(width = 1280, height = 800) {
+            val overlaySource = MutableOverlayCommandSource()
+            val app =
+                GameApp(
+                    saveManager = SaveManager(tempDir.resolve(saveFolderName)),
+                    defaultConfig =
+                        FoundationGameConfig(
+                            seed = 20260409L,
+                            zoneId = "underground_river",
+                            playerProfessionId = "rogue",
+                        ),
+                    menuInputSourceFactory = { NoOpInputSource },
+                    gameCommandSourceFactory = { overlaySource },
+                    outcomeInputSourceFactory = { NoOpInputSource },
+                    renderEnabled = true,
+                    initialLocale = locale,
+                )
+
+            try {
+                app.create()
+                app.startNewGame()
+                val session = requireNotNull(app.activeSessionOrNull()) { "Expected active session for OPT PR-03 golden capture." }
+                val selections = installOptPr03InspectFixtures(session)
+                selections.map { inventorySelection ->
+                    captureHash {
+                        overlaySource.overlayState = OverlayState(mode = UiMode.INVENTORY, inventorySelection = inventorySelection)
+                        repeat(2) { app.render() }
+                    }
+                }
+            } finally {
+                app.dispose()
+            }
+        }
+
     private fun captureHash(render: () -> Unit): String {
         render()
         Gdx.gl.glFinish()
@@ -592,6 +658,104 @@ class GoldenScreenshotHarnessTest {
             "Expected holy_light slot for boss warning golden."
         }.slot
         check(session.perform(PlayerCommand.UseTalent(slot = holyLightSlot))) { "Expected holy_light to consume a turn during boss warning golden capture." }
+    }
+
+    private fun installOptPr03InspectFixtures(session: FoundationGameSession): List<Int> =
+        prependInventoryFixtureItems(
+            session,
+            listOf(
+                buildAffixItem(baseId = "long_sword", affixId = "briarhook"),
+                buildAffixItem(baseId = "bandit_trophy", affixId = "floodtouched"),
+                buildSpecialItem(templateId = "unique.thornpath_crook"),
+                buildSpecialItem(templateId = "artifact.heartroot_gambit"),
+            ),
+        )
+
+    private fun prependInventoryFixtureItems(
+        session: FoundationGameSession,
+        items: List<ItemInstance>,
+    ): List<Int> {
+        val world = automationWorld(session)
+        val inventory = requireNotNull(world.get<com.ktome.core.item.Inventory>(session.playerId))
+        val createdIds = items.map { item -> ItemFactory().createCarriedItem(world = world, item = item) }
+        inventory.itemIds.addAll(0, createdIds)
+        return createdIds.indices.toList()
+    }
+
+    private fun addInventoryFixtureItem(
+        session: FoundationGameSession,
+        item: ItemInstance,
+    ): Int {
+        val world = automationWorld(session)
+        val inventory = requireNotNull(world.get<com.ktome.core.item.Inventory>(session.playerId))
+        val index = inventory.itemIds.size
+        inventory.itemIds += ItemFactory().createCarriedItem(world = world, item = item)
+        return index
+    }
+
+    private fun buildAffixItem(
+        baseId: String,
+        affixId: String,
+    ): ItemInstance {
+        val base = requireNotNull(optPr03ItemBundle.baseItems.firstOrNull { item -> item.id == baseId }) { "Unknown base item '$baseId'." }
+        val affix = requireNotNull(optPr03ItemBundle.affixes.firstOrNull { candidate -> candidate.id == affixId }) { "Unknown affix '$affixId'." }
+        return ItemInstance(
+            baseId = base.id,
+            name = base.name,
+            type = base.type,
+            slot = base.slot,
+            glyph = base.glyph,
+            colorHex = base.colorHex,
+            quality = RarityTier.MAGIC,
+            affixes = listOf(affix),
+            stats = base.baseStats + affix.statModifiers,
+            effect = base.effect,
+            resourceTypeId = base.resourceTypeId,
+            magnitude = base.magnitude,
+            passive = affix.passive ?: base.passive,
+        )
+    }
+
+    private fun buildSpecialItem(
+        templateId: String,
+    ): ItemInstance {
+        val template = requireNotNull(optPr03ItemBundle.specialTemplate(templateId)) { "Unknown special template '$templateId'." }
+        val base = requireNotNull(optPr03ItemBundle.baseItems.firstOrNull { item -> item.id == template.itemId }) {
+            "Unknown special item base '${template.itemId}'."
+        }
+        val material = template.fixedMaterialId?.let { materialId ->
+            requireNotNull(optPr03ItemBundle.materials.firstOrNull { candidate -> candidate.id == materialId }) {
+                "Unknown material '$materialId' for '$templateId'."
+            }
+        }
+        val affixes =
+            template.fixedAffixIds.map { affixId ->
+                requireNotNull(optPr03ItemBundle.affixes.firstOrNull { candidate -> candidate.id == affixId }) {
+                    "Unknown affix '$affixId' for '$templateId'."
+                }
+            }
+        val stats =
+            listOf(base.baseStats, material?.statModifiers ?: StatModifier.ZERO)
+                .plus(affixes.map(AffixDef::statModifiers))
+                .fold(StatModifier.ZERO) { acc, modifier -> acc + modifier }
+        return ItemInstance(
+            baseId = base.id,
+            name = base.name,
+            type = base.type,
+            slot = base.slot,
+            glyph = base.glyph,
+            colorHex = base.colorHex,
+            quality = RarityTier.RARE,
+            materialId = material?.id,
+            materialName = material?.name,
+            affixes = affixes,
+            stats = stats,
+            effect = base.effect,
+            resourceTypeId = base.resourceTypeId,
+            magnitude = base.magnitude,
+            passive = base.passive,
+            specialTemplateId = template.id,
+        )
     }
 
     private fun <T> withLwjgl3Context(

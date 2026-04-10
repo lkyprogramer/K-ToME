@@ -96,6 +96,7 @@ data class DamageOutcome(
 
 class MutableCombatContext(
     val request: DamageRequest,
+    private val random: RandomSource,
 ) {
     var accuracy: Int = request.attackerAccuracy
     var evasion: Int = request.targetEvasion
@@ -114,6 +115,20 @@ class MutableCombatContext(
     var statusResolution: StatusApplicationResolution? = null
     var terrainInteraction: ElementInteractionResolution? = null
     val childTraceIds: MutableList<String> = mutableListOf()
+    private val passiveTriggers: MutableList<PassiveTriggerTrace> = mutableListOf()
+
+    fun rollChance(chance: Double): Double? =
+        when {
+            chance <= 0.0 -> null
+            chance >= 1.0 -> 0.0
+            else -> random.nextDouble()
+        }
+
+    fun recordPassiveTrigger(trigger: PassiveTriggerTrace) {
+        passiveTriggers += trigger
+    }
+
+    fun passiveTriggers(): List<PassiveTriggerTrace> = passiveTriggers.toList()
 }
 
 class CombatPipeline(
@@ -123,7 +138,7 @@ class CombatPipeline(
         request: DamageRequest,
         applyDamageHook: ((Int) -> Unit)? = null,
     ): DamageOutcome {
-        val context = MutableCombatContext(request)
+        val context = MutableCombatContext(request, random)
         val steps = mutableListOf<ResolutionStep>()
 
         val preHitCallbacks = invokeCallbacks(CombatCallbackPhase.PRE_HIT_CHECK, context)
@@ -586,6 +601,7 @@ class CombatPipeline(
                         targetKilled = targetKilled,
                         deathPrevented = context.deathPrevented,
                     ),
+                passiveTriggers = context.passiveTriggers(),
                 childTraceIds = context.childTraceIds.toList(),
             )
         val damageResult =

@@ -2,6 +2,7 @@ package com.ktome.core.ecs
 
 import com.ktome.core.combat.DamageType
 import com.ktome.core.combat.PowerSaveStats
+import com.ktome.core.item.StatModifier
 import com.ktome.core.dungeon.StairDirection
 import com.ktome.core.map.Point
 
@@ -73,6 +74,10 @@ data class DerivedStats(
     val powerSave: PowerSaveStats = PowerSaveStats(),
     val castSpeedRating: Int = 0,
     val effectiveCastSpeed: Double = 0.0,
+)
+
+data class EquipmentPassiveStatModifier(
+    val modifier: StatModifier = StatModifier.ZERO,
 )
 
 data class Health(

@@ -242,6 +242,30 @@ visuals:
   - id: affix.of_fortitude.icon
   - id: affix.of_speed.visual
   - id: affix.of_speed.icon
+  - id: affix.briarhook.visual
+  - id: affix.briarhook.icon
+  - id: affix.cindervein.visual
+  - id: affix.cindervein.icon
+  - id: affix.frostlash.visual
+  - id: affix.frostlash.icon
+  - id: affix.lucid.visual
+  - id: affix.lucid.icon
+  - id: affix.wind_fed.visual
+  - id: affix.wind_fed.icon
+  - id: affix.zealbound.visual
+  - id: affix.zealbound.icon
+  - id: affix.spite_fed.visual
+  - id: affix.spite_fed.icon
+  - id: affix.lastlight.visual
+  - id: affix.lastlight.icon
+  - id: affix.floodtouched.visual
+  - id: affix.floodtouched.icon
+  - id: affix.honed.visual
+  - id: affix.honed.icon
+  - id: affix.starforged.visual
+  - id: affix.starforged.icon
+  - id: affix.anchored.visual
+  - id: affix.anchored.icon
   - id: item.short_sword.visual
   - id: item.short_sword.icon
   - id: item.long_sword.visual
@@ -266,6 +290,30 @@ visuals:
   - id: item.arcane_staff.icon
   - id: item.apprentice_robe.visual
   - id: item.apprentice_robe.icon
+  - id: item.unique.thornpath_crook.visual
+  - id: item.unique.thornpath_crook.icon
+  - id: item.unique.heartwood_talisman.visual
+  - id: item.unique.heartwood_talisman.icon
+  - id: item.unique.quenchbreaker_maul.visual
+  - id: item.unique.quenchbreaker_maul.icon
+  - id: item.unique.cinderveil_plate.visual
+  - id: item.unique.cinderveil_plate.icon
+  - id: item.unique.floodglass_rapier.visual
+  - id: item.unique.floodglass_rapier.icon
+  - id: item.unique.deepcurrent_lens.visual
+  - id: item.unique.deepcurrent_lens.icon
+  - id: item.unique.vesper_chainmail.visual
+  - id: item.unique.vesper_chainmail.icon
+  - id: item.unique.nullwake_blade.visual
+  - id: item.unique.nullwake_blade.icon
+  - id: item.artifact.heartroot_gambit.visual
+  - id: item.artifact.heartroot_gambit.icon
+  - id: item.artifact.slag_tyrant_seal.visual
+  - id: item.artifact.slag_tyrant_seal.icon
+  - id: item.artifact.deepcurrent_crown.visual
+  - id: item.artifact.deepcurrent_crown.icon
+  - id: item.artifact.vesper_prism.visual
+  - id: item.artifact.vesper_prism.icon
   - id: actor.orc.molten_giant
   - id: icon.monster.orc.molten_giant
   - id: actor.abyssal.guardian
