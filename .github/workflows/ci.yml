@@ -59,7 +59,7 @@ jobs:
         uses: gradle/actions/setup-gradle@v5
 
       - name: Run verification gates
-        run: ./gradlew --no-daemon check
+        run: ./gradlew --no-daemon verificationGate
 
       - name: Upload Gradle reports
         if: failure()

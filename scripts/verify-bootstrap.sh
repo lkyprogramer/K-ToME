@@ -25,6 +25,4 @@ GRADLE_USER_HOME="$BOOTSTRAP_GRADLE_USER_HOME" \
   "$BOOTSTRAP_GRADLE_BIN" \
   --offline \
   --no-daemon \
-  test \
-  jacocoTestReport \
-  :core:jacocoTestCoverageVerification
+  bootstrapOfflineVerify

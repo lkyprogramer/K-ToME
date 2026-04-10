@@ -77,6 +77,12 @@ subprojects {
                     "clientSmoke",
                     "longRunLab",
                     "soloClearLab",
+                    "goldenScreenshot",
+                    "bossHarness",
+                    "terrainInteractionBatch",
+                    "combatTraceGolden",
+                    "localeLint",
+                    "contractLint",
                     "mapgenSmoke",
                     "solvabilityHarness",
                     "hiddenContentHarness",
@@ -109,6 +115,33 @@ val test = tasks.register("test") {
     group = LifecycleBasePlugin.VERIFICATION_GROUP
     description = "Runs tests for all subprojects."
     dependsOn(subprojects.map { it.tasks.named("test") })
+}
+
+val verificationGate = tasks.register("verificationGate") {
+    group = LifecycleBasePlugin.VERIFICATION_GROUP
+    description = "Runs the CI verification gates without generating the aggregate coverage report."
+    dependsOn(test)
+    dependsOn("combatTraceGolden")
+    dependsOn("bossHarness")
+    dependsOn("localeLint")
+    dependsOn("contractLint")
+    dependsOn("assetLint")
+    dependsOn("styleLint")
+    dependsOn("audioLint")
+    dependsOn("manifestLint")
+    dependsOn("goldenScreenshot")
+    dependsOn("headlessSmoke")
+    dependsOn("soloClearLab")
+    dependsOn("longRunLab")
+    dependsOn("clientSmoke")
+    dependsOn(":core:jacocoTestCoverageVerification")
+}
+
+val bootstrapOfflineVerify = tasks.register("bootstrapOfflineVerify") {
+    group = LifecycleBasePlugin.VERIFICATION_GROUP
+    description = "Runs the offline bootstrap verification gate without heavyweight harness and report tasks."
+    dependsOn(test)
+    dependsOn(":core:jacocoTestCoverageVerification")
 }
 
 tasks.register("saveSmoke") {
