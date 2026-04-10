@@ -412,8 +412,9 @@ class ItemGenerator(
     ): Int {
         val buildMatches = template.tags.count(context.buildTags::contains)
         val routeMatches = template.tags.count(context.routeBiasTags::contains)
+        val specialBiasMatches = template.tags.count(context.specialTemplateBiasTags::contains)
         val sourceMatches = template.tags.count(templateRewardSourceBiasTags(context.rewardSource)::contains)
-        return (1 + buildMatches * 4 + routeMatches * 2 + sourceMatches).coerceAtLeast(1)
+        return (1 + buildMatches * 4 + routeMatches * 2 + specialBiasMatches * 2 + sourceMatches).coerceAtLeast(1)
     }
 
     private fun resolveEquipType(base: ItemBaseDef): AffixEquipType? =

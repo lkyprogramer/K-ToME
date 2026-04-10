@@ -68,6 +68,7 @@ data class ContentPackCaseResult(
     val expectedFailureCodes: List<String>,
     val diagnosticCodes: List<String>,
     val diagnostics: List<String>,
+    val diagnosticDetails: List<Map<String, String>>,
     val localeKeysResolved: List<String>,
     val visualKeysResolved: List<String>,
     val audioKeysResolved: List<String>,
@@ -85,6 +86,13 @@ data class ContentPackCaseResult(
     val lootProfilePresent: Boolean,
     val lootProfileRewardBudget: Int?,
     val lootProfileItemIds: List<String>,
+    val lootProfilePoolStrategy: String?,
+    val lootProfileItemTagFilter: List<String>,
+    val lootProfileExcludeIds: List<String>,
+    val lootProfileTypeWeights: Map<String, Int>,
+    val lootProfileSlotBias: Map<String, Int>,
+    val lootProfileSpecialTemplateTagPreference: List<String>,
+    val lootProfileAffixTagPreference: List<String>,
     val specialTemplateIds: List<String>,
     val generatedSpecialTemplateIds: List<String>,
     val resourceContractVerified: Boolean,
@@ -93,12 +101,8 @@ data class ContentPackCaseResult(
     val success: Boolean,
     val failureReasons: List<String>,
 ) {
-    fun toJson(header: HarnessReportHeader): JsonObject =
+    fun toFactsJson(): JsonObject =
         buildJsonObject {
-            put("buildId", header.buildId)
-            put("phaseId", header.phaseId)
-            put("locale", header.locale)
-            put("overlayContractVersion", header.overlayContractVersion)
             put("fixtureId", fixtureId)
             put("packId", packId)
             putJsonArray("activePackIds") { activePackIds.forEach { packId -> add(JsonPrimitive(packId)) } }
@@ -111,6 +115,9 @@ data class ContentPackCaseResult(
             putJsonArray("expectedFailureCodes") { expectedFailureCodes.forEach { code -> add(JsonPrimitive(code)) } }
             putJsonArray("diagnosticCodes") { diagnosticCodes.forEach { code -> add(JsonPrimitive(code)) } }
             putJsonArray("diagnostics") { diagnostics.forEach { diagnostic -> add(JsonPrimitive(diagnostic)) } }
+            putJsonArray("diagnosticDetails") {
+                diagnosticDetails.forEach { details -> add(details.toJson()) }
+            }
             putJsonArray("localeKeysResolved") { localeKeysResolved.forEach { key -> add(JsonPrimitive(key)) } }
             putJsonArray("visualKeysResolved") { visualKeysResolved.forEach { key -> add(JsonPrimitive(key)) } }
             putJsonArray("audioKeysResolved") { audioKeysResolved.forEach { key -> add(JsonPrimitive(key)) } }
@@ -128,6 +135,25 @@ data class ContentPackCaseResult(
             put("lootProfilePresent", lootProfilePresent)
             put("lootProfileRewardBudget", lootProfileRewardBudget)
             putJsonArray("lootProfileItemIds") { lootProfileItemIds.forEach { itemId -> add(JsonPrimitive(itemId)) } }
+            put("lootProfilePoolStrategy", lootProfilePoolStrategy)
+            putJsonArray("lootProfileItemTagFilter") {
+                lootProfileItemTagFilter.forEach { tag -> add(JsonPrimitive(tag)) }
+            }
+            putJsonArray("lootProfileExcludeIds") {
+                lootProfileExcludeIds.forEach { itemId -> add(JsonPrimitive(itemId)) }
+            }
+            putJsonObject("lootProfileTypeWeights") {
+                lootProfileTypeWeights.forEach { (type, weight) -> put(type, weight) }
+            }
+            putJsonObject("lootProfileSlotBias") {
+                lootProfileSlotBias.forEach { (slot, weight) -> put(slot, weight) }
+            }
+            putJsonArray("lootProfileSpecialTemplateTagPreference") {
+                lootProfileSpecialTemplateTagPreference.forEach { tag -> add(JsonPrimitive(tag)) }
+            }
+            putJsonArray("lootProfileAffixTagPreference") {
+                lootProfileAffixTagPreference.forEach { tag -> add(JsonPrimitive(tag)) }
+            }
             putJsonArray("specialTemplateIds") { specialTemplateIds.forEach { templateId -> add(JsonPrimitive(templateId)) } }
             putJsonArray("generatedSpecialTemplateIds") {
                 generatedSpecialTemplateIds.forEach { templateId -> add(JsonPrimitive(templateId)) }
@@ -140,7 +166,40 @@ data class ContentPackCaseResult(
             put("success", success)
             putJsonArray("failureReasons") { failureReasons.forEach { reason -> add(JsonPrimitive(reason)) } }
         }
+
+    fun toJson(header: HarnessReportHeader): JsonObject =
+        buildJsonObject {
+            put("buildId", header.buildId)
+            put("phaseId", header.phaseId)
+            put("locale", header.locale)
+            put("overlayContractVersion", header.overlayContractVersion)
+            toFactsJson().forEach { (key, value) -> put(key, value) }
+        }
 }
+
+internal data class LegacyLootProfileSchemaRejectSummary(
+    val fixtureId: String,
+    val packId: String,
+    val diagnosticCode: String,
+    val targetProfileId: String,
+    val actualSchemaVersion: String,
+    val expectedSchemaVersion: String,
+) {
+    fun toJson(): JsonObject =
+        buildJsonObject {
+            put("fixtureId", fixtureId)
+            put("packId", packId)
+            put("diagnosticCode", diagnosticCode)
+            put("targetProfileId", targetProfileId)
+            put("actualSchemaVersion", actualSchemaVersion)
+            put("expectedSchemaVersion", expectedSchemaVersion)
+        }
+}
+
+private fun Map<String, String>.toJson(): JsonObject =
+    buildJsonObject {
+        this@toJson.toSortedMap().forEach { (key, value) -> put(key, value) }
+    }
 
 internal data class ContentPackSummaryMetrics(
     val totalCases: Int,
@@ -157,6 +216,8 @@ internal data class ContentPackSummaryMetrics(
     val precedenceFailureCount: Int,
     val resourceContractFailureCount: Int,
     val generatedTemplateFailureCount: Int,
+    val legacyLootProfileSchemaRejectCount: Int,
+    val legacyLootProfileSchemaRejectSummaries: List<LegacyLootProfileSchemaRejectSummary>,
 ) {
     val failureCount: Int
         get() = caseFailureCount + aggregateFailureCount
@@ -274,6 +335,8 @@ object ContentPackHarnessRunner {
                     expectedSecretZoneAudioProfile = "sample_flooded_relics.audio.zone.flooded_reliquary",
                     expectedHiddenEventLootProfileId = sampleLootProfileId,
                     expectedLootProfileId = sampleLootProfileId,
+                    expectedLootProfileSpecialTemplateTagPreference = listOf("underground_river"),
+                    expectedLootProfileAffixTagPreference = listOf("underground_river"),
                     expectedSpecialTemplateIds =
                         setOf(
                             "sample.flooded_relics.unique.floodtide_lantern",
@@ -333,6 +396,8 @@ object ContentPackHarnessRunner {
                     expectedSecretZoneAudioProfile = "fixture_sample_flooded_relics_override.audio.zone.flooded_reliquary",
                     expectedHiddenEventLootProfileId = sampleLootProfileId,
                     expectedLootProfileId = sampleLootProfileId,
+                    expectedLootProfileSpecialTemplateTagPreference = listOf("underground_river"),
+                    expectedLootProfileAffixTagPreference = listOf("underground_river"),
                     expectedSpecialTemplateIds =
                         setOf(
                             "sample.flooded_relics.unique.floodtide_lantern",
@@ -349,6 +414,35 @@ object ContentPackHarnessRunner {
                             "fixture_sample_flooded_relics_override.zone.flooded_reliquary.icon",
                         ),
                     audioKeys = listOf("fixture_sample_flooded_relics_override.audio.zone.flooded_reliquary"),
+                ),
+                HarnessScenario(
+                    fixtureId = "split_bias_fixture",
+                    reportPackId = ContentPackFixtureCatalog.sampleBiasSplitFixturePackId,
+                    selectionProvider = {
+                        ContentPackFixtureCatalog.selection(
+                            activePackRoots = listOf(ContentPackFixtureCatalog.fixturePackRoot(ContentPackFixtureCatalog.sampleBiasSplitFixturePackId)),
+                            availablePackRoots =
+                                listOf(
+                                    ContentPackFixtureCatalog.samplePackRoot(),
+                                    ContentPackFixtureCatalog.fixturePackRoot(ContentPackFixtureCatalog.sampleBiasSplitFixturePackId),
+                                ),
+                        )
+                    },
+                    seedList = harnessSpec.harnessSeeds,
+                    expectedResolvedOrder = listOf(ContentPackFixtureCatalog.samplePackId, ContentPackFixtureCatalog.sampleBiasSplitFixturePackId),
+                    expectedHiddenEventLootProfileId = sampleLootProfileId,
+                    expectedLootProfileId = sampleLootProfileId,
+                    expectedLootProfileSpecialTemplateTagPreference = listOf("underground_river"),
+                    expectedLootProfileAffixTagPreference = listOf("water"),
+                    expectedSpecialTemplateIds =
+                        setOf(
+                            "sample.flooded_relics.unique.floodtide_lantern",
+                            "sample.flooded_relics.artifact.tideglass_echo",
+                        ),
+                    localeKeys = officialSampleLocaleKeys,
+                    visualKeys = officialSampleVisualKeys,
+                    audioKeys = officialSampleAudioKeys,
+                    verifyGeneratedTemplates = true,
                 ),
                 HarnessScenario(
                     fixtureId = "append_runtime_rejected",
@@ -423,6 +517,14 @@ object ContentPackHarnessRunner {
                         ContentPackFixtureCatalog.availableSelection(listOf(ContentPackFixtureCatalog.duplicateWithoutReplacePackId))
                     },
                     expectedFailureCodes = setOf("content-pack.overlay.add-conflict"),
+                ),
+                HarnessScenario(
+                    fixtureId = "legacy_v2_loot_profile_rejected",
+                    reportPackId = ContentPackFixtureCatalog.legacyV2LootProfilePackId,
+                    selectionProvider = {
+                        ContentPackFixtureCatalog.availableSelection(listOf(ContentPackFixtureCatalog.legacyV2LootProfilePackId))
+                    },
+                    expectedFailureCodes = setOf("content-pack.loot-profile.schema-version-mismatch"),
                 ),
             ).associateBy(HarnessScenario::fixtureId)
         val fixtureOrder = harnessSpec.fixtureOrder.ifEmpty { scenarioCatalog.keys.toList() }
@@ -562,6 +664,16 @@ object ContentPackHarnessRunner {
                         if (scenario.expectedLootProfileId == sampleLootProfileId && lootProfile?.id != sampleLootProfileId) {
                             add("case.loot_profile_registry_mismatch")
                         }
+                        if (scenario.expectedLootProfileSpecialTemplateTagPreference.isNotEmpty() &&
+                            lootProfile?.specialTemplateTagPreference != scenario.expectedLootProfileSpecialTemplateTagPreference
+                        ) {
+                            add("case.loot_profile_special_template_preference_mismatch")
+                        }
+                        if (scenario.expectedLootProfileAffixTagPreference.isNotEmpty() &&
+                            lootProfile?.affixTagPreference != scenario.expectedLootProfileAffixTagPreference
+                        ) {
+                            add("case.loot_profile_affix_preference_mismatch")
+                        }
                         if (scenario.expectedSpecialTemplateIds.isNotEmpty() &&
                             packSpecialTemplates.mapTo(linkedSetOf(), SpecialItemTemplateSchemaV2::id) != scenario.expectedSpecialTemplateIds
                         ) {
@@ -584,6 +696,7 @@ object ContentPackHarnessRunner {
                     expectedFailureCodes = scenario.expectedFailureCodes.sorted(),
                     diagnosticCodes = emptyList(),
                     diagnostics = emptyList(),
+                    diagnosticDetails = emptyList(),
                     localeKeysResolved = localeChecks.resolvedKeys,
                     visualKeysResolved = visualChecks.resolvedKeys,
                     audioKeysResolved = audioChecks.resolvedKeys,
@@ -601,6 +714,21 @@ object ContentPackHarnessRunner {
                     lootProfilePresent = lootProfile != null,
                     lootProfileRewardBudget = lootProfile?.rewardBudget,
                     lootProfileItemIds = lootProfile?.itemIds.orEmpty(),
+                    lootProfilePoolStrategy = lootProfile?.poolStrategy?.name,
+                    lootProfileItemTagFilter = lootProfile?.itemTagFilter.orEmpty(),
+                    lootProfileExcludeIds = lootProfile?.excludeIds.orEmpty(),
+                    lootProfileTypeWeights =
+                        lootProfile
+                            ?.typeWeights
+                            ?.mapKeys { (type, _) -> type.name }
+                            .orEmpty(),
+                    lootProfileSlotBias =
+                        lootProfile
+                            ?.slotBias
+                            ?.mapKeys { (slot, _) -> slot.name }
+                            .orEmpty(),
+                    lootProfileSpecialTemplateTagPreference = lootProfile?.specialTemplateTagPreference.orEmpty(),
+                    lootProfileAffixTagPreference = lootProfile?.affixTagPreference.orEmpty(),
                     specialTemplateIds = packSpecialTemplates.map(SpecialItemTemplateSchemaV2::id).sorted(),
                     generatedSpecialTemplateIds = generatedSpecialTemplateIds,
                     resourceContractVerified = resourceContracts.verified,
@@ -639,6 +767,7 @@ object ContentPackHarnessRunner {
                 expectedFailureCodes = scenario.expectedFailureCodes.sorted(),
                 diagnosticCodes = actualCodes.toList(),
                 diagnostics = failure.diagnostics,
+                diagnosticDetails = failure.diagnosticDetails,
                 localeKeysResolved = emptyList(),
                 visualKeysResolved = emptyList(),
                 audioKeysResolved = emptyList(),
@@ -656,6 +785,13 @@ object ContentPackHarnessRunner {
                 lootProfilePresent = false,
                 lootProfileRewardBudget = null,
                 lootProfileItemIds = emptyList(),
+                lootProfilePoolStrategy = null,
+                lootProfileItemTagFilter = emptyList(),
+                lootProfileExcludeIds = emptyList(),
+                lootProfileTypeWeights = emptyMap(),
+                lootProfileSlotBias = emptyMap(),
+                lootProfileSpecialTemplateTagPreference = emptyList(),
+                lootProfileAffixTagPreference = emptyList(),
                 specialTemplateIds = emptyList(),
                 generatedSpecialTemplateIds = emptyList(),
                 resourceContractVerified = !scenario.verifyResourceContracts,
@@ -673,18 +809,21 @@ object ContentPackHarnessRunner {
             return StructuredHarnessFailure(
                 diagnosticCodes = loadFailure.diagnostics.map { diagnostic -> diagnostic.code },
                 diagnostics = loadFailure.diagnostics.map { diagnostic -> diagnostic.message },
+                diagnosticDetails = loadFailure.diagnostics.map { diagnostic -> diagnostic.details },
             )
         }
         causes.filterIsInstance<ManifestLoadException>().firstOrNull()?.let { manifestFailure ->
             return StructuredHarnessFailure(
                 diagnosticCodes = listOf(manifestFailureCode(manifestFailure)),
                 diagnostics = listOf(requireNotNull(manifestFailure.message)),
+                diagnosticDetails = emptyList(),
             )
         }
         causes.firstOrNull(::isLocaleResourceFailure)?.let { localeFailure ->
             return StructuredHarnessFailure(
                 diagnosticCodes = listOf("content-pack.resource.locale-invalid"),
                 diagnostics = listOf("${localeFailure::class.simpleName}: ${localeFailure.message ?: "Invalid locale bundle."}"),
+                diagnosticDetails = emptyList(),
             )
         }
         return unexpectedFailure(exception)
@@ -882,6 +1021,7 @@ object ContentPackHarnessRunner {
         StructuredHarnessFailure(
             diagnosticCodes = listOf("content-pack.harness.unexpected-exception"),
             diagnostics = listOf("${exception::class.simpleName}: ${exception.message ?: "Unexpected exception."}"),
+            diagnosticDetails = emptyList(),
         )
 
     private fun precedenceMatches(
@@ -969,6 +1109,28 @@ object ContentPackHarnessRunner {
     }
 
     private fun analyze(results: List<ContentPackCaseResult>): ContentPackAnalysis {
+        val legacyLootProfileSchemaRejectSummaries =
+            results
+                .filter { result ->
+                    result.fixtureId == "legacy_v2_loot_profile_rejected" &&
+                        result.success &&
+                        result.diagnosticCodes.contains("content-pack.loot-profile.schema-version-mismatch")
+                }.flatMap { result ->
+                    result.diagnosticCodes.mapIndexedNotNull { index, diagnosticCode ->
+                        if (diagnosticCode != "content-pack.loot-profile.schema-version-mismatch") {
+                            return@mapIndexedNotNull null
+                        }
+                        val details = result.diagnosticDetails.getOrNull(index).orEmpty()
+                        LegacyLootProfileSchemaRejectSummary(
+                            fixtureId = result.fixtureId,
+                            packId = details["packId"] ?: (result.packId ?: "unknown"),
+                            diagnosticCode = diagnosticCode,
+                            targetProfileId = details["targetProfileId"] ?: "unknown",
+                            actualSchemaVersion = details["actualSchemaVersion"] ?: "unknown",
+                            expectedSchemaVersion = details["expectedSchemaVersion"] ?: "unknown",
+                        )
+                    }
+                }
         val aggregateFailures =
             buildList {
                 if (results.any { result -> "case.diagnostic_code_mismatch" in result.failureReasons }) add("aggregate.diagnostic_code_mismatch")
@@ -980,6 +1142,9 @@ object ContentPackHarnessRunner {
                 if (results.any { result -> !result.precedenceVerified }) add("aggregate.precedence_failure")
                 if (results.any { result -> "case.resource_contract_failed" in result.failureReasons }) add("aggregate.resource_contract_failure")
                 if (results.any { result -> "case.generated_special_template_missing" in result.failureReasons }) add("aggregate.generated_special_template_missing")
+                if (results.any { result -> "legacy_v2_loot_profile_rejected" == result.fixtureId && !result.success }) {
+                    add("aggregate.legacy_loot_profile_schema_reject_failure")
+                }
             }
         val summary =
             ContentPackSummaryMetrics(
@@ -997,6 +1162,8 @@ object ContentPackHarnessRunner {
                 precedenceFailureCount = results.count { result -> !result.precedenceVerified },
                 resourceContractFailureCount = results.count { result -> "case.resource_contract_failed" in result.failureReasons },
                 generatedTemplateFailureCount = results.count { result -> "case.generated_special_template_missing" in result.failureReasons },
+                legacyLootProfileSchemaRejectCount = legacyLootProfileSchemaRejectSummaries.size,
+                legacyLootProfileSchemaRejectSummaries = legacyLootProfileSchemaRejectSummaries,
             )
         return ContentPackAnalysis(
             summary = summary,
@@ -1030,6 +1197,12 @@ object ContentPackHarnessRunner {
                     put("precedenceFailureCount", analysis.summary.precedenceFailureCount)
                     put("resourceContractFailureCount", analysis.summary.resourceContractFailureCount)
                     put("generatedTemplateFailureCount", analysis.summary.generatedTemplateFailureCount)
+                    put("legacyLootProfileSchemaRejectCount", analysis.summary.legacyLootProfileSchemaRejectCount)
+                    putJsonArray("legacyLootProfileSchemaRejectSummaries") {
+                        analysis.summary.legacyLootProfileSchemaRejectSummaries.forEach { summary ->
+                            add(summary.toJson())
+                        }
+                    }
                 },
             )
             putJsonArray("aggregateFailures") {
@@ -1077,6 +1250,8 @@ object ContentPackHarnessRunner {
         val expectedSecretZoneAudioProfile: String? = null,
         val expectedHiddenEventLootProfileId: String? = null,
         val expectedLootProfileId: String? = null,
+        val expectedLootProfileSpecialTemplateTagPreference: List<String> = emptyList(),
+        val expectedLootProfileAffixTagPreference: List<String> = emptyList(),
         val expectedSpecialTemplateIds: Set<String> = emptySet(),
         val localeKeys: List<String> = emptyList(),
         val visualKeys: List<String> = emptyList(),
@@ -1094,6 +1269,7 @@ object ContentPackHarnessRunner {
     internal data class StructuredHarnessFailure(
         val diagnosticCodes: List<String>,
         val diagnostics: List<String>,
+        val diagnosticDetails: List<Map<String, String>>,
     )
 }
 

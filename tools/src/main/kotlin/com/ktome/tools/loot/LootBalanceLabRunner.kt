@@ -21,7 +21,9 @@ import com.ktome.core.mapgen.ZoneRewardProfile
 import com.ktome.core.phase.Phase4ContractVersions
 import com.ktome.core.random.SplitMix64RandomSource
 import com.ktome.game.data.DataLoader
+import com.ktome.game.data.schema.LootProfileSchemaV3
 import com.ktome.game.i18n.GameLocale
+import com.ktome.game.loot.LootProfileCandidatePoolResolver
 import com.ktome.game.mapgen.SchemaZoneRewardProfileResolver
 import com.ktome.tools.mapgen.phase4HarnessHeader
 import java.nio.file.Files
@@ -467,7 +469,7 @@ internal object LootLabKernel {
             specialPoolSummary = specialPoolSummary,
             clampComparison = clampComparison,
             matrixSeeds = matrixSpecs.map(LootMatrixSpec::seedBase),
-            profileOverlapSummary = summarizeLootProfileOverlap(schemaCatalog.lootProfiles),
+            profileOverlapSummary = summarizeLootProfileOverlap(schemaCatalog.lootProfiles, itemBundle),
             passiveCoverageSummary = summarizeAffixPassiveCoverage(itemBundle),
         )
     }
@@ -858,22 +860,31 @@ internal object LootLabKernel {
     }
 
     private fun summarizeLootProfileOverlap(
-        profiles: List<com.ktome.game.data.schema.LootProfileSchemaV2>,
+        profiles: List<LootProfileSchemaV3>,
+        itemBundle: ItemDataBundle,
     ): LootProfileOverlapSummary {
+        val resolver = LootProfileCandidatePoolResolver(itemBundle)
+        val candidateBaseIdsByProfileId =
+            profiles.associate { profile ->
+                profile.id to resolver.resolve(profile).allCandidateBaseIds
+            }
         val overlapMatrix =
             profiles.associate { profile ->
-                val leftItems = profile.itemIds.toSet()
+                val leftItems = candidateBaseIdsByProfileId.getValue(profile.id)
                 profile.id to
                     profiles
                         .filterNot { candidate -> candidate.id == profile.id }
                         .associate { candidate ->
-                            val rightItems = candidate.itemIds.toSet()
+                            val rightItems = candidateBaseIdsByProfileId.getValue(candidate.id)
                             val denominator = minOf(leftItems.size, rightItems.size).coerceAtLeast(1)
                             candidate.id to leftItems.intersect(rightItems).size.toDouble() / denominator.toDouble()
                         }
             }
         val overlapValues = overlapMatrix.values.flatMap { row -> row.values }
-        val distinctBaseItemCount = profiles.flatMapTo(linkedSetOf()) { profile -> profile.itemIds }.size
+        val distinctBaseItemCount =
+            candidateBaseIdsByProfileId.values
+                .flatMapTo(linkedSetOf()) { candidateBaseIds -> candidateBaseIds }
+                .size
         return LootProfileOverlapSummary(
             overlapMatrix = overlapMatrix,
             averageOverlap = overlapValues.averageOrZero(),

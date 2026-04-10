@@ -479,6 +479,8 @@ object Phase4ReportRunner {
                     put("precedenceFailureCount", summary.intValue("precedenceFailureCount"))
                     put("resourceContractFailureCount", summary.intValue("resourceContractFailureCount"))
                     put("generatedTemplateFailureCount", summary.intValue("generatedTemplateFailureCount"))
+                    put("legacyLootProfileSchemaRejectCount", summary.intValue("legacyLootProfileSchemaRejectCount"))
+                    put("legacyLootProfileSchemaRejectSummaries", summary.getValue("legacyLootProfileSchemaRejectSummaries"))
                     put("whiteBoxFailedAssertions", whiteBoxFailedAssertions)
                     put("whiteBoxSummaryPath", relativize(repoRoot, whiteBoxSourcePath))
                     put("whiteBoxCorpusAggregateMetrics", whiteBoxCorpusMetrics)
@@ -647,6 +649,15 @@ object Phase4ReportRunner {
                 note = "overlap = |A ∩ B| / min(|A|, |B|)",
             ),
             Phase4ExperienceMetric(
+                metricId = "lootProfileMaxBaseItemOverlap",
+                sourceTaskId = loot.taskId,
+                currentValue = loot.metrics.getValue("lootProfileMaxBaseItemOverlap"),
+                currentValueText = formatRatio(lootMaxOverlap),
+                target = "< 0.95 (sanity)",
+                status = verdictOf(lootMaxOverlap < 0.95),
+                note = "soft sanity guard for profile identity; does not affect task verdict",
+            ),
+            Phase4ExperienceMetric(
                 metricId = "lootProfileDistinctBaseItemCount",
                 sourceTaskId = loot.taskId,
                 currentValue = loot.metrics.getValue("lootProfileDistinctBaseItemCount"),
@@ -796,6 +807,20 @@ object Phase4ReportRunner {
             report.tasks.forEach { task ->
                 appendLine("### `${task.taskId}` - ${task.status}")
                 appendLine("- sourcePath: `${task.sourcePath}`")
+                task.metrics["legacyLootProfileSchemaRejectSummaries"]
+                    ?.jsonArray
+                    ?.takeIf { summaries -> summaries.isNotEmpty() }
+                    ?.let { summaries ->
+                        appendLine("- legacyLootProfileSchemaRejectSummaries:")
+                        summaries.forEach { summary ->
+                            val payload = summary.jsonObject
+                            appendLine(
+                                "  - `${payload.stringValue("packId")}` -> `${payload.stringValue("targetProfileId")}`: " +
+                                    "${payload.stringValue("diagnosticCode")} " +
+                                    "(actual=${payload.stringValue("actualSchemaVersion")}, expected=${payload.stringValue("expectedSchemaVersion")})",
+                            )
+                        }
+                    }
                 appendLine("```json")
                 appendLine(json.encodeToString(JsonObject.serializer(), task.metrics))
                 appendLine("```")

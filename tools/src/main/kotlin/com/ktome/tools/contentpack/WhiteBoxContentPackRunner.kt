@@ -13,11 +13,9 @@ import com.ktome.tools.whitebox.WhiteBoxReportWriter
 import com.ktome.tools.whitebox.toVerificationReportHeader
 import java.nio.file.Files
 import java.nio.file.Path
-import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
-import kotlinx.serialization.json.putJsonObject
 
 data class WhiteBoxContentPackRun(
     val caseCount: Int,
@@ -46,34 +44,7 @@ object WhiteBoxContentPackRunner {
                     )
                 WhiteBoxCaseReport(
                     joinKey = joinKey,
-                    facts =
-                        buildJsonObject {
-                            put("fixtureId", result.fixtureId)
-                            put("packId", result.packId)
-                            putJsonArray("activePackIds") { result.activePackIds.forEach { packId -> add(JsonPrimitive(packId)) } }
-                            putJsonObject("activePackManifestVersions") {
-                                result.activePackManifestVersions.forEach { (packId, version) -> put(packId, version) }
-                            }
-                            putJsonArray("diagnosticCodes") { result.diagnosticCodes.forEach { code -> add(JsonPrimitive(code)) } }
-                            putJsonArray("resolvedOrder") { result.resolvedOrder.forEach { packId -> add(JsonPrimitive(packId)) } }
-                            putJsonArray("overlayOps") { result.overlayOps.forEach { op -> add(JsonPrimitive(op)) } }
-                            put("headlessRunSucceeded", result.headlessRunSucceeded)
-                            put("fallbackToBaseVerified", result.fallbackToBaseVerified)
-                            put("secretZonePresent", result.secretZonePresent)
-                            put("secretZoneNameKey", result.secretZoneNameKey)
-                            put("secretZoneVisualKey", result.secretZoneVisualKey)
-                            put("secretZoneAudioProfile", result.secretZoneAudioProfile)
-                            put("hiddenEventLootProfileId", result.hiddenEventLootProfileId)
-                            put("lootProfilePresent", result.lootProfilePresent)
-                            putJsonArray("specialTemplateIds") {
-                                result.specialTemplateIds.forEach { templateId -> add(JsonPrimitive(templateId)) }
-                            }
-                            putJsonArray("generatedSpecialTemplateIds") {
-                                result.generatedSpecialTemplateIds.forEach { templateId -> add(JsonPrimitive(templateId)) }
-                            }
-                            put("resourceContractVerified", result.resourceContractVerified)
-                            put("precedenceVerified", result.precedenceVerified)
-                        },
+                    facts = result.toFactsJson(),
                     fingerprints =
                         mapOf(
                             "fixtureId" to result.fixtureId,
@@ -117,6 +88,12 @@ object WhiteBoxContentPackRunner {
                                         put("precedenceFailureCount", kernelRun.analysis.summary.precedenceFailureCount)
                                         put("resourceContractFailureCount", kernelRun.analysis.summary.resourceContractFailureCount)
                                         put("generatedTemplateFailureCount", kernelRun.analysis.summary.generatedTemplateFailureCount)
+                                        put("legacyLootProfileSchemaRejectCount", kernelRun.analysis.summary.legacyLootProfileSchemaRejectCount)
+                                        putJsonArray("legacyLootProfileSchemaRejectSummaries") {
+                                            kernelRun.analysis.summary.legacyLootProfileSchemaRejectSummaries.forEach { summary ->
+                                                add(summary.toJson())
+                                            }
+                                        }
                                     },
                                 assertions =
                                     listOf(
@@ -127,8 +104,9 @@ object WhiteBoxContentPackRunner {
                                         ),
                                         WhiteBoxAssertionResult(
                                             ruleId = "content-pack.aggregate.runtime_sample_pack_path",
-                                            passed = kernelRun.analysis.summary.successfulRuntimeCaseCount >= 3,
-                                            message = "Official sample pack, disabled fallback, and precedence fixture all execute through the formal loader path.",
+                                            passed = kernelRun.analysis.summary.successfulRuntimeCaseCount >= 4,
+                                            message =
+                                                "Official sample pack, disabled fallback, precedence fixture, and split-bias fixture all execute through the formal loader path.",
                                         ),
                                         WhiteBoxAssertionResult(
                                             ruleId = "content-pack.aggregate.key_resolution_exact",
@@ -152,6 +130,11 @@ object WhiteBoxContentPackRunner {
                                             ruleId = "content-pack.aggregate.precedence_verified",
                                             passed = kernelRun.analysis.summary.precedenceFailureCount == 0,
                                             message = "Dual-pack precedence and expected non-ADD overlay ops remain explainable.",
+                                        ),
+                                        WhiteBoxAssertionResult(
+                                            ruleId = "content-pack.aggregate.legacy_loot_profile_schema_rejected",
+                                            passed = kernelRun.analysis.summary.legacyLootProfileSchemaRejectCount == 1,
+                                            message = "Legacy V2 loot profiles are rejected by the runtime loader with the dedicated schema mismatch diagnostic.",
                                         ),
                                         WhiteBoxAssertionResult(
                                             ruleId = "content-pack.aggregate.headless_run_stable",
@@ -263,7 +246,14 @@ object WhiteBoxContentPackRunner {
                         appendLine("hiddenEventLootProfileId: ${result.hiddenEventLootProfileId}")
                         appendLine("lootProfilePresent: ${result.lootProfilePresent}")
                         appendLine("lootProfileRewardBudget: ${result.lootProfileRewardBudget}")
+                        appendLine("lootProfilePoolStrategy: ${result.lootProfilePoolStrategy}")
                         appendLine("lootProfileItemIds: ${result.lootProfileItemIds}")
+                        appendLine("lootProfileItemTagFilter: ${result.lootProfileItemTagFilter}")
+                        appendLine("lootProfileExcludeIds: ${result.lootProfileExcludeIds}")
+                        appendLine("lootProfileTypeWeights: ${result.lootProfileTypeWeights}")
+                        appendLine("lootProfileSlotBias: ${result.lootProfileSlotBias}")
+                        appendLine("lootProfileSpecialTemplateTagPreference: ${result.lootProfileSpecialTemplateTagPreference}")
+                        appendLine("lootProfileAffixTagPreference: ${result.lootProfileAffixTagPreference}")
                         appendLine("specialTemplateIds: ${result.specialTemplateIds}")
                     },
                 tags = listOf("manifest", "merge", "content-pack"),

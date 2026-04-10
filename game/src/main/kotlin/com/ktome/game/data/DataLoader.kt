@@ -123,7 +123,8 @@ import com.ktome.game.data.schema.EquipmentPassiveSchemaV2
 import com.ktome.game.data.schema.InteractableSchemaV2
 import com.ktome.game.data.schema.ItemBundleSchemaV2
 import com.ktome.game.data.schema.ItemSchemaV2
-import com.ktome.game.data.schema.LootProfileSchemaV2
+import com.ktome.game.data.schema.LootPoolStrategy
+import com.ktome.game.data.schema.LootProfileSchemaV3
 import com.ktome.game.data.schema.MaterialSchemaV2
 import com.ktome.game.data.schema.MonsterSchemaV2
 import com.ktome.game.data.schema.NamedSchemaRef
@@ -213,6 +214,8 @@ class DataLoader(
     )
 
     companion object {
+        private const val LOOT_PROFILE_SCHEMA_VERSION: Int = 3
+
         val REMOVED_LEGACY_EFFECT_FIELDS =
             setOf(
                 "stunDuration",
@@ -355,7 +358,7 @@ class DataLoader(
     ): SchemaCatalog {
         val hiddenEventsById = baseCatalog.hiddenEvents.associateByTo(linkedMapOf(), HiddenEventDef::id)
         val secretZonesById = baseCatalog.secretZones.associateByTo(linkedMapOf()) { secretZone -> secretZone.id.id }
-        val lootProfilesById = baseCatalog.lootProfiles.associateByTo(linkedMapOf(), LootProfileSchemaV2::id)
+        val lootProfilesById = baseCatalog.lootProfiles.associateByTo(linkedMapOf(), LootProfileSchemaV3::id)
         val monstersById = baseCatalog.monsters.associateByTo(linkedMapOf(), MonsterSchemaV2::id)
         val itemsById = baseCatalog.itemBundle.items.associateByTo(linkedMapOf(), ItemSchemaV2::id)
         val materialsById = baseCatalog.itemBundle.materials.associateByTo(linkedMapOf(), MaterialSchemaV2::id)
@@ -553,16 +556,31 @@ class DataLoader(
                 )
 
             "loot_profile" ->
-                ParsedPackOverlayPayload.LootProfile(
-                    entry =
-                        requireSinglePackEntry(
+                requireSinglePackEntry(
+                    pack = pack,
+                    overlay = overlay,
+                    sourcePath = sourcePath,
+                    entries = parseLootProfileSchemas(root, expectedSchemaVersion = null),
+                    idOf = LootProfileSchemaV3::id,
+                ).let { entry ->
+                    if (entry.schemaVersion != LOOT_PROFILE_SCHEMA_VERSION) {
+                        throw packLoadException(
+                            code = "content-pack.loot-profile.schema-version-mismatch",
+                            message = "Loot profile overlay '${entry.id}' must use schemaVersion=$LOOT_PROFILE_SCHEMA_VERSION; got ${entry.schemaVersion}.",
                             pack = pack,
                             overlay = overlay,
                             sourcePath = sourcePath,
-                            entries = parseLootProfileSchemas(root),
-                            idOf = LootProfileSchemaV2::id,
-                        ),
-                )
+                            details =
+                                mapOf(
+                                    "packId" to pack.id.value,
+                                    "targetProfileId" to entry.id,
+                                    "actualSchemaVersion" to entry.schemaVersion.toString(),
+                                    "expectedSchemaVersion" to LOOT_PROFILE_SCHEMA_VERSION.toString(),
+                                ),
+                        )
+                    }
+                    ParsedPackOverlayPayload.LootProfile(entry = entry)
+                }
 
             "monster" ->
                 ParsedPackOverlayPayload.Monster(
@@ -790,6 +808,7 @@ class DataLoader(
         pack: ResolvedContentPack,
         overlay: com.ktome.game.contentpack.OverlayEntry,
         sourcePath: Path? = null,
+        details: Map<String, String> = emptyMap(),
     ): ContentPackLoadException =
         ContentPackLoadException(
             listOf(
@@ -799,6 +818,7 @@ class DataLoader(
                     packId = pack.id,
                     targetRef = overlay.targetRef,
                     sourcePath = sourcePath?.toString() ?: pack.manifestPath.toString(),
+                    details = details,
                 ),
             ),
         )
@@ -813,7 +833,7 @@ class DataLoader(
         ) : ParsedPackOverlayPayload
 
         data class LootProfile(
-            val entry: LootProfileSchemaV2,
+            val entry: LootProfileSchemaV3,
         ) : ParsedPackOverlayPayload
 
         data class Monster(
@@ -1780,16 +1800,32 @@ class DataLoader(
             )
         }
 
-    private fun parseLootProfileSchemas(root: Map<String, Any?>): List<LootProfileSchemaV2> =
+    private fun parseLootProfileSchemas(
+        root: Map<String, Any?>,
+        expectedSchemaVersion: Int? = LOOT_PROFILE_SCHEMA_VERSION,
+    ): List<LootProfileSchemaV3> =
         root.requiredList("lootProfiles").map { entry ->
             val profile = entry.requiredMap()
-            LootProfileSchemaV2(
+            LootProfileSchemaV3(
                 id = profile.requiredString("id"),
                 schemaVersion = profile.requiredInt("schemaVersion"),
                 tags = profile.optionalStringList("tags"),
                 itemIds = profile.optionalStringList("itemIds"),
                 rewardBudget = profile.requiredInt("rewardBudget"),
-            )
+                poolStrategy = LootPoolStrategy.valueOf(profile.requiredString("poolStrategy")),
+                itemTagFilter = profile.optionalStringList("itemTagFilter"),
+                excludeIds = profile.optionalStringList("excludeIds"),
+                typeWeights = profile.optionalItemTypeWeightMap("typeWeights"),
+                slotBias = profile.optionalEquipSlotWeightMap("slotBias"),
+                specialTemplateTagPreference = profile.optionalStringList("specialTemplateTagPreference"),
+                affixTagPreference = profile.optionalStringList("affixTagPreference"),
+            ).also { parsed ->
+                expectedSchemaVersion?.let { expected ->
+                    require(parsed.schemaVersion == expected) {
+                        "Loot profile '${parsed.id}' must use schemaVersion=$expected but got ${parsed.schemaVersion}."
+                    }
+                }
+            }
         }
 
     private fun parseTelegraphSpecs(root: Map<String, Any?>): List<TelegraphSpec> =
@@ -2894,6 +2930,12 @@ private fun Map<*, *>.optionalIntMap(key: String): Map<String, Int> =
                 else -> error("Entry '$key' must contain numeric values")
             }
     } ?: emptyMap()
+
+private fun Map<*, *>.optionalItemTypeWeightMap(key: String): Map<ItemType, Int> =
+    optionalIntMap(key).mapKeys { (rawKey, _) -> ItemType.valueOf(rawKey) }
+
+private fun Map<*, *>.optionalEquipSlotWeightMap(key: String): Map<EquipSlot, Int> =
+    optionalIntMap(key).mapKeys { (rawKey, _) -> EquipSlot.valueOf(rawKey) }
 
 private fun Map<*, *>.optionalStringMap(key: String): Map<String, String> =
     optionalMap(key)?.entries?.associate { (rawKey, rawValue) ->

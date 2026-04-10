@@ -64,7 +64,21 @@ class Phase4ReportRunnerTest {
         assertTrue(hiddenTask.getValue("metrics").jsonObject.containsKey("hiddenTriggerTypeCoverage"))
         assertTrue(hiddenTask.getValue("metrics").jsonObject.containsKey("secretEntranceBindingSet"))
         assertTrue(hiddenTask.getValue("metrics").jsonObject.containsKey("corpusAggregateMetrics"))
-        assertEquals("11", contentPackTask.getValue("metrics").jsonObject.getValue("totalCases").jsonPrimitive.content)
+        assertEquals("13", contentPackTask.getValue("metrics").jsonObject.getValue("totalCases").jsonPrimitive.content)
+        assertEquals("1", contentPackTask.getValue("metrics").jsonObject.getValue("legacyLootProfileSchemaRejectCount").jsonPrimitive.content)
+        assertEquals(
+            "loot.foundation.common",
+            contentPackTask
+                .getValue("metrics")
+                .jsonObject
+                .getValue("legacyLootProfileSchemaRejectSummaries")
+                .jsonArray
+                .single()
+                .jsonObject
+                .getValue("targetProfileId")
+                .jsonPrimitive
+                .content,
+        )
         assertTrue(
             contentPackTask.getValue("metrics").jsonObject.getValue("whiteBoxSummaryPath").jsonPrimitive.content.contains("whitebox/content-pack"),
         )
@@ -80,12 +94,13 @@ class Phase4ReportRunnerTest {
             Duration.between(contentPackTimestamp, whiteBoxContentPackTimestamp).abs() <= Duration.ofMinutes(30),
             "content-pack artifact timestamps drifted beyond the freshness guard window.",
         )
-        assertEquals(14, experienceMetrics.size)
+        assertEquals(15, experienceMetrics.size)
         assertEquals(
             setOf(
                 "eliteMutationDistinctCount",
                 "eliteMutationValidPairCount",
                 "lootProfileBaseItemOverlapMatrix",
+                "lootProfileMaxBaseItemOverlap",
                 "lootProfileDistinctBaseItemCount",
                 "affixCount",
                 "uniqueTemplateCount",
@@ -102,6 +117,8 @@ class Phase4ReportRunnerTest {
         )
         assertTrue(markdown.contains("## 体验度量基线"))
         assertTrue(markdown.contains("uniqueArtifactMeaningfulSwapRate"))
+        assertTrue(markdown.contains("legacyLootProfileSchemaRejectSummaries"))
+        assertTrue(markdown.contains("loot.foundation.common"))
         assertEquals(
             setOf(
                 "mapgenSmoke",

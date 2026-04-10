@@ -1,106 +1,175 @@
 lootProfiles:
   - id: loot.foundation.common
-    schemaVersion: 2
+    schemaVersion: 3
     tags: [loot, common]
+    poolStrategy: FIXED_LIST
     rewardBudget: 6
     itemIds: [healing_potion, short_sword, leather_armor, bandit_trophy, stamina_draught, hunter_bow]
   - id: loot.foundation.elite
-    schemaVersion: 2
+    schemaVersion: 3
     tags: [loot, elite]
+    poolStrategy: FIXED_LIST
     rewardBudget: 8
     itemIds: [basic_shield, mana_potion, chain_mail, apprentice_robe, long_sword, emerald_charm, furnace_talisman, energy_tonic]
   - id: loot.foundation.boss
-    schemaVersion: 2
+    schemaVersion: 3
     tags: [loot, boss]
+    poolStrategy: FIXED_LIST
     rewardBudget: 10
     itemIds: [battle_axe, plate_armor, arcane_staff, scroll_teleport, mana_potion, forgebreaker_pick, sanctified_seal, seal_reliquary, shadow_cloak, consecrated_oil]
   - id: loot.shattered_outpost.cadence
-    schemaVersion: 2
+    schemaVersion: 3
     tags: [loot, cadence, shattered_outpost]
+    poolStrategy: FIXED_LIST
     rewardBudget: 4
     itemIds: [basic_shield, bandit_trophy, emerald_charm, apprentice_robe]
   - id: loot.greenwood_fringe.cadence
-    schemaVersion: 2
+    schemaVersion: 3
     tags: [loot, cadence, greenwood]
+    poolStrategy: TAG_WEIGHTED
     rewardBudget: 4
     itemIds: [hunter_bow, emerald_charm, leather_armor, apprentice_robe]
+    itemTagFilter: [greenwood_fringe]
+    excludeIds: []
+    typeWeights: { WEAPON: 3, ARMOR: 2, CONSUMABLE: 1 }
+    slotBias: { WEAPON: 2, ARMOR: 2, OFF_HAND: 1 }
   - id: loot.bandit_camp.cadence
-    schemaVersion: 2
+    schemaVersion: 3
     tags: [loot, cadence, bandit_camp]
+    poolStrategy: FIXED_LIST
     rewardBudget: 4
-    itemIds: [bandit_trophy, hunter_bow, leather_armor, short_sword]
+    itemIds: [bandit_trophy, hunter_bow, leather_armor, basic_shield]
   - id: loot.elven_ruins.cadence
-    schemaVersion: 2
+    schemaVersion: 3
     tags: [loot, cadence, elven_ruins]
+    poolStrategy: FIXED_LIST
     rewardBudget: 4
     itemIds: [emerald_charm, apprentice_robe, seal_reliquary, sanctified_seal]
   - id: loot.deep_iron_pit.cadence
-    schemaVersion: 2
+    schemaVersion: 3
     tags: [loot, cadence, deep_iron_pit]
+    poolStrategy: TAG_WEIGHTED
     rewardBudget: 4
     itemIds: [forgebreaker_pick, chain_mail, apprentice_robe, furnace_talisman]
+    itemTagFilter: [deep_iron_pit]
+    excludeIds: []
+    typeWeights: { WEAPON: 3, ARMOR: 2, CONSUMABLE: 1 }
+    slotBias: { WEAPON: 2, ARMOR: 2, OFF_HAND: 1 }
   - id: loot.molten_core.cadence
-    schemaVersion: 2
+    schemaVersion: 3
     tags: [loot, cadence, molten_core]
+    poolStrategy: FIXED_LIST
     rewardBudget: 4
     itemIds: [war_maul, forgebreaker_pick, furnace_talisman, chain_mail]
   - id: loot.grey_gate_depths.cadence
-    schemaVersion: 2
+    schemaVersion: 3
     tags: [loot, cadence, grey_gate]
+    poolStrategy: FIXED_LIST
     rewardBudget: 4
     itemIds: [seal_reliquary, shadow_cloak, sanctified_seal, apprentice_robe]
   - id: loot.underground_river.cadence
-    schemaVersion: 2
+    schemaVersion: 3
     tags: [loot, cadence, underground_river]
+    poolStrategy: TAG_WEIGHTED
     rewardBudget: 4
     itemIds: [seal_reliquary, mana_potion, chain_mail, hunter_bow]
+    itemTagFilter: [underground_river]
+    excludeIds: []
+    typeWeights: { WEAPON: 3, ARMOR: 2, CONSUMABLE: 1 }
+    slotBias: { WEAPON: 2, ARMOR: 2, OFF_HAND: 1 }
   - id: loot.crystal_cavern.cadence
-    schemaVersion: 2
+    schemaVersion: 3
     tags: [loot, cadence, crystal_cavern]
+    poolStrategy: FIXED_LIST
     rewardBudget: 4
     itemIds: [emerald_charm, seal_reliquary, arcane_staff, shadow_cloak]
   - id: loot.abyssal_temple.cadence
-    schemaVersion: 2
+    schemaVersion: 3
     tags: [loot, cadence, abyssal_temple]
+    poolStrategy: TAG_WEIGHTED
     rewardBudget: 4
     itemIds: [sanctified_seal, shadow_cloak, seal_reliquary, consecrated_oil]
+    itemTagFilter: [abyssal_temple]
+    excludeIds: []
+    typeWeights: { WEAPON: 3, ARMOR: 2, CONSUMABLE: 1 }
+    slotBias: { WEAPON: 2, ARMOR: 2, OFF_HAND: 1 }
   - id: loot.greenwood_fringe.reward
-    schemaVersion: 2
+    schemaVersion: 3
     tags: [loot, reward, greenwood]
+    poolStrategy: TAG_WEIGHTED
     rewardBudget: 4
     itemIds: [bandit_trophy, emerald_charm, hunter_bow, stamina_draught]
+    itemTagFilter: [greenwood_fringe]
+    excludeIds: [artifact_briar_heart, artifact_heartroot_gambit]
+    typeWeights: { WEAPON: 2, ARMOR: 2, CONSUMABLE: 1 }
+    slotBias: { OFF_HAND: 3, WEAPON: 2, ARMOR: 1 }
   - id: loot.deep_iron_pit.reward
-    schemaVersion: 2
+    schemaVersion: 3
     tags: [loot, reward, mine]
+    poolStrategy: TAG_WEIGHTED
     rewardBudget: 4
     itemIds: [furnace_talisman, war_maul, forgebreaker_pick, energy_tonic]
+    itemTagFilter: [deep_iron_pit]
+    excludeIds: []
+    typeWeights: { WEAPON: 2, ARMOR: 2, CONSUMABLE: 1 }
+    slotBias: { OFF_HAND: 3, WEAPON: 2, ARMOR: 1 }
   - id: loot.grey_gate_depths.reward
-    schemaVersion: 2
+    schemaVersion: 3
     tags: [loot, reward, grey_gate]
+    poolStrategy: FIXED_LIST
     rewardBudget: 4
-    itemIds: [seal_reliquary, shadow_cloak, sanctified_seal, consecrated_oil]
+    itemIds: [seal_reliquary, shadow_cloak, apprentice_robe, arcane_staff]
   - id: loot.abyssal_heart.reward
-    schemaVersion: 2
+    schemaVersion: 3
     tags: [loot, reward, abyssal, finale]
+    poolStrategy: FIXED_LIST
     rewardBudget: 1
     itemIds: [abyssal_heartstone]
   - id: loot.greenwood_hidden_cache.secret
-    schemaVersion: 2
+    schemaVersion: 3
     tags: [loot, secret, greenwood]
+    poolStrategy: TAG_WEIGHTED
     rewardBudget: 5
-    itemIds: [hunter_bow, bandit_trophy, emerald_charm, stamina_draught]
+    itemIds: [bandit_trophy, stamina_draught, leather_armor, apprentice_robe]
+    itemTagFilter: [greenwood_fringe]
+    excludeIds: [artifact_briar_heart, artifact_heartroot_gambit]
+    typeWeights: { WEAPON: 2, ARMOR: 2, CONSUMABLE: 1 }
+    slotBias: { OFF_HAND: 3, WEAPON: 2, ARMOR: 1 }
+    specialTemplateTagPreference: [greenwood_fringe]
+    affixTagPreference: [greenwood_fringe]
   - id: loot.deep_iron_slag_cache.secret
-    schemaVersion: 2
+    schemaVersion: 3
     tags: [loot, secret, deep_iron]
+    poolStrategy: TAG_WEIGHTED
     rewardBudget: 6
     itemIds: [forgebreaker_pick, furnace_talisman, energy_tonic, chain_mail]
+    itemTagFilter: [deep_iron_pit]
+    excludeIds: []
+    typeWeights: { WEAPON: 2, ARMOR: 2, CONSUMABLE: 1 }
+    slotBias: { OFF_HAND: 3, WEAPON: 2, ARMOR: 1 }
+    specialTemplateTagPreference: [deep_iron_pit]
+    affixTagPreference: [deep_iron_pit]
   - id: loot.underground_river_crystal_rift.secret
-    schemaVersion: 2
+    schemaVersion: 3
     tags: [loot, secret, underground_river]
+    poolStrategy: TAG_WEIGHTED
     rewardBudget: 6
     itemIds: [seal_reliquary, mana_potion, chain_mail, arcane_staff]
+    itemTagFilter: [underground_river]
+    excludeIds: []
+    typeWeights: { WEAPON: 2, ARMOR: 2, CONSUMABLE: 1 }
+    slotBias: { OFF_HAND: 3, WEAPON: 2, ARMOR: 1 }
+    specialTemplateTagPreference: [underground_river]
+    affixTagPreference: [underground_river]
   - id: loot.abyssal_temple_warded_archive.secret
-    schemaVersion: 2
+    schemaVersion: 3
     tags: [loot, secret, abyssal_temple]
+    poolStrategy: TAG_WEIGHTED
     rewardBudget: 7
-    itemIds: [sanctified_seal, shadow_cloak, consecrated_oil, seal_reliquary]
+    itemIds: [shadow_cloak, sanctified_seal, plate_armor, arcane_staff]
+    itemTagFilter: [abyssal_temple]
+    excludeIds: [artifact_eclipsed_relic, artifact_vesper_prism]
+    typeWeights: { WEAPON: 2, ARMOR: 2, CONSUMABLE: 1 }
+    slotBias: { OFF_HAND: 3, WEAPON: 2, ARMOR: 1 }
+    specialTemplateTagPreference: [abyssal_temple]
+    affixTagPreference: [abyssal_temple]

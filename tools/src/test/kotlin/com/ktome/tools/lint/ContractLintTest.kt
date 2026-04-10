@@ -6,6 +6,7 @@ import com.ktome.core.talent.KeywordRegistry
 import com.ktome.game.FOUNDATION_ZONE_ROUTE
 import com.ktome.game.data.DataLoader
 import com.ktome.game.i18n.GameLocale
+import com.ktome.game.loot.LootProfileCandidatePoolResolver
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -24,7 +25,8 @@ class ContractLintTest {
 
     @Test
     fun `schema v2 contracts resolve all mandatory cross references`() {
-        val catalog = DataLoader().loadSchemaCatalog()
+        val loader = DataLoader()
+        val catalog = loader.loadSchemaCatalog()
         val assets = ClientAssetBundleLoader.load()
         val professionIds = catalog.professions.map { it.id }.toSet()
         val advancedProfessionIds = setOf("berserker", "spellblade", "shadowblade", "warden")
@@ -36,6 +38,8 @@ class ContractLintTest {
         val interactableIds = catalog.interactables.map { it.id }.toSet()
         val objectiveIds = catalog.objectiveSets.map { it.id }.toSet()
         val itemIds = catalog.itemBundle.items.map { it.id }.toSet()
+        val runtimeItemBundle = loader.loadItemBundle()
+        val lootProfileResolver = LootProfileCandidatePoolResolver(runtimeItemBundle)
         val inscriptionIds = catalog.inscriptions.map { it.id }
         val uniqueInscriptionIds = inscriptionIds.toSet()
         val lootIds = catalog.lootProfiles.map { it.id }.toSet()
@@ -61,10 +65,14 @@ class ContractLintTest {
         }
 
         catalog.lootProfiles.forEach { lootProfile ->
-            assertEquals(2, lootProfile.schemaVersion)
+            assertEquals(3, lootProfile.schemaVersion)
             lootProfile.itemIds.forEach { itemId ->
                 assertTrue(itemId in itemIds, "Unknown loot profile item $itemId")
             }
+            val candidatePool = lootProfileResolver.resolve(lootProfile)
+            assertTrue(candidatePool.allCandidateBaseIds.isNotEmpty(), "Loot profile ${lootProfile.id} resolved empty allCandidateBaseIds")
+            assertTrue(candidatePool.standardCandidateBaseIds.isNotEmpty(), "Loot profile ${lootProfile.id} resolved empty standardCandidateBaseIds")
+            assertTrue(candidatePool.allCandidateBaseIds.containsAll(candidatePool.standardCandidateBaseIds))
         }
 
         catalog.professions.forEach { profession ->

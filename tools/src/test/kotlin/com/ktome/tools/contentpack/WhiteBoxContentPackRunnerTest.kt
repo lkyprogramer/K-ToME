@@ -16,7 +16,7 @@ class WhiteBoxContentPackRunnerTest {
     fun `white-box content-pack writes standard reports and zero failed assertions`() {
         val run = WhiteBoxContentPackRunner.run()
 
-        assertEquals(11, run.caseCount)
+        assertEquals(13, run.caseCount)
         assertEquals(0, run.failedAssertions, "whiteBoxContentPack recorded failures; inspect ${run.summaryPath}")
         assertTrue(Files.exists(run.summaryPath), "Expected summary report at ${run.summaryPath}")
         assertTrue(Files.exists(run.casesPath), "Expected cases report at ${run.casesPath}")
@@ -34,7 +34,7 @@ class WhiteBoxContentPackRunnerTest {
         assertEquals("content-pack", payload.getValue("domainId").jsonPrimitive.content)
         assertEquals("PASS", payload.getValue("verdict").jsonPrimitive.content)
         assertEquals("P4_PR09_SAMPLE_CONTENT_PACK_WHITEBOX", corpus.getValue("corpusId").jsonPrimitive.content)
-        assertEquals("11", summary.getValue("caseCount").jsonPrimitive.content)
+        assertEquals("13", summary.getValue("caseCount").jsonPrimitive.content)
         assertEquals("0", summary.getValue("failedAssertions").jsonPrimitive.content)
         assertEquals(
             setOf(

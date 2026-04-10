@@ -262,6 +262,7 @@ import com.ktome.game.objective.ObjectiveCompletionTrigger
 import com.ktome.game.objective.ObjectiveRuntimeEvaluator
 import com.ktome.game.i18n.LocalizationBundle
 import com.ktome.game.i18n.Localizer
+import com.ktome.game.loot.LootProfileCandidatePool
 import com.ktome.game.model.BossDefinition
 import com.ktome.game.model.MonsterTemplate
 import com.ktome.game.PLAYER_ACTIVE_TALENT_SLOT_COUNT
@@ -306,6 +307,15 @@ private val SUPPORT_REWARD_INTERACTABLE_IDS: Set<String> =
         AbyssalRuntimeKeys.Finale.INTERACTABLE_ID,
     )
 private val OBJECTIVE_ADVANCE_INTERACTABLE_IDS: Set<String> = setOf("armory_gate", "hunter_snare", "mine_furnace", "ritual_altar")
+
+private data class WeightedLootBaseCandidate(
+    val base: ItemBaseDef,
+    val weight: Int,
+) {
+    init {
+        require(weight > 0) { "WeightedLootBaseCandidate.weight must be positive." }
+    }
+}
 
 internal fun cacheRewardSourceId(
     zoneId: String,
@@ -3493,6 +3503,8 @@ class FoundationGameSession internal constructor(
 
     private fun lootProfile(profileId: String) = content.lootProfile(profileId)
 
+    private fun lootProfileCandidatePool(profileId: String) = content.lootProfileCandidatePool(profileId)
+
     private fun currentZoneRewardProfile() = content.zoneRewardProfileResolver.resolve(currentZoneSchema().id)
 
     private fun currentMagicFindBonus(): Float = 0.0f
@@ -3618,7 +3630,9 @@ class FoundationGameSession internal constructor(
             seed = (sessionRandom as? StatefulRandomSource)?.snapshotState() ?: config.seed,
         )
 
-    private fun milestoneSpecialTierEligibility(rewardContext: RewardGenerationContext): SpecialTierEligibility =
+    private fun milestoneSpecialTierEligibility(
+        rewardContext: RewardGenerationContext,
+    ): SpecialTierEligibility =
         when (rewardContext.rewardSource) {
             MilestoneRewardSource.ROUTE ->
                 SpecialTierEligibility(
@@ -3933,10 +3947,8 @@ class FoundationGameSession internal constructor(
         rewardContext: RewardGenerationContext,
         randomSource: RandomSource = sessionRandom,
     ): ItemInstance {
-        val candidateIds =
-            profileIds
-                .flatMap { profileId -> lootProfile(profileId)?.itemIds.orEmpty() }
-                .distinct()
+        val pools = resolvedLootProfileCandidatePools(profileIds)
+        val candidateIds = pools.flatMapTo(linkedSetOf()) { pool -> pool.standardCandidateBaseIds }.toList()
         val effectiveFallbackBaseId = normalizeMilestoneFallbackBaseId(fallbackBaseId, rewardContext)
         val selectedBaseId =
             rankMilestoneRewardCandidateIds(candidateIds, rewardContext).firstOrNull()
@@ -3950,10 +3962,19 @@ class FoundationGameSession internal constructor(
             ItemGenerator(content.itemBundle, randomSource).rollAndGenerate(
                 context = rewardLootRollContext(rewardContext),
                 zoneRewardProfile = currentZoneRewardProfile(),
-                affixContext = milestoneAffixContext(rewardContext),
+                affixContext =
+                    milestoneAffixContext(
+                        rewardContext = rewardContext,
+                        additionalAffixBiasTags = pools.flatMapTo(linkedSetOf()) { pool -> pool.affixBiasTags },
+                        additionalSpecialTemplateBiasTags = pools.flatMapTo(linkedSetOf()) { pool -> pool.specialTemplateBiasTags },
+                    ),
                 pityTracker = pityTracker,
                 base = base,
-                specialTierEligibility = milestoneSpecialTierEligibility(rewardContext),
+                specialTierEligibility =
+                    preferredSpecialTierEligibility(
+                        baseEligibility = milestoneSpecialTierEligibility(rewardContext),
+                        preferredTemplateIds = pools.flatMapTo(linkedSetOf()) { pool -> pool.preferredSpecialTemplateIds },
+                    ),
             )
         pityTracker = generated.rollResult.resultingPityTracker
         return generated.item
@@ -4191,13 +4212,19 @@ class FoundationGameSession internal constructor(
         }
     }
 
-    private fun milestoneAffixContext(rewardContext: RewardGenerationContext): AffixSelectionContext {
+    private fun milestoneAffixContext(
+        rewardContext: RewardGenerationContext,
+        additionalAffixBiasTags: Set<String> = emptySet(),
+        additionalSpecialTemplateBiasTags: Set<String> = emptySet(),
+    ): AffixSelectionContext {
         val buildContext = currentAffixBuildContext()
         return buildContext.copy(
             rewardSource = rewardContext.rewardSource,
             qualityFloor = rewardContext.qualityFloor,
             minAffixCount = rewardContext.minAffixCount,
             routeBiasTags = rewardContext.routeBiasTags,
+            affixBiasTags = buildContext.affixBiasTags + additionalAffixBiasTags,
+            specialTemplateBiasTags = buildContext.specialTemplateBiasTags + additionalSpecialTemplateBiasTags,
         )
     }
 
@@ -4842,10 +4869,7 @@ class FoundationGameSession internal constructor(
     private fun hasLootProfile(profileId: String): Boolean = lootProfile(profileId) != null
 
     private fun cadenceFallbackBaseId(): String =
-        cadenceFallbackProfileIds()
-            .asSequence()
-            .flatMap { profileId -> lootProfile(profileId)?.itemIds.orEmpty().asSequence() }
-            .firstOrNull()
+        bestWeightedLootCandidateId(cadenceFallbackProfileIds())
             ?: defaultMilestoneFallbackBaseId(
                 RewardGenerationContext(
                     rewardSource = MilestoneRewardSource.CACHE,
@@ -10550,32 +10574,47 @@ class FoundationGameSession internal constructor(
             world.get<BossVariantRuntime>(target)?.lootProfileOverride?.takeIf(String::isNotBlank)
                 ?: template.lootProfileId.takeIf(String::isNotBlank)
                 ?: return null
-        val profile = lootProfile(profileId) ?: return null
-        val candidateItems = profile.itemIds.mapNotNull(::itemBaseDef)
-        if (candidateItems.isEmpty()) {
+        val pool = lootProfileCandidatePool(profileId) ?: return null
+        val sourceTier =
+            when {
+                world.get<BossVariantRuntime>(target) != null -> com.ktome.core.loot.SourceTier.BOSS
+                world.get<EliteMutationLoadout>(target)?.mutationIds?.isNotEmpty() == true -> com.ktome.core.loot.SourceTier.ELITE
+                else -> monsterSourceTier(template)
+            }
+        val allWeightedCandidates = lootWeightedBaseCandidatesFromPools(listOf(pool))
+        val weightedCandidates =
+            allWeightedCandidates
+                .filter { candidate -> currentFloor() in candidate.base.dropFloors }
+                .ifEmpty { allWeightedCandidates }
+        if (weightedCandidates.isEmpty()) {
             return null
         }
-        val floorCandidates = candidateItems.filter { item -> currentFloor() in item.dropFloors }.ifEmpty { candidateItems }
+        val affixContext = currentAffixBuildContext().let { baseContext ->
+            baseContext.copy(
+                affixBiasTags = baseContext.affixBiasTags + pool.affixBiasTags,
+                specialTemplateBiasTags = baseContext.specialTemplateBiasTags + pool.specialTemplateBiasTags,
+            )
+        }
         val generated =
             ItemGenerator(content.itemBundle, sessionRandom).rollAndGenerate(
                 context =
                     com.ktome.core.loot.LootRollContext(
                         sourceLevel = currentZoneSourceLevel(),
-                        sourceTier =
-                            when {
-                                world.get<BossVariantRuntime>(target) != null -> com.ktome.core.loot.SourceTier.BOSS
-                                world.get<EliteMutationLoadout>(target)?.mutationIds?.isNotEmpty() == true -> com.ktome.core.loot.SourceTier.ELITE
-                                else -> monsterSourceTier(template)
-                            },
+                        sourceTier = sourceTier,
                         zoneId = currentZoneSchema().id,
                         playerLevel = playerStatus().level,
                         magicFindBonus = currentMagicFindBonus(),
                         seed = (sessionRandom as? StatefulRandomSource)?.snapshotState() ?: config.seed,
                     ),
                 zoneRewardProfile = currentZoneRewardProfile(),
-                affixContext = currentAffixBuildContext(),
+                affixContext = affixContext,
                 pityTracker = pityTracker,
-                base = chooseWeightedLootItem(floorCandidates),
+                base = chooseWeightedLootItem(weightedCandidates),
+                specialTierEligibility =
+                    preferredSpecialTierEligibility(
+                        baseEligibility = com.ktome.core.loot.LootBudgetResolver.defaultSpecialTierEligibility(sourceTier),
+                        preferredTemplateIds = pool.preferredSpecialTemplateIds,
+                    ),
             )
         if (generated.item.type != ItemType.CONSUMABLE) {
             pityTracker = generated.rollResult.resultingPityTracker
@@ -10593,17 +10632,71 @@ class FoundationGameSession internal constructor(
         )
     }
 
-    private fun chooseWeightedLootItem(candidates: List<ItemBaseDef>): ItemBaseDef {
-        val totalWeight = candidates.sumOf { item -> item.dropWeight.coerceAtLeast(1) }
+    private fun resolvedLootProfileCandidatePools(profileIds: List<String>): List<LootProfileCandidatePool> =
+        profileIds.mapNotNull(::lootProfileCandidatePool)
+
+    private fun preferredSpecialTierEligibility(
+        baseEligibility: SpecialTierEligibility,
+        preferredTemplateIds: Set<String>,
+    ): SpecialTierEligibility {
+        if (preferredTemplateIds.isEmpty()) {
+            return baseEligibility
+        }
+        val allowedPreferredTemplateIds =
+            preferredTemplateIds
+                .filterTo(linkedSetOf()) { templateId ->
+                    content.itemBundle.specialTemplate(templateId)?.specialTier in baseEligibility.availableSpecialTiers
+                }
+        if (allowedPreferredTemplateIds.isEmpty()) {
+            return baseEligibility
+        }
+        val allowedPreferredTiers =
+            allowedPreferredTemplateIds
+                .mapNotNullTo(linkedSetOf()) { templateId ->
+                    content.itemBundle.specialTemplate(templateId)?.specialTier
+                }
+        return SpecialTierEligibility(
+            availableSpecialTiers = allowedPreferredTiers,
+            availableTemplateIds = allowedPreferredTemplateIds,
+        )
+    }
+
+    private fun lootWeightedBaseCandidates(profileIds: List<String>): List<WeightedLootBaseCandidate> =
+        lootWeightedBaseCandidatesFromPools(resolvedLootProfileCandidatePools(profileIds))
+
+    private fun lootWeightedBaseCandidatesFromPools(pools: List<LootProfileCandidatePool>): List<WeightedLootBaseCandidate> {
+        val weightsByBaseId = linkedMapOf<String, Int>()
+        pools.forEach { pool ->
+            pool.standardCandidateBaseIds.forEach { baseId ->
+                val base = requireNotNull(itemBaseDef(baseId)) {
+                    "Loot profile '${pool.profileId}' resolved unknown candidate base '$baseId'."
+                }
+                val weightedDrop = base.dropWeight.coerceAtLeast(1) * pool.weightFor(base)
+                weightsByBaseId[baseId] = weightsByBaseId.getOrDefault(baseId, 0) + weightedDrop
+            }
+        }
+        return weightsByBaseId.mapNotNull { (baseId, weight) ->
+            itemBaseDef(baseId)?.let { base -> WeightedLootBaseCandidate(base = base, weight = weight) }
+        }
+    }
+
+    private fun bestWeightedLootCandidateId(profileIds: List<String>): String? =
+        lootWeightedBaseCandidates(profileIds)
+            .maxWithOrNull(compareBy<WeightedLootBaseCandidate> { it.weight }.thenBy { it.base.id })
+            ?.base
+            ?.id
+
+    private fun chooseWeightedLootItem(candidates: List<WeightedLootBaseCandidate>): ItemBaseDef {
+        val totalWeight = candidates.sumOf(WeightedLootBaseCandidate::weight)
         require(totalWeight > 0) { "Loot selection requires a positive total weight." }
         var roll = sessionRandom.nextInt(0, totalWeight)
         candidates.forEach { item ->
-            roll -= item.dropWeight.coerceAtLeast(1)
+            roll -= item.weight
             if (roll < 0) {
-                return item
+                return item.base
             }
         }
-        return candidates.last()
+        return candidates.last().base
     }
 
     private fun talentNameKey(talentId: String): String =

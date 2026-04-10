@@ -16,7 +16,7 @@ import com.ktome.core.talent.TalentDef
 import com.ktome.core.talent.TalentRegistry
 import com.ktome.core.item.ItemDataBundle
 import com.ktome.core.status.StatusCatalog
-import com.ktome.game.data.schema.LootProfileSchemaV2
+import com.ktome.game.data.schema.LootProfileSchemaV3
 import com.ktome.game.data.schema.SchemaCatalog
 import com.ktome.game.data.schema.StatusSchemaV2
 import com.ktome.game.data.schema.ZoneSchemaV2
@@ -31,6 +31,8 @@ import com.ktome.game.hidden.LOOT_PROFILE_REGISTRY_ID
 import com.ktome.game.hidden.MONSTER_REGISTRY_ID
 import com.ktome.game.hidden.STATUS_REGISTRY_ID
 import com.ktome.game.hidden.SecretZoneRegistry
+import com.ktome.game.loot.LootProfileCandidatePool
+import com.ktome.game.loot.LootProfileCandidatePoolResolver
 import com.ktome.game.model.BossDefinition
 import com.ktome.game.model.MonsterTemplate
 import com.ktome.game.telegraph.TelegraphRegistry
@@ -117,7 +119,8 @@ internal data class GameContent(
 ) {
     val aiProfilesById: Map<String, AIProfile> = schemaCatalog.aiProfiles.associateBy(AIProfile::id)
     val racesById: Map<String, RaceDef> = races.associateBy(RaceDef::id)
-    val lootProfilesById: Map<String, LootProfileSchemaV2> = schemaCatalog.lootProfiles.associateBy(LootProfileSchemaV2::id)
+    val lootProfilesById: Map<String, LootProfileSchemaV3> = schemaCatalog.lootProfiles.associateBy(LootProfileSchemaV3::id)
+    val lootProfileCandidatePoolResolver: LootProfileCandidatePoolResolver = LootProfileCandidatePoolResolver(itemBundle)
     val eliteMutationRegistry: EliteMutationRegistry =
         EliteMutationRegistry(
             config = schemaCatalog.eliteMutationConfig,
@@ -296,7 +299,10 @@ internal data class GameContent(
     fun aiProfile(profileId: String?): AIProfile? =
         profileId?.let(aiProfilesById::get)
 
-    fun lootProfile(profileId: String): LootProfileSchemaV2? = lootProfilesById[profileId]
+    fun lootProfile(profileId: String): LootProfileSchemaV3? = lootProfilesById[profileId]
+
+    fun lootProfileCandidatePool(profileId: String): LootProfileCandidatePool? =
+        lootProfile(profileId)?.let(lootProfileCandidatePoolResolver::resolve)
 
     fun secretZone(contentRef: com.ktome.core.world.solvability.ContentRef) = secretZoneRegistry.resolve(contentRef)
 
