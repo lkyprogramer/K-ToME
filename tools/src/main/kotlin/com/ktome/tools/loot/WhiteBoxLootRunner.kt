@@ -182,7 +182,7 @@ object WhiteBoxLootRunner {
             WhiteBoxAssertionResult(
                 ruleId = "loot.aggregate.template_pool_thresholds",
                 passed = kernelRun.specialPoolSummary.passesThresholds,
-                message = "Template pool satisfies PR-05 minimum counts and coverage thresholds.",
+                message = "Template pool satisfies OPT PR-03 counts, zone coverage, and source-tier thresholds.",
                 context = kernelRun.specialPoolSummary.toJson(),
             ),
             WhiteBoxAssertionResult(
@@ -199,8 +199,8 @@ object WhiteBoxLootRunner {
             ),
             WhiteBoxAssertionResult(
                 ruleId = "loot.aggregate.passive_coverage",
-                passed = kernelRun.passiveCoverageSummary.coverageRatio >= 0.40,
-                message = "Affix passive coverage stays at or above the OPT PR-01 baseline threshold.",
+                passed = kernelRun.passiveCoverageSummary.coverageRatio >= 0.80,
+                message = "Affix passive coverage stays at or above the OPT PR-03 threshold.",
                 context = kernelRun.passiveCoverageSummary.toJson(),
             ),
         )
@@ -244,6 +244,10 @@ object WhiteBoxLootRunner {
             put("uniquePityActivations", kernelRun.matrices.sumOf(LootMatrixResult::uniquePityActivations))
             put("clampMaxDistributionDelta", kernelRun.clampComparison.maxDistributionDelta)
             put("templatePoolThresholdsPassed", kernelRun.specialPoolSummary.passesThresholds)
+            put("affixCount", kernelRun.specialPoolSummary.affixCount)
+            put("uniqueTemplateCount", kernelRun.specialPoolSummary.uniqueTemplateCount)
+            put("artifactTemplateCount", kernelRun.specialPoolSummary.artifactTemplateCount)
+            put("totalCount", kernelRun.specialPoolSummary.totalCount)
             put("lootProfileAverageBaseItemOverlap", kernelRun.profileOverlapSummary.averageOverlap)
             put("lootProfileMaxBaseItemOverlap", kernelRun.profileOverlapSummary.maxOverlap)
             put("lootProfileDistinctBaseItemCount", kernelRun.profileOverlapSummary.distinctBaseItemCount)

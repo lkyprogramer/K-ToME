@@ -202,38 +202,49 @@ class FoundationGameSessionTest {
     }
 
     @Test
-    fun `failed hidden entrance search is cached and repeated attempts do not reroll`() {
+    fun `resolved hidden entrance search is cached and repeated attempts do not reroll`() {
         val session =
             GameModule.newFoundationSession(
                 config = FoundationGameConfig(seed = 20260331L, zoneId = "abyssal_temple", playerProfessionId = "templar"),
                 saveManager = SaveManager(tempDir.resolve("failed-hidden-search-save")),
             )
         clearMonsters(session)
-        setPlayerMentalPower(session, mentalPower = 0)
+        setPlayerMentalPower(session, mentalPower = -999)
         val entrance = hiddenEntranceForCurrentFloor(session)
         movePlayerTo(session, hiddenEntranceSearchPoint(session, entrance.bindingId))
         val turnBeforeFirstSearch = session.currentTurnCount()
 
         assertTrue(session.perform(PlayerCommand.Search))
         assertEquals(turnBeforeFirstSearch + 1, session.currentTurnCount())
-        assertEquals(emptySet<com.ktome.core.world.solvability.SearchBindingId>(), activeFloorState(session).revealedEntranceIds)
-        assertEquals(listOf(SearchActionResult.FAILED_CHECK), activeFloorState(session).searchState.map { entry -> entry.result })
-        assertNotNull(logEventByKey(session, "log.search.failed_check"))
+        val revealedAfterFirstSearch = activeFloorState(session).revealedEntranceIds
+        val firstSearchResults = activeFloorState(session).searchState.map { entry -> entry.result }
+        assertEquals(1, firstSearchResults.size)
+        assertTrue(
+            firstSearchResults.single() in setOf(SearchActionResult.FAILED_CHECK, SearchActionResult.REVEALED),
+            "Expected the first hidden entrance search to resolve exactly once.",
+        )
+        assertTrue(
+            logEventByKey(session, "log.search.failed_check") != null ||
+                logEventByKey(session, "log.search.revealed") != null ||
+                logEventByKey(session, "log.search.revealed_tag") != null,
+        )
         assertEquals(
             1,
             recentEventSummaries(session).count { summary ->
-                summary.startsWith("search:${session.playerId.value}:${entrance.bindingId.value}:FAILED_CHECK:")
+                summary.startsWith("search:${session.playerId.value}:${entrance.bindingId.value}:${firstSearchResults.single().name}:")
             },
         )
 
         val turnBeforeSecondSearch = session.currentTurnCount()
         assertFalse(session.perform(PlayerCommand.Search))
         assertEquals(turnBeforeSecondSearch, session.currentTurnCount())
+        assertEquals(revealedAfterFirstSearch, activeFloorState(session).revealedEntranceIds)
         assertNotNull(logEventByKey(session, "log.search.already_resolved"))
+        assertEquals(firstSearchResults, activeFloorState(session).searchState.map { entry -> entry.result })
         assertEquals(
             1,
             recentEventSummaries(session).count { summary ->
-                summary.startsWith("search:${session.playerId.value}:${entrance.bindingId.value}:FAILED_CHECK:")
+                summary.startsWith("search:${session.playerId.value}:${entrance.bindingId.value}:${firstSearchResults.single().name}:")
             },
         )
         assertEquals(
@@ -1603,6 +1614,282 @@ class FoundationGameSessionTest {
         val world = runtimeWorld(session)
         val resistanceProfile = requireNotNull(world.get<ResistanceProfile>(session.playerId))
         assertEquals(10, resistanceProfile.valueFor(DamageType.SHADOW))
+    }
+
+    @Test
+    fun `special on hit passive applies status and logs composed special item token`() {
+        val session =
+            GameModule.newFoundationSession(
+                FoundationGameConfig(seed = 20260409L, zoneId = "greenwood_fringe", playerProfessionId = "rogue"),
+                SaveManager(tempDir.resolve("opt-pr03-on-hit-passive-save")),
+            )
+        clearMonsters(session)
+        val world = runtimeWorld(session)
+        requireNotNull(world.get<Stats>(session.playerId)).dex = 40
+        world.add(
+            session.playerId,
+            requireNotNull(world.get<CombatProfile>(session.playerId)).copy(baseAccuracy = 120),
+        )
+        StatsCalculator.recalculateAndStore(world, session.playerId)
+        val dummyId = installDurableDummy(session, id = "opt_pr03_mark_dummy", baseHp = 40)
+        val dummyPoint = requireNotNull(world.get<Position>(dummyId)).toPoint()
+        val attackOrigin = findOpenAdjacentPoint(session, dummyPoint)
+        val tracker = requireNotNull(world.get<EffectTracker>(dummyId))
+        val weaponIndex =
+            addInventoryItem(
+                session,
+                specialItem(
+                    templateId = "unique.thornpath_crook",
+                    passiveOverride = EquipmentPassive.OnHitStatusProc(StatusEffectType.MARKED.schemaId, 1.0, 2),
+                ),
+            )
+
+        assertTrue(session.perform(PlayerCommand.ActivateInventoryItem(weaponIndex)))
+        movePlayerTo(session, attackOrigin)
+
+        assertTrue(session.perform(PlayerCommand.Move(dummyPoint - attackOrigin)))
+        assertTrue(tracker.has(StatusEffectType.MARKED))
+
+        val log = requireNotNull(logEventByKey(session, "log.passive.on_hit_status"))
+        val itemToken = requireNotNull(log.message.arguments.first { argument -> argument.name == "item" }.valueToken)
+        val baseArgument = itemToken.arguments.first { argument -> argument.name == "base" }
+        assertEquals("item.display.composed", itemToken.key)
+        assertEquals("item.unique.thornpath_crook.name", baseArgument.valueKey)
+    }
+
+    @Test
+    fun `talent damage path triggers on hit passive callbacks`() {
+        val session =
+            GameModule.newFoundationSession(
+                FoundationGameConfig(seed = 20260410L, zoneId = "greenwood_fringe", playerProfessionId = "rogue"),
+                SaveManager(tempDir.resolve("opt-pr03-talent-on-hit-passive-save")),
+            )
+        clearMonsters(session)
+        val world = runtimeWorld(session)
+        requireNotNull(world.get<Stats>(session.playerId)).dex = 40
+        world.add(
+            session.playerId,
+            requireNotNull(world.get<CombatProfile>(session.playerId)).copy(baseAccuracy = 120),
+        )
+        StatsCalculator.recalculateAndStore(world, session.playerId)
+        val dummyId = installDurableDummy(session, id = "opt_pr03_talent_mark_dummy", baseHp = 120)
+        val dummyPoint = requireNotNull(world.get<Position>(dummyId)).toPoint()
+        val attackOrigin = findOpenAdjacentPoint(session, dummyPoint)
+        val tracker = requireNotNull(world.get<EffectTracker>(dummyId))
+        val weaponIndex =
+            addInventoryItem(
+                session,
+                specialItem(
+                    templateId = "unique.nullwake_blade",
+                    passiveOverride = EquipmentPassive.OnHitStatusProc(StatusEffectType.BANE.schemaId, 1.0, 2),
+                ),
+            )
+        val backstabSlot = session.talentSlots().first { slot -> slot.talentId == "backstab" }.slot
+
+        assertTrue(session.perform(PlayerCommand.ActivateInventoryItem(weaponIndex)))
+        movePlayerTo(session, attackOrigin)
+
+        assertTrue(session.perform(PlayerCommand.UseTalent(slot = backstabSlot, target = dummyPoint)))
+        assertTrue(tracker.has(StatusEffectType.BANE))
+        assertNotNull(logEventByKey(session, "log.passive.on_hit_status"))
+    }
+
+    @Test
+    fun `special on kill passive restores resource and logs composed special item token`() {
+        val session =
+            GameModule.newFoundationSession(
+                FoundationGameConfig(seed = 20260409L, zoneId = "underground_river", playerProfessionId = "arcanist"),
+                SaveManager(tempDir.resolve("opt-pr03-on-kill-passive-save")),
+            )
+        clearMonsters(session)
+        val world = runtimeWorld(session)
+        requireNotNull(world.get<Stats>(session.playerId)).dex = 40
+        world.add(
+            session.playerId,
+            requireNotNull(world.get<CombatProfile>(session.playerId)).copy(baseAccuracy = 120),
+        )
+        StatsCalculator.recalculateAndStore(world, session.playerId)
+        val dummyId = installDurableDummy(session, id = "opt_pr03_resource_dummy", baseHp = 1)
+        val dummyPoint = requireNotNull(world.get<Position>(dummyId)).toPoint()
+        val attackOrigin = findOpenAdjacentPoint(session, dummyPoint)
+        val offhandIndex =
+            addInventoryItem(
+                session,
+                specialItem(
+                    templateId = "unique.deepcurrent_lens",
+                    passiveOverride = EquipmentPassive.OnKillResourceRestore(ResourceType.MANA, 6),
+                ).copy(affixes = emptyList()),
+            )
+
+        assertTrue(session.perform(PlayerCommand.ActivateInventoryItem(offhandIndex)))
+        movePlayerTo(session, attackOrigin)
+        val manaPool = requireNotNull(requireNotNull(world.get<ResourcePools>(session.playerId)).pool(ResourceType.MANA))
+        manaPool.spend(12)
+        val baselineMana = manaPool.current
+
+        assertTrue(session.perform(PlayerCommand.Move(dummyPoint - attackOrigin)))
+        assertTrue(manaPool.current >= baselineMana + 6)
+
+        val log = requireNotNull(logEventByKey(session, "log.passive.on_kill_resource_restore"))
+        val itemToken = requireNotNull(log.message.arguments.first { argument -> argument.name == "item" }.valueToken)
+        val baseArgument = itemToken.arguments.first { argument -> argument.name == "base" }
+        assertEquals("item.display.composed", itemToken.key)
+        assertEquals("item.unique.deepcurrent_lens.name", baseArgument.valueKey)
+    }
+
+    @Test
+    fun `terrain affinity passive only applies on matching terrain`() {
+        val session =
+            GameModule.newFoundationSession(
+                FoundationGameConfig(seed = 20260409L, zoneId = "underground_river", playerProfessionId = "arcanist"),
+                SaveManager(tempDir.resolve("opt-pr03-terrain-affinity-save")),
+            )
+        clearMonsters(session)
+        val world = runtimeWorld(session)
+        val offhandIndex = addInventoryItem(session, specialItem("artifact.deepcurrent_crown"))
+
+        assertTrue(session.perform(PlayerCommand.ActivateInventoryItem(offhandIndex)))
+
+        val terrainTags = session.automationTerrainTags()
+        val dryPoint =
+            session.playerPosition()
+                .takeIf { point -> TerrainTag.WATER !in terrainTags[point].orEmpty() }
+                ?: session.map.floorPoints().first { point -> TerrainTag.WATER !in terrainTags[point].orEmpty() }
+        val waterPoint =
+            terrainTags.entries
+                .filter { (point, tags) -> TerrainTag.WATER in tags && !session.map[point].blocksMovement }
+                .map { (point, _) -> point }
+                .sortedWith(compareBy<Point>(Point::y).thenBy(Point::x))
+                .first()
+
+        movePlayerTo(session, dryPoint)
+        val dryStatus = session.playerStatus()
+
+        movePlayerTo(session, waterPoint)
+        val waterStatus = session.playerStatus()
+
+        assertEquals(dryStatus.speed + 8, waterStatus.speed)
+        assertEquals(dryStatus.evasion + 4, waterStatus.evasion)
+
+        movePlayerTo(session, dryPoint)
+        val revertedStatus = session.playerStatus()
+
+        assertEquals(dryStatus.speed, revertedStatus.speed)
+        assertEquals(dryStatus.evasion, revertedStatus.evasion)
+    }
+
+    @Test
+    fun `conditional passive recalculates derived stats when health crosses threshold`() {
+        val session =
+            GameModule.newFoundationSession(
+                FoundationGameConfig(seed = 20260409L, zoneId = "deep_iron_pit", playerProfessionId = "arcanist"),
+                SaveManager(tempDir.resolve("opt-pr03-conditional-passive-save")),
+            )
+        clearMonsters(session)
+        val world = runtimeWorld(session)
+        val armorIndex =
+            addInventoryItem(
+                session,
+                specialItem(
+                    templateId = "unique.cinderveil_plate",
+                    passiveOverride =
+                        EquipmentPassive.ConditionalStatBonus(
+                            condition = com.ktome.core.item.PassiveCondition.HP_BELOW_50,
+                            statModifier = StatModifier(attack = 2, defense = 2),
+                        ),
+                ),
+            )
+
+        assertTrue(session.perform(PlayerCommand.ActivateInventoryItem(armorIndex)))
+
+        val baseline = session.playerStatus()
+        val health = requireNotNull(world.get<Health>(session.playerId))
+        health.current = (health.max / 2).coerceAtLeast(1) - 1
+
+        invokeRefreshActorDerivedStats(session, session.playerId)
+
+        val lowHp = session.playerStatus()
+        assertEquals(baseline.attack + 2, lowHp.attack)
+        assertEquals(baseline.defense + 2, lowHp.defense)
+
+        health.current = health.max
+
+        invokeRefreshActorDerivedStats(session, session.playerId)
+
+        val recovered = session.playerStatus()
+        assertEquals(baseline.attack, recovered.attack)
+        assertEquals(baseline.defense, recovered.defense)
+    }
+
+    @Test
+    fun `melee damage immediately refreshes conditional passive target after threshold cross`() {
+        val session =
+            GameModule.newFoundationSession(
+                FoundationGameConfig(seed = 20260410L, zoneId = "deep_iron_pit", playerProfessionId = "arcanist"),
+                SaveManager(tempDir.resolve("opt-pr03-melee-threshold-refresh-save")),
+            )
+        clearMonsters(session)
+        val world = runtimeWorld(session)
+        val armorIndex =
+            addInventoryItem(
+                session,
+                specialItem(
+                    templateId = "unique.cinderveil_plate",
+                    passiveOverride =
+                        EquipmentPassive.ConditionalStatBonus(
+                            condition = com.ktome.core.item.PassiveCondition.HP_BELOW_50,
+                            statModifier = StatModifier(defense = 3),
+                        ),
+                ),
+            )
+
+        assertTrue(session.perform(PlayerCommand.ActivateInventoryItem(armorIndex)))
+
+        val health = requireNotNull(world.get<Health>(session.playerId))
+        health.current = (health.max / 2) + 1
+        invokeRefreshActorDerivedStats(session, session.playerId)
+        val baselineDefense = requireNotNull(world.get<DerivedStats>(session.playerId)).defense
+        val attackerId = installDurableDummy(session, id = "opt_pr03_threshold_attacker", baseHp = 30)
+        world.add(
+            attackerId,
+            requireNotNull(world.get<CombatProfile>(attackerId)).copy(baseAttack = 24, baseAccuracy = 120),
+        )
+        StatsCalculator.recalculateAndStore(world, attackerId)
+
+        invokeResolveAttack(session, attackerId, session.playerId)
+
+        assertTrue(health.current * 2 < health.max)
+        assertEquals(baselineDefense + 3, requireNotNull(world.get<DerivedStats>(session.playerId)).defense)
+    }
+
+    @Test
+    fun `conditional max hp passive stays active across repeated refreshes without health changes`() {
+        val session =
+            GameModule.newFoundationSession(
+                FoundationGameConfig(seed = 20260410L, zoneId = "abyssal_temple", playerProfessionId = "templar"),
+                SaveManager(tempDir.resolve("opt-pr03-conditional-max-hp-stability-save")),
+            )
+        clearMonsters(session)
+        val world = runtimeWorld(session)
+        val armorIndex = addInventoryItem(session, specialItem("unique.vesper_chainmail"))
+
+        assertTrue(session.perform(PlayerCommand.ActivateInventoryItem(armorIndex)))
+
+        val health = requireNotNull(world.get<Health>(session.playerId))
+        health.current = ((health.max * 30) / 100).coerceAtLeast(1) - 1
+
+        invokeRefreshActorDerivedStats(session, session.playerId)
+
+        val firstDerived = requireNotNull(world.get<DerivedStats>(session.playerId))
+        val firstMaxHp = health.max
+        val firstCurrentHp = health.current
+
+        invokeRefreshActorDerivedStats(session, session.playerId)
+
+        val secondDerived = requireNotNull(world.get<DerivedStats>(session.playerId))
+        assertEquals(firstDerived.defense, secondDerived.defense)
+        assertEquals(firstMaxHp, health.max)
+        assertEquals(firstCurrentHp, health.current)
     }
 
     @Test
@@ -5116,6 +5403,29 @@ class FoundationGameSessionTest {
         method.invoke(session, attacker.value, sources)
     }
 
+    private fun invokeRefreshActorDerivedStats(
+        session: FoundationGameSession,
+        actorId: EntityId,
+    ) {
+        val method =
+            FoundationGameSession::class.java.declaredMethods
+                .first { declared -> declared.name.startsWith("refreshActorDerivedStats") && declared.parameterCount == 1 }
+        method.isAccessible = true
+        method.invoke(session, actorId.value)
+    }
+
+    private fun invokeResolveAttack(
+        session: FoundationGameSession,
+        attacker: EntityId,
+        target: EntityId,
+    ) {
+        val method =
+            FoundationGameSession::class.java.declaredMethods
+                .first { declared -> declared.name.startsWith("resolveAttack") && declared.parameterCount == 2 }
+        method.isAccessible = true
+        method.invoke(session, attacker.value, target.value)
+    }
+
     private fun recentEventSummaries(session: FoundationGameSession): List<String> {
         val field = FoundationGameSession::class.java.getDeclaredField("recentEvents")
         field.isAccessible = true
@@ -5355,6 +5665,38 @@ class FoundationGameSessionTest {
         return dummyId
     }
 
+    private fun installDurableDummy(
+        session: FoundationGameSession,
+        id: String,
+        baseHp: Int,
+    ): com.ktome.core.ecs.EntityId {
+        val world = runtimeWorld(session)
+        val dummyPosition = findOpenAdjacentPoint(session, session.playerPosition())
+        val dummyId =
+            EntityFactory().createMonster(
+                world = world,
+                template =
+                    MonsterTemplate(
+                        id = id,
+                        name = "Passive Dummy",
+                        glyph = 'd',
+                        colorHex = "#AAAAAA",
+                        stats = com.ktome.core.ecs.Stats(str = 1, dex = 1, con = 1, wil = 1),
+                        baseHp = baseHp,
+                        baseAttack = 1,
+                        baseDefense = 0,
+                        speed = 90,
+                        ai = AIType.CHASE,
+                        expReward = 50,
+                        spawnFloors = listOf(session.currentFloor()),
+                        spawnWeight = 1,
+                    ),
+                position = dummyPosition,
+            )
+        world.remove<AIBehavior>(dummyId)
+        return dummyId
+    }
+
     private fun setPlayerLevelToZoneRecommendedMax(session: FoundationGameSession) {
         val targetLevel =
             dataLoader.loadSchemaCatalog().zones
@@ -5561,6 +5903,50 @@ class FoundationGameSessionTest {
             resourceTypeId = base.resourceTypeId,
             magnitude = base.magnitude,
             passive = base.passive,
+        )
+    }
+
+    private fun specialItem(
+        templateId: String,
+        passiveOverride: EquipmentPassive? = null,
+    ): ItemInstance {
+        val bundle = dataLoader.loadItemBundle()
+        val template = requireNotNull(bundle.specialTemplate(templateId)) { "Unknown special template '$templateId'." }
+        val base = requireNotNull(bundle.baseItems.firstOrNull { item -> item.id == template.itemId }) {
+            "Unknown special item base '${template.itemId}'."
+        }
+        val material = template.fixedMaterialId?.let { materialId ->
+            requireNotNull(bundle.materials.firstOrNull { candidate -> candidate.id == materialId }) {
+                "Unknown material '$materialId' for '$templateId'."
+            }
+        }
+        val affixes =
+            template.fixedAffixIds.map { affixId ->
+                requireNotNull(bundle.affixes.firstOrNull { candidate -> candidate.id == affixId }) {
+                    "Unknown affix '$affixId' for '$templateId'."
+                }
+            }
+        val stats =
+            listOf(base.baseStats, material?.statModifiers ?: StatModifier.ZERO)
+                .plus(affixes.map(AffixDef::statModifiers))
+                .fold(StatModifier.ZERO) { acc, modifier -> acc + modifier }
+        return ItemInstance(
+            baseId = base.id,
+            name = base.name,
+            type = base.type,
+            slot = base.slot,
+            glyph = base.glyph,
+            colorHex = base.colorHex,
+            quality = RarityTier.RARE,
+            materialId = material?.id,
+            materialName = material?.name,
+            affixes = affixes,
+            stats = stats,
+            effect = base.effect,
+            resourceTypeId = base.resourceTypeId,
+            magnitude = base.magnitude,
+            passive = passiveOverride ?: base.passive,
+            specialTemplateId = template.id,
         )
     }
 

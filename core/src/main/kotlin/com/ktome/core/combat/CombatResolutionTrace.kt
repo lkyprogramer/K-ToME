@@ -13,6 +13,7 @@ data class CombatResolutionTrace(
     val damageType: DamageType,
     val steps: List<ResolutionStep>,
     val result: ResolutionResult,
+    val passiveTriggers: List<PassiveTriggerTrace> = emptyList(),
     val childTraceIds: List<String> = emptyList(),
 )
 
@@ -33,6 +34,24 @@ data class CallbackRecord(
     val priority: Int,
     val result: String,
     val effect: String? = null,
+)
+
+@Serializable
+data class PassiveTriggerTrace(
+    val passiveKind: String,
+    val sourceItemBaseId: String,
+    val sourceAffixId: String? = null,
+    val sourceSpecialTemplateId: String? = null,
+    val statusId: String? = null,
+    val resourceType: String? = null,
+    val terrainTag: String? = null,
+    val condition: String? = null,
+    val triggeredCount: Int = 1,
+    val amount: Int? = null,
+    val duration: Int? = null,
+    val magnitude: Double? = null,
+    val chance: Double? = null,
+    val roll: Double? = null,
 )
 
 @Serializable

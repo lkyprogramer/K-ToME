@@ -1,0 +1,63 @@
+manifestVersion: 1
+fallbackKey: audio.fallback.silence
+entries:
+  - key: audio.item.unique.thornpath_crook
+    cueFamily: item
+    eventId: audio.item.unique.thornpath_crook
+    sourcePath: audio/phase4/opt_pr03/unique_thornpath_crook.ogg
+    tags: [phase4, opt, pr03, unique, greenwood_fringe, rogue]
+  - key: audio.item.unique.heartwood_talisman
+    cueFamily: item
+    eventId: audio.item.unique.heartwood_talisman
+    sourcePath: audio/phase4/opt_pr03/unique_heartwood_talisman.ogg
+    tags: [phase4, opt, pr03, unique, greenwood_fringe, templar]
+  - key: audio.item.unique.quenchbreaker_maul
+    cueFamily: item
+    eventId: audio.item.unique.quenchbreaker_maul
+    sourcePath: audio/phase4/opt_pr03/unique_quenchbreaker_maul.ogg
+    tags: [phase4, opt, pr03, unique, deep_iron_pit, vanguard]
+  - key: audio.item.unique.cinderveil_plate
+    cueFamily: item
+    eventId: audio.item.unique.cinderveil_plate
+    sourcePath: audio/phase4/opt_pr03/unique_cinderveil_plate.ogg
+    tags: [phase4, opt, pr03, unique, deep_iron_pit, arcanist]
+  - key: audio.item.unique.floodglass_rapier
+    cueFamily: item
+    eventId: audio.item.unique.floodglass_rapier
+    sourcePath: audio/phase4/opt_pr03/unique_floodglass_rapier.ogg
+    tags: [phase4, opt, pr03, unique, underground_river, rogue]
+  - key: audio.item.unique.deepcurrent_lens
+    cueFamily: item
+    eventId: audio.item.unique.deepcurrent_lens
+    sourcePath: audio/phase4/opt_pr03/unique_deepcurrent_lens.ogg
+    tags: [phase4, opt, pr03, unique, underground_river, arcanist]
+  - key: audio.item.unique.vesper_chainmail
+    cueFamily: item
+    eventId: audio.item.unique.vesper_chainmail
+    sourcePath: audio/phase4/opt_pr03/unique_vesper_chainmail.ogg
+    tags: [phase4, opt, pr03, unique, abyssal_temple, templar]
+  - key: audio.item.unique.nullwake_blade
+    cueFamily: item
+    eventId: audio.item.unique.nullwake_blade
+    sourcePath: audio/phase4/opt_pr03/unique_nullwake_blade.ogg
+    tags: [phase4, opt, pr03, unique, abyssal_temple, rogue]
+  - key: audio.item.artifact.heartroot_gambit
+    cueFamily: item
+    eventId: audio.item.artifact.heartroot_gambit
+    sourcePath: audio/phase4/opt_pr03/artifact_heartroot_gambit.ogg
+    tags: [phase4, opt, pr03, artifact, greenwood_fringe, rogue]
+  - key: audio.item.artifact.slag_tyrant_seal
+    cueFamily: item
+    eventId: audio.item.artifact.slag_tyrant_seal
+    sourcePath: audio/phase4/opt_pr03/artifact_slag_tyrant_seal.ogg
+    tags: [phase4, opt, pr03, artifact, deep_iron_pit, vanguard]
+  - key: audio.item.artifact.deepcurrent_crown
+    cueFamily: item
+    eventId: audio.item.artifact.deepcurrent_crown
+    sourcePath: audio/phase4/opt_pr03/artifact_deepcurrent_crown.ogg
+    tags: [phase4, opt, pr03, artifact, underground_river, arcanist]
+  - key: audio.item.artifact.vesper_prism
+    cueFamily: item
+    eventId: audio.item.artifact.vesper_prism
+    sourcePath: audio/phase4/opt_pr03/artifact_vesper_prism.ogg
+    tags: [phase4, opt, pr03, artifact, abyssal_temple, templar]

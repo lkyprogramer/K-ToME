@@ -144,13 +144,21 @@ class SmokeBot : RunBot {
             }
         val lowHealth = observation.playerStatus.currentHp * 100 <= observation.playerStatus.maxHp * lowHealthThreshold
         val adjacentHostiles = hostilesWithin(observation, 1)
+        val nearbyHostiles = hostilesWithin(observation, 3)
         val canEmergencyBlink = availableTalent(observation, "blink") != null
+        val staminaSingleBossEscape =
+            observation.playerResource.typeId == "STAMINA" &&
+                bossThreatClose &&
+                nearbyHostiles <= 1 &&
+                observation.playerStatus.currentHp * 100 > observation.playerStatus.maxHp * 50
+        val shouldUseTeleportEscape =
+            lowHealth &&
+                (adjacentHostiles > 0 || bossThreatClose) &&
+                !canEmergencyBlink &&
+                !staminaSingleBossEscape
         val escapeIndex =
             observation.inventoryItems.indexOfFirst { item ->
-                lowHealth &&
-                    (adjacentHostiles > 0 || bossThreatClose) &&
-                    !canEmergencyBlink &&
-                    item.effect == ConsumableEffect.TELEPORT
+                shouldUseTeleportEscape && item.effect == ConsumableEffect.TELEPORT
             }
         if (escapeIndex >= 0) {
             return PlayerCommand.ActivateInventoryItem(escapeIndex)
@@ -158,13 +166,14 @@ class SmokeBot : RunBot {
         availableInscription(observation, "phase_door")
             ?.takeIf { !it.requiresTarget }
             ?.takeIf {
-                lowHealth && (adjacentHostiles > 0 || bossThreatClose) ||
+                (lowHealth && (adjacentHostiles > 0 || bossThreatClose) && !staminaSingleBossEscape) ||
                     (
                         observation.playerResource.typeId == "STAMINA" &&
-                            bossVisible &&
-                            nearestBossDistance != null &&
-                            nearestBossDistance in 2..6 &&
-                            observation.playerStatus.currentHp < observation.playerStatus.maxHp
+                        bossVisible &&
+                        nearestBossDistance != null &&
+                        nearestBossDistance in 2..6 &&
+                        observation.playerStatus.currentHp * 100 <= observation.playerStatus.maxHp * 50 &&
+                        nearbyHostiles >= 2
                     )
             }?.let { inscription ->
                 return PlayerCommand.UseInscription(inscription.hotkey)

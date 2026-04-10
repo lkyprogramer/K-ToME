@@ -80,13 +80,17 @@ class Phase4ReportRunnerTest {
             Duration.between(contentPackTimestamp, whiteBoxContentPackTimestamp).abs() <= Duration.ofMinutes(30),
             "content-pack artifact timestamps drifted beyond the freshness guard window.",
         )
-        assertEquals(10, experienceMetrics.size)
+        assertEquals(14, experienceMetrics.size)
         assertEquals(
             setOf(
                 "eliteMutationDistinctCount",
                 "eliteMutationValidPairCount",
                 "lootProfileBaseItemOverlapMatrix",
                 "lootProfileDistinctBaseItemCount",
+                "affixCount",
+                "uniqueTemplateCount",
+                "artifactTemplateCount",
+                "totalLootContentCount",
                 "affixPassiveCoverage",
                 "hiddenTriggerTypeCoverage",
                 "secretEntranceBindingCoverage",

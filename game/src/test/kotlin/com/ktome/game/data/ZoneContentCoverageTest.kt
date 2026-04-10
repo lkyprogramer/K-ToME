@@ -136,7 +136,7 @@ class ZoneContentCoverageTest {
         val buildArchetypes = setOf("vanguard", "rogue", "arcanist", "templar")
         val artifactTemplates = specialTemplatesByTier.getValue(SpecialTier.ARTIFACT)
 
-        assertEquals(40, itemBundle.affixes.size)
+        assertEquals(78, itemBundle.affixes.size)
         assertTrue(
             itemBundle.affixes.all { affix ->
                 affix.cost in setOf(
@@ -168,8 +168,22 @@ class ZoneContentCoverageTest {
         assertTrue(
             itemBundle.affixes.any { affix -> affix.equipType == AffixEquipType.ARMOR && affix.type == AffixType.SUFFIX },
         )
-        assertTrue(specialTemplatesByTier.getValue(SpecialTier.UNIQUE).size >= 12)
-        assertTrue(artifactTemplates.size >= 4)
+        assertTrue(specialTemplatesByTier.getValue(SpecialTier.UNIQUE).size >= 20)
+        assertTrue(artifactTemplates.size >= 8)
+        assertEquals(
+            setOf(
+                "ConditionalStatBonus",
+                "DamageTypeBonus",
+                "DamageVsStatus",
+                "DamageVsTag",
+                "HpRegenPerTurn",
+                "OnHitStatusProc",
+                "OnKillResourceRestore",
+                "ResistanceBonus",
+                "TerrainAffinityBonus",
+            ),
+            itemBundle.affixes.mapNotNull { affix -> affix.passive?.let { passive -> passive::class.simpleName } }.toSet(),
+        )
         assertEquals(
             targetZones,
             itemBundle.specialTemplates.flatMapTo(linkedSetOf()) { template -> template.allowedZones }.intersect(targetZones),

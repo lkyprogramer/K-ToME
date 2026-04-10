@@ -420,6 +420,10 @@ object Phase4ReportRunner {
                     put("matrixCount", summary.intValue("matrixCount"))
                     put("totalRolls", summary.intValue("totalRolls"))
                     put("failedExpectationCount", failedExpectationCount)
+                    put("affixCount", payload.getValue("specialTemplatePool").jsonObject.intValue("affixCount"))
+                    put("uniqueTemplateCount", payload.getValue("specialTemplatePool").jsonObject.intValue("uniqueTemplateCount"))
+                    put("artifactTemplateCount", payload.getValue("specialTemplatePool").jsonObject.intValue("artifactTemplateCount"))
+                    put("totalCount", payload.getValue("specialTemplatePool").jsonObject.intValue("totalCount"))
                     put("rarePityActivations", summary.intValue("rarePityActivations"))
                     put("uniquePityActivations", summary.intValue("uniquePityActivations"))
                     put("maxMagicRateDrift", summary.doubleValue("maxMagicRateDrift"))
@@ -505,6 +509,10 @@ object Phase4ReportRunner {
                     put("aggregateCount", summary.intValue("aggregateCount"))
                     put("failedAssertions", failedAssertions)
                     put("artifactCount", summary.intValue("artifactCount"))
+                    put("affixCount", corpusMetrics.getValue("affixCount"))
+                    put("uniqueTemplateCount", corpusMetrics.getValue("uniqueTemplateCount"))
+                    put("artifactTemplateCount", corpusMetrics.getValue("artifactTemplateCount"))
+                    put("totalCount", corpusMetrics.getValue("totalCount"))
                     put("corpusAggregateMetrics", corpusMetrics)
                     put("lootProfileAverageBaseItemOverlap", corpusMetrics.getValue("lootProfileAverageBaseItemOverlap"))
                     put("lootProfileMaxBaseItemOverlap", corpusMetrics.getValue("lootProfileMaxBaseItemOverlap"))
@@ -589,6 +597,10 @@ object Phase4ReportRunner {
         val lootAverageOverlap = loot.metrics.doubleValue("lootProfileAverageBaseItemOverlap")
         val lootMaxOverlap = loot.metrics.doubleValue("lootProfileMaxBaseItemOverlap")
         val lootDistinctBaseItemCount = loot.metrics.intValue("lootProfileDistinctBaseItemCount")
+        val affixCount = loot.metrics.intValue("affixCount")
+        val uniqueTemplateCount = loot.metrics.intValue("uniqueTemplateCount")
+        val artifactTemplateCount = loot.metrics.intValue("artifactTemplateCount")
+        val totalCount = loot.metrics.intValue("totalCount")
         val affixCoverage = loot.metrics.doubleValue("affixPassiveCoverage")
         val affixPassiveKinds = loot.metrics.stringList("affixPassiveKinds")
         val hiddenTriggerCoverage = hidden.metrics.doubleValue("hiddenTriggerTypeCoverage")
@@ -641,6 +653,38 @@ object Phase4ReportRunner {
                 currentValueText = lootDistinctBaseItemCount.toString(),
                 target = ">= 35",
                 status = verdictOf(lootDistinctBaseItemCount >= 35),
+            ),
+            Phase4ExperienceMetric(
+                metricId = "affixCount",
+                sourceTaskId = loot.taskId,
+                currentValue = loot.metrics.getValue("affixCount"),
+                currentValueText = affixCount.toString(),
+                target = ">= 75",
+                status = verdictOf(affixCount >= 75),
+            ),
+            Phase4ExperienceMetric(
+                metricId = "uniqueTemplateCount",
+                sourceTaskId = loot.taskId,
+                currentValue = loot.metrics.getValue("uniqueTemplateCount"),
+                currentValueText = uniqueTemplateCount.toString(),
+                target = ">= 20",
+                status = verdictOf(uniqueTemplateCount >= 20),
+            ),
+            Phase4ExperienceMetric(
+                metricId = "artifactTemplateCount",
+                sourceTaskId = loot.taskId,
+                currentValue = loot.metrics.getValue("artifactTemplateCount"),
+                currentValueText = artifactTemplateCount.toString(),
+                target = ">= 8",
+                status = verdictOf(artifactTemplateCount >= 8),
+            ),
+            Phase4ExperienceMetric(
+                metricId = "totalLootContentCount",
+                sourceTaskId = loot.taskId,
+                currentValue = loot.metrics.getValue("totalCount"),
+                currentValueText = totalCount.toString(),
+                target = ">= 103",
+                status = verdictOf(totalCount >= 103),
             ),
             Phase4ExperienceMetric(
                 metricId = "affixPassiveCoverage",

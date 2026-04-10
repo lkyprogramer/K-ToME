@@ -38,6 +38,7 @@ import com.ktome.core.item.ItemBaseDef
 import com.ktome.core.item.ItemDataBundle
 import com.ktome.core.item.ItemType
 import com.ktome.core.item.MaterialDef
+import com.ktome.core.item.PassiveCondition
 import com.ktome.core.item.SpecialItemTemplate
 import com.ktome.core.item.StatModifier
 import com.ktome.core.loot.SourceTier
@@ -2202,13 +2203,66 @@ class DataLoader(
             kind = requiredString("kind"),
             tag = optionalString("tag"),
             statusId = optionalString("statusId"),
+            resourceType = optionalString("resourceType"),
+            condition = optionalString("condition"),
+            terrainTag = optionalString("terrainTag"),
             damageType = optionalString("damageType"),
+            statModifier = optionalMap("statModifier")?.toSchemaStatModifier(),
+            chance = optionalDouble("chance", 0.0),
+            duration = optionalInt("duration"),
+            magnitude = optionalDouble("magnitude", 0.0),
             bonusPercent = optionalDouble("bonusPercent", 0.0),
             amount = optionalInt("amount"),
         )
 
     private fun EquipmentPassiveSchemaV2.toRuntimePassive(): EquipmentPassive =
         when (kind) {
+            "OnHitStatusProc" ->
+                EquipmentPassive.OnHitStatusProc(
+                    statusId = canonicalStatusId(requireNotNull(statusId) { "OnHitStatusProc passive requires 'statusId'." }),
+                    chance = chance.also { resolvedChance ->
+                        require(resolvedChance in 0.0..1.0) { "OnHitStatusProc chance must be between 0 and 1." }
+                    },
+                    duration = duration.also { resolvedDuration ->
+                        require(resolvedDuration > 0) { "OnHitStatusProc duration must be positive." }
+                    },
+                    magnitude = magnitude,
+                )
+
+            "OnKillResourceRestore" ->
+                EquipmentPassive.OnKillResourceRestore(
+                    resourceType = ResourceType.fromId(requireNotNull(resourceType) { "OnKillResourceRestore passive requires 'resourceType'." }),
+                    amount = amount.also { resolvedAmount ->
+                        require(resolvedAmount > 0) { "OnKillResourceRestore amount must be positive." }
+                    },
+                )
+
+            "ConditionalStatBonus" ->
+                EquipmentPassive.ConditionalStatBonus(
+                    condition =
+                        PassiveCondition.valueOf(
+                            requireNotNull(condition) { "ConditionalStatBonus passive requires 'condition'." },
+                        ),
+                    statModifier =
+                        requireNotNull(statModifier) { "ConditionalStatBonus passive requires 'statModifier'." }
+                            .toRuntimeStatModifier(),
+                    statusId =
+                        statusId?.let { rawStatusId ->
+                            canonicalStatusId(rawStatusId)
+                        },
+                )
+
+            "TerrainAffinityBonus" ->
+                EquipmentPassive.TerrainAffinityBonus(
+                    terrainTag =
+                        TerrainTag.valueOf(
+                            requireNotNull(terrainTag) { "TerrainAffinityBonus passive requires 'terrainTag'." },
+                        ),
+                    statModifier =
+                        requireNotNull(statModifier) { "TerrainAffinityBonus passive requires 'statModifier'." }
+                            .toRuntimeStatModifier(),
+                )
+
             "DamageVsTag" ->
                 EquipmentPassive.DamageVsTag(
                     tag = requireNotNull(tag) { "DamageVsTag passive requires 'tag'." },

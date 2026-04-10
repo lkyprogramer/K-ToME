@@ -4,6 +4,8 @@ import com.ktome.core.combat.DamageType
 import com.ktome.core.ecs.World
 import com.ktome.core.ecs.add
 import com.ktome.core.ecs.get
+import com.ktome.core.mapgen.TerrainTag
+import com.ktome.core.resource.ResourceType
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -174,6 +176,153 @@ class PassiveEffectResolverTest {
         assertEquals(2, passives.size)
         assertTrue(passives.any { source -> source.passive is EquipmentPassive.DamageTypeBonus })
         assertTrue(passives.any { source -> source.passive is EquipmentPassive.DamageVsStatus && source.passive.statusId == "BANE" })
+    }
+
+    @Test
+    fun `conditional and terrain stat bonuses aggregate when conditions match`() {
+        val world = World()
+        val actor = world.createEntity()
+        equip(
+            world = world,
+            actor = actor,
+            slot = EquipSlot.ARMOR,
+            item =
+                item(
+                    baseId = "last_stand_mail",
+                    passive =
+                        EquipmentPassive.ConditionalStatBonus(
+                            condition = PassiveCondition.HP_BELOW_50,
+                            statModifier = StatModifier(defense = 4, maxHp = 12),
+                        ),
+                ),
+        )
+        equip(
+            world = world,
+            actor = actor,
+            slot = EquipSlot.OFF_HAND,
+            item =
+                item(
+                    baseId = "river_charm",
+                    passive =
+                        EquipmentPassive.TerrainAffinityBonus(
+                            terrainTag = TerrainTag.WATER,
+                            statModifier = StatModifier(accuracy = 3, speed = 2),
+                        ),
+                ),
+        )
+
+        val adjustment =
+            PassiveEffectResolver.resolveStatAdjustment(
+                passives = PassiveEffectResolver.equippedPassives(world, actor),
+                context =
+                    PassiveStatContext(
+                        healthFraction = 0.45,
+                        terrainTags = setOf(TerrainTag.WATER),
+                    ),
+            )
+
+        assertEquals(2, adjustment.sources.size)
+        assertEquals(4, adjustment.modifier.defense)
+        assertEquals(12, adjustment.modifier.maxHp)
+        assertEquals(3, adjustment.modifier.accuracy)
+        assertEquals(2, adjustment.modifier.speed)
+    }
+
+    @Test
+    fun `conditional stat bonus self has status requires matching status id`() {
+        val world = World()
+        val actor = world.createEntity()
+        equip(
+            world = world,
+            actor = actor,
+            slot = EquipSlot.ARMOR,
+            item =
+                item(
+                    baseId = "warded_mail",
+                    passive =
+                        EquipmentPassive.ConditionalStatBonus(
+                            condition = PassiveCondition.SELF_HAS_STATUS,
+                            statusId = "GUARD",
+                            statModifier = StatModifier(defense = 5),
+                        ),
+                ),
+        )
+
+        val matching =
+            PassiveEffectResolver.resolveStatAdjustment(
+                passives = PassiveEffectResolver.equippedPassives(world, actor),
+                context = PassiveStatContext(healthFraction = 1.0, selfStatusIds = setOf("GUARD")),
+            )
+        val nonMatching =
+            PassiveEffectResolver.resolveStatAdjustment(
+                passives = PassiveEffectResolver.equippedPassives(world, actor),
+                context = PassiveStatContext(healthFraction = 1.0, selfStatusIds = setOf("BANE")),
+            )
+
+        assertEquals(5, matching.modifier.defense)
+        assertEquals(0, nonMatching.modifier.defense)
+    }
+
+    @Test
+    fun `on hit status proc collection preserves source metadata`() {
+        val world = World()
+        val actor = world.createEntity()
+        equip(
+            world = world,
+            actor = actor,
+            slot = EquipSlot.WEAPON,
+            item =
+                ItemInstance(
+                    baseId = "venom_blade",
+                    name = "Venom Blade",
+                    type = ItemType.WEAPON,
+                    slot = EquipSlot.WEAPON,
+                    glyph = ')',
+                    colorHex = "#00FF66",
+                    affixes =
+                        listOf(
+                            AffixDef(
+                                id = "toxic_edge",
+                                name = "Toxic Edge",
+                                type = AffixType.SUFFIX,
+                                cost = 10,
+                                affixFamily = "toxic_edge",
+                                statModifiers = StatModifier(),
+                                passive = EquipmentPassive.OnHitStatusProc(statusId = "POISONED", chance = 0.35, duration = 3),
+                            ),
+                        ),
+                ),
+        )
+
+        val trigger = PassiveEffectResolver.onHitStatusProcs(PassiveEffectResolver.equippedPassives(world, actor)).single()
+
+        assertEquals("POISONED", trigger.statusId)
+        assertEquals(0.35, trigger.chance, 0.0001)
+        assertEquals(3, trigger.duration)
+        assertEquals("venom_blade", trigger.source.item.baseId)
+        assertEquals("toxic_edge", trigger.source.affixId)
+    }
+
+    @Test
+    fun `on kill resource restore collection preserves resource type and amount`() {
+        val world = World()
+        val actor = world.createEntity()
+        equip(
+            world = world,
+            actor = actor,
+            slot = EquipSlot.OFF_HAND,
+            item =
+                item(
+                    baseId = "reaper_idol",
+                    passive = EquipmentPassive.OnKillResourceRestore(resourceType = ResourceType.MANA, amount = 6),
+                ),
+        )
+
+        val trigger = PassiveEffectResolver.onKillResourceRestores(PassiveEffectResolver.equippedPassives(world, actor)).single()
+
+        assertEquals(ResourceType.MANA, trigger.resourceType)
+        assertEquals(6, trigger.amount)
+        assertEquals("reaper_idol", trigger.source.item.baseId)
     }
 
     private fun equip(

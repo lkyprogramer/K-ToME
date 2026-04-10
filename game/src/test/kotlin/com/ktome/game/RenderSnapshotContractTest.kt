@@ -39,7 +39,9 @@ class RenderSnapshotContractTest {
     @TempDir
     lateinit var tempDir: Path
 
-    private val schemaCatalog = DataLoader().loadSchemaCatalog()
+    private val dataLoader = DataLoader()
+    private val schemaCatalog = dataLoader.loadSchemaCatalog()
+    private val itemBundle = dataLoader.loadItemBundle()
 
     @Test
     fun `same seed and locale produce stable initial render snapshot hash`() {
@@ -285,6 +287,55 @@ class RenderSnapshotContractTest {
             cell.terrainTags,
         )
         assertTrue(cell.visibility != CellVisibilitySnapshot.HIDDEN)
+    }
+
+    @Test
+    fun `render snapshot exposes opt pr03 passive inspect tokens and special template presentation`() {
+        val session =
+            GameModule.newFoundationSession(
+                config = FoundationGameConfig(seed = 2026040912L, zoneId = "underground_river", playerProfessionId = "rogue"),
+                saveManager = SaveManager(tempDir.resolve("opt-pr03-inspect-render")),
+            )
+        val world = session.automationWorld()
+        val playerId = world.entitiesWith(PlayerControlled::class).single()
+        val inventory = requireNotNull(world.get<com.ktome.core.item.Inventory>(playerId))
+        val itemFactory = ItemFactory()
+
+        inventory.itemIds += itemFactory.createCarriedItem(world = world, item = affixItem(baseId = "long_sword", affixId = "briarhook"))
+        inventory.itemIds += itemFactory.createCarriedItem(world = world, item = affixItem(baseId = "bandit_trophy", affixId = "floodtouched"))
+        inventory.itemIds += itemFactory.createCarriedItem(world = world, item = specialItem("unique.thornpath_crook"))
+        inventory.itemIds += itemFactory.createCarriedItem(world = world, item = specialItem("artifact.heartroot_gambit"))
+
+        val snapshot = session.renderSnapshot()
+        val onHitItem =
+            snapshot.uiState.inventory.first { entry ->
+                entry.item.baseItemId == "long_sword" && "affix.briarhook.name" in entry.item.affixNameKeys
+            }.item
+        val terrainItem =
+            snapshot.uiState.inventory.first { entry ->
+                entry.item.baseItemId == "bandit_trophy" && "affix.floodtouched.name" in entry.item.affixNameKeys
+            }.item
+        val uniqueItem =
+            snapshot.uiState.inventory.first { entry ->
+                entry.item.baseItemId == "unique_thornpath_crook"
+            }.item
+        val artifactItem =
+            snapshot.uiState.inventory.first { entry ->
+                entry.item.baseItemId == "artifact_heartroot_gambit"
+            }.item
+
+        assertTrue(onHitItem.passiveDescriptions.any { passive -> passive.key == "ui.inspect.passive.on_hit_status_proc" })
+        assertTrue(terrainItem.passiveDescriptions.any { passive -> passive.key == "ui.inspect.passive.terrain_affinity_bonus" })
+        assertEquals("item.unique.thornpath_crook.name", uniqueItem.nameKey)
+        assertEquals("item.unique.thornpath_crook.desc", uniqueItem.descKey)
+        assertEquals("item.unique.thornpath_crook.visual", uniqueItem.visualKey)
+        assertEquals("item.unique.thornpath_crook.icon", uniqueItem.iconKey)
+        assertEquals("audio.item.unique.thornpath_crook", uniqueItem.audioProfile)
+        assertEquals("item.artifact.heartroot_gambit.name", artifactItem.nameKey)
+        assertEquals("item.artifact.heartroot_gambit.desc", artifactItem.descKey)
+        assertEquals("item.artifact.heartroot_gambit.visual", artifactItem.visualKey)
+        assertEquals("item.artifact.heartroot_gambit.icon", artifactItem.iconKey)
+        assertEquals("audio.item.artifact.heartroot_gambit", artifactItem.audioProfile)
     }
 
     @Test
@@ -654,6 +705,71 @@ class RenderSnapshotContractTest {
         requireNotNull(schemaCatalog.professions.firstOrNull { profession -> profession.id == id }) {
             "Unknown profession '$id'."
         }
+
+    private fun affixItem(
+        baseId: String,
+        affixId: String,
+    ): ItemInstance {
+        val base = requireNotNull(itemBundle.baseItems.firstOrNull { item -> item.id == baseId }) { "Unknown base item '$baseId'." }
+        val affix = requireNotNull(itemBundle.affixes.firstOrNull { candidate -> candidate.id == affixId }) { "Unknown affix '$affixId'." }
+        return ItemInstance(
+            baseId = base.id,
+            name = base.name,
+            type = base.type,
+            slot = base.slot,
+            glyph = base.glyph,
+            colorHex = base.colorHex,
+            quality = RarityTier.MAGIC,
+            affixes = listOf(affix),
+            stats = base.baseStats + affix.statModifiers,
+            effect = base.effect,
+            resourceTypeId = base.resourceTypeId,
+            magnitude = base.magnitude,
+            passive = affix.passive ?: base.passive,
+        )
+    }
+
+    private fun specialItem(
+        templateId: String,
+    ): ItemInstance {
+        val template = requireNotNull(itemBundle.specialTemplate(templateId)) { "Unknown special template '$templateId'." }
+        val base = requireNotNull(itemBundle.baseItems.firstOrNull { item -> item.id == template.itemId }) {
+            "Unknown special item base '${template.itemId}'."
+        }
+        val material = template.fixedMaterialId?.let { materialId ->
+            requireNotNull(itemBundle.materials.firstOrNull { candidate -> candidate.id == materialId }) {
+                "Unknown material '$materialId' for '$templateId'."
+            }
+        }
+        val affixes =
+            template.fixedAffixIds.map { affixId ->
+                requireNotNull(itemBundle.affixes.firstOrNull { candidate -> candidate.id == affixId }) {
+                    "Unknown affix '$affixId' for '$templateId'."
+                }
+            }
+        val stats =
+            listOf(base.baseStats, material?.statModifiers ?: StatModifier.ZERO)
+                .plus(affixes.map(AffixDef::statModifiers))
+                .fold(StatModifier.ZERO) { acc, modifier -> acc + modifier }
+        return ItemInstance(
+            baseId = base.id,
+            name = base.name,
+            type = base.type,
+            slot = base.slot,
+            glyph = base.glyph,
+            colorHex = base.colorHex,
+            quality = RarityTier.RARE,
+            materialId = material?.id,
+            materialName = material?.name,
+            affixes = affixes,
+            stats = stats,
+            effect = base.effect,
+            resourceTypeId = base.resourceTypeId,
+            magnitude = base.magnitude,
+            passive = base.passive,
+            specialTemplateId = template.id,
+        )
+    }
 
     private fun dummyTemplate(): com.ktome.game.model.MonsterTemplate =
         com.ktome.game.model.MonsterTemplate(

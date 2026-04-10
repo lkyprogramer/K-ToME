@@ -24,12 +24,16 @@ import com.ktome.core.ai.DangerLevel
 import com.ktome.core.ai.PendingTelegraphState
 import com.ktome.core.ai.StealthTauntHandler
 import com.ktome.core.ai.ThreatRatingResolver
+import com.ktome.core.combat.ApplicationPolicy
+import com.ktome.core.combat.CallbackDecision
 import com.ktome.core.combat.CombatRuleset
 import com.ktome.core.combat.CombatResolver
 import com.ktome.core.combat.DamageFormula
 import com.ktome.core.combat.DamageType
 import com.ktome.core.combat.ElementInteractionRegistry
 import com.ktome.core.combat.ElementInteractionResolution
+import com.ktome.core.combat.PassiveTriggerTrace
+import com.ktome.core.combat.PipelineCallback
 import com.ktome.core.combat.TerrainInteractionContext
 import com.ktome.core.combat.TerrainInteractionContextResolver
 import com.ktome.core.combat.TerrainInteractionTarget
@@ -47,6 +51,7 @@ import com.ktome.core.ecs.DisplayColor
 import com.ktome.core.ecs.Energy
 import com.ktome.core.ecs.EntityId
 import com.ktome.core.ecs.EliteMutationLoadout
+import com.ktome.core.ecs.EquipmentPassiveStatModifier
 import com.ktome.core.ecs.Experience
 import com.ktome.core.ecs.ExperienceReward
 import com.ktome.core.ecs.FactionTag
@@ -97,6 +102,7 @@ import com.ktome.core.item.AffixType
 import com.ktome.core.item.EquipSlot
 import com.ktome.core.item.Equipment
 import com.ktome.core.item.EquipmentPassive
+import com.ktome.core.item.EquipmentPassiveKindIds
 import com.ktome.core.item.EquippedPassiveSource
 import com.ktome.core.item.ItemBaseDef
 import com.ktome.core.item.ItemDataBundle
@@ -111,9 +117,12 @@ import com.ktome.core.item.MaterialDef
 import com.ktome.core.item.MilestoneRewardSource
 import com.ktome.core.item.PassiveDamageAdjustment
 import com.ktome.core.item.PassiveEffectResolver
+import com.ktome.core.item.PassiveCondition
+import com.ktome.core.item.PassiveStatContext
 import com.ktome.core.item.SpecialItemTemplate
 import com.ktome.core.item.StatModifier
 import com.ktome.core.item.defaultAffixCount
+import com.ktome.core.item.kindId
 import com.ktome.core.loot.PityTracker
 import com.ktome.core.loot.RarityTier
 import com.ktome.core.loot.SpecialTier
@@ -210,6 +219,7 @@ import com.ktome.core.status.StatusEffectType
 import com.ktome.core.talent.RollbackManager
 import com.ktome.core.talent.TalentAllocationDraft
 import com.ktome.core.talent.TalentAllocationPlanner
+import com.ktome.core.talent.TalentCombatCallbackResolver
 import com.ktome.core.talent.TalentFailureCode
 import com.ktome.core.talent.TalentLoadout
 import com.ktome.core.talent.TalentPrerequisiteValidator
@@ -501,6 +511,10 @@ class FoundationGameSession internal constructor(
                     baseMultiplier = baseMultiplier,
                 )
             }
+        talentResolver.combatCallbackResolver =
+            TalentCombatCallbackResolver { _, attacker, _, _, _ ->
+                buildEquipmentPassiveCallbacks(attacker)
+            }
         combatResolver.terrainInteractionContextResolver =
             TerrainInteractionContextResolver { _, attacker, target, damageType, interactionDepth ->
                 resolveTerrainInteractionContext(
@@ -513,10 +527,9 @@ class FoundationGameSession internal constructor(
         initialMessageLog.forEach(::addMessage)
         restorePendingTurnState()
         syncUnlockedPlayerTalents()
-        StatsCalculator.recalculateAndStore(world, playerId)
+        refreshActorDerivedStats(playerId)
         ensurePlayerResourcePools()
         ensurePlayerInscriptions()
-        syncPlayerResistanceProfile()
         restorePendingZoneAdvanceIfNeeded()
         refreshFov()
         announceZoneMechanicFloorEntryIfNeeded()
@@ -817,6 +830,7 @@ class FoundationGameSession internal constructor(
     fun automationMovePlayerTo(point: Point) {
         require(map.isInBounds(point.x, point.y)) { "Point $point is outside the current map." }
         requireNotNull(world.get<Position>(playerId)).moveTo(point)
+        refreshActorDerivedStats(playerId)
         refreshFov()
     }
 
@@ -926,6 +940,7 @@ class FoundationGameSession internal constructor(
         abilityId = abilityId,
         interactionDepth = interactionDepth,
     ).also { result ->
+        refreshTargetDerivedStatsAfterDamage(target = target, finalDamage = result.finalDamage, targetKilled = result.targetKilled)
         applyTerrainInteraction(attacker = source, target = target, interaction = result.terrainInteraction)
         if (result.targetKilled) {
             handleDeath(target, source)
@@ -1890,7 +1905,7 @@ class FoundationGameSession internal constructor(
                 nextIndex = { bound -> sessionRandom.nextInt(0, bound) },
             )
         encounterDecorationService.applyDecoration(world = world, entityId = monsterId, decoration = decoration)
-        StatsCalculator.recalculateAndStore(world, monsterId)
+        refreshActorDerivedStats(monsterId)
         logDecorationMessages(monsterId, decoration)
         return monsterId
     }
@@ -2010,6 +2025,7 @@ class FoundationGameSession internal constructor(
                 return@forEach
             }
             requireNotNull(world.get<Position>(actorId)).moveTo(destination)
+            refreshActorDerivedStats(actorId)
             if (actorId == playerId) {
                 addMessage(RiverCrystalRuntimeKeys.River.DRAG_LOG_KEY)
             }
@@ -4115,6 +4131,19 @@ class FoundationGameSession internal constructor(
                 add("spell")
             }
             when (val passive = base.passive) {
+                is EquipmentPassive.OnHitStatusProc -> {
+                    add(passive.statusId.lowercase())
+                    add("offense")
+                }
+                is EquipmentPassive.OnKillResourceRestore -> {
+                    add(passive.resourceType.name.lowercase())
+                    add("sustain")
+                }
+                is EquipmentPassive.ConditionalStatBonus -> add("conditional")
+                is EquipmentPassive.TerrainAffinityBonus -> {
+                    add(passive.terrainTag.name.lowercase())
+                    add("terrain")
+                }
                 is EquipmentPassive.DamageVsStatus -> add("offense")
                 is EquipmentPassive.DamageTypeBonus -> {
                     add(passive.type.name.lowercase())
@@ -4559,10 +4588,7 @@ class FoundationGameSession internal constructor(
         if (!result.applied) {
             return
         }
-        StatsCalculator.recalculateAndStore(world, actorId)
-        if (actorId == playerId) {
-            syncPlayerResistanceProfile()
-        }
+        refreshActorDerivedStats(actorId)
         logEvent(
             StatusAppliedEvent(
                 target = actorId,
@@ -5266,7 +5292,7 @@ class FoundationGameSession internal constructor(
             )
         }
         if (removedStatuses.isNotEmpty()) {
-            StatsCalculator.recalculateAndStore(world, actorId)
+            refreshActorDerivedStats(actorId)
         }
         if (actorId == playerId) {
             ensurePlayerResourcePools()
@@ -5300,7 +5326,7 @@ class FoundationGameSession internal constructor(
         }
 
         if (world.isAlive(actorId)) {
-            StatsCalculator.recalculateAndStore(world, actorId)
+            refreshActorDerivedStats(actorId)
         }
         return world.isAlive(actorId)
     }
@@ -5335,6 +5361,7 @@ class FoundationGameSession internal constructor(
                 traceId = "status-tick:${dueEffect.effect.id}:${actorId.value}",
             )
         val finalDamage = result.damage.finalDamage
+        refreshTargetDerivedStatsAfterDamage(target = actorId, finalDamage = finalDamage, targetKilled = result.targetKilled)
 
         logEvent(
             DamageDealtEvent(
@@ -5508,7 +5535,7 @@ class FoundationGameSession internal constructor(
                         PrimaryStat.WIL -> stats.wil += 1
                     }
                     experience.unspentStatPoints -= 1
-                    StatsCalculator.recalculateAndStore(world, playerId)
+                    refreshActorDerivedStats(playerId)
                     ensurePlayerResourcePools()
                     addMessage("log.stat.invest", keyArg("stat", primaryStatLabelKey(command.stat)))
                     CommandResolution(accepted = true, consumesTurn = false)
@@ -5702,9 +5729,8 @@ class FoundationGameSession internal constructor(
                                     inventoryManager.equip(world, playerId, command.index)
                                 }
                             if (result.success) {
-                                StatsCalculator.recalculateAndStore(world, playerId)
+                                refreshActorDerivedStats(playerId)
                                 ensurePlayerResourcePools()
-                                syncPlayerResistanceProfile()
                             }
                             addInventoryMessage(result)
                             CommandResolution(result.success, consumesTurn = false)
@@ -5728,6 +5754,7 @@ class FoundationGameSession internal constructor(
                         val result = MovementRules.attemptMove(map, from, command.delta)
                         if (result.moved) {
                             requireNotNull(world.get<Position>(playerId)).moveTo(result.destination)
+                            refreshActorDerivedStats(playerId)
                             triggerAmbushLaneIfNeeded(result.destination)
                             CommandResolution.accepted()
                         } else {
@@ -5907,9 +5934,8 @@ class FoundationGameSession internal constructor(
         world.destroyEntity(itemId)
         val sellValue = sellValueForItem(item)
         shardBalance += sellValue
-        StatsCalculator.recalculateAndStore(world, playerId)
+        refreshActorDerivedStats(playerId)
         ensurePlayerResourcePools()
-        syncPlayerResistanceProfile()
         addMessage(
             "log.shop.sell",
             keyArg("shop", shop.nameKey),
@@ -6070,6 +6096,7 @@ class FoundationGameSession internal constructor(
                         randomTeleportDestination(maxRange = effect.range)
                     }
                 requireNotNull(world.get<Position>(playerId)).moveTo(destination)
+                refreshActorDerivedStats(playerId)
                 refreshFov()
                 addMessage("log.inscription.teleport")
                 true
@@ -6100,8 +6127,7 @@ class FoundationGameSession internal constructor(
                         ),
                     )
                 }
-                StatsCalculator.recalculateAndStore(world, playerId)
-                syncPlayerResistanceProfile()
+                refreshActorDerivedStats(playerId)
                 addMessage("log.inscription.shield", literalArg("turns", effect.duration))
                 true
             }
@@ -6134,7 +6160,7 @@ class FoundationGameSession internal constructor(
                 if (removed.isNotEmpty()) {
                     addMessage("log.inscription.cleanse", literalArg("count", removed.size))
                 }
-                StatsCalculator.recalculateAndStore(world, playerId)
+                refreshActorDerivedStats(playerId)
                 true
             }
 
@@ -6163,7 +6189,7 @@ class FoundationGameSession internal constructor(
                         ),
                     )
                 }
-                StatsCalculator.recalculateAndStore(world, playerId)
+                refreshActorDerivedStats(playerId)
                 addMessage("log.inscription.buff", literalArg("turns", effect.duration))
                 true
             }
@@ -6939,6 +6965,7 @@ class FoundationGameSession internal constructor(
             is AIPathCommand.Move -> {
                 if (blockerAt(command.destination) == null) {
                     requireNotNull(world.get<Position>(monsterId)).moveTo(command.destination)
+                    refreshActorDerivedStats(monsterId)
                 }
             }
             AIPathCommand.Wait -> Unit
@@ -7053,7 +7080,7 @@ class FoundationGameSession internal constructor(
                 ),
             )
         }
-        StatsCalculator.recalculateAndStore(world, target)
+        refreshActorDerivedStats(target)
     }
 
     private fun applyTerrainSlip(
@@ -7093,7 +7120,7 @@ class FoundationGameSession internal constructor(
             keyArg("rule", terrainRuleNameKey(ruleId)),
             keyArg("status", statusEffectNameKey(statusType)),
         )
-        StatsCalculator.recalculateAndStore(world, target)
+        refreshActorDerivedStats(target)
     }
 
     private fun applyTerrainTransform(
@@ -7119,6 +7146,7 @@ class FoundationGameSession internal constructor(
             literalArg("terrain", terrainNameFor(map[point], terrainTransform.targetTerrainTags)),
             literalArg("turns", terrainTransform.durationTurns),
         )
+        actorAt(point)?.let(::refreshActorDerivedStats)
     }
 
     private fun applyTerrainChildTrace(
@@ -7145,6 +7173,11 @@ class FoundationGameSession internal constructor(
         if (!result.hit || result.finalDamage <= 0) {
             return
         }
+        refreshTargetDerivedStatsAfterDamage(
+            target = childTrace.targetId,
+            finalDamage = result.finalDamage,
+            targetKilled = result.targetKilled,
+        )
         logEvent(
             DamageDealtEvent(
                 attacker = attacker,
@@ -7179,6 +7212,7 @@ class FoundationGameSession internal constructor(
                 interactionDepth = ElementInteractionRegistry.MAX_INTERACTION_DEPTH,
             )
         if (result.finalDamage > 0) {
+            refreshTargetDerivedStatsAfterDamage(target = actorId, finalDamage = result.finalDamage, targetKilled = result.targetKilled)
             logEvent(
                 DamageDealtEvent(
                     attacker = actorId,
@@ -7265,7 +7299,7 @@ class FoundationGameSession internal constructor(
                         true
                     }
             if (refreshedOwnerBuff) {
-                StatsCalculator.recalculateAndStore(world, ownerId)
+                refreshActorDerivedStats(ownerId)
             }
         }
     }
@@ -7312,6 +7346,7 @@ class FoundationGameSession internal constructor(
                 target = target,
                 damageType = DamageType.PHYSICAL,
                 damageMultiplier = damageAdjustment.multiplier,
+                callbacks = buildEquipmentPassiveCallbacks(attacker),
             )
 
         if (!result.hit) {
@@ -7344,6 +7379,8 @@ class FoundationGameSession internal constructor(
             damageAmount = result.finalDamage,
             terrainInteraction = result.terrainInteraction,
         )
+        refreshTargetDerivedStatsAfterDamage(target = target, finalDamage = result.finalDamage, targetKilled = result.targetKilled)
+        applyTriggeredCombatPassives(attacker = attacker, target = target, trace = result.trace)
         applyDamageResourceReactions(attacker, target, result.finalDamage)
         applyTerrainInteraction(attacker = attacker, target = target, interaction = result.terrainInteraction)
         if (attacker == playerId) {
@@ -7419,6 +7456,9 @@ class FoundationGameSession internal constructor(
             currentProfessionSchema()?.let { profession ->
                 PlayerResourceService.onKill(world, playerId, profession)
             }
+        }
+        if (killer != null && killer != target && world.isAlive(killer)) {
+            applyOnKillPassiveRestores(killer)
         }
 
         val activeBossTemplateId = activeBossDefinition()?.template?.id
@@ -7611,7 +7651,7 @@ class FoundationGameSession internal constructor(
             stats.con += profession.statGrowth.con
             stats.wil += profession.statGrowth.wil
         }
-        StatsCalculator.recalculateAndStore(world, playerId)
+        refreshActorDerivedStats(playerId)
     }
 
     private fun transitionFloor(direction: StairDirection): TransitionOutcome {
@@ -7971,6 +8011,7 @@ class FoundationGameSession internal constructor(
 
     private fun applyTurnStartPassives(actorId: EntityId) {
         val health = world.get<Health>(actorId) ?: return
+        var refreshed = false
         PassiveEffectResolver.equippedPassives(world, actorId).forEach { source ->
             when (val passive = source.passive) {
                 is EquipmentPassive.HpRegenPerTurn -> {
@@ -7984,14 +8025,85 @@ class FoundationGameSession internal constructor(
                             literalArg("amount", restored),
                         )
                     }
+                    refreshed = refreshed || restored > 0
                 }
 
+                is EquipmentPassive.OnHitStatusProc,
+                is EquipmentPassive.OnKillResourceRestore,
+                is EquipmentPassive.ConditionalStatBonus,
+                is EquipmentPassive.TerrainAffinityBonus,
                 is EquipmentPassive.DamageVsStatus,
                 is EquipmentPassive.DamageTypeBonus,
                 is EquipmentPassive.DamageVsTag,
                 is EquipmentPassive.ResistanceBonus,
                 -> Unit
             }
+        }
+        if (refreshed) {
+            refreshActorDerivedStats(actorId)
+        }
+    }
+
+    private fun refreshActorDerivedStats(actorId: EntityId) {
+        if (world.get<Stats>(actorId) == null || world.get<com.ktome.core.ecs.CombatProfile>(actorId) == null) {
+            return
+        }
+        syncEquipmentPassiveStatModifier(actorId)
+        StatsCalculator.recalculateAndStore(world, actorId)
+        if (actorId == playerId) {
+            syncPlayerResistanceProfile()
+        }
+    }
+
+    private fun syncEquipmentPassiveStatModifier(actorId: EntityId) {
+        val health = world.get<Health>(actorId)
+        val currentComponent = world.get<EquipmentPassiveStatModifier>(actorId)
+        val passiveFreeDerived = StatsCalculator.calculateWithoutEquipmentPassive(world, actorId)
+        val passiveFreeMaxHp = passiveFreeDerived.maxHp.coerceAtLeast(1)
+        val passiveMaxHpDelta = (health?.max ?: passiveFreeMaxHp) - passiveFreeMaxHp
+        val underlyingCurrentHp =
+            if (health == null) {
+                passiveFreeMaxHp
+            } else {
+                // Recalculate preserves missing HP when max HP changes. Subtract the currently applied
+                // passive HP delta so threshold passives evaluate against the underlying health state.
+                (health.current - passiveMaxHpDelta).coerceIn(0, passiveFreeMaxHp)
+            }
+        val healthFraction =
+            underlyingCurrentHp.toDouble() / passiveFreeMaxHp.toDouble()
+        val statusIds =
+            world.get<com.ktome.core.status.StatusTracker>(actorId)
+                ?.activeEffects()
+                ?.mapTo(linkedSetOf()) { effect -> effect.schemaId }
+                .orEmpty()
+        val terrainTags =
+            world.get<Position>(actorId)
+                ?.toPoint()
+                ?.let(activeFloorState::terrainTagsAt)
+                .orEmpty()
+        val statAdjustment =
+            PassiveEffectResolver.resolveStatAdjustment(
+                passives = PassiveEffectResolver.equippedPassives(world, actorId),
+                context =
+                    PassiveStatContext(
+                        healthFraction = healthFraction,
+                        selfStatusIds = statusIds,
+                        terrainTags = terrainTags,
+                    ),
+            )
+        if (statAdjustment.modifier == StatModifier.ZERO) {
+            if (currentComponent != null) {
+                world.remove<EquipmentPassiveStatModifier>(actorId)
+            }
+            return
+        }
+        if (currentComponent?.modifier != statAdjustment.modifier) {
+            world.add(
+                actorId,
+                EquipmentPassiveStatModifier(
+                    modifier = statAdjustment.modifier,
+                ),
+            )
         }
     }
 
@@ -8000,16 +8112,22 @@ class FoundationGameSession internal constructor(
         PassiveEffectResolver.resistanceBonuses(PassiveEffectResolver.equippedPassives(world, playerId)).forEach { (type, amount) ->
             combined[type] = (combined[type] ?: 0) + amount
         }
+        val currentProfile = world.get<ResistanceProfile>(playerId)
         if (combined.isEmpty()) {
-            world.remove<ResistanceProfile>(playerId)
-        } else {
-            world.add(
-                playerId,
-                ResistanceProfile(
-                    values = combined.toMutableMap(),
-                ),
-            )
+            if (currentProfile != null) {
+                world.remove<ResistanceProfile>(playerId)
+            }
+            return
         }
+        if (currentProfile?.values == combined) {
+            return
+        }
+        world.add(
+            playerId,
+            ResistanceProfile(
+                values = combined.toMutableMap(),
+            ),
+        )
     }
 
     private fun resolveDamageMultiplier(
@@ -8132,6 +8250,187 @@ class FoundationGameSession internal constructor(
         return monsterTags + statusTags
     }
 
+    private fun buildEquipmentPassiveCallbacks(attacker: EntityId): List<PipelineCallback> {
+        val passives = PassiveEffectResolver.equippedPassives(world, attacker)
+        if (passives.isEmpty()) {
+            return emptyList()
+        }
+        val callbacks = mutableListOf<PipelineCallback>()
+        PassiveEffectResolver.onHitStatusProcs(passives).forEach { trigger ->
+            callbacks +=
+                PipelineCallback(
+                    ownerId = attacker,
+                    callbackName = "item_passive_on_hit:${trigger.source.item.baseId}:${trigger.source.affixId ?: "base"}",
+                    phase = com.ktome.core.combat.CombatCallbackPhase.ON_DAMAGE_APPLIED,
+                    priority = 220,
+                ) { context ->
+                    val roll = context.rollChance(trigger.chance)
+                    val triggered =
+                        when {
+                            trigger.chance <= 0.0 -> false
+                            trigger.chance >= 1.0 -> true
+                            else -> requireNotNull(roll) < trigger.chance
+                        }
+                    if (triggered) {
+                        context.recordPassiveTrigger(
+                            PassiveTriggerTrace(
+                                passiveKind = EquipmentPassiveKindIds.ON_HIT_STATUS_PROC,
+                                sourceItemBaseId = trigger.source.item.baseId,
+                                sourceAffixId = trigger.source.affixId,
+                                sourceSpecialTemplateId = trigger.source.item.specialTemplateId,
+                                statusId = trigger.statusId,
+                                triggeredCount = 1,
+                                duration = trigger.duration,
+                                magnitude = trigger.magnitude,
+                                chance = trigger.chance,
+                                roll = roll,
+                            ),
+                        )
+                    }
+                    CallbackDecision(effect = if (triggered) "ITEM_PASSIVE_TRIGGERED" else "ITEM_PASSIVE_NOT_TRIGGERED")
+                }
+        }
+        PassiveEffectResolver.onKillResourceRestores(passives).forEach { trigger ->
+            callbacks +=
+                PipelineCallback(
+                    ownerId = attacker,
+                    callbackName = "item_passive_on_kill:${trigger.source.item.baseId}:${trigger.source.affixId ?: "base"}",
+                    phase = com.ktome.core.combat.CombatCallbackPhase.ON_KILL,
+                    priority = 230,
+                ) { context ->
+                    context.recordPassiveTrigger(
+                        PassiveTriggerTrace(
+                            passiveKind = EquipmentPassiveKindIds.ON_KILL_RESOURCE_RESTORE,
+                            sourceItemBaseId = trigger.source.item.baseId,
+                            sourceAffixId = trigger.source.affixId,
+                            sourceSpecialTemplateId = trigger.source.item.specialTemplateId,
+                            resourceType = trigger.resourceType.name,
+                            triggeredCount = 1,
+                            amount = trigger.amount,
+                        ),
+                    )
+                    CallbackDecision(effect = "ITEM_PASSIVE_TRIGGERED")
+                }
+        }
+        return callbacks
+    }
+
+    private fun applyTriggeredCombatPassives(
+        attacker: EntityId,
+        target: EntityId,
+        trace: com.ktome.core.combat.CombatResolutionTrace?,
+    ) = applyTriggeredCombatPassives(attacker = attacker, target = target, triggers = trace?.passiveTriggers.orEmpty())
+
+    private fun applyTriggeredCombatPassives(
+        attacker: EntityId,
+        target: EntityId,
+        triggers: List<PassiveTriggerTrace>,
+    ) {
+        triggers.forEach { trigger ->
+            when (trigger.passiveKind) {
+                EquipmentPassiveKindIds.ON_HIT_STATUS_PROC -> applyTriggeredStatusProc(attacker = attacker, target = target, trigger = trigger)
+                EquipmentPassiveKindIds.ON_KILL_RESOURCE_RESTORE -> Unit
+            }
+        }
+    }
+
+    private fun applyTriggeredStatusProc(
+        attacker: EntityId,
+        target: EntityId,
+        trigger: PassiveTriggerTrace,
+    ) {
+        if (!world.isAlive(target) || (world.get<Health>(target)?.current ?: 0) <= 0) {
+            return
+        }
+        val statusId = requireNotNull(trigger.statusId)
+        val duration = requireNotNull(trigger.duration)
+        val source = findTriggeredPassiveSource(attacker = attacker, trigger = trigger)
+        val resolution =
+            combatResolver.resolveStatusApplication(
+                world = world,
+                attacker = attacker,
+                target = target,
+                request =
+                    com.ktome.core.combat.StatusApplicationRequest(
+                        statusId = statusId,
+                        duration = duration,
+                        applicationPolicy = ApplicationPolicy.INSTANT_ACTION,
+                    ),
+                hitSucceeded = true,
+            )
+        if (!resolution.applied) {
+            return
+        }
+        val statusType = StatusEffectType.fromSchemaId(statusId)
+        val result =
+            com.ktome.core.status.StatusLifecycle.applyEffect(
+                world,
+                target,
+                com.ktome.core.status.StatusLifecycle.createInstance(
+                    type = statusType,
+                    effectId = "item_passive:${trigger.sourceItemBaseId}:${statusId}:${target.value}:$turnCount",
+                    duration = duration,
+                    magnitude = trigger.magnitude ?: 0.0,
+                    sourceEntityId = attacker,
+                    appliedTurn = turnCount,
+                    applicationPolicy = ApplicationPolicy.INSTANT_ACTION,
+                ),
+            )
+        if (!result.applied) {
+            return
+        }
+        refreshActorDerivedStats(target)
+        logEvent(
+            StatusAppliedEvent(
+                target = target,
+                statusType = statusType,
+                statusId = statusId,
+                source = attacker,
+                remainingTurns = duration,
+            ),
+        )
+        if (attacker == playerId && source != null) {
+            addMessage(
+                "log.passive.on_hit_status",
+                itemDisplayArgument("item", source.item),
+                entityArg("target", target),
+                keyArg("status", statusNameKey(statusId)),
+                literalArg("turns", duration),
+            )
+        }
+    }
+
+    private fun applyOnKillPassiveRestores(
+        attacker: EntityId,
+    ) {
+        val pools = world.get<com.ktome.core.resource.ResourcePools>(attacker) ?: return
+        PassiveEffectResolver.onKillResourceRestores(PassiveEffectResolver.equippedPassives(world, attacker)).forEach { trigger ->
+            val pool = pools.pool(trigger.resourceType) ?: return@forEach
+            val before = pool.current
+            pool.restore(trigger.amount)
+            val restored = pool.current - before
+            if (restored > 0 && attacker == playerId) {
+                addMessage(
+                    "log.passive.on_kill_resource_restore",
+                    itemDisplayArgument("item", trigger.source.item),
+                    literalArg("amount", restored),
+                    keyArg("resource", resourceLabelKey(trigger.resourceType.name)),
+                )
+            }
+        }
+    }
+
+    private fun findTriggeredPassiveSource(
+        attacker: EntityId,
+        trigger: PassiveTriggerTrace,
+    ): EquippedPassiveSource? =
+        PassiveEffectResolver.equippedPassives(world, attacker).firstOrNull { source ->
+            source.item.baseId == trigger.sourceItemBaseId &&
+                source.affixId == trigger.sourceAffixId &&
+                source.item.specialTemplateId == trigger.sourceSpecialTemplateId &&
+                source.passive.kindId() == trigger.passiveKind
+        }
+
     private fun logTriggeredDamagePassives(
         attacker: EntityId,
         sources: List<EquippedPassiveSource>,
@@ -8168,6 +8467,10 @@ class FoundationGameSession internal constructor(
                         literalArg("amount", (passive.bonusPercent * 100).toInt()),
                     )
 
+                is EquipmentPassive.OnHitStatusProc,
+                is EquipmentPassive.OnKillResourceRestore,
+                is EquipmentPassive.ConditionalStatBonus,
+                is EquipmentPassive.TerrainAffinityBonus,
                 is EquipmentPassive.HpRegenPerTurn,
                 is EquipmentPassive.ResistanceBonus,
                 -> Unit
@@ -8267,12 +8570,41 @@ class FoundationGameSession internal constructor(
         applyTalentResourceReactions(result)
         recordTalentCombatObservations(result)
         applyTalentTerrainInteractions(result)
+        applyTriggeredTalentCombatPassives(result)
         if (successfulPlayerAffinityId != null && result.hasConfirmedResolutionSuccess()) {
             recordSuccessfulPlayerAffinity(successfulPlayerAffinityId)
         }
         logTalentResult(result)
         logTriggeredTalentDamagePassives(result)
         handleTalentDeaths(result.targets, result.user)
+    }
+
+    private fun applyTriggeredTalentCombatPassives(result: com.ktome.core.talent.TalentResult) {
+        result.effects
+            .filterIsInstance<com.ktome.core.talent.TalentEffectResult.Damage>()
+            .forEach { effect ->
+                refreshTargetDerivedStatsAfterDamage(
+                    target = effect.target,
+                    finalDamage = effect.amount,
+                    targetKilled = !world.isAlive(effect.target),
+                )
+                applyTriggeredCombatPassives(
+                    attacker = result.user,
+                    target = effect.target,
+                    triggers = effect.passiveTriggers,
+                )
+            }
+    }
+
+    private fun refreshTargetDerivedStatsAfterDamage(
+        target: EntityId,
+        finalDamage: Int,
+        targetKilled: Boolean,
+    ) {
+        if (finalDamage <= 0 || targetKilled || !world.isAlive(target)) {
+            return
+        }
+        refreshActorDerivedStats(target)
     }
 
     private fun applyTalentTerrainInteractions(result: com.ktome.core.talent.TalentResult) {
@@ -8641,8 +8973,7 @@ class FoundationGameSession internal constructor(
                     remainingTurns = payload.durationTurns,
                 ),
             )
-            StatsCalculator.recalculateAndStore(world, playerId)
-            syncPlayerResistanceProfile()
+            refreshActorDerivedStats(playerId)
             addMessage(
                 "log.hidden.reward.buff",
                 keyArg("zone", secretZoneNameKey(secretZoneId)),
@@ -8729,7 +9060,7 @@ class FoundationGameSession internal constructor(
                 threatCost = threatCost,
             ),
         )
-        StatsCalculator.recalculateAndStore(world, monsterId)
+        refreshActorDerivedStats(monsterId)
         addMessage(
             "log.hidden.reward.encounter",
             keyArg("zone", secretZoneNameKey(secretZoneId)),
@@ -8964,6 +9295,7 @@ class FoundationGameSession internal constructor(
         val secretZone = requireNotNull(content.secretZone(context.secretZoneId))
         val anchorPoints = secretZoneAnchorPoints(context.room)
         requireNotNull(world.get<Position>(playerId)).moveTo(anchorPoints.entry)
+        refreshActorDerivedStats(playerId)
         activeFloorState.visitedSecretZoneIds += context.secretZoneId
         addMessage("log.hidden.secret_zone.enter", keyArg("zone", secretZone.nameKey))
         return CommandResolution.accepted()
@@ -8974,6 +9306,7 @@ class FoundationGameSession internal constructor(
             activeFloorState.generatedFloor.rooms.firstOrNull { room -> room.nodeId == context.entrance.resolvedReturnBridgeNodeId }
                 ?: error("Secret-zone return bridge '${context.entrance.resolvedReturnBridgeNodeId.value}' did not resolve to a room.")
         requireNotNull(world.get<Position>(playerId)).moveTo(secretZoneAnchorPoints(returnRoom).entry)
+        refreshActorDerivedStats(playerId)
         addMessage("log.hidden.secret_zone.return", keyArg("zone", secretZoneNameKey(context.secretZoneId)))
         return CommandResolution.accepted()
     }
@@ -9536,6 +9869,43 @@ class FoundationGameSession internal constructor(
 
     private fun passiveDescriptionToken(passive: EquipmentPassive): RenderTextTokenSnapshot =
         when (passive) {
+            is EquipmentPassive.OnHitStatusProc ->
+                RenderTextTokenSnapshot(
+                    "ui.inspect.passive.on_hit_status_proc",
+                    listOf(
+                        literalArg("chance", (passive.chance * 100).toInt()),
+                        keyArg("status", statusNameKey(passive.statusId)),
+                        literalArg("turns", passive.duration),
+                    ),
+                )
+
+            is EquipmentPassive.OnKillResourceRestore ->
+                RenderTextTokenSnapshot(
+                    "ui.inspect.passive.on_kill_resource_restore",
+                    listOf(
+                        literalArg("amount", passive.amount),
+                        keyArg("resource", resourceLabelKey(passive.resourceType.name)),
+                    ),
+                )
+
+            is EquipmentPassive.ConditionalStatBonus ->
+                RenderTextTokenSnapshot(
+                    "ui.inspect.passive.conditional_stat_bonus",
+                    listOf(
+                        keyArg("condition", passiveConditionLabelKey(passive.condition)),
+                        literalArg("modifier", statModifierSummary(passive.statModifier)),
+                    ),
+                )
+
+            is EquipmentPassive.TerrainAffinityBonus ->
+                RenderTextTokenSnapshot(
+                    "ui.inspect.passive.terrain_affinity_bonus",
+                    listOf(
+                        keyArg("terrain", terrainTagLabelKey(passive.terrainTag)),
+                        literalArg("modifier", statModifierSummary(passive.statModifier)),
+                    ),
+                )
+
             is EquipmentPassive.DamageVsTag ->
                 RenderTextTokenSnapshot(
                     "ui.inspect.passive.damage_vs_tag",
@@ -9580,6 +9950,23 @@ class FoundationGameSession internal constructor(
                     ),
                 )
         }
+
+    private fun passiveConditionLabelKey(condition: PassiveCondition): String =
+        when (condition) {
+            PassiveCondition.HP_BELOW_50 -> "ui.inspect.passive.condition.hp_below_50"
+            PassiveCondition.HP_BELOW_30 -> "ui.inspect.passive.condition.hp_below_30"
+            PassiveCondition.HP_ABOVE_80 -> "ui.inspect.passive.condition.hp_above_80"
+            PassiveCondition.SELF_HAS_STATUS -> "ui.inspect.passive.condition.self_has_status"
+        }
+
+    private fun terrainTagLabelKey(tag: TerrainTag): String =
+        when (tag) {
+            TerrainTag.WATER -> "tile.water.name"
+            TerrainTag.OIL -> "tile.oil.name"
+            TerrainTag.ICE -> "tile.ice.name"
+        }
+
+    private fun statModifierSummary(modifier: StatModifier): String = statModifierLines(modifier).joinToString(", ")
 
     private fun monsterTagArg(
         name: String,
@@ -9914,9 +10301,8 @@ class FoundationGameSession internal constructor(
         }
         val result = inventoryManager.drop(world, playerId, index, playerPosition())
         if (result.success && itemView.equippedSlot != null) {
-            StatsCalculator.recalculateAndStore(world, playerId)
+            refreshActorDerivedStats(playerId)
             ensurePlayerResourcePools()
-            syncPlayerResistanceProfile()
         }
         addInventoryMessage(result)
         return CommandResolution(result.success, consumesTurn = false)

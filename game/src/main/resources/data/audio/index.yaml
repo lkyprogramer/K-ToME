@@ -102,6 +102,18 @@ audioProfiles:
   - id: audio.item.mana_potion
   - id: audio.item.arcane_staff
   - id: audio.item.apprentice_robe
+  - id: audio.item.unique.thornpath_crook
+  - id: audio.item.unique.heartwood_talisman
+  - id: audio.item.unique.quenchbreaker_maul
+  - id: audio.item.unique.cinderveil_plate
+  - id: audio.item.unique.floodglass_rapier
+  - id: audio.item.unique.deepcurrent_lens
+  - id: audio.item.unique.vesper_chainmail
+  - id: audio.item.unique.nullwake_blade
+  - id: audio.item.artifact.heartroot_gambit
+  - id: audio.item.artifact.slag_tyrant_seal
+  - id: audio.item.artifact.deepcurrent_crown
+  - id: audio.item.artifact.vesper_prism
   - id: audio.talent.linebreaker
   - id: audio.talent.earthshaker
   - id: audio.talent.bulwark_march

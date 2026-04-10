@@ -5,6 +5,8 @@ import com.ktome.core.combat.CombatResolver
 import com.ktome.core.combat.DamageType
 import com.ktome.core.combat.DiminishingReturns
 import com.ktome.core.combat.ElementInteractionResolution
+import com.ktome.core.combat.PassiveTriggerTrace
+import com.ktome.core.combat.PipelineCallback
 import com.ktome.core.combat.SaveDimension
 import com.ktome.core.combat.StatusApplicationRequest
 import com.ktome.core.ecs.BlocksMovement
@@ -91,6 +93,20 @@ enum class TalentFailureCode {
     NO_CHARGE_PATH,
 }
 
+fun interface TalentCombatCallbackResolver {
+    fun resolve(
+        world: World,
+        attacker: EntityId,
+        target: EntityId,
+        damageType: DamageType,
+        abilityId: String,
+    ): List<PipelineCallback>
+
+    companion object {
+        val NONE: TalentCombatCallbackResolver = TalentCombatCallbackResolver { _, _, _, _, _ -> emptyList() }
+    }
+}
+
 data class TalentResult(
     val talentId: String,
     val talentName: String,
@@ -107,6 +123,7 @@ sealed interface TalentEffectResult {
         val damageType: DamageType = DamageType.PHYSICAL,
         val resistanceValue: Int = 0,
         val terrainInteraction: ElementInteractionResolution? = null,
+        val passiveTriggers: List<PassiveTriggerTrace> = emptyList(),
         val stealthBroken: Boolean = false,
         val removedStatusTypes: List<StatusEffectType> = emptyList(),
     ) : TalentEffectResult
@@ -171,6 +188,7 @@ class TalentResolver(
 ) {
     var damageMultiplierResolver: DamageMultiplierResolver =
         DamageMultiplierResolver { _, _, _, _, baseMultiplier -> baseMultiplier }
+    var combatCallbackResolver: TalentCombatCallbackResolver = TalentCombatCallbackResolver.NONE
 
     private val supportedTalentIds =
         setOf(
@@ -1596,6 +1614,14 @@ class TalentResolver(
                 damageType = damageType,
                 damageMultiplier = effectiveMultiplier,
                 abilityId = abilityId,
+                callbacks =
+                    combatCallbackResolver.resolve(
+                        world = world,
+                        attacker = attacker,
+                        target = target,
+                        damageType = damageType,
+                        abilityId = abilityId,
+                    ),
             )
         if (!result.hit) {
             effects += TalentEffectResult.Miss(target)
@@ -1611,6 +1637,7 @@ class TalentResolver(
                 damageType = damage.type,
                 resistanceValue = damage.resistanceValue,
                 terrainInteraction = result.terrainInteraction,
+                passiveTriggers = result.trace?.passiveTriggers.orEmpty(),
                 stealthBroken = StatusEffectType.STEALTH in result.removedStatusTypes,
                 removedStatusTypes = result.removedStatusTypes.toList(),
             )

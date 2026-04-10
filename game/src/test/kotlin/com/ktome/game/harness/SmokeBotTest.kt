@@ -101,6 +101,47 @@ class SmokeBotTest {
     }
 
     @Test
+    fun `moderately injured vanguard keeps pressure on a lone close boss instead of spending teleport escape`() {
+        val observation =
+            observation(
+                inventoryItems =
+                    listOf(
+                        InventoryItemView(
+                            index = 0,
+                            name = "传送卷轴",
+                            type = ItemType.CONSUMABLE,
+                            effect = ConsumableEffect.TELEPORT,
+                        ),
+                    ),
+                playerStatus =
+                    PlayerStatus(
+                        currentHp = 22,
+                        maxHp = 30,
+                        level = 1,
+                        currentExperience = 0,
+                        nextLevelRequirement = 10,
+                        statPoints = 0,
+                        talentPoints = 0,
+                        attack = 6,
+                        defense = 4,
+                        accuracy = 5,
+                        evasion = 3,
+                        speed = 100,
+                    ),
+                playerResource = PlayerResourceView(current = 20, max = 20, typeId = "STAMINA"),
+                visibleHostilePositions = listOf(Point(4, 1)),
+                visibleBossPositions = listOf(Point(4, 1)),
+                visibleTiles = setOf(Point(1, 1), Point(2, 1), Point(3, 1), Point(4, 1)),
+                exploredTiles = setOf(Point(1, 1), Point(2, 1), Point(3, 1), Point(4, 1)),
+            )
+
+        assertFalse(
+            bot.decide(observation) is PlayerCommand.ActivateInventoryItem,
+            "Vanguard should keep boss pressure at moderate health instead of spending teleport escape.",
+        )
+    }
+
+    @Test
     fun `low hp heals before interacting with an objective on the same tile`() {
         val observation =
             observation(
