@@ -44,8 +44,8 @@ class LongRunLabTest {
                         ),
                 ),
                 fullRouteSmokeSpec(
-                    name = "long-run-rogue-20260360",
-                    seed = 20260360L,
+                    name = "long-run-rogue-20260350",
+                    seed = 20260350L,
                     professionId = "rogue",
                 ),
                 fullRouteSmokeSpec(

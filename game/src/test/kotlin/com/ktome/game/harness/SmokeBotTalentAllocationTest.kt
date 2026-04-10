@@ -124,6 +124,25 @@ class SmokeBotTalentAllocationTest {
         assertEquals(PlayerCommand.AssignTalent("shadowstep"), command)
     }
 
+    @Test
+    fun `smoke bot pushes rogue shadowstep to breakpoint rank before finishing shadow bind`() {
+        val command =
+            bot.decide(
+                observation(
+                    playerStatus = healthyStatus(talentPoints = 1, raceTalentPoints = 0),
+                    playerResource = PlayerResourceView(current = 40, max = 100, typeId = "ENERGY"),
+                    talentSlots =
+                        listOf(
+                            talentSlot(slot = 1, talentId = "backstab", ownerType = TalentTreeOwnerType.PROFESSION),
+                            talentSlot(slot = 2, talentId = "shadow_bind", ownerType = TalentTreeOwnerType.PROFESSION).copy(level = 1),
+                            talentSlot(slot = 3, talentId = "shadowstep", ownerType = TalentTreeOwnerType.PROFESSION).copy(level = 1),
+                        ),
+                ),
+            )
+
+        assertEquals(PlayerCommand.AssignTalent("shadowstep"), command)
+    }
+
     private fun observation(
         playerStatus: PlayerStatus,
         playerResource: PlayerResourceView = PlayerResourceView(current = 40, max = 100, typeId = "HATE"),

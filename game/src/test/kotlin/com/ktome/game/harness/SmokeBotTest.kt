@@ -101,6 +101,42 @@ class SmokeBotTest {
     }
 
     @Test
+    fun `critical mana build blinks away from a single nearby elite threat`() {
+        val observation =
+            observation(
+                inventoryItems = emptyList(),
+                playerStatus =
+                    PlayerStatus(
+                        currentHp = 9,
+                        maxHp = 30,
+                        level = 2,
+                        currentExperience = 0,
+                        nextLevelRequirement = 10,
+                        statPoints = 0,
+                        talentPoints = 0,
+                        attack = 6,
+                        defense = 4,
+                        accuracy = 5,
+                        evasion = 3,
+                        speed = 100,
+                    ),
+                playerResource = PlayerResourceView(current = 20, max = 20, typeId = "MANA"),
+                visibleHostilePositions = listOf(Point(7, 0)),
+                visibleTiles = (0..10).mapTo(linkedSetOf()) { x -> Point(x, 0) },
+                exploredTiles = (0..10).mapTo(linkedSetOf()) { x -> Point(x, 0) },
+                map = longCorridorMap,
+                playerPosition = Point(4, 0),
+                talentSlots = manaLoadout(),
+            )
+
+        val command = bot.decide(observation)
+        assertTrue(
+            command is PlayerCommand.UseTalent && command.slot == 2 && command.target != null,
+            "Expected critical mana build to blink away from a single nearby threat, actual=$command.",
+        )
+    }
+
+    @Test
     fun `moderately injured vanguard keeps pressure on a lone close boss instead of spending teleport escape`() {
         val observation =
             observation(
@@ -193,6 +229,80 @@ class SmokeBotTest {
                         ),
                     ),
                 playerResource = PlayerResourceView(current = 60, max = 100, typeId = "ENERGY"),
+            )
+
+        assertEquals(PlayerCommand.ActivateInventoryItem(1), bot.decide(observation))
+    }
+
+    @Test
+    fun `hate build does not auto equip a low value off hand into an empty slot`() {
+        val observation =
+            observation(
+                inventoryItems =
+                    listOf(
+                        InventoryItemView(
+                            index = 0,
+                            name = "War Maul",
+                            baseItemId = "war_maul",
+                            type = ItemType.WEAPON,
+                            slot = EquipSlot.WEAPON,
+                            equippedSlot = EquipSlot.WEAPON,
+                            quality = RarityTier.NORMAL,
+                        ),
+                        InventoryItemView(
+                            index = 1,
+                            name = "Basic Shield of Life",
+                            baseItemId = "basic_shield",
+                            type = ItemType.ARMOR,
+                            slot = EquipSlot.OFF_HAND,
+                            quality = RarityTier.MAGIC,
+                            affixIds = listOf("sentinel", "of_life"),
+                        ),
+                    ),
+                playerResource = PlayerResourceView(current = 44, max = 100, typeId = "HATE"),
+            )
+
+        assertFalse(
+            bot.decide(observation) is PlayerCommand.ActivateInventoryItem,
+            "HATE builds should not fill an empty off-hand with a generic sustain shield by default.",
+        )
+    }
+
+    @Test
+    fun `mana gear management prefers offensive rare battle axe over affix padded long sword`() {
+        val observation =
+            observation(
+                inventoryItems =
+                    listOf(
+                        InventoryItemView(
+                            index = 0,
+                            name = "Arcane Staff",
+                            baseItemId = "arcane_staff",
+                            type = ItemType.WEAPON,
+                            slot = EquipSlot.WEAPON,
+                            equippedSlot = EquipSlot.WEAPON,
+                            quality = RarityTier.NORMAL,
+                        ),
+                        InventoryItemView(
+                            index = 1,
+                            name = "Battle Axe of Blackice",
+                            baseItemId = "battle_axe",
+                            type = ItemType.WEAPON,
+                            slot = EquipSlot.WEAPON,
+                            quality = RarityTier.RARE,
+                            affixIds = listOf("warforged", "of_blackice", "vampiric"),
+                        ),
+                        InventoryItemView(
+                            index = 2,
+                            name = "Long Sword of Blackice",
+                            baseItemId = "long_sword",
+                            type = ItemType.WEAPON,
+                            slot = EquipSlot.WEAPON,
+                            quality = RarityTier.RARE,
+                            affixIds = listOf("warforged", "of_storms", "sharp", "of_blackice"),
+                        ),
+                    ),
+                playerResource = PlayerResourceView(current = 20, max = 20, typeId = "MANA"),
             )
 
         assertEquals(PlayerCommand.ActivateInventoryItem(1), bot.decide(observation))
