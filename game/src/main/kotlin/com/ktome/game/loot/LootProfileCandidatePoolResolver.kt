@@ -68,6 +68,7 @@ class LootProfileCandidatePoolResolver(
             }
         val excludedIds = resolveExplicitIds(profile.excludeIds, fieldName = "excludeIds", profileId = profile.id)
         allCandidateBaseIds.removeAll(excludedIds)
+        val survivingExplicitBaseIds = explicitBaseIds - excludedIds
 
         require(allCandidateBaseIds.isNotEmpty()) {
             "Loot profile '${profile.id}' resolved to an empty candidate pool."
@@ -77,11 +78,14 @@ class LootProfileCandidatePoolResolver(
             allCandidateBaseIds
                 .filterTo(linkedSetOf()) { baseId -> itemBundle.specialTemplateForItemId(baseId) != null }
         val explicitPreferredSpecialTemplateIds =
-            explicitBaseIds
+            survivingExplicitBaseIds
                 .mapNotNullTo(linkedSetOf()) { baseId -> itemBundle.specialTemplateForItemId(baseId)?.id }
         val preferredSpecialTemplateIds =
             explicitPreferredSpecialTemplateIds.ifEmpty {
-                resolveTemplateIdsByTags(profile.specialTemplateTagPreference)
+                resolveTemplateIdsByTags(
+                    tags = profile.specialTemplateTagPreference,
+                    allowedBaseIds = allCandidateBaseIds,
+                )
             }
         val standardCandidateBaseIds = allCandidateBaseIds - specialLinkedBaseIds
         require(standardCandidateBaseIds.isNotEmpty()) {
@@ -124,13 +128,17 @@ class LootProfileCandidatePoolResolver(
             .mapTo(linkedSetOf(), ItemBaseDef::id)
     }
 
-    private fun resolveTemplateIdsByTags(tags: List<String>): Set<String> {
+    private fun resolveTemplateIdsByTags(
+        tags: List<String>,
+        allowedBaseIds: Set<String>,
+    ): Set<String> {
         if (tags.isEmpty()) {
             return emptySet()
         }
         val normalizedTags = tags.mapTo(linkedSetOf(), ::normalizeTag)
         return itemBundle.specialTemplates
             .asSequence()
+            .filter { template -> template.itemId in allowedBaseIds }
             .filter { template -> template.tags.any { tag -> normalizeTag(tag) in normalizedTags } }
             .mapTo(linkedSetOf()) { template -> template.id }
     }

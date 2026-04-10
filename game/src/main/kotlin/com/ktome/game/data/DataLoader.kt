@@ -560,26 +560,35 @@ class DataLoader(
                     pack = pack,
                     overlay = overlay,
                     sourcePath = sourcePath,
-                    entries = parseLootProfileSchemas(root, expectedSchemaVersion = null),
-                    idOf = LootProfileSchemaV3::id,
-                ).let { entry ->
-                    if (entry.schemaVersion != LOOT_PROFILE_SCHEMA_VERSION) {
+                    entries = parseLootProfileSchemaHeaders(root),
+                    idOf = LootProfileSchemaHeader::id,
+                ).let { header ->
+                    if (header.schemaVersion != LOOT_PROFILE_SCHEMA_VERSION) {
                         throw packLoadException(
                             code = "content-pack.loot-profile.schema-version-mismatch",
-                            message = "Loot profile overlay '${entry.id}' must use schemaVersion=$LOOT_PROFILE_SCHEMA_VERSION; got ${entry.schemaVersion}.",
+                            message = "Loot profile overlay '${header.id}' must use schemaVersion=$LOOT_PROFILE_SCHEMA_VERSION; got ${header.schemaVersion}.",
                             pack = pack,
                             overlay = overlay,
                             sourcePath = sourcePath,
                             details =
                                 mapOf(
                                     "packId" to pack.id.value,
-                                    "targetProfileId" to entry.id,
-                                    "actualSchemaVersion" to entry.schemaVersion.toString(),
+                                    "targetProfileId" to header.id,
+                                    "actualSchemaVersion" to header.schemaVersion.toString(),
                                     "expectedSchemaVersion" to LOOT_PROFILE_SCHEMA_VERSION.toString(),
                                 ),
                         )
                     }
-                    ParsedPackOverlayPayload.LootProfile(entry = entry)
+                    ParsedPackOverlayPayload.LootProfile(
+                        entry =
+                            requireSinglePackEntry(
+                                pack = pack,
+                                overlay = overlay,
+                                sourcePath = sourcePath,
+                                entries = parseLootProfileSchemas(root),
+                                idOf = LootProfileSchemaV3::id,
+                            ),
+                    )
                 }
 
             "monster" ->
@@ -1800,10 +1809,16 @@ class DataLoader(
             )
         }
 
-    private fun parseLootProfileSchemas(
-        root: Map<String, Any?>,
-        expectedSchemaVersion: Int? = LOOT_PROFILE_SCHEMA_VERSION,
-    ): List<LootProfileSchemaV3> =
+    private fun parseLootProfileSchemaHeaders(root: Map<String, Any?>): List<LootProfileSchemaHeader> =
+        root.requiredList("lootProfiles").map { entry ->
+            val profile = entry.requiredMap()
+            LootProfileSchemaHeader(
+                id = profile.requiredString("id"),
+                schemaVersion = profile.requiredInt("schemaVersion"),
+            )
+        }
+
+    private fun parseLootProfileSchemas(root: Map<String, Any?>): List<LootProfileSchemaV3> =
         root.requiredList("lootProfiles").map { entry ->
             val profile = entry.requiredMap()
             LootProfileSchemaV3(
@@ -1820,13 +1835,16 @@ class DataLoader(
                 specialTemplateTagPreference = profile.optionalStringList("specialTemplateTagPreference"),
                 affixTagPreference = profile.optionalStringList("affixTagPreference"),
             ).also { parsed ->
-                expectedSchemaVersion?.let { expected ->
-                    require(parsed.schemaVersion == expected) {
-                        "Loot profile '${parsed.id}' must use schemaVersion=$expected but got ${parsed.schemaVersion}."
-                    }
+                require(parsed.schemaVersion == LOOT_PROFILE_SCHEMA_VERSION) {
+                    "Loot profile '${parsed.id}' must use schemaVersion=$LOOT_PROFILE_SCHEMA_VERSION but got ${parsed.schemaVersion}."
                 }
             }
         }
+
+    private data class LootProfileSchemaHeader(
+        val id: String,
+        val schemaVersion: Int,
+    )
 
     private fun parseTelegraphSpecs(root: Map<String, Any?>): List<TelegraphSpec> =
         root.requiredList("telegraphSpecs").map { entry ->
