@@ -80,12 +80,14 @@ data class DualPackScenario(
 data class ContentPackHarnessSpec(
     val packId: PackId,
     val harnessSeeds: List<Long>,
+    val generatedTemplateSeeds: List<Long> = harnessSeeds,
     val dualPackScenarios: List<DualPackScenario> = emptyList(),
     val fixtureOrder: List<String> = emptyList(),
     val overlayContractVersion: Int = 1,
 ) {
     init {
         require(harnessSeeds.isNotEmpty()) { "ContentPackHarnessSpec.harnessSeeds must not be empty." }
+        require(generatedTemplateSeeds.isNotEmpty()) { "ContentPackHarnessSpec.generatedTemplateSeeds must not be empty." }
         require(fixtureOrder.distinct().size == fixtureOrder.size) {
             "ContentPackHarnessSpec.fixtureOrder must not contain duplicates."
         }

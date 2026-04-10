@@ -59,6 +59,7 @@ import com.ktome.core.map.Point
 import com.ktome.core.mapgen.GeneratedFloor
 import com.ktome.core.mapgen.MapgenPipeline
 import com.ktome.core.mapgen.MapgenRequest
+import com.ktome.core.mapgen.NodeId
 import com.ktome.core.mapgen.TerrainTag
 import com.ktome.core.mapgen.TerrainOverride
 import com.ktome.core.mapgen.TopologyFingerprinting
@@ -161,6 +162,8 @@ internal data class FloorRuntimeState(
     val entities: MutableList<EntitySnapshot> = mutableListOf(),
     val revealedEntranceIds: LinkedHashSet<SearchBindingId> = linkedSetOf(),
     val visitedSecretZoneIds: LinkedHashSet<ContentRef> = linkedSetOf(),
+    val enteredRoomNodeIds: LinkedHashSet<NodeId> = linkedSetOf(),
+    val discoveryTags: LinkedHashSet<String> = linkedSetOf(),
     val consumedHiddenEventIds: LinkedHashSet<String> = linkedSetOf(),
     val searchState: MutableList<SearchStateEntry> = mutableListOf(),
 ) {
@@ -234,6 +237,16 @@ internal data class FloorRuntimeState(
         consumedHiddenEventIds += hiddenEventId
     }
 
+    fun hasEnteredRoom(nodeId: NodeId): Boolean = nodeId in enteredRoomNodeIds
+
+    fun markRoomEntered(nodeId: NodeId) {
+        enteredRoomNodeIds += nodeId
+    }
+
+    fun grantDiscoveryTags(tags: Set<String>) {
+        discoveryTags += tags
+    }
+
     private fun validateSearchStateConsistency() {
         require(revealedEntranceIds == searchState.revealedBindingIds()) {
             "FloorRuntimeState.revealedEntranceIds must match REVEALED searchState entries."
@@ -250,6 +263,8 @@ internal data class FloorRuntimeState(
         entities: MutableList<EntitySnapshot> = mutableListOf(),
         revealedEntranceIds: LinkedHashSet<SearchBindingId> = linkedSetOf(),
         visitedSecretZoneIds: LinkedHashSet<ContentRef> = linkedSetOf(),
+        enteredRoomNodeIds: LinkedHashSet<NodeId> = linkedSetOf(),
+        discoveryTags: LinkedHashSet<String> = linkedSetOf(),
         consumedHiddenEventIds: LinkedHashSet<String> = linkedSetOf(),
         searchState: MutableList<SearchStateEntry> = mutableListOf(),
     ) : this(
@@ -262,6 +277,8 @@ internal data class FloorRuntimeState(
         entities = entities,
         revealedEntranceIds = revealedEntranceIds,
         visitedSecretZoneIds = visitedSecretZoneIds,
+        enteredRoomNodeIds = enteredRoomNodeIds,
+        discoveryTags = discoveryTags,
         consumedHiddenEventIds = consumedHiddenEventIds,
         searchState = searchState,
     )
@@ -318,6 +335,8 @@ internal object SessionSnapshotMapper {
         excludedEntities: Set<EntityId>,
         revealedEntranceIds: Set<SearchBindingId> = emptySet(),
         visitedSecretZoneIds: Set<ContentRef> = emptySet(),
+        enteredRoomNodeIds: Set<NodeId> = emptySet(),
+        discoveryTags: Set<String> = emptySet(),
         consumedHiddenEventIds: Set<String> = emptySet(),
         searchState: List<SearchStateEntry> = emptyList(),
     ): FloorRuntimeState =
@@ -335,6 +354,8 @@ internal object SessionSnapshotMapper {
                     .toMutableList(),
             revealedEntranceIds = linkedSetOf<SearchBindingId>().apply { addAll(revealedEntranceIds) },
             visitedSecretZoneIds = linkedSetOf<ContentRef>().apply { addAll(visitedSecretZoneIds) },
+            enteredRoomNodeIds = linkedSetOf<NodeId>().apply { addAll(enteredRoomNodeIds) },
+            discoveryTags = linkedSetOf<String>().apply { addAll(discoveryTags) },
             consumedHiddenEventIds = linkedSetOf<String>().apply { addAll(consumedHiddenEventIds) },
             searchState = searchState.toMutableList(),
         )
@@ -461,6 +482,8 @@ internal object SessionSnapshotMapper {
                         resolvedHiddenEntranceBindings = floorState.payload.resolvedHiddenEntranceBindings,
                         revealedEntranceIds = floorState.payload.revealedEntranceIds.toSet(),
                         visitedSecretZoneIds = floorState.payload.visitedSecretZoneIds.toSet(),
+                        enteredRoomNodeIds = floorState.payload.enteredRoomNodeIds.toSet(),
+                        discoveryTags = floorState.payload.discoveryTags.toSet(),
                         consumedHiddenEventIds = floorState.payload.consumedHiddenEventIds.toSet(),
                         searchState = floorState.payload.searchState.toList(),
                         map =
@@ -544,6 +567,8 @@ internal object SessionSnapshotMapper {
                                 entities = floor.entities.map(::canonicalizeEntitySnapshot).sortedBy(EntitySnapshot::id).toMutableList(),
                                 revealedEntranceIds = linkedSetOf<SearchBindingId>().apply { addAll(floor.revealedEntranceIds) },
                                 visitedSecretZoneIds = linkedSetOf<ContentRef>().apply { addAll(floor.visitedSecretZoneIds) },
+                                enteredRoomNodeIds = linkedSetOf<NodeId>().apply { addAll(floor.enteredRoomNodeIds) },
+                                discoveryTags = linkedSetOf<String>().apply { addAll(floor.discoveryTags) },
                                 consumedHiddenEventIds = linkedSetOf<String>().apply { addAll(floor.consumedHiddenEventIds) },
                                 searchState = floor.searchState.toMutableList(),
                             ),

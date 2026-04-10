@@ -21,7 +21,7 @@ secretZones:
     guaranteedContent:
       - registry: hidden_event
         id: hidden.event.greenwood.hidden_cache.reward
-    entranceBindingId: optional.branch.1
+    entranceBindingId: hidden.branch
     returnBridgePolicy: LAST_MAINLINE_BRANCH
   - id:
       registry: secret_zone
@@ -36,8 +36,8 @@ secretZones:
     entryRule:
       combinator: AND
       predicates:
-        - type: PERCEPTION_CHECK
-          difficulty: 12
+        - type: REQUIRED_TAG
+          requiredTag: hidden.primer.deep_iron.slag_cache
     pathClass: SECRET
     rewardProfileId:
       registry: loot_profile
@@ -45,7 +45,7 @@ secretZones:
     guaranteedContent:
       - registry: hidden_event
         id: hidden.event.deep_iron.slag_cache.reward
-    entranceBindingId: optional.branch.1
+    entranceBindingId: hidden.critical.adjacent
     returnBridgePolicy: NEAREST_OPTIONAL_ANCHOR
   - id:
       registry: secret_zone
@@ -60,8 +60,10 @@ secretZones:
     entryRule:
       combinator: AND
       predicates:
+        - type: REQUIRED_TAG
+          requiredTag: hidden.primer.underground_river.crystal_rift
         - type: PERCEPTION_CHECK
-          difficulty: 16
+          difficulty: 10
     pathClass: SECRET
     rewardProfileId:
       registry: loot_profile
@@ -69,7 +71,7 @@ secretZones:
     guaranteedContent:
       - registry: hidden_event
         id: hidden.event.underground_river.crystal_rift.reward
-    entranceBindingId: optional.branch.1
+    entranceBindingId: hidden.branch
     returnBridgePolicy: EXPLICIT_ANCHOR
     returnBridgeAnchorTag: hub
   - id:
@@ -85,8 +87,10 @@ secretZones:
     entryRule:
       combinator: AND
       predicates:
+        - type: REQUIRED_TAG
+          requiredTag: hidden.primer.abyssal_temple.warded_archive
         - type: PERCEPTION_CHECK
-          difficulty: 20
+          difficulty: 15
     pathClass: SECRET
     rewardProfileId:
       registry: loot_profile
@@ -94,5 +98,29 @@ secretZones:
     guaranteedContent:
       - registry: hidden_event
         id: hidden.event.abyssal_temple.warded_archive.reward
-    entranceBindingId: optional.branch.1
+    entranceBindingId: hidden.goal.adjacent
+    returnBridgePolicy: NEAREST_OPTIONAL_ANCHOR
+  - id:
+      registry: secret_zone
+      id: deep_iron_smuggler_stash
+    nameKey: zone.secret.deep_iron_smuggler_stash.name
+    descKey: zone.secret.deep_iron_smuggler_stash.desc
+    visualKey: zone.secret.deep_iron_smuggler_stash.visual
+    iconKey: zone.secret.deep_iron_smuggler_stash.icon
+    audioProfile: audio.secret_zone.deep_iron_smuggler_stash
+    schemaVersion: 1
+    tags: [secret_zone, deep_iron, optional, contraband]
+    entryRule:
+      combinator: AND
+      predicates:
+        - type: REQUIRED_TAG
+          requiredTag: hidden.primer.deep_iron.smuggler_stash
+    pathClass: SECRET
+    rewardProfileId:
+      registry: loot_profile
+      id: loot.deep_iron_smuggler_stash.secret
+    guaranteedContent:
+      - registry: hidden_event
+        id: hidden.event.deep_iron.smuggler_stash.reward
+    entranceBindingId: hidden.branch
     returnBridgePolicy: NEAREST_OPTIONAL_ANCHOR

@@ -5,12 +5,14 @@ import com.ktome.core.harness.toJson
 import com.ktome.core.map.Point
 import com.ktome.core.mapgen.PathClass
 import com.ktome.core.mapgen.center
-import com.ktome.core.mapgen.contains
+import com.ktome.core.world.solvability.NodeAnchorId
 import com.ktome.core.world.solvability.SearchActionResult
+import com.ktome.core.world.solvability.SearchBindingId
 import com.ktome.game.FoundationGameConfig
 import com.ktome.game.GameModule
 import com.ktome.game.PlayerCommand
 import com.ktome.game.data.DataLoader
+import com.ktome.game.hidden.HiddenConditionKey
 import com.ktome.game.hidden.HiddenEventDef
 import com.ktome.game.hidden.HiddenEventRewardKey
 import com.ktome.game.hidden.HiddenEventRewardPayload
@@ -40,6 +42,7 @@ data class HiddenContentCaseSpec(
     val zoneId: String,
     val floorIndex: Int,
     val seed: Long,
+    val searchBindingId: String,
 )
 
 data class HiddenContentCaseResult(
@@ -50,10 +53,12 @@ data class HiddenContentCaseResult(
     val entranceBindingId: String,
     val resolvedReturnBridgeNodeId: String,
     val searchActionResult: String,
+    val explicitSearchReveal: Boolean,
     val triggerType: String,
     val hiddenEventIds: List<String>,
     val triggerTypes: List<String>,
     val triggerPathClasses: List<String>,
+    val optionalOnlyTriggerPathClasses: List<String>,
     val secretZoneId: String?,
     val secretZoneEntered: Boolean,
     val secretRewardNodePresent: Boolean,
@@ -75,8 +80,11 @@ data class HiddenContentCaseResult(
     val logKeys: List<String>,
     val failure: String? = null,
 ) {
-    val triggerPathClassesWithinOptionalOrSecret: Boolean
-        get() = triggerPathClasses.all { pathClass -> pathClass == PathClass.OPTIONAL.name || pathClass == PathClass.SECRET.name }
+    val optionalOnlyTriggerPathClassesWithinOptionalOrSecret: Boolean
+        get() =
+            optionalOnlyTriggerPathClasses.all { pathClass ->
+                pathClass == PathClass.OPTIONAL.name || pathClass == PathClass.SECRET.name
+            }
 
     val rewardBridgeBackedByLootBudget: Boolean
         get() = expectedRewardBudgetSources.all(rewardBudgetSources::contains)
@@ -95,8 +103,8 @@ data class HiddenContentCaseResult(
             if (!criticalPathReachable) {
                 add("case.mainline_path_unreachable")
             }
-            if (hiddenEventIds.isNotEmpty() && !triggerPathClassesWithinOptionalOrSecret) {
-                add("case.hidden_event_outside_optional_or_secret")
+            if (hiddenEventIds.isNotEmpty() && !optionalOnlyTriggerPathClassesWithinOptionalOrSecret) {
+                add("case.optional_only_hidden_event_outside_optional_or_secret")
             }
             if (secretZoneEntered && !secretRewardNodePresent) {
                 add("case.secret_reward_node_missing")
@@ -136,6 +144,7 @@ data class HiddenContentCaseResult(
             put("entranceBindingId", entranceBindingId)
             put("resolvedReturnBridgeNodeId", resolvedReturnBridgeNodeId)
             put("searchActionResult", searchActionResult)
+            put("explicitSearchReveal", explicitSearchReveal)
             put("triggerType", triggerType)
             put("secretZoneId", secretZoneId)
             put("secretZoneEntered", secretZoneEntered)
@@ -150,7 +159,8 @@ data class HiddenContentCaseResult(
             put("proofSearchActionResult", proofSearchActionResult)
             put("solvabilityProofMatchesSearchAction", solvabilityProofMatchesSearchAction)
             put("solvabilityProofCoversReturnBridge", solvabilityProofCoversReturnBridge)
-            put("triggerPathClassesWithinOptionalOrSecret", triggerPathClassesWithinOptionalOrSecret)
+            put("triggerPathClassesWithinOptionalOrSecret", optionalOnlyTriggerPathClassesWithinOptionalOrSecret)
+            put("optionalOnlyTriggerPathClassesWithinOptionalOrSecret", optionalOnlyTriggerPathClassesWithinOptionalOrSecret)
             put("rewardBridgeBackedByLootBudget", rewardBridgeBackedByLootBudget)
             put("encounterBridgeBackedByThreatBudget", encounterBridgeBackedByThreatBudget)
             putJsonArray("triggerTypes") {
@@ -158,6 +168,9 @@ data class HiddenContentCaseResult(
             }
             putJsonArray("triggerPathClasses") {
                 triggerPathClasses.forEach { pathClass -> add(JsonPrimitive(pathClass)) }
+            }
+            putJsonArray("optionalOnlyTriggerPathClasses") {
+                optionalOnlyTriggerPathClasses.forEach { pathClass -> add(JsonPrimitive(pathClass)) }
             }
             putJsonArray("hiddenEventIds") {
                 hiddenEventIds.forEach { hiddenEventId -> add(JsonPrimitive(hiddenEventId)) }
@@ -225,6 +238,8 @@ internal data class HiddenContentSummaryMetrics(
     val searchFailureBlockingCount: Int,
     val proofMismatchCount: Int,
     val runtimeReturnDestinationMismatchCount: Int,
+    val hiddenEventRegistryCount: Int,
+    val secretZoneRegistryCount: Int,
     val hiddenTriggerTypeCoverage: Double,
     val hiddenTriggerTypeSet: Set<String>,
     val secretEntranceBindingCoverage: Int,
@@ -243,6 +258,8 @@ internal data class HiddenContentAnalysis(
 internal data class HiddenContentRegistryMetrics(
     val hiddenTriggerTypeSet: Set<String>,
     val secretEntranceBindingSet: Set<String>,
+    val hiddenEventRegistryCount: Int,
+    val secretZoneRegistryCount: Int,
 ) {
     val hiddenTriggerTypeCoverage: Double
         get() = hiddenTriggerTypeSet.size.toDouble() / HiddenTriggerType.entries.size.toDouble()
@@ -253,8 +270,9 @@ internal data class HiddenContentRegistryMetrics(
 
 internal const val MIN_HIDDEN_EVENT_TRIGGER_RATE: Double = 0.30
 internal const val MIN_SECRET_ZONE_DISCOVERY_RATE: Double = 0.10
-internal const val MIN_HIDDEN_TRIGGER_TYPE_COVERAGE: Double = 2.0 / 6.0
-internal const val MIN_SECRET_ENTRANCE_BINDING_COVERAGE: Int = 1
+internal const val MIN_HIDDEN_EVENT_REGISTRY_COUNT: Int = 12
+internal const val MIN_HIDDEN_TRIGGER_TYPE_COVERAGE: Double = 4.0 / 6.0
+internal const val MIN_SECRET_ENTRANCE_BINDING_COVERAGE: Int = 3
 
 internal object HiddenContentRegistrySnapshot {
     fun load(): HiddenContentRegistryMetrics {
@@ -262,6 +280,8 @@ internal object HiddenContentRegistrySnapshot {
         return HiddenContentRegistryMetrics(
             hiddenTriggerTypeSet = catalog.hiddenEvents.mapTo(linkedSetOf()) { hiddenEvent -> hiddenEvent.triggerType.name },
             secretEntranceBindingSet = catalog.secretZones.mapTo(linkedSetOf()) { secretZone -> secretZone.entranceBindingId.value },
+            hiddenEventRegistryCount = catalog.hiddenEvents.size,
+            secretZoneRegistryCount = catalog.secretZones.size,
         )
     }
 }
@@ -271,22 +291,64 @@ internal object HiddenContentHarnessKernel {
     private const val SEED_BASE: Long = 20260407070000L
     private const val ZONE_SEED_BLOCK: Long = 1_000L
     private const val SEEDS_PER_ZONE: Int = 125
-    private val upgradedZones: List<String> =
+    private const val CRYSTAL_CACHE_CHEST_ID: String = "crystal_cache_chest"
+    private const val TEMPLE_WARD_RELIQUARY_ID: String = "temple_ward_reliquary"
+    private val hiddenBindingScenarios: List<HiddenBindingScenario> =
         listOf(
-            "greenwood_fringe",
-            "deep_iron_pit",
-            "underground_river",
-            "abyssal_temple",
+            HiddenBindingScenario(
+                zoneId = "greenwood_fringe",
+                searchBindingId = SearchBindingId("search.greenwood.hidden_cache"),
+                primerAction = HiddenPrimerAction.NONE,
+            ),
+            HiddenBindingScenario(
+                zoneId = "deep_iron_pit",
+                searchBindingId = SearchBindingId("search.deep_iron.slag_cache"),
+                primerAction = HiddenPrimerAction.FORCE_ELITE_KILL,
+            ),
+            HiddenBindingScenario(
+                zoneId = "deep_iron_pit",
+                searchBindingId = SearchBindingId("search.deep_iron.smuggler_stash"),
+                primerAction = HiddenPrimerAction.ENTER_HIDDEN_BRANCH_ROOM,
+            ),
+            HiddenBindingScenario(
+                zoneId = "underground_river",
+                searchBindingId = SearchBindingId("search.underground_river.crystal_rift"),
+                primerAction = HiddenPrimerAction.OPEN_CRYSTAL_CACHE_CHEST,
+            ),
+            HiddenBindingScenario(
+                zoneId = "abyssal_temple",
+                searchBindingId = SearchBindingId("search.abyssal_temple.warded_archive"),
+                primerAction = HiddenPrimerAction.CLAIM_WARD_RELIQUARY,
+            ),
         )
+
+    private data class HiddenBindingScenario(
+        val zoneId: String,
+        val searchBindingId: SearchBindingId,
+        val primerAction: HiddenPrimerAction,
+    )
+
+    private enum class HiddenPrimerAction {
+        NONE,
+        FORCE_ELITE_KILL,
+        OPEN_CRYSTAL_CACHE_CHEST,
+        CLAIM_WARD_RELIQUARY,
+        ENTER_HIDDEN_BRANCH_ROOM,
+    }
+
+    private data class HiddenPrimerExecution(
+        val triggerPathClass: String? = null,
+    )
 
     fun execute(): HiddenContentKernelRun {
         val cases =
-            upgradedZones.flatMapIndexed { zoneOrdinal, zoneId ->
+            hiddenBindingScenarios.flatMapIndexed { scenarioOrdinal, scenario ->
                 (0 until SEEDS_PER_ZONE).map { seedOrdinal ->
                     HiddenContentCaseSpec(
-                        zoneId = zoneId,
+                        zoneId = scenario.zoneId,
                         floorIndex = FLOOR_INDEX,
-                        seed = SEED_BASE + zoneOrdinal * ZONE_SEED_BLOCK + seedOrdinal,
+                        seed = SEED_BASE + scenarioOrdinal * ZONE_SEED_BLOCK + seedOrdinal,
+                        searchBindingId = scenario.searchBindingId.value,
                     )
                 }
             }
@@ -297,6 +359,7 @@ internal object HiddenContentHarnessKernel {
 
     private fun executeCase(caseSpec: HiddenContentCaseSpec): HiddenContentCaseResult =
         try {
+            val bindingId = SearchBindingId(caseSpec.searchBindingId)
             val session =
                 GameModule.newFoundationSession(
                     config =
@@ -309,15 +372,18 @@ internal object HiddenContentHarnessKernel {
                     saveManager = com.ktome.core.save.SaveManager(reportDir().resolve("tmp").resolve("${caseSpec.zoneId}-${caseSpec.seed}")),
                     locale = GameLocale.EN_US,
                 )
-            val entrance =
-                session.automationGeneratedFloor().entrances
-                    .sortedBy { candidate -> candidate.bindingId.value }
-                    .first()
             val generatedFloor = session.automationGeneratedFloor()
+            val entrance = requireNotNull(generatedFloor.entranceByBinding(bindingId)) {
+                "Missing generated entrance for binding '${bindingId.value}'."
+            }
+            val primer = primeScenario(session = session, caseSpec = caseSpec, generatedFloor = generatedFloor)
             val entranceRoom = requireNotNull(generatedFloor.roomForEntrance(entrance))
-            val searchPoint = entranceRoom.center
+            val searchPoint = requireNotNull(session.automationSearchPointForBinding(bindingId)) {
+                "Missing search point for binding '${bindingId.value}'."
+            }
+            val searchStateBefore = session.automationSearchState().firstOrNull { entry -> entry.bindingId == bindingId }?.result
             session.automationMovePlayerTo(searchPoint)
-            session.perform(PlayerCommand.Search)
+            val searchAccepted = session.perform(PlayerCommand.Search)
             val searchResult =
                 session.automationSearchState()
                     .firstOrNull { entry -> entry.bindingId == entrance.bindingId }
@@ -327,28 +393,29 @@ internal object HiddenContentHarnessKernel {
             var secretRewardPathClass = PathClass.SECRET.name
 
             if (searchResult == SearchActionResult.REVEALED) {
-                session.renderSnapshot().props.firstOrNull { prop -> prop.propTypeId == "hidden_entrance" }?.let { prop ->
-                    session.automationMovePlayerTo(Point(prop.x, prop.y))
+                session.automationHiddenEntrancePointForBinding(bindingId)?.let { propPoint ->
+                    session.automationMovePlayerTo(propPoint)
                     session.perform(PlayerCommand.Interact)
                 }
-                val rewardProp = session.renderSnapshot().props.firstOrNull { prop -> prop.propTypeId == "secret_reward" }
-                secretRewardNodePresent = rewardProp != null
-                secretRewardPathClass =
-                    rewardProp
-                        ?.let { prop ->
-                            secretZoneAnchorPathClass(
-                                generatedFloor = generatedFloor,
-                                entrance = entrance,
-                                point = Point(prop.x, prop.y),
-                            )
+                val secretRoom =
+                    generatedFloor.roomByAnchor(entrance.targetAnchorId)
+                        ?: generatedFloor.rooms.firstOrNull { room -> room.nodeId == entrance.targetNodeId }
+                val rewardPoint = session.automationSecretRewardPointForBinding(bindingId)
+                secretRewardNodePresent =
+                    rewardPoint != null &&
+                        session.renderSnapshot().props.any { prop ->
+                            prop.propTypeId == "secret_reward" && Point(prop.x, prop.y) == rewardPoint
                         }
+                secretRewardPathClass =
+                    rewardPoint
+                        ?.let { point -> secretRoom?.pathClass?.name ?: generatedFloor.roomAt(point)?.pathClass?.name ?: "UNKNOWN" }
                         ?: "UNKNOWN"
-                rewardProp?.let { prop ->
-                    session.automationMovePlayerTo(Point(prop.x, prop.y))
+                rewardPoint?.let { point ->
+                    session.automationMovePlayerTo(point)
                     session.perform(PlayerCommand.Interact)
                 }
-                session.renderSnapshot().props.firstOrNull { prop -> prop.propTypeId == "secret_return" }?.let { prop ->
-                    session.automationMovePlayerTo(Point(prop.x, prop.y))
+                session.automationSecretReturnPointForBinding(bindingId)?.let { point ->
+                    session.automationMovePlayerTo(point)
                     session.perform(PlayerCommand.Interact)
                 }
             }
@@ -364,13 +431,28 @@ internal object HiddenContentHarnessKernel {
                 }
             val triggerPathClasses =
                 hiddenEvents.map { hiddenEvent ->
-                    when (hiddenEvent.triggerType) {
-                        HiddenTriggerType.PERCEPTION_REVEAL -> entranceRoom.pathClass.name
-                        HiddenTriggerType.INTERACT_TILE -> secretRewardPathClass
-                        else -> generatedFloor.roomAt(searchPoint)?.pathClass?.name ?: "UNKNOWN"
-                    }
+                    triggerPathClass(
+                        hiddenEvent = hiddenEvent,
+                        generatedFloor = generatedFloor,
+                        entranceRoom = entranceRoom,
+                        secretRewardPathClass = secretRewardPathClass,
+                        primerTriggerPathClass = primer.triggerPathClass,
+                    )
                 }
+            val optionalOnlyTriggerPathClasses =
+                hiddenEvents
+                    .filter(HiddenEventDef::optionalOnly)
+                    .map { hiddenEvent ->
+                        triggerPathClass(
+                            hiddenEvent = hiddenEvent,
+                            generatedFloor = generatedFloor,
+                            entranceRoom = entranceRoom,
+                            secretRewardPathClass = secretRewardPathClass,
+                            primerTriggerPathClass = primer.triggerPathClass,
+                        )
+                    }
             val secretZoneId = session.automationVisitedSecretZoneIds().firstOrNull()?.id
+                ?.takeIf { candidate -> candidate == entrance.targetSecretZoneId.id }
             val proof = session.automationSolvabilityProof()
             val proofSearchActionResult = proof.searchStates.firstOrNull { entry -> entry.bindingId == entrance.bindingId }?.result?.name
             val finalSnapshot = session.renderSnapshot()
@@ -378,9 +460,7 @@ internal object HiddenContentHarnessKernel {
             val finalRoom = generatedFloor.roomAt(actualPlayerPoint)
             val secretZoneEntered = secretZoneId != null
             val returnedToMainline = !secretZoneEntered || finalRoom?.pathClass != PathClass.SECRET
-            val returnRoom =
-                generatedFloor.rooms.firstOrNull { room -> room.nodeId == entrance.resolvedReturnBridgeNodeId }
-            val expectedReturnPoint = returnRoom?.let { room -> secretZoneAnchorEntryPoint(generatedFloor = generatedFloor, room = room) }
+            val expectedReturnPoint = session.automationResolvedReturnPointForBinding(bindingId)
             val returnedRoomNodeId =
                 when {
                     !secretZoneEntered -> finalRoom?.nodeId?.value
@@ -407,10 +487,15 @@ internal object HiddenContentHarnessKernel {
                 entranceBindingId = entrance.entranceAnchorId.value,
                 resolvedReturnBridgeNodeId = entrance.resolvedReturnBridgeNodeId.value,
                 searchActionResult = searchResult.name,
+                explicitSearchReveal =
+                    searchAccepted &&
+                        searchStateBefore == null &&
+                        searchResult == SearchActionResult.REVEALED,
                 triggerType = triggerType,
                 hiddenEventIds = hiddenEventIds,
                 triggerTypes = triggerTypes,
                 triggerPathClasses = triggerPathClasses,
+                optionalOnlyTriggerPathClasses = optionalOnlyTriggerPathClasses,
                 secretZoneId = secretZoneId,
                 secretZoneEntered = secretZoneEntered,
                 secretRewardNodePresent = secretZoneEntered && secretRewardNodePresent,
@@ -437,14 +522,16 @@ internal object HiddenContentHarnessKernel {
                 zoneId = caseSpec.zoneId,
                 floorIndex = caseSpec.floorIndex,
                 seed = caseSpec.seed,
-                searchBindingId = "",
+                searchBindingId = caseSpec.searchBindingId,
                 entranceBindingId = "",
                 resolvedReturnBridgeNodeId = "",
                 searchActionResult = SearchActionResult.NO_TARGET.name,
+                explicitSearchReveal = false,
                 triggerType = "NONE",
                 hiddenEventIds = emptyList(),
                 triggerTypes = emptyList(),
                 triggerPathClasses = emptyList(),
+                optionalOnlyTriggerPathClasses = emptyList(),
                 secretZoneId = null,
                 secretZoneEntered = false,
                 secretRewardNodePresent = false,
@@ -467,6 +554,103 @@ internal object HiddenContentHarnessKernel {
                 failure = exception.message ?: exception::class.simpleName.orEmpty(),
             )
         }
+
+    private fun primeScenario(
+        session: com.ktome.game.FoundationGameSession,
+        caseSpec: HiddenContentCaseSpec,
+        generatedFloor: com.ktome.core.mapgen.GeneratedFloor,
+    ): HiddenPrimerExecution {
+        val scenario =
+            requireNotNull(
+                hiddenBindingScenarios.firstOrNull { candidate ->
+                    candidate.zoneId == caseSpec.zoneId && candidate.searchBindingId.value == caseSpec.searchBindingId
+                },
+            ) {
+                "Unsupported hidden-content binding scenario '${caseSpec.zoneId}:${caseSpec.searchBindingId}'."
+            }
+        return when (scenario.primerAction) {
+            HiddenPrimerAction.NONE -> HiddenPrimerExecution()
+            HiddenPrimerAction.FORCE_ELITE_KILL -> {
+                require(session.automationKillFirstExistingEliteMonster()) {
+                    "No existing elite monster available for '${caseSpec.searchBindingId}'."
+                }
+                HiddenPrimerExecution(triggerPathClass = PathClass.CRITICAL_PATH.name)
+            }
+            HiddenPrimerAction.OPEN_CRYSTAL_CACHE_CHEST -> {
+                val point = requireNotNull(session.automationInteractablePoint(CRYSTAL_CACHE_CHEST_ID)) {
+                    "Missing interactable '$CRYSTAL_CACHE_CHEST_ID'."
+                }
+                session.automationMovePlayerTo(point)
+                require(session.perform(PlayerCommand.Interact)) {
+                    "Failed to open interactable '$CRYSTAL_CACHE_CHEST_ID'."
+                }
+                HiddenPrimerExecution(
+                    triggerPathClass = generatedFloor.roomAt(point)?.pathClass?.name ?: "UNKNOWN",
+                )
+            }
+            HiddenPrimerAction.CLAIM_WARD_RELIQUARY -> {
+                val point = requireNotNull(session.automationInteractablePoint(TEMPLE_WARD_RELIQUARY_ID)) {
+                    "Missing interactable '$TEMPLE_WARD_RELIQUARY_ID'."
+                }
+                session.automationMovePlayerTo(point)
+                require(session.perform(PlayerCommand.Interact)) {
+                    "Failed to claim interactable '$TEMPLE_WARD_RELIQUARY_ID'."
+                }
+                session.perform(PlayerCommand.CloseShop)
+                HiddenPrimerExecution(
+                    triggerPathClass = generatedFloor.roomAt(point)?.pathClass?.name ?: "UNKNOWN",
+                )
+            }
+            HiddenPrimerAction.ENTER_HIDDEN_BRANCH_ROOM -> {
+                val point =
+                    requireNotNull(generatedFloor.roomByAnchor(NodeAnchorId("hidden.branch"))) {
+                        "Missing hidden.branch room for '${caseSpec.searchBindingId}'."
+                    }.center
+                session.automationMovePlayerTo(point)
+                HiddenPrimerExecution(
+                    triggerPathClass = generatedFloor.roomAt(point)?.pathClass?.name ?: "UNKNOWN",
+                )
+            }
+        }
+    }
+
+    private fun triggerPathClass(
+        hiddenEvent: HiddenEventDef,
+        generatedFloor: com.ktome.core.mapgen.GeneratedFloor,
+        entranceRoom: com.ktome.core.mapgen.RoomInstance,
+        secretRewardPathClass: String,
+        primerTriggerPathClass: String?,
+    ): String =
+        when (hiddenEvent.triggerType) {
+            HiddenTriggerType.PERCEPTION_REVEAL -> entranceRoom.pathClass.name
+            HiddenTriggerType.INTERACT_TILE -> secretRewardPathClass
+            HiddenTriggerType.ENTER_ROOM ->
+                roomPathClassForHiddenEvent(generatedFloor = generatedFloor, hiddenEvent = hiddenEvent)
+                    ?: primerTriggerPathClass
+                    ?: "UNKNOWN"
+            HiddenTriggerType.KILL_ELITE,
+            HiddenTriggerType.OPEN_CHEST,
+            HiddenTriggerType.QUEST_STEP,
+            -> primerTriggerPathClass ?: "UNKNOWN"
+        }
+
+    private fun roomPathClassForHiddenEvent(
+        generatedFloor: com.ktome.core.mapgen.GeneratedFloor,
+        hiddenEvent: HiddenEventDef,
+    ): String? {
+        val requiredRoomTags =
+            hiddenEvent.conditions
+                .filter { condition -> condition.key == HiddenConditionKey.ROOM_TAG }
+                .map { condition -> condition.expectedValue }
+                .toSet()
+        if (requiredRoomTags.isEmpty()) {
+            return null
+        }
+        return generatedFloor.rooms
+            .firstOrNull { room -> requiredRoomTags.all(room.tags::contains) }
+            ?.pathClass
+            ?.name
+    }
 
     private object DataRegistryHolder {
         private val hiddenEventsById: Map<String, HiddenEventDef> by lazy {
@@ -509,66 +693,7 @@ internal object HiddenContentHarnessKernel {
                 .sorted()
     }
 
-    private fun secretZoneAnchorEntryPoint(
-        generatedFloor: com.ktome.core.mapgen.GeneratedFloor,
-        room: com.ktome.core.mapgen.RoomInstance,
-    ): Point =
-        roomWalkablePoints(generatedFloor = generatedFloor, room = room).firstOrNull() ?: room.center
-
-    private fun secretZoneAnchorPathClass(
-        generatedFloor: com.ktome.core.mapgen.GeneratedFloor,
-        entrance: com.ktome.core.mapgen.GeneratedEntrance,
-        point: Point,
-    ): String {
-        val secretRoom =
-            generatedFloor.roomByAnchor(entrance.targetAnchorId)
-                ?: generatedFloor.rooms.firstOrNull { room -> room.nodeId == entrance.targetNodeId }
-        if (secretRoom != null) {
-            val anchors = secretZoneAnchorPoints(generatedFloor = generatedFloor, room = secretRoom)
-            if (point == anchors.entry || point == anchors.reward || point == anchors.returnBridge) {
-                return secretRoom.pathClass.name
-            }
-        }
-        return generatedFloor.roomAt(point)?.pathClass?.name ?: "UNKNOWN"
-    }
-
-    private fun secretZoneAnchorPoints(
-        generatedFloor: com.ktome.core.mapgen.GeneratedFloor,
-        room: com.ktome.core.mapgen.RoomInstance,
-    ): SecretZoneAnchorPoints {
-        val points = roomWalkablePoints(generatedFloor = generatedFloor, room = room)
-        val entry = points.firstOrNull() ?: room.center
-        val reward = points.firstOrNull { point -> point != entry } ?: entry
-        val returnBridge = points.firstOrNull { point -> point != entry && point != reward } ?: reward
-        return SecretZoneAnchorPoints(entry = entry, reward = reward, returnBridge = returnBridge)
-    }
-
-    private fun roomWalkablePoints(
-        generatedFloor: com.ktome.core.mapgen.GeneratedFloor,
-        room: com.ktome.core.mapgen.RoomInstance,
-    ): List<Point> =
-        buildList {
-            for (y in room.y until room.y + room.height) {
-                for (x in room.x until room.x + room.width) {
-                    val point = Point(x, y)
-                    if (generatedFloor.map.isInBounds(x, y) && room.contains(point) && !generatedFloor.map[point].blocksMovement) {
-                        add(point)
-                    }
-                }
-            }
-        }.sortedWith(
-            compareBy<Point> { point -> point.chebyshevDistanceTo(room.center) }
-                .thenBy(Point::y)
-                .thenBy(Point::x),
-        )
-
     private fun Point.toDebugString(): String = "$x,$y"
-
-    private data class SecretZoneAnchorPoints(
-        val entry: Point,
-        val reward: Point,
-        val returnBridge: Point,
-    )
 }
 
 internal object HiddenContentHarnessAnalysis {
@@ -602,8 +727,8 @@ internal object HiddenContentHarnessAnalysis {
                 if (results.any { result -> !result.criticalPathReachable }) {
                     add("aggregate.hidden_content_blocks_mainline")
                 }
-                if (results.any { result -> result.hiddenEventIds.isNotEmpty() && !result.triggerPathClassesWithinOptionalOrSecret }) {
-                    add("aggregate.hidden_event_outside_optional_or_secret")
+                if (results.any { result -> result.hiddenEventIds.isNotEmpty() && !result.optionalOnlyTriggerPathClassesWithinOptionalOrSecret }) {
+                    add("aggregate.optional_only_hidden_event_outside_optional_or_secret")
                 }
                 if (results.any { result -> result.secretZoneEntered && !result.secretRewardNodePresent }) {
                     add("aggregate.secret_reward_node_missing")
@@ -625,6 +750,9 @@ internal object HiddenContentHarnessAnalysis {
                 ) {
                     add("aggregate.return_bridge_or_proof_mismatch")
                 }
+                if (registryMetrics.hiddenEventRegistryCount < MIN_HIDDEN_EVENT_REGISTRY_COUNT) {
+                    add("aggregate.hidden_event_registry_count_below_threshold")
+                }
                 if (registryMetrics.hiddenTriggerTypeCoverage < MIN_HIDDEN_TRIGGER_TYPE_COVERAGE) {
                     add("aggregate.hidden_trigger_type_coverage_failed")
                 }
@@ -642,12 +770,15 @@ internal object HiddenContentHarnessAnalysis {
                 hiddenEventTriggerRate = hiddenEventTriggerCount.toDouble() / results.size.toDouble(),
                 secretZoneDiscoveryCount = secretZoneDiscoveryCount,
                 secretZoneDiscoveryRate = secretZoneDiscoveryCount.toDouble() / results.size.toDouble(),
-                explicitSearchRevealCount = results.count { result -> result.searchActionResult == SearchActionResult.REVEALED.name },
+                explicitSearchRevealCount = results.count(HiddenContentCaseResult::explicitSearchReveal),
                 searchFailureCount = results.count { result -> result.searchActionResult == SearchActionResult.FAILED_CHECK.name },
                 zeroHiddenEventZoneCount = zoneBreakdown.values.count { metrics -> metrics.hiddenEventTriggerCount == 0 },
                 zeroSecretZoneZoneCount = zoneBreakdown.values.count { metrics -> metrics.secretZoneDiscoveryCount == 0 },
                 criticalPathFailureCount = results.count { result -> !result.criticalPathReachable },
-                triggerContextFailureCount = results.count { result -> result.hiddenEventIds.isNotEmpty() && !result.triggerPathClassesWithinOptionalOrSecret },
+                triggerContextFailureCount =
+                    results.count { result ->
+                        result.hiddenEventIds.isNotEmpty() && !result.optionalOnlyTriggerPathClassesWithinOptionalOrSecret
+                    },
                 secretRewardNodeMissingCount = results.count { result -> result.secretZoneEntered && !result.secretRewardNodePresent },
                 rewardBudgetFailureCount = results.count { result -> !result.rewardBridgeBackedByLootBudget },
                 threatBudgetFailureCount = results.count { result -> !result.encounterBridgeBackedByThreatBudget },
@@ -664,6 +795,8 @@ internal object HiddenContentHarnessAnalysis {
                     results.count { result ->
                         result.secretZoneEntered && !result.returnBridgeMatchesResolvedNodeId
                     },
+                hiddenEventRegistryCount = registryMetrics.hiddenEventRegistryCount,
+                secretZoneRegistryCount = registryMetrics.secretZoneRegistryCount,
                 hiddenTriggerTypeCoverage = registryMetrics.hiddenTriggerTypeCoverage,
                 hiddenTriggerTypeSet = registryMetrics.hiddenTriggerTypeSet,
                 secretEntranceBindingCoverage = registryMetrics.secretEntranceBindingCoverage,
@@ -737,6 +870,8 @@ object HiddenContentHarnessRunner {
                 put("searchFailureBlockingCount", summary.searchFailureBlockingCount)
                 put("proofMismatchCount", summary.proofMismatchCount)
                 put("runtimeReturnDestinationMismatchCount", summary.runtimeReturnDestinationMismatchCount)
+                put("hiddenEventRegistryCount", summary.hiddenEventRegistryCount)
+                put("secretZoneRegistryCount", summary.secretZoneRegistryCount)
                 put("hiddenTriggerTypeCoverage", summary.hiddenTriggerTypeCoverage)
                 putJsonArray("hiddenTriggerTypeSet") {
                     summary.hiddenTriggerTypeSet.sorted().forEach { triggerType -> add(JsonPrimitive(triggerType)) }

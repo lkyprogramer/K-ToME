@@ -1,5 +1,8 @@
 packId: sample.flooded_relics
 harnessSeeds: [20260301, 20260304, 20260323]
+generatedTemplateSeeds:
+  - 20260302
+  - 20260319
 overlayContractVersion: 1
 fixtureOrder:
   - official_sample_pack

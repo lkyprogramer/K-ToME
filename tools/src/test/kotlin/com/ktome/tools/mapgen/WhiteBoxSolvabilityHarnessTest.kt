@@ -13,7 +13,7 @@ import org.junit.jupiter.api.Test
 class WhiteBoxSolvabilityHarnessTest {
     @Test
     @Tag("whiteBoxSolvability")
-    fun `white-box solvability pilot writes standard reports for the PR-03 corpus`() {
+    fun `white-box solvability pilot writes standard reports for the OPT PR-05 corpus`() {
         val run = WhiteBoxSolvabilityRunner.run()
 
         assertEquals(40, run.totalCases)
@@ -30,17 +30,35 @@ class WhiteBoxSolvabilityHarnessTest {
 
         assertEquals("solvability", payload.getValue("domainId").jsonPrimitive.content)
         assertEquals("PASS", payload.getValue("verdict").jsonPrimitive.content)
-        assertEquals("P4_PR03_SOLVABILITY_WHITEBOX", corpus.getValue("corpusId").jsonPrimitive.content)
+        assertEquals("P4_OPT_PR05_SOLVABILITY_WHITEBOX", corpus.getValue("corpusId").jsonPrimitive.content)
         assertEquals("40", summary.getValue("caseCount").jsonPrimitive.content)
         assertEquals("0", summary.getValue("failedAssertions").jsonPrimitive.content)
         val corpusAggregate =
             aggregates.first { aggregate -> aggregate.jsonObject.getValue("groupId").jsonPrimitive.content == "corpus" }.jsonObject
+        val corpusMetrics = corpusAggregate.getValue("metrics").jsonObject
         assertTrue(
             corpusAggregate.getValue("assertions").jsonArray.any { assertion ->
                 assertion.jsonObject.getValue("ruleId").jsonPrimitive.content == "solvability.aggregate.corpus_backtrack_coverage"
             },
         )
+        assertTrue(
+            corpusAggregate.getValue("assertions").jsonArray.any { assertion ->
+                assertion.jsonObject.getValue("ruleId").jsonPrimitive.content ==
+                    "solvability.aggregate.corpus_hidden_anchor_families_resolved"
+            },
+        )
         val firstCase = Json.parseToJsonElement(Files.readAllLines(run.casesPath).first { line -> line.isNotBlank() }).jsonObject
+        assertTrue(corpusMetrics.containsKey("providedDiscoveryTags"))
+        assertTrue(corpusMetrics.containsKey("requiredHiddenAnchorFamilies"))
+        assertTrue(corpusMetrics.containsKey("observedHiddenAnchorFamilies"))
+        assertTrue(firstCase.getValue("facts").jsonObject.containsKey("providedDiscoveryTags"))
+        assertTrue(firstCase.getValue("facts").jsonObject.containsKey("hiddenAnchorFamiliesSatisfied"))
+        assertTrue(
+            firstCase.getValue("assertions").jsonArray.any { assertion ->
+                assertion.jsonObject.getValue("ruleId").jsonPrimitive.content ==
+                    "solvability.case.hidden_anchor_families_resolved"
+            },
+        )
         assertTrue(
             firstCase.getValue("assertions").jsonArray.none { assertion ->
                 assertion.jsonObject.getValue("ruleId").jsonPrimitive.content == "solvability.case.backtrack_satisfied"

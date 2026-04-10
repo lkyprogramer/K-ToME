@@ -6549,6 +6549,38 @@
       ]
     },
     {
+      "key": "zone.secret.deep_iron_smuggler_stash.icon",
+      "category": "icon_quest",
+      "rawOutputPath": "phase4/opt_pr05/zone_secret_deep_iron_smuggler_stash_icon.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "opt",
+        "pr05",
+        "zone",
+        "mine",
+        "secret"
+      ]
+    },
+    {
+      "key": "zone.secret.deep_iron_smuggler_stash.visual",
+      "category": "portrait",
+      "rawOutputPath": "phase4/opt_pr05/zone_secret_deep_iron_smuggler_stash_visual.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "opt",
+        "pr05",
+        "zone",
+        "mine",
+        "secret"
+      ]
+    },
+    {
       "key": "zone.secret.underground_river_crystal_rift.icon",
       "category": "icon_quest",
       "rawOutputPath": "phase4/pr07/zone_secret_underground_river_crystal_rift_icon.png",

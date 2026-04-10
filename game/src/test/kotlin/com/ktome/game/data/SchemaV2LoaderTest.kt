@@ -112,6 +112,7 @@ class SchemaV2LoaderTest {
                 "elven_wardstone",
                 "molten_pressure_valve",
                 "crystal_resonance_node",
+                "crystal_cache_chest",
                 "river_ferry_anchor",
                 "temple_ward_reliquary",
                 "heart_ward_focus",
@@ -198,7 +199,10 @@ class SchemaV2LoaderTest {
             setOf("room_center", "boss_entry", "stairs_up", "player_start"),
             catalog.objectiveSets.single { it.id == "shattered_outpost_breach" }.placements.map { it.anchor }.toSet(),
         )
-        assertEquals(listOf("river_ferry_anchor"), catalog.objectiveSets.single { it.id == "underground_river_crossing" }.interactables)
+        assertEquals(
+            listOf("river_ferry_anchor", "crystal_cache_chest"),
+            catalog.objectiveSets.single { it.id == "underground_river_crossing" }.interactables,
+        )
         assertEquals(listOf("temple_ward_reliquary"), catalog.objectiveSets.single { it.id == "abyssal_temple_sanctum" }.interactables)
         assertEquals(
             "abyssal_reliquary_post",
@@ -310,17 +314,22 @@ class SchemaV2LoaderTest {
         assertTrue(catalog.audioProfiles.contains("audio.interactable.hidden_return"))
         assertTrue(catalog.audioProfiles.contains("audio.secret_zone.greenwood_hidden_cache"))
         assertTrue(catalog.audioProfiles.contains("audio.secret_zone.abyssal_temple_warded_archive"))
-        assertEquals(8, catalog.hiddenEvents.size)
+        assertTrue(catalog.audioProfiles.contains("audio.secret_zone.deep_iron_smuggler_stash"))
+        assertEquals(12, catalog.hiddenEvents.size)
         assertEquals(
             setOf(
                 "greenwood_hidden_cache",
                 "deep_iron_slag_cache",
+                "deep_iron_smuggler_stash",
                 "underground_river_crystal_rift",
                 "abyssal_temple_warded_archive",
             ),
             catalog.secretZones.map { secretZone -> secretZone.id.id }.toSet(),
         )
-        assertEquals(setOf("optional.branch.1"), catalog.secretZones.map { secretZone -> secretZone.entranceBindingId.value }.toSet())
+        assertEquals(
+            setOf("hidden.branch", "hidden.critical.adjacent", "hidden.goal.adjacent"),
+            catalog.secretZones.map { secretZone -> secretZone.entranceBindingId.value }.toSet(),
+        )
         assertTrue(
             catalog.hiddenEvents
                 .flatMap { hiddenEvent -> hiddenEvent.rewards.map { reward -> reward.key.name } }

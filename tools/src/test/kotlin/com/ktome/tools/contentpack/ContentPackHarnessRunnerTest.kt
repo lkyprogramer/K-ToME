@@ -1,5 +1,6 @@
 package com.ktome.tools.contentpack
 
+import com.ktome.game.contentpack.ContentPackFixtureCatalog
 import java.nio.file.Files
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonArray
@@ -22,8 +23,10 @@ class ContentPackHarnessRunnerTest {
         assertTrue(Files.exists(run.runsPath), "Expected runs report at ${run.runsPath}")
 
         val payload = Json.parseToJsonElement(Files.readString(run.summaryPath)).jsonObject
+        val header = payload.getValue("header").jsonObject
         val summary = payload.getValue("summary").jsonObject
         val cases = payload.getValue("cases").jsonArray
+        val harnessSpec = ContentPackFixtureCatalog.harnessSpec(ContentPackFixtureCatalog.samplePackId)
         val precedenceCase =
             cases.first { element -> element.jsonObject.getValue("fixtureId").jsonPrimitive.content == "precedence_fixture" }.jsonObject
         val officialCase =
@@ -61,6 +64,14 @@ class ContentPackHarnessRunnerTest {
             precedenceCase.getValue("overlayOps").jsonArray.map { value -> value.jsonPrimitive.content }.filter { op -> op != "ADD" },
         )
         assertEquals("true", officialCase.getValue("resourceContractVerified").jsonPrimitive.content)
+        assertEquals(
+            harnessSpec.generatedTemplateSeeds.map(Long::toString),
+            officialCase.getValue("generatedTemplateSeedList").jsonArray.map { value -> value.jsonPrimitive.content },
+        )
+        assertEquals(
+            (harnessSpec.harnessSeeds + harnessSpec.generatedTemplateSeeds).distinct().map(Long::toString),
+            header.getValue("seedList").jsonArray.map { value -> value.jsonPrimitive.content },
+        )
         assertTrue(
             officialCase.getValue("generatedSpecialTemplateIds").jsonArray.any { value ->
                 value.jsonPrimitive.content.startsWith("sample.flooded_relics.")

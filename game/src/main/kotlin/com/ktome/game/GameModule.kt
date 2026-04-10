@@ -684,6 +684,7 @@ object GameModule {
         random: Random,
     ): List<MonsterTemplate> {
         val selected = mutableListOf<MonsterTemplate>()
+        guaranteedEncounterTemplate(zone, floor, availableTemplates, random)?.let(selected::add)
         encounterBehaviorOrder(zone, floor).forEach { behavior ->
             selectWeightedTemplate(
                 candidates = availableTemplates.filter { template -> resolveAiType(template) == behavior },
@@ -695,6 +696,25 @@ object GameModule {
             )?.let(selected::add)
         }
         return selected
+    }
+
+    private fun guaranteedEncounterTemplate(
+        zone: ZoneSchemaV2,
+        floor: Int,
+        availableTemplates: List<MonsterTemplate>,
+        random: Random,
+    ): MonsterTemplate? {
+        if (zone.id != "deep_iron_pit" || floor != 1) {
+            return null
+        }
+        return selectWeightedTemplate(
+            candidates = availableTemplates.filter(::isEliteEncounterTemplate),
+            zone = zone,
+            floor = floor,
+            selected = emptyList(),
+            random = random,
+            uniqueOnly = true,
+        )
     }
 
     private fun selectWeightedTemplate(
@@ -739,6 +759,9 @@ object GameModule {
         }
         return selected.count { template -> resolveAiType(template) == AIType.KITE } < maxKiteSpawnCount(zone, floor)
     }
+
+    private fun isEliteEncounterTemplate(template: MonsterTemplate): Boolean =
+        "elite" in template.tags || template.lootProfileId.endsWith(".elite")
 
     private fun maxKiteSpawnCount(
         zone: ZoneSchemaV2,
@@ -1302,7 +1325,7 @@ object GameModule {
         val allowedIds =
             linkedSetOf<String>().apply {
                 addAll(zone.monsterPools)
-                if (floor > 1) {
+                if (floor > 1 || (zone.id == "deep_iron_pit" && floor == 1)) {
                     addAll(zone.elitePools)
                 }
             }

@@ -1543,6 +1543,7 @@ class DataLoader(
                             payload = parseHiddenEventRewardPayload(key = key, reward = reward.requiredMap("payload")),
                         )
                     },
+                grantedDiscoveryTags = event.optionalStringList("grantedDiscoveryTags").toSet(),
                 optionalOnly = event.optionalBoolean("optionalOnly", default = true),
             )
         }

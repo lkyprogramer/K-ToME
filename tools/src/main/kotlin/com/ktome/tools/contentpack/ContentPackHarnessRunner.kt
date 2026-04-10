@@ -14,7 +14,7 @@ import com.ktome.core.loot.SpecialTier
 import com.ktome.core.phase.PackId
 import com.ktome.core.save.SaveManager
 import com.ktome.core.map.Point
-import com.ktome.core.mapgen.center
+import com.ktome.core.world.solvability.SearchBindingId
 import com.ktome.game.FoundationGameConfig
 import com.ktome.game.FoundationGameSession
 import com.ktome.game.GameModule
@@ -63,6 +63,7 @@ data class ContentPackCaseResult(
     val activePackIds: List<String>,
     val activePackManifestVersions: Map<String, String>,
     val seedList: List<Long>,
+    val generatedTemplateSeedList: List<Long>,
     val resolvedOrder: List<String>,
     val overlayOps: List<String>,
     val expectedFailureCodes: List<String>,
@@ -110,6 +111,7 @@ data class ContentPackCaseResult(
                 activePackManifestVersions.forEach { (packId, version) -> put(packId, version) }
             }
             putJsonArray("seedList") { seedList.forEach { seed -> add(JsonPrimitive(seed)) } }
+            putJsonArray("generatedTemplateSeedList") { generatedTemplateSeedList.forEach { seed -> add(JsonPrimitive(seed)) } }
             putJsonArray("resolvedOrder") { resolvedOrder.forEach { packId -> add(JsonPrimitive(packId)) } }
             putJsonArray("overlayOps") { overlayOps.forEach { op -> add(JsonPrimitive(op)) } }
             putJsonArray("expectedFailureCodes") { expectedFailureCodes.forEach { code -> add(JsonPrimitive(code)) } }
@@ -243,6 +245,8 @@ object ContentPackHarnessRunner {
     private const val SUMMARY_FILE: String = "content-pack-summary.json"
     private const val RUNS_FILE: String = "content-pack-runs.jsonl"
     private const val secretZoneId: String = "underground_river_crystal_rift"
+    private const val secretBindingId: String = "search.underground_river.crystal_rift"
+    private const val crystalCacheChestId: String = "crystal_cache_chest"
     private const val hiddenEventId: String = "hidden.event.underground_river.crystal_rift.reward"
     private const val sampleLootProfileId: String = "sample.flooded_relics.loot.flooded_reliquary.secret"
     private const val baseLootProfileId: String = "loot.underground_river_crystal_rift.secret"
@@ -316,7 +320,7 @@ object ContentPackHarnessRunner {
     }
 
     internal fun executeKernel(): ContentPackKernelRun {
-        val harnessSpec = ContentPackSidecarCatalog.loadHarnessSpec(ContentPackFixtureCatalog.samplePackId)
+        val harnessSpec = ContentPackFixtureCatalog.harnessSpec(ContentPackFixtureCatalog.samplePackId)
         val precedenceScenario = harnessSpec.dualPackScenarios.single()
         val scenarioCatalog =
             listOf(
@@ -342,6 +346,7 @@ object ContentPackHarnessRunner {
                             "sample.flooded_relics.unique.floodtide_lantern",
                             "sample.flooded_relics.artifact.tideglass_echo",
                         ),
+                    generatedTemplateSeedList = harnessSpec.generatedTemplateSeeds,
                     localeKeys = officialSampleLocaleKeys,
                     visualKeys = officialSampleVisualKeys,
                     audioKeys = officialSampleAudioKeys,
@@ -439,6 +444,7 @@ object ContentPackHarnessRunner {
                             "sample.flooded_relics.unique.floodtide_lantern",
                             "sample.flooded_relics.artifact.tideglass_echo",
                         ),
+                    generatedTemplateSeedList = harnessSpec.generatedTemplateSeeds,
                     localeKeys = officialSampleLocaleKeys,
                     visualKeys = officialSampleVisualKeys,
                     audioKeys = officialSampleAudioKeys,
@@ -537,7 +543,10 @@ object ContentPackHarnessRunner {
         val header =
             phase4HarnessHeader(
                 harnessId = "contentPackHarness",
-                seedList = results.flatMap(ContentPackCaseResult::seedList).distinct(),
+                seedList =
+                    results
+                        .flatMap { result -> result.seedList + result.generatedTemplateSeedList }
+                        .distinct(),
                 locale = baseLocale.id,
                 activePackIds = resolvedCases.flatMap { result -> result.activePackIds.map(::PackId) }.distinct(),
                 activePackManifestVersions =
@@ -590,7 +599,7 @@ object ContentPackHarnessRunner {
                     if (scenario.verifyGeneratedTemplates) {
                         generateSampleRewardTemplateIds(
                             selection = selection,
-                            seedList = scenario.seedList,
+                            seedList = scenario.generatedTemplateSeedList,
                         )
                     } else {
                         emptyList()
@@ -691,6 +700,7 @@ object ContentPackHarnessRunner {
                     activePackIds = currentResolvedSelection.activePackIds.map(PackId::value),
                     activePackManifestVersions = currentResolvedSelection.activePackManifestVersions.mapKeys { (packId, _) -> packId.value },
                     seedList = scenario.seedList,
+                    generatedTemplateSeedList = scenario.generatedTemplateSeedList,
                     resolvedOrder = resolvedOrder,
                     overlayOps = overlayOps,
                     expectedFailureCodes = scenario.expectedFailureCodes.sorted(),
@@ -762,6 +772,7 @@ object ContentPackHarnessRunner {
                 activePackIds = resolvedActivePackIds,
                 activePackManifestVersions = resolvedManifestVersions,
                 seedList = scenario.seedList,
+                generatedTemplateSeedList = scenario.generatedTemplateSeedList,
                 resolvedOrder = resolvedOrder,
                 overlayOps = overlayOps,
                 expectedFailureCodes = scenario.expectedFailureCodes.sorted(),
@@ -862,25 +873,34 @@ object ContentPackHarnessRunner {
 
     private fun generateSampleRewardTemplateId(session: FoundationGameSession): String? {
         clearMonsters(session)
-        val generatedFloor = session.automationGeneratedFloor()
-        val entrance = generatedFloor.entrances.sortedBy { candidate -> candidate.bindingId.value }.first()
-        val searchPoint = requireNotNull(generatedFloor.roomForEntrance(entrance)).center
+        val bindingId = SearchBindingId(secretBindingId)
+        val crystalChestPoint = requireNotNull(session.automationInteractablePoint(crystalCacheChestId)) {
+            "Expected crystal cache chest for sample content-pack harness."
+        }
+        session.automationMovePlayerTo(crystalChestPoint)
+        check(session.perform(PlayerCommand.Interact)) { "Failed to open crystal cache chest for sample content-pack harness." }
+        val searchPoint = requireNotNull(session.automationSearchPointForBinding(bindingId)) {
+            "Missing search point for sample content-pack harness binding '$secretBindingId'."
+        }
         session.automationMovePlayerTo(searchPoint)
         check(session.perform(PlayerCommand.Search)) { "Failed to reveal sample content-pack entrance for harness verification." }
 
-        val entranceProp = requireNotNull(propByType(session, "hidden_entrance")) {
+        val entrancePoint = requireNotNull(session.automationHiddenEntrancePointForBinding(bindingId)) {
             "Expected revealed hidden entrance for sample content-pack harness."
         }
-        session.automationMovePlayerTo(Point(entranceProp.x, entranceProp.y))
+        session.automationMovePlayerTo(entrancePoint)
         check(session.perform(PlayerCommand.Interact)) { "Failed to enter sample content-pack secret zone for harness verification." }
         check(session.automationVisitedSecretZoneIds().any { secretZone -> secretZone.id == secretZoneId }) {
             "Sample content-pack secret zone '$secretZoneId' was not visited through the runtime route."
         }
 
-        val rewardProp = requireNotNull(propByType(session, "secret_reward")) {
+        val rewardPoint = requireNotNull(session.automationSecretRewardPointForBinding(bindingId)) {
+            "Missing secret reward anchor for sample content-pack harness."
+        }
+        check(session.renderSnapshot().props.any { prop -> prop.propTypeId == "secret_reward" && Point(prop.x, prop.y) == rewardPoint }) {
             "Expected secret reward prop for sample content-pack harness."
         }
-        session.automationMovePlayerTo(Point(rewardProp.x, rewardProp.y))
+        session.automationMovePlayerTo(rewardPoint)
         check(session.perform(PlayerCommand.Interact)) { "Failed to claim sample content-pack reward through runtime route." }
         return session.inventoryItems().firstOrNull { item -> item.specialTemplateId != null }?.specialTemplateId
     }
@@ -889,11 +909,6 @@ object ContentPackHarnessRunner {
         val world = runtimeWorld(session)
         world.entitiesWith(MonsterTemplateId::class).forEach(world::destroyEntity)
     }
-
-    private fun propByType(
-        session: FoundationGameSession,
-        propTypeId: String,
-    ) = session.renderSnapshot().props.firstOrNull { prop -> prop.propTypeId == propTypeId }
 
     private fun hiddenEventLootProfileId(hiddenEvent: HiddenEventDef?): String? =
         hiddenEvent
@@ -1242,6 +1257,7 @@ object ContentPackHarnessRunner {
         val reportPackId: PackId,
         val selectionProvider: () -> ContentPackSelection,
         val seedList: List<Long> = emptyList(),
+        val generatedTemplateSeedList: List<Long> = seedList,
         val expectedFailureCodes: Set<String> = emptySet(),
         val expectedResolvedOrder: List<PackId> = emptyList(),
         val expectedOverlayOps: List<OverlayOp> = emptyList(),

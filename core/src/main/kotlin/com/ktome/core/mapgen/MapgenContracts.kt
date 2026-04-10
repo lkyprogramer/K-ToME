@@ -206,6 +206,15 @@ data class KeyGatePlan(
         get() = RequirementRef("${keyType.name}:$keyId")
 }
 
+val FORMAL_HIDDEN_ENTRANCE_ANCHOR_IDS: Set<NodeAnchorId> =
+    linkedSetOf(
+        NodeAnchorId("hidden.branch"),
+        NodeAnchorId("hidden.critical.adjacent"),
+        NodeAnchorId("hidden.goal.adjacent"),
+    )
+
+fun NodeAnchorId.isFormalHiddenEntranceAnchor(): Boolean = this in FORMAL_HIDDEN_ENTRANCE_ANCHOR_IDS
+
 data class HiddenEntrancePlan(
     val bindingId: SearchBindingId,
     val sourceAnchorId: NodeAnchorId,
@@ -221,6 +230,9 @@ data class HiddenEntrancePlan(
         }
         require(sourceAnchorId == entranceAnchorId) {
             "HiddenEntrancePlan.entranceAnchorId must match sourceAnchorId in PR-03."
+        }
+        require(sourceAnchorId.isFormalHiddenEntranceAnchor()) {
+            "HiddenEntrancePlan.sourceAnchorId must use a formal hidden entrance anchor family."
         }
     }
 }

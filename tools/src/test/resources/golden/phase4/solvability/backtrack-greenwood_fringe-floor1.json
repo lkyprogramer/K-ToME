@@ -7,44 +7,53 @@
         "primary-0",
         "primary-1",
         "primary-2",
+        "hidden-source-0",
         "optional-0",
-        "primary-3",
-        "secret-0"
+        "secret-0",
+        "primary-3"
     ],
     "acquiredKeys": [
         "KEY_ITEM:greenwood_final_path_key"
     ],
     "unresolvedRequirements": [],
-    "optionalPathCount": 1,
+    "optionalPathCount": 2,
     "secretPathCount": 1,
-    "totalReachableNodes": 6,
+    "totalReachableNodes": 7,
     "reachabilityRatio": 1.0,
     "topologySummary": {
-        "nodeCount": 6,
-        "edgeCount": 5,
+        "nodeCount": 7,
+        "edgeCount": 7,
         "primaryPathLength": 4,
         "optionalLoopCount": 1,
-        "loopEdgeCount": 1,
-        "loopEdgeRatio": 0.2,
-        "roomCount": 6,
+        "loopEdgeCount": 2,
+        "loopEdgeRatio": 0.2857142857142857,
+        "roomCount": 7,
         "patternRoomCount": 0,
-        "vaultPlacementCount": 1,
+        "vaultPlacementCount": 2,
         "pathClassCounts": {
             "CRITICAL_PATH": 4,
-            "OPTIONAL": 1,
+            "OPTIONAL": 2,
             "SECRET": 1
         }
     },
     "searchActionCount": 1,
     "searchRevealCount": 1,
     "searchFailCount": 0,
+    "providedDiscoveryTags": [],
+    "hiddenAnchorFamiliesSatisfied": true,
+    "requiredHiddenAnchorFamilies": [
+        "hidden.branch"
+    ],
+    "observedHiddenAnchorFamilies": [
+        "hidden.branch"
+    ],
     "searchStates": {
         "search.greenwood.hidden_cache": "REVEALED"
     },
     "secretProofs": [
         {
             "bindingId": "search.greenwood.hidden_cache",
-            "entranceAnchorId": "optional.branch.1",
+            "entranceAnchorId": "hidden.branch",
             "targetNodeId": "secret-0",
             "resolved": true,
             "result": "REVEALED"
@@ -53,7 +62,7 @@
     "resolvedEntranceBindings": [
         {
             "bindingId": "search.greenwood.hidden_cache",
-            "entranceAnchorId": "optional.branch.1",
+            "entranceAnchorId": "hidden.branch",
             "targetNodeId": "secret-0"
         }
     ]

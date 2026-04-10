@@ -70,7 +70,15 @@ class SolvabilityGoldenContractTest {
                 ),
             )
         val graph = SolvabilityGraphBuilder.build(generatedFloor)
-        val proof = SolvabilityProver.prove(graph = graph, perceptionScore = perceptionScore)
+        val providedDiscoveryTags = primerDiscoveryTagsForCase(schemaCatalog = schemaCatalog, zoneId = zoneId, floorIndex = floorIndex)
+        val requiredHiddenAnchorFamilies = requiredHiddenAnchorFamiliesForZone(schemaCatalog = schemaCatalog, zoneId = zoneId)
+        val observedHiddenAnchorFamilies = observedHiddenAnchorFamiliesForFloor(generatedFloor)
+        val proof =
+            SolvabilityProver.prove(
+                graph = graph,
+                perceptionScore = perceptionScore,
+                providedTags = providedDiscoveryTags,
+            )
         return buildJsonObject {
             put("zoneId", zoneId)
             put("floorIndex", floorIndex)
@@ -117,6 +125,16 @@ class SolvabilityGoldenContractTest {
             put("searchActionCount", proof.searchActionCount)
             put("searchRevealCount", proof.searchRevealCount)
             put("searchFailCount", proof.searchFailCount)
+            putJsonArray("providedDiscoveryTags") {
+                providedDiscoveryTags.sorted().forEach { tag -> add(JsonPrimitive(tag)) }
+            }
+            put("hiddenAnchorFamiliesSatisfied", requiredHiddenAnchorFamilies.all(observedHiddenAnchorFamilies::contains))
+            putJsonArray("requiredHiddenAnchorFamilies") {
+                requiredHiddenAnchorFamilies.sorted().forEach { family -> add(JsonPrimitive(family)) }
+            }
+            putJsonArray("observedHiddenAnchorFamilies") {
+                observedHiddenAnchorFamilies.sorted().forEach { family -> add(JsonPrimitive(family)) }
+            }
             putJsonObject("searchStates") {
                 proof.searchStates.associate { entry -> entry.bindingId.value to entry.result.name }
                     .toSortedMap()

@@ -135,6 +135,14 @@ interactables:
     schemaVersion: 2
     tags: [interactable, support, optional]
     interactionTags: [support, objective]
+  - id: crystal_cache_chest
+    nameKey: interactable.crystal_cache_chest.name
+    descKey: interactable.crystal_cache_chest.desc
+    visualKey: prop.supply_crate
+    audioProfile: audio.interactable.open
+    schemaVersion: 2
+    tags: [interactable, reward, optional]
+    interactionTags: [loot, objective]
   - id: river_ferry_anchor
     nameKey: interactable.river_ferry_anchor.name
     descKey: interactable.river_ferry_anchor.desc

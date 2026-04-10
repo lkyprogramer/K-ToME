@@ -76,6 +76,7 @@ audioProfiles:
   - id: audio.zone.grey_gate_depths
   - id: audio.secret_zone.greenwood_hidden_cache
   - id: audio.secret_zone.deep_iron_slag_cache
+  - id: audio.secret_zone.deep_iron_smuggler_stash
   - id: audio.secret_zone.underground_river_crystal_rift
   - id: audio.secret_zone.abyssal_temple_warded_archive
   - id: audio.difficulty.normal

@@ -4,20 +4,20 @@
     "floorIndex": 1,
     "seed": 20260403010101,
     "criticalPathReachable": true,
-    "topologyFingerprint": "601bd3a9b88daeb3de6f62db1a4aa3a9ad926bbafd4c63ff122757c0a714b93a",
+    "topologyFingerprint": "5fdbe09ae51ddcd8c5aa21185f314aa1d2d170e7e7b030d6bffdb920a73583c9",
     "topologySummary": {
-        "nodeCount": 7,
-        "edgeCount": 7,
+        "nodeCount": 8,
+        "edgeCount": 9,
         "primaryPathLength": 4,
         "optionalLoopCount": 2,
-        "loopEdgeCount": 2,
-        "loopEdgeRatio": 0.2857142857142857,
-        "roomCount": 7,
+        "loopEdgeCount": 3,
+        "loopEdgeRatio": 0.3333333333333333,
+        "roomCount": 8,
         "patternRoomCount": 1,
-        "vaultPlacementCount": 2,
+        "vaultPlacementCount": 3,
         "pathClassCounts": {
             "CRITICAL_PATH": 4,
-            "OPTIONAL": 2,
+            "OPTIONAL": 3,
             "SECRET": 1
         }
     },
@@ -33,6 +33,12 @@
             "threatBudget": 4
         },
         {
+            "vaultId": "vault.greenwood.briar_cache",
+            "pathClass": "OPTIONAL",
+            "rewardBudget": 6,
+            "threatBudget": 4
+        },
+        {
             "vaultId": "vault.greenwood.smuggler_cache",
             "pathClass": "OPTIONAL",
             "rewardBudget": 7,
@@ -40,7 +46,7 @@
         }
     ],
     "terrainTagDistribution": {
-        "WATER": 81
+        "WATER": 92
     },
     "rewardProfile": {
         "id": "zone_reward.greenwood_fringe.phase4",

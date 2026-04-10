@@ -49,6 +49,9 @@ class Phase4ReportRunnerTest {
         assertEquals("12", payload.getValue("taskCount").jsonPrimitive.content)
         assertEquals("0", payload.getValue("failedTaskCount").jsonPrimitive.content)
         assertEquals("1000", solvabilityTask.getValue("metrics").jsonObject.getValue("distinctSeedCount").jsonPrimitive.content)
+        assertTrue(solvabilityTask.getValue("metrics").jsonObject.containsKey("providedDiscoveryTags"))
+        assertTrue(solvabilityTask.getValue("metrics").jsonObject.containsKey("requiredHiddenAnchorFamilies"))
+        assertTrue(solvabilityTask.getValue("metrics").jsonObject.containsKey("observedHiddenAnchorFamilies"))
         assertTrue(bossTask.getValue("metrics").jsonObject.getValue("whiteBoxSummaryPath").jsonPrimitive.content.contains("whitebox/boss"))
         assertTrue(bossTask.getValue("metrics").jsonObject.containsKey("eliteMutationDistinctCount"))
         assertTrue(bossTask.getValue("metrics").jsonObject.containsKey("eliteMutationValidPairCount"))
@@ -58,9 +61,11 @@ class Phase4ReportRunnerTest {
         assertTrue(terrainTask.getValue("metrics").jsonObject.containsKey("terrainTaggedCombatExposureRate"))
         assertTrue(terrainTask.getValue("metrics").jsonObject.containsKey("terrainCoverageByZone"))
         assertTrue(terrainTask.getValue("metrics").jsonObject.containsKey("corpusAggregateMetrics"))
+        assertTrue(tasks.first { element -> element.jsonObject.getValue("taskId").jsonPrimitive.content == "whiteBoxMapgen" }.jsonObject.getValue("metrics").jsonObject.containsKey("requiredHiddenAnchorFamilies"))
         assertTrue(lootTask.getValue("metrics").jsonObject.containsKey("lootProfileBaseItemOverlapMatrix"))
         assertTrue(lootTask.getValue("metrics").jsonObject.containsKey("uniqueArtifactMeaningfulSwapRate"))
         assertTrue(lootTask.getValue("metrics").jsonObject.containsKey("corpusAggregateMetrics"))
+        assertTrue(hiddenTask.getValue("metrics").jsonObject.containsKey("hiddenEventRegistryCount"))
         assertTrue(hiddenTask.getValue("metrics").jsonObject.containsKey("hiddenTriggerTypeCoverage"))
         assertTrue(hiddenTask.getValue("metrics").jsonObject.containsKey("secretEntranceBindingSet"))
         assertTrue(hiddenTask.getValue("metrics").jsonObject.containsKey("corpusAggregateMetrics"))
@@ -94,7 +99,7 @@ class Phase4ReportRunnerTest {
             Duration.between(contentPackTimestamp, whiteBoxContentPackTimestamp).abs() <= Duration.ofMinutes(30),
             "content-pack artifact timestamps drifted beyond the freshness guard window.",
         )
-        assertEquals(15, experienceMetrics.size)
+        assertEquals(16, experienceMetrics.size)
         assertEquals(
             setOf(
                 "eliteMutationDistinctCount",
@@ -107,6 +112,7 @@ class Phase4ReportRunnerTest {
                 "artifactTemplateCount",
                 "totalLootContentCount",
                 "affixPassiveCoverage",
+                "hiddenEventCount",
                 "hiddenTriggerTypeCoverage",
                 "secretEntranceBindingCoverage",
                 "terrainTaggedCombatExposureRate",

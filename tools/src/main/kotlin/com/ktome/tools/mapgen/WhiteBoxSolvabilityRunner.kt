@@ -36,7 +36,7 @@ object WhiteBoxSolvabilityRunner {
     const val HARNESS_ID: String = "whiteBoxSolvability"
     private const val DOMAIN_ID: String = "solvability"
     private const val SEEDS_PER_FLOOR: Int = 5
-    private const val CORPUS_ID: String = "P4_PR03_SOLVABILITY_WHITEBOX"
+    private const val CORPUS_ID: String = "P4_OPT_PR05_SOLVABILITY_WHITEBOX"
     private val caseRules: List<WhiteBoxCaseRule<WhiteBoxSolvabilityCaseData>> =
         listOf(
             WhiteBoxCaseRule { caseData ->
@@ -109,6 +109,25 @@ object WhiteBoxSolvabilityRunner {
                 caseData.executedCase.generatedFloor ?: return@WhiteBoxCaseRule emptyList()
                 listOf(
                     WhiteBoxAssertionResult(
+                        ruleId = "solvability.case.hidden_anchor_families_resolved",
+                        passed = caseData.result.hiddenAnchorFamiliesSatisfied,
+                        message = "Hidden entrance anchor families observed in the topology satisfy the zone's formal hidden-anchor contract.",
+                        context =
+                            buildJsonObject {
+                                putJsonArray("requiredHiddenAnchorFamilies") {
+                                    caseData.result.requiredHiddenAnchorFamilies.sorted().forEach { family -> add(JsonPrimitive(family)) }
+                                }
+                                putJsonArray("observedHiddenAnchorFamilies") {
+                                    caseData.result.observedHiddenAnchorFamilies.sorted().forEach { family -> add(JsonPrimitive(family)) }
+                                }
+                            },
+                    ),
+                )
+            },
+            WhiteBoxCaseRule { caseData ->
+                caseData.executedCase.generatedFloor ?: return@WhiteBoxCaseRule emptyList()
+                listOf(
+                    WhiteBoxAssertionResult(
                         ruleId = "solvability.case.reveal_fail_non_blocking",
                         passed = caseData.result.searchFailCount == 0 || caseData.result.criticalPathReachable,
                         message = "Reveal failure never blocks the critical path.",
@@ -158,6 +177,12 @@ object WhiteBoxSolvabilityRunner {
                         message = "Each zone/floor corpus keeps a readable proof trace for every sampled case.",
                         context = metrics,
                     ),
+                    WhiteBoxAssertionResult(
+                        ruleId = "solvability.aggregate.zone_floor_hidden_anchor_families_resolved",
+                        passed = metrics.intValue("hiddenAnchorFamilyFailureCount") == 0,
+                        message = "Each zone/floor corpus resolves the formal hidden-anchor families required by the upgraded topology contract.",
+                        context = metrics,
+                    ),
                 )
             },
         )
@@ -190,6 +215,12 @@ object WhiteBoxSolvabilityRunner {
                         message = "Corpus keeps critical path failures at 0.",
                         context = metrics,
                     ),
+                    WhiteBoxAssertionResult(
+                        ruleId = "solvability.aggregate.corpus_hidden_anchor_families_resolved",
+                        passed = metrics.intValue("hiddenAnchorFamilyFailureCount") == 0,
+                        message = "Corpus resolves the formal hidden-anchor families required by OPT PR-05 across all sampled cases.",
+                        context = metrics,
+                    ),
                 )
             },
         )
@@ -200,7 +231,13 @@ object WhiteBoxSolvabilityRunner {
 
         val executionContext = MapgenSmokeRunner.loadExecutionContext()
         val upgradedZones = executionContext.schemaCatalog.zones.filter(ZoneSchemaV2::isPhase4Upgraded).sortedBy(ZoneSchemaV2::id)
-        val cases = SolvabilityHarnessRunner.buildCases(upgradedZones, seedsPerFloor = SEEDS_PER_FLOOR)
+        val cases =
+            SolvabilityHarnessRunner.buildCases(
+                upgradedZones = upgradedZones,
+                primerDiscoveryTagsByZoneAndFloor = primerDiscoveryTagsByZoneAndFloor(executionContext.schemaCatalog, upgradedZones),
+                requiredHiddenAnchorFamiliesByZone = requiredHiddenAnchorFamiliesByZone(executionContext.schemaCatalog),
+                seedsPerFloor = SEEDS_PER_FLOOR,
+            )
         val distinctSeedList = cases.map { case -> case.request.seed }.distinct()
         require(distinctSeedList.size == cases.size) {
             "whiteBoxSolvability corpus must keep a one-to-one seed corpus; got ${distinctSeedList.size} distinct seeds for ${cases.size} cases."
@@ -211,7 +248,7 @@ object WhiteBoxSolvabilityRunner {
         val corpus =
             WhiteBoxCorpusSpec(
                 corpusId = CORPUS_ID,
-                description = "First 5 deterministic solvability seeds per floor for the 4 Phase 4 upgraded zones after PR-03.",
+                description = "First 5 deterministic solvability seeds per floor for the 4 Phase 4 upgraded zones after OPT PR-05 hidden primer and anchor alignment.",
                 sampleCount = cases.size,
             )
 
@@ -308,6 +345,7 @@ object WhiteBoxSolvabilityRunner {
             )
             put("casesWithReveal", caseData.count { data -> data.result.searchRevealCount > 0 })
             put("casesWithFail", caseData.count { data -> data.result.searchFailCount > 0 })
+            put("hiddenAnchorFamilyFailureCount", caseData.count { data -> !data.result.hiddenAnchorFamiliesSatisfied })
             put("maxReachabilityRatio", caseData.maxOfOrNull { data -> data.result.reachabilityRatio } ?: 0f)
         }
 
@@ -318,6 +356,16 @@ object WhiteBoxSolvabilityRunner {
             put("casesWithFail", caseData.count { data -> data.result.searchFailCount > 0 })
             put("casesWithBacktrackProof", caseData.count { data -> data.result.backtrackSatisfied })
             put("casesWithProofTrace", caseData.count { data -> data.result.visitedNodes.isNotEmpty() })
+            put("hiddenAnchorFamilyFailureCount", caseData.count { data -> !data.result.hiddenAnchorFamiliesSatisfied })
+            putJsonArray("providedDiscoveryTags") {
+                caseData.flatMapTo(linkedSetOf(), { data -> data.result.providedDiscoveryTags }).sorted().forEach { tag -> add(JsonPrimitive(tag)) }
+            }
+            putJsonArray("requiredHiddenAnchorFamilies") {
+                caseData.flatMapTo(linkedSetOf(), { data -> data.result.requiredHiddenAnchorFamilies }).sorted().forEach { family -> add(JsonPrimitive(family)) }
+            }
+            putJsonArray("observedHiddenAnchorFamilies") {
+                caseData.flatMapTo(linkedSetOf(), { data -> data.result.observedHiddenAnchorFamilies }).sorted().forEach { family -> add(JsonPrimitive(family)) }
+            }
         }
 
     private fun caseFacts(caseData: WhiteBoxSolvabilityCaseData): JsonObject {
@@ -335,6 +383,16 @@ object WhiteBoxSolvabilityRunner {
             put("searchRevealCount", result.searchRevealCount)
             put("searchFailCount", result.searchFailCount)
             put("backtrackSatisfied", result.backtrackSatisfied)
+            putJsonArray("providedDiscoveryTags") {
+                result.providedDiscoveryTags.sorted().forEach { tag -> add(JsonPrimitive(tag)) }
+            }
+            put("hiddenAnchorFamiliesSatisfied", result.hiddenAnchorFamiliesSatisfied)
+            putJsonArray("requiredHiddenAnchorFamilies") {
+                result.requiredHiddenAnchorFamilies.sorted().forEach { family -> add(JsonPrimitive(family)) }
+            }
+            putJsonArray("observedHiddenAnchorFamilies") {
+                result.observedHiddenAnchorFamilies.sorted().forEach { family -> add(JsonPrimitive(family)) }
+            }
             putJsonArray("visitedNodes") {
                 result.visitedNodes.forEach { nodeId -> add(JsonPrimitive(nodeId)) }
             }

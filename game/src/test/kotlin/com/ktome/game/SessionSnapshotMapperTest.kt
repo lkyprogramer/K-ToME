@@ -703,6 +703,53 @@ class SessionSnapshotMapperTest {
         assertEquals(snapshot.specialTierEligibilityVersion, phase4Snapshot(phase4HiddenEntranceFloor(bindingId = SearchBindingId("search.greenwood.secret_entrance"))).specialTierEligibilityVersion)
     }
 
+    @Test
+    fun `save snapshot round trip preserves discovery tags and entered room node ids`() {
+        val generatedFloor = phase4HiddenEntranceFloor(bindingId = SearchBindingId("search.greenwood.secret_entrance"))
+        val player = PlayerSnapshot(entity = EntitySnapshot(id = 1, position = PointSnapshot.from(generatedFloor.map.playerStart), isPlayerControlled = true))
+        val enteredRoomNodeIds = linkedSetOf(NodeId("start"))
+        val discoveryTags = linkedSetOf("hidden.primer.greenwood.hidden_cache")
+        val snapshot =
+            SessionSnapshotMapper.toSaveSnapshot(
+                config =
+                    FoundationGameConfig(
+                        width = generatedFloor.map.width,
+                        height = generatedFloor.map.height,
+                        zoneId = generatedFloor.zoneId,
+                        playerProfessionId = "vanguard",
+                    ),
+                currentFloor = generatedFloor.floorIndex,
+                turnCount = 1,
+                headlessTurnEquivalent = 1,
+                player = player,
+                floors =
+                    listOf(
+                        FloorState(
+                            floor = generatedFloor.floorIndex,
+                            payload =
+                                FloorRuntimeState(
+                                    generatedFloor = generatedFloor,
+                                    entities = mutableListOf(),
+                                    enteredRoomNodeIds = linkedSetOf<NodeId>().apply { addAll(enteredRoomNodeIds) },
+                                    discoveryTags = linkedSetOf<String>().apply { addAll(discoveryTags) },
+                                ),
+                        ),
+                    ),
+                combatRandomState = null,
+                sessionRandomState = null,
+                pendingActionIds = emptyList(),
+                activeTurnActorId = null,
+            )
+
+        val savedFloor = snapshot.floors.single()
+        assertEquals(enteredRoomNodeIds, savedFloor.enteredRoomNodeIds)
+        assertEquals(discoveryTags, savedFloor.discoveryTags)
+
+        val restored = SessionSnapshotMapper.fromSaveSnapshot(snapshot)
+        assertEquals(enteredRoomNodeIds, restored.floors.single().payload.enteredRoomNodeIds.toSet())
+        assertEquals(discoveryTags, restored.floors.single().payload.discoveryTags.toSet())
+    }
+
     private fun content(): GameContent {
         val loader = DataLoader()
         val schemaCatalog = loader.loadSchemaCatalog()

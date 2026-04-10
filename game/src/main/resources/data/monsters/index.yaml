@@ -20,7 +20,7 @@ monsters:
     lootProfileId: loot.foundation.common
     talents: {}
     expReward: 15
-    spawnFloors: [1, 2]
+    spawnFloors: [2]
     spawnWeight: 10
   - id: undead.bone_archer
     nameKey: monster.undead.bone_archer.name
@@ -278,7 +278,7 @@ monsters:
     resistances: { FIRE: -10 }
     talents: { war_cry: 1 }
     expReward: 220
-    spawnFloors: [2]
+    spawnFloors: [1, 2]
     spawnWeight: 1
   - id: abyssal.guardian
     nameKey: monster.abyssal.guardian.name
@@ -536,7 +536,7 @@ monsters:
     resistances: { FIRE: 20, COLD: -10 }
     talents: { war_cry: 1, shield_bash: 1 }
     expReward: 72
-    spawnFloors: [2]
+    spawnFloors: [1, 2]
     spawnWeight: 3
   - id: orc.molten_giant
     nameKey: monster.orc.molten_giant.name
