@@ -8570,8 +8570,8 @@ class FoundationGameSession internal constructor(
     ) {
         applyTalentResourceReactions(result)
         recordTalentCombatObservations(result)
-        applyTalentTerrainInteractions(result)
         applyTriggeredTalentCombatPassives(result)
+        applyTalentTerrainInteractions(result)
         if (successfulPlayerAffinityId != null && result.hasConfirmedResolutionSuccess()) {
             recordSuccessfulPlayerAffinity(successfulPlayerAffinityId)
         }
@@ -8587,7 +8587,7 @@ class FoundationGameSession internal constructor(
                 refreshTargetDerivedStatsAfterDamage(
                     target = effect.target,
                     finalDamage = effect.amount,
-                    targetKilled = !world.isAlive(effect.target),
+                    targetKilled = effect.targetKilled,
                 )
                 applyTriggeredCombatPassives(
                     attacker = result.user,

@@ -1855,6 +1855,131 @@ class FoundationGameSessionTest {
     }
 
     @Test
+    fun `talent lethal result does not revive target through low hp passive refresh`() {
+        val session =
+            GameModule.newFoundationSession(
+                FoundationGameConfig(seed = 20260410L, zoneId = "deep_iron_pit", playerProfessionId = "arcanist"),
+                SaveManager(tempDir.resolve("opt-pr03-talent-lethal-refresh-save")),
+            )
+        clearMonsters(session)
+        val world = runtimeWorld(session)
+        val targetId = installDurableDummy(session, id = "opt_pr03_talent_lethal_target", baseHp = 20)
+        equipItemOnActor(
+            session = session,
+            actorId = targetId,
+            item =
+                ItemInstance(
+                    baseId = "last_stand_mail",
+                    name = "Last Stand Mail",
+                    type = ItemType.ARMOR,
+                    slot = EquipSlot.ARMOR,
+                    glyph = '[',
+                    colorHex = "#AA6644",
+                    quality = RarityTier.RARE,
+                    passive =
+                        EquipmentPassive.ConditionalStatBonus(
+                            condition = com.ktome.core.item.PassiveCondition.HP_BELOW_30,
+                            statModifier = StatModifier(maxHp = 20),
+                        ),
+                ),
+        )
+        invokeRefreshActorDerivedStats(session, targetId)
+        requireNotNull(world.get<Health>(targetId)).current = 0
+
+        invokeHandleResolvedTalentSuccess(
+            session = session,
+            result =
+                com.ktome.core.talent.TalentResult(
+                    talentId = "test.lethal_blast",
+                    talentName = "Lethal Blast",
+                    user = session.playerId,
+                    targets = listOf(targetId),
+                    effects =
+                        listOf(
+                            com.ktome.core.talent.TalentEffectResult.Damage(
+                                target = targetId,
+                                amount = 8,
+                                crit = false,
+                                targetKilled = true,
+                                damageType = DamageType.FIRE,
+                            ),
+                        ),
+                ),
+        )
+
+        assertFalse(world.isAlive(targetId))
+    }
+
+    @Test
+    fun `talent terrain follow up uses refreshed target stats after threshold cross`() {
+        val session =
+            GameModule.newFoundationSession(
+                FoundationGameConfig(seed = 20260410L, zoneId = "underground_river", playerProfessionId = "arcanist"),
+                SaveManager(tempDir.resolve("opt-pr03-talent-terrain-refresh-save")),
+            )
+        clearMonsters(session)
+        val world = runtimeWorld(session)
+        val targetId = installDurableDummy(session, id = "opt_pr03_talent_terrain_target", baseHp = 20)
+        equipItemOnActor(
+            session = session,
+            actorId = targetId,
+            item =
+                ItemInstance(
+                    baseId = "cinderveil_plate",
+                    name = "Cinderveil Plate",
+                    type = ItemType.ARMOR,
+                    slot = EquipSlot.ARMOR,
+                    glyph = '[',
+                    colorHex = "#AA6644",
+                    quality = RarityTier.RARE,
+                    passive =
+                        EquipmentPassive.ConditionalStatBonus(
+                            condition = com.ktome.core.item.PassiveCondition.HP_BELOW_50,
+                            statModifier = StatModifier(defense = 50),
+                        ),
+                ),
+        )
+        invokeRefreshActorDerivedStats(session, targetId)
+        requireNotNull(world.get<Health>(targetId)).current = 4
+
+        invokeHandleResolvedTalentSuccess(
+            session = session,
+            result =
+                com.ktome.core.talent.TalentResult(
+                    talentId = "test.terrain_combo",
+                    talentName = "Terrain Combo",
+                    user = session.playerId,
+                    targets = listOf(targetId),
+                    effects =
+                        listOf(
+                            com.ktome.core.talent.TalentEffectResult.Damage(
+                                target = targetId,
+                                amount = 6,
+                                crit = false,
+                                targetKilled = false,
+                                damageType = DamageType.COLD,
+                                terrainInteraction =
+                                    ElementInteractionResolution(
+                                        ruleId = ElementInteractionRegistry.TERRAIN_COLD_WATER_FREEZE,
+                                        triggerDamageType = DamageType.PHYSICAL,
+                                        bonusTargetTrace =
+                                            com.ktome.core.combat.TerrainInteractionChildTrace(
+                                                traceId = "opt-pr03-talent-follow-up",
+                                                targetId = targetId,
+                                                rawDamage = 5,
+                                                damageMultiplier = 1.0,
+                                            ),
+                                    ),
+                            ),
+                        ),
+                ),
+        )
+
+        assertTrue(world.isAlive(targetId))
+        assertEquals(1, requireNotNull(world.get<Health>(targetId)).current)
+    }
+
+    @Test
     fun `conditional passive recalculates derived stats when health crosses threshold`() {
         val session =
             GameModule.newFoundationSession(
@@ -5771,6 +5896,17 @@ class FoundationGameSessionTest {
             )
         world.remove<AIBehavior>(dummyId)
         return dummyId
+    }
+
+    private fun equipItemOnActor(
+        session: FoundationGameSession,
+        actorId: EntityId,
+        item: ItemInstance,
+    ) {
+        val world = runtimeWorld(session)
+        val itemId = ItemFactory().createCarriedItem(world, item)
+        val equipment = world.get<com.ktome.core.item.Equipment>(actorId) ?: com.ktome.core.item.Equipment().also { world.add(actorId, it) }
+        equipment.slots[requireNotNull(item.slot)] = itemId
     }
 
     private fun setPlayerLevelToZoneRecommendedMax(session: FoundationGameSession) {
