@@ -226,6 +226,7 @@
   "ai.chase": "追击",
   "ai.kite": "游走",
   "ai.patrol": "巡逻",
+  "ai.overlay": "覆盖",
   "stairs.up.name": "上楼梯",
   "stairs.down.name": "下楼梯",
   "prop.hidden_entrance.revealed.name": "隐藏入口",

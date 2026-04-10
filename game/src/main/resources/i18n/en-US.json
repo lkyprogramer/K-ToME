@@ -226,6 +226,7 @@
   "ai.chase": "Chase",
   "ai.kite": "Kite",
   "ai.patrol": "Patrol",
+  "ai.overlay": "Overlay",
   "stairs.up.name": "Upstairs",
   "stairs.down.name": "Downstairs",
   "prop.hidden_entrance.revealed.name": "Hidden Entrance",
