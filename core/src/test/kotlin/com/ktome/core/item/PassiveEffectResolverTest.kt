@@ -304,6 +304,30 @@ class PassiveEffectResolverTest {
     }
 
     @Test
+    fun `on hit status proc collection keeps multiple equipped sources`() {
+        val world = World()
+        val actor = world.createEntity()
+        equip(
+            world = world,
+            actor = actor,
+            slot = EquipSlot.WEAPON,
+            item = item(baseId = "venom_blade", passive = EquipmentPassive.OnHitStatusProc(statusId = "POISONED", chance = 0.25, duration = 2)),
+        )
+        equip(
+            world = world,
+            actor = actor,
+            slot = EquipSlot.OFF_HAND,
+            item = item(baseId = "bane_idol", passive = EquipmentPassive.OnHitStatusProc(statusId = "BANE", chance = 0.40, duration = 3)),
+        )
+
+        val triggers = PassiveEffectResolver.onHitStatusProcs(PassiveEffectResolver.equippedPassives(world, actor))
+
+        assertEquals(2, triggers.size)
+        assertTrue(triggers.any { trigger -> trigger.source.item.baseId == "venom_blade" && trigger.statusId == "POISONED" })
+        assertTrue(triggers.any { trigger -> trigger.source.item.baseId == "bane_idol" && trigger.statusId == "BANE" })
+    }
+
+    @Test
     fun `on kill resource restore collection preserves resource type and amount`() {
         val world = World()
         val actor = world.createEntity()
@@ -323,6 +347,30 @@ class PassiveEffectResolverTest {
         assertEquals(ResourceType.MANA, trigger.resourceType)
         assertEquals(6, trigger.amount)
         assertEquals("reaper_idol", trigger.source.item.baseId)
+    }
+
+    @Test
+    fun `on kill resource restore collection keeps multiple resource triggers`() {
+        val world = World()
+        val actor = world.createEntity()
+        equip(
+            world = world,
+            actor = actor,
+            slot = EquipSlot.OFF_HAND,
+            item = item(baseId = "reaper_idol", passive = EquipmentPassive.OnKillResourceRestore(resourceType = ResourceType.MANA, amount = 6)),
+        )
+        equip(
+            world = world,
+            actor = actor,
+            slot = EquipSlot.ARMOR,
+            item = item(baseId = "war_drum", passive = EquipmentPassive.OnKillResourceRestore(resourceType = ResourceType.STAMINA, amount = 4)),
+        )
+
+        val triggers = PassiveEffectResolver.onKillResourceRestores(PassiveEffectResolver.equippedPassives(world, actor))
+
+        assertEquals(2, triggers.size)
+        assertTrue(triggers.any { trigger -> trigger.resourceType == ResourceType.MANA && trigger.amount == 6 })
+        assertTrue(triggers.any { trigger -> trigger.resourceType == ResourceType.STAMINA && trigger.amount == 4 })
     }
 
     private fun equip(

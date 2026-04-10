@@ -1779,6 +1779,82 @@ class FoundationGameSessionTest {
     }
 
     @Test
+    fun `terrain affinity passive changes combat hit outcome on matching terrain`() {
+        fun resolveHit(onWater: Boolean): Boolean {
+            val session =
+                GameModule.newFoundationSession(
+                    FoundationGameConfig(seed = 20260410L, zoneId = "underground_river", playerProfessionId = "rogue"),
+                    SaveManager(tempDir.resolve(if (onWater) "opt-pr03-terrain-combat-water" else "opt-pr03-terrain-combat-dry")),
+                )
+            clearMonsters(session)
+            val world = runtimeWorld(session)
+            val weaponIndex = addInventoryItem(session, specialItem("unique.floodglass_rapier"))
+            assertTrue(session.perform(PlayerCommand.ActivateInventoryItem(weaponIndex)))
+
+            val terrainTags = session.automationTerrainTags()
+            val playerPoint =
+                if (onWater) {
+                    terrainTags.entries
+                        .filter { (point, tags) -> TerrainTag.WATER in tags && !session.map[point].blocksMovement }
+                        .map { (point, _) -> point }
+                        .sortedWith(compareBy<Point>(Point::y).thenBy(Point::x))
+                        .first()
+                } else {
+                    session.playerPosition()
+                        .takeIf { point -> TerrainTag.WATER !in terrainTags[point].orEmpty() }
+                        ?: session.map.floorPoints().first { point -> TerrainTag.WATER !in terrainTags[point].orEmpty() }
+                }
+            movePlayerTo(session, playerPoint)
+
+            requireNotNull(world.get<Stats>(session.playerId)).dex = 0
+            world.add(
+                session.playerId,
+                requireNotNull(world.get<CombatProfile>(session.playerId)).copy(baseAccuracy = 6, baseAttack = 10),
+            )
+            invokeRefreshActorDerivedStats(session, session.playerId)
+
+            val passiveModifier = world.get<com.ktome.core.ecs.EquipmentPassiveStatModifier>(session.playerId)?.modifier ?: StatModifier.ZERO
+            if (onWater) {
+                assertEquals(9, passiveModifier.accuracy)
+            } else {
+                assertEquals(0, passiveModifier.accuracy)
+            }
+
+            val dummyPoint = findOpenAdjacentPoint(session, playerPoint)
+            val dummyId =
+                EntityFactory().createMonster(
+                    world = world,
+                    template =
+                        MonsterTemplate(
+                            id = if (onWater) "opt_pr03_terrain_water_dummy" else "opt_pr03_terrain_dry_dummy",
+                            name = "Terrain Combat Dummy",
+                            glyph = 'd',
+                            colorHex = "#AAAAAA",
+                            stats = Stats(str = 1, dex = 1, con = 1, wil = 1),
+                            baseHp = 30,
+                            baseAttack = 1,
+                            baseDefense = 0,
+                            baseAccuracy = 10,
+                            baseEvasion = 29,
+                            speed = 90,
+                            ai = AIType.CHASE,
+                            expReward = 10,
+                            spawnFloors = listOf(session.currentFloor()),
+                            spawnWeight = 1,
+                        ),
+                    position = dummyPoint,
+                )
+            world.remove<AIBehavior>(dummyId)
+
+            val result = combatResolver(0.46, 0).resolveMelee(world = world, attacker = session.playerId, target = dummyId)
+            return result.hit
+        }
+
+        assertFalse(resolveHit(onWater = false))
+        assertTrue(resolveHit(onWater = true))
+    }
+
+    @Test
     fun `conditional passive recalculates derived stats when health crosses threshold`() {
         val session =
             GameModule.newFoundationSession(

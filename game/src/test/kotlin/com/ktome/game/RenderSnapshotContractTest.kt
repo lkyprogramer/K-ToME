@@ -304,6 +304,8 @@ class RenderSnapshotContractTest {
         inventory.itemIds += itemFactory.createCarriedItem(world = world, item = affixItem(baseId = "long_sword", affixId = "briarhook"))
         inventory.itemIds += itemFactory.createCarriedItem(world = world, item = affixItem(baseId = "bandit_trophy", affixId = "floodtouched"))
         inventory.itemIds += itemFactory.createCarriedItem(world = world, item = specialItem("unique.thornpath_crook"))
+        inventory.itemIds += itemFactory.createCarriedItem(world = world, item = specialItem("unique.deepcurrent_lens"))
+        inventory.itemIds += itemFactory.createCarriedItem(world = world, item = specialItem("unique.cinderveil_plate"))
         inventory.itemIds += itemFactory.createCarriedItem(world = world, item = specialItem("artifact.heartroot_gambit"))
 
         val snapshot = session.renderSnapshot()
@@ -314,6 +316,14 @@ class RenderSnapshotContractTest {
         val terrainItem =
             snapshot.uiState.inventory.first { entry ->
                 entry.item.baseItemId == "bandit_trophy" && "affix.floodtouched.name" in entry.item.affixNameKeys
+            }.item
+        val onKillItem =
+            snapshot.uiState.inventory.first { entry ->
+                entry.item.baseItemId == "unique_deepcurrent_lens"
+            }.item
+        val conditionalItem =
+            snapshot.uiState.inventory.first { entry ->
+                entry.item.baseItemId == "unique_cinderveil_plate"
             }.item
         val uniqueItem =
             snapshot.uiState.inventory.first { entry ->
@@ -326,6 +336,13 @@ class RenderSnapshotContractTest {
 
         assertTrue(onHitItem.passiveDescriptions.any { passive -> passive.key == "ui.inspect.passive.on_hit_status_proc" })
         assertTrue(terrainItem.passiveDescriptions.any { passive -> passive.key == "ui.inspect.passive.terrain_affinity_bonus" })
+        assertTrue(onKillItem.passiveDescriptions.any { passive -> passive.key == "ui.inspect.passive.on_kill_resource_restore" })
+        assertTrue(conditionalItem.passiveDescriptions.any { passive -> passive.key == "ui.inspect.passive.conditional_stat_bonus" })
+        assertTrue(
+            conditionalItem.passiveDescriptions
+                .flatMap { passive -> passive.arguments }
+                .any { argument -> argument.name == "condition" && argument.valueKey == "ui.inspect.passive.condition.hp_below_50" },
+        )
         assertEquals("item.unique.thornpath_crook.name", uniqueItem.nameKey)
         assertEquals("item.unique.thornpath_crook.desc", uniqueItem.descKey)
         assertEquals("item.unique.thornpath_crook.visual", uniqueItem.visualKey)

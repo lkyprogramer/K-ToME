@@ -8329,7 +8329,8 @@ class FoundationGameSession internal constructor(
         triggers.forEach { trigger ->
             when (trigger.passiveKind) {
                 EquipmentPassiveKindIds.ON_HIT_STATUS_PROC -> applyTriggeredStatusProc(attacker = attacker, target = target, trigger = trigger)
-                EquipmentPassiveKindIds.ON_KILL_RESOURCE_RESTORE -> Unit
+                EquipmentPassiveKindIds.ON_KILL_RESOURCE_RESTORE -> Unit // Applied in the ON_KILL callback path.
+                else -> Unit
             }
         }
     }
