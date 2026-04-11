@@ -455,6 +455,8 @@ tasks.register<Exec>("manifestLint") {
         "--extra-plan",
         "assets-src/image/specs/phase4-opt-pr03-gemini-plan.yaml",
         "--extra-plan",
+        "assets-src/image/specs/phase4-opt-pr05-gemini-plan.yaml",
+        "--extra-plan",
         "assets-src/image/specs/phase4-pr07-gemini-plan.yaml",
         "--manifest",
         "assets-src/image/manifests/phase2-visual-manifest.json",
