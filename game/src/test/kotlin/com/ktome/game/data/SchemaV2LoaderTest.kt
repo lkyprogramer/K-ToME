@@ -602,6 +602,66 @@ class SchemaV2LoaderTest {
     }
 
     @Test
+    fun `schema v2 loader requires explicit preferred terrain tags and rejects invalid terrain tags on elite mutations`() {
+        val loader = DataLoader(GameLocale.EN_US)
+        val parseMethod =
+            DataLoader::class.java.getDeclaredMethod("parseEliteMutationDefs", Map::class.java).apply {
+                isAccessible = true
+            }
+
+        val missingFieldError =
+            assertThrows(InvocationTargetException::class.java) {
+                parseMethod.invoke(
+                    loader,
+                    linkedMapOf(
+                        "eliteMutations" to
+                            listOf(
+                                linkedMapOf(
+                                    "id" to "elite.missing_preferred_terrain",
+                                    "kind" to "STAT_PACKAGE",
+                                    "tier" to "MINOR",
+                                    "threatCost" to 1,
+                                    "nameKey" to "mutation.test.missing_preferred_terrain.name",
+                                    "iconKey" to "icon.mutation.test.missing_preferred_terrain",
+                                    "applyToTags" to listOf("elite"),
+                                    "minFloor" to 1,
+                                ),
+                            ),
+                    ),
+                )
+            }
+
+        assertTrue(missingFieldError.cause is IllegalStateException)
+        assertTrue(missingFieldError.cause?.message?.contains("preferredTerrainTags") == true)
+
+        val invalidTagError =
+            assertThrows(InvocationTargetException::class.java) {
+                parseMethod.invoke(
+                    loader,
+                    linkedMapOf(
+                        "eliteMutations" to
+                            listOf(
+                                linkedMapOf(
+                                    "id" to "elite.invalid_preferred_terrain",
+                                    "kind" to "STAT_PACKAGE",
+                                    "tier" to "MINOR",
+                                    "threatCost" to 1,
+                                    "nameKey" to "mutation.test.invalid_preferred_terrain.name",
+                                    "iconKey" to "icon.mutation.test.invalid_preferred_terrain",
+                                    "applyToTags" to listOf("elite"),
+                                    "minFloor" to 1,
+                                    "preferredTerrainTags" to listOf("LAVA"),
+                                ),
+                            ),
+                    ),
+                )
+            }
+
+        assertTrue(invalidTagError.cause is IllegalArgumentException)
+        assertTrue(invalidTagError.cause?.message?.contains("No enum constant") == true)
+    }
+
+    @Test
     fun `schema v2 loader parses and projects talent ai hints`() {
         val loader = DataLoader(GameLocale.EN_US)
         val parseMethod =

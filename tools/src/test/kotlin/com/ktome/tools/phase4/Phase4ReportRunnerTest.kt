@@ -20,6 +20,8 @@ class Phase4ReportRunnerTest {
 
         assertEquals(12, run.taskCount)
         assertEquals(0, run.failedTaskCount, "phase4Report recorded failed tasks; inspect ${run.summaryPath}")
+        assertEquals(0, run.failedExperienceMetricCount, "phase4Report recorded failed experience metrics; inspect ${run.summaryPath}")
+        assertEquals(0, run.failedGateCount, "phase4Report recorded failed gates; inspect ${run.summaryPath}")
         assertTrue(Files.exists(run.summaryPath), "Expected phase4 summary report at ${run.summaryPath}")
         assertTrue(Files.exists(run.markdownPath), "Expected phase4 markdown report at ${run.markdownPath}")
 
@@ -43,11 +45,17 @@ class Phase4ReportRunnerTest {
             tasks.first { element -> element.jsonObject.getValue("taskId").jsonPrimitive.content == "contentPackHarness" }.jsonObject
         val experienceMetricIds =
             experienceMetrics.map { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content }.toSet()
+        val terrainExposureMetric =
+            experienceMetrics.first { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "terrainTaggedCombatExposureRate" }.jsonObject
+        val terrainEncounterMetric =
+            experienceMetrics.first { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "terrainInteractionEncounterRate" }.jsonObject
         val markdown = Files.readString(run.markdownPath)
 
         assertEquals("P4", payload.getValue("phaseId").jsonPrimitive.content)
         assertEquals("12", payload.getValue("taskCount").jsonPrimitive.content)
         assertEquals("0", payload.getValue("failedTaskCount").jsonPrimitive.content)
+        assertEquals("0", payload.getValue("failedExperienceMetricCount").jsonPrimitive.content)
+        assertEquals("0", payload.getValue("failedGateCount").jsonPrimitive.content)
         assertEquals("1000", solvabilityTask.getValue("metrics").jsonObject.getValue("distinctSeedCount").jsonPrimitive.content)
         assertTrue(solvabilityTask.getValue("metrics").jsonObject.containsKey("providedDiscoveryTags"))
         assertTrue(solvabilityTask.getValue("metrics").jsonObject.containsKey("requiredHiddenAnchorFamilies"))
@@ -57,10 +65,18 @@ class Phase4ReportRunnerTest {
         assertTrue(bossTask.getValue("metrics").jsonObject.containsKey("eliteMutationValidPairCount"))
         assertTrue(bossTask.getValue("metrics").jsonObject.containsKey("corpusAggregateMetrics"))
         assertTrue(bossTask.getValue("metrics").jsonObject.containsKey("perEncounterAggregateMetrics"))
+        assertTrue(bossTask.getValue("metrics").jsonObject.containsKey("terrainPreferenceAvailableVariantCount"))
+        assertTrue(bossTask.getValue("metrics").jsonObject.containsKey("terrainPreferenceImplementedRate"))
+        assertTrue(bossTask.getValue("metrics").jsonObject.containsKey("bossVariantPreferredTerrainTags"))
         assertTrue(terrainTask.getValue("sourcePath").jsonPrimitive.content.contains("whitebox/terrain"))
         assertTrue(terrainTask.getValue("metrics").jsonObject.containsKey("terrainTaggedCombatExposureRate"))
         assertTrue(terrainTask.getValue("metrics").jsonObject.containsKey("terrainCoverageByZone"))
         assertTrue(terrainTask.getValue("metrics").jsonObject.containsKey("corpusAggregateMetrics"))
+        assertTrue(terrainTask.getValue("metrics").jsonObject.containsKey("preferredTerrainCaseImplementationRate"))
+        assertTrue(terrainTask.getValue("metrics").jsonObject.containsKey("preferredTerrainCombatImplementationRate"))
+        assertTrue(terrainTask.getValue("metrics").jsonObject.containsKey("terrainMetricDefinitionVersion"))
+        assertTrue(terrainTask.getValue("metrics").jsonObject.containsKey("decisionPathByCurrentMetrics"))
+        assertTrue(terrainTask.getValue("metrics").jsonObject.containsKey("preferredTerrainTagsSeen"))
         assertTrue(tasks.first { element -> element.jsonObject.getValue("taskId").jsonPrimitive.content == "whiteBoxMapgen" }.jsonObject.getValue("metrics").jsonObject.containsKey("requiredHiddenAnchorFamilies"))
         assertTrue(lootTask.getValue("metrics").jsonObject.containsKey("lootProfileBaseItemOverlapMatrix"))
         assertTrue(lootTask.getValue("metrics").jsonObject.containsKey("uniqueArtifactMeaningfulSwapRate"))
@@ -123,8 +139,17 @@ class Phase4ReportRunnerTest {
         )
         assertTrue(markdown.contains("## 体验度量基线"))
         assertTrue(markdown.contains("uniqueArtifactMeaningfulSwapRate"))
+        assertTrue(markdown.contains("decisionPathByCurrentMetrics"))
         assertTrue(markdown.contains("legacyLootProfileSchemaRejectSummaries"))
         assertTrue(markdown.contains("loot.foundation.common"))
+        assertTrue(terrainExposureMetric.getValue("currentValue").jsonObject.containsKey("baseline"))
+        assertTrue(terrainExposureMetric.getValue("currentValue").jsonObject.containsKey("relativeIncrease"))
+        assertTrue(terrainExposureMetric.getValue("currentValue").jsonObject.containsKey("targetRate"))
+        assertTrue(terrainEncounterMetric.getValue("currentValue").jsonObject.containsKey("baseline"))
+        assertTrue(terrainEncounterMetric.getValue("currentValue").jsonObject.containsKey("relativeIncrease"))
+        assertTrue(terrainEncounterMetric.getValue("currentValue").jsonObject.containsKey("targetRate"))
+        assertTrue(terrainExposureMetric.getValue("note").jsonPrimitive.content.contains("baseline="))
+        assertTrue(terrainEncounterMetric.getValue("note").jsonPrimitive.content.contains("normalized by"))
         assertEquals(
             setOf(
                 "mapgenSmoke",
@@ -142,5 +167,11 @@ class Phase4ReportRunnerTest {
             ),
             taskIds,
         )
+    }
+
+    @Test
+    fun `failed gate count includes failed experience metrics even when tasks pass`() {
+        assertEquals(0, countFailedStatuses(listOf("PASS", "PASS")))
+        assertEquals(1, countFailedStatuses(listOf("PASS", "FAIL", "PASS")))
     }
 }

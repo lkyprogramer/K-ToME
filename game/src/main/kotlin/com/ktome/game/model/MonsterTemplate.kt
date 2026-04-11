@@ -34,3 +34,6 @@ data class MonsterTemplate(
     val resistances: Map<DamageType, Int> = emptyMap(),
     val talentLevels: Map<String, Int> = emptyMap(),
 )
+
+internal fun MonsterTemplate.isEliteEncounterTemplate(): Boolean =
+    "elite" in tags || lootProfileId.endsWith(".elite")

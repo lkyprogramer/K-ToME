@@ -3,6 +3,7 @@ package com.ktome.game
 import com.ktome.core.dungeon.FloorState
 import com.ktome.core.effect.AreaEffectEmitter
 import com.ktome.core.effect.WorldEffect
+import com.ktome.core.ecs.PreferredTerrainAffinity
 import com.ktome.core.ecs.get
 import com.ktome.core.item.EquipmentPassive
 import com.ktome.core.item.EquipSlot
@@ -682,6 +683,31 @@ class SessionSnapshotMapperTest {
 
         assertTrue(tracker.engagedInCombat)
         assertEquals(setOf("dungeon_lord_opening_war_cry"), tracker.consumedTriggerIds)
+    }
+
+    @Test
+    fun `restore world rebuilds preferred terrain affinity from elite mutations`() {
+        val content = content()
+        val player = PlayerSnapshot(entity = EntitySnapshot(id = 1, position = PointSnapshot(1, 1), isPlayerControlled = true))
+        val floor =
+            FloorRuntimeState(
+                map = GameMap.fromAscii(rows = listOf(".....", ".....", "....."), playerStart = Point(1, 1)),
+                exploredTiles = linkedSetOf(Point(1, 1)),
+                entities =
+                    mutableListOf(
+                        EntitySnapshot(
+                            id = 8,
+                            position = PointSnapshot(3, 1),
+                            monsterTemplateId = "bandit.sentry",
+                            eliteMutations = listOf("elite.tidebound"),
+                        ),
+                    ),
+            )
+
+        val world = SessionSnapshotMapper.restoreWorld(content, player, floor)
+        val affinity = requireNotNull(world.get<PreferredTerrainAffinity>(com.ktome.core.ecs.EntityId(8)))
+
+        assertEquals(setOf(TerrainTag.WATER), affinity.terrainTags)
     }
 
     @Test

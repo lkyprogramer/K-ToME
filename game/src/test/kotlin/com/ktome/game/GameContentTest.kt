@@ -134,23 +134,36 @@ class GameContentTest {
     }
 
     @Test
-    fun `frostbound overlay keeps retreat and nova control cadence`() {
-        val profile = baseSchemaCatalog.aiProfiles.first { profile -> profile.id == "ai.elite.frostbound" }
-        val retreat = profile.actions.first { action -> action.id == "retreat" }
-        val frostNova = profile.actions.first { action -> action.id == "frost_nova" }
+    fun `frostbound and tidebound overlays keep close-range cold control windows`() {
+        val frostboundProfile = baseSchemaCatalog.aiProfiles.first { profile -> profile.id == "ai.elite.frostbound" }
+        val tideboundProfile = baseSchemaCatalog.aiProfiles.first { profile -> profile.id == "ai.elite.tidebound" }
+        val retreat = frostboundProfile.actions.first { action -> action.id == "retreat" }
+        val frostNova = frostboundProfile.actions.first { action -> action.id == "frost_nova" }
         val frostNovaCondition = frostNova.condition as? AICondition.And
+        val glacialSeal = tideboundProfile.actions.first { action -> action.id == "glacial_seal" }
+        val glacialSealCondition = glacialSeal.condition as? AICondition.And
 
         assertEquals(AIActionType.RETREAT_FROM_TARGET, retreat.type)
         assertEquals(AICondition.TargetDistanceLessThan(distance = 2), retreat.condition)
         assertEquals(AIActionType.USE_ABILITY, frostNova.type)
         assertEquals("elite_frost_nova", frostNova.abilityId)
         assertEquals(
-            AICondition.TargetDistanceBetween(minDistance = 2, maxDistance = 4),
+            AICondition.TargetDistanceBetween(minDistance = 1, maxDistance = 2),
             frostNovaCondition?.conditions?.firstOrNull(),
         )
         assertEquals(
             AICondition.TalentReady(talentId = "elite_frost_nova"),
             frostNovaCondition?.conditions?.getOrNull(1),
+        )
+        assertEquals(AIActionType.USE_ABILITY, glacialSeal.type)
+        assertEquals("glacial_seal", glacialSeal.abilityId)
+        assertEquals(
+            AICondition.TargetDistanceBetween(minDistance = 1, maxDistance = 6),
+            glacialSealCondition?.conditions?.firstOrNull(),
+        )
+        assertEquals(
+            AICondition.TalentReady(talentId = "glacial_seal"),
+            glacialSealCondition?.conditions?.getOrNull(1),
         )
     }
 

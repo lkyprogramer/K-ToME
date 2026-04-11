@@ -1,7 +1,9 @@
 package com.ktome.game.elites
 
+import com.ktome.core.mapgen.TerrainTag
 import com.ktome.game.data.DataLoader
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
@@ -72,6 +74,7 @@ class EliteMutationRegistryTest {
                     threatCost = 2,
                     minFloor = 1,
                     allowedZones = emptySet(),
+                    preferredTerrainTags = emptyList(),
                     incompatibleWith = emptySet(),
                 ),
                 ExpectedMutationContract(
@@ -81,6 +84,7 @@ class EliteMutationRegistryTest {
                     threatCost = 2,
                     minFloor = 2,
                     allowedZones = emptySet(),
+                    preferredTerrainTags = emptyList(),
                     grantedTalents = listOf("elite_phase_step"),
                     aiProfileOverlay = "ai.elite.phase_runner",
                     incompatibleWith = emptySet(),
@@ -92,6 +96,7 @@ class EliteMutationRegistryTest {
                     threatCost = 3,
                     minFloor = 2,
                     allowedZones = emptySet(),
+                    preferredTerrainTags = emptyList(),
                     grantedTalents = listOf("elite_war_call"),
                     aiProfileOverlay = "ai.elite.war_caller",
                     incompatibleWith = setOf("elite.battle_drill"),
@@ -101,8 +106,9 @@ class EliteMutationRegistryTest {
                     kind = MutationKind.AURA,
                     tier = MutationTier.MAJOR,
                     threatCost = 4,
-                    minFloor = 3,
+                    minFloor = 2,
                     allowedZones = setOf("deep_iron_pit", "molten_core"),
+                    preferredTerrainTags = listOf(TerrainTag.OIL),
                     incompatibleWith = setOf("elite.dread_aura", "elite.void_mirror"),
                     auraStatusId = "ARMOR_BREAK",
                 ),
@@ -111,11 +117,24 @@ class EliteMutationRegistryTest {
                     kind = MutationKind.ELEMENT_PACKAGE,
                     tier = MutationTier.MAJOR,
                     threatCost = 4,
-                    minFloor = 3,
-                    allowedZones = setOf("underground_river", "crystal_cavern"),
+                    minFloor = 1,
+                    allowedZones = setOf("greenwood_fringe", "underground_river", "crystal_cavern"),
+                    preferredTerrainTags = listOf(TerrainTag.WATER, TerrainTag.ICE),
                     grantedTalents = listOf("elite_frost_nova"),
                     aiProfileOverlay = "ai.elite.frostbound",
                     incompatibleWith = setOf("elite.emberblood", "elite.tidebound"),
+                ),
+                ExpectedMutationContract(
+                    id = "elite.tidebound",
+                    kind = MutationKind.ELEMENT_PACKAGE,
+                    tier = MutationTier.MAJOR,
+                    threatCost = 4,
+                    minFloor = 1,
+                    allowedZones = setOf("greenwood_fringe", "underground_river", "crystal_cavern"),
+                    preferredTerrainTags = listOf(TerrainTag.WATER),
+                    grantedTalents = listOf("glacial_seal"),
+                    aiProfileOverlay = "ai.elite.tidebound",
+                    incompatibleWith = setOf("elite.emberblood", "elite.frostbound"),
                 ),
                 ExpectedMutationContract(
                     id = "elite.void_mirror",
@@ -124,6 +143,7 @@ class EliteMutationRegistryTest {
                     threatCost = 5,
                     minFloor = 4,
                     allowedZones = setOf("grey_gate_depths", "abyssal_temple", "abyssal_heart"),
+                    preferredTerrainTags = emptyList(),
                     incompatibleWith = setOf("elite.corrosion_cloud", "elite.dread_aura"),
                     auraStatusId = "ARCANE_SHIELD_BUFF",
                 ),
@@ -149,6 +169,7 @@ class EliteMutationRegistryTest {
             assertEquals(expected.threatCost, mutation.threatCost, "${expected.id} threatCost")
             assertEquals(expected.minFloor, mutation.minFloor, "${expected.id} minFloor")
             assertEquals(expected.allowedZones, mutation.allowedZones, "${expected.id} allowedZones")
+            assertEquals(expected.preferredTerrainTags, mutation.preferredTerrainTags, "${expected.id} preferredTerrainTags")
             assertEquals(expected.grantedTalents, mutation.grantedTalents.map(TalentGrantRef::talentId), "${expected.id} grantedTalents")
             assertEquals(expected.aiProfileOverlay, mutation.aiProfileOverlay, "${expected.id} aiProfileOverlay")
             assertEquals(expected.incompatibleWith, mutation.incompatibleWith, "${expected.id} incompatibleWith")
@@ -194,6 +215,112 @@ class EliteMutationRegistryTest {
         }
     }
 
+    @Test
+    fun `elite mutation def defaults preferred terrain to empty list and rejects duplicates`() {
+        val mutation =
+            EliteMutationDef(
+                id = "elite.test.default_terrain",
+                kind = MutationKind.STAT_PACKAGE,
+                tier = MutationTier.MINOR,
+                threatCost = 1,
+                nameKey = "mutation.test.default_terrain.name",
+                iconKey = "icon.mutation.test.default_terrain",
+                applyToTags = setOf("elite"),
+                minFloor = 1,
+                maxFloor = null,
+                allowedZones = emptySet(),
+                statModifiers = emptyList(),
+                grantedTalents = emptyList(),
+                aiProfileOverlay = null,
+                incompatibleWith = emptySet(),
+            )
+
+        assertEquals(emptyList<TerrainTag>(), mutation.preferredTerrainTags)
+        assertThrows(IllegalArgumentException::class.java) {
+            mutation.copy(preferredTerrainTags = listOf(TerrainTag.WATER, TerrainTag.WATER))
+        }
+    }
+
+    @Test
+    fun `matching terrain affinity increases mutation selection share inside its formal zones`() {
+        val registry =
+            EliteMutationRegistry(
+                config = EliteMutationConfig(),
+                statModifiersById = emptyMap(),
+                definitionsById =
+                    listOf(
+                        EliteMutationDef(
+                            id = "elite.generic_major",
+                            kind = MutationKind.AURA,
+                            tier = MutationTier.MAJOR,
+                            threatCost = 3,
+                            nameKey = "mutation.test.generic_major.name",
+                            iconKey = "icon.mutation.test.generic_major",
+                            applyToTags = setOf("elite"),
+                            minFloor = 1,
+                            maxFloor = null,
+                            allowedZones = setOf("greenwood_fringe"),
+                            statModifiers = emptyList(),
+                            grantedTalents = emptyList(),
+                            aiProfileOverlay = null,
+                            incompatibleWith = emptySet(),
+                        ),
+                        EliteMutationDef(
+                            id = "elite.terrain_major",
+                            kind = MutationKind.ELEMENT_PACKAGE,
+                            tier = MutationTier.MAJOR,
+                            threatCost = 3,
+                            nameKey = "mutation.test.terrain_major.name",
+                            iconKey = "icon.mutation.test.terrain_major",
+                            applyToTags = setOf("elite"),
+                            minFloor = 1,
+                            maxFloor = null,
+                            allowedZones = setOf("greenwood_fringe"),
+                            preferredTerrainTags = listOf(TerrainTag.WATER),
+                            statModifiers = emptyList(),
+                            grantedTalents = emptyList(),
+                            aiProfileOverlay = null,
+                            incompatibleWith = emptySet(),
+                        ),
+                    ).associateBy(EliteMutationDef::id),
+            )
+
+        val counts =
+            mutableMapOf(
+                "elite.generic_major" to 0,
+                "elite.terrain_major" to 0,
+            )
+        var cursor = 0
+        repeat(240) {
+            val selected =
+                registry.select(
+                    MutationSelectionContext(
+                        zoneId = "greenwood_fringe",
+                        floorIndex = 1,
+                        applyToTags = setOf("elite"),
+                    ),
+                ) { bound ->
+                    val roll = cursor % bound
+                    cursor += 1
+                    roll
+                }
+            counts.compute(selected.single().id) { _, value -> (value ?: 0) + 1 }
+        }
+
+        assertTrue(counts.getValue("elite.terrain_major") > counts.getValue("elite.generic_major"))
+    }
+
+    @Test
+    fun `greenwood elite bandit context unlocks terrain affinity mutations`() {
+        val withoutEliteTag = sampleMutationIds(zoneId = "greenwood_fringe", floorIndex = 2, applyToTags = setOf("monster", "bandit"))
+        val withEliteTag = sampleMutationIds(zoneId = "greenwood_fringe", floorIndex = 2, applyToTags = setOf("monster", "bandit", "elite"))
+
+        assertTrue("elite.frostbound" !in withoutEliteTag)
+        assertTrue("elite.tidebound" !in withoutEliteTag)
+        assertTrue("elite.frostbound" in withEliteTag)
+        assertTrue("elite.tidebound" in withEliteTag)
+    }
+
     private fun sampleTierCounts(
         registry: EliteMutationRegistry,
         context: MutationSelectionContext,
@@ -214,6 +341,32 @@ class EliteMutationRegistryTest {
         return counts
     }
 
+    private fun sampleMutationIds(
+        zoneId: String,
+        floorIndex: Int,
+        applyToTags: Set<String>,
+        iterations: Int = 240,
+    ): Set<String> {
+        var cursor = 0
+        val ids = linkedSetOf<String>()
+        repeat(iterations) {
+            val selected =
+                phase4Registry.select(
+                    MutationSelectionContext(
+                        zoneId = zoneId,
+                        floorIndex = floorIndex,
+                        applyToTags = applyToTags,
+                    ),
+                ) { bound ->
+                    val roll = cursor % bound
+                    cursor += 1
+                    roll
+                }
+            ids += selected.map(EliteMutationDef::id)
+        }
+        return ids
+    }
+
     private fun testRegistry(): EliteMutationRegistry =
         EliteMutationRegistry(
             config = EliteMutationConfig(),
@@ -231,6 +384,7 @@ class EliteMutationRegistryTest {
                         minFloor = 1,
                         maxFloor = null,
                         allowedZones = emptySet(),
+                        preferredTerrainTags = emptyList(),
                         statModifiers = emptyList(),
                         grantedTalents = emptyList(),
                         aiProfileOverlay = null,
@@ -247,6 +401,7 @@ class EliteMutationRegistryTest {
                         minFloor = 1,
                         maxFloor = null,
                         allowedZones = emptySet(),
+                        preferredTerrainTags = emptyList(),
                         statModifiers = emptyList(),
                         grantedTalents = emptyList(),
                         aiProfileOverlay = null,
@@ -263,6 +418,7 @@ class EliteMutationRegistryTest {
                         minFloor = 1,
                         maxFloor = null,
                         allowedZones = emptySet(),
+                        preferredTerrainTags = emptyList(),
                         statModifiers = emptyList(),
                         grantedTalents = emptyList(),
                         aiProfileOverlay = null,
@@ -279,6 +435,7 @@ private data class ExpectedMutationContract(
     val threatCost: Int,
     val minFloor: Int,
     val allowedZones: Set<String>,
+    val preferredTerrainTags: List<TerrainTag> = emptyList(),
     val grantedTalents: List<String> = emptyList(),
     val aiProfileOverlay: String? = null,
     val incompatibleWith: Set<String>,

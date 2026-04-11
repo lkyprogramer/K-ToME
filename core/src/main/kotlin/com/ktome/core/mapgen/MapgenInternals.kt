@@ -116,6 +116,8 @@ internal object CompatibilityRoomProjector {
 }
 
 internal object TerrainTagPainter {
+    private const val TERRAIN_DENSITY_SCALE: Float = 0.64f
+
     fun paint(
         map: GameMap,
         profile: ZoneMapgenProfile,
@@ -139,58 +141,91 @@ internal object TerrainTagPainter {
         biomeFamilies: Map<NodeId, BiomeFamilyDef>,
         seededTags: Map<Point, Set<TerrainTag>>,
     ): Map<Point, Set<TerrainTag>> {
-        val painted = seededTags.mapValuesTo(linkedMapOf()) { (_, tags) -> linkedSetOf<TerrainTag>().apply { addAll(tags) } }
+        val painted: MutableMap<Point, MutableSet<TerrainTag>> =
+            seededTags.mapValuesTo(linkedMapOf()) { (_, tags) -> linkedSetOf<TerrainTag>().apply { addAll(tags) } }
         if (rooms.isEmpty()) {
             return seededTags
         }
         rooms.forEachIndexed { index, room ->
-            val familyWeights = biomeFamilies[room.nodeId]?.terrainTagWeights.orEmpty()
             val effectiveWeights =
-                linkedMapOf<TerrainTag, Float>().apply {
-                    TerrainTag.entries.sortedBy(TerrainTag::ordinal).forEach { tag ->
-                        val resolvedWeight = profile.terrainTagWeights[tag] ?: familyWeights[tag] ?: 0f
-                        if (resolvedWeight > 0f) {
-                            put(tag, resolvedWeight)
-                        }
-                    }
-                }
+                resolveEffectiveWeights(
+                    profileWeights = profile.terrainTagWeights,
+                    familyWeights = biomeFamilies[room.nodeId]?.terrainTagWeights.orEmpty(),
+                )
             if (effectiveWeights.isEmpty()) {
                 return@forEachIndexed
             }
-            val candidatePoints =
-                roomFloorPoints(room = room, map = map)
-                    .asSequence()
-                    .filterNot { point -> point == map.playerStart }
-                    .toList()
-            if (candidatePoints.isEmpty()) {
-                return@forEachIndexed
-            }
-            val totalWeight = effectiveWeights.values.sum()
-            effectiveWeights.forEach { (tag, weight) ->
-                val ratio = weight / totalWeight
-                val targetCount = maxOf(1, (candidatePoints.size * ratio * 0.18f).roundToInt())
-                val random = Random(seed xor room.nodeId.value.hashCode().toLong() xor ((index + 1L) shl 24) xor tag.ordinal.toLong())
-                repeat(targetCount) {
-                    val point = candidatePoints[random.nextInt(candidatePoints.size)]
-                    painted.getOrPut(point) { linkedSetOf() }.add(tag)
-                }
+            paintWeightedTags(
+                painted = painted,
+                candidatePoints = paintableRoomPoints(room = room, map = map, excludedPoint = map.playerStart),
+                weights = effectiveWeights,
+            ) { tag ->
+                Random(seed xor room.nodeId.value.hashCode().toLong() xor ((index + 1L) shl 24) xor tag.ordinal.toLong())
             }
         }
         return painted.mapValues { (_, tags) -> tags.toSet() }
     }
 
-    private fun roomFloorPoints(
+    fun resolveEffectiveWeights(
+        profileWeights: Map<TerrainTag, Float>,
+        familyWeights: Map<TerrainTag, Float>,
+    ): Map<TerrainTag, Float> =
+        linkedMapOf<TerrainTag, Float>().apply {
+            TerrainTag.entries.sortedBy(TerrainTag::ordinal).forEach { tag ->
+                val resolvedWeight = profileWeights[tag] ?: familyWeights[tag] ?: 0f
+                if (resolvedWeight > 0f) {
+                    put(tag, resolvedWeight)
+                }
+            }
+        }
+
+    fun paintWeightedTags(
+        painted: MutableMap<Point, MutableSet<TerrainTag>>,
+        candidatePoints: List<Point>,
+        weights: Map<TerrainTag, Float>,
+        randomForTag: (TerrainTag) -> Random,
+    ) {
+        if (candidatePoints.isEmpty()) {
+            return
+        }
+        weights.entries
+            .sortedBy { (tag, _) -> tag.ordinal }
+            .forEach { (tag, weight) ->
+                if (weight <= 0f) {
+                    return@forEach
+                }
+                val targetCount = terrainTargetCount(candidatePoints.size, weight)
+                val random = randomForTag(tag)
+                repeat(targetCount) {
+                    val point = candidatePoints[random.nextInt(candidatePoints.size)]
+                    painted.getOrPut(point) { linkedSetOf() }.add(tag)
+                }
+            }
+    }
+
+    fun paintableRoomPoints(
         room: RoomInstance,
         map: GameMap,
+        excludedPoint: Point? = null,
     ): List<Point> {
         val points = mutableListOf<Point>()
         for (y in room.y until room.y + room.height) {
             for (x in room.x until room.x + room.width) {
-                if (!map.blocksMovement(x, y)) {
-                    points += Point(x, y)
+                val point = Point(x, y)
+                if (map.isInBounds(x, y) && !map.blocksMovement(x, y) && point != excludedPoint) {
+                    points += point
                 }
             }
         }
         return points.sortedWith(compareBy<Point>(Point::y).thenBy(Point::x))
     }
+
+    private fun terrainTargetCount(
+        candidatePointCount: Int,
+        weight: Float,
+    ): Int =
+        maxOf(
+            1,
+            minOf(candidatePointCount, (candidatePointCount * weight * TERRAIN_DENSITY_SCALE).roundToInt()),
+        )
 }

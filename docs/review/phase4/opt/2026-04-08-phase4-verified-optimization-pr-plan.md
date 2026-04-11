@@ -1528,3 +1528,9 @@ python3 scripts/process_audio.py \
 2. 实施时建议以本文档为主 source of truth，在 PR review 中引用对应章节编号（如”参见 OPT-PR-03 §3.3.2”）；若 implementation note 与本文档冲突，以修订后的本文档为准。
 3. 每个 OPT-PR 完成后，更新本文档的”量化验收标准”段落，记录实际达到的数值。
 4. Gate-1 通过后再决定是否执行 OPT-PR-06~07，或直接进入 Phase 5。
+terrain 两个指标一旦被 `OPT-PR-06 / OPT-PR-07` 当作 before/after 门禁，固定消费：
+
+1. `docs/review/phase4/opt/baselines/2026-04-09-opt-pr01-terrain-metrics-baseline.json`
+2. `phase4Report` 中显式展示的 baseline provenance / delta / target rate
+
+禁止后续 PR 直接在 `Phase4ReportRunner` 内写死绝对阈值而不更新 baseline artifact。

@@ -62,6 +62,7 @@ import com.ktome.core.ecs.MonsterTemplateId
 import com.ktome.core.ecs.Name
 import com.ktome.core.ecs.PatrolRoute
 import com.ktome.core.ecs.Position
+import com.ktome.core.ecs.PreferredTerrainAffinity
 import com.ktome.core.ecs.ResistanceProfile
 import com.ktome.core.ecs.Stats
 import com.ktome.core.ecs.Stair
@@ -265,6 +266,7 @@ import com.ktome.game.i18n.Localizer
 import com.ktome.game.loot.LootProfileCandidatePool
 import com.ktome.game.model.BossDefinition
 import com.ktome.game.model.MonsterTemplate
+import com.ktome.game.model.isEliteEncounterTemplate
 import com.ktome.game.PLAYER_ACTIVE_TALENT_SLOT_COUNT
 import com.ktome.game.professionAffixBuildContext
 import com.ktome.game.routeRewardBiasTags
@@ -473,6 +475,10 @@ class FoundationGameSession internal constructor(
         val damageAmount: Int,
         val attackerTerrainTags: Set<TerrainTag>,
         val targetTerrainTags: Set<TerrainTag>,
+        val attackerAdjacentTerrainTags: Set<TerrainTag>,
+        val targetAdjacentTerrainTags: Set<TerrainTag>,
+        val attackerPreferredTerrainTags: Set<TerrainTag>,
+        val targetPreferredTerrainTags: Set<TerrainTag>,
         val terrainInteractionTriggered: Boolean,
         val terrainInteractionRuleId: String?,
     )
@@ -842,9 +848,13 @@ class FoundationGameSession internal constructor(
 
     internal fun automationTerrainTagsAt(point: Point): Set<com.ktome.core.mapgen.TerrainTag> = activeFloorState.terrainTagsAt(point)
 
+    internal fun automationAdjacentTerrainTagsAt(point: Point): Set<com.ktome.core.mapgen.TerrainTag> = adjacentTerrainTagsAt(point)
+
     internal fun automationTerrainStateHash(): String = "${activeFloorState.terrainTagHash}:${activeFloorState.terrainOverrideHash}"
 
     internal fun automationTerrainCombatObservations(): List<TerrainCombatObservation> = terrainCombatObservations.toList()
+
+    internal fun automationPreferredTerrainTags(entityId: EntityId): Set<com.ktome.core.mapgen.TerrainTag> = entityPreferredTerrainTags(entityId)
 
     fun automationMovePlayerTo(point: Point) {
         require(map.isInBounds(point.x, point.y)) { "Point $point is outside the current map." }
@@ -7174,6 +7184,21 @@ class FoundationGameSession internal constructor(
             }
         }
 
+    private fun adjacentTerrainTagsAt(point: Point): Set<TerrainTag> =
+        Point.ALL_DIRECTIONS
+            .asSequence()
+            .map { delta -> point + delta }
+            .filter { adjacent -> map.isInBounds(adjacent.x, adjacent.y) }
+            .flatMap { adjacent -> activeFloorState.terrainTagsAt(adjacent).asSequence() }
+            .toCollection(linkedSetOf())
+
+    private fun entityPreferredTerrainTags(entityId: EntityId): Set<TerrainTag> =
+        world.get<PreferredTerrainAffinity>(entityId)
+            ?.terrainTags
+            ?.asSequence()
+            ?.toCollection(linkedSetOf())
+            .orEmpty()
+
     private fun applyTerrainInteraction(
         attacker: EntityId,
         target: EntityId,
@@ -7627,7 +7652,7 @@ class FoundationGameSession internal constructor(
                 !isBoss &&
                 defeatedBossTemplateId
                     ?.let(content.monsterTemplatesById::get)
-                    ?.let(::isEliteEncounterTemplate) == true
+                    ?.let { template -> template.isEliteEncounterTemplate() } == true
 
         addMessage("log.entity.death", deathTargetArg)
         val monsterDropArg = entityArg("monster", target)
@@ -8802,8 +8827,24 @@ class FoundationGameSession internal constructor(
         damageAmount: Int,
         terrainInteraction: ElementInteractionResolution?,
     ) {
-        val attackerTerrainTags = world.get<Position>(attacker)?.toPoint()?.let(activeFloorState::terrainTagsAt).orEmpty()
-        val targetTerrainTags = world.get<Position>(target)?.toPoint()?.let(activeFloorState::terrainTagsAt).orEmpty()
+        val attackerPosition = world.get<Position>(attacker)?.toPoint()
+        val targetPosition = world.get<Position>(target)?.toPoint()
+        val attackerTerrainTags = attackerPosition?.let(activeFloorState::terrainTagsAt).orEmpty()
+        val targetTerrainTags = targetPosition?.let(activeFloorState::terrainTagsAt).orEmpty()
+        val attackerPreferredTerrainTags = entityPreferredTerrainTags(attacker)
+        val targetPreferredTerrainTags = entityPreferredTerrainTags(target)
+        val attackerAdjacentTerrainTags =
+            if (attackerPreferredTerrainTags.isEmpty()) {
+                emptySet()
+            } else {
+                attackerPosition?.let(::adjacentTerrainTagsAt).orEmpty()
+            }
+        val targetAdjacentTerrainTags =
+            if (targetPreferredTerrainTags.isEmpty()) {
+                emptySet()
+            } else {
+                targetPosition?.let(::adjacentTerrainTagsAt).orEmpty()
+            }
         terrainCombatObservations +=
             TerrainCombatObservation(
                 zoneId = currentZoneSchema().id,
@@ -8815,6 +8856,10 @@ class FoundationGameSession internal constructor(
                 damageAmount = damageAmount,
                 attackerTerrainTags = attackerTerrainTags,
                 targetTerrainTags = targetTerrainTags,
+                attackerAdjacentTerrainTags = attackerAdjacentTerrainTags,
+                targetAdjacentTerrainTags = targetAdjacentTerrainTags,
+                attackerPreferredTerrainTags = attackerPreferredTerrainTags,
+                targetPreferredTerrainTags = targetPreferredTerrainTags,
                 terrainInteractionTriggered = terrainInteraction != null,
                 terrainInteractionRuleId = terrainInteraction?.ruleId,
             )
@@ -9616,7 +9661,7 @@ class FoundationGameSession internal constructor(
                 world.get<MonsterTemplateId>(entityId)
                     ?.value
                     ?.let(content.monsterTemplatesById::get)
-                    ?.let(::isEliteEncounterTemplate) == true
+                    ?.let { template -> template.isEliteEncounterTemplate() } == true
             }.minWithOrNull(
                 compareBy<EntityId> { entityId ->
                     requireNotNull(world.get<Position>(entityId)).toPoint().chebyshevDistanceTo(playerPoint)
@@ -9633,8 +9678,8 @@ class FoundationGameSession internal constructor(
             currentZoneSchema().elitePools
                 .asSequence()
                 .mapNotNull(content.monsterTemplatesById::get)
-                .firstOrNull(::isEliteEncounterTemplate)
-                ?: content.monsterCatalog.firstOrNull(::isEliteEncounterTemplate)
+                .firstOrNull { template -> template.isEliteEncounterTemplate() }
+                ?: content.monsterCatalog.firstOrNull { template -> template.isEliteEncounterTemplate() }
                 ?: return null
         val blocked = occupiedBlockingTiles(excluding = playerId)
         val playerPoint = playerPosition()
@@ -9662,9 +9707,6 @@ class FoundationGameSession internal constructor(
         invalidateRenderSnapshot()
         return true
     }
-
-    private fun isEliteEncounterTemplate(template: MonsterTemplate): Boolean =
-        "elite" in template.tags || template.lootProfileId.endsWith(".elite")
 
     private fun secretZoneIdForBinding(bindingId: com.ktome.core.world.solvability.SearchBindingId): ContentRef? =
         activeFloorState.generatedFloor.entranceByBinding(bindingId)?.targetSecretZoneId

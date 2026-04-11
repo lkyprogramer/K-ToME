@@ -754,10 +754,46 @@ aiProfiles:
           type: AND
           conditions:
             - type: TARGET_DISTANCE_BETWEEN
-              minDistance: 2
-              maxDistance: 4
+              minDistance: 1
+              maxDistance: 2
             - type: TALENT_READY
               talentId: elite_frost_nova
+      - id: retreat
+        type: RETREAT_FROM_TARGET
+        orderKey: 20
+        condition:
+          type: TARGET_DISTANCE_LESS_THAN
+          distance: 2
+      - id: strike
+        type: ATTACK_TARGET
+        orderKey: 30
+        condition:
+          type: TARGET_DISTANCE_LESS_THAN
+          distance: 2
+      - id: reposition
+        type: MOVE_TOWARD_TARGET
+        orderKey: 40
+        condition:
+          type: TARGET_VISIBLE
+  - id: ai.elite.tidebound
+    schemaVersion: 2
+    perceptionRange: 9
+    useLastKnownPosition: true
+    defaultBehavior: KITE
+    selectionPolicy: DETERMINISTIC_PRIORITY
+    actions:
+      - id: glacial_seal
+        type: USE_ABILITY
+        orderKey: 10
+        abilityId: glacial_seal
+        condition:
+          type: AND
+          conditions:
+            - type: TARGET_DISTANCE_BETWEEN
+              minDistance: 1
+              maxDistance: 6
+            - type: TALENT_READY
+              talentId: glacial_seal
       - id: retreat
         type: RETREAT_FROM_TARGET
         orderKey: 20

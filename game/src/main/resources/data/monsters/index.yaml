@@ -66,7 +66,7 @@ monsters:
     lootProfileId: loot.foundation.common
     talents: { war_cry: 1 }
     expReward: 28
-    spawnFloors: [2]
+    spawnFloors: [1, 2]
     spawnWeight: 8
   - id: orc.raider
     nameKey: monster.orc.raider.name
@@ -433,7 +433,7 @@ monsters:
     resistances: { FIRE: -10, COLD: 10 }
     talents: { power_strike: 2 }
     expReward: 58
-    spawnFloors: [2, 3]
+    spawnFloors: [1, 2, 3]
     spawnWeight: 3
   - id: orc.miner
     nameKey: monster.orc.miner.name
@@ -1290,7 +1290,7 @@ monsters:
     resistances: { COLD: 10, SHADOW: 10 }
     talents: { ricochet_knives: 2, eviscerate: 2 }
     expReward: 94
-    spawnFloors: [2]
+    spawnFloors: [1, 2]
     spawnWeight: 2
   - id: river.silt_shaman
     nameKey: monster.river.silt_shaman.name

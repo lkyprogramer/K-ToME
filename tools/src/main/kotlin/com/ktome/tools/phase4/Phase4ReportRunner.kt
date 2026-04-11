@@ -20,11 +20,38 @@ import kotlinx.serialization.json.putJsonObject
 data class Phase4ReportRun(
     val taskCount: Int,
     val failedTaskCount: Int,
+    val failedExperienceMetricCount: Int,
+    val failedGateCount: Int,
     val summaryPath: Path,
     val markdownPath: Path,
 )
 
 private val phase4Json: Json = Json { prettyPrint = true }
+private const val TERRAIN_BASELINE_RELATIVE_PATH: String =
+    "docs/review/phase4/opt/baselines/2026-04-09-opt-pr01-terrain-metrics-baseline.json"
+
+private data class TerrainMetricBaseline(
+    val baselineId: String,
+    val metricDefinitionVersion: String,
+    val sourceArtifactPath: String,
+    val sourceBuildId: String?,
+    val sourceGeneratedAt: String?,
+    val metricsById: Map<String, TerrainMetricBaselineMetric>,
+)
+
+private data class TerrainMetricBaselineMetric(
+    val metricId: String,
+    val baselineRate: Double,
+    val targetRelativeIncrease: Double,
+    val numerator: Int,
+    val denominator: Int,
+    val numeratorLabel: String,
+    val denominatorLabel: String,
+    val sourceValueText: String,
+    val normalizedFormula: String,
+) {
+    val targetRate: Double = baselineRate * (1.0 + targetRelativeIncrease)
+}
 
 private data class Phase4AggregateReport(
     val phaseId: String,
@@ -34,6 +61,8 @@ private data class Phase4AggregateReport(
     val taskCount: Int,
     val passedTaskCount: Int,
     val failedTaskCount: Int,
+    val failedExperienceMetricCount: Int,
+    val failedGateCount: Int,
     val tasks: List<Phase4TaskAggregate>,
     val experienceMetrics: List<Phase4ExperienceMetric>,
 )
@@ -131,7 +160,10 @@ object Phase4ReportRunner {
         Files.createDirectories(outputDir)
 
         val taskReports = taskDescriptors.map { descriptor -> descriptor.read(repoRoot) }
-        val failedTaskCount = taskReports.count { task -> task.status == "FAIL" }
+        val experienceMetrics = buildExperienceMetrics(repoRoot = repoRoot, tasks = taskReports)
+        val failedTaskCount = countFailedStatuses(taskReports.map(Phase4TaskAggregate::status))
+        val failedExperienceMetricCount = countFailedStatuses(experienceMetrics.map(Phase4ExperienceMetric::status))
+        val failedGateCount = failedTaskCount + failedExperienceMetricCount
         val aggregate =
             Phase4AggregateReport(
                 phaseId = "P4",
@@ -141,8 +173,10 @@ object Phase4ReportRunner {
                 taskCount = taskReports.size,
                 passedTaskCount = taskReports.count { task -> task.status == "PASS" },
                 failedTaskCount = failedTaskCount,
+                failedExperienceMetricCount = failedExperienceMetricCount,
+                failedGateCount = failedGateCount,
                 tasks = taskReports,
-                experienceMetrics = buildExperienceMetrics(taskReports),
+                experienceMetrics = experienceMetrics,
             )
         val summaryPath = outputDir.resolve(SUMMARY_FILE)
         val markdownPath = outputDir.resolve(MARKDOWN_FILE)
@@ -151,6 +185,8 @@ object Phase4ReportRunner {
         return Phase4ReportRun(
             taskCount = aggregate.taskCount,
             failedTaskCount = aggregate.failedTaskCount,
+            failedExperienceMetricCount = aggregate.failedExperienceMetricCount,
+            failedGateCount = aggregate.failedGateCount,
             summaryPath = summaryPath,
             markdownPath = markdownPath,
         )
@@ -317,8 +353,13 @@ object Phase4ReportRunner {
                     put("eliteMutationValidPairCount", corpusMetrics.getValue("eliteMutationValidPairCount"))
                     put("bossVariantCount", corpusMetrics.getValue("bossVariantCount"))
                     put("bossVariantMutationPairwiseDistinct", corpusMetrics.getValue("bossVariantMutationPairwiseDistinct"))
+                    put("terrainPreferenceVariantCount", corpusMetrics.getValue("terrainPreferenceVariantCount"))
+                    put("terrainPreferenceAvailableVariantCount", corpusMetrics.getValue("terrainPreferenceAvailableVariantCount"))
+                    put("terrainPreferenceImplementedCount", corpusMetrics.getValue("terrainPreferenceImplementedCount"))
+                    put("terrainPreferenceImplementedRate", corpusMetrics.getValue("terrainPreferenceImplementedRate"))
                     put("mutationTierDistribution", corpusMetrics.getValue("mutationTierDistribution"))
                     put("bossVariantMutationSets", corpusMetrics.getValue("bossVariantMutationSets"))
+                    put("bossVariantPreferredTerrainTags", corpusMetrics.getValue("bossVariantPreferredTerrainTags"))
                     whiteBoxFirstFailedJoinKey?.let { joinKey -> put("whiteBoxFirstFailedJoinKey", joinKey.toString()) }
                 },
         )
@@ -353,6 +394,17 @@ object Phase4ReportRunner {
                     put("combatCount", corpusMetrics.getValue("combatCount"))
                     put("taggedCombatCount", corpusMetrics.getValue("taggedCombatCount"))
                     put("triggeredInteractionCombatCount", corpusMetrics.getValue("triggeredInteractionCombatCount"))
+                    put("preferredTerrainCaseCount", corpusMetrics.getValue("preferredTerrainCaseCount"))
+                    put("preferredTerrainImplementedCount", corpusMetrics.getValue("preferredTerrainImplementedCount"))
+                    put("preferredTerrainCaseImplementationRate", corpusMetrics.getValue("preferredTerrainCaseImplementationRate"))
+                    put("preferredTerrainCombatCount", corpusMetrics.getValue("preferredTerrainCombatCount"))
+                    put("preferredTerrainImplementedCombatCount", corpusMetrics.getValue("preferredTerrainImplementedCombatCount"))
+                    put("preferredTerrainCombatImplementationRate", corpusMetrics.getValue("preferredTerrainCombatImplementationRate"))
+                    put("terrainMetricDefinitionVersion", corpusMetrics.getValue("terrainMetricDefinitionVersion"))
+                    put("terrainTaggedCombatExposureFormula", corpusMetrics.getValue("terrainTaggedCombatExposureFormula"))
+                    put("terrainInteractionEncounterFormula", corpusMetrics.getValue("terrainInteractionEncounterFormula"))
+                    put("decisionPathByCurrentMetrics", corpusMetrics.getValue("decisionPathByCurrentMetrics"))
+                    put("preferredTerrainTagsSeen", corpusMetrics.getValue("preferredTerrainTagsSeen"))
                     put("terrainCoverageByZone", corpusMetrics.getValue("terrainCoverageByZone"))
                     payload["firstFailedJoinKey"]?.let { joinKey -> put("firstFailedJoinKey", joinKey.toString()) }
                 },
@@ -602,12 +654,16 @@ object Phase4ReportRunner {
         )
     }
 
-    private fun buildExperienceMetrics(tasks: List<Phase4TaskAggregate>): List<Phase4ExperienceMetric> {
+    private fun buildExperienceMetrics(
+        repoRoot: Path,
+        tasks: List<Phase4TaskAggregate>,
+    ): List<Phase4ExperienceMetric> {
         val tasksById = tasks.associateBy(Phase4TaskAggregate::taskId)
         val boss = requireTask(tasksById, "bossHarness")
         val loot = requireTask(tasksById, "whiteBoxLoot")
         val hidden = requireTask(tasksById, "whiteBoxHiddenContent")
         val terrain = requireTask(tasksById, "terrainInteractionBatch")
+        val terrainBaseline = readTerrainBaseline(repoRoot)
 
         val lootAverageOverlap = loot.metrics.doubleValue("lootProfileAverageBaseItemOverlap")
         val lootMaxOverlap = loot.metrics.doubleValue("lootProfileMaxBaseItemOverlap")
@@ -628,6 +684,14 @@ object Phase4ReportRunner {
         val combatCount = terrain.metrics.intValue("combatCount")
         val taggedCombatCount = terrain.metrics.intValue("taggedCombatCount")
         val triggeredInteractionCombatCount = terrain.metrics.intValue("triggeredInteractionCombatCount")
+        val terrainMetricDefinitionVersion = terrain.metrics.stringValue("terrainMetricDefinitionVersion")
+        require(terrainMetricDefinitionVersion == terrainBaseline.metricDefinitionVersion) {
+            "Terrain metric definition drifted: runtime=$terrainMetricDefinitionVersion baseline=${terrainBaseline.metricDefinitionVersion}."
+        }
+        val terrainTaggedExposureBaseline = terrainBaseline.metric("terrainTaggedCombatExposureRate")
+        val terrainEncounterBaseline = terrainBaseline.metric("terrainInteractionEncounterRate")
+        val terrainTaggedExposureRelativeIncrease = relativeIncrease(terrainTaggedExposureRate, terrainTaggedExposureBaseline.baselineRate)
+        val terrainEncounterRelativeIncrease = relativeIncrease(terrainEncounterRate, terrainEncounterBaseline.baselineRate)
         val uniqueArtifactMeaningfulSwapRate = loot.metrics.doubleValue("uniqueArtifactMeaningfulSwapRate")
         val uniqueArtifactOutcomeCount = loot.metrics.intValue("uniqueArtifactOutcomeCount")
         val meaningfulUniqueArtifactSwapCount = loot.metrics.intValue("meaningfulUniqueArtifactSwapCount")
@@ -763,11 +827,23 @@ object Phase4ReportRunner {
                         put("rate", terrain.metrics.getValue("terrainTaggedCombatExposureRate"))
                         put("combatCount", terrain.metrics.getValue("combatCount"))
                         put("taggedCombatCount", terrain.metrics.getValue("taggedCombatCount"))
+                        put("baseline", terrainTaggedExposureBaseline.toJson())
+                        put("relativeIncrease", terrainTaggedExposureRelativeIncrease)
+                        put("targetRate", terrainTaggedExposureBaseline.targetRate)
+                        put("decisionPathByCurrentMetrics", terrain.metrics.getValue("decisionPathByCurrentMetrics"))
                         put("terrainCoverageByZone", terrain.metrics.getValue("terrainCoverageByZone"))
                     },
-                currentValueText = "${formatPercent(terrainTaggedExposureRate)} ($taggedCombatCount/$combatCount)",
-                target = ">= 40%",
-                status = verdictOf(terrainTaggedExposureRate >= 0.40),
+                currentValueText =
+                    "${formatPercent(terrainTaggedExposureRate)} ($taggedCombatCount/$combatCount), " +
+                        "delta=${formatSignedPercent(terrainTaggedExposureRelativeIncrease)} vs baseline ${formatPercent(terrainTaggedExposureBaseline.baselineRate)}",
+                target =
+                    ">= ${formatPercentPrecise(terrainTaggedExposureBaseline.targetRate)} " +
+                        "(baseline ${formatPercentPrecise(terrainTaggedExposureBaseline.baselineRate)} +${formatPercentPrecise(terrainTaggedExposureBaseline.targetRelativeIncrease)})",
+                status = verdictOf(terrainTaggedExposureRate >= terrainTaggedExposureBaseline.targetRate),
+                note =
+                    "baseline=${terrainBaseline.baselineId} @ ${terrainBaseline.sourceArtifactPath} " +
+                        "(buildId=${terrainBaseline.sourceBuildId ?: "unknown"}, generatedAt=${terrainBaseline.sourceGeneratedAt ?: "unknown"}, metricDefinitionVersion=$terrainMetricDefinitionVersion); " +
+                        "decisionPathByCurrentMetrics=${terrain.metrics.stringValue("decisionPathByCurrentMetrics")}",
             ),
             Phase4ExperienceMetric(
                 metricId = "terrainInteractionEncounterRate",
@@ -775,13 +851,25 @@ object Phase4ReportRunner {
                 currentValue =
                     buildJsonObject {
                         put("rate", terrain.metrics.getValue("terrainInteractionEncounterRate"))
-                        put("combatCount", terrain.metrics.getValue("combatCount"))
+                        put("taggedCombatCount", terrain.metrics.getValue("taggedCombatCount"))
                         put("triggeredInteractionCombatCount", terrain.metrics.getValue("triggeredInteractionCombatCount"))
+                        put("baseline", terrainEncounterBaseline.toJson())
+                        put("relativeIncrease", terrainEncounterRelativeIncrease)
+                        put("targetRate", terrainEncounterBaseline.targetRate)
+                        put("decisionPathByCurrentMetrics", terrain.metrics.getValue("decisionPathByCurrentMetrics"))
                         put("terrainCoverageByZone", terrain.metrics.getValue("terrainCoverageByZone"))
                     },
-                currentValueText = "${formatPercent(terrainEncounterRate)} ($triggeredInteractionCombatCount/$combatCount)",
-                target = ">= 25%",
-                status = verdictOf(terrainEncounterRate >= 0.25),
+                currentValueText =
+                    "${formatPercent(terrainEncounterRate)} ($triggeredInteractionCombatCount/$taggedCombatCount), " +
+                        "delta=${formatSignedPercent(terrainEncounterRelativeIncrease)} vs baseline ${formatPercent(terrainEncounterBaseline.baselineRate)}",
+                target =
+                    ">= ${formatPercentPrecise(terrainEncounterBaseline.targetRate)} " +
+                        "(baseline ${formatPercentPrecise(terrainEncounterBaseline.baselineRate)} +${formatPercentPrecise(terrainEncounterBaseline.targetRelativeIncrease)})",
+                status = verdictOf(terrainEncounterRate >= terrainEncounterBaseline.targetRate),
+                note =
+                    "encounterRate = triggeredInteractionCombatCount / taggedCombatCount; " +
+                        "baseline=${terrainBaseline.baselineId} normalized by ${terrainEncounterBaseline.normalizedFormula} " +
+                        "from ${terrainBaseline.sourceArtifactPath}",
             ),
             Phase4ExperienceMetric(
                 metricId = "uniqueArtifactMeaningfulSwapRate",
@@ -810,6 +898,8 @@ object Phase4ReportRunner {
             appendLine("- taskCount: `${report.taskCount}`")
             appendLine("- passedTaskCount: `${report.passedTaskCount}`")
             appendLine("- failedTaskCount: `${report.failedTaskCount}`")
+            appendLine("- failedExperienceMetricCount: `${report.failedExperienceMetricCount}`")
+            appendLine("- failedGateCount: `${report.failedGateCount}`")
             appendLine()
             appendLine("## 体验度量基线")
             appendLine("| metricId | current | source | target | status |")
@@ -878,6 +968,8 @@ private fun Phase4AggregateReport.toJson(): JsonObject =
         put("taskCount", taskCount)
         put("passedTaskCount", passedTaskCount)
         put("failedTaskCount", failedTaskCount)
+        put("failedExperienceMetricCount", failedExperienceMetricCount)
+        put("failedGateCount", failedGateCount)
         putJsonArray("tasks") {
             tasks.forEach { task -> add(task.toJson()) }
         }
@@ -907,6 +999,63 @@ private fun Phase4ExperienceMetric.toJson(): JsonObject =
         put("target", target)
         put("status", status)
         note?.let { value -> put("note", value) }
+    }
+
+private fun readTerrainBaseline(repoRoot: Path): TerrainMetricBaseline {
+    val baselinePath = repoRoot.resolve(TERRAIN_BASELINE_RELATIVE_PATH)
+    val payload = readPhase4Json(baselinePath)
+    val metricsById =
+        payload.getValue("metrics").jsonArray.associate { element ->
+            val metric = element.jsonObject
+            val metricId = metric.stringValue("metricId")
+            metricId to
+                TerrainMetricBaselineMetric(
+                    metricId = metricId,
+                    baselineRate = metric.doubleValue("baselineRate"),
+                    targetRelativeIncrease = metric.doubleValue("targetRelativeIncrease"),
+                    numerator = metric.intValue("numerator"),
+                    denominator = metric.intValue("denominator"),
+                    numeratorLabel = metric.stringValue("numeratorLabel"),
+                    denominatorLabel = metric.stringValue("denominatorLabel"),
+                    sourceValueText = metric.stringValue("sourceValueText"),
+                    normalizedFormula = metric.stringValue("normalizedFormula"),
+                )
+        }
+    return TerrainMetricBaseline(
+        baselineId = payload.stringValue("baselineId"),
+        metricDefinitionVersion = payload.stringValue("metricDefinitionVersion"),
+        sourceArtifactPath = payload.stringValue("sourceArtifactPath"),
+        sourceBuildId = payload.stringValue("sourceBuildId"),
+        sourceGeneratedAt = payload.stringValue("sourceGeneratedAt"),
+        metricsById = metricsById,
+    )
+}
+
+private fun TerrainMetricBaseline.metric(metricId: String): TerrainMetricBaselineMetric =
+    checkNotNull(metricsById[metricId]) { "Missing terrain baseline metric '$metricId' in $baselineId." }
+
+private fun TerrainMetricBaselineMetric.toJson(): JsonObject =
+    buildJsonObject {
+        put("metricId", metricId)
+        put("baselineRate", baselineRate)
+        put("targetRelativeIncrease", targetRelativeIncrease)
+        put("targetRate", targetRate)
+        put("numerator", numerator)
+        put("denominator", denominator)
+        put("numeratorLabel", numeratorLabel)
+        put("denominatorLabel", denominatorLabel)
+        put("sourceValueText", sourceValueText)
+        put("normalizedFormula", normalizedFormula)
+    }
+
+private fun relativeIncrease(
+    currentValue: Double,
+    baselineValue: Double,
+): Double =
+    if (baselineValue == 0.0) {
+        0.0
+    } else {
+        (currentValue - baselineValue) / baselineValue
     }
 
 private fun aggregateMetrics(
@@ -944,9 +1093,20 @@ private fun requireFreshnessAligned(
     }
 }
 
+internal fun countFailedStatuses(statuses: Iterable<String>): Int = statuses.count { status -> status == "FAIL" }
+
 private fun verdictOf(passed: Boolean): String = if (passed) "PASS" else "FAIL"
 
 private fun formatPercent(value: Double): String = String.format(Locale.US, "%.1f%%", value * 100.0)
+
+private fun formatPercentPrecise(value: Double): String = String.format(Locale.US, "%.2f%%", value * 100.0)
+
+private fun formatSignedPercent(value: Double): String =
+    if (value >= 0.0) {
+        "+${formatPercentPrecise(value)}"
+    } else {
+        "-${formatPercentPrecise(kotlin.math.abs(value))}"
+    }
 
 private fun formatRatio(value: Double): String = String.format(Locale.US, "%.3f", value)
 

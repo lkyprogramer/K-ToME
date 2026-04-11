@@ -54,6 +54,7 @@ import com.ktome.core.mapgen.BspBackedMapgenPipeline
 import com.ktome.core.mapgen.ZoneRewardProfile
 import com.ktome.game.model.BossDefinition
 import com.ktome.game.model.MonsterTemplate
+import com.ktome.game.model.isEliteEncounterTemplate
 import com.ktome.game.telegraph.TelegraphRegistry
 import com.ktome.game.telegraph.ThreatProfileRegistry
 import com.ktome.core.item.ItemGenerator
@@ -471,56 +472,59 @@ object GameModule {
 
         val bossPosition =
             if (bossDefinition != null) {
-                chooseBossPosition(map, occupiedPoints)
+                val decoration =
+                    encounterDecorationService.selectDecoration(
+                        request =
+                            SpawnDecorationRequest(
+                                zoneId = zone.id,
+                                floorIndex = floor,
+                                template = bossDefinition.template,
+                                bossEncounterId = bossDefinition.encounter.id,
+                                preferredBossVariantId = config.preferredBossVariantId,
+                                bossVariantSelectionMode = config.bossVariantSelectionMode,
+                            ),
+                        nextIndex = { bound -> monsterRandom.nextInt(bound) },
+                    )
+                val resolvedBossPosition =
+                    chooseBossPosition(
+                        map = map,
+                        occupiedPoints = occupiedPoints,
+                        terrainTagsByPoint = generatedFloor.terrainTags,
+                        preferredTerrainTags = decoration.preferredTerrainTags,
+                    )
+                val bossId = bossFactory.createBoss(world, bossDefinition, resolvedBossPosition)
+                encounterDecorationService.applyDecoration(world = world, entityId = bossId, decoration = decoration)
+                StatsCalculator.recalculateAndStore(world, bossId)
+                occupiedPoints += resolvedBossPosition
+                resolvedBossPosition
             } else {
+                spawnMonsters(
+                    zone = zone,
+                    encounterDecorationService = encounterDecorationService,
+                    factory = factory,
+                    world = world,
+                    map = map,
+                    generatedFloor = generatedFloor,
+                    floor = floor,
+                    catalog = zoneMonsterCatalog,
+                    occupiedPoints = occupiedPoints,
+                    random = monsterRandom,
+                    desiredCount = zoneMonsterSpawnCount(zone, floor, map.rooms.size),
+                )
+                spawnItems(
+                    itemFactory = itemFactory,
+                    itemGenerator = itemGenerator,
+                    affixContext = affixBuildContext,
+                    world = world,
+                    map = map,
+                    zone = zone,
+                    zoneRewardProfile = content.zoneRewardProfileResolver.resolve(zone.id),
+                    floor = floor,
+                    seed = config.seed,
+                    occupiedPoints = occupiedPoints,
+                )
                 null
             }
-
-        if (bossDefinition != null) {
-            val resolvedBossPosition = requireNotNull(bossPosition)
-            val bossId = bossFactory.createBoss(world, bossDefinition, resolvedBossPosition)
-            val decoration =
-                encounterDecorationService.selectDecoration(
-                    request =
-                        SpawnDecorationRequest(
-                            zoneId = zone.id,
-                            floorIndex = floor,
-                            template = bossDefinition.template,
-                            bossEncounterId = bossDefinition.encounter.id,
-                            preferredBossVariantId = config.preferredBossVariantId,
-                            bossVariantSelectionMode = config.bossVariantSelectionMode,
-                        ),
-                    nextIndex = { bound -> monsterRandom.nextInt(bound) },
-                )
-            encounterDecorationService.applyDecoration(world = world, entityId = bossId, decoration = decoration)
-            StatsCalculator.recalculateAndStore(world, bossId)
-            occupiedPoints += resolvedBossPosition
-        } else {
-            spawnMonsters(
-                zone = zone,
-                encounterDecorationService = encounterDecorationService,
-                factory = factory,
-                world = world,
-                map = map,
-                floor = floor,
-                catalog = zoneMonsterCatalog,
-                occupiedPoints = occupiedPoints,
-                random = monsterRandom,
-                desiredCount = zoneMonsterSpawnCount(zone, floor, map.rooms.size),
-            )
-            spawnItems(
-                itemFactory = itemFactory,
-                itemGenerator = itemGenerator,
-                affixContext = affixBuildContext,
-                world = world,
-                map = map,
-                zone = zone,
-                zoneRewardProfile = content.zoneRewardProfileResolver.resolve(zone.id),
-                floor = floor,
-                seed = config.seed,
-                occupiedPoints = occupiedPoints,
-            )
-        }
         createObjectiveInteractables(
             world = world,
             map = map,
@@ -573,6 +577,7 @@ object GameModule {
         factory: EntityFactory,
         world: World,
         map: com.ktome.core.map.GameMap,
+        generatedFloor: com.ktome.core.mapgen.GeneratedFloor,
         floor: Int,
         catalog: List<MonsterTemplate>,
         occupiedPoints: MutableSet<Point>,
@@ -591,35 +596,46 @@ object GameModule {
         val spawnCount = desiredCount.coerceIn(1, maxSpawnSlots)
         val selectedTemplates = selectMonsterTemplates(zone, floor, availableTemplates, spawnCount, random)
         val plannedRooms = plannedMonsterRooms(zone, floor, roomCandidates, selectedTemplates.size, random)
-
-        plannedRooms
-            .zip(selectedTemplates)
-            .groupBy({ (room, _) -> room }, { (_, template) -> template })
-            .forEach { (room, templates) ->
-                val spawnPoints = findSpawnPoints(room, map, occupiedPoints, templates.size)
-                templates.zip(spawnPoints).forEach { (template, spawnPoint) ->
-                    val monsterId =
-                        factory.createMonster(
-                        world = world,
-                        template = template,
-                        position = spawnPoint,
-                        patrolRoute = if (resolveAiType(template) == AIType.PATROL) buildPatrolRoute(room = room, map = map) else null,
+        val encounterPlans =
+            selectedTemplates.map { template ->
+                val forceEliteMutationEligibility =
+                    template.id in zone.elitePools &&
+                        !template.isEliteEncounterTemplate()
+                template to
+                    encounterDecorationService.selectDecoration(
+                        request =
+                            SpawnDecorationRequest(
+                                zoneId = zone.id,
+                                floorIndex = floor,
+                                template = template,
+                                forceEliteMutationEligibility = forceEliteMutationEligibility,
+                            ),
+                        nextIndex = { bound -> random.nextInt(bound) },
                     )
-                    val decoration =
-                        encounterDecorationService.selectDecoration(
-                            request =
-                                SpawnDecorationRequest(
-                                    zoneId = zone.id,
-                                    floorIndex = floor,
-                                    template = template,
-                                ),
-                            nextIndex = { bound -> random.nextInt(bound) },
-                        )
-                    encounterDecorationService.applyDecoration(world = world, entityId = monsterId, decoration = decoration)
-                    StatsCalculator.recalculateAndStore(world, monsterId)
-                    occupiedPoints += spawnPoint
-                }
             }
+
+        encounterPlans.forEachIndexed { index, (template, decoration) ->
+            val fallbackRoom = plannedRooms[index]
+            val placement =
+                chooseTerrainAwareRoomPlacement(
+                    roomCandidates = roomCandidates,
+                    fallbackRoom = fallbackRoom,
+                    map = map,
+                    occupiedPoints = occupiedPoints,
+                    terrainTagsByPoint = generatedFloor.terrainTags,
+                    preferredTerrainTags = decoration.preferredTerrainTags,
+                )
+            val monsterId =
+                factory.createMonster(
+                    world = world,
+                    template = template,
+                    position = placement.spawnPoint,
+                    patrolRoute = if (resolveAiType(template) == AIType.PATROL) buildPatrolRoute(room = placement.room, map = map) else null,
+                )
+            encounterDecorationService.applyDecoration(world = world, entityId = monsterId, decoration = decoration)
+            StatsCalculator.recalculateAndStore(world, monsterId)
+            occupiedPoints += placement.spawnPoint
+        }
     }
 
     private fun zoneMonsterSpawnCount(
@@ -704,11 +720,16 @@ object GameModule {
         availableTemplates: List<MonsterTemplate>,
         random: Random,
     ): MonsterTemplate? {
-        if (zone.id != "deep_iron_pit" || floor != 1) {
+        if (zone.mapgenProfileId == null) {
+            return null
+        }
+        val elitePoolIds = zone.elitePools.toSet()
+        val eliteCandidates = availableTemplates.filter { template -> template.id in elitePoolIds }
+        if (eliteCandidates.isEmpty()) {
             return null
         }
         return selectWeightedTemplate(
-            candidates = availableTemplates.filter(::isEliteEncounterTemplate),
+            candidates = eliteCandidates,
             zone = zone,
             floor = floor,
             selected = emptyList(),
@@ -759,9 +780,6 @@ object GameModule {
         }
         return selected.count { template -> resolveAiType(template) == AIType.KITE } < maxKiteSpawnCount(zone, floor)
     }
-
-    private fun isEliteEncounterTemplate(template: MonsterTemplate): Boolean =
-        "elite" in template.tags || template.lootProfileId.endsWith(".elite")
 
     private fun maxKiteSpawnCount(
         zone: ZoneSchemaV2,
@@ -919,10 +937,24 @@ object GameModule {
     private fun chooseBossPosition(
         map: com.ktome.core.map.GameMap,
         occupiedPoints: Set<Point>,
+        terrainTagsByPoint: Map<Point, Set<com.ktome.core.mapgen.TerrainTag>>,
+        preferredTerrainTags: Set<com.ktome.core.mapgen.TerrainTag>,
     ): Point {
         val reachable = reachablePassablePoints(map = map, start = map.playerStart)
-        return map.rooms.asReversed().map(Room::center).firstOrNull { it !in occupiedPoints && it in reachable }
-            ?: map.floorPoints().first { it !in occupiedPoints && it in reachable }
+        val candidates =
+            (
+                map.rooms.asReversed().map(Room::center).filter { point -> point !in occupiedPoints && point in reachable } +
+                    map.floorPoints().filter { point -> point !in occupiedPoints && point in reachable }
+            ).distinct()
+        val fallbackPoint = candidates.first()
+        return chooseTerrainAwarePoint(
+            candidatePoints = candidates,
+            fallbackPoint = fallbackPoint,
+            map = map,
+            occupiedPoints = occupiedPoints,
+            terrainTagsByPoint = terrainTagsByPoint,
+            preferredTerrainTags = preferredTerrainTags,
+        ).first
     }
 
     private fun createObjectiveInteractables(
@@ -1325,7 +1357,7 @@ object GameModule {
         val allowedIds =
             linkedSetOf<String>().apply {
                 addAll(zone.monsterPools)
-                if (floor > 1 || (zone.id == "deep_iron_pit" && floor == 1)) {
+                if (floor > 1 || zoneAllowsEarlyTerrainEliteUptake(zone.id)) {
                     addAll(zone.elitePools)
                 }
             }
@@ -1341,6 +1373,15 @@ object GameModule {
             }
         return scopedCatalog.filter { monster -> floor in monster.spawnFloors }.ifEmpty { scopedCatalog }
     }
+
+    private fun zoneAllowsEarlyTerrainEliteUptake(zoneId: String): Boolean =
+        zoneId in
+            setOf(
+                "deep_iron_pit",
+                "greenwood_fringe",
+                "underground_river",
+                "crystal_cavern",
+            )
 
     private fun floorSeed(
         seed: Long,

@@ -2,6 +2,7 @@ package com.ktome.game
 
 import com.ktome.core.ai.AIProfile
 import com.ktome.core.inscription.InscriptionDef
+import com.ktome.core.mapgen.TerrainTag
 import com.ktome.core.mapgen.BspBackedMapgenPipeline
 import com.ktome.core.mapgen.HybridTopologyMapgenPipeline
 import com.ktome.core.mapgen.MapgenContentCatalog
@@ -305,6 +306,13 @@ internal data class GameContent(
         lootProfile(profileId)?.let(lootProfileCandidatePoolResolver::resolve)
 
     fun secretZone(contentRef: com.ktome.core.world.solvability.ContentRef) = secretZoneRegistry.resolve(contentRef)
+
+    fun preferredTerrainTagsForMutations(mutationIds: Iterable<String>): Set<TerrainTag> =
+        mutationIds
+            .asSequence()
+            .mapNotNull(eliteMutationRegistry::resolve)
+            .flatMap { mutation -> mutation.preferredTerrainTags.asSequence() }
+            .toCollection(linkedSetOf())
 
     private fun baseEncounterActionIds(baseEncounterId: String): Set<String> =
         schemaCatalog.bossEncounters

@@ -7,7 +7,6 @@ import com.ktome.core.map.TileType
 import com.ktome.core.world.solvability.NodeAnchorId
 import kotlin.math.max
 import kotlin.math.min
-import kotlin.math.roundToInt
 import kotlin.random.Random
 
 class HybridTopologyPlanner(
@@ -881,45 +880,35 @@ class HybridTopologyMapgenPipeline(
         val roomsByNodeId = rooms.associateBy(RoomInstance::nodeId)
         rooms.forEachIndexed { ordinal, room ->
             val weights =
-                linkedMapOf<TerrainTag, Float>().apply {
-                    room.biomeFamilyId?.let { familyId ->
-                        biomeFamiliesById[familyId]?.terrainTagWeights?.forEach { (tag, weight) ->
-                            this[tag] = weight
-                        }
-                    }
-                    profile.terrainTagWeights.forEach { (tag, weight) ->
-                        this[tag] = weight
-                    }
-                }
+                TerrainTagPainter.resolveEffectiveWeights(
+                    profileWeights = profile.terrainTagWeights,
+                    familyWeights = room.biomeFamilyId?.let(biomeFamiliesById::get)?.terrainTagWeights.orEmpty(),
+                )
             if (weights.isEmpty()) {
                 return@forEachIndexed
             }
-            val candidatePoints = floorPointsInRoom(room = room, map = map).filterNot { point -> point == map.playerStart }
-            val totalWeight = weights.values.sum()
-            if (candidatePoints.isEmpty() || totalWeight <= 0f) {
+            val candidatePoints =
+                TerrainTagPainter.paintableRoomPoints(
+                    room = room,
+                    map = map,
+                    excludedPoint = map.playerStart,
+                )
+            if (candidatePoints.isEmpty()) {
                 return@forEachIndexed
             }
-            val sortedCandidatePoints = candidatePoints.sortedWith(compareBy<Point>(Point::y).thenBy(Point::x))
-            weights.entries
-                .sortedBy { (tag, _) -> tag.ordinal }
-                .forEach { (tag, weight) ->
-                    if (weight <= 0f) {
-                        return@forEach
-                    }
-                    val ratio = weight / totalWeight
-                    val targetCount = max(1, (candidatePoints.size * ratio * 0.14f).roundToInt())
-                    val random = stableRandom(request.seed, "terrain:${room.nodeId.value}:${ordinal}:${tag.name}")
-                    repeat(targetCount) {
-                        val point = candidatePoints[random.nextInt(candidatePoints.size)]
-                        painted.getOrPut(point) { linkedSetOf() }.add(tag)
-                    }
+            TerrainTagPainter.paintWeightedTags(
+                painted = painted,
+                candidatePoints = candidatePoints,
+                weights = weights,
+            ) { tag ->
+                stableRandom(request.seed, "terrain:${room.nodeId.value}:${ordinal}:${tag.name}")
             }
             val terrainHints = terrainHintsForPattern(room.patternId)
             terrainHints.forEachIndexed { index, tag ->
-                if (sortedCandidatePoints.isNotEmpty()) {
+                if (candidatePoints.isNotEmpty()) {
                     val point =
-                        sortedCandidatePoints[
-                            (index * max(1, sortedCandidatePoints.size / max(1, terrainHints.size))) % sortedCandidatePoints.size
+                        candidatePoints[
+                            (index * max(1, candidatePoints.size / max(1, terrainHints.size))) % candidatePoints.size
                         ]
                     painted.getOrPut(point) { linkedSetOf() }.add(tag)
                 }
@@ -927,13 +916,12 @@ class HybridTopologyMapgenPipeline(
         }
         vaultPlacements.forEach { vault ->
             val room = roomsByNodeId[vault.nodeId] ?: return@forEach
-            val candidatePoints = floorPointsInRoom(room = room, map = map)
+            val candidatePoints = TerrainTagPainter.paintableRoomPoints(room = room, map = map)
             if (candidatePoints.isEmpty()) {
                 return@forEach
             }
-            val sortedPoints = candidatePoints.sortedWith(compareBy<Point>(Point::y).thenBy(Point::x))
             vault.requiredTerrainTags.sortedBy(TerrainTag::ordinal).forEachIndexed { index, tag ->
-                val point = sortedPoints[(index * max(1, sortedPoints.size / max(1, vault.requiredTerrainTags.size))) % sortedPoints.size]
+                val point = candidatePoints[(index * max(1, candidatePoints.size / max(1, vault.requiredTerrainTags.size))) % candidatePoints.size]
                 painted.getOrPut(point) { linkedSetOf() }.add(tag)
             }
         }
@@ -1096,21 +1084,6 @@ class HybridTopologyMapgenPipeline(
         val range = if (startY <= endY) startY..endY else endY..startY
         range.forEach { y -> builder.setTile(Point(x, y), TileType.FLOOR) }
     }
-
-    private fun floorPointsInRoom(
-        room: RoomInstance,
-        map: GameMap,
-    ): List<Point> =
-        buildList {
-            for (y in room.y..room.y + room.height - 1) {
-                for (x in room.x..room.x + room.width - 1) {
-                    val point = Point(x, y)
-                    if (map.isInBounds(x, y) && !map.blocksMovement(x, y)) {
-                        add(point)
-                    }
-                }
-            }
-        }
 
     private fun terrainHintsForPattern(patternId: String?): Set<TerrainTag> {
         patternId ?: return emptySet()

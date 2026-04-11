@@ -2835,6 +2835,7 @@ class DataLoader(
                 minFloor = mutation.requiredInt("minFloor"),
                 maxFloor = mutation.optionalNullableInt("maxFloor"),
                 allowedZones = mutation.optionalStringList("allowedZones").toSet(),
+                preferredTerrainTags = mutation.explicitStringList("preferredTerrainTags").map(TerrainTag::valueOf),
                 statModifiers = mutation.optionalStringList("statModifiers").map(::StatModifierRef),
                 grantedTalents = mutation.optionalStringList("grantedTalents").map(::TalentGrantRef),
                 aiProfileOverlay = mutation.optionalString("aiProfileOverlay"),
@@ -2938,6 +2939,13 @@ private fun Map<*, *>.optionalStringList(key: String): List<String> =
 
 private fun Map<*, *>.requiredStringList(key: String): List<String> =
     optionalStringList(key).ifEmpty { error("Missing string list '$key'") }
+
+private fun Map<*, *>.explicitStringList(key: String): List<String> =
+    if (containsKey(key)) {
+        optionalStringList(key)
+    } else {
+        error("Missing string list '$key'")
+    }
 
 private fun Map<*, *>.optionalIntMap(key: String): Map<String, Int> =
     optionalMap(key)?.entries?.associate { (rawKey, rawValue) ->
