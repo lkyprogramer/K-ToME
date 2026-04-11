@@ -11,6 +11,7 @@ val harnessReportDir = rootProject.layout.buildDirectory.dir("reports/harness")
 dependencies {
     api(project(":core"))
     implementation("org.yaml:snakeyaml:${rootProject.providers.gradleProperty("snakeyamlVersion").get()}")
+    testFixturesImplementation("org.yaml:snakeyaml:${rootProject.providers.gradleProperty("snakeyamlVersion").get()}")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json-jvm:${rootProject.providers.gradleProperty("kotlinxSerializationVersion").get()}")
 }
 

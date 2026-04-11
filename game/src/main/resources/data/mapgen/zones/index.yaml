@@ -16,8 +16,8 @@ zoneMapgenProfiles:
         keyId: greenwood_final_path_key
     hiddenEntrancePlans:
       - bindingId: search.greenwood.hidden_cache
-        sourceAnchorId: optional.branch.1
-        entranceAnchorId: optional.branch.1
+        sourceAnchorId: hidden.branch
+        entranceAnchorId: hidden.branch
         targetAnchorId: secret.greenwood.hidden_cache
         targetSecretZoneId:
           registry: secret_zone
@@ -44,8 +44,8 @@ zoneMapgenProfiles:
         keyId: deep_iron_forge_switch
     hiddenEntrancePlans:
       - bindingId: search.deep_iron.slag_cache
-        sourceAnchorId: optional.branch.1
-        entranceAnchorId: optional.branch.1
+        sourceAnchorId: hidden.critical.adjacent
+        entranceAnchorId: hidden.critical.adjacent
         targetAnchorId: secret.deep_iron.slag_cache
         targetSecretZoneId:
           registry: secret_zone
@@ -53,8 +53,20 @@ zoneMapgenProfiles:
         discoveryRule:
           combinator: AND
           predicates:
-            - type: PERCEPTION_CHECK
-              difficulty: 12
+            - type: REQUIRED_TAG
+              requiredTag: hidden.primer.deep_iron.slag_cache
+      - bindingId: search.deep_iron.smuggler_stash
+        sourceAnchorId: hidden.branch
+        entranceAnchorId: hidden.branch
+        targetAnchorId: secret.deep_iron.smuggler_stash
+        targetSecretZoneId:
+          registry: secret_zone
+          id: deep_iron_smuggler_stash
+        discoveryRule:
+          combinator: AND
+          predicates:
+            - type: REQUIRED_TAG
+              requiredTag: hidden.primer.deep_iron.smuggler_stash
   - id: zone_mapgen.underground_river.phase4
     zoneId: underground_river
     allowedBiomeFamilies: [flooded_cavern, crystal_bank]
@@ -73,8 +85,8 @@ zoneMapgenProfiles:
         keyId: underground_river_ferry_mark
     hiddenEntrancePlans:
       - bindingId: search.underground_river.crystal_rift
-        sourceAnchorId: optional.branch.1
-        entranceAnchorId: optional.branch.1
+        sourceAnchorId: hidden.branch
+        entranceAnchorId: hidden.branch
         targetAnchorId: secret.underground_river.crystal_rift
         targetSecretZoneId:
           registry: secret_zone
@@ -82,8 +94,10 @@ zoneMapgenProfiles:
         discoveryRule:
           combinator: AND
           predicates:
+            - type: REQUIRED_TAG
+              requiredTag: hidden.primer.underground_river.crystal_rift
             - type: PERCEPTION_CHECK
-              difficulty: 16
+              difficulty: 10
   - id: zone_mapgen.abyssal_temple.phase4
     zoneId: abyssal_temple
     allowedBiomeFamilies: [ruin, oil_catacomb]
@@ -101,8 +115,8 @@ zoneMapgenProfiles:
         keyId: abyssal_temple_sigil
     hiddenEntrancePlans:
       - bindingId: search.abyssal_temple.warded_archive
-        sourceAnchorId: optional.branch.1
-        entranceAnchorId: optional.branch.1
+        sourceAnchorId: hidden.goal.adjacent
+        entranceAnchorId: hidden.goal.adjacent
         targetAnchorId: secret.abyssal_temple.warded_archive
         targetSecretZoneId:
           registry: secret_zone
@@ -110,8 +124,10 @@ zoneMapgenProfiles:
         discoveryRule:
           combinator: AND
           predicates:
+            - type: REQUIRED_TAG
+              requiredTag: hidden.primer.abyssal_temple.warded_archive
             - type: PERCEPTION_CHECK
-              difficulty: 20
+              difficulty: 15
 
 zoneRewardProfiles:
   - id: zone_reward.greenwood_fringe.phase4

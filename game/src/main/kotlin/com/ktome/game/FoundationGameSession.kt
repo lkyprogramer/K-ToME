@@ -291,7 +291,16 @@ private const val ABYSSAL_WARNING_AUDIO_PROFILE: String = "audio.boss.warning"
 private const val HIDDEN_ENTRANCE_PROP_TYPE_ID: String = "hidden_entrance"
 private const val SECRET_REWARD_PROP_TYPE_ID: String = "secret_reward"
 private const val SECRET_RETURN_PROP_TYPE_ID: String = "secret_return"
-private val CACHE_REWARD_INTERACTABLE_IDS: Set<String> = setOf("supply_crate", "trail_cache", "ore_stash", "seal_cache", "bandit_cache")
+private val CACHE_REWARD_INTERACTABLE_IDS: Set<String> =
+    setOf(
+        "supply_crate",
+        "trail_cache",
+        "ore_stash",
+        "seal_cache",
+        "bandit_cache",
+        RiverCrystalRuntimeKeys.River.CACHE_INTERACTABLE_ID,
+    )
+private val OPEN_CHEST_INTERACTABLE_IDS: Set<String> = CACHE_REWARD_INTERACTABLE_IDS
 private val ALERT_INTERACTABLE_IDS: Set<String> = setOf("warden_beacon", "slag_valve", "shadow_brazier")
 private val SUPPORT_REWARD_INTERACTABLE_IDS: Set<String> =
     setOf(
@@ -839,9 +848,7 @@ class FoundationGameSession internal constructor(
 
     fun automationMovePlayerTo(point: Point) {
         require(map.isInBounds(point.x, point.y)) { "Point $point is outside the current map." }
-        requireNotNull(world.get<Position>(playerId)).moveTo(point)
-        refreshActorDerivedStats(playerId)
-        refreshFov()
+        movePlayerTo(point, refreshFieldOfView = true)
     }
 
     fun automationGeneratedFloor(): GeneratedFloor = activeFloorState.generatedFloor
@@ -850,13 +857,94 @@ class FoundationGameSession internal constructor(
 
     fun automationVisitedSecretZoneIds(): Set<ContentRef> = activeFloorState.visitedSecretZoneIds.toSet()
 
+    fun automationInteractablePoint(interactableId: String): Point? =
+        world.entitiesWith(Position::class, Interactable::class)
+            .asSequence()
+            .filter { entityId -> world.get<Interactable>(entityId)?.id == interactableId }
+            .mapNotNull { entityId -> world.get<Position>(entityId)?.toPoint() }
+            .minWithOrNull(compareBy<Point> { point -> point.chebyshevDistanceTo(playerPosition()) }.thenBy(Point::y).thenBy(Point::x))
+
+    fun automationSearchPointForBinding(bindingId: com.ktome.core.world.solvability.SearchBindingId): Point? =
+        activeFloorState.generatedFloor.entranceByBinding(bindingId)?.let { entrance ->
+            val entranceRoom = activeFloorState.generatedFloor.roomForEntrance(entrance) ?: return null
+            searchPointForEntrance(entrance = entrance, entranceRoom = entranceRoom)
+        }
+
+    fun automationHiddenEntrancePointForBinding(bindingId: com.ktome.core.world.solvability.SearchBindingId): Point? =
+        activeFloorState.generatedFloor.entranceByBinding(bindingId)?.let(::hiddenEntrancePropPoint)
+
+    fun automationSecretRewardPointForBinding(bindingId: com.ktome.core.world.solvability.SearchBindingId): Point? =
+        activeFloorState.generatedFloor.entranceByBinding(bindingId)
+            ?.let(::secretZoneContextForEntrance)
+            ?.let { context -> secretZoneAnchorPoints(context.room).reward }
+
+    fun automationSecretReturnPointForBinding(bindingId: com.ktome.core.world.solvability.SearchBindingId): Point? =
+        activeFloorState.generatedFloor.entranceByBinding(bindingId)
+            ?.let(::secretZoneContextForEntrance)
+            ?.let { context -> secretZoneAnchorPoints(context.room).returnBridge }
+
+    fun automationResolvedReturnPointForBinding(bindingId: com.ktome.core.world.solvability.SearchBindingId): Point? =
+        activeFloorState.generatedFloor.entranceByBinding(bindingId)
+            ?.resolvedReturnBridgeNodeId
+            ?.let { resolvedNodeId ->
+                activeFloorState.generatedFloor.rooms.firstOrNull { room -> room.nodeId == resolvedNodeId }
+            }?.let(::roomEntryPoint)
+
+    fun automationDiscoveryTags(): Set<String> = activeFloorState.discoveryTags.toSet()
+
     fun automationConsumedHiddenEventIds(): Set<String> = activeFloorState.consumedHiddenEventIds.toSet()
+
+    fun automationHasExistingEliteMonster(): Boolean = nearestLivingEliteMonsterId() != null
+
+    fun automationKillFirstExistingEliteMonster(): Boolean = nearestLivingEliteMonsterId()?.let(::killMonsterForAutomation) ?: false
+
+    fun automationSpawnAndKillEliteMonsterForTest(): Boolean = spawnEliteMonsterNearPlayer()?.let(::killMonsterForAutomation) ?: false
+
+    fun automationForceKillFirstEliteMonster(): Boolean =
+        automationKillFirstExistingEliteMonster() || automationSpawnAndKillEliteMonsterForTest()
 
     internal fun automationStairPoint(direction: StairDirection): Point? =
         when (direction) {
             StairDirection.UP -> activeFloorState.stairsUp
             StairDirection.DOWN -> activeFloorState.stairsDown
         }
+
+    private fun movePlayerTo(
+        destination: Point,
+        refreshFieldOfView: Boolean = false,
+    ) {
+        val previousPoint = playerPosition()
+        requireNotNull(world.get<Position>(playerId)).moveTo(destination)
+        refreshActorDerivedStats(playerId)
+        if (refreshFieldOfView) {
+            refreshFov()
+        }
+        handlePlayerRoomEntry(previousPoint = previousPoint, destination = destination)
+    }
+
+    private fun handlePlayerRoomEntry(
+        previousPoint: Point,
+        destination: Point,
+    ) {
+        val previousRoom = currentRoomInstanceAt(previousPoint)
+        previousRoom
+            ?.takeUnless { room -> activeFloorState.hasEnteredRoom(room.nodeId) }
+            ?.let { room -> activeFloorState.markRoomEntered(room.nodeId) }
+        val currentRoom = currentRoomInstanceAt(destination) ?: return
+        if (previousRoom?.nodeId == currentRoom.nodeId) {
+            return
+        }
+        val firstEntry = !activeFloorState.hasEnteredRoom(currentRoom.nodeId)
+        activeFloorState.markRoomEntered(currentRoom.nodeId)
+        if (!firstEntry) {
+            return
+        }
+        executeHiddenEvents(
+            triggerType = HiddenTriggerType.ENTER_ROOM,
+            roomTags = currentRoom.tags,
+            rewardPresentationSource = RewardPresentationSourceSnapshot.HIDDEN_EVENT,
+        )
+    }
 
     internal fun automationEntityByTemplateId(templateId: String): EntityId? =
         world.entitiesWith(MonsterTemplateId::class)
@@ -870,13 +958,23 @@ class FoundationGameSession internal constructor(
     internal fun automationPendingObjectiveInteractablePoint(): Point? {
         val objective = currentObjectiveSetSchema() ?: return null
         val state = currentObjectiveStateEntry()?.second ?: return null
-        if (state != ObjectiveState.AVAILABLE) {
+        if (state == ObjectiveState.COMPLETED) {
+            return null
+        }
+        if (
+            state == ObjectiveState.IN_PROGRESS &&
+            currentFloor() >= config.maxFloor &&
+            currentObjectiveCompletionRule() in setOf(ObjectiveCompletionRule.EXPLORE_FLOOR_PAIR, ObjectiveCompletionRule.SECURE_FORGE_PATH)
+        ) {
             return null
         }
         val currentFloorInteractableIds =
             objective.placements
                 .asSequence()
                 .filter { placement -> placement.floor == currentFloor() }
+                .filter { placement ->
+                    objectiveProgressSpecFor(placement.interactableId)?.token !in objectiveProgressTokens
+                }
                 .map { placement -> placement.interactableId }
                 .toSet()
         if (currentFloorInteractableIds.isEmpty()) {
@@ -893,6 +991,30 @@ class FoundationGameSession internal constructor(
         buildSet {
             world.entitiesWith(RiverCurrentRuntimeState::class).forEach { entityId ->
                 addAll(riverHazardCells(requireNotNull(world.get<RiverCurrentRuntimeState>(entityId))))
+            }
+            world.entitiesWith(FurnacePressureRuntimeState::class).forEach { entityId ->
+                val state = requireNotNull(world.get<FurnacePressureRuntimeState>(entityId))
+                if (state.phase != FurnacePressurePhase.IDLE) {
+                    addAll(state.hazardCells)
+                }
+            }
+            world.entitiesWith(CrystalShardRuntimeState::class).forEach { entityId ->
+                val state = requireNotNull(world.get<CrystalShardRuntimeState>(entityId))
+                if (!isCrystalResonanceSettled() && state.phase != CrystalShardPhase.IDLE) {
+                    addAll(state.hazardCells)
+                }
+            }
+            world.entitiesWith(AbyssalTemplePressureRuntimeState::class).forEach { entityId ->
+                val state = requireNotNull(world.get<AbyssalTemplePressureRuntimeState>(entityId))
+                if (state.phase != VoidPressurePhase.IDLE && state.suppressionTurnsRemaining == 0) {
+                    addAll(templeVoidPressureCells(state))
+                }
+            }
+            world.entitiesWith(VoidEruptionRuntimeState::class).forEach { entityId ->
+                val state = requireNotNull(world.get<VoidEruptionRuntimeState>(entityId))
+                if (state.phase != VoidPressurePhase.IDLE && state.stabilizedTurnsRemaining == 0) {
+                    addAll(state.hazardCells)
+                }
             }
         }
 
@@ -967,6 +1089,7 @@ class FoundationGameSession internal constructor(
         com.ktome.core.world.solvability.SolvabilityProver.prove(
             graph = com.ktome.core.world.solvability.SolvabilityGraphBuilder.build(activeFloorState.generatedFloor),
             perceptionScore = perceptionScoreForSearch(),
+            providedTags = activeFloorState.discoveryTags,
         )
 
     fun automationSecretEncounterThreatSources(): List<String> =
@@ -4714,6 +4837,11 @@ class FoundationGameSession internal constructor(
                     RiverCrystalRuntimeKeys.River.PROGRESS_TOKEN,
                     RiverCrystalRuntimeKeys.River.PROGRESS_STEP_KEY,
                 )
+            RiverCrystalRuntimeKeys.River.CACHE_INTERACTABLE_ID ->
+                ObjectiveProgressSpec(
+                    RiverCrystalRuntimeKeys.River.CACHE_PROGRESS_TOKEN,
+                    RiverCrystalRuntimeKeys.River.CACHE_PROGRESS_STEP_KEY,
+                )
             AbyssalRuntimeKeys.Temple.INTERACTABLE_ID ->
                 ObjectiveProgressSpec(
                     AbyssalRuntimeKeys.Temple.PROGRESS_TOKEN,
@@ -4752,6 +4880,7 @@ class FoundationGameSession internal constructor(
             "ore_stash" -> RewardSpec(listOf("loot.deep_iron_pit.reward", "loot.foundation.elite"), "stamina_draught")
             "seal_cache" -> RewardSpec(listOf("loot.grey_gate_depths.reward", "loot.foundation.boss"), "scroll_teleport")
             "bandit_cache" -> optionalZoneRewardSpec()
+            RiverCrystalRuntimeKeys.River.CACHE_INTERACTABLE_ID -> RewardSpec(listOf("loot.foundation.common", "loot.foundation.elite"), "mana_potion")
             else -> null
         }
 
@@ -4995,6 +5124,11 @@ class FoundationGameSession internal constructor(
             "log.objective.progress",
             keyArg("objective", objective.nameKey),
             keyArg("step", stepKey),
+        )
+        executeHiddenEvents(
+            triggerType = HiddenTriggerType.QUEST_STEP,
+            objectiveStepKey = stepKey,
+            rewardPresentationSource = RewardPresentationSourceSnapshot.HIDDEN_EVENT,
         )
     }
 
@@ -5777,8 +5911,7 @@ class FoundationGameSession internal constructor(
                     } else {
                         val result = MovementRules.attemptMove(map, from, command.delta)
                         if (result.moved) {
-                            requireNotNull(world.get<Position>(playerId)).moveTo(result.destination)
-                            refreshActorDerivedStats(playerId)
+                            movePlayerTo(result.destination)
                             triggerAmbushLaneIfNeeded(result.destination)
                             CommandResolution.accepted()
                         } else {
@@ -6119,9 +6252,7 @@ class FoundationGameSession internal constructor(
                     } else {
                         randomTeleportDestination(maxRange = effect.range)
                     }
-                requireNotNull(world.get<Position>(playerId)).moveTo(destination)
-                refreshActorDerivedStats(playerId)
-                refreshFov()
+                movePlayerTo(destination, refreshFieldOfView = true)
                 addMessage("log.inscription.teleport")
                 true
             }
@@ -7491,6 +7622,12 @@ class FoundationGameSession internal constructor(
             currentFloor() == config.maxFloor &&
                 activeBossTemplateId != null &&
                 defeatedBossTemplateId == activeBossTemplateId
+        val triggerEliteKillEvent =
+            killer == playerId &&
+                !isBoss &&
+                defeatedBossTemplateId
+                    ?.let(content.monsterTemplatesById::get)
+                    ?.let(::isEliteEncounterTemplate) == true
 
         addMessage("log.entity.death", deathTargetArg)
         val monsterDropArg = entityArg("monster", target)
@@ -7502,6 +7639,12 @@ class FoundationGameSession internal constructor(
             } else {
                 null
             }
+        if (triggerEliteKillEvent) {
+            executeHiddenEvents(
+                triggerType = HiddenTriggerType.KILL_ELITE,
+                rewardPresentationSource = RewardPresentationSourceSnapshot.HIDDEN_EVENT,
+            )
+        }
         world.destroyEntity(target)
         if (killer == playerId && reward > 0) {
             gainExperience(reward)
@@ -8020,6 +8163,8 @@ class FoundationGameSession internal constructor(
                 excludedEntities = excludedEntities,
                 revealedEntranceIds = activeFloorState.revealedEntranceIds,
                 visitedSecretZoneIds = activeFloorState.visitedSecretZoneIds,
+                enteredRoomNodeIds = activeFloorState.enteredRoomNodeIds,
+                discoveryTags = activeFloorState.discoveryTags,
                 consumedHiddenEventIds = activeFloorState.consumedHiddenEventIds,
                 searchState = activeFloorState.searchState,
             )
@@ -8865,6 +9010,8 @@ class FoundationGameSession internal constructor(
         bindingId: com.ktome.core.world.solvability.SearchBindingId? = null,
         secretZoneId: ContentRef? = null,
         interactableId: String? = null,
+        roomTags: Set<String> = emptySet(),
+        objectiveStepKey: String? = null,
         hiddenEventId: String? = null,
         rewardPresentationSource: RewardPresentationSourceSnapshot,
     ): Boolean {
@@ -8878,6 +9025,8 @@ class FoundationGameSession internal constructor(
                         bindingId = bindingId,
                         secretZoneId = secretZoneId,
                         interactableId = interactableId,
+                        roomTags = roomTags,
+                        objectiveStepKey = objectiveStepKey,
                     )
                 }
         var executed = false
@@ -8889,6 +9038,7 @@ class FoundationGameSession internal constructor(
                 "Hidden event '${hiddenEvent.id}' must only execute from OPTIONAL / SECRET paths."
             }
             activeFloorState.markHiddenEventConsumed(hiddenEvent.id)
+            activeFloorState.grantDiscoveryTags(hiddenEvent.grantedDiscoveryTags)
             addMessage(
                 "log.hidden.event.triggered",
                 keyArg("zone", secretZoneNameKey(secretZoneId ?: bindingId?.let(::secretZoneIdForBinding) ?: currentSecretZoneId())),
@@ -8933,6 +9083,8 @@ class FoundationGameSession internal constructor(
         bindingId: com.ktome.core.world.solvability.SearchBindingId?,
         secretZoneId: ContentRef?,
         interactableId: String?,
+        roomTags: Set<String>,
+        objectiveStepKey: String?,
     ): Boolean =
         hiddenEvent.conditions.all { condition ->
             when (condition.key) {
@@ -8941,6 +9093,8 @@ class FoundationGameSession internal constructor(
                 HiddenConditionKey.SEARCH_BINDING_ID -> bindingId?.value == condition.expectedValue
                 HiddenConditionKey.SECRET_ZONE_ID -> secretZoneId?.id == condition.expectedValue
                 HiddenConditionKey.INTERACTABLE_ID -> interactableId == condition.expectedValue
+                HiddenConditionKey.ROOM_TAG -> condition.expectedValue in roomTags
+                HiddenConditionKey.OBJECTIVE_STEP_KEY -> objectiveStepKey == condition.expectedValue
                 HiddenConditionKey.ENTRANCE_REVEALED -> {
                     val expected = condition.expectedValue.toBooleanStrictOrNull() ?: false
                     (bindingId?.let { candidate -> activeFloorState.revealedEntranceIds.contains(candidate) } ?: false) == expected
@@ -9147,6 +9301,13 @@ class FoundationGameSession internal constructor(
                 objectiveProgressSpecFor(interactable.id)?.let { progress ->
                     recordObjectiveProgress(token = progress.token, stepKey = progress.stepKey)
                 }
+                if (interactable.id in OPEN_CHEST_INTERACTABLE_IDS) {
+                    executeHiddenEvents(
+                        triggerType = HiddenTriggerType.OPEN_CHEST,
+                        interactableId = interactable.id,
+                        rewardPresentationSource = RewardPresentationSourceSnapshot.HIDDEN_EVENT,
+                    )
+                }
             }
 
             "alarm_bonfire" -> {
@@ -9319,8 +9480,7 @@ class FoundationGameSession internal constructor(
         }
         val secretZone = requireNotNull(content.secretZone(context.secretZoneId))
         val anchorPoints = secretZoneAnchorPoints(context.room)
-        requireNotNull(world.get<Position>(playerId)).moveTo(anchorPoints.entry)
-        refreshActorDerivedStats(playerId)
+        movePlayerTo(anchorPoints.entry)
         activeFloorState.visitedSecretZoneIds += context.secretZoneId
         addMessage("log.hidden.secret_zone.enter", keyArg("zone", secretZone.nameKey))
         return CommandResolution.accepted()
@@ -9330,8 +9490,7 @@ class FoundationGameSession internal constructor(
         val returnRoom =
             activeFloorState.generatedFloor.rooms.firstOrNull { room -> room.nodeId == context.entrance.resolvedReturnBridgeNodeId }
                 ?: error("Secret-zone return bridge '${context.entrance.resolvedReturnBridgeNodeId.value}' did not resolve to a room.")
-        requireNotNull(world.get<Position>(playerId)).moveTo(secretZoneAnchorPoints(returnRoom).entry)
-        refreshActorDerivedStats(playerId)
+        movePlayerTo(secretZoneAnchorPoints(returnRoom).entry)
         addMessage("log.hidden.secret_zone.return", keyArg("zone", secretZoneNameKey(context.secretZoneId)))
         return CommandResolution.accepted()
     }
@@ -9351,6 +9510,21 @@ class FoundationGameSession internal constructor(
     private fun unresolvedSearchableEntranceAtPlayerPosition(): SearchTarget? =
         searchableEntranceAtPlayerPosition()
             ?.takeIf { target -> activeFloorState.searchStateFor(target.entrance.bindingId) == null }
+
+    private fun searchPointForEntrance(
+        entrance: GeneratedEntrance,
+        entranceRoom: com.ktome.core.mapgen.RoomInstance,
+    ): Point {
+        val points = roomWalkablePoints(entranceRoom)
+        return points.firstOrNull { point ->
+            val resolvedRoom = currentRoomInstanceAt(point)
+            resolvedRoom?.nodeId == entranceRoom.nodeId && resolvedRoom.anchorId == entrance.entranceAnchorId
+        }
+            ?: points.firstOrNull { point ->
+                currentRoomInstanceAt(point)?.nodeId == entranceRoom.nodeId
+            }
+            ?: entranceRoom.center
+    }
 
     private fun currentRoomInstanceAt(point: Point): com.ktome.core.mapgen.RoomInstance? =
         activeFloorState.generatedFloor.roomAt(point)
@@ -9415,6 +9589,8 @@ class FoundationGameSession internal constructor(
         return SecretZoneAnchorPoints(entry = entry, reward = reward, returnBridge = returnBridge)
     }
 
+    private fun roomEntryPoint(room: RoomInstance): Point = roomWalkablePoints(room).firstOrNull() ?: room.center
+
     private fun roomWalkablePoints(room: RoomInstance): List<Point> =
         buildList {
             for (y in room.y until room.y + room.height) {
@@ -9430,6 +9606,65 @@ class FoundationGameSession internal constructor(
                 .thenBy(Point::y)
                 .thenBy(Point::x),
         )
+
+    private fun nearestLivingEliteMonsterId(): EntityId? {
+        val playerPoint = playerPosition()
+        return world.entitiesWith(Position::class, MonsterTemplateId::class, Health::class)
+            .asSequence()
+            .filter { entityId -> (world.get<Health>(entityId)?.current ?: 0) > 0 }
+            .filter { entityId ->
+                world.get<MonsterTemplateId>(entityId)
+                    ?.value
+                    ?.let(content.monsterTemplatesById::get)
+                    ?.let(::isEliteEncounterTemplate) == true
+            }.minWithOrNull(
+                compareBy<EntityId> { entityId ->
+                    requireNotNull(world.get<Position>(entityId)).toPoint().chebyshevDistanceTo(playerPoint)
+                }.thenBy { entityId ->
+                    requireNotNull(world.get<Position>(entityId)).toPoint().y
+                }.thenBy { entityId ->
+                    requireNotNull(world.get<Position>(entityId)).toPoint().x
+                },
+            )
+    }
+
+    private fun spawnEliteMonsterNearPlayer(): EntityId? {
+        val template =
+            currentZoneSchema().elitePools
+                .asSequence()
+                .mapNotNull(content.monsterTemplatesById::get)
+                .firstOrNull(::isEliteEncounterTemplate)
+                ?: content.monsterCatalog.firstOrNull(::isEliteEncounterTemplate)
+                ?: return null
+        val blocked = occupiedBlockingTiles(excluding = playerId)
+        val playerPoint = playerPosition()
+        val spawnPoint =
+            sequenceOf(
+                Point(playerPoint.x + 1, playerPoint.y),
+                Point(playerPoint.x - 1, playerPoint.y),
+                Point(playerPoint.x, playerPoint.y + 1),
+                Point(playerPoint.x, playerPoint.y - 1),
+                Point(playerPoint.x + 1, playerPoint.y + 1),
+                Point(playerPoint.x + 1, playerPoint.y - 1),
+                Point(playerPoint.x - 1, playerPoint.y + 1),
+                Point(playerPoint.x - 1, playerPoint.y - 1),
+            ).firstOrNull { point ->
+                map.isInBounds(point.x, point.y) &&
+                    !map.blocksMovement(point.x, point.y) &&
+                    point !in blocked
+            } ?: return null
+        return EntityFactory().createMonster(world = world, template = template, position = spawnPoint)
+    }
+
+    private fun killMonsterForAutomation(entityId: EntityId): Boolean {
+        requireNotNull(world.get<Health>(entityId)).current = 0
+        handleDeath(entityId, playerId)
+        invalidateRenderSnapshot()
+        return true
+    }
+
+    private fun isEliteEncounterTemplate(template: MonsterTemplate): Boolean =
+        "elite" in template.tags || template.lootProfileId.endsWith(".elite")
 
     private fun secretZoneIdForBinding(bindingId: com.ktome.core.world.solvability.SearchBindingId): ContentRef? =
         activeFloorState.generatedFloor.entranceByBinding(bindingId)?.targetSecretZoneId
@@ -9466,7 +9701,7 @@ class FoundationGameSession internal constructor(
         val audioProfile: String,
     )
 
-    private fun searchContextTags(searchTarget: SearchTarget): Set<String> = searchTarget.room.tags
+    private fun searchContextTags(searchTarget: SearchTarget): Set<String> = searchTarget.room.tags + activeFloorState.discoveryTags
 
     private fun perceptionScoreForSearch(): PerceptionScore =
         PerceptionScore(

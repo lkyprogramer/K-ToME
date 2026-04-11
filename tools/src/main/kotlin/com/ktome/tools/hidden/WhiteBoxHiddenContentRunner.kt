@@ -30,7 +30,7 @@ data class WhiteBoxHiddenContentRun(
 object WhiteBoxHiddenContentRunner {
     const val HARNESS_ID: String = "whiteBoxHiddenContent"
     private const val DOMAIN_ID: String = "hidden-content"
-    private const val CORPUS_ID: String = "P4_PR07_HIDDEN_CONTENT_WHITEBOX"
+    private const val CORPUS_ID: String = "P4_OPT_PR05_HIDDEN_CONTENT_WHITEBOX"
 
     fun run(): WhiteBoxHiddenContentRun {
         val kernelRun = HiddenContentHarnessKernel.execute()
@@ -69,7 +69,7 @@ object WhiteBoxHiddenContentRunner {
                     corpus =
                         WhiteBoxCorpusSpec(
                             corpusId = CORPUS_ID,
-                            description = "500 deterministic Phase 4 hidden-content cases sharing the same session-driven kernel as hiddenContentHarness.",
+                            description = "625 deterministic Phase 4 hidden-content cases, one per formal search binding and seed, sharing the same session-driven kernel as hiddenContentHarness.",
                             sampleCount = kernelRun.results.size,
                         ),
                     cases = caseReports,
@@ -100,8 +100,8 @@ object WhiteBoxHiddenContentRunner {
             ),
             WhiteBoxAssertionResult(
                 ruleId = "hidden-content.case.hidden_events_optional_or_secret_only",
-                passed = result.triggerPathClassesWithinOptionalOrSecret,
-                message = "Hidden events only execute from OPTIONAL / SECRET paths.",
+                passed = result.optionalOnlyTriggerPathClassesWithinOptionalOrSecret,
+                message = "optionalOnly hidden events only execute from OPTIONAL / SECRET paths.",
             ),
             WhiteBoxAssertionResult(
                 ruleId = "hidden-content.case.secret_reward_node_present",
@@ -174,6 +174,8 @@ object WhiteBoxHiddenContentRunner {
                         put("searchFailureBlockingCount", summary.searchFailureBlockingCount)
                         put("proofMismatchCount", summary.proofMismatchCount)
                         put("zoneCount", analysis.zoneBreakdown.size)
+                        put("hiddenEventRegistryCount", summary.hiddenEventRegistryCount)
+                        put("secretZoneRegistryCount", summary.secretZoneRegistryCount)
                         put("hiddenTriggerTypeCoverage", summary.hiddenTriggerTypeCoverage)
                         putJsonArray("hiddenTriggerTypeSet") {
                             summary.hiddenTriggerTypeSet.sorted().forEach { triggerType -> add(JsonPrimitive(triggerType)) }
@@ -218,7 +220,12 @@ object WhiteBoxHiddenContentRunner {
                         WhiteBoxAssertionResult(
                             ruleId = "hidden-content.aggregate.hidden_events_optional_or_secret_only",
                             passed = summary.triggerContextFailureCount == 0,
-                            message = "Hidden events stay constrained to OPTIONAL / SECRET paths.",
+                            message = "optionalOnly hidden events stay constrained to OPTIONAL / SECRET paths.",
+                        ),
+                        WhiteBoxAssertionResult(
+                            ruleId = "hidden-content.aggregate.hidden_event_registry_count",
+                            passed = summary.hiddenEventRegistryCount >= MIN_HIDDEN_EVENT_REGISTRY_COUNT,
+                            message = "Hidden event registry count reaches the OPT PR-05 floor.",
                         ),
                         WhiteBoxAssertionResult(
                             ruleId = "hidden-content.aggregate.secret_reward_node_present",
@@ -248,12 +255,12 @@ object WhiteBoxHiddenContentRunner {
                         WhiteBoxAssertionResult(
                             ruleId = "hidden-content.aggregate.trigger_type_coverage",
                             passed = summary.hiddenTriggerTypeCoverage >= MIN_HIDDEN_TRIGGER_TYPE_COVERAGE,
-                            message = "Hidden event registry covers at least the OPT PR-01 baseline trigger taxonomy.",
+                            message = "Hidden event registry covers the OPT PR-05 trigger taxonomy floor.",
                         ),
                         WhiteBoxAssertionResult(
                             ruleId = "hidden-content.aggregate.binding_coverage",
                             passed = summary.secretEntranceBindingCoverage >= MIN_SECRET_ENTRANCE_BINDING_COVERAGE,
-                            message = "Secret-zone registry covers at least the OPT PR-01 baseline entrance-binding diversity.",
+                            message = "Secret-zone registry covers the OPT PR-05 entrance-binding diversity floor.",
                         ),
                     ),
             ),
@@ -338,7 +345,8 @@ object WhiteBoxHiddenContentRunner {
             appendLine("| proof searchActionResult | `${result.proofSearchActionResult ?: "missing"}` |")
             appendLine("| searchFailureKeepsMainlineReachable | `${result.searchFailureKeepsMainlineReachable}` |")
             appendLine("| criticalPathReachable | `${result.criticalPathReachable}` |")
-            appendLine("| triggerPathClassesWithinOptionalOrSecret | `${result.triggerPathClassesWithinOptionalOrSecret}` |")
+            appendLine("| explicitSearchReveal | `${result.explicitSearchReveal}` |")
+            appendLine("| optionalOnlyTriggerPathClassesWithinOptionalOrSecret | `${result.optionalOnlyTriggerPathClassesWithinOptionalOrSecret}` |")
         }
 
     private fun renderReturnBridgeProof(result: HiddenContentCaseResult): String =
@@ -406,7 +414,9 @@ object WhiteBoxHiddenContentRunner {
             put("proofSearchActionResult", result.proofSearchActionResult)
             put("solvabilityProofMatchesSearchAction", result.solvabilityProofMatchesSearchAction)
             put("solvabilityProofCoversReturnBridge", result.solvabilityProofCoversReturnBridge)
-            put("triggerPathClassesWithinOptionalOrSecret", result.triggerPathClassesWithinOptionalOrSecret)
+            put("explicitSearchReveal", result.explicitSearchReveal)
+            put("triggerPathClassesWithinOptionalOrSecret", result.optionalOnlyTriggerPathClassesWithinOptionalOrSecret)
+            put("optionalOnlyTriggerPathClassesWithinOptionalOrSecret", result.optionalOnlyTriggerPathClassesWithinOptionalOrSecret)
             put("rewardBridgeBackedByLootBudget", result.rewardBridgeBackedByLootBudget)
             put("encounterBridgeBackedByThreatBudget", result.encounterBridgeBackedByThreatBudget)
             putJsonArray("hiddenEventIds") {
@@ -418,12 +428,14 @@ object WhiteBoxHiddenContentRunner {
             putJsonArray("hiddenTriggerTypeSet") {
                 registryMetrics.hiddenTriggerTypeSet.sorted().forEach { triggerType -> add(JsonPrimitive(triggerType)) }
             }
+            put("hiddenEventRegistryCount", registryMetrics.hiddenEventRegistryCount)
             putJsonArray("triggerPathClasses") {
                 result.triggerPathClasses.forEach { pathClass -> add(JsonPrimitive(pathClass)) }
             }
             putJsonArray("secretEntranceBindingSet") {
                 registryMetrics.secretEntranceBindingSet.sorted().forEach { bindingId -> add(JsonPrimitive(bindingId)) }
             }
+            put("secretZoneRegistryCount", registryMetrics.secretZoneRegistryCount)
             putJsonArray("rewardSources") {
                 result.rewardSources.forEach { rewardSource -> add(JsonPrimitive(rewardSource)) }
             }

@@ -37,7 +37,7 @@ object WhiteBoxMapgenRunner {
     const val HARNESS_ID: String = "whiteBoxMapgen"
     private const val DOMAIN_ID: String = "mapgen"
     private const val SEEDS_PER_FLOOR: Int = 5
-    private const val CORPUS_ID: String = "P4_PR03_MAPGEN_WHITEBOX"
+    private const val CORPUS_ID: String = "P4_OPT_PR05_MAPGEN_WHITEBOX"
     private const val DIFFERENCE_THRESHOLD: Int = 3
     private const val LOOP_RATIO_MIN: Double = 0.15
     private const val LOOP_RATIO_MAX: Double = 0.35
@@ -66,6 +66,26 @@ object WhiteBoxMapgenRunner {
                                 "Critical path is not walkable across room centers."
                             },
                         context = buildJsonObject { put("topologyFingerprint", caseData.smokeResult.topologyFingerprint) },
+                    ),
+                )
+            },
+            WhiteBoxCaseRule { caseData ->
+                val floor = caseData.executedCase.generatedFloor ?: return@WhiteBoxCaseRule emptyList()
+                val observedFamilies = observedHiddenAnchorFamilies(floor)
+                listOf(
+                    WhiteBoxAssertionResult(
+                        ruleId = "mapgen.case.hidden_anchor_families_present",
+                        passed = caseData.requiredHiddenAnchorFamilies.all(observedFamilies::contains),
+                        message = "Every referenced formal hidden anchor family resolves to a stable room on this floor.",
+                        context =
+                            buildJsonObject {
+                                putJsonArray("requiredHiddenAnchorFamilies") {
+                                    caseData.requiredHiddenAnchorFamilies.sorted().forEach { family -> add(JsonPrimitive(family)) }
+                                }
+                                putJsonArray("observedHiddenAnchorFamilies") {
+                                    observedFamilies.sorted().forEach { family -> add(JsonPrimitive(family)) }
+                                }
+                            },
                     ),
                 )
             },
@@ -183,10 +203,11 @@ object WhiteBoxMapgenRunner {
         val header =
             phase4HarnessHeader(harnessId = HARNESS_ID, seedList = distinctSeedList)
                 .toVerificationReportHeader(corpusId = CORPUS_ID)
+        val requiredHiddenAnchorFamiliesByZone = requiredHiddenAnchorFamiliesByZone(executionContext.schemaCatalog)
         val corpus =
             WhiteBoxCorpusSpec(
                 corpusId = CORPUS_ID,
-                description = "First 5 deterministic mapgenSmoke seeds per floor for the 4 Phase 4 upgraded zones after PR-03.",
+                description = "First 5 deterministic mapgenSmoke seeds per floor for the 4 Phase 4 upgraded zones after OPT PR-05 hidden-anchor expansion.",
                 sampleCount = cases.size,
             )
 
@@ -197,6 +218,7 @@ object WhiteBoxMapgenRunner {
                 WhiteBoxMapgenCaseData(
                     executedCase = executedCase,
                     smokeResult = smokeResult,
+                    requiredHiddenAnchorFamilies = requiredHiddenAnchorFamiliesByZone[testCase.request.zoneId].orEmpty(),
                 )
             }
         val caseReports =
@@ -298,6 +320,8 @@ object WhiteBoxMapgenRunner {
                         "${entrance.bindingId.value}:${entrance.targetNodeId.value}:${entrance.resolvedReturnBridgeNodeId.value}"
                     } ?: emptyList()
             }.distinct().size
+        val requiredHiddenAnchorFamilies = zoneCases.flatMap(WhiteBoxMapgenCaseData::requiredHiddenAnchorFamilies).toSet()
+        val observedHiddenAnchorFamilies = zoneCases.flatMap { data -> observedHiddenAnchorFamilies(data.executedCase.generatedFloor) }.toSet()
         val differenceCategories =
             listOf(
                 topologyDistinct > 1,
@@ -315,6 +339,13 @@ object WhiteBoxMapgenRunner {
             put("distinctPatternRoomCount", patternCountDistinct)
             put("distinctEntranceLayoutCount", entranceLayoutDistinct)
             put("differenceCategoryCount", differenceCategories)
+            putJsonArray("requiredHiddenAnchorFamilies") {
+                requiredHiddenAnchorFamilies.sorted().forEach { family -> add(JsonPrimitive(family)) }
+            }
+            putJsonArray("observedHiddenAnchorFamilies") {
+                observedHiddenAnchorFamilies.sorted().forEach { family -> add(JsonPrimitive(family)) }
+            }
+            put("requiredHiddenAnchorFamilyCoverage", requiredHiddenAnchorFamilies.count(observedHiddenAnchorFamilies::contains))
         }
     }
 
@@ -324,6 +355,14 @@ object WhiteBoxMapgenRunner {
             put("casesWithPatternRoom", caseData.count { data -> data.smokeResult.topologySummary.patternRoomCount > 0 })
             put("maxLoopEdgeRatio", caseData.maxOfOrNull { data -> data.smokeResult.topologySummary.loopEdgeRatio } ?: 0.0)
             put("maxRoomCount", caseData.maxOfOrNull { data -> data.smokeResult.topologySummary.roomCount } ?: 0)
+            val requiredHiddenAnchorFamilies = caseData.flatMap(WhiteBoxMapgenCaseData::requiredHiddenAnchorFamilies).toSet()
+            val observedFamilies = caseData.flatMap { data -> observedHiddenAnchorFamilies(data.executedCase.generatedFloor) }.toSet()
+            putJsonArray("requiredHiddenAnchorFamilies") {
+                requiredHiddenAnchorFamilies.sorted().forEach { family -> add(JsonPrimitive(family)) }
+            }
+            putJsonArray("observedHiddenAnchorFamilies") {
+                observedFamilies.sorted().forEach { family -> add(JsonPrimitive(family)) }
+            }
         }
 
     private fun caseFacts(caseData: WhiteBoxMapgenCaseData): JsonObject {
@@ -371,6 +410,12 @@ object WhiteBoxMapgenRunner {
                 put("qualityBonus", smokeResult.rewardProfile.qualityBonus)
                 put("baseRewardBudget", smokeResult.rewardProfile.baseRewardBudget)
             }
+            putJsonArray("requiredHiddenAnchorFamilies") {
+                caseData.requiredHiddenAnchorFamilies.sorted().forEach { family -> add(JsonPrimitive(family)) }
+            }
+            putJsonArray("observedHiddenAnchorFamilies") {
+                observedHiddenAnchorFamilies(caseData.executedCase.generatedFloor).sorted().forEach { family -> add(JsonPrimitive(family)) }
+            }
             smokeResult.error?.let { error -> put("error", error) }
         }
     }
@@ -397,6 +442,10 @@ object WhiteBoxMapgenRunner {
                     ?.joinToString(separator = "|") { entrance ->
                         "${entrance.bindingId.value}:${entrance.targetNodeId.value}:${entrance.resolvedReturnBridgeNodeId.value}"
                     }.orEmpty().ifBlank { "none" },
+            )
+            put(
+                "hiddenAnchorFamilies",
+                observedHiddenAnchorFamilies(caseData.executedCase.generatedFloor).sorted().joinToString(separator = "|").ifBlank { "none" },
             )
         }
 
@@ -515,6 +564,8 @@ object WhiteBoxMapgenRunner {
             appendLine("- seed: `${caseData.smokeResult.seed}`")
             appendLine("- topologyFingerprint: `${caseData.smokeResult.topologyFingerprint}`")
             appendLine("- rewardProfile: `${caseData.smokeResult.rewardProfile.id}`")
+            appendLine("- requiredHiddenAnchorFamilies: `${caseData.requiredHiddenAnchorFamilies.sorted().joinToString().ifBlank { "none" }}`")
+            appendLine("- observedHiddenAnchorFamilies: `${observedHiddenAnchorFamilies(caseData.executedCase.generatedFloor).sorted().joinToString().ifBlank { "none" }}`")
             appendLine()
             appendLine("## Topology Summary")
             appendLine("- nodeCount: `${caseData.smokeResult.topologySummary.nodeCount}`")
@@ -584,6 +635,7 @@ object WhiteBoxMapgenRunner {
 private data class WhiteBoxMapgenCaseData(
     val executedCase: MapgenExecutedCase,
     val smokeResult: MapgenCaseResult,
+    val requiredHiddenAnchorFamilies: Set<String>,
 ) {
     val joinKey: WhiteBoxJoinKey
         get() =
@@ -593,5 +645,8 @@ private data class WhiteBoxMapgenCaseData(
                 floorIndex = smokeResult.floorIndex,
             )
 }
+
+private fun observedHiddenAnchorFamilies(generatedFloor: GeneratedFloor?): Set<String> =
+    generatedFloor?.let(::observedHiddenAnchorFamiliesForFloor).orEmpty()
 
 private fun JsonObject.intValue(key: String): Int = (getValue(key) as JsonPrimitive).content.toInt()

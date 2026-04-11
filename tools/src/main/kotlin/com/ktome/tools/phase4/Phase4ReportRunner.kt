@@ -208,6 +208,11 @@ object Phase4ReportRunner {
                     put("casesWithBacktrackProof", summary.intValue("casesWithBacktrackProof"))
                     put("casesWithSecretReveal", summary.intValue("casesWithSecretReveal"))
                     put("casesWithSearchFailure", summary.intValue("casesWithSearchFailure"))
+                    put("providedDiscoveryTagCount", summary.intValue("providedDiscoveryTagCount"))
+                    put("providedDiscoveryTags", summary.getValue("providedDiscoveryTags"))
+                    put("hiddenAnchorFamilyFailureCount", summary.intValue("hiddenAnchorFamilyFailureCount"))
+                    put("requiredHiddenAnchorFamilies", summary.getValue("requiredHiddenAnchorFamilies"))
+                    put("observedHiddenAnchorFamilies", summary.getValue("observedHiddenAnchorFamilies"))
                 },
         )
     }
@@ -249,6 +254,8 @@ object Phase4ReportRunner {
                     put("searchFailureBlockingCount", summary.intValue("searchFailureBlockingCount"))
                     put("proofMismatchCount", summary.intValue("proofMismatchCount"))
                     put("runtimeReturnDestinationMismatchCount", summary.intValue("runtimeReturnDestinationMismatchCount"))
+                    put("hiddenEventRegistryCount", summary.intValue("hiddenEventRegistryCount"))
+                    put("secretZoneRegistryCount", summary.intValue("secretZoneRegistryCount"))
                     put("hiddenTriggerTypeCoverage", summary.getValue("hiddenTriggerTypeCoverage"))
                     put("hiddenTriggerTypeSet", summary.getValue("hiddenTriggerTypeSet"))
                     put("secretEntranceBindingCoverage", summary.getValue("secretEntranceBindingCoverage"))
@@ -360,6 +367,7 @@ object Phase4ReportRunner {
         val header = payload.getValue("header").jsonObject
         val summary = payload.getValue("summary").jsonObject
         val failedAssertions = summary.intValue("failedAssertions")
+        val corpusMetrics = aggregateMetrics(payload, "corpus")
         return Phase4TaskAggregate(
             taskId = "whiteBoxMapgen",
             status = if (failedAssertions == 0) "PASS" else "FAIL",
@@ -372,6 +380,9 @@ object Phase4ReportRunner {
                     put("aggregateCount", summary.intValue("aggregateCount"))
                     put("failedAssertions", failedAssertions)
                     put("artifactCount", summary.intValue("artifactCount"))
+                    put("corpusAggregateMetrics", corpusMetrics)
+                    put("requiredHiddenAnchorFamilies", corpusMetrics.getValue("requiredHiddenAnchorFamilies"))
+                    put("observedHiddenAnchorFamilies", corpusMetrics.getValue("observedHiddenAnchorFamilies"))
                 },
         )
     }
@@ -580,6 +591,8 @@ object Phase4ReportRunner {
                     put("failedCaseCount", payload.intValue("failedCaseCount"))
                     put("failedAggregateCount", payload.intValue("failedAggregateCount"))
                     put("corpusAggregateMetrics", corpusMetrics)
+                    put("hiddenEventRegistryCount", corpusMetrics.getValue("hiddenEventRegistryCount"))
+                    put("secretZoneRegistryCount", corpusMetrics.getValue("secretZoneRegistryCount"))
                     put("hiddenTriggerTypeCoverage", corpusMetrics.getValue("hiddenTriggerTypeCoverage"))
                     put("hiddenTriggerTypeSet", corpusMetrics.getValue("hiddenTriggerTypeSet"))
                     put("secretEntranceBindingCoverage", corpusMetrics.getValue("secretEntranceBindingCoverage"))
@@ -605,6 +618,7 @@ object Phase4ReportRunner {
         val totalCount = loot.metrics.intValue("totalCount")
         val affixCoverage = loot.metrics.doubleValue("affixPassiveCoverage")
         val affixPassiveKinds = loot.metrics.stringList("affixPassiveKinds")
+        val hiddenEventRegistryCount = hidden.metrics.intValue("hiddenEventRegistryCount")
         val hiddenTriggerCoverage = hidden.metrics.doubleValue("hiddenTriggerTypeCoverage")
         val hiddenTriggerTypes = hidden.metrics.stringList("hiddenTriggerTypeSet")
         val secretBindingCoverage = hidden.metrics.intValue("secretEntranceBindingCoverage")
@@ -708,6 +722,14 @@ object Phase4ReportRunner {
                 currentValueText = "${formatPercent(affixCoverage)} (${affixPassiveKinds.joinToString()})",
                 target = ">= 80%",
                 status = verdictOf(affixCoverage >= 0.80),
+            ),
+            Phase4ExperienceMetric(
+                metricId = "hiddenEventCount",
+                sourceTaskId = hidden.taskId,
+                currentValue = hidden.metrics.getValue("hiddenEventRegistryCount"),
+                currentValueText = hiddenEventRegistryCount.toString(),
+                target = ">= 12",
+                status = verdictOf(hiddenEventRegistryCount >= 12),
             ),
             Phase4ExperienceMetric(
                 metricId = "hiddenTriggerTypeCoverage",

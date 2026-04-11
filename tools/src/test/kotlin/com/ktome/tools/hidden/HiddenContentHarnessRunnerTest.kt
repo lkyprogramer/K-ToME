@@ -17,7 +17,7 @@ class HiddenContentHarnessRunnerTest {
     fun `hidden-content harness writes fixed reports and preserves join-key facts`() {
         val run = HiddenContentHarnessRunner.run()
 
-        assertEquals(500, run.totalCases)
+        assertEquals(625, run.totalCases)
         assertEquals(0, run.failureCount, "hiddenContentHarness recorded failures; inspect ${run.summaryPath}")
         assertTrue(Files.exists(run.summaryPath), "Expected summary report at ${run.summaryPath}")
         assertTrue(Files.exists(run.eventsPath), "Expected event report at ${run.eventsPath}")
@@ -28,11 +28,13 @@ class HiddenContentHarnessRunnerTest {
         val firstEvent =
             Json.parseToJsonElement(Files.readAllLines(run.eventsPath).first { line -> line.isNotBlank() }).jsonObject
 
-        assertEquals("500", summary.getValue("totalCases").jsonPrimitive.content)
-        assertEquals("500", summary.getValue("distinctSeedCount").jsonPrimitive.content)
+        assertEquals("625", summary.getValue("totalCases").jsonPrimitive.content)
+        assertEquals("625", summary.getValue("distinctSeedCount").jsonPrimitive.content)
         assertEquals("0", summary.getValue("failureCount").jsonPrimitive.content)
         assertEquals("0", summary.getValue("caseFailureCount").jsonPrimitive.content)
         assertEquals("0", summary.getValue("aggregateFailureCount").jsonPrimitive.content)
+        assertEquals("12", summary.getValue("hiddenEventRegistryCount").jsonPrimitive.content)
+        assertEquals("5", summary.getValue("secretZoneRegistryCount").jsonPrimitive.content)
         assertTrue(summary.getValue("hiddenEventTriggerCount").jsonPrimitive.content.toInt() > 0)
         assertTrue(summary.getValue("hiddenEventTriggerRate").jsonPrimitive.content.toDouble() >= MIN_HIDDEN_EVENT_TRIGGER_RATE)
         assertTrue(summary.getValue("secretZoneDiscoveryCount").jsonPrimitive.content.toInt() > 0)
@@ -42,12 +44,13 @@ class HiddenContentHarnessRunnerTest {
         assertEquals("0", summary.getValue("zeroSecretZoneZoneCount").jsonPrimitive.content)
         assertEquals(setOf("greenwood_fringe", "deep_iron_pit", "underground_river", "abyssal_temple"), zones.keys)
         assertTrue(firstEvent.getValue("searchBindingId").jsonPrimitive.content.startsWith("search."))
-        assertTrue(firstEvent.getValue("entranceBindingId").jsonPrimitive.content.startsWith("optional."))
+        assertTrue(firstEvent.getValue("entranceBindingId").jsonPrimitive.content.startsWith("hidden."))
         assertTrue(firstEvent.containsKey("resolvedReturnBridgeNodeId"))
         assertTrue(firstEvent.containsKey("triggerType"))
+        assertTrue(firstEvent.containsKey("explicitSearchReveal"))
         assertTrue(firstEvent.containsKey("rewardBudgetSources"))
         assertTrue(firstEvent.containsKey("caseFailureReasons"))
         assertNotNull(payload["aggregateFailures"]?.jsonArray)
-        assertEquals(500, Files.readAllLines(run.eventsPath).count { line -> line.isNotBlank() })
+        assertEquals(625, Files.readAllLines(run.eventsPath).count { line -> line.isNotBlank() })
     }
 }

@@ -317,7 +317,7 @@ class MapgenContractTest {
         assertThrows(IllegalArgumentException::class.java) {
             HiddenEntrancePlan(
                 bindingId = SearchBindingId("search.test.hidden"),
-                sourceAnchorId = NodeAnchorId("optional.branch.1"),
+                sourceAnchorId = NodeAnchorId("hidden.branch"),
                 entranceAnchorId = NodeAnchorId("critical.hub"),
                 targetAnchorId = NodeAnchorId("secret.test.hidden"),
                 targetSecretZoneId = ContentRef(registry = RegistryId("secret_zone"), id = "hidden_stub"),

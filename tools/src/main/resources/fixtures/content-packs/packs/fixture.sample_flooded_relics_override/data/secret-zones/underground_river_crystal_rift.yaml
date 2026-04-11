@@ -12,8 +12,10 @@ secretZones:
     entryRule:
       combinator: AND
       predicates:
+        - type: REQUIRED_TAG
+          requiredTag: hidden.primer.underground_river.crystal_rift
         - type: PERCEPTION_CHECK
-          difficulty: 16
+          difficulty: 10
     pathClass: SECRET
     rewardProfileId:
       registry: loot_profile
@@ -21,6 +23,6 @@ secretZones:
     guaranteedContent:
       - registry: hidden_event
         id: hidden.event.underground_river.crystal_rift.reward
-    entranceBindingId: optional.branch.1
+    entranceBindingId: hidden.branch
     returnBridgePolicy: EXPLICIT_ANCHOR
     returnBridgeAnchorTag: hub

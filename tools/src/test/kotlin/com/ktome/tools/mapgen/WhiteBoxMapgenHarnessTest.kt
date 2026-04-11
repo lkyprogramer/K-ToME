@@ -52,7 +52,7 @@ class WhiteBoxMapgenHarnessTest {
 
         assertEquals("mapgen", payload.getValue("domainId").jsonPrimitive.content)
         assertEquals("PASS", payload.getValue("verdict").jsonPrimitive.content)
-        assertEquals("P4_PR03_MAPGEN_WHITEBOX", corpus.getValue("corpusId").jsonPrimitive.content)
+        assertEquals("P4_OPT_PR05_MAPGEN_WHITEBOX", corpus.getValue("corpusId").jsonPrimitive.content)
         assertEquals("40", summary.getValue("caseCount").jsonPrimitive.content)
         assertEquals("0", summary.getValue("failedAssertions").jsonPrimitive.content)
         assertTrue(aggregates.any { aggregate -> aggregate.jsonObject.getValue("groupId").jsonPrimitive.content == "corpus" })
@@ -60,6 +60,12 @@ class WhiteBoxMapgenHarnessTest {
             aggregates.any { aggregate ->
                 val metrics = aggregate.jsonObject.getValue("metrics").jsonObject
                 "distinctEntranceLayoutCount" in metrics
+            },
+        )
+        assertTrue(
+            aggregates.any { aggregate ->
+                val metrics = aggregate.jsonObject.getValue("metrics").jsonObject
+                "requiredHiddenAnchorFamilies" in metrics
             },
         )
         assertEquals(40, Files.readAllLines(run.casesPath).count { line -> line.isNotBlank() })

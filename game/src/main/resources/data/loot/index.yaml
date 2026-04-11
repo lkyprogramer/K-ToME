@@ -60,7 +60,7 @@ lootProfiles:
     tags: [loot, cadence, molten_core]
     poolStrategy: FIXED_LIST
     rewardBudget: 4
-    itemIds: [war_maul, forgebreaker_pick, furnace_talisman, chain_mail]
+    itemIds: [war_maul, forgebreaker_pick, furnace_talisman, chain_mail, plate_armor]
   - id: loot.grey_gate_depths.cadence
     schemaVersion: 3
     tags: [loot, cadence, grey_gate]
@@ -108,7 +108,7 @@ lootProfiles:
     tags: [loot, reward, mine]
     poolStrategy: TAG_WEIGHTED
     rewardBudget: 4
-    itemIds: [furnace_talisman, war_maul, forgebreaker_pick, energy_tonic]
+    itemIds: [furnace_talisman, war_maul, forgebreaker_pick, energy_tonic, stamina_draught]
     itemTagFilter: [deep_iron_pit]
     excludeIds: []
     typeWeights: { WEAPON: 2, ARMOR: 2, CONSUMABLE: 1 }
@@ -141,13 +141,13 @@ lootProfiles:
     schemaVersion: 3
     tags: [loot, secret, deep_iron]
     poolStrategy: TAG_WEIGHTED
-    rewardBudget: 6
-    itemIds: [forgebreaker_pick, furnace_talisman, energy_tonic, chain_mail]
+    rewardBudget: 8
+    itemIds: [forgebreaker_pick, furnace_talisman, energy_tonic, chain_mail, war_maul]
     itemTagFilter: [deep_iron_pit]
     excludeIds: []
-    typeWeights: { WEAPON: 2, ARMOR: 2, CONSUMABLE: 1 }
-    slotBias: { OFF_HAND: 3, WEAPON: 2, ARMOR: 1 }
-    specialTemplateTagPreference: [deep_iron_pit]
+    typeWeights: { WEAPON: 2, ARMOR: 1, CONSUMABLE: 2 }
+    slotBias: { OFF_HAND: 4, WEAPON: 2, ARMOR: 1 }
+    specialTemplateTagPreference: [deep_iron_pit, oil, secret_zone]
     affixTagPreference: [deep_iron_pit]
   - id: loot.underground_river_crystal_rift.secret
     schemaVersion: 3
@@ -165,11 +165,23 @@ lootProfiles:
     schemaVersion: 3
     tags: [loot, secret, abyssal_temple]
     poolStrategy: TAG_WEIGHTED
-    rewardBudget: 7
-    itemIds: [shadow_cloak, sanctified_seal, plate_armor, arcane_staff]
+    rewardBudget: 9
+    itemIds: [shadow_cloak, sanctified_seal, plate_armor, arcane_staff, consecrated_oil, seal_reliquary]
     itemTagFilter: [abyssal_temple]
     excludeIds: [artifact_eclipsed_relic, artifact_vesper_prism]
-    typeWeights: { WEAPON: 2, ARMOR: 2, CONSUMABLE: 1 }
+    typeWeights: { WEAPON: 2, ARMOR: 2, CONSUMABLE: 2 }
     slotBias: { OFF_HAND: 3, WEAPON: 2, ARMOR: 1 }
-    specialTemplateTagPreference: [abyssal_temple]
-    affixTagPreference: [abyssal_temple]
+    specialTemplateTagPreference: [abyssal_temple, protection, secret_zone]
+    affixTagPreference: [abyssal_temple, protection]
+  - id: loot.deep_iron_smuggler_stash.secret
+    schemaVersion: 3
+    tags: [loot, secret, deep_iron, contraband]
+    poolStrategy: TAG_WEIGHTED
+    rewardBudget: 6
+    itemIds: [energy_tonic, stamina_draught, furnace_talisman, emerald_charm]
+    itemTagFilter: [deep_iron_pit]
+    excludeIds: []
+    typeWeights: { WEAPON: 1, ARMOR: 1, CONSUMABLE: 4 }
+    slotBias: { OFF_HAND: 4, WEAPON: 1, ARMOR: 1 }
+    specialTemplateTagPreference: [deep_iron_pit, survival, secret_zone]
+    affixTagPreference: [deep_iron_pit, survival]

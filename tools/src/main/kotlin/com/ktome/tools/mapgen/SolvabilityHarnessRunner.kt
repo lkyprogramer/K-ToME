@@ -5,12 +5,15 @@ import com.ktome.core.harness.toJson
 import com.ktome.core.mapgen.HybridTopologyMapgenPipeline
 import com.ktome.core.mapgen.MapgenRequest
 import com.ktome.core.mapgen.PathClass
+import com.ktome.core.mapgen.isFormalHiddenEntranceAnchor
 import com.ktome.core.world.solvability.PerceptionScore
 import com.ktome.core.world.solvability.SolvabilityGraph
 import com.ktome.core.world.solvability.SolvabilityGraphBuilder
 import com.ktome.core.world.solvability.SolvabilityProof
 import com.ktome.core.world.solvability.SolvabilityProver
+import com.ktome.game.data.schema.SchemaCatalog
 import com.ktome.game.data.schema.ZoneSchemaV2
+import com.ktome.game.hidden.HiddenConditionKey
 import java.nio.file.Files
 import java.nio.file.Path
 import kotlinx.serialization.json.Json
@@ -45,7 +48,12 @@ object SolvabilityHarnessRunner {
 
         val executionContext = MapgenSmokeRunner.loadExecutionContext()
         val upgradedZones = executionContext.schemaCatalog.zones.filter(ZoneSchemaV2::isPhase4Upgraded).sortedBy(ZoneSchemaV2::id)
-        val cases = buildCases(upgradedZones)
+        val cases =
+            buildCases(
+                upgradedZones = upgradedZones,
+                primerDiscoveryTagsByZoneAndFloor = primerDiscoveryTagsByZoneAndFloor(executionContext.schemaCatalog, upgradedZones),
+                requiredHiddenAnchorFamiliesByZone = requiredHiddenAnchorFamiliesByZone(executionContext.schemaCatalog),
+            )
         val distinctSeedList = cases.map { case -> case.request.seed }.distinct()
         require(distinctSeedList.size == cases.size) {
             "solvabilityHarness cases must keep a one-to-one seed corpus; got ${distinctSeedList.size} distinct seeds for ${cases.size} cases."
@@ -78,7 +86,12 @@ object SolvabilityHarnessRunner {
         )
         return SolvabilityHarnessRun(
             totalCases = results.size,
-            failureCount = results.count { result -> result.error != null || !result.criticalPathReachable },
+            failureCount =
+                results.count { result ->
+                    result.error != null ||
+                        !result.criticalPathReachable ||
+                        !result.hiddenAnchorFamiliesSatisfied
+                },
             summaryPath = summaryPath,
             proofsPath = proofsPath,
         )
@@ -86,6 +99,8 @@ object SolvabilityHarnessRunner {
 
     internal fun buildCases(
         upgradedZones: List<ZoneSchemaV2>,
+        primerDiscoveryTagsByZoneAndFloor: Map<Pair<String, Int>, Set<String>> = emptyMap(),
+        requiredHiddenAnchorFamiliesByZone: Map<String, Set<String>> = emptyMap(),
         seedsPerFloor: Int = SEEDS_PER_FLOOR,
     ): List<SolvabilityCase> =
         buildList {
@@ -102,6 +117,8 @@ object SolvabilityHarnessRunner {
                                         targetWidth = zone.mapSize.width,
                                         targetHeight = zone.mapSize.height,
                                     ),
+                                providedDiscoveryTags = primerDiscoveryTagsByZoneAndFloor[zone.id to floorIndex].orEmpty(),
+                                requiredHiddenAnchorFamilies = requiredHiddenAnchorFamiliesByZone[zone.id].orEmpty(),
                             ),
                         )
                     }
@@ -116,7 +133,12 @@ object SolvabilityHarnessRunner {
         try {
             val generatedFloor = executionContext.pipeline.run(testCase.request)
             val graph = SolvabilityGraphBuilder.build(generatedFloor)
-            val proof = SolvabilityProver.prove(graph = graph, perceptionScore = harnessPerceptionScore)
+            val proof =
+                SolvabilityProver.prove(
+                    graph = graph,
+                    perceptionScore = harnessPerceptionScore,
+                    providedTags = testCase.providedDiscoveryTags,
+                )
             SolvabilityExecutedCase(
                 testCase = testCase,
                 generatedFloor = generatedFloor,
@@ -138,21 +160,43 @@ object SolvabilityHarnessRunner {
         header: HarnessReportHeader,
         results: List<SolvabilityCaseResult>,
         distinctSeedCount: Int,
-    ): JsonObject =
-        buildJsonObject {
+    ): JsonObject {
+        val providedDiscoveryTags = results.flatMapTo(linkedSetOf(), SolvabilityCaseResult::providedDiscoveryTags)
+        val requiredHiddenAnchorFamilies = results.flatMapTo(linkedSetOf(), SolvabilityCaseResult::requiredHiddenAnchorFamilies)
+        val observedHiddenAnchorFamilies = results.flatMapTo(linkedSetOf(), SolvabilityCaseResult::observedHiddenAnchorFamilies)
+        return buildJsonObject {
             put("header", header.toJson())
             putJsonObject("summary") {
                 put("totalCases", results.size)
                 put("distinctSeedCount", distinctSeedCount)
-                put("failureCount", results.count { result -> result.error != null || !result.criticalPathReachable })
+                put(
+                    "failureCount",
+                    results.count { result ->
+                        result.error != null ||
+                            !result.criticalPathReachable ||
+                            !result.hiddenAnchorFamiliesSatisfied
+                    },
+                )
                 put("criticalPathFailureCount", results.count { result -> !result.criticalPathReachable })
                 put("errorCount", results.count { result -> result.error != null })
                 put("casesWithBacktrackProof", results.count(SolvabilityCaseResult::backtrackSatisfied))
                 put("casesWithSecretReveal", results.count { result -> result.searchRevealCount > 0 })
                 put("casesWithSearchFailure", results.count { result -> result.searchFailCount > 0 })
                 put("maxReachabilityRatio", results.maxOfOrNull(SolvabilityCaseResult::reachabilityRatio) ?: 0f)
+                put("providedDiscoveryTagCount", providedDiscoveryTags.size)
+                putJsonArray("providedDiscoveryTags") {
+                    providedDiscoveryTags.sorted().forEach { tag -> add(JsonPrimitive(tag)) }
+                }
+                put("hiddenAnchorFamilyFailureCount", results.count { result -> !result.hiddenAnchorFamiliesSatisfied })
+                putJsonArray("requiredHiddenAnchorFamilies") {
+                    requiredHiddenAnchorFamilies.sorted().forEach { family -> add(JsonPrimitive(family)) }
+                }
+                putJsonArray("observedHiddenAnchorFamilies") {
+                    observedHiddenAnchorFamilies.sorted().forEach { family -> add(JsonPrimitive(family)) }
+                }
             }
         }
+    }
 
     private fun SolvabilityCaseResult.toJson(header: HarnessReportHeader): JsonObject =
         buildJsonObject {
@@ -198,6 +242,16 @@ object SolvabilityHarnessRunner {
             put("searchRevealCount", searchRevealCount)
             put("searchFailCount", searchFailCount)
             put("backtrackSatisfied", backtrackSatisfied)
+            putJsonArray("providedDiscoveryTags") {
+                providedDiscoveryTags.sorted().forEach { tag -> add(JsonPrimitive(tag)) }
+            }
+            put("hiddenAnchorFamiliesSatisfied", hiddenAnchorFamiliesSatisfied)
+            putJsonArray("requiredHiddenAnchorFamilies") {
+                requiredHiddenAnchorFamilies.sorted().forEach { family -> add(JsonPrimitive(family)) }
+            }
+            putJsonArray("observedHiddenAnchorFamilies") {
+                observedHiddenAnchorFamilies.sorted().forEach { family -> add(JsonPrimitive(family)) }
+            }
             putJsonObject("searchStates") {
                 searchStates.toSortedMap().forEach { (bindingId, result) -> put(bindingId, result) }
             }
@@ -305,6 +359,10 @@ internal data class SolvabilityExecutedCase(
                 secretProofs = emptyList(),
                 resolvedEntranceBindings = emptyList(),
                 resolvedReturnBridgeNodeIds = emptyMap(),
+                providedDiscoveryTags = testCase.providedDiscoveryTags,
+                requiredHiddenAnchorFamilies = testCase.requiredHiddenAnchorFamilies,
+                observedHiddenAnchorFamilies = emptySet(),
+                hiddenAnchorFamiliesSatisfied = false,
                 backtrackSatisfied = false,
                 error = error,
             )
@@ -329,6 +387,7 @@ internal data class SolvabilityExecutedCase(
             solvabilityProof.searchStates.associate { entry ->
                 entry.bindingId.value to entry.result.name
             }
+        val observedHiddenAnchorFamilies = observedHiddenAnchorFamiliesForFloor(floor)
         return SolvabilityCaseResult(
             zoneId = testCase.request.zoneId,
             floorIndex = testCase.request.floorIndex,
@@ -370,6 +429,10 @@ internal data class SolvabilityExecutedCase(
                 floor.entrances.associate { entrance ->
                     entrance.bindingId.value to entrance.resolvedReturnBridgeNodeId.value
                 },
+            providedDiscoveryTags = testCase.providedDiscoveryTags,
+            requiredHiddenAnchorFamilies = testCase.requiredHiddenAnchorFamilies,
+            observedHiddenAnchorFamilies = observedHiddenAnchorFamilies,
+            hiddenAnchorFamiliesSatisfied = testCase.requiredHiddenAnchorFamilies.all(observedHiddenAnchorFamilies::contains),
             backtrackSatisfied =
                 criticalGateRequirements.any(optionalRequirementProviders::contains) &&
                     solvabilityProof.criticalPathReachable,
@@ -380,6 +443,8 @@ internal data class SolvabilityExecutedCase(
 
 internal data class SolvabilityCase(
     val request: MapgenRequest,
+    val providedDiscoveryTags: Set<String> = emptySet(),
+    val requiredHiddenAnchorFamilies: Set<String> = emptySet(),
 )
 
 internal data class SolvabilityCaseResult(
@@ -402,6 +467,10 @@ internal data class SolvabilityCaseResult(
     val secretProofs: List<SecretProofSnapshot>,
     val resolvedEntranceBindings: List<ResolvedEntranceBindingSnapshot>,
     val resolvedReturnBridgeNodeIds: Map<String, String>,
+    val providedDiscoveryTags: Set<String>,
+    val requiredHiddenAnchorFamilies: Set<String>,
+    val observedHiddenAnchorFamilies: Set<String>,
+    val hiddenAnchorFamiliesSatisfied: Boolean,
     val backtrackSatisfied: Boolean,
     val error: String?,
 )
@@ -432,5 +501,64 @@ internal data class ResolvedEntranceBindingSnapshot(
     val entranceAnchorId: String,
     val targetNodeId: String,
 )
+
+internal fun primerDiscoveryTagsForCase(
+    schemaCatalog: SchemaCatalog,
+    zoneId: String,
+    floorIndex: Int,
+): Set<String> =
+    schemaCatalog.hiddenEvents
+        .asSequence()
+        .filter { hiddenEvent -> hiddenEvent.grantedDiscoveryTags.isNotEmpty() }
+        .filter { hiddenEvent ->
+            hiddenEvent.conditions.all { condition ->
+                when (condition.key) {
+                    HiddenConditionKey.ZONE_ID -> condition.expectedValue == zoneId
+                    HiddenConditionKey.FLOOR_INDEX -> condition.expectedValue == floorIndex.toString()
+                    else -> true
+                }
+            }
+        }.flatMap { hiddenEvent -> hiddenEvent.grantedDiscoveryTags.asSequence() }
+        .toCollection(linkedSetOf())
+
+internal fun requiredHiddenAnchorFamiliesForZone(
+    schemaCatalog: SchemaCatalog,
+    zoneId: String,
+): Set<String> =
+    schemaCatalog.zoneMapgenProfiles
+        .asSequence()
+        .filter { profile -> profile.zoneId == zoneId }
+        .flatMap { profile -> profile.hiddenEntrancePlans.asSequence() }
+        .map { plan -> plan.sourceAnchorId.value }
+        .toCollection(linkedSetOf())
+
+internal fun observedHiddenAnchorFamiliesForFloor(
+    generatedFloor: com.ktome.core.mapgen.GeneratedFloor,
+): Set<String> =
+    generatedFloor.entrances
+        .asSequence()
+        .map { entrance -> entrance.entranceAnchorId }
+        .filter { anchorId -> anchorId.isFormalHiddenEntranceAnchor() }
+        .map { anchorId -> anchorId.value }
+        .toCollection(linkedSetOf())
+
+internal fun primerDiscoveryTagsByZoneAndFloor(
+    schemaCatalog: SchemaCatalog,
+    upgradedZones: List<ZoneSchemaV2>,
+): Map<Pair<String, Int>, Set<String>> =
+    buildMap {
+        upgradedZones.forEach { zone ->
+            (1..zone.floorCount).forEach { floorIndex ->
+                put(zone.id to floorIndex, primerDiscoveryTagsForCase(schemaCatalog, zone.id, floorIndex))
+            }
+        }
+    }
+
+internal fun requiredHiddenAnchorFamiliesByZone(
+    schemaCatalog: SchemaCatalog,
+): Map<String, Set<String>> =
+    schemaCatalog.zoneMapgenProfiles
+        .groupBy { profile -> profile.zoneId }
+        .mapValues { (zoneId, _) -> requiredHiddenAnchorFamiliesForZone(schemaCatalog, zoneId) }
 
 internal fun ZoneSchemaV2.isPhase4Upgraded(): Boolean = mapgenProfileId != null

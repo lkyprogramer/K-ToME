@@ -23,10 +23,20 @@ class SolvabilityHarnessRunnerTest {
         val summary = Json.parseToJsonElement(Files.readString(run.summaryPath)).jsonObject
         val header = summary.getValue("header").jsonObject
         val summaryMetrics = summary.getValue("summary").jsonObject
+        val firstProof =
+            Json.parseToJsonElement(Files.readAllLines(run.proofsPath).first { line -> line.isNotBlank() }).jsonObject
         assertEquals("zh-CN", header.getValue("locale").jsonPrimitive.content)
         assertEquals("1000", summaryMetrics.getValue("totalCases").jsonPrimitive.content)
         assertEquals("1000", summaryMetrics.getValue("distinctSeedCount").jsonPrimitive.content)
         assertTrue(summaryMetrics.getValue("casesWithBacktrackProof").jsonPrimitive.content.toInt() > 0)
+        assertTrue(summaryMetrics.getValue("providedDiscoveryTagCount").jsonPrimitive.content.toInt() > 0)
+        assertEquals("0", summaryMetrics.getValue("hiddenAnchorFamilyFailureCount").jsonPrimitive.content)
+        assertTrue(summaryMetrics.getValue("requiredHiddenAnchorFamilies").jsonArray.isNotEmpty())
+        assertTrue(summaryMetrics.getValue("observedHiddenAnchorFamilies").jsonArray.isNotEmpty())
+        assertTrue(firstProof.containsKey("providedDiscoveryTags"))
+        assertTrue(firstProof.containsKey("hiddenAnchorFamiliesSatisfied"))
+        assertTrue(firstProof.containsKey("requiredHiddenAnchorFamilies"))
+        assertTrue(firstProof.containsKey("observedHiddenAnchorFamilies"))
         assertEquals(1000, header.getValue("seedList").jsonArray.map { element -> element.jsonPrimitive.content }.distinct().size)
         assertEquals(1000, Files.readAllLines(run.proofsPath).count { line -> line.isNotBlank() })
     }

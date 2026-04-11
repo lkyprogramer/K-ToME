@@ -34,6 +34,10 @@ class HybridTopologyPlanner(
                 profile.vaultPool.isNotEmpty() -> 1
                 else -> 0
             }
+        val hiddenSourceAnchorIds = profile.hiddenEntrancePlans.map(HiddenEntrancePlan::sourceAnchorId).distinct().sortedBy(NodeAnchorId::value)
+        require(hiddenSourceAnchorIds.size == profile.hiddenEntrancePlans.size) {
+            "Each zone mapgen profile must bind at most one hidden entrance plan to a formal hidden anchor family."
+        }
 
         val primaryNodes =
             (0 until primaryNodeCount).map { index ->
@@ -105,6 +109,38 @@ class HybridTopologyPlanner(
                     biomeFamilyId = nodeBiomeFamilyId,
                 )
             }
+        val hiddenSourceNodes =
+            hiddenSourceAnchorIds.mapIndexed { index, anchorId ->
+                val nodeBiomeFamilyId =
+                    selectNodeBiomeFamily(
+                        selectedFamilies = selectedFamilies,
+                        pathClass = PathClass.OPTIONAL,
+                        ordinal = primaryNodeCount + optionalNodeCount + index,
+                    )
+                val candidateTags = resolveCandidateRoomTags(profile = profile, biomeFamilyId = nodeBiomeFamilyId)
+                TopologyNode(
+                    id = NodeId("hidden-source-$index"),
+                    anchorId = anchorId,
+                    roomDefId =
+                        chooseRoomDefId(
+                            biomeFamilyId = nodeBiomeFamilyId,
+                            pathClass = PathClass.OPTIONAL,
+                            roleTag = "optional",
+                            candidateTags = candidateTags,
+                            seed = request.seed,
+                            salt = "hidden-source-$index",
+                        ),
+                    pathClass = PathClass.OPTIONAL,
+                    tags = buildSet {
+                        add("optional")
+                        add("hidden_anchor")
+                        add(anchorId.value)
+                        add("vault_candidate")
+                        add("pattern_candidate")
+                    },
+                    biomeFamilyId = nodeBiomeFamilyId,
+                )
+            }
 
         val requirementRefsByAnchorId =
             profile.keyGatePlans
@@ -119,7 +155,11 @@ class HybridTopologyPlanner(
             optionalNodes.map { node ->
                 node.copy(grants = requirementRefsByAnchorId[node.anchorId].orEmpty())
             }
-        val accessibleNodes = primaryNodesWithGrants + optionalNodesWithGrants
+        val hiddenSourceNodesWithGrants =
+            hiddenSourceNodes.map { node ->
+                node.copy(grants = requirementRefsByAnchorId[node.anchorId].orEmpty())
+            }
+        val accessibleNodes = primaryNodesWithGrants + optionalNodesWithGrants + hiddenSourceNodesWithGrants
         val accessibleNodesByAnchorId = accessibleNodes.associateBy(TopologyNode::anchorId)
         profile.keyGatePlans.forEach { plan ->
             val grantNode = requireNotNull(accessibleNodesByAnchorId[plan.grantedByAnchorId]) {
@@ -175,6 +215,11 @@ class HybridTopologyPlanner(
                     add(TopologyEdge(from = attachNode.id, to = node.id))
                     add(TopologyEdge(from = node.id, to = reconnectNode.id, isLoop = true))
                 }
+                hiddenSourceNodesWithGrants.forEach { node ->
+                    val placement = hiddenAnchorPlacement(anchorId = node.anchorId, primaryNodes = primaryNodesWithGrants)
+                    add(TopologyEdge(from = placement.attachNode.id, to = node.id))
+                    add(TopologyEdge(from = node.id, to = placement.reconnectNode.id, isLoop = true))
+                }
             }
         val edges =
             applyKeyGatePlans(
@@ -188,7 +233,7 @@ class HybridTopologyPlanner(
             nodes = nodes,
             edges = edges,
             primaryPathNodeIds = primaryNodesWithGrants.map(TopologyNode::id),
-            optionalLoopCount = optionalNodesWithGrants.size,
+            optionalLoopCount = edges.count(TopologyEdge::isLoop),
         )
     }
 
@@ -428,6 +473,7 @@ class HybridTopologyMapgenPipeline(
 
         val patternedRooms = applyPatternRooms(builder = builder, topology = topology, rooms = roomInstances, request = request)
         val vaultPlacements = applyVaults(builder = builder, topology = topology, rooms = patternedRooms, profile = profile, request = request)
+        val roomsWithVaultTags = tagVaultRooms(rooms = patternedRooms, vaultPlacements = vaultPlacements)
         topology.edges.forEach { edge ->
             carveCorridor(
                 builder = builder,
@@ -436,18 +482,18 @@ class HybridTopologyMapgenPipeline(
                 random = stableRandom(request.seed, "corridor:${edge.from.value}:${edge.to.value}:${edge.isLoop}"),
             )
         }
-        ensureAnchorsWalkable(builder = builder, topology = topology, rooms = patternedRooms)
+        ensureAnchorsWalkable(builder = builder, topology = topology, rooms = roomsWithVaultTags)
 
         val map =
             builder.build(
-                rooms = patternedRooms.map { room -> Room(room.x, room.y, room.width, room.height) },
-                playerStart = Room(patternedRooms.first().x, patternedRooms.first().y, patternedRooms.first().width, patternedRooms.first().height).center,
+                rooms = roomsWithVaultTags.map { room -> Room(room.x, room.y, room.width, room.height) },
+                playerStart = Room(roomsWithVaultTags.first().x, roomsWithVaultTags.first().y, roomsWithVaultTags.first().width, roomsWithVaultTags.first().height).center,
             )
         val terrainTags =
             paintTerrainTags(
                 map = map,
                 profile = profile,
-                rooms = patternedRooms,
+                rooms = roomsWithVaultTags,
                 vaultPlacements = vaultPlacements,
                 request = request,
             )
@@ -455,16 +501,16 @@ class HybridTopologyMapgenPipeline(
             buildGeneratedEntrances(
                 hiddenEntrancePlans = profile.hiddenEntrancePlans,
                 nodesByAnchorId = nodesByAnchorId,
-                roomsByAnchorId = patternedRooms.associateBy(RoomInstance::anchorId),
+                roomsByAnchorId = roomsWithVaultTags.associateBy(RoomInstance::anchorId),
             )
         return GeneratedFloor(
             zoneId = request.zoneId,
             floorIndex = request.floorIndex,
             seed = request.seed,
             topology = topology,
-            rooms = patternedRooms,
+            rooms = roomsWithVaultTags,
             terrainTags = terrainTags,
-            biomeFamilyIds = patternedRooms.mapNotNull(RoomInstance::biomeFamilyId).distinct(),
+            biomeFamilyIds = roomsWithVaultTags.mapNotNull(RoomInstance::biomeFamilyId).distinct(),
             vaultPlacements = vaultPlacements,
             entrances = entrances,
             map = map,
@@ -477,7 +523,9 @@ class HybridTopologyMapgenPipeline(
         request: MapgenRequest,
     ): List<RoomInstance> {
         val nodesById = topology.nodes.associateBy(TopologyNode::id)
+        val nodesByAnchorId = topology.nodes.associateBy(TopologyNode::anchorId)
         val primaryNodes = topology.primaryPathNodeIds.map(nodesById::getValue)
+        val hiddenSourceAnchorIds = hiddenEntrancePlans.map(HiddenEntrancePlan::sourceAnchorId).toSet()
         val primaryCount = primaryNodes.size
         val segmentWidth = max(12, (request.targetWidth - 8) / primaryCount)
         val baseY = ((request.targetHeight / 2) - 5).coerceAtLeast(3)
@@ -507,41 +555,49 @@ class HybridTopologyMapgenPipeline(
         }
 
         topology.nodes
-            .filter { node -> node.pathClass != PathClass.SECRET && node.id !in topology.primaryPathNodeIds }
+            .filter { node ->
+                node.pathClass != PathClass.SECRET &&
+                    node.id !in topology.primaryPathNodeIds &&
+                    node.anchorId !in hiddenSourceAnchorIds
+            }
             .sortedBy { node -> node.id.value }
             .forEachIndexed { index, node ->
                 val anchorRoom = rooms[(rooms.lastIndex - 1 - index).coerceAtLeast(1)]
-                val roomDef = roomDefsById.getValue(node.roomDefId)
-                val width = sampleDimension(roomDef.widthRange, maxValue = (request.targetWidth / 5).coerceAtLeast(roomDef.widthRange.first), random = stableRandom(request.seed, "width:${node.id.value}"))
-                val height = sampleDimension(roomDef.heightRange, maxValue = (request.targetHeight / 4).coerceAtLeast(roomDef.heightRange.first), random = stableRandom(request.seed, "height:${node.id.value}"))
-                val branchUp = stableRandom(request.seed, "branch:${node.id.value}").nextBoolean()
-                val candidateX = (anchorRoom.x + (anchorRoom.width / 2) - (width / 2)).coerceIn(2, request.targetWidth - width - 2)
-                val candidateY =
-                    if (branchUp) {
-                        anchorRoom.y - height - 4
-                    } else {
-                        anchorRoom.y + anchorRoom.height + 4
-                    }
-                val boundedY = candidateY.coerceIn(2, request.targetHeight - height - 2)
                 rooms +=
-                    adjustPlacement(
+                    instantiateOptionalRoom(
+                        room = node,
+                        anchorRoom = anchorRoom,
                         existingRooms = rooms,
-                        candidate =
-                            RoomInstance(
-                                nodeId = node.id,
-                                anchorId = node.anchorId,
-                                roomDefId = node.roomDefId,
-                                x = candidateX,
-                                y = boundedY,
-                                width = width,
-                                height = height,
-                                shape = roomDef.shape,
-                                pathClass = node.pathClass,
-                                tags = node.tags,
-                                biomeFamilyId = node.biomeFamilyId,
-                            ),
-                        maxWidth = request.targetWidth,
-                        maxHeight = request.targetHeight,
+                        request = request,
+                        branchSalt = "branch:${node.id.value}",
+                        horizontalSalt = null,
+                        verticalSpacing = 4,
+                    )
+            }
+
+        hiddenSourceAnchorIds
+            .sortedBy(NodeAnchorId::value)
+            .map(nodesByAnchorId::getValue)
+            .forEach { node ->
+                val placement = hiddenAnchorPlacement(anchorId = node.anchorId, primaryNodes = primaryNodes)
+                val anchorRoom = requireNotNull(rooms.firstOrNull { room -> room.nodeId == placement.attachNode.id }) {
+                    "Hidden entrance anchor '${node.anchorId.value}' could not resolve its anchor room."
+                }
+                val verticalSpacing =
+                    when (node.anchorId.value) {
+                        "hidden.critical.adjacent" -> 5
+                        "hidden.goal.adjacent" -> 6
+                        else -> 4
+                    }
+                rooms +=
+                    instantiateOptionalRoom(
+                        room = node,
+                        anchorRoom = anchorRoom,
+                        existingRooms = rooms,
+                        request = request,
+                        branchSalt = "hidden-branch:${node.id.value}",
+                        horizontalSalt = "hidden-x:${node.id.value}",
+                        verticalSpacing = verticalSpacing,
                     )
             }
 
@@ -713,6 +769,82 @@ class HybridTopologyMapgenPipeline(
                     requiredTerrainTags = chosen.requiredTerrainTags,
                 )
             }.toList()
+    }
+
+    private fun tagVaultRooms(
+        rooms: List<RoomInstance>,
+        vaultPlacements: List<VaultPlacement>,
+    ): List<RoomInstance> {
+        if (vaultPlacements.isEmpty()) {
+            return rooms
+        }
+        val vaultNodeIds = vaultPlacements.map(VaultPlacement::nodeId).toSet()
+        return rooms.map { room ->
+            if (room.nodeId in vaultNodeIds) {
+                room.copy(tags = room.tags + "vault")
+            } else {
+                room
+            }
+        }
+    }
+
+    private fun instantiateOptionalRoom(
+        room: TopologyNode,
+        anchorRoom: RoomInstance,
+        existingRooms: List<RoomInstance>,
+        request: MapgenRequest,
+        branchSalt: String,
+        horizontalSalt: String?,
+        verticalSpacing: Int,
+    ): RoomInstance {
+        val roomDef = roomDefsById.getValue(room.roomDefId)
+        val width =
+            sampleDimension(
+                roomDef.widthRange,
+                maxValue = (request.targetWidth / 5).coerceAtLeast(roomDef.widthRange.first),
+                random = stableRandom(request.seed, "width:${room.id.value}"),
+            )
+        val height =
+            sampleDimension(
+                roomDef.heightRange,
+                maxValue = (request.targetHeight / 4).coerceAtLeast(roomDef.heightRange.first),
+                random = stableRandom(request.seed, "height:${room.id.value}"),
+            )
+        val branchUp = stableRandom(request.seed, branchSalt).nextBoolean()
+        val horizontalOffset =
+            horizontalSalt
+                ?.let { salt ->
+                    stableRandom(request.seed, salt).nextInt(-max(2, width / 3), max(3, width / 3) + 1)
+                } ?: 0
+        val candidateX =
+            (anchorRoom.x + (anchorRoom.width / 2) - (width / 2) + horizontalOffset)
+                .coerceIn(2, request.targetWidth - width - 2)
+        val candidateY =
+            if (branchUp) {
+                anchorRoom.y - height - verticalSpacing
+            } else {
+                anchorRoom.y + anchorRoom.height + verticalSpacing
+            }
+        val boundedY = candidateY.coerceIn(2, request.targetHeight - height - 2)
+        return adjustPlacement(
+            existingRooms = existingRooms,
+            candidate =
+                RoomInstance(
+                    nodeId = room.id,
+                    anchorId = room.anchorId,
+                    roomDefId = room.roomDefId,
+                    x = candidateX,
+                    y = boundedY,
+                    width = width,
+                    height = height,
+                    shape = roomDef.shape,
+                    pathClass = room.pathClass,
+                    tags = room.tags,
+                    biomeFamilyId = room.biomeFamilyId,
+                ),
+            maxWidth = request.targetWidth,
+            maxHeight = request.targetHeight,
+        )
     }
 
     private fun ensureAnchorsWalkable(
@@ -1061,6 +1193,34 @@ private fun selectNodeBiomeFamily(
         selectedFamilies.size == 1 -> selectedFamilies.first()
         else -> selectedFamilies[ordinal % selectedFamilies.size]
     }
+}
+
+private data class HiddenAnchorPlacement(
+    val attachNode: TopologyNode,
+    val reconnectNode: TopologyNode,
+)
+
+private fun hiddenAnchorPlacement(
+    anchorId: NodeAnchorId,
+    primaryNodes: List<TopologyNode>,
+): HiddenAnchorPlacement {
+    require(primaryNodes.size >= 3) { "Hybrid topology requires at least three primary nodes for hidden entrance placement." }
+    val attachIndex =
+        when (anchorId.value) {
+            "hidden.branch" -> 1
+            "hidden.critical.adjacent" -> primaryNodes.lastIndex / 2
+            "hidden.goal.adjacent" -> (primaryNodes.lastIndex - 1).coerceAtLeast(1)
+            else -> error("Unsupported hidden entrance anchor '${anchorId.value}'.")
+        }
+    val reconnectIndex =
+        when (anchorId.value) {
+            "hidden.critical.adjacent" -> (attachIndex + 1).coerceAtMost(primaryNodes.lastIndex)
+            else -> primaryNodes.lastIndex
+        }
+    return HiddenAnchorPlacement(
+        attachNode = primaryNodes[attachIndex],
+        reconnectNode = primaryNodes[reconnectIndex],
+    )
 }
 
 private fun primaryAnchorId(

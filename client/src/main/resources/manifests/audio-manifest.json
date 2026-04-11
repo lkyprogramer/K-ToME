@@ -2384,6 +2384,20 @@
       ]
     },
     {
+      "key": "audio.secret_zone.deep_iron_smuggler_stash",
+      "cueFamily": "zone",
+      "eventId": "audio.secret_zone.deep_iron_smuggler_stash",
+      "sourcePath": "audio/phase4/opt_pr05/secret_zone_deep_iron_smuggler_stash.ogg",
+      "tags": [
+        "phase4",
+        "opt",
+        "pr05",
+        "hidden",
+        "zone",
+        "mine"
+      ]
+    },
+    {
       "key": "audio.secret_zone.underground_river_crystal_rift",
       "cueFamily": "zone",
       "eventId": "audio.secret_zone.underground_river_crystal_rift",

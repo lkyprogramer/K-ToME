@@ -138,12 +138,16 @@ objectiveSets:
     descKey: objective.underground_river_crossing.desc
     schemaVersion: 2
     tags: [objective, route]
-    interactables: [river_ferry_anchor]
+    interactables: [river_ferry_anchor, crystal_cache_chest]
     placements:
       - interactableId: river_ferry_anchor
         floor: 1
         anchor: room_center
         offset: { x: 0, y: 0 }
+      - interactableId: crystal_cache_chest
+        floor: 1
+        anchor: stairs_up
+        offset: { x: 1, y: 0 }
     completionRule: explore_floor_pair
     linkedQuestId: quest.underground_river
     questObjectiveId: crossing

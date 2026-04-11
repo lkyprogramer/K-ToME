@@ -1,0 +1,37 @@
+styleTag: ktome-middle-fantasy-painterly-tile-v1
+artStyleBible: docs/2026-03-13-art-style-bible.md
+stylePrompt: >-
+  High fantasy, middle-earth inspired painterly production pass for Phase 4 OPT
+  PR-05 hidden-content diversity. The new Deep Iron smuggler stash secret-zone
+  assets must read as clandestine mine contraband rather than generic treasure,
+  while staying grounded in the established K-ToME palette, material language,
+  and tactical readability. Never anime, never sci-fi, and never UI-debug-like.
+defaults:
+  imageAspectRatio: "1:1"
+  imageSize: "1K"
+  negativeConstraints:
+    - no modern clothing
+    - no firearms
+    - no sci-fi materials
+    - no anime proportions
+    - no floating text, watermark or logo
+phase2AssetGates:
+  P4-OPT-PR05:
+    description: Formal OPT PR-05 visual plan for the Deep Iron smuggler stash secret zone.
+    assets:
+      - id: phase4_opt_pr05_zone_deep_iron_smuggler_stash_icon
+        category: icon_quest
+        visualKey: zone.secret.deep_iron_smuggler_stash.icon
+        outputName: phase4/opt_pr05/zone_secret_deep_iron_smuggler_stash_icon.png
+        subject: smuggler stash secret-zone icon with contraband crates, chain seals, and a furnace-ash marker
+        materialTags: [phase4, opt, pr05, zone, mine, secret, contraband]
+        constraints: [ui-readable icon, clean silhouette, readable at journal and reward-card sizes]
+        geminiKeyRequired: true
+      - id: phase4_opt_pr05_zone_deep_iron_smuggler_stash_visual
+        category: portrait
+        visualKey: zone.secret.deep_iron_smuggler_stash.visual
+        outputName: phase4/opt_pr05/zone_secret_deep_iron_smuggler_stash_visual.png
+        subject: clandestine mine smuggler stash tucked behind vaulted masonry, with sealed crates, hidden lantern light, and soot-dark ironwork
+        materialTags: [phase4, opt, pr05, zone, mine, secret, contraband]
+        constraints: [portrait composition, atmospheric but readable, treasure cache must feel hidden rather than ceremonial]
+        geminiKeyRequired: true

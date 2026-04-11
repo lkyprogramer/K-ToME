@@ -4,6 +4,7 @@ import com.ktome.core.combat.DamageType
 import com.ktome.core.loot.PityTracker
 import com.ktome.core.map.GameMap
 import com.ktome.core.map.Point
+import com.ktome.core.mapgen.NodeId
 import com.ktome.core.economy.ShopInventoryState
 import com.ktome.core.phase.PackId
 import com.ktome.core.phase.Phase4ContractVersions
@@ -158,8 +159,8 @@ data class SaveSnapshot(
     }
 
     companion object {
-        const val CURRENT_SCHEMA_VERSION: Int = 13
-        const val DEFAULT_BUILD_METADATA: String = "phase4-pr07-dev"
+        const val CURRENT_SCHEMA_VERSION: Int = 14
+        const val DEFAULT_BUILD_METADATA: String = "phase4-opt-pr05-dev"
     }
 }
 
@@ -203,6 +204,8 @@ data class FloorSnapshot(
     val resolvedHiddenEntranceBindings: List<ResolvedEntranceBinding> = emptyList(),
     val revealedEntranceIds: Set<SearchBindingId> = emptySet(),
     val visitedSecretZoneIds: Set<ContentRef> = emptySet(),
+    val enteredRoomNodeIds: Set<NodeId> = emptySet(),
+    val discoveryTags: Set<String> = emptySet(),
     val consumedHiddenEventIds: Set<String> = emptySet(),
     val searchState: List<SearchStateEntry> = emptyList(),
     val map: MapSnapshot,
@@ -225,6 +228,9 @@ data class FloorSnapshot(
         }
         require(searchState.distinctBy(SearchStateEntry::bindingId).size == searchState.size) {
             "FloorSnapshot.searchState must not contain duplicate binding ids."
+        }
+        require(discoveryTags.all(String::isNotBlank)) {
+            "FloorSnapshot.discoveryTags must not contain blank tags."
         }
         require(consumedHiddenEventIds.all(String::isNotBlank)) {
             "FloorSnapshot.consumedHiddenEventIds must not contain blank ids."

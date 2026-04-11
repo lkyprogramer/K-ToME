@@ -5,9 +5,12 @@ internal object RiverCrystalRuntimeKeys {
         const val QUEST_ID: String = "quest.underground_river"
         const val OBJECTIVE_ID: String = "crossing"
         const val INTERACTABLE_ID: String = "river_ferry_anchor"
+        const val CACHE_INTERACTABLE_ID: String = "crystal_cache_chest"
         const val SOURCE_ABILITY_ID: String = "zone.currents"
         const val PROGRESS_TOKEN: String = "underground_river.ferry_anchor_secured"
         const val PROGRESS_STEP_KEY: String = "objective.underground_river_crossing.step.ferry_anchor_secured"
+        const val CACHE_PROGRESS_TOKEN: String = "underground_river.crystal_cache_opened"
+        const val CACHE_PROGRESS_STEP_KEY: String = "objective.underground_river_crossing.step.crystal_cache_opened"
         const val DRAG_LOG_KEY: String = "log.zone.currents.drag"
         const val SAFE_LANE_LOG_KEY: String = "log.zone.currents.safe_lane"
     }

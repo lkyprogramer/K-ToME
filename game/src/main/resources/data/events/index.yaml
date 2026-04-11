@@ -22,11 +22,12 @@ events:
             registry: loot_profile
             id: loot.greenwood_hidden_cache.secret
   - id: hidden.event.deep_iron.slag_cache.reveal
-    triggerType: PERCEPTION_REVEAL
-    optionalOnly: true
+    triggerType: KILL_ELITE
+    optionalOnly: false
     conditions:
-      - key: SEARCH_BINDING_ID
-        expectedValue: search.deep_iron.slag_cache
+      - key: ZONE_ID
+        expectedValue: deep_iron_pit
+    grantedDiscoveryTags: [hidden.primer.deep_iron.slag_cache]
     rewards:
       - key: REVEAL_SECRET_ZONE
         payload:
@@ -50,6 +51,16 @@ events:
           lootProfileRef:
             registry: loot_profile
             id: loot.deep_iron_slag_cache.secret
+  - id: hidden.event.underground_river.crystal_rift.primer
+    triggerType: OPEN_CHEST
+    optionalOnly: false
+    conditions:
+      - key: ZONE_ID
+        expectedValue: underground_river
+      - key: INTERACTABLE_ID
+        expectedValue: crystal_cache_chest
+    grantedDiscoveryTags: [hidden.primer.underground_river.crystal_rift]
+    rewards: []
   - id: hidden.event.underground_river.crystal_rift.reveal
     triggerType: PERCEPTION_REVEAL
     optionalOnly: true
@@ -78,6 +89,16 @@ events:
           lootProfileRef:
             registry: loot_profile
             id: loot.underground_river_crystal_rift.secret
+  - id: hidden.event.abyssal_temple.warded_archive.primer
+    triggerType: QUEST_STEP
+    optionalOnly: false
+    conditions:
+      - key: ZONE_ID
+        expectedValue: abyssal_temple
+      - key: OBJECTIVE_STEP_KEY
+        expectedValue: objective.abyssal_temple_sanctum.step.ward_reliquary_claimed
+    grantedDiscoveryTags: [hidden.primer.abyssal_temple.warded_archive]
+    rewards: []
   - id: hidden.event.abyssal_temple.warded_archive.reveal
     triggerType: PERCEPTION_REVEAL
     optionalOnly: true
@@ -100,3 +121,30 @@ events:
           lootProfileRef:
             registry: loot_profile
             id: loot.abyssal_temple_warded_archive.secret
+  - id: hidden.event.deep_iron.smuggler_stash.reveal
+    triggerType: ENTER_ROOM
+    optionalOnly: true
+    conditions:
+      - key: ZONE_ID
+        expectedValue: deep_iron_pit
+      - key: ROOM_TAG
+        expectedValue: hidden.branch
+      - key: ROOM_TAG
+        expectedValue: vault
+    grantedDiscoveryTags: [hidden.primer.deep_iron.smuggler_stash]
+    rewards:
+      - key: REVEAL_SECRET_ZONE
+        payload:
+          bindingId: search.deep_iron.smuggler_stash
+  - id: hidden.event.deep_iron.smuggler_stash.reward
+    triggerType: INTERACT_TILE
+    optionalOnly: true
+    conditions:
+      - key: SECRET_ZONE_ID
+        expectedValue: deep_iron_smuggler_stash
+    rewards:
+      - key: LOOT_PROFILE
+        payload:
+          lootProfileRef:
+            registry: loot_profile
+            id: loot.deep_iron_smuggler_stash.secret

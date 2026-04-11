@@ -1,7 +1,9 @@
 package com.ktome.game.contentpack
 
 import com.ktome.core.phase.PackId
+import java.nio.file.Files
 import java.nio.file.Path
+import org.yaml.snakeyaml.Yaml
 
 object ContentPackFixtureCatalog {
     val samplePackId: PackId = PackId("sample.flooded_relics")
@@ -52,6 +54,28 @@ object ContentPackFixtureCatalog {
             .resolve("tools/src/main/resources/fixtures/content-packs/packs")
             .resolve(packId.value)
 
+    fun harnessSpec(packId: PackId): ContentPackHarnessSpec {
+        val path = sidecarPath(packId)
+        val root = Files.newBufferedReader(path).use { reader -> Yaml().load<Map<String, Any?>>(reader) }
+            ?: error("Harness spec root must not be null: $path")
+        return ContentPackHarnessSpec(
+            packId = PackId(root.requiredString("packId")),
+            harnessSeeds = root.requiredLongList("harnessSeeds"),
+            generatedTemplateSeeds = root.optionalLongList("generatedTemplateSeeds").ifEmpty { root.requiredLongList("harnessSeeds") },
+            dualPackScenarios =
+                root.optionalList("dualPackScenarios").map { raw ->
+                    val scenario = raw.requiredMap()
+                    DualPackScenario(
+                        fixturePackId = PackId(scenario.requiredString("fixturePackId")),
+                        expectedOrder = scenario.requiredStringList("expectedOrder").map(::PackId),
+                        expectedOps = scenario.optionalStringList("expectedOps").map { op -> OverlayOp.valueOf(op.uppercase()) },
+                    )
+                },
+            fixtureOrder = root.optionalStringList("fixtureOrder"),
+            overlayContractVersion = root.requiredInt("overlayContractVersion"),
+        )
+    }
+
     fun selection(
         activePackRoots: List<Path>,
         availablePackRoots: List<Path> = activePackRoots,
@@ -66,6 +90,11 @@ object ContentPackFixtureCatalog {
             activePackRoots = activePackIds.map(::fixturePackRoot),
             availablePackRoots = allPackIds.map(::fixturePackRoot),
         )
+
+    private fun sidecarPath(packId: PackId): Path =
+        repoRoot()
+            .resolve("tools/src/main/resources/fixtures/content-packs")
+            .resolve("${packId.value}.yaml")
 }
 
 fun repoRoot(): Path =
@@ -74,3 +103,52 @@ fun repoRoot(): Path =
             "ktome.repo.root system property is required for content-pack fixtures."
         },
     )
+
+private fun Map<*, *>.requiredString(key: String): String =
+    this[key]?.toString()?.trim()?.takeIf(String::isNotBlank) ?: error("Missing string entry '$key'.")
+
+private fun Map<*, *>.requiredInt(key: String): Int =
+    when (val value = this[key]) {
+        is Int -> value
+        is Number -> value.toInt()
+        is String -> value.toInt()
+        else -> error("Missing int entry '$key'.")
+    }
+
+private fun Map<*, *>.requiredLongList(key: String): List<Long> =
+    (this[key] as? List<*>)?.map { raw ->
+        when (raw) {
+            is Long -> raw
+            is Int -> raw.toLong()
+            is Number -> raw.toLong()
+            is String -> raw.toLong()
+            else -> error("Entry '$key' must contain integer-like values.")
+        }
+    } ?: error("Missing list entry '$key'.")
+
+private fun Map<*, *>.optionalLongList(key: String): List<Long> =
+    (this[key] as? List<*>)?.map { raw ->
+        when (raw) {
+            is Long -> raw
+            is Int -> raw.toLong()
+            is Number -> raw.toLong()
+            is String -> raw.toLong()
+            else -> error("Entry '$key' must contain integer-like values.")
+        }
+    } ?: emptyList()
+
+private fun Map<*, *>.requiredStringList(key: String): List<String> =
+    (this[key] as? List<*>)?.map { raw ->
+        raw?.toString()?.trim()?.takeIf(String::isNotBlank) ?: error("Entry '$key' must not contain blank strings.")
+    } ?: error("Missing list entry '$key'.")
+
+private fun Map<*, *>.optionalStringList(key: String): List<String> =
+    (this[key] as? List<*>)?.map { raw ->
+        raw?.toString()?.trim()?.takeIf(String::isNotBlank) ?: error("Entry '$key' must not contain blank strings.")
+    } ?: emptyList()
+
+private fun Map<*, *>.optionalList(key: String): List<Any?> =
+    (this[key] as? List<Any?>).orEmpty()
+
+private fun Any?.requiredMap(): Map<*, *> =
+    this as? Map<*, *> ?: error("Entry must be a map.")

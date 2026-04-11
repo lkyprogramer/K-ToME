@@ -48,6 +48,7 @@ class HeadlessRunHarness(
         var failureReason: String? = null
         var stuckReason: String? = null
         var observation = RunObservationCapture.capture(session, turnCount)
+        var bossCombatLock = updateBossCombatLock(session, observation, currentLock = null)
         var previousBuildHash = session.currentCommittedBuildHash()
         appendVisitedZone(visitedZonePath, session.config.zoneId)
         appendZoneMilestone(
@@ -130,7 +131,7 @@ class HeadlessRunHarness(
 
             val command =
                 routeProgressCommand(session, observation)
-                    .takeIf { shouldPrioritizeRouteProgress(spec, observation) }
+                    .takeIf { shouldPrioritizeRouteProgress(spec, observation, bossCombatLock != null) }
                     ?: bot.decide(observation)
                     ?: run {
                     failureReason = "Bot returned no command."
@@ -166,6 +167,7 @@ class HeadlessRunHarness(
             }
 
             observation = RunObservationCapture.capture(session, turnCount)
+            bossCombatLock = updateBossCombatLock(session, observation, bossCombatLock)
             appendVisitedZone(visitedZonePath, session.config.zoneId)
             appendZoneMilestone(
                 milestones = zoneHeadlessMilestones,
@@ -350,9 +352,11 @@ class HeadlessRunHarness(
     private fun shouldPrioritizeRouteProgress(
         spec: ScenarioSpec,
         observation: RunObservation,
+        bossCombatLocked: Boolean,
     ): Boolean =
         when {
             observation.activeShopId != null -> false
+            bossCombatLocked -> false
 
             else ->
                 when (spec.goal) {
@@ -371,6 +375,32 @@ class HeadlessRunHarness(
                             .any { assertion -> zoneDepth(observation.zoneId) < zoneDepth(assertion.zoneId) }
                 }
         }
+
+    private fun updateBossCombatLock(
+        session: FoundationGameSession,
+        observation: RunObservation,
+        currentLock: BossCombatLock?,
+    ): BossCombatLock? {
+        if (observation.zoneId != "deep_iron_pit") {
+            return null
+        }
+        if (observation.visibleBossPositions.isNotEmpty()) {
+            return BossCombatLock(
+                zoneId = observation.zoneId,
+                floor = observation.floor,
+            )
+        }
+        val activeLock = currentLock ?: return null
+        if (activeLock.zoneId != observation.zoneId || activeLock.floor != observation.floor) {
+            return null
+        }
+        return if (session.automationBossPoint() == null) null else activeLock
+    }
+
+    private data class BossCombatLock(
+        val zoneId: String,
+        val floor: Int,
+    )
 
     private fun newSession(
         spec: ScenarioSpec,

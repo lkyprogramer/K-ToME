@@ -27,6 +27,8 @@ enum class HiddenConditionKey {
     SEARCH_BINDING_ID,
     SECRET_ZONE_ID,
     INTERACTABLE_ID,
+    ROOM_TAG,
+    OBJECTIVE_STEP_KEY,
     ENTRANCE_REVEALED,
     SECRET_ZONE_UNVISITED,
 }
@@ -106,12 +108,18 @@ data class HiddenEventDef(
     val triggerType: HiddenTriggerType,
     val conditions: List<HiddenEventCondition>,
     val rewards: List<HiddenEventReward>,
+    val grantedDiscoveryTags: Set<String> = emptySet(),
     val optionalOnly: Boolean = true,
 ) {
     init {
         require(id.isNotBlank()) { "HiddenEventDef.id must not be blank." }
         require(conditions.isNotEmpty()) { "HiddenEventDef.conditions must not be empty." }
-        require(rewards.isNotEmpty()) { "HiddenEventDef.rewards must not be empty." }
+        require(rewards.isNotEmpty() || grantedDiscoveryTags.isNotEmpty()) {
+            "HiddenEventDef must grant at least one reward or discovery tag."
+        }
+        require(grantedDiscoveryTags.all(String::isNotBlank)) {
+            "HiddenEventDef.grantedDiscoveryTags must not contain blank tags."
+        }
     }
 }
 

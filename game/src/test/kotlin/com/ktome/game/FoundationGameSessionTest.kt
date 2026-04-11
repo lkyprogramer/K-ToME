@@ -86,6 +86,7 @@ import com.ktome.core.world.solvability.DiscoveryPredicate
 import com.ktome.core.world.solvability.DiscoveryPredicateType
 import com.ktome.core.world.solvability.DiscoveryRule
 import com.ktome.core.world.solvability.ContentRef
+import com.ktome.core.world.solvability.NodeAnchorId
 import com.ktome.core.world.solvability.RegistryId
 import com.ktome.core.world.solvability.SearchActionResult
 import com.ktome.core.world.ObjectiveState
@@ -441,6 +442,105 @@ class FoundationGameSessionTest {
         assertEquals("隐藏入口", requireNotNull(inspect.prop).name)
         assertTrue(requireNotNull(inspect.prop).details.any { detail -> detail.contains("隐藏入口") })
         assertTrue(inspect.prop.details.none { detail -> "search." in detail || "greenwood_hidden_cache" in detail })
+    }
+
+    @Test
+    fun `killing elite reveals slag cache and grants discovery tag`() {
+        val session =
+            GameModule.newFoundationSession(
+                config = FoundationGameConfig(seed = 20260331L, zoneId = "deep_iron_pit", playerProfessionId = "vanguard"),
+                saveManager = SaveManager(tempDir.resolve("deep-iron-slag-cache-primer-save")),
+            )
+        clearMonsters(session)
+
+        assertTrue(session.automationSpawnAndKillEliteMonsterForTest())
+        assertTrue(session.automationDiscoveryTags().contains("hidden.primer.deep_iron.slag_cache"))
+        assertEquals(
+            SearchActionResult.REVEALED,
+            requireNotNull(
+                activeFloorState(session).searchState.firstOrNull { entry ->
+                    entry.bindingId.value == "search.deep_iron.slag_cache"
+                },
+            ).result,
+        )
+        assertNotNull(logEventByKey(session, "log.hidden.secret_zone.revealed"))
+    }
+
+    @Test
+    fun `opening crystal cache chest grants discovery tag before crystal rift search`() {
+        val session =
+            GameModule.newFoundationSession(
+                config = FoundationGameConfig(seed = 20260331L, zoneId = "underground_river", playerProfessionId = "rogue"),
+                saveManager = SaveManager(tempDir.resolve("underground-river-crystal-rift-primer-save")),
+            )
+        clearMonsters(session)
+
+        movePlayerTo(session, requireNotNull(session.automationInteractablePoint(RiverCrystalRuntimeKeys.River.CACHE_INTERACTABLE_ID)))
+        assertTrue(session.perform(PlayerCommand.Interact))
+        assertTrue(session.automationDiscoveryTags().contains("hidden.primer.underground_river.crystal_rift"))
+
+        movePlayerTo(session, hiddenEntranceSearchPoint(session, com.ktome.core.world.solvability.SearchBindingId("search.underground_river.crystal_rift")))
+        assertTrue(session.perform(PlayerCommand.Search))
+        assertEquals(
+            SearchActionResult.REVEALED,
+            requireNotNull(
+                activeFloorState(session).searchState.firstOrNull { entry ->
+                    entry.bindingId.value == "search.underground_river.crystal_rift"
+                },
+            ).result,
+        )
+    }
+
+    @Test
+    fun `claiming ward reliquary grants discovery tag before warded archive search`() {
+        val session =
+            GameModule.newFoundationSession(
+                config = FoundationGameConfig(seed = 20260331L, zoneId = "abyssal_temple", playerProfessionId = "templar"),
+                saveManager = SaveManager(tempDir.resolve("abyssal-warded-archive-primer-save")),
+            )
+        clearMonsters(session)
+
+        movePlayerTo(session, requireNotNull(session.automationInteractablePoint(AbyssalRuntimeKeys.Temple.INTERACTABLE_ID)))
+        assertTrue(session.perform(PlayerCommand.Interact))
+        if (session.renderSnapshot().uiState.activeShop != null) {
+            assertTrue(session.perform(PlayerCommand.CloseShop))
+        }
+        assertTrue(session.automationDiscoveryTags().contains("hidden.primer.abyssal_temple.warded_archive"))
+
+        movePlayerTo(session, hiddenEntranceSearchPoint(session, com.ktome.core.world.solvability.SearchBindingId("search.abyssal_temple.warded_archive")))
+        assertTrue(session.perform(PlayerCommand.Search))
+        assertEquals(
+            SearchActionResult.REVEALED,
+            requireNotNull(
+                activeFloorState(session).searchState.firstOrNull { entry ->
+                    entry.bindingId.value == "search.abyssal_temple.warded_archive"
+                },
+            ).result,
+        )
+    }
+
+    @Test
+    fun `entering hidden branch vault reveals smuggler stash without explicit search`() {
+        val session =
+            GameModule.newFoundationSession(
+                config = FoundationGameConfig(seed = 20260331L, zoneId = "deep_iron_pit", playerProfessionId = "vanguard"),
+                saveManager = SaveManager(tempDir.resolve("deep-iron-smuggler-stash-enter-room-save")),
+            )
+        clearMonsters(session)
+
+        val hiddenBranchRoom = requireNotNull(activeFloorState(session).generatedFloor.roomByAnchor(NodeAnchorId("hidden.branch")))
+        movePlayerTo(session, hiddenBranchRoom.center)
+
+        assertTrue(session.automationDiscoveryTags().contains("hidden.primer.deep_iron.smuggler_stash"))
+        assertEquals(
+            SearchActionResult.REVEALED,
+            requireNotNull(
+                activeFloorState(session).searchState.firstOrNull { entry ->
+                    entry.bindingId.value == "search.deep_iron.smuggler_stash"
+                },
+            ).result,
+        )
+        assertNotNull(logEventByKey(session, "log.hidden.secret_zone.revealed"))
     }
 
     @Test

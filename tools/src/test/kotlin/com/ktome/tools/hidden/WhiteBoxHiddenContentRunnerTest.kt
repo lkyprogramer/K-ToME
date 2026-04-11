@@ -16,7 +16,7 @@ class WhiteBoxHiddenContentRunnerTest {
     fun `white-box hidden-content writes standard reports and zero failed assertions`() {
         val run = WhiteBoxHiddenContentRunner.run()
 
-        assertEquals(500, run.caseCount)
+        assertEquals(625, run.caseCount)
         assertEquals(0, run.failedAssertions, "whiteBoxHiddenContent recorded failures; inspect ${run.summaryPath}")
         assertTrue(Files.exists(run.summaryPath), "Expected summary report at ${run.summaryPath}")
         assertTrue(Files.exists(run.casesPath), "Expected case report at ${run.casesPath}")
@@ -53,10 +53,10 @@ class WhiteBoxHiddenContentRunnerTest {
 
         assertEquals("hidden-content", payload.getValue("domainId").jsonPrimitive.content)
         assertEquals("PASS", payload.getValue("verdict").jsonPrimitive.content)
-        assertEquals("P4_PR07_HIDDEN_CONTENT_WHITEBOX", corpus.getValue("corpusId").jsonPrimitive.content)
-        assertEquals("500", summary.getValue("caseCount").jsonPrimitive.content)
+        assertEquals("P4_OPT_PR05_HIDDEN_CONTENT_WHITEBOX", corpus.getValue("corpusId").jsonPrimitive.content)
+        assertEquals("625", summary.getValue("caseCount").jsonPrimitive.content)
         assertEquals("0", summary.getValue("failedAssertions").jsonPrimitive.content)
-        assertEquals("2000", summary.getValue("artifactCount").jsonPrimitive.content)
+        assertEquals("2500", summary.getValue("artifactCount").jsonPrimitive.content)
         assertTrue(
             aggregates.any { aggregate ->
                 aggregate.jsonObject.getValue("groupId").jsonPrimitive.content == "corpus"
@@ -66,6 +66,7 @@ class WhiteBoxHiddenContentRunnerTest {
             setOf(
                 "hidden-content.aggregate.explicit_search_reveal_present",
                 "hidden-content.aggregate.hidden_events_optional_or_secret_only",
+                "hidden-content.aggregate.hidden_event_registry_count",
                 "hidden-content.aggregate.secret_reward_node_present",
                 "hidden-content.aggregate.reward_bridge_backed_by_loot_budget",
                 "hidden-content.aggregate.search_failure_non_blocking",
@@ -78,14 +79,20 @@ class WhiteBoxHiddenContentRunnerTest {
             setOf(
                 "hiddenTriggerTypeCoverage",
                 "hiddenTriggerTypeSet",
+                "hiddenEventRegistryCount",
                 "secretEntranceBindingCoverage",
                 "secretEntranceBindingSet",
+                "secretZoneRegistryCount",
             ).all(corpusMetrics::containsKey),
         )
         assertTrue(corpusMetrics.getValue("hiddenTriggerTypeSet").jsonArray.isNotEmpty())
         assertTrue(corpusMetrics.getValue("secretEntranceBindingSet").jsonArray.isNotEmpty())
+        assertEquals("12", corpusMetrics.getValue("hiddenEventRegistryCount").jsonPrimitive.content)
+        assertEquals("5", corpusMetrics.getValue("secretZoneRegistryCount").jsonPrimitive.content)
         assertTrue(firstCase.getValue("facts").jsonObject.containsKey("hiddenTriggerTypeSet"))
+        assertTrue(firstCase.getValue("facts").jsonObject.containsKey("hiddenEventRegistryCount"))
         assertTrue(firstCase.getValue("facts").jsonObject.containsKey("secretEntranceBindingSet"))
+        assertTrue(firstCase.getValue("facts").jsonObject.containsKey("secretZoneRegistryCount"))
         assertTrue(
             setOf(
                 "hidden-content.case.hidden_events_optional_or_secret_only",
@@ -100,6 +107,6 @@ class WhiteBoxHiddenContentRunnerTest {
             setOf("trigger-timeline", "search-action-results", "return-bridge-proof", "reward-bridge-summary"),
             artifactIds,
         )
-        assertEquals(500, Files.readAllLines(run.casesPath).count { line -> line.isNotBlank() })
+        assertEquals(625, Files.readAllLines(run.casesPath).count { line -> line.isNotBlank() })
     }
 }

@@ -4,7 +4,7 @@ import com.ktome.core.ecs.MonsterTemplateId
 import com.ktome.core.map.Point
 import com.ktome.core.save.SaveManager
 import com.ktome.core.snapshot.InventoryEntrySnapshot
-import com.ktome.core.mapgen.center
+import com.ktome.core.world.solvability.SearchBindingId
 import com.ktome.game.contentpack.ContentPackFixtureCatalog
 import com.ktome.game.contentpack.ContentPackSelection
 import com.ktome.game.i18n.GameLocale
@@ -16,13 +16,24 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 
 class ContentPackRewardPresentationTest {
+    private data class SamplePackRewardOutcome(
+        val seed: Long,
+        val inventoryEntry: InventoryEntrySnapshot,
+        val specialTemplateId: String,
+    )
+
+    private val samplePackHarnessSpec by lazy(LazyThreadSafetyMode.NONE) {
+        ContentPackFixtureCatalog.harnessSpec(ContentPackFixtureCatalog.samplePackId)
+    }
+    private val sampleSecretBindingId = SearchBindingId("search.underground_river.crystal_rift")
+
     @TempDir
     lateinit var tempDir: Path
 
     @Test
     fun `sample pack reward uses pack-local presentation in live runtime and survives reload`() {
         val saveManager = SaveManager(tempDir.resolve("sample-pack-reward-save"))
-        val session = newSamplePackSession(seed = 20260304L, saveManager = saveManager)
+        val session = newSamplePackSession(seed = firstSamplePackRewardOutcome().seed, saveManager = saveManager)
 
         val claimedEntry = claimSamplePackReward(session)
         val inventoryView = requireNotNull(session.inventoryItems().firstOrNull { item -> item.specialTemplateId != null })
@@ -57,12 +68,9 @@ class ContentPackRewardPresentationTest {
     @Test
     fun `sample pack fixed seeds cover both special templates through live secret-route execution`() {
         val generatedTemplateIds =
-            listOf(20260301L, 20260304L, 20260323L)
-                .map { seed ->
-                    val session = newSamplePackSession(seed = seed, saveManager = SaveManager(tempDir.resolve("sample-pack-seed-$seed")))
-                    claimSamplePackReward(session)
-                    requireNotNull(session.inventoryItems().firstOrNull { item -> item.specialTemplateId != null }).specialTemplateId
-                }.toSet()
+            samplePackRewardOutcomes(seedList = samplePackHarnessSpec.generatedTemplateSeeds)
+                .map(SamplePackRewardOutcome::specialTemplateId)
+                .toSet()
 
         assertEquals(
             setOf(
@@ -75,7 +83,7 @@ class ContentPackRewardPresentationTest {
 
     @Test
     fun `sample pack inventory logs keep pack-local name keys after reward is claimed`() {
-        val session = newSamplePackSession(seed = 20260304L, saveManager = SaveManager(tempDir.resolve("sample-pack-drop-log")))
+        val session = newSamplePackSession(seed = firstSamplePackRewardOutcome().seed, saveManager = SaveManager(tempDir.resolve("sample-pack-drop-log")))
 
         claimSamplePackReward(session)
         val rewardItem = requireNotNull(session.inventoryItems().firstOrNull { item -> item.specialTemplateId != null })
@@ -105,15 +113,14 @@ class ContentPackRewardPresentationTest {
 
     private fun claimSamplePackReward(session: FoundationGameSession): InventoryEntrySnapshot {
         clearMonsters(session)
-        val entrance = session.automationGeneratedFloor().entrances.sortedBy { generated -> generated.bindingId.value }.first()
-        val searchPoint =
-            requireNotNull(session.automationGeneratedFloor().roomForEntrance(entrance)).center
-        session.automationMovePlayerTo(searchPoint)
+        assertTrue(session.perform(PlayerCommand.DropInventoryItem(session.inventoryItems().first().index)))
+        session.automationMovePlayerTo(requireNotNull(session.automationInteractablePoint("crystal_cache_chest")))
+        assertTrue(session.perform(PlayerCommand.Interact))
+        session.automationMovePlayerTo(requireNotNull(session.automationSearchPointForBinding(sampleSecretBindingId)))
         assertTrue(session.perform(PlayerCommand.Search))
         assertTrue(session.automationSearchState().single().result == com.ktome.core.world.solvability.SearchActionResult.REVEALED)
 
-        val entranceProp = requireNotNull(propByType(session, "hidden_entrance"))
-        session.automationMovePlayerTo(Point(entranceProp.x, entranceProp.y))
+        session.automationMovePlayerTo(requireNotNull(session.automationHiddenEntrancePointForBinding(sampleSecretBindingId)))
         assertTrue(session.perform(PlayerCommand.Interact))
         assertTrue(session.automationVisitedSecretZoneIds().any { secretZone -> secretZone.id == "underground_river_crystal_rift" })
         val secretZoneId = requireNotNull(session.automationVisitedSecretZoneIds().firstOrNull())
@@ -130,8 +137,7 @@ class ContentPackRewardPresentationTest {
                 .id
         assertEquals("sample.flooded_relics.loot.flooded_reliquary.secret", rewardProfileId)
 
-        val rewardProp = requireNotNull(propByType(session, "secret_reward"))
-        session.automationMovePlayerTo(Point(rewardProp.x, rewardProp.y))
+        session.automationMovePlayerTo(requireNotNull(session.automationSecretRewardPointForBinding(sampleSecretBindingId)))
         check(session.perform(PlayerCommand.Interact)) {
             "Failed to claim sample-pack reward. zone=${session.renderSnapshot().metadata.zoneNameKey} consumed=${session.automationConsumedHiddenEventIds()} props=${session.renderSnapshot().props.map { prop -> prop.propTypeId to Point(prop.x, prop.y) }}"
         }
@@ -148,15 +154,55 @@ class ContentPackRewardPresentationTest {
             "Expected sample-pack inventory entry. keys=${session.renderSnapshot().uiState.inventory.map { entry -> entry.item.nameKey }} templates=${session.inventoryItems().map { item -> item.specialTemplateId }}"
         }
 
+    private fun firstSamplePackRewardOutcome(): SamplePackRewardOutcome {
+        val failures = mutableListOf<String>()
+        samplePackHarnessSpec.generatedTemplateSeeds.forEach { seed ->
+            runCatching { samplePackRewardOutcome(seed) }
+                .onSuccess { outcome -> return outcome }
+                .onFailure { throwable ->
+                    failures += "$seed:${throwable.message ?: throwable::class.simpleName.orEmpty()}"
+                }
+        }
+        error("Expected at least one deterministic generated-template seed to produce a pack-local secret reward. failures=$failures")
+    }
+
+    private fun samplePackRewardOutcomes(seedList: Iterable<Long>): List<SamplePackRewardOutcome> {
+        val failures = mutableListOf<String>()
+        val outcomes =
+            buildList {
+                seedList.forEach { seed ->
+                    runCatching { samplePackRewardOutcome(seed) }
+                        .onSuccess(::add)
+                        .onFailure { throwable ->
+                            failures += "$seed:${throwable.message ?: throwable::class.simpleName.orEmpty()}"
+                        }
+                }
+            }
+        assertTrue(
+            failures.isEmpty(),
+            "Sample-pack generated-template seeds must stay reproducible. successes=${outcomes.map { outcome -> "${outcome.seed}:${outcome.specialTemplateId}" }} failures=$failures",
+        )
+        return outcomes
+    }
+
+    private fun samplePackRewardOutcome(seed: Long): SamplePackRewardOutcome {
+        val session = newSamplePackSession(seed = seed, saveManager = SaveManager(tempDir.resolve("sample-pack-seed-$seed")))
+        val inventoryEntry = claimSamplePackReward(session)
+        val specialTemplateId =
+            requireNotNull(requireNotNull(session.inventoryItems().firstOrNull { item -> item.specialTemplateId != null }).specialTemplateId) {
+                "Missing generated special template for sample-pack seed $seed."
+            }
+        return SamplePackRewardOutcome(
+            seed = seed,
+            inventoryEntry = inventoryEntry,
+            specialTemplateId = specialTemplateId,
+        )
+    }
+
     private fun clearMonsters(session: FoundationGameSession) {
         val world = session.automationWorld()
         world.entitiesWith(MonsterTemplateId::class).forEach(world::destroyEntity)
     }
-
-    private fun propByType(
-        session: FoundationGameSession,
-        propTypeId: String,
-    ) = session.renderSnapshot().props.firstOrNull { prop -> prop.propTypeId == propTypeId }
 
     private fun logEventByKey(
         session: FoundationGameSession,

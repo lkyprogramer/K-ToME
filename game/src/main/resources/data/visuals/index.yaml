@@ -194,6 +194,8 @@ visuals:
   - id: zone.deep_iron_pit.icon
   - id: zone.secret.deep_iron_slag_cache.visual
   - id: zone.secret.deep_iron_slag_cache.icon
+  - id: zone.secret.deep_iron_smuggler_stash.visual
+  - id: zone.secret.deep_iron_smuggler_stash.icon
   - id: zone.grey_gate_depths.visual
   - id: zone.grey_gate_depths.icon
   - id: vfx.zone.effect.current_lane_01
