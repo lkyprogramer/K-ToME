@@ -57,7 +57,6 @@ class RouteProgressCommandTest {
         assertTrue(routeProgressCommand(session, observation) == null)
     }
 
-    @Test
     fun `route progress still pursues objective hook when only distant hostiles are visible`() {
         val session =
             GameModule.newFoundationSession(
@@ -88,6 +87,33 @@ class RouteProgressCommandTest {
             val destination = observation.playerPosition + command.delta
             assertCloser(destination, observation.playerPosition, objectivePoint)
         }
+    }
+
+    @Test
+    fun `route progress pivots to boss path on final floor after terminal objective is in progress`() {
+        val session =
+            GameModule.newFoundationSession(
+                config = FoundationGameConfig(seed = 20260318L, zoneId = "deep_iron_pit", playerProfessionId = "templar"),
+                saveManager = SaveManager(tempDir.resolve("deep-iron-in-progress-route-progress")),
+            )
+
+        val oreStash = requireNotNull(session.automationInteractablePoint("ore_stash"))
+        session.automationMovePlayerTo(oreStash)
+        assertTrue(session.perform(PlayerCommand.Interact))
+
+        val stairsDown = requireNotNull(session.automationStairPoint(StairDirection.DOWN))
+        session.automationMovePlayerTo(stairsDown)
+        assertTrue(session.perform(PlayerCommand.Descend))
+
+        assertTrue(session.automationPendingObjectiveInteractablePoint() == null)
+
+        val bossPoint = requireNotNull(session.automationBossPoint())
+        val observation = RunObservationCapture.capture(session, turnIndex = 0)
+        val command = requireNotNull(routeProgressCommand(session, observation))
+
+        assertTrue(command is PlayerCommand.Move)
+        val destination = observation.playerPosition + (command as PlayerCommand.Move).delta
+        assertCloser(destination, observation.playerPosition, bossPoint)
     }
 
     private fun assertCloser(

@@ -20,7 +20,7 @@ monsters:
     lootProfileId: loot.foundation.common
     talents: {}
     expReward: 15
-    spawnFloors: [2]
+    spawnFloors: [1, 2]
     spawnWeight: 10
   - id: undead.bone_archer
     nameKey: monster.undead.bone_archer.name
@@ -66,7 +66,7 @@ monsters:
     lootProfileId: loot.foundation.common
     talents: { war_cry: 1 }
     expReward: 28
-    spawnFloors: [1, 2]
+    spawnFloors: [2]
     spawnWeight: 8
   - id: orc.raider
     nameKey: monster.orc.raider.name

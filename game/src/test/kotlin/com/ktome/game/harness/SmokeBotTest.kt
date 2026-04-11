@@ -352,6 +352,60 @@ class SmokeBotTest {
     }
 
     @Test
+    fun `recent drop suppresses near full detours toward visible ground items`() {
+        val crowdedInventory =
+            listOf(
+                InventoryItemView(index = 0, name = "Arcane Staff", baseItemId = "arcane_staff", type = ItemType.WEAPON, slot = EquipSlot.WEAPON, equippedSlot = EquipSlot.WEAPON, quality = RarityTier.NORMAL),
+                InventoryItemView(index = 1, name = "Mana Potion A", type = ItemType.CONSUMABLE, effect = ConsumableEffect.RESTORE_RESOURCE, resourceTypeId = "MANA"),
+                InventoryItemView(index = 2, name = "Mana Potion B", type = ItemType.CONSUMABLE, effect = ConsumableEffect.RESTORE_RESOURCE, resourceTypeId = "MANA"),
+                InventoryItemView(index = 3, name = "Mana Potion C", type = ItemType.CONSUMABLE, effect = ConsumableEffect.RESTORE_RESOURCE, resourceTypeId = "MANA"),
+                InventoryItemView(index = 4, name = "Healing Potion A", type = ItemType.CONSUMABLE, effect = ConsumableEffect.HEAL),
+                InventoryItemView(index = 5, name = "Healing Potion B", type = ItemType.CONSUMABLE, effect = ConsumableEffect.HEAL),
+                InventoryItemView(index = 6, name = "Healing Potion C", type = ItemType.CONSUMABLE, effect = ConsumableEffect.HEAL),
+                InventoryItemView(index = 7, name = "Teleport Scroll A", type = ItemType.CONSUMABLE, effect = ConsumableEffect.TELEPORT),
+                InventoryItemView(index = 8, name = "Teleport Scroll B", type = ItemType.CONSUMABLE, effect = ConsumableEffect.TELEPORT),
+                InventoryItemView(index = 9, name = "Teleport Scroll C", type = ItemType.CONSUMABLE, effect = ConsumableEffect.TELEPORT),
+                InventoryItemView(index = 10, name = "Battle Axe", baseItemId = "battle_axe", type = ItemType.WEAPON, slot = EquipSlot.WEAPON, quality = RarityTier.NORMAL),
+            )
+
+        val dropObservation =
+            observation(
+                inventoryItems = crowdedInventory,
+                playerStatus = healthyStatus(),
+                playerResource = PlayerResourceView(current = 20, max = 20, typeId = "MANA"),
+                turnIndex = 10,
+                map = longCorridorMap,
+                playerPosition = Point(3, 0),
+                visibleTiles = (0..10).mapTo(linkedSetOf()) { x -> Point(x, 0) },
+                exploredTiles = (0..10).mapTo(linkedSetOf()) { x -> Point(x, 0) },
+                knownDownstairsPositions = listOf(Point(0, 0)),
+            )
+
+        val firstCommand = bot.decide(dropObservation)
+        assertTrue(firstCommand is PlayerCommand.DropInventoryItem, "Expected crowded inventory to be pruned, but got $firstCommand.")
+
+        val detourObservation =
+            observation(
+                inventoryItems = crowdedInventory.dropLast(1),
+                playerStatus = healthyStatus(),
+                playerResource = PlayerResourceView(current = 20, max = 20, typeId = "MANA"),
+                turnIndex = 11,
+                map = longCorridorMap,
+                playerPosition = Point(3, 0),
+                visibleTiles = (0..10).mapTo(linkedSetOf()) { x -> Point(x, 0) },
+                exploredTiles = (0..10).mapTo(linkedSetOf()) { x -> Point(x, 0) },
+                knownDownstairsPositions = listOf(Point(0, 0)),
+                visibleGroundItemPositions = listOf(Point(4, 0)),
+            )
+
+        val command = bot.decide(detourObservation)
+        assertFalse(
+            command == PlayerCommand.Move(Point(1, 0)) || command == PlayerCommand.PickUp,
+            "Bot should not detour back into visible ground loot immediately after pruning, actual=$command.",
+        )
+    }
+
+    @Test
     fun `inventory at pickup cap prunes gear before skipping visible loot`() {
         val cappedInventory =
             listOf(

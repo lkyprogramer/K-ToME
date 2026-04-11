@@ -233,7 +233,7 @@ class HybridTopologyPlanner(
             nodes = nodes,
             edges = edges,
             primaryPathNodeIds = primaryNodesWithGrants.map(TopologyNode::id),
-            optionalLoopCount = optionalNodesWithGrants.size,
+            optionalLoopCount = edges.count(TopologyEdge::isLoop),
         )
     }
 

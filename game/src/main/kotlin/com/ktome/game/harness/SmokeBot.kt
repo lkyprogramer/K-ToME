@@ -447,9 +447,14 @@ class SmokeBot : RunBot {
         }
 
     private fun shouldSkipFreshDropPickup(observation: RunObservation): Boolean =
-        recentDroppedPositions[observation.playerPosition]?.let { droppedAtTurn ->
-            observation.turnIndex <= droppedAtTurn + RECENT_DROP_PICKUP_COOLDOWN_TURNS
-        } == true
+        shouldDelayGroundItemPickupAfterRecentDrop(observation) ||
+            recentDroppedPositions[observation.playerPosition]?.let { droppedAtTurn ->
+                observation.turnIndex <= droppedAtTurn + RECENT_DROP_PICKUP_COOLDOWN_TURNS
+            } == true
+
+    private fun shouldDelayGroundItemPickupAfterRecentDrop(observation: RunObservation): Boolean =
+        recentDroppedPositions.isNotEmpty() &&
+            observation.inventoryItems.size >= INVENTORY_PRUNE_TRIGGER_SIZE - 1
 
     private fun shouldAvoidDroppedGroundItem(
         observation: RunObservation,
@@ -856,6 +861,9 @@ class SmokeBot : RunBot {
 
     private fun chooseGroundItemPath(observation: RunObservation): PlayerCommand? {
         if (!shouldDetourForGroundItems(observation)) {
+            return null
+        }
+        if (shouldDelayGroundItemPickupAfterRecentDrop(observation)) {
             return null
         }
         val maxDetourDistance =

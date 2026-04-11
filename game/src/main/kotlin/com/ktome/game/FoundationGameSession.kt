@@ -958,13 +958,23 @@ class FoundationGameSession internal constructor(
     internal fun automationPendingObjectiveInteractablePoint(): Point? {
         val objective = currentObjectiveSetSchema() ?: return null
         val state = currentObjectiveStateEntry()?.second ?: return null
-        if (state != ObjectiveState.AVAILABLE) {
+        if (state == ObjectiveState.COMPLETED) {
+            return null
+        }
+        if (
+            state == ObjectiveState.IN_PROGRESS &&
+            currentFloor() >= config.maxFloor &&
+            currentObjectiveCompletionRule() in setOf(ObjectiveCompletionRule.EXPLORE_FLOOR_PAIR, ObjectiveCompletionRule.SECURE_FORGE_PATH)
+        ) {
             return null
         }
         val currentFloorInteractableIds =
             objective.placements
                 .asSequence()
                 .filter { placement -> placement.floor == currentFloor() }
+                .filter { placement ->
+                    objectiveProgressSpecFor(placement.interactableId)?.token !in objectiveProgressTokens
+                }
                 .map { placement -> placement.interactableId }
                 .toSet()
         if (currentFloorInteractableIds.isEmpty()) {
@@ -981,6 +991,30 @@ class FoundationGameSession internal constructor(
         buildSet {
             world.entitiesWith(RiverCurrentRuntimeState::class).forEach { entityId ->
                 addAll(riverHazardCells(requireNotNull(world.get<RiverCurrentRuntimeState>(entityId))))
+            }
+            world.entitiesWith(FurnacePressureRuntimeState::class).forEach { entityId ->
+                val state = requireNotNull(world.get<FurnacePressureRuntimeState>(entityId))
+                if (state.phase != FurnacePressurePhase.IDLE) {
+                    addAll(state.hazardCells)
+                }
+            }
+            world.entitiesWith(CrystalShardRuntimeState::class).forEach { entityId ->
+                val state = requireNotNull(world.get<CrystalShardRuntimeState>(entityId))
+                if (!isCrystalResonanceSettled() && state.phase != CrystalShardPhase.IDLE) {
+                    addAll(state.hazardCells)
+                }
+            }
+            world.entitiesWith(AbyssalTemplePressureRuntimeState::class).forEach { entityId ->
+                val state = requireNotNull(world.get<AbyssalTemplePressureRuntimeState>(entityId))
+                if (state.phase != VoidPressurePhase.IDLE && state.suppressionTurnsRemaining == 0) {
+                    addAll(templeVoidPressureCells(state))
+                }
+            }
+            world.entitiesWith(VoidEruptionRuntimeState::class).forEach { entityId ->
+                val state = requireNotNull(world.get<VoidEruptionRuntimeState>(entityId))
+                if (state.phase != VoidPressurePhase.IDLE && state.stabilizedTurnsRemaining == 0) {
+                    addAll(state.hazardCells)
+                }
             }
         }
 
