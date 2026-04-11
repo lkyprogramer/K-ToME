@@ -2,6 +2,7 @@ package com.ktome.game.elites
 
 import com.ktome.core.combat.DamageType
 import com.ktome.core.item.StatModifier
+import com.ktome.core.mapgen.TerrainTag
 
 enum class MutationKind {
     STAT_PACKAGE,
@@ -62,6 +63,7 @@ data class EliteMutationDef(
     val minFloor: Int,
     val maxFloor: Int?,
     val allowedZones: Set<String>,
+    val preferredTerrainTags: List<TerrainTag> = emptyList(),
     val statModifiers: List<StatModifierRef>,
     val grantedTalents: List<TalentGrantRef>,
     val aiProfileOverlay: String?,
@@ -80,6 +82,9 @@ data class EliteMutationDef(
         require(maxFloor == null || maxFloor >= minFloor) { "EliteMutationDef.maxFloor must be >= minFloor when present." }
         require(applyToTags.all(String::isNotBlank)) { "EliteMutationDef.applyToTags must not contain blanks." }
         require(allowedZones.all(String::isNotBlank)) { "EliteMutationDef.allowedZones must not contain blanks." }
+        require(preferredTerrainTags.size == preferredTerrainTags.distinct().size) {
+            "EliteMutationDef.preferredTerrainTags must not contain duplicates."
+        }
         require(aiProfileOverlay == null || aiProfileOverlay.isNotBlank()) {
             "EliteMutationDef.aiProfileOverlay must not be blank when present."
         }
@@ -164,6 +169,9 @@ class EliteMutationRegistry(
                 "abyssal_temple",
                 "abyssal_heart",
             )
+        // Keep terrain-affinity packages slightly above same-tier generic majors so Path B
+        // can manifest in real combat, without fully crowding out non-affinity elites.
+        const val PREFERRED_TERRAIN_WEIGHT_BONUS: Int = 4
     }
 
     init {
@@ -204,7 +212,10 @@ class EliteMutationRegistry(
         }
         val desiredCount = if (context.allowDoubleMutation) config.maxMutationsPerElite else 1
         while (selected.size < desiredCount && candidates.isNotEmpty()) {
-            val weightedCandidates = candidates.map { definition -> definition to tierWeight(definition.tier, context) }
+            val weightedCandidates =
+                candidates.map { definition ->
+                    definition to (tierWeight(definition.tier, context) + terrainAffinityWeightBonus(definition, context))
+                }
             val totalWeight = weightedCandidates.sumOf { (_, weight) -> weight.coerceAtLeast(0) }
             if (totalWeight <= 0) {
                 break
@@ -245,6 +256,18 @@ class EliteMutationRegistry(
                 }
         }
     }
+
+    private fun terrainAffinityWeightBonus(
+        definition: EliteMutationDef,
+        context: MutationSelectionContext,
+    ): Int =
+        if (definition.preferredTerrainTags.isEmpty()) {
+            0
+        } else if (definition.allowedZones.isNotEmpty() && context.zoneId !in definition.allowedZones) {
+            0
+        } else {
+            PREFERRED_TERRAIN_WEIGHT_BONUS
+        }
 }
 
 class BossVariantRegistry(

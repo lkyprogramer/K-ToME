@@ -19,6 +19,7 @@ import com.ktome.core.ecs.Health
 import com.ktome.core.ecs.MonsterTemplateId
 import com.ktome.core.ecs.Name
 import com.ktome.core.ecs.Position
+import com.ktome.core.ecs.PreferredTerrainAffinity
 import com.ktome.core.ecs.Stats
 import com.ktome.core.ecs.World
 import com.ktome.core.ecs.add
@@ -41,6 +42,8 @@ import com.ktome.core.talent.EffectTracker
 import com.ktome.game.FoundationGameConfig
 import com.ktome.game.FoundationGameSession
 import com.ktome.game.GameModule
+import com.ktome.game.data.DataLoader
+import com.ktome.game.terrainPreferenceImplemented
 import java.nio.file.Path
 import java.security.MessageDigest
 import kotlinx.serialization.encodeToString
@@ -60,8 +63,20 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 
 class TerrainInteractionBatchTest {
+    private companion object {
+        private const val TERRAIN_METRIC_DEFINITION_VERSION: String = "phase4-terrain-v2"
+        private const val TERRAIN_TAGGED_EXPOSURE_FORMULA: String = "taggedCombatCount / combatCount"
+        private const val TERRAIN_INTERACTION_ENCOUNTER_FORMULA: String =
+            "triggeredInteractionCombatCount / taggedCombatCount"
+    }
+
     @TempDir
     lateinit var tempDir: Path
+
+    private val preferredTerrainTagsByMutationId: Map<String, Set<TerrainTag>> =
+        DataLoader().loadSchemaCatalog().eliteMutations.associate { mutation ->
+            mutation.id to mutation.preferredTerrainTags.toSet()
+        }
 
     @Test
     @Tag("terrainInteractionBatch")
@@ -300,6 +315,18 @@ class TerrainInteractionBatchTest {
                 add("damage:${damageType.name.lowercase()}")
                 sourceMutationId?.let { mutationId -> add("mutation:$mutationId") }
             }
+        val preferredTerrainTags = sourceMutationId?.let(preferredTerrainTagsByMutationId::get).orEmpty()
+        val adjacentTerrainTags =
+            Point.ALL_DIRECTIONS
+                .asSequence()
+                .map { delta -> targetPoint + delta }
+                .filter { point -> session.map.isInBounds(point.x, point.y) }
+                .flatMap { point -> session.automationTerrainTagsAt(point).asSequence() }
+                .toCollection(linkedSetOf())
+        val terrainPreferenceImplemented =
+            preferredTerrainTags.isEmpty() ||
+                beforeTerrainTags.any(preferredTerrainTags::contains) ||
+                adjacentTerrainTags.any(preferredTerrainTags::contains)
         val step9 = trace.steps.firstOrNull { step -> step.stepIndex == 9 }
         val step9ResolvedRuleId = step9?.outputs?.get("terrainInteractionRuleId")
         val childTraceIds = interaction?.childTraceIds.orEmpty()
@@ -319,6 +346,8 @@ class TerrainInteractionBatchTest {
                 chainHealthAfter = chainHealthAfter,
                 expectedSecondaryEffect = expectedSecondaryEffect,
                 sourceTags = sourceTags,
+                preferredTerrainTags = preferredTerrainTags,
+                terrainPreferenceImplemented = terrainPreferenceImplemented,
             )
         val artifacts = writeTerrainArtifacts(outputDir = whiteBoxSummaryReportDir("ktome.phase4.whitebox.terrain.reportDir", "terrain"), joinKey = joinKey, session = session, result = result, interaction = interaction, beforeTerrainTags = beforeTerrainTags, afterTerrainTags = afterTerrainTags, targetPoint = targetPoint, mapSlice = mapSlice, chainId = prepared.chainId)
         val report =
@@ -334,6 +363,9 @@ class TerrainInteractionBatchTest {
                         putJsonArray("adjacentTargetIds") { prepared.chainId?.value?.let { add(JsonPrimitive(it)) } }
                         putJsonArray("appliedStatusIds") { interaction?.appliedStatusIds.orEmpty().sorted().forEach { value -> add(JsonPrimitive(value)) } }
                         putJsonArray("removedStatusIds") { interaction?.removedStatusIds.orEmpty().sorted().forEach { value -> add(JsonPrimitive(value)) } }
+                        putJsonArray("preferredTerrainTags") { preferredTerrainTags.map(TerrainTag::name).sorted().forEach { value -> add(JsonPrimitive(value)) } }
+                        putJsonArray("adjacentTerrainTags") { adjacentTerrainTags.map(TerrainTag::name).sorted().forEach { value -> add(JsonPrimitive(value)) } }
+                        put("terrainPreferenceImplemented", terrainPreferenceImplemented)
                         putJsonArray("createdTerrainOverrides") {
                             targetOverride?.let { override ->
                                 add(
@@ -367,6 +399,8 @@ class TerrainInteractionBatchTest {
             joinKey = joinKey,
             resolvedRuleId = step9ResolvedRuleId,
             provenanceTerrainTags = if (provenance) beforeTerrainTags.mapTo(linkedSetOf()) { it.name } else emptySet(),
+            preferredTerrainTags = preferredTerrainTags.mapTo(linkedSetOf(), TerrainTag::name),
+            terrainPreferenceImplemented = terrainPreferenceImplemented,
             sourceTags = sourceTags,
             report = report,
         )
@@ -386,6 +420,8 @@ class TerrainInteractionBatchTest {
         chainHealthAfter: Int?,
         expectedSecondaryEffect: TerrainSecondaryEffect,
         sourceTags: Set<String>,
+        preferredTerrainTags: Set<TerrainTag>,
+        terrainPreferenceImplemented: Boolean,
     ): List<WhiteBoxAssertionResult> {
         val actualAfterTagNames = actualAfterTags.map { it.name }.sorted()
         return listOf(
@@ -455,6 +491,15 @@ class TerrainInteractionBatchTest {
                         putJsonArray("sourceTags") { sourceTags.sorted().forEach { value -> add(JsonPrimitive(value)) } }
                     },
             ),
+            WhiteBoxAssertionResult(
+                ruleId = "terrain.case.preferred_terrain_applied",
+                passed = preferredTerrainTags.isEmpty() || terrainPreferenceImplemented,
+                message = "Formal terrain-affinity mutations land on preferred terrain or an adjacent tactical tile.",
+                context =
+                    buildJsonObject {
+                        putJsonArray("preferredTerrainTags") { preferredTerrainTags.map(TerrainTag::name).sorted().forEach { value -> add(JsonPrimitive(value)) } }
+                    },
+            ),
         )
     }
 
@@ -471,6 +516,11 @@ class TerrainInteractionBatchTest {
             cases.count { case ->
                 case.sourceTags.any { tag -> tag.startsWith("mutation:") || tag.startsWith("bossVariant:") }
             }
+        val preferredTerrainCaseCount = cases.count { case -> case.preferredTerrainTags.isNotEmpty() }
+        val preferredTerrainImplementedCount =
+            cases.count { case ->
+                case.preferredTerrainTags.isNotEmpty() && case.terrainPreferenceImplemented
+            }
         return WhiteBoxAggregateReport(
             groupId = groupId,
             sampleCount = cases.size,
@@ -480,24 +530,50 @@ class TerrainInteractionBatchTest {
                     put("failedAssertionCount", failedCount)
                     put("unresolvedRuleCount", unresolvedRuleCount)
                     put("formalSourceTagCount", formalSourceTagCount)
+                    put("preferredTerrainCaseCount", preferredTerrainCaseCount)
+                    put("preferredTerrainImplementedCount", preferredTerrainImplementedCount)
+                    put(
+                        "preferredTerrainCaseImplementationRate",
+                        if (preferredTerrainCaseCount == 0) {
+                            0.0
+                        } else {
+                            preferredTerrainImplementedCount.toDouble() / preferredTerrainCaseCount.toDouble()
+                        },
+                    )
+                    put("terrainMetricDefinitionVersion", TERRAIN_METRIC_DEFINITION_VERSION)
+                    put("terrainTaggedCombatExposureFormula", TERRAIN_TAGGED_EXPOSURE_FORMULA)
+                    put("terrainInteractionEncounterFormula", TERRAIN_INTERACTION_ENCOUNTER_FORMULA)
                     putJsonArray("coveredRuleIds") { allRuleIds.sorted().forEach { value -> add(JsonPrimitive(value)) } }
                     putJsonArray("provenanceTerrainTags") { provenanceTags.sorted().forEach { value -> add(JsonPrimitive(value)) } }
+                    putJsonArray("preferredTerrainTagsSeen") {
+                        cases.flatMapTo(linkedSetOf()) { case -> case.preferredTerrainTags }.sorted().forEach { value -> add(JsonPrimitive(value)) }
+                    }
                     exposureProbe?.let { probe ->
                         put("terrainTaggedCombatExposureRate", probe.terrainTaggedCombatExposureRate)
                         put("terrainInteractionEncounterRate", probe.terrainInteractionEncounterRate)
                         put("combatCount", probe.combatCount)
                         put("taggedCombatCount", probe.taggedCombatCount)
                         put("triggeredInteractionCombatCount", probe.triggeredInteractionCombatCount)
+                        put("preferredTerrainCombatCount", probe.preferredTerrainCombatCount)
+                        put("preferredTerrainImplementedCombatCount", probe.preferredTerrainImplementedCombatCount)
+                        put("preferredTerrainCombatImplementationRate", probe.preferredTerrainCombatImplementationRate)
+                        put("decisionPathByCurrentMetrics", terrainDecisionPath(probe.terrainTaggedCombatExposureRate, probe.terrainInteractionEncounterRate))
                         putJsonObject("terrainCoverageByZone") {
                             probe.coverageByZone.forEach { (zoneId, coverage) ->
                                 putJsonObject(zoneId) {
                                     put("combatCount", coverage.combatCount)
                                     put("taggedCombatCount", coverage.taggedCombatCount)
                                     put("triggeredInteractionCombatCount", coverage.triggeredInteractionCombatCount)
+                                    put("preferredTerrainCombatCount", coverage.preferredTerrainCombatCount)
+                                    put("preferredTerrainImplementedCombatCount", coverage.preferredTerrainImplementedCombatCount)
+                                    put("preferredTerrainCombatImplementationRate", coverage.preferredTerrainCombatImplementationRate)
                                     put("terrainTaggedCombatExposureRate", coverage.terrainTaggedCombatExposureRate)
                                     put("terrainInteractionEncounterRate", coverage.terrainInteractionEncounterRate)
                                     putJsonArray("observedTerrainTags") {
                                         coverage.observedTerrainTags.sorted().forEach { terrainTag -> add(JsonPrimitive(terrainTag)) }
+                                    }
+                                    putJsonArray("observedPreferredTerrainTags") {
+                                        coverage.observedPreferredTerrainTags.sorted().forEach { terrainTag -> add(JsonPrimitive(terrainTag)) }
                                     }
                                     putJsonArray("triggeredRuleIds") {
                                         coverage.triggeredRuleIds.sorted().forEach { ruleId -> add(JsonPrimitive(ruleId)) }
@@ -542,6 +618,15 @@ class TerrainInteractionBatchTest {
                             ruleId = "terrain.aggregate.formal_source_tags_present",
                             passed = formalSourceTagCount > 0,
                             message = "At least one terrain interaction provenance case retains formal mutation/boss source tags.",
+                        )
+                    } else {
+                        null
+                    },
+                    if (groupId == "provenance-corpus" || groupId == "corpus") {
+                        WhiteBoxAssertionResult(
+                            ruleId = "terrain.aggregate.preferred_terrain_implemented",
+                            passed = preferredTerrainCaseCount == 0 || preferredTerrainCaseCount == preferredTerrainImplementedCount,
+                            message = "Every provenance case with explicit terrain affinity lands on preferred terrain or an adjacent tactical tile.",
                         )
                     } else {
                         null
@@ -621,10 +706,21 @@ class TerrainInteractionBatchTest {
                     combatCount = zoneObservations.size,
                     taggedCombatCount = zoneObservations.count(FoundationGameSession.TerrainCombatObservation::isTerrainTagged),
                     triggeredInteractionCombatCount = zoneObservations.count(FoundationGameSession.TerrainCombatObservation::terrainInteractionTriggered),
+                    preferredTerrainCombatCount = zoneObservations.count(FoundationGameSession.TerrainCombatObservation::hasPreferredTerrain),
+                    preferredTerrainImplementedCombatCount =
+                        zoneObservations.count { observation ->
+                            observation.hasPreferredTerrain() && observation.preferredTerrainImplemented()
+                        },
                     observedTerrainTags =
                         zoneObservations
                             .flatMapTo(linkedSetOf()) { observation ->
                                 observation.attackerTerrainTags.map(TerrainTag::name) + observation.targetTerrainTags.map(TerrainTag::name)
+                            },
+                    observedPreferredTerrainTags =
+                        zoneObservations
+                            .flatMapTo(linkedSetOf()) { observation ->
+                                observation.attackerPreferredTerrainTags.map(TerrainTag::name) +
+                                    observation.targetPreferredTerrainTags.map(TerrainTag::name)
                             },
                     triggeredRuleIds =
                         zoneObservations
@@ -636,6 +732,11 @@ class TerrainInteractionBatchTest {
             combatCount = observations.size,
             taggedCombatCount = observations.count(FoundationGameSession.TerrainCombatObservation::isTerrainTagged),
             triggeredInteractionCombatCount = observations.count(FoundationGameSession.TerrainCombatObservation::terrainInteractionTriggered),
+            preferredTerrainCombatCount = observations.count(FoundationGameSession.TerrainCombatObservation::hasPreferredTerrain),
+            preferredTerrainImplementedCombatCount =
+                observations.count { observation ->
+                    observation.hasPreferredTerrain() && observation.preferredTerrainImplemented()
+                },
             coverageByZone = coverageByZone,
         )
     }
@@ -707,7 +808,16 @@ class TerrainInteractionBatchTest {
         sourceMutationId?.let { mutationId ->
             world.remove<EliteMutationLoadout>(session.playerId)
             world.add(session.playerId, EliteMutationLoadout(mutableListOf(mutationId)))
-        } ?: world.remove<EliteMutationLoadout>(session.playerId)
+            val preferredTerrainTags = preferredTerrainTagsByMutationId[mutationId].orEmpty()
+            if (preferredTerrainTags.isEmpty()) {
+                world.remove<PreferredTerrainAffinity>(session.playerId)
+            } else {
+                world.add(session.playerId, PreferredTerrainAffinity(preferredTerrainTags))
+            }
+        } ?: run {
+            world.remove<EliteMutationLoadout>(session.playerId)
+            world.remove<PreferredTerrainAffinity>(session.playerId)
+        }
         val playerPoint = openAdjacentWalkablePoint(session, targetPoint)
         session.automationMovePlayerTo(playerPoint)
         return PreparedCombatants(world = world, targetId = targetId, chainId = chainId)
@@ -971,6 +1081,8 @@ private data class TerrainBatchCaseRecord(
     val joinKey: WhiteBoxJoinKey,
     val resolvedRuleId: String?,
     val provenanceTerrainTags: Set<String>,
+    val preferredTerrainTags: Set<String>,
+    val terrainPreferenceImplemented: Boolean,
     val sourceTags: Set<String>,
     val report: WhiteBoxCaseReport,
 )
@@ -980,28 +1092,59 @@ private data class TerrainExposureProbeSummary(
     val combatCount: Int,
     val taggedCombatCount: Int,
     val triggeredInteractionCombatCount: Int,
+    val preferredTerrainCombatCount: Int,
+    val preferredTerrainImplementedCombatCount: Int,
     val coverageByZone: Map<String, TerrainZoneExposureSummary>,
 ) {
     val terrainTaggedCombatExposureRate: Double
         get() = if (combatCount == 0) 0.0 else taggedCombatCount.toDouble() / combatCount.toDouble()
 
     val terrainInteractionEncounterRate: Double
-        get() = if (combatCount == 0) 0.0 else triggeredInteractionCombatCount.toDouble() / combatCount.toDouble()
+        get() = if (taggedCombatCount == 0) 0.0 else triggeredInteractionCombatCount.toDouble() / taggedCombatCount.toDouble()
+
+    val preferredTerrainCombatImplementationRate: Double
+        get() =
+            if (preferredTerrainCombatCount == 0) {
+                0.0
+            } else {
+                preferredTerrainImplementedCombatCount.toDouble() / preferredTerrainCombatCount.toDouble()
+            }
 }
 
 private data class TerrainZoneExposureSummary(
     val combatCount: Int,
     val taggedCombatCount: Int,
     val triggeredInteractionCombatCount: Int,
+    val preferredTerrainCombatCount: Int,
+    val preferredTerrainImplementedCombatCount: Int,
     val observedTerrainTags: Set<String>,
+    val observedPreferredTerrainTags: Set<String>,
     val triggeredRuleIds: Set<String>,
 ) {
     val terrainTaggedCombatExposureRate: Double
         get() = if (combatCount == 0) 0.0 else taggedCombatCount.toDouble() / combatCount.toDouble()
 
     val terrainInteractionEncounterRate: Double
-        get() = if (combatCount == 0) 0.0 else triggeredInteractionCombatCount.toDouble() / combatCount.toDouble()
+        get() = if (taggedCombatCount == 0) 0.0 else triggeredInteractionCombatCount.toDouble() / taggedCombatCount.toDouble()
+
+    val preferredTerrainCombatImplementationRate: Double
+        get() =
+            if (preferredTerrainCombatCount == 0) {
+                0.0
+            } else {
+                preferredTerrainImplementedCombatCount.toDouble() / preferredTerrainCombatCount.toDouble()
+            }
 }
+
+private fun terrainDecisionPath(
+    terrainTaggedCombatExposureRate: Double,
+    terrainInteractionEncounterRate: Double,
+): String =
+    when {
+        terrainTaggedCombatExposureRate < 0.20 -> "Path A"
+        terrainInteractionEncounterRate < 0.15 -> "Path B"
+        else -> "Path C"
+    }
 
 private enum class TerrainSecondaryEffect {
     CHAIN_DAMAGE,
@@ -1039,6 +1182,21 @@ private const val TERRAIN_EXPOSURE_MAX_FLOOR: Int = 2
 
 private fun FoundationGameSession.TerrainCombatObservation.isTerrainTagged(): Boolean =
     attackerTerrainTags.isNotEmpty() || targetTerrainTags.isNotEmpty()
+
+private fun FoundationGameSession.TerrainCombatObservation.hasPreferredTerrain(): Boolean =
+    attackerPreferredTerrainTags.isNotEmpty() || targetPreferredTerrainTags.isNotEmpty()
+
+private fun FoundationGameSession.TerrainCombatObservation.preferredTerrainImplemented(): Boolean =
+    terrainPreferenceImplemented(
+        preferredTerrainTags = attackerPreferredTerrainTags,
+        directTerrainTags = attackerTerrainTags,
+        adjacentTerrainTags = attackerAdjacentTerrainTags,
+    ) &&
+        terrainPreferenceImplemented(
+            preferredTerrainTags = targetPreferredTerrainTags,
+            directTerrainTags = targetTerrainTags,
+            adjacentTerrainTags = targetAdjacentTerrainTags,
+        )
 
 private fun shouldPrioritizeTerrainProbeRouteProgress(observation: RunObservation): Boolean =
     observation.visibleBossPositions.isEmpty() &&

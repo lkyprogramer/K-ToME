@@ -5,11 +5,13 @@ import com.ktome.core.ecs.BossVariantRuntime
 import com.ktome.core.ecs.EliteMutationLoadout
 import com.ktome.core.ecs.EntityId
 import com.ktome.core.ecs.Name
+import com.ktome.core.ecs.PreferredTerrainAffinity
 import com.ktome.core.ecs.ResistanceProfile
 import com.ktome.core.ecs.World
 import com.ktome.core.ecs.add
 import com.ktome.core.ecs.get
 import com.ktome.core.item.StatModifier
+import com.ktome.core.mapgen.TerrainTag
 import com.ktome.core.resource.ResourcePool
 import com.ktome.core.resource.ResourcePools
 import com.ktome.core.resource.ResourceType
@@ -23,6 +25,7 @@ import com.ktome.core.talent.EffectTracker
 import com.ktome.core.talent.TalentLoadout
 import com.ktome.game.GameContent
 import com.ktome.game.model.MonsterTemplate
+import com.ktome.game.model.isEliteEncounterTemplate
 
 enum class BossVariantSelectionMode {
     DISABLED,
@@ -35,6 +38,7 @@ internal data class SpawnDecorationRequest(
     val floorIndex: Int,
     val template: MonsterTemplate,
     val allowDoubleMutation: Boolean = false,
+    val forceEliteMutationEligibility: Boolean = false,
     val bossEncounterId: String? = null,
     val preferredBossVariantId: String? = null,
     val bossVariantSelectionMode: BossVariantSelectionMode = BossVariantSelectionMode.DISABLED,
@@ -43,6 +47,7 @@ internal data class SpawnDecorationRequest(
 internal data class EncounterDecoration(
     val mutations: List<EliteMutationDef> = emptyList(),
     val bossVariant: BossVariantDef? = null,
+    val preferredTerrainTags: Set<TerrainTag> = emptySet(),
 )
 
 internal class EncounterDecorationService(
@@ -52,6 +57,7 @@ internal class EncounterDecorationService(
         request: SpawnDecorationRequest,
         nextIndex: (Int) -> Int,
     ): EncounterDecoration {
+        val eliteMutationEligible = request.forceEliteMutationEligibility || request.template.isEliteEncounterTemplate()
         val bossVariant =
             resolveBossVariant(
                 request = request,
@@ -60,13 +66,13 @@ internal class EncounterDecorationService(
         val mutations =
             if (bossVariant != null) {
                 bossVariant.grantedMutations.mapNotNull { mutationRef -> content.eliteMutationRegistry.resolve(mutationRef.mutationId) }
-            } else if (isEliteTemplate(request.template)) {
+            } else if (eliteMutationEligible) {
                 content.eliteMutationRegistry.select(
                     context =
                         MutationSelectionContext(
                             zoneId = request.zoneId,
                             floorIndex = request.floorIndex,
-                            applyToTags = request.template.tags.toSet(),
+                            applyToTags = mutationSelectionTags(request.template, eliteMutationEligible),
                             allowDoubleMutation = request.allowDoubleMutation,
                         ),
                     nextIndex = nextIndex,
@@ -77,6 +83,7 @@ internal class EncounterDecorationService(
         return EncounterDecoration(
             mutations = mutations,
             bossVariant = bossVariant,
+            preferredTerrainTags = mutations.flatMapTo(linkedSetOf(), EliteMutationDef::preferredTerrainTags),
         )
     }
 
@@ -94,6 +101,13 @@ internal class EncounterDecorationService(
                 loadout.mutationIds += mutation.id
             }
             applyMutation(world, entityId, mutation)
+        }
+        if (decoration.preferredTerrainTags.isNotEmpty()) {
+            val existingTags = world.get<PreferredTerrainAffinity>(entityId)?.terrainTags.orEmpty()
+            world.add(
+                entityId,
+                PreferredTerrainAffinity(existingTags + decoration.preferredTerrainTags),
+            )
         }
         if (decoration.mutations.isNotEmpty()) {
             applyMutationName(world, entityId, decoration.mutations)
@@ -141,8 +155,17 @@ internal class EncounterDecorationService(
         return content.bossVariantRegistry.select(baseEncounterId, nextIndex)
     }
 
-    private fun isEliteTemplate(template: MonsterTemplate): Boolean =
-        "elite" in template.tags || template.lootProfileId.endsWith(".elite")
+    private fun mutationSelectionTags(
+        template: MonsterTemplate,
+        eliteMutationEligible: Boolean,
+    ): Set<String> {
+        val baseTags = template.tags.toSet()
+        return if (eliteMutationEligible) {
+            baseTags + "elite"
+        } else {
+            baseTags
+        }
+    }
 
     private fun applyMutation(
         world: World,

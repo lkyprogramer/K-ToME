@@ -5,6 +5,7 @@ import com.ktome.core.combat.PowerSaveStats
 import com.ktome.core.item.StatModifier
 import com.ktome.core.dungeon.StairDirection
 import com.ktome.core.map.Point
+import com.ktome.core.mapgen.TerrainTag
 
 data class Position(var x: Int, var y: Int) {
     fun toPoint(): Point = Point(x, y)
@@ -131,6 +132,10 @@ data class EliteMutationLoadout(
         require(mutationIds.all(String::isNotBlank)) { "EliteMutationLoadout.mutationIds must not contain blanks." }
     }
 }
+
+data class PreferredTerrainAffinity(
+    val terrainTags: Set<TerrainTag> = emptySet(),
+)
 
 data class AiProfileOverride(val profileId: String)
 

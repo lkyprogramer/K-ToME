@@ -47,6 +47,19 @@ class MapgenContractTest {
     }
 
     @Test
+    fun `bsp backed terrain painting increases single-tag coverage when weight increases`() {
+        val request = MapgenRequest(zoneId = "greenwood_fringe", floorIndex = 1, seed = 2026040102L, targetWidth = 70, targetHeight = 45)
+        val lowWeight =
+            BspBackedMapgenPipeline(profileResolver = singleTagProfileResolver(weight = 0.20f))
+                .run(request)
+        val highWeight =
+            BspBackedMapgenPipeline(profileResolver = singleTagProfileResolver(weight = 0.45f))
+                .run(request)
+
+        assertTrue(countTerrainPoints(highWeight, TerrainTag.WATER) > countTerrainPoints(lowWeight, TerrainTag.WATER))
+    }
+
+    @Test
     fun `hybrid topology pipeline keeps room biome and vault invariants`() {
         val pipeline =
             HybridTopologyMapgenPipeline(
@@ -109,6 +122,15 @@ class MapgenContractTest {
         assertTrue(generated.vaultPlacements.isNotEmpty())
         assertTrue(generated.terrainTags.isNotEmpty())
         assertFalse(generated.map.floorPoints().isEmpty())
+    }
+
+    @Test
+    fun `hybrid topology terrain painting increases single-tag coverage when weight increases`() {
+        val request = MapgenRequest(zoneId = "greenwood_fringe", floorIndex = 1, seed = 2026040106L, targetWidth = 72, targetHeight = 46)
+        val lowWeight = hybridPipelineForSingleTerrainWeight(weight = 0.20f).run(request)
+        val highWeight = hybridPipelineForSingleTerrainWeight(weight = 0.45f).run(request)
+
+        assertTrue(countTerrainPoints(highWeight, TerrainTag.WATER) > countTerrainPoints(lowWeight, TerrainTag.WATER))
     }
 
     @Test
@@ -386,4 +408,50 @@ class MapgenContractTest {
         assertEquals(generated.topology.nodes.map { node -> node.id }.toSet(), generated.rooms.map { room -> room.nodeId }.toSet())
         assertTrue(generated.rooms.all { room -> room.biomeFamilyId == LEGACY_COMPATIBILITY_BIOME_FAMILY_ID })
     }
+
+    private fun singleTagProfileResolver(weight: Float): ZoneMapgenProfileResolver =
+        object : ZoneMapgenProfileResolver {
+            override fun resolve(zoneId: String): ZoneMapgenProfile =
+                ZoneMapgenProfile(
+                    id = "$zoneId.single-tag",
+                    zoneId = zoneId,
+                    allowedBiomeFamilies = setOf("family.test"),
+                    loopCountRange = 1..1,
+                    vaultPool = emptySet(),
+                    terrainTagWeights = mapOf(TerrainTag.WATER to weight),
+                    roomTagFilter = setOf("start", "hub", "goal", "optional"),
+                )
+        }
+
+    private fun hybridPipelineForSingleTerrainWeight(weight: Float): HybridTopologyMapgenPipeline =
+        HybridTopologyMapgenPipeline(
+            profileResolver = singleTagProfileResolver(weight = weight),
+            roomDefs =
+                listOf(
+                    RoomDef("room.entry", RoomShape.RECT, 8..9, 7..8, setOf("general", "start")),
+                    RoomDef("room.hub", RoomShape.RECT, 9..10, 8..9, setOf("general", "hub")),
+                    RoomDef("room.goal", RoomShape.RECT, 9..10, 8..9, setOf("general", "goal")),
+                    RoomDef("room.optional", RoomShape.ROUND, 8..9, 8..9, setOf("general", "optional")),
+                ),
+            patternTemplates = emptyList(),
+            patternRooms = emptyList(),
+            vaultTemplates = emptyList(),
+            vaults = emptyList(),
+            biomeFamilies =
+                listOf(
+                    BiomeFamilyDef(
+                        id = "family.test",
+                        primaryTileSet = "tileset.test",
+                        secondaryTileSet = null,
+                        terrainTagWeights = emptyMap(),
+                        allowedRoomTags = setOf("start", "hub", "goal", "optional", "general"),
+                    ),
+                ),
+        )
+
+    private fun countTerrainPoints(
+        generatedFloor: GeneratedFloor,
+        terrainTag: TerrainTag,
+    ): Int =
+        generatedFloor.terrainTags.values.count { terrainTags -> terrainTag in terrainTags }
 }

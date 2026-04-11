@@ -128,7 +128,20 @@ game/src/test/kotlin/com/ktome/game/harness/TerrainInteractionBatchTest.kt
 
 1. `tools/build/reports/phase4/phase4-summary.json`
 2. `tools/build/reports/phase4/phase4-summary.md`
-3. 对应 white-box summary / cases / artifacts 目录
+3. `docs/review/phase4/opt/baselines/2026-04-09-opt-pr01-terrain-metrics-baseline.json`
+4. 对应 white-box summary / cases / artifacts 目录
+
+补充约束：
+
+1. `terrainTaggedCombatExposureRate` 与 `terrainInteractionEncounterRate` 一旦被后续 PR 作为 before/after 对比目标，必须固定消费上面的 baseline artifact，而不是直接从某次临时 `tools/build/reports/...` 输出反推。
+2. baseline artifact 必须显式保存：
+   - `metricDefinitionVersion`
+   - `sourceArtifactPath`
+   - `sourceBuildId`
+   - `sourceGeneratedAt`
+   - baseline 原始分子 / 分母
+   - 相对提升目标
+3. 若后续调整 metric 公式，只允许通过新的 baseline artifact + 文档更新一起完成，禁止只改 `phase4Report` 内部常量。
 
 ## 5. 推荐改动面
 
@@ -188,4 +201,5 @@ game/src/test/kotlin/com/ktome/game/harness/TerrainInteractionBatchTest.kt
 
 1. `phase4Report` 已能展示全部体验基线指标。
 2. `BossHarnessTest / TerrainInteractionBatchTest / WhiteBoxLootRunner / WhiteBoxHiddenContentRunner` 的 aggregate summary 已统一。
-3. 体验问题后续不再以“感觉”讨论，而能以结构化字段对比。
+3. terrain 两个指标已有受版本控制的 baseline artifact 与 provenance，后续 PR 能以相对提升而不是临时绝对阈值裁决。
+4. 体验问题后续不再以“感觉”讨论，而能以结构化字段对比。

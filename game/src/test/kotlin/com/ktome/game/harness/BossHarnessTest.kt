@@ -28,6 +28,7 @@ import com.ktome.game.FoundationGameConfig
 import com.ktome.game.FoundationGameSession
 import com.ktome.game.GameModule
 import com.ktome.game.PlayerCommand
+import com.ktome.game.terrainPreferenceImplemented
 import com.ktome.game.elites.BossVariantSelectionMode
 import com.ktome.game.interactablePoint
 import java.nio.file.Path
@@ -72,20 +73,23 @@ class BossHarnessTest {
             fileStem = "boss-harness",
             payload =
                 buildJsonObject {
-                    put("scriptVersion", "boss-harness-v3")
+                    put("scriptVersion", "boss-harness-v4")
                     putJsonArray("reports") { reports.forEach { report -> add(report.toJson()) } }
                     putJsonArray("pairReports") { pairReports.forEach { report -> add(report.toJson()) } }
                 },
             markdown =
                 buildString {
                     appendLine("# Boss Harness")
-                    appendLine("- scriptVersion: boss-harness-v3")
+                    appendLine("- scriptVersion: boss-harness-v4")
                     reports.forEach { report ->
                         appendLine(
                             "- encounter=${report.encounterId}, template=${report.templateId}, variant=${report.variantId ?: "base"}, " +
                                 "seed=${report.seed}, success=${report.success}, phase=${report.phaseId}, telegraph=${report.telegraphKey}, " +
                                 "selectedActions=${if (report.selectedActionIds.isEmpty()) "none" else report.selectedActionIds}, " +
                                 "threatCost=${report.threatCost}, lootProfileOverride=${report.lootProfileOverride ?: "none"}, " +
+                                "preferredTerrain=${if (report.preferredTerrainTags.isEmpty()) "none" else report.preferredTerrainTags}, " +
+                                "bossTerrain=${if (report.bossTerrainTags.isEmpty()) "none" else report.bossTerrainTags}, " +
+                                "preferenceAvailable=${report.terrainPreferenceAvailable}, preferenceApplied=${report.terrainPreferenceImplemented}, " +
                                 "phaseSequence=${report.phaseSequence}, aiTraceHash=${report.aiTraceHash}, bossTraceHash=${report.bossTraceHash}",
                         )
                     }
@@ -93,7 +97,9 @@ class BossHarnessTest {
                         appendLine(
                             "- pair=${pair.joinKey.scenarioId}, success=${pair.success}, phaseGraphUnchanged=${pair.phaseGraphUnchanged}, " +
                                 "structuralDiffCount=${pair.phaseGraphStructuralDiffCount}, inspectReadable=${pair.inspectReadable}, " +
-                                "logReadable=${pair.logReadable}, threatLedgerMatched=${pair.threatLedgerMatched}, rewardLedgerMatched=${pair.rewardLedgerMatched}",
+                                "logReadable=${pair.logReadable}, threatLedgerMatched=${pair.threatLedgerMatched}, rewardLedgerMatched=${pair.rewardLedgerMatched}, " +
+                                "terrainPreferenceAvailable=${pair.variantReport.terrainPreferenceAvailable}, " +
+                                "terrainPreferenceApplied=${pair.variantReport.terrainPreferenceImplemented}",
                         )
                     }
                 },
@@ -418,6 +424,18 @@ class BossHarnessTest {
                 }
         val variantRuntime = world.get<BossVariantRuntime>(bossId)
         val mutationLoadout = world.get<EliteMutationLoadout>(bossId)?.mutationIds?.sorted().orEmpty()
+        val preferredTerrainTags = session.automationPreferredTerrainTags(bossId).map { terrainTag -> terrainTag.name }.sorted()
+        val bossTerrainTags = session.automationTerrainTagsAt(bossPoint).map { terrainTag -> terrainTag.name }.sorted()
+        val adjacentBossTerrainTags = session.automationAdjacentTerrainTagsAt(bossPoint).map { terrainTag -> terrainTag.name }.sorted()
+        val terrainPreferenceAvailable =
+            preferredTerrainTags.isNotEmpty() &&
+                session.automationTerrainTags().values.any { terrainTags -> terrainTags.any { terrainTag -> terrainTag.name in preferredTerrainTags } }
+        val terrainPreferenceImplemented =
+            terrainPreferenceImplemented(
+                preferredTerrainTags = preferredTerrainTags.toSet(),
+                directTerrainTags = bossTerrainTags.toSet(),
+                adjacentTerrainTags = adjacentBossTerrainTags.toSet(),
+            )
         val inspectPoint = world.get<Position>(bossId)?.toPoint() ?: bossPoint
         val inspectActor = session.inspectAt(inspectPoint).actor
         val snapshot = session.renderSnapshot()
@@ -456,6 +474,7 @@ class BossHarnessTest {
                 expectedBossPhaseTracePresent &&
                 expectedBossSideEffectPresent &&
                 variantMatches &&
+                (!terrainPreferenceAvailable || terrainPreferenceImplemented) &&
                 inspectReadable &&
                 logReadable
         val failureReason =
@@ -470,6 +489,8 @@ class BossHarnessTest {
                 !expectedBossPhaseTracePresent -> "Missing boss phase trace '$expectedBossTracePhaseId'."
                 !expectedBossSideEffectPresent -> "Missing boss trace side effect '$expectedBossTraceSideEffect'."
                 !variantMatches -> "Expected variant ${expectedVariantId ?: "base"} but got ${variantRuntime?.variantId ?: "base"}."
+                terrainPreferenceAvailable && !terrainPreferenceImplemented ->
+                    "Boss spawn did not land on preferred terrain or an adjacent tactical tile."
                 !inspectReadable -> "Inspect view did not expose the expected variant/mutation metadata."
                 !logReadable -> "Render log did not expose the expected boss variant token."
                 else -> null
@@ -488,6 +509,11 @@ class BossHarnessTest {
             actionWeightProfileId = variantRuntime?.actionWeightProfileId,
             visualTintKey = variantRuntime?.visualTintKey,
             renderTintColorHex = null,
+            preferredTerrainTags = preferredTerrainTags,
+            bossTerrainTags = bossTerrainTags,
+            adjacentBossTerrainTags = adjacentBossTerrainTags,
+            terrainPreferenceAvailable = terrainPreferenceAvailable,
+            terrainPreferenceImplemented = terrainPreferenceImplemented,
             success = success,
             phaseId = phaseState?.currentPhaseId,
             telegraphKey = telegraph?.sourceAbilityId ?: telegraph?.telegraphSpecId,
@@ -586,6 +612,14 @@ class BossHarnessTest {
                         put("pairCount", pairReports.size)
                         put("phaseGraphStructuralDiffCount", pairReports.sumOf(BossHarnessPairReport::phaseGraphStructuralDiffCount))
                         put("variantCount", pairReports.count { pair -> pair.variantReport.variantId != null })
+                        put("terrainPreferenceVariantCount", pairReports.count { pair -> pair.variantReport.preferredTerrainTags.isNotEmpty() })
+                        put("terrainPreferenceAvailableVariantCount", pairReports.count { pair -> pair.variantReport.terrainPreferenceAvailable })
+                        put(
+                            "terrainPreferenceImplementedCount",
+                            pairReports.count { pair ->
+                                pair.variantReport.terrainPreferenceAvailable && pair.variantReport.terrainPreferenceImplemented
+                            },
+                        )
                     },
                 assertions =
                     listOf(
@@ -598,6 +632,14 @@ class BossHarnessTest {
                             ruleId = "boss.aggregate.phase_graph_diff_zero",
                             passed = pairReports.sumOf(BossHarnessPairReport::phaseGraphStructuralDiffCount) == 0,
                             message = "All boss variants preserve the original phase graph structure.",
+                        ),
+                        WhiteBoxAssertionResult(
+                            ruleId = "boss.aggregate.preferred_terrain_applied",
+                            passed =
+                                pairReports.all { pair ->
+                                    !pair.variantReport.terrainPreferenceAvailable || pair.variantReport.terrainPreferenceImplemented
+                                },
+                            message = "Every boss variant with explicit terrain affinity lands on preferred terrain or an adjacent tactical tile.",
                         ),
                     ),
             ),
@@ -615,6 +657,27 @@ class BossHarnessTest {
                         put("eliteMutationValidPairCount", bossRegistryMetrics.eliteMutationValidPairCount)
                         put("bossVariantCount", bossRegistryMetrics.bossVariantCount)
                         put("bossVariantMutationPairwiseDistinct", bossRegistryMetrics.bossVariantMutationPairwiseDistinct)
+                        put("terrainPreferenceVariantCount", pairReports.count { pair -> pair.variantReport.preferredTerrainTags.isNotEmpty() })
+                        put("terrainPreferenceAvailableVariantCount", pairReports.count { pair -> pair.variantReport.terrainPreferenceAvailable })
+                        put(
+                            "terrainPreferenceImplementedCount",
+                            pairReports.count { pair ->
+                                pair.variantReport.terrainPreferenceAvailable && pair.variantReport.terrainPreferenceImplemented
+                            },
+                        )
+                        put(
+                            "terrainPreferenceImplementedRate",
+                            pairReports.let { reports ->
+                                val variantsWithAvailability = reports.count { pair -> pair.variantReport.terrainPreferenceAvailable }
+                                if (variantsWithAvailability == 0) {
+                                    0.0
+                                } else {
+                                    reports.count { pair ->
+                                        pair.variantReport.terrainPreferenceAvailable && pair.variantReport.terrainPreferenceImplemented
+                                    }.toDouble() / variantsWithAvailability.toDouble()
+                                }
+                            },
+                        )
                         putJsonObject("mutationTierDistribution") {
                             bossRegistryMetrics.mutationTierDistribution.forEach { (tierId, count) ->
                                 put(tierId, count)
@@ -624,6 +687,13 @@ class BossHarnessTest {
                             bossRegistryMetrics.bossVariantMutationSets.forEach { (variantId, mutationIds) ->
                                 putJsonArray(variantId) {
                                     mutationIds.forEach { mutationId -> add(JsonPrimitive(mutationId)) }
+                                }
+                            }
+                        }
+                        putJsonObject("bossVariantPreferredTerrainTags") {
+                            bossRegistryMetrics.bossVariantPreferredTerrainTags.forEach { (variantId, terrainTags) ->
+                                putJsonArray(variantId) {
+                                    terrainTags.forEach { terrainTag -> add(JsonPrimitive(terrainTag)) }
                                 }
                             }
                         }
@@ -667,6 +737,14 @@ class BossHarnessTest {
                             ruleId = "boss.aggregate.variant_pairwise_distinct",
                             passed = bossRegistryMetrics.bossVariantMutationPairwiseDistinct,
                             message = "All formal boss variants keep pairwise-distinct mutation combinations.",
+                        ),
+                        WhiteBoxAssertionResult(
+                            ruleId = "boss.aggregate.variant_preferred_terrain_applied",
+                            passed =
+                                pairReports.all { pair ->
+                                    !pair.variantReport.terrainPreferenceAvailable || pair.variantReport.terrainPreferenceImplemented
+                                },
+                            message = "Boss variants with explicit terrain affinity are realized on preferred terrain or an adjacent tactical tile.",
                         ),
                     ),
             ),
@@ -820,6 +898,11 @@ private data class BossHarnessReport(
     val actionWeightProfileId: String?,
     val visualTintKey: String?,
     val renderTintColorHex: String?,
+    val preferredTerrainTags: List<String>,
+    val bossTerrainTags: List<String>,
+    val adjacentBossTerrainTags: List<String>,
+    val terrainPreferenceAvailable: Boolean,
+    val terrainPreferenceImplemented: Boolean,
     val success: Boolean,
     val phaseId: String?,
     val telegraphKey: String?,
@@ -869,6 +952,11 @@ private data class BossHarnessReport(
             actionWeightProfileId?.let { put("actionWeightProfileId", it) }
             visualTintKey?.let { put("visualTintKey", it) }
             renderTintColorHex?.let { put("renderTintColorHex", it) }
+            putJsonArray("preferredTerrainTags") { preferredTerrainTags.forEach { terrainTag -> add(JsonPrimitive(terrainTag)) } }
+            putJsonArray("bossTerrainTags") { bossTerrainTags.forEach { terrainTag -> add(JsonPrimitive(terrainTag)) } }
+            putJsonArray("adjacentBossTerrainTags") { adjacentBossTerrainTags.forEach { terrainTag -> add(JsonPrimitive(terrainTag)) } }
+            put("terrainPreferenceAvailable", terrainPreferenceAvailable)
+            put("terrainPreferenceImplemented", terrainPreferenceImplemented)
             put("encounterThreatBudget", encounterThreatBudget)
             put("floorRewardBudgetDelta", floorRewardBudgetDelta)
             put("inspectReadable", inspectReadable)
@@ -884,6 +972,7 @@ private data class BossHarnessReport(
                 add(JsonPrimitive("phaseSpecificActionTrace"))
                 add(JsonPrimitive("traceHash"))
                 add(JsonPrimitive("variantReadability"))
+                add(JsonPrimitive("terrainAwarePlacement"))
                 add(JsonPrimitive("threatRewardLedger"))
             }
         }
@@ -956,6 +1045,11 @@ private data class BossHarnessPairReport(
                     passed = inspectReadable && logReadable && variantReport.telegraphKey != null,
                     message = "Variant remains traceable via telegraph, inspect, and log metadata.",
                 ),
+                WhiteBoxAssertionResult(
+                    ruleId = "boss.case.preferred_terrain_applied",
+                    passed = !variantReport.terrainPreferenceAvailable || variantReport.terrainPreferenceImplemented,
+                    message = "Variant preferred terrain tags are realized by the final boss landing tile or its adjacent tactical tiles.",
+                ),
             )
         return WhiteBoxCaseReport(
             joinKey = joinKey,
@@ -971,6 +1065,11 @@ private data class BossHarnessPairReport(
                     putJsonArray("phaseSequence") { variantReport.phaseSequence.forEach { phase -> add(JsonPrimitive(phase)) } }
                     putJsonArray("phaseTransitionTriggers") { variantReport.phaseTransitionTriggers.forEach { trigger -> add(JsonPrimitive(trigger)) } }
                     putJsonArray("selectedActions") { variantReport.selectedActionIds.forEach { actionId -> add(JsonPrimitive(actionId)) } }
+                    putJsonArray("preferredTerrainTags") { variantReport.preferredTerrainTags.forEach { terrainTag -> add(JsonPrimitive(terrainTag)) } }
+                    putJsonArray("bossTerrainTags") { variantReport.bossTerrainTags.forEach { terrainTag -> add(JsonPrimitive(terrainTag)) } }
+                    putJsonArray("adjacentBossTerrainTags") { variantReport.adjacentBossTerrainTags.forEach { terrainTag -> add(JsonPrimitive(terrainTag)) } }
+                    put("terrainPreferenceAvailable", variantReport.terrainPreferenceAvailable)
+                    put("terrainPreferenceImplemented", variantReport.terrainPreferenceImplemented)
                     put("aiTraceHash", variantReport.aiTraceHash)
                     put("bossTraceHash", variantReport.bossTraceHash)
                     put("encounterThreatBudget", variantReport.encounterThreatBudget)
@@ -1043,6 +1142,28 @@ private data class BossHarnessPairReport(
             WhiteBoxHarnessWriter.writeTextArtifact(
                 outputDir = outputDir,
                 joinKey = joinKey,
+                artifactId = "terrain-placement",
+                kind = "terrain_placement",
+                fileName = "terrain-placement.md",
+                summary = "Boss variant terrain affinity versus realized landing tile.",
+                content =
+                    buildString {
+                        appendLine("| side | preferredTerrainTags | bossTerrainTags | adjacentBossTerrainTags | preferenceImplemented |")
+                        appendLine("| --- | --- | --- | --- | --- |")
+                        appendLine(
+                            "| base | ${baseReport.preferredTerrainTags.joinToString().ifBlank { "-" }} | ${baseReport.bossTerrainTags.joinToString().ifBlank { "-" }} | " +
+                                "${baseReport.adjacentBossTerrainTags.joinToString().ifBlank { "-" }} | ${baseReport.terrainPreferenceAvailable}/${baseReport.terrainPreferenceImplemented} |",
+                        )
+                        appendLine(
+                            "| variant | ${variantReport.preferredTerrainTags.joinToString().ifBlank { "-" }} | ${variantReport.bossTerrainTags.joinToString().ifBlank { "-" }} | " +
+                                "${variantReport.adjacentBossTerrainTags.joinToString().ifBlank { "-" }} | ${variantReport.terrainPreferenceAvailable}/${variantReport.terrainPreferenceImplemented} |",
+                        )
+                    },
+                tags = listOf("terrain", "placement"),
+            ),
+            WhiteBoxHarnessWriter.writeTextArtifact(
+                outputDir = outputDir,
+                joinKey = joinKey,
                 artifactId = "ledger-breakdown",
                 kind = "ledger_breakdown",
                 fileName = "ledger-breakdown.md",
@@ -1082,16 +1203,31 @@ private data class BossRegistryMetrics(
     val bossVariantCount: Int,
     val bossVariantMutationPairwiseDistinct: Boolean,
     val bossVariantMutationSets: Map<String, List<String>>,
+    val bossVariantPreferredTerrainTags: Map<String, List<String>>,
 ) {
     companion object {
         fun load(): BossRegistryMetrics {
             val schemaCatalog = DataLoader().loadSchemaCatalog()
             val allZoneIds = schemaCatalog.zones.mapTo(linkedSetOf()) { zone -> zone.id }
             val mutations = schemaCatalog.eliteMutations
+            val mutationsById = mutations.associateBy { mutation -> mutation.id }
             val bossVariantMutationSets =
                 schemaCatalog.bossVariants
                     .associate { variant ->
                         variant.id to variant.grantedMutations.map { mutationRef -> mutationRef.mutationId }.sorted()
+                    }.toSortedMap()
+            val bossVariantPreferredTerrainTags =
+                schemaCatalog.bossVariants
+                    .associate { variant ->
+                        variant.id to
+                            variant.grantedMutations
+                                .asSequence()
+                                .mapNotNull { mutationRef -> mutationsById[mutationRef.mutationId] }
+                                .flatMap { mutation -> mutation.preferredTerrainTags.asSequence() }
+                                .map { terrainTag -> terrainTag.name }
+                                .distinct()
+                                .sorted()
+                                .toList()
                     }.toSortedMap()
             val validPairCount =
                 mutations.indices.sumOf { leftIndex ->
@@ -1112,6 +1248,7 @@ private data class BossRegistryMetrics(
                 bossVariantMutationPairwiseDistinct =
                     bossVariantMutationSets.values.distinct().size == bossVariantMutationSets.size,
                 bossVariantMutationSets = bossVariantMutationSets,
+                bossVariantPreferredTerrainTags = bossVariantPreferredTerrainTags,
             )
         }
 

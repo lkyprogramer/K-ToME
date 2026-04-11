@@ -5,7 +5,7 @@ zoneMapgenProfiles:
     loopCountRange: { start: 1, endInclusive: 2 }
     vaultPool: [vault.greenwood.briar_cache, vault.greenwood.smuggler_cache]
     terrainTagWeights:
-      WATER: 0.22
+      WATER: 0.44
     roomTagFilter: [forest, bog, sightline, bridge, hidden_cache, ambush]
     keyGatePlans:
       - id: gate.greenwood.final_path
@@ -33,7 +33,7 @@ zoneMapgenProfiles:
     loopCountRange: { start: 1, endInclusive: 2 }
     vaultPool: [vault.deep_iron.slag_armory, vault.deep_iron.forge_lockbox]
     terrainTagWeights:
-      OIL: 0.24
+      OIL: 0.32
     roomTagFilter: [mine, forge, sightline, hidden_cache, shrine]
     keyGatePlans:
       - id: gate.deep_iron.final_path
@@ -73,8 +73,8 @@ zoneMapgenProfiles:
     loopCountRange: { start: 1, endInclusive: 2 }
     vaultPool: [vault.underground_river.sunken_reliquary, vault.underground_river.crystal_cache]
     terrainTagWeights:
-      WATER: 0.28
-      ICE: 0.16
+      WATER: 0.36
+      ICE: 0.20
     roomTagFilter: [flooded_cavern, crystal_bank, bridge, shrine, hidden_cache]
     keyGatePlans:
       - id: gate.underground_river.final_path

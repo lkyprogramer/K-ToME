@@ -30,6 +30,7 @@ import com.ktome.core.ecs.Name
 import com.ktome.core.ecs.PatrolRoute
 import com.ktome.core.ecs.PlayerControlled
 import com.ktome.core.ecs.Position
+import com.ktome.core.ecs.PreferredTerrainAffinity
 import com.ktome.core.ecs.ResistanceProfile
 import com.ktome.core.ecs.Stats
 import com.ktome.core.ecs.Stair
@@ -1025,6 +1026,10 @@ internal object SessionSnapshotMapper {
                 entityId,
                 EliteMutationLoadout(snapshot.eliteMutations.toMutableList()),
             )
+            val preferredTerrainTags = content.preferredTerrainTagsForMutations(snapshot.eliteMutations)
+            if (preferredTerrainTags.isNotEmpty()) {
+                world.add(entityId, PreferredTerrainAffinity(preferredTerrainTags))
+            }
         }
         snapshot.aiProfileOverrideId?.let { profileId ->
             world.add(entityId, AiProfileOverride(profileId))

@@ -3,10 +3,12 @@ package com.ktome.game.elites
 import com.ktome.core.combat.DamageType
 import com.ktome.core.ecs.AiProfileOverride
 import com.ktome.core.ecs.EliteMutationLoadout
+import com.ktome.core.ecs.PreferredTerrainAffinity
 import com.ktome.core.ecs.ResistanceProfile
 import com.ktome.core.ecs.World
 import com.ktome.core.ecs.get
 import com.ktome.core.item.StatModifier
+import com.ktome.core.mapgen.TerrainTag
 import com.ktome.core.talent.EffectTracker
 import com.ktome.core.talent.TalentRegistry
 import com.ktome.game.GameContent
@@ -141,6 +143,117 @@ class EncounterDecorationServiceTest {
             requireNotNull(world.get<EliteMutationLoadout>(entityId)).mutationIds,
         )
         assertEquals(null, world.get<AiProfileOverride>(entityId))
+    }
+
+    @Test
+    fun `boss variant decoration aggregates preferred terrain tags from granted mutations`() {
+        val content = newContent(baseSchemaCatalog)
+        val service = EncounterDecorationService(content)
+
+        val decoration =
+            service.selectDecoration(
+                SpawnDecorationRequest(
+                    zoneId = "deep_iron_pit",
+                    floorIndex = 2,
+                    template = content.bossDefinitions.getValue("molten_giant_encounter").template,
+                    bossEncounterId = "molten_giant_encounter",
+                    preferredBossVariantId = "boss.variant.molten_glass",
+                    bossVariantSelectionMode = BossVariantSelectionMode.FORCE_AVAILABLE,
+                ),
+            ) { 0 }
+
+        assertEquals(setOf(TerrainTag.OIL), decoration.preferredTerrainTags)
+    }
+
+    @Test
+    fun `apply decoration caches preferred terrain affinity on the entity`() {
+        val content = newContent(baseSchemaCatalog)
+        val service = EncounterDecorationService(content)
+        val world = World()
+        val entityId = world.createEntity()
+
+        service.applyDecoration(
+            world = world,
+            entityId = entityId,
+            decoration =
+                EncounterDecoration(
+                    mutations = listOf(requireNotNull(content.eliteMutationRegistry.resolve("elite.tidebound"))),
+                    preferredTerrainTags = setOf(TerrainTag.WATER),
+                ),
+        )
+
+        assertEquals(setOf(TerrainTag.WATER), world.get<PreferredTerrainAffinity>(entityId)?.terrainTags)
+    }
+
+    @Test
+    fun `elite pool entries can force elite mutation eligibility without template elite tags`() {
+        val content = newContent(baseSchemaCatalog)
+        val service = EncounterDecorationService(content)
+        val template = requireNotNull(content.monsterCatalog.firstOrNull { monster -> monster.id == "bandit.sentry" })
+
+        val undecorated =
+            service.selectDecoration(
+                SpawnDecorationRequest(
+                    zoneId = "greenwood_fringe",
+                    floorIndex = 2,
+                    template = template,
+                ),
+            ) { 0 }
+        val decorated =
+            service.selectDecoration(
+                SpawnDecorationRequest(
+                    zoneId = "greenwood_fringe",
+                    floorIndex = 2,
+                    template = template,
+                    forceEliteMutationEligibility = true,
+                ),
+            ) { 0 }
+
+        assertTrue(undecorated.mutations.isEmpty())
+        assertTrue(decorated.mutations.isNotEmpty())
+    }
+
+    @Test
+    fun `force elite mutation eligibility injects elite selection tag for preferred terrain mutations`() {
+        val terrainAffinityMutation =
+            EliteMutationDef(
+                id = "elite.a_test_force_terrain_affinity",
+                kind = MutationKind.ELEMENT_PACKAGE,
+                tier = MutationTier.MAJOR,
+                threatCost = 3,
+                nameKey = "mutation.test.force_terrain_affinity.name",
+                iconKey = "icon.mutation.test.force_terrain_affinity",
+                applyToTags = setOf("elite"),
+                minFloor = 1,
+                maxFloor = null,
+                allowedZones = setOf("greenwood_fringe"),
+                preferredTerrainTags = listOf(TerrainTag.WATER),
+                statModifiers = emptyList(),
+                grantedTalents = emptyList(),
+                aiProfileOverlay = null,
+                incompatibleWith = emptySet(),
+            )
+        val content =
+            newContent(
+                baseSchemaCatalog.copy(
+                    eliteMutations = baseSchemaCatalog.eliteMutations + terrainAffinityMutation,
+                ),
+            )
+        val service = EncounterDecorationService(content)
+        val template = requireNotNull(content.monsterCatalog.firstOrNull { monster -> monster.id == "bandit.sentry" })
+
+        val decoration =
+            service.selectDecoration(
+                SpawnDecorationRequest(
+                    zoneId = "greenwood_fringe",
+                    floorIndex = 2,
+                    template = template,
+                    forceEliteMutationEligibility = true,
+                ),
+            ) { 0 }
+
+        assertEquals(listOf(terrainAffinityMutation.id), decoration.mutations.map(EliteMutationDef::id))
+        assertEquals(setOf(TerrainTag.WATER), decoration.preferredTerrainTags)
     }
 
     private fun newContent(schemaCatalog: SchemaCatalog): GameContent =

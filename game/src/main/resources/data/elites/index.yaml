@@ -37,6 +37,7 @@ eliteMutations:
     applyToTags: [elite]
     minFloor: 1
     allowedZones: []
+    preferredTerrainTags: []
     statModifiers: [mod.mutation.stonehide]
     grantedTalents: []
     incompatibleWith: []
@@ -50,6 +51,7 @@ eliteMutations:
     applyToTags: [elite]
     minFloor: 1
     allowedZones: []
+    preferredTerrainTags: []
     statModifiers: [mod.mutation.ironhide]
     grantedTalents: []
     incompatibleWith: []
@@ -63,6 +65,7 @@ eliteMutations:
     applyToTags: [elite, bandit, forge, abyssal]
     minFloor: 2
     allowedZones: []
+    preferredTerrainTags: []
     statModifiers: []
     grantedTalents: [linebreaker]
     incompatibleWith: [elite.war_caller]
@@ -76,6 +79,7 @@ eliteMutations:
     applyToTags: [elite, cultist, abyssal]
     minFloor: 3
     allowedZones: [grey_gate_depths, abyssal_temple, abyssal_heart]
+    preferredTerrainTags: []
     statModifiers: []
     grantedTalents: []
     incompatibleWith: [elite.battle_drill, elite.corrosion_cloud, elite.void_mirror]
@@ -93,6 +97,7 @@ eliteMutations:
     applyToTags: [elite, bandit, river]
     minFloor: 2
     allowedZones: []
+    preferredTerrainTags: []
     statModifiers: []
     grantedTalents: []
     aiProfileOverlay: ai.elite.huntmaster
@@ -107,6 +112,7 @@ eliteMutations:
     applyToTags: [elite, bandit, river, crystal, abyssal]
     minFloor: 2
     allowedZones: []
+    preferredTerrainTags: []
     statModifiers: []
     grantedTalents: [elite_phase_step]
     aiProfileOverlay: ai.elite.phase_runner
@@ -121,6 +127,7 @@ eliteMutations:
     applyToTags: [elite, bandit, cultist, forge, abyssal]
     minFloor: 2
     allowedZones: []
+    preferredTerrainTags: []
     statModifiers: []
     grantedTalents: [elite_war_call]
     aiProfileOverlay: ai.elite.war_caller
@@ -133,8 +140,9 @@ eliteMutations:
     nameKey: mutation.corrosion_cloud.name
     iconKey: icon.mutation.corrosion_cloud
     applyToTags: [elite, forge, abyssal]
-    minFloor: 3
+    minFloor: 2
     allowedZones: [deep_iron_pit, molten_core]
+    preferredTerrainTags: [OIL]
     statModifiers: []
     grantedTalents: []
     incompatibleWith: [elite.dread_aura, elite.void_mirror]
@@ -152,6 +160,7 @@ eliteMutations:
     applyToTags: [elite, forge, abyssal]
     minFloor: 4
     allowedZones: [deep_iron_pit, molten_core, abyssal_temple, abyssal_heart]
+    preferredTerrainTags: [OIL]
     statModifiers: [mod.mutation.emberblood]
     grantedTalents: [cinder_burst]
     incompatibleWith: [elite.tidebound, elite.frostbound]
@@ -163,8 +172,9 @@ eliteMutations:
     nameKey: mutation.frostbound.name
     iconKey: icon.mutation.frostbound
     applyToTags: [elite, river, crystal]
-    minFloor: 3
-    allowedZones: [underground_river, crystal_cavern]
+    minFloor: 1
+    allowedZones: [greenwood_fringe, underground_river, crystal_cavern]
+    preferredTerrainTags: [WATER, ICE]
     statModifiers: [mod.mutation.frostbound]
     grantedTalents: [elite_frost_nova]
     aiProfileOverlay: ai.elite.frostbound
@@ -177,10 +187,12 @@ eliteMutations:
     nameKey: mutation.tidebound.name
     iconKey: icon.mutation.tidebound
     applyToTags: [elite, river, crystal]
-    minFloor: 4
-    allowedZones: [underground_river, crystal_cavern]
+    minFloor: 1
+    allowedZones: [greenwood_fringe, underground_river, crystal_cavern]
+    preferredTerrainTags: [WATER]
     statModifiers: [mod.mutation.tidebound]
     grantedTalents: [glacial_seal]
+    aiProfileOverlay: ai.elite.tidebound
     incompatibleWith: [elite.emberblood, elite.frostbound]
 
   - id: elite.void_mirror
@@ -192,6 +204,7 @@ eliteMutations:
     applyToTags: [elite, cultist, abyssal]
     minFloor: 4
     allowedZones: [grey_gate_depths, abyssal_temple, abyssal_heart]
+    preferredTerrainTags: []
     statModifiers: []
     grantedTalents: []
     incompatibleWith: [elite.dread_aura, elite.corrosion_cloud]

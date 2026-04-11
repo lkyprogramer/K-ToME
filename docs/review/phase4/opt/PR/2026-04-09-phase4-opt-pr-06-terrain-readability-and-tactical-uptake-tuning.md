@@ -16,6 +16,12 @@
 
 基于 `terrainTaggedCombatExposureRate` 与 `terrainInteractionEncounterRate` 的真实基线，对地形系统做分层调优，而不是继续无差别堆规则。
 
+terrain 基线固定消费：
+
+1. `docs/review/phase4/opt/baselines/2026-04-09-opt-pr01-terrain-metrics-baseline.json`
+2. `phase4Report` 必须输出 baseline provenance、当前值、相对提升和 target rate，不允许只写死绝对阈值
+3. 若 metric definition version 变化，必须先更新 baseline artifact，再允许修改本 PR 的门禁裁决
+
 完成标准：
 
 1. `terrainTaggedCombatExposureRate` 相对基线提升 `>=50%`
@@ -161,7 +167,8 @@
 1. exposure 与 encounter rate 提升
 2. `solvabilityHarness` 不回归
 3. 任何 elite-terrain 偏置都不改变正式 rule contract
-4. 若走 Path C，客户端截图能稳定呈现新反馈
+4. `phase4Report` 能显示 `decisionPathByCurrentMetrics` 与 terrain baseline provenance
+5. 若走 Path C，客户端截图能稳定呈现新反馈
 
 ## 7. 资源生成计划
 
@@ -223,4 +230,9 @@ python3 scripts/process_audio.py \
 2. `terrainInteractionEncounterRate` 相比基线提升 `>=30%`
 3. `solvabilityHarness` 的主线可达性保持 `100%`
 4. 不新增 `TerrainTag`
-5. 若新增 client 可见资源，`goldenScreenshot` 必须同步通过
+5. `phase4Report` 对两个 terrain 指标必须显式展示：
+   - baseline artifact path
+   - metric definition version
+   - 当前值 / baseline 值 / 相对提升 / target rate
+   - `decisionPathByCurrentMetrics`
+6. 若新增 client 可见资源，`goldenScreenshot` 必须同步通过
