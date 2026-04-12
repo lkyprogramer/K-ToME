@@ -18,73 +18,72 @@ class Phase4ReportRunnerTest {
     fun `phase4 report aggregates currently landed phase4 verification tasks`() {
         val run = Phase4ReportRunner.run()
 
-        assertEquals(12, run.taskCount)
-        assertEquals(0, run.failedTaskCount, "phase4Report recorded failed tasks; inspect ${run.summaryPath}")
-        assertEquals(0, run.failedExperienceMetricCount, "phase4Report recorded failed experience metrics; inspect ${run.summaryPath}")
-        assertEquals(0, run.failedGateCount, "phase4Report recorded failed gates; inspect ${run.summaryPath}")
+        assertEquals(14, run.taskCount)
+        assertEquals(1, run.failedTaskCount, "phase4Report should now surface whiteBoxLoot local-identity guardrail failures as a task-level FAIL; inspect ${run.summaryPath}")
+        assertTrue(run.failedExperienceMetricCount > 0, "phase4Report should now expose failing owner metrics; inspect ${run.summaryPath}")
+        assertEquals(run.failedTaskCount + run.failedExperienceMetricCount, run.failedGateCount)
         assertTrue(Files.exists(run.summaryPath), "Expected phase4 summary report at ${run.summaryPath}")
         assertTrue(Files.exists(run.markdownPath), "Expected phase4 markdown report at ${run.markdownPath}")
 
         val payload = Json.parseToJsonElement(Files.readString(run.summaryPath)).jsonObject
         val tasks = payload.getValue("tasks").jsonArray
+        val metricCatalog = payload.getValue("metricCatalog").jsonArray
         val experienceMetrics = payload.getValue("experienceMetrics").jsonArray
         val taskIds = tasks.map { element -> element.jsonObject.getValue("taskId").jsonPrimitive.content }.toSet()
         val solvabilityTask =
             tasks.first { element -> element.jsonObject.getValue("taskId").jsonPrimitive.content == "solvabilityHarness" }.jsonObject
-        val bossTask =
-            tasks.first { element -> element.jsonObject.getValue("taskId").jsonPrimitive.content == "bossHarness" }.jsonObject
+        val hiddenHarnessTask =
+            tasks.first { element -> element.jsonObject.getValue("taskId").jsonPrimitive.content == "hiddenContentHarness" }.jsonObject
+        val organicHiddenTask =
+            tasks.first { element -> element.jsonObject.getValue("taskId").jsonPrimitive.content == "organicHiddenProbe" }.jsonObject
+        val longRunTask =
+            tasks.first { element -> element.jsonObject.getValue("taskId").jsonPrimitive.content == "longRunLab" }.jsonObject
         val terrainTask =
             tasks.first { element -> element.jsonObject.getValue("taskId").jsonPrimitive.content == "terrainInteractionBatch" }.jsonObject
         val lootTask =
             tasks.first { element -> element.jsonObject.getValue("taskId").jsonPrimitive.content == "whiteBoxLoot" }.jsonObject
-        val hiddenTask =
-            tasks.first { element -> element.jsonObject.getValue("taskId").jsonPrimitive.content == "whiteBoxHiddenContent" }.jsonObject
         val whiteBoxContentPackTask =
             tasks.first { element -> element.jsonObject.getValue("taskId").jsonPrimitive.content == "whiteBoxContentPack" }.jsonObject
         val contentPackTask =
             tasks.first { element -> element.jsonObject.getValue("taskId").jsonPrimitive.content == "contentPackHarness" }.jsonObject
         val experienceMetricIds =
             experienceMetrics.map { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content }.toSet()
-        val terrainExposureMetric =
-            experienceMetrics.first { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "terrainTaggedCombatExposureRate" }.jsonObject
-        val terrainEncounterMetric =
-            experienceMetrics.first { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "terrainInteractionEncounterRate" }.jsonObject
+        val metricCatalogIds =
+            metricCatalog.map { entry -> entry.jsonObject.getValue("metricId").jsonPrimitive.content }.toSet()
+        val terrainAggregateMetric =
+            experienceMetrics.first { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "terrainInteractionEncounterRate.aggregate" }.jsonObject
+        val terrainLowerBoundMetric =
+            experienceMetrics.first { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "terrainInteractionEncounterRate.per_zone_lower_bound" }.jsonObject
         val markdown = Files.readString(run.markdownPath)
 
         assertEquals("P4", payload.getValue("phaseId").jsonPrimitive.content)
-        assertEquals("12", payload.getValue("taskCount").jsonPrimitive.content)
-        assertEquals("0", payload.getValue("failedTaskCount").jsonPrimitive.content)
-        assertEquals("0", payload.getValue("failedExperienceMetricCount").jsonPrimitive.content)
-        assertEquals("0", payload.getValue("failedGateCount").jsonPrimitive.content)
+        assertEquals("14", payload.getValue("taskCount").jsonPrimitive.content)
+        assertEquals("1", payload.getValue("failedTaskCount").jsonPrimitive.content)
         assertEquals("1000", solvabilityTask.getValue("metrics").jsonObject.getValue("distinctSeedCount").jsonPrimitive.content)
         assertTrue(solvabilityTask.getValue("metrics").jsonObject.containsKey("providedDiscoveryTags"))
         assertTrue(solvabilityTask.getValue("metrics").jsonObject.containsKey("requiredHiddenAnchorFamilies"))
         assertTrue(solvabilityTask.getValue("metrics").jsonObject.containsKey("observedHiddenAnchorFamilies"))
-        assertTrue(bossTask.getValue("metrics").jsonObject.getValue("whiteBoxSummaryPath").jsonPrimitive.content.contains("whitebox/boss"))
-        assertTrue(bossTask.getValue("metrics").jsonObject.containsKey("eliteMutationDistinctCount"))
-        assertTrue(bossTask.getValue("metrics").jsonObject.containsKey("eliteMutationValidPairCount"))
-        assertTrue(bossTask.getValue("metrics").jsonObject.containsKey("corpusAggregateMetrics"))
-        assertTrue(bossTask.getValue("metrics").jsonObject.containsKey("perEncounterAggregateMetrics"))
-        assertTrue(bossTask.getValue("metrics").jsonObject.containsKey("terrainPreferenceAvailableVariantCount"))
-        assertTrue(bossTask.getValue("metrics").jsonObject.containsKey("terrainPreferenceImplementedRate"))
-        assertTrue(bossTask.getValue("metrics").jsonObject.containsKey("bossVariantPreferredTerrainTags"))
+        assertEquals("true", hiddenHarnessTask.getValue("metrics").jsonObject.getValue("scriptedVerification").jsonPrimitive.content)
+        assertTrue(hiddenHarnessTask.getValue("metrics").jsonObject.containsKey("primerActionUsedCount"))
+        assertEquals("false", organicHiddenTask.getValue("metrics").jsonObject.getValue("scriptedVerification").jsonPrimitive.content)
+        assertTrue(organicHiddenTask.getValue("metrics").jsonObject.containsKey("organicHiddenDiscoveryRate"))
+        assertTrue(organicHiddenTask.getValue("metrics").jsonObject.containsKey("searchActionUseRate"))
+        assertTrue(longRunTask.getValue("metrics").jsonObject.containsKey("terminalWeaponBaseDiversity"))
+        assertTrue(longRunTask.getValue("metrics").jsonObject.containsKey("crossProfessionTopWeaponDominance"))
+        assertTrue(longRunTask.getValue("metrics").jsonObject.containsKey("professionAlignedWeaponAdoptionRate"))
+        assertTrue(longRunTask.getValue("metrics").jsonObject.containsKey("professionTerminalWeaponDistribution"))
         assertTrue(terrainTask.getValue("sourcePath").jsonPrimitive.content.contains("whitebox/terrain"))
-        assertTrue(terrainTask.getValue("metrics").jsonObject.containsKey("terrainTaggedCombatExposureRate"))
-        assertTrue(terrainTask.getValue("metrics").jsonObject.containsKey("terrainCoverageByZone"))
-        assertTrue(terrainTask.getValue("metrics").jsonObject.containsKey("corpusAggregateMetrics"))
-        assertTrue(terrainTask.getValue("metrics").jsonObject.containsKey("preferredTerrainCaseImplementationRate"))
-        assertTrue(terrainTask.getValue("metrics").jsonObject.containsKey("preferredTerrainCombatImplementationRate"))
-        assertTrue(terrainTask.getValue("metrics").jsonObject.containsKey("terrainMetricDefinitionVersion"))
-        assertTrue(terrainTask.getValue("metrics").jsonObject.containsKey("decisionPathByCurrentMetrics"))
-        assertTrue(terrainTask.getValue("metrics").jsonObject.containsKey("preferredTerrainTagsSeen"))
+        assertTrue(terrainTask.getValue("metrics").jsonObject.containsKey("combatSampledZoneIds"))
+        assertTrue(terrainTask.getValue("metrics").jsonObject.containsKey("combatSampledZoneExclusionNotes"))
+        assertTrue(terrainTask.getValue("metrics").jsonObject.containsKey("perZoneEncounterLowerBoundTarget"))
+        assertTrue(terrainTask.getValue("metrics").jsonObject.containsKey("perZoneEncounterFailures"))
         assertTrue(tasks.first { element -> element.jsonObject.getValue("taskId").jsonPrimitive.content == "whiteBoxMapgen" }.jsonObject.getValue("metrics").jsonObject.containsKey("requiredHiddenAnchorFamilies"))
         assertTrue(lootTask.getValue("metrics").jsonObject.containsKey("lootProfileBaseItemOverlapMatrix"))
-        assertTrue(lootTask.getValue("metrics").jsonObject.containsKey("uniqueArtifactMeaningfulSwapRate"))
-        assertTrue(lootTask.getValue("metrics").jsonObject.containsKey("corpusAggregateMetrics"))
-        assertTrue(hiddenTask.getValue("metrics").jsonObject.containsKey("hiddenEventRegistryCount"))
-        assertTrue(hiddenTask.getValue("metrics").jsonObject.containsKey("hiddenTriggerTypeCoverage"))
-        assertTrue(hiddenTask.getValue("metrics").jsonObject.containsKey("secretEntranceBindingSet"))
-        assertTrue(hiddenTask.getValue("metrics").jsonObject.containsKey("corpusAggregateMetrics"))
+        assertTrue(lootTask.getValue("metrics").jsonObject.containsKey("sameZoneSecretVsCadenceMaxOverlap"))
+        assertTrue(lootTask.getValue("metrics").jsonObject.containsKey("sameZoneSecretVsRewardMaxOverlap"))
+        assertTrue(lootTask.getValue("metrics").jsonObject.containsKey("localIdentityFailurePairs"))
+        assertEquals("FAIL", lootTask.getValue("status").jsonPrimitive.content)
+        assertEquals("2", lootTask.getValue("metrics").jsonObject.getValue("failedAssertions").jsonPrimitive.content)
         assertEquals("13", contentPackTask.getValue("metrics").jsonObject.getValue("totalCases").jsonPrimitive.content)
         assertEquals("1", contentPackTask.getValue("metrics").jsonObject.getValue("legacyLootProfileSchemaRejectCount").jsonPrimitive.content)
         assertEquals(
@@ -115,48 +114,63 @@ class Phase4ReportRunnerTest {
             Duration.between(contentPackTimestamp, whiteBoxContentPackTimestamp).abs() <= Duration.ofMinutes(30),
             "content-pack artifact timestamps drifted beyond the freshness guard window.",
         )
-        assertEquals(16, experienceMetrics.size)
+        assertEquals(9, experienceMetrics.size)
+        assertEquals(9, metricCatalog.size)
         assertEquals(
             setOf(
-                "eliteMutationDistinctCount",
-                "eliteMutationValidPairCount",
-                "lootProfileBaseItemOverlapMatrix",
-                "lootProfileMaxBaseItemOverlap",
-                "lootProfileDistinctBaseItemCount",
-                "affixCount",
-                "uniqueTemplateCount",
-                "artifactTemplateCount",
-                "totalLootContentCount",
-                "affixPassiveCoverage",
-                "hiddenEventCount",
-                "hiddenTriggerTypeCoverage",
-                "secretEntranceBindingCoverage",
-                "terrainTaggedCombatExposureRate",
-                "terrainInteractionEncounterRate",
-                "uniqueArtifactMeaningfulSwapRate",
+                "scriptedHiddenVerificationRate",
+                "organicHiddenDiscoveryRate",
+                "sameZoneSecretVsCadenceMaxOverlap",
+                "sameZoneSecretVsRewardMaxOverlap",
+                "terminalWeaponBaseDiversity",
+                "crossProfessionTopWeaponDominance",
+                "professionAlignedWeaponAdoptionRate",
+                "terrainInteractionEncounterRate.aggregate",
+                "terrainInteractionEncounterRate.per_zone_lower_bound",
             ),
             experienceMetricIds,
         )
-        assertTrue(markdown.contains("## 体验度量基线"))
-        assertTrue(markdown.contains("uniqueArtifactMeaningfulSwapRate"))
-        assertTrue(markdown.contains("decisionPathByCurrentMetrics"))
+        assertEquals(experienceMetricIds, metricCatalogIds)
+        assertTrue(markdown.contains("## 指标 Owner 表"))
+        assertTrue(markdown.contains("## Local Reward Identity"))
+        assertTrue(markdown.contains("## Terminal Build Identity"))
+        assertTrue(markdown.contains("## Scripted vs Organic Hidden"))
+        assertTrue(markdown.contains("## Terrain Combat Sample Contract"))
+        assertTrue(markdown.contains("- sourceTask: `whiteBoxLoot`"))
+        assertTrue(markdown.contains("- sourceTask: `longRunLab`"))
+        assertTrue(markdown.contains("- sourceTask.scripted: `hiddenContentHarness`"))
+        assertTrue(markdown.contains("- sourceTask.organic: `organicHiddenProbe`"))
+        assertTrue(markdown.contains("- sourceTask: `terrainInteractionBatch`"))
         assertTrue(markdown.contains("legacyLootProfileSchemaRejectSummaries"))
         assertTrue(markdown.contains("loot.foundation.common"))
-        assertTrue(terrainExposureMetric.getValue("currentValue").jsonObject.containsKey("baseline"))
-        assertTrue(terrainExposureMetric.getValue("currentValue").jsonObject.containsKey("relativeIncrease"))
-        assertTrue(terrainExposureMetric.getValue("currentValue").jsonObject.containsKey("targetRate"))
-        assertTrue(terrainEncounterMetric.getValue("currentValue").jsonObject.containsKey("baseline"))
-        assertTrue(terrainEncounterMetric.getValue("currentValue").jsonObject.containsKey("relativeIncrease"))
-        assertTrue(terrainEncounterMetric.getValue("currentValue").jsonObject.containsKey("targetRate"))
-        assertTrue(terrainExposureMetric.getValue("note").jsonPrimitive.content.contains("baseline="))
-        assertTrue(terrainEncounterMetric.getValue("note").jsonPrimitive.content.contains("normalized by"))
+        assertTrue(terrainAggregateMetric.getValue("currentValue").jsonObject.containsKey("baseline"))
+        assertTrue(terrainAggregateMetric.getValue("currentValue").jsonObject.containsKey("relativeIncrease"))
+        assertTrue(terrainAggregateMetric.getValue("currentValue").jsonObject.containsKey("targetRate"))
+        assertTrue(terrainLowerBoundMetric.getValue("currentValue").jsonObject.containsKey("failureZones"))
+        assertTrue(terrainLowerBoundMetric.getValue("currentValue").jsonObject.containsKey("combatSampledZoneIds"))
+        assertTrue(terrainAggregateMetric.getValue("note").jsonPrimitive.content.contains("baseline="))
+        assertTrue(terrainLowerBoundMetric.getValue("note").jsonPrimitive.content.contains("combatSampledZoneIds"))
+        val terminalDiversityMetric =
+            experienceMetrics.first { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "terminalWeaponBaseDiversity" }.jsonObject
+        val topWeaponMetric =
+            experienceMetrics.first { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "crossProfessionTopWeaponDominance" }.jsonObject
+        val alignedWeaponMetric =
+            experienceMetrics.first { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "professionAlignedWeaponAdoptionRate" }.jsonObject
+        val organicHiddenMetric =
+            experienceMetrics.first { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "organicHiddenDiscoveryRate" }.jsonObject
+        assertTrue(terminalDiversityMetric.getValue("note").jsonPrimitive.content.contains("terminalBases="))
+        assertTrue(topWeaponMetric.getValue("note").jsonPrimitive.content.contains("topWeaponBaseId="))
+        assertTrue(alignedWeaponMetric.getValue("note").jsonPrimitive.content.contains("alignedSamples="))
+        assertTrue(organicHiddenMetric.getValue("note").jsonPrimitive.content.contains("observationOnly=true"))
         assertEquals(
             setOf(
                 "mapgenSmoke",
                 "solvabilityHarness",
                 "hiddenContentHarness",
+                "organicHiddenProbe",
                 "contentPackHarness",
                 "bossHarness",
+                "longRunLab",
                 "terrainInteractionBatch",
                 "whiteBoxMapgen",
                 "whiteBoxSolvability",

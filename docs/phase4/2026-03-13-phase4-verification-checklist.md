@@ -10,12 +10,17 @@
 ./gradlew whiteBoxMapgen
 ./gradlew whiteBoxSolvability
 ./gradlew whiteBoxVerify
-./gradlew phase4Report
 ./gradlew lootBalanceLab
+./gradlew whiteBoxLoot
 ./gradlew terrainInteractionBatch
 ./gradlew bossHarness
 ./gradlew hiddenContentHarness
+./gradlew organicHiddenProbe
+./gradlew longRunLab
+./gradlew whiteBoxHiddenContent
 ./gradlew contentPackHarness
+./gradlew whiteBoxContentPack
+./gradlew phase4Report
 ./gradlew jacocoTestReport
 ./gradlew :core:jacocoTestCoverageVerification
 ```
@@ -23,10 +28,11 @@
 说明：
 
 1. 当前主干已经落地 `whiteBoxMapgen`、`whiteBoxSolvability`、`whiteBoxVerify` 与 `phase4Report`。
-2. 当前 `phase4Report` 聚合的是已落地主线任务：`mapgenSmoke`、`solvabilityHarness`、`bossHarness`、`whiteBoxMapgen`、`whiteBoxSolvability`。
-3. `lootBalanceLab`、`terrainInteractionBatch`、`hiddenContentHarness`、`contentPackHarness` 在各自实现落地后继续并入 `phase4Report`。
-4. 单个 harness 仍保留独立命令，便于局部回归和 PR 级收口。
-5. `terrainInteractionBatch + bossHarness` 是 `PR-06` 的主验证入口；`hiddenContentHarness` 只消费 terrain/mutation/boss 的结果，不承担其主验证职责。
+2. 当前 `phase4Report` 聚合 `14` 个任务：`mapgenSmoke`、`solvabilityHarness`、`hiddenContentHarness`、`organicHiddenProbe`、`contentPackHarness`、`bossHarness`、`longRunLab`、`terrainInteractionBatch`、`whiteBoxMapgen`、`whiteBoxSolvability`、`lootBalanceLab`、`whiteBoxLoot`、`whiteBoxHiddenContent`、`whiteBoxContentPack`。
+3. `phase4Report` 现在同时是 `scripted vs organic hidden`、`same-zone local reward identity`、`terminal build identity`、`terrain combat sample contract` 的唯一 owner metric 聚合入口。
+4. `hiddenContentHarness` 继续承担 scripted correctness owner；`organicHiddenProbe` 只负责无 primer 的 organic experience 观测，不得借助内部 reveal 路径。
+5. 单个 harness 仍保留独立命令，便于局部回归、PR 级收口与 artifact 定向排查。
+6. `terrainInteractionBatch + bossHarness` 是 `PR-06` 的主验证入口；`hiddenContentHarness` 只消费 terrain/mutation/boss 的结果，不承担其主验证职责。
 
 ### 必须检查的结果
 
@@ -62,19 +68,34 @@
    - 至少覆盖 `500` 个 seed
    - 至少 `30%` 的 run 触发 `1` 个 hidden event
    - 至少 `10%` 的 run 发现 `1` 个 secret zone
+   - summary 必须显式标记 `scriptedVerification = true`
+   - summary 必须保留 `primerActionUsedCount / primerFreeCaseCount`
    - 不允许存在某个已升级 zone 的 hidden event 触发率长期为 `0`
    - 设计理据：
      - `30%` 保证平均每 `3~4` 局至少出现一次显式隐藏发现
      - `10%` 保持 secret zone 的稀缺感，但不会在长期游玩中完全不可见
-7. `terrainInteractionBatch`
+7. `organicHiddenProbe`
+   - 至少覆盖 `500` 个 seed
+   - 不允许使用 `HiddenPrimerAction` 或直接 reveal API
+   - `runtimeFailureCount = 0`
+   - summary 必须显式标记 `scriptedVerification = false`
+   - summary 必须保留 `searchActionUseRate / organicHiddenDiscoveryRate / secretZoneEntryRate`
+8. `longRunLab`
+   - `long-run-full.json` 必须保留 `terminalWeaponBaseDiversity`
+   - `long-run-full.json` 必须保留 `crossProfessionTopWeaponDominance`
+   - `long-run-full.json` 必须保留 `professionAlignedWeaponAdoptionRate`
+   - `long-run-full.json` 必须保留 `professionTerminalWeaponDistribution`
+9. `terrainInteractionBatch`
    - 五种地形交互都能在 isolated batch 中稳定复现
    - `0` unresolved interaction rule
    - trace 必须进入 `CombatPipeline step 9`
-8. `bossHarness`
+   - summary 必须保留 `combatSampledZoneIds / combatSampledZoneExclusionNotes`
+   - summary 必须保留 `perZoneEncounterLowerBoundTarget / perZoneEncounterFailures`
+10. `bossHarness`
    - 至少覆盖 base boss + variant boss 对照样本
    - `actionWeightProfileId` 不得改变 phase graph 结构
    - `threatCost` 汇总必须可追溯
-9. `contentPackHarness`
+11. `contentPackHarness`
    - 示例 pack `0` schema error
    - `0` unresolved i18n key
    - `0` unresolved visual/audio key
@@ -131,6 +152,9 @@
    - `iLvl / qLvl / rarityScore`
    - affix 分布
    - unique/artifact 出现率
+   - `sameZoneSecretVsCadencePairs / sameZoneSecretVsRewardPairs`
+   - `sameZoneSecretVsCadenceMaxOverlap / sameZoneSecretVsRewardMaxOverlap`
+   - `localIdentityFailurePairs`
    - pity 激活次数（`rarePityActivations / uniquePityActivations`）
    - 预算偏离
    - `sourceLevel / sourceTier / zone / playerLevel / magicFind` 分层统计
@@ -141,6 +165,7 @@
    - `BOSS + magicFind=1.50` 与 `BOSS + magicFind=1.00` 的分布结果应一致到统计容差内
    - `UNIQUE / ARTIFACT` 只出现在允许来源
    - `castSpeed` affix 经过收益递减，不出现原始线性叠加越界
+   - same-zone `.secret ↔ .cadence / .reward` 冲突必须能从 summary 直接定位到具体 pair
 
 ### 2.4 Terrain Interaction Isolated Batch
 
@@ -188,6 +213,22 @@
    - secret zone 至少包含 `1` 个正式奖励节点
    - hidden event / secret zone 不承担主线必需钥匙
    - 不允许存在某个已升级 zone 长期无法触发 hidden event 或 secret zone
+
+### 2.6.1 Organic Hidden Probe
+
+1. 固定 `500` 个 seed 跑 `organicHiddenProbe`。
+2. 记录：
+   - `searchAttemptCount / runsWithSearchActionCount / searchActionUseCount`
+   - `discoveryWithoutPrimerCount / organicHiddenDiscoveryRate`
+   - `secretZoneEntryCount / secretZoneEntryRate`
+   - `averageFirstHiddenDiscoveryTurn / averageFirstSecretZoneEntryTurn`
+   - zone breakdown
+3. 检查：
+   - 不允许使用 primer action
+   - 不允许借助内部直接 reveal API
+   - 导航与搜索决策只允许消费 `RunObservation` / `RenderSnapshot` 暴露的可见 prompt、可见交互物与探索状态，不得读取 hidden entrance ground truth
+   - `runtimeFailureCount = 0`
+   - 即使首次 owner metric 为 `FAIL`，也必须输出真实观测值而不是假数据
 
 ### 2.7 Content Pack Batch
 

@@ -1442,7 +1442,6 @@ class SmokeBotTest {
                 visibleHostilePositions = listOf(Point(8, 0)),
                 visibleTiles = longCorridorMap.floorPoints().toSet(),
                 exploredTiles = longCorridorMap.floorPoints().toSet(),
-                knownDownstairsPositions = listOf(Point(0, 0)),
                 talentSlots = pursuitTalents,
             )
         assertEquals(PlayerCommand.Move(Point(1, 0)), bot.decide(initialObservation))

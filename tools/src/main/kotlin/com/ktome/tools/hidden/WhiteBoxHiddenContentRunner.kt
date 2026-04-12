@@ -33,7 +33,12 @@ object WhiteBoxHiddenContentRunner {
     private const val CORPUS_ID: String = "P4_OPT_PR05_HIDDEN_CONTENT_WHITEBOX"
 
     fun run(): WhiteBoxHiddenContentRun {
-        val kernelRun = HiddenContentHarnessKernel.execute()
+        val kernelRun =
+            if (reuseHarnessOutputs()) {
+                HiddenContentHarnessRunner.loadKernelRun() ?: HiddenContentHarnessKernel.execute()
+            } else {
+                HiddenContentHarnessKernel.execute()
+            }
         val analysis = HiddenContentHarnessAnalysis.analyze(kernelRun.results)
         val registryMetrics = HiddenContentRegistrySnapshot.load()
         val outputDir = reportDir().resolveSibling("whitebox").resolve("hidden")
@@ -85,6 +90,8 @@ object WhiteBoxHiddenContentRunner {
             reportPath = result.reportPath,
         )
     }
+
+    private fun reuseHarnessOutputs(): Boolean = System.getProperty("ktome.phase4.reuseHarnessOutputs") == "true"
 
     private fun caseAssertions(result: HiddenContentCaseResult): List<WhiteBoxAssertionResult> =
         listOf(

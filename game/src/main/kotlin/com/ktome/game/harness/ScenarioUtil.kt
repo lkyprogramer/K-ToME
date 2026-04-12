@@ -4,12 +4,29 @@ import com.ktome.core.dungeon.StairDirection
 import com.ktome.core.ecs.BlocksMovement
 import com.ktome.core.ecs.Position
 import com.ktome.core.ecs.get
+import com.ktome.core.item.ConsumableEffect
+import com.ktome.core.item.EquipSlot
+import com.ktome.core.item.ItemType
+import com.ktome.core.loot.RarityTier
 import com.ktome.core.map.Point
 import com.ktome.core.pathfinding.AStar
+import com.ktome.core.snapshot.CellVisibilitySnapshot
+import com.ktome.core.snapshot.InventoryEntrySnapshot
+import com.ktome.core.snapshot.ItemRenderSnapshot
+import com.ktome.core.snapshot.PlayerStatusSnapshot
 import com.ktome.core.snapshot.ActorRoleKindSnapshot
 import com.ktome.core.snapshot.RouteSelectionSnapshot
+import com.ktome.core.snapshot.TalentReserveSnapshot
+import com.ktome.core.snapshot.TalentSlotSnapshot
 import com.ktome.game.FoundationGameSession
+import com.ktome.game.InventoryItemView
+import com.ktome.game.PlayerResourceView
+import com.ktome.game.PlayerStatus
 import com.ktome.game.PlayerCommand
+import com.ktome.game.SecondaryPlayerResourceView
+import com.ktome.game.TalentReserveView
+import com.ktome.game.TalentSlotView
+import com.ktome.core.talent.TalentTreeOwnerType
 import java.nio.file.Files
 import java.nio.file.Path
 import kotlinx.serialization.json.Json
@@ -47,36 +64,49 @@ object RunObservationCapture {
         session: FoundationGameSession,
         turnIndex: Int,
     ): RunObservation {
-        val visibleTiles = session.visibleTiles()
-        val exploredTiles = session.exploredTiles()
+        val snapshot = session.renderSnapshot()
+        val actors = snapshot.actors
+        val uiState = snapshot.uiState
+        val playerStatusSnapshot = uiState.playerStatus
+        val mapCells = snapshot.mapCells
+        val visibleTiles = mapCells.asSequence()
+            .filter { cell -> cell.visibility == CellVisibilitySnapshot.VISIBLE }
+            .map { cell -> Point(cell.x, cell.y) }
+            .toSet()
+        val exploredTiles = mapCells.asSequence()
+            .filter { cell -> cell.visibility != CellVisibilitySnapshot.HIDDEN }
+            .map { cell -> Point(cell.x, cell.y) }
+            .toSet()
         val knownDownstairsPositions =
-            exploredTiles
-                .mapNotNull { point ->
-                    session.inspectAt(point)
-                        .takeIf { it.stairDirectionId == "DOWN" }
-                        ?.point
-                }
+            mapCells
+                .asSequence()
+                .filter { cell -> cell.visibility != CellVisibilitySnapshot.HIDDEN && cell.stairDirectionId == StairDirection.DOWN.name }
+                .map { cell -> Point(cell.x, cell.y) }
                 .distinct()
                 .sortedWith(compareBy<Point> { it.y }.thenBy { it.x })
+                .toList()
 
         val visibleGroundItemPositions =
-            visibleTiles
-                .mapNotNull { point ->
-                    session.inspectAt(point)
-                        .takeIf { it.items.isNotEmpty() }
-                        ?.point
-                }
+            mapCells
+                .asSequence()
+                .filter { cell -> cell.visibility == CellVisibilitySnapshot.VISIBLE && cell.items.isNotEmpty() }
+                .map { cell -> Point(cell.x, cell.y) }
                 .distinct()
                 .sortedWith(compareBy<Point> { it.y }.thenBy { it.x })
+                .toList()
+        val interactableTagsByType = linkedMapOf<String, Set<String>>()
         val visibleInteractables =
-            session.renderSnapshot().props
+            snapshot.props
                 .asSequence()
                 .filter { prop -> prop.propTypeId != "stairs" }
                 .map { prop ->
                     ObservedInteractable(
                         id = prop.propTypeId,
                         position = Point(prop.x, prop.y),
-                        interactionTags = session.automationInteractableTags(prop.propTypeId),
+                        interactionTags =
+                            interactableTagsByType.getOrPut(prop.propTypeId) {
+                                session.automationInteractableTags(prop.propTypeId)
+                            },
                     )
                 }
                 .distinctBy { interactable -> interactable.id to interactable.position }
@@ -84,46 +114,44 @@ object RunObservationCapture {
                 .toList()
 
         val visibleBlockingPositions =
-            session.actorViews()
+            actors
                 .filterNot { it.isPlayer }
-                .map { it.position }
+                .map { actor -> Point(actor.x, actor.y) }
                 .toSet()
         val visibleBossPositions =
-            session.renderSnapshot().actors
+            actors
                 .asSequence()
                 .filter { actor -> !actor.isPlayer && actor.roleKind == ActorRoleKindSnapshot.BOSS }
                 .map { actor -> Point(actor.x, actor.y) }
                 .distinct()
                 .sortedWith(compareBy<Point> { it.y }.thenBy { it.x })
                 .toList()
+        val playerActor = actors.firstOrNull { actor -> actor.isPlayer }
+        val activeShop = uiState.activeShop
 
         return RunObservation(
-            zoneId = session.renderSnapshot().metadata.zoneId,
+            zoneId = snapshot.metadata.zoneId,
             floor = session.currentFloor(),
             turnIndex = turnIndex,
-            playerStatus = session.playerStatus(),
-            playerResource = session.playerResourceView(),
-            shardBalance = session.renderSnapshot().uiState.shardBalance,
+            playerStatus = playerStatusSnapshot.toPlayerStatus(),
+            playerResource = playerStatusSnapshot.toPlayerResourceView(),
+            shardBalance = uiState.shardBalance,
             playerPosition = session.playerPosition(),
             map = session.map,
             visibleTiles = visibleTiles,
             exploredTiles = exploredTiles,
-            visibleHostilePositions = session.targetableHostilePositions(),
+            visibleHostilePositions = uiState.targetablePositions.map { point -> Point(point.x, point.y) },
             visibleBossPositions = visibleBossPositions,
             visibleBlockingPositions = visibleBlockingPositions,
             visibleGroundItemPositions = visibleGroundItemPositions,
             visibleInteractables = visibleInteractables,
             knownDownstairsPositions = knownDownstairsPositions,
-            playerStatusTypeIds =
-                session.renderSnapshot().actors
-                    .firstOrNull { actor -> actor.isPlayer }
-                    ?.statusEffects
-                    ?.mapTo(linkedSetOf()) { status -> status.typeId }
-                    .orEmpty(),
-            activeRouteSelection = session.renderSnapshot().uiState.activeRouteSelection,
-            activeShopId = session.renderSnapshot().uiState.activeShop?.shopId,
+            searchPromptAvailable = uiState.searchPromptLabelKey != null,
+            playerStatusTypeIds = playerActor?.statusEffects?.mapTo(linkedSetOf()) { status -> status.typeId }.orEmpty(),
+            activeRouteSelection = uiState.activeRouteSelection,
+            activeShopId = activeShop?.shopId,
             activeShopOffers =
-                session.renderSnapshot().uiState.activeShop
+                activeShop
                     ?.offers
                     ?.map { offer ->
                         ObservedShopOffer(
@@ -133,9 +161,9 @@ object RunObservationCapture {
                             purchasable = session.automationCanPurchaseShopOffer(offer.index),
                         )
                     }.orEmpty(),
-            inventoryItems = session.inventoryItems(),
+            inventoryItems = uiState.inventory.map(::toInventoryItemView),
             inscriptions =
-                session.renderSnapshot().uiState.inscriptions.map { inscription ->
+                uiState.inscriptions.map { inscription ->
                     ObservedInscription(
                         hotkey = inscription.hotkey,
                         inscriptionId = inscription.inscriptionId,
@@ -143,8 +171,8 @@ object RunObservationCapture {
                         requiresTarget = inscription.requiresTarget,
                     )
                 },
-            talentSlots = session.talentSlots(),
-            reserveTalents = session.reserveTalentSlots(),
+            talentSlots = uiState.talents.map(::toTalentSlotView),
+            reserveTalents = uiState.reserveTalents.map(::toTalentReserveView),
             canAscend = session.canAscend(),
             canDescend = session.canDescend(),
             runOutcome = session.runOutcome(),
@@ -153,6 +181,122 @@ object RunObservationCapture {
         )
     }
 }
+
+private fun PlayerStatusSnapshot.toPlayerStatus(): PlayerStatus =
+    PlayerStatus(
+        currentHp = currentHp,
+        maxHp = maxHp,
+        level = level,
+        currentExperience = currentExperience,
+        nextLevelRequirement = nextLevelRequirement,
+        statPoints = statPoints,
+        talentPoints = talentPoints,
+        raceTalentPoints = raceTalentPoints,
+        attack = attack,
+        defense = defense,
+        accuracy = accuracy,
+        evasion = evasion,
+        speed = speed,
+        castSpeedRating = castSpeedRating,
+        effectiveCastSpeed = effectiveCastSpeed,
+    )
+
+private fun PlayerStatusSnapshot.toPlayerResourceView(): PlayerResourceView =
+    PlayerResourceView(
+        current = currentResource,
+        max = maxResource,
+        typeId = resourceTypeId,
+        stableMin = resourceStableMin,
+        stableMax = resourceStableMax,
+        secondary =
+            secondaryResourceView(
+                current = secondaryResourceCurrent,
+                max = secondaryResourceMax,
+                typeId = secondaryResourceTypeId,
+                stableMin = secondaryResourceStableMin,
+                stableMax = secondaryResourceStableMax,
+            ),
+    )
+
+private fun secondaryResourceView(
+    current: Int?,
+    max: Int?,
+    typeId: String?,
+    stableMin: Int?,
+    stableMax: Int?,
+): SecondaryPlayerResourceView? {
+    if (current == null || max == null || typeId == null) {
+        return null
+    }
+    return SecondaryPlayerResourceView(
+        current = current,
+        max = max,
+        typeId = typeId,
+        stableMin = stableMin,
+        stableMax = stableMax,
+    )
+}
+
+private fun toInventoryItemView(entry: InventoryEntrySnapshot): InventoryItemView {
+    val item = entry.item
+    return InventoryItemView(
+        index = entry.index,
+        name = item.displayName?.key ?: item.nameKey,
+        baseItemId = item.baseItemId,
+        specialTemplateId = item.specialTemplateId,
+        type = ItemType.valueOf(item.typeId),
+        slot = item.slotId?.let(EquipSlot::valueOf),
+        equippedSlot = entry.equippedSlotId?.let(EquipSlot::valueOf),
+        quality = RarityTier.valueOf(item.qualityTierId),
+        affixIds = item.affixIds,
+        effect = item.effectTypeId?.let(ConsumableEffect::valueOf),
+        resourceTypeId = item.resourceTypeId,
+        magnitude = item.magnitude,
+    )
+}
+
+private fun toTalentSlotView(snapshot: TalentSlotSnapshot): TalentSlotView =
+    TalentSlotView(
+        slot = snapshot.slot,
+        talentId = snapshot.talentId,
+        name = snapshot.nameKey,
+        descKey = snapshot.descKey,
+        ownerType = TalentTreeOwnerType.valueOf(snapshot.ownerType),
+        level = snapshot.level,
+        committedLevel = snapshot.committedLevel,
+        maxLevel = snapshot.maxLevel,
+        resourceCost = snapshot.resourceCost,
+        resourceTypeId = snapshot.resourceTypeId,
+        range = snapshot.range,
+        minRange = snapshot.minRange,
+        currentCooldown = snapshot.currentCooldown,
+        maxCooldown = snapshot.maxCooldown,
+        requiresTarget = snapshot.requiresTarget,
+        descriptionModel = null,
+        nextBreakpointPreview = snapshot.nextBreakpointPreview,
+        hasPendingAllocation = snapshot.hasPendingAllocation,
+    )
+
+private fun toTalentReserveView(snapshot: TalentReserveSnapshot): TalentReserveView =
+    TalentReserveView(
+        talentId = snapshot.talentId,
+        name = snapshot.nameKey,
+        descKey = snapshot.descKey,
+        ownerType = TalentTreeOwnerType.valueOf(snapshot.ownerType),
+        level = snapshot.level,
+        committedLevel = snapshot.committedLevel,
+        maxLevel = snapshot.maxLevel,
+        resourceCost = snapshot.resourceCost,
+        resourceTypeId = snapshot.resourceTypeId,
+        range = snapshot.range,
+        minRange = snapshot.minRange,
+        currentCooldown = snapshot.currentCooldown,
+        maxCooldown = snapshot.maxCooldown,
+        requiresTarget = snapshot.requiresTarget,
+        descriptionModel = null,
+        nextBreakpointPreview = snapshot.nextBreakpointPreview,
+        hasPendingAllocation = snapshot.hasPendingAllocation,
+    )
 
 fun RunObservation.signature(): String =
     buildString {
@@ -222,7 +366,7 @@ fun routeProgressCommand(
         return null
     }
 
-    session.renderSnapshot().uiState.activeRouteSelection?.let { routeSelection ->
+    observation.activeRouteSelection?.let { routeSelection ->
         return PlayerCommand.SelectRoute(preferredRouteIndex(routeSelection))
     }
 

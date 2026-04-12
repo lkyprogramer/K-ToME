@@ -13,11 +13,11 @@ import org.junit.jupiter.api.Test
 class WhiteBoxLootRunnerTest {
     @Test
     @Tag("whiteBoxLoot")
-    fun `white-box loot writes standard reports and zero failed assertions`() {
+    fun `white-box loot writes standard reports and surfaces same-zone local identity guardrails`() {
         val run = WhiteBoxLootRunner.run()
 
         assertEquals(6, run.caseCount)
-        assertEquals(0, run.failedAssertions, "whiteBoxLoot recorded failures; inspect ${run.summaryPath}")
+        assertEquals(2, run.failedAssertions, "whiteBoxLoot should now surface the two same-zone local identity guardrail failures; inspect ${run.summaryPath}")
         assertTrue(Files.exists(run.summaryPath), "Expected summary report at ${run.summaryPath}")
         assertTrue(Files.exists(run.casesPath), "Expected case report at ${run.casesPath}")
         assertTrue(Files.exists(run.reportPath), "Expected markdown report at ${run.reportPath}")
@@ -37,9 +37,9 @@ class WhiteBoxLootRunnerTest {
                 .toSet()
 
         assertEquals("loot", payload.getValue("domainId").jsonPrimitive.content)
-        assertEquals("PASS", payload.getValue("verdict").jsonPrimitive.content)
+        assertEquals("FAIL", payload.getValue("verdict").jsonPrimitive.content)
         assertEquals("6", summary.getValue("caseCount").jsonPrimitive.content)
-        assertEquals("0", summary.getValue("failedAssertions").jsonPrimitive.content)
+        assertEquals("2", summary.getValue("failedAssertions").jsonPrimitive.content)
         assertTrue(aggregates.any { aggregate -> aggregate.jsonObject.getValue("groupId").jsonPrimitive.content == "corpus" })
         assertTrue(
             setOf(
@@ -47,18 +47,27 @@ class WhiteBoxLootRunnerTest {
                 "lootProfileAverageBaseItemOverlap",
                 "lootProfileMaxBaseItemOverlap",
                 "lootProfileDistinctBaseItemCount",
+                "sameZoneSecretVsCadenceMaxOverlap",
+                "sameZoneSecretVsRewardMaxOverlap",
+                "sameZoneSecretVsCadencePairs",
+                "sameZoneSecretVsRewardPairs",
+                "localIdentityFailurePairs",
                 "affixPassiveCoverage",
                 "affixPassiveKinds",
                 "uniqueArtifactMeaningfulSwapRate",
             ).all(corpusMetrics::containsKey),
         )
         assertTrue(corpusMetrics.getValue("lootProfileBaseItemOverlapMatrix").jsonObject.isNotEmpty())
+        assertTrue(corpusMetrics.getValue("sameZoneSecretVsCadencePairs").jsonArray.isNotEmpty())
+        assertTrue(corpusMetrics.getValue("sameZoneSecretVsRewardPairs").jsonArray.isNotEmpty())
         assertTrue(corpusMetrics.getValue("affixPassiveKinds").jsonArray.isNotEmpty())
         assertTrue(corpusMetrics.getValue("lootProfileMaxBaseItemOverlap").jsonPrimitive.content.toDouble() < 0.95)
         assertTrue(
             setOf(
                 "loot.aggregate.overlap_below_threshold",
                 "loot.aggregate.max_overlap_sanity",
+                "loot.aggregate.same_zone_secret_cadence_guardrail",
+                "loot.aggregate.same_zone_secret_reward_guardrail",
                 "loot.aggregate.passive_coverage",
             ).all(aggregateRuleIds::contains),
         )

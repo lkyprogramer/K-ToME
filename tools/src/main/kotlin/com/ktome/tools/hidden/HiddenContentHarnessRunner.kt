@@ -5,6 +5,7 @@ import com.ktome.core.harness.toJson
 import com.ktome.core.map.Point
 import com.ktome.core.mapgen.PathClass
 import com.ktome.core.mapgen.center
+import com.ktome.core.phase.PackId
 import com.ktome.core.world.solvability.NodeAnchorId
 import com.ktome.core.world.solvability.SearchActionResult
 import com.ktome.core.world.solvability.SearchBindingId
@@ -27,6 +28,10 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
 import kotlinx.serialization.json.putJsonObject
@@ -43,6 +48,7 @@ data class HiddenContentCaseSpec(
     val floorIndex: Int,
     val seed: Long,
     val searchBindingId: String,
+    val primerActionId: String,
 )
 
 data class HiddenContentCaseResult(
@@ -50,6 +56,8 @@ data class HiddenContentCaseResult(
     val floorIndex: Int,
     val seed: Long,
     val searchBindingId: String,
+    val primerActionId: String,
+    val primerActionUsed: Boolean,
     val entranceBindingId: String,
     val resolvedReturnBridgeNodeId: String,
     val searchActionResult: String,
@@ -141,6 +149,8 @@ data class HiddenContentCaseResult(
             put("zoneId", zoneId)
             put("floorIndex", floorIndex)
             put("searchBindingId", searchBindingId)
+            put("primerActionId", primerActionId)
+            put("primerActionUsed", primerActionUsed)
             put("entranceBindingId", entranceBindingId)
             put("resolvedReturnBridgeNodeId", resolvedReturnBridgeNodeId)
             put("searchActionResult", searchActionResult)
@@ -227,6 +237,8 @@ internal data class HiddenContentSummaryMetrics(
     val secretZoneDiscoveryCount: Int,
     val secretZoneDiscoveryRate: Double,
     val explicitSearchRevealCount: Int,
+    val primerActionUsedCount: Int,
+    val primerFreeCaseCount: Int,
     val searchFailureCount: Int,
     val zeroHiddenEventZoneCount: Int,
     val zeroSecretZoneZoneCount: Int,
@@ -349,6 +361,7 @@ internal object HiddenContentHarnessKernel {
                         floorIndex = FLOOR_INDEX,
                         seed = SEED_BASE + scenarioOrdinal * ZONE_SEED_BLOCK + seedOrdinal,
                         searchBindingId = scenario.searchBindingId.value,
+                        primerActionId = scenario.primerAction.name,
                     )
                 }
             }
@@ -484,6 +497,8 @@ internal object HiddenContentHarnessKernel {
                 floorIndex = caseSpec.floorIndex,
                 seed = caseSpec.seed,
                 searchBindingId = entrance.bindingId.value,
+                primerActionId = caseSpec.primerActionId,
+                primerActionUsed = caseSpec.primerActionId != HiddenPrimerAction.NONE.name,
                 entranceBindingId = entrance.entranceAnchorId.value,
                 resolvedReturnBridgeNodeId = entrance.resolvedReturnBridgeNodeId.value,
                 searchActionResult = searchResult.name,
@@ -523,6 +538,8 @@ internal object HiddenContentHarnessKernel {
                 floorIndex = caseSpec.floorIndex,
                 seed = caseSpec.seed,
                 searchBindingId = caseSpec.searchBindingId,
+                primerActionId = caseSpec.primerActionId,
+                primerActionUsed = caseSpec.primerActionId != HiddenPrimerAction.NONE.name,
                 entranceBindingId = "",
                 resolvedReturnBridgeNodeId = "",
                 searchActionResult = SearchActionResult.NO_TARGET.name,
@@ -771,6 +788,8 @@ internal object HiddenContentHarnessAnalysis {
                 secretZoneDiscoveryCount = secretZoneDiscoveryCount,
                 secretZoneDiscoveryRate = secretZoneDiscoveryCount.toDouble() / results.size.toDouble(),
                 explicitSearchRevealCount = results.count(HiddenContentCaseResult::explicitSearchReveal),
+                primerActionUsedCount = results.count(HiddenContentCaseResult::primerActionUsed),
+                primerFreeCaseCount = results.count { result -> !result.primerActionUsed },
                 searchFailureCount = results.count { result -> result.searchActionResult == SearchActionResult.FAILED_CHECK.name },
                 zeroHiddenEventZoneCount = zoneBreakdown.values.count { metrics -> metrics.hiddenEventTriggerCount == 0 },
                 zeroSecretZoneZoneCount = zoneBreakdown.values.count { metrics -> metrics.secretZoneDiscoveryCount == 0 },
@@ -840,6 +859,26 @@ object HiddenContentHarnessRunner {
         )
     }
 
+    internal fun loadKernelRun(reportDir: Path = reportDir()): HiddenContentKernelRun? {
+        val summaryPath = reportDir.resolve(SUMMARY_FILE)
+        val eventsPath = reportDir.resolve(EVENTS_FILE)
+        if (!Files.isRegularFile(summaryPath) || !Files.isRegularFile(eventsPath)) {
+            return null
+        }
+        val payload = json.parseToJsonElement(Files.readString(summaryPath)).jsonObject
+        val header = payload.getValue("header").jsonObject.toHarnessReportHeader()
+        val results =
+            Files.readAllLines(eventsPath)
+                .asSequence()
+                .filter(String::isNotBlank)
+                .map { line -> json.parseToJsonElement(line).jsonObject.toHiddenContentCaseResult() }
+                .toList()
+        return HiddenContentKernelRun(
+            header = header,
+            results = results,
+        )
+    }
+
     private fun buildSummaryPayload(
         kernelRun: HiddenContentKernelRun,
         analysis: HiddenContentAnalysis,
@@ -848,6 +887,7 @@ object HiddenContentHarnessRunner {
         return buildJsonObject {
             put("header", kernelRun.header.toJson())
             putJsonObject("summary") {
+                put("scriptedVerification", true)
                 put("totalCases", summary.totalCases)
                 put("distinctSeedCount", summary.distinctSeedCount)
                 put("failureCount", summary.failureCount)
@@ -858,6 +898,8 @@ object HiddenContentHarnessRunner {
                 put("secretZoneDiscoveryCount", summary.secretZoneDiscoveryCount)
                 put("secretZoneDiscoveryRate", summary.secretZoneDiscoveryRate)
                 put("explicitSearchRevealCount", summary.explicitSearchRevealCount)
+                put("primerActionUsedCount", summary.primerActionUsedCount)
+                put("primerFreeCaseCount", summary.primerFreeCaseCount)
                 put("searchFailureCount", summary.searchFailureCount)
                 put("zeroTriggerZoneCount", summary.zeroHiddenEventZoneCount)
                 put("zeroHiddenEventZoneCount", summary.zeroHiddenEventZoneCount)
@@ -907,3 +949,77 @@ internal fun reportDir(): Path {
         Path.of(configured)
     }
 }
+
+private fun JsonObject.toHarnessReportHeader(): HarnessReportHeader =
+    HarnessReportHeader(
+        harnessId = stringValue("harnessId"),
+        phaseId = stringValue("phaseId"),
+        buildId = stringValue("buildId"),
+        locale = stringValue("locale"),
+        contentSchemaVersion = intValue("contentSchemaVersion"),
+        topologyFingerprintVersion = intValue("topologyFingerprintVersion"),
+        rewardLedgerVersion = intValue("rewardLedgerVersion"),
+        lootFormulaVersion = intValue("lootFormulaVersion"),
+        specialTierEligibilityVersion = intValue("specialTierEligibilityVersion"),
+        searchRuleVersion = intValue("searchRuleVersion"),
+        secretRuleVersion = intValue("secretRuleVersion"),
+        overlayContractVersion = intValue("overlayContractVersion"),
+        activePackIds = getValue("activePackIds").jsonArray.map { packId -> PackId(packId.jsonPrimitive.content) },
+        activePackManifestVersions =
+            getValue("activePackManifestVersions").jsonObject.entries.associate { (packId, version) ->
+                PackId(packId) to version.jsonPrimitive.content
+            },
+        timestamp = stringValue("timestamp"),
+        seedList = getValue("seedList").jsonArray.map { seed -> seed.jsonPrimitive.content.toLong() },
+    )
+
+private fun JsonObject.toHiddenContentCaseResult(): HiddenContentCaseResult =
+    HiddenContentCaseResult(
+        zoneId = stringValue("zoneId"),
+        floorIndex = intValue("floorIndex"),
+        seed = longValue("seed"),
+        searchBindingId = stringValue("searchBindingId"),
+        primerActionId = stringValue("primerActionId"),
+        primerActionUsed = booleanValue("primerActionUsed"),
+        entranceBindingId = stringValue("entranceBindingId"),
+        resolvedReturnBridgeNodeId = stringValue("resolvedReturnBridgeNodeId"),
+        searchActionResult = stringValue("searchActionResult"),
+        explicitSearchReveal = booleanValue("explicitSearchReveal"),
+        triggerType = stringValue("triggerType"),
+        hiddenEventIds = stringList("hiddenEventIds"),
+        triggerTypes = stringList("triggerTypes"),
+        triggerPathClasses = stringList("triggerPathClasses"),
+        optionalOnlyTriggerPathClasses = stringList("optionalOnlyTriggerPathClasses"),
+        secretZoneId = nullableString("secretZoneId"),
+        secretZoneEntered = booleanValue("secretZoneEntered"),
+        secretRewardNodePresent = booleanValue("secretRewardNodePresent"),
+        criticalPathReachable = booleanValue("criticalPathReachable"),
+        searchFailureKeepsMainlineReachable = booleanValue("searchFailureKeepsMainlineReachable"),
+        returnedToMainline = booleanValue("returnedToMainline"),
+        returnedRoomNodeId = nullableString("returnedRoomNodeId"),
+        returnedPoint = nullableString("returnedPoint"),
+        expectedReturnPoint = nullableString("expectedReturnPoint"),
+        returnBridgeMatchesResolvedNodeId = booleanValue("returnBridgeMatchesResolvedNodeId"),
+        proofSearchActionResult = nullableString("proofSearchActionResult"),
+        solvabilityProofMatchesSearchAction = booleanValue("solvabilityProofMatchesSearchAction"),
+        solvabilityProofCoversReturnBridge = booleanValue("solvabilityProofCoversReturnBridge"),
+        rewardSources = stringList("rewardSources"),
+        rewardBudgetSources = stringList("rewardBudgetSources"),
+        expectedRewardBudgetSources = stringList("expectedRewardBudgetSources"),
+        threatBudgetSources = stringList("threatBudgetSources"),
+        expectedThreatBudgetSources = stringList("expectedThreatBudgetSources"),
+        logKeys = stringList("logKeys"),
+        failure = nullableString("failure"),
+    )
+
+private fun JsonObject.stringList(key: String): List<String> = getValue(key).jsonArray.map { element -> element.jsonPrimitive.content }
+
+private fun JsonObject.intValue(key: String): Int = getValue(key).jsonPrimitive.content.toInt()
+
+private fun JsonObject.longValue(key: String): Long = getValue(key).jsonPrimitive.content.toLong()
+
+private fun JsonObject.stringValue(key: String): String = getValue(key).jsonPrimitive.content
+
+private fun JsonObject.booleanValue(key: String): Boolean = getValue(key).jsonPrimitive.content.toBooleanStrict()
+
+private fun JsonObject.nullableString(key: String): String? = this[key]?.jsonPrimitive?.contentOrNull

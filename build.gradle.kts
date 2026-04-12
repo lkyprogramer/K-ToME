@@ -86,6 +86,7 @@ subprojects {
                     "mapgenSmoke",
                     "solvabilityHarness",
                     "hiddenContentHarness",
+                    "organicHiddenProbe",
                     "lootBalanceLab",
                     "contentPackHarness",
                     "whiteBoxMapgen",
@@ -246,6 +247,12 @@ tasks.register("contentPackHarness") {
     dependsOn(":tools:contentPackHarness")
 }
 
+tasks.register("organicHiddenProbe") {
+    group = LifecycleBasePlugin.VERIFICATION_GROUP
+    description = "Runs the Phase 4 organic hidden-content probe and writes structured reports."
+    dependsOn(":tools:organicHiddenProbe")
+}
+
 tasks.register("whiteBoxMapgen") {
     group = LifecycleBasePlugin.VERIFICATION_GROUP
     description = "Runs the Phase 4 unified white-box mapgen pilot."
@@ -292,6 +299,12 @@ tasks.register("phase4Report") {
     group = LifecycleBasePlugin.VERIFICATION_GROUP
     description = "Aggregates current Phase 4 verification tasks, including hidden content, into tools/build/reports/phase4/phase4-summary.json."
     dependsOn(":tools:phase4Report")
+}
+
+tasks.register("phase4ReportOnly") {
+    group = LifecycleBasePlugin.VERIFICATION_GROUP
+    description = "Rebuilds tools/build/reports/phase4/phase4-summary.json from existing artifacts without rerunning Phase 4 producer tasks."
+    dependsOn(":tools:phase4ReportOnly")
 }
 
 tasks.register<Exec>("assetLint") {

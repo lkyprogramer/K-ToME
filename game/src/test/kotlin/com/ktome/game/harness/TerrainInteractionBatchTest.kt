@@ -558,6 +558,16 @@ class TerrainInteractionBatchTest {
                         put("preferredTerrainImplementedCombatCount", probe.preferredTerrainImplementedCombatCount)
                         put("preferredTerrainCombatImplementationRate", probe.preferredTerrainCombatImplementationRate)
                         put("decisionPathByCurrentMetrics", terrainDecisionPath(probe.terrainTaggedCombatExposureRate, probe.terrainInteractionEncounterRate))
+                        put("perZoneEncounterLowerBoundTarget", PER_ZONE_ENCOUNTER_LOWER_BOUND_TARGET)
+                        putJsonArray("combatSampledZoneIds") {
+                            TERRAIN_EXPOSURE_ZONE_IDS.forEach { zoneId -> add(JsonPrimitive(zoneId)) }
+                        }
+                        putJsonArray("combatSampledZoneExclusionNotes") {
+                            TERRAIN_EXPOSURE_ZONE_EXCLUSION_NOTES.forEach { note -> add(JsonPrimitive(note)) }
+                        }
+                        putJsonArray("perZoneEncounterFailures") {
+                            probe.perZoneEncounterFailureZoneIds.forEach { zoneId -> add(JsonPrimitive(zoneId)) }
+                        }
                         putJsonObject("terrainCoverageByZone") {
                             probe.coverageByZone.forEach { (zoneId, coverage) ->
                                 putJsonObject(zoneId) {
@@ -1109,6 +1119,13 @@ private data class TerrainExposureProbeSummary(
             } else {
                 preferredTerrainImplementedCombatCount.toDouble() / preferredTerrainCombatCount.toDouble()
             }
+
+    val perZoneEncounterFailureZoneIds: List<String>
+        get() =
+            coverageByZone.entries
+                .filter { (_, coverage) -> coverage.terrainInteractionEncounterRate < PER_ZONE_ENCOUNTER_LOWER_BOUND_TARGET }
+                .map { (zoneId, _) -> zoneId }
+                .sorted()
 }
 
 private data class TerrainZoneExposureSummary(
@@ -1173,6 +1190,14 @@ private val TERRAIN_EXPOSURE_ZONE_IDS: List<String> =
         "underground_river",
         "crystal_cavern",
     )
+
+private val TERRAIN_EXPOSURE_ZONE_EXCLUSION_NOTES: List<String> =
+    listOf(
+        "abyssal_temple is excluded from combat-sampled terrain metrics because the current runtime is objective/pressure-driven and regular direct-combat spawns collapse the denominator.",
+        "crystal_cavern remains in the combat-sampled set because it is the formal ICE-heavy encounter surface used to verify frozen/melt/slip terrain semantics under real mapgen combat.",
+    )
+
+private const val PER_ZONE_ENCOUNTER_LOWER_BOUND_TARGET: Double = 0.15
 
 private const val TERRAIN_EXPOSURE_SEED_BASE: Long = 20260409010000L
 private const val TERRAIN_EXPOSURE_ZONE_SEED_BLOCK: Long = 1_000L

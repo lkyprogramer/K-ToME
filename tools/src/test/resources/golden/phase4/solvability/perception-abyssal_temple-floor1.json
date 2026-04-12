@@ -25,7 +25,7 @@
         "nodeCount": 9,
         "edgeCount": 10,
         "primaryPathLength": 5,
-        "optionalLoopCount": 2,
+        "optionalLoopCount": 3,
         "loopEdgeCount": 3,
         "loopEdgeRatio": 0.3,
         "roomCount": 9,

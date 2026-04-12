@@ -501,6 +501,10 @@ class FoundationGameSession internal constructor(
     private var exploredTiles: LinkedHashSet<Point> = activeFloorState.exploredTiles
     private var renderSnapshotRevision: Long = 1L
     private var cachedRenderSnapshot: RenderSnapshot? = null
+    private var cachedCurrentBuildHash: String? = null
+    private var cachedCommittedBuildHash: String? = null
+    private var cachedBreakpointPayoffSummaries: List<BreakpointPayoffSummary>? = null
+    private var cachedAffixSynergyActivationDistribution: Map<String, Int>? = null
     private var lastPlayerCombatTurn: Int = -1
     private val objectiveProgressTokens = linkedSetOf<String>()
     private var checkpointRequested: Boolean = false
@@ -685,6 +689,15 @@ class FoundationGameSession internal constructor(
     fun currentHeadlessTurnEquivalent(): Int = headlessTurnEquivalent
 
     fun currentBuildHash(includePendingTalentDrafts: Boolean = true): String {
+        val cachedHash =
+            if (includePendingTalentDrafts) {
+                cachedCurrentBuildHash
+            } else {
+                cachedCommittedBuildHash
+            }
+        if (cachedHash != null) {
+            return cachedHash
+        }
         val equipmentHash =
             EquipSlot.entries.joinToString(separator = "|") { slot ->
                 val equipped = equippedItemFor(slot)
@@ -721,12 +734,21 @@ class FoundationGameSession internal constructor(
             equipmentHash,
             talentHash,
             inscriptionHash,
-        ).joinToString(separator = "#")
+        ).joinToString(separator = "#").also { buildHash ->
+            if (includePendingTalentDrafts) {
+                cachedCurrentBuildHash = buildHash
+            } else {
+                cachedCommittedBuildHash = buildHash
+            }
+        }
     }
 
     fun currentCommittedBuildHash(): String = currentBuildHash(includePendingTalentDrafts = false)
 
+    fun currentEquippedBaseItemId(slot: EquipSlot): String? = equippedBaseItemIdFor(slot)
+
     fun currentBreakpointPayoffSummaries(): List<BreakpointPayoffSummary> {
+        cachedBreakpointPayoffSummaries?.let { return it }
         val loadout = world.get<TalentLoadout>(playerId) ?: return emptyList()
         return loadout.talentLevels.entries
             .mapNotNull { (talentId, rank) ->
@@ -747,6 +769,9 @@ class FoundationGameSession internal constructor(
                             .distinct(),
                 )
             }.sortedWith(compareBy(BreakpointPayoffSummary::treeId, BreakpointPayoffSummary::talentId))
+            .also { summaries ->
+                cachedBreakpointPayoffSummaries = summaries
+            }
     }
 
     fun milestoneRewardSummaries(): List<MilestoneRewardSummary> =
@@ -754,7 +779,10 @@ class FoundationGameSession internal constructor(
 
     fun currentAffixSynergyActivationCount(): Int = affixSynergyActivationCounts.values.sum()
 
-    fun currentAffixSynergyActivationDistribution(): Map<String, Int> = affixSynergyActivationCounts.toMap(linkedMapOf())
+    fun currentAffixSynergyActivationDistribution(): Map<String, Int> =
+        cachedAffixSynergyActivationDistribution ?: affixSynergyActivationCounts.toMap(linkedMapOf()).also { distribution ->
+            cachedAffixSynergyActivationDistribution = distribution
+        }
 
     private fun persistedMilestoneRewardSummaries(): List<MilestoneRewardSummary> = recordedMilestoneRewardSummaries.toList()
 
@@ -1029,7 +1057,12 @@ class FoundationGameSession internal constructor(
         }
 
     internal fun automationInteractableTags(interactableId: String): Set<String> =
-        interactableSchemaFor(interactableId)?.interactionTags?.toSet().orEmpty()
+        when (interactableId) {
+            HIDDEN_ENTRANCE_PROP_TYPE_ID -> setOf("gate", "secret")
+            SECRET_REWARD_PROP_TYPE_ID -> setOf("loot", "secret")
+            SECRET_RETURN_PROP_TYPE_ID -> setOf("gate", "secret")
+            else -> interactableSchemaFor(interactableId)?.interactionTags?.toSet().orEmpty()
+        }
 
     internal fun automationCanPurchaseShopOffer(index: Int): Boolean =
         availableShopOffers().getOrNull(index)?.let(::canPurchaseShopOffer) == true
@@ -1116,6 +1149,7 @@ class FoundationGameSession internal constructor(
         } else {
             world.add(playerId, draft)
         }
+        invalidateDerivedHarnessCaches()
     }
 
     private fun storeNormalizedTalentDraft(
@@ -1229,7 +1263,9 @@ class FoundationGameSession internal constructor(
 
     fun playerResourceView(): PlayerResourceView = resolvePlayerResourceView()
 
-    fun inventoryItems(): List<InventoryItemView> {
+    fun inventoryItems(): List<InventoryItemView> = buildInventoryItemViews()
+
+    private fun buildInventoryItemViews(): List<InventoryItemView> {
         val inventory = world.get<Inventory>(playerId) ?: return emptyList()
         return inventory.itemIds.mapIndexedNotNull { index, itemId ->
             val item = world.get<ItemInstance>(itemId) ?: return@mapIndexedNotNull null
@@ -1257,11 +1293,13 @@ class FoundationGameSession internal constructor(
                 itemName =
                     inventoryItems()
                         .firstOrNull { item -> item.equippedSlot == slot }
-                        ?.name,
+                ?.name,
             )
         }
 
-    fun talentSlots(): List<TalentSlotView> {
+    fun talentSlots(): List<TalentSlotView> = buildTalentSlotViews()
+
+    private fun buildTalentSlotViews(): List<TalentSlotView> {
         val loadout = world.get<TalentLoadout>(playerId) ?: return emptyList()
         val cooldowns = world.get<CooldownState>(playerId)?.remainingByTalentId.orEmpty()
         return activeTalentMappings(loadout).mapNotNull { (slot, talentId) ->
@@ -1289,7 +1327,9 @@ class FoundationGameSession internal constructor(
         }
     }
 
-    fun reserveTalentSlots(): List<TalentReserveView> {
+    fun reserveTalentSlots(): List<TalentReserveView> = buildReserveTalentViews()
+
+    private fun buildReserveTalentViews(): List<TalentReserveView> {
         val loadout = world.get<TalentLoadout>(playerId) ?: return emptyList()
         val cooldowns = world.get<CooldownState>(playerId)?.remainingByTalentId.orEmpty()
         return reserveTalentIds(loadout).mapNotNull { talentId ->
@@ -1378,7 +1418,9 @@ class FoundationGameSession internal constructor(
     fun itemNamesAtPlayerPosition(): List<String> =
         itemsOnGroundAt(playerPosition()).mapNotNull { itemId -> world.get<ItemInstance>(itemId)?.name }
 
-    fun targetableHostilePositions(): List<Point> {
+    fun targetableHostilePositions(): List<Point> = buildTargetableHostilePositions()
+
+    private fun buildTargetableHostilePositions(): List<Point> {
         val playerFaction = requireNotNull(world.get<FactionTag>(playerId)).value
         return world.entitiesWith(Position::class, Health::class, FactionTag::class)
             .filter { entityId ->
@@ -3018,75 +3060,111 @@ class FoundationGameSession internal constructor(
             ?.let { entityId -> world.get<ItemInstance>(entityId) }
 
     private fun buildTalentSnapshots(): List<TalentSlotSnapshot> =
-        talentSlots().map { slot ->
-            val schema = requireNotNull(content.schemaCatalog.talents.firstOrNull { it.id == slot.talentId }) {
-                "Unknown talent schema '${slot.talentId}'."
-            }
-            val owner = requireNotNull(resolveTalentTreeOwner(schema)) { "Unknown talent tree owner for '${slot.talentId}'." }
-            val resourceTypeId = schema.resourceCosts.firstOrNull()?.axis ?: resolvePlayerResourceView().typeId
-            TalentSlotSnapshot(
-                slot = slot.slot,
-                talentId = slot.talentId,
-                ownerType = owner.ownerType.name,
-                treeOwnerId = owner.treeOwnerId,
-                nameKey = schema.nameKey,
-                visualKey = schema.visualKey,
-                iconKey = schema.iconKey,
-                damageTypeIconKey = schema.damageType?.let(::damageTypeIconKey),
-                audioProfile = schema.audioProfile,
-                level = slot.level,
-                maxLevel = slot.maxLevel,
-                resourceCost = schema.resourceCosts.firstOrNull { cost -> cost.axis == resourceTypeId }?.amount ?: slot.resourceCost,
-                resourceLabelKey = resourceLabelKey(resourceTypeId),
-                resourceTypeId = resourceTypeId,
-                range = slot.range,
-                minRange = slot.minRange,
-                currentCooldown = slot.currentCooldown,
-                maxCooldown = slot.maxCooldown,
-                requiresTarget = slot.requiresTarget,
-                descKey = slot.descKey,
-                committedLevel = slot.committedLevel,
-                descriptionModel = slot.descriptionModel?.toSnapshot(),
-                nextBreakpointPreview = slot.nextBreakpointPreview,
-                isMaxRank = slot.level >= slot.maxLevel,
-                hasPendingAllocation = slot.hasPendingAllocation,
-            )
-        }
+        world.get<TalentLoadout>(playerId)
+            ?.let { loadout ->
+                val cooldowns = world.get<CooldownState>(playerId)?.remainingByTalentId.orEmpty()
+                activeTalentMappings(loadout).mapNotNull { (slot, talentId) ->
+                    buildTalentSlotSnapshot(
+                        slot = slot,
+                        talentId = talentId,
+                        loadout = loadout,
+                        cooldowns = cooldowns,
+                    )
+                }
+            }.orEmpty()
 
     private fun buildReserveTalentSnapshots(): List<TalentReserveSnapshot> =
-        reserveTalentSlots().map { talent ->
-            val schema = requireNotNull(content.schemaCatalog.talents.firstOrNull { it.id == talent.talentId }) {
-                "Unknown talent schema '${talent.talentId}'."
-            }
-            val owner = requireNotNull(resolveTalentTreeOwner(schema)) { "Unknown talent tree owner for '${talent.talentId}'." }
-            val resourceTypeId = schema.resourceCosts.firstOrNull()?.axis ?: resolvePlayerResourceView().typeId
-            TalentReserveSnapshot(
-                talentId = talent.talentId,
-                ownerType = owner.ownerType.name,
-                treeOwnerId = owner.treeOwnerId,
-                nameKey = schema.nameKey,
-                visualKey = schema.visualKey,
-                iconKey = schema.iconKey,
-                damageTypeIconKey = schema.damageType?.let(::damageTypeIconKey),
-                audioProfile = schema.audioProfile,
-                level = talent.level,
-                maxLevel = talent.maxLevel,
-                resourceCost = schema.resourceCosts.firstOrNull { cost -> cost.axis == resourceTypeId }?.amount ?: talent.resourceCost,
-                resourceLabelKey = resourceLabelKey(resourceTypeId),
-                resourceTypeId = resourceTypeId,
-                range = talent.range,
-                minRange = talent.minRange,
-                currentCooldown = talent.currentCooldown,
-                maxCooldown = talent.maxCooldown,
-                requiresTarget = talent.requiresTarget,
-                descKey = talent.descKey,
-                committedLevel = talent.committedLevel,
-                descriptionModel = talent.descriptionModel?.toSnapshot(),
-                nextBreakpointPreview = talent.nextBreakpointPreview,
-                isMaxRank = talent.level >= talent.maxLevel,
-                hasPendingAllocation = talent.hasPendingAllocation,
-            )
+        world.get<TalentLoadout>(playerId)
+            ?.let { loadout ->
+                val cooldowns = world.get<CooldownState>(playerId)?.remainingByTalentId.orEmpty()
+                reserveTalentIds(loadout).mapNotNull { talentId ->
+                    buildReserveTalentSnapshot(
+                        talentId = talentId,
+                        loadout = loadout,
+                        cooldowns = cooldowns,
+                    )
+                }
+            }.orEmpty()
+
+    private fun buildTalentSlotSnapshot(
+        slot: Int,
+        talentId: String,
+        loadout: TalentLoadout,
+        cooldowns: Map<String, Int>,
+    ): TalentSlotSnapshot? {
+        val details = playerTalentDetails(loadout, talentId, cooldowns) ?: return null
+        val schema = requireNotNull(content.schemaCatalog.talents.firstOrNull { it.id == talentId }) {
+            "Unknown talent schema '$talentId'."
         }
+        val owner = requireNotNull(resolveTalentTreeOwner(schema)) { "Unknown talent tree owner for '$talentId'." }
+        val resourceTypeId = schema.resourceCosts.firstOrNull()?.axis ?: details.resourceTypeId
+        return TalentSlotSnapshot(
+            slot = slot,
+            talentId = talentId,
+            ownerType = owner.ownerType.name,
+            treeOwnerId = owner.treeOwnerId,
+            nameKey = schema.nameKey,
+            visualKey = schema.visualKey,
+            iconKey = schema.iconKey,
+            damageTypeIconKey = schema.damageType?.let(::damageTypeIconKey),
+            audioProfile = schema.audioProfile,
+            level = details.level,
+            maxLevel = details.maxLevel,
+            resourceCost = schema.resourceCosts.firstOrNull { cost -> cost.axis == resourceTypeId }?.amount ?: details.resourceCost,
+            resourceLabelKey = resourceLabelKey(resourceTypeId),
+            resourceTypeId = resourceTypeId,
+            range = details.range,
+            minRange = details.minRange,
+            currentCooldown = details.currentCooldown,
+            maxCooldown = details.maxCooldown,
+            requiresTarget = details.requiresTarget,
+            descKey = details.descKey,
+            committedLevel = details.committedLevel,
+            descriptionModel = details.descriptionModel?.toSnapshot(),
+            nextBreakpointPreview = details.nextBreakpointPreview,
+            isMaxRank = details.level >= details.maxLevel,
+            hasPendingAllocation = details.hasPendingAllocation,
+        )
+    }
+
+    private fun buildReserveTalentSnapshot(
+        talentId: String,
+        loadout: TalentLoadout,
+        cooldowns: Map<String, Int>,
+    ): TalentReserveSnapshot? {
+        val details = playerTalentDetails(loadout, talentId, cooldowns) ?: return null
+        val schema = requireNotNull(content.schemaCatalog.talents.firstOrNull { it.id == talentId }) {
+            "Unknown talent schema '$talentId'."
+        }
+        val owner = requireNotNull(resolveTalentTreeOwner(schema)) { "Unknown talent tree owner for '$talentId'." }
+        val resourceTypeId = schema.resourceCosts.firstOrNull()?.axis ?: details.resourceTypeId
+        return TalentReserveSnapshot(
+            talentId = talentId,
+            ownerType = owner.ownerType.name,
+            treeOwnerId = owner.treeOwnerId,
+            nameKey = schema.nameKey,
+            visualKey = schema.visualKey,
+            iconKey = schema.iconKey,
+            damageTypeIconKey = schema.damageType?.let(::damageTypeIconKey),
+            audioProfile = schema.audioProfile,
+            level = details.level,
+            maxLevel = details.maxLevel,
+            resourceCost = schema.resourceCosts.firstOrNull { cost -> cost.axis == resourceTypeId }?.amount ?: details.resourceCost,
+            resourceLabelKey = resourceLabelKey(resourceTypeId),
+            resourceTypeId = resourceTypeId,
+            range = details.range,
+            minRange = details.minRange,
+            currentCooldown = details.currentCooldown,
+            maxCooldown = details.maxCooldown,
+            requiresTarget = details.requiresTarget,
+            descKey = details.descKey,
+            committedLevel = details.committedLevel,
+            descriptionModel = details.descriptionModel?.toSnapshot(),
+            nextBreakpointPreview = details.nextBreakpointPreview,
+            isMaxRank = details.level >= details.maxLevel,
+            hasPendingAllocation = details.hasPendingAllocation,
+        )
+    }
 
     private fun buildInscriptionSnapshots(): List<InscriptionSlotSnapshot> {
         val loadout = world.get<InscriptionLoadout>(playerId) ?: return emptyList()
@@ -3139,28 +3217,28 @@ class FoundationGameSession internal constructor(
         )
 
     private fun buildInventoryEntries(): List<InventoryEntrySnapshot> =
-        inventoryItems().map { itemView ->
-            val itemEntityId = world.get<Inventory>(playerId)?.itemIds?.getOrNull(itemView.index)
-            val item =
-                requireNotNull(itemEntityId?.let { entityId -> world.get<ItemInstance>(entityId) }) {
-                    "Missing inventory item at index ${itemView.index}."
-                }
-            InventoryEntrySnapshot(
-                index = itemView.index,
-                item = toItemRenderSnapshot(item),
-                equippedSlotId = itemView.equippedSlot?.name,
-            )
-        }
+        world.get<Inventory>(playerId)
+            ?.itemIds
+            ?.mapIndexedNotNull { index, itemEntityId ->
+                val item = world.get<ItemInstance>(itemEntityId) ?: return@mapIndexedNotNull null
+                InventoryEntrySnapshot(
+                    index = index,
+                    item = toItemRenderSnapshot(item),
+                    equippedSlotId = inventoryManager.equippedSlotOf(world, playerId, itemEntityId)?.name,
+                )
+            }.orEmpty()
 
     private fun toItemRenderSnapshot(itemId: EntityId): ItemRenderSnapshot? =
         world.get<ItemInstance>(itemId)?.let(::toItemRenderSnapshot)
 
     private fun toItemRenderSnapshot(item: ItemInstance): ItemRenderSnapshot {
         val presentation = itemPresentationSchema(item)
+        val affixIds = item.affixes.map(com.ktome.core.item.AffixDef::id)
         val materialNameKey = item.materialId?.let(::materialSchemaFor)?.nameKey
-        val affixNameKeys = item.affixes.mapNotNull { affix -> affixSchemaFor(affix.id)?.nameKey }
+        val affixNameKeys = affixIds.mapNotNull { affixId -> affixSchemaFor(affixId)?.nameKey }
         return ItemRenderSnapshot(
             baseItemId = item.baseId,
+            specialTemplateId = item.specialTemplateId,
             nameKey = presentation.nameKey,
             displayName = itemDisplayToken(item),
             descKey = presentation.descKey,
@@ -3169,12 +3247,15 @@ class FoundationGameSession internal constructor(
             iconKey = presentation.iconKey,
             audioProfile = presentation.audioProfile,
             slotId = item.slot?.name,
+            qualityTierId = item.quality.name,
             qualityNameKey = qualityLabelKey(item.quality),
             materialNameKey = materialNameKey,
+            affixIds = affixIds,
             affixNameKeys = affixNameKeys,
             passiveDescriptions = itemPassiveDescriptions(item),
             stats = item.stats.toSnapshot(),
             effectTypeId = item.effect?.name,
+            resourceTypeId = item.resourceTypeId,
             magnitude = item.magnitude,
         )
     }
@@ -10098,6 +10179,14 @@ class FoundationGameSession internal constructor(
     private fun invalidateRenderSnapshot() {
         renderSnapshotRevision += 1
         cachedRenderSnapshot = null
+        invalidateDerivedHarnessCaches()
+    }
+
+    private fun invalidateDerivedHarnessCaches() {
+        cachedCurrentBuildHash = null
+        cachedCommittedBuildHash = null
+        cachedBreakpointPayoffSummaries = null
+        cachedAffixSynergyActivationDistribution = null
     }
 
     private fun shouldIncludeInRunSummary(message: RenderTextTokenSnapshot): Boolean = message.key != "log.zone.enter"

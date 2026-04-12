@@ -143,6 +143,15 @@ class FoundationGameSessionTest {
     }
 
     @Test
+    fun `organic automation exposes runtime hidden props as typed interactables`() {
+        val session = sessionForAutomationTagCheck()
+
+        assertEquals(setOf("gate", "secret"), session.automationInteractableTags("hidden_entrance"))
+        assertEquals(setOf("loot", "secret"), session.automationInteractableTags("secret_reward"))
+        assertEquals(setOf("gate", "secret"), session.automationInteractableTags("secret_return"))
+    }
+
+    @Test
     fun `search without a target emits no target event without consuming a turn`() {
         val session =
             GameModule.newFoundationSession(
@@ -5830,6 +5839,12 @@ class FoundationGameSessionTest {
         session: FoundationGameSession,
         talentId: String,
     ): Int = requireNotNull(runtimeWorld(session).get<com.ktome.core.talent.CooldownState>(session.playerId)).remainingByTalentId[talentId] ?: 0
+
+    private fun sessionForAutomationTagCheck(): FoundationGameSession =
+        GameModule.newFoundationSession(
+            FoundationGameConfig(seed = 20260331L, zoneId = "greenwood_fringe", playerProfessionId = "arcanist"),
+            SaveManager(tempDir.resolve("automation-tag-check-save")),
+        )
 
     private fun installCombatDummy(
         session: FoundationGameSession,
