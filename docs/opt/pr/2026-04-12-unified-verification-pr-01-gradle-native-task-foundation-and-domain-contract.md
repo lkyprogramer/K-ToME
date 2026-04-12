@@ -86,6 +86,23 @@
 3. 不实现 shard cache
 4. 不实现完整 impact analyzer
 5. 不改 `Phase 5` 任务
+6. 不把 `VerificationNodeSpec.dependsOn` 接进正式执行器或 Gradle 依赖闭包
+7. 不为 `LegacyHarnessAdapterTask` 实现 tag-only classpath discovery
+
+补充说明：
+
+1. `dependsOn` 在本 PR 先作为 **contract-only 字段** 冻结
+   - 当前只要求：
+     - node id 稳定
+     - tier/node 选择成立
+     - 依赖引用合法
+   - 当前不要求：
+     - DAG 拓扑执行
+     - `kernel -> evaluation -> render` 闭包调度
+     - Gradle 层自动映射 task dependency
+2. `LegacyHarnessAdapterTask` 当前仍允许使用显式 `selectedClasses` + 可选 tag filter
+   - 这是迁移期兼容策略
+   - `tag-only classpath discovery` 记为后续 adapter 优化，不作为本 PR 完成条件
 
 ---
 
@@ -99,11 +116,11 @@
 build-logic/
   settings.gradle.kts
   build.gradle.kts
-  src/main/kotlin/com/ktome/build/verification/
-    VerificationTaskPlugin.kt
-    VerificationTask.kt
-    VerificationReportTask.kt
-    LegacyHarnessAdapterTask.kt
+  src/main/java/com/ktome/build/verification/
+    VerificationTaskPlugin.java
+    VerificationTask.java
+    VerificationReportTask.java
+    LegacyHarnessAdapterTask.java
 ```
 
 根 `settings.gradle.kts` 需要：
@@ -121,6 +138,7 @@ build-logic/
 
 ```text
 tools/src/main/kotlin/com/ktome/tools/verification/
+  VerificationCli.kt
   VerificationDomainSpec.kt
   VerificationNodeSpec.kt
   VerificationTier.kt
@@ -151,6 +169,12 @@ tools/src/main/kotlin/com/ktome/tools/verification/
    - `EXPECTED_FAILURE_CODE_SET`
    - `RELATIVE_BASELINE`
    - `BUDGET_THRESHOLD`
+
+同时需要一个轻量 `VerificationCli` 作为 Gradle task 与 `tools` 运行时 contract 之间的桥接入口，负责：
+
+1. CLI 参数解析
+2. domain/tier/node 选择
+3. artifact 写入与 report-only 重建
 
 ### 5.3 Task 类型
 
@@ -187,6 +211,11 @@ tools/src/main/kotlin/com/ktome/tools/verification/
 1. 在迁移期包装旧 `Test + @Tag` harness
 2. 让新 registry 能先把旧任务当成 node 看待
 3. 便于新旧系统并行对账
+
+边界：
+
+1. 本 PR 的 legacy adapter 以“稳定包装旧执行面”为目标，不以“替代 JUnit classpath discovery”为目标
+2. 若当前 demo domain 用显式 `selectedClasses` 更稳定，应优先选显式 class list，而不是为了减少一处重复先引入 tag-only discovery
 
 ### 5.4 最小 demo domain
 
@@ -232,7 +261,7 @@ baseline/debt 细节放到 `PR-03`。
 
 1. `build-logic/settings.gradle.kts`
 2. `build-logic/build.gradle.kts`
-3. `build-logic/src/main/kotlin/com/ktome/build/verification/*`
+3. `build-logic/src/main/java/com/ktome/build/verification/*`
 
 ### 6.2 `tools`
 
@@ -266,7 +295,7 @@ baseline/debt 细节放到 `PR-03`。
 ### Task 3：实现 `VerificationTask` / `VerificationReportTask`
 
 - **目标**：跑通最小 node 执行路径
-- **文件**：`build-logic/src/main/kotlin/com/ktome/build/verification/*`
+- **文件**：`build-logic/src/main/java/com/ktome/build/verification/*`, `tools/src/main/kotlin/com/ktome/tools/verification/VerificationCli.kt`
 - **验收**：
   - task 可声明 inputs/outputs
   - warm rerun 可命中 Gradle 自带缓存

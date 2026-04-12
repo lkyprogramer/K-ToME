@@ -61,6 +61,23 @@
 5. **普通 unit test 保持 JUnit 运行方式**
    - 新体系只替换验证域，不替换常规单测
 
+### 3.1 关于 `dependsOn` 与 legacy JUnit adapter 的额外口径
+
+为避免后续 review 或增量 PR 对 `PR-01` 范围产生误判，统一补充以下判断规则：
+
+1. `VerificationNodeSpec.dependsOn` 在 `PR-01` 阶段先冻结为 **contract-only 字段**
+   - 当前职责仅限于表达 node graph 形状、校验依赖 id 合法性、为后续 planner/executor 留稳定 contract
+   - 在 dedicated planner/executor 任务落地前，不要求 `PR-01 ~ PR-03` 把它真正接进执行闭包或 Gradle task dependency
+2. 只有当仓库开始出现真实多 node domain，且需要 `kernel -> evaluation -> render` 之类的依赖闭包时，才应把 `dependsOn` 升级为正式执行语义
+   - 这属于 DAG/planner 能力建设，不应作为 `contract/demo` PR 的顺手扩展
+3. `LegacyHarnessAdapterTask` 在迁移期允许继续使用显式 `selectedClasses` 和可选 tag filter
+   - `tag-only classpath discovery` 属于 legacy adapter 优化，不是当前 PR 序列的主线里程碑
+   - 只有当显式 class list 已经成为持续维护负担，或 legacy adapter 需要长期保留时，才值得单独补这项能力
+4. 因此，后续 review 遇到这两类点时，默认先判断：
+   - 它是不是当前 PR 的显式目标？
+   - 它是不是已经阻塞真实多 node domain 或迁移效率？
+   - 若都不是，应记录为后续能力缺口，而不是回判 `PR-01` 不完整
+
 ## 4. 预期里程碑
 
 完成 `PR-01 ~ PR-03` 后，应达到：
