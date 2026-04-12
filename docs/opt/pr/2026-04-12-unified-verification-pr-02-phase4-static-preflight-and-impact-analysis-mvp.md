@@ -92,7 +92,9 @@
    - `game/src/main/resources/data/secret-zones/`
    - `tools/src/main/kotlin/com/ktome/tools/hidden/`
 3. `content-pack`
-   - `game/src/main/resources/data/content-packs/`
+   - `examples/content-packs/`
+   - `tools/src/main/resources/fixtures/content-packs/`
+   - `game/src/main/kotlin/com/ktome/game/contentpack/`
    - `tools/src/main/kotlin/com/ktome/tools/contentpack/`
 4. `schema/i18n`
    - `game/src/main/resources/i18n/`
