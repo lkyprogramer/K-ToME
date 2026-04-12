@@ -56,8 +56,8 @@ object VerificationCli {
         val domain = VerificationTaskRegistry.spec(parsed.domainId)
         val tier = VerificationTier.valueOf(parsed.tier)
         val sourceArtifactDir =
-            parsed.artifactInputs.firstOrNull()
-                ?: error("VerificationReportTask requires at least one --artifact-input directory.")
+            parsed.artifactInputs.singleOrNull()
+                ?: error("VerificationReportTask requires exactly one --artifact-input directory.")
         require(sourceArtifactDir.exists()) {
             "Verification report source artifact directory does not exist: $sourceArtifactDir"
         }
@@ -79,6 +79,11 @@ object VerificationCli {
         }
         require(sourceSummary.nodeId == rawResult.nodeId) {
             "Verification report source summary node mismatch: expected ${rawResult.nodeId}, found ${sourceSummary.nodeId}"
+        }
+        parsed.nodeId?.let { requestedNodeId ->
+            require(requestedNodeId == rawResult.nodeId) {
+                "Verification report requested node mismatch: expected $requestedNodeId, found ${rawResult.nodeId}"
+            }
         }
         writeArtifacts(
             domain = domain,

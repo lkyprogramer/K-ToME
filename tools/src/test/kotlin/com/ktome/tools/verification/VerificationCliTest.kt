@@ -10,6 +10,8 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 
@@ -25,52 +27,12 @@ class VerificationCliTest {
 
     @Test
     fun `report mode rebuilds summary from existing raw result without copying producer payload`() {
-        val sourceDir = tempDir.resolve("source").createDirectories()
+        val sourceDir =
+            writeReportSourceArtifact(
+                tempDir.resolve("source").createDirectories(),
+                nodeId = "contractLint.staticGraph",
+            )
         val outputDir = tempDir.resolve("report")
-        sourceDir.resolve("raw-result.json").writeText(
-            json.encodeToString(
-                LegacyJUnitRawResult(
-                    domainId = "contractLint",
-                    tier = VerificationTier.PREFLIGHT.name,
-                    nodeId = "contractLint.staticGraph",
-                    selectedClasses = listOf("com.ktome.tools.lint.ContractLintTest"),
-                    selectedTags = emptyList(),
-                    totalTests = 3,
-                    failedTests = 0,
-                    durationMillis = 15,
-                    tests =
-                        listOf(
-                            VerificationTestCaseResult(
-                                uniqueId = "[engine:junit-jupiter]/[class:demo]/[method:test]",
-                                displayName = "test",
-                                status = "SUCCESSFUL",
-                            ),
-                        ),
-                ),
-            ),
-        )
-        sourceDir.resolve("summary.json").writeText(
-            json.encodeToString(
-                VerificationSummary(
-                    domainId = "contractLint",
-                    tier = VerificationTier.PREFLIGHT.name,
-                    verdict = "PASS",
-                    snapshotHash = "source-snapshot",
-                    cacheStatus = "LOCAL_EXECUTION",
-                    outputPaths =
-                        mapOf(
-                            "rawResult" to sourceDir.resolve("raw-result.json").toString(),
-                            "summary" to sourceDir.resolve("summary.json").toString(),
-                            "metadata" to sourceDir.resolve("metadata.json").toString(),
-                        ),
-                    nodeId = "contractLint.staticGraph",
-                    totalTests = 3,
-                    failedTests = 0,
-                    durationMillis = 15,
-                    reportOnly = false,
-                ),
-            ),
-        )
 
         VerificationCli.main(
             arrayOf(
@@ -108,6 +70,75 @@ class VerificationCliTest {
     }
 
     @Test
+    fun `report mode rejects multiple artifact inputs`() {
+        val sourceA =
+            writeReportSourceArtifact(
+                tempDir.resolve("source-a").createDirectories(),
+                nodeId = "contractLint.staticGraph",
+            )
+        val sourceB =
+            writeReportSourceArtifact(
+                tempDir.resolve("source-b").createDirectories(),
+                nodeId = "contractLint.staticGraph",
+            )
+
+        val exception =
+            assertThrows(IllegalStateException::class.java) {
+                VerificationCli.main(
+                    arrayOf(
+                        "report",
+                        "--domain",
+                        "contractLint",
+                        "--tier",
+                        VerificationTier.PREFLIGHT.name,
+                        "--output-dir",
+                        tempDir.resolve("report-multi").toString(),
+                        "--cache-status",
+                        "REPORT_ONLY_REBUILD",
+                        "--artifact-input",
+                        sourceA.toString(),
+                        "--artifact-input",
+                        sourceB.toString(),
+                    ),
+                )
+            }
+
+        assertTrue(exception.message!!.contains("exactly one --artifact-input"))
+    }
+
+    @Test
+    fun `report mode rejects requested node id mismatch`() {
+        val sourceDir =
+            writeReportSourceArtifact(
+                tempDir.resolve("source-mismatch").createDirectories(),
+                nodeId = "contractLint.staticGraph",
+            )
+
+        val exception =
+            assertThrows(IllegalArgumentException::class.java) {
+                VerificationCli.main(
+                    arrayOf(
+                        "report",
+                        "--domain",
+                        "contractLint",
+                        "--tier",
+                        VerificationTier.PREFLIGHT.name,
+                        "--node-id",
+                        "contractLint.otherNode",
+                        "--output-dir",
+                        tempDir.resolve("report-mismatch").toString(),
+                        "--cache-status",
+                        "REPORT_ONLY_REBUILD",
+                        "--artifact-input",
+                        sourceDir.toString(),
+                    ),
+                )
+            }
+
+        assertTrue(exception.message!!.contains("requested node mismatch"))
+    }
+
+    @Test
     fun `legacy adapter accepts explicit node id`() {
         val outputDir = tempDir.resolve("legacy")
 
@@ -138,5 +169,56 @@ class VerificationCliTest {
 
         assertEquals("demo.customNode", summary.nodeId)
         assertEquals("PASS", summary.verdict)
+    }
+
+    private fun writeReportSourceArtifact(
+        directory: Path,
+        nodeId: String,
+    ): Path {
+        directory.resolve("raw-result.json").writeText(
+            json.encodeToString(
+                LegacyJUnitRawResult(
+                    domainId = "contractLint",
+                    tier = VerificationTier.PREFLIGHT.name,
+                    nodeId = nodeId,
+                    selectedClasses = listOf("com.ktome.tools.lint.ContractLintTest"),
+                    selectedTags = emptyList(),
+                    totalTests = 3,
+                    failedTests = 0,
+                    durationMillis = 15,
+                    tests =
+                        listOf(
+                            VerificationTestCaseResult(
+                                uniqueId = "[engine:junit-jupiter]/[class:demo]/[method:test]",
+                                displayName = "test",
+                                status = "SUCCESSFUL",
+                            ),
+                        ),
+                ),
+            ),
+        )
+        directory.resolve("summary.json").writeText(
+            json.encodeToString(
+                VerificationSummary(
+                    domainId = "contractLint",
+                    tier = VerificationTier.PREFLIGHT.name,
+                    verdict = "PASS",
+                    snapshotHash = "source-snapshot",
+                    cacheStatus = "LOCAL_EXECUTION",
+                    outputPaths =
+                        mapOf(
+                            "rawResult" to directory.resolve("raw-result.json").toString(),
+                            "summary" to directory.resolve("summary.json").toString(),
+                            "metadata" to directory.resolve("metadata.json").toString(),
+                        ),
+                    nodeId = nodeId,
+                    totalTests = 3,
+                    failedTests = 0,
+                    durationMillis = 15,
+                    reportOnly = false,
+                ),
+            ),
+        )
+        return directory
     }
 }
