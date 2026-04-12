@@ -86,6 +86,23 @@
 3. 不实现 shard cache
 4. 不实现完整 impact analyzer
 5. 不改 `Phase 5` 任务
+6. 不把 `VerificationNodeSpec.dependsOn` 接进正式执行器或 Gradle 依赖闭包
+7. 不为 `LegacyHarnessAdapterTask` 实现 tag-only classpath discovery
+
+补充说明：
+
+1. `dependsOn` 在本 PR 先作为 **contract-only 字段** 冻结
+   - 当前只要求：
+     - node id 稳定
+     - tier/node 选择成立
+     - 依赖引用合法
+   - 当前不要求：
+     - DAG 拓扑执行
+     - `kernel -> evaluation -> render` 闭包调度
+     - Gradle 层自动映射 task dependency
+2. `LegacyHarnessAdapterTask` 当前仍允许使用显式 `selectedClasses` + 可选 tag filter
+   - 这是迁移期兼容策略
+   - `tag-only classpath discovery` 记为后续 adapter 优化，不作为本 PR 完成条件
 
 ---
 
@@ -187,6 +204,11 @@ tools/src/main/kotlin/com/ktome/tools/verification/
 1. 在迁移期包装旧 `Test + @Tag` harness
 2. 让新 registry 能先把旧任务当成 node 看待
 3. 便于新旧系统并行对账
+
+边界：
+
+1. 本 PR 的 legacy adapter 以“稳定包装旧执行面”为目标，不以“替代 JUnit classpath discovery”为目标
+2. 若当前 demo domain 用显式 `selectedClasses` 更稳定，应优先选显式 class list，而不是为了减少一处重复先引入 tag-only discovery
 
 ### 5.4 最小 demo domain
 

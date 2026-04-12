@@ -1,9 +1,7 @@
 import java.io.File
 
 pluginManagement {
-    includeBuild("build-logic")
-
-    val bootstrapRepo = File(settingsDir, ".bootstrap/m2")
+    val bootstrapRepo = File(settingsDir, "../.bootstrap/m2").canonicalFile
 
     repositories {
         if (bootstrapRepo.isDirectory) {
@@ -14,7 +12,4 @@ pluginManagement {
     }
 }
 
-rootProject.name = "K-ToME"
-
-include("core", "game", "client")
-include("tools")
+rootProject.name = "ktome-build-logic"

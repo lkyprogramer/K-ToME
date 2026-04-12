@@ -1,7 +1,14 @@
+import com.ktome.build.verification.VerificationReportTask
+import com.ktome.build.verification.VerificationTask
+import java.security.MessageDigest
+import org.gradle.api.file.FileCollection
+import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.testing.Test
 
 plugins {
     `java-library`
+    kotlin("plugin.serialization")
+    id("com.ktome.build.verification")
 }
 
 val harnessReportDir = rootProject.layout.buildDirectory.dir("reports/harness")
@@ -12,9 +19,72 @@ dependencies {
     implementation(testFixtures(project(":game")))
     implementation("org.yaml:snakeyaml:${rootProject.providers.gradleProperty("snakeyamlVersion").get()}")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json-jvm:${rootProject.providers.gradleProperty("kotlinxSerializationVersion").get()}")
+    implementation("org.junit.platform:junit-platform-engine:${rootProject.providers.gradleProperty("junitPlatformVersion").get()}")
+    implementation("org.junit.platform:junit-platform-launcher:${rootProject.providers.gradleProperty("junitPlatformVersion").get()}")
     testImplementation(project(":game"))
     testImplementation("org.jetbrains.kotlinx:kotlinx-serialization-json-jvm:${rootProject.providers.gradleProperty("kotlinxSerializationVersion").get()}")
 }
+
+fun verificationSnapshotHash(vararg values: Any): Provider<String> =
+    providers.provider {
+        val digest = MessageDigest.getInstance("SHA-256")
+        values.forEach { value ->
+            when (value) {
+                is String -> digest.update(value.toByteArray())
+                is FileCollection ->
+                    value.files
+                        .sortedBy { file -> file.invariantSeparatorsPath }
+                        .forEach { file ->
+                            digest.update(file.relativeTo(rootProject.projectDir).invariantSeparatorsPath.toByteArray())
+                            if (file.isFile) {
+                                digest.update(file.readBytes())
+                            }
+                        }
+                else -> error("Unsupported snapshot hash input: ${value::class.qualifiedName}")
+            }
+        }
+        digest.digest().joinToString(separator = "") { byte -> "%02x".format(byte) }
+    }
+
+val verificationFoundationInputs =
+    files(
+        rootProject.files(
+            "settings.gradle.kts",
+            "build.gradle.kts",
+            "tools/build.gradle.kts",
+            "build-logic/build.gradle.kts",
+            "build-logic/settings.gradle.kts",
+        ),
+        rootProject.fileTree("build-logic/src/main") {
+            include("**/*.kt", "**/*.java")
+        },
+        fileTree("src/main/kotlin/com/ktome/tools/verification") {
+            include("**/*.kt")
+        },
+    )
+
+val contractLintVerificationInputs =
+    files(
+        verificationFoundationInputs,
+        fileTree("src/test/kotlin/com/ktome/tools/lint") {
+            include("**/*.kt")
+        },
+        rootProject.fileTree("game/src/main/resources") {
+            include("**/*.yaml", "**/*.yml", "**/*.json")
+        },
+        rootProject.fileTree("client/src/main/resources/manifests") {
+            include("**/*.json")
+        },
+    )
+val contractLintVerificationSnapshotHash =
+    verificationSnapshotHash(
+        "contractLint",
+        "PREFLIGHT",
+        "contractLint.staticGraph",
+        contractLintVerificationInputs,
+    )
+val contractLintVerificationOutputDir = layout.buildDirectory.dir("reports/verification/contract-lint/preflight")
+val contractLintVerificationReportDir = layout.buildDirectory.dir("reports/verification/contract-lint/preflight-report")
 
 tasks.withType<Test>().configureEach {
     systemProperty("ktome.repo.root", rootProject.projectDir.absolutePath)
@@ -59,6 +129,30 @@ tasks.register<Test>("contractLint") {
     useJUnitPlatform {
         includeTags("contractLint")
     }
+}
+
+tasks.register<VerificationTask>("verifyContractLintPreflight") {
+    description = "Runs the contractLint STATIC_GRAPH demo through the unified verification task foundation."
+    domainId.set("contractLint")
+    tier.set("PREFLIGHT")
+    nodeId.set("contractLint.staticGraph")
+    inputSnapshotHash.set(contractLintVerificationSnapshotHash)
+    runtimeClasspath.from(sourceSets.test.get().runtimeClasspath)
+    sourceInputs.from(contractLintVerificationInputs)
+    outputDir.set(contractLintVerificationOutputDir)
+    systemPropertiesMap.put("ktome.repo.root", rootProject.projectDir.absolutePath)
+}
+
+tasks.register<VerificationReportTask>("verifyContractLintPreflightReport") {
+    description = "Rebuilds the contractLint STATIC_GRAPH summary from existing artifacts without rerunning producer tests."
+    domainId.set("contractLint")
+    tier.set("PREFLIGHT")
+    nodeId.set("contractLint.staticGraph")
+    runtimeClasspath.from(sourceSets.test.get().runtimeClasspath)
+    artifactInputs.from(contractLintVerificationOutputDir)
+    outputDir.set(contractLintVerificationReportDir)
+    systemPropertiesMap.put("ktome.repo.root", rootProject.projectDir.absolutePath)
+    mustRunAfter("verifyContractLintPreflight")
 }
 
 tasks.register<Test>("mapgenSmoke") {

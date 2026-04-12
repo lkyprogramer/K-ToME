@@ -10384,26 +10384,27 @@ class FoundationGameSession internal constructor(
 
     private fun statModifierSummary(modifier: StatModifier): String = statModifierLines(modifier).joinToString(", ")
 
+    private val damageVsTagLabelKeys: Map<String, String> =
+        mapOf(
+            "bandit" to "monster.tag.bandit",
+            "undead" to "monster.tag.undead",
+            "orc" to "monster.tag.orc",
+            "cultist" to "monster.tag.cultist",
+            "forge" to "monster.tag.forge",
+            "river" to "monster.tag.river",
+            "crystal" to "monster.tag.crystal",
+            "abyssal" to "monster.tag.abyssal",
+        )
+
     private fun monsterTagArg(
         name: String,
         tag: String,
     ): RenderTextArgumentSnapshot =
-        monsterTagLabelKeyOrNull(tag)
+        damageVsTagLabelKeyOrNull(tag)
             ?.let { key -> keyArg(name, key) }
             ?: literalArg(name, tag)
 
-    private fun monsterTagLabelKeyOrNull(tag: String): String? =
-        when (tag) {
-            "bandit" -> "monster.tag.bandit"
-            "undead" -> "monster.tag.undead"
-            "armor_break" -> "status.armor_break"
-            "bane" -> "status.bane"
-            "burn" -> "status.burn"
-            "freeze" -> "status.freeze"
-            "guard" -> "status.guard"
-            "marked" -> "status.marked"
-            else -> null
-        }
+    private fun damageVsTagLabelKeyOrNull(tag: String): String? = damageVsTagLabelKeys[tag]
 
     private fun breakpointEffectKind(effect: com.ktome.core.talent.EffectOp): String =
         when (effect) {

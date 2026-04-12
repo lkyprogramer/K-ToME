@@ -7,6 +7,8 @@ build/
 out/
 bin/
 *.class
+!build-logic/src/main/java/com/ktome/build/
+!build-logic/src/main/java/com/ktome/build/**
 
 # IDE
 .idea/

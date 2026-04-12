@@ -205,6 +205,18 @@ tasks.register("contractLint") {
     dependsOn(":tools:contractLint")
 }
 
+tasks.register("verifyContractLintPreflight") {
+    group = LifecycleBasePlugin.VERIFICATION_GROUP
+    description = "Runs the unified verification STATIC_GRAPH demo for contractLint."
+    dependsOn(":tools:verifyContractLintPreflight")
+}
+
+tasks.register("verifyContractLintPreflightReport") {
+    group = LifecycleBasePlugin.VERIFICATION_GROUP
+    description = "Rebuilds the unified verification demo report for contractLint from existing artifacts."
+    dependsOn(":tools:verifyContractLintPreflightReport")
+}
+
 tasks.register("combatTraceGolden") {
     group = LifecycleBasePlugin.VERIFICATION_GROUP
     description = "Runs the Phase 3 FORMULA corpus combat trace golden harness."

@@ -206,43 +206,30 @@ class RenderSnapshotContractTest {
                         stats = StatModifier(attack = 9, speed = 15),
                     ),
             )
-        inventory.itemIds +=
-            itemFactory.createCarriedItem(
-                world = world,
-                item =
-                    ItemInstance(
-                        baseId = "bandit_trophy",
-                        name = "Bandit Trophy",
-                        type = ItemType.ARMOR,
-                        slot = com.ktome.core.item.EquipSlot.OFF_HAND,
-                        glyph = ']',
-                        colorHex = "#8A7148",
-                        quality = RarityTier.NORMAL,
-                        stats = StatModifier(dex = 1),
-                        passive = EquipmentPassive.DamageVsTag("bandit", 0.15),
-                    ),
+        val damageVsTagCases =
+            listOf(
+                Triple("hunter_bow", "huntsbane", "bandit"),
+                Triple("long_sword", "gravehunter", "undead"),
+                Triple("battle_axe", "orcslayer", "orc"),
+                Triple("short_sword", "of_iconoclasm", "cultist"),
+                Triple("forgebreaker_pick", "forgehunter", "forge"),
+                Triple("arcane_staff", "of_tidehunt", "river"),
+                Triple("war_maul", "crystalrend", "crystal"),
+                Triple("battle_axe", "of_abyssbane", "abyssal"),
             )
-        inventory.itemIds +=
-            itemFactory.createCarriedItem(
-                world = world,
-                item =
-                    ItemInstance(
-                        baseId = "long_sword",
-                        name = "Long Sword",
-                        type = ItemType.WEAPON,
-                        slot = com.ktome.core.item.EquipSlot.WEAPON,
-                        glyph = ')',
-                        colorHex = "#C0C0C0",
-                        quality = RarityTier.NORMAL,
-                        stats = StatModifier(attack = 8),
-                        passive = EquipmentPassive.DamageVsTag("undead", 0.10),
-                    ),
-            )
+        damageVsTagCases.forEach { (baseId, affixId, _) ->
+            inventory.itemIds +=
+                itemFactory.createCarriedItem(
+                    world = world,
+                    item = affixItem(baseId = baseId, affixId = affixId),
+                )
+        }
 
         val snapshot = session.renderSnapshot()
-        val rareWeapon = snapshot.uiState.inventory.first { entry -> entry.item.baseItemId == "battle_axe" }.item
-        val passiveReward = snapshot.uiState.inventory.first { entry -> entry.item.baseItemId == "bandit_trophy" }.item
-        val undeadSlayer = snapshot.uiState.inventory.first { entry -> entry.item.baseItemId == "long_sword" }.item
+        val rareWeapon =
+            snapshot.uiState.inventory.first { entry ->
+                entry.item.baseItemId == "battle_axe" && "affix.of_speed.name" in entry.item.affixNameKeys
+            }.item
         val rareWeaponDisplayName = requireNotNull(rareWeapon.displayName)
 
         assertEquals("item.quality.rare", rareWeapon.qualityNameKey)
@@ -257,16 +244,18 @@ class RenderSnapshotContractTest {
             "item.display.part.material",
             requireNotNull(rareWeaponDisplayName.arguments.first { argument -> argument.name == "material" }.valueToken).key,
         )
-        assertEquals("ui.inspect.passive.damage_vs_tag", passiveReward.passiveDescriptions.single().key)
-        assertEquals(
-            "monster.tag.bandit",
-            passiveReward.passiveDescriptions.single().arguments.first { argument -> argument.name == "tag" }.valueKey,
-        )
-        assertEquals("ui.inspect.passive.damage_vs_tag", undeadSlayer.passiveDescriptions.single().key)
-        assertEquals(
-            "monster.tag.undead",
-            undeadSlayer.passiveDescriptions.single().arguments.first { argument -> argument.name == "tag" }.valueKey,
-        )
+        damageVsTagCases.forEach { (baseId, affixId, tag) ->
+            val renderedItem =
+                snapshot.uiState.inventory.first { entry ->
+                    entry.item.baseItemId == baseId && "affix.$affixId.name" in entry.item.affixNameKeys
+                }.item
+            val damageVsTagPassive =
+                renderedItem.passiveDescriptions.firstOrNull { passive ->
+                    passive.key == "ui.inspect.passive.damage_vs_tag" &&
+                        passive.arguments.firstOrNull { argument -> argument.name == "tag" }?.valueKey == "monster.tag.$tag"
+                }
+            assertTrue(damageVsTagPassive != null, "Expected $baseId/$affixId to expose a localized DamageVsTag passive for $tag.")
+        }
     }
 
     @Test

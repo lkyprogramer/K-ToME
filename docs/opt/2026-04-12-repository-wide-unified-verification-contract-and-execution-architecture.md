@@ -1338,6 +1338,15 @@ data class InputScope(
 2. 节点 DAG 可视化与拓扑执行成立
 3. 不依赖 JUnit `@Tag`
 
+实现顺序补充口径：
+
+1. 上述目标代表**目标架构的完整终态**，不是对 `PR-01` 范围的逐条硬绑定
+2. 若当前 PR 拆分先以 `Gradle-native task + domain/node contract + demo domain` 止痛，则允许：
+   - 先把 `dependsOn` 冻结为 contract-only 字段
+   - 先保留 legacy adapter 的显式 `selectedClasses`
+3. 但一旦后续开始引入真实多 node domain，尤其是 `kernel -> evaluation -> render` 或同 tier 多 node 路径，就必须补 dedicated planner/executor，把 `dependsOn` 从 contract-only 升级为执行语义
+4. `tag-only classpath discovery` 不属于 DAG/planner 主线能力；它只在 legacy adapter 长期保留且 class list 漂移已形成维护负担时才值得单独补
+
 ### Sprint 1.5：统一 baseline schema 与迁移脚本
 
 目标：
