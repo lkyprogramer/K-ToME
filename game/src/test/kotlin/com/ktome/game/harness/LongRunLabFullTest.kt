@@ -172,6 +172,18 @@ class LongRunLabFullTest {
                             }
                         }
                     }
+                    putJsonObject("professionTopWeaponBaseIds") {
+                        terminalWeaponIdentity.professionTopWeaponBaseIds.forEach { (professionId, weaponBaseId) ->
+                            put(professionId, weaponBaseId)
+                        }
+                    }
+                    putJsonObject("professionTopWeaponSemanticTags") {
+                        terminalWeaponIdentity.professionTopWeaponSemanticTags.forEach { (professionId, semanticTags) ->
+                            putJsonArray(professionId) {
+                                semanticTags.forEach { tag -> add(JsonPrimitive(tag)) }
+                            }
+                        }
+                    }
                     putJsonObject("fullRouteZoneTraversalDiagnostics") {
                         fullRouteZoneTraversalDiagnostics.forEach { (zoneId, diagnostic) ->
                             putJsonObject(zoneId) {
@@ -305,6 +317,8 @@ class LongRunLabFullTest {
                     appendLine("- crossProfessionTopWeaponBaseId: ${terminalWeaponIdentity.topWeaponBaseId ?: "none"}")
                     appendLine("- crossProfessionTopWeaponCount: ${terminalWeaponIdentity.topWeaponCount}/${terminalWeaponIdentity.fullRouteSampleCount}")
                     appendLine("- professionTerminalWeaponDistribution: ${if (terminalWeaponIdentity.professionTerminalWeaponDistribution.isEmpty()) "none" else terminalWeaponIdentity.professionTerminalWeaponDistribution}")
+                    appendLine("- professionTopWeaponBaseIds: ${if (terminalWeaponIdentity.professionTopWeaponBaseIds.isEmpty()) "none" else terminalWeaponIdentity.professionTopWeaponBaseIds}")
+                    appendLine("- professionTopWeaponSemanticTags: ${if (terminalWeaponIdentity.professionTopWeaponSemanticTags.isEmpty()) "none" else terminalWeaponIdentity.professionTopWeaponSemanticTags}")
                     appendLine("- fullRouteZoneTraversalDiagnostics: ${if (fullRouteZoneTraversalDiagnostics.isEmpty()) "none" else fullRouteZoneTraversalDiagnostics}")
                     appendLine("- focusZoneDesignAudit: ${if (focusZoneDesignAudit.isEmpty()) "none" else focusZoneDesignAudit}")
                     appendLine("- deathDistribution: ${if (deathDistribution.isEmpty()) "none" else deathDistribution}")
@@ -633,7 +647,7 @@ class LongRunLabFullTest {
             ),
             branchInclusiveSpec(
                 name = "long-run-branch-molten-vanguard-dwarf",
-                seed = 20260432L,
+                seed = LongRunLabSeedBank.fullRouteMatrixSeed(professionId = "vanguard", raceId = "dwarf"),
                 professionId = "vanguard",
                 raceId = "dwarf",
                 zoneRoute = FOUNDATION_MOLTEN_ROUTE,
@@ -750,6 +764,13 @@ class LongRunLabFullTest {
                 }.toSortedMap()
         val terminalWeaponCounts = terminalWeaponByReport.values.groupingBy { weaponBaseId -> weaponBaseId }.eachCount()
         val topWeapon = terminalWeaponCounts.maxByOrNull { (_, count) -> count }
+        val professionTopWeaponBaseIds =
+            distribution
+                .mapValues { (_, professionDistribution) ->
+                    professionDistribution.maxByOrNull { (_, count) -> count }?.key
+                }.mapValues { (_, weaponBaseId) -> requireNotNull(weaponBaseId) }
+        val professionTopWeaponSemanticTags =
+            professionTopWeaponBaseIds.mapValues { (_, weaponBaseId) -> itemSemanticTagsById[weaponBaseId].orEmpty() }
         val alignedCount =
             terminalWeaponByReport.count { (report, weaponBaseId) ->
                 isProfessionAlignedTerminalWeapon(professionId = report.professionId, weaponBaseId = weaponBaseId)
@@ -773,6 +794,8 @@ class LongRunLabFullTest {
             topWeaponBaseId = topWeapon?.key,
             topWeaponCount = topWeapon?.value ?: 0,
             professionTerminalWeaponDistribution = distribution,
+            professionTopWeaponBaseIds = professionTopWeaponBaseIds,
+            professionTopWeaponSemanticTags = professionTopWeaponSemanticTags,
         )
     }
 
@@ -895,6 +918,8 @@ class LongRunLabFullTest {
         val topWeaponBaseId: String?,
         val topWeaponCount: Int,
         val professionTerminalWeaponDistribution: Map<String, Map<String, Int>>,
+        val professionTopWeaponBaseIds: Map<String, String>,
+        val professionTopWeaponSemanticTags: Map<String, Set<String>>,
     )
 
     private data class ZoneTraversalDiagnosticAggregate(
@@ -959,26 +984,28 @@ class LongRunLabFullTest {
                 "vanguard" to
                     ProfessionAlignedTerminalWeaponRule(
                         exactWeaponBaseIds = setOf("battle_axe", "long_sword"),
-                        requiredItemTags = setOf("vanguard", "shield"),
+                        requiredItemTags = setOf("frontline", "guard", "shield", "discipline"),
                     ),
                 "templar" to
                     ProfessionAlignedTerminalWeaponRule(
                         exactWeaponBaseIds = setOf("battle_axe", "long_sword"),
-                        requiredItemTags = setOf("holy", "templar"),
+                        requiredItemTags = setOf("holy", "frontline", "guard", "shield"),
                     ),
                 "rogue" to
                     ProfessionAlignedTerminalWeaponRule(
                         exactWeaponBaseIds = setOf("short_sword", "hunter_bow"),
-                        requiredItemTags = setOf("rogue", "precision", "mobility"),
+                        requiredItemTags = setOf("precision", "mobility", "finesse", "ranged", "marked"),
                     ),
                 "arcanist" to
                     ProfessionAlignedTerminalWeaponRule(
                         exactWeaponBaseIds = setOf("arcane_staff"),
-                        requiredItemTags = setOf("arcanist", "arcane", "spell"),
+                        requiredItemTags = setOf("arcane", "spell", "ranged", "control"),
                     ),
             )
         private val itemTagsById: Map<String, Set<String>> =
             schemaCatalog.itemBundle.items.associate { item -> item.id to item.tags.toSet() }
+        private val itemSemanticTagsById: Map<String, Set<String>> =
+            DataLoader().loadItemBundle().baseItems.associate { item -> item.id to item.tags.toSet() }
     }
 
     private fun sampleScenarioReport(

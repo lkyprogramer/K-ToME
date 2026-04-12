@@ -122,8 +122,8 @@ professions:
     startingKit: [long_sword, basic_shield, chain_mail, healing_potion]
     initialUnlockState: RELEASE_UNLOCKED
     soloContract:
-      offenseTags: [holy, smite, execute]
-      defenseTags: [shield, cleanse, sustain]
+      offenseTags: [holy, smite, execute, melee]
+      defenseTags: [shield, frontline, guard, cleanse, sustain]
       mobilityTags: [faith, steadfast]
       aoeAnswerTags: [judgment_hammer, holy_aura, consecration]
       bossAnswerTags: [heavens_judgment, holy_mark]

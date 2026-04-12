@@ -45,10 +45,20 @@ data class LootProfileCandidatePool(
         }
     }
 
-    fun weightFor(base: ItemBaseDef): Int {
+    fun weightFor(
+        base: ItemBaseDef,
+        selectionContext: LootBaseSelectionContext = LootBaseSelectionContext.EMPTY,
+    ): Int {
         val typeWeight = typeWeights[base.type] ?: 1
         val slotWeight = base.slot?.let { slot -> slotBias[slot] ?: 1 } ?: 1
-        return (typeWeight * slotWeight).coerceAtLeast(1)
+        val evaluation = selectionContext.evaluate(base)
+        val weighted =
+            base.dropWeight.coerceAtLeast(1).toLong() *
+                typeWeight.toLong() *
+                slotWeight.toLong() *
+                evaluation.buildTagMatchMultiplierBasisPoints.toLong() *
+                evaluation.antiCollapseMultiplierBasisPoints.toLong()
+        return (weighted / 10_000L / 10_000L).coerceAtLeast(1L).toInt()
     }
 }
 

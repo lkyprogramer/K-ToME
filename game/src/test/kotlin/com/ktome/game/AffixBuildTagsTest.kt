@@ -52,7 +52,7 @@ class AffixBuildTagsTest {
                             "holy_mark" to 3,
                             "purify" to 4,
                         ),
-                    expectedTags = setOf("templar", "positive_energy", "bane", "holy", "cleanse", "holy_shield"),
+                    expectedTags = setOf("templar", "positive_energy", "bane", "holy", "cleanse", "holy_shield", "melee", "frontline", "guard"),
                 ),
             )
 

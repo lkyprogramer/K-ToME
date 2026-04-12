@@ -1088,6 +1088,108 @@ affixes:
     stats: { attack: 2, speed: 4 }
     blacklistTags: []
     passive: { kind: DamageTypeBonus, damageType: LIGHTNING, bonusPercent: 0.10 }
+  - id: orcslayer
+    nameKey: affix.orcslayer.name
+    descKey: affix.orcslayer.desc
+    visualKey: affix.cindervein.visual
+    iconKey: affix.cindervein.icon
+    audioProfile: audio.affix.sharp
+    schemaVersion: 2
+    tags: [affix, weapon, offense, orc, molten_core]
+    type: PREFIX
+    equipType: WEAPON
+    tier: 2
+    cost: 6
+    affixFamily: weapon_orcslayer
+    minFloor: 3
+    stats: { attack: 2 }
+    blacklistTags: []
+    passive: { kind: DamageVsTag, tag: orc, bonusPercent: 0.12 }
+  - id: forgehunter
+    nameKey: affix.forgehunter.name
+    descKey: affix.forgehunter.desc
+    visualKey: affix.cindervein.visual
+    iconKey: affix.cindervein.icon
+    audioProfile: audio.affix.sharp
+    schemaVersion: 2
+    tags: [affix, weapon, offense, forge, deep_iron_pit]
+    type: PREFIX
+    equipType: WEAPON
+    tier: 2
+    cost: 6
+    affixFamily: weapon_forgehunter
+    minFloor: 4
+    stats: { attack: 2, accuracy: 1 }
+    blacklistTags: []
+    passive: { kind: DamageVsTag, tag: forge, bonusPercent: 0.12 }
+  - id: crystalrend
+    nameKey: affix.crystalrend.name
+    descKey: affix.crystalrend.desc
+    visualKey: affix.starforged.visual
+    iconKey: affix.starforged.icon
+    audioProfile: audio.affix.sharp
+    schemaVersion: 2
+    tags: [affix, weapon, offense, crystal, crystal_cavern]
+    type: PREFIX
+    equipType: WEAPON
+    tier: 3
+    cost: 6
+    affixFamily: weapon_crystalrend
+    minFloor: 4
+    stats: { attack: 2, speed: 2 }
+    blacklistTags: []
+    passive: { kind: DamageVsTag, tag: crystal, bonusPercent: 0.14 }
+  - id: of_iconoclasm
+    nameKey: affix.of_iconoclasm.name
+    descKey: affix.of_iconoclasm.desc
+    visualKey: affix.lastlight.visual
+    iconKey: affix.lastlight.icon
+    audioProfile: audio.affix.sharp
+    schemaVersion: 2
+    tags: [affix, weapon, offense, cultist, grey_gate_depths]
+    type: SUFFIX
+    equipType: WEAPON
+    tier: 2
+    cost: 6
+    affixFamily: suffix_iconoclasm
+    minFloor: 3
+    stats: { accuracy: 2 }
+    blacklistTags: []
+    passive: { kind: DamageVsTag, tag: cultist, bonusPercent: 0.12 }
+  - id: of_tidehunt
+    nameKey: affix.of_tidehunt.name
+    descKey: affix.of_tidehunt.desc
+    visualKey: affix.floodtouched.visual
+    iconKey: affix.floodtouched.icon
+    audioProfile: audio.affix.sharp
+    schemaVersion: 2
+    tags: [affix, weapon, offense, river, underground_river]
+    type: SUFFIX
+    equipType: WEAPON
+    tier: 2
+    cost: 6
+    affixFamily: suffix_tidehunt
+    minFloor: 4
+    stats: { speed: 4 }
+    blacklistTags: []
+    passive: { kind: DamageVsTag, tag: river, bonusPercent: 0.12 }
+  - id: of_abyssbane
+    nameKey: affix.of_abyssbane.name
+    descKey: affix.of_abyssbane.desc
+    visualKey: affix.lastlight.visual
+    iconKey: affix.lastlight.icon
+    audioProfile: audio.affix.sharp
+    schemaVersion: 2
+    tags: [affix, weapon, offense, abyssal, abyssal_temple]
+    type: SUFFIX
+    equipType: WEAPON
+    tier: 3
+    cost: 6
+    affixFamily: suffix_abyssbane
+    minFloor: 5
+    stats: { accuracy: 2, attack: 1 }
+    blacklistTags: []
+    passive: { kind: DamageVsTag, tag: abyssal, bonusPercent: 0.14 }
   - id: of_cinders
     nameKey: affix.of_cinders.name
     descKey: affix.of_cinders.desc
@@ -1726,12 +1828,13 @@ items:
     iconKey: item.short_sword.icon
     audioProfile: audio.item.short_sword
     schemaVersion: 2
-    tags: [item, weapon]
+    tags: [item, weapon, energy, precision, mobility, finesse]
     type: WEAPON
     slot: WEAPON
     glyph: ")"
     color: "#C0C0C0"
-    baseAttack: 5
+    baseAttack: 6
+    stats: { dex: 1, accuracy: 1 }
     dropFloors: [1, 2, 3, 4, 5]
     dropWeight: 10
     materials: [IRON, STEEL, MITHRIL, ADAMANTITE]
@@ -1742,7 +1845,7 @@ items:
     iconKey: item.long_sword.icon
     audioProfile: audio.item.long_sword
     schemaVersion: 2
-    tags: [item, weapon]
+    tags: [item, weapon, melee, frontline, guard, discipline]
     type: WEAPON
     slot: WEAPON
     glyph: ")"
@@ -1759,14 +1862,14 @@ items:
     iconKey: item.battle_axe.icon
     audioProfile: audio.item.battle_axe
     schemaVersion: 2
-    tags: [item, weapon]
+    tags: [item, weapon, melee, frontline, stamina, cleave, bruise, dominant_risk]
     type: WEAPON
     slot: WEAPON
     glyph: ")"
     color: "#C0C0C0"
     baseAttack: 11
     dropFloors: [3, 4, 5]
-    dropWeight: 4
+    dropWeight: 3
     materials: [STEEL, MITHRIL, ADAMANTITE]
   - id: leather_armor
     nameKey: item.leather_armor.name
@@ -1883,15 +1986,15 @@ items:
     iconKey: item.arcane_staff.icon
     audioProfile: audio.item.arcane_staff
     schemaVersion: 2
-    tags: [item, weapon, arcane, arcanist, spell]
+    tags: [item, weapon, mana, spell, ranged, arcane, control]
     type: WEAPON
     slot: WEAPON
     glyph: ")"
     color: "#7A6DFF"
-    baseAttack: 4
+    baseAttack: 5
     stats: { wil: 2, attack: 1 }
-    dropFloors: [1, 2]
-    dropWeight: 6
+    dropFloors: [1, 2, 3, 4, 5]
+    dropWeight: 8
     materials: [IRON, STEEL]
   - id: apprentice_robe
     nameKey: item.apprentice_robe.name
@@ -1916,7 +2019,7 @@ items:
     iconKey: item.long_sword.icon
     audioProfile: audio.item.long_sword
     schemaVersion: 2
-    tags: [item, weapon, rogue, precision, mobility]
+    tags: [item, weapon, energy, ranged, precision, mobility, kite]
     type: WEAPON
     slot: WEAPON
     glyph: ")"
@@ -1924,8 +2027,8 @@ items:
     baseAttack: 7
     stats: { dex: 1, accuracy: 2 }
     passive: { kind: DamageVsTag, tag: bandit, bonusPercent: 0.10 }
-    dropFloors: [2, 3]
-    dropWeight: 6
+    dropFloors: [2, 3, 4, 5]
+    dropWeight: 7
     materials: [IRON, STEEL, MITHRIL]
   - id: war_maul
     nameKey: item.war_maul.name
@@ -1934,7 +2037,7 @@ items:
     iconKey: item.battle_axe.icon
     audioProfile: audio.item.battle_axe
     schemaVersion: 2
-    tags: [item, weapon]
+    tags: [item, weapon, melee, hate, cleave, bruise, stagger]
     type: WEAPON
     slot: WEAPON
     glyph: ")"
@@ -1951,7 +2054,7 @@ items:
     iconKey: item.battle_axe.icon
     audioProfile: audio.item.battle_axe
     schemaVersion: 2
-    tags: [item, weapon, reward, vanguard, fire, strength]
+    tags: [item, weapon, melee, frontline, stamina, sunder, forge]
     type: WEAPON
     slot: WEAPON
     glyph: ")"
@@ -1959,7 +2062,7 @@ items:
     baseAttack: 13
     stats: { str: 1, attack: 2, accuracy: 1 }
     dropFloors: [4, 5]
-    dropWeight: 1
+    dropWeight: 2
     materials: [STEEL, MITHRIL]
   - id: shadow_cloak
     nameKey: item.shadow_cloak.name

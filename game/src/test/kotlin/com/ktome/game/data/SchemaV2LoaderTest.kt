@@ -193,6 +193,18 @@ class SchemaV2LoaderTest {
         assertEquals("shattered_outpost", catalog.worldGraph.startZoneId)
         assertEquals(10, catalog.worldGraph.connections.size)
         assertEquals(10, catalog.routeRewards.size)
+        assertEquals(
+            listOf("loot.underground_river.reward", "loot.foundation.boss"),
+            catalog.routeRewards.single { reward -> reward.routeId == "route.grey_gate_depths.underground_river" }.milestoneRewardProfileIds,
+        )
+        assertEquals(
+            listOf("loot.underground_river.reward", "loot.foundation.elite"),
+            catalog.routeRewards.single { reward -> reward.routeId == "route.underground_river.crystal_cavern" }.milestoneRewardProfileIds,
+        )
+        assertEquals(
+            listOf("loot.abyssal_temple.reward", "loot.foundation.boss"),
+            catalog.routeRewards.single { reward -> reward.routeId == "route.underground_river.abyssal_temple" }.milestoneRewardProfileIds,
+        )
         assertEquals(3, catalog.shopNodes.size)
         assertEquals(4, catalog.objectiveSets.single { it.id == "shattered_outpost_breach" }.placements.size)
         assertEquals(
@@ -219,7 +231,7 @@ class SchemaV2LoaderTest {
         assertEquals(setOf("normal"), catalog.difficulties.map { it.id }.toSet())
         assertEquals(60, catalog.monsters.size)
         assertEquals(53, catalog.itemBundle.items.size)
-        assertEquals(78, catalog.itemBundle.affixes.size)
+        assertEquals(84, catalog.itemBundle.affixes.size)
         assertTrue(catalog.itemBundle.uniqueTemplates.size >= 20)
         assertTrue(catalog.itemBundle.artifactTemplates.size >= 8)
         assertTrue(
@@ -361,7 +373,7 @@ class SchemaV2LoaderTest {
             catalog.lootProfiles.first { it.id == "loot.foundation.elite" }.itemIds.containsAll(listOf("chain_mail", "long_sword")),
         )
         assertEquals(
-            listOf("battle_axe", "plate_armor", "arcane_staff", "scroll_teleport", "mana_potion", "forgebreaker_pick", "sanctified_seal", "seal_reliquary", "shadow_cloak", "consecrated_oil"),
+            listOf("battle_axe", "long_sword", "hunter_bow", "plate_armor", "arcane_staff", "scroll_teleport", "mana_potion", "forgebreaker_pick", "sanctified_seal", "seal_reliquary", "shadow_cloak", "consecrated_oil"),
             catalog.lootProfiles.first { it.id == "loot.foundation.boss" }.itemIds,
         )
         assertEquals(3, catalog.lootProfiles.first { it.id == "loot.foundation.boss" }.schemaVersion)

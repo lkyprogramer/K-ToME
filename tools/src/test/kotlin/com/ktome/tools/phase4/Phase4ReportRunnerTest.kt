@@ -72,6 +72,8 @@ class Phase4ReportRunnerTest {
         assertTrue(longRunTask.getValue("metrics").jsonObject.containsKey("crossProfessionTopWeaponDominance"))
         assertTrue(longRunTask.getValue("metrics").jsonObject.containsKey("professionAlignedWeaponAdoptionRate"))
         assertTrue(longRunTask.getValue("metrics").jsonObject.containsKey("professionTerminalWeaponDistribution"))
+        assertTrue(longRunTask.getValue("metrics").jsonObject.containsKey("professionTopWeaponBaseIds"))
+        assertTrue(longRunTask.getValue("metrics").jsonObject.containsKey("professionTopWeaponSemanticTags"))
         assertTrue(terrainTask.getValue("sourcePath").jsonPrimitive.content.contains("whitebox/terrain"))
         assertTrue(terrainTask.getValue("metrics").jsonObject.containsKey("combatSampledZoneIds"))
         assertTrue(terrainTask.getValue("metrics").jsonObject.containsKey("combatSampledZoneExclusionNotes"))
@@ -159,8 +161,10 @@ class Phase4ReportRunnerTest {
         val organicHiddenMetric =
             experienceMetrics.first { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "organicHiddenDiscoveryRate" }.jsonObject
         assertTrue(terminalDiversityMetric.getValue("note").jsonPrimitive.content.contains("terminalBases="))
+        assertTrue(terminalDiversityMetric.getValue("note").jsonPrimitive.content.contains("topWeaponSemantics="))
         assertTrue(topWeaponMetric.getValue("note").jsonPrimitive.content.contains("topWeaponBaseId="))
         assertTrue(alignedWeaponMetric.getValue("note").jsonPrimitive.content.contains("alignedSamples="))
+        assertTrue(alignedWeaponMetric.getValue("note").jsonPrimitive.content.contains("topWeaponSemantics="))
         assertTrue(organicHiddenMetric.getValue("note").jsonPrimitive.content.contains("observationOnly=true"))
         assertEquals(
             setOf(

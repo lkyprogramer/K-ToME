@@ -136,7 +136,7 @@ class ZoneContentCoverageTest {
         val buildArchetypes = setOf("vanguard", "rogue", "arcanist", "templar")
         val artifactTemplates = specialTemplatesByTier.getValue(SpecialTier.ARTIFACT)
 
-        assertEquals(78, itemBundle.affixes.size)
+        assertEquals(84, itemBundle.affixes.size)
         assertTrue(
             itemBundle.affixes.all { affix ->
                 affix.cost in setOf(
@@ -221,14 +221,14 @@ class ZoneContentCoverageTest {
         val bundle = LocalizationBundle.load()
         val english = bundle.translator(GameLocale.EN_US)
         val chinese = bundle.translator(GameLocale.ZH_CN)
+        val itemBundle = DataLoader(GameLocale.EN_US).loadItemBundle()
         val passiveTags =
-            DataLoader(GameLocale.EN_US)
-                .loadItemBundle()
-                .baseItems
-                .mapNotNull { item -> (item.passive as? EquipmentPassive.DamageVsTag)?.tag }
-                .toSet()
+            (
+                itemBundle.baseItems.mapNotNull { item -> (item.passive as? EquipmentPassive.DamageVsTag)?.tag } +
+                    itemBundle.affixes.mapNotNull { affix -> (affix.passive as? EquipmentPassive.DamageVsTag)?.tag }
+            ).toSet()
 
-        assertEquals(setOf("bandit", "undead"), passiveTags)
+        assertEquals(setOf("bandit", "undead", "orc", "cultist", "forge", "river", "crystal", "abyssal"), passiveTags)
         passiveTags.forEach { tag ->
             val key = "monster.tag.$tag"
             assertTrue(english.text(key) != "!!$key!!", "English bundle is missing monster tag key '$key'.")
