@@ -94,6 +94,11 @@ tasks.withType<Test>().configureEach {
     providers.systemProperty("ktome.updateSolvabilityGolden").orNull?.let { value ->
         systemProperty("ktome.updateSolvabilityGolden", value)
     }
+    if (name == "test") {
+        useJUnitPlatform {
+            excludeTags("verificationFixtureFailure")
+        }
+    }
 }
 
 tasks.register<Test>("combatTraceGolden") {
