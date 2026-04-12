@@ -1,12 +1,15 @@
+import com.ktome.build.verification.VerifyChangedPlanGate
 import org.gradle.api.tasks.testing.Test
 import org.gradle.language.jvm.tasks.ProcessResources
 
 plugins {
     `java-library`
     `java-test-fixtures`
+    id("com.ktome.build.verification")
 }
 
 val harnessReportDir = rootProject.layout.buildDirectory.dir("reports/harness")
+val verifyChangedTaskPathsFile = rootProject.layout.buildDirectory.file("verification/verify-changed/task-paths.txt")
 
 dependencies {
     api(project(":core"))
@@ -91,4 +94,14 @@ tasks.register<Test>("terrainInteractionBatch") {
         rootProject.layout.projectDirectory.dir("tools/build/reports/phase4/whitebox/terrain").asFile.absolutePath,
     )
     outputs.dir(rootProject.layout.projectDirectory.dir("tools/build/reports/phase4/whitebox/terrain"))
+}
+
+listOf(
+    tasks.named("longRunLab"),
+    tasks.named("bossHarness"),
+    tasks.named("terrainInteractionBatch"),
+).forEach { taskProvider ->
+    taskProvider.configure {
+        VerifyChangedPlanGate.applyTo(this, verifyChangedTaskPathsFile, ":tools:prepareVerifyChangedPlan")
+    }
 }

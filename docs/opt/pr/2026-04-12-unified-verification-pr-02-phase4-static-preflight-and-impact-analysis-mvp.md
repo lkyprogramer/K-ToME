@@ -72,6 +72,7 @@
 2. 不迁移 `phase4Report`
 3. 不迁移 `lootBalanceLab / longRunLab`
 4. 不做 shard cache
+5. 不把 `phase4ReportOnly` 挂进 `verifyChanged` 的默认自动路由；aggregate cutover 留到后续 PR
 
 ---
 
@@ -104,7 +105,7 @@
 1. 命中 `core/src/main/kotlin/com/ktome/core/`
    - 扩到当前 phase 的 owner 验证集
 2. 命中 `game/data/DataLoader`
-   - 扩到 `loot / hidden / content-pack / report`
+   - 扩到 `loot / hidden / content-pack`
 3. 命中 `FoundationGameSession`
    - 扩到 `loot / hidden / boss / longrun`
 4. 命中 `HeadlessRunHarness`
@@ -117,10 +118,10 @@
 1. 检查 domain spec 的 `inputScopes` 是否覆盖实际关键 package/import
 2. 首期不追求完全精准
 3. 重点检查：
+   - `core/src/main/kotlin/com/ktome/core/`
    - `DataLoader`
    - `FoundationGameSession`
    - `HeadlessRunHarness`
-   - `Phase4ReportRunner`
 
 ### 5.4 Preflight 设计
 
@@ -169,6 +170,7 @@
 
 1. phase5 domain 路由
 2. statistical shard 智能拼装
+3. `phase4ReportOnly` 的 artifact-only cutover
 
 ---
 
@@ -246,6 +248,7 @@
 2. 改 `core/` -> 命中更宽 owner 集合
 3. `verifyLootPreflight` 能输出 culprit pair diff
 4. `verifyChanged` 不误判为“无任务可跑”
+5. base ref 缺失时，`verifyChanged` 退回保守 changed-file 收集，而不是让独立 preflight 任务在配置期失败
 
 ### 8.3 性能目标
 

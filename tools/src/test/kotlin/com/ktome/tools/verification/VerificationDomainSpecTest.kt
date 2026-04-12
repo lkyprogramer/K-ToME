@@ -50,6 +50,17 @@ class VerificationDomainSpecTest {
     }
 
     @Test
+    fun `registry exposes phase4 loot input scopes and task routing`() {
+        val spec = VerificationTaskRegistry.spec("loot")
+
+        assertEquals(VerificationTier.PREFLIGHT, spec.defaultTier)
+        assertTrue(spec.inputScopes.any { scope -> scope.scopeId == "loot.data.loot" && !scope.ownerRequired })
+        assertTrue(spec.inputScopes.any { scope -> scope.scopeId == "loot.runtime" && scope.ownerRequired })
+        assertEquals(listOf(":tools:verifyLootPreflight"), spec.preflightTaskPaths)
+        assertEquals(listOf(":tools:lootBalanceLab"), spec.ownerTaskPaths)
+    }
+
+    @Test
     fun `resolve node fails when tier is ambiguous without node id`() {
         val spec =
             VerificationDomainSpec(

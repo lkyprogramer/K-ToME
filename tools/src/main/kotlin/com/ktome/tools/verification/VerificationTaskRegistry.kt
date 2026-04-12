@@ -24,6 +24,335 @@ object VerificationTaskRegistry {
                     ),
                 ),
             baselinePolicy = BaselinePolicySpec(mode = BaselineMode.STRICT_ZERO_FAILURE),
+            inputScopes =
+                listOf(
+                    InputScope(
+                        scopeId = "schema-i18n.locale",
+                        pathPrefixes = listOf("game/src/main/resources/i18n/"),
+                    ),
+                    InputScope(
+                        scopeId = "schema-i18n.schema",
+                        pathPrefixes = listOf("game/src/main/kotlin/com/ktome/game/data/schema/"),
+                        ownerRequired = true,
+                    ),
+                ),
+            preflightTaskPaths = listOf(":tools:verifyContractLintPreflight"),
+            ownerTaskPaths = listOf(":tools:contractLint"),
+            cachePolicy =
+                VerificationCachePolicy(
+                    buildCacheEnabled = true,
+                    configurationCacheCompatible = true,
+                    reuseExistingArtifacts = true,
+                ),
+            artifactPolicy = VerificationArtifactPolicy(),
+        )
+
+    private val lootDomain =
+        VerificationDomainSpec(
+            domainId = "loot",
+            phaseIds = setOf("phase4"),
+            workloadClass = VerificationWorkloadClass.STATIC_GRAPH,
+            defaultTier = VerificationTier.PREFLIGHT,
+            nodeSpecs =
+                listOf(
+                    VerificationNodeSpec(
+                        nodeId = "loot.preflight",
+                        description = "Runs the Phase 4 loot static preflight without entering the statistical lab.",
+                        workloadClass = VerificationWorkloadClass.STATIC_GRAPH,
+                        tier = VerificationTier.PREFLIGHT,
+                        nodeKind = VerificationNodeKind.LEGACY_JUNIT_CLASS_SET,
+                        selectedClasses = listOf("com.ktome.tools.loot.LootPreflightRunnerTest"),
+                    ),
+                ),
+            inputScopes =
+                listOf(
+                    InputScope(
+                        scopeId = "loot.data.items",
+                        pathPrefixes = listOf("game/src/main/resources/data/items/"),
+                    ),
+                    InputScope(
+                        scopeId = "loot.data.loot",
+                        pathPrefixes = listOf("game/src/main/resources/data/loot/"),
+                    ),
+                    InputScope(
+                        scopeId = "loot.data.world",
+                        pathPrefixes = listOf("game/src/main/resources/data/world/"),
+                    ),
+                    InputScope(
+                        scopeId = "loot.runtime",
+                        pathPrefixes =
+                            listOf(
+                                "game/src/main/kotlin/com/ktome/game/loot/",
+                                "tools/src/main/kotlin/com/ktome/tools/loot/",
+                            ),
+                        ownerRequired = true,
+                    ),
+                ),
+            preflightTaskPaths = listOf(":tools:verifyLootPreflight"),
+            ownerTaskPaths = listOf(":tools:lootBalanceLab"),
+            baselinePolicy = BaselinePolicySpec(mode = BaselineMode.STRICT_ZERO_FAILURE),
+            cachePolicy =
+                VerificationCachePolicy(
+                    buildCacheEnabled = true,
+                    configurationCacheCompatible = true,
+                    reuseExistingArtifacts = true,
+                ),
+            artifactPolicy = VerificationArtifactPolicy(),
+        )
+
+    private val hiddenDomain =
+        VerificationDomainSpec(
+            domainId = "hidden",
+            phaseIds = setOf("phase4"),
+            workloadClass = VerificationWorkloadClass.STATIC_GRAPH,
+            defaultTier = VerificationTier.PREFLIGHT,
+            nodeSpecs =
+                listOf(
+                    VerificationNodeSpec(
+                        nodeId = "hidden.preflight",
+                        description = "Runs the Phase 4 hidden-content static preflight without organic or session-driven probes.",
+                        workloadClass = VerificationWorkloadClass.STATIC_GRAPH,
+                        tier = VerificationTier.PREFLIGHT,
+                        nodeKind = VerificationNodeKind.LEGACY_JUNIT_CLASS_SET,
+                        selectedClasses = listOf("com.ktome.tools.hidden.HiddenPreflightRunnerTest"),
+                    ),
+                ),
+            inputScopes =
+                listOf(
+                    InputScope(
+                        scopeId = "hidden.data.events",
+                        pathPrefixes = listOf("game/src/main/resources/data/events/"),
+                    ),
+                    InputScope(
+                        scopeId = "hidden.data.secret-zones",
+                        pathPrefixes = listOf("game/src/main/resources/data/secret-zones/"),
+                    ),
+                    // Search bindings live under mapgen data, so the first version stays conservative here.
+                    InputScope(
+                        scopeId = "hidden.data.mapgen",
+                        pathPrefixes = listOf("game/src/main/resources/data/mapgen/"),
+                    ),
+                    InputScope(
+                        scopeId = "hidden.runtime",
+                        pathPrefixes =
+                            listOf(
+                                "tools/src/main/kotlin/com/ktome/tools/hidden/",
+                                "game/src/main/kotlin/com/ktome/game/hidden/",
+                                "game/src/main/kotlin/com/ktome/game/Phase4StaticContentValidator.kt",
+                            ),
+                        ownerRequired = true,
+                    ),
+                ),
+            preflightTaskPaths = listOf(":tools:verifyHiddenPreflight"),
+            ownerTaskPaths = listOf(":tools:hiddenContentHarness"),
+            baselinePolicy = BaselinePolicySpec(mode = BaselineMode.STRICT_ZERO_FAILURE),
+            cachePolicy =
+                VerificationCachePolicy(
+                    buildCacheEnabled = true,
+                    configurationCacheCompatible = true,
+                    reuseExistingArtifacts = true,
+                ),
+            artifactPolicy = VerificationArtifactPolicy(),
+        )
+
+    private val contentPackDomain =
+        VerificationDomainSpec(
+            domainId = "content-pack",
+            phaseIds = setOf("phase4"),
+            workloadClass = VerificationWorkloadClass.STATIC_GRAPH,
+            defaultTier = VerificationTier.PREFLIGHT,
+            nodeSpecs =
+                listOf(
+                    VerificationNodeSpec(
+                        nodeId = "content-pack.preflight",
+                        description = "Runs the Phase 4 content-pack static preflight without headless runtime execution.",
+                        workloadClass = VerificationWorkloadClass.STATIC_GRAPH,
+                        tier = VerificationTier.PREFLIGHT,
+                        nodeKind = VerificationNodeKind.LEGACY_JUNIT_CLASS_SET,
+                        selectedClasses = listOf("com.ktome.tools.contentpack.ContentPackPreflightRunnerTest"),
+                    ),
+                ),
+            inputScopes =
+                listOf(
+                    InputScope(
+                        scopeId = "content-pack.sample-pack",
+                        pathPrefixes = listOf("examples/content-packs/"),
+                    ),
+                    InputScope(
+                        scopeId = "content-pack.fixtures",
+                        pathPrefixes = listOf("tools/src/main/resources/fixtures/content-packs/"),
+                    ),
+                    InputScope(
+                        scopeId = "content-pack.runtime",
+                        pathPrefixes =
+                            listOf(
+                                "game/src/main/kotlin/com/ktome/game/contentpack/",
+                                "tools/src/main/kotlin/com/ktome/tools/contentpack/",
+                            ),
+                        ownerRequired = true,
+                    ),
+                ),
+            preflightTaskPaths = listOf(":tools:verifyContentPackPreflight"),
+            ownerTaskPaths = listOf(":tools:contentPackHarness"),
+            baselinePolicy = BaselinePolicySpec(mode = BaselineMode.STRICT_ZERO_FAILURE),
+            cachePolicy =
+                VerificationCachePolicy(
+                    buildCacheEnabled = true,
+                    configurationCacheCompatible = true,
+                    reuseExistingArtifacts = true,
+                ),
+            artifactPolicy = VerificationArtifactPolicy(),
+        )
+
+    private val mapgenDomain =
+        VerificationDomainSpec(
+            domainId = "mapgen",
+            phaseIds = setOf("phase4"),
+            workloadClass = VerificationWorkloadClass.DETERMINISTIC_SCENARIO,
+            defaultTier = VerificationTier.OWNER,
+            nodeSpecs =
+                listOf(
+                    VerificationNodeSpec(
+                        nodeId = "mapgen.owner",
+                        description = "Tracks Phase 4 mapgen owner verification routing.",
+                        workloadClass = VerificationWorkloadClass.DETERMINISTIC_SCENARIO,
+                        tier = VerificationTier.OWNER,
+                        nodeKind = VerificationNodeKind.REPORT_ONLY,
+                    ),
+                ),
+            ownerTaskPaths = listOf(":tools:mapgenSmoke"),
+            cachePolicy =
+                VerificationCachePolicy(
+                    buildCacheEnabled = true,
+                    configurationCacheCompatible = true,
+                    reuseExistingArtifacts = true,
+                ),
+            artifactPolicy = VerificationArtifactPolicy(),
+        )
+
+    private val solvabilityDomain =
+        VerificationDomainSpec(
+            domainId = "solvability",
+            phaseIds = setOf("phase4"),
+            workloadClass = VerificationWorkloadClass.DETERMINISTIC_SCENARIO,
+            defaultTier = VerificationTier.OWNER,
+            nodeSpecs =
+                listOf(
+                    VerificationNodeSpec(
+                        nodeId = "solvability.owner",
+                        description = "Tracks Phase 4 solvability owner verification routing.",
+                        workloadClass = VerificationWorkloadClass.DETERMINISTIC_SCENARIO,
+                        tier = VerificationTier.OWNER,
+                        nodeKind = VerificationNodeKind.REPORT_ONLY,
+                    ),
+                ),
+            ownerTaskPaths = listOf(":tools:solvabilityHarness"),
+            cachePolicy =
+                VerificationCachePolicy(
+                    buildCacheEnabled = true,
+                    configurationCacheCompatible = true,
+                    reuseExistingArtifacts = true,
+                ),
+            artifactPolicy = VerificationArtifactPolicy(),
+        )
+
+    private val terrainDomain =
+        VerificationDomainSpec(
+            domainId = "terrain",
+            phaseIds = setOf("phase4"),
+            workloadClass = VerificationWorkloadClass.DETERMINISTIC_SCENARIO,
+            defaultTier = VerificationTier.OWNER,
+            nodeSpecs =
+                listOf(
+                    VerificationNodeSpec(
+                        nodeId = "terrain.owner",
+                        description = "Tracks Phase 4 terrain interaction owner verification routing.",
+                        workloadClass = VerificationWorkloadClass.DETERMINISTIC_SCENARIO,
+                        tier = VerificationTier.OWNER,
+                        nodeKind = VerificationNodeKind.REPORT_ONLY,
+                    ),
+                ),
+            ownerTaskPaths = listOf(":game:terrainInteractionBatch"),
+            cachePolicy =
+                VerificationCachePolicy(
+                    buildCacheEnabled = true,
+                    configurationCacheCompatible = true,
+                    reuseExistingArtifacts = true,
+                ),
+            artifactPolicy = VerificationArtifactPolicy(),
+        )
+
+    private val bossDomain =
+        VerificationDomainSpec(
+            domainId = "boss",
+            phaseIds = setOf("phase4"),
+            workloadClass = VerificationWorkloadClass.DETERMINISTIC_SCENARIO,
+            defaultTier = VerificationTier.OWNER,
+            nodeSpecs =
+                listOf(
+                    VerificationNodeSpec(
+                        nodeId = "boss.owner",
+                        description = "Tracks Phase 4 boss harness owner verification routing.",
+                        workloadClass = VerificationWorkloadClass.DETERMINISTIC_SCENARIO,
+                        tier = VerificationTier.OWNER,
+                        nodeKind = VerificationNodeKind.REPORT_ONLY,
+                    ),
+                ),
+            ownerTaskPaths = listOf(":game:bossHarness"),
+            cachePolicy =
+                VerificationCachePolicy(
+                    buildCacheEnabled = true,
+                    configurationCacheCompatible = true,
+                    reuseExistingArtifacts = true,
+                ),
+            artifactPolicy = VerificationArtifactPolicy(),
+        )
+
+    private val longrunDomain =
+        VerificationDomainSpec(
+            domainId = "longrun",
+            phaseIds = setOf("phase4"),
+            workloadClass = VerificationWorkloadClass.LONG_RUNNING_SYSTEM,
+            defaultTier = VerificationTier.OWNER,
+            nodeSpecs =
+                listOf(
+                    VerificationNodeSpec(
+                        nodeId = "longrun.owner",
+                        description = "Tracks Phase 4 long-run owner verification routing.",
+                        workloadClass = VerificationWorkloadClass.LONG_RUNNING_SYSTEM,
+                        tier = VerificationTier.OWNER,
+                        nodeKind = VerificationNodeKind.REPORT_ONLY,
+                    ),
+                ),
+            ownerTaskPaths = listOf(":game:longRunLab"),
+            cachePolicy =
+                VerificationCachePolicy(
+                    buildCacheEnabled = true,
+                    configurationCacheCompatible = true,
+                    reuseExistingArtifacts = true,
+                ),
+            artifactPolicy = VerificationArtifactPolicy(),
+        )
+
+    private val scopeCoverageDomain =
+        VerificationDomainSpec(
+            domainId = "scopeCoverage",
+            phaseIds = setOf("phase4"),
+            workloadClass = VerificationWorkloadClass.STATIC_GRAPH,
+            defaultTier = VerificationTier.PREFLIGHT,
+            nodeSpecs =
+                listOf(
+                    VerificationNodeSpec(
+                        nodeId = "scopeCoverage.lint",
+                        description = "Checks that Phase 4 impact scopes and false-negative fallbacks still cover critical shared entry points.",
+                        workloadClass = VerificationWorkloadClass.STATIC_GRAPH,
+                        tier = VerificationTier.PREFLIGHT,
+                        nodeKind = VerificationNodeKind.LEGACY_JUNIT_CLASS_SET,
+                        selectedClasses = listOf("com.ktome.tools.verification.ScopeCoverageLintTest"),
+                    ),
+                ),
+            preflightTaskPaths = listOf(":tools:scopeCoverageLint"),
+            baselinePolicy = BaselinePolicySpec(mode = BaselineMode.STRICT_ZERO_FAILURE),
             cachePolicy =
                 VerificationCachePolicy(
                     buildCacheEnabled = true,
@@ -34,10 +363,24 @@ object VerificationTaskRegistry {
         )
 
     private val domainsById: Map<String, VerificationDomainSpec> =
-        listOf(contractLintDomain).associateBy { it.domainId }
+        listOf(
+            contractLintDomain,
+            lootDomain,
+            hiddenDomain,
+            contentPackDomain,
+            mapgenDomain,
+            solvabilityDomain,
+            terrainDomain,
+            bossDomain,
+            longrunDomain,
+            scopeCoverageDomain,
+        ).associateBy { it.domainId }
 
     fun spec(domainId: String): VerificationDomainSpec =
         domainsById[domainId] ?: error("No verification domain registered for $domainId.")
 
     fun registeredDomainIds(): Set<String> = domainsById.keys
+
+    fun registeredImpactSpecs(): List<VerificationDomainSpec> =
+        domainsById.values.filter { spec -> spec.inputScopes.isNotEmpty() || spec.preflightTaskPaths.isNotEmpty() || spec.ownerTaskPaths.isNotEmpty() }
 }

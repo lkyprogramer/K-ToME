@@ -26,11 +26,6 @@ import com.ktome.game.elites.BossVariantRegistry
 import com.ktome.game.elites.EliteMutationRegistry
 import com.ktome.game.hidden.HiddenContentMapgenPipeline
 import com.ktome.game.hidden.HiddenEventRegistry
-import com.ktome.game.hidden.HiddenConditionKey
-import com.ktome.game.hidden.HiddenEventRewardPayload
-import com.ktome.game.hidden.LOOT_PROFILE_REGISTRY_ID
-import com.ktome.game.hidden.MONSTER_REGISTRY_ID
-import com.ktome.game.hidden.STATUS_REGISTRY_ID
 import com.ktome.game.hidden.SecretZoneRegistry
 import com.ktome.game.loot.LootProfileCandidatePool
 import com.ktome.game.loot.LootProfileCandidatePoolResolver
@@ -169,96 +164,12 @@ internal data class GameContent(
                 }
             }
         }
-        val hiddenEntrancePlans = schemaCatalog.zoneMapgenProfiles.flatMap { profile -> profile.hiddenEntrancePlans }
-        val hiddenEntrancePlansByBindingId = hiddenEntrancePlans.associateBy { plan -> plan.bindingId }
-        val hiddenEntrancePlansBySecretZoneId = hiddenEntrancePlans.associateBy { plan -> plan.targetSecretZoneId.id }
-        require(hiddenEntrancePlansBySecretZoneId.size == hiddenEntrancePlans.size) {
-            "Each hidden entrance plan must target a unique secret zone id."
-        }
-        schemaCatalog.secretZones.forEach { secretZone ->
-            val hiddenEntrancePlan = requireNotNull(hiddenEntrancePlansBySecretZoneId[secretZone.id.id]) {
-                "Secret zone '${secretZone.id.id}' is not targeted by any hidden entrance plan."
-            }
-            require(hiddenEntrancePlan.targetSecretZoneId == secretZone.id) {
-                "Secret zone '${secretZone.id.id}' must be targeted by hidden entrance '${hiddenEntrancePlan.bindingId.value}'."
-            }
-            require(secretZone.entranceBindingId == hiddenEntrancePlan.entranceAnchorId) {
-                "Secret zone '${secretZone.id.id}' must bind to hidden entrance anchor '${hiddenEntrancePlan.entranceAnchorId.value}'."
-            }
-            require(secretZone.entryRule == hiddenEntrancePlan.discoveryRule) {
-                "Secret zone '${secretZone.id.id}' entryRule must match hidden entrance discoveryRule '${hiddenEntrancePlan.bindingId.value}'."
-            }
-            require(lootProfilesById.containsKey(secretZone.rewardProfileId.id)) {
-                "Secret zone '${secretZone.id.id}' references unknown reward profile '${secretZone.rewardProfileId.id}'."
-            }
-            secretZone.guaranteedContent.forEach { contentRef ->
-                when (contentRef.registry.value) {
-                    "hidden_event" ->
-                        require(hiddenEventRegistry.resolve(contentRef.id) != null) {
-                            "Secret zone '${secretZone.id.id}' guaranteed content references unknown hidden event '${contentRef.id}'."
-                        }
-
-                    "monster" ->
-                        require(monsterTemplatesById.containsKey(contentRef.id)) {
-                            "Secret zone '${secretZone.id.id}' guaranteed content references unknown monster '${contentRef.id}'."
-                        }
-
-                    else -> error("Secret zone '${secretZone.id.id}' guaranteed content registry '${contentRef.registry.value}' is unsupported.")
-                }
-            }
-        }
-        schemaCatalog.hiddenEvents.forEach { hiddenEvent ->
-            hiddenEvent.conditions.forEach { condition ->
-                when (condition.key) {
-                    HiddenConditionKey.SEARCH_BINDING_ID ->
-                        require(hiddenEntrancePlansByBindingId.keys.any { bindingId -> bindingId.value == condition.expectedValue }) {
-                            "Hidden event '${hiddenEvent.id}' references unknown search binding '${condition.expectedValue}'."
-                        }
-
-                    HiddenConditionKey.SECRET_ZONE_ID ->
-                        require(secretZoneRegistry.resolve(condition.expectedValue) != null) {
-                            "Hidden event '${hiddenEvent.id}' references unknown secret zone '${condition.expectedValue}'."
-                        }
-
-                    else -> Unit
-                }
-            }
-            hiddenEvent.rewards.forEach { reward ->
-                when (val payload = reward.payload) {
-                    is HiddenEventRewardPayload.RevealSecretZone ->
-                        require(hiddenEntrancePlansByBindingId.containsKey(payload.bindingId)) {
-                            "Hidden event '${hiddenEvent.id}' reveal payload references unknown search binding '${payload.bindingId.value}'."
-                        }
-
-                    is HiddenEventRewardPayload.GrantBuff -> {
-                        require(payload.statusRef.registry.value == STATUS_REGISTRY_ID) {
-                            "Hidden event '${hiddenEvent.id}' buff payload must use registry '$STATUS_REGISTRY_ID'."
-                        }
-                        require(statusSchemaFor(payload.statusRef.id) != null) {
-                            "Hidden event '${hiddenEvent.id}' references unknown status '${payload.statusRef.id}'."
-                        }
-                    }
-
-                    is HiddenEventRewardPayload.LootProfile -> {
-                        require(payload.lootProfileRef.registry.value == LOOT_PROFILE_REGISTRY_ID) {
-                            "Hidden event '${hiddenEvent.id}' loot payload must use registry '$LOOT_PROFILE_REGISTRY_ID'."
-                        }
-                        require(lootProfilesById.containsKey(payload.lootProfileRef.id)) {
-                            "Hidden event '${hiddenEvent.id}' references unknown loot profile '${payload.lootProfileRef.id}'."
-                        }
-                    }
-
-                    is HiddenEventRewardPayload.TriggerEncounter -> {
-                        require(payload.encounterRef.registry.value == MONSTER_REGISTRY_ID) {
-                            "Hidden event '${hiddenEvent.id}' encounter payload must use registry '$MONSTER_REGISTRY_ID'."
-                        }
-                        require(monsterTemplatesById.containsKey(payload.encounterRef.id)) {
-                            "Hidden event '${hiddenEvent.id}' references unknown monster '${payload.encounterRef.id}'."
-                        }
-                    }
-                }
-            }
-        }
+        Phase4StaticContentValidator.validateHiddenContentContracts(
+            schemaCatalog = schemaCatalog,
+            lootProfilesById = lootProfilesById,
+            monsterTemplatesById = monsterTemplatesById,
+            statuses = statuses,
+        )
     }
 
     fun validateEliteMutationContracts() {

@@ -26,6 +26,53 @@ plugins {
 group = providers.gradleProperty("group").get()
 version = providers.gradleProperty("version").get()
 val bootstrapRepo = rootProject.layout.projectDirectory.dir(".bootstrap/m2").asFile
+val verificationOnlyTestTags =
+    listOf(
+        "headlessSmoke",
+        "clientSmoke",
+        "longRunLab",
+        "soloClearLab",
+        "goldenScreenshot",
+        "bossHarness",
+        "terrainInteractionBatch",
+        "combatTraceGolden",
+        "localeLint",
+        "contractLint",
+        "mapgenSmoke",
+        "solvabilityHarness",
+        "hiddenContentHarness",
+        "organicHiddenProbe",
+        "lootBalanceLab",
+        "contentPackHarness",
+        "whiteBoxMapgen",
+        "whiteBoxLoot",
+        "whiteBoxSolvability",
+        "whiteBoxHiddenContent",
+        "whiteBoxContentPack",
+        "phase4Report",
+        "verifyLootPreflight",
+        "verifyHiddenPreflight",
+        "verifyContentPackPreflight",
+        "scopeCoverageLint",
+    )
+val verifyChangedTaskPaths =
+    listOf(
+        ":tools:prepareVerifyChangedPlan",
+        ":tools:scopeCoverageLint",
+        ":tools:verifyContractLintPreflight",
+        ":tools:contractLint",
+        ":tools:verifyLootPreflight",
+        ":tools:verifyHiddenPreflight",
+        ":tools:verifyContentPackPreflight",
+        ":tools:lootBalanceLab",
+        ":tools:hiddenContentHarness",
+        ":tools:contentPackHarness",
+        ":tools:mapgenSmoke",
+        ":tools:solvabilityHarness",
+        ":game:terrainInteractionBatch",
+        ":game:bossHarness",
+        ":game:longRunLab",
+    )
 
 extensions.configure<JacocoPluginExtension> {
     toolVersion = providers.gradleProperty("jacocoVersion").get()
@@ -72,30 +119,7 @@ subprojects {
         useJUnitPlatform()
         if (name == "test") {
             useJUnitPlatform {
-                excludeTags(
-                    "headlessSmoke",
-                    "clientSmoke",
-                    "longRunLab",
-                    "soloClearLab",
-                    "goldenScreenshot",
-                    "bossHarness",
-                    "terrainInteractionBatch",
-                    "combatTraceGolden",
-                    "localeLint",
-                    "contractLint",
-                    "mapgenSmoke",
-                    "solvabilityHarness",
-                    "hiddenContentHarness",
-                    "organicHiddenProbe",
-                    "lootBalanceLab",
-                    "contentPackHarness",
-                    "whiteBoxMapgen",
-                    "whiteBoxLoot",
-                    "whiteBoxSolvability",
-                    "whiteBoxHiddenContent",
-                    "whiteBoxContentPack",
-                    "phase4Report",
-                )
+                excludeTags(*verificationOnlyTestTags.toTypedArray())
             }
         }
         testLogging {
@@ -217,6 +241,30 @@ tasks.register("verifyContractLintPreflightReport") {
     dependsOn(":tools:verifyContractLintPreflightReport")
 }
 
+tasks.register("verifyLootPreflight") {
+    group = LifecycleBasePlugin.VERIFICATION_GROUP
+    description = "Runs the Phase 4 loot static preflight."
+    dependsOn(":tools:verifyLootPreflight")
+}
+
+tasks.register("verifyHiddenPreflight") {
+    group = LifecycleBasePlugin.VERIFICATION_GROUP
+    description = "Runs the Phase 4 hidden-content static preflight."
+    dependsOn(":tools:verifyHiddenPreflight")
+}
+
+tasks.register("verifyContentPackPreflight") {
+    group = LifecycleBasePlugin.VERIFICATION_GROUP
+    description = "Runs the Phase 4 content-pack static preflight."
+    dependsOn(":tools:verifyContentPackPreflight")
+}
+
+tasks.register("scopeCoverageLint") {
+    group = LifecycleBasePlugin.VERIFICATION_GROUP
+    description = "Checks that Phase 4 impact scopes and false-negative fallbacks still cover critical shared entry points."
+    dependsOn(":tools:scopeCoverageLint")
+}
+
 tasks.register("combatTraceGolden") {
     group = LifecycleBasePlugin.VERIFICATION_GROUP
     description = "Runs the Phase 3 FORMULA corpus combat trace golden harness."
@@ -317,6 +365,12 @@ tasks.register("phase4ReportOnly") {
     group = LifecycleBasePlugin.VERIFICATION_GROUP
     description = "Rebuilds tools/build/reports/phase4/phase4-summary.json from existing artifacts without rerunning Phase 4 producer tasks."
     dependsOn(":tools:phase4ReportOnly")
+}
+
+tasks.register("verifyChanged") {
+    group = LifecycleBasePlugin.VERIFICATION_GROUP
+    description = "Collects changed files, analyzes impacted Phase 4 domains, and runs the selected preflight/owner verification tasks."
+    dependsOn(verifyChangedTaskPaths)
 }
 
 tasks.register<Exec>("assetLint") {

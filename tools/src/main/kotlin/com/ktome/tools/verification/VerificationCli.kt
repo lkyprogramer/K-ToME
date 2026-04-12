@@ -23,13 +23,14 @@ object VerificationCli {
             "run" -> runVerification(parsed)
             "report" -> rebuildReport(parsed)
             "legacy-adapter" -> runLegacyAdapter(parsed)
+            "plan-changed" -> writeChangedPlan(parsed)
             else -> error("Unsupported verification command ${parsed.command}.")
         }
     }
 
     private fun runVerification(parsed: ParsedCommand) {
-        val domain = VerificationTaskRegistry.spec(parsed.domainId)
-        val tier = VerificationTier.valueOf(parsed.tier)
+        val domain = VerificationTaskRegistry.spec(parsed.requireDomainId())
+        val tier = VerificationTier.valueOf(parsed.requireTier())
         val node = domain.resolveNode(tier = tier, nodeId = parsed.nodeId)
         val outputDir = parsed.outputDir.also { it.createDirectories() }
         val rawResult =
@@ -53,8 +54,8 @@ object VerificationCli {
     }
 
     private fun rebuildReport(parsed: ParsedCommand) {
-        val domain = VerificationTaskRegistry.spec(parsed.domainId)
-        val tier = VerificationTier.valueOf(parsed.tier)
+        val domain = VerificationTaskRegistry.spec(parsed.requireDomainId())
+        val tier = VerificationTier.valueOf(parsed.requireTier())
         val sourceArtifactDir =
             parsed.artifactInputs.singleOrNull()
                 ?: error("VerificationReportTask requires exactly one --artifact-input directory.")
@@ -99,10 +100,10 @@ object VerificationCli {
     }
 
     private fun runLegacyAdapter(parsed: ParsedCommand) {
-        val tier = VerificationTier.valueOf(parsed.tier)
+        val tier = VerificationTier.valueOf(parsed.requireTier())
         val node =
             VerificationNodeSpec(
-                nodeId = parsed.nodeId ?: "${parsed.domainId}.legacyAdapter",
+                nodeId = parsed.nodeId ?: "${parsed.requireDomainId()}.legacyAdapter",
                 description = "Adapts an existing JUnit class/tag selection into verification artifacts.",
                 workloadClass = VerificationWorkloadClass.STATIC_GRAPH,
                 tier = tier,
@@ -112,7 +113,7 @@ object VerificationCli {
             )
         val domain =
             VerificationDomainSpec(
-                domainId = parsed.domainId,
+                domainId = parsed.requireDomainId(),
                 phaseIds = setOf("migration"),
                 workloadClass = VerificationWorkloadClass.STATIC_GRAPH,
                 defaultTier = tier,
@@ -125,7 +126,7 @@ object VerificationCli {
                     ),
                 artifactPolicy = VerificationArtifactPolicy(),
             )
-        val rawResult = LegacyJUnitClassSetExecutor.execute(parsed.domainId, tier, node)
+        val rawResult = LegacyJUnitClassSetExecutor.execute(parsed.requireDomainId(), tier, node)
         writeArtifacts(
             domain = domain,
             tier = tier,
@@ -137,6 +138,30 @@ object VerificationCli {
             sourceArtifactDir = null,
             reportOnly = false,
         )
+    }
+
+    private fun writeChangedPlan(parsed: ParsedCommand) {
+        val outputDir = parsed.outputDir.also { it.createDirectories() }
+        val collected =
+            if (parsed.changedFiles.isNotEmpty()) {
+                GitChangedFileCollection(
+                    changedFiles = parsed.changedFiles,
+                    notes = emptyList(),
+                )
+            } else {
+                GitChangedFileCollector.collect(
+                    repoRoot = repoRoot(),
+                    preferredBaseRef = parsed.baseRef,
+                )
+            }
+        val plan =
+            VerificationImpactAnalyzer
+                .analyze(collected.changedFiles)
+                .copy(collectionNotes = collected.notes)
+        outputDir.resolve(CHANGED_PLAN_FILE_NAME).writeText(prettyJson.encodeToString(plan))
+        outputDir.resolve(CHANGED_TASKS_FILE_NAME).writeText(plan.requestedTaskPaths.joinToString(separator = System.lineSeparator()))
+        outputDir.resolve(CHANGED_PLAN_MARKDOWN_FILE_NAME).writeText(renderChangedPlanMarkdown(plan))
+        println(plan.renderConsoleSummary())
     }
 
     private fun writeArtifacts(
@@ -213,10 +238,46 @@ object VerificationCli {
         return paths
     }
 
+    private fun renderChangedPlanMarkdown(plan: VerificationImpactPlan): String =
+        buildString {
+            appendLine("# verifyChanged Plan")
+            appendLine()
+            if (plan.collectionNotes.isNotEmpty()) {
+                appendLine("## Collection Notes")
+                plan.collectionNotes.forEach { note -> appendLine("- $note") }
+                appendLine()
+            }
+            appendLine("## Changed Files")
+            if (plan.changedFiles.isEmpty()) {
+                appendLine("- none")
+            } else {
+                plan.changedFiles.forEach { changedFile -> appendLine("- `$changedFile`") }
+            }
+            appendLine()
+            appendLine("## Impacted Domains")
+            if (plan.impactedDomains.isEmpty()) {
+                appendLine("- none")
+            } else {
+                plan.impactedDomains.forEach { impact ->
+                    appendLine("- `${impact.domainId}`")
+                    impact.reasons.forEach { reason ->
+                        val scopeSuffix =
+                            reason.scopeId?.let { scopeId -> " (`$scopeId`)" }
+                                ?: ""
+                        val mode = if (reason.ownerRequired) "owner" else "preflight"
+                        appendLine("  - `$mode` via `${reason.reasonId}`$scopeSuffix: ${reason.matchedFiles.joinToString()}")
+                    }
+                }
+            }
+            appendLine()
+            appendLine("## Requested Tasks")
+            plan.requestedTaskPaths.forEach { taskPath -> appendLine("- `$taskPath`") }
+        }
+
     private data class ParsedCommand(
         val command: String,
-        val domainId: String,
-        val tier: String,
+        val domainId: String?,
+        val tier: String?,
         val nodeId: String?,
         val snapshotHash: String?,
         val outputDir: Path,
@@ -224,8 +285,12 @@ object VerificationCli {
         val artifactInputs: List<Path>,
         val selectedClasses: List<String>,
         val selectedTags: List<String>,
+        val changedFiles: List<String>,
+        val baseRef: String?,
     ) {
         companion object {
+            private const val DEFAULT_CACHE_STATUS: String = "LOCAL_EXECUTION"
+
             fun parse(arguments: List<String>): ParsedCommand {
                 require(arguments.isNotEmpty()) { "VerificationCli requires a command." }
                 val command = arguments.first()
@@ -240,15 +305,25 @@ object VerificationCli {
                 }
                 return ParsedCommand(
                     command = command,
-                    domainId = values.singleValue("--domain"),
-                    tier = values.singleValue("--tier"),
+                    domainId =
+                        when (command) {
+                            "plan-changed" -> values["--domain"]?.singleOrNull()
+                            else -> values.singleValue("--domain")
+                        },
+                    tier =
+                        when (command) {
+                            "plan-changed" -> values["--tier"]?.singleOrNull()
+                            else -> values.singleValue("--tier")
+                        },
                     nodeId = values["--node-id"]?.singleOrNull(),
                     snapshotHash = values["--snapshot"]?.singleOrNull(),
                     outputDir = Path.of(values.singleValue("--output-dir")),
-                    cacheStatus = values.singleValue("--cache-status"),
+                    cacheStatus = values["--cache-status"]?.singleOrNull() ?: DEFAULT_CACHE_STATUS,
                     artifactInputs = values["--artifact-input"].orEmpty().map(Path::of),
                     selectedClasses = values["--select-class"].orEmpty().sorted(),
                     selectedTags = values["--select-tag"].orEmpty().sorted(),
+                    changedFiles = values["--changed-file"].orEmpty().sorted(),
+                    baseRef = values["--base-ref"]?.singleOrNull(),
                 )
             }
 
@@ -258,5 +333,20 @@ object VerificationCli {
 
         fun requireSnapshotHash(): String =
             snapshotHash ?: error("Expected exactly one value for --snapshot.")
+
+        fun requireDomainId(): String =
+            domainId ?: error("Expected exactly one value for --domain.")
+
+        fun requireTier(): String =
+            tier ?: error("Expected exactly one value for --tier.")
     }
+
+    private const val CHANGED_PLAN_FILE_NAME: String = "verify-changed-plan.json"
+    private const val CHANGED_TASKS_FILE_NAME: String = "task-paths.txt"
+    private const val CHANGED_PLAN_MARKDOWN_FILE_NAME: String = "verify-changed-plan.md"
+
+    private fun repoRoot(): Path =
+        System.getProperty("ktome.repo.root")
+            ?.let(Path::of)
+            ?: Path.of("").toAbsolutePath().normalize()
 }
