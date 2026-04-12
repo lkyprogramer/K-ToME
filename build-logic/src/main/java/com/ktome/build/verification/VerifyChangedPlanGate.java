@@ -22,6 +22,9 @@ public final class VerifyChangedPlanGate {
         if (!verifyChangedRequested(task)) {
             return true;
         }
+        if (taskExplicitlyRequested(task)) {
+            return true;
+        }
         File requestedTasksFile = taskPathsFile.get().getAsFile();
         if (!requestedTasksFile.exists()) {
             return false;
@@ -41,5 +44,16 @@ public final class VerifyChangedPlanGate {
     private static boolean verifyChangedRequested(Task task) {
         return task.getProject().getGradle().getStartParameter().getTaskNames().stream()
                 .anyMatch(taskName -> taskName.equals("verifyChanged") || taskName.endsWith(":verifyChanged"));
+    }
+
+    private static boolean taskExplicitlyRequested(Task task) {
+        String taskPath = task.getPath();
+        String relativeTaskPath = taskPath.startsWith(":") ? taskPath.substring(1) : taskPath;
+        String taskName = task.getName();
+        return task.getProject().getGradle().getStartParameter().getTaskNames().stream()
+                .anyMatch(taskNameArg ->
+                        taskNameArg.equals(taskPath)
+                                || taskNameArg.equals(relativeTaskPath)
+                                || taskNameArg.equals(taskName));
     }
 }

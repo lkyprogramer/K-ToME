@@ -110,6 +110,17 @@ class VerificationTaskPluginFunctionalTest {
         assertTrue(result.getOutput().contains("WATCHED"));
     }
 
+    @Test
+    void verifyChangedPlanGateDoesNotSkipExplicitlyRequestedTaskInMixedInvocation() throws IOException {
+        writeBuildWithVerifyChangedGate(":otherTask\\n");
+
+        var result = runner().withArguments("verifyChanged", "watched", "-q").build();
+
+        assertEquals(TaskOutcome.SUCCESS, result.task(":prepareVerifyChangedPlan").getOutcome());
+        assertEquals(TaskOutcome.SUCCESS, result.task(":watched").getOutcome());
+        assertTrue(result.getOutput().contains("WATCHED"));
+    }
+
     private GradleRunner runner() {
         return GradleRunner.create()
                 .withProjectDir(tempDir.toFile())
