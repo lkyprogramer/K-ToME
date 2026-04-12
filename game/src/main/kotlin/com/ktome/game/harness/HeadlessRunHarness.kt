@@ -64,6 +64,14 @@ class HeadlessRunHarness(
             turnIndex = turnCount,
             headlessTurnEquivalent = session.currentHeadlessTurnEquivalent(),
         )
+        recordObjectiveProgressForObservedZones(
+            accumulators = zoneTraversalAccumulators,
+            previousZoneId = session.config.zoneId,
+            currentZoneId = observation.zoneId,
+            objectiveBindings = zoneObjectiveBindings,
+            session = session,
+            turnIndex = turnCount,
+        )
         appendZoneMilestone(
             milestones = zoneHeadlessMilestones,
             zoneId = session.config.zoneId,
@@ -108,6 +116,20 @@ class HeadlessRunHarness(
                 session = roundTrip.loadedSession ?: session
                 observation = RunObservationCapture.capture(session, turnCount)
                 appendVisitedZone(visitedZonePath, session.config.zoneId)
+                beginZoneVisit(
+                    accumulators = zoneTraversalAccumulators,
+                    zoneId = session.config.zoneId,
+                    turnIndex = turnCount,
+                    headlessTurnEquivalent = session.currentHeadlessTurnEquivalent(),
+                )
+                recordObjectiveProgressForObservedZones(
+                    accumulators = zoneTraversalAccumulators,
+                    previousZoneId = session.config.zoneId,
+                    currentZoneId = observation.zoneId,
+                    objectiveBindings = zoneObjectiveBindings,
+                    session = session,
+                    turnIndex = turnCount,
+                )
                 appendZoneMilestone(
                     milestones = zoneHeadlessMilestones,
                     zoneId = session.config.zoneId,
@@ -144,7 +166,7 @@ class HeadlessRunHarness(
 
             val commandZoneId = observation.zoneId
             val headlessBeforeCommand = session.currentHeadlessTurnEquivalent()
-            val visibleThreatCount = observation.visibleHostilePositions.size + observation.visibleBossPositions.size
+            val visibleThreatCount = distinctVisibleThreatCount(observation)
             val command =
                 routeProgressCommand(session, observation)
                     .takeIf { shouldPrioritizeRouteProgress(spec, observation, bossCombatLock != null) }
@@ -189,13 +211,6 @@ class HeadlessRunHarness(
             }
 
             observation = RunObservationCapture.capture(session, turnCount)
-            recordObjectiveProgressIfAcquired(
-                accumulators = zoneTraversalAccumulators,
-                zoneId = commandZoneId,
-                objectiveBinding = zoneObjectiveBindings[commandZoneId],
-                session = session,
-                turnIndex = turnCount,
-            )
             finishZoneVisitIfTransitioned(
                 accumulators = zoneTraversalAccumulators,
                 previousZoneId = commandZoneId,
@@ -206,6 +221,14 @@ class HeadlessRunHarness(
                 zoneId = session.config.zoneId,
                 turnIndex = turnCount,
                 headlessTurnEquivalent = session.currentHeadlessTurnEquivalent(),
+            )
+            recordObjectiveProgressForObservedZones(
+                accumulators = zoneTraversalAccumulators,
+                previousZoneId = commandZoneId,
+                currentZoneId = observation.zoneId,
+                objectiveBindings = zoneObjectiveBindings,
+                session = session,
+                turnIndex = turnCount,
             )
             bossCombatLock = updateBossCombatLock(session, observation, bossCombatLock)
             appendVisitedZone(visitedZonePath, session.config.zoneId)
@@ -725,6 +748,25 @@ class HeadlessRunHarness(
         )
     }
 
+    private fun recordObjectiveProgressForObservedZones(
+        accumulators: MutableMap<String, ZoneTraversalAccumulator>,
+        previousZoneId: String,
+        currentZoneId: String,
+        objectiveBindings: Map<String, ZoneObjectiveBinding>,
+        session: FoundationGameSession,
+        turnIndex: Int,
+    ) {
+        objectiveProgressZoneIds(previousZoneId = previousZoneId, currentZoneId = currentZoneId).forEach { zoneId ->
+            recordObjectiveProgressIfAcquired(
+                accumulators = accumulators,
+                zoneId = zoneId,
+                objectiveBinding = objectiveBindings[zoneId],
+                session = session,
+                turnIndex = turnIndex,
+            )
+        }
+    }
+
     private data class ZoneObjectiveBinding(
         val questId: String,
         val objectiveId: String,
@@ -812,3 +854,18 @@ class HeadlessRunHarness(
         const val CAPTAIN_TRACE_EVENT_WINDOW: Int = 4
     }
 }
+
+internal fun distinctVisibleThreatCount(observation: RunObservation): Int =
+    (observation.visibleHostilePositions + observation.visibleBossPositions)
+        .distinct()
+        .size
+
+internal fun objectiveProgressZoneIds(
+    previousZoneId: String,
+    currentZoneId: String,
+): List<String> =
+    if (previousZoneId == currentZoneId) {
+        listOf(currentZoneId)
+    } else {
+        listOf(previousZoneId, currentZoneId)
+    }
