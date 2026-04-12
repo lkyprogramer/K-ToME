@@ -63,4 +63,44 @@ class VerificationImpactAnalyzerTest {
         assertTrue(plan.impactedDomains.any { impact -> impact.domainId == "hidden" })
         assertTrue(plan.requestedTaskPaths.contains(":tools:hiddenContentHarness"))
     }
+
+    @Test
+    fun `mapgen runner change routes to mapgen owner task`() {
+        val plan = VerificationImpactAnalyzer.analyze(listOf("tools/src/main/kotlin/com/ktome/tools/mapgen/MapgenSmokeRunner.kt"))
+
+        assertEquals(setOf("mapgen"), plan.impactedDomains.map(VerificationDomainImpact::domainId).toSet())
+        assertTrue(plan.requestedTaskPaths.contains(":tools:mapgenSmoke"))
+    }
+
+    @Test
+    fun `solvability runner change routes to solvability owner task`() {
+        val plan = VerificationImpactAnalyzer.analyze(listOf("tools/src/main/kotlin/com/ktome/tools/mapgen/SolvabilityHarnessRunner.kt"))
+
+        assertEquals(setOf("solvability"), plan.impactedDomains.map(VerificationDomainImpact::domainId).toSet())
+        assertTrue(plan.requestedTaskPaths.contains(":tools:solvabilityHarness"))
+    }
+
+    @Test
+    fun `terrain harness change routes to terrain owner task`() {
+        val plan = VerificationImpactAnalyzer.analyze(listOf("game/src/test/kotlin/com/ktome/game/harness/TerrainInteractionBatchTest.kt"))
+
+        assertEquals(setOf("terrain"), plan.impactedDomains.map(VerificationDomainImpact::domainId).toSet())
+        assertTrue(plan.requestedTaskPaths.contains(":game:terrainInteractionBatch"))
+    }
+
+    @Test
+    fun `boss harness change routes to boss owner task`() {
+        val plan = VerificationImpactAnalyzer.analyze(listOf("game/src/test/kotlin/com/ktome/game/harness/BossHarnessTest.kt"))
+
+        assertEquals(setOf("boss"), plan.impactedDomains.map(VerificationDomainImpact::domainId).toSet())
+        assertTrue(plan.requestedTaskPaths.contains(":game:bossHarness"))
+    }
+
+    @Test
+    fun `long run harness change routes to longrun owner task`() {
+        val plan = VerificationImpactAnalyzer.analyze(listOf("game/src/test/kotlin/com/ktome/game/harness/LongRunLabSeedBank.kt"))
+
+        assertEquals(setOf("longrun"), plan.impactedDomains.map(VerificationDomainImpact::domainId).toSet())
+        assertTrue(plan.requestedTaskPaths.contains(":game:longRunLab"))
+    }
 }

@@ -66,6 +66,26 @@ object ScopeCoverageLintRunner {
                     caseId = "headless_harness_false_negative",
                     changedFiles = listOf("game/src/main/kotlin/com/ktome/game/harness/HeadlessRunHarness.kt"),
                 ),
+                planCase(
+                    caseId = "mapgen_owner_scope",
+                    changedFiles = listOf("tools/src/main/kotlin/com/ktome/tools/mapgen/MapgenSmokeRunner.kt"),
+                ),
+                planCase(
+                    caseId = "solvability_owner_scope",
+                    changedFiles = listOf("tools/src/main/kotlin/com/ktome/tools/mapgen/SolvabilityHarnessRunner.kt"),
+                ),
+                planCase(
+                    caseId = "terrain_owner_scope",
+                    changedFiles = listOf("game/src/test/kotlin/com/ktome/game/harness/TerrainInteractionBatchTest.kt"),
+                ),
+                planCase(
+                    caseId = "boss_owner_scope",
+                    changedFiles = listOf("game/src/test/kotlin/com/ktome/game/harness/BossHarnessTest.kt"),
+                ),
+                planCase(
+                    caseId = "longrun_owner_scope",
+                    changedFiles = listOf("game/src/test/kotlin/com/ktome/game/harness/LongRunLabSeedBank.kt"),
+                ),
             )
         val summary =
             ScopeCoverageLintSummary(

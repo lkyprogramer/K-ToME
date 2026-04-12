@@ -220,6 +220,18 @@ object VerificationTaskRegistry {
                         nodeKind = VerificationNodeKind.REPORT_ONLY,
                     ),
                 ),
+            inputScopes =
+                listOf(
+                    InputScope(
+                        scopeId = "mapgen.runtime",
+                        pathPrefixes =
+                            listOf(
+                                "tools/src/main/kotlin/com/ktome/tools/mapgen/MapgenSmokeRunner.kt",
+                                "tools/src/test/kotlin/com/ktome/tools/mapgen/MapgenSmokeHarnessTest.kt",
+                            ),
+                        ownerRequired = true,
+                    ),
+                ),
             ownerTaskPaths = listOf(":tools:mapgenSmoke"),
             cachePolicy =
                 VerificationCachePolicy(
@@ -244,6 +256,19 @@ object VerificationTaskRegistry {
                         workloadClass = VerificationWorkloadClass.DETERMINISTIC_SCENARIO,
                         tier = VerificationTier.OWNER,
                         nodeKind = VerificationNodeKind.REPORT_ONLY,
+                    ),
+                ),
+            inputScopes =
+                listOf(
+                    InputScope(
+                        scopeId = "solvability.runtime",
+                        pathPrefixes =
+                            listOf(
+                                "tools/src/main/kotlin/com/ktome/tools/mapgen/SolvabilityHarnessRunner.kt",
+                                "tools/src/test/kotlin/com/ktome/tools/mapgen/SolvabilityHarnessRunnerTest.kt",
+                                "tools/src/test/kotlin/com/ktome/tools/mapgen/SolvabilityGoldenContractTest.kt",
+                            ),
+                        ownerRequired = true,
                     ),
                 ),
             ownerTaskPaths = listOf(":tools:solvabilityHarness"),
@@ -272,6 +297,14 @@ object VerificationTaskRegistry {
                         nodeKind = VerificationNodeKind.REPORT_ONLY,
                     ),
                 ),
+            inputScopes =
+                listOf(
+                    InputScope(
+                        scopeId = "terrain.runtime",
+                        pathPrefixes = listOf("game/src/test/kotlin/com/ktome/game/harness/TerrainInteractionBatchTest.kt"),
+                        ownerRequired = true,
+                    ),
+                ),
             ownerTaskPaths = listOf(":game:terrainInteractionBatch"),
             cachePolicy =
                 VerificationCachePolicy(
@@ -298,6 +331,18 @@ object VerificationTaskRegistry {
                         nodeKind = VerificationNodeKind.REPORT_ONLY,
                     ),
                 ),
+            inputScopes =
+                listOf(
+                    InputScope(
+                        scopeId = "boss.runtime",
+                        pathPrefixes =
+                            listOf(
+                                "game/src/test/kotlin/com/ktome/game/harness/BossHarnessTest.kt",
+                                "game/src/test/kotlin/com/ktome/game/harness/OfficialSliceStabilityTest.kt",
+                            ),
+                        ownerRequired = true,
+                    ),
+                ),
             ownerTaskPaths = listOf(":game:bossHarness"),
             cachePolicy =
                 VerificationCachePolicy(
@@ -322,6 +367,22 @@ object VerificationTaskRegistry {
                         workloadClass = VerificationWorkloadClass.LONG_RUNNING_SYSTEM,
                         tier = VerificationTier.OWNER,
                         nodeKind = VerificationNodeKind.REPORT_ONLY,
+                    ),
+                ),
+            inputScopes =
+                listOf(
+                    InputScope(
+                        scopeId = "longrun.runtime",
+                        pathPrefixes =
+                            listOf(
+                                "game/src/test/kotlin/com/ktome/game/harness/LongRunLabSeedBank.kt",
+                                "game/src/test/kotlin/com/ktome/game/harness/LongRunLabTest.kt",
+                                "game/src/test/kotlin/com/ktome/game/harness/LongRunLabFullTest.kt",
+                                "game/src/test/kotlin/com/ktome/game/harness/TemplarHumanCaptainRegressionTest.kt",
+                                "game/src/test/kotlin/com/ktome/game/harness/RogueHumanCaptainRegressionTest.kt",
+                                "game/src/test/kotlin/com/ktome/game/harness/OfficialSliceStabilityTest.kt",
+                            ),
+                        ownerRequired = true,
                     ),
                 ),
             ownerTaskPaths = listOf(":game:longRunLab"),
