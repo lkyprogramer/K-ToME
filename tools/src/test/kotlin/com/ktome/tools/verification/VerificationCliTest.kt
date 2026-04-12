@@ -171,6 +171,35 @@ class VerificationCliTest {
         assertEquals("PASS", summary.verdict)
     }
 
+    @Test
+    fun `plan changed writes task list and impact summary`() {
+        val outputDir = tempDir.resolve("changed-plan")
+
+        VerificationCli.main(
+            arrayOf(
+                "plan-changed",
+                "--output-dir",
+                outputDir.toString(),
+                "--changed-file",
+                "game/src/main/resources/data/loot/index.yaml",
+                "--changed-file",
+                "game/src/main/kotlin/com/ktome/game/data/DataLoader.kt",
+            ),
+        )
+
+        val plan =
+            json.decodeFromString<VerificationImpactPlan>(
+                outputDir.resolve("verify-changed-plan.json").readText(),
+            )
+        val taskPaths = outputDir.resolve("task-paths.txt").readText().lineSequence().filter(String::isNotBlank).toSet()
+
+        assertTrue(plan.impactedDomains.any { impact -> impact.domainId == "loot" })
+        assertTrue(plan.impactedDomains.any { impact -> impact.domainId == "hidden" })
+        assertTrue(taskPaths.contains(":tools:verifyLootPreflight"))
+        assertTrue(taskPaths.contains(":tools:lootBalanceLab"))
+        assertFalse(taskPaths.contains(":tools:phase4ReportOnly"))
+    }
+
     private fun writeReportSourceArtifact(
         directory: Path,
         nodeId: String,

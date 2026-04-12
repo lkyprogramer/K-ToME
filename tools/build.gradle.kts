@@ -1,8 +1,10 @@
 import com.ktome.build.verification.VerificationReportTask
 import com.ktome.build.verification.VerificationTask
+import com.ktome.build.verification.VerifyChangedPlanGate
 import java.security.MessageDigest
 import org.gradle.api.file.FileCollection
 import org.gradle.api.provider.Provider
+import org.gradle.api.tasks.JavaExec
 import org.gradle.api.tasks.testing.Test
 
 plugins {
@@ -12,6 +14,9 @@ plugins {
 }
 
 val harnessReportDir = rootProject.layout.buildDirectory.dir("reports/harness")
+val verifyChangedPlanOutputDir = rootProject.layout.buildDirectory.dir("verification/verify-changed")
+val verifyChangedTaskPathsFile = rootProject.layout.buildDirectory.file("verification/verify-changed/task-paths.txt")
+val verifyChangedBaseRef = rootProject.findProperty("verifyChangedBaseRef")?.toString() ?: "origin/main"
 
 dependencies {
     implementation(project(":client"))
@@ -85,6 +90,114 @@ val contractLintVerificationSnapshotHash =
     )
 val contractLintVerificationOutputDir = layout.buildDirectory.dir("reports/verification/contract-lint/preflight")
 val contractLintVerificationReportDir = layout.buildDirectory.dir("reports/verification/contract-lint/preflight-report")
+val lootPreflightInputs =
+    files(
+        verificationFoundationInputs,
+        fileTree("src/main/kotlin/com/ktome/tools/loot") {
+            include("**/*.kt")
+        },
+        fileTree("src/test/kotlin/com/ktome/tools/loot") {
+            include("LootPreflightRunnerTest.kt")
+        },
+        rootProject.fileTree("game/src/main/kotlin/com/ktome/game/loot") {
+            include("**/*.kt")
+        },
+        rootProject.fileTree("game/src/main/resources/data/items") {
+            include("**/*.yaml", "**/*.yml")
+        },
+        rootProject.fileTree("game/src/main/resources/data/loot") {
+            include("**/*.yaml", "**/*.yml")
+        },
+        rootProject.fileTree("game/src/main/resources/data/world") {
+            include("**/*.yaml", "**/*.yml")
+        },
+    )
+val lootPreflightOutputDir = layout.buildDirectory.dir("reports/verification/loot/preflight")
+val lootPreflightSnapshotHash =
+    verificationSnapshotHash(
+        "loot",
+        "PREFLIGHT",
+        "loot.preflight",
+        lootPreflightInputs,
+    )
+val hiddenPreflightInputs =
+    files(
+        verificationFoundationInputs,
+        fileTree("src/main/kotlin/com/ktome/tools/hidden") {
+            include("**/*.kt")
+        },
+        fileTree("src/test/kotlin/com/ktome/tools/hidden") {
+            include("HiddenPreflightRunnerTest.kt")
+        },
+        rootProject.files("game/src/main/kotlin/com/ktome/game/Phase4StaticContentValidator.kt"),
+        rootProject.fileTree("game/src/main/kotlin/com/ktome/game/hidden") {
+            include("**/*.kt")
+        },
+        rootProject.fileTree("game/src/main/resources/data/events") {
+            include("**/*.yaml", "**/*.yml")
+        },
+        rootProject.fileTree("game/src/main/resources/data/secret-zones") {
+            include("**/*.yaml", "**/*.yml")
+        },
+        rootProject.fileTree("game/src/main/resources/data/mapgen") {
+            include("**/*.yaml", "**/*.yml")
+        },
+    )
+val hiddenPreflightOutputDir = layout.buildDirectory.dir("reports/verification/hidden/preflight")
+val hiddenPreflightSnapshotHash =
+    verificationSnapshotHash(
+        "hidden",
+        "PREFLIGHT",
+        "hidden.preflight",
+        hiddenPreflightInputs,
+    )
+val contentPackPreflightInputs =
+    files(
+        verificationFoundationInputs,
+        fileTree("src/main/kotlin/com/ktome/tools/contentpack") {
+            include("**/*.kt")
+        },
+        fileTree("src/test/kotlin/com/ktome/tools/contentpack") {
+            include("ContentPackPreflightRunnerTest.kt")
+        },
+        rootProject.fileTree("game/src/main/kotlin/com/ktome/game/contentpack") {
+            include("**/*.kt")
+        },
+        rootProject.fileTree("examples/content-packs") {
+            include("**/*")
+        },
+        fileTree("src/main/resources/fixtures/content-packs") {
+            include("**/*")
+        },
+    )
+val contentPackPreflightOutputDir = layout.buildDirectory.dir("reports/verification/content-pack/preflight")
+val contentPackPreflightSnapshotHash =
+    verificationSnapshotHash(
+        "content-pack",
+        "PREFLIGHT",
+        "content-pack.preflight",
+        contentPackPreflightInputs,
+    )
+val scopeCoverageLintInputs =
+    files(
+        verificationFoundationInputs,
+        fileTree("src/test/kotlin/com/ktome/tools/verification") {
+            include("ScopeCoverageLintTest.kt", "VerificationImpactAnalyzerTest.kt")
+        },
+        rootProject.files(
+            "game/src/main/kotlin/com/ktome/game/data/DataLoader.kt",
+            "game/src/main/kotlin/com/ktome/game/FoundationGameSession.kt",
+            "game/src/main/kotlin/com/ktome/game/harness/HeadlessRunHarness.kt",
+        ),
+    )
+val scopeCoverageLintOutputDir = layout.buildDirectory.dir("reports/verification/scope-coverage/lint")
+val scopeCoverageLintSnapshotHash =
+    verificationSnapshotHash(
+        "scopeCoverage",
+        "PREFLIGHT",
+        "scopeCoverage.lint",
+        scopeCoverageLintInputs,
+    )
 
 tasks.withType<Test>().configureEach {
     systemProperty("ktome.repo.root", rootProject.projectDir.absolutePath)
@@ -99,6 +212,27 @@ tasks.withType<Test>().configureEach {
             excludeTags("verificationFixtureFailure")
         }
     }
+}
+
+tasks.register<JavaExec>("prepareVerifyChangedPlan") {
+    group = "verification"
+    description = "Builds the verifyChanged impact plan from current repo changes."
+    classpath = sourceSets.main.get().runtimeClasspath
+    mainClass.set("com.ktome.tools.verification.VerificationCli")
+    workingDir = rootProject.projectDir
+    systemProperty("ktome.repo.root", rootProject.projectDir.absolutePath)
+    args(
+        "plan-changed",
+        "--output-dir",
+        verifyChangedPlanOutputDir.get().asFile.absolutePath,
+        "--cache-status",
+        "LOCAL_EXECUTION",
+        "--base-ref",
+        verifyChangedBaseRef,
+    )
+    inputs.property("baseRef", verifyChangedBaseRef)
+    outputs.dir(verifyChangedPlanOutputDir)
+    outputs.upToDateWhen { false }
 }
 
 tasks.register<Test>("combatTraceGolden") {
@@ -158,6 +292,57 @@ tasks.register<VerificationReportTask>("verifyContractLintPreflightReport") {
     outputDir.set(contractLintVerificationReportDir)
     systemPropertiesMap.put("ktome.repo.root", rootProject.projectDir.absolutePath)
     mustRunAfter("verifyContractLintPreflight")
+}
+
+tasks.register<VerificationTask>("verifyLootPreflight") {
+    description = "Runs the Phase 4 loot static preflight through the unified verification task path."
+    domainId.set("loot")
+    tier.set("PREFLIGHT")
+    nodeId.set("loot.preflight")
+    inputSnapshotHash.set(lootPreflightSnapshotHash)
+    runtimeClasspath.from(sourceSets.test.get().runtimeClasspath)
+    sourceInputs.from(lootPreflightInputs)
+    outputDir.set(lootPreflightOutputDir)
+    systemPropertiesMap.put("ktome.repo.root", rootProject.projectDir.absolutePath)
+    systemPropertiesMap.put("ktome.phase4.loot.preflight.reportDir", lootPreflightOutputDir.get().asFile.absolutePath)
+}
+
+tasks.register<VerificationTask>("verifyHiddenPreflight") {
+    description = "Runs the Phase 4 hidden-content static preflight through the unified verification task path."
+    domainId.set("hidden")
+    tier.set("PREFLIGHT")
+    nodeId.set("hidden.preflight")
+    inputSnapshotHash.set(hiddenPreflightSnapshotHash)
+    runtimeClasspath.from(sourceSets.test.get().runtimeClasspath)
+    sourceInputs.from(hiddenPreflightInputs)
+    outputDir.set(hiddenPreflightOutputDir)
+    systemPropertiesMap.put("ktome.repo.root", rootProject.projectDir.absolutePath)
+    systemPropertiesMap.put("ktome.phase4.hidden.preflight.reportDir", hiddenPreflightOutputDir.get().asFile.absolutePath)
+}
+
+tasks.register<VerificationTask>("verifyContentPackPreflight") {
+    description = "Runs the Phase 4 content-pack static preflight through the unified verification task path."
+    domainId.set("content-pack")
+    tier.set("PREFLIGHT")
+    nodeId.set("content-pack.preflight")
+    inputSnapshotHash.set(contentPackPreflightSnapshotHash)
+    runtimeClasspath.from(sourceSets.test.get().runtimeClasspath)
+    sourceInputs.from(contentPackPreflightInputs)
+    outputDir.set(contentPackPreflightOutputDir)
+    systemPropertiesMap.put("ktome.repo.root", rootProject.projectDir.absolutePath)
+    systemPropertiesMap.put("ktome.phase4.contentPack.preflight.reportDir", contentPackPreflightOutputDir.get().asFile.absolutePath)
+}
+
+tasks.register<VerificationTask>("scopeCoverageLint") {
+    description = "Runs the static scope coverage lint for Phase 4 impact analysis."
+    domainId.set("scopeCoverage")
+    tier.set("PREFLIGHT")
+    nodeId.set("scopeCoverage.lint")
+    inputSnapshotHash.set(scopeCoverageLintSnapshotHash)
+    runtimeClasspath.from(sourceSets.test.get().runtimeClasspath)
+    sourceInputs.from(scopeCoverageLintInputs)
+    outputDir.set(scopeCoverageLintOutputDir)
+    systemPropertiesMap.put("ktome.phase4.scopeCoverage.reportDir", scopeCoverageLintOutputDir.get().asFile.absolutePath)
 }
 
 tasks.register<Test>("mapgenSmoke") {
@@ -349,4 +534,22 @@ tasks.register<Test>("phase4ReportOnly") {
     val reportDir = layout.buildDirectory.dir("reports/phase4")
     systemProperty("ktome.phase4.reportDir", reportDir.get().asFile.absolutePath)
     outputs.dir(reportDir)
+}
+
+listOf(
+    tasks.named("contractLint"),
+    tasks.named("verifyContractLintPreflight"),
+    tasks.named("verifyLootPreflight"),
+    tasks.named("verifyHiddenPreflight"),
+    tasks.named("verifyContentPackPreflight"),
+    tasks.named("scopeCoverageLint"),
+    tasks.named("lootBalanceLab"),
+    tasks.named("hiddenContentHarness"),
+    tasks.named("contentPackHarness"),
+    tasks.named("mapgenSmoke"),
+    tasks.named("solvabilityHarness"),
+).forEach { taskProvider ->
+    taskProvider.configure {
+        VerifyChangedPlanGate.applyTo(this, verifyChangedTaskPathsFile, "prepareVerifyChangedPlan")
+    }
 }

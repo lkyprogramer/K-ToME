@@ -6,6 +6,9 @@ data class VerificationDomainSpec(
     val workloadClass: VerificationWorkloadClass,
     val defaultTier: VerificationTier,
     val nodeSpecs: List<VerificationNodeSpec>,
+    val inputScopes: List<InputScope> = emptyList(),
+    val preflightTaskPaths: List<String> = emptyList(),
+    val ownerTaskPaths: List<String> = emptyList(),
     val baselinePolicy: BaselinePolicySpec? = null,
     val cachePolicy: VerificationCachePolicy,
     val artifactPolicy: VerificationArtifactPolicy,
@@ -21,6 +24,16 @@ data class VerificationDomainSpec(
         }
         require(nodeSpecs.any { it.tier == defaultTier }) {
             "VerificationDomainSpec($domainId) must declare a node for default tier $defaultTier."
+        }
+        val distinctScopeIds = inputScopes.map(InputScope::scopeId).toSet()
+        require(distinctScopeIds.size == inputScopes.size) {
+            "VerificationDomainSpec($domainId) must not contain duplicate input scope ids: ${inputScopes.map(InputScope::scopeId)}."
+        }
+        require(preflightTaskPaths.none(String::isBlank)) {
+            "VerificationDomainSpec($domainId).preflightTaskPaths must not contain blank task paths."
+        }
+        require(ownerTaskPaths.none(String::isBlank)) {
+            "VerificationDomainSpec($domainId).ownerTaskPaths must not contain blank task paths."
         }
         val mismatchedWorkloadNodes =
             nodeSpecs

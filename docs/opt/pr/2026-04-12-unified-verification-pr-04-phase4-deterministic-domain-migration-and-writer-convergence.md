@@ -132,6 +132,16 @@
 
 但其实现切到新 domain/adapter。
 
+### 4.5 `hidden owner` 的静态校验入口收口
+
+当前 `Phase4StaticContentValidator` 可以继续作为 `GameContent` 与 `verifyHiddenPreflight / hidden owner` 共用的静态校验入口。
+
+但 `PR-04` 在迁移 `hidden owner` domain 时，必须同步守住以下演进规则：
+
+1. 若 hidden contract 在本 PR 或其后续收口中继续扩张，导致 validator 需要再承载新的 verification consumer，不能继续扩大“多 list 参数 + 线性扫描”式 API。
+2. 若 `Phase4StaticContentValidator` 出现第 `3` 个调用方，必须升级为 `HiddenValidationContext` 或等价的 registry-backed access。
+3. 迁移目标是保留单一 hidden contract 真源，而不是让 `GameContent`、preflight、owner harness 各自维护一套 hidden 静态解析路径。
+
 ---
 
 ## 5. 推荐改动面
