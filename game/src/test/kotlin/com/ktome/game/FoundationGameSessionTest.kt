@@ -3446,7 +3446,7 @@ class FoundationGameSessionTest {
         assertTrue(session.perform(PlayerCommand.Move(deathPoint - attackOrigin)))
         assertTrue(
             groundItemBaseIdsAt(session, deathPoint).any { baseId ->
-                baseId in setOf("basic_shield", "mana_potion", "chain_mail", "apprentice_robe", "long_sword")
+                baseId in setOf("basic_shield", "mana_potion", "chain_mail", "apprentice_robe", "long_sword", "emerald_charm", "furnace_talisman", "energy_tonic")
             },
         )
         val droppedItem = groundItemsAt(session, deathPoint).single()

@@ -140,6 +140,7 @@ class SmokeBot : RunBot {
             when (observation.playerResource.typeId) {
                 "MANA" -> if (bossVisible) 92 else 85
                 "ENERGY" -> 70
+                "STAMINA", "HATE" -> if (bossVisible) 88 else 82
                 else -> if (bossVisible) 85 else 75
             }
         val lowHealth = observation.playerStatus.currentHp * 100 <= observation.playerStatus.maxHp * lowHealthThreshold
@@ -275,12 +276,12 @@ class SmokeBot : RunBot {
         val sustainMatchCount = item.affixIds.count(SUSTAIN_AFFIX_IDS::contains)
         val slotScore =
             when (item.slot) {
-                EquipSlot.WEAPON -> if (synergyMatchCount > 0) 240 else 40
+                EquipSlot.WEAPON -> if (synergyMatchCount > 0) 65 else 40
                 EquipSlot.OFF_HAND -> offHandSlotScore(observation, item)
                 EquipSlot.ARMOR -> 35
                 null -> 0
             }
-        return slotScore + qualityScore + item.affixIds.size * 10 + synergyMatchCount * 120 + sustainMatchCount * 15 + preferredWeaponScore(observation, item)
+        return slotScore + qualityScore + item.affixIds.size * 10 + synergyMatchCount * 60 + sustainMatchCount * 15 + preferredWeaponScore(observation, item)
     }
 
     private fun desiredSynergyAffixIds(observation: RunObservation): Set<String> =
@@ -333,34 +334,43 @@ class SmokeBot : RunBot {
         return when (observation.playerResource.typeId) {
             "STAMINA" ->
                 when (item.baseItemId) {
-                    "forgebreaker_pick" -> 80
-                    "battle_axe" -> 60
-                    "long_sword" -> 40
+                    "forgebreaker_pick" -> 55
+                    "battle_axe" -> 45
+                    "long_sword" -> 35
+                    "war_maul" -> 15
                     else -> 0
                 }
             "HATE" ->
                 when (item.baseItemId) {
-                    "war_maul" -> 100
-                    "battle_axe" -> 20
+                    "war_maul" -> 60
+                    "battle_axe" -> 12
                     else -> 0
                 }
             "MANA" ->
                 when (item.baseItemId) {
-                    "arcane_staff" -> 80
-                    "battle_axe" -> 40
+                    "arcane_staff" -> 45
+                    "battle_axe" -> -95
+                    "war_maul" -> -90
+                    "forgebreaker_pick" -> -70
+                    "long_sword" -> -25
                     else -> 0
                 }
             "ENERGY" ->
                 when (item.baseItemId) {
-                    "short_sword", "hunter_bow" -> 70
-                    "battle_axe" -> 20
+                    "short_sword" -> 45
+                    "hunter_bow" -> 42
+                    "battle_axe" -> -85
+                    "war_maul" -> -90
+                    "forgebreaker_pick" -> -65
+                    "long_sword" -> -20
                     else -> 0
                 }
             "POSITIVE_ENERGY" ->
                 when (item.baseItemId) {
-                    "battle_axe" -> 60
-                    "long_sword" -> 50
-                    "war_maul" -> 40
+                    "long_sword" -> 42
+                    "battle_axe" -> 22
+                    "war_maul" -> 8
+                    "forgebreaker_pick" -> 10
                     else -> 0
                 }
             else -> 0
@@ -426,8 +436,7 @@ class SmokeBot : RunBot {
         val desiredAffixes = desiredSynergyAffixIds(observation)
         val synergyMatchCount = item.affixIds.count(desiredAffixes::contains)
         val sustainMatchCount = item.affixIds.count(SUSTAIN_AFFIX_IDS::contains)
-        val professionBaseScore = preferredWeaponScore(observation, item)
-        return gearEquipPriority(observation, item) + professionBaseScore + synergyMatchCount * 80 + sustainMatchCount * 20
+        return gearEquipPriority(observation, item) + synergyMatchCount * 40 + sustainMatchCount * 20
     }
 
     private fun consumableKeepPriority(
@@ -504,6 +513,7 @@ class SmokeBot : RunBot {
         val lowHealthThreshold =
             when (observation.playerResource.typeId) {
                 "ENERGY" -> if (bossVisible) 40 else 55
+                "STAMINA", "HATE" -> if (bossVisible) 82 else 72
                 else -> if (bossVisible) 80 else 65
             }
         val lowHealth = observation.playerStatus.currentHp * 100 <= observation.playerStatus.maxHp * lowHealthThreshold
@@ -511,6 +521,7 @@ class SmokeBot : RunBot {
             when (observation.playerResource.typeId) {
                 "ENERGY" -> if (bossVisible) 28 else 35
                 "MANA" -> if (bossVisible) 55 else 45
+                "STAMINA", "HATE" -> if (bossVisible) 68 else 55
                 else -> if (bossVisible) 65 else 50
             }
         val criticalHealth = observation.playerStatus.currentHp * 100 <= observation.playerStatus.maxHp * criticalHealthThreshold
@@ -680,12 +691,14 @@ class SmokeBot : RunBot {
         val lowHealthThreshold =
             when (observation.playerResource.typeId) {
                 "ENERGY" -> if (bossVisible) 40 else 55
+                "STAMINA", "HATE" -> if (bossVisible) 82 else 72
                 else -> if (bossVisible) 80 else 65
             }
         val lowHealth = observation.playerStatus.currentHp * 100 <= observation.playerStatus.maxHp * lowHealthThreshold
         val criticalHealthThreshold =
             when (observation.playerResource.typeId) {
                 "ENERGY" -> if (bossVisible) 28 else 35
+                "STAMINA", "HATE" -> if (bossVisible) 68 else 55
                 else -> if (bossVisible) 65 else 50
             }
         val criticalHealth = observation.playerStatus.currentHp * 100 <= observation.playerStatus.maxHp * criticalHealthThreshold

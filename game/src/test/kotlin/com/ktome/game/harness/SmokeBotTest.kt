@@ -269,7 +269,56 @@ class SmokeBotTest {
     }
 
     @Test
-    fun `mana gear management prefers offensive rare battle axe over affix padded long sword`() {
+    fun `mana gear management prefers aligned arcane staff upgrades over off archetype battle axe spikes`() {
+        val observation =
+            observation(
+                inventoryItems =
+                    listOf(
+                        InventoryItemView(
+                            index = 0,
+                            name = "Arcane Staff",
+                            baseItemId = "arcane_staff",
+                            type = ItemType.WEAPON,
+                            slot = EquipSlot.WEAPON,
+                            equippedSlot = EquipSlot.WEAPON,
+                            quality = RarityTier.NORMAL,
+                        ),
+                        InventoryItemView(
+                            index = 1,
+                            name = "Arcane Staff of Blackice",
+                            baseItemId = "arcane_staff",
+                            type = ItemType.WEAPON,
+                            slot = EquipSlot.WEAPON,
+                            quality = RarityTier.RARE,
+                            affixIds = listOf("runed", "of_blackice", "of_focus"),
+                        ),
+                        InventoryItemView(
+                            index = 2,
+                            name = "Battle Axe of Blackice",
+                            baseItemId = "battle_axe",
+                            type = ItemType.WEAPON,
+                            slot = EquipSlot.WEAPON,
+                            quality = RarityTier.RARE,
+                            affixIds = listOf("warforged", "of_blackice", "vampiric"),
+                        ),
+                        InventoryItemView(
+                            index = 3,
+                            name = "Long Sword of Blackice",
+                            baseItemId = "long_sword",
+                            type = ItemType.WEAPON,
+                            slot = EquipSlot.WEAPON,
+                            quality = RarityTier.RARE,
+                            affixIds = listOf("warforged", "of_storms", "sharp", "of_blackice"),
+                        ),
+                    ),
+                playerResource = PlayerResourceView(current = 20, max = 20, typeId = "MANA"),
+            )
+
+        assertEquals(PlayerCommand.ActivateInventoryItem(1), bot.decide(observation))
+    }
+
+    @Test
+    fun `mana gear management does not let a raw battle axe displace the current staff by default`() {
         val observation =
             observation(
                 inventoryItems =
@@ -292,20 +341,11 @@ class SmokeBotTest {
                             quality = RarityTier.RARE,
                             affixIds = listOf("warforged", "of_blackice", "vampiric"),
                         ),
-                        InventoryItemView(
-                            index = 2,
-                            name = "Long Sword of Blackice",
-                            baseItemId = "long_sword",
-                            type = ItemType.WEAPON,
-                            slot = EquipSlot.WEAPON,
-                            quality = RarityTier.RARE,
-                            affixIds = listOf("warforged", "of_storms", "sharp", "of_blackice"),
-                        ),
                     ),
                 playerResource = PlayerResourceView(current = 20, max = 20, typeId = "MANA"),
             )
 
-        assertEquals(PlayerCommand.ActivateInventoryItem(1), bot.decide(observation))
+        assertFalse(bot.decide(observation) is PlayerCommand.ActivateInventoryItem)
     }
 
     @Test

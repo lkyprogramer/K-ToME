@@ -1,5 +1,6 @@
 package com.ktome.tools.phase4
 
+import com.ktome.game.data.DataLoader
 import java.nio.file.Files
 import java.nio.file.Path
 import java.time.Duration
@@ -29,6 +30,12 @@ data class Phase4ReportRun(
 private val phase4Json: Json = Json { prettyPrint = true }
 private const val TERRAIN_BASELINE_RELATIVE_PATH: String =
     "docs/review/phase4/opt/baselines/2026-04-09-opt-pr01-terrain-metrics-baseline.json"
+private val longRunItemSemanticTagsById: Map<String, List<String>> by lazy {
+    DataLoader()
+        .loadItemBundle()
+        .baseItems
+        .associate { item -> item.id to item.tags.sorted() }
+}
 
 private data class TerrainMetricBaseline(
     val baselineId: String,
@@ -426,6 +433,12 @@ object Phase4ReportRunner {
         payload: JsonObject,
     ): Phase4TaskAggregate {
         val fullRouteCount = payload.intValue("fullRouteCount")
+        val professionTerminalWeaponDistribution = payload.getValue("professionTerminalWeaponDistribution")
+        val professionTopWeaponBaseIds =
+            payload["professionTopWeaponBaseIds"] ?: deriveProfessionTopWeaponBaseIds(professionTerminalWeaponDistribution.jsonObject)
+        val professionTopWeaponSemanticTags =
+            payload["professionTopWeaponSemanticTags"]
+                ?: deriveProfessionTopWeaponSemanticTags(professionTopWeaponBaseIds.jsonObject)
         return Phase4TaskAggregate(
             taskId = "longRunLab",
             status = if (fullRouteCount > 0) "PASS" else "FAIL",
@@ -443,10 +456,40 @@ object Phase4ReportRunner {
                     put("alignedFullRouteSampleCount", payload.intValue("alignedFullRouteSampleCount"))
                     put("crossProfessionTopWeaponCount", payload.intValue("crossProfessionTopWeaponCount"))
                     payload["crossProfessionTopWeaponBaseId"]?.let { topWeaponBaseId -> put("crossProfessionTopWeaponBaseId", topWeaponBaseId) }
-                    put("professionTerminalWeaponDistribution", payload.getValue("professionTerminalWeaponDistribution"))
+                    put("professionTerminalWeaponDistribution", professionTerminalWeaponDistribution)
+                    put("professionTopWeaponBaseIds", professionTopWeaponBaseIds)
+                    put("professionTopWeaponSemanticTags", professionTopWeaponSemanticTags)
                 },
         )
     }
+
+    private fun deriveProfessionTopWeaponBaseIds(distribution: JsonObject): JsonObject =
+        buildJsonObject {
+            distribution.entries
+                .sortedBy(Map.Entry<String, JsonElement>::key)
+                .forEach { (professionId, professionDistribution) ->
+                    val topWeaponBaseId =
+                        professionDistribution
+                            .jsonObject
+                            .maxByOrNull { (_, count) -> count.jsonPrimitive.content.toInt() }
+                            ?.key
+                    if (topWeaponBaseId != null) {
+                        put(professionId, topWeaponBaseId)
+                    }
+                }
+        }
+
+    private fun deriveProfessionTopWeaponSemanticTags(topWeaponBaseIds: JsonObject): JsonObject =
+        buildJsonObject {
+            topWeaponBaseIds.entries
+                .sortedBy(Map.Entry<String, JsonElement>::key)
+                .forEach { (professionId, weaponBaseIdElement) ->
+                    val semanticTags = longRunItemSemanticTagsById[weaponBaseIdElement.jsonPrimitive.content].orEmpty()
+                    putJsonArray(professionId) {
+                        semanticTags.forEach { tag -> add(JsonPrimitive(tag)) }
+                    }
+                }
+        }
 
     private fun readTerrainInteractionBatch(
         repoRoot: Path,
@@ -779,12 +822,26 @@ object Phase4ReportRunner {
         val alignedFullRouteSampleCount = longRun.metrics.intValue("alignedFullRouteSampleCount")
         val fullRouteCount = longRun.metrics.intValue("fullRouteCount")
         val professionTerminalWeaponDistribution = longRun.metrics.getValue("professionTerminalWeaponDistribution")
+        val professionTopWeaponBaseIds = longRun.metrics.getValue("professionTopWeaponBaseIds")
+        val professionTopWeaponSemanticTags = longRun.metrics.getValue("professionTopWeaponSemanticTags")
         val terminalWeaponBaseNote =
             professionTerminalWeaponDistribution.jsonObject.values
                 .flatMap { distribution -> distribution.jsonObject.keys }
                 .distinct()
                 .sorted()
                 .joinToString()
+        val professionTopWeaponSemanticNote =
+            professionTopWeaponBaseIds.jsonObject.keys
+                .sorted()
+                .joinToString(separator = "; ") { professionId ->
+                    val weaponBaseId = professionTopWeaponBaseIds.jsonObject.getValue(professionId).jsonPrimitive.content
+                    val semanticTags =
+                        professionTopWeaponSemanticTags.jsonObject[professionId]
+                            ?.jsonArray
+                            ?.joinToString { tag -> tag.jsonPrimitive.content }
+                            ?: ""
+                    "$professionId=$weaponBaseId[$semanticTags]"
+                }
         val terrainEncounterRate = terrain.metrics.doubleValue("terrainInteractionEncounterRate")
         val taggedCombatCount = terrain.metrics.intValue("taggedCombatCount")
         val triggeredInteractionCombatCount = terrain.metrics.intValue("triggeredInteractionCombatCount")
@@ -869,7 +926,7 @@ object Phase4ReportRunner {
                 currentValueText = terminalWeaponBaseDiversity.toString(),
                 target = Phase4MetricCatalog.requireSpec("terminalWeaponBaseDiversity").targetText,
                 status = verdictOf(terminalWeaponBaseDiversity >= TERMINAL_WEAPON_BASE_DIVERSITY_TARGET),
-                note = "terminalBases=$terminalWeaponBaseNote",
+                note = "terminalBases=$terminalWeaponBaseNote; topWeaponSemantics=$professionTopWeaponSemanticNote",
             ),
             Phase4ExperienceMetric(
                 metricId = "crossProfessionTopWeaponDominance",
@@ -898,11 +955,13 @@ object Phase4ReportRunner {
                         put("alignedFullRouteSampleCount", longRun.metrics.getValue("alignedFullRouteSampleCount"))
                         put("fullRouteCount", longRun.metrics.getValue("fullRouteCount"))
                         put("professionTerminalWeaponDistribution", professionTerminalWeaponDistribution)
+                        put("professionTopWeaponBaseIds", professionTopWeaponBaseIds)
+                        put("professionTopWeaponSemanticTags", professionTopWeaponSemanticTags)
                     },
                 currentValueText = "${formatPercent(professionAlignedWeaponAdoptionRate)} ($alignedFullRouteSampleCount/$fullRouteCount)",
                 target = Phase4MetricCatalog.requireSpec("professionAlignedWeaponAdoptionRate").targetText,
                 status = verdictOf(professionAlignedWeaponAdoptionRate >= PROFESSION_ALIGNED_WEAPON_ADOPTION_TARGET),
-                note = "alignedSamples=$alignedFullRouteSampleCount/$fullRouteCount",
+                note = "alignedSamples=$alignedFullRouteSampleCount/$fullRouteCount; topWeaponSemantics=$professionTopWeaponSemanticNote",
             ),
             Phase4ExperienceMetric(
                 metricId = "terrainInteractionEncounterRate.aggregate",
@@ -1020,8 +1079,12 @@ object Phase4ReportRunner {
             appendLine("- `terminalWeaponBaseDiversity`: ${metricsById.getValue("terminalWeaponBaseDiversity").currentValueText} / ${metricsById.getValue("terminalWeaponBaseDiversity").status}")
             appendLine("- `crossProfessionTopWeaponDominance`: ${metricsById.getValue("crossProfessionTopWeaponDominance").currentValueText} / ${metricsById.getValue("crossProfessionTopWeaponDominance").status}")
             appendLine("- `professionAlignedWeaponAdoptionRate`: ${metricsById.getValue("professionAlignedWeaponAdoptionRate").currentValueText} / ${metricsById.getValue("professionAlignedWeaponAdoptionRate").status}")
+            val professionTopWeaponSemanticTags = longRunTask.metrics.getValue("professionTopWeaponSemanticTags")
             appendLine("```json")
             appendLine(professionTerminalWeaponDistribution)
+            appendLine("```")
+            appendLine("```json")
+            appendLine(professionTopWeaponSemanticTags.toString())
             appendLine("```")
             appendLine()
             appendLine("## Scripted vs Organic Hidden")

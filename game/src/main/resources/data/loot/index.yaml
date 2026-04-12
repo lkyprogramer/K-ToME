@@ -5,18 +5,24 @@ lootProfiles:
     poolStrategy: FIXED_LIST
     rewardBudget: 6
     itemIds: [healing_potion, short_sword, leather_armor, bandit_trophy, stamina_draught, hunter_bow]
+    typeWeights: { WEAPON: 2, ARMOR: 2, CONSUMABLE: 1 }
+    slotBias: { WEAPON: 2, OFF_HAND: 2, ARMOR: 1 }
   - id: loot.foundation.elite
     schemaVersion: 3
     tags: [loot, elite]
     poolStrategy: FIXED_LIST
     rewardBudget: 8
     itemIds: [basic_shield, mana_potion, chain_mail, apprentice_robe, long_sword, emerald_charm, furnace_talisman, energy_tonic]
+    typeWeights: { WEAPON: 3, ARMOR: 2, CONSUMABLE: 1 }
+    slotBias: { WEAPON: 2, OFF_HAND: 2, ARMOR: 2 }
   - id: loot.foundation.boss
     schemaVersion: 3
     tags: [loot, boss]
     poolStrategy: FIXED_LIST
     rewardBudget: 10
-    itemIds: [battle_axe, plate_armor, arcane_staff, scroll_teleport, mana_potion, forgebreaker_pick, sanctified_seal, seal_reliquary, shadow_cloak, consecrated_oil]
+    itemIds: [battle_axe, long_sword, hunter_bow, plate_armor, arcane_staff, scroll_teleport, mana_potion, forgebreaker_pick, sanctified_seal, seal_reliquary, shadow_cloak, consecrated_oil]
+    typeWeights: { WEAPON: 4, ARMOR: 2, CONSUMABLE: 1 }
+    slotBias: { WEAPON: 3, OFF_HAND: 2, ARMOR: 2 }
   - id: loot.shattered_outpost.cadence
     schemaVersion: 3
     tags: [loot, cadence, shattered_outpost]
@@ -72,11 +78,11 @@ lootProfiles:
     tags: [loot, cadence, underground_river]
     poolStrategy: TAG_WEIGHTED
     rewardBudget: 4
-    itemIds: [seal_reliquary, mana_potion, chain_mail, hunter_bow]
+    itemIds: [seal_reliquary, mana_potion, chain_mail, hunter_bow, arcane_staff]
     itemTagFilter: [underground_river]
     excludeIds: []
-    typeWeights: { WEAPON: 3, ARMOR: 2, CONSUMABLE: 1 }
-    slotBias: { WEAPON: 2, ARMOR: 2, OFF_HAND: 1 }
+    typeWeights: { WEAPON: 4, ARMOR: 2, CONSUMABLE: 1 }
+    slotBias: { WEAPON: 3, ARMOR: 2, OFF_HAND: 1 }
   - id: loot.crystal_cavern.cadence
     schemaVersion: 3
     tags: [loot, cadence, crystal_cavern]
@@ -88,11 +94,11 @@ lootProfiles:
     tags: [loot, cadence, abyssal_temple]
     poolStrategy: TAG_WEIGHTED
     rewardBudget: 4
-    itemIds: [sanctified_seal, shadow_cloak, seal_reliquary, consecrated_oil]
+    itemIds: [sanctified_seal, shadow_cloak, seal_reliquary, consecrated_oil, long_sword, hunter_bow, arcane_staff]
     itemTagFilter: [abyssal_temple]
     excludeIds: []
-    typeWeights: { WEAPON: 3, ARMOR: 2, CONSUMABLE: 1 }
-    slotBias: { WEAPON: 2, ARMOR: 2, OFF_HAND: 1 }
+    typeWeights: { WEAPON: 4, ARMOR: 2, CONSUMABLE: 1 }
+    slotBias: { WEAPON: 3, ARMOR: 2, OFF_HAND: 1 }
   - id: loot.greenwood_fringe.reward
     schemaVersion: 3
     tags: [loot, reward, greenwood]
@@ -119,6 +125,22 @@ lootProfiles:
     poolStrategy: FIXED_LIST
     rewardBudget: 4
     itemIds: [seal_reliquary, shadow_cloak, apprentice_robe, arcane_staff]
+  - id: loot.underground_river.reward
+    schemaVersion: 3
+    tags: [loot, reward, underground_river]
+    poolStrategy: FIXED_LIST
+    rewardBudget: 4
+    itemIds: [hunter_bow, shadow_cloak, emerald_charm, apprentice_robe, mana_potion]
+    typeWeights: { WEAPON: 3, ARMOR: 2, CONSUMABLE: 1 }
+    slotBias: { WEAPON: 3, OFF_HAND: 2, ARMOR: 2 }
+  - id: loot.abyssal_temple.reward
+    schemaVersion: 3
+    tags: [loot, reward, abyssal_temple]
+    poolStrategy: FIXED_LIST
+    rewardBudget: 5
+    itemIds: [plate_armor, long_sword, hunter_bow, apprentice_robe, consecrated_oil]
+    typeWeights: { WEAPON: 3, ARMOR: 2, CONSUMABLE: 1 }
+    slotBias: { WEAPON: 3, OFF_HAND: 2, ARMOR: 2 }
   - id: loot.abyssal_heart.reward
     schemaVersion: 3
     tags: [loot, reward, abyssal, finale]
@@ -154,7 +176,7 @@ lootProfiles:
     tags: [loot, secret, underground_river]
     poolStrategy: TAG_WEIGHTED
     rewardBudget: 6
-    itemIds: [seal_reliquary, mana_potion, chain_mail, arcane_staff]
+    itemIds: [seal_reliquary, mana_potion, chain_mail, arcane_staff, emerald_charm]
     itemTagFilter: [underground_river]
     excludeIds: []
     typeWeights: { WEAPON: 2, ARMOR: 2, CONSUMABLE: 1 }

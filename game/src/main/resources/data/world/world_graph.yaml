@@ -94,21 +94,21 @@ routeRewards:
     levelBandRef: lv10_12
     shardReward: 90
     guaranteedUtilityDropIds: [seal_reliquary]
-    milestoneRewardProfileIds: [loot.grey_gate_depths.reward, loot.foundation.boss]
+    milestoneRewardProfileIds: [loot.underground_river.reward, loot.foundation.boss]
     rescueTags: [CLEANSING]
   - routeId: route.underground_river.crystal_cavern
     claimPolicy: ON_ROUTE_UNLOCK
     levelBandRef: lv11_13
     shardReward: 35
     guaranteedUtilityDropIds: [mana_potion]
-    milestoneRewardProfileIds: [loot.grey_gate_depths.reward, loot.foundation.elite]
+    milestoneRewardProfileIds: [loot.underground_river.reward, loot.foundation.elite]
     rescueTags: [ARCANE]
   - routeId: route.underground_river.abyssal_temple
     claimPolicy: ON_FIRST_ROUTE_CLEAR
     levelBandRef: lv12_15
     shardReward: 110
     guaranteedUtilityDropIds: [sanctified_seal]
-    milestoneRewardProfileIds: [loot.grey_gate_depths.reward, loot.foundation.boss]
+    milestoneRewardProfileIds: [loot.abyssal_temple.reward, loot.foundation.boss]
     rescueTags: [PROTECTION]
   - routeId: route.abyssal_temple.abyssal_heart
     claimPolicy: ON_FIRST_ROUTE_CLEAR

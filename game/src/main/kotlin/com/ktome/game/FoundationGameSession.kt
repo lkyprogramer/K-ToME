@@ -264,6 +264,10 @@ import com.ktome.game.objective.ObjectiveRuntimeEvaluator
 import com.ktome.game.i18n.LocalizationBundle
 import com.ktome.game.i18n.Localizer
 import com.ktome.game.loot.LootProfileCandidatePool
+import com.ktome.game.loot.LootBaseBuildMatchStrength
+import com.ktome.game.loot.LootBaseSelectionContext
+import com.ktome.game.loot.evaluate
+import com.ktome.game.loot.lootBaseSemanticTags
 import com.ktome.game.model.BossDefinition
 import com.ktome.game.model.MonsterTemplate
 import com.ktome.game.model.isEliteEncounterTemplate
@@ -4162,10 +4166,21 @@ class FoundationGameSession internal constructor(
         randomSource: RandomSource = sessionRandom,
     ): ItemInstance {
         val pools = resolvedLootProfileCandidatePools(profileIds)
+        val lootBaseSelectionContext = currentLootBaseSelectionContext()
+        val poolWeightByBaseId =
+            lootWeightedBaseCandidatesFromPools(
+                pools = pools,
+                selectionContext = lootBaseSelectionContext,
+            ).associate { candidate -> candidate.base.id to candidate.weight }
         val candidateIds = pools.flatMapTo(linkedSetOf()) { pool -> pool.standardCandidateBaseIds }.toList()
         val effectiveFallbackBaseId = normalizeMilestoneFallbackBaseId(fallbackBaseId, rewardContext)
         val selectedBaseId =
-            rankMilestoneRewardCandidateIds(candidateIds, rewardContext).firstOrNull()
+            rankMilestoneRewardCandidateIds(
+                candidateIds = candidateIds,
+                rewardContext = rewardContext,
+                poolWeightByBaseId = poolWeightByBaseId,
+                selectionContext = lootBaseSelectionContext,
+            ).firstOrNull()
                 ?: effectiveFallbackBaseId
         val base =
             itemBaseDef(selectedBaseId)
@@ -4222,32 +4237,61 @@ class FoundationGameSession internal constructor(
     private fun rankMilestoneRewardCandidateIds(
         candidateIds: List<String>,
         rewardContext: RewardGenerationContext,
+        poolWeightByBaseId: Map<String, Int> = emptyMap(),
+        selectionContext: LootBaseSelectionContext = currentLootBaseSelectionContext(),
     ): List<String> {
-        val strictCandidates = strictMilestoneRewardCandidateIds(candidateIds, rewardContext)
+        val strictCandidates =
+            strictMilestoneRewardCandidateIds(
+                candidateIds = candidateIds,
+                rewardContext = rewardContext,
+                poolWeightByBaseId = poolWeightByBaseId,
+                selectionContext = selectionContext,
+            )
         if (strictCandidates.isNotEmpty() || rewardContext.replacementSlot != null) {
             return strictCandidates
         }
-        val replacementSlot = selectMilestoneReplacementSlot(candidateIds, rewardContext) ?: return emptyList()
-        return strictMilestoneRewardCandidateIds(candidateIds, rewardContext.copy(replacementSlot = replacementSlot))
+        val replacementSlot =
+            selectMilestoneReplacementSlot(
+                candidateIds = candidateIds,
+                rewardContext = rewardContext,
+                poolWeightByBaseId = poolWeightByBaseId,
+                selectionContext = selectionContext,
+            ) ?: return emptyList()
+        return strictMilestoneRewardCandidateIds(
+            candidateIds = candidateIds,
+            rewardContext = rewardContext.copy(replacementSlot = replacementSlot),
+            poolWeightByBaseId = poolWeightByBaseId,
+            selectionContext = selectionContext,
+        )
     }
 
     private fun strictMilestoneRewardCandidateIds(
         candidateIds: List<String>,
         rewardContext: RewardGenerationContext,
+        poolWeightByBaseId: Map<String, Int>,
+        selectionContext: LootBaseSelectionContext,
     ): List<String> =
         candidateIds
             .distinct()
             .filter { baseItemId -> isMilestoneRewardBaseAllowed(baseItemId, rewardContext) }
             .sortedWith(
-                compareByDescending<String> { baseItemId -> milestoneRewardBaseScore(baseItemId, rewardContext) }
+                compareByDescending<String> { baseItemId ->
+                    milestoneRewardBaseScore(
+                        baseItemId = baseItemId,
+                        rewardContext = rewardContext,
+                        poolWeightByBaseId = poolWeightByBaseId,
+                        selectionContext = selectionContext,
+                    )
+                }
                     .thenBy { baseItemId -> rewardPreferenceOrder().indexOf(baseItemId).takeIf { it >= 0 } ?: Int.MAX_VALUE }
-                    .thenByDescending { baseItemId -> itemBaseDef(baseItemId)?.dropWeight ?: 0 }
                     .thenBy { it },
             )
 
     private fun selectMilestoneReplacementSlot(
         candidateIds: List<String>,
         rewardContext: RewardGenerationContext,
+        poolWeightByBaseId: Map<String, Int>,
+        selectionContext: LootBaseSelectionContext,
     ): EquipSlot? =
         milestoneReplacementSlotPriority().firstOrNull { candidateSlot ->
             candidateSlot in rewardContext.occupiedSlots &&
@@ -4255,6 +4299,8 @@ class FoundationGameSession internal constructor(
                 strictMilestoneRewardCandidateIds(
                     candidateIds = candidateIds,
                     rewardContext = rewardContext.copy(replacementSlot = candidateSlot),
+                    poolWeightByBaseId = poolWeightByBaseId,
+                    selectionContext = selectionContext,
                 ).isNotEmpty()
         }
 
@@ -4336,62 +4382,41 @@ class FoundationGameSession internal constructor(
     private fun milestoneRewardBaseScore(
         baseItemId: String,
         rewardContext: RewardGenerationContext,
+        poolWeightByBaseId: Map<String, Int>,
+        selectionContext: LootBaseSelectionContext,
     ): Int {
         val base = itemBaseDef(baseItemId) ?: return Int.MIN_VALUE
         val baseTags = rewardBaseTags(base)
-        val buildContext = currentAffixBuildContext()
-        val freshBonus = if (baseItemId !in currentOwnedItemBaseIds()) 120 else 0
-        val buildMatchScore = baseTags.count(buildContext.buildTags::contains) * 10
-        val routeBiasScore = baseTags.count(rewardContext.routeBiasTags::contains) * 6
-        val rewardBiasScore = baseTags.count(rewardSourceBiasTags(rewardContext.rewardSource)::contains) * 3
-        return freshBonus + buildMatchScore + routeBiasScore + rewardBiasScore + (base.dropWeight.coerceAtLeast(1))
+        val evaluation = selectionContext.evaluate(base)
+        val poolWeightScore = (poolWeightByBaseId[baseItemId] ?: base.dropWeight.coerceAtLeast(1)) * 10
+        val freshBonus =
+            if (baseItemId !in currentOwnedItemBaseIds() && evaluation.matchStrength != LootBaseBuildMatchStrength.NONE) {
+                40
+            } else {
+                0
+            }
+        val buildMatchScore =
+            when (evaluation.matchStrength) {
+                LootBaseBuildMatchStrength.NONE -> 0
+                LootBaseBuildMatchStrength.WEAK -> 30
+                LootBaseBuildMatchStrength.STRONG -> 70
+            }
+        val routeBiasScore = baseTags.count(rewardContext.routeBiasTags::contains) * 12
+        val rewardBiasScore = baseTags.count(rewardSourceBiasTags(rewardContext.rewardSource)::contains) * 8
+        val antiCollapsePenalty =
+            if (evaluation.antiCollapseMultiplierBasisPoints < 10_000) {
+                30
+            } else {
+                0
+            }
+        return poolWeightScore + freshBonus + buildMatchScore + routeBiasScore + rewardBiasScore - antiCollapsePenalty
     }
 
     private fun rewardBaseTags(base: ItemBaseDef): Set<String> =
         linkedSetOf<String>().apply {
-            addAll(base.tags.map(String::lowercase))
+            addAll(lootBaseSemanticTags(base))
             add(base.type.name.lowercase())
             base.slot?.name?.lowercase()?.let(::add)
-            base.resourceTypeId?.lowercase()?.let(::add)
-            if (base.baseStats.attack > 0) {
-                add("offense")
-            }
-            if (base.baseStats.defense > 0 || base.baseStats.maxHp > 0) {
-                addAll(listOf("protection", "defense"))
-            }
-            if (base.baseStats.evasion > 0 || base.baseStats.speed > 0) {
-                add("mobility")
-            }
-            if (base.baseStats.talentPower > 0.0 || base.baseStats.wil > 0) {
-                add("spell")
-            }
-            when (val passive = base.passive) {
-                is EquipmentPassive.OnHitStatusProc -> {
-                    add(passive.statusId.lowercase())
-                    add("offense")
-                }
-                is EquipmentPassive.OnKillResourceRestore -> {
-                    add(passive.resourceType.name.lowercase())
-                    add("sustain")
-                }
-                is EquipmentPassive.ConditionalStatBonus -> add("conditional")
-                is EquipmentPassive.TerrainAffinityBonus -> {
-                    add(passive.terrainTag.name.lowercase())
-                    add("terrain")
-                }
-                is EquipmentPassive.DamageVsStatus -> add("offense")
-                is EquipmentPassive.DamageTypeBonus -> {
-                    add(passive.type.name.lowercase())
-                    add("offense")
-                }
-                is EquipmentPassive.ResistanceBonus -> {
-                    add(passive.damageType.name.lowercase())
-                    addAll(listOf("protection", "resistance"))
-                }
-                is EquipmentPassive.HpRegenPerTurn -> addAll(listOf("sustain", "life", "regeneration"))
-                is EquipmentPassive.DamageVsTag -> add("offense")
-                null -> Unit
-            }
         }
 
     private fun normalizeMilestoneFallbackBaseId(
@@ -10947,7 +10972,8 @@ class FoundationGameSession internal constructor(
                 world.get<EliteMutationLoadout>(target)?.mutationIds?.isNotEmpty() == true -> com.ktome.core.loot.SourceTier.ELITE
                 else -> monsterSourceTier(template)
             }
-        val allWeightedCandidates = lootWeightedBaseCandidatesFromPools(listOf(pool))
+        val lootBaseSelectionContext = currentLootBaseSelectionContext()
+        val allWeightedCandidates = lootWeightedBaseCandidatesFromPools(listOf(pool), lootBaseSelectionContext)
         val weightedCandidates =
             allWeightedCandidates
                 .filter { candidate -> currentFloor() in candidate.base.dropFloors }
@@ -10998,6 +11024,13 @@ class FoundationGameSession internal constructor(
         )
     }
 
+    private fun currentLootBaseSelectionContext(): LootBaseSelectionContext {
+        currentProfessionSchema() ?: return LootBaseSelectionContext.EMPTY
+        return LootBaseSelectionContext(
+            buildTags = currentAffixBuildContext().buildTags,
+        )
+    }
+
     private fun resolvedLootProfileCandidatePools(profileIds: List<String>): List<LootProfileCandidatePool> =
         profileIds.mapNotNull(::lootProfileCandidatePool)
 
@@ -11028,16 +11061,22 @@ class FoundationGameSession internal constructor(
     }
 
     private fun lootWeightedBaseCandidates(profileIds: List<String>): List<WeightedLootBaseCandidate> =
-        lootWeightedBaseCandidatesFromPools(resolvedLootProfileCandidatePools(profileIds))
+        lootWeightedBaseCandidatesFromPools(
+            pools = resolvedLootProfileCandidatePools(profileIds),
+            selectionContext = currentLootBaseSelectionContext(),
+        )
 
-    private fun lootWeightedBaseCandidatesFromPools(pools: List<LootProfileCandidatePool>): List<WeightedLootBaseCandidate> {
+    private fun lootWeightedBaseCandidatesFromPools(
+        pools: List<LootProfileCandidatePool>,
+        selectionContext: LootBaseSelectionContext,
+    ): List<WeightedLootBaseCandidate> {
         val weightsByBaseId = linkedMapOf<String, Int>()
         pools.forEach { pool ->
             pool.standardCandidateBaseIds.forEach { baseId ->
                 val base = requireNotNull(itemBaseDef(baseId)) {
                     "Loot profile '${pool.profileId}' resolved unknown candidate base '$baseId'."
                 }
-                val weightedDrop = base.dropWeight.coerceAtLeast(1) * pool.weightFor(base)
+                val weightedDrop = pool.weightFor(base, selectionContext)
                 weightsByBaseId[baseId] = weightsByBaseId.getOrDefault(baseId, 0) + weightedDrop
             }
         }
