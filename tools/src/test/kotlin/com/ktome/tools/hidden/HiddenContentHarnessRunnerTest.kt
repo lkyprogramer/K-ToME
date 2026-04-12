@@ -27,9 +27,11 @@ class HiddenContentHarnessRunnerTest {
         val zones = payload.getValue("zones").jsonObject
         val firstEvent =
             Json.parseToJsonElement(Files.readAllLines(run.eventsPath).first { line -> line.isNotBlank() }).jsonObject
+        val restoredKernelRun = HiddenContentHarnessRunner.loadKernelRun(run.summaryPath.parent)
 
         assertEquals("625", summary.getValue("totalCases").jsonPrimitive.content)
         assertEquals("625", summary.getValue("distinctSeedCount").jsonPrimitive.content)
+        assertEquals("true", summary.getValue("scriptedVerification").jsonPrimitive.content)
         assertEquals("0", summary.getValue("failureCount").jsonPrimitive.content)
         assertEquals("0", summary.getValue("caseFailureCount").jsonPrimitive.content)
         assertEquals("0", summary.getValue("aggregateFailureCount").jsonPrimitive.content)
@@ -40,10 +42,14 @@ class HiddenContentHarnessRunnerTest {
         assertTrue(summary.getValue("secretZoneDiscoveryCount").jsonPrimitive.content.toInt() > 0)
         assertTrue(summary.getValue("secretZoneDiscoveryRate").jsonPrimitive.content.toDouble() >= MIN_SECRET_ZONE_DISCOVERY_RATE)
         assertTrue(summary.getValue("explicitSearchRevealCount").jsonPrimitive.content.toInt() > 0)
+        assertTrue(summary.getValue("primerActionUsedCount").jsonPrimitive.content.toInt() > 0)
+        assertTrue(summary.getValue("primerFreeCaseCount").jsonPrimitive.content.toInt() > 0)
         assertEquals("0", summary.getValue("zeroHiddenEventZoneCount").jsonPrimitive.content)
         assertEquals("0", summary.getValue("zeroSecretZoneZoneCount").jsonPrimitive.content)
         assertEquals(setOf("greenwood_fringe", "deep_iron_pit", "underground_river", "abyssal_temple"), zones.keys)
         assertTrue(firstEvent.getValue("searchBindingId").jsonPrimitive.content.startsWith("search."))
+        assertTrue(firstEvent.getValue("primerActionId").jsonPrimitive.content.isNotBlank())
+        assertTrue(firstEvent.containsKey("primerActionUsed"))
         assertTrue(firstEvent.getValue("entranceBindingId").jsonPrimitive.content.startsWith("hidden."))
         assertTrue(firstEvent.containsKey("resolvedReturnBridgeNodeId"))
         assertTrue(firstEvent.containsKey("triggerType"))
@@ -51,6 +57,9 @@ class HiddenContentHarnessRunnerTest {
         assertTrue(firstEvent.containsKey("rewardBudgetSources"))
         assertTrue(firstEvent.containsKey("caseFailureReasons"))
         assertNotNull(payload["aggregateFailures"]?.jsonArray)
+        assertNotNull(restoredKernelRun)
+        assertEquals(625, restoredKernelRun?.results?.size)
+        assertEquals(625, restoredKernelRun?.header?.seedList?.size)
         assertEquals(625, Files.readAllLines(run.eventsPath).count { line -> line.isNotBlank() })
     }
 }

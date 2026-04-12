@@ -4,13 +4,16 @@ import com.ktome.core.item.MilestoneRewardSource
 import com.ktome.core.run.RunOutcome
 import com.ktome.game.FOUNDATION_SYNERGY_AFFIX_IDS
 import com.ktome.game.FOUNDATION_ZONE_ROUTE
+import com.ktome.game.data.DataLoader
 import java.nio.file.Path
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
 import kotlinx.serialization.json.putJsonObject
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
@@ -62,6 +65,9 @@ class LongRunLabFullTest {
         val fullRouteAffixSynergyMetrics = affixSynergyMetrics(fullRouteReports)
         val allScenarioSynergyRewardMetrics = synergyRewardMetrics(reports)
         val fullRouteSynergyRewardMetrics = synergyRewardMetrics(fullRouteReports)
+        val terminalWeaponIdentity = terminalWeaponIdentitySummary(fullRouteReports)
+        val fullRouteZoneTraversalDiagnostics = aggregateZoneTraversalDiagnostics(fullRouteReports)
+        val focusZoneDesignAudit = focusZoneDesignAudit()
         val milestoneRewardQualityDistribution = milestoneRewards.groupingBy { it.qualityTier.name }.eachCount().toSortedMap()
         val milestoneAffixCountDistribution = milestoneRewards.groupingBy { it.affixIds.size.toString() }.eachCount().toSortedMap()
         val milestoneRewardAdoptionDistribution =
@@ -152,6 +158,66 @@ class LongRunLabFullTest {
                     putJsonObject("fullRouteBreakpointPayoffEffectDistribution") {
                         fullRouteBreakpointMetrics.effectDistribution.forEach { (effectKind, count) -> put(effectKind, count) }
                     }
+                    put("terminalWeaponBaseDiversity", terminalWeaponIdentity.terminalWeaponBaseDiversity)
+                    put("crossProfessionTopWeaponDominance", terminalWeaponIdentity.crossProfessionTopWeaponDominance)
+                    put("professionAlignedWeaponAdoptionRate", terminalWeaponIdentity.professionAlignedWeaponAdoptionRate)
+                    put("alignedFullRouteSampleCount", terminalWeaponIdentity.alignedFullRouteSampleCount)
+                    put("fullRouteSampleCount", terminalWeaponIdentity.fullRouteSampleCount)
+                    terminalWeaponIdentity.topWeaponBaseId?.let { topWeaponBaseId -> put("crossProfessionTopWeaponBaseId", topWeaponBaseId) }
+                    put("crossProfessionTopWeaponCount", terminalWeaponIdentity.topWeaponCount)
+                    putJsonObject("professionTerminalWeaponDistribution") {
+                        terminalWeaponIdentity.professionTerminalWeaponDistribution.forEach { (professionId, distribution) ->
+                            putJsonObject(professionId) {
+                                distribution.forEach { (weaponBaseId, count) -> put(weaponBaseId, count) }
+                            }
+                        }
+                    }
+                    putJsonObject("fullRouteZoneTraversalDiagnostics") {
+                        fullRouteZoneTraversalDiagnostics.forEach { (zoneId, diagnostic) ->
+                            putJsonObject(zoneId) {
+                                put("sampleCount", diagnostic.sampleCount)
+                                put("visitCount", diagnostic.visitCount)
+                                put("avgPlayerTurns", diagnostic.avgPlayerTurns)
+                                put("avgEnemyTurns", diagnostic.avgEnemyTurns)
+                                put("avgEnemyTurnsPerPlayerTurn", diagnostic.avgEnemyTurnsPerPlayerTurn)
+                                put("avgVisibleHostileTurnCount", diagnostic.avgVisibleHostileTurnCount)
+                                put("avgLiveHostileWindow", diagnostic.avgLiveHostileWindow)
+                                put("maxVisibleHostiles", diagnostic.maxVisibleHostiles)
+                                put("objectiveAcquireSampleCount", diagnostic.objectiveAcquireSampleCount)
+                                diagnostic.avgObjectiveAcquireTurn?.let { put("avgObjectiveAcquireTurn", it) }
+                                diagnostic.avgObjectiveAcquireHeadlessTurnEquivalent?.let { put("avgObjectiveAcquireHeadlessTurnEquivalent", it) }
+                                putJsonObject("objectiveStateDistribution") {
+                                    diagnostic.objectiveStateDistribution.forEach { (state, count) -> put(state, count) }
+                                }
+                            }
+                        }
+                    }
+                    putJsonObject("focusZoneDesignAudit") {
+                        focusZoneDesignAudit.forEach { (zoneId, audit) ->
+                            putJsonObject(zoneId) {
+                                put("floorCount", audit.floorCount)
+                                put("mapSize", audit.mapSize)
+                                put("worldRole", audit.worldRole)
+                                put("monsterPoolCount", audit.monsterPoolCount)
+                                put("elitePoolCount", audit.elitePoolCount)
+                                audit.bossEncounterId?.let { put("bossEncounterId", it) }
+                                audit.objectiveSetId?.let { put("objectiveSetId", it) }
+                                audit.objectiveCompletionRule?.let { put("objectiveCompletionRule", it) }
+                                putJsonArray("specialMechanics") {
+                                    audit.specialMechanics.forEach { mechanic -> add(JsonPrimitive(mechanic)) }
+                                }
+                                putJsonArray("mechanicsWithoutDedicatedRuntimeHook") {
+                                    audit.mechanicsWithoutDedicatedRuntimeHook.forEach { mechanic -> add(JsonPrimitive(mechanic)) }
+                                }
+                                putJsonArray("objectivePlacements") {
+                                    audit.objectivePlacements.forEach { placement -> add(JsonPrimitive(placement)) }
+                                }
+                                putJsonObject("terrainTagWeights") {
+                                    audit.terrainTagWeights.forEach { (terrainTag, weight) -> put(terrainTag, weight) }
+                                }
+                            }
+                        }
+                    }
                     putJsonObject("scenarioTypeDistribution") {
                         scenarioTypeDistribution.forEach { (scenarioType, count) -> put(scenarioType, count) }
                     }
@@ -233,6 +299,14 @@ class LongRunLabFullTest {
                     appendLine("- fullRouteSynergyAffixDistribution: ${if (fullRouteSynergyRewardMetrics.distribution.isEmpty()) "none" else fullRouteSynergyRewardMetrics.distribution}")
                     appendLine("- fullRouteBreakpointPayoffTalentDistribution: ${if (fullRouteBreakpointMetrics.talentDistribution.isEmpty()) "none" else fullRouteBreakpointMetrics.talentDistribution}")
                     appendLine("- fullRouteBreakpointPayoffEffectDistribution: ${if (fullRouteBreakpointMetrics.effectDistribution.isEmpty()) "none" else fullRouteBreakpointMetrics.effectDistribution}")
+                    appendLine("- terminalWeaponBaseDiversity: ${terminalWeaponIdentity.terminalWeaponBaseDiversity}")
+                    appendLine("- crossProfessionTopWeaponDominance: ${terminalWeaponIdentity.crossProfessionTopWeaponDominance}")
+                    appendLine("- professionAlignedWeaponAdoptionRate: ${terminalWeaponIdentity.professionAlignedWeaponAdoptionRate}")
+                    appendLine("- crossProfessionTopWeaponBaseId: ${terminalWeaponIdentity.topWeaponBaseId ?: "none"}")
+                    appendLine("- crossProfessionTopWeaponCount: ${terminalWeaponIdentity.topWeaponCount}/${terminalWeaponIdentity.fullRouteSampleCount}")
+                    appendLine("- professionTerminalWeaponDistribution: ${if (terminalWeaponIdentity.professionTerminalWeaponDistribution.isEmpty()) "none" else terminalWeaponIdentity.professionTerminalWeaponDistribution}")
+                    appendLine("- fullRouteZoneTraversalDiagnostics: ${if (fullRouteZoneTraversalDiagnostics.isEmpty()) "none" else fullRouteZoneTraversalDiagnostics}")
+                    appendLine("- focusZoneDesignAudit: ${if (focusZoneDesignAudit.isEmpty()) "none" else focusZoneDesignAudit}")
                     appendLine("- deathDistribution: ${if (deathDistribution.isEmpty()) "none" else deathDistribution}")
                     appendLine("- zoneRouteHashDistribution: ${if (routeHashDistribution.isEmpty()) "none" else routeHashDistribution}")
                     appendLine("- branchRouteHashDistribution: ${if (branchRouteHashDistribution.isEmpty()) "none" else branchRouteHashDistribution}")
@@ -405,6 +479,117 @@ class LongRunLabFullTest {
         )
     }
 
+    @Test
+    fun `terminal weapon identity summary fails fast when a full-route report is missing terminal weapon contract data`() {
+        val exception =
+            assertThrows(IllegalArgumentException::class.java) {
+                terminalWeaponIdentitySummary(
+                    listOf(
+                        sampleScenarioReport(
+                            name = "missing-terminal-weapon",
+                            professionId = "vanguard",
+                            terminalWeaponBaseId = null,
+                        ),
+                    ),
+                )
+            }
+
+        assertTrue(exception.message.orEmpty().contains("missing terminalWeaponBaseId"))
+    }
+
+    @Test
+    fun `profession aligned terminal weapon rules stay in sync with the current item catalog`() {
+        val fullRouteProfessionIds = fullRouteMatrixSpecs().map(ScenarioSpec::professionId).toSet()
+        val allKnownItemTags = itemTagsById.values.flatten().toSet()
+
+        assertEquals(fullRouteProfessionIds, PROFESSION_ALIGNED_TERMINAL_WEAPON_RULES.keys)
+        PROFESSION_ALIGNED_TERMINAL_WEAPON_RULES.forEach { (professionId, rule) ->
+            assertTrue(
+                rule.exactWeaponBaseIds.all(itemTagsById::containsKey),
+                "Profession '$professionId' references unknown terminal weapon ids ${rule.exactWeaponBaseIds - itemTagsById.keys}.",
+            )
+            assertTrue(
+                rule.requiredItemTags.all(allKnownItemTags::contains),
+                "Profession '$professionId' references unknown alignment tags ${rule.requiredItemTags - allKnownItemTags}.",
+            )
+        }
+    }
+
+    @Test
+    fun `zone traversal diagnostics aggregate enemy turn pressure and objective timing`() {
+        val reports =
+            listOf(
+                sampleScenarioReport(
+                    name = "diag-a",
+                    professionId = "vanguard",
+                    terminalWeaponBaseId = "battle_axe",
+                    zoneTraversalDiagnostics =
+                        listOf(
+                            ZoneTraversalDiagnostic(
+                                zoneId = "greenwood_fringe",
+                                visitCount = 1,
+                                playerTurns = 100,
+                                enemyTurns = 220,
+                                enemyTurnsPerPlayerTurn = 2.2,
+                                visibleHostileTurnCount = 35,
+                                liveHostileWindow = 12,
+                                maxVisibleHostiles = 3,
+                                objectiveAcquireTurn = 8,
+                                objectiveAcquireHeadlessTurnEquivalent = 14,
+                                objectiveStateAtExit = com.ktome.core.world.ObjectiveState.COMPLETED,
+                            ),
+                        ),
+                ),
+                sampleScenarioReport(
+                    name = "diag-b",
+                    professionId = "templar",
+                    terminalWeaponBaseId = "long_sword",
+                    zoneTraversalDiagnostics =
+                        listOf(
+                            ZoneTraversalDiagnostic(
+                                zoneId = "greenwood_fringe",
+                                visitCount = 1,
+                                playerTurns = 80,
+                                enemyTurns = 120,
+                                enemyTurnsPerPlayerTurn = 1.5,
+                                visibleHostileTurnCount = 20,
+                                liveHostileWindow = 7,
+                                maxVisibleHostiles = 2,
+                                objectiveAcquireTurn = 6,
+                                objectiveAcquireHeadlessTurnEquivalent = 10,
+                                objectiveStateAtExit = com.ktome.core.world.ObjectiveState.IN_PROGRESS,
+                            ),
+                        ),
+                ),
+            )
+
+        val aggregate = requireNotNull(aggregateZoneTraversalDiagnostics(reports)["greenwood_fringe"])
+
+        assertEquals(2, aggregate.sampleCount)
+        assertEquals(2, aggregate.visitCount)
+        assertEquals(90.0, aggregate.avgPlayerTurns)
+        assertEquals(170.0, aggregate.avgEnemyTurns)
+        assertEquals(1.85, aggregate.avgEnemyTurnsPerPlayerTurn, 0.0001)
+        assertEquals(27.5, aggregate.avgVisibleHostileTurnCount)
+        assertEquals(9.5, aggregate.avgLiveHostileWindow)
+        assertEquals(3, aggregate.maxVisibleHostiles)
+        assertEquals(2, aggregate.objectiveAcquireSampleCount)
+        assertEquals(7.0, aggregate.avgObjectiveAcquireTurn)
+        assertEquals(12.0, aggregate.avgObjectiveAcquireHeadlessTurnEquivalent)
+        assertEquals(mapOf("COMPLETED" to 1, "IN_PROGRESS" to 1), aggregate.objectiveStateDistribution)
+    }
+
+    @Test
+    fun `focus zone design audit exposes current greenwood and deep iron contracts`() {
+        val audit = focusZoneDesignAudit()
+
+        assertEquals(setOf("greenwood_fringe", "deep_iron_pit"), audit.keys)
+        assertTrue(audit.getValue("greenwood_fringe").objectivePlacements.any { placement -> "trail_cache@floor1:player_start+1,0" in placement })
+        assertTrue(audit.getValue("greenwood_fringe").mechanicsWithoutDedicatedRuntimeHook.contains("trail_pressure"))
+        assertTrue(audit.getValue("deep_iron_pit").objectivePlacements.any { placement -> "mine_furnace@floor2:boss_entry+0,0" in placement })
+        assertTrue(audit.getValue("deep_iron_pit").mechanicsWithoutDedicatedRuntimeHook.contains("slag_alert"))
+    }
+
     private fun fullRouteMatrixSpecs(): List<ScenarioSpec> {
         val professions = listOf("vanguard", "arcanist", "rogue", "templar")
         val races = listOf("human", "elf", "dwarf")
@@ -548,6 +733,141 @@ class LongRunLabFullTest {
             .fold(0) { accumulator, entry -> accumulator + entry.value }
             .toSortedMap()
 
+    private fun terminalWeaponIdentitySummary(reports: List<ScenarioReport>): TerminalWeaponIdentitySummary {
+        val missingTerminalWeaponReports =
+            reports.filter { report -> report.terminalWeaponBaseId.isNullOrBlank() }
+        require(missingTerminalWeaponReports.isEmpty()) {
+            "Full-route reports missing terminalWeaponBaseId: " +
+                missingTerminalWeaponReports.joinToString { report -> "${report.name}:${report.professionId}/${report.raceId}/${report.seed}" }
+        }
+        val terminalWeaponByReport =
+            reports.associateWith { report -> requireNotNull(report.terminalWeaponBaseId) }
+        val distribution =
+            terminalWeaponByReport.entries
+                .groupBy { (report, _) -> report.professionId }
+                .mapValues { (_, entries) ->
+                    entries.groupingBy { (_, weaponBaseId) -> weaponBaseId }.eachCount().toSortedMap()
+                }.toSortedMap()
+        val terminalWeaponCounts = terminalWeaponByReport.values.groupingBy { weaponBaseId -> weaponBaseId }.eachCount()
+        val topWeapon = terminalWeaponCounts.maxByOrNull { (_, count) -> count }
+        val alignedCount =
+            terminalWeaponByReport.count { (report, weaponBaseId) ->
+                isProfessionAlignedTerminalWeapon(professionId = report.professionId, weaponBaseId = weaponBaseId)
+            }
+        return TerminalWeaponIdentitySummary(
+            fullRouteSampleCount = reports.size,
+            terminalWeaponBaseDiversity = terminalWeaponCounts.keys.size,
+            crossProfessionTopWeaponDominance =
+                if (reports.isEmpty()) {
+                    0.0
+                } else {
+                    (topWeapon?.value ?: 0).toDouble() / reports.size.toDouble()
+                },
+            professionAlignedWeaponAdoptionRate =
+                if (reports.isEmpty()) {
+                    0.0
+                } else {
+                    alignedCount.toDouble() / reports.size.toDouble()
+                },
+            alignedFullRouteSampleCount = alignedCount,
+            topWeaponBaseId = topWeapon?.key,
+            topWeaponCount = topWeapon?.value ?: 0,
+            professionTerminalWeaponDistribution = distribution,
+        )
+    }
+
+    private fun aggregateZoneTraversalDiagnostics(
+        reports: List<ScenarioReport>,
+    ): Map<String, ZoneTraversalDiagnosticAggregate> =
+        reports
+            .flatMap(ScenarioReport::zoneTraversalDiagnostics)
+            .groupBy(ZoneTraversalDiagnostic::zoneId)
+            .toSortedMap(compareBy(::zoneDepth).thenBy { it })
+            .mapValues { (_, diagnostics) ->
+                val objectiveAcquireTurns = diagnostics.mapNotNull(ZoneTraversalDiagnostic::objectiveAcquireTurn)
+                val objectiveAcquireHeadlessTurns = diagnostics.mapNotNull(ZoneTraversalDiagnostic::objectiveAcquireHeadlessTurnEquivalent)
+                ZoneTraversalDiagnosticAggregate(
+                    sampleCount = diagnostics.size,
+                    visitCount = diagnostics.sumOf(ZoneTraversalDiagnostic::visitCount),
+                    avgPlayerTurns = diagnostics.map(ZoneTraversalDiagnostic::playerTurns).average(),
+                    avgEnemyTurns = diagnostics.map(ZoneTraversalDiagnostic::enemyTurns).average(),
+                    avgEnemyTurnsPerPlayerTurn = diagnostics.map(ZoneTraversalDiagnostic::enemyTurnsPerPlayerTurn).average(),
+                    avgVisibleHostileTurnCount = diagnostics.map(ZoneTraversalDiagnostic::visibleHostileTurnCount).average(),
+                    avgLiveHostileWindow = diagnostics.map(ZoneTraversalDiagnostic::liveHostileWindow).average(),
+                    maxVisibleHostiles = diagnostics.maxOfOrNull(ZoneTraversalDiagnostic::maxVisibleHostiles) ?: 0,
+                    objectiveAcquireSampleCount = objectiveAcquireTurns.size,
+                    avgObjectiveAcquireTurn =
+                        objectiveAcquireTurns
+                            .takeIf(List<Int>::isNotEmpty)
+                            ?.average(),
+                    avgObjectiveAcquireHeadlessTurnEquivalent =
+                        objectiveAcquireHeadlessTurns
+                            .takeIf(List<Int>::isNotEmpty)
+                            ?.average(),
+                    objectiveStateDistribution =
+                        diagnostics
+                            .mapNotNull(ZoneTraversalDiagnostic::objectiveStateAtExit)
+                            .groupingBy { state -> state.name }
+                            .eachCount()
+                            .toSortedMap(),
+                )
+            }
+
+    private fun focusZoneDesignAudit(): Map<String, FocusZoneDesignAuditEntry> {
+        val objectivesById = schemaCatalog.objectiveSets.associateBy { objective -> objective.id }
+        val profilesByZone = schemaCatalog.zoneMapgenProfiles.associateBy { profile -> profile.zoneId }
+        return listOf("greenwood_fringe", "deep_iron_pit")
+            .map { zoneId ->
+                val zone = requireNotNull(schemaCatalog.zones.firstOrNull { candidate -> candidate.id == zoneId }) {
+                    "Missing focus zone '$zoneId' in schema catalog."
+                }
+                val objective = zone.objectiveSetId?.let(objectivesById::get)
+                zoneId to
+                    FocusZoneDesignAuditEntry(
+                        zoneId = zoneId,
+                        floorCount = zone.floorCount,
+                        mapSize = "${zone.mapSize.width}x${zone.mapSize.height}",
+                        worldRole = zone.worldRole,
+                        specialMechanics = zone.specialMechanics,
+                        mechanicsWithoutDedicatedRuntimeHook =
+                            zone.specialMechanics.filterNot { mechanic ->
+                                mechanic in DEDICATED_RUNTIME_MECHANICS || mechanic in STATIC_FRONTSTAGE_MECHANICS
+                            },
+                        monsterPoolCount = zone.monsterPools.size,
+                        elitePoolCount = zone.elitePools.size,
+                        bossEncounterId = zone.bossEncounterId,
+                        objectiveSetId = zone.objectiveSetId,
+                        objectiveCompletionRule = objective?.completionRule,
+                        objectivePlacements =
+                            objective
+                                ?.placements
+                                ?.sortedWith(compareBy({ it.floor }, { it.interactableId }))
+                                ?.map { placement ->
+                                    "${placement.interactableId}@floor${placement.floor}:${placement.anchor}+${placement.offset.x},${placement.offset.y}"
+                                }.orEmpty(),
+                        terrainTagWeights =
+                            profilesByZone[zoneId]
+                                ?.terrainTagWeights
+                                ?.entries
+                                ?.sortedBy { entry -> entry.key.name }
+                                ?.associate { entry -> entry.key.name to entry.value.toDouble() }
+                                .orEmpty(),
+                    )
+            }.toMap(linkedMapOf())
+    }
+
+    private fun isProfessionAlignedTerminalWeapon(
+        professionId: String,
+        weaponBaseId: String,
+    ): Boolean {
+        val rule =
+            requireNotNull(PROFESSION_ALIGNED_TERMINAL_WEAPON_RULES[professionId]) {
+                "Missing profession-aligned terminal weapon rule for '$professionId'."
+            }
+        val itemTags = itemTagsById[weaponBaseId].orEmpty()
+        return rule.matches(weaponBaseId = weaponBaseId, itemTags = itemTags)
+    }
+
     private data class BreakpointMetrics(
         val observationCount: Int,
         val buildHashChangeCount: Int,
@@ -565,4 +885,118 @@ class LongRunLabFullTest {
         val adoptionCount: Int,
         val distribution: Map<String, Int>,
     )
+
+    private data class TerminalWeaponIdentitySummary(
+        val fullRouteSampleCount: Int,
+        val terminalWeaponBaseDiversity: Int,
+        val crossProfessionTopWeaponDominance: Double,
+        val professionAlignedWeaponAdoptionRate: Double,
+        val alignedFullRouteSampleCount: Int,
+        val topWeaponBaseId: String?,
+        val topWeaponCount: Int,
+        val professionTerminalWeaponDistribution: Map<String, Map<String, Int>>,
+    )
+
+    private data class ZoneTraversalDiagnosticAggregate(
+        val sampleCount: Int,
+        val visitCount: Int,
+        val avgPlayerTurns: Double,
+        val avgEnemyTurns: Double,
+        val avgEnemyTurnsPerPlayerTurn: Double,
+        val avgVisibleHostileTurnCount: Double,
+        val avgLiveHostileWindow: Double,
+        val maxVisibleHostiles: Int,
+        val objectiveAcquireSampleCount: Int,
+        val avgObjectiveAcquireTurn: Double?,
+        val avgObjectiveAcquireHeadlessTurnEquivalent: Double?,
+        val objectiveStateDistribution: Map<String, Int>,
+    )
+
+    private data class FocusZoneDesignAuditEntry(
+        val zoneId: String,
+        val floorCount: Int,
+        val mapSize: String,
+        val worldRole: String,
+        val specialMechanics: List<String>,
+        val mechanicsWithoutDedicatedRuntimeHook: List<String>,
+        val monsterPoolCount: Int,
+        val elitePoolCount: Int,
+        val bossEncounterId: String?,
+        val objectiveSetId: String?,
+        val objectiveCompletionRule: String?,
+        val objectivePlacements: List<String>,
+        val terrainTagWeights: Map<String, Double>,
+    )
+
+    private data class ProfessionAlignedTerminalWeaponRule(
+        val exactWeaponBaseIds: Set<String> = emptySet(),
+        val requiredItemTags: Set<String> = emptySet(),
+    ) {
+        fun matches(
+            weaponBaseId: String,
+            itemTags: Set<String>,
+        ): Boolean = weaponBaseId in exactWeaponBaseIds || itemTags.any(requiredItemTags::contains)
+    }
+
+    private companion object {
+        private val schemaCatalog = DataLoader().loadSchemaCatalog()
+        private val DEDICATED_RUNTIME_MECHANICS: Set<String> =
+            setOf(
+                "patrol_pressure",
+                "ambush_lane",
+                "furnace_pressure",
+                "currents",
+                "crystal_shards",
+                "abyssal_ward",
+                "finale",
+            )
+        private val STATIC_FRONTSTAGE_MECHANICS: Set<String> =
+            setOf(
+                "line_of_sight",
+            )
+        private val PROFESSION_ALIGNED_TERMINAL_WEAPON_RULES: Map<String, ProfessionAlignedTerminalWeaponRule> =
+            mapOf(
+                "vanguard" to
+                    ProfessionAlignedTerminalWeaponRule(
+                        exactWeaponBaseIds = setOf("battle_axe", "long_sword"),
+                        requiredItemTags = setOf("vanguard", "shield"),
+                    ),
+                "templar" to
+                    ProfessionAlignedTerminalWeaponRule(
+                        exactWeaponBaseIds = setOf("battle_axe", "long_sword"),
+                        requiredItemTags = setOf("holy", "templar"),
+                    ),
+                "rogue" to
+                    ProfessionAlignedTerminalWeaponRule(
+                        exactWeaponBaseIds = setOf("short_sword", "hunter_bow"),
+                        requiredItemTags = setOf("rogue", "precision", "mobility"),
+                    ),
+                "arcanist" to
+                    ProfessionAlignedTerminalWeaponRule(
+                        exactWeaponBaseIds = setOf("arcane_staff"),
+                        requiredItemTags = setOf("arcanist", "arcane", "spell"),
+                    ),
+            )
+        private val itemTagsById: Map<String, Set<String>> =
+            schemaCatalog.itemBundle.items.associate { item -> item.id to item.tags.toSet() }
+    }
+
+    private fun sampleScenarioReport(
+        name: String,
+        professionId: String,
+        terminalWeaponBaseId: String?,
+        zoneTraversalDiagnostics: List<ZoneTraversalDiagnostic> = emptyList(),
+    ): ScenarioReport =
+        ScenarioReport(
+            name = name,
+            seed = 1L,
+            professionId = professionId,
+            success = true,
+            outcome = RunOutcome.Victory(floor = 1),
+            floorReached = 1,
+            turns = 10,
+            goalReached = true,
+            terminalWeaponBaseId = terminalWeaponBaseId,
+            zoneTraversalDiagnostics = zoneTraversalDiagnostics,
+        )
 }

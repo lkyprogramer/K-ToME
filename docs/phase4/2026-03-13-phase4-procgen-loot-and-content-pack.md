@@ -1313,10 +1313,19 @@ data class HarnessReportHeader(
 4. 当前主干上的 `phase4Report` 已聚合：
    - `mapgenSmoke`
    - `solvabilityHarness`
+   - `hiddenContentHarness`
+   - `organicHiddenProbe`
+   - `contentPackHarness`
    - `bossHarness`
+   - `longRunLab`
+   - `terrainInteractionBatch`
    - `whiteBoxMapgen`
    - `whiteBoxSolvability`
-5. 后续随着 `lootBalanceLab / terrainInteractionBatch / hiddenContentHarness / contentPackHarness` 落地，再继续并入同一聚合入口。
+   - `lootBalanceLab`
+   - `whiteBoxLoot`
+   - `whiteBoxHiddenContent`
+   - `whiteBoxContentPack`
+5. `phase4Report` 现在额外收口四类 owner metric：`scripted vs organic hidden`、`same-zone reward identity`、`terminal build identity`、`terrain combat sample contract`。
 6. 聚合输出落到 `tools/build/reports/phase4/phase4-summary.json`。
 
 ## 6. 测试与自证
@@ -1348,10 +1357,15 @@ data class HarnessReportHeader(
 ./gradlew mapgenSmoke
 ./gradlew solvabilityHarness
 ./gradlew lootBalanceLab
+./gradlew whiteBoxLoot
 ./gradlew terrainInteractionBatch
 ./gradlew bossHarness
 ./gradlew hiddenContentHarness
+./gradlew organicHiddenProbe
+./gradlew longRunLab
+./gradlew whiteBoxHiddenContent
 ./gradlew contentPackHarness
+./gradlew whiteBoxContentPack
 ./gradlew phase4Report
 ./gradlew jacocoTestReport
 ./gradlew :core:jacocoTestCoverageVerification

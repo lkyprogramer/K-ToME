@@ -3,6 +3,7 @@ package com.ktome.game.harness
 import com.ktome.core.ecs.Health
 import com.ktome.core.ecs.Position
 import com.ktome.core.ecs.get
+import com.ktome.core.item.EquipSlot
 import com.ktome.core.profile.AvailabilityContext
 import com.ktome.core.save.SaveManager
 import com.ktome.core.world.ObjectiveState
@@ -14,6 +15,7 @@ import com.ktome.game.FoundationGameSession
 import com.ktome.game.GameModule
 import com.ktome.game.PlayerCommand
 import com.ktome.game.data.DataLoader
+import com.ktome.game.data.schema.SchemaCatalog
 import com.ktome.game.zoneRouteHash
 import java.nio.file.Files
 import java.nio.file.Path
@@ -24,6 +26,8 @@ class HeadlessRunHarness(
     private val bot: RunBot = SmokeBot(),
     private val stallRepeats: Int = 20,
 ) {
+    private val schemaCatalogByLocale = linkedMapOf<String, SchemaCatalog>()
+
     fun run(spec: ScenarioSpec): ScenarioReport {
         val runDir = rootDir.resolve("${spec.name}-seed-${spec.seed}")
         Files.createDirectories(runDir)
@@ -31,9 +35,12 @@ class HeadlessRunHarness(
         saveManager.deleteSave()
 
         var session = newSession(spec, saveManager)
+        val schemaCatalog = schemaCatalogFor(session)
+        val zoneObjectiveBindings = buildZoneObjectiveBindings(schemaCatalog)
         val commandStats = linkedMapOf<String, Int>()
         val commandTail = ArrayDeque<String>()
         val zoneHeadlessMilestones = mutableListOf<ZoneHeadlessMilestone>()
+        val zoneTraversalAccumulators = linkedMapOf<String, ZoneTraversalAccumulator>()
         val visitedZonePath = mutableListOf<String>()
         val captainEncounterTrace = ArrayDeque<CaptainEncounterTraceEntry>()
         val breakpointPayoffObservations = mutableListOf<BreakpointPayoffObservation>()
@@ -51,6 +58,12 @@ class HeadlessRunHarness(
         var bossCombatLock = updateBossCombatLock(session, observation, currentLock = null)
         var previousBuildHash = session.currentCommittedBuildHash()
         appendVisitedZone(visitedZonePath, session.config.zoneId)
+        beginZoneVisit(
+            accumulators = zoneTraversalAccumulators,
+            zoneId = session.config.zoneId,
+            turnIndex = turnCount,
+            headlessTurnEquivalent = session.currentHeadlessTurnEquivalent(),
+        )
         appendZoneMilestone(
             milestones = zoneHeadlessMilestones,
             zoneId = session.config.zoneId,
@@ -129,6 +142,9 @@ class HeadlessRunHarness(
                 stallDetector.reset()
             }
 
+            val commandZoneId = observation.zoneId
+            val headlessBeforeCommand = session.currentHeadlessTurnEquivalent()
+            val visibleThreatCount = observation.visibleHostilePositions.size + observation.visibleBossPositions.size
             val command =
                 routeProgressCommand(session, observation)
                     .takeIf { shouldPrioritizeRouteProgress(spec, observation, bossCombatLock != null) }
@@ -164,9 +180,33 @@ class HeadlessRunHarness(
 
             if (command.consumesTurn()) {
                 turnCount += 1
+                recordZoneTraversalTurn(
+                    accumulators = zoneTraversalAccumulators,
+                    zoneId = commandZoneId,
+                    visibleThreatCount = visibleThreatCount,
+                    headlessTurnsSpent = (session.currentHeadlessTurnEquivalent() - headlessBeforeCommand - 1).coerceAtLeast(0),
+                )
             }
 
             observation = RunObservationCapture.capture(session, turnCount)
+            recordObjectiveProgressIfAcquired(
+                accumulators = zoneTraversalAccumulators,
+                zoneId = commandZoneId,
+                objectiveBinding = zoneObjectiveBindings[commandZoneId],
+                session = session,
+                turnIndex = turnCount,
+            )
+            finishZoneVisitIfTransitioned(
+                accumulators = zoneTraversalAccumulators,
+                previousZoneId = commandZoneId,
+                currentZoneId = observation.zoneId,
+            )
+            beginZoneVisit(
+                accumulators = zoneTraversalAccumulators,
+                zoneId = session.config.zoneId,
+                turnIndex = turnCount,
+                headlessTurnEquivalent = session.currentHeadlessTurnEquivalent(),
+            )
             bossCombatLock = updateBossCombatLock(session, observation, bossCombatLock)
             appendVisitedZone(visitedZonePath, session.config.zoneId)
             appendZoneMilestone(
@@ -209,6 +249,15 @@ class HeadlessRunHarness(
         }
 
         val provisional =
+            run {
+                val zoneObjectiveSummaries = buildZoneObjectiveSummaries(schemaCatalog = schemaCatalog, session = session, visitedZonePath = visitedZonePath)
+                val objectiveStateByZone = zoneObjectiveSummaries.associateBy(ZoneObjectiveSummary::zoneId, ZoneObjectiveSummary::state)
+                val zoneTraversalDiagnostics =
+                    zoneTraversalAccumulators.values
+                        .map { accumulator ->
+                            accumulator.toDiagnostic(objectiveStateAtExit = objectiveStateByZone[accumulator.zoneId])
+                        }.sortedBy { diagnostic -> zoneDepth(diagnostic.zoneId) }
+
             ScenarioReport(
                 name = spec.name,
                 seed = spec.seed,
@@ -233,6 +282,7 @@ class HeadlessRunHarness(
                 localeId = session.localizer().locale.id,
                 profileId = HarnessMetadata.PROFILE_ID,
                 buildHash = session.currentBuildHash(),
+                terminalWeaponBaseId = session.currentEquippedBaseItemId(EquipSlot.WEAPON),
                 breakpointPayoffs = session.currentBreakpointPayoffSummaries(),
                 breakpointPayoffObservations = breakpointPayoffObservations.toList(),
                 milestoneRewards = session.milestoneRewardSummaries(),
@@ -253,12 +303,14 @@ class HeadlessRunHarness(
                 checkpointRoundTripVerified = checkpointVerified,
                 commandStats = commandStats.toMap(),
                 zoneHeadlessMilestones = zoneHeadlessMilestones.toList(),
-                zoneObjectiveSummaries = buildZoneObjectiveSummaries(session, visitedZonePath),
+                zoneObjectiveSummaries = zoneObjectiveSummaries,
+                zoneTraversalDiagnostics = zoneTraversalDiagnostics,
                 captainEncounterTrace = captainEncounterTrace.toList(),
                 lastCommands = commandTail.toList(),
                 lastMessages = observation.messageLogTail,
                 eventTail = observation.eventTail,
             )
+            }
 
         val assertionFailures = spec.assertions.mapNotNull { it.verify(provisional) }
         val success = provisional.failureReason == null && provisional.stuckReason == null && provisional.goalReached && assertionFailures.isEmpty()
@@ -420,6 +472,15 @@ class HeadlessRunHarness(
             availabilityContext = AvailabilityContext.DEV_LAB,
         )
 
+    private fun schemaCatalogFor(
+        session: FoundationGameSession,
+    ): SchemaCatalog {
+        val locale = session.localizer().locale
+        return schemaCatalogByLocale.getOrPut(locale.id) {
+            DataLoader(locale).loadSchemaCatalog()
+        }
+    }
+
     private fun roundTripCheckpoint(
         session: FoundationGameSession,
         saveManager: SaveManager,
@@ -549,12 +610,12 @@ class HeadlessRunHarness(
     }
 
     private fun buildZoneObjectiveSummaries(
+        schemaCatalog: SchemaCatalog,
         session: FoundationGameSession,
         visitedZonePath: List<String>,
     ): List<ZoneObjectiveSummary> {
-        val catalog = DataLoader(session.localizer().locale).loadSchemaCatalog()
-        val zonesById = catalog.zones.associateBy { zone -> zone.id }
-        val objectivesById = catalog.objectiveSets.associateBy { objective -> objective.id }
+        val zonesById = schemaCatalog.zones.associateBy { zone -> zone.id }
+        val objectivesById = schemaCatalog.objectiveSets.associateBy { objective -> objective.id }
         val worldProgress = session.worldProgress()
         return visitedZonePath
             .distinct()
@@ -582,6 +643,167 @@ class HeadlessRunHarness(
         if (visitedZonePath.lastOrNull() != zoneId) {
             visitedZonePath += zoneId
         }
+    }
+
+    private fun buildZoneObjectiveBindings(
+        schemaCatalog: SchemaCatalog,
+    ): Map<String, ZoneObjectiveBinding> {
+        val objectivesById = schemaCatalog.objectiveSets.associateBy { objective -> objective.id }
+        return schemaCatalog.zones
+            .mapNotNull { zone ->
+                val objective = zone.objectiveSetId?.let(objectivesById::get) ?: return@mapNotNull null
+                val questId = objective.linkedQuestId ?: return@mapNotNull null
+                val objectiveId = objective.questObjectiveId ?: return@mapNotNull null
+                zone.id to ZoneObjectiveBinding(questId = questId, objectiveId = objectiveId)
+            }.toMap(linkedMapOf())
+    }
+
+    private fun beginZoneVisit(
+        accumulators: MutableMap<String, ZoneTraversalAccumulator>,
+        zoneId: String,
+        turnIndex: Int,
+        headlessTurnEquivalent: Int,
+    ) {
+        val existing = accumulators[zoneId]
+        if (existing != null) {
+            if (existing.isActiveVisit) {
+                return
+            }
+            existing.beginVisit()
+            return
+        }
+        accumulators[zoneId] =
+            ZoneTraversalAccumulator(
+                zoneId = zoneId,
+                firstEntryTurnIndex = turnIndex,
+                firstEntryHeadlessTurnEquivalent = headlessTurnEquivalent,
+            )
+    }
+
+    private fun finishZoneVisitIfTransitioned(
+        accumulators: MutableMap<String, ZoneTraversalAccumulator>,
+        previousZoneId: String,
+        currentZoneId: String,
+    ) {
+        if (previousZoneId == currentZoneId) {
+            return
+        }
+        accumulators[previousZoneId]?.finishVisit()
+    }
+
+    private fun recordZoneTraversalTurn(
+        accumulators: MutableMap<String, ZoneTraversalAccumulator>,
+        zoneId: String,
+        visibleThreatCount: Int,
+        headlessTurnsSpent: Int,
+    ) {
+        accumulators[zoneId]?.recordTurn(
+            visibleThreatCount = visibleThreatCount,
+            enemyTurns = headlessTurnsSpent,
+        )
+    }
+
+    private fun recordObjectiveProgressIfAcquired(
+        accumulators: MutableMap<String, ZoneTraversalAccumulator>,
+        zoneId: String,
+        objectiveBinding: ZoneObjectiveBinding?,
+        session: FoundationGameSession,
+        turnIndex: Int,
+    ) {
+        objectiveBinding ?: return
+        val state =
+            session.worldProgress()
+                .questStates[objectiveBinding.questId]
+                ?.objectiveStates[objectiveBinding.objectiveId]
+                ?: ObjectiveState.LOCKED
+        if (state !in setOf(ObjectiveState.IN_PROGRESS, ObjectiveState.COMPLETED)) {
+            return
+        }
+        accumulators[zoneId]?.recordObjectiveAcquire(
+            currentTurnIndex = turnIndex,
+            currentHeadlessTurnEquivalent = session.currentHeadlessTurnEquivalent(),
+        )
+    }
+
+    private data class ZoneObjectiveBinding(
+        val questId: String,
+        val objectiveId: String,
+    )
+
+    private data class ZoneTraversalAccumulator(
+        val zoneId: String,
+        val firstEntryTurnIndex: Int,
+        val firstEntryHeadlessTurnEquivalent: Int,
+        var visitCount: Int = 1,
+        var playerTurns: Int = 0,
+        var enemyTurns: Int = 0,
+        var visibleHostileTurnCount: Int = 0,
+        var liveHostileWindow: Int = 0,
+        var maxVisibleHostiles: Int = 0,
+        var objectiveAcquireTurn: Int? = null,
+        var objectiveAcquireHeadlessTurnEquivalent: Int? = null,
+        var isActiveVisit: Boolean = true,
+        private var currentLiveHostileStreak: Int = 0,
+    ) {
+        fun beginVisit() {
+            visitCount += 1
+            isActiveVisit = true
+            currentLiveHostileStreak = 0
+        }
+
+        fun finishVisit() {
+            isActiveVisit = false
+            currentLiveHostileStreak = 0
+        }
+
+        fun recordTurn(
+            visibleThreatCount: Int,
+            enemyTurns: Int,
+        ) {
+            playerTurns += 1
+            this.enemyTurns += enemyTurns
+            if (visibleThreatCount > 0) {
+                visibleHostileTurnCount += 1
+                currentLiveHostileStreak += 1
+                liveHostileWindow = maxOf(liveHostileWindow, currentLiveHostileStreak)
+                maxVisibleHostiles = maxOf(maxVisibleHostiles, visibleThreatCount)
+            } else {
+                currentLiveHostileStreak = 0
+            }
+        }
+
+        fun recordObjectiveAcquire(
+            currentTurnIndex: Int,
+            currentHeadlessTurnEquivalent: Int,
+        ) {
+            if (objectiveAcquireTurn != null) {
+                return
+            }
+            objectiveAcquireTurn = currentTurnIndex - firstEntryTurnIndex
+            objectiveAcquireHeadlessTurnEquivalent = currentHeadlessTurnEquivalent - firstEntryHeadlessTurnEquivalent
+        }
+
+        fun toDiagnostic(
+            objectiveStateAtExit: ObjectiveState?,
+        ): ZoneTraversalDiagnostic =
+            ZoneTraversalDiagnostic(
+                zoneId = zoneId,
+                visitCount = visitCount,
+                playerTurns = playerTurns,
+                enemyTurns = enemyTurns,
+                enemyTurnsPerPlayerTurn =
+                    if (playerTurns == 0) {
+                        0.0
+                    } else {
+                        enemyTurns.toDouble() / playerTurns.toDouble()
+                    },
+                visibleHostileTurnCount = visibleHostileTurnCount,
+                liveHostileWindow = liveHostileWindow,
+                maxVisibleHostiles = maxVisibleHostiles,
+                objectiveAcquireTurn = objectiveAcquireTurn,
+                objectiveAcquireHeadlessTurnEquivalent = objectiveAcquireHeadlessTurnEquivalent,
+                objectiveStateAtExit = objectiveStateAtExit,
+            )
     }
 
     private companion object {

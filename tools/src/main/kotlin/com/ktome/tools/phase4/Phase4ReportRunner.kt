@@ -64,6 +64,7 @@ private data class Phase4AggregateReport(
     val failedExperienceMetricCount: Int,
     val failedGateCount: Int,
     val tasks: List<Phase4TaskAggregate>,
+    val metricCatalog: List<Phase4MetricCatalogEntry>,
     val experienceMetrics: List<Phase4ExperienceMetric>,
 )
 
@@ -117,8 +118,16 @@ object Phase4ReportRunner {
                 reader = ::readHiddenContentHarness,
             ),
             Phase4TaskDescriptor(
+                relativeSourcePath = "tools/build/reports/phase4/hidden/organic-hidden-probe-summary.json",
+                reader = ::readOrganicHiddenProbe,
+            ),
+            Phase4TaskDescriptor(
                 relativeSourcePath = "build/reports/harness/boss-harness.json",
                 reader = ::readBossHarness,
+            ),
+            Phase4TaskDescriptor(
+                relativeSourcePath = "build/reports/harness/long-run-full.json",
+                reader = ::readLongRunLabFull,
             ),
             Phase4TaskDescriptor(
                 relativeSourcePath = "tools/build/reports/phase4/whitebox/terrain/whitebox-terrain-summary.json",
@@ -160,6 +169,8 @@ object Phase4ReportRunner {
         Files.createDirectories(outputDir)
 
         val taskReports = taskDescriptors.map { descriptor -> descriptor.read(repoRoot) }
+        val sourcePathByTaskId = taskReports.associate { task -> task.taskId to task.sourcePath }
+        val metricCatalog = Phase4MetricCatalog.entries(sourcePathByTaskId)
         val experienceMetrics = buildExperienceMetrics(repoRoot = repoRoot, tasks = taskReports)
         val failedTaskCount = countFailedStatuses(taskReports.map(Phase4TaskAggregate::status))
         val failedExperienceMetricCount = countFailedStatuses(experienceMetrics.map(Phase4ExperienceMetric::status))
@@ -176,6 +187,7 @@ object Phase4ReportRunner {
                 failedExperienceMetricCount = failedExperienceMetricCount,
                 failedGateCount = failedGateCount,
                 tasks = taskReports,
+                metricCatalog = metricCatalog,
                 experienceMetrics = experienceMetrics,
             )
         val summaryPath = outputDir.resolve(SUMMARY_FILE)
@@ -269,6 +281,7 @@ object Phase4ReportRunner {
             locale = header.stringValue("locale"),
             metrics =
                 buildJsonObject {
+                    put("scriptedVerification", summary.getValue("scriptedVerification"))
                     put("totalCases", summary.intValue("totalCases"))
                     put("distinctSeedCount", summary.intValue("distinctSeedCount"))
                     put("failureCount", failureCount)
@@ -279,6 +292,8 @@ object Phase4ReportRunner {
                     put("secretZoneDiscoveryCount", summary.intValue("secretZoneDiscoveryCount"))
                     put("secretZoneDiscoveryRate", summary.doubleValue("secretZoneDiscoveryRate"))
                     put("explicitSearchRevealCount", summary.intValue("explicitSearchRevealCount"))
+                    put("primerActionUsedCount", summary.intValue("primerActionUsedCount"))
+                    put("primerFreeCaseCount", summary.intValue("primerFreeCaseCount"))
                     put("searchFailureCount", summary.intValue("searchFailureCount"))
                     put("zeroHiddenEventZoneCount", summary.intValue("zeroHiddenEventZoneCount"))
                     put("zeroSecretZoneZoneCount", summary.intValue("zeroSecretZoneZoneCount"))
@@ -296,6 +311,46 @@ object Phase4ReportRunner {
                     put("hiddenTriggerTypeSet", summary.getValue("hiddenTriggerTypeSet"))
                     put("secretEntranceBindingCoverage", summary.getValue("secretEntranceBindingCoverage"))
                     put("secretEntranceBindingSet", summary.getValue("secretEntranceBindingSet"))
+                },
+        )
+    }
+
+    private fun readOrganicHiddenProbe(
+        repoRoot: Path,
+        sourcePath: Path,
+        payload: JsonObject,
+    ): Phase4TaskAggregate {
+        val header = payload.getValue("header").jsonObject
+        val summary = payload.getValue("summary").jsonObject
+        val runtimeFailureCount = summary.intValue("runtimeFailureCount")
+        return Phase4TaskAggregate(
+            taskId = "organicHiddenProbe",
+            status = if (runtimeFailureCount == 0) "PASS" else "FAIL",
+            sourcePath = relativize(repoRoot, sourcePath),
+            buildId = header.stringValue("buildId"),
+            locale = header.stringValue("locale"),
+            metrics =
+                buildJsonObject {
+                    put("scriptedVerification", summary.getValue("scriptedVerification"))
+                    put("primerActionUsedCount", summary.intValue("primerActionUsedCount"))
+                    put("totalCases", summary.intValue("totalCases"))
+                    put("distinctSeedCount", summary.intValue("distinctSeedCount"))
+                    put("runtimeFailureCount", runtimeFailureCount)
+                    put("searchAttemptCount", summary.intValue("searchAttemptCount"))
+                    put("runsWithSearchActionCount", summary.intValue("runsWithSearchActionCount"))
+                    put("searchActionUseCount", summary.intValue("searchActionUseCount"))
+                    put("searchActionUseRate", summary.doubleValue("searchActionUseRate"))
+                    put("discoveryWithoutPrimerCount", summary.intValue("discoveryWithoutPrimerCount"))
+                    put("organicHiddenDiscoveryRate", summary.doubleValue("organicHiddenDiscoveryRate"))
+                    put("secretZoneEntryCount", summary.intValue("secretZoneEntryCount"))
+                    put("secretZoneEntryRate", summary.doubleValue("secretZoneEntryRate"))
+                    put("averageFirstHiddenDiscoveryTurn", summary.getValue("averageFirstHiddenDiscoveryTurn"))
+                    put("averageFirstSecretZoneEntryTurn", summary.getValue("averageFirstSecretZoneEntryTurn"))
+                    put("probeBotId", summary.getValue("probeBotId"))
+                    put("probeTurnBudget", summary.intValue("probeTurnBudget"))
+                    put("probeMaxFloor", summary.intValue("probeMaxFloor"))
+                    put("zones", payload.getValue("zones"))
+                    put("notes", payload.getValue("notes"))
                 },
         )
     }
@@ -365,6 +420,34 @@ object Phase4ReportRunner {
         )
     }
 
+    private fun readLongRunLabFull(
+        repoRoot: Path,
+        sourcePath: Path,
+        payload: JsonObject,
+    ): Phase4TaskAggregate {
+        val fullRouteCount = payload.intValue("fullRouteCount")
+        return Phase4TaskAggregate(
+            taskId = "longRunLab",
+            status = if (fullRouteCount > 0) "PASS" else "FAIL",
+            sourcePath = relativize(repoRoot, sourcePath),
+            buildId = payload.stringValue("buildId"),
+            locale = payload.stringValue("localeId"),
+            metrics =
+                buildJsonObject {
+                    put("scenarioCount", payload.intValue("scenarioCount"))
+                    put("fullRouteCount", fullRouteCount)
+                    put("branchInclusiveCount", payload.intValue("branchInclusiveCount"))
+                    put("terminalWeaponBaseDiversity", payload.intValue("terminalWeaponBaseDiversity"))
+                    put("crossProfessionTopWeaponDominance", payload.doubleValue("crossProfessionTopWeaponDominance"))
+                    put("professionAlignedWeaponAdoptionRate", payload.doubleValue("professionAlignedWeaponAdoptionRate"))
+                    put("alignedFullRouteSampleCount", payload.intValue("alignedFullRouteSampleCount"))
+                    put("crossProfessionTopWeaponCount", payload.intValue("crossProfessionTopWeaponCount"))
+                    payload["crossProfessionTopWeaponBaseId"]?.let { topWeaponBaseId -> put("crossProfessionTopWeaponBaseId", topWeaponBaseId) }
+                    put("professionTerminalWeaponDistribution", payload.getValue("professionTerminalWeaponDistribution"))
+                },
+        )
+    }
+
     private fun readTerrainInteractionBatch(
         repoRoot: Path,
         sourcePath: Path,
@@ -405,6 +488,10 @@ object Phase4ReportRunner {
                     put("terrainInteractionEncounterFormula", corpusMetrics.getValue("terrainInteractionEncounterFormula"))
                     put("decisionPathByCurrentMetrics", corpusMetrics.getValue("decisionPathByCurrentMetrics"))
                     put("preferredTerrainTagsSeen", corpusMetrics.getValue("preferredTerrainTagsSeen"))
+                    put("combatSampledZoneIds", corpusMetrics.getValue("combatSampledZoneIds"))
+                    put("combatSampledZoneExclusionNotes", corpusMetrics.getValue("combatSampledZoneExclusionNotes"))
+                    put("perZoneEncounterLowerBoundTarget", corpusMetrics.getValue("perZoneEncounterLowerBoundTarget"))
+                    put("perZoneEncounterFailures", corpusMetrics.getValue("perZoneEncounterFailures"))
                     put("terrainCoverageByZone", corpusMetrics.getValue("terrainCoverageByZone"))
                     payload["firstFailedJoinKey"]?.let { joinKey -> put("firstFailedJoinKey", joinKey.toString()) }
                 },
@@ -583,6 +670,11 @@ object Phase4ReportRunner {
                     put("lootProfileMaxBaseItemOverlap", corpusMetrics.getValue("lootProfileMaxBaseItemOverlap"))
                     put("lootProfileDistinctBaseItemCount", corpusMetrics.getValue("lootProfileDistinctBaseItemCount"))
                     put("lootProfileBaseItemOverlapMatrix", corpusMetrics.getValue("lootProfileBaseItemOverlapMatrix"))
+                    put("sameZoneSecretVsCadenceMaxOverlap", corpusMetrics.getValue("sameZoneSecretVsCadenceMaxOverlap"))
+                    put("sameZoneSecretVsRewardMaxOverlap", corpusMetrics.getValue("sameZoneSecretVsRewardMaxOverlap"))
+                    put("sameZoneSecretVsCadencePairs", corpusMetrics.getValue("sameZoneSecretVsCadencePairs"))
+                    put("sameZoneSecretVsRewardPairs", corpusMetrics.getValue("sameZoneSecretVsRewardPairs"))
+                    put("localIdentityFailurePairs", corpusMetrics.getValue("localIdentityFailurePairs"))
                     put("affixPassiveCoverage", corpusMetrics.getValue("affixPassiveCoverage"))
                     put("affixPassiveKinds", corpusMetrics.getValue("affixPassiveKinds"))
                     put("uniqueArtifactOutcomeCount", corpusMetrics.getValue("uniqueArtifactOutcomeCount"))
@@ -659,194 +751,161 @@ object Phase4ReportRunner {
         tasks: List<Phase4TaskAggregate>,
     ): List<Phase4ExperienceMetric> {
         val tasksById = tasks.associateBy(Phase4TaskAggregate::taskId)
-        val boss = requireTask(tasksById, "bossHarness")
         val loot = requireTask(tasksById, "whiteBoxLoot")
-        val hidden = requireTask(tasksById, "whiteBoxHiddenContent")
+        val scriptedHidden = requireTask(tasksById, "hiddenContentHarness")
+        val organicHidden = requireTask(tasksById, "organicHiddenProbe")
+        val longRun = requireTask(tasksById, "longRunLab")
         val terrain = requireTask(tasksById, "terrainInteractionBatch")
         val terrainBaseline = readTerrainBaseline(repoRoot)
 
-        val lootAverageOverlap = loot.metrics.doubleValue("lootProfileAverageBaseItemOverlap")
-        val lootMaxOverlap = loot.metrics.doubleValue("lootProfileMaxBaseItemOverlap")
-        val lootDistinctBaseItemCount = loot.metrics.intValue("lootProfileDistinctBaseItemCount")
-        val affixCount = loot.metrics.intValue("affixCount")
-        val uniqueTemplateCount = loot.metrics.intValue("uniqueTemplateCount")
-        val artifactTemplateCount = loot.metrics.intValue("artifactTemplateCount")
-        val totalCount = loot.metrics.intValue("totalCount")
-        val affixCoverage = loot.metrics.doubleValue("affixPassiveCoverage")
-        val affixPassiveKinds = loot.metrics.stringList("affixPassiveKinds")
-        val hiddenEventRegistryCount = hidden.metrics.intValue("hiddenEventRegistryCount")
-        val hiddenTriggerCoverage = hidden.metrics.doubleValue("hiddenTriggerTypeCoverage")
-        val hiddenTriggerTypes = hidden.metrics.stringList("hiddenTriggerTypeSet")
-        val secretBindingCoverage = hidden.metrics.intValue("secretEntranceBindingCoverage")
-        val secretBindingSet = hidden.metrics.stringList("secretEntranceBindingSet")
-        val terrainTaggedExposureRate = terrain.metrics.doubleValue("terrainTaggedCombatExposureRate")
+        val scriptedTotalCases = scriptedHidden.metrics.intValue("totalCases")
+        val scriptedFailureCount = scriptedHidden.metrics.intValue("failureCount")
+        val scriptedHiddenVerificationRate =
+            if (scriptedTotalCases == 0) {
+                0.0
+            } else {
+                (scriptedTotalCases - scriptedFailureCount).toDouble() / scriptedTotalCases.toDouble()
+            }
+        val organicTotalCases = organicHidden.metrics.intValue("totalCases")
+        val organicDiscoveryCount = organicHidden.metrics.intValue("discoveryWithoutPrimerCount")
+        val organicHiddenDiscoveryRate = organicHidden.metrics.doubleValue("organicHiddenDiscoveryRate")
+        val organicSearchActionUseRate = organicHidden.metrics.doubleValue("searchActionUseRate")
+        val organicSecretZoneEntryRate = organicHidden.metrics.doubleValue("secretZoneEntryRate")
+        val sameZoneSecretVsCadenceMaxOverlap = loot.metrics.doubleValue("sameZoneSecretVsCadenceMaxOverlap")
+        val sameZoneSecretVsRewardMaxOverlap = loot.metrics.doubleValue("sameZoneSecretVsRewardMaxOverlap")
+        val terminalWeaponBaseDiversity = longRun.metrics.intValue("terminalWeaponBaseDiversity")
+        val crossProfessionTopWeaponDominance = longRun.metrics.doubleValue("crossProfessionTopWeaponDominance")
+        val professionAlignedWeaponAdoptionRate = longRun.metrics.doubleValue("professionAlignedWeaponAdoptionRate")
+        val alignedFullRouteSampleCount = longRun.metrics.intValue("alignedFullRouteSampleCount")
+        val fullRouteCount = longRun.metrics.intValue("fullRouteCount")
+        val professionTerminalWeaponDistribution = longRun.metrics.getValue("professionTerminalWeaponDistribution")
+        val terminalWeaponBaseNote =
+            professionTerminalWeaponDistribution.jsonObject.values
+                .flatMap { distribution -> distribution.jsonObject.keys }
+                .distinct()
+                .sorted()
+                .joinToString()
         val terrainEncounterRate = terrain.metrics.doubleValue("terrainInteractionEncounterRate")
-        val combatCount = terrain.metrics.intValue("combatCount")
         val taggedCombatCount = terrain.metrics.intValue("taggedCombatCount")
         val triggeredInteractionCombatCount = terrain.metrics.intValue("triggeredInteractionCombatCount")
         val terrainMetricDefinitionVersion = terrain.metrics.stringValue("terrainMetricDefinitionVersion")
+        val perZoneEncounterLowerBoundTarget = terrain.metrics.doubleValue("perZoneEncounterLowerBoundTarget")
+        val perZoneEncounterFailures = terrain.metrics.stringList("perZoneEncounterFailures")
         require(terrainMetricDefinitionVersion == terrainBaseline.metricDefinitionVersion) {
             "Terrain metric definition drifted: runtime=$terrainMetricDefinitionVersion baseline=${terrainBaseline.metricDefinitionVersion}."
         }
-        val terrainTaggedExposureBaseline = terrainBaseline.metric("terrainTaggedCombatExposureRate")
         val terrainEncounterBaseline = terrainBaseline.metric("terrainInteractionEncounterRate")
-        val terrainTaggedExposureRelativeIncrease = relativeIncrease(terrainTaggedExposureRate, terrainTaggedExposureBaseline.baselineRate)
         val terrainEncounterRelativeIncrease = relativeIncrease(terrainEncounterRate, terrainEncounterBaseline.baselineRate)
-        val uniqueArtifactMeaningfulSwapRate = loot.metrics.doubleValue("uniqueArtifactMeaningfulSwapRate")
-        val uniqueArtifactOutcomeCount = loot.metrics.intValue("uniqueArtifactOutcomeCount")
-        val meaningfulUniqueArtifactSwapCount = loot.metrics.intValue("meaningfulUniqueArtifactSwapCount")
         return listOf(
             Phase4ExperienceMetric(
-                metricId = "eliteMutationDistinctCount",
-                sourceTaskId = boss.taskId,
-                currentValue = boss.metrics.getValue("eliteMutationDistinctCount"),
-                currentValueText = boss.metrics.intValue("eliteMutationDistinctCount").toString(),
-                target = ">= 12",
-                status = verdictOf(boss.metrics.intValue("eliteMutationDistinctCount") >= 12),
-            ),
-            Phase4ExperienceMetric(
-                metricId = "eliteMutationValidPairCount",
-                sourceTaskId = boss.taskId,
-                currentValue = boss.metrics.getValue("eliteMutationValidPairCount"),
-                currentValueText = boss.metrics.intValue("eliteMutationValidPairCount").toString(),
-                target = ">= 40",
-                status = verdictOf(boss.metrics.intValue("eliteMutationValidPairCount") >= 40),
-            ),
-            Phase4ExperienceMetric(
-                metricId = "lootProfileBaseItemOverlapMatrix",
-                sourceTaskId = loot.taskId,
+                metricId = "scriptedHiddenVerificationRate",
+                sourceTaskId = scriptedHidden.taskId,
                 currentValue =
                     buildJsonObject {
-                        put("averageOverlap", loot.metrics.getValue("lootProfileAverageBaseItemOverlap"))
-                        put("maxOverlap", loot.metrics.getValue("lootProfileMaxBaseItemOverlap"))
-                        put("matrix", loot.metrics.getValue("lootProfileBaseItemOverlapMatrix"))
-                    },
-                currentValueText = "average=${formatRatio(lootAverageOverlap)}, max=${formatRatio(lootMaxOverlap)}",
-                target = "averageOverlap < 0.30",
-                status = verdictOf(lootAverageOverlap < 0.30),
-                note = "overlap = |A ∩ B| / min(|A|, |B|)",
-            ),
-            Phase4ExperienceMetric(
-                metricId = "lootProfileMaxBaseItemOverlap",
-                sourceTaskId = loot.taskId,
-                currentValue = loot.metrics.getValue("lootProfileMaxBaseItemOverlap"),
-                currentValueText = formatRatio(lootMaxOverlap),
-                target = "< 0.95 (sanity)",
-                status = verdictOf(lootMaxOverlap < 0.95),
-                note = "soft sanity guard for profile identity; does not affect task verdict",
-            ),
-            Phase4ExperienceMetric(
-                metricId = "lootProfileDistinctBaseItemCount",
-                sourceTaskId = loot.taskId,
-                currentValue = loot.metrics.getValue("lootProfileDistinctBaseItemCount"),
-                currentValueText = lootDistinctBaseItemCount.toString(),
-                target = ">= 35",
-                status = verdictOf(lootDistinctBaseItemCount >= 35),
-            ),
-            Phase4ExperienceMetric(
-                metricId = "affixCount",
-                sourceTaskId = loot.taskId,
-                currentValue = loot.metrics.getValue("affixCount"),
-                currentValueText = affixCount.toString(),
-                target = ">= 75",
-                status = verdictOf(affixCount >= 75),
-            ),
-            Phase4ExperienceMetric(
-                metricId = "uniqueTemplateCount",
-                sourceTaskId = loot.taskId,
-                currentValue = loot.metrics.getValue("uniqueTemplateCount"),
-                currentValueText = uniqueTemplateCount.toString(),
-                target = ">= 20",
-                status = verdictOf(uniqueTemplateCount >= 20),
-            ),
-            Phase4ExperienceMetric(
-                metricId = "artifactTemplateCount",
-                sourceTaskId = loot.taskId,
-                currentValue = loot.metrics.getValue("artifactTemplateCount"),
-                currentValueText = artifactTemplateCount.toString(),
-                target = ">= 8",
-                status = verdictOf(artifactTemplateCount >= 8),
-            ),
-            Phase4ExperienceMetric(
-                metricId = "totalLootContentCount",
-                sourceTaskId = loot.taskId,
-                currentValue = loot.metrics.getValue("totalCount"),
-                currentValueText = totalCount.toString(),
-                target = ">= 103",
-                status = verdictOf(totalCount >= 103),
-            ),
-            Phase4ExperienceMetric(
-                metricId = "affixPassiveCoverage",
-                sourceTaskId = loot.taskId,
-                currentValue =
-                    buildJsonObject {
-                        put("coverageRatio", loot.metrics.getValue("affixPassiveCoverage"))
-                        put("passiveKinds", loot.metrics.getValue("affixPassiveKinds"))
-                    },
-                currentValueText = "${formatPercent(affixCoverage)} (${affixPassiveKinds.joinToString()})",
-                target = ">= 80%",
-                status = verdictOf(affixCoverage >= 0.80),
-            ),
-            Phase4ExperienceMetric(
-                metricId = "hiddenEventCount",
-                sourceTaskId = hidden.taskId,
-                currentValue = hidden.metrics.getValue("hiddenEventRegistryCount"),
-                currentValueText = hiddenEventRegistryCount.toString(),
-                target = ">= 12",
-                status = verdictOf(hiddenEventRegistryCount >= 12),
-            ),
-            Phase4ExperienceMetric(
-                metricId = "hiddenTriggerTypeCoverage",
-                sourceTaskId = hidden.taskId,
-                currentValue =
-                    buildJsonObject {
-                        put("coverageRatio", hidden.metrics.getValue("hiddenTriggerTypeCoverage"))
-                        put("triggerTypes", hidden.metrics.getValue("hiddenTriggerTypeSet"))
-                    },
-                currentValueText = "${formatPercent(hiddenTriggerCoverage)} (${hiddenTriggerTypes.joinToString()})",
-                target = ">= 4/6",
-                status = verdictOf(hiddenTriggerCoverage >= (4.0 / 6.0)),
-            ),
-            Phase4ExperienceMetric(
-                metricId = "secretEntranceBindingCoverage",
-                sourceTaskId = hidden.taskId,
-                currentValue =
-                    buildJsonObject {
-                        put("bindingCount", hidden.metrics.getValue("secretEntranceBindingCoverage"))
-                        put("bindingSet", hidden.metrics.getValue("secretEntranceBindingSet"))
-                    },
-                currentValueText = "$secretBindingCoverage (${secretBindingSet.joinToString()})",
-                target = ">= 3",
-                status = verdictOf(secretBindingCoverage >= 3),
-            ),
-            Phase4ExperienceMetric(
-                metricId = "terrainTaggedCombatExposureRate",
-                sourceTaskId = terrain.taskId,
-                currentValue =
-                    buildJsonObject {
-                        put("rate", terrain.metrics.getValue("terrainTaggedCombatExposureRate"))
-                        put("combatCount", terrain.metrics.getValue("combatCount"))
-                        put("taggedCombatCount", terrain.metrics.getValue("taggedCombatCount"))
-                        put("baseline", terrainTaggedExposureBaseline.toJson())
-                        put("relativeIncrease", terrainTaggedExposureRelativeIncrease)
-                        put("targetRate", terrainTaggedExposureBaseline.targetRate)
-                        put("decisionPathByCurrentMetrics", terrain.metrics.getValue("decisionPathByCurrentMetrics"))
-                        put("terrainCoverageByZone", terrain.metrics.getValue("terrainCoverageByZone"))
+                        put("rate", scriptedHiddenVerificationRate)
+                        put("totalCases", scriptedHidden.metrics.getValue("totalCases"))
+                        put("failureCount", scriptedHidden.metrics.getValue("failureCount"))
+                        put("primerActionUsedCount", scriptedHidden.metrics.getValue("primerActionUsedCount"))
+                        put("primerFreeCaseCount", scriptedHidden.metrics.getValue("primerFreeCaseCount"))
+                        put("secretZoneDiscoveryRate", scriptedHidden.metrics.getValue("secretZoneDiscoveryRate"))
                     },
                 currentValueText =
-                    "${formatPercent(terrainTaggedExposureRate)} ($taggedCombatCount/$combatCount), " +
-                        "delta=${formatSignedPercent(terrainTaggedExposureRelativeIncrease)} vs baseline ${formatPercent(terrainTaggedExposureBaseline.baselineRate)}",
-                target =
-                    ">= ${formatPercentPrecise(terrainTaggedExposureBaseline.targetRate)} " +
-                        "(baseline ${formatPercentPrecise(terrainTaggedExposureBaseline.baselineRate)} +${formatPercentPrecise(terrainTaggedExposureBaseline.targetRelativeIncrease)})",
-                status = verdictOf(terrainTaggedExposureRate >= terrainTaggedExposureBaseline.targetRate),
-                note =
-                    "baseline=${terrainBaseline.baselineId} @ ${terrainBaseline.sourceArtifactPath} " +
-                        "(buildId=${terrainBaseline.sourceBuildId ?: "unknown"}, generatedAt=${terrainBaseline.sourceGeneratedAt ?: "unknown"}, metricDefinitionVersion=$terrainMetricDefinitionVersion); " +
-                        "decisionPathByCurrentMetrics=${terrain.metrics.stringValue("decisionPathByCurrentMetrics")}",
+                    "${formatPercent(scriptedHiddenVerificationRate)} (${scriptedTotalCases - scriptedFailureCount}/$scriptedTotalCases)",
+                target = Phase4MetricCatalog.requireSpec("scriptedHiddenVerificationRate").targetText,
+                status = verdictOf(scriptedHiddenVerificationRate >= SCRIPTED_HIDDEN_VERIFICATION_RATE_TARGET),
+                note = "primerCases=${scriptedHidden.metrics.intValue("primerActionUsedCount")}, primerFreeCases=${scriptedHidden.metrics.intValue("primerFreeCaseCount")}",
             ),
             Phase4ExperienceMetric(
-                metricId = "terrainInteractionEncounterRate",
+                metricId = "organicHiddenDiscoveryRate",
+                sourceTaskId = organicHidden.taskId,
+                currentValue =
+                    buildJsonObject {
+                        put("rate", organicHidden.metrics.getValue("organicHiddenDiscoveryRate"))
+                        put("totalCases", organicHidden.metrics.getValue("totalCases"))
+                        put("discoveryWithoutPrimerCount", organicHidden.metrics.getValue("discoveryWithoutPrimerCount"))
+                        put("searchActionUseRate", organicHidden.metrics.getValue("searchActionUseRate"))
+                        put("secretZoneEntryRate", organicHidden.metrics.getValue("secretZoneEntryRate"))
+                        put("zones", organicHidden.metrics.getValue("zones"))
+                    },
+                currentValueText =
+                    "${formatPercent(organicHiddenDiscoveryRate)} ($organicDiscoveryCount/$organicTotalCases), " +
+                        "searchUse=${formatPercent(organicSearchActionUseRate)}, secretEntry=${formatPercent(organicSecretZoneEntryRate)}",
+                target = Phase4MetricCatalog.requireSpec("organicHiddenDiscoveryRate").targetText,
+                status = verdictOf(organicHiddenDiscoveryRate >= ORGANIC_HIDDEN_DISCOVERY_RATE_TARGET),
+                note = "probeBot=${organicHidden.metrics.stringValue("probeBotId")}, scripted=false, observationOnly=true",
+            ),
+            Phase4ExperienceMetric(
+                metricId = "sameZoneSecretVsCadenceMaxOverlap",
+                sourceTaskId = loot.taskId,
+                currentValue =
+                    buildJsonObject {
+                        put("maxOverlap", loot.metrics.getValue("sameZoneSecretVsCadenceMaxOverlap"))
+                        put("pairs", loot.metrics.getValue("sameZoneSecretVsCadencePairs"))
+                        put("localIdentityFailurePairs", loot.metrics.getValue("localIdentityFailurePairs"))
+                    },
+                currentValueText = formatRatio(sameZoneSecretVsCadenceMaxOverlap),
+                target = Phase4MetricCatalog.requireSpec("sameZoneSecretVsCadenceMaxOverlap").targetText,
+                status = verdictOf(sameZoneSecretVsCadenceMaxOverlap < SAME_ZONE_SECRET_CADENCE_MAX_OVERLAP_TARGET),
+                note = "pairCount=${loot.metrics.getValue("sameZoneSecretVsCadencePairs").jsonArray.size}, overlap = |A ∩ B| / min(|A|, |B|)",
+            ),
+            Phase4ExperienceMetric(
+                metricId = "sameZoneSecretVsRewardMaxOverlap",
+                sourceTaskId = loot.taskId,
+                currentValue =
+                    buildJsonObject {
+                        put("maxOverlap", loot.metrics.getValue("sameZoneSecretVsRewardMaxOverlap"))
+                        put("pairs", loot.metrics.getValue("sameZoneSecretVsRewardPairs"))
+                        put("localIdentityFailurePairs", loot.metrics.getValue("localIdentityFailurePairs"))
+                    },
+                currentValueText = formatRatio(sameZoneSecretVsRewardMaxOverlap),
+                target = Phase4MetricCatalog.requireSpec("sameZoneSecretVsRewardMaxOverlap").targetText,
+                status = verdictOf(sameZoneSecretVsRewardMaxOverlap < SAME_ZONE_SECRET_REWARD_MAX_OVERLAP_TARGET),
+                note = "pairCount=${loot.metrics.getValue("sameZoneSecretVsRewardPairs").jsonArray.size}, failurePairs=${loot.metrics.getValue("localIdentityFailurePairs").jsonArray.size}",
+            ),
+            Phase4ExperienceMetric(
+                metricId = "terminalWeaponBaseDiversity",
+                sourceTaskId = longRun.taskId,
+                currentValue = longRun.metrics.getValue("terminalWeaponBaseDiversity"),
+                currentValueText = terminalWeaponBaseDiversity.toString(),
+                target = Phase4MetricCatalog.requireSpec("terminalWeaponBaseDiversity").targetText,
+                status = verdictOf(terminalWeaponBaseDiversity >= TERMINAL_WEAPON_BASE_DIVERSITY_TARGET),
+                note = "terminalBases=$terminalWeaponBaseNote",
+            ),
+            Phase4ExperienceMetric(
+                metricId = "crossProfessionTopWeaponDominance",
+                sourceTaskId = longRun.taskId,
+                currentValue =
+                    buildJsonObject {
+                        put("rate", longRun.metrics.getValue("crossProfessionTopWeaponDominance"))
+                        longRun.metrics["crossProfessionTopWeaponBaseId"]?.let { topWeaponBaseId -> put("topWeaponBaseId", topWeaponBaseId) }
+                        put("topWeaponCount", longRun.metrics.getValue("crossProfessionTopWeaponCount"))
+                        put("fullRouteCount", longRun.metrics.getValue("fullRouteCount"))
+                    },
+                currentValueText =
+                    "${formatPercent(crossProfessionTopWeaponDominance)} " +
+                        "(${longRun.metrics.intValue("crossProfessionTopWeaponCount")}/$fullRouteCount) " +
+                        "top=${longRun.metrics["crossProfessionTopWeaponBaseId"]?.jsonPrimitive?.content ?: "unknown"}",
+                target = Phase4MetricCatalog.requireSpec("crossProfessionTopWeaponDominance").targetText,
+                status = verdictOf(crossProfessionTopWeaponDominance <= CROSS_PROFESSION_TOP_WEAPON_DOMINANCE_TARGET),
+                note = "topWeaponBaseId=${longRun.metrics["crossProfessionTopWeaponBaseId"]?.jsonPrimitive?.content ?: "unknown"}",
+            ),
+            Phase4ExperienceMetric(
+                metricId = "professionAlignedWeaponAdoptionRate",
+                sourceTaskId = longRun.taskId,
+                currentValue =
+                    buildJsonObject {
+                        put("rate", longRun.metrics.getValue("professionAlignedWeaponAdoptionRate"))
+                        put("alignedFullRouteSampleCount", longRun.metrics.getValue("alignedFullRouteSampleCount"))
+                        put("fullRouteCount", longRun.metrics.getValue("fullRouteCount"))
+                        put("professionTerminalWeaponDistribution", professionTerminalWeaponDistribution)
+                    },
+                currentValueText = "${formatPercent(professionAlignedWeaponAdoptionRate)} ($alignedFullRouteSampleCount/$fullRouteCount)",
+                target = Phase4MetricCatalog.requireSpec("professionAlignedWeaponAdoptionRate").targetText,
+                status = verdictOf(professionAlignedWeaponAdoptionRate >= PROFESSION_ALIGNED_WEAPON_ADOPTION_TARGET),
+                note = "alignedSamples=$alignedFullRouteSampleCount/$fullRouteCount",
+            ),
+            Phase4ExperienceMetric(
+                metricId = "terrainInteractionEncounterRate.aggregate",
                 sourceTaskId = terrain.taskId,
                 currentValue =
                     buildJsonObject {
@@ -857,6 +916,8 @@ object Phase4ReportRunner {
                         put("relativeIncrease", terrainEncounterRelativeIncrease)
                         put("targetRate", terrainEncounterBaseline.targetRate)
                         put("decisionPathByCurrentMetrics", terrain.metrics.getValue("decisionPathByCurrentMetrics"))
+                        put("combatSampledZoneIds", terrain.metrics.getValue("combatSampledZoneIds"))
+                        put("combatSampledZoneExclusionNotes", terrain.metrics.getValue("combatSampledZoneExclusionNotes"))
                         put("terrainCoverageByZone", terrain.metrics.getValue("terrainCoverageByZone"))
                     },
                 currentValueText =
@@ -867,29 +928,53 @@ object Phase4ReportRunner {
                         "(baseline ${formatPercentPrecise(terrainEncounterBaseline.baselineRate)} +${formatPercentPrecise(terrainEncounterBaseline.targetRelativeIncrease)})",
                 status = verdictOf(terrainEncounterRate >= terrainEncounterBaseline.targetRate),
                 note =
-                    "encounterRate = triggeredInteractionCombatCount / taggedCombatCount; " +
-                        "baseline=${terrainBaseline.baselineId} normalized by ${terrainEncounterBaseline.normalizedFormula} " +
-                        "from ${terrainBaseline.sourceArtifactPath}",
+                    "baseline=${terrainBaseline.baselineId} @ ${terrainBaseline.sourceArtifactPath} " +
+                        "(buildId=${terrainBaseline.sourceBuildId ?: "unknown"}, generatedAt=${terrainBaseline.sourceGeneratedAt ?: "unknown"}, metricDefinitionVersion=$terrainMetricDefinitionVersion); " +
+                        "decisionPathByCurrentMetrics=${terrain.metrics.stringValue("decisionPathByCurrentMetrics")}",
             ),
             Phase4ExperienceMetric(
-                metricId = "uniqueArtifactMeaningfulSwapRate",
-                sourceTaskId = loot.taskId,
+                metricId = "terrainInteractionEncounterRate.per_zone_lower_bound",
+                sourceTaskId = terrain.taskId,
                 currentValue =
                     buildJsonObject {
-                        put("rate", loot.metrics.getValue("uniqueArtifactMeaningfulSwapRate"))
-                        put("uniqueArtifactOutcomeCount", loot.metrics.getValue("uniqueArtifactOutcomeCount"))
-                        put("meaningfulUniqueArtifactSwapCount", loot.metrics.getValue("meaningfulUniqueArtifactSwapCount"))
+                        put("target", terrain.metrics.getValue("perZoneEncounterLowerBoundTarget"))
+                        put("failureZones", terrain.metrics.getValue("perZoneEncounterFailures"))
+                        put("combatSampledZoneIds", terrain.metrics.getValue("combatSampledZoneIds"))
+                        put("combatSampledZoneExclusionNotes", terrain.metrics.getValue("combatSampledZoneExclusionNotes"))
+                        put("terrainCoverageByZone", terrain.metrics.getValue("terrainCoverageByZone"))
                     },
-                currentValueText = "${formatPercent(uniqueArtifactMeaningfulSwapRate)} ($meaningfulUniqueArtifactSwapCount/$uniqueArtifactOutcomeCount)",
-                target = ">= 50%",
-                status = verdictOf(uniqueArtifactMeaningfulSwapRate >= 0.50),
-                note = "meaningful = passive signature set is non-empty and not fully covered by the same-slot rare passive universe",
+                currentValueText =
+                    if (perZoneEncounterFailures.isEmpty()) {
+                        "all sampled zones >= ${formatPercent(perZoneEncounterLowerBoundTarget)}"
+                    } else {
+                        "failed=${perZoneEncounterFailures.joinToString()} target=${formatPercent(perZoneEncounterLowerBoundTarget)}"
+                    },
+                target = Phase4MetricCatalog.requireSpec("terrainInteractionEncounterRate.per_zone_lower_bound").targetText,
+                status = verdictOf(perZoneEncounterFailures.isEmpty()),
+                note =
+                    "combatSampledZoneIds=${terrain.metrics.stringList("combatSampledZoneIds").joinToString()}, " +
+                        "exclusions=${terrain.metrics.getValue("combatSampledZoneExclusionNotes").jsonArray.joinToString { note -> note.jsonPrimitive.content }}",
             ),
         )
     }
 
     private fun renderMarkdown(report: Phase4AggregateReport): String =
         buildString {
+            val metricsById = report.experienceMetrics.associateBy(Phase4ExperienceMetric::metricId)
+            val tasksById = report.tasks.associateBy(Phase4TaskAggregate::taskId)
+            val lootTask = requireTask(tasksById, "whiteBoxLoot")
+            val longRunTask = requireTask(tasksById, "longRunLab")
+            val professionTerminalWeaponDistribution =
+                json.encodeToString(
+                    JsonObject.serializer(),
+                    buildJsonObject {
+                        put("professionTerminalWeaponDistribution", longRunTask.metrics.getValue("professionTerminalWeaponDistribution"))
+                    },
+                )
+            val scriptedHiddenTask = requireTask(tasksById, "hiddenContentHarness")
+            val organicHiddenTask = requireTask(tasksById, "organicHiddenProbe")
+            val terrainTask = requireTask(tasksById, "terrainInteractionBatch")
+
             appendLine("# Phase 4 Report")
             appendLine()
             appendLine("- generatedAt: `${report.generatedAt}`")
@@ -901,7 +986,16 @@ object Phase4ReportRunner {
             appendLine("- failedExperienceMetricCount: `${report.failedExperienceMetricCount}`")
             appendLine("- failedGateCount: `${report.failedGateCount}`")
             appendLine()
-            appendLine("## 体验度量基线")
+            appendLine("## 指标 Owner 表")
+            appendLine("| metricId | owner | sourcePath | formula | target | fail semantics |")
+            appendLine("| --- | --- | --- | --- | --- | --- |")
+            report.metricCatalog.forEach { entry ->
+                appendLine(
+                    "| `${entry.id}` | `${entry.ownerTaskId}` | `${entry.sourcePath}` | `${entry.formula}` | `${entry.targetText}` | ${entry.failSemantics} |",
+                )
+            }
+            appendLine()
+            appendLine("## Owner Metrics")
             appendLine("| metricId | current | source | target | status |")
             appendLine("| --- | --- | --- | --- | --- |")
             report.experienceMetrics.forEach { metric ->
@@ -914,6 +1008,41 @@ object Phase4ReportRunner {
                     appendLine("- `${metric.metricId}` note: ${metric.note}")
                 }
             }
+            appendLine()
+            appendLine("## Local Reward Identity")
+            appendLine("- sourceTask: `${lootTask.taskId}`")
+            appendLine("- `sameZoneSecretVsCadenceMaxOverlap`: ${metricsById.getValue("sameZoneSecretVsCadenceMaxOverlap").currentValueText} / ${metricsById.getValue("sameZoneSecretVsCadenceMaxOverlap").status}")
+            appendLine("- `sameZoneSecretVsRewardMaxOverlap`: ${metricsById.getValue("sameZoneSecretVsRewardMaxOverlap").currentValueText} / ${metricsById.getValue("sameZoneSecretVsRewardMaxOverlap").status}")
+            appendLine("- `localIdentityFailurePairs`: ${lootTask.metrics.getValue("localIdentityFailurePairs").jsonArray.joinToString { pair -> pair.jsonPrimitive.content }.ifBlank { "none" }}")
+            appendLine()
+            appendLine("## Terminal Build Identity")
+            appendLine("- sourceTask: `${longRunTask.taskId}`")
+            appendLine("- `terminalWeaponBaseDiversity`: ${metricsById.getValue("terminalWeaponBaseDiversity").currentValueText} / ${metricsById.getValue("terminalWeaponBaseDiversity").status}")
+            appendLine("- `crossProfessionTopWeaponDominance`: ${metricsById.getValue("crossProfessionTopWeaponDominance").currentValueText} / ${metricsById.getValue("crossProfessionTopWeaponDominance").status}")
+            appendLine("- `professionAlignedWeaponAdoptionRate`: ${metricsById.getValue("professionAlignedWeaponAdoptionRate").currentValueText} / ${metricsById.getValue("professionAlignedWeaponAdoptionRate").status}")
+            appendLine("```json")
+            appendLine(professionTerminalWeaponDistribution)
+            appendLine("```")
+            appendLine()
+            appendLine("## Scripted vs Organic Hidden")
+            appendLine("- sourceTask.scripted: `${scriptedHiddenTask.taskId}`")
+            appendLine("- sourceTask.organic: `${organicHiddenTask.taskId}`")
+            appendLine("- `scriptedHiddenVerificationRate`: ${metricsById.getValue("scriptedHiddenVerificationRate").currentValueText} / ${metricsById.getValue("scriptedHiddenVerificationRate").status}")
+            appendLine("- `organicHiddenDiscoveryRate`: ${metricsById.getValue("organicHiddenDiscoveryRate").currentValueText} / ${metricsById.getValue("organicHiddenDiscoveryRate").status}")
+            appendLine("- scripted primer cases: `${scriptedHiddenTask.metrics.intValue("primerActionUsedCount")}`")
+            appendLine("- organic search use rate: `${formatPercent(organicHiddenTask.metrics.doubleValue("searchActionUseRate"))}`")
+            appendLine("- organic secret zone entry rate: `${formatPercent(organicHiddenTask.metrics.doubleValue("secretZoneEntryRate"))}`")
+            appendLine()
+            appendLine("## Terrain Combat Sample Contract")
+            appendLine("- sourceTask: `${terrainTask.taskId}`")
+            appendLine("- `terrainInteractionEncounterRate.aggregate`: ${metricsById.getValue("terrainInteractionEncounterRate.aggregate").currentValueText} / ${metricsById.getValue("terrainInteractionEncounterRate.aggregate").status}")
+            appendLine("- `terrainInteractionEncounterRate.per_zone_lower_bound`: ${metricsById.getValue("terrainInteractionEncounterRate.per_zone_lower_bound").currentValueText} / ${metricsById.getValue("terrainInteractionEncounterRate.per_zone_lower_bound").status}")
+            appendLine("- combatSampledZoneIds: `${terrainTask.metrics.stringList("combatSampledZoneIds").joinToString()}`")
+            appendLine("- combatSampledZoneExclusionNotes:")
+            terrainTask.metrics.getValue("combatSampledZoneExclusionNotes").jsonArray.forEach { note ->
+                appendLine("  - ${note.jsonPrimitive.content}")
+            }
+            appendLine("- perZoneEncounterFailures: `${terrainTask.metrics.stringList("perZoneEncounterFailures").joinToString().ifBlank { "none" }}`")
             appendLine()
             appendLine("## Tasks")
             report.tasks.forEach { task ->
@@ -972,6 +1101,9 @@ private fun Phase4AggregateReport.toJson(): JsonObject =
         put("failedGateCount", failedGateCount)
         putJsonArray("tasks") {
             tasks.forEach { task -> add(task.toJson()) }
+        }
+        putJsonArray("metricCatalog") {
+            metricCatalog.forEach { entry -> add(entry.toJson()) }
         }
         putJsonArray("experienceMetrics") {
             experienceMetrics.forEach { metric -> add(metric.toJson()) }

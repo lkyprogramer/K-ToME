@@ -164,6 +164,7 @@ internal fun ScenarioReport.toJson() =
         put("localeId", localeId)
         put("profileId", profileId)
         buildHash?.let { put("buildHash", it) }
+        terminalWeaponBaseId?.let { put("terminalWeaponBaseId", it) }
         putJsonArray("breakpointPayoffs") {
             breakpointPayoffs.forEach { payoff ->
                 add(
@@ -271,6 +272,25 @@ internal fun ScenarioReport.toJson() =
                         put("objectiveId", summary.objectiveId)
                         put("state", summary.state.name)
                         put("completionFlagGranted", summary.completionFlagGranted)
+                    },
+                )
+            }
+        }
+        putJsonArray("zoneTraversalDiagnostics") {
+            zoneTraversalDiagnostics.forEach { diagnostic ->
+                add(
+                    buildJsonObject {
+                        put("zoneId", diagnostic.zoneId)
+                        put("visitCount", diagnostic.visitCount)
+                        put("playerTurns", diagnostic.playerTurns)
+                        put("enemyTurns", diagnostic.enemyTurns)
+                        put("enemyTurnsPerPlayerTurn", diagnostic.enemyTurnsPerPlayerTurn)
+                        put("visibleHostileTurnCount", diagnostic.visibleHostileTurnCount)
+                        put("liveHostileWindow", diagnostic.liveHostileWindow)
+                        put("maxVisibleHostiles", diagnostic.maxVisibleHostiles)
+                        diagnostic.objectiveAcquireTurn?.let { put("objectiveAcquireTurn", it) }
+                        diagnostic.objectiveAcquireHeadlessTurnEquivalent?.let { put("objectiveAcquireHeadlessTurnEquivalent", it) }
+                        diagnostic.objectiveStateAtExit?.let { put("objectiveStateAtExit", it.name) }
                     },
                 )
             }

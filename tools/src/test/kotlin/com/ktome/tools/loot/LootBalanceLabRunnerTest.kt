@@ -6,6 +6,7 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Tag
@@ -30,10 +31,12 @@ class LootBalanceLabRunnerTest {
         val matrices = payload.getValue("matrices").jsonArray
         val clamp = payload.getValue("magicFindClampComparison").jsonObject
         val specialTemplatePool = payload.getValue("specialTemplatePool").jsonObject
+        val profileOverlapSummary = payload.getValue("profileOverlapSummary").jsonObject
         val rewardChestMatrix =
             matrices
                 .map { element -> element.jsonObject }
                 .first { matrix -> matrix.getValue("matrixId").jsonPrimitive.content == "abyssal_reward_chest_mf010" }
+        val restoredKernelRun = LootBalanceLabRunner.readKernelRun(run.summaryPath.parent)
 
         assertEquals("PASS", summary.getValue("verdict").jsonPrimitive.content)
         assertEquals("6", summary.getValue("matrixCount").jsonPrimitive.content)
@@ -53,6 +56,25 @@ class LootBalanceLabRunnerTest {
             rollLines.any { line -> "\"rawAffixBudgetShortfall\":0" !in line && "\"rawAffixBudgetShortfall\":" in line },
             "Expected at least one non-zero raw affix budget shortfall sample in ${run.rollsPath}",
         )
+        assertEquals(
+            setOf("greenwood_fringe", "deep_iron_pit", "underground_river", "abyssal_temple"),
+            profileOverlapSummary
+                .getValue("sameZoneSecretVsCadencePairs")
+                .jsonArray
+                .map { pair -> pair.jsonObject.getValue("zoneId").jsonPrimitive.content }
+                .toSet(),
+        )
+        assertEquals(
+            setOf("greenwood_fringe", "deep_iron_pit", "underground_river", "abyssal_temple"),
+            profileOverlapSummary
+                .getValue("sameZoneSecretVsRewardPairs")
+                .jsonArray
+                .map { pair -> pair.jsonObject.getValue("zoneId").jsonPrimitive.content }
+                .toSet(),
+        )
+        assertNotNull(restoredKernelRun)
+        assertEquals(6, restoredKernelRun?.matrices?.size)
+        assertEquals(60_000, restoredKernelRun?.totalRolls)
         assertEquals(60_000, rollLines.count { line -> line.isNotBlank() })
     }
 }

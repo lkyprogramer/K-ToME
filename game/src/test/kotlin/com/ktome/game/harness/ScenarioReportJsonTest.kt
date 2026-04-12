@@ -34,6 +34,7 @@ class ScenarioReportJsonTest {
                 corpusId = HarnessMetadata.LONG_RUN_FULL_CORPUS_ID,
                 localeId = "en-US",
                 buildHash = "templar#human#build",
+                terminalWeaponBaseId = "forgebreaker_pick",
                 breakpointPayoffs =
                     listOf(
                         BreakpointPayoffSummary(
@@ -103,6 +104,22 @@ class ScenarioReportJsonTest {
                             completionFlagGranted = true,
                         ),
                     ),
+                zoneTraversalDiagnostics =
+                    listOf(
+                        ZoneTraversalDiagnostic(
+                            zoneId = "shattered_outpost",
+                            visitCount = 1,
+                            playerTurns = 24,
+                            enemyTurns = 31,
+                            enemyTurnsPerPlayerTurn = 31.0 / 24.0,
+                            visibleHostileTurnCount = 9,
+                            liveHostileWindow = 4,
+                            maxVisibleHostiles = 2,
+                            objectiveAcquireTurn = 3,
+                            objectiveAcquireHeadlessTurnEquivalent = 5,
+                            objectiveStateAtExit = com.ktome.core.world.ObjectiveState.COMPLETED,
+                        ),
+                    ),
                 captainEncounterTrace =
                     listOf(
                         CaptainEncounterTraceEntry(
@@ -131,6 +148,7 @@ class ScenarioReportJsonTest {
         assertEquals(HarnessMetadata.PHASE_ID, json.requiredString("phaseId"))
         assertEquals(HarnessMetadata.LONG_RUN_FULL_CORPUS_ID, json.requiredString("corpusId"))
         assertEquals("templar#human#build", json.requiredString("buildHash"))
+        assertEquals("forgebreaker_pick", json.requiredString("terminalWeaponBaseId"))
         assertEquals("full_route", json.requiredString("scenarioType"))
         assertEquals("true", json.requiredString("isFullRoute"))
         assertEquals("3", json.requiredString("affixSynergyActivationCount"))
@@ -168,6 +186,18 @@ class ScenarioReportJsonTest {
         assertEquals(1, objectives.size)
         assertEquals("quest.shattered_outpost", objectives.single().jsonObject.requiredString("questId"))
         assertEquals("COMPLETED", objectives.single().jsonObject.requiredString("state"))
+        val traversalDiagnostics = json.requiredArray("zoneTraversalDiagnostics")
+        assertEquals(1, traversalDiagnostics.size)
+        val traversal = traversalDiagnostics.single().jsonObject
+        assertEquals("shattered_outpost", traversal.requiredString("zoneId"))
+        assertEquals("24", traversal.requiredString("playerTurns"))
+        assertEquals("31", traversal.requiredString("enemyTurns"))
+        assertEquals("9", traversal.requiredString("visibleHostileTurnCount"))
+        assertEquals("4", traversal.requiredString("liveHostileWindow"))
+        assertEquals("2", traversal.requiredString("maxVisibleHostiles"))
+        assertEquals("3", traversal.requiredString("objectiveAcquireTurn"))
+        assertEquals("5", traversal.requiredString("objectiveAcquireHeadlessTurnEquivalent"))
+        assertEquals("COMPLETED", traversal.requiredString("objectiveStateAtExit"))
 
         val captainTrace = json.requiredArray("captainEncounterTrace")
         assertEquals(1, captainTrace.size)

@@ -131,6 +131,20 @@ data class ZoneObjectiveSummary(
     val completionFlagGranted: Boolean,
 )
 
+data class ZoneTraversalDiagnostic(
+    val zoneId: String,
+    val visitCount: Int,
+    val playerTurns: Int,
+    val enemyTurns: Int,
+    val enemyTurnsPerPlayerTurn: Double,
+    val visibleHostileTurnCount: Int,
+    val liveHostileWindow: Int,
+    val maxVisibleHostiles: Int,
+    val objectiveAcquireTurn: Int? = null,
+    val objectiveAcquireHeadlessTurnEquivalent: Int? = null,
+    val objectiveStateAtExit: ObjectiveState? = null,
+)
+
 data class ScenarioReport(
     val name: String,
     val seed: Long,
@@ -155,6 +169,7 @@ data class ScenarioReport(
     val localeId: String = "headless",
     val profileId: String = HarnessMetadata.PROFILE_ID,
     val buildHash: String? = null,
+    val terminalWeaponBaseId: String? = null,
     val breakpointPayoffs: List<BreakpointPayoffSummary> = emptyList(),
     val breakpointPayoffObservations: List<BreakpointPayoffObservation> = emptyList(),
     val milestoneRewards: List<MilestoneRewardSummary> = emptyList(),
@@ -177,6 +192,7 @@ data class ScenarioReport(
     val commandStats: Map<String, Int> = emptyMap(),
     val zoneHeadlessMilestones: List<ZoneHeadlessMilestone> = emptyList(),
     val zoneObjectiveSummaries: List<ZoneObjectiveSummary> = emptyList(),
+    val zoneTraversalDiagnostics: List<ZoneTraversalDiagnostic> = emptyList(),
     val captainEncounterTrace: List<CaptainEncounterTraceEntry> = emptyList(),
     val lastCommands: List<String> = emptyList(),
     val lastMessages: List<String> = emptyList(),
@@ -397,6 +413,7 @@ data class RunObservation(
     val visibleGroundItemPositions: List<Point>,
     val visibleInteractables: List<ObservedInteractable>,
     val knownDownstairsPositions: List<Point>,
+    val searchPromptAvailable: Boolean = false,
     val playerStatusTypeIds: Set<String> = emptySet(),
     val activeRouteSelection: RouteSelectionSnapshot? = null,
     val activeShopId: String? = null,

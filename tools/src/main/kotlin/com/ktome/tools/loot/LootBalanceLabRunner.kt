@@ -26,6 +26,8 @@ import com.ktome.game.i18n.GameLocale
 import com.ktome.game.loot.LootProfileCandidatePoolResolver
 import com.ktome.game.mapgen.SchemaZoneRewardProfileResolver
 import com.ktome.tools.mapgen.phase4HarnessHeader
+import com.ktome.tools.phase4.SAME_ZONE_SECRET_CADENCE_MAX_OVERLAP_TARGET
+import com.ktome.tools.phase4.SAME_ZONE_SECRET_REWARD_MAX_OVERLAP_TARGET
 import java.nio.file.Files
 import java.nio.file.Path
 import kotlin.math.abs
@@ -35,6 +37,10 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
 import kotlinx.serialization.json.putJsonObject
@@ -164,7 +170,17 @@ internal data class LootPityEvent(
     val specialTemplateId: String?,
     val beforeValue: Int,
     val afterValue: Int,
-)
+) {
+    fun toJson(): JsonObject =
+        buildJsonObject {
+            put("rollIndex", rollIndex)
+            put("kind", kind)
+            put("finalTier", finalTier)
+            put("specialTemplateId", specialTemplateId)
+            put("beforeValue", beforeValue)
+            put("afterValue", afterValue)
+        }
+}
 
 internal data class LootCastSpeedSample(
     val rollIndex: Int,
@@ -172,7 +188,16 @@ internal data class LootCastSpeedSample(
     val effectiveCastSpeed: Double,
     val finalTier: String,
     val specialTemplateId: String?,
-)
+) {
+    fun toJson(): JsonObject =
+        buildJsonObject {
+            put("rollIndex", rollIndex)
+            put("rawCastSpeedRating", rawCastSpeedRating)
+            put("effectiveCastSpeed", effectiveCastSpeed)
+            put("finalTier", finalTier)
+            put("specialTemplateId", specialTemplateId)
+        }
+}
 
 internal data class LootExpectation(
     val finalRates: Map<String, Double>,
@@ -216,6 +241,7 @@ internal data class LootMatrixResult(
     fun toJson(): JsonObject =
         buildJsonObject {
             put("matrixId", spec.id)
+            put("seedBase", spec.seedBase)
             put("sourceLevel", spec.sourceLevel)
             put("sourceTier", spec.sourceTier.name)
             put("sourceDescriptor", spec.sourceDescriptor)
@@ -224,6 +250,9 @@ internal data class LootMatrixResult(
             put("magicFind", spec.magicFind)
             put("effectiveMagicFind", spec.magicFind.coerceIn(0.0f, 1.0f))
             put("rollCount", totalRolls)
+            putJsonArray("availableSpecialTiers") {
+                availableSpecialTiers.map(SpecialTier::name).sorted().forEach { tier -> add(JsonPrimitive(tier)) }
+            }
             putJsonObject("rarityTierDistribution") {
                 rarityTierDistribution.forEach { (tier, rate) -> put(tier, rate) }
             }
@@ -258,6 +287,15 @@ internal data class LootMatrixResult(
             putJsonObject("topAffixIds") {
                 topAffixIds.forEach { (affixId, count) -> put(affixId, count) }
             }
+            putJsonArray("pityTimeline") {
+                pityTimeline.forEach { event -> add(event.toJson()) }
+            }
+            putJsonArray("castSpeedSamples") {
+                castSpeedSamples.forEach { sample -> add(sample.toJson()) }
+            }
+            putJsonArray("sampleRolls") {
+                sampleRolls.forEach { sample -> add(sample.toJson()) }
+            }
             put("uniqueArtifactOutcomeCount", uniqueArtifactOutcomeCount)
             put("meaningfulUniqueArtifactSwapCount", meaningfulUniqueArtifactSwapCount)
             put("meaningfulUniqueArtifactSwapRate", meaningfulUniqueArtifactSwapRate)
@@ -269,12 +307,23 @@ internal data class LootProfileOverlapSummary(
     val averageOverlap: Double,
     val maxOverlap: Double,
     val distinctBaseItemCount: Int,
+    val sameZoneSecretVsCadencePairs: List<LootLocalOverlapPairSummary>,
+    val sameZoneSecretVsRewardPairs: List<LootLocalOverlapPairSummary>,
+    val localIdentityFailurePairs: List<String>,
 ) {
+    val sameZoneSecretVsCadenceMaxOverlap: Double
+        get() = sameZoneSecretVsCadencePairs.maxOfOrNull(LootLocalOverlapPairSummary::overlap) ?: 0.0
+
+    val sameZoneSecretVsRewardMaxOverlap: Double
+        get() = sameZoneSecretVsRewardPairs.maxOfOrNull(LootLocalOverlapPairSummary::overlap) ?: 0.0
+
     fun toJson(): JsonObject =
         buildJsonObject {
             put("averageOverlap", averageOverlap)
             put("maxOverlap", maxOverlap)
             put("distinctBaseItemCount", distinctBaseItemCount)
+            put("sameZoneSecretVsCadenceMaxOverlap", sameZoneSecretVsCadenceMaxOverlap)
+            put("sameZoneSecretVsRewardMaxOverlap", sameZoneSecretVsRewardMaxOverlap)
             putJsonObject("matrix") {
                 overlapMatrix.toSortedMap().forEach { (profileId, row) ->
                     putJsonObject(profileId) {
@@ -284,6 +333,40 @@ internal data class LootProfileOverlapSummary(
                     }
                 }
             }
+            putJsonArray("sameZoneSecretVsCadencePairs") {
+                sameZoneSecretVsCadencePairs.sortedBy(LootLocalOverlapPairSummary::pairId).forEach { pair ->
+                    add(pair.toJson())
+                }
+            }
+            putJsonArray("sameZoneSecretVsRewardPairs") {
+                sameZoneSecretVsRewardPairs.sortedBy(LootLocalOverlapPairSummary::pairId).forEach { pair ->
+                    add(pair.toJson())
+                }
+            }
+            putJsonArray("localIdentityFailurePairs") {
+                localIdentityFailurePairs.sorted().forEach { pairId -> add(JsonPrimitive(pairId)) }
+            }
+        }
+}
+
+internal data class LootLocalOverlapPairSummary(
+    val zoneId: String,
+    val pairType: String,
+    val secretProfileId: String,
+    val comparedProfileId: String,
+    val overlap: Double,
+) {
+    val pairId: String
+        get() = "$zoneId:$secretProfileId->$comparedProfileId"
+
+    fun toJson(): JsonObject =
+        buildJsonObject {
+            put("pairId", pairId)
+            put("zoneId", zoneId)
+            put("pairType", pairType)
+            put("secretProfileId", secretProfileId)
+            put("comparedProfileId", comparedProfileId)
+            put("overlap", overlap)
         }
 }
 
@@ -881,6 +964,29 @@ internal object LootLabKernel {
                         }
             }
         val overlapValues = overlapMatrix.values.flatMap { row -> row.values }
+        val metadataByProfileId = profiles.associate { profile -> profile.id to profile.localIdentityMetadata() }
+        val sameZoneSecretVsCadencePairs =
+            buildLocalOverlapPairs(
+                overlapMatrix = overlapMatrix,
+                metadataByProfileId = metadataByProfileId,
+                comparedCategory = "cadence",
+            )
+        val sameZoneSecretVsRewardPairs =
+            buildLocalOverlapPairs(
+                overlapMatrix = overlapMatrix,
+                metadataByProfileId = metadataByProfileId,
+                comparedCategory = "reward",
+            )
+        validateLocalIdentityPairCoverage(
+            metadataByProfileId = metadataByProfileId,
+            pairs = sameZoneSecretVsCadencePairs,
+            comparedCategory = "cadence",
+        )
+        validateLocalIdentityPairCoverage(
+            metadataByProfileId = metadataByProfileId,
+            pairs = sameZoneSecretVsRewardPairs,
+            comparedCategory = "reward",
+        )
         val distinctBaseItemCount =
             candidateBaseIdsByProfileId.values
                 .flatMapTo(linkedSetOf()) { candidateBaseIds -> candidateBaseIds }
@@ -890,8 +996,105 @@ internal object LootLabKernel {
             averageOverlap = overlapValues.averageOrZero(),
             maxOverlap = overlapValues.maxOrNull() ?: 0.0,
             distinctBaseItemCount = distinctBaseItemCount,
+            sameZoneSecretVsCadencePairs = sameZoneSecretVsCadencePairs,
+            sameZoneSecretVsRewardPairs = sameZoneSecretVsRewardPairs,
+            localIdentityFailurePairs =
+                (
+                    sameZoneSecretVsCadencePairs
+                        .filter { pair -> pair.overlap >= SAME_ZONE_SECRET_CADENCE_MAX_OVERLAP_TARGET }
+                        .map(LootLocalOverlapPairSummary::pairId) +
+                        sameZoneSecretVsRewardPairs
+                            .filter { pair -> pair.overlap >= SAME_ZONE_SECRET_REWARD_MAX_OVERLAP_TARGET }
+                            .map(LootLocalOverlapPairSummary::pairId)
+                ).distinct(),
         )
     }
+
+    private fun buildLocalOverlapPairs(
+        overlapMatrix: Map<String, Map<String, Double>>,
+        metadataByProfileId: Map<String, LootProfileLocalIdentityMetadata>,
+        comparedCategory: String,
+    ): List<LootLocalOverlapPairSummary> =
+        overlapMatrix.flatMap { (profileId, row) ->
+            val profileMetadata = metadataByProfileId.getValue(profileId)
+            if (profileMetadata.category != "secret" || profileMetadata.zoneId == null) {
+                emptyList()
+            } else {
+                row.mapNotNull { (candidateId, overlap) ->
+                    val candidateMetadata = metadataByProfileId.getValue(candidateId)
+                    if (candidateMetadata.category != comparedCategory || candidateMetadata.zoneId != profileMetadata.zoneId) {
+                        null
+                    } else {
+                        LootLocalOverlapPairSummary(
+                            zoneId = profileMetadata.zoneId,
+                            pairType = "secret_vs_$comparedCategory",
+                            secretProfileId = profileId,
+                            comparedProfileId = candidateId,
+                            overlap = overlap,
+                        )
+                    }
+                }
+            }
+        }
+
+    private fun validateLocalIdentityPairCoverage(
+        metadataByProfileId: Map<String, LootProfileLocalIdentityMetadata>,
+        pairs: List<LootLocalOverlapPairSummary>,
+        comparedCategory: String,
+    ) {
+        val secretZoneIds =
+            metadataByProfileId.values
+                .asSequence()
+                .filter { metadata -> metadata.category == "secret" }
+                .mapNotNull(LootProfileLocalIdentityMetadata::zoneId)
+                .toSet()
+        val pairedZoneIds = pairs.mapTo(linkedSetOf(), LootLocalOverlapPairSummary::zoneId)
+        val missingZoneIds = secretZoneIds - pairedZoneIds
+        require(missingZoneIds.isEmpty()) {
+            "Local identity metric lost same-zone secret_vs_$comparedCategory coverage for zones ${missingZoneIds.sorted()}."
+        }
+    }
+
+    private fun LootProfileSchemaV3.localIdentityMetadata(): LootProfileLocalIdentityMetadata {
+        val category =
+            when {
+                "secret" in tags -> "secret"
+                "cadence" in tags -> "cadence"
+                "reward" in tags -> "reward"
+                else -> "other"
+            }
+        val zoneId =
+            itemTagFilter.firstOrNull()
+                ?.takeIf(String::isNotBlank)
+                ?: canonicalZoneIdFromProfileId(id)
+        require(category != "secret" || zoneId != null) {
+            "Secret loot profile '$id' must resolve a canonical zone id for same-zone local identity metrics."
+        }
+        return LootProfileLocalIdentityMetadata(
+            zoneId = zoneId,
+            category = category,
+        )
+    }
+
+    private fun canonicalZoneIdFromProfileId(profileId: String): String? =
+        when {
+            "greenwood_fringe" in profileId -> "greenwood_fringe"
+            "deep_iron_pit" in profileId || "deep_iron_" in profileId -> "deep_iron_pit"
+            "underground_river" in profileId -> "underground_river"
+            "crystal_cavern" in profileId -> "crystal_cavern"
+            "abyssal_temple" in profileId -> "abyssal_temple"
+            "grey_gate_depths" in profileId || "grey_gate" in profileId -> "grey_gate_depths"
+            "molten_core" in profileId -> "molten_core"
+            "bandit_camp" in profileId -> "bandit_camp"
+            "elven_ruins" in profileId -> "elven_ruins"
+            "shattered_outpost" in profileId -> "shattered_outpost"
+            else -> null
+        }
+
+    private data class LootProfileLocalIdentityMetadata(
+        val zoneId: String?,
+        val category: String,
+    )
 
     private fun summarizeAffixPassiveCoverage(bundle: ItemDataBundle): LootPassiveCoverageSummary {
         val passiveKinds =
@@ -1182,10 +1385,35 @@ object LootBalanceLabRunner {
             }
             put("specialTemplatePool", kernelRun.specialPoolSummary.toJson())
             put("magicFindClampComparison", kernelRun.clampComparison.toJson())
+            put("profileOverlapSummary", kernelRun.profileOverlapSummary.toJson())
+            put("passiveCoverageSummary", kernelRun.passiveCoverageSummary.toJson())
             putJsonArray("matrices") {
                 kernelRun.matrices.forEach { matrix -> add(matrix.toJson()) }
             }
         }
+
+    internal fun readKernelRun(reportDir: Path = reportDir()): LootKernelRun? {
+        val summaryPath = reportDir.resolve(SUMMARY_FILE)
+        if (!Files.isRegularFile(summaryPath)) {
+            return null
+        }
+        val payload = json.parseToJsonElement(Files.readString(summaryPath)).jsonObject
+        val matrices =
+            payload.getValue("matrices").jsonArray.map { matrix ->
+                matrix.jsonObject.toLootMatrixResult()
+            }
+        val profileOverlapSummary = payload.getValue("profileOverlapSummary").jsonObject.toLootProfileOverlapSummary()
+        val passiveCoverageSummary = payload.getValue("passiveCoverageSummary").jsonObject.toLootPassiveCoverageSummary()
+        val matrixSeeds = payload.getValue("header").jsonObject.getValue("seedList").jsonArray.map { seed -> seed.jsonPrimitive.content.toLong() }
+        return LootKernelRun(
+            matrices = matrices,
+            specialPoolSummary = payload.getValue("specialTemplatePool").jsonObject.toLootSpecialPoolSummary(),
+            clampComparison = payload.getValue("magicFindClampComparison").jsonObject.toLootClampComparison(),
+            matrixSeeds = matrixSeeds,
+            profileOverlapSummary = profileOverlapSummary,
+            passiveCoverageSummary = passiveCoverageSummary,
+        )
+    }
 
     private fun reportDir(): Path {
         val configured = System.getProperty("ktome.phase4.loot.reportDir")
@@ -1196,3 +1424,210 @@ object LootBalanceLabRunner {
         }
     }
 }
+
+private fun JsonObject.toLootMatrixResult(): LootMatrixResult {
+    val expectedDistribution = getValue("expectedDistribution").jsonObject.toLootExpectation()
+    return LootMatrixResult(
+        spec =
+            LootMatrixSpec(
+                id = stringValue("matrixId"),
+                zoneId = stringValue("zoneId"),
+                sourceLevel = intValue("sourceLevel"),
+                sourceTier = SourceTier.valueOf(stringValue("sourceTier")),
+                sourceDescriptor = stringValue("sourceDescriptor"),
+                playerLevel = intValue("playerLevel"),
+                magicFind = floatValue("magicFind"),
+                specialTierOverride =
+                    getValue("availableSpecialTiers").jsonArray
+                        .map { tier -> SpecialTier.valueOf(tier.jsonPrimitive.content) }
+                        .toSet(),
+                rollCount = intValue("rollCount"),
+                seedBase = longValue("seedBase"),
+            ),
+        totalRolls = intValue("rollCount"),
+        availableSpecialTiers =
+            getValue("availableSpecialTiers").jsonArray
+                .map { tier -> SpecialTier.valueOf(tier.jsonPrimitive.content) }
+                .toSet(),
+        rarityTierDistribution = getValue("rarityTierDistribution").jsonObject.toDoubleMap(),
+        baseRarityDistribution = getValue("baseRarityDistribution").jsonObject.toDoubleMap(),
+        expectedDistribution = expectedDistribution,
+        affixBudgetAverageDeviation = getValue("affixBudgetDeviation").jsonObject.doubleValue("average"),
+        affixBudgetP95Deviation = getValue("affixBudgetDeviation").jsonObject.doubleValue("p95"),
+        uniqueRate = doubleValue("uniqueRate"),
+        artifactRate = doubleValue("artifactRate"),
+        specialTierEligibilityRate = doubleValue("specialTierEligibilityRate"),
+        rarePityActivations = intValue("rarePityActivations"),
+        uniquePityActivations = intValue("uniquePityActivations"),
+        castSpeedPostDrP50 = doubleValue("castSpeedPostDrP50"),
+        castSpeedPostDrP95 = doubleValue("castSpeedPostDrP95"),
+        magicRateDrift = getValue("distributionError").jsonObject.doubleValue("magicRateDrift"),
+        rareRateDrift = getValue("distributionError").jsonObject.doubleValue("rareRateDrift"),
+        uniqueRelativeError = getValue("distributionError").jsonObject.doubleValue("uniqueRelativeError"),
+        artifactRelativeError = getValue("distributionError").jsonObject.doubleValue("artifactRelativeError"),
+        failedExpectationCount = intValue("failedExpectationCount"),
+        affixCostHistogram = getValue("affixCostHistogram").jsonObject.toIntMap(),
+        topAffixIds = getValue("topAffixIds").jsonObject.toIntMap(),
+        pityTimeline = getValue("pityTimeline").jsonArray.map { event -> event.jsonObject.toLootPityEvent() },
+        castSpeedSamples = getValue("castSpeedSamples").jsonArray.map { sample -> sample.jsonObject.toLootCastSpeedSample() },
+        sampleRolls = getValue("sampleRolls").jsonArray.map { sample -> sample.jsonObject.toLootRollSample() },
+        uniqueArtifactOutcomeCount = intValue("uniqueArtifactOutcomeCount"),
+        meaningfulUniqueArtifactSwapCount = intValue("meaningfulUniqueArtifactSwapCount"),
+        meaningfulUniqueArtifactSwapRate = doubleValue("meaningfulUniqueArtifactSwapRate"),
+    )
+}
+
+private fun JsonObject.toLootExpectation(): LootExpectation {
+    val finalRates = toDoubleMap().filterKeys { key -> key != "noUpgradeRate" }
+    val uniqueRate = finalRates["UNIQUE"] ?: 0.0
+    val artifactRate = finalRates["ARTIFACT"] ?: 0.0
+    return LootExpectation(
+        finalRates = finalRates,
+        magicRate = finalRates["MAGIC"] ?: 0.0,
+        rareRate = finalRates["RARE"] ?: 0.0,
+        uniqueRate = uniqueRate,
+        artifactRate = artifactRate,
+        noUpgradeRate = doubleValue("noUpgradeRate"),
+    )
+}
+
+private fun JsonObject.toLootPityEvent(): LootPityEvent =
+    LootPityEvent(
+        rollIndex = intValue("rollIndex"),
+        kind = stringValue("kind"),
+        finalTier = stringValue("finalTier"),
+        specialTemplateId = nullableString("specialTemplateId"),
+        beforeValue = intValue("beforeValue"),
+        afterValue = intValue("afterValue"),
+    )
+
+private fun JsonObject.toLootCastSpeedSample(): LootCastSpeedSample =
+    LootCastSpeedSample(
+        rollIndex = intValue("rollIndex"),
+        rawCastSpeedRating = intValue("rawCastSpeedRating"),
+        effectiveCastSpeed = doubleValue("effectiveCastSpeed"),
+        finalTier = stringValue("finalTier"),
+        specialTemplateId = nullableString("specialTemplateId"),
+    )
+
+private fun JsonObject.toLootRollSample(): LootRollSample =
+    LootRollSample(
+        matrixId = stringValue("matrixId"),
+        rollIndex = intValue("rollIndex"),
+        seed = longValue("seed"),
+        sourceLevel = intValue("sourceLevel"),
+        sourceTier = SourceTier.valueOf(stringValue("sourceTier")),
+        zoneId = stringValue("zoneId"),
+        playerLevel = intValue("playerLevel"),
+        magicFind = floatValue("magicFind"),
+        effectiveMagicFind = floatValue("effectiveMagicFind"),
+        rolledRarityTier = RarityTier.valueOf(stringValue("rolledRarityTier")),
+        resolvedRarityTier = RarityTier.valueOf(stringValue("resolvedRarityTier")),
+        finalTier = stringValue("finalTier"),
+        specialTier = nullableString("specialTier")?.let(SpecialTier::valueOf),
+        specialTemplateId = nullableString("specialTemplateId"),
+        generatedBaseItemId = stringValue("generatedBaseItemId"),
+        itemType = ItemType.valueOf(stringValue("itemType")),
+        equipSlot = nullableString("equipSlot")?.let(EquipSlot::valueOf),
+        specialOrBasePassiveSignatures = getValue("specialOrBasePassiveSignatures").jsonArray.map { it.jsonPrimitive.content }.toSet(),
+        affixPassiveSignatures = getValue("affixPassiveSignatures").jsonArray.map { it.jsonPrimitive.content }.toSet(),
+        meaningfulUniqueArtifactSwap = nullableBoolean("meaningfulUniqueArtifactSwap"),
+        specialTierEligibilityCount = intValue("specialTierEligibilityCount"),
+        rarePityApplied = booleanValue("rarePityApplied"),
+        specialPityApplied = booleanValue("specialPityApplied"),
+        affixBudget = intValue("affixBudget"),
+        affixBudgetTarget = intValue("affixBudgetTarget"),
+        affixBudgetConsumed = intValue("affixBudgetConsumed"),
+        affixBudgetDeviationRatio = nullableDouble("affixBudgetDeviationRatio"),
+        rawAffixBudgetShortfall = intValue("rawAffixBudgetShortfall"),
+        rawCastSpeedRating = intValue("rawCastSpeedRating"),
+        effectiveCastSpeed = doubleValue("effectiveCastSpeed"),
+        affixCostBreakdown =
+            getValue("affixCostBreakdown").jsonArray.map { entry ->
+                entry.jsonObject.stringValue("affixId") to entry.jsonObject.intValue("cost")
+            },
+        previousRarePity = getValue("pityBefore").jsonObject.intValue("rollsSinceLastRare"),
+        previousSpecialPity = getValue("pityBefore").jsonObject.intValue("eligibleSpecialRollsSinceLastUnique"),
+        resultingRarePity = getValue("pityAfter").jsonObject.intValue("rollsSinceLastRare"),
+        resultingSpecialPity = getValue("pityAfter").jsonObject.intValue("eligibleSpecialRollsSinceLastUnique"),
+    )
+
+private fun JsonObject.toLootProfileOverlapSummary(): LootProfileOverlapSummary =
+    LootProfileOverlapSummary(
+        overlapMatrix =
+            getValue("matrix").jsonObject.mapValues { (_, row) ->
+                row.jsonObject.toDoubleMap()
+            },
+        averageOverlap = doubleValue("averageOverlap"),
+        maxOverlap = doubleValue("maxOverlap"),
+        distinctBaseItemCount = intValue("distinctBaseItemCount"),
+        sameZoneSecretVsCadencePairs =
+            getValue("sameZoneSecretVsCadencePairs").jsonArray.map { pair ->
+                pair.jsonObject.toLootLocalOverlapPairSummary()
+            },
+        sameZoneSecretVsRewardPairs =
+            getValue("sameZoneSecretVsRewardPairs").jsonArray.map { pair ->
+                pair.jsonObject.toLootLocalOverlapPairSummary()
+            },
+        localIdentityFailurePairs = getValue("localIdentityFailurePairs").jsonArray.map { pair -> pair.jsonPrimitive.content },
+    )
+
+private fun JsonObject.toLootLocalOverlapPairSummary(): LootLocalOverlapPairSummary =
+    LootLocalOverlapPairSummary(
+        zoneId = stringValue("zoneId"),
+        pairType = stringValue("pairType"),
+        secretProfileId = stringValue("secretProfileId"),
+        comparedProfileId = stringValue("comparedProfileId"),
+        overlap = doubleValue("overlap"),
+    )
+
+private fun JsonObject.toLootPassiveCoverageSummary(): LootPassiveCoverageSummary =
+    LootPassiveCoverageSummary(
+        passiveKinds = getValue("passiveKinds").jsonArray.map { passive -> passive.jsonPrimitive.content }.toSet(),
+        coverageRatio = doubleValue("coverageRatio"),
+    )
+
+private fun JsonObject.toLootSpecialPoolSummary(): LootSpecialPoolSummary =
+    LootSpecialPoolSummary(
+        affixCount = intValue("affixCount"),
+        uniqueTemplateCount = intValue("uniqueTemplateCount"),
+        artifactTemplateCount = intValue("artifactTemplateCount"),
+        totalCount = intValue("totalCount"),
+        targetZoneCoverageCount = intValue("targetZoneCoverageCount"),
+        buildArchetypeCount = intValue("buildArchetypeCount"),
+        bossOnlyArtifactTemplateCount = intValue("bossOnlyArtifactTemplateCount"),
+        chestOnlyArtifactTemplateCount = intValue("chestOnlyArtifactTemplateCount"),
+        secretZoneArtifactTemplateCount = intValue("secretZoneArtifactTemplateCount"),
+        passesThresholds = booleanValue("passesThresholds"),
+    )
+
+private fun JsonObject.toLootClampComparison(): LootClampComparison =
+    LootClampComparison(
+        referenceMatrixId = stringValue("referenceMatrixId"),
+        overflowMatrixId = stringValue("overflowMatrixId"),
+        tierDelta = getValue("tierDelta").jsonObject.toDoubleMap(),
+        maxDistributionDelta = doubleValue("maxDistributionDelta"),
+        withinTolerance = booleanValue("withinTolerance"),
+    )
+
+private fun JsonObject.toDoubleMap(): Map<String, Double> = entries.associate { (key, value) -> key to value.jsonPrimitive.content.toDouble() }
+
+private fun JsonObject.toIntMap(): Map<String, Int> = entries.associate { (key, value) -> key to value.jsonPrimitive.content.toInt() }
+
+private fun JsonObject.intValue(key: String): Int = getValue(key).jsonPrimitive.content.toInt()
+
+private fun JsonObject.longValue(key: String): Long = getValue(key).jsonPrimitive.content.toLong()
+
+private fun JsonObject.floatValue(key: String): Float = getValue(key).jsonPrimitive.content.toFloat()
+
+private fun JsonObject.doubleValue(key: String): Double = getValue(key).jsonPrimitive.content.toDouble()
+
+private fun JsonObject.stringValue(key: String): String = getValue(key).jsonPrimitive.content
+
+private fun JsonObject.booleanValue(key: String): Boolean = getValue(key).jsonPrimitive.content.toBooleanStrict()
+
+private fun JsonObject.nullableString(key: String): String? = this[key]?.jsonPrimitive?.contentOrNull
+
+private fun JsonObject.nullableDouble(key: String): Double? = this[key]?.jsonPrimitive?.contentOrNull?.toDouble()
+
+private fun JsonObject.nullableBoolean(key: String): Boolean? = this[key]?.jsonPrimitive?.contentOrNull?.toBooleanStrict()

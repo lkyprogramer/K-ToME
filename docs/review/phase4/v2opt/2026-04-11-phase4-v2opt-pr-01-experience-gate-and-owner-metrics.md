@@ -295,6 +295,7 @@ tools/src/main/kotlin/com/ktome/tools/hidden/OrganicHiddenProbeRunner.kt
 1. `organicHiddenProbe` 第一版不调内容，只读现状。
 2. 允许初始 FAIL。
 3. 不允许借助 `HiddenPrimerAction` 或内部直接 reveal API。
+4. 导航与搜索决策只允许消费 `RunObservation` / `RenderSnapshot` 已暴露的可见线索，不允许读取 hidden entrance / search point ground truth。
 
 ### 6.5 terrain per-zone lower bound
 

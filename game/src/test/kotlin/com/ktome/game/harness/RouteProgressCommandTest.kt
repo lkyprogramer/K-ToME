@@ -57,6 +57,7 @@ class RouteProgressCommandTest {
         assertTrue(routeProgressCommand(session, observation) == null)
     }
 
+    @Test
     fun `route progress still pursues objective hook when only distant hostiles are visible`() {
         val session =
             GameModule.newFoundationSession(

@@ -100,6 +100,19 @@ tasks.register<Test>("hiddenContentHarness") {
     outputs.dir(reportDir)
 }
 
+tasks.register<Test>("organicHiddenProbe") {
+    group = "verification"
+    description = "Runs the Phase 4 organic hidden-content probe and writes structured reports."
+    testClassesDirs = sourceSets.test.get().output.classesDirs
+    classpath = sourceSets.test.get().runtimeClasspath
+    useJUnitPlatform {
+        includeTags("organicHiddenProbe")
+    }
+    val reportDir = layout.buildDirectory.dir("reports/phase4/hidden")
+    systemProperty("ktome.phase4.hidden.reportDir", reportDir.get().asFile.absolutePath)
+    outputs.dir(reportDir)
+}
+
 tasks.register<Test>("contentPackHarness") {
     group = "verification"
     description = "Runs the Phase 4 content-pack harness and writes structured reports."
@@ -160,6 +173,9 @@ tasks.register<Test>("whiteBoxLoot") {
     useJUnitPlatform {
         includeTags("whiteBoxLoot")
     }
+    dependsOn("lootBalanceLab")
+    systemProperty("ktome.phase4.loot.reportDir", layout.buildDirectory.dir("reports/phase4/loot").get().asFile.absolutePath)
+    systemProperty("ktome.phase4.reuseHarnessOutputs", "true")
     val reportDir = layout.buildDirectory.dir("reports/phase4/whitebox/loot")
     systemProperty("ktome.phase4.whitebox.loot.reportDir", reportDir.get().asFile.absolutePath)
     outputs.dir(reportDir)
@@ -173,6 +189,8 @@ tasks.register<Test>("whiteBoxHiddenContent") {
     useJUnitPlatform {
         includeTags("whiteBoxHiddenContent")
     }
+    dependsOn("hiddenContentHarness")
+    systemProperty("ktome.phase4.reuseHarnessOutputs", "true")
     val reportDir = layout.buildDirectory.dir("reports/phase4/whitebox/hidden")
     systemProperty("ktome.phase4.hidden.reportDir", layout.buildDirectory.dir("reports/phase4/hidden").get().asFile.absolutePath)
     outputs.dir(reportDir)
@@ -204,6 +222,7 @@ tasks.register<Test>("phase4Report") {
         ":tools:mapgenSmoke",
         ":tools:solvabilityHarness",
         ":tools:hiddenContentHarness",
+        ":tools:organicHiddenProbe",
         ":tools:contentPackHarness",
         ":tools:lootBalanceLab",
         ":tools:whiteBoxMapgen",
@@ -213,7 +232,21 @@ tasks.register<Test>("phase4Report") {
         ":tools:whiteBoxContentPack",
         ":game:terrainInteractionBatch",
         ":game:bossHarness",
+        ":game:longRunLab",
     )
+    val reportDir = layout.buildDirectory.dir("reports/phase4")
+    systemProperty("ktome.phase4.reportDir", reportDir.get().asFile.absolutePath)
+    outputs.dir(reportDir)
+}
+
+tasks.register<Test>("phase4ReportOnly") {
+    group = "verification"
+    description = "Rebuilds the Phase 4 aggregate report from existing artifacts without rerunning heavyweight producer tasks."
+    testClassesDirs = sourceSets.test.get().output.classesDirs
+    classpath = sourceSets.test.get().runtimeClasspath
+    useJUnitPlatform {
+        includeTags("phase4Report")
+    }
     val reportDir = layout.buildDirectory.dir("reports/phase4")
     systemProperty("ktome.phase4.reportDir", reportDir.get().asFile.absolutePath)
     outputs.dir(reportDir)

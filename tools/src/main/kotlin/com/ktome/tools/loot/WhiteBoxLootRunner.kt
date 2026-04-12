@@ -7,6 +7,8 @@ import com.ktome.core.harness.whitebox.WhiteBoxCaseReport
 import com.ktome.core.harness.whitebox.WhiteBoxCorpusSpec
 import com.ktome.core.harness.whitebox.WhiteBoxJoinKey
 import com.ktome.tools.mapgen.phase4HarnessHeader
+import com.ktome.tools.phase4.SAME_ZONE_SECRET_CADENCE_MAX_OVERLAP_TARGET
+import com.ktome.tools.phase4.SAME_ZONE_SECRET_REWARD_MAX_OVERLAP_TARGET
 import com.ktome.tools.whitebox.WhiteBoxDomainWriteRequest
 import com.ktome.tools.whitebox.WhiteBoxReportWriter
 import com.ktome.tools.whitebox.toVerificationReportHeader
@@ -35,10 +37,16 @@ object WhiteBoxLootRunner {
         val outputDir = reportDir()
         Files.createDirectories(outputDir)
 
-        val kernelRun = LootLabKernel.execute()
+        val kernelRun =
+            if (reuseHarnessOutputs()) {
+                LootBalanceLabRunner.readKernelRun() ?: LootLabKernel.execute()
+            } else {
+                LootLabKernel.execute()
+            }
         val header =
             phase4HarnessHeader(harnessId = HARNESS_ID, seedList = kernelRun.matrixSeeds, locale = LOOT_REPORT_LOCALE.id)
                 .toVerificationReportHeader(corpusId = CORPUS_ID)
+        val overlapSummaryJson = kernelRun.profileOverlapSummary.toJson()
         val corpus =
             WhiteBoxCorpusSpec(
                 corpusId = CORPUS_ID,
@@ -84,8 +92,8 @@ object WhiteBoxLootRunner {
                 WhiteBoxAggregateReport(
                     groupId = "corpus",
                     sampleCount = kernelRun.matrices.size,
-                    metrics = corpusMetrics(kernelRun),
-                    assertions = corpusAssertions(kernelRun),
+                    metrics = corpusMetrics(kernelRun, overlapSummaryJson),
+                    assertions = corpusAssertions(kernelRun, overlapSummaryJson),
                 ),
             )
         val result =
@@ -108,6 +116,8 @@ object WhiteBoxLootRunner {
             reportPath = result.reportPath,
         )
     }
+
+    private fun reuseHarnessOutputs(): Boolean = System.getProperty("ktome.phase4.reuseHarnessOutputs") == "true"
 
     private fun caseAssertions(matrix: LootMatrixResult): List<WhiteBoxAssertionResult> =
         listOf(
@@ -177,7 +187,10 @@ object WhiteBoxLootRunner {
             ),
         )
 
-    private fun corpusAssertions(kernelRun: LootKernelRun): List<WhiteBoxAssertionResult> =
+    private fun corpusAssertions(
+        kernelRun: LootKernelRun,
+        overlapSummaryJson: JsonObject,
+    ): List<WhiteBoxAssertionResult> =
         listOf(
             WhiteBoxAssertionResult(
                 ruleId = "loot.aggregate.template_pool_thresholds",
@@ -195,13 +208,25 @@ object WhiteBoxLootRunner {
                 ruleId = "loot.aggregate.overlap_below_threshold",
                 passed = kernelRun.profileOverlapSummary.averageOverlap < 0.30,
                 message = "Average loot-profile base item overlap stays below the OPT PR-04 exit threshold.",
-                context = kernelRun.profileOverlapSummary.toJson(),
+                context = overlapSummaryJson,
             ),
             WhiteBoxAssertionResult(
                 ruleId = "loot.aggregate.max_overlap_sanity",
                 passed = kernelRun.profileOverlapSummary.maxOverlap < 0.95,
                 message = "No loot-profile base item pool remains a near-total subset of another profile.",
-                context = kernelRun.profileOverlapSummary.toJson(),
+                context = overlapSummaryJson,
+            ),
+            WhiteBoxAssertionResult(
+                ruleId = "loot.aggregate.same_zone_secret_cadence_guardrail",
+                passed = kernelRun.profileOverlapSummary.sameZoneSecretVsCadenceMaxOverlap < SAME_ZONE_SECRET_CADENCE_MAX_OVERLAP_TARGET,
+                message = "Same-zone secret versus cadence overlap stays below the V2OPT PR-01 local identity guardrail.",
+                context = overlapSummaryJson,
+            ),
+            WhiteBoxAssertionResult(
+                ruleId = "loot.aggregate.same_zone_secret_reward_guardrail",
+                passed = kernelRun.profileOverlapSummary.sameZoneSecretVsRewardMaxOverlap < SAME_ZONE_SECRET_REWARD_MAX_OVERLAP_TARGET,
+                message = "Same-zone secret versus reward overlap stays below the V2OPT PR-01 local identity guardrail.",
+                context = overlapSummaryJson,
             ),
             WhiteBoxAssertionResult(
                 ruleId = "loot.aggregate.passive_coverage",
@@ -237,7 +262,10 @@ object WhiteBoxLootRunner {
             put("uniqueArtifactMeaningfulSwapRate", matrix.meaningfulUniqueArtifactSwapRate)
         }
 
-    private fun corpusMetrics(kernelRun: LootKernelRun): JsonObject =
+    private fun corpusMetrics(
+        kernelRun: LootKernelRun,
+        overlapSummaryJson: JsonObject,
+    ): JsonObject =
         buildJsonObject {
             put("matrixCount", kernelRun.matrices.size)
             put("totalRolls", kernelRun.totalRolls)
@@ -257,7 +285,12 @@ object WhiteBoxLootRunner {
             put("lootProfileAverageBaseItemOverlap", kernelRun.profileOverlapSummary.averageOverlap)
             put("lootProfileMaxBaseItemOverlap", kernelRun.profileOverlapSummary.maxOverlap)
             put("lootProfileDistinctBaseItemCount", kernelRun.profileOverlapSummary.distinctBaseItemCount)
-            put("lootProfileBaseItemOverlapMatrix", kernelRun.profileOverlapSummary.toJson().getValue("matrix"))
+            put("lootProfileBaseItemOverlapMatrix", overlapSummaryJson.getValue("matrix"))
+            put("sameZoneSecretVsCadenceMaxOverlap", kernelRun.profileOverlapSummary.sameZoneSecretVsCadenceMaxOverlap)
+            put("sameZoneSecretVsRewardMaxOverlap", kernelRun.profileOverlapSummary.sameZoneSecretVsRewardMaxOverlap)
+            put("sameZoneSecretVsCadencePairs", overlapSummaryJson.getValue("sameZoneSecretVsCadencePairs"))
+            put("sameZoneSecretVsRewardPairs", overlapSummaryJson.getValue("sameZoneSecretVsRewardPairs"))
+            put("localIdentityFailurePairs", overlapSummaryJson.getValue("localIdentityFailurePairs"))
             put("affixPassiveCoverage", kernelRun.passiveCoverageSummary.coverageRatio)
             putJsonArray("affixPassiveKinds") {
                 kernelRun.passiveCoverageSummary.passiveKinds.sorted().forEach { passiveKind -> add(kotlinx.serialization.json.JsonPrimitive(passiveKind)) }
