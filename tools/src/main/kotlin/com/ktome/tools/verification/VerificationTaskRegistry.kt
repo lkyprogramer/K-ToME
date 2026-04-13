@@ -251,6 +251,7 @@ object VerificationTaskRegistry {
                         scopeId = "mapgen.runtime",
                         pathPrefixes =
                             listOf(
+                                "tools/src/main/kotlin/com/ktome/tools/mapgen/MapgenSmokeRunner.kt",
                                 "tools/src/main/kotlin/com/ktome/tools/mapgen/WhiteBoxMapgenRunner.kt",
                                 "tools/src/test/kotlin/com/ktome/tools/mapgen/WhiteBoxMapgenHarnessTest.kt",
                             ),
@@ -298,6 +299,7 @@ object VerificationTaskRegistry {
                         scopeId = "solvability.runtime",
                         pathPrefixes =
                             listOf(
+                                "tools/src/main/kotlin/com/ktome/tools/mapgen/SolvabilityHarnessRunner.kt",
                                 "tools/src/main/kotlin/com/ktome/tools/mapgen/WhiteBoxSolvabilityRunner.kt",
                                 "tools/src/test/kotlin/com/ktome/tools/mapgen/WhiteBoxSolvabilityHarnessTest.kt",
                             ),

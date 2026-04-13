@@ -73,8 +73,24 @@ class VerificationImpactAnalyzerTest {
     }
 
     @Test
+    fun `mapgen smoke runner change still routes to mapgen owner task`() {
+        val plan = VerificationImpactAnalyzer.analyze(listOf("tools/src/main/kotlin/com/ktome/tools/mapgen/MapgenSmokeRunner.kt"))
+
+        assertEquals(setOf("mapgen"), plan.impactedDomains.map(VerificationDomainImpact::domainId).toSet())
+        assertTrue(plan.requestedTaskPaths.contains(":tools:whiteBoxMapgen"))
+    }
+
+    @Test
     fun `solvability white box runner change routes to solvability owner task`() {
         val plan = VerificationImpactAnalyzer.analyze(listOf("tools/src/main/kotlin/com/ktome/tools/mapgen/WhiteBoxSolvabilityRunner.kt"))
+
+        assertEquals(setOf("solvability"), plan.impactedDomains.map(VerificationDomainImpact::domainId).toSet())
+        assertTrue(plan.requestedTaskPaths.contains(":tools:whiteBoxSolvability"))
+    }
+
+    @Test
+    fun `solvability proof runner change still routes to solvability owner task`() {
+        val plan = VerificationImpactAnalyzer.analyze(listOf("tools/src/main/kotlin/com/ktome/tools/mapgen/SolvabilityHarnessRunner.kt"))
 
         assertEquals(setOf("solvability"), plan.impactedDomains.map(VerificationDomainImpact::domainId).toSet())
         assertTrue(plan.requestedTaskPaths.contains(":tools:whiteBoxSolvability"))

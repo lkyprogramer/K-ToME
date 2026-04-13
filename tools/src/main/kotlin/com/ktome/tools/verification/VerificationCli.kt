@@ -224,6 +224,9 @@ object VerificationCli {
                 ),
             ),
         )
+        require(rawResult.failedTests == 0) {
+            "Verification node $nodeId recorded ${rawResult.failedTests} failing tests; inspect ${outputDir.resolve(domain.artifactPolicy.summaryFileName)}."
+        }
     }
 
     private fun outputPaths(
