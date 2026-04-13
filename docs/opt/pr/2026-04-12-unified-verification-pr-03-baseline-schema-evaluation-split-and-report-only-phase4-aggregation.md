@@ -85,6 +85,11 @@
 7. `ceilings`
 8. `expectedMetricRanges`
 
+补充约束：
+
+1. Phase 4 owner metric baseline 也应外置到 `docs/review/phase4/opt/baselines/`
+2. `reportPhase4` 不应继续在 Kotlin 代码里硬编码 hidden / loot / long-run / terrain owner threshold
+
 ### 5.2 baseline mode
 
 第一版必须支持：
@@ -158,6 +163,7 @@
 
 1. baseline migration script
 2. 现有 baseline 文件
+3. Phase 4 owner baseline 文件（`hidden / organic-hidden / loot / longrun / terrain`）
 
 ---
 

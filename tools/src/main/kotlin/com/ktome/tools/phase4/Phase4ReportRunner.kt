@@ -75,7 +75,7 @@ private data class Phase4AggregateReport(
     val experienceMetrics: List<Phase4ExperienceMetric>,
 )
 
-private data class Phase4TaskAggregate(
+internal data class Phase4TaskAggregate(
     val taskId: String,
     val status: String,
     val sourcePath: String,
@@ -175,7 +175,7 @@ object Phase4ReportRunner {
         val outputDir = reportDir()
         Files.createDirectories(outputDir)
 
-        val taskReports = taskDescriptors.map { descriptor -> descriptor.read(repoRoot) }
+        val taskReports = collectTaskAggregates(repoRoot)
         val sourcePathByTaskId = taskReports.associate { task -> task.taskId to task.sourcePath }
         val metricCatalog = Phase4MetricCatalog.entries(sourcePathByTaskId)
         val experienceMetrics = buildExperienceMetrics(repoRoot = repoRoot, tasks = taskReports)
@@ -210,6 +210,9 @@ object Phase4ReportRunner {
             markdownPath = markdownPath,
         )
     }
+
+    internal fun collectTaskAggregates(repoRoot: Path = repoRoot()): List<Phase4TaskAggregate> =
+        taskDescriptors.map { descriptor -> descriptor.read(repoRoot) }
 
     private fun readMapgenSmoke(
         repoRoot: Path,

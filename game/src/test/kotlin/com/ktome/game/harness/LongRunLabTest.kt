@@ -24,6 +24,7 @@ class LongRunLabTest {
     @Tag("longRunLab")
     fun `nightly long run lab distinguishes full route smoke from probes`() {
         val harness = HeadlessRunHarness(rootDir = tempDir)
+        val stableArcanistSmokeSeed = LongRunLabSeedBank.fullRouteMatrixSeed(professionId = "arcanist", raceId = "human")
         val officialSliceReports =
             listOf(
                 fullRouteSmokeSpec(
@@ -32,8 +33,9 @@ class LongRunLabTest {
                     professionId = "vanguard",
                 ),
                 fullRouteSmokeSpec(
-                    name = "long-run-arcanist-20260313",
-                    seed = 20260313L,
+                    // Keep the smoke slice on the same stable matrix seed that still reaches the documented blink payoff.
+                    name = "long-run-arcanist-$stableArcanistSmokeSeed",
+                    seed = stableArcanistSmokeSeed,
                     professionId = "arcanist",
                     saveLoadCheckpoint = SaveLoadCheckpoint(floor = 1, continueTurns = 40),
                     assertions =

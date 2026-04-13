@@ -1,0 +1,21 @@
+{
+    "schemaVersion": 1,
+    "baselineId": "phase4-organic-hidden-owner-v1",
+    "domainId": "organic-hidden",
+    "mode": "BUDGET_THRESHOLD",
+    "metricDefinitionVersion": "phase4-owner-metrics-v1",
+    "approvedDebtKeys": [],
+    "expectedFailureCodes": [],
+    "ceilings": [],
+    "expectedMetricRanges": [
+        {
+            "metricId": "organicHiddenDiscoveryRate",
+            "minValue": 0.3,
+            "notes": "Organic hidden discovery remains observation-only and must not rely on primer actions or direct reveal APIs."
+        }
+    ],
+    "notes": [
+        "Externalized from ReportPhase4Runner so organic hidden owner evaluation can be rerun independently from phase aggregation."
+    ],
+    "metadata": {}
+}

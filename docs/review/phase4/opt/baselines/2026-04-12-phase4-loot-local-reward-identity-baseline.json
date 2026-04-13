@@ -1,0 +1,26 @@
+{
+    "schemaVersion": 1,
+    "baselineId": "phase4-loot-local-reward-identity-v1",
+    "domainId": "loot",
+    "mode": "BUDGET_THRESHOLD",
+    "metricDefinitionVersion": "phase4-owner-metrics-v1",
+    "approvedDebtKeys": [],
+    "expectedFailureCodes": [],
+    "ceilings": [],
+    "expectedMetricRanges": [
+        {
+            "metricId": "sameZoneSecretVsCadenceMaxOverlap",
+            "maxValue": 0.75,
+            "notes": "same-zone secret cadence overlap must stay below the local-identity guardrail."
+        },
+        {
+            "metricId": "sameZoneSecretVsRewardMaxOverlap",
+            "maxValue": 0.75,
+            "notes": "same-zone secret reward overlap must stay below the local-identity guardrail."
+        }
+    ],
+    "notes": [
+        "Externalized from ReportPhase4Runner so loot owner baselines live beside other Phase 4 review baselines."
+    ],
+    "metadata": {}
+}

@@ -36,7 +36,7 @@ lootProfiles:
     rewardBudget: 4
     itemIds: [hunter_bow, emerald_charm, leather_armor, apprentice_robe]
     itemTagFilter: [greenwood_fringe]
-    excludeIds: []
+    excludeIds: &greenwood_local_identity_excludes [unique_briarbound_bow, unique_thornpath_crook, unique_heartwood_talisman, artifact_briar_heart, artifact_heartroot_gambit]
     typeWeights: { WEAPON: 3, ARMOR: 2, CONSUMABLE: 1 }
     slotBias: { WEAPON: 2, ARMOR: 2, OFF_HAND: 1 }
   - id: loot.bandit_camp.cadence
@@ -58,7 +58,7 @@ lootProfiles:
     rewardBudget: 4
     itemIds: [forgebreaker_pick, chain_mail, apprentice_robe, furnace_talisman]
     itemTagFilter: [deep_iron_pit]
-    excludeIds: []
+    excludeIds: &deep_iron_local_identity_excludes [unique_slagbreaker_pick, unique_coal_ward_talisman, unique_quenchbreaker_maul, unique_cinderveil_plate, artifact_slag_tyrant_seal]
     typeWeights: { WEAPON: 3, ARMOR: 2, CONSUMABLE: 1 }
     slotBias: { WEAPON: 2, ARMOR: 2, OFF_HAND: 1 }
   - id: loot.molten_core.cadence
@@ -80,7 +80,7 @@ lootProfiles:
     rewardBudget: 4
     itemIds: [seal_reliquary, mana_potion, chain_mail, hunter_bow, arcane_staff]
     itemTagFilter: [underground_river]
-    excludeIds: []
+    excludeIds: [artifact_river_echo, unique_floodglass_rapier, unique_deepcurrent_lens, artifact_deepcurrent_crown]
     typeWeights: { WEAPON: 4, ARMOR: 2, CONSUMABLE: 1 }
     slotBias: { WEAPON: 3, ARMOR: 2, OFF_HAND: 1 }
   - id: loot.crystal_cavern.cadence
@@ -96,7 +96,7 @@ lootProfiles:
     rewardBudget: 4
     itemIds: [sanctified_seal, shadow_cloak, seal_reliquary, consecrated_oil, long_sword, hunter_bow, arcane_staff]
     itemTagFilter: [abyssal_temple]
-    excludeIds: []
+    excludeIds: [unique_eclipse_mail, artifact_eclipsed_relic, unique_vesper_chainmail, unique_nullwake_blade, artifact_vesper_prism]
     typeWeights: { WEAPON: 4, ARMOR: 2, CONSUMABLE: 1 }
     slotBias: { WEAPON: 3, ARMOR: 2, OFF_HAND: 1 }
   - id: loot.greenwood_fringe.reward
@@ -106,7 +106,7 @@ lootProfiles:
     rewardBudget: 4
     itemIds: [bandit_trophy, emerald_charm, hunter_bow, stamina_draught]
     itemTagFilter: [greenwood_fringe]
-    excludeIds: [artifact_briar_heart, artifact_heartroot_gambit]
+    excludeIds: *greenwood_local_identity_excludes
     typeWeights: { WEAPON: 2, ARMOR: 2, CONSUMABLE: 1 }
     slotBias: { OFF_HAND: 3, WEAPON: 2, ARMOR: 1 }
   - id: loot.deep_iron_pit.reward
@@ -116,7 +116,7 @@ lootProfiles:
     rewardBudget: 4
     itemIds: [furnace_talisman, war_maul, forgebreaker_pick, energy_tonic, stamina_draught]
     itemTagFilter: [deep_iron_pit]
-    excludeIds: []
+    excludeIds: *deep_iron_local_identity_excludes
     typeWeights: { WEAPON: 2, ARMOR: 2, CONSUMABLE: 1 }
     slotBias: { OFF_HAND: 3, WEAPON: 2, ARMOR: 1 }
   - id: loot.grey_gate_depths.reward
@@ -154,7 +154,7 @@ lootProfiles:
     rewardBudget: 5
     itemIds: [bandit_trophy, stamina_draught, leather_armor, apprentice_robe]
     itemTagFilter: [greenwood_fringe]
-    excludeIds: [artifact_briar_heart, artifact_heartroot_gambit]
+    excludeIds: [unique_greenwood_watcher_blade, unique_warden_barkmail]
     typeWeights: { WEAPON: 2, ARMOR: 2, CONSUMABLE: 1 }
     slotBias: { OFF_HAND: 3, WEAPON: 2, ARMOR: 1 }
     specialTemplateTagPreference: [greenwood_fringe]
@@ -166,7 +166,7 @@ lootProfiles:
     rewardBudget: 8
     itemIds: [forgebreaker_pick, furnace_talisman, energy_tonic, chain_mail, war_maul]
     itemTagFilter: [deep_iron_pit]
-    excludeIds: []
+    excludeIds: [unique_furnace_plate, unique_coal_ward_talisman, artifact_forge_oath, unique_cinderveil_plate]
     typeWeights: { WEAPON: 2, ARMOR: 1, CONSUMABLE: 2 }
     slotBias: { OFF_HAND: 4, WEAPON: 2, ARMOR: 1 }
     specialTemplateTagPreference: [deep_iron_pit, oil, secret_zone]
@@ -178,7 +178,7 @@ lootProfiles:
     rewardBudget: 6
     itemIds: [seal_reliquary, mana_potion, chain_mail, arcane_staff, emerald_charm]
     itemTagFilter: [underground_river]
-    excludeIds: []
+    excludeIds: [unique_tideglass_staff, unique_currentstrider_cloak, unique_ferrywarden_lantern]
     typeWeights: { WEAPON: 2, ARMOR: 2, CONSUMABLE: 1 }
     slotBias: { OFF_HAND: 3, WEAPON: 2, ARMOR: 1 }
     specialTemplateTagPreference: [underground_river]
@@ -190,7 +190,7 @@ lootProfiles:
     rewardBudget: 9
     itemIds: [shadow_cloak, sanctified_seal, plate_armor, arcane_staff, consecrated_oil, seal_reliquary]
     itemTagFilter: [abyssal_temple]
-    excludeIds: [artifact_eclipsed_relic, artifact_vesper_prism]
+    excludeIds: [unique_voidlit_seal, unique_sanctum_lance]
     typeWeights: { WEAPON: 2, ARMOR: 2, CONSUMABLE: 2 }
     slotBias: { OFF_HAND: 3, WEAPON: 2, ARMOR: 1 }
     specialTemplateTagPreference: [abyssal_temple, protection, secret_zone]
@@ -202,7 +202,7 @@ lootProfiles:
     rewardBudget: 6
     itemIds: [energy_tonic, stamina_draught, furnace_talisman, emerald_charm]
     itemTagFilter: [deep_iron_pit]
-    excludeIds: []
+    excludeIds: [unique_slagbreaker_pick, unique_furnace_plate, artifact_forge_oath, unique_quenchbreaker_maul, artifact_slag_tyrant_seal]
     typeWeights: { WEAPON: 1, ARMOR: 1, CONSUMABLE: 4 }
     slotBias: { OFF_HAND: 4, WEAPON: 1, ARMOR: 1 }
     specialTemplateTagPreference: [deep_iron_pit, survival, secret_zone]

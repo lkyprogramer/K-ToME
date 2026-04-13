@@ -61,6 +61,17 @@ class VerificationDomainSpecTest {
     }
 
     @Test
+    fun `terrain domain declares unified relative baseline policy`() {
+        val spec = VerificationTaskRegistry.spec("terrain")
+
+        assertEquals(BaselineMode.RELATIVE_BASELINE, spec.baselinePolicy?.mode)
+        assertEquals(
+            "docs/review/phase4/opt/baselines/2026-04-09-opt-pr01-terrain-metrics-baseline-unified.json",
+            spec.baselinePolicy?.baselinePath,
+        )
+    }
+
+    @Test
     fun `resolve node fails when tier is ambiguous without node id`() {
         val spec =
             VerificationDomainSpec(

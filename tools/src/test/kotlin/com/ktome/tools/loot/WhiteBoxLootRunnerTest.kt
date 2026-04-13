@@ -13,11 +13,11 @@ import org.junit.jupiter.api.Test
 class WhiteBoxLootRunnerTest {
     @Test
     @Tag("whiteBoxLoot")
-    fun `white-box loot writes standard reports and surfaces same-zone local identity guardrails`() {
+    fun `white-box loot writes standard reports and keeps same-zone local identity guardrails green`() {
         val run = WhiteBoxLootRunner.run()
 
         assertEquals(6, run.caseCount)
-        assertEquals(2, run.failedAssertions, "whiteBoxLoot should now surface the two same-zone local identity guardrail failures; inspect ${run.summaryPath}")
+        assertEquals(0, run.failedAssertions, "whiteBoxLoot should keep same-zone local identity guardrails green; inspect ${run.summaryPath}")
         assertTrue(Files.exists(run.summaryPath), "Expected summary report at ${run.summaryPath}")
         assertTrue(Files.exists(run.casesPath), "Expected case report at ${run.casesPath}")
         assertTrue(Files.exists(run.reportPath), "Expected markdown report at ${run.reportPath}")
@@ -37,9 +37,9 @@ class WhiteBoxLootRunnerTest {
                 .toSet()
 
         assertEquals("loot", payload.getValue("domainId").jsonPrimitive.content)
-        assertEquals("FAIL", payload.getValue("verdict").jsonPrimitive.content)
+        assertEquals("PASS", payload.getValue("verdict").jsonPrimitive.content)
         assertEquals("6", summary.getValue("caseCount").jsonPrimitive.content)
-        assertEquals("2", summary.getValue("failedAssertions").jsonPrimitive.content)
+        assertEquals("0", summary.getValue("failedAssertions").jsonPrimitive.content)
         assertTrue(aggregates.any { aggregate -> aggregate.jsonObject.getValue("groupId").jsonPrimitive.content == "corpus" })
         assertTrue(
             setOf(

@@ -19,8 +19,8 @@ class Phase4ReportRunnerTest {
         val run = Phase4ReportRunner.run()
 
         assertEquals(14, run.taskCount)
-        assertEquals(1, run.failedTaskCount, "phase4Report should now surface whiteBoxLoot local-identity guardrail failures as a task-level FAIL; inspect ${run.summaryPath}")
-        assertTrue(run.failedExperienceMetricCount > 0, "phase4Report should now expose failing owner metrics; inspect ${run.summaryPath}")
+        assertEquals(0, run.failedTaskCount, "phase4Report should stay green once the landed owner guardrails are repaired; inspect ${run.summaryPath}")
+        assertEquals(0, run.failedExperienceMetricCount, "phase4Report should not report residual failing owner metrics after the repair; inspect ${run.summaryPath}")
         assertEquals(run.failedTaskCount + run.failedExperienceMetricCount, run.failedGateCount)
         assertTrue(Files.exists(run.summaryPath), "Expected phase4 summary report at ${run.summaryPath}")
         assertTrue(Files.exists(run.markdownPath), "Expected phase4 markdown report at ${run.markdownPath}")
@@ -58,7 +58,7 @@ class Phase4ReportRunnerTest {
 
         assertEquals("P4", payload.getValue("phaseId").jsonPrimitive.content)
         assertEquals("14", payload.getValue("taskCount").jsonPrimitive.content)
-        assertEquals("1", payload.getValue("failedTaskCount").jsonPrimitive.content)
+        assertEquals("0", payload.getValue("failedTaskCount").jsonPrimitive.content)
         assertEquals("1000", solvabilityTask.getValue("metrics").jsonObject.getValue("distinctSeedCount").jsonPrimitive.content)
         assertTrue(solvabilityTask.getValue("metrics").jsonObject.containsKey("providedDiscoveryTags"))
         assertTrue(solvabilityTask.getValue("metrics").jsonObject.containsKey("requiredHiddenAnchorFamilies"))
@@ -84,8 +84,8 @@ class Phase4ReportRunnerTest {
         assertTrue(lootTask.getValue("metrics").jsonObject.containsKey("sameZoneSecretVsCadenceMaxOverlap"))
         assertTrue(lootTask.getValue("metrics").jsonObject.containsKey("sameZoneSecretVsRewardMaxOverlap"))
         assertTrue(lootTask.getValue("metrics").jsonObject.containsKey("localIdentityFailurePairs"))
-        assertEquals("FAIL", lootTask.getValue("status").jsonPrimitive.content)
-        assertEquals("2", lootTask.getValue("metrics").jsonObject.getValue("failedAssertions").jsonPrimitive.content)
+        assertEquals("PASS", lootTask.getValue("status").jsonPrimitive.content)
+        assertEquals("0", lootTask.getValue("metrics").jsonObject.getValue("failedAssertions").jsonPrimitive.content)
         assertEquals("13", contentPackTask.getValue("metrics").jsonObject.getValue("totalCases").jsonPrimitive.content)
         assertEquals("1", contentPackTask.getValue("metrics").jsonObject.getValue("legacyLootProfileSchemaRejectCount").jsonPrimitive.content)
         assertEquals(

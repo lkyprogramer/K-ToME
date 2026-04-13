@@ -1,6 +1,8 @@
 package com.ktome.tools.phase4
 
 import java.util.Locale
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 
@@ -22,12 +24,15 @@ internal data class Phase4MetricSpec(
     val decisionNotes: String,
 )
 
+@Serializable
 internal data class Phase4MetricCatalogEntry(
+    @SerialName("metricId")
     val id: String,
     val ownerTaskId: String,
     val sourcePath: String,
     val outputSection: String,
     val formula: String,
+    @SerialName("target")
     val targetText: String,
     val failSemantics: String,
     val decisionNotes: String,
