@@ -85,6 +85,8 @@
 7. `ceilings`
 8. `expectedMetricRanges`
 
+其中 `expectedMetricRanges` 允许通过可选的 `minInclusive` / `maxInclusive` 表达严格边界；默认仍为 inclusive，像 loot local-identity 这类“必须低于阈值”的 owner guardrail 必须显式写成 strict upper bound。
+
 补充约束：
 
 1. Phase 4 owner metric baseline 也应外置到 `docs/review/phase4/opt/baselines/`

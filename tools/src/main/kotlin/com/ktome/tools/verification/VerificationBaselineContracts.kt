@@ -87,7 +87,9 @@ data class VerificationExpectedMetricRange(
     val metricId: String,
     val baselineValue: Double? = null,
     val minValue: Double? = null,
+    val minInclusive: Boolean = true,
     val maxValue: Double? = null,
+    val maxInclusive: Boolean = true,
     val targetRelativeIncrease: Double? = null,
     val targetRelativeDecrease: Double? = null,
     val numerator: Int? = null,
@@ -121,6 +123,12 @@ data class VerificationExpectedMetricRange(
         require(targetRelativeIncrease == null || targetRelativeDecrease == null) {
             "VerificationExpectedMetricRange($metricId) must not declare both targetRelativeIncrease and targetRelativeDecrease."
         }
+        require(minInclusive || minimumAcceptedValue() != null) {
+            "VerificationExpectedMetricRange($metricId) cannot set minInclusive=false without a minimum bound."
+        }
+        require(maxInclusive || maximumAcceptedValue() != null) {
+            "VerificationExpectedMetricRange($metricId) cannot set maxInclusive=false without a maximum bound."
+        }
     }
 
     fun minimumAcceptedValue(): Double? =
@@ -136,4 +144,18 @@ data class VerificationExpectedMetricRange(
             baselineValue != null && targetRelativeDecrease != null -> baselineValue * (1.0 - targetRelativeDecrease)
             else -> null
         }
+
+    fun minimumBoundOperator(): String = if (minInclusive) ">=" else ">"
+
+    fun maximumBoundOperator(): String = if (maxInclusive) "<=" else "<"
+
+    fun passesMinimumBound(actualValue: Double): Boolean {
+        val minimumAcceptedValue = minimumAcceptedValue() ?: return true
+        return if (minInclusive) actualValue >= minimumAcceptedValue else actualValue > minimumAcceptedValue
+    }
+
+    fun passesMaximumBound(actualValue: Double): Boolean {
+        val maximumAcceptedValue = maximumAcceptedValue() ?: return true
+        return if (maxInclusive) actualValue <= maximumAcceptedValue else actualValue < maximumAcceptedValue
+    }
 }

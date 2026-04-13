@@ -53,7 +53,7 @@ class ReportPhase4RunnerTest {
         assertEquals("RELATIVE_BASELINE", terrainMetric.getValue("baselineMode").jsonPrimitive.content)
         assertEquals("BUDGET_THRESHOLD", lootMetric.getValue("baselineMode").jsonPrimitive.content)
         assertEquals("PASS", lootMetric.getValue("status").jsonPrimitive.content)
-        assertEquals("<= 0.750", lootMetric.getValue("target").jsonPrimitive.content)
+        assertEquals("< 0.750", lootMetric.getValue("target").jsonPrimitive.content)
         assertEquals(lootMetric.getValue("target").jsonPrimitive.content, lootCatalogMetric.getValue("target").jsonPrimitive.content)
         assertTrue(terrainInput.getValue("renderResult").jsonObject.getValue("metadata").jsonObject.containsKey("cacheStatus"))
         assertTrue(terrainInput.getValue("renderResult").jsonObject.getValue("metadata").jsonObject.containsKey("sourceArtifactFingerprint"))

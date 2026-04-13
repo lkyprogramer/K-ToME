@@ -199,6 +199,39 @@ class VerificationBaselineComparatorTest {
     }
 
     @Test
+    fun `budget threshold comparator supports strict upper bounds`() {
+        val baseline =
+            VerificationBaseline(
+                schemaVersion = VERIFICATION_BASELINE_SCHEMA_VERSION,
+                baselineId = "loot-local-identity-v1",
+                domainId = "loot",
+                mode = BaselineMode.BUDGET_THRESHOLD,
+                metricDefinitionVersion = "phase4-owner-metrics-v1",
+                expectedMetricRanges =
+                    listOf(
+                        VerificationExpectedMetricRange(
+                            metricId = "sameZoneSecretVsCadenceMaxOverlap",
+                            maxValue = 0.75,
+                            maxInclusive = false,
+                        ),
+                    ),
+            )
+
+        val result =
+            VerificationBaselineComparator.compareBudgetThreshold(
+                domainId = "loot",
+                evaluationId = "loot.localRewardIdentity",
+                baseline = baseline,
+                actualMetrics = mapOf("sameZoneSecretVsCadenceMaxOverlap" to 0.75),
+                currentValueTexts = mapOf("sameZoneSecretVsCadenceMaxOverlap" to "0.750"),
+            )
+
+        assertEquals(EvaluationVerdict.FAIL, result.verdict)
+        assertEquals(EvaluationEntryStatus.UNEXPECTED_REGRESSION, result.entries.single().status)
+        assertEquals("< 0.750000", result.entries.single().targetText)
+    }
+
+    @Test
     fun `terrain unified baseline file parses with schema version and relative mode`() {
         val baseline =
             VerificationBaseline.read(
@@ -240,5 +273,30 @@ class VerificationBaselineComparatorTest {
 
         val error = assertThrows(IllegalArgumentException::class.java) { VerificationBaseline.read(baselineFile) }
         assertTrue(error.message!!.contains("schemaVersion"))
+    }
+
+    @Test
+    fun `loot local reward identity baseline encodes strict upper bounds`() {
+        val baseline =
+            VerificationBaseline.read(
+                Path
+                    .of(System.getProperty("ktome.repo.root"))
+                    .resolve(
+                        Path.of(
+                            "docs",
+                            "review",
+                            "phase4",
+                            "opt",
+                            "baselines",
+                            "2026-04-12-phase4-loot-local-reward-identity-baseline.json",
+                        ),
+                    ),
+            )
+
+        val cadenceRange = baseline.expectedMetricRange("sameZoneSecretVsCadenceMaxOverlap")
+        val rewardRange = baseline.expectedMetricRange("sameZoneSecretVsRewardMaxOverlap")
+
+        assertEquals(false, cadenceRange?.maxInclusive)
+        assertEquals(false, rewardRange?.maxInclusive)
     }
 }

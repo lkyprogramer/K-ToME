@@ -46,17 +46,7 @@ internal object Phase4OwnerMetricTargets {
         range: VerificationExpectedMetricRange,
         actualValue: Double,
     ): Boolean {
-        range.minimumAcceptedValue()?.let { minimum ->
-            if (actualValue < minimum) {
-                return false
-            }
-        }
-        range.maximumAcceptedValue()?.let { maximum ->
-            if (actualValue > maximum) {
-                return false
-            }
-        }
-        return true
+        return range.passesMinimumBound(actualValue) && range.passesMaximumBound(actualValue)
     }
 
     private fun renderTerrainAggregateTarget(range: VerificationExpectedMetricRange): String {
@@ -83,9 +73,9 @@ internal object Phase4OwnerMetricTargets {
         val maximumAcceptedValue = range.maximumAcceptedValue()
         return when {
             minimumAcceptedValue != null && maximumAcceptedValue != null ->
-                "${formatter(minimumAcceptedValue)} .. ${formatter(maximumAcceptedValue)}"
-            minimumAcceptedValue != null -> ">= ${formatter(minimumAcceptedValue)}"
-            maximumAcceptedValue != null -> "<= ${formatter(maximumAcceptedValue)}"
+                "${range.minimumBoundOperator()} ${formatter(minimumAcceptedValue)} .. ${range.maximumBoundOperator()} ${formatter(maximumAcceptedValue)}"
+            minimumAcceptedValue != null -> "${range.minimumBoundOperator()} ${formatter(minimumAcceptedValue)}"
+            maximumAcceptedValue != null -> "${range.maximumBoundOperator()} ${formatter(maximumAcceptedValue)}"
             else -> "defined by baseline"
         }
     }

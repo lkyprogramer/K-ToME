@@ -285,12 +285,10 @@ object VerificationBaselineComparator {
         if (actualValue == null) {
             return EvaluationEntryStatus.UNEXPECTED_REGRESSION
         }
-        val minimumAcceptedValue = range.minimumAcceptedValue()
-        if (minimumAcceptedValue != null && actualValue < minimumAcceptedValue) {
+        if (!range.passesMinimumBound(actualValue)) {
             return EvaluationEntryStatus.UNEXPECTED_REGRESSION
         }
-        val maximumAcceptedValue = range.maximumAcceptedValue()
-        if (maximumAcceptedValue != null && actualValue > maximumAcceptedValue) {
+        if (!range.passesMaximumBound(actualValue)) {
             return EvaluationEntryStatus.UNEXPECTED_REGRESSION
         }
         return EvaluationEntryStatus.PASS
@@ -322,11 +320,11 @@ object VerificationBaselineComparator {
     private fun renderExpectedRangeTarget(range: VerificationExpectedMetricRange): String =
         when {
             range.minValue != null && range.maxValue != null ->
-                "${formatValue(range.minValue)} .. ${formatValue(range.maxValue)}"
+                "${range.minimumBoundOperator()} ${formatValue(range.minValue)} .. ${range.maximumBoundOperator()} ${formatValue(range.maxValue)}"
             range.minimumAcceptedValue() != null && range.maximumAcceptedValue() != null ->
-                "${formatValue(range.minimumAcceptedValue()!!)} .. ${formatValue(range.maximumAcceptedValue()!!)}"
-            range.minimumAcceptedValue() != null -> ">= ${formatValue(range.minimumAcceptedValue()!!)}"
-            range.maximumAcceptedValue() != null -> "<= ${formatValue(range.maximumAcceptedValue()!!)}"
+                "${range.minimumBoundOperator()} ${formatValue(range.minimumAcceptedValue()!!)} .. ${range.maximumBoundOperator()} ${formatValue(range.maximumAcceptedValue()!!)}"
+            range.minimumAcceptedValue() != null -> "${range.minimumBoundOperator()} ${formatValue(range.minimumAcceptedValue()!!)}"
+            range.maximumAcceptedValue() != null -> "${range.maximumBoundOperator()} ${formatValue(range.maximumAcceptedValue()!!)}"
             else -> "defined by baseline"
         }
 

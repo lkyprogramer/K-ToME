@@ -11,11 +11,13 @@
         {
             "metricId": "sameZoneSecretVsCadenceMaxOverlap",
             "maxValue": 0.75,
+            "maxInclusive": false,
             "notes": "same-zone secret cadence overlap must stay below the local-identity guardrail."
         },
         {
             "metricId": "sameZoneSecretVsRewardMaxOverlap",
             "maxValue": 0.75,
+            "maxInclusive": false,
             "notes": "same-zone secret reward overlap must stay below the local-identity guardrail."
         }
     ],
