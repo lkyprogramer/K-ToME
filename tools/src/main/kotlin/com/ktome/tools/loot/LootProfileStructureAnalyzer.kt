@@ -4,8 +4,6 @@ import com.ktome.game.data.schema.LootPoolStrategy
 import com.ktome.game.data.schema.LootProfileSchemaV3
 import com.ktome.game.loot.LootProfileCandidatePoolResolver
 import com.ktome.core.item.ItemDataBundle
-import com.ktome.tools.phase4.SAME_ZONE_SECRET_CADENCE_MAX_OVERLAP_TARGET
-import com.ktome.tools.phase4.SAME_ZONE_SECRET_REWARD_MAX_OVERLAP_TARGET
 
 private const val NEAR_SUBSET_OVERLAP_THRESHOLD: Double = 0.95
 

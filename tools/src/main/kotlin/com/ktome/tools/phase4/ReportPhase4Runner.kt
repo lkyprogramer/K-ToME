@@ -107,8 +107,12 @@ object ReportPhase4Runner {
 
         val aggregationInputs = materialization.inputs
         val sourcePathByTaskId = aggregationInputs.associate { input -> input.sourceTaskId to input.kernelResult.sourcePath }
-        val metricCatalog = Phase4MetricCatalog.entries(sourcePathByTaskId)
         val ownerMetrics = buildOwnerMetrics(aggregationInputs = aggregationInputs)
+        val metricCatalog =
+            Phase4MetricCatalog.entries(
+                sourcePathByTaskId = sourcePathByTaskId,
+                targetTextByMetricId = ownerMetrics.associate { metric -> metric.metricId to metric.target },
+            )
         val evaluationResults = aggregationInputs.flatMap(ReportAggregationInput::evaluationResults)
         val failedTaskCount =
             aggregationInputs.count { input ->
@@ -209,7 +213,7 @@ object ReportPhase4Runner {
                 status = entry.status,
                 currentValue = entry.currentValue,
                 currentValueText = entry.currentValueText,
-                target = entry.targetText ?: spec.targetText,
+                target = checkNotNull(entry.targetText) { "Missing targetText for reportPhase4 owner metric ${spec.id}." },
                 note = entry.note,
             )
         }

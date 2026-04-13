@@ -26,6 +26,7 @@ class ReportPhase4RunnerTest {
         val payload = Json.parseToJsonElement(Files.readString(run.summaryPath)).jsonObject
         val inputs = payload.getValue("inputs").jsonArray
         val ownerMetrics = payload.getValue("ownerMetrics").jsonArray
+        val metricCatalog = payload.getValue("metricCatalog").jsonArray
 
         assertEquals("P4", payload.getValue("phaseId").jsonPrimitive.content)
         assertEquals("14", payload.getValue("inputCount").jsonPrimitive.content)
@@ -45,12 +46,15 @@ class ReportPhase4RunnerTest {
             ownerMetrics.first { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "terrainInteractionEncounterRate.aggregate" }.jsonObject
         val lootMetric =
             ownerMetrics.first { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "sameZoneSecretVsCadenceMaxOverlap" }.jsonObject
+        val lootCatalogMetric =
+            metricCatalog.first { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "sameZoneSecretVsCadenceMaxOverlap" }.jsonObject
 
         assertTrue(terrainInput.getValue("evaluationResults").jsonArray.size >= 3)
         assertEquals("RELATIVE_BASELINE", terrainMetric.getValue("baselineMode").jsonPrimitive.content)
         assertEquals("BUDGET_THRESHOLD", lootMetric.getValue("baselineMode").jsonPrimitive.content)
         assertEquals("PASS", lootMetric.getValue("status").jsonPrimitive.content)
-        assertTrue(payload.containsKey("metricCatalog"))
+        assertEquals("<= 0.750", lootMetric.getValue("target").jsonPrimitive.content)
+        assertEquals(lootMetric.getValue("target").jsonPrimitive.content, lootCatalogMetric.getValue("target").jsonPrimitive.content)
         assertTrue(terrainInput.getValue("renderResult").jsonObject.getValue("metadata").jsonObject.containsKey("cacheStatus"))
         assertTrue(terrainInput.getValue("renderResult").jsonObject.getValue("metadata").jsonObject.containsKey("sourceArtifactFingerprint"))
 

@@ -35,7 +35,7 @@ import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonObject
 
-private const val PHASE4_AGGREGATION_INPUT_CONTRACT_VERSION: String = "phase4-aggregation-input-v3"
+private const val PHASE4_AGGREGATION_INPUT_CONTRACT_VERSION: String = "phase4-aggregation-input-v4"
 private const val AGGREGATION_INPUT_DIRECTORY_NAME: String = "inputs"
 private const val AGGREGATION_INPUT_SUMMARY_FILE: String = "aggregation-input-summary.json"
 
@@ -279,11 +279,12 @@ internal object Phase4AggregationInputRunner {
         val failureCount = task.metrics.intValue("failureCount")
         val verificationRate = if (totalCases == 0) 0.0 else (totalCases - failureCount).toDouble() / totalCases.toDouble()
         val metricId = "scriptedHiddenVerificationRate"
+        val range = baseline.requiredMetric(metricId)
         val result =
             VerificationBaselineComparator.compareBudgetThreshold(
                 domainId = "hidden",
                 evaluationId = "hidden.scriptedOwner",
-                baseline = baseline,
+                baseline = baseline.copy(expectedMetricRanges = listOf(range)),
                 actualMetrics = mapOf(metricId to verificationRate),
                 currentValueTexts = mapOf(metricId to "${formatPercent(verificationRate)} (${totalCases - failureCount}/$totalCases)"),
                 currentValueElements =
@@ -304,7 +305,7 @@ internal object Phase4AggregationInputRunner {
             metricId = metricId,
             presentation =
                 MetricPresentation(
-                    targetText = Phase4MetricCatalog.requireSpec(metricId).targetText,
+                    targetText = Phase4OwnerMetricTargets.targetText(metricId, range),
                     note =
                         "primerCases=${task.metrics.intValue("primerActionUsedCount")}, " +
                             "primerFreeCases=${task.metrics.intValue("primerFreeCaseCount")}",
@@ -322,11 +323,12 @@ internal object Phase4AggregationInputRunner {
         val searchActionUseRate = task.metrics.doubleValue("searchActionUseRate")
         val secretZoneEntryRate = task.metrics.doubleValue("secretZoneEntryRate")
         val metricId = "organicHiddenDiscoveryRate"
+        val range = baseline.requiredMetric(metricId)
         val result =
             VerificationBaselineComparator.compareBudgetThreshold(
                 domainId = "organic-hidden",
                 evaluationId = "organic-hidden.owner",
-                baseline = baseline,
+                baseline = baseline.copy(expectedMetricRanges = listOf(range)),
                 actualMetrics = mapOf(metricId to discoveryRate),
                 currentValueTexts =
                     mapOf(
@@ -352,7 +354,7 @@ internal object Phase4AggregationInputRunner {
             metricId = metricId,
             presentation =
                 MetricPresentation(
-                    targetText = Phase4MetricCatalog.requireSpec(metricId).targetText,
+                    targetText = Phase4OwnerMetricTargets.targetText(metricId, range),
                     note = "probeBot=${task.metrics.stringValue("probeBotId")}, scripted=false, observationOnly=true",
                 ),
         )
@@ -366,11 +368,13 @@ internal object Phase4AggregationInputRunner {
         val rewardMetricId = "sameZoneSecretVsRewardMaxOverlap"
         val cadenceOverlap = task.metrics.doubleValue(cadenceMetricId)
         val rewardOverlap = task.metrics.doubleValue(rewardMetricId)
+        val cadenceRange = baseline.requiredMetric(cadenceMetricId)
+        val rewardRange = baseline.requiredMetric(rewardMetricId)
         val result =
             VerificationBaselineComparator.compareBudgetThreshold(
                 domainId = "loot",
                 evaluationId = "loot.localRewardIdentity",
-                baseline = baseline,
+                baseline = baseline.copy(expectedMetricRanges = listOf(cadenceRange, rewardRange)),
                 actualMetrics =
                     mapOf(
                         cadenceMetricId to cadenceOverlap,
@@ -406,14 +410,14 @@ internal object Phase4AggregationInputRunner {
             mapOf(
                 cadenceMetricId to
                     MetricPresentation(
-                        targetText = Phase4MetricCatalog.requireSpec(cadenceMetricId).targetText,
+                        targetText = Phase4OwnerMetricTargets.targetText(cadenceMetricId, cadenceRange),
                         note =
                             "pairCount=${task.metrics.getValue("sameZoneSecretVsCadencePairs").jsonArray.size}, " +
                                 "overlap = |A ∩ B| / min(|A|, |B|)",
                     ),
                 rewardMetricId to
                     MetricPresentation(
-                        targetText = Phase4MetricCatalog.requireSpec(rewardMetricId).targetText,
+                        targetText = Phase4OwnerMetricTargets.targetText(rewardMetricId, rewardRange),
                         note =
                             "pairCount=${task.metrics.getValue("sameZoneSecretVsRewardPairs").jsonArray.size}, " +
                                 "failurePairs=${task.metrics.getValue("localIdentityFailurePairs").jsonArray.size}",
@@ -455,11 +459,14 @@ internal object Phase4AggregationInputRunner {
                             ?: ""
                     "$professionId=$weaponBaseId[$semanticTags]"
                 }
+        val diversityRange = baseline.requiredMetric(diversityMetricId)
+        val dominanceRange = baseline.requiredMetric(dominanceMetricId)
+        val adoptionRange = baseline.requiredMetric(adoptionMetricId)
         val result =
             VerificationBaselineComparator.compareBudgetThreshold(
                 domainId = "longrun",
                 evaluationId = "longrun.terminalBuildIdentity",
-                baseline = baseline,
+                baseline = baseline.copy(expectedMetricRanges = listOf(diversityRange, dominanceRange, adoptionRange)),
                 actualMetrics =
                     mapOf(
                         diversityMetricId to diversity.toDouble(),
@@ -505,17 +512,17 @@ internal object Phase4AggregationInputRunner {
             mapOf(
                 diversityMetricId to
                     MetricPresentation(
-                        targetText = Phase4MetricCatalog.requireSpec(diversityMetricId).targetText,
+                        targetText = Phase4OwnerMetricTargets.targetText(diversityMetricId, diversityRange),
                         note = "terminalBases=$terminalWeaponBaseNote; topWeaponSemantics=$professionTopWeaponSemanticNote",
                     ),
                 dominanceMetricId to
                     MetricPresentation(
-                        targetText = Phase4MetricCatalog.requireSpec(dominanceMetricId).targetText,
+                        targetText = Phase4OwnerMetricTargets.targetText(dominanceMetricId, dominanceRange),
                         note = "topWeaponBaseId=${task.metrics["crossProfessionTopWeaponBaseId"]?.jsonPrimitive?.content ?: "unknown"}",
                     ),
                 adoptionMetricId to
                     MetricPresentation(
-                        targetText = Phase4MetricCatalog.requireSpec(adoptionMetricId).targetText,
+                        targetText = Phase4OwnerMetricTargets.targetText(adoptionMetricId, adoptionRange),
                         note = "alignedSamples=$alignedFullRouteSampleCount/$fullRouteCount; topWeaponSemantics=$professionTopWeaponSemanticNote",
                     ),
             ),
@@ -568,8 +575,7 @@ internal object Phase4AggregationInputRunner {
                 detailsByMetricId = mapOf(metricId to task.metrics),
             )
         val targetText =
-            ">= ${formatPercentPrecise(baselineMetric.targetRate)} " +
-                "(baseline ${formatPercentPrecise(baselineMetric.baselineValue)} +${formatPercentPrecise(baselineMetric.targetRelativeIncrease)})"
+            Phase4OwnerMetricTargets.targetText(metricId, range)
         val note =
             "baseline=${baseline.baselineId} @ ${baseline.sourceArtifactPath ?: "unknown"} " +
                 "(buildId=${baseline.sourceBuildId ?: "unknown"}, generatedAt=${baseline.sourceGeneratedAt ?: "unknown"}, " +
@@ -630,7 +636,7 @@ internal object Phase4AggregationInputRunner {
             metricId = metricId,
             presentation =
                 MetricPresentation(
-                    targetText = Phase4MetricCatalog.requireSpec(metricId).targetText,
+                    targetText = Phase4OwnerMetricTargets.targetText(metricId, range),
                     note = note,
                 ),
         )
@@ -658,9 +664,6 @@ internal object Phase4AggregationInputRunner {
         return copy(renderResult = currentRender.copy(metadata = updatedMetadata))
     }
 }
-
-private fun VerificationBaseline.requiredMetric(metricId: String): VerificationExpectedMetricRange =
-    checkNotNull(expectedMetricRange(metricId)) { "Missing baseline metric '$metricId' in ${baselineId}." }
 
 private fun VerificationExpectedMetricRange.toTerrainUnifiedBaselineMetric(): TerrainUnifiedBaselineMetric =
     TerrainUnifiedBaselineMetric(
