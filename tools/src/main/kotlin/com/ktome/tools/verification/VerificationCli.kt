@@ -198,16 +198,18 @@ object VerificationCli {
         )
         outputDir.resolve(domain.artifactPolicy.metadataFileName).writeText(
             prettyJson.encodeToString(
-                VerificationMetadata(
-                    domainId = domain.domainId,
-                    phaseIds = domain.phaseIds.sorted(),
-                    workloadClass = domain.workloadClass.name,
-                    defaultTier = domain.defaultTier.name,
-                    selectedTier = tier.name,
-                    nodeId = nodeId,
-                    baselineMode = domain.baselinePolicy?.mode?.name,
-                    cachePolicy =
-                        VerificationCachePolicyDescriptor(
+                    VerificationMetadata(
+                        domainId = domain.domainId,
+                        phaseIds = domain.phaseIds.sorted(),
+                        workloadClass = domain.workloadClass.name,
+                        declaredWorkloadClasses = domain.declaredWorkloadClasses().map(Enum<*>::name).sorted(),
+                        defaultTier = domain.defaultTier.name,
+                        selectedTier = tier.name,
+                        nodeId = nodeId,
+                        selectedNodeWorkloadClass = domain.node(nodeId).workloadClass.name,
+                        baselineMode = domain.baselinePolicy?.mode?.name,
+                        cachePolicy =
+                            VerificationCachePolicyDescriptor(
                             buildCacheEnabled = domain.cachePolicy.buildCacheEnabled,
                             configurationCacheCompatible = domain.cachePolicy.configurationCacheCompatible,
                             reuseExistingArtifacts = domain.cachePolicy.reuseExistingArtifacts,

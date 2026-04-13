@@ -42,9 +42,9 @@ class VerificationImpactAnalyzerTest {
         val impactedDomainIds = plan.impactedDomains.map(VerificationDomainImpact::domainId).toSet()
 
         assertEquals(setOf("boss", "longrun", "terrain"), impactedDomainIds)
-        assertTrue(plan.requestedTaskPaths.contains(":game:bossHarness"))
+        assertTrue(plan.requestedTaskPaths.contains(":tools:bossHarness"))
         assertTrue(plan.requestedTaskPaths.contains(":game:longRunLab"))
-        assertTrue(plan.requestedTaskPaths.contains(":game:terrainInteractionBatch"))
+        assertTrue(plan.requestedTaskPaths.contains(":tools:terrainInteractionBatch"))
     }
 
     @Test
@@ -65,19 +65,19 @@ class VerificationImpactAnalyzerTest {
     }
 
     @Test
-    fun `mapgen runner change routes to mapgen owner task`() {
-        val plan = VerificationImpactAnalyzer.analyze(listOf("tools/src/main/kotlin/com/ktome/tools/mapgen/MapgenSmokeRunner.kt"))
+    fun `mapgen white box runner change routes to mapgen owner task`() {
+        val plan = VerificationImpactAnalyzer.analyze(listOf("tools/src/main/kotlin/com/ktome/tools/mapgen/WhiteBoxMapgenRunner.kt"))
 
         assertEquals(setOf("mapgen"), plan.impactedDomains.map(VerificationDomainImpact::domainId).toSet())
-        assertTrue(plan.requestedTaskPaths.contains(":tools:mapgenSmoke"))
+        assertTrue(plan.requestedTaskPaths.contains(":tools:whiteBoxMapgen"))
     }
 
     @Test
-    fun `solvability runner change routes to solvability owner task`() {
-        val plan = VerificationImpactAnalyzer.analyze(listOf("tools/src/main/kotlin/com/ktome/tools/mapgen/SolvabilityHarnessRunner.kt"))
+    fun `solvability white box runner change routes to solvability owner task`() {
+        val plan = VerificationImpactAnalyzer.analyze(listOf("tools/src/main/kotlin/com/ktome/tools/mapgen/WhiteBoxSolvabilityRunner.kt"))
 
         assertEquals(setOf("solvability"), plan.impactedDomains.map(VerificationDomainImpact::domainId).toSet())
-        assertTrue(plan.requestedTaskPaths.contains(":tools:solvabilityHarness"))
+        assertTrue(plan.requestedTaskPaths.contains(":tools:whiteBoxSolvability"))
     }
 
     @Test
@@ -85,7 +85,7 @@ class VerificationImpactAnalyzerTest {
         val plan = VerificationImpactAnalyzer.analyze(listOf("game/src/test/kotlin/com/ktome/game/harness/TerrainInteractionBatchTest.kt"))
 
         assertEquals(setOf("terrain"), plan.impactedDomains.map(VerificationDomainImpact::domainId).toSet())
-        assertTrue(plan.requestedTaskPaths.contains(":game:terrainInteractionBatch"))
+        assertTrue(plan.requestedTaskPaths.contains(":tools:terrainInteractionBatch"))
     }
 
     @Test
@@ -93,7 +93,7 @@ class VerificationImpactAnalyzerTest {
         val plan = VerificationImpactAnalyzer.analyze(listOf("game/src/test/kotlin/com/ktome/game/harness/BossHarnessTest.kt"))
 
         assertEquals(setOf("boss"), plan.impactedDomains.map(VerificationDomainImpact::domainId).toSet())
-        assertTrue(plan.requestedTaskPaths.contains(":game:bossHarness"))
+        assertTrue(plan.requestedTaskPaths.contains(":tools:bossHarness"))
     }
 
     @Test
