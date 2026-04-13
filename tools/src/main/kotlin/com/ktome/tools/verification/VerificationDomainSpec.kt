@@ -35,13 +35,6 @@ data class VerificationDomainSpec(
         require(ownerTaskPaths.none(String::isBlank)) {
             "VerificationDomainSpec($domainId).ownerTaskPaths must not contain blank task paths."
         }
-        val mismatchedWorkloadNodes =
-            nodeSpecs
-                .filterNot { node -> node.workloadClass == workloadClass }
-                .map { node -> "${node.nodeId}:${node.workloadClass}" }
-        require(mismatchedWorkloadNodes.isEmpty()) {
-            "VerificationDomainSpec($domainId) contains nodes whose workloadClass diverges from domain workloadClass $workloadClass: $mismatchedWorkloadNodes."
-        }
         val missingDependencies =
             nodeSpecs.flatMap { node ->
                 node.dependsOn
@@ -59,6 +52,9 @@ data class VerificationDomainSpec(
 
     fun nodesFor(tier: VerificationTier): List<VerificationNodeSpec> =
         nodeSpecs.filter { it.tier == tier }.sortedBy(VerificationNodeSpec::nodeId)
+
+    fun declaredWorkloadClasses(): Set<VerificationWorkloadClass> =
+        nodeSpecs.map(VerificationNodeSpec::workloadClass).toSet()
 
     fun resolveNode(
         tier: VerificationTier,

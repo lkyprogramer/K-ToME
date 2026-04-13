@@ -61,6 +61,33 @@ class VerificationDomainSpecTest {
     }
 
     @Test
+    fun `hidden and content pack domains expose executable owner nodes in addition to preflight`() {
+        val hidden = VerificationTaskRegistry.spec("hidden")
+        val contentPack = VerificationTaskRegistry.spec("content-pack")
+
+        assertEquals(VerificationTier.OWNER, hidden.defaultTier)
+        assertEquals(VerificationNodeKind.LEGACY_JUNIT_CLASS_SET, hidden.resolveNode(VerificationTier.OWNER).nodeKind)
+        assertEquals(listOf(":tools:hiddenContentHarness"), hidden.ownerTaskPaths)
+        assertTrue(hidden.preflightTaskPaths.contains(":tools:verifyHiddenPreflight"))
+
+        assertEquals(VerificationTier.OWNER, contentPack.defaultTier)
+        assertEquals(VerificationNodeKind.LEGACY_JUNIT_CLASS_SET, contentPack.resolveNode(VerificationTier.OWNER).nodeKind)
+        assertEquals(listOf(":tools:contentPackHarness"), contentPack.ownerTaskPaths)
+        assertTrue(contentPack.preflightTaskPaths.contains(":tools:verifyContentPackPreflight"))
+    }
+
+    @Test
+    fun `mapgen and solvability domains point owner routing at the white box aliases without implicit full-node dependencies`() {
+        val mapgen = VerificationTaskRegistry.spec("mapgen")
+        val solvability = VerificationTaskRegistry.spec("solvability")
+
+        assertEquals(listOf(":tools:whiteBoxMapgen"), mapgen.ownerTaskPaths)
+        assertTrue(mapgen.resolveNode(VerificationTier.OWNER).dependsOn.isEmpty())
+        assertEquals(listOf(":tools:whiteBoxSolvability"), solvability.ownerTaskPaths)
+        assertTrue(solvability.resolveNode(VerificationTier.OWNER).dependsOn.isEmpty())
+    }
+
+    @Test
     fun `terrain domain declares unified relative baseline policy`() {
         val spec = VerificationTaskRegistry.spec("terrain")
 
@@ -69,6 +96,7 @@ class VerificationDomainSpecTest {
             "docs/review/phase4/opt/baselines/2026-04-09-opt-pr01-terrain-metrics-baseline-unified.json",
             spec.baselinePolicy?.baselinePath,
         )
+        assertEquals(listOf(":tools:terrainInteractionBatch"), spec.ownerTaskPaths)
     }
 
     @Test
@@ -190,34 +218,43 @@ class VerificationDomainSpecTest {
     }
 
     @Test
-    fun `node workload class must stay aligned with domain workload class`() {
-        val exception =
-            assertThrows(IllegalArgumentException::class.java) {
-                VerificationDomainSpec(
-                    domainId = "demo",
-                    phaseIds = setOf("phase4"),
-                    workloadClass = VerificationWorkloadClass.STATIC_GRAPH,
-                    defaultTier = VerificationTier.PREFLIGHT,
-                    nodeSpecs =
-                        listOf(
-                            VerificationNodeSpec(
-                                nodeId = "demo.preflight",
-                                description = "only",
-                                workloadClass = VerificationWorkloadClass.DETERMINISTIC_SCENARIO,
-                                tier = VerificationTier.PREFLIGHT,
-                                nodeKind = VerificationNodeKind.LEGACY_JUNIT_CLASS_SET,
-                                selectedClasses = listOf(VerificationDemoProbeTest::class.java.name),
-                            ),
+    fun `domain may declare mixed node workload classes when preflight and owner semantics differ`() {
+        val spec =
+            VerificationDomainSpec(
+                domainId = "demo",
+                phaseIds = setOf("phase4"),
+                workloadClass = VerificationWorkloadClass.DETERMINISTIC_SCENARIO,
+                defaultTier = VerificationTier.OWNER,
+                nodeSpecs =
+                    listOf(
+                        VerificationNodeSpec(
+                            nodeId = "demo.preflight",
+                            description = "preflight",
+                            workloadClass = VerificationWorkloadClass.STATIC_GRAPH,
+                            tier = VerificationTier.PREFLIGHT,
+                            nodeKind = VerificationNodeKind.LEGACY_JUNIT_CLASS_SET,
+                            selectedClasses = listOf(VerificationDemoProbeTest::class.java.name),
                         ),
-                    cachePolicy =
-                        VerificationCachePolicy(
-                            buildCacheEnabled = true,
-                            configurationCacheCompatible = true,
+                        VerificationNodeSpec(
+                            nodeId = "demo.owner",
+                            description = "owner",
+                            workloadClass = VerificationWorkloadClass.DETERMINISTIC_SCENARIO,
+                            tier = VerificationTier.OWNER,
+                            nodeKind = VerificationNodeKind.LEGACY_JUNIT_CLASS_SET,
+                            selectedClasses = listOf(VerificationDemoProbeTest::class.java.name),
                         ),
-                    artifactPolicy = VerificationArtifactPolicy(),
-                )
-            }
+                    ),
+                cachePolicy =
+                    VerificationCachePolicy(
+                        buildCacheEnabled = true,
+                        configurationCacheCompatible = true,
+                    ),
+                artifactPolicy = VerificationArtifactPolicy(),
+            )
 
-        assertTrue(exception.message!!.contains("workloadClass diverges"))
+        assertEquals(
+            setOf(VerificationWorkloadClass.STATIC_GRAPH, VerificationWorkloadClass.DETERMINISTIC_SCENARIO),
+            spec.declaredWorkloadClasses(),
+        )
     }
 }

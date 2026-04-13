@@ -49,7 +49,7 @@ Phase 4 的主题是把“可完成的长局”升级成“重复游玩差异明
    - `whiteBoxHiddenContent`
    - `contentPackHarness`
    - `whiteBoxContentPack`
-   - `phase4Report`（当前聚合 `mapgenSmoke / solvabilityHarness / hiddenContentHarness / organicHiddenProbe / contentPackHarness / bossHarness / longRunLab / terrainInteractionBatch / whiteBoxMapgen / whiteBoxSolvability / lootBalanceLab / whiteBoxLoot / whiteBoxHiddenContent / whiteBoxContentPack`，并正式收口 hidden / loot / terrain / terminal identity owner metric）
+   - `phase4Report`（artifact-only 聚合当前 `mapgenSmoke / solvabilityHarness / hiddenContentHarness / organicHiddenProbe / contentPackHarness / bossHarness / longRunLab / terrainInteractionBatch / whiteBoxMapgen / whiteBoxSolvability / lootBalanceLab / whiteBoxLoot / whiteBoxHiddenContent / whiteBoxContentPack` 的既有 artifact，并正式收口 hidden / loot / terrain / terminal identity owner metric）
 
 ## 4. 工作包与依赖
 

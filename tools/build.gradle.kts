@@ -4,6 +4,7 @@ import com.ktome.build.verification.VerifyChangedPlanGate
 import java.security.MessageDigest
 import org.gradle.api.file.FileCollection
 import org.gradle.api.provider.Provider
+import org.gradle.api.tasks.SourceSetContainer
 import org.gradle.api.tasks.JavaExec
 import org.gradle.api.tasks.testing.Test
 
@@ -29,6 +30,16 @@ dependencies {
     testImplementation(project(":game"))
     testImplementation("org.jetbrains.kotlinx:kotlinx-serialization-json-jvm:${rootProject.providers.gradleProperty("kotlinxSerializationVersion").get()}")
 }
+
+val gameTestRuntimeClasspath =
+    providers.provider {
+        project(":game")
+            .extensions
+            .getByType(SourceSetContainer::class.java)
+            .named("test")
+            .get()
+            .runtimeClasspath
+    }
 
 fun verificationSnapshotHash(vararg values: Any): Provider<String> =
     providers.provider {
@@ -177,6 +188,127 @@ val contentPackPreflightSnapshotHash =
         "PREFLIGHT",
         "content-pack.preflight",
         contentPackPreflightInputs,
+    )
+val mapgenOwnerInputs =
+    files(
+        verificationFoundationInputs,
+        fileTree("src/main/kotlin/com/ktome/tools/mapgen") {
+            include("**/*.kt")
+        },
+        fileTree("src/test/kotlin/com/ktome/tools/mapgen") {
+            include("WhiteBoxMapgenHarnessTest.kt")
+        },
+        rootProject.fileTree("game/src/main/resources/data") {
+            include("mapgen/**/*.yaml", "mapgen/**/*.yml", "world/**/*.yaml", "world/**/*.yml")
+        },
+    )
+val mapgenOwnerOutputDir = layout.buildDirectory.dir("reports/phase4/whitebox/mapgen")
+val mapgenOwnerSnapshotHash =
+    verificationSnapshotHash(
+        "mapgen",
+        "OWNER",
+        "mapgen.owner",
+        mapgenOwnerInputs,
+    )
+val solvabilityOwnerInputs =
+    files(
+        verificationFoundationInputs,
+        fileTree("src/main/kotlin/com/ktome/tools/mapgen") {
+            include("**/*.kt")
+        },
+        fileTree("src/test/kotlin/com/ktome/tools/mapgen") {
+            include("WhiteBoxSolvabilityHarnessTest.kt")
+        },
+        rootProject.fileTree("game/src/main/resources/data") {
+            include("mapgen/**/*.yaml", "mapgen/**/*.yml", "world/**/*.yaml", "world/**/*.yml")
+        },
+    )
+val solvabilityOwnerOutputDir = layout.buildDirectory.dir("reports/phase4/whitebox/solvability")
+val solvabilityOwnerSnapshotHash =
+    verificationSnapshotHash(
+        "solvability",
+        "OWNER",
+        "solvability.owner",
+        solvabilityOwnerInputs,
+    )
+val hiddenOwnerInputs =
+    files(
+        hiddenPreflightInputs,
+        fileTree("src/test/kotlin/com/ktome/tools/hidden") {
+            include("HiddenContentHarnessRunnerTest.kt")
+        },
+    )
+val hiddenOwnerOutputDir = layout.buildDirectory.dir("reports/phase4/hidden")
+val hiddenOwnerSnapshotHash =
+    verificationSnapshotHash(
+        "hidden",
+        "OWNER",
+        "hidden.owner",
+        hiddenOwnerInputs,
+    )
+val contentPackOwnerInputs =
+    files(
+        contentPackPreflightInputs,
+        fileTree("src/test/kotlin/com/ktome/tools/contentpack") {
+            include("ContentPackHarnessRunnerTest.kt")
+        },
+    )
+val contentPackOwnerOutputDir = layout.buildDirectory.dir("reports/phase4/content-pack")
+val contentPackOwnerSnapshotHash =
+    verificationSnapshotHash(
+        "content-pack",
+        "OWNER",
+        "content-pack.owner",
+        contentPackOwnerInputs,
+    )
+val gameHarnessSharedInputs =
+    files(
+        verificationFoundationInputs,
+        rootProject.fileTree("game/src/main") {
+            include("**/*.kt")
+        },
+        rootProject.fileTree("game/src/main/resources") {
+            include("**/*.yaml", "**/*.yml", "**/*.json")
+        },
+        rootProject.fileTree("game/src/testFixtures") {
+            include("**/*.kt")
+        },
+        rootProject.fileTree("core/src/main") {
+            include("**/*.kt")
+        },
+        rootProject.files("game/src/test/kotlin/com/ktome/game/harness/WhiteBoxHarnessWriter.kt"),
+        fileTree("src/main/kotlin/com/ktome/tools/phase4") {
+            include("**/*.kt")
+        },
+    )
+val terrainOwnerInputs =
+    files(
+        gameHarnessSharedInputs,
+        rootProject.files("game/src/test/kotlin/com/ktome/game/harness/TerrainInteractionBatchTest.kt"),
+    )
+val terrainOwnerOutputDir = layout.buildDirectory.dir("reports/phase4/whitebox/terrain")
+val terrainOwnerSnapshotHash =
+    verificationSnapshotHash(
+        "terrain",
+        "OWNER",
+        "terrain.owner",
+        terrainOwnerInputs,
+    )
+val bossOwnerInputs =
+    files(
+        gameHarnessSharedInputs,
+        rootProject.files(
+            "game/src/test/kotlin/com/ktome/game/harness/BossHarnessTest.kt",
+            "game/src/test/kotlin/com/ktome/game/harness/OfficialSliceStabilityTest.kt",
+        ),
+    )
+val bossOwnerOutputDir = layout.buildDirectory.dir("reports/phase4/whitebox/boss")
+val bossOwnerSnapshotHash =
+    verificationSnapshotHash(
+        "boss",
+        "OWNER",
+        "boss.owner",
+        bossOwnerInputs,
     )
 val scopeCoverageLintInputs =
     files(
@@ -371,17 +503,17 @@ tasks.register<Test>("solvabilityHarness") {
     outputs.dir(reportDir)
 }
 
-tasks.register<Test>("hiddenContentHarness") {
-    group = "verification"
-    description = "Runs the Phase 4 hidden-content harness and writes structured reports."
-    testClassesDirs = sourceSets.test.get().output.classesDirs
-    classpath = sourceSets.test.get().runtimeClasspath
-    useJUnitPlatform {
-        includeTags("hiddenContentHarness")
-    }
-    val reportDir = layout.buildDirectory.dir("reports/phase4/hidden")
-    systemProperty("ktome.phase4.hidden.reportDir", reportDir.get().asFile.absolutePath)
-    outputs.dir(reportDir)
+tasks.register<VerificationTask>("hiddenContentHarness") {
+    description = "Runs the Phase 4 hidden-content owner domain through the unified verification task path."
+    domainId.set("hidden")
+    tier.set("OWNER")
+    nodeId.set("hidden.owner")
+    inputSnapshotHash.set(hiddenOwnerSnapshotHash)
+    runtimeClasspath.from(sourceSets.test.get().runtimeClasspath)
+    sourceInputs.from(hiddenOwnerInputs)
+    outputDir.set(hiddenOwnerOutputDir)
+    systemPropertiesMap.put("ktome.repo.root", rootProject.projectDir.absolutePath)
+    systemPropertiesMap.put("ktome.phase4.hidden.reportDir", hiddenOwnerOutputDir.get().asFile.absolutePath)
 }
 
 tasks.register<Test>("organicHiddenProbe") {
@@ -397,43 +529,43 @@ tasks.register<Test>("organicHiddenProbe") {
     outputs.dir(reportDir)
 }
 
-tasks.register<Test>("contentPackHarness") {
-    group = "verification"
-    description = "Runs the Phase 4 content-pack harness and writes structured reports."
-    testClassesDirs = sourceSets.test.get().output.classesDirs
-    classpath = sourceSets.test.get().runtimeClasspath
-    useJUnitPlatform {
-        includeTags("contentPackHarness")
-    }
-    val reportDir = layout.buildDirectory.dir("reports/phase4/content-pack")
-    systemProperty("ktome.phase4.contentPack.reportDir", reportDir.get().asFile.absolutePath)
-    outputs.dir(reportDir)
+tasks.register<VerificationTask>("contentPackHarness") {
+    description = "Runs the Phase 4 content-pack owner domain through the unified verification task path."
+    domainId.set("content-pack")
+    tier.set("OWNER")
+    nodeId.set("content-pack.owner")
+    inputSnapshotHash.set(contentPackOwnerSnapshotHash)
+    runtimeClasspath.from(sourceSets.test.get().runtimeClasspath)
+    sourceInputs.from(contentPackOwnerInputs)
+    outputDir.set(contentPackOwnerOutputDir)
+    systemPropertiesMap.put("ktome.repo.root", rootProject.projectDir.absolutePath)
+    systemPropertiesMap.put("ktome.phase4.contentPack.reportDir", contentPackOwnerOutputDir.get().asFile.absolutePath)
 }
 
-tasks.register<Test>("whiteBoxMapgen") {
-    group = "verification"
-    description = "Runs the Phase 4 unified white-box mapgen pilot and writes standard reports."
-    testClassesDirs = sourceSets.test.get().output.classesDirs
-    classpath = sourceSets.test.get().runtimeClasspath
-    useJUnitPlatform {
-        includeTags("whiteBoxMapgen")
-    }
-    val reportDir = layout.buildDirectory.dir("reports/phase4/whitebox/mapgen")
-    systemProperty("ktome.phase4.whitebox.mapgen.reportDir", reportDir.get().asFile.absolutePath)
-    outputs.dir(reportDir)
+tasks.register<VerificationTask>("whiteBoxMapgen") {
+    description = "Runs the Phase 4 mapgen owner domain through the unified verification task path."
+    domainId.set("mapgen")
+    tier.set("OWNER")
+    nodeId.set("mapgen.owner")
+    inputSnapshotHash.set(mapgenOwnerSnapshotHash)
+    runtimeClasspath.from(sourceSets.test.get().runtimeClasspath)
+    sourceInputs.from(mapgenOwnerInputs)
+    outputDir.set(mapgenOwnerOutputDir)
+    systemPropertiesMap.put("ktome.repo.root", rootProject.projectDir.absolutePath)
+    systemPropertiesMap.put("ktome.phase4.whitebox.mapgen.reportDir", mapgenOwnerOutputDir.get().asFile.absolutePath)
 }
 
-tasks.register<Test>("whiteBoxSolvability") {
-    group = "verification"
-    description = "Runs the Phase 4 unified white-box solvability pilot and writes standard reports."
-    testClassesDirs = sourceSets.test.get().output.classesDirs
-    classpath = sourceSets.test.get().runtimeClasspath
-    useJUnitPlatform {
-        includeTags("whiteBoxSolvability")
-    }
-    val reportDir = layout.buildDirectory.dir("reports/phase4/whitebox/solvability")
-    systemProperty("ktome.phase4.whitebox.solvability.reportDir", reportDir.get().asFile.absolutePath)
-    outputs.dir(reportDir)
+tasks.register<VerificationTask>("whiteBoxSolvability") {
+    description = "Runs the Phase 4 solvability owner domain through the unified verification task path."
+    domainId.set("solvability")
+    tier.set("OWNER")
+    nodeId.set("solvability.owner")
+    inputSnapshotHash.set(solvabilityOwnerSnapshotHash)
+    runtimeClasspath.from(sourceSets.test.get().runtimeClasspath)
+    sourceInputs.from(solvabilityOwnerInputs)
+    outputDir.set(solvabilityOwnerOutputDir)
+    systemPropertiesMap.put("ktome.repo.root", rootProject.projectDir.absolutePath)
+    systemPropertiesMap.put("ktome.phase4.whitebox.solvability.reportDir", solvabilityOwnerOutputDir.get().asFile.absolutePath)
 }
 
 tasks.register<Test>("lootBalanceLab") {
@@ -480,6 +612,33 @@ tasks.register<Test>("whiteBoxHiddenContent") {
     outputs.dir(reportDir)
 }
 
+tasks.register<VerificationTask>("terrainInteractionBatch") {
+    description = "Runs the Phase 4 terrain owner domain through the unified verification task path."
+    domainId.set("terrain")
+    tier.set("OWNER")
+    nodeId.set("terrain.owner")
+    inputSnapshotHash.set(terrainOwnerSnapshotHash)
+    runtimeClasspath.from(sourceSets.test.get().runtimeClasspath, gameTestRuntimeClasspath)
+    sourceInputs.from(terrainOwnerInputs)
+    outputDir.set(terrainOwnerOutputDir)
+    systemPropertiesMap.put("ktome.repo.root", rootProject.projectDir.absolutePath)
+    systemPropertiesMap.put("ktome.phase4.whitebox.terrain.reportDir", terrainOwnerOutputDir.get().asFile.absolutePath)
+}
+
+tasks.register<VerificationTask>("bossHarness") {
+    description = "Runs the Phase 4 boss owner domain through the unified verification task path."
+    domainId.set("boss")
+    tier.set("OWNER")
+    nodeId.set("boss.owner")
+    inputSnapshotHash.set(bossOwnerSnapshotHash)
+    runtimeClasspath.from(sourceSets.test.get().runtimeClasspath, gameTestRuntimeClasspath)
+    sourceInputs.from(bossOwnerInputs)
+    outputDir.set(bossOwnerOutputDir)
+    systemPropertiesMap.put("ktome.repo.root", rootProject.projectDir.absolutePath)
+    systemPropertiesMap.put("ktome.harness.reportDir", bossOwnerOutputDir.get().asFile.absolutePath)
+    systemPropertiesMap.put("ktome.phase4.whitebox.boss.reportDir", bossOwnerOutputDir.get().asFile.absolutePath)
+}
+
 tasks.register<Test>("whiteBoxContentPack") {
     group = "verification"
     description = "Runs the Phase 4 unified white-box content-pack domain and writes standard reports."
@@ -496,28 +655,12 @@ tasks.register<Test>("whiteBoxContentPack") {
 
 tasks.register<Test>("phase4Report") {
     group = "verification"
-    description = "Aggregates the currently landed Phase 4 verification reports into a single phase summary."
+    description = "Rebuilds the legacy Phase 4 aggregate summary from existing artifacts without rerunning producer tasks."
     testClassesDirs = sourceSets.test.get().output.classesDirs
     classpath = sourceSets.test.get().runtimeClasspath
     useJUnitPlatform {
         includeTags("phase4Report")
     }
-    dependsOn(
-        ":tools:mapgenSmoke",
-        ":tools:solvabilityHarness",
-        ":tools:hiddenContentHarness",
-        ":tools:organicHiddenProbe",
-        ":tools:contentPackHarness",
-        ":tools:lootBalanceLab",
-        ":tools:whiteBoxMapgen",
-        ":tools:whiteBoxSolvability",
-        ":tools:whiteBoxLoot",
-        ":tools:whiteBoxHiddenContent",
-        ":tools:whiteBoxContentPack",
-        ":game:terrainInteractionBatch",
-        ":game:bossHarness",
-        ":game:longRunLab",
-    )
     val reportDir = layout.buildDirectory.dir("reports/phase4")
     systemProperty("ktome.phase4.reportDir", reportDir.get().asFile.absolutePath)
     outputs.dir(reportDir)
@@ -525,7 +668,7 @@ tasks.register<Test>("phase4Report") {
 
 tasks.register<Test>("phase4ReportOnly") {
     group = "verification"
-    description = "Rebuilds the Phase 4 aggregate report from existing artifacts without rerunning heavyweight producer tasks."
+    description = "Explicit artifact-only alias for rebuilding the legacy Phase 4 aggregate report from existing artifacts."
     testClassesDirs = sourceSets.test.get().output.classesDirs
     classpath = sourceSets.test.get().runtimeClasspath
     useJUnitPlatform {
@@ -538,14 +681,13 @@ tasks.register<Test>("phase4ReportOnly") {
 
 tasks.register<Test>("reportPhase4") {
     group = "verification"
-    description = "Materializes Phase 4 evaluation artifacts from existing domain summaries, builds the new aggregate report, and compares owner metrics against the legacy phase4Report output."
+    description = "Materializes the new aggregate report from unified domain artifacts and compares owner metrics against an existing legacy phase4Report output."
     testClassesDirs = sourceSets.test.get().output.classesDirs
     classpath = sourceSets.test.get().runtimeClasspath
     useJUnitPlatform {
         includeTags("reportPhase4")
         excludeTags("phase4AggregationInput")
     }
-    dependsOn("phase4ReportOnly")
     val aggregateReportDir = layout.buildDirectory.dir("reports/verification/phase4")
     systemProperty("ktome.phase4.reportDir", layout.buildDirectory.dir("reports/phase4").get().asFile.absolutePath)
     systemProperty("ktome.phase4.aggregate.reportDir", aggregateReportDir.get().asFile.absolutePath)
@@ -579,6 +721,10 @@ listOf(
     tasks.named("lootBalanceLab"),
     tasks.named("hiddenContentHarness"),
     tasks.named("contentPackHarness"),
+    tasks.named("terrainInteractionBatch"),
+    tasks.named("bossHarness"),
+    tasks.named("whiteBoxMapgen"),
+    tasks.named("whiteBoxSolvability"),
     tasks.named("mapgenSmoke"),
     tasks.named("solvabilityHarness"),
 ).forEach { taskProvider ->

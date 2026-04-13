@@ -92,7 +92,7 @@ internal object Phase4AggregationInputRunner {
         val inputDir = reportDir.resolve(AGGREGATION_INPUT_DIRECTORY_NAME)
         Files.createDirectories(inputDir)
 
-        val taskReports = Phase4ReportRunner.collectTaskAggregates(repoRoot)
+        val taskReports = Phase4DomainArtifactRegistry.collectTaskAggregates(repoRoot)
         val inputs = mutableListOf<ReportAggregationInput>()
         val invalidationReasonCounts = linkedMapOf<String, Int>()
         val baselineFingerprintCache = mutableMapOf<Path, String>()

@@ -68,10 +68,10 @@ val verifyChangedTaskPaths =
         ":tools:lootBalanceLab",
         ":tools:hiddenContentHarness",
         ":tools:contentPackHarness",
-        ":tools:mapgenSmoke",
-        ":tools:solvabilityHarness",
-        ":game:terrainInteractionBatch",
-        ":game:bossHarness",
+        ":tools:whiteBoxMapgen",
+        ":tools:whiteBoxSolvability",
+        ":tools:terrainInteractionBatch",
+        ":tools:bossHarness",
         ":game:longRunLab",
     )
 
@@ -274,14 +274,14 @@ tasks.register("combatTraceGolden") {
 
 tasks.register("bossHarness") {
     group = LifecycleBasePlugin.VERIFICATION_GROUP
-    description = "Runs the Phase 3 boss encounter stability harness."
-    dependsOn(":game:bossHarness")
+    description = "Runs the Phase 4 boss owner domain through the unified verification task path."
+    dependsOn(":tools:bossHarness")
 }
 
 tasks.register("terrainInteractionBatch") {
     group = LifecycleBasePlugin.VERIFICATION_GROUP
-    description = "Runs the PR-06 terrain interaction batch and writes unified white-box reports."
-    dependsOn(":game:terrainInteractionBatch")
+    description = "Runs the Phase 4 terrain owner domain through the unified verification task path."
+    dependsOn(":tools:terrainInteractionBatch")
 }
 
 tasks.register("mapgenSmoke") {
@@ -358,13 +358,13 @@ tasks.register("whiteBoxLoot") {
 
 tasks.register("phase4Report") {
     group = LifecycleBasePlugin.VERIFICATION_GROUP
-    description = "Aggregates current Phase 4 verification tasks, including hidden content, into tools/build/reports/phase4/phase4-summary.json."
+    description = "Rebuilds tools/build/reports/phase4/phase4-summary.json from existing Phase 4 verification artifacts."
     dependsOn(":tools:phase4Report")
 }
 
 tasks.register("phase4ReportOnly") {
     group = LifecycleBasePlugin.VERIFICATION_GROUP
-    description = "Rebuilds tools/build/reports/phase4/phase4-summary.json from existing artifacts without rerunning Phase 4 producer tasks."
+    description = "Explicit artifact-only alias for rebuilding tools/build/reports/phase4/phase4-summary.json from existing artifacts."
     dependsOn(":tools:phase4ReportOnly")
 }
 

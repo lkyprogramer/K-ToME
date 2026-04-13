@@ -10,6 +10,7 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Test
@@ -172,6 +173,76 @@ class VerificationCliTest {
     }
 
     @Test
+    fun `legacy adapter fails the task when selected junit classes fail`() {
+        val outputDir = tempDir.resolve("legacy-failing")
+
+        val exception =
+            assertThrows(IllegalArgumentException::class.java) {
+                VerificationCli.main(
+                    arrayOf(
+                        "legacy-adapter",
+                        "--domain",
+                        "demo",
+                        "--tier",
+                        VerificationTier.PREFLIGHT.name,
+                        "--node-id",
+                        "demo.failingNode",
+                        "--snapshot",
+                        "snapshot-failing",
+                        "--output-dir",
+                        outputDir.toString(),
+                        "--cache-status",
+                        "LOCAL_EXECUTION",
+                        "--select-class",
+                        VerificationFailingProbeFixture::class.java.name,
+                    ),
+                )
+            }
+
+        val summary =
+            json.decodeFromString<VerificationSummary>(
+                outputDir.resolve("summary.json").readText(),
+            )
+
+        assertNotNull(exception.message)
+        assertTrue(exception.message!!.contains("failing tests"))
+        assertEquals("FAIL", summary.verdict)
+        assertEquals(1, summary.failedTests)
+    }
+
+    @Test
+    fun `report mode fails when source artifact captured failing junit classes`() {
+        val sourceDir =
+            writeReportSourceArtifact(
+                tempDir.resolve("source-failing").createDirectories(),
+                nodeId = "contractLint.staticGraph",
+                failedTests = 1,
+                verdict = "FAIL",
+            )
+
+        val exception =
+            assertThrows(IllegalArgumentException::class.java) {
+                VerificationCli.main(
+                    arrayOf(
+                        "report",
+                        "--domain",
+                        "contractLint",
+                        "--tier",
+                        VerificationTier.PREFLIGHT.name,
+                        "--output-dir",
+                        tempDir.resolve("report-failing").toString(),
+                        "--cache-status",
+                        "REPORT_ONLY_REBUILD",
+                        "--artifact-input",
+                        sourceDir.toString(),
+                    ),
+                )
+            }
+
+        assertTrue(exception.message!!.contains("failing tests"))
+    }
+
+    @Test
     fun `plan changed writes task list and impact summary`() {
         val outputDir = tempDir.resolve("changed-plan")
 
@@ -203,6 +274,8 @@ class VerificationCliTest {
     private fun writeReportSourceArtifact(
         directory: Path,
         nodeId: String,
+        failedTests: Int = 0,
+        verdict: String = if (failedTests == 0) "PASS" else "FAIL",
     ): Path {
         directory.resolve("raw-result.json").writeText(
             json.encodeToString(
@@ -213,7 +286,7 @@ class VerificationCliTest {
                     selectedClasses = listOf("com.ktome.tools.lint.ContractLintTest"),
                     selectedTags = emptyList(),
                     totalTests = 3,
-                    failedTests = 0,
+                    failedTests = failedTests,
                     durationMillis = 15,
                     tests =
                         listOf(
@@ -231,7 +304,7 @@ class VerificationCliTest {
                 VerificationSummary(
                     domainId = "contractLint",
                     tier = VerificationTier.PREFLIGHT.name,
-                    verdict = "PASS",
+                    verdict = verdict,
                     snapshotHash = "source-snapshot",
                     cacheStatus = "LOCAL_EXECUTION",
                     outputPaths =
@@ -242,7 +315,7 @@ class VerificationCliTest {
                         ),
                     nodeId = nodeId,
                     totalTests = 3,
-                    failedTests = 0,
+                    failedTests = failedTests,
                     durationMillis = 15,
                     reportOnly = false,
                 ),

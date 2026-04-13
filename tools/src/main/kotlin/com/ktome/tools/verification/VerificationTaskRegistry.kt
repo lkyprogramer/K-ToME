@@ -104,8 +104,8 @@ object VerificationTaskRegistry {
         VerificationDomainSpec(
             domainId = "hidden",
             phaseIds = setOf("phase4"),
-            workloadClass = VerificationWorkloadClass.STATIC_GRAPH,
-            defaultTier = VerificationTier.PREFLIGHT,
+            workloadClass = VerificationWorkloadClass.DETERMINISTIC_SCENARIO,
+            defaultTier = VerificationTier.OWNER,
             nodeSpecs =
                 listOf(
                     VerificationNodeSpec(
@@ -115,6 +115,14 @@ object VerificationTaskRegistry {
                         tier = VerificationTier.PREFLIGHT,
                         nodeKind = VerificationNodeKind.LEGACY_JUNIT_CLASS_SET,
                         selectedClasses = listOf("com.ktome.tools.hidden.HiddenPreflightRunnerTest"),
+                    ),
+                    VerificationNodeSpec(
+                        nodeId = "hidden.owner",
+                        description = "Runs the deterministic hidden-content owner harness through the unified verification contract.",
+                        workloadClass = VerificationWorkloadClass.DETERMINISTIC_SCENARIO,
+                        tier = VerificationTier.OWNER,
+                        nodeKind = VerificationNodeKind.LEGACY_JUNIT_CLASS_SET,
+                        selectedClasses = listOf("com.ktome.tools.hidden.HiddenContentHarnessRunnerTest"),
                     ),
                 ),
             inputScopes =
@@ -159,8 +167,8 @@ object VerificationTaskRegistry {
         VerificationDomainSpec(
             domainId = "content-pack",
             phaseIds = setOf("phase4"),
-            workloadClass = VerificationWorkloadClass.STATIC_GRAPH,
-            defaultTier = VerificationTier.PREFLIGHT,
+            workloadClass = VerificationWorkloadClass.DETERMINISTIC_SCENARIO,
+            defaultTier = VerificationTier.OWNER,
             nodeSpecs =
                 listOf(
                     VerificationNodeSpec(
@@ -170,6 +178,14 @@ object VerificationTaskRegistry {
                         tier = VerificationTier.PREFLIGHT,
                         nodeKind = VerificationNodeKind.LEGACY_JUNIT_CLASS_SET,
                         selectedClasses = listOf("com.ktome.tools.contentpack.ContentPackPreflightRunnerTest"),
+                    ),
+                    VerificationNodeSpec(
+                        nodeId = "content-pack.owner",
+                        description = "Runs the content-pack owner harness through the unified verification contract.",
+                        workloadClass = VerificationWorkloadClass.DETERMINISTIC_SCENARIO,
+                        tier = VerificationTier.OWNER,
+                        nodeKind = VerificationNodeKind.LEGACY_JUNIT_CLASS_SET,
+                        selectedClasses = listOf("com.ktome.tools.contentpack.ContentPackHarnessRunnerTest"),
                     ),
                 ),
             inputScopes =
@@ -214,10 +230,19 @@ object VerificationTaskRegistry {
                 listOf(
                     VerificationNodeSpec(
                         nodeId = "mapgen.owner",
-                        description = "Tracks Phase 4 mapgen owner verification routing.",
+                        description = "Runs the white-box Phase 4 mapgen owner domain through the unified verification contract.",
                         workloadClass = VerificationWorkloadClass.DETERMINISTIC_SCENARIO,
                         tier = VerificationTier.OWNER,
-                        nodeKind = VerificationNodeKind.REPORT_ONLY,
+                        nodeKind = VerificationNodeKind.LEGACY_JUNIT_CLASS_SET,
+                        selectedClasses = listOf("com.ktome.tools.mapgen.WhiteBoxMapgenHarnessTest"),
+                    ),
+                    VerificationNodeSpec(
+                        nodeId = "mapgen.full",
+                        description = "Runs the full Phase 4 mapgen smoke corpus as the upstream kernel for owner/report consumers.",
+                        workloadClass = VerificationWorkloadClass.DETERMINISTIC_SCENARIO,
+                        tier = VerificationTier.FULL,
+                        nodeKind = VerificationNodeKind.LEGACY_JUNIT_CLASS_SET,
+                        selectedClasses = listOf("com.ktome.tools.mapgen.MapgenSmokeHarnessTest"),
                     ),
                 ),
             inputScopes =
@@ -227,12 +252,13 @@ object VerificationTaskRegistry {
                         pathPrefixes =
                             listOf(
                                 "tools/src/main/kotlin/com/ktome/tools/mapgen/MapgenSmokeRunner.kt",
-                                "tools/src/test/kotlin/com/ktome/tools/mapgen/MapgenSmokeHarnessTest.kt",
+                                "tools/src/main/kotlin/com/ktome/tools/mapgen/WhiteBoxMapgenRunner.kt",
+                                "tools/src/test/kotlin/com/ktome/tools/mapgen/WhiteBoxMapgenHarnessTest.kt",
                             ),
                         ownerRequired = true,
                     ),
                 ),
-            ownerTaskPaths = listOf(":tools:mapgenSmoke"),
+            ownerTaskPaths = listOf(":tools:whiteBoxMapgen"),
             cachePolicy =
                 VerificationCachePolicy(
                     buildCacheEnabled = true,
@@ -252,10 +278,19 @@ object VerificationTaskRegistry {
                 listOf(
                     VerificationNodeSpec(
                         nodeId = "solvability.owner",
-                        description = "Tracks Phase 4 solvability owner verification routing.",
+                        description = "Runs the white-box Phase 4 solvability owner domain through the unified verification contract.",
                         workloadClass = VerificationWorkloadClass.DETERMINISTIC_SCENARIO,
                         tier = VerificationTier.OWNER,
-                        nodeKind = VerificationNodeKind.REPORT_ONLY,
+                        nodeKind = VerificationNodeKind.LEGACY_JUNIT_CLASS_SET,
+                        selectedClasses = listOf("com.ktome.tools.mapgen.WhiteBoxSolvabilityHarnessTest"),
+                    ),
+                    VerificationNodeSpec(
+                        nodeId = "solvability.full",
+                        description = "Runs the full Phase 4 solvability proof corpus as the upstream kernel for owner/report consumers.",
+                        workloadClass = VerificationWorkloadClass.DETERMINISTIC_SCENARIO,
+                        tier = VerificationTier.FULL,
+                        nodeKind = VerificationNodeKind.LEGACY_JUNIT_CLASS_SET,
+                        selectedClasses = listOf("com.ktome.tools.mapgen.SolvabilityHarnessRunnerTest"),
                     ),
                 ),
             inputScopes =
@@ -265,13 +300,13 @@ object VerificationTaskRegistry {
                         pathPrefixes =
                             listOf(
                                 "tools/src/main/kotlin/com/ktome/tools/mapgen/SolvabilityHarnessRunner.kt",
-                                "tools/src/test/kotlin/com/ktome/tools/mapgen/SolvabilityHarnessRunnerTest.kt",
-                                "tools/src/test/kotlin/com/ktome/tools/mapgen/SolvabilityGoldenContractTest.kt",
+                                "tools/src/main/kotlin/com/ktome/tools/mapgen/WhiteBoxSolvabilityRunner.kt",
+                                "tools/src/test/kotlin/com/ktome/tools/mapgen/WhiteBoxSolvabilityHarnessTest.kt",
                             ),
                         ownerRequired = true,
                     ),
                 ),
-            ownerTaskPaths = listOf(":tools:solvabilityHarness"),
+            ownerTaskPaths = listOf(":tools:whiteBoxSolvability"),
             cachePolicy =
                 VerificationCachePolicy(
                     buildCacheEnabled = true,
@@ -291,21 +326,26 @@ object VerificationTaskRegistry {
                 listOf(
                     VerificationNodeSpec(
                         nodeId = "terrain.owner",
-                        description = "Tracks Phase 4 terrain interaction owner verification routing.",
+                        description = "Runs the Phase 4 terrain owner harness through the unified verification contract.",
                         workloadClass = VerificationWorkloadClass.DETERMINISTIC_SCENARIO,
                         tier = VerificationTier.OWNER,
-                        nodeKind = VerificationNodeKind.REPORT_ONLY,
+                        nodeKind = VerificationNodeKind.LEGACY_JUNIT_CLASS_SET,
+                        selectedClasses = listOf("com.ktome.game.harness.TerrainInteractionBatchTest"),
                     ),
                 ),
             inputScopes =
                 listOf(
                     InputScope(
                         scopeId = "terrain.runtime",
-                        pathPrefixes = listOf("game/src/test/kotlin/com/ktome/game/harness/TerrainInteractionBatchTest.kt"),
+                        pathPrefixes =
+                            listOf(
+                                "game/src/test/kotlin/com/ktome/game/harness/TerrainInteractionBatchTest.kt",
+                                "tools/src/main/kotlin/com/ktome/tools/phase4/Phase4DomainArtifactRegistry.kt",
+                            ),
                         ownerRequired = true,
                     ),
                 ),
-            ownerTaskPaths = listOf(":game:terrainInteractionBatch"),
+            ownerTaskPaths = listOf(":tools:terrainInteractionBatch"),
             baselinePolicy =
                 BaselinePolicySpec(
                     mode = BaselineMode.RELATIVE_BASELINE,
@@ -330,10 +370,15 @@ object VerificationTaskRegistry {
                 listOf(
                     VerificationNodeSpec(
                         nodeId = "boss.owner",
-                        description = "Tracks Phase 4 boss harness owner verification routing.",
+                        description = "Runs the Phase 4 boss owner harness through the unified verification contract.",
                         workloadClass = VerificationWorkloadClass.DETERMINISTIC_SCENARIO,
                         tier = VerificationTier.OWNER,
-                        nodeKind = VerificationNodeKind.REPORT_ONLY,
+                        nodeKind = VerificationNodeKind.LEGACY_JUNIT_CLASS_SET,
+                        selectedClasses =
+                            listOf(
+                                "com.ktome.game.harness.BossHarnessTest",
+                                "com.ktome.game.harness.OfficialSliceStabilityTest",
+                            ),
                     ),
                 ),
             inputScopes =
@@ -344,11 +389,12 @@ object VerificationTaskRegistry {
                             listOf(
                                 "game/src/test/kotlin/com/ktome/game/harness/BossHarnessTest.kt",
                                 "game/src/test/kotlin/com/ktome/game/harness/OfficialSliceStabilityTest.kt",
+                                "tools/src/main/kotlin/com/ktome/tools/phase4/Phase4DomainArtifactRegistry.kt",
                             ),
                         ownerRequired = true,
                     ),
                 ),
-            ownerTaskPaths = listOf(":game:bossHarness"),
+            ownerTaskPaths = listOf(":tools:bossHarness"),
             cachePolicy =
                 VerificationCachePolicy(
                     buildCacheEnabled = true,

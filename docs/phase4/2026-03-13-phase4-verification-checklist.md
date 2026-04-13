@@ -30,9 +30,10 @@
 1. 当前主干已经落地 `whiteBoxMapgen`、`whiteBoxSolvability`、`whiteBoxVerify` 与 `phase4Report`。
 2. 当前 `phase4Report` 聚合 `14` 个任务：`mapgenSmoke`、`solvabilityHarness`、`hiddenContentHarness`、`organicHiddenProbe`、`contentPackHarness`、`bossHarness`、`longRunLab`、`terrainInteractionBatch`、`whiteBoxMapgen`、`whiteBoxSolvability`、`lootBalanceLab`、`whiteBoxLoot`、`whiteBoxHiddenContent`、`whiteBoxContentPack`。
 3. `phase4Report` 现在同时是 `scripted vs organic hidden`、`same-zone local reward identity`、`terminal build identity`、`terrain combat sample contract` 的唯一 owner metric 聚合入口。
-4. `hiddenContentHarness` 继续承担 scripted correctness owner；`organicHiddenProbe` 只负责无 primer 的 organic experience 观测，不得借助内部 reveal 路径。
-5. 单个 harness 仍保留独立命令，便于局部回归、PR 级收口与 artifact 定向排查。
-6. `terrainInteractionBatch + bossHarness` 是 `PR-06` 的主验证入口；`hiddenContentHarness` 只消费 terrain/mutation/boss 的结果，不承担其主验证职责。
+4. `phase4Report` 与 `phase4ReportOnly` 都按 artifact-only 语义运行；前面的 producer 命令必须先产出报告，再由这两个聚合入口消费。
+5. `hiddenContentHarness` 继续承担 scripted correctness owner；`organicHiddenProbe` 只负责无 primer 的 organic experience 观测，不得借助内部 reveal 路径。
+6. 单个 harness 仍保留独立命令，便于局部回归、PR 级收口与 artifact 定向排查。
+7. `terrainInteractionBatch + bossHarness` 是 `PR-06` 的主验证入口；`hiddenContentHarness` 只消费 terrain/mutation/boss 的结果，不承担其主验证职责。
 
 ### 必须检查的结果
 

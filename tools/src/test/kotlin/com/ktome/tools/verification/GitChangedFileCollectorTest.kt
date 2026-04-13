@@ -35,7 +35,8 @@ class GitChangedFileCollectorTest {
 
     @Test
     fun `collector falls back to existing local branch when preferred base ref is missing`() {
-        runGit(tempDir, "init", "--initial-branch=main")
+        runGit(tempDir, "init")
+        runGit(tempDir, "checkout", "-b", "main")
         runGit(tempDir, "config", "user.name", "Codex")
         runGit(tempDir, "config", "user.email", "codex@example.com")
         Files.writeString(tempDir.resolve("tracked.txt"), "v1")

@@ -1,0 +1,738 @@
+package com.ktome.tools.phase4
+
+import com.ktome.game.data.DataLoader
+import java.nio.file.Path
+import java.time.Duration
+import java.time.Instant
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.put
+import kotlinx.serialization.json.putJsonArray
+
+internal data class Phase4TaskAggregate(
+    val taskId: String,
+    val status: String,
+    val sourcePath: String,
+    val buildId: String? = null,
+    val locale: String? = null,
+    val metrics: JsonObject,
+)
+
+private data class Phase4TaskDescriptor(
+    val relativeSourcePath: String,
+    val reader: (repoRoot: Path, sourcePath: Path, payload: JsonObject) -> Phase4TaskAggregate,
+) {
+    fun read(repoRoot: Path): Phase4TaskAggregate {
+        val sourcePath = repoRoot.resolve(relativeSourcePath)
+        val payload = readPhase4Json(sourcePath)
+        return reader(repoRoot, sourcePath, payload)
+    }
+}
+
+private val contentPackArtifactMaxSkew: Duration = Duration.ofMinutes(30)
+private val longRunItemSemanticTagsById: Map<String, List<String>> by lazy {
+    DataLoader()
+        .loadItemBundle()
+        .baseItems
+        .associate { item -> item.id to item.tags.sorted() }
+}
+
+internal object Phase4DomainArtifactRegistry {
+    private val taskDescriptors: List<Phase4TaskDescriptor> =
+        listOf(
+            Phase4TaskDescriptor(
+                relativeSourcePath = "tools/build/reports/phase4/mapgen/mapgen-smoke-summary.json",
+                reader = ::readMapgenSmoke,
+            ),
+            Phase4TaskDescriptor(
+                relativeSourcePath = "tools/build/reports/phase4/solvability/solvability-summary.json",
+                reader = ::readSolvabilityHarness,
+            ),
+            Phase4TaskDescriptor(
+                relativeSourcePath = "tools/build/reports/phase4/hidden/hidden-content-summary.json",
+                reader = ::readHiddenContentHarness,
+            ),
+            Phase4TaskDescriptor(
+                relativeSourcePath = "tools/build/reports/phase4/hidden/organic-hidden-probe-summary.json",
+                reader = ::readOrganicHiddenProbe,
+            ),
+            Phase4TaskDescriptor(
+                relativeSourcePath = "tools/build/reports/phase4/whitebox/boss/boss-harness.json",
+                reader = ::readBossHarness,
+            ),
+            Phase4TaskDescriptor(
+                relativeSourcePath = "build/reports/harness/long-run-full.json",
+                reader = ::readLongRunLabFull,
+            ),
+            Phase4TaskDescriptor(
+                relativeSourcePath = "tools/build/reports/phase4/whitebox/terrain/whitebox-terrain-summary.json",
+                reader = ::readTerrainInteractionBatch,
+            ),
+            Phase4TaskDescriptor(
+                relativeSourcePath = "tools/build/reports/phase4/whitebox/mapgen/whitebox-mapgen-summary.json",
+                reader = ::readWhiteBoxMapgen,
+            ),
+            Phase4TaskDescriptor(
+                relativeSourcePath = "tools/build/reports/phase4/whitebox/solvability/whitebox-solvability-summary.json",
+                reader = ::readWhiteBoxSolvability,
+            ),
+            Phase4TaskDescriptor(
+                relativeSourcePath = "tools/build/reports/phase4/loot/loot-balance-summary.json",
+                reader = ::readLootBalanceLab,
+            ),
+            Phase4TaskDescriptor(
+                relativeSourcePath = "tools/build/reports/phase4/whitebox/loot/whitebox-loot-summary.json",
+                reader = ::readWhiteBoxLoot,
+            ),
+            Phase4TaskDescriptor(
+                relativeSourcePath = "tools/build/reports/phase4/whitebox/hidden/whitebox-hidden-content-summary.json",
+                reader = ::readWhiteBoxHiddenContent,
+            ),
+            Phase4TaskDescriptor(
+                relativeSourcePath = "tools/build/reports/phase4/whitebox/content-pack/whitebox-content-pack-summary.json",
+                reader = ::readWhiteBoxContentPack,
+            ),
+            Phase4TaskDescriptor(
+                relativeSourcePath = "tools/build/reports/phase4/content-pack/content-pack-summary.json",
+                reader = ::readContentPackHarness,
+            ),
+        )
+
+    fun collectTaskAggregates(repoRoot: Path = repoRoot()): List<Phase4TaskAggregate> =
+        taskDescriptors.map { descriptor -> descriptor.read(repoRoot) }
+
+    private fun readMapgenSmoke(
+        repoRoot: Path,
+        sourcePath: Path,
+        payload: JsonObject,
+    ): Phase4TaskAggregate {
+        val header = payload.getValue("header").jsonObject
+        val summary = payload.getValue("summary").jsonObject
+        val failureCount = summary.intValue("failureCount")
+        val emptyMapCount = summary.intValue("emptyMapCount")
+        val unreachableCount = summary.intValue("unreachableCount")
+        return Phase4TaskAggregate(
+            taskId = "mapgenSmoke",
+            status = if (failureCount == 0 && emptyMapCount == 0 && unreachableCount == 0) "PASS" else "FAIL",
+            sourcePath = relativize(repoRoot, sourcePath),
+            buildId = header.optionalStringValue("buildId"),
+            locale = header.optionalStringValue("locale"),
+            metrics =
+                buildJsonObject {
+                    put("totalCases", summary.intValue("totalCases"))
+                    put("distinctSeedCount", summary.intValue("distinctSeedCount"))
+                    put("failureCount", failureCount)
+                    put("emptyMapCount", emptyMapCount)
+                    put("unreachableCount", unreachableCount)
+                    put("p95GenerationMillis", summary.intValue("p95GenerationMillis"))
+                },
+        )
+    }
+
+    private fun readSolvabilityHarness(
+        repoRoot: Path,
+        sourcePath: Path,
+        payload: JsonObject,
+    ): Phase4TaskAggregate {
+        val header = payload.getValue("header").jsonObject
+        val summary = payload.getValue("summary").jsonObject
+        val failureCount = summary.intValue("failureCount")
+        val criticalPathFailureCount = summary.intValue("criticalPathFailureCount")
+        return Phase4TaskAggregate(
+            taskId = "solvabilityHarness",
+            status = if (failureCount == 0 && criticalPathFailureCount == 0) "PASS" else "FAIL",
+            sourcePath = relativize(repoRoot, sourcePath),
+            buildId = header.optionalStringValue("buildId"),
+            locale = header.optionalStringValue("locale"),
+            metrics =
+                buildJsonObject {
+                    put("totalCases", summary.intValue("totalCases"))
+                    put("distinctSeedCount", summary.intValue("distinctSeedCount"))
+                    put("failureCount", failureCount)
+                    put("criticalPathFailureCount", criticalPathFailureCount)
+                    put("casesWithBacktrackProof", summary.intValue("casesWithBacktrackProof"))
+                    put("casesWithSecretReveal", summary.intValue("casesWithSecretReveal"))
+                    put("casesWithSearchFailure", summary.intValue("casesWithSearchFailure"))
+                    put("providedDiscoveryTagCount", summary.intValue("providedDiscoveryTagCount"))
+                    put("providedDiscoveryTags", summary.getValue("providedDiscoveryTags"))
+                    put("hiddenAnchorFamilyFailureCount", summary.intValue("hiddenAnchorFamilyFailureCount"))
+                    put("requiredHiddenAnchorFamilies", summary.getValue("requiredHiddenAnchorFamilies"))
+                    put("observedHiddenAnchorFamilies", summary.getValue("observedHiddenAnchorFamilies"))
+                },
+        )
+    }
+
+    private fun readHiddenContentHarness(
+        repoRoot: Path,
+        sourcePath: Path,
+        payload: JsonObject,
+    ): Phase4TaskAggregate {
+        val header = payload.getValue("header").jsonObject
+        val summary = payload.getValue("summary").jsonObject
+        val failureCount = summary.intValue("failureCount")
+        return Phase4TaskAggregate(
+            taskId = "hiddenContentHarness",
+            status = if (failureCount == 0) "PASS" else "FAIL",
+            sourcePath = relativize(repoRoot, sourcePath),
+            buildId = header.optionalStringValue("buildId"),
+            locale = header.optionalStringValue("locale"),
+            metrics =
+                buildJsonObject {
+                    put("scriptedVerification", summary.getValue("scriptedVerification"))
+                    put("totalCases", summary.intValue("totalCases"))
+                    put("distinctSeedCount", summary.intValue("distinctSeedCount"))
+                    put("failureCount", failureCount)
+                    put("caseFailureCount", summary.intValue("caseFailureCount"))
+                    put("aggregateFailureCount", summary.intValue("aggregateFailureCount"))
+                    put("hiddenEventTriggerCount", summary.intValue("hiddenEventTriggerCount"))
+                    put("hiddenEventTriggerRate", summary.doubleValue("hiddenEventTriggerRate"))
+                    put("secretZoneDiscoveryCount", summary.intValue("secretZoneDiscoveryCount"))
+                    put("secretZoneDiscoveryRate", summary.doubleValue("secretZoneDiscoveryRate"))
+                    put("explicitSearchRevealCount", summary.intValue("explicitSearchRevealCount"))
+                    put("primerActionUsedCount", summary.intValue("primerActionUsedCount"))
+                    put("primerFreeCaseCount", summary.intValue("primerFreeCaseCount"))
+                    put("searchFailureCount", summary.intValue("searchFailureCount"))
+                    put("zeroHiddenEventZoneCount", summary.intValue("zeroHiddenEventZoneCount"))
+                    put("zeroSecretZoneZoneCount", summary.intValue("zeroSecretZoneZoneCount"))
+                    put("criticalPathFailureCount", summary.intValue("criticalPathFailureCount"))
+                    put("triggerContextFailureCount", summary.intValue("triggerContextFailureCount"))
+                    put("secretRewardNodeMissingCount", summary.intValue("secretRewardNodeMissingCount"))
+                    put("rewardBudgetFailureCount", summary.intValue("rewardBudgetFailureCount"))
+                    put("threatBudgetFailureCount", summary.intValue("threatBudgetFailureCount"))
+                    put("searchFailureBlockingCount", summary.intValue("searchFailureBlockingCount"))
+                    put("proofMismatchCount", summary.intValue("proofMismatchCount"))
+                    put("runtimeReturnDestinationMismatchCount", summary.intValue("runtimeReturnDestinationMismatchCount"))
+                    put("hiddenEventRegistryCount", summary.intValue("hiddenEventRegistryCount"))
+                    put("secretZoneRegistryCount", summary.intValue("secretZoneRegistryCount"))
+                    put("hiddenTriggerTypeCoverage", summary.getValue("hiddenTriggerTypeCoverage"))
+                    put("hiddenTriggerTypeSet", summary.getValue("hiddenTriggerTypeSet"))
+                    put("secretEntranceBindingCoverage", summary.getValue("secretEntranceBindingCoverage"))
+                    put("secretEntranceBindingSet", summary.getValue("secretEntranceBindingSet"))
+                },
+        )
+    }
+
+    private fun readOrganicHiddenProbe(
+        repoRoot: Path,
+        sourcePath: Path,
+        payload: JsonObject,
+    ): Phase4TaskAggregate {
+        val header = payload.getValue("header").jsonObject
+        val summary = payload.getValue("summary").jsonObject
+        val runtimeFailureCount = summary.intValue("runtimeFailureCount")
+        return Phase4TaskAggregate(
+            taskId = "organicHiddenProbe",
+            status = if (runtimeFailureCount == 0) "PASS" else "FAIL",
+            sourcePath = relativize(repoRoot, sourcePath),
+            buildId = header.optionalStringValue("buildId"),
+            locale = header.optionalStringValue("locale"),
+            metrics =
+                buildJsonObject {
+                    put("scriptedVerification", summary.getValue("scriptedVerification"))
+                    put("primerActionUsedCount", summary.intValue("primerActionUsedCount"))
+                    put("totalCases", summary.intValue("totalCases"))
+                    put("distinctSeedCount", summary.intValue("distinctSeedCount"))
+                    put("runtimeFailureCount", runtimeFailureCount)
+                    put("searchAttemptCount", summary.intValue("searchAttemptCount"))
+                    put("runsWithSearchActionCount", summary.intValue("runsWithSearchActionCount"))
+                    put("searchActionUseCount", summary.intValue("searchActionUseCount"))
+                    put("searchActionUseRate", summary.doubleValue("searchActionUseRate"))
+                    put("discoveryWithoutPrimerCount", summary.intValue("discoveryWithoutPrimerCount"))
+                    put("organicHiddenDiscoveryRate", summary.doubleValue("organicHiddenDiscoveryRate"))
+                    put("secretZoneEntryCount", summary.intValue("secretZoneEntryCount"))
+                    put("secretZoneEntryRate", summary.doubleValue("secretZoneEntryRate"))
+                    put("averageFirstHiddenDiscoveryTurn", summary.getValue("averageFirstHiddenDiscoveryTurn"))
+                    put("averageFirstSecretZoneEntryTurn", summary.getValue("averageFirstSecretZoneEntryTurn"))
+                    put("probeBotId", summary.getValue("probeBotId"))
+                    put("probeTurnBudget", summary.intValue("probeTurnBudget"))
+                    put("probeMaxFloor", summary.intValue("probeMaxFloor"))
+                    put("zones", payload.getValue("zones"))
+                    put("notes", payload.getValue("notes"))
+                },
+        )
+    }
+
+    private fun readBossHarness(
+        repoRoot: Path,
+        sourcePath: Path,
+        payload: JsonObject,
+    ): Phase4TaskAggregate {
+        val reports = payload.getValue("reports").jsonArray
+        val pairReports = payload["pairReports"]?.jsonArray.orEmpty()
+        val whiteBoxSourcePath = repoRoot.resolve("tools/build/reports/phase4/whitebox/boss/whitebox-boss-summary.json")
+        val whiteBoxPayload = readPhase4Json(whiteBoxSourcePath)
+        val whiteBoxHeader = whiteBoxPayload.getValue("header").jsonObject
+        val whiteBoxSummary = whiteBoxPayload.getValue("summary").jsonObject
+        val whiteBoxFailedAssertions = whiteBoxSummary.intValue("failedAssertions")
+        val whiteBoxFirstFailedJoinKey = whiteBoxPayload["firstFailedJoinKey"]
+        val perEncounterMetrics = aggregateMetrics(whiteBoxPayload, "per-encounter")
+        val corpusMetrics = aggregateMetrics(whiteBoxPayload, "corpus")
+        val failureCount =
+            reports.count { element -> !element.jsonObject.getValue("success").jsonPrimitive.content.toBooleanStrict() } +
+                pairReports.count { element -> !element.jsonObject.getValue("success").jsonPrimitive.content.toBooleanStrict() }
+        val aiTraceCountTotal = reports.sumOf { element -> element.jsonObject.intValue("aiTraceCount") }
+        val bossTraceCountTotal = reports.sumOf { element -> element.jsonObject.intValue("bossTraceCount") }
+        val distinctTemplateCount = reports.mapNotNull { element -> element.jsonObject["templateId"]?.jsonPrimitive?.content }.distinct().size
+        val variantCount = reports.count { element -> "variantId" in element.jsonObject }
+        val phaseGraphStructuralDiffCount = pairReports.sumOf { element -> element.jsonObject.intValue("phaseGraphStructuralDiffCount") }
+        return Phase4TaskAggregate(
+            taskId = "bossHarness",
+            status = if (failureCount == 0 && whiteBoxFailedAssertions == 0) "PASS" else "FAIL",
+            sourcePath = relativize(repoRoot, sourcePath),
+            buildId = whiteBoxHeader.optionalStringValue("buildId"),
+            locale = whiteBoxHeader.optionalStringValue("locale"),
+            metrics =
+                buildJsonObject {
+                    put("scriptVersion", payload.getValue("scriptVersion").jsonPrimitive.content)
+                    put("reportCount", reports.size)
+                    put("pairCount", pairReports.size)
+                    put("failureCount", failureCount)
+                    put("distinctTemplateCount", distinctTemplateCount)
+                    put("variantCount", variantCount)
+                    put("aiTraceCountTotal", aiTraceCountTotal)
+                    put("bossTraceCountTotal", bossTraceCountTotal)
+                    put("phaseGraphStructuralDiffCount", phaseGraphStructuralDiffCount)
+                    put("whiteBoxFailedAssertions", whiteBoxFailedAssertions)
+                    put("whiteBoxFailedCaseCount", whiteBoxPayload.intValue("failedCaseCount"))
+                    put("whiteBoxFailedAggregateCount", whiteBoxPayload.intValue("failedAggregateCount"))
+                    put("whiteBoxArtifactCount", whiteBoxSummary.intValue("artifactCount"))
+                    put("whiteBoxSummaryPath", relativize(repoRoot, whiteBoxSourcePath))
+                    put("perEncounterAggregateMetrics", perEncounterMetrics)
+                    put("corpusAggregateMetrics", corpusMetrics)
+                    put("perEncounterPairCount", perEncounterMetrics.getValue("pairCount"))
+                    put("perEncounterVariantCount", perEncounterMetrics.getValue("variantCount"))
+                    put("eliteMutationDistinctCount", corpusMetrics.getValue("eliteMutationDistinctCount"))
+                    put("eliteMutationValidPairCount", corpusMetrics.getValue("eliteMutationValidPairCount"))
+                    put("bossVariantCount", corpusMetrics.getValue("bossVariantCount"))
+                    put("bossVariantMutationPairwiseDistinct", corpusMetrics.getValue("bossVariantMutationPairwiseDistinct"))
+                    put("terrainPreferenceVariantCount", corpusMetrics.getValue("terrainPreferenceVariantCount"))
+                    put("terrainPreferenceAvailableVariantCount", corpusMetrics.getValue("terrainPreferenceAvailableVariantCount"))
+                    put("terrainPreferenceImplementedCount", corpusMetrics.getValue("terrainPreferenceImplementedCount"))
+                    put("terrainPreferenceImplementedRate", corpusMetrics.getValue("terrainPreferenceImplementedRate"))
+                    put("mutationTierDistribution", corpusMetrics.getValue("mutationTierDistribution"))
+                    put("bossVariantMutationSets", corpusMetrics.getValue("bossVariantMutationSets"))
+                    put("bossVariantPreferredTerrainTags", corpusMetrics.getValue("bossVariantPreferredTerrainTags"))
+                    whiteBoxFirstFailedJoinKey?.let { joinKey -> put("whiteBoxFirstFailedJoinKey", joinKey.toString()) }
+                },
+        )
+    }
+
+    private fun readLongRunLabFull(
+        repoRoot: Path,
+        sourcePath: Path,
+        payload: JsonObject,
+    ): Phase4TaskAggregate {
+        val fullRouteCount = payload.intValue("fullRouteCount")
+        val professionTerminalWeaponDistribution = payload.getValue("professionTerminalWeaponDistribution")
+        val professionTopWeaponBaseIds =
+            payload["professionTopWeaponBaseIds"] ?: deriveProfessionTopWeaponBaseIds(professionTerminalWeaponDistribution.jsonObject)
+        val professionTopWeaponSemanticTags =
+            payload["professionTopWeaponSemanticTags"]
+                ?: deriveProfessionTopWeaponSemanticTags(professionTopWeaponBaseIds.jsonObject)
+        return Phase4TaskAggregate(
+            taskId = "longRunLab",
+            status = if (fullRouteCount > 0) "PASS" else "FAIL",
+            sourcePath = relativize(repoRoot, sourcePath),
+            buildId = payload["buildId"]?.jsonPrimitive?.content,
+            locale = payload["localeId"]?.jsonPrimitive?.content,
+            metrics =
+                buildJsonObject {
+                    put("scenarioCount", payload.intValue("scenarioCount"))
+                    put("fullRouteCount", fullRouteCount)
+                    put("branchInclusiveCount", payload.intValue("branchInclusiveCount"))
+                    put("terminalWeaponBaseDiversity", payload.intValue("terminalWeaponBaseDiversity"))
+                    put("crossProfessionTopWeaponDominance", payload.doubleValue("crossProfessionTopWeaponDominance"))
+                    put("professionAlignedWeaponAdoptionRate", payload.doubleValue("professionAlignedWeaponAdoptionRate"))
+                    put("alignedFullRouteSampleCount", payload.intValue("alignedFullRouteSampleCount"))
+                    put("crossProfessionTopWeaponCount", payload.intValue("crossProfessionTopWeaponCount"))
+                    payload["crossProfessionTopWeaponBaseId"]?.let { topWeaponBaseId -> put("crossProfessionTopWeaponBaseId", topWeaponBaseId) }
+                    put("professionTerminalWeaponDistribution", professionTerminalWeaponDistribution)
+                    put("professionTopWeaponBaseIds", professionTopWeaponBaseIds)
+                    put("professionTopWeaponSemanticTags", professionTopWeaponSemanticTags)
+                },
+        )
+    }
+
+    private fun readTerrainInteractionBatch(
+        repoRoot: Path,
+        sourcePath: Path,
+        payload: JsonObject,
+    ): Phase4TaskAggregate {
+        val header = payload.getValue("header").jsonObject
+        val summary = payload.getValue("summary").jsonObject
+        val corpusMetrics = aggregateMetrics(payload, "corpus")
+        val failedAssertions = summary.intValue("failedAssertions")
+        return Phase4TaskAggregate(
+            taskId = "terrainInteractionBatch",
+            status = if (failedAssertions == 0) "PASS" else "FAIL",
+            sourcePath = relativize(repoRoot, sourcePath),
+            buildId = header.optionalStringValue("buildId"),
+            locale = header.optionalStringValue("locale"),
+            metrics =
+                buildJsonObject {
+                    put("caseCount", summary.intValue("caseCount"))
+                    put("aggregateCount", summary.intValue("aggregateCount"))
+                    put("failedAssertions", failedAssertions)
+                    put("artifactCount", summary.intValue("artifactCount"))
+                    put("failedCaseCount", payload.intValue("failedCaseCount"))
+                    put("failedAggregateCount", payload.intValue("failedAggregateCount"))
+                    put("corpusAggregateMetrics", corpusMetrics)
+                    put("terrainTaggedCombatExposureRate", corpusMetrics.getValue("terrainTaggedCombatExposureRate"))
+                    put("terrainInteractionEncounterRate", corpusMetrics.getValue("terrainInteractionEncounterRate"))
+                    put("combatCount", corpusMetrics.getValue("combatCount"))
+                    put("taggedCombatCount", corpusMetrics.getValue("taggedCombatCount"))
+                    put("triggeredInteractionCombatCount", corpusMetrics.getValue("triggeredInteractionCombatCount"))
+                    put("preferredTerrainCaseCount", corpusMetrics.getValue("preferredTerrainCaseCount"))
+                    put("preferredTerrainImplementedCount", corpusMetrics.getValue("preferredTerrainImplementedCount"))
+                    put("preferredTerrainCaseImplementationRate", corpusMetrics.getValue("preferredTerrainCaseImplementationRate"))
+                    put("preferredTerrainCombatCount", corpusMetrics.getValue("preferredTerrainCombatCount"))
+                    put("preferredTerrainImplementedCombatCount", corpusMetrics.getValue("preferredTerrainImplementedCombatCount"))
+                    put("preferredTerrainCombatImplementationRate", corpusMetrics.getValue("preferredTerrainCombatImplementationRate"))
+                    put("terrainMetricDefinitionVersion", corpusMetrics.getValue("terrainMetricDefinitionVersion"))
+                    put("terrainTaggedCombatExposureFormula", corpusMetrics.getValue("terrainTaggedCombatExposureFormula"))
+                    put("terrainInteractionEncounterFormula", corpusMetrics.getValue("terrainInteractionEncounterFormula"))
+                    put("decisionPathByCurrentMetrics", corpusMetrics.getValue("decisionPathByCurrentMetrics"))
+                    put("preferredTerrainTagsSeen", corpusMetrics.getValue("preferredTerrainTagsSeen"))
+                    put("combatSampledZoneIds", corpusMetrics.getValue("combatSampledZoneIds"))
+                    put("combatSampledZoneExclusionNotes", corpusMetrics.getValue("combatSampledZoneExclusionNotes"))
+                    put("perZoneEncounterLowerBoundTarget", corpusMetrics.getValue("perZoneEncounterLowerBoundTarget"))
+                    put("perZoneEncounterFailures", corpusMetrics.getValue("perZoneEncounterFailures"))
+                    put("terrainCoverageByZone", corpusMetrics.getValue("terrainCoverageByZone"))
+                    payload["firstFailedJoinKey"]?.let { joinKey -> put("firstFailedJoinKey", joinKey.toString()) }
+                },
+        )
+    }
+
+    private fun readWhiteBoxMapgen(
+        repoRoot: Path,
+        sourcePath: Path,
+        payload: JsonObject,
+    ): Phase4TaskAggregate {
+        val header = payload.getValue("header").jsonObject
+        val summary = payload.getValue("summary").jsonObject
+        val failedAssertions = summary.intValue("failedAssertions")
+        val corpusMetrics = aggregateMetrics(payload, "corpus")
+        return Phase4TaskAggregate(
+            taskId = "whiteBoxMapgen",
+            status = if (failedAssertions == 0) "PASS" else "FAIL",
+            sourcePath = relativize(repoRoot, sourcePath),
+            buildId = header.optionalStringValue("buildId"),
+            locale = header.optionalStringValue("locale"),
+            metrics =
+                buildJsonObject {
+                    put("caseCount", summary.intValue("caseCount"))
+                    put("aggregateCount", summary.intValue("aggregateCount"))
+                    put("failedAssertions", failedAssertions)
+                    put("artifactCount", summary.intValue("artifactCount"))
+                    put("corpusAggregateMetrics", corpusMetrics)
+                    put("requiredHiddenAnchorFamilies", corpusMetrics.getValue("requiredHiddenAnchorFamilies"))
+                    put("observedHiddenAnchorFamilies", corpusMetrics.getValue("observedHiddenAnchorFamilies"))
+                },
+        )
+    }
+
+    private fun readWhiteBoxSolvability(
+        repoRoot: Path,
+        sourcePath: Path,
+        payload: JsonObject,
+    ): Phase4TaskAggregate {
+        val header = payload.getValue("header").jsonObject
+        val summary = payload.getValue("summary").jsonObject
+        val failedAssertions = summary.intValue("failedAssertions")
+        return Phase4TaskAggregate(
+            taskId = "whiteBoxSolvability",
+            status = if (failedAssertions == 0) "PASS" else "FAIL",
+            sourcePath = relativize(repoRoot, sourcePath),
+            buildId = header.optionalStringValue("buildId"),
+            locale = header.optionalStringValue("locale"),
+            metrics =
+                buildJsonObject {
+                    put("caseCount", summary.intValue("caseCount"))
+                    put("aggregateCount", summary.intValue("aggregateCount"))
+                    put("failedAssertions", failedAssertions)
+                    put("artifactCount", summary.intValue("artifactCount"))
+                },
+        )
+    }
+
+    private fun readLootBalanceLab(
+        repoRoot: Path,
+        sourcePath: Path,
+        payload: JsonObject,
+    ): Phase4TaskAggregate {
+        val header = payload.getValue("header").jsonObject
+        val summary = payload.getValue("summary").jsonObject
+        val clamp = payload.getValue("magicFindClampComparison").jsonObject
+        val failedExpectationCount = summary.intValue("failedExpectationCount")
+        return Phase4TaskAggregate(
+            taskId = "lootBalanceLab",
+            status = if (failedExpectationCount == 0 && clamp.getValue("withinTolerance").jsonPrimitive.content.toBooleanStrict()) "PASS" else "FAIL",
+            sourcePath = relativize(repoRoot, sourcePath),
+            buildId = header.optionalStringValue("buildId"),
+            locale = header.optionalStringValue("locale"),
+            metrics =
+                buildJsonObject {
+                    put("matrixCount", summary.intValue("matrixCount"))
+                    put("totalRolls", summary.intValue("totalRolls"))
+                    put("failedExpectationCount", failedExpectationCount)
+                    put("affixCount", payload.getValue("specialTemplatePool").jsonObject.intValue("affixCount"))
+                    put("uniqueTemplateCount", payload.getValue("specialTemplatePool").jsonObject.intValue("uniqueTemplateCount"))
+                    put("artifactTemplateCount", payload.getValue("specialTemplatePool").jsonObject.intValue("artifactTemplateCount"))
+                    put("totalCount", payload.getValue("specialTemplatePool").jsonObject.intValue("totalCount"))
+                    put("rarePityActivations", summary.intValue("rarePityActivations"))
+                    put("uniquePityActivations", summary.intValue("uniquePityActivations"))
+                    put("maxMagicRateDrift", summary.doubleValue("maxMagicRateDrift"))
+                    put("maxRareRateDrift", summary.doubleValue("maxRareRateDrift"))
+                    put("maxUniqueRelativeError", summary.doubleValue("maxUniqueRelativeError"))
+                    put("maxArtifactRelativeError", summary.doubleValue("maxArtifactRelativeError"))
+                    put("clampWithinTolerance", clamp.getValue("withinTolerance").jsonPrimitive.content.toBooleanStrict())
+                    put("clampMaxDistributionDelta", clamp.getValue("maxDistributionDelta").jsonPrimitive.content.toDouble())
+                },
+        )
+    }
+
+    private fun readContentPackHarness(
+        repoRoot: Path,
+        sourcePath: Path,
+        payload: JsonObject,
+    ): Phase4TaskAggregate {
+        val header = payload.getValue("header").jsonObject
+        val summary = payload.getValue("summary").jsonObject
+        val whiteBoxSourcePath = repoRoot.resolve("tools/build/reports/phase4/whitebox/content-pack/whitebox-content-pack-summary.json")
+        val whiteBoxPayload = readPhase4Json(whiteBoxSourcePath)
+        requireFreshnessAligned(
+            primaryPath = sourcePath,
+            primaryPayload = payload,
+            secondaryPath = whiteBoxSourcePath,
+            secondaryPayload = whiteBoxPayload,
+            maxSkew = contentPackArtifactMaxSkew,
+        )
+        val whiteBoxSummary = whiteBoxPayload.getValue("summary").jsonObject
+        val whiteBoxFailedAssertions = whiteBoxSummary.intValue("failedAssertions")
+        val failureCount = summary.intValue("failureCount")
+        val whiteBoxCorpusMetrics = aggregateMetrics(whiteBoxPayload, "corpus")
+        return Phase4TaskAggregate(
+            taskId = "contentPackHarness",
+            status = if (failureCount == 0 && whiteBoxFailedAssertions == 0) "PASS" else "FAIL",
+            sourcePath = relativize(repoRoot, sourcePath),
+            buildId = header.optionalStringValue("buildId"),
+            locale = header.optionalStringValue("locale"),
+            metrics =
+                buildJsonObject {
+                    put("totalCases", summary.intValue("totalCases"))
+                    put("failureCount", failureCount)
+                    put("caseFailureCount", summary.intValue("caseFailureCount"))
+                    put("aggregateFailureCount", summary.intValue("aggregateFailureCount"))
+                    put("successfulRuntimeCaseCount", summary.intValue("successfulRuntimeCaseCount"))
+                    put("expectedFailureCaseCount", summary.intValue("expectedFailureCaseCount"))
+                    put("diagnosticMismatchCount", summary.intValue("diagnosticMismatchCount"))
+                    put("localeResolutionFailureCount", summary.intValue("localeResolutionFailureCount"))
+                    put("visualResolutionFailureCount", summary.intValue("visualResolutionFailureCount"))
+                    put("audioResolutionFailureCount", summary.intValue("audioResolutionFailureCount"))
+                    put("headlessRunFailureCount", summary.intValue("headlessRunFailureCount"))
+                    put("fallbackFailureCount", summary.intValue("fallbackFailureCount"))
+                    put("precedenceFailureCount", summary.intValue("precedenceFailureCount"))
+                    put("resourceContractFailureCount", summary.intValue("resourceContractFailureCount"))
+                    put("generatedTemplateFailureCount", summary.intValue("generatedTemplateFailureCount"))
+                    put("legacyLootProfileSchemaRejectCount", summary.intValue("legacyLootProfileSchemaRejectCount"))
+                    put("legacyLootProfileSchemaRejectSummaries", summary.getValue("legacyLootProfileSchemaRejectSummaries"))
+                    put("whiteBoxFailedAssertions", whiteBoxFailedAssertions)
+                    put("whiteBoxSummaryPath", relativize(repoRoot, whiteBoxSourcePath))
+                    put("whiteBoxCorpusAggregateMetrics", whiteBoxCorpusMetrics)
+                    put("contentPackArtifactTimestamp", payload.getValue("header").jsonObject.getValue("timestamp"))
+                    put("whiteBoxContentPackArtifactTimestamp", whiteBoxPayload.getValue("header").jsonObject.getValue("timestamp"))
+                },
+        )
+    }
+
+    private fun readWhiteBoxLoot(
+        repoRoot: Path,
+        sourcePath: Path,
+        payload: JsonObject,
+    ): Phase4TaskAggregate {
+        val header = payload.getValue("header").jsonObject
+        val summary = payload.getValue("summary").jsonObject
+        val failedAssertions = summary.intValue("failedAssertions")
+        val corpusMetrics = aggregateMetrics(payload, "corpus")
+        return Phase4TaskAggregate(
+            taskId = "whiteBoxLoot",
+            status = if (failedAssertions == 0) "PASS" else "FAIL",
+            sourcePath = relativize(repoRoot, sourcePath),
+            buildId = header.optionalStringValue("buildId"),
+            locale = header.optionalStringValue("locale"),
+            metrics =
+                buildJsonObject {
+                    put("caseCount", summary.intValue("caseCount"))
+                    put("aggregateCount", summary.intValue("aggregateCount"))
+                    put("failedAssertions", failedAssertions)
+                    put("artifactCount", summary.intValue("artifactCount"))
+                    put("affixCount", corpusMetrics.getValue("affixCount"))
+                    put("uniqueTemplateCount", corpusMetrics.getValue("uniqueTemplateCount"))
+                    put("artifactTemplateCount", corpusMetrics.getValue("artifactTemplateCount"))
+                    put("totalCount", corpusMetrics.getValue("totalCount"))
+                    put("corpusAggregateMetrics", corpusMetrics)
+                    put("lootProfileAverageBaseItemOverlap", corpusMetrics.getValue("lootProfileAverageBaseItemOverlap"))
+                    put("lootProfileMaxBaseItemOverlap", corpusMetrics.getValue("lootProfileMaxBaseItemOverlap"))
+                    put("lootProfileDistinctBaseItemCount", corpusMetrics.getValue("lootProfileDistinctBaseItemCount"))
+                    put("lootProfileBaseItemOverlapMatrix", corpusMetrics.getValue("lootProfileBaseItemOverlapMatrix"))
+                    put("sameZoneSecretVsCadenceMaxOverlap", corpusMetrics.getValue("sameZoneSecretVsCadenceMaxOverlap"))
+                    put("sameZoneSecretVsRewardMaxOverlap", corpusMetrics.getValue("sameZoneSecretVsRewardMaxOverlap"))
+                    put("sameZoneSecretVsCadencePairs", corpusMetrics.getValue("sameZoneSecretVsCadencePairs"))
+                    put("sameZoneSecretVsRewardPairs", corpusMetrics.getValue("sameZoneSecretVsRewardPairs"))
+                    put("localIdentityFailurePairs", corpusMetrics.getValue("localIdentityFailurePairs"))
+                    put("affixPassiveCoverage", corpusMetrics.getValue("affixPassiveCoverage"))
+                    put("affixPassiveKinds", corpusMetrics.getValue("affixPassiveKinds"))
+                    put("uniqueArtifactOutcomeCount", corpusMetrics.getValue("uniqueArtifactOutcomeCount"))
+                    put("meaningfulUniqueArtifactSwapCount", corpusMetrics.getValue("meaningfulUniqueArtifactSwapCount"))
+                    put("uniqueArtifactMeaningfulSwapRate", corpusMetrics.getValue("uniqueArtifactMeaningfulSwapRate"))
+                },
+        )
+    }
+
+    private fun readWhiteBoxContentPack(
+        repoRoot: Path,
+        sourcePath: Path,
+        payload: JsonObject,
+    ): Phase4TaskAggregate {
+        val header = payload.getValue("header").jsonObject
+        val summary = payload.getValue("summary").jsonObject
+        val failedAssertions = summary.intValue("failedAssertions")
+        return Phase4TaskAggregate(
+            taskId = "whiteBoxContentPack",
+            status = if (failedAssertions == 0) "PASS" else "FAIL",
+            sourcePath = relativize(repoRoot, sourcePath),
+            buildId = header.optionalStringValue("buildId"),
+            locale = header.optionalStringValue("locale"),
+            metrics =
+                buildJsonObject {
+                    put("caseCount", summary.intValue("caseCount"))
+                    put("aggregateCount", summary.intValue("aggregateCount"))
+                    put("failedAssertions", failedAssertions)
+                    put("artifactCount", summary.intValue("artifactCount"))
+                    put("failedCaseCount", payload.intValue("failedCaseCount"))
+                    put("failedAggregateCount", payload.intValue("failedAggregateCount"))
+                    payload["firstFailedJoinKey"]?.let { joinKey -> put("firstFailedJoinKey", joinKey.toString()) }
+                },
+        )
+    }
+
+    private fun readWhiteBoxHiddenContent(
+        repoRoot: Path,
+        sourcePath: Path,
+        payload: JsonObject,
+    ): Phase4TaskAggregate {
+        val header = payload.getValue("header").jsonObject
+        val summary = payload.getValue("summary").jsonObject
+        val failedAssertions = summary.intValue("failedAssertions")
+        val corpusMetrics = aggregateMetrics(payload, "corpus")
+        return Phase4TaskAggregate(
+            taskId = "whiteBoxHiddenContent",
+            status = if (failedAssertions == 0) "PASS" else "FAIL",
+            sourcePath = relativize(repoRoot, sourcePath),
+            buildId = header.optionalStringValue("buildId"),
+            locale = header.optionalStringValue("locale"),
+            metrics =
+                buildJsonObject {
+                    put("caseCount", summary.intValue("caseCount"))
+                    put("aggregateCount", summary.intValue("aggregateCount"))
+                    put("failedAssertions", failedAssertions)
+                    put("artifactCount", summary.intValue("artifactCount"))
+                    put("failedCaseCount", payload.intValue("failedCaseCount"))
+                    put("failedAggregateCount", payload.intValue("failedAggregateCount"))
+                    put("corpusAggregateMetrics", corpusMetrics)
+                    put("hiddenEventRegistryCount", corpusMetrics.getValue("hiddenEventRegistryCount"))
+                    put("secretZoneRegistryCount", corpusMetrics.getValue("secretZoneRegistryCount"))
+                    put("hiddenTriggerTypeCoverage", corpusMetrics.getValue("hiddenTriggerTypeCoverage"))
+                    put("hiddenTriggerTypeSet", corpusMetrics.getValue("hiddenTriggerTypeSet"))
+                    put("secretEntranceBindingCoverage", corpusMetrics.getValue("secretEntranceBindingCoverage"))
+                    put("secretEntranceBindingSet", corpusMetrics.getValue("secretEntranceBindingSet"))
+                    payload["firstFailedJoinKey"]?.let { joinKey -> put("firstFailedJoinKey", joinKey.toString()) }
+                },
+        )
+    }
+}
+
+private fun deriveProfessionTopWeaponBaseIds(distribution: JsonObject): JsonObject =
+    buildJsonObject {
+        distribution.entries
+            .sortedBy(Map.Entry<String, JsonElement>::key)
+            .forEach { (professionId, professionDistribution) ->
+                val topWeaponBaseId =
+                    professionDistribution
+                        .jsonObject
+                        .maxByOrNull { (_, count) -> count.jsonPrimitive.content.toInt() }
+                        ?.key
+                if (topWeaponBaseId != null) {
+                    put(professionId, topWeaponBaseId)
+                }
+            }
+    }
+
+private fun deriveProfessionTopWeaponSemanticTags(topWeaponBaseIds: JsonObject): JsonObject =
+    buildJsonObject {
+        topWeaponBaseIds.entries
+            .sortedBy(Map.Entry<String, JsonElement>::key)
+            .forEach { (professionId, weaponBaseIdElement) ->
+                val semanticTags = longRunItemSemanticTagsById[weaponBaseIdElement.jsonPrimitive.content].orEmpty()
+                putJsonArray(professionId) {
+                    semanticTags.forEach { tag -> add(JsonPrimitive(tag)) }
+                }
+            }
+    }
+
+private fun aggregateMetrics(
+    payload: JsonObject,
+    groupId: String,
+): JsonObject =
+    payload.getValue("aggregates").jsonArray
+        .first { aggregate -> aggregate.jsonObject.getValue("groupId").jsonPrimitive.content == groupId }
+        .jsonObject
+        .getValue("metrics")
+        .jsonObject
+
+private fun requireFreshnessAligned(
+    primaryPath: Path,
+    primaryPayload: JsonObject,
+    secondaryPath: Path,
+    secondaryPayload: JsonObject,
+    maxSkew: Duration,
+) {
+    val primaryBuildId = reportBuildId(primaryPayload)
+    val secondaryBuildId = reportBuildId(secondaryPayload)
+    check(primaryBuildId == secondaryBuildId) {
+        "Mismatched content-pack artifact buildIds: $primaryPath ($primaryBuildId) vs $secondaryPath ($secondaryBuildId)."
+    }
+    val primaryTimestamp = reportTimestamp(primaryPayload)
+    val secondaryTimestamp = reportTimestamp(secondaryPayload)
+    val skew = Duration.between(primaryTimestamp, secondaryTimestamp).abs()
+    check(skew <= maxSkew) {
+        "Stale content-pack artifacts: $primaryPath ($primaryBuildId @ $primaryTimestamp) vs $secondaryPath ($secondaryBuildId @ $secondaryTimestamp), skew=${skew.toMinutes()}m exceeds ${maxSkew.toMinutes()}m."
+    }
+}
+
+private fun reportBuildId(payload: JsonObject): String = payload.getValue("header").jsonObject.stringValue("buildId")
+
+private fun reportTimestamp(payload: JsonObject): Instant = Instant.parse(payload.getValue("header").jsonObject.stringValue("timestamp"))
+
+private fun relativize(
+    repoRoot: Path,
+    path: Path,
+): String = repoRoot.relativize(path.toAbsolutePath().normalize()).toString().replace('\\', '/')
+
+private fun repoRoot(): Path =
+    System.getProperty("ktome.repo.root")
+        ?.let(Path::of)
+        ?: Path.of("").toAbsolutePath().normalize()
+
+private fun JsonObject.intValue(key: String): Int = getValue(key).jsonPrimitive.content.toInt()
+
+private fun JsonObject.doubleValue(key: String): Double = getValue(key).jsonPrimitive.content.toDouble()
+
+private fun JsonObject.stringValue(key: String): String = getValue(key).jsonPrimitive.content
+
+private fun JsonObject.optionalStringValue(key: String): String? = get(key)?.jsonPrimitive?.content

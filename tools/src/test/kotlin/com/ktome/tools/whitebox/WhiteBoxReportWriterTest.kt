@@ -162,4 +162,23 @@ class WhiteBoxReportWriterTest {
             ),
         )
     }
+
+    @Test
+    fun `artifact paths preserve scenario separators used by boss white box cases`() {
+        val outputDir = tempDir.resolve("boss-whitebox")
+        val joinKey = WhiteBoxJoinKey(scenarioId = "pair:molten_giant:boss.variant.molten_glass")
+
+        val artifact =
+            WhiteBoxReportWriter.writeTextArtifact(
+                outputDir = outputDir,
+                joinKey = joinKey,
+                artifactId = "boss-trace",
+                kind = "trace",
+                fileName = "boss-trace.txt",
+                content = "trace",
+            )
+
+        assertTrue(artifact.relativePath.contains("scenario-pair:molten_giant:boss.variant.molten_glass"))
+        assertTrue(Files.exists(outputDir.resolve(artifact.relativePath)))
+    }
 }
