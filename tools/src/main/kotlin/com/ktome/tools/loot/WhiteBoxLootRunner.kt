@@ -7,8 +7,6 @@ import com.ktome.core.harness.whitebox.WhiteBoxCaseReport
 import com.ktome.core.harness.whitebox.WhiteBoxCorpusSpec
 import com.ktome.core.harness.whitebox.WhiteBoxJoinKey
 import com.ktome.tools.mapgen.phase4HarnessHeader
-import com.ktome.tools.phase4.SAME_ZONE_SECRET_CADENCE_MAX_OVERLAP_TARGET
-import com.ktome.tools.phase4.SAME_ZONE_SECRET_REWARD_MAX_OVERLAP_TARGET
 import com.ktome.tools.whitebox.WhiteBoxDomainWriteRequest
 import com.ktome.tools.whitebox.WhiteBoxReportWriter
 import com.ktome.tools.whitebox.toVerificationReportHeader

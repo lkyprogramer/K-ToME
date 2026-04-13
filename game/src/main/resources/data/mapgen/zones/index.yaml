@@ -5,7 +5,7 @@ zoneMapgenProfiles:
     loopCountRange: { start: 1, endInclusive: 2 }
     vaultPool: [vault.greenwood.briar_cache, vault.greenwood.smuggler_cache]
     terrainTagWeights:
-      WATER: 0.44
+      WATER: 0.32
     roomTagFilter: [forest, bog, sightline, bridge, hidden_cache, ambush]
     keyGatePlans:
       - id: gate.greenwood.final_path

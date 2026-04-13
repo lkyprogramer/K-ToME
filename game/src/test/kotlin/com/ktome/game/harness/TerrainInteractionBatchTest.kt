@@ -46,6 +46,7 @@ import com.ktome.game.data.DataLoader
 import com.ktome.game.terrainPreferenceImplemented
 import java.nio.file.Path
 import java.security.MessageDigest
+import kotlin.io.path.readText
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
@@ -53,6 +54,9 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
 import kotlinx.serialization.json.putJsonObject
@@ -658,6 +662,22 @@ class TerrainInteractionBatchTest {
                     },
                     if (groupId == "corpus" && exposureProbe != null) {
                         WhiteBoxAssertionResult(
+                            ruleId = "terrain.aggregate.interaction_rate_owner_gate",
+                            passed = exposureProbe.terrainInteractionEncounterRate >= TERRAIN_INTERACTION_ENCOUNTER_RATE_TARGET,
+                            message = "Terrain interaction encounter rate stays at or above the phase4 owner gate target.",
+                            context =
+                                buildJsonObject {
+                                    put("terrainInteractionEncounterRate", exposureProbe.terrainInteractionEncounterRate)
+                                    put("target", TERRAIN_INTERACTION_ENCOUNTER_RATE_TARGET)
+                                    put("taggedCombatCount", exposureProbe.taggedCombatCount)
+                                    put("triggeredInteractionCombatCount", exposureProbe.triggeredInteractionCombatCount)
+                                },
+                        )
+                    } else {
+                        null
+                    },
+                    if (groupId == "corpus" && exposureProbe != null) {
+                        WhiteBoxAssertionResult(
                             ruleId = "terrain.aggregate.zone_probe_nonempty",
                             passed = exposureProbe.coverageByZone.values.all { coverage -> coverage.combatCount > 0 },
                             message = "Each target zone contributes at least one direct-combat observation to the terrain exposure baseline.",
@@ -667,6 +687,22 @@ class TerrainInteractionBatchTest {
                                         exposureProbe.coverageByZone.forEach { (zoneId, coverage) ->
                                             put(zoneId, coverage.combatCount)
                                         }
+                                    }
+                                },
+                        )
+                    } else {
+                        null
+                    },
+                    if (groupId == "corpus" && exposureProbe != null) {
+                        WhiteBoxAssertionResult(
+                            ruleId = "terrain.aggregate.per_zone_lower_bound_owner_gate",
+                            passed = exposureProbe.perZoneEncounterFailureZoneIds.isEmpty(),
+                            message = "Each combat-sampled zone stays at or above the terrain interaction per-zone lower bound.",
+                            context =
+                                buildJsonObject {
+                                    put("perZoneEncounterLowerBoundTarget", PER_ZONE_ENCOUNTER_LOWER_BOUND_TARGET)
+                                    putJsonArray("perZoneEncounterFailures") {
+                                        exposureProbe.perZoneEncounterFailureZoneIds.forEach { zoneId -> add(JsonPrimitive(zoneId)) }
                                     }
                                 },
                         )
@@ -1159,7 +1195,7 @@ private fun terrainDecisionPath(
 ): String =
     when {
         terrainTaggedCombatExposureRate < 0.20 -> "Path A"
-        terrainInteractionEncounterRate < 0.15 -> "Path B"
+        terrainInteractionEncounterRate < PER_ZONE_ENCOUNTER_LOWER_BOUND_TARGET -> "Path B"
         else -> "Path C"
     }
 
@@ -1197,7 +1233,11 @@ private val TERRAIN_EXPOSURE_ZONE_EXCLUSION_NOTES: List<String> =
         "crystal_cavern remains in the combat-sampled set because it is the formal ICE-heavy encounter surface used to verify frozen/melt/slip terrain semantics under real mapgen combat.",
     )
 
-private const val PER_ZONE_ENCOUNTER_LOWER_BOUND_TARGET: Double = 0.15
+private const val TERRAIN_PER_ZONE_BASELINE_RELATIVE_PATH: String =
+    "docs/review/phase4/opt/baselines/2026-04-12-phase4-terrain-per-zone-lower-bound-baseline.json"
+
+private val PER_ZONE_ENCOUNTER_LOWER_BOUND_TARGET: Double = terrainPerZoneLowerBoundTarget()
+private const val TERRAIN_INTERACTION_ENCOUNTER_RATE_TARGET: Double = 0.16363636363636364
 
 private const val TERRAIN_EXPOSURE_SEED_BASE: Long = 20260409010000L
 private const val TERRAIN_EXPOSURE_ZONE_SEED_BLOCK: Long = 1_000L
@@ -1222,6 +1262,20 @@ private fun FoundationGameSession.TerrainCombatObservation.preferredTerrainImple
             directTerrainTags = targetTerrainTags,
             adjacentTerrainTags = targetAdjacentTerrainTags,
         )
+
+private fun terrainPerZoneLowerBoundTarget(): Double {
+    val repoRoot = Path.of(System.getProperty("ktome.repo.root", ".")).toAbsolutePath().normalize()
+    val payload =
+        Json.parseToJsonElement(
+            repoRoot.resolve(TERRAIN_PER_ZONE_BASELINE_RELATIVE_PATH).readText(),
+        ).jsonObject
+    val metric =
+        payload.getValue("expectedMetricRanges").jsonArray
+            .single { element ->
+                element.jsonObject.getValue("metricId").jsonPrimitive.content == "terrainInteractionEncounterRate.per_zone_lower_bound"
+            }.jsonObject
+    return metric.getValue("metadata").jsonObject.getValue("perZoneEncounterLowerBoundTarget").jsonPrimitive.content.toDouble()
+}
 
 private fun shouldPrioritizeTerrainProbeRouteProgress(observation: RunObservation): Boolean =
     observation.visibleBossPositions.isEmpty() &&

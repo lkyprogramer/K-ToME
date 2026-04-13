@@ -536,6 +536,39 @@ tasks.register<Test>("phase4ReportOnly") {
     outputs.dir(reportDir)
 }
 
+tasks.register<Test>("reportPhase4") {
+    group = "verification"
+    description = "Materializes Phase 4 evaluation artifacts from existing domain summaries, builds the new aggregate report, and compares owner metrics against the legacy phase4Report output."
+    testClassesDirs = sourceSets.test.get().output.classesDirs
+    classpath = sourceSets.test.get().runtimeClasspath
+    useJUnitPlatform {
+        includeTags("reportPhase4")
+        excludeTags("phase4AggregationInput")
+    }
+    dependsOn("phase4ReportOnly")
+    val aggregateReportDir = layout.buildDirectory.dir("reports/verification/phase4")
+    systemProperty("ktome.phase4.reportDir", layout.buildDirectory.dir("reports/phase4").get().asFile.absolutePath)
+    systemProperty("ktome.phase4.aggregate.reportDir", aggregateReportDir.get().asFile.absolutePath)
+    systemProperty("ktome.phase4.aggregate.compareLegacy", "true")
+    outputs.dir(aggregateReportDir)
+}
+
+tasks.register<Test>("reportPhase4Only") {
+    group = "verification"
+    description = "Rebuilds the new Phase 4 aggregate report from existing domain summaries and cached evaluation artifacts without legacy comparison or producer reruns."
+    testClassesDirs = sourceSets.test.get().output.classesDirs
+    classpath = sourceSets.test.get().runtimeClasspath
+    useJUnitPlatform {
+        includeTags("reportPhase4")
+        excludeTags("phase4AggregationInput")
+    }
+    val aggregateReportDir = layout.buildDirectory.dir("reports/verification/phase4")
+    systemProperty("ktome.phase4.reportDir", layout.buildDirectory.dir("reports/phase4").get().asFile.absolutePath)
+    systemProperty("ktome.phase4.aggregate.reportDir", aggregateReportDir.get().asFile.absolutePath)
+    systemProperty("ktome.phase4.aggregate.compareLegacy", "false")
+    outputs.dir(aggregateReportDir)
+}
+
 listOf(
     tasks.named("contractLint"),
     tasks.named("verifyContractLintPreflight"),

@@ -50,6 +50,7 @@ val verificationOnlyTestTags =
         "whiteBoxHiddenContent",
         "whiteBoxContentPack",
         "phase4Report",
+        "reportPhase4",
         "verifyLootPreflight",
         "verifyHiddenPreflight",
         "verifyContentPackPreflight",
@@ -365,6 +366,18 @@ tasks.register("phase4ReportOnly") {
     group = LifecycleBasePlugin.VERIFICATION_GROUP
     description = "Rebuilds tools/build/reports/phase4/phase4-summary.json from existing artifacts without rerunning Phase 4 producer tasks."
     dependsOn(":tools:phase4ReportOnly")
+}
+
+tasks.register("reportPhase4") {
+    group = LifecycleBasePlugin.VERIFICATION_GROUP
+    description = "Materializes Phase 4 evaluation artifacts from existing domain summaries, builds the new aggregate report, and compares its owner metrics against legacy phase4Report."
+    dependsOn(":tools:reportPhase4")
+}
+
+tasks.register("reportPhase4Only") {
+    group = LifecycleBasePlugin.VERIFICATION_GROUP
+    description = "Rebuilds the new Phase 4 aggregate report from existing domain summaries and cached evaluation artifacts without legacy comparison."
+    dependsOn(":tools:reportPhase4Only")
 }
 
 tasks.register("verifyChanged") {

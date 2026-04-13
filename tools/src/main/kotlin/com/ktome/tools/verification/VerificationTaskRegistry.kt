@@ -306,6 +306,11 @@ object VerificationTaskRegistry {
                     ),
                 ),
             ownerTaskPaths = listOf(":game:terrainInteractionBatch"),
+            baselinePolicy =
+                BaselinePolicySpec(
+                    mode = BaselineMode.RELATIVE_BASELINE,
+                    baselinePath = "docs/review/phase4/opt/baselines/2026-04-09-opt-pr01-terrain-metrics-baseline-unified.json",
+                ),
             cachePolicy =
                 VerificationCachePolicy(
                     buildCacheEnabled = true,

@@ -26,8 +26,6 @@ import com.ktome.game.i18n.GameLocale
 import com.ktome.game.loot.LootProfileCandidatePoolResolver
 import com.ktome.game.mapgen.SchemaZoneRewardProfileResolver
 import com.ktome.tools.mapgen.phase4HarnessHeader
-import com.ktome.tools.phase4.SAME_ZONE_SECRET_CADENCE_MAX_OVERLAP_TARGET
-import com.ktome.tools.phase4.SAME_ZONE_SECRET_REWARD_MAX_OVERLAP_TARGET
 import java.nio.file.Files
 import java.nio.file.Path
 import kotlin.math.abs

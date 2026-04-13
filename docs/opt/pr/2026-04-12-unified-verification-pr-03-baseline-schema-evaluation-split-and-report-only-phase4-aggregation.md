@@ -85,6 +85,13 @@
 7. `ceilings`
 8. `expectedMetricRanges`
 
+其中 `expectedMetricRanges` 允许通过可选的 `minInclusive` / `maxInclusive` 表达严格边界；默认仍为 inclusive，像 loot local-identity 这类“必须低于阈值”的 owner guardrail 必须显式写成 strict upper bound。
+
+补充约束：
+
+1. Phase 4 owner metric baseline 也应外置到 `docs/review/phase4/opt/baselines/`
+2. `reportPhase4` 不应继续在 Kotlin 代码里硬编码 hidden / loot / long-run / terrain owner threshold
+
 ### 5.2 baseline mode
 
 第一版必须支持：
@@ -158,6 +165,7 @@
 
 1. baseline migration script
 2. 现有 baseline 文件
+3. Phase 4 owner baseline 文件（`hidden / organic-hidden / loot / longrun / terrain`）
 
 ---
 

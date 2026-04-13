@@ -1,0 +1,21 @@
+{
+    "schemaVersion": 1,
+    "baselineId": "phase4-scripted-hidden-owner-v1",
+    "domainId": "hidden",
+    "mode": "BUDGET_THRESHOLD",
+    "metricDefinitionVersion": "phase4-owner-metrics-v1",
+    "approvedDebtKeys": [],
+    "expectedFailureCodes": [],
+    "ceilings": [],
+    "expectedMetricRanges": [
+        {
+            "metricId": "scriptedHiddenVerificationRate",
+            "minValue": 1.0,
+            "notes": "Scripted hidden verification is a correctness owner metric and must remain fully passing."
+        }
+    ],
+    "notes": [
+        "Externalized from ReportPhase4Runner so Phase 4 owner evaluation no longer hard-codes hidden thresholds inside the phase aggregator."
+    ],
+    "metadata": {}
+}
