@@ -77,6 +77,7 @@ object VerificationImpactAnalyzer {
             "solvability",
             "loot",
             "hidden",
+            "organic-hidden",
             "content-pack",
             "terrain",
             "boss",
@@ -101,13 +102,13 @@ object VerificationImpactAnalyzer {
             VerificationFallbackRule(
                 ruleId = "false-negative.data-loader",
                 pathPrefix = "game/src/main/kotlin/com/ktome/game/data/DataLoader.kt",
-                domainIds = linkedSetOf("loot", "hidden", "content-pack"),
+                domainIds = linkedSetOf("loot", "hidden", "organic-hidden", "content-pack"),
                 ownerRequired = true,
             ),
             VerificationFallbackRule(
                 ruleId = "false-negative.foundation-session",
                 pathPrefix = "game/src/main/kotlin/com/ktome/game/FoundationGameSession.kt",
-                domainIds = linkedSetOf("loot", "hidden", "boss", "longrun"),
+                domainIds = linkedSetOf("loot", "hidden", "organic-hidden", "boss", "longrun"),
                 ownerRequired = true,
             ),
             VerificationFallbackRule(
@@ -198,6 +199,7 @@ object VerificationImpactAnalyzer {
                 }
             reason.ownerRequired = reason.ownerRequired || scope.ownerRequired
             reason.matchedFiles += matchedFiles
+            reason.requestedTaskPaths += scope.requestedTaskPaths
         }
 
         fun recordFallback(
@@ -220,12 +222,16 @@ object VerificationImpactAnalyzer {
 
         fun freeze(): VerificationDomainImpact {
             val spec = VerificationTaskRegistry.spec(domainId)
+            val requiresDefaultRouting = reasons.values.any { reason -> reason.requestedTaskPaths.isEmpty() }
             val requestedTaskPaths =
                 buildList {
-                    addAll(spec.preflightTaskPaths)
-                    if (ownerRequired || spec.preflightTaskPaths.isEmpty()) {
-                        addAll(spec.ownerTaskPaths)
+                    if (requiresDefaultRouting) {
+                        addAll(spec.preflightTaskPaths)
+                        if (ownerRequired || spec.preflightTaskPaths.isEmpty()) {
+                            addAll(spec.ownerTaskPaths)
+                        }
                     }
+                    reasons.values.forEach { reason -> addAll(reason.requestedTaskPaths) }
                 }.distinct()
             return VerificationDomainImpact(
                 domainId = domainId,
@@ -243,6 +249,7 @@ object VerificationImpactAnalyzer {
         val scopeId: String?,
         var ownerRequired: Boolean,
         val matchedFiles: LinkedHashSet<String> = linkedSetOf(),
+        val requestedTaskPaths: LinkedHashSet<String> = linkedSetOf(),
     ) {
         fun freeze(): VerificationImpactReason =
             VerificationImpactReason(

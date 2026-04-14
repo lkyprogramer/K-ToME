@@ -24,13 +24,19 @@ internal data class Phase4TaskAggregate(
 )
 
 private data class Phase4TaskDescriptor(
+    val taskId: String,
     val relativeSourcePath: String,
+    val aggregationOnly: Boolean = false,
     val reader: (repoRoot: Path, sourcePath: Path, payload: JsonObject) -> Phase4TaskAggregate,
 ) {
     fun read(repoRoot: Path): Phase4TaskAggregate {
         val sourcePath = repoRoot.resolve(relativeSourcePath)
         val payload = readPhase4Json(sourcePath)
-        return reader(repoRoot, sourcePath, payload)
+        val aggregate = reader(repoRoot, sourcePath, payload)
+        check(aggregate.taskId == taskId) {
+            "Phase4 task descriptor for $taskId returned ${aggregate.taskId} from $relativeSourcePath."
+        }
+        return aggregate
     }
 }
 
@@ -46,58 +52,76 @@ internal object Phase4DomainArtifactRegistry {
     private val taskDescriptors: List<Phase4TaskDescriptor> =
         listOf(
             Phase4TaskDescriptor(
+                taskId = "mapgenSmoke",
                 relativeSourcePath = "tools/build/reports/phase4/mapgen/mapgen-smoke-summary.json",
+                aggregationOnly = true,
                 reader = ::readMapgenSmoke,
             ),
             Phase4TaskDescriptor(
+                taskId = "solvabilityHarness",
                 relativeSourcePath = "tools/build/reports/phase4/solvability/solvability-summary.json",
+                aggregationOnly = true,
                 reader = ::readSolvabilityHarness,
             ),
             Phase4TaskDescriptor(
+                taskId = "hiddenContentHarness",
                 relativeSourcePath = "tools/build/reports/phase4/hidden/hidden-content-summary.json",
                 reader = ::readHiddenContentHarness,
             ),
             Phase4TaskDescriptor(
+                taskId = "organicHiddenProbe",
                 relativeSourcePath = "tools/build/reports/phase4/hidden/organic-hidden-probe-summary.json",
                 reader = ::readOrganicHiddenProbe,
             ),
             Phase4TaskDescriptor(
+                taskId = "bossHarness",
                 relativeSourcePath = "tools/build/reports/phase4/whitebox/boss/boss-harness.json",
                 reader = ::readBossHarness,
             ),
             Phase4TaskDescriptor(
+                taskId = "longRunLab",
                 relativeSourcePath = "build/reports/harness/long-run-full.json",
                 reader = ::readLongRunLabFull,
             ),
             Phase4TaskDescriptor(
+                taskId = "terrainInteractionBatch",
                 relativeSourcePath = "tools/build/reports/phase4/whitebox/terrain/whitebox-terrain-summary.json",
                 reader = ::readTerrainInteractionBatch,
             ),
             Phase4TaskDescriptor(
+                taskId = "whiteBoxMapgen",
                 relativeSourcePath = "tools/build/reports/phase4/whitebox/mapgen/whitebox-mapgen-summary.json",
                 reader = ::readWhiteBoxMapgen,
             ),
             Phase4TaskDescriptor(
+                taskId = "whiteBoxSolvability",
                 relativeSourcePath = "tools/build/reports/phase4/whitebox/solvability/whitebox-solvability-summary.json",
                 reader = ::readWhiteBoxSolvability,
             ),
             Phase4TaskDescriptor(
+                taskId = "lootBalanceLab",
                 relativeSourcePath = "tools/build/reports/phase4/loot/loot-balance-summary.json",
                 reader = ::readLootBalanceLab,
             ),
             Phase4TaskDescriptor(
+                taskId = "whiteBoxLoot",
                 relativeSourcePath = "tools/build/reports/phase4/whitebox/loot/whitebox-loot-summary.json",
                 reader = ::readWhiteBoxLoot,
             ),
             Phase4TaskDescriptor(
+                taskId = "whiteBoxHiddenContent",
                 relativeSourcePath = "tools/build/reports/phase4/whitebox/hidden/whitebox-hidden-content-summary.json",
+                aggregationOnly = true,
                 reader = ::readWhiteBoxHiddenContent,
             ),
             Phase4TaskDescriptor(
+                taskId = "whiteBoxContentPack",
                 relativeSourcePath = "tools/build/reports/phase4/whitebox/content-pack/whitebox-content-pack-summary.json",
+                aggregationOnly = true,
                 reader = ::readWhiteBoxContentPack,
             ),
             Phase4TaskDescriptor(
+                taskId = "contentPackHarness",
                 relativeSourcePath = "tools/build/reports/phase4/content-pack/content-pack-summary.json",
                 reader = ::readContentPackHarness,
             ),
@@ -105,6 +129,15 @@ internal object Phase4DomainArtifactRegistry {
 
     fun collectTaskAggregates(repoRoot: Path = repoRoot()): List<Phase4TaskAggregate> =
         taskDescriptors.map { descriptor -> descriptor.read(repoRoot) }
+
+    fun registeredTaskIds(): Set<String> = taskDescriptors.mapTo(linkedSetOf(), Phase4TaskDescriptor::taskId)
+
+    fun aggregationOnlyTaskIds(): Set<String> =
+        taskDescriptors
+            .asSequence()
+            .filter(Phase4TaskDescriptor::aggregationOnly)
+            .map(Phase4TaskDescriptor::taskId)
+            .toSet()
 
     private fun readMapgenSmoke(
         repoRoot: Path,

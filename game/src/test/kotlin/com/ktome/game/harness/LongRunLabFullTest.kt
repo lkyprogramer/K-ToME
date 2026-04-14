@@ -26,9 +26,16 @@ class LongRunLabFullTest {
     @Test
     @Tag("longRunLab")
     fun `full long run lab separates full route gate from branch inclusive probes`() {
-        val harness = HeadlessRunHarness(rootDir = tempDir)
-        val fullRouteReports = fullRouteMatrixSpecs().map(harness::run)
-        val branchInclusiveReports = branchProbeMatrixSpecs().map(harness::run)
+        val fullRouteSpecs = fullRouteMatrixSpecs()
+        val branchInclusiveSpecs = branchProbeMatrixSpecs()
+        val kernelExecution =
+            LongRunKernelCache.execute(
+                rootDir = tempDir,
+                specs = fullRouteSpecs + branchInclusiveSpecs,
+            )
+        val reportsByName = kernelExecution.reports.associateBy(ScenarioReport::name)
+        val fullRouteReports = fullRouteSpecs.map { spec -> requireNotNull(reportsByName[spec.name]) }
+        val branchInclusiveReports = branchInclusiveSpecs.map { spec -> requireNotNull(reportsByName[spec.name]) }
         val reports = fullRouteReports + branchInclusiveReports
         val routeProbeReports = reports.filter { report -> report.scenarioType == ScenarioType.ROUTE_PROBE }
         val lateRouteProbeReports = reports.filter { report -> report.scenarioType == ScenarioType.LATE_ROUTE_PROBE }
@@ -96,6 +103,7 @@ class LongRunLabFullTest {
                     put("traceSchemaVersion", HarnessMetadata.TRACE_SCHEMA_VERSION)
                     put("corpusId", HarnessMetadata.LONG_RUN_FULL_CORPUS_ID)
                     put("profileId", HarnessMetadata.PROFILE_ID)
+                    put("kernelCache", kernelExecution.cacheMetadata(Path.of(System.getProperty("ktome.repo.root", "."))))
                     put("localeId", reports.map(ScenarioReport::localeId).distinct().singleOrNull() ?: "mixed")
                     put("scenarioCount", reports.size)
                     put("fullRouteCount", fullRouteReports.size)

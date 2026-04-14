@@ -77,6 +77,60 @@
 3. 不在 `core / game / client` 再造第二套规则真源。
 4. 不追求一次性消灭所有历史 debt；但 debt 必须进入显式 baseline/debt contract。
 
+### 2.3 已验证经验与长期硬约束
+
+`PR-01 ~ PR-05` 已经把 unified verification 第一轮迁移中最容易踩坑的部分跑出来了。以下内容从现在开始不再只是 `Phase 4` 的迁移经验，而是**后续所有 verification / harness / lab / QA / release 开发都必须继承的长期约束**。
+
+#### 2.3.1 Gradle / 任务注册层
+
+1. 新验证域优先走 `build-logic + VerificationTask/VerificationReportTask` 宿主，不再默认做成 `Test + @Tag + 手写 root alias`。
+2. root 公开命令可以继续保留稳定 alias，但 alias 必须从统一 contract 派生，不得在 `build.gradle.kts` 或子模块脚本里长期维护第二份 task 清单。
+3. build-logic 只负责 task generation、execution host、verifyChanged gate 和 cacheable inputs/outputs；domain 业务规则、metric 公式、artifact 解析不得下沉到 build-logic。
+
+#### 2.3.2 Impact Analysis / `verifyChanged`
+
+1. `verifyChanged` 必须保持**可见且保守**，不能成为隐藏魔法。
+2. 新 domain 若支持 `verifyChanged`，必须同时声明 `inputScopes`、fallback 行为与 scope coverage lint；未补齐 coverage 前，不得默认接入自动路由。
+3. baseline / report / aggregation 改动应优先命中 evaluation-only 或 report-only 路径，而不是误触发重型 kernel。
+4. 任一 phase report task 都必须明确区分 producer、report-only rebuild alias 与 verifyChanged 下的自动路由行为。
+
+#### 2.3.3 Kernel / Evaluation / Render / Aggregate 分层
+
+1. 新 verification domain 必须显式拆成 `Kernel`、`Evaluation`、`Render`、`Aggregate` 四层；若某层不存在，也要在 contract 中显式声明“不需要”。
+2. baseline 变化不得重跑 kernel；renderer/template 变化不得重跑 kernel/evaluation；phase aggregate 不得触发 producer。
+3. phase report 只消费已有 artifact，不直接执行上游 domain。
+4. baseline、approved debt、expected failure、budget threshold、relative baseline 统一走公共 comparator/schema，不允许域内再发明第二套回归语义。
+
+#### 2.3.4 Cache 复用与 fingerprint
+
+1. cache key 必须只覆盖该层真正的权威输入，不得把 report-only、markdown、无关 task 或不相关 phase 文件混进 kernel fingerprint。
+2. statistical / long-running domain 默认优先设计 shard cache；相同输入二次运行命中 kernel cache 是首要收益路径。
+3. 目录 fingerprint 必须递归且确定性；缺失 shard artifact 必须 fail fast，不能静默跳过。
+4. cache metadata 至少要保留：
+   - `contractVersion`
+   - `inputFingerprint`
+   - `cacheStatus`
+   - `reusedShardCount`
+   - `shardCount`
+   - `artifactReuseSource` 或等价来源字段
+5. baseline-only / evaluation-only / report-only 场景必须有专门测试，不能只靠热跑时间“看起来命中”。
+
+#### 2.3.5 Registry / Catalog 一致性
+
+1. 同一套 domain/task/baseline/metric/report inclusion 关系不得在多个 registry 中长期各自维护而没有一致性 lint。
+2. 若短期需要多处结构并存，必须有 cross-registry consistency test；长期目标仍应收敛到 single-source catalog。
+3. aggregation-only task 与 routed owner task 必须显式区分，并用 allowlist 或 contract 字段建模；禁止依赖隐式约定。
+
+#### 2.3.6 Legacy 复用
+
+1. 已存在的 `Phase 3/4` producer 可以作为 legacy upstream provider 被复用，但只能消费其 artifact，不得在新 phase 再复制并行 runner。
+2. 复用 legacy provider 时，必须显式声明：
+   - source artifact
+   - reuse boundary
+   - invalidation boundary
+   - 是否进入 owner metric / phase aggregate
+3. 兼容 alias 可以保留一个稳定窗口，但 canonical wiring 只能有一套。
+
 ---
 
 ## 3. 当前体系的根因分析

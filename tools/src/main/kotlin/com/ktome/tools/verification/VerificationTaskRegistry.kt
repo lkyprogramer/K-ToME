@@ -1,5 +1,7 @@
 package com.ktome.tools.verification
 
+import com.ktome.tools.phase4.Phase4OwnerBaselineRegistry
+
 object VerificationTaskRegistry {
     private val contractLintDomain =
         VerificationDomainSpec(
@@ -86,10 +88,40 @@ object VerificationTaskRegistry {
                                 "tools/src/main/kotlin/com/ktome/tools/loot/",
                             ),
                         ownerRequired = true,
+                        requestedTaskPaths =
+                            listOf(
+                                ":tools:verifyLootPreflight",
+                                ":tools:lootBalanceLab",
+                                ":tools:whiteBoxLoot",
+                            ),
+                    ),
+                    InputScope(
+                        scopeId = "loot.owner-evaluation",
+                        pathPrefixes =
+                            listOf(
+                                "tools/src/main/kotlin/com/ktome/tools/loot/WhiteBoxLootRunner.kt",
+                                Phase4OwnerBaselineRegistry.LOOT_LOCAL_REWARD_BASELINE_RELATIVE_PATH,
+                            ),
+                        requestedTaskPaths =
+                            listOf(
+                                ":tools:verifyLootPreflight",
+                                ":tools:whiteBoxLoot",
+                            ),
+                    ),
+                    InputScope(
+                        scopeId = "loot.phase4-report",
+                        pathPrefixes =
+                            listOf(
+                                "tools/src/main/kotlin/com/ktome/tools/phase4/Phase4AggregationInputRunner.kt",
+                                "tools/src/main/kotlin/com/ktome/tools/phase4/Phase4DomainArtifactRegistry.kt",
+                                "tools/src/main/kotlin/com/ktome/tools/phase4/Phase4ReportRunner.kt",
+                                "tools/src/main/kotlin/com/ktome/tools/phase4/ReportPhase4Runner.kt",
+                            ),
+                        requestedTaskPaths = listOf(":tools:reportPhase4Only"),
                     ),
                 ),
             preflightTaskPaths = listOf(":tools:verifyLootPreflight"),
-            ownerTaskPaths = listOf(":tools:lootBalanceLab"),
+            ownerTaskPaths = listOf(":tools:lootBalanceLab", ":tools:whiteBoxLoot"),
             baselinePolicy = BaselinePolicySpec(mode = BaselineMode.STRICT_ZERO_FAILURE),
             cachePolicy =
                 VerificationCachePolicy(
@@ -141,18 +173,104 @@ object VerificationTaskRegistry {
                         pathPrefixes = listOf("game/src/main/resources/data/mapgen/"),
                     ),
                     InputScope(
+                        scopeId = "hidden.preflight-runner",
+                        pathPrefixes = listOf("tools/src/main/kotlin/com/ktome/tools/hidden/HiddenPreflightRunner.kt"),
+                        requestedTaskPaths = listOf(":tools:verifyHiddenPreflight"),
+                    ),
+                    InputScope(
                         scopeId = "hidden.runtime",
                         pathPrefixes =
                             listOf(
-                                "tools/src/main/kotlin/com/ktome/tools/hidden/",
+                                "tools/src/main/kotlin/com/ktome/tools/hidden/HiddenContentHarnessRunner.kt",
+                                "tools/src/main/kotlin/com/ktome/tools/hidden/WhiteBoxHiddenContentRunner.kt",
                                 "game/src/main/kotlin/com/ktome/game/hidden/",
                                 "game/src/main/kotlin/com/ktome/game/Phase4StaticContentValidator.kt",
                             ),
                         ownerRequired = true,
                     ),
+                    InputScope(
+                        scopeId = "hidden.owner-evaluation",
+                        pathPrefixes =
+                            listOf(
+                                Phase4OwnerBaselineRegistry.SCRIPTED_HIDDEN_BASELINE_RELATIVE_PATH,
+                                "tools/src/main/kotlin/com/ktome/tools/phase4/Phase4AggregationInputRunner.kt",
+                                "tools/src/main/kotlin/com/ktome/tools/phase4/Phase4DomainArtifactRegistry.kt",
+                                "tools/src/main/kotlin/com/ktome/tools/phase4/Phase4ReportRunner.kt",
+                                "tools/src/main/kotlin/com/ktome/tools/phase4/ReportPhase4Runner.kt",
+                            ),
+                        requestedTaskPaths = listOf(":tools:reportPhase4Only"),
+                    ),
                 ),
             preflightTaskPaths = listOf(":tools:verifyHiddenPreflight"),
             ownerTaskPaths = listOf(":tools:hiddenContentHarness"),
+            baselinePolicy = BaselinePolicySpec(mode = BaselineMode.STRICT_ZERO_FAILURE),
+            cachePolicy =
+                VerificationCachePolicy(
+                    buildCacheEnabled = true,
+                    configurationCacheCompatible = true,
+                    reuseExistingArtifacts = true,
+                ),
+            artifactPolicy = VerificationArtifactPolicy(),
+        )
+
+    private val organicHiddenDomain =
+        VerificationDomainSpec(
+            domainId = "organic-hidden",
+            phaseIds = setOf("phase4"),
+            workloadClass = VerificationWorkloadClass.STATISTICAL_BATCH,
+            defaultTier = VerificationTier.OWNER,
+            nodeSpecs =
+                listOf(
+                    VerificationNodeSpec(
+                        nodeId = "organic-hidden.owner",
+                        description = "Runs the Phase 4 organic hidden-content probe through the unified verification contract.",
+                        workloadClass = VerificationWorkloadClass.STATISTICAL_BATCH,
+                        tier = VerificationTier.OWNER,
+                        nodeKind = VerificationNodeKind.LEGACY_JUNIT_CLASS_SET,
+                        selectedClasses = listOf("com.ktome.tools.hidden.OrganicHiddenProbeRunnerTest"),
+                    ),
+                ),
+            inputScopes =
+                listOf(
+                    InputScope(
+                        scopeId = "organic-hidden.data.events",
+                        pathPrefixes = listOf("game/src/main/resources/data/events/"),
+                    ),
+                    InputScope(
+                        scopeId = "organic-hidden.data.secret-zones",
+                        pathPrefixes = listOf("game/src/main/resources/data/secret-zones/"),
+                    ),
+                    InputScope(
+                        scopeId = "organic-hidden.data.mapgen",
+                        pathPrefixes = listOf("game/src/main/resources/data/mapgen/"),
+                    ),
+                    InputScope(
+                        scopeId = "organic-hidden.runtime",
+                        pathPrefixes =
+                            listOf(
+                                "tools/src/main/kotlin/com/ktome/tools/hidden/OrganicHiddenProbeRunner.kt",
+                                "game/src/main/kotlin/com/ktome/game/harness/RunBot.kt",
+                                "game/src/main/kotlin/com/ktome/game/harness/ScenarioModels.kt",
+                                "game/src/main/kotlin/com/ktome/game/harness/ScenarioUtil.kt",
+                                "game/src/main/kotlin/com/ktome/game/harness/SmokeBot.kt",
+                                "game/src/main/kotlin/com/ktome/game/hidden/",
+                            ),
+                        ownerRequired = true,
+                    ),
+                    InputScope(
+                        scopeId = "organic-hidden.owner-evaluation",
+                        pathPrefixes =
+                            listOf(
+                                Phase4OwnerBaselineRegistry.ORGANIC_HIDDEN_BASELINE_RELATIVE_PATH,
+                                "tools/src/main/kotlin/com/ktome/tools/phase4/Phase4AggregationInputRunner.kt",
+                                "tools/src/main/kotlin/com/ktome/tools/phase4/Phase4DomainArtifactRegistry.kt",
+                                "tools/src/main/kotlin/com/ktome/tools/phase4/Phase4ReportRunner.kt",
+                                "tools/src/main/kotlin/com/ktome/tools/phase4/ReportPhase4Runner.kt",
+                            ),
+                        requestedTaskPaths = listOf(":tools:reportPhase4Only"),
+                    ),
+                ),
+            ownerTaskPaths = listOf(":tools:organicHiddenProbe"),
             baselinePolicy = BaselinePolicySpec(mode = BaselineMode.STRICT_ZERO_FAILURE),
             cachePolicy =
                 VerificationCachePolicy(
@@ -344,6 +462,19 @@ object VerificationTaskRegistry {
                             ),
                         ownerRequired = true,
                     ),
+                    InputScope(
+                        scopeId = "terrain.owner-evaluation",
+                        pathPrefixes =
+                            listOf(
+                                Phase4OwnerBaselineRegistry.TERRAIN_UNIFIED_BASELINE_RELATIVE_PATH,
+                                Phase4OwnerBaselineRegistry.TERRAIN_PER_ZONE_BASELINE_RELATIVE_PATH,
+                                "tools/src/main/kotlin/com/ktome/tools/phase4/Phase4AggregationInputRunner.kt",
+                                "tools/src/main/kotlin/com/ktome/tools/phase4/Phase4DomainArtifactRegistry.kt",
+                                "tools/src/main/kotlin/com/ktome/tools/phase4/Phase4ReportRunner.kt",
+                                "tools/src/main/kotlin/com/ktome/tools/phase4/ReportPhase4Runner.kt",
+                            ),
+                        requestedTaskPaths = listOf(":tools:reportPhase4Only"),
+                    ),
                 ),
             ownerTaskPaths = listOf(":tools:terrainInteractionBatch"),
             baselinePolicy =
@@ -414,10 +545,18 @@ object VerificationTaskRegistry {
                 listOf(
                     VerificationNodeSpec(
                         nodeId = "longrun.owner",
-                        description = "Tracks Phase 4 long-run owner verification routing.",
+                        description = "Runs the long-run owner matrix through the shared Phase 4 verification routing contract.",
                         workloadClass = VerificationWorkloadClass.LONG_RUNNING_SYSTEM,
                         tier = VerificationTier.OWNER,
-                        nodeKind = VerificationNodeKind.REPORT_ONLY,
+                        nodeKind = VerificationNodeKind.LEGACY_JUNIT_CLASS_SET,
+                        selectedClasses =
+                            listOf(
+                                "com.ktome.game.harness.LongRunLabTest",
+                                "com.ktome.game.harness.LongRunLabFullTest",
+                                "com.ktome.game.harness.TemplarHumanCaptainRegressionTest",
+                                "com.ktome.game.harness.RogueHumanCaptainRegressionTest",
+                                "com.ktome.game.harness.OfficialSliceStabilityTest",
+                            ),
                     ),
                 ),
             inputScopes =
@@ -426,6 +565,7 @@ object VerificationTaskRegistry {
                         scopeId = "longrun.runtime",
                         pathPrefixes =
                             listOf(
+                                "game/src/test/kotlin/com/ktome/game/harness/LongRunKernelCache.kt",
                                 "game/src/test/kotlin/com/ktome/game/harness/LongRunLabSeedBank.kt",
                                 "game/src/test/kotlin/com/ktome/game/harness/LongRunLabTest.kt",
                                 "game/src/test/kotlin/com/ktome/game/harness/LongRunLabFullTest.kt",
@@ -434,6 +574,18 @@ object VerificationTaskRegistry {
                                 "game/src/test/kotlin/com/ktome/game/harness/OfficialSliceStabilityTest.kt",
                             ),
                         ownerRequired = true,
+                    ),
+                    InputScope(
+                        scopeId = "longrun.owner-evaluation",
+                        pathPrefixes =
+                            listOf(
+                                Phase4OwnerBaselineRegistry.TERMINAL_BUILD_BASELINE_RELATIVE_PATH,
+                                "tools/src/main/kotlin/com/ktome/tools/phase4/Phase4AggregationInputRunner.kt",
+                                "tools/src/main/kotlin/com/ktome/tools/phase4/Phase4DomainArtifactRegistry.kt",
+                                "tools/src/main/kotlin/com/ktome/tools/phase4/Phase4ReportRunner.kt",
+                                "tools/src/main/kotlin/com/ktome/tools/phase4/ReportPhase4Runner.kt",
+                            ),
+                        requestedTaskPaths = listOf(":tools:reportPhase4Only"),
                     ),
                 ),
             ownerTaskPaths = listOf(":game:longRunLab"),
@@ -479,6 +631,7 @@ object VerificationTaskRegistry {
             contractLintDomain,
             lootDomain,
             hiddenDomain,
+            organicHiddenDomain,
             contentPackDomain,
             mapgenDomain,
             solvabilityDomain,
@@ -493,6 +646,16 @@ object VerificationTaskRegistry {
 
     fun registeredDomainIds(): Set<String> = domainsById.keys
 
+    fun phaseOwnerTaskIds(phaseId: String): Set<String> =
+        domainsById.values
+            .asSequence()
+            .filter { spec -> phaseId in spec.phaseIds }
+            .flatMap { spec -> spec.ownerTaskPaths.asSequence() }
+            .map(::taskIdForPath)
+            .toSet()
+
     fun registeredImpactSpecs(): List<VerificationDomainSpec> =
         domainsById.values.filter { spec -> spec.inputScopes.isNotEmpty() || spec.preflightTaskPaths.isNotEmpty() || spec.ownerTaskPaths.isNotEmpty() }
+
+    private fun taskIdForPath(taskPath: String): String = taskPath.substringAfterLast(':')
 }

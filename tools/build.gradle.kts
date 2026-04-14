@@ -589,8 +589,9 @@ tasks.register<Test>("whiteBoxLoot") {
     useJUnitPlatform {
         includeTags("whiteBoxLoot")
     }
-    dependsOn("lootBalanceLab")
+    dependsOn("verifyLootPreflight")
     systemProperty("ktome.phase4.loot.reportDir", layout.buildDirectory.dir("reports/phase4/loot").get().asFile.absolutePath)
+    systemProperty("ktome.phase4.loot.preflight.reportDir", lootPreflightOutputDir.get().asFile.absolutePath)
     systemProperty("ktome.phase4.reuseHarnessOutputs", "true")
     val reportDir = layout.buildDirectory.dir("reports/phase4/whitebox/loot")
     systemProperty("ktome.phase4.whitebox.loot.reportDir", reportDir.get().asFile.absolutePath)
@@ -719,8 +720,11 @@ listOf(
     tasks.named("verifyContentPackPreflight"),
     tasks.named("scopeCoverageLint"),
     tasks.named("lootBalanceLab"),
+    tasks.named("whiteBoxLoot"),
     tasks.named("hiddenContentHarness"),
+    tasks.named("organicHiddenProbe"),
     tasks.named("contentPackHarness"),
+    tasks.named("reportPhase4Only"),
     tasks.named("terrainInteractionBatch"),
     tasks.named("bossHarness"),
     tasks.named("whiteBoxMapgen"),

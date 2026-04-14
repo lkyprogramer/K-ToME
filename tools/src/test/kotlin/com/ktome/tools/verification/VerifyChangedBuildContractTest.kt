@@ -17,6 +17,7 @@ class VerifyChangedBuildContractTest {
                 VerificationTaskRegistry.registeredImpactSpecs().forEach { spec ->
                     addAll(spec.preflightTaskPaths)
                     addAll(spec.ownerTaskPaths)
+                    spec.inputScopes.forEach { scope -> addAll(scope.requestedTaskPaths) }
                 }
             }
 

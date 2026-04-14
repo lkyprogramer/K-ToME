@@ -23,9 +23,8 @@ class LongRunLabTest {
     @Test
     @Tag("longRunLab")
     fun `nightly long run lab distinguishes full route smoke from probes`() {
-        val harness = HeadlessRunHarness(rootDir = tempDir)
         val stableArcanistSmokeSeed = LongRunLabSeedBank.fullRouteMatrixSeed(professionId = "arcanist", raceId = "human")
-        val officialSliceReports =
+        val officialSliceSpecs =
             listOf(
                 fullRouteSmokeSpec(
                     name = "long-run-vanguard-20260312",
@@ -55,8 +54,8 @@ class LongRunLabTest {
                     seed = LongRunLabSeedBank.fullRouteMatrixSeed(professionId = "templar", raceId = "human"),
                     professionId = "templar",
                 ),
-            ).map(harness::run)
-        val advancedFullRouteReports =
+            )
+        val advancedFullRouteSpecs =
             listOf(
                 fullRouteSmokeSpec(
                     name = "long-run-advanced-berserker-20260318",
@@ -70,8 +69,8 @@ class LongRunLabTest {
                     professionId = "spellblade",
                     maxTurns = 2200,
                 ),
-            ).map(harness::run)
-        val advancedLateRouteProbeReports =
+            )
+        val advancedLateRouteProbeSpecs =
             listOf(
                 lateRouteProbeSpec(
                     name = "long-run-advanced-berserker-late-route-probe-20260318",
@@ -83,8 +82,8 @@ class LongRunLabTest {
                     seed = 20260319L,
                     professionId = "spellblade",
                 ),
-            ).map(harness::run)
-        val branchInclusiveReports =
+            )
+        val branchInclusiveSpecs =
             listOf(
                 branchInclusiveSmokeSpec(
                     name = "long-run-branch-rogue-20260320",
@@ -94,8 +93,8 @@ class LongRunLabTest {
                     branchZoneId = "bandit_camp",
                     maxTurns = 2400,
                 ),
-            ).map(harness::run)
-        val routeProbeReports =
+            )
+        val routeProbeSpecs =
             listOf(
                 ScenarioSpec(
                     name = "long-run-rogue-deep-iron-pit-route-probe",
@@ -137,7 +136,18 @@ class LongRunLabTest {
                             ScenarioAssertion.NoStall,
                         ),
                 ),
-            ).map(harness::run)
+            )
+        val kernelExecution =
+            LongRunKernelCache.execute(
+                rootDir = tempDir,
+                specs = officialSliceSpecs + advancedFullRouteSpecs + advancedLateRouteProbeSpecs + branchInclusiveSpecs + routeProbeSpecs,
+            )
+        val reportsByName = kernelExecution.reports.associateBy(ScenarioReport::name)
+        val officialSliceReports = officialSliceSpecs.map { spec -> requireNotNull(reportsByName[spec.name]) }
+        val advancedFullRouteReports = advancedFullRouteSpecs.map { spec -> requireNotNull(reportsByName[spec.name]) }
+        val advancedLateRouteProbeReports = advancedLateRouteProbeSpecs.map { spec -> requireNotNull(reportsByName[spec.name]) }
+        val branchInclusiveReports = branchInclusiveSpecs.map { spec -> requireNotNull(reportsByName[spec.name]) }
+        val routeProbeReports = routeProbeSpecs.map { spec -> requireNotNull(reportsByName[spec.name]) }
         val reports =
             officialSliceReports +
                 advancedFullRouteReports +
@@ -202,6 +212,7 @@ class LongRunLabTest {
                 put("traceSchemaVersion", HarnessMetadata.TRACE_SCHEMA_VERSION)
                 put("corpusId", HarnessMetadata.LONG_RUN_SMOKE_CORPUS_ID)
                 put("profileId", HarnessMetadata.PROFILE_ID)
+                put("kernelCache", kernelExecution.cacheMetadata(Path.of(System.getProperty("ktome.repo.root", "."))))
                 put("localeId", reports.map(ScenarioReport::localeId).distinct().singleOrNull() ?: "mixed")
                 put("seedCount", reports.size)
                 put("fullRouteCount", fullRouteCount)

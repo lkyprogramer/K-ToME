@@ -29,7 +29,8 @@
    - `perfSmoke`
    - `soakRun`
    - `BalanceLab`
-   - `phase5Report` 或等价聚合入口
+   - `reportPhase5`
+   - `reportPhase5Only`
    - 统一白盒验证框架接入（`whiteBoxTacticalAi`、`whiteBoxReplay`、`whiteBoxPerf`、`whiteBoxSoak` 等）
 3. `Release Lane`
    - Localization QA
@@ -53,6 +54,7 @@
 2. `P5-W4` 不允许在没有 `TacticalAIDecisionTrace` 与 `PerceptionState` 正式合同的情况下先写临时 replay/death schema。
 3. `P5-W4` 可以与 `P5-W3` 并行推进；`P5-B` 退出仍要求 replay/death 与 perf/soak 同时通过。
 4. `P5-W5` 的 `BalanceLab` 复用 `longRunLab` 与 `LootBalanceLab` 的 batch 基础设施，不新建并行 runner。
+5. `Phase 5` 的 verification/task/report wiring 统一受 [2026-04-14-phase5-unified-verification-and-development-spec.md](./2026-04-14-phase5-unified-verification-and-development-spec.md) 约束；后续不得再引入 phase 专用第二套 registry。
 
 ## 5. 进入与退出摘要
 
@@ -72,6 +74,7 @@
 
 1. [2026-03-13-phase5-tactical-ai-stability-and-release.md](./2026-03-13-phase5-tactical-ai-stability-and-release.md)
 2. [2026-03-13-phase5-regression-checklist.md](./2026-03-13-phase5-regression-checklist.md)
-3. [../2026-04-04-unified-white-box-verification-framework.md](../2026-04-04-unified-white-box-verification-framework.md)
-4. [../2026-03-13-phase2-to-phase5-final-roadmap.md](../2026-03-13-phase2-to-phase5-final-roadmap.md)
-5. [../2026-03-13-core-systems-design-and-phase-supplements.md](../2026-03-13-core-systems-design-and-phase-supplements.md)
+3. [2026-04-14-phase5-unified-verification-and-development-spec.md](./2026-04-14-phase5-unified-verification-and-development-spec.md)
+4. [../2026-04-04-unified-white-box-verification-framework.md](../2026-04-04-unified-white-box-verification-framework.md)
+5. [../2026-03-13-phase2-to-phase5-final-roadmap.md](../2026-03-13-phase2-to-phase5-final-roadmap.md)
+6. [../2026-03-13-core-systems-design-and-phase-supplements.md](../2026-03-13-core-systems-design-and-phase-supplements.md)

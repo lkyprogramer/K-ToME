@@ -4,6 +4,7 @@ import com.ktome.game.data.DataLoader
 import java.nio.file.Files
 import java.nio.file.Path
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
@@ -48,8 +49,8 @@ data class LootPreflightRun(
 )
 
 object LootPreflightRunner {
-    private const val SUMMARY_FILE_NAME: String = "loot-preflight-summary.json"
-    private const val DETAILS_FILE_NAME: String = "loot-preflight-pairs.json"
+    internal const val SUMMARY_FILE_NAME: String = "loot-preflight-summary.json"
+    internal const val DETAILS_FILE_NAME: String = "loot-preflight-pairs.json"
     private val json: Json = Json { prettyPrint = true }
 
     fun run(): LootPreflightRun {
@@ -90,6 +91,26 @@ object LootPreflightRunner {
                 "ktome.phase4.loot.preflight.reportDir system property is required for loot preflight output."
             },
         )
+
+    internal fun summaryPath(reportDir: Path = reportDir()): Path = reportDir.resolve(SUMMARY_FILE_NAME)
+
+    internal fun detailsPath(reportDir: Path = reportDir()): Path = reportDir.resolve(DETAILS_FILE_NAME)
+
+    internal fun readSummary(reportDir: Path = reportDir()): LootPreflightSummary? {
+        val summaryPath = summaryPath(reportDir)
+        if (!Files.isRegularFile(summaryPath)) {
+            return null
+        }
+        return json.decodeFromString(Files.readString(summaryPath))
+    }
+
+    internal fun readAllPairs(reportDir: Path = reportDir()): List<LootPreflightPairSummary>? {
+        val detailsPath = detailsPath(reportDir)
+        if (!Files.isRegularFile(detailsPath)) {
+            return null
+        }
+        return json.decodeFromString(Files.readString(detailsPath))
+    }
 
     private fun LootProfilePairDiff.toSummary(): LootPreflightPairSummary =
         LootPreflightPairSummary(

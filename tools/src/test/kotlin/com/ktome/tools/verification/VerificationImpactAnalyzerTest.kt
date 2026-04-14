@@ -1,5 +1,6 @@
 package com.ktome.tools.verification
 
+import com.ktome.tools.phase4.Phase4OwnerBaselineRegistry
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -20,10 +21,11 @@ class VerificationImpactAnalyzerTest {
         val plan = VerificationImpactAnalyzer.analyze(listOf("game/src/main/kotlin/com/ktome/game/data/DataLoader.kt"))
         val impactedDomainIds = plan.impactedDomains.map(VerificationDomainImpact::domainId).toSet()
 
-        assertEquals(setOf("content-pack", "hidden", "loot"), impactedDomainIds)
+        assertEquals(setOf("content-pack", "hidden", "organic-hidden", "loot"), impactedDomainIds)
         assertFalse(plan.requestedTaskPaths.contains(":tools:phase4ReportOnly"))
         assertTrue(plan.requestedTaskPaths.contains(":tools:lootBalanceLab"))
         assertTrue(plan.requestedTaskPaths.contains(":tools:hiddenContentHarness"))
+        assertTrue(plan.requestedTaskPaths.contains(":tools:organicHiddenProbe"))
         assertTrue(plan.requestedTaskPaths.contains(":tools:contentPackHarness"))
     }
 
@@ -32,7 +34,7 @@ class VerificationImpactAnalyzerTest {
         val plan = VerificationImpactAnalyzer.analyze(listOf("core/src/main/kotlin/com/ktome/core/map/MapGrid.kt"))
         val impactedDomainIds = plan.impactedDomains.map(VerificationDomainImpact::domainId).toSet()
 
-        assertEquals(setOf("boss", "content-pack", "hidden", "longrun", "loot", "mapgen", "solvability", "terrain"), impactedDomainIds)
+        assertEquals(setOf("boss", "content-pack", "hidden", "longrun", "loot", "mapgen", "organic-hidden", "solvability", "terrain"), impactedDomainIds)
         assertFalse(plan.requestedTaskPaths.contains(":tools:phase4ReportOnly"))
     }
 
@@ -61,6 +63,7 @@ class VerificationImpactAnalyzerTest {
         val plan = VerificationImpactAnalyzer.analyze(listOf("game/src/main/kotlin/com/ktome/game/Phase4StaticContentValidator.kt"))
 
         assertTrue(plan.impactedDomains.any { impact -> impact.domainId == "hidden" })
+        assertFalse(plan.impactedDomains.any { impact -> impact.domainId == "organic-hidden" })
         assertTrue(plan.requestedTaskPaths.contains(":tools:hiddenContentHarness"))
     }
 
@@ -113,10 +116,55 @@ class VerificationImpactAnalyzerTest {
     }
 
     @Test
+    fun `organic hidden runtime change routes to organic hidden owner task`() {
+        val plan = VerificationImpactAnalyzer.analyze(listOf("tools/src/main/kotlin/com/ktome/tools/hidden/OrganicHiddenProbeRunner.kt"))
+
+        assertEquals(setOf("organic-hidden"), plan.impactedDomains.map(VerificationDomainImpact::domainId).toSet())
+        assertTrue(plan.requestedTaskPaths.contains(":tools:organicHiddenProbe"))
+        assertFalse(plan.requestedTaskPaths.contains(":tools:hiddenContentHarness"))
+    }
+
+    @Test
     fun `long run harness change routes to longrun owner task`() {
         val plan = VerificationImpactAnalyzer.analyze(listOf("game/src/test/kotlin/com/ktome/game/harness/LongRunLabSeedBank.kt"))
 
         assertEquals(setOf("longrun"), plan.impactedDomains.map(VerificationDomainImpact::domainId).toSet())
         assertTrue(plan.requestedTaskPaths.contains(":game:longRunLab"))
+    }
+
+    @Test
+    fun `loot owner baseline change routes to whitebox evaluation without rerunning loot kernel`() {
+        val plan = VerificationImpactAnalyzer.analyze(listOf(Phase4OwnerBaselineRegistry.LOOT_LOCAL_REWARD_BASELINE_RELATIVE_PATH))
+
+        assertEquals(setOf("loot"), plan.impactedDomains.map(VerificationDomainImpact::domainId).toSet())
+        assertTrue(plan.requestedTaskPaths.contains(":tools:verifyLootPreflight"))
+        assertTrue(plan.requestedTaskPaths.contains(":tools:whiteBoxLoot"))
+        assertFalse(plan.requestedTaskPaths.contains(":tools:lootBalanceLab"))
+    }
+
+    @Test
+    fun `longrun owner baseline change routes to report only aggregation rebuild`() {
+        val plan = VerificationImpactAnalyzer.analyze(listOf(Phase4OwnerBaselineRegistry.TERMINAL_BUILD_BASELINE_RELATIVE_PATH))
+
+        assertEquals(setOf("longrun"), plan.impactedDomains.map(VerificationDomainImpact::domainId).toSet())
+        assertTrue(plan.requestedTaskPaths.contains(":tools:reportPhase4Only"))
+        assertFalse(plan.requestedTaskPaths.contains(":game:longRunLab"))
+    }
+
+    @Test
+    fun `organic hidden owner baseline change routes to report only aggregation rebuild`() {
+        val plan = VerificationImpactAnalyzer.analyze(listOf(Phase4OwnerBaselineRegistry.ORGANIC_HIDDEN_BASELINE_RELATIVE_PATH))
+
+        assertEquals(setOf("organic-hidden"), plan.impactedDomains.map(VerificationDomainImpact::domainId).toSet())
+        assertTrue(plan.requestedTaskPaths.contains(":tools:reportPhase4Only"))
+        assertFalse(plan.requestedTaskPaths.contains(":tools:organicHiddenProbe"))
+    }
+
+    @Test
+    fun `phase4 aggregation code change routes to report only rebuild for migrated owner domains`() {
+        val plan = VerificationImpactAnalyzer.analyze(listOf("tools/src/main/kotlin/com/ktome/tools/phase4/Phase4AggregationInputRunner.kt"))
+
+        assertEquals(setOf("hidden", "longrun", "loot", "organic-hidden", "terrain"), plan.impactedDomains.map(VerificationDomainImpact::domainId).toSet())
+        assertEquals(listOf(":tools:scopeCoverageLint", ":tools:reportPhase4Only"), plan.requestedTaskPaths)
     }
 }
