@@ -1,6 +1,7 @@
 package com.ktome.game.harness
 
 import java.nio.file.Path
+import kotlin.math.abs
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -24,12 +25,14 @@ class LongRunKernelCacheTest {
 
     @Test
     fun `long run cache reuses unchanged shards when only one scenario is added`() {
+        val cacheIsolation = abs(tempDir.fileName.toString().hashCode().toLong())
         val cachedSpecs =
             listOf(
-                quickProbeSpec(name = "cache-reuse-route-probe-a", seed = 2099041301L),
-                quickProbeSpec(name = "cache-reuse-route-probe-b", seed = 2099041302L),
+                quickProbeSpec(name = "cache-reuse-route-probe-a-$cacheIsolation", seed = 2099041301L + cacheIsolation),
+                quickProbeSpec(name = "cache-reuse-route-probe-b-$cacheIsolation", seed = 2099041302L + cacheIsolation),
             )
-        val expandedSpecs = cachedSpecs + quickProbeSpec(name = "cache-reuse-route-probe-c", seed = 2099041303L)
+        val expandedSpecs =
+            cachedSpecs + quickProbeSpec(name = "cache-reuse-route-probe-c-$cacheIsolation", seed = 2099041303L + cacheIsolation)
 
         val coldRun = LongRunKernelCache.execute(rootDir = tempDir.resolve("cold"), specs = cachedSpecs)
         val partialWarmRun = LongRunKernelCache.execute(rootDir = tempDir.resolve("partial-warm"), specs = expandedSpecs)

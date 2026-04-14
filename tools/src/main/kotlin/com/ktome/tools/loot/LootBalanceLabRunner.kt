@@ -471,6 +471,8 @@ private data class LootMatrixKernelShard(
     val matrixId: String,
     val rollStartInclusive: Int,
     val rollCount: Int,
+    val startingPityTracker: com.ktome.core.loot.PityTracker,
+    val resultingPityTracker: com.ktome.core.loot.PityTracker,
     val availableSpecialTiers: Set<SpecialTier>,
     val finalTierCounts: Map<String, Int>,
     val baseRarityCounts: Map<String, Int>,
@@ -495,6 +497,14 @@ private data class LootMatrixKernelShard(
             put("matrixId", matrixId)
             put("rollStartInclusive", rollStartInclusive)
             put("rollCount", rollCount)
+            putJsonObject("startingPityTracker") {
+                put("rollsSinceLastRare", startingPityTracker.rollsSinceLastRare)
+                put("eligibleSpecialRollsSinceLastUnique", startingPityTracker.eligibleSpecialRollsSinceLastUnique)
+            }
+            putJsonObject("resultingPityTracker") {
+                put("rollsSinceLastRare", resultingPityTracker.rollsSinceLastRare)
+                put("eligibleSpecialRollsSinceLastUnique", resultingPityTracker.eligibleSpecialRollsSinceLastUnique)
+            }
             putJsonArray("availableSpecialTiers") {
                 availableSpecialTiers.map(SpecialTier::name).sorted().forEach { tier -> add(JsonPrimitive(tier)) }
             }
@@ -656,32 +666,43 @@ internal object LootLabKernel {
         val shardRollPaths = mutableListOf<Path>()
         val matrices =
             matrixSpecs.map { spec ->
+                var currentPityTracker = com.ktome.core.loot.PityTracker()
                 val shards =
                     matrixShardSpecs(spec).map { shardSpec ->
                         val shardDir = VerificationCacheSupport.ensureDirectory(kernelRoot.resolve(spec.id).resolve(shardSpec.shardId))
                         val shardPayloadPath = shardDir.resolve("kernel.json")
                         val shardRollPath = shardDir.resolve("rolls.jsonl")
                         shardRollPaths.add(shardRollPath)
-                        if (Files.isRegularFile(shardPayloadPath) && Files.isRegularFile(shardRollPath)) {
-                            reusedShardCount += 1
-                            readShardPayload(shardPayloadPath)
-                        } else {
-                            val shardExecution =
-                                executeMatrixShard(
-                                    spec = spec,
-                                    shardSpec = shardSpec,
-                                    zoneRewardProfile = rewardResolver.resolve(spec.zoneId),
-                                    itemBundleLoader = { itemBundle },
-                                    rarePassiveUniverseBySlot = rarePassiveUniverseBySlot,
+                        val cachedShard =
+                            if (Files.isRegularFile(shardPayloadPath) && Files.isRegularFile(shardRollPath)) {
+                                readShardPayload(shardPayloadPath)
+                            } else {
+                                null
+                            }
+                        val shard =
+                            if (cachedShard != null && cachedShard.startingPityTracker == currentPityTracker) {
+                                reusedShardCount += 1
+                                cachedShard
+                            } else {
+                                val shardExecution =
+                                    executeMatrixShard(
+                                        spec = spec,
+                                        shardSpec = shardSpec,
+                                        zoneRewardProfile = rewardResolver.resolve(spec.zoneId),
+                                        itemBundleLoader = { itemBundle },
+                                        rarePassiveUniverseBySlot = rarePassiveUniverseBySlot,
+                                        startingPityTracker = currentPityTracker,
+                                    )
+                                writeShardPayload(
+                                    shardPayloadPath = shardPayloadPath,
+                                    shardRollPath = shardRollPath,
+                                    shard = shardExecution.shard,
+                                    rolls = shardExecution.rolls,
                                 )
-                            writeShardPayload(
-                                shardPayloadPath = shardPayloadPath,
-                                shardRollPath = shardRollPath,
-                                shard = shardExecution.shard,
-                                rolls = shardExecution.rolls,
-                            )
-                            shardExecution.shard
-                        }
+                                shardExecution.shard
+                            }
+                        currentPityTracker = shard.resultingPityTracker
+                        shard
                     }
                 mergeMatrixShards(
                     spec = spec,
@@ -736,6 +757,7 @@ internal object LootLabKernel {
         zoneRewardProfile: ZoneRewardProfile,
         itemBundleLoader: () -> com.ktome.core.item.ItemDataBundle,
         rarePassiveUniverseBySlot: Map<EquipSlot, Set<String>>,
+        startingPityTracker: com.ktome.core.loot.PityTracker,
     ): LootMatrixShardExecution {
         val finalTierCounts = linkedMapOf("NORMAL" to 0, "MAGIC" to 0, "RARE" to 0, "UNIQUE" to 0, "ARTIFACT" to 0)
         val baseRarityCounts = linkedMapOf("NORMAL" to 0, "MAGIC" to 0, "RARE" to 0)
@@ -755,7 +777,7 @@ internal object LootLabKernel {
         var meaningfulUniqueArtifactSwapCount = 0
         var rarePityActivations = 0
         var uniquePityActivations = 0
-        var pityTracker = com.ktome.core.loot.PityTracker()
+        var pityTracker = startingPityTracker
 
         repeat(shardSpec.rollCount) { shardIndex ->
             val rollIndex = shardSpec.rollStartInclusive + shardIndex
@@ -871,6 +893,8 @@ internal object LootLabKernel {
                     matrixId = spec.id,
                     rollStartInclusive = shardSpec.rollStartInclusive,
                     rollCount = shardSpec.rollCount,
+                    startingPityTracker = startingPityTracker,
+                    resultingPityTracker = pityTracker,
                     availableSpecialTiers = availableSpecialTiers,
                     finalTierCounts = finalTierCounts.toSortedMap(),
                     baseRarityCounts = baseRarityCounts.toSortedMap(),
@@ -1689,8 +1713,17 @@ object LootBalanceLabRunner {
         return payload.toLootKernelRun()
     }
 
+    internal fun lootPreflightReportDir(repoRoot: Path = VerificationCacheSupport.repoRoot()): Path {
+        val configured = System.getProperty("ktome.phase4.loot.preflight.reportDir")
+        return if (configured.isNullOrBlank()) {
+            repoRoot.resolve("tools/build/reports/verification/loot/preflight")
+        } else {
+            Path.of(configured)
+        }
+    }
+
     internal fun lootPreflightSummaryPath(repoRoot: Path = VerificationCacheSupport.repoRoot()): Path =
-        repoRoot.resolve("tools/build/reports/verification/loot/preflight/verification-summary.json")
+        lootPreflightReportDir(repoRoot).resolve(LootPreflightRunner.SUMMARY_FILE_NAME)
 
     private fun JsonObject.toLootKernelRun(): LootKernelRun {
         val matrices =
@@ -1853,6 +1886,20 @@ private fun JsonObject.toLootMatrixKernelShard(): LootMatrixKernelShard =
         matrixId = stringValue("matrixId"),
         rollStartInclusive = intValue("rollStartInclusive"),
         rollCount = intValue("rollCount"),
+        startingPityTracker =
+            getValue("startingPityTracker").jsonObject.let { pity ->
+                com.ktome.core.loot.PityTracker(
+                    rollsSinceLastRare = pity.intValue("rollsSinceLastRare"),
+                    eligibleSpecialRollsSinceLastUnique = pity.intValue("eligibleSpecialRollsSinceLastUnique"),
+                )
+            },
+        resultingPityTracker =
+            getValue("resultingPityTracker").jsonObject.let { pity ->
+                com.ktome.core.loot.PityTracker(
+                    rollsSinceLastRare = pity.intValue("rollsSinceLastRare"),
+                    eligibleSpecialRollsSinceLastUnique = pity.intValue("eligibleSpecialRollsSinceLastUnique"),
+                )
+            },
         availableSpecialTiers = getValue("availableSpecialTiers").jsonArray.map { tier -> SpecialTier.valueOf(tier.jsonPrimitive.content) }.toSet(),
         finalTierCounts = getValue("finalTierCounts").jsonObject.toIntMap(),
         baseRarityCounts = getValue("baseRarityCounts").jsonObject.toIntMap(),

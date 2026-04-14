@@ -7,6 +7,7 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.int
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNotEquals
@@ -110,6 +111,27 @@ class LootBalanceLabRunnerTest {
             assertTrue(shardRollPaths.all(Files::isRegularFile))
             assertTrue(shardRollPaths.all { path -> Files.readAllLines(path).count(String::isNotBlank) == 1_000 })
             assertEquals(60_000, shardRollPaths.sumOf { path -> Files.readAllLines(path).count(String::isNotBlank) })
+
+            val shardPayloads =
+                shardRollPaths
+                    .map { shardRollPath ->
+                        Json.parseToJsonElement(Files.readString(shardRollPath.parent.resolve("kernel.json"))).jsonObject
+                    }.groupBy { payload -> payload.getValue("matrixId").jsonPrimitive.content }
+            shardPayloads.values.forEach { payloads ->
+                val orderedPayloads = payloads.sortedBy { payload -> payload.getValue("rollStartInclusive").jsonPrimitive.int }
+                assertEquals("0", orderedPayloads.first().getValue("startingPityTracker").jsonObject.getValue("rollsSinceLastRare").jsonPrimitive.content)
+                assertEquals(
+                    "0",
+                    orderedPayloads.first().getValue("startingPityTracker").jsonObject.getValue("eligibleSpecialRollsSinceLastUnique").jsonPrimitive.content,
+                )
+                orderedPayloads.zipWithNext { previous, current ->
+                    assertEquals(
+                        previous.getValue("resultingPityTracker").jsonObject,
+                        current.getValue("startingPityTracker").jsonObject,
+                        "Adjacent loot shards must preserve pity tracker continuity across shard boundaries.",
+                    )
+                }
+            }
         } finally {
             if (originalReportDir == null) {
                 System.clearProperty("ktome.phase4.loot.reportDir")
