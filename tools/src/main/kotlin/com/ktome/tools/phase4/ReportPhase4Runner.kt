@@ -361,6 +361,14 @@ object ReportPhase4Runner {
 
     private fun renderMarkdown(report: ReportPhase4Aggregate): String =
         buildString {
+            val inputsByTaskId = report.inputs.associateBy(ReportAggregationInput::sourceTaskId)
+            val scriptedHiddenInput = requireInput(inputsByTaskId, "hiddenContentHarness")
+            val organicHiddenInput = requireInput(inputsByTaskId, "organicHiddenProbe")
+            val lootInput = requireInput(inputsByTaskId, "whiteBoxLoot")
+            val scriptedHiddenMetric = requireOwnerMetric(report.ownerMetrics, "scriptedHiddenVerificationRate")
+            val organicHiddenMetric = requireOwnerMetric(report.ownerMetrics, "organicHiddenDiscoveryRate")
+            val cadenceMetric = requireOwnerMetric(report.ownerMetrics, "sameZoneSecretVsCadenceMaxOverlap")
+            val rewardMetric = requireOwnerMetric(report.ownerMetrics, "sameZoneSecretVsRewardMaxOverlap")
             appendLine("# reportPhase4")
             appendLine()
             appendLine("- generatedAt: `${report.generatedAt}`")
@@ -396,6 +404,64 @@ object ReportPhase4Runner {
                     appendLine("- `${metric.metricId}` note: ${metric.note}")
                 }
             }
+            appendLine()
+            appendLine("## Scripted vs Organic Hidden")
+            appendLine("- sourceTask.scripted: `${scriptedHiddenInput.sourceTaskId}`")
+            appendLine("- sourceTask.organic: `${organicHiddenInput.sourceTaskId}`")
+            appendLine("- `scriptedHiddenVerificationRate`: ${scriptedHiddenMetric.currentValueText} / `${scriptedHiddenMetric.status}`")
+            appendLine("- `organicHiddenDiscoveryRate`: ${organicHiddenMetric.currentValueText} / `${organicHiddenMetric.status}`")
+            appendLine("- scripted primer cases: `${scriptedHiddenInput.kernelResult.metrics.intValue("primerActionUsedCount")}`")
+            appendLine("- organic first hidden turn P50/P90: `${formatNullableInt(organicHiddenInput.kernelResult.metrics.optionalIntValue("firstHiddenDiscoveryTurnP50"))} / ${formatNullableInt(organicHiddenInput.kernelResult.metrics.optionalIntValue("firstHiddenDiscoveryTurnP90"))}`")
+            appendLine("- organic first secret-zone entry turn P50/P90: `${formatNullableInt(organicHiddenInput.kernelResult.metrics.optionalIntValue("firstSecretZoneEntryTurnP50"))} / ${formatNullableInt(organicHiddenInput.kernelResult.metrics.optionalIntValue("firstSecretZoneEntryTurnP90"))}`")
+            appendLine("- organic released matrix: `${organicHiddenInput.kernelResult.metrics.stringList("professionIds").joinToString()} × ${organicHiddenInput.kernelResult.metrics.stringList("raceIds").joinToString()}`")
+            appendLine("- organic searchPromptRequired: `${organicHiddenInput.kernelResult.metrics.getValue("searchPromptRequired").jsonPrimitive.content}`")
+            appendLine("- organic zone discovery distribution:")
+            organicHiddenInput.kernelResult.metrics
+                .getValue("zoneDiscoveryDistribution")
+                .jsonObject
+                .toSortedMap()
+                .forEach { (zoneId, rate) ->
+                    appendLine("  - `$zoneId`: `${formatRate(rate.jsonPrimitive.content.toDouble())}` share of total discoveries")
+                }
+            appendLine("- organic secret-zone discovery distribution:")
+            organicHiddenInput.kernelResult.metrics
+                .getValue("secretZoneDiscoveryDistribution")
+                .jsonObject
+                .toSortedMap()
+                .forEach { (secretZoneId, rate) ->
+                    appendLine("  - `$secretZoneId`: `${formatRate(rate.jsonPrimitive.content.toDouble())}` share of total secret-zone entries")
+                }
+            appendLine()
+            appendLine("## Local Reward Identity")
+            appendLine("- sourceTask: `${lootInput.sourceTaskId}`")
+            appendLine("- `sameZoneSecretVsCadenceMaxOverlap`: ${cadenceMetric.currentValueText} / `${cadenceMetric.status}`")
+            appendLine("- `sameZoneSecretVsRewardMaxOverlap`: ${rewardMetric.currentValueText} / `${rewardMetric.status}`")
+            appendLine("- `localIdentityFailurePairs`: ${lootInput.kernelResult.metrics.stringList("localIdentityFailurePairs").joinToString().ifBlank { "none" }}")
+            appendLine("- `strictLocalIdentityViolations`: ${lootInput.kernelResult.metrics.getValue("strictLocalIdentityViolations").jsonArray.joinToString { violation -> violation.jsonObject.getValue("pairId").jsonPrimitive.content }.ifBlank { "none" }}")
+            appendLine("- secret reward identity summaries:")
+            lootInput.kernelResult.metrics
+                .getValue("secretProfileIdentitySummaries")
+                .jsonArray
+                .forEach { element ->
+                    val summary = element.jsonObject
+                    appendLine("  - `${summary.getValue("profileId").jsonPrimitive.content}` (`${summary.getValue("zoneId").jsonPrimitive.content}`)")
+                    appendLine("    - axes: `${summary.getValue("identityAxes").jsonArray.joinToString { axis -> axis.jsonPrimitive.content }}`")
+                    appendLine("    - rewardStructureKeys: `${summary.getValue("rewardStructureKeys").jsonArray.joinToString { rewardKey -> rewardKey.jsonPrimitive.content }.ifBlank { "none" }}`")
+                    appendLine("    - fixedItemIds: `${summary.getValue("fixedItemIds").jsonArray.joinToString { itemId -> itemId.jsonPrimitive.content }.ifBlank { "none" }}`")
+                    appendLine("    - candidateBaseIds: `${summary.getValue("candidateBaseIds").jsonArray.joinToString { baseId -> baseId.jsonPrimitive.content }}`")
+                    appendLine("    - typeWeights: `${summary.getValue("typeWeights").jsonObject.entries.joinToString { (typeId, weight) -> "$typeId=${weight.jsonPrimitive.content}" }.ifBlank { "none" }}`")
+                    appendLine("    - slotBias: `${summary.getValue("slotBias").jsonObject.entries.joinToString { (slotId, weight) -> "$slotId=${weight.jsonPrimitive.content}" }.ifBlank { "none" }}`")
+                    appendLine("    - specialTemplateTagPreference: `${summary.getValue("specialTemplateTagPreference").jsonArray.joinToString { tag -> tag.jsonPrimitive.content }.ifBlank { "none" }}`")
+                    appendLine("    - affixTagPreference: `${summary.getValue("affixTagPreference").jsonArray.joinToString { tag -> tag.jsonPrimitive.content }.ifBlank { "none" }}`")
+                    appendLine(
+                        "    - overlap: cadence=${formatNullableRate(summary["sameZoneCadenceMaxOverlap"]?.jsonPrimitive?.content?.toDoubleOrNull())}, " +
+                            "reward=${formatNullableRate(summary["sameZoneRewardMaxOverlap"]?.jsonPrimitive?.content?.toDoubleOrNull())}, " +
+                            "strictTarget=${formatNullableRate(summary["strictAllowedMaxOverlap"]?.jsonPrimitive?.content?.toDoubleOrNull())}",
+                    )
+                    appendLine(
+                        "    - strictViolationPairIds: `${summary.getValue("strictViolationPairIds").jsonArray.joinToString { pairId -> pairId.jsonPrimitive.content }.ifBlank { "none" }}`",
+                    )
+                }
             appendLine()
             appendLine("## Inputs")
             report.inputs.forEach { input ->
@@ -472,3 +538,28 @@ private fun JsonObject.stringValue(key: String): String? = get(key)?.jsonPrimiti
 private fun JsonObject.jsonObjectArray(key: String): List<JsonObject> = getValue(key).jsonArray.map(JsonElement::jsonObject)
 
 private fun formatRate(value: Double): String = String.format(java.util.Locale.US, "%.3f", value)
+
+private fun formatNullableRate(value: Double?): String = value?.let(::formatRate) ?: "n/a"
+
+private fun formatNullableInt(value: Int?): String = value?.toString() ?: "n/a"
+
+private fun JsonObject.intValue(key: String): Int = getValue(key).jsonPrimitive.content.toInt()
+
+private fun JsonObject.optionalIntValue(key: String): Int? = get(key)?.jsonPrimitive?.content?.toIntOrNull()
+
+private fun JsonObject.stringList(key: String): List<String> = getValue(key).jsonArray.map { element -> element.jsonPrimitive.content }
+
+private fun requireInput(
+    inputsByTaskId: Map<String, ReportAggregationInput>,
+    taskId: String,
+): ReportAggregationInput =
+    checkNotNull(inputsByTaskId[taskId]) {
+        "Missing reportPhase4 input for task '$taskId'."
+    }
+
+private fun requireOwnerMetric(
+    ownerMetrics: List<ReportPhase4OwnerMetric>,
+    metricId: String,
+): ReportPhase4OwnerMetric =
+    ownerMetrics.firstOrNull { metric -> metric.metricId == metricId }
+        ?: error("Missing reportPhase4 owner metric '$metricId'.")

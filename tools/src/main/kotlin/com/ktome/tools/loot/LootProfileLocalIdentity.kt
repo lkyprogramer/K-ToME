@@ -28,19 +28,23 @@ internal fun LootProfileSchemaV3.localIdentityMetadata(): LootProfileLocalIdenti
     )
 }
 
+private val CANONICAL_ZONE_ID_PREFIXES: Map<String, List<String>> =
+    linkedMapOf(
+        "greenwood_fringe" to listOf("loot.greenwood_fringe.", "loot.greenwood_hidden_cache."),
+        "deep_iron_pit" to listOf("loot.deep_iron_pit.", "loot.deep_iron_slag_cache.", "loot.deep_iron_smuggler_stash."),
+        "underground_river" to listOf("loot.underground_river.", "loot.underground_river_crystal_rift."),
+        "crystal_cavern" to listOf("loot.crystal_cavern."),
+        "abyssal_temple" to listOf("loot.abyssal_temple.", "loot.abyssal_temple_warded_archive."),
+        "grey_gate_depths" to listOf("loot.grey_gate_depths.", "loot.grey_gate."),
+        "molten_core" to listOf("loot.molten_core."),
+        "bandit_camp" to listOf("loot.bandit_camp."),
+        "elven_ruins" to listOf("loot.elven_ruins."),
+        "shattered_outpost" to listOf("loot.shattered_outpost."),
+    )
+
 internal fun canonicalZoneIdFromProfileId(profileId: String): String? =
-    when {
-        "greenwood_fringe" in profileId -> "greenwood_fringe"
-        "deep_iron_pit" in profileId || "deep_iron_" in profileId -> "deep_iron_pit"
-        "underground_river" in profileId -> "underground_river"
-        "crystal_cavern" in profileId -> "crystal_cavern"
-        "abyssal_temple" in profileId -> "abyssal_temple"
-        "grey_gate_depths" in profileId || "grey_gate" in profileId -> "grey_gate_depths"
-        "molten_core" in profileId -> "molten_core"
-        "bandit_camp" in profileId -> "bandit_camp"
-        "elven_ruins" in profileId -> "elven_ruins"
-        "shattered_outpost" in profileId -> "shattered_outpost"
-        else -> null
-    }
+    CANONICAL_ZONE_ID_PREFIXES.entries
+        .firstOrNull { (_, prefixes) -> prefixes.any(profileId::startsWith) }
+        ?.key
 
 internal fun normalizeLootTag(tag: String): String = tag.trim().lowercase()

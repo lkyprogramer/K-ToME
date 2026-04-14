@@ -22,6 +22,8 @@ import com.ktome.core.phase.Phase4ContractVersions
 import com.ktome.core.random.SplitMix64RandomSource
 import com.ktome.game.data.DataLoader
 import com.ktome.game.data.schema.LootProfileSchemaV3
+import com.ktome.game.data.schema.SchemaCatalog
+import com.ktome.game.hidden.HiddenEventRewardPayload
 import com.ktome.game.i18n.GameLocale
 import com.ktome.game.loot.LootProfileCandidatePoolResolver
 import com.ktome.game.mapgen.SchemaZoneRewardProfileResolver
@@ -309,6 +311,8 @@ internal data class LootProfileOverlapSummary(
     val sameZoneSecretVsCadencePairs: List<LootLocalOverlapPairSummary>,
     val sameZoneSecretVsRewardPairs: List<LootLocalOverlapPairSummary>,
     val localIdentityFailurePairs: List<String>,
+    val strictLocalIdentityViolations: List<LootStrictLocalIdentityViolation>,
+    val secretProfileIdentitySummaries: List<LootSecretProfileIdentitySummary>,
 ) {
     val sameZoneSecretVsCadenceMaxOverlap: Double
         get() = sameZoneSecretVsCadencePairs.maxOfOrNull(LootLocalOverlapPairSummary::overlap) ?: 0.0
@@ -345,6 +349,16 @@ internal data class LootProfileOverlapSummary(
             putJsonArray("localIdentityFailurePairs") {
                 localIdentityFailurePairs.sorted().forEach { pairId -> add(JsonPrimitive(pairId)) }
             }
+            putJsonArray("strictLocalIdentityViolations") {
+                strictLocalIdentityViolations.sortedBy(LootStrictLocalIdentityViolation::pairId).forEach { violation ->
+                    add(violation.toJson())
+                }
+            }
+            putJsonArray("secretProfileIdentitySummaries") {
+                secretProfileIdentitySummaries.sortedBy(LootSecretProfileIdentitySummary::profileId).forEach { summary ->
+                    add(summary.toJson())
+                }
+            }
         }
 }
 
@@ -366,6 +380,61 @@ internal data class LootLocalOverlapPairSummary(
             put("secretProfileId", secretProfileId)
             put("comparedProfileId", comparedProfileId)
             put("overlap", overlap)
+        }
+}
+
+internal data class LootSecretProfileIdentitySummary(
+    val profileId: String,
+    val zoneId: String,
+    val poolStrategy: String,
+    val identityAxes: List<String>,
+    val rewardStructureKeys: List<String>,
+    val fixedItemIds: List<String>,
+    val candidateBaseIds: List<String>,
+    val typeWeights: Map<String, Int>,
+    val slotBias: Map<String, Int>,
+    val specialTemplateTagPreference: List<String>,
+    val affixTagPreference: List<String>,
+    val sameZoneCadenceMaxOverlap: Double?,
+    val sameZoneRewardMaxOverlap: Double?,
+    val strictAllowedMaxOverlap: Double?,
+    val strictViolationPairIds: List<String>,
+) {
+    fun toJson(): JsonObject =
+        buildJsonObject {
+            put("profileId", profileId)
+            put("zoneId", zoneId)
+            put("poolStrategy", poolStrategy)
+            putJsonArray("identityAxes") {
+                identityAxes.forEach { axis -> add(JsonPrimitive(axis)) }
+            }
+            putJsonArray("rewardStructureKeys") {
+                rewardStructureKeys.forEach { rewardKey -> add(JsonPrimitive(rewardKey)) }
+            }
+            putJsonArray("fixedItemIds") {
+                fixedItemIds.forEach { itemId -> add(JsonPrimitive(itemId)) }
+            }
+            putJsonArray("candidateBaseIds") {
+                candidateBaseIds.forEach { baseId -> add(JsonPrimitive(baseId)) }
+            }
+            putJsonObject("typeWeights") {
+                typeWeights.toSortedMap().forEach { (typeId, weight) -> put(typeId, weight) }
+            }
+            putJsonObject("slotBias") {
+                slotBias.toSortedMap().forEach { (slotId, weight) -> put(slotId, weight) }
+            }
+            putJsonArray("specialTemplateTagPreference") {
+                specialTemplateTagPreference.forEach { tag -> add(JsonPrimitive(tag)) }
+            }
+            putJsonArray("affixTagPreference") {
+                affixTagPreference.forEach { tag -> add(JsonPrimitive(tag)) }
+            }
+            put("sameZoneCadenceMaxOverlap", sameZoneCadenceMaxOverlap)
+            put("sameZoneRewardMaxOverlap", sameZoneRewardMaxOverlap)
+            put("strictAllowedMaxOverlap", strictAllowedMaxOverlap)
+            putJsonArray("strictViolationPairIds") {
+                strictViolationPairIds.forEach { pairId -> add(JsonPrimitive(pairId)) }
+            }
         }
 }
 
@@ -582,7 +651,7 @@ private const val SPECIAL_RELATIVE_ERROR_TOLERANCE: Double = 0.25
 private const val AFFIX_BUDGET_AVERAGE_TOLERANCE: Double = 0.05
 private const val AFFIX_BUDGET_P95_TOLERANCE: Double = 0.12
 private const val CLAMP_DISTRIBUTION_TOLERANCE: Double = 0.02
-private const val LOOT_KERNEL_CACHE_VERSION: String = "uvr-pr05-loot-kernel-v2"
+private const val LOOT_KERNEL_CACHE_VERSION: String = "uvr-pr05-loot-kernel-v5"
 internal val LOOT_REPORT_LOCALE: GameLocale = GameLocale.EN_US
 private const val EQUIPMENT_PASSIVE_KIND_COUNT: Int = 9
 
@@ -660,6 +729,7 @@ internal object LootLabKernel {
         val loader = DataLoader(LOOT_REPORT_LOCALE)
         val schemaCatalog = loader.loadSchemaCatalog()
         val itemBundle = loader.loadItemBundle()
+        val strictPairCeilings = loadStrictSecretProfileMaxOverlapTargets(repoRoot)
         val rewardResolver = SchemaZoneRewardProfileResolver(schemaCatalog.zones, schemaCatalog.zoneRewardProfiles)
         val rarePassiveUniverseBySlot = buildRarePassiveUniverseBySlot(itemBundle)
         var reusedShardCount = 0
@@ -714,13 +784,19 @@ internal object LootLabKernel {
         val clampComparison = compareClampBoundary(matrices)
         val kernelRun =
             LootKernelRun(
-            matrices = matrices,
-            specialPoolSummary = specialPoolSummary,
-            clampComparison = clampComparison,
-            matrixSeeds = matrixSpecs.map(LootMatrixSpec::seedBase),
-            profileOverlapSummary = summarizeLootProfileOverlap(schemaCatalog.lootProfiles, itemBundle),
-            passiveCoverageSummary = summarizeAffixPassiveCoverage(itemBundle),
-        )
+                matrices = matrices,
+                specialPoolSummary = specialPoolSummary,
+                clampComparison = clampComparison,
+                matrixSeeds = matrixSpecs.map(LootMatrixSpec::seedBase),
+                profileOverlapSummary =
+                    summarizeLootProfileOverlap(
+                        schemaCatalog = schemaCatalog,
+                        profiles = schemaCatalog.lootProfiles,
+                        itemBundle = itemBundle,
+                        strictPairCeilings = strictPairCeilings,
+                    ),
+                passiveCoverageSummary = summarizeAffixPassiveCoverage(itemBundle),
+            )
         val header = phase4HarnessHeader(harnessId = LootBalanceLabRunner.HARNESS_ID, seedList = kernelRun.matrixSeeds, locale = LOOT_REPORT_LOCALE.id)
         Files.writeString(
             mergedKernelPath,
@@ -1099,8 +1175,10 @@ internal object LootLabKernel {
             repoRoot.resolve("game/src/main/kotlin/com/ktome/game/data"),
             repoRoot.resolve("game/src/main/kotlin/com/ktome/game/loot"),
             repoRoot.resolve("game/src/main/kotlin/com/ktome/game/mapgen"),
+            repoRoot.resolve("game/src/main/resources/data/events"),
             repoRoot.resolve("game/src/main/resources/data/items"),
             repoRoot.resolve("game/src/main/resources/data/loot"),
+            repoRoot.resolve("game/src/main/resources/data/secret-zones"),
             repoRoot.resolve("game/src/main/resources/data/world"),
         )
 
@@ -1283,14 +1361,17 @@ internal object LootLabKernel {
     }
 
     private fun summarizeLootProfileOverlap(
+        schemaCatalog: SchemaCatalog,
         profiles: List<LootProfileSchemaV3>,
         itemBundle: ItemDataBundle,
+        strictPairCeilings: Map<String, Double>,
     ): LootProfileOverlapSummary {
         val resolver = LootProfileCandidatePoolResolver(itemBundle)
         val candidateBaseIdsByProfileId =
             profiles.associate { profile ->
                 profile.id to resolver.resolve(profile).allCandidateBaseIds
             }
+        val rewardStructureKeysByProfileId = buildSecretRewardStructureKeysByProfileId(schemaCatalog)
         val overlapMatrix =
             profiles.associate { profile ->
                 val leftItems = candidateBaseIdsByProfileId.getValue(profile.id)
@@ -1331,6 +1412,11 @@ internal object LootLabKernel {
             candidateBaseIdsByProfileId.values
                 .flatMapTo(linkedSetOf()) { candidateBaseIds -> candidateBaseIds }
                 .size
+        val strictLocalIdentityViolations =
+            (sameZoneSecretVsCadencePairs + sameZoneSecretVsRewardPairs)
+                .mapNotNull { pair -> pair.toStrictLocalIdentityViolationOrNull(strictPairCeilings) }
+                .distinctBy(LootStrictLocalIdentityViolation::pairId)
+                .sortedBy(LootStrictLocalIdentityViolation::pairId)
         return LootProfileOverlapSummary(
             overlapMatrix = overlapMatrix,
             averageOverlap = overlapValues.averageOrZero(),
@@ -1341,12 +1427,24 @@ internal object LootLabKernel {
             localIdentityFailurePairs =
                 (
                     sameZoneSecretVsCadencePairs
-                        .filter { pair -> pair.overlap >= SAME_ZONE_SECRET_CADENCE_MAX_OVERLAP_TARGET }
+                        .filter { pair -> pair.exceedsGlobalLocalIdentityGuardrail() }
                         .map(LootLocalOverlapPairSummary::pairId) +
                         sameZoneSecretVsRewardPairs
-                            .filter { pair -> pair.overlap >= SAME_ZONE_SECRET_REWARD_MAX_OVERLAP_TARGET }
+                            .filter { pair -> pair.exceedsGlobalLocalIdentityGuardrail() }
                             .map(LootLocalOverlapPairSummary::pairId)
                 ).distinct(),
+            strictLocalIdentityViolations = strictLocalIdentityViolations,
+            secretProfileIdentitySummaries =
+                buildSecretProfileIdentitySummaries(
+                    profiles = profiles,
+                    metadataByProfileId = metadataByProfileId,
+                    candidateBaseIdsByProfileId = candidateBaseIdsByProfileId,
+                    rewardStructureKeysByProfileId = rewardStructureKeysByProfileId,
+                    cadencePairsBySecretProfileId = sameZoneSecretVsCadencePairs.groupBy(LootLocalOverlapPairSummary::secretProfileId),
+                    rewardPairsBySecretProfileId = sameZoneSecretVsRewardPairs.groupBy(LootLocalOverlapPairSummary::secretProfileId),
+                    strictViolationsBySecretProfileId = strictLocalIdentityViolations.groupBy(LootStrictLocalIdentityViolation::secretProfileId),
+                    strictPairCeilings = strictPairCeilings,
+                ),
         )
     }
 
@@ -1376,6 +1474,81 @@ internal object LootLabKernel {
                 }
             }
         }
+
+    private fun buildSecretProfileIdentitySummaries(
+        profiles: List<LootProfileSchemaV3>,
+        metadataByProfileId: Map<String, LootProfileLocalIdentityMetadata>,
+        candidateBaseIdsByProfileId: Map<String, Set<String>>,
+        rewardStructureKeysByProfileId: Map<String, List<String>>,
+        cadencePairsBySecretProfileId: Map<String, List<LootLocalOverlapPairSummary>>,
+        rewardPairsBySecretProfileId: Map<String, List<LootLocalOverlapPairSummary>>,
+        strictViolationsBySecretProfileId: Map<String, List<LootStrictLocalIdentityViolation>>,
+        strictPairCeilings: Map<String, Double>,
+    ): List<LootSecretProfileIdentitySummary> =
+        profiles
+            .filter { profile -> metadataByProfileId.getValue(profile.id).category == "secret" }
+            .map { profile ->
+                val metadata = metadataByProfileId.getValue(profile.id)
+                val cadencePairs = cadencePairsBySecretProfileId[profile.id].orEmpty()
+                val rewardPairs = rewardPairsBySecretProfileId[profile.id].orEmpty()
+                val strictViolations = strictViolationsBySecretProfileId[profile.id].orEmpty()
+                val rewardStructureKeys = rewardStructureKeysByProfileId[profile.id].orEmpty()
+                LootSecretProfileIdentitySummary(
+                    profileId = profile.id,
+                    zoneId = requireNotNull(metadata.zoneId) {
+                        "Secret loot profile '${profile.id}' must resolve zoneId for identity summary."
+                    },
+                    poolStrategy = profile.poolStrategy.name,
+                    identityAxes = profile.identityAxes(rewardStructureKeys),
+                    rewardStructureKeys = rewardStructureKeys,
+                    fixedItemIds = profile.itemIds.sorted(),
+                    candidateBaseIds = candidateBaseIdsByProfileId.getValue(profile.id).sorted(),
+                    typeWeights = profile.typeWeights.entries.associate { (type, weight) -> type.name to weight },
+                    slotBias = profile.slotBias.entries.associate { (slot, weight) -> slot.name to weight },
+                    specialTemplateTagPreference = profile.specialTemplateTagPreference.sorted(),
+                    affixTagPreference = profile.affixTagPreference.sorted(),
+                    sameZoneCadenceMaxOverlap = cadencePairs.maxOfOrNull(LootLocalOverlapPairSummary::overlap),
+                    sameZoneRewardMaxOverlap = rewardPairs.maxOfOrNull(LootLocalOverlapPairSummary::overlap),
+                    strictAllowedMaxOverlap = strictSecretProfileMaxOverlapTarget(profile.id, strictPairCeilings),
+                    strictViolationPairIds = strictViolations.map(LootStrictLocalIdentityViolation::pairId).sorted(),
+                )
+            }
+            .sortedBy(LootSecretProfileIdentitySummary::profileId)
+
+    private fun LootProfileSchemaV3.identityAxes(rewardStructureKeys: List<String>): List<String> =
+        buildList {
+            if (itemIds.isNotEmpty()) add("fixed_item_ids")
+            if (typeWeights.isNotEmpty()) add("type_weights")
+            if (slotBias.isNotEmpty()) add("slot_bias")
+            if (specialTemplateTagPreference.isNotEmpty()) add("special_template_bias")
+            if (affixTagPreference.isNotEmpty()) add("affix_bias")
+            if (rewardStructureKeys.any { rewardKey -> rewardKey != "LOOT_PROFILE" } || rewardStructureKeys.distinct().size > 1) {
+                add("reward_structure")
+            }
+        }
+
+    private fun buildSecretRewardStructureKeysByProfileId(schemaCatalog: SchemaCatalog): Map<String, List<String>> {
+        val rewardKeysByProfileId =
+            schemaCatalog.hiddenEvents
+                .flatMap { hiddenEvent ->
+                    val rewardKeys = hiddenEvent.rewards.map { reward -> reward.key.name }
+                    hiddenEvent.rewards.mapNotNull { reward ->
+                        val lootProfilePayload = reward.payload as? HiddenEventRewardPayload.LootProfile ?: return@mapNotNull null
+                        lootProfilePayload.lootProfileRef.id to rewardKeys
+                    }
+                }.groupBy(
+                    keySelector = Pair<String, List<String>>::first,
+                    valueTransform = Pair<String, List<String>>::second,
+                ).mapValues { (_, rewardKeyGroups) ->
+                    rewardKeyGroups
+                        .flatten()
+                        .distinct()
+                        .sorted()
+                }
+        return schemaCatalog.secretZones.associate { secretZone ->
+            secretZone.rewardProfileId.id to rewardKeysByProfileId[secretZone.rewardProfileId.id].orEmpty()
+        }
+    }
 
     private fun validateLocalIdentityPairCoverage(
         metadataByProfileId: Map<String, LootProfileLocalIdentityMetadata>,
@@ -1701,7 +1874,9 @@ object LootBalanceLabRunner {
         val summaryPath = reportDir.resolve(SUMMARY_FILE)
         if (Files.isRegularFile(summaryPath)) {
             val payload = json.parseToJsonElement(Files.readString(summaryPath)).jsonObject
-            return payload.toLootKernelRun()
+            if (payload.hasCurrentKernelContractVersion()) {
+                return payload.toLootKernelRun()
+            }
         }
         val repoRoot = VerificationCacheSupport.repoRoot()
         val cacheDirs = VerificationCacheSupport.cacheDirs("loot", repoRoot)
@@ -1710,7 +1885,7 @@ object LootBalanceLabRunner {
             return null
         }
         val payload = json.parseToJsonElement(Files.readString(mergedKernelPath)).jsonObject
-        return payload.toLootKernelRun()
+        return if (payload.hasCurrentKernelContractVersion()) payload.toLootKernelRun() else null
     }
 
     internal fun lootPreflightReportDir(repoRoot: Path = VerificationCacheSupport.repoRoot()): Path {
@@ -1742,6 +1917,13 @@ object LootBalanceLabRunner {
             passiveCoverageSummary = passiveCoverageSummary,
         )
     }
+
+    private fun JsonObject.hasCurrentKernelContractVersion(): Boolean =
+        this["kernelCache"]
+            ?.jsonObject
+            ?.get("contractVersion")
+            ?.jsonPrimitive
+            ?.contentOrNull == LOOT_KERNEL_CACHE_VERSION
 
     private fun reportDir(): Path {
         val configured = System.getProperty("ktome.phase4.loot.reportDir")
@@ -1937,6 +2119,14 @@ private fun JsonObject.toLootProfileOverlapSummary(): LootProfileOverlapSummary 
                 pair.jsonObject.toLootLocalOverlapPairSummary()
             },
         localIdentityFailurePairs = getValue("localIdentityFailurePairs").jsonArray.map { pair -> pair.jsonPrimitive.content },
+        strictLocalIdentityViolations =
+            this["strictLocalIdentityViolations"]?.jsonArray?.map { violation ->
+                violation.jsonObject.toLootStrictLocalIdentityViolation()
+            }.orEmpty(),
+        secretProfileIdentitySummaries =
+            this["secretProfileIdentitySummaries"]?.jsonArray?.map { summary ->
+                summary.jsonObject.toLootSecretProfileIdentitySummary()
+            }.orEmpty(),
     )
 
 private fun JsonObject.toLootLocalOverlapPairSummary(): LootLocalOverlapPairSummary =
@@ -1946,6 +2136,25 @@ private fun JsonObject.toLootLocalOverlapPairSummary(): LootLocalOverlapPairSumm
         secretProfileId = stringValue("secretProfileId"),
         comparedProfileId = stringValue("comparedProfileId"),
         overlap = doubleValue("overlap"),
+    )
+
+private fun JsonObject.toLootSecretProfileIdentitySummary(): LootSecretProfileIdentitySummary =
+    LootSecretProfileIdentitySummary(
+        profileId = stringValue("profileId"),
+        zoneId = stringValue("zoneId"),
+        poolStrategy = stringValue("poolStrategy"),
+        identityAxes = getValue("identityAxes").jsonArray.map { axis -> axis.jsonPrimitive.content },
+        rewardStructureKeys = this["rewardStructureKeys"]?.jsonArray?.map { rewardKey -> rewardKey.jsonPrimitive.content }.orEmpty(),
+        fixedItemIds = getValue("fixedItemIds").jsonArray.map { itemId -> itemId.jsonPrimitive.content },
+        candidateBaseIds = getValue("candidateBaseIds").jsonArray.map { baseId -> baseId.jsonPrimitive.content },
+        typeWeights = getValue("typeWeights").jsonObject.toIntMap(),
+        slotBias = getValue("slotBias").jsonObject.toIntMap(),
+        specialTemplateTagPreference = getValue("specialTemplateTagPreference").jsonArray.map { tag -> tag.jsonPrimitive.content },
+        affixTagPreference = getValue("affixTagPreference").jsonArray.map { tag -> tag.jsonPrimitive.content },
+        sameZoneCadenceMaxOverlap = this["sameZoneCadenceMaxOverlap"]?.jsonPrimitive?.contentOrNull?.toDoubleOrNull(),
+        sameZoneRewardMaxOverlap = this["sameZoneRewardMaxOverlap"]?.jsonPrimitive?.contentOrNull?.toDoubleOrNull(),
+        strictAllowedMaxOverlap = this["strictAllowedMaxOverlap"]?.jsonPrimitive?.contentOrNull?.toDoubleOrNull(),
+        strictViolationPairIds = getValue("strictViolationPairIds").jsonArray.map { pairId -> pairId.jsonPrimitive.content },
     )
 
 private fun JsonObject.toLootPassiveCoverageSummary(): LootPassiveCoverageSummary =

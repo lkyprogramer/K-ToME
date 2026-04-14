@@ -119,11 +119,14 @@ object LootProfileStructureAnalyzer {
                 if (overlap >= NEAR_SUBSET_OVERLAP_THRESHOLD) {
                     add("near_total_subset_overlap")
                 }
-                if (pairType == "secret_vs_cadence" && overlap >= SAME_ZONE_SECRET_CADENCE_MAX_OVERLAP_TARGET) {
-                    add("same_zone_secret_vs_cadence")
-                }
-                if (pairType == "secret_vs_reward" && overlap >= SAME_ZONE_SECRET_REWARD_MAX_OVERLAP_TARGET) {
-                    add("same_zone_secret_vs_reward")
+                if (exceedsGlobalLocalIdentityGuardrail(pairType = pairType, overlap = overlap)) {
+                    add(
+                        when (pairType) {
+                            SECRET_VS_CADENCE_PAIR_TYPE -> "same_zone_secret_vs_cadence"
+                            SECRET_VS_REWARD_PAIR_TYPE -> "same_zone_secret_vs_reward"
+                            else -> error("Unexpected same-zone local identity pairType '$pairType'.")
+                        },
+                    )
                 }
             }
         return LootProfilePairDiff(

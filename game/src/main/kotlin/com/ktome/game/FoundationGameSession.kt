@@ -9188,11 +9188,19 @@ class FoundationGameSession internal constructor(
             require(!hiddenEvent.optionalOnly || hiddenEventOptionalContextMatches(bindingId = bindingId, secretZoneId = secretZoneId)) {
                 "Hidden event '${hiddenEvent.id}' must only execute from OPTIONAL / SECRET paths."
             }
+            val zoneNameKey = secretZoneNameKey(secretZoneId ?: bindingId?.let(::secretZoneIdForBinding) ?: currentSecretZoneId())
+            val newlyGrantedDiscoveryTags = hiddenEvent.grantedDiscoveryTags.filterNot(activeFloorState.discoveryTags::contains)
             activeFloorState.markHiddenEventConsumed(hiddenEvent.id)
             activeFloorState.grantDiscoveryTags(hiddenEvent.grantedDiscoveryTags)
+            if (newlyGrantedDiscoveryTags.isNotEmpty()) {
+                addMessage(
+                    "log.hidden.primer.acquired",
+                    keyArg("zone", zoneNameKey),
+                )
+            }
             addMessage(
                 "log.hidden.event.triggered",
-                keyArg("zone", secretZoneNameKey(secretZoneId ?: bindingId?.let(::secretZoneIdForBinding) ?: currentSecretZoneId())),
+                keyArg("zone", zoneNameKey),
             )
             hiddenEvent.rewards.forEach { reward ->
                 when (val payload = reward.payload) {

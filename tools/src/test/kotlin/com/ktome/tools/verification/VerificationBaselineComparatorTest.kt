@@ -211,8 +211,8 @@ class VerificationBaselineComparatorTest {
                     listOf(
                         VerificationExpectedMetricRange(
                             metricId = "sameZoneSecretVsCadenceMaxOverlap",
-                            maxValue = 0.75,
-                            maxInclusive = false,
+                            maxValue = 0.50,
+                            maxInclusive = true,
                         ),
                     ),
             )
@@ -222,13 +222,13 @@ class VerificationBaselineComparatorTest {
                 domainId = "loot",
                 evaluationId = "loot.localRewardIdentity",
                 baseline = baseline,
-                actualMetrics = mapOf("sameZoneSecretVsCadenceMaxOverlap" to 0.75),
-                currentValueTexts = mapOf("sameZoneSecretVsCadenceMaxOverlap" to "0.750"),
+                actualMetrics = mapOf("sameZoneSecretVsCadenceMaxOverlap" to 0.50),
+                currentValueTexts = mapOf("sameZoneSecretVsCadenceMaxOverlap" to "0.500"),
             )
 
-        assertEquals(EvaluationVerdict.FAIL, result.verdict)
-        assertEquals(EvaluationEntryStatus.UNEXPECTED_REGRESSION, result.entries.single().status)
-        assertEquals("< 0.750000", result.entries.single().targetText)
+        assertEquals(EvaluationVerdict.PASS, result.verdict)
+        assertEquals(EvaluationEntryStatus.PASS, result.entries.single().status)
+        assertEquals("<= 0.500000", result.entries.single().targetText)
     }
 
     @Test
@@ -296,7 +296,7 @@ class VerificationBaselineComparatorTest {
         val cadenceRange = baseline.expectedMetricRange("sameZoneSecretVsCadenceMaxOverlap")
         val rewardRange = baseline.expectedMetricRange("sameZoneSecretVsRewardMaxOverlap")
 
-        assertEquals(false, cadenceRange?.maxInclusive)
-        assertEquals(false, rewardRange?.maxInclusive)
+        assertEquals(true, cadenceRange?.maxInclusive)
+        assertEquals(true, rewardRange?.maxInclusive)
     }
 }

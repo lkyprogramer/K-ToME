@@ -1,7 +1,13 @@
 package com.ktome.tools.phase4
 
+import com.ktome.tools.loot.SECRET_VS_CADENCE_PAIR_TYPE
+import com.ktome.tools.loot.SECRET_VS_REWARD_PAIR_TYPE
+import com.ktome.tools.loot.formatStrictAwareLocalIdentityCurrentValue
+import com.ktome.tools.loot.toLootStrictLocalIdentityViolation
+import com.ktome.tools.loot.withStrictLocalIdentityViolations
 import com.ktome.tools.verification.BaselineMode
 import com.ktome.tools.verification.EvaluationEntry
+import com.ktome.tools.verification.EvaluationEntryStatus
 import com.ktome.tools.verification.EvaluationResult
 import com.ktome.tools.verification.EvaluationVerdict
 import com.ktome.tools.verification.KernelResult
@@ -402,7 +408,18 @@ internal object Phase4AggregationInputRunner {
                                 put("discoveryWithoutPrimerCount", task.metrics.getValue("discoveryWithoutPrimerCount"))
                                 put("searchActionUseRate", task.metrics.getValue("searchActionUseRate"))
                                 put("secretZoneEntryRate", task.metrics.getValue("secretZoneEntryRate"))
+                                put("firstHiddenDiscoveryTurnP50", task.metrics.getValue("firstHiddenDiscoveryTurnP50"))
+                                put("firstHiddenDiscoveryTurnP90", task.metrics.getValue("firstHiddenDiscoveryTurnP90"))
+                                put("firstSecretZoneEntryTurnP50", task.metrics.getValue("firstSecretZoneEntryTurnP50"))
+                                put("firstSecretZoneEntryTurnP90", task.metrics.getValue("firstSecretZoneEntryTurnP90"))
+                                put("comboCount", task.metrics.getValue("comboCount"))
+                                put("seedsPerZoneCombo", task.metrics.getValue("seedsPerZoneCombo"))
+                                put("searchPromptRequired", task.metrics.getValue("searchPromptRequired"))
+                                put("reactiveSearchOnly", task.metrics.getValue("reactiveSearchOnly"))
                                 put("zones", task.metrics.getValue("zones"))
+                                put("combinations", task.metrics.getValue("combinations"))
+                                put("zoneDiscoveryDistribution", task.metrics.getValue("zoneDiscoveryDistribution"))
+                                put("secretZoneDiscoveryDistribution", task.metrics.getValue("secretZoneDiscoveryDistribution"))
                             },
                     ),
                 detailsByMetricId = mapOf(metricId to task.metrics),
@@ -412,7 +429,10 @@ internal object Phase4AggregationInputRunner {
             presentation =
                 MetricPresentation(
                     targetText = Phase4OwnerMetricTargets.targetText(metricId, range),
-                    note = "probeBot=${task.metrics.stringValue("probeBotId")}, scripted=false, observationOnly=true",
+                    note =
+                        "probeBot=${task.metrics.stringValue("probeBotId")}, scripted=false, observationOnly=true, " +
+                            "promptRequired=${task.metrics.booleanValue("searchPromptRequired")}, " +
+                            "combos=${task.metrics.intValue("comboCount")}, seedsPerCombo=${task.metrics.intValue("seedsPerZoneCombo")}",
                 ),
         )
     }
@@ -425,6 +445,14 @@ internal object Phase4AggregationInputRunner {
         val rewardMetricId = "sameZoneSecretVsRewardMaxOverlap"
         val cadenceOverlap = task.metrics.doubleValue(cadenceMetricId)
         val rewardOverlap = task.metrics.doubleValue(rewardMetricId)
+        val strictViolations =
+            task.metrics.getValue("strictLocalIdentityViolations").jsonArray.map { violation ->
+                violation.jsonObject.toLootStrictLocalIdentityViolation()
+            }
+        val cadenceStrictViolations =
+            strictViolations.filter { violation -> violation.pairType == SECRET_VS_CADENCE_PAIR_TYPE }
+        val rewardStrictViolations =
+            strictViolations.filter { violation -> violation.pairType == SECRET_VS_REWARD_PAIR_TYPE }
         val cadenceRange = baseline.requiredMetric(cadenceMetricId)
         val rewardRange = baseline.requiredMetric(rewardMetricId)
         val result =
@@ -439,8 +467,8 @@ internal object Phase4AggregationInputRunner {
                     ),
                 currentValueTexts =
                     mapOf(
-                        cadenceMetricId to formatRatio(cadenceOverlap),
-                        rewardMetricId to formatRatio(rewardOverlap),
+                        cadenceMetricId to formatStrictAwareLocalIdentityCurrentValue(cadenceOverlap, cadenceStrictViolations),
+                        rewardMetricId to formatStrictAwareLocalIdentityCurrentValue(rewardOverlap, rewardStrictViolations),
                     ),
                 currentValueElements =
                     mapOf(
@@ -449,12 +477,14 @@ internal object Phase4AggregationInputRunner {
                                 put("maxOverlap", task.metrics.getValue(cadenceMetricId))
                                 put("pairs", task.metrics.getValue("sameZoneSecretVsCadencePairs"))
                                 put("localIdentityFailurePairs", task.metrics.getValue("localIdentityFailurePairs"))
+                                put("strictLocalIdentityViolations", task.metrics.getValue("strictLocalIdentityViolations"))
                             },
                         rewardMetricId to
                             buildJsonObject {
                                 put("maxOverlap", task.metrics.getValue(rewardMetricId))
                                 put("pairs", task.metrics.getValue("sameZoneSecretVsRewardPairs"))
                                 put("localIdentityFailurePairs", task.metrics.getValue("localIdentityFailurePairs"))
+                                put("strictLocalIdentityViolations", task.metrics.getValue("strictLocalIdentityViolations"))
                             },
                     ),
                 detailsByMetricId =
@@ -463,13 +493,20 @@ internal object Phase4AggregationInputRunner {
                         rewardMetricId to task.metrics,
                     ),
             )
-        return result.withEntryPresentations(
+        val strictAwareResult =
+            result.withStrictLocalIdentityViolations(
+                cadenceMetricId = cadenceMetricId,
+                rewardMetricId = rewardMetricId,
+                violations = strictViolations,
+            )
+        return strictAwareResult.withEntryPresentations(
             mapOf(
                 cadenceMetricId to
                     MetricPresentation(
                         targetText = Phase4OwnerMetricTargets.targetText(cadenceMetricId, cadenceRange),
                         note =
                             "pairCount=${task.metrics.getValue("sameZoneSecretVsCadencePairs").jsonArray.size}, " +
+                                "strictViolations=${cadenceStrictViolations.size}, " +
                                 "overlap = |A ∩ B| / min(|A|, |B|)",
                     ),
                 rewardMetricId to
@@ -477,7 +514,8 @@ internal object Phase4AggregationInputRunner {
                         targetText = Phase4OwnerMetricTargets.targetText(rewardMetricId, rewardRange),
                         note =
                             "pairCount=${task.metrics.getValue("sameZoneSecretVsRewardPairs").jsonArray.size}, " +
-                                "failurePairs=${task.metrics.getValue("localIdentityFailurePairs").jsonArray.size}",
+                                "failurePairs=${task.metrics.getValue("localIdentityFailurePairs").jsonArray.size}, " +
+                                "strictViolations=${rewardStrictViolations.size}",
                     ),
             ),
         )
@@ -827,6 +865,8 @@ private fun JsonObject.intValue(key: String): Int = getValue(key).jsonPrimitive.
 
 private fun JsonObject.doubleValue(key: String): Double = getValue(key).jsonPrimitive.content.toDouble()
 
+private fun JsonObject.booleanValue(key: String): Boolean = getValue(key).jsonPrimitive.content.toBooleanStrict()
+
 private fun JsonObject.stringValue(key: String): String? = get(key)?.jsonPrimitive?.content
 
 private fun JsonObject.stringList(key: String): List<String> =
@@ -862,5 +902,3 @@ private fun formatSignedPercent(value: Double): String =
     } else {
         String.format(Locale.US, "%.2f%%", value * 100.0)
     }
-
-private fun formatRatio(value: Double): String = String.format(Locale.US, "%.3f", value)

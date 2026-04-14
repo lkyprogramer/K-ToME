@@ -20,7 +20,7 @@
 ## 0. PR-06 后的验证约束
 
 1. 默认开发回路先跑 `./gradlew verifyChanged`。
-2. 本 PR 的默认联合验收固定为：`hiddenContentHarness`、`whiteBoxHiddenContent`、`whiteBoxLoot`、`verifyOwner`、`phase4Report`。
+2. 本 PR 的默认联合验收固定为：`organicHiddenProbe`、`hiddenContentHarness`、`whiteBoxHiddenContent`、`whiteBoxLoot`、`verifyOwner`、`phase4Report`。
 3. `phase4Report` 的 canonical 输出路径固定为 `tools/build/reports/verification/phase4/report-phase4-summary.{json,md}`。
 4. 只有当本 PR 改到 verification contract、baseline、aggregation schema 或 report schema 时，才额外执行 `phase4LegacyReportOnly + reportPhase4` 做显式 parity 对账。
 5. legacy `tools/build/reports/phase4/phase4-summary.{json,md}` 在本 PR 中只属于手工 fallback/historical artifact，不得再作为默认验收产物。
