@@ -16,6 +16,25 @@
 2. mutation / terrain / search / passive 的关键信息更多沉在 inspect / log 的二级通道
 3. 当前版本已经“可解释”，但还没足够“低摩擦可感知”
 
+## 0. PR-06 后的验证约束
+
+1. 默认开发回路先跑 `./gradlew verifyChanged`。
+2. 本 PR 的默认联合验收固定为：`whiteBoxMapgen`、`clientSmoke`、`goldenScreenshot`、`verifyOwner`、`phase4Report`。
+3. `phase4Report` 的 canonical 输出路径固定为 `tools/build/reports/verification/phase4/report-phase4-summary.{json,md}`。
+4. 只有当本 PR 改到 verification contract、baseline、aggregation schema 或 report schema 时，才额外执行 `phase4LegacyReportOnly + reportPhase4` 做显式 parity 对账。
+5. legacy `tools/build/reports/phase4/phase4-summary.{json,md}` 在本 PR 中只属于手工 fallback/historical artifact，不得再作为默认验收产物。
+6. 提交或审查本 PR 时，默认证据必须直接引用 canonical `report-phase4-summary.{json,md}` 与对应 white-box / golden artifact 中的段落或 metric：
+   - `greenwood_fringe` replay hook 相关 mapgen 差异指标
+   - terrain / mutation / hidden / passive 前台摘要对应截图或 golden 结果
+   - `clientSmoke` / `goldenScreenshot` 的 canonical 产物或差异结论
+   不能只报命令 exit code，也不能只贴 legacy `phase4-summary` 快照。
+7. 若本 PR 变更了 replayability/readability 相关 owner metric、render snapshot 字段、golden 语义或 report schema，除跑显式 parity 外，还必须在同一提交同步更新：
+   - `docs/review/phase4/v2opt/README.md`
+   - `docs/review/phase4/v2opt/2026-04-11-phase4-v2opt-verified-next-pr-plan.md`
+   - 若影响 Phase 4 正式 gate 口径，再同步 `docs/phase4/2026-03-13-phase4-verification-checklist.md`、`docs/phase4/roadmap.md` 与相邻 authority docs
+8. 若本 PR 需要新增或调整 replayability/readability 相关 aggregate/report task、兼容 alias 或 report-only 入口，必须复用统一 helper / declarative generation path；不得复制新的 `tasks.register<Test>` family。
+9. 相关 build contract test 必须直接断言 helper 参数与 canonical/parity/fallback 语义；若 canonical 与 parity 共用输出目录，plain `phase4Report` 后不得残留 parity-only artifact。
+
 ---
 
 ## 1. 阶段目标
@@ -264,6 +283,7 @@ game/src/main/resources/data/mapgen/zones/index.yaml
 ./gradlew whiteBoxMapgen
 ./gradlew clientSmoke
 ./gradlew goldenScreenshot
+./gradlew verifyOwner
 ./gradlew phase4Report
 ```
 

@@ -22,9 +22,11 @@
 
 1. `Phase 5` 新 task 不得直接以 `Test + @Tag + build.gradle.kts` 手工 glue 作为唯一注册方式。
 2. `Phase 5` 的 domain、tier、node DAG、impact scope、artifact 路径、baseline/metric 归属、phase aggregate 收录关系，必须只在一处声明。
-3. `reportPhase5` 是 `Phase 5` 的唯一 phase aggregate 入口；`reportPhase5Only` 是 artifact-only rebuild alias。
-4. `contentPackHarness`、`longRunLab`、`LootBalanceLab` 等现有 `Phase 3/4` 产物只能作为 **legacy upstream provider** 被声明引用，不得在 `Phase 5` 再复制第二套 runner。
-5. 后续 `Phase 5` 新功能或 `Phase 5` 之后的系统开发，若命中 verification/report/gate，必须继续复用这一套 catalog 规范。
+3. `reportPhase5` 是 `Phase 5` 的唯一 phase aggregate 入口，canonical 产物路径固定为 `tools/build/reports/verification/phase5/report-phase5-summary.{json,md}`；`reportPhase5Only` 是 artifact-only rebuild alias。
+4. 若较早的跨 phase 文档仍出现 `phase5Report` 命名，以本文件及 `docs/phase5/*` 当前权威链为准；`Phase 5` 不再引入平行 phase report 语义。
+5. 若未来需要兼容 alias、fallback 或 sibling aggregate/report task，必须从同一 shared helper / declarative generation path 派生；不得复制新的 `tasks.register<Test>` family。
+6. `contentPackHarness`、`longRunLab`、`LootBalanceLab` 等现有 `Phase 3/4` 产物只能作为 **legacy upstream provider** 被声明引用，不得在 `Phase 5` 再复制第二套 runner。
+7. 后续 `Phase 5` 新功能或 `Phase 5` 之后的系统开发，若命中 verification/report/gate，必须继续复用这一套 catalog 规范。
 
 ---
 
@@ -48,6 +50,10 @@
    - 统计域与长时域默认按 shard cache 设计，而不是先写单体 runner 再补复用。
    - baseline-only / evaluation-only / report-only 场景必须是 first-class path。
    - fingerprint 必须覆盖真实 runtime closure，同时避免把 report-only 变更混进 kernel key。
+6. `PR-06`
+   - sibling aggregate/report task 若只在 `taskName / includeTag / outputDir / aggregateRole / compatAlias` 这类显式参数上有差异，必须复用 shared generation path，而不是复制整组 Gradle DSL。
+   - canonical aggregate、artifact-only rebuild alias 与未来可能存在的 compat/fallback 语义必须显式分离，默认 gate 不得残留 alias-only artifact。
+   - build contract test 必须优先校验生成参数与 semantic invariant，不得把“大段 DSL 文本切片”当长期 contract。
 
 换句话说，`Phase 5` 不只是采用新命名，而是必须继承：
 
@@ -150,7 +156,9 @@ config/verification/catalog-v2/
 
 1. `reportPhase5` 是正式 aggregate gate。
 2. `reportPhase5Only` 只做 artifact-only rebuild，不触发 producer。
-3. 不再引入 `phase5Report` 作为平行公开命名；若未来需要兼容 alias，也只能是 `reportPhase5` 的别名，不能成为第二套语义。
+3. canonical 产物路径固定为 `tools/build/reports/verification/phase5/report-phase5-summary.{json,md}`。
+4. 不再引入 `phase5Report` 作为平行公开命名；若未来需要兼容 alias，也只能是 `reportPhase5` 的别名，不能成为第二套语义。
+5. 若未来兼容 alias 或 fallback task 与 canonical 共享输出目录，则 plain `reportPhase5` 后不得残留 alias-only artifact；否则视为 phase gate contract 未收口。
 
 ### 4.2 Inputs
 
@@ -244,6 +252,8 @@ legacy upstream 只允许通过 catalog 中的 `legacyUpstreamRefs` 声明接入
 9. checklist 命令与验收项
 10. cache layering / fingerprint policy
 11. artifact-only rebuild behavior
+12. shared generation path / helper ownership
+13. semantic build contract test
 
 ### 5.3 适用于 Phase 5 之后的新功能
 

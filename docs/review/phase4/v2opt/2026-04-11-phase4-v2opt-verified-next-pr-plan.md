@@ -9,6 +9,17 @@
   - `docs/phase4/2026-03-13-phase4-pr-02-hybrid-topology-pattern-vault-and-biome-family.md`
   - `docs/phase4/2026-03-13-phase4-pr-06-terrain-interaction-elite-mutation-and-boss-variant.md`
 
+## 0. PR-06 后的执行约束
+
+1. 本文档后续所有 `V2OPT-PR` 的默认开发回路先跑 `./gradlew verifyChanged`。
+2. 默认联合验收固定为：命中的 domain task + `./gradlew verifyOwner` + `./gradlew phase4Report`。
+3. `phase4Report` 的 canonical 产物固定为 `tools/build/reports/verification/phase4/report-phase4-summary.{json,md}`。
+4. `reportPhase4` 只在 verification contract、baseline、aggregation 或 report schema 改动时，作为显式 parity 对账入口执行。
+5. `phase4LegacyReport` / `phase4LegacyReportOnly` 只保留为手工 fallback；下面若引用 `phase4-summary.{json,md}`，均视为历史证据，不是新的默认验收产物。
+6. 若后续 `V2OPT-PR` 需要新增 sibling aggregate/report task、兼容 alias 或 report-only rebuild 入口，必须复用统一 helper / declarative generation path；不得在 `tools/build.gradle.kts` 里再复制一整组近似 `tasks.register<Test>`。
+7. 对这类 task family 的 build contract test，必须直接校验 helper 参数与 canonical/parity/fallback 语义，不得把“每个 task 各有一大段 DSL 文本”本身当成长期 contract。
+8. 若 canonical aggregate 与 parity 入口共享同一输出目录，默认 canonical 运行后不得残留 parity-only artifact；否则视为 gate contract 未收口。
+
 ---
 
 ## 1. 直接结论
@@ -76,6 +87,7 @@
 2. **不回到“先加内容数量再看体验”的旧路。** 后续 PR 必须每个都带 owner metric。
 3. **不再把 Phase 4 的 follow-up 和 Phase 5 的大系统混在一起。** content pack runtime op、正式 death analysis、更多 boss variant 数量扩张都不在本轮主计划里。
 4. **`V2OPT-PR-01 ~ 05` 全部不再开新图片/音频生成批次。** 当前 repo 已有 `Phase4 PR05/06/07` 与 `OPT PR02/05` 落下的 item、terrain/mutation、hidden/secret canonical 资源族；这轮 follow-up 只允许复用、接线和前台化，不再新增一套 raw asset plan。
+5. **默认 gate 口径以 `verifyOwner + phase4Report` 为准。** 不再接受“只贴一份 legacy `phase4-summary` 快照”作为开发完成证据。
 
 ---
 
@@ -117,13 +129,13 @@
    - 保留 aggregate gate
    - 增加 combat-sampled zone 的 `perZoneEncounterLowerBound`
    - 明确 `crystal_cavern` 为 combat sample、不是“升级 zone 全覆盖证明”
-5. 把所有体验指标的 owner、公式、阈值和 note 收进 `phase4-summary.md/json`，禁止继续靠审查文本口头解释。
+5. 把所有体验指标的 owner、公式、阈值和 note 收进 canonical `report-phase4-summary.md/json`，禁止继续靠审查文本口头解释。
 
 **建议验收**
 
-1. `phase4-summary.md` 明确把 hidden 的 scripted 与 organic 分成两列。
-2. `phase4-summary.md` 新增 terminal build identity 段。
-3. `phase4-summary.md` 新增 local reward overlap 段。
+1. `report-phase4-summary.md` 明确把 hidden 的 scripted 与 organic 分成两列。
+2. `report-phase4-summary.md` 新增 terminal build identity 段。
+3. `report-phase4-summary.md` 新增 local reward overlap 段。
 4. `terrainInteractionBatch` 的 markdown 或 JSON 里明确写出 combat-sampled zone 列表与排除理由。
 
 **推荐命令**
@@ -133,6 +145,7 @@
 ./gradlew whiteBoxHiddenContent
 ./gradlew terrainInteractionBatch
 ./gradlew longRunLab
+./gradlew verifyOwner
 ./gradlew phase4Report
 ```
 
@@ -191,6 +204,7 @@
 ./gradlew lootBalanceLab
 ./gradlew soloClearLab
 ./gradlew longRunLab
+./gradlew verifyOwner
 ./gradlew phase4Report
 ```
 
@@ -251,6 +265,7 @@
 ./gradlew hiddenContentHarness
 ./gradlew whiteBoxHiddenContent
 ./gradlew whiteBoxLoot
+./gradlew verifyOwner
 ./gradlew phase4Report
 ```
 
@@ -296,6 +311,7 @@
 ```bash
 ./gradlew terrainInteractionBatch
 ./gradlew bossHarness
+./gradlew verifyOwner
 ./gradlew phase4Report
 ```
 
@@ -342,6 +358,7 @@
 ./gradlew whiteBoxMapgen
 ./gradlew clientSmoke
 ./gradlew goldenScreenshot
+./gradlew verifyOwner
 ./gradlew phase4Report
 ```
 

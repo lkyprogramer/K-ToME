@@ -19,6 +19,12 @@
 ./gradlew reportPhase5
 ```
 
+说明：
+
+1. `reportPhase5` 是 `Phase 5` 的 canonical aggregate gate，默认产物路径固定为 `tools/build/reports/verification/phase5/report-phase5-summary.{json,md}`。
+2. `reportPhase5Only` 只做 artifact-only rebuild，不触发 producer；若较早文档仍出现 `phase5Report` 命名，以本 checklist 与 `Phase 5` unified verification spec 为准。
+3. 若后续为 `Phase 5` 新增 sibling aggregate/report alias 或 fallback 入口，必须复用 shared helper / declarative generation path，并用 semantic build contract test 锁定 canonical 行为。
+
 ### 必须检查的结果
 
 1. `tacticalAiHarness`
@@ -59,6 +65,7 @@
    - 必须收录全部 `Phase 5` owned domains 与声明的 legacy upstream inputs
    - summary 必须保留 `failedGateCount / ownerMetricCount / artifactReuseRate / domainCacheHitRate / releaseReadiness`
    - owner metric catalog、legacy upstream inventory 与 release summary 最小字段必须可追溯
+   - canonical summary / markdown 默认位于 `tools/build/reports/verification/phase5/report-phase5-summary.{json,md}`
 
 ## 2. Fixed-Seed Harness Verification
 
@@ -177,3 +184,4 @@
 11. 安装包验收结果
 12. `runSemanticHash / runTraceHash / aiTraceHash`
 13. `reportPhase5` summary / markdown 路径与对应 owner metric 结论
+   - 默认检查 `tools/build/reports/verification/phase5/report-phase5-summary.{json,md}`

@@ -1326,7 +1326,7 @@ data class HarnessReportHeader(
    - `whiteBoxHiddenContent`
    - `whiteBoxContentPack`
 5. `phase4Report` 现在额外收口四类 owner metric：`scripted vs organic hidden`、`same-zone reward identity`、`terminal build identity`、`terrain combat sample contract`。
-6. 聚合输出落到 `tools/build/reports/phase4/phase4-summary.json`。
+6. 默认 canonical 聚合输出落到 `tools/build/reports/verification/phase4/report-phase4-summary.{json,md}`；legacy `tools/build/reports/phase4/phase4-summary.{json,md}` 只保留给 `phase4LegacyReport` / `phase4LegacyReportOnly` 手工 fallback，`reportPhase4` 只用于显式 parity 对账。
 
 ## 6. 测试与自证
 

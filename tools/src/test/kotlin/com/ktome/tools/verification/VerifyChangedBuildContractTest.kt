@@ -23,6 +23,22 @@ class VerifyChangedBuildContractTest {
 
         assertEquals(expectedTaskPaths, actualTaskPaths.toSet())
         assertFalse(actualTaskPaths.contains(":tools:phase4ReportOnly"))
+        assertFalse(actualTaskPaths.contains(":tools:phase4LegacyReport"))
+        assertFalse(actualTaskPaths.contains(":tools:phase4LegacyReportOnly"))
+    }
+
+    @Test
+    fun `root verifyOwner task paths stay aligned with routed phase4 owner domains`() {
+        val buildScript = Files.readString(repoRoot().resolve("build.gradle.kts"))
+        val actualTaskPaths = buildScript.readStringList(name = "verifyOwnerTaskPaths")
+        val expectedTaskPaths =
+            VerificationTaskRegistry
+                .registeredImpactSpecs()
+                .filter { spec -> "phase4" in spec.phaseIds }
+                .flatMap { spec -> spec.ownerTaskPaths }
+                .toSet()
+
+        assertEquals(expectedTaskPaths, actualTaskPaths.toSet())
     }
 
     private fun repoRoot(): Path =

@@ -179,7 +179,7 @@ K-ToME 不能继续把“白盒验证”维持在“人工跑几局、目视确�
 
 ```mermaid
 flowchart TD
-    A["Phase / Checklist Gate"] --> B["Root Gradle Alias<br/>phase4Report / phase5Report / whiteBoxVerify"]
+    A["Phase / Checklist Gate"] --> B["Root Gradle Alias<br/>phase4Report / reportPhase5 / whiteBoxVerify"]
     B --> C["Domain Runner<br/>whiteBoxMapgen / whiteBoxSolvability / whiteBoxTacticalAi / ..."]
     C --> D["Shared White-Box Framework<br/>Corpus + Rule + Artifact + Report Contract"]
     D --> E["Artifacts / Reports<br/>summary.json / cases.jsonl / report.md / artifacts/"]
@@ -211,9 +211,9 @@ flowchart TD
 正式约束：
 
 1. `whiteBoxVerify` 只是开发便利入口，不是 release gate 唯一入口。
-2. 当前主干已落地 `whiteBoxMapgen / whiteBoxSolvability / whiteBoxVerify / phase4Report`。
-3. 当前 `phase4Report` 已聚合 `mapgenSmoke / solvabilityHarness / bossHarness / whiteBoxMapgen / whiteBoxSolvability`，后续再继续吸收其余 `Phase 4` domain。
-4. `Phase 5` 应建立 `phase5Report` 或等价聚合入口。
+2. 当前主干已落地 `whiteBoxMapgen / whiteBoxSolvability / whiteBoxVerify / phase4Report`，其中 `phase4Report` 已在 `PR-06` 切为默认 canonical aggregate gate。
+3. 当前 `phase4Report` 默认以 artifact-only 方式聚合全部已迁 `Phase 4` domain，产物落到 `tools/build/reports/verification/phase4/report-phase4-summary.{json,md}`；legacy `tools/build/reports/phase4/phase4-summary.{json,md}` 只保留给 `phase4LegacyReport*` 手工 fallback，`reportPhase4` 只作为显式 parity 对账入口。
+4. `Phase 5` 现在以 `reportPhase5` 作为 canonical aggregate gate，默认产物路径为 `tools/build/reports/verification/phase5/report-phase5-summary.{json,md}`；若较早的跨 phase 文档仍出现 `phase5Report` 命名，以 `docs/phase5/*` 当前权威链为准。
 
 #### Domain Runner
 
@@ -760,12 +760,12 @@ AI 必须遵守：
 | `whiteBoxLoot` | 差异性域 | `Phase 4` 后续 | rollout table、budget delta、rarity 分布 | `phase4Report` |
 | `whiteBoxHiddenContent` | 差异性域 | `Phase 4` 后续 | hidden trigger 表、secret zone 发现摘要 | `phase4Report` |
 | `whiteBoxContentPack` | 差异性域 | `Phase 4` 后续 | precedence 诊断、lint 结果、fixture 报告 | `phase4Report` |
-| `whiteBoxTacticalAi` | 固定场景域 | `Phase 5` | 决策表、候选评分、目标切换、telegraph 响应 | `phase5Report` |
-| `whiteBoxReplay` | 固定场景域 | `Phase 5` | semantic/trace hash、事件计数、death analysis 对照 | `phase5Report` |
-| `whiteBoxPerf` | 固定场景域 | `Phase 5` | percentile、spike、budget 摘要 | `phase5Report` |
-| `whiteBoxSoak` | 固定场景域 | `Phase 5` | drift、GC、句柄、超时与异常摘要 | `phase5Report` |
-| `whiteBoxLocalization` | 固定场景域 | `Phase 5` | unresolved key / placeholder / truncation 表 | `phase5Report` |
-| `whiteBoxAccessibility` | 固定场景域 | `Phase 5` | contrast / keyboard / non-color cue violation 表 | `phase5Report` |
+| `whiteBoxTacticalAi` | 固定场景域 | `Phase 5` | 决策表、候选评分、目标切换、telegraph 响应 | `reportPhase5` |
+| `whiteBoxReplay` | 固定场景域 | `Phase 5` | semantic/trace hash、事件计数、death analysis 对照 | `reportPhase5` |
+| `whiteBoxPerf` | 固定场景域 | `Phase 5` | percentile、spike、budget 摘要 | `reportPhase5` |
+| `whiteBoxSoak` | 固定场景域 | `Phase 5` | drift、GC、句柄、超时与异常摘要 | `reportPhase5` |
+| `whiteBoxLocalization` | 固定场景域 | `Phase 5` | unresolved key / placeholder / truncation 表 | `reportPhase5` |
+| `whiteBoxAccessibility` | 固定场景域 | `Phase 5` | contrast / keyboard / non-color cue violation 表 | `reportPhase5` |
 
 说明：
 
@@ -790,7 +790,7 @@ AI 必须遵守：
    - `whiteBoxVerify`
 3. **后续 phase gate**
    - `phase4Report`
-   - `phase5Report`
+   - `reportPhase5`
 
 ### 14.2 gate 关系
 
@@ -806,9 +806,9 @@ AI 必须遵守：
 3. `phase4Report`
    - 后续继续吸收与 `Phase 4` 相关的其余 domain
    - 包括 `loot / terrain interaction / hidden content / content pack`
-4. `phase5Report`
-   - 需要在 `Phase 5` 正式建立
-   - 聚合 tactical/replay/perf/qa 相关 white-box 结果
+4. `reportPhase5`
+   - 是 `Phase 5` 当前 canonical aggregate gate
+   - 聚合 tactical/replay/perf/qa 相关 white-box 结果，默认产物位于 `tools/build/reports/verification/phase5/report-phase5-summary.{json,md}`
 
 ### 14.3 报告目录兼容性
 

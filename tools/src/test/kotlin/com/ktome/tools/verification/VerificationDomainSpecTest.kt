@@ -79,7 +79,7 @@ class VerificationDomainSpecTest {
 
         assertEquals(VerificationTier.OWNER, contentPack.defaultTier)
         assertEquals(VerificationNodeKind.LEGACY_JUNIT_CLASS_SET, contentPack.resolveNode(VerificationTier.OWNER).nodeKind)
-        assertEquals(listOf(":tools:contentPackHarness"), contentPack.ownerTaskPaths)
+        assertEquals(listOf(":tools:contentPackHarness", ":tools:whiteBoxContentPack"), contentPack.ownerTaskPaths)
         assertTrue(contentPack.preflightTaskPaths.contains(":tools:verifyContentPackPreflight"))
     }
 

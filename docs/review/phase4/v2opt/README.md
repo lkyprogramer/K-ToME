@@ -41,6 +41,17 @@ V2OPT-PR-05
 3. 不把 `Phase 5` 事项提前塞回 `Phase 4` follow-up。
 4. 不接受“先做内容，验证以后补”的中间态。
 
+## PR-06 之后的统一验证约束
+
+1. `phase4Report` 现在是默认 canonical aggregate gate，产物路径固定为 `tools/build/reports/verification/phase4/report-phase4-summary.{json,md}`。
+2. `verifyOwner` 是后续 `V2OPT` PR 的默认联合验收入口；默认开发回路先跑 `verifyChanged`，提交前跑 `verifyOwner + phase4Report`。
+3. `reportPhase4` 只用于 verification contract、baseline、aggregation schema 变更后的显式 parity 对账；它不是默认日常 gate。
+4. `phase4LegacyReport` / `phase4LegacyReportOnly` 只保留为手工 fallback；后续 PR 文档不得再把 legacy `phase4-summary.{json,md}` 写成默认验收产物。
+5. 本目录里凡是引用 `phase4-summary.{json,md}` 的旧报告快照，都只代表历史证据，不代表新的默认输出路径。
+6. 后续若需要新增或调整 sibling aggregate/report task、alias 或 report-only 入口，必须复用统一 helper / declarative generation path，不得再复制一组新的 `tasks.register<Test>` block。
+7. 相关 build contract test 必须直接断言 helper 参数与 canonical/parity/fallback 语义，不能再把“保留多段近似 DSL 文本”当成长期 contract。
+8. 若 canonical aggregate 与 parity 入口共用输出目录，普通 canonical 运行后不得残留 parity-only artifact；否则该 PR 不算完成默认 gate 约束。
+
 ## 资源结论
 
 `V2OPT` 这轮 follow-up **不再开新的图片/音频生成批次**。  

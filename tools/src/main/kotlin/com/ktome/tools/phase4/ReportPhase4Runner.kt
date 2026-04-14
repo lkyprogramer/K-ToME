@@ -166,14 +166,18 @@ object ReportPhase4Runner {
         val markdownPath = outputDir.resolve(MARKDOWN_FILE)
         Files.writeString(summaryPath, reportPhase4Json.encodeToString(ReportPhase4Aggregate.serializer(), aggregate))
         Files.writeString(markdownPath, renderMarkdown(aggregate))
+        val legacyComparisonPath = outputDir.resolve(LEGACY_COMPARISON_FILE)
         val comparisonPath =
             legacyComparison?.let { comparison ->
-                outputDir.resolve(LEGACY_COMPARISON_FILE).also { path ->
+                legacyComparisonPath.also { path ->
                     Files.writeString(
                         path,
                         reportPhase4Json.encodeToString(ReportPhase4LegacyComparison.serializer(), comparison),
                     )
                 }
+            } ?: run {
+                Files.deleteIfExists(legacyComparisonPath)
+                null
             }
         require(legacyComparison?.mismatchCount ?: 0 == 0) {
             "reportPhase4 legacy comparison found ${legacyComparison?.mismatchCount ?: 0} mismatches; inspect ${comparisonPath ?: outputDir.resolve(LEGACY_COMPARISON_FILE)}."
@@ -254,8 +258,8 @@ object ReportPhase4Runner {
                 mismatches = mismatches,
                 metricId = metric.metricId,
                 field = "currentValue",
-                expectedValue = legacyMetric.getValue("currentValue").toString(),
-                actualValue = metric.currentValue.toString(),
+                expectedValue = legacyMetric.getValue("currentValue"),
+                actualValue = metric.currentValue,
             )
             compareField(
                 mismatches = mismatches,
@@ -302,6 +306,24 @@ object ReportPhase4Runner {
         mismatches: MutableList<ReportPhase4LegacyMismatch>,
         metricId: String,
         field: String,
+        expectedValue: JsonElement,
+        actualValue: JsonElement,
+    ) {
+        if (!jsonSubsetMatches(expected = expectedValue, actual = actualValue)) {
+            mismatches +=
+                ReportPhase4LegacyMismatch(
+                    metricId = metricId,
+                    field = field,
+                    expectedValue = expectedValue.toString(),
+                    actualValue = actualValue.toString(),
+                )
+        }
+    }
+
+    private fun compareField(
+        mismatches: MutableList<ReportPhase4LegacyMismatch>,
+        metricId: String,
+        field: String,
         expectedValue: String,
         actualValue: String,
     ) {
@@ -315,6 +337,21 @@ object ReportPhase4Runner {
                 )
         }
     }
+
+    private fun jsonSubsetMatches(
+        expected: JsonElement,
+        actual: JsonElement,
+    ): Boolean =
+        when {
+            expected is JsonObject && actual is JsonObject ->
+                expected.all { (key, expectedValue) ->
+                    actual[key]?.let { actualValue -> jsonSubsetMatches(expectedValue, actualValue) } == true
+                }
+            expected is kotlinx.serialization.json.JsonArray && actual is kotlinx.serialization.json.JsonArray ->
+                expected.size == actual.size &&
+                    expected.indices.all { index -> jsonSubsetMatches(expected[index], actual[index]) }
+            else -> expected == actual
+        }
 
     private fun normalizeLegacyStatus(status: EvaluationEntryStatus): String =
         when (status) {
@@ -401,7 +438,7 @@ object ReportPhase4Runner {
     private fun requireLegacySummaryPath(): Path {
         val summaryPath = legacyReportDir().resolve("phase4-summary.json")
         require(Files.exists(summaryPath)) {
-            "Missing legacy phase4 summary at $summaryPath. Run phase4Report or phase4ReportOnly before compareLegacy=true."
+            "Missing legacy phase4 summary at $summaryPath. Run phase4LegacyReport or phase4LegacyReportOnly before compareLegacy=true."
         }
         return summaryPath
     }
@@ -424,7 +461,7 @@ object ReportPhase4Runner {
         }
     }
 
-private fun repoRoot(): Path {
+    private fun repoRoot(): Path {
         val configured = System.getProperty("ktome.repo.root")
         return if (configured.isNullOrBlank()) Path.of(".").toAbsolutePath().normalize() else Path.of(configured).toAbsolutePath().normalize()
     }

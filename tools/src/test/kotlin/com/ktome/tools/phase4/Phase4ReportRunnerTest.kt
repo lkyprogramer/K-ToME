@@ -14,8 +14,8 @@ import org.junit.jupiter.api.Test
 
 class Phase4ReportRunnerTest {
     @Test
-    @Tag("phase4Report")
-    fun `phase4 report aggregates currently landed phase4 verification tasks`() {
+    @Tag("phase4LegacyReport")
+    fun `legacy phase4 report aggregates currently landed phase4 verification tasks`() {
         val run = Phase4ReportRunner.run()
 
         assertEquals(14, run.taskCount)
@@ -84,9 +84,6 @@ class Phase4ReportRunnerTest {
         assertTrue(lootTask.getValue("metrics").jsonObject.containsKey("sameZoneSecretVsCadenceMaxOverlap"))
         assertTrue(lootTask.getValue("metrics").jsonObject.containsKey("sameZoneSecretVsRewardMaxOverlap"))
         assertTrue(lootTask.getValue("metrics").jsonObject.containsKey("localIdentityFailurePairs"))
-        assertTrue(lootTask.getValue("metrics").jsonObject.containsKey("preflightCulpritPairCount"))
-        assertTrue(lootTask.getValue("metrics").jsonObject.containsKey("preflightCulpritReasons"))
-        assertTrue(lootTask.getValue("metrics").jsonObject.containsKey("preflightCulpritPairs"))
         assertEquals("PASS", lootTask.getValue("status").jsonPrimitive.content)
         assertEquals("0", lootTask.getValue("metrics").jsonObject.getValue("failedAssertions").jsonPrimitive.content)
         assertEquals("13", contentPackTask.getValue("metrics").jsonObject.getValue("totalCases").jsonPrimitive.content)

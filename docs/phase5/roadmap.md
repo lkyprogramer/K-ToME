@@ -55,6 +55,9 @@
 3. `P5-W4` 可以与 `P5-W3` 并行推进；`P5-B` 退出仍要求 replay/death 与 perf/soak 同时通过。
 4. `P5-W5` 的 `BalanceLab` 复用 `longRunLab` 与 `LootBalanceLab` 的 batch 基础设施，不新建并行 runner。
 5. `Phase 5` 的 verification/task/report wiring 统一受 [2026-04-14-phase5-unified-verification-and-development-spec.md](./2026-04-14-phase5-unified-verification-and-development-spec.md) 约束；后续不得再引入 phase 专用第二套 registry。
+6. `reportPhase5` 是 `Phase 5` 的 canonical aggregate gate，默认产物路径固定为 `tools/build/reports/verification/phase5/report-phase5-summary.{json,md}`；`reportPhase5Only` 只做 artifact-only rebuild。
+7. 若较早的跨 phase 文档仍出现 `phase5Report` 命名，以 `docs/phase5/*` 当前权威链为准；`Phase 5` 正式命令与证据路径统一使用 `reportPhase5`。
+8. 后续若需要新增 sibling aggregate/report task、兼容 alias 或 report-only 入口，必须复用 shared helper 或 declarative generation path，并用 semantic build contract test 锁定 canonical / alias / fallback 行为。
 
 ## 5. 进入与退出摘要
 

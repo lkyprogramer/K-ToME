@@ -3,40 +3,51 @@ package com.ktome.tools.phase4
 import java.nio.file.Files
 import java.nio.file.Path
 import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class ReportPhase4BuildContractTest {
     @Test
-    fun `reportPhase4 task stays artifact only and does not depend on phase4Report`() {
-        val lines = Files.readAllLines(repoRoot().resolve("tools/build.gradle.kts"))
-        val startIndex = lines.indexOfFirst { line -> line.contains("tasks.register<Test>(\"reportPhase4\")") }
-        check(startIndex >= 0) { "Missing reportPhase4 task registration in tools/build.gradle.kts." }
-        val endIndex =
-            (startIndex + 1 until lines.size)
-                .firstOrNull { index -> lines[index].contains("tasks.register<Test>(\"reportPhase4Only\")") }
-                ?: error("Missing reportPhase4Only task registration after reportPhase4.")
-        check(endIndex > startIndex) { "Missing reportPhase4Only task registration after reportPhase4." }
+    fun `phase4 aggregate helper keeps reportPhase4 artifact only semantics`() {
+        val buildScript = Files.readString(repoRoot().resolve("tools/build.gradle.kts"))
+        val helperInvocation = helperInvocation(buildScript, taskName = "reportPhase4")
 
-        val reportPhase4Block = lines.subList(startIndex, endIndex).joinToString(separator = "\n")
-
-        assertFalse(reportPhase4Block.contains("dependsOn(\"phase4Report\")"))
-        assertFalse(reportPhase4Block.contains("dependsOn(\"phase4ReportOnly\")"))
+        assertTrue(buildScript.contains("fun registerPhase4AggregateTask("))
+        assertTrue(buildScript.contains("includeTags(includeTag)"))
+        assertTrue(buildScript.contains("if (includeTag == \"reportPhase4\")"))
+        assertTrue(buildScript.contains("excludeTags(\"phase4AggregationInput\")"))
+        assertTrue(helperInvocation.contains("includeTag = \"reportPhase4\""))
+        assertTrue(helperInvocation.contains("outputDir = unifiedPhase4ReportDir"))
+        assertTrue(helperInvocation.contains("aggregateReportDir = unifiedPhase4ReportDir"))
+        assertTrue(helperInvocation.contains("legacyReportDir = legacyPhase4ReportDir"))
+        assertTrue(helperInvocation.contains("compareLegacy = true"))
+        assertFalse(helperInvocation.contains("phase4ReportOnly"))
+        assertFalse(helperInvocation.contains("phase4LegacyReportOnly"))
     }
 
     @Test
-    fun `phase4Report task stays artifact only and does not depend on producer tasks`() {
-        val lines = Files.readAllLines(repoRoot().resolve("tools/build.gradle.kts"))
-        val startIndex = lines.indexOfFirst { line -> line.contains("tasks.register<Test>(\"phase4Report\")") }
-        check(startIndex >= 0) { "Missing phase4Report task registration in tools/build.gradle.kts." }
-        val endIndex =
-            (startIndex + 1 until lines.size)
-                .firstOrNull { index -> lines[index].contains("tasks.register<Test>(\"phase4ReportOnly\")") }
-                ?: error("Missing phase4ReportOnly task registration after phase4Report.")
-        check(endIndex > startIndex) { "Missing phase4ReportOnly task registration after phase4Report." }
+    fun `phase4Report task is cut over to the unified aggregate via the shared helper`() {
+        val buildScript = Files.readString(repoRoot().resolve("tools/build.gradle.kts"))
+        val helperInvocation = helperInvocation(buildScript, taskName = "phase4Report")
 
-        val phase4ReportBlock = lines.subList(startIndex, endIndex).joinToString(separator = "\n")
+        assertTrue(helperInvocation.contains("includeTag = \"reportPhase4\""))
+        assertTrue(helperInvocation.contains("outputDir = unifiedPhase4ReportDir"))
+        assertTrue(helperInvocation.contains("aggregateReportDir = unifiedPhase4ReportDir"))
+        assertTrue(helperInvocation.contains("compareLegacy = false"))
+        assertFalse(helperInvocation.contains("legacyReportDir = legacyPhase4ReportDir"))
+        assertFalse(helperInvocation.contains("includeTag = \"phase4LegacyReport\""))
+    }
 
-        assertFalse(phase4ReportBlock.contains("dependsOn("))
+    @Test
+    fun `phase4LegacyReport task remains available as isolated manual fallback via the shared helper`() {
+        val buildScript = Files.readString(repoRoot().resolve("tools/build.gradle.kts"))
+        val helperInvocation = helperInvocation(buildScript, taskName = "phase4LegacyReport")
+
+        assertTrue(helperInvocation.contains("includeTag = \"phase4LegacyReport\""))
+        assertTrue(helperInvocation.contains("outputDir = legacyPhase4ReportDir"))
+        assertTrue(helperInvocation.contains("legacyReportDir = legacyPhase4ReportDir"))
+        assertFalse(helperInvocation.contains("aggregateReportDir = unifiedPhase4ReportDir"))
+        assertFalse(helperInvocation.contains("compareLegacy = true"))
     }
 
     @Test
@@ -60,4 +71,14 @@ class ReportPhase4BuildContractTest {
         System.getProperty("ktome.repo.root")
             ?.let(Path::of)
             ?: Path.of("").toAbsolutePath().normalize()
+
+    private fun helperInvocation(
+        buildScript: String,
+        taskName: String,
+    ): String =
+        Regex(
+            """registerPhase4AggregateTask\(\s*name\s*=\s*"$taskName",(.*?)\n\)""",
+            setOf(RegexOption.DOT_MATCHES_ALL),
+        ).find(buildScript)?.value
+            ?: error("Missing registerPhase4AggregateTask invocation for '$taskName'.")
 }
