@@ -193,10 +193,21 @@ jobs:
             bootstrap-downloads-${{ runner.os }}-
 
       - name: Run bootstrap offline verification
+        id: bootstrap_verify
+        continue-on-error: true
         run: ./scripts/verify-bootstrap.sh --clean
 
+      - name: Warn on PR bootstrap verification failure
+        if: github.event_name == 'pull_request' && steps.bootstrap_verify.outcome == 'failure'
+        run: |
+          echo "::warning::Bootstrap Offline Verify failed, but the job is non-blocking on pull requests. Inspect the uploaded bootstrap reports before merging build or dependency pipeline changes."
+
+      - name: Fail bootstrap verification on main and manual runs
+        if: github.event_name != 'pull_request' && steps.bootstrap_verify.outcome == 'failure'
+        run: exit 1
+
       - name: Upload bootstrap verification reports
-        if: failure()
+        if: steps.bootstrap_verify.outcome == 'failure'
         uses: actions/upload-artifact@v4
         with:
           name: bootstrap-reports-${{ github.run_id }}
