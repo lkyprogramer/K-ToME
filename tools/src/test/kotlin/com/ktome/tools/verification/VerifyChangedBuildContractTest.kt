@@ -4,6 +4,7 @@ import java.nio.file.Files
 import java.nio.file.Path
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class VerifyChangedBuildContractTest {
@@ -39,6 +40,14 @@ class VerifyChangedBuildContractTest {
                 .toSet()
 
         assertEquals(expectedTaskPaths, actualTaskPaths.toSet())
+    }
+
+    @Test
+    fun `tools verifyChanged plan gate applies to every routed owner task including white box content pack`() {
+        val buildScript = Files.readString(repoRoot().resolve("tools/build.gradle.kts"))
+
+        assertTrue(buildScript.contains("""tasks.named("whiteBoxContentPack")"""))
+        assertTrue(buildScript.contains("""VerifyChangedPlanGate.applyTo(this, verifyChangedTaskPathsFile, "prepareVerifyChangedPlan")"""))
     }
 
     private fun repoRoot(): Path =

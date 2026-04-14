@@ -756,6 +756,7 @@ listOf(
     tasks.named("hiddenContentHarness"),
     tasks.named("organicHiddenProbe"),
     tasks.named("contentPackHarness"),
+    tasks.named("whiteBoxContentPack"),
     tasks.named("reportPhase4Only"),
     tasks.named("terrainInteractionBatch"),
     tasks.named("bossHarness"),
