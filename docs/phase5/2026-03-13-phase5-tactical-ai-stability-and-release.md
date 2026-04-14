@@ -16,6 +16,7 @@
 1. `docs/2026-03-13-core-systems-design-and-phase-supplements.md` 的 `§9.4` 只保留锚点级骨架；完整字段集、YAML/JSON 示例、量化门槛与工作包依赖以本文为执行权威。
 2. 本文的类型名与 `§9.4` 保持一致；若字段细节不同，以本文为权威。
 3. `Phase 5` 的量化通过标准、golden 更新策略和白盒步骤以 [2026-03-13-phase5-regression-checklist.md](./2026-03-13-phase5-regression-checklist.md) 为权威。
+4. `Phase 5` 的 verification/task/report wiring、`reportPhase5` contract 与后续功能接入规范，以 [2026-04-14-phase5-unified-verification-and-development-spec.md](./2026-04-14-phase5-unified-verification-and-development-spec.md) 为权威。
 
 ---
 
@@ -74,6 +75,13 @@
 2. 不做完整脚本平台或通用 planner。
 3. 不因为追求 AI“看起来聪明”而牺牲可解释性、确定性与回归定位能力。
 4. 不在 `client` 中复制规则真源；所有 AI/perception/replay 语义仍由 `core` 决定。
+
+### 3.3 Unified Verification 开发规范
+
+1. `Phase 5` 新增 verification/gate/report 任务时，必须先落到 single-source catalog，再生成 task wiring；禁止先写 `Test + @Tag` 或在 `build.gradle.kts` 手工接 root task。
+2. `reportPhase5` 是 `Phase 5` 的 canonical aggregate gate，`reportPhase5Only` 是 artifact-only rebuild alias；不再引入与其平行的第二套 phase report 命名或 registry。
+3. `contentPackHarness`、`longRunLab`、`LootBalanceLab` 继续作为上游 legacy provider 被复用；`Phase 5` 不得复制其 runner，只能消费其 artifact。
+4. 任何 `Phase 5` 之后的新功能，只要命中 verification/report/gate，也继续沿用同一套 catalog 规范，不得再引入 phase 专用 registry。
 
 ## 4. 技术合同
 
@@ -768,6 +776,7 @@ tools/src/main/kotlin/com/ktome/tools/release/*
 ./gradlew balanceLab
 ./gradlew contentPackHarness
 ./gradlew packageRelease
+./gradlew reportPhase5
 ```
 
 ### 6.4 Golden 与 batch 更新策略
@@ -789,10 +798,11 @@ tools/src/main/kotlin/com/ktome/tools/release/*
 
 ## 7. 出口门禁
 
-1. `tacticalAiHarness`、`replayHarness`、`perfSmoke`、`soakRun`、`balanceLab`、`packageRelease` 全绿。
+1. `tacticalAiHarness`、`replayHarness`、`perfSmoke`、`soakRun`、`balanceLab`、`packageRelease`、`reportPhase5` 全绿。
 2. `DeathAnalysis`、`ReplayFrame`、`RunHistoryEntry`、`SoakReport` 都有稳定的 schema 与 batch 证据。
 3. Localization QA、Accessibility QA 与 content pack compatibility 全绿。
-4. 安装包、已知问题、操作说明、验证说明和 release notes 齐全。
+4. `reportPhase5` 的 summary/json/markdown 与 release summary 最小字段齐全，且输入 inventory、owner metrics 与 legacy upstream bindings 可追溯。
+5. 安装包、已知问题、操作说明、验证说明和 release notes 齐全。
 
 ## 8. 风险与止损
 

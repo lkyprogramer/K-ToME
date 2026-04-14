@@ -26,6 +26,7 @@ import com.ktome.game.i18n.GameLocale
 import com.ktome.game.loot.LootProfileCandidatePoolResolver
 import com.ktome.game.mapgen.SchemaZoneRewardProfileResolver
 import com.ktome.tools.mapgen.phase4HarnessHeader
+import com.ktome.tools.verification.VerificationCacheSupport
 import java.nio.file.Files
 import java.nio.file.Path
 import kotlin.math.abs
@@ -456,17 +457,128 @@ internal data class LootKernelRun(
             }
 }
 
+private data class LootMatrixShardSpec(
+    val matrixId: String,
+    val rollStartInclusive: Int,
+    val rollCount: Int,
+) {
+    val shardId: String
+        get() = "$matrixId:${rollStartInclusive}-${rollStartInclusive + rollCount - 1}"
+}
+
+private data class LootMatrixKernelShard(
+    val shardId: String,
+    val matrixId: String,
+    val rollStartInclusive: Int,
+    val rollCount: Int,
+    val availableSpecialTiers: Set<SpecialTier>,
+    val finalTierCounts: Map<String, Int>,
+    val baseRarityCounts: Map<String, Int>,
+    val affixDeviationRatios: List<Double>,
+    val castSpeedValues: List<Double>,
+    val affixCostHistogram: Map<String, Int>,
+    val affixIdCounts: Map<String, Int>,
+    val pityTimeline: List<LootPityEvent>,
+    val castSpeedSamples: List<LootCastSpeedSample>,
+    val sampleRolls: List<LootRollSample>,
+    val eligibleCount: Int,
+    val uniqueCount: Int,
+    val artifactCount: Int,
+    val uniqueArtifactOutcomeCount: Int,
+    val meaningfulUniqueArtifactSwapCount: Int,
+    val rarePityActivations: Int,
+    val uniquePityActivations: Int,
+) {
+    fun toJson(): JsonObject =
+        buildJsonObject {
+            put("shardId", shardId)
+            put("matrixId", matrixId)
+            put("rollStartInclusive", rollStartInclusive)
+            put("rollCount", rollCount)
+            putJsonArray("availableSpecialTiers") {
+                availableSpecialTiers.map(SpecialTier::name).sorted().forEach { tier -> add(JsonPrimitive(tier)) }
+            }
+            putJsonObject("finalTierCounts") {
+                finalTierCounts.toSortedMap().forEach { (tier, count) -> put(tier, count) }
+            }
+            putJsonObject("baseRarityCounts") {
+                baseRarityCounts.toSortedMap().forEach { (tier, count) -> put(tier, count) }
+            }
+            putJsonArray("affixDeviationRatios") {
+                affixDeviationRatios.forEach { ratio -> add(JsonPrimitive(ratio)) }
+            }
+            putJsonArray("castSpeedValues") {
+                castSpeedValues.forEach { value -> add(JsonPrimitive(value)) }
+            }
+            putJsonObject("affixCostHistogram") {
+                affixCostHistogram.toSortedMap().forEach { (cost, count) -> put(cost, count) }
+            }
+            putJsonObject("affixIdCounts") {
+                affixIdCounts.toSortedMap().forEach { (affixId, count) -> put(affixId, count) }
+            }
+            putJsonArray("pityTimeline") {
+                pityTimeline.forEach { event -> add(event.toJson()) }
+            }
+            putJsonArray("castSpeedSamples") {
+                castSpeedSamples.forEach { sample -> add(sample.toJson()) }
+            }
+            putJsonArray("sampleRolls") {
+                sampleRolls.forEach { sample -> add(sample.toJson()) }
+            }
+            put("eligibleCount", eligibleCount)
+            put("uniqueCount", uniqueCount)
+            put("artifactCount", artifactCount)
+            put("uniqueArtifactOutcomeCount", uniqueArtifactOutcomeCount)
+            put("meaningfulUniqueArtifactSwapCount", meaningfulUniqueArtifactSwapCount)
+            put("rarePityActivations", rarePityActivations)
+            put("uniquePityActivations", uniquePityActivations)
+        }
+}
+
+private data class LootMatrixShardExecution(
+    val shard: LootMatrixKernelShard,
+    val rolls: List<LootRollSample>,
+)
+
+internal data class LootKernelExecution(
+    val kernelRun: LootKernelRun,
+    val inputFingerprint: String,
+    val cacheStatus: String,
+    val reusedShardCount: Int,
+    val shardCount: Int,
+    val mergedKernelPath: Path,
+    val shardRollPaths: List<Path>,
+) {
+    fun cacheMetadata(repoRoot: Path): JsonObject =
+        buildJsonObject {
+            put("contractVersion", LOOT_KERNEL_CACHE_VERSION)
+            put("inputFingerprint", inputFingerprint)
+            put("cacheStatus", cacheStatus)
+            put("reusedShardCount", reusedShardCount)
+            put("shardCount", shardCount)
+            put("kernelReuseSource", VerificationCacheSupport.relativeToRepo(mergedKernelPath, repoRoot))
+            putJsonArray("shardRollPaths") {
+                shardRollPaths.forEach { shardRollPath ->
+                    add(JsonPrimitive(VerificationCacheSupport.relativeToRepo(shardRollPath, repoRoot)))
+                }
+            }
+        }
+}
+
 private const val ROLLS_PER_MATRIX: Int = 10_000
+private const val ROLLS_PER_SHARD: Int = 1_000
 private const val MAGIC_RARE_ABSOLUTE_DRIFT_TOLERANCE: Double = 0.05
 private const val SPECIAL_RELATIVE_ERROR_TOLERANCE: Double = 0.25
 private const val AFFIX_BUDGET_AVERAGE_TOLERANCE: Double = 0.05
 private const val AFFIX_BUDGET_P95_TOLERANCE: Double = 0.12
 private const val CLAMP_DISTRIBUTION_TOLERANCE: Double = 0.02
+private const val LOOT_KERNEL_CACHE_VERSION: String = "uvr-pr05-loot-kernel-v2"
 internal val LOOT_REPORT_LOCALE: GameLocale = GameLocale.EN_US
 private const val EQUIPMENT_PASSIVE_KIND_COUNT: Int = 9
 
 internal object LootLabKernel {
     private val json: Json = Json { prettyPrint = true }
+    private val compactJson: Json = Json { prettyPrint = false; explicitNulls = false }
     private val matrixSpecs: List<LootMatrixSpec> =
         listOf(
             LootMatrixSpec(
@@ -527,25 +639,60 @@ internal object LootLabKernel {
             ),
         )
 
-    fun execute(onRoll: (LootRollSample) -> Unit = {}): LootKernelRun {
+    fun execute(): LootKernelExecution {
+        val repoRoot = VerificationCacheSupport.repoRoot()
+        val cacheDirs = VerificationCacheSupport.cacheDirs(domainId = "loot", repoRoot = repoRoot)
+        val inputFingerprint = VerificationCacheSupport.sha256Files(lootKernelFingerprintInputs(repoRoot))
+        val kernelRoot = VerificationCacheSupport.ensureDirectory(cacheDirs.kernelDir.resolve(inputFingerprint))
+        val mergedKernelPath =
+            VerificationCacheSupport.ensureDirectory(cacheDirs.kernelDir.resolve("merged"))
+                .resolve("loot-kernel-merged.json")
         val loader = DataLoader(LOOT_REPORT_LOCALE)
         val schemaCatalog = loader.loadSchemaCatalog()
         val itemBundle = loader.loadItemBundle()
         val rewardResolver = SchemaZoneRewardProfileResolver(schemaCatalog.zones, schemaCatalog.zoneRewardProfiles)
         val rarePassiveUniverseBySlot = buildRarePassiveUniverseBySlot(itemBundle)
+        var reusedShardCount = 0
+        val shardRollPaths = mutableListOf<Path>()
         val matrices =
             matrixSpecs.map { spec ->
-                executeMatrix(
+                val shards =
+                    matrixShardSpecs(spec).map { shardSpec ->
+                        val shardDir = VerificationCacheSupport.ensureDirectory(kernelRoot.resolve(spec.id).resolve(shardSpec.shardId))
+                        val shardPayloadPath = shardDir.resolve("kernel.json")
+                        val shardRollPath = shardDir.resolve("rolls.jsonl")
+                        shardRollPaths.add(shardRollPath)
+                        if (Files.isRegularFile(shardPayloadPath) && Files.isRegularFile(shardRollPath)) {
+                            reusedShardCount += 1
+                            readShardPayload(shardPayloadPath)
+                        } else {
+                            val shardExecution =
+                                executeMatrixShard(
+                                    spec = spec,
+                                    shardSpec = shardSpec,
+                                    zoneRewardProfile = rewardResolver.resolve(spec.zoneId),
+                                    itemBundleLoader = { itemBundle },
+                                    rarePassiveUniverseBySlot = rarePassiveUniverseBySlot,
+                                )
+                            writeShardPayload(
+                                shardPayloadPath = shardPayloadPath,
+                                shardRollPath = shardRollPath,
+                                shard = shardExecution.shard,
+                                rolls = shardExecution.rolls,
+                            )
+                            shardExecution.shard
+                        }
+                    }
+                mergeMatrixShards(
                     spec = spec,
+                    shards = shards,
                     zoneRewardProfile = rewardResolver.resolve(spec.zoneId),
-                    itemBundleLoader = { itemBundle },
-                    rarePassiveUniverseBySlot = rarePassiveUniverseBySlot,
-                    onRoll = onRoll,
                 )
             }
         val specialPoolSummary = summarizeSpecialPool(itemBundleLoader = { itemBundle })
         val clampComparison = compareClampBoundary(matrices)
-        return LootKernelRun(
+        val kernelRun =
+            LootKernelRun(
             matrices = matrices,
             specialPoolSummary = specialPoolSummary,
             clampComparison = clampComparison,
@@ -553,15 +700,43 @@ internal object LootLabKernel {
             profileOverlapSummary = summarizeLootProfileOverlap(schemaCatalog.lootProfiles, itemBundle),
             passiveCoverageSummary = summarizeAffixPassiveCoverage(itemBundle),
         )
+        val header = phase4HarnessHeader(harnessId = LootBalanceLabRunner.HARNESS_ID, seedList = kernelRun.matrixSeeds, locale = LOOT_REPORT_LOCALE.id)
+        Files.writeString(
+            mergedKernelPath,
+            VerificationCacheSupport.json.encodeToString(
+                JsonElement.serializer(),
+                buildMergedKernelPayload(
+                    header = header,
+                    kernelRun = kernelRun,
+                    cacheMetadata =
+                        buildJsonObject {
+                            put("contractVersion", LOOT_KERNEL_CACHE_VERSION)
+                            put("inputFingerprint", inputFingerprint)
+                            put("cacheStatus", if (reusedShardCount == shardRollPaths.size) "HIT" else "MISS")
+                            put("reusedShardCount", reusedShardCount)
+                            put("shardCount", shardRollPaths.size)
+                        },
+                ),
+            ),
+        )
+        return LootKernelExecution(
+            kernelRun = kernelRun,
+            inputFingerprint = inputFingerprint,
+            cacheStatus = if (reusedShardCount == shardRollPaths.size) "HIT" else "MISS",
+            reusedShardCount = reusedShardCount,
+            shardCount = shardRollPaths.size,
+            mergedKernelPath = mergedKernelPath,
+            shardRollPaths = shardRollPaths.sortedBy(Path::toString),
+        )
     }
 
-    private fun executeMatrix(
+    private fun executeMatrixShard(
         spec: LootMatrixSpec,
+        shardSpec: LootMatrixShardSpec,
         zoneRewardProfile: ZoneRewardProfile,
         itemBundleLoader: () -> com.ktome.core.item.ItemDataBundle,
         rarePassiveUniverseBySlot: Map<EquipSlot, Set<String>>,
-        onRoll: (LootRollSample) -> Unit,
-    ): LootMatrixResult {
+    ): LootMatrixShardExecution {
         val finalTierCounts = linkedMapOf("NORMAL" to 0, "MAGIC" to 0, "RARE" to 0, "UNIQUE" to 0, "ARTIFACT" to 0)
         val baseRarityCounts = linkedMapOf("NORMAL" to 0, "MAGIC" to 0, "RARE" to 0)
         val affixDeviationRatios = mutableListOf<Double>()
@@ -571,6 +746,7 @@ internal object LootLabKernel {
         val pityTimeline = mutableListOf<LootPityEvent>()
         val castSpeedSamples = mutableListOf<LootCastSpeedSample>()
         val sampleRolls = mutableListOf<LootRollSample>()
+        val allRolls = mutableListOf<LootRollSample>()
         var availableSpecialTiers: Set<SpecialTier> = emptySet()
         var eligibleCount = 0
         var uniqueCount = 0
@@ -581,7 +757,8 @@ internal object LootLabKernel {
         var uniquePityActivations = 0
         var pityTracker = com.ktome.core.loot.PityTracker()
 
-        repeat(spec.rollCount) { rollIndex ->
+        repeat(shardSpec.rollCount) { shardIndex ->
+            val rollIndex = shardSpec.rollStartInclusive + shardIndex
             val seed = spec.seedBase + rollIndex
             val context =
                 LootRollContext(
@@ -613,11 +790,10 @@ internal object LootLabKernel {
                     previousPity = pityTracker,
                     rarePassiveUniverseBySlot = rarePassiveUniverseBySlot,
                 )
+            allRolls += sample
             availableSpecialTiers =
                 availableSpecialTiers + generated.rollResult.budget.specialTierEligibility.availableSpecialTiers
             pityTracker = generated.rollResult.resultingPityTracker
-            onRoll(sample)
-
             baseRarityCounts.compute(sample.rolledRarityTier.name) { _, count -> (count ?: 0) + 1 }
             finalTierCounts.compute(sample.finalTier) { _, count -> (count ?: 0) + 1 }
             if (sample.specialTierEligibilityCount > 0) {
@@ -676,7 +852,7 @@ internal object LootLabKernel {
                 affixIdCounts.compute(affixId) { _, count -> (count ?: 0) + 1 }
             }
             if (
-                sampleRolls.size < 8 ||
+                rollIndex < 8 ||
                 sample.specialTier != null ||
                 sample.rarePityApplied ||
                 sample.specialPityApplied ||
@@ -688,11 +864,62 @@ internal object LootLabKernel {
             }
         }
 
+        return LootMatrixShardExecution(
+            shard =
+                LootMatrixKernelShard(
+                    shardId = shardSpec.shardId,
+                    matrixId = spec.id,
+                    rollStartInclusive = shardSpec.rollStartInclusive,
+                    rollCount = shardSpec.rollCount,
+                    availableSpecialTiers = availableSpecialTiers,
+                    finalTierCounts = finalTierCounts.toSortedMap(),
+                    baseRarityCounts = baseRarityCounts.toSortedMap(),
+                    affixDeviationRatios = affixDeviationRatios.toList(),
+                    castSpeedValues = castSpeedValues.toList(),
+                    affixCostHistogram = affixCostHistogram.toSortedMap(),
+                    affixIdCounts = affixIdCounts.toSortedMap(),
+                    pityTimeline = pityTimeline.sortedBy(LootPityEvent::rollIndex),
+                    castSpeedSamples = castSpeedSamples.sortedByDescending(LootCastSpeedSample::rawCastSpeedRating),
+                    sampleRolls = sampleRolls.sortedBy(LootRollSample::rollIndex),
+                    eligibleCount = eligibleCount,
+                    uniqueCount = uniqueCount,
+                    artifactCount = artifactCount,
+                    uniqueArtifactOutcomeCount = uniqueArtifactOutcomeCount,
+                    meaningfulUniqueArtifactSwapCount = meaningfulUniqueArtifactSwapCount,
+                    rarePityActivations = rarePityActivations,
+                    uniquePityActivations = uniquePityActivations,
+                ),
+            rolls = allRolls.sortedBy(LootRollSample::rollIndex),
+        )
+    }
+
+    private fun mergeMatrixShards(
+        spec: LootMatrixSpec,
+        shards: List<LootMatrixKernelShard>,
+        zoneRewardProfile: ZoneRewardProfile,
+    ): LootMatrixResult {
+        val availableSpecialTiers = shards.flatMapTo(linkedSetOf(), LootMatrixKernelShard::availableSpecialTiers)
+        val finalTierCounts = mergeIntMaps(shards.map(LootMatrixKernelShard::finalTierCounts))
+        val baseRarityCounts = mergeIntMaps(shards.map(LootMatrixKernelShard::baseRarityCounts))
+        val affixDeviationRatios = shards.flatMap(LootMatrixKernelShard::affixDeviationRatios)
+        val castSpeedValues = shards.flatMap(LootMatrixKernelShard::castSpeedValues)
+        val affixCostHistogram = mergeIntMaps(shards.map(LootMatrixKernelShard::affixCostHistogram)).toSortedMap()
+        val affixIdCounts = mergeIntMaps(shards.map(LootMatrixKernelShard::affixIdCounts))
+        val pityTimeline = shards.flatMap(LootMatrixKernelShard::pityTimeline).sortedBy(LootPityEvent::rollIndex)
+        val castSpeedSamples =
+            shards
+                .flatMap(LootMatrixKernelShard::castSpeedSamples)
+                .sortedByDescending(LootCastSpeedSample::rawCastSpeedRating)
+        val sampleRolls =
+            shards
+                .flatMap(LootMatrixKernelShard::sampleRolls)
+                .sortedBy(LootRollSample::rollIndex)
+                .distinctBy(LootRollSample::rollIndex)
         val expected =
             expectedDistribution(
                 spec = spec,
                 zoneRewardProfile = zoneRewardProfile,
-                eligibleCount = eligibleCount,
+                eligibleCount = shards.sumOf(LootMatrixKernelShard::eligibleCount),
                 totalRolls = spec.rollCount,
                 availableSpecialTiers = availableSpecialTiers,
             )
@@ -700,6 +927,8 @@ internal object LootLabKernel {
         val baseDistribution = baseRarityCounts.mapValues { (_, count) -> count.toDouble() / spec.rollCount.toDouble() }
         val magicRateDrift = abs(rarityDistribution.getValue("MAGIC") - expected.magicRate)
         val rareRateDrift = abs(rarityDistribution.getValue("RARE") - expected.rareRate)
+        val uniqueCount = shards.sumOf(LootMatrixKernelShard::uniqueCount)
+        val artifactCount = shards.sumOf(LootMatrixKernelShard::artifactCount)
         val uniqueRate = uniqueCount.toDouble() / spec.rollCount.toDouble()
         val artifactRate = artifactCount.toDouble() / spec.rollCount.toDouble()
         val uniqueRelativeError = relativeError(actual = uniqueRate, expected = expected.uniqueRate)
@@ -745,9 +974,9 @@ internal object LootLabKernel {
             affixBudgetP95Deviation = affixBudgetP95Deviation,
             uniqueRate = uniqueRate,
             artifactRate = artifactRate,
-            specialTierEligibilityRate = eligibleCount.toDouble() / spec.rollCount.toDouble(),
-            rarePityActivations = rarePityActivations,
-            uniquePityActivations = uniquePityActivations,
+            specialTierEligibilityRate = shards.sumOf(LootMatrixKernelShard::eligibleCount).toDouble() / spec.rollCount.toDouble(),
+            rarePityActivations = shards.sumOf(LootMatrixKernelShard::rarePityActivations),
+            uniquePityActivations = shards.sumOf(LootMatrixKernelShard::uniquePityActivations),
             castSpeedPostDrP50 = castSpeedPostDrP50,
             castSpeedPostDrP95 = castSpeedPostDrP95,
             magicRateDrift = magicRateDrift,
@@ -755,21 +984,110 @@ internal object LootLabKernel {
             uniqueRelativeError = uniqueRelativeError,
             artifactRelativeError = artifactRelativeError,
             failedExpectationCount = failedExpectationCount,
-            affixCostHistogram = affixCostHistogram.toSortedMap(),
+            affixCostHistogram = affixCostHistogram,
             topAffixIds = affixIdCounts.entries.sortedByDescending(Map.Entry<String, Int>::value).take(8).associate { it.key to it.value },
             pityTimeline = pityTimeline.take(20),
-            castSpeedSamples = castSpeedSamples.sortedByDescending(LootCastSpeedSample::rawCastSpeedRating).take(10),
+            castSpeedSamples = castSpeedSamples.take(10),
             sampleRolls = sampleRolls.take(16),
-            uniqueArtifactOutcomeCount = uniqueArtifactOutcomeCount,
-            meaningfulUniqueArtifactSwapCount = meaningfulUniqueArtifactSwapCount,
+            uniqueArtifactOutcomeCount = shards.sumOf(LootMatrixKernelShard::uniqueArtifactOutcomeCount),
+            meaningfulUniqueArtifactSwapCount = shards.sumOf(LootMatrixKernelShard::meaningfulUniqueArtifactSwapCount),
             meaningfulUniqueArtifactSwapRate =
-                if (uniqueArtifactOutcomeCount == 0) {
+                if (shards.sumOf(LootMatrixKernelShard::uniqueArtifactOutcomeCount) == 0) {
                     0.0
                 } else {
-                    meaningfulUniqueArtifactSwapCount.toDouble() / uniqueArtifactOutcomeCount.toDouble()
+                    shards.sumOf(LootMatrixKernelShard::meaningfulUniqueArtifactSwapCount).toDouble() /
+                        shards.sumOf(LootMatrixKernelShard::uniqueArtifactOutcomeCount).toDouble()
                 },
         )
     }
+
+    private fun matrixShardSpecs(spec: LootMatrixSpec): List<LootMatrixShardSpec> =
+        (0 until spec.rollCount step ROLLS_PER_SHARD).map { rollStartInclusive ->
+            LootMatrixShardSpec(
+                matrixId = spec.id,
+                rollStartInclusive = rollStartInclusive,
+                rollCount = minOf(ROLLS_PER_SHARD, spec.rollCount - rollStartInclusive),
+            )
+        }
+
+    private fun readShardPayload(path: Path): LootMatrixKernelShard =
+        VerificationCacheSupport.json.parseToJsonElement(Files.readString(path)).jsonObject.toLootMatrixKernelShard()
+
+    private fun writeShardPayload(
+        shardPayloadPath: Path,
+        shardRollPath: Path,
+        shard: LootMatrixKernelShard,
+        rolls: List<LootRollSample>,
+    ) {
+        Files.createDirectories(shardPayloadPath.parent)
+        Files.writeString(
+            shardPayloadPath,
+            VerificationCacheSupport.json.encodeToString(JsonElement.serializer(), shard.toJson()),
+        )
+        Files.writeString(
+            shardRollPath,
+            rolls
+                .sortedBy(LootRollSample::rollIndex)
+                .joinToString(separator = "\n") { sample ->
+                    compactJson.encodeToString(JsonElement.serializer(), sample.toJson())
+                } + "\n",
+        )
+    }
+
+    private fun buildMergedKernelPayload(
+        header: com.ktome.core.harness.HarnessReportHeader,
+        kernelRun: LootKernelRun,
+        cacheMetadata: JsonObject,
+    ): JsonObject =
+        buildJsonObject {
+            put("header", header.toJson())
+            put("kernelCache", cacheMetadata)
+            putJsonObject("summary") {
+                put("matrixCount", kernelRun.matrices.size)
+                put("totalRolls", kernelRun.totalRolls)
+                put("failedExpectationCount", kernelRun.failedExpectationCount)
+                put("magicRareAbsoluteDriftTolerance", MAGIC_RARE_ABSOLUTE_DRIFT_TOLERANCE)
+                put("specialRelativeErrorTolerance", SPECIAL_RELATIVE_ERROR_TOLERANCE)
+                put("affixBudgetAverageTolerance", AFFIX_BUDGET_AVERAGE_TOLERANCE)
+                put("affixBudgetP95Tolerance", AFFIX_BUDGET_P95_TOLERANCE)
+                put("clampDistributionTolerance", CLAMP_DISTRIBUTION_TOLERANCE)
+                put("rarePityActivations", kernelRun.matrices.sumOf(LootMatrixResult::rarePityActivations))
+                put("uniquePityActivations", kernelRun.matrices.sumOf(LootMatrixResult::uniquePityActivations))
+                put("maxMagicRateDrift", kernelRun.matrices.maxOfOrNull(LootMatrixResult::magicRateDrift) ?: 0.0)
+                put("maxRareRateDrift", kernelRun.matrices.maxOfOrNull(LootMatrixResult::rareRateDrift) ?: 0.0)
+                put("maxUniqueRelativeError", kernelRun.matrices.maxOfOrNull(LootMatrixResult::uniqueRelativeError) ?: 0.0)
+                put("maxArtifactRelativeError", kernelRun.matrices.maxOfOrNull(LootMatrixResult::artifactRelativeError) ?: 0.0)
+                put("verdict", if (kernelRun.failedExpectationCount == 0) "PASS" else "FAIL")
+            }
+            put("specialTemplatePool", kernelRun.specialPoolSummary.toJson())
+            put("magicFindClampComparison", kernelRun.clampComparison.toJson())
+            put("profileOverlapSummary", kernelRun.profileOverlapSummary.toJson())
+            put("passiveCoverageSummary", kernelRun.passiveCoverageSummary.toJson())
+            putJsonArray("matrices") {
+                kernelRun.matrices.forEach { matrix -> add(matrix.toJson()) }
+            }
+        }
+
+    private fun lootKernelFingerprintInputs(repoRoot: Path): List<Path> =
+        listOf(
+            repoRoot.resolve("core/src/main/kotlin/com/ktome/core"),
+            repoRoot.resolve("tools/src/main/kotlin/com/ktome/tools/loot"),
+            repoRoot.resolve("game/src/main/kotlin/com/ktome/game/data"),
+            repoRoot.resolve("game/src/main/kotlin/com/ktome/game/loot"),
+            repoRoot.resolve("game/src/main/kotlin/com/ktome/game/mapgen"),
+            repoRoot.resolve("game/src/main/resources/data/items"),
+            repoRoot.resolve("game/src/main/resources/data/loot"),
+            repoRoot.resolve("game/src/main/resources/data/world"),
+        )
+
+    private fun mergeIntMaps(maps: List<Map<String, Int>>): Map<String, Int> =
+        buildMap {
+            maps.forEach { currentMap ->
+                currentMap.forEach { (key, count) ->
+                    put(key, (get(key) ?: 0) + count)
+                }
+            }
+        }
 
     private fun buildRollSample(
         spec: LootMatrixSpec,
@@ -1290,24 +1608,28 @@ object LootBalanceLabRunner {
     private const val SUMMARY_FILE: String = "loot-balance-summary.json"
     private const val ROLLS_FILE: String = "loot-balance-rolls.jsonl"
     private val json: Json = Json { prettyPrint = true }
-    private val compactJson: Json = Json { prettyPrint = false }
 
     fun run(): LootBalanceLabRun {
         val outputDir = reportDir()
         Files.createDirectories(outputDir)
         val rollsPath = outputDir.resolve(ROLLS_FILE)
-        Files.deleteIfExists(rollsPath)
-        Files.createFile(rollsPath)
-
-        val kernelRun =
-            Files.newBufferedWriter(rollsPath).use { writer ->
-                LootLabKernel.execute { sample ->
-                    writer.appendLine(compactJson.encodeToString(JsonElement.serializer(), sample.toJson()))
-                }
-            }
+        val repoRoot = VerificationCacheSupport.repoRoot()
+        val kernelExecution = LootLabKernel.execute()
+        VerificationCacheSupport.mergeJsonlFiles(targetPath = rollsPath, sourcePaths = kernelExecution.shardRollPaths)
+        val kernelRun = kernelExecution.kernelRun
         val header = phase4HarnessHeader(harnessId = HARNESS_ID, seedList = kernelRun.matrixSeeds, locale = LOOT_REPORT_LOCALE.id)
         val summaryPath = outputDir.resolve(SUMMARY_FILE)
-        Files.writeString(summaryPath, json.encodeToString(JsonElement.serializer(), buildSummaryPayload(header, kernelRun)))
+        Files.writeString(
+            summaryPath,
+            json.encodeToString(
+                JsonElement.serializer(),
+                buildSummaryPayload(
+                    header = header,
+                    kernelRun = kernelRun,
+                    kernelCacheMetadata = kernelExecution.cacheMetadata(repoRoot),
+                ),
+            ),
+        )
         return LootBalanceLabRun(
             matrixCount = kernelRun.matrices.size,
             totalRolls = kernelRun.totalRolls,
@@ -1320,9 +1642,11 @@ object LootBalanceLabRunner {
     private fun buildSummaryPayload(
         header: com.ktome.core.harness.HarnessReportHeader,
         kernelRun: LootKernelRun,
+        kernelCacheMetadata: JsonObject,
     ): JsonObject =
         buildJsonObject {
             put("header", header.toJson())
+            put("kernelCache", kernelCacheMetadata)
             putJsonObject("summary") {
                 put("matrixCount", kernelRun.matrices.size)
                 put("totalRolls", kernelRun.totalRolls)
@@ -1351,21 +1675,35 @@ object LootBalanceLabRunner {
 
     internal fun readKernelRun(reportDir: Path = reportDir()): LootKernelRun? {
         val summaryPath = reportDir.resolve(SUMMARY_FILE)
-        if (!Files.isRegularFile(summaryPath)) {
+        if (Files.isRegularFile(summaryPath)) {
+            val payload = json.parseToJsonElement(Files.readString(summaryPath)).jsonObject
+            return payload.toLootKernelRun()
+        }
+        val repoRoot = VerificationCacheSupport.repoRoot()
+        val cacheDirs = VerificationCacheSupport.cacheDirs("loot", repoRoot)
+        val mergedKernelPath = cacheDirs.kernelDir.resolve("merged").resolve("loot-kernel-merged.json")
+        if (!Files.isRegularFile(mergedKernelPath)) {
             return null
         }
-        val payload = json.parseToJsonElement(Files.readString(summaryPath)).jsonObject
+        val payload = json.parseToJsonElement(Files.readString(mergedKernelPath)).jsonObject
+        return payload.toLootKernelRun()
+    }
+
+    internal fun lootPreflightSummaryPath(repoRoot: Path = VerificationCacheSupport.repoRoot()): Path =
+        repoRoot.resolve("tools/build/reports/verification/loot/preflight/verification-summary.json")
+
+    private fun JsonObject.toLootKernelRun(): LootKernelRun {
         val matrices =
-            payload.getValue("matrices").jsonArray.map { matrix ->
+            getValue("matrices").jsonArray.map { matrix ->
                 matrix.jsonObject.toLootMatrixResult()
             }
-        val profileOverlapSummary = payload.getValue("profileOverlapSummary").jsonObject.toLootProfileOverlapSummary()
-        val passiveCoverageSummary = payload.getValue("passiveCoverageSummary").jsonObject.toLootPassiveCoverageSummary()
-        val matrixSeeds = payload.getValue("header").jsonObject.getValue("seedList").jsonArray.map { seed -> seed.jsonPrimitive.content.toLong() }
+        val profileOverlapSummary = getValue("profileOverlapSummary").jsonObject.toLootProfileOverlapSummary()
+        val passiveCoverageSummary = getValue("passiveCoverageSummary").jsonObject.toLootPassiveCoverageSummary()
+        val matrixSeeds = getValue("header").jsonObject.getValue("seedList").jsonArray.map { seed -> seed.jsonPrimitive.content.toLong() }
         return LootKernelRun(
             matrices = matrices,
-            specialPoolSummary = payload.getValue("specialTemplatePool").jsonObject.toLootSpecialPoolSummary(),
-            clampComparison = payload.getValue("magicFindClampComparison").jsonObject.toLootClampComparison(),
+            specialPoolSummary = getValue("specialTemplatePool").jsonObject.toLootSpecialPoolSummary(),
+            clampComparison = getValue("magicFindClampComparison").jsonObject.toLootClampComparison(),
             matrixSeeds = matrixSeeds,
             profileOverlapSummary = profileOverlapSummary,
             passiveCoverageSummary = passiveCoverageSummary,
@@ -1507,6 +1845,31 @@ private fun JsonObject.toLootRollSample(): LootRollSample =
         previousSpecialPity = getValue("pityBefore").jsonObject.intValue("eligibleSpecialRollsSinceLastUnique"),
         resultingRarePity = getValue("pityAfter").jsonObject.intValue("rollsSinceLastRare"),
         resultingSpecialPity = getValue("pityAfter").jsonObject.intValue("eligibleSpecialRollsSinceLastUnique"),
+    )
+
+private fun JsonObject.toLootMatrixKernelShard(): LootMatrixKernelShard =
+    LootMatrixKernelShard(
+        shardId = stringValue("shardId"),
+        matrixId = stringValue("matrixId"),
+        rollStartInclusive = intValue("rollStartInclusive"),
+        rollCount = intValue("rollCount"),
+        availableSpecialTiers = getValue("availableSpecialTiers").jsonArray.map { tier -> SpecialTier.valueOf(tier.jsonPrimitive.content) }.toSet(),
+        finalTierCounts = getValue("finalTierCounts").jsonObject.toIntMap(),
+        baseRarityCounts = getValue("baseRarityCounts").jsonObject.toIntMap(),
+        affixDeviationRatios = getValue("affixDeviationRatios").jsonArray.map { ratio -> ratio.jsonPrimitive.content.toDouble() },
+        castSpeedValues = getValue("castSpeedValues").jsonArray.map { value -> value.jsonPrimitive.content.toDouble() },
+        affixCostHistogram = getValue("affixCostHistogram").jsonObject.toIntMap(),
+        affixIdCounts = getValue("affixIdCounts").jsonObject.toIntMap(),
+        pityTimeline = getValue("pityTimeline").jsonArray.map { event -> event.jsonObject.toLootPityEvent() },
+        castSpeedSamples = getValue("castSpeedSamples").jsonArray.map { sample -> sample.jsonObject.toLootCastSpeedSample() },
+        sampleRolls = getValue("sampleRolls").jsonArray.map { sample -> sample.jsonObject.toLootRollSample() },
+        eligibleCount = intValue("eligibleCount"),
+        uniqueCount = intValue("uniqueCount"),
+        artifactCount = intValue("artifactCount"),
+        uniqueArtifactOutcomeCount = intValue("uniqueArtifactOutcomeCount"),
+        meaningfulUniqueArtifactSwapCount = intValue("meaningfulUniqueArtifactSwapCount"),
+        rarePityActivations = intValue("rarePityActivations"),
+        uniquePityActivations = intValue("uniquePityActivations"),
     )
 
 private fun JsonObject.toLootProfileOverlapSummary(): LootProfileOverlapSummary =

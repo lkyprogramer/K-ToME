@@ -9,6 +9,7 @@ import com.ktome.tools.verification.RenderResult
 import com.ktome.tools.verification.ReportAggregationInput
 import com.ktome.tools.verification.VerificationBaseline
 import com.ktome.tools.verification.VerificationBaselineComparator
+import com.ktome.tools.verification.VerificationCacheSupport
 import com.ktome.tools.verification.VerificationExpectedMetricRange
 import java.nio.file.Files
 import java.nio.file.Path
@@ -71,6 +72,12 @@ private data class MetricPresentation(
     val note: String? = null,
 )
 
+private data class Phase4EvaluationCacheEntry(
+    val cachePath: Path,
+    val fingerprint: String,
+    val cacheRoot: Path,
+)
+
 private data class TerrainUnifiedBaselineMetric(
     val metricId: String,
     val baselineValue: Double,
@@ -110,7 +117,8 @@ internal object Phase4AggregationInputRunner {
                     baselinePaths = baselinePaths,
                     baselineFingerprintCache = baselineFingerprintCache,
                 )
-            val existing = loadExistingInput(inputPath)
+            val evaluationCacheEntry = resolveEvaluationCacheEntry(repoRoot = repoRoot, task = task, currentFingerprints = currentFingerprints)
+            val existing = loadExistingInput(inputPath) ?: evaluationCacheEntry?.cachePath?.let(::loadExistingInput)
             val invalidationReason = resolveInvalidationReason(existing?.renderResult?.metadata, currentFingerprints)
             val evaluationStartNanos = System.nanoTime()
             val reused = invalidationReason == null && existing != null
@@ -133,10 +141,16 @@ internal object Phase4AggregationInputRunner {
                     currentFingerprints = currentFingerprints,
                     cacheStatus = if (reused) "HIT" else "MISS",
                     artifactReused = reused,
+                    artifactReuseSource = evaluationCacheEntry?.let { entry -> VerificationCacheSupport.relativeToRepo(entry.cacheRoot, repoRoot) },
+                    evaluationCacheFingerprint = evaluationCacheEntry?.fingerprint,
                     invalidationReason = invalidationReason,
                     evaluationDurationMillis = evaluationMillis,
                 )
             Files.writeString(inputPath, phase4AggregationJson.encodeToString(annotatedInput))
+            evaluationCacheEntry?.let { entry ->
+                Files.createDirectories(entry.cachePath.parent)
+                Files.writeString(entry.cachePath, phase4AggregationJson.encodeToString(annotatedInput))
+            }
             inputs += annotatedInput
         }
 
@@ -222,13 +236,16 @@ internal object Phase4AggregationInputRunner {
     ): ReportAggregationInput {
         val evaluations = mutableListOf(taskStatusEvaluation(task))
         when (task.taskId) {
-            "hiddenContentHarness" -> evaluations += scriptedHiddenEvaluation(task = task, baseline = baselinesByPath.getValue(Phase4OwnerBaselineRegistry.SCRIPTED_HIDDEN_BASELINE_RELATIVE_PATH))
-            "organicHiddenProbe" -> evaluations += organicHiddenEvaluation(task = task, baseline = baselinesByPath.getValue(Phase4OwnerBaselineRegistry.ORGANIC_HIDDEN_BASELINE_RELATIVE_PATH))
-            "whiteBoxLoot" -> evaluations += localRewardIdentityEvaluation(task = task, baseline = baselinesByPath.getValue(Phase4OwnerBaselineRegistry.LOOT_LOCAL_REWARD_BASELINE_RELATIVE_PATH))
-            "longRunLab" -> evaluations += terminalBuildIdentityEvaluation(task = task, baseline = baselinesByPath.getValue(Phase4OwnerBaselineRegistry.TERMINAL_BUILD_BASELINE_RELATIVE_PATH))
+            "hiddenContentHarness" -> evaluations += scriptedHiddenEvaluation(task = task, baseline = baselinesByPath.getValue(Phase4OwnerBaselineRegistry.scriptedHiddenBaselinePath()))
+            "organicHiddenProbe" -> evaluations += organicHiddenEvaluation(task = task, baseline = baselinesByPath.getValue(Phase4OwnerBaselineRegistry.organicHiddenBaselinePath()))
+            "whiteBoxLoot" ->
+                evaluations +=
+                    readEmbeddedOwnerEvaluation(repoRoot = repoRoot(), task = task)
+                        ?: localRewardIdentityEvaluation(task = task, baseline = baselinesByPath.getValue(Phase4OwnerBaselineRegistry.lootBaselinePath()))
+            "longRunLab" -> evaluations += terminalBuildIdentityEvaluation(task = task, baseline = baselinesByPath.getValue(Phase4OwnerBaselineRegistry.terminalBuildBaselinePath()))
             "terrainInteractionBatch" -> {
-                evaluations += terrainAggregateEvaluation(task = task, baseline = baselinesByPath.getValue(Phase4OwnerBaselineRegistry.TERRAIN_UNIFIED_BASELINE_RELATIVE_PATH))
-                evaluations += terrainPerZoneLowerBoundEvaluation(task = task, baseline = baselinesByPath.getValue(Phase4OwnerBaselineRegistry.TERRAIN_PER_ZONE_BASELINE_RELATIVE_PATH))
+                evaluations += terrainAggregateEvaluation(task = task, baseline = baselinesByPath.getValue(Phase4OwnerBaselineRegistry.terrainUnifiedBaselinePath()))
+                evaluations += terrainPerZoneLowerBoundEvaluation(task = task, baseline = baselinesByPath.getValue(Phase4OwnerBaselineRegistry.terrainPerZoneBaselinePath()))
             }
         }
         val baselinePaths = baselinesByPath.keys.toList().sorted()
@@ -255,6 +272,46 @@ internal object Phase4AggregationInputRunner {
                     summaryPath = task.sourcePath,
                     artifactInputs = listOf(task.sourcePath) + baselinePaths,
                 ),
+        )
+    }
+
+    private fun readEmbeddedOwnerEvaluation(
+        repoRoot: Path,
+        task: Phase4TaskAggregate,
+    ): EvaluationResult? {
+        val sourcePath = repoRoot.resolve(task.sourcePath)
+        if (!Files.isRegularFile(sourcePath)) {
+            return null
+        }
+        return runCatching {
+            val payload = phase4AggregationJson.parseToJsonElement(sourcePath.readText()).jsonObject
+            val ownerEvaluation = payload["ownerEvaluation"] ?: return null
+            phase4AggregationJson.decodeFromString<EvaluationResult>(
+                phase4AggregationJson.encodeToString(JsonElement.serializer(), ownerEvaluation),
+            )
+        }.getOrNull()
+    }
+
+    private fun resolveEvaluationCacheEntry(
+        repoRoot: Path,
+        task: Phase4TaskAggregate,
+        currentFingerprints: JsonObject,
+    ): Phase4EvaluationCacheEntry? {
+        if (task.taskId != "longRunLab") {
+            return null
+        }
+        val cacheDirs = VerificationCacheSupport.cacheDirs(domainId = "longrun", repoRoot = repoRoot)
+        val fingerprint =
+            VerificationCacheSupport.sha256(
+                PHASE4_AGGREGATION_INPUT_CONTRACT_VERSION,
+                task.taskId,
+                phase4AggregationJson.encodeToString(JsonElement.serializer(), currentFingerprints),
+            )
+        val cacheRoot = VerificationCacheSupport.ensureDirectory(cacheDirs.evaluationDir.resolve("$PHASE4_AGGREGATION_INPUT_CONTRACT_VERSION-$fingerprint"))
+        return Phase4EvaluationCacheEntry(
+            cachePath = cacheRoot.resolve("${task.taskId}.json"),
+            fingerprint = fingerprint,
+            cacheRoot = cacheRoot,
         )
     }
 
@@ -646,6 +703,8 @@ internal object Phase4AggregationInputRunner {
         currentFingerprints: JsonObject,
         cacheStatus: String,
         artifactReused: Boolean,
+        artifactReuseSource: String?,
+        evaluationCacheFingerprint: String?,
         invalidationReason: String?,
         evaluationDurationMillis: Long,
     ): ReportAggregationInput {
@@ -656,6 +715,8 @@ internal object Phase4AggregationInputRunner {
                 put("contractVersion", PHASE4_AGGREGATION_INPUT_CONTRACT_VERSION)
                 put("cacheStatus", cacheStatus)
                 put("artifactReused", artifactReused)
+                artifactReuseSource?.let { value -> put("artifactReuseSource", value) }
+                evaluationCacheFingerprint?.let { value -> put("evaluationCacheFingerprint", value) }
                 invalidationReason?.let { value -> put("invalidationReason", value) }
                 put("evaluationDurationMillis", evaluationDurationMillis)
                 put("sourceArtifactFingerprint", currentFingerprints.getValue("sourceArtifactFingerprint"))

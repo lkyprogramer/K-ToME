@@ -1,5 +1,7 @@
 # Phase 5 Regression Checklist
 
+统一的 `Phase 5` verification/task/report wiring 与 `reportPhase5` contract，以 [2026-04-14-phase5-unified-verification-and-development-spec.md](./2026-04-14-phase5-unified-verification-and-development-spec.md) 为权威。
+
 ## 1. Automated Verification
 
 ```bash
@@ -14,6 +16,7 @@
 ./gradlew balanceLab
 ./gradlew contentPackHarness
 ./gradlew packageRelease
+./gradlew reportPhase5
 ```
 
 ### 必须检查的结果
@@ -52,6 +55,10 @@
 9. `packageRelease`
    - 安装包可生成、可启动
    - 已知问题、安装说明、验证摘要齐全
+10. `reportPhase5`
+   - 必须收录全部 `Phase 5` owned domains 与声明的 legacy upstream inputs
+   - summary 必须保留 `failedGateCount / ownerMetricCount / artifactReuseRate / domainCacheHitRate / releaseReadiness`
+   - owner metric catalog、legacy upstream inventory 与 release summary 最小字段必须可追溯
 
 ## 2. Fixed-Seed Harness Verification
 
@@ -169,3 +176,4 @@
 10. `balanceLab` 摘要
 11. 安装包验收结果
 12. `runSemanticHash / runTraceHash / aiTraceHash`
+13. `reportPhase5` summary / markdown 路径与对应 owner metric 结论

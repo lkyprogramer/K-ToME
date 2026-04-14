@@ -83,8 +83,36 @@ object ScopeCoverageLintRunner {
                     changedFiles = listOf("game/src/test/kotlin/com/ktome/game/harness/BossHarnessTest.kt"),
                 ),
                 planCase(
+                    caseId = "organic_hidden_owner_scope",
+                    changedFiles = listOf("tools/src/main/kotlin/com/ktome/tools/hidden/OrganicHiddenProbeRunner.kt"),
+                ),
+                planCase(
                     caseId = "longrun_owner_scope",
                     changedFiles = listOf("game/src/test/kotlin/com/ktome/game/harness/LongRunLabSeedBank.kt"),
+                ),
+                planCase(
+                    caseId = "scripted_hidden_owner_baseline_scope",
+                    changedFiles = listOf("docs/review/phase4/opt/baselines/2026-04-12-phase4-scripted-hidden-owner-baseline.json"),
+                ),
+                planCase(
+                    caseId = "organic_hidden_owner_baseline_scope",
+                    changedFiles = listOf("docs/review/phase4/opt/baselines/2026-04-12-phase4-organic-hidden-owner-baseline.json"),
+                ),
+                planCase(
+                    caseId = "loot_owner_baseline_scope",
+                    changedFiles = listOf("docs/review/phase4/opt/baselines/2026-04-12-phase4-loot-local-reward-identity-baseline.json"),
+                ),
+                planCase(
+                    caseId = "terrain_owner_baseline_scope",
+                    changedFiles = listOf("docs/review/phase4/opt/baselines/2026-04-09-opt-pr01-terrain-metrics-baseline-unified.json"),
+                ),
+                planCase(
+                    caseId = "longrun_owner_baseline_scope",
+                    changedFiles = listOf("docs/review/phase4/opt/baselines/2026-04-12-phase4-terminal-build-identity-baseline.json"),
+                ),
+                planCase(
+                    caseId = "phase4_report_only_scope",
+                    changedFiles = listOf("tools/src/main/kotlin/com/ktome/tools/phase4/Phase4AggregationInputRunner.kt"),
                 ),
             )
         val summary =

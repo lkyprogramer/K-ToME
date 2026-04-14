@@ -16,6 +16,7 @@ import com.ktome.game.harness.commandName
 import com.ktome.game.harness.consumesTurn
 import com.ktome.game.i18n.GameLocale
 import com.ktome.tools.mapgen.phase4HarnessHeader
+import com.ktome.tools.verification.VerificationCacheSupport
 import java.nio.file.Files
 import java.nio.file.Path
 import java.util.ArrayDeque
@@ -24,6 +25,10 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
 import kotlinx.serialization.json.putJsonObject
@@ -98,6 +103,16 @@ private data class OrganicHiddenProbeCaseResult(
         }
 }
 
+private data class OrganicHiddenProbeShardSpec(
+    val zoneId: String,
+    val floorIndex: Int,
+    val shardIndex: Int,
+    val cases: List<OrganicHiddenProbeCaseSpec>,
+) {
+    val shardId: String
+        get() = "$zoneId:$floorIndex:$shardIndex"
+}
+
 private data class OrganicHiddenProbeZoneMetrics(
     val caseCount: Int,
     val runsWithSearchActionCount: Int,
@@ -145,10 +160,12 @@ object OrganicHiddenProbeRunner {
 
     private const val SUMMARY_FILE: String = "organic-hidden-probe-summary.json"
     private const val EVENTS_FILE: String = "organic-hidden-probe-events.jsonl"
+    private const val ORGANIC_HIDDEN_KERNEL_CACHE_VERSION: String = "uvr-pr05-organic-hidden-kernel-v2"
     private const val FLOOR_INDEX: Int = 1
     private const val SEED_BASE: Long = 20260411010000L
     private const val ZONE_SEED_BLOCK: Long = 1_000L
     private const val SEEDS_PER_ZONE: Int = 125
+    private const val CASES_PER_SHARD: Int = 25
     private const val TURN_BUDGET: Int = 48
     private const val MAX_FLOOR: Int = 1
     private val json: Json = Json { prettyPrint = true }
@@ -161,6 +178,7 @@ object OrganicHiddenProbeRunner {
         )
 
     fun run(): OrganicHiddenProbeRun {
+        val repoRoot = VerificationCacheSupport.repoRoot()
         val outputDir = reportDir()
         Files.createDirectories(outputDir)
         val tempSaveRoot = outputDir.resolve("tmp")
@@ -176,15 +194,56 @@ object OrganicHiddenProbeRunner {
                 }
             }
         val header = phase4HarnessHeader(harnessId = HARNESS_ID, seedList = cases.map(OrganicHiddenProbeCaseSpec::seed))
-        val results = cases.map { caseSpec -> executeCase(caseSpec = caseSpec, tempSaveRoot = tempSaveRoot) }
+        val kernelCache = VerificationCacheSupport.cacheDirs(domainId = "organic-hidden", repoRoot = repoRoot)
+        val inputFingerprint = VerificationCacheSupport.sha256Files(organicHiddenFingerprintInputs(repoRoot))
+        val kernelRoot = VerificationCacheSupport.ensureDirectory(kernelCache.kernelDir.resolve(inputFingerprint))
+        var reusedShardCount = 0
+        val shardSpecs = buildShardSpecs(cases)
+        val shardEventPaths = mutableListOf<Path>()
+        val results =
+            shardSpecs
+                .flatMap { shardSpec ->
+                    val shardDir = VerificationCacheSupport.ensureDirectory(kernelRoot.resolve(shardSpec.shardId))
+                    val shardSummaryPath = shardDir.resolve("summary.json")
+                    val shardEventsPath = shardDir.resolve("events.jsonl")
+                    shardEventPaths.add(shardEventsPath)
+                    if (Files.isRegularFile(shardSummaryPath) && Files.isRegularFile(shardEventsPath)) {
+                        reusedShardCount += 1
+                        readShardResults(shardEventsPath)
+                    } else {
+                        val shardResults =
+                            shardSpec.cases.map { caseSpec -> executeCase(caseSpec = caseSpec, tempSaveRoot = tempSaveRoot) }
+                        writeShardResults(shardSummaryPath = shardSummaryPath, shardEventsPath = shardEventsPath, header = header, shardSpec = shardSpec, results = shardResults)
+                        shardResults
+                    }
+                }.sortedWith(compareBy(OrganicHiddenProbeCaseResult::zoneId, OrganicHiddenProbeCaseResult::seed))
         val summary = summarize(results)
         val summaryPath = outputDir.resolve(SUMMARY_FILE)
         val eventsPath = outputDir.resolve(EVENTS_FILE)
-        Files.writeString(summaryPath, json.encodeToString(JsonElement.serializer(), buildSummaryPayload(header = header, summary = summary)))
         Files.writeString(
-            eventsPath,
-            results.joinToString(separator = "\n") { result -> Json.encodeToString(JsonElement.serializer(), result.toJson(header)) } + "\n",
+            summaryPath,
+            json.encodeToString(
+                JsonElement.serializer(),
+                buildSummaryPayload(
+                    header = header,
+                    summary = summary,
+                    kernelCacheMetadata =
+                        buildJsonObject {
+                            put("contractVersion", ORGANIC_HIDDEN_KERNEL_CACHE_VERSION)
+                            put("inputFingerprint", inputFingerprint)
+                            put("cacheStatus", if (reusedShardCount == shardSpecs.size) "HIT" else "MISS")
+                            put("reusedShardCount", reusedShardCount)
+                            put("shardCount", shardSpecs.size)
+                            putJsonArray("shardEventPaths") {
+                                shardEventPaths.forEach { shardEventPath ->
+                                    add(JsonPrimitive(VerificationCacheSupport.relativeToRepo(shardEventPath, repoRoot)))
+                                }
+                            }
+                        },
+                ),
+            ),
         )
+        VerificationCacheSupport.mergeJsonlFiles(targetPath = eventsPath, sourcePaths = shardEventPaths)
         return OrganicHiddenProbeRun(
             totalCases = results.size,
             runtimeFailureCount = summary.runtimeFailureCount,
@@ -355,9 +414,11 @@ object OrganicHiddenProbeRunner {
     private fun buildSummaryPayload(
         header: HarnessReportHeader,
         summary: OrganicHiddenProbeSummary,
+        kernelCacheMetadata: JsonObject,
     ): JsonObject =
         buildJsonObject {
             put("header", header.toJson())
+            put("kernelCache", kernelCacheMetadata)
             putJsonObject("summary") {
                 put("scriptedVerification", false)
                 put("primerActionUsedCount", 0)
@@ -401,7 +462,85 @@ object OrganicHiddenProbeRunner {
             }
         }
 
+    private fun buildShardSpecs(cases: List<OrganicHiddenProbeCaseSpec>): List<OrganicHiddenProbeShardSpec> =
+        cases.groupBy(OrganicHiddenProbeCaseSpec::zoneId)
+            .toSortedMap()
+            .flatMap { (zoneId, zoneCases) ->
+                zoneCases
+                    .sortedBy(OrganicHiddenProbeCaseSpec::seed)
+                    .chunked(CASES_PER_SHARD)
+                    .mapIndexed { shardIndex, shardCases ->
+                        OrganicHiddenProbeShardSpec(
+                            zoneId = zoneId,
+                            floorIndex = FLOOR_INDEX,
+                            shardIndex = shardIndex,
+                            cases = shardCases,
+                        )
+                    }
+            }
+
+    private fun organicHiddenFingerprintInputs(repoRoot: Path): List<Path> =
+        listOf(
+            repoRoot.resolve("core/src/main/kotlin/com/ktome/core"),
+            repoRoot.resolve("tools/src/main/kotlin/com/ktome/tools/hidden"),
+            repoRoot.resolve("game/src/main/kotlin/com/ktome/game"),
+            repoRoot.resolve("game/src/main/resources/data/events"),
+            repoRoot.resolve("game/src/main/resources/data/secret-zones"),
+            repoRoot.resolve("game/src/main/resources/data/mapgen"),
+        )
+
+    private fun writeShardResults(
+        shardSummaryPath: Path,
+        shardEventsPath: Path,
+        header: HarnessReportHeader,
+        shardSpec: OrganicHiddenProbeShardSpec,
+        results: List<OrganicHiddenProbeCaseResult>,
+    ) {
+        Files.createDirectories(shardSummaryPath.parent)
+        Files.writeString(
+            shardSummaryPath,
+            json.encodeToString(
+                JsonElement.serializer(),
+                buildJsonObject {
+                    put("header", header.toJson())
+                    put("shardId", shardSpec.shardId)
+                    put("zoneId", shardSpec.zoneId)
+                    put("floorIndex", shardSpec.floorIndex)
+                    put("caseCount", results.size)
+                },
+            ),
+        )
+        Files.writeString(
+            shardEventsPath,
+            results.joinToString(separator = "\n") { result -> Json.encodeToString(JsonElement.serializer(), result.toJson(header)) } + "\n",
+        )
+    }
+
+    private fun readShardResults(shardEventsPath: Path): List<OrganicHiddenProbeCaseResult> =
+        Files.readAllLines(shardEventsPath)
+            .filter(String::isNotBlank)
+            .map { line -> json.parseToJsonElement(line).jsonObject.toOrganicHiddenProbeCaseResult() }
+
 }
+
+private fun JsonObject.toOrganicHiddenProbeCaseResult(): OrganicHiddenProbeCaseResult =
+    OrganicHiddenProbeCaseResult(
+        zoneId = getValue("zoneId").jsonPrimitive.content,
+        floorIndex = getValue("floorIndex").jsonPrimitive.content.toInt(),
+        seed = getValue("seed").jsonPrimitive.content.toLong(),
+        turnCount = getValue("turnCount").jsonPrimitive.content.toInt(),
+        searchAttemptCount = getValue("searchAttemptCount").jsonPrimitive.content.toInt(),
+        searchActionUseCount = getValue("searchActionUseCount").jsonPrimitive.content.toInt(),
+        searchRevealCount = getValue("searchRevealCount").jsonPrimitive.content.toInt(),
+        hiddenEventIds = getValue("hiddenEventIds").jsonArray.map { hiddenEventId -> hiddenEventId.jsonPrimitive.content },
+        secretZoneIds = getValue("secretZoneIds").jsonArray.map { secretZoneId -> secretZoneId.jsonPrimitive.content },
+        firstHiddenDiscoveryTurn = this["firstHiddenDiscoveryTurn"]?.jsonPrimitive?.contentOrNull?.toIntOrNull(),
+        firstSecretZoneEntryTurn = this["firstSecretZoneEntryTurn"]?.jsonPrimitive?.contentOrNull?.toIntOrNull(),
+        lastCommands = getValue("lastCommands").jsonArray.map { command -> command.jsonPrimitive.content },
+        finalZoneId = getValue("finalZoneId").jsonPrimitive.content,
+        finalFloor = getValue("finalFloor").jsonPrimitive.content.toInt(),
+        runtimeFailure = this["runtimeFailure"]?.jsonPrimitive?.contentOrNull,
+    )
 
 private data class OrganicProbeState(
     val revealedBindingIds: Set<String>,

@@ -6,14 +6,26 @@ import com.ktome.core.harness.whitebox.WhiteBoxAssertionResult
 import com.ktome.core.harness.whitebox.WhiteBoxCaseReport
 import com.ktome.core.harness.whitebox.WhiteBoxCorpusSpec
 import com.ktome.core.harness.whitebox.WhiteBoxJoinKey
+import com.ktome.tools.phase4.Phase4OwnerBaselineRegistry
+import com.ktome.tools.phase4.requiredMetric
 import com.ktome.tools.mapgen.phase4HarnessHeader
+import com.ktome.tools.verification.EvaluationResult
+import com.ktome.tools.verification.VerificationBaseline
+import com.ktome.tools.verification.VerificationBaselineComparator
+import com.ktome.tools.verification.VerificationCacheSupport
 import com.ktome.tools.whitebox.WhiteBoxDomainWriteRequest
 import com.ktome.tools.whitebox.WhiteBoxReportWriter
 import com.ktome.tools.whitebox.toVerificationReportHeader
 import java.nio.file.Files
 import java.nio.file.Path
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
 import kotlinx.serialization.json.putJsonObject
@@ -26,25 +38,63 @@ data class WhiteBoxLootRun(
     val reportPath: Path,
 )
 
+private data class LootPreflightArtifacts(
+    val summary: LootPreflightSummary,
+) {
+    val culpritPairs: List<LootPreflightPairSummary> = summary.culpritPairs.sortedBy(LootPreflightPairSummary::pairId)
+    val culpritPairIds: Set<String> = culpritPairs.mapTo(linkedSetOf(), LootPreflightPairSummary::pairId)
+    val culpritReasons: List<String> = culpritPairs.flatMap(LootPreflightPairSummary::culpritReasons).distinct().sorted()
+    val culpritReasonCounts: Map<String, Int> =
+        culpritPairs
+            .flatMap(LootPreflightPairSummary::culpritReasons)
+            .groupingBy { it }
+            .eachCount()
+            .toSortedMap()
+}
+
 object WhiteBoxLootRunner {
     const val HARNESS_ID: String = "whiteBoxLoot"
     private const val DOMAIN_ID: String = "loot"
     private const val CORPUS_ID: String = "P4_PR05_LOOT_WHITEBOX"
+    private const val WHITEBOX_EVALUATION_CACHE_VERSION: String = "uvr-pr05-whitebox-loot-eval-v2"
+    private val json: Json = Json { prettyPrint = true; explicitNulls = false }
 
     fun run(): WhiteBoxLootRun {
+        val repoRoot = VerificationCacheSupport.repoRoot()
         val outputDir = reportDir()
         Files.createDirectories(outputDir)
+        val cacheDirs = VerificationCacheSupport.cacheDirs(domainId = DOMAIN_ID, repoRoot = repoRoot)
+        val preflightSummaryPath = LootBalanceLabRunner.lootPreflightSummaryPath(repoRoot)
+        val baselinePath = repoRoot.resolve(Phase4OwnerBaselineRegistry.lootBaselinePath())
 
         val kernelRun =
             if (reuseHarnessOutputs()) {
-                LootBalanceLabRunner.readKernelRun() ?: LootLabKernel.execute()
+                LootBalanceLabRunner.readKernelRun() ?: LootLabKernel.execute().kernelRun
             } else {
-                LootLabKernel.execute()
+                LootLabKernel.execute().kernelRun
             }
+        val overlapSummaryJson = kernelRun.profileOverlapSummary.toJson()
+        val preflightArtifacts = loadPreflightArtifacts(preflightSummaryPath.parent)
+        val corpusAggregateMetrics = corpusMetrics(kernelRun, overlapSummaryJson, preflightArtifacts)
+        val evaluationFingerprint =
+            VerificationCacheSupport.sha256(
+                WHITEBOX_EVALUATION_CACHE_VERSION,
+                VerificationCacheSupport.sha256Json(corpusAggregateMetrics),
+                if (Files.isRegularFile(preflightSummaryPath)) VerificationCacheSupport.sha256Files(listOf(preflightSummaryPath)) else "missing-preflight",
+                if (Files.isRegularFile(baselinePath)) VerificationCacheSupport.sha256Files(listOf(baselinePath)) else "missing-baseline",
+            )
+        val evaluationCacheDir = cacheDirs.evaluationDir.resolve("$WHITEBOX_EVALUATION_CACHE_VERSION-$evaluationFingerprint")
+        val cachedSummaryPath = evaluationCacheDir.resolve("whitebox-loot-summary.json")
+        val cachedCasesPath = evaluationCacheDir.resolve("whitebox-loot-cases.jsonl")
+        val cachedReportPath = evaluationCacheDir.resolve("whitebox-loot-report.md")
+        if (Files.isRegularFile(cachedSummaryPath) && Files.isRegularFile(cachedCasesPath) && Files.isRegularFile(cachedReportPath)) {
+            VerificationCacheSupport.clearDirectory(outputDir)
+            VerificationCacheSupport.copyDirectoryContents(evaluationCacheDir, outputDir)
+            return cachedRun(outputDir.resolve("whitebox-loot-summary.json"), outputDir.resolve("whitebox-loot-cases.jsonl"), outputDir.resolve("whitebox-loot-report.md"))
+        }
         val header =
             phase4HarnessHeader(harnessId = HARNESS_ID, seedList = kernelRun.matrixSeeds, locale = LOOT_REPORT_LOCALE.id)
                 .toVerificationReportHeader(corpusId = CORPUS_ID)
-        val overlapSummaryJson = kernelRun.profileOverlapSummary.toJson()
         val corpus =
             WhiteBoxCorpusSpec(
                 corpusId = CORPUS_ID,
@@ -90,8 +140,8 @@ object WhiteBoxLootRunner {
                 WhiteBoxAggregateReport(
                     groupId = "corpus",
                     sampleCount = kernelRun.matrices.size,
-                    metrics = corpusMetrics(kernelRun, overlapSummaryJson),
-                    assertions = corpusAssertions(kernelRun, overlapSummaryJson),
+                    metrics = corpusAggregateMetrics,
+                    assertions = corpusAssertions(kernelRun, overlapSummaryJson, preflightArtifacts),
                 ),
             )
         val result =
@@ -106,6 +156,24 @@ object WhiteBoxLootRunner {
                     retentionPolicy = ArtifactRetentionPolicy.ALL,
                 ),
             )
+        val ownerEvaluation =
+            buildOwnerEvaluation(
+                kernelRun = kernelRun,
+                baseline = VerificationBaseline.read(baselinePath),
+                preflightArtifacts = preflightArtifacts,
+                corpusAggregateMetrics = corpusAggregateMetrics,
+            )
+        decorateSummary(
+            summaryPath = result.summaryPath,
+            repoRoot = repoRoot,
+            preflightSummaryPath = preflightSummaryPath,
+            baselinePath = baselinePath,
+            evaluationFingerprint = evaluationFingerprint,
+            ownerEvaluation = ownerEvaluation,
+            preflightArtifacts = preflightArtifacts,
+        )
+        VerificationCacheSupport.clearDirectory(evaluationCacheDir)
+        VerificationCacheSupport.copyDirectoryContents(outputDir, evaluationCacheDir)
         return WhiteBoxLootRun(
             caseCount = caseReports.size,
             failedAssertions = result.failedAssertions,
@@ -188,6 +256,7 @@ object WhiteBoxLootRunner {
     private fun corpusAssertions(
         kernelRun: LootKernelRun,
         overlapSummaryJson: JsonObject,
+        preflightArtifacts: LootPreflightArtifacts,
     ): List<WhiteBoxAssertionResult> =
         listOf(
             WhiteBoxAssertionResult(
@@ -232,6 +301,28 @@ object WhiteBoxLootRunner {
                 message = "Affix passive coverage stays at or above the OPT PR-03 threshold.",
                 context = kernelRun.passiveCoverageSummary.toJson(),
             ),
+            WhiteBoxAssertionResult(
+                ruleId = "loot.aggregate.preflight_culprit_alignment",
+                passed = (kernelRun.profileOverlapSummary.localIdentityFailurePairs.toSet() - preflightArtifacts.culpritPairIds).isEmpty(),
+                message = "verifyLootPreflight culprit pairs cover every same-zone local identity failure surfaced by whiteBoxLoot.",
+                context =
+                    buildJsonObject {
+                        putJsonArray("localIdentityFailurePairs") {
+                            kernelRun.profileOverlapSummary.localIdentityFailurePairs.sorted().forEach { pairId -> add(JsonPrimitive(pairId)) }
+                        }
+                        putJsonArray("preflightCulpritPairIds") {
+                            preflightArtifacts.culpritPairIds.sorted().forEach { pairId -> add(JsonPrimitive(pairId)) }
+                        }
+                        putJsonArray("missingPairIds") {
+                            (kernelRun.profileOverlapSummary.localIdentityFailurePairs.toSet() - preflightArtifacts.culpritPairIds)
+                                .sorted()
+                                .forEach { pairId -> add(JsonPrimitive(pairId)) }
+                        }
+                        putJsonObject("preflightCulpritReasonCounts") {
+                            preflightArtifacts.culpritReasonCounts.forEach { (reason, count) -> put(reason, count) }
+                        }
+                    },
+            ),
         )
 
     private fun caseFacts(matrix: LootMatrixResult): JsonObject =
@@ -263,6 +354,7 @@ object WhiteBoxLootRunner {
     private fun corpusMetrics(
         kernelRun: LootKernelRun,
         overlapSummaryJson: JsonObject,
+        preflightArtifacts: LootPreflightArtifacts,
     ): JsonObject =
         buildJsonObject {
             put("matrixCount", kernelRun.matrices.size)
@@ -289,6 +381,18 @@ object WhiteBoxLootRunner {
             put("sameZoneSecretVsCadencePairs", overlapSummaryJson.getValue("sameZoneSecretVsCadencePairs"))
             put("sameZoneSecretVsRewardPairs", overlapSummaryJson.getValue("sameZoneSecretVsRewardPairs"))
             put("localIdentityFailurePairs", overlapSummaryJson.getValue("localIdentityFailurePairs"))
+            put("preflightProfileCount", preflightArtifacts.summary.profileCount)
+            put("preflightPairCount", preflightArtifacts.summary.pairCount)
+            put("preflightCulpritPairCount", preflightArtifacts.summary.culpritPairCount)
+            putJsonArray("preflightCulpritReasons") {
+                preflightArtifacts.culpritReasons.forEach { reason -> add(JsonPrimitive(reason)) }
+            }
+            putJsonObject("preflightCulpritReasonCounts") {
+                preflightArtifacts.culpritReasonCounts.forEach { (reason, count) -> put(reason, count) }
+            }
+            putJsonArray("preflightCulpritPairs") {
+                preflightArtifacts.culpritPairs.forEach { pair -> add(pair.toJson()) }
+            }
             put("affixPassiveCoverage", kernelRun.passiveCoverageSummary.coverageRatio)
             putJsonArray("affixPassiveKinds") {
                 kernelRun.passiveCoverageSummary.passiveKinds.sorted().forEach { passiveKind -> add(kotlinx.serialization.json.JsonPrimitive(passiveKind)) }
@@ -355,6 +459,166 @@ object WhiteBoxLootRunner {
                 tags = listOf("cast_speed", "dr"),
             ),
         )
+
+    private fun cachedRun(
+        summaryPath: Path,
+        casesPath: Path,
+        reportPath: Path,
+    ): WhiteBoxLootRun {
+        val payload = json.parseToJsonElement(Files.readString(summaryPath)).jsonObject
+        val rewritten =
+            buildJsonObject {
+                payload.forEach { (key, value) ->
+                    if (key == "evaluationCache") {
+                        putJsonObject("evaluationCache") {
+                            value.jsonObject.forEach { (cacheKey, cacheValue) ->
+                                put(cacheKey, if (cacheKey == "cacheStatus") JsonPrimitive("HIT") else cacheValue)
+                            }
+                        }
+                    } else {
+                        put(key, value)
+                    }
+                }
+            }
+        Files.writeString(summaryPath, json.encodeToString(JsonElement.serializer(), rewritten))
+        val summary = rewritten.getValue("summary").jsonObject
+        return WhiteBoxLootRun(
+            caseCount = summary.getValue("caseCount").jsonPrimitive.content.toInt(),
+            failedAssertions = summary.getValue("failedAssertions").jsonPrimitive.content.toInt(),
+            summaryPath = summaryPath,
+            casesPath = casesPath,
+            reportPath = reportPath,
+        )
+    }
+
+    private fun decorateSummary(
+        summaryPath: Path,
+        repoRoot: Path,
+        preflightSummaryPath: Path,
+        baselinePath: Path,
+        evaluationFingerprint: String,
+        ownerEvaluation: EvaluationResult,
+        preflightArtifacts: LootPreflightArtifacts,
+    ) {
+        val payload = json.parseToJsonElement(Files.readString(summaryPath)).jsonObject
+        val decorated =
+            buildJsonObject {
+                payload.forEach { (key, value) -> put(key, value) }
+                put(
+                    "ownerEvaluation",
+                    json.parseToJsonElement(json.encodeToString(EvaluationResult.serializer(), ownerEvaluation)),
+                )
+                putJsonObject("evaluationCache") {
+                    put("contractVersion", WHITEBOX_EVALUATION_CACHE_VERSION)
+                    put("inputFingerprint", evaluationFingerprint)
+                    put("cacheStatus", "MISS")
+                    put("preflightSummaryPath", VerificationCacheSupport.relativeToRepo(preflightSummaryPath, repoRoot))
+                    put("preflightCulpritPairCount", preflightArtifacts.summary.culpritPairCount)
+                    put("baselinePath", VerificationCacheSupport.relativeToRepo(baselinePath, repoRoot))
+                }
+            }
+        Files.writeString(summaryPath, json.encodeToString(JsonElement.serializer(), decorated))
+    }
+
+    private fun buildOwnerEvaluation(
+        kernelRun: LootKernelRun,
+        baseline: VerificationBaseline,
+        preflightArtifacts: LootPreflightArtifacts,
+        corpusAggregateMetrics: JsonObject,
+    ): EvaluationResult {
+        val cadenceMetricId = "sameZoneSecretVsCadenceMaxOverlap"
+        val rewardMetricId = "sameZoneSecretVsRewardMaxOverlap"
+        val cadenceRange = baseline.requiredMetric(cadenceMetricId)
+        val rewardRange = baseline.requiredMetric(rewardMetricId)
+        val overlapSummaryJson = kernelRun.profileOverlapSummary.toJson()
+        val result =
+            VerificationBaselineComparator.compareBudgetThreshold(
+                domainId = "loot",
+                evaluationId = "loot.localRewardIdentity",
+                baseline = baseline.copy(expectedMetricRanges = listOf(cadenceRange, rewardRange)),
+                actualMetrics =
+                    mapOf(
+                        cadenceMetricId to kernelRun.profileOverlapSummary.sameZoneSecretVsCadenceMaxOverlap,
+                        rewardMetricId to kernelRun.profileOverlapSummary.sameZoneSecretVsRewardMaxOverlap,
+                    ),
+                currentValueTexts =
+                    mapOf(
+                        cadenceMetricId to formatRatio(kernelRun.profileOverlapSummary.sameZoneSecretVsCadenceMaxOverlap),
+                        rewardMetricId to formatRatio(kernelRun.profileOverlapSummary.sameZoneSecretVsRewardMaxOverlap),
+                    ),
+                currentValueElements =
+                    mapOf(
+                        cadenceMetricId to
+                            buildJsonObject {
+                                put("maxOverlap", kernelRun.profileOverlapSummary.sameZoneSecretVsCadenceMaxOverlap)
+                                put("pairs", overlapSummaryJson.getValue("sameZoneSecretVsCadencePairs"))
+                                put("localIdentityFailurePairs", overlapSummaryJson.getValue("localIdentityFailurePairs"))
+                                putJsonArray("preflightCulpritPairs") {
+                                    preflightArtifacts.culpritPairs.forEach { pair -> add(pair.toJson()) }
+                                }
+                                putJsonArray("preflightCulpritReasons") {
+                                    preflightArtifacts.culpritReasons.forEach { reason -> add(JsonPrimitive(reason)) }
+                                }
+                            },
+                        rewardMetricId to
+                            buildJsonObject {
+                                put("maxOverlap", kernelRun.profileOverlapSummary.sameZoneSecretVsRewardMaxOverlap)
+                                put("pairs", overlapSummaryJson.getValue("sameZoneSecretVsRewardPairs"))
+                                put("localIdentityFailurePairs", overlapSummaryJson.getValue("localIdentityFailurePairs"))
+                                putJsonArray("preflightCulpritPairs") {
+                                    preflightArtifacts.culpritPairs.forEach { pair -> add(pair.toJson()) }
+                                }
+                                putJsonArray("preflightCulpritReasons") {
+                                    preflightArtifacts.culpritReasons.forEach { reason -> add(JsonPrimitive(reason)) }
+                                }
+                            },
+                    ),
+                detailsByMetricId =
+                    mapOf(
+                        cadenceMetricId to corpusAggregateMetrics,
+                        rewardMetricId to corpusAggregateMetrics,
+                    ),
+            )
+        return result.copy(
+            entries =
+                result.entries.map { entry ->
+                    when (entry.metricId) {
+                        cadenceMetricId ->
+                            entry.copy(
+                                targetText = com.ktome.tools.phase4.Phase4OwnerMetricTargets.targetText(cadenceMetricId, cadenceRange),
+                                note =
+                                    "pairCount=${kernelRun.profileOverlapSummary.sameZoneSecretVsCadencePairs.size}, " +
+                                        "overlap = |A ∩ B| / min(|A|, |B|); " +
+                                        "preflightCulprits=${preflightArtifacts.summary.culpritPairCount}",
+                            )
+
+                        rewardMetricId ->
+                            entry.copy(
+                                targetText = com.ktome.tools.phase4.Phase4OwnerMetricTargets.targetText(rewardMetricId, rewardRange),
+                                note =
+                                    "pairCount=${kernelRun.profileOverlapSummary.sameZoneSecretVsRewardPairs.size}, " +
+                                        "failurePairs=${kernelRun.profileOverlapSummary.localIdentityFailurePairs.size}; " +
+                                        "preflightCulprits=${preflightArtifacts.summary.culpritPairCount}",
+                            )
+
+                        else -> entry
+                    }
+                },
+        )
+    }
+
+    private fun loadPreflightArtifacts(reportDir: Path): LootPreflightArtifacts =
+        LootPreflightArtifacts(
+            summary =
+                requireNotNull(LootPreflightRunner.readSummary(reportDir)) {
+                    "Missing loot preflight summary under $reportDir. Run verifyLootPreflight before whiteBoxLoot."
+                },
+        )
+
+    private fun formatRatio(value: Double): String = String.format(java.util.Locale.US, "%.3f", value)
+
+    private fun LootPreflightPairSummary.toJson(): JsonObject =
+        json.parseToJsonElement(json.encodeToString(LootPreflightPairSummary.serializer(), this)).jsonObject
 
     private fun reportDir(): Path {
         val configured = System.getProperty("ktome.phase4.whitebox.loot.reportDir")

@@ -1,9 +1,12 @@
 package com.ktome.tools.phase4
 
 import com.ktome.tools.verification.VerificationBaseline
+import java.io.File
 import java.nio.file.Path
 
 internal object Phase4OwnerBaselineRegistry {
+    private const val OWNER_BASELINE_OVERRIDE_PROPERTY_PREFIX: String = "ktome.phase4.ownerBaselineOverride."
+
     const val SCRIPTED_HIDDEN_BASELINE_RELATIVE_PATH: String =
         "docs/review/phase4/opt/baselines/2026-04-12-phase4-scripted-hidden-owner-baseline.json"
     const val ORGANIC_HIDDEN_BASELINE_RELATIVE_PATH: String =
@@ -26,14 +29,47 @@ internal object Phase4OwnerBaselineRegistry {
             "terrainInteractionBatch" to listOf(TERRAIN_UNIFIED_BASELINE_RELATIVE_PATH, TERRAIN_PER_ZONE_BASELINE_RELATIVE_PATH),
         )
 
+    fun registeredTaskIds(): Set<String> = baselinePathsByTaskId.keys
+
     fun ownerBaselinePaths(taskId: String): List<String> =
-        baselinePathsByTaskId[taskId].orEmpty()
+        resolveBaselinePaths(taskId = taskId, defaultPaths = baselinePathsByTaskId[taskId].orEmpty())
+
+    fun scriptedHiddenBaselinePath(): String = ownerBaselinePaths("hiddenContentHarness").single()
+
+    fun organicHiddenBaselinePath(): String = ownerBaselinePaths("organicHiddenProbe").single()
+
+    fun lootBaselinePath(): String = ownerBaselinePaths("whiteBoxLoot").single()
+
+    fun terminalBuildBaselinePath(): String = ownerBaselinePaths("longRunLab").single()
+
+    fun terrainUnifiedBaselinePath(): String = ownerBaselinePaths("terrainInteractionBatch")[0]
+
+    fun terrainPerZoneBaselinePath(): String = ownerBaselinePaths("terrainInteractionBatch")[1]
 
     fun readOwnerBaselines(
         repoRoot: Path,
         taskId: String,
     ): Map<String, VerificationBaseline> =
         ownerBaselinePaths(taskId).associateWith { relativePath -> read(repoRoot, relativePath) }
+
+    private fun resolveBaselinePaths(
+        taskId: String,
+        defaultPaths: List<String>,
+    ): List<String> {
+        val override =
+            System.getProperty("$OWNER_BASELINE_OVERRIDE_PROPERTY_PREFIX$taskId")
+                ?.split(File.pathSeparatorChar)
+                ?.map(String::trim)
+                ?.filter(String::isNotEmpty)
+                .orEmpty()
+        if (override.isEmpty()) {
+            return defaultPaths
+        }
+        require(override.size == defaultPaths.size) {
+            "Baseline override for $taskId must provide ${defaultPaths.size} path(s), found ${override.size}."
+        }
+        return override
+    }
 
     private fun read(
         repoRoot: Path,

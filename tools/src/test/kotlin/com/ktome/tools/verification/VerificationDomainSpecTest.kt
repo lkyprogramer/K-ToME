@@ -57,18 +57,25 @@ class VerificationDomainSpecTest {
         assertTrue(spec.inputScopes.any { scope -> scope.scopeId == "loot.data.loot" && !scope.ownerRequired })
         assertTrue(spec.inputScopes.any { scope -> scope.scopeId == "loot.runtime" && scope.ownerRequired })
         assertEquals(listOf(":tools:verifyLootPreflight"), spec.preflightTaskPaths)
-        assertEquals(listOf(":tools:lootBalanceLab"), spec.ownerTaskPaths)
+        assertEquals(listOf(":tools:lootBalanceLab", ":tools:whiteBoxLoot"), spec.ownerTaskPaths)
     }
 
     @Test
     fun `hidden and content pack domains expose executable owner nodes in addition to preflight`() {
         val hidden = VerificationTaskRegistry.spec("hidden")
+        val organicHidden = VerificationTaskRegistry.spec("organic-hidden")
         val contentPack = VerificationTaskRegistry.spec("content-pack")
 
         assertEquals(VerificationTier.OWNER, hidden.defaultTier)
         assertEquals(VerificationNodeKind.LEGACY_JUNIT_CLASS_SET, hidden.resolveNode(VerificationTier.OWNER).nodeKind)
         assertEquals(listOf(":tools:hiddenContentHarness"), hidden.ownerTaskPaths)
         assertTrue(hidden.preflightTaskPaths.contains(":tools:verifyHiddenPreflight"))
+        assertTrue(hidden.inputScopes.any { scope -> scope.scopeId == "hidden.owner-evaluation" })
+
+        assertEquals(VerificationTier.OWNER, organicHidden.defaultTier)
+        assertEquals(VerificationNodeKind.LEGACY_JUNIT_CLASS_SET, organicHidden.resolveNode(VerificationTier.OWNER).nodeKind)
+        assertEquals(listOf(":tools:organicHiddenProbe"), organicHidden.ownerTaskPaths)
+        assertTrue(organicHidden.inputScopes.any { scope -> scope.scopeId == "organic-hidden.owner-evaluation" })
 
         assertEquals(VerificationTier.OWNER, contentPack.defaultTier)
         assertEquals(VerificationNodeKind.LEGACY_JUNIT_CLASS_SET, contentPack.resolveNode(VerificationTier.OWNER).nodeKind)
@@ -97,6 +104,16 @@ class VerificationDomainSpecTest {
             spec.baselinePolicy?.baselinePath,
         )
         assertEquals(listOf(":tools:terrainInteractionBatch"), spec.ownerTaskPaths)
+        assertTrue(spec.inputScopes.any { scope -> scope.scopeId == "terrain.owner-evaluation" })
+    }
+
+    @Test
+    fun `longrun domain now resolves to executable junit owner nodes`() {
+        val spec = VerificationTaskRegistry.spec("longrun")
+
+        assertEquals(VerificationTier.OWNER, spec.defaultTier)
+        assertEquals(VerificationNodeKind.LEGACY_JUNIT_CLASS_SET, spec.resolveNode(VerificationTier.OWNER).nodeKind)
+        assertEquals(listOf(":game:longRunLab"), spec.ownerTaskPaths)
     }
 
     @Test

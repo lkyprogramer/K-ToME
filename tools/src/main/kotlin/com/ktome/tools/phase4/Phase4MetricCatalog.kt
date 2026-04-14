@@ -105,6 +105,8 @@ internal object Phase4MetricCatalog {
             ),
         )
 
+    fun ownerTaskIds(): Set<String> = specs.mapTo(linkedSetOf(), Phase4MetricSpec::ownerTaskId)
+
     fun entryFor(
         metricId: String,
         sourcePathByTaskId: Map<String, String>,
