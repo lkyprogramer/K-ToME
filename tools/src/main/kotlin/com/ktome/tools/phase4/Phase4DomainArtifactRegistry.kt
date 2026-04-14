@@ -117,7 +117,6 @@ internal object Phase4DomainArtifactRegistry {
             Phase4TaskDescriptor(
                 taskId = "whiteBoxContentPack",
                 relativeSourcePath = "tools/build/reports/phase4/whitebox/content-pack/whitebox-content-pack-summary.json",
-                aggregationOnly = true,
                 reader = ::readWhiteBoxContentPack,
             ),
             Phase4TaskDescriptor(

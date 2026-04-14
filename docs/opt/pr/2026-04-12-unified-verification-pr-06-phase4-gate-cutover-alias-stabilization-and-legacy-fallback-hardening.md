@@ -24,7 +24,7 @@
 
 完成标准：
 
-1. `phase4Report` 对外语义切到新 `reportPhase4`
+1. `phase4Report` 对外语义切到 canonical unified aggregate；`reportPhase4` 只作为显式 parity 对账入口
 2. 旧 root alias 仍可用
 3. 旧链路降级为 fallback，不再承担默认主路径
 4. 新体系的关键 owner metric 与旧体系对账完成
@@ -75,6 +75,11 @@
 
 但对外 alias 保持不变。
 
+补充说明：
+
+1. root `phase4Report` 指向默认 canonical unified aggregate，底层仍可保留 `:tools:phase4Report` 这一 task 名称。
+2. `reportPhase4` 不承担日常 gate，而是 verification contract / baseline / aggregation schema / report schema 发生变化时的显式 parity 对账入口。
+
 ### 4.2 cutover 条件
 
 只有在以下条件全部满足后，才切正式 gate：
@@ -118,6 +123,7 @@
 ### Task 2：切换 root alias 指向
 
 - **目标**：对外保持名字不变，对内切新实现
+- **补充约束**：若某个 domain 的 owner coverage 在切 gate 时存在明显漏项，允许把该补齐与 cutover 合并落地；但仅限 owner task 集对齐，不得顺手改动对应 domain 的 kernel、baseline、阈值或业务规则
 
 ### Task 3：固化 fallback
 

@@ -1,18 +1,24 @@
 package com.ktome.tools.phase4
 
 import java.nio.file.Files
+import java.nio.file.Path
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.io.TempDir
 
 class ReportPhase4RunnerTest {
+    @TempDir
+    lateinit var tempDir: Path
+
     @Test
     @Tag("reportPhase4")
     fun `reportPhase4 builds artifact only aggregate and optional legacy comparison`() {
@@ -65,6 +71,30 @@ class ReportPhase4RunnerTest {
             assertEquals("9", comparison.getValue("metricCount").jsonPrimitive.content)
         } else {
             assertNull(run.comparisonPath)
+        }
+    }
+
+    @Test
+    @Tag("reportPhase4")
+    fun `reportPhase4 removes stale legacy comparison artifact on canonical runs`() {
+        val originalReportDir = System.getProperty("ktome.phase4.aggregate.reportDir")
+        val staleComparisonPath = tempDir.resolve("report-phase4-legacy-comparison.json")
+        Files.writeString(staleComparisonPath, """{"stale":true}""")
+
+        try {
+            System.setProperty("ktome.phase4.aggregate.reportDir", tempDir.toString())
+
+            val run = ReportPhase4Runner.run(compareLegacy = false)
+
+            assertTrue(Files.exists(run.summaryPath))
+            assertFalse(Files.exists(staleComparisonPath), "Canonical phase4Report run should delete stale parity artifacts from the default output directory.")
+            assertNull(run.comparisonPath)
+        } finally {
+            if (originalReportDir == null) {
+                System.clearProperty("ktome.phase4.aggregate.reportDir")
+            } else {
+                System.setProperty("ktome.phase4.aggregate.reportDir", originalReportDir)
+            }
         }
     }
 }

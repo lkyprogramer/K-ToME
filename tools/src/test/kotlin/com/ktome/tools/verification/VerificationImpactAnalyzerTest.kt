@@ -23,10 +23,13 @@ class VerificationImpactAnalyzerTest {
 
         assertEquals(setOf("content-pack", "hidden", "organic-hidden", "loot"), impactedDomainIds)
         assertFalse(plan.requestedTaskPaths.contains(":tools:phase4ReportOnly"))
+        assertFalse(plan.requestedTaskPaths.contains(":tools:phase4LegacyReport"))
+        assertFalse(plan.requestedTaskPaths.contains(":tools:phase4LegacyReportOnly"))
         assertTrue(plan.requestedTaskPaths.contains(":tools:lootBalanceLab"))
         assertTrue(plan.requestedTaskPaths.contains(":tools:hiddenContentHarness"))
         assertTrue(plan.requestedTaskPaths.contains(":tools:organicHiddenProbe"))
         assertTrue(plan.requestedTaskPaths.contains(":tools:contentPackHarness"))
+        assertTrue(plan.requestedTaskPaths.contains(":tools:whiteBoxContentPack"))
     }
 
     @Test
@@ -36,6 +39,8 @@ class VerificationImpactAnalyzerTest {
 
         assertEquals(setOf("boss", "content-pack", "hidden", "longrun", "loot", "mapgen", "organic-hidden", "solvability", "terrain"), impactedDomainIds)
         assertFalse(plan.requestedTaskPaths.contains(":tools:phase4ReportOnly"))
+        assertFalse(plan.requestedTaskPaths.contains(":tools:phase4LegacyReport"))
+        assertFalse(plan.requestedTaskPaths.contains(":tools:phase4LegacyReportOnly"))
     }
 
     @Test
@@ -166,5 +171,7 @@ class VerificationImpactAnalyzerTest {
 
         assertEquals(setOf("hidden", "longrun", "loot", "organic-hidden", "terrain"), plan.impactedDomains.map(VerificationDomainImpact::domainId).toSet())
         assertEquals(listOf(":tools:scopeCoverageLint", ":tools:reportPhase4Only"), plan.requestedTaskPaths)
+        assertFalse(plan.requestedTaskPaths.contains(":tools:phase4LegacyReport"))
+        assertFalse(plan.requestedTaskPaths.contains(":tools:phase4LegacyReportOnly"))
     }
 }

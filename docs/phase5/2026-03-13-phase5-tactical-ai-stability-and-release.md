@@ -79,9 +79,12 @@
 ### 3.3 Unified Verification 开发规范
 
 1. `Phase 5` 新增 verification/gate/report 任务时，必须先落到 single-source catalog，再生成 task wiring；禁止先写 `Test + @Tag` 或在 `build.gradle.kts` 手工接 root task。
-2. `reportPhase5` 是 `Phase 5` 的 canonical aggregate gate，`reportPhase5Only` 是 artifact-only rebuild alias；不再引入与其平行的第二套 phase report 命名或 registry。
-3. `contentPackHarness`、`longRunLab`、`LootBalanceLab` 继续作为上游 legacy provider 被复用；`Phase 5` 不得复制其 runner，只能消费其 artifact。
-4. 任何 `Phase 5` 之后的新功能，只要命中 verification/report/gate，也继续沿用同一套 catalog 规范，不得再引入 phase 专用 registry。
+2. `reportPhase5` 是 `Phase 5` 的 canonical aggregate gate，默认产物路径固定为 `tools/build/reports/verification/phase5/report-phase5-summary.{json,md}`；`reportPhase5Only` 是 artifact-only rebuild alias。
+3. 若较早的跨 phase 文档仍出现 `phase5Report` 命名，以 `docs/phase5/*` 当前权威链为准；`Phase 5` 不再引入与 `reportPhase5` 平行的第二套 phase report 命名或 registry。
+4. 若后续需要新增 sibling aggregate/report task、兼容 alias 或 fallback 入口，必须复用 shared helper 或 declarative generation path；不得重新复制 `tasks.register<Test>` family。
+5. 相关 build contract test 必须直接断言 canonical 输出路径、artifact-only rebuild 语义、legacy/compat alias 是否隔离等 semantic invariant，而不是依赖大段 Gradle DSL 文本形状。
+6. `contentPackHarness`、`longRunLab`、`LootBalanceLab` 继续作为上游 legacy provider 被复用；`Phase 5` 不得复制其 runner，只能消费其 artifact。
+7. 任何 `Phase 5` 之后的新功能，只要命中 verification/report/gate，也继续沿用同一套 catalog 规范，不得再引入 phase 专用 registry。
 
 ## 4. 技术合同
 

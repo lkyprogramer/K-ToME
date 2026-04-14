@@ -269,6 +269,8 @@ class VerificationCliTest {
         assertTrue(taskPaths.contains(":tools:verifyLootPreflight"))
         assertTrue(taskPaths.contains(":tools:lootBalanceLab"))
         assertFalse(taskPaths.contains(":tools:phase4ReportOnly"))
+        assertFalse(taskPaths.contains(":tools:phase4LegacyReport"))
+        assertFalse(taskPaths.contains(":tools:phase4LegacyReportOnly"))
     }
 
     private fun writeReportSourceArtifact(

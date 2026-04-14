@@ -34,7 +34,7 @@ class Phase4RegistryConsistencyTest {
         val reportOwnerTaskIds = aggregatedTaskIds - aggregationOnlyTaskIds
 
         assertEquals(
-            setOf("mapgenSmoke", "solvabilityHarness", "whiteBoxHiddenContent", "whiteBoxContentPack"),
+            setOf("mapgenSmoke", "solvabilityHarness", "whiteBoxHiddenContent"),
             aggregationOnlyTaskIds,
         )
         assertEquals(setOf("contractLint"), routedOwnerTaskIds - reportOwnerTaskIds)

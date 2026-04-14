@@ -654,63 +654,95 @@ tasks.register<Test>("whiteBoxContentPack") {
     outputs.dir(reportDir)
 }
 
-tasks.register<Test>("phase4Report") {
-    group = "verification"
-    description = "Rebuilds the legacy Phase 4 aggregate summary from existing artifacts without rerunning producer tasks."
-    testClassesDirs = sourceSets.test.get().output.classesDirs
-    classpath = sourceSets.test.get().runtimeClasspath
-    useJUnitPlatform {
-        includeTags("phase4Report")
+val legacyPhase4ReportDir = layout.buildDirectory.dir("reports/phase4")
+val unifiedPhase4ReportDir = layout.buildDirectory.dir("reports/verification/phase4")
+val testSourceSet = sourceSets.test.get()
+
+fun registerPhase4AggregateTask(
+    name: String,
+    descriptionText: String,
+    includeTag: String,
+    outputDir: Provider<org.gradle.api.file.Directory>,
+    aggregateReportDir: Provider<org.gradle.api.file.Directory>? = null,
+    legacyReportDir: Provider<org.gradle.api.file.Directory>? = null,
+    compareLegacy: Boolean? = null,
+) {
+    tasks.register<Test>(name) {
+        group = "verification"
+        description = descriptionText
+        testClassesDirs = testSourceSet.output.classesDirs
+        classpath = testSourceSet.runtimeClasspath
+        useJUnitPlatform {
+            includeTags(includeTag)
+            if (includeTag == "reportPhase4") {
+                excludeTags("phase4AggregationInput")
+            }
+        }
+        aggregateReportDir?.let {
+            systemProperty("ktome.phase4.aggregate.reportDir", it.get().asFile.absolutePath)
+        }
+        legacyReportDir?.let {
+            systemProperty("ktome.phase4.reportDir", it.get().asFile.absolutePath)
+        }
+        compareLegacy?.let {
+            systemProperty("ktome.phase4.aggregate.compareLegacy", it.toString())
+        }
+        outputs.dir(outputDir)
     }
-    val reportDir = layout.buildDirectory.dir("reports/phase4")
-    systemProperty("ktome.phase4.reportDir", reportDir.get().asFile.absolutePath)
-    outputs.dir(reportDir)
 }
 
-tasks.register<Test>("phase4ReportOnly") {
-    group = "verification"
-    description = "Explicit artifact-only alias for rebuilding the legacy Phase 4 aggregate report from existing artifacts."
-    testClassesDirs = sourceSets.test.get().output.classesDirs
-    classpath = sourceSets.test.get().runtimeClasspath
-    useJUnitPlatform {
-        includeTags("phase4Report")
-    }
-    val reportDir = layout.buildDirectory.dir("reports/phase4")
-    systemProperty("ktome.phase4.reportDir", reportDir.get().asFile.absolutePath)
-    outputs.dir(reportDir)
-}
+registerPhase4AggregateTask(
+    name = "phase4LegacyReport",
+    descriptionText = "Manually rebuilds the legacy Phase 4 aggregate summary from existing artifacts without rerunning producer tasks.",
+    includeTag = "phase4LegacyReport",
+    outputDir = legacyPhase4ReportDir,
+    legacyReportDir = legacyPhase4ReportDir,
+)
 
-tasks.register<Test>("reportPhase4") {
-    group = "verification"
-    description = "Materializes the new aggregate report from unified domain artifacts and compares owner metrics against an existing legacy phase4Report output."
-    testClassesDirs = sourceSets.test.get().output.classesDirs
-    classpath = sourceSets.test.get().runtimeClasspath
-    useJUnitPlatform {
-        includeTags("reportPhase4")
-        excludeTags("phase4AggregationInput")
-    }
-    val aggregateReportDir = layout.buildDirectory.dir("reports/verification/phase4")
-    systemProperty("ktome.phase4.reportDir", layout.buildDirectory.dir("reports/phase4").get().asFile.absolutePath)
-    systemProperty("ktome.phase4.aggregate.reportDir", aggregateReportDir.get().asFile.absolutePath)
-    systemProperty("ktome.phase4.aggregate.compareLegacy", "true")
-    outputs.dir(aggregateReportDir)
-}
+registerPhase4AggregateTask(
+    name = "phase4LegacyReportOnly",
+    descriptionText = "Explicit artifact-only alias for manually rebuilding the legacy Phase 4 aggregate report.",
+    includeTag = "phase4LegacyReport",
+    outputDir = legacyPhase4ReportDir,
+    legacyReportDir = legacyPhase4ReportDir,
+)
 
-tasks.register<Test>("reportPhase4Only") {
-    group = "verification"
-    description = "Rebuilds the new Phase 4 aggregate report from existing domain summaries and cached evaluation artifacts without legacy comparison or producer reruns."
-    testClassesDirs = sourceSets.test.get().output.classesDirs
-    classpath = sourceSets.test.get().runtimeClasspath
-    useJUnitPlatform {
-        includeTags("reportPhase4")
-        excludeTags("phase4AggregationInput")
-    }
-    val aggregateReportDir = layout.buildDirectory.dir("reports/verification/phase4")
-    systemProperty("ktome.phase4.reportDir", layout.buildDirectory.dir("reports/phase4").get().asFile.absolutePath)
-    systemProperty("ktome.phase4.aggregate.reportDir", aggregateReportDir.get().asFile.absolutePath)
-    systemProperty("ktome.phase4.aggregate.compareLegacy", "false")
-    outputs.dir(aggregateReportDir)
-}
+registerPhase4AggregateTask(
+    name = "phase4Report",
+    descriptionText = "Rebuilds the canonical unified Phase 4 aggregate report from existing domain summaries and cached evaluation artifacts.",
+    includeTag = "reportPhase4",
+    outputDir = unifiedPhase4ReportDir,
+    aggregateReportDir = unifiedPhase4ReportDir,
+    compareLegacy = false,
+)
+
+registerPhase4AggregateTask(
+    name = "phase4ReportOnly",
+    descriptionText = "Explicit artifact-only alias for rebuilding the canonical unified Phase 4 aggregate report.",
+    includeTag = "reportPhase4",
+    outputDir = unifiedPhase4ReportDir,
+    aggregateReportDir = unifiedPhase4ReportDir,
+    compareLegacy = false,
+)
+
+registerPhase4AggregateTask(
+    name = "reportPhase4",
+    descriptionText = "Runs the explicit parity gate that compares the canonical unified Phase 4 aggregate against the legacy fallback report.",
+    includeTag = "reportPhase4",
+    outputDir = unifiedPhase4ReportDir,
+    aggregateReportDir = unifiedPhase4ReportDir,
+    legacyReportDir = legacyPhase4ReportDir,
+    compareLegacy = true,
+)
+
+registerPhase4AggregateTask(
+    name = "reportPhase4Only",
+    descriptionText = "Rebuilds the canonical unified Phase 4 aggregate report from existing domain summaries without legacy comparison or producer reruns.",
+    includeTag = "reportPhase4",
+    outputDir = unifiedPhase4ReportDir,
+    aggregateReportDir = unifiedPhase4ReportDir,
+    compareLegacy = false,
+)
 
 listOf(
     tasks.named("contractLint"),
@@ -724,6 +756,7 @@ listOf(
     tasks.named("hiddenContentHarness"),
     tasks.named("organicHiddenProbe"),
     tasks.named("contentPackHarness"),
+    tasks.named("whiteBoxContentPack"),
     tasks.named("reportPhase4Only"),
     tasks.named("terrainInteractionBatch"),
     tasks.named("bossHarness"),

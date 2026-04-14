@@ -4,6 +4,7 @@ import java.nio.file.Files
 import java.nio.file.Path
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class VerifyChangedBuildContractTest {
@@ -23,6 +24,30 @@ class VerifyChangedBuildContractTest {
 
         assertEquals(expectedTaskPaths, actualTaskPaths.toSet())
         assertFalse(actualTaskPaths.contains(":tools:phase4ReportOnly"))
+        assertFalse(actualTaskPaths.contains(":tools:phase4LegacyReport"))
+        assertFalse(actualTaskPaths.contains(":tools:phase4LegacyReportOnly"))
+    }
+
+    @Test
+    fun `root verifyOwner task paths stay aligned with routed phase4 owner domains`() {
+        val buildScript = Files.readString(repoRoot().resolve("build.gradle.kts"))
+        val actualTaskPaths = buildScript.readStringList(name = "verifyOwnerTaskPaths")
+        val expectedTaskPaths =
+            VerificationTaskRegistry
+                .registeredImpactSpecs()
+                .filter { spec -> "phase4" in spec.phaseIds }
+                .flatMap { spec -> spec.ownerTaskPaths }
+                .toSet()
+
+        assertEquals(expectedTaskPaths, actualTaskPaths.toSet())
+    }
+
+    @Test
+    fun `tools verifyChanged plan gate applies to every routed owner task including white box content pack`() {
+        val buildScript = Files.readString(repoRoot().resolve("tools/build.gradle.kts"))
+
+        assertTrue(buildScript.contains("""tasks.named("whiteBoxContentPack")"""))
+        assertTrue(buildScript.contains("""VerifyChangedPlanGate.applyTo(this, verifyChangedTaskPathsFile, "prepareVerifyChangedPlan")"""))
     }
 
     private fun repoRoot(): Path =

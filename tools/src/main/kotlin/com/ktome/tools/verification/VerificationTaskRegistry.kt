@@ -327,7 +327,7 @@ object VerificationTaskRegistry {
                     ),
                 ),
             preflightTaskPaths = listOf(":tools:verifyContentPackPreflight"),
-            ownerTaskPaths = listOf(":tools:contentPackHarness"),
+            ownerTaskPaths = listOf(":tools:contentPackHarness", ":tools:whiteBoxContentPack"),
             baselinePolicy = BaselinePolicySpec(mode = BaselineMode.STRICT_ZERO_FAILURE),
             cachePolicy =
                 VerificationCachePolicy(

@@ -38,7 +38,7 @@
 4. **统一回归语义**
    - 显式建模 `strict pass / approved debt / expected failure / relative baseline / budget threshold`。
 5. **统一 phase 聚合**
-   - `phase4Report`、未来的 `phase5Report` 都只消费已有 domain artifact，不直接重新执行 producer。
+   - `phase4Report`、未来的 `reportPhase5` 都只消费已有 domain artifact，不直接重新执行 producer。
 
 如果按本方案落地：
 
@@ -86,6 +86,9 @@
 1. 新验证域优先走 `build-logic + VerificationTask/VerificationReportTask` 宿主，不再默认做成 `Test + @Tag + 手写 root alias`。
 2. root 公开命令可以继续保留稳定 alias，但 alias 必须从统一 contract 派生，不得在 `build.gradle.kts` 或子模块脚本里长期维护第二份 task 清单。
 3. build-logic 只负责 task generation、execution host、verifyChanged gate 和 cacheable inputs/outputs；domain 业务规则、metric 公式、artifact 解析不得下沉到 build-logic。
+4. 只要一组 sibling verification/aggregate task 的差异仅在 `task name / includeTag / outputDir / aggregateReportDir / legacyReportDir / compareLegacy` 这一类显式参数，就必须共用同一套 helper 或 build-logic generation path；不得长期复制多段等价 `tasks.register<Test>` block。
+5. canonical aggregate、显式 parity 对账入口与 legacy fallback 的职责必须在 task contract 上明确分开；兼容 alias 可以保留，但 canonical wiring 只能有一套，且默认 gate 不得遗留 parity artifact。
+6. build contract test 必须优先校验 helper/build-logic 调用参数与语义不变量，例如 canonical 输出路径、parity 是否显式开启、legacy fallback 是否隔离；不得长期依赖“大段 Gradle DSL 文本切片”作为唯一断言方式。
 
 #### 2.3.2 Impact Analysis / `verifyChanged`
 
@@ -148,7 +151,7 @@
 4. **长时系统验证**
    - 例：longRunLab、soakRun、perfSmoke。
 5. **聚合报告**
-   - 例：phase4Report、未来的 phase5Report。
+   - 例：phase4Report、未来的 reportPhase5。
 
 这些任务的：
 
@@ -254,7 +257,7 @@ flowchart TD
     B --> C["Verification Engine<br/>kernel DAG + cache resolver + worker scheduler"]
     C --> D["Evaluation Layer<br/>rules + baseline/debt + regression diff"]
     D --> E["Reporting Layer<br/>summary.json + cases.jsonl + report.md + artifacts"]
-    E --> F["Phase Aggregator<br/>phase4Report / phase5Report / release summary"]
+    E --> F["Phase Aggregator<br/>phase4Report / reportPhase5 / release summary"]
 ```
 
 ### 4.2 以 DAG 为核心的执行图
@@ -680,6 +683,19 @@ tools/src/main/kotlin/com/ktome/tools/phase5/
 4. `LegacyHarnessAdapterTask`
    - 用于迁移期承接现有 `Test + @Tag` harness
 
+迁移期补充约束：
+
+1. 在仍需保留 `Test + @Tag` adapter family 的阶段，同族 aggregate/report task 也必须收敛到共享 helper，而不是继续复制 block。
+2. helper/build-logic 至少要把以下差异显式参数化：
+   - `taskName`
+   - `includeTag`
+   - `outputDir`
+   - `aggregateReportDir`
+   - `legacyReportDir`
+   - `compareLegacy`
+3. 若 canonical aggregate 与 parity task 共享输出目录，则默认 canonical 路径必须显式清理 parity-only artifact，或把 parity artifact 隔离到独立目录；不允许让一次历史 parity 运行污染默认 gate 证据。
+4. 迁移期的 build contract test 应直接锚定 helper/build-logic 生成参数与关键语义，不应要求每个 sibling task 继续保留独立的大段 DSL 形状。
+
 ---
 
 ## 7. 执行模型与依赖顺序
@@ -800,18 +816,22 @@ flowchart TD
 
 ```bash
 ./gradlew verifyChanged
-./gradlew verifyChangedReportOnly
 ./gradlew verifyOwner
+./gradlew phase4Report
 ```
 
 #### Phase 级
 
 ```bash
-./gradlew verifyPhase4
 ./gradlew verifyPhase5
 ./gradlew reportPhase4
 ./gradlew reportPhase5
 ```
+
+说明：
+
+1. `verifyChangedReportOnly` 与 `verifyPhase4` 仍是后续可选扩展，不属于当前 `PR-06` 已落地入口。
+2. 当前 `Phase 4` 的 canonical aggregate gate 是 `phase4Report`；`reportPhase4` 是显式 parity 对账入口。
 
 #### 发布态
 
@@ -1014,7 +1034,7 @@ data class InputScope(
    - 若只改静态池结构，不必先跑 `longRunLab`
 2. 改 `ReplayHeader`
    - 命中 `replay`
-   - 传递命中 `phase5Report`、`packageRelease`
+   - 传递命中 `reportPhase5`、`packageRelease`
 3. 改 `TerrainTag`
    - 命中 `mapgen / solvability / terrain / tactical-ai / perf`
 
@@ -1212,7 +1232,7 @@ data class InputScope(
 | `contentPackHarness` | `content-pack/OWNER` | `STATIC_GRAPH + DETERMINISTIC_SCENARIO` | 强缓存 | white-box / phase4 复用 |
 | `whiteBoxHiddenContent` | `hidden/OWNER` | `EVALUATION` | 复用 hidden kernel | phase4 复用 |
 | `whiteBoxContentPack` | `content-pack/OWNER` | `EVALUATION` | 复用 content-pack kernel | phase4 复用 |
-| `phase4Report` | `phase4/AGGREGATE` | `REPORT_ONLY` | 强缓存 | 不跑 producer |
+| `phase4Report` | `phase4/AGGREGATE` | `REPORT_ONLY` | 强缓存 | canonical unified aggregate，默认产物为 `tools/build/reports/verification/phase4/report-phase4-summary.{json,md}`，不跑 producer |
 
 **必须新增的 Phase 4 preflight**
 
@@ -1229,13 +1249,15 @@ data class InputScope(
 1. `lootBalanceLab`
 2. `whiteBoxLoot`
 3. `phase4Report`
-4. 其余 checklist 中已经冻结的 root task 名
+4. `phase4LegacyReport`
+5. 其余 checklist 中已经冻结的 root task 名
 
 原则：
 
 1. `Phase 4` 迁移期先保证行为迁移，不先强制改所有任务名
 2. 新内部任务名与 node/domain 语义可并存
-3. 是否在 `Phase 5` 前后统一对外命名，再单独决策
+3. `phase4Report` 指向 canonical unified aggregate；`phase4LegacyReport` / `phase4LegacyReportOnly` 只保留为手工 fallback，不进入默认 gate、默认 impact routing 或默认开发回路
+4. 是否在 `Phase 5` 前后统一对外命名，再单独决策
 
 ---
 
@@ -1258,7 +1280,7 @@ data class InputScope(
 | `balanceLab` | `balance/FULL|NIGHTLY` | `STATISTICAL_BATCH` | shard 缓存 | `BUDGET_THRESHOLD` |
 | `contentPackHarness` | `content-pack/OWNER` | `STATIC_GRAPH + DETERMINISTIC_SCENARIO` | 强缓存 | `EXPECTED_FAILURE_CODE_SET` |
 | `packageRelease` | `release/RELEASE` | `LONG_RUNNING_SYSTEM` | 仅缓存 build artifact | `STRICT_ZERO_FAILURE` |
-| `phase5Report` | `phase5/AGGREGATE` | `REPORT_ONLY` | 强缓存 | N/A |
+| `reportPhase5` | `phase5/AGGREGATE` | `REPORT_ONLY` | 强缓存 | canonical unified aggregate，默认产物为 `tools/build/reports/verification/phase5/report-phase5-summary.{json,md}`，不跑 producer |
 
 **Phase 5 必须从第一天就具备的报告产物**
 
@@ -1318,7 +1340,7 @@ data class InputScope(
 
 要求：
 
-1. 新系统生成的 `reportPhase4` 结果，与旧 `phase4Report` 在关键 owner metric 上做对账
+1. 新系统生成的 `reportPhase4` 结果，与 `phase4LegacyReport` 产出的旧 summary 在关键 owner metric 上做对账
 2. 若关键 metric 不一致，优先阻断迁移，不直接替换旧任务
 3. 旧 report 至少保留到：
    - `Phase 4` 当前所有 owner domain 都已迁完
@@ -1449,20 +1471,26 @@ data class InputScope(
 
 ### Sprint 4：Phase 4 全面回绿与 gate 重排
 
-目标：
+当前 PR-06 落地目标：
 
-1. `verifyPhase4`
+1. `phase4Report`
 2. `reportPhase4`
 3. `verifyChanged`
 4. `verifyOwner`
-5. `verifyChangedReportOnly`
+5. `phase4LegacyReport`
 
-验收：
+当前验收：
 
 1. `Phase 4` 当前 owner gate 全部通过新 contract 运行
 2. 修改 `Phase 4` 相关输入时，默认先命中 preflight，再按 impact 选择必要重任务
-3. `phase4Report` 完全不触发 producer
-4. 当前“改一点就炸、炸了还跑很久”的主痛点在 `Phase 4` 范围内被解除
+3. `phase4Report` 完全不触发 producer，且默认产物切到 unified aggregate 目录
+4. legacy report 降级为手工 fallback，不再承担默认 gate
+5. 当前“改一点就炸、炸了还跑很久”的主痛点在 `Phase 4` 范围内被解除
+
+后续可选扩展：
+
+1. `verifyPhase4`
+2. `verifyChangedReportOnly`
 
 ### Sprint 5：Phase 5 设计封版（仅文档，不实现）
 

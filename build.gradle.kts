@@ -49,12 +49,27 @@ val verificationOnlyTestTags =
         "whiteBoxSolvability",
         "whiteBoxHiddenContent",
         "whiteBoxContentPack",
-        "phase4Report",
+        "phase4LegacyReport",
         "reportPhase4",
         "verifyLootPreflight",
         "verifyHiddenPreflight",
         "verifyContentPackPreflight",
         "scopeCoverageLint",
+    )
+val verifyOwnerTaskPaths =
+    listOf(
+        ":tools:contractLint",
+        ":tools:lootBalanceLab",
+        ":tools:whiteBoxLoot",
+        ":tools:hiddenContentHarness",
+        ":tools:organicHiddenProbe",
+        ":tools:contentPackHarness",
+        ":tools:whiteBoxContentPack",
+        ":tools:whiteBoxMapgen",
+        ":tools:whiteBoxSolvability",
+        ":tools:terrainInteractionBatch",
+        ":tools:bossHarness",
+        ":game:longRunLab",
     )
 val verifyChangedTaskPaths =
     listOf(
@@ -70,6 +85,7 @@ val verifyChangedTaskPaths =
         ":tools:hiddenContentHarness",
         ":tools:organicHiddenProbe",
         ":tools:contentPackHarness",
+        ":tools:whiteBoxContentPack",
         ":tools:reportPhase4Only",
         ":tools:whiteBoxMapgen",
         ":tools:whiteBoxSolvability",
@@ -359,28 +375,46 @@ tasks.register("whiteBoxLoot") {
     dependsOn(":tools:whiteBoxLoot")
 }
 
+tasks.register("phase4LegacyReport") {
+    group = LifecycleBasePlugin.VERIFICATION_GROUP
+    description = "Manually rebuilds the legacy Phase 4 aggregate report from existing artifacts."
+    dependsOn(":tools:phase4LegacyReport")
+}
+
+tasks.register("phase4LegacyReportOnly") {
+    group = LifecycleBasePlugin.VERIFICATION_GROUP
+    description = "Explicit artifact-only alias for manually rebuilding the legacy Phase 4 aggregate report."
+    dependsOn(":tools:phase4LegacyReportOnly")
+}
+
 tasks.register("phase4Report") {
     group = LifecycleBasePlugin.VERIFICATION_GROUP
-    description = "Rebuilds tools/build/reports/phase4/phase4-summary.json from existing Phase 4 verification artifacts."
+    description = "Rebuilds the canonical unified Phase 4 aggregate report from existing owner artifacts."
     dependsOn(":tools:phase4Report")
 }
 
 tasks.register("phase4ReportOnly") {
     group = LifecycleBasePlugin.VERIFICATION_GROUP
-    description = "Explicit artifact-only alias for rebuilding tools/build/reports/phase4/phase4-summary.json from existing artifacts."
+    description = "Explicit artifact-only alias for rebuilding the canonical unified Phase 4 aggregate report."
     dependsOn(":tools:phase4ReportOnly")
 }
 
 tasks.register("reportPhase4") {
     group = LifecycleBasePlugin.VERIFICATION_GROUP
-    description = "Materializes Phase 4 evaluation artifacts from existing domain summaries, builds the new aggregate report, and compares its owner metrics against legacy phase4Report."
+    description = "Runs the explicit parity gate that compares the canonical unified Phase 4 aggregate against the legacy fallback report."
     dependsOn(":tools:reportPhase4")
 }
 
 tasks.register("reportPhase4Only") {
     group = LifecycleBasePlugin.VERIFICATION_GROUP
-    description = "Rebuilds the new Phase 4 aggregate report from existing domain summaries and cached evaluation artifacts without legacy comparison."
+    description = "Rebuilds the canonical unified Phase 4 aggregate report from existing domain summaries without legacy comparison."
     dependsOn(":tools:reportPhase4Only")
+}
+
+tasks.register("verifyOwner") {
+    group = LifecycleBasePlugin.VERIFICATION_GROUP
+    description = "Runs the routed Phase 4 owner verification set on top of the unified verification contract."
+    dependsOn(verifyOwnerTaskPaths)
 }
 
 tasks.register("verifyChanged") {
