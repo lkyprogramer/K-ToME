@@ -58,6 +58,8 @@
 6. `reportPhase5` 是 `Phase 5` 的 canonical aggregate gate，默认产物路径固定为 `tools/build/reports/verification/phase5/report-phase5-summary.{json,md}`；`reportPhase5Only` 只做 artifact-only rebuild。
 7. 若较早的跨 phase 文档仍出现 `phase5Report` 命名，以 `docs/phase5/*` 当前权威链为准；`Phase 5` 正式命令与证据路径统一使用 `reportPhase5`。
 8. 后续若需要新增 sibling aggregate/report task、兼容 alias 或 report-only 入口，必须复用 shared helper 或 declarative generation path，并用 semantic build contract test 锁定 canonical / alias / fallback 行为。
+9. `Phase 5` 的 non-trivial Kotlin、verification/report/gate、catalog/build wiring 改动，必须同时遵守 [../rule/ai-change-governance.md](../rule/ai-change-governance.md)；默认开发主回路先跑 `./gradlew verifyChanged`，命中结构/边界/治理接线时再补 `./gradlew maintainabilityLint`。
+10. `Phase 5` 及之后的新功能，若引入 `Boolean` 参数、默认参数矩阵、`Helper / Utils / Manager`、compat path、第二真源，或没有 `debt(id)` 与删除条件的临时逻辑，默认视为阻塞项；必须先解释 owner / contract / boundary 选择，再决定是否保留实现。
 
 ## 5. 进入与退出摘要
 
@@ -81,3 +83,4 @@
 4. [../2026-04-04-unified-white-box-verification-framework.md](../2026-04-04-unified-white-box-verification-framework.md)
 5. [../2026-03-13-phase2-to-phase5-final-roadmap.md](../2026-03-13-phase2-to-phase5-final-roadmap.md)
 6. [../2026-03-13-core-systems-design-and-phase-supplements.md](../2026-03-13-core-systems-design-and-phase-supplements.md)
+7. [../rule/ai-change-governance.md](../rule/ai-change-governance.md)

@@ -11,6 +11,8 @@
 5. [../opt/pr/2026-04-12-unified-verification-pr-07-phase5-domain-spec-and-phase-report-design-freeze.md](../opt/pr/2026-04-12-unified-verification-pr-07-phase5-domain-spec-and-phase-report-design-freeze.md)
 6. [../opt/2026-04-12-repository-wide-unified-verification-contract-and-execution-architecture.md](../opt/2026-04-12-repository-wide-unified-verification-contract-and-execution-architecture.md)
 7. [../opt/pr/README.md](../opt/pr/README.md)
+8. [../rule/kotlin.md](../rule/kotlin.md)
+9. [../rule/ai-change-governance.md](../rule/ai-change-governance.md)
 
 ---
 
@@ -27,6 +29,9 @@
 5. 若未来需要兼容 alias、fallback 或 sibling aggregate/report task，必须从同一 shared helper / declarative generation path 派生；不得复制新的 `tasks.register<Test>` family。
 6. `contentPackHarness`、`longRunLab`、`LootBalanceLab` 等现有 `Phase 3/4` 产物只能作为 **legacy upstream provider** 被声明引用，不得在 `Phase 5` 再复制第二套 runner。
 7. 后续 `Phase 5` 新功能或 `Phase 5` 之后的系统开发，若命中 verification/report/gate，必须继续复用这一套 catalog 规范。
+8. `Phase 5` 的 non-trivial Kotlin、verification/report/gate、catalog/build wiring 变更，必须同时经过 repo-owned anti-bloat 治理；`maintainabilityLint` 是该类改动的默认 quick preflight。
+9. `maintainabilityLint` 只拦高信号、可稳定判定的反模式；设计裁决仍以 [../rule/ai-change-governance.md](../rule/ai-change-governance.md) 的 taxonomy 与 review 口径为准，不把 gate 当成第二套长期规则。
+10. `option-sprawl / helper-sprawl / second-authority / temp-path-without-expiry` 在 `Phase 5` 默认按阻塞项处理；不能以“先把 task 接上”为理由接受结构性膨胀。
 
 ---
 
@@ -216,14 +221,32 @@ legacy upstream 只允许通过 catalog 中的 `legacyUpstreamRefs` 声明接入
 
 ## 5. 开发规范
 
-### 5.1 新增 Phase 5 功能时的接线顺序
+### 5.1 开发前 Anti-Bloat 预检
+
+任何 `Phase 5` non-trivial Kotlin、verification/report/gate、catalog/build wiring 改动，开始实现前必须明确：
+
+1. `Goal`
+   - 这次要收敛什么行为，为什么属于 `Phase 5` 当前 checkpoint。
+2. `Owner / Contracts`
+   - 变更属于 `core / game / client / tools` 哪一层，是否命中 `snapshot / replay / report / baseline / package / release` 等稳定合同。
+3. `Chosen Shape`
+   - 只能优先从 `inline simplify / extract typed model / extend boundary / content-schema wiring` 中选一个主形状。
+4. `Forbidden Shortcuts Check`
+   - 默认禁止新增 `Boolean` 参数、默认参数矩阵、`Helper / Utils / Manager`、compat path、第二真源，以及没有 `debt(id)` 与删除条件的临时逻辑。
+5. `Deletion Budget`
+   - 必须说明这次删掉或收敛了什么复杂度；如果只是增加代码、没有任何收敛，必须写明原因。
+6. `Planned Validation`
+   - 默认先跑 `./gradlew verifyChanged`；若命中结构/边界/治理接线，再补 `./gradlew maintainabilityLint`，然后才进入 domain owner/full 验证。
+
+### 5.2 新增 Phase 5 功能时的接线顺序
 
 只要新功能命中 verification/gate/report，接线顺序固定为：
 
-1. 先在 `catalog-v2` 增加 domain 或扩展已有 domain。
-2. 再增加 `artifactReaderId` / `evaluationStrategyId` / `ownerMetricProviderId`。
-3. 再由 build-logic 自动生成任务。
-4. 最后才写 runner / harness / report presenter。
+1. 先完成 `5.1` 的 anti-bloat 预检。
+2. 再在 `catalog-v2` 增加 domain 或扩展已有 domain。
+3. 再增加 `artifactReaderId` / `evaluationStrategyId` / `ownerMetricProviderId`。
+4. 再由 build-logic 自动生成任务。
+5. 最后才写 runner / harness / report presenter。
 
 禁止反向顺序：
 
@@ -236,8 +259,10 @@ legacy upstream 只允许通过 catalog 中的 `legacyUpstreamRefs` 声明接入
 1. 若该功能需要日常增量开发入口，必须同步补 `verifyChanged` coverage 与 scope coverage lint。
 2. 若该功能需要 phase aggregate 指标，必须先定义 `reportPhase5` inclusion、owner metric ids 与 summary schema，再实现 runner。
 3. 若该功能是统计型或长时型验证，必须先定义 cache layering、fingerprint 边界与 evaluation-only 行为，再实现执行器。
+4. 若该功能命中 non-trivial Kotlin 结构/边界或 verification/report/build wiring，必须同步把 `maintainabilityLint` 纳入本地最小必跑集合。
+5. 若 review 或 lint finding 已经落到 `option-sprawl / helper-sprawl / second-authority / temp-path-without-expiry`，则必须先修 owner / contract / boundary，不得把结构债留给后续 phase。
 
-### 5.2 新增 task 的最小清单
+### 5.3 新增 task 的最小清单
 
 每新增一个 `Phase 5` task，必须同时补齐：
 
@@ -254,8 +279,10 @@ legacy upstream 只允许通过 catalog 中的 `legacyUpstreamRefs` 声明接入
 11. artifact-only rebuild behavior
 12. shared generation path / helper ownership
 13. semantic build contract test
+14. anti-bloat preflight记录或显式复用已有 `5.1` 结论
+15. `maintainabilityLint` 覆盖与输入声明，若该 task 会消费 governance/build wiring 变更
 
-### 5.3 适用于 Phase 5 之后的新功能
+### 5.4 适用于 Phase 5 之后的新功能
 
 从本规范生效起，后续新功能若满足以下任一条件，必须复用同一套 catalog：
 
@@ -264,8 +291,9 @@ legacy upstream 只允许通过 catalog 中的 `legacyUpstreamRefs` 声明接入
 3. 需要 baseline / expected debt / budget threshold
 4. 需要 verifyChanged routing
 5. 需要 report-only rebuild
+6. 需要 anti-bloat preflight 或 `maintainabilityLint` owner coverage
 
-### 5.4 文档同步规则
+### 5.5 文档同步规则
 
 若 `Phase 5` verification contract 发生变化，必须同步更新：
 
@@ -273,6 +301,7 @@ legacy upstream 只允许通过 catalog 中的 `legacyUpstreamRefs` 声明接入
 2. [2026-03-13-phase5-tactical-ai-stability-and-release.md](./2026-03-13-phase5-tactical-ai-stability-and-release.md)
 3. [2026-03-13-phase5-regression-checklist.md](./2026-03-13-phase5-regression-checklist.md)
 4. 本文
+5. [../rule/ai-change-governance.md](../rule/ai-change-governance.md) 若 taxonomy / gate / author discipline 口径也发生变化
 
 ---
 

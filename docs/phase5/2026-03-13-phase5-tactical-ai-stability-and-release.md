@@ -85,6 +85,9 @@
 5. 相关 build contract test 必须直接断言 canonical 输出路径、artifact-only rebuild 语义、legacy/compat alias 是否隔离等 semantic invariant，而不是依赖大段 Gradle DSL 文本形状。
 6. `contentPackHarness`、`longRunLab`、`LootBalanceLab` 继续作为上游 legacy provider 被复用；`Phase 5` 不得复制其 runner，只能消费其 artifact。
 7. 任何 `Phase 5` 之后的新功能，只要命中 verification/report/gate，也继续沿用同一套 catalog 规范，不得再引入 phase 专用 registry。
+8. `Phase 5` 的 non-trivial Kotlin、verification/report/gate、catalog/build wiring 变更，必须同时遵守 [../rule/ai-change-governance.md](../rule/ai-change-governance.md)；默认开发回路先跑 `./gradlew verifyChanged`，命中结构/边界/治理接线时再补 `./gradlew maintainabilityLint`。
+9. `option-sprawl / helper-sprawl / second-authority / temp-path-without-expiry` 在 `Phase 5` 默认按阻塞项处理；必须先修 owner / contract / boundary，不能继续堆 patch。
+10. `Boolean` 参数、默认参数矩阵、`Helper / Utils / Manager`、compat path、第二真源，以及没有 `debt(id)` 与删除条件的临时逻辑，除非设计文档显式说明理由，否则不得进入 `Phase 5` 主线。
 
 ## 4. 技术合同
 

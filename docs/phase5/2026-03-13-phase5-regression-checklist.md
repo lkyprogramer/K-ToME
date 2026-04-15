@@ -2,6 +2,22 @@
 
 统一的 `Phase 5` verification/task/report wiring 与 `reportPhase5` contract，以 [2026-04-14-phase5-unified-verification-and-development-spec.md](./2026-04-14-phase5-unified-verification-and-development-spec.md) 为权威。
 
+## 0. Development Preflight
+
+后续 `Phase 5` 开发默认先走增量 preflight，再决定是否进入完整 release 回归：
+
+```bash
+./gradlew verifyChanged
+./gradlew maintainabilityLint
+```
+
+约束：
+
+1. `verifyChanged` 是默认开发主回路；新 domain、新 report wiring、catalog/build 接线、governance 文档变更都必须先经过 impact routing。
+2. `maintainabilityLint` 只在 non-trivial Kotlin 结构/边界、verification/report/gate/catalog/build wiring、repo governance 变更时强制执行；它是 quick preflight，不替代完整 release gate。
+3. 若 `maintainabilityLint` 或 review 命中 `option-sprawl / helper-sprawl / second-authority / temp-path-without-expiry`，必须先解释 owner / contract / boundary，或直接修掉，再继续后续实现。
+4. `Boolean` 参数、默认参数矩阵、`Helper / Utils / Manager`、compat path、第二真源、没有 `debt(id)` 与删除条件的临时逻辑，在 `Phase 5` 默认按阻塞项处理。
+
 ## 1. Automated Verification
 
 ```bash
@@ -24,6 +40,7 @@
 1. `reportPhase5` 是 `Phase 5` 的 canonical aggregate gate，默认产物路径固定为 `tools/build/reports/verification/phase5/report-phase5-summary.{json,md}`。
 2. `reportPhase5Only` 只做 artifact-only rebuild，不触发 producer；若较早文档仍出现 `phase5Report` 命名，以本 checklist 与 `Phase 5` unified verification spec 为准。
 3. 若后续为 `Phase 5` 新增 sibling aggregate/report alias 或 fallback 入口，必须复用 shared helper / declarative generation path，并用 semantic build contract test 锁定 canonical 行为。
+4. `maintainabilityLint` 不是 `Phase 5` release checklist 的默认重型 gate，但它是后续开发的 mandatory preflight；只要命中 `Phase 5` Kotlin 结构、verification/report/build wiring 或治理接线，就不能跳过。
 
 ### 必须检查的结果
 
