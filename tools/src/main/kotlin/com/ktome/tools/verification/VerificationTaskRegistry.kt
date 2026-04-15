@@ -49,6 +49,71 @@ object VerificationTaskRegistry {
             artifactPolicy = VerificationArtifactPolicy(),
         )
 
+    private val maintainabilityDomain =
+        VerificationDomainSpec(
+            domainId = "maintainability",
+            phaseIds = setOf("phase4", "phase5"),
+            workloadClass = VerificationWorkloadClass.STATIC_GRAPH,
+            defaultTier = VerificationTier.PREFLIGHT,
+            nodeSpecs =
+                listOf(
+                    VerificationNodeSpec(
+                        nodeId = "maintainability.preflight",
+                        description = "Runs the anti-bloat maintainability lint against the versioned debt baseline.",
+                        workloadClass = VerificationWorkloadClass.STATIC_GRAPH,
+                        tier = VerificationTier.PREFLIGHT,
+                        nodeKind = VerificationNodeKind.LEGACY_JUNIT_CLASS_SET,
+                        selectedClasses = listOf("com.ktome.tools.lint.MaintainabilityLintRunnerTest"),
+                    ),
+                ),
+            inputScopes =
+                listOf(
+                    InputScope(
+                        scopeId = "maintainability.runtime.core",
+                        pathPrefixes = listOf("core/src/main/kotlin/"),
+                    ),
+                    InputScope(
+                        scopeId = "maintainability.runtime.game",
+                        pathPrefixes = listOf("game/src/main/kotlin/"),
+                    ),
+                    InputScope(
+                        scopeId = "maintainability.runtime.client",
+                        pathPrefixes = listOf("client/src/main/kotlin/"),
+                    ),
+                    InputScope(
+                        scopeId = "maintainability.runtime.tools",
+                        pathPrefixes = listOf("tools/src/main/kotlin/"),
+                    ),
+                    InputScope(
+                        scopeId = "maintainability.runtime.build-logic",
+                        pathPrefixes = listOf("build-logic/src/main/kotlin/"),
+                    ),
+                    InputScope(
+                        scopeId = "maintainability.governance",
+                        pathPrefixes =
+                            listOf(
+                                "docs/rule/ai-change-governance.md",
+                                "maintainability-baseline.json",
+                                "build.gradle.kts",
+                                "tools/build.gradle.kts",
+                            ),
+                    ),
+                ),
+            preflightTaskPaths = listOf(":tools:maintainabilityLint"),
+            baselinePolicy =
+                BaselinePolicySpec(
+                    mode = BaselineMode.APPROVED_DEBT_SET,
+                    baselinePath = "maintainability-baseline.json",
+                ),
+            cachePolicy =
+                VerificationCachePolicy(
+                    buildCacheEnabled = true,
+                    configurationCacheCompatible = true,
+                    reuseExistingArtifacts = true,
+                ),
+            artifactPolicy = VerificationArtifactPolicy(),
+        )
+
     private val lootDomain =
         VerificationDomainSpec(
             domainId = "loot",
@@ -629,6 +694,7 @@ object VerificationTaskRegistry {
     private val domainsById: Map<String, VerificationDomainSpec> =
         listOf(
             contractLintDomain,
+            maintainabilityDomain,
             lootDomain,
             hiddenDomain,
             organicHiddenDomain,

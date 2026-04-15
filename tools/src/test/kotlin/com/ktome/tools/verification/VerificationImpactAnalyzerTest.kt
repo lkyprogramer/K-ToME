@@ -21,10 +21,11 @@ class VerificationImpactAnalyzerTest {
         val plan = VerificationImpactAnalyzer.analyze(listOf("game/src/main/kotlin/com/ktome/game/data/DataLoader.kt"))
         val impactedDomainIds = plan.impactedDomains.map(VerificationDomainImpact::domainId).toSet()
 
-        assertEquals(setOf("content-pack", "hidden", "organic-hidden", "loot"), impactedDomainIds)
+        assertEquals(setOf("content-pack", "hidden", "organic-hidden", "loot", "maintainability"), impactedDomainIds)
         assertFalse(plan.requestedTaskPaths.contains(":tools:phase4ReportOnly"))
         assertFalse(plan.requestedTaskPaths.contains(":tools:phase4LegacyReport"))
         assertFalse(plan.requestedTaskPaths.contains(":tools:phase4LegacyReportOnly"))
+        assertTrue(plan.requestedTaskPaths.contains(":tools:maintainabilityLint"))
         assertTrue(plan.requestedTaskPaths.contains(":tools:lootBalanceLab"))
         assertTrue(plan.requestedTaskPaths.contains(":tools:hiddenContentHarness"))
         assertTrue(plan.requestedTaskPaths.contains(":tools:organicHiddenProbe"))
@@ -37,10 +38,11 @@ class VerificationImpactAnalyzerTest {
         val plan = VerificationImpactAnalyzer.analyze(listOf("core/src/main/kotlin/com/ktome/core/map/MapGrid.kt"))
         val impactedDomainIds = plan.impactedDomains.map(VerificationDomainImpact::domainId).toSet()
 
-        assertEquals(setOf("boss", "content-pack", "hidden", "longrun", "loot", "mapgen", "organic-hidden", "solvability", "terrain"), impactedDomainIds)
+        assertEquals(setOf("boss", "content-pack", "hidden", "longrun", "loot", "maintainability", "mapgen", "organic-hidden", "solvability", "terrain"), impactedDomainIds)
         assertFalse(plan.requestedTaskPaths.contains(":tools:phase4ReportOnly"))
         assertFalse(plan.requestedTaskPaths.contains(":tools:phase4LegacyReport"))
         assertFalse(plan.requestedTaskPaths.contains(":tools:phase4LegacyReportOnly"))
+        assertTrue(plan.requestedTaskPaths.contains(":tools:maintainabilityLint"))
     }
 
     @Test
@@ -48,9 +50,10 @@ class VerificationImpactAnalyzerTest {
         val plan = VerificationImpactAnalyzer.analyze(listOf("game/src/main/kotlin/com/ktome/game/harness/HeadlessRunHarness.kt"))
         val impactedDomainIds = plan.impactedDomains.map(VerificationDomainImpact::domainId).toSet()
 
-        assertEquals(setOf("boss", "longrun", "terrain"), impactedDomainIds)
+        assertEquals(setOf("boss", "longrun", "maintainability", "terrain"), impactedDomainIds)
         assertTrue(plan.requestedTaskPaths.contains(":tools:bossHarness"))
         assertTrue(plan.requestedTaskPaths.contains(":game:longRunLab"))
+        assertTrue(plan.requestedTaskPaths.contains(":tools:maintainabilityLint"))
         assertTrue(plan.requestedTaskPaths.contains(":tools:terrainInteractionBatch"))
     }
 
@@ -76,7 +79,8 @@ class VerificationImpactAnalyzerTest {
     fun `mapgen white box runner change routes to mapgen owner task`() {
         val plan = VerificationImpactAnalyzer.analyze(listOf("tools/src/main/kotlin/com/ktome/tools/mapgen/WhiteBoxMapgenRunner.kt"))
 
-        assertEquals(setOf("mapgen"), plan.impactedDomains.map(VerificationDomainImpact::domainId).toSet())
+        assertEquals(setOf("maintainability", "mapgen"), plan.impactedDomains.map(VerificationDomainImpact::domainId).toSet())
+        assertTrue(plan.requestedTaskPaths.contains(":tools:maintainabilityLint"))
         assertTrue(plan.requestedTaskPaths.contains(":tools:whiteBoxMapgen"))
     }
 
@@ -84,7 +88,8 @@ class VerificationImpactAnalyzerTest {
     fun `mapgen smoke runner change still routes to mapgen owner task`() {
         val plan = VerificationImpactAnalyzer.analyze(listOf("tools/src/main/kotlin/com/ktome/tools/mapgen/MapgenSmokeRunner.kt"))
 
-        assertEquals(setOf("mapgen"), plan.impactedDomains.map(VerificationDomainImpact::domainId).toSet())
+        assertEquals(setOf("maintainability", "mapgen"), plan.impactedDomains.map(VerificationDomainImpact::domainId).toSet())
+        assertTrue(plan.requestedTaskPaths.contains(":tools:maintainabilityLint"))
         assertTrue(plan.requestedTaskPaths.contains(":tools:whiteBoxMapgen"))
     }
 
@@ -92,7 +97,8 @@ class VerificationImpactAnalyzerTest {
     fun `solvability white box runner change routes to solvability owner task`() {
         val plan = VerificationImpactAnalyzer.analyze(listOf("tools/src/main/kotlin/com/ktome/tools/mapgen/WhiteBoxSolvabilityRunner.kt"))
 
-        assertEquals(setOf("solvability"), plan.impactedDomains.map(VerificationDomainImpact::domainId).toSet())
+        assertEquals(setOf("maintainability", "solvability"), plan.impactedDomains.map(VerificationDomainImpact::domainId).toSet())
+        assertTrue(plan.requestedTaskPaths.contains(":tools:maintainabilityLint"))
         assertTrue(plan.requestedTaskPaths.contains(":tools:whiteBoxSolvability"))
     }
 
@@ -100,7 +106,8 @@ class VerificationImpactAnalyzerTest {
     fun `solvability proof runner change still routes to solvability owner task`() {
         val plan = VerificationImpactAnalyzer.analyze(listOf("tools/src/main/kotlin/com/ktome/tools/mapgen/SolvabilityHarnessRunner.kt"))
 
-        assertEquals(setOf("solvability"), plan.impactedDomains.map(VerificationDomainImpact::domainId).toSet())
+        assertEquals(setOf("maintainability", "solvability"), plan.impactedDomains.map(VerificationDomainImpact::domainId).toSet())
+        assertTrue(plan.requestedTaskPaths.contains(":tools:maintainabilityLint"))
         assertTrue(plan.requestedTaskPaths.contains(":tools:whiteBoxSolvability"))
     }
 
@@ -124,8 +131,9 @@ class VerificationImpactAnalyzerTest {
     fun `organic hidden runtime change routes to organic hidden owner task`() {
         val plan = VerificationImpactAnalyzer.analyze(listOf("tools/src/main/kotlin/com/ktome/tools/hidden/OrganicHiddenProbeRunner.kt"))
 
-        assertEquals(setOf("organic-hidden"), plan.impactedDomains.map(VerificationDomainImpact::domainId).toSet())
+        assertEquals(setOf("maintainability", "organic-hidden"), plan.impactedDomains.map(VerificationDomainImpact::domainId).toSet())
         assertTrue(plan.requestedTaskPaths.contains(":tools:organicHiddenProbe"))
+        assertTrue(plan.requestedTaskPaths.contains(":tools:maintainabilityLint"))
         assertFalse(plan.requestedTaskPaths.contains(":tools:hiddenContentHarness"))
     }
 
@@ -169,9 +177,33 @@ class VerificationImpactAnalyzerTest {
     fun `phase4 aggregation code change routes to report only rebuild for migrated owner domains`() {
         val plan = VerificationImpactAnalyzer.analyze(listOf("tools/src/main/kotlin/com/ktome/tools/phase4/Phase4AggregationInputRunner.kt"))
 
-        assertEquals(setOf("hidden", "longrun", "loot", "organic-hidden", "terrain"), plan.impactedDomains.map(VerificationDomainImpact::domainId).toSet())
-        assertEquals(listOf(":tools:scopeCoverageLint", ":tools:reportPhase4Only"), plan.requestedTaskPaths)
+        assertEquals(setOf("hidden", "longrun", "loot", "maintainability", "organic-hidden", "terrain"), plan.impactedDomains.map(VerificationDomainImpact::domainId).toSet())
+        assertEquals(setOf(":tools:scopeCoverageLint", ":tools:maintainabilityLint", ":tools:reportPhase4Only"), plan.requestedTaskPaths.toSet())
         assertFalse(plan.requestedTaskPaths.contains(":tools:phase4LegacyReport"))
         assertFalse(plan.requestedTaskPaths.contains(":tools:phase4LegacyReportOnly"))
+    }
+
+    @Test
+    fun `governance doc change routes to maintainability lint only`() {
+        val plan = VerificationImpactAnalyzer.analyze(listOf("docs/rule/ai-change-governance.md"))
+
+        assertEquals(setOf("maintainability"), plan.impactedDomains.map(VerificationDomainImpact::domainId).toSet())
+        assertEquals(listOf(":tools:scopeCoverageLint", ":tools:maintainabilityLint"), plan.requestedTaskPaths)
+    }
+
+    @Test
+    fun `maintainability baseline change routes to maintainability lint only`() {
+        val plan = VerificationImpactAnalyzer.analyze(listOf("maintainability-baseline.json"))
+
+        assertEquals(setOf("maintainability"), plan.impactedDomains.map(VerificationDomainImpact::domainId).toSet())
+        assertEquals(listOf(":tools:scopeCoverageLint", ":tools:maintainabilityLint"), plan.requestedTaskPaths)
+    }
+
+    @Test
+    fun `generic governance docs outside lint inputs do not route to maintainability lint`() {
+        val plan = VerificationImpactAnalyzer.analyze(listOf("AGENTS.md"))
+
+        assertTrue(plan.impactedDomains.isEmpty())
+        assertEquals(listOf(":tools:scopeCoverageLint"), plan.requestedTaskPaths)
     }
 }

@@ -4,6 +4,7 @@ import com.ktome.build.verification.VerifyChangedPlanGate
 import java.security.MessageDigest
 import org.gradle.api.file.FileCollection
 import org.gradle.api.provider.Provider
+import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.SourceSetContainer
 import org.gradle.api.tasks.JavaExec
 import org.gradle.api.tasks.testing.Test
@@ -18,6 +19,7 @@ val harnessReportDir = rootProject.layout.buildDirectory.dir("reports/harness")
 val verifyChangedPlanOutputDir = rootProject.layout.buildDirectory.dir("verification/verify-changed")
 val verifyChangedTaskPathsFile = rootProject.layout.buildDirectory.file("verification/verify-changed/task-paths.txt")
 val verifyChangedBaseRef = rootProject.findProperty("verifyChangedBaseRef")?.toString() ?: "origin/main"
+val maintainabilityLintOutputDir = layout.buildDirectory.dir("reports/verification/maintainability")
 
 dependencies {
     implementation(project(":client"))
@@ -402,6 +404,40 @@ tasks.register<Test>("contractLint") {
     }
 }
 
+tasks.register<Test>("maintainabilityLint") {
+    group = "verification"
+    description = "Runs the anti-bloat maintainability lint against the versioned debt baseline."
+    testClassesDirs = sourceSets.test.get().output.classesDirs
+    classpath = sourceSets.test.get().runtimeClasspath
+    useJUnitPlatform {
+        includeTags("maintainabilityLint")
+    }
+    systemProperty("ktome.repo.root", rootProject.projectDir.absolutePath)
+    systemProperty("ktome.maintainability.baselinePath", rootProject.file("maintainability-baseline.json").absolutePath)
+    systemProperty("ktome.maintainability.reportDir", maintainabilityLintOutputDir.get().asFile.absolutePath)
+    systemProperty(
+        "ktome.maintainability.blockingMode",
+        providers.systemProperty("ktome.maintainability.blockingMode").orElse("true").get(),
+    )
+    inputs.files(
+        rootProject.fileTree("core/src/main/kotlin") { include("**/*.kt") },
+        rootProject.fileTree("game/src/main/kotlin") { include("**/*.kt") },
+        rootProject.fileTree("client/src/main/kotlin") { include("**/*.kt") },
+        rootProject.fileTree("tools/src/main/kotlin") { include("**/*.kt") },
+        rootProject.fileTree("build-logic/src/main/kotlin") { include("**/*.kt") },
+    ).withPathSensitivity(PathSensitivity.RELATIVE)
+    inputs.files(
+        rootProject.files(
+            "docs/rule/ai-change-governance.md",
+            "build.gradle.kts",
+            "tools/build.gradle.kts",
+        ),
+    ).withPathSensitivity(PathSensitivity.RELATIVE)
+    inputs.file(rootProject.file("maintainability-baseline.json")).withPathSensitivity(PathSensitivity.RELATIVE)
+    inputs.property("ktome.maintainability.blockingMode", providers.systemProperty("ktome.maintainability.blockingMode").orElse("true"))
+    outputs.dir(maintainabilityLintOutputDir)
+}
+
 tasks.register<VerificationTask>("verifyContractLintPreflight") {
     description = "Runs the contractLint STATIC_GRAPH demo through the unified verification task foundation."
     domainId.set("contractLint")
@@ -751,6 +787,7 @@ listOf(
     tasks.named("verifyHiddenPreflight"),
     tasks.named("verifyContentPackPreflight"),
     tasks.named("scopeCoverageLint"),
+    tasks.named("maintainabilityLint"),
     tasks.named("lootBalanceLab"),
     tasks.named("whiteBoxLoot"),
     tasks.named("hiddenContentHarness"),

@@ -50,6 +50,18 @@ class VerificationDomainSpecTest {
     }
 
     @Test
+    fun `registry exposes maintainability preflight baseline contract`() {
+        val spec = VerificationTaskRegistry.spec("maintainability")
+
+        assertEquals(VerificationWorkloadClass.STATIC_GRAPH, spec.workloadClass)
+        assertEquals(VerificationTier.PREFLIGHT, spec.defaultTier)
+        assertEquals(BaselineMode.APPROVED_DEBT_SET, spec.baselinePolicy?.mode)
+        assertEquals("maintainability-baseline.json", spec.baselinePolicy?.baselinePath)
+        assertEquals(listOf(":tools:maintainabilityLint"), spec.preflightTaskPaths)
+        assertTrue(spec.inputScopes.any { scope -> scope.scopeId == "maintainability.governance" })
+    }
+
+    @Test
     fun `registry exposes phase4 loot input scopes and task routing`() {
         val spec = VerificationTaskRegistry.spec("loot")
 

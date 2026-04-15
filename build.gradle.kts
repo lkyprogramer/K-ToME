@@ -38,6 +38,7 @@ val verificationOnlyTestTags =
         "combatTraceGolden",
         "localeLint",
         "contractLint",
+        "maintainabilityLint",
         "mapgenSmoke",
         "solvabilityHarness",
         "hiddenContentHarness",
@@ -75,6 +76,7 @@ val verifyChangedTaskPaths =
     listOf(
         ":tools:prepareVerifyChangedPlan",
         ":tools:scopeCoverageLint",
+        ":tools:maintainabilityLint",
         ":tools:verifyContractLintPreflight",
         ":tools:contractLint",
         ":tools:verifyLootPreflight",
@@ -247,6 +249,12 @@ tasks.register("contractLint") {
     group = LifecycleBasePlugin.VERIFICATION_GROUP
     description = "Validates schema V2 structure, cross-references, and key namespaces."
     dependsOn(":tools:contractLint")
+}
+
+tasks.register("maintainabilityLint") {
+    group = LifecycleBasePlugin.VERIFICATION_GROUP
+    description = "Runs the anti-bloat maintainability lint and baseline debt gate."
+    dependsOn(":tools:maintainabilityLint")
 }
 
 tasks.register("verifyContractLintPreflight") {

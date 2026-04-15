@@ -68,10 +68,11 @@ K-ToME 是一个使用 `Kotlin + libGDX` 开发的类 ToME 回合制 Roguelike �
 2. [docs/2026-03-13-phase2-to-phase5-final-roadmap.md](docs/2026-03-13-phase2-to-phase5-final-roadmap.md)
 3. [docs/2026-03-13-core-systems-design-and-phase-supplements.md](docs/2026-03-13-core-systems-design-and-phase-supplements.md)
 4. 如果本次涉及 Kotlin 改动：[docs/rule/kotlin.md](docs/rule/kotlin.md)
-5. 当前阶段 roadmap
-6. 当前阶段 verification checklist
-7. 本次命中的 `P?-W*` / PR 级设计文档
-8. 本次会修改到的代码与对应测试
+5. 如果本次涉及 non-trivial Kotlin 改动、结构重排、review/gate/工具链治理：[docs/rule/ai-change-governance.md](docs/rule/ai-change-governance.md)
+6. 当前阶段 roadmap
+7. 当前阶段 verification checklist
+8. 本次命中的 `P?-W*` / PR 级设计文档
+9. 本次会修改到的代码与对应测试
 
 如果任务只是局部 bugfix，可以不重复通读所有 phase 文档，但仍必须确认：
 
@@ -79,6 +80,7 @@ K-ToME 是一个使用 `Kotlin + libGDX` 开发的类 ToME 回合制 Roguelike �
 2. 没有违反当前 phase 冻结口径
 3. 没有绕过现有 harness / lint / 白盒门禁
 4. 如果涉及 Kotlin 改动，已按 [docs/rule/kotlin.md](docs/rule/kotlin.md) 完成预检与自检
+5. 如果涉及 non-trivial Kotlin 改动，已按 [docs/rule/ai-change-governance.md](docs/rule/ai-change-governance.md) 完成 anti-bloat 预检
 
 ### 3.2 第一条输出要求
 
@@ -96,6 +98,16 @@ K-ToME 是一个使用 `Kotlin + libGDX` 开发的类 ToME 回合制 Roguelike �
 1. 任何触及公式、schema、版本、事件、snapshot、AI、world progress、content pack、release gate 的改动，都必须先映射到当前阶段的 `P?-W*`。
 2. 如果一个任务跨越多个 checkpoint，必须优先落上游 contract，再落内容和表现。
 3. 如果某个工作包结束后主干不可玩，说明切分过大，必须继续拆分。
+
+### 3.4 AI 变更治理
+
+1. 非 trivial Kotlin 改动，提交前必须经过一次 anti-bloat review；治理权威见 [docs/rule/ai-change-governance.md](docs/rule/ai-change-governance.md)。
+2. 若改动新增以下任一结构，必须在设计文档、实现说明或 review 中显式说明理由；默认按阻塞项处理：
+   - `Boolean` 参数或默认参数矩阵
+   - `Helper / Utils / Manager` 一类业务类型
+   - compat 分支、临时双路径或第二真源
+   - 没有 `debt(<id>)` 与删除条件的临时逻辑
+3. repo-specific anti-bloat 规则必须只在仓库文档内定义；不得在 skill、prompt 或 review 模板中复制出第二份长期口径。
 
 ## 4. 架构基线
 
@@ -155,7 +167,7 @@ K-ToME 是一个使用 `Kotlin + libGDX` 开发的类 ToME 回合制 Roguelike �
 
 职责：
 
-1. `localeLint`、`contractLint`、`assetLint`、`audioLint`、`manifestLint`
+1. `localeLint`、`contractLint`、`maintainabilityLint`、`assetLint`、`audioLint`、`manifestLint`
 2. `headlessSmoke`、`clientSmoke`、`goldenScreenshot`、`soloClearLab`、`longRunLab`
 3. `combatTraceGolden`、`bossHarness`、`mapgenSmoke`、`solvabilityHarness`
 4. `lootBalanceLab`、`hiddenContentHarness`、`contentPackHarness`
@@ -520,6 +532,7 @@ AI 场景矩阵、replay 哈希一致性、perf/soak 预算、Localization/Acces
 2. batch/harness 需要输出可追溯报告，而不是只在控制台打印结论。
 3. 只要改动命中 `trace schema`、golden corpus、snapshot contract、locale key、manifest key、report schema、lint/harness 断言中的任一项，就不能只跑 `:core:test` / `:game:test`；必须补跑对应 `:tools:test` 或其 owner gate。
 4. 对 `tools` 侧失败，优先把问题归类为“合同/基线未同步”还是“运行时逻辑回归”，不要默认认为是 CI 环境噪声。
+5. 对 non-trivial Kotlin 改动，若 `maintainabilityLint` 或 anti-bloat review 命中 `option-sprawl / helper-sprawl / second-authority / temp-path-without-expiry`，必须先解释 owner 与 contract 选择，再决定是否保留实现。
 
 ### 8.4 构建与基础验证
 
@@ -550,6 +563,12 @@ sdk env
 ./gradlew jacocoTestReport
 ./gradlew :core:jacocoTestCoverageVerification
 ./gradlew check
+```
+
+如果本次改动涉及 non-trivial Kotlin 结构变更、review/gate/verification wiring 或 anti-bloat 治理能力，还必须额外执行：
+
+```bash
+./gradlew maintainabilityLint
 ```
 
 如果当前机器存在 Maven / TLS 拉取问题，可先执行：
@@ -641,6 +660,7 @@ sdk env
 7. 文档、schema、manifest、lint/harness 说明已同步
 8. 主干在当前 checkpoint 结束后仍保持可玩
 9. 没有把当前阶段非目标偷偷带入主干实现
+10. 非 trivial Kotlin 改动已完成 anti-bloat review，且新增 option/helper/compat path/second-authority 有显式理由或已被消除
 
 ## 11. 一句话原则
 
