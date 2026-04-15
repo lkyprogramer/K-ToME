@@ -414,6 +414,7 @@ object ReportPhase4Runner {
             appendLine("- organic first hidden turn P50/P90: `${formatNullableInt(organicHiddenInput.kernelResult.metrics.optionalIntValue("firstHiddenDiscoveryTurnP50"))} / ${formatNullableInt(organicHiddenInput.kernelResult.metrics.optionalIntValue("firstHiddenDiscoveryTurnP90"))}`")
             appendLine("- organic first secret-zone entry turn P50/P90: `${formatNullableInt(organicHiddenInput.kernelResult.metrics.optionalIntValue("firstSecretZoneEntryTurnP50"))} / ${formatNullableInt(organicHiddenInput.kernelResult.metrics.optionalIntValue("firstSecretZoneEntryTurnP90"))}`")
             appendLine("- organic released matrix: `${organicHiddenInput.kernelResult.metrics.stringList("professionIds").joinToString()} × ${organicHiddenInput.kernelResult.metrics.stringList("raceIds").joinToString()}`")
+            appendLine("- organic comboCount / seedsPerZoneCombo: `${organicHiddenInput.kernelResult.metrics.intValue("comboCount")} / ${organicHiddenInput.kernelResult.metrics.intValue("seedsPerZoneCombo")}`")
             appendLine("- organic searchPromptRequired: `${organicHiddenInput.kernelResult.metrics.getValue("searchPromptRequired").jsonPrimitive.content}`")
             appendLine("- organic zone discovery distribution:")
             organicHiddenInput.kernelResult.metrics
@@ -423,14 +424,18 @@ object ReportPhase4Runner {
                 .forEach { (zoneId, rate) ->
                     appendLine("  - `$zoneId`: `${formatRate(rate.jsonPrimitive.content.toDouble())}` share of total discoveries")
                 }
-            appendLine("- organic secret-zone discovery distribution:")
-            organicHiddenInput.kernelResult.metrics
-                .getValue("secretZoneDiscoveryDistribution")
-                .jsonObject
-                .toSortedMap()
-                .forEach { (secretZoneId, rate) ->
-                    appendLine("  - `$secretZoneId`: `${formatRate(rate.jsonPrimitive.content.toDouble())}` share of total secret-zone entries")
-                }
+            val secretZoneDiscoveryDistribution =
+                organicHiddenInput.kernelResult.metrics["secretZoneDiscoveryDistribution"]?.jsonObject
+            if (secretZoneDiscoveryDistribution.isNullOrEmpty()) {
+                appendLine("- organic secret-zone discovery distribution: `n/a`")
+            } else {
+                appendLine("- organic secret-zone discovery distribution:")
+                secretZoneDiscoveryDistribution
+                    .toSortedMap()
+                    .forEach { (secretZoneId, rate) ->
+                        appendLine("  - `$secretZoneId`: `${formatRate(rate.jsonPrimitive.content.toDouble())}` share of total secret-zone entries")
+                    }
+            }
             appendLine()
             appendLine("## Local Reward Identity")
             appendLine("- sourceTask: `${lootInput.sourceTaskId}`")
@@ -444,11 +449,11 @@ object ReportPhase4Runner {
                 .jsonArray
                 .forEach { element ->
                     val summary = element.jsonObject
-                    appendLine("  - `${summary.getValue("profileId").jsonPrimitive.content}` (`${summary.getValue("zoneId").jsonPrimitive.content}`)")
-                    appendLine("    - axes: `${summary.getValue("identityAxes").jsonArray.joinToString { axis -> axis.jsonPrimitive.content }}`")
+                    val canonicalZoneId = summary.getValue("canonicalZoneId").jsonPrimitive.content
+                    appendLine("  - `${summary.getValue("profileId").jsonPrimitive.content}` (`$canonicalZoneId`)")
                     appendLine("    - rewardStructureKeys: `${summary.getValue("rewardStructureKeys").jsonArray.joinToString { rewardKey -> rewardKey.jsonPrimitive.content }.ifBlank { "none" }}`")
+                    appendLine("    - axes: `${summary.getValue("identityAxes").jsonArray.joinToString { axis -> axis.jsonPrimitive.content }}`")
                     appendLine("    - fixedItemIds: `${summary.getValue("fixedItemIds").jsonArray.joinToString { itemId -> itemId.jsonPrimitive.content }.ifBlank { "none" }}`")
-                    appendLine("    - candidateBaseIds: `${summary.getValue("candidateBaseIds").jsonArray.joinToString { baseId -> baseId.jsonPrimitive.content }}`")
                     appendLine("    - typeWeights: `${summary.getValue("typeWeights").jsonObject.entries.joinToString { (typeId, weight) -> "$typeId=${weight.jsonPrimitive.content}" }.ifBlank { "none" }}`")
                     appendLine("    - slotBias: `${summary.getValue("slotBias").jsonObject.entries.joinToString { (slotId, weight) -> "$slotId=${weight.jsonPrimitive.content}" }.ifBlank { "none" }}`")
                     appendLine("    - specialTemplateTagPreference: `${summary.getValue("specialTemplateTagPreference").jsonArray.joinToString { tag -> tag.jsonPrimitive.content }.ifBlank { "none" }}`")
@@ -460,6 +465,9 @@ object ReportPhase4Runner {
                     )
                     appendLine(
                         "    - strictViolationPairIds: `${summary.getValue("strictViolationPairIds").jsonArray.joinToString { pairId -> pairId.jsonPrimitive.content }.ifBlank { "none" }}`",
+                    )
+                    appendLine(
+                        "    - candidateBaseIds (debug): `${summary.getValue("candidateBaseIds").jsonArray.joinToString { baseId -> baseId.jsonPrimitive.content }.ifBlank { "none" }}`",
                     )
                 }
             appendLine()

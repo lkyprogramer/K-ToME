@@ -45,6 +45,7 @@ class DataLoaderContentPackTest {
         )
         assertEquals(7, lootProfile.rewardBudget)
         assertEquals(3, lootProfile.schemaVersion)
+        assertEquals("underground_river", lootProfile.canonicalZoneId)
         assertEquals(LootPoolStrategy.TAG_WEIGHTED, lootProfile.poolStrategy)
         assertEquals(listOf("underground_river"), lootProfile.itemTagFilter)
         assertEquals(emptyList<String>(), lootProfile.excludeIds)

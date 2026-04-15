@@ -1828,6 +1828,7 @@ class DataLoader(
                 tags = profile.optionalStringList("tags"),
                 itemIds = profile.optionalStringList("itemIds"),
                 rewardBudget = profile.requiredInt("rewardBudget"),
+                canonicalZoneId = profile.optionalString("canonicalZoneId"),
                 poolStrategy = LootPoolStrategy.valueOf(profile.requiredString("poolStrategy")),
                 itemTagFilter = profile.optionalStringList("itemTagFilter"),
                 excludeIds = profile.optionalStringList("excludeIds"),

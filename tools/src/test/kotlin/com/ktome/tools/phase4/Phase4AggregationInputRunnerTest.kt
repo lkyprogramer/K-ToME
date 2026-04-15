@@ -2,7 +2,11 @@ package com.ktome.tools.phase4
 
 import com.ktome.tools.verification.VerificationCacheSupport
 import java.nio.file.Files
+import java.nio.file.Path
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonArray
+import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -10,8 +14,12 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.io.TempDir
 
 class Phase4AggregationInputRunnerTest {
+    @TempDir
+    lateinit var tempDir: Path
+
     @Test
     @Tag("reportPhase4")
     @Tag("phase4AggregationInput")
@@ -108,6 +116,59 @@ class Phase4AggregationInputRunnerTest {
             } else {
                 System.setProperty("ktome.phase4.ownerBaselineOverride.longRunLab", originalBaselineOverride)
             }
+        }
+    }
+
+    @Test
+    @Tag("reportPhase4")
+    @Tag("phase4AggregationInput")
+    fun `whitebox loot mismatch falls back to recomputed local reward identity evaluation`() {
+        val fixtureRepoRoot = Phase4ReportFixtureTestSupport.preparePhase4RepoFixture(tempDir)
+        val pairId = "deep_iron_pit:loot.deep_iron_slag_cache.secret->loot.deep_iron_pit.cadence"
+        Phase4ReportFixtureTestSupport.mutateWhiteBoxLootCorpusMetrics(fixtureRepoRoot) { metrics ->
+            Phase4ReportFixtureTestSupport.replaceMetricsFields(
+                metrics = metrics,
+                replacements =
+                    mapOf(
+                        "strictLocalIdentityViolationCount" to JsonPrimitive(1),
+                        "strictLocalIdentityViolations" to
+                            buildJsonArray {
+                                add(
+                                    buildJsonObject {
+                                        put("pairId", JsonPrimitive(pairId))
+                                        put("zoneId", JsonPrimitive("deep_iron_pit"))
+                                        put("pairType", JsonPrimitive(com.ktome.tools.loot.SECRET_VS_CADENCE_PAIR_TYPE))
+                                        put("secretProfileId", JsonPrimitive("loot.deep_iron_slag_cache.secret"))
+                                        put("comparedProfileId", JsonPrimitive("loot.deep_iron_pit.cadence"))
+                                        put("overlap", JsonPrimitive(0.400))
+                                        put("allowedMaxOverlap", JsonPrimitive(0.190))
+                                    },
+                                )
+                            },
+                    ),
+            )
+        }
+
+        Phase4ReportFixtureTestSupport.withFixtureProperties(
+            repoRoot = fixtureRepoRoot,
+            aggregateReportDir = tempDir.resolve("phase4-aggregation-local-reward-fallback"),
+        ) {
+            val run = Phase4AggregationInputRunner.materialize()
+            val lootPayload =
+                Json.parseToJsonElement(Files.readString(run.inputDir.resolve("whiteBoxLoot.json"))).jsonObject
+            val lootEvaluation =
+                lootPayload.getValue("evaluationResults").jsonArray
+                    .first { evaluation -> evaluation.jsonObject.getValue("evaluationId").jsonPrimitive.content == "loot.localRewardIdentity" }
+                    .jsonObject
+            val cadenceEntry =
+                lootEvaluation.getValue("entries").jsonArray
+                    .first { entry -> entry.jsonObject.getValue("metricId").jsonPrimitive.content == "sameZoneSecretVsCadenceMaxOverlap" }
+                    .jsonObject
+
+            assertEquals("FAIL", lootEvaluation.getValue("verdict").jsonPrimitive.content)
+            assertEquals("UNEXPECTED_REGRESSION", cadenceEntry.getValue("status").jsonPrimitive.content)
+            assertTrue(cadenceEntry.getValue("note").jsonPrimitive.content.contains(pairId))
+            assertTrue(cadenceEntry.getValue("note").jsonPrimitive.content.contains("0.190"))
         }
     }
 

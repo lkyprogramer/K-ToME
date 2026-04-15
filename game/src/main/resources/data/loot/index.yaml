@@ -26,12 +26,14 @@ lootProfiles:
   - id: loot.shattered_outpost.cadence
     schemaVersion: 3
     tags: [loot, cadence, shattered_outpost]
+    canonicalZoneId: shattered_outpost
     poolStrategy: FIXED_LIST
     rewardBudget: 4
     itemIds: [basic_shield, bandit_trophy, emerald_charm, apprentice_robe]
   - id: loot.greenwood_fringe.cadence
     schemaVersion: 3
     tags: [loot, cadence, greenwood]
+    canonicalZoneId: greenwood_fringe
     poolStrategy: TAG_WEIGHTED
     rewardBudget: 4
     itemIds: [hunter_bow, emerald_charm, leather_armor, apprentice_robe]
@@ -42,18 +44,21 @@ lootProfiles:
   - id: loot.bandit_camp.cadence
     schemaVersion: 3
     tags: [loot, cadence, bandit_camp]
+    canonicalZoneId: bandit_camp
     poolStrategy: FIXED_LIST
     rewardBudget: 4
     itemIds: [bandit_trophy, hunter_bow, leather_armor, basic_shield]
   - id: loot.elven_ruins.cadence
     schemaVersion: 3
     tags: [loot, cadence, elven_ruins]
+    canonicalZoneId: elven_ruins
     poolStrategy: FIXED_LIST
     rewardBudget: 4
     itemIds: [emerald_charm, apprentice_robe, seal_reliquary, sanctified_seal]
   - id: loot.deep_iron_pit.cadence
     schemaVersion: 3
     tags: [loot, cadence, deep_iron_pit]
+    canonicalZoneId: deep_iron_pit
     poolStrategy: TAG_WEIGHTED
     rewardBudget: 4
     itemIds: [forgebreaker_pick, chain_mail, apprentice_robe, furnace_talisman]
@@ -64,18 +69,21 @@ lootProfiles:
   - id: loot.molten_core.cadence
     schemaVersion: 3
     tags: [loot, cadence, molten_core]
+    canonicalZoneId: molten_core
     poolStrategy: FIXED_LIST
     rewardBudget: 4
     itemIds: [war_maul, forgebreaker_pick, furnace_talisman, chain_mail, plate_armor]
   - id: loot.grey_gate_depths.cadence
     schemaVersion: 3
     tags: [loot, cadence, grey_gate]
+    canonicalZoneId: grey_gate_depths
     poolStrategy: FIXED_LIST
     rewardBudget: 4
     itemIds: [seal_reliquary, shadow_cloak, sanctified_seal, apprentice_robe]
   - id: loot.underground_river.cadence
     schemaVersion: 3
     tags: [loot, cadence, underground_river]
+    canonicalZoneId: underground_river
     poolStrategy: TAG_WEIGHTED
     rewardBudget: 4
     itemIds: [seal_reliquary, mana_potion, chain_mail, hunter_bow, arcane_staff]
@@ -86,12 +94,14 @@ lootProfiles:
   - id: loot.crystal_cavern.cadence
     schemaVersion: 3
     tags: [loot, cadence, crystal_cavern]
+    canonicalZoneId: crystal_cavern
     poolStrategy: FIXED_LIST
     rewardBudget: 4
     itemIds: [emerald_charm, seal_reliquary, arcane_staff, shadow_cloak]
   - id: loot.abyssal_temple.cadence
     schemaVersion: 3
     tags: [loot, cadence, abyssal_temple]
+    canonicalZoneId: abyssal_temple
     poolStrategy: TAG_WEIGHTED
     rewardBudget: 4
     itemIds: [sanctified_seal, shadow_cloak, seal_reliquary, consecrated_oil, long_sword, hunter_bow, arcane_staff]
@@ -102,6 +112,7 @@ lootProfiles:
   - id: loot.greenwood_fringe.reward
     schemaVersion: 3
     tags: [loot, reward, greenwood]
+    canonicalZoneId: greenwood_fringe
     poolStrategy: TAG_WEIGHTED
     rewardBudget: 4
     itemIds: [bandit_trophy, emerald_charm, hunter_bow, stamina_draught]
@@ -112,6 +123,7 @@ lootProfiles:
   - id: loot.deep_iron_pit.reward
     schemaVersion: 3
     tags: [loot, reward, mine]
+    canonicalZoneId: deep_iron_pit
     poolStrategy: TAG_WEIGHTED
     rewardBudget: 4
     itemIds: [furnace_talisman, war_maul, forgebreaker_pick, energy_tonic, stamina_draught]
@@ -122,12 +134,14 @@ lootProfiles:
   - id: loot.grey_gate_depths.reward
     schemaVersion: 3
     tags: [loot, reward, grey_gate]
+    canonicalZoneId: grey_gate_depths
     poolStrategy: FIXED_LIST
     rewardBudget: 4
     itemIds: [seal_reliquary, shadow_cloak, apprentice_robe, arcane_staff]
   - id: loot.underground_river.reward
     schemaVersion: 3
     tags: [loot, reward, underground_river]
+    canonicalZoneId: underground_river
     poolStrategy: FIXED_LIST
     rewardBudget: 4
     itemIds: [hunter_bow, shadow_cloak, emerald_charm, apprentice_robe, mana_potion]
@@ -136,6 +150,7 @@ lootProfiles:
   - id: loot.abyssal_temple.reward
     schemaVersion: 3
     tags: [loot, reward, abyssal_temple]
+    canonicalZoneId: abyssal_temple
     poolStrategy: FIXED_LIST
     rewardBudget: 5
     itemIds: [plate_armor, long_sword, hunter_bow, apprentice_robe, consecrated_oil]
@@ -144,12 +159,14 @@ lootProfiles:
   - id: loot.abyssal_heart.reward
     schemaVersion: 3
     tags: [loot, reward, abyssal, finale]
+    canonicalZoneId: abyssal_heart
     poolStrategy: FIXED_LIST
     rewardBudget: 1
     itemIds: [abyssal_heartstone]
   - id: loot.greenwood_hidden_cache.secret
     schemaVersion: 3
     tags: [loot, secret, greenwood]
+    canonicalZoneId: greenwood_fringe
     poolStrategy: FIXED_LIST
     rewardBudget: 5
     itemIds: [unique_thornpath_crook, unique_heartwood_talisman, shadow_cloak, stamina_draught, leather_armor]
@@ -161,6 +178,7 @@ lootProfiles:
   - id: loot.deep_iron_slag_cache.secret
     schemaVersion: 3
     tags: [loot, secret, deep_iron]
+    canonicalZoneId: deep_iron_pit
     poolStrategy: FIXED_LIST
     rewardBudget: 7
     itemIds: [unique_quenchbreaker_maul, unique_coal_ward_talisman, artifact_slag_tyrant_seal, energy_tonic, chain_mail]
@@ -172,6 +190,7 @@ lootProfiles:
   - id: loot.underground_river_crystal_rift.secret
     schemaVersion: 3
     tags: [loot, secret, underground_river]
+    canonicalZoneId: underground_river
     poolStrategy: FIXED_LIST
     rewardBudget: 6
     itemIds: [unique_floodglass_rapier, unique_deepcurrent_lens, artifact_deepcurrent_crown, mana_potion, emerald_charm]
@@ -183,6 +202,7 @@ lootProfiles:
   - id: loot.abyssal_temple_warded_archive.secret
     schemaVersion: 3
     tags: [loot, secret, abyssal_temple]
+    canonicalZoneId: abyssal_temple
     poolStrategy: FIXED_LIST
     rewardBudget: 7
     itemIds: [basic_shield, healing_potion, unique_voidlit_seal, unique_eclipse_mail, unique_vesper_chainmail]
@@ -194,6 +214,7 @@ lootProfiles:
   - id: loot.deep_iron_smuggler_stash.secret
     schemaVersion: 3
     tags: [loot, secret, deep_iron, contraband]
+    canonicalZoneId: deep_iron_pit
     poolStrategy: FIXED_LIST
     rewardBudget: 6
     itemIds: [short_sword, hunter_bow, shadow_cloak, emerald_charm, unique_cinderveil_plate]

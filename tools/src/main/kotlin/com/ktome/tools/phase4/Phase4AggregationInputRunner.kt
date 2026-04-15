@@ -1,10 +1,9 @@
 package com.ktome.tools.phase4
 
-import com.ktome.tools.loot.SECRET_VS_CADENCE_PAIR_TYPE
-import com.ktome.tools.loot.SECRET_VS_REWARD_PAIR_TYPE
-import com.ktome.tools.loot.formatStrictAwareLocalIdentityCurrentValue
+import com.ktome.tools.loot.LocalRewardIdentityMetricEvaluationInput
+import com.ktome.tools.loot.buildLocalRewardIdentityEvaluation
+import com.ktome.tools.loot.splitByLocalIdentityPairType
 import com.ktome.tools.loot.toLootStrictLocalIdentityViolation
-import com.ktome.tools.loot.withStrictLocalIdentityViolations
 import com.ktome.tools.verification.BaselineMode
 import com.ktome.tools.verification.EvaluationEntry
 import com.ktome.tools.verification.EvaluationEntryStatus
@@ -247,6 +246,7 @@ internal object Phase4AggregationInputRunner {
             "whiteBoxLoot" ->
                 evaluations +=
                     readEmbeddedOwnerEvaluation(repoRoot = repoRoot(), task = task)
+                        ?.takeIf { embedded -> embeddedLootOwnerEvaluationMatchesTaskMetrics(task = task, evaluation = embedded) }
                         ?: localRewardIdentityEvaluation(task = task, baseline = baselinesByPath.getValue(Phase4OwnerBaselineRegistry.lootBaselinePath()))
             "longRunLab" -> evaluations += terminalBuildIdentityEvaluation(task = task, baseline = baselinesByPath.getValue(Phase4OwnerBaselineRegistry.terminalBuildBaselinePath()))
             "terrainInteractionBatch" -> {
@@ -319,6 +319,45 @@ internal object Phase4AggregationInputRunner {
             fingerprint = fingerprint,
             cacheRoot = cacheRoot,
         )
+    }
+
+    private fun embeddedLootOwnerEvaluationMatchesTaskMetrics(
+        task: Phase4TaskAggregate,
+        evaluation: EvaluationResult,
+    ): Boolean {
+        if (task.taskId != "whiteBoxLoot" || evaluation.evaluationId != "loot.localRewardIdentity") {
+            return true
+        }
+        val entriesByMetricId = evaluation.entries.associateBy(EvaluationEntry::metricId)
+        val strictViolationBreakdown =
+            task.metrics.getValue("strictLocalIdentityViolations").jsonArray
+                .map { violation -> violation.jsonObject.toLootStrictLocalIdentityViolation() }
+                .splitByLocalIdentityPairType()
+        val expectedCadenceStatus =
+            if (strictViolationBreakdown.cadenceViolations.isEmpty()) {
+                EvaluationEntryStatus.PASS
+            } else {
+                EvaluationEntryStatus.UNEXPECTED_REGRESSION
+            }
+        val expectedRewardStatus =
+            if (strictViolationBreakdown.rewardViolations.isEmpty()) {
+                EvaluationEntryStatus.PASS
+            } else {
+                EvaluationEntryStatus.UNEXPECTED_REGRESSION
+            }
+        val expectedUnexpectedRegressionCount =
+            listOf(strictViolationBreakdown.cadenceViolations, strictViolationBreakdown.rewardViolations)
+                .count { violations -> violations.isNotEmpty() }
+        val expectedVerdict =
+            if (expectedUnexpectedRegressionCount > 0) {
+                EvaluationVerdict.FAIL
+            } else {
+                EvaluationVerdict.PASS
+            }
+        return entriesByMetricId["sameZoneSecretVsCadenceMaxOverlap"]?.status == expectedCadenceStatus &&
+            entriesByMetricId["sameZoneSecretVsRewardMaxOverlap"]?.status == expectedRewardStatus &&
+            evaluation.unexpectedRegressionCount == expectedUnexpectedRegressionCount &&
+            evaluation.verdict == expectedVerdict
     }
 
     private fun taskStatusEvaluation(task: Phase4TaskAggregate): EvaluationResult =
@@ -449,75 +488,42 @@ internal object Phase4AggregationInputRunner {
             task.metrics.getValue("strictLocalIdentityViolations").jsonArray.map { violation ->
                 violation.jsonObject.toLootStrictLocalIdentityViolation()
             }
-        val cadenceStrictViolations =
-            strictViolations.filter { violation -> violation.pairType == SECRET_VS_CADENCE_PAIR_TYPE }
-        val rewardStrictViolations =
-            strictViolations.filter { violation -> violation.pairType == SECRET_VS_REWARD_PAIR_TYPE }
-        val cadenceRange = baseline.requiredMetric(cadenceMetricId)
-        val rewardRange = baseline.requiredMetric(rewardMetricId)
-        val result =
-            VerificationBaselineComparator.compareBudgetThreshold(
-                domainId = "loot",
-                evaluationId = "loot.localRewardIdentity",
-                baseline = baseline.copy(expectedMetricRanges = listOf(cadenceRange, rewardRange)),
-                actualMetrics =
-                    mapOf(
-                        cadenceMetricId to cadenceOverlap,
-                        rewardMetricId to rewardOverlap,
-                    ),
-                currentValueTexts =
-                    mapOf(
-                        cadenceMetricId to formatStrictAwareLocalIdentityCurrentValue(cadenceOverlap, cadenceStrictViolations),
-                        rewardMetricId to formatStrictAwareLocalIdentityCurrentValue(rewardOverlap, rewardStrictViolations),
-                    ),
-                currentValueElements =
-                    mapOf(
-                        cadenceMetricId to
-                            buildJsonObject {
-                                put("maxOverlap", task.metrics.getValue(cadenceMetricId))
-                                put("pairs", task.metrics.getValue("sameZoneSecretVsCadencePairs"))
-                                put("localIdentityFailurePairs", task.metrics.getValue("localIdentityFailurePairs"))
-                                put("strictLocalIdentityViolations", task.metrics.getValue("strictLocalIdentityViolations"))
-                            },
-                        rewardMetricId to
-                            buildJsonObject {
-                                put("maxOverlap", task.metrics.getValue(rewardMetricId))
-                                put("pairs", task.metrics.getValue("sameZoneSecretVsRewardPairs"))
-                                put("localIdentityFailurePairs", task.metrics.getValue("localIdentityFailurePairs"))
-                                put("strictLocalIdentityViolations", task.metrics.getValue("strictLocalIdentityViolations"))
-                            },
-                    ),
-                detailsByMetricId =
-                    mapOf(
-                        cadenceMetricId to task.metrics,
-                        rewardMetricId to task.metrics,
-                    ),
-            )
-        val strictAwareResult =
-            result.withStrictLocalIdentityViolations(
-                cadenceMetricId = cadenceMetricId,
-                rewardMetricId = rewardMetricId,
-                violations = strictViolations,
-            )
-        return strictAwareResult.withEntryPresentations(
-            mapOf(
-                cadenceMetricId to
-                    MetricPresentation(
-                        targetText = Phase4OwnerMetricTargets.targetText(cadenceMetricId, cadenceRange),
-                        note =
-                            "pairCount=${task.metrics.getValue("sameZoneSecretVsCadencePairs").jsonArray.size}, " +
-                                "strictViolations=${cadenceStrictViolations.size}, " +
-                                "overlap = |A ∩ B| / min(|A|, |B|)",
-                    ),
-                rewardMetricId to
-                    MetricPresentation(
-                        targetText = Phase4OwnerMetricTargets.targetText(rewardMetricId, rewardRange),
-                        note =
-                            "pairCount=${task.metrics.getValue("sameZoneSecretVsRewardPairs").jsonArray.size}, " +
-                                "failurePairs=${task.metrics.getValue("localIdentityFailurePairs").jsonArray.size}, " +
-                                "strictViolations=${rewardStrictViolations.size}",
-                    ),
-            ),
+        return buildLocalRewardIdentityEvaluation(
+            baseline = baseline,
+            strictViolations = strictViolations,
+            cadenceInput =
+                LocalRewardIdentityMetricEvaluationInput(
+                    metricId = cadenceMetricId,
+                    overlap = cadenceOverlap,
+                    currentValueElement =
+                        buildJsonObject {
+                            put("maxOverlap", task.metrics.getValue(cadenceMetricId))
+                            put("pairs", task.metrics.getValue("sameZoneSecretVsCadencePairs"))
+                            put("localIdentityFailurePairs", task.metrics.getValue("localIdentityFailurePairs"))
+                            put("strictLocalIdentityViolations", task.metrics.getValue("strictLocalIdentityViolations"))
+                        },
+                    pairCount = task.metrics.getValue("sameZoneSecretVsCadencePairs").jsonArray.size,
+                    includeOverlapFormula = true,
+                ),
+            rewardInput =
+                LocalRewardIdentityMetricEvaluationInput(
+                    metricId = rewardMetricId,
+                    overlap = rewardOverlap,
+                    currentValueElement =
+                        buildJsonObject {
+                            put("maxOverlap", task.metrics.getValue(rewardMetricId))
+                            put("pairs", task.metrics.getValue("sameZoneSecretVsRewardPairs"))
+                            put("localIdentityFailurePairs", task.metrics.getValue("localIdentityFailurePairs"))
+                            put("strictLocalIdentityViolations", task.metrics.getValue("strictLocalIdentityViolations"))
+                        },
+                    pairCount = task.metrics.getValue("sameZoneSecretVsRewardPairs").jsonArray.size,
+                    failurePairCount = task.metrics.getValue("localIdentityFailurePairs").jsonArray.size,
+                ),
+            detailsByMetricId =
+                mapOf(
+                    cadenceMetricId to task.metrics,
+                    rewardMetricId to task.metrics,
+                ),
         )
     }
 

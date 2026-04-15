@@ -7,11 +7,9 @@ import com.ktome.core.harness.whitebox.WhiteBoxCaseReport
 import com.ktome.core.harness.whitebox.WhiteBoxCorpusSpec
 import com.ktome.core.harness.whitebox.WhiteBoxJoinKey
 import com.ktome.tools.phase4.Phase4OwnerBaselineRegistry
-import com.ktome.tools.phase4.requiredMetric
 import com.ktome.tools.mapgen.phase4HarnessHeader
 import com.ktome.tools.verification.EvaluationResult
 import com.ktome.tools.verification.VerificationBaseline
-import com.ktome.tools.verification.VerificationBaselineComparator
 import com.ktome.tools.verification.VerificationCacheSupport
 import com.ktome.tools.whitebox.WhiteBoxDomainWriteRequest
 import com.ktome.tools.whitebox.WhiteBoxReportWriter
@@ -569,104 +567,65 @@ object WhiteBoxLootRunner {
     ): EvaluationResult {
         val cadenceMetricId = "sameZoneSecretVsCadenceMaxOverlap"
         val rewardMetricId = "sameZoneSecretVsRewardMaxOverlap"
-        val cadenceRange = baseline.requiredMetric(cadenceMetricId)
-        val rewardRange = baseline.requiredMetric(rewardMetricId)
         val overlapSummaryJson = profileOverlapSummary.toJson()
-        val cadenceStrictViolations =
-            profileOverlapSummary.strictLocalIdentityViolations.filter { violation ->
-                violation.pairType == SECRET_VS_CADENCE_PAIR_TYPE
-            }
-        val rewardStrictViolations =
-            profileOverlapSummary.strictLocalIdentityViolations.filter { violation ->
-                violation.pairType == SECRET_VS_REWARD_PAIR_TYPE
-            }
-        val result =
-            VerificationBaselineComparator.compareBudgetThreshold(
-                domainId = "loot",
-                evaluationId = "loot.localRewardIdentity",
-                baseline = baseline.copy(expectedMetricRanges = listOf(cadenceRange, rewardRange)),
-                actualMetrics =
-                    mapOf(
-                        cadenceMetricId to profileOverlapSummary.sameZoneSecretVsCadenceMaxOverlap,
-                        rewardMetricId to profileOverlapSummary.sameZoneSecretVsRewardMaxOverlap,
-                    ),
-                currentValueTexts =
-                    mapOf(
-                        cadenceMetricId to formatStrictAwareLocalIdentityCurrentValue(profileOverlapSummary.sameZoneSecretVsCadenceMaxOverlap, cadenceStrictViolations),
-                        rewardMetricId to formatStrictAwareLocalIdentityCurrentValue(profileOverlapSummary.sameZoneSecretVsRewardMaxOverlap, rewardStrictViolations),
-                    ),
-                currentValueElements =
-                    mapOf(
-                        cadenceMetricId to
-                            buildJsonObject {
-                                put("maxOverlap", profileOverlapSummary.sameZoneSecretVsCadenceMaxOverlap)
-                                put("pairs", overlapSummaryJson.getValue("sameZoneSecretVsCadencePairs"))
-                                put("localIdentityFailurePairs", overlapSummaryJson.getValue("localIdentityFailurePairs"))
-                                putJsonArray("strictLocalIdentityViolations") {
-                                    cadenceStrictViolations.forEach { violation -> add(violation.toJson()) }
-                                }
-                                putJsonArray("preflightCulpritPairs") {
-                                    preflightArtifacts.culpritPairs.forEach { pair -> add(pair.toJson()) }
-                                }
-                                putJsonArray("preflightCulpritReasons") {
-                                    preflightArtifacts.culpritReasons.forEach { reason -> add(JsonPrimitive(reason)) }
-                                }
-                            },
-                        rewardMetricId to
-                            buildJsonObject {
-                                put("maxOverlap", profileOverlapSummary.sameZoneSecretVsRewardMaxOverlap)
-                                put("pairs", overlapSummaryJson.getValue("sameZoneSecretVsRewardPairs"))
-                                put("localIdentityFailurePairs", overlapSummaryJson.getValue("localIdentityFailurePairs"))
-                                putJsonArray("strictLocalIdentityViolations") {
-                                    rewardStrictViolations.forEach { violation -> add(violation.toJson()) }
-                                }
-                                putJsonArray("preflightCulpritPairs") {
-                                    preflightArtifacts.culpritPairs.forEach { pair -> add(pair.toJson()) }
-                                }
-                                putJsonArray("preflightCulpritReasons") {
-                                    preflightArtifacts.culpritReasons.forEach { reason -> add(JsonPrimitive(reason)) }
-                                }
-                            },
-                    ),
-                detailsByMetricId =
-                    mapOf(
-                        cadenceMetricId to corpusAggregateMetrics,
-                        rewardMetricId to corpusAggregateMetrics,
-                    ),
-            )
-        val strictAwareResult =
-            result.withStrictLocalIdentityViolations(
-                cadenceMetricId = cadenceMetricId,
-                rewardMetricId = rewardMetricId,
-                violations = profileOverlapSummary.strictLocalIdentityViolations,
-            )
-        return strictAwareResult.copy(
-            entries =
-                strictAwareResult.entries.map { entry ->
-                    when (entry.metricId) {
-                        cadenceMetricId ->
-                            entry.copy(
-                                targetText = com.ktome.tools.phase4.Phase4OwnerMetricTargets.targetText(cadenceMetricId, cadenceRange),
-                                note =
-                                    "pairCount=${profileOverlapSummary.sameZoneSecretVsCadencePairs.size}, " +
-                                        "strictViolations=${cadenceStrictViolations.size}, " +
-                                        "overlap = |A ∩ B| / min(|A|, |B|); " +
-                                        "preflightCulprits=${preflightArtifacts.summary.culpritPairCount}",
-                            )
-
-                        rewardMetricId ->
-                            entry.copy(
-                                targetText = com.ktome.tools.phase4.Phase4OwnerMetricTargets.targetText(rewardMetricId, rewardRange),
-                                note =
-                                    "pairCount=${profileOverlapSummary.sameZoneSecretVsRewardPairs.size}, " +
-                                        "failurePairs=${profileOverlapSummary.localIdentityFailurePairs.size}, " +
-                                        "strictViolations=${rewardStrictViolations.size}; " +
-                                        "preflightCulprits=${preflightArtifacts.summary.culpritPairCount}",
-                            )
-
-                        else -> entry
-                    }
-                },
+        val strictViolationBreakdown =
+            profileOverlapSummary.strictLocalIdentityViolations.splitByLocalIdentityPairType()
+        val cadenceStrictViolations = strictViolationBreakdown.cadenceViolations
+        val rewardStrictViolations = strictViolationBreakdown.rewardViolations
+        return buildLocalRewardIdentityEvaluation(
+            baseline = baseline,
+            strictViolations = profileOverlapSummary.strictLocalIdentityViolations,
+            cadenceInput =
+                LocalRewardIdentityMetricEvaluationInput(
+                    metricId = cadenceMetricId,
+                    overlap = profileOverlapSummary.sameZoneSecretVsCadenceMaxOverlap,
+                    currentValueElement =
+                        buildJsonObject {
+                            put("maxOverlap", profileOverlapSummary.sameZoneSecretVsCadenceMaxOverlap)
+                            put("pairs", overlapSummaryJson.getValue("sameZoneSecretVsCadencePairs"))
+                            put("localIdentityFailurePairs", overlapSummaryJson.getValue("localIdentityFailurePairs"))
+                            putJsonArray("strictLocalIdentityViolations") {
+                                cadenceStrictViolations.forEach { violation -> add(violation.toJson()) }
+                            }
+                            putJsonArray("preflightCulpritPairs") {
+                                preflightArtifacts.culpritPairs.forEach { pair -> add(pair.toJson()) }
+                            }
+                            putJsonArray("preflightCulpritReasons") {
+                                preflightArtifacts.culpritReasons.forEach { reason -> add(JsonPrimitive(reason)) }
+                            }
+                        },
+                    pairCount = profileOverlapSummary.sameZoneSecretVsCadencePairs.size,
+                    includeOverlapFormula = true,
+                    preflightCulpritCount = preflightArtifacts.summary.culpritPairCount,
+                ),
+            rewardInput =
+                LocalRewardIdentityMetricEvaluationInput(
+                    metricId = rewardMetricId,
+                    overlap = profileOverlapSummary.sameZoneSecretVsRewardMaxOverlap,
+                    currentValueElement =
+                        buildJsonObject {
+                            put("maxOverlap", profileOverlapSummary.sameZoneSecretVsRewardMaxOverlap)
+                            put("pairs", overlapSummaryJson.getValue("sameZoneSecretVsRewardPairs"))
+                            put("localIdentityFailurePairs", overlapSummaryJson.getValue("localIdentityFailurePairs"))
+                            putJsonArray("strictLocalIdentityViolations") {
+                                rewardStrictViolations.forEach { violation -> add(violation.toJson()) }
+                            }
+                            putJsonArray("preflightCulpritPairs") {
+                                preflightArtifacts.culpritPairs.forEach { pair -> add(pair.toJson()) }
+                            }
+                            putJsonArray("preflightCulpritReasons") {
+                                preflightArtifacts.culpritReasons.forEach { reason -> add(JsonPrimitive(reason)) }
+                            }
+                        },
+                    pairCount = profileOverlapSummary.sameZoneSecretVsRewardPairs.size,
+                    failurePairCount = profileOverlapSummary.localIdentityFailurePairs.size,
+                    preflightCulpritCount = preflightArtifacts.summary.culpritPairCount,
+                ),
+            detailsByMetricId =
+                mapOf(
+                    cadenceMetricId to corpusAggregateMetrics,
+                    rewardMetricId to corpusAggregateMetrics,
+                ),
         )
     }
 

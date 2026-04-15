@@ -3,7 +3,11 @@ package com.ktome.tools.loot
 import com.ktome.tools.verification.VerificationCacheSupport
 import java.nio.file.Files
 import java.nio.file.Path
+import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -19,6 +23,8 @@ import org.junit.jupiter.api.io.TempDir
 class LootBalanceLabRunnerTest {
     @TempDir
     lateinit var tempDir: Path
+
+    private val json: Json = Json { prettyPrint = true; explicitNulls = false }
 
     @Test
     @Tag("lootBalanceLab")
@@ -139,5 +145,60 @@ class LootBalanceLabRunnerTest {
                 System.setProperty("ktome.phase4.loot.reportDir", originalReportDir)
             }
         }
+    }
+
+    @Test
+    @Tag("lootBalanceLab")
+    fun `readKernelRun ignores cached payloads with stale contract version`() {
+        val originalReportDir = System.getProperty("ktome.phase4.loot.reportDir")
+        val repoRoot = VerificationCacheSupport.repoRoot()
+        val cacheDirs = VerificationCacheSupport.cacheDirs(domainId = "loot", repoRoot = repoRoot)
+        VerificationCacheSupport.clearDirectory(cacheDirs.kernelDir)
+        try {
+            val effectiveReportDir = tempDir.resolve("loot-reports-stale-contract").toString()
+            System.setProperty("ktome.phase4.loot.reportDir", effectiveReportDir)
+            val run = LootBalanceLabRunner.run()
+            val mergedKernelPath = cacheDirs.kernelDir.resolve("merged").resolve("loot-kernel-merged.json")
+
+            overwriteContractVersion(run.summaryPath, "uvr-pr05-loot-kernel-v5")
+            overwriteContractVersion(mergedKernelPath, "uvr-pr05-loot-kernel-v5")
+
+            assertEquals(null, LootBalanceLabRunner.readKernelRun(run.summaryPath.parent))
+        } finally {
+            VerificationCacheSupport.clearDirectory(cacheDirs.kernelDir)
+            if (originalReportDir == null) {
+                System.clearProperty("ktome.phase4.loot.reportDir")
+            } else {
+                System.setProperty("ktome.phase4.loot.reportDir", originalReportDir)
+            }
+        }
+    }
+
+    private fun overwriteContractVersion(
+        path: Path,
+        contractVersion: String,
+    ) {
+        val payload = json.parseToJsonElement(Files.readString(path)).jsonObject
+        val rewritten =
+            buildJsonObject {
+                payload.forEach { (key, value) ->
+                    if (key == "kernelCache") {
+                        put(
+                            key,
+                            buildJsonObject {
+                                value.jsonObject.forEach { (cacheKey, cacheValue) ->
+                                    put(
+                                        cacheKey,
+                                        if (cacheKey == "contractVersion") JsonPrimitive(contractVersion) else cacheValue,
+                                    )
+                                }
+                            },
+                        )
+                    } else {
+                        put(key, value)
+                    }
+                }
+            }
+        Files.writeString(path, json.encodeToString(JsonElement.serializer(), rewritten))
     }
 }

@@ -1,8 +1,8 @@
 package com.ktome.tools.phase4
 
-import com.ktome.tools.loot.SECRET_VS_CADENCE_PAIR_TYPE
-import com.ktome.tools.loot.SECRET_VS_REWARD_PAIR_TYPE
 import com.ktome.tools.loot.formatStrictAwareLocalIdentityCurrentValue
+import com.ktome.tools.loot.localIdentityEvaluationDetail
+import com.ktome.tools.loot.splitByLocalIdentityPairType
 import com.ktome.tools.loot.toLootStrictLocalIdentityViolation
 import com.ktome.tools.verification.VerificationBaseline
 import java.nio.file.Files
@@ -81,6 +81,9 @@ private data class Phase4ExperienceMetric(
     val note: String? = null,
 )
 
+@Deprecated(
+    message = "Legacy Phase 4 aggregate kept only for parity/fallback. Canonical authority lives in ReportPhase4Runner.",
+)
 object Phase4ReportRunner {
     private const val SUMMARY_FILE: String = "phase4-summary.json"
     private const val MARKDOWN_FILE: String = "phase4-summary.md"
@@ -180,14 +183,9 @@ object Phase4ReportRunner {
             loot.metrics.getValue("strictLocalIdentityViolations").jsonArray.map { violation ->
                 violation.jsonObject.toLootStrictLocalIdentityViolation()
             }
-        val strictCadenceViolations =
-            strictLocalIdentityViolations.filter { violation ->
-                violation.pairType == SECRET_VS_CADENCE_PAIR_TYPE
-            }
-        val strictRewardViolations =
-            strictLocalIdentityViolations.filter { violation ->
-                violation.pairType == SECRET_VS_REWARD_PAIR_TYPE
-            }
+        val strictViolationBreakdown = strictLocalIdentityViolations.splitByLocalIdentityPairType()
+        val strictCadenceViolations = strictViolationBreakdown.cadenceViolations
+        val strictRewardViolations = strictViolationBreakdown.rewardViolations
         val terminalWeaponBaseDiversity = longRun.metrics.intValue("terminalWeaponBaseDiversity")
         val crossProfessionTopWeaponDominance = longRun.metrics.doubleValue("crossProfessionTopWeaponDominance")
         val professionAlignedWeaponAdoptionRate = longRun.metrics.doubleValue("professionAlignedWeaponAdoptionRate")
@@ -295,8 +293,11 @@ object Phase4ReportRunner {
                             strictCadenceViolations.isEmpty(),
                     ),
                 note =
-                    "pairCount=${loot.metrics.getValue("sameZoneSecretVsCadencePairs").jsonArray.size}, " +
-                        "strictViolations=${strictCadenceViolations.size}, overlap = |A ∩ B| / min(|A|, |B|)",
+                    localIdentityEvaluationDetail(
+                        pairCount = loot.metrics.getValue("sameZoneSecretVsCadencePairs").jsonArray.size,
+                        strictViolationCount = strictCadenceViolations.size,
+                        includeOverlapFormula = true,
+                    ),
             ),
             Phase4ExperienceMetric(
                 metricId = "sameZoneSecretVsRewardMaxOverlap",
@@ -316,9 +317,11 @@ object Phase4ReportRunner {
                             strictRewardViolations.isEmpty(),
                     ),
                 note =
-                    "pairCount=${loot.metrics.getValue("sameZoneSecretVsRewardPairs").jsonArray.size}, " +
-                        "failurePairs=${loot.metrics.getValue("localIdentityFailurePairs").jsonArray.size}, " +
-                        "strictViolations=${strictRewardViolations.size}",
+                    localIdentityEvaluationDetail(
+                        pairCount = loot.metrics.getValue("sameZoneSecretVsRewardPairs").jsonArray.size,
+                        failurePairCount = loot.metrics.getValue("localIdentityFailurePairs").jsonArray.size,
+                        strictViolationCount = strictRewardViolations.size,
+                    ),
             ),
             Phase4ExperienceMetric(
                 metricId = "terminalWeaponBaseDiversity",
