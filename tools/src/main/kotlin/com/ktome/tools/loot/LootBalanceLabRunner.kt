@@ -21,6 +21,7 @@ import com.ktome.core.mapgen.ZoneRewardProfile
 import com.ktome.core.phase.Phase4ContractVersions
 import com.ktome.core.random.SplitMix64RandomSource
 import com.ktome.game.data.DataLoader
+import com.ktome.game.data.schema.LootProfileLocalIdentityCategory
 import com.ktome.game.data.schema.LootProfileSchemaV3
 import com.ktome.game.data.schema.SchemaCatalog
 import com.ktome.game.hidden.HiddenEventRewardPayload
@@ -383,9 +384,14 @@ internal data class LootLocalOverlapPairSummary(
         }
 }
 
+/**
+ * Canonical owner-artifact shape for the Phase 4 local reward identity report.
+ * The long-term authority doc refers to this surface as `SecretRewardIdentitySummary`.
+ * `poolStrategy` is retained as explanatory debug metadata and is not a separate metric contract.
+ */
 internal data class LootSecretProfileIdentitySummary(
     val profileId: String,
-    val zoneId: String,
+    val canonicalZoneId: String,
     val poolStrategy: String,
     val identityAxes: List<String>,
     val rewardStructureKeys: List<String>,
@@ -403,7 +409,7 @@ internal data class LootSecretProfileIdentitySummary(
     fun toJson(): JsonObject =
         buildJsonObject {
             put("profileId", profileId)
-            put("zoneId", zoneId)
+            put("canonicalZoneId", canonicalZoneId)
             put("poolStrategy", poolStrategy)
             putJsonArray("identityAxes") {
                 identityAxes.forEach { axis -> add(JsonPrimitive(axis)) }
@@ -1390,23 +1396,23 @@ internal object LootLabKernel {
             buildLocalOverlapPairs(
                 overlapMatrix = overlapMatrix,
                 metadataByProfileId = metadataByProfileId,
-                comparedCategory = "cadence",
+                comparedCategory = LootProfileLocalIdentityCategory.CADENCE,
             )
         val sameZoneSecretVsRewardPairs =
             buildLocalOverlapPairs(
                 overlapMatrix = overlapMatrix,
                 metadataByProfileId = metadataByProfileId,
-                comparedCategory = "reward",
+                comparedCategory = LootProfileLocalIdentityCategory.REWARD,
             )
         validateLocalIdentityPairCoverage(
             metadataByProfileId = metadataByProfileId,
             pairs = sameZoneSecretVsCadencePairs,
-            comparedCategory = "cadence",
+            comparedCategory = LootProfileLocalIdentityCategory.CADENCE,
         )
         validateLocalIdentityPairCoverage(
             metadataByProfileId = metadataByProfileId,
             pairs = sameZoneSecretVsRewardPairs,
-            comparedCategory = "reward",
+            comparedCategory = LootProfileLocalIdentityCategory.REWARD,
         )
         val distinctBaseItemCount =
             candidateBaseIdsByProfileId.values
@@ -1451,21 +1457,21 @@ internal object LootLabKernel {
     private fun buildLocalOverlapPairs(
         overlapMatrix: Map<String, Map<String, Double>>,
         metadataByProfileId: Map<String, LootProfileLocalIdentityMetadata>,
-        comparedCategory: String,
+        comparedCategory: LootProfileLocalIdentityCategory,
     ): List<LootLocalOverlapPairSummary> =
         overlapMatrix.flatMap { (profileId, row) ->
             val profileMetadata = metadataByProfileId.getValue(profileId)
-            if (profileMetadata.category != "secret" || profileMetadata.zoneId == null) {
+            if (profileMetadata.category != LootProfileLocalIdentityCategory.SECRET || profileMetadata.canonicalZoneId == null) {
                 emptyList()
             } else {
                 row.mapNotNull { (candidateId, overlap) ->
                     val candidateMetadata = metadataByProfileId.getValue(candidateId)
-                    if (candidateMetadata.category != comparedCategory || candidateMetadata.zoneId != profileMetadata.zoneId) {
+                    if (candidateMetadata.category != comparedCategory || candidateMetadata.canonicalZoneId != profileMetadata.canonicalZoneId) {
                         null
                     } else {
                         LootLocalOverlapPairSummary(
-                            zoneId = profileMetadata.zoneId,
-                            pairType = "secret_vs_$comparedCategory",
+                            zoneId = requireNotNull(profileMetadata.canonicalZoneId),
+                            pairType = localIdentityPairTypeForComparedCategory(comparedCategory),
                             secretProfileId = profileId,
                             comparedProfileId = candidateId,
                             overlap = overlap,
@@ -1486,7 +1492,7 @@ internal object LootLabKernel {
         strictPairCeilings: Map<String, Double>,
     ): List<LootSecretProfileIdentitySummary> =
         profiles
-            .filter { profile -> metadataByProfileId.getValue(profile.id).category == "secret" }
+            .filter { profile -> metadataByProfileId.getValue(profile.id).category == LootProfileLocalIdentityCategory.SECRET }
             .map { profile ->
                 val metadata = metadataByProfileId.getValue(profile.id)
                 val cadencePairs = cadencePairsBySecretProfileId[profile.id].orEmpty()
@@ -1495,8 +1501,8 @@ internal object LootLabKernel {
                 val rewardStructureKeys = rewardStructureKeysByProfileId[profile.id].orEmpty()
                 LootSecretProfileIdentitySummary(
                     profileId = profile.id,
-                    zoneId = requireNotNull(metadata.zoneId) {
-                        "Secret loot profile '${profile.id}' must resolve zoneId for identity summary."
+                    canonicalZoneId = requireNotNull(metadata.canonicalZoneId) {
+                        "Secret loot profile '${profile.id}' must resolve canonicalZoneId for identity summary."
                     },
                     poolStrategy = profile.poolStrategy.name,
                     identityAxes = profile.identityAxes(rewardStructureKeys),
@@ -1553,18 +1559,18 @@ internal object LootLabKernel {
     private fun validateLocalIdentityPairCoverage(
         metadataByProfileId: Map<String, LootProfileLocalIdentityMetadata>,
         pairs: List<LootLocalOverlapPairSummary>,
-        comparedCategory: String,
+        comparedCategory: LootProfileLocalIdentityCategory,
     ) {
         val secretZoneIds =
             metadataByProfileId.values
                 .asSequence()
-                .filter { metadata -> metadata.category == "secret" }
-                .mapNotNull(LootProfileLocalIdentityMetadata::zoneId)
+                .filter { metadata -> metadata.category == LootProfileLocalIdentityCategory.SECRET }
+                .mapNotNull(LootProfileLocalIdentityMetadata::canonicalZoneId)
                 .toSet()
         val pairedZoneIds = pairs.mapTo(linkedSetOf(), LootLocalOverlapPairSummary::zoneId)
         val missingZoneIds = secretZoneIds - pairedZoneIds
         require(missingZoneIds.isEmpty()) {
-            "Local identity metric lost same-zone secret_vs_$comparedCategory coverage for zones ${missingZoneIds.sorted()}."
+            "Local identity metric lost same-zone ${localIdentityPairTypeForComparedCategory(comparedCategory)} coverage for zones ${missingZoneIds.sorted()}."
         }
     }
 
@@ -2141,7 +2147,7 @@ private fun JsonObject.toLootLocalOverlapPairSummary(): LootLocalOverlapPairSumm
 private fun JsonObject.toLootSecretProfileIdentitySummary(): LootSecretProfileIdentitySummary =
     LootSecretProfileIdentitySummary(
         profileId = stringValue("profileId"),
-        zoneId = stringValue("zoneId"),
+        canonicalZoneId = stringValue("canonicalZoneId"),
         poolStrategy = stringValue("poolStrategy"),
         identityAxes = getValue("identityAxes").jsonArray.map { axis -> axis.jsonPrimitive.content },
         rewardStructureKeys = this["rewardStructureKeys"]?.jsonArray?.map { rewardKey -> rewardKey.jsonPrimitive.content }.orEmpty(),

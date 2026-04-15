@@ -4,6 +4,7 @@ import com.ktome.game.data.DataLoader
 import java.nio.file.Path
 import java.time.Duration
 import java.time.Instant
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -13,6 +14,7 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
+import kotlinx.serialization.json.putJsonObject
 
 internal data class Phase4TaskAggregate(
     val taskId: String,
@@ -632,7 +634,7 @@ internal object Phase4DomainArtifactRegistry {
                     put("localIdentityFailurePairs", corpusMetrics.getValue("localIdentityFailurePairs"))
                     put("strictLocalIdentityViolationCount", corpusMetrics.getValue("strictLocalIdentityViolationCount"))
                     put("strictLocalIdentityViolations", corpusMetrics.getValue("strictLocalIdentityViolations"))
-                    put("secretProfileIdentitySummaries", corpusMetrics.getValue("secretProfileIdentitySummaries"))
+                    put("secretProfileIdentitySummaries", validatedSecretProfileIdentitySummaries(corpusMetrics.getValue("secretProfileIdentitySummaries").jsonArray))
                     put("affixPassiveCoverage", corpusMetrics.getValue("affixPassiveCoverage"))
                     put("affixPassiveKinds", corpusMetrics.getValue("affixPassiveKinds"))
                     put("uniqueArtifactOutcomeCount", corpusMetrics.getValue("uniqueArtifactOutcomeCount"))
@@ -640,6 +642,19 @@ internal object Phase4DomainArtifactRegistry {
                     put("uniqueArtifactMeaningfulSwapRate", corpusMetrics.getValue("uniqueArtifactMeaningfulSwapRate"))
                 },
         )
+    }
+
+    private fun validatedSecretProfileIdentitySummaries(summaries: JsonArray): JsonArray {
+        summaries.forEach { element ->
+            val summary = element.jsonObject
+            check(summary.containsKey("canonicalZoneId")) {
+                "whiteBoxLoot.secretProfileIdentitySummaries must expose canonicalZoneId on the canonical aggregate path."
+            }
+            check(!summary.containsKey("zoneId")) {
+                "whiteBoxLoot.secretProfileIdentitySummaries must not retain legacy zoneId on the canonical aggregate path."
+            }
+        }
+        return summaries
     }
 
     private fun readWhiteBoxContentPack(

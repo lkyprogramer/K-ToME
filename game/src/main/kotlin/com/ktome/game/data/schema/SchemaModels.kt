@@ -131,12 +131,34 @@ enum class LootPoolStrategy {
     TAG_WEIGHTED,
 }
 
+enum class LootProfileLocalIdentityCategory(
+    val token: String,
+) {
+    SECRET("secret"),
+    CADENCE("cadence"),
+    REWARD("reward"),
+    OTHER("other"),
+    ;
+
+    val requiresCanonicalZoneId: Boolean
+        get() = this != OTHER
+}
+
+fun LootProfileSchemaV3.localIdentityCategory(): LootProfileLocalIdentityCategory =
+    when {
+        "secret" in tags -> LootProfileLocalIdentityCategory.SECRET
+        "cadence" in tags -> LootProfileLocalIdentityCategory.CADENCE
+        "reward" in tags -> LootProfileLocalIdentityCategory.REWARD
+        else -> LootProfileLocalIdentityCategory.OTHER
+    }
+
 data class LootProfileSchemaV3(
     val id: String,
     val schemaVersion: Int,
     val tags: List<String>,
     val itemIds: List<String>,
     val rewardBudget: Int,
+    val canonicalZoneId: String? = null,
     val poolStrategy: LootPoolStrategy,
     val itemTagFilter: List<String> = emptyList(),
     val excludeIds: List<String> = emptyList(),
@@ -151,6 +173,9 @@ data class LootProfileSchemaV3(
         require(tags.none(String::isBlank)) { "LootProfileSchemaV3.tags must not contain blanks." }
         require(itemIds.none(String::isBlank)) { "LootProfileSchemaV3.itemIds must not contain blanks." }
         require(rewardBudget >= 0) { "LootProfileSchemaV3.rewardBudget must not be negative." }
+        require(canonicalZoneId == null || canonicalZoneId.isNotBlank()) {
+            "LootProfileSchemaV3.canonicalZoneId must not be blank when provided."
+        }
         require(itemTagFilter.none(String::isBlank)) { "LootProfileSchemaV3.itemTagFilter must not contain blanks." }
         require(excludeIds.none(String::isBlank)) { "LootProfileSchemaV3.excludeIds must not contain blanks." }
         require(typeWeights.values.all { weight -> weight > 0 }) { "LootProfileSchemaV3.typeWeights must be positive." }
@@ -160,6 +185,10 @@ data class LootProfileSchemaV3(
         }
         require(affixTagPreference.none(String::isBlank)) {
             "LootProfileSchemaV3.affixTagPreference must not contain blanks."
+        }
+        val localIdentityCategory = localIdentityCategory()
+        require(!localIdentityCategory.requiresCanonicalZoneId || canonicalZoneId != null) {
+            "Loot profile '$id' tagged as ${localIdentityCategory.token} must declare canonicalZoneId."
         }
     }
 }

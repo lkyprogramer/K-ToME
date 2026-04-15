@@ -1,6 +1,7 @@
 package com.ktome.tools.loot
 
 import com.ktome.game.data.schema.LootPoolStrategy
+import com.ktome.game.data.schema.LootProfileLocalIdentityCategory
 import com.ktome.game.data.schema.LootProfileSchemaV3
 import com.ktome.game.loot.LootProfileCandidatePoolResolver
 import com.ktome.core.item.ItemDataBundle
@@ -44,8 +45,8 @@ private data class LootProfileSourceIndex(
     val candidateBaseIds: Set<String>,
     val explicitBaseIds: Set<String>,
     val tagMatchedBaseIds: Set<String>,
-    val zoneId: String?,
-    val category: String,
+    val canonicalZoneId: String?,
+    val category: LootProfileLocalIdentityCategory,
 ) {
     fun toBreakdown(): LootProfileSourceBreakdown =
         LootProfileSourceBreakdown(
@@ -78,7 +79,7 @@ object LootProfileStructureAnalyzer {
                         candidateBaseIds = pool.allCandidateBaseIds,
                         explicitBaseIds = explicitBaseIds.intersect(pool.allCandidateBaseIds),
                         tagMatchedBaseIds = tagMatchedBaseIds.intersect(pool.allCandidateBaseIds),
-                        zoneId = localIdentityMetadata.zoneId,
+                        canonicalZoneId = localIdentityMetadata.canonicalZoneId,
                         category = localIdentityMetadata.category,
                     )
                 }
@@ -153,27 +154,13 @@ object LootProfileStructureAnalyzer {
         left: LootProfileSourceIndex,
         right: LootProfileSourceIndex,
     ): String? {
-        if (left.zoneId == null || right.zoneId == null || left.zoneId != right.zoneId) {
+        if (left.canonicalZoneId == null || right.canonicalZoneId == null || left.canonicalZoneId != right.canonicalZoneId) {
             return null
         }
-        return when {
-            left.category == "secret" && right.category == "cadence" -> "secret_vs_cadence"
-            right.category == "secret" && left.category == "cadence" -> "secret_vs_cadence"
-            left.category == "secret" && right.category == "reward" -> "secret_vs_reward"
-            right.category == "secret" && left.category == "reward" -> "secret_vs_reward"
-            else -> null
-        }
+        return localIdentityPairType(leftCategory = left.category, rightCategory = right.category)
     }
 
     private fun LootProfilePairDiff.isCulprit(): Boolean = culpritReasons.isNotEmpty()
-
-    private fun LootProfileSchemaV3.category(): String =
-        when {
-            "secret" in tags -> "secret"
-            "cadence" in tags -> "cadence"
-            "reward" in tags -> "reward"
-            else -> "other"
-        }
 
     private fun resolveTagMatchedBaseIds(
         itemBundle: ItemDataBundle,

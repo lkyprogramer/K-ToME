@@ -1,9 +1,13 @@
 package com.ktome.tools.loot
 
+import com.ktome.game.data.schema.LootProfileLocalIdentityCategory
 import com.ktome.tools.phase4.Phase4OwnerBaselineRegistry
+import com.ktome.tools.phase4.Phase4OwnerMetricTargets
+import com.ktome.tools.phase4.requiredMetric
 import com.ktome.tools.verification.EvaluationEntryStatus
 import com.ktome.tools.verification.EvaluationResult
 import com.ktome.tools.verification.VerificationBaseline
+import com.ktome.tools.verification.VerificationBaselineComparator
 import com.ktome.tools.verification.EvaluationVerdict
 import com.ktome.tools.verification.VerificationCacheSupport
 import java.nio.file.Path
@@ -71,6 +75,21 @@ internal data class LootStrictLocalIdentityViolation(
         }
 }
 
+internal data class LootStrictLocalIdentityViolationBreakdown(
+    val cadenceViolations: List<LootStrictLocalIdentityViolation>,
+    val rewardViolations: List<LootStrictLocalIdentityViolation>,
+)
+
+internal data class LocalRewardIdentityMetricEvaluationInput(
+    val metricId: String,
+    val overlap: Double,
+    val currentValueElement: JsonObject,
+    val pairCount: Int,
+    val failurePairCount: Int? = null,
+    val includeOverlapFormula: Boolean = false,
+    val preflightCulpritCount: Int? = null,
+)
+
 internal fun exceedsGlobalLocalIdentityGuardrail(
     pairType: String?,
     overlap: Double,
@@ -111,6 +130,40 @@ internal fun JsonObject.toLootStrictLocalIdentityViolation(): LootStrictLocalIde
         allowedMaxOverlap = getValue("allowedMaxOverlap").jsonPrimitive.content.toDouble(),
     )
 
+internal fun Iterable<LootStrictLocalIdentityViolation>.splitByLocalIdentityPairType(): LootStrictLocalIdentityViolationBreakdown {
+    val cadenceViolations = mutableListOf<LootStrictLocalIdentityViolation>()
+    val rewardViolations = mutableListOf<LootStrictLocalIdentityViolation>()
+    for (violation in this) {
+        when (violation.pairType) {
+            SECRET_VS_CADENCE_PAIR_TYPE -> cadenceViolations += violation
+            SECRET_VS_REWARD_PAIR_TYPE -> rewardViolations += violation
+        }
+    }
+    return LootStrictLocalIdentityViolationBreakdown(
+        cadenceViolations = cadenceViolations,
+        rewardViolations = rewardViolations,
+    )
+}
+
+internal fun localIdentityPairTypeForComparedCategory(comparedCategory: LootProfileLocalIdentityCategory): String =
+    when (comparedCategory) {
+        LootProfileLocalIdentityCategory.CADENCE -> SECRET_VS_CADENCE_PAIR_TYPE
+        LootProfileLocalIdentityCategory.REWARD -> SECRET_VS_REWARD_PAIR_TYPE
+        else -> error("Unsupported local identity compared category '${comparedCategory.token}'.")
+    }
+
+internal fun localIdentityPairType(
+    leftCategory: LootProfileLocalIdentityCategory,
+    rightCategory: LootProfileLocalIdentityCategory,
+): String? =
+    when {
+        leftCategory == LootProfileLocalIdentityCategory.SECRET && rightCategory == LootProfileLocalIdentityCategory.CADENCE -> SECRET_VS_CADENCE_PAIR_TYPE
+        rightCategory == LootProfileLocalIdentityCategory.SECRET && leftCategory == LootProfileLocalIdentityCategory.CADENCE -> SECRET_VS_CADENCE_PAIR_TYPE
+        leftCategory == LootProfileLocalIdentityCategory.SECRET && rightCategory == LootProfileLocalIdentityCategory.REWARD -> SECRET_VS_REWARD_PAIR_TYPE
+        rightCategory == LootProfileLocalIdentityCategory.SECRET && leftCategory == LootProfileLocalIdentityCategory.REWARD -> SECRET_VS_REWARD_PAIR_TYPE
+        else -> null
+    }
+
 internal fun LootProfileOverlapSummary.withStrictPairCeilings(
     strictPairCeilings: Map<String, Double>,
 ): LootProfileOverlapSummary {
@@ -141,9 +194,9 @@ internal fun EvaluationResult.withStrictLocalIdentityViolations(
     rewardMetricId: String,
     violations: Iterable<LootStrictLocalIdentityViolation>,
 ): EvaluationResult {
-    val violationList = violations.toList()
-    val cadenceViolations = violationList.filter { violation -> violation.pairType == SECRET_VS_CADENCE_PAIR_TYPE }
-    val rewardViolations = violationList.filter { violation -> violation.pairType == SECRET_VS_REWARD_PAIR_TYPE }
+    val violationBreakdown = violations.splitByLocalIdentityPairType()
+    val cadenceViolations = violationBreakdown.cadenceViolations
+    val rewardViolations = violationBreakdown.rewardViolations
     val updatedEntries =
         entries.map { entry ->
             when {
@@ -176,6 +229,100 @@ internal fun EvaluationResult.withStrictLocalIdentityViolations(
     )
 }
 
+internal fun buildLocalRewardIdentityEvaluation(
+    baseline: VerificationBaseline,
+    strictViolations: List<LootStrictLocalIdentityViolation>,
+    cadenceInput: LocalRewardIdentityMetricEvaluationInput,
+    rewardInput: LocalRewardIdentityMetricEvaluationInput,
+    detailsByMetricId: Map<String, JsonObject>,
+): EvaluationResult {
+    val cadenceRange = baseline.requiredMetric(cadenceInput.metricId)
+    val rewardRange = baseline.requiredMetric(rewardInput.metricId)
+    val strictViolationBreakdown = strictViolations.splitByLocalIdentityPairType()
+    val strictViolationsByMetricId =
+        mapOf(
+            cadenceInput.metricId to strictViolationBreakdown.cadenceViolations,
+            rewardInput.metricId to strictViolationBreakdown.rewardViolations,
+        )
+    val result =
+        VerificationBaselineComparator.compareBudgetThreshold(
+            domainId = "loot",
+            evaluationId = "loot.localRewardIdentity",
+            baseline = baseline.copy(expectedMetricRanges = listOf(cadenceRange, rewardRange)),
+            actualMetrics =
+                mapOf(
+                    cadenceInput.metricId to cadenceInput.overlap,
+                    rewardInput.metricId to rewardInput.overlap,
+                ),
+            currentValueTexts =
+                mapOf(
+                    cadenceInput.metricId to
+                        formatStrictAwareLocalIdentityCurrentValue(
+                            cadenceInput.overlap,
+                            strictViolationsByMetricId.getValue(cadenceInput.metricId),
+                        ),
+                    rewardInput.metricId to
+                        formatStrictAwareLocalIdentityCurrentValue(
+                            rewardInput.overlap,
+                            strictViolationsByMetricId.getValue(rewardInput.metricId),
+                        ),
+                ),
+            currentValueElements =
+                mapOf(
+                    cadenceInput.metricId to cadenceInput.currentValueElement,
+                    rewardInput.metricId to rewardInput.currentValueElement,
+                ),
+            detailsByMetricId = detailsByMetricId,
+        )
+    val strictAwareResult =
+        result.withStrictLocalIdentityViolations(
+            cadenceMetricId = cadenceInput.metricId,
+            rewardMetricId = rewardInput.metricId,
+            violations = strictViolations,
+        )
+    return strictAwareResult.copy(
+        entries =
+            strictAwareResult.entries.map { entry ->
+                when (entry.metricId) {
+                    cadenceInput.metricId ->
+                        entry.copy(
+                            targetText = Phase4OwnerMetricTargets.targetText(entry.metricId, cadenceRange),
+                            note =
+                                appendEvaluationNote(
+                                    existingNote = entry.note,
+                                    detail =
+                                        localIdentityEvaluationDetail(
+                                            pairCount = cadenceInput.pairCount,
+                                            strictViolationCount = strictViolationsByMetricId.getValue(cadenceInput.metricId).size,
+                                            includeOverlapFormula = cadenceInput.includeOverlapFormula,
+                                            preflightCulpritCount = cadenceInput.preflightCulpritCount,
+                                        ),
+                                ),
+                        )
+
+                    rewardInput.metricId ->
+                        entry.copy(
+                            targetText = Phase4OwnerMetricTargets.targetText(entry.metricId, rewardRange),
+                            note =
+                                appendEvaluationNote(
+                                    existingNote = entry.note,
+                                    detail =
+                                        localIdentityEvaluationDetail(
+                                            pairCount = rewardInput.pairCount,
+                                            failurePairCount = rewardInput.failurePairCount,
+                                            strictViolationCount = strictViolationsByMetricId.getValue(rewardInput.metricId).size,
+                                            includeOverlapFormula = rewardInput.includeOverlapFormula,
+                                            preflightCulpritCount = rewardInput.preflightCulpritCount,
+                                        ),
+                                ),
+                        )
+
+                    else -> entry
+                }
+            },
+    )
+}
+
 internal fun formatStrictAwareLocalIdentityCurrentValue(
     overlap: Double,
     violations: List<LootStrictLocalIdentityViolation>,
@@ -194,6 +341,36 @@ internal fun formatStrictAwareLocalIdentityCurrentValue(
         "$baseValue (strict: $detail, +${violations.size - 1} more)"
     }
 }
+
+internal fun localIdentityEvaluationDetail(
+    pairCount: Int,
+    strictViolationCount: Int,
+    failurePairCount: Int? = null,
+    includeOverlapFormula: Boolean = false,
+    preflightCulpritCount: Int? = null,
+): String {
+    val counters =
+        buildList {
+            add("pairCount=$pairCount")
+            failurePairCount?.let { count -> add("failurePairs=$count") }
+            add("strictViolations=$strictViolationCount")
+        }
+    val extras =
+        buildList {
+            if (includeOverlapFormula) {
+                add("overlap = |A ∩ B| / min(|A|, |B|)")
+            }
+            preflightCulpritCount?.let { count -> add("preflightCulprits=$count") }
+        }
+    return listOf(counters.joinToString(", "), extras.takeIf { it.isNotEmpty() }?.joinToString("; "))
+        .filterNotNull()
+        .joinToString("; ")
+}
+
+internal fun appendEvaluationNote(
+    existingNote: String?,
+    detail: String,
+): String = listOfNotNull(existingNote, detail.takeIf(String::isNotBlank)).joinToString(separator = "; ")
 
 private fun formatStrictLocalIdentityViolation(violation: LootStrictLocalIdentityViolation): String =
     "${violation.pairId}=${formatLocalIdentityRatio(violation.overlap)}>${formatLocalIdentityRatio(violation.allowedMaxOverlap)}"
