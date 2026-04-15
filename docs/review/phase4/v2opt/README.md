@@ -41,6 +41,26 @@ V2OPT-PR-05
 3. 不把 `Phase 5` 事项提前塞回 `Phase 4` follow-up。
 4. 不接受“先做内容，验证以后补”的中间态。
 
+## V2OPT-PR-03 实施冻结补充（2026-04-14）
+
+1. `whiteBoxLoot` 的 same-zone secret local identity 现在分两层：
+   - 全体 `secret ↔ cadence/reward <= 0.50`
+   - strict pair ceiling：`loot.abyssal_temple_warded_archive.secret <= 0.35`、`loot.deep_iron_slag_cache.secret <= 0.40`、`loot.deep_iron_smuggler_stash.secret <= 0.40`
+2. `whiteBoxLoot` 保持原 owner metric id，不新增第二套 aggregate metric；但只要命中 strict pair violation，task status 必须直接失败。
+3. `organicHiddenProbe` 固定覆盖全部已发布组合：`4 profession × 3 released race(human/elf/dwarf)`，每个 `zone × combo` 固定 `11` seed，总量 `528` case；`orc/undead` 不参与。
+4. `organicHiddenProbe` 报告字段固定包含：
+   - `professionIds / raceIds`
+   - `firstHiddenDiscoveryTurnP50/P90`
+   - `firstSecretZoneEntryTurnP50/P90`
+   - `zoneDiscoveryDistribution`
+   - `scriptedVerification=false`
+   - `primerActionUsedCount=0`
+5. `V2OPT-PR-03` 的最小前台反馈合同固定为三条：
+   - primer 获得时要明确提示“拿到了值得继续搜的线索”
+   - failed search 要表达“这里确实有内容，但你没过检定/前置”
+   - secret reward 文案必须和普通 route/cache reward 区分，recent reward source 继续保留 `SECRET_ZONE`
+6. 本 PR 默认不新增任何 `visual/audio` family；hidden/secret 体验必须通过 reward identity、runtime feedback 与 owner/report 收口证明，而不是通过新增资源族掩盖问题。
+
 ## PR-06 之后的统一验证约束
 
 1. `phase4Report` 现在是默认 canonical aggregate gate，产物路径固定为 `tools/build/reports/verification/phase4/report-phase4-summary.{json,md}`。

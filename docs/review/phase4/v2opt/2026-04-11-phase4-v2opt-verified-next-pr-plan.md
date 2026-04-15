@@ -252,6 +252,29 @@
    - 不做大 UI
    - 只做足够低摩擦的提示和 reward 反馈
 
+**实施冻结补充（2026-04-14）**
+
+1. `whiteBoxLoot` 的 same-zone local identity owner contract 固定为两层：
+   - 全体 `sameZoneSecretVsCadenceMaxOverlap <= 0.50`
+   - 全体 `sameZoneSecretVsRewardMaxOverlap <= 0.50`
+2. 对最差 pair 再叠 strict ceiling，命中即 owner fail：
+   - `loot.abyssal_temple_warded_archive.secret <= 0.35`
+   - `loot.deep_iron_slag_cache.secret <= 0.40`
+   - `loot.deep_iron_smuggler_stash.secret <= 0.40`
+3. `organicHiddenProbe` 固定覆盖全部已发布组合：`4 profession × 3 released race(human/elf/dwarf)`，每个 `zone × combo` 固定 `11` seed，总量 `528` case；`orc/undead` 不参与。
+4. `organicHiddenProbe` 的 canonical 输出至少包含：
+   - `professionIds / raceIds`
+   - `firstHiddenDiscoveryTurnP50/P90`
+   - `firstSecretZoneEntryTurnP50/P90`
+   - `zoneDiscoveryDistribution`
+   - `scriptedVerification=false`
+   - `primerActionUsedCount=0`
+5. runtime 最小反馈增强固定收口到三条正式语义：
+   - primer 获得时让玩家知道“拿到了值得继续搜的线索”
+   - failed search 明确表达“这里确实有内容，但你没过检定/前置”
+   - secret reward 文案必须和普通 route/cache reward 区分，recent reward source 继续保留 `SECRET_ZONE`
+6. 本 PR 默认不新增任何 `visual/audio` family；若实现依赖新增资源族，视为 PR 边界切错。
+
 **建议验收**
 
 1. scripted hidden 与 organic hidden 两条指标都存在。
@@ -262,6 +285,7 @@
 **推荐命令**
 
 ```bash
+./gradlew organicHiddenProbe
 ./gradlew hiddenContentHarness
 ./gradlew whiteBoxHiddenContent
 ./gradlew whiteBoxLoot

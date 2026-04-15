@@ -68,6 +68,13 @@ class Phase4ReportRunnerTest {
         assertEquals("false", organicHiddenTask.getValue("metrics").jsonObject.getValue("scriptedVerification").jsonPrimitive.content)
         assertTrue(organicHiddenTask.getValue("metrics").jsonObject.containsKey("organicHiddenDiscoveryRate"))
         assertTrue(organicHiddenTask.getValue("metrics").jsonObject.containsKey("searchActionUseRate"))
+        assertTrue(organicHiddenTask.getValue("metrics").jsonObject.containsKey("firstHiddenDiscoveryTurnP50"))
+        assertTrue(organicHiddenTask.getValue("metrics").jsonObject.containsKey("firstHiddenDiscoveryTurnP90"))
+        assertTrue(organicHiddenTask.getValue("metrics").jsonObject.containsKey("firstSecretZoneEntryTurnP50"))
+        assertTrue(organicHiddenTask.getValue("metrics").jsonObject.containsKey("firstSecretZoneEntryTurnP90"))
+        assertTrue(organicHiddenTask.getValue("metrics").jsonObject.containsKey("zoneDiscoveryDistribution"))
+        assertTrue(organicHiddenTask.getValue("metrics").jsonObject.containsKey("secretZoneDiscoveryDistribution"))
+        assertTrue(organicHiddenTask.getValue("metrics").jsonObject.containsKey("searchPromptRequired"))
         assertTrue(longRunTask.getValue("metrics").jsonObject.containsKey("terminalWeaponBaseDiversity"))
         assertTrue(longRunTask.getValue("metrics").jsonObject.containsKey("crossProfessionTopWeaponDominance"))
         assertTrue(longRunTask.getValue("metrics").jsonObject.containsKey("professionAlignedWeaponAdoptionRate"))
@@ -84,6 +91,15 @@ class Phase4ReportRunnerTest {
         assertTrue(lootTask.getValue("metrics").jsonObject.containsKey("sameZoneSecretVsCadenceMaxOverlap"))
         assertTrue(lootTask.getValue("metrics").jsonObject.containsKey("sameZoneSecretVsRewardMaxOverlap"))
         assertTrue(lootTask.getValue("metrics").jsonObject.containsKey("localIdentityFailurePairs"))
+        assertTrue(lootTask.getValue("metrics").jsonObject.containsKey("strictLocalIdentityViolationCount"))
+        assertTrue(lootTask.getValue("metrics").jsonObject.containsKey("strictLocalIdentityViolations"))
+        assertTrue(lootTask.getValue("metrics").jsonObject.containsKey("secretProfileIdentitySummaries"))
+        assertTrue(
+            lootTask.getValue("metrics").jsonObject
+                .getValue("secretProfileIdentitySummaries")
+                .jsonArray
+                .all { summary -> summary.jsonObject.containsKey("rewardStructureKeys") },
+        )
         assertEquals("PASS", lootTask.getValue("status").jsonPrimitive.content)
         assertEquals("0", lootTask.getValue("metrics").jsonObject.getValue("failedAssertions").jsonPrimitive.content)
         assertEquals("13", contentPackTask.getValue("metrics").jsonObject.getValue("totalCases").jsonPrimitive.content)
@@ -143,6 +159,7 @@ class Phase4ReportRunnerTest {
         assertTrue(markdown.contains("- sourceTask.scripted: `hiddenContentHarness`"))
         assertTrue(markdown.contains("- sourceTask.organic: `organicHiddenProbe`"))
         assertTrue(markdown.contains("- sourceTask: `terrainInteractionBatch`"))
+        assertTrue(markdown.contains("secret reward identity summaries"))
         assertTrue(markdown.contains("legacyLootProfileSchemaRejectSummaries"))
         assertTrue(markdown.contains("loot.foundation.common"))
         assertTrue(terrainAggregateMetric.getValue("currentValue").jsonObject.containsKey("baseline"))
@@ -166,6 +183,9 @@ class Phase4ReportRunnerTest {
         assertTrue(alignedWeaponMetric.getValue("note").jsonPrimitive.content.contains("alignedSamples="))
         assertTrue(alignedWeaponMetric.getValue("note").jsonPrimitive.content.contains("topWeaponSemantics="))
         assertTrue(organicHiddenMetric.getValue("note").jsonPrimitive.content.contains("observationOnly=true"))
+        assertTrue(organicHiddenMetric.getValue("note").jsonPrimitive.content.contains("promptRequired=true"))
+        assertTrue(markdown.contains("strictLocalIdentityViolations"))
+        assertTrue(markdown.contains("searchPromptRequired"))
         assertEquals(
             setOf(
                 "mapgenSmoke",

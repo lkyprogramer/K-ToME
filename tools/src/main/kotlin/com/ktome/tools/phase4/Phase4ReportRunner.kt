@@ -1,5 +1,9 @@
 package com.ktome.tools.phase4
 
+import com.ktome.tools.loot.SECRET_VS_CADENCE_PAIR_TYPE
+import com.ktome.tools.loot.SECRET_VS_REWARD_PAIR_TYPE
+import com.ktome.tools.loot.formatStrictAwareLocalIdentityCurrentValue
+import com.ktome.tools.loot.toLootStrictLocalIdentityViolation
 import com.ktome.tools.verification.VerificationBaseline
 import java.nio.file.Files
 import java.nio.file.Path
@@ -172,6 +176,18 @@ object Phase4ReportRunner {
         val organicSecretZoneEntryRate = organicHidden.metrics.doubleValue("secretZoneEntryRate")
         val sameZoneSecretVsCadenceMaxOverlap = loot.metrics.doubleValue("sameZoneSecretVsCadenceMaxOverlap")
         val sameZoneSecretVsRewardMaxOverlap = loot.metrics.doubleValue("sameZoneSecretVsRewardMaxOverlap")
+        val strictLocalIdentityViolations =
+            loot.metrics.getValue("strictLocalIdentityViolations").jsonArray.map { violation ->
+                violation.jsonObject.toLootStrictLocalIdentityViolation()
+            }
+        val strictCadenceViolations =
+            strictLocalIdentityViolations.filter { violation ->
+                violation.pairType == SECRET_VS_CADENCE_PAIR_TYPE
+            }
+        val strictRewardViolations =
+            strictLocalIdentityViolations.filter { violation ->
+                violation.pairType == SECRET_VS_REWARD_PAIR_TYPE
+            }
         val terminalWeaponBaseDiversity = longRun.metrics.intValue("terminalWeaponBaseDiversity")
         val crossProfessionTopWeaponDominance = longRun.metrics.doubleValue("crossProfessionTopWeaponDominance")
         val professionAlignedWeaponAdoptionRate = longRun.metrics.doubleValue("professionAlignedWeaponAdoptionRate")
@@ -238,14 +254,28 @@ object Phase4ReportRunner {
                         put("discoveryWithoutPrimerCount", organicHidden.metrics.getValue("discoveryWithoutPrimerCount"))
                         put("searchActionUseRate", organicHidden.metrics.getValue("searchActionUseRate"))
                         put("secretZoneEntryRate", organicHidden.metrics.getValue("secretZoneEntryRate"))
+                        put("firstHiddenDiscoveryTurnP50", organicHidden.metrics.getValue("firstHiddenDiscoveryTurnP50"))
+                        put("firstHiddenDiscoveryTurnP90", organicHidden.metrics.getValue("firstHiddenDiscoveryTurnP90"))
+                        put("firstSecretZoneEntryTurnP50", organicHidden.metrics.getValue("firstSecretZoneEntryTurnP50"))
+                        put("firstSecretZoneEntryTurnP90", organicHidden.metrics.getValue("firstSecretZoneEntryTurnP90"))
+                        put("comboCount", organicHidden.metrics.getValue("comboCount"))
+                        put("seedsPerZoneCombo", organicHidden.metrics.getValue("seedsPerZoneCombo"))
+                        put("searchPromptRequired", organicHidden.metrics.getValue("searchPromptRequired"))
+                        put("reactiveSearchOnly", organicHidden.metrics.getValue("reactiveSearchOnly"))
                         put("zones", organicHidden.metrics.getValue("zones"))
+                        put("combinations", organicHidden.metrics.getValue("combinations"))
+                        put("zoneDiscoveryDistribution", organicHidden.metrics.getValue("zoneDiscoveryDistribution"))
+                        put("secretZoneDiscoveryDistribution", organicHidden.metrics.getValue("secretZoneDiscoveryDistribution"))
                     },
                 currentValueText =
                     "${formatPercent(organicHiddenDiscoveryRate)} ($organicDiscoveryCount/$organicTotalCases), " +
                         "searchUse=${formatPercent(organicSearchActionUseRate)}, secretEntry=${formatPercent(organicSecretZoneEntryRate)}",
                 target = Phase4OwnerMetricTargets.targetText("organicHiddenDiscoveryRate", organicHiddenRange),
                 status = verdictOf(Phase4OwnerMetricTargets.passes(organicHiddenRange, organicHiddenDiscoveryRate)),
-                note = "probeBot=${organicHidden.metrics.stringValue("probeBotId")}, scripted=false, observationOnly=true",
+                note =
+                    "probeBot=${organicHidden.metrics.stringValue("probeBotId")}, scripted=false, observationOnly=true, " +
+                        "promptRequired=${organicHidden.metrics.booleanValue("searchPromptRequired")}, " +
+                        "combos=${organicHidden.metrics.intValue("comboCount")}, seedsPerCombo=${organicHidden.metrics.intValue("seedsPerZoneCombo")}",
             ),
             Phase4ExperienceMetric(
                 metricId = "sameZoneSecretVsCadenceMaxOverlap",
@@ -255,11 +285,18 @@ object Phase4ReportRunner {
                         put("maxOverlap", loot.metrics.getValue("sameZoneSecretVsCadenceMaxOverlap"))
                         put("pairs", loot.metrics.getValue("sameZoneSecretVsCadencePairs"))
                         put("localIdentityFailurePairs", loot.metrics.getValue("localIdentityFailurePairs"))
+                        put("strictLocalIdentityViolations", loot.metrics.getValue("strictLocalIdentityViolations"))
                     },
-                currentValueText = formatRatio(sameZoneSecretVsCadenceMaxOverlap),
+                currentValueText = formatStrictAwareLocalIdentityCurrentValue(sameZoneSecretVsCadenceMaxOverlap, strictCadenceViolations),
                 target = Phase4OwnerMetricTargets.targetText("sameZoneSecretVsCadenceMaxOverlap", cadenceOverlapRange),
-                status = verdictOf(Phase4OwnerMetricTargets.passes(cadenceOverlapRange, sameZoneSecretVsCadenceMaxOverlap)),
-                note = "pairCount=${loot.metrics.getValue("sameZoneSecretVsCadencePairs").jsonArray.size}, overlap = |A ∩ B| / min(|A|, |B|)",
+                status =
+                    verdictOf(
+                        Phase4OwnerMetricTargets.passes(cadenceOverlapRange, sameZoneSecretVsCadenceMaxOverlap) &&
+                            strictCadenceViolations.isEmpty(),
+                    ),
+                note =
+                    "pairCount=${loot.metrics.getValue("sameZoneSecretVsCadencePairs").jsonArray.size}, " +
+                        "strictViolations=${strictCadenceViolations.size}, overlap = |A ∩ B| / min(|A|, |B|)",
             ),
             Phase4ExperienceMetric(
                 metricId = "sameZoneSecretVsRewardMaxOverlap",
@@ -269,11 +306,19 @@ object Phase4ReportRunner {
                         put("maxOverlap", loot.metrics.getValue("sameZoneSecretVsRewardMaxOverlap"))
                         put("pairs", loot.metrics.getValue("sameZoneSecretVsRewardPairs"))
                         put("localIdentityFailurePairs", loot.metrics.getValue("localIdentityFailurePairs"))
+                        put("strictLocalIdentityViolations", loot.metrics.getValue("strictLocalIdentityViolations"))
                     },
-                currentValueText = formatRatio(sameZoneSecretVsRewardMaxOverlap),
+                currentValueText = formatStrictAwareLocalIdentityCurrentValue(sameZoneSecretVsRewardMaxOverlap, strictRewardViolations),
                 target = Phase4OwnerMetricTargets.targetText("sameZoneSecretVsRewardMaxOverlap", rewardOverlapRange),
-                status = verdictOf(Phase4OwnerMetricTargets.passes(rewardOverlapRange, sameZoneSecretVsRewardMaxOverlap)),
-                note = "pairCount=${loot.metrics.getValue("sameZoneSecretVsRewardPairs").jsonArray.size}, failurePairs=${loot.metrics.getValue("localIdentityFailurePairs").jsonArray.size}",
+                status =
+                    verdictOf(
+                        Phase4OwnerMetricTargets.passes(rewardOverlapRange, sameZoneSecretVsRewardMaxOverlap) &&
+                            strictRewardViolations.isEmpty(),
+                    ),
+                note =
+                    "pairCount=${loot.metrics.getValue("sameZoneSecretVsRewardPairs").jsonArray.size}, " +
+                        "failurePairs=${loot.metrics.getValue("localIdentityFailurePairs").jsonArray.size}, " +
+                        "strictViolations=${strictRewardViolations.size}",
             ),
             Phase4ExperienceMetric(
                 metricId = "terminalWeaponBaseDiversity",
@@ -422,11 +467,21 @@ object Phase4ReportRunner {
                 }
             }
             appendLine()
+            appendLine("## Organic Hidden")
+            appendLine("- sourceTask.scripted: `${scriptedHiddenTask.taskId}`")
+            appendLine("- sourceTask.organic: `${organicHiddenTask.taskId}`")
+            appendLine("- `scriptedHiddenVerificationRate`: ${metricsById.getValue("scriptedHiddenVerificationRate").currentValueText} / ${metricsById.getValue("scriptedHiddenVerificationRate").status}")
+            appendLine("- `organicHiddenDiscoveryRate`: ${metricsById.getValue("organicHiddenDiscoveryRate").currentValueText} / ${metricsById.getValue("organicHiddenDiscoveryRate").status}")
+            appendLine("- `zoneDiscoveryDistribution`: ${organicHiddenTask.metrics.getValue("zoneDiscoveryDistribution").jsonObject.entries.joinToString { (zoneId, rate) -> "$zoneId=${formatPercent(rate.jsonPrimitive.content.toDouble())}" }}")
+            appendLine("- `secretZoneDiscoveryDistribution`: ${organicHiddenTask.metrics.getValue("secretZoneDiscoveryDistribution").jsonObject.entries.joinToString { (secretZoneId, rate) -> "$secretZoneId=${formatPercent(rate.jsonPrimitive.content.toDouble())}" }}")
+            appendLine("- `searchPromptRequired`: `${organicHiddenTask.metrics.booleanValue("searchPromptRequired")}`")
+            appendLine()
             appendLine("## Local Reward Identity")
             appendLine("- sourceTask: `${lootTask.taskId}`")
             appendLine("- `sameZoneSecretVsCadenceMaxOverlap`: ${metricsById.getValue("sameZoneSecretVsCadenceMaxOverlap").currentValueText} / ${metricsById.getValue("sameZoneSecretVsCadenceMaxOverlap").status}")
             appendLine("- `sameZoneSecretVsRewardMaxOverlap`: ${metricsById.getValue("sameZoneSecretVsRewardMaxOverlap").currentValueText} / ${metricsById.getValue("sameZoneSecretVsRewardMaxOverlap").status}")
             appendLine("- `localIdentityFailurePairs`: ${lootTask.metrics.getValue("localIdentityFailurePairs").jsonArray.joinToString { pair -> pair.jsonPrimitive.content }.ifBlank { "none" }}")
+            appendLine("- `strictLocalIdentityViolations`: ${lootTask.metrics.getValue("strictLocalIdentityViolations").jsonArray.joinToString { violation -> violation.jsonObject.getValue("pairId").jsonPrimitive.content }.ifBlank { "none" }}")
             appendLine()
             appendLine("## Terminal Build Identity")
             appendLine("- sourceTask: `${longRunTask.taskId}`")
@@ -622,11 +677,11 @@ private fun formatSignedPercent(value: Double): String =
         "-${formatPercentPrecise(kotlin.math.abs(value))}"
     }
 
-private fun formatRatio(value: Double): String = String.format(Locale.US, "%.3f", value)
-
 private fun JsonObject.intValue(key: String): Int = getValue(key).jsonPrimitive.content.toInt()
 
 private fun JsonObject.doubleValue(key: String): Double = getValue(key).jsonPrimitive.content.toDouble()
+
+private fun JsonObject.booleanValue(key: String): Boolean = getValue(key).jsonPrimitive.content.toBooleanStrict()
 
 private fun JsonObject.stringValue(key: String): String = getValue(key).jsonPrimitive.content
 

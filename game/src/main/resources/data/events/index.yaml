@@ -16,6 +16,13 @@ events:
       - key: SECRET_ZONE_ID
         expectedValue: greenwood_hidden_cache
     rewards:
+      - key: GRANT_BUFF
+        payload:
+          statusRef:
+            registry: status
+            id: STEALTH
+          durationTurns: 5
+          magnitude: 0.15
       - key: LOOT_PROFILE
         payload:
           lootProfileRef:
@@ -116,6 +123,13 @@ events:
       - key: SECRET_ZONE_ID
         expectedValue: abyssal_temple_warded_archive
     rewards:
+      - key: GRANT_BUFF
+        payload:
+          statusRef:
+            registry: status
+            id: HOLY_SHIELD_BUFF
+          durationTurns: 4
+          magnitude: 0.12
       - key: LOOT_PROFILE
         payload:
           lootProfileRef:
@@ -143,6 +157,19 @@ events:
       - key: SECRET_ZONE_ID
         expectedValue: deep_iron_smuggler_stash
     rewards:
+      - key: GRANT_BUFF
+        payload:
+          statusRef:
+            registry: status
+            id: HASTE
+          durationTurns: 4
+          magnitude: 0.30
+      - key: TRIGGER_ENCOUNTER
+        payload:
+          encounterRef:
+            registry: monster
+            id: bandit.sentry
+          threatCost: 3
       - key: LOOT_PROFILE
         payload:
           lootProfileRef:

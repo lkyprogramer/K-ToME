@@ -66,6 +66,7 @@ object WhiteBoxLootRunner {
         val cacheDirs = VerificationCacheSupport.cacheDirs(domainId = DOMAIN_ID, repoRoot = repoRoot)
         val preflightSummaryPath = LootBalanceLabRunner.lootPreflightSummaryPath(repoRoot)
         val baselinePath = repoRoot.resolve(Phase4OwnerBaselineRegistry.lootBaselinePath())
+        val baseline = VerificationBaseline.read(baselinePath)
 
         val kernelRun =
             if (reuseHarnessOutputs()) {
@@ -73,9 +74,17 @@ object WhiteBoxLootRunner {
             } else {
                 LootLabKernel.execute().kernelRun
             }
-        val overlapSummaryJson = kernelRun.profileOverlapSummary.toJson()
+        val strictAwareProfileOverlapSummary =
+            kernelRun.profileOverlapSummary.withStrictPairCeilings(strictSecretProfileMaxOverlapTargets(baseline))
+        val overlapSummaryJson = strictAwareProfileOverlapSummary.toJson()
         val preflightArtifacts = loadPreflightArtifacts(preflightSummaryPath.parent)
-        val corpusAggregateMetrics = corpusMetrics(kernelRun, overlapSummaryJson, preflightArtifacts)
+        val corpusAggregateMetrics =
+            corpusMetrics(
+                kernelRun = kernelRun,
+                profileOverlapSummary = strictAwareProfileOverlapSummary,
+                overlapSummaryJson = overlapSummaryJson,
+                preflightArtifacts = preflightArtifacts,
+            )
         val evaluationFingerprint =
             VerificationCacheSupport.sha256(
                 WHITEBOX_EVALUATION_CACHE_VERSION,
@@ -141,7 +150,13 @@ object WhiteBoxLootRunner {
                     groupId = "corpus",
                     sampleCount = kernelRun.matrices.size,
                     metrics = corpusAggregateMetrics,
-                    assertions = corpusAssertions(kernelRun, overlapSummaryJson, preflightArtifacts),
+                    assertions =
+                        corpusAssertions(
+                            kernelRun = kernelRun,
+                            profileOverlapSummary = strictAwareProfileOverlapSummary,
+                            overlapSummaryJson = overlapSummaryJson,
+                            preflightArtifacts = preflightArtifacts,
+                        ),
                 ),
             )
         val result =
@@ -158,8 +173,8 @@ object WhiteBoxLootRunner {
             )
         val ownerEvaluation =
             buildOwnerEvaluation(
-                kernelRun = kernelRun,
-                baseline = VerificationBaseline.read(baselinePath),
+                profileOverlapSummary = strictAwareProfileOverlapSummary,
+                baseline = baseline,
                 preflightArtifacts = preflightArtifacts,
                 corpusAggregateMetrics = corpusAggregateMetrics,
             )
@@ -255,6 +270,7 @@ object WhiteBoxLootRunner {
 
     private fun corpusAssertions(
         kernelRun: LootKernelRun,
+        profileOverlapSummary: LootProfileOverlapSummary,
         overlapSummaryJson: JsonObject,
         preflightArtifacts: LootPreflightArtifacts,
     ): List<WhiteBoxAssertionResult> =
@@ -273,27 +289,40 @@ object WhiteBoxLootRunner {
             ),
             WhiteBoxAssertionResult(
                 ruleId = "loot.aggregate.overlap_below_threshold",
-                passed = kernelRun.profileOverlapSummary.averageOverlap < 0.30,
+                passed = profileOverlapSummary.averageOverlap < 0.30,
                 message = "Average loot-profile base item overlap stays below the OPT PR-04 exit threshold.",
                 context = overlapSummaryJson,
             ),
             WhiteBoxAssertionResult(
                 ruleId = "loot.aggregate.max_overlap_sanity",
-                passed = kernelRun.profileOverlapSummary.maxOverlap < 0.95,
+                passed = profileOverlapSummary.maxOverlap < 0.95,
                 message = "No loot-profile base item pool remains a near-total subset of another profile.",
                 context = overlapSummaryJson,
             ),
             WhiteBoxAssertionResult(
                 ruleId = "loot.aggregate.same_zone_secret_cadence_guardrail",
-                passed = kernelRun.profileOverlapSummary.sameZoneSecretVsCadenceMaxOverlap < SAME_ZONE_SECRET_CADENCE_MAX_OVERLAP_TARGET,
+                passed = profileOverlapSummary.sameZoneSecretVsCadenceMaxOverlap <= SAME_ZONE_SECRET_CADENCE_MAX_OVERLAP_TARGET,
                 message = "Same-zone secret versus cadence overlap stays below the V2OPT PR-01 local identity guardrail.",
                 context = overlapSummaryJson,
             ),
             WhiteBoxAssertionResult(
                 ruleId = "loot.aggregate.same_zone_secret_reward_guardrail",
-                passed = kernelRun.profileOverlapSummary.sameZoneSecretVsRewardMaxOverlap < SAME_ZONE_SECRET_REWARD_MAX_OVERLAP_TARGET,
+                passed = profileOverlapSummary.sameZoneSecretVsRewardMaxOverlap <= SAME_ZONE_SECRET_REWARD_MAX_OVERLAP_TARGET,
                 message = "Same-zone secret versus reward overlap stays below the V2OPT PR-01 local identity guardrail.",
                 context = overlapSummaryJson,
+            ),
+            WhiteBoxAssertionResult(
+                ruleId = "loot.aggregate.strict_pair_guardrail",
+                passed = profileOverlapSummary.strictLocalIdentityViolations.isEmpty(),
+                message = "PR-03 strict pair guardrails hold for abyssal/deep-iron secret identities.",
+                context =
+                    buildJsonObject {
+                        putJsonArray("strictLocalIdentityViolations") {
+                            profileOverlapSummary.strictLocalIdentityViolations.forEach { violation ->
+                                add(violation.toJson())
+                            }
+                        }
+                    },
             ),
             WhiteBoxAssertionResult(
                 ruleId = "loot.aggregate.passive_coverage",
@@ -303,18 +332,18 @@ object WhiteBoxLootRunner {
             ),
             WhiteBoxAssertionResult(
                 ruleId = "loot.aggregate.preflight_culprit_alignment",
-                passed = (kernelRun.profileOverlapSummary.localIdentityFailurePairs.toSet() - preflightArtifacts.culpritPairIds).isEmpty(),
+                passed = (profileOverlapSummary.localIdentityFailurePairs.toSet() - preflightArtifacts.culpritPairIds).isEmpty(),
                 message = "verifyLootPreflight culprit pairs cover every same-zone local identity failure surfaced by whiteBoxLoot.",
                 context =
                     buildJsonObject {
                         putJsonArray("localIdentityFailurePairs") {
-                            kernelRun.profileOverlapSummary.localIdentityFailurePairs.sorted().forEach { pairId -> add(JsonPrimitive(pairId)) }
+                            profileOverlapSummary.localIdentityFailurePairs.sorted().forEach { pairId -> add(JsonPrimitive(pairId)) }
                         }
                         putJsonArray("preflightCulpritPairIds") {
                             preflightArtifacts.culpritPairIds.sorted().forEach { pairId -> add(JsonPrimitive(pairId)) }
                         }
                         putJsonArray("missingPairIds") {
-                            (kernelRun.profileOverlapSummary.localIdentityFailurePairs.toSet() - preflightArtifacts.culpritPairIds)
+                            (profileOverlapSummary.localIdentityFailurePairs.toSet() - preflightArtifacts.culpritPairIds)
                                 .sorted()
                                 .forEach { pairId -> add(JsonPrimitive(pairId)) }
                         }
@@ -353,6 +382,7 @@ object WhiteBoxLootRunner {
 
     private fun corpusMetrics(
         kernelRun: LootKernelRun,
+        profileOverlapSummary: LootProfileOverlapSummary,
         overlapSummaryJson: JsonObject,
         preflightArtifacts: LootPreflightArtifacts,
     ): JsonObject =
@@ -372,15 +402,26 @@ object WhiteBoxLootRunner {
             put("uniqueTemplateCount", kernelRun.specialPoolSummary.uniqueTemplateCount)
             put("artifactTemplateCount", kernelRun.specialPoolSummary.artifactTemplateCount)
             put("totalCount", kernelRun.specialPoolSummary.totalCount)
-            put("lootProfileAverageBaseItemOverlap", kernelRun.profileOverlapSummary.averageOverlap)
-            put("lootProfileMaxBaseItemOverlap", kernelRun.profileOverlapSummary.maxOverlap)
-            put("lootProfileDistinctBaseItemCount", kernelRun.profileOverlapSummary.distinctBaseItemCount)
+            put("lootProfileAverageBaseItemOverlap", profileOverlapSummary.averageOverlap)
+            put("lootProfileMaxBaseItemOverlap", profileOverlapSummary.maxOverlap)
+            put("lootProfileDistinctBaseItemCount", profileOverlapSummary.distinctBaseItemCount)
             put("lootProfileBaseItemOverlapMatrix", overlapSummaryJson.getValue("matrix"))
-            put("sameZoneSecretVsCadenceMaxOverlap", kernelRun.profileOverlapSummary.sameZoneSecretVsCadenceMaxOverlap)
-            put("sameZoneSecretVsRewardMaxOverlap", kernelRun.profileOverlapSummary.sameZoneSecretVsRewardMaxOverlap)
+            put("sameZoneSecretVsCadenceMaxOverlap", profileOverlapSummary.sameZoneSecretVsCadenceMaxOverlap)
+            put("sameZoneSecretVsRewardMaxOverlap", profileOverlapSummary.sameZoneSecretVsRewardMaxOverlap)
             put("sameZoneSecretVsCadencePairs", overlapSummaryJson.getValue("sameZoneSecretVsCadencePairs"))
             put("sameZoneSecretVsRewardPairs", overlapSummaryJson.getValue("sameZoneSecretVsRewardPairs"))
             put("localIdentityFailurePairs", overlapSummaryJson.getValue("localIdentityFailurePairs"))
+            put("strictLocalIdentityViolationCount", profileOverlapSummary.strictLocalIdentityViolations.size)
+            putJsonArray("strictLocalIdentityViolations") {
+                profileOverlapSummary.strictLocalIdentityViolations.forEach { violation ->
+                    add(violation.toJson())
+                }
+            }
+            putJsonArray("secretProfileIdentitySummaries") {
+                profileOverlapSummary.secretProfileIdentitySummaries.forEach { summary ->
+                    add(summary.toJson())
+                }
+            }
             put("preflightProfileCount", preflightArtifacts.summary.profileCount)
             put("preflightPairCount", preflightArtifacts.summary.pairCount)
             put("preflightCulpritPairCount", preflightArtifacts.summary.culpritPairCount)
@@ -521,7 +562,7 @@ object WhiteBoxLootRunner {
     }
 
     private fun buildOwnerEvaluation(
-        kernelRun: LootKernelRun,
+        profileOverlapSummary: LootProfileOverlapSummary,
         baseline: VerificationBaseline,
         preflightArtifacts: LootPreflightArtifacts,
         corpusAggregateMetrics: JsonObject,
@@ -530,7 +571,15 @@ object WhiteBoxLootRunner {
         val rewardMetricId = "sameZoneSecretVsRewardMaxOverlap"
         val cadenceRange = baseline.requiredMetric(cadenceMetricId)
         val rewardRange = baseline.requiredMetric(rewardMetricId)
-        val overlapSummaryJson = kernelRun.profileOverlapSummary.toJson()
+        val overlapSummaryJson = profileOverlapSummary.toJson()
+        val cadenceStrictViolations =
+            profileOverlapSummary.strictLocalIdentityViolations.filter { violation ->
+                violation.pairType == SECRET_VS_CADENCE_PAIR_TYPE
+            }
+        val rewardStrictViolations =
+            profileOverlapSummary.strictLocalIdentityViolations.filter { violation ->
+                violation.pairType == SECRET_VS_REWARD_PAIR_TYPE
+            }
         val result =
             VerificationBaselineComparator.compareBudgetThreshold(
                 domainId = "loot",
@@ -538,21 +587,24 @@ object WhiteBoxLootRunner {
                 baseline = baseline.copy(expectedMetricRanges = listOf(cadenceRange, rewardRange)),
                 actualMetrics =
                     mapOf(
-                        cadenceMetricId to kernelRun.profileOverlapSummary.sameZoneSecretVsCadenceMaxOverlap,
-                        rewardMetricId to kernelRun.profileOverlapSummary.sameZoneSecretVsRewardMaxOverlap,
+                        cadenceMetricId to profileOverlapSummary.sameZoneSecretVsCadenceMaxOverlap,
+                        rewardMetricId to profileOverlapSummary.sameZoneSecretVsRewardMaxOverlap,
                     ),
                 currentValueTexts =
                     mapOf(
-                        cadenceMetricId to formatRatio(kernelRun.profileOverlapSummary.sameZoneSecretVsCadenceMaxOverlap),
-                        rewardMetricId to formatRatio(kernelRun.profileOverlapSummary.sameZoneSecretVsRewardMaxOverlap),
+                        cadenceMetricId to formatStrictAwareLocalIdentityCurrentValue(profileOverlapSummary.sameZoneSecretVsCadenceMaxOverlap, cadenceStrictViolations),
+                        rewardMetricId to formatStrictAwareLocalIdentityCurrentValue(profileOverlapSummary.sameZoneSecretVsRewardMaxOverlap, rewardStrictViolations),
                     ),
                 currentValueElements =
                     mapOf(
                         cadenceMetricId to
                             buildJsonObject {
-                                put("maxOverlap", kernelRun.profileOverlapSummary.sameZoneSecretVsCadenceMaxOverlap)
+                                put("maxOverlap", profileOverlapSummary.sameZoneSecretVsCadenceMaxOverlap)
                                 put("pairs", overlapSummaryJson.getValue("sameZoneSecretVsCadencePairs"))
                                 put("localIdentityFailurePairs", overlapSummaryJson.getValue("localIdentityFailurePairs"))
+                                putJsonArray("strictLocalIdentityViolations") {
+                                    cadenceStrictViolations.forEach { violation -> add(violation.toJson()) }
+                                }
                                 putJsonArray("preflightCulpritPairs") {
                                     preflightArtifacts.culpritPairs.forEach { pair -> add(pair.toJson()) }
                                 }
@@ -562,9 +614,12 @@ object WhiteBoxLootRunner {
                             },
                         rewardMetricId to
                             buildJsonObject {
-                                put("maxOverlap", kernelRun.profileOverlapSummary.sameZoneSecretVsRewardMaxOverlap)
+                                put("maxOverlap", profileOverlapSummary.sameZoneSecretVsRewardMaxOverlap)
                                 put("pairs", overlapSummaryJson.getValue("sameZoneSecretVsRewardPairs"))
                                 put("localIdentityFailurePairs", overlapSummaryJson.getValue("localIdentityFailurePairs"))
+                                putJsonArray("strictLocalIdentityViolations") {
+                                    rewardStrictViolations.forEach { violation -> add(violation.toJson()) }
+                                }
                                 putJsonArray("preflightCulpritPairs") {
                                     preflightArtifacts.culpritPairs.forEach { pair -> add(pair.toJson()) }
                                 }
@@ -579,15 +634,22 @@ object WhiteBoxLootRunner {
                         rewardMetricId to corpusAggregateMetrics,
                     ),
             )
-        return result.copy(
+        val strictAwareResult =
+            result.withStrictLocalIdentityViolations(
+                cadenceMetricId = cadenceMetricId,
+                rewardMetricId = rewardMetricId,
+                violations = profileOverlapSummary.strictLocalIdentityViolations,
+            )
+        return strictAwareResult.copy(
             entries =
-                result.entries.map { entry ->
+                strictAwareResult.entries.map { entry ->
                     when (entry.metricId) {
                         cadenceMetricId ->
                             entry.copy(
                                 targetText = com.ktome.tools.phase4.Phase4OwnerMetricTargets.targetText(cadenceMetricId, cadenceRange),
                                 note =
-                                    "pairCount=${kernelRun.profileOverlapSummary.sameZoneSecretVsCadencePairs.size}, " +
+                                    "pairCount=${profileOverlapSummary.sameZoneSecretVsCadencePairs.size}, " +
+                                        "strictViolations=${cadenceStrictViolations.size}, " +
                                         "overlap = |A ∩ B| / min(|A|, |B|); " +
                                         "preflightCulprits=${preflightArtifacts.summary.culpritPairCount}",
                             )
@@ -596,8 +658,9 @@ object WhiteBoxLootRunner {
                             entry.copy(
                                 targetText = com.ktome.tools.phase4.Phase4OwnerMetricTargets.targetText(rewardMetricId, rewardRange),
                                 note =
-                                    "pairCount=${kernelRun.profileOverlapSummary.sameZoneSecretVsRewardPairs.size}, " +
-                                        "failurePairs=${kernelRun.profileOverlapSummary.localIdentityFailurePairs.size}; " +
+                                    "pairCount=${profileOverlapSummary.sameZoneSecretVsRewardPairs.size}, " +
+                                        "failurePairs=${profileOverlapSummary.localIdentityFailurePairs.size}, " +
+                                        "strictViolations=${rewardStrictViolations.size}; " +
                                         "preflightCulprits=${preflightArtifacts.summary.culpritPairCount}",
                             )
 
@@ -614,8 +677,6 @@ object WhiteBoxLootRunner {
                     "Missing loot preflight summary under $reportDir. Run verifyLootPreflight before whiteBoxLoot."
                 },
         )
-
-    private fun formatRatio(value: Double): String = String.format(java.util.Locale.US, "%.3f", value)
 
     private fun LootPreflightPairSummary.toJson(): JsonObject =
         json.parseToJsonElement(json.encodeToString(LootPreflightPairSummary.serializer(), this)).jsonObject

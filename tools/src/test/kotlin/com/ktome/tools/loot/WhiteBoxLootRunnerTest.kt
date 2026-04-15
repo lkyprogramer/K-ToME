@@ -92,6 +92,9 @@ class WhiteBoxLootRunnerTest {
                     "sameZoneSecretVsCadencePairs",
                     "sameZoneSecretVsRewardPairs",
                     "localIdentityFailurePairs",
+                    "strictLocalIdentityViolationCount",
+                    "strictLocalIdentityViolations",
+                    "secretProfileIdentitySummaries",
                     "preflightCulpritPairCount",
                     "preflightCulpritReasons",
                     "preflightCulpritPairs",
@@ -103,6 +106,19 @@ class WhiteBoxLootRunnerTest {
             assertTrue(corpusMetrics.getValue("lootProfileBaseItemOverlapMatrix").jsonObject.isNotEmpty())
             assertTrue(corpusMetrics.getValue("sameZoneSecretVsCadencePairs").jsonArray.isNotEmpty())
             assertTrue(corpusMetrics.getValue("sameZoneSecretVsRewardPairs").jsonArray.isNotEmpty())
+            assertEquals(0, corpusMetrics.getValue("strictLocalIdentityViolationCount").jsonPrimitive.content.toInt())
+            assertTrue(corpusMetrics.getValue("strictLocalIdentityViolations").jsonArray.isEmpty())
+            val secretProfileIdentitySummaries = corpusMetrics.getValue("secretProfileIdentitySummaries").jsonArray
+            assertEquals(5, secretProfileIdentitySummaries.size)
+            assertTrue(secretProfileIdentitySummaries.all { summary -> summary.jsonObject.containsKey("identityAxes") })
+            assertTrue(secretProfileIdentitySummaries.all { summary -> summary.jsonObject.containsKey("rewardStructureKeys") })
+            assertTrue(secretProfileIdentitySummaries.any { summary -> summary.jsonObject.getValue("profileId").jsonPrimitive.content == "loot.deep_iron_slag_cache.secret" })
+            assertTrue(
+                secretProfileIdentitySummaries.any { summary ->
+                    summary.jsonObject.getValue("profileId").jsonPrimitive.content == "loot.deep_iron_smuggler_stash.secret" &&
+                        summary.jsonObject.getValue("rewardStructureKeys").jsonArray.size >= 3
+                },
+            )
             val preflightCulpritPairs = corpusMetrics.getValue("preflightCulpritPairs").jsonArray
             val preflightCulpritReasons = corpusMetrics.getValue("preflightCulpritReasons").jsonArray
             assertEquals(corpusMetrics.getValue("preflightCulpritPairCount").jsonPrimitive.content.toInt(), preflightCulpritPairs.size)
@@ -121,6 +137,7 @@ class WhiteBoxLootRunnerTest {
                     "loot.aggregate.max_overlap_sanity",
                     "loot.aggregate.same_zone_secret_cadence_guardrail",
                     "loot.aggregate.same_zone_secret_reward_guardrail",
+                    "loot.aggregate.strict_pair_guardrail",
                     "loot.aggregate.passive_coverage",
                     "loot.aggregate.preflight_culprit_alignment",
                 ).all(aggregateRuleIds::contains),

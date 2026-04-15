@@ -10,19 +10,41 @@
     "expectedMetricRanges": [
         {
             "metricId": "sameZoneSecretVsCadenceMaxOverlap",
-            "maxValue": 0.75,
-            "maxInclusive": false,
+            "maxValue": 0.50,
+            "maxInclusive": true,
             "notes": "same-zone secret cadence overlap must stay below the local-identity guardrail."
         },
         {
             "metricId": "sameZoneSecretVsRewardMaxOverlap",
-            "maxValue": 0.75,
-            "maxInclusive": false,
+            "maxValue": 0.50,
+            "maxInclusive": true,
             "notes": "same-zone secret reward overlap must stay below the local-identity guardrail."
         }
     ],
     "notes": [
-        "Externalized from ReportPhase4Runner so loot owner baselines live beside other Phase 4 review baselines."
+        "Externalized from ReportPhase4Runner so loot owner baselines live beside other Phase 4 review baselines.",
+        "strictPairCeilings in metadata are the source of truth for PR-03 strict same-zone secret identity ceilings."
     ],
-    "metadata": {}
+    "metadata": {
+        "strictPairCeilings": [
+            {
+                "secretProfileId": "loot.abyssal_temple_warded_archive.secret",
+                "maxValue": 0.35,
+                "maxInclusive": true,
+                "notes": "Archive secret reward must stay materially distinct from abyssal cadence/reward channels."
+            },
+            {
+                "secretProfileId": "loot.deep_iron_slag_cache.secret",
+                "maxValue": 0.40,
+                "maxInclusive": true,
+                "notes": "Slag cache should not collapse back into the generic deep-iron reward channel."
+            },
+            {
+                "secretProfileId": "loot.deep_iron_smuggler_stash.secret",
+                "maxValue": 0.40,
+                "maxInclusive": true,
+                "notes": "Smuggler stash must retain a contraband identity distinct from mainline deep-iron rewards."
+            }
+        ]
+    }
 }

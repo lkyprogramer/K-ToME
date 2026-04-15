@@ -30,6 +30,7 @@ class ReportPhase4RunnerTest {
         assertTrue(Files.exists(run.markdownPath), "Expected reportPhase4 markdown report at ${run.markdownPath}")
 
         val payload = Json.parseToJsonElement(Files.readString(run.summaryPath)).jsonObject
+        val markdown = Files.readString(run.markdownPath)
         val inputs = payload.getValue("inputs").jsonArray
         val ownerMetrics = payload.getValue("ownerMetrics").jsonArray
         val metricCatalog = payload.getValue("metricCatalog").jsonArray
@@ -54,15 +55,31 @@ class ReportPhase4RunnerTest {
             ownerMetrics.first { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "sameZoneSecretVsCadenceMaxOverlap" }.jsonObject
         val lootCatalogMetric =
             metricCatalog.first { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "sameZoneSecretVsCadenceMaxOverlap" }.jsonObject
+        val lootInput =
+            inputs.first { input -> input.jsonObject.getValue("sourceTaskId").jsonPrimitive.content == "whiteBoxLoot" }.jsonObject
+        val organicHiddenInput =
+            inputs.first { input -> input.jsonObject.getValue("sourceTaskId").jsonPrimitive.content == "organicHiddenProbe" }.jsonObject
 
         assertTrue(terrainInput.getValue("evaluationResults").jsonArray.size >= 3)
         assertEquals("RELATIVE_BASELINE", terrainMetric.getValue("baselineMode").jsonPrimitive.content)
         assertEquals("BUDGET_THRESHOLD", lootMetric.getValue("baselineMode").jsonPrimitive.content)
         assertEquals("PASS", lootMetric.getValue("status").jsonPrimitive.content)
-        assertEquals("< 0.750", lootMetric.getValue("target").jsonPrimitive.content)
+        assertEquals("<= 0.500", lootMetric.getValue("target").jsonPrimitive.content)
         assertEquals(lootMetric.getValue("target").jsonPrimitive.content, lootCatalogMetric.getValue("target").jsonPrimitive.content)
         assertTrue(terrainInput.getValue("renderResult").jsonObject.getValue("metadata").jsonObject.containsKey("cacheStatus"))
         assertTrue(terrainInput.getValue("renderResult").jsonObject.getValue("metadata").jsonObject.containsKey("sourceArtifactFingerprint"))
+        assertTrue(lootInput.getValue("kernelResult").jsonObject.getValue("metrics").jsonObject.containsKey("secretProfileIdentitySummaries"))
+        assertTrue(organicHiddenInput.getValue("kernelResult").jsonObject.getValue("metrics").jsonObject.containsKey("zoneDiscoveryDistribution"))
+        assertTrue(organicHiddenInput.getValue("kernelResult").jsonObject.getValue("metrics").jsonObject.containsKey("secretZoneDiscoveryDistribution"))
+        assertTrue(organicHiddenInput.getValue("kernelResult").jsonObject.getValue("metrics").jsonObject.containsKey("searchPromptRequired"))
+        assertTrue(markdown.contains("## Scripted vs Organic Hidden"))
+        assertTrue(markdown.contains("## Local Reward Identity"))
+        assertTrue(markdown.contains("secret reward identity summaries"))
+        assertTrue(markdown.contains("rewardStructureKeys"))
+        assertTrue(markdown.contains("loot.deep_iron_slag_cache.secret"))
+        assertTrue(markdown.contains("share of total discoveries"))
+        assertTrue(markdown.contains("share of total secret-zone entries"))
+        assertTrue(markdown.contains("searchPromptRequired"))
 
         if (compareLegacy) {
             assertNotNull(run.comparisonPath)

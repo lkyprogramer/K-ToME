@@ -238,6 +238,13 @@ class FoundationGameSessionTest {
                 logEventByKey(session, "log.search.revealed") != null ||
                 logEventByKey(session, "log.search.revealed_tag") != null,
         )
+        if (firstSearchResults.single() == SearchActionResult.FAILED_CHECK) {
+            val failedSearchMessage = requireNotNull(renderLogMessage(session, "log.search.failed_check"))
+            assertTrue(
+                failedSearchMessage.contains("something hidden") || failedSearchMessage.contains("确实藏着东西"),
+                "Expected failed search feedback to signal hidden value, actual=$failedSearchMessage",
+            )
+        }
         assertEquals(
             1,
             recentEventSummaries(session).count { summary ->
@@ -464,6 +471,11 @@ class FoundationGameSessionTest {
 
         assertTrue(session.automationSpawnAndKillEliteMonsterForTest())
         assertTrue(session.automationDiscoveryTags().contains("hidden.primer.deep_iron.slag_cache"))
+        val primerMessage = requireNotNull(renderLogMessage(session, "log.hidden.primer.acquired"))
+        assertTrue(
+            primerMessage.contains("worth searching") || primerMessage.contains("值得继续搜"),
+            "Expected primer feedback to advertise follow-up value, actual=$primerMessage",
+        )
         assertEquals(
             SearchActionResult.REVEALED,
             requireNotNull(
@@ -576,12 +588,18 @@ class FoundationGameSessionTest {
 
         movePlayerTo(session, Point(rewardProp.x, rewardProp.y))
         assertTrue(session.perform(PlayerCommand.Interact))
+        assertTrue(requireNotNull(runtimeWorld(session).get<EffectTracker>(session.playerId)).has(StatusEffectType.STEALTH))
         val recentReward = requireNotNull(session.renderSnapshot().uiState.recentRewards.lastOrNull())
         assertEquals(RewardPresentationSourceSnapshot.SECRET_ZONE, recentReward.source)
         assertEquals("ui.reward.source.secret_zone", recentReward.sourceLabelKey)
+        val rewardLog =
+            logEventByKey(session, "log.hidden.reward.claimed")
+                ?: logEventByKey(session, "log.hidden.reward.dropped")
+        assertNotNull(rewardLog)
+        val rewardMessage = requireNotNull(rewardLog).let { log -> renderToken(session, log.message) }
         assertTrue(
-            logEventByKey(session, "log.hidden.reward.claimed") != null ||
-                logEventByKey(session, "log.hidden.reward.dropped") != null,
+            rewardMessage.contains("Secret reward") || rewardMessage.contains("密藏回报"),
+            "Expected secret reward log to expose source wording, actual=$rewardMessage",
         )
         assertNull(propByType(session, "secret_reward"))
 
@@ -638,9 +656,39 @@ class FoundationGameSessionTest {
         assertTrue(session.perform(PlayerCommand.Interact))
 
         assertNotNull(entityByTemplateId(session, "bandit.sentry"))
-        assertNotNull(logEventByKey(session, "log.hidden.reward.encounter"))
+        val encounterLog = requireNotNull(logEventByKey(session, "log.hidden.reward.encounter"))
+        val encounterMessage = renderToken(session, encounterLog.message)
+        assertTrue(
+            encounterMessage.contains("Secret reward") || encounterMessage.contains("密藏回报"),
+            "Expected encounter reward log to expose secret source wording, actual=$encounterMessage",
+        )
         assertNull(propByType(session, "secret_reward"))
         assertTrue(activeFloorState(session).consumedHiddenEventIds.contains("secret_zone:greenwood_hidden_cache:monster:bandit.sentry"))
+    }
+
+    @Test
+    fun `smuggler stash reward grants haste and spawns contraband guard`() {
+        val session =
+            GameModule.newFoundationSession(
+                config = FoundationGameConfig(seed = 20260331L, zoneId = "deep_iron_pit", playerProfessionId = "vanguard"),
+                saveManager = SaveManager(tempDir.resolve("smuggler-stash-reward-structure")),
+            )
+        clearMonsters(session)
+
+        val hiddenBranchRoom = requireNotNull(activeFloorState(session).generatedFloor.roomByAnchor(NodeAnchorId("hidden.branch")))
+        movePlayerTo(session, hiddenBranchRoom.center)
+
+        val entranceProp = requireNotNull(propByType(session, "hidden_entrance"))
+        movePlayerTo(session, Point(entranceProp.x, entranceProp.y))
+        assertTrue(session.perform(PlayerCommand.Interact))
+
+        val rewardProp = requireNotNull(propByType(session, "secret_reward"))
+        movePlayerTo(session, Point(rewardProp.x, rewardProp.y))
+        assertTrue(session.perform(PlayerCommand.Interact))
+
+        assertTrue(requireNotNull(runtimeWorld(session).get<EffectTracker>(session.playerId)).has(StatusEffectType.HASTE))
+        assertNotNull(entityByTemplateId(session, "bandit.sentry"))
+        assertNotNull(logEventByKey(session, "log.hidden.reward.encounter"))
     }
 
     @Test
@@ -6059,6 +6107,29 @@ class FoundationGameSessionTest {
         key: String,
     ): com.ktome.core.snapshot.RenderLogEventSnapshot? =
         session.renderSnapshot().logEvents.firstOrNull { event -> event.message.key == key }
+
+    private fun renderLogMessage(
+        session: FoundationGameSession,
+        key: String,
+    ): String? = logEventByKey(session, key)?.let { event -> renderToken(session, event.message) }
+
+    private fun renderToken(
+        session: FoundationGameSession,
+        token: com.ktome.core.snapshot.RenderTextTokenSnapshot,
+    ): String =
+        session.localizer().text(
+            token.key,
+            *token.arguments.map { argument -> argument.name to renderArgument(session, argument) }.toTypedArray(),
+        )
+
+    private fun renderArgument(
+        session: FoundationGameSession,
+        argument: com.ktome.core.snapshot.RenderTextArgumentSnapshot,
+    ): String =
+        argument.value
+            ?: argument.valueKey?.let(session.localizer()::text)
+            ?: argument.valueToken?.let { valueToken -> renderToken(session, valueToken) }
+            ?: ""
 
     private fun findOpenAdjacentPoint(
         session: FoundationGameSession,

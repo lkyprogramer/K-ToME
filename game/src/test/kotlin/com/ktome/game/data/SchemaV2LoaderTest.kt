@@ -348,6 +348,22 @@ class SchemaV2LoaderTest {
                 .toSet()
                 .containsAll(setOf("REVEAL_SECRET_ZONE", "GRANT_BUFF", "LOOT_PROFILE", "TRIGGER_ENCOUNTER")),
         )
+        val rewardKeysByHiddenEventId =
+            catalog.hiddenEvents.associate { hiddenEvent ->
+                hiddenEvent.id to hiddenEvent.rewards.map { reward -> reward.key.name }
+            }
+        assertEquals(
+            listOf("GRANT_BUFF", "LOOT_PROFILE"),
+            rewardKeysByHiddenEventId.getValue("hidden.event.greenwood.hidden_cache.reward"),
+        )
+        assertEquals(
+            listOf("GRANT_BUFF", "LOOT_PROFILE"),
+            rewardKeysByHiddenEventId.getValue("hidden.event.abyssal_temple.warded_archive.reward"),
+        )
+        assertEquals(
+            listOf("GRANT_BUFF", "TRIGGER_ENCOUNTER", "LOOT_PROFILE"),
+            rewardKeysByHiddenEventId.getValue("hidden.event.deep_iron.smuggler_stash.reward"),
+        )
         assertTrue(
             catalog.zoneMapgenProfiles
                 .flatMap { profile -> profile.hiddenEntrancePlans }

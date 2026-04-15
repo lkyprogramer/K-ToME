@@ -8,7 +8,7 @@ secretZones:
     iconKey: zone.secret.greenwood_hidden_cache.icon
     audioProfile: audio.secret_zone.greenwood_hidden_cache
     schemaVersion: 1
-    tags: [secret_zone, greenwood, optional]
+    tags: [secret_zone, greenwood, optional, mobility, stealth]
     entryRule:
       combinator: AND
       predicates:
@@ -32,7 +32,7 @@ secretZones:
     iconKey: zone.secret.deep_iron_slag_cache.icon
     audioProfile: audio.secret_zone.deep_iron_slag_cache
     schemaVersion: 1
-    tags: [secret_zone, deep_iron, optional]
+    tags: [secret_zone, deep_iron, optional, forge, armor_break]
     entryRule:
       combinator: AND
       predicates:
@@ -56,7 +56,7 @@ secretZones:
     iconKey: zone.secret.underground_river_crystal_rift.icon
     audioProfile: audio.secret_zone.underground_river_crystal_rift
     schemaVersion: 1
-    tags: [secret_zone, river, optional]
+    tags: [secret_zone, river, optional, mana, mobility]
     entryRule:
       combinator: AND
       predicates:
@@ -83,7 +83,7 @@ secretZones:
     iconKey: zone.secret.abyssal_temple_warded_archive.icon
     audioProfile: audio.secret_zone.abyssal_temple_warded_archive
     schemaVersion: 1
-    tags: [secret_zone, abyssal, optional]
+    tags: [secret_zone, abyssal, optional, protection, warded]
     entryRule:
       combinator: AND
       predicates:
@@ -109,7 +109,7 @@ secretZones:
     iconKey: zone.secret.deep_iron_smuggler_stash.icon
     audioProfile: audio.secret_zone.deep_iron_smuggler_stash
     schemaVersion: 1
-    tags: [secret_zone, deep_iron, optional, contraband]
+    tags: [secret_zone, deep_iron, optional, contraband, precision, burst]
     entryRule:
       combinator: AND
       predicates:
