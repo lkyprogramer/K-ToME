@@ -51,6 +51,14 @@ object ScopeCoverageLintRunner {
                     changedFiles = listOf("game/src/main/resources/i18n/en-US.json"),
                 ),
                 planCase(
+                    caseId = "maintainability_governance_scope",
+                    changedFiles = listOf("docs/rule/ai-change-governance.md"),
+                ),
+                planCase(
+                    caseId = "maintainability_baseline_scope",
+                    changedFiles = listOf("maintainability-baseline.json"),
+                ),
+                planCase(
                     caseId = "core_phase4_owner_false_negative",
                     changedFiles = listOf("core/src/main/kotlin/com/ktome/core/map/MapGrid.kt"),
                 ),
