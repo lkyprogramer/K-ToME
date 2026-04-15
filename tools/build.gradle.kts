@@ -426,6 +426,13 @@ tasks.register<Test>("maintainabilityLint") {
         rootProject.fileTree("tools/src/main/kotlin") { include("**/*.kt") },
         rootProject.fileTree("build-logic/src/main/kotlin") { include("**/*.kt") },
     ).withPathSensitivity(PathSensitivity.RELATIVE)
+    inputs.files(
+        rootProject.files(
+            "docs/rule/ai-change-governance.md",
+            "build.gradle.kts",
+            "tools/build.gradle.kts",
+        ),
+    ).withPathSensitivity(PathSensitivity.RELATIVE)
     inputs.file(rootProject.file("maintainability-baseline.json")).withPathSensitivity(PathSensitivity.RELATIVE)
     inputs.property("ktome.maintainability.blockingMode", providers.systemProperty("ktome.maintainability.blockingMode").orElse("true"))
     outputs.dir(maintainabilityLintOutputDir)

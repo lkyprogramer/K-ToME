@@ -50,6 +50,16 @@ class VerifyChangedBuildContractTest {
         assertTrue(buildScript.contains("""VerifyChangedPlanGate.applyTo(this, verifyChangedTaskPathsFile, "prepareVerifyChangedPlan")"""))
     }
 
+    @Test
+    fun `maintainability lint task declares the routed governance inputs`() {
+        val buildScript = Files.readString(repoRoot().resolve("tools/build.gradle.kts"))
+
+        assertTrue(buildScript.contains("docs/rule/ai-change-governance.md"))
+        assertTrue(buildScript.contains("\"build.gradle.kts\""))
+        assertTrue(buildScript.contains("\"tools/build.gradle.kts\""))
+        assertTrue(buildScript.contains("maintainability-baseline.json"))
+    }
+
     private fun repoRoot(): Path =
         System.getProperty("ktome.repo.root")
             ?.let(Path::of)

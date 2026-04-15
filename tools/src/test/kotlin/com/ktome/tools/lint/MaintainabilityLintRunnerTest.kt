@@ -319,6 +319,64 @@ class MaintainabilityLintRunnerTest {
     }
 
     @Test
+    fun `alias imports still count as cross file production references for internal apis`() {
+        val repoRoot =
+            createTempRepo(
+                sourceFiles =
+                    mapOf(
+                        "core/src/main/kotlin/com/ktome/core/sample/InternalApis.kt" to
+                            """
+                            package com.ktome.core.sample
+
+                            internal fun resolveViaAlias(
+                                actorId: String,
+                                zoneId: String,
+                                floorId: String,
+                                includeFallback: Boolean,
+                                retryCount: Int,
+                            ): String = "${'$'}actorId-${'$'}zoneId-${'$'}floorId-${'$'}includeFallback-${'$'}retryCount"
+
+                            internal object RuntimeGate {
+                                internal fun resolveState(
+                                    actorId: String,
+                                    zoneId: String,
+                                    floorId: String,
+                                    includeFallback: Boolean,
+                                    retryCount: Int,
+                                ): String = "${'$'}actorId-${'$'}zoneId-${'$'}floorId-${'$'}includeFallback-${'$'}retryCount"
+                            }
+                            """.trimIndent(),
+                        "game/src/main/kotlin/com/ktome/game/sample/InternalApiConsumers.kt" to
+                            """
+                            package com.ktome.game.sample
+
+                            import com.ktome.core.sample.RuntimeGate as AliasedRuntimeGate
+                            import com.ktome.core.sample.resolveViaAlias as aliasedResolve
+
+                            internal fun useAliases(actorId: String, zoneId: String, floorId: String) {
+                                aliasedResolve(actorId, zoneId, floorId, true, 1)
+                                AliasedRuntimeGate.resolveState(actorId, zoneId, floorId, true, 1)
+                            }
+                            """.trimIndent(),
+                    ),
+                baseline = emptyBaseline(),
+            )
+
+        val optionFindings =
+            MaintainabilityLintRunner
+                .collectFindings(repoRoot)
+                .filter { finding -> finding.taxonomy == "option-sprawl" }
+
+        assertTrue(
+            optionFindings.any { finding -> finding.symbol == "resolveViaAlias(5)" && finding.ruleId == "boolean-parameter" },
+            optionFindings.joinToString(separator = "\n") { finding -> "${finding.symbol}:${finding.ruleId}:${finding.findingId}" },
+        )
+        assertTrue(optionFindings.any { finding -> finding.symbol == "resolveViaAlias(5)" && finding.ruleId == "parameter-count" })
+        assertTrue(optionFindings.any { finding -> finding.symbol == "RuntimeGate.resolveState(5)" && finding.ruleId == "boolean-parameter" })
+        assertTrue(optionFindings.any { finding -> finding.symbol == "RuntimeGate.resolveState(5)" && finding.ruleId == "parameter-count" })
+    }
+
+    @Test
     fun `api lint ignores private top level containers`() {
         val repoRoot =
             createTempRepo(

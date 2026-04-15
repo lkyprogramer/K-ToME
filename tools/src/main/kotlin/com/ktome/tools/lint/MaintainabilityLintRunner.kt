@@ -28,7 +28,8 @@ private const val SUMMARY_FILE_NAME: String = "summary.json"
 private const val FINDINGS_FILE_NAME: String = "findings.json"
 private const val REPORT_FILE_NAME: String = "report.md"
 private val packageDeclarationRegex: Regex = Regex("""(?m)^[ \t]*package\s+([A-Za-z_][A-Za-z0-9_.]*)\s*$""")
-private val importDeclarationRegex: Regex = Regex("""(?m)^[ \t]*import\s+([A-Za-z_][A-Za-z0-9_.*`]+)(?:\s+as\s+[A-Za-z_][A-Za-z0-9_]*)?\s*$""")
+private val importDeclarationRegex: Regex =
+    Regex("""(?m)^[ \t]*import\s+([A-Za-z_][A-Za-z0-9_.*`]+)(?:\s+as\s+([A-Za-z_][A-Za-z0-9_]*))?\s*$""")
 private const val DECLARATION_ANNOTATION_PREFIX: String =
     """(?:@[A-Za-z_][A-Za-z0-9_.]*(?:\([^)\n]*\))?\s*)*"""
 
@@ -954,10 +955,15 @@ private data class TopLevelContainer(
     val isInternal: Boolean,
 )
 
+private data class ImportedSymbol(
+    val canonicalPath: String,
+    val localName: String,
+)
+
 private data class SourceFileContext(
     val relativePath: String,
     val packageName: String,
-    val importedSymbols: Set<String>,
+    val importedSymbols: Set<ImportedSymbol>,
     val wildcardImports: Set<String>,
     val parsedSource: ParsedKotlinSource,
     val lineIndex: LineIndex,
@@ -969,16 +975,23 @@ private data class SourceFileContext(
         ): SourceFileContext {
             val text = file.readText()
             val packageName = packageDeclarationRegex.find(text)?.groupValues?.get(1).orEmpty()
-            val importedPaths =
+            val imports =
                 importDeclarationRegex
                     .findAll(text)
-                    .map { match -> match.groupValues[1].removeSurrounding("`") }
+                    .map { match ->
+                        val canonicalPath = match.groupValues[1].removeSurrounding("`")
+                        val alias = match.groupValues[2].takeIf(String::isNotBlank)
+                        ImportedSymbol(
+                            canonicalPath = canonicalPath,
+                            localName = alias ?: canonicalPath.substringAfterLast('.').removeSurrounding("`"),
+                        )
+                    }
                     .toList()
             return SourceFileContext(
                 relativePath = repoRoot.relativize(file).toString().replace('\\', '/'),
                 packageName = packageName,
-                importedSymbols = importedPaths.filterNot { path -> path.endsWith(".*") }.toSet(),
-                wildcardImports = importedPaths.filter { path -> path.endsWith(".*") }.map { path -> path.removeSuffix(".*") }.toSet(),
+                importedSymbols = imports.filterNot { symbol -> symbol.canonicalPath.endsWith(".*") }.toSet(),
+                wildcardImports = imports.filter { symbol -> symbol.canonicalPath.endsWith(".*") }.map { symbol -> symbol.canonicalPath.removeSuffix(".*") }.toSet(),
                 parsedSource = ParsedKotlinSource.parse(text),
                 lineIndex = LineIndex(text),
             )
@@ -993,15 +1006,6 @@ private class CrossFileRuntimeReferenceIndex private constructor(
         sourceFile: SourceFileContext,
         signature: ParsedFunctionSignature,
     ): Boolean {
-        val referencePattern = Regex("""\b${Regex.escape(signature.referenceName)}\s*\(""")
-        val ownerReferencePattern =
-            signature.topLevelOwnerName?.let { ownerName ->
-                Regex("""\b${Regex.escape(ownerName)}\b\s*\.\s*${Regex.escape(signature.referenceName)}\s*\(""")
-            }
-        val ownerTokenPattern =
-            signature.topLevelOwnerName?.let { ownerName ->
-                Regex("""\b${Regex.escape(ownerName)}\b""")
-            }
         return sourceFiles.any { candidate ->
             if (candidate.relativePath == sourceFile.relativePath) {
                 return@any false
@@ -1009,25 +1013,36 @@ private class CrossFileRuntimeReferenceIndex private constructor(
             if (!candidate.canReference(sourceFile, signature)) {
                 return@any false
             }
-            if (ownerReferencePattern != null &&
-                candidate.parsedSource.sanitizedCode.hasInvocationWithinArity(
-                    pattern = ownerReferencePattern,
-                    minimumArgumentCount = signature.minimumArgumentCount,
-                    maximumArgumentCount = signature.maximumArgumentCount,
-                )
-            ) {
+            val ownerReferenceNames = candidate.ownerReferenceNamesFor(sourceFile, signature)
+            val ownerMatched =
+                ownerReferenceNames.any { ownerName ->
+                    candidate.parsedSource.sanitizedCode.hasMemberInvocationWithinArity(
+                        ownerName = ownerName,
+                        memberName = signature.referenceName,
+                        minimumArgumentCount = signature.minimumArgumentCount,
+                        maximumArgumentCount = signature.maximumArgumentCount,
+                    )
+                }
+            if (ownerMatched) {
                 return@any true
             }
-            if (!candidate.parsedSource.sanitizedCode.hasInvocationWithinArity(
-                    pattern = referencePattern,
-                    minimumArgumentCount = signature.minimumArgumentCount,
-                    maximumArgumentCount = signature.maximumArgumentCount,
-                )
-            ) {
+            val directReferenceNames = candidate.directReferenceNamesFor(sourceFile, signature)
+            val directMatched =
+                directReferenceNames.any { referenceName ->
+                    candidate.parsedSource.sanitizedCode.hasDirectInvocationWithinArity(
+                        referenceName = referenceName,
+                        allowMemberReceiver = ownerReferenceNames.isNotEmpty(),
+                        minimumArgumentCount = signature.minimumArgumentCount,
+                        maximumArgumentCount = signature.maximumArgumentCount,
+                    )
+                }
+            if (!directMatched) {
                 return@any false
             }
             when {
-                ownerTokenPattern != null -> ownerTokenPattern.containsMatchIn(candidate.parsedSource.sanitizedCode)
+                ownerReferenceNames.isNotEmpty() -> ownerReferenceNames.any { ownerName ->
+                    Regex("""\b${Regex.escape(ownerName)}\b""").containsMatchIn(candidate.parsedSource.sanitizedCode)
+                }
                 signature.receiverTypeTokens.isNotEmpty() -> signature.receiverTypeTokens.any { token ->
                     Regex("""\b${Regex.escape(token)}\b""").containsMatchIn(candidate.parsedSource.sanitizedCode)
                 }
@@ -1044,16 +1059,89 @@ private class CrossFileRuntimeReferenceIndex private constructor(
     }
 }
 
-private fun String.hasInvocationWithinArity(
-    pattern: Regex,
+private fun String.hasDirectInvocationWithinArity(
+    referenceName: String,
+    allowMemberReceiver: Boolean,
     minimumArgumentCount: Int,
     maximumArgumentCount: Int,
-): Boolean =
-    pattern.findAll(this).any { match ->
-        val openParenOffset = match.range.first + match.value.lastIndexOf('(')
-        val argumentCount = invocationArgumentCountAt(openParenOffset) ?: return@any false
-        argumentCount in minimumArgumentCount..maximumArgumentCount
+): Boolean {
+    var searchStart = 0
+    while (searchStart < length) {
+        val referenceOffset = indexOf(referenceName, startIndex = searchStart)
+        if (referenceOffset < 0) {
+            return false
+        }
+        val referenceEnd = referenceOffset + referenceName.length
+        val beforeReference = getOrNull(referenceOffset - 1)
+        val afterReference = getOrNull(referenceEnd)
+        val beforeOk =
+            beforeReference == null ||
+                (!beforeReference.isIdentifierTokenChar() && (allowMemberReceiver || beforeReference != '.'))
+        val afterOk = afterReference == null || !afterReference.isIdentifierTokenChar()
+        if (beforeOk && afterOk) {
+            val openParenOffset = skipInlineWhitespace(referenceEnd)
+            if (openParenOffset < length && this[openParenOffset] == '(') {
+                val argumentCount = invocationArgumentCountAt(openParenOffset) ?: return false
+                if (argumentCount in minimumArgumentCount..maximumArgumentCount) {
+                    return true
+                }
+            }
+        }
+        searchStart = referenceOffset + 1
     }
+    return false
+}
+
+private fun String.hasMemberInvocationWithinArity(
+    ownerName: String,
+    memberName: String,
+    minimumArgumentCount: Int,
+    maximumArgumentCount: Int,
+): Boolean {
+    var searchStart = 0
+    while (searchStart < length) {
+        val ownerOffset = indexOf(ownerName, startIndex = searchStart)
+        if (ownerOffset < 0) {
+            return false
+        }
+        val ownerEnd = ownerOffset + ownerName.length
+        val beforeOwner = getOrNull(ownerOffset - 1)
+        val afterOwner = getOrNull(ownerEnd)
+        val ownerBoundaryOk = beforeOwner == null || !beforeOwner.isIdentifierTokenChar()
+        val ownerNameOk = afterOwner == null || !afterOwner.isIdentifierTokenChar()
+        if (ownerBoundaryOk && ownerNameOk) {
+            val dotOffset = skipInlineWhitespace(ownerEnd)
+            if (dotOffset < length && this[dotOffset] == '.') {
+                val memberOffset = skipInlineWhitespace(dotOffset + 1)
+                if (regionMatches(memberOffset, memberName, 0, memberName.length)) {
+                    val memberEnd = memberOffset + memberName.length
+                    val afterMember = getOrNull(memberEnd)
+                    if (afterMember == null || !afterMember.isIdentifierTokenChar()) {
+                        val openParenOffset = skipInlineWhitespace(memberEnd)
+                        if (openParenOffset < length && this[openParenOffset] == '(') {
+                            val argumentCount = invocationArgumentCountAt(openParenOffset) ?: return false
+                            if (argumentCount in minimumArgumentCount..maximumArgumentCount) {
+                                return true
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        searchStart = ownerOffset + 1
+    }
+    return false
+}
+
+private fun Char.isIdentifierTokenChar(): Boolean = isLetterOrDigit() || this == '_' || this == '`'
+
+private fun String.skipInlineWhitespace(startIndex: Int): Int {
+    var index = startIndex
+    while (index < length && (this[index] == ' ' || this[index] == '\t')) {
+        index++
+    }
+    return index
+}
 
 private fun String.invocationArgumentCountAt(openParenOffset: Int): Int? {
     if (openParenOffset !in indices || this[openParenOffset] != '(') {
@@ -1121,18 +1209,35 @@ private fun splitTopLevelArguments(argumentBlock: String): List<String> {
 private fun SourceFileContext.canReference(
     declarationFile: SourceFileContext,
     signature: ParsedFunctionSignature,
-): Boolean {
-    if (packageName == declarationFile.packageName) {
-        return true
+): Boolean = directReferenceNamesFor(declarationFile, signature).isNotEmpty() || ownerReferenceNamesFor(declarationFile, signature).isNotEmpty()
+
+private fun SourceFileContext.directReferenceNamesFor(
+    declarationFile: SourceFileContext,
+    signature: ParsedFunctionSignature,
+): Set<String> {
+    val referenceNames = linkedSetOf<String>()
+    if (packageName == declarationFile.packageName || wildcardImports.contains(declarationFile.packageName)) {
+        referenceNames += signature.referenceName
     }
-    if (wildcardImports.contains(declarationFile.packageName)) {
-        return true
-    }
-    val functionImport = "${declarationFile.packageName}.${signature.referenceName}"
-    if (functionImport in importedSymbols) {
-        return true
-    }
-    val ownerName = signature.topLevelOwnerName ?: return false
-    val ownerImport = "${declarationFile.packageName}.$ownerName"
-    return ownerImport in importedSymbols
+    referenceNames += importedLocalNamesFor("${declarationFile.packageName}.${signature.referenceName}")
+    return referenceNames
 }
+
+private fun SourceFileContext.ownerReferenceNamesFor(
+    declarationFile: SourceFileContext,
+    signature: ParsedFunctionSignature,
+): Set<String> {
+    val ownerName = signature.topLevelOwnerName ?: return emptySet()
+    val referenceNames = linkedSetOf<String>()
+    if (packageName == declarationFile.packageName || wildcardImports.contains(declarationFile.packageName)) {
+        referenceNames += ownerName
+    }
+    referenceNames += importedLocalNamesFor("${declarationFile.packageName}.$ownerName")
+    return referenceNames
+}
+
+private fun SourceFileContext.importedLocalNamesFor(canonicalPath: String): Set<String> =
+    importedSymbols
+        .asSequence()
+        .filter { symbol -> symbol.canonicalPath == canonicalPath }
+        .mapTo(linkedSetOf()) { symbol -> symbol.localName }
