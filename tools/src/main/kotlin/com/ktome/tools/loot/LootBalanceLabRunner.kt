@@ -657,7 +657,7 @@ private const val SPECIAL_RELATIVE_ERROR_TOLERANCE: Double = 0.25
 private const val AFFIX_BUDGET_AVERAGE_TOLERANCE: Double = 0.05
 private const val AFFIX_BUDGET_P95_TOLERANCE: Double = 0.12
 private const val CLAMP_DISTRIBUTION_TOLERANCE: Double = 0.02
-private const val LOOT_KERNEL_CACHE_VERSION: String = "uvr-pr05-loot-kernel-v5"
+private const val LOOT_KERNEL_CACHE_VERSION: String = "uvr-pr05-loot-kernel-v6"
 internal val LOOT_REPORT_LOCALE: GameLocale = GameLocale.EN_US
 private const val EQUIPMENT_PASSIVE_KIND_COUNT: Int = 9
 
