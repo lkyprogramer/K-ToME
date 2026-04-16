@@ -47,6 +47,8 @@ import com.ktome.core.snapshot.RenderMetadataSnapshot
 import com.ktome.core.snapshot.RenderSnapshot
 import com.ktome.core.snapshot.RenderTextTokenSnapshot
 import com.ktome.core.snapshot.RenderUiStateSnapshot
+import com.ktome.core.world.solvability.SearchActionResult
+import com.ktome.core.world.solvability.SearchBindingId
 import com.ktome.game.FOUNDATION_ZONE_ROUTE
 import com.ktome.game.FoundationGameConfig
 import com.ktome.game.FoundationGameSession
@@ -58,6 +60,7 @@ import com.ktome.game.i18n.GameLocale
 import java.nio.file.Path
 import java.security.MessageDigest
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
@@ -70,6 +73,7 @@ class GoldenScreenshotHarnessTest {
     lateinit var tempDir: Path
 
     private val optPr03ItemBundle = DataLoader().loadItemBundle()
+    private val sampleSecretBindingId = SearchBindingId("search.underground_river.crystal_rift")
 
     @Test
     fun `golden screenshot hashes remain stable for english and chinese formal screens`() {
@@ -81,13 +85,13 @@ class GoldenScreenshotHarnessTest {
                 "36fffb5f8ea3ff2f78486ee5d520278135f39f61a44a7cb9d4cf60317a607ade",
                 "38c2efe56098462e01a8dd93999413b837058cb8591cc49a5de2b93023817ff9",
                 "be583fcf3253d13516aa0ebc365a24eafece7c0234a2b9ec7847c64fe7cd0ec0",
-                "b8ec1e164fdf5eb9578b2b4f980af9ddd98cb47aa050e89727bfa55be38b4bd0",
-                "aefc22e5976562bc54fd611c36c53035fea53edf1ed224bba01338f1f9e71fe3",
+                "d6762902f95528e8f8d67e2b95ea9f55aa4a00def3ffc298b3673be75d8b98f4",
+                "c8ef1c9ab76f4118caf7ae0b7724c7448838a3fb90267c1a277d568fc4c6573d",
                 "511542b3a7dafb4fe22de3f96e5ced6bbf18ab3246b9eb8de55dff01fd8924a2",
-                "39b9f1029dbd383ae3a2219709f9b13427805e886ddb584f5bfbd8cad2319a8c",
-                "61f90b2386b956f4e56b598dbe4643bd25d23fc1e206c91b365883d9451569f2",
-                "601eb80cce7a99da20a78616c9b074208e9e6d4035f8613964dd91fb18eedccd",
-                "d8e2fdbd0d3843cb7b6b19bc033f1f8f3d798e2c0f0adce102eab0e3640789cd",
+                "b42a36d61ba8b178945685f583f58435f11fd52d0596b454fb535dc8a30a14af",
+                "f7e879385fb536dfe59470fb12a3048d5b610970899007d02864e2aef07658e0",
+                "3611f0b2765fcd42f97b9921dd5f17c0eb626ae26b9549af1e141b69fba0678b",
+                "07494bf17f02dcd7949bac16b77c098f070c81266ced9f4aa97442d7b0299620",
             ),
             english + chinese,
         )
@@ -100,8 +104,8 @@ class GoldenScreenshotHarnessTest {
 
         assertEquals(
             listOf(
-                "62389cc28f98fb559fb695529887f89028b1766fb6b2105e686c25858d6de0b9",
-                "90e5311251cd68508da9c3b49458bdaa8709b296ff3047336f5e664c8453c646",
+                "99c02b56844c98c4bf88887afd547ba6a28f472ed4ef2c15537a207f98c97e5d",
+                "8b93f66a2bc52fa97ca25662e5551fb6d743f6ba366fad31793683b739ad82ed",
             ),
             listOf(english, chinese),
         )
@@ -114,15 +118,30 @@ class GoldenScreenshotHarnessTest {
 
         assertEquals(
             listOf(
-                "48478184c38383d082a52d20076975e98ddd1c3aa9d81c63b0a3319cba420d16",
-                "a623dcb508bf8484ed5e4f2e01359f5e9fdbf8c02ad6298b54f1c96dfd59bd72",
-                "a5a07c8af9b258cd007623c7f6a61981c004630ffc05010bccdd42e69c849aa2",
-                "eaf0a1368485cbde4ee83f9fd64190eb60b00a69251180e99ed62e17bcc7dd74",
-                "07112b7b1935f64643c9529b48a4a9200a0b3db902f795caf57a536b946869b9",
-                "f05adef654818c06b22c18a27fb7b8b2bbc94900e80f775ddf748b0b8aa50d5b",
+                "0fcc5ecf954d09fb17bd060254be66852c250f92ff331bbcaf4877e8cf77630e",
+                "84ee9e11d6b0f8436c5754261f55d3cfe7f76aaefa319081bd2d5abc49edf026",
+                "4dd6ec1ef8a7638f4dd07c0d8951970ded59c6a7ed8c69bbe4733780a4eb0f8f",
+                "47b441c3089480c8b531ae7b0da95fbcb3b21e250cdfa435278eb1e0a433bd2b",
+                "ddad0311c18f17f1f3904030cbdf01cdb10b2574ecb64cb65017299a8ce42ed3",
+                "9e40a495ce0b073fc3db0b47cbcf22bf41ab18c2f0f5423958f6b471e80cee9f",
             ),
             english + chinese,
         )
+    }
+
+    @Test
+    fun `golden map path snapshot keeps frontstage readability cues available`() {
+        val session =
+            GameModule.newFoundationSession(
+                config = FoundationGameConfig(seed = 20260331L, zoneId = "greenwood_fringe", playerProfessionId = "rogue"),
+                saveManager = SaveManager(tempDir.resolve("golden-frontstage-snapshot")),
+            )
+
+        assertFalse(session.perform(PlayerCommand.Search))
+
+        val snapshot = session.renderSnapshot()
+        assertTrue(snapshot.uiState.frontstageReadability.terrainHighlights.size <= 2)
+        assertTrue(snapshot.uiState.frontstageReadability.recentActionHighlights.any { token -> token.key == "log.search.no_target" })
     }
 
     @Test
@@ -143,10 +162,10 @@ class GoldenScreenshotHarnessTest {
         assertEquals(
             listOf(
                 "abe12adc7adb0db103aa4a9a24359136876508b65436f898d7c3b5e16e55a176",
-                "304c84283ffc5132b695cbd13b3878ce6d02e469eea22d6acf8d00734c8b6a20",
+                "57927865e806465d2f1760f9bc7e46afe5910181ca28ae8bcbc7c52aa228ef47",
                 "b66eae39fd61bd04c1942e2934dae05c5d9065b2b5a4dbece55d3cfd39b9f01d",
-                "d3dcf30b0032892079b55da37123cd0b40e4f440e9fbd1dbe2fc201c995a13ee",
-                "fd0fc7399c4bb0a068da375d51710f64316aeeb40187ba1fa73b2993f5b34a70",
+                "c0ac894b7f42aa8e5255d9016772347a158f7179d22fc2dbe25b5453b7e1108a",
+                "7760710208b32ce6312c00b03789f5b693cb40b9bc14c5f1eec5434826a1f2bd",
                 "211ac1042a5638ee18c2f4e90164e57aa4af360ee439c040c3bc1f6cf96dac28",
             ),
             english + chinese,
@@ -163,7 +182,7 @@ class GoldenScreenshotHarnessTest {
                 "450e7caf5c08a15a48c92829f8bdfbacd38b2f5291fb61f4696ec0d325e53633",
                 "b4388ae96ece049715de87724347e4b3ef60aade53bcbbcca99bdc93d917cb24",
                 "1b2502c2e7fd673dde69ef26ed55b91ba246883c2a10d3a470e74a9c7853647a",
-                "07c5e5549b8fb4cf70be16f2284ad95c03b913bcf835c2c2d05c61657b392b37",
+                "63fdbe852334c7e2bcce83a29f851a4b8bfd600fad38165adc9a6f33164accf3",
             ),
             english + chinese,
         )
@@ -173,7 +192,7 @@ class GoldenScreenshotHarnessTest {
     fun `sample pack golden hash remains stable for filesystem backed content`() {
         val hash = captureSamplePackRuntimeHash()
 
-        assertEquals("a5324076178d8a59741e75843294d1432f0e4f68ed88b4cdfdf057f2e87cf71e", hash)
+        assertEquals("a82f857a41d32832cf7f4a1ef4ed41702cab93cca8313c75616ce686f107e926", hash)
     }
 
     @Test
@@ -183,14 +202,14 @@ class GoldenScreenshotHarnessTest {
 
         assertEquals(
             listOf(
-                "1002257fadf5502cdbdedfdb91d6ecef35c9eeef2b163ff12e3c25e0b14e9356",
-                "b6abde6dc18bdfe91b50df283a70a4630d001d4f38894fa551c076dbf5e39fe9",
-                "e51f92e452c11cbe987514c5f48036ddd067dab68dd33f9abc3f35764ea66724",
-                "e1a284586f0b01b1f918f8b1b6580be908393f76cae276b33d95391fd7ffbf6b",
-                "a618a2289a98eac6582055714d8b44c4bb44a4b0db9b28287e16b508c8e287e1",
-                "536a699539f112e816b31834a4b88bd2e326a3d9fea3aef7fbfb14a8f4d83363",
-                "75f19e88b1b06b36d8835382746593d9d99a1dca6fec6fed7477a7c38aa2443a",
-                "4f5ebd0e7bdf2be856afe7ac09db23de62ddc7b9874890791336f8455cf3d406",
+                "58b0458b75a36bec56c55af6530d5821eca8e09836bd6979be392aa08cebb747",
+                "07b73d7bbbcb7877badf8db0c63f84d4a93b40ddbf8890f72c8f711ebef076f8",
+                "37c821140953afc8b3e514d1f29aea84939c775a125df82675ba5443d7fe498b",
+                "2d77c2f1debee51195cd91947a9d479e7ffdb21ca381955659b801b62c61fd31",
+                "9526bb115cff4fa35ab64a9ef12570ecb3ca9f0753b8930fc91d45dc6b77f6e0",
+                "06e00c35ecca8f410908c39e83a35c5bda8024a2a8cdf9eeab2da1e170bdb587",
+                "5806c17211648e009d4e2c841524d48ab58c1f693186e4c779a65a3316bfab6a",
+                "5f3aa7552b993b6573566975405fa8978731818f60dc16ba744de554b1491114",
             ),
             english + chinese,
         )
@@ -527,7 +546,7 @@ class GoldenScreenshotHarnessTest {
                     saveManager = SaveManager(tempDir.resolve("sample-pack-golden")),
                     defaultConfig =
                         FoundationGameConfig(
-                            seed = 20260304L,
+                            seed = 20260302L,
                             zoneId = "underground_river",
                             playerProfessionId = "arcanist",
                         ),
@@ -846,18 +865,24 @@ class GoldenScreenshotHarnessTest {
 
     private fun claimSamplePackReward(session: FoundationGameSession): Int {
         clearMonsters(session)
-        val generatedFloor = session.automationGeneratedFloor()
-        val entrance = generatedFloor.entrances.sortedBy { candidate -> candidate.bindingId.value }.first()
-        val searchPoint = requireNotNull(generatedFloor.roomForEntrance(entrance)).center
-        automationMovePlayerTo(session, searchPoint)
-        check(session.perform(PlayerCommand.Search)) { "Failed to reveal sample-pack entrance." }
+        session.automationMovePlayerTo(requireNotNull(session.automationInteractablePoint("crystal_cache_chest")))
+        check(session.perform(PlayerCommand.Interact)) { "Failed to claim underground_river primer interactable for sample-pack golden capture." }
 
-        val entranceProp = requireNotNull(propByType(session, "hidden_entrance")) { "Expected revealed hidden entrance for sample-pack golden capture." }
-        automationMovePlayerTo(session, Point(entranceProp.x, entranceProp.y))
+        session.automationMovePlayerTo(requireNotNull(session.automationSearchPointForBinding(sampleSecretBindingId)))
+        check(session.perform(PlayerCommand.Search)) { "Search command was rejected during sample-pack golden capture." }
+        check(
+            session.automationSearchState().any { entry ->
+                entry.bindingId == sampleSecretBindingId && entry.result == SearchActionResult.REVEALED
+            },
+        ) {
+            "Expected sample-pack hidden entrance to be REVEALED. " +
+                "tags=${session.automationDiscoveryTags()} searchState=${session.automationSearchState()}"
+        }
+
+        session.automationMovePlayerTo(requireNotNull(session.automationHiddenEntrancePointForBinding(sampleSecretBindingId)))
         check(session.perform(PlayerCommand.Interact)) { "Failed to enter sample-pack secret zone." }
 
-        val rewardProp = requireNotNull(propByType(session, "secret_reward")) { "Expected secret reward node for sample-pack golden capture." }
-        automationMovePlayerTo(session, Point(rewardProp.x, rewardProp.y))
+        session.automationMovePlayerTo(requireNotNull(session.automationSecretRewardPointForBinding(sampleSecretBindingId)))
         check(session.perform(PlayerCommand.Interact)) { "Failed to claim sample-pack reward." }
         assertEquals("sample_flooded_relics.zone.flooded_reliquary.name", session.renderSnapshot().metadata.zoneNameKey)
 

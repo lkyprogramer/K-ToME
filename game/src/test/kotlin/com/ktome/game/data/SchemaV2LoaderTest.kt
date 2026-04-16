@@ -327,9 +327,10 @@ class SchemaV2LoaderTest {
         assertTrue(catalog.audioProfiles.contains("audio.secret_zone.greenwood_hidden_cache"))
         assertTrue(catalog.audioProfiles.contains("audio.secret_zone.abyssal_temple_warded_archive"))
         assertTrue(catalog.audioProfiles.contains("audio.secret_zone.deep_iron_smuggler_stash"))
-        assertEquals(12, catalog.hiddenEvents.size)
+        assertEquals(14, catalog.hiddenEvents.size)
         assertEquals(
             setOf(
+                "greenwood_ambush_hideout",
                 "greenwood_hidden_cache",
                 "deep_iron_slag_cache",
                 "deep_iron_smuggler_stash",
@@ -355,6 +356,10 @@ class SchemaV2LoaderTest {
         assertEquals(
             listOf("GRANT_BUFF", "LOOT_PROFILE"),
             rewardKeysByHiddenEventId.getValue("hidden.event.greenwood.hidden_cache.reward"),
+        )
+        assertEquals(
+            listOf("GRANT_BUFF", "LOOT_PROFILE"),
+            rewardKeysByHiddenEventId.getValue("hidden.event.greenwood.ambush_hideout.reward"),
         )
         assertEquals(
             listOf("GRANT_BUFF", "LOOT_PROFILE"),

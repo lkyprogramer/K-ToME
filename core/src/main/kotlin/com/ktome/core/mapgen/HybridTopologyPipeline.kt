@@ -449,7 +449,7 @@ class HybridTopologyMapgenPipeline(
     )
 
     override fun run(request: MapgenRequest): GeneratedFloor {
-        val profile = profileResolver.resolve(request.zoneId)
+        val profile = profileResolver.resolve(request.zoneId, request.floorIndex)
         val topology = planner.plan(profile = profile, request = request)
         val roomInstances =
             instantiateRooms(

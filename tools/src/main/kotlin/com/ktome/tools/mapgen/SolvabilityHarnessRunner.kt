@@ -52,7 +52,8 @@ object SolvabilityHarnessRunner {
             buildCases(
                 upgradedZones = upgradedZones,
                 primerDiscoveryTagsByZoneAndFloor = primerDiscoveryTagsByZoneAndFloor(executionContext.schemaCatalog, upgradedZones),
-                requiredHiddenAnchorFamiliesByZone = requiredHiddenAnchorFamiliesByZone(executionContext.schemaCatalog),
+                requiredHiddenAnchorFamiliesByZoneAndFloor =
+                    requiredHiddenAnchorFamiliesByZoneAndFloor(executionContext.schemaCatalog, upgradedZones),
             )
         val distinctSeedList = cases.map { case -> case.request.seed }.distinct()
         require(distinctSeedList.size == cases.size) {
@@ -100,7 +101,7 @@ object SolvabilityHarnessRunner {
     internal fun buildCases(
         upgradedZones: List<ZoneSchemaV2>,
         primerDiscoveryTagsByZoneAndFloor: Map<Pair<String, Int>, Set<String>> = emptyMap(),
-        requiredHiddenAnchorFamiliesByZone: Map<String, Set<String>> = emptyMap(),
+        requiredHiddenAnchorFamiliesByZoneAndFloor: Map<Pair<String, Int>, Set<String>> = emptyMap(),
         seedsPerFloor: Int = SEEDS_PER_FLOOR,
     ): List<SolvabilityCase> =
         buildList {
@@ -118,7 +119,8 @@ object SolvabilityHarnessRunner {
                                         targetHeight = zone.mapSize.height,
                                     ),
                                 providedDiscoveryTags = primerDiscoveryTagsByZoneAndFloor[zone.id to floorIndex].orEmpty(),
-                                requiredHiddenAnchorFamilies = requiredHiddenAnchorFamiliesByZone[zone.id].orEmpty(),
+                                requiredHiddenAnchorFamilies =
+                                    requiredHiddenAnchorFamiliesByZoneAndFloor[zone.id to floorIndex].orEmpty(),
                             ),
                         )
                     }
@@ -521,16 +523,36 @@ internal fun primerDiscoveryTagsForCase(
         }.flatMap { hiddenEvent -> hiddenEvent.grantedDiscoveryTags.asSequence() }
         .toCollection(linkedSetOf())
 
+internal fun requiredHiddenAnchorFamiliesForZoneFloor(
+    schemaCatalog: SchemaCatalog,
+    zoneId: String,
+    floorIndex: Int,
+): Set<String> =
+    schemaCatalog.zones
+        .firstOrNull { zone -> zone.id == zoneId }
+        ?.let { zone ->
+            val profileId = zone.resolvedMapgenProfileId(floorIndex)
+            schemaCatalog.zoneMapgenProfiles
+                .firstOrNull { profile -> profile.id == profileId }
+                ?.hiddenEntrancePlans
+                ?.asSequence()
+                ?.map { plan -> plan.sourceAnchorId.value }
+                ?.toCollection(linkedSetOf())
+                ?: emptySet()
+        } ?: emptySet()
+
 internal fun requiredHiddenAnchorFamiliesForZone(
     schemaCatalog: SchemaCatalog,
     zoneId: String,
 ): Set<String> =
-    schemaCatalog.zoneMapgenProfiles
-        .asSequence()
-        .filter { profile -> profile.zoneId == zoneId }
-        .flatMap { profile -> profile.hiddenEntrancePlans.asSequence() }
-        .map { plan -> plan.sourceAnchorId.value }
-        .toCollection(linkedSetOf())
+    schemaCatalog.zones
+        .firstOrNull { zone -> zone.id == zoneId }
+        ?.let { zone ->
+            (1..zone.floorCount)
+                .asSequence()
+                .flatMap { floorIndex -> requiredHiddenAnchorFamiliesForZoneFloor(schemaCatalog, zoneId, floorIndex).asSequence() }
+                .toCollection(linkedSetOf())
+        } ?: emptySet()
 
 internal fun observedHiddenAnchorFamiliesForFloor(
     generatedFloor: com.ktome.core.mapgen.GeneratedFloor,
@@ -557,8 +579,18 @@ internal fun primerDiscoveryTagsByZoneAndFloor(
 internal fun requiredHiddenAnchorFamiliesByZone(
     schemaCatalog: SchemaCatalog,
 ): Map<String, Set<String>> =
-    schemaCatalog.zoneMapgenProfiles
-        .groupBy { profile -> profile.zoneId }
-        .mapValues { (zoneId, _) -> requiredHiddenAnchorFamiliesForZone(schemaCatalog, zoneId) }
+    schemaCatalog.zones.associate { zone -> zone.id to requiredHiddenAnchorFamiliesForZone(schemaCatalog, zone.id) }
+
+internal fun requiredHiddenAnchorFamiliesByZoneAndFloor(
+    schemaCatalog: SchemaCatalog,
+    upgradedZones: List<ZoneSchemaV2>,
+): Map<Pair<String, Int>, Set<String>> =
+    buildMap {
+        upgradedZones.forEach { zone ->
+            (1..zone.floorCount).forEach { floorIndex ->
+                put(zone.id to floorIndex, requiredHiddenAnchorFamiliesForZoneFloor(schemaCatalog, zone.id, floorIndex))
+            }
+        }
+    }
 
 internal fun ZoneSchemaV2.isPhase4Upgraded(): Boolean = mapgenProfileId != null

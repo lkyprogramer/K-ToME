@@ -28,6 +28,35 @@ events:
           lootProfileRef:
             registry: loot_profile
             id: loot.greenwood_hidden_cache.secret
+  - id: hidden.event.greenwood.ambush_hideout.reveal
+    triggerType: PERCEPTION_REVEAL
+    optionalOnly: true
+    conditions:
+      - key: SEARCH_BINDING_ID
+        expectedValue: search.greenwood.ambush_hideout
+    rewards:
+      - key: REVEAL_SECRET_ZONE
+        payload:
+          bindingId: search.greenwood.ambush_hideout
+  - id: hidden.event.greenwood.ambush_hideout.reward
+    triggerType: INTERACT_TILE
+    optionalOnly: true
+    conditions:
+      - key: SECRET_ZONE_ID
+        expectedValue: greenwood_ambush_hideout
+    rewards:
+      - key: GRANT_BUFF
+        payload:
+          statusRef:
+            registry: status
+            id: STEALTH
+          durationTurns: 5
+          magnitude: 0.15
+      - key: LOOT_PROFILE
+        payload:
+          lootProfileRef:
+            registry: loot_profile
+            id: loot.greenwood_hidden_cache.secret
   - id: hidden.event.deep_iron.slag_cache.reveal
     triggerType: KILL_ELITE
     optionalOnly: false

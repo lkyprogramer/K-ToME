@@ -12,6 +12,8 @@ internal fun recentRewardText(
     itemDisplayName: String,
 ): String = "$sourceLabel: $itemDisplayName"
 
+internal fun recentRewardDetailText(detailText: String): String = "  $detailText"
+
 internal fun shopOfferText(
     localizer: Localizer,
     offer: ShopOfferSnapshot,

@@ -25,6 +25,30 @@ secretZones:
     returnBridgePolicy: LAST_MAINLINE_BRANCH
   - id:
       registry: secret_zone
+      id: greenwood_ambush_hideout
+    nameKey: zone.secret.greenwood_ambush_hideout.name
+    descKey: zone.secret.greenwood_ambush_hideout.desc
+    visualKey: zone.secret.greenwood_hidden_cache.visual
+    iconKey: zone.secret.greenwood_hidden_cache.icon
+    audioProfile: audio.secret_zone.greenwood_hidden_cache
+    schemaVersion: 1
+    tags: [secret_zone, greenwood, optional, mobility, stealth, ambush]
+    entryRule:
+      combinator: AND
+      predicates:
+        - type: PERCEPTION_CHECK
+          difficulty: 8
+    pathClass: SECRET
+    rewardProfileId:
+      registry: loot_profile
+      id: loot.greenwood_hidden_cache.secret
+    guaranteedContent:
+      - registry: hidden_event
+        id: hidden.event.greenwood.ambush_hideout.reward
+    entranceBindingId: hidden.critical.adjacent
+    returnBridgePolicy: NEAREST_OPTIONAL_ANCHOR
+  - id:
+      registry: secret_zone
       id: deep_iron_slag_cache
     nameKey: zone.secret.deep_iron_slag_cache.name
     descKey: zone.secret.deep_iron_slag_cache.desc

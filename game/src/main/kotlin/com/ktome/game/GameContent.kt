@@ -35,7 +35,10 @@ import com.ktome.game.telegraph.TelegraphRegistry
 import com.ktome.game.telegraph.ThreatProfileRegistry
 
 private object EmptyZoneMapgenProfileResolver : ZoneMapgenProfileResolver {
-    override fun resolve(zoneId: String): ZoneMapgenProfile =
+    override fun resolve(
+        zoneId: String,
+        floorIndex: Int,
+    ): ZoneMapgenProfile =
         ZoneMapgenProfile(
             id = "$zoneId.compatibility",
             zoneId = zoneId,

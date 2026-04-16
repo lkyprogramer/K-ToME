@@ -1,11 +1,12 @@
 zoneMapgenProfiles:
-  - id: zone_mapgen.greenwood_fringe.phase4
+  - id: zone_mapgen.greenwood_fringe.phase4.floor1
     zoneId: greenwood_fringe
     allowedBiomeFamilies: [forest, bog]
     loopCountRange: { start: 1, endInclusive: 2 }
     vaultPool: [vault.greenwood.briar_cache, vault.greenwood.smuggler_cache]
     terrainTagWeights:
-      WATER: 0.32
+      WATER: 0.24
+      ICE: 0.12
     roomTagFilter: [forest, bog, sightline, bridge, hidden_cache, ambush]
     keyGatePlans:
       - id: gate.greenwood.final_path
@@ -22,6 +23,35 @@ zoneMapgenProfiles:
         targetSecretZoneId:
           registry: secret_zone
           id: greenwood_hidden_cache
+        discoveryRule:
+          combinator: AND
+          predicates:
+            - type: PERCEPTION_CHECK
+              difficulty: 8
+  - id: zone_mapgen.greenwood_fringe.phase4.floor2
+    zoneId: greenwood_fringe
+    allowedBiomeFamilies: [forest, bog]
+    loopCountRange: { start: 1, endInclusive: 2 }
+    vaultPool: [vault.greenwood.briar_cache, vault.greenwood.smuggler_cache]
+    terrainTagWeights:
+      WATER: 0.24
+      ICE: 0.12
+    roomTagFilter: [forest, bog, sightline, bridge, hidden_cache, ambush]
+    keyGatePlans:
+      - id: gate.greenwood.final_path
+        fromAnchorId: critical.hub
+        toAnchorId: critical.goal
+        grantedByAnchorId: optional.branch.1
+        keyType: KEY_ITEM
+        keyId: greenwood_final_path_key
+    hiddenEntrancePlans:
+      - bindingId: search.greenwood.ambush_hideout
+        sourceAnchorId: hidden.critical.adjacent
+        entranceAnchorId: hidden.critical.adjacent
+        targetAnchorId: secret.greenwood.ambush_hideout
+        targetSecretZoneId:
+          registry: secret_zone
+          id: greenwood_ambush_hideout
         discoveryRule:
           combinator: AND
           predicates:

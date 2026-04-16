@@ -235,7 +235,8 @@ object WhiteBoxSolvabilityRunner {
             SolvabilityHarnessRunner.buildCases(
                 upgradedZones = upgradedZones,
                 primerDiscoveryTagsByZoneAndFloor = primerDiscoveryTagsByZoneAndFloor(executionContext.schemaCatalog, upgradedZones),
-                requiredHiddenAnchorFamiliesByZone = requiredHiddenAnchorFamiliesByZone(executionContext.schemaCatalog),
+                requiredHiddenAnchorFamiliesByZoneAndFloor =
+                    requiredHiddenAnchorFamiliesByZoneAndFloor(executionContext.schemaCatalog, upgradedZones),
                 seedsPerFloor = SEEDS_PER_FLOOR,
             )
         val distinctSeedList = cases.map { case -> case.request.seed }.distinct()

@@ -64,6 +64,7 @@ import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
@@ -379,12 +380,15 @@ class ClientSmokeHarnessTest {
             )
         automationMovePlayerTo(session, requireNotNull(automationStairPoint(session, StairDirection.DOWN)))
         assertTrue(session.perform(PlayerCommand.Descend))
+        assertFalse(session.perform(PlayerCommand.Search))
 
         val localizer = session.localizer()
         val capture = captureOverlay(localizer, session.renderSnapshot(), OverlayState(mode = UiMode.MAP))
 
         assertTrue(capture.rows.any { row -> row.contains(localizer.text("ui.reward.source.cadence")) })
         assertEquals(1, capture.rows.count { row -> row == localizer.text("ui.sidebar.recent_rewards") })
+        assertTrue(capture.rows.any { row -> row == localizer.text("ui.sidebar.frontstage") })
+        assertTrue(capture.rows.any { row -> row == localizer.text("log.search.no_target") })
     }
 
     @Test

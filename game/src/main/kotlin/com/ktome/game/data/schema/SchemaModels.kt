@@ -460,8 +460,34 @@ data class ZoneSchemaV2(
     val shopNodeId: String? = null,
     val uniqueContentTag: String? = null,
     val mapgenProfileId: String? = null,
+    val mapgenProfileBindings: List<SchemaFloorMapgenProfileBinding> = emptyList(),
     val rewardProfileId: String? = null,
-)
+) {
+    init {
+        require(mapgenProfileBindings.distinctBy(SchemaFloorMapgenProfileBinding::floorIndex).size == mapgenProfileBindings.size) {
+            "ZoneSchemaV2.mapgenProfileBindings must not declare duplicate floor indices for zone '$id'."
+        }
+        require(mapgenProfileBindings.all { binding -> binding.floorIndex in 1..floorCount }) {
+            "ZoneSchemaV2.mapgenProfileBindings must stay within the floor range for zone '$id'."
+        }
+    }
+
+    fun resolvedMapgenProfileId(floorIndex: Int): String? =
+        mapgenProfileBindings
+            .firstOrNull { binding -> binding.floorIndex == floorIndex }
+            ?.profileId
+            ?: mapgenProfileId
+}
+
+data class SchemaFloorMapgenProfileBinding(
+    val floorIndex: Int,
+    val profileId: String,
+) {
+    init {
+        require(floorIndex > 0) { "SchemaFloorMapgenProfileBinding.floorIndex must be positive." }
+        require(profileId.isNotBlank()) { "SchemaFloorMapgenProfileBinding.profileId must not be blank." }
+    }
+}
 
 data class InteractableSchemaV2(
     val id: String,

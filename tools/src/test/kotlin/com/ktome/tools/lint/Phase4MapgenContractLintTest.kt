@@ -51,12 +51,13 @@ class Phase4MapgenContractLintTest {
 
         assertFrozenZoneProfile(
             zone = requireNotNull(zonesById["greenwood_fringe"]),
-            expectedMapgenProfileId = "zone_mapgen.greenwood_fringe.phase4",
+            expectedMapgenProfileId = "zone_mapgen.greenwood_fringe.phase4.floor1",
             expectedRewardProfileId = "zone_reward.greenwood_fringe.phase4",
             rewardProfilesById = rewardProfilesById,
             mapgenProfilesById = mapgenProfilesById,
             expectedRarityBonus = 0.00f,
             expectedQualityBonus = 0,
+            expectedFloorBindings = listOf(2 to "zone_mapgen.greenwood_fringe.phase4.floor2"),
         )
         assertFrozenZoneProfile(
             zone = requireNotNull(zonesById["deep_iron_pit"]),
@@ -66,6 +67,7 @@ class Phase4MapgenContractLintTest {
             mapgenProfilesById = mapgenProfilesById,
             expectedRarityBonus = 0.05f,
             expectedQualityBonus = 1,
+            expectedFloorBindings = emptyList(),
         )
         assertFrozenZoneProfile(
             zone = requireNotNull(zonesById["underground_river"]),
@@ -75,6 +77,7 @@ class Phase4MapgenContractLintTest {
             mapgenProfilesById = mapgenProfilesById,
             expectedRarityBonus = 0.08f,
             expectedQualityBonus = 1,
+            expectedFloorBindings = emptyList(),
         )
         assertFrozenZoneProfile(
             zone = requireNotNull(zonesById["abyssal_temple"]),
@@ -84,6 +87,7 @@ class Phase4MapgenContractLintTest {
             mapgenProfilesById = mapgenProfilesById,
             expectedRarityBonus = 0.12f,
             expectedQualityBonus = 2,
+            expectedFloorBindings = emptyList(),
         )
     }
 
@@ -95,10 +99,16 @@ class Phase4MapgenContractLintTest {
         mapgenProfilesById: Map<String, com.ktome.core.mapgen.ZoneMapgenProfile>,
         expectedRarityBonus: Float,
         expectedQualityBonus: Int,
+        expectedFloorBindings: List<Pair<Int, String>>,
     ) {
         assertEquals(expectedMapgenProfileId, zone.mapgenProfileId, "Zone ${zone.id} must stay pinned to the PR-02 mapgen profile id.")
         assertEquals(expectedRewardProfileId, zone.rewardProfileId, "Zone ${zone.id} must stay pinned to the PR-02 reward profile id.")
+        assertEquals(expectedFloorBindings, zone.mapgenProfileBindings.map { binding -> binding.floorIndex to binding.profileId })
         assertTrue(expectedMapgenProfileId in mapgenProfilesById, "Zone ${zone.id} references an unknown mapgen profile.")
+        assertTrue(
+            zone.mapgenProfileBindings.all { binding -> binding.profileId in mapgenProfilesById },
+            "Zone ${zone.id} floor-aware mapgen binding references an unknown profile.",
+        )
         val rewardProfile = requireNotNull(rewardProfilesById[expectedRewardProfileId]) { "Zone ${zone.id} reward profile missing." }
         assertEquals(expectedRarityBonus, rewardProfile.rarityBonus, "Zone ${zone.id} rarity bonus drifted from PR-02 freeze table.")
         assertEquals(expectedQualityBonus, rewardProfile.qualityBonus, "Zone ${zone.id} quality bonus drifted from PR-02 freeze table.")

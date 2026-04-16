@@ -519,7 +519,10 @@ data class GeneratedFloor(
 }
 
 interface ZoneMapgenProfileResolver {
-    fun resolve(zoneId: String): ZoneMapgenProfile
+    fun resolve(
+        zoneId: String,
+        floorIndex: Int,
+    ): ZoneMapgenProfile
 }
 
 interface TopologyPlanner {

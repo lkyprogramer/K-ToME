@@ -173,6 +173,7 @@ import com.ktome.core.snapshot.CombatFeedbackTypeSnapshot
 import com.ktome.core.snapshot.DescriptionModelSnapshot
 import com.ktome.core.snapshot.DescriptionValueSnapshot
 import com.ktome.core.snapshot.EquipmentSlotSnapshot
+import com.ktome.core.snapshot.FrontstageReadabilitySnapshot
 import com.ktome.core.snapshot.GridPointSnapshot
 import com.ktome.core.snapshot.InscriptionSlotSnapshot
 import com.ktome.core.snapshot.InventoryEntrySnapshot
@@ -287,6 +288,11 @@ internal data class ZoneRuntimeBundle(
 
 private const val SUMMARY_EVENT_LIMIT: Int = 5
 private const val RECENT_REWARD_LIMIT: Int = 5
+private const val FRONTSTAGE_MUTATION_LIMIT: Int = 2
+private const val FRONTSTAGE_TERRAIN_LIMIT: Int = 2
+private const val FRONTSTAGE_RECENT_ACTION_LIMIT: Int = 2
+private const val FRONTSTAGE_RECENT_ACTION_CUE_CAP: Int = 8
+private const val FRONTSTAGE_RECENT_ACTION_TTL_TURNS: Int = 3
 private const val AI_TRACE_LIMIT: Int = 64
 private const val TERRAIN_COMBAT_OBSERVATION_LIMIT: Int = 512
 private const val ABYSSAL_WARD_PROTECTION_TURNS: Int = 4
@@ -444,6 +450,12 @@ class FoundationGameSession internal constructor(
     private data class RecentRewardPresentationEntry(
         val source: RewardPresentationSourceSnapshot,
         val itemDisplayName: RenderTextTokenSnapshot,
+        val detailText: RenderTextTokenSnapshot? = null,
+    )
+
+    private data class RecentFrontstageActionCue(
+        val message: RenderTextTokenSnapshot,
+        val expiresAfterTurn: Int,
     )
 
     private data class SecretZoneContext(
@@ -493,6 +505,7 @@ class FoundationGameSession internal constructor(
     private val recentEvents = ArrayDeque<String>()
     private val recentSummaryEvents = ArrayDeque<RenderTextTokenSnapshot>()
     private val recentRewardEntries = ArrayDeque<RecentRewardPresentationEntry>()
+    private val recentFrontstageActionCues = ArrayDeque<RecentFrontstageActionCue>()
     private val pendingCombatFeedbackEvents = ArrayDeque<PendingCombatFeedback>()
     private val pendingActions = ArrayDeque<EntityId>()
     private var activeTurnActor: EntityId? = null
@@ -1444,6 +1457,8 @@ class FoundationGameSession internal constructor(
         val overlays = buildOverlaySnapshots()
         val combatFeedbackEvents = resolvePendingCombatFeedbackEvents()
         pendingCombatFeedbackEvents.clear()
+        val mapCells = buildMapCells(zone)
+        val actors = buildActorSnapshots()
         return RenderSnapshot(
             metadata =
                 RenderMetadataSnapshot(
@@ -1462,9 +1477,9 @@ class FoundationGameSession internal constructor(
                     tilesetKey = zone.tilesetKey,
                     ambientProfile = zone.ambientProfile,
                 ),
-            mapCells = buildMapCells(zone),
+            mapCells = mapCells,
             props = buildPropSnapshots(),
-            actors = buildActorSnapshots(),
+            actors = actors,
             overlays = overlays,
             uiState = buildRenderUiState(),
             logEvents = buildVisibleLogEvents(overlays),
@@ -2936,11 +2951,19 @@ class FoundationGameSession internal constructor(
             inscriptions = buildInscriptionSnapshots(),
             inventory = buildInventoryEntries(),
             recentRewards = buildRecentRewardSnapshots(),
+            frontstageReadability = buildFrontstageReadabilitySnapshot(),
             targetablePositions = targetableHostilePositions().map { point -> GridPointSnapshot(point.x, point.y) },
             searchPromptLabelKey = unresolvedSearchableEntranceAtPlayerPosition()?.let { "ui.controls.map.search" },
             shardBalance = shardBalance,
             activeShop = buildShopPanelSnapshot(),
             activeRouteSelection = buildRouteSelectionSnapshot(),
+        )
+
+    private fun buildFrontstageReadabilitySnapshot(): FrontstageReadabilitySnapshot =
+        FrontstageReadabilitySnapshot(
+            mutationHighlights = buildMutationHighlights(),
+            terrainHighlights = buildTerrainHighlights(),
+            recentActionHighlights = buildRecentActionHighlights(),
         )
 
     private fun buildRecentRewardSnapshots(): List<RewardPresentationEntrySnapshot> =
@@ -2949,8 +2972,99 @@ class FoundationGameSession internal constructor(
                 source = entry.source,
                 sourceLabelKey = rewardPresentationSourceLabelKey(entry.source),
                 itemDisplayName = entry.itemDisplayName,
+                detailText = entry.detailText,
             )
         }
+
+    private fun buildMutationHighlights(): List<RenderTextTokenSnapshot> {
+        val playerPoint = playerPosition()
+        return world.entitiesWith(Position::class, Health::class, EliteMutationLoadout::class, Name::class)
+            .asSequence()
+            .filterNot { entityId -> entityId == playerId }
+            .filter { entityId ->
+                val health = world.get<Health>(entityId)
+                val position = world.get<Position>(entityId)?.toPoint()
+                health != null && health.current > 0 && position in visibleTiles
+            }.mapNotNull { entityId ->
+                val position = requireNotNull(world.get<Position>(entityId)).toPoint()
+                val highlightedMutation =
+                    world.get<EliteMutationLoadout>(entityId)
+                        ?.mutationIds
+                        ?.asSequence()
+                        ?.mapNotNull(content.eliteMutationRegistry::resolve)
+                        ?.mapNotNull { mutation -> mutationSummaryToken(mutation)?.let { summary -> mutation to summary } }
+                        ?.firstOrNull()
+                        ?: return@mapNotNull null
+                val (mutation, summary) = highlightedMutation
+                Triple(
+                    position.chebyshevDistanceTo(playerPoint),
+                    entityId.value,
+                    RenderTextTokenSnapshot(
+                        key = "ui.hud.frontstage.mutation_line",
+                        arguments =
+                            listOf(
+                                entityArg("actor", entityId),
+                                keyArg("mutation", mutation.nameKey),
+                                tokenArg("summary", summary),
+                            ),
+                    ),
+                )
+            }.sortedWith(compareBy<Triple<Int, Int, RenderTextTokenSnapshot>> { it.first }.thenBy { it.second })
+            .take(FRONTSTAGE_MUTATION_LIMIT)
+            .map(Triple<Int, Int, RenderTextTokenSnapshot>::third)
+            .toList()
+    }
+
+    private fun buildTerrainHighlights(): List<RenderTextTokenSnapshot> {
+        val playerPoint = playerPosition()
+        val terrainOverride = activeFloorState.terrainOverrideAt(playerPoint)
+        val terrainTags = activeFloorState.terrainTagsAt(playerPoint)
+        return buildList {
+            terrainOverride?.let { activeOverride ->
+                add(
+                    RenderTextTokenSnapshot(
+                        key = "ui.inspect.terrain.rule",
+                        arguments = listOf(keyArg("rule", terrainRuleNameKey(activeOverride.sourceRuleId))),
+                    ),
+                )
+                val tickDamageType = activeOverride.tickDamageType
+                when {
+                    activeOverride.tickDamage > 0 && tickDamageType != null ->
+                        add(
+                            RenderTextTokenSnapshot(
+                                key = "ui.inspect.terrain.tick_damage",
+                                arguments =
+                                    listOf(
+                                        literalArg("amount", activeOverride.tickDamage),
+                                        keyArg("damageType", damageTypeLabelKey(tickDamageType)),
+                                    ),
+                            ),
+                        )
+
+                    activeOverride.conductsLightning -> add(RenderTextTokenSnapshot(key = "ui.inspect.terrain.conducts_lightning"))
+                }
+            }
+            if (size < FRONTSTAGE_TERRAIN_LIMIT) {
+                conciseTerrainHint(terrainTags)?.let(::add)
+            }
+        }.take(FRONTSTAGE_TERRAIN_LIMIT)
+    }
+
+    private fun conciseTerrainHint(terrainTags: Collection<TerrainTag>): RenderTextTokenSnapshot? =
+        when {
+            TerrainTag.OIL in terrainTags -> RenderTextTokenSnapshot("ui.hud.frontstage.terrain.oil")
+            TerrainTag.ICE in terrainTags -> RenderTextTokenSnapshot("ui.hud.frontstage.terrain.ice")
+            TerrainTag.WATER in terrainTags -> RenderTextTokenSnapshot("ui.hud.frontstage.terrain.water")
+            else -> null
+        }
+
+    private fun buildRecentActionHighlights(): List<RenderTextTokenSnapshot> {
+        pruneExpiredFrontstageActionCues()
+        return recentFrontstageActionCues
+            .takeLast(FRONTSTAGE_RECENT_ACTION_LIMIT)
+            .asReversed()
+            .map(RecentFrontstageActionCue::message)
+    }
 
     private fun buildShopPanelSnapshot(): ShopPanelSnapshot? {
         val shop = currentShopNode() ?: return null
@@ -4512,6 +4626,7 @@ class FoundationGameSession internal constructor(
         includeQuality: Boolean = true,
     ) {
         val displayName = itemDisplayToken(reward, includeQuality = includeQuality) ?: return
+        val detailText = firstMeaningfulRewardDetailToken(reward)
         if (recentRewardEntries.size == RECENT_REWARD_LIMIT) {
             recentRewardEntries.removeFirst()
         }
@@ -4519,8 +4634,12 @@ class FoundationGameSession internal constructor(
             RecentRewardPresentationEntry(
                 source = source,
                 itemDisplayName = displayName,
+                detailText = detailText,
             )
     }
+
+    private fun firstMeaningfulRewardDetailToken(reward: ItemInstance): RenderTextTokenSnapshot? =
+        itemPassiveDescriptions(reward).firstOrNull()
 
     private fun markMeaningfulRewardSeenThisFloor() {
         if (!currentFloorRewardState.meaningfulRewardSeenThisFloor) {
@@ -8319,7 +8438,7 @@ class FoundationGameSession internal constructor(
                     health.current = (health.current + passive.amount).coerceAtMost(health.max)
                     val restored = health.current - before
                     if (restored > 0 && actorId == playerId) {
-                        addMessage(
+                        addFrontstageMessage(
                             "log.passive.hp_regen",
                             itemDisplayArgument("item", source.item),
                             literalArg("amount", restored),
@@ -8691,7 +8810,7 @@ class FoundationGameSession internal constructor(
             ),
         )
         if (attacker == playerId && source != null) {
-            addMessage(
+            addFrontstageMessage(
                 "log.passive.on_hit_status",
                 itemDisplayArgument("item", source.item),
                 entityArg("target", target),
@@ -8711,7 +8830,7 @@ class FoundationGameSession internal constructor(
             pool.restore(trigger.amount)
             val restored = pool.current - before
             if (restored > 0 && attacker == playerId) {
-                addMessage(
+                addFrontstageMessage(
                     "log.passive.on_kill_resource_restore",
                     itemDisplayArgument("item", trigger.source.item),
                     literalArg("amount", restored),
@@ -8745,7 +8864,7 @@ class FoundationGameSession internal constructor(
             val itemArgument = itemDisplayArgument("item", source.item)
             when (val passive = source.passive) {
                 is EquipmentPassive.DamageVsTag ->
-                    addMessage(
+                    addFrontstageMessage(
                         "log.passive.damage_bonus_vs_tag",
                         itemArgument,
                         monsterTagArg("tag", passive.tag),
@@ -8753,7 +8872,7 @@ class FoundationGameSession internal constructor(
                     )
 
                 is EquipmentPassive.DamageVsStatus ->
-                    addMessage(
+                    addFrontstageMessage(
                         "log.passive.damage_bonus_vs_status",
                         itemArgument,
                         keyArg("status", statusNameKey(passive.statusId)),
@@ -8761,7 +8880,7 @@ class FoundationGameSession internal constructor(
                     )
 
                 is EquipmentPassive.DamageTypeBonus ->
-                    addMessage(
+                    addFrontstageMessage(
                         "log.passive.damage_bonus_type",
                         itemArgument,
                         keyArg("damageType", damageTypeLabelKey(passive.type)),
@@ -9077,7 +9196,7 @@ class FoundationGameSession internal constructor(
                     difficulty = null,
                 ),
             )
-            addMessage("log.search.no_target")
+            addFrontstageMessage("log.search.no_target")
             return CommandResolution.rejected()
         }
 
@@ -9123,13 +9242,13 @@ class FoundationGameSession internal constructor(
         when (result) {
             SearchActionResult.REVEALED -> {
                 if (searchDifficulty != null) {
-                    addMessage(
+                    addFrontstageMessage(
                         "log.search.revealed",
                         literalArg("perception", perceptionScore.total),
                         literalArg("difficulty", searchDifficulty),
                     )
                 } else {
-                    addMessage("log.search.revealed_tag")
+                    addFrontstageMessage("log.search.revealed_tag")
                 }
                 executeHiddenEvents(
                     triggerType = HiddenTriggerType.PERCEPTION_REVEAL,
@@ -9140,13 +9259,13 @@ class FoundationGameSession internal constructor(
 
             SearchActionResult.FAILED_CHECK ->
                 if (searchDifficulty != null) {
-                    addMessage(
+                    addFrontstageMessage(
                         "log.search.failed_check",
                         literalArg("perception", perceptionScore.total),
                         literalArg("difficulty", searchDifficulty),
                     )
                 } else {
-                    addMessage("log.search.failed_tag")
+                    addFrontstageMessage("log.search.failed_tag")
                 }
 
             SearchActionResult.NO_TARGET,
@@ -9208,7 +9327,7 @@ class FoundationGameSession internal constructor(
                         if (activeFloorState.searchStateFor(payload.bindingId)?.result != SearchActionResult.REVEALED) {
                             activeFloorState.recordSearchResolution(payload.bindingId, SearchActionResult.REVEALED)
                         }
-                        addMessage(
+                        addFrontstageMessage(
                             "log.hidden.secret_zone.revealed",
                             keyArg("zone", secretZoneNameKey(secretZoneIdForBinding(payload.bindingId))),
                         )
@@ -9312,7 +9431,7 @@ class FoundationGameSession internal constructor(
                 ),
             )
             refreshActorDerivedStats(playerId)
-            addMessage(
+            addFrontstageMessage(
                 "log.hidden.reward.buff",
                 keyArg("zone", secretZoneNameKey(secretZoneId)),
                 keyArg("buff", requireNotNull(content.statusSchemaFor(payload.statusRef.id)).nameKey),
@@ -9335,7 +9454,7 @@ class FoundationGameSession internal constructor(
         val dropPoint = playerPosition()
         val stored = grantRewardItem(reward, dropPoint)
         recordRecentRewardPresentation(source = rewardPresentationSource, reward = reward)
-        addMessage(
+        addFrontstageMessage(
             if (stored) "log.hidden.reward.claimed" else "log.hidden.reward.dropped",
             keyArg("zone", secretZoneNameKey(secretZoneId)),
             keyArg("item", rewardItemNameKey(reward, "hidden")),
@@ -9399,7 +9518,7 @@ class FoundationGameSession internal constructor(
             ),
         )
         refreshActorDerivedStats(monsterId)
-        addMessage(
+        addFrontstageMessage(
             "log.hidden.reward.encounter",
             keyArg("zone", secretZoneNameKey(secretZoneId)),
             entityArg("monster", monsterId),
@@ -9641,7 +9760,7 @@ class FoundationGameSession internal constructor(
         val anchorPoints = secretZoneAnchorPoints(context.room)
         movePlayerTo(anchorPoints.entry)
         activeFloorState.visitedSecretZoneIds += context.secretZoneId
-        addMessage("log.hidden.secret_zone.enter", keyArg("zone", secretZone.nameKey))
+        addFrontstageMessage("log.hidden.secret_zone.enter", keyArg("zone", secretZone.nameKey))
         return CommandResolution.accepted()
     }
 
@@ -10184,7 +10303,7 @@ class FoundationGameSession internal constructor(
         invalidateRenderSnapshot()
     }
 
-    private fun addMessage(message: RenderLogEventSnapshot) {
+    private fun recordMessage(message: RenderLogEventSnapshot) {
         if (messageLog.size == config.messageLogSize) {
             messageLog.removeFirst()
         }
@@ -10195,7 +10314,35 @@ class FoundationGameSession internal constructor(
             }
             recentSummaryEvents += message.message
         }
+    }
+
+    private fun addMessage(message: RenderLogEventSnapshot) {
+        recordMessage(message)
         invalidateRenderSnapshot()
+    }
+
+    private fun addFrontstageMessage(message: RenderLogEventSnapshot) {
+        recordMessage(message)
+        recordFrontstageActionCue(message.message)
+        invalidateRenderSnapshot()
+    }
+
+    private fun recordFrontstageActionCue(message: RenderTextTokenSnapshot) {
+        pruneExpiredFrontstageActionCues()
+        recentFrontstageActionCues +=
+            RecentFrontstageActionCue(
+                message = message,
+                expiresAfterTurn = turnCount + FRONTSTAGE_RECENT_ACTION_TTL_TURNS,
+            )
+        while (recentFrontstageActionCues.size > FRONTSTAGE_RECENT_ACTION_CUE_CAP) {
+            recentFrontstageActionCues.removeFirst()
+        }
+    }
+
+    private fun pruneExpiredFrontstageActionCues() {
+        while (recentFrontstageActionCues.firstOrNull()?.expiresAfterTurn?.let { expiry -> expiry < turnCount } == true) {
+            recentFrontstageActionCues.removeFirst()
+        }
     }
 
     private fun addMessage(
@@ -10203,6 +10350,17 @@ class FoundationGameSession internal constructor(
         vararg arguments: RenderTextArgumentSnapshot,
     ) {
         addMessage(
+            RenderLogEventSnapshot(
+                message = RenderTextTokenSnapshot(key, arguments.toList()),
+            ),
+        )
+    }
+
+    private fun addFrontstageMessage(
+        key: String,
+        vararg arguments: RenderTextArgumentSnapshot,
+    ) {
+        addFrontstageMessage(
             RenderLogEventSnapshot(
                 message = RenderTextTokenSnapshot(key, arguments.toList()),
             ),

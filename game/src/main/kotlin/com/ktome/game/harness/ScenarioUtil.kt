@@ -428,7 +428,9 @@ fun routeProgressCommand(
                 map = session.map,
                 start = observation.playerPosition,
                 goal = bossPoint,
-                blocked = (occupiedTiles + hazardTiles) - bossPoint,
+                // Offscreen boss pursuit must not freeze on transient hazard telegraphs,
+                // otherwise the harness can orbit outside the arena without ever reacquiring the boss.
+                blocked = occupiedTiles - bossPoint,
             )
         val nextStep = path.getOrNull(1) ?: return null
         return PlayerCommand.Move(nextStep.deltaFrom(observation.playerPosition))

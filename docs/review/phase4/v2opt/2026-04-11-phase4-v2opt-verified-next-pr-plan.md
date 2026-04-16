@@ -354,9 +354,12 @@
 **范围**
 
 1. `tools/build/reports/phase4/whitebox/mapgen/whitebox-mapgen-summary.json`
-2. `game/src/main/resources/data/mapgen/*`
-3. `client/src/main/kotlin/com/ktome/client/render/*`
-4. `game/src/main/resources/i18n/*.json`
+2. `core/src/main/kotlin/com/ktome/core/mapgen/*`
+3. `core/src/main/kotlin/com/ktome/core/snapshot/RenderSnapshot.kt`
+4. `game/src/main/resources/data/mapgen/*`
+5. `game/src/main/kotlin/com/ktome/game/FoundationGameSession.kt`
+6. `client/src/main/kotlin/com/ktome/client/render/*`
+7. `game/src/main/resources/i18n/*.json`
 
 **核心改动**
 
@@ -385,6 +388,16 @@
 ./gradlew verifyOwner
 ./gradlew phase4Report
 ```
+
+**实施冻结补充（2026-04-16）**
+
+1. `greenwood_fringe` 为了把 `distinctEntranceLayoutCount` 稳定抬到 `>1`，已从单 `zone -> profile` 收口到 floor-aware `mapgenProfileBindings`，正式 resolver contract 变为 `zoneId + floorIndex -> profile`。
+2. 当前 white-box 关闭口径不再使用旧的 `1 / 1 / 3` 基线；`whiteBoxMapgen` 当前 close-out 证据固定为 `greenwood_fringe = 2 / 2 / 5`，并同时覆盖 `hidden.branch + hidden.critical.adjacent` 两个 hidden anchor family。
+3. frontstage readability 的正式 client boundary 已明确扩成：
+   - `RenderSnapshot.uiState.frontstageReadability`
+   - `RenderSnapshot.uiState.recentRewards[*].detailText`
+   - `FoundationGameSession` 单路径映射到 `TileRenderModel / AsciiRenderModel`
+4. `clientSmoke` / `goldenScreenshot` / render tests 在本 PR 的 close-out 里不能只断言标题；至少一条 frontstage 内容行或 reward detail 行必须进入正式 client 断言。
 
 ---
 
