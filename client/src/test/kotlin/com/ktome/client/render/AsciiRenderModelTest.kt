@@ -13,8 +13,11 @@ import com.ktome.core.snapshot.BossVariantRenderSnapshot
 import com.ktome.core.snapshot.CellVisibilitySnapshot
 import com.ktome.core.snapshot.CombatFeedbackSnapshot
 import com.ktome.core.snapshot.CombatFeedbackTypeSnapshot
+import com.ktome.core.snapshot.FrontstageReadabilitySnapshot
 import com.ktome.core.snapshot.GridPointSnapshot
 import com.ktome.core.snapshot.MapCellSnapshot
+import com.ktome.core.snapshot.RewardPresentationEntrySnapshot
+import com.ktome.core.snapshot.RewardPresentationSourceSnapshot
 import com.ktome.core.snapshot.PlayerStatusSnapshot
 import com.ktome.core.snapshot.RenderLogEventSnapshot
 import com.ktome.core.snapshot.RenderMetadataSnapshot
@@ -141,6 +144,47 @@ class AsciiRenderModelTest {
             )
 
         assertEquals("#FF7A3C", model.actorGlyphs.single { glyph -> glyph.x == 1 && glyph.y == 0 }.colorHex)
+    }
+
+    @Test
+    fun `ascii render model shows frontstage section and recent reward detail line`() {
+        val localizer = LocalizationBundle.load().translator(GameLocale.EN_US)
+        val baseSnapshot = sampleSnapshot(logEvents = emptyList())
+        val model =
+            AsciiRenderer.buildRenderModel(
+                localizer = localizer,
+                visualResolver = sampleResolver(),
+                snapshot =
+                    baseSnapshot.copy(
+                        uiState =
+                            baseSnapshot.uiState.copy(
+                                recentRewards =
+                                    listOf(
+                                        RewardPresentationEntrySnapshot(
+                                            source = RewardPresentationSourceSnapshot.SECRET_ZONE,
+                                            sourceLabelKey = "ui.reward.source.secret_zone",
+                                            itemDisplayName = RenderTextTokenSnapshot("tile.floor.name"),
+                                            detailText =
+                                                RenderTextTokenSnapshot(
+                                                    "ui.inspect.passive.hp_regen_turn",
+                                                    listOf(RenderTextArgumentSnapshot(name = "amount", value = "2")),
+                                                ),
+                                        ),
+                                    ),
+                                frontstageReadability =
+                                    FrontstageReadabilitySnapshot(
+                                        terrainHighlights = listOf(RenderTextTokenSnapshot("ui.hud.frontstage.terrain.water")),
+                                        recentActionHighlights = listOf(RenderTextTokenSnapshot("log.search.no_target")),
+                                    ),
+                            ),
+                    ),
+                overlayState = OverlayState(mode = UiMode.MAP),
+            )
+
+        val sidebarTexts = model.sidebarLines.map { line -> line.text }
+        assertTrue(sidebarTexts.contains(localizer.text("ui.sidebar.frontstage")))
+        assertTrue(sidebarTexts.any { text -> text.contains(localizer.text("ui.hud.frontstage.terrain.water")) })
+        assertTrue(sidebarTexts.any { text -> text.contains(localizer.text("ui.inspect.passive.hp_regen_turn", "amount" to 2)) })
     }
 
     private fun sampleResolver(): VisualManifestResolver =

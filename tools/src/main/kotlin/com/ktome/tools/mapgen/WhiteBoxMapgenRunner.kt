@@ -203,7 +203,9 @@ object WhiteBoxMapgenRunner {
         val header =
             phase4HarnessHeader(harnessId = HARNESS_ID, seedList = distinctSeedList)
                 .toVerificationReportHeader(corpusId = CORPUS_ID)
-        val requiredHiddenAnchorFamiliesByZone = requiredHiddenAnchorFamiliesByZone(executionContext.schemaCatalog)
+        val upgradedZones = executionContext.schemaCatalog.zones.filter(ZoneSchemaV2::isPhase4Upgraded).sortedBy(ZoneSchemaV2::id)
+        val requiredHiddenAnchorFamiliesByZoneAndFloor =
+            requiredHiddenAnchorFamiliesByZoneAndFloor(executionContext.schemaCatalog, upgradedZones)
         val corpus =
             WhiteBoxCorpusSpec(
                 corpusId = CORPUS_ID,
@@ -218,7 +220,8 @@ object WhiteBoxMapgenRunner {
                 WhiteBoxMapgenCaseData(
                     executedCase = executedCase,
                     smokeResult = smokeResult,
-                    requiredHiddenAnchorFamilies = requiredHiddenAnchorFamiliesByZone[testCase.request.zoneId].orEmpty(),
+                    requiredHiddenAnchorFamilies =
+                        requiredHiddenAnchorFamiliesByZoneAndFloor[testCase.request.zoneId to testCase.request.floorIndex].orEmpty(),
                 )
             }
         val caseReports =

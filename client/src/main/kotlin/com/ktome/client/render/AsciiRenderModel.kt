@@ -171,6 +171,12 @@ internal object AsciiRenderModelBuilder {
                 }
                 lines += blankLine()
             }
+            val frontstageLines = frontstageSidebarLines(localizer, snapshot)
+            if (frontstageLines.isNotEmpty()) {
+                lines += AsciiTextLine(localizer.text("ui.sidebar.frontstage"), AsciiTextTone.GOLD)
+                lines += frontstageLines
+                lines += blankLine()
+            }
         }
 
         lines += AsciiTextLine(localizer.text("ui.sidebar.equipment"), AsciiTextTone.GOLD)
@@ -593,6 +599,9 @@ internal object AsciiRenderModelBuilder {
                         ),
                         rewardPresentationTone(entry.source),
                     )
+                entry.detailText?.let { detailText ->
+                    lines += AsciiTextLine(recentRewardDetailText(renderTextToken(localizer, detailText)), AsciiTextTone.LIGHT_GRAY)
+                }
             }
         }
 
@@ -608,6 +617,22 @@ internal object AsciiRenderModelBuilder {
             RewardPresentationSourceSnapshot.SUPPORT -> AsciiTextTone.LIGHT_GRAY
             RewardPresentationSourceSnapshot.HIDDEN_EVENT -> AsciiTextTone.MAGENTA
             RewardPresentationSourceSnapshot.SECRET_ZONE -> AsciiTextTone.GREEN
+        }
+
+    private fun frontstageSidebarLines(
+        localizer: Localizer,
+        snapshot: RenderSnapshot,
+    ): List<AsciiTextLine> =
+        frontstagePresentationEntries(snapshot).map { entry ->
+            AsciiTextLine(
+                text = renderTextToken(localizer, entry.token),
+                tone =
+                    when (entry.kind) {
+                        FrontstagePresentationKind.MUTATION -> AsciiTextTone.WHITE
+                        FrontstagePresentationKind.TERRAIN -> AsciiTextTone.CYAN
+                        FrontstagePresentationKind.ACTION -> AsciiTextTone.GREEN
+                    },
+            )
         }
 
     private fun terrainPresentation(

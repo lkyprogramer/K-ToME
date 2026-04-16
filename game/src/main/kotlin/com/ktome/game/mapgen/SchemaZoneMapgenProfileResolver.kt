@@ -12,9 +12,12 @@ class SchemaZoneMapgenProfileResolver(
     private val zoneById: Map<String, ZoneSchemaV2> = zones.associateBy(ZoneSchemaV2::id)
     private val profileById: Map<String, ZoneMapgenProfile> = profiles.associateBy(ZoneMapgenProfile::id)
 
-    override fun resolve(zoneId: String): ZoneMapgenProfile {
+    override fun resolve(
+        zoneId: String,
+        floorIndex: Int,
+    ): ZoneMapgenProfile {
         val zone = requireNotNull(zoneById[zoneId]) { "Unknown zone '$zoneId' for ZoneMapgenProfileResolver." }
-        val explicitProfileId = zone.mapgenProfileId
+        val explicitProfileId = zone.resolvedMapgenProfileId(floorIndex)
         if (explicitProfileId != null) {
             val profile = requireNotNull(profileById[explicitProfileId]) {
                 "Zone '${zone.id}' references unknown mapgen profile '$explicitProfileId'."

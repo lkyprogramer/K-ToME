@@ -29,7 +29,10 @@ zones:
     schemaVersion: 2
     tags: [zone, foundation, mandatory]
     biome: forest
-    mapgenProfileId: zone_mapgen.greenwood_fringe.phase4
+    mapgenProfileId: zone_mapgen.greenwood_fringe.phase4.floor1
+    mapgenProfileBindings:
+      - floorIndex: 2
+        profileId: zone_mapgen.greenwood_fringe.phase4.floor2
     rewardProfileId: zone_reward.greenwood_fringe.phase4
     floorCount: 2
     mapSize: { width: 70, height: 45 }

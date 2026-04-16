@@ -41,6 +41,19 @@ class Phase4MapgenSchemaTest {
             assertEquals(expectedRewardHints.getValue(zoneId).second, rewardProfile.qualityBonus)
             assertEquals(expectedRewardHints.getValue(zoneId).third, rewardProfile.baseRewardBudget)
         }
+
+        val greenwood = catalog.zones.first { zone -> zone.id == "greenwood_fringe" }
+        assertEquals("zone_mapgen.greenwood_fringe.phase4.floor1", greenwood.mapgenProfileId)
+        assertEquals(
+            listOf(2 to "zone_mapgen.greenwood_fringe.phase4.floor2"),
+            greenwood.mapgenProfileBindings.map { binding -> binding.floorIndex to binding.profileId },
+        )
+        assertEquals("zone_mapgen.greenwood_fringe.phase4.floor1", greenwood.resolvedMapgenProfileId(floorIndex = 1))
+        assertEquals("zone_mapgen.greenwood_fringe.phase4.floor2", greenwood.resolvedMapgenProfileId(floorIndex = 2))
+        assertEquals(
+            listOf("forest", "bog"),
+            requireNotNull(profilesById["zone_mapgen.greenwood_fringe.phase4.floor2"]).allowedBiomeFamilies.toList(),
+        )
     }
 
     @Test
@@ -73,6 +86,10 @@ class Phase4MapgenSchemaTest {
             assertNotNull(zone.rewardProfileId)
             assertTrue(zone.mapgenProfileId in targetProfileIds, "Zone '$zoneId' should bind an explicit mapgen profile.")
             assertTrue(zone.rewardProfileId in rewardProfileIds, "Zone '$zoneId' should bind an explicit reward profile.")
+            assertTrue(
+                zone.mapgenProfileBindings.all { binding -> binding.profileId in targetProfileIds },
+                "Zone '$zoneId' should keep floor-aware mapgen bindings pinned to explicit profiles.",
+            )
         }
     }
 }

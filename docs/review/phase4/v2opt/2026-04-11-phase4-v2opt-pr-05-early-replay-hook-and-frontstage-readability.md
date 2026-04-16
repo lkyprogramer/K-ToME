@@ -152,6 +152,14 @@
 2. 记录最少包含：变化原因、新的 owner/contract、额外 validation、是否影响范围/非目标。
 3. 只有当调整越过本 PR 非目标、需要新核心抽象族，或必须改写 Phase 4 authority/checklist 口径时，才升级为新 PR 文档，而不是在本 PR 内继续扩张。
 
+### 6.4 Implementation Adjustment（2026-04-15）
+
+1. **变化原因**：现有 `greenwood_fringe` 仍是每-zone 单 mapgen profile 绑定，content-only 扩容只能增加 pattern/vault 变化，无法把 `distinctEntranceLayoutCount` 从 `1` 稳定抬到 `>1`。
+2. **新的 owner / contract**：在 `game` schema 增加 floor-aware `mapgenProfileBindings`，并把 `ZoneMapgenProfileResolver` 收口到 `zoneId + floorIndex -> profile`；该调整只影响 `game` content/schema wiring 与 mapgen resolver boundary，不把 floor 语义下沉到 `core` 规则真源，也不改 `ZoneRewardProfile`。
+3. **范围影响**：`greenwood_fringe` 正式拆为 `floor1 / floor2` 两套 profile。`floor1` 保留当前 `hidden.branch -> greenwood_hidden_cache`；`floor2` 切到 `hidden.critical.adjacent` 并绑定第二个 greenwood secret zone。为强化 floor 间 replay hook 差异，在不新增新 terrain 系统的前提下，相关 profile 同时把部分 `terrainTagWeights` 从单 `WATER` 分布调整为 `WATER + ICE` 的已有 tag 组合。
+4. **验证影响**：仍沿用 `verifyChanged -> whiteBoxMapgen -> phase4Report` 的 Task 1 owner gate，不新增 Phase 4 authority/checklist 或 report schema 口径；验收只要求 white-box/canonical report 体现 replay hook 指标提升。
+5. **golden 稳定化补充**：sample-pack / frontstage 相关 golden 录制在本 PR 内补做了 deterministic 收口，样例运行固定为显式 hidden binding 路径（`search.underground_river.crystal_rift`）并使用稳定 seed，避免文件系统 sample-pack 路径因为入口选择漂移导致无关 hash 抖动。
+
 ---
 
 ## 7. 技术方案

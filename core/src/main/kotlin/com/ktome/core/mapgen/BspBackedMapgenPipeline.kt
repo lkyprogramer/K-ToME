@@ -7,7 +7,7 @@ class BspBackedMapgenPipeline(
     private val profileResolver: ZoneMapgenProfileResolver,
 ) : MapgenPipeline {
     override fun run(request: MapgenRequest): GeneratedFloor {
-        val profile = profileResolver.resolve(request.zoneId)
+        val profile = profileResolver.resolve(request.zoneId, request.floorIndex)
         val map =
             BspGenerator(
                 seed = request.seed,

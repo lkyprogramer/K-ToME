@@ -468,7 +468,10 @@ class SessionSnapshotMapperTest {
     fun `from save snapshot regenerates generated floor metadata when phase4 metadata is present`() {
         val resolver =
             object : ZoneMapgenProfileResolver {
-                override fun resolve(zoneId: String): ZoneMapgenProfile =
+                override fun resolve(
+                    zoneId: String,
+                    floorIndex: Int,
+                ): ZoneMapgenProfile =
                     ZoneMapgenProfile(
                         id = "$zoneId.test",
                         zoneId = zoneId,

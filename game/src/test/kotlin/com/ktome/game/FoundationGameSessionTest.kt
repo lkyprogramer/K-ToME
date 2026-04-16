@@ -20,6 +20,7 @@ import com.ktome.core.ecs.BlocksMovement
 import com.ktome.core.ecs.CombatProfile
 import com.ktome.core.ecs.DerivedStats
 import com.ktome.core.ecs.EntityId
+import com.ktome.core.ecs.EliteMutationLoadout
 import com.ktome.core.ecs.Experience
 import com.ktome.core.ecs.Health
 import com.ktome.core.ecs.Interactable
@@ -305,6 +306,64 @@ class FoundationGameSessionTest {
         assertEquals(setOf(TerrainTag.ICE), restoredOverride.terrainTags)
         assertEquals("terrain_cold_water_freeze", restoredOverride.sourceRuleId)
         assertEquals(3, restoredOverride.remainingTurns)
+    }
+
+    @Test
+    fun `frontstage readability surfaces mutation terrain and recent action cues without inspect`() {
+        val session =
+            GameModule.newFoundationSession(
+                config = FoundationGameConfig(seed = 20260331L, zoneId = "greenwood_fringe", playerProfessionId = "rogue"),
+                saveManager = SaveManager(tempDir.resolve("frontstage-readability-save")),
+            )
+        clearMonsters(session)
+        val dummyId = installCombatDummy(session, id = "frontstage_mutation_dummy")
+        runtimeWorld(session).add(dummyId, EliteMutationLoadout(mutableListOf("elite.phase_runner")))
+        session.automationSetTerrainOverride(
+            point = session.playerPosition(),
+            terrainOverride =
+                TerrainOverride(
+                    terrainTags = setOf(TerrainTag.OIL),
+                    sourceRuleId = "terrain_fire_oil_ignite",
+                    remainingTurns = 3,
+                    tickDamageType = DamageType.FIRE,
+                    tickDamage = 2,
+                ),
+        )
+
+        assertFalse(session.perform(PlayerCommand.Search))
+
+        val snapshot = session.renderSnapshot()
+        assertEquals(listOf("ui.hud.frontstage.mutation_line"), snapshot.uiState.frontstageReadability.mutationHighlights.map { token -> token.key })
+        assertEquals(
+            listOf("ui.inspect.terrain.rule", "ui.inspect.terrain.tick_damage"),
+            snapshot.uiState.frontstageReadability.terrainHighlights.map { token -> token.key },
+        )
+        assertEquals(listOf("log.search.no_target"), snapshot.uiState.frontstageReadability.recentActionHighlights.map { token -> token.key })
+
+        repeat(4) {
+            assertTrue(session.perform(PlayerCommand.Wait))
+        }
+        assertTrue(session.renderSnapshot().uiState.frontstageReadability.recentActionHighlights.isEmpty())
+    }
+
+    @Test
+    fun `frontstage readability does not surface already resolved search noise`() {
+        val session =
+            GameModule.newFoundationSession(
+                config = FoundationGameConfig(seed = 20260416L, zoneId = "greenwood_fringe", playerProfessionId = "rogue"),
+                saveManager = SaveManager(tempDir.resolve("frontstage-search-noise-save")),
+            )
+        clearMonsters(session)
+        val entrance = revealHiddenEntrance(session)
+
+        repeat(4) {
+            assertTrue(session.perform(PlayerCommand.Wait))
+        }
+
+        movePlayerTo(session, hiddenEntranceSearchPoint(session, entrance.bindingId))
+        assertFalse(session.perform(PlayerCommand.Search))
+        assertEquals(emptyList<String>(), session.renderSnapshot().uiState.frontstageReadability.recentActionHighlights.map { token -> token.key })
+        assertNotNull(logEventByKey(session, "log.search.already_resolved"))
     }
 
     @Test

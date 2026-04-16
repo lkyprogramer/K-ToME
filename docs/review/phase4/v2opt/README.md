@@ -10,7 +10,7 @@
 | `V2OPT-PR-02` | 成长身份救火与职业化掉落分发 | `game`, `tools`, 少量 `core` 接线 | `XL`（`6~8` 人日） | 不新增图片/音频；复用现有 item 资源 | 必须把掉落分发、base item 底盘和 long-run owner metric 放在同一 PR；拆开会形成错误中间态 |
 | `V2OPT-PR-03` | Secret Reward 身份重建与 Organic Hidden 闭环 | `game`, `tools`, 少量 `client` 提示 | `L`（`4~6` 人日） | 不新增图片/音频；复用现有 hidden/secret 资源 | 必须把 reward identity 和 organic hidden 放在同一 PR；只修其一没有体验意义 |
 | `V2OPT-PR-04` | Terrain / Mutation 语义收口与主题防稀释 | `game`, `tools`, 少量 `client` 文案 | `M-L`（`3~5` 人日） | 不新增图片/音频；复用现有 terrain/mutation 资源 | 保持单 PR；只修语义、权重和主题约束，不混前台抛光 |
-| `V2OPT-PR-05` | 前 30 分钟 Replay Hook 与 Frontstage Readability | `game`, `client`, `tools` | `M`（`2~4` 人日） | 不新增图片/音频；复用现有 terrain/mutation/hidden/item 资源并前台化 | 保持单 PR；聚焦前期 mapgen 记忆点和前台反馈，不再动深层掉落/隐藏合同 |
+| `V2OPT-PR-05` | 前 30 分钟 Replay Hook 与 Frontstage Readability | `core`, `game`, `client`, `tools` | `M`（`2~4` 人日） | 不新增图片/音频；复用现有 terrain/mutation/hidden/item 资源并前台化 | 保持单 PR；聚焦前期 mapgen 记忆点和前台反馈，不再动深层掉落/隐藏合同 |
 
 ## 依赖顺序
 
@@ -60,6 +60,16 @@ V2OPT-PR-05
    - failed search 要表达“这里确实有内容，但你没过检定/前置”
    - secret reward 文案必须和普通 route/cache reward 区分，recent reward source 继续保留 `SECRET_ZONE`
 6. 本 PR 默认不新增任何 `visual/audio` family；hidden/secret 体验必须通过 reward identity、runtime feedback 与 owner/report 收口证明，而不是通过新增资源族掩盖问题。
+
+## V2OPT-PR-05 实施冻结补充（2026-04-16）
+
+1. `greenwood_fringe` 的 replay hook 不再停留在旧基线 `distinctPatternRoomCount=1 / distinctEntranceLayoutCount=1 / differenceCategoryCount=3`；当前 white-box close-out 口径固定为 floor-aware profile + second secret anchor family，`whiteBoxMapgen` 产物已抬到 `2 / 2 / 5`。
+2. `V2OPT-PR-05` 的正式 readability boundary 固定为：
+   - `RenderSnapshot.uiState.frontstageReadability`
+   - `RenderSnapshot.uiState.recentRewards[*].detailText`
+   - `FoundationGameSession -> Tile/Ascii render model` 的单一路径消费
+3. `client` 侧不得只验证 `ui.sidebar.frontstage` 标题出现；最小 client close-out 还必须断言至少一条 frontstage 内容行或 reward detail 行进入正式 render model / canvas 路径。
+4. 这次 PR 触及 `RenderSnapshot` 字段、tile/ascii golden 语义与 `ZoneMapgenProfileResolver(zoneId, floorIndex)` 边界，后续引用 `V2OPT-PR-05` 时必须按上述合同理解，不再按旧的 `game + client` 窄范围口径描述。
 
 ## PR-06 之后的统一验证约束
 

@@ -207,6 +207,7 @@ data class RenderUiStateSnapshot(
     val inscriptions: List<InscriptionSlotSnapshot> = emptyList(),
     val inventory: List<InventoryEntrySnapshot>,
     val recentRewards: List<RewardPresentationEntrySnapshot> = emptyList(),
+    val frontstageReadability: FrontstageReadabilitySnapshot = FrontstageReadabilitySnapshot(),
     val targetablePositions: List<GridPointSnapshot>,
     val searchPromptLabelKey: String? = null,
     val shardBalance: Int = 0,
@@ -379,6 +380,14 @@ data class RewardPresentationEntrySnapshot(
     val source: RewardPresentationSourceSnapshot,
     val sourceLabelKey: String,
     val itemDisplayName: RenderTextTokenSnapshot,
+    val detailText: RenderTextTokenSnapshot? = null,
+)
+
+@Serializable
+data class FrontstageReadabilitySnapshot(
+    val mutationHighlights: List<RenderTextTokenSnapshot> = emptyList(),
+    val terrainHighlights: List<RenderTextTokenSnapshot> = emptyList(),
+    val recentActionHighlights: List<RenderTextTokenSnapshot> = emptyList(),
 )
 
 @Serializable

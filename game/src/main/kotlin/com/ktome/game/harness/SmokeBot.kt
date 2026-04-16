@@ -70,7 +70,7 @@ class SmokeBot : RunBot {
             LoadoutPlanner.preferredLoadoutCommand(observation)?.let { return it }
         }
         if (
-            observation.inventoryItems.size < SMOKE_BOT_AUTO_PICKUP_LIMIT &&
+            observation.inventoryItems.size < GROUND_ITEM_PICKUP_LIMIT &&
             observation.visibleGroundItemPositions.any { it == observation.playerPosition } &&
             !shouldSkipFreshDropPickup(observation) &&
             canManageInventorySafely(observation)
@@ -885,7 +885,7 @@ class SmokeBot : RunBot {
             } else {
                 MAX_ITEM_DETOUR_DISTANCE
             }
-        if (observation.inventoryItems.size >= SMOKE_BOT_AUTO_PICKUP_LIMIT) {
+        if (observation.inventoryItems.size >= GROUND_ITEM_PICKUP_LIMIT) {
             return null
         }
         val target =
@@ -1646,6 +1646,7 @@ class SmokeBot : RunBot {
         const val NAVIGATION_REPEAT_THRESHOLD: Int = 2
         const val BOSS_MEMORY_CONFIRM_RADIUS: Int = 2
         const val SMOKE_BOT_AUTO_PICKUP_LIMIT: Int = 10
+        const val GROUND_ITEM_PICKUP_LIMIT: Int = SMOKE_BOT_AUTO_PICKUP_LIMIT - 1
         const val INVENTORY_PRUNE_TRIGGER_SIZE: Int = SMOKE_BOT_AUTO_PICKUP_LIMIT
         const val RECENT_DROP_PICKUP_COOLDOWN_TURNS: Int = 12
         val SUSTAIN_AFFIX_IDS: Set<String> = setOf("of_life", "of_regeneration", "of_cleansing")

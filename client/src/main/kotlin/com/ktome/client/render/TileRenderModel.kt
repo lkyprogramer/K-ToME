@@ -241,6 +241,7 @@ internal object TileRenderModelBuilder {
         val playerStatus = snapshot.uiState.playerStatus
         val resourceHud = ResourceHud.build(localizer, snapshot)
         val focusActor = focusedActor(snapshot, overlayState, actorById, cellByPoint)
+        val frontstageFocus = frontstageFocus(localizer, snapshot, overlayState, focusActor)
         val statusIcons = StatusIconResolver.resolveIcons(visualResolver, player.statusEffects)
         val hotbar =
                 snapshot.uiState.talents.map { talent ->
@@ -258,7 +259,9 @@ internal object TileRenderModelBuilder {
                         },
                 )
             }
-        val focusName = focusActor?.let { actor -> localizer.text(actor.nameKey) }
+        val focusName =
+            focusActor?.let { actor -> localizer.text(actor.nameKey) }
+                ?: frontstageFocus?.first
         val focusLines =
             focusActor?.let { actor ->
                 listOf(
@@ -277,7 +280,7 @@ internal object TileRenderModelBuilder {
                         } ?: localizer.text("ui.inspect.mutation.line", "mutation" to localizer.text(mutation.nameKey))
                     } +
                     actor.statusEffects.map { effect -> StatusHudRenderer.renderTurns(localizer, effect) }
-            } ?: emptyList()
+            } ?: frontstageFocus?.second.orEmpty()
 
         return TileHudModel(
             playerName = localizer.text(player.nameKey),
@@ -325,6 +328,11 @@ internal object TileRenderModelBuilder {
                 if (snapshot.overlays.isNotEmpty()) {
                     rows += TileTextRow(localizer.text("ui.sidebar.warnings"), TileTextTone.GOLD)
                     rows += TelegraphRenderer.tileRows(localizer, snapshot)
+                }
+                val frontstageRows = frontstageSidebarRows(localizer, snapshot)
+                if (frontstageRows.isNotEmpty()) {
+                    rows += TileTextRow(localizer.text("ui.sidebar.frontstage"), TileTextTone.GOLD)
+                    rows += frontstageRows
                 }
                 rows += TileTextRow(localizer.text("ui.sidebar.equipment"), TileTextTone.GOLD)
                 snapshot.uiState.equipment.forEach { equipment ->
@@ -763,6 +771,9 @@ internal object TileRenderModelBuilder {
                         ),
                         rewardPresentationTone(entry.source),
                     )
+                entry.detailText?.let { detailText ->
+                    rows += TileTextRow(recentRewardDetailText(renderTextToken(localizer, detailText)), TileTextTone.LIGHT_GRAY)
+                }
             }
         }
 
@@ -803,6 +814,38 @@ internal object TileRenderModelBuilder {
         val actorId = cellByPoint[focusPoint]?.actorEntityId ?: return null
         return actorById[actorId]
     }
+
+    private fun frontstageFocus(
+        localizer: Localizer,
+        snapshot: RenderSnapshot,
+        overlayState: OverlayState,
+        focusActor: ActorRenderSnapshot?,
+    ): Pair<String, List<String>>? {
+        if (overlayState.mode != UiMode.MAP || focusActor != null) {
+            return null
+        }
+        val lines = frontstagePresentationEntries(snapshot).map { entry -> renderTextToken(localizer, entry.token) }
+        if (lines.isEmpty()) {
+            return null
+        }
+        return localizer.text("ui.hud.frontstage.title") to lines
+    }
+
+    private fun frontstageSidebarRows(
+        localizer: Localizer,
+        snapshot: RenderSnapshot,
+    ): List<TileTextRow> =
+        frontstagePresentationEntries(snapshot).map { entry ->
+            TileTextRow(
+                text = renderTextToken(localizer, entry.token),
+                tone =
+                    when (entry.kind) {
+                        FrontstagePresentationKind.MUTATION -> TileTextTone.WHITE
+                        FrontstagePresentationKind.TERRAIN -> TileTextTone.CYAN
+                        FrontstagePresentationKind.ACTION -> TileTextTone.GREEN
+                    },
+            )
+        }
 
     private fun resourceTone(resourceTypeId: String): TileTextTone =
         when (resourceTypeId) {

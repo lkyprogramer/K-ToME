@@ -19,7 +19,10 @@ import org.junit.jupiter.api.Test
 class MapgenContractTest {
     private val resolver =
         object : ZoneMapgenProfileResolver {
-            override fun resolve(zoneId: String): ZoneMapgenProfile =
+            override fun resolve(
+                zoneId: String,
+                floorIndex: Int,
+            ): ZoneMapgenProfile =
                 ZoneMapgenProfile(
                     id = "$zoneId.test",
                     zoneId = zoneId,
@@ -411,7 +414,10 @@ class MapgenContractTest {
 
     private fun singleTagProfileResolver(weight: Float): ZoneMapgenProfileResolver =
         object : ZoneMapgenProfileResolver {
-            override fun resolve(zoneId: String): ZoneMapgenProfile =
+            override fun resolve(
+                zoneId: String,
+                floorIndex: Int,
+            ): ZoneMapgenProfile =
                 ZoneMapgenProfile(
                     id = "$zoneId.single-tag",
                     zoneId = zoneId,

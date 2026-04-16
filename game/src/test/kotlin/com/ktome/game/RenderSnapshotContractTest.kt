@@ -20,13 +20,19 @@ import com.ktome.core.map.Point
 import com.ktome.core.resource.ResourceType
 import com.ktome.core.save.SaveManager
 import com.ktome.core.snapshot.CellVisibilitySnapshot
+import com.ktome.core.snapshot.FrontstageReadabilitySnapshot
 import com.ktome.core.snapshot.OverlayShapeSnapshot
+import com.ktome.core.snapshot.RewardPresentationEntrySnapshot
+import com.ktome.core.snapshot.RewardPresentationSourceSnapshot
 import com.ktome.core.snapshot.RenderSnapshotHasher
+import com.ktome.core.snapshot.RenderTextArgumentSnapshot
+import com.ktome.core.snapshot.RenderTextTokenSnapshot
 import com.ktome.core.stats.StatsCalculator
 import com.ktome.game.data.DataLoader
 import com.ktome.game.factory.EntityFactory
 import com.ktome.game.factory.ItemFactory
 import java.nio.file.Path
+import kotlinx.serialization.json.Json
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotEquals
@@ -60,6 +66,61 @@ class RenderSnapshotContractTest {
             RenderSnapshotHasher.sha256(left.renderSnapshot()),
             RenderSnapshotHasher.sha256(right.renderSnapshot()),
         )
+    }
+
+    @Test
+    fun `render snapshot ui state keeps frontstage readability and reward detail contract serializable`() {
+        val session =
+            GameModule.newFoundationSession(
+                config = FoundationGameConfig(seed = 20260318L, zoneId = "shattered_outpost", playerProfessionId = "vanguard"),
+                saveManager = SaveManager(tempDir.resolve("frontstage-serialization")),
+            )
+
+        val snapshot =
+            session.renderSnapshot().copy(
+                uiState =
+                    session.renderSnapshot().uiState.copy(
+                        recentRewards =
+                            listOf(
+                                RewardPresentationEntrySnapshot(
+                                    source = RewardPresentationSourceSnapshot.SECRET_ZONE,
+                                    sourceLabelKey = "ui.reward.source.secret_zone",
+                                    itemDisplayName = RenderTextTokenSnapshot("tile.floor.name"),
+                                    detailText =
+                                        RenderTextTokenSnapshot(
+                                            "ui.inspect.passive.hp_regen_turn",
+                                            listOf(RenderTextArgumentSnapshot(name = "amount", value = "2")),
+                                        ),
+                                ),
+                            ),
+                        frontstageReadability =
+                            FrontstageReadabilitySnapshot(
+                                mutationHighlights =
+                                    listOf(
+                                        RenderTextTokenSnapshot(
+                                            "ui.hud.frontstage.mutation_line",
+                                            listOf(
+                                                RenderTextArgumentSnapshot(name = "actor", valueKey = "actor.player.name"),
+                                                RenderTextArgumentSnapshot(name = "mutation", valueKey = "status.stealth.name"),
+                                                RenderTextArgumentSnapshot(
+                                                    name = "summary",
+                                                    valueToken = RenderTextTokenSnapshot("ui.inspect.mutation.summary.phase_runner"),
+                                                ),
+                                            ),
+                                        ),
+                                    ),
+                                terrainHighlights = listOf(RenderTextTokenSnapshot("ui.hud.frontstage.terrain.water")),
+                                recentActionHighlights = listOf(RenderTextTokenSnapshot("log.search.no_target")),
+                            ),
+                    ),
+            )
+
+        val encoded = Json.encodeToString(snapshot)
+        val decoded = Json.decodeFromString<com.ktome.core.snapshot.RenderSnapshot>(encoded)
+
+        assertEquals("ui.hud.frontstage.mutation_line", decoded.uiState.frontstageReadability.mutationHighlights.single().key)
+        assertEquals("ui.inspect.passive.hp_regen_turn", decoded.uiState.recentRewards.single().detailText?.key)
+        assertEquals("log.search.no_target", decoded.uiState.frontstageReadability.recentActionHighlights.single().key)
     }
 
     @Test

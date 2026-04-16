@@ -140,6 +140,7 @@ import com.ktome.game.data.schema.SchemaCombatProfile
 import com.ktome.game.data.schema.SchemaLevelRange
 import com.ktome.game.data.schema.SchemaMapSize
 import com.ktome.game.data.schema.SchemaOffset
+import com.ktome.game.data.schema.SchemaFloorMapgenProfileBinding
 import com.ktome.game.data.schema.SchemaStatModifier
 import com.ktome.game.data.schema.SchemaStats
 import com.ktome.game.data.schema.ShopNodeSchemaV2
@@ -1374,6 +1375,14 @@ class DataLoader(
                 tags = zone.optionalStringList("tags"),
                 biome = zone.requiredString("biome"),
                 mapgenProfileId = zone.optionalString("mapgenProfileId"),
+                mapgenProfileBindings =
+                    zone.optionalList("mapgenProfileBindings").map { rawBinding ->
+                        val binding = rawBinding.requiredMap()
+                        SchemaFloorMapgenProfileBinding(
+                            floorIndex = binding.requiredInt("floorIndex"),
+                            profileId = binding.requiredString("profileId"),
+                        )
+                    },
                 rewardProfileId = zone.optionalString("rewardProfileId"),
                 floorCount = zone.requiredInt("floorCount"),
                 mapSize = zone.requiredMap("mapSize").toSchemaMapSize(),

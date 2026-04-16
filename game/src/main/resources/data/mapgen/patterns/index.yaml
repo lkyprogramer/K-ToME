@@ -9,6 +9,11 @@ patternRooms:
     patternId: boardwalk_lane
     requiredTags: [bog, bridge]
     spawnWeight: 5
+  - id: pattern.greenwood.ambush_hideout
+    baseRoomId: room.route.hideout
+    patternId: hideout_switchback
+    requiredTags: [hidden_cache, ambush]
+    spawnWeight: 4
   - id: pattern.deep_iron.split_gallery
     baseRoomId: room.mine.gallery
     patternId: split_hall

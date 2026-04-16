@@ -45,6 +45,15 @@ class SolvabilityGoldenContractTest {
         assertGolden("golden/phase4/solvability/perception-abyssal_temple-floor1.json")
     }
 
+    @Test
+    fun `required hidden anchor families respect floor aware mapgen bindings`() {
+        assertEquals(setOf("hidden.branch"), requiredHiddenAnchorFamiliesForZoneFloor(schemaCatalog, zoneId = "greenwood_fringe", floorIndex = 1))
+        assertEquals(
+            setOf("hidden.critical.adjacent"),
+            requiredHiddenAnchorFamiliesForZoneFloor(schemaCatalog, zoneId = "greenwood_fringe", floorIndex = 2),
+        )
+    }
+
     private fun assertGolden(resourcePath: String) {
         val (zoneId, floorIndex, seed) = goldenCase(resourcePath)
         val actual = buildCaseJson(zoneId = zoneId, floorIndex = floorIndex, seed = seed)
@@ -71,7 +80,8 @@ class SolvabilityGoldenContractTest {
             )
         val graph = SolvabilityGraphBuilder.build(generatedFloor)
         val providedDiscoveryTags = primerDiscoveryTagsForCase(schemaCatalog = schemaCatalog, zoneId = zoneId, floorIndex = floorIndex)
-        val requiredHiddenAnchorFamilies = requiredHiddenAnchorFamiliesForZone(schemaCatalog = schemaCatalog, zoneId = zoneId)
+        val requiredHiddenAnchorFamilies =
+            requiredHiddenAnchorFamiliesForZoneFloor(schemaCatalog = schemaCatalog, zoneId = zoneId, floorIndex = floorIndex)
         val observedHiddenAnchorFamilies = observedHiddenAnchorFamiliesForFloor(generatedFloor)
         val proof =
             SolvabilityProver.prove(

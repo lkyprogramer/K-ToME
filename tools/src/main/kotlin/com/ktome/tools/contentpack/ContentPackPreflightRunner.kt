@@ -89,7 +89,7 @@ object ContentPackPreflightRunner {
     }
 
     private fun runPrecedenceFixtureCase(): ContentPackPreflightCaseResult {
-        val harnessSpec = ContentPackFixtureCatalog.harnessSpec(ContentPackFixtureCatalog.samplePrecedenceFixturePackId)
+        val harnessSpec = ContentPackFixtureCatalog.harnessSpec(ContentPackFixtureCatalog.samplePackId)
         val precedenceScenario = harnessSpec.dualPackScenarios.single()
         val selection =
             ContentPackFixtureCatalog.selection(

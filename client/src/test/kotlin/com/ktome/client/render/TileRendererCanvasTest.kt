@@ -17,6 +17,7 @@ import com.ktome.core.snapshot.CombatFeedbackSnapshot
 import com.ktome.core.snapshot.CombatFeedbackTypeSnapshot
 import com.ktome.core.snapshot.DescriptionModelSnapshot
 import com.ktome.core.snapshot.DescriptionValueSnapshot
+import com.ktome.core.snapshot.FrontstageReadabilitySnapshot
 import com.ktome.core.snapshot.GridPointSnapshot
 import com.ktome.core.snapshot.InventoryEntrySnapshot
 import com.ktome.core.snapshot.ItemRenderSnapshot
@@ -24,6 +25,8 @@ import com.ktome.core.snapshot.MapCellSnapshot
 import com.ktome.core.snapshot.OverlayRenderSnapshot
 import com.ktome.core.snapshot.OverlayShapeSnapshot
 import com.ktome.core.snapshot.PlayerStatusSnapshot
+import com.ktome.core.snapshot.RewardPresentationEntrySnapshot
+import com.ktome.core.snapshot.RewardPresentationSourceSnapshot
 import com.ktome.core.snapshot.RenderLogEventSnapshot
 import com.ktome.core.snapshot.RenderMetadataSnapshot
 import com.ktome.core.snapshot.RenderSnapshot
@@ -254,6 +257,51 @@ class TileRendererCanvasTest {
         assertTrue(sortedGaugeBackgrounds.zipWithNext().all { (lower, upper) -> upper.y >= lower.y + lower.height + 4f })
         assertTrue(sortedGaugeBackgrounds.last().y + sortedGaugeBackgrounds.last().height <= subtitleDraw.y)
         assertTrue(subtitleDraw.y - (sortedGaugeBackgrounds.last().y + sortedGaugeBackgrounds.last().height) >= 4f)
+    }
+
+    @Test
+    fun `render canvas shows frontstage focus card and recent reward detail text in map mode`() {
+        val canvas = RecordingTileCanvas()
+        val localizer = LocalizationBundle.load().translator(GameLocale.EN_US)
+        val baseSnapshot = sampleSnapshot(width = 11, height = 20)
+        val snapshot =
+            baseSnapshot.copy(
+                uiState =
+                    baseSnapshot.uiState.copy(
+                        recentRewards =
+                            listOf(
+                                RewardPresentationEntrySnapshot(
+                                    source = RewardPresentationSourceSnapshot.SECRET_ZONE,
+                                    sourceLabelKey = "ui.reward.source.secret_zone",
+                                    itemDisplayName = RenderTextTokenSnapshot("tile.floor.name"),
+                                    detailText =
+                                        RenderTextTokenSnapshot(
+                                            "ui.inspect.passive.hp_regen_turn",
+                                            listOf(RenderTextArgumentSnapshot(name = "amount", value = "2")),
+                                        ),
+                                ),
+                            ),
+                        frontstageReadability =
+                            FrontstageReadabilitySnapshot(
+                                terrainHighlights = listOf(RenderTextTokenSnapshot("ui.hud.frontstage.terrain.water")),
+                                recentActionHighlights = listOf(RenderTextTokenSnapshot("log.search.no_target")),
+                            ),
+                    ),
+            )
+
+        TileRenderer.renderToCanvas(
+            localizer = localizer,
+            visualResolver = sampleResolver(),
+            snapshot = snapshot,
+            overlayState = OverlayState(mode = UiMode.MAP),
+            canvas = canvas,
+            cellWidth = 32f,
+            cellHeight = 32f,
+        )
+
+        assertTrue(canvas.textDraws.any { draw -> draw.text == localizer.text("ui.hud.frontstage.title") })
+        assertTrue(canvas.textDraws.any { draw -> draw.text.contains("Water lane") })
+        assertTrue(canvas.textDraws.any { draw -> draw.text.contains("Restore 2 HP") })
     }
 
     @Test
