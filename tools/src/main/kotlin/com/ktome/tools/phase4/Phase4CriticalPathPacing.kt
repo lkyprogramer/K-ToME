@@ -211,7 +211,8 @@ internal fun JsonObject.toCriticalPathPacingSummary(): CriticalPathPacingSummary
         zoneIds = zoneIds,
         zonesById =
             zoneIds.associateWith { zoneId ->
-                diagnostics.getValue(zoneId).jsonObject.toCriticalPathZonePacingSnapshot(zoneId)
+                diagnostics[zoneId]?.jsonObject?.toCriticalPathZonePacingSnapshot(zoneId)
+                    ?: missingCriticalPathZonePacingSnapshot(zoneId)
             },
     )
 }
@@ -220,8 +221,16 @@ private fun JsonObject.toCriticalPathZonePacingSnapshot(zoneId: String): Critica
     CriticalPathZonePacingSnapshot(
         zoneId = zoneId,
         avgObjectiveAcquireTurn = this["avgObjectiveAcquireTurn"]?.jsonPrimitive?.content?.toDoubleOrNull(),
-        avgVisibleHostileTurnCount = getValue("avgVisibleHostileTurnCount").jsonPrimitive.content.toDouble(),
-        avgEnemyTurns = getValue("avgEnemyTurns").jsonPrimitive.content.toDouble(),
+        avgVisibleHostileTurnCount = this["avgVisibleHostileTurnCount"]?.jsonPrimitive?.content?.toDoubleOrNull() ?: 0.0,
+        avgEnemyTurns = this["avgEnemyTurns"]?.jsonPrimitive?.content?.toDoubleOrNull() ?: 0.0,
+    )
+
+private fun missingCriticalPathZonePacingSnapshot(zoneId: String): CriticalPathZonePacingSnapshot =
+    CriticalPathZonePacingSnapshot(
+        zoneId = zoneId,
+        avgObjectiveAcquireTurn = null,
+        avgVisibleHostileTurnCount = 0.0,
+        avgEnemyTurns = 0.0,
     )
 
 internal fun List<String>.toJsonArray(): JsonArray =
