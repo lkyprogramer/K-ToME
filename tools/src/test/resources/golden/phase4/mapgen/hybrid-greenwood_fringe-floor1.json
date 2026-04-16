@@ -46,7 +46,8 @@
         }
     ],
     "terrainTagDistribution": {
-        "WATER": 128
+        "ICE": 54,
+        "WATER": 99
     },
     "rewardProfile": {
         "id": "zone_reward.greenwood_fringe.phase4",
