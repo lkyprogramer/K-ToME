@@ -369,6 +369,16 @@ object ReportPhase4Runner {
             val organicHiddenMetric = requireOwnerMetric(report.ownerMetrics, "organicHiddenDiscoveryRate")
             val cadenceMetric = requireOwnerMetric(report.ownerMetrics, "sameZoneSecretVsCadenceMaxOverlap")
             val rewardMetric = requireOwnerMetric(report.ownerMetrics, "sameZoneSecretVsRewardMaxOverlap")
+            val objectiveMetric = requireOwnerMetric(report.ownerMetrics, "avgObjectiveAcquireTurn")
+            val visibleMetric = requireOwnerMetric(report.ownerMetrics, "avgVisibleHostileTurnCount")
+            val enemyMetric = requireOwnerMetric(report.ownerMetrics, "avgEnemyTurns")
+            val satisfiedMetric = requireOwnerMetric(report.ownerMetrics, "criticalPathCombatFloorSatisfied")
+            val criticalPathMetricValue = satisfiedMetric.currentValue.jsonObject
+            val criticalPathZoneIds =
+                criticalPathMetricValue.getValue("criticalPathZoneIds").jsonArray.map { zoneId ->
+                    zoneId.jsonPrimitive.content
+                }
+            val criticalPathBreakdown = criticalPathMetricValue.getValue("zoneBreakdown").jsonObject
             appendLine("# reportPhase4")
             appendLine()
             appendLine("- generatedAt: `${report.generatedAt}`")
@@ -470,6 +480,22 @@ object ReportPhase4Runner {
                         "    - candidateBaseIds (debug): `${summary.getValue("candidateBaseIds").jsonArray.joinToString { baseId -> baseId.jsonPrimitive.content }.ifBlank { "none" }}`",
                     )
                 }
+            appendLine()
+            appendLine("## Critical Path Pacing")
+            appendLine("- sourceTask: `${satisfiedMetric.sourceTaskId}`")
+            appendLine("- `avgObjectiveAcquireTurn`: ${objectiveMetric.currentValueText} / `${objectiveMetric.status}`")
+            appendLine("- `avgVisibleHostileTurnCount`: ${visibleMetric.currentValueText} / `${visibleMetric.status}`")
+            appendLine("- `avgEnemyTurns`: ${enemyMetric.currentValueText} / `${enemyMetric.status}`")
+            appendLine("- `criticalPathCombatFloorSatisfied`: ${satisfiedMetric.currentValueText} / `${satisfiedMetric.status}`")
+            appendLine("- criticalPathZoneIds: `${criticalPathZoneIds.joinToString()}`")
+            appendLine("| zoneId | avgObjectiveAcquireTurn | avgVisibleHostileTurnCount | avgEnemyTurns | satisfied |")
+            appendLine("| --- | --- | --- | --- | --- |")
+            criticalPathZoneIds.forEach { zoneId ->
+                val zoneState = criticalPathBreakdown.getValue(zoneId).jsonObject
+                appendLine(
+                    "| `$zoneId` | ${formatNullableRate(zoneState["avgObjectiveAcquireTurn"]?.jsonPrimitive?.content?.toDoubleOrNull())} | ${formatRate(zoneState.getValue("avgVisibleHostileTurnCount").jsonPrimitive.content.toDouble())} | ${formatRate(zoneState.getValue("avgEnemyTurns").jsonPrimitive.content.toDouble())} | `${zoneState.getValue("satisfied").jsonPrimitive.content}` |",
+                )
+            }
             appendLine()
             appendLine("## Inputs")
             report.inputs.forEach { input ->

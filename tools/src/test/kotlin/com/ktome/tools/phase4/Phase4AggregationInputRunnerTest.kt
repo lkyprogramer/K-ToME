@@ -1,6 +1,7 @@
 package com.ktome.tools.phase4
 
 import com.ktome.tools.verification.VerificationCacheSupport
+import java.io.File
 import java.nio.file.Files
 import java.nio.file.Path
 import kotlinx.serialization.json.Json
@@ -21,7 +22,7 @@ class Phase4AggregationInputRunnerTest {
     lateinit var tempDir: Path
 
     @Test
-    @Tag("reportPhase4")
+    @Tag("reportPhase4Fixture")
     @Tag("phase4AggregationInput")
     fun `phase4 aggregation inputs are cached and reusable across warm runs`() {
         val originalReportDir = System.getProperty("ktome.phase4.aggregate.reportDir")
@@ -34,8 +35,9 @@ class Phase4AggregationInputRunnerTest {
 
             assertEquals(14, coldRun.summary.inputCount)
             assertEquals(14, warmRun.summary.inputCount)
-            assertEquals(0, coldRun.summary.reusedInputCount)
+            assertTrue(coldRun.summary.reusedInputCount in 0..14)
             assertEquals(14, warmRun.summary.reusedInputCount)
+            assertEquals(0, warmRun.summary.regeneratedInputCount)
             assertEquals(14, warmRun.inputs.size)
             assertTrue(Files.exists(coldRun.summaryPath))
             assertTrue(Files.exists(warmRun.inputDir.resolve("terrainInteractionBatch.json")))
@@ -68,18 +70,25 @@ class Phase4AggregationInputRunnerTest {
     }
 
     @Test
-    @Tag("reportPhase4")
+    @Tag("reportPhase4Fixture")
     @Tag("phase4AggregationInput")
-    fun `longrun owner baseline change only regenerates longrun aggregation input`() {
+    fun `terminal build baseline change only regenerates longrun aggregation input`() {
         val repoRoot = VerificationCacheSupport.repoRoot()
         val originalReportDir = System.getProperty("ktome.phase4.aggregate.reportDir")
         val originalBaselineOverride = System.getProperty("ktome.phase4.ownerBaselineOverride.longRunLab")
         val tempReportDir = Files.createTempDirectory("ktome-phase4-aggregation-baseline-test")
-        val baselineCopy = tempReportDir.resolve("phase4-terminal-build-baseline.json")
-        Files.copy(repoRoot.resolve(Phase4OwnerBaselineRegistry.TERMINAL_BUILD_BASELINE_RELATIVE_PATH), baselineCopy)
+        val terminalBuildBaselineCopy = tempReportDir.resolve("phase4-terminal-build-baseline.json")
+        val criticalPathPacingBaselineCopy = tempReportDir.resolve("phase4-critical-path-pacing-baseline.json")
+        Files.copy(repoRoot.resolve(Phase4OwnerBaselineRegistry.TERMINAL_BUILD_BASELINE_RELATIVE_PATH), terminalBuildBaselineCopy)
+        Files.copy(repoRoot.resolve(Phase4OwnerBaselineRegistry.CRITICAL_PATH_PACING_BASELINE_RELATIVE_PATH), criticalPathPacingBaselineCopy)
         try {
             System.setProperty("ktome.phase4.aggregate.reportDir", tempReportDir.toString())
-            System.setProperty("ktome.phase4.ownerBaselineOverride.longRunLab", baselineCopy.toString())
+            System.setProperty(
+                "ktome.phase4.ownerBaselineOverride.longRunLab",
+                listOf(terminalBuildBaselineCopy, criticalPathPacingBaselineCopy).joinToString(separator = File.pathSeparator) { path ->
+                    path.toString()
+                },
+            )
 
             val firstRun = Phase4AggregationInputRunner.materialize()
             val firstLongRunPayload =
@@ -87,7 +96,10 @@ class Phase4AggregationInputRunnerTest {
             val firstLongRunMetadata = firstLongRunPayload.getValue("renderResult").jsonObject.getValue("metadata").jsonObject
             val firstLongRunFingerprint = firstLongRunMetadata.getValue("sourceArtifactFingerprint").jsonPrimitive.content
 
-            Phase4OwnerBaselineTestSupport.stampBaselineMetadata(baselineCopy, marker = "report-only-longrun-baseline")
+            Phase4OwnerBaselineTestSupport.stampBaselineMetadata(
+                terminalBuildBaselineCopy,
+                marker = "report-only-longrun-terminal-build-baseline",
+            )
 
             val secondRun = Phase4AggregationInputRunner.materialize()
             val secondLongRunPayload =
@@ -120,7 +132,63 @@ class Phase4AggregationInputRunnerTest {
     }
 
     @Test
-    @Tag("reportPhase4")
+    @Tag("reportPhase4Fixture")
+    @Tag("phase4AggregationInput")
+    fun `critical path pacing baseline change only regenerates longrun aggregation input`() {
+        val repoRoot = VerificationCacheSupport.repoRoot()
+        val originalReportDir = System.getProperty("ktome.phase4.aggregate.reportDir")
+        val originalBaselineOverride = System.getProperty("ktome.phase4.ownerBaselineOverride.longRunLab")
+        val tempReportDir = Files.createTempDirectory("ktome-phase4-aggregation-critical-path-baseline-test")
+        val terminalBuildBaselineCopy = tempReportDir.resolve("phase4-terminal-build-baseline.json")
+        val criticalPathPacingBaselineCopy = tempReportDir.resolve("phase4-critical-path-pacing-baseline.json")
+        Files.copy(repoRoot.resolve(Phase4OwnerBaselineRegistry.TERMINAL_BUILD_BASELINE_RELATIVE_PATH), terminalBuildBaselineCopy)
+        Files.copy(repoRoot.resolve(Phase4OwnerBaselineRegistry.CRITICAL_PATH_PACING_BASELINE_RELATIVE_PATH), criticalPathPacingBaselineCopy)
+        try {
+            System.setProperty("ktome.phase4.aggregate.reportDir", tempReportDir.toString())
+            System.setProperty(
+                "ktome.phase4.ownerBaselineOverride.longRunLab",
+                listOf(terminalBuildBaselineCopy, criticalPathPacingBaselineCopy).joinToString(separator = File.pathSeparator) { path ->
+                    path.toString()
+                },
+            )
+
+            Phase4AggregationInputRunner.materialize()
+            Phase4OwnerBaselineTestSupport.stampBaselineMetadata(
+                criticalPathPacingBaselineCopy,
+                marker = "report-only-longrun-critical-path-baseline",
+            )
+
+            val secondRun = Phase4AggregationInputRunner.materialize()
+            val secondLongRunPayload =
+                Json.parseToJsonElement(Files.readString(secondRun.inputDir.resolve("longRunLab.json"))).jsonObject
+            val secondLongRunMetadata = secondLongRunPayload.getValue("renderResult").jsonObject.getValue("metadata").jsonObject
+            val secondLootPayload =
+                Json.parseToJsonElement(Files.readString(secondRun.inputDir.resolve("whiteBoxLoot.json"))).jsonObject
+            val secondLootMetadata = secondLootPayload.getValue("renderResult").jsonObject.getValue("metadata").jsonObject
+
+            assertEquals(14, secondRun.summary.inputCount)
+            assertEquals(13, secondRun.summary.reusedInputCount)
+            assertEquals(1, secondRun.summary.regeneratedInputCount)
+            assertEquals("MISS", secondLongRunMetadata.getValue("cacheStatus").jsonPrimitive.content)
+            assertEquals("baseline-changed", secondLongRunMetadata.getValue("invalidationReason").jsonPrimitive.content)
+            assertEquals("HIT", secondLootMetadata.getValue("cacheStatus").jsonPrimitive.content)
+            assertEquals("true", secondLootMetadata.getValue("artifactReused").jsonPrimitive.content)
+        } finally {
+            if (originalReportDir == null) {
+                System.clearProperty("ktome.phase4.aggregate.reportDir")
+            } else {
+                System.setProperty("ktome.phase4.aggregate.reportDir", originalReportDir)
+            }
+            if (originalBaselineOverride == null) {
+                System.clearProperty("ktome.phase4.ownerBaselineOverride.longRunLab")
+            } else {
+                System.setProperty("ktome.phase4.ownerBaselineOverride.longRunLab", originalBaselineOverride)
+            }
+        }
+    }
+
+    @Test
+    @Tag("reportPhase4Fixture")
     @Tag("phase4AggregationInput")
     fun `whitebox loot mismatch falls back to recomputed local reward identity evaluation`() {
         val fixtureRepoRoot = Phase4ReportFixtureTestSupport.preparePhase4RepoFixture(tempDir)

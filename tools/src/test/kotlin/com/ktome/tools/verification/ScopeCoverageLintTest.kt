@@ -43,6 +43,7 @@ class ScopeCoverageLintTest {
         val terrainOwnerBaselineCase = cases.first { case -> case.getValue("caseId").jsonPrimitive.content == "terrain_owner_baseline_scope" }
         val longrunOwnerBaselineCase = cases.first { case -> case.getValue("caseId").jsonPrimitive.content == "longrun_owner_baseline_scope" }
         val phase4ReportOnlyCase = cases.first { case -> case.getValue("caseId").jsonPrimitive.content == "phase4_report_only_scope" }
+        val phase4ReportHelperCase = cases.first { case -> case.getValue("caseId").jsonPrimitive.content == "phase4_report_helper_scope" }
 
         assertTrue(run.caseCount >= 20)
         assertTrue(coreCase.getValue("impactedDomainIds").jsonArray.any { domain -> domain.jsonPrimitive.content == "mapgen" })
@@ -75,6 +76,9 @@ class ScopeCoverageLintTest {
         assertTrue(longrunOwnerBaselineCase.getValue("requestedTaskPaths").jsonArray.none { task -> task.jsonPrimitive.content == ":game:longRunLab" })
         assertTrue(phase4ReportOnlyCase.getValue("requestedTaskPaths").jsonArray.any { task -> task.jsonPrimitive.content == ":tools:reportPhase4Only" })
         assertTrue(phase4ReportOnlyCase.getValue("impactedDomainIds").jsonArray.any { domain -> domain.jsonPrimitive.content == "organic-hidden" })
+        assertTrue(phase4ReportHelperCase.getValue("requestedTaskPaths").jsonArray.any { task -> task.jsonPrimitive.content == ":tools:reportPhase4Only" })
+        assertTrue(phase4ReportHelperCase.getValue("impactedDomainIds").jsonArray.any { domain -> domain.jsonPrimitive.content == "longrun" })
+        assertTrue(phase4ReportHelperCase.getValue("impactedDomainIds").jsonArray.any { domain -> domain.jsonPrimitive.content == "loot" })
         assertTrue(dataLoaderCase.getValue("requestedTaskPaths").jsonArray.none { task -> task.jsonPrimitive.content == ":tools:phase4ReportOnly" })
         assertTrue(phase4ReportOnlyCase.getValue("requestedTaskPaths").jsonArray.none { task -> task.jsonPrimitive.content == ":tools:phase4LegacyReport" })
         assertTrue(phase4ReportOnlyCase.getValue("requestedTaskPaths").jsonArray.none { task -> task.jsonPrimitive.content == ":tools:phase4LegacyReportOnly" })

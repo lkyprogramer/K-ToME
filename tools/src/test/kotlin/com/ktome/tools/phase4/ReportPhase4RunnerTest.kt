@@ -23,7 +23,7 @@ class ReportPhase4RunnerTest {
     lateinit var tempDir: Path
 
     @Test
-    @Tag("reportPhase4")
+    @Tag("reportPhase4Fixture")
     fun `reportPhase4 builds artifact only aggregate and optional legacy comparison`() {
         val compareLegacy = System.getProperty("ktome.phase4.aggregate.compareLegacy")?.toBooleanStrictOrNull() ?: false
         val fixtureRepoRoot = Phase4ReportFixtureTestSupport.preparePhase4RepoFixture(tempDir, includeLegacySummary = compareLegacy)
@@ -42,7 +42,7 @@ class ReportPhase4RunnerTest {
 
             assertEquals("P4", payload.getValue("phaseId").jsonPrimitive.content)
             assertEquals("14", payload.getValue("inputCount").jsonPrimitive.content)
-            assertEquals("9", payload.getValue("ownerMetricCount").jsonPrimitive.content)
+            assertEquals("13", payload.getValue("ownerMetricCount").jsonPrimitive.content)
             assertEquals("0", payload.getValue("unexpectedRegressionCount").jsonPrimitive.content)
             assertEquals("0", payload.getValue("approvedDebtCount").jsonPrimitive.content)
             assertEquals("0", payload.getValue("improvedDebtCount").jsonPrimitive.content)
@@ -50,7 +50,7 @@ class ReportPhase4RunnerTest {
             assertTrue(payload.containsKey("artifactReuseRate"))
             assertTrue(payload.containsKey("topInvalidationReasons"))
             assertEquals(14, inputs.size)
-            assertEquals(9, ownerMetrics.size)
+            assertEquals(13, ownerMetrics.size)
 
             val terrainInput =
                 inputs.first { input -> input.jsonObject.getValue("sourceTaskId").jsonPrimitive.content == "terrainInteractionBatch" }.jsonObject
@@ -91,18 +91,21 @@ class ReportPhase4RunnerTest {
             assertTrue(organicHiddenInput.getValue("kernelResult").jsonObject.getValue("metrics").jsonObject.containsKey("searchPromptRequired"))
             assertTrue(markdown.contains("## Scripted vs Organic Hidden"))
             assertTrue(markdown.contains("## Local Reward Identity"))
+            assertTrue(markdown.contains("## Critical Path Pacing"))
             assertTrue(markdown.contains("secret reward identity summaries"))
             assertTrue(markdown.contains("rewardStructureKeys"))
             assertTrue(markdown.contains("loot.deep_iron_slag_cache.secret"))
             assertTrue(markdown.contains("share of total discoveries"))
             assertTrue(markdown.contains("share of total secret-zone entries"))
             assertTrue(markdown.contains("searchPromptRequired"))
+            assertTrue(markdown.contains("criticalPathZoneIds"))
+            assertTrue(markdown.contains("criticalPathCombatFloorSatisfied"))
 
             if (compareLegacy) {
                 assertNotNull(run.comparisonPath)
                 val comparison = Phase4ReportFixtureTestSupport.json.parseToJsonElement(Files.readString(run.comparisonPath!!)).jsonObject
                 assertEquals("0", comparison.getValue("mismatchCount").jsonPrimitive.content)
-                assertEquals("9", comparison.getValue("metricCount").jsonPrimitive.content)
+                assertEquals("13", comparison.getValue("metricCount").jsonPrimitive.content)
             } else {
                 assertNull(run.comparisonPath)
             }
@@ -110,7 +113,7 @@ class ReportPhase4RunnerTest {
     }
 
     @Test
-    @Tag("reportPhase4")
+    @Tag("reportPhase4Fixture")
     fun `reportPhase4 removes stale legacy comparison artifact on canonical runs`() {
         val fixtureRepoRoot = Phase4ReportFixtureTestSupport.preparePhase4RepoFixture(tempDir)
         val staleComparisonPath = tempDir.resolve("report-phase4-legacy-comparison.json")
@@ -126,7 +129,7 @@ class ReportPhase4RunnerTest {
     }
 
     @Test
-    @Tag("reportPhase4")
+    @Tag("reportPhase4Fixture")
     fun `reportPhase4 fails fast when canonical aggregate sees legacy loot identity summaries`() {
         val fixtureRepoRoot = Phase4ReportFixtureTestSupport.preparePhase4RepoFixture(tempDir)
         Phase4ReportFixtureTestSupport.mutateWhiteBoxLootCorpusMetrics(fixtureRepoRoot) { metrics ->
@@ -168,7 +171,7 @@ class ReportPhase4RunnerTest {
     }
 
     @Test
-    @Tag("reportPhase4")
+    @Tag("reportPhase4Fixture")
     fun `reportPhase4 propagates strict local identity violations as unexpected regression`() {
         val fixtureRepoRoot = Phase4ReportFixtureTestSupport.preparePhase4RepoFixture(tempDir)
         val pairId = "deep_iron_pit:loot.deep_iron_slag_cache.secret->loot.deep_iron_pit.cadence"
@@ -250,6 +253,66 @@ class ReportPhase4RunnerTest {
             assertTrue(ownerMetric.getValue("note").jsonPrimitive.content.contains(pairId))
             assertTrue(markdown.contains("strictLocalIdentityViolations"))
             assertTrue(markdown.contains(pairId))
+        }
+    }
+
+    @Test
+    @Tag("reportPhase4Fixture")
+    fun `reportPhase4 treats missing critical path objective samples as regression`() {
+        val fixtureRepoRoot = Phase4ReportFixtureTestSupport.preparePhase4RepoFixture(tempDir)
+        val longRunSummaryPath = fixtureRepoRoot.resolve("build/reports/harness/long-run-full.json")
+        val payload = Phase4ReportFixtureTestSupport.json.parseToJsonElement(Files.readString(longRunSummaryPath)).jsonObject
+        val updatedDiagnostics =
+            buildJsonObject {
+                payload.getValue("fullRouteZoneTraversalDiagnostics").jsonObject.forEach { (zoneId, diagnostic) ->
+                    put(
+                        zoneId,
+                        if (zoneId == "grey_gate_depths") {
+                            buildJsonObject {
+                                diagnostic.jsonObject.forEach { (key, value) ->
+                                    if (key != "avgObjectiveAcquireTurn") {
+                                        put(key, value)
+                                    }
+                                }
+                            }
+                        } else {
+                            diagnostic
+                        },
+                    )
+                }
+            }
+        Files.writeString(
+            longRunSummaryPath,
+            Phase4ReportFixtureTestSupport.json.encodeToString(
+                kotlinx.serialization.json.JsonElement.serializer(),
+                buildJsonObject {
+                    payload.forEach { (key, value) ->
+                        if (key == "fullRouteZoneTraversalDiagnostics") {
+                            put(key, updatedDiagnostics)
+                        } else {
+                            put(key, value)
+                        }
+                    }
+                },
+            ),
+        )
+
+        Phase4ReportFixtureTestSupport.withFixtureProperties(repoRoot = fixtureRepoRoot, aggregateReportDir = tempDir.resolve("aggregate-missing-objective")) {
+            val run = ReportPhase4Runner.run(compareLegacy = false)
+            val objectiveMetric =
+                Phase4ReportFixtureTestSupport.json.parseToJsonElement(Files.readString(run.summaryPath)).jsonObject
+                    .getValue("ownerMetrics")
+                    .jsonArray
+                    .first { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "avgObjectiveAcquireTurn" }
+                    .jsonObject
+
+            assertEquals("UNEXPECTED_REGRESSION", objectiveMetric.getValue("status").jsonPrimitive.content)
+            assertTrue(objectiveMetric.getValue("currentValueText").jsonPrimitive.content.contains("min=n/a"))
+            assertTrue(
+                objectiveMetric.getValue("currentValue").jsonObject.getValue("failingZones").jsonArray.any { zone ->
+                    zone.jsonPrimitive.content == "grey_gate_depths"
+                },
+            )
         }
     }
 }

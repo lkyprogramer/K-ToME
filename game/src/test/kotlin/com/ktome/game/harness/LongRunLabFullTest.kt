@@ -74,7 +74,8 @@ class LongRunLabFullTest {
         val fullRouteSynergyRewardMetrics = synergyRewardMetrics(fullRouteReports)
         val terminalWeaponIdentity = terminalWeaponIdentitySummary(fullRouteReports)
         val fullRouteZoneTraversalDiagnostics = aggregateZoneTraversalDiagnostics(fullRouteReports)
-        val focusZoneDesignAudit = focusZoneDesignAudit()
+        val criticalPathZoneIds = criticalPathZoneIds()
+        val criticalPathZoneDesignAudit = criticalPathZoneDesignAudit()
         val milestoneRewardQualityDistribution = milestoneRewards.groupingBy { it.qualityTier.name }.eachCount().toSortedMap()
         val milestoneAffixCountDistribution = milestoneRewards.groupingBy { it.affixIds.size.toString() }.eachCount().toSortedMap()
         val milestoneRewardAdoptionDistribution =
@@ -212,8 +213,11 @@ class LongRunLabFullTest {
                             }
                         }
                     }
-                    putJsonObject("focusZoneDesignAudit") {
-                        focusZoneDesignAudit.forEach { (zoneId, audit) ->
+                    putJsonArray("criticalPathZoneIds") {
+                        criticalPathZoneIds.forEach { zoneId -> add(JsonPrimitive(zoneId)) }
+                    }
+                    putJsonObject("criticalPathZoneDesignAudit") {
+                        criticalPathZoneDesignAudit.forEach { (zoneId, audit) ->
                             putJsonObject(zoneId) {
                                 put("floorCount", audit.floorCount)
                                 put("mapSize", audit.mapSize)
@@ -328,7 +332,8 @@ class LongRunLabFullTest {
                     appendLine("- professionTopWeaponBaseIds: ${if (terminalWeaponIdentity.professionTopWeaponBaseIds.isEmpty()) "none" else terminalWeaponIdentity.professionTopWeaponBaseIds}")
                     appendLine("- professionTopWeaponSemanticTags: ${if (terminalWeaponIdentity.professionTopWeaponSemanticTags.isEmpty()) "none" else terminalWeaponIdentity.professionTopWeaponSemanticTags}")
                     appendLine("- fullRouteZoneTraversalDiagnostics: ${if (fullRouteZoneTraversalDiagnostics.isEmpty()) "none" else fullRouteZoneTraversalDiagnostics}")
-                    appendLine("- focusZoneDesignAudit: ${if (focusZoneDesignAudit.isEmpty()) "none" else focusZoneDesignAudit}")
+                    appendLine("- criticalPathZoneIds: ${criticalPathZoneIds.joinToString()}")
+                    appendLine("- criticalPathZoneDesignAudit: ${if (criticalPathZoneDesignAudit.isEmpty()) "none" else criticalPathZoneDesignAudit}")
                     appendLine("- deathDistribution: ${if (deathDistribution.isEmpty()) "none" else deathDistribution}")
                     appendLine("- zoneRouteHashDistribution: ${if (routeHashDistribution.isEmpty()) "none" else routeHashDistribution}")
                     appendLine("- branchRouteHashDistribution: ${if (branchRouteHashDistribution.isEmpty()) "none" else branchRouteHashDistribution}")
@@ -602,14 +607,17 @@ class LongRunLabFullTest {
     }
 
     @Test
-    fun `focus zone design audit exposes current greenwood and deep iron contracts`() {
-        val audit = focusZoneDesignAudit()
+    fun `critical path zone design audit exposes current pacing contracts`() {
+        val audit = criticalPathZoneDesignAudit()
 
-        assertEquals(setOf("greenwood_fringe", "deep_iron_pit"), audit.keys)
-        assertTrue(audit.getValue("greenwood_fringe").objectivePlacements.any { placement -> "trail_cache@floor1:player_start+1,0" in placement })
+        assertEquals(setOf("greenwood_fringe", "deep_iron_pit", "grey_gate_depths", "underground_river", "abyssal_temple"), audit.keys)
+        assertTrue(audit.getValue("greenwood_fringe").objectivePlacements.any { placement -> "trail_cache@floor1:stairs_down+1,0" in placement })
         assertTrue(audit.getValue("greenwood_fringe").mechanicsWithoutDedicatedRuntimeHook.contains("trail_pressure"))
         assertTrue(audit.getValue("deep_iron_pit").objectivePlacements.any { placement -> "mine_furnace@floor2:boss_entry+0,0" in placement })
         assertTrue(audit.getValue("deep_iron_pit").mechanicsWithoutDedicatedRuntimeHook.contains("slag_alert"))
+        assertTrue(audit.getValue("grey_gate_depths").objectivePlacements.any { placement -> "seal_cache@floor1:stairs_down+1,0" in placement })
+        assertTrue(audit.getValue("underground_river").objectivePlacements.any { placement -> "crystal_cache_chest@floor1:stairs_down+1,0" in placement })
+        assertTrue(audit.getValue("abyssal_temple").specialMechanics.contains("void_pressure"))
     }
 
     private fun fullRouteMatrixSpecs(): List<ScenarioSpec> {
@@ -844,17 +852,20 @@ class LongRunLabFullTest {
                 )
             }
 
-    private fun focusZoneDesignAudit(): Map<String, FocusZoneDesignAuditEntry> {
+    private fun criticalPathZoneIds(): List<String> =
+        FOUNDATION_ZONE_ROUTE.drop(1).dropLast(1)
+
+    private fun criticalPathZoneDesignAudit(): Map<String, CriticalPathZoneDesignAuditEntry> {
         val objectivesById = schemaCatalog.objectiveSets.associateBy { objective -> objective.id }
         val profilesByZone = schemaCatalog.zoneMapgenProfiles.associateBy { profile -> profile.zoneId }
-        return listOf("greenwood_fringe", "deep_iron_pit")
+        return criticalPathZoneIds()
             .map { zoneId ->
                 val zone = requireNotNull(schemaCatalog.zones.firstOrNull { candidate -> candidate.id == zoneId }) {
-                    "Missing focus zone '$zoneId' in schema catalog."
+                    "Missing critical-path zone '$zoneId' in schema catalog."
                 }
                 val objective = zone.objectiveSetId?.let(objectivesById::get)
                 zoneId to
-                    FocusZoneDesignAuditEntry(
+                    CriticalPathZoneDesignAuditEntry(
                         zoneId = zoneId,
                         floorCount = zone.floorCount,
                         mapSize = "${zone.mapSize.width}x${zone.mapSize.height}",
@@ -945,7 +956,7 @@ class LongRunLabFullTest {
         val objectiveStateDistribution: Map<String, Int>,
     )
 
-    private data class FocusZoneDesignAuditEntry(
+    private data class CriticalPathZoneDesignAuditEntry(
         val zoneId: String,
         val floorCount: Int,
         val mapSize: String,

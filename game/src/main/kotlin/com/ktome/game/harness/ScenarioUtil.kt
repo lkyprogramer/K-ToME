@@ -361,6 +361,28 @@ fun Point.deltaFrom(origin: Point): Point =
 fun routeProgressCommand(
     session: FoundationGameSession,
     observation: RunObservation,
+): PlayerCommand? =
+    routeProgressCommand(
+        session = session,
+        observation = observation,
+        pendingObjectivePoint = session.automationPendingObjectiveInteractablePoint(),
+    )
+
+fun routeProgressCommandWithoutObjectiveHook(
+    session: FoundationGameSession,
+    observation: RunObservation,
+): PlayerCommand? {
+    return routeProgressCommand(
+        session = session,
+        observation = observation,
+        pendingObjectivePoint = null,
+    )
+}
+
+private fun routeProgressCommand(
+    session: FoundationGameSession,
+    observation: RunObservation,
+    pendingObjectivePoint: Point?,
 ): PlayerCommand? {
     if (observation.activeShopId != null) {
         return null
@@ -370,34 +392,35 @@ fun routeProgressCommand(
         return PlayerCommand.SelectRoute(preferredRouteIndex(routeSelection))
     }
 
-    val occupiedTiles =
+    val occupiedTiles by lazy {
         session.automationWorld()
             .entitiesWith(Position::class, BlocksMovement::class)
             .filter { entityId -> entityId != session.playerId }
             .map { entityId -> requireNotNull(session.automationWorld().get<Position>(entityId)).toPoint() }
             .toSet()
-    val hazardTiles = session.automationZoneHazardPoints() - observation.playerPosition
+    }
+    val hazardTiles by lazy { session.automationZoneHazardPoints() - observation.playerPosition }
 
     val canPursueObjectiveHook =
-        observation.visibleBossPositions.isEmpty() &&
+        pendingObjectivePoint != null &&
+            observation.visibleBossPositions.isEmpty() &&
             observation.visibleHostilePositions.none { hostile ->
                 hostile.chebyshevDistanceTo(observation.playerPosition) <= 2
             }
     if (canPursueObjectiveHook) {
-        session.automationPendingObjectiveInteractablePoint()?.let { objectivePoint ->
-            if (objectivePoint == observation.playerPosition) {
-                return PlayerCommand.Interact
-            }
-            val path =
-                AStar.findPath(
-                    map = session.map,
-                    start = observation.playerPosition,
-                    goal = objectivePoint,
-                    blocked = (occupiedTiles + hazardTiles) - objectivePoint,
-                )
-            path.getOrNull(1)?.let { nextStep ->
-                return PlayerCommand.Move(nextStep.deltaFrom(observation.playerPosition))
-            }
+        val objectivePoint = requireNotNull(pendingObjectivePoint)
+        if (objectivePoint == observation.playerPosition) {
+            return PlayerCommand.Interact
+        }
+        val path =
+            AStar.findPath(
+                map = session.map,
+                start = observation.playerPosition,
+                goal = objectivePoint,
+                blocked = (occupiedTiles + hazardTiles) - objectivePoint,
+            )
+        path.getOrNull(1)?.let { nextStep ->
+            return PlayerCommand.Move(nextStep.deltaFrom(observation.playerPosition))
         }
     }
 

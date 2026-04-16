@@ -184,6 +184,14 @@ class VerificationImpactAnalyzerTest {
     }
 
     @Test
+    fun `phase4 shared report helper change routes to report only rebuild for migrated owner domains`() {
+        val plan = VerificationImpactAnalyzer.analyze(listOf("tools/src/main/kotlin/com/ktome/tools/phase4/Phase4CriticalPathPacing.kt"))
+
+        assertEquals(setOf("hidden", "longrun", "loot", "maintainability", "organic-hidden", "terrain"), plan.impactedDomains.map(VerificationDomainImpact::domainId).toSet())
+        assertEquals(setOf(":tools:scopeCoverageLint", ":tools:maintainabilityLint", ":tools:reportPhase4Only"), plan.requestedTaskPaths.toSet())
+    }
+
+    @Test
     fun `governance doc change routes to maintainability lint only`() {
         val plan = VerificationImpactAnalyzer.analyze(listOf("docs/rule/ai-change-governance.md"))
 

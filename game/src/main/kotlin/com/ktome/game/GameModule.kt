@@ -647,9 +647,9 @@ object GameModule {
             "shattered_outpost" -> 2
             "greenwood_fringe" -> 2
             "deep_iron_pit" -> 1
-            "grey_gate_depths" -> 0
-            "underground_river" -> 1
-            "abyssal_temple" -> 0
+            "grey_gate_depths" -> 2
+            "underground_river" -> 2
+            "abyssal_temple" -> 1
             else -> roomCount.coerceAtMost(4).coerceAtLeast(3)
         }
     }

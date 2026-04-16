@@ -151,6 +151,7 @@ object Phase4ReportRunner {
         val organicHiddenBaseline = VerificationBaseline.read(repoRoot.resolve(Phase4OwnerBaselineRegistry.organicHiddenBaselinePath()))
         val lootBaseline = VerificationBaseline.read(repoRoot.resolve(Phase4OwnerBaselineRegistry.lootBaselinePath()))
         val terminalBuildBaseline = VerificationBaseline.read(repoRoot.resolve(Phase4OwnerBaselineRegistry.terminalBuildBaselinePath()))
+        val criticalPathPacingBaseline = VerificationBaseline.read(repoRoot.resolve(Phase4OwnerBaselineRegistry.criticalPathPacingBaselinePath()))
         val terrainUnifiedBaseline = VerificationBaseline.read(repoRoot.resolve(Phase4OwnerBaselineRegistry.terrainUnifiedBaselinePath()))
         val terrainPerZoneBaseline = VerificationBaseline.read(repoRoot.resolve(Phase4OwnerBaselineRegistry.terrainPerZoneBaselinePath()))
         val terrainBaseline = readTerrainBaseline(repoRoot)
@@ -161,6 +162,10 @@ object Phase4ReportRunner {
         val diversityRange = terminalBuildBaseline.requiredMetric("terminalWeaponBaseDiversity")
         val dominanceRange = terminalBuildBaseline.requiredMetric("crossProfessionTopWeaponDominance")
         val adoptionRange = terminalBuildBaseline.requiredMetric("professionAlignedWeaponAdoptionRate")
+        val objectiveRange = criticalPathPacingBaseline.requiredMetric("avgObjectiveAcquireTurn")
+        val visibleRange = criticalPathPacingBaseline.requiredMetric("avgVisibleHostileTurnCount")
+        val enemyRange = criticalPathPacingBaseline.requiredMetric("avgEnemyTurns")
+        val satisfiedRange = criticalPathPacingBaseline.requiredMetric("criticalPathCombatFloorSatisfied")
         val terrainAggregateRange = terrainUnifiedBaseline.requiredMetric("terrainInteractionEncounterRate.aggregate")
         val terrainPerZoneRange = terrainPerZoneBaseline.requiredMetric("terrainInteractionEncounterRate.per_zone_lower_bound")
 
@@ -212,6 +217,17 @@ object Phase4ReportRunner {
                             ?: ""
                     "$professionId=$weaponBaseId[$semanticTags]"
                 }
+        val criticalPathPacing = longRun.metrics.toCriticalPathPacingSummary()
+        val objectiveFloor = checkNotNull(objectiveRange.minimumAcceptedValue())
+        val visibleFloor = checkNotNull(visibleRange.minimumAcceptedValue())
+        val enemyFloor = checkNotNull(enemyRange.minimumAcceptedValue())
+        val criticalPathEvaluation =
+            criticalPathPacing.evaluate(
+                objectiveAcquireFloor = objectiveFloor,
+                visibleHostileFloor = visibleFloor,
+                enemyTurnFloor = enemyFloor,
+            )
+        val criticalPathNote = criticalPathEvaluation.note(::formatScalar)
         val terrainEncounterRate = terrain.metrics.doubleValue("terrainInteractionEncounterRate")
         val taggedCombatCount = terrain.metrics.intValue("taggedCombatCount")
         val triggeredInteractionCombatCount = terrain.metrics.intValue("triggeredInteractionCombatCount")
@@ -368,6 +384,59 @@ object Phase4ReportRunner {
                 note = "alignedSamples=$alignedFullRouteSampleCount/$fullRouteCount; topWeaponSemantics=$professionTopWeaponSemanticNote",
             ),
             Phase4ExperienceMetric(
+                metricId = "avgObjectiveAcquireTurn",
+                sourceTaskId = longRun.taskId,
+                currentValue = criticalPathEvaluation.objectiveMetricValue(),
+                currentValueText =
+                    if (criticalPathEvaluation.objectiveFailures.isEmpty()) {
+                        "min=${formatNullableScalar(criticalPathEvaluation.objectiveMinimum)} all critical-path zones >= ${formatScalar(objectiveFloor)}"
+                    } else {
+                        "min=${formatNullableScalar(criticalPathEvaluation.objectiveMinimum)} failed=${criticalPathEvaluation.objectiveFailures.joinToString()} target>=${formatScalar(objectiveFloor)}"
+                    },
+                target = Phase4OwnerMetricTargets.targetText("avgObjectiveAcquireTurn", objectiveRange),
+                status = verdictOf(Phase4OwnerMetricTargets.passes(objectiveRange, criticalPathEvaluation.objectiveMinimum ?: 0.0)),
+                note = criticalPathNote,
+            ),
+            Phase4ExperienceMetric(
+                metricId = "avgVisibleHostileTurnCount",
+                sourceTaskId = longRun.taskId,
+                currentValue = criticalPathEvaluation.visibleMetricValue(),
+                currentValueText =
+                    if (criticalPathEvaluation.visibleFailures.isEmpty()) {
+                        "min=${formatScalar(criticalPathEvaluation.visibleMinimum)} all critical-path zones >= ${formatScalar(visibleFloor)}"
+                    } else {
+                        "min=${formatScalar(criticalPathEvaluation.visibleMinimum)} failed=${criticalPathEvaluation.visibleFailures.joinToString()} target>=${formatScalar(visibleFloor)}"
+                    },
+                target = Phase4OwnerMetricTargets.targetText("avgVisibleHostileTurnCount", visibleRange),
+                status = verdictOf(Phase4OwnerMetricTargets.passes(visibleRange, criticalPathEvaluation.visibleMinimum)),
+                note = criticalPathNote,
+            ),
+            Phase4ExperienceMetric(
+                metricId = "avgEnemyTurns",
+                sourceTaskId = longRun.taskId,
+                currentValue = criticalPathEvaluation.enemyMetricValue(),
+                currentValueText =
+                    if (criticalPathEvaluation.enemyFailures.isEmpty()) {
+                        "min=${formatScalar(criticalPathEvaluation.enemyMinimum)} all critical-path zones >= ${formatScalar(enemyFloor)}"
+                    } else {
+                        "min=${formatScalar(criticalPathEvaluation.enemyMinimum)} failed=${criticalPathEvaluation.enemyFailures.joinToString()} target>=${formatScalar(enemyFloor)}"
+                    },
+                target = Phase4OwnerMetricTargets.targetText("avgEnemyTurns", enemyRange),
+                status = verdictOf(Phase4OwnerMetricTargets.passes(enemyRange, criticalPathEvaluation.enemyMinimum)),
+                note = criticalPathNote,
+            ),
+            Phase4ExperienceMetric(
+                metricId = "criticalPathCombatFloorSatisfied",
+                sourceTaskId = longRun.taskId,
+                currentValue = criticalPathEvaluation.satisfiedMetricValue(),
+                currentValueText =
+                    "${formatPercent(criticalPathEvaluation.satisfiedRatio)} (${criticalPathEvaluation.satisfiedZoneIds.size}/${criticalPathEvaluation.zoneIds.size}), " +
+                        "failed=${criticalPathEvaluation.satisfiedFailures.joinToString().ifBlank { "none" }}",
+                target = Phase4OwnerMetricTargets.targetText("criticalPathCombatFloorSatisfied", satisfiedRange),
+                status = verdictOf(Phase4OwnerMetricTargets.passes(satisfiedRange, criticalPathEvaluation.satisfiedRatio)),
+                note = criticalPathNote,
+            ),
+            Phase4ExperienceMetric(
                 metricId = "terrainInteractionEncounterRate.aggregate",
                 sourceTaskId = terrain.taskId,
                 currentValue =
@@ -425,6 +494,13 @@ object Phase4ReportRunner {
             val tasksById = report.tasks.associateBy(Phase4TaskAggregate::taskId)
             val lootTask = requireTask(tasksById, "whiteBoxLoot")
             val longRunTask = requireTask(tasksById, "longRunLab")
+            val criticalPathMetric = metricsById.getValue("criticalPathCombatFloorSatisfied")
+            val criticalPathMetricValue = criticalPathMetric.currentValue.jsonObject
+            val criticalPathZoneIds =
+                criticalPathMetricValue.getValue("criticalPathZoneIds").jsonArray.map { zoneId ->
+                    zoneId.jsonPrimitive.content
+                }
+            val criticalPathBreakdown = criticalPathMetricValue.getValue("zoneBreakdown").jsonObject
             val professionTerminalWeaponDistribution =
                 json.encodeToString(
                     JsonObject.serializer(),
@@ -485,6 +561,23 @@ object Phase4ReportRunner {
             appendLine("- `sameZoneSecretVsRewardMaxOverlap`: ${metricsById.getValue("sameZoneSecretVsRewardMaxOverlap").currentValueText} / ${metricsById.getValue("sameZoneSecretVsRewardMaxOverlap").status}")
             appendLine("- `localIdentityFailurePairs`: ${lootTask.metrics.getValue("localIdentityFailurePairs").jsonArray.joinToString { pair -> pair.jsonPrimitive.content }.ifBlank { "none" }}")
             appendLine("- `strictLocalIdentityViolations`: ${lootTask.metrics.getValue("strictLocalIdentityViolations").jsonArray.joinToString { violation -> violation.jsonObject.getValue("pairId").jsonPrimitive.content }.ifBlank { "none" }}")
+            lootTask.metrics["secretProfileIdentitySummaries"]
+                ?.jsonArray
+                ?.takeIf { summaries -> summaries.isNotEmpty() }
+                ?.let { summaries ->
+                    appendLine("- secret reward identity summaries:")
+                    summaries.forEach { summary ->
+                        val payload = summary.jsonObject
+                        val profileId = payload.getValue("profileId").jsonPrimitive.content
+                        val canonicalZoneId = payload.getValue("canonicalZoneId").jsonPrimitive.content
+                        val rewardStructureKeys =
+                            payload.getValue("rewardStructureKeys").jsonArray.joinToString { key ->
+                                key.jsonPrimitive.content
+                            }
+                        appendLine("  - `$profileId` (`$canonicalZoneId`)")
+                        appendLine("    - rewardStructureKeys: `$rewardStructureKeys`")
+                    }
+                }
             appendLine()
             appendLine("## Terminal Build Identity")
             appendLine("- sourceTask: `${longRunTask.taskId}`")
@@ -498,6 +591,22 @@ object Phase4ReportRunner {
             appendLine("```json")
             appendLine(professionTopWeaponSemanticTags.toString())
             appendLine("```")
+            appendLine()
+            appendLine("## Critical Path Pacing")
+            appendLine("- sourceTask: `${longRunTask.taskId}`")
+            appendLine("- `avgObjectiveAcquireTurn`: ${metricsById.getValue("avgObjectiveAcquireTurn").currentValueText} / ${metricsById.getValue("avgObjectiveAcquireTurn").status}")
+            appendLine("- `avgVisibleHostileTurnCount`: ${metricsById.getValue("avgVisibleHostileTurnCount").currentValueText} / ${metricsById.getValue("avgVisibleHostileTurnCount").status}")
+            appendLine("- `avgEnemyTurns`: ${metricsById.getValue("avgEnemyTurns").currentValueText} / ${metricsById.getValue("avgEnemyTurns").status}")
+            appendLine("- `criticalPathCombatFloorSatisfied`: ${criticalPathMetric.currentValueText} / ${criticalPathMetric.status}")
+            appendLine("- criticalPathZoneIds: `${criticalPathZoneIds.joinToString()}`")
+            appendLine("| zoneId | avgObjectiveAcquireTurn | avgVisibleHostileTurnCount | avgEnemyTurns | satisfied |")
+            appendLine("| --- | --- | --- | --- | --- |")
+            criticalPathZoneIds.forEach { zoneId ->
+                val zoneBreakdown = criticalPathBreakdown.getValue(zoneId).jsonObject
+                appendLine(
+                    "| `$zoneId` | ${formatNullableScalar(zoneBreakdown["avgObjectiveAcquireTurn"]?.jsonPrimitive?.content?.toDoubleOrNull())} | ${formatScalar(zoneBreakdown.getValue("avgVisibleHostileTurnCount").jsonPrimitive.content.toDouble())} | ${formatScalar(zoneBreakdown.getValue("avgEnemyTurns").jsonPrimitive.content.toDouble())} | `${zoneBreakdown.getValue("satisfied").jsonPrimitive.content}` |",
+                )
+            }
             appendLine()
             appendLine("## Scripted vs Organic Hidden")
             appendLine("- sourceTask.scripted: `${scriptedHiddenTask.taskId}`")
@@ -672,6 +781,10 @@ private fun verdictOf(passed: Boolean): String = if (passed) "PASS" else "FAIL"
 private fun formatPercent(value: Double): String = String.format(Locale.US, "%.1f%%", value * 100.0)
 
 private fun formatPercentPrecise(value: Double): String = String.format(Locale.US, "%.2f%%", value * 100.0)
+
+private fun formatScalar(value: Double): String = String.format(Locale.US, "%.1f", value)
+
+private fun formatNullableScalar(value: Double?): String = value?.let(::formatScalar) ?: "n/a"
 
 private fun formatSignedPercent(value: Double): String =
     if (value >= 0.0) {

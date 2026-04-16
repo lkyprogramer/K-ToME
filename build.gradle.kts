@@ -52,6 +52,7 @@ val verificationOnlyTestTags =
         "whiteBoxContentPack",
         "phase4LegacyReport",
         "reportPhase4",
+        "reportPhase4Fixture",
         "verifyLootPreflight",
         "verifyHiddenPreflight",
         "verifyContentPackPreflight",
@@ -417,6 +418,12 @@ tasks.register("reportPhase4Only") {
     group = LifecycleBasePlugin.VERIFICATION_GROUP
     description = "Rebuilds the canonical unified Phase 4 aggregate report from existing domain summaries without legacy comparison."
     dependsOn(":tools:reportPhase4Only")
+}
+
+tasks.register("reportPhase4Fixture") {
+    group = LifecycleBasePlugin.VERIFICATION_GROUP
+    description = "Runs the fixture-backed reportPhase4 contract tests without materializing the repo-scoped canonical report."
+    dependsOn(":tools:reportPhase4Fixture")
 }
 
 tasks.register("verifyOwner") {

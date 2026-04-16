@@ -1,0 +1,37 @@
+{
+    "schemaVersion": 1,
+    "baselineId": "phase4-critical-path-pacing-v1",
+    "domainId": "longrun",
+    "mode": "BUDGET_THRESHOLD",
+    "metricDefinitionVersion": "phase4-critical-path-pacing-v1",
+    "approvedDebtKeys": [],
+    "expectedFailureCodes": [],
+    "ceilings": [],
+    "expectedMetricRanges": [
+        {
+            "metricId": "avgObjectiveAcquireTurn",
+            "minValue": 4.0,
+            "notes": "The minimum critical-path zone objective acquire turn must stay at or above 4.0 so objective pickup no longer collapses into a two-turn flatline."
+        },
+        {
+            "metricId": "avgVisibleHostileTurnCount",
+            "minValue": 1.0,
+            "notes": "The minimum critical-path zone visible hostile turn count must stay above the zero-combat floor."
+        },
+        {
+            "metricId": "avgEnemyTurns",
+            "minValue": 1.0,
+            "notes": "The minimum critical-path zone enemy turn count must stay above the zero-combat floor."
+        },
+        {
+            "metricId": "criticalPathCombatFloorSatisfied",
+            "minValue": 1.0,
+            "notes": "All critical-path zones must satisfy the objective/combat pacing floors."
+        }
+    ],
+    "notes": [
+        "Critical-path pacing is evaluated from longRunLab fullRoute zone traversal diagnostics and kept separate from terminal build identity so late-game reward tuning does not silently redefine pacing floors.",
+        "Thresholds are the minimum formalization of the PR requirement: no 2-turn objective acquisition and no 0-combat critical-path zone."
+    ],
+    "metadata": {}
+}

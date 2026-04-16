@@ -3,6 +3,18 @@ package com.ktome.tools.verification
 import com.ktome.tools.phase4.Phase4OwnerBaselineRegistry
 
 object VerificationTaskRegistry {
+    private val phase4CanonicalReportSharedPaths: List<String> =
+        listOf(
+            "tools/src/main/kotlin/com/ktome/tools/phase4/Phase4AggregationInputRunner.kt",
+            "tools/src/main/kotlin/com/ktome/tools/phase4/Phase4CriticalPathPacing.kt",
+            "tools/src/main/kotlin/com/ktome/tools/phase4/Phase4DomainArtifactRegistry.kt",
+            "tools/src/main/kotlin/com/ktome/tools/phase4/Phase4MetricCatalog.kt",
+            "tools/src/main/kotlin/com/ktome/tools/phase4/Phase4OwnerBaselineRegistry.kt",
+            "tools/src/main/kotlin/com/ktome/tools/phase4/Phase4OwnerMetricTargets.kt",
+            "tools/src/main/kotlin/com/ktome/tools/phase4/Phase4ReportRunner.kt",
+            "tools/src/main/kotlin/com/ktome/tools/phase4/ReportPhase4Runner.kt",
+        )
+
     private val contractLintDomain =
         VerificationDomainSpec(
             domainId = "contractLint",
@@ -176,12 +188,7 @@ object VerificationTaskRegistry {
                     InputScope(
                         scopeId = "loot.phase4-report",
                         pathPrefixes =
-                            listOf(
-                                "tools/src/main/kotlin/com/ktome/tools/phase4/Phase4AggregationInputRunner.kt",
-                                "tools/src/main/kotlin/com/ktome/tools/phase4/Phase4DomainArtifactRegistry.kt",
-                                "tools/src/main/kotlin/com/ktome/tools/phase4/Phase4ReportRunner.kt",
-                                "tools/src/main/kotlin/com/ktome/tools/phase4/ReportPhase4Runner.kt",
-                            ),
+                            phase4CanonicalReportSharedPaths,
                         requestedTaskPaths = listOf(":tools:reportPhase4Only"),
                     ),
                 ),
@@ -256,13 +263,8 @@ object VerificationTaskRegistry {
                     InputScope(
                         scopeId = "hidden.owner-evaluation",
                         pathPrefixes =
-                            listOf(
-                                Phase4OwnerBaselineRegistry.SCRIPTED_HIDDEN_BASELINE_RELATIVE_PATH,
-                                "tools/src/main/kotlin/com/ktome/tools/phase4/Phase4AggregationInputRunner.kt",
-                                "tools/src/main/kotlin/com/ktome/tools/phase4/Phase4DomainArtifactRegistry.kt",
-                                "tools/src/main/kotlin/com/ktome/tools/phase4/Phase4ReportRunner.kt",
-                                "tools/src/main/kotlin/com/ktome/tools/phase4/ReportPhase4Runner.kt",
-                            ),
+                            listOf(Phase4OwnerBaselineRegistry.SCRIPTED_HIDDEN_BASELINE_RELATIVE_PATH) +
+                                phase4CanonicalReportSharedPaths,
                         requestedTaskPaths = listOf(":tools:reportPhase4Only"),
                     ),
                 ),
@@ -325,13 +327,8 @@ object VerificationTaskRegistry {
                     InputScope(
                         scopeId = "organic-hidden.owner-evaluation",
                         pathPrefixes =
-                            listOf(
-                                Phase4OwnerBaselineRegistry.ORGANIC_HIDDEN_BASELINE_RELATIVE_PATH,
-                                "tools/src/main/kotlin/com/ktome/tools/phase4/Phase4AggregationInputRunner.kt",
-                                "tools/src/main/kotlin/com/ktome/tools/phase4/Phase4DomainArtifactRegistry.kt",
-                                "tools/src/main/kotlin/com/ktome/tools/phase4/Phase4ReportRunner.kt",
-                                "tools/src/main/kotlin/com/ktome/tools/phase4/ReportPhase4Runner.kt",
-                            ),
+                            listOf(Phase4OwnerBaselineRegistry.ORGANIC_HIDDEN_BASELINE_RELATIVE_PATH) +
+                                phase4CanonicalReportSharedPaths,
                         requestedTaskPaths = listOf(":tools:reportPhase4Only"),
                     ),
                 ),
@@ -533,11 +530,7 @@ object VerificationTaskRegistry {
                             listOf(
                                 Phase4OwnerBaselineRegistry.TERRAIN_UNIFIED_BASELINE_RELATIVE_PATH,
                                 Phase4OwnerBaselineRegistry.TERRAIN_PER_ZONE_BASELINE_RELATIVE_PATH,
-                                "tools/src/main/kotlin/com/ktome/tools/phase4/Phase4AggregationInputRunner.kt",
-                                "tools/src/main/kotlin/com/ktome/tools/phase4/Phase4DomainArtifactRegistry.kt",
-                                "tools/src/main/kotlin/com/ktome/tools/phase4/Phase4ReportRunner.kt",
-                                "tools/src/main/kotlin/com/ktome/tools/phase4/ReportPhase4Runner.kt",
-                            ),
+                            ) + phase4CanonicalReportSharedPaths,
                         requestedTaskPaths = listOf(":tools:reportPhase4Only"),
                     ),
                 ),
@@ -645,11 +638,8 @@ object VerificationTaskRegistry {
                         pathPrefixes =
                             listOf(
                                 Phase4OwnerBaselineRegistry.TERMINAL_BUILD_BASELINE_RELATIVE_PATH,
-                                "tools/src/main/kotlin/com/ktome/tools/phase4/Phase4AggregationInputRunner.kt",
-                                "tools/src/main/kotlin/com/ktome/tools/phase4/Phase4DomainArtifactRegistry.kt",
-                                "tools/src/main/kotlin/com/ktome/tools/phase4/Phase4ReportRunner.kt",
-                                "tools/src/main/kotlin/com/ktome/tools/phase4/ReportPhase4Runner.kt",
-                            ),
+                                Phase4OwnerBaselineRegistry.CRITICAL_PATH_PACING_BASELINE_RELATIVE_PATH,
+                            ) + phase4CanonicalReportSharedPaths,
                         requestedTaskPaths = listOf(":tools:reportPhase4Only"),
                     ),
                 ),
