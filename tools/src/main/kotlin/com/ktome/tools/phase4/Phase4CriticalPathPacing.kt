@@ -9,6 +9,7 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
+import kotlinx.serialization.json.putJsonArray
 import kotlinx.serialization.json.putJsonObject
 
 internal data class CriticalPathZonePacingSnapshot(
@@ -17,6 +18,49 @@ internal data class CriticalPathZonePacingSnapshot(
     val avgVisibleHostileTurnCount: Double,
     val avgEnemyTurns: Double,
 )
+
+internal data class CriticalPathZoneDesignAuditSnapshot(
+    val zoneId: String,
+    val floorCount: Int,
+    val mapSize: String,
+    val worldRole: String,
+    val monsterPoolCount: Int,
+    val elitePoolCount: Int,
+    val bossEncounterId: String?,
+    val objectiveSetId: String,
+    val objectiveCompletionRule: String,
+    val specialMechanics: List<String>,
+    val mechanicsWithoutDedicatedRuntimeHook: List<String>,
+    val objectivePlacements: List<String>,
+    val terrainTagWeights: Map<String, Double>,
+) {
+    fun toJson(): JsonObject =
+        buildJsonObject {
+            put("zoneId", zoneId)
+            put("floorCount", floorCount)
+            put("mapSize", mapSize)
+            put("worldRole", worldRole)
+            put("monsterPoolCount", monsterPoolCount)
+            put("elitePoolCount", elitePoolCount)
+            bossEncounterId?.let { value -> put("bossEncounterId", value) }
+            put("objectiveSetId", objectiveSetId)
+            put("objectiveCompletionRule", objectiveCompletionRule)
+            putJsonArray("specialMechanics") {
+                specialMechanics.forEach { mechanic -> add(JsonPrimitive(mechanic)) }
+            }
+            putJsonArray("mechanicsWithoutDedicatedRuntimeHook") {
+                mechanicsWithoutDedicatedRuntimeHook.forEach { mechanic -> add(JsonPrimitive(mechanic)) }
+            }
+            putJsonArray("objectivePlacements") {
+                objectivePlacements.forEach { placement -> add(JsonPrimitive(placement)) }
+            }
+            putJsonObject("terrainTagWeights") {
+                terrainTagWeights.toSortedMap().forEach { (terrainTag, weight) ->
+                    put(terrainTag, weight)
+                }
+            }
+        }
+}
 
 internal data class CriticalPathPacingSummary(
     val zoneIds: List<String>,
@@ -28,6 +72,9 @@ internal data class CriticalPathPacingSummary(
             "CriticalPathPacingSummary.zonesById must cover all criticalPathZoneIds."
         }
     }
+
+    fun zoneSnapshotsInOrder(): List<CriticalPathZonePacingSnapshot> =
+        zoneIds.map { zoneId -> zonesById.getValue(zoneId) }
 
     fun minimumObjectiveAcquireTurn(): Double? =
         zoneIds
@@ -72,15 +119,11 @@ internal data class CriticalPathPacingSummary(
         visibleHostileFloor: Double,
         enemyTurnFloor: Double,
     ): Double =
-        if (zoneIds.isEmpty()) {
-            0.0
-        } else {
-            satisfiedZoneIds(
-                objectiveAcquireFloor = objectiveAcquireFloor,
-                visibleHostileFloor = visibleHostileFloor,
-                enemyTurnFloor = enemyTurnFloor,
-            ).size.toDouble() / zoneIds.size.toDouble()
-        }
+        satisfiedZoneIds(
+            objectiveAcquireFloor = objectiveAcquireFloor,
+            visibleHostileFloor = visibleHostileFloor,
+            enemyTurnFloor = enemyTurnFloor,
+        ).size.toDouble() / zoneIds.size.toDouble()
 
     fun perZoneBreakdownJson(
         objectiveAcquireFloor: Double,
@@ -91,7 +134,7 @@ internal data class CriticalPathPacingSummary(
             zoneIds.forEach { zoneId ->
                 val zone = zonesById.getValue(zoneId)
                 putJsonObject(zoneId) {
-                    zone.avgObjectiveAcquireTurn?.let { put("avgObjectiveAcquireTurn", it) }
+                    zone.avgObjectiveAcquireTurn?.let { value -> put("avgObjectiveAcquireTurn", value) }
                     put("avgVisibleHostileTurnCount", zone.avgVisibleHostileTurnCount)
                     put("avgEnemyTurns", zone.avgEnemyTurns)
                     put(
@@ -217,6 +260,18 @@ internal fun JsonObject.toCriticalPathPacingSummary(): CriticalPathPacingSummary
     )
 }
 
+internal fun JsonObject.toCriticalPathDesignAuditSnapshots(criticalPathZoneIds: List<String>): List<CriticalPathZoneDesignAuditSnapshot> {
+    val payload = getValue("criticalPathZoneDesignAudit").jsonObject
+    val extraZoneIds = payload.keys - criticalPathZoneIds.toSet()
+    require(extraZoneIds.isEmpty()) {
+        "criticalPathZoneDesignAudit declared non-critical zones: ${extraZoneIds.sorted().joinToString()}."
+    }
+    return criticalPathZoneIds.map { zoneId ->
+        payload[zoneId]?.jsonObject?.toCriticalPathZoneDesignAuditSnapshot(zoneId)
+            ?: error("criticalPathZoneDesignAudit missing entry for critical-path zone '$zoneId'.")
+    }
+}
+
 private fun JsonObject.toCriticalPathZonePacingSnapshot(zoneId: String): CriticalPathZonePacingSnapshot =
     CriticalPathZonePacingSnapshot(
         zoneId = zoneId,
@@ -224,6 +279,31 @@ private fun JsonObject.toCriticalPathZonePacingSnapshot(zoneId: String): Critica
         avgVisibleHostileTurnCount = this["avgVisibleHostileTurnCount"]?.jsonPrimitive?.content?.toDoubleOrNull() ?: 0.0,
         avgEnemyTurns = this["avgEnemyTurns"]?.jsonPrimitive?.content?.toDoubleOrNull() ?: 0.0,
     )
+
+private fun JsonObject.toCriticalPathZoneDesignAuditSnapshot(zoneId: String): CriticalPathZoneDesignAuditSnapshot =
+    CriticalPathZoneDesignAuditSnapshot(
+        zoneId = zoneId,
+        floorCount = getValue("floorCount").jsonPrimitive.content.toInt(),
+        mapSize = getValue("mapSize").jsonPrimitive.content,
+        worldRole = getValue("worldRole").jsonPrimitive.content,
+        monsterPoolCount = getValue("monsterPoolCount").jsonPrimitive.content.toInt(),
+        elitePoolCount = getValue("elitePoolCount").jsonPrimitive.content.toInt(),
+        bossEncounterId = this["bossEncounterId"]?.jsonPrimitive?.content,
+        objectiveSetId = getValue("objectiveSetId").jsonPrimitive.content,
+        objectiveCompletionRule = getValue("objectiveCompletionRule").jsonPrimitive.content,
+        specialMechanics = stringList("specialMechanics"),
+        mechanicsWithoutDedicatedRuntimeHook = stringList("mechanicsWithoutDedicatedRuntimeHook"),
+        objectivePlacements = stringList("objectivePlacements"),
+        terrainTagWeights =
+            getValue("terrainTagWeights").jsonObject.entries
+                .sortedBy(Map.Entry<String, kotlinx.serialization.json.JsonElement>::key)
+                .associate { (terrainTag, weight) ->
+                    terrainTag to weight.jsonPrimitive.content.toDouble()
+                },
+    )
+
+private fun JsonObject.stringList(key: String): List<String> =
+    getValue(key).jsonArray.map { element -> element.jsonPrimitive.content }
 
 private fun missingCriticalPathZonePacingSnapshot(zoneId: String): CriticalPathZonePacingSnapshot =
     CriticalPathZonePacingSnapshot(

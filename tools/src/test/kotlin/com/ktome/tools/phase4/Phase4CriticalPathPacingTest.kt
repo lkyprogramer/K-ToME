@@ -41,11 +41,11 @@ class Phase4CriticalPathPacingTest {
         assertEquals(listOf("grey_gate_depths"), summary.failingEnemyTurnZones(target = 1.0))
 
         val breakdown =
-            summary.evaluate(
+            summary.perZoneBreakdownJson(
                 objectiveAcquireFloor = 4.0,
                 visibleHostileFloor = 1.0,
                 enemyTurnFloor = 1.0,
-            ).zoneBreakdown
+            )
 
         assertEquals(
             JsonPrimitive(false),
