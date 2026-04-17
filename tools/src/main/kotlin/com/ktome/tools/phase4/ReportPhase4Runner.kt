@@ -15,9 +15,11 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.put
 
 @Serializable
 data class ReportPhase4Run(
@@ -36,6 +38,7 @@ data class ReportPhase4Run(
 
 @Serializable
 private data class ReportPhase4Aggregate(
+    val schemaVersion: String,
     val phaseId: String,
     val generatedAt: String,
     val buildId: String? = null,
@@ -55,6 +58,7 @@ private data class ReportPhase4Aggregate(
     val metricCatalog: List<Phase4MetricCatalogEntry>,
     val inputs: List<ReportAggregationInput>,
     val ownerMetrics: List<ReportPhase4OwnerMetric>,
+    val sections: JsonObject = JsonObject(emptyMap()),
     val legacyComparison: ReportPhase4LegacyComparison? = null,
 )
 
@@ -69,6 +73,7 @@ private data class ReportPhase4OwnerMetric(
     val currentValueText: String,
     val target: String,
     val note: String? = null,
+    val details: JsonObject = JsonObject(emptyMap()),
 )
 
 @Serializable
@@ -95,9 +100,17 @@ private val reportPhase4Json: Json =
     }
 
 object ReportPhase4Runner {
+    private const val SCHEMA_VERSION: String = "report-phase4-v2"
     private const val SUMMARY_FILE: String = "report-phase4-summary.json"
     private const val MARKDOWN_FILE: String = "report-phase4-summary.md"
     private const val LEGACY_COMPARISON_FILE: String = "report-phase4-legacy-comparison.json"
+    private val pacingMetricIds: List<String> =
+        listOf(
+            "avgObjectiveAcquireTurn",
+            "avgVisibleHostileTurnCount",
+            "avgEnemyTurns",
+            "criticalPathCombatFloorSatisfied",
+        )
 
     fun run(compareLegacy: Boolean = false): ReportPhase4Run {
         val materialization = Phase4AggregationInputRunner.materialize()
@@ -108,6 +121,7 @@ object ReportPhase4Runner {
         val aggregationInputs = materialization.inputs
         val sourcePathByTaskId = aggregationInputs.associate { input -> input.sourceTaskId to input.kernelResult.sourcePath }
         val ownerMetrics = buildOwnerMetrics(aggregationInputs = aggregationInputs)
+        val sections = buildSections(aggregationInputs = aggregationInputs, ownerMetrics = ownerMetrics)
         val metricCatalog =
             Phase4MetricCatalog.entries(
                 sourcePathByTaskId = sourcePathByTaskId,
@@ -136,6 +150,7 @@ object ReportPhase4Runner {
             }
         val aggregate =
             ReportPhase4Aggregate(
+                schemaVersion = SCHEMA_VERSION,
                 phaseId = "P4",
                 generatedAt = Instant.now().toString(),
                 buildId = aggregationInputs.firstNotNullOfOrNull { input -> input.kernelResult.buildId },
@@ -160,6 +175,7 @@ object ReportPhase4Runner {
                 metricCatalog = metricCatalog,
                 inputs = aggregationInputs,
                 ownerMetrics = ownerMetrics,
+                sections = sections,
                 legacyComparison = legacyComparison,
             )
         val summaryPath = outputDir.resolve(SUMMARY_FILE)
@@ -219,6 +235,59 @@ object ReportPhase4Runner {
                 currentValueText = entry.currentValueText,
                 target = checkNotNull(entry.targetText) { "Missing targetText for reportPhase4 owner metric ${spec.id}." },
                 note = entry.note,
+                details = entry.details,
+            )
+        }
+    }
+
+    private fun buildSections(
+        aggregationInputs: List<ReportAggregationInput>,
+        ownerMetrics: List<ReportPhase4OwnerMetric>,
+    ): JsonObject {
+        val longRunInput = requireInput(aggregationInputs.associateBy(ReportAggregationInput::sourceTaskId), "longRunLab")
+        val objectiveMetric = requireOwnerMetric(ownerMetrics, "avgObjectiveAcquireTurn")
+        val visibleMetric = requireOwnerMetric(ownerMetrics, "avgVisibleHostileTurnCount")
+        val enemyMetric = requireOwnerMetric(ownerMetrics, "avgEnemyTurns")
+        val satisfiedMetric = requireOwnerMetric(ownerMetrics, "criticalPathCombatFloorSatisfied")
+        val satisfiedValue = satisfiedMetric.currentValue.jsonObject
+        val criticalPathZoneIds =
+            satisfiedValue.getValue("criticalPathZoneIds").jsonArray.map { zoneId -> zoneId.jsonPrimitive.content }
+        val zoneBreakdown = satisfiedValue.getValue("zoneBreakdown").jsonObject
+        val zoneSnapshots =
+            criticalPathZoneIds.map { zoneId ->
+                val zoneState = zoneBreakdown.getValue(zoneId).jsonObject
+                CriticalPathZonePacingSnapshot(
+                    zoneId = zoneId,
+                    avgObjectiveAcquireTurn = zoneState["avgObjectiveAcquireTurn"]?.jsonPrimitive?.content?.toDoubleOrNull(),
+                    avgVisibleHostileTurnCount = zoneState.getValue("avgVisibleHostileTurnCount").jsonPrimitive.content.toDouble(),
+                    avgEnemyTurns = zoneState.getValue("avgEnemyTurns").jsonPrimitive.content.toDouble(),
+                )
+            }
+        val sampleMissingZoneIds =
+            zoneSnapshots
+                .filter { snapshot -> snapshot.avgObjectiveAcquireTurn == null }
+                .map(CriticalPathZonePacingSnapshot::zoneId)
+        val designAudit = longRunInput.kernelResult.metrics.toCriticalPathDesignAuditSnapshots(criticalPathZoneIds)
+        validateCriticalPathPacingDetails(
+            ownerMetrics =
+                listOf(
+                    objectiveMetric,
+                    visibleMetric,
+                    enemyMetric,
+                    satisfiedMetric,
+                ),
+            sampleMissingZoneIds = sampleMissingZoneIds,
+        )
+        return buildJsonObject {
+            put(
+                "criticalPathPacing",
+                CriticalPathPacingEvidence(
+                    criticalPathZoneIds = criticalPathZoneIds,
+                    zoneSnapshots = zoneSnapshots,
+                    zoneBreakdown = zoneBreakdown,
+                    designAudit = designAudit,
+                    sampleMissingZoneIds = sampleMissingZoneIds,
+                ).toSectionJson(),
             )
         }
     }
@@ -373,14 +442,16 @@ object ReportPhase4Runner {
             val visibleMetric = requireOwnerMetric(report.ownerMetrics, "avgVisibleHostileTurnCount")
             val enemyMetric = requireOwnerMetric(report.ownerMetrics, "avgEnemyTurns")
             val satisfiedMetric = requireOwnerMetric(report.ownerMetrics, "criticalPathCombatFloorSatisfied")
-            val criticalPathMetricValue = satisfiedMetric.currentValue.jsonObject
+            val criticalPathSection = requireSection(report.sections, "criticalPathPacing")
             val criticalPathZoneIds =
-                criticalPathMetricValue.getValue("criticalPathZoneIds").jsonArray.map { zoneId ->
+                criticalPathSection.getValue("criticalPathZoneIds").jsonArray.map { zoneId ->
                     zoneId.jsonPrimitive.content
                 }
-            val criticalPathBreakdown = criticalPathMetricValue.getValue("zoneBreakdown").jsonObject
+            val criticalPathBreakdown = criticalPathSection.getValue("zoneBreakdown").jsonObject
+            val criticalPathDesignAudit = criticalPathSection.getValue("designAudit").jsonArray
             appendLine("# reportPhase4")
             appendLine()
+            appendLine("- schemaVersion: `${report.schemaVersion}`")
             appendLine("- generatedAt: `${report.generatedAt}`")
             report.buildId?.let { buildId -> appendLine("- buildId: `${buildId}`") }
             report.locale?.let { locale -> appendLine("- locale: `${locale}`") }
@@ -497,6 +568,16 @@ object ReportPhase4Runner {
                 )
             }
             appendLine()
+            appendLine("### Critical Path Design Audit")
+            appendLine("| zoneId | floorCount | mapSize | worldRole | objectiveSetId | objectiveCompletionRule | mechanicsWithoutDedicatedRuntimeHook |")
+            appendLine("| --- | --- | --- | --- | --- | --- | --- |")
+            criticalPathDesignAudit.forEach { element ->
+                val audit = element.jsonObject
+                appendLine(
+                    "| `${audit.getValue("zoneId").jsonPrimitive.content}` | `${audit.getValue("floorCount").jsonPrimitive.content}` | `${audit.getValue("mapSize").jsonPrimitive.content}` | `${audit.getValue("worldRole").jsonPrimitive.content}` | `${audit.getValue("objectiveSetId").jsonPrimitive.content}` | `${audit.getValue("objectiveCompletionRule").jsonPrimitive.content}` | `${audit.getValue("mechanicsWithoutDedicatedRuntimeHook").jsonArray.joinToString { mechanic -> mechanic.jsonPrimitive.content }.ifBlank { "none" }}` |",
+                )
+            }
+            appendLine()
             appendLine("## Inputs")
             report.inputs.forEach { input ->
                 appendLine("### `${input.sourceTaskId}`")
@@ -565,6 +646,55 @@ object ReportPhase4Runner {
         val configured = System.getProperty("ktome.repo.root")
         return if (configured.isNullOrBlank()) Path.of(".").toAbsolutePath().normalize() else Path.of(configured).toAbsolutePath().normalize()
     }
+
+    private fun validateCriticalPathPacingDetails(
+        ownerMetrics: List<ReportPhase4OwnerMetric>,
+        sampleMissingZoneIds: List<String>,
+    ) {
+        ownerMetrics.forEach { ownerMetric ->
+            val expectedMetricKind =
+                if (ownerMetric.metricId == "criticalPathCombatFloorSatisfied") {
+                    "ratio"
+                } else {
+                    "minimum"
+                }
+            val expectedSampleMissing =
+                when (ownerMetric.metricId) {
+                    "avgObjectiveAcquireTurn",
+                    "criticalPathCombatFloorSatisfied",
+                    ->
+                        sampleMissingZoneIds.isNotEmpty()
+
+                    else -> false
+                }
+            val expectedZoneFailures =
+                ownerMetric.currentValue.jsonObject
+                    .getValue("failingZones")
+                    .jsonArray
+                    .map { zone -> zone.jsonPrimitive.content }
+            require(ownerMetric.details.getValue("sectionRef").jsonPrimitive.content == "criticalPathPacing") {
+                "reportPhase4 owner metric ${ownerMetric.metricId} must point at sections.criticalPathPacing."
+            }
+            require(ownerMetric.details.getValue("metricKind").jsonPrimitive.content == expectedMetricKind) {
+                "reportPhase4 owner metric ${ownerMetric.metricId} metricKind drifted from the shared pacing contract."
+            }
+            require(ownerMetric.details.getValue("zoneFailures") == expectedZoneFailures.toJsonArray()) {
+                "reportPhase4 owner metric ${ownerMetric.metricId} zoneFailures drifted from the shared pacing contract."
+            }
+            require(ownerMetric.details.getValue("sampleMissing").jsonPrimitive.content.toBoolean() == expectedSampleMissing) {
+                "reportPhase4 owner metric ${ownerMetric.metricId} sampleMissing drifted from the shared pacing contract."
+            }
+        }
+    }
+
+    private fun requireSection(
+        sections: JsonObject,
+        sectionKey: String,
+    ): JsonObject =
+        checkNotNull(sections[sectionKey]?.jsonObject) {
+            "Missing reportPhase4 section '$sectionKey'."
+        }
+
 }
 
 private fun JsonObject.stringValue(key: String): String? = get(key)?.jsonPrimitive?.content
