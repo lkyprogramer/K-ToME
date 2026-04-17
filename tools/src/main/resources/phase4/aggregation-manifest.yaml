@@ -1,0 +1,59 @@
+schemaVersion: phase4-aggregation-manifest-v1
+phaseId: P4
+tasks:
+  - taskId: mapgenSmoke
+    taskPath: :tools:mapgenSmoke
+    artifactRelativePath: tools/build/reports/phase4/mapgen/mapgen-smoke-summary.json
+    role: AGGREGATION_ONLY
+  - taskId: solvabilityHarness
+    taskPath: :tools:solvabilityHarness
+    artifactRelativePath: tools/build/reports/phase4/solvability/solvability-summary.json
+    role: AGGREGATION_ONLY
+  - taskId: hiddenContentHarness
+    taskPath: :tools:hiddenContentHarness
+    artifactRelativePath: tools/build/reports/phase4/hidden/hidden-content-summary.json
+    role: OWNER
+  - taskId: organicHiddenProbe
+    taskPath: :tools:organicHiddenProbe
+    artifactRelativePath: tools/build/reports/phase4/hidden/organic-hidden-probe-summary.json
+    role: OWNER
+  - taskId: contentPackHarness
+    taskPath: :tools:contentPackHarness
+    artifactRelativePath: tools/build/reports/phase4/content-pack/content-pack-summary.json
+    role: OWNER
+  - taskId: bossHarness
+    taskPath: :tools:bossHarness
+    artifactRelativePath: tools/build/reports/phase4/whitebox/boss/boss-harness.json
+    role: OWNER
+  - taskId: longRunLab
+    taskPath: :game:longRunLab
+    artifactRelativePath: build/reports/harness/long-run-full.json
+    role: OWNER
+  - taskId: terrainInteractionBatch
+    taskPath: :tools:terrainInteractionBatch
+    artifactRelativePath: tools/build/reports/phase4/whitebox/terrain/whitebox-terrain-summary.json
+    role: OWNER
+  - taskId: whiteBoxMapgen
+    taskPath: :tools:whiteBoxMapgen
+    artifactRelativePath: tools/build/reports/phase4/whitebox/mapgen/whitebox-mapgen-summary.json
+    role: OWNER
+  - taskId: whiteBoxSolvability
+    taskPath: :tools:whiteBoxSolvability
+    artifactRelativePath: tools/build/reports/phase4/whitebox/solvability/whitebox-solvability-summary.json
+    role: OWNER
+  - taskId: lootBalanceLab
+    taskPath: :tools:lootBalanceLab
+    artifactRelativePath: tools/build/reports/phase4/loot/loot-balance-summary.json
+    role: OWNER
+  - taskId: whiteBoxLoot
+    taskPath: :tools:whiteBoxLoot
+    artifactRelativePath: tools/build/reports/phase4/whitebox/loot/whitebox-loot-summary.json
+    role: OWNER
+  - taskId: whiteBoxHiddenContent
+    taskPath: :tools:whiteBoxHiddenContent
+    artifactRelativePath: tools/build/reports/phase4/whitebox/hidden/whitebox-hidden-content-summary.json
+    role: AGGREGATION_ONLY
+  - taskId: whiteBoxContentPack
+    taskPath: :tools:whiteBoxContentPack
+    artifactRelativePath: tools/build/reports/phase4/whitebox/content-pack/whitebox-content-pack-summary.json
+    role: OWNER

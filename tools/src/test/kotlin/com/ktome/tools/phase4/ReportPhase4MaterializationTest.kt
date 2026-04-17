@@ -41,16 +41,20 @@ class ReportPhase4MaterializationTest {
         val payload = Phase4ReportFixtureTestSupport.json.parseToJsonElement(Files.readString(run.summaryPath)).jsonObject
         val markdown = Files.readString(run.markdownPath)
         val ownerMetrics = payload.getValue("ownerMetrics").jsonArray
+        val sections = payload.getValue("sections").jsonObject
 
+        assertEquals("report-phase4-v2", payload.getValue("schemaVersion").jsonPrimitive.content)
         assertEquals("P4", payload.getValue("phaseId").jsonPrimitive.content)
         assertEquals("14", payload.getValue("inputCount").jsonPrimitive.content)
         assertEquals("13", payload.getValue("ownerMetricCount").jsonPrimitive.content)
         assertEquals(13, ownerMetrics.size)
+        assertTrue(sections.containsKey("criticalPathPacing"))
         assertTrue(ownerMetrics.any { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "avgObjectiveAcquireTurn" })
         assertTrue(ownerMetrics.any { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "avgVisibleHostileTurnCount" })
         assertTrue(ownerMetrics.any { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "avgEnemyTurns" })
         assertTrue(ownerMetrics.any { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "criticalPathCombatFloorSatisfied" })
         assertTrue(markdown.contains("## Critical Path Pacing"))
+        assertTrue(markdown.contains("### Critical Path Design Audit"))
         assertTrue(markdown.contains("criticalPathZoneIds"))
         assertTrue(markdown.contains("criticalPathCombatFloorSatisfied"))
 

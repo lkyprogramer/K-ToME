@@ -2,6 +2,7 @@ package com.ktome.tools.phase4
 
 import com.ktome.tools.verification.VerificationTaskRegistry
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
@@ -29,17 +30,27 @@ class Phase4RegistryConsistencyTest {
     @Test
     fun `phase4 aggregation inventory equals routed owners plus explicit aggregation only tasks`() {
         val routedOwnerTaskIds = VerificationTaskRegistry.phaseOwnerTaskIds("phase4")
-        val aggregationOnlyTaskIds = Phase4DomainArtifactRegistry.aggregationOnlyTaskIds()
-        val aggregatedTaskIds = Phase4DomainArtifactRegistry.registeredTaskIds()
-        val reportOwnerTaskIds = aggregatedTaskIds - aggregationOnlyTaskIds
+        val manifest = Phase4AggregationManifestRuntime.manifest()
+        val aggregationOnlyTaskIds = manifest.aggregationOnlyTasks.mapTo(linkedSetOf(), Phase4AggregationManifestTask::taskId)
+        val manifestOwnerTaskIds = manifest.ownerTasks.mapTo(linkedSetOf(), Phase4AggregationManifestTask::taskId)
+        val aggregatedTaskIds = manifest.tasks.mapTo(linkedSetOf(), Phase4AggregationManifestTask::taskId)
 
         assertEquals(
-            setOf("mapgenSmoke", "solvabilityHarness", "whiteBoxHiddenContent"),
+            Phase4OwnerTaskRoles.AGGREGATION_ONLY_TASK_IDS,
             aggregationOnlyTaskIds,
         )
-        assertEquals(setOf("contractLint"), routedOwnerTaskIds - reportOwnerTaskIds)
-        assertEquals(reportOwnerTaskIds + aggregationOnlyTaskIds, aggregatedTaskIds)
-        assertTrue(reportOwnerTaskIds.all(routedOwnerTaskIds::contains))
+        assertEquals(
+            routedOwnerTaskIds - Phase4OwnerTaskRoles.NON_AGGREGATED_OWNER_TASK_IDS,
+            manifestOwnerTaskIds,
+        )
+        assertEquals(aggregatedTaskIds, Phase4DomainArtifactRegistry.registeredTaskIds())
+        assertEquals(aggregatedTaskIds, Phase4DomainArtifactRegistry.readerTaskIds())
         assertTrue(aggregationOnlyTaskIds.none(routedOwnerTaskIds::contains))
+        Phase4OwnerTaskRoles.NON_AGGREGATED_OWNER_TASK_IDS.forEach { taskId ->
+            assertFalse(
+                taskId in aggregatedTaskIds,
+                "Non-aggregated owner '$taskId' must not appear in the aggregation manifest.",
+            )
+        }
     }
 }

@@ -39,7 +39,9 @@ class ReportPhase4RunnerTest {
             val inputs = payload.getValue("inputs").jsonArray
             val ownerMetrics = payload.getValue("ownerMetrics").jsonArray
             val metricCatalog = payload.getValue("metricCatalog").jsonArray
+            val sections = payload.getValue("sections").jsonObject
 
+            assertEquals("report-phase4-v2", payload.getValue("schemaVersion").jsonPrimitive.content)
             assertEquals("P4", payload.getValue("phaseId").jsonPrimitive.content)
             assertEquals("14", payload.getValue("inputCount").jsonPrimitive.content)
             assertEquals("13", payload.getValue("ownerMetricCount").jsonPrimitive.content)
@@ -58,12 +60,17 @@ class ReportPhase4RunnerTest {
                 ownerMetrics.first { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "terrainInteractionEncounterRate.aggregate" }.jsonObject
             val lootMetric =
                 ownerMetrics.first { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "sameZoneSecretVsCadenceMaxOverlap" }.jsonObject
+            val objectiveMetric =
+                ownerMetrics.first { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "avgObjectiveAcquireTurn" }.jsonObject
+            val satisfiedMetric =
+                ownerMetrics.first { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "criticalPathCombatFloorSatisfied" }.jsonObject
             val lootCatalogMetric =
                 metricCatalog.first { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "sameZoneSecretVsCadenceMaxOverlap" }.jsonObject
             val lootInput =
                 inputs.first { input -> input.jsonObject.getValue("sourceTaskId").jsonPrimitive.content == "whiteBoxLoot" }.jsonObject
             val organicHiddenInput =
                 inputs.first { input -> input.jsonObject.getValue("sourceTaskId").jsonPrimitive.content == "organicHiddenProbe" }.jsonObject
+            val criticalPathSection = sections.getValue("criticalPathPacing").jsonObject
 
             assertTrue(terrainInput.getValue("evaluationResults").jsonArray.size >= 3)
             assertEquals("RELATIVE_BASELINE", terrainMetric.getValue("baselineMode").jsonPrimitive.content)
@@ -89,9 +96,21 @@ class ReportPhase4RunnerTest {
             assertTrue(organicHiddenInput.getValue("kernelResult").jsonObject.getValue("metrics").jsonObject.containsKey("zoneDiscoveryDistribution"))
             assertTrue(organicHiddenInput.getValue("kernelResult").jsonObject.getValue("metrics").jsonObject.containsKey("secretZoneDiscoveryDistribution"))
             assertTrue(organicHiddenInput.getValue("kernelResult").jsonObject.getValue("metrics").jsonObject.containsKey("searchPromptRequired"))
+            assertTrue(sections.containsKey("criticalPathPacing"))
+            assertEquals("criticalPathPacing", objectiveMetric.getValue("details").jsonObject.getValue("sectionRef").jsonPrimitive.content)
+            assertEquals("criticalPathPacing", satisfiedMetric.getValue("details").jsonObject.getValue("sectionRef").jsonPrimitive.content)
+            assertEquals(
+                criticalPathSection.getValue("designAudit"),
+                satisfiedMetric.getValue("details").jsonObject.getValue("designAudit"),
+            )
+            assertEquals(
+                criticalPathSection.getValue("criticalPathZoneIds").jsonArray.size,
+                criticalPathSection.getValue("designAudit").jsonArray.size,
+            )
             assertTrue(markdown.contains("## Scripted vs Organic Hidden"))
             assertTrue(markdown.contains("## Local Reward Identity"))
             assertTrue(markdown.contains("## Critical Path Pacing"))
+            assertTrue(markdown.contains("### Critical Path Design Audit"))
             assertTrue(markdown.contains("secret reward identity summaries"))
             assertTrue(markdown.contains("rewardStructureKeys"))
             assertTrue(markdown.contains("loot.deep_iron_slag_cache.secret"))

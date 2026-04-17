@@ -11,6 +11,7 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Tag
@@ -237,6 +238,41 @@ class Phase4AggregationInputRunnerTest {
             assertEquals("UNEXPECTED_REGRESSION", cadenceEntry.getValue("status").jsonPrimitive.content)
             assertTrue(cadenceEntry.getValue("note").jsonPrimitive.content.contains(pairId))
             assertTrue(cadenceEntry.getValue("note").jsonPrimitive.content.contains("0.190"))
+        }
+    }
+
+    @Test
+    @Tag("reportPhase4Fixture")
+    @Tag("phase4AggregationInput")
+    fun `phase4 aggregation input v6 stores compact pacing details from shared evaluator`() {
+        val fixtureRepoRoot = Phase4ReportFixtureTestSupport.preparePhase4RepoFixture(tempDir)
+
+        Phase4ReportFixtureTestSupport.withFixtureProperties(
+            repoRoot = fixtureRepoRoot,
+            aggregateReportDir = tempDir.resolve("phase4-aggregation-v6"),
+        ) {
+            val run = Phase4AggregationInputRunner.materialize()
+            val summary =
+                Json.parseToJsonElement(Files.readString(run.summaryPath)).jsonObject
+            val longRunPayload =
+                Json.parseToJsonElement(Files.readString(run.inputDir.resolve("longRunLab.json"))).jsonObject
+            val pacingEvaluation =
+                longRunPayload.getValue("evaluationResults").jsonArray
+                    .first { evaluation -> evaluation.jsonObject.getValue("evaluationId").jsonPrimitive.content == "longrun.criticalPathPacing" }
+                    .jsonObject
+            val objectiveEntry =
+                pacingEvaluation.getValue("entries").jsonArray
+                    .first { entry -> entry.jsonObject.getValue("metricId").jsonPrimitive.content == "avgObjectiveAcquireTurn" }
+                    .jsonObject
+            val objectiveDetails = objectiveEntry.getValue("details").jsonObject
+
+            assertEquals("phase4-aggregation-input-v7", summary.getValue("contractVersion").jsonPrimitive.content)
+            assertEquals("criticalPathPacing", objectiveDetails.getValue("sectionRef").jsonPrimitive.content)
+            assertEquals("minimum", objectiveDetails.getValue("metricKind").jsonPrimitive.content)
+            assertFalse(objectiveDetails.containsKey("fullRouteZoneTraversalDiagnostics"))
+            assertFalse(objectiveDetails.containsKey("criticalPathZoneDesignAudit"))
+            assertTrue(objectiveDetails.getValue("zoneFailures").jsonArray.isNotEmpty().not())
+            assertEquals("false", objectiveDetails.getValue("sampleMissing").jsonPrimitive.content)
         }
     }
 

@@ -13,6 +13,15 @@ class ReportPhase4BuildContractTest {
         val helperInvocation = helperInvocation(buildScript, taskName = "reportPhase4")
 
         assertTrue(buildScript.contains("fun registerPhase4AggregateTask("))
+        assertTrue(buildScript.contains("Phase4AggregationManifestValueSource"))
+        assertTrue(buildScript.contains("Phase4TaskPathResolver.resolve"))
+        assertTrue(buildScript.contains("val phase4AggregateProducerArtifactRelativePaths ="))
+        assertTrue(buildScript.contains("phase4AggregationManifest.artifactRelativePaths"))
+        assertTrue(buildScript.contains("val phase4AggregateProducerTaskPaths ="))
+        assertTrue(buildScript.contains("phase4AggregationManifest.taskPaths"))
+        assertFalse(buildScript.contains("ktome.phase4.aggregationManifestMode"))
+        assertFalse(buildScript.contains("phase4LegacyLiteralProducerArtifactRelativePaths"))
+        assertFalse(buildScript.contains("phase4LegacyLiteralProducerTaskPaths"))
         assertTrue(buildScript.contains("includeTags(includeTag)"))
         assertTrue(buildScript.contains("if (includeTag == \"reportPhase4\")"))
         assertTrue(buildScript.contains("excludeTags(\"phase4AggregationInput\")"))
@@ -28,10 +37,11 @@ class ReportPhase4BuildContractTest {
         assertTrue(helperInvocation.contains("aggregateReportDir = unifiedPhase4ReportDir"))
         assertTrue(helperInvocation.contains("legacyReportDir = legacyPhase4ReportDir"))
         assertTrue(helperInvocation.contains("additionalDependsOn = listOf(tasks.named(\"phase4LegacyReport\"))"))
+        assertTrue(helperInvocation.contains("additionalMustRunAfter = listOf(tasks.named(\"phase4LegacyReportOnly\"))"))
         assertTrue(helperInvocation.contains("additionalInputs = files(legacyPhase4SummaryInput)"))
         assertTrue(helperInvocation.contains("compareLegacy = true"))
         assertFalse(helperInvocation.contains("phase4ReportOnly"))
-        assertFalse(helperInvocation.contains("phase4LegacyReportOnly"))
+        assertFalse(helperInvocation.contains("additionalDependsOn = listOf(tasks.named(\"phase4LegacyReportOnly\"))"))
     }
 
     @Test
@@ -71,6 +81,11 @@ class ReportPhase4BuildContractTest {
             )
 
         assertFalse(registrySource.contains("Phase4ReportRunner::"))
+        assertFalse(registrySource.contains("private data class Phase4TaskDescriptor"))
+        assertFalse(registrySource.contains("relativeSourcePath ="))
+        assertFalse(registrySource.contains("aggregationOnly = true"))
+        assertTrue(registrySource.contains("Phase4AggregationManifestRuntime.tasks()"))
+        assertTrue(registrySource.contains("taskReadersById"))
     }
 
     @Test

@@ -83,6 +83,7 @@ class Phase4ReportRunnerTest {
         assertTrue(longRunTask.getValue("metrics").jsonObject.containsKey("professionTopWeaponSemanticTags"))
         assertTrue(longRunTask.getValue("metrics").jsonObject.containsKey("fullRouteZoneTraversalDiagnostics"))
         assertTrue(longRunTask.getValue("metrics").jsonObject.containsKey("criticalPathZoneIds"))
+        assertTrue(longRunTask.getValue("metrics").jsonObject.containsKey("criticalPathZoneDesignAudit"))
         assertTrue(terrainTask.getValue("sourcePath").jsonPrimitive.content.contains("whitebox/terrain"))
         assertTrue(terrainTask.getValue("metrics").jsonObject.containsKey("combatSampledZoneIds"))
         assertTrue(terrainTask.getValue("metrics").jsonObject.containsKey("combatSampledZoneExclusionNotes"))
@@ -159,6 +160,7 @@ class Phase4ReportRunnerTest {
         assertTrue(markdown.contains("## Local Reward Identity"))
         assertTrue(markdown.contains("## Terminal Build Identity"))
         assertTrue(markdown.contains("## Critical Path Pacing"))
+        assertTrue(markdown.contains("### Critical Path Design Audit"))
         assertTrue(markdown.contains("## Scripted vs Organic Hidden"))
         assertTrue(markdown.contains("## Terrain Combat Sample Contract"))
         assertTrue(markdown.contains("- sourceTask: `whiteBoxLoot`"))
@@ -186,8 +188,14 @@ class Phase4ReportRunnerTest {
             experienceMetrics.first { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "avgObjectiveAcquireTurn" }.jsonObject
         val combatFloorMetric =
             experienceMetrics.first { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "criticalPathCombatFloorSatisfied" }.jsonObject
+        val criticalPathZoneIds =
+            combatFloorMetric.getValue("currentValue").jsonObject.getValue("criticalPathZoneIds").jsonArray.map { zoneId ->
+                zoneId.jsonPrimitive.content
+            }
         val organicHiddenMetric =
             experienceMetrics.first { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "organicHiddenDiscoveryRate" }.jsonObject
+        val criticalPathAuditSection =
+            markdown.substringAfter("### Critical Path Design Audit").substringBefore("## Scripted vs Organic Hidden")
         assertTrue(terminalDiversityMetric.getValue("note").jsonPrimitive.content.contains("terminalBases="))
         assertTrue(terminalDiversityMetric.getValue("note").jsonPrimitive.content.contains("topWeaponSemantics="))
         assertTrue(topWeaponMetric.getValue("note").jsonPrimitive.content.contains("topWeaponBaseId="))
@@ -195,10 +203,16 @@ class Phase4ReportRunnerTest {
         assertTrue(alignedWeaponMetric.getValue("note").jsonPrimitive.content.contains("topWeaponSemantics="))
         assertTrue(objectiveMetric.getValue("currentValue").jsonObject.containsKey("failingZones"))
         assertTrue(!objectiveMetric.getValue("currentValue").jsonObject.containsKey("zoneBreakdown"))
+        assertEquals("criticalPathPacing", objectiveMetric.getValue("details").jsonObject.getValue("sectionRef").jsonPrimitive.content)
         assertTrue(combatFloorMetric.getValue("currentValue").jsonObject.containsKey("failingZones"))
         assertTrue(combatFloorMetric.getValue("currentValue").jsonObject.containsKey("zoneBreakdown"))
+        assertTrue(combatFloorMetric.getValue("details").jsonObject.containsKey("designAudit"))
         assertTrue(organicHiddenMetric.getValue("note").jsonPrimitive.content.contains("observationOnly=true"))
         assertTrue(organicHiddenMetric.getValue("note").jsonPrimitive.content.contains("promptRequired=true"))
+        assertEquals(
+            criticalPathZoneIds.size,
+            criticalPathAuditSection.lineSequence().count { line -> criticalPathZoneIds.any { zoneId -> line.startsWith("| `$zoneId` |") } },
+        )
         assertTrue(markdown.contains("strictLocalIdentityViolations"))
         assertTrue(markdown.contains("searchPromptRequired"))
         assertEquals(
