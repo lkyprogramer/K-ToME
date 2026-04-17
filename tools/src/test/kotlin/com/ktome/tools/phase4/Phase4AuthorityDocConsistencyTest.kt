@@ -61,7 +61,10 @@ class Phase4AuthorityDocConsistencyTest {
         assertTrue(phase4Roadmap.contains("profession capstone"))
         assertTrue(phase4Checklist.contains("critical-path pacing"))
         assertTrue(phase4Checklist.contains("professionCapstoneAdoptionRate"))
+        assertTrue(phase4Checklist.contains("professionCapstoneBreakdown"))
         assertTrue(phase4Checklist.contains("specialTierPassiveFamilyDuplicateCount"))
+        assertTrue(phase4Checklist.contains("specialTierPassiveFamilyDuplicateSummary"))
+        assertTrue(phase4Checklist.contains("dynamicPoolTargetProfiles"))
         assertTrue(v2optPr01.contains("critical path pacing"))
         assertTrue(terminalRanges.containsKey("professionCapstoneAdoptionRate"))
         assertTrue(

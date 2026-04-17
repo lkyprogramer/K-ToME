@@ -69,7 +69,7 @@ internal object Phase4MetricCatalog {
                 outputSection = "local-reward-identity",
                 formula = "dynamicPoolTargetProfileCount / 10",
                 failSemantics = "FAIL means at least one PR-02 target profile still ships as a fixed list instead of a dynamic pool.",
-                decisionNotes = "The numerator is frozen to the ten PR-02 target profiles; partial coverage is not acceptable evidence.",
+                decisionNotes = "The denominator is frozen to the ten PR-02 target profiles; partial coverage is not acceptable evidence.",
             ),
             Phase4MetricSpec(
                 id = "specialTierPassiveFamilyDuplicateCount",

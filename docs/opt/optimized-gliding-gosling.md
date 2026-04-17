@@ -48,7 +48,29 @@ sdk env
 ./scripts/verify-bootstrap.sh
 ```
 
-### 1.4 全局阶段门禁
+### 1.4 文档映射
+
+本方案只定义 repo-local test perf monitor 的实现路径，不替代现有 verification authority。
+
+固定映射：
+
+1. `AGENTS.md` 继续定义仓库级模块边界、验证纪律与高风险红线。
+2. `docs/phase4/2026-03-13-phase4-verification-checklist.md` 继续定义 `Phase 4` owner gate、canonical evidence 与 aggregate contract。
+3. `docs/phase5/2026-04-14-phase5-unified-verification-and-development-spec.md` 继续定义 `Phase 5` unified verification / aggregate future contract。
+4. 本文只负责“如何在本地对 task 执行成本做可比较监控”，不新增 phase gate、不改 owner metric、也不提升 task 分类字符串为新的跨仓库真源。
+
+### 1.5 contract 边界
+
+以下名词在本文里都只代表 perf monitor 内部实现约定，不应外溢成 repo-level contract：
+
+1. `workloadClass`
+2. `LIGHT_AGGREGATE`
+3. `HEAVY_VERIFICATION`
+4. `reportPhase4Only` / `phase4ReportOnly` 在 perf monitor 内的 aggregate 分类
+
+这些分类只能服务于“是否适合作为性能证据、如何解释时延变化”，不能替代 `VerificationTaskRegistry`、aggregation manifest、phase checklist 或 owner report 的权威语义。
+
+### 1.6 全局阶段门禁
 
 本开发文档采用**严格串行 PR** 策略。
 

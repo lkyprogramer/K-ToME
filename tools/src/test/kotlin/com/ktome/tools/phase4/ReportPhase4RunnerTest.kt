@@ -199,10 +199,15 @@ class ReportPhase4RunnerTest {
     fun `reportPhase4 fails fast when whitebox loot owner metrics are missing from artifact`() {
         val fixtureRepoRoot = Phase4ReportFixtureTestSupport.preparePhase4RepoFixture(tempDir)
         Phase4ReportFixtureTestSupport.mutateWhiteBoxLootCorpusMetrics(fixtureRepoRoot) { metrics ->
-            buildJsonObject {
-                metrics.forEach { (key, value) ->
-                    if (key != "dynamicPoolCoverage") {
-                        put(key, value)
+            Phase4ReportFixtureTestSupport.replaceMetricsFields(
+                metrics = metrics,
+                replacements = emptyMap(),
+            ).let { baselineMetrics ->
+                buildJsonObject {
+                    baselineMetrics.forEach { (key, value) ->
+                        if (key != "dynamicPoolCoverage") {
+                            put(key, value)
+                        }
                     }
                 }
             }
@@ -300,6 +305,54 @@ class ReportPhase4RunnerTest {
             assertTrue(ownerMetric.getValue("note").jsonPrimitive.content.contains(pairId))
             assertTrue(markdown.contains("strictLocalIdentityViolations"))
             assertTrue(markdown.contains(pairId))
+        }
+    }
+
+    @Test
+    @Tag("reportPhase4Fixture")
+    fun `reportPhase4 fails fast when content pack artifacts are semantically aligned but freshness diverges`() {
+        val fixtureRepoRoot = Phase4ReportFixtureTestSupport.preparePhase4RepoFixture(tempDir)
+        val whiteBoxSummaryPath =
+            fixtureRepoRoot.resolve("tools/build/reports/phase4/whitebox/content-pack/whitebox-content-pack-summary.json")
+        val whiteBoxPayload = Phase4ReportFixtureTestSupport.json.parseToJsonElement(Files.readString(whiteBoxSummaryPath)).jsonObject
+        val staleWhiteBoxPayload =
+            buildJsonObject {
+                whiteBoxPayload.forEach { (key, value) ->
+                    if (key == "header") {
+                        put(
+                            key,
+                            buildJsonObject {
+                                value.jsonObject.forEach { (headerKey, headerValue) ->
+                                    put(
+                                        headerKey,
+                                        if (headerKey == "timestamp") {
+                                            JsonPrimitive("1999-12-31T23:59:59Z")
+                                        } else {
+                                            headerValue
+                                        },
+                                    )
+                                }
+                            },
+                        )
+                    } else {
+                        put(key, value)
+                    }
+                }
+            }
+        Files.writeString(
+            whiteBoxSummaryPath,
+            Phase4ReportFixtureTestSupport.json.encodeToString(
+                kotlinx.serialization.json.JsonElement.serializer(),
+                staleWhiteBoxPayload,
+            ),
+        )
+
+        Phase4ReportFixtureTestSupport.withFixtureProperties(repoRoot = fixtureRepoRoot, aggregateReportDir = tempDir.resolve("aggregate-stale-content-pack")) {
+            val error =
+                assertThrows(IllegalStateException::class.java) {
+                    ReportPhase4Runner.run(compareLegacy = false)
+                }
+            assertTrue(error.message.orEmpty().contains("freshness"))
         }
     }
 

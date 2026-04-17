@@ -2484,7 +2484,7 @@ items:
     iconKey: item.artifact.river_echo.icon
     audioProfile: audio.item.artifact.river_echo
     schemaVersion: 2
-    tags: [item, weapon, artifact, underground_river, arcanist, special_chest, capstone]
+    tags: [item, weapon, artifact, underground_river, arcanist, secret_zone, capstone]
     type: WEAPON
     slot: WEAPON
     glyph: ")"
@@ -2502,7 +2502,7 @@ items:
     iconKey: item.artifact.eclipsed_relic.icon
     audioProfile: audio.item.artifact.eclipsed_relic
     schemaVersion: 2
-    tags: [item, armor, accessory, artifact, abyssal_temple, templar, boss, capstone, non_weapon_capstone]
+    tags: [item, armor, accessory, artifact, abyssal_temple, templar, boss, secret_zone, capstone, non_weapon_capstone]
     type: ARMOR
     slot: OFF_HAND
     glyph: "]"

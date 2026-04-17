@@ -2,6 +2,8 @@ package com.ktome.tools.phase4
 
 import com.ktome.game.data.DataLoader
 import java.nio.file.Path
+import java.time.Duration
+import java.time.Instant
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
@@ -29,6 +31,8 @@ private val longRunItemSemanticTagsById: Map<String, List<String>> by lazy {
         .baseItems
         .associate { item -> item.id to item.tags.sorted() }
 }
+
+private val contentPackArtifactFreshnessTolerance: Duration = Duration.ofMinutes(1)
 
 internal object Phase4DomainArtifactRegistry {
     private val taskReadersById: Map<String, (repoRoot: Path, sourcePath: Path, payload: JsonObject) -> Phase4TaskAggregate> =
@@ -727,6 +731,14 @@ internal fun requireContentPackArtifactsSemanticallyAligned(
     check(primaryBuildId == secondaryBuildId) {
         "Mismatched content-pack artifact buildIds: $primaryPath ($primaryBuildId) vs $secondaryPath ($secondaryBuildId)."
     }
+    val primaryTimestamp = Instant.parse(reportTimestamp(primaryPayload))
+    val secondaryTimestamp = Instant.parse(reportTimestamp(secondaryPayload))
+    val freshnessDelta = Duration.between(primaryTimestamp, secondaryTimestamp).abs()
+    check(freshnessDelta <= contentPackArtifactFreshnessTolerance) {
+        "Mismatched content-pack artifact freshness: $primaryPath ($primaryTimestamp) vs $secondaryPath ($secondaryTimestamp), " +
+            "delta=${freshnessDelta.seconds}s exceeds ${contentPackArtifactFreshnessTolerance.seconds}s. " +
+            "Fix the producer pair instead of mixing stale and fresh content-pack artifacts."
+    }
     val primarySignature = contentPackArtifactSemanticSignature(primaryPayload)
     val secondarySignature = contentPackArtifactSemanticSignature(secondaryPayload)
     check(primarySignature == secondarySignature) {
@@ -736,6 +748,8 @@ internal fun requireContentPackArtifactsSemanticallyAligned(
 }
 
 private fun reportBuildId(payload: JsonObject): String = payload.getValue("header").jsonObject.stringValue("buildId")
+
+private fun reportTimestamp(payload: JsonObject): String = payload.getValue("header").jsonObject.stringValue("timestamp")
 
 internal fun contentPackArtifactSemanticSignature(payload: JsonObject): JsonObject {
     val header = payload.getValue("header").jsonObject

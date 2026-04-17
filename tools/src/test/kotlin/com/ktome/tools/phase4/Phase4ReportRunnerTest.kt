@@ -2,6 +2,8 @@ package com.ktome.tools.phase4
 
 import java.nio.file.Files
 import java.nio.file.Path
+import java.time.Duration
+import java.time.Instant
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
@@ -142,8 +144,14 @@ class Phase4ReportRunnerTest {
                 Files.readString(repoRoot().resolve(whiteBoxContentPackTask.getValue("sourcePath").jsonPrimitive.content)),
             ).jsonObject
         assertTrue(
+            Duration.between(
+                Instant.parse(contentPackArtifactPayload.getValue("header").jsonObject.getValue("timestamp").jsonPrimitive.content),
+                Instant.parse(whiteBoxContentPackArtifactPayload.getValue("header").jsonObject.getValue("timestamp").jsonPrimitive.content),
+            ).abs() <= Duration.ofMinutes(1),
+        )
+        assertTrue(
             contentPackArtifactSemanticSignature(contentPackArtifactPayload) == contentPackArtifactSemanticSignature(whiteBoxContentPackArtifactPayload),
-            "content-pack artifacts should stay semantically aligned even when they are rebuilt at different times.",
+            "content-pack artifacts must stay semantically aligned after the paired freshness check passes.",
         )
         assertEquals(18, experienceMetrics.size)
         assertEquals(18, metricCatalog.size)

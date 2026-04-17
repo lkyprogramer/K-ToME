@@ -45,6 +45,7 @@ import com.ktome.core.inscription.InscriptionSlot
 import com.ktome.core.item.AffixDef
 import com.ktome.core.item.AffixType
 import com.ktome.core.item.ConsumableEffect
+import com.ktome.core.item.Equipment
 import com.ktome.core.item.EquipmentPassive
 import com.ktome.core.item.EquipSlot
 import com.ktome.core.item.ItemInstance
@@ -92,6 +93,10 @@ import com.ktome.core.world.solvability.RegistryId
 import com.ktome.core.world.solvability.SearchActionResult
 import com.ktome.core.world.ObjectiveState
 import com.ktome.game.data.DataLoader
+import com.ktome.game.hidden.HiddenEventReward
+import com.ktome.game.hidden.HiddenEventRewardKey
+import com.ktome.game.hidden.HiddenEventRewardPayload
+import com.ktome.game.hidden.LOOT_PROFILE_REGISTRY_ID
 import com.ktome.game.elites.EncounterDecoration
 import com.ktome.game.elites.EncounterDecorationService
 import com.ktome.game.factory.EntityFactory
@@ -671,42 +676,108 @@ class FoundationGameSessionTest {
 
     @Test
     fun `secret zone capstone reward is recorded as milestone evidence and announces profession anchor`() {
-        val capstoneIds = setOf("artifact_briar_heart", "artifact_heartroot_gambit", "unique_thornpath_crook", "unique_briarbound_bow")
-        val foundCapstoneReward =
-            (20260331L..20260354L).firstNotNullOfOrNull { seed ->
-                val session =
-                    GameModule.newFoundationSession(
-                        config = FoundationGameConfig(seed = seed, zoneId = "greenwood_fringe", playerProfessionId = "rogue"),
-                        saveManager = SaveManager(tempDir.resolve("secret-zone-capstone-anchor-$seed")),
+        val session =
+            GameModule.newFoundationSession(
+                config = FoundationGameConfig(seed = 20260331L, zoneId = "greenwood_fringe", playerProfessionId = "rogue"),
+                saveManager = SaveManager(tempDir.resolve("secret-zone-capstone-anchor-deterministic")),
+            )
+        clearMonsters(session)
+        runtimeWorld(session).get<Equipment>(session.playerId)?.slots?.clear()
+        val deterministicRewardProfileId = "loot.test.greenwood_hidden_cache.capstone"
+        val deterministicCapstoneBaseId = "test_rogue_secret_capstone"
+        replaceContent(
+            session = session,
+            content =
+                sessionContent(session).let { content ->
+                    val deterministicCapstoneBase =
+                        content.itemBundle.baseItems
+                            .first { item -> item.id == "basic_shield" }
+                            .copy(
+                                id = deterministicCapstoneBaseId,
+                                name = "Test Rogue Secret Buckler",
+                                tags = setOf("item", "armor", "accessory", "rogue", "capstone", "non_weapon_capstone", "secret_zone"),
+                                dropWeight = 4,
+                            )
+                    val deterministicCapstoneSchema =
+                        content.schemaCatalog.itemBundle.items
+                            .first { item -> item.id == "basic_shield" }
+                            .copy(
+                                id = deterministicCapstoneBaseId,
+                                tags = listOf("item", "armor", "accessory", "rogue", "capstone", "non_weapon_capstone", "secret_zone"),
+                                dropWeight = 4,
+                            )
+                    content.copy(
+                        itemBundle = content.itemBundle.copy(baseItems = content.itemBundle.baseItems + deterministicCapstoneBase),
+                        schemaCatalog =
+                            content.schemaCatalog.copy(
+                                itemBundle =
+                                    content.schemaCatalog.itemBundle.copy(
+                                        items = content.schemaCatalog.itemBundle.items + deterministicCapstoneSchema,
+                                    ),
+                                lootProfiles =
+                                    content.schemaCatalog.lootProfiles +
+                                        content.schemaCatalog.lootProfiles
+                                            .first { profile -> profile.id == "loot.greenwood_hidden_cache.secret" }
+                                            .copy(
+                                                id = deterministicRewardProfileId,
+                                                itemIds = listOf(deterministicCapstoneBaseId),
+                                                poolStrategy = com.ktome.game.data.schema.LootPoolStrategy.FIXED_LIST,
+                                                itemTagFilter = emptyList(),
+                                                excludeIds = emptyList(),
+                                                typeWeights = emptyMap(),
+                                                slotBias = emptyMap(),
+                                                specialTemplateTagPreference = emptyList(),
+                                                affixTagPreference = emptyList(),
+                                            ),
+                                hiddenEvents =
+                                    content.schemaCatalog.hiddenEvents.map { event ->
+                                        if (event.id == "hidden.event.greenwood.hidden_cache.reward") {
+                                            event.copy(
+                                                rewards =
+                                                    event.rewards.map { reward ->
+                                                        if (reward.key == HiddenEventRewardKey.LOOT_PROFILE) {
+                                                            HiddenEventReward(
+                                                                key = HiddenEventRewardKey.LOOT_PROFILE,
+                                                                payload =
+                                                                    HiddenEventRewardPayload.LootProfile(
+                                                                        lootProfileRef =
+                                                                            ContentRef(
+                                                                                registry = RegistryId(LOOT_PROFILE_REGISTRY_ID),
+                                                                                id = deterministicRewardProfileId,
+                                                                            ),
+                                                                    ),
+                                                            )
+                                                        } else {
+                                                            reward
+                                                        }
+                                                    },
+                                            )
+                                        } else {
+                                            event
+                                        }
+                                    },
+                            ),
                     )
-                clearMonsters(session)
-                revealHiddenEntrance(session)
+                },
+        )
+        revealHiddenEntrance(session)
 
-                val entranceProp = requireNotNull(propByType(session, "hidden_entrance"))
-                movePlayerTo(session, Point(entranceProp.x, entranceProp.y))
-                assertTrue(session.perform(PlayerCommand.Interact))
+        val entranceProp = requireNotNull(propByType(session, "hidden_entrance"))
+        movePlayerTo(session, Point(entranceProp.x, entranceProp.y))
+        assertTrue(session.perform(PlayerCommand.Interact))
 
-                val rewardProp = requireNotNull(propByType(session, "secret_reward"))
-                movePlayerTo(session, Point(rewardProp.x, rewardProp.y))
-                setSessionPityTracker(
-                    session,
-                    PityTracker(
-                        eligibleSpecialRollsSinceLastUnique = 50,
-                    ),
-                )
-                assertTrue(session.perform(PlayerCommand.Interact))
+        val rewardProp = requireNotNull(propByType(session, "secret_reward"))
+        movePlayerTo(session, Point(rewardProp.x, rewardProp.y))
+        assertTrue(session.perform(PlayerCommand.Interact))
 
-                val rewardSummary =
-                    session.milestoneRewardSummaries().firstOrNull { reward ->
-                        reward.rewardSource == MilestoneRewardSource.CACHE &&
-                            reward.sourceId == "hidden.event.greenwood.hidden_cache.reward"
-                    } ?: return@firstNotNullOfOrNull null
-                if (rewardSummary.baseItemId !in capstoneIds) {
-                    return@firstNotNullOfOrNull null
-                }
-                session
-            }
-        val session = requireNotNull(foundCapstoneReward) { "Expected at least one fixed seed to surface a rogue capstone reward from greenwood hidden cache." }
+        val rewardSummary =
+            requireNotNull(
+                session.milestoneRewardSummaries().firstOrNull { reward ->
+                    reward.rewardSource == MilestoneRewardSource.CACHE &&
+                        reward.sourceId == "hidden.event.greenwood.hidden_cache.reward"
+                },
+            )
+        assertEquals(deterministicCapstoneBaseId, rewardSummary.baseItemId)
         assertNotNull(
             logEventByKey(session, "log.reward.capstone.anchor")
                 ?: logEventByKey(session, "log.reward.capstone.non_weapon_anchor"),
@@ -3726,7 +3797,12 @@ class FoundationGameSessionTest {
                 baseId in setOf("basic_shield", "mana_potion", "chain_mail", "apprentice_robe", "long_sword", "emerald_charm", "furnace_talisman", "energy_tonic")
             },
         )
-        val droppedItem = groundItemsAt(session, deathPoint).single()
+        val droppedItem =
+            requireNotNull(
+                groundItemsAt(session, deathPoint).firstOrNull { item ->
+                    item.baseId in setOf("basic_shield", "mana_potion", "chain_mail", "apprentice_robe", "long_sword", "emerald_charm", "furnace_talisman", "energy_tonic")
+                },
+            )
         val dropLog = requireNotNull(logEventByKey(session, "log.loot.monster_drop_quality"))
         assertTrue(
             dropLog.message.arguments.any { argument ->

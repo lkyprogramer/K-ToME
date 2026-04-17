@@ -361,11 +361,18 @@ internal object Phase4AggregationInputRunner {
             } else {
                 EvaluationEntryStatus.UNEXPECTED_REGRESSION
             }
+        val expectedSpecialTierDuplicateStatus =
+            if (task.metrics.intValue("specialTierPassiveFamilyDuplicateCount") == 0) {
+                EvaluationEntryStatus.PASS
+            } else {
+                EvaluationEntryStatus.UNEXPECTED_REGRESSION
+            }
         val expectedUnexpectedRegressionCount =
             listOf(
                 expectedCadenceStatus,
                 expectedRewardStatus,
                 expectedDynamicPoolStatus,
+                expectedSpecialTierDuplicateStatus,
             ).count { status -> status == EvaluationEntryStatus.UNEXPECTED_REGRESSION }
         val expectedVerdict =
             if (expectedUnexpectedRegressionCount > 0) {
@@ -376,6 +383,7 @@ internal object Phase4AggregationInputRunner {
         return entriesByMetricId["sameZoneSecretVsCadenceMaxOverlap"]?.status == expectedCadenceStatus &&
             entriesByMetricId["sameZoneSecretVsRewardMaxOverlap"]?.status == expectedRewardStatus &&
             entriesByMetricId["dynamicPoolCoverage"]?.status == expectedDynamicPoolStatus &&
+            entriesByMetricId["specialTierPassiveFamilyDuplicateCount"]?.status == expectedSpecialTierDuplicateStatus &&
             evaluation.unexpectedRegressionCount == expectedUnexpectedRegressionCount &&
             evaluation.verdict == expectedVerdict
     }
