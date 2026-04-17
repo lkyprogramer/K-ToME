@@ -50,6 +50,11 @@ internal object Phase4OwnerBaselineRegistry {
 
     fun terrainPerZoneBaselinePath(): String = ownerBaselinePaths("terrainInteractionBatch")[1]
 
+    fun allOwnerBaselinePaths(): Set<String> =
+        baselinePathsByTaskId.values
+            .flatten()
+            .toCollection(linkedSetOf())
+
     fun readOwnerBaselines(
         repoRoot: Path,
         taskId: String,

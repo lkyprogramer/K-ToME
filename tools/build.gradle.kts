@@ -1,3 +1,5 @@
+import com.ktome.build.verification.Phase4AggregationManifestValueSource
+import com.ktome.build.verification.Phase4TaskPathResolver
 import com.ktome.build.verification.VerificationReportTask
 import com.ktome.build.verification.VerificationTask
 import com.ktome.build.verification.VerifyChangedPlanGate
@@ -719,41 +721,65 @@ val phase4OwnerBaselineInputs =
         "docs/review/phase4/opt/baselines/2026-04-09-opt-pr01-terrain-metrics-baseline-unified.json",
         "docs/review/phase4/opt/baselines/2026-04-12-phase4-terrain-per-zone-lower-bound-baseline.json",
     )
+val phase4AggregationManifestMode =
+    rootProject.findProperty("ktome.phase4.aggregationManifestMode")?.toString() ?: "manifest"
+val phase4AggregationManifest =
+    providers.of(Phase4AggregationManifestValueSource::class) {
+        parameters.manifestFile.set(rootProject.layout.projectDirectory.file("tools/src/main/resources/phase4/aggregation-manifest.yaml"))
+    }.get()
+val phase4LegacyLiteralProducerArtifactRelativePaths =
+    listOf(
+        "tools/build/reports/phase4/mapgen/mapgen-smoke-summary.json",
+        "tools/build/reports/phase4/solvability/solvability-summary.json",
+        "tools/build/reports/phase4/hidden/hidden-content-summary.json",
+        "tools/build/reports/phase4/hidden/organic-hidden-probe-summary.json",
+        "tools/build/reports/phase4/content-pack/content-pack-summary.json",
+        "tools/build/reports/phase4/whitebox/boss/boss-harness.json",
+        "build/reports/harness/long-run-full.json",
+        "tools/build/reports/phase4/whitebox/terrain/whitebox-terrain-summary.json",
+        "tools/build/reports/phase4/whitebox/mapgen/whitebox-mapgen-summary.json",
+        "tools/build/reports/phase4/whitebox/solvability/whitebox-solvability-summary.json",
+        "tools/build/reports/phase4/loot/loot-balance-summary.json",
+        "tools/build/reports/phase4/whitebox/loot/whitebox-loot-summary.json",
+        "tools/build/reports/phase4/whitebox/hidden/whitebox-hidden-content-summary.json",
+        "tools/build/reports/phase4/whitebox/content-pack/whitebox-content-pack-summary.json",
+    )
+val phase4LegacyLiteralProducerTaskPaths =
+    listOf(
+        ":tools:mapgenSmoke",
+        ":tools:solvabilityHarness",
+        ":tools:hiddenContentHarness",
+        ":tools:organicHiddenProbe",
+        ":tools:contentPackHarness",
+        ":tools:bossHarness",
+        ":game:longRunLab",
+        ":tools:terrainInteractionBatch",
+        ":tools:whiteBoxMapgen",
+        ":tools:whiteBoxSolvability",
+        ":tools:lootBalanceLab",
+        ":tools:whiteBoxLoot",
+        ":tools:whiteBoxHiddenContent",
+        ":tools:whiteBoxContentPack",
+    )
+val phase4AggregateProducerArtifactRelativePaths =
+    when (phase4AggregationManifestMode) {
+        "manifest" -> phase4AggregationManifest.artifactRelativePaths
+        "legacyLiteral" -> phase4LegacyLiteralProducerArtifactRelativePaths
+        else -> error("Unsupported ktome.phase4.aggregationManifestMode=$phase4AggregationManifestMode")
+    }
+val phase4AggregateProducerTaskPaths =
+    when (phase4AggregationManifestMode) {
+        "manifest" -> phase4AggregationManifest.taskPaths
+        "legacyLiteral" -> phase4LegacyLiteralProducerTaskPaths
+        else -> error("Unsupported ktome.phase4.aggregationManifestMode=$phase4AggregationManifestMode")
+    }
 val phase4AggregateProducerInputs =
-    files(
-        rootProject.layout.buildDirectory.file("reports/harness/long-run-full.json"),
-        layout.buildDirectory.file("reports/phase4/mapgen/mapgen-smoke-summary.json"),
-        layout.buildDirectory.file("reports/phase4/solvability/solvability-summary.json"),
-        layout.buildDirectory.file("reports/phase4/hidden/hidden-content-summary.json"),
-        layout.buildDirectory.file("reports/phase4/hidden/organic-hidden-probe-summary.json"),
-        layout.buildDirectory.file("reports/phase4/content-pack/content-pack-summary.json"),
-        layout.buildDirectory.file("reports/phase4/whitebox/boss/boss-harness.json"),
-        layout.buildDirectory.file("reports/phase4/whitebox/mapgen/whitebox-mapgen-summary.json"),
-        layout.buildDirectory.file("reports/phase4/whitebox/solvability/whitebox-solvability-summary.json"),
-        layout.buildDirectory.file("reports/phase4/whitebox/terrain/whitebox-terrain-summary.json"),
-        layout.buildDirectory.file("reports/phase4/whitebox/loot/whitebox-loot-summary.json"),
-        layout.buildDirectory.file("reports/phase4/whitebox/hidden/whitebox-hidden-content-summary.json"),
-        layout.buildDirectory.file("reports/phase4/whitebox/content-pack/whitebox-content-pack-summary.json"),
-        layout.buildDirectory.file("reports/phase4/loot/loot-balance-summary.json"),
+    rootProject.files(
+        phase4AggregateProducerArtifactRelativePaths.map { relativePath -> rootProject.file(relativePath) },
         phase4OwnerBaselineInputs,
     )
 val phase4AggregateProducerTasks: List<TaskProvider<out Task>> =
-    listOf(
-        tasks.named("mapgenSmoke"),
-        tasks.named("solvabilityHarness"),
-        tasks.named("hiddenContentHarness"),
-        tasks.named("organicHiddenProbe"),
-        tasks.named("contentPackHarness"),
-        tasks.named("bossHarness"),
-        project(":game").tasks.named("longRunLab"),
-        tasks.named("terrainInteractionBatch"),
-        tasks.named("whiteBoxMapgen"),
-        tasks.named("whiteBoxSolvability"),
-        tasks.named("lootBalanceLab"),
-        tasks.named("whiteBoxLoot"),
-        tasks.named("whiteBoxHiddenContent"),
-        tasks.named("whiteBoxContentPack"),
-    )
+    phase4AggregateProducerTaskPaths.map { taskPath -> Phase4TaskPathResolver.resolve(rootProject, taskPath) }
 val legacyPhase4SummaryInput = layout.buildDirectory.file("reports/phase4/phase4-summary.json")
 val testSourceSet = sourceSets.test.get()
 
@@ -860,6 +886,7 @@ registerPhase4AggregateTask(
     producerInputs = phase4AggregateProducerInputs,
     producerTasks = phase4AggregateProducerTasks,
     additionalDependsOn = listOf(tasks.named("phase4LegacyReport")),
+    additionalMustRunAfter = listOf(tasks.named("phase4LegacyReportOnly")),
     additionalInputs = files(legacyPhase4SummaryInput),
     aggregateReportDir = unifiedPhase4ReportDir,
     legacyReportDir = legacyPhase4ReportDir,
