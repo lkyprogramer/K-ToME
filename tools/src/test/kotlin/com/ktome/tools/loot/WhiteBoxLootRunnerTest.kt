@@ -17,12 +17,12 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertTimeout
 import org.junit.jupiter.api.io.TempDir
 
+@Tag("whiteBoxLoot")
 class WhiteBoxLootRunnerTest {
     @TempDir
     lateinit var tempDir: Path
 
     @Test
-    @Tag("whiteBoxLoot")
     fun `white-box loot writes standard reports and keeps same-zone local identity guardrails green`() {
         val originalLootReportDir = System.getProperty("ktome.phase4.loot.reportDir")
         val originalWhiteBoxReportDir = System.getProperty("ktome.phase4.whitebox.loot.reportDir")

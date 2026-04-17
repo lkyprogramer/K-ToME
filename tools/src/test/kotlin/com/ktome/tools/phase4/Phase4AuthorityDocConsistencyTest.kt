@@ -16,11 +16,26 @@ class Phase4AuthorityDocConsistencyTest {
             Files.readString(
                 repoRoot().resolve("docs/phase4/2026-03-13-phase4-procgen-loot-and-content-pack.md"),
             )
+        val phase4Roadmap =
+            Files.readString(
+                repoRoot().resolve("docs/phase4/roadmap.md"),
+            )
+        val phase4Checklist =
+            Files.readString(
+                repoRoot().resolve("docs/phase4/2026-03-13-phase4-verification-checklist.md"),
+            )
+        val v2optPr01 =
+            Files.readString(
+                repoRoot().resolve("docs/review/phase4/v2opt/2026-04-11-phase4-v2opt-pr-01-experience-gate-and-owner-metrics.md"),
+            )
 
         assertTrue(whiteBoxFramework.contains("tools/build/reports/verification/phase4/report-phase4-summary.{json,md}"))
         assertTrue(whiteBoxFramework.contains("phase4LegacyReport"))
         assertTrue(phase4Guide.contains("tools/build/reports/verification/phase4/report-phase4-summary.{json,md}"))
         assertTrue(phase4Guide.contains("phase4LegacyReport"))
+        assertTrue(phase4Roadmap.contains("critical-path pacing"))
+        assertTrue(phase4Checklist.contains("critical-path pacing"))
+        assertTrue(v2optPr01.contains("critical path pacing"))
     }
 
     private fun repoRoot(): Path =

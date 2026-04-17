@@ -81,6 +81,8 @@ class Phase4ReportRunnerTest {
         assertTrue(longRunTask.getValue("metrics").jsonObject.containsKey("professionTerminalWeaponDistribution"))
         assertTrue(longRunTask.getValue("metrics").jsonObject.containsKey("professionTopWeaponBaseIds"))
         assertTrue(longRunTask.getValue("metrics").jsonObject.containsKey("professionTopWeaponSemanticTags"))
+        assertTrue(longRunTask.getValue("metrics").jsonObject.containsKey("fullRouteZoneTraversalDiagnostics"))
+        assertTrue(longRunTask.getValue("metrics").jsonObject.containsKey("criticalPathZoneIds"))
         assertTrue(terrainTask.getValue("sourcePath").jsonPrimitive.content.contains("whitebox/terrain"))
         assertTrue(terrainTask.getValue("metrics").jsonObject.containsKey("combatSampledZoneIds"))
         assertTrue(terrainTask.getValue("metrics").jsonObject.containsKey("combatSampledZoneExclusionNotes"))
@@ -132,8 +134,8 @@ class Phase4ReportRunnerTest {
             Duration.between(contentPackTimestamp, whiteBoxContentPackTimestamp).abs() <= Duration.ofMinutes(30),
             "content-pack artifact timestamps drifted beyond the freshness guard window.",
         )
-        assertEquals(9, experienceMetrics.size)
-        assertEquals(9, metricCatalog.size)
+        assertEquals(13, experienceMetrics.size)
+        assertEquals(13, metricCatalog.size)
         assertEquals(
             setOf(
                 "scriptedHiddenVerificationRate",
@@ -143,6 +145,10 @@ class Phase4ReportRunnerTest {
                 "terminalWeaponBaseDiversity",
                 "crossProfessionTopWeaponDominance",
                 "professionAlignedWeaponAdoptionRate",
+                "avgObjectiveAcquireTurn",
+                "avgVisibleHostileTurnCount",
+                "avgEnemyTurns",
+                "criticalPathCombatFloorSatisfied",
                 "terrainInteractionEncounterRate.aggregate",
                 "terrainInteractionEncounterRate.per_zone_lower_bound",
             ),
@@ -152,6 +158,7 @@ class Phase4ReportRunnerTest {
         assertTrue(markdown.contains("## 指标 Owner 表"))
         assertTrue(markdown.contains("## Local Reward Identity"))
         assertTrue(markdown.contains("## Terminal Build Identity"))
+        assertTrue(markdown.contains("## Critical Path Pacing"))
         assertTrue(markdown.contains("## Scripted vs Organic Hidden"))
         assertTrue(markdown.contains("## Terrain Combat Sample Contract"))
         assertTrue(markdown.contains("- sourceTask: `whiteBoxLoot`"))
@@ -175,6 +182,10 @@ class Phase4ReportRunnerTest {
             experienceMetrics.first { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "crossProfessionTopWeaponDominance" }.jsonObject
         val alignedWeaponMetric =
             experienceMetrics.first { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "professionAlignedWeaponAdoptionRate" }.jsonObject
+        val objectiveMetric =
+            experienceMetrics.first { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "avgObjectiveAcquireTurn" }.jsonObject
+        val combatFloorMetric =
+            experienceMetrics.first { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "criticalPathCombatFloorSatisfied" }.jsonObject
         val organicHiddenMetric =
             experienceMetrics.first { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "organicHiddenDiscoveryRate" }.jsonObject
         assertTrue(terminalDiversityMetric.getValue("note").jsonPrimitive.content.contains("terminalBases="))
@@ -182,6 +193,10 @@ class Phase4ReportRunnerTest {
         assertTrue(topWeaponMetric.getValue("note").jsonPrimitive.content.contains("topWeaponBaseId="))
         assertTrue(alignedWeaponMetric.getValue("note").jsonPrimitive.content.contains("alignedSamples="))
         assertTrue(alignedWeaponMetric.getValue("note").jsonPrimitive.content.contains("topWeaponSemantics="))
+        assertTrue(objectiveMetric.getValue("currentValue").jsonObject.containsKey("failingZones"))
+        assertTrue(!objectiveMetric.getValue("currentValue").jsonObject.containsKey("zoneBreakdown"))
+        assertTrue(combatFloorMetric.getValue("currentValue").jsonObject.containsKey("failingZones"))
+        assertTrue(combatFloorMetric.getValue("currentValue").jsonObject.containsKey("zoneBreakdown"))
         assertTrue(organicHiddenMetric.getValue("note").jsonPrimitive.content.contains("observationOnly=true"))
         assertTrue(organicHiddenMetric.getValue("note").jsonPrimitive.content.contains("promptRequired=true"))
         assertTrue(markdown.contains("strictLocalIdentityViolations"))

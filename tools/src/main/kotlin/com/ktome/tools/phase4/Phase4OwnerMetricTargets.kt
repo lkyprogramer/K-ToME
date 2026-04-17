@@ -34,6 +34,17 @@ internal object Phase4OwnerMetricTargets {
                     formatter = ::formatNumber,
                 )
 
+            "avgObjectiveAcquireTurn" ->
+                "min critical-path zone avg >= ${formatNumber(checkNotNull(range.minimumAcceptedValue()))}"
+
+            "avgVisibleHostileTurnCount",
+            "avgEnemyTurns",
+            ->
+                "min critical-path zone avg >= ${formatNumber(checkNotNull(range.minimumAcceptedValue()))}"
+
+            "criticalPathCombatFloorSatisfied" ->
+                "100.0% critical-path zones satisfy objective/combat floors"
+
             "terrainInteractionEncounterRate.aggregate" -> renderTerrainAggregateTarget(range)
 
             "terrainInteractionEncounterRate.per_zone_lower_bound" ->

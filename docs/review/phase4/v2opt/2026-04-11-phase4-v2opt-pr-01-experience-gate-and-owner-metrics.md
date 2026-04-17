@@ -27,8 +27,10 @@
 1. `phase4Report` 正式区分 scripted verification 与 organic experience。
 2. loot 报表新增 same-zone local overlap guardrail，不再只保留 corpus average。
 3. long-run 报表新增职业身份 owner metric，能直接暴露 terminal weapon convergence。
+4. 后续 critical-path pacing owner metric 继续复用 `longRunLab + phase4Report` 这条 owner 链，不再单独维护第二套主线路径体验判断口径。
 4. terrain 报表新增 per-zone lower bound，并显式写明 combat-sampled zone 范围与排除理由。
 5. 所有新增指标都有 owner、公式、阈值、输出位置和 FAIL 语义；后续 PR 禁止私自重定义。
+6. `phase4Report / reportPhase4` 生成的 canonical report 必须直接刷新当前仓库的 `tools/build/reports/verification/phase4/report-phase4-summary.{json,md}`，不能只在测试 fixture 目录里通过。
 
 ---
 
@@ -326,8 +328,9 @@ tools/src/main/kotlin/com/ktome/tools/phase4/Phase4ReportRunner.kt
 1. “指标 owner 表”
 2. “local reward identity” 段
 3. “terminal build identity” 段
-4. “scripted vs organic hidden” 段
-5. “terrain combat sample contract” 段
+4. “critical path pacing” 段
+5. “scripted vs organic hidden” 段
+6. “terrain combat sample contract” 段
 
 并且：
 
@@ -451,7 +454,8 @@ tools/src/main/kotlin/com/ktome/tools/phase4/Phase4ReportRunner.kt
 2. hidden 分成 scripted 与 organic 两条正式指标。
 3. loot local overlap guardrail 正式进入 report。
 4. long-run terminal identity 正式进入 report。
-5. terrain combat-sampled zone contract 正式进入 report。
+5. critical-path pacing 正式进入 report，并覆盖 `greenwood_fringe / deep_iron_pit / grey_gate_depths / underground_river / abyssal_temple`。
+6. terrain combat-sampled zone contract 正式进入 report。
 
 ---
 

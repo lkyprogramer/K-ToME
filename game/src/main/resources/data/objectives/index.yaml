@@ -34,7 +34,7 @@ objectiveSets:
     placements:
       - interactableId: trail_cache
         floor: 1
-        anchor: player_start
+        anchor: stairs_down
         offset: { x: 1, y: 0 }
       - interactableId: warden_beacon
         floor: 1
@@ -106,7 +106,7 @@ objectiveSets:
     placements:
       - interactableId: seal_cache
         floor: 1
-        anchor: player_start
+        anchor: stairs_down
         offset: { x: 1, y: 0 }
       - interactableId: shadow_brazier
         floor: 1
@@ -146,7 +146,7 @@ objectiveSets:
         offset: { x: 0, y: 0 }
       - interactableId: crystal_cache_chest
         floor: 1
-        anchor: stairs_up
+        anchor: stairs_down
         offset: { x: 1, y: 0 }
     completionRule: explore_floor_pair
     linkedQuestId: quest.underground_river

@@ -41,7 +41,7 @@ import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonObject
 
-private const val PHASE4_AGGREGATION_INPUT_CONTRACT_VERSION: String = "phase4-aggregation-input-v4"
+private const val PHASE4_AGGREGATION_INPUT_CONTRACT_VERSION: String = "phase4-aggregation-input-v5"
 private const val AGGREGATION_INPUT_DIRECTORY_NAME: String = "inputs"
 private const val AGGREGATION_INPUT_SUMMARY_FILE: String = "aggregation-input-summary.json"
 
@@ -127,12 +127,12 @@ internal object Phase4AggregationInputRunner {
             val invalidationReason = resolveInvalidationReason(existing?.renderResult?.metadata, currentFingerprints)
             val evaluationStartNanos = System.nanoTime()
             val reused = invalidationReason == null && existing != null
-            val baselinesByPath = Phase4OwnerBaselineRegistry.readOwnerBaselines(repoRoot = repoRoot, taskId = task.taskId)
             val input =
                 if (reused) {
                     reusedInputCount += 1
                     existing
                 } else {
+                    val baselinesByPath = Phase4OwnerBaselineRegistry.readOwnerBaselines(repoRoot = repoRoot, taskId = task.taskId)
                     invalidationReasonCounts.merge(invalidationReason ?: "missing-input-artifact", 1, Int::plus)
                     buildAggregationInput(task = task, baselinesByPath = baselinesByPath)
                 }
@@ -248,7 +248,10 @@ internal object Phase4AggregationInputRunner {
                     readEmbeddedOwnerEvaluation(repoRoot = repoRoot(), task = task)
                         ?.takeIf { embedded -> embeddedLootOwnerEvaluationMatchesTaskMetrics(task = task, evaluation = embedded) }
                         ?: localRewardIdentityEvaluation(task = task, baseline = baselinesByPath.getValue(Phase4OwnerBaselineRegistry.lootBaselinePath()))
-            "longRunLab" -> evaluations += terminalBuildIdentityEvaluation(task = task, baseline = baselinesByPath.getValue(Phase4OwnerBaselineRegistry.terminalBuildBaselinePath()))
+            "longRunLab" -> {
+                evaluations += terminalBuildIdentityEvaluation(task = task, baseline = baselinesByPath.getValue(Phase4OwnerBaselineRegistry.terminalBuildBaselinePath()))
+                evaluations += criticalPathPacingEvaluation(task = task, baseline = baselinesByPath.getValue(Phase4OwnerBaselineRegistry.criticalPathPacingBaselinePath()))
+            }
             "terrainInteractionBatch" -> {
                 evaluations += terrainAggregateEvaluation(task = task, baseline = baselinesByPath.getValue(Phase4OwnerBaselineRegistry.terrainUnifiedBaselinePath()))
                 evaluations += terrainPerZoneLowerBoundEvaluation(task = task, baseline = baselinesByPath.getValue(Phase4OwnerBaselineRegistry.terrainPerZoneBaselinePath()))
@@ -630,6 +633,115 @@ internal object Phase4AggregationInputRunner {
         )
     }
 
+    private fun criticalPathPacingEvaluation(
+        task: Phase4TaskAggregate,
+        baseline: VerificationBaseline,
+    ): EvaluationResult {
+        val pacing = task.metrics.toCriticalPathPacingSummary()
+        val objectiveMetricId = "avgObjectiveAcquireTurn"
+        val visibleMetricId = "avgVisibleHostileTurnCount"
+        val enemyMetricId = "avgEnemyTurns"
+        val satisfiedMetricId = "criticalPathCombatFloorSatisfied"
+        val objectiveRange = baseline.requiredMetric(objectiveMetricId)
+        val visibleRange = baseline.requiredMetric(visibleMetricId)
+        val enemyRange = baseline.requiredMetric(enemyMetricId)
+        val satisfiedRange = baseline.requiredMetric(satisfiedMetricId)
+        val objectiveFloor =
+            checkNotNull(objectiveRange.minimumAcceptedValue()) {
+                "Critical-path pacing baseline must define minValue for $objectiveMetricId."
+            }
+        val visibleFloor =
+            checkNotNull(visibleRange.minimumAcceptedValue()) {
+                "Critical-path pacing baseline must define minValue for $visibleMetricId."
+            }
+        val enemyFloor =
+            checkNotNull(enemyRange.minimumAcceptedValue()) {
+                "Critical-path pacing baseline must define minValue for $enemyMetricId."
+            }
+        val evaluation =
+            pacing.evaluate(
+                objectiveAcquireFloor = objectiveFloor,
+                visibleHostileFloor = visibleFloor,
+                enemyTurnFloor = enemyFloor,
+            )
+        val result =
+            VerificationBaselineComparator.compareBudgetThreshold(
+                domainId = "longrun",
+                evaluationId = "longrun.criticalPathPacing",
+                baseline = baseline.copy(expectedMetricRanges = listOf(objectiveRange, visibleRange, enemyRange, satisfiedRange)),
+                actualMetrics =
+                    mapOf(
+                        objectiveMetricId to (evaluation.objectiveMinimum ?: 0.0),
+                        visibleMetricId to evaluation.visibleMinimum,
+                        enemyMetricId to evaluation.enemyMinimum,
+                        satisfiedMetricId to evaluation.satisfiedRatio,
+                    ),
+                currentValueTexts =
+                    mapOf(
+                        objectiveMetricId to
+                            if (evaluation.objectiveFailures.isEmpty()) {
+                                "min=${formatDecimal(evaluation.objectiveMinimum)} all critical-path zones >= ${formatDecimal(objectiveFloor)}"
+                            } else {
+                                "min=${formatDecimal(evaluation.objectiveMinimum)} failed=${evaluation.objectiveFailures.joinToString()} target>=${formatDecimal(objectiveFloor)}"
+                            },
+                        visibleMetricId to
+                            if (evaluation.visibleFailures.isEmpty()) {
+                                "min=${formatDecimal(evaluation.visibleMinimum)} all critical-path zones >= ${formatDecimal(visibleFloor)}"
+                            } else {
+                                "min=${formatDecimal(evaluation.visibleMinimum)} failed=${evaluation.visibleFailures.joinToString()} target>=${formatDecimal(visibleFloor)}"
+                            },
+                        enemyMetricId to
+                            if (evaluation.enemyFailures.isEmpty()) {
+                                "min=${formatDecimal(evaluation.enemyMinimum)} all critical-path zones >= ${formatDecimal(enemyFloor)}"
+                            } else {
+                                "min=${formatDecimal(evaluation.enemyMinimum)} failed=${evaluation.enemyFailures.joinToString()} target>=${formatDecimal(enemyFloor)}"
+                            },
+                        satisfiedMetricId to
+                            "${formatPercent(evaluation.satisfiedRatio)} (${evaluation.satisfiedZoneIds.size}/${evaluation.zoneIds.size}), " +
+                                "failed=${evaluation.satisfiedFailures.joinToString().ifBlank { "none" }}",
+                    ),
+                currentValueElements =
+                    mapOf(
+                        objectiveMetricId to evaluation.objectiveMetricValue(),
+                        visibleMetricId to evaluation.visibleMetricValue(),
+                        enemyMetricId to evaluation.enemyMetricValue(),
+                        satisfiedMetricId to evaluation.satisfiedMetricValue(),
+                    ),
+                detailsByMetricId =
+                    mapOf(
+                        objectiveMetricId to task.metrics,
+                        visibleMetricId to task.metrics,
+                        enemyMetricId to task.metrics,
+                        satisfiedMetricId to task.metrics,
+                    ),
+            )
+        val note = evaluation.note(::formatRequiredDecimal)
+        return result.withEntryPresentations(
+            mapOf(
+                objectiveMetricId to
+                    MetricPresentation(
+                        targetText = Phase4OwnerMetricTargets.targetText(objectiveMetricId, objectiveRange),
+                        note = note,
+                    ),
+                visibleMetricId to
+                    MetricPresentation(
+                        targetText = Phase4OwnerMetricTargets.targetText(visibleMetricId, visibleRange),
+                        note = note,
+                    ),
+                enemyMetricId to
+                    MetricPresentation(
+                        targetText = Phase4OwnerMetricTargets.targetText(enemyMetricId, enemyRange),
+                        note = note,
+                    ),
+                satisfiedMetricId to
+                    MetricPresentation(
+                        targetText = Phase4OwnerMetricTargets.targetText(satisfiedMetricId, satisfiedRange),
+                        note = note,
+                    ),
+            ),
+        )
+    }
+
     private fun terrainAggregateEvaluation(
         task: Phase4TaskAggregate,
         baseline: VerificationBaseline,
@@ -901,6 +1013,11 @@ private fun relativeIncrease(
 private fun formatPercent(value: Double): String = String.format(Locale.US, "%.1f%%", value * 100.0)
 
 private fun formatPercentPrecise(value: Double): String = String.format(Locale.US, "%.2f%%", value * 100.0)
+
+private fun formatDecimal(value: Double?): String =
+    value?.let { current -> String.format(Locale.US, "%.1f", current) } ?: "n/a"
+
+private fun formatRequiredDecimal(value: Double): String = String.format(Locale.US, "%.1f", value)
 
 private fun formatSignedPercent(value: Double): String =
     if (value >= 0.0) {

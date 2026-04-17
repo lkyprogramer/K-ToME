@@ -116,11 +116,19 @@ object ScopeCoverageLintRunner {
                 ),
                 planCase(
                     caseId = "longrun_owner_baseline_scope",
-                    changedFiles = listOf("docs/review/phase4/opt/baselines/2026-04-12-phase4-terminal-build-identity-baseline.json"),
+                    changedFiles =
+                        listOf(
+                            "docs/review/phase4/opt/baselines/2026-04-12-phase4-terminal-build-identity-baseline.json",
+                            "docs/review/phase4/opt/baselines/2026-04-16-phase4-critical-path-pacing-owner-baseline.json",
+                        ),
                 ),
                 planCase(
                     caseId = "phase4_report_only_scope",
                     changedFiles = listOf("tools/src/main/kotlin/com/ktome/tools/phase4/Phase4AggregationInputRunner.kt"),
+                ),
+                planCase(
+                    caseId = "phase4_report_helper_scope",
+                    changedFiles = listOf("tools/src/main/kotlin/com/ktome/tools/phase4/Phase4CriticalPathPacing.kt"),
                 ),
             )
         val summary =

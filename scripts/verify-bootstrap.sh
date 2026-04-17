@@ -7,7 +7,25 @@ BOOTSTRAP_ROOT="$ROOT_DIR/.bootstrap"
 BOOTSTRAP_GRADLE_BIN_FILE="$BOOTSTRAP_ROOT/gradle-bin.path"
 BOOTSTRAP_GRADLE_USER_HOME="$BOOTSTRAP_ROOT/gradle-user-home"
 
-"$ROOT_DIR/scripts/bootstrap-deps.sh" "$@"
+bootstrap_task="bootstrapOfflineVerify"
+bootstrap_deps_args=()
+
+for arg in "$@"; do
+  case "$arg" in
+    --smoke)
+      bootstrap_task="bootstrapOfflineSmoke"
+      ;;
+    *)
+      bootstrap_deps_args+=("$arg")
+      ;;
+  esac
+done
+
+if (( ${#bootstrap_deps_args[@]} == 0 )); then
+  "$ROOT_DIR/scripts/bootstrap-deps.sh"
+else
+  "$ROOT_DIR/scripts/bootstrap-deps.sh" "${bootstrap_deps_args[@]}"
+fi
 
 if [[ ! -f "$BOOTSTRAP_GRADLE_BIN_FILE" ]]; then
   echo "Bootstrapped Gradle metadata not found: $BOOTSTRAP_GRADLE_BIN_FILE" >&2
@@ -25,4 +43,4 @@ GRADLE_USER_HOME="$BOOTSTRAP_GRADLE_USER_HOME" \
   "$BOOTSTRAP_GRADLE_BIN" \
   --offline \
   --no-daemon \
-  bootstrapOfflineVerify
+  "$bootstrap_task"

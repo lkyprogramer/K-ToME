@@ -91,6 +91,29 @@ class RouteProgressCommandTest {
     }
 
     @Test
+    fun `route progress without objective hook does not auto interact pending objective`() {
+        val session =
+            GameModule.newFoundationSession(
+                config =
+                    FoundationGameConfig(
+                        seed = 20260318L,
+                        zoneId = "bandit_camp",
+                        playerProfessionId = "rogue",
+                        zoneRoute = listOf("shattered_outpost", "greenwood_fringe", "bandit_camp"),
+                        routeIndex = 2,
+                    ),
+                saveManager = SaveManager(tempDir.resolve("objective-hook-disabled-route-progress")),
+            )
+
+        val objectivePoint = requireNotNull(session.automationPendingObjectiveInteractablePoint())
+        session.automationMovePlayerTo(objectivePoint)
+        val observation = RunObservationCapture.capture(session, turnIndex = 0)
+
+        assertTrue(routeProgressCommand(session, observation) == PlayerCommand.Interact)
+        assertTrue(routeProgressCommandWithoutObjectiveHook(session, observation) != PlayerCommand.Interact)
+    }
+
+    @Test
     fun `route progress pivots to boss path on final floor after terminal objective is in progress`() {
         val session =
             GameModule.newFoundationSession(

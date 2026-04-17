@@ -727,8 +727,11 @@ class TerrainInteractionBatchTest {
                 var observation = RunObservationCapture.capture(session, turnIndex)
                 while (turnIndex < TERRAIN_EXPOSURE_TURN_BUDGET && !observation.runOutcome.isTerminal && session.currentFloor() <= TERRAIN_EXPOSURE_MAX_FLOOR) {
                     val command =
-                        routeProgressCommand(session, observation)
-                            .takeIf { shouldPrioritizeTerrainProbeRouteProgress(observation) }
+                        if (shouldPrioritizeTerrainProbeRouteProgress(observation)) {
+                            routeProgressCommandWithoutObjectiveHook(session, observation)
+                        } else {
+                            null
+                        }
                             ?: bot.decide(observation)
                     val accepted = session.perform(command)
                     if (!accepted) {

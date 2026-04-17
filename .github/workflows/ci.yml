@@ -192,10 +192,21 @@ jobs:
           restore-keys: |
             bootstrap-downloads-${{ runner.os }}-
 
+      - name: Restore bootstrap Gradle user home cache
+        uses: actions/cache@v4
+        with:
+          path: .bootstrap/gradle-user-home
+          key: bootstrap-gradle-user-home-${{ runner.os }}-${{ hashFiles('build.gradle.kts', '**/build.gradle.kts', 'settings.gradle.kts', 'gradle.properties', 'gradle/wrapper/gradle-wrapper.properties', 'scripts/bootstrap-deps.sh', 'scripts/verify-bootstrap.sh') }}
+
       - name: Run bootstrap offline verification
         id: bootstrap_verify
         continue-on-error: true
-        run: ./scripts/verify-bootstrap.sh --clean
+        run: |
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            ./scripts/verify-bootstrap.sh --smoke
+          else
+            ./scripts/verify-bootstrap.sh --clean
+          fi
 
       - name: Warn on PR bootstrap verification failure
         if: github.event_name == 'pull_request' && steps.bootstrap_verify.outcome == 'failure'

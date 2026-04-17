@@ -381,6 +381,8 @@ internal object Phase4DomainArtifactRegistry {
         val professionTopWeaponSemanticTags =
             payload["professionTopWeaponSemanticTags"]
                 ?: deriveProfessionTopWeaponSemanticTags(professionTopWeaponBaseIds.jsonObject)
+        val fullRouteZoneTraversalDiagnostics = payload.getValue("fullRouteZoneTraversalDiagnostics")
+        val criticalPathZoneIds = payload.getValue("criticalPathZoneIds")
         return Phase4TaskAggregate(
             taskId = "longRunLab",
             status = if (fullRouteCount > 0) "PASS" else "FAIL",
@@ -401,6 +403,8 @@ internal object Phase4DomainArtifactRegistry {
                     put("professionTerminalWeaponDistribution", professionTerminalWeaponDistribution)
                     put("professionTopWeaponBaseIds", professionTopWeaponBaseIds)
                     put("professionTopWeaponSemanticTags", professionTopWeaponSemanticTags)
+                    put("fullRouteZoneTraversalDiagnostics", fullRouteZoneTraversalDiagnostics)
+                    put("criticalPathZoneIds", criticalPathZoneIds)
                 },
         )
     }

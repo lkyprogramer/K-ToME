@@ -2,10 +2,12 @@ import com.ktome.build.verification.VerificationReportTask
 import com.ktome.build.verification.VerificationTask
 import com.ktome.build.verification.VerifyChangedPlanGate
 import java.security.MessageDigest
+import org.gradle.api.Task
 import org.gradle.api.file.FileCollection
 import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.SourceSetContainer
+import org.gradle.api.tasks.TaskProvider
 import org.gradle.api.tasks.JavaExec
 import org.gradle.api.tasks.testing.Test
 
@@ -692,6 +694,67 @@ tasks.register<Test>("whiteBoxContentPack") {
 
 val legacyPhase4ReportDir = layout.buildDirectory.dir("reports/phase4")
 val unifiedPhase4ReportDir = layout.buildDirectory.dir("reports/verification/phase4")
+val legacyPhase4ReportOutputs =
+    files(
+        legacyPhase4ReportDir.map { directory -> directory.file("phase4-summary.json").asFile },
+        legacyPhase4ReportDir.map { directory -> directory.file("phase4-summary.md").asFile },
+    )
+val unifiedPhase4ReportOutputs =
+    files(
+        unifiedPhase4ReportDir.map { directory -> directory.file("report-phase4-summary.json").asFile },
+        unifiedPhase4ReportDir.map { directory -> directory.file("report-phase4-summary.md").asFile },
+    )
+val unifiedPhase4ParityOutputs =
+    files(
+        unifiedPhase4ReportOutputs,
+        unifiedPhase4ReportDir.map { directory -> directory.file("report-phase4-legacy-comparison.json").asFile },
+    )
+val phase4OwnerBaselineInputs =
+    rootProject.files(
+        "docs/review/phase4/opt/baselines/2026-04-12-phase4-scripted-hidden-owner-baseline.json",
+        "docs/review/phase4/opt/baselines/2026-04-12-phase4-organic-hidden-owner-baseline.json",
+        "docs/review/phase4/opt/baselines/2026-04-12-phase4-loot-local-reward-identity-baseline.json",
+        "docs/review/phase4/opt/baselines/2026-04-12-phase4-terminal-build-identity-baseline.json",
+        "docs/review/phase4/opt/baselines/2026-04-16-phase4-critical-path-pacing-owner-baseline.json",
+        "docs/review/phase4/opt/baselines/2026-04-09-opt-pr01-terrain-metrics-baseline-unified.json",
+        "docs/review/phase4/opt/baselines/2026-04-12-phase4-terrain-per-zone-lower-bound-baseline.json",
+    )
+val phase4AggregateProducerInputs =
+    files(
+        rootProject.layout.buildDirectory.file("reports/harness/long-run-full.json"),
+        layout.buildDirectory.file("reports/phase4/mapgen/mapgen-smoke-summary.json"),
+        layout.buildDirectory.file("reports/phase4/solvability/solvability-summary.json"),
+        layout.buildDirectory.file("reports/phase4/hidden/hidden-content-summary.json"),
+        layout.buildDirectory.file("reports/phase4/hidden/organic-hidden-probe-summary.json"),
+        layout.buildDirectory.file("reports/phase4/content-pack/content-pack-summary.json"),
+        layout.buildDirectory.file("reports/phase4/whitebox/boss/boss-harness.json"),
+        layout.buildDirectory.file("reports/phase4/whitebox/mapgen/whitebox-mapgen-summary.json"),
+        layout.buildDirectory.file("reports/phase4/whitebox/solvability/whitebox-solvability-summary.json"),
+        layout.buildDirectory.file("reports/phase4/whitebox/terrain/whitebox-terrain-summary.json"),
+        layout.buildDirectory.file("reports/phase4/whitebox/loot/whitebox-loot-summary.json"),
+        layout.buildDirectory.file("reports/phase4/whitebox/hidden/whitebox-hidden-content-summary.json"),
+        layout.buildDirectory.file("reports/phase4/whitebox/content-pack/whitebox-content-pack-summary.json"),
+        layout.buildDirectory.file("reports/phase4/loot/loot-balance-summary.json"),
+        phase4OwnerBaselineInputs,
+    )
+val phase4AggregateProducerTasks: List<TaskProvider<out Task>> =
+    listOf(
+        tasks.named("mapgenSmoke"),
+        tasks.named("solvabilityHarness"),
+        tasks.named("hiddenContentHarness"),
+        tasks.named("organicHiddenProbe"),
+        tasks.named("contentPackHarness"),
+        tasks.named("bossHarness"),
+        project(":game").tasks.named("longRunLab"),
+        tasks.named("terrainInteractionBatch"),
+        tasks.named("whiteBoxMapgen"),
+        tasks.named("whiteBoxSolvability"),
+        tasks.named("lootBalanceLab"),
+        tasks.named("whiteBoxLoot"),
+        tasks.named("whiteBoxHiddenContent"),
+        tasks.named("whiteBoxContentPack"),
+    )
+val legacyPhase4SummaryInput = layout.buildDirectory.file("reports/phase4/phase4-summary.json")
 val testSourceSet = sourceSets.test.get()
 
 fun registerPhase4AggregateTask(
@@ -699,6 +762,12 @@ fun registerPhase4AggregateTask(
     descriptionText: String,
     includeTag: String,
     outputDir: Provider<org.gradle.api.file.Directory>,
+    outputArtifacts: FileCollection,
+    producerInputs: FileCollection,
+    producerTasks: List<TaskProvider<out Task>>,
+    additionalDependsOn: List<TaskProvider<out Task>> = emptyList(),
+    additionalInputs: FileCollection = files(),
+    additionalMustRunAfter: List<TaskProvider<out Task>> = emptyList(),
     aggregateReportDir: Provider<org.gradle.api.file.Directory>? = null,
     legacyReportDir: Provider<org.gradle.api.file.Directory>? = null,
     compareLegacy: Boolean? = null,
@@ -712,8 +781,10 @@ fun registerPhase4AggregateTask(
             includeTags(includeTag)
             if (includeTag == "reportPhase4") {
                 excludeTags("phase4AggregationInput")
+                excludeTags("reportPhase4Fixture")
             }
         }
+        systemProperty("ktome.repo.root", rootProject.projectDir.absolutePath)
         aggregateReportDir?.let {
             systemProperty("ktome.phase4.aggregate.reportDir", it.get().asFile.absolutePath)
         }
@@ -723,7 +794,14 @@ fun registerPhase4AggregateTask(
         compareLegacy?.let {
             systemProperty("ktome.phase4.aggregate.compareLegacy", it.toString())
         }
-        outputs.dir(outputDir)
+        dependsOn(additionalDependsOn)
+        mustRunAfter(producerTasks)
+        mustRunAfter(additionalMustRunAfter)
+        inputs.files(producerInputs)
+            .withPathSensitivity(PathSensitivity.RELATIVE)
+        inputs.files(additionalInputs)
+            .withPathSensitivity(PathSensitivity.RELATIVE)
+        outputs.files(outputArtifacts)
     }
 }
 
@@ -732,6 +810,9 @@ registerPhase4AggregateTask(
     descriptionText = "Manually rebuilds the legacy Phase 4 aggregate summary from existing artifacts without rerunning producer tasks.",
     includeTag = "phase4LegacyReport",
     outputDir = legacyPhase4ReportDir,
+    outputArtifacts = legacyPhase4ReportOutputs,
+    producerInputs = phase4AggregateProducerInputs,
+    producerTasks = phase4AggregateProducerTasks,
     legacyReportDir = legacyPhase4ReportDir,
 )
 
@@ -740,6 +821,9 @@ registerPhase4AggregateTask(
     descriptionText = "Explicit artifact-only alias for manually rebuilding the legacy Phase 4 aggregate report.",
     includeTag = "phase4LegacyReport",
     outputDir = legacyPhase4ReportDir,
+    outputArtifacts = legacyPhase4ReportOutputs,
+    producerInputs = phase4AggregateProducerInputs,
+    producerTasks = phase4AggregateProducerTasks,
     legacyReportDir = legacyPhase4ReportDir,
 )
 
@@ -748,6 +832,9 @@ registerPhase4AggregateTask(
     descriptionText = "Rebuilds the canonical unified Phase 4 aggregate report from existing domain summaries and cached evaluation artifacts.",
     includeTag = "reportPhase4",
     outputDir = unifiedPhase4ReportDir,
+    outputArtifacts = unifiedPhase4ReportOutputs,
+    producerInputs = phase4AggregateProducerInputs,
+    producerTasks = phase4AggregateProducerTasks,
     aggregateReportDir = unifiedPhase4ReportDir,
     compareLegacy = false,
 )
@@ -757,6 +844,9 @@ registerPhase4AggregateTask(
     descriptionText = "Explicit artifact-only alias for rebuilding the canonical unified Phase 4 aggregate report.",
     includeTag = "reportPhase4",
     outputDir = unifiedPhase4ReportDir,
+    outputArtifacts = unifiedPhase4ReportOutputs,
+    producerInputs = phase4AggregateProducerInputs,
+    producerTasks = phase4AggregateProducerTasks,
     aggregateReportDir = unifiedPhase4ReportDir,
     compareLegacy = false,
 )
@@ -766,6 +856,11 @@ registerPhase4AggregateTask(
     descriptionText = "Runs the explicit parity gate that compares the canonical unified Phase 4 aggregate against the legacy fallback report.",
     includeTag = "reportPhase4",
     outputDir = unifiedPhase4ReportDir,
+    outputArtifacts = unifiedPhase4ParityOutputs,
+    producerInputs = phase4AggregateProducerInputs,
+    producerTasks = phase4AggregateProducerTasks,
+    additionalDependsOn = listOf(tasks.named("phase4LegacyReport")),
+    additionalInputs = files(legacyPhase4SummaryInput),
     aggregateReportDir = unifiedPhase4ReportDir,
     legacyReportDir = legacyPhase4ReportDir,
     compareLegacy = true,
@@ -776,9 +871,22 @@ registerPhase4AggregateTask(
     descriptionText = "Rebuilds the canonical unified Phase 4 aggregate report from existing domain summaries without legacy comparison or producer reruns.",
     includeTag = "reportPhase4",
     outputDir = unifiedPhase4ReportDir,
+    outputArtifacts = unifiedPhase4ReportOutputs,
+    producerInputs = phase4AggregateProducerInputs,
+    producerTasks = phase4AggregateProducerTasks,
     aggregateReportDir = unifiedPhase4ReportDir,
     compareLegacy = false,
 )
+
+tasks.register<Test>("reportPhase4Fixture") {
+    group = "verification"
+    description = "Runs the fixture-backed reportPhase4 contract tests without materializing the repo-scoped canonical report."
+    testClassesDirs = testSourceSet.output.classesDirs
+    classpath = testSourceSet.runtimeClasspath
+    useJUnitPlatform {
+        includeTags("reportPhase4Fixture")
+    }
+}
 
 listOf(
     tasks.named("contractLint"),
