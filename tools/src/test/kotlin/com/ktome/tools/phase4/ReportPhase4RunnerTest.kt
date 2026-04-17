@@ -258,6 +258,66 @@ class ReportPhase4RunnerTest {
 
     @Test
     @Tag("reportPhase4Fixture")
+    fun `reportPhase4 treats missing critical path zone diagnostics as regression instead of crashing`() {
+        val fixtureRepoRoot = Phase4ReportFixtureTestSupport.preparePhase4RepoFixture(tempDir)
+        val longRunSummaryPath = fixtureRepoRoot.resolve("build/reports/harness/long-run-full.json")
+        val payload = Phase4ReportFixtureTestSupport.json.parseToJsonElement(Files.readString(longRunSummaryPath)).jsonObject
+        val updatedDiagnostics =
+            buildJsonObject {
+                payload.getValue("fullRouteZoneTraversalDiagnostics").jsonObject.forEach { (zoneId, diagnostic) ->
+                    if (zoneId != "grey_gate_depths") {
+                        put(zoneId, diagnostic)
+                    }
+                }
+            }
+        Files.writeString(
+            longRunSummaryPath,
+            Phase4ReportFixtureTestSupport.json.encodeToString(
+                kotlinx.serialization.json.JsonElement.serializer(),
+                buildJsonObject {
+                    payload.forEach { (key, value) ->
+                        if (key == "fullRouteZoneTraversalDiagnostics") {
+                            put(key, updatedDiagnostics)
+                        } else {
+                            put(key, value)
+                        }
+                    }
+                },
+            ),
+        )
+
+        Phase4ReportFixtureTestSupport.withFixtureProperties(repoRoot = fixtureRepoRoot, aggregateReportDir = tempDir.resolve("aggregate-missing-zone")) {
+            val run = ReportPhase4Runner.run(compareLegacy = false)
+            val ownerMetrics =
+                Phase4ReportFixtureTestSupport.json.parseToJsonElement(Files.readString(run.summaryPath)).jsonObject.getValue("ownerMetrics").jsonArray
+            val objectiveMetric =
+                ownerMetrics
+                    .first { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "avgObjectiveAcquireTurn" }
+                    .jsonObject
+            val satisfiedMetric =
+                ownerMetrics
+                    .first { metric ->
+                        metric.jsonObject.getValue("metricId").jsonPrimitive.content == "criticalPathCombatFloorSatisfied"
+                    }.jsonObject
+
+            assertEquals("UNEXPECTED_REGRESSION", objectiveMetric.getValue("status").jsonPrimitive.content)
+            assertTrue(objectiveMetric.getValue("currentValueText").jsonPrimitive.content.contains("min=n/a"))
+            assertTrue(
+                objectiveMetric.getValue("currentValue").jsonObject.getValue("failingZones").jsonArray.any { zone ->
+                    zone.jsonPrimitive.content == "grey_gate_depths"
+                },
+            )
+            assertEquals("UNEXPECTED_REGRESSION", satisfiedMetric.getValue("status").jsonPrimitive.content)
+            assertTrue(
+                satisfiedMetric.getValue("currentValue").jsonObject.getValue("failingZones").jsonArray.any { zone ->
+                    zone.jsonPrimitive.content == "grey_gate_depths"
+                },
+            )
+        }
+    }
+
+    @Test
+    @Tag("reportPhase4Fixture")
     fun `reportPhase4 treats missing critical path objective samples as regression`() {
         val fixtureRepoRoot = Phase4ReportFixtureTestSupport.preparePhase4RepoFixture(tempDir)
         val longRunSummaryPath = fixtureRepoRoot.resolve("build/reports/harness/long-run-full.json")

@@ -168,7 +168,8 @@ val test = tasks.register("test") {
 val unitAndToolsGate = tasks.register("unitAndToolsGate") {
     group = LifecycleBasePlugin.VERIFICATION_GROUP
     description = "Runs the unit, lint, trace-golden, and core coverage verification gates."
-    dependsOn(test)
+    dependsOn(":core:test")
+    dependsOn(":tools:test")
     dependsOn("localeLint")
     dependsOn("contractLint")
     dependsOn("combatTraceGolden")
@@ -178,6 +179,7 @@ val unitAndToolsGate = tasks.register("unitAndToolsGate") {
 val gameHarnessGate = tasks.register("gameHarnessGate") {
     group = LifecycleBasePlugin.VERIFICATION_GROUP
     description = "Runs the game harness verification gates."
+    dependsOn(":game:test")
     dependsOn("headlessSmoke")
     dependsOn("soloClearLab")
     dependsOn("longRunLab")
@@ -187,6 +189,7 @@ val gameHarnessGate = tasks.register("gameHarnessGate") {
 val clientAndAssetsGate = tasks.register("clientAndAssetsGate") {
     group = LifecycleBasePlugin.VERIFICATION_GROUP
     description = "Runs the client, golden screenshot, and asset verification gates."
+    dependsOn(":client:test")
     dependsOn("clientSmoke")
     dependsOn("goldenScreenshot")
     dependsOn("assetLint")
@@ -203,9 +206,17 @@ val verificationGate = tasks.register("verificationGate") {
     dependsOn(clientAndAssetsGate)
 }
 
+val bootstrapOfflineSmoke = tasks.register("bootstrapOfflineSmoke") {
+    group = LifecycleBasePlugin.VERIFICATION_GROUP
+    description = "Runs the PR bootstrap smoke gate with isolated offline core/tools verification."
+    dependsOn(":core:test")
+    dependsOn(":tools:test")
+    dependsOn(":core:jacocoTestCoverageVerification")
+}
+
 val bootstrapOfflineVerify = tasks.register("bootstrapOfflineVerify") {
     group = LifecycleBasePlugin.VERIFICATION_GROUP
-    description = "Runs the offline bootstrap verification gate without heavyweight harness and report tasks."
+    description = "Runs the full offline bootstrap verification gate with the aggregate root test suite."
     dependsOn(test)
     dependsOn(":core:jacocoTestCoverageVerification")
 }
