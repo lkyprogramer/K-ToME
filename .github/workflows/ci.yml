@@ -197,8 +197,6 @@ jobs:
         with:
           path: .bootstrap/gradle-user-home
           key: bootstrap-gradle-user-home-${{ runner.os }}-${{ hashFiles('build.gradle.kts', '**/build.gradle.kts', 'settings.gradle.kts', 'gradle.properties', 'gradle/wrapper/gradle-wrapper.properties', 'scripts/bootstrap-deps.sh', 'scripts/verify-bootstrap.sh') }}
-          restore-keys: |
-            bootstrap-gradle-user-home-${{ runner.os }}-
 
       - name: Run bootstrap offline verification
         id: bootstrap_verify

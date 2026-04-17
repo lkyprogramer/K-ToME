@@ -765,6 +765,7 @@ fun registerPhase4AggregateTask(
     outputArtifacts: FileCollection,
     producerInputs: FileCollection,
     producerTasks: List<TaskProvider<out Task>>,
+    additionalDependsOn: List<TaskProvider<out Task>> = emptyList(),
     additionalInputs: FileCollection = files(),
     additionalMustRunAfter: List<TaskProvider<out Task>> = emptyList(),
     aggregateReportDir: Provider<org.gradle.api.file.Directory>? = null,
@@ -793,6 +794,7 @@ fun registerPhase4AggregateTask(
         compareLegacy?.let {
             systemProperty("ktome.phase4.aggregate.compareLegacy", it.toString())
         }
+        dependsOn(additionalDependsOn)
         mustRunAfter(producerTasks)
         mustRunAfter(additionalMustRunAfter)
         inputs.files(producerInputs)
@@ -857,8 +859,8 @@ registerPhase4AggregateTask(
     outputArtifacts = unifiedPhase4ParityOutputs,
     producerInputs = phase4AggregateProducerInputs,
     producerTasks = phase4AggregateProducerTasks,
+    additionalDependsOn = listOf(tasks.named("phase4LegacyReport")),
     additionalInputs = files(legacyPhase4SummaryInput),
-    additionalMustRunAfter = listOf(tasks.named("phase4LegacyReport")),
     aggregateReportDir = unifiedPhase4ReportDir,
     legacyReportDir = legacyPhase4ReportDir,
     compareLegacy = true,
