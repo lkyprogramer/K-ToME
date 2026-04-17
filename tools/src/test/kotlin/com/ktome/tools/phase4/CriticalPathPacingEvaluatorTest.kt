@@ -16,8 +16,12 @@ import kotlinx.serialization.json.putJsonObject
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.io.TempDir
 
 class CriticalPathPacingEvaluatorTest {
+    @TempDir
+    lateinit var tempDir: Path
+
     @Test
     fun `missing objective sample becomes unexpected regression with compact details`() {
         val evaluation =
@@ -101,54 +105,58 @@ class CriticalPathPacingEvaluatorTest {
 
     @Test
     fun `design audit stays ordered and non-gating for pacing verdicts`() {
-        val metrics = longRunMetrics()
-        val baseline = VerificationBaseline.read(repoRoot().resolve(Phase4OwnerBaselineRegistry.CRITICAL_PATH_PACING_BASELINE_RELATIVE_PATH))
-        val thresholds = CriticalPathPacingThresholds.fromBaseline(baseline)
-        val evaluation = CriticalPathPacingEvaluator.evaluate(metrics, thresholds)
-        val mutatedEvaluation =
-            CriticalPathPacingEvaluator.evaluate(
-                metrics.withMutatedAuditMapSize(zoneId = "greenwood_fringe", mapSize = "999x999"),
-                thresholds,
-            )
-        val sortedTerrainTagKeys =
-            evaluation.evidence.designAudit
-                .first { audit -> audit.zoneId == "greenwood_fringe" }
-                .toJson()
-                .getValue("terrainTagWeights")
-                .jsonObject
-                .keys
-                .toList()
+        withFixtureRepoRoot {
+            val metrics = longRunMetrics()
+            val baseline = VerificationBaseline.read(repoRoot().resolve(Phase4OwnerBaselineRegistry.CRITICAL_PATH_PACING_BASELINE_RELATIVE_PATH))
+            val thresholds = CriticalPathPacingThresholds.fromBaseline(baseline)
+            val evaluation = CriticalPathPacingEvaluator.evaluate(metrics, thresholds)
+            val mutatedEvaluation =
+                CriticalPathPacingEvaluator.evaluate(
+                    metrics.withMutatedAuditMapSize(zoneId = "greenwood_fringe", mapSize = "999x999"),
+                    thresholds,
+                )
+            val sortedTerrainTagKeys =
+                evaluation.evidence.designAudit
+                    .first { audit -> audit.zoneId == "greenwood_fringe" }
+                    .toJson()
+                    .getValue("terrainTagWeights")
+                    .jsonObject
+                    .keys
+                    .toList()
 
-        assertEquals(
-            evaluation.evidence.criticalPathZoneIds,
-            evaluation.evidence.designAudit.map(CriticalPathZoneDesignAuditSnapshot::zoneId),
-        )
-        assertEquals(sortedTerrainTagKeys.sorted(), sortedTerrainTagKeys)
-        assertEquals(
-            evaluation.toEvaluationResult(domainId = "longrun", evaluationId = "longrun.criticalPathPacing").entries.map { entry ->
-                listOf(entry.metricId, entry.status.name, entry.currentValue.toString(), entry.currentValueText)
-            },
-            mutatedEvaluation.toEvaluationResult(domainId = "longrun", evaluationId = "longrun.criticalPathPacing").entries.map { entry ->
-                listOf(entry.metricId, entry.status.name, entry.currentValue.toString(), entry.currentValueText)
-            },
-        )
+            assertEquals(
+                evaluation.evidence.criticalPathZoneIds,
+                evaluation.evidence.designAudit.map(CriticalPathZoneDesignAuditSnapshot::zoneId),
+            )
+            assertEquals(sortedTerrainTagKeys.sorted(), sortedTerrainTagKeys)
+            assertEquals(
+                evaluation.toEvaluationResult(domainId = "longrun", evaluationId = "longrun.criticalPathPacing").entries.map { entry ->
+                    listOf(entry.metricId, entry.status.name, entry.currentValue.toString(), entry.currentValueText)
+                },
+                mutatedEvaluation.toEvaluationResult(domainId = "longrun", evaluationId = "longrun.criticalPathPacing").entries.map { entry ->
+                    listOf(entry.metricId, entry.status.name, entry.currentValue.toString(), entry.currentValueText)
+                },
+            )
+        }
     }
 
     @Test
     fun `missing critical path design audit zone fails fast`() {
-        val metrics = longRunMetrics()
-        val baseline = VerificationBaseline.read(repoRoot().resolve(Phase4OwnerBaselineRegistry.CRITICAL_PATH_PACING_BASELINE_RELATIVE_PATH))
-        val thresholds = CriticalPathPacingThresholds.fromBaseline(baseline)
+        withFixtureRepoRoot {
+            val metrics = longRunMetrics()
+            val baseline = VerificationBaseline.read(repoRoot().resolve(Phase4OwnerBaselineRegistry.CRITICAL_PATH_PACING_BASELINE_RELATIVE_PATH))
+            val thresholds = CriticalPathPacingThresholds.fromBaseline(baseline)
 
-        val error =
-            assertThrows(IllegalStateException::class.java) {
-                CriticalPathPacingEvaluator.evaluate(
-                    metrics.withRemovedAuditZone(zoneId = "grey_gate_depths"),
-                    thresholds,
-                )
-            }
+            val error =
+                assertThrows(IllegalStateException::class.java) {
+                    CriticalPathPacingEvaluator.evaluate(
+                        metrics.withRemovedAuditZone(zoneId = "grey_gate_depths"),
+                        thresholds,
+                    )
+                }
 
-        assertEquals(true, error.message.orEmpty().contains("grey_gate_depths"))
+            assertEquals(true, error.message.orEmpty().contains("grey_gate_depths"))
+        }
     }
 
     private fun longRunMetrics(): JsonObject =
@@ -232,4 +240,14 @@ class CriticalPathPacingEvaluatorTest {
         System.getProperty("ktome.repo.root")
             ?.let(Path::of)
             ?: Path.of("").toAbsolutePath().normalize()
+
+    private fun withFixtureRepoRoot(block: () -> Unit) {
+        val fixtureRepoRoot = Phase4ReportFixtureTestSupport.preparePhase4RepoFixture(tempDir)
+        Phase4ReportFixtureTestSupport.withFixtureProperties(
+            repoRoot = fixtureRepoRoot,
+            aggregateReportDir = tempDir.resolve("aggregate-pacing-evaluator"),
+        ) {
+            block()
+        }
+    }
 }
