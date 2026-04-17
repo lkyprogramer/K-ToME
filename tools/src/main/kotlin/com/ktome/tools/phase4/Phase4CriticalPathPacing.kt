@@ -157,7 +157,7 @@ internal fun JsonObject.toCriticalPathPacingSummary(): CriticalPathPacingSummary
         zonesById =
             zoneIds.associateWith { zoneId ->
                 diagnostics[zoneId]?.jsonObject?.toCriticalPathZonePacingSnapshot(zoneId)
-                    ?: error("fullRouteZoneTraversalDiagnostics missing entry for critical-path zone '$zoneId'.")
+                    ?: missingCriticalPathZonePacingSnapshot(zoneId)
             },
     )
 }
@@ -222,6 +222,14 @@ private fun JsonObject.toCriticalPathZoneDesignAuditSnapshot(zoneId: String): Cr
 
 private fun JsonObject.stringList(key: String): List<String> =
     getValue(key).jsonArray.map { element -> element.jsonPrimitive.content }
+
+private fun missingCriticalPathZonePacingSnapshot(zoneId: String): CriticalPathZonePacingSnapshot =
+    CriticalPathZonePacingSnapshot(
+        zoneId = zoneId,
+        avgObjectiveAcquireTurn = null,
+        avgVisibleHostileTurnCount = 0.0,
+        avgEnemyTurns = 0.0,
+    )
 
 internal fun List<String>.toJsonArray(): JsonArray =
     buildJsonArray {
