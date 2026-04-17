@@ -266,7 +266,7 @@ class Phase4AggregationInputRunnerTest {
                     .jsonObject
             val objectiveDetails = objectiveEntry.getValue("details").jsonObject
 
-            assertEquals("phase4-aggregation-input-v6", summary.getValue("contractVersion").jsonPrimitive.content)
+            assertEquals("phase4-aggregation-input-v7", summary.getValue("contractVersion").jsonPrimitive.content)
             assertEquals("criticalPathPacing", objectiveDetails.getValue("sectionRef").jsonPrimitive.content)
             assertEquals("minimum", objectiveDetails.getValue("metricKind").jsonPrimitive.content)
             assertFalse(objectiveDetails.containsKey("fullRouteZoneTraversalDiagnostics"))

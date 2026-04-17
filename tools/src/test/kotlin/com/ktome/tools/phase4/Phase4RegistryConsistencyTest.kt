@@ -2,6 +2,7 @@ package com.ktome.tools.phase4
 
 import com.ktome.tools.verification.VerificationTaskRegistry
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
@@ -45,5 +46,11 @@ class Phase4RegistryConsistencyTest {
         assertEquals(aggregatedTaskIds, Phase4DomainArtifactRegistry.registeredTaskIds())
         assertEquals(aggregatedTaskIds, Phase4DomainArtifactRegistry.readerTaskIds())
         assertTrue(aggregationOnlyTaskIds.none(routedOwnerTaskIds::contains))
+        Phase4OwnerTaskRoles.NON_AGGREGATED_OWNER_TASK_IDS.forEach { taskId ->
+            assertFalse(
+                taskId in aggregatedTaskIds,
+                "Non-aggregated owner '$taskId' must not appear in the aggregation manifest.",
+            )
+        }
     }
 }

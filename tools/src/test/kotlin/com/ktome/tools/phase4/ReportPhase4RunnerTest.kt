@@ -100,6 +100,10 @@ class ReportPhase4RunnerTest {
             assertEquals("criticalPathPacing", objectiveMetric.getValue("details").jsonObject.getValue("sectionRef").jsonPrimitive.content)
             assertEquals("criticalPathPacing", satisfiedMetric.getValue("details").jsonObject.getValue("sectionRef").jsonPrimitive.content)
             assertEquals(
+                criticalPathSection.getValue("designAudit"),
+                satisfiedMetric.getValue("details").jsonObject.getValue("designAudit"),
+            )
+            assertEquals(
                 criticalPathSection.getValue("criticalPathZoneIds").jsonArray.size,
                 criticalPathSection.getValue("designAudit").jsonArray.size,
             )

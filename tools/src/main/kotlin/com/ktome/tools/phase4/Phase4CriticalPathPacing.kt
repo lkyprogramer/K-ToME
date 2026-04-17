@@ -157,7 +157,7 @@ internal fun JsonObject.toCriticalPathPacingSummary(): CriticalPathPacingSummary
         zonesById =
             zoneIds.associateWith { zoneId ->
                 diagnostics[zoneId]?.jsonObject?.toCriticalPathZonePacingSnapshot(zoneId)
-                    ?: missingCriticalPathZonePacingSnapshot(zoneId)
+                    ?: error("fullRouteZoneTraversalDiagnostics missing entry for critical-path zone '$zoneId'.")
             },
     )
 }
@@ -174,12 +174,28 @@ internal fun JsonObject.toCriticalPathDesignAuditSnapshots(criticalPathZoneIds: 
     }
 }
 
+internal fun JsonArray.toCriticalPathDesignAuditSnapshots(): List<CriticalPathZoneDesignAuditSnapshot> =
+    map { element ->
+        val payload = element.jsonObject
+        payload.toCriticalPathZoneDesignAuditSnapshot(
+            zoneId = payload.getValue("zoneId").jsonPrimitive.content,
+        )
+    }
+
 private fun JsonObject.toCriticalPathZonePacingSnapshot(zoneId: String): CriticalPathZonePacingSnapshot =
     CriticalPathZonePacingSnapshot(
         zoneId = zoneId,
         avgObjectiveAcquireTurn = this["avgObjectiveAcquireTurn"]?.jsonPrimitive?.content?.toDoubleOrNull(),
-        avgVisibleHostileTurnCount = this["avgVisibleHostileTurnCount"]?.jsonPrimitive?.content?.toDoubleOrNull() ?: 0.0,
-        avgEnemyTurns = this["avgEnemyTurns"]?.jsonPrimitive?.content?.toDoubleOrNull() ?: 0.0,
+        avgVisibleHostileTurnCount =
+            requiredDouble(
+                key = "avgVisibleHostileTurnCount",
+                zoneId = zoneId,
+            ),
+        avgEnemyTurns =
+            requiredDouble(
+                key = "avgEnemyTurns",
+                zoneId = zoneId,
+            ),
     )
 
 private fun JsonObject.toCriticalPathZoneDesignAuditSnapshot(zoneId: String): CriticalPathZoneDesignAuditSnapshot =
@@ -207,15 +223,19 @@ private fun JsonObject.toCriticalPathZoneDesignAuditSnapshot(zoneId: String): Cr
 private fun JsonObject.stringList(key: String): List<String> =
     getValue(key).jsonArray.map { element -> element.jsonPrimitive.content }
 
-private fun missingCriticalPathZonePacingSnapshot(zoneId: String): CriticalPathZonePacingSnapshot =
-    CriticalPathZonePacingSnapshot(
-        zoneId = zoneId,
-        avgObjectiveAcquireTurn = null,
-        avgVisibleHostileTurnCount = 0.0,
-        avgEnemyTurns = 0.0,
-    )
-
 internal fun List<String>.toJsonArray(): JsonArray =
     buildJsonArray {
         this@toJsonArray.forEach { value -> add(JsonPrimitive(value)) }
     }
+
+private fun JsonObject.requiredDouble(
+    key: String,
+    zoneId: String,
+): Double {
+    val rawValue =
+        this[key]?.jsonPrimitive?.content?.toDoubleOrNull()
+    requireNotNull(rawValue) {
+        "$key must be a numeric value for critical-path zone '$zoneId'."
+    }
+    return rawValue
+}

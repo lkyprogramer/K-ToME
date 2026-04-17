@@ -121,7 +121,7 @@ object ReportPhase4Runner {
         val aggregationInputs = materialization.inputs
         val sourcePathByTaskId = aggregationInputs.associate { input -> input.sourceTaskId to input.kernelResult.sourcePath }
         val ownerMetrics = buildOwnerMetrics(aggregationInputs = aggregationInputs)
-        val sections = buildSections(aggregationInputs = aggregationInputs, ownerMetrics = ownerMetrics)
+        val sections = buildSections(ownerMetrics = ownerMetrics)
         val metricCatalog =
             Phase4MetricCatalog.entries(
                 sourcePathByTaskId = sourcePathByTaskId,
@@ -240,11 +240,7 @@ object ReportPhase4Runner {
         }
     }
 
-    private fun buildSections(
-        aggregationInputs: List<ReportAggregationInput>,
-        ownerMetrics: List<ReportPhase4OwnerMetric>,
-    ): JsonObject {
-        val longRunInput = requireInput(aggregationInputs.associateBy(ReportAggregationInput::sourceTaskId), "longRunLab")
+    private fun buildSections(ownerMetrics: List<ReportPhase4OwnerMetric>): JsonObject {
         val objectiveMetric = requireOwnerMetric(ownerMetrics, "avgObjectiveAcquireTurn")
         val visibleMetric = requireOwnerMetric(ownerMetrics, "avgVisibleHostileTurnCount")
         val enemyMetric = requireOwnerMetric(ownerMetrics, "avgEnemyTurns")
@@ -267,7 +263,11 @@ object ReportPhase4Runner {
             zoneSnapshots
                 .filter { snapshot -> snapshot.avgObjectiveAcquireTurn == null }
                 .map(CriticalPathZonePacingSnapshot::zoneId)
-        val designAudit = longRunInput.kernelResult.metrics.toCriticalPathDesignAuditSnapshots(criticalPathZoneIds)
+        val designAudit =
+            satisfiedMetric.details
+                .getValue("designAudit")
+                .jsonArray
+                .toCriticalPathDesignAuditSnapshots()
         validateCriticalPathPacingDetails(
             ownerMetrics =
                 listOf(
@@ -683,6 +683,11 @@ object ReportPhase4Runner {
             }
             require(ownerMetric.details.getValue("sampleMissing").jsonPrimitive.content.toBoolean() == expectedSampleMissing) {
                 "reportPhase4 owner metric ${ownerMetric.metricId} sampleMissing drifted from the shared pacing contract."
+            }
+            if (ownerMetric.metricId == "criticalPathCombatFloorSatisfied") {
+                require(ownerMetric.details.containsKey("designAudit")) {
+                    "reportPhase4 owner metric ${ownerMetric.metricId} must carry designAudit through shared pacing details."
+                }
             }
         }
     }

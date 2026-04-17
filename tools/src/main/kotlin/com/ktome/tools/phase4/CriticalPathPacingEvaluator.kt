@@ -122,6 +122,7 @@ internal data class CriticalPathPacingLegacyMetricProjection(
     val target: String,
     val status: String,
     val note: String,
+    val details: JsonObject = JsonObject(emptyMap()),
 )
 
 internal data class CriticalPathPacingEvaluation(
@@ -162,7 +163,7 @@ internal data class CriticalPathPacingEvaluation(
                         currentValueText = result.currentValueText,
                         targetText = legacyTargetText(metricId),
                         note = note,
-                        details = result.details(),
+                        details = detailsFor(metricId = metricId, result = result),
                     )
                 },
         )
@@ -183,6 +184,7 @@ internal data class CriticalPathPacingEvaluation(
                         "PASS"
                     },
                 note = note,
+                details = detailsFor(metricId = metricId, result = result),
             )
         }
 
@@ -199,6 +201,22 @@ internal data class CriticalPathPacingEvaluation(
     private fun legacyTargetText(metricId: String): String =
         checkNotNull(thresholds.targetTextByMetricId[metricId]) {
             "CriticalPathPacingThresholds.targetTextByMetricId missing target text for '$metricId'."
+        }
+
+    private fun detailsFor(
+        metricId: String,
+        result: CriticalPathPacingMetricResult,
+    ): JsonObject =
+        buildJsonObject {
+            result.details().forEach { (key, value) -> put(key, value) }
+            if (metricId == "criticalPathCombatFloorSatisfied") {
+                put(
+                    "designAudit",
+                    kotlinx.serialization.json.buildJsonArray {
+                        evidence.designAudit.forEach { audit -> add(audit.toJson()) }
+                    },
+                )
+            }
         }
 
     private fun targetFloor(metricId: String): Double =

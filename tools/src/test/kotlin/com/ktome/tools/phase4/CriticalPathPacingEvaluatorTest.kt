@@ -66,6 +66,40 @@ class CriticalPathPacingEvaluatorTest {
     }
 
     @Test
+    fun `missing visible hostile metric fails fast instead of falling back to zero`() {
+        val error =
+            assertThrows(IllegalArgumentException::class.java) {
+                CriticalPathPacingEvaluator.evaluate(
+                    longRunMetrics =
+                        buildJsonObject {
+                            putJsonArray("criticalPathZoneIds") {
+                                add(JsonPrimitive("greenwood_fringe"))
+                            }
+                            putJsonObject("fullRouteZoneTraversalDiagnostics") {
+                                putJsonObject("greenwood_fringe") {
+                                    put("avgObjectiveAcquireTurn", 7.2)
+                                    put("avgEnemyTurns", 69.8)
+                                }
+                            }
+                            putJsonObject("criticalPathZoneDesignAudit") {
+                                put("greenwood_fringe", designAudit(zoneId = "greenwood_fringe"))
+                            }
+                        },
+                    thresholds =
+                        CriticalPathPacingThresholds(
+                            objectiveFloor = 4.0,
+                            visibleFloor = 1.0,
+                            enemyFloor = 1.0,
+                            satisfiedFloor = 1.0,
+                        ),
+                )
+            }
+
+        assertEquals(true, error.message.orEmpty().contains("avgVisibleHostileTurnCount"))
+        assertEquals(true, error.message.orEmpty().contains("greenwood_fringe"))
+    }
+
+    @Test
     fun `design audit stays ordered and non-gating for pacing verdicts`() {
         val metrics = longRunMetrics()
         val baseline = VerificationBaseline.read(repoRoot().resolve(Phase4OwnerBaselineRegistry.CRITICAL_PATH_PACING_BASELINE_RELATIVE_PATH))

@@ -203,8 +203,10 @@ class Phase4ReportRunnerTest {
         assertTrue(alignedWeaponMetric.getValue("note").jsonPrimitive.content.contains("topWeaponSemantics="))
         assertTrue(objectiveMetric.getValue("currentValue").jsonObject.containsKey("failingZones"))
         assertTrue(!objectiveMetric.getValue("currentValue").jsonObject.containsKey("zoneBreakdown"))
+        assertEquals("criticalPathPacing", objectiveMetric.getValue("details").jsonObject.getValue("sectionRef").jsonPrimitive.content)
         assertTrue(combatFloorMetric.getValue("currentValue").jsonObject.containsKey("failingZones"))
         assertTrue(combatFloorMetric.getValue("currentValue").jsonObject.containsKey("zoneBreakdown"))
+        assertTrue(combatFloorMetric.getValue("details").jsonObject.containsKey("designAudit"))
         assertTrue(organicHiddenMetric.getValue("note").jsonPrimitive.content.contains("observationOnly=true"))
         assertTrue(organicHiddenMetric.getValue("note").jsonPrimitive.content.contains("promptRequired=true"))
         assertEquals(

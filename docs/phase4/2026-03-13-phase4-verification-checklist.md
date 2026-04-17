@@ -38,6 +38,9 @@
 8. `hiddenContentHarness` 继续承担 scripted correctness owner；`organicHiddenProbe` 只负责无 primer 的 organic experience 观测，不得借助内部 reveal 路径。
 9. 单个 harness 仍保留独立命令，便于局部回归、PR 级收口与 artifact 定向排查。
 10. `terrainInteractionBatch + bossHarness` 是 `PR-06` 的主验证入口；`hiddenContentHarness` 只消费 terrain/mutation/boss 的结果，不承担其主验证职责。
+11. Phase 4 producer inventory 的唯一 authoritative source 固定为 `tools/src/main/resources/phase4/aggregation-manifest.yaml`；`build-logic` wiring、`Phase4DomainArtifactRegistry`、`VerificationTaskRegistry` 与 baseline inputs 的一致性必须同时通过 `Phase4AggregationManifest* / Phase4RegistryConsistencyTest / ReportPhase4BuildContractTest`。
+12. canonical `phase4Report` summary schema 当前固定为 `report-phase4-v2`；critical-path pacing 共享证据只保留一份在 `sections.criticalPathPacing`，四个 pacing owner metric 必须通过 `details.sectionRef = criticalPathPacing` 指向同一份 evidence，`designAudit` 也必须通过 shared pacing projection 的 additive details 透传，render 侧不得重读 raw `longRunLab.metrics`。
+13. phase aggregate 的定向回归命令固定为 `reportPhase4Only`、`phase4LegacyReportOnly`、`reportPhase4`；其中 `reportPhase4` 只做 canonical vs legacy parity，对已删除的 manifest fallback 模式不再提供兼容分支。
 
 ### 必须检查的结果
 

@@ -41,7 +41,7 @@ import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonObject
 
-private const val PHASE4_AGGREGATION_INPUT_CONTRACT_VERSION: String = "phase4-aggregation-input-v6"
+private const val PHASE4_AGGREGATION_INPUT_CONTRACT_VERSION: String = "phase4-aggregation-input-v7"
 private const val AGGREGATION_INPUT_DIRECTORY_NAME: String = "inputs"
 private const val AGGREGATION_INPUT_SUMMARY_FILE: String = "aggregation-input-summary.json"
 

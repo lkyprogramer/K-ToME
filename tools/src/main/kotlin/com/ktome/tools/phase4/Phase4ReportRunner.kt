@@ -79,6 +79,7 @@ private data class Phase4ExperienceMetric(
     val target: String,
     val status: String,
     val note: String? = null,
+    val details: JsonObject = JsonObject(emptyMap()),
 )
 
 @Deprecated(
@@ -463,7 +464,11 @@ object Phase4ReportRunner {
                     zoneId.jsonPrimitive.content
                 }
             val criticalPathBreakdown = criticalPathMetricValue.getValue("zoneBreakdown").jsonObject
-            val criticalPathDesignAudit = longRunTask.metrics.toCriticalPathDesignAuditSnapshots(criticalPathZoneIds)
+            val criticalPathDesignAudit =
+                metricsById.getValue("criticalPathCombatFloorSatisfied").details
+                    .getValue("designAudit")
+                    .jsonArray
+                    .toCriticalPathDesignAuditSnapshots()
             val professionTerminalWeaponDistribution =
                 json.encodeToString(
                     JsonObject.serializer(),
@@ -682,6 +687,9 @@ private fun Phase4ExperienceMetric.toJson(): JsonObject =
         put("target", target)
         put("status", status)
         note?.let { value -> put("note", value) }
+        if (details.isNotEmpty()) {
+            put("details", details)
+        }
     }
 
 private fun CriticalPathPacingLegacyMetricProjection.toLegacyExperienceMetric(): Phase4ExperienceMetric =
@@ -693,6 +701,7 @@ private fun CriticalPathPacingLegacyMetricProjection.toLegacyExperienceMetric():
         target = target,
         status = status,
         note = note,
+        details = details,
     )
 
 private fun readTerrainBaseline(repoRoot: Path): TerrainMetricBaseline {

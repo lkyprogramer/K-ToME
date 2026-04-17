@@ -50,6 +50,8 @@ Phase 4 的主题是把“可完成的长局”升级成“重复游玩差异明
    - `contentPackHarness`
    - `whiteBoxContentPack`
    - `phase4Report`（默认 canonical gate，artifact-only 聚合当前 `mapgenSmoke / solvabilityHarness / hiddenContentHarness / organicHiddenProbe / contentPackHarness / bossHarness / longRunLab / terrainInteractionBatch / whiteBoxMapgen / whiteBoxSolvability / lootBalanceLab / whiteBoxLoot / whiteBoxHiddenContent / whiteBoxContentPack` 的既有 artifact，产物落到 `tools/build/reports/verification/phase4/report-phase4-summary.{json,md}`，并正式收口 hidden / loot / terrain / terminal identity / critical-path pacing owner metric；legacy `phase4-summary.{json,md}` 只保留为 `phase4LegacyReport*` 手工 fallback）
+   - Phase 4 producer inventory 的唯一 authoritative source 固定为 `tools/src/main/resources/phase4/aggregation-manifest.yaml`；build wiring、runtime registry、owner routing 与 baseline inputs 的一致性必须由自动化测试共同锁定
+   - canonical summary schema 以 `report-phase4-v2` 为当前 authority；critical-path pacing 共享证据只保留在 `sections.criticalPathPacing`，legacy report 只消费 shared evaluator 投影，不再自行重建 verdict；`designAudit` 也必须经 shared pacing projection/additive details 透传，render 侧禁止重读 raw `longRunLab.metrics`
 
 ## 4. 工作包与依赖
 
@@ -118,3 +120,5 @@ Phase 4 的主题是把“可完成的长局”升级成“重复游玩差异明
 13. [2026-03-13-phase4-pr-09-sample-content-pack-and-pack-resource-pipeline.md](./2026-03-13-phase4-pr-09-sample-content-pack-and-pack-resource-pipeline.md)
 14. [../2026-03-13-phase2-to-phase5-final-roadmap.md](../2026-03-13-phase2-to-phase5-final-roadmap.md)
 15. [../2026-03-13-core-systems-design-and-phase-supplements.md](../2026-03-13-core-systems-design-and-phase-supplements.md)
+16. [../review/phase4/opt/2026-04-17-phase4-aggregation-manifest-authority.md](../review/phase4/opt/2026-04-17-phase4-aggregation-manifest-authority.md)
+17. [../review/phase4/opt/2026-04-17-critical-path-pacing-contract.md](../review/phase4/opt/2026-04-17-critical-path-pacing-contract.md)
