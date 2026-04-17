@@ -5,6 +5,7 @@ import java.nio.file.Path
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
@@ -82,6 +83,37 @@ internal object Phase4OwnerBaselineTestSupport {
                                 }
                             },
                         )
+                    },
+                )
+        }
+        Files.writeString(path, prettyJson.encodeToString(JsonElement.serializer(), updated))
+    }
+
+    fun replaceExpectedMetricRange(
+        path: Path,
+        metricId: String,
+        replacement: JsonObject,
+    ) {
+        val payload = Json.parseToJsonElement(Files.readString(path)).jsonObject
+        val expectedMetricRanges = payload.getValue("expectedMetricRanges").jsonArray
+        val updated =
+            buildJsonObject {
+                payload.forEach { (key, value) ->
+                    if (key != "expectedMetricRanges") {
+                        put(key, value)
+                    }
+                }
+                put(
+                    "expectedMetricRanges",
+                    buildJsonArray {
+                        expectedMetricRanges.forEach { entry ->
+                            val entryObject = entry.jsonObject
+                            if (entryObject.getValue("metricId").jsonPrimitive.content == metricId) {
+                                add(replacement)
+                            } else {
+                                add(entryObject)
+                            }
+                        }
                     },
                 )
             }

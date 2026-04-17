@@ -402,12 +402,65 @@ class SchemaV2LoaderTest {
         assertEquals(10, catalog.lootProfiles.first { it.id == "loot.foundation.boss" }.rewardBudget)
         assertTrue(catalog.lootProfiles.first { it.id == "loot.foundation.boss" }.itemIds.contains("shadow_cloak"))
         assertEquals(
-            listOf("abyssal_heartstone"),
+            listOf("abyssal_heartstone", "artifact_eclipsed_relic", "unique_vesper_chainmail", "unique_voidlit_seal"),
             catalog.lootProfiles.first { it.id == "loot.abyssal_heart.reward" }.itemIds,
         )
         assertEquals(3, catalog.lootProfiles.first { it.id == "loot.abyssal_heart.reward" }.schemaVersion)
-        assertEquals(LootPoolStrategy.FIXED_LIST, catalog.lootProfiles.first { it.id == "loot.abyssal_heart.reward" }.poolStrategy)
+        assertEquals(LootPoolStrategy.TAG_WEIGHTED, catalog.lootProfiles.first { it.id == "loot.abyssal_heart.reward" }.poolStrategy)
         assertEquals(1, catalog.lootProfiles.first { it.id == "loot.abyssal_heart.reward" }.rewardBudget)
+        val dynamicTargetProfileIds =
+            setOf(
+                "loot.shattered_outpost.cadence",
+                "loot.bandit_camp.cadence",
+                "loot.elven_ruins.cadence",
+                "loot.molten_core.cadence",
+                "loot.grey_gate_depths.cadence",
+                "loot.crystal_cavern.cadence",
+                "loot.grey_gate_depths.reward",
+                "loot.underground_river.reward",
+                "loot.abyssal_temple.reward",
+                "loot.abyssal_heart.reward",
+            )
+        val dynamicTargetProfiles = catalog.lootProfiles.filter { profile -> profile.id in dynamicTargetProfileIds }
+        assertEquals(dynamicTargetProfileIds, dynamicTargetProfiles.map { profile -> profile.id }.toSet())
+        assertTrue(dynamicTargetProfiles.all { profile -> profile.poolStrategy == LootPoolStrategy.TAG_WEIGHTED })
+        assertTrue(dynamicTargetProfiles.all { profile -> profile.itemTagFilter.isNotEmpty() })
+        assertTrue(dynamicTargetProfiles.all { profile -> profile.typeWeights.isNotEmpty() })
+        assertTrue(dynamicTargetProfiles.all { profile -> profile.slotBias.isNotEmpty() })
+        assertTrue(dynamicTargetProfiles.all { profile -> profile.specialTemplateTagPreference.isNotEmpty() })
+        assertTrue(dynamicTargetProfiles.all { profile -> profile.affixTagPreference.isNotEmpty() })
+        assertTrue(dynamicTargetProfiles.all { profile -> profile.excludeIds.isNotEmpty() })
+        val capstoneItemIds =
+            setOf(
+                "artifact_briar_heart",
+                "artifact_forge_oath",
+                "unique_furnace_plate",
+                "unique_quenchbreaker_maul",
+                "artifact_river_echo",
+                "unique_deepcurrent_lens",
+                "artifact_heartroot_gambit",
+                "unique_thornpath_crook",
+                "unique_briarbound_bow",
+                "artifact_eclipsed_relic",
+                "unique_vesper_chainmail",
+                "unique_voidlit_seal",
+            )
+        val nonWeaponCapstoneItemIds =
+            setOf(
+                "artifact_briar_heart",
+                "unique_furnace_plate",
+                "unique_deepcurrent_lens",
+                "artifact_eclipsed_relic",
+                "unique_vesper_chainmail",
+                "unique_voidlit_seal",
+            )
+        val runtimeItemsById = loader.loadItemBundle().baseItems.associateBy(ItemBaseDef::id)
+        assertTrue(capstoneItemIds.all { itemId -> "capstone" in runtimeItemsById.getValue(itemId).tags })
+        assertTrue(nonWeaponCapstoneItemIds.all { itemId -> "non_weapon_capstone" in runtimeItemsById.getValue(itemId).tags })
+        val specialTemplatesByItemId =
+            (catalog.itemBundle.uniqueTemplates + catalog.itemBundle.artifactTemplates).associateBy { template -> template.itemId }
+        assertTrue(capstoneItemIds.all { itemId -> "capstone" in specialTemplatesByItemId.getValue(itemId).tags })
+        assertTrue(nonWeaponCapstoneItemIds.all { itemId -> "non_weapon_capstone" in specialTemplatesByItemId.getValue(itemId).tags })
         val banditCaptainAi = catalog.aiProfiles.first { it.id == "ai.boss.bandit_captain.phase_full" }
         assertEquals(AISelectionPolicy.WEIGHTED_RANDOM, banditCaptainAi.selectionPolicy)
         assertEquals("strike", banditCaptainAi.actions.first().id)

@@ -41,7 +41,7 @@ import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonObject
 
-private const val PHASE4_AGGREGATION_INPUT_CONTRACT_VERSION: String = "phase4-aggregation-input-v7"
+private const val PHASE4_AGGREGATION_INPUT_CONTRACT_VERSION: String = "phase4-aggregation-input-v8"
 private const val AGGREGATION_INPUT_DIRECTORY_NAME: String = "inputs"
 private const val AGGREGATION_INPUT_SUMMARY_FILE: String = "aggregation-input-summary.json"
 
@@ -75,6 +75,13 @@ internal data class Phase4AggregationInputMaterialization(
 private data class MetricPresentation(
     val targetText: String,
     val note: String? = null,
+)
+
+internal data class ProfessionCapstoneSeenFloorViolation(
+    val professionId: String,
+    val seenCount: Int,
+    val requiredSeenCount: Int,
+    val sampleCount: Int,
 )
 
 private data class Phase4EvaluationCacheEntry(
@@ -348,9 +355,18 @@ internal object Phase4AggregationInputRunner {
             } else {
                 EvaluationEntryStatus.UNEXPECTED_REGRESSION
             }
+        val expectedDynamicPoolStatus =
+            if (task.metrics.doubleValue("dynamicPoolCoverage") >= 1.0) {
+                EvaluationEntryStatus.PASS
+            } else {
+                EvaluationEntryStatus.UNEXPECTED_REGRESSION
+            }
         val expectedUnexpectedRegressionCount =
-            listOf(strictViolationBreakdown.cadenceViolations, strictViolationBreakdown.rewardViolations)
-                .count { violations -> violations.isNotEmpty() }
+            listOf(
+                expectedCadenceStatus,
+                expectedRewardStatus,
+                expectedDynamicPoolStatus,
+            ).count { status -> status == EvaluationEntryStatus.UNEXPECTED_REGRESSION }
         val expectedVerdict =
             if (expectedUnexpectedRegressionCount > 0) {
                 EvaluationVerdict.FAIL
@@ -359,6 +375,7 @@ internal object Phase4AggregationInputRunner {
             }
         return entriesByMetricId["sameZoneSecretVsCadenceMaxOverlap"]?.status == expectedCadenceStatus &&
             entriesByMetricId["sameZoneSecretVsRewardMaxOverlap"]?.status == expectedRewardStatus &&
+            entriesByMetricId["dynamicPoolCoverage"]?.status == expectedDynamicPoolStatus &&
             evaluation.unexpectedRegressionCount == expectedUnexpectedRegressionCount &&
             evaluation.verdict == expectedVerdict
     }
@@ -479,19 +496,32 @@ internal object Phase4AggregationInputRunner {
         )
     }
 
-    private fun localRewardIdentityEvaluation(
+    internal fun localRewardIdentityEvaluation(
         task: Phase4TaskAggregate,
         baseline: VerificationBaseline,
     ): EvaluationResult {
         val cadenceMetricId = "sameZoneSecretVsCadenceMaxOverlap"
         val rewardMetricId = "sameZoneSecretVsRewardMaxOverlap"
+        val dynamicPoolMetricId = "dynamicPoolCoverage"
+        val specialTierDuplicateMetricId = "specialTierPassiveFamilyDuplicateCount"
         val cadenceOverlap = task.metrics.doubleValue(cadenceMetricId)
         val rewardOverlap = task.metrics.doubleValue(rewardMetricId)
+        val dynamicPoolCoverage = task.metrics.doubleValue(dynamicPoolMetricId)
+        val dynamicPoolTargetProfiles = task.metrics.getValue("dynamicPoolTargetProfiles")
+        val specialTierPassiveFamilyDuplicateSummary = task.metrics.getValue("specialTierPassiveFamilyDuplicateSummary")
+        val specialTierPassiveFamilyDuplicateCount =
+            specialTierPassiveFamilyDuplicateSummary.jsonObject.getValue("duplicateFamilyCount").jsonPrimitive.content.toInt()
+        val uniqueArtifactMeaningfulSwapRate = task.metrics.doubleValue("uniqueArtifactMeaningfulSwapRate")
+        val dynamicTargetCount =
+            dynamicPoolTargetProfiles.jsonArray.count { profile ->
+                profile.jsonObject.getValue("dynamic").jsonPrimitive.content.toBooleanStrict()
+            }
         val strictViolations =
             task.metrics.getValue("strictLocalIdentityViolations").jsonArray.map { violation ->
                 violation.jsonObject.toLootStrictLocalIdentityViolation()
             }
-        return buildLocalRewardIdentityEvaluation(
+        val localRewardEvaluation =
+            buildLocalRewardIdentityEvaluation(
             baseline = baseline,
             strictViolations = strictViolations,
             cadenceInput =
@@ -528,23 +558,92 @@ internal object Phase4AggregationInputRunner {
                     rewardMetricId to task.metrics,
                 ),
         )
+        val dynamicPoolRange = baseline.requiredMetric(dynamicPoolMetricId)
+        val specialTierDuplicateRange = baseline.requiredMetric(specialTierDuplicateMetricId)
+        val dynamicPoolEntry =
+            EvaluationEntry(
+                metricId = dynamicPoolMetricId,
+                status =
+                    if (Phase4OwnerMetricTargets.passes(dynamicPoolRange, dynamicPoolCoverage)) {
+                        EvaluationEntryStatus.PASS
+                    } else {
+                        EvaluationEntryStatus.UNEXPECTED_REGRESSION
+                    },
+                currentValue =
+                    buildJsonObject {
+                        put("rate", task.metrics.getValue(dynamicPoolMetricId))
+                        put("dynamicPoolTargetProfiles", dynamicPoolTargetProfiles)
+                        put("specialTierPassiveFamilyDuplicateSummary", specialTierPassiveFamilyDuplicateSummary)
+                        put("uniqueArtifactMeaningfulSwapRate", task.metrics.getValue("uniqueArtifactMeaningfulSwapRate"))
+                    },
+                currentValueText = "${formatPercent(dynamicPoolCoverage)} ($dynamicTargetCount/${dynamicPoolTargetProfiles.jsonArray.size})",
+                targetText = Phase4OwnerMetricTargets.targetText(dynamicPoolMetricId, dynamicPoolRange),
+                note =
+                    "duplicateFamilies=${specialTierPassiveFamilyDuplicateSummary.jsonObject.getValue("duplicateFamilyCount").jsonPrimitive.content}; " +
+                        "meaningfulSwap=${formatPercent(uniqueArtifactMeaningfulSwapRate)}",
+                details = task.metrics,
+            )
+        val specialTierDuplicateEntry =
+            EvaluationEntry(
+                metricId = specialTierDuplicateMetricId,
+                status =
+                    if (Phase4OwnerMetricTargets.passes(specialTierDuplicateRange, specialTierPassiveFamilyDuplicateCount.toDouble())) {
+                        EvaluationEntryStatus.PASS
+                    } else {
+                        EvaluationEntryStatus.UNEXPECTED_REGRESSION
+                    },
+                currentValue =
+                    buildJsonObject {
+                        put("count", specialTierPassiveFamilyDuplicateCount)
+                        put("specialTierPassiveFamilyDuplicateSummary", specialTierPassiveFamilyDuplicateSummary)
+                        put("uniqueArtifactMeaningfulSwapRate", task.metrics.getValue("uniqueArtifactMeaningfulSwapRate"))
+                    },
+                currentValueText = specialTierPassiveFamilyDuplicateCount.toString(),
+                targetText = Phase4OwnerMetricTargets.targetText(specialTierDuplicateMetricId, specialTierDuplicateRange),
+                note =
+                    "duplicatedZones=${specialTierPassiveFamilyDuplicateSummary.jsonObject.getValue("duplicatedZoneCount").jsonPrimitive.content}; " +
+                        "meaningfulSwap=${formatPercent(uniqueArtifactMeaningfulSwapRate)}",
+                details = task.metrics,
+            )
+        val entries = localRewardEvaluation.entries + dynamicPoolEntry + specialTierDuplicateEntry
+        val unexpectedRegressionCount = entries.count { entry -> entry.status == EvaluationEntryStatus.UNEXPECTED_REGRESSION }
+        return localRewardEvaluation.copy(
+            verdict = if (unexpectedRegressionCount > 0) EvaluationVerdict.FAIL else EvaluationVerdict.PASS,
+            passCount = entries.count { entry -> entry.status == EvaluationEntryStatus.PASS },
+            approvedDebtCount = entries.count { entry -> entry.status == EvaluationEntryStatus.APPROVED_DEBT },
+            expectedFailureCount = entries.count { entry -> entry.status == EvaluationEntryStatus.EXPECTED_FAILURE },
+            unexpectedRegressionCount = unexpectedRegressionCount,
+            improvedDebtCount = entries.count { entry -> entry.status == EvaluationEntryStatus.IMPROVEMENT },
+            entries = entries,
+        )
     }
 
-    private fun terminalBuildIdentityEvaluation(
+    internal fun terminalBuildIdentityEvaluation(
         task: Phase4TaskAggregate,
         baseline: VerificationBaseline,
     ): EvaluationResult {
         val diversityMetricId = "terminalWeaponBaseDiversity"
         val dominanceMetricId = "crossProfessionTopWeaponDominance"
         val adoptionMetricId = "professionAlignedWeaponAdoptionRate"
+        val capstoneSeenMetricId = "professionCapstoneSeenRate"
+        val capstoneAdoptionMetricId = "professionCapstoneAdoptionRate"
+        val nonWeaponMetricId = "nonWeaponBuildPayoffRate"
         val diversity = task.metrics.intValue(diversityMetricId)
         val dominance = task.metrics.doubleValue(dominanceMetricId)
         val adoption = task.metrics.doubleValue(adoptionMetricId)
+        val professionCapstoneSeenRate = task.metrics.doubleValue(capstoneSeenMetricId)
+        val nonWeaponBuildPayoffRate = task.metrics.doubleValue(nonWeaponMetricId)
+        val professionCapstoneAdoptionRate = task.metrics.doubleValue(capstoneAdoptionMetricId)
         val fullRouteCount = task.metrics.intValue("fullRouteCount")
         val alignedFullRouteSampleCount = task.metrics.intValue("alignedFullRouteSampleCount")
         val professionTerminalWeaponDistribution = task.metrics.getValue("professionTerminalWeaponDistribution")
         val professionTopWeaponBaseIds = task.metrics.getValue("professionTopWeaponBaseIds")
         val professionTopWeaponSemanticTags = task.metrics.getValue("professionTopWeaponSemanticTags")
+        val professionCapstoneBreakdown = task.metrics.getValue("professionCapstoneBreakdown")
+        val professionCapstoneAdoptionCount =
+            professionCapstoneBreakdown.jsonObject.values.sumOf { breakdown ->
+                breakdown.jsonObject.getValue("adoptedCount").jsonPrimitive.content.toInt()
+            }
         val terminalWeaponBaseNote =
             professionTerminalWeaponDistribution.jsonObject.values
                 .flatMap { distribution -> distribution.jsonObject.keys }
@@ -566,16 +665,38 @@ internal object Phase4AggregationInputRunner {
         val diversityRange = baseline.requiredMetric(diversityMetricId)
         val dominanceRange = baseline.requiredMetric(dominanceMetricId)
         val adoptionRange = baseline.requiredMetric(adoptionMetricId)
+        val capstoneSeenRange = baseline.requiredMetric(capstoneSeenMetricId)
+        val capstoneAdoptionRange = baseline.requiredMetric(capstoneAdoptionMetricId)
+        val nonWeaponRange = baseline.requiredMetric(nonWeaponMetricId)
+        val professionCapstoneSeenViolations =
+            professionCapstoneSeenFloorViolations(
+                professionCapstoneBreakdown = professionCapstoneBreakdown.jsonObject,
+                range = capstoneSeenRange,
+            )
         val result =
             VerificationBaselineComparator.compareBudgetThreshold(
                 domainId = "longrun",
                 evaluationId = "longrun.terminalBuildIdentity",
-                baseline = baseline.copy(expectedMetricRanges = listOf(diversityRange, dominanceRange, adoptionRange)),
+                baseline =
+                    baseline.copy(
+                        expectedMetricRanges =
+                            listOf(
+                                diversityRange,
+                                dominanceRange,
+                                adoptionRange,
+                                capstoneSeenRange,
+                                capstoneAdoptionRange,
+                                nonWeaponRange,
+                            ),
+                    ),
                 actualMetrics =
                     mapOf(
                         diversityMetricId to diversity.toDouble(),
                         dominanceMetricId to dominance,
                         adoptionMetricId to adoption,
+                        capstoneSeenMetricId to professionCapstoneSeenRate,
+                        capstoneAdoptionMetricId to professionCapstoneAdoptionRate,
+                        nonWeaponMetricId to nonWeaponBuildPayoffRate,
                     ),
                 currentValueTexts =
                     mapOf(
@@ -584,6 +705,9 @@ internal object Phase4AggregationInputRunner {
                             "${formatPercent(dominance)} (${task.metrics.intValue("crossProfessionTopWeaponCount")}/$fullRouteCount) " +
                                 "top=${task.metrics["crossProfessionTopWeaponBaseId"]?.jsonPrimitive?.content ?: "unknown"}",
                         adoptionMetricId to "${formatPercent(adoption)} ($alignedFullRouteSampleCount/$fullRouteCount)",
+                        capstoneSeenMetricId to "${formatPercent(professionCapstoneSeenRate)} adoption=${formatPercent(professionCapstoneAdoptionRate)}",
+                        capstoneAdoptionMetricId to "${formatPercent(professionCapstoneAdoptionRate)} ($professionCapstoneAdoptionCount/$fullRouteCount)",
+                        nonWeaponMetricId to "${formatPercent(nonWeaponBuildPayoffRate)} adoption=${formatPercent(professionCapstoneAdoptionRate)}",
                     ),
                 currentValueElements =
                     mapOf(
@@ -604,15 +728,52 @@ internal object Phase4AggregationInputRunner {
                                 put("professionTopWeaponBaseIds", professionTopWeaponBaseIds)
                                 put("professionTopWeaponSemanticTags", professionTopWeaponSemanticTags)
                             },
+                        capstoneSeenMetricId to
+                            buildJsonObject {
+                                put("rate", task.metrics.getValue(capstoneSeenMetricId))
+                                put("professionCapstoneAdoptionRate", task.metrics.getValue("professionCapstoneAdoptionRate"))
+                                put("professionCapstoneBreakdown", professionCapstoneBreakdown)
+                                put("fullRouteCount", task.metrics.getValue("fullRouteCount"))
+                            },
+                        capstoneAdoptionMetricId to
+                            buildJsonObject {
+                                put("rate", task.metrics.getValue(capstoneAdoptionMetricId))
+                                put("professionCapstoneBreakdown", professionCapstoneBreakdown)
+                                put("fullRouteCount", task.metrics.getValue("fullRouteCount"))
+                            },
+                        nonWeaponMetricId to
+                            buildJsonObject {
+                                put("rate", task.metrics.getValue(nonWeaponMetricId))
+                                put("professionCapstoneAdoptionRate", task.metrics.getValue("professionCapstoneAdoptionRate"))
+                                put("professionCapstoneBreakdown", professionCapstoneBreakdown)
+                                put("fullRouteCount", task.metrics.getValue("fullRouteCount"))
+                            },
                     ),
                 detailsByMetricId =
                     mapOf(
                         diversityMetricId to task.metrics,
                         dominanceMetricId to task.metrics,
                         adoptionMetricId to task.metrics,
+                        capstoneSeenMetricId to task.metrics,
+                        capstoneAdoptionMetricId to task.metrics,
+                        nonWeaponMetricId to task.metrics,
                     ),
             )
-        return result.withEntryPresentations(
+        val statusOverrides =
+            if (professionCapstoneSeenViolations.isEmpty()) {
+                emptyMap()
+            } else {
+                mapOf(
+                    capstoneSeenMetricId to
+                        EvaluationEntryStatusOverride(
+                            status = EvaluationEntryStatus.UNEXPECTED_REGRESSION,
+                            note = professionCapstoneSeenNote(professionCapstoneAdoptionRate, professionCapstoneBreakdown.jsonObject, professionCapstoneSeenViolations),
+                        ),
+                )
+            }
+        return result
+            .withEntryStatusOverrides(statusOverrides)
+            .withEntryPresentations(
             mapOf(
                 diversityMetricId to
                     MetricPresentation(
@@ -628,6 +789,21 @@ internal object Phase4AggregationInputRunner {
                     MetricPresentation(
                         targetText = Phase4OwnerMetricTargets.targetText(adoptionMetricId, adoptionRange),
                         note = "alignedSamples=$alignedFullRouteSampleCount/$fullRouteCount; topWeaponSemantics=$professionTopWeaponSemanticNote",
+                    ),
+                capstoneSeenMetricId to
+                    MetricPresentation(
+                        targetText = Phase4OwnerMetricTargets.targetText(capstoneSeenMetricId, capstoneSeenRange),
+                        note = professionCapstoneSeenNote(professionCapstoneAdoptionRate, professionCapstoneBreakdown.jsonObject, professionCapstoneSeenViolations),
+                    ),
+                capstoneAdoptionMetricId to
+                    MetricPresentation(
+                        targetText = Phase4OwnerMetricTargets.targetText(capstoneAdoptionMetricId, capstoneAdoptionRange),
+                        note = "nonWeaponPayoff=${formatPercent(nonWeaponBuildPayoffRate)}; breakdown=${professionCapstoneBreakdown.jsonObject.keys.sorted().joinToString()}",
+                    ),
+                nonWeaponMetricId to
+                    MetricPresentation(
+                        targetText = Phase4OwnerMetricTargets.targetText(nonWeaponMetricId, nonWeaponRange),
+                        note = "capstoneAdoption=${formatPercent(professionCapstoneAdoptionRate)}; breakdown=${professionCapstoneBreakdown.jsonObject.keys.sorted().joinToString()}",
                     ),
             ),
         )
@@ -874,6 +1050,34 @@ private fun EvaluationResult.withEntryPresentation(
     presentation: MetricPresentation,
 ): EvaluationResult = withEntryPresentations(mapOf(metricId to presentation))
 
+private data class EvaluationEntryStatusOverride(
+    val status: EvaluationEntryStatus,
+    val note: String? = null,
+)
+
+private fun EvaluationResult.withEntryStatusOverrides(
+    overrides: Map<String, EvaluationEntryStatusOverride>,
+): EvaluationResult {
+    if (overrides.isEmpty()) {
+        return this
+    }
+    val updatedEntries =
+        entries.map { entry ->
+            overrides[entry.metricId]?.let { override ->
+                entry.copy(status = override.status, note = override.note ?: entry.note)
+            } ?: entry
+        }
+    return copy(
+        verdict = if (updatedEntries.any { entry -> entry.status == EvaluationEntryStatus.UNEXPECTED_REGRESSION }) EvaluationVerdict.FAIL else EvaluationVerdict.PASS,
+        passCount = updatedEntries.count { entry -> entry.status == EvaluationEntryStatus.PASS },
+        approvedDebtCount = updatedEntries.count { entry -> entry.status == EvaluationEntryStatus.APPROVED_DEBT },
+        expectedFailureCount = updatedEntries.count { entry -> entry.status == EvaluationEntryStatus.EXPECTED_FAILURE },
+        unexpectedRegressionCount = updatedEntries.count { entry -> entry.status == EvaluationEntryStatus.UNEXPECTED_REGRESSION },
+        improvedDebtCount = updatedEntries.count { entry -> entry.status == EvaluationEntryStatus.IMPROVEMENT },
+        entries = updatedEntries,
+    )
+}
+
 private fun EvaluationResult.withEntryPresentations(
     presentations: Map<String, MetricPresentation>,
 ): EvaluationResult =
@@ -921,6 +1125,48 @@ private fun sha256(path: Path): String {
 }
 
 private const val DEFAULT_SHA256_BUFFER_SIZE: Int = 8 * 1024
+
+internal val phase4FoundationProfessionIds: Set<String> = linkedSetOf("arcanist", "rogue", "templar", "vanguard")
+
+internal fun professionCapstoneSeenFloorViolations(
+    professionCapstoneBreakdown: JsonObject,
+    range: VerificationExpectedMetricRange,
+): List<ProfessionCapstoneSeenFloorViolation> {
+    val requiredSeenCount = range.metadata["perProfessionSeenMinCount"]?.jsonPrimitive?.content?.toIntOrNull() ?: return emptyList()
+    return phase4FoundationProfessionIds.mapNotNull { professionId ->
+        val breakdown = professionCapstoneBreakdown[professionId]?.jsonObject
+        val seenCount = breakdown?.get("seenCount")?.jsonPrimitive?.content?.toIntOrNull() ?: 0
+        val sampleCount = breakdown?.get("sampleCount")?.jsonPrimitive?.content?.toIntOrNull() ?: 0
+        if (seenCount < requiredSeenCount) {
+            ProfessionCapstoneSeenFloorViolation(
+                professionId = professionId,
+                seenCount = seenCount,
+                requiredSeenCount = requiredSeenCount,
+                sampleCount = sampleCount,
+            )
+        } else {
+            null
+        }
+    }
+}
+
+internal fun professionCapstoneSeenNote(
+    professionCapstoneAdoptionRate: Double,
+    professionCapstoneBreakdown: JsonObject,
+    violations: List<ProfessionCapstoneSeenFloorViolation>,
+): String =
+    buildList {
+        add("capstoneAdoption=${formatPercent(professionCapstoneAdoptionRate)}")
+        add("breakdown=${professionCapstoneBreakdown.keys.sorted().joinToString()}")
+        if (violations.isNotEmpty()) {
+            add(
+                "missingPerProfessionSeen=" +
+                    violations.joinToString { violation ->
+                        "${violation.professionId}(${violation.seenCount}/${violation.requiredSeenCount},samples=${violation.sampleCount})"
+                    },
+            )
+        }
+    }.joinToString(separator = "; ")
 
 private fun JsonObject.intValue(key: String): Int = getValue(key).jsonPrimitive.content.toInt()
 

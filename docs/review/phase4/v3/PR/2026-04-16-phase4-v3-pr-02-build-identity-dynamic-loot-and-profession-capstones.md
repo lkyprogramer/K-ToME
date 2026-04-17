@@ -33,7 +33,9 @@
    - `professionTerminalWeaponDistribution`
    - `crossProfessionTopWeaponDominance`
    - `dynamicPoolCoverage`
+   - `specialTierPassiveFamilyDuplicateCount`
    - `professionCapstoneSeenRate`
+   - `professionCapstoneAdoptionRate`
    - `nonWeaponBuildPayoffRate`
 
 ## 1. 阶段目标
@@ -189,12 +191,13 @@ run 后半段缺一个明确的“我要追这件装备”的目标，导致成�
 - **目标**: 让玩家在 30 分钟后有明确追逐目标
 - **验收**:
   - 每个基础职业至少 2 个 capstone 可被看到
-  - `professionCapstoneSeenRate / AdoptionRate` 可统计
+  - `professionCapstoneSeenRate / professionCapstoneAdoptionRate` 为正式 owner metric，且 `professionCapstoneSeenRate` 需要按职业 breakdown 执行最小 seen floor
 
 ### Task 4：special-tier identity owner metric
 
 - **目标**: 避免 special-tier 继续只是“更好的通用组合”
 - **验收**:
+  - `specialTierPassiveFamilyDuplicateCount = 0`
   - 同区 special-tier passive kind 重复率下降
   - 拾取后玩法转向率可观察
 

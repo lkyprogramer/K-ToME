@@ -1,6 +1,9 @@
 package com.ktome.game.harness
 
+import com.ktome.core.item.EquipSlot
 import com.ktome.core.item.MilestoneRewardSource
+import com.ktome.core.loot.RarityTier
+import com.ktome.core.profile.MilestoneRewardSummary
 import com.ktome.core.run.RunOutcome
 import com.ktome.game.FOUNDATION_SYNERGY_AFFIX_IDS
 import com.ktome.game.FOUNDATION_ZONE_ROUTE
@@ -9,6 +12,7 @@ import java.nio.file.Path
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
 import kotlinx.serialization.json.putJsonObject
@@ -91,6 +95,8 @@ class LongRunLabFullTest {
                 .groupingBy { it }
                 .eachCount()
                 .toSortedMap()
+        val professionCapstoneSummary = professionCapstoneSummary(fullRouteReports)
+        val reportPath = HarnessReportWriter.reportDir().resolve("long-run-full.json")
         val failingReports = reports.filterNot(ScenarioReport::success)
 
         HarnessReportWriter.writeJsonAndMarkdown(
@@ -172,6 +178,9 @@ class LongRunLabFullTest {
                     put("professionAlignedWeaponAdoptionRate", terminalWeaponIdentity.professionAlignedWeaponAdoptionRate)
                     put("alignedFullRouteSampleCount", terminalWeaponIdentity.alignedFullRouteSampleCount)
                     put("fullRouteSampleCount", terminalWeaponIdentity.fullRouteSampleCount)
+                    put("professionCapstoneSeenRate", professionCapstoneSummary.professionCapstoneSeenRate)
+                    put("professionCapstoneAdoptionRate", professionCapstoneSummary.professionCapstoneAdoptionRate)
+                    put("nonWeaponBuildPayoffRate", professionCapstoneSummary.nonWeaponBuildPayoffRate)
                     terminalWeaponIdentity.topWeaponBaseId?.let { topWeaponBaseId -> put("crossProfessionTopWeaponBaseId", topWeaponBaseId) }
                     put("crossProfessionTopWeaponCount", terminalWeaponIdentity.topWeaponCount)
                     putJsonObject("professionTerminalWeaponDistribution") {
@@ -190,6 +199,25 @@ class LongRunLabFullTest {
                         terminalWeaponIdentity.professionTopWeaponSemanticTags.forEach { (professionId, semanticTags) ->
                             putJsonArray(professionId) {
                                 semanticTags.forEach { tag -> add(JsonPrimitive(tag)) }
+                            }
+                        }
+                    }
+                    putJsonObject("professionCapstoneBreakdown") {
+                        professionCapstoneSummary.professionBreakdown.forEach { (professionId, breakdown) ->
+                            putJsonObject(professionId) {
+                                put("sampleCount", breakdown.sampleCount)
+                                put("seenCount", breakdown.seenCount)
+                                put("adoptedCount", breakdown.adoptedCount)
+                                put("nonWeaponPayoffCount", breakdown.nonWeaponPayoffCount)
+                                putJsonObject("seenItems") {
+                                    breakdown.seenItems.forEach { (itemId, count) -> put(itemId, count) }
+                                }
+                                putJsonObject("adoptedItems") {
+                                    breakdown.adoptedItems.forEach { (itemId, count) -> put(itemId, count) }
+                                }
+                                putJsonObject("nonWeaponPayoffItems") {
+                                    breakdown.nonWeaponPayoffItems.forEach { (itemId, count) -> put(itemId, count) }
+                                }
                             }
                         }
                     }
@@ -326,11 +354,15 @@ class LongRunLabFullTest {
                     appendLine("- terminalWeaponBaseDiversity: ${terminalWeaponIdentity.terminalWeaponBaseDiversity}")
                     appendLine("- crossProfessionTopWeaponDominance: ${terminalWeaponIdentity.crossProfessionTopWeaponDominance}")
                     appendLine("- professionAlignedWeaponAdoptionRate: ${terminalWeaponIdentity.professionAlignedWeaponAdoptionRate}")
+                    appendLine("- professionCapstoneSeenRate: ${professionCapstoneSummary.professionCapstoneSeenRate}")
+                    appendLine("- professionCapstoneAdoptionRate: ${professionCapstoneSummary.professionCapstoneAdoptionRate}")
+                    appendLine("- nonWeaponBuildPayoffRate: ${professionCapstoneSummary.nonWeaponBuildPayoffRate}")
                     appendLine("- crossProfessionTopWeaponBaseId: ${terminalWeaponIdentity.topWeaponBaseId ?: "none"}")
                     appendLine("- crossProfessionTopWeaponCount: ${terminalWeaponIdentity.topWeaponCount}/${terminalWeaponIdentity.fullRouteSampleCount}")
                     appendLine("- professionTerminalWeaponDistribution: ${if (terminalWeaponIdentity.professionTerminalWeaponDistribution.isEmpty()) "none" else terminalWeaponIdentity.professionTerminalWeaponDistribution}")
                     appendLine("- professionTopWeaponBaseIds: ${if (terminalWeaponIdentity.professionTopWeaponBaseIds.isEmpty()) "none" else terminalWeaponIdentity.professionTopWeaponBaseIds}")
                     appendLine("- professionTopWeaponSemanticTags: ${if (terminalWeaponIdentity.professionTopWeaponSemanticTags.isEmpty()) "none" else terminalWeaponIdentity.professionTopWeaponSemanticTags}")
+                    appendLine("- professionCapstoneBreakdown: ${if (professionCapstoneSummary.professionBreakdown.isEmpty()) "none" else professionCapstoneSummary.professionBreakdown}")
                     appendLine("- fullRouteZoneTraversalDiagnostics: ${if (fullRouteZoneTraversalDiagnostics.isEmpty()) "none" else fullRouteZoneTraversalDiagnostics}")
                     appendLine("- criticalPathZoneIds: ${criticalPathZoneIds.joinToString()}")
                     appendLine("- criticalPathZoneDesignAudit: ${if (criticalPathZoneDesignAudit.isEmpty()) "none" else criticalPathZoneDesignAudit}")
@@ -379,6 +411,7 @@ class LongRunLabFullTest {
                     }
                 },
         )
+        val longRunPayload = kotlinx.serialization.json.Json.parseToJsonElement(reportPath.toFile().readText()).jsonObject
 
         assertTrue(
             reports.none(ScenarioReport::crashedOrStalled),
@@ -409,6 +442,10 @@ class LongRunLabFullTest {
             },
             "Expected every full-route matrix sample to start at shattered_outpost routeIndex=0.",
         )
+        assertTrue(longRunPayload.containsKey("professionCapstoneSeenRate"))
+        assertTrue(longRunPayload.containsKey("professionCapstoneAdoptionRate"))
+        assertTrue(longRunPayload.containsKey("nonWeaponBuildPayoffRate"))
+        assertTrue(longRunPayload.containsKey("professionCapstoneBreakdown"))
         assertTrue(
             branchInclusiveReports.all { report ->
                 !report.isFullRoute &&
@@ -540,6 +577,64 @@ class LongRunLabFullTest {
                 "Profession '$professionId' references unknown alignment tags ${rule.requiredItemTags - allKnownItemTags}.",
             )
         }
+    }
+
+    @Test
+    fun `profession capstone summary tracks seen adopted and non weapon payoff rates`() {
+        val summary =
+            professionCapstoneSummary(
+                listOf(
+                    sampleScenarioReport(
+                        name = "capstone-arcanist",
+                        professionId = "arcanist",
+                        terminalWeaponBaseId = "arcane_staff",
+                        milestoneRewards =
+                            listOf(
+                                sampleMilestoneReward(
+                                    baseItemId = "unique_deepcurrent_lens",
+                                    equipSlot = EquipSlot.OFF_HAND,
+                                    adoptedInFinalBuild = true,
+                                ),
+                            ),
+                    ),
+                    sampleScenarioReport(
+                        name = "capstone-vanguard",
+                        professionId = "vanguard",
+                        terminalWeaponBaseId = "long_sword",
+                        milestoneRewards =
+                            listOf(
+                                sampleMilestoneReward(
+                                    baseItemId = "artifact_forge_oath",
+                                    equipSlot = EquipSlot.WEAPON,
+                                    adoptedInFinalBuild = true,
+                                ),
+                            ),
+                    ),
+                    sampleScenarioReport(
+                        name = "capstone-templar",
+                        professionId = "templar",
+                        terminalWeaponBaseId = "long_sword",
+                        milestoneRewards =
+                            listOf(
+                                sampleMilestoneReward(
+                                    baseItemId = "unique_voidlit_seal",
+                                    equipSlot = EquipSlot.OFF_HAND,
+                                    adoptedInFinalBuild = false,
+                                ),
+                            ),
+                    ),
+                ),
+            )
+
+        assertEquals(1.0, summary.professionCapstoneSeenRate, 0.0001)
+        assertEquals(2.0 / 3.0, summary.professionCapstoneAdoptionRate, 0.0001)
+        assertEquals(1.0 / 3.0, summary.nonWeaponBuildPayoffRate, 0.0001)
+        assertEquals(1, summary.professionBreakdown.getValue("arcanist").seenCount)
+        assertEquals(1, summary.professionBreakdown.getValue("arcanist").adoptedCount)
+        assertEquals(1, summary.professionBreakdown.getValue("arcanist").nonWeaponPayoffCount)
+        assertEquals(1, summary.professionBreakdown.getValue("templar").seenCount)
+        assertEquals(0, summary.professionBreakdown.getValue("templar").adoptedCount)
+        assertEquals(0, summary.professionBreakdown.getValue("templar").nonWeaponPayoffCount)
     }
 
     @Test
@@ -852,6 +947,85 @@ class LongRunLabFullTest {
                 )
             }
 
+    private fun professionCapstoneSummary(reports: List<ScenarioReport>): ProfessionCapstoneSummary {
+        val breakdown =
+            reports
+                .groupBy(ScenarioReport::professionId)
+                .toSortedMap()
+                .mapValues { (professionId, professionReports) ->
+                    val capstoneIds =
+                        requireNotNull(PROFESSION_CAPSTONE_ITEM_IDS[professionId]) {
+                            "Missing profession capstone configuration for '$professionId'."
+                        }
+                    val seenReports =
+                        professionReports.filter { report ->
+                            report.milestoneRewards.any { reward -> reward.baseItemId in capstoneIds }
+                        }
+                    val adoptedReports =
+                        professionReports.filter { report ->
+                            report.milestoneRewards.any { reward -> reward.baseItemId in capstoneIds && reward.adoptedInFinalBuild }
+                        }
+                    val nonWeaponPayoffReports =
+                        professionReports.filter { report ->
+                            report.milestoneRewards.any { reward ->
+                                reward.baseItemId in capstoneIds &&
+                                    reward.adoptedInFinalBuild &&
+                                    reward.equipSlot != EquipSlot.WEAPON
+                            }
+                        }
+                    ProfessionCapstoneBreakdown(
+                        sampleCount = professionReports.size,
+                        seenCount = seenReports.size,
+                        adoptedCount = adoptedReports.size,
+                        nonWeaponPayoffCount = nonWeaponPayoffReports.size,
+                        seenItems = countMilestoneItems(seenReports, capstoneIds),
+                        adoptedItems = countMilestoneItems(adoptedReports, capstoneIds, adoptedOnly = true),
+                        nonWeaponPayoffItems =
+                            countMilestoneItems(
+                                nonWeaponPayoffReports,
+                                capstoneIds,
+                                adoptedOnly = true,
+                                nonWeaponOnly = true,
+                            ),
+                    )
+                }
+        val sampleCount = reports.size
+        val seenCount = breakdown.values.sumOf(ProfessionCapstoneBreakdown::seenCount)
+        val adoptedCount = breakdown.values.sumOf(ProfessionCapstoneBreakdown::adoptedCount)
+        val nonWeaponPayoffCount = breakdown.values.sumOf(ProfessionCapstoneBreakdown::nonWeaponPayoffCount)
+        return ProfessionCapstoneSummary(
+            professionCapstoneSeenRate = ratio(seenCount, sampleCount),
+            professionCapstoneAdoptionRate = ratio(adoptedCount, sampleCount),
+            nonWeaponBuildPayoffRate = ratio(nonWeaponPayoffCount, sampleCount),
+            professionBreakdown = breakdown,
+        )
+    }
+
+    private fun countMilestoneItems(
+        reports: List<ScenarioReport>,
+        capstoneIds: Set<String>,
+        adoptedOnly: Boolean = false,
+        nonWeaponOnly: Boolean = false,
+    ): Map<String, Int> =
+        reports
+            .flatMap(ScenarioReport::milestoneRewards)
+            .filter { reward -> reward.baseItemId in capstoneIds }
+            .filter { reward -> !adoptedOnly || reward.adoptedInFinalBuild }
+            .filter { reward -> !nonWeaponOnly || reward.equipSlot != EquipSlot.WEAPON }
+            .groupingBy(MilestoneRewardSummary::baseItemId)
+            .eachCount()
+            .toSortedMap()
+
+    private fun ratio(
+        numerator: Int,
+        denominator: Int,
+    ): Double =
+        if (denominator == 0) {
+            0.0
+        } else {
+            numerator.toDouble() / denominator.toDouble()
+        }
+
     private fun criticalPathZoneIds(): List<String> =
         FOUNDATION_ZONE_ROUTE.drop(1).dropLast(1)
 
@@ -941,6 +1115,23 @@ class LongRunLabFullTest {
         val professionTopWeaponSemanticTags: Map<String, Set<String>>,
     )
 
+    private data class ProfessionCapstoneSummary(
+        val professionCapstoneSeenRate: Double,
+        val professionCapstoneAdoptionRate: Double,
+        val nonWeaponBuildPayoffRate: Double,
+        val professionBreakdown: Map<String, ProfessionCapstoneBreakdown>,
+    )
+
+    private data class ProfessionCapstoneBreakdown(
+        val sampleCount: Int,
+        val seenCount: Int,
+        val adoptedCount: Int,
+        val nonWeaponPayoffCount: Int,
+        val seenItems: Map<String, Int>,
+        val adoptedItems: Map<String, Int>,
+        val nonWeaponPayoffItems: Map<String, Int>,
+    )
+
     private data class ZoneTraversalDiagnosticAggregate(
         val sampleCount: Int,
         val visitCount: Int,
@@ -1021,6 +1212,13 @@ class LongRunLabFullTest {
                         requiredItemTags = setOf("arcane", "spell", "ranged", "control"),
                     ),
             )
+        private val PROFESSION_CAPSTONE_ITEM_IDS: Map<String, Set<String>> =
+            mapOf(
+                "vanguard" to setOf("artifact_forge_oath", "unique_furnace_plate", "unique_quenchbreaker_maul"),
+                "arcanist" to setOf("artifact_river_echo", "unique_deepcurrent_lens"),
+                "rogue" to setOf("artifact_briar_heart", "artifact_heartroot_gambit", "unique_thornpath_crook", "unique_briarbound_bow"),
+                "templar" to setOf("artifact_eclipsed_relic", "unique_vesper_chainmail", "unique_voidlit_seal"),
+            )
         private val itemTagsById: Map<String, Set<String>> =
             schemaCatalog.itemBundle.items.associate { item -> item.id to item.tags.toSet() }
         private val itemSemanticTagsById: Map<String, Set<String>> =
@@ -1032,6 +1230,7 @@ class LongRunLabFullTest {
         professionId: String,
         terminalWeaponBaseId: String?,
         zoneTraversalDiagnostics: List<ZoneTraversalDiagnostic> = emptyList(),
+        milestoneRewards: List<MilestoneRewardSummary> = emptyList(),
     ): ScenarioReport =
         ScenarioReport(
             name = name,
@@ -1044,5 +1243,24 @@ class LongRunLabFullTest {
             goalReached = true,
             terminalWeaponBaseId = terminalWeaponBaseId,
             zoneTraversalDiagnostics = zoneTraversalDiagnostics,
+            milestoneRewards = milestoneRewards,
+        )
+
+    private fun sampleMilestoneReward(
+        baseItemId: String,
+        equipSlot: EquipSlot,
+        adoptedInFinalBuild: Boolean,
+    ): MilestoneRewardSummary =
+        MilestoneRewardSummary(
+            rewardSource = MilestoneRewardSource.ROUTE,
+            sourceId = "test:$baseItemId",
+            zoneId = "deep_iron_pit",
+            baseItemId = baseItemId,
+            equipSlot = equipSlot,
+            qualityTier = RarityTier.RARE,
+            buildHashAtGrant = "before",
+            equippedBaseItemIdBeforeReward = null,
+            equippedBaseItemIdAtRunEnd = if (adoptedInFinalBuild) baseItemId else "other:$baseItemId",
+            adoptedInFinalBuild = adoptedInFinalBuild,
         )
 }

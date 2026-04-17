@@ -6,8 +6,10 @@ import com.ktome.core.item.ItemBaseDef
 private const val NO_BUILD_MATCH_MULTIPLIER_BPS: Int = 10_000
 private const val WEAK_BUILD_MATCH_MULTIPLIER_BPS: Int = 11_500
 private const val STRONG_BUILD_MATCH_MULTIPLIER_BPS: Int = 13_500
+private const val EXACT_PROFESSION_MATCH_MULTIPLIER_BPS: Int = 30_000
+private const val EXACT_PROFESSION_CAPSTONE_MATCH_MULTIPLIER_BPS: Int = 250_000
 private const val DEFAULT_ANTI_COLLAPSE_MULTIPLIER_BPS: Int = 10_000
-private const val DOMINANT_RISK_MISMATCH_MULTIPLIER_BPS: Int = 7_500
+private const val DOMINANT_RISK_MISMATCH_MULTIPLIER_BPS: Int = 6_500
 
 private val NON_SIGNAL_BASE_SELECTION_TAGS: Set<String> =
     setOf(
@@ -25,15 +27,20 @@ private val NON_SIGNAL_BASE_SELECTION_TAGS: Set<String> =
 
 data class LootBaseSelectionContext(
     val buildTags: Set<String> = emptySet(),
+    val preferredProfessionTag: String? = null,
 ) {
     init {
         require(buildTags.none(String::isBlank)) { "LootBaseSelectionContext.buildTags must not contain blanks." }
+        require(preferredProfessionTag?.isBlank() != true) {
+            "LootBaseSelectionContext.preferredProfessionTag must not be blank when present."
+        }
     }
 
     val normalizedBuildTags: Set<String> = buildTags.mapTo(linkedSetOf(), ::normalizeLootBaseSelectionTag)
+    val normalizedPreferredProfessionTag: String? = preferredProfessionTag?.let(::normalizeLootBaseSelectionTag)
 
     val hasSignalContext: Boolean
-        get() = normalizedBuildTags.isNotEmpty()
+        get() = normalizedBuildTags.isNotEmpty() || normalizedPreferredProfessionTag != null
 
     companion object {
         val EMPTY: LootBaseSelectionContext = LootBaseSelectionContext()
@@ -50,6 +57,7 @@ internal data class LootBaseSelectionEvaluation(
     val semanticTags: Set<String>,
     val matchedBuildTags: Set<String>,
     val matchStrength: LootBaseBuildMatchStrength,
+    val exactProfessionMatch: Boolean,
     val buildTagMatchMultiplierBasisPoints: Int,
     val antiCollapseMultiplierBasisPoints: Int,
 )
@@ -65,11 +73,17 @@ internal fun LootBaseSelectionContext.evaluate(base: ItemBaseDef): LootBaseSelec
             semanticTags = semanticTags,
             matchedBuildTags = emptySet(),
             matchStrength = LootBaseBuildMatchStrength.NONE,
+            exactProfessionMatch = false,
             buildTagMatchMultiplierBasisPoints = NO_BUILD_MATCH_MULTIPLIER_BPS,
             antiCollapseMultiplierBasisPoints = DEFAULT_ANTI_COLLAPSE_MULTIPLIER_BPS,
         )
     }
     val matchedBuildTags = semanticTags.intersect(normalizedBuildTags)
+    val exactProfessionMatch =
+        normalizedPreferredProfessionTag?.let { preferredProfessionTag ->
+            preferredProfessionTag in semanticTags
+        } ?: false
+    val exactProfessionCapstoneMatch = exactProfessionMatch && "capstone" in rawSemanticTags
     val matchStrength =
         when {
             matchedBuildTags.size >= 2 -> LootBaseBuildMatchStrength.STRONG
@@ -77,13 +91,15 @@ internal fun LootBaseSelectionContext.evaluate(base: ItemBaseDef): LootBaseSelec
             else -> LootBaseBuildMatchStrength.NONE
         }
     val buildTagMatchMultiplierBasisPoints =
-        when (matchStrength) {
-            LootBaseBuildMatchStrength.NONE -> NO_BUILD_MATCH_MULTIPLIER_BPS
-            LootBaseBuildMatchStrength.WEAK -> WEAK_BUILD_MATCH_MULTIPLIER_BPS
-            LootBaseBuildMatchStrength.STRONG -> STRONG_BUILD_MATCH_MULTIPLIER_BPS
+        when {
+            exactProfessionCapstoneMatch -> EXACT_PROFESSION_CAPSTONE_MATCH_MULTIPLIER_BPS
+            exactProfessionMatch -> EXACT_PROFESSION_MATCH_MULTIPLIER_BPS
+            matchStrength == LootBaseBuildMatchStrength.STRONG -> STRONG_BUILD_MATCH_MULTIPLIER_BPS
+            matchStrength == LootBaseBuildMatchStrength.WEAK -> WEAK_BUILD_MATCH_MULTIPLIER_BPS
+            else -> NO_BUILD_MATCH_MULTIPLIER_BPS
         }
     val antiCollapseMultiplierBasisPoints =
-        if ("dominant_risk" in rawSemanticTags && matchStrength == LootBaseBuildMatchStrength.NONE) {
+        if ("dominant_risk" in rawSemanticTags && normalizedPreferredProfessionTag != null && !exactProfessionMatch) {
             DOMINANT_RISK_MISMATCH_MULTIPLIER_BPS
         } else {
             DEFAULT_ANTI_COLLAPSE_MULTIPLIER_BPS
@@ -92,6 +108,7 @@ internal fun LootBaseSelectionContext.evaluate(base: ItemBaseDef): LootBaseSelec
         semanticTags = semanticTags,
         matchedBuildTags = matchedBuildTags,
         matchStrength = matchStrength,
+        exactProfessionMatch = exactProfessionMatch,
         buildTagMatchMultiplierBasisPoints = buildTagMatchMultiplierBasisPoints,
         antiCollapseMultiplierBasisPoints = antiCollapseMultiplierBasisPoints,
     )

@@ -4,6 +4,7 @@ import com.ktome.tools.loot.formatStrictAwareLocalIdentityCurrentValue
 import com.ktome.tools.loot.localIdentityEvaluationDetail
 import com.ktome.tools.loot.splitByLocalIdentityPairType
 import com.ktome.tools.loot.toLootStrictLocalIdentityViolation
+import com.ktome.tools.verification.EvaluationEntry
 import com.ktome.tools.verification.VerificationBaseline
 import java.nio.file.Files
 import java.nio.file.Path
@@ -214,6 +215,14 @@ object Phase4ReportRunner {
                             ?: ""
                     "$professionId=$weaponBaseId[$semanticTags]"
                 }
+        val localRewardEntriesByMetricId =
+            Phase4AggregationInputRunner.localRewardIdentityEvaluation(task = loot, baseline = lootBaseline)
+                .entries
+                .associateBy(EvaluationEntry::metricId)
+        val terminalBuildEntriesByMetricId =
+            Phase4AggregationInputRunner.terminalBuildIdentityEvaluation(task = longRun, baseline = terminalBuildBaseline)
+                .entries
+                .associateBy(EvaluationEntry::metricId)
         val criticalPathPacingEvaluation =
             CriticalPathPacingEvaluator.evaluate(
                 longRun.metrics,
@@ -341,6 +350,12 @@ object Phase4ReportRunner {
                 ),
             )
             add(
+                localRewardEntriesByMetricId.getValue("dynamicPoolCoverage").toLegacyExperienceMetric(loot.taskId),
+            )
+            add(
+                localRewardEntriesByMetricId.getValue("specialTierPassiveFamilyDuplicateCount").toLegacyExperienceMetric(loot.taskId),
+            )
+            add(
                 Phase4ExperienceMetric(
                     metricId = "terminalWeaponBaseDiversity",
                     sourceTaskId = longRun.taskId,
@@ -389,6 +404,15 @@ object Phase4ReportRunner {
                     status = verdictOf(Phase4OwnerMetricTargets.passes(adoptionRange, professionAlignedWeaponAdoptionRate)),
                     note = "alignedSamples=$alignedFullRouteSampleCount/$fullRouteCount; topWeaponSemantics=$professionTopWeaponSemanticNote",
                 ),
+            )
+            add(
+                terminalBuildEntriesByMetricId.getValue("professionCapstoneSeenRate").toLegacyExperienceMetric(longRun.taskId),
+            )
+            add(
+                terminalBuildEntriesByMetricId.getValue("professionCapstoneAdoptionRate").toLegacyExperienceMetric(longRun.taskId),
+            )
+            add(
+                terminalBuildEntriesByMetricId.getValue("nonWeaponBuildPayoffRate").toLegacyExperienceMetric(longRun.taskId),
             )
             addAll(
                 criticalPathPacingEvaluation.toExperienceMetrics(longRun.taskId).map { metric ->
@@ -527,8 +551,12 @@ object Phase4ReportRunner {
             appendLine("- sourceTask: `${lootTask.taskId}`")
             appendLine("- `sameZoneSecretVsCadenceMaxOverlap`: ${metricsById.getValue("sameZoneSecretVsCadenceMaxOverlap").currentValueText} / ${metricsById.getValue("sameZoneSecretVsCadenceMaxOverlap").status}")
             appendLine("- `sameZoneSecretVsRewardMaxOverlap`: ${metricsById.getValue("sameZoneSecretVsRewardMaxOverlap").currentValueText} / ${metricsById.getValue("sameZoneSecretVsRewardMaxOverlap").status}")
+            appendLine("- `dynamicPoolCoverage`: ${metricsById.getValue("dynamicPoolCoverage").currentValueText} / ${metricsById.getValue("dynamicPoolCoverage").status}")
+            appendLine("- `specialTierPassiveFamilyDuplicateCount`: ${metricsById.getValue("specialTierPassiveFamilyDuplicateCount").currentValueText} / ${metricsById.getValue("specialTierPassiveFamilyDuplicateCount").status}")
             appendLine("- `localIdentityFailurePairs`: ${lootTask.metrics.getValue("localIdentityFailurePairs").jsonArray.joinToString { pair -> pair.jsonPrimitive.content }.ifBlank { "none" }}")
             appendLine("- `strictLocalIdentityViolations`: ${lootTask.metrics.getValue("strictLocalIdentityViolations").jsonArray.joinToString { violation -> violation.jsonObject.getValue("pairId").jsonPrimitive.content }.ifBlank { "none" }}")
+            appendLine("- `specialTierPassiveFamilyDuplicateSummary.duplicateFamilyCount`: ${lootTask.metrics.getValue("specialTierPassiveFamilyDuplicateSummary").jsonObject.getValue("duplicateFamilyCount").jsonPrimitive.content}")
+            appendLine("- `uniqueArtifactMeaningfulSwapRate`: ${formatPercent(lootTask.metrics.doubleValue("uniqueArtifactMeaningfulSwapRate"))}")
             lootTask.metrics["secretProfileIdentitySummaries"]
                 ?.jsonArray
                 ?.takeIf { summaries -> summaries.isNotEmpty() }
@@ -552,12 +580,19 @@ object Phase4ReportRunner {
             appendLine("- `terminalWeaponBaseDiversity`: ${metricsById.getValue("terminalWeaponBaseDiversity").currentValueText} / ${metricsById.getValue("terminalWeaponBaseDiversity").status}")
             appendLine("- `crossProfessionTopWeaponDominance`: ${metricsById.getValue("crossProfessionTopWeaponDominance").currentValueText} / ${metricsById.getValue("crossProfessionTopWeaponDominance").status}")
             appendLine("- `professionAlignedWeaponAdoptionRate`: ${metricsById.getValue("professionAlignedWeaponAdoptionRate").currentValueText} / ${metricsById.getValue("professionAlignedWeaponAdoptionRate").status}")
+            appendLine("- `professionCapstoneSeenRate`: ${metricsById.getValue("professionCapstoneSeenRate").currentValueText} / ${metricsById.getValue("professionCapstoneSeenRate").status}")
+            appendLine("- `professionCapstoneAdoptionRate`: ${metricsById.getValue("professionCapstoneAdoptionRate").currentValueText} / ${metricsById.getValue("professionCapstoneAdoptionRate").status}")
+            appendLine("- `nonWeaponBuildPayoffRate`: ${metricsById.getValue("nonWeaponBuildPayoffRate").currentValueText} / ${metricsById.getValue("nonWeaponBuildPayoffRate").status}")
             val professionTopWeaponSemanticTags = longRunTask.metrics.getValue("professionTopWeaponSemanticTags")
+            val professionCapstoneBreakdown = longRunTask.metrics.getValue("professionCapstoneBreakdown")
             appendLine("```json")
             appendLine(professionTerminalWeaponDistribution)
             appendLine("```")
             appendLine("```json")
             appendLine(professionTopWeaponSemanticTags.toString())
+            appendLine("```")
+            appendLine("```json")
+            appendLine(professionCapstoneBreakdown.toString())
             appendLine("```")
             appendLine()
             appendLine("## Critical Path Pacing")
@@ -700,6 +735,18 @@ private fun CriticalPathPacingLegacyMetricProjection.toLegacyExperienceMetric():
         currentValueText = currentValueText,
         target = target,
         status = status,
+        note = note,
+        details = details,
+    )
+
+private fun EvaluationEntry.toLegacyExperienceMetric(sourceTaskId: String): Phase4ExperienceMetric =
+    Phase4ExperienceMetric(
+        metricId = metricId,
+        sourceTaskId = sourceTaskId,
+        currentValue = currentValue,
+        currentValueText = currentValueText,
+        target = targetText ?: "n/a",
+        status = if (status.name == "PASS") "PASS" else "FAIL",
         note = note,
         details = details,
     )

@@ -6,9 +6,15 @@ import com.ktome.core.harness.whitebox.WhiteBoxAssertionResult
 import com.ktome.core.harness.whitebox.WhiteBoxCaseReport
 import com.ktome.core.harness.whitebox.WhiteBoxCorpusSpec
 import com.ktome.core.harness.whitebox.WhiteBoxJoinKey
+import com.ktome.game.data.DataLoader
 import com.ktome.tools.phase4.Phase4OwnerBaselineRegistry
+import com.ktome.tools.phase4.Phase4OwnerMetricTargets
+import com.ktome.tools.phase4.requiredMetric
 import com.ktome.tools.mapgen.phase4HarnessHeader
+import com.ktome.tools.verification.EvaluationEntry
+import com.ktome.tools.verification.EvaluationEntryStatus
 import com.ktome.tools.verification.EvaluationResult
+import com.ktome.tools.verification.EvaluationVerdict
 import com.ktome.tools.verification.VerificationBaseline
 import com.ktome.tools.verification.VerificationCacheSupport
 import com.ktome.tools.whitebox.WhiteBoxDomainWriteRequest
@@ -54,7 +60,7 @@ object WhiteBoxLootRunner {
     const val HARNESS_ID: String = "whiteBoxLoot"
     private const val DOMAIN_ID: String = "loot"
     private const val CORPUS_ID: String = "P4_PR05_LOOT_WHITEBOX"
-    private const val WHITEBOX_EVALUATION_CACHE_VERSION: String = "uvr-pr05-whitebox-loot-eval-v2"
+    private const val WHITEBOX_EVALUATION_CACHE_VERSION: String = "uvr-pr05-whitebox-loot-eval-v3"
     private val json: Json = Json { prettyPrint = true; explicitNulls = false }
 
     fun run(): WhiteBoxLootRun {
@@ -65,6 +71,11 @@ object WhiteBoxLootRunner {
         val preflightSummaryPath = LootBalanceLabRunner.lootPreflightSummaryPath(repoRoot)
         val baselinePath = repoRoot.resolve(Phase4OwnerBaselineRegistry.lootBaselinePath())
         val baseline = VerificationBaseline.read(baselinePath)
+        val loader = DataLoader(LOOT_REPORT_LOCALE)
+        val schemaCatalog = loader.loadSchemaCatalog()
+        val itemBundle = loader.loadItemBundle()
+        val dynamicPoolCoverageSummary = computeDynamicPoolCoverage(schemaCatalog.lootProfiles)
+        val specialTierPassiveFamilyDuplicateSummary = computeSpecialTierPassiveFamilyDuplicateSummary(itemBundle)
 
         val kernelRun =
             if (reuseHarnessOutputs()) {
@@ -82,6 +93,8 @@ object WhiteBoxLootRunner {
                 profileOverlapSummary = strictAwareProfileOverlapSummary,
                 overlapSummaryJson = overlapSummaryJson,
                 preflightArtifacts = preflightArtifacts,
+                dynamicPoolCoverageSummary = dynamicPoolCoverageSummary,
+                specialTierPassiveFamilyDuplicateSummary = specialTierPassiveFamilyDuplicateSummary,
             )
         val evaluationFingerprint =
             VerificationCacheSupport.sha256(
@@ -175,6 +188,7 @@ object WhiteBoxLootRunner {
                 baseline = baseline,
                 preflightArtifacts = preflightArtifacts,
                 corpusAggregateMetrics = corpusAggregateMetrics,
+                dynamicPoolCoverageSummary = dynamicPoolCoverageSummary,
             )
         decorateSummary(
             summaryPath = result.summaryPath,
@@ -383,6 +397,8 @@ object WhiteBoxLootRunner {
         profileOverlapSummary: LootProfileOverlapSummary,
         overlapSummaryJson: JsonObject,
         preflightArtifacts: LootPreflightArtifacts,
+        dynamicPoolCoverageSummary: DynamicPoolCoverageSummary,
+        specialTierPassiveFamilyDuplicateSummary: SpecialTierPassiveFamilyDuplicateSummary,
     ): JsonObject =
         buildJsonObject {
             put("matrixCount", kernelRun.matrices.size)
@@ -436,9 +452,15 @@ object WhiteBoxLootRunner {
             putJsonArray("affixPassiveKinds") {
                 kernelRun.passiveCoverageSummary.passiveKinds.sorted().forEach { passiveKind -> add(kotlinx.serialization.json.JsonPrimitive(passiveKind)) }
             }
+            put("dynamicPoolCoverage", dynamicPoolCoverageSummary.dynamicPoolCoverage)
+            putJsonArray("dynamicPoolTargetProfiles") {
+                dynamicPoolCoverageSummary.targetProfiles.forEach { summary -> add(summary.toJson()) }
+            }
             put("uniqueArtifactOutcomeCount", kernelRun.uniqueArtifactOutcomeCount)
             put("meaningfulUniqueArtifactSwapCount", kernelRun.meaningfulUniqueArtifactSwapCount)
             put("uniqueArtifactMeaningfulSwapRate", kernelRun.uniqueArtifactMeaningfulSwapRate)
+            put("specialTierPassiveFamilyDuplicateCount", specialTierPassiveFamilyDuplicateSummary.duplicateFamilyCount)
+            put("specialTierPassiveFamilyDuplicateSummary", specialTierPassiveFamilyDuplicateSummary.toJson())
         }
 
     private fun writeArtifacts(
@@ -564,15 +586,19 @@ object WhiteBoxLootRunner {
         baseline: VerificationBaseline,
         preflightArtifacts: LootPreflightArtifacts,
         corpusAggregateMetrics: JsonObject,
+        dynamicPoolCoverageSummary: DynamicPoolCoverageSummary,
     ): EvaluationResult {
         val cadenceMetricId = "sameZoneSecretVsCadenceMaxOverlap"
         val rewardMetricId = "sameZoneSecretVsRewardMaxOverlap"
+        val dynamicPoolMetricId = "dynamicPoolCoverage"
+        val specialTierDuplicateMetricId = "specialTierPassiveFamilyDuplicateCount"
         val overlapSummaryJson = profileOverlapSummary.toJson()
         val strictViolationBreakdown =
             profileOverlapSummary.strictLocalIdentityViolations.splitByLocalIdentityPairType()
         val cadenceStrictViolations = strictViolationBreakdown.cadenceViolations
         val rewardStrictViolations = strictViolationBreakdown.rewardViolations
-        return buildLocalRewardIdentityEvaluation(
+        val localRewardEvaluation =
+            buildLocalRewardIdentityEvaluation(
             baseline = baseline,
             strictViolations = profileOverlapSummary.strictLocalIdentityViolations,
             cadenceInput =
@@ -627,6 +653,73 @@ object WhiteBoxLootRunner {
                     rewardMetricId to corpusAggregateMetrics,
                 ),
         )
+        val dynamicPoolRange = baseline.requiredMetric(dynamicPoolMetricId)
+        val dynamicPoolStatus =
+            if (Phase4OwnerMetricTargets.passes(dynamicPoolRange, dynamicPoolCoverageSummary.dynamicPoolCoverage)) {
+                EvaluationEntryStatus.PASS
+            } else {
+                EvaluationEntryStatus.UNEXPECTED_REGRESSION
+            }
+        val specialTierDuplicateRange = baseline.requiredMetric(specialTierDuplicateMetricId)
+        val specialTierPassiveFamilyDuplicateSummary = corpusAggregateMetrics.getValue("specialTierPassiveFamilyDuplicateSummary")
+        val specialTierPassiveFamilyDuplicateCount =
+            corpusAggregateMetrics.getValue("specialTierPassiveFamilyDuplicateCount").jsonPrimitive.content.toInt()
+        val uniqueArtifactMeaningfulSwapRate = corpusAggregateMetrics.getValue("uniqueArtifactMeaningfulSwapRate").jsonPrimitive.content.toDouble()
+        val dynamicPoolEntry =
+            EvaluationEntry(
+                metricId = dynamicPoolMetricId,
+                status = dynamicPoolStatus,
+                currentValue =
+                    buildJsonObject {
+                        put("rate", dynamicPoolCoverageSummary.dynamicPoolCoverage)
+                        putJsonArray("dynamicPoolTargetProfiles") {
+                            dynamicPoolCoverageSummary.targetProfiles.forEach { summary -> add(summary.toJson()) }
+                        }
+                        put("specialTierPassiveFamilyDuplicateSummary", specialTierPassiveFamilyDuplicateSummary)
+                        put("uniqueArtifactMeaningfulSwapRate", corpusAggregateMetrics.getValue("uniqueArtifactMeaningfulSwapRate"))
+                    },
+                currentValueText =
+                    "${formatPercent(dynamicPoolCoverageSummary.dynamicPoolCoverage)} " +
+                        "(${dynamicPoolCoverageSummary.dynamicProfileCount}/${dynamicPoolCoverageSummary.targetProfiles.size})",
+                targetText = Phase4OwnerMetricTargets.targetText(dynamicPoolMetricId, dynamicPoolRange),
+                note =
+                    "duplicateFamilies=${specialTierPassiveFamilyDuplicateSummary.jsonObject.getValue("duplicateFamilyCount").jsonPrimitive.content}; " +
+                        "meaningfulSwap=${formatPercent(uniqueArtifactMeaningfulSwapRate)}",
+                details = corpusAggregateMetrics,
+            )
+        val specialTierDuplicateEntry =
+            EvaluationEntry(
+                metricId = specialTierDuplicateMetricId,
+                status =
+                    if (Phase4OwnerMetricTargets.passes(specialTierDuplicateRange, specialTierPassiveFamilyDuplicateCount.toDouble())) {
+                        EvaluationEntryStatus.PASS
+                    } else {
+                        EvaluationEntryStatus.UNEXPECTED_REGRESSION
+                    },
+                currentValue =
+                    buildJsonObject {
+                        put("count", specialTierPassiveFamilyDuplicateCount)
+                        put("specialTierPassiveFamilyDuplicateSummary", specialTierPassiveFamilyDuplicateSummary)
+                        put("uniqueArtifactMeaningfulSwapRate", corpusAggregateMetrics.getValue("uniqueArtifactMeaningfulSwapRate"))
+                    },
+                currentValueText = specialTierPassiveFamilyDuplicateCount.toString(),
+                targetText = Phase4OwnerMetricTargets.targetText(specialTierDuplicateMetricId, specialTierDuplicateRange),
+                note =
+                    "duplicatedZones=${specialTierPassiveFamilyDuplicateSummary.jsonObject.getValue("duplicatedZoneCount").jsonPrimitive.content}; " +
+                        "meaningfulSwap=${formatPercent(uniqueArtifactMeaningfulSwapRate)}",
+                details = corpusAggregateMetrics,
+            )
+        val entries = localRewardEvaluation.entries + dynamicPoolEntry + specialTierDuplicateEntry
+        val unexpectedRegressionCount = entries.count { entry -> entry.status == EvaluationEntryStatus.UNEXPECTED_REGRESSION }
+        return localRewardEvaluation.copy(
+            verdict = if (unexpectedRegressionCount > 0) EvaluationVerdict.FAIL else EvaluationVerdict.PASS,
+            passCount = entries.count { entry -> entry.status == EvaluationEntryStatus.PASS },
+            approvedDebtCount = entries.count { entry -> entry.status == EvaluationEntryStatus.APPROVED_DEBT },
+            expectedFailureCount = entries.count { entry -> entry.status == EvaluationEntryStatus.EXPECTED_FAILURE },
+            unexpectedRegressionCount = unexpectedRegressionCount,
+            improvedDebtCount = entries.count { entry -> entry.status == EvaluationEntryStatus.IMPROVEMENT },
+            entries = entries,
+        )
     }
 
     private fun loadPreflightArtifacts(reportDir: Path): LootPreflightArtifacts =
@@ -640,12 +733,14 @@ object WhiteBoxLootRunner {
     private fun LootPreflightPairSummary.toJson(): JsonObject =
         json.parseToJsonElement(json.encodeToString(LootPreflightPairSummary.serializer(), this)).jsonObject
 
-    private fun reportDir(): Path {
-        val configured = System.getProperty("ktome.phase4.whitebox.loot.reportDir")
-        return if (configured.isNullOrBlank()) {
-            Path.of("tools", "build", "reports", "phase4", "whitebox", DOMAIN_ID)
-        } else {
-            Path.of(configured)
-        }
+private fun reportDir(): Path {
+    val configured = System.getProperty("ktome.phase4.whitebox.loot.reportDir")
+    return if (configured.isNullOrBlank()) {
+        Path.of("tools", "build", "reports", "phase4", "whitebox", DOMAIN_ID)
+    } else {
+        Path.of(configured)
     }
+}
+
+private fun formatPercent(value: Double): String = String.format(java.util.Locale.US, "%.1f%%", value * 100.0)
 }

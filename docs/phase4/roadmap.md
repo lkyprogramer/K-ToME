@@ -45,11 +45,11 @@ Phase 4 的主题是把“可完成的长局”升级成“重复游玩差异明
    - `bossHarness`（沿用 Phase 3 主 harness，扩展 variant/threat 汇总）
    - `hiddenContentHarness`
    - `organicHiddenProbe`
-   - `longRunLab`（沿用 Phase 3 主 harness，补终盘 build identity 与 critical-path pacing owner metric）
+  - `longRunLab`（沿用 Phase 3 主 harness，补终盘 build identity、profession capstone sight/adoption、per-profession capstone floor 与 critical-path pacing owner metric）
    - `whiteBoxHiddenContent`
    - `contentPackHarness`
    - `whiteBoxContentPack`
-   - `phase4Report`（默认 canonical gate，artifact-only 聚合当前 `mapgenSmoke / solvabilityHarness / hiddenContentHarness / organicHiddenProbe / contentPackHarness / bossHarness / longRunLab / terrainInteractionBatch / whiteBoxMapgen / whiteBoxSolvability / lootBalanceLab / whiteBoxLoot / whiteBoxHiddenContent / whiteBoxContentPack` 的既有 artifact，产物落到 `tools/build/reports/verification/phase4/report-phase4-summary.{json,md}`，并正式收口 hidden / loot / terrain / terminal identity / critical-path pacing owner metric；legacy `phase4-summary.{json,md}` 只保留为 `phase4LegacyReport*` 手工 fallback）
+  - `phase4Report`（默认 canonical gate，artifact-only 聚合当前 `mapgenSmoke / solvabilityHarness / hiddenContentHarness / organicHiddenProbe / contentPackHarness / bossHarness / longRunLab / terrainInteractionBatch / whiteBoxMapgen / whiteBoxSolvability / lootBalanceLab / whiteBoxLoot / whiteBoxHiddenContent / whiteBoxContentPack` 的既有 artifact，产物落到 `tools/build/reports/verification/phase4/report-phase4-summary.{json,md}`，并正式收口 hidden / loot / terrain / terminal identity / profession capstone / special-tier duplicate identity / critical-path pacing owner metric；legacy `phase4-summary.{json,md}` 只保留为 `phase4LegacyReport*` 手工 fallback）
    - Phase 4 producer inventory 的唯一 authoritative source 固定为 `tools/src/main/resources/phase4/aggregation-manifest.yaml`；build wiring、runtime registry、owner routing 与 baseline inputs 的一致性必须由自动化测试共同锁定
    - canonical summary schema 以 `report-phase4-v2` 为当前 authority；critical-path pacing 共享证据只保留在 `sections.criticalPathPacing`，legacy report 只消费 shared evaluator 投影，不再自行重建 verdict；`designAudit` 也必须经 shared pacing projection/additive details 透传，render 侧禁止重读 raw `longRunLab.metrics`
 

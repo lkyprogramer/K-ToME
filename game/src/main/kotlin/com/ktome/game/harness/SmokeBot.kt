@@ -13,6 +13,7 @@ import com.ktome.game.PlayerCommand
 import com.ktome.game.PrimaryStat
 import com.ktome.game.TalentReserveView
 import com.ktome.game.TalentSlotView
+import com.ktome.game.loot.foundationProfessionCapstonePreferenceScore
 
 class SmokeBot : RunBot {
     override fun decide(observation: RunObservation): PlayerCommand {
@@ -281,7 +282,15 @@ class SmokeBot : RunBot {
                 EquipSlot.ARMOR -> 35
                 null -> 0
             }
-        return slotScore + qualityScore + item.affixIds.size * 10 + synergyMatchCount * 60 + sustainMatchCount * 15 + preferredWeaponScore(observation, item)
+        return (
+            slotScore +
+                qualityScore +
+                item.affixIds.size * 10 +
+                synergyMatchCount * 60 +
+                sustainMatchCount * 15 +
+                preferredWeaponScore(observation, item) +
+                professionCapstonePreferenceScore(observation, item)
+        )
     }
 
     private fun desiredSynergyAffixIds(observation: RunObservation): Set<String> =
@@ -376,6 +385,16 @@ class SmokeBot : RunBot {
             else -> 0
         }
     }
+
+    private fun professionCapstonePreferenceScore(
+        observation: RunObservation,
+        item: InventoryItemView,
+    ): Int =
+        foundationProfessionCapstonePreferenceScore(
+            resourceTypeId = observation.playerResource.typeId,
+            baseItemId = item.baseItemId,
+            slot = item.slot,
+        )
 
     private fun inventoryCleanupCandidateIndex(observation: RunObservation): Int? {
         if (!shouldPruneInventory(observation)) {

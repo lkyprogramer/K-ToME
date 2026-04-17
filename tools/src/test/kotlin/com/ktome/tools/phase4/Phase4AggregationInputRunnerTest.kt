@@ -14,6 +14,7 @@ import kotlinx.serialization.json.jsonPrimitive
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
@@ -244,6 +245,180 @@ class Phase4AggregationInputRunnerTest {
     @Test
     @Tag("reportPhase4Fixture")
     @Tag("phase4AggregationInput")
+    fun `terminal build evaluation fails when per profession capstone floors collapse`() {
+        val fixtureRepoRoot = Phase4ReportFixtureTestSupport.preparePhase4RepoFixture(tempDir)
+        val terminalBuildBaselinePath =
+            fixtureRepoRoot.resolve(Phase4OwnerBaselineRegistry.TERMINAL_BUILD_BASELINE_RELATIVE_PATH)
+        Phase4OwnerBaselineTestSupport.replaceExpectedMetricRange(
+            path = terminalBuildBaselinePath,
+            metricId = "professionCapstoneSeenRate",
+            replacement =
+                buildJsonObject {
+                    put("metricId", JsonPrimitive("professionCapstoneSeenRate"))
+                    put("minValue", JsonPrimitive(0.25))
+                    put("notes", JsonPrimitive("Profession capstone visibility must stay above the PR-02 floor and cover every profession."))
+                    put(
+                        "metadata",
+                        buildJsonObject {
+                            put("perProfessionSeenMinCount", JsonPrimitive(1))
+                        },
+                    )
+                },
+        )
+        Phase4OwnerBaselineTestSupport.replaceExpectedMetricRange(
+            path = terminalBuildBaselinePath,
+            metricId = "nonWeaponBuildPayoffRate",
+            replacement =
+                buildJsonObject {
+                    put("metricId", JsonPrimitive("nonWeaponBuildPayoffRate"))
+                    put("minValue", JsonPrimitive(0.25))
+                    put("notes", JsonPrimitive("Non-weapon capstone payoff must be materially adopted in full-route runs."))
+                },
+        )
+        Phase4ReportFixtureTestSupport.mutateLongRunSummary(fixtureRepoRoot) { payload ->
+            buildJsonObject {
+                payload.forEach { (key, value) ->
+                    when (key) {
+                        "professionCapstoneSeenRate" -> put(key, JsonPrimitive(0.25))
+                        "professionCapstoneAdoptionRate" -> put(key, JsonPrimitive(0.0))
+                        "nonWeaponBuildPayoffRate" -> put(key, JsonPrimitive(0.0))
+                        "professionCapstoneBreakdown" ->
+                            put(
+                                key,
+                                buildJsonObject {
+                                    put(
+                                        "arcanist",
+                                        buildJsonObject {
+                                            put("sampleCount", JsonPrimitive(3))
+                                            put("seenCount", JsonPrimitive(0))
+                                            put("adoptedCount", JsonPrimitive(0))
+                                            put("nonWeaponPayoffCount", JsonPrimitive(0))
+                                            put("seenItems", buildJsonObject {})
+                                            put("adoptedItems", buildJsonObject {})
+                                            put("nonWeaponPayoffItems", buildJsonObject {})
+                                        },
+                                    )
+                                    put(
+                                        "rogue",
+                                        buildJsonObject {
+                                            put("sampleCount", JsonPrimitive(3))
+                                            put("seenCount", JsonPrimitive(1))
+                                            put("adoptedCount", JsonPrimitive(0))
+                                            put("nonWeaponPayoffCount", JsonPrimitive(0))
+                                            put(
+                                                "seenItems",
+                                                buildJsonObject {
+                                                    put("unique_thornpath_crook", JsonPrimitive(1))
+                                                },
+                                            )
+                                            put("adoptedItems", buildJsonObject {})
+                                            put("nonWeaponPayoffItems", buildJsonObject {})
+                                        },
+                                    )
+                                    put(
+                                        "templar",
+                                        buildJsonObject {
+                                            put("sampleCount", JsonPrimitive(3))
+                                            put("seenCount", JsonPrimitive(1))
+                                            put("adoptedCount", JsonPrimitive(0))
+                                            put("nonWeaponPayoffCount", JsonPrimitive(0))
+                                            put(
+                                                "seenItems",
+                                                buildJsonObject {
+                                                    put("unique_vesper_chainmail", JsonPrimitive(1))
+                                                },
+                                            )
+                                            put("adoptedItems", buildJsonObject {})
+                                            put("nonWeaponPayoffItems", buildJsonObject {})
+                                        },
+                                    )
+                                    put(
+                                        "vanguard",
+                                        buildJsonObject {
+                                            put("sampleCount", JsonPrimitive(3))
+                                            put("seenCount", JsonPrimitive(1))
+                                            put("adoptedCount", JsonPrimitive(0))
+                                            put("nonWeaponPayoffCount", JsonPrimitive(0))
+                                            put(
+                                                "seenItems",
+                                                buildJsonObject {
+                                                    put("unique_furnace_plate", JsonPrimitive(1))
+                                                },
+                                            )
+                                            put("adoptedItems", buildJsonObject {})
+                                            put("nonWeaponPayoffItems", buildJsonObject {})
+                                        },
+                                    )
+                                },
+                            )
+                        else -> put(key, value)
+                    }
+                }
+            }
+        }
+
+        Phase4ReportFixtureTestSupport.withFixtureProperties(
+            repoRoot = fixtureRepoRoot,
+            aggregateReportDir = tempDir.resolve("phase4-aggregation-terminal-build-regression"),
+        ) {
+            val run = Phase4AggregationInputRunner.materialize()
+            val longRunPayload =
+                Json.parseToJsonElement(Files.readString(run.inputDir.resolve("longRunLab.json"))).jsonObject
+            val terminalBuildEvaluation =
+                longRunPayload.getValue("evaluationResults").jsonArray
+                    .first { evaluation -> evaluation.jsonObject.getValue("evaluationId").jsonPrimitive.content == "longrun.terminalBuildIdentity" }
+                    .jsonObject
+            val seenEntry =
+                terminalBuildEvaluation.getValue("entries").jsonArray
+                    .first { entry -> entry.jsonObject.getValue("metricId").jsonPrimitive.content == "professionCapstoneSeenRate" }
+                    .jsonObject
+            val adoptionEntry =
+                terminalBuildEvaluation.getValue("entries").jsonArray
+                    .first { entry -> entry.jsonObject.getValue("metricId").jsonPrimitive.content == "professionCapstoneAdoptionRate" }
+                    .jsonObject
+            val nonWeaponEntry =
+                terminalBuildEvaluation.getValue("entries").jsonArray
+                    .first { entry -> entry.jsonObject.getValue("metricId").jsonPrimitive.content == "nonWeaponBuildPayoffRate" }
+                    .jsonObject
+
+            assertEquals("FAIL", terminalBuildEvaluation.getValue("verdict").jsonPrimitive.content)
+            assertEquals("UNEXPECTED_REGRESSION", seenEntry.getValue("status").jsonPrimitive.content)
+            assertEquals("UNEXPECTED_REGRESSION", adoptionEntry.getValue("status").jsonPrimitive.content)
+            assertEquals("UNEXPECTED_REGRESSION", nonWeaponEntry.getValue("status").jsonPrimitive.content)
+            assertTrue(seenEntry.getValue("note").jsonPrimitive.content.contains("arcanist"))
+        }
+    }
+
+    @Test
+    @Tag("reportPhase4Fixture")
+    @Tag("phase4AggregationInput")
+    fun `phase4 aggregation fails fast when longrun capstone metrics are missing from artifact`() {
+        val fixtureRepoRoot = Phase4ReportFixtureTestSupport.preparePhase4RepoFixture(tempDir)
+        Phase4ReportFixtureTestSupport.mutateLongRunSummary(fixtureRepoRoot) { payload ->
+            buildJsonObject {
+                payload.forEach { (key, value) ->
+                    if (key != "professionCapstoneSeenRate") {
+                        put(key, value)
+                    }
+                }
+            }
+        }
+
+        Phase4ReportFixtureTestSupport.withFixtureProperties(
+            repoRoot = fixtureRepoRoot,
+            aggregateReportDir = tempDir.resolve("phase4-aggregation-missing-capstone-metric"),
+        ) {
+            val error =
+                assertThrows(IllegalStateException::class.java) {
+                    Phase4AggregationInputRunner.materialize()
+                }
+            assertTrue(error.message.orEmpty().contains("longRunLab.professionCapstoneSeenRate"))
+        }
+    }
+
+    @Test
+    @Tag("reportPhase4Fixture")
+    @Tag("phase4AggregationInput")
     fun `phase4 aggregation input v6 stores compact pacing details from shared evaluator`() {
         val fixtureRepoRoot = Phase4ReportFixtureTestSupport.preparePhase4RepoFixture(tempDir)
 
@@ -266,7 +441,7 @@ class Phase4AggregationInputRunnerTest {
                     .jsonObject
             val objectiveDetails = objectiveEntry.getValue("details").jsonObject
 
-            assertEquals("phase4-aggregation-input-v7", summary.getValue("contractVersion").jsonPrimitive.content)
+            assertEquals("phase4-aggregation-input-v8", summary.getValue("contractVersion").jsonPrimitive.content)
             assertEquals("criticalPathPacing", objectiveDetails.getValue("sectionRef").jsonPrimitive.content)
             assertEquals("minimum", objectiveDetails.getValue("metricKind").jsonPrimitive.content)
             assertFalse(objectiveDetails.containsKey("fullRouteZoneTraversalDiagnostics"))

@@ -19,6 +19,20 @@
             "maxValue": 0.50,
             "maxInclusive": true,
             "notes": "same-zone secret reward overlap must stay below the local-identity guardrail."
+        },
+        {
+            "metricId": "dynamicPoolCoverage",
+            "minValue": 1.0,
+            "maxValue": 1.0,
+            "minInclusive": true,
+            "maxInclusive": true,
+            "notes": "All ten PR-02 target reward profiles must resolve to dynamic pools."
+        },
+        {
+            "metricId": "specialTierPassiveFamilyDuplicateCount",
+            "maxValue": 0.0,
+            "maxInclusive": true,
+            "notes": "Same-zone unique and artifact templates must not retain duplicate passive families once PR-02 identity cleanup lands."
         }
     ],
     "notes": [
