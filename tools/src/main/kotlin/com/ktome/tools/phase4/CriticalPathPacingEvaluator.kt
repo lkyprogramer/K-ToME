@@ -23,6 +23,7 @@ internal data class CriticalPathPacingThresholds(
     val visibleFloor: Double,
     val enemyFloor: Double,
     val satisfiedFloor: Double,
+    val targetTextByMetricId: Map<String, String> = emptyMap(),
 ) {
     companion object {
         fun fromBaseline(baseline: VerificationBaseline): CriticalPathPacingThresholds {
@@ -47,6 +48,13 @@ internal data class CriticalPathPacingThresholds(
                     checkNotNull(baseline.requiredMetric(satisfiedMetricId).minimumAcceptedValue()) {
                         "Critical-path pacing baseline must define minValue for $satisfiedMetricId."
                     },
+                targetTextByMetricId =
+                    mapOf(
+                        objectiveMetricId to Phase4OwnerMetricTargets.targetText(objectiveMetricId, baseline.requiredMetric(objectiveMetricId)),
+                        visibleMetricId to Phase4OwnerMetricTargets.targetText(visibleMetricId, baseline.requiredMetric(visibleMetricId)),
+                        enemyMetricId to Phase4OwnerMetricTargets.targetText(enemyMetricId, baseline.requiredMetric(enemyMetricId)),
+                        satisfiedMetricId to Phase4OwnerMetricTargets.targetText(satisfiedMetricId, baseline.requiredMetric(satisfiedMetricId)),
+                    ),
             )
         }
     }
@@ -189,17 +197,8 @@ internal data class CriticalPathPacingEvaluation(
     }
 
     private fun legacyTargetText(metricId: String): String =
-        when (metricId) {
-            "avgObjectiveAcquireTurn",
-            "avgVisibleHostileTurnCount",
-            "avgEnemyTurns",
-            ->
-                "min critical-path zone avg >= ${formatRequiredDecimal(targetFloor(metricId))}"
-
-            "criticalPathCombatFloorSatisfied" ->
-                "${formatPercent(thresholds.satisfiedFloor)} critical-path zones satisfy objective/combat floors"
-
-            else -> error("Unsupported critical-path pacing metric '$metricId'.")
+        checkNotNull(thresholds.targetTextByMetricId[metricId]) {
+            "CriticalPathPacingThresholds.targetTextByMetricId missing target text for '$metricId'."
         }
 
     private fun targetFloor(metricId: String): Double =
