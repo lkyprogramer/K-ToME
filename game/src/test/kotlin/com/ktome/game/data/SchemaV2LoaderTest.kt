@@ -404,7 +404,14 @@ class SchemaV2LoaderTest {
         assertEquals(10, catalog.lootProfiles.first { it.id == "loot.foundation.boss" }.rewardBudget)
         assertTrue(catalog.lootProfiles.first { it.id == "loot.foundation.boss" }.itemIds.contains("shadow_cloak"))
         assertEquals(
-            listOf("abyssal_heartstone", "artifact_eclipsed_relic", "unique_vesper_chainmail", "unique_voidlit_seal"),
+            listOf(
+                "abyssal_heartstone",
+                "artifact_eclipsed_relic",
+                "unique_vesper_chainmail",
+                "unique_voidlit_seal",
+                "artifact_briar_heart",
+                "unique_thornpath_crook",
+            ),
             catalog.lootProfiles.first { it.id == "loot.abyssal_heart.reward" }.itemIds,
         )
         assertEquals(3, catalog.lootProfiles.first { it.id == "loot.abyssal_heart.reward" }.schemaVersion)
