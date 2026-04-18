@@ -12,13 +12,18 @@ internal object Phase4OwnerMetricTargets {
         when (metricId) {
             "scriptedHiddenVerificationRate",
             "organicHiddenDiscoveryRate",
+            "dynamicPoolCoverage",
             "crossProfessionTopWeaponDominance",
             "professionAlignedWeaponAdoptionRate",
+            "professionCapstoneAdoptionRate",
+            "nonWeaponBuildPayoffRate",
             ->
                 renderBoundTarget(
                     range = range,
                     formatter = ::formatPercent,
                 )
+
+            "professionCapstoneSeenRate" -> renderProfessionCapstoneSeenTarget(range)
 
             "sameZoneSecretVsCadenceMaxOverlap",
             "sameZoneSecretVsRewardMaxOverlap",
@@ -74,6 +79,17 @@ internal object Phase4OwnerMetricTargets {
                 "terrainInteractionEncounterRate.aggregate must resolve a minimumAcceptedValue."
             }
         return ">= ${formatPercentPrecise(minimumAcceptedValue)} (baseline ${formatPercentPrecise(baselineValue)} +${formatPercentPrecise(targetRelativeIncrease)})"
+    }
+
+    private fun renderProfessionCapstoneSeenTarget(range: VerificationExpectedMetricRange): String {
+        val aggregateTarget = renderBoundTarget(range = range, formatter = ::formatPercent)
+        val perProfessionSeenMinCount =
+            range.metadata["perProfessionSeenMinCount"]?.toString()?.trim('"')?.toIntOrNull()
+        return if (perProfessionSeenMinCount == null) {
+            aggregateTarget
+        } else {
+            "$aggregateTarget + every profession seenCount >= $perProfessionSeenMinCount"
+        }
     }
 
     private fun renderBoundTarget(

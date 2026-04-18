@@ -44,7 +44,7 @@ class ReportPhase4RunnerTest {
             assertEquals("report-phase4-v2", payload.getValue("schemaVersion").jsonPrimitive.content)
             assertEquals("P4", payload.getValue("phaseId").jsonPrimitive.content)
             assertEquals("14", payload.getValue("inputCount").jsonPrimitive.content)
-            assertEquals("13", payload.getValue("ownerMetricCount").jsonPrimitive.content)
+            assertEquals("18", payload.getValue("ownerMetricCount").jsonPrimitive.content)
             assertEquals("0", payload.getValue("unexpectedRegressionCount").jsonPrimitive.content)
             assertEquals("0", payload.getValue("approvedDebtCount").jsonPrimitive.content)
             assertEquals("0", payload.getValue("improvedDebtCount").jsonPrimitive.content)
@@ -52,7 +52,7 @@ class ReportPhase4RunnerTest {
             assertTrue(payload.containsKey("artifactReuseRate"))
             assertTrue(payload.containsKey("topInvalidationReasons"))
             assertEquals(14, inputs.size)
-            assertEquals(13, ownerMetrics.size)
+            assertEquals(18, ownerMetrics.size)
 
             val terrainInput =
                 inputs.first { input -> input.jsonObject.getValue("sourceTaskId").jsonPrimitive.content == "terrainInteractionBatch" }.jsonObject
@@ -103,6 +103,11 @@ class ReportPhase4RunnerTest {
                 criticalPathSection.getValue("designAudit"),
                 satisfiedMetric.getValue("details").jsonObject.getValue("designAudit"),
             )
+            assertTrue(ownerMetrics.any { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "dynamicPoolCoverage" })
+            assertTrue(ownerMetrics.any { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "specialTierPassiveFamilyDuplicateCount" })
+            assertTrue(ownerMetrics.any { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "professionCapstoneSeenRate" })
+            assertTrue(ownerMetrics.any { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "professionCapstoneAdoptionRate" })
+            assertTrue(ownerMetrics.any { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "nonWeaponBuildPayoffRate" })
             assertEquals(
                 criticalPathSection.getValue("criticalPathZoneIds").jsonArray.size,
                 criticalPathSection.getValue("designAudit").jsonArray.size,
@@ -124,7 +129,7 @@ class ReportPhase4RunnerTest {
                 assertNotNull(run.comparisonPath)
                 val comparison = Phase4ReportFixtureTestSupport.json.parseToJsonElement(Files.readString(run.comparisonPath!!)).jsonObject
                 assertEquals("0", comparison.getValue("mismatchCount").jsonPrimitive.content)
-                assertEquals("13", comparison.getValue("metricCount").jsonPrimitive.content)
+                assertEquals("18", comparison.getValue("metricCount").jsonPrimitive.content)
             } else {
                 assertNull(run.comparisonPath)
             }
@@ -186,6 +191,34 @@ class ReportPhase4RunnerTest {
                     ReportPhase4Runner.run(compareLegacy = false)
                 }
             assertTrue(error.message.orEmpty().contains("canonicalZoneId"))
+        }
+    }
+
+    @Test
+    @Tag("reportPhase4Fixture")
+    fun `reportPhase4 fails fast when whitebox loot owner metrics are missing from artifact`() {
+        val fixtureRepoRoot = Phase4ReportFixtureTestSupport.preparePhase4RepoFixture(tempDir)
+        Phase4ReportFixtureTestSupport.mutateWhiteBoxLootCorpusMetrics(fixtureRepoRoot) { metrics ->
+            Phase4ReportFixtureTestSupport.replaceMetricsFields(
+                metrics = metrics,
+                replacements = emptyMap(),
+            ).let { baselineMetrics ->
+                buildJsonObject {
+                    baselineMetrics.forEach { (key, value) ->
+                        if (key != "dynamicPoolCoverage") {
+                            put(key, value)
+                        }
+                    }
+                }
+            }
+        }
+
+        Phase4ReportFixtureTestSupport.withFixtureProperties(repoRoot = fixtureRepoRoot, aggregateReportDir = tempDir.resolve("aggregate-missing-loot-owner-metric")) {
+            val error =
+                assertThrows(IllegalStateException::class.java) {
+                    ReportPhase4Runner.run(compareLegacy = false)
+                }
+            assertTrue(error.message.orEmpty().contains("whiteBoxLoot.dynamicPoolCoverage"))
         }
     }
 
@@ -272,6 +305,54 @@ class ReportPhase4RunnerTest {
             assertTrue(ownerMetric.getValue("note").jsonPrimitive.content.contains(pairId))
             assertTrue(markdown.contains("strictLocalIdentityViolations"))
             assertTrue(markdown.contains(pairId))
+        }
+    }
+
+    @Test
+    @Tag("reportPhase4Fixture")
+    fun `reportPhase4 fails fast when content pack artifacts are semantically aligned but freshness diverges`() {
+        val fixtureRepoRoot = Phase4ReportFixtureTestSupport.preparePhase4RepoFixture(tempDir)
+        val whiteBoxSummaryPath =
+            fixtureRepoRoot.resolve("tools/build/reports/phase4/whitebox/content-pack/whitebox-content-pack-summary.json")
+        val whiteBoxPayload = Phase4ReportFixtureTestSupport.json.parseToJsonElement(Files.readString(whiteBoxSummaryPath)).jsonObject
+        val staleWhiteBoxPayload =
+            buildJsonObject {
+                whiteBoxPayload.forEach { (key, value) ->
+                    if (key == "header") {
+                        put(
+                            key,
+                            buildJsonObject {
+                                value.jsonObject.forEach { (headerKey, headerValue) ->
+                                    put(
+                                        headerKey,
+                                        if (headerKey == "timestamp") {
+                                            JsonPrimitive("1999-12-31T23:59:59Z")
+                                        } else {
+                                            headerValue
+                                        },
+                                    )
+                                }
+                            },
+                        )
+                    } else {
+                        put(key, value)
+                    }
+                }
+            }
+        Files.writeString(
+            whiteBoxSummaryPath,
+            Phase4ReportFixtureTestSupport.json.encodeToString(
+                kotlinx.serialization.json.JsonElement.serializer(),
+                staleWhiteBoxPayload,
+            ),
+        )
+
+        Phase4ReportFixtureTestSupport.withFixtureProperties(repoRoot = fixtureRepoRoot, aggregateReportDir = tempDir.resolve("aggregate-stale-content-pack")) {
+            val error =
+                assertThrows(IllegalStateException::class.java) {
+                    ReportPhase4Runner.run(compareLegacy = false)
+                }
+            assertTrue(error.message.orEmpty().contains("freshness"))
         }
     }
 

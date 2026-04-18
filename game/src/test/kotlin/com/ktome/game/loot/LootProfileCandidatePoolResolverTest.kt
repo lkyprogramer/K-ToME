@@ -1,6 +1,7 @@
 package com.ktome.game.loot
 
 import com.ktome.core.item.ConsumableEffect
+import com.ktome.core.item.EquipSlot
 import com.ktome.core.item.ItemBaseDef
 import com.ktome.core.item.ItemDataBundle
 import com.ktome.core.item.ItemType
@@ -125,6 +126,148 @@ class LootProfileCandidatePoolResolverTest {
         assertTrue(battleAxeWeight > neutralBattleAxeWeight)
     }
 
+    @Test
+    fun `exact profession tags outrank generic dominant risk bases when both look like strong matches`() {
+        val bundle =
+            ItemDataBundle(
+                baseItems =
+                    listOf(
+                        baseItem(
+                            id = "generic_guard_blade",
+                            tags = setOf("item", "weapon", "frontline", "guard", "holy", "dominant_risk"),
+                            dropWeight = 9,
+                        ),
+                        baseItem(
+                            id = "templar_relic",
+                            type = ItemType.ARMOR,
+                            slot = EquipSlot.OFF_HAND,
+                            tags = setOf("item", "armor", "accessory", "templar", "holy", "capstone"),
+                            dropWeight = 3,
+                        ),
+                    ),
+                materials = emptyList(),
+                affixes = emptyList(),
+            )
+        val profile =
+            LootProfileSchemaV3(
+                id = "loot.templar.capstone",
+                schemaVersion = 3,
+                tags = listOf("loot", "reward"),
+                itemIds = listOf("generic_guard_blade", "templar_relic"),
+                rewardBudget = 5,
+                canonicalZoneId = "test_zone",
+                poolStrategy = LootPoolStrategy.FIXED_LIST,
+            )
+
+        val resolved = LootProfileCandidatePoolResolver(itemBundle = bundle).resolve(profile)
+        val templarContext =
+            LootBaseSelectionContext(
+                buildTags = setOf("templar", "holy", "guard"),
+                preferredProfessionTag = "templar",
+            )
+        val genericGuardBlade = bundle.baseItems.first { item -> item.id == "generic_guard_blade" }
+        val templarRelic = bundle.baseItems.first { item -> item.id == "templar_relic" }
+
+        assertTrue(
+            resolved.weightFor(templarRelic, templarContext) > resolved.weightFor(genericGuardBlade, templarContext),
+            "Exact profession-tagged capstones should outrank generic dominant-risk alternatives for the same profession context.",
+        )
+    }
+
+    @Test
+    fun `exact profession capstones outrank aligned generic milestone bases`() {
+        val bundle =
+            ItemDataBundle(
+                baseItems =
+                    listOf(
+                        baseItem(
+                            id = "long_sword",
+                            tags = setOf("item", "weapon", "melee", "frontline", "guard", "discipline"),
+                            dropWeight = 7,
+                        ),
+                        baseItem(
+                            id = "unique_furnace_plate",
+                            type = ItemType.ARMOR,
+                            slot = EquipSlot.ARMOR,
+                            tags = setOf("item", "armor", "vanguard", "fire", "capstone", "non_weapon_capstone"),
+                            dropWeight = 1,
+                        ),
+                    ),
+                materials = emptyList(),
+                affixes = emptyList(),
+            )
+        val profile =
+            LootProfileSchemaV3(
+                id = "loot.vanguard.milestone",
+                schemaVersion = 3,
+                tags = listOf("loot", "reward"),
+                itemIds = listOf("long_sword", "unique_furnace_plate"),
+                rewardBudget = 5,
+                canonicalZoneId = "test_zone",
+                poolStrategy = LootPoolStrategy.FIXED_LIST,
+                typeWeights = mapOf(ItemType.WEAPON to 4, ItemType.ARMOR to 3),
+                slotBias = mapOf(EquipSlot.WEAPON to 2, EquipSlot.ARMOR to 4),
+            )
+
+        val resolved = LootProfileCandidatePoolResolver(itemBundle = bundle).resolve(profile)
+        val vanguardContext =
+            LootBaseSelectionContext(
+                buildTags = setOf("vanguard", "frontline", "guard", "fire"),
+                preferredProfessionTag = "vanguard",
+            )
+        val longSword = bundle.baseItems.first { item -> item.id == "long_sword" }
+        val furnacePlate = bundle.baseItems.first { item -> item.id == "unique_furnace_plate" }
+
+        assertTrue(
+            resolved.weightFor(furnacePlate, vanguardContext) > resolved.weightFor(longSword, vanguardContext),
+            "Profession-tagged capstones should beat aligned but generic milestone bases once PR-02 chase-path weighting is active.",
+        )
+    }
+
+    @Test
+    fun `preferred profession tag alone activates profession capstone weighting`() {
+        val bundle =
+            ItemDataBundle(
+                baseItems =
+                    listOf(
+                        baseItem(
+                            id = "generic_guard_blade",
+                            tags = setOf("item", "weapon", "frontline", "guard", "holy", "dominant_risk"),
+                            dropWeight = 9,
+                        ),
+                        baseItem(
+                            id = "templar_relic",
+                            type = ItemType.ARMOR,
+                            slot = EquipSlot.OFF_HAND,
+                            tags = setOf("item", "armor", "accessory", "templar", "holy", "capstone", "non_weapon_capstone"),
+                            dropWeight = 3,
+                        ),
+                    ),
+                materials = emptyList(),
+                affixes = emptyList(),
+            )
+        val profile =
+            LootProfileSchemaV3(
+                id = "loot.templar.profession-only",
+                schemaVersion = 3,
+                tags = listOf("loot", "reward"),
+                itemIds = listOf("generic_guard_blade", "templar_relic"),
+                rewardBudget = 5,
+                canonicalZoneId = "test_zone",
+                poolStrategy = LootPoolStrategy.FIXED_LIST,
+            )
+
+        val resolved = LootProfileCandidatePoolResolver(itemBundle = bundle).resolve(profile)
+        val professionOnlyContext = LootBaseSelectionContext(preferredProfessionTag = "templar")
+        val genericGuardBlade = bundle.baseItems.first { item -> item.id == "generic_guard_blade" }
+        val templarRelic = bundle.baseItems.first { item -> item.id == "templar_relic" }
+
+        assertTrue(
+            resolved.weightFor(templarRelic, professionOnlyContext) > resolved.weightFor(genericGuardBlade, professionOnlyContext),
+            "Preferred profession tag should still activate exact-profession capstone weighting when build tags are absent.",
+        )
+    }
+
     private fun testItemBundle(): ItemDataBundle =
         ItemDataBundle(
             baseItems =
@@ -168,6 +311,7 @@ class LootProfileCandidatePoolResolverTest {
     private fun baseItem(
         id: String,
         type: ItemType = ItemType.WEAPON,
+        slot: EquipSlot? = null,
         tags: Set<String>,
         dropWeight: Int = 1,
     ): ItemBaseDef =
@@ -175,6 +319,7 @@ class LootProfileCandidatePoolResolverTest {
             id = id,
             name = id,
             type = type,
+            slot = slot,
             tags = tags,
             glyph = if (type == ItemType.CONSUMABLE) '!' else ')',
             colorHex = "#FFFFFF",

@@ -27,9 +27,15 @@ lootProfiles:
     schemaVersion: 3
     tags: [loot, cadence, shattered_outpost]
     canonicalZoneId: shattered_outpost
-    poolStrategy: FIXED_LIST
+    poolStrategy: TAG_WEIGHTED
     rewardBudget: 4
     itemIds: [basic_shield, bandit_trophy, emerald_charm, apprentice_robe]
+    itemTagFilter: [frontline, guard, precision, mobility]
+    excludeIds: [artifact_forge_oath, unique_furnace_plate, unique_quenchbreaker_maul]
+    typeWeights: { WEAPON: 2, ARMOR: 2, CONSUMABLE: 1 }
+    slotBias: { OFF_HAND: 3, WEAPON: 2, ARMOR: 2 }
+    specialTemplateTagPreference: [guard, mobility, precision]
+    affixTagPreference: [guard, mobility, precision]
   - id: loot.greenwood_fringe.cadence
     schemaVersion: 3
     tags: [loot, cadence, greenwood]
@@ -45,16 +51,28 @@ lootProfiles:
     schemaVersion: 3
     tags: [loot, cadence, bandit_camp]
     canonicalZoneId: bandit_camp
-    poolStrategy: FIXED_LIST
+    poolStrategy: TAG_WEIGHTED
     rewardBudget: 4
     itemIds: [bandit_trophy, hunter_bow, leather_armor, basic_shield]
+    itemTagFilter: [precision, mobility, rogue, ranged]
+    excludeIds: *greenwood_local_identity_excludes
+    typeWeights: { WEAPON: 3, ARMOR: 2, CONSUMABLE: 1 }
+    slotBias: { WEAPON: 2, OFF_HAND: 2, ARMOR: 1 }
+    specialTemplateTagPreference: [rogue, marked, capstone]
+    affixTagPreference: [precision, mobility, marked]
   - id: loot.elven_ruins.cadence
     schemaVersion: 3
     tags: [loot, cadence, elven_ruins]
     canonicalZoneId: elven_ruins
-    poolStrategy: FIXED_LIST
+    poolStrategy: TAG_WEIGHTED
     rewardBudget: 4
     itemIds: [emerald_charm, apprentice_robe, seal_reliquary, sanctified_seal]
+    itemTagFilter: [holy, protection, spell, cleanse]
+    excludeIds: [artifact_eclipsed_relic, unique_vesper_chainmail, unique_voidlit_seal]
+    typeWeights: { WEAPON: 2, ARMOR: 3, CONSUMABLE: 1 }
+    slotBias: { OFF_HAND: 3, ARMOR: 2, WEAPON: 1 }
+    specialTemplateTagPreference: [holy, protection, capstone]
+    affixTagPreference: [holy, protection, cleanse]
   - id: loot.deep_iron_pit.cadence
     schemaVersion: 3
     tags: [loot, cadence, deep_iron_pit]
@@ -70,16 +88,28 @@ lootProfiles:
     schemaVersion: 3
     tags: [loot, cadence, molten_core]
     canonicalZoneId: molten_core
-    poolStrategy: FIXED_LIST
+    poolStrategy: TAG_WEIGHTED
     rewardBudget: 4
     itemIds: [war_maul, forgebreaker_pick, furnace_talisman, chain_mail, plate_armor]
+    itemTagFilter: [fire, oil, frontline, vanguard]
+    excludeIds: [artifact_forge_oath, unique_furnace_plate, unique_quenchbreaker_maul]
+    typeWeights: { WEAPON: 3, ARMOR: 2, CONSUMABLE: 1 }
+    slotBias: { WEAPON: 2, ARMOR: 2, OFF_HAND: 1 }
+    specialTemplateTagPreference: [vanguard, oil, capstone]
+    affixTagPreference: [oil, fire, armor_break]
   - id: loot.grey_gate_depths.cadence
     schemaVersion: 3
     tags: [loot, cadence, grey_gate]
     canonicalZoneId: grey_gate_depths
-    poolStrategy: FIXED_LIST
+    poolStrategy: TAG_WEIGHTED
     rewardBudget: 4
-    itemIds: [seal_reliquary, shadow_cloak, sanctified_seal, apprentice_robe]
+    itemIds: [seal_reliquary, shadow_cloak, apprentice_robe, arcane_staff]
+    itemTagFilter: [shadow]
+    excludeIds: [artifact_eclipsed_relic, unique_vesper_chainmail, unique_voidlit_seal]
+    typeWeights: { WEAPON: 2, ARMOR: 3, CONSUMABLE: 1 }
+    slotBias: { OFF_HAND: 3, ARMOR: 2, WEAPON: 1 }
+    specialTemplateTagPreference: [shadow, bane, spell]
+    affixTagPreference: [shadow, bane, spell]
   - id: loot.underground_river.cadence
     schemaVersion: 3
     tags: [loot, cadence, underground_river]
@@ -95,9 +125,15 @@ lootProfiles:
     schemaVersion: 3
     tags: [loot, cadence, crystal_cavern]
     canonicalZoneId: crystal_cavern
-    poolStrategy: FIXED_LIST
+    poolStrategy: TAG_WEIGHTED
     rewardBudget: 4
     itemIds: [emerald_charm, seal_reliquary, arcane_staff, shadow_cloak]
+    itemTagFilter: [arcane, control, spell, ranged]
+    excludeIds: [artifact_river_echo, unique_deepcurrent_lens, artifact_deepcurrent_crown]
+    typeWeights: { WEAPON: 3, ARMOR: 2, CONSUMABLE: 1 }
+    slotBias: { WEAPON: 2, OFF_HAND: 2, ARMOR: 1 }
+    specialTemplateTagPreference: [arcanist, spell, capstone]
+    affixTagPreference: [arcane, control, lightning]
   - id: loot.abyssal_temple.cadence
     schemaVersion: 3
     tags: [loot, cadence, abyssal_temple]
@@ -126,90 +162,112 @@ lootProfiles:
     canonicalZoneId: deep_iron_pit
     poolStrategy: TAG_WEIGHTED
     rewardBudget: 4
-    itemIds: [furnace_talisman, war_maul, forgebreaker_pick, energy_tonic, stamina_draught]
+    itemIds: [artifact_forge_oath, unique_furnace_plate, unique_quenchbreaker_maul, furnace_talisman, war_maul]
     itemTagFilter: [deep_iron_pit]
-    excludeIds: *deep_iron_local_identity_excludes
-    typeWeights: { WEAPON: 2, ARMOR: 2, CONSUMABLE: 1 }
-    slotBias: { OFF_HAND: 3, WEAPON: 2, ARMOR: 1 }
+    excludeIds: [unique_slagbreaker_pick, unique_coal_ward_talisman, unique_cinderveil_plate, artifact_slag_tyrant_seal]
+    typeWeights: { WEAPON: 2, ARMOR: 3, CONSUMABLE: 1 }
+    slotBias: { ARMOR: 4, WEAPON: 2, OFF_HAND: 2 }
+    specialTemplateTagPreference: [deep_iron_pit, vanguard, capstone]
+    affixTagPreference: [oil, fire, guard]
   - id: loot.grey_gate_depths.reward
     schemaVersion: 3
     tags: [loot, reward, grey_gate]
     canonicalZoneId: grey_gate_depths
-    poolStrategy: FIXED_LIST
+    poolStrategy: TAG_WEIGHTED
     rewardBudget: 4
-    itemIds: [seal_reliquary, shadow_cloak, apprentice_robe, arcane_staff]
+    itemIds: [sanctified_seal, basic_shield, plate_armor, abyssal_heartstone, consecrated_oil, healing_potion]
+    itemTagFilter: [holy]
+    excludeIds: [artifact_eclipsed_relic, unique_vesper_chainmail, unique_voidlit_seal]
+    typeWeights: { WEAPON: 1, ARMOR: 3, CONSUMABLE: 1 }
+    slotBias: { OFF_HAND: 4, ARMOR: 3, WEAPON: 1 }
+    specialTemplateTagPreference: [templar, holy, protection]
+    affixTagPreference: [holy, protection, survival]
   - id: loot.underground_river.reward
     schemaVersion: 3
     tags: [loot, reward, underground_river]
     canonicalZoneId: underground_river
-    poolStrategy: FIXED_LIST
+    poolStrategy: TAG_WEIGHTED
     rewardBudget: 4
-    itemIds: [hunter_bow, shadow_cloak, emerald_charm, apprentice_robe, mana_potion]
-    typeWeights: { WEAPON: 3, ARMOR: 2, CONSUMABLE: 1 }
-    slotBias: { WEAPON: 3, OFF_HAND: 2, ARMOR: 2 }
+    itemIds: [artifact_river_echo, unique_deepcurrent_lens, unique_tideglass_staff, emerald_charm, mana_potion]
+    itemTagFilter: [underground_river]
+    excludeIds: &underground_river_capstone_excludes [unique_floodglass_rapier, unique_currentstrider_cloak, unique_ferrywarden_lantern, artifact_deepcurrent_crown]
+    typeWeights: { WEAPON: 2, ARMOR: 3, CONSUMABLE: 1 }
+    slotBias: { OFF_HAND: 4, WEAPON: 2, ARMOR: 2 }
+    specialTemplateTagPreference: [underground_river, arcanist, capstone]
+    affixTagPreference: [water, mana, lightning]
   - id: loot.abyssal_temple.reward
     schemaVersion: 3
     tags: [loot, reward, abyssal_temple]
     canonicalZoneId: abyssal_temple
-    poolStrategy: FIXED_LIST
+    poolStrategy: TAG_WEIGHTED
     rewardBudget: 5
-    itemIds: [plate_armor, long_sword, hunter_bow, apprentice_robe, consecrated_oil]
-    typeWeights: { WEAPON: 3, ARMOR: 2, CONSUMABLE: 1 }
-    slotBias: { WEAPON: 3, OFF_HAND: 2, ARMOR: 2 }
+    itemIds: [artifact_eclipsed_relic, unique_vesper_chainmail, unique_voidlit_seal, sanctified_seal, consecrated_oil]
+    itemTagFilter: [abyssal_temple]
+    excludeIds: &abyssal_capstone_excludes [unique_eclipse_mail, unique_sanctum_lance, unique_nullwake_blade, artifact_vesper_prism]
+    typeWeights: { WEAPON: 2, ARMOR: 4, CONSUMABLE: 1 }
+    slotBias: { OFF_HAND: 4, ARMOR: 3, WEAPON: 1 }
+    specialTemplateTagPreference: [abyssal_temple, templar, capstone]
+    affixTagPreference: [holy, protection, survival]
   - id: loot.abyssal_heart.reward
     schemaVersion: 3
     tags: [loot, reward, abyssal, finale]
     canonicalZoneId: abyssal_heart
-    poolStrategy: FIXED_LIST
+    poolStrategy: TAG_WEIGHTED
     rewardBudget: 1
-    itemIds: [abyssal_heartstone]
+    itemIds: [abyssal_heartstone, artifact_eclipsed_relic, unique_vesper_chainmail, unique_voidlit_seal]
+    itemTagFilter: [abyssal_heart]
+    excludeIds: *abyssal_capstone_excludes
+    typeWeights: { ARMOR: 5, WEAPON: 1 }
+    slotBias: { OFF_HAND: 5, ARMOR: 4, WEAPON: 1 }
+    specialTemplateTagPreference: [templar, capstone, non_weapon_capstone]
+    affixTagPreference: [shadow, protection, holy]
   - id: loot.greenwood_hidden_cache.secret
     schemaVersion: 3
     tags: [loot, secret, greenwood]
     canonicalZoneId: greenwood_fringe
     poolStrategy: FIXED_LIST
     rewardBudget: 5
-    itemIds: [unique_thornpath_crook, unique_heartwood_talisman, shadow_cloak, stamina_draught, leather_armor]
-    excludeIds: [unique_greenwood_watcher_blade, unique_briarbound_bow, unique_warden_barkmail, artifact_briar_heart, artifact_heartroot_gambit]
+    itemIds: [artifact_heartroot_gambit, unique_thornpath_crook, unique_briarbound_bow, artifact_briar_heart, stamina_draught]
+    excludeIds: [unique_greenwood_watcher_blade, unique_warden_barkmail, unique_heartwood_talisman]
     typeWeights: { WEAPON: 2, ARMOR: 2, CONSUMABLE: 1 }
-    slotBias: { WEAPON: 3, OFF_HAND: 3, ARMOR: 1 }
-    specialTemplateTagPreference: [greenwood_fringe, marked, survival]
-    affixTagPreference: [mobility, precision, survival]
+    slotBias: { OFF_HAND: 4, WEAPON: 3, ARMOR: 1 }
+    specialTemplateTagPreference: [greenwood_fringe, rogue, capstone]
+    affixTagPreference: [mobility, precision, crit]
   - id: loot.deep_iron_slag_cache.secret
     schemaVersion: 3
     tags: [loot, secret, deep_iron]
     canonicalZoneId: deep_iron_pit
     poolStrategy: FIXED_LIST
     rewardBudget: 7
-    itemIds: [unique_quenchbreaker_maul, unique_coal_ward_talisman, artifact_slag_tyrant_seal, energy_tonic, chain_mail]
-    excludeIds: [unique_slagbreaker_pick, unique_furnace_plate, artifact_forge_oath, unique_cinderveil_plate]
-    typeWeights: { WEAPON: 3, ARMOR: 2, CONSUMABLE: 2 }
-    slotBias: { WEAPON: 4, OFF_HAND: 3, ARMOR: 1 }
-    specialTemplateTagPreference: [deep_iron_pit, oil, secret_zone]
-    affixTagPreference: [oil, armor_break, fire]
+    itemIds: [unique_quenchbreaker_maul, unique_slagbreaker_pick, artifact_slag_tyrant_seal, basic_shield, chain_mail]
+    excludeIds: [unique_coal_ward_talisman, unique_cinderveil_plate, artifact_forge_oath, unique_furnace_plate]
+    typeWeights: { WEAPON: 2, ARMOR: 3, CONSUMABLE: 2 }
+    slotBias: { ARMOR: 4, WEAPON: 3, OFF_HAND: 2 }
+    specialTemplateTagPreference: [deep_iron_pit, vanguard, capstone]
+    affixTagPreference: [oil, fire, guard]
   - id: loot.underground_river_crystal_rift.secret
     schemaVersion: 3
     tags: [loot, secret, underground_river]
     canonicalZoneId: underground_river
     poolStrategy: FIXED_LIST
     rewardBudget: 6
-    itemIds: [unique_floodglass_rapier, unique_deepcurrent_lens, artifact_deepcurrent_crown, mana_potion, emerald_charm]
-    excludeIds: [unique_tideglass_staff, unique_currentstrider_cloak, unique_ferrywarden_lantern, artifact_river_echo]
+    itemIds: [artifact_river_echo, artifact_deepcurrent_crown, unique_ferrywarden_lantern, arcane_staff, apprentice_robe]
+    excludeIds: [unique_floodglass_rapier, unique_currentstrider_cloak, unique_deepcurrent_lens, unique_tideglass_staff]
     typeWeights: { WEAPON: 2, ARMOR: 2, CONSUMABLE: 1 }
     slotBias: { OFF_HAND: 4, WEAPON: 2, ARMOR: 1 }
-    specialTemplateTagPreference: [underground_river, mana, secret_zone]
-    affixTagPreference: [water, mana, mobility]
+    specialTemplateTagPreference: [underground_river, arcanist, capstone]
+    affixTagPreference: [water, mana, lightning]
   - id: loot.abyssal_temple_warded_archive.secret
     schemaVersion: 3
     tags: [loot, secret, abyssal_temple]
     canonicalZoneId: abyssal_temple
     poolStrategy: FIXED_LIST
     rewardBudget: 7
-    itemIds: [basic_shield, healing_potion, unique_voidlit_seal, unique_eclipse_mail, unique_vesper_chainmail]
-    excludeIds: [sanctified_seal, shadow_cloak, seal_reliquary, plate_armor, arcane_staff, unique_sanctum_lance, artifact_eclipsed_relic, artifact_vesper_prism]
+    itemIds: [unique_voidlit_seal, unique_eclipse_mail, artifact_vesper_prism, mana_potion, healing_potion]
+    excludeIds: [sanctified_seal, shadow_cloak, seal_reliquary, plate_armor, arcane_staff, artifact_eclipsed_relic, unique_vesper_chainmail]
     typeWeights: { ARMOR: 4, CONSUMABLE: 1 }
     slotBias: { OFF_HAND: 4, ARMOR: 3, WEAPON: 1 }
-    specialTemplateTagPreference: [abyssal_temple, protection, survival]
+    specialTemplateTagPreference: [abyssal_temple, templar, capstone]
     affixTagPreference: [protection, holy, survival]
   - id: loot.deep_iron_smuggler_stash.secret
     schemaVersion: 3

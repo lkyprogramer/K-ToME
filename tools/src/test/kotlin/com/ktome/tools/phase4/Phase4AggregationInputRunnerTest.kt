@@ -1,6 +1,5 @@
 package com.ktome.tools.phase4
 
-import com.ktome.tools.verification.VerificationCacheSupport
 import java.io.File
 import java.nio.file.Files
 import java.nio.file.Path
@@ -14,6 +13,7 @@ import kotlinx.serialization.json.jsonPrimitive
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
@@ -27,40 +27,42 @@ class Phase4AggregationInputRunnerTest {
     @Tag("phase4AggregationInput")
     fun `phase4 aggregation inputs are cached and reusable across warm runs`() {
         val originalReportDir = System.getProperty("ktome.phase4.aggregate.reportDir")
+        val fixtureRepoRoot = Phase4ReportFixtureTestSupport.preparePhase4RepoFixture(tempDir)
         val tempReportDir = Files.createTempDirectory("ktome-phase4-aggregation-test")
         try {
             System.setProperty("ktome.phase4.aggregate.reportDir", tempReportDir.toString())
+            Phase4ReportFixtureTestSupport.withFixtureProperties(repoRoot = fixtureRepoRoot, aggregateReportDir = tempReportDir) {
+                val coldRun = Phase4AggregationInputRunner.materialize()
+                val warmRun = Phase4AggregationInputRunner.materialize()
 
-            val coldRun = Phase4AggregationInputRunner.materialize()
-            val warmRun = Phase4AggregationInputRunner.materialize()
+                assertEquals(14, coldRun.summary.inputCount)
+                assertEquals(14, warmRun.summary.inputCount)
+                assertTrue(coldRun.summary.reusedInputCount in 0..14)
+                assertEquals(14, warmRun.summary.reusedInputCount)
+                assertEquals(0, warmRun.summary.regeneratedInputCount)
+                assertEquals(14, warmRun.inputs.size)
+                assertTrue(Files.exists(coldRun.summaryPath))
+                assertTrue(Files.exists(warmRun.inputDir.resolve("terrainInteractionBatch.json")))
 
-            assertEquals(14, coldRun.summary.inputCount)
-            assertEquals(14, warmRun.summary.inputCount)
-            assertTrue(coldRun.summary.reusedInputCount in 0..14)
-            assertEquals(14, warmRun.summary.reusedInputCount)
-            assertEquals(0, warmRun.summary.regeneratedInputCount)
-            assertEquals(14, warmRun.inputs.size)
-            assertTrue(Files.exists(coldRun.summaryPath))
-            assertTrue(Files.exists(warmRun.inputDir.resolve("terrainInteractionBatch.json")))
+                val payload =
+                    Json.parseToJsonElement(Files.readString(warmRun.inputDir.resolve("terrainInteractionBatch.json"))).jsonObject
+                val evaluations = payload.getValue("evaluationResults").jsonArray
+                val renderMetadata = payload.getValue("renderResult").jsonObject.getValue("metadata").jsonObject
+                val lootPayload =
+                    Json.parseToJsonElement(Files.readString(warmRun.inputDir.resolve("whiteBoxLoot.json"))).jsonObject
+                val lootEvaluationIds =
+                    lootPayload
+                        .getValue("evaluationResults")
+                        .jsonArray
+                        .map { evaluation -> evaluation.jsonObject.getValue("evaluationId").jsonPrimitive.content }
 
-            val payload =
-                Json.parseToJsonElement(Files.readString(warmRun.inputDir.resolve("terrainInteractionBatch.json"))).jsonObject
-            val evaluations = payload.getValue("evaluationResults").jsonArray
-            val renderMetadata = payload.getValue("renderResult").jsonObject.getValue("metadata").jsonObject
-            val lootPayload =
-                Json.parseToJsonElement(Files.readString(warmRun.inputDir.resolve("whiteBoxLoot.json"))).jsonObject
-            val lootEvaluationIds =
-                lootPayload
-                    .getValue("evaluationResults")
-                    .jsonArray
-                    .map { evaluation -> evaluation.jsonObject.getValue("evaluationId").jsonPrimitive.content }
-
-            assertTrue(evaluations.any { evaluation -> evaluation.jsonObject.getValue("evaluationId").jsonPrimitive.content == "terrain.aggregateRelativeBaseline" })
-            assertTrue(evaluations.any { evaluation -> evaluation.jsonObject.getValue("evaluationId").jsonPrimitive.content == "terrain.perZoneLowerBound" })
-            assertTrue(lootEvaluationIds.contains("loot.localRewardIdentity"))
-            assertTrue(renderMetadata.containsKey("baselineFingerprints"))
-            assertEquals("HIT", renderMetadata.getValue("cacheStatus").jsonPrimitive.content)
-            assertEquals("true", renderMetadata.getValue("artifactReused").jsonPrimitive.content)
+                assertTrue(evaluations.any { evaluation -> evaluation.jsonObject.getValue("evaluationId").jsonPrimitive.content == "terrain.aggregateRelativeBaseline" })
+                assertTrue(evaluations.any { evaluation -> evaluation.jsonObject.getValue("evaluationId").jsonPrimitive.content == "terrain.perZoneLowerBound" })
+                assertTrue(lootEvaluationIds.contains("loot.localRewardIdentity"))
+                assertTrue(renderMetadata.containsKey("baselineFingerprints"))
+                assertEquals("HIT", renderMetadata.getValue("cacheStatus").jsonPrimitive.content)
+                assertEquals("true", renderMetadata.getValue("artifactReused").jsonPrimitive.content)
+            }
         } finally {
             if (originalReportDir == null) {
                 System.clearProperty("ktome.phase4.aggregate.reportDir")
@@ -74,14 +76,14 @@ class Phase4AggregationInputRunnerTest {
     @Tag("reportPhase4Fixture")
     @Tag("phase4AggregationInput")
     fun `terminal build baseline change only regenerates longrun aggregation input`() {
-        val repoRoot = VerificationCacheSupport.repoRoot()
+        val fixtureRepoRoot = Phase4ReportFixtureTestSupport.preparePhase4RepoFixture(tempDir)
         val originalReportDir = System.getProperty("ktome.phase4.aggregate.reportDir")
         val originalBaselineOverride = System.getProperty("ktome.phase4.ownerBaselineOverride.longRunLab")
         val tempReportDir = Files.createTempDirectory("ktome-phase4-aggregation-baseline-test")
         val terminalBuildBaselineCopy = tempReportDir.resolve("phase4-terminal-build-baseline.json")
         val criticalPathPacingBaselineCopy = tempReportDir.resolve("phase4-critical-path-pacing-baseline.json")
-        Files.copy(repoRoot.resolve(Phase4OwnerBaselineRegistry.TERMINAL_BUILD_BASELINE_RELATIVE_PATH), terminalBuildBaselineCopy)
-        Files.copy(repoRoot.resolve(Phase4OwnerBaselineRegistry.CRITICAL_PATH_PACING_BASELINE_RELATIVE_PATH), criticalPathPacingBaselineCopy)
+        Files.copy(fixtureRepoRoot.resolve(Phase4OwnerBaselineRegistry.TERMINAL_BUILD_BASELINE_RELATIVE_PATH), terminalBuildBaselineCopy)
+        Files.copy(fixtureRepoRoot.resolve(Phase4OwnerBaselineRegistry.CRITICAL_PATH_PACING_BASELINE_RELATIVE_PATH), criticalPathPacingBaselineCopy)
         try {
             System.setProperty("ktome.phase4.aggregate.reportDir", tempReportDir.toString())
             System.setProperty(
@@ -90,34 +92,35 @@ class Phase4AggregationInputRunnerTest {
                     path.toString()
                 },
             )
+            Phase4ReportFixtureTestSupport.withFixtureProperties(repoRoot = fixtureRepoRoot, aggregateReportDir = tempReportDir) {
+                val firstRun = Phase4AggregationInputRunner.materialize()
+                val firstLongRunPayload =
+                    Json.parseToJsonElement(Files.readString(firstRun.inputDir.resolve("longRunLab.json"))).jsonObject
+                val firstLongRunMetadata = firstLongRunPayload.getValue("renderResult").jsonObject.getValue("metadata").jsonObject
+                val firstLongRunFingerprint = firstLongRunMetadata.getValue("sourceArtifactFingerprint").jsonPrimitive.content
 
-            val firstRun = Phase4AggregationInputRunner.materialize()
-            val firstLongRunPayload =
-                Json.parseToJsonElement(Files.readString(firstRun.inputDir.resolve("longRunLab.json"))).jsonObject
-            val firstLongRunMetadata = firstLongRunPayload.getValue("renderResult").jsonObject.getValue("metadata").jsonObject
-            val firstLongRunFingerprint = firstLongRunMetadata.getValue("sourceArtifactFingerprint").jsonPrimitive.content
+                Phase4OwnerBaselineTestSupport.stampBaselineMetadata(
+                    terminalBuildBaselineCopy,
+                    marker = "report-only-longrun-terminal-build-baseline",
+                )
 
-            Phase4OwnerBaselineTestSupport.stampBaselineMetadata(
-                terminalBuildBaselineCopy,
-                marker = "report-only-longrun-terminal-build-baseline",
-            )
+                val secondRun = Phase4AggregationInputRunner.materialize()
+                val secondLongRunPayload =
+                    Json.parseToJsonElement(Files.readString(secondRun.inputDir.resolve("longRunLab.json"))).jsonObject
+                val secondLongRunMetadata = secondLongRunPayload.getValue("renderResult").jsonObject.getValue("metadata").jsonObject
+                val secondLootPayload =
+                    Json.parseToJsonElement(Files.readString(secondRun.inputDir.resolve("whiteBoxLoot.json"))).jsonObject
+                val secondLootMetadata = secondLootPayload.getValue("renderResult").jsonObject.getValue("metadata").jsonObject
 
-            val secondRun = Phase4AggregationInputRunner.materialize()
-            val secondLongRunPayload =
-                Json.parseToJsonElement(Files.readString(secondRun.inputDir.resolve("longRunLab.json"))).jsonObject
-            val secondLongRunMetadata = secondLongRunPayload.getValue("renderResult").jsonObject.getValue("metadata").jsonObject
-            val secondLootPayload =
-                Json.parseToJsonElement(Files.readString(secondRun.inputDir.resolve("whiteBoxLoot.json"))).jsonObject
-            val secondLootMetadata = secondLootPayload.getValue("renderResult").jsonObject.getValue("metadata").jsonObject
-
-            assertEquals(14, secondRun.summary.inputCount)
-            assertEquals(13, secondRun.summary.reusedInputCount)
-            assertEquals(1, secondRun.summary.regeneratedInputCount)
-            assertEquals("MISS", secondLongRunMetadata.getValue("cacheStatus").jsonPrimitive.content)
-            assertEquals("baseline-changed", secondLongRunMetadata.getValue("invalidationReason").jsonPrimitive.content)
-            assertEquals(firstLongRunFingerprint, secondLongRunMetadata.getValue("sourceArtifactFingerprint").jsonPrimitive.content)
-            assertEquals("HIT", secondLootMetadata.getValue("cacheStatus").jsonPrimitive.content)
-            assertEquals("true", secondLootMetadata.getValue("artifactReused").jsonPrimitive.content)
+                assertEquals(14, secondRun.summary.inputCount)
+                assertEquals(13, secondRun.summary.reusedInputCount)
+                assertEquals(1, secondRun.summary.regeneratedInputCount)
+                assertEquals("MISS", secondLongRunMetadata.getValue("cacheStatus").jsonPrimitive.content)
+                assertEquals("baseline-changed", secondLongRunMetadata.getValue("invalidationReason").jsonPrimitive.content)
+                assertEquals(firstLongRunFingerprint, secondLongRunMetadata.getValue("sourceArtifactFingerprint").jsonPrimitive.content)
+                assertEquals("HIT", secondLootMetadata.getValue("cacheStatus").jsonPrimitive.content)
+                assertEquals("true", secondLootMetadata.getValue("artifactReused").jsonPrimitive.content)
+            }
         } finally {
             if (originalReportDir == null) {
                 System.clearProperty("ktome.phase4.aggregate.reportDir")
@@ -136,14 +139,14 @@ class Phase4AggregationInputRunnerTest {
     @Tag("reportPhase4Fixture")
     @Tag("phase4AggregationInput")
     fun `critical path pacing baseline change only regenerates longrun aggregation input`() {
-        val repoRoot = VerificationCacheSupport.repoRoot()
+        val fixtureRepoRoot = Phase4ReportFixtureTestSupport.preparePhase4RepoFixture(tempDir)
         val originalReportDir = System.getProperty("ktome.phase4.aggregate.reportDir")
         val originalBaselineOverride = System.getProperty("ktome.phase4.ownerBaselineOverride.longRunLab")
         val tempReportDir = Files.createTempDirectory("ktome-phase4-aggregation-critical-path-baseline-test")
         val terminalBuildBaselineCopy = tempReportDir.resolve("phase4-terminal-build-baseline.json")
         val criticalPathPacingBaselineCopy = tempReportDir.resolve("phase4-critical-path-pacing-baseline.json")
-        Files.copy(repoRoot.resolve(Phase4OwnerBaselineRegistry.TERMINAL_BUILD_BASELINE_RELATIVE_PATH), terminalBuildBaselineCopy)
-        Files.copy(repoRoot.resolve(Phase4OwnerBaselineRegistry.CRITICAL_PATH_PACING_BASELINE_RELATIVE_PATH), criticalPathPacingBaselineCopy)
+        Files.copy(fixtureRepoRoot.resolve(Phase4OwnerBaselineRegistry.TERMINAL_BUILD_BASELINE_RELATIVE_PATH), terminalBuildBaselineCopy)
+        Files.copy(fixtureRepoRoot.resolve(Phase4OwnerBaselineRegistry.CRITICAL_PATH_PACING_BASELINE_RELATIVE_PATH), criticalPathPacingBaselineCopy)
         try {
             System.setProperty("ktome.phase4.aggregate.reportDir", tempReportDir.toString())
             System.setProperty(
@@ -152,28 +155,29 @@ class Phase4AggregationInputRunnerTest {
                     path.toString()
                 },
             )
+            Phase4ReportFixtureTestSupport.withFixtureProperties(repoRoot = fixtureRepoRoot, aggregateReportDir = tempReportDir) {
+                Phase4AggregationInputRunner.materialize()
+                Phase4OwnerBaselineTestSupport.stampBaselineMetadata(
+                    criticalPathPacingBaselineCopy,
+                    marker = "report-only-longrun-critical-path-baseline",
+                )
 
-            Phase4AggregationInputRunner.materialize()
-            Phase4OwnerBaselineTestSupport.stampBaselineMetadata(
-                criticalPathPacingBaselineCopy,
-                marker = "report-only-longrun-critical-path-baseline",
-            )
+                val secondRun = Phase4AggregationInputRunner.materialize()
+                val secondLongRunPayload =
+                    Json.parseToJsonElement(Files.readString(secondRun.inputDir.resolve("longRunLab.json"))).jsonObject
+                val secondLongRunMetadata = secondLongRunPayload.getValue("renderResult").jsonObject.getValue("metadata").jsonObject
+                val secondLootPayload =
+                    Json.parseToJsonElement(Files.readString(secondRun.inputDir.resolve("whiteBoxLoot.json"))).jsonObject
+                val secondLootMetadata = secondLootPayload.getValue("renderResult").jsonObject.getValue("metadata").jsonObject
 
-            val secondRun = Phase4AggregationInputRunner.materialize()
-            val secondLongRunPayload =
-                Json.parseToJsonElement(Files.readString(secondRun.inputDir.resolve("longRunLab.json"))).jsonObject
-            val secondLongRunMetadata = secondLongRunPayload.getValue("renderResult").jsonObject.getValue("metadata").jsonObject
-            val secondLootPayload =
-                Json.parseToJsonElement(Files.readString(secondRun.inputDir.resolve("whiteBoxLoot.json"))).jsonObject
-            val secondLootMetadata = secondLootPayload.getValue("renderResult").jsonObject.getValue("metadata").jsonObject
-
-            assertEquals(14, secondRun.summary.inputCount)
-            assertEquals(13, secondRun.summary.reusedInputCount)
-            assertEquals(1, secondRun.summary.regeneratedInputCount)
-            assertEquals("MISS", secondLongRunMetadata.getValue("cacheStatus").jsonPrimitive.content)
-            assertEquals("baseline-changed", secondLongRunMetadata.getValue("invalidationReason").jsonPrimitive.content)
-            assertEquals("HIT", secondLootMetadata.getValue("cacheStatus").jsonPrimitive.content)
-            assertEquals("true", secondLootMetadata.getValue("artifactReused").jsonPrimitive.content)
+                assertEquals(14, secondRun.summary.inputCount)
+                assertEquals(13, secondRun.summary.reusedInputCount)
+                assertEquals(1, secondRun.summary.regeneratedInputCount)
+                assertEquals("MISS", secondLongRunMetadata.getValue("cacheStatus").jsonPrimitive.content)
+                assertEquals("baseline-changed", secondLongRunMetadata.getValue("invalidationReason").jsonPrimitive.content)
+                assertEquals("HIT", secondLootMetadata.getValue("cacheStatus").jsonPrimitive.content)
+                assertEquals("true", secondLootMetadata.getValue("artifactReused").jsonPrimitive.content)
+            }
         } finally {
             if (originalReportDir == null) {
                 System.clearProperty("ktome.phase4.aggregate.reportDir")
@@ -244,6 +248,233 @@ class Phase4AggregationInputRunnerTest {
     @Test
     @Tag("reportPhase4Fixture")
     @Tag("phase4AggregationInput")
+    fun `whitebox loot duplicate family mismatch also falls back to recomputed local reward identity evaluation`() {
+        val fixtureRepoRoot = Phase4ReportFixtureTestSupport.preparePhase4RepoFixture(tempDir)
+        Phase4ReportFixtureTestSupport.mutateWhiteBoxLootCorpusMetrics(fixtureRepoRoot) { metrics ->
+            Phase4ReportFixtureTestSupport.replaceMetricsFields(
+                metrics = metrics,
+                replacements =
+                    mapOf(
+                        "specialTierPassiveFamilyDuplicateCount" to JsonPrimitive(1),
+                        "specialTierPassiveFamilyDuplicateSummary" to
+                            buildJsonObject {
+                                put("duplicateFamilyCount", JsonPrimitive(1))
+                                put("duplicatedZoneCount", JsonPrimitive(1))
+                                put(
+                                    "zones",
+                                    buildJsonArray {
+                                        add(
+                                            buildJsonObject {
+                                                put("canonicalZoneId", JsonPrimitive("deep_iron_pit"))
+                                                put("duplicateFamilies", buildJsonArray { add(JsonPrimitive("OnKillResourceRestore")) })
+                                            },
+                                        )
+                                    },
+                                )
+                            },
+                    ),
+            )
+        }
+
+        Phase4ReportFixtureTestSupport.withFixtureProperties(
+            repoRoot = fixtureRepoRoot,
+            aggregateReportDir = tempDir.resolve("phase4-aggregation-duplicate-family-fallback"),
+        ) {
+            val run = Phase4AggregationInputRunner.materialize()
+            val lootPayload =
+                Json.parseToJsonElement(Files.readString(run.inputDir.resolve("whiteBoxLoot.json"))).jsonObject
+            val lootEvaluation =
+                lootPayload.getValue("evaluationResults").jsonArray
+                    .first { evaluation -> evaluation.jsonObject.getValue("evaluationId").jsonPrimitive.content == "loot.localRewardIdentity" }
+                    .jsonObject
+            val duplicateEntry =
+                lootEvaluation.getValue("entries").jsonArray
+                    .first { entry -> entry.jsonObject.getValue("metricId").jsonPrimitive.content == "specialTierPassiveFamilyDuplicateCount" }
+                    .jsonObject
+
+            assertEquals("FAIL", lootEvaluation.getValue("verdict").jsonPrimitive.content)
+            assertEquals("UNEXPECTED_REGRESSION", duplicateEntry.getValue("status").jsonPrimitive.content)
+            assertTrue(duplicateEntry.getValue("note").jsonPrimitive.content.contains("duplicatedZones=1"))
+        }
+    }
+
+    @Test
+    @Tag("reportPhase4Fixture")
+    @Tag("phase4AggregationInput")
+    fun `terminal build evaluation fails when per profession capstone floors collapse`() {
+        val fixtureRepoRoot = Phase4ReportFixtureTestSupport.preparePhase4RepoFixture(tempDir)
+        val terminalBuildBaselinePath =
+            fixtureRepoRoot.resolve(Phase4OwnerBaselineRegistry.TERMINAL_BUILD_BASELINE_RELATIVE_PATH)
+        Phase4OwnerBaselineTestSupport.replaceExpectedMetricRange(
+            path = terminalBuildBaselinePath,
+            metricId = "professionCapstoneSeenRate",
+            replacement =
+                buildJsonObject {
+                    put("metricId", JsonPrimitive("professionCapstoneSeenRate"))
+                    put("minValue", JsonPrimitive(0.25))
+                    put("notes", JsonPrimitive("Profession capstone visibility must stay above the PR-02 floor and cover every profession."))
+                    put(
+                        "metadata",
+                        buildJsonObject {
+                            put("perProfessionSeenMinCount", JsonPrimitive(1))
+                        },
+                    )
+                },
+        )
+        Phase4OwnerBaselineTestSupport.replaceExpectedMetricRange(
+            path = terminalBuildBaselinePath,
+            metricId = "nonWeaponBuildPayoffRate",
+            replacement =
+                buildJsonObject {
+                    put("metricId", JsonPrimitive("nonWeaponBuildPayoffRate"))
+                    put("minValue", JsonPrimitive(0.25))
+                    put("notes", JsonPrimitive("Non-weapon capstone payoff must be materially adopted in full-route runs."))
+                },
+        )
+        Phase4ReportFixtureTestSupport.mutateLongRunSummary(fixtureRepoRoot) { payload ->
+            buildJsonObject {
+                payload.forEach { (key, value) ->
+                    when (key) {
+                        "professionCapstoneSeenRate" -> put(key, JsonPrimitive(0.25))
+                        "professionCapstoneAdoptionRate" -> put(key, JsonPrimitive(0.0))
+                        "nonWeaponBuildPayoffRate" -> put(key, JsonPrimitive(0.0))
+                        "professionCapstoneBreakdown" ->
+                            put(
+                                key,
+                                buildJsonObject {
+                                    put(
+                                        "arcanist",
+                                        buildJsonObject {
+                                            put("sampleCount", JsonPrimitive(3))
+                                            put("seenCount", JsonPrimitive(0))
+                                            put("adoptedCount", JsonPrimitive(0))
+                                            put("nonWeaponPayoffCount", JsonPrimitive(0))
+                                            put("seenItems", buildJsonObject {})
+                                            put("adoptedItems", buildJsonObject {})
+                                            put("nonWeaponPayoffItems", buildJsonObject {})
+                                        },
+                                    )
+                                    put(
+                                        "rogue",
+                                        buildJsonObject {
+                                            put("sampleCount", JsonPrimitive(3))
+                                            put("seenCount", JsonPrimitive(1))
+                                            put("adoptedCount", JsonPrimitive(0))
+                                            put("nonWeaponPayoffCount", JsonPrimitive(0))
+                                            put(
+                                                "seenItems",
+                                                buildJsonObject {
+                                                    put("unique_thornpath_crook", JsonPrimitive(1))
+                                                },
+                                            )
+                                            put("adoptedItems", buildJsonObject {})
+                                            put("nonWeaponPayoffItems", buildJsonObject {})
+                                        },
+                                    )
+                                    put(
+                                        "templar",
+                                        buildJsonObject {
+                                            put("sampleCount", JsonPrimitive(3))
+                                            put("seenCount", JsonPrimitive(1))
+                                            put("adoptedCount", JsonPrimitive(0))
+                                            put("nonWeaponPayoffCount", JsonPrimitive(0))
+                                            put(
+                                                "seenItems",
+                                                buildJsonObject {
+                                                    put("unique_vesper_chainmail", JsonPrimitive(1))
+                                                },
+                                            )
+                                            put("adoptedItems", buildJsonObject {})
+                                            put("nonWeaponPayoffItems", buildJsonObject {})
+                                        },
+                                    )
+                                    put(
+                                        "vanguard",
+                                        buildJsonObject {
+                                            put("sampleCount", JsonPrimitive(3))
+                                            put("seenCount", JsonPrimitive(1))
+                                            put("adoptedCount", JsonPrimitive(0))
+                                            put("nonWeaponPayoffCount", JsonPrimitive(0))
+                                            put(
+                                                "seenItems",
+                                                buildJsonObject {
+                                                    put("unique_furnace_plate", JsonPrimitive(1))
+                                                },
+                                            )
+                                            put("adoptedItems", buildJsonObject {})
+                                            put("nonWeaponPayoffItems", buildJsonObject {})
+                                        },
+                                    )
+                                },
+                            )
+                        else -> put(key, value)
+                    }
+                }
+            }
+        }
+
+        Phase4ReportFixtureTestSupport.withFixtureProperties(
+            repoRoot = fixtureRepoRoot,
+            aggregateReportDir = tempDir.resolve("phase4-aggregation-terminal-build-regression"),
+        ) {
+            val run = Phase4AggregationInputRunner.materialize()
+            val longRunPayload =
+                Json.parseToJsonElement(Files.readString(run.inputDir.resolve("longRunLab.json"))).jsonObject
+            val terminalBuildEvaluation =
+                longRunPayload.getValue("evaluationResults").jsonArray
+                    .first { evaluation -> evaluation.jsonObject.getValue("evaluationId").jsonPrimitive.content == "longrun.terminalBuildIdentity" }
+                    .jsonObject
+            val seenEntry =
+                terminalBuildEvaluation.getValue("entries").jsonArray
+                    .first { entry -> entry.jsonObject.getValue("metricId").jsonPrimitive.content == "professionCapstoneSeenRate" }
+                    .jsonObject
+            val adoptionEntry =
+                terminalBuildEvaluation.getValue("entries").jsonArray
+                    .first { entry -> entry.jsonObject.getValue("metricId").jsonPrimitive.content == "professionCapstoneAdoptionRate" }
+                    .jsonObject
+            val nonWeaponEntry =
+                terminalBuildEvaluation.getValue("entries").jsonArray
+                    .first { entry -> entry.jsonObject.getValue("metricId").jsonPrimitive.content == "nonWeaponBuildPayoffRate" }
+                    .jsonObject
+
+            assertEquals("FAIL", terminalBuildEvaluation.getValue("verdict").jsonPrimitive.content)
+            assertEquals("UNEXPECTED_REGRESSION", seenEntry.getValue("status").jsonPrimitive.content)
+            assertEquals("UNEXPECTED_REGRESSION", adoptionEntry.getValue("status").jsonPrimitive.content)
+            assertEquals("UNEXPECTED_REGRESSION", nonWeaponEntry.getValue("status").jsonPrimitive.content)
+            assertTrue(seenEntry.getValue("note").jsonPrimitive.content.contains("arcanist"))
+        }
+    }
+
+    @Test
+    @Tag("reportPhase4Fixture")
+    @Tag("phase4AggregationInput")
+    fun `phase4 aggregation fails fast when longrun capstone metrics are missing from artifact`() {
+        val fixtureRepoRoot = Phase4ReportFixtureTestSupport.preparePhase4RepoFixture(tempDir)
+        Phase4ReportFixtureTestSupport.mutateLongRunSummary(fixtureRepoRoot) { payload ->
+            buildJsonObject {
+                payload.forEach { (key, value) ->
+                    if (key != "professionCapstoneSeenRate") {
+                        put(key, value)
+                    }
+                }
+            }
+        }
+
+        Phase4ReportFixtureTestSupport.withFixtureProperties(
+            repoRoot = fixtureRepoRoot,
+            aggregateReportDir = tempDir.resolve("phase4-aggregation-missing-capstone-metric"),
+        ) {
+            val error =
+                assertThrows(IllegalStateException::class.java) {
+                    Phase4AggregationInputRunner.materialize()
+                }
+            assertTrue(error.message.orEmpty().contains("longRunLab.professionCapstoneSeenRate"))
+        }
+    }
+
+    @Test
+    @Tag("reportPhase4Fixture")
+    @Tag("phase4AggregationInput")
     fun `phase4 aggregation input v6 stores compact pacing details from shared evaluator`() {
         val fixtureRepoRoot = Phase4ReportFixtureTestSupport.preparePhase4RepoFixture(tempDir)
 
@@ -266,7 +497,7 @@ class Phase4AggregationInputRunnerTest {
                     .jsonObject
             val objectiveDetails = objectiveEntry.getValue("details").jsonObject
 
-            assertEquals("phase4-aggregation-input-v7", summary.getValue("contractVersion").jsonPrimitive.content)
+            assertEquals("phase4-aggregation-input-v8", summary.getValue("contractVersion").jsonPrimitive.content)
             assertEquals("criticalPathPacing", objectiveDetails.getValue("sectionRef").jsonPrimitive.content)
             assertEquals("minimum", objectiveDetails.getValue("metricKind").jsonPrimitive.content)
             assertFalse(objectiveDetails.containsKey("fullRouteZoneTraversalDiagnostics"))

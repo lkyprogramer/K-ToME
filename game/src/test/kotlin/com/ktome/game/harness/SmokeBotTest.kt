@@ -235,6 +235,45 @@ class SmokeBotTest {
     }
 
     @Test
+    fun `mana bot does not treat non capstone staff as profession anchor`() {
+        val observation =
+            observation(
+                inventoryItems =
+                    listOf(
+                        InventoryItemView(
+                            index = 0,
+                            name = "Arcane Staff",
+                            baseItemId = "arcane_staff",
+                            type = ItemType.WEAPON,
+                            slot = EquipSlot.WEAPON,
+                            equippedSlot = EquipSlot.WEAPON,
+                            quality = RarityTier.NORMAL,
+                        ),
+                        InventoryItemView(
+                            index = 1,
+                            name = "Tideglass Staff",
+                            baseItemId = "unique_tideglass_staff",
+                            type = ItemType.WEAPON,
+                            slot = EquipSlot.WEAPON,
+                            quality = RarityTier.NORMAL,
+                        ),
+                    ),
+                playerStatus = healthyStatus(),
+                playerResource = PlayerResourceView(current = 60, max = 100, typeId = "MANA"),
+                visibleTiles = longCorridorMap.floorPoints().toSet(),
+                exploredTiles = longCorridorMap.floorPoints().toSet(),
+                map = longCorridorMap,
+                playerPosition = Point(4, 0),
+                knownDownstairsPositions = listOf(Point(0, 0)),
+            )
+
+        assertTrue(
+            bot.decide(observation) != PlayerCommand.ActivateInventoryItem(1),
+            "SmokeBot should only anchor on tagged profession capstones, not on untagged themed weapons.",
+        )
+    }
+
+    @Test
     fun `hate build does not auto equip a low value off hand into an empty slot`() {
         val observation =
             observation(

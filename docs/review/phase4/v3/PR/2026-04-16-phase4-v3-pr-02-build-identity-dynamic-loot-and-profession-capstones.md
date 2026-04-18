@@ -33,8 +33,13 @@
    - `professionTerminalWeaponDistribution`
    - `crossProfessionTopWeaponDominance`
    - `dynamicPoolCoverage`
+   - `dynamicPoolTargetProfiles`
+   - `specialTierPassiveFamilyDuplicateCount`
+   - `specialTierPassiveFamilyDuplicateSummary`
    - `professionCapstoneSeenRate`
+   - `professionCapstoneAdoptionRate`
    - `nonWeaponBuildPayoffRate`
+   - `professionCapstoneBreakdown`
 
 ## 1. 阶段目标
 
@@ -157,6 +162,32 @@ run 后半段缺一个明确的“我要追这件装备”的目标，导致成�
 2. 同区 passive family 去重
 3. 拾取瞬间前台明确“这是一件职业锚点”
 
+### 6.5 owner metric 定义冻结
+
+本 PR 涉及的新增 / 强化 owner metric，口径必须写死，不能只留在 report note：
+
+1. `professionCapstoneSeenRate`
+   - 公式：`fullRoute runs with at least one profession capstone seen / fullRouteCount`
+   - 数据源：`long-run-full.json` 中的 milestone reward summary
+   - owner：`longRunLab`
+   - 阈值：使用 terminal-build baseline，并且 `professionCapstoneBreakdown` 必须参与每个基础职业的 seen floor 判定
+2. `professionCapstoneAdoptionRate`
+   - 公式：`fullRoute runs adopting at least one profession capstone / fullRouteCount`
+   - 数据源：与 `professionCapstoneSeenRate` 相同的 milestone reward summary
+   - owner：`longRunLab`
+   - 阈值：使用 terminal-build baseline；它与 `professionCapstoneSeenRate` 是两个独立 metric，不得合并成单一“seen/adoption”描述
+3. `nonWeaponBuildPayoffRate`
+   - 公式：`fullRoute runs adopting a non-weapon profession capstone / fullRouteCount`
+   - 数据源：与 `professionCapstoneSeenRate` 相同的 profession capstone breakdown
+   - owner：`longRunLab`
+   - 阈值：使用 terminal-build baseline 的正式最小值，不允许再接受 `0.0%` 通过
+4. `specialTierPassiveFamilyDuplicateCount`
+   - 公式：`count(same-zone duplicate passive families across unique/artifact templates)`
+   - 数据源：`whiteBoxLoot` corpus 对官方 unique / artifact template 池的聚合
+   - owner：`whiteBoxLoot`
+   - 阈值：`0`
+   - 语义：这是 design-time owner metric，经 canonical report 投影为正式证据；它不是运行时玩家行为 telemetry
+
 ## 7. 推荐改动面
 
 1. `game/src/main/resources/data/loot/index.yaml`
@@ -189,12 +220,15 @@ run 后半段缺一个明确的“我要追这件装备”的目标，导致成�
 - **目标**: 让玩家在 30 分钟后有明确追逐目标
 - **验收**:
   - 每个基础职业至少 2 个 capstone 可被看到
-  - `professionCapstoneSeenRate / AdoptionRate` 可统计
+  - `professionCapstoneSeenRate` 与 `professionCapstoneAdoptionRate` 为两个独立正式 owner metric
+  - `professionCapstoneSeenRate` 需要按 `professionCapstoneBreakdown` 对每个基础职业执行最小 seen floor，而不是只看 aggregate
 
 ### Task 4：special-tier identity owner metric
 
 - **目标**: 避免 special-tier 继续只是“更好的通用组合”
 - **验收**:
+  - `specialTierPassiveFamilyDuplicateCount = 0`
+  - canonical evidence 必须显式保留 `specialTierPassiveFamilyDuplicateSummary`
   - 同区 special-tier passive kind 重复率下降
   - 拾取后玩法转向率可观察
 

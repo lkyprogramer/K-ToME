@@ -25,13 +25,14 @@ internal data class Phase4TaskAggregate(
     val metrics: JsonObject,
 )
 
-private val contentPackArtifactMaxSkew: Duration = Duration.ofMinutes(30)
 private val longRunItemSemanticTagsById: Map<String, List<String>> by lazy {
     DataLoader()
         .loadItemBundle()
         .baseItems
         .associate { item -> item.id to item.tags.sorted() }
 }
+
+private val contentPackArtifactFreshnessTolerance: Duration = Duration.ofMinutes(1)
 
 internal object Phase4DomainArtifactRegistry {
     private val taskReadersById: Map<String, (repoRoot: Path, sourcePath: Path, payload: JsonObject) -> Phase4TaskAggregate> =
@@ -309,6 +310,10 @@ internal object Phase4DomainArtifactRegistry {
     ): Phase4TaskAggregate {
         val fullRouteCount = payload.intValue("fullRouteCount")
         val professionTerminalWeaponDistribution = payload.getValue("professionTerminalWeaponDistribution")
+        val professionCapstoneSeenRate = payload.requireArtifactMetric("longRunLab", "professionCapstoneSeenRate")
+        val professionCapstoneAdoptionRate = payload.requireArtifactMetric("longRunLab", "professionCapstoneAdoptionRate")
+        val nonWeaponBuildPayoffRate = payload.requireArtifactMetric("longRunLab", "nonWeaponBuildPayoffRate")
+        val professionCapstoneBreakdown = payload.requireArtifactMetric("longRunLab", "professionCapstoneBreakdown")
         val professionTopWeaponBaseIds =
             payload["professionTopWeaponBaseIds"] ?: deriveProfessionTopWeaponBaseIds(professionTerminalWeaponDistribution.jsonObject)
         val professionTopWeaponSemanticTags =
@@ -331,12 +336,16 @@ internal object Phase4DomainArtifactRegistry {
                     put("terminalWeaponBaseDiversity", payload.intValue("terminalWeaponBaseDiversity"))
                     put("crossProfessionTopWeaponDominance", payload.doubleValue("crossProfessionTopWeaponDominance"))
                     put("professionAlignedWeaponAdoptionRate", payload.doubleValue("professionAlignedWeaponAdoptionRate"))
+                    put("professionCapstoneSeenRate", professionCapstoneSeenRate)
+                    put("professionCapstoneAdoptionRate", professionCapstoneAdoptionRate)
+                    put("nonWeaponBuildPayoffRate", nonWeaponBuildPayoffRate)
                     put("alignedFullRouteSampleCount", payload.intValue("alignedFullRouteSampleCount"))
                     put("crossProfessionTopWeaponCount", payload.intValue("crossProfessionTopWeaponCount"))
                     payload["crossProfessionTopWeaponBaseId"]?.let { topWeaponBaseId -> put("crossProfessionTopWeaponBaseId", topWeaponBaseId) }
                     put("professionTerminalWeaponDistribution", professionTerminalWeaponDistribution)
                     put("professionTopWeaponBaseIds", professionTopWeaponBaseIds)
                     put("professionTopWeaponSemanticTags", professionTopWeaponSemanticTags)
+                    put("professionCapstoneBreakdown", professionCapstoneBreakdown)
                     put("fullRouteZoneTraversalDiagnostics", fullRouteZoneTraversalDiagnostics)
                     put("criticalPathZoneIds", criticalPathZoneIds)
                     put("criticalPathZoneDesignAudit", criticalPathZoneDesignAudit)
@@ -491,12 +500,11 @@ internal object Phase4DomainArtifactRegistry {
         val summary = payload.getValue("summary").jsonObject
         val whiteBoxSourcePath = repoRoot.resolve("tools/build/reports/phase4/whitebox/content-pack/whitebox-content-pack-summary.json")
         val whiteBoxPayload = readPhase4Json(whiteBoxSourcePath)
-        requireFreshnessAligned(
+        requireContentPackArtifactsSemanticallyAligned(
             primaryPath = sourcePath,
             primaryPayload = payload,
             secondaryPath = whiteBoxSourcePath,
             secondaryPayload = whiteBoxPayload,
-            maxSkew = contentPackArtifactMaxSkew,
         )
         val whiteBoxSummary = whiteBoxPayload.getValue("summary").jsonObject
         val whiteBoxFailedAssertions = whiteBoxSummary.intValue("failedAssertions")
@@ -574,11 +582,19 @@ internal object Phase4DomainArtifactRegistry {
                     put("strictLocalIdentityViolationCount", corpusMetrics.getValue("strictLocalIdentityViolationCount"))
                     put("strictLocalIdentityViolations", corpusMetrics.getValue("strictLocalIdentityViolations"))
                     put("secretProfileIdentitySummaries", validatedSecretProfileIdentitySummaries(corpusMetrics.getValue("secretProfileIdentitySummaries").jsonArray))
+                    put("dynamicPoolCoverage", corpusMetrics.requireArtifactMetric("whiteBoxLoot", "dynamicPoolCoverage"))
+                    putJsonArray("dynamicPoolTargetProfiles") {
+                        corpusMetrics.requireArtifactMetric("whiteBoxLoot", "dynamicPoolTargetProfiles").jsonArray.forEach { targetProfile ->
+                            add(targetProfile)
+                        }
+                    }
                     put("affixPassiveCoverage", corpusMetrics.getValue("affixPassiveCoverage"))
                     put("affixPassiveKinds", corpusMetrics.getValue("affixPassiveKinds"))
                     put("uniqueArtifactOutcomeCount", corpusMetrics.getValue("uniqueArtifactOutcomeCount"))
                     put("meaningfulUniqueArtifactSwapCount", corpusMetrics.getValue("meaningfulUniqueArtifactSwapCount"))
                     put("uniqueArtifactMeaningfulSwapRate", corpusMetrics.getValue("uniqueArtifactMeaningfulSwapRate"))
+                    put("specialTierPassiveFamilyDuplicateSummary", corpusMetrics.requireArtifactMetric("whiteBoxLoot", "specialTierPassiveFamilyDuplicateSummary"))
+                    put("specialTierPassiveFamilyDuplicateCount", corpusMetrics.requireArtifactMetric("whiteBoxLoot", "specialTierPassiveFamilyDuplicateCount"))
                 },
         )
     }
@@ -697,29 +713,92 @@ private fun aggregateMetrics(
         .getValue("metrics")
         .jsonObject
 
-private fun requireFreshnessAligned(
+private fun JsonObject.requireArtifactMetric(
+    taskId: String,
+    key: String,
+): JsonElement =
+    get(key)
+        ?: error("Phase4 canonical aggregate requires $taskId.$key in the producer artifact; fix the source report instead of recomputing it locally.")
+
+internal fun requireContentPackArtifactsSemanticallyAligned(
     primaryPath: Path,
     primaryPayload: JsonObject,
     secondaryPath: Path,
     secondaryPayload: JsonObject,
-    maxSkew: Duration,
 ) {
     val primaryBuildId = reportBuildId(primaryPayload)
     val secondaryBuildId = reportBuildId(secondaryPayload)
     check(primaryBuildId == secondaryBuildId) {
         "Mismatched content-pack artifact buildIds: $primaryPath ($primaryBuildId) vs $secondaryPath ($secondaryBuildId)."
     }
-    val primaryTimestamp = reportTimestamp(primaryPayload)
-    val secondaryTimestamp = reportTimestamp(secondaryPayload)
-    val skew = Duration.between(primaryTimestamp, secondaryTimestamp).abs()
-    check(skew <= maxSkew) {
-        "Stale content-pack artifacts: $primaryPath ($primaryBuildId @ $primaryTimestamp) vs $secondaryPath ($secondaryBuildId @ $secondaryTimestamp), skew=${skew.toMinutes()}m exceeds ${maxSkew.toMinutes()}m."
+    val primaryTimestamp = Instant.parse(reportTimestamp(primaryPayload))
+    val secondaryTimestamp = Instant.parse(reportTimestamp(secondaryPayload))
+    val freshnessDelta = Duration.between(primaryTimestamp, secondaryTimestamp).abs()
+    check(freshnessDelta <= contentPackArtifactFreshnessTolerance) {
+        "Mismatched content-pack artifact freshness: $primaryPath ($primaryTimestamp) vs $secondaryPath ($secondaryTimestamp), " +
+            "delta=${freshnessDelta.seconds}s exceeds ${contentPackArtifactFreshnessTolerance.seconds}s. " +
+            "Fix the producer pair instead of mixing stale and fresh content-pack artifacts."
+    }
+    val primarySignature = contentPackArtifactSemanticSignature(primaryPayload)
+    val secondarySignature = contentPackArtifactSemanticSignature(secondaryPayload)
+    check(primarySignature == secondarySignature) {
+        "Misaligned content-pack artifacts: $primaryPath ($primaryBuildId) vs $secondaryPath ($secondaryBuildId). " +
+            "primarySignature=$primarySignature secondarySignature=$secondarySignature"
     }
 }
 
 private fun reportBuildId(payload: JsonObject): String = payload.getValue("header").jsonObject.stringValue("buildId")
 
-private fun reportTimestamp(payload: JsonObject): Instant = Instant.parse(payload.getValue("header").jsonObject.stringValue("timestamp"))
+private fun reportTimestamp(payload: JsonObject): String = payload.getValue("header").jsonObject.stringValue("timestamp")
+
+internal fun contentPackArtifactSemanticSignature(payload: JsonObject): JsonObject {
+    val header = payload.getValue("header").jsonObject
+    return buildJsonObject {
+        put("phaseId", JsonPrimitive(header.stringValue("phaseId")))
+        header.optionalStringValue("locale")?.let { locale -> put("locale", JsonPrimitive(locale)) }
+        putJsonArray("activePackIds") {
+            header.getValue("activePackIds").jsonArray
+                .map { value -> value.jsonPrimitive.content }
+                .sorted()
+                .forEach { packId -> add(JsonPrimitive(packId)) }
+        }
+        putJsonObject("activePackManifestVersions") {
+            header.getValue("activePackManifestVersions").jsonObject.entries
+                .sortedBy(Map.Entry<String, JsonElement>::key)
+                .forEach { (packId, manifestVersion) -> put(packId, JsonPrimitive(manifestVersion.jsonPrimitive.content)) }
+        }
+        putJsonArray("seedList") {
+            header.getValue("seedList").jsonArray
+                .map { value -> value.jsonPrimitive.content }
+                .sorted()
+                .forEach { seed -> add(JsonPrimitive(seed)) }
+        }
+        put("contractVersions", contentPackContractVersionSignature(header))
+    }
+}
+
+internal fun contentPackContractVersionSignature(header: JsonObject): JsonObject =
+    if (header.containsKey("contractVersions")) {
+        buildJsonObject {
+            header.getValue("contractVersions").jsonArray
+                .map { entry ->
+                    entry.jsonObject.getValue("contractId").jsonPrimitive.content to
+                        entry.jsonObject.getValue("version").jsonPrimitive.content
+                }.sortedBy(Pair<String, String>::first)
+                .forEach { (contractId, version) -> put(contractId, JsonPrimitive(version)) }
+        }
+    } else {
+        buildJsonObject {
+            put("contentSchema", JsonPrimitive(header.stringValue("contentSchemaVersion")))
+            put("overlayContract", JsonPrimitive(header.stringValue("overlayContractVersion")))
+            put("lootFormula", JsonPrimitive(header.stringValue("lootFormulaVersion")))
+            put("rewardLedger", JsonPrimitive(header.stringValue("rewardLedgerVersion")))
+            put("searchRule", JsonPrimitive(header.stringValue("searchRuleVersion")))
+            put("secretRule", JsonPrimitive(header.stringValue("secretRuleVersion")))
+            put("specialTierEligibility", JsonPrimitive(header.stringValue("specialTierEligibilityVersion")))
+            put("topologyFingerprint", JsonPrimitive(header.stringValue("topologyFingerprintVersion")))
+        }
+    }
 
 private fun relativize(
     repoRoot: Path,

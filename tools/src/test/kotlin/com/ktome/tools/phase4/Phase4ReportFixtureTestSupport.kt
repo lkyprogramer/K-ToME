@@ -85,6 +85,15 @@ internal object Phase4ReportFixtureTestSupport {
         )
     }
 
+    fun mutateLongRunSummary(
+        repoRoot: Path,
+        transform: (JsonObject) -> JsonObject,
+    ) {
+        val summaryPath = repoRoot.resolve("build/reports/harness/long-run-full.json")
+        val payload = json.parseToJsonElement(Files.readString(summaryPath)).jsonObject
+        Files.writeString(summaryPath, json.encodeToString(JsonElement.serializer(), transform(payload)))
+    }
+
     fun replaceMetricsField(
         metrics: JsonObject,
         key: String,

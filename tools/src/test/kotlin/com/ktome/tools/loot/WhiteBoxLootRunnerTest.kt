@@ -87,6 +87,8 @@ class WhiteBoxLootRunnerTest {
                     "lootProfileAverageBaseItemOverlap",
                     "lootProfileMaxBaseItemOverlap",
                     "lootProfileDistinctBaseItemCount",
+                    "dynamicPoolCoverage",
+                    "dynamicPoolTargetProfiles",
                     "sameZoneSecretVsCadenceMaxOverlap",
                     "sameZoneSecretVsRewardMaxOverlap",
                     "sameZoneSecretVsCadencePairs",
@@ -101,13 +103,17 @@ class WhiteBoxLootRunnerTest {
                     "affixPassiveCoverage",
                     "affixPassiveKinds",
                     "uniqueArtifactMeaningfulSwapRate",
+                    "specialTierPassiveFamilyDuplicateSummary",
                 ).all(corpusMetrics::containsKey),
             )
+            assertEquals(1.0, corpusMetrics.getValue("dynamicPoolCoverage").jsonPrimitive.content.toDouble())
+            assertEquals(10, corpusMetrics.getValue("dynamicPoolTargetProfiles").jsonArray.size)
             assertTrue(corpusMetrics.getValue("lootProfileBaseItemOverlapMatrix").jsonObject.isNotEmpty())
             assertTrue(corpusMetrics.getValue("sameZoneSecretVsCadencePairs").jsonArray.isNotEmpty())
             assertTrue(corpusMetrics.getValue("sameZoneSecretVsRewardPairs").jsonArray.isNotEmpty())
             assertEquals(0, corpusMetrics.getValue("strictLocalIdentityViolationCount").jsonPrimitive.content.toInt())
             assertTrue(corpusMetrics.getValue("strictLocalIdentityViolations").jsonArray.isEmpty())
+            assertTrue(corpusMetrics.getValue("specialTierPassiveFamilyDuplicateSummary").jsonObject.containsKey("duplicateFamilies"))
             val secretProfileIdentitySummaries = corpusMetrics.getValue("secretProfileIdentitySummaries").jsonArray
             assertEquals(5, secretProfileIdentitySummaries.size)
             assertTrue(secretProfileIdentitySummaries.all { summary -> summary.jsonObject.containsKey("identityAxes") })

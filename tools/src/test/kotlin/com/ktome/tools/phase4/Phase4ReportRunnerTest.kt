@@ -1,8 +1,9 @@
 package com.ktome.tools.phase4
 
+import java.nio.file.Files
+import java.nio.file.Path
 import java.time.Duration
 import java.time.Instant
-import java.nio.file.Files
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
@@ -81,6 +82,10 @@ class Phase4ReportRunnerTest {
         assertTrue(longRunTask.getValue("metrics").jsonObject.containsKey("professionTerminalWeaponDistribution"))
         assertTrue(longRunTask.getValue("metrics").jsonObject.containsKey("professionTopWeaponBaseIds"))
         assertTrue(longRunTask.getValue("metrics").jsonObject.containsKey("professionTopWeaponSemanticTags"))
+        assertTrue(longRunTask.getValue("metrics").jsonObject.containsKey("professionCapstoneSeenRate"))
+        assertTrue(longRunTask.getValue("metrics").jsonObject.containsKey("professionCapstoneAdoptionRate"))
+        assertTrue(longRunTask.getValue("metrics").jsonObject.containsKey("nonWeaponBuildPayoffRate"))
+        assertTrue(longRunTask.getValue("metrics").jsonObject.containsKey("professionCapstoneBreakdown"))
         assertTrue(longRunTask.getValue("metrics").jsonObject.containsKey("fullRouteZoneTraversalDiagnostics"))
         assertTrue(longRunTask.getValue("metrics").jsonObject.containsKey("criticalPathZoneIds"))
         assertTrue(longRunTask.getValue("metrics").jsonObject.containsKey("criticalPathZoneDesignAudit"))
@@ -97,6 +102,9 @@ class Phase4ReportRunnerTest {
         assertTrue(lootTask.getValue("metrics").jsonObject.containsKey("strictLocalIdentityViolationCount"))
         assertTrue(lootTask.getValue("metrics").jsonObject.containsKey("strictLocalIdentityViolations"))
         assertTrue(lootTask.getValue("metrics").jsonObject.containsKey("secretProfileIdentitySummaries"))
+        assertTrue(lootTask.getValue("metrics").jsonObject.containsKey("dynamicPoolCoverage"))
+        assertTrue(lootTask.getValue("metrics").jsonObject.containsKey("dynamicPoolTargetProfiles"))
+        assertTrue(lootTask.getValue("metrics").jsonObject.containsKey("specialTierPassiveFamilyDuplicateSummary"))
         assertTrue(
             lootTask.getValue("metrics").jsonObject
                 .getValue("secretProfileIdentitySummaries")
@@ -127,25 +135,40 @@ class Phase4ReportRunnerTest {
         assertTrue(contentPackTask.getValue("metrics").jsonObject.containsKey("contentPackArtifactTimestamp"))
         assertTrue(contentPackTask.getValue("metrics").jsonObject.containsKey("whiteBoxContentPackArtifactTimestamp"))
         assertEquals(whiteBoxContentPackTask.getValue("buildId").jsonPrimitive.content, contentPackTask.getValue("buildId").jsonPrimitive.content)
-        val contentPackTimestamp =
-            Instant.parse(contentPackTask.getValue("metrics").jsonObject.getValue("contentPackArtifactTimestamp").jsonPrimitive.content)
-        val whiteBoxContentPackTimestamp =
-            Instant.parse(contentPackTask.getValue("metrics").jsonObject.getValue("whiteBoxContentPackArtifactTimestamp").jsonPrimitive.content)
+        val contentPackArtifactPayload =
+            Json.parseToJsonElement(
+                Files.readString(repoRoot().resolve(contentPackTask.getValue("sourcePath").jsonPrimitive.content)),
+            ).jsonObject
+        val whiteBoxContentPackArtifactPayload =
+            Json.parseToJsonElement(
+                Files.readString(repoRoot().resolve(whiteBoxContentPackTask.getValue("sourcePath").jsonPrimitive.content)),
+            ).jsonObject
         assertTrue(
-            Duration.between(contentPackTimestamp, whiteBoxContentPackTimestamp).abs() <= Duration.ofMinutes(30),
-            "content-pack artifact timestamps drifted beyond the freshness guard window.",
+            Duration.between(
+                Instant.parse(contentPackArtifactPayload.getValue("header").jsonObject.getValue("timestamp").jsonPrimitive.content),
+                Instant.parse(whiteBoxContentPackArtifactPayload.getValue("header").jsonObject.getValue("timestamp").jsonPrimitive.content),
+            ).abs() <= Duration.ofMinutes(1),
         )
-        assertEquals(13, experienceMetrics.size)
-        assertEquals(13, metricCatalog.size)
+        assertTrue(
+            contentPackArtifactSemanticSignature(contentPackArtifactPayload) == contentPackArtifactSemanticSignature(whiteBoxContentPackArtifactPayload),
+            "content-pack artifacts must stay semantically aligned after the paired freshness check passes.",
+        )
+        assertEquals(18, experienceMetrics.size)
+        assertEquals(18, metricCatalog.size)
         assertEquals(
             setOf(
                 "scriptedHiddenVerificationRate",
                 "organicHiddenDiscoveryRate",
+                "dynamicPoolCoverage",
+                "specialTierPassiveFamilyDuplicateCount",
                 "sameZoneSecretVsCadenceMaxOverlap",
                 "sameZoneSecretVsRewardMaxOverlap",
                 "terminalWeaponBaseDiversity",
                 "crossProfessionTopWeaponDominance",
                 "professionAlignedWeaponAdoptionRate",
+                "professionCapstoneSeenRate",
+                "professionCapstoneAdoptionRate",
+                "nonWeaponBuildPayoffRate",
                 "avgObjectiveAcquireTurn",
                 "avgVisibleHostileTurnCount",
                 "avgEnemyTurns",
@@ -163,6 +186,11 @@ class Phase4ReportRunnerTest {
         assertTrue(markdown.contains("### Critical Path Design Audit"))
         assertTrue(markdown.contains("## Scripted vs Organic Hidden"))
         assertTrue(markdown.contains("## Terrain Combat Sample Contract"))
+        assertTrue(markdown.contains("dynamicPoolCoverage"))
+        assertTrue(markdown.contains("specialTierPassiveFamilyDuplicateCount"))
+        assertTrue(markdown.contains("professionCapstoneSeenRate"))
+        assertTrue(markdown.contains("professionCapstoneAdoptionRate"))
+        assertTrue(markdown.contains("nonWeaponBuildPayoffRate"))
         assertTrue(markdown.contains("- sourceTask: `whiteBoxLoot`"))
         assertTrue(markdown.contains("- sourceTask: `longRunLab`"))
         assertTrue(markdown.contains("- sourceTask.scripted: `hiddenContentHarness`"))
@@ -241,4 +269,9 @@ class Phase4ReportRunnerTest {
         assertEquals(0, countFailedStatuses(listOf("PASS", "PASS")))
         assertEquals(1, countFailedStatuses(listOf("PASS", "FAIL", "PASS")))
     }
+
+    private fun repoRoot(): Path =
+        System.getProperty("ktome.repo.root")
+            ?.let(Path::of)
+            ?: Path.of("").toAbsolutePath().normalize()
 }

@@ -30,7 +30,7 @@
 
 1. 当前主干已经落地 `whiteBoxMapgen`、`whiteBoxSolvability`、`whiteBoxVerify` 与 `phase4Report`。
 2. 当前 `phase4Report` 聚合 `14` 个任务：`mapgenSmoke`、`solvabilityHarness`、`hiddenContentHarness`、`organicHiddenProbe`、`contentPackHarness`、`bossHarness`、`longRunLab`、`terrainInteractionBatch`、`whiteBoxMapgen`、`whiteBoxSolvability`、`lootBalanceLab`、`whiteBoxLoot`、`whiteBoxHiddenContent`、`whiteBoxContentPack`。
-3. `phase4Report` 现在同时是 `scripted vs organic hidden`、`same-zone local reward identity`、`terminal build identity`、`critical-path pacing`、`terrain combat sample contract` 的唯一 owner metric 聚合入口。
+3. `phase4Report` 现在同时是 `scripted vs organic hidden`、`same-zone local reward identity`、`terminal build identity`、`critical-path pacing`、`terrain combat sample contract` 的唯一 owner metric 聚合入口；canonical evidence 至少必须显式保留 `dynamicPoolCoverage`、`dynamicPoolTargetProfiles`、`specialTierPassiveFamilyDuplicateCount`、`specialTierPassiveFamilyDuplicateSummary`、`professionCapstoneSeenRate`、`professionCapstoneAdoptionRate`、`nonWeaponBuildPayoffRate`、`professionCapstoneBreakdown`。
 4. `verifyOwner` 是 `Phase 4` 后续 owner 级 PR 的默认联合验收入口；它运行 routed owner task 集，不承担 phase aggregate 职责。
 5. `phase4Report` 与 `phase4ReportOnly` 都按 artifact-only 语义运行，默认产物落到 `tools/build/reports/verification/phase4/report-phase4-summary.{json,md}`；前面的 producer 命令必须先产出报告，再由这两个聚合入口消费。
 6. `phase4Report / reportPhase4` 必须直接基于当前仓库里最新的 producer artifact materialize canonical summary，不允许只在临时 fixture 目录里生成通过后让工作区 canonical 文件继续停留在旧版本。
@@ -72,6 +72,7 @@
    - `MAGIC / RARE` 分布偏离公式预期不超过 `±5%`
    - `UNIQUE / ARTIFACT` 分布偏离不超过 `±25%` 相对误差
    - `affixBudget` 平均偏离不超过 `±5%`，`P95` 不超过 `±12%`
+   - `whiteBoxLoot` / canonical report 证据必须能从同一批 producer artifact 衍生 `dynamicPoolCoverage / dynamicPoolTargetProfiles / specialTierPassiveFamilyDuplicateCount / specialTierPassiveFamilyDuplicateSummary`
 6. `hiddenContentHarness`
    - 至少覆盖 `500` 个 seed
    - 至少 `30%` 的 run 触发 `1` 个 hidden event
@@ -92,6 +93,10 @@
    - `long-run-full.json` 必须保留 `terminalWeaponBaseDiversity`
    - `long-run-full.json` 必须保留 `crossProfessionTopWeaponDominance`
    - `long-run-full.json` 必须保留 `professionAlignedWeaponAdoptionRate`
+   - `long-run-full.json` 必须保留 `professionCapstoneSeenRate`
+   - `long-run-full.json` 必须保留 `professionCapstoneAdoptionRate`
+   - `long-run-full.json` 必须保留 `nonWeaponBuildPayoffRate`
+   - `long-run-full.json` 必须保留 `professionCapstoneBreakdown`
    - `long-run-full.json` 必须保留 `professionTerminalWeaponDistribution`
    - `long-run-full.json` 必须保留 `fullRouteZoneTraversalDiagnostics`
    - `long-run-full.json` 必须保留 `criticalPathZoneIds`
@@ -99,6 +104,7 @@
    - critical-path zone 的 `avgObjectiveAcquireTurn` 最小值必须 `>= 4.0`
    - critical-path zone 的 `avgVisibleHostileTurnCount` 最小值必须 `>= 1.0`
    - critical-path zone 的 `avgEnemyTurns` 最小值必须 `>= 1.0`
+   - `professionCapstoneSeenRate` 的 baseline metadata 必须保留 `perProfessionSeenMinCount`，并且 owner gate 需要按 `professionCapstoneBreakdown` 对每个基础职业执行 seen floor 判定
 9. `terrainInteractionBatch`
    - 五种地形交互都能在 isolated batch 中稳定复现
    - `0` unresolved interaction rule
@@ -167,8 +173,11 @@
    - affix 分布
    - unique/artifact 出现率
    - `sameZoneSecretVsCadencePairs / sameZoneSecretVsRewardPairs`
+   - `dynamicPoolCoverage / dynamicPoolTargetProfiles`
    - `sameZoneSecretVsCadenceMaxOverlap / sameZoneSecretVsRewardMaxOverlap`
    - `localIdentityFailurePairs`
+   - `specialTierPassiveFamilyDuplicateCount`
+   - `specialTierPassiveFamilyDuplicateSummary`
    - pity 激活次数（`rarePityActivations / uniquePityActivations`）
    - 预算偏离
    - `sourceLevel / sourceTier / zone / playerLevel / magicFind` 分层统计

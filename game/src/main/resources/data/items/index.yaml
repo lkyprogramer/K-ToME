@@ -1488,7 +1488,7 @@ uniqueTemplates:
     iconKey: item.unique.briarbound_bow.icon
     audioProfile: audio.item.unique.briarbound_bow
     schemaVersion: 2
-    tags: [greenwood_fringe, rogue, precision]
+    tags: [greenwood_fringe, rogue, precision, capstone]
     allowedSourceTiers: [CHEST, ELITE]
     allowedZones: [greenwood_fringe]
     fixedAffixIds: [precise, of_shadow]
@@ -1526,7 +1526,7 @@ uniqueTemplates:
     iconKey: item.unique.furnace_plate.icon
     audioProfile: audio.item.unique.furnace_plate
     schemaVersion: 2
-    tags: [deep_iron_pit, vanguard, fire]
+    tags: [deep_iron_pit, vanguard, fire, capstone, non_weapon_capstone]
     allowedSourceTiers: [BOSS, CHEST]
     allowedZones: [deep_iron_pit]
     fixedAffixIds: [emberguard, of_fortitude]
@@ -1587,9 +1587,9 @@ uniqueTemplates:
     iconKey: item.unique.voidlit_seal.icon
     audioProfile: audio.item.unique.voidlit_seal
     schemaVersion: 2
-    tags: [abyssal_temple, templar, holy]
+    tags: [abyssal_temple, templar, holy, capstone, non_weapon_capstone]
     allowedSourceTiers: [ELITE, BOSS]
-    allowedZones: [abyssal_temple]
+    allowedZones: [abyssal_temple, abyssal_heart]
     fixedAffixIds: [sanctified, of_smite]
   - id: unique.eclipse_mail
     itemId: unique_eclipse_mail
@@ -1624,7 +1624,7 @@ uniqueTemplates:
     iconKey: item.unique.thornpath_crook.icon
     audioProfile: audio.item.unique.thornpath_crook
     schemaVersion: 2
-    tags: [greenwood_fringe, rogue, marked]
+    tags: [greenwood_fringe, rogue, marked, capstone]
     allowedSourceTiers: [CHEST, ELITE]
     allowedZones: [greenwood_fringe]
     fixedAffixIds: [briarhook, honed]
@@ -1649,7 +1649,7 @@ uniqueTemplates:
     iconKey: item.unique.quenchbreaker_maul.icon
     audioProfile: audio.item.unique.quenchbreaker_maul
     schemaVersion: 2
-    tags: [deep_iron_pit, vanguard, oil]
+    tags: [deep_iron_pit, vanguard, oil, capstone]
     allowedSourceTiers: [ELITE, BOSS]
     allowedZones: [deep_iron_pit]
     fixedAffixIds: [cindervein, ironroot]
@@ -1687,7 +1687,7 @@ uniqueTemplates:
     iconKey: item.unique.deepcurrent_lens.icon
     audioProfile: audio.item.unique.deepcurrent_lens
     schemaVersion: 2
-    tags: [underground_river, arcanist, mana]
+    tags: [underground_river, arcanist, mana, capstone, non_weapon_capstone]
     allowedSourceTiers: [CHEST, BOSS]
     allowedZones: [underground_river]
     fixedAffixIds: [lucid, clearmind]
@@ -1699,9 +1699,9 @@ uniqueTemplates:
     iconKey: item.unique.vesper_chainmail.icon
     audioProfile: audio.item.unique.vesper_chainmail
     schemaVersion: 2
-    tags: [abyssal_temple, templar, survival]
+    tags: [abyssal_temple, templar, survival, capstone, non_weapon_capstone]
     allowedSourceTiers: [CHEST, BOSS]
-    allowedZones: [abyssal_temple]
+    allowedZones: [abyssal_temple, abyssal_heart]
     fixedAffixIds: [duskward, of_bulwarked_soul]
   - id: unique.nullwake_blade
     itemId: unique_nullwake_blade
@@ -1726,7 +1726,7 @@ artifactTemplates:
     iconKey: item.artifact.briar_heart.icon
     audioProfile: audio.item.artifact.briar_heart
     schemaVersion: 2
-    tags: [greenwood_fringe, rogue, special_chest]
+    tags: [greenwood_fringe, rogue, special_chest, capstone, non_weapon_capstone]
     allowedSourceTiers: [CHEST]
     allowedZones: [greenwood_fringe]
     fixedAffixIds: [wind_fed, of_last_stand]
@@ -1739,7 +1739,7 @@ artifactTemplates:
     iconKey: item.artifact.forge_oath.icon
     audioProfile: audio.item.artifact.forge_oath
     schemaVersion: 2
-    tags: [deep_iron_pit, vanguard, boss]
+    tags: [deep_iron_pit, vanguard, boss, capstone]
     allowedSourceTiers: [BOSS]
     allowedZones: [deep_iron_pit]
     fixedAffixIds: [cindervein, of_slagwake]
@@ -1752,7 +1752,7 @@ artifactTemplates:
     iconKey: item.artifact.river_echo.icon
     audioProfile: audio.item.artifact.river_echo
     schemaVersion: 2
-    tags: [underground_river, arcanist, secret_zone]
+    tags: [underground_river, arcanist, secret_zone, capstone]
     allowedSourceTiers: [CHEST, SECRET_ZONE]
     allowedZones: [underground_river]
     fixedAffixIds: [stormcall, of_the_current]
@@ -1765,9 +1765,9 @@ artifactTemplates:
     iconKey: item.artifact.eclipsed_relic.icon
     audioProfile: audio.item.artifact.eclipsed_relic
     schemaVersion: 2
-    tags: [abyssal_temple, templar, boss, secret_zone]
+    tags: [abyssal_temple, templar, boss, secret_zone, capstone, non_weapon_capstone]
     allowedSourceTiers: [BOSS, CHEST, SECRET_ZONE]
-    allowedZones: [abyssal_temple]
+    allowedZones: [abyssal_temple, abyssal_heart]
     fixedAffixIds: [lastlight, of_bulwarked_soul]
   - id: artifact.heartroot_gambit
     itemId: artifact_heartroot_gambit
@@ -1777,7 +1777,7 @@ artifactTemplates:
     iconKey: item.artifact.heartroot_gambit.icon
     audioProfile: audio.item.artifact.heartroot_gambit
     schemaVersion: 2
-    tags: [greenwood_fringe, rogue, chest]
+    tags: [greenwood_fringe, rogue, chest, capstone]
     allowedSourceTiers: [CHEST]
     allowedZones: [greenwood_fringe]
     fixedAffixIds: [briarhook, of_execution]
@@ -2254,14 +2254,14 @@ items:
     iconKey: item.unique.briarbound_bow.icon
     audioProfile: audio.item.unique.briarbound_bow
     schemaVersion: 2
-    tags: [item, weapon, unique, greenwood_fringe, rogue, precision]
+    tags: [item, weapon, unique, greenwood_fringe, rogue, precision, capstone]
     type: WEAPON
     slot: WEAPON
     glyph: ")"
     color: "#6C8A54"
     baseAttack: 8
     stats: { dex: 1, accuracy: 2 }
-    passive: { kind: DamageVsTag, tag: bandit, bonusPercent: 0.12 }
+    passive: { kind: DamageVsStatus, statusId: MARKED, bonusPercent: 0.18 }
     dropWeight: 0
     dropFloors: []
     materials: [STEEL, MITHRIL]
@@ -2307,7 +2307,7 @@ items:
     iconKey: item.unique.furnace_plate.icon
     audioProfile: audio.item.unique.furnace_plate
     schemaVersion: 2
-    tags: [item, armor, unique, deep_iron_pit, vanguard, fire]
+    tags: [item, armor, unique, deep_iron_pit, vanguard, fire, capstone, non_weapon_capstone]
     type: ARMOR
     slot: ARMOR
     glyph: "["
@@ -2393,7 +2393,7 @@ items:
     iconKey: item.unique.voidlit_seal.icon
     audioProfile: audio.item.unique.voidlit_seal
     schemaVersion: 2
-    tags: [item, armor, accessory, unique, abyssal_temple, templar, holy]
+    tags: [item, armor, accessory, unique, abyssal_temple, templar, holy, capstone, non_weapon_capstone]
     type: ARMOR
     slot: OFF_HAND
     glyph: "]"
@@ -2445,17 +2445,14 @@ items:
     iconKey: item.artifact.briar_heart.icon
     audioProfile: audio.item.artifact.briar_heart
     schemaVersion: 2
-    tags: [item, armor, accessory, artifact, greenwood_fringe, rogue, special_chest]
+    tags: [item, armor, accessory, artifact, greenwood_fringe, rogue, special_chest, capstone, non_weapon_capstone]
     type: ARMOR
     slot: OFF_HAND
     glyph: "]"
     color: "#7A5E6F"
     baseDefense: 3
     stats: { dex: 2, critChance: 0.05, maxHp: 10 }
-    passive:
-      kind: ConditionalStatBonus
-      condition: HP_ABOVE_80
-      statModifier: { critChance: 0.08, evasion: 4 }
+    passive: { kind: OnKillResourceRestore, resourceType: ENERGY, amount: 10 }
     dropWeight: 0
     dropFloors: []
     materials: [STEEL]
@@ -2466,7 +2463,7 @@ items:
     iconKey: item.artifact.forge_oath.icon
     audioProfile: audio.item.artifact.forge_oath
     schemaVersion: 2
-    tags: [item, weapon, artifact, deep_iron_pit, vanguard, boss]
+    tags: [item, weapon, artifact, deep_iron_pit, vanguard, boss, capstone]
     type: WEAPON
     slot: WEAPON
     glyph: ")"
@@ -2487,7 +2484,7 @@ items:
     iconKey: item.artifact.river_echo.icon
     audioProfile: audio.item.artifact.river_echo
     schemaVersion: 2
-    tags: [item, weapon, artifact, underground_river, arcanist, special_chest]
+    tags: [item, weapon, artifact, underground_river, arcanist, secret_zone, capstone]
     type: WEAPON
     slot: WEAPON
     glyph: ")"
@@ -2505,14 +2502,14 @@ items:
     iconKey: item.artifact.eclipsed_relic.icon
     audioProfile: audio.item.artifact.eclipsed_relic
     schemaVersion: 2
-    tags: [item, armor, accessory, artifact, abyssal_temple, templar, boss]
+    tags: [item, armor, accessory, artifact, abyssal_temple, templar, boss, secret_zone, capstone, non_weapon_capstone]
     type: ARMOR
     slot: OFF_HAND
     glyph: "]"
     color: "#8C789B"
     baseDefense: 4
     stats: { wil: 2, maxHp: 14 }
-    passive: { kind: OnHitStatusProc, statusId: BANE, chance: 0.40, duration: 3 }
+    passive: { kind: DamageVsStatus, statusId: BANE, bonusPercent: 0.18 }
     dropWeight: 0
     dropFloors: []
   - id: unique_thornpath_crook
@@ -2522,7 +2519,7 @@ items:
     iconKey: item.unique.thornpath_crook.icon
     audioProfile: audio.item.unique.thornpath_crook
     schemaVersion: 2
-    tags: [item, weapon, unique, greenwood_fringe, rogue, marked]
+    tags: [item, weapon, unique, greenwood_fringe, rogue, marked, capstone]
     type: WEAPON
     slot: WEAPON
     glyph: ")"
@@ -2557,17 +2554,14 @@ items:
     iconKey: item.unique.quenchbreaker_maul.icon
     audioProfile: audio.item.unique.quenchbreaker_maul
     schemaVersion: 2
-    tags: [item, weapon, unique, deep_iron_pit, vanguard, oil]
+    tags: [item, weapon, unique, deep_iron_pit, vanguard, oil, capstone]
     type: WEAPON
     slot: WEAPON
     glyph: ")"
     color: "#A6693E"
     baseAttack: 15
     stats: { str: 2, attack: 2 }
-    passive:
-      kind: TerrainAffinityBonus
-      terrainTag: OIL
-      statModifier: { attack: 4, defense: 2 }
+    passive: { kind: DamageVsStatus, statusId: ARMOR_BREAK, bonusPercent: 0.18 }
     dropWeight: 0
     dropFloors: []
     materials: [STEEL, MITHRIL]
@@ -2619,14 +2613,14 @@ items:
     iconKey: item.unique.deepcurrent_lens.icon
     audioProfile: audio.item.unique.deepcurrent_lens
     schemaVersion: 2
-    tags: [item, armor, accessory, unique, underground_river, arcanist, mana]
+    tags: [item, armor, accessory, unique, underground_river, arcanist, mana, capstone, non_weapon_capstone]
     type: ARMOR
     slot: OFF_HAND
     glyph: "]"
     color: "#6A90A4"
     baseDefense: 2
     stats: { wil: 2, talentPower: 0.06 }
-    passive: { kind: OnKillResourceRestore, resourceType: MANA, amount: 6 }
+    passive: { kind: ResistanceBonus, damageType: LIGHTNING, amount: 14 }
     dropWeight: 0
     dropFloors: []
   - id: unique_vesper_chainmail
@@ -2636,7 +2630,7 @@ items:
     iconKey: item.unique.vesper_chainmail.icon
     audioProfile: audio.item.unique.vesper_chainmail
     schemaVersion: 2
-    tags: [item, armor, unique, abyssal_temple, templar, survival]
+    tags: [item, armor, unique, abyssal_temple, templar, survival, capstone, non_weapon_capstone]
     type: ARMOR
     slot: ARMOR
     glyph: "["
@@ -2663,7 +2657,7 @@ items:
     color: "#8B79A8"
     baseAttack: 14
     stats: { attack: 2, accuracy: 2 }
-    passive: { kind: OnHitStatusProc, statusId: BANE, chance: 0.40, duration: 3 }
+    passive: { kind: DamageTypeBonus, damageType: SHADOW, bonusPercent: 0.18 }
     dropWeight: 0
     dropFloors: []
     materials: [STEEL, MITHRIL, ADAMANTITE]
@@ -2674,7 +2668,7 @@ items:
     iconKey: item.artifact.heartroot_gambit.icon
     audioProfile: audio.item.artifact.heartroot_gambit
     schemaVersion: 2
-    tags: [item, weapon, artifact, greenwood_fringe, rogue, chest]
+    tags: [item, weapon, artifact, greenwood_fringe, rogue, chest, capstone]
     type: WEAPON
     slot: WEAPON
     glyph: ")"
@@ -2702,10 +2696,7 @@ items:
     color: "#B06A43"
     baseAttack: 17
     stats: { str: 2, attack: 3 }
-    passive:
-      kind: TerrainAffinityBonus
-      terrainTag: OIL
-      statModifier: { attack: 5, defense: 3 }
+    passive: { kind: HpRegenPerTurn, amount: 3 }
     dropWeight: 0
     dropFloors: []
     materials: [STEEL, MITHRIL, ADAMANTITE]
@@ -2724,9 +2715,9 @@ items:
     baseDefense: 4
     stats: { wil: 3, talentPower: 0.10, maxHp: 12 }
     passive:
-      kind: TerrainAffinityBonus
-      terrainTag: WATER
-      statModifier: { wil: 2, talentPower: 0.10, accuracy: 4 }
+      kind: ConditionalStatBonus
+      condition: HP_ABOVE_80
+      statModifier: { talentPower: 0.12, evasion: 4 }
     dropWeight: 0
     dropFloors: []
   - id: artifact_vesper_prism
@@ -2743,6 +2734,6 @@ items:
     color: "#8B6F9D"
     baseDefense: 4
     stats: { wil: 3, defense: 2, maxHp: 12 }
-    passive: { kind: OnHitStatusProc, statusId: BANE, chance: 0.40, duration: 3 }
+    passive: { kind: OnKillResourceRestore, resourceType: POSITIVE_ENERGY, amount: 8 }
     dropWeight: 0
     dropFloors: []

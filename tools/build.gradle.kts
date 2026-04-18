@@ -736,6 +736,7 @@ val phase4AggregateProducerInputs =
     )
 val phase4AggregateProducerTasks: List<TaskProvider<out Task>> =
     phase4AggregateProducerTaskPaths.map { taskPath -> Phase4TaskPathResolver.resolve(rootProject, taskPath) }
+val soloClearLabProducerTask: TaskProvider<out Task> = project(":game").tasks.named("soloClearLab")
 val legacyPhase4SummaryInput = layout.buildDirectory.file("reports/phase4/phase4-summary.json")
 val testSourceSet = sourceSets.test.get()
 
@@ -795,6 +796,7 @@ registerPhase4AggregateTask(
     outputArtifacts = legacyPhase4ReportOutputs,
     producerInputs = phase4AggregateProducerInputs,
     producerTasks = phase4AggregateProducerTasks,
+    additionalMustRunAfter = listOf(soloClearLabProducerTask),
     legacyReportDir = legacyPhase4ReportDir,
 )
 
@@ -806,6 +808,7 @@ registerPhase4AggregateTask(
     outputArtifacts = legacyPhase4ReportOutputs,
     producerInputs = phase4AggregateProducerInputs,
     producerTasks = phase4AggregateProducerTasks,
+    additionalMustRunAfter = listOf(soloClearLabProducerTask),
     legacyReportDir = legacyPhase4ReportDir,
 )
 
@@ -817,6 +820,7 @@ registerPhase4AggregateTask(
     outputArtifacts = unifiedPhase4ReportOutputs,
     producerInputs = phase4AggregateProducerInputs,
     producerTasks = phase4AggregateProducerTasks,
+    additionalMustRunAfter = listOf(soloClearLabProducerTask),
     aggregateReportDir = unifiedPhase4ReportDir,
     compareLegacy = false,
 )
@@ -829,6 +833,7 @@ registerPhase4AggregateTask(
     outputArtifacts = unifiedPhase4ReportOutputs,
     producerInputs = phase4AggregateProducerInputs,
     producerTasks = phase4AggregateProducerTasks,
+    additionalMustRunAfter = listOf(soloClearLabProducerTask),
     aggregateReportDir = unifiedPhase4ReportDir,
     compareLegacy = false,
 )
@@ -842,7 +847,7 @@ registerPhase4AggregateTask(
     producerInputs = phase4AggregateProducerInputs,
     producerTasks = phase4AggregateProducerTasks,
     additionalDependsOn = listOf(tasks.named("phase4LegacyReport")),
-    additionalMustRunAfter = listOf(tasks.named("phase4LegacyReportOnly")),
+    additionalMustRunAfter = listOf(tasks.named("phase4LegacyReportOnly"), soloClearLabProducerTask),
     additionalInputs = files(legacyPhase4SummaryInput),
     aggregateReportDir = unifiedPhase4ReportDir,
     legacyReportDir = legacyPhase4ReportDir,
@@ -857,6 +862,7 @@ registerPhase4AggregateTask(
     outputArtifacts = unifiedPhase4ReportOutputs,
     producerInputs = phase4AggregateProducerInputs,
     producerTasks = phase4AggregateProducerTasks,
+    additionalMustRunAfter = listOf(soloClearLabProducerTask),
     aggregateReportDir = unifiedPhase4ReportDir,
     compareLegacy = false,
 )

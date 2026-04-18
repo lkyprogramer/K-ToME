@@ -45,6 +45,7 @@ import com.ktome.core.inscription.InscriptionSlot
 import com.ktome.core.item.AffixDef
 import com.ktome.core.item.AffixType
 import com.ktome.core.item.ConsumableEffect
+import com.ktome.core.item.Equipment
 import com.ktome.core.item.EquipmentPassive
 import com.ktome.core.item.EquipSlot
 import com.ktome.core.item.ItemInstance
@@ -92,6 +93,10 @@ import com.ktome.core.world.solvability.RegistryId
 import com.ktome.core.world.solvability.SearchActionResult
 import com.ktome.core.world.ObjectiveState
 import com.ktome.game.data.DataLoader
+import com.ktome.game.hidden.HiddenEventReward
+import com.ktome.game.hidden.HiddenEventRewardKey
+import com.ktome.game.hidden.HiddenEventRewardPayload
+import com.ktome.game.hidden.LOOT_PROFILE_REGISTRY_ID
 import com.ktome.game.elites.EncounterDecoration
 import com.ktome.game.elites.EncounterDecorationService
 import com.ktome.game.factory.EntityFactory
@@ -667,6 +672,116 @@ class FoundationGameSessionTest {
         assertTrue(session.perform(PlayerCommand.Interact))
         assertNotEquals(PathClass.SECRET, requireNotNull(activeFloorState(session).generatedFloor.roomAt(session.playerPosition())).pathClass)
         assertNotNull(logEventByKey(session, "log.hidden.secret_zone.return"))
+    }
+
+    @Test
+    fun `secret zone capstone reward is recorded as milestone evidence and announces profession anchor`() {
+        val session =
+            GameModule.newFoundationSession(
+                config = FoundationGameConfig(seed = 20260331L, zoneId = "greenwood_fringe", playerProfessionId = "rogue"),
+                saveManager = SaveManager(tempDir.resolve("secret-zone-capstone-anchor-deterministic")),
+            )
+        clearMonsters(session)
+        runtimeWorld(session).get<Equipment>(session.playerId)?.slots?.clear()
+        val deterministicRewardProfileId = "loot.test.greenwood_hidden_cache.capstone"
+        val deterministicCapstoneBaseId = "test_rogue_secret_capstone"
+        replaceContent(
+            session = session,
+            content =
+                sessionContent(session).let { content ->
+                    val deterministicCapstoneBase =
+                        content.itemBundle.baseItems
+                            .first { item -> item.id == "basic_shield" }
+                            .copy(
+                                id = deterministicCapstoneBaseId,
+                                name = "Test Rogue Secret Buckler",
+                                tags = setOf("item", "armor", "accessory", "rogue", "capstone", "non_weapon_capstone", "secret_zone"),
+                                dropWeight = 4,
+                            )
+                    val deterministicCapstoneSchema =
+                        content.schemaCatalog.itemBundle.items
+                            .first { item -> item.id == "basic_shield" }
+                            .copy(
+                                id = deterministicCapstoneBaseId,
+                                tags = listOf("item", "armor", "accessory", "rogue", "capstone", "non_weapon_capstone", "secret_zone"),
+                                dropWeight = 4,
+                            )
+                    content.copy(
+                        itemBundle = content.itemBundle.copy(baseItems = content.itemBundle.baseItems + deterministicCapstoneBase),
+                        schemaCatalog =
+                            content.schemaCatalog.copy(
+                                itemBundle =
+                                    content.schemaCatalog.itemBundle.copy(
+                                        items = content.schemaCatalog.itemBundle.items + deterministicCapstoneSchema,
+                                    ),
+                                lootProfiles =
+                                    content.schemaCatalog.lootProfiles +
+                                        content.schemaCatalog.lootProfiles
+                                            .first { profile -> profile.id == "loot.greenwood_hidden_cache.secret" }
+                                            .copy(
+                                                id = deterministicRewardProfileId,
+                                                itemIds = listOf(deterministicCapstoneBaseId),
+                                                poolStrategy = com.ktome.game.data.schema.LootPoolStrategy.FIXED_LIST,
+                                                itemTagFilter = emptyList(),
+                                                excludeIds = emptyList(),
+                                                typeWeights = emptyMap(),
+                                                slotBias = emptyMap(),
+                                                specialTemplateTagPreference = emptyList(),
+                                                affixTagPreference = emptyList(),
+                                            ),
+                                hiddenEvents =
+                                    content.schemaCatalog.hiddenEvents.map { event ->
+                                        if (event.id == "hidden.event.greenwood.hidden_cache.reward") {
+                                            event.copy(
+                                                rewards =
+                                                    event.rewards.map { reward ->
+                                                        if (reward.key == HiddenEventRewardKey.LOOT_PROFILE) {
+                                                            HiddenEventReward(
+                                                                key = HiddenEventRewardKey.LOOT_PROFILE,
+                                                                payload =
+                                                                    HiddenEventRewardPayload.LootProfile(
+                                                                        lootProfileRef =
+                                                                            ContentRef(
+                                                                                registry = RegistryId(LOOT_PROFILE_REGISTRY_ID),
+                                                                                id = deterministicRewardProfileId,
+                                                                            ),
+                                                                    ),
+                                                            )
+                                                        } else {
+                                                            reward
+                                                        }
+                                                    },
+                                            )
+                                        } else {
+                                            event
+                                        }
+                                    },
+                            ),
+                    )
+                },
+        )
+        revealHiddenEntrance(session)
+
+        val entranceProp = requireNotNull(propByType(session, "hidden_entrance"))
+        movePlayerTo(session, Point(entranceProp.x, entranceProp.y))
+        assertTrue(session.perform(PlayerCommand.Interact))
+
+        val rewardProp = requireNotNull(propByType(session, "secret_reward"))
+        movePlayerTo(session, Point(rewardProp.x, rewardProp.y))
+        assertTrue(session.perform(PlayerCommand.Interact))
+
+        val rewardSummary =
+            requireNotNull(
+                session.milestoneRewardSummaries().firstOrNull { reward ->
+                    reward.rewardSource == MilestoneRewardSource.CACHE &&
+                        reward.sourceId == "hidden.event.greenwood.hidden_cache.reward"
+                },
+            )
+        assertEquals(deterministicCapstoneBaseId, rewardSummary.baseItemId)
+        assertNotNull(
+            logEventByKey(session, "log.reward.capstone.anchor")
+                ?: logEventByKey(session, "log.reward.capstone.non_weapon_anchor"),
+        )
     }
 
     @Test
@@ -2497,6 +2612,47 @@ class FoundationGameSessionTest {
     }
 
     @Test
+    fun `interact crystal cache chest drops an underground river reward and records objective progress`() {
+        val session =
+            GameModule.newFoundationSession(
+                FoundationGameConfig(seed = 20260318L, zoneId = "underground_river", playerProfessionId = "arcanist"),
+                SaveManager(tempDir.resolve("underground-river-cache-save")),
+            )
+        val cachePoint = interactablePoint(session, RiverCrystalRuntimeKeys.River.CACHE_INTERACTABLE_ID)
+
+        session.automationMovePlayerTo(cachePoint)
+
+        assertTrue(session.perform(PlayerCommand.Interact))
+        val cacheRewardSourceId =
+            cacheRewardSourceId(session.config.zoneId, session.currentFloor(), RiverCrystalRuntimeKeys.River.CACHE_INTERACTABLE_ID, cachePoint)
+
+        assertTrue(
+            groundItemBaseIdsAt(session, cachePoint).any { itemId ->
+                itemId in setOf("artifact_river_echo", "unique_deepcurrent_lens", "unique_tideglass_staff", "emerald_charm", "mana_potion")
+            },
+        )
+        assertTrue(session.renderSnapshot().logEvents.any { event -> event.message.key == "log.objective.progress" })
+        assertTrue(session.renderSnapshot().logEvents.any { event -> event.message.key == "log.reward.cache.claimed" })
+        assertEquals(
+            RewardPresentationSourceSnapshot.CACHE,
+            requireNotNull(session.renderSnapshot().uiState.recentRewards.lastOrNull()).source,
+        )
+        val rewardSummary =
+            requireNotNull(
+                session.milestoneRewardSummaries().firstOrNull { reward ->
+                    reward.rewardSource == MilestoneRewardSource.CACHE &&
+                        reward.sourceId == cacheRewardSourceId &&
+                        reward.qualityTier.ordinal >= RarityTier.MAGIC.ordinal &&
+                        reward.affixIds.isNotEmpty()
+                },
+            )
+        assertTrue(
+            rewardSummary.baseItemId in
+                setOf("artifact_river_echo", "unique_deepcurrent_lens", "unique_tideglass_staff", "emerald_charm"),
+        )
+    }
+
+    @Test
     fun `interact mine furnace grants route support reward and restores stamina`() {
         val session =
             GameModule.newFoundationSession(
@@ -2526,6 +2682,54 @@ class FoundationGameSessionTest {
                     reward.sourceId == cacheRewardSourceId(session.config.zoneId, session.currentFloor(), "mine_furnace", furnacePoint)
             },
         )
+    }
+
+    @Test
+    fun `interact river ferry anchor can replace an equipped off hand with an arcanist capstone`() {
+        val session =
+            GameModule.newFoundationSession(
+                FoundationGameConfig(seed = 20260318L, zoneId = "underground_river", playerProfessionId = "arcanist"),
+                SaveManager(tempDir.resolve("underground-river-anchor-save")),
+            )
+        clearMonsters(session)
+        val charmIndex = addInventoryItem(session, baseItem("emerald_charm"))
+        assertTrue(session.perform(PlayerCommand.ActivateInventoryItem(charmIndex)))
+        assertEquals(
+            EquipSlot.OFF_HAND,
+            requireNotNull(session.inventoryItems().firstOrNull { item -> inventoryBaseIdAt(session, item.index) == "emerald_charm" }).equippedSlot,
+        )
+        val anchorPoint = interactablePoint(session, RiverCrystalRuntimeKeys.River.INTERACTABLE_ID)
+
+        session.automationMovePlayerTo(anchorPoint)
+
+        assertTrue(session.perform(PlayerCommand.Interact))
+        val rewardSourceId =
+            cacheRewardSourceId(session.config.zoneId, session.currentFloor(), RiverCrystalRuntimeKeys.River.INTERACTABLE_ID, anchorPoint)
+        val rewardSummary =
+            requireNotNull(
+                session.milestoneRewardSummaries().firstOrNull { reward ->
+                    reward.rewardSource == MilestoneRewardSource.SUPPORT &&
+                        reward.sourceId == rewardSourceId &&
+                        reward.qualityTier.ordinal >= RarityTier.MAGIC.ordinal &&
+                        reward.affixIds.isNotEmpty()
+                },
+            )
+        assertEquals("unique_deepcurrent_lens", rewardSummary.baseItemId)
+        assertEquals(EquipSlot.OFF_HAND, rewardSummary.equipSlot)
+        assertEquals("emerald_charm", rewardSummary.equippedBaseItemIdBeforeReward)
+        assertTrue(session.renderSnapshot().logEvents.any { event -> event.message.key == "log.reward.capstone.non_weapon_anchor" })
+
+        val rewardInventoryIndex = inventoryIndexOfBaseId(session, rewardSummary.baseItemId)
+        assertTrue(session.perform(PlayerCommand.ActivateInventoryItem(rewardInventoryIndex)))
+        val adoptedSummary =
+            requireNotNull(
+                session.milestoneRewardSummaries().firstOrNull { reward ->
+                    reward.rewardSource == MilestoneRewardSource.SUPPORT &&
+                        reward.sourceId == rewardSourceId
+                },
+            )
+        assertEquals("unique_deepcurrent_lens", adoptedSummary.equippedBaseItemIdAtRunEnd)
+        assertTrue(adoptedSummary.adoptedInFinalBuild)
     }
 
     @Test
@@ -2762,6 +2966,7 @@ class FoundationGameSessionTest {
         state.nextCycleTurn = 1
         val hazardPoint = state.laneCells.first { point -> point !in state.corridorCells }
         val corridorPoint = state.corridorCells.first()
+        val reliquaryPoint = interactablePoint(session, AbyssalRuntimeKeys.Temple.INTERACTABLE_ID)
 
         movePlayerTo(session, hazardPoint)
 
@@ -2779,13 +2984,33 @@ class FoundationGameSessionTest {
         assertTrue(healthAfterTick <= healthBeforeTick)
         assertTrue(healthAfterTick < healthBeforeTick || requireNotNull(world.get<EffectTracker>(session.playerId)).has(StatusEffectType.CURSE))
 
-        movePlayerTo(session, interactablePoint(session, AbyssalRuntimeKeys.Temple.INTERACTABLE_ID))
+        movePlayerTo(session, reliquaryPoint)
         assertTrue(session.perform(PlayerCommand.Interact))
+        val rewardSourceId =
+            cacheRewardSourceId(session.config.zoneId, session.currentFloor(), AbyssalRuntimeKeys.Temple.INTERACTABLE_ID, reliquaryPoint)
+        val rewardSummary =
+            requireNotNull(
+                session.milestoneRewardSummaries().firstOrNull { reward ->
+                    reward.rewardSource == MilestoneRewardSource.SUPPORT &&
+                        reward.sourceId == rewardSourceId &&
+                        reward.qualityTier.ordinal >= RarityTier.MAGIC.ordinal &&
+                        reward.affixIds.isNotEmpty()
+                },
+            )
+        assertTrue(
+            rewardSummary.baseItemId in
+                setOf("artifact_eclipsed_relic", "unique_vesper_chainmail", "unique_voidlit_seal"),
+        )
         assertEquals(ObjectiveState.IN_PROGRESS, session.worldProgress().questStates[AbyssalRuntimeKeys.Temple.QUEST_ID]?.objectiveStates?.get(AbyssalRuntimeKeys.Temple.OBJECTIVE_ID))
         assertTrue(state.suppressionTurnsRemaining > 0)
         assertEquals(VoidPressurePhase.IDLE, state.phase)
         assertTrue(hasAbyssalWardProtection(world, session.playerId))
         assertTrue(session.renderSnapshot().logEvents.any { event -> event.message.key == AbyssalRuntimeKeys.Temple.STABILIZED_LOG_KEY })
+        assertTrue(
+            session.renderSnapshot().logEvents.any { event ->
+                event.message.key == "log.reward.capstone.anchor" || event.message.key == "log.reward.capstone.non_weapon_anchor"
+            },
+        )
         assertTrue(
             world.entitiesWith(Position::class, Interactable::class).any { entityId ->
                 world.get<Interactable>(entityId)?.id == AbyssalRuntimeKeys.Temple.INTERACTABLE_ID
@@ -2861,6 +3086,7 @@ class FoundationGameSessionTest {
         val state = requireNotNull(world.get<VoidEruptionRuntimeState>(eruptionEntity))
         state.nextCycleTurn = 1
         val hazardPoint = state.hazardCells.first()
+        val focusPoint = interactablePoint(session, AbyssalRuntimeKeys.Finale.INTERACTABLE_ID)
 
         movePlayerTo(session, hazardPoint)
 
@@ -2869,8 +3095,23 @@ class FoundationGameSessionTest {
         assertTrue(session.renderSnapshot().overlays.any { overlay -> overlay.id.startsWith("void-eruption:") })
         assertTrue(session.renderSnapshot().logEvents.any { event -> event.message.key == AbyssalRuntimeKeys.Finale.TELEGRAPH_LOG_KEY })
 
-        movePlayerTo(session, interactablePoint(session, AbyssalRuntimeKeys.Finale.INTERACTABLE_ID))
+        movePlayerTo(session, focusPoint)
         assertTrue(session.perform(PlayerCommand.Interact))
+        val rewardSourceId =
+            cacheRewardSourceId(session.config.zoneId, session.currentFloor(), AbyssalRuntimeKeys.Finale.INTERACTABLE_ID, focusPoint)
+        val rewardSummary =
+            requireNotNull(
+                session.milestoneRewardSummaries().firstOrNull { reward ->
+                    reward.rewardSource == MilestoneRewardSource.SUPPORT &&
+                        reward.sourceId == rewardSourceId &&
+                        reward.qualityTier.ordinal >= RarityTier.MAGIC.ordinal &&
+                        reward.affixIds.isNotEmpty()
+                },
+            )
+        assertTrue(
+            rewardSummary.baseItemId in
+                setOf("abyssal_heartstone", "artifact_eclipsed_relic", "unique_vesper_chainmail", "unique_voidlit_seal"),
+        )
         assertEquals(ObjectiveState.IN_PROGRESS, session.worldProgress().questStates[AbyssalRuntimeKeys.Finale.QUEST_ID]?.objectiveStates?.get(AbyssalRuntimeKeys.Finale.OBJECTIVE_ID))
         assertTrue(state.stabilizedTurnsRemaining > 0)
         assertEquals(VoidPressurePhase.IDLE, state.phase)
@@ -3556,13 +3797,107 @@ class FoundationGameSessionTest {
                 baseId in setOf("basic_shield", "mana_potion", "chain_mail", "apprentice_robe", "long_sword", "emerald_charm", "furnace_talisman", "energy_tonic")
             },
         )
-        val droppedItem = groundItemsAt(session, deathPoint).single()
+        val droppedItem =
+            requireNotNull(
+                groundItemsAt(session, deathPoint).firstOrNull { item ->
+                    item.baseId in setOf("basic_shield", "mana_potion", "chain_mail", "apprentice_robe", "long_sword", "emerald_charm", "furnace_talisman", "energy_tonic")
+                },
+            )
         val dropLog = requireNotNull(logEventByKey(session, "log.loot.monster_drop_quality"))
         assertTrue(
             dropLog.message.arguments.any { argument ->
                 argument.name == "quality" && argument.valueKey == qualityLabelKey(droppedItem.quality)
             },
         )
+    }
+
+    @Test
+    fun `elite capstone monster drops also emit profession anchor cue`() {
+        val session =
+            GameModule.newFoundationSession(
+                FoundationGameConfig(seed = 20260318L, zoneId = "deep_iron_pit", playerProfessionId = "vanguard"),
+                SaveManager(tempDir.resolve("elite-capstone-drop-save")),
+            )
+        clearMonsters(session)
+
+        val customMonster =
+            MonsterTemplate(
+                id = "test.capstone_drop",
+                name = "Capstone Dropper",
+                glyph = 'c',
+                colorHex = "#CC7722",
+                stats = com.ktome.core.ecs.Stats(str = 6, dex = 4, con = 6, wil = 3),
+                baseHp = 8,
+                baseAttack = 2,
+                baseDefense = 0,
+                speed = 90,
+                ai = AIType.CHASE,
+                expReward = 0,
+                spawnFloors = listOf(1),
+                spawnWeight = 1,
+                lootProfileId = "loot.test.capstone_elite",
+            )
+        val existingContent = sessionContent(session)
+        val customCapstoneBaseId = "test_vanguard_anchor_blade"
+        val customCapstoneBase =
+            existingContent.itemBundle.baseItems
+                .first { item -> item.id == "war_maul" }
+                .copy(
+                    id = customCapstoneBaseId,
+                    name = "Test Vanguard Anchor",
+                    tags = setOf("item", "weapon", "vanguard", "capstone", "oil"),
+                    dropFloors = listOf(1),
+                    dropWeight = 4,
+                )
+        val customCapstoneSchema =
+            existingContent.schemaCatalog.itemBundle.items
+                .first { item -> item.id == "war_maul" }
+                .copy(
+                    id = customCapstoneBaseId,
+                    tags = listOf("item", "weapon", "vanguard", "capstone", "oil"),
+                    dropFloors = listOf(1),
+                    dropWeight = 4,
+                )
+        replaceContent(
+            session = session,
+            content =
+                existingContent.copy(
+                    monsterCatalog = existingContent.monsterCatalog + customMonster,
+                    itemBundle = existingContent.itemBundle.copy(baseItems = existingContent.itemBundle.baseItems + customCapstoneBase),
+                    schemaCatalog =
+                        existingContent.schemaCatalog.copy(
+                            itemBundle =
+                                existingContent.schemaCatalog.itemBundle.copy(
+                                    items = existingContent.schemaCatalog.itemBundle.items + customCapstoneSchema,
+                                ),
+                            lootProfiles =
+                                existingContent.schemaCatalog.lootProfiles +
+                                    com.ktome.game.data.schema.LootProfileSchemaV3(
+                                        id = "loot.test.capstone_elite",
+                                        schemaVersion = 3,
+                                        tags = listOf("loot", "test", "capstone"),
+                                        itemIds = listOf(customCapstoneBaseId),
+                                        rewardBudget = 1,
+                                        canonicalZoneId = "deep_iron_pit",
+                                        poolStrategy = com.ktome.game.data.schema.LootPoolStrategy.FIXED_LIST,
+                                    ),
+                        ),
+                ),
+        )
+
+        val world = runtimeWorld(session)
+        val monsterPoint = findOpenAdjacentPoint(session, session.playerPosition())
+        val monsterId = EntityFactory().createMonster(world = world, template = customMonster, position = monsterPoint)
+        world.add(monsterId, EliteMutationLoadout(mutableListOf("elite.phase_runner")))
+        world.remove<AIBehavior>(monsterId)
+        requireNotNull(world.get<Health>(monsterId)).current = 1
+        val attackOrigin = findOpenAdjacentPoint(session, monsterPoint)
+        movePlayerTo(session, attackOrigin)
+
+        assertTrue(session.perform(PlayerCommand.Move(monsterPoint - attackOrigin)))
+        assertEquals(listOf(customCapstoneBaseId), groundItemBaseIdsAt(session, monsterPoint))
+        assertNotNull(logEventByKey(session, "log.loot.monster_drop_quality"))
+        assertNotNull(logEventByKey(session, "log.reward.capstone.anchor"))
     }
 
     @Test
@@ -4879,20 +5214,25 @@ class FoundationGameSessionTest {
         invokeHandleDeath(session, bossId, session.playerId)
         assertTrue(session.isVictory())
         assertEquals(baselineInventoryCount + 1, session.inventoryItems().size)
-        assertEquals(1, inventoryBaseIds(session).count { baseId -> baseId == "abyssal_heartstone" })
+        val rewardSummary =
+            requireNotNull(
+                session.milestoneRewardSummaries().firstOrNull { reward ->
+                    reward.rewardSource == MilestoneRewardSource.BOSS &&
+                        reward.sourceId == "abyssal_guardian_encounter" &&
+                        reward.qualityTier == RarityTier.RARE &&
+                        reward.affixIds.size >= 3
+                },
+            )
         assertTrue(
-            session.milestoneRewardSummaries().any { reward ->
-                reward.rewardSource == MilestoneRewardSource.BOSS &&
-                    reward.sourceId == "abyssal_guardian_encounter" &&
-                    reward.qualityTier == RarityTier.RARE &&
-                    reward.affixIds.size >= 3
-            },
+            rewardSummary.baseItemId in
+                setOf("abyssal_heartstone", "artifact_eclipsed_relic", "unique_vesper_chainmail", "unique_voidlit_seal"),
         )
         val rewardLog = logEventByKey(session, "log.boss.reward.claimed") ?: logEventByKey(session, "log.boss.reward.dropped")
-        rewardLog?.let { snapshot ->
-            assertEquals(
-                "item.abyssal_heartstone.name",
-                snapshot.message.arguments.first { argument -> argument.name == "item" }.valueKey,
+        assertNotNull(rewardLog)
+        if (rewardSummary.baseItemId != "abyssal_heartstone") {
+            assertNotNull(
+                logEventByKey(session, "log.reward.capstone.anchor")
+                    ?: logEventByKey(session, "log.reward.capstone.non_weapon_anchor"),
             )
         }
         assertNull(logEventByKey(session, "log.loot.monster_drop_quality"))

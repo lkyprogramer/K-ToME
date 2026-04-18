@@ -22,6 +22,24 @@
             "metricId": "professionAlignedWeaponAdoptionRate",
             "minValue": 0.75,
             "notes": "Profession-aligned weapon adoption must remain at or above 75%."
+        },
+        {
+            "metricId": "professionCapstoneSeenRate",
+            "minValue": 0.25,
+            "notes": "Profession capstone visibility is frozen to the refreshed PR-02 long-run artifact floor and each foundation profession must see at least one capstone.",
+            "metadata": {
+                "perProfessionSeenMinCount": 1
+            }
+        },
+        {
+            "metricId": "professionCapstoneAdoptionRate",
+            "minValue": 0.25,
+            "notes": "Profession capstone adoption must stay materially visible in terminal builds."
+        },
+        {
+            "metricId": "nonWeaponBuildPayoffRate",
+            "minValue": 0.25,
+            "notes": "Non-weapon build payoff must remain materially adopted in refreshed PR-02 full-route runs."
         }
     ],
     "notes": [
