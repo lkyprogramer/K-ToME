@@ -15,6 +15,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
@@ -103,7 +104,8 @@ object ReportPhase4Runner {
     private const val SCHEMA_VERSION: String = "report-phase4-v2"
     private const val SUMMARY_FILE: String = "report-phase4-summary.json"
     private const val MARKDOWN_FILE: String = "report-phase4-summary.md"
-    private const val LEGACY_COMPARISON_FILE: String = "report-phase4-legacy-comparison.json"
+private const val LEGACY_COMPARISON_FILE: String = "report-phase4-legacy-comparison.json"
+private const val BUILD_IDENTITY_DEBUG_FILE: String = "build-identity-debug.json"
     private val pacingMetricIds: List<String> =
         listOf(
             "avgObjectiveAcquireTurn",
@@ -182,6 +184,14 @@ object ReportPhase4Runner {
         val markdownPath = outputDir.resolve(MARKDOWN_FILE)
         Files.writeString(summaryPath, reportPhase4Json.encodeToString(ReportPhase4Aggregate.serializer(), aggregate))
         Files.writeString(markdownPath, renderMarkdown(aggregate))
+        val buildIdentityDebugPath = outputDir.resolve(BUILD_IDENTITY_DEBUG_FILE)
+        Files.writeString(
+            buildIdentityDebugPath,
+            reportPhase4Json.encodeToString(
+                JsonElement.serializer(),
+                buildIdentityDebugArtifact(aggregationInputs.associateBy(ReportAggregationInput::sourceTaskId)),
+            ),
+        )
         val legacyComparisonPath = outputDir.resolve(LEGACY_COMPARISON_FILE)
         val comparisonPath =
             legacyComparison?.let { comparison ->
@@ -407,6 +417,66 @@ object ReportPhase4Runner {
         }
     }
 
+    private fun buildIdentityDebugArtifact(
+        inputsByTaskId: Map<String, ReportAggregationInput>,
+    ): JsonElement {
+        val longRunInput = requireInput(inputsByTaskId, "longRunLab")
+        val lootInput = requireInput(inputsByTaskId, "whiteBoxLoot")
+        val longRunRewardSelections = readLongRunRewardSelections(repoRoot().resolve(longRunInput.kernelResult.sourcePath))
+        val rewardRoutingCoverageSummary =
+            lootInput.kernelResult.metrics["rewardRoutingCoverageSummary"]
+                ?: error("whiteBoxLoot.rewardRoutingCoverageSummary missing from artifact.")
+        return buildJsonObject {
+            put("rewardSourceSelections", longRunRewardSelections)
+            put(
+                "topRejectedCapstoneCandidates",
+                rewardRoutingCoverageSummary.jsonObject.getValue("topRejectedCapstoneCandidates"),
+            )
+            put(
+                "perProfessionSourceCoverage",
+                rewardRoutingCoverageSummary.jsonObject.getValue("professionSourceCoverage"),
+            )
+        }
+    }
+
+    private fun readLongRunRewardSelections(sourcePath: Path): JsonElement {
+        if (!Files.isRegularFile(sourcePath)) {
+            return buildJsonArray {}
+        }
+        val payload = reportPhase4Json.parseToJsonElement(Files.readString(sourcePath)).jsonObject
+        val rewards =
+            payload["reports"]
+                ?.jsonArray
+                ?.flatMap { report ->
+                    report.jsonObject["milestoneRewards"]?.jsonArray.orEmpty()
+                }.orEmpty()
+        val grouped =
+            rewards.groupBy { reward ->
+                val payload = reward.jsonObject
+                listOf(
+                    payload.getValue("rewardSource").jsonPrimitive.content,
+                    payload.getValue("sourceId").jsonPrimitive.content,
+                    payload.getValue("zoneId").jsonPrimitive.content,
+                    payload.getValue("baseItemId").jsonPrimitive.content,
+                )
+            }
+        return buildJsonArray {
+            grouped.entries
+                .sortedBy { (key, _) -> key.joinToString("|") }
+                .forEach { (key, entries) ->
+                    add(
+                        buildJsonObject {
+                            put("rewardSource", key[0])
+                            put("sourceId", key[1])
+                            put("zoneId", key[2])
+                            put("selectedBaseId", key[3])
+                            put("count", entries.size)
+                        },
+                    )
+                }
+        }
+    }
+
     private fun jsonSubsetMatches(
         expected: JsonElement,
         actual: JsonElement,
@@ -438,10 +508,13 @@ object ReportPhase4Runner {
             val organicHiddenMetric = requireOwnerMetric(report.ownerMetrics, "organicHiddenDiscoveryRate")
             val cadenceMetric = requireOwnerMetric(report.ownerMetrics, "sameZoneSecretVsCadenceMaxOverlap")
             val rewardMetric = requireOwnerMetric(report.ownerMetrics, "sameZoneSecretVsRewardMaxOverlap")
+            val sourceCoverageMetric = requireOwnerMetric(report.ownerMetrics, "professionCapstoneSourceCoverage.reportOnly")
             val objectiveMetric = requireOwnerMetric(report.ownerMetrics, "avgObjectiveAcquireTurn")
             val visibleMetric = requireOwnerMetric(report.ownerMetrics, "avgVisibleHostileTurnCount")
             val enemyMetric = requireOwnerMetric(report.ownerMetrics, "avgEnemyTurns")
             val satisfiedMetric = requireOwnerMetric(report.ownerMetrics, "criticalPathCombatFloorSatisfied")
+            val capstoneAdoptionFloorMetric = requireOwnerMetric(report.ownerMetrics, "professionCapstoneAdoptionFloor.reportOnly")
+            val nonWeaponFloorMetric = requireOwnerMetric(report.ownerMetrics, "nonWeaponBuildPayoffFloor.reportOnly")
             val criticalPathSection = requireSection(report.sections, "criticalPathPacing")
             val criticalPathZoneIds =
                 criticalPathSection.getValue("criticalPathZoneIds").jsonArray.map { zoneId ->
@@ -522,8 +595,10 @@ object ReportPhase4Runner {
             appendLine("- sourceTask: `${lootInput.sourceTaskId}`")
             appendLine("- `sameZoneSecretVsCadenceMaxOverlap`: ${cadenceMetric.currentValueText} / `${cadenceMetric.status}`")
             appendLine("- `sameZoneSecretVsRewardMaxOverlap`: ${rewardMetric.currentValueText} / `${rewardMetric.status}`")
+            appendLine("- `professionCapstoneSourceCoverage.reportOnly`: ${sourceCoverageMetric.currentValueText} / `${sourceCoverageMetric.status}`")
             appendLine("- `localIdentityFailurePairs`: ${lootInput.kernelResult.metrics.stringList("localIdentityFailurePairs").joinToString().ifBlank { "none" }}")
             appendLine("- `strictLocalIdentityViolations`: ${lootInput.kernelResult.metrics.getValue("strictLocalIdentityViolations").jsonArray.joinToString { violation -> violation.jsonObject.getValue("pairId").jsonPrimitive.content }.ifBlank { "none" }}")
+            sourceCoverageMetric.note?.let { note -> appendLine("- `professionCapstoneSourceCoverage.reportOnly` note: $note") }
             appendLine("- secret reward identity summaries:")
             lootInput.kernelResult.metrics
                 .getValue("secretProfileIdentitySummaries")
@@ -577,6 +652,12 @@ object ReportPhase4Runner {
                     "| `${audit.getValue("zoneId").jsonPrimitive.content}` | `${audit.getValue("floorCount").jsonPrimitive.content}` | `${audit.getValue("mapSize").jsonPrimitive.content}` | `${audit.getValue("worldRole").jsonPrimitive.content}` | `${audit.getValue("objectiveSetId").jsonPrimitive.content}` | `${audit.getValue("objectiveCompletionRule").jsonPrimitive.content}` | `${audit.getValue("mechanicsWithoutDedicatedRuntimeHook").jsonArray.joinToString { mechanic -> mechanic.jsonPrimitive.content }.ifBlank { "none" }}` |",
                 )
             }
+            appendLine()
+            appendLine("## Terminal Build Identity")
+            appendLine("- `professionCapstoneAdoptionFloor.reportOnly`: ${capstoneAdoptionFloorMetric.currentValueText} / `${capstoneAdoptionFloorMetric.status}`")
+            appendLine("- `nonWeaponBuildPayoffFloor.reportOnly`: ${nonWeaponFloorMetric.currentValueText} / `${nonWeaponFloorMetric.status}`")
+            capstoneAdoptionFloorMetric.note?.let { note -> appendLine("- `professionCapstoneAdoptionFloor.reportOnly` note: $note") }
+            nonWeaponFloorMetric.note?.let { note -> appendLine("- `nonWeaponBuildPayoffFloor.reportOnly` note: $note") }
             appendLine()
             appendLine("## Inputs")
             report.inputs.forEach { input ->

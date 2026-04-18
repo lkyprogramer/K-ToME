@@ -595,6 +595,7 @@ internal object Phase4DomainArtifactRegistry {
                     put("uniqueArtifactMeaningfulSwapRate", corpusMetrics.getValue("uniqueArtifactMeaningfulSwapRate"))
                     put("specialTierPassiveFamilyDuplicateSummary", corpusMetrics.requireArtifactMetric("whiteBoxLoot", "specialTierPassiveFamilyDuplicateSummary"))
                     put("specialTierPassiveFamilyDuplicateCount", corpusMetrics.requireArtifactMetric("whiteBoxLoot", "specialTierPassiveFamilyDuplicateCount"))
+                    put("rewardRoutingCoverageSummary", corpusMetrics.requireArtifactMetric("whiteBoxLoot", "rewardRoutingCoverageSummary"))
                 },
         )
     }

@@ -301,6 +301,131 @@ class Phase4AggregationInputRunnerTest {
     @Test
     @Tag("reportPhase4Fixture")
     @Tag("phase4AggregationInput")
+    fun `whitebox loot source coverage mismatch fails aggregation with culprit sources`() {
+        val fixtureRepoRoot = Phase4ReportFixtureTestSupport.preparePhase4RepoFixture(tempDir)
+        Phase4ReportFixtureTestSupport.mutateWhiteBoxLootCorpusMetrics(fixtureRepoRoot) { metrics ->
+            Phase4ReportFixtureTestSupport.replaceMetricsField(
+                metrics = metrics,
+                key = "rewardRoutingCoverageSummary",
+                value =
+                    buildJsonObject {
+                        put("coveredSourcePairCount", JsonPrimitive(5))
+                        put("totalSourcePairCount", JsonPrimitive(6))
+                        put("professionCapstoneSourceCoverageRate", JsonPrimitive(5.0 / 6.0))
+                        put(
+                            "criticalSources",
+                            metrics.getValue("rewardRoutingCoverageSummary").jsonObject.getValue("criticalSources"),
+                        )
+                        put(
+                            "professionSourceCoverage",
+                            buildJsonArray {
+                                add(
+                                    buildJsonObject {
+                                        put("professionId", JsonPrimitive("arcanist"))
+                                        put("rewardSource", JsonPrimitive("CACHE"))
+                                        put("covered", JsonPrimitive(false))
+                                        put("coveredSourceIds", buildJsonArray {})
+                                        put(
+                                            "culpritSourceIds",
+                                            buildJsonArray {
+                                                add(JsonPrimitive("abyssal_temple/temple_ward_reliquary/GROUND_CACHE"))
+                                            },
+                                        )
+                                    },
+                                )
+                                add(
+                                    buildJsonObject {
+                                        put("professionId", JsonPrimitive("rogue"))
+                                        put("rewardSource", JsonPrimitive("CACHE"))
+                                        put("covered", JsonPrimitive(true))
+                                        put(
+                                            "coveredSourceIds",
+                                            buildJsonArray {
+                                                add(JsonPrimitive("underground_river/crystal_cache_chest/GROUND_CACHE"))
+                                            },
+                                        )
+                                        put("culpritSourceIds", buildJsonArray {})
+                                    },
+                                )
+                            },
+                        )
+                        put(
+                            "topRejectedCapstoneCandidates",
+                            buildJsonArray {
+                                add(
+                                    buildJsonObject {
+                                        put("professionId", JsonPrimitive("arcanist"))
+                                        put("rewardSource", JsonPrimitive("CACHE"))
+                                        put("sourceId", JsonPrimitive("abyssal_temple/temple_ward_reliquary/GROUND_CACHE"))
+                                        put("zoneId", JsonPrimitive("abyssal_temple"))
+                                        put("baseItemId", JsonPrimitive("unique_arcane_lexicon"))
+                                        put("rejectionReason", JsonPrimitive("SOURCE_TIER_MISMATCH"))
+                                    },
+                                )
+                            },
+                        )
+                    },
+            )
+        }
+
+        Phase4ReportFixtureTestSupport.withFixtureProperties(
+            repoRoot = fixtureRepoRoot,
+            aggregateReportDir = tempDir.resolve("phase4-aggregation-source-coverage-fallback"),
+        ) {
+            val run = Phase4AggregationInputRunner.materialize()
+            val lootPayload =
+                Json.parseToJsonElement(Files.readString(run.inputDir.resolve("whiteBoxLoot.json"))).jsonObject
+            val lootEvaluation =
+                lootPayload.getValue("evaluationResults").jsonArray
+                    .first { evaluation -> evaluation.jsonObject.getValue("evaluationId").jsonPrimitive.content == "loot.localRewardIdentity" }
+                    .jsonObject
+            val sourceCoverageEntry =
+                lootEvaluation.getValue("entries").jsonArray
+                    .first { entry -> entry.jsonObject.getValue("metricId").jsonPrimitive.content == "professionCapstoneSourceCoverage.reportOnly" }
+                    .jsonObject
+
+            assertEquals("FAIL", lootEvaluation.getValue("verdict").jsonPrimitive.content)
+            assertEquals("UNEXPECTED_REGRESSION", sourceCoverageEntry.getValue("status").jsonPrimitive.content)
+            assertEquals("5/6", sourceCoverageEntry.getValue("currentValueText").jsonPrimitive.content)
+            assertTrue(sourceCoverageEntry.getValue("note").jsonPrimitive.content.contains("arcanist:CACHE"))
+            assertTrue(
+                sourceCoverageEntry.getValue("note").jsonPrimitive.content.contains(
+                    "abyssal_temple/temple_ward_reliquary/GROUND_CACHE",
+                ),
+            )
+        }
+    }
+
+    @Test
+    @Tag("reportPhase4Fixture")
+    @Tag("phase4AggregationInput")
+    fun `whitebox loot missing reward routing coverage summary fails aggregation fast`() {
+        val fixtureRepoRoot = Phase4ReportFixtureTestSupport.preparePhase4RepoFixture(tempDir)
+        Phase4ReportFixtureTestSupport.mutateWhiteBoxLootCorpusMetrics(fixtureRepoRoot) { metrics ->
+            buildJsonObject {
+                metrics.forEach { (key, value) ->
+                    if (key != "rewardRoutingCoverageSummary") {
+                        put(key, value)
+                    }
+                }
+            }
+        }
+
+        Phase4ReportFixtureTestSupport.withFixtureProperties(
+            repoRoot = fixtureRepoRoot,
+            aggregateReportDir = tempDir.resolve("phase4-aggregation-missing-source-coverage-summary"),
+        ) {
+            val error =
+                assertThrows(IllegalStateException::class.java) {
+                    Phase4AggregationInputRunner.materialize()
+                }
+            assertTrue(error.message.orEmpty().contains("whiteBoxLoot.rewardRoutingCoverageSummary"))
+        }
+    }
+
+    @Test
+    @Tag("reportPhase4Fixture")
+    @Tag("phase4AggregationInput")
     fun `terminal build evaluation fails when per profession capstone floors collapse`() {
         val fixtureRepoRoot = Phase4ReportFixtureTestSupport.preparePhase4RepoFixture(tempDir)
         val terminalBuildBaselinePath =
@@ -432,16 +557,28 @@ class Phase4AggregationInputRunnerTest {
                 terminalBuildEvaluation.getValue("entries").jsonArray
                     .first { entry -> entry.jsonObject.getValue("metricId").jsonPrimitive.content == "professionCapstoneAdoptionRate" }
                     .jsonObject
+            val adoptionFloorEntry =
+                terminalBuildEvaluation.getValue("entries").jsonArray
+                    .first { entry -> entry.jsonObject.getValue("metricId").jsonPrimitive.content == "professionCapstoneAdoptionFloor.reportOnly" }
+                    .jsonObject
             val nonWeaponEntry =
                 terminalBuildEvaluation.getValue("entries").jsonArray
                     .first { entry -> entry.jsonObject.getValue("metricId").jsonPrimitive.content == "nonWeaponBuildPayoffRate" }
+                    .jsonObject
+            val nonWeaponFloorEntry =
+                terminalBuildEvaluation.getValue("entries").jsonArray
+                    .first { entry -> entry.jsonObject.getValue("metricId").jsonPrimitive.content == "nonWeaponBuildPayoffFloor.reportOnly" }
                     .jsonObject
 
             assertEquals("FAIL", terminalBuildEvaluation.getValue("verdict").jsonPrimitive.content)
             assertEquals("UNEXPECTED_REGRESSION", seenEntry.getValue("status").jsonPrimitive.content)
             assertEquals("UNEXPECTED_REGRESSION", adoptionEntry.getValue("status").jsonPrimitive.content)
             assertEquals("UNEXPECTED_REGRESSION", nonWeaponEntry.getValue("status").jsonPrimitive.content)
+            assertEquals("APPROVED_DEBT", adoptionFloorEntry.getValue("status").jsonPrimitive.content)
+            assertEquals("APPROVED_DEBT", nonWeaponFloorEntry.getValue("status").jsonPrimitive.content)
             assertTrue(seenEntry.getValue("note").jsonPrimitive.content.contains("arcanist"))
+            assertTrue(adoptionFloorEntry.getValue("note").jsonPrimitive.content.contains("arcanist"))
+            assertTrue(nonWeaponFloorEntry.getValue("note").jsonPrimitive.content.contains("arcanist"))
         }
     }
 

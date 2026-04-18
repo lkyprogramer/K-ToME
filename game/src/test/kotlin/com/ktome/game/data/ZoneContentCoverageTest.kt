@@ -9,6 +9,7 @@ import com.ktome.core.loot.AffixCostBand
 import com.ktome.core.loot.SourceTier
 import com.ktome.core.loot.SpecialTier
 import com.ktome.game.ZoneMechanicRuntime
+import com.ktome.game.data.schema.RewardRoutingGrantMode
 import com.ktome.game.i18n.GameLocale
 import com.ktome.game.i18n.LocalizationBundle
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -22,6 +23,10 @@ class ZoneContentCoverageTest {
         val catalog = DataLoader(GameLocale.EN_US).loadSchemaCatalog()
         val objectivesById = catalog.objectiveSets.associateBy { objective -> objective.id }
         val optionalZones = catalog.zones.filter { zone -> zone.worldRole == "optional" }
+        val rewardRoutingKeys =
+            catalog.rewardRoutingEntries.mapTo(linkedSetOf()) { entry ->
+                Triple(entry.zoneId, entry.interactableId, entry.grantMode)
+            }
 
         assertEquals(setOf("bandit_camp", "elven_ruins", "molten_core", "crystal_cavern"), optionalZones.map { zone -> zone.id }.toSet())
         optionalZones.forEach { zone ->
@@ -35,8 +40,11 @@ class ZoneContentCoverageTest {
             assertTrue(objective.interactables.isNotEmpty(), "Optional zone '${zone.id}' must expose at least one interactable hook.")
             assertTrue(objective.placements.isNotEmpty(), "Optional zone '${zone.id}' must place its objective hook into the runtime map.")
             assertTrue(
-                ZoneMechanicRuntime.uniqueContentRewardProfiles(zone.uniqueContentTag).isNotEmpty(),
-                "Optional zone '${zone.id}' must route uniqueContentTag into a real reward/runtime bias.",
+                objective.interactables.any { interactableId ->
+                    Triple(zone.id, interactableId, RewardRoutingGrantMode.GROUND_CACHE) in rewardRoutingKeys ||
+                        Triple(zone.id, interactableId, RewardRoutingGrantMode.SUPPORT_GRANT) in rewardRoutingKeys
+                },
+                "Optional zone '${zone.id}' must route its objective interactables into reward routing authority.",
             )
         }
     }

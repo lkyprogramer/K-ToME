@@ -1,0 +1,45 @@
+buildIdentities:
+  - professionId: vanguard
+    schemaVersion: 1
+    capstoneBaseIds: [artifact_forge_oath, unique_furnace_plate, unique_quenchbreaker_maul]
+    nonWeaponCapstoneBaseIds: [unique_furnace_plate]
+    preferredRewardSources: [SUPPORT, BOSS]
+    preferredReplacementSlots: [WEAPON, ARMOR]
+    terminalIdentityTags: [frontline, guard, shield, discipline]
+    reportOnlyFloors:
+      seenMinCount: 1
+      adoptionMinCount: 1
+      nonWeaponMinCount: 1
+  - professionId: arcanist
+    schemaVersion: 1
+    capstoneBaseIds: [artifact_river_echo, unique_deepcurrent_lens]
+    nonWeaponCapstoneBaseIds: [unique_deepcurrent_lens]
+    preferredRewardSources: [CACHE, SUPPORT]
+    preferredReplacementSlots: [WEAPON, OFF_HAND]
+    terminalIdentityTags: [arcane, spell, ranged, control]
+    reportOnlyFloors:
+      seenMinCount: 1
+      adoptionMinCount: 1
+      nonWeaponMinCount: 1
+  - professionId: rogue
+    schemaVersion: 1
+    capstoneBaseIds: [artifact_briar_heart, artifact_heartroot_gambit, unique_thornpath_crook, unique_briarbound_bow]
+    nonWeaponCapstoneBaseIds: [artifact_briar_heart]
+    preferredRewardSources: [CACHE, BOSS]
+    preferredReplacementSlots: [WEAPON, OFF_HAND]
+    terminalIdentityTags: [precision, mobility, finesse, ranged, marked]
+    reportOnlyFloors:
+      seenMinCount: 1
+      adoptionMinCount: 1
+      nonWeaponMinCount: 1
+  - professionId: templar
+    schemaVersion: 1
+    capstoneBaseIds: [artifact_eclipsed_relic, unique_vesper_chainmail, unique_voidlit_seal]
+    nonWeaponCapstoneBaseIds: [artifact_eclipsed_relic, unique_vesper_chainmail, unique_voidlit_seal]
+    preferredRewardSources: [SUPPORT, BOSS]
+    preferredReplacementSlots: [OFF_HAND, ARMOR]
+    terminalIdentityTags: [holy, frontline, guard, shield]
+    reportOnlyFloors:
+      seenMinCount: 1
+      adoptionMinCount: 1
+      nonWeaponMinCount: 1

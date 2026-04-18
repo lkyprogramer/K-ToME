@@ -1,32 +1,63 @@
 package com.ktome.game.loot
 
 import com.ktome.core.item.EquipSlot
+import com.ktome.core.item.MilestoneRewardSource
 import com.ktome.core.profession.ProfessionTier
 import com.ktome.game.data.DataLoader
-import com.ktome.game.data.schema.ProfessionSchemaV2
+import com.ktome.game.data.schema.SchemaCatalog
 
-private data class FoundationProfessionCapstoneCatalog(
-    val baseIdsByProfessionId: Map<String, Set<String>>,
-    val baseIdsByResourceType: Map<String, Set<String>>,
-    val nonWeaponBaseIdsByResourceType: Map<String, Set<String>>,
+data class FoundationBuildIdentityReportOnlyFloors(
+    val seenMinCount: Int,
+    val adoptionMinCount: Int,
+    val nonWeaponMinCount: Int,
 )
 
-private val foundationProfessionCapstoneCatalog: FoundationProfessionCapstoneCatalog by lazy(::buildFoundationProfessionCapstoneCatalog)
+data class FoundationProfessionBuildIdentity(
+    val professionId: String,
+    val resourceTypeId: String,
+    val capstoneBaseIds: Set<String>,
+    val nonWeaponCapstoneBaseIds: Set<String>,
+    val preferredRewardSources: Set<MilestoneRewardSource>,
+    val preferredReplacementSlots: Set<EquipSlot>,
+    val terminalIdentityTags: Set<String>,
+    val reportOnlyFloors: FoundationBuildIdentityReportOnlyFloors,
+)
 
-internal val foundationProfessionCapstoneBaseIdsByProfessionId: Map<String, Set<String>>
-    get() = foundationProfessionCapstoneCatalog.baseIdsByProfessionId
+private data class FoundationBuildIdentityCatalog(
+    val identitiesByProfessionId: Map<String, FoundationProfessionBuildIdentity>,
+    val identitiesByResourceTypeId: Map<String, FoundationProfessionBuildIdentity>,
+)
 
-internal fun foundationProfessionCapstonePreferenceScore(
+private val foundationBuildIdentityCatalog: FoundationBuildIdentityCatalog by lazy(::buildFoundationBuildIdentityCatalog)
+
+val foundationBuildIdentityByProfessionId: Map<String, FoundationProfessionBuildIdentity>
+    get() = foundationBuildIdentityCatalog.identitiesByProfessionId
+
+val foundationBuildIdentityProfessionIds: Set<String>
+    get() = foundationBuildIdentityCatalog.identitiesByProfessionId.keys
+
+val foundationProfessionCapstoneBaseIdsByProfessionId: Map<String, Set<String>>
+    get() =
+        foundationBuildIdentityCatalog.identitiesByProfessionId.mapValues { (_, identity) ->
+            identity.capstoneBaseIds
+        }
+
+fun foundationBuildIdentityForResourceType(resourceTypeId: String): FoundationProfessionBuildIdentity? =
+    foundationBuildIdentityCatalog.identitiesByResourceTypeId[resourceTypeId]
+
+fun foundationBuildIdentityMapFor(schemaCatalog: SchemaCatalog): Map<String, FoundationProfessionBuildIdentity> =
+    buildFoundationBuildIdentityCatalog(schemaCatalog).identitiesByProfessionId
+
+fun foundationProfessionCapstonePreferenceScore(
     resourceTypeId: String,
     baseItemId: String,
     slot: EquipSlot?,
 ): Int {
-    val capstoneIds = foundationProfessionCapstoneCatalog.baseIdsByResourceType[resourceTypeId].orEmpty()
-    if (baseItemId !in capstoneIds) {
+    val identity = foundationBuildIdentityForResourceType(resourceTypeId) ?: return 0
+    if (baseItemId !in identity.capstoneBaseIds) {
         return 0
     }
-    val nonWeaponCapstoneIds = foundationProfessionCapstoneCatalog.nonWeaponBaseIdsByResourceType[resourceTypeId].orEmpty()
-    val nonWeaponCapstone = baseItemId in nonWeaponCapstoneIds
+    val nonWeaponCapstone = baseItemId in identity.nonWeaponCapstoneBaseIds
     return when (slot) {
         EquipSlot.OFF_HAND -> if (nonWeaponCapstone) 150 else 120
         EquipSlot.ARMOR -> if (nonWeaponCapstone) 140 else 120
@@ -35,53 +66,45 @@ internal fun foundationProfessionCapstonePreferenceScore(
     }
 }
 
-private fun buildFoundationProfessionCapstoneCatalog(): FoundationProfessionCapstoneCatalog {
-    val loader = DataLoader()
-    val schemaCatalog = loader.loadSchemaCatalog()
-    val itemBundle = loader.loadItemBundle()
-    val foundationProfessions =
-        schemaCatalog.professions.filter { profession ->
-            profession.tier == ProfessionTier.BASE &&
-                profession.tags.any { tag -> normalizeLootBaseSelectionTag(tag) == "foundation" }
-        }
-    val normalizedTagsByBaseId =
-        itemBundle.baseItems.associate { base ->
-            base.id to base.tags.mapTo(linkedSetOf(), ::normalizeLootBaseSelectionTag)
-        }
-    val baseIdsByProfessionId =
-        foundationProfessions.associate { profession ->
-            val capstoneBaseIds =
-                itemBundle.baseItems
-                    .asSequence()
-                    .filter { base ->
-                        val tags = normalizedTagsByBaseId.getValue(base.id)
-                        "capstone" in tags && profession.id in tags
-                    }.map { base -> base.id }
-                    .toCollection(linkedSetOf())
-            check(capstoneBaseIds.isNotEmpty()) {
-                "Foundation profession '${profession.id}' must declare at least one tagged capstone base item."
+private fun buildFoundationBuildIdentityCatalog(): FoundationBuildIdentityCatalog =
+    buildFoundationBuildIdentityCatalog(DataLoader().loadSchemaCatalog())
+
+private fun buildFoundationBuildIdentityCatalog(schemaCatalog: SchemaCatalog): FoundationBuildIdentityCatalog {
+    val foundationProfessionsById =
+        schemaCatalog.professions
+            .filter { profession ->
+                profession.tier == ProfessionTier.BASE &&
+                    profession.tags.any { tag -> normalizeLootBaseSelectionTag(tag) == "foundation" }
+            }.associateBy { profession -> profession.id }
+    val identitiesByProfessionId =
+        schemaCatalog.buildIdentities.associate { identity ->
+            val profession = requireNotNull(foundationProfessionsById[identity.professionId]) {
+                "Missing foundation profession '${identity.professionId}' for build identity catalog."
             }
-            profession.id to capstoneBaseIds
+            identity.professionId to
+                FoundationProfessionBuildIdentity(
+                    professionId = identity.professionId,
+                    resourceTypeId = profession.resourceType,
+                    capstoneBaseIds = identity.capstoneBaseIds.toCollection(linkedSetOf()),
+                    nonWeaponCapstoneBaseIds = identity.nonWeaponCapstoneBaseIds.toCollection(linkedSetOf()),
+                    preferredRewardSources = identity.preferredRewardSources.toCollection(linkedSetOf()),
+                    preferredReplacementSlots = identity.preferredReplacementSlots.toCollection(linkedSetOf()),
+                    terminalIdentityTags = identity.terminalIdentityTags.mapTo(linkedSetOf(), ::normalizeLootBaseSelectionTag),
+                    reportOnlyFloors =
+                        FoundationBuildIdentityReportOnlyFloors(
+                            seenMinCount = identity.reportOnlyFloors.seenMinCount,
+                            adoptionMinCount = identity.reportOnlyFloors.adoptionMinCount,
+                            nonWeaponMinCount = identity.reportOnlyFloors.nonWeaponMinCount,
+                        ),
+                )
         }
-    val baseIdsByResourceType = foundationProfessions.capstoneIdsByResourceType(baseIdsByProfessionId)
-    return FoundationProfessionCapstoneCatalog(
-        baseIdsByProfessionId = baseIdsByProfessionId,
-        baseIdsByResourceType = baseIdsByResourceType,
-        nonWeaponBaseIdsByResourceType =
-            foundationProfessions.capstoneIdsByResourceType(baseIdsByProfessionId) { baseItemId ->
-                "non_weapon_capstone" in normalizedTagsByBaseId.getValue(baseItemId)
-            },
+    val identitiesByResourceTypeId =
+        identitiesByProfessionId.values.associateBy { identity -> identity.resourceTypeId }
+    require(identitiesByResourceTypeId.size == identitiesByProfessionId.size) {
+        "Foundation build identity catalog must keep a unique resourceTypeId per foundation profession."
+    }
+    return FoundationBuildIdentityCatalog(
+        identitiesByProfessionId = identitiesByProfessionId,
+        identitiesByResourceTypeId = identitiesByResourceTypeId,
     )
 }
-
-private fun List<ProfessionSchemaV2>.capstoneIdsByResourceType(
-    baseIdsByProfessionId: Map<String, Set<String>>,
-    filter: (String) -> Boolean = { true },
-): Map<String, Set<String>> =
-    groupBy(ProfessionSchemaV2::resourceType)
-        .mapValues { (_, professions) ->
-            professions
-                .flatMap { profession -> baseIdsByProfessionId.getValue(profession.id) }
-                .filter(filter)
-                .toCollection(linkedSetOf())
-        }

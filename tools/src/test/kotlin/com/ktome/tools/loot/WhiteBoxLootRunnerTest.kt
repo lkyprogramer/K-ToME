@@ -104,6 +104,8 @@ class WhiteBoxLootRunnerTest {
                     "affixPassiveKinds",
                     "uniqueArtifactMeaningfulSwapRate",
                     "specialTierPassiveFamilyDuplicateSummary",
+                    "rewardRoutingCoverageSummary",
+                    "professionCapstoneSourceCoverageRate",
                 ).all(corpusMetrics::containsKey),
             )
             assertEquals(1.0, corpusMetrics.getValue("dynamicPoolCoverage").jsonPrimitive.content.toDouble())
@@ -114,6 +116,18 @@ class WhiteBoxLootRunnerTest {
             assertEquals(0, corpusMetrics.getValue("strictLocalIdentityViolationCount").jsonPrimitive.content.toInt())
             assertTrue(corpusMetrics.getValue("strictLocalIdentityViolations").jsonArray.isEmpty())
             assertTrue(corpusMetrics.getValue("specialTierPassiveFamilyDuplicateSummary").jsonObject.containsKey("duplicateFamilies"))
+            val rewardRoutingCoverageSummary = corpusMetrics.getValue("rewardRoutingCoverageSummary").jsonObject
+            assertEquals(
+                corpusMetrics.getValue("professionCapstoneSourceCoverageRate").jsonPrimitive.content.toDouble(),
+                rewardRoutingCoverageSummary.getValue("professionCapstoneSourceCoverageRate").jsonPrimitive.content.toDouble(),
+            )
+            assertTrue(rewardRoutingCoverageSummary.getValue("criticalSources").jsonArray.isNotEmpty())
+            assertTrue(rewardRoutingCoverageSummary.getValue("professionSourceCoverage").jsonArray.isNotEmpty())
+            assertTrue(
+                rewardRoutingCoverageSummary.getValue("topRejectedCapstoneCandidates").jsonArray.all { candidate ->
+                    candidate.jsonObject.containsKey("rejectionReason")
+                },
+            )
             val secretProfileIdentitySummaries = corpusMetrics.getValue("secretProfileIdentitySummaries").jsonArray
             assertEquals(5, secretProfileIdentitySummaries.size)
             assertTrue(secretProfileIdentitySummaries.all { summary -> summary.jsonObject.containsKey("identityAxes") })
@@ -169,6 +183,12 @@ class WhiteBoxLootRunnerTest {
                 corpusMetrics.getValue("preflightCulpritPairCount").jsonPrimitive.content,
                 evaluationCache.getValue("preflightCulpritPairCount").jsonPrimitive.content,
             )
+            val sourceCoverageEntry =
+                ownerEvaluation.getValue("entries").jsonArray
+                    .first { entry -> entry.jsonObject.getValue("metricId").jsonPrimitive.content == "professionCapstoneSourceCoverage.reportOnly" }
+                    .jsonObject
+            assertEquals("PASS", sourceCoverageEntry.getValue("status").jsonPrimitive.content)
+            assertTrue(sourceCoverageEntry.getValue("note").jsonPrimitive.content.isNotBlank())
             assertEquals(6, Files.readAllLines(run.casesPath).count { line -> line.isNotBlank() })
         } finally {
             if (originalLootReportDir == null) {

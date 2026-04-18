@@ -16,7 +16,11 @@ import com.ktome.core.ai.AISelectionPolicy
 import com.ktome.core.talent.TalentDef
 import com.ktome.core.talent.TalentRole
 import com.ktome.game.data.schema.LootPoolStrategy
+import com.ktome.game.data.schema.ProfessionBuildIdentityReportOnlyFloorsSchemaV1
+import com.ktome.game.data.schema.ProfessionBuildIdentitySchemaV1
+import com.ktome.game.data.schema.RewardRoutingGrantMode
 import com.ktome.game.i18n.GameLocale
+import com.ktome.game.loot.foundationBuildIdentityByProfessionId
 import com.ktome.game.data.schema.TalentSchemaV2
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertThrows
@@ -402,7 +406,14 @@ class SchemaV2LoaderTest {
         assertEquals(10, catalog.lootProfiles.first { it.id == "loot.foundation.boss" }.rewardBudget)
         assertTrue(catalog.lootProfiles.first { it.id == "loot.foundation.boss" }.itemIds.contains("shadow_cloak"))
         assertEquals(
-            listOf("abyssal_heartstone", "artifact_eclipsed_relic", "unique_vesper_chainmail", "unique_voidlit_seal"),
+            listOf(
+                "abyssal_heartstone",
+                "artifact_eclipsed_relic",
+                "unique_vesper_chainmail",
+                "unique_voidlit_seal",
+                "artifact_briar_heart",
+                "unique_thornpath_crook",
+            ),
             catalog.lootProfiles.first { it.id == "loot.abyssal_heart.reward" }.itemIds,
         )
         assertEquals(3, catalog.lootProfiles.first { it.id == "loot.abyssal_heart.reward" }.schemaVersion)
@@ -430,30 +441,13 @@ class SchemaV2LoaderTest {
         assertTrue(dynamicTargetProfiles.all { profile -> profile.specialTemplateTagPreference.isNotEmpty() })
         assertTrue(dynamicTargetProfiles.all { profile -> profile.affixTagPreference.isNotEmpty() })
         assertTrue(dynamicTargetProfiles.all { profile -> profile.excludeIds.isNotEmpty() })
+        val buildIdentityByProfessionId = foundationBuildIdentityByProfessionId
         val capstoneItemIds =
-            setOf(
-                "artifact_briar_heart",
-                "artifact_forge_oath",
-                "unique_furnace_plate",
-                "unique_quenchbreaker_maul",
-                "artifact_river_echo",
-                "unique_deepcurrent_lens",
-                "artifact_heartroot_gambit",
-                "unique_thornpath_crook",
-                "unique_briarbound_bow",
-                "artifact_eclipsed_relic",
-                "unique_vesper_chainmail",
-                "unique_voidlit_seal",
-            )
+            buildIdentityByProfessionId.values
+                .flatMapTo(linkedSetOf()) { identity -> identity.capstoneBaseIds }
         val nonWeaponCapstoneItemIds =
-            setOf(
-                "artifact_briar_heart",
-                "unique_furnace_plate",
-                "unique_deepcurrent_lens",
-                "artifact_eclipsed_relic",
-                "unique_vesper_chainmail",
-                "unique_voidlit_seal",
-            )
+            buildIdentityByProfessionId.values
+                .flatMapTo(linkedSetOf()) { identity -> identity.nonWeaponCapstoneBaseIds }
         val runtimeItemsById = loader.loadItemBundle().baseItems.associateBy(ItemBaseDef::id)
         assertTrue(capstoneItemIds.all { itemId -> "capstone" in runtimeItemsById.getValue(itemId).tags })
         assertTrue(nonWeaponCapstoneItemIds.all { itemId -> "non_weapon_capstone" in runtimeItemsById.getValue(itemId).tags })
@@ -475,6 +469,25 @@ class SchemaV2LoaderTest {
         assertTrue(catalog.arenas.any { it.id == "arena.shattered_outpost.boss" })
         assertTrue(catalog.arenas.any { it.id == "arena.deep_iron_pit.boss" })
         assertTrue(catalog.arenas.any { it.id == "arena.abyssal_heart.boss" })
+    }
+
+    @Test
+    fun `build identity schema rejects empty capstone lists`() {
+        val error =
+            assertThrows(IllegalArgumentException::class.java) {
+                ProfessionBuildIdentitySchemaV1(
+                    professionId = "rogue",
+                    schemaVersion = 1,
+                    capstoneBaseIds = emptyList(),
+                    nonWeaponCapstoneBaseIds = listOf("artifact_briar_heart"),
+                    preferredRewardSources = listOf(com.ktome.core.item.MilestoneRewardSource.CACHE),
+                    preferredReplacementSlots = listOf(com.ktome.core.item.EquipSlot.OFF_HAND),
+                    terminalIdentityTags = listOf("rogue"),
+                    reportOnlyFloors = ProfessionBuildIdentityReportOnlyFloorsSchemaV1(1, 1, 1),
+                )
+            }
+
+        assertTrue(error.message.orEmpty().contains("capstoneBaseIds must not be empty"))
     }
 
     @Test
@@ -985,6 +998,102 @@ class SchemaV2LoaderTest {
             "shadow_cloak" in bossSeenBaseIds,
             "Expected fixed boss loot seed corpus to surface shadow_cloak from loot.foundation.boss.",
         )
+    }
+
+    @Test
+    fun `schema loader reads reward routing authority for key build identity interactables`() {
+        val loader = DataLoader(GameLocale.EN_US)
+        val catalog = loader.loadSchemaCatalog()
+        val routingByKey =
+            catalog.rewardRoutingEntries.associateBy { entry ->
+                Triple(entry.zoneId, entry.interactableId, entry.grantMode)
+            }
+
+        assertEquals(
+            listOf("loot.underground_river.reward", "loot.foundation.elite"),
+            routingByKey.getValue(
+                Triple(
+                    "underground_river",
+                    "crystal_cache_chest",
+                    RewardRoutingGrantMode.GROUND_CACHE,
+                ),
+            ).profileIds,
+        )
+        assertEquals(
+            listOf("loot.underground_river.reward", "loot.foundation.elite"),
+            routingByKey.getValue(
+                Triple(
+                    "underground_river",
+                    "river_ferry_anchor",
+                    RewardRoutingGrantMode.SUPPORT_GRANT,
+                ),
+            ).profileIds,
+        )
+        assertEquals(
+            listOf("loot.abyssal_temple.reward", "loot.foundation.boss"),
+            routingByKey.getValue(
+                Triple(
+                    "abyssal_temple",
+                    "temple_ward_reliquary",
+                    RewardRoutingGrantMode.SUPPORT_GRANT,
+                ),
+            ).profileIds,
+        )
+        assertEquals(
+            listOf("loot.abyssal_heart.reward", "loot.foundation.boss"),
+            routingByKey.getValue(
+                Triple(
+                    "abyssal_heart",
+                    "heart_ward_focus",
+                    RewardRoutingGrantMode.SUPPORT_GRANT,
+                ),
+            ).profileIds,
+        )
+    }
+
+    @Test
+    fun `build identity catalog keeps capstone ids and report only floors aligned with the item catalog`() {
+        val loader = DataLoader(GameLocale.EN_US)
+        val catalog = loader.loadSchemaCatalog()
+        val runtimeItemsById = loader.loadItemBundle().baseItems.associateBy(ItemBaseDef::id)
+        val specialTemplatesByItemId =
+            (catalog.itemBundle.uniqueTemplates + catalog.itemBundle.artifactTemplates).associateBy { template -> template.itemId }
+
+        assertEquals(setOf("arcanist", "rogue", "templar", "vanguard"), catalog.buildIdentities.map { identity -> identity.professionId }.toSet())
+        catalog.buildIdentities.forEach { identity ->
+            assertTrue(identity.capstoneBaseIds.size >= 2, "Profession '${identity.professionId}' must expose at least two capstones.")
+            assertTrue(
+                identity.nonWeaponCapstoneBaseIds.isNotEmpty(),
+                "Profession '${identity.professionId}' must expose at least one non-weapon capstone.",
+            )
+            assertTrue(identity.preferredRewardSources.isNotEmpty(), "Profession '${identity.professionId}' must expose preferredRewardSources.")
+            assertTrue(identity.preferredReplacementSlots.isNotEmpty(), "Profession '${identity.professionId}' must expose preferredReplacementSlots.")
+            assertTrue(identity.terminalIdentityTags.isNotEmpty(), "Profession '${identity.professionId}' must expose terminalIdentityTags.")
+            assertTrue(identity.reportOnlyFloors.seenMinCount > 0, "Profession '${identity.professionId}' must expose seen report-only floor.")
+            assertTrue(
+                identity.reportOnlyFloors.adoptionMinCount > 0,
+                "Profession '${identity.professionId}' must expose adoption report-only floor.",
+            )
+            assertTrue(
+                identity.reportOnlyFloors.nonWeaponMinCount > 0,
+                "Profession '${identity.professionId}' must expose non-weapon report-only floor.",
+            )
+            assertTrue(
+                identity.capstoneBaseIds.all { itemId ->
+                    val runtimeTags = runtimeItemsById.getValue(itemId).tags
+                    val templateTags = specialTemplatesByItemId.getValue(itemId).tags
+                    "capstone" in runtimeTags && "capstone" in templateTags && identity.professionId in runtimeTags && identity.professionId in templateTags
+                },
+                "Profession '${identity.professionId}' capstone ids must resolve to matching profession-tagged capstone items.",
+            )
+            assertTrue(
+                identity.nonWeaponCapstoneBaseIds.all { itemId ->
+                    val runtimeItem = runtimeItemsById.getValue(itemId)
+                    "non_weapon_capstone" in runtimeItem.tags && runtimeItem.slot != com.ktome.core.item.EquipSlot.WEAPON
+                },
+                "Profession '${identity.professionId}' non-weapon capstones must remain tagged and non-weapon.",
+            )
+        }
     }
 
     private fun generatedLootBaseIds(

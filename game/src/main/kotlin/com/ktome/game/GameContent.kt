@@ -27,6 +27,8 @@ import com.ktome.game.elites.EliteMutationRegistry
 import com.ktome.game.hidden.HiddenContentMapgenPipeline
 import com.ktome.game.hidden.HiddenEventRegistry
 import com.ktome.game.hidden.SecretZoneRegistry
+import com.ktome.game.loot.FoundationProfessionBuildIdentity
+import com.ktome.game.loot.foundationBuildIdentityMapFor
 import com.ktome.game.loot.LootProfileCandidatePool
 import com.ktome.game.loot.LootProfileCandidatePoolResolver
 import com.ktome.game.model.BossDefinition
@@ -117,6 +119,7 @@ internal data class GameContent(
         ),
 ) {
     val aiProfilesById: Map<String, AIProfile> = schemaCatalog.aiProfiles.associateBy(AIProfile::id)
+    val buildIdentityByProfessionId: Map<String, FoundationProfessionBuildIdentity> = foundationBuildIdentityMapFor(schemaCatalog)
     val racesById: Map<String, RaceDef> = races.associateBy(RaceDef::id)
     val lootProfilesById: Map<String, LootProfileSchemaV3> = schemaCatalog.lootProfiles.associateBy(LootProfileSchemaV3::id)
     val lootProfileCandidatePoolResolver: LootProfileCandidatePoolResolver = LootProfileCandidatePoolResolver(itemBundle)

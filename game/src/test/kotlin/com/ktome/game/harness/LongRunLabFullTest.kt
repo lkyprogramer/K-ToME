@@ -8,6 +8,8 @@ import com.ktome.core.run.RunOutcome
 import com.ktome.game.FOUNDATION_SYNERGY_AFFIX_IDS
 import com.ktome.game.FOUNDATION_ZONE_ROUTE
 import com.ktome.game.data.DataLoader
+import com.ktome.game.loot.foundationBuildIdentityByProfessionId
+import com.ktome.game.loot.foundationProfessionCapstoneBaseIdsByProfessionId
 import java.nio.file.Path
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonArray
@@ -1194,31 +1196,25 @@ class LongRunLabFullTest {
                 "vanguard" to
                     ProfessionAlignedTerminalWeaponRule(
                         exactWeaponBaseIds = setOf("battle_axe", "long_sword"),
-                        requiredItemTags = setOf("frontline", "guard", "shield", "discipline"),
+                        requiredItemTags = foundationBuildIdentityByProfessionId.getValue("vanguard").terminalIdentityTags,
                     ),
                 "templar" to
                     ProfessionAlignedTerminalWeaponRule(
                         exactWeaponBaseIds = setOf("battle_axe", "long_sword"),
-                        requiredItemTags = setOf("holy", "frontline", "guard", "shield"),
+                        requiredItemTags = foundationBuildIdentityByProfessionId.getValue("templar").terminalIdentityTags,
                     ),
                 "rogue" to
                     ProfessionAlignedTerminalWeaponRule(
                         exactWeaponBaseIds = setOf("short_sword", "hunter_bow"),
-                        requiredItemTags = setOf("precision", "mobility", "finesse", "ranged", "marked"),
+                        requiredItemTags = foundationBuildIdentityByProfessionId.getValue("rogue").terminalIdentityTags,
                     ),
                 "arcanist" to
                     ProfessionAlignedTerminalWeaponRule(
                         exactWeaponBaseIds = setOf("arcane_staff"),
-                        requiredItemTags = setOf("arcane", "spell", "ranged", "control"),
+                        requiredItemTags = foundationBuildIdentityByProfessionId.getValue("arcanist").terminalIdentityTags,
                     ),
             )
-        private val PROFESSION_CAPSTONE_ITEM_IDS: Map<String, Set<String>> =
-            mapOf(
-                "vanguard" to setOf("artifact_forge_oath", "unique_furnace_plate", "unique_quenchbreaker_maul"),
-                "arcanist" to setOf("artifact_river_echo", "unique_deepcurrent_lens"),
-                "rogue" to setOf("artifact_briar_heart", "artifact_heartroot_gambit", "unique_thornpath_crook", "unique_briarbound_bow"),
-                "templar" to setOf("artifact_eclipsed_relic", "unique_vesper_chainmail", "unique_voidlit_seal"),
-            )
+        private val PROFESSION_CAPSTONE_ITEM_IDS: Map<String, Set<String>> = foundationProfessionCapstoneBaseIdsByProfessionId
         private val itemTagsById: Map<String, Set<String>> =
             schemaCatalog.itemBundle.items.associate { item -> item.id to item.tags.toSet() }
         private val itemSemanticTagsById: Map<String, Set<String>> =

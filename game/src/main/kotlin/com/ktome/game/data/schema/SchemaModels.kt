@@ -32,6 +32,7 @@ import com.ktome.core.item.AffixType
 import com.ktome.core.item.ConsumableEffect
 import com.ktome.core.item.EquipSlot
 import com.ktome.core.item.ItemType
+import com.ktome.core.item.MilestoneRewardSource
 import com.ktome.core.loot.SourceTier
 import com.ktome.core.loot.SpecialTier
 import com.ktome.core.world.GateCondition
@@ -68,6 +69,8 @@ data class SchemaCatalog(
     val questProgressions: List<QuestProgress> = emptyList(),
     val shopNodes: List<ShopNode> = emptyList(),
     val interactables: List<InteractableSchemaV2>,
+    val rewardRoutingEntries: List<RewardRoutingEntrySchemaV1> = emptyList(),
+    val buildIdentities: List<ProfessionBuildIdentitySchemaV1> = emptyList(),
     val objectiveSets: List<ObjectiveSetSchemaV2>,
     val difficulties: List<DifficultySchemaV2>,
     val itemBundle: ItemBundleSchemaV2,
@@ -93,7 +96,86 @@ data class SchemaCatalog(
     val zoneRewardProfiles: List<ZoneRewardProfile> = emptyList(),
     val visualKeys: Set<String>,
     val audioProfiles: Set<String>,
-)
+) {
+    init {
+        val zoneIds = zones.mapTo(linkedSetOf(), ZoneSchemaV2::id)
+        val interactableIds = interactables.mapTo(linkedSetOf(), InteractableSchemaV2::id)
+        val lootProfileIds = lootProfiles.mapTo(linkedSetOf(), LootProfileSchemaV3::id)
+        val itemIds = itemBundle.items.mapTo(linkedSetOf(), ItemSchemaV2::id)
+        val itemSchemasById = itemBundle.items.associateBy(ItemSchemaV2::id)
+        val foundationProfessionsById =
+            professions
+                .filter { profession ->
+                    profession.tier == ProfessionTier.BASE &&
+                        profession.tags.any { tag -> normalizeSchemaTag(tag) == "foundation" }
+                }.associateBy(ProfessionSchemaV2::id)
+        val duplicateRoutingKeys =
+            rewardRoutingEntries
+                .groupBy { entry -> RewardRoutingEntryKey(entry.zoneId, entry.interactableId, entry.grantMode) }
+                .filterValues { entries -> entries.size > 1 }
+                .keys
+        require(duplicateRoutingKeys.isEmpty()) {
+            "Duplicate reward routing entries found for ${duplicateRoutingKeys.sortedBy(RewardRoutingEntryKey::sortKey).joinToString { key -> key.sortKey() }}."
+        }
+        rewardRoutingEntries.forEach { entry ->
+            require(entry.zoneId in zoneIds) {
+                "Reward routing entry '${entry.zoneId}/${entry.interactableId}/${entry.grantMode.name}' references unknown zone '${entry.zoneId}'."
+            }
+            require(entry.interactableId in interactableIds) {
+                "Reward routing entry '${entry.zoneId}/${entry.interactableId}/${entry.grantMode.name}' references unknown interactable '${entry.interactableId}'."
+            }
+            val unknownProfileIds = entry.profileIds.filterNot(lootProfileIds::contains)
+            require(unknownProfileIds.isEmpty()) {
+                "Reward routing entry '${entry.zoneId}/${entry.interactableId}/${entry.grantMode.name}' references unknown loot profiles ${unknownProfileIds.joinToString()}."
+            }
+            require(entry.fallbackBaseId in itemIds) {
+                "Reward routing entry '${entry.zoneId}/${entry.interactableId}/${entry.grantMode.name}' references unknown fallback item '${entry.fallbackBaseId}'."
+            }
+        }
+        val duplicateBuildIdentityProfessionIds =
+            buildIdentities
+                .groupBy(ProfessionBuildIdentitySchemaV1::professionId)
+                .filterValues { entries -> entries.size > 1 }
+                .keys
+        require(duplicateBuildIdentityProfessionIds.isEmpty()) {
+            "Duplicate build identity entries found for ${duplicateBuildIdentityProfessionIds.sorted().joinToString()}."
+        }
+        buildIdentities.forEach { identity ->
+            require(identity.professionId in foundationProfessionsById) {
+                "Build identity entry '${identity.professionId}' must reference a foundation base profession."
+            }
+            val unknownCapstoneIds = identity.capstoneBaseIds.filterNot(itemIds::contains)
+            require(unknownCapstoneIds.isEmpty()) {
+                "Build identity entry '${identity.professionId}' references unknown capstone item ids ${unknownCapstoneIds.joinToString()}."
+            }
+            require(identity.nonWeaponCapstoneBaseIds.all(identity.capstoneBaseIds::contains)) {
+                "Build identity entry '${identity.professionId}' nonWeaponCapstoneBaseIds must be a subset of capstoneBaseIds."
+            }
+            identity.capstoneBaseIds.forEach { itemId ->
+                val item = requireNotNull(itemSchemasById[itemId])
+                val tags = item.tags.mapTo(linkedSetOf(), ::normalizeSchemaTag)
+                require("capstone" in tags && identity.professionId in tags) {
+                    "Build identity capstone '$itemId' must carry profession '${identity.professionId}' and 'capstone' tags."
+                }
+            }
+            identity.nonWeaponCapstoneBaseIds.forEach { itemId ->
+                val item = requireNotNull(itemSchemasById[itemId])
+                val tags = item.tags.mapTo(linkedSetOf(), ::normalizeSchemaTag)
+                require("non_weapon_capstone" in tags && item.slot != EquipSlot.WEAPON) {
+                    "Build identity non-weapon capstone '$itemId' must carry 'non_weapon_capstone' tag and avoid WEAPON slot."
+                }
+            }
+        }
+    }
+}
+
+private data class RewardRoutingEntryKey(
+    val zoneId: String,
+    val interactableId: String,
+    val grantMode: RewardRoutingGrantMode,
+) {
+    fun sortKey(): String = "$zoneId/$interactableId/${grantMode.name}"
+}
 
 data class StatusSchemaV2(
     val id: String,
@@ -500,6 +582,78 @@ data class InteractableSchemaV2(
     val interactionTags: List<String>,
     val shopNodeId: String? = null,
 )
+
+enum class RewardRoutingGrantMode {
+    GROUND_CACHE,
+    SUPPORT_GRANT,
+}
+
+data class RewardRoutingEntrySchemaV1(
+    val zoneId: String,
+    val interactableId: String,
+    val grantMode: RewardRoutingGrantMode,
+    val schemaVersion: Int,
+    val profileIds: List<String>,
+    val fallbackBaseId: String,
+) {
+    init {
+        require(zoneId.isNotBlank()) { "RewardRoutingEntrySchemaV1.zoneId must not be blank." }
+        require(interactableId.isNotBlank()) { "RewardRoutingEntrySchemaV1.interactableId must not be blank." }
+        require(schemaVersion > 0) { "RewardRoutingEntrySchemaV1.schemaVersion must be positive." }
+        require(profileIds.none(String::isBlank)) { "RewardRoutingEntrySchemaV1.profileIds must not contain blanks." }
+        require(fallbackBaseId.isNotBlank()) { "RewardRoutingEntrySchemaV1.fallbackBaseId must not be blank." }
+    }
+}
+
+data class ProfessionBuildIdentityReportOnlyFloorsSchemaV1(
+    val seenMinCount: Int,
+    val adoptionMinCount: Int,
+    val nonWeaponMinCount: Int,
+) {
+    init {
+        require(seenMinCount >= 0) { "ProfessionBuildIdentityReportOnlyFloorsSchemaV1.seenMinCount must not be negative." }
+        require(adoptionMinCount >= 0) { "ProfessionBuildIdentityReportOnlyFloorsSchemaV1.adoptionMinCount must not be negative." }
+        require(nonWeaponMinCount >= 0) { "ProfessionBuildIdentityReportOnlyFloorsSchemaV1.nonWeaponMinCount must not be negative." }
+    }
+}
+
+data class ProfessionBuildIdentitySchemaV1(
+    val professionId: String,
+    val schemaVersion: Int,
+    val capstoneBaseIds: List<String>,
+    val nonWeaponCapstoneBaseIds: List<String>,
+    val preferredRewardSources: List<MilestoneRewardSource>,
+    val preferredReplacementSlots: List<EquipSlot>,
+    val terminalIdentityTags: List<String>,
+    val reportOnlyFloors: ProfessionBuildIdentityReportOnlyFloorsSchemaV1,
+) {
+    init {
+        require(professionId.isNotBlank()) { "ProfessionBuildIdentitySchemaV1.professionId must not be blank." }
+        require(schemaVersion > 0) { "ProfessionBuildIdentitySchemaV1.schemaVersion must be positive." }
+        require(capstoneBaseIds.isNotEmpty()) { "ProfessionBuildIdentitySchemaV1.capstoneBaseIds must not be empty." }
+        require(capstoneBaseIds.none(String::isBlank)) { "ProfessionBuildIdentitySchemaV1.capstoneBaseIds must not contain blanks." }
+        require(nonWeaponCapstoneBaseIds.none(String::isBlank)) {
+            "ProfessionBuildIdentitySchemaV1.nonWeaponCapstoneBaseIds must not contain blanks."
+        }
+        require(preferredRewardSources.isNotEmpty()) {
+            "ProfessionBuildIdentitySchemaV1.preferredRewardSources must not be empty."
+        }
+        require(preferredRewardSources.size == preferredRewardSources.toSet().size) {
+            "ProfessionBuildIdentitySchemaV1.preferredRewardSources must not contain duplicates."
+        }
+        require(preferredReplacementSlots.isNotEmpty()) {
+            "ProfessionBuildIdentitySchemaV1.preferredReplacementSlots must not be empty."
+        }
+        require(preferredReplacementSlots.size == preferredReplacementSlots.toSet().size) {
+            "ProfessionBuildIdentitySchemaV1.preferredReplacementSlots must not contain duplicates."
+        }
+        require(terminalIdentityTags.none(String::isBlank)) {
+            "ProfessionBuildIdentitySchemaV1.terminalIdentityTags must not contain blanks."
+        }
+    }
+}
+
+private fun normalizeSchemaTag(tag: String): String = tag.trim().lowercase()
 
 data class ObjectiveSetSchemaV2(
     val id: String,

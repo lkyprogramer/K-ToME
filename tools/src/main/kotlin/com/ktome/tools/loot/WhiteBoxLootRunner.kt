@@ -48,6 +48,7 @@ private data class LootPreflightArtifacts(
     val culpritPairs: List<LootPreflightPairSummary> = summary.culpritPairs.sortedBy(LootPreflightPairSummary::pairId)
     val culpritPairIds: Set<String> = culpritPairs.mapTo(linkedSetOf(), LootPreflightPairSummary::pairId)
     val culpritReasons: List<String> = culpritPairs.flatMap(LootPreflightPairSummary::culpritReasons).distinct().sorted()
+    val rewardRoutingCoverageSummary: RewardRoutingCoverageSummary = summary.rewardRoutingCoverageSummary
     val culpritReasonCounts: Map<String, Int> =
         culpritPairs
             .flatMap(LootPreflightPairSummary::culpritReasons)
@@ -461,6 +462,8 @@ object WhiteBoxLootRunner {
             put("uniqueArtifactMeaningfulSwapRate", kernelRun.uniqueArtifactMeaningfulSwapRate)
             put("specialTierPassiveFamilyDuplicateCount", specialTierPassiveFamilyDuplicateSummary.duplicateFamilyCount)
             put("specialTierPassiveFamilyDuplicateSummary", specialTierPassiveFamilyDuplicateSummary.toJson())
+            put("professionCapstoneSourceCoverageRate", preflightArtifacts.rewardRoutingCoverageSummary.professionCapstoneSourceCoverageRate)
+            put("rewardRoutingCoverageSummary", preflightArtifacts.rewardRoutingCoverageSummary.toJson())
         }
 
     private fun writeArtifacts(
@@ -592,6 +595,7 @@ object WhiteBoxLootRunner {
         val rewardMetricId = "sameZoneSecretVsRewardMaxOverlap"
         val dynamicPoolMetricId = "dynamicPoolCoverage"
         val specialTierDuplicateMetricId = "specialTierPassiveFamilyDuplicateCount"
+        val sourceCoverageMetricId = "professionCapstoneSourceCoverage.reportOnly"
         val overlapSummaryJson = profileOverlapSummary.toJson()
         val strictViolationBreakdown =
             profileOverlapSummary.strictLocalIdentityViolations.splitByLocalIdentityPairType()
@@ -664,6 +668,7 @@ object WhiteBoxLootRunner {
         val specialTierPassiveFamilyDuplicateSummary = corpusAggregateMetrics.getValue("specialTierPassiveFamilyDuplicateSummary")
         val specialTierPassiveFamilyDuplicateCount =
             corpusAggregateMetrics.getValue("specialTierPassiveFamilyDuplicateCount").jsonPrimitive.content.toInt()
+        val rewardRoutingCoverageSummary = corpusAggregateMetrics.getValue("rewardRoutingCoverageSummary")
         val uniqueArtifactMeaningfulSwapRate = corpusAggregateMetrics.getValue("uniqueArtifactMeaningfulSwapRate").jsonPrimitive.content.toDouble()
         val dynamicPoolEntry =
             EvaluationEntry(
@@ -709,7 +714,28 @@ object WhiteBoxLootRunner {
                         "meaningfulSwap=${formatPercent(uniqueArtifactMeaningfulSwapRate)}",
                 details = corpusAggregateMetrics,
             )
-        val entries = localRewardEvaluation.entries + dynamicPoolEntry + specialTierDuplicateEntry
+        val sourceCoverageSummary = preflightArtifacts.rewardRoutingCoverageSummary
+        val missingSourceCoverage =
+            sourceCoverageSummary.professionSourceCoverage.filterNot(ProfessionCapstoneSourceCoverage::covered)
+        val sourceCoverageEntry =
+            EvaluationEntry(
+                metricId = sourceCoverageMetricId,
+                status = if (missingSourceCoverage.isEmpty()) EvaluationEntryStatus.PASS else EvaluationEntryStatus.UNEXPECTED_REGRESSION,
+                currentValue = rewardRoutingCoverageSummary,
+                currentValueText = "${sourceCoverageSummary.coveredSourcePairCount}/${sourceCoverageSummary.totalSourcePairCount}",
+                targetText = "all preferred profession/source pairs covered",
+                note =
+                    if (missingSourceCoverage.isEmpty()) {
+                        "allPreferredSourcesCovered"
+                    } else {
+                        "missingSourceCoverage=" +
+                            missingSourceCoverage.joinToString { coverage ->
+                                "${coverage.professionId}:${coverage.rewardSource.name}[${coverage.culpritSourceIds.joinToString().ifBlank { "none" }}]"
+                            }
+                    },
+                details = corpusAggregateMetrics,
+            )
+        val entries = localRewardEvaluation.entries + dynamicPoolEntry + specialTierDuplicateEntry + sourceCoverageEntry
         val unexpectedRegressionCount = entries.count { entry -> entry.status == EvaluationEntryStatus.UNEXPECTED_REGRESSION }
         return localRewardEvaluation.copy(
             verdict = if (unexpectedRegressionCount > 0) EvaluationVerdict.FAIL else EvaluationVerdict.PASS,

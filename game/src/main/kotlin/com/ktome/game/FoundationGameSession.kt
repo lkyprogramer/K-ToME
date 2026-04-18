@@ -243,6 +243,7 @@ import com.ktome.core.world.RouteReward
 import com.ktome.core.world.ZoneConnection
 import com.ktome.game.data.schema.ItemBundleSchemaV2
 import com.ktome.game.data.schema.ProfessionSchemaV2
+import com.ktome.game.data.schema.RewardRoutingGrantMode
 import com.ktome.game.data.schema.SchemaCatalog
 import com.ktome.game.data.schema.SchemaLevelRange
 import com.ktome.game.data.schema.SchemaMapSize
@@ -264,11 +265,16 @@ import com.ktome.game.objective.ObjectiveCompletionTrigger
 import com.ktome.game.objective.ObjectiveRuntimeEvaluator
 import com.ktome.game.i18n.LocalizationBundle
 import com.ktome.game.i18n.Localizer
-import com.ktome.game.loot.LootProfileCandidatePool
-import com.ktome.game.loot.LootBaseBuildMatchStrength
 import com.ktome.game.loot.LootBaseSelectionContext
-import com.ktome.game.loot.evaluate
-import com.ktome.game.loot.lootBaseSemanticTags
+import com.ktome.game.loot.LootProfileCandidatePool
+import com.ktome.game.loot.FOUNDATION_DETERMINISTIC_RESCUE_UTILITY_BASE_IDS
+import com.ktome.game.loot.MilestoneRewardSelectionRequest
+import com.ktome.game.loot.MilestoneRewardSelector
+import com.ktome.game.loot.MilestoneRewardSelectorContext
+import com.ktome.game.loot.foundationMilestoneLootWeightByBaseIdFromPools
+import com.ktome.game.loot.foundationMilestoneRewardSourceTier
+import com.ktome.game.loot.foundationStandardLootWeightByBaseIdFromPools
+import com.ktome.game.loot.isMilestoneRewardSuitableForProfession
 import com.ktome.game.model.BossDefinition
 import com.ktome.game.model.MonsterTemplate
 import com.ktome.game.model.isEliteEncounterTemplate
@@ -395,6 +401,9 @@ class FoundationGameSession internal constructor(
 ) {
     private val talentTreeOwnerResolver =
         TalentTreeOwnerResolver(content.schemaCatalog.talentTrees.associateBy { tree -> tree.id })
+    private val milestoneRewardSelector: MilestoneRewardSelector by lazy(LazyThreadSafetyMode.NONE) {
+        MilestoneRewardSelector(content.itemBundle)
+    }
 
     private data class LevelUpFeedbackSnapshot(
         val stats: Stats,
@@ -3937,13 +3946,7 @@ class FoundationGameSession internal constructor(
     }
 
     private fun rewardSourceTier(source: MilestoneRewardSource): com.ktome.core.loot.SourceTier =
-        when (source) {
-            MilestoneRewardSource.ROUTE,
-            MilestoneRewardSource.CACHE,
-            MilestoneRewardSource.SUPPORT,
-            -> com.ktome.core.loot.SourceTier.CHEST
-            MilestoneRewardSource.BOSS -> com.ktome.core.loot.SourceTier.BOSS
-        }
+        foundationMilestoneRewardSourceTier(source)
 
     private fun monsterSourceTier(template: MonsterTemplate): com.ktome.core.loot.SourceTier =
         when {
@@ -4289,14 +4292,14 @@ class FoundationGameSession internal constructor(
             )
         val candidateIds = pools.flatMapTo(linkedSetOf()) { pool -> pool.allCandidateBaseIds }.toList()
         val effectiveFallbackBaseId = normalizeMilestoneFallbackBaseId(fallbackBaseId, rewardContext)
-        val selectedBaseId =
-            rankMilestoneRewardCandidateIds(
+        val selectionResult =
+            milestoneRewardSelectionResult(
                 candidateIds = candidateIds,
                 rewardContext = rewardContext,
                 poolWeightByBaseId = poolWeightByBaseId,
                 selectionContext = lootBaseSelectionContext,
-            ).firstOrNull()
-                ?: effectiveFallbackBaseId
+            )
+        val selectedBaseId = selectionResult.selectedBaseId ?: effectiveFallbackBaseId
         val base =
             itemBaseDef(selectedBaseId)
                 ?: requireNotNull(itemBaseDef(effectiveFallbackBaseId)) {
@@ -4339,164 +4342,60 @@ class FoundationGameSession internal constructor(
     private fun isRewardSuitableForCurrentProfession(baseItemId: String): Boolean {
         val profession = currentProfessionSchema() ?: return true
         val base = itemBaseDef(baseItemId) ?: return false
-        if (base.resourceTypeId != null && base.resourceTypeId != profession.resourceType) {
-            return false
-        }
-        val itemSchema = itemSchemaFor(baseItemId)
-        if (profession.resourceType != ResourceType.MANA.name && itemSchema?.tags?.contains("arcane") == true) {
-            return false
-        }
-        return true
+        return isMilestoneRewardSuitableForProfession(base, profession, ::itemSchemaFor)
     }
 
-    private fun rankMilestoneRewardCandidateIds(
+    private fun milestoneRewardSelectionResult(
         candidateIds: List<String>,
         rewardContext: RewardGenerationContext,
         poolWeightByBaseId: Map<String, Int> = emptyMap(),
         selectionContext: LootBaseSelectionContext = currentLootBaseSelectionContext(),
-    ): List<String> {
-        val strictCandidates =
-            strictMilestoneRewardCandidateIds(
-                candidateIds = candidateIds,
-                rewardContext = rewardContext,
-                poolWeightByBaseId = poolWeightByBaseId,
-                selectionContext = selectionContext,
-            )
-        if (strictCandidates.isNotEmpty() || rewardContext.replacementSlot != null) {
-            return strictCandidates
-        }
-        val replacementSlot =
-            selectMilestoneReplacementSlot(
-                candidateIds = candidateIds,
-                rewardContext = rewardContext,
-                poolWeightByBaseId = poolWeightByBaseId,
-                selectionContext = selectionContext,
-            ) ?: return emptyList()
-        return strictMilestoneRewardCandidateIds(
-            candidateIds = candidateIds,
-            rewardContext = rewardContext.copy(replacementSlot = replacementSlot),
-            poolWeightByBaseId = poolWeightByBaseId,
-            selectionContext = selectionContext,
-        )
-    }
-
-    private fun strictMilestoneRewardCandidateIds(
-        candidateIds: List<String>,
-        rewardContext: RewardGenerationContext,
-        poolWeightByBaseId: Map<String, Int>,
-        selectionContext: LootBaseSelectionContext,
-    ): List<String> =
-        strictMilestoneRewardCandidates(
-            candidateIds = candidateIds,
-            rewardContext = rewardContext,
-            poolWeightByBaseId = poolWeightByBaseId,
-            selectionContext = selectionContext,
-        ).map(MilestoneRewardCandidate::baseItemId)
-
-    private fun strictMilestoneRewardCandidates(
-        candidateIds: List<String>,
-        rewardContext: RewardGenerationContext,
-        poolWeightByBaseId: Map<String, Int>,
-        selectionContext: LootBaseSelectionContext,
-    ): List<MilestoneRewardCandidate> =
-        candidateIds
-            .distinct()
-            .filter { baseItemId -> isMilestoneRewardBaseAllowed(baseItemId, rewardContext) }
-            .map { baseItemId ->
-                MilestoneRewardCandidate(
-                    baseItemId = baseItemId,
-                    score =
-                        milestoneRewardBaseScore(
-                            baseItemId = baseItemId,
-                            rewardContext = rewardContext,
-                            poolWeightByBaseId = poolWeightByBaseId,
-                            selectionContext = selectionContext,
+    ) =
+        milestoneRewardSelector.select(
+            request =
+                MilestoneRewardSelectionRequest(
+                    candidateBaseIds = candidateIds,
+                    selectorContext =
+                        MilestoneRewardSelectorContext(
+                            rewardSource = rewardContext.rewardSource,
+                            zoneId = currentZoneSchema().id,
+                            sourceTier = rewardSourceTier(rewardContext.rewardSource),
+                            effectiveFloorBand = previewRewardLegacyFloorBand(rewardContext),
+                            routeBiasTags = rewardContext.routeBiasTags,
+                            reservedSlots = rewardContext.reservedSlots,
+                            occupiedSlots = rewardContext.occupiedSlots,
                         ),
+                    poolWeightByBaseId = poolWeightByBaseId,
+                    selectionContext = selectionContext,
+                    currentOwnedBaseIds = currentOwnedItemBaseIds(),
+                    preferredRewardSources = currentProfessionBuildIdentity()?.preferredRewardSources.orEmpty(),
+                    rewardPreferenceOrder = rewardPreferenceOrder(),
+                    replacementSlotPriority = milestoneReplacementSlotPriority(),
+                    forbiddenBaseIds = FOUNDATION_DETERMINISTIC_RESCUE_UTILITY_BASE_IDS,
+                    forcedReplacementSlot = rewardContext.replacementSlot,
+                ),
+            professionSuitability = { base -> isRewardSuitableForCurrentProfession(base.id) },
+            canSatisfyAffixes = { base ->
+                canMilestoneRewardBaseSatisfyAffixes(
+                    base = base,
+                    rewardContext = rewardContext,
+                    effectiveFloorBand = previewRewardLegacyFloorBand(rewardContext),
                 )
-            }.sortedWith(
-                compareByDescending<MilestoneRewardCandidate> { candidate -> candidate.score }
-                    .thenBy { candidate -> rewardPreferenceOrder().indexOf(candidate.baseItemId).takeIf { it >= 0 } ?: Int.MAX_VALUE }
-                    .thenBy(MilestoneRewardCandidate::baseItemId),
-            )
-
-    private fun selectMilestoneReplacementSlot(
-        candidateIds: List<String>,
-        rewardContext: RewardGenerationContext,
-        poolWeightByBaseId: Map<String, Int>,
-        selectionContext: LootBaseSelectionContext,
-    ): EquipSlot? =
-        milestoneReplacementSlotPriority()
-            .mapIndexedNotNull { priorityIndex, candidateSlot ->
-                if (candidateSlot !in rewardContext.occupiedSlots || candidateSlot in rewardContext.reservedSlots) {
-                    return@mapIndexedNotNull null
-                }
-                val rankedCandidate =
-                    strictMilestoneRewardCandidates(
-                        candidateIds = candidateIds,
-                        rewardContext = rewardContext.copy(replacementSlot = candidateSlot),
-                        poolWeightByBaseId = poolWeightByBaseId,
-                        selectionContext = selectionContext,
-                    ).firstOrNull() ?: return@mapIndexedNotNull null
-                val base = itemBaseDef(rankedCandidate.baseItemId) ?: return@mapIndexedNotNull null
-                val evaluation = selectionContext.evaluate(base)
-                MilestoneReplacementSlotCandidate(
-                    slot = candidateSlot,
-                    priorityIndex = priorityIndex,
-                    score = rankedCandidate.score,
-                    exactProfessionCapstone = evaluation.exactProfessionMatch && "capstone" in base.tags,
-                    nonWeaponCapstone = evaluation.exactProfessionMatch && "non_weapon_capstone" in base.tags && base.slot != EquipSlot.WEAPON,
-                )
-            }.let { replacementCandidates ->
-                replacementCandidates
-                    .filter(MilestoneReplacementSlotCandidate::exactProfessionCapstone)
-                    .sortedWith(
-                        compareByDescending<MilestoneReplacementSlotCandidate> { it.nonWeaponCapstone }
-                            .thenByDescending { it.score }
-                            .thenBy(MilestoneReplacementSlotCandidate::priorityIndex),
-                    ).firstOrNull()
-                    ?: replacementCandidates.minByOrNull(MilestoneReplacementSlotCandidate::priorityIndex)
-            }?.slot
+            },
+        )
 
     private fun milestoneReplacementSlotPriority(): List<EquipSlot> =
-        if (config.playerProfessionId in FOUNDATION_AFFIX_WEAPON_PRIORITY_PROFESSION_IDS) {
-            listOf(EquipSlot.WEAPON, EquipSlot.OFF_HAND, EquipSlot.ARMOR)
-        } else {
-            MILESTONE_REPLACEMENT_SLOT_PRIORITY
-        }
+        currentProfessionBuildIdentity()
+            ?.preferredReplacementSlots
+            ?.toList()
+            ?.takeIf(List<EquipSlot>::isNotEmpty)
+            ?.let { preferredSlots ->
+                preferredSlots + EquipSlot.entries.filterNot(preferredSlots::contains)
+            }
+            ?: MILESTONE_REPLACEMENT_SLOT_PRIORITY
 
-    private fun isMilestoneRewardBaseAllowed(
-        baseItemId: String,
-        rewardContext: RewardGenerationContext,
-    ): Boolean {
-        val base = itemBaseDef(baseItemId) ?: return false
-        val slot = base.slot ?: return false
-        val effectiveFloorBand = previewRewardLegacyFloorBand(rewardContext)
-        if (base.type == ItemType.CONSUMABLE || base.id in DETERMINISTIC_RESCUE_UTILITY_BASE_IDS) {
-            return false
-        }
-        val isSpecialLinkedMilestoneBase = content.itemBundle.specialTemplateForItemId(base.id) != null
-        if (!isSpecialLinkedMilestoneBase && effectiveFloorBand !in base.dropFloors) {
-            return false
-        }
-        if (!isRewardSuitableForCurrentProfession(baseItemId)) {
-            return false
-        }
-        val hasUsableMaterial =
-            base.allowedMaterials.isEmpty() ||
-                content.itemBundle.materials.any { material ->
-                    material.id in base.allowedMaterials && effectiveFloorBand >= material.minFloor
-                }
-        if (!hasUsableMaterial) {
-            return false
-        }
-        if (!canMilestoneRewardBaseSatisfyAffixes(base, rewardContext, effectiveFloorBand)) {
-            return false
-        }
-        if (slot in rewardContext.reservedSlots) {
-            return false
-        }
-        return slot !in rewardContext.occupiedSlots || slot == rewardContext.replacementSlot
-    }
+    private fun currentProfessionBuildIdentity() =
+        content.buildIdentityByProfessionId[config.playerProfessionId]
 
     private fun canMilestoneRewardBaseSatisfyAffixes(
         base: ItemBaseDef,
@@ -4533,69 +4432,6 @@ class FoundationGameSession internal constructor(
         )
     }
 
-    private fun milestoneRewardBaseScore(
-        baseItemId: String,
-        rewardContext: RewardGenerationContext,
-        poolWeightByBaseId: Map<String, Int>,
-        selectionContext: LootBaseSelectionContext,
-    ): Int {
-        val base = itemBaseDef(baseItemId) ?: return Int.MIN_VALUE
-        val baseTags = rewardBaseTags(base)
-        val evaluation = selectionContext.evaluate(base)
-        val poolWeightScore = (poolWeightByBaseId[baseItemId] ?: base.dropWeight.coerceAtLeast(1)) * 10
-        val freshBonus =
-            if (baseItemId !in currentOwnedItemBaseIds() && evaluation.matchStrength != LootBaseBuildMatchStrength.NONE) {
-                40
-            } else {
-                0
-            }
-        val buildMatchScore =
-            when (evaluation.matchStrength) {
-                LootBaseBuildMatchStrength.NONE -> 0
-                LootBaseBuildMatchStrength.WEAK -> 30
-                LootBaseBuildMatchStrength.STRONG -> 70
-            }
-        val exactProfessionScore = if (evaluation.exactProfessionMatch) 35 else 0
-        val professionCapstoneScore =
-            if (evaluation.exactProfessionMatch && "capstone" in base.tags) {
-                55
-            } else {
-                0
-            }
-        val nonWeaponAnchorScore =
-            if (evaluation.exactProfessionMatch && "non_weapon_capstone" in base.tags && base.slot != EquipSlot.WEAPON) {
-                40
-            } else {
-                0
-            }
-        val routeBiasScore = baseTags.count(rewardContext.routeBiasTags::contains) * 12
-        val rewardBiasScore = baseTags.count(rewardSourceBiasTags(rewardContext.rewardSource)::contains) * 8
-        val antiCollapsePenalty =
-            if (evaluation.antiCollapseMultiplierBasisPoints < 10_000) {
-                30
-            } else {
-                0
-            }
-        return (
-            poolWeightScore +
-                freshBonus +
-                buildMatchScore +
-                exactProfessionScore +
-                professionCapstoneScore +
-                nonWeaponAnchorScore +
-                routeBiasScore +
-                rewardBiasScore -
-                antiCollapsePenalty
-        )
-    }
-
-    private fun rewardBaseTags(base: ItemBaseDef): Set<String> =
-        linkedSetOf<String>().apply {
-            addAll(lootBaseSemanticTags(base))
-            add(base.type.name.lowercase())
-            base.slot?.name?.lowercase()?.let(::add)
-        }
-
     private fun normalizeMilestoneFallbackBaseId(
         fallbackBaseId: String,
         rewardContext: RewardGenerationContext,
@@ -4615,14 +4451,14 @@ class FoundationGameSession internal constructor(
         preferredBaseIds: List<String>,
         rewardContext: RewardGenerationContext,
     ): String {
-        rankMilestoneRewardCandidateIds(preferredBaseIds, rewardContext).firstOrNull()?.let { fallbackBaseId ->
+        milestoneRewardSelectionResult(preferredBaseIds, rewardContext).selectedBaseId?.let { fallbackBaseId ->
             return fallbackBaseId
         }
         return requireNotNull(
-            rankMilestoneRewardCandidateIds(
+            milestoneRewardSelectionResult(
                 candidateIds = content.itemBundle.baseItems.map(ItemBaseDef::id),
                 rewardContext = rewardContext,
-            ).firstOrNull(),
+            ).selectedBaseId,
         ) {
             "No legal milestone reward base available for ${rewardContext.rewardSource}:${rewardContext.sourceId}."
         }
@@ -4651,14 +4487,6 @@ class FoundationGameSession internal constructor(
             "rogue" -> listOf("abyssal_heartstone", "short_sword", "hunter_bow", "bandit_trophy", "leather_armor", "energy_tonic", "scroll_teleport", "healing_potion")
             "templar" -> listOf("abyssal_heartstone", "long_sword", "basic_shield", "sanctified_seal", "chain_mail", "consecrated_oil", "healing_potion")
             else -> listOf("healing_potion", "scroll_teleport")
-        }
-
-    private fun rewardSourceBiasTags(source: MilestoneRewardSource): Set<String> =
-        when (source) {
-            MilestoneRewardSource.ROUTE -> setOf("reward", "route")
-            MilestoneRewardSource.BOSS -> setOf("reward", "boss", "elite")
-            MilestoneRewardSource.CACHE -> setOf("reward", "cache")
-            MilestoneRewardSource.SUPPORT -> setOf("reward", "cache", "support")
         }
 
     private fun rewardCountsAsMeaningful(reward: ItemInstance): Boolean =
@@ -5178,12 +5006,6 @@ class FoundationGameSession internal constructor(
             else -> null
         }
 
-    private fun optionalZoneRewardSpec(): RewardSpec =
-        RewardSpec(
-            profileIds = ZoneMechanicRuntime.uniqueContentRewardProfiles(currentZoneSchema().uniqueContentTag),
-            fallbackBaseId = ZoneMechanicRuntime.uniqueContentFallbackBaseId(currentZoneSchema().uniqueContentTag),
-        )
-
     private fun ZoneSchemaV2.rewardBiasTags(): Set<String> =
         linkedSetOf<String>().apply {
             uniqueContentTag
@@ -5196,35 +5018,27 @@ class FoundationGameSession internal constructor(
             environmentTheme.takeIf(String::isNotBlank)?.lowercase()?.let(::add)
         }
 
-    private fun groundRewardSpecFor(interactableId: String): RewardSpec? =
-        when (interactableId) {
-            "supply_crate" -> RewardSpec(profileIds = emptyList(), fallbackBaseId = "scroll_teleport")
-            "trail_cache" -> RewardSpec(listOf("loot.greenwood_fringe.reward", "loot.foundation.common"), "healing_potion")
-            "ore_stash" -> RewardSpec(listOf("loot.deep_iron_pit.reward", "loot.foundation.elite"), "stamina_draught")
-            "seal_cache" -> RewardSpec(listOf("loot.grey_gate_depths.reward", "loot.foundation.boss"), "scroll_teleport")
-            "bandit_cache" -> optionalZoneRewardSpec()
-            RiverCrystalRuntimeKeys.River.CACHE_INTERACTABLE_ID ->
-                RewardSpec(listOf("loot.underground_river.reward", "loot.foundation.elite"), "mana_potion")
-            else -> null
+    private fun rewardSpecForInteractable(
+        interactableId: String,
+        grantMode: RewardRoutingGrantMode,
+    ): RewardSpec {
+        val zoneId = currentZoneSchema().id
+        val matches =
+            content.schemaCatalog.rewardRoutingEntries.filter { entry ->
+                entry.zoneId == zoneId &&
+                    entry.interactableId == interactableId &&
+                    entry.grantMode == grantMode
+            }
+        require(matches.size == 1) {
+            val key = "$zoneId/$interactableId/${grantMode.name}"
+            when (matches.size) {
+                0 -> "Missing reward routing entry for $key."
+                else -> "Duplicate reward routing entries found for $key."
+            }
         }
-
-    private fun supportRewardSpecFor(interactableId: String): RewardSpec? =
-        when (interactableId) {
-            "armory_gate" -> RewardSpec(listOf("loot.foundation.elite"), "healing_potion")
-            "hunter_snare" -> RewardSpec(listOf("loot.greenwood_fringe.reward", "loot.foundation.elite"), "bandit_trophy")
-            "mine_furnace" -> RewardSpec(listOf("loot.deep_iron_pit.reward", "loot.foundation.elite"), "forgebreaker_pick")
-            "ritual_altar" -> RewardSpec(listOf("loot.grey_gate_depths.reward", "loot.foundation.boss"), "sanctified_seal")
-            "elven_wardstone" -> optionalZoneRewardSpec()
-            "molten_pressure_valve" -> optionalZoneRewardSpec()
-            RiverCrystalRuntimeKeys.Crystal.INTERACTABLE_ID -> optionalZoneRewardSpec()
-            RiverCrystalRuntimeKeys.River.INTERACTABLE_ID ->
-                RewardSpec(listOf("loot.underground_river.reward", "loot.foundation.elite"), "scroll_teleport")
-            AbyssalRuntimeKeys.Temple.INTERACTABLE_ID ->
-                RewardSpec(listOf("loot.abyssal_temple.reward", "loot.foundation.boss"), "sanctified_seal")
-            AbyssalRuntimeKeys.Finale.INTERACTABLE_ID ->
-                RewardSpec(listOf("loot.abyssal_heart.reward", "loot.foundation.boss"), "abyssal_heartstone")
-            else -> null
-        }
+        val entry = matches.single()
+        return RewardSpec(profileIds = entry.profileIds, fallbackBaseId = entry.fallbackBaseId)
+    }
 
     private fun groundRewardItemFor(
         sourceId: String,
@@ -9671,9 +9485,7 @@ class FoundationGameSession internal constructor(
             }
 
             in CACHE_REWARD_INTERACTABLE_IDS -> {
-                val rewardSpec = requireNotNull(groundRewardSpecFor(interactable.id)) {
-                    "Missing ground reward spec for interactable '${interactable.id}'."
-                }
+                val rewardSpec = rewardSpecForInteractable(interactable.id, RewardRoutingGrantMode.GROUND_CACHE)
                 dropGroundRewardFromInteractable(schema, position, rewardSpec)
                 objectiveProgressSpecFor(interactable.id)?.let { progress ->
                     recordObjectiveProgress(token = progress.token, stepKey = progress.stepKey)
@@ -9716,9 +9528,7 @@ class FoundationGameSession internal constructor(
             }
 
             in SUPPORT_REWARD_INTERACTABLE_IDS -> {
-                val rewardSpec = requireNotNull(supportRewardSpecFor(interactable.id)) {
-                    "Missing support reward spec for interactable '${interactable.id}'."
-                }
+                val rewardSpec = rewardSpecForInteractable(interactable.id, RewardRoutingGrantMode.SUPPORT_GRANT)
                 grantSupportRewardFromInteractable(schema, position, rewardSpec)
                 objectiveProgressSpecFor(interactable.id)?.let { progress ->
                     recordObjectiveProgress(token = progress.token, stepKey = progress.stepKey)
@@ -11352,25 +11162,20 @@ class FoundationGameSession internal constructor(
         pools: List<LootProfileCandidatePool>,
         selectionContext: LootBaseSelectionContext,
         includeSpecialLinkedBaseIds: Boolean,
-    ): Map<String, Int> {
-        val weightsByBaseId = linkedMapOf<String, Int>()
-        pools.forEach { pool ->
-            val candidateBaseIds =
-                if (includeSpecialLinkedBaseIds) {
-                    pool.allCandidateBaseIds
-                } else {
-                    pool.standardCandidateBaseIds
-                }
-            candidateBaseIds.forEach { baseId ->
-                val base = requireNotNull(itemBaseDef(baseId)) {
-                    "Loot profile '${pool.profileId}' resolved unknown candidate base '$baseId'."
-                }
-                val weightedDrop = pool.weightFor(base, selectionContext)
-                weightsByBaseId[baseId] = weightsByBaseId.getOrDefault(baseId, 0) + weightedDrop
-            }
+    ): Map<String, Int> =
+        if (includeSpecialLinkedBaseIds) {
+            foundationMilestoneLootWeightByBaseIdFromPools(
+                baseItemById = ::itemBaseDef,
+                pools = pools,
+                selectionContext = selectionContext,
+            )
+        } else {
+            foundationStandardLootWeightByBaseIdFromPools(
+                baseItemById = ::itemBaseDef,
+                pools = pools,
+                selectionContext = selectionContext,
+            )
         }
-        return weightsByBaseId
-    }
 
     private fun bestWeightedLootCandidateId(profileIds: List<String>): String? =
         lootWeightedBaseCandidates(profileIds)
@@ -11840,33 +11645,8 @@ class FoundationGameSession internal constructor(
             turnCount: Int,
         ): StatefulRandomSource = SplitMix64RandomSource.fromSeed(config.seed xor turnCount.toLong() xor SESSION_RANDOM_SALT)
 
-        private val DETERMINISTIC_RESCUE_UTILITY_BASE_IDS: Set<String> =
-            setOf(
-                "healing_potion",
-                "scroll_teleport",
-                "mana_potion",
-                "stamina_draught",
-                "energy_tonic",
-                "consecrated_oil",
-            )
-
-        private data class MilestoneReplacementSlotCandidate(
-            val slot: EquipSlot,
-            val priorityIndex: Int,
-            val score: Int,
-            val exactProfessionCapstone: Boolean,
-            val nonWeaponCapstone: Boolean,
-        )
-
-        private data class MilestoneRewardCandidate(
-            val baseItemId: String,
-            val score: Int,
-        )
-
         private val MILESTONE_REPLACEMENT_SLOT_PRIORITY: List<EquipSlot> =
             listOf(EquipSlot.OFF_HAND, EquipSlot.ARMOR, EquipSlot.WEAPON)
-        private val FOUNDATION_AFFIX_WEAPON_PRIORITY_PROFESSION_IDS: Set<String> =
-            setOf("vanguard", "arcanist", "rogue", "templar")
 
         private data object UntrackedRandomSource : RandomSource {
             override fun nextDouble(): Double = 0.0

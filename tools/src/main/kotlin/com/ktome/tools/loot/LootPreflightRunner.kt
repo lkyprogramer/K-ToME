@@ -38,6 +38,8 @@ data class LootPreflightSummary(
     val pairCount: Int,
     val culpritPairCount: Int,
     val culpritPairs: List<LootPreflightPairSummary>,
+    val specialTierPassiveFamilyDuplicateSummary: SpecialTierPassiveFamilyDuplicateSummary,
+    val rewardRoutingCoverageSummary: RewardRoutingCoverageSummary,
 )
 
 data class LootPreflightRun(
@@ -58,10 +60,11 @@ object LootPreflightRunner {
         Files.createDirectories(outputDir)
         val loader = DataLoader()
         val schemaCatalog = loader.loadSchemaCatalog()
+        val itemBundle = loader.loadItemBundle()
         val analysis =
             LootProfileStructureAnalyzer.analyze(
                 profiles = schemaCatalog.lootProfiles,
-                itemBundle = loader.loadItemBundle(),
+                itemBundle = itemBundle,
             )
         val culpritPairs = analysis.culpritPairs.map { pairDiff -> pairDiff.toSummary() }
         val allPairs = analysis.pairDiffs.map { pairDiff -> pairDiff.toSummary() }
@@ -71,6 +74,8 @@ object LootPreflightRunner {
                 pairCount = analysis.pairDiffs.size,
                 culpritPairCount = culpritPairs.size,
                 culpritPairs = culpritPairs,
+                specialTierPassiveFamilyDuplicateSummary = computeSpecialTierPassiveFamilyDuplicateSummary(itemBundle),
+                rewardRoutingCoverageSummary = computeRewardRoutingCoverageSummary(schemaCatalog, itemBundle),
             )
         val summaryPath = outputDir.resolve(SUMMARY_FILE_NAME)
         val detailsPath = outputDir.resolve(DETAILS_FILE_NAME)

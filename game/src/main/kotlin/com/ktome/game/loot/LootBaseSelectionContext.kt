@@ -83,7 +83,11 @@ internal fun LootBaseSelectionContext.evaluate(base: ItemBaseDef): LootBaseSelec
         normalizedPreferredProfessionTag?.let { preferredProfessionTag ->
             preferredProfessionTag in semanticTags
         } ?: false
-    val exactProfessionCapstoneMatch = exactProfessionMatch && "capstone" in rawSemanticTags
+    val exactProfessionCapstoneMatch =
+        exactProfessionMatch &&
+            normalizedPreferredProfessionTag?.let { professionId ->
+                base.id in foundationProfessionCapstoneBaseIdsByProfessionId[professionId].orEmpty()
+            } == true
     val matchStrength =
         when {
             matchedBuildTags.size >= 2 -> LootBaseBuildMatchStrength.STRONG
