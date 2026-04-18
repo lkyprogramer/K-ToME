@@ -16,6 +16,8 @@ import com.ktome.core.ai.AISelectionPolicy
 import com.ktome.core.talent.TalentDef
 import com.ktome.core.talent.TalentRole
 import com.ktome.game.data.schema.LootPoolStrategy
+import com.ktome.game.data.schema.ProfessionBuildIdentityReportOnlyFloorsSchemaV1
+import com.ktome.game.data.schema.ProfessionBuildIdentitySchemaV1
 import com.ktome.game.data.schema.RewardRoutingGrantMode
 import com.ktome.game.i18n.GameLocale
 import com.ktome.game.loot.foundationBuildIdentityByProfessionId
@@ -467,6 +469,25 @@ class SchemaV2LoaderTest {
         assertTrue(catalog.arenas.any { it.id == "arena.shattered_outpost.boss" })
         assertTrue(catalog.arenas.any { it.id == "arena.deep_iron_pit.boss" })
         assertTrue(catalog.arenas.any { it.id == "arena.abyssal_heart.boss" })
+    }
+
+    @Test
+    fun `build identity schema rejects empty capstone lists`() {
+        val error =
+            assertThrows(IllegalArgumentException::class.java) {
+                ProfessionBuildIdentitySchemaV1(
+                    professionId = "rogue",
+                    schemaVersion = 1,
+                    capstoneBaseIds = emptyList(),
+                    nonWeaponCapstoneBaseIds = listOf("artifact_briar_heart"),
+                    preferredRewardSources = listOf(com.ktome.core.item.MilestoneRewardSource.CACHE),
+                    preferredReplacementSlots = listOf(com.ktome.core.item.EquipSlot.OFF_HAND),
+                    terminalIdentityTags = listOf("rogue"),
+                    reportOnlyFloors = ProfessionBuildIdentityReportOnlyFloorsSchemaV1(1, 1, 1),
+                )
+            }
+
+        assertTrue(error.message.orEmpty().contains("capstoneBaseIds must not be empty"))
     }
 
     @Test

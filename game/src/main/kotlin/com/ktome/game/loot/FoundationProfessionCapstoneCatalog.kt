@@ -4,6 +4,7 @@ import com.ktome.core.item.EquipSlot
 import com.ktome.core.item.MilestoneRewardSource
 import com.ktome.core.profession.ProfessionTier
 import com.ktome.game.data.DataLoader
+import com.ktome.game.data.schema.SchemaCatalog
 
 data class FoundationBuildIdentityReportOnlyFloors(
     val seenMinCount: Int,
@@ -44,6 +45,9 @@ val foundationProfessionCapstoneBaseIdsByProfessionId: Map<String, Set<String>>
 fun foundationBuildIdentityForResourceType(resourceTypeId: String): FoundationProfessionBuildIdentity? =
     foundationBuildIdentityCatalog.identitiesByResourceTypeId[resourceTypeId]
 
+fun foundationBuildIdentityMapFor(schemaCatalog: SchemaCatalog): Map<String, FoundationProfessionBuildIdentity> =
+    buildFoundationBuildIdentityCatalog(schemaCatalog).identitiesByProfessionId
+
 fun foundationProfessionCapstonePreferenceScore(
     resourceTypeId: String,
     baseItemId: String,
@@ -62,8 +66,10 @@ fun foundationProfessionCapstonePreferenceScore(
     }
 }
 
-private fun buildFoundationBuildIdentityCatalog(): FoundationBuildIdentityCatalog {
-    val schemaCatalog = DataLoader().loadSchemaCatalog()
+private fun buildFoundationBuildIdentityCatalog(): FoundationBuildIdentityCatalog =
+    buildFoundationBuildIdentityCatalog(DataLoader().loadSchemaCatalog())
+
+private fun buildFoundationBuildIdentityCatalog(schemaCatalog: SchemaCatalog): FoundationBuildIdentityCatalog {
     val foundationProfessionsById =
         schemaCatalog.professions
             .filter { profession ->

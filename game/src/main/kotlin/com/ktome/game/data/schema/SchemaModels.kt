@@ -630,6 +630,7 @@ data class ProfessionBuildIdentitySchemaV1(
     init {
         require(professionId.isNotBlank()) { "ProfessionBuildIdentitySchemaV1.professionId must not be blank." }
         require(schemaVersion > 0) { "ProfessionBuildIdentitySchemaV1.schemaVersion must be positive." }
+        require(capstoneBaseIds.isNotEmpty()) { "ProfessionBuildIdentitySchemaV1.capstoneBaseIds must not be empty." }
         require(capstoneBaseIds.none(String::isBlank)) { "ProfessionBuildIdentitySchemaV1.capstoneBaseIds must not contain blanks." }
         require(nonWeaponCapstoneBaseIds.none(String::isBlank)) {
             "ProfessionBuildIdentitySchemaV1.nonWeaponCapstoneBaseIds must not contain blanks."

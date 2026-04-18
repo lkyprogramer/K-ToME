@@ -95,6 +95,7 @@ import com.ktome.core.world.ObjectiveState
 import com.ktome.game.data.DataLoader
 import com.ktome.game.data.schema.LootPoolStrategy
 import com.ktome.game.data.schema.RewardRoutingGrantMode
+import com.ktome.game.loot.FoundationProfessionBuildIdentity
 import com.ktome.game.hidden.HiddenEventReward
 import com.ktome.game.hidden.HiddenEventRewardKey
 import com.ktome.game.hidden.HiddenEventRewardPayload
@@ -5732,6 +5733,43 @@ class FoundationGameSessionTest {
     }
 
     @Test
+    fun `current profession build identity follows session content overrides`() {
+        val session =
+            GameModule.newFoundationSession(
+                FoundationGameConfig(seed = 20260418L, zoneId = "greenwood_fringe", playerProfessionId = "rogue"),
+                SaveManager(tempDir.resolve("session-build-identity-override")),
+            )
+        val existingContent = sessionContent(session)
+        val originalIdentity = requireNotNull(invokeCurrentProfessionBuildIdentity(session))
+        replaceContent(
+            session = session,
+            content =
+                existingContent.copy(
+                    schemaCatalog =
+                        existingContent.schemaCatalog.copy(
+                            buildIdentities =
+                                existingContent.schemaCatalog.buildIdentities.map { identity ->
+                                    if (identity.professionId == "rogue") {
+                                        identity.copy(
+                                            preferredRewardSources = listOf(MilestoneRewardSource.SUPPORT),
+                                            preferredReplacementSlots = listOf(EquipSlot.WEAPON),
+                                        )
+                                    } else {
+                                        identity
+                                    }
+                                },
+                        ),
+                ),
+        )
+
+        val currentIdentity = requireNotNull(invokeCurrentProfessionBuildIdentity(session))
+
+        assertEquals(setOf(MilestoneRewardSource.CACHE, MilestoneRewardSource.BOSS), originalIdentity.preferredRewardSources)
+        assertEquals(setOf(MilestoneRewardSource.SUPPORT), currentIdentity.preferredRewardSources)
+        assertEquals(setOf(EquipSlot.WEAPON), currentIdentity.preferredReplacementSlots)
+    }
+
+    @Test
     fun `status interactions are surfaced through visible render log messages`() {
         val session =
             GameModule.newFoundationSession(
@@ -6195,6 +6233,15 @@ class FoundationGameSessionTest {
         val field = FoundationGameSession::class.java.getDeclaredField("content")
         field.isAccessible = true
         return field.get(session) as GameContent
+    }
+
+    private fun invokeCurrentProfessionBuildIdentity(session: FoundationGameSession): FoundationProfessionBuildIdentity? {
+        val method =
+            FoundationGameSession::class.java.declaredMethods
+                .first { declared -> declared.name == "currentProfessionBuildIdentity" && declared.parameterCount == 0 }
+        method.isAccessible = true
+        @Suppress("UNCHECKED_CAST")
+        return method.invoke(session) as FoundationProfessionBuildIdentity?
     }
 
     private fun replaceContent(

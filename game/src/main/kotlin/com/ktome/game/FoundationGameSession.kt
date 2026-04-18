@@ -271,7 +271,6 @@ import com.ktome.game.loot.FOUNDATION_DETERMINISTIC_RESCUE_UTILITY_BASE_IDS
 import com.ktome.game.loot.MilestoneRewardSelectionRequest
 import com.ktome.game.loot.MilestoneRewardSelector
 import com.ktome.game.loot.MilestoneRewardSelectorContext
-import com.ktome.game.loot.foundationBuildIdentityByProfessionId
 import com.ktome.game.loot.foundationMilestoneLootWeightByBaseIdFromPools
 import com.ktome.game.loot.foundationMilestoneRewardSourceTier
 import com.ktome.game.loot.foundationStandardLootWeightByBaseIdFromPools
@@ -4396,7 +4395,7 @@ class FoundationGameSession internal constructor(
             ?: MILESTONE_REPLACEMENT_SLOT_PRIORITY
 
     private fun currentProfessionBuildIdentity() =
-        foundationBuildIdentityByProfessionId[config.playerProfessionId]
+        content.buildIdentityByProfessionId[config.playerProfessionId]
 
     private fun canMilestoneRewardBaseSatisfyAffixes(
         base: ItemBaseDef,
