@@ -4,6 +4,8 @@ import org.gradle.api.plugins.JavaPluginExtension
 import org.gradle.api.tasks.SourceSetContainer
 import org.gradle.api.tasks.testing.Test
 import org.gradle.api.tasks.testing.logging.TestExceptionFormat
+import com.ktome.build.testperf.TestPerfPlainTestBand
+import com.ktome.build.testperf.TestPerfPlainTestOptIn
 import org.gradle.jvm.toolchain.JavaLanguageVersion
 import org.gradle.kotlin.dsl.configure
 import org.gradle.kotlin.dsl.dependencies
@@ -18,6 +20,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     base
+    id("com.ktome.build.testperf")
     kotlin("jvm") version "2.2.21" apply false
     kotlin("plugin.serialization") version "2.2.21" apply false
     jacoco
@@ -144,6 +147,7 @@ subprojects {
             useJUnitPlatform {
                 excludeTags(*verificationOnlyTestTags.toTypedArray())
             }
+            TestPerfPlainTestOptIn.monitor(this, TestPerfPlainTestBand.SMALL_TEST)
         }
         testLogging {
             events("failed", "skipped")
@@ -447,6 +451,18 @@ tasks.register("verifyChanged") {
     group = LifecycleBasePlugin.VERIFICATION_GROUP
     description = "Collects changed files, analyzes impacted Phase 4 domains, and runs the selected preflight/owner verification tasks."
     dependsOn(verifyChangedTaskPaths)
+}
+
+tasks.register("nightlyGovernanceGate") {
+    group = LifecycleBasePlugin.VERIFICATION_GROUP
+    description =
+        "Runs the shared governance preflight plus Phase 4 aggregate smoke on top of the canonical nightly producer set."
+    dependsOn("scopeCoverageLint")
+    dependsOn("maintainabilityLint")
+    dependsOn("verifyOwner")
+    dependsOn("mapgenSmoke")
+    dependsOn("solvabilityHarness")
+    dependsOn("reportPhase4")
 }
 
 tasks.register<Exec>("assetLint") {
