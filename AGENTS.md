@@ -253,6 +253,9 @@ sdk env
 9. non-trivial Kotlin 结构变更、review/gate/verification wiring 或 anti-bloat 治理改动，必须补跑 `./gradlew maintainabilityLint`
 10. 只要改动涉及 `gradle.properties`、`build.gradle.kts`、`settings.gradle.kts`、`scripts/bootstrap-deps.sh` 或依赖版本调整，必须补跑 `./scripts/verify-bootstrap.sh`
 11. 如果当前机器存在 Maven / TLS 拉取问题，可先执行 `./scripts/bootstrap-deps.sh`
+12. 共享 PR CI 的默认 preflight 是 `./gradlew verifyChanged`；新增 verification/report/gate/governance 接线时，优先复用既有 `VerifyChangedPlanGate` / impact routing，不要在 workflow 或脚本里再造第二套变更判定逻辑
+13. 共享 nightly automation 的默认入口是 `./gradlew nightlyGovernanceGate`；需要增加 governance、freshness 或 aggregate smoke 时，优先扩这个 root task，而不是再手写一份并行 nightly inventory
+14. `com.ktome.build.testperf` 是 leaf-task、local-first 的 task perf monitor：plain `Test` 默认不进入监控面，只有显式 opt-in 才进入 baseline；CI 只允许保留 report-only summary，不得把 `.gradle/test-perf/` 的 lane、baseline 或 report-only 目录当成 unified verification registry 或 `reportPhase5` 的权威输入
 
 ### 5.3 白盒验证与结果汇报
 
@@ -302,6 +305,7 @@ sdk env
 7. 引入 Lua / runtime script host / 第二套 AI 系统 / 第二套 telegraph 权威
 8. 修改 content pack 边界，使其越权定义核心规则语义
 9. 用“临时逻辑”污染长期 contract 或阶段出口
+10. 把 `testperf` lane / baseline / report-only 目录升级成共享 verification authority，或让它反向决定 `reportPhase5` / unified verification 的 canonical 结论
 
 ### 6.3 完成定义
 

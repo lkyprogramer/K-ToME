@@ -50,7 +50,10 @@
    - 看对应阶段 checklist
 5. 想看统一白盒验证、AI 如何消费报告、以及自动化白盒如何与人工体验对齐：
    - 看 [2026-04-04-unified-white-box-verification-framework.md](./2026-04-04-unified-white-box-verification-framework.md)
-6. 想快速理解项目全局结构与主流程：
+6. 想看 verification 基础设施和 task perf monitor：
+   - shared automation defaults、task perf boundary 与入口说明先看 [verification/README.md](./verification/README.md)
+   - task perf monitor 细节见 [verification/test-task-performance-monitoring.md](./verification/test-task-performance-monitoring.md)
+7. 想快速理解项目全局结构与主流程：
    - 看 [project-architecture-mermaid.md](./project-architecture-mermaid.md)
    - 需要可编辑源图时，看 [project-architecture-drawio.drawio](./project-architecture-drawio.drawio)
    - 看 [project-functional-flow-mermaid.md](./project-functional-flow-mermaid.md)

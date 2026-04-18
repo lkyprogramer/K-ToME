@@ -17,6 +17,8 @@
 2. `maintainabilityLint` 只在 non-trivial Kotlin 结构/边界、verification/report/gate/catalog/build wiring、repo governance 变更时强制执行；它是 quick preflight，不替代完整 release gate。
 3. 若 `maintainabilityLint` 或 review 命中 `option-sprawl / helper-sprawl / second-authority / temp-path-without-expiry`，必须先解释 owner / contract / boundary，或直接修掉，再继续后续实现。
 4. `Boolean` 参数、默认参数矩阵、`Helper / Utils / Manager`、compat path、第二真源、没有 `debt(id)` 与删除条件的临时逻辑，在 `Phase 5` 默认按阻塞项处理。
+5. 共享 PR CI 也应先跑 `verifyChanged`，避免 repo 文档里的默认 preflight 只停留在本地开发约定。
+6. nightly automation 可以把 `maintainabilityLint` 切到 report-only，但仍应保留 `scopeCoverageLint` 与 aggregate smoke，持续观察 routing / governance / artifact freshness 漂移。
 
 ## 1. Automated Verification
 

@@ -2,6 +2,8 @@ import com.ktome.build.verification.Phase4AggregationManifestValueSource
 import com.ktome.build.verification.Phase4TaskPathResolver
 import com.ktome.build.verification.VerificationReportTask
 import com.ktome.build.verification.VerificationTask
+import com.ktome.build.testperf.TestPerfPlainTestBand
+import com.ktome.build.testperf.TestPerfPlainTestOptIn
 import com.ktome.build.verification.VerifyChangedPlanGate
 import java.security.MessageDigest
 import org.gradle.api.Task
@@ -619,6 +621,7 @@ tasks.register<Test>("lootBalanceLab") {
     val reportDir = layout.buildDirectory.dir("reports/phase4/loot")
     systemProperty("ktome.phase4.loot.reportDir", reportDir.get().asFile.absolutePath)
     outputs.dir(reportDir)
+    TestPerfPlainTestOptIn.monitor(this, TestPerfPlainTestBand.HEAVY_EVALUATION)
 }
 
 tasks.register<Test>("whiteBoxLoot") {
@@ -636,6 +639,7 @@ tasks.register<Test>("whiteBoxLoot") {
     val reportDir = layout.buildDirectory.dir("reports/phase4/whitebox/loot")
     systemProperty("ktome.phase4.whitebox.loot.reportDir", reportDir.get().asFile.absolutePath)
     outputs.dir(reportDir)
+    TestPerfPlainTestOptIn.monitor(this, TestPerfPlainTestBand.HEAVY_EVALUATION)
 }
 
 tasks.register<Test>("whiteBoxHiddenContent") {
@@ -651,6 +655,7 @@ tasks.register<Test>("whiteBoxHiddenContent") {
     val reportDir = layout.buildDirectory.dir("reports/phase4/whitebox/hidden")
     systemProperty("ktome.phase4.hidden.reportDir", layout.buildDirectory.dir("reports/phase4/hidden").get().asFile.absolutePath)
     outputs.dir(reportDir)
+    TestPerfPlainTestOptIn.monitor(this, TestPerfPlainTestBand.HEAVY_EVALUATION)
 }
 
 tasks.register<VerificationTask>("terrainInteractionBatch") {
@@ -692,6 +697,7 @@ tasks.register<Test>("whiteBoxContentPack") {
     systemProperty("ktome.phase4.whitebox.contentPack.reportDir", reportDir.get().asFile.absolutePath)
     systemProperty("ktome.phase4.contentPack.reportDir", layout.buildDirectory.dir("reports/phase4/content-pack").get().asFile.absolutePath)
     outputs.dir(reportDir)
+    TestPerfPlainTestOptIn.monitor(this, TestPerfPlainTestBand.HEAVY_EVALUATION)
 }
 
 val legacyPhase4ReportDir = layout.buildDirectory.dir("reports/phase4")
@@ -785,6 +791,7 @@ fun registerPhase4AggregateTask(
         inputs.files(additionalInputs)
             .withPathSensitivity(PathSensitivity.RELATIVE)
         outputs.files(outputArtifacts)
+        TestPerfPlainTestOptIn.monitor(this, TestPerfPlainTestBand.LIGHT_AGGREGATE)
     }
 }
 

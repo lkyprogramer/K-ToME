@@ -22,6 +22,7 @@ java {
 }
 
 dependencies {
+    implementation("com.google.code.gson:gson:${providers.gradleProperty("gsonVersion").orNull ?: "2.11.0"}")
     implementation("org.yaml:snakeyaml:${providers.gradleProperty("snakeyamlVersion").orNull ?: "2.6"}")
     testImplementation(gradleTestKit())
     testImplementation("org.junit.jupiter:junit-jupiter:${providers.gradleProperty("junitVersion").orNull ?: "5.12.2"}")
@@ -37,6 +38,10 @@ gradlePlugin {
         register("ktomeVerification") {
             id = "com.ktome.build.verification"
             implementationClass = "com.ktome.build.verification.VerificationTaskPlugin"
+        }
+        register("ktomeTestPerf") {
+            id = "com.ktome.build.testperf"
+            implementationClass = "com.ktome.build.testperf.TestPerfPlugin"
         }
     }
 }
