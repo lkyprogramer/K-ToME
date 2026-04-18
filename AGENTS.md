@@ -216,6 +216,8 @@ K-ToME 是一个使用 `Kotlin + libGDX` 开发的类 ToME 回合制 Roguelike �
 4. 同一 seed + 同一输入序列 = 同一输出
 5. 禁止在规则层使用系统时间、线程 ID、未定义迭代顺序或其他非确定性来源
 6. 任何 phase 合同变化导致 golden / harness / report schema 漂移时，必须在同一提交里同步更新其 owner 基线
+7. `tools` 中任何用于验证 runtime selector、reward legality、owner metric 的派生逻辑，都必须复用 `game` 侧已冻结 authority 或共享 helper；禁止再手写一套 `sourceTier / professionSuitability / weight / forbiddenBaseIds` 等平行规则
+8. canonical owner evidence 一旦缺字段或缺 artifact，必须 fail fast；禁止用 default-success fallback、伪造 `1.0` 覆盖率或空数组占位把 report/materialization 继续跑绿
 
 长期保留的回归套件：
 
@@ -319,4 +321,3 @@ sdk env
 “这段代码是在定义游戏规则，还是在展示、装配、验证这些规则？”
 
 如果答案是规则，默认放进 `core`；如果答案是内容装配，默认放进 `game`；如果答案是展示或交互，默认留在 `client`；如果答案是批量验证、流水线或报告，默认放进 `tools`。
-

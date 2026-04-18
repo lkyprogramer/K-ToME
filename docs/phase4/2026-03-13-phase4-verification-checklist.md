@@ -41,6 +41,9 @@
 11. Phase 4 producer inventory 的唯一 authoritative source 固定为 `tools/src/main/resources/phase4/aggregation-manifest.yaml`；`build-logic` wiring、`Phase4DomainArtifactRegistry`、`VerificationTaskRegistry` 与 baseline inputs 的一致性必须同时通过 `Phase4AggregationManifest* / Phase4RegistryConsistencyTest / ReportPhase4BuildContractTest`。
 12. canonical `phase4Report` summary schema 当前固定为 `report-phase4-v2`；critical-path pacing 共享证据只保留一份在 `sections.criticalPathPacing`，四个 pacing owner metric 必须通过 `details.sectionRef = criticalPathPacing` 指向同一份 evidence，`designAudit` 也必须通过 shared pacing projection 的 additive details 透传，render 侧不得重读 raw `longRunLab.metrics`。
 13. phase aggregate 的定向回归命令固定为 `reportPhase4Only`、`phase4LegacyReportOnly`、`reportPhase4`；其中 `reportPhase4` 只做 canonical vs legacy parity，对已删除的 manifest fallback 模式不再提供兼容分支。
+14. 带 `.reportOnly` 后缀的 owner metric 只能表示“当前不参与 blocking gate”；命名、baseline、`failSemantics` 与 render status 必须一致。如果某项实际会阻塞 owner gate，就必须移除 `.reportOnly` 后缀，禁止继续用 report-only 名称承载 blocking 语义。
+15. producer freshness 有配对约束的任务必须按同一批次重刷；`contentPackHarness + whiteBoxContentPack + phase4Report` 这类成对 producer 若 freshness 失败，标准修复是一起重跑，必要时使用 `--rerun-tasks`，禁止依赖 `UP-TO-DATE` 混用新旧 artifact。
+16. 任何 authority 数据改动如果会改变 schema-visible 集合、reward candidate 集合或 loader 可见字段，必须在同一提交同步更新 schema / loader / contract test；不允许接受“本地 harness 通过但 clean-checkout 的 schema expectation 仍锁旧集合”的状态。
 
 ### 必须检查的结果
 
