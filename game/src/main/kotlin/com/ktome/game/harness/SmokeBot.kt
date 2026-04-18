@@ -250,7 +250,11 @@ class SmokeBot : RunBot {
             return false
         }
         if (equipped == null) {
-            return gearEquipPriority(observation, candidate) >= emptySlotEquipThreshold(observation, candidate)
+            return gearEquipPriority(observation, candidate) >=
+                BuildIdentityAdoptionPolicy.emptySlotEquipThreshold(
+                    resourceTypeId = observation.playerResource.typeId,
+                    slot = candidate.slot,
+                )
         }
         val replacementThreshold =
             when (candidate.slot) {
@@ -278,7 +282,11 @@ class SmokeBot : RunBot {
         val slotScore =
             when (item.slot) {
                 EquipSlot.WEAPON -> if (synergyMatchCount > 0) 65 else 40
-                EquipSlot.OFF_HAND -> offHandSlotScore(observation, item)
+                EquipSlot.OFF_HAND ->
+                    BuildIdentityAdoptionPolicy.offHandSlotScore(
+                        resourceTypeId = observation.playerResource.typeId,
+                        item = item,
+                    )
                 EquipSlot.ARMOR -> 35
                 null -> 0
             }
@@ -288,7 +296,10 @@ class SmokeBot : RunBot {
                 item.affixIds.size * 10 +
                 synergyMatchCount * 60 +
                 sustainMatchCount * 15 +
-                preferredWeaponScore(observation, item) +
+                BuildIdentityAdoptionPolicy.preferredWeaponScore(
+                    resourceTypeId = observation.playerResource.typeId,
+                    item = item,
+                ) +
                 professionCapstonePreferenceScore(observation, item)
         )
     }
@@ -301,90 +312,6 @@ class SmokeBot : RunBot {
             "POSITIVE_ENERGY" -> setOf("of_smite")
             else -> emptySet()
         }
-
-    private fun emptySlotEquipThreshold(
-        observation: RunObservation,
-        item: InventoryItemView,
-    ): Int =
-        when (item.slot) {
-            EquipSlot.WEAPON,
-            EquipSlot.ARMOR,
-            -> 0
-            EquipSlot.OFF_HAND ->
-                when (observation.playerResource.typeId) {
-                    "HATE" -> 100
-                    else -> 60
-                }
-            null -> Int.MAX_VALUE
-        }
-
-    private fun offHandSlotScore(
-        observation: RunObservation,
-        item: InventoryItemView,
-    ): Int =
-        when (observation.playerResource.typeId) {
-            "HATE" -> 0
-            "MANA" ->
-                if (item.baseItemId in setOf("emerald_charm", "seal_reliquary", "unique_deepcurrent_lens")) {
-                    70
-                } else {
-                    45
-                }
-            else -> 50
-        }
-
-    private fun preferredWeaponScore(
-        observation: RunObservation,
-        item: InventoryItemView,
-    ): Int {
-        if (item.slot != EquipSlot.WEAPON) {
-            return 0
-        }
-        return when (observation.playerResource.typeId) {
-            "STAMINA" ->
-                when (item.baseItemId) {
-                    "forgebreaker_pick" -> 55
-                    "battle_axe" -> 45
-                    "long_sword" -> 35
-                    "war_maul" -> 15
-                    else -> 0
-                }
-            "HATE" ->
-                when (item.baseItemId) {
-                    "war_maul" -> 60
-                    "battle_axe" -> 12
-                    else -> 0
-                }
-            "MANA" ->
-                when (item.baseItemId) {
-                    "arcane_staff" -> 45
-                    "battle_axe" -> -95
-                    "war_maul" -> -90
-                    "forgebreaker_pick" -> -70
-                    "long_sword" -> -25
-                    else -> 0
-                }
-            "ENERGY" ->
-                when (item.baseItemId) {
-                    "short_sword" -> 45
-                    "hunter_bow" -> 42
-                    "battle_axe" -> -85
-                    "war_maul" -> -90
-                    "forgebreaker_pick" -> -65
-                    "long_sword" -> -20
-                    else -> 0
-                }
-            "POSITIVE_ENERGY" ->
-                when (item.baseItemId) {
-                    "long_sword" -> 42
-                    "battle_axe" -> 22
-                    "war_maul" -> 8
-                    "forgebreaker_pick" -> 10
-                    else -> 0
-                }
-            else -> 0
-        }
-    }
 
     private fun professionCapstonePreferenceScore(
         observation: RunObservation,

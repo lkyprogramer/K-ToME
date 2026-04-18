@@ -30,12 +30,15 @@ class ReportPhase4RunnerTest {
 
         Phase4ReportFixtureTestSupport.withFixtureProperties(repoRoot = fixtureRepoRoot, aggregateReportDir = tempDir.resolve("aggregate-happy-path")) {
             val run = ReportPhase4Runner.run(compareLegacy = compareLegacy)
+            val debugArtifactPath = tempDir.resolve("aggregate-happy-path").resolve("build-identity-debug.json")
 
             assertTrue(Files.exists(run.summaryPath), "Expected reportPhase4 summary report at ${run.summaryPath}")
             assertTrue(Files.exists(run.markdownPath), "Expected reportPhase4 markdown report at ${run.markdownPath}")
+            assertTrue(Files.exists(debugArtifactPath), "Expected build-identity debug artifact at $debugArtifactPath")
 
             val payload = Phase4ReportFixtureTestSupport.json.parseToJsonElement(Files.readString(run.summaryPath)).jsonObject
             val markdown = Files.readString(run.markdownPath)
+            val debugArtifact = Phase4ReportFixtureTestSupport.json.parseToJsonElement(Files.readString(debugArtifactPath)).jsonObject
             val inputs = payload.getValue("inputs").jsonArray
             val ownerMetrics = payload.getValue("ownerMetrics").jsonArray
             val metricCatalog = payload.getValue("metricCatalog").jsonArray
@@ -44,15 +47,24 @@ class ReportPhase4RunnerTest {
             assertEquals("report-phase4-v2", payload.getValue("schemaVersion").jsonPrimitive.content)
             assertEquals("P4", payload.getValue("phaseId").jsonPrimitive.content)
             assertEquals("14", payload.getValue("inputCount").jsonPrimitive.content)
-            assertEquals("18", payload.getValue("ownerMetricCount").jsonPrimitive.content)
-            assertEquals("0", payload.getValue("unexpectedRegressionCount").jsonPrimitive.content)
-            assertEquals("0", payload.getValue("approvedDebtCount").jsonPrimitive.content)
-            assertEquals("0", payload.getValue("improvedDebtCount").jsonPrimitive.content)
+            assertEquals("21", payload.getValue("ownerMetricCount").jsonPrimitive.content)
+            assertEquals(
+                ownerMetrics.count { metric -> metric.jsonObject.getValue("status").jsonPrimitive.content == "UNEXPECTED_REGRESSION" }.toString(),
+                payload.getValue("unexpectedRegressionCount").jsonPrimitive.content,
+            )
+            assertEquals(
+                ownerMetrics.count { metric -> metric.jsonObject.getValue("status").jsonPrimitive.content == "APPROVED_DEBT" }.toString(),
+                payload.getValue("approvedDebtCount").jsonPrimitive.content,
+            )
+            assertEquals(
+                ownerMetrics.count { metric -> metric.jsonObject.getValue("status").jsonPrimitive.content == "IMPROVEMENT" }.toString(),
+                payload.getValue("improvedDebtCount").jsonPrimitive.content,
+            )
             assertTrue(payload.containsKey("domainCacheHitRate"))
             assertTrue(payload.containsKey("artifactReuseRate"))
             assertTrue(payload.containsKey("topInvalidationReasons"))
             assertEquals(14, inputs.size)
-            assertEquals(18, ownerMetrics.size)
+            assertEquals(21, ownerMetrics.size)
 
             val terrainInput =
                 inputs.first { input -> input.jsonObject.getValue("sourceTaskId").jsonPrimitive.content == "terrainInteractionBatch" }.jsonObject
@@ -108,6 +120,9 @@ class ReportPhase4RunnerTest {
             assertTrue(ownerMetrics.any { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "professionCapstoneSeenRate" })
             assertTrue(ownerMetrics.any { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "professionCapstoneAdoptionRate" })
             assertTrue(ownerMetrics.any { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "nonWeaponBuildPayoffRate" })
+            assertTrue(ownerMetrics.any { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "professionCapstoneSourceCoverage.reportOnly" })
+            assertTrue(ownerMetrics.any { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "professionCapstoneAdoptionFloor.reportOnly" })
+            assertTrue(ownerMetrics.any { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "nonWeaponBuildPayoffFloor.reportOnly" })
             assertEquals(
                 criticalPathSection.getValue("criticalPathZoneIds").jsonArray.size,
                 criticalPathSection.getValue("designAudit").jsonArray.size,
@@ -124,12 +139,25 @@ class ReportPhase4RunnerTest {
             assertTrue(markdown.contains("searchPromptRequired"))
             assertTrue(markdown.contains("criticalPathZoneIds"))
             assertTrue(markdown.contains("criticalPathCombatFloorSatisfied"))
+            assertTrue(debugArtifact.containsKey("rewardSourceSelections"))
+            assertTrue(debugArtifact.containsKey("topRejectedCapstoneCandidates"))
+            assertTrue(debugArtifact.containsKey("perProfessionSourceCoverage"))
+            assertTrue(
+                debugArtifact.getValue("topRejectedCapstoneCandidates").jsonArray.all { candidate ->
+                    candidate.jsonObject.containsKey("rejectionReason")
+                },
+            )
+            assertTrue(
+                debugArtifact.getValue("perProfessionSourceCoverage").jsonArray.all { coverage ->
+                    coverage.jsonObject.containsKey("culpritSourceIds")
+                },
+            )
 
             if (compareLegacy) {
                 assertNotNull(run.comparisonPath)
                 val comparison = Phase4ReportFixtureTestSupport.json.parseToJsonElement(Files.readString(run.comparisonPath!!)).jsonObject
                 assertEquals("0", comparison.getValue("mismatchCount").jsonPrimitive.content)
-                assertEquals("18", comparison.getValue("metricCount").jsonPrimitive.content)
+                assertEquals("21", comparison.getValue("metricCount").jsonPrimitive.content)
             } else {
                 assertNull(run.comparisonPath)
             }
@@ -219,6 +247,29 @@ class ReportPhase4RunnerTest {
                     ReportPhase4Runner.run(compareLegacy = false)
                 }
             assertTrue(error.message.orEmpty().contains("whiteBoxLoot.dynamicPoolCoverage"))
+        }
+    }
+
+    @Test
+    @Tag("reportPhase4Fixture")
+    fun `reportPhase4 fails fast when reward routing coverage summary is missing from whitebox loot artifact`() {
+        val fixtureRepoRoot = Phase4ReportFixtureTestSupport.preparePhase4RepoFixture(tempDir)
+        Phase4ReportFixtureTestSupport.mutateWhiteBoxLootCorpusMetrics(fixtureRepoRoot) { metrics ->
+            buildJsonObject {
+                metrics.forEach { (key, value) ->
+                    if (key != "rewardRoutingCoverageSummary") {
+                        put(key, value)
+                    }
+                }
+            }
+        }
+
+        Phase4ReportFixtureTestSupport.withFixtureProperties(repoRoot = fixtureRepoRoot, aggregateReportDir = tempDir.resolve("aggregate-missing-reward-routing-coverage")) {
+            val error =
+                assertThrows(IllegalStateException::class.java) {
+                    ReportPhase4Runner.run(compareLegacy = false)
+                }
+            assertTrue(error.message.orEmpty().contains("whiteBoxLoot.rewardRoutingCoverageSummary"))
         }
     }
 

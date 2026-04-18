@@ -93,6 +93,8 @@ import com.ktome.core.world.solvability.RegistryId
 import com.ktome.core.world.solvability.SearchActionResult
 import com.ktome.core.world.ObjectiveState
 import com.ktome.game.data.DataLoader
+import com.ktome.game.data.schema.LootPoolStrategy
+import com.ktome.game.data.schema.RewardRoutingGrantMode
 import com.ktome.game.hidden.HiddenEventReward
 import com.ktome.game.hidden.HiddenEventRewardKey
 import com.ktome.game.hidden.HiddenEventRewardPayload
@@ -2653,6 +2655,220 @@ class FoundationGameSessionTest {
     }
 
     @Test
+    fun `cache reward routing authority can emit the same capstone cue as support rewards`() {
+        val session =
+            GameModule.newFoundationSession(
+                FoundationGameConfig(seed = 20260318L, zoneId = "underground_river", playerProfessionId = "arcanist"),
+                SaveManager(tempDir.resolve("underground-river-cache-capstone-cue-save")),
+            )
+        clearMonsters(session)
+        val cachePoint = interactablePoint(session, RiverCrystalRuntimeKeys.River.CACHE_INTERACTABLE_ID)
+        val deterministicProfileId = "loot.test.underground_river.cache_capstone"
+        val deterministicCapstoneBaseId = "test_arcanist_cache_capstone"
+        replaceContent(
+            session = session,
+            content =
+                sessionContent(session).let { content ->
+                    val deterministicCapstoneBase =
+                        content.itemBundle.baseItems
+                            .first { item -> item.id == "basic_shield" }
+                            .copy(
+                                id = deterministicCapstoneBaseId,
+                                name = "Test Arcanist Cache Lens",
+                                tags = setOf("item", "armor", "accessory", "arcanist", "capstone", "non_weapon_capstone", "water"),
+                                dropWeight = 4,
+                            )
+                    val deterministicCapstoneSchema =
+                        content.schemaCatalog.itemBundle.items
+                            .first { item -> item.id == "basic_shield" }
+                            .copy(
+                                id = deterministicCapstoneBaseId,
+                                tags = listOf("item", "armor", "accessory", "arcanist", "capstone", "non_weapon_capstone", "water"),
+                                dropWeight = 4,
+                            )
+                    val deterministicProfile =
+                        content.schemaCatalog.lootProfiles
+                            .first { profile -> profile.id == "loot.underground_river.reward" }
+                            .copy(
+                                id = deterministicProfileId,
+                                itemIds = listOf(deterministicCapstoneBaseId),
+                                poolStrategy = LootPoolStrategy.FIXED_LIST,
+                                itemTagFilter = emptyList(),
+                                excludeIds = emptyList(),
+                                typeWeights = emptyMap(),
+                                slotBias = emptyMap(),
+                                specialTemplateTagPreference = emptyList(),
+                                affixTagPreference = emptyList(),
+                            )
+                    val updatedRewardRoutingEntries =
+                        content.schemaCatalog.rewardRoutingEntries.map { entry ->
+                            if (
+                                entry.zoneId == "underground_river" &&
+                                entry.interactableId == RiverCrystalRuntimeKeys.River.CACHE_INTERACTABLE_ID &&
+                                entry.grantMode == RewardRoutingGrantMode.GROUND_CACHE
+                            ) {
+                                entry.copy(profileIds = listOf(deterministicProfileId), fallbackBaseId = deterministicCapstoneBaseId)
+                            } else {
+                                entry
+                            }
+                        }
+                    content.copy(
+                        itemBundle = content.itemBundle.copy(baseItems = content.itemBundle.baseItems + deterministicCapstoneBase),
+                        schemaCatalog =
+                            content.schemaCatalog.copy(
+                                itemBundle =
+                                    content.schemaCatalog.itemBundle.copy(
+                                        items = content.schemaCatalog.itemBundle.items + deterministicCapstoneSchema,
+                                    ),
+                                lootProfiles = content.schemaCatalog.lootProfiles + deterministicProfile,
+                                rewardRoutingEntries = updatedRewardRoutingEntries,
+                            ),
+                    )
+                },
+        )
+
+        session.automationMovePlayerTo(cachePoint)
+
+        assertTrue(session.perform(PlayerCommand.Interact))
+        val rewardSummary =
+            requireNotNull(
+                session.milestoneRewardSummaries().firstOrNull { reward ->
+                    reward.rewardSource == MilestoneRewardSource.CACHE &&
+                        reward.sourceId ==
+                        cacheRewardSourceId(
+                            session.config.zoneId,
+                            session.currentFloor(),
+                            RiverCrystalRuntimeKeys.River.CACHE_INTERACTABLE_ID,
+                            cachePoint,
+                        )
+                },
+            )
+        assertEquals(deterministicCapstoneBaseId, rewardSummary.baseItemId)
+        assertNotNull(logEventByKey(session, "log.reward.capstone.non_weapon_anchor"))
+    }
+
+    @Test
+    fun `support reward selector keeps exact profession capstones ahead of aligned generic weapons`() {
+        val session =
+            GameModule.newFoundationSession(
+                FoundationGameConfig(seed = 20260318L, zoneId = "underground_river", playerProfessionId = "arcanist"),
+                SaveManager(tempDir.resolve("underground-river-selector-priority-save")),
+            )
+        clearMonsters(session)
+        val anchorPoint = interactablePoint(session, RiverCrystalRuntimeKeys.River.INTERACTABLE_ID)
+        val deterministicProfileId = "loot.test.underground_river.selector_priority"
+        val deterministicCapstoneBaseId = "test_arcanist_selector_capstone"
+        val deterministicGenericWeaponId = "test_arcanist_generic_weapon"
+        replaceContent(
+            session = session,
+            content =
+                sessionContent(session).let { content ->
+                    val deterministicCapstoneBase =
+                        content.itemBundle.baseItems
+                            .first { item -> item.id == "basic_shield" }
+                            .copy(
+                                id = deterministicCapstoneBaseId,
+                                name = "Test Arcanist Selector Lens",
+                                tags = setOf("item", "armor", "accessory", "arcanist", "mana", "capstone", "non_weapon_capstone"),
+                                dropWeight = 2,
+                            )
+                    val deterministicCapstoneSchema =
+                        content.schemaCatalog.itemBundle.items
+                            .first { item -> item.id == "basic_shield" }
+                            .copy(
+                                id = deterministicCapstoneBaseId,
+                                tags = listOf("item", "armor", "accessory", "arcanist", "mana", "capstone", "non_weapon_capstone"),
+                                dropWeight = 2,
+                            )
+                    val deterministicGenericWeapon =
+                        content.itemBundle.baseItems
+                            .first { item -> item.id == "arcane_staff" }
+                            .copy(
+                                id = deterministicGenericWeaponId,
+                                name = "Test Arcanist Generic Staff",
+                                tags = setOf("item", "weapon", "arcanist", "mana", "spell", "ranged"),
+                                dropWeight = 9,
+                            )
+                    val deterministicGenericWeaponSchema =
+                        content.schemaCatalog.itemBundle.items
+                            .first { item -> item.id == "arcane_staff" }
+                            .copy(
+                                id = deterministicGenericWeaponId,
+                                tags = listOf("item", "weapon", "arcanist", "mana", "spell", "ranged"),
+                                dropWeight = 9,
+                            )
+                    val deterministicProfile =
+                        content.schemaCatalog.lootProfiles
+                            .first { profile -> profile.id == "loot.underground_river.reward" }
+                            .copy(
+                                id = deterministicProfileId,
+                                itemIds = listOf(deterministicGenericWeaponId, deterministicCapstoneBaseId),
+                                poolStrategy = LootPoolStrategy.FIXED_LIST,
+                                itemTagFilter = emptyList(),
+                                excludeIds = emptyList(),
+                                typeWeights = mapOf(ItemType.WEAPON to 4, ItemType.ARMOR to 4),
+                                slotBias = mapOf(EquipSlot.WEAPON to 4, EquipSlot.OFF_HAND to 4),
+                                specialTemplateTagPreference = emptyList(),
+                                affixTagPreference = emptyList(),
+                            )
+                    val updatedRewardRoutingEntries =
+                        content.schemaCatalog.rewardRoutingEntries.map { entry ->
+                            if (
+                                entry.zoneId == "underground_river" &&
+                                entry.interactableId == RiverCrystalRuntimeKeys.River.INTERACTABLE_ID &&
+                                entry.grantMode == RewardRoutingGrantMode.SUPPORT_GRANT
+                            ) {
+                                entry.copy(profileIds = listOf(deterministicProfileId), fallbackBaseId = deterministicCapstoneBaseId)
+                            } else {
+                                entry
+                            }
+                        }
+                    content.copy(
+                        itemBundle =
+                            content.itemBundle.copy(
+                                baseItems =
+                                    content.itemBundle.baseItems +
+                                        deterministicCapstoneBase +
+                                        deterministicGenericWeapon,
+                            ),
+                        schemaCatalog =
+                            content.schemaCatalog.copy(
+                                itemBundle =
+                                    content.schemaCatalog.itemBundle.copy(
+                                        items =
+                                            content.schemaCatalog.itemBundle.items +
+                                                deterministicCapstoneSchema +
+                                                deterministicGenericWeaponSchema,
+                                    ),
+                                lootProfiles = content.schemaCatalog.lootProfiles + deterministicProfile,
+                                rewardRoutingEntries = updatedRewardRoutingEntries,
+                            ),
+                    )
+                },
+        )
+        val charmIndex = addInventoryItem(session, baseItem("emerald_charm"))
+        assertTrue(session.perform(PlayerCommand.ActivateInventoryItem(charmIndex)))
+
+        session.automationMovePlayerTo(anchorPoint)
+
+        assertTrue(session.perform(PlayerCommand.Interact))
+        val rewardSourceId =
+            cacheRewardSourceId(session.config.zoneId, session.currentFloor(), RiverCrystalRuntimeKeys.River.INTERACTABLE_ID, anchorPoint)
+        val rewardSummary =
+            requireNotNull(
+                session.milestoneRewardSummaries().firstOrNull { reward ->
+                    reward.rewardSource == MilestoneRewardSource.SUPPORT &&
+                        reward.sourceId == rewardSourceId &&
+                        reward.qualityTier.ordinal >= RarityTier.MAGIC.ordinal &&
+                        reward.affixIds.isNotEmpty()
+                },
+            )
+        assertEquals(deterministicCapstoneBaseId, rewardSummary.baseItemId)
+        assertEquals(EquipSlot.OFF_HAND, rewardSummary.equipSlot)
+        assertEquals("emerald_charm", rewardSummary.equippedBaseItemIdBeforeReward)
+    }
+
+    @Test
     fun `interact mine furnace grants route support reward and restores stamina`() {
         val session =
             GameModule.newFoundationSession(
@@ -3110,13 +3326,17 @@ class FoundationGameSessionTest {
             )
         assertTrue(
             rewardSummary.baseItemId in
-                setOf("abyssal_heartstone", "artifact_eclipsed_relic", "unique_vesper_chainmail", "unique_voidlit_seal"),
+                setOf("artifact_briar_heart", "unique_thornpath_crook"),
         )
         assertEquals(ObjectiveState.IN_PROGRESS, session.worldProgress().questStates[AbyssalRuntimeKeys.Finale.QUEST_ID]?.objectiveStates?.get(AbyssalRuntimeKeys.Finale.OBJECTIVE_ID))
         assertTrue(state.stabilizedTurnsRemaining > 0)
         assertEquals(VoidPressurePhase.IDLE, state.phase)
         assertTrue(hasAbyssalWardProtection(world, session.playerId))
         assertTrue(session.renderSnapshot().logEvents.any { event -> event.message.key == AbyssalRuntimeKeys.Finale.STABILIZED_LOG_KEY })
+        assertNotNull(
+            logEventByKey(session, "log.reward.capstone.anchor")
+                ?: logEventByKey(session, "log.reward.capstone.non_weapon_anchor"),
+        )
 
         state.nextCycleTurn = session.currentTurnCount()
         repeat(2) {
@@ -5225,16 +5445,14 @@ class FoundationGameSessionTest {
             )
         assertTrue(
             rewardSummary.baseItemId in
-                setOf("abyssal_heartstone", "artifact_eclipsed_relic", "unique_vesper_chainmail", "unique_voidlit_seal"),
+                setOf("artifact_briar_heart", "unique_thornpath_crook"),
         )
         val rewardLog = logEventByKey(session, "log.boss.reward.claimed") ?: logEventByKey(session, "log.boss.reward.dropped")
         assertNotNull(rewardLog)
-        if (rewardSummary.baseItemId != "abyssal_heartstone") {
-            assertNotNull(
-                logEventByKey(session, "log.reward.capstone.anchor")
-                    ?: logEventByKey(session, "log.reward.capstone.non_weapon_anchor"),
-            )
-        }
+        assertNotNull(
+            logEventByKey(session, "log.reward.capstone.anchor")
+                ?: logEventByKey(session, "log.reward.capstone.non_weapon_anchor"),
+        )
         assertNull(logEventByKey(session, "log.loot.monster_drop_quality"))
         assertTrue(session.renderSnapshot().uiState.recentRewards.any { entry -> entry.source == RewardPresentationSourceSnapshot.BOSS })
     }
@@ -5910,6 +6128,7 @@ class FoundationGameSessionTest {
                 schemaCatalog =
                     schemaCatalog.copy(
                         professions = listOf(professionSchema),
+                        buildIdentities = emptyList(),
                         talents = listOf(professionTalentSchema.copy(treeId = "profession_tree"), raceTalentSchema),
                         talentTrees = listOf(professionTree, raceTree),
                         hiddenEvents = emptyList(),

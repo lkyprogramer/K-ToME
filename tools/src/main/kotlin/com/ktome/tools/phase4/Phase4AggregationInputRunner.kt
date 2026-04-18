@@ -1,5 +1,7 @@
 package com.ktome.tools.phase4
 
+import com.ktome.game.loot.foundationBuildIdentityByProfessionId
+import com.ktome.game.loot.foundationBuildIdentityProfessionIds
 import com.ktome.tools.loot.LocalRewardIdentityMetricEvaluationInput
 import com.ktome.tools.loot.buildLocalRewardIdentityEvaluation
 import com.ktome.tools.loot.splitByLocalIdentityPairType
@@ -81,6 +83,13 @@ internal data class ProfessionCapstoneSeenFloorViolation(
     val professionId: String,
     val seenCount: Int,
     val requiredSeenCount: Int,
+    val sampleCount: Int,
+)
+
+internal data class ProfessionCapstoneCountFloorViolation(
+    val professionId: String,
+    val actualCount: Int,
+    val requiredCount: Int,
     val sampleCount: Int,
 )
 
@@ -367,12 +376,24 @@ internal object Phase4AggregationInputRunner {
             } else {
                 EvaluationEntryStatus.UNEXPECTED_REGRESSION
             }
+        val expectedSourceCoverageStatus =
+            if (
+                requireRewardRoutingCoverageSummary(task.metrics)
+                    .getValue("professionSourceCoverage")
+                    .jsonArray
+                    .all { coverage -> coverage.jsonObject.getValue("covered").jsonPrimitive.content.toBooleanStrict() }
+            ) {
+                EvaluationEntryStatus.PASS
+            } else {
+                EvaluationEntryStatus.UNEXPECTED_REGRESSION
+            }
         val expectedUnexpectedRegressionCount =
             listOf(
                 expectedCadenceStatus,
                 expectedRewardStatus,
                 expectedDynamicPoolStatus,
                 expectedSpecialTierDuplicateStatus,
+                expectedSourceCoverageStatus,
             ).count { status -> status == EvaluationEntryStatus.UNEXPECTED_REGRESSION }
         val expectedVerdict =
             if (expectedUnexpectedRegressionCount > 0) {
@@ -384,6 +405,7 @@ internal object Phase4AggregationInputRunner {
             entriesByMetricId["sameZoneSecretVsRewardMaxOverlap"]?.status == expectedRewardStatus &&
             entriesByMetricId["dynamicPoolCoverage"]?.status == expectedDynamicPoolStatus &&
             entriesByMetricId["specialTierPassiveFamilyDuplicateCount"]?.status == expectedSpecialTierDuplicateStatus &&
+            entriesByMetricId["professionCapstoneSourceCoverage.reportOnly"]?.status == expectedSourceCoverageStatus &&
             evaluation.unexpectedRegressionCount == expectedUnexpectedRegressionCount &&
             evaluation.verdict == expectedVerdict
     }
@@ -512,6 +534,7 @@ internal object Phase4AggregationInputRunner {
         val rewardMetricId = "sameZoneSecretVsRewardMaxOverlap"
         val dynamicPoolMetricId = "dynamicPoolCoverage"
         val specialTierDuplicateMetricId = "specialTierPassiveFamilyDuplicateCount"
+        val sourceCoverageMetricId = "professionCapstoneSourceCoverage.reportOnly"
         val cadenceOverlap = task.metrics.doubleValue(cadenceMetricId)
         val rewardOverlap = task.metrics.doubleValue(rewardMetricId)
         val dynamicPoolCoverage = task.metrics.doubleValue(dynamicPoolMetricId)
@@ -519,6 +542,7 @@ internal object Phase4AggregationInputRunner {
         val specialTierPassiveFamilyDuplicateSummary = task.metrics.getValue("specialTierPassiveFamilyDuplicateSummary")
         val specialTierPassiveFamilyDuplicateCount =
             specialTierPassiveFamilyDuplicateSummary.jsonObject.getValue("duplicateFamilyCount").jsonPrimitive.content.toInt()
+        val rewardRoutingCoverageSummary = requireRewardRoutingCoverageSummary(task.metrics)
         val uniqueArtifactMeaningfulSwapRate = task.metrics.doubleValue("uniqueArtifactMeaningfulSwapRate")
         val dynamicTargetCount =
             dynamicPoolTargetProfiles.jsonArray.count { profile ->
@@ -613,7 +637,34 @@ internal object Phase4AggregationInputRunner {
                         "meaningfulSwap=${formatPercent(uniqueArtifactMeaningfulSwapRate)}",
                 details = task.metrics,
             )
-        val entries = localRewardEvaluation.entries + dynamicPoolEntry + specialTierDuplicateEntry
+        val sourceCoveragePairs = rewardRoutingCoverageSummary.jsonObject.getValue("professionSourceCoverage").jsonArray
+        val missingSourceCoverage =
+            sourceCoveragePairs.filter { coverage ->
+                !coverage.jsonObject.getValue("covered").jsonPrimitive.content.toBooleanStrict()
+            }
+        val sourceCoverageEntry =
+            EvaluationEntry(
+                metricId = sourceCoverageMetricId,
+                status = if (missingSourceCoverage.isEmpty()) EvaluationEntryStatus.PASS else EvaluationEntryStatus.UNEXPECTED_REGRESSION,
+                currentValue = rewardRoutingCoverageSummary,
+                currentValueText =
+                    "${rewardRoutingCoverageSummary.jsonObject.getValue("coveredSourcePairCount").jsonPrimitive.content}/" +
+                        rewardRoutingCoverageSummary.jsonObject.getValue("totalSourcePairCount").jsonPrimitive.content,
+                targetText = "all preferred profession/source pairs covered",
+                note =
+                    if (missingSourceCoverage.isEmpty()) {
+                        "allPreferredSourcesCovered"
+                    } else {
+                        "missingSourceCoverage=" +
+                            missingSourceCoverage.joinToString { coverage ->
+                                val payload = coverage.jsonObject
+                                "${payload.getValue("professionId").jsonPrimitive.content}:${payload.getValue("rewardSource").jsonPrimitive.content}" +
+                                    "[${payload.getValue("culpritSourceIds").jsonArray.joinToString { culprit -> culprit.jsonPrimitive.content }.ifBlank { "none" }}]"
+                            }
+                    },
+                details = task.metrics,
+            )
+        val entries = localRewardEvaluation.entries + dynamicPoolEntry + specialTierDuplicateEntry + sourceCoverageEntry
         val unexpectedRegressionCount = entries.count { entry -> entry.status == EvaluationEntryStatus.UNEXPECTED_REGRESSION }
         return localRewardEvaluation.copy(
             verdict = if (unexpectedRegressionCount > 0) EvaluationVerdict.FAIL else EvaluationVerdict.PASS,
@@ -681,6 +732,10 @@ internal object Phase4AggregationInputRunner {
                 professionCapstoneBreakdown = professionCapstoneBreakdown.jsonObject,
                 range = capstoneSeenRange,
             )
+        val professionCapstoneAdoptionViolations =
+            professionCapstoneAdoptionFloorViolations(professionCapstoneBreakdown.jsonObject)
+        val professionNonWeaponViolations =
+            professionNonWeaponFloorViolations(professionCapstoneBreakdown.jsonObject)
         val result =
             VerificationBaselineComparator.compareBudgetThreshold(
                 domainId = "longrun",
@@ -779,7 +834,8 @@ internal object Phase4AggregationInputRunner {
                         ),
                 )
             }
-        return result
+        val baseResult =
+            result
             .withEntryStatusOverrides(statusOverrides)
             .withEntryPresentations(
             mapOf(
@@ -806,15 +862,52 @@ internal object Phase4AggregationInputRunner {
                 capstoneAdoptionMetricId to
                     MetricPresentation(
                         targetText = Phase4OwnerMetricTargets.targetText(capstoneAdoptionMetricId, capstoneAdoptionRange),
-                        note = "nonWeaponPayoff=${formatPercent(nonWeaponBuildPayoffRate)}; breakdown=${professionCapstoneBreakdown.jsonObject.keys.sorted().joinToString()}",
+                        note =
+                            "nonWeaponPayoff=${formatPercent(nonWeaponBuildPayoffRate)}; " +
+                                "breakdown=${professionCapstoneBreakdown.jsonObject.keys.sorted().joinToString()}; " +
+                                "reportOnlyFloors=${professionBuildIdentityReportOnlyFloorNote()}; " +
+                                "preferredSources=${professionBuildIdentityPreferredSourceNote()}",
                     ),
                 nonWeaponMetricId to
                     MetricPresentation(
                         targetText = Phase4OwnerMetricTargets.targetText(nonWeaponMetricId, nonWeaponRange),
-                        note = "capstoneAdoption=${formatPercent(professionCapstoneAdoptionRate)}; breakdown=${professionCapstoneBreakdown.jsonObject.keys.sorted().joinToString()}",
+                        note =
+                            "capstoneAdoption=${formatPercent(professionCapstoneAdoptionRate)}; " +
+                                "breakdown=${professionCapstoneBreakdown.jsonObject.keys.sorted().joinToString()}; " +
+                                "reportOnlyFloors=${professionBuildIdentityReportOnlyFloorNote()}; " +
+                                "preferredSources=${professionBuildIdentityPreferredSourceNote()}",
                     ),
             ),
         )
+        val reportOnlyEntries =
+            listOf(
+                EvaluationEntry(
+                    metricId = "professionCapstoneAdoptionFloor.reportOnly",
+                    status = if (professionCapstoneAdoptionViolations.isEmpty()) EvaluationEntryStatus.PASS else EvaluationEntryStatus.APPROVED_DEBT,
+                    currentValue =
+                        buildJsonObject {
+                            put("professionCapstoneBreakdown", professionCapstoneBreakdown)
+                        },
+                    currentValueText =
+                        "${phase4FoundationProfessionIds.size - professionCapstoneAdoptionViolations.size}/${phase4FoundationProfessionIds.size}",
+                    targetText = "report-only per-profession adoption floor from build-identity schema",
+                    note = professionCapstoneAdoptionFloorNote(professionCapstoneAdoptionViolations),
+                    details = task.metrics,
+                ),
+                EvaluationEntry(
+                    metricId = "nonWeaponBuildPayoffFloor.reportOnly",
+                    status = if (professionNonWeaponViolations.isEmpty()) EvaluationEntryStatus.PASS else EvaluationEntryStatus.APPROVED_DEBT,
+                    currentValue =
+                        buildJsonObject {
+                            put("professionCapstoneBreakdown", professionCapstoneBreakdown)
+                        },
+                    currentValueText = "${phase4FoundationProfessionIds.size - professionNonWeaponViolations.size}/${phase4FoundationProfessionIds.size}",
+                    targetText = "report-only per-profession non-weapon floor from build-identity schema",
+                    note = professionNonWeaponFloorNote(professionNonWeaponViolations),
+                    details = task.metrics,
+                ),
+            )
+        return appendReportOnlyEntries(baseResult, reportOnlyEntries)
     }
 
     private fun criticalPathPacingEvaluation(
@@ -1134,7 +1227,22 @@ private fun sha256(path: Path): String {
 
 private const val DEFAULT_SHA256_BUFFER_SIZE: Int = 8 * 1024
 
-internal val phase4FoundationProfessionIds: Set<String> = linkedSetOf("arcanist", "rogue", "templar", "vanguard")
+internal val phase4FoundationProfessionIds: Set<String> = foundationBuildIdentityProfessionIds
+
+internal fun professionBuildIdentityReportOnlyFloorNote(): String =
+    foundationBuildIdentityByProfessionId.values
+        .sortedBy { identity -> identity.professionId }
+        .joinToString(separator = ", ") { identity ->
+            val floors = identity.reportOnlyFloors
+            "${identity.professionId}(seen>=${floors.seenMinCount},adoption>=${floors.adoptionMinCount},nonWeapon>=${floors.nonWeaponMinCount})"
+        }
+
+internal fun professionBuildIdentityPreferredSourceNote(): String =
+    foundationBuildIdentityByProfessionId.values
+        .sortedBy { identity -> identity.professionId }
+        .joinToString(separator = ", ") { identity ->
+            "${identity.professionId}=${identity.preferredRewardSources.joinToString(separator = "/") { source -> source.name }}"
+        }
 
 internal fun professionCapstoneSeenFloorViolations(
     professionCapstoneBreakdown: JsonObject,
@@ -1166,6 +1274,8 @@ internal fun professionCapstoneSeenNote(
     buildList {
         add("capstoneAdoption=${formatPercent(professionCapstoneAdoptionRate)}")
         add("breakdown=${professionCapstoneBreakdown.keys.sorted().joinToString()}")
+        add("reportOnlyFloors=${professionBuildIdentityReportOnlyFloorNote()}")
+        add("preferredSources=${professionBuildIdentityPreferredSourceNote()}")
         if (violations.isNotEmpty()) {
             add(
                 "missingPerProfessionSeen=" +
@@ -1176,9 +1286,100 @@ internal fun professionCapstoneSeenNote(
         }
     }.joinToString(separator = "; ")
 
+internal fun professionCapstoneAdoptionFloorViolations(
+    professionCapstoneBreakdown: JsonObject,
+): List<ProfessionCapstoneCountFloorViolation> =
+    phase4FoundationProfessionIds.mapNotNull { professionId ->
+        val breakdown = professionCapstoneBreakdown[professionId]?.jsonObject
+        val actualCount = breakdown?.get("adoptedCount")?.jsonPrimitive?.content?.toIntOrNull() ?: 0
+        val sampleCount = breakdown?.get("sampleCount")?.jsonPrimitive?.content?.toIntOrNull() ?: 0
+        val requiredCount = foundationBuildIdentityByProfessionId.getValue(professionId).reportOnlyFloors.adoptionMinCount
+        if (actualCount < requiredCount) {
+            ProfessionCapstoneCountFloorViolation(
+                professionId = professionId,
+                actualCount = actualCount,
+                requiredCount = requiredCount,
+                sampleCount = sampleCount,
+            )
+        } else {
+            null
+        }
+    }
+
+internal fun professionNonWeaponFloorViolations(
+    professionCapstoneBreakdown: JsonObject,
+): List<ProfessionCapstoneCountFloorViolation> =
+    phase4FoundationProfessionIds.mapNotNull { professionId ->
+        val breakdown = professionCapstoneBreakdown[professionId]?.jsonObject
+        val actualCount = breakdown?.get("nonWeaponPayoffCount")?.jsonPrimitive?.content?.toIntOrNull() ?: 0
+        val sampleCount = breakdown?.get("sampleCount")?.jsonPrimitive?.content?.toIntOrNull() ?: 0
+        val requiredCount = foundationBuildIdentityByProfessionId.getValue(professionId).reportOnlyFloors.nonWeaponMinCount
+        if (actualCount < requiredCount) {
+            ProfessionCapstoneCountFloorViolation(
+                professionId = professionId,
+                actualCount = actualCount,
+                requiredCount = requiredCount,
+                sampleCount = sampleCount,
+            )
+        } else {
+            null
+        }
+    }
+
+internal fun professionCapstoneAdoptionFloorNote(
+    violations: List<ProfessionCapstoneCountFloorViolation>,
+): String =
+    reportOnlyFloorNote("adoption", violations)
+
+internal fun professionNonWeaponFloorNote(
+    violations: List<ProfessionCapstoneCountFloorViolation>,
+): String =
+    reportOnlyFloorNote("nonWeapon", violations)
+
+private fun reportOnlyFloorNote(
+    label: String,
+    violations: List<ProfessionCapstoneCountFloorViolation>,
+): String =
+    buildList {
+        add("reportOnlyFloors=${professionBuildIdentityReportOnlyFloorNote()}")
+        if (violations.isEmpty()) {
+            add("$label=all-professions-covered")
+        } else {
+            add(
+                "$label=" +
+                    violations.joinToString { violation ->
+                        "${violation.professionId}(${violation.actualCount}/${violation.requiredCount},samples=${violation.sampleCount})"
+                    },
+            )
+        }
+    }.joinToString(separator = "; ")
+
+private fun appendReportOnlyEntries(
+    evaluation: EvaluationResult,
+    extraEntries: List<EvaluationEntry>,
+): EvaluationResult {
+    if (extraEntries.isEmpty()) {
+        return evaluation
+    }
+    val entries = evaluation.entries + extraEntries
+    return evaluation.copy(
+        verdict = if (entries.any { entry -> entry.status == EvaluationEntryStatus.UNEXPECTED_REGRESSION }) EvaluationVerdict.FAIL else EvaluationVerdict.PASS,
+        passCount = entries.count { entry -> entry.status == EvaluationEntryStatus.PASS },
+        approvedDebtCount = entries.count { entry -> entry.status == EvaluationEntryStatus.APPROVED_DEBT },
+        expectedFailureCount = entries.count { entry -> entry.status == EvaluationEntryStatus.EXPECTED_FAILURE },
+        unexpectedRegressionCount = entries.count { entry -> entry.status == EvaluationEntryStatus.UNEXPECTED_REGRESSION },
+        improvedDebtCount = entries.count { entry -> entry.status == EvaluationEntryStatus.IMPROVEMENT },
+        entries = entries,
+    )
+}
+
 private fun JsonObject.intValue(key: String): Int = getValue(key).jsonPrimitive.content.toInt()
 
 private fun JsonObject.doubleValue(key: String): Double = getValue(key).jsonPrimitive.content.toDouble()
+
+private fun requireRewardRoutingCoverageSummary(metrics: JsonObject): JsonObject =
+    metrics["rewardRoutingCoverageSummary"]?.jsonObject
+        ?: error("whiteBoxLoot.rewardRoutingCoverageSummary missing from artifact.")
 
 private fun JsonObject.booleanValue(key: String): Boolean = getValue(key).jsonPrimitive.content.toBooleanStrict()
 

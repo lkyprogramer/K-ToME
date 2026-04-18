@@ -1,0 +1,97 @@
+rewardRoutingEntries:
+  - zoneId: shattered_outpost
+    interactableId: supply_crate
+    grantMode: GROUND_CACHE
+    schemaVersion: 1
+    profileIds: []
+    fallbackBaseId: scroll_teleport
+  - zoneId: greenwood_fringe
+    interactableId: trail_cache
+    grantMode: GROUND_CACHE
+    schemaVersion: 1
+    profileIds: [loot.greenwood_fringe.reward, loot.foundation.common]
+    fallbackBaseId: healing_potion
+  - zoneId: deep_iron_pit
+    interactableId: ore_stash
+    grantMode: GROUND_CACHE
+    schemaVersion: 1
+    profileIds: [loot.deep_iron_pit.reward, loot.foundation.elite]
+    fallbackBaseId: stamina_draught
+  - zoneId: grey_gate_depths
+    interactableId: seal_cache
+    grantMode: GROUND_CACHE
+    schemaVersion: 1
+    profileIds: [loot.grey_gate_depths.reward, loot.foundation.boss]
+    fallbackBaseId: scroll_teleport
+  - zoneId: bandit_camp
+    interactableId: bandit_cache
+    grantMode: GROUND_CACHE
+    schemaVersion: 1
+    profileIds: [loot.greenwood_fringe.reward, loot.foundation.elite]
+    fallbackBaseId: bandit_trophy
+  - zoneId: underground_river
+    interactableId: crystal_cache_chest
+    grantMode: GROUND_CACHE
+    schemaVersion: 1
+    profileIds: [loot.underground_river.reward, loot.foundation.elite]
+    fallbackBaseId: mana_potion
+  - zoneId: shattered_outpost
+    interactableId: armory_gate
+    grantMode: SUPPORT_GRANT
+    schemaVersion: 1
+    profileIds: [loot.foundation.elite]
+    fallbackBaseId: healing_potion
+  - zoneId: greenwood_fringe
+    interactableId: hunter_snare
+    grantMode: SUPPORT_GRANT
+    schemaVersion: 1
+    profileIds: [loot.greenwood_fringe.reward, loot.foundation.elite]
+    fallbackBaseId: bandit_trophy
+  - zoneId: deep_iron_pit
+    interactableId: mine_furnace
+    grantMode: SUPPORT_GRANT
+    schemaVersion: 1
+    profileIds: [loot.deep_iron_pit.reward, loot.foundation.elite]
+    fallbackBaseId: forgebreaker_pick
+  - zoneId: grey_gate_depths
+    interactableId: ritual_altar
+    grantMode: SUPPORT_GRANT
+    schemaVersion: 1
+    profileIds: [loot.grey_gate_depths.reward, loot.foundation.boss]
+    fallbackBaseId: sanctified_seal
+  - zoneId: elven_ruins
+    interactableId: elven_wardstone
+    grantMode: SUPPORT_GRANT
+    schemaVersion: 1
+    profileIds: [loot.grey_gate_depths.reward, loot.foundation.boss]
+    fallbackBaseId: seal_reliquary
+  - zoneId: molten_core
+    interactableId: molten_pressure_valve
+    grantMode: SUPPORT_GRANT
+    schemaVersion: 1
+    profileIds: [loot.deep_iron_pit.reward, loot.foundation.elite]
+    fallbackBaseId: forgebreaker_pick
+  - zoneId: crystal_cavern
+    interactableId: crystal_resonance_node
+    grantMode: SUPPORT_GRANT
+    schemaVersion: 1
+    profileIds: [loot.grey_gate_depths.reward, loot.foundation.elite]
+    fallbackBaseId: emerald_charm
+  - zoneId: underground_river
+    interactableId: river_ferry_anchor
+    grantMode: SUPPORT_GRANT
+    schemaVersion: 1
+    profileIds: [loot.underground_river.reward, loot.foundation.elite]
+    fallbackBaseId: scroll_teleport
+  - zoneId: abyssal_temple
+    interactableId: temple_ward_reliquary
+    grantMode: SUPPORT_GRANT
+    schemaVersion: 1
+    profileIds: [loot.abyssal_temple.reward, loot.foundation.boss]
+    fallbackBaseId: sanctified_seal
+  - zoneId: abyssal_heart
+    interactableId: heart_ward_focus
+    grantMode: SUPPORT_GRANT
+    schemaVersion: 1
+    profileIds: [loot.abyssal_heart.reward, loot.foundation.boss]
+    fallbackBaseId: abyssal_heartstone

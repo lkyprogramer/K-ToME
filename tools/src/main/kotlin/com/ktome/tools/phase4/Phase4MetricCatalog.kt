@@ -80,6 +80,14 @@ internal object Phase4MetricCatalog {
                 decisionNotes = "This metric is derived from the official special-template corpus and should remain at zero once PR-02 identity cleanup lands.",
             ),
             Phase4MetricSpec(
+                id = "professionCapstoneSourceCoverage.reportOnly",
+                ownerTaskId = "whiteBoxLoot",
+                outputSection = "local-reward-identity",
+                formula = "covered preferred profession/source pairs / total preferred profession/source pairs",
+                failSemantics = "FAIL means at least one preferred profession/source pair still has no legal capstone path on the official main-path sources.",
+                decisionNotes = "Unlike the staged adoption and non-weapon floors, preferred source coverage is part of the current hardening contract and must fail before long-run verification.",
+            ),
+            Phase4MetricSpec(
                 id = "avgObjectiveAcquireTurn",
                 ownerTaskId = "longRunLab",
                 outputSection = "critical-path-pacing",
@@ -158,6 +166,22 @@ internal object Phase4MetricCatalog {
                 formula = "fullRoute runs adopting a non-weapon profession capstone / fullRouteCount",
                 failSemantics = "FAIL means OFF_HAND / ARMOR build-defining payoff still is not landing often enough in terminal builds.",
                 decisionNotes = "Use the same profession-capstone evidence chain as professionCapstoneSeenRate; do not invent a second build summary source.",
+            ),
+            Phase4MetricSpec(
+                id = "professionCapstoneAdoptionFloor.reportOnly",
+                ownerTaskId = "longRunLab",
+                outputSection = "terminal-build-identity",
+                formula = "count(professions meeting build-identity adoption floor) / foundationProfessionCount",
+                failSemantics = "APPROVED_DEBT means per-profession adoption floor is visible but not blocking yet.",
+                decisionNotes = "The floor is derived from build-identity reportOnlyFloors and is intentionally report-only in PR-04.",
+            ),
+            Phase4MetricSpec(
+                id = "nonWeaponBuildPayoffFloor.reportOnly",
+                ownerTaskId = "longRunLab",
+                outputSection = "terminal-build-identity",
+                formula = "count(professions meeting build-identity non-weapon floor) / foundationProfessionCount",
+                failSemantics = "APPROVED_DEBT means per-profession non-weapon payoff floor is visible but not blocking yet.",
+                decisionNotes = "The floor is derived from build-identity reportOnlyFloors and should only become blocking in a later gate-cutover PR.",
             ),
             Phase4MetricSpec(
                 id = "terrainInteractionEncounterRate.aggregate",

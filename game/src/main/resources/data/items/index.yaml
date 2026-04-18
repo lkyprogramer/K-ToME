@@ -1625,8 +1625,8 @@ uniqueTemplates:
     audioProfile: audio.item.unique.thornpath_crook
     schemaVersion: 2
     tags: [greenwood_fringe, rogue, marked, capstone]
-    allowedSourceTiers: [CHEST, ELITE]
-    allowedZones: [greenwood_fringe]
+    allowedSourceTiers: [CHEST, ELITE, BOSS]
+    allowedZones: [greenwood_fringe, abyssal_heart]
     fixedAffixIds: [briarhook, honed]
     fixedMaterialId: STEEL
   - id: unique.heartwood_talisman
@@ -1727,8 +1727,8 @@ artifactTemplates:
     audioProfile: audio.item.artifact.briar_heart
     schemaVersion: 2
     tags: [greenwood_fringe, rogue, special_chest, capstone, non_weapon_capstone]
-    allowedSourceTiers: [CHEST]
-    allowedZones: [greenwood_fringe]
+    allowedSourceTiers: [CHEST, BOSS, SECRET_ZONE]
+    allowedZones: [greenwood_fringe, underground_river, abyssal_heart]
     fixedAffixIds: [wind_fed, of_last_stand]
     fixedMaterialId: STEEL
   - id: artifact.forge_oath

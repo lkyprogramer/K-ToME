@@ -30,10 +30,10 @@
 
 1. 当前主干已经落地 `whiteBoxMapgen`、`whiteBoxSolvability`、`whiteBoxVerify` 与 `phase4Report`。
 2. 当前 `phase4Report` 聚合 `14` 个任务：`mapgenSmoke`、`solvabilityHarness`、`hiddenContentHarness`、`organicHiddenProbe`、`contentPackHarness`、`bossHarness`、`longRunLab`、`terrainInteractionBatch`、`whiteBoxMapgen`、`whiteBoxSolvability`、`lootBalanceLab`、`whiteBoxLoot`、`whiteBoxHiddenContent`、`whiteBoxContentPack`。
-3. `phase4Report` 现在同时是 `scripted vs organic hidden`、`same-zone local reward identity`、`terminal build identity`、`critical-path pacing`、`terrain combat sample contract` 的唯一 owner metric 聚合入口；canonical evidence 至少必须显式保留 `dynamicPoolCoverage`、`dynamicPoolTargetProfiles`、`specialTierPassiveFamilyDuplicateCount`、`specialTierPassiveFamilyDuplicateSummary`、`professionCapstoneSeenRate`、`professionCapstoneAdoptionRate`、`nonWeaponBuildPayoffRate`、`professionCapstoneBreakdown`。
+3. `phase4Report` 现在同时是 `scripted vs organic hidden`、`same-zone local reward identity`、`terminal build identity`、`critical-path pacing`、`terrain combat sample contract` 的唯一 owner metric 聚合入口；canonical evidence 至少必须显式保留 `dynamicPoolCoverage`、`dynamicPoolTargetProfiles`、`specialTierPassiveFamilyDuplicateCount`、`specialTierPassiveFamilyDuplicateSummary`、`rewardRoutingCoverageSummary`、`professionCapstoneSourceCoverage.reportOnly`、`professionCapstoneSeenRate`、`professionCapstoneAdoptionRate`、`professionCapstoneAdoptionFloor.reportOnly`、`nonWeaponBuildPayoffRate`、`nonWeaponBuildPayoffFloor.reportOnly`、`professionCapstoneBreakdown`。
 4. `verifyOwner` 是 `Phase 4` 后续 owner 级 PR 的默认联合验收入口；它运行 routed owner task 集，不承担 phase aggregate 职责。
 5. `phase4Report` 与 `phase4ReportOnly` 都按 artifact-only 语义运行，默认产物落到 `tools/build/reports/verification/phase4/report-phase4-summary.{json,md}`；前面的 producer 命令必须先产出报告，再由这两个聚合入口消费。
-6. `phase4Report / reportPhase4` 必须直接基于当前仓库里最新的 producer artifact materialize canonical summary，不允许只在临时 fixture 目录里生成通过后让工作区 canonical 文件继续停留在旧版本。
+6. `phase4Report / reportPhase4` 必须直接基于当前仓库里最新的 producer artifact materialize canonical summary，不允许只在临时 fixture 目录里生成通过后让工作区 canonical 文件继续停留在旧版本；同目录下还必须增量产出 `build-identity-debug.json`，用于保留 reward source -> selected base id、top rejected capstone candidates、rejection reasons、per-profession source coverage。
 7. 旧 `tools/build/reports/phase4/phase4-summary.{json,md}` 只保留为 `phase4LegacyReport` / `phase4LegacyReportOnly` 手工 fallback 产物，不再作为默认 gate 或默认验收证据。
 8. `hiddenContentHarness` 继续承担 scripted correctness owner；`organicHiddenProbe` 只负责无 primer 的 organic experience 观测，不得借助内部 reveal 路径。
 9. 单个 harness 仍保留独立命令，便于局部回归、PR 级收口与 artifact 定向排查。
@@ -72,7 +72,7 @@
    - `MAGIC / RARE` 分布偏离公式预期不超过 `±5%`
    - `UNIQUE / ARTIFACT` 分布偏离不超过 `±25%` 相对误差
    - `affixBudget` 平均偏离不超过 `±5%`，`P95` 不超过 `±12%`
-   - `whiteBoxLoot` / canonical report 证据必须能从同一批 producer artifact 衍生 `dynamicPoolCoverage / dynamicPoolTargetProfiles / specialTierPassiveFamilyDuplicateCount / specialTierPassiveFamilyDuplicateSummary`
+   - `whiteBoxLoot` / canonical report 证据必须能从同一批 producer artifact 衍生 `dynamicPoolCoverage / dynamicPoolTargetProfiles / specialTierPassiveFamilyDuplicateCount / specialTierPassiveFamilyDuplicateSummary / rewardRoutingCoverageSummary / professionCapstoneSourceCoverage.reportOnly`
 6. `hiddenContentHarness`
    - 至少覆盖 `500` 个 seed
    - 至少 `30%` 的 run 触发 `1` 个 hidden event
@@ -178,6 +178,8 @@
    - `localIdentityFailurePairs`
    - `specialTierPassiveFamilyDuplicateCount`
    - `specialTierPassiveFamilyDuplicateSummary`
+   - `rewardRoutingCoverageSummary`
+   - `professionCapstoneSourceCoverage.reportOnly`
    - pity 激活次数（`rarePityActivations / uniquePityActivations`）
    - 预算偏离
    - `sourceLevel / sourceTier / zone / playerLevel / magicFind` 分层统计
@@ -189,6 +191,7 @@
    - `UNIQUE / ARTIFACT` 只出现在允许来源
    - `castSpeed` affix 经过收益递减，不出现原始线性叠加越界
    - same-zone `.secret ↔ .cadence / .reward` 冲突必须能从 summary 直接定位到具体 pair
+   - reward routing drift / missing capstone source 必须能从 summary 或 `build-identity-debug.json` 直接定位到 culprit source id 与 rejection reason
 
 ### 2.4 Terrain Interaction Isolated Batch
 

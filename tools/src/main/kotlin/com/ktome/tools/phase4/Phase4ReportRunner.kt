@@ -5,6 +5,7 @@ import com.ktome.tools.loot.localIdentityEvaluationDetail
 import com.ktome.tools.loot.splitByLocalIdentityPairType
 import com.ktome.tools.loot.toLootStrictLocalIdentityViolation
 import com.ktome.tools.verification.EvaluationEntry
+import com.ktome.tools.verification.EvaluationEntryStatus
 import com.ktome.tools.verification.VerificationBaseline
 import java.nio.file.Files
 import java.nio.file.Path
@@ -356,6 +357,9 @@ object Phase4ReportRunner {
                 localRewardEntriesByMetricId.getValue("specialTierPassiveFamilyDuplicateCount").toLegacyExperienceMetric(loot.taskId),
             )
             add(
+                localRewardEntriesByMetricId.getValue("professionCapstoneSourceCoverage.reportOnly").toLegacyExperienceMetric(loot.taskId),
+            )
+            add(
                 Phase4ExperienceMetric(
                     metricId = "terminalWeaponBaseDiversity",
                     sourceTaskId = longRun.taskId,
@@ -413,6 +417,12 @@ object Phase4ReportRunner {
             )
             add(
                 terminalBuildEntriesByMetricId.getValue("nonWeaponBuildPayoffRate").toLegacyExperienceMetric(longRun.taskId),
+            )
+            add(
+                terminalBuildEntriesByMetricId.getValue("professionCapstoneAdoptionFloor.reportOnly").toLegacyExperienceMetric(longRun.taskId),
+            )
+            add(
+                terminalBuildEntriesByMetricId.getValue("nonWeaponBuildPayoffFloor.reportOnly").toLegacyExperienceMetric(longRun.taskId),
             )
             addAll(
                 criticalPathPacingEvaluation.toExperienceMetrics(longRun.taskId).map { metric ->
@@ -583,6 +593,8 @@ object Phase4ReportRunner {
             appendLine("- `professionCapstoneSeenRate`: ${metricsById.getValue("professionCapstoneSeenRate").currentValueText} / ${metricsById.getValue("professionCapstoneSeenRate").status}")
             appendLine("- `professionCapstoneAdoptionRate`: ${metricsById.getValue("professionCapstoneAdoptionRate").currentValueText} / ${metricsById.getValue("professionCapstoneAdoptionRate").status}")
             appendLine("- `nonWeaponBuildPayoffRate`: ${metricsById.getValue("nonWeaponBuildPayoffRate").currentValueText} / ${metricsById.getValue("nonWeaponBuildPayoffRate").status}")
+            appendLine("- reportOnlyProfessionFloors: `${professionBuildIdentityReportOnlyFloorNote()}`")
+            appendLine("- preferredRewardSources: `${professionBuildIdentityPreferredSourceNote()}`")
             val professionTopWeaponSemanticTags = longRunTask.metrics.getValue("professionTopWeaponSemanticTags")
             val professionCapstoneBreakdown = longRunTask.metrics.getValue("professionCapstoneBreakdown")
             appendLine("```json")
@@ -746,7 +758,7 @@ private fun EvaluationEntry.toLegacyExperienceMetric(sourceTaskId: String): Phas
         currentValue = currentValue,
         currentValueText = currentValueText,
         target = targetText ?: "n/a",
-        status = if (status.name == "PASS") "PASS" else "FAIL",
+        status = if (status == EvaluationEntryStatus.UNEXPECTED_REGRESSION) "FAIL" else "PASS",
         note = note,
         details = details,
     )

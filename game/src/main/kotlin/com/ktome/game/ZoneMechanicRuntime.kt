@@ -215,24 +215,6 @@ internal object ZoneMechanicRuntime {
             else -> null
         }
 
-    fun uniqueContentRewardProfiles(uniqueContentTag: String?): List<String> =
-        when (uniqueContentTag) {
-            "optional.bandit_camp.cache" -> listOf("loot.greenwood_fringe.reward", "loot.foundation.elite")
-            "optional.elven_ruins.relic" -> listOf("loot.grey_gate_depths.reward", "loot.foundation.boss")
-            "optional.molten_core.relic" -> listOf("loot.deep_iron_pit.reward", "loot.foundation.elite")
-            "optional.crystal_cavern.node" -> listOf("loot.grey_gate_depths.reward", "loot.foundation.elite")
-            else -> emptyList()
-        }
-
-    fun uniqueContentFallbackBaseId(uniqueContentTag: String?): String =
-        when (uniqueContentTag) {
-            "optional.bandit_camp.cache" -> "bandit_trophy"
-            "optional.elven_ruins.relic" -> "seal_reliquary"
-            "optional.molten_core.relic" -> "forgebreaker_pick"
-            "optional.crystal_cavern.node" -> "emerald_charm"
-            else -> "healing_potion"
-        }
-
     fun installFloorRuntime(
         config: FoundationGameConfig,
         zone: ZoneSchemaV2,

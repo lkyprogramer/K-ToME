@@ -188,7 +188,7 @@ lootProfiles:
     canonicalZoneId: underground_river
     poolStrategy: TAG_WEIGHTED
     rewardBudget: 4
-    itemIds: [artifact_river_echo, unique_deepcurrent_lens, unique_tideglass_staff, emerald_charm, mana_potion]
+    itemIds: [artifact_river_echo, unique_deepcurrent_lens, artifact_briar_heart, unique_tideglass_staff, emerald_charm, mana_potion]
     itemTagFilter: [underground_river]
     excludeIds: &underground_river_capstone_excludes [unique_floodglass_rapier, unique_currentstrider_cloak, unique_ferrywarden_lantern, artifact_deepcurrent_crown]
     typeWeights: { WEAPON: 2, ARMOR: 3, CONSUMABLE: 1 }
@@ -214,7 +214,7 @@ lootProfiles:
     canonicalZoneId: abyssal_heart
     poolStrategy: TAG_WEIGHTED
     rewardBudget: 1
-    itemIds: [abyssal_heartstone, artifact_eclipsed_relic, unique_vesper_chainmail, unique_voidlit_seal]
+    itemIds: [abyssal_heartstone, artifact_eclipsed_relic, unique_vesper_chainmail, unique_voidlit_seal, artifact_briar_heart, unique_thornpath_crook]
     itemTagFilter: [abyssal_heart]
     excludeIds: *abyssal_capstone_excludes
     typeWeights: { ARMOR: 5, WEAPON: 1 }

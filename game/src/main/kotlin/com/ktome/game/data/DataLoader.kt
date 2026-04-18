@@ -36,6 +36,7 @@ import com.ktome.core.item.EquipmentPassive
 import com.ktome.core.item.EquipSlot
 import com.ktome.core.item.ItemBaseDef
 import com.ktome.core.item.ItemDataBundle
+import com.ktome.core.item.MilestoneRewardSource
 import com.ktome.core.item.ItemType
 import com.ktome.core.item.MaterialDef
 import com.ktome.core.item.PassiveCondition
@@ -130,8 +131,12 @@ import com.ktome.game.data.schema.MonsterSchemaV2
 import com.ktome.game.data.schema.NamedSchemaRef
 import com.ktome.game.data.schema.ObjectiveSetSchemaV2
 import com.ktome.game.data.schema.ObjectiveInteractablePlacementSchemaV2
+import com.ktome.game.data.schema.ProfessionBuildIdentityReportOnlyFloorsSchemaV1
+import com.ktome.game.data.schema.ProfessionBuildIdentitySchemaV1
 import com.ktome.game.data.schema.ProfessionSchemaV2
 import com.ktome.game.data.schema.QuestProgressSchemaV2
+import com.ktome.game.data.schema.RewardRoutingEntrySchemaV1
+import com.ktome.game.data.schema.RewardRoutingGrantMode
 import com.ktome.game.data.schema.ResourceCostSchemaV2
 import com.ktome.game.data.schema.RescueInventoryPolicySchemaV2
 import com.ktome.game.data.schema.RouteRewardSchemaV2
@@ -216,6 +221,8 @@ class DataLoader(
 
     companion object {
         private const val LOOT_PROFILE_SCHEMA_VERSION: Int = 3
+        private const val REWARD_ROUTING_SCHEMA_VERSION: Int = 1
+        private const val BUILD_IDENTITY_SCHEMA_VERSION: Int = 1
 
         val REMOVED_LEGACY_EFFECT_FIELDS =
             setOf(
@@ -325,6 +332,8 @@ class DataLoader(
             questProgressions = parseQuestProgressSchemas(loadYamlMap("/data/world/quests.yaml")).map { schema -> schema.toRuntime() },
             shopNodes = parseShopNodeSchemas(loadYamlMap("/data/shops/index.yaml")).map { schema -> schema.toRuntime() },
             interactables = parseInteractableSchemas(loadYamlMap("/data/interactables/index.yaml")),
+            rewardRoutingEntries = parseRewardRoutingEntries(loadYamlMap("/data/reward-routing/index.yaml")),
+            buildIdentities = parseBuildIdentities(loadYamlMap("/data/build-identity/index.yaml")),
             objectiveSets = parseObjectiveSetSchemas(loadYamlMap("/data/objectives/index.yaml")),
             difficulties = parseDifficultySchemas(loadYamlMap("/data/difficulties/index.yaml")),
             itemBundle = parseItemBundleSchemas(loadYamlMap("/data/items/index.yaml")),
@@ -1771,6 +1780,55 @@ class DataLoader(
                 interactionTags = interactable.optionalStringList("interactionTags"),
                 shopNodeId = interactable.optionalString("shopNodeId"),
             )
+        }
+
+    private fun parseRewardRoutingEntries(root: Map<String, Any?>): List<RewardRoutingEntrySchemaV1> =
+        root.requiredList("rewardRoutingEntries").map { entry ->
+            val routing = entry.requiredMap()
+            RewardRoutingEntrySchemaV1(
+                zoneId = routing.requiredString("zoneId"),
+                interactableId = routing.requiredString("interactableId"),
+                grantMode = RewardRoutingGrantMode.valueOf(routing.requiredString("grantMode")),
+                schemaVersion = routing.requiredInt("schemaVersion"),
+                profileIds = routing.optionalStringList("profileIds"),
+                fallbackBaseId = routing.requiredString("fallbackBaseId"),
+            ).also { parsed ->
+                require(parsed.schemaVersion == REWARD_ROUTING_SCHEMA_VERSION) {
+                    "Reward routing entry '${parsed.zoneId}/${parsed.interactableId}/${parsed.grantMode.name}' must use schemaVersion=$REWARD_ROUTING_SCHEMA_VERSION but got ${parsed.schemaVersion}."
+                }
+            }
+        }
+
+    private fun parseBuildIdentities(root: Map<String, Any?>): List<ProfessionBuildIdentitySchemaV1> =
+        root.requiredList("buildIdentities").map { entry ->
+            val identity = entry.requiredMap()
+            ProfessionBuildIdentitySchemaV1(
+                professionId = identity.requiredString("professionId"),
+                schemaVersion = identity.requiredInt("schemaVersion"),
+                capstoneBaseIds = identity.optionalStringList("capstoneBaseIds"),
+                nonWeaponCapstoneBaseIds = identity.optionalStringList("nonWeaponCapstoneBaseIds"),
+                preferredRewardSources =
+                    identity.optionalStringList("preferredRewardSources").map { source ->
+                        MilestoneRewardSource.valueOf(source)
+                    },
+                preferredReplacementSlots =
+                    identity.optionalStringList("preferredReplacementSlots").map { slot ->
+                        EquipSlot.valueOf(slot)
+                    },
+                terminalIdentityTags = identity.optionalStringList("terminalIdentityTags"),
+                reportOnlyFloors =
+                    identity.requiredMap("reportOnlyFloors").let { floors ->
+                        ProfessionBuildIdentityReportOnlyFloorsSchemaV1(
+                            seenMinCount = floors.requiredInt("seenMinCount"),
+                            adoptionMinCount = floors.requiredInt("adoptionMinCount"),
+                            nonWeaponMinCount = floors.requiredInt("nonWeaponMinCount"),
+                        )
+                    },
+            ).also { parsed ->
+                require(parsed.schemaVersion == BUILD_IDENTITY_SCHEMA_VERSION) {
+                    "Build identity '${parsed.professionId}' must use schemaVersion=$BUILD_IDENTITY_SCHEMA_VERSION but got ${parsed.schemaVersion}."
+                }
+            }
         }
 
     private fun parseObjectiveSetSchemas(root: Map<String, Any?>): List<ObjectiveSetSchemaV2> =

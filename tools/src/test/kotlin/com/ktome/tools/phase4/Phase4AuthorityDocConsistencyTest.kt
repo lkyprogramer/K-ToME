@@ -1,11 +1,13 @@
 package com.ktome.tools.phase4
 
+import com.ktome.game.loot.foundationBuildIdentityByProfessionId
 import java.nio.file.Files
 import java.nio.file.Path
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
@@ -31,6 +33,10 @@ class Phase4AuthorityDocConsistencyTest {
         val v2optPr01 =
             Files.readString(
                 repoRoot().resolve("docs/review/phase4/v2opt/2026-04-11-phase4-v2opt-pr-01-experience-gate-and-owner-metrics.md"),
+            )
+        val buildIdentityHardeningPlan =
+            Files.readString(
+                repoRoot().resolve("docs/opt/2026-04-17-phase4-build-identity-end-to-end-hardening-and-fast-fail-plan.md"),
             )
         val terminalBuildBaseline =
             Json.parseToJsonElement(
@@ -64,8 +70,15 @@ class Phase4AuthorityDocConsistencyTest {
         assertTrue(phase4Checklist.contains("professionCapstoneBreakdown"))
         assertTrue(phase4Checklist.contains("specialTierPassiveFamilyDuplicateCount"))
         assertTrue(phase4Checklist.contains("specialTierPassiveFamilyDuplicateSummary"))
+        assertTrue(phase4Checklist.contains("professionCapstoneSourceCoverage.reportOnly"))
+        assertTrue(phase4Checklist.contains("build-identity-debug.json"))
         assertTrue(phase4Checklist.contains("dynamicPoolTargetProfiles"))
         assertTrue(v2optPr01.contains("critical path pacing"))
+        assertTrue(buildIdentityHardeningPlan.contains("data/build-identity/index.yaml"))
+        assertTrue(buildIdentityHardeningPlan.contains("reportOnlyFloors"))
+        assertEquals(setOf("arcanist", "rogue", "templar", "vanguard"), foundationBuildIdentityByProfessionId.keys)
+        assertTrue(foundationBuildIdentityByProfessionId.values.all { identity -> identity.reportOnlyFloors.adoptionMinCount > 0 })
+        assertTrue(foundationBuildIdentityByProfessionId.values.all { identity -> identity.reportOnlyFloors.nonWeaponMinCount > 0 })
         assertTrue(terminalRanges.containsKey("professionCapstoneAdoptionRate"))
         assertTrue(
             terminalRanges.getValue("professionCapstoneSeenRate").jsonObject
