@@ -36,6 +36,57 @@
    - same-zone local overlap guardrail
    - `secretZoneRewardAuthorityViolations`
 
+### 0.1 Computer Use / Validation Mode 快速白盒模块
+
+本 PR 的人工白盒验证默认复用：
+
+1. [docs/opt/cheatMode.md](/Users/luo/Documents/github/K-ToME/docs/opt/cheatMode.md:917) 中 `PR-03 / PR-07 / PR-09` 对应映射
+2. [docs/verification/validation-mode.md](/Users/luo/Documents/github/K-ToME/docs/verification/validation-mode.md:7) 中 `HIDDEN_CONTENT / CONTENT_PACK` 使用说明
+
+推荐按下面两个模块执行，优先使用 `Validation Mode`，不要重新走长流程自然探索。
+
+#### 模块 A：`HIDDEN_CONTENT` 主闭环
+
+- Validation preset：`HIDDEN_CONTENT`
+- setup 关注项：
+  - 确认 preset 摘要显示 hidden/search 路径
+  - 若 UI 显示 seed / zone / floor，记录到人工验证备注
+- 局内操作顺序：
+  1. `F9` 打开 Validation overlay
+  2. 执行 `Travel to Search Anchor`
+  3. 执行正式 `Execute Search`
+  4. 观察 reveal 结果后执行 `Travel to Hidden Entrance`
+  5. 进入 secret 路径后继续执行 `Travel to Secret Reward`
+  6. 最后执行 `Travel to Secret Return`
+- 必看证据：
+  - `SearchAction` 成功/失败反馈是正式日志，不是 Validation 私有文案
+  - reveal 后 hidden entrance / return bridge 路径真实可达
+  - secret reward 来源在 log / inspect / route 上可读，不只是地图几何变化
+  - return 后能重新回到主路径，证明 secret loop 是闭环
+
+#### 模块 B：`CONTENT_PACK` pack-enabled hidden 路径
+
+- Validation preset：`CONTENT_PACK`
+- setup 关注项：
+  - 确认默认启用 `sample.flooded_relics`
+  - 若 setup 未显示 sample pack active roots，视为 blocker
+- 局内操作顺序：
+  1. `F9` 打开 overlay
+  2. 先确认 overlay header 中的 `active pack ids`
+  3. 复用模块 A 的 `Search Anchor -> Execute Search -> Hidden Entrance -> Secret Reward` 路径
+- 必看证据：
+  - overlay 中可见 `sample.flooded_relics`
+  - 客户端实际出现 sample pack 内容，而不是只看到 active ids
+  - 内容 key / namespace 对人工读屏是可解释的，不是不可读 raw path
+
+#### 人工判断边界
+
+以下判断仍必须由人工确认，不能被 Validation 快速路径替代：
+
+1. reveal / enter / reward / return 是否构成“愿意主动搜、且搜到了真的有记忆点”的完整 loop
+2. `greenwood_ambush_hideout` 一类 replay hook 是否已经从几何扰动提升为真正内容分支
+3. sample pack 内容是否在客户端里真实成立，而不是只有 metadata / active ids 成立
+
 ## 1. 阶段目标
 
 把 hidden 从“系统存在且脚本能验证”推进到“玩家在自然游玩中愿意主动搜、且搜到了真的有记忆点”。

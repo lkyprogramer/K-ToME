@@ -36,6 +36,60 @@
    - `frontstageCueExpiryParity`
    - `frontstageSecretCueVisibilityRate`
 
+### 0.1 Computer Use / Validation Mode 快速白盒模块
+
+本 PR 的人工白盒验证默认复用：
+
+1. [docs/opt/cheatMode.md](/Users/luo/Documents/github/K-ToME/docs/opt/cheatMode.md:945) 中“人工确认仍保留”的 Validation 原则
+2. [docs/verification/validation-mode.md](/Users/luo/Documents/github/K-ToME/docs/verification/validation-mode.md:18) 中 `MAPGEN_DIFF / HIDDEN_CONTENT / CONTENT_PACK` 的人工边界
+
+本 PR 关注的是前台 cue contract，所以推荐让 `Computer Use` 只验证“高价值 cue 是否稳定可见、去重和生命周期是否符合预期”，不要把重点重新放回后端 owner 指标。
+
+#### 模块 A：`HIDDEN_CONTENT` search / secret cue
+
+- Validation preset：`HIDDEN_CONTENT`
+- 局内操作顺序：
+  1. `F9` 打开 overlay
+  2. `Travel to Search Anchor`
+  3. `Execute Search`
+  4. `Travel to Hidden Entrance`
+  5. `Travel to Secret Reward`
+- 必看证据：
+  - `SEARCH` cue 与 `SECRET` cue 在前台是不同 tone、不同优先级
+  - 高价值 `SEARCH_REVEALED` / `SECRET_ZONE_REVEALED` cue 不会立刻被低价值 passive cue 挤掉
+  - 同一 hidden/secret 事件重复触发时，前台 cue 表现为替换/去重，而不是无限堆积
+
+#### 模块 B：`BOSS_VARIANT` boss cue
+
+- Validation preset：`BOSS_VARIANT`
+- 局内操作顺序：
+  1. `F9` 打开 overlay
+  2. `Travel to Boss`
+  3. 观察 boss phase 切换或关键技能触发后的前台 cue
+- 必看证据：
+  - 高优先级 boss/secret cue 仍能保留在前台
+  - 不会被低价值 passive/action 噪声覆盖
+  - boss cue 的 tone/readability 对 `Computer Use` 读屏足够稳定
+
+#### 模块 C：`CONTENT_PACK` pack-specific cue
+
+- Validation preset：`CONTENT_PACK`
+- 局内操作顺序：
+  1. 启动 sample pack
+  2. `F9` 确认 active pack ids
+  3. 沿 search / hidden / secret 路径进入 pack 内容
+- 必看证据：
+  - pack-specific search/secret cue 在前台仍保持可读，不被 generic passive cue 淹没
+  - 若同一 stable cue 重复触发，屏幕上的 cue 行为符合去重预期
+
+#### 人工判断边界
+
+以下仍必须由人工确认：
+
+1. 前台 cue 的文字、颜色和停留时间是否真的“更容易理解”，而不是只是满足 typed contract
+2. high / medium / low cue 的排序是否符合玩家直觉
+3. golden / snapshot 虽然通过，但真实读屏体验是否出现回归
+
 ## 1. 阶段目标
 
 把当前“轻量 frontstage 可读性补强”升级成正式的 action cue contract，让 priority、TTL、去重和 tone 都由 `game -> snapshot` 决定，`client` 不再靠隐式约定补排序。

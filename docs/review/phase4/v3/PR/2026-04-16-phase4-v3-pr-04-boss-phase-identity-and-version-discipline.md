@@ -28,6 +28,56 @@
    - `phase4Report`
 3. 若改动影响 build metadata / sample pack version range，再补 pack 侧白盒或最小 smoke 验证。
 
+### 0.1 Computer Use / Validation Mode 快速白盒模块
+
+本 PR 的人工白盒验证默认复用：
+
+1. [docs/opt/cheatMode.md](/Users/luo/Documents/github/K-ToME/docs/opt/cheatMode.md:919) 中 `PR-06 / PR-09` 对应 Validation 映射
+2. [docs/verification/validation-mode.md](/Users/luo/Documents/github/K-ToME/docs/verification/validation-mode.md:7) 中 `BOSS_VARIANT` 与 `CONTENT_PACK` 路径
+
+推荐拆成两个模块，`Computer Use` 先做 boss，再做 pack version/boundary。
+
+#### 模块 A：`BOSS_VARIANT` boss identity 快速核验
+
+- Validation preset：`BOSS_VARIANT`
+- setup 关注项：
+  - 记录当前 boss variant / boss zone / floor
+  - 若 setup 支持 variant 切换，至少人工验证 2 个 variant
+- 局内操作顺序：
+  1. `F9` 打开 overlay
+  2. 确认 summary 中的 preset / boss variant / zone / floor
+  3. 执行 `Travel to Boss`
+  4. 观察 phase 变化、boss cue、variant 相关日志/inspect
+  5. 如需要快速收尾，再执行 `Kill Active Boss`
+- 必看证据：
+  - boss variant 在 inspect / 顶部 cue / 日志中是可读的，不只是内部 id 变化
+  - phase 变化真实发生，不是只有血量变化
+  - 不同 variant 至少在 mutation / terrain preference /掉落/表现里有一项可感知差异
+
+#### 模块 B：`CONTENT_PACK` version / pack boundary 快速核验
+
+- Validation preset：`CONTENT_PACK`
+- setup 关注项：
+  - 确认 sample pack 默认启用
+  - 若版本口径不匹配导致 setup 阻止启动，视为 version discipline blocker
+- 局内操作顺序：
+  1. 启动 `CONTENT_PACK`
+  2. `F9` 打开 overlay
+  3. 检查 `active pack ids`
+  4. 沿 sample pack 主路径至少进入一次 pack 内容
+- 必看证据：
+  - pack 不因 `gameVersionRange` / build metadata 漂移而被拒绝
+  - overlay 中 active pack ids 可见
+  - sample pack 实际内容可见，而不是只有 metadata 可见
+
+#### 人工判断边界
+
+以下判断仍必须由人工负责：
+
+1. boss 是否真的形成“不同阶段、不同打法”的终盘语言
+2. variant/base trace divergence 是否在玩家前台也能被感知，而不是只存在于 harness 指标
+3. version discipline 是否既不放宽 pack boundary，也不把 sample pack 意外锁死
+
 ## 1. 阶段目标
 
 给终盘补上“不同阶段、不同打法”的正式语言，同时把版本纪律收口到当前 Phase4 语义。
