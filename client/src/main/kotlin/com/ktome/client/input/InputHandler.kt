@@ -11,6 +11,7 @@ import com.ktome.core.talent.TalentTreeOwnerType
 import com.ktome.game.PrimaryStat
 import com.ktome.game.PLAYER_ACTIVE_TALENT_SLOT_COUNT
 import com.ktome.game.PlayerCommand
+import com.ktome.game.validation.ValidationPreset
 
 enum class UiMode {
     MAP,
@@ -20,6 +21,7 @@ enum class UiMode {
     LOADOUT_EDIT,
     TARGETING,
     INSPECT,
+    VALIDATION,
     STAT_ASSIGN,
     TALENT_ASSIGN,
 }
@@ -47,10 +49,15 @@ data class OverlayState(
     val targetingInscriptionHotkey: Int? = null,
     val targetingCursor: Point? = null,
     val inspectCursor: Point? = null,
+    val validationCursor: ValidationOverlayCursor? = null,
+    val validationPanel: ValidationOverlayPanelState? = null,
 )
 
 class InputHandler(
     private val input: InputSource = GdxInputSource,
+    private val validationOverlayAvailability: ValidationOverlayAvailability = ValidationOverlayAvailability.DISABLED,
+    private val validationPreset: ValidationPreset = ValidationPreset.CUSTOM,
+    private val validationRestartNextSeedEnabled: Boolean = false,
 ) {
     private val overlayCloseBindings = listOf(Keys.F)
     private val repeatInitialDelayFrames = 12
@@ -96,6 +103,7 @@ class InputHandler(
     private var targetingInscriptionHotkey: Int? = null
     private var targetingCursor: Point? = null
     private var inspectCursor: Point? = null
+    private var validationCursor: ValidationOverlayCursor = ValidationOverlayCursor()
     private var heldMovementKey: Int? = null
     private var movementRepeatCountdown: Int = repeatInitialDelayFrames
 
@@ -115,9 +123,14 @@ class InputHandler(
             targetingInscriptionHotkey = targetingInscriptionHotkey,
             targetingCursor = targetingCursor,
             inspectCursor = inspectCursor,
+            validationCursor =
+                validationCursor.takeIf { validationOverlayAvailability == ValidationOverlayAvailability.ENABLED },
         )
 
     fun pollCommand(snapshot: RenderSnapshot): PlayerCommand? {
+        if (toggleValidationModeIfRequested(snapshot)) {
+            return null
+        }
         if (mode == UiMode.MAP && input.isKeyJustPressed(Keys.L)) {
             enterLoadoutEdit(snapshot)
             return null
@@ -140,6 +153,7 @@ class InputHandler(
             UiMode.LOADOUT_EDIT -> pollLoadoutCommand(snapshot)
             UiMode.TARGETING -> pollTargetingCommand(snapshot)
             UiMode.INSPECT -> pollInspectCommand(snapshot)
+            UiMode.VALIDATION -> pollValidationCommand(snapshot)
             UiMode.STAT_ASSIGN -> pollStatAssignCommand(snapshot)
             UiMode.TALENT_ASSIGN -> pollTalentAssignCommand(snapshot)
         }
@@ -184,6 +198,8 @@ class InputHandler(
             }
 
             is PlayerCommand.EquipTalentToSlot -> reconcileMode(snapshot)
+
+            is PlayerCommand.Validation -> Unit
 
             is PlayerCommand.AssignStat,
             is PlayerCommand.AssignTalent,
@@ -252,7 +268,18 @@ class InputHandler(
             UiMode.INVENTORY,
             UiMode.TARGETING,
             UiMode.INSPECT,
+            UiMode.VALIDATION,
             -> Unit
+        }
+
+        if (mode == UiMode.VALIDATION) {
+            inspectCursor =
+                (inspectCursor ?: defaultInspectCursor(snapshot)).let { cursor ->
+                    Point(
+                        x = cursor.x.coerceIn(0, snapshot.metadata.width - 1),
+                        y = cursor.y.coerceIn(0, snapshot.metadata.height - 1),
+                    )
+                }
         }
 
         if (hasPendingStatAllocation(snapshot) && mode == UiMode.MAP) {
@@ -473,6 +500,75 @@ class InputHandler(
         return null
     }
 
+    private fun pollValidationCommand(snapshot: RenderSnapshot): PlayerCommand? {
+        if (input.isKeyJustPressed(Keys.ESCAPE) || input.isKeyJustPressed(Keys.F9)) {
+            clearValidation()
+            return null
+        }
+
+        if (input.isKeyJustPressed(Keys.UP) || input.isKeyJustPressed(Keys.W)) {
+            validationCursor = validationCursor.moveSection(delta = -1)
+            return null
+        }
+        if (input.isKeyJustPressed(Keys.DOWN) || input.isKeyJustPressed(Keys.X)) {
+            validationCursor = validationCursor.moveSection(delta = 1)
+            return null
+        }
+        if (input.isKeyJustPressed(Keys.LEFT) || input.isKeyJustPressed(Keys.A)) {
+            validationCursor =
+                validationCursor.moveAction(
+                    delta = -1,
+                    actionCount = validationActionCount(validationCursor.selectedSection),
+                )
+            return null
+        }
+        if (input.isKeyJustPressed(Keys.RIGHT) || input.isKeyJustPressed(Keys.D)) {
+            validationCursor =
+                validationCursor.moveAction(
+                    delta = 1,
+                    actionCount = validationActionCount(validationCursor.selectedSection),
+                )
+            return null
+        }
+
+        val cursor = inspectCursor ?: defaultInspectCursor(snapshot)
+        val inspectionDelta =
+            when {
+                input.isKeyJustPressed(Keys.I) -> Point(0, -1)
+                input.isKeyJustPressed(Keys.K) -> Point(0, 1)
+                input.isKeyJustPressed(Keys.J) -> Point(-1, 0)
+                input.isKeyJustPressed(Keys.L) -> Point(1, 0)
+                else -> null
+            }
+        if (inspectionDelta != null) {
+            inspectCursor =
+                Point(
+                    x = (cursor.x + inspectionDelta.x).coerceIn(0, snapshot.metadata.width - 1),
+                    y = (cursor.y + inspectionDelta.y).coerceIn(0, snapshot.metadata.height - 1),
+                )
+            return null
+        }
+
+        if (
+            input.isKeyJustPressed(Keys.ENTER) ||
+            input.isKeyJustPressed(Keys.SPACE) ||
+            input.isKeyJustPressed(Keys.E)
+        ) {
+            return PlayerCommand.Validation(
+                validationOverlayAction(
+                    ValidationOverlaySelection(
+                        preset = validationPreset,
+                        restartNextSeedEnabled = validationRestartNextSeedEnabled,
+                        section = validationCursor.selectedSection,
+                        index = validationCursor.actionIndex(validationCursor.selectedSection),
+                        inspectCursor = cursor,
+                    ),
+                ),
+            )
+        }
+        return null
+    }
+
     private fun pollInventoryCommand(snapshot: RenderSnapshot): PlayerCommand? {
         val inventorySize = snapshot.uiState.inventory.size
         if (isOverlayCloseBinding() || input.isKeyJustPressed(Keys.I)) {
@@ -667,11 +763,64 @@ class InputHandler(
         resetMovementRepeat()
     }
 
+    private fun clearValidation() {
+        mode = UiMode.MAP
+        resetMovementRepeat()
+    }
+
+    private fun validationActionCount(section: ValidationOverlaySection): Int =
+        validationOverlayActionDescriptors(
+            scope =
+                ValidationOverlayDescriptorScope(
+                    preset = validationPreset,
+                    restartMode =
+                        if (validationRestartNextSeedEnabled) {
+                            ValidationOverlayRestartMode.NEXT_SEED_ENABLED
+                        } else {
+                            ValidationOverlayRestartMode.SAME_PRESET_ONLY
+                        },
+                ),
+            section = section,
+        ).size
+
     private fun enterLoadoutEdit(snapshot: RenderSnapshot) {
         mode = UiMode.LOADOUT_EDIT
         loadoutSlotSelection = loadoutSlotSelection.coerceIn(1, PLAYER_ACTIVE_TALENT_SLOT_COUNT)
         loadoutReserveSelection = loadoutReserveSelection.coerceIn(0, (snapshot.uiState.reserveTalents.size - 1).coerceAtLeast(0))
         resetMovementRepeat()
+    }
+
+    private fun toggleValidationModeIfRequested(snapshot: RenderSnapshot): Boolean {
+        if (input.isKeyJustPressed(Keys.F9).not()) {
+            return false
+        }
+        if (validationOverlayAvailability != ValidationOverlayAvailability.ENABLED) {
+            return false
+        }
+        when (mode) {
+            UiMode.MAP,
+            UiMode.INSPECT,
+            -> {
+                mode = UiMode.VALIDATION
+                inspectCursor = inspectCursor ?: defaultInspectCursor(snapshot)
+                resetMovementRepeat()
+                return true
+            }
+
+            UiMode.VALIDATION -> {
+                clearValidation()
+                return true
+            }
+
+            UiMode.SHOP,
+            UiMode.WORLD_MAP,
+            UiMode.INVENTORY,
+            UiMode.LOADOUT_EDIT,
+            UiMode.TARGETING,
+            UiMode.STAT_ASSIGN,
+            UiMode.TALENT_ASSIGN,
+            -> return false
+        }
     }
 
     private fun isSaveBinding(): Boolean = controlPressed() && input.isKeyJustPressed(Keys.S)

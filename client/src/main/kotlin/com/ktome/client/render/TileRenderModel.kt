@@ -1,11 +1,13 @@
 package com.ktome.client.render
 
+import com.ktome.client.bossVariantModeLabelKey
 import com.ktome.client.telegraph.TelegraphRenderer
 import com.ktome.client.telegraph.TelegraphStyle
 import com.ktome.client.assets.ResolvedVisualAsset
 import com.ktome.client.assets.VisualManifestResolver
 import com.ktome.client.input.OverlayState
 import com.ktome.client.input.UiMode
+import com.ktome.client.input.ValidationOverlayPanelState
 import com.ktome.client.ui.hud.ResourceGaugeModel
 import com.ktome.client.ui.hud.ResourceHud
 import com.ktome.client.ui.status.StatusHudRenderer
@@ -682,6 +684,10 @@ internal object TileRenderModelBuilder {
                 rows += TileTextRow(localizer.text("ui.controls.inspect"), TileTextTone.LIGHT_GRAY)
             }
 
+            UiMode.VALIDATION -> {
+                rows += validationOverlayRows(localizer, requireNotNull(overlayState.validationPanel))
+            }
+
             UiMode.STAT_ASSIGN -> {
                 rows += TileTextRow(localizer.text("ui.sidebar.points", "value" to snapshot.uiState.playerStatus.statPoints), TileTextTone.WHITE)
                 rows += TileTextRow("1. ${localizer.text("ui.stat.str")}", TileTextTone.WHITE)
@@ -809,10 +815,97 @@ internal object TileRenderModelBuilder {
             when (overlayState.mode) {
                 UiMode.INSPECT -> overlayState.inspectCursor
                 UiMode.TARGETING -> overlayState.targetingCursor
+                UiMode.VALIDATION -> overlayState.validationPanel?.inspectCursor
                 else -> null
             } ?: return null
         val actorId = cellByPoint[focusPoint]?.actorEntityId ?: return null
         return actorById[actorId]
+    }
+
+    private fun validationOverlayRows(
+        localizer: Localizer,
+        panel: ValidationOverlayPanelState,
+    ): List<TileTextRow> {
+        val rows = mutableListOf<TileTextRow>()
+        val summary = panel.summary
+        rows += TileTextRow(localizer.text("ui.validation.overlay.summary"), TileTextTone.GOLD)
+        rows += TileTextRow(localizer.text("ui.validation.entry.preset", "value" to localizer.text(summary.preset.titleKey)), TileTextTone.WHITE)
+        rows += TileTextRow(localizer.text("ui.validation.entry.seed", "value" to summary.seed), TileTextTone.WHITE)
+        if (summary.seedCorpus.size > 1) {
+            rows +=
+                TileTextRow(
+                    localizer.text(
+                        "ui.validation.entry.seed_corpus",
+                        "value" to summary.seedCorpus.joinToString(", "),
+                    ),
+                    TileTextTone.WHITE,
+                )
+        }
+        rows += TileTextRow(localizer.text("ui.validation.entry.zone", "value" to localizer.text(panel.zoneNameKey)), TileTextTone.WHITE)
+        rows += TileTextRow(localizer.text("ui.validation.entry.floor", "value" to summary.floor), TileTextTone.WHITE)
+        rows +=
+            TileTextRow(
+                localizer.text(
+                    "ui.validation.active_packs",
+                    "value" to summary.activePackIds.ifEmpty { listOf(localizer.text("ui.validation.none")) }.joinToString(", "),
+                ),
+                TileTextTone.WHITE,
+            )
+        rows +=
+            TileTextRow(
+                localizer.text(
+                    "ui.validation.entry.boss_variant_mode",
+                    "value" to localizer.text(bossVariantModeLabelKey(summary.bossVariantModeId)),
+                ),
+                TileTextTone.WHITE,
+            )
+        rows +=
+            TileTextRow(
+                localizer.text(
+                    "ui.validation.entry.preferred_variant",
+                    "value" to (summary.preferredBossVariantId ?: localizer.text("ui.validation.none")),
+                ),
+                TileTextTone.WHITE,
+            )
+        rows += TileTextRow(localizer.text("ui.inspect.cursor", "x" to panel.inspectCursor.x, "y" to panel.inspectCursor.y), TileTextTone.WHITE)
+        rows +=
+            TileTextRow(
+                localizer.text(
+                    "ui.validation.overlay.last_result",
+                    "value" to (summary.lastResult?.let { token -> renderTextToken(localizer, token) } ?: localizer.text("ui.validation.none")),
+                ),
+                TileTextTone.LIGHT_GRAY,
+            )
+        rows += TileTextRow(localizer.text("ui.validation.phase4.targets"), TileTextTone.GOLD)
+        panel.phase4Guide.targetLabelKeys.forEach { labelKey ->
+            rows += TileTextRow("  ${localizer.text(labelKey)}", TileTextTone.WHITE)
+        }
+        rows += TileTextRow(localizer.text("ui.validation.phase4.quick_paths"), TileTextTone.GOLD)
+        panel.phase4Guide.quickPathLabelKeys.forEach { labelKey ->
+            rows += TileTextRow("  ${localizer.text(labelKey)}", TileTextTone.LIGHT_GRAY)
+        }
+        rows += TileTextRow(localizer.text("ui.validation.phase4.evidence"), TileTextTone.GOLD)
+        panel.phase4Guide.evidenceLabelKeys.forEach { labelKey ->
+            rows += TileTextRow("  ${localizer.text(labelKey)}", TileTextTone.LIGHT_GRAY)
+        }
+        rows += TileTextRow(localizer.text("ui.controls.validation"), TileTextTone.LIGHT_GRAY)
+        panel.sections.forEach { section ->
+            rows +=
+                TileTextRow(
+                    text = localizer.text(section.titleKey),
+                    tone = if (section.selected) TileTextTone.GOLD else TileTextTone.WHITE,
+                    selected = section.selected,
+                )
+            section.actions.forEach { action ->
+                rows +=
+                    TileTextRow(
+                        text = "  ${localizer.text(action.labelKey)}",
+                        tone = if (action.selected) TileTextTone.CYAN else TileTextTone.LIGHT_GRAY,
+                        selected = action.selected,
+                    )
+            }
+        }
+        return rows
     }
 
     private fun frontstageFocus(

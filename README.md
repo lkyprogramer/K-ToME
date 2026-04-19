@@ -134,6 +134,33 @@ sdk env
 3. 当前 `.app` 仅用于本地 macOS 打包与启动验证，不包含签名或 notarization
 4. app icon 来自离线美术管线生成的 packaging asset：`client/src/packaging/macos/K-ToME-app-icon.png`
 
+更具体的使用方式：
+
+1. `:client:releaseDesktopDist`
+   - 适用于需要一个不依赖 Gradle 的桌面分发包时。
+   - 产物固定落在 `client/build/release/ktome-v0.1.0-desktop.zip`。
+   - 解压后可直接使用生成的启动脚本运行桌面版。
+2. `:client:packageMacApp`
+   - 仅支持 macOS。
+   - 依赖当前 SDKMAN JDK 21 自带的 `jpackage`，以及系统 `/usr/bin/sips`、`/usr/bin/iconutil`。
+   - 产物固定落在 `client/build/release/K-ToME.app`。
+   - 该任务会自动准备 runtime jars、生成 `.icns` 图标，并用 `jpackage --type app-image` 组装 `.app`。
+3. 如果只需要生成 macOS `.app`，直接执行：
+
+```bash
+source "$HOME/.sdkman/bin/sdkman-init.sh"
+sdk env
+./gradlew :client:packageMacApp
+```
+
+4. 打包完成后，可在 Finder 中打开 `client/build/release/K-ToME.app`，或在终端执行：
+
+```bash
+open client/build/release/K-ToME.app
+```
+
+5. 当前仓库的打包目标仍是本地验证和 pre-release acceptance，不包含 Developer ID 签名、notarization、DMG 打包或发布态安装器。
+
 ## 当前验证入口
 
 ### 通用 gate

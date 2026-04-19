@@ -22,15 +22,185 @@ import com.ktome.core.snapshot.RenderUiStateSnapshot
 import com.ktome.core.talent.TalentTreeOwnerType
 import com.ktome.game.GameModule
 import com.ktome.game.PlayerCommand
+import com.ktome.game.validation.ValidationPreset
+import com.ktome.game.validation.ValidationSessionRequest
+import com.ktome.game.validation.validationSessionOptionsForPreset
 import java.nio.file.Path
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 
 class InputHandlerTest {
     @TempDir
     lateinit var tempDir: Path
+
+    @Test
+    fun `validation overlay only opens for enabled input handlers`() {
+        val validationSession =
+            GameModule.newValidationSession(
+                ValidationSessionRequest(
+                    saveManager = SaveManager(tempDir.resolve("validation-overlay-open-save")),
+                    options = validationSessionOptionsForPreset(ValidationPreset.MAPGEN_DIFF),
+                ),
+            )
+        val standardSession = GameModule.newFoundationSession(saveManager = SaveManager(tempDir.resolve("standard-overlay-open-save")))
+        val disabledInput = ReplayInputSource()
+        val disabledHandler = InputHandler(disabledInput)
+
+        disabledInput.frame(justPressed = setOf(Keys.F9))
+        assertNull(disabledHandler.pollCommand(standardSession.renderSnapshot()))
+        assertEquals(UiMode.MAP, disabledHandler.overlayState().mode)
+        disabledInput.clear()
+
+        val enabledInput = ReplayInputSource()
+        val enabledHandler = InputHandler(enabledInput, ValidationOverlayAvailability.ENABLED)
+        enabledInput.frame(justPressed = setOf(Keys.F9))
+        assertNull(enabledHandler.pollCommand(validationSession.renderSnapshot()))
+        assertEquals(UiMode.VALIDATION, enabledHandler.overlayState().mode)
+        assertEquals(ValidationOverlaySection.RESTART, enabledHandler.overlayState().validationCursor?.selectedSection)
+    }
+
+    @Test
+    fun `validation overlay captures navigation keys and returns map movement after close`() {
+        val input = ReplayInputSource()
+        val handler = InputHandler(input, ValidationOverlayAvailability.ENABLED)
+        val session =
+            GameModule.newValidationSession(
+                ValidationSessionRequest(
+                    saveManager = SaveManager(tempDir.resolve("validation-overlay-navigation-save")),
+                    options = validationSessionOptionsForPreset(ValidationPreset.MAPGEN_DIFF),
+                ),
+            )
+
+        input.frame(justPressed = setOf(Keys.F9))
+        assertNull(handler.pollCommand(session.renderSnapshot()))
+        assertEquals(UiMode.VALIDATION, handler.overlayState().mode)
+        input.clear()
+
+        input.frame(justPressed = setOf(Keys.DOWN))
+        assertNull(handler.pollCommand(session.renderSnapshot()))
+        assertEquals(UiMode.VALIDATION, handler.overlayState().mode)
+        assertEquals(ValidationOverlaySection.TRAVEL, handler.overlayState().validationCursor?.selectedSection)
+        input.clear()
+
+        input.frame(justPressed = setOf(Keys.F9))
+        assertNull(handler.pollCommand(session.renderSnapshot()))
+        assertEquals(UiMode.MAP, handler.overlayState().mode)
+        input.clear()
+
+        input.frame(justPressed = setOf(Keys.S))
+        assertEquals(PlayerCommand.Move(Point(0, 1)), handler.pollCommand(session.renderSnapshot()))
+    }
+
+    @Test
+    fun `validation overlay navigation emits typed validation commands`() {
+        val input = ReplayInputSource()
+        val handler = InputHandler(input, ValidationOverlayAvailability.ENABLED)
+        val session =
+            GameModule.newValidationSession(
+                ValidationSessionRequest(
+                    saveManager = SaveManager(tempDir.resolve("validation-overlay-command-save")),
+                    options = validationSessionOptionsForPreset(ValidationPreset.MAPGEN_DIFF),
+                ),
+            )
+
+        input.frame(justPressed = setOf(Keys.F9))
+        assertNull(handler.pollCommand(session.renderSnapshot()))
+        input.clear()
+
+        input.frame(justPressed = setOf(Keys.DOWN))
+        assertNull(handler.pollCommand(session.renderSnapshot()))
+        assertEquals(ValidationOverlaySection.TRAVEL, handler.overlayState().validationCursor?.selectedSection)
+        input.clear()
+
+        input.frame(justPressed = setOf(Keys.ENTER))
+        assertEquals(
+            PlayerCommand.Validation(com.ktome.game.validation.ValidationAction.TravelToStair(com.ktome.core.dungeon.StairDirection.DOWN)),
+            handler.pollCommand(session.renderSnapshot()),
+        )
+        assertTrue(handler.overlayState().validationCursor != null)
+        assertFalse(handler.isMapMode())
+    }
+
+    @Test
+    fun `single seed validation overlays keep restart on same preset`() {
+        val input = ReplayInputSource()
+        val handler =
+            InputHandler(
+                input = input,
+                validationOverlayAvailability = ValidationOverlayAvailability.ENABLED,
+                validationPreset = ValidationPreset.HIDDEN_CONTENT,
+                validationRestartNextSeedEnabled = false,
+            )
+        val session =
+            GameModule.newValidationSession(
+                ValidationSessionRequest(
+                    saveManager = SaveManager(tempDir.resolve("validation-overlay-single-seed-save")),
+                    options = validationSessionOptionsForPreset(ValidationPreset.HIDDEN_CONTENT),
+                ),
+            )
+
+        input.frame(justPressed = setOf(Keys.F9))
+        assertNull(handler.pollCommand(session.renderSnapshot()))
+        input.clear()
+
+        input.frame(justPressed = setOf(Keys.RIGHT))
+        assertNull(handler.pollCommand(session.renderSnapshot()))
+        input.clear()
+
+        input.frame(justPressed = setOf(Keys.ENTER))
+        assertEquals(
+            PlayerCommand.Validation(com.ktome.game.validation.ValidationAction.RestartSamePreset),
+            handler.pollCommand(session.renderSnapshot()),
+        )
+    }
+
+    @Test
+    fun `validation overlay action descriptors stay aligned with dispatch`() {
+        val inspectCursor = Point(4, 7)
+        val cases =
+            listOf(
+                ValidationPreset.MAPGEN_DIFF to true,
+                ValidationPreset.HIDDEN_CONTENT to false,
+            )
+
+        cases.forEach { (preset, restartNextSeedEnabled) ->
+            ValidationOverlaySection.entries.forEach { section ->
+                val descriptors =
+                    validationOverlayActionDescriptors(
+                        scope =
+                            ValidationOverlayDescriptorScope(
+                                preset = preset,
+                                restartMode =
+                                    if (restartNextSeedEnabled) {
+                                        ValidationOverlayRestartMode.NEXT_SEED_ENABLED
+                                    } else {
+                                        ValidationOverlayRestartMode.SAME_PRESET_ONLY
+                                    },
+                            ),
+                        section = section,
+                    )
+                assertTrue(descriptors.isNotEmpty(), "Expected actions for $preset / $section")
+                descriptors.forEachIndexed { index, descriptor ->
+                    assertEquals(
+                        descriptor.buildAction(inspectCursor),
+                        validationOverlayAction(
+                            ValidationOverlaySelection(
+                                preset = preset,
+                                restartNextSeedEnabled = restartNextSeedEnabled,
+                                section = section,
+                                index = index,
+                                inspectCursor = inspectCursor,
+                            ),
+                        ),
+                    )
+                }
+            }
+        }
+    }
 
     @Test
     fun `x enters inspect mode and cursor movement stays UI only`() {

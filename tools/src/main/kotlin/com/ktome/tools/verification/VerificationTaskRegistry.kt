@@ -171,6 +171,7 @@ object VerificationTaskRegistry {
                                 ":tools:lootBalanceLab",
                                 ":tools:whiteBoxLoot",
                             ),
+                        requestedPreflightTaskPaths = listOf(":tools:verifyLootPreflight"),
                     ),
                     InputScope(
                         scopeId = "loot.owner-evaluation",
@@ -184,6 +185,7 @@ object VerificationTaskRegistry {
                                 ":tools:verifyLootPreflight",
                                 ":tools:whiteBoxLoot",
                             ),
+                        requestedPreflightTaskPaths = listOf(":tools:verifyLootPreflight"),
                     ),
                     InputScope(
                         scopeId = "loot.phase4-report",
@@ -248,6 +250,7 @@ object VerificationTaskRegistry {
                         scopeId = "hidden.preflight-runner",
                         pathPrefixes = listOf("tools/src/main/kotlin/com/ktome/tools/hidden/HiddenPreflightRunner.kt"),
                         requestedTaskPaths = listOf(":tools:verifyHiddenPreflight"),
+                        requestedPreflightTaskPaths = listOf(":tools:verifyHiddenPreflight"),
                     ),
                     InputScope(
                         scopeId = "hidden.runtime",
@@ -257,8 +260,9 @@ object VerificationTaskRegistry {
                                 "tools/src/main/kotlin/com/ktome/tools/hidden/WhiteBoxHiddenContentRunner.kt",
                                 "game/src/main/kotlin/com/ktome/game/hidden/",
                                 "game/src/main/kotlin/com/ktome/game/Phase4StaticContentValidator.kt",
-                            ),
+                        ),
                         ownerRequired = true,
+                        requestedPreflightTaskPaths = listOf(":tools:verifyHiddenPreflight"),
                     ),
                     InputScope(
                         scopeId = "hidden.owner-evaluation",
@@ -384,8 +388,9 @@ object VerificationTaskRegistry {
                             listOf(
                                 "game/src/main/kotlin/com/ktome/game/contentpack/",
                                 "tools/src/main/kotlin/com/ktome/tools/contentpack/",
-                            ),
+                        ),
                         ownerRequired = true,
+                        requestedPreflightTaskPaths = listOf(":tools:verifyContentPackPreflight"),
                     ),
                 ),
             preflightTaskPaths = listOf(":tools:verifyContentPackPreflight"),

@@ -105,6 +105,11 @@ import com.ktome.game.elites.EncounterDecorationService
 import com.ktome.game.factory.EntityFactory
 import com.ktome.game.factory.ItemFactory
 import com.ktome.game.model.MonsterTemplate
+import com.ktome.game.validation.ValidationAction
+import com.ktome.game.validation.ValidationCapabilitySet
+import com.ktome.game.validation.ValidationPreset
+import com.ktome.game.validation.ValidationSessionRequest
+import com.ktome.game.validation.validationSessionOptionsForPreset
 import java.nio.file.Files
 import java.nio.file.Path
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -158,6 +163,221 @@ class FoundationGameSessionTest {
         assertEquals(setOf("gate", "secret"), session.automationInteractableTags("hidden_entrance"))
         assertEquals(setOf("loot", "secret"), session.automationInteractableTags("secret_reward"))
         assertEquals(setOf("gate", "secret"), session.automationInteractableTags("secret_return"))
+    }
+
+    @Test
+    fun `standard sessions reject typed validation commands`() {
+        val session =
+            GameModule.newFoundationSession(
+                config = FoundationGameConfig(seed = 20260419L, zoneId = "greenwood_fringe", playerProfessionId = "rogue"),
+                saveManager = SaveManager(tempDir.resolve("validation-standard-reject")),
+            )
+        clearMonsters(session)
+        val positionBefore = requireNotNull(runtimeWorld(session).get<Position>(session.playerId)).toPoint()
+
+        assertFalse(session.perform(PlayerCommand.Validation(ValidationAction.TravelToStair(StairDirection.DOWN))))
+        assertEquals(positionBefore, requireNotNull(runtimeWorld(session).get<Position>(session.playerId)).toPoint())
+        assertNotNull(logEventByKey(session, "log.validation.rejected.non_validation_session"))
+    }
+
+    @Test
+    fun `validation travel recovery terrain and discovery actions mutate authoritative state`() {
+        val session = newValidationSessionForTest(tempDir.resolve("validation-runtime-success"))
+        clearMonsters(session)
+        val world = runtimeWorld(session)
+        val health = requireNotNull(world.get<Health>(session.playerId))
+        health.current = 1
+        val pools = requireNotNull(world.get<ResourcePools>(session.playerId))
+        pools.entries.values.forEach { pool -> pool.current = 0 }
+
+        val stairPoint = requireNotNull(session.automationStairPoint(StairDirection.DOWN))
+        assertTrue(session.perform(PlayerCommand.Validation(ValidationAction.TravelToStair(StairDirection.DOWN))))
+        assertEquals(stairPoint, requireNotNull(world.get<Position>(session.playerId)).toPoint())
+
+        assertTrue(session.perform(PlayerCommand.Validation(ValidationAction.FullHeal)))
+        assertEquals(health.max, health.current)
+        assertTrue(session.perform(PlayerCommand.Validation(ValidationAction.RestoreResources)))
+        assertTrue(pools.entries.values.all { pool -> pool.current == pool.max })
+
+        val terrainPoint = stairPoint
+        val terrainOverride =
+            TerrainOverride(
+                terrainTags = setOf(TerrainTag.WATER),
+                sourceRuleId = "validation.test",
+                remainingTurns = 3,
+            )
+        assertTrue(session.perform(PlayerCommand.Validation(ValidationAction.SetTerrainOverride(terrainPoint, terrainOverride))))
+        assertEquals(terrainOverride, session.automationTerrainOverrideAt(terrainPoint))
+
+        val entrance = hiddenEntranceForCurrentFloor(session)
+        assertTrue(session.perform(PlayerCommand.Validation(ValidationAction.RevealBinding(entrance.bindingId))))
+        assertEquals(SearchActionResult.REVEALED, activeFloorState(session).searchStateFor(entrance.bindingId)?.result)
+        assertNotNull(logEventByKey(session, "log.validation.discovery.reveal_binding"))
+    }
+
+    @Test
+    fun `validation encounter actions and capability gates behave predictably`() {
+        val gatedSession =
+            GameModule.newValidationSession(
+                ValidationSessionRequest(
+                    saveManager = SaveManager(tempDir.resolve("validation-runtime-gated")),
+                    options =
+                        validationSessionOptionsForPreset(ValidationPreset.MAPGEN_DIFF).copy(
+                            capabilities = ValidationCapabilitySet(encounter = false),
+                        ),
+                ),
+            )
+        clearMonsters(gatedSession)
+        assertFalse(gatedSession.perform(PlayerCommand.Validation(ValidationAction.SpawnEliteNearPlayer)))
+        assertNotNull(logEventByKey(gatedSession, "log.validation.rejected.capability"))
+
+        val session = newValidationSessionForTest(tempDir.resolve("validation-runtime-encounter"))
+        clearMonsters(session)
+        assertTrue(session.perform(PlayerCommand.Validation(ValidationAction.SpawnEliteNearPlayer)))
+        assertTrue(session.automationHasExistingEliteMonster())
+        assertTrue(session.perform(PlayerCommand.Validation(ValidationAction.KillNearestElite)))
+        assertFalse(session.automationHasExistingEliteMonster())
+    }
+
+    @Test
+    fun `validation reward and item actions can materialize visible rewards`() {
+        val session = newValidationSessionForTest(tempDir.resolve("validation-runtime-reward"))
+        clearMonsters(session)
+        val inventoryBefore = session.inventoryItems().size
+
+        assertTrue(session.perform(PlayerCommand.Validation(ValidationAction.SpawnItem("healing_potion"))))
+
+        assertEquals(inventoryBefore + 1, session.inventoryItems().size)
+        assertNotNull(logEventByKey(session, "log.validation.item.spawned"))
+    }
+
+    @Test
+    fun `validation action failures surface explicit feedback`() {
+        val session = newValidationSessionForTest(tempDir.resolve("validation-runtime-failure"))
+        clearMonsters(session)
+
+        assertFalse(session.perform(PlayerCommand.Validation(ValidationAction.TravelToBoss)))
+        assertNotNull(logEventByKey(session, "log.validation.target_missing"))
+    }
+
+    @Test
+    fun `validation restart action queues restart options without mutating current world`() {
+        val session = newValidationSessionForTest(tempDir.resolve("validation-runtime-restart"))
+        clearMonsters(session)
+
+        assertTrue(session.perform(PlayerCommand.Validation(ValidationAction.RestartNextSeed)))
+
+        val pendingRestart = requireNotNull(session.consumePendingValidationRestartOptions())
+        assertEquals(20260402L, pendingRestart.foundationConfig.seed)
+        assertEquals(20260401L, session.config.seed)
+        assertNotNull(logEventByKey(session, "log.validation.restart.next_seed"))
+    }
+
+    @Test
+    fun `validation restart next seed wraps inside the same corpus`() {
+        val baseOptions = validationSessionOptionsForPreset(ValidationPreset.MAPGEN_DIFF)
+        val session =
+            GameModule.newValidationSession(
+                ValidationSessionRequest(
+                    saveManager = SaveManager(tempDir.resolve("validation-runtime-restart-wrap")),
+                    options =
+                        baseOptions.copy(
+                            foundationConfig = baseOptions.foundationConfig.copy(seed = 20260405L),
+                        ),
+                ),
+            )
+        clearMonsters(session)
+
+        assertTrue(session.perform(PlayerCommand.Validation(ValidationAction.RestartNextSeed)))
+
+        val pendingRestart = requireNotNull(session.consumePendingValidationRestartOptions())
+        assertEquals(baseOptions.seedCorpus, pendingRestart.seedCorpus)
+        assertEquals(20260401L, pendingRestart.foundationConfig.seed)
+    }
+
+    @Test
+    fun `validation restart next seed rejects single seed presets`() {
+        val session =
+            GameModule.newValidationSession(
+                ValidationSessionRequest(
+                    saveManager = SaveManager(tempDir.resolve("validation-runtime-restart-single-seed")),
+                    options = validationSessionOptionsForPreset(ValidationPreset.HIDDEN_CONTENT),
+                ),
+            )
+        clearMonsters(session)
+
+        assertFalse(session.perform(PlayerCommand.Validation(ValidationAction.RestartNextSeed)))
+        assertNull(session.consumePendingValidationRestartOptions())
+        assertNotNull(logEventByKey(session, "log.validation.rejected.restart_next_seed"))
+    }
+
+    @Test
+    fun `validation restart next seed rejects seeds outside the fixed corpus`() {
+        val baseOptions = validationSessionOptionsForPreset(ValidationPreset.MAPGEN_DIFF)
+        val session =
+            GameModule.newValidationSession(
+                ValidationSessionRequest(
+                    saveManager = SaveManager(tempDir.resolve("validation-runtime-restart-outside-corpus")),
+                    options =
+                        baseOptions.copy(
+                            foundationConfig = baseOptions.foundationConfig.copy(seed = 20269999L),
+                        ),
+                ),
+            )
+        clearMonsters(session)
+
+        assertFalse(session.perform(PlayerCommand.Validation(ValidationAction.RestartNextSeed)))
+        assertNull(session.consumePendingValidationRestartOptions())
+        assertNotNull(logEventByKey(session, "log.validation.rejected.restart_next_seed"))
+    }
+
+    @Test
+    fun `validation summary exposes content pack ids and fixed seed corpus`() {
+        val options = validationSessionOptionsForPreset(ValidationPreset.CONTENT_PACK, samplePackSelectionForValidation())
+        val session =
+            GameModule.newValidationSession(
+                ValidationSessionRequest(
+                    saveManager = SaveManager(tempDir.resolve("validation-runtime-summary-content-pack")),
+                    options = options,
+                ),
+            )
+
+        val summary = requireNotNull(session.validationSummarySnapshot())
+
+        assertEquals(listOf(20260414L), summary.seedCorpus)
+        assertEquals(listOf("sample.flooded_relics"), summary.activePackIds)
+    }
+
+    @Test
+    fun `validation recovery and encounter state survives save and load`() {
+        val saveManager = SaveManager(tempDir.resolve("validation-runtime-save-load"))
+        val options = validationSessionOptionsForPreset(ValidationPreset.MAPGEN_DIFF)
+        val session =
+            GameModule.newValidationSession(
+                ValidationSessionRequest(
+                    saveManager = saveManager,
+                    options = options,
+                ),
+            )
+        clearMonsters(session)
+
+        assertTrue(session.perform(PlayerCommand.Validation(ValidationAction.GrantShards(17))))
+        assertTrue(session.perform(PlayerCommand.Validation(ValidationAction.SpawnEliteNearPlayer)))
+        assertTrue(session.automationHasExistingEliteMonster())
+        assertTrue(session.perform(PlayerCommand.SaveGame))
+
+        val loaded =
+            requireNotNull(
+                GameModule.loadValidationSession(
+                    saveManager = saveManager,
+                    validationSessionOptions = options,
+                    contentPackSelection = options.contentPackSelection,
+                ),
+            )
+
+        assertEquals(17, loaded.currentShardBalance())
+        assertTrue(loaded.automationHasExistingEliteMonster())
+        assertEquals(ValidationPreset.MAPGEN_DIFF, requireNotNull(loaded.validationSummarySnapshot()).preset)
     }
 
     @Test
@@ -7013,6 +7233,19 @@ class FoundationGameSessionTest {
             specialTemplateId = template.id,
         )
     }
+
+    private fun newValidationSessionForTest(saveDir: Path): FoundationGameSession =
+        GameModule.newValidationSession(
+            ValidationSessionRequest(
+                saveManager = SaveManager(saveDir),
+                options = validationSessionOptionsForPreset(ValidationPreset.MAPGEN_DIFF),
+            ),
+        )
+
+    private fun samplePackSelectionForValidation(): com.ktome.game.contentpack.ContentPackSelection =
+        com.ktome.game.contentpack.ContentPackFixtureCatalog.selection(
+            activePackRoots = listOf(com.ktome.game.contentpack.ContentPackFixtureCatalog.samplePackRoot()),
+        )
 
     private fun sessionSaveManager(session: FoundationGameSession): SaveManager {
         val field = FoundationGameSession::class.java.getDeclaredField("saveManager")

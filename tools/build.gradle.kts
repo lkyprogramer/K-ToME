@@ -24,6 +24,7 @@ plugins {
 val harnessReportDir = rootProject.layout.buildDirectory.dir("reports/harness")
 val verifyChangedPlanOutputDir = rootProject.layout.buildDirectory.dir("verification/verify-changed")
 val verifyChangedTaskPathsFile = rootProject.layout.buildDirectory.file("verification/verify-changed/task-paths.txt")
+val verifyChangedPreflightTaskPathsFile = rootProject.layout.buildDirectory.file("verification/verify-changed/preflight-task-paths.txt")
 val verifyChangedBaseRef = rootProject.findProperty("verifyChangedBaseRef")?.toString() ?: "origin/main"
 val maintainabilityLintOutputDir = layout.buildDirectory.dir("reports/verification/maintainability")
 
@@ -907,6 +908,6 @@ listOf(
     tasks.named("solvabilityHarness"),
 ).forEach { taskProvider ->
     taskProvider.configure {
-        VerifyChangedPlanGate.applyTo(this, verifyChangedTaskPathsFile, "prepareVerifyChangedPlan")
+        VerifyChangedPlanGate.applyTo(this, verifyChangedTaskPathsFile, verifyChangedPreflightTaskPathsFile, "prepareVerifyChangedPlan")
     }
 }

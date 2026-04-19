@@ -25,6 +25,9 @@ import com.ktome.core.resource.ResourcePoolSnapshot
 import com.ktome.game.data.DataLoader
 import com.ktome.game.data.schema.SchemaLevelRange
 import com.ktome.game.model.MonsterTemplate
+import com.ktome.game.validation.ValidationPreset
+import com.ktome.game.validation.ValidationSessionRequest
+import com.ktome.game.validation.validationSessionOptionsForPreset
 import org.junit.jupiter.api.Assertions.assertEquals
 import java.nio.file.Files
 import java.nio.file.Path
@@ -116,6 +119,44 @@ class GameModuleTest {
             )
 
         assertEquals("spellblade", devLab.config.playerProfessionId)
+    }
+
+    @Test
+    fun `validation session uses white box availability for advanced professions without weakening locked race rules`() {
+        assertThrows(IllegalArgumentException::class.java) {
+            GameModule.newFoundationSession(
+                config = FoundationGameConfig(playerProfessionId = "spellblade"),
+                saveManager = SaveManager(tempDir.resolve("standard-validation-profession-blocked")),
+            )
+        }
+
+        val validation =
+            GameModule.newValidationSession(
+                ValidationSessionRequest(
+                    saveManager = SaveManager(tempDir.resolve("validation-profession-allowed")),
+                    options =
+                        validationSessionOptionsForPreset(ValidationPreset.CUSTOM).copy(
+                            foundationConfig = FoundationGameConfig(playerProfessionId = "spellblade"),
+                        ),
+                ),
+            )
+
+        assertEquals("spellblade", validation.config.playerProfessionId)
+
+        val lockedRace =
+            assertThrows(IllegalArgumentException::class.java) {
+                GameModule.newValidationSession(
+                    ValidationSessionRequest(
+                        saveManager = SaveManager(tempDir.resolve("validation-locked-race")),
+                        options =
+                            validationSessionOptionsForPreset(ValidationPreset.CUSTOM).copy(
+                                foundationConfig = FoundationGameConfig(playerRaceId = "orc"),
+                            ),
+                    ),
+                )
+            }
+
+        assertTrue(lockedRace.message!!.contains("Race 'orc'"))
     }
 
     @Test

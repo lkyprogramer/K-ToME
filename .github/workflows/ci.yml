@@ -95,7 +95,7 @@ jobs:
         uses: gradle/actions/setup-gradle@v5
 
       - name: Run verifyChanged preflight
-        run: ./gradlew --no-daemon verifyChanged
+        run: ./gradlew --no-daemon verifyChangedPreflight
 
       - name: Upload verifyChanged preflight reports
         if: always()

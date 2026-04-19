@@ -26,11 +26,21 @@ class MainMenuScreenTextTest {
 
     @Test
     fun `main menu footer spacing stays below the class entry stack`() {
-        val lastEntryY = mainMenuClassEntryY(2)
+        val entryCount = 4
+        val lastEntryY = mainMenuLastEntryY(entryCount)
 
-        assertTrue(MAIN_MENU_FOOTER_LANGUAGE_Y + MAIN_MENU_FOOTER_LINE_HEIGHT <= lastEntryY)
-        assertTrue(MAIN_MENU_FOOTER_CONTROLS_Y + MAIN_MENU_FOOTER_LINE_HEIGHT <= MAIN_MENU_FOOTER_LANGUAGE_Y)
-        assertTrue(MAIN_MENU_FOOTER_NOTICE_Y + MAIN_MENU_FOOTER_LINE_HEIGHT <= MAIN_MENU_FOOTER_CONTROLS_Y)
+        assertTrue(mainMenuFooterLanguageY(entryCount) + MAIN_MENU_FOOTER_LINE_HEIGHT <= lastEntryY)
+        assertTrue(mainMenuFooterControlsY(entryCount) + MAIN_MENU_FOOTER_LINE_HEIGHT <= mainMenuFooterLanguageY(entryCount))
+        assertTrue(mainMenuFooterNoticeY(entryCount) + MAIN_MENU_FOOTER_LINE_HEIGHT <= mainMenuFooterControlsY(entryCount))
+    }
+
+    @Test
+    fun `main menu footer keeps legacy placement when the menu stack is shorter`() {
+        val entryCount = 3
+
+        assertEquals(MAIN_MENU_FOOTER_LANGUAGE_DEFAULT_Y, mainMenuFooterLanguageY(entryCount))
+        assertEquals(MAIN_MENU_FOOTER_CONTROLS_DEFAULT_Y, mainMenuFooterControlsY(entryCount))
+        assertEquals(MAIN_MENU_FOOTER_NOTICE_DEFAULT_Y, mainMenuFooterNoticeY(entryCount))
     }
 
     @Test

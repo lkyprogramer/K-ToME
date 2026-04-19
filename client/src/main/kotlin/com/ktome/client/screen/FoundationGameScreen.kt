@@ -56,6 +56,10 @@ class FoundationGameScreen(
             snapshot = session.renderSnapshot()
             syncViewport(snapshot)
             commandSource.onCommandResult(previousSnapshot, snapshot, command, consumed)
+            session.consumePendingValidationRestartOptions()?.let { restartOptions ->
+                app.startValidationSession(restartOptions)
+                return
+            }
         }
 
         if (session.runOutcome().isTerminal) {

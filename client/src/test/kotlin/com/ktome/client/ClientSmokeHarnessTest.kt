@@ -27,6 +27,8 @@ import com.ktome.client.input.InputHandlerCommandSource
 import com.ktome.client.input.InputSource
 import com.ktome.client.input.OverlayState
 import com.ktome.client.input.UiMode
+import com.ktome.client.input.ValidationCommandSource
+import com.ktome.client.input.ValidationOverlayAvailability
 import com.ktome.client.render.TileRenderer
 import com.ktome.core.dungeon.StairDirection
 import com.ktome.core.ecs.BlocksMovement
@@ -47,6 +49,7 @@ import com.ktome.core.snapshot.CellVisibilitySnapshot
 import com.ktome.core.snapshot.RenderSnapshot
 import com.ktome.client.screen.MainMenuScreen
 import com.ktome.client.screen.MainMenuTextSnapshot
+import com.ktome.client.screen.ValidationSetupScreen
 import com.ktome.core.save.AssetVersionContract
 import com.ktome.core.save.SaveManager
 import com.ktome.game.FOUNDATION_ZONE_ROUTE
@@ -54,9 +57,11 @@ import com.ktome.game.FoundationGameConfig
 import com.ktome.game.FoundationGameSession
 import com.ktome.game.GameModule
 import com.ktome.game.PlayerCommand
+import com.ktome.game.contentpack.ContentPackSelection
 import com.ktome.game.harness.HarnessReportWriter
 import com.ktome.game.i18n.GameLocale
 import com.ktome.game.i18n.Localizer
+import com.ktome.game.validation.ValidationPreset
 import java.nio.file.Path
 import java.security.MessageDigest
 import kotlin.math.abs
@@ -257,6 +262,192 @@ class ClientSmokeHarnessTest {
         )
 
         assertTrue(reports.all { it.success }, reports.joinToString(separator = "\n") { "${it.name}: ${it.failureReason}" })
+    }
+
+    @Test
+    @Tag("clientSmoke")
+    fun `validation setup smoke can render and launch default preset`() {
+        withHeadlessGdx {
+            val menuInput =
+                ScriptedInputSource(
+                    Keys.DOWN,
+                    Keys.DOWN,
+                    Keys.ENTER,
+                    Keys.DOWN,
+                    Keys.DOWN,
+                    Keys.DOWN,
+                    Keys.DOWN,
+                    Keys.DOWN,
+                    Keys.DOWN,
+                    Keys.DOWN,
+                    Keys.DOWN,
+                    Keys.DOWN,
+                    Keys.DOWN,
+                    Keys.DOWN,
+                    Keys.ENTER,
+                )
+            val app =
+                GameApp(
+                    saveManager = SaveManager(tempDir.resolve("validation-setup-smoke/save")),
+                    validationSaveManager = SaveManager(tempDir.resolve("validation-setup-smoke/validation-save")),
+                    profileManager = com.ktome.core.profile.ProfileManager(tempDir.resolve("validation-setup-smoke/profile")),
+                    validationProfileManager = com.ktome.core.profile.ProfileManager(tempDir.resolve("validation-setup-smoke/validation-profile")),
+                    menuInputSourceFactory = { menuInput },
+                    renderEnabled = false,
+                )
+
+            try {
+                app.showMainMenu(saveCurrent = false)
+                repeat(3) {
+                    app.render()
+                }
+                assertTrue(app.screen is ValidationSetupScreen)
+
+                repeat(20) {
+                    if (app.activeSessionOrNull() != null) {
+                        return@repeat
+                    }
+                    app.render()
+                }
+
+                val session = requireNotNull(app.activeSessionOrNull())
+                assertTrue(session.isValidationSession())
+                assertEquals("greenwood_fringe", session.config.zoneId)
+            } finally {
+                app.dispose()
+            }
+        }
+    }
+
+    @Test
+    @Tag("clientSmoke")
+    fun `validation overlay smoke can render and execute travel action`() {
+        withHeadlessGdx {
+            val smokeSource =
+                SmokeCommandSource(
+                    overlayInput = ScriptedInputSource(Keys.F9, Keys.DOWN, Keys.ENTER),
+                    validationOverlayAvailability = ValidationOverlayAvailability.ENABLED,
+                    validationPreset = ValidationPreset.MAPGEN_DIFF,
+                )
+            val app =
+                GameApp(
+                    saveManager = SaveManager(tempDir.resolve("validation-overlay-smoke/save")),
+                    validationSaveManager = SaveManager(tempDir.resolve("validation-overlay-smoke/validation-save")),
+                    profileManager = com.ktome.core.profile.ProfileManager(tempDir.resolve("validation-overlay-smoke/profile")),
+                    validationProfileManager = com.ktome.core.profile.ProfileManager(tempDir.resolve("validation-overlay-smoke/validation-profile")),
+                    gameCommandSourceFactory = { smokeSource },
+                    renderEnabled = false,
+                )
+
+            try {
+                app.startValidationSession()
+                repeat(4) {
+                    app.render()
+                }
+
+                val session = requireNotNull(app.activeSessionOrNull())
+                val stairPoint = requireNotNull(automationStairPoint(session, StairDirection.DOWN))
+                assertEquals(stairPoint, session.playerPosition())
+                assertTrue(smokeSource.entered(UiMode.VALIDATION))
+
+                val localizer = session.localizer()
+                val capture =
+                    captureOverlay(
+                        localizer,
+                        session.renderSnapshot(),
+                        ValidationCommandSource(session, smokeSource).overlayState(),
+                    )
+                assertEquals(localizer.text("ui.sidebar.validation"), capture.title)
+                assertTrue(capture.rows.any { row -> row == localizer.text("ui.validation.overlay.summary") })
+                assertTrue(capture.rows.any { row -> row.contains(localizer.text("ui.validation.section.travel")) })
+            } finally {
+                app.dispose()
+            }
+        }
+    }
+
+    @Test
+    @Tag("clientSmoke")
+    fun `validation overlay exposes hidden content and content pack phase4 guidance`() {
+        withHeadlessGdx {
+            val hiddenSnapshot =
+                captureValidationOverlay(
+                    name = "validation-hidden-content-overlay",
+                    options = com.ktome.game.validation.validationSessionOptionsForPreset(com.ktome.game.validation.ValidationPreset.HIDDEN_CONTENT),
+                )
+            assertTrue(
+                hiddenSnapshot.capture.rows.any { row ->
+                    row == hiddenSnapshot.localizer.text("ui.validation.entry.seed", "value" to 20260409L)
+                },
+            )
+            assertTrue(
+                hiddenSnapshot.capture.rows.any { row ->
+                    row.contains(hiddenSnapshot.localizer.text("ui.validation.action.travel.search_anchor"))
+                },
+            )
+            assertTrue(
+                hiddenSnapshot.capture.rows.any { row ->
+                    row.contains(hiddenSnapshot.localizer.text("ui.validation.action.travel.hidden_entrance"))
+                },
+            )
+            assertTrue(
+                hiddenSnapshot.capture.rows.any { row ->
+                    row.contains(hiddenSnapshot.localizer.text("ui.validation.phase4.quick.hidden.search_anchor"))
+                },
+            )
+            assertFalse(
+                hiddenSnapshot.capture.rows.any { row ->
+                    row.contains(hiddenSnapshot.localizer.text("ui.validation.action.restart.next_seed"))
+                },
+            )
+
+            val contentPackSnapshot =
+                captureValidationOverlay(
+                    name = "validation-content-pack-overlay",
+                    options =
+                        com.ktome.game.validation.validationSessionOptionsForPreset(
+                            preset = com.ktome.game.validation.ValidationPreset.CONTENT_PACK,
+                            contentPackSelection = samplePackSelection(),
+                        ),
+                )
+            assertTrue(
+                contentPackSnapshot.capture.rows.any { row ->
+                    row == contentPackSnapshot.localizer.text("ui.validation.active_packs", "value" to "sample.flooded_relics")
+                },
+            )
+            assertTrue(
+                contentPackSnapshot.capture.rows.any { row ->
+                    row.contains(contentPackSnapshot.localizer.text("ui.validation.action.travel.secret_reward"))
+                },
+            )
+            assertTrue(
+                contentPackSnapshot.capture.rows.any { row ->
+                    row.contains(contentPackSnapshot.localizer.text("ui.validation.phase4.evidence.pack.visible_namespace"))
+                },
+            )
+        }
+    }
+
+    @Test
+    @Tag("clientSmoke")
+    fun `validation overlay hides next seed restart when active seed is outside corpus`() {
+        withHeadlessGdx {
+            val options = com.ktome.game.validation.validationSessionOptionsForPreset(com.ktome.game.validation.ValidationPreset.MAPGEN_DIFF)
+            val snapshot =
+                captureValidationOverlay(
+                    name = "validation-custom-seed-overlay",
+                    options =
+                        options.copy(
+                            foundationConfig = options.foundationConfig.copy(seed = 20269999L),
+                        ),
+                )
+
+            assertFalse(
+                snapshot.capture.rows.any { row ->
+                    row.contains(snapshot.localizer.text("ui.validation.action.restart.next_seed"))
+                },
+            )
+        }
     }
 
     @Test
@@ -1160,9 +1351,62 @@ class ClientSmokeHarnessTest {
         )
     }
 
+    private fun captureValidationOverlay(
+        name: String,
+        options: com.ktome.game.validation.ValidationSessionOptions,
+    ): ValidationOverlaySnapshot {
+        val smokeSource =
+            SmokeCommandSource(
+                overlayInput = ScriptedInputSource(Keys.F9),
+                validationOverlayAvailability = ValidationOverlayAvailability.ENABLED,
+                validationPreset = options.preset,
+            )
+        val app =
+            GameApp(
+                saveManager = SaveManager(tempDir.resolve("$name/save")),
+                validationSaveManager = SaveManager(tempDir.resolve("$name/validation-save")),
+                profileManager = com.ktome.core.profile.ProfileManager(tempDir.resolve("$name/profile")),
+                validationProfileManager = com.ktome.core.profile.ProfileManager(tempDir.resolve("$name/validation-profile")),
+                gameCommandSourceFactory = { smokeSource },
+                renderEnabled = false,
+            )
+        return try {
+            app.startValidationSession(options)
+            repeat(4) {
+                app.render()
+            }
+            val session = requireNotNull(app.activeSessionOrNull())
+            val localizer = session.localizer()
+            ValidationOverlaySnapshot(
+                localizer = localizer,
+                capture =
+                    captureOverlay(
+                        localizer,
+                        session.renderSnapshot(),
+                        ValidationCommandSource(session, smokeSource).overlayState(),
+                    ),
+            )
+        } finally {
+            app.dispose()
+        }
+    }
+
+    private fun samplePackSelection(): ContentPackSelection {
+        val repoRoot =
+            Path.of(System.getProperty("ktome.repo.root", "."))
+                .toAbsolutePath()
+                .normalize()
+        return ContentPackSelection.of(repoRoot.resolve("examples/content-packs/sample.flooded_relics"))
+    }
+
     private data class OverlayCapture(
         val title: String,
         val rows: List<String>,
+    )
+
+    private data class ValidationOverlaySnapshot(
+        val localizer: Localizer,
+        val capture: OverlayCapture,
     )
 
     private data class ClientUiSnapshot(
@@ -1276,10 +1520,12 @@ private class BotCommandSource(
 private class SmokeCommandSource(
     private val botSource: BotCommandSource = BotCommandSource(),
     overlayInput: ScriptedInputSource = ScriptedInputSource(Keys.L, Keys.F, Keys.I, Keys.F, Keys.X, Keys.F),
+    validationOverlayAvailability: ValidationOverlayAvailability = ValidationOverlayAvailability.DISABLED,
+    validationPreset: ValidationPreset = ValidationPreset.CUSTOM,
 ) : CommandSource, AudioRouterAwareCommandSource {
     private val uiSource =
         InputHandlerCommandSource(
-            inputHandler = InputHandler(overlayInput),
+            inputHandler = InputHandler(overlayInput, validationOverlayAvailability, validationPreset),
             inputSource = overlayInput,
         )
     private val enteredModes = linkedSetOf(UiMode.MAP)

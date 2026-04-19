@@ -285,18 +285,18 @@
 
 统一白盒验证框架架构、artifact/report 合同、AI 消费协议与人工一致性策略，以 [../2026-04-04-unified-white-box-verification-framework.md](../2026-04-04-unified-white-box-verification-framework.md) 为权威。
 
-本节只保留 `Phase 4` 当前仍需人工抽样确认的体验项。对差异性域，抽样口径统一为固定 `5` seed；对固定场景域，不强行套用 seed 差异门槛。`PR-03` 的自动白盒签收以 `whiteBoxSolvability` 为主，`whiteBoxMapgen` 提供其上游拓扑与可感知差异证据。
+Validation Mode 的 preset/action 映射表与使用约束，以 [../verification/validation-mode.md](../verification/validation-mode.md) 为正式入口。本节只保留 `Phase 4` 当前仍需人工抽样确认的体验项。对差异性域，抽样口径统一为固定 `5` seed；对固定场景域，不强行套用 seed 差异门槛。`PR-03` 的自动白盒签收以 `whiteBoxSolvability` 为主，`whiteBoxMapgen` 提供其上游拓扑与可感知差异证据。
 
-1. 连续开 `5` 个不同 seed 的 run，人工确认至少存在 `3` 类可感知差异：
+1. 使用 `Validation Mode -> MAPGEN_DIFF` 连续轮转固定 `5` 个 seed 的 run，人工确认至少存在 `3` 类可感知差异：
    - 主路径 / 环路形态差异
    - vault / pattern room / hidden entrance 出现差异
    - biome family 混合、terrain tag 痕迹或奖励/遭遇差异
-2. 至少触发一次隐藏入口或 secret event，并确认发现逻辑清楚。
+2. 使用 `HIDDEN_CONTENT` preset 至少触发一次隐藏入口或 secret event，并确认发现逻辑清楚。
 3. 在至少两个不同 zone 中观察 `WATER / OIL / ICE` 的表现与规则一致。
-4. 用装有示例 content pack 的客户端进入一局，确认新增内容真实可见。
-5. 至少观察一次 elite mutation 的命名、图标、日志和 inspect 信息，确认来源可读。
-6. 至少击败一次带 Boss 变体的 encounter，确认 phase 结构未被破坏，仅 mutation / loot / 表现发生变化。
-7. 至少手动执行一次对有效目标的 `SearchAction`，确认会消耗标准行动、产生日志，并在失败/成功时都有明确反馈。
+4. 使用 `CONTENT_PACK` preset 且 sample pack 启用的客户端进入一局，确认新增内容真实可见。
+5. 使用 `ELITE_MUTATION` preset 至少观察一次 elite mutation 的命名、图标、日志和 inspect 信息，确认来源可读。
+6. 使用 `BOSS_VARIANT` preset 至少击败一次带 Boss 变体的 encounter，确认 phase 结构未被破坏，仅 mutation / loot / 表现发生变化。
+7. 使用 `HIDDEN_CONTENT` 或 `CONTENT_PACK` preset 至少手动执行一次对有效目标的 `SearchAction`，确认会消耗标准行动、产生日志，并在失败/成功时都有明确反馈。
 
 ## 4. Reproducibility Contract
 

@@ -940,9 +940,7 @@ sdk env
 
 1. `docs/phase4/2026-03-13-phase4-verification-checklist.md`
 2. 本文本身
-3. 需要时补一份 validation 使用说明：
-   - `docs/verification/validation-mode.md`
-   - 或等价正式落位
+3. `docs/verification/validation-mode.md`
 
 #### 9.3.3 白盒步骤仍保留“人工确认”
 
@@ -972,7 +970,7 @@ Validation Mode 的职责是提速，不是替代人工判断。
 
 - `docs/opt/cheatMode.md`
 - `docs/phase4/2026-03-13-phase4-verification-checklist.md`
-- `docs/verification/validation-mode.md`（如采用）
+- `docs/verification/validation-mode.md`
 
 ### 9.5 必须实现的行为
 

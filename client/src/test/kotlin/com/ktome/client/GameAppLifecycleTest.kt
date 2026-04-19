@@ -24,6 +24,7 @@ import com.ktome.client.assets.VisualManifest
 import com.ktome.client.assets.VisualManifestResourceLoader
 import com.ktome.client.input.InputSource
 import com.ktome.client.screen.MainMenuScreen
+import com.ktome.client.screen.ValidationSetupScreen
 import com.ktome.client.screen.selectionLabel
 import com.ktome.core.profile.AdvancedClassUnlockRule
 import com.ktome.core.profile.ProfileData
@@ -45,11 +46,16 @@ import com.ktome.game.i18n.LocalizationBundle
 import com.ktome.game.FoundationGameConfig
 import com.ktome.game.PlayerCreationSelection
 import com.ktome.game.PlayerCreationState
+import com.ktome.game.contentpack.ContentPackSelection
 import com.ktome.game.ProfessionPlayerCreationOption
 import com.ktome.game.RacePlayerCreationOption
+import com.ktome.game.validation.ValidationPreset
+import com.ktome.game.validation.ValidationSessionMetadataStore
+import com.ktome.game.validation.validationSessionOptionsForPreset
 import java.nio.file.Files
 import java.nio.file.Path
 import kotlin.io.path.exists
+import kotlin.io.path.readText
 import kotlin.io.path.writeText
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
@@ -367,6 +373,364 @@ class GameAppLifecycleTest {
             }
         }
     }
+
+    @Test
+    fun `validation session persists to isolated save root and does not enable standard continue`() {
+        withHeadlessGdx {
+            val standardSaveManager = SaveManager(tempDir.resolve("standard/save"))
+            val validationSaveManager = SaveManager(tempDir.resolve("validation/save"))
+            val standardProfileManager = ProfileManager(tempDir.resolve("standard/profile"))
+            val validationProfileManager = ProfileManager(tempDir.resolve("validation/profile"))
+            val app =
+                GameApp(
+                    saveManager = standardSaveManager,
+                    validationSaveManager = validationSaveManager,
+                    profileManager = standardProfileManager,
+                    validationProfileManager = validationProfileManager,
+                    renderEnabled = false,
+                )
+
+            try {
+                app.startValidationSession(
+                    FoundationGameConfig(
+                        playerProfessionId = "spellblade",
+                        playerRaceId = "human",
+                    ),
+                )
+
+                val session = requireNotNull(app.activeSessionOrNull())
+                assertTrue(session.saveOnExit())
+                app.showMainMenu(saveCurrent = false)
+
+                assertTrue(validationSaveManager.savePath().exists())
+                assertFalse(standardSaveManager.savePath().exists())
+                assertFalse(app.standardContinueAvailableForTest())
+                assertTrue(app.validationContinueAvailableForTest())
+            } finally {
+                app.dispose()
+            }
+        }
+    }
+
+    @Test
+    fun `validation continue reloads validation save without consulting standard save root`() {
+        withHeadlessGdx {
+            val standardSaveManager = SaveManager(tempDir.resolve("standard/save"))
+            val validationSaveManager = SaveManager(tempDir.resolve("validation/save"))
+            val app =
+                GameApp(
+                    saveManager = standardSaveManager,
+                    validationSaveManager = validationSaveManager,
+                    profileManager = ProfileManager(tempDir.resolve("standard/profile")),
+                    validationProfileManager = ProfileManager(tempDir.resolve("validation/profile")),
+                    renderEnabled = false,
+                )
+
+            try {
+                app.startValidationSession(
+                    FoundationGameConfig(
+                        playerProfessionId = "spellblade",
+                        playerRaceId = "human",
+                    ),
+                )
+                requireNotNull(app.activeSessionOrNull()).saveOnExit()
+                app.showMainMenu(saveCurrent = false)
+
+                app.continueValidationSession()
+
+                val continued = requireNotNull(app.activeSessionOrNull())
+                assertTrue(continued.isValidationSession())
+                assertEquals("spellblade", continued.config.playerProfessionId)
+                assertFalse(standardSaveManager.savePath().exists())
+                assertTrue(validationSaveManager.savePath().exists())
+            } finally {
+                app.dispose()
+            }
+        }
+    }
+
+    @Test
+    fun `validation continue restores saved preset metadata after app restart`() {
+        withHeadlessGdx {
+            val standardSaveManager = SaveManager(tempDir.resolve("standard/save"))
+            val validationSaveManager = SaveManager(tempDir.resolve("validation/save"))
+            val validationProfileManager = ProfileManager(tempDir.resolve("validation/profile"))
+            val initialApp =
+                GameApp(
+                    saveManager = standardSaveManager,
+                    validationSaveManager = validationSaveManager,
+                    profileManager = ProfileManager(tempDir.resolve("standard/profile")),
+                    validationProfileManager = validationProfileManager,
+                    renderEnabled = false,
+                )
+
+            try {
+                initialApp.startValidationSession(
+                    validationSessionOptionsForPreset(ValidationPreset.HIDDEN_CONTENT),
+                )
+                requireNotNull(initialApp.activeSessionOrNull()).saveOnExit()
+            } finally {
+                initialApp.dispose()
+            }
+
+            val resumedApp =
+                GameApp(
+                    saveManager = standardSaveManager,
+                    validationSaveManager = validationSaveManager,
+                    profileManager = ProfileManager(tempDir.resolve("standard/profile")),
+                    validationProfileManager = validationProfileManager,
+                    renderEnabled = false,
+                )
+
+            try {
+                resumedApp.continueValidationSession()
+
+                val resumed = requireNotNull(resumedApp.activeSessionOrNull())
+                val summary = requireNotNull(resumed.validationSummarySnapshot())
+                assertTrue(resumed.isValidationSession())
+                assertEquals(ValidationPreset.HIDDEN_CONTENT, summary.preset)
+                assertEquals(listOf(20260409L), summary.seedCorpus)
+                assertEquals("underground_river", resumed.config.zoneId)
+            } finally {
+                resumedApp.dispose()
+            }
+        }
+    }
+
+    @Test
+    fun `validation continue becomes unavailable when metadata file is missing`() {
+        withHeadlessGdx {
+            val standardSaveManager = SaveManager(tempDir.resolve("standard/save"))
+            val validationSaveManager = SaveManager(tempDir.resolve("validation/save"))
+            val app =
+                GameApp(
+                    saveManager = standardSaveManager,
+                    validationSaveManager = validationSaveManager,
+                    profileManager = ProfileManager(tempDir.resolve("standard/profile")),
+                    validationProfileManager = ProfileManager(tempDir.resolve("validation/profile")),
+                    renderEnabled = false,
+                )
+
+            try {
+                app.startValidationSession(
+                    validationSessionOptionsForPreset(ValidationPreset.HIDDEN_CONTENT),
+                )
+                requireNotNull(app.activeSessionOrNull()).saveOnExit()
+                Files.delete(
+                    validationSaveManager.savePath().parent.resolve(ValidationSessionMetadataStore.DEFAULT_FILE_NAME),
+                )
+
+                assertFalse(app.validationContinueAvailableForTest())
+
+                app.continueValidationSession()
+
+                assertNull(app.activeSessionOrNull())
+                assertTrue(app.screen is MainMenuScreen)
+            } finally {
+                app.dispose()
+            }
+        }
+    }
+
+    @Test
+    fun `main menu validation mode entry opens validation setup screen`() {
+        withHeadlessGdx {
+            val input =
+                QueueInputSource(
+                    com.badlogic.gdx.Input.Keys.DOWN,
+                    com.badlogic.gdx.Input.Keys.DOWN,
+                    com.badlogic.gdx.Input.Keys.ENTER,
+                )
+            val app =
+                GameApp(
+                    saveManager = SaveManager(tempDir.resolve("validation-mode-entry/save")),
+                    validationSaveManager = SaveManager(tempDir.resolve("validation-mode-entry/validation-save")),
+                    profileManager = ProfileManager(tempDir.resolve("validation-mode-entry/profile")),
+                    validationProfileManager = ProfileManager(tempDir.resolve("validation-mode-entry/validation-profile")),
+                    menuInputSourceFactory = { input },
+                    renderEnabled = false,
+                )
+
+            try {
+                app.showMainMenu(saveCurrent = false)
+                repeat(3) {
+                    app.render()
+                }
+
+                assertTrue(app.screen is ValidationSetupScreen)
+            } finally {
+                app.dispose()
+            }
+        }
+    }
+
+    @Test
+    fun `validation setup can start the default preset session`() {
+        withHeadlessGdx {
+            val input = QueueInputSource()
+            input.push(
+                com.badlogic.gdx.Input.Keys.DOWN,
+                com.badlogic.gdx.Input.Keys.DOWN,
+                com.badlogic.gdx.Input.Keys.ENTER,
+            )
+            repeat(11) {
+                input.push(com.badlogic.gdx.Input.Keys.DOWN)
+            }
+            input.push(com.badlogic.gdx.Input.Keys.ENTER)
+            val app =
+                GameApp(
+                    saveManager = SaveManager(tempDir.resolve("validation-setup-start/save")),
+                    validationSaveManager = SaveManager(tempDir.resolve("validation-setup-start/validation-save")),
+                    profileManager = ProfileManager(tempDir.resolve("validation-setup-start/profile")),
+                    validationProfileManager = ProfileManager(tempDir.resolve("validation-setup-start/validation-profile")),
+                    menuInputSourceFactory = { input },
+                    renderEnabled = false,
+                )
+
+            try {
+                app.showMainMenu(saveCurrent = false)
+                repeat(20) {
+                    if (app.activeSessionOrNull() != null) {
+                        return@repeat
+                    }
+                    app.render()
+                }
+
+                val session = requireNotNull(app.activeSessionOrNull())
+                assertTrue(session.isValidationSession())
+                assertEquals("greenwood_fringe", session.config.zoneId)
+            } finally {
+                app.dispose()
+            }
+        }
+    }
+
+    @Test
+    fun `validation content pack startup stays in setup and surfaces a notice when pack root is invalid`() {
+        withHeadlessGdx {
+            val missingPackRoot = tempDir.resolve("missing-sample.flooded_relics")
+            val options =
+                validationSessionOptionsForPreset(
+                    preset = ValidationPreset.CONTENT_PACK,
+                    contentPackSelection = ContentPackSelection.of(missingPackRoot),
+                )
+            val app =
+                GameApp(
+                    saveManager = SaveManager(tempDir.resolve("validation-pack-failure/save")),
+                    validationSaveManager = SaveManager(tempDir.resolve("validation-pack-failure/validation-save")),
+                    profileManager = ProfileManager(tempDir.resolve("validation-pack-failure/profile")),
+                    validationProfileManager = ProfileManager(tempDir.resolve("validation-pack-failure/validation-profile")),
+                    renderEnabled = false,
+                )
+
+            try {
+                app.startValidationSession(options)
+
+                assertNull(app.activeSessionOrNull())
+                assertTrue(app.screen is ValidationSetupScreen)
+                val snapshot = (app.screen as ValidationSetupScreen).textSnapshot(options)
+                assertTrue(snapshot.notice?.contains("manifest.yaml") == true)
+            } finally {
+                app.dispose()
+            }
+        }
+    }
+
+    @Test
+    fun `validation continue stays in setup and surfaces a notice when persisted pack root is invalid`() {
+        withHeadlessGdx {
+            val standardSaveManager = SaveManager(tempDir.resolve("validation-continue-pack-failure/save"))
+            val validationSaveManager = SaveManager(tempDir.resolve("validation-continue-pack-failure/validation-save"))
+            val samplePackRoot =
+                resolveValidationSamplePackSelection().activePackRoots.singleOrNull()
+                    ?: error("Expected a sample validation content pack root for resume testing.")
+            val copiedPackRoot = tempDir.resolve("sample.flooded_relics")
+            copyDirectory(samplePackRoot, copiedPackRoot)
+            val options =
+                validationSessionOptionsForPreset(
+                    preset = ValidationPreset.CONTENT_PACK,
+                    contentPackSelection = ContentPackSelection.of(copiedPackRoot),
+                )
+            val app =
+                GameApp(
+                    saveManager = standardSaveManager,
+                    validationSaveManager = validationSaveManager,
+                    profileManager = ProfileManager(tempDir.resolve("validation-continue-pack-failure/profile")),
+                    validationProfileManager = ProfileManager(tempDir.resolve("validation-continue-pack-failure/validation-profile")),
+                    validationSamplePackSelectionProvider = { ContentPackSelection.of(copiedPackRoot) },
+                    renderEnabled = false,
+                )
+
+            try {
+                app.startValidationSession(options)
+                requireNotNull(app.activeSessionOrNull()).saveOnExit()
+                app.showMainMenu(saveCurrent = false)
+                Files.delete(copiedPackRoot.resolve("manifest.yaml"))
+
+                app.continueValidationSession()
+
+                assertNull(app.activeSessionOrNull())
+                assertTrue(app.screen is ValidationSetupScreen)
+                val snapshot = (app.screen as ValidationSetupScreen).textSnapshot(options)
+                assertTrue(snapshot.notice?.contains("manifest.yaml") == true)
+            } finally {
+                app.dispose()
+            }
+        }
+    }
+
+    @Test
+    fun `validation sample pack selection resolves the first runtime root with a manifest`() {
+        val bundledPackRoot = tempDir.resolve("app/content-packs/sample.flooded_relics")
+        Files.createDirectories(bundledPackRoot)
+        bundledPackRoot.resolve("manifest.yaml").writeText("id: sample.flooded_relics")
+
+        val selection =
+            resolveValidationSamplePackSelection(
+                candidateRoots =
+                    listOf(
+                        tempDir.resolve("missing-pack"),
+                        bundledPackRoot,
+                    ),
+            )
+
+        assertEquals(listOf(bundledPackRoot), selection.activePackRoots)
+        assertEquals(listOf(bundledPackRoot), selection.availablePackRoots)
+    }
+
+    @Test
+    fun `validation outcome does not rewrite profile progression`() {
+        withHeadlessGdx {
+            val validationProfileManager = ProfileManager(tempDir.resolve("validation/profile"))
+            val initialProfile =
+                ProfileData(
+                    releaseUnlockedClasses = setOf("berserker"),
+                )
+            assertTrue(validationProfileManager.save(initialProfile))
+            val profilePayloadBefore = validationProfileManager.savePath().readText()
+            val app =
+                GameApp(
+                    saveManager = SaveManager(tempDir.resolve("standard/save")),
+                    validationSaveManager = SaveManager(tempDir.resolve("validation/save")),
+                    profileManager = ProfileManager(tempDir.resolve("standard/profile")),
+                    validationProfileManager = validationProfileManager,
+                    renderEnabled = false,
+                )
+
+            try {
+                app.startValidationSession()
+
+                val session = requireNotNull(app.activeSessionOrNull())
+                invokeSessionInternal(session, "automationForceDefeatPlayer")
+                app.showOutcome(session)
+
+                assertEquals(initialProfile, validationProfileManager.load())
+                assertEquals(profilePayloadBefore, validationProfileManager.savePath().readText())
+            } finally {
+                app.dispose()
+            }
+        }
+    }
 }
 
 private fun playerCreationState(selection: PlayerCreationSelection): PlayerCreationState =
@@ -436,10 +800,32 @@ private fun <T> withHeadlessGdx(block: () -> T): T {
     }
 }
 
+private fun copyDirectory(
+    source: Path,
+    target: Path,
+) {
+    Files.walk(source).forEach { path ->
+        val relative = source.relativize(path)
+        val destination = target.resolve(relative.toString())
+        if (Files.isDirectory(path)) {
+            Files.createDirectories(destination)
+        } else {
+            Files.createDirectories(destination.parent)
+            Files.copy(path, destination)
+        }
+    }
+}
+
 private class QueueInputSource(
     vararg keys: Int,
 ) : InputSource {
     private val queue = ArrayDeque<Int>().apply { keys.forEach(::addLast) }
+
+    fun push(
+        vararg keys: Int,
+    ) {
+        keys.forEach(queue::addLast)
+    }
 
     override fun isKeyJustPressed(keycode: Int): Boolean =
         if (queue.firstOrNull() == keycode) {
@@ -450,6 +836,21 @@ private class QueueInputSource(
         }
 
     override fun isKeyPressed(keycode: Int): Boolean = false
+}
+
+private fun invokeSessionInternal(
+    session: com.ktome.game.FoundationGameSession,
+    methodName: String,
+    vararg args: Any?,
+): Any? {
+    val method =
+        session.javaClass.methods.firstOrNull { candidate ->
+            candidate.name == methodName ||
+                candidate.name.startsWith("${methodName}-") ||
+                candidate.name.startsWith("${methodName}\$")
+        } ?: error("No internal helper matched $methodName on ${session.javaClass.name}.")
+    method.isAccessible = true
+    return method.invoke(session, *args)
 }
 
 private fun sampleSnapshot(): SaveSnapshot =

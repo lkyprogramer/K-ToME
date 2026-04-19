@@ -938,6 +938,7 @@ internal class SoloClearLabHarness(
             PlayerCommand.ConfirmTalentDraft -> "ConfirmTalentDraft"
             PlayerCommand.RollbackTalentDraft -> "RollbackTalentDraft"
             is PlayerCommand.RespecTalentTree -> "RespecTalentTree(${command.ownerType},${command.treeOwnerId})"
+            is PlayerCommand.Validation -> com.ktome.game.harness.renderCommand(command)
         }
 
     internal fun reportsToJson(reports: List<SoloClearLabReport>) =

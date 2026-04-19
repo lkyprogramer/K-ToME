@@ -160,6 +160,9 @@ object VerificationCli {
                 .copy(collectionNotes = collected.notes)
         outputDir.resolve(CHANGED_PLAN_FILE_NAME).writeText(prettyJson.encodeToString(plan))
         outputDir.resolve(CHANGED_TASKS_FILE_NAME).writeText(plan.requestedTaskPaths.joinToString(separator = System.lineSeparator()))
+        outputDir.resolve(CHANGED_PREFLIGHT_TASKS_FILE_NAME).writeText(
+            plan.requestedPreflightTaskPaths.joinToString(separator = System.lineSeparator()),
+        )
         outputDir.resolve(CHANGED_PLAN_MARKDOWN_FILE_NAME).writeText(renderChangedPlanMarkdown(plan))
         println(plan.renderConsoleSummary())
     }
@@ -277,6 +280,9 @@ object VerificationCli {
             appendLine()
             appendLine("## Requested Tasks")
             plan.requestedTaskPaths.forEach { taskPath -> appendLine("- `$taskPath`") }
+            appendLine()
+            appendLine("## Requested Preflight Tasks")
+            plan.requestedPreflightTaskPaths.forEach { taskPath -> appendLine("- `$taskPath`") }
         }
 
     private data class ParsedCommand(
@@ -348,6 +354,7 @@ object VerificationCli {
 
     private const val CHANGED_PLAN_FILE_NAME: String = "verify-changed-plan.json"
     private const val CHANGED_TASKS_FILE_NAME: String = "task-paths.txt"
+    private const val CHANGED_PREFLIGHT_TASKS_FILE_NAME: String = "preflight-task-paths.txt"
     private const val CHANGED_PLAN_MARKDOWN_FILE_NAME: String = "verify-changed-plan.md"
 
     private fun repoRoot(): Path =

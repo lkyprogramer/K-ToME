@@ -18,9 +18,13 @@ import com.ktome.client.input.CommandSource
 import com.ktome.client.input.GdxInputSource
 import com.ktome.client.input.InputHandlerCommandSource
 import com.ktome.client.input.InputSource
+import com.ktome.client.input.ValidationCommandSource
 import com.ktome.client.screen.FoundationGameScreen
 import com.ktome.client.screen.GameOverScreen
 import com.ktome.client.screen.MainMenuScreen
+import com.ktome.client.screen.ValidationSetupContext
+import com.ktome.client.screen.ValidationSetupScreen
+import com.ktome.client.screen.ValidationZoneOption
 import com.ktome.client.screen.VictoryScreen
 import com.ktome.core.profile.AvailabilityContext
 import com.ktome.core.profile.AdvancedClassUnlockRule
@@ -41,14 +45,25 @@ import com.ktome.game.FoundationGameSession
 import com.ktome.game.GameModule
 import com.ktome.game.PlayerCreationSelection
 import com.ktome.game.PlayerCreationState
+import com.ktome.game.contentpack.ContentPackLoadException
 import com.ktome.game.contentpack.ContentPackSelection
+import com.ktome.game.data.DataLoader
 import com.ktome.game.i18n.GameLocale
 import com.ktome.game.i18n.LocalizationBundle
 import com.ktome.game.i18n.Localizer
+import com.ktome.game.validation.ProfileRunPersistenceMode
+import com.ktome.game.validation.ValidationPreset
+import com.ktome.game.validation.ValidationPaths
+import com.ktome.game.validation.ValidationSessionRequest
+import com.ktome.game.validation.ValidationSessionOptions
+import com.ktome.game.validation.loadPersistedValidationSessionOptions
+import com.ktome.game.validation.validationSessionOptionsForPreset
+import java.nio.file.Files
 import java.nio.file.Path
 
 class GameApp(
     private val saveManager: SaveManager = SaveManager(defaultSaveDir()),
+    private val validationSaveManager: SaveManager = SaveManager(ValidationPaths.saveDir()),
     private val defaultConfig: FoundationGameConfig = FoundationGameConfig(),
     private val contentPackSelection: ContentPackSelection = ContentPackSelection.EMPTY,
     private val playerCreationStateProvider:
@@ -62,6 +77,7 @@ class GameApp(
                 )
             },
     private val profileManager: ProfileManager = ProfileManager(defaultSaveDir().resolve("profile")),
+    private val validationProfileManager: ProfileManager = ProfileManager(ValidationPaths.profileDir()),
     private val menuInputSourceFactory: () -> InputSource = { GdxInputSource },
     private val gameCommandSourceFactory: () -> CommandSource = { InputHandlerCommandSource() },
     private val outcomeInputSourceFactory: () -> InputSource = { GdxInputSource },
@@ -71,6 +87,7 @@ class GameApp(
     private val audioManifestProvider: () -> AudioManifest = AudioManifestResourceLoader::load,
     private val assetVersionGate: AssetVersionGate = AssetVersionGate(),
     private val audioSinkBindingsFactory: AudioSinkBindingsFactory = DefaultAudioSinkBindingsFactory,
+    private val validationSamplePackSelectionProvider: () -> ContentPackSelection = { defaultValidationSamplePackSelection() },
     initialLocale: GameLocale = GameLocale.DEFAULT,
     localizationBundle: LocalizationBundle = LocalizationBundle.load(),
 ) : Game() {
@@ -79,25 +96,35 @@ class GameApp(
             profileManager = profileManager,
             localizer = localizationBundle.translator(initialLocale),
         )
+    private val initialValidationProfileState =
+        loadProfilePersistenceState(
+            profileManager = validationProfileManager,
+            localizer = localizationBundle.translator(initialLocale),
+        )
     private val defaultPlayerCreationSelection =
         PlayerCreationSelection(
             professionId = defaultConfig.playerProfessionId,
             raceId = defaultConfig.playerRaceId,
         )
+    private var activeContentPackSelection: ContentPackSelection = contentPackSelection
     private val lifecycle = LifecycleCoordinator(saveManager)
+    private val validationLifecycle =
+        LifecycleCoordinator(validationSaveManager) {
+            loadPersistedValidationSessionOptions(validationSaveManager) != null
+        }
     private val assetContracts =
         AssetContractCoordinator(
             assetVersionProvider = assetVersionProvider,
             visualManifestProvider = visualManifestProvider,
             audioManifestProvider = audioManifestProvider,
             clientAssetBundleProvider = {
-                if (contentPackSelection.isEmpty) {
+                if (activeContentPackSelection.isEmpty) {
                     ClientAssetBundleLoader.load(
                         visualManifestProvider = visualManifestProvider,
                         audioManifestProvider = audioManifestProvider,
                     )
                 } else {
-                    ClientAssetBundleLoader.load(contentPackSelection = contentPackSelection)
+                    ClientAssetBundleLoader.load(contentPackSelection = activeContentPackSelection)
                 }
             },
             assetVersionGate = assetVersionGate,
@@ -107,12 +134,18 @@ class GameApp(
     private var currentLocalizer: Localizer = localizationBundle.translator(initialLocale)
     private var profileData: ProfileData = initialProfileState.profileData
     private var profilePersistenceEnabled: Boolean = initialProfileState.persistenceEnabled
+    private var validationProfileData: ProfileData = initialValidationProfileState.profileData
+    private var validationProfilePersistenceEnabled: Boolean = initialValidationProfileState.persistenceEnabled
+    private var validationSetupOptions: ValidationSessionOptions =
+        validationSessionOptionsForPreset(ValidationPreset.MAPGEN_DIFF)
+    private var validationSetupNotice: String? = null
     private var playerCreationState: PlayerCreationState =
         resolvePlayerCreationState(
             locale = initialLocale,
             previousSelection = defaultPlayerCreationSelection,
         )
     private var activeSession: FoundationGameSession? = null
+    private var activeSessionPath: SessionPath = SessionPath.STANDARD
     private var pendingMenuNotice: String? = initialProfileState.notice
     private val audioSinks = audioSinkBindingsFactory.create(renderEnabled)
 
@@ -121,6 +154,7 @@ class GameApp(
     }
 
     fun startNewGame(selection: PlayerCreationSelection = playerCreationState.selection) {
+        activeContentPackSelection = contentPackSelection
         if (!ensureAssetContracts()) {
             return
         }
@@ -140,12 +174,14 @@ class GameApp(
                     availabilityContext = AvailabilityContext.PLAYER_CREATION,
                 )
             }
+        activeSessionPath = SessionPath.STANDARD
         activeSession = session
         assetContracts.prepareSession(session.renderSnapshot())
-        replaceScreen(FoundationGameScreen(this, session, requireClientAssets(), prepareCommandSource(requireClientAssets(), gameCommandSourceFactory()), renderEnabled))
+        replaceScreen(FoundationGameScreen(this, session, requireClientAssets(), prepareCommandSource(requireClientAssets(), session, gameCommandSourceFactory()), renderEnabled))
     }
 
     fun continueGame() {
+        activeContentPackSelection = contentPackSelection
         if (!ensureAssetContracts()) {
             return
         }
@@ -160,15 +196,129 @@ class GameApp(
                 showMainMenu(saveCurrent = false, notice = lifecycle.consumeNotice())
                 return
             }
+        activeSessionPath = SessionPath.STANDARD
         activeSession = session
         assetContracts.prepareSession(session.renderSnapshot())
-        replaceScreen(FoundationGameScreen(this, session, requireClientAssets(), prepareCommandSource(requireClientAssets(), gameCommandSourceFactory()), renderEnabled))
+        replaceScreen(FoundationGameScreen(this, session, requireClientAssets(), prepareCommandSource(requireClientAssets(), session, gameCommandSourceFactory()), renderEnabled))
+    }
+
+    internal fun showValidationSetup(
+        options: ValidationSessionOptions = validationSetupOptions,
+        notice: String? = validationSetupNotice,
+    ) {
+        validationSetupOptions = options
+        replaceScreen(
+            ValidationSetupScreen(
+                app = this,
+                context = validationSetupContext(options, notice),
+                inputSource = menuInputSourceFactory(),
+                renderEnabled = renderEnabled,
+            ),
+        )
+        validationSetupNotice = null
+    }
+
+    internal fun startValidationSession(config: FoundationGameConfig = defaultConfig) {
+        startValidationSession(
+            validationSetupOptions.copy(
+                foundationConfig = config,
+                contentPackSelection = contentPackSelection,
+            ),
+        )
+    }
+
+    internal fun startValidationSession(options: ValidationSessionOptions) {
+        validationSetupOptions = options
+        activeContentPackSelection = options.contentPackSelection
+        if (!ensureValidationAssetContracts(options)) {
+            return
+        }
+        val session =
+            try {
+                validationLifecycle.startNewSession {
+                    GameModule.newValidationSession(
+                        ValidationSessionRequest(
+                            saveManager = validationSaveManager,
+                            locale = currentLocale,
+                            profile = validationProfileData,
+                            options = options,
+                        ),
+                    )
+                }
+            } catch (exception: IllegalArgumentException) {
+                showValidationSetupFailure(options, exception)
+                return
+            } catch (exception: ContentPackLoadException) {
+                showValidationSetupFailure(options, exception)
+                return
+            }
+        activeSessionPath = SessionPath.VALIDATION
+        activeSession = session
+        try {
+            assetContracts.prepareSession(session.renderSnapshot())
+        } catch (exception: ManifestLoadException) {
+            showValidationSetupFailure(options, exception)
+            return
+        } catch (exception: ContentPackLoadException) {
+            showValidationSetupFailure(options, exception)
+            return
+        }
+        replaceScreen(FoundationGameScreen(this, session, requireClientAssets(), prepareCommandSource(requireClientAssets(), session, gameCommandSourceFactory()), renderEnabled))
+    }
+
+    internal fun continueValidationSession() {
+        continueValidationSession(validationSetupOptions)
+    }
+
+    internal fun continueValidationSession(options: ValidationSessionOptions) {
+        val resolvedOptions =
+            try {
+                loadPersistedValidationSessionOptions(validationSaveManager)
+            } catch (exception: SaveLoadException) {
+                pendingMenuNotice = exception.message
+                showMainMenu(saveCurrent = false, notice = pendingMenuNotice)
+                return
+            }
+                ?: run {
+                    showMainMenu(saveCurrent = false)
+                    return
+                }
+        validationSetupOptions = resolvedOptions
+        activeContentPackSelection = resolvedOptions.contentPackSelection
+        if (!ensureValidationAssetContracts(resolvedOptions)) {
+            return
+        }
+        val session =
+            try {
+                validationLifecycle.continueSession {
+                    GameModule.loadValidationSessionResolved(
+                        saveManager = validationSaveManager,
+                        locale = currentLocale,
+                        resolvedOptions = resolvedOptions,
+                        contentPackSelection = resolvedOptions.contentPackSelection,
+                    )
+                }
+            } catch (exception: ContentPackLoadException) {
+                showValidationSetupFailure(resolvedOptions, exception)
+                return
+            } ?: run {
+                pendingMenuNotice = validationLifecycle.consumeNotice()
+                showMainMenu(saveCurrent = false, notice = pendingMenuNotice)
+                return
+            }
+        activeSessionPath = SessionPath.VALIDATION
+        activeSession = session
+        assetContracts.prepareSession(session.renderSnapshot())
+        replaceScreen(FoundationGameScreen(this, session, requireClientAssets(), prepareCommandSource(requireClientAssets(), session, gameCommandSourceFactory()), renderEnabled))
     }
 
     fun showOutcome(session: FoundationGameSession) {
         val summary = session.outcomeSummary() ?: return
-        recordProfileRun(session)
+        if (session.profileRunPersistenceMode() == ProfileRunPersistenceMode.WRITE_PROFILE_SUMMARY) {
+            recordProfileRun(session)
+        }
         activeSession = null
+        activeSessionPath = SessionPath.STANDARD
         replaceScreen(
             if (session.isVictory()) {
                 VictoryScreen(this, summary, outcomeInputSourceFactory(), renderEnabled)
@@ -186,6 +336,8 @@ class GameApp(
             activeSession?.saveOnExit()
         }
         activeSession = null
+        activeSessionPath = SessionPath.STANDARD
+        activeContentPackSelection = contentPackSelection
         refreshPlayerCreationState()
         val continueEnabled = lifecycle.refreshContinueAvailability()
         replaceScreen(
@@ -219,9 +371,17 @@ class GameApp(
 
     internal fun activeSessionOrNull(): FoundationGameSession? = activeSession
 
+    internal fun standardContinueAvailableForTest(): Boolean = lifecycle.refreshContinueAvailability()
+
+    internal fun validationContinueAvailableForTest(): Boolean = validationLifecycle.refreshContinueAvailability()
+
     internal fun currentLocale(): GameLocale = currentLocale
 
     internal fun localizer(): Localizer = currentLocalizer
+
+    internal fun rememberValidationSetupOptions(options: ValidationSessionOptions) {
+        validationSetupOptions = options
+    }
 
     internal fun rememberPlayerCreationSelection(selection: PlayerCreationSelection) {
         playerCreationState =
@@ -281,6 +441,13 @@ class GameApp(
             false
         } ?: true
 
+    private fun ensureValidationAssetContracts(options: ValidationSessionOptions): Boolean =
+        assetContractNotice()?.let { notice ->
+            validationSetupNotice = notice
+            showValidationSetup(options, notice)
+            false
+        } ?: true
+
     private fun refreshPlayerCreationState(
         previousSelection: PlayerCreationSelection = playerCreationState.selection,
     ): PlayerCreationState =
@@ -293,6 +460,50 @@ class GameApp(
         previousSelection: PlayerCreationSelection? = null,
     ): PlayerCreationState =
         playerCreationStateProvider(locale, profileData, previousSelection)
+
+    private fun validationSetupContext(
+        options: ValidationSessionOptions,
+        notice: String? = null,
+    ): ValidationSetupContext {
+        val schemaCatalog = DataLoader(locale = currentLocale).loadSchemaCatalog()
+        return ValidationSetupContext(
+            initialOptions = options,
+            playerCreationState =
+                GameModule.playerCreationState(
+                    locale = currentLocale,
+                    profile = validationProfileData,
+                    previousSelection =
+                        PlayerCreationSelection(
+                            professionId = options.foundationConfig.playerProfessionId,
+                            raceId = options.foundationConfig.playerRaceId,
+                        ),
+                    context = AvailabilityContext.WHITE_BOX,
+                ),
+            zones =
+                schemaCatalog.zones.map { zone ->
+                    ValidationZoneOption(
+                        id = zone.id,
+                        displayNameKey = zone.nameKey,
+                        floorCount = zone.floorCount,
+                    )
+                },
+            bossVariantIds = schemaCatalog.bossVariants.map { variant -> variant.id }.sorted(),
+            samplePackSelection = validationSamplePackSelectionProvider(),
+            continueEnabled = validationLifecycle.refreshContinueAvailability(),
+            notice = notice,
+        )
+    }
+
+    private fun showValidationSetupFailure(
+        options: ValidationSessionOptions,
+        exception: Exception,
+    ) {
+        validationSetupNotice = exception.message ?: exception::class.simpleName ?: "Validation setup failed."
+        activeSession = null
+        activeSessionPath = SessionPath.STANDARD
+        activeContentPackSelection = contentPackSelection
+        showValidationSetup(options, validationSetupNotice)
+    }
 
     private fun playerCreationSelectionNotice(state: PlayerCreationState): String {
         val professionOption = state.selectedProfessionOption()
@@ -323,19 +534,43 @@ class GameApp(
         )
 
     private fun recordProfileRun(session: FoundationGameSession) {
+        val target =
+            when (activeSessionPath) {
+                SessionPath.STANDARD ->
+                    ActiveProfileTarget(
+                        profileManager = profileManager,
+                        profile = profileData,
+                        persistenceEnabled = profilePersistenceEnabled,
+                    )
+
+                SessionPath.VALIDATION ->
+                    ActiveProfileTarget(
+                        profileManager = validationProfileManager,
+                        profile = validationProfileData,
+                        persistenceEnabled = validationProfilePersistenceEnabled,
+                    )
+            }
         val result =
             appendAndPersistProfileRun(
-                profileManager = profileManager,
-                profile = profileData,
-                persistenceEnabled = profilePersistenceEnabled,
+                profileManager = target.profileManager,
+                profile = target.profile,
+                persistenceEnabled = target.persistenceEnabled,
                 summary = requireNotNull(session.profileRunSummary(System.currentTimeMillis())),
                 unlockRules = GameModule.advancedClassUnlockRules(currentLocale),
                 localizer = currentLocalizer,
             )
-        profileData = result.profileData
-        pendingMenuNotice = result.notice
-        if (result.persisted) {
-            refreshPlayerCreationState()
+        when (activeSessionPath) {
+            SessionPath.STANDARD -> {
+                profileData = result.profileData
+                pendingMenuNotice = result.notice
+                if (result.persisted) {
+                    refreshPlayerCreationState()
+                }
+            }
+
+            SessionPath.VALIDATION -> {
+                validationProfileData = result.profileData
+            }
         }
     }
 
@@ -346,9 +581,18 @@ class GameApp(
 
     private fun prepareCommandSource(
         assets: ClientAssetBundle,
+        session: FoundationGameSession,
         commandSource: CommandSource,
-    ): CommandSource =
-        commandSource.also { source ->
+    ): CommandSource {
+        val effectiveSource =
+            if (!session.isValidationSession()) {
+                commandSource
+            } else if (commandSource is InputHandlerCommandSource) {
+                ValidationCommandSource(session)
+            } else {
+                ValidationCommandSource(session, commandSource)
+            }
+        return effectiveSource.also { source ->
             if (source is AudioRouterAwareCommandSource && source.audioRouter == null) {
                 source.audioRouter =
                     AudioRouter(
@@ -358,11 +602,66 @@ class GameApp(
                     )
             }
         }
+    }
 
     companion object {
         private fun defaultSaveDir(): Path = Path.of(System.getProperty("user.home"), ".ktome")
+
+        private fun defaultValidationSamplePackSelection(): ContentPackSelection {
+            return resolveValidationSamplePackSelection()
+        }
     }
 }
+
+private const val validationSamplePackRelativePath: String = "examples/content-packs/sample.flooded_relics"
+private const val bundledValidationSamplePackRelativePath: String = "content-packs/sample.flooded_relics"
+
+internal fun resolveValidationSamplePackSelection(
+    candidateRoots: List<Path> = validationSamplePackCandidateRoots(),
+): ContentPackSelection {
+    val packRoot =
+        candidateRoots.firstOrNull { candidate ->
+            Files.isRegularFile(candidate.resolve("manifest.yaml"))
+        } ?: return ContentPackSelection.EMPTY
+    return ContentPackSelection.of(packRoot)
+}
+
+internal fun validationSamplePackCandidateRoots(
+    overrideRoot: String? = System.getProperty("ktome.validationSamplePackRoot"),
+    repoRoot: String? = System.getProperty("ktome.repo.root"),
+    runtimeAppDir: Path? = runtimeApplicationDir(),
+    workingDir: Path = Path.of(".").toAbsolutePath().normalize(),
+): List<Path> {
+    val candidates = linkedSetOf<Path>()
+    parseNormalizedPath(overrideRoot)?.let(candidates::add)
+    parseNormalizedPath(repoRoot)?.resolve(validationSamplePackRelativePath)?.normalize()?.let(candidates::add)
+    runtimeAppDir?.let { appDir ->
+        candidates.add(appDir.resolve(bundledValidationSamplePackRelativePath).normalize())
+        appDir.parent?.resolve(bundledValidationSamplePackRelativePath)?.normalize()?.let(candidates::add)
+    }
+    candidates.add(workingDir.resolve(validationSamplePackRelativePath).normalize())
+    return candidates.toList()
+}
+
+private fun runtimeApplicationDir(): Path? =
+    runCatching {
+        Path.of(GameApp::class.java.protectionDomain.codeSource.location.toURI())
+    }.getOrNull()?.let { codeSourcePath ->
+        if (Files.isRegularFile(codeSourcePath)) {
+            codeSourcePath.parent
+        } else {
+            codeSourcePath
+        }
+    }
+
+private fun parseNormalizedPath(rawPath: String?): Path? =
+    rawPath
+        ?.takeIf(String::isNotBlank)
+        ?.let { value ->
+            runCatching {
+                Path.of(value).toAbsolutePath().normalize()
+            }.getOrNull()
+        }
 
 internal data class LoadedProfilePersistenceState(
     val profileData: ProfileData,
@@ -375,6 +674,17 @@ internal data class PersistedProfileRunResult(
     val persisted: Boolean,
     val notice: String? = null,
 )
+
+private data class ActiveProfileTarget(
+    val profileManager: ProfileManager,
+    val profile: ProfileData,
+    val persistenceEnabled: Boolean,
+)
+
+private enum class SessionPath {
+    STANDARD,
+    VALIDATION,
+}
 
 internal fun newGameConfig(
     defaultConfig: FoundationGameConfig,
@@ -467,6 +777,9 @@ internal class AssetContractCoordinator(
         } catch (exception: ManifestLoadException) {
             dispose()
             exception.message
+        } catch (exception: ContentPackLoadException) {
+            dispose()
+            exception.message
         }
 
     fun bundleOrNull(): ClientAssetBundle? = cachedBundle
@@ -492,6 +805,7 @@ internal class AssetContractCoordinator(
 
 internal class LifecycleCoordinator(
     private val saveManager: SaveManager,
+    private val continueAvailabilityProbe: () -> Boolean = { saveManager.load() != null },
 ) {
     private var cachedContinueAvailable: Boolean = false
     private var pendingNotice: String? = null
@@ -534,7 +848,7 @@ internal class LifecycleCoordinator(
 
     private fun snapshotIsLoadable(): Boolean =
         try {
-            saveManager.load() != null
+            continueAvailabilityProbe()
         } catch (exception: SaveLoadException) {
             pendingNotice = exception.message
             false

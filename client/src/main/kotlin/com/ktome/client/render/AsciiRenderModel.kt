@@ -1,11 +1,13 @@
 package com.ktome.client.render
 
+import com.ktome.client.bossVariantModeLabelKey
 import com.ktome.client.telegraph.TelegraphRenderer
 import com.ktome.client.telegraph.TelegraphStyle
 import com.ktome.client.assets.ResolvedVisualAsset
 import com.ktome.client.assets.VisualManifestResolver
 import com.ktome.client.input.OverlayState
 import com.ktome.client.input.UiMode
+import com.ktome.client.input.ValidationOverlayPanelState
 import com.ktome.client.ui.status.StatusHudRenderer
 import com.ktome.client.ui.talent.DescriptionLine
 import com.ktome.client.ui.talent.DescriptionLineKind
@@ -151,6 +153,9 @@ internal object AsciiRenderModelBuilder {
         val lines = mutableListOf<AsciiTextLine>()
         val playerCell = requireNotNull(cellByPoint[point(snapshot.metadata.playerX, snapshot.metadata.playerY)])
         val propByPoint = snapshot.props.associateBy { prop -> point(prop.x, prop.y) }
+        if (overlayState.mode == UiMode.VALIDATION) {
+            return validationOverlayLines(localizer, requireNotNull(overlayState.validationPanel))
+        }
         if (overlayState.mode == UiMode.MAP) {
             snapshot.metadata.zoneDescKey?.let { descKey ->
                 lines += AsciiTextLine(localizer.text(descKey), AsciiTextTone.LIGHT_GRAY)
@@ -507,6 +512,8 @@ internal object AsciiRenderModelBuilder {
                 lines += AsciiTextLine(localizer.text("ui.controls.inspect"), AsciiTextTone.LIGHT_GRAY)
             }
 
+            UiMode.VALIDATION -> Unit
+
             UiMode.STAT_ASSIGN -> {
                 lines += blankLine()
                 lines += AsciiTextLine(AsciiRenderer.sidebarTitle(localizer, UiMode.STAT_ASSIGN), AsciiTextTone.GOLD)
@@ -605,6 +612,90 @@ internal object AsciiRenderModelBuilder {
             }
         }
 
+        return lines
+    }
+
+    private fun validationOverlayLines(
+        localizer: Localizer,
+        panel: ValidationOverlayPanelState,
+    ): List<AsciiTextLine> {
+        val lines = mutableListOf<AsciiTextLine>()
+        val summary = panel.summary
+        lines += AsciiTextLine(localizer.text("ui.validation.overlay.summary"), AsciiTextTone.GOLD)
+        lines += AsciiTextLine(localizer.text("ui.validation.entry.preset", "value" to localizer.text(summary.preset.titleKey)), AsciiTextTone.WHITE)
+        lines += AsciiTextLine(localizer.text("ui.validation.entry.seed", "value" to summary.seed), AsciiTextTone.WHITE)
+        if (summary.seedCorpus.size > 1) {
+            lines +=
+                AsciiTextLine(
+                    localizer.text(
+                        "ui.validation.entry.seed_corpus",
+                        "value" to summary.seedCorpus.joinToString(", "),
+                    ),
+                    AsciiTextTone.WHITE,
+                )
+        }
+        lines += AsciiTextLine(localizer.text("ui.validation.entry.zone", "value" to localizer.text(panel.zoneNameKey)), AsciiTextTone.WHITE)
+        lines += AsciiTextLine(localizer.text("ui.validation.entry.floor", "value" to summary.floor), AsciiTextTone.WHITE)
+        lines +=
+            AsciiTextLine(
+                localizer.text(
+                    "ui.validation.active_packs",
+                    "value" to summary.activePackIds.ifEmpty { listOf(localizer.text("ui.validation.none")) }.joinToString(", "),
+                ),
+                AsciiTextTone.WHITE,
+            )
+        lines +=
+            AsciiTextLine(
+                localizer.text(
+                    "ui.validation.entry.boss_variant_mode",
+                    "value" to localizer.text(bossVariantModeLabelKey(summary.bossVariantModeId)),
+                ),
+                AsciiTextTone.WHITE,
+            )
+        lines +=
+            AsciiTextLine(
+                localizer.text(
+                    "ui.validation.entry.preferred_variant",
+                    "value" to (summary.preferredBossVariantId ?: localizer.text("ui.validation.none")),
+                ),
+                AsciiTextTone.WHITE,
+            )
+        lines += AsciiTextLine(localizer.text("ui.inspect.cursor", "x" to panel.inspectCursor.x, "y" to panel.inspectCursor.y), AsciiTextTone.WHITE)
+        lines +=
+            AsciiTextLine(
+                localizer.text(
+                    "ui.validation.overlay.last_result",
+                    "value" to (summary.lastResult?.let { token -> renderTextToken(localizer, token) } ?: localizer.text("ui.validation.none")),
+                ),
+                AsciiTextTone.LIGHT_GRAY,
+            )
+        lines += AsciiTextLine(localizer.text("ui.validation.phase4.targets"), AsciiTextTone.GOLD)
+        panel.phase4Guide.targetLabelKeys.forEach { labelKey ->
+            lines += AsciiTextLine("  ${localizer.text(labelKey)}", AsciiTextTone.WHITE)
+        }
+        lines += AsciiTextLine(localizer.text("ui.validation.phase4.quick_paths"), AsciiTextTone.GOLD)
+        panel.phase4Guide.quickPathLabelKeys.forEach { labelKey ->
+            lines += AsciiTextLine("  ${localizer.text(labelKey)}", AsciiTextTone.LIGHT_GRAY)
+        }
+        lines += AsciiTextLine(localizer.text("ui.validation.phase4.evidence"), AsciiTextTone.GOLD)
+        panel.phase4Guide.evidenceLabelKeys.forEach { labelKey ->
+            lines += AsciiTextLine("  ${localizer.text(labelKey)}", AsciiTextTone.LIGHT_GRAY)
+        }
+        lines += AsciiTextLine(localizer.text("ui.controls.validation"), AsciiTextTone.LIGHT_GRAY)
+        panel.sections.forEach { section ->
+            lines +=
+                AsciiTextLine(
+                    localizer.text(section.titleKey),
+                    if (section.selected) AsciiTextTone.GOLD else AsciiTextTone.WHITE,
+                )
+            section.actions.forEach { action ->
+                lines +=
+                    AsciiTextLine(
+                        "  ${localizer.text(action.labelKey)}",
+                        if (action.selected) AsciiTextTone.CYAN else AsciiTextTone.LIGHT_GRAY,
+                    )
+            }
+        }
         return lines
     }
 
