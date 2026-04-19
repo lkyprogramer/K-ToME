@@ -29,6 +29,35 @@ class VerifyChangedBuildContractTest {
     }
 
     @Test
+    fun `root verifyChanged preflight task paths stay aligned with routed lightweight checks`() {
+        val buildScript = Files.readString(repoRoot().resolve("build.gradle.kts"))
+        val actualTaskPaths = buildScript.readStringList(name = "verifyChangedPreflightTaskPaths")
+        val expectedTaskPaths =
+            buildSet {
+                add(":tools:prepareVerifyChangedPlan")
+                VerificationTaskRegistry.registeredImpactSpecs().forEach { spec ->
+                    addAll(spec.preflightTaskPaths)
+                    spec.inputScopes.forEach { scope -> addAll(scope.requestedTaskPaths) }
+                }
+                removeAll(
+                    VerificationTaskRegistry
+                        .registeredImpactSpecs()
+                        .flatMap { spec -> spec.ownerTaskPaths }
+                        .toSet(),
+                )
+                remove(":tools:reportPhase4Only")
+            }
+
+        assertEquals(expectedTaskPaths, actualTaskPaths.toSet())
+        assertFalse(actualTaskPaths.contains(":tools:contractLint"))
+        assertFalse(actualTaskPaths.contains(":tools:lootBalanceLab"))
+        assertFalse(actualTaskPaths.contains(":tools:hiddenContentHarness"))
+        assertFalse(actualTaskPaths.contains(":tools:bossHarness"))
+        assertFalse(actualTaskPaths.contains(":game:longRunLab"))
+        assertFalse(actualTaskPaths.contains(":tools:reportPhase4Only"))
+    }
+
+    @Test
     fun `root verifyOwner task paths stay aligned with routed phase4 owner domains`() {
         val buildScript = Files.readString(repoRoot().resolve("build.gradle.kts"))
         val actualTaskPaths = buildScript.readStringList(name = "verifyOwnerTaskPaths")

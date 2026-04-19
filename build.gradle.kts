@@ -99,6 +99,16 @@ val verifyChangedTaskPaths =
         ":tools:bossHarness",
         ":game:longRunLab",
     )
+val verifyChangedPreflightTaskPaths =
+    listOf(
+        ":tools:prepareVerifyChangedPlan",
+        ":tools:scopeCoverageLint",
+        ":tools:maintainabilityLint",
+        ":tools:verifyContractLintPreflight",
+        ":tools:verifyLootPreflight",
+        ":tools:verifyHiddenPreflight",
+        ":tools:verifyContentPackPreflight",
+    )
 
 extensions.configure<JacocoPluginExtension> {
     toolVersion = providers.gradleProperty("jacocoVersion").get()
@@ -451,6 +461,12 @@ tasks.register("verifyChanged") {
     group = LifecycleBasePlugin.VERIFICATION_GROUP
     description = "Collects changed files, analyzes impacted Phase 4 domains, and runs the selected preflight/owner verification tasks."
     dependsOn(verifyChangedTaskPaths)
+}
+
+tasks.register("verifyChangedPreflight") {
+    group = LifecycleBasePlugin.VERIFICATION_GROUP
+    description = "Collects changed files, analyzes impacted Phase 4 domains, and runs only the routed lightweight preflight checks."
+    dependsOn(verifyChangedPreflightTaskPaths)
 }
 
 tasks.register("nightlyGovernanceGate") {
