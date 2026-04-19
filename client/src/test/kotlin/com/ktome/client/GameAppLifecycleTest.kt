@@ -637,6 +637,49 @@ class GameAppLifecycleTest {
     }
 
     @Test
+    fun `validation continue stays in setup and surfaces a notice when persisted pack root is invalid`() {
+        withHeadlessGdx {
+            val standardSaveManager = SaveManager(tempDir.resolve("validation-continue-pack-failure/save"))
+            val validationSaveManager = SaveManager(tempDir.resolve("validation-continue-pack-failure/validation-save"))
+            val samplePackRoot =
+                resolveValidationSamplePackSelection().activePackRoots.singleOrNull()
+                    ?: error("Expected a sample validation content pack root for resume testing.")
+            val copiedPackRoot = tempDir.resolve("sample.flooded_relics")
+            copyDirectory(samplePackRoot, copiedPackRoot)
+            val options =
+                validationSessionOptionsForPreset(
+                    preset = ValidationPreset.CONTENT_PACK,
+                    contentPackSelection = ContentPackSelection.of(copiedPackRoot),
+                )
+            val app =
+                GameApp(
+                    saveManager = standardSaveManager,
+                    validationSaveManager = validationSaveManager,
+                    profileManager = ProfileManager(tempDir.resolve("validation-continue-pack-failure/profile")),
+                    validationProfileManager = ProfileManager(tempDir.resolve("validation-continue-pack-failure/validation-profile")),
+                    validationSamplePackSelectionProvider = { ContentPackSelection.of(copiedPackRoot) },
+                    renderEnabled = false,
+                )
+
+            try {
+                app.startValidationSession(options)
+                requireNotNull(app.activeSessionOrNull()).saveOnExit()
+                app.showMainMenu(saveCurrent = false)
+                Files.delete(copiedPackRoot.resolve("manifest.yaml"))
+
+                app.continueValidationSession()
+
+                assertNull(app.activeSessionOrNull())
+                assertTrue(app.screen is ValidationSetupScreen)
+                val snapshot = (app.screen as ValidationSetupScreen).textSnapshot(options)
+                assertTrue(snapshot.notice?.contains("manifest.yaml") == true)
+            } finally {
+                app.dispose()
+            }
+        }
+    }
+
+    @Test
     fun `validation sample pack selection resolves the first runtime root with a manifest`() {
         val bundledPackRoot = tempDir.resolve("app/content-packs/sample.flooded_relics")
         Files.createDirectories(bundledPackRoot)
@@ -754,6 +797,22 @@ private fun <T> withHeadlessGdx(block: () -> T): T {
         block()
     } finally {
         backend.exit()
+    }
+}
+
+private fun copyDirectory(
+    source: Path,
+    target: Path,
+) {
+    Files.walk(source).forEach { path ->
+        val relative = source.relativize(path)
+        val destination = target.resolve(relative.toString())
+        if (Files.isDirectory(path)) {
+            Files.createDirectories(destination)
+        } else {
+            Files.createDirectories(destination.parent)
+            Files.copy(path, destination)
+        }
     }
 }
 

@@ -289,13 +289,18 @@ class GameApp(
             return
         }
         val session =
-            validationLifecycle.continueSession {
-                GameModule.loadValidationSessionResolved(
-                    saveManager = validationSaveManager,
-                    locale = currentLocale,
-                    resolvedOptions = resolvedOptions,
-                    contentPackSelection = resolvedOptions.contentPackSelection,
-                )
+            try {
+                validationLifecycle.continueSession {
+                    GameModule.loadValidationSessionResolved(
+                        saveManager = validationSaveManager,
+                        locale = currentLocale,
+                        resolvedOptions = resolvedOptions,
+                        contentPackSelection = resolvedOptions.contentPackSelection,
+                    )
+                }
+            } catch (exception: ContentPackLoadException) {
+                showValidationSetupFailure(resolvedOptions, exception)
+                return
             } ?: run {
                 pendingMenuNotice = validationLifecycle.consumeNotice()
                 showMainMenu(saveCurrent = false, notice = pendingMenuNotice)
