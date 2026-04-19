@@ -41,6 +41,7 @@ CANVAS_BY_CATEGORY = {
     "icon_damage_type": 160,
     "icon_item": 160,
     "icon_quest": 160,
+    "app_icon": 1024,
     "ui_frame": 256,
     "vfx_plate": 192,
 }
@@ -59,6 +60,7 @@ PADDING_BY_CATEGORY = {
     "icon_damage_type": 0.1,
     "icon_item": 0.1,
     "icon_quest": 0.1,
+    "app_icon": 0.0,
     "ui_frame": 0.05,
     "vfx_plate": 0.08,
 }

@@ -118,6 +118,22 @@ sdk env
 ./gradlew :client:run
 ```
 
+桌面打包：
+
+```bash
+source "$HOME/.sdkman/bin/sdkman-init.sh"
+sdk env
+./gradlew :client:releaseDesktopDist
+./gradlew :client:packageMacApp
+```
+
+区别：
+
+1. `:client:releaseDesktopDist` 产出跨平台 zip 分发包：`client/build/release/ktome-v0.1.0-desktop.zip`
+2. `:client:packageMacApp` 产出 macOS 本地 `.app`：`client/build/release/K-ToME.app`
+3. 当前 `.app` 仅用于本地 macOS 打包与启动验证，不包含签名或 notarization
+4. app icon 来自离线美术管线生成的 packaging asset：`client/src/packaging/macos/K-ToME-app-icon.png`
+
 ## 当前验证入口
 
 ### 通用 gate
@@ -169,6 +185,9 @@ sdk env
 ./gradlew styleLint
 ./gradlew audioLint
 ./gradlew manifestLint
+./scripts/generate_macos_app_icon.sh
+./gradlew :client:releaseDesktopDist
+./gradlew :client:packageMacApp
 ```
 
 ## 文档导航

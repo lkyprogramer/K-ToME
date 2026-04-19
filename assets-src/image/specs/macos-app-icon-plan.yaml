@@ -1,0 +1,35 @@
+styleTag: ktome-middle-fantasy-painterly-tile-v1
+artStyleBible: docs/2026-03-13-art-style-bible.md
+stylePrompt: >-
+  High fantasy, middle-earth inspired painterly packaging icon pass for K-ToME.
+  The macOS app icon must read as a formal product icon rather than a runtime
+  inventory tile: weathered black iron, ember-lit runes, and an ancient dungeon
+  gate silhouette should stay grounded in the established K-ToME palette and
+  material language, never anime and never sci-fi.
+defaults:
+  imageAspectRatio: "1:1"
+  imageSize: "1K"
+  negativeConstraints:
+    - no modern clothing
+    - no firearms
+    - no sci-fi materials
+    - no anime proportions
+    - no floating text, watermark or logo
+phase2AssetGates:
+  MACOS-APP:
+    description: Packaging-only Gemini plan for the macOS app icon.
+    assets:
+      - id: ktome_macos_app_icon
+        category: app_icon
+        visualKey: packaging.macos.app_icon
+        outputName: packaging/macos/K-ToME-app-icon.png
+        subject: macOS app icon with a single centered weathered black iron tower shield carrying an ember-lit old oath rune and dungeon gate sigil
+        materialTags: [packaging, macos, app_icon, shield, black_iron, rune]
+        moodTags: [solemn, ancient, ember_lit, austere]
+        constraints:
+          - single centered subject
+          - square icon plate, not a floating transparent item
+          - dock-readable silhouette at small sizes
+          - weak cold-versus-warm background plate only
+          - no letters, no ui chrome, no character portrait, no complex scene
+        geminiKeyRequired: true

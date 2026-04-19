@@ -467,12 +467,14 @@ tasks.register("nightlyGovernanceGate") {
 
 tasks.register<Exec>("assetLint") {
     group = LifecycleBasePlugin.VERIFICATION_GROUP
-    description = "Validates the primary image asset plan plus PR-09 Gemini additions."
+    description = "Validates the primary image asset plan, packaging icon plan, plus Gemini additions."
     commandLine(
         "python3",
         "scripts/asset-lint.py",
         "--plan",
         "assets-src/image/specs/phase2-asset-plan.yaml",
+        "--extra-plan",
+        "assets-src/image/specs/macos-app-icon-plan.yaml",
         "--extra-plan",
         "assets-src/image/specs/phase3-pr09-gemini-plan.yaml",
         "--extra-plan",
@@ -502,12 +504,14 @@ tasks.register<Exec>("assetLint") {
 
 tasks.register<Exec>("styleLint") {
     group = LifecycleBasePlugin.VERIFICATION_GROUP
-    description = "Validates the primary art style contract bindings plus PR-09 Gemini additions."
+    description = "Validates the primary art style contract bindings, packaging icon plan, plus Gemini additions."
     commandLine(
         "python3",
         "scripts/style-lint.py",
         "--plan",
         "assets-src/image/specs/phase2-asset-plan.yaml",
+        "--extra-plan",
+        "assets-src/image/specs/macos-app-icon-plan.yaml",
         "--extra-plan",
         "assets-src/image/specs/phase3-pr09-gemini-plan.yaml",
         "--extra-plan",

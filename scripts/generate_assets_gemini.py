@@ -51,6 +51,7 @@ ALLOWED_CATEGORIES = {
     "icon_damage_type",
     "icon_item",
     "icon_quest",
+    "app_icon",
     "ui_frame",
     "vfx_plate",
 }

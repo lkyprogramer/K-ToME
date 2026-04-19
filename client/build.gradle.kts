@@ -1,9 +1,13 @@
+import org.gradle.api.GradleException
 import org.gradle.api.tasks.JavaExec
 import org.gradle.api.tasks.Copy
+import org.gradle.api.tasks.Sync
 import org.gradle.api.tasks.testing.Test
 import org.gradle.api.tasks.bundling.Zip
 import org.gradle.kotlin.dsl.named
 import org.gradle.jvm.application.tasks.CreateStartScripts
+import org.gradle.jvm.tasks.Jar
+import java.io.File
 
 plugins {
     application
@@ -11,6 +15,60 @@ plugins {
 }
 
 val harnessReportDir = rootProject.layout.buildDirectory.dir("reports/harness")
+val desktopMainClass = "com.ktome.client.DesktopLauncherKt"
+val desktopAppVersion = project.version.toString()
+val macAppName = "K-ToME"
+val macAppBundleIdentifier = "com.ktome.client"
+val macPackagingWorkspaceDir = layout.buildDirectory.dir("jpackage")
+val macPackagingInputDir = macPackagingWorkspaceDir.map { it.dir("input") }
+val macPackagingIconDir = macPackagingWorkspaceDir.map { it.dir("icon") }
+val macPackagingIconSource = layout.projectDirectory.file("src/packaging/macos/K-ToME-app-icon.png")
+val macPackagingIcnsFile = macPackagingIconDir.map { it.file("$macAppName.icns") }
+val macAppOutputDir = layout.buildDirectory.dir("release")
+val macAppImageDir = layout.buildDirectory.dir("release/$macAppName.app")
+val isMacOs = System.getProperty("os.name").contains("Mac", ignoreCase = true)
+
+fun requireMacPackagingEnvironment(taskName: String, requireIconTools: Boolean = false): File {
+    if (!isMacOs) {
+        throw GradleException("$taskName is macOS-only.")
+    }
+
+    val jpackageExecutable = File(System.getProperty("java.home"), "bin/jpackage")
+    if (!jpackageExecutable.isFile) {
+        throw GradleException("$taskName requires jpackage from the SDKMAN-managed JDK 21 environment.")
+    }
+
+    if (requireIconTools) {
+        listOf("/usr/bin/sips", "/usr/bin/iconutil").forEach { toolPath ->
+            if (!File(toolPath).isFile) {
+                throw GradleException("$taskName requires $toolPath to be available on macOS.")
+            }
+        }
+    }
+
+    return jpackageExecutable
+}
+
+fun toJpackageAppVersion(version: String): String {
+    val components =
+        version.split('.').map { fragment ->
+            fragment.toIntOrNull()
+                ?: throw GradleException("packageMacApp requires a numeric project.version, but found '$version'.")
+        }.toMutableList()
+
+    while (components.size < 3) {
+        components += 0
+    }
+
+    if (components.first() <= 0) {
+        components[0] = 1
+    }
+
+    return components.take(3).joinToString(".")
+}
+
+val macAppPackageVersion = toJpackageAppVersion(desktopAppVersion)
+val desktopRuntimeClasspath = configurations.runtimeClasspath
 
 dependencies {
     implementation(project(":core"))
@@ -25,7 +83,7 @@ dependencies {
 }
 
 application {
-    mainClass.set("com.ktome.client.DesktopLauncherKt")
+    mainClass.set(desktopMainClass)
 }
 
 distributions {
@@ -81,6 +139,150 @@ tasks.register<Copy>("releaseDesktopDist") {
     from(distZip.flatMap { it.archiveFile })
     into(layout.buildDirectory.dir("release"))
     rename { "ktome-v${project.version}-desktop.zip" }
+}
+
+val desktopJar = tasks.named<Jar>("jar")
+
+val prepareMacAppInput =
+    tasks.register<Sync>("prepareMacAppInput") {
+    group = "distribution"
+    description = "Stages the desktop runtime jars for jpackage."
+    dependsOn(desktopJar)
+    dependsOn(desktopRuntimeClasspath)
+    into(macPackagingInputDir)
+    from(desktopJar.flatMap { it.archiveFile })
+    from(desktopRuntimeClasspath) {
+        include("*.jar")
+    }
+    doFirst {
+        requireMacPackagingEnvironment(name)
+    }
+}
+
+val prepareMacAppIcon =
+    tasks.register("prepareMacAppIcon") {
+    group = "distribution"
+    description = "Builds a macOS .icns icon for the desktop app image."
+    inputs.file(macPackagingIconSource)
+    outputs.file(macPackagingIcnsFile)
+
+    doLast {
+        requireMacPackagingEnvironment(name, requireIconTools = true)
+
+        val sourceIcon = macPackagingIconSource.asFile
+        if (!sourceIcon.isFile) {
+            throw GradleException("Missing macOS packaging icon source: ${sourceIcon.absolutePath}")
+        }
+
+        val iconRoot = macPackagingIconDir.get().asFile
+        val iconsetDir = iconRoot.resolve("$macAppName.iconset")
+        val icnsFile = macPackagingIcnsFile.get().asFile
+        val iconVariants =
+            listOf(
+                "icon_16x16.png" to 16,
+                "icon_16x16@2x.png" to 32,
+                "icon_32x32.png" to 32,
+                "icon_32x32@2x.png" to 64,
+                "icon_128x128.png" to 128,
+                "icon_128x128@2x.png" to 256,
+                "icon_256x256.png" to 256,
+                "icon_256x256@2x.png" to 512,
+                "icon_512x512.png" to 512,
+                "icon_512x512@2x.png" to 1024,
+            )
+
+        delete(iconsetDir)
+        iconRoot.mkdirs()
+        iconsetDir.mkdirs()
+
+        iconVariants.forEach { (fileName, size) ->
+            providers.exec {
+                commandLine(
+                    "/usr/bin/sips",
+                    "-z",
+                    size.toString(),
+                    size.toString(),
+                    sourceIcon.absolutePath,
+                    "--out",
+                    iconsetDir.resolve(fileName).absolutePath,
+                )
+            }.result.get()
+        }
+
+        delete(icnsFile)
+        providers.exec {
+            commandLine(
+                "/usr/bin/iconutil",
+                "-c",
+                "icns",
+                iconsetDir.absolutePath,
+                "-o",
+                icnsFile.absolutePath,
+            )
+        }.result.get()
+    }
+}
+
+tasks.register("packageMacApp") {
+    group = "distribution"
+    description = "Packages a macOS .app image under build/release using jpackage."
+    dependsOn(prepareMacAppInput, prepareMacAppIcon)
+    inputs.files(files(macPackagingInputDir).builtBy(prepareMacAppInput))
+    inputs.files(files(macPackagingIcnsFile).builtBy(prepareMacAppIcon))
+    outputs.dir(macAppImageDir)
+
+    doLast {
+        val jpackageExecutable = requireMacPackagingEnvironment(name)
+        val outputDir = macAppOutputDir.get().asFile
+        val appImageDir = macAppImageDir.get().asFile
+
+        delete(appImageDir)
+        outputDir.mkdirs()
+
+        providers.exec {
+            commandLine(
+                jpackageExecutable.absolutePath,
+                "--type",
+                "app-image",
+                "--dest",
+                outputDir.absolutePath,
+                "--input",
+                macPackagingInputDir.get().asFile.absolutePath,
+                "--name",
+                macAppName,
+                "--main-jar",
+                desktopJar.get().archiveFileName.get(),
+                "--main-class",
+                desktopMainClass,
+                "--app-version",
+                macAppPackageVersion,
+                "--icon",
+                macPackagingIcnsFile.get().asFile.absolutePath,
+                "--vendor",
+                macAppName,
+                "--mac-package-identifier",
+                macAppBundleIdentifier,
+                "--java-options",
+                "-XstartOnFirstThread",
+            )
+        }.result.get()
+
+        val infoPlist = appImageDir.resolve("Contents/Info.plist")
+        if (!infoPlist.isFile) {
+            throw GradleException("packageMacApp did not produce ${infoPlist.absolutePath}")
+        }
+
+        providers.exec {
+            commandLine(
+                "/usr/bin/plutil",
+                "-replace",
+                "CFBundleShortVersionString",
+                "-string",
+                desktopAppVersion,
+                infoPlist.absolutePath,
+            )
+        }.result.get()
+    }
 }
 
 tasks.named<Test>("test") {

@@ -29,6 +29,7 @@ ALLOWED_CATEGORIES = {
     "icon_damage_type",
     "icon_item",
     "icon_quest",
+    "app_icon",
     "ui_frame",
     "vfx_plate",
     "debug",
@@ -70,6 +71,7 @@ EXPECTED_FOOTPRINT_BY_CATEGORY = {
     "icon_damage_type": "ui",
     "icon_item": "ui",
     "icon_quest": "ui",
+    "app_icon": "ui",
     "ui_frame": "ui",
     "vfx_plate": "overlay",
 }
