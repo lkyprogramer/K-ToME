@@ -19,6 +19,7 @@ val desktopMainClass = "com.ktome.client.DesktopLauncherKt"
 val desktopAppVersion = project.version.toString()
 val macAppName = "K-ToME"
 val macAppBundleIdentifier = "com.ktome.client"
+val validationSamplePackDir = rootProject.file("examples/content-packs/sample.flooded_relics")
 val macPackagingWorkspaceDir = layout.buildDirectory.dir("jpackage")
 val macPackagingInputDir = macPackagingWorkspaceDir.map { it.dir("input") }
 val macPackagingIconDir = macPackagingWorkspaceDir.map { it.dir("icon") }
@@ -89,6 +90,9 @@ application {
 distributions {
     main {
         contents {
+            from(validationSamplePackDir) {
+                into("content-packs/sample.flooded_relics")
+            }
             from(rootProject.file("README.md")) {
                 into("docs")
             }
@@ -153,6 +157,9 @@ val prepareMacAppInput =
     from(desktopJar.flatMap { it.archiveFile })
     from(desktopRuntimeClasspath) {
         include("*.jar")
+    }
+    from(validationSamplePackDir) {
+        into("content-packs/sample.flooded_relics")
     }
     doFirst {
         requireMacPackagingEnvironment(name)

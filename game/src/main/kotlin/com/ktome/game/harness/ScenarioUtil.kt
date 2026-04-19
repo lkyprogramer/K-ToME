@@ -26,6 +26,7 @@ import com.ktome.game.PlayerCommand
 import com.ktome.game.SecondaryPlayerResourceView
 import com.ktome.game.TalentReserveView
 import com.ktome.game.TalentSlotView
+import com.ktome.game.validation.ValidationAction
 import com.ktome.core.talent.TalentTreeOwnerType
 import java.nio.file.Files
 import java.nio.file.Path
@@ -492,6 +493,7 @@ fun renderCommand(command: PlayerCommand): String =
         is PlayerCommand.AssignStat -> "AssignStat(${command.stat.name})"
         is PlayerCommand.AssignTalent -> "AssignTalent(${command.talentId})"
         is PlayerCommand.RespecTalentTree -> "RespecTalentTree(${command.ownerType},${command.treeOwnerId})"
+        is PlayerCommand.Validation -> "Validation(${command.action})"
         else -> command.commandName()
     }
 
@@ -522,6 +524,12 @@ fun PlayerCommand.consumesTurn(): Boolean =
         PlayerCommand.RollbackTalentDraft,
         PlayerCommand.SaveGame,
         -> false
+
+        is PlayerCommand.Validation ->
+            when (this.action) {
+                ValidationAction.ExecuteSearch -> true
+                else -> false
+            }
     }
 
 object HarnessReportWriter {

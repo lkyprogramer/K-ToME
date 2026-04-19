@@ -26,15 +26,37 @@ internal const val MAIN_MENU_TEXT_X = 120f
 internal const val MAIN_MENU_TITLE_Y = 420f
 internal const val MAIN_MENU_SUBTITLE_Y = 392f
 internal const val MAIN_MENU_PANEL_TOP_Y = 352f
-internal const val MAIN_MENU_FOOTER_LANGUAGE_Y = 128f
-internal const val MAIN_MENU_FOOTER_CONTROLS_Y = 80f
-internal const val MAIN_MENU_FOOTER_NOTICE_Y = 44f
+internal const val MAIN_MENU_FOOTER_LANGUAGE_DEFAULT_Y = 128f
+internal const val MAIN_MENU_FOOTER_CONTROLS_DEFAULT_Y = 80f
+internal const val MAIN_MENU_FOOTER_NOTICE_DEFAULT_Y = 44f
 internal const val MAIN_MENU_FOOTER_LINE_HEIGHT = 24f
 internal const val MAIN_MENU_CLASS_ENTRY_BASE_OFFSET_Y = 132f
 internal const val MAIN_MENU_CLASS_ENTRY_STEP_Y = 32f
+internal const val MAIN_MENU_ENTRY_TO_FOOTER_CLEARANCE_Y = MAIN_MENU_FOOTER_LINE_HEIGHT + 4f
+internal const val MAIN_MENU_FOOTER_STACK_CLEARANCE_Y = MAIN_MENU_FOOTER_LINE_HEIGHT + 4f
 
 internal fun mainMenuClassEntryY(index: Int): Float =
     MAIN_MENU_PANEL_TOP_Y - MAIN_MENU_CLASS_ENTRY_BASE_OFFSET_Y - index * MAIN_MENU_CLASS_ENTRY_STEP_Y
+
+internal fun mainMenuLastEntryY(entryCount: Int): Float = mainMenuClassEntryY((entryCount - 1).coerceAtLeast(0))
+
+internal fun mainMenuFooterLanguageY(entryCount: Int): Float =
+    minOf(
+        MAIN_MENU_FOOTER_LANGUAGE_DEFAULT_Y,
+        mainMenuLastEntryY(entryCount) - MAIN_MENU_ENTRY_TO_FOOTER_CLEARANCE_Y,
+    )
+
+internal fun mainMenuFooterControlsY(entryCount: Int): Float =
+    minOf(
+        MAIN_MENU_FOOTER_CONTROLS_DEFAULT_Y,
+        mainMenuFooterLanguageY(entryCount) - MAIN_MENU_FOOTER_STACK_CLEARANCE_Y,
+    )
+
+internal fun mainMenuFooterNoticeY(entryCount: Int): Float =
+    minOf(
+        MAIN_MENU_FOOTER_NOTICE_DEFAULT_Y,
+        mainMenuFooterControlsY(entryCount) - MAIN_MENU_FOOTER_STACK_CLEARANCE_Y,
+    )
 
 internal data class MainMenuTextSnapshot(
     val title: String,
@@ -110,6 +132,10 @@ class MainMenuScreen(
                 app.continueGame()
                 return
             }
+            MainMenuAction.ValidationMode -> {
+                app.showValidationSetup()
+                return
+            }
             MainMenuAction.ExitGame -> {
                 Gdx.app.exit()
                 return
@@ -135,6 +161,9 @@ class MainMenuScreen(
 
         val selectedIndex = controller.selectedIndex()
         val entries = controller.entries(continueEnabled)
+        val footerLanguageY = mainMenuFooterLanguageY(entries.size)
+        val footerControlsY = mainMenuFooterControlsY(entries.size)
+        val footerNoticeY = mainMenuFooterNoticeY(entries.size)
         val playerCreationPanel =
             PlayerCreationPanel.build(
                 professionSection =
@@ -174,12 +203,12 @@ class MainMenuScreen(
         )
 
         font.color = Color.GOLD
-        font.draw(batch, text.language, MAIN_MENU_TEXT_X, MAIN_MENU_FOOTER_LANGUAGE_Y)
+        font.draw(batch, text.language, MAIN_MENU_TEXT_X, footerLanguageY)
         font.color = Color.GRAY
-        font.draw(batch, text.controls, MAIN_MENU_TEXT_X, MAIN_MENU_FOOTER_CONTROLS_Y)
+        font.draw(batch, text.controls, MAIN_MENU_TEXT_X, footerControlsY)
         text.notice?.let { message ->
             font.color = Color.SALMON
-            font.draw(batch, message, MAIN_MENU_TEXT_X, MAIN_MENU_FOOTER_NOTICE_Y)
+            font.draw(batch, message, MAIN_MENU_TEXT_X, footerNoticeY)
         }
         batch.end()
     }

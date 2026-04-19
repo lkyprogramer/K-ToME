@@ -12,6 +12,8 @@ internal sealed interface MainMenuAction {
 
     data object ContinueGame : MainMenuAction
 
+    data object ValidationMode : MainMenuAction
+
     data object ExitGame : MainMenuAction
 
     data object ToggleLocale : MainMenuAction
@@ -69,6 +71,7 @@ internal class MainMenuController(
         listOf(
             MenuEntry("ui.menu.new_game", enabled = canStartNewGame()),
             MenuEntry("ui.menu.continue", enabled = hasSave),
+            MenuEntry("ui.menu.validation_mode", enabled = true),
             MenuEntry("ui.menu.exit", enabled = true),
         )
 
@@ -130,6 +133,7 @@ internal class MainMenuController(
                     when (selectedIndex) {
                         0 -> MainMenuAction.StartNewGame
                         1 -> MainMenuAction.ContinueGame
+                        2 -> MainMenuAction.ValidationMode
                         else -> MainMenuAction.ExitGame
                     },
                 selection = currentSelection(),

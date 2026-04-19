@@ -248,6 +248,7 @@ class AudioRouter(
             is PlayerCommand.AssignStat,
             is PlayerCommand.AssignTalent,
             is PlayerCommand.RespecTalentTree,
+            is PlayerCommand.Validation,
             PlayerCommand.ConfirmTalentDraft,
             PlayerCommand.RollbackTalentDraft,
             PlayerCommand.SaveGame,

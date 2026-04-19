@@ -50,6 +50,10 @@ import com.ktome.game.factory.ItemFactory
 import com.ktome.game.mapgen.SchemaMapgenContentCatalogFactory
 import com.ktome.game.mapgen.SchemaZoneMapgenProfileResolver
 import com.ktome.game.mapgen.SchemaZoneRewardProfileResolver
+import com.ktome.game.validation.ValidationPaths
+import com.ktome.game.validation.ValidationSessionRequest
+import com.ktome.game.validation.ValidationSessionOptions
+import com.ktome.game.validation.loadPersistedValidationSessionOptions
 import com.ktome.core.mapgen.BspBackedMapgenPipeline
 import com.ktome.core.mapgen.ZoneRewardProfile
 import com.ktome.game.model.BossDefinition
@@ -152,6 +156,38 @@ object GameModule {
         profile: ProfileData = ProfileData(),
         availabilityContext: AvailabilityContext = AvailabilityContext.PLAYER_CREATION,
         contentPackSelection: ContentPackSelection = ContentPackSelection.EMPTY,
+    ): FoundationGameSession =
+        createNewSession(
+            config = config,
+            saveManager = saveManager,
+            locale = locale,
+            profile = profile,
+            availabilityContext = availabilityContext,
+            contentPackSelection = contentPackSelection,
+            validationSessionOptions = null,
+        )
+
+    fun newValidationSession(
+        request: ValidationSessionRequest = ValidationSessionRequest(),
+    ): FoundationGameSession =
+        createNewSession(
+            config = request.options.foundationConfig,
+            saveManager = request.saveManager,
+            locale = request.locale,
+            profile = request.profile,
+            availabilityContext = AvailabilityContext.WHITE_BOX,
+            contentPackSelection = request.options.contentPackSelection,
+            validationSessionOptions = request.options,
+        )
+
+    private fun createNewSession(
+        config: FoundationGameConfig,
+        saveManager: SaveManager,
+        locale: GameLocale,
+        profile: ProfileData,
+        availabilityContext: AvailabilityContext,
+        contentPackSelection: ContentPackSelection,
+        validationSessionOptions: ValidationSessionOptions?,
     ): FoundationGameSession {
         val content = loadContent(locale = locale, contentPackSelection = contentPackSelection)
         validateNewSessionConfig(
@@ -183,6 +219,7 @@ object GameModule {
                 ShopInventoryState(shopId = shop.id)
             },
             zoneRuntimeFactory = { nextConfig -> buildZoneRuntime(content, nextConfig) },
+            validationSessionOptions = validationSessionOptions,
         )
     }
 
@@ -190,6 +227,52 @@ object GameModule {
         saveManager: SaveManager,
         locale: GameLocale = GameLocale.DEFAULT,
         contentPackSelection: ContentPackSelection = ContentPackSelection.EMPTY,
+    ): FoundationGameSession? =
+        loadSession(
+            saveManager = saveManager,
+            locale = locale,
+            contentPackSelection = contentPackSelection,
+            validationSessionOptions = null,
+        )
+
+    fun loadValidationSession(
+        saveManager: SaveManager,
+        locale: GameLocale = GameLocale.DEFAULT,
+        validationSessionOptions: ValidationSessionOptions = ValidationSessionOptions(),
+        contentPackSelection: ContentPackSelection = ContentPackSelection.EMPTY,
+    ): FoundationGameSession? {
+        val persistedOptions = loadPersistedValidationSessionOptions(saveManager)
+        val resolvedOptions = persistedOptions ?: validationSessionOptions
+        val resolvedContentPackSelection =
+            persistedOptions?.contentPackSelection
+                ?: resolvedOptions.contentPackSelection.takeUnless { selection -> selection.isEmpty }
+                ?: contentPackSelection
+        return loadValidationSessionResolved(
+            saveManager = saveManager,
+            locale = locale,
+            resolvedOptions = resolvedOptions,
+            contentPackSelection = resolvedContentPackSelection,
+        )
+    }
+
+    fun loadValidationSessionResolved(
+        saveManager: SaveManager,
+        locale: GameLocale = GameLocale.DEFAULT,
+        resolvedOptions: ValidationSessionOptions,
+        contentPackSelection: ContentPackSelection = resolvedOptions.contentPackSelection,
+    ): FoundationGameSession? =
+        loadSession(
+            saveManager = saveManager,
+            locale = locale,
+            contentPackSelection = contentPackSelection,
+            validationSessionOptions = resolvedOptions,
+        )
+
+    private fun loadSession(
+        saveManager: SaveManager,
+        locale: GameLocale,
+        contentPackSelection: ContentPackSelection,
+        validationSessionOptions: ValidationSessionOptions?,
     ): FoundationGameSession? {
         val snapshot = saveManager.load() ?: return null
         val loader = DataLoader(locale = locale, packSelection = contentPackSelection)
@@ -250,6 +333,7 @@ object GameModule {
             restoredPendingActionIds = restored.pendingActionIds,
             restoredActiveTurnActorId = restored.activeTurnActorId,
             zoneRuntimeFactory = { nextConfig -> buildZoneRuntime(content, nextConfig) },
+            validationSessionOptions = validationSessionOptions,
         )
     }
 

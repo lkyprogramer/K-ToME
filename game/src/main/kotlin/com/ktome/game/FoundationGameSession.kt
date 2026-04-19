@@ -278,6 +278,14 @@ import com.ktome.game.loot.isMilestoneRewardSuitableForProfession
 import com.ktome.game.model.BossDefinition
 import com.ktome.game.model.MonsterTemplate
 import com.ktome.game.model.isEliteEncounterTemplate
+import com.ktome.game.validation.ValidationAction
+import com.ktome.game.validation.ValidationActionFamily
+import com.ktome.game.validation.ProfileRunPersistenceMode
+import com.ktome.game.validation.persistValidationSessionMetadata
+import com.ktome.game.validation.ValidationSessionOptions
+import com.ktome.game.validation.ValidationSummarySnapshot
+import com.ktome.game.validation.hasMeaningfulNextSeedRestart
+import com.ktome.game.validation.nextSeedInCorpus
 import com.ktome.game.PLAYER_ACTIVE_TALENT_SLOT_COUNT
 import com.ktome.game.professionAffixBuildContext
 import com.ktome.game.routeRewardBiasTags
@@ -398,6 +406,7 @@ class FoundationGameSession internal constructor(
         error("Zone transition is not supported for config $unsupportedZoneConfig.")
     },
     private val isolatedZoneSlice: Boolean = false,
+    private val validationSessionOptions: ValidationSessionOptions? = null,
 ) {
     private val talentTreeOwnerResolver =
         TalentTreeOwnerResolver(content.schemaCatalog.talentTrees.associateBy { tree -> tree.id })
@@ -527,6 +536,8 @@ class FoundationGameSession internal constructor(
     private var exploredTiles: LinkedHashSet<Point> = activeFloorState.exploredTiles
     private var renderSnapshotRevision: Long = 1L
     private var cachedRenderSnapshot: RenderSnapshot? = null
+    private var lastValidationResult: RenderTextTokenSnapshot? = null
+    private var pendingValidationRestartOptions: ValidationSessionOptions? = null
     private var cachedCurrentBuildHash: String? = null
     private var cachedCommittedBuildHash: String? = null
     private var cachedBreakpointPayoffSummaries: List<BreakpointPayoffSummary>? = null
@@ -881,6 +892,31 @@ class FoundationGameSession internal constructor(
             )
         }
 
+    fun profileRunPersistenceMode(): ProfileRunPersistenceMode =
+        validationSessionOptions?.profileRunPersistenceMode ?: ProfileRunPersistenceMode.WRITE_PROFILE_SUMMARY
+
+    fun isValidationSession(): Boolean = validationSessionOptions != null
+
+    fun validationSummarySnapshot(): ValidationSummarySnapshot? =
+        validationSessionOptions?.let { options ->
+            ValidationSummarySnapshot(
+                preset = options.preset,
+                seed = options.foundationConfig.seed,
+                seedCorpus = options.seedCorpus,
+                zoneId = config.zoneId,
+                floor = currentFloor(),
+                activePackIds = content.activePackIds.map { packId -> packId.value },
+                bossVariantModeId = options.foundationConfig.bossVariantSelectionMode.name,
+                preferredBossVariantId = options.foundationConfig.preferredBossVariantId,
+                lastResult = lastValidationResult,
+            )
+        }
+
+    fun consumePendingValidationRestartOptions(): ValidationSessionOptions? =
+        pendingValidationRestartOptions.also {
+            pendingValidationRestartOptions = null
+        }
+
     fun canAscend(): Boolean = activeFloorState.stairsUp != null && playerPosition() == activeFloorState.stairsUp
 
     fun canDescend(): Boolean = activeFloorState.stairsDown != null && playerPosition() == activeFloorState.stairsDown
@@ -1121,6 +1157,374 @@ class FoundationGameSession internal constructor(
     ) {
         activeFloorState.setTerrainOverride(point, terrainOverride)
         invalidateRenderSnapshot()
+    }
+
+    private fun executeValidationAction(action: ValidationAction): CommandResolution {
+        val options =
+            validationSessionOptions
+                ?: return rejectValidationAction(
+                    "log.validation.rejected.non_validation_session",
+                )
+        if (!options.capabilities.allows(action.family)) {
+            return rejectValidationAction(
+                "log.validation.rejected.capability",
+                literalArg("family", action.family.name),
+            )
+        }
+        return when (action) {
+            ValidationAction.RestartSamePreset ->
+                queueValidationRestart(
+                    options = options,
+                    key = "log.validation.restart.same_preset",
+                )
+
+            ValidationAction.RestartNextSeed ->
+                if (!options.hasMeaningfulNextSeedRestart()) {
+                    rejectValidationAction("log.validation.rejected.restart_next_seed")
+                } else {
+                    queueValidationRestart(
+                        options =
+                            options.copy(
+                                foundationConfig = options.foundationConfig.copy(seed = options.nextSeedInCorpus()),
+                            ),
+                        key = "log.validation.restart.next_seed",
+                        literalArg("seed", options.nextSeedInCorpus()),
+                    )
+                }
+
+            is ValidationAction.TravelToStair ->
+                travelToValidationPoint(
+                    point = automationStairPoint(action.direction),
+                    targetLabel = "stair.${action.direction.name.lowercase()}",
+                )
+
+            ValidationAction.TravelToBoss ->
+                travelToValidationPoint(
+                    point = automationBossPoint(),
+                    targetLabel = "boss",
+                )
+
+            ValidationAction.TravelToPendingObjective ->
+                travelToValidationPoint(
+                    point = automationPendingObjectiveInteractablePoint(),
+                    targetLabel = "pending_objective",
+                )
+
+            is ValidationAction.TravelToPoint ->
+                travelToValidationPoint(
+                    point = action.point,
+                    targetLabel = "inspect_cursor",
+                )
+
+            is ValidationAction.TravelToInteractable ->
+                travelToValidationPoint(
+                    point = automationInteractablePoint(action.interactableId),
+                    targetLabel = action.interactableId,
+                )
+
+            is ValidationAction.TravelToSearchBinding ->
+                travelToValidationPoint(
+                    point = automationSearchPointForBinding(action.bindingId),
+                    targetLabel = action.bindingId.value,
+                )
+
+            is ValidationAction.TravelToHiddenEntrance ->
+                travelToValidationPoint(
+                    point = automationHiddenEntrancePointForBinding(action.bindingId),
+                    targetLabel = action.bindingId.value,
+                )
+
+            is ValidationAction.TravelToSecretReward ->
+                travelToValidationPoint(
+                    point = automationSecretRewardPointForBinding(action.bindingId),
+                    targetLabel = action.bindingId.value,
+                )
+
+            is ValidationAction.TravelToSecretReturn ->
+                travelToValidationPoint(
+                    point = automationSecretReturnPointForBinding(action.bindingId),
+                    targetLabel = action.bindingId.value,
+                )
+
+            ValidationAction.FullHeal -> {
+                requireNotNull(world.get<Health>(playerId)).current = requireNotNull(world.get<Health>(playerId)).max
+                acceptValidationAction("log.validation.recovery.full_heal")
+            }
+
+            ValidationAction.RestoreResources -> {
+                world.get<com.ktome.core.resource.ResourcePools>(playerId)?.entries?.values?.forEach { pool ->
+                    pool.current = pool.max
+                }
+                acceptValidationAction("log.validation.recovery.restore_resources")
+            }
+
+            ValidationAction.ResetCooldowns -> {
+                world.get<CooldownState>(playerId)?.remainingByTalentId?.clear()
+                world.get<InscriptionCooldownState>(playerId)?.remainingByInscriptionId?.clear()
+                acceptValidationAction("log.validation.recovery.reset_cooldowns")
+            }
+
+            is ValidationAction.GrantShards -> {
+                shardBalance += action.amount
+                acceptValidationAction(
+                    "log.validation.recovery.grant_shards",
+                    literalArg("amount", action.amount),
+                )
+            }
+
+            is ValidationAction.GrantStatPoints -> {
+                requireNotNull(world.get<Experience>(playerId)).unspentStatPoints += action.amount
+                acceptValidationAction(
+                    "log.validation.recovery.grant_stat_points",
+                    literalArg("amount", action.amount),
+                )
+            }
+
+            is ValidationAction.GrantTalentPoints -> {
+                requireNotNull(world.get<Experience>(playerId)).unspentTalentPoints += action.amount
+                acceptValidationAction(
+                    "log.validation.recovery.grant_talent_points",
+                    literalArg("amount", action.amount),
+                )
+            }
+
+            ValidationAction.SpawnEliteNearPlayer -> {
+                val spawned = spawnEliteMonsterNearPlayer()
+                if (spawned == null) {
+                    rejectValidationAction("log.validation.target_missing", literalArg("target", "elite_spawn"))
+                } else {
+                    acceptValidationAction("log.validation.encounter.spawn_elite")
+                }
+            }
+
+            ValidationAction.KillNearestHostile -> {
+                val target = nearestLivingHostileMonsterId()
+                if (target == null) {
+                    rejectValidationAction("log.validation.target_missing", literalArg("target", "hostile"))
+                } else {
+                    killMonsterForAutomation(target)
+                    acceptValidationAction("log.validation.encounter.kill_hostile")
+                }
+            }
+
+            ValidationAction.KillNearestElite ->
+                if (automationForceKillFirstEliteMonster()) {
+                    acceptValidationAction("log.validation.encounter.kill_elite")
+                } else {
+                    rejectValidationAction("log.validation.target_missing", literalArg("target", "elite"))
+                }
+
+            ValidationAction.KillActiveBoss -> {
+                val boss = activeBossEntityId()
+                if (boss == null) {
+                    rejectValidationAction("log.validation.target_missing", literalArg("target", "boss"))
+                } else {
+                    killMonsterForAutomation(boss)
+                    acceptValidationAction("log.validation.encounter.kill_boss")
+                }
+            }
+
+            ValidationAction.ForcePlayerDefeat -> {
+                automationForceDefeatPlayer()
+                acceptValidationAction("log.validation.encounter.force_defeat")
+            }
+
+            is ValidationAction.SetTerrainOverride -> {
+                automationSetTerrainOverride(action.point, action.terrainOverride)
+                acceptValidationAction(
+                    "log.validation.terrain.set",
+                    literalArg("x", action.point.x),
+                    literalArg("y", action.point.y),
+                )
+            }
+
+            is ValidationAction.ClearTerrainOverride ->
+                if (automationTerrainOverrideAt(action.point) == null) {
+                    rejectValidationAction("log.validation.target_missing", literalArg("target", "terrain_override"))
+                } else {
+                    activeFloorState.clearTerrainOverride(action.point)
+                    invalidateRenderSnapshot()
+                    acceptValidationAction(
+                        "log.validation.terrain.cleared",
+                        literalArg("x", action.point.x),
+                        literalArg("y", action.point.y),
+                    )
+                }
+
+            is ValidationAction.PresentReward -> presentValidationReward(action)
+
+            is ValidationAction.SpawnItem -> spawnValidationItem(action.baseItemId)
+
+            ValidationAction.ExecuteSearch -> executeValidationSearch()
+
+            is ValidationAction.RevealBinding -> revealValidationBinding(action.bindingId)
+        }
+    }
+
+    private fun queueValidationRestart(
+        options: ValidationSessionOptions,
+        key: String,
+        vararg arguments: RenderTextArgumentSnapshot,
+    ): CommandResolution {
+        pendingValidationRestartOptions = options
+        return acceptValidationAction(key, *arguments)
+    }
+
+    private fun travelToValidationPoint(
+        point: Point?,
+        targetLabel: String,
+    ): CommandResolution =
+        if (point == null) {
+            rejectValidationAction(
+                "log.validation.target_missing",
+                literalArg("target", targetLabel),
+            )
+        } else {
+            automationMovePlayerTo(point)
+            acceptValidationAction(
+                "log.validation.travel.success",
+                literalArg("target", targetLabel),
+                literalArg("x", point.x),
+                literalArg("y", point.y),
+            )
+        }
+
+    private fun presentValidationReward(action: ValidationAction.PresentReward): CommandResolution {
+        val reward =
+            zoneRewardItem(
+                profileIds = action.profileIds,
+                fallbackBaseId = action.fallbackBaseId,
+                rewardContext = validationRewardGenerationContext(action.sourceId),
+            )
+        val stored = grantRewardItem(reward, playerPosition())
+        recordRecentRewardPresentation(source = RewardPresentationSourceSnapshot.CACHE, reward = reward)
+        announceCapstoneRewardIfNeeded(reward)
+        return acceptValidationAction(
+            if (stored) "log.validation.reward.presented" else "log.validation.reward.dropped",
+            keyArg("item", rewardItemNameKey(reward, "validation reward")),
+        )
+    }
+
+    private fun spawnValidationItem(baseItemId: String): CommandResolution {
+        val reward =
+            itemBaseDef(baseItemId)?.toRuntimeItem()
+                ?: return rejectValidationAction(
+                    "log.validation.target_missing",
+                    literalArg("target", baseItemId),
+                )
+        val stored = grantRewardItem(reward, playerPosition())
+        return acceptValidationAction(
+            if (stored) "log.validation.item.spawned" else "log.validation.item.dropped",
+            keyArg("item", rewardItemNameKey(reward, "validation item")),
+        )
+    }
+
+    private fun executeValidationSearch(): CommandResolution {
+        val searchTarget = searchableEntranceAtPlayerPosition()
+        val existingResolution = searchTarget?.entrance?.bindingId?.let(activeFloorState::searchStateFor)
+        val resolution = searchAtPlayerPosition()
+        lastValidationResult =
+            when {
+                searchTarget == null -> RenderTextTokenSnapshot("log.search.no_target")
+                existingResolution != null -> RenderTextTokenSnapshot("log.search.already_resolved")
+                activeFloorState.searchStateFor(searchTarget.entrance.bindingId)?.result == SearchActionResult.REVEALED ->
+                    RenderTextTokenSnapshot("log.search.revealed_tag")
+
+                activeFloorState.searchStateFor(searchTarget.entrance.bindingId)?.result == SearchActionResult.FAILED_CHECK ->
+                    RenderTextTokenSnapshot("log.search.failed_tag")
+
+                else -> lastValidationResult
+            }
+        return resolution
+    }
+
+    private fun revealValidationBinding(bindingId: com.ktome.core.world.solvability.SearchBindingId): CommandResolution {
+        val entrance =
+            activeFloorState.generatedFloor.entranceByBinding(bindingId)
+                ?: return rejectValidationAction(
+                    "log.validation.target_missing",
+                    literalArg("target", bindingId.value),
+                )
+        if (activeFloorState.searchStateFor(bindingId) != null) {
+            return rejectValidationAction("log.search.already_resolved")
+        }
+        activeFloorState.recordSearchResolution(bindingId = bindingId, result = SearchActionResult.REVEALED)
+        logEvent(
+            SearchResolvedEvent(
+                actor = playerId,
+                bindingId = bindingId,
+                result = SearchActionResult.REVEALED,
+                perceptionTotal = perceptionScoreForSearch().total,
+                difficulty = entrance.discoveryRule.perceptionDifficulty(),
+            ),
+        )
+        executeHiddenEvents(
+            triggerType = HiddenTriggerType.PERCEPTION_REVEAL,
+            bindingId = bindingId,
+            rewardPresentationSource = RewardPresentationSourceSnapshot.HIDDEN_EVENT,
+        )
+        return acceptValidationAction(
+            "log.validation.discovery.reveal_binding",
+            literalArg("binding", bindingId.value),
+        )
+    }
+
+    private fun acceptValidationAction(
+        key: String,
+        vararg arguments: RenderTextArgumentSnapshot,
+    ): CommandResolution {
+        val token = RenderTextTokenSnapshot(key, arguments.toList())
+        lastValidationResult = token
+        addMessage(RenderLogEventSnapshot(message = token))
+        return CommandResolution(accepted = true, consumesTurn = false)
+    }
+
+    private fun rejectValidationAction(
+        key: String,
+        vararg arguments: RenderTextArgumentSnapshot,
+    ): CommandResolution {
+        val token = RenderTextTokenSnapshot(key, arguments.toList())
+        lastValidationResult = token
+        addMessage(RenderLogEventSnapshot(message = token))
+        return CommandResolution.rejected()
+    }
+
+    private fun validationRewardGenerationContext(sourceId: String): RewardGenerationContext =
+        RewardGenerationContext(
+            rewardSource = MilestoneRewardSource.CACHE,
+            sourceId = sourceId,
+            sourceLevel = currentZoneSchema().recommendedLevel.max,
+            floor = itemFloorForRecommendedLevel(currentZoneSchema().recommendedLevel.max),
+            qualityFloor = RarityTier.MAGIC,
+            minAffixCount = 1,
+            routeBiasTags = routeRewardBiasTags(currentZoneSchema().rewardBiasTags()),
+            occupiedSlots = currentEquippedSlots(),
+        )
+
+    private fun nearestLivingHostileMonsterId(): EntityId? {
+        val playerPoint = playerPosition()
+        return world.entitiesWith(Position::class, MonsterTemplateId::class, Health::class)
+            .asSequence()
+            .filter { entityId -> (world.get<Health>(entityId)?.current ?: 0) > 0 }
+            .filter { entityId -> areHostile(playerId, entityId) }
+            .minWithOrNull(
+                compareBy<EntityId> { entityId ->
+                    requireNotNull(world.get<Position>(entityId)).toPoint().chebyshevDistanceTo(playerPoint)
+                }.thenBy { entityId ->
+                    requireNotNull(world.get<Position>(entityId)).toPoint().y
+                }.thenBy { entityId ->
+                    requireNotNull(world.get<Position>(entityId)).toPoint().x
+                },
+            )
+    }
+
+    private fun activeBossEntityId(): EntityId? {
+        val activeBossTemplateId = activeBossDefinition()?.template?.id ?: return null
+        return world.entitiesWith(Position::class, MonsterTemplateId::class, Health::class)
+            .firstOrNull { entityId ->
+                (world.get<Health>(entityId)?.current ?: 0) > 0 &&
+                    world.get<MonsterTemplateId>(entityId)?.value == activeBossTemplateId
+            }
     }
 
     internal fun automationResolveTriggeredDamage(
@@ -5754,7 +6158,12 @@ class FoundationGameSession internal constructor(
     }
 
     private fun executePlayerCommand(command: PlayerCommand): CommandResolution {
-        if (pendingRouteSelection.isNotEmpty() && command !is PlayerCommand.SelectRoute && command != PlayerCommand.SaveGame) {
+        if (
+            pendingRouteSelection.isNotEmpty() &&
+            command !is PlayerCommand.SelectRoute &&
+            command != PlayerCommand.SaveGame &&
+            command !is PlayerCommand.Validation
+        ) {
             addMessage("log.route.selection.pending")
             return CommandResolution.rejected()
         }
@@ -5763,7 +6172,8 @@ class FoundationGameSession internal constructor(
             command !is PlayerCommand.CloseShop &&
             command !is PlayerCommand.BuyShopOffer &&
             command !is PlayerCommand.SellInventoryItem &&
-            command != PlayerCommand.SaveGame
+            command != PlayerCommand.SaveGame &&
+            command !is PlayerCommand.Validation
         ) {
             addMessage("log.shop.pending")
             return CommandResolution.rejected()
@@ -5800,6 +6210,8 @@ class FoundationGameSession internal constructor(
                 addMessage(if (saved) "log.save.success" else "log.save.failure")
                 CommandResolution(accepted = true, consumesTurn = false)
             }
+
+            is PlayerCommand.Validation -> executeValidationAction(command.action)
 
             PlayerCommand.CloseShop -> {
                 if (activeShopId == null) {
@@ -8064,28 +8476,35 @@ class FoundationGameSession internal constructor(
                     ?.let { actorId -> add(actorId.value) }
                 addAll(pendingActions.map(EntityId::value))
             }.distinct()
-        return saveManager.save(
-            SessionSnapshotMapper.toSaveSnapshot(
-                config = config,
-                currentFloor = currentFloor(),
-                turnCount = turnCount,
-                headlessTurnEquivalent = headlessTurnEquivalent,
-                player = playerSnapshot,
-                floors = floors,
-                worldProgress = worldProgress,
-                shardBalance = shardBalance,
-                shopStates = shopStates(),
-                cadenceRewardCount = cadenceRewardCount,
-                pityTracker = pityTracker,
-                combatRandomState = (combatRandomSource as? StatefulRandomSource)?.snapshotState(),
-                sessionRandomState = (sessionRandom as? StatefulRandomSource)?.snapshotState(),
-                milestoneRewards = persistedMilestoneRewardSummaries(),
-                pendingActionIds = serializedPendingActionIds,
-                activeTurnActorId = activeTurnActor?.value?.takeIf { actorId -> actorId in serializedPendingActionIds },
-                activePackIds = content.activePackIds,
-                activePackManifestVersions = content.activePackManifestVersions,
-            ),
-        )
+        val saved =
+            saveManager.save(
+                SessionSnapshotMapper.toSaveSnapshot(
+                    config = config,
+                    currentFloor = currentFloor(),
+                    turnCount = turnCount,
+                    headlessTurnEquivalent = headlessTurnEquivalent,
+                    player = playerSnapshot,
+                    floors = floors,
+                    worldProgress = worldProgress,
+                    shardBalance = shardBalance,
+                    shopStates = shopStates(),
+                    cadenceRewardCount = cadenceRewardCount,
+                    pityTracker = pityTracker,
+                    combatRandomState = (combatRandomSource as? StatefulRandomSource)?.snapshotState(),
+                    sessionRandomState = (sessionRandom as? StatefulRandomSource)?.snapshotState(),
+                    milestoneRewards = persistedMilestoneRewardSummaries(),
+                    pendingActionIds = serializedPendingActionIds,
+                    activeTurnActorId = activeTurnActor?.value?.takeIf { actorId -> actorId in serializedPendingActionIds },
+                    activePackIds = content.activePackIds,
+                    activePackManifestVersions = content.activePackManifestVersions,
+                ),
+            )
+        if (!saved) {
+            return false
+        }
+        return validationSessionOptions?.let { options ->
+            persistValidationSessionMetadata(saveManager, options)
+        } ?: true
     }
 
     private fun maybePersistCheckpoint(resolution: CommandResolution) {

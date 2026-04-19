@@ -9,6 +9,7 @@ import com.ktome.core.map.Point
 import com.ktome.core.run.RunOutcome
 import com.ktome.core.snapshot.RenderTextTokenSnapshot
 import com.ktome.core.talent.TalentTreeOwnerType
+import com.ktome.game.validation.ValidationAction
 
 sealed interface PlayerCommand {
     data class Move(val delta: Point) : PlayerCommand
@@ -55,6 +56,8 @@ sealed interface PlayerCommand {
     data object ConfirmTalentDraft : PlayerCommand
 
     data object RollbackTalentDraft : PlayerCommand
+
+    data class Validation(val action: ValidationAction) : PlayerCommand
 
     data class RespecTalentTree(
         val ownerType: TalentTreeOwnerType,

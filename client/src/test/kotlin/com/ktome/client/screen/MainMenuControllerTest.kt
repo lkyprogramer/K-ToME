@@ -117,6 +117,27 @@ class MainMenuControllerTest {
         assertFalse(raceResult.rejected)
     }
 
+    @Test
+    fun `main menu exposes validation mode as the fourth entry`() {
+        val input = QueueInputSource()
+        val controller =
+            MainMenuController(
+                input = input,
+                playerCreationState = playableState(),
+            )
+
+        assertEquals(4, controller.entries(hasSave = true).size)
+        input.push(Keys.DOWN)
+        controller.pollAction(hasSave = true)
+        input.push(Keys.DOWN)
+        controller.pollAction(hasSave = true)
+        input.push(Keys.ENTER)
+
+        val result = controller.pollAction(hasSave = true)
+
+        assertEquals(MainMenuAction.ValidationMode, result.action)
+    }
+
     private fun playableState(): PlayerCreationState =
         PlayerCreationState(
             professionOptions =

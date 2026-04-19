@@ -140,6 +140,7 @@ class AsciiRenderer(
                 UiMode.LOADOUT_EDIT -> localizer.text("ui.sidebar.loadout")
                 UiMode.TARGETING -> localizer.text("ui.sidebar.targeting")
                 UiMode.INSPECT -> localizer.text("ui.sidebar.inspect")
+                UiMode.VALIDATION -> localizer.text("ui.sidebar.validation")
                 UiMode.STAT_ASSIGN -> localizer.text("ui.sidebar.assign_stats")
                 UiMode.TALENT_ASSIGN -> localizer.text("ui.sidebar.improve_talents")
             }
