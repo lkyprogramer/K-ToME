@@ -263,11 +263,16 @@ class VerificationCliTest {
                 outputDir.resolve("verify-changed-plan.json").readText(),
             )
         val taskPaths = outputDir.resolve("task-paths.txt").readText().lineSequence().filter(String::isNotBlank).toSet()
+        val preflightTaskPaths =
+            outputDir.resolve("preflight-task-paths.txt").readText().lineSequence().filter(String::isNotBlank).toSet()
 
         assertTrue(plan.impactedDomains.any { impact -> impact.domainId == "loot" })
         assertTrue(plan.impactedDomains.any { impact -> impact.domainId == "hidden" })
         assertTrue(taskPaths.contains(":tools:verifyLootPreflight"))
         assertTrue(taskPaths.contains(":tools:lootBalanceLab"))
+        assertTrue(preflightTaskPaths.contains(":tools:verifyLootPreflight"))
+        assertTrue(preflightTaskPaths.contains(":tools:verifyHiddenPreflight"))
+        assertFalse(preflightTaskPaths.contains(":tools:lootBalanceLab"))
         assertFalse(taskPaths.contains(":tools:phase4ReportOnly"))
         assertFalse(taskPaths.contains(":tools:phase4LegacyReport"))
         assertFalse(taskPaths.contains(":tools:phase4LegacyReportOnly"))

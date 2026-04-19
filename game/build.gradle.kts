@@ -10,6 +10,7 @@ plugins {
 
 val harnessReportDir = rootProject.layout.buildDirectory.dir("reports/harness")
 val verifyChangedTaskPathsFile = rootProject.layout.buildDirectory.file("verification/verify-changed/task-paths.txt")
+val verifyChangedPreflightTaskPathsFile = rootProject.layout.buildDirectory.file("verification/verify-changed/preflight-task-paths.txt")
 
 dependencies {
     api(project(":core"))
@@ -105,6 +106,11 @@ listOf(
     tasks.named("terrainInteractionBatch"),
 ).forEach { taskProvider ->
     taskProvider.configure {
-        VerifyChangedPlanGate.applyTo(this, verifyChangedTaskPathsFile, ":tools:prepareVerifyChangedPlan")
+        VerifyChangedPlanGate.applyTo(
+            this,
+            verifyChangedTaskPathsFile,
+            verifyChangedPreflightTaskPathsFile,
+            ":tools:prepareVerifyChangedPlan",
+        )
     }
 }

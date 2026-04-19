@@ -12,6 +12,7 @@ class VerificationImpactAnalyzerTest {
         val plan = VerificationImpactAnalyzer.analyze(listOf("game/src/main/resources/data/loot/index.yaml"))
 
         assertEquals(listOf(":tools:scopeCoverageLint", ":tools:verifyLootPreflight"), plan.requestedTaskPaths)
+        assertEquals(listOf(":tools:scopeCoverageLint", ":tools:verifyLootPreflight"), plan.requestedPreflightTaskPaths)
         val lootImpact = plan.impactedDomains.single { impact -> impact.domainId == "loot" }
         assertTrue(lootImpact.reasons.all { reason -> !reason.ownerRequired })
     }
@@ -31,6 +32,10 @@ class VerificationImpactAnalyzerTest {
         assertTrue(plan.requestedTaskPaths.contains(":tools:organicHiddenProbe"))
         assertTrue(plan.requestedTaskPaths.contains(":tools:contentPackHarness"))
         assertTrue(plan.requestedTaskPaths.contains(":tools:whiteBoxContentPack"))
+        assertTrue(plan.requestedPreflightTaskPaths.contains(":tools:verifyLootPreflight"))
+        assertTrue(plan.requestedPreflightTaskPaths.contains(":tools:verifyHiddenPreflight"))
+        assertTrue(plan.requestedPreflightTaskPaths.contains(":tools:verifyContentPackPreflight"))
+        assertFalse(plan.requestedPreflightTaskPaths.contains(":tools:lootBalanceLab"))
     }
 
     @Test
@@ -55,6 +60,7 @@ class VerificationImpactAnalyzerTest {
         assertTrue(plan.requestedTaskPaths.contains(":game:longRunLab"))
         assertTrue(plan.requestedTaskPaths.contains(":tools:maintainabilityLint"))
         assertTrue(plan.requestedTaskPaths.contains(":tools:terrainInteractionBatch"))
+        assertEquals(listOf(":tools:scopeCoverageLint", ":tools:maintainabilityLint"), plan.requestedPreflightTaskPaths)
     }
 
     @Test
@@ -73,6 +79,8 @@ class VerificationImpactAnalyzerTest {
         assertTrue(plan.impactedDomains.any { impact -> impact.domainId == "hidden" })
         assertFalse(plan.impactedDomains.any { impact -> impact.domainId == "organic-hidden" })
         assertTrue(plan.requestedTaskPaths.contains(":tools:hiddenContentHarness"))
+        assertTrue(plan.requestedPreflightTaskPaths.contains(":tools:verifyHiddenPreflight"))
+        assertFalse(plan.requestedPreflightTaskPaths.contains(":tools:hiddenContentHarness"))
     }
 
     @Test
@@ -135,6 +143,7 @@ class VerificationImpactAnalyzerTest {
         assertTrue(plan.requestedTaskPaths.contains(":tools:organicHiddenProbe"))
         assertTrue(plan.requestedTaskPaths.contains(":tools:maintainabilityLint"))
         assertFalse(plan.requestedTaskPaths.contains(":tools:hiddenContentHarness"))
+        assertEquals(listOf(":tools:scopeCoverageLint", ":tools:maintainabilityLint"), plan.requestedPreflightTaskPaths)
     }
 
     @Test
@@ -162,6 +171,7 @@ class VerificationImpactAnalyzerTest {
         assertEquals(setOf("longrun"), plan.impactedDomains.map(VerificationDomainImpact::domainId).toSet())
         assertTrue(plan.requestedTaskPaths.contains(":tools:reportPhase4Only"))
         assertFalse(plan.requestedTaskPaths.contains(":game:longRunLab"))
+        assertEquals(listOf(":tools:scopeCoverageLint"), plan.requestedPreflightTaskPaths)
     }
 
     @Test
@@ -171,6 +181,7 @@ class VerificationImpactAnalyzerTest {
         assertEquals(setOf("organic-hidden"), plan.impactedDomains.map(VerificationDomainImpact::domainId).toSet())
         assertTrue(plan.requestedTaskPaths.contains(":tools:reportPhase4Only"))
         assertFalse(plan.requestedTaskPaths.contains(":tools:organicHiddenProbe"))
+        assertEquals(listOf(":tools:scopeCoverageLint"), plan.requestedPreflightTaskPaths)
     }
 
     @Test
@@ -179,6 +190,7 @@ class VerificationImpactAnalyzerTest {
 
         assertEquals(setOf("hidden", "longrun", "loot", "maintainability", "organic-hidden", "terrain"), plan.impactedDomains.map(VerificationDomainImpact::domainId).toSet())
         assertEquals(setOf(":tools:scopeCoverageLint", ":tools:maintainabilityLint", ":tools:reportPhase4Only"), plan.requestedTaskPaths.toSet())
+        assertEquals(setOf(":tools:scopeCoverageLint", ":tools:maintainabilityLint"), plan.requestedPreflightTaskPaths.toSet())
         assertFalse(plan.requestedTaskPaths.contains(":tools:phase4LegacyReport"))
         assertFalse(plan.requestedTaskPaths.contains(":tools:phase4LegacyReportOnly"))
     }
@@ -189,6 +201,7 @@ class VerificationImpactAnalyzerTest {
 
         assertEquals(setOf("hidden", "longrun", "loot", "maintainability", "organic-hidden", "terrain"), plan.impactedDomains.map(VerificationDomainImpact::domainId).toSet())
         assertEquals(setOf(":tools:scopeCoverageLint", ":tools:maintainabilityLint", ":tools:reportPhase4Only"), plan.requestedTaskPaths.toSet())
+        assertEquals(setOf(":tools:scopeCoverageLint", ":tools:maintainabilityLint"), plan.requestedPreflightTaskPaths.toSet())
     }
 
     @Test
@@ -213,5 +226,18 @@ class VerificationImpactAnalyzerTest {
 
         assertTrue(plan.impactedDomains.isEmpty())
         assertEquals(listOf(":tools:scopeCoverageLint"), plan.requestedTaskPaths)
+        assertEquals(listOf(":tools:scopeCoverageLint"), plan.requestedPreflightTaskPaths)
+    }
+
+    @Test
+    fun `foundation session false negative no longer fans validation changes into loot and hidden owner domains`() {
+        val plan = VerificationImpactAnalyzer.analyze(listOf("game/src/main/kotlin/com/ktome/game/FoundationGameSession.kt"))
+
+        assertEquals(setOf("boss", "longrun", "maintainability"), plan.impactedDomains.map(VerificationDomainImpact::domainId).toSet())
+        assertTrue(plan.requestedTaskPaths.contains(":tools:bossHarness"))
+        assertTrue(plan.requestedTaskPaths.contains(":game:longRunLab"))
+        assertFalse(plan.requestedTaskPaths.contains(":tools:lootBalanceLab"))
+        assertFalse(plan.requestedTaskPaths.contains(":tools:hiddenContentHarness"))
+        assertEquals(listOf(":tools:scopeCoverageLint", ":tools:maintainabilityLint"), plan.requestedPreflightTaskPaths)
     }
 }

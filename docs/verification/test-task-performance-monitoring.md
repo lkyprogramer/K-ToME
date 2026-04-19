@@ -18,6 +18,12 @@
 3. `reportPhase5` 的 canonical aggregate 语义
 4. 跨次 CI baseline compare
 
+补充边界：
+
+1. `verifyChangedPreflight` 的 `build/verification/verify-changed/preflight-task-paths.txt` 与 `task-duration-summary.{json,md}` 属于 routed preflight artifact
+2. 这些 artifact 只用于说明本次 PR 轻量入口实际选中了哪些 task、每个 task 耗时多少
+3. 它们不是 `.gradle/test-perf/` lane baseline，也不能反向充当 unified verification registry
+
 默认监控面：
 
 1. `VerificationTask`

@@ -92,33 +92,44 @@ class VerificationTaskPluginFunctionalTest {
 
     @Test
     void verifyChangedPlanGateSkipsTasksOutsideRequestedPlan() throws IOException {
-        writeBuildWithVerifyChangedGate(":otherTask\\n");
+        writeBuildWithVerifyChangedGate(":otherTask\n");
 
         var result = runner().withArguments("verifyChanged", "-q").build();
 
         assertEquals(TaskOutcome.SUCCESS, result.task(":prepareVerifyChangedPlan").getOutcome());
-        assertEquals(TaskOutcome.SKIPPED, result.task(":watched").getOutcome());
+        assertTrue(Files.notExists(tempDir.resolve("build/watched.txt")));
     }
 
     @Test
     void verifyChangedPlanGateDoesNotBlockDirectTaskExecution() throws IOException {
-        writeBuildWithVerifyChangedGate(":otherTask\\n");
+        writeBuildWithVerifyChangedGate(":otherTask\n");
 
         var result = runner().withArguments("watched", "-q").build();
 
         assertEquals(TaskOutcome.SUCCESS, result.task(":watched").getOutcome());
-        assertTrue(result.getOutput().contains("WATCHED"));
+        assertTrue(Files.exists(tempDir.resolve("build/watched.txt")));
     }
 
     @Test
     void verifyChangedPlanGateDoesNotSkipExplicitlyRequestedTaskInMixedInvocation() throws IOException {
-        writeBuildWithVerifyChangedGate(":otherTask\\n");
+        writeBuildWithVerifyChangedGate(":otherTask\n");
 
         var result = runner().withArguments("verifyChanged", "watched", "-q").build();
 
         assertEquals(TaskOutcome.SUCCESS, result.task(":prepareVerifyChangedPlan").getOutcome());
         assertEquals(TaskOutcome.SUCCESS, result.task(":watched").getOutcome());
-        assertTrue(result.getOutput().contains("WATCHED"));
+        assertTrue(Files.exists(tempDir.resolve("build/watched.txt")));
+    }
+
+    @Test
+    void verifyChangedPreflightUsesDedicatedTaskPlanFile() throws IOException {
+        writeBuildWithVerifyChangedGate(":otherTask\n", ":watched\n");
+
+        var result = runner().withArguments("verifyChangedPreflight", "-q").build();
+
+        assertEquals(TaskOutcome.SUCCESS, result.task(":prepareVerifyChangedPlan").getOutcome());
+        assertEquals(TaskOutcome.SUCCESS, result.task(":watched").getOutcome());
+        assertTrue(Files.exists(tempDir.resolve("build/watched.txt")));
     }
 
     private GradleRunner runner() {
@@ -133,6 +144,10 @@ class VerificationTaskPluginFunctionalTest {
     }
 
     private void writeBuildWithVerifyChangedGate(String plannedTaskPaths) throws IOException {
+        writeBuildWithVerifyChangedGate(plannedTaskPaths, plannedTaskPaths);
+    }
+
+    private void writeBuildWithVerifyChangedGate(String plannedTaskPaths, String plannedPreflightTaskPaths) throws IOException {
         writeBuild(
                 """
                 import com.ktome.build.verification.VerifyChangedPlanGate
@@ -142,31 +157,46 @@ class VerificationTaskPluginFunctionalTest {
                 }
 
                 def verifyChangedTaskPathsFile = layout.buildDirectory.file('verification/verify-changed/task-paths.txt')
+                def verifyChangedPreflightTaskPathsFile = layout.buildDirectory.file('verification/verify-changed/preflight-task-paths.txt')
 
                 tasks.register('prepareVerifyChangedPlan') {
                     doLast {
                         def taskPathsFile = verifyChangedTaskPathsFile.get().asFile
+                        def preflightTaskPathsFile = verifyChangedPreflightTaskPathsFile.get().asFile
                         taskPathsFile.parentFile.mkdirs()
                         taskPathsFile.text = %s
+                        preflightTaskPathsFile.text = %s
                     }
                 }
 
                 tasks.register('watched') { task ->
                     doLast {
-                        println('WATCHED')
+                        def marker = layout.buildDirectory.file('watched.txt').get().asFile
+                        marker.parentFile.mkdirs()
+                        marker.text = 'WATCHED'
                     }
-                    VerifyChangedPlanGate.applyTo(task, verifyChangedTaskPathsFile, 'prepareVerifyChangedPlan')
+                    VerifyChangedPlanGate.applyTo(task, verifyChangedTaskPathsFile, verifyChangedPreflightTaskPathsFile, 'prepareVerifyChangedPlan')
                 }
 
                 tasks.register('verifyChanged') {
                     dependsOn(tasks.named('prepareVerifyChangedPlan'))
                     dependsOn(tasks.named('watched'))
                 }
+
+                tasks.register('verifyChangedPreflight') {
+                    dependsOn(tasks.named('prepareVerifyChangedPlan'))
+                    dependsOn(tasks.named('watched'))
+                }
                 """
-                        .formatted(groovyQuoted(plannedTaskPaths)));
+                        .formatted(groovyQuoted(plannedTaskPaths), groovyQuoted(plannedPreflightTaskPaths)));
     }
 
     private static String groovyQuoted(String value) {
-        return "'" + value.replace("\\", "\\\\").replace("'", "\\'") + "'";
+        return "\""
+                + value
+                        .replace("\\", "\\\\")
+                        .replace("\"", "\\\"")
+                        .replace("\n", "\\n")
+                + "\"";
     }
 }

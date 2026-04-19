@@ -19,6 +19,7 @@ data class VerificationImpactReason(
 data class VerificationDomainImpact(
     val domainId: String,
     val requestedTaskPaths: List<String>,
+    val requestedPreflightTaskPaths: List<String>,
     val reasons: List<VerificationImpactReason>,
 )
 
@@ -26,6 +27,7 @@ data class VerificationDomainImpact(
 data class VerificationImpactPlan(
     val changedFiles: List<String>,
     val requestedTaskPaths: List<String>,
+    val requestedPreflightTaskPaths: List<String>,
     val impactedDomains: List<VerificationDomainImpact>,
     val collectionNotes: List<String> = emptyList(),
 ) {
@@ -49,8 +51,10 @@ data class VerificationImpactPlan(
                     appendLine("  reason=${reason.reasonId}$scopeSuffix mode=$mode files=${reason.matchedFiles.joinToString()}")
                 }
             }
-            appendLine("tasks=${requestedTaskPaths.size}")
-            requestedTaskPaths.forEach { taskPath -> appendLine("- task: $taskPath") }
+            appendLine("fullTasks=${requestedTaskPaths.size}")
+            requestedTaskPaths.forEach { taskPath -> appendLine("- full-task: $taskPath") }
+            appendLine("preflightTasks=${requestedPreflightTaskPaths.size}")
+            requestedPreflightTaskPaths.forEach { taskPath -> appendLine("- preflight-task: $taskPath") }
         }.trimEnd()
 }
 
@@ -108,7 +112,7 @@ object VerificationImpactAnalyzer {
             VerificationFallbackRule(
                 ruleId = "false-negative.foundation-session",
                 pathPrefix = "game/src/main/kotlin/com/ktome/game/FoundationGameSession.kt",
-                domainIds = linkedSetOf("loot", "hidden", "organic-hidden", "boss", "longrun"),
+                domainIds = linkedSetOf("boss", "longrun"),
                 ownerRequired = true,
             ),
             VerificationFallbackRule(
@@ -169,10 +173,16 @@ object VerificationImpactAnalyzer {
                 add(":tools:scopeCoverageLint")
                 impactedDomains.forEach { impact -> addAll(impact.requestedTaskPaths) }
             }.distinct()
+        val requestedPreflightTaskPaths =
+            buildList {
+                add(":tools:scopeCoverageLint")
+                impactedDomains.forEach { impact -> addAll(impact.requestedPreflightTaskPaths) }
+            }.distinct()
 
         return VerificationImpactPlan(
             changedFiles = normalizedChangedFiles,
             requestedTaskPaths = requestedTaskPaths,
+            requestedPreflightTaskPaths = requestedPreflightTaskPaths,
             impactedDomains = impactedDomains,
             collectionNotes = emptyList(),
         )
@@ -200,6 +210,7 @@ object VerificationImpactAnalyzer {
             reason.ownerRequired = reason.ownerRequired || scope.ownerRequired
             reason.matchedFiles += matchedFiles
             reason.requestedTaskPaths += scope.requestedTaskPaths
+            reason.requestedPreflightTaskPaths += scope.requestedPreflightTaskPaths
         }
 
         fun recordFallback(
@@ -233,9 +244,17 @@ object VerificationImpactAnalyzer {
                     }
                     reasons.values.forEach { reason -> addAll(reason.requestedTaskPaths) }
                 }.distinct()
+            val requestedPreflightTaskPaths =
+                buildList {
+                    if (requiresDefaultRouting) {
+                        addAll(spec.preflightTaskPaths)
+                    }
+                    reasons.values.forEach { reason -> addAll(reason.requestedPreflightTaskPaths) }
+                }.distinct()
             return VerificationDomainImpact(
                 domainId = domainId,
                 requestedTaskPaths = requestedTaskPaths,
+                requestedPreflightTaskPaths = requestedPreflightTaskPaths,
                 reasons =
                     reasons.values
                         .map { reason -> reason.freeze() }
@@ -250,6 +269,7 @@ object VerificationImpactAnalyzer {
         var ownerRequired: Boolean,
         val matchedFiles: LinkedHashSet<String> = linkedSetOf(),
         val requestedTaskPaths: LinkedHashSet<String> = linkedSetOf(),
+        val requestedPreflightTaskPaths: LinkedHashSet<String> = linkedSetOf(),
     ) {
         fun freeze(): VerificationImpactReason =
             VerificationImpactReason(

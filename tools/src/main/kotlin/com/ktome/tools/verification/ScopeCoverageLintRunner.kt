@@ -12,6 +12,7 @@ data class ScopeCoverageLintCaseResult(
     val changedFiles: List<String>,
     val impactedDomainIds: List<String>,
     val requestedTaskPaths: List<String>,
+    val requestedPreflightTaskPaths: List<String>,
 )
 
 @Serializable
@@ -154,6 +155,7 @@ object ScopeCoverageLintRunner {
             changedFiles = plan.changedFiles,
             impactedDomainIds = plan.impactedDomains.map(VerificationDomainImpact::domainId),
             requestedTaskPaths = plan.requestedTaskPaths,
+            requestedPreflightTaskPaths = plan.requestedPreflightTaskPaths,
         )
     }
 

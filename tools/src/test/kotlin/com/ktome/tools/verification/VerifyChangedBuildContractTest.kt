@@ -37,15 +37,8 @@ class VerifyChangedBuildContractTest {
                 add(":tools:prepareVerifyChangedPlan")
                 VerificationTaskRegistry.registeredImpactSpecs().forEach { spec ->
                     addAll(spec.preflightTaskPaths)
-                    spec.inputScopes.forEach { scope -> addAll(scope.requestedTaskPaths) }
+                    spec.inputScopes.forEach { scope -> addAll(scope.requestedPreflightTaskPaths) }
                 }
-                removeAll(
-                    VerificationTaskRegistry
-                        .registeredImpactSpecs()
-                        .flatMap { spec -> spec.ownerTaskPaths }
-                        .toSet(),
-                )
-                remove(":tools:reportPhase4Only")
             }
 
         assertEquals(expectedTaskPaths, actualTaskPaths.toSet())
@@ -76,7 +69,7 @@ class VerifyChangedBuildContractTest {
         val buildScript = Files.readString(repoRoot().resolve("tools/build.gradle.kts"))
 
         assertTrue(buildScript.contains("""tasks.named("whiteBoxContentPack")"""))
-        assertTrue(buildScript.contains("""VerifyChangedPlanGate.applyTo(this, verifyChangedTaskPathsFile, "prepareVerifyChangedPlan")"""))
+        assertTrue(buildScript.contains("""VerifyChangedPlanGate.applyTo(this, verifyChangedTaskPathsFile, verifyChangedPreflightTaskPathsFile, "prepareVerifyChangedPlan")"""))
     }
 
     @Test
