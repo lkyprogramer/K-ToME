@@ -883,7 +883,11 @@ object ContentPackHarnessRunner {
         val searchPoint = requireNotNull(session.automationSearchPointForBinding(bindingId)) {
             "Missing search point for sample content-pack harness binding '$secretBindingId'."
         }
-        if (session.automationSearchState().single().result != SearchActionResult.REVEALED) {
+        val bindingSearchResult =
+            session.automationSearchState()
+                .firstOrNull { entry -> entry.bindingId == bindingId }
+                ?.result
+        if (bindingSearchResult != SearchActionResult.REVEALED) {
             session.automationMovePlayerTo(searchPoint)
             check(session.perform(PlayerCommand.Search)) { "Failed to reveal sample content-pack entrance for harness verification." }
         }

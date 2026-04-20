@@ -37,6 +37,7 @@ object WhiteBoxSolvabilityRunner {
     private const val DOMAIN_ID: String = "solvability"
     private const val SEEDS_PER_FLOOR: Int = 5
     private const val CORPUS_ID: String = "P4_OPT_PR05_SOLVABILITY_WHITEBOX"
+    private const val FAIL_COVERAGE_CASE_INDEX: Int = 0
     private val caseRules: List<WhiteBoxCaseRule<WhiteBoxSolvabilityCaseData>> =
         listOf(
             WhiteBoxCaseRule { caseData ->
@@ -198,6 +199,12 @@ object WhiteBoxSolvabilityRunner {
                         context = metrics,
                     ),
                     WhiteBoxAssertionResult(
+                        ruleId = "solvability.aggregate.corpus_fail_coverage",
+                        passed = metrics.intValue("casesWithFail") > 0,
+                        message = "Corpus contains at least one failed-search case.",
+                        context = metrics,
+                    ),
+                    WhiteBoxAssertionResult(
                         ruleId = "solvability.aggregate.corpus_backtrack_coverage",
                         passed = metrics.intValue("casesWithBacktrackProof") > 0,
                         message = "Corpus contains at least one OPTIONAL -> CRITICAL_PATH backtrack proof case.",
@@ -226,13 +233,25 @@ object WhiteBoxSolvabilityRunner {
         val executionContext = MapgenSmokeRunner.loadExecutionContext()
         val upgradedZones = executionContext.schemaCatalog.zones.filter(ZoneSchemaV2::isPhase4Upgraded).sortedBy(ZoneSchemaV2::id)
         val cases =
-            SolvabilityHarnessRunner.buildCases(
-                upgradedZones = upgradedZones,
-                primerDiscoveryTagsByZoneAndFloor = primerDiscoveryTagsByZoneAndFloor(executionContext.schemaCatalog, upgradedZones),
-                requiredHiddenAnchorFamiliesByZoneAndFloor =
-                    requiredHiddenAnchorFamiliesByZoneAndFloor(executionContext.schemaCatalog, upgradedZones),
-                seedsPerFloor = SEEDS_PER_FLOOR,
-            )
+            SolvabilityHarnessRunner
+                .buildCases(
+                    upgradedZones = upgradedZones,
+                    primerDiscoveryTagsByZoneAndFloor = primerDiscoveryTagsByZoneAndFloor(executionContext.schemaCatalog, upgradedZones),
+                    requiredHiddenAnchorFamiliesByZoneAndFloor =
+                        requiredHiddenAnchorFamiliesByZoneAndFloor(executionContext.schemaCatalog, upgradedZones),
+                    seedsPerFloor = SEEDS_PER_FLOOR,
+                ).groupBy { testCase -> testCase.request.zoneId to testCase.request.floorIndex }
+                .toSortedMap(compareBy<Pair<String, Int>>({ key -> key.first }, { key -> key.second }))
+                .values
+                .flatMap { groupedCases ->
+                    groupedCases.mapIndexed { caseIndex, testCase ->
+                        if (caseIndex == FAIL_COVERAGE_CASE_INDEX) {
+                            testCase.copy(providedDiscoveryTags = emptySet())
+                        } else {
+                            testCase
+                        }
+                    }
+                }
         val distinctSeedList = cases.map { case -> case.request.seed }.distinct()
         require(distinctSeedList.size == cases.size) {
             "whiteBoxSolvability corpus must keep a one-to-one seed corpus; got ${distinctSeedList.size} distinct seeds for ${cases.size} cases."
