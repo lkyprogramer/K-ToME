@@ -178,6 +178,8 @@ visuals:
   - id: zone.greenwood_fringe.icon
   - id: zone.secret.greenwood_hidden_cache.visual
   - id: zone.secret.greenwood_hidden_cache.icon
+  - id: zone.secret.greenwood_ambush_hideout.visual
+  - id: zone.secret.greenwood_ambush_hideout.icon
   - id: zone.abyssal_temple.visual
   - id: zone.abyssal_temple.icon
   - id: zone.secret.abyssal_temple_warded_archive.visual

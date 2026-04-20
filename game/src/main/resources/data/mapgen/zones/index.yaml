@@ -74,8 +74,8 @@ zoneMapgenProfiles:
         keyId: deep_iron_forge_switch
     hiddenEntrancePlans:
       - bindingId: search.deep_iron.slag_cache
-        sourceAnchorId: hidden.critical.adjacent
-        entranceAnchorId: hidden.critical.adjacent
+        sourceAnchorId: hidden.goal.adjacent
+        entranceAnchorId: hidden.goal.adjacent
         targetAnchorId: secret.deep_iron.slag_cache
         targetSecretZoneId:
           registry: secret_zone
@@ -127,7 +127,7 @@ zoneMapgenProfiles:
             - type: REQUIRED_TAG
               requiredTag: hidden.primer.underground_river.crystal_rift
             - type: PERCEPTION_CHECK
-              difficulty: 10
+              difficulty: 8
   - id: zone_mapgen.abyssal_temple.phase4
     zoneId: abyssal_temple
     allowedBiomeFamilies: [ruin, oil_catacomb]
@@ -145,8 +145,8 @@ zoneMapgenProfiles:
         keyId: abyssal_temple_sigil
     hiddenEntrancePlans:
       - bindingId: search.abyssal_temple.warded_archive
-        sourceAnchorId: hidden.goal.adjacent
-        entranceAnchorId: hidden.goal.adjacent
+        sourceAnchorId: hidden.critical.adjacent
+        entranceAnchorId: hidden.critical.adjacent
         targetAnchorId: secret.abyssal_temple.warded_archive
         targetSecretZoneId:
           registry: secret_zone
@@ -157,7 +157,7 @@ zoneMapgenProfiles:
             - type: REQUIRED_TAG
               requiredTag: hidden.primer.abyssal_temple.warded_archive
             - type: PERCEPTION_CHECK
-              difficulty: 15
+              difficulty: 10
 
 zoneRewardProfiles:
   - id: zone_reward.greenwood_fringe.phase4

@@ -117,10 +117,12 @@
 
 1. 把 hidden 指标拆成两条：
    - `scriptedHiddenVerificationRate`
-   - `organicHiddenDiscoveryRate`
+   - `leadDiscoveryRate`
+   - `secretConversionRate`
 2. 给 loot 增加局部 guardrail，而不是只看 corpus average：
    - `sameZoneSecretVsCadenceMaxOverlap`
    - `sameZoneSecretVsRewardMaxOverlap`
+   - `secretZoneRewardAuthorityViolations`
 3. 给 long-run 增加成长身份指标：
    - `professionAlignedWeaponAdoptionRate`
    - `terminalWeaponBaseDiversity`
@@ -243,7 +245,7 @@
    - 专属 base item
    - 专属 slot bias
    - 专属 tag identity
-   - 或者 `LOOT_PROFILE + BUFF / ENCOUNTER / SERVICE` 的混合奖励结构
+   - 或者 `SECRET_ZONE_REWARD + BUFF / ENCOUNTER / SERVICE` 的混合奖励结构
 3. 保留 existing primer contract，但增加 organic 路径：
    - 无 primer 时的发现率
    - 搜索动作使用率

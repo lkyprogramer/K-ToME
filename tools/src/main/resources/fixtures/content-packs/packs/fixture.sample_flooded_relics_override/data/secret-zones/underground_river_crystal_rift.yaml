@@ -15,7 +15,7 @@ secretZones:
         - type: REQUIRED_TAG
           requiredTag: hidden.primer.underground_river.crystal_rift
         - type: PERCEPTION_CHECK
-          difficulty: 10
+          difficulty: 8
     pathClass: SECRET
     rewardProfileId:
       registry: loot_profile

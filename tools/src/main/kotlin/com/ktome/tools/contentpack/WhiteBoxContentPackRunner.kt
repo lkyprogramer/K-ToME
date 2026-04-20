@@ -243,7 +243,7 @@ object WhiteBoxContentPackRunner {
                         appendLine("secretZoneVisualKey: ${result.secretZoneVisualKey}")
                         appendLine("secretZoneAudioProfile: ${result.secretZoneAudioProfile}")
                         appendLine("hiddenEventPresent: ${result.hiddenEventPresent}")
-                        appendLine("hiddenEventLootProfileId: ${result.hiddenEventLootProfileId}")
+                        appendLine("secretRewardProfileId: ${result.secretRewardProfileId}")
                         appendLine("lootProfilePresent: ${result.lootProfilePresent}")
                         appendLine("lootProfileRewardBudget: ${result.lootProfileRewardBudget}")
                         appendLine("lootProfilePoolStrategy: ${result.lootProfilePoolStrategy}")

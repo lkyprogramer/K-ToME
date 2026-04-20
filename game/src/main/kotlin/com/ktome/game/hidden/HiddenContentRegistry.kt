@@ -6,12 +6,17 @@ import com.ktome.core.world.solvability.ContentRef
 class HiddenEventRegistry(
     private val eventsById: Map<String, HiddenEventDef>,
 ) {
+    private val eventsByTrigger: Map<HiddenTriggerType, List<HiddenEventDef>> =
+        eventsById.values
+            .groupBy(HiddenEventDef::triggerType)
+            .mapValues { (_, events) -> events.sortedBy(HiddenEventDef::id) }
+
     fun all(): List<HiddenEventDef> = eventsById.values.sortedBy(HiddenEventDef::id)
 
     fun resolve(id: String): HiddenEventDef? = eventsById[id]
 
     fun eventsForTrigger(triggerType: HiddenTriggerType): List<HiddenEventDef> =
-        eventsById.values.asSequence().filter { event -> event.triggerType == triggerType }.sortedBy(HiddenEventDef::id).toList()
+        eventsByTrigger[triggerType].orEmpty()
 }
 
 class SecretZoneRegistry(

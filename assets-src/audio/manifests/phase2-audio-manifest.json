@@ -2371,6 +2371,21 @@
       ]
     },
     {
+      "key": "audio.secret_zone.greenwood_ambush_hideout",
+      "cueFamily": "zone",
+      "eventId": "audio.secret_zone.greenwood_ambush_hideout",
+      "sourcePath": "audio/phase4/v3_pr03/secret_zone_greenwood_ambush_hideout.ogg",
+      "tags": [
+        "phase4",
+        "v3",
+        "pr03",
+        "hidden",
+        "zone",
+        "greenwood",
+        "ambush"
+      ]
+    },
+    {
       "key": "audio.secret_zone.deep_iron_slag_cache",
       "cueFamily": "zone",
       "eventId": "audio.secret_zone.deep_iron_slag_cache",

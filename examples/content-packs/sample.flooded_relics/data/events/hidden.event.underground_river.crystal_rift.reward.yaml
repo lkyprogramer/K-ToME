@@ -12,8 +12,5 @@ events:
             registry: monster
             id: undead.bone_archer
           threatCost: 4
-      - key: LOOT_PROFILE
-        payload:
-          lootProfileRef:
-            registry: loot_profile
-            id: sample.flooded_relics.loot.flooded_reliquary.secret
+      - key: SECRET_ZONE_REWARD
+        payload: {}

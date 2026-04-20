@@ -159,7 +159,8 @@ object Phase4ReportRunner {
         val terrainPerZoneBaseline = VerificationBaseline.read(repoRoot.resolve(Phase4OwnerBaselineRegistry.terrainPerZoneBaselinePath()))
         val terrainBaseline = readTerrainBaseline(repoRoot)
         val scriptedHiddenRange = scriptedHiddenBaseline.requiredMetric("scriptedHiddenVerificationRate")
-        val organicHiddenRange = organicHiddenBaseline.requiredMetric("organicHiddenDiscoveryRate")
+        val leadDiscoveryRange = organicHiddenBaseline.requiredMetric("leadDiscoveryRate")
+        val secretConversionRange = organicHiddenBaseline.requiredMetric("secretConversionRate")
         val cadenceOverlapRange = lootBaseline.requiredMetric("sameZoneSecretVsCadenceMaxOverlap")
         val rewardOverlapRange = lootBaseline.requiredMetric("sameZoneSecretVsRewardMaxOverlap")
         val diversityRange = terminalBuildBaseline.requiredMetric("terminalWeaponBaseDiversity")
@@ -177,8 +178,10 @@ object Phase4ReportRunner {
                 (scriptedTotalCases - scriptedFailureCount).toDouble() / scriptedTotalCases.toDouble()
             }
         val organicTotalCases = organicHidden.metrics.intValue("totalCases")
-        val organicDiscoveryCount = organicHidden.metrics.intValue("discoveryWithoutPrimerCount")
-        val organicHiddenDiscoveryRate = organicHidden.metrics.doubleValue("organicHiddenDiscoveryRate")
+        val organicDiscoveryCount = organicHidden.metrics.intValue("leadDiscoveryCount")
+        val leadDiscoveryRate = organicHidden.metrics.doubleValue("leadDiscoveryRate")
+        val secretConversionCount = organicHidden.metrics.intValue("secretConversionCount")
+        val secretConversionRate = organicHidden.metrics.doubleValue("secretConversionRate")
         val organicSearchActionUseRate = organicHidden.metrics.doubleValue("searchActionUseRate")
         val organicSecretZoneEntryRate = organicHidden.metrics.doubleValue("secretZoneEntryRate")
         val sameZoneSecretVsCadenceMaxOverlap = loot.metrics.doubleValue("sameZoneSecretVsCadenceMaxOverlap")
@@ -265,14 +268,15 @@ object Phase4ReportRunner {
             )
             add(
                 Phase4ExperienceMetric(
-                    metricId = "organicHiddenDiscoveryRate",
+                    metricId = "leadDiscoveryRate",
                     sourceTaskId = organicHidden.taskId,
                     currentValue =
                         buildJsonObject {
-                            put("rate", organicHidden.metrics.getValue("organicHiddenDiscoveryRate"))
+                            put("rate", organicHidden.metrics.getValue("leadDiscoveryRate"))
                             put("totalCases", organicHidden.metrics.getValue("totalCases"))
-                            put("discoveryWithoutPrimerCount", organicHidden.metrics.getValue("discoveryWithoutPrimerCount"))
+                            put("leadDiscoveryCount", organicHidden.metrics.getValue("leadDiscoveryCount"))
                             put("searchActionUseRate", organicHidden.metrics.getValue("searchActionUseRate"))
+                            put("secretConversionRate", organicHidden.metrics.getValue("secretConversionRate"))
                             put("secretZoneEntryRate", organicHidden.metrics.getValue("secretZoneEntryRate"))
                             put("firstHiddenDiscoveryTurnP50", organicHidden.metrics.getValue("firstHiddenDiscoveryTurnP50"))
                             put("firstHiddenDiscoveryTurnP90", organicHidden.metrics.getValue("firstHiddenDiscoveryTurnP90"))
@@ -288,14 +292,42 @@ object Phase4ReportRunner {
                             put("secretZoneDiscoveryDistribution", organicHidden.metrics.getValue("secretZoneDiscoveryDistribution"))
                         },
                     currentValueText =
-                        "${formatPercent(organicHiddenDiscoveryRate)} ($organicDiscoveryCount/$organicTotalCases), " +
+                        "${formatPercent(leadDiscoveryRate)} ($organicDiscoveryCount/$organicTotalCases), " +
                             "searchUse=${formatPercent(organicSearchActionUseRate)}, secretEntry=${formatPercent(organicSecretZoneEntryRate)}",
-                    target = Phase4OwnerMetricTargets.targetText("organicHiddenDiscoveryRate", organicHiddenRange),
-                    status = verdictOf(Phase4OwnerMetricTargets.passes(organicHiddenRange, organicHiddenDiscoveryRate)),
+                    target = Phase4OwnerMetricTargets.targetText("leadDiscoveryRate", leadDiscoveryRange),
+                    status = verdictOf(Phase4OwnerMetricTargets.passes(leadDiscoveryRange, leadDiscoveryRate)),
                     note =
                         "probeBot=${organicHidden.metrics.stringValue("probeBotId")}, scripted=false, observationOnly=true, " +
                             "promptRequired=${organicHidden.metrics.booleanValue("searchPromptRequired")}, " +
                             "combos=${organicHidden.metrics.intValue("comboCount")}, seedsPerCombo=${organicHidden.metrics.intValue("seedsPerZoneCombo")}",
+                ),
+            )
+            add(
+                Phase4ExperienceMetric(
+                    metricId = "secretConversionRate",
+                    sourceTaskId = organicHidden.taskId,
+                    currentValue =
+                        buildJsonObject {
+                            put("rate", organicHidden.metrics.getValue("secretConversionRate"))
+                            put("leadDiscoveryCount", organicHidden.metrics.getValue("leadDiscoveryCount"))
+                            put("secretConversionCount", organicHidden.metrics.getValue("secretConversionCount"))
+                            put("secretZoneEntryRate", organicHidden.metrics.getValue("secretZoneEntryRate"))
+                            put("perZoneSecretEntryMinRate", organicHidden.metrics.getValue("perZoneSecretEntryMinRate"))
+                            put("failingSecretEntryZoneIds", organicHidden.metrics.getValue("failingSecretEntryZoneIds"))
+                            put("zones", organicHidden.metrics.getValue("zones"))
+                        },
+                    currentValueText =
+                        "${formatPercent(secretConversionRate)} ($secretConversionCount/$organicDiscoveryCount), " +
+                            "secretEntry=${formatPercent(organicSecretZoneEntryRate)}",
+                    target = Phase4OwnerMetricTargets.targetText("secretConversionRate", secretConversionRange),
+                    status =
+                        verdictOf(
+                            Phase4OwnerMetricTargets.passes(secretConversionRange, secretConversionRate) &&
+                                organicHidden.metrics.stringList("failingSecretEntryZoneIds").isEmpty(),
+                        ),
+                    note =
+                        "perZoneSecretEntryMinRate=${formatPercent(organicHidden.metrics.doubleValue("perZoneSecretEntryMinRate"))}, " +
+                            "failingZones=${organicHidden.metrics.stringList("failingSecretEntryZoneIds").joinToString().ifBlank { "none" }}",
                 ),
             )
             add(
@@ -355,6 +387,9 @@ object Phase4ReportRunner {
             )
             add(
                 localRewardEntriesByMetricId.getValue("specialTierPassiveFamilyDuplicateCount").toLegacyExperienceMetric(loot.taskId),
+            )
+            add(
+                localRewardEntriesByMetricId.getValue("secretZoneRewardAuthorityViolations").toLegacyExperienceMetric(loot.taskId),
             )
             add(
                 localRewardEntriesByMetricId.getValue("professionCapstoneSourceCoverage.reportOnly").toLegacyExperienceMetric(loot.taskId),
@@ -552,9 +587,11 @@ object Phase4ReportRunner {
             appendLine("- sourceTask.scripted: `${scriptedHiddenTask.taskId}`")
             appendLine("- sourceTask.organic: `${organicHiddenTask.taskId}`")
             appendLine("- `scriptedHiddenVerificationRate`: ${metricsById.getValue("scriptedHiddenVerificationRate").currentValueText} / ${metricsById.getValue("scriptedHiddenVerificationRate").status}")
-            appendLine("- `organicHiddenDiscoveryRate`: ${metricsById.getValue("organicHiddenDiscoveryRate").currentValueText} / ${metricsById.getValue("organicHiddenDiscoveryRate").status}")
+            appendLine("- `leadDiscoveryRate`: ${metricsById.getValue("leadDiscoveryRate").currentValueText} / ${metricsById.getValue("leadDiscoveryRate").status}")
+            appendLine("- `secretConversionRate`: ${metricsById.getValue("secretConversionRate").currentValueText} / ${metricsById.getValue("secretConversionRate").status}")
             appendLine("- `zoneDiscoveryDistribution`: ${organicHiddenTask.metrics.getValue("zoneDiscoveryDistribution").jsonObject.entries.joinToString { (zoneId, rate) -> "$zoneId=${formatPercent(rate.jsonPrimitive.content.toDouble())}" }}")
             appendLine("- `secretZoneDiscoveryDistribution`: ${organicHiddenTask.metrics.getValue("secretZoneDiscoveryDistribution").jsonObject.entries.joinToString { (secretZoneId, rate) -> "$secretZoneId=${formatPercent(rate.jsonPrimitive.content.toDouble())}" }}")
+            appendLine("- `failingSecretEntryZoneIds`: `${organicHiddenTask.metrics.stringList("failingSecretEntryZoneIds").joinToString().ifBlank { "none" }}`")
             appendLine("- `searchPromptRequired`: `${organicHiddenTask.metrics.booleanValue("searchPromptRequired")}`")
             appendLine()
             appendLine("## Local Reward Identity")
@@ -563,8 +600,10 @@ object Phase4ReportRunner {
             appendLine("- `sameZoneSecretVsRewardMaxOverlap`: ${metricsById.getValue("sameZoneSecretVsRewardMaxOverlap").currentValueText} / ${metricsById.getValue("sameZoneSecretVsRewardMaxOverlap").status}")
             appendLine("- `dynamicPoolCoverage`: ${metricsById.getValue("dynamicPoolCoverage").currentValueText} / ${metricsById.getValue("dynamicPoolCoverage").status}")
             appendLine("- `specialTierPassiveFamilyDuplicateCount`: ${metricsById.getValue("specialTierPassiveFamilyDuplicateCount").currentValueText} / ${metricsById.getValue("specialTierPassiveFamilyDuplicateCount").status}")
+            appendLine("- `secretZoneRewardAuthorityViolations`: ${metricsById.getValue("secretZoneRewardAuthorityViolations").currentValueText} / ${metricsById.getValue("secretZoneRewardAuthorityViolations").status}")
             appendLine("- `localIdentityFailurePairs`: ${lootTask.metrics.getValue("localIdentityFailurePairs").jsonArray.joinToString { pair -> pair.jsonPrimitive.content }.ifBlank { "none" }}")
             appendLine("- `strictLocalIdentityViolations`: ${lootTask.metrics.getValue("strictLocalIdentityViolations").jsonArray.joinToString { violation -> violation.jsonObject.getValue("pairId").jsonPrimitive.content }.ifBlank { "none" }}")
+            appendLine("- `secretZoneRewardAuthorityViolationIds`: ${lootTask.metrics.getValue("secretZoneRewardAuthorityViolations").jsonArray.joinToString { violation -> violation.jsonObject.getValue("violationId").jsonPrimitive.content }.ifBlank { "none" }}")
             appendLine("- `specialTierPassiveFamilyDuplicateSummary.duplicateFamilyCount`: ${lootTask.metrics.getValue("specialTierPassiveFamilyDuplicateSummary").jsonObject.getValue("duplicateFamilyCount").jsonPrimitive.content}")
             appendLine("- `uniqueArtifactMeaningfulSwapRate`: ${formatPercent(lootTask.metrics.doubleValue("uniqueArtifactMeaningfulSwapRate"))}")
             lootTask.metrics["secretProfileIdentitySummaries"]
@@ -636,10 +675,12 @@ object Phase4ReportRunner {
             appendLine("- sourceTask.scripted: `${scriptedHiddenTask.taskId}`")
             appendLine("- sourceTask.organic: `${organicHiddenTask.taskId}`")
             appendLine("- `scriptedHiddenVerificationRate`: ${metricsById.getValue("scriptedHiddenVerificationRate").currentValueText} / ${metricsById.getValue("scriptedHiddenVerificationRate").status}")
-            appendLine("- `organicHiddenDiscoveryRate`: ${metricsById.getValue("organicHiddenDiscoveryRate").currentValueText} / ${metricsById.getValue("organicHiddenDiscoveryRate").status}")
+            appendLine("- `leadDiscoveryRate`: ${metricsById.getValue("leadDiscoveryRate").currentValueText} / ${metricsById.getValue("leadDiscoveryRate").status}")
+            appendLine("- `secretConversionRate`: ${metricsById.getValue("secretConversionRate").currentValueText} / ${metricsById.getValue("secretConversionRate").status}")
             appendLine("- scripted primer cases: `${scriptedHiddenTask.metrics.intValue("primerActionUsedCount")}`")
             appendLine("- organic search use rate: `${formatPercent(organicHiddenTask.metrics.doubleValue("searchActionUseRate"))}`")
             appendLine("- organic secret zone entry rate: `${formatPercent(organicHiddenTask.metrics.doubleValue("secretZoneEntryRate"))}`")
+            appendLine("- organic failing secret-entry zones: `${organicHiddenTask.metrics.stringList("failingSecretEntryZoneIds").joinToString().ifBlank { "none" }}`")
             appendLine()
             appendLine("## Terrain Combat Sample Contract")
             appendLine("- sourceTask: `${terrainTask.taskId}`")

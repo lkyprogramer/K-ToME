@@ -2,6 +2,7 @@ package com.ktome.tools.mapgen
 
 import java.nio.file.Files
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.int
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -43,6 +44,11 @@ class WhiteBoxSolvabilityHarnessTest {
         )
         assertTrue(
             corpusAggregate.getValue("assertions").jsonArray.any { assertion ->
+                assertion.jsonObject.getValue("ruleId").jsonPrimitive.content == "solvability.aggregate.corpus_fail_coverage"
+            },
+        )
+        assertTrue(
+            corpusAggregate.getValue("assertions").jsonArray.any { assertion ->
                 assertion.jsonObject.getValue("ruleId").jsonPrimitive.content ==
                     "solvability.aggregate.corpus_hidden_anchor_families_resolved"
             },
@@ -51,6 +57,8 @@ class WhiteBoxSolvabilityHarnessTest {
         assertTrue(corpusMetrics.containsKey("providedDiscoveryTags"))
         assertTrue(corpusMetrics.containsKey("requiredHiddenAnchorFamilies"))
         assertTrue(corpusMetrics.containsKey("observedHiddenAnchorFamilies"))
+        assertTrue(corpusMetrics.containsKey("casesWithFail"))
+        assertTrue(corpusMetrics.getValue("casesWithFail").jsonPrimitive.int > 0)
         assertTrue(firstCase.getValue("facts").jsonObject.containsKey("providedDiscoveryTags"))
         assertTrue(firstCase.getValue("facts").jsonObject.containsKey("hiddenAnchorFamiliesSatisfied"))
         assertTrue(

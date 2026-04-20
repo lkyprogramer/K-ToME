@@ -11,7 +11,8 @@ internal object Phase4OwnerMetricTargets {
     ): String =
         when (metricId) {
             "scriptedHiddenVerificationRate",
-            "organicHiddenDiscoveryRate",
+            "leadDiscoveryRate",
+            "secretConversionRate",
             "dynamicPoolCoverage",
             "crossProfessionTopWeaponDominance",
             "professionAlignedWeaponAdoptionRate",
@@ -31,6 +32,12 @@ internal object Phase4OwnerMetricTargets {
                 renderBoundTarget(
                     range = range,
                     formatter = ::formatRatio,
+                )
+
+            "secretZoneRewardAuthorityViolations" ->
+                renderBoundTarget(
+                    range = range,
+                    formatter = ::formatNumber,
                 )
 
             "terminalWeaponBaseDiversity" ->

@@ -1,0 +1,38 @@
+styleTag: ktome-middle-fantasy-painterly-tile-v1
+artStyleBible: docs/2026-03-13-art-style-bible.md
+stylePrompt: >-
+  High fantasy, middle-earth inspired painterly production pass for Phase 4 V3
+  PR-03 hidden-content replay hooks. The Greenwood ambush hideout must read as a
+  trap-backed warden fallback site with shield relic identity, distinct from the
+  thorn-hidden cache secret zone while staying grounded in the established
+  K-ToME palette, material language, and tactical readability. Never anime,
+  never sci-fi, and never UI-debug-like.
+defaults:
+  imageAspectRatio: "1:1"
+  imageSize: "1K"
+  negativeConstraints:
+    - no modern clothing
+    - no firearms
+    - no sci-fi materials
+    - no anime proportions
+    - no floating text, watermark or logo
+phase2AssetGates:
+  P4-V3-PR03:
+    description: Formal V3 PR-03 visual plan for the Greenwood ambush hideout secret zone.
+    assets:
+      - id: phase4_v3_pr03_zone_greenwood_ambush_hideout_icon
+        category: icon_quest
+        visualKey: zone.secret.greenwood_ambush_hideout.icon
+        outputName: phase4/v3_pr03/zone_secret_greenwood_ambush_hideout_icon.png
+        subject: ambush hideout secret-zone icon with a warden shield cache, tripwire hook, and lookout lantern motif
+        materialTags: [phase4, v3, pr03, zone, greenwood, secret, ambush]
+        constraints: [ui-readable icon, clean silhouette, readable at journal and reward-card sizes]
+        geminiKeyRequired: true
+      - id: phase4_v3_pr03_zone_greenwood_ambush_hideout_visual
+        category: portrait
+        visualKey: zone.secret.greenwood_ambush_hideout.visual
+        outputName: phase4/v3_pr03/zone_secret_greenwood_ambush_hideout_visual.png
+        subject: concealed greenwood ambush hideout with shield relic racks, kill-lane tripwires, and a collapsed lookout retreat path
+        materialTags: [phase4, v3, pr03, zone, greenwood, secret, ambush]
+        constraints: [portrait composition, atmospheric but readable, must feel like a tactical fallback site rather than a treasure stash]
+        geminiKeyRequired: true

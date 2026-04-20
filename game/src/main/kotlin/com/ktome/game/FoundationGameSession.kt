@@ -9614,7 +9614,9 @@ class FoundationGameSession internal constructor(
         val events =
             content.hiddenEventRegistry
                 .eventsForTrigger(triggerType)
+                .asSequence()
                 .filter { hiddenEvent -> hiddenEventId == null || hiddenEvent.id == hiddenEventId }
+                .filterNot { hiddenEvent -> activeFloorState.hasConsumedHiddenEvent(hiddenEvent.id) }
                 .filter { hiddenEvent ->
                     hiddenEventConditionsMatch(
                         hiddenEvent = hiddenEvent,
@@ -9625,11 +9627,9 @@ class FoundationGameSession internal constructor(
                         objectiveStepKey = objectiveStepKey,
                     )
                 }
+                .toList()
         var executed = false
         events.forEach { hiddenEvent ->
-            if (activeFloorState.hasConsumedHiddenEvent(hiddenEvent.id)) {
-                return@forEach
-            }
             require(!hiddenEvent.optionalOnly || hiddenEventOptionalContextMatches(bindingId = bindingId, secretZoneId = secretZoneId)) {
                 "Hidden event '${hiddenEvent.id}' must only execute from OPTIONAL / SECRET paths."
             }
@@ -9638,7 +9638,7 @@ class FoundationGameSession internal constructor(
             activeFloorState.markHiddenEventConsumed(hiddenEvent.id)
             activeFloorState.grantDiscoveryTags(hiddenEvent.grantedDiscoveryTags)
             if (newlyGrantedDiscoveryTags.isNotEmpty()) {
-                addMessage(
+                addFrontstageMessage(
                     "log.hidden.primer.acquired",
                     keyArg("zone", zoneNameKey),
                 )
@@ -9661,6 +9661,16 @@ class FoundationGameSession internal constructor(
 
                     is HiddenEventRewardPayload.GrantBuff -> {
                         grantHiddenBuff(hiddenEvent = hiddenEvent, payload = payload, secretZoneId = secretZoneId)
+                    }
+
+                    is HiddenEventRewardPayload.SecretZoneReward -> {
+                        grantSecretZoneReward(
+                            hiddenEvent = hiddenEvent,
+                            rewardPresentationSource = rewardPresentationSource,
+                            secretZoneId = requireNotNull(secretZoneId) {
+                                "Hidden event '${hiddenEvent.id}' SECRET_ZONE_REWARD requires secretZoneId."
+                            },
+                        )
                     }
 
                     is HiddenEventRewardPayload.LootProfile -> {
@@ -9790,6 +9800,22 @@ class FoundationGameSession internal constructor(
             if (stored) "log.hidden.reward.claimed" else "log.hidden.reward.dropped",
             keyArg("zone", secretZoneNameKey(secretZoneId)),
             keyArg("item", rewardItemNameKey(reward, "hidden")),
+        )
+    }
+
+    private fun grantSecretZoneReward(
+        hiddenEvent: HiddenEventDef,
+        rewardPresentationSource: RewardPresentationSourceSnapshot,
+        secretZoneId: ContentRef,
+    ) {
+        val secretZone = requireNotNull(content.secretZone(secretZoneId)) {
+            "Hidden event '${hiddenEvent.id}' references unknown secret zone '${secretZoneId.id}'."
+        }
+        grantHiddenLootReward(
+            hiddenEvent = hiddenEvent,
+            lootProfileId = secretZone.rewardProfileId.id,
+            rewardPresentationSource = rewardPresentationSource,
+            secretZoneId = secretZoneId,
         )
     }
 
@@ -9974,6 +10000,11 @@ class FoundationGameSession internal constructor(
                 if (interactable.id in OBJECTIVE_ADVANCE_INTERACTABLE_IDS) {
                     addMessage("log.objective.advance")
                 }
+                executeHiddenEvents(
+                    triggerType = HiddenTriggerType.INTERACT_TILE,
+                    interactableId = interactable.id,
+                    rewardPresentationSource = RewardPresentationSourceSnapshot.HIDDEN_EVENT,
+                )
                 if (interactable.id == AbyssalRuntimeKeys.Temple.INTERACTABLE_ID && interactableShop != null) {
                     consumeInteractable = false
                     if (canOpenReliquaryShopSafely()) {

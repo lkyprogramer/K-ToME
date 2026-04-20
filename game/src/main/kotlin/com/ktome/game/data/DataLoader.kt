@@ -1583,6 +1583,8 @@ class DataLoader(
                     magnitude = reward.optionalDouble("magnitude", 0.0),
                 )
 
+            HiddenEventRewardKey.SECRET_ZONE_REWARD -> HiddenEventRewardPayload.SecretZoneReward
+
             HiddenEventRewardKey.LOOT_PROFILE ->
                 HiddenEventRewardPayload.LootProfile(
                     lootProfileRef = reward.requiredMap("lootProfileRef").toContentRef(),

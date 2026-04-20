@@ -8,6 +8,7 @@ import com.ktome.game.harness.RunObservation
 import com.ktome.game.harness.RunObservationCapture
 import com.ktome.game.harness.SmokeBot
 import com.ktome.tools.verification.VerificationCacheSupport
+import com.ktome.core.map.Point
 import java.nio.file.Files
 import java.nio.file.Path
 import kotlinx.serialization.json.Json
@@ -75,7 +76,8 @@ class OrganicHiddenProbeRunnerTest {
             assertTrue(summary.containsKey("searchActionUseCount"))
             assertTrue(summary.containsKey("searchActionUseRate"))
             assertTrue(summary.containsKey("searchAttemptCount"))
-            assertTrue(summary.containsKey("organicHiddenDiscoveryRate"))
+            assertTrue(summary.containsKey("leadDiscoveryRate"))
+            assertTrue(summary.containsKey("secretConversionRate"))
             assertTrue(summary.containsKey("secretZoneEntryRate"))
             assertTrue(summary.containsKey("averageFirstHiddenDiscoveryTurn"))
             assertTrue(summary.containsKey("firstHiddenDiscoveryTurnP50"))
@@ -91,7 +93,7 @@ class OrganicHiddenProbeRunnerTest {
             assertEquals(listOf("human", "elf", "dwarf"), summary.getValue("raceIds").jsonArray.map { it.jsonPrimitive.content })
             assertTrue(notes.any { note -> note.jsonPrimitive.content.contains("RunObservation-visible prompts") })
             assertTrue(notes.any { note -> note.jsonPrimitive.content.contains("4 profession x 3 race") })
-            assertTrue(notes.any { note -> note.jsonPrimitive.content.contains("searchPromptAvailable=true") })
+            assertTrue(notes.any { note -> note.jsonPrimitive.content.contains("highest-priority clue") })
             assertEquals(setOf("greenwood_fringe", "deep_iron_pit", "underground_river", "abyssal_temple"), zones.keys)
             assertEquals(12, combinations.size)
             assertEquals(zones.keys, zoneDiscoveryDistribution.keys)
@@ -104,6 +106,8 @@ class OrganicHiddenProbeRunnerTest {
             assertTrue(markdown.contains("## Secret-Zone Discovery Distribution"))
             assertTrue(markdown.contains("## Combination Breakdown"))
             assertTrue(markdown.contains("searchPromptRequired: `true`"))
+            assertTrue(markdown.contains("leadDiscoveryRate"))
+            assertTrue(markdown.contains("secretConversionRate"))
             assertTrue(markdown.contains("organicHiddenProbe is a standalone owner artifact"))
         } finally {
             if (originalReportDir == null) {
@@ -140,6 +144,19 @@ class OrganicHiddenProbeRunnerTest {
             PlayerCommand.Search,
             bot.searchCommand(observation.copy(turnIndex = observation.turnIndex + 4, playerPosition = observation.playerPosition.copy(x = observation.playerPosition.x + 1))),
         )
+    }
+
+    @Test
+    fun `visible threats and descent do not suppress prompt-driven search`() {
+        val bot = OrganicHiddenProbeBot(delegate = SmokeBot())
+        val observation =
+            searchableObservation(turnIndex = 10).copy(
+                canDescend = true,
+                visibleBossPositions = listOf(Point(3, 3)),
+                visibleHostilePositions = listOf(Point(4, 4)),
+            )
+
+        assertEquals(PlayerCommand.Search, bot.searchCommand(observation))
     }
 
     private fun searchableObservation(turnIndex: Int): RunObservation {

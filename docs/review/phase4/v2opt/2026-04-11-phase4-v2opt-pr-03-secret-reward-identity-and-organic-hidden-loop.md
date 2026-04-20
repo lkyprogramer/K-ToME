@@ -26,9 +26,12 @@
 5. legacy `tools/build/reports/phase4/phase4-summary.{json,md}` 在本 PR 中只属于手工 fallback/historical artifact，不得再作为默认验收产物。
 6. 提交或审查本 PR 时，默认证据必须直接引用 canonical `report-phase4-summary.{json,md}` 中与本 PR 相关的段落或 metric：
    - `scriptedHiddenVerificationRate`
-   - `organicHiddenDiscoveryRate`
+   - `leadDiscoveryRate`
+   - `secretConversionRate`
+   - `secretZoneEntryRate`
    - `sameZoneSecretVsCadenceMaxOverlap`
    - `sameZoneSecretVsRewardMaxOverlap`
+   - `secretZoneRewardAuthorityViolations`
    - hidden / reward identity 对应说明段
    不能只报命令 exit code，也不能只贴 legacy `phase4-summary` 快照。
 7. 若本 PR 变更了上述 metric 的定义、target、threshold、note、owner 映射或 report schema，除跑显式 parity 外，还必须在同一提交同步更新：
@@ -188,11 +191,12 @@ tools/src/main/kotlin/com/ktome/tools/hidden/OrganicHiddenProbeRunner.kt
 
 输出：
 
-1. `organicHiddenDiscoveryRate`
-2. `organicSecretZoneEntryRate`
-3. `organicSearchActionUseRate`
-4. `firstDiscoveryTurnP50/P90`
-5. `zoneDiscoveryDistribution`
+1. `leadDiscoveryRate`
+2. `secretConversionRate`
+3. `organicSecretZoneEntryRate`
+4. `organicSearchActionUseRate`
+5. `firstDiscoveryTurnP50/P90`
+6. `zoneDiscoveryDistribution`
 
 执行策略：
 
@@ -204,10 +208,10 @@ tools/src/main/kotlin/com/ktome/tools/hidden/OrganicHiddenProbeRunner.kt
 
 每个 secret zone 至少落到以下三类之一：
 
-1. `LOOT_PROFILE`
-2. `LOOT_PROFILE + GRANT_BUFF`
-3. `TRIGGER_ENCOUNTER + LOOT_PROFILE`
-4. `LOOT_PROFILE + SERVICE / SHOP / CURRENCY`
+1. `SECRET_ZONE_REWARD`
+2. `SECRET_ZONE_REWARD + GRANT_BUFF`
+3. `TRIGGER_ENCOUNTER + SECRET_ZONE_REWARD`
+4. `SECRET_ZONE_REWARD + SERVICE / SHOP / CURRENCY`
 
 推荐：
 
@@ -358,9 +362,10 @@ tools/src/main/kotlin/com/ktome/tools/hidden/OrganicHiddenProbeRunner.kt
 ## 11. 出口门禁
 
 1. `organicHiddenDiscoveryRate` 正式上线。
-2. `sameZoneSecretVsCadenceMaxOverlap` 与 `sameZoneSecretVsRewardMaxOverlap` 全部达标。
-3. hidden scripted correctness 不回归。
-4. secret reward 在 report 中可解释。
+2. `leadDiscoveryRate / secretConversionRate / secretZoneEntryRate` 正式上线并可解释。
+3. `sameZoneSecretVsCadenceMaxOverlap`、`sameZoneSecretVsRewardMaxOverlap` 与 `secretZoneRewardAuthorityViolations` 全部达标。
+4. hidden scripted correctness 不回归。
+5. secret reward 在 report 中可解释。
 
 ---
 

@@ -351,26 +351,26 @@ class SchemaV2LoaderTest {
             catalog.hiddenEvents
                 .flatMap { hiddenEvent -> hiddenEvent.rewards.map { reward -> reward.key.name } }
                 .toSet()
-                .containsAll(setOf("REVEAL_SECRET_ZONE", "GRANT_BUFF", "LOOT_PROFILE", "TRIGGER_ENCOUNTER")),
+                .containsAll(setOf("REVEAL_SECRET_ZONE", "GRANT_BUFF", "SECRET_ZONE_REWARD", "TRIGGER_ENCOUNTER")),
         )
         val rewardKeysByHiddenEventId =
             catalog.hiddenEvents.associate { hiddenEvent ->
                 hiddenEvent.id to hiddenEvent.rewards.map { reward -> reward.key.name }
             }
         assertEquals(
-            listOf("GRANT_BUFF", "LOOT_PROFILE"),
+            listOf("GRANT_BUFF", "SECRET_ZONE_REWARD"),
             rewardKeysByHiddenEventId.getValue("hidden.event.greenwood.hidden_cache.reward"),
         )
         assertEquals(
-            listOf("GRANT_BUFF", "LOOT_PROFILE"),
+            listOf("GRANT_BUFF", "TRIGGER_ENCOUNTER", "SECRET_ZONE_REWARD"),
             rewardKeysByHiddenEventId.getValue("hidden.event.greenwood.ambush_hideout.reward"),
         )
         assertEquals(
-            listOf("GRANT_BUFF", "LOOT_PROFILE"),
+            listOf("GRANT_BUFF", "SECRET_ZONE_REWARD"),
             rewardKeysByHiddenEventId.getValue("hidden.event.abyssal_temple.warded_archive.reward"),
         )
         assertEquals(
-            listOf("GRANT_BUFF", "TRIGGER_ENCOUNTER", "LOOT_PROFILE"),
+            listOf("GRANT_BUFF", "TRIGGER_ENCOUNTER", "SECRET_ZONE_REWARD"),
             rewardKeysByHiddenEventId.getValue("hidden.event.deep_iron.smuggler_stash.reward"),
         )
         assertTrue(

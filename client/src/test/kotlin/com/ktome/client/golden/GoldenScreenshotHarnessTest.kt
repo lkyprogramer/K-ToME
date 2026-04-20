@@ -82,16 +82,16 @@ class GoldenScreenshotHarnessTest {
 
         assertEquals(
             listOf(
-                "d146db8e743a9724703a08cb957bf24c76e6d22421a9092ceffb03ad34b7a94c",
+                "90c4f7cd96241b6fee7f42468da3c3ddc4d3bbf3410e92edf5e4581c693d0afe",
                 "38c2efe56098462e01a8dd93999413b837058cb8591cc49a5de2b93023817ff9",
                 "baf81c651d314d59dc946bcbd1fe53f3bf7e9024ebf055e7efa66f129bd0c5c6",
-                "d6762902f95528e8f8d67e2b95ea9f55aa4a00def3ffc298b3673be75d8b98f4",
+                "b8ec1e164fdf5eb9578b2b4f980af9ddd98cb47aa050e89727bfa55be38b4bd0",
                 "c8ef1c9ab76f4118caf7ae0b7724c7448838a3fb90267c1a277d568fc4c6573d",
-                "d768a1ebf255ea3fba3c48c0e8c6b32c49dc109e195e61458bf17ad832f91cea",
-                "39b9f1029dbd383ae3a2219709f9b13427805e886ddb584f5bfbd8cad2319a8c",
-                "3ed984200a2f41231216ecedf37441665c9eeb7f97191d500bdd84b024e2ec40",
-                "f18e95f4f52d02494ac4034050fd220cb340cf58910a7e0ae21c6a3f20e7b0bb",
-                "4f96724493192eb1fa6bc1170ca7c078dcc3c66e05287bba7d9d34280e1cc55e",
+                "5aa72c12fe71e78d37075b0ce112a7f4d508f8c27311d28d4379e3ae05836c40",
+                "153a119a7a59cb3950e3af844efb268f3c3e0df7b1bc1300fa83eb9cdf6cd8dc",
+                "f3c729ce29b830d763f78b3c27a15d5066318d01a6b2efe08a49b9eb80c11af3",
+                "8c775ae8123fea31b7af322a24a57bbc88bb5f76c452f61e13a287a63018c99b",
+                "cda7b478375f807296a264c0f9aecce27da8d2017e75d46ce7c87d1e3b289d70",
             ),
             english + chinese,
         )
@@ -104,7 +104,7 @@ class GoldenScreenshotHarnessTest {
 
         assertEquals(
             listOf(
-                "ea57f003c28b61e47c4bbf43dd51973fac29a3e1582c069f21806892598cc25a",
+                "9aee48d3cc2b51efb1db58b53d0af05c25e08c003c9d908112a5128c3b8aae88",
                 "30d998c51a877e7e189c75058f80c2aa7682045aae7b1f5cd35912c4a31de061",
             ),
             listOf(english, chinese),
@@ -118,9 +118,9 @@ class GoldenScreenshotHarnessTest {
 
         assertEquals(
             listOf(
-                "0fcc5ecf954d09fb17bd060254be66852c250f92ff331bbcaf4877e8cf77630e",
-                "cec56b2df96585535f52a996e33bd7c24098dbae2be780db66597a31807f3249",
-                "4dd6ec1ef8a7638f4dd07c0d8951970ded59c6a7ed8c69bbe4733780a4eb0f8f",
+                "5bbf1ad0ee18b4fc698fa7ef594fb78a386a9208814d82b1cc4a179a365653cb",
+                "2d89353d73cea3b6ab805dadac3d2501f696c5b87a6e8e70a4342cfbb8b27bec",
+                "9f0e11e7012884b99fe1beb4a5b8e8fefec18a87e241ea294ee9783a79d6f408",
                 "81a716f4f0b99403d019badde38e7aa2cf56eeb9c1aa75ccd96eb69677eeccdc",
                 "ddad0311c18f17f1f3904030cbdf01cdb10b2574ecb64cb65017299a8ce42ed3",
                 "9e40a495ce0b073fc3db0b47cbcf22bf41ab18c2f0f5423958f6b471e80cee9f",
@@ -182,7 +182,7 @@ class GoldenScreenshotHarnessTest {
                 "450e7caf5c08a15a48c92829f8bdfbacd38b2f5291fb61f4696ec0d325e53633",
                 "9353f3c85c8a949854b56f1b462afa174194076548b41dba075448c68e86b3e9",
                 "1b2502c2e7fd673dde69ef26ed55b91ba246883c2a10d3a470e74a9c7853647a",
-                "fb8e92b60786c864fe5469abec811eb634971dde0e44c8db1654799c04ef1f19",
+                "fde126b3934a587b0897cd68bf1dbd3b7f4a7927d64179ef041b16a8152497c6",
             ),
             english + chinese,
         )
@@ -192,7 +192,7 @@ class GoldenScreenshotHarnessTest {
     fun `sample pack golden hash remains stable for filesystem backed content`() {
         val hash = captureSamplePackRuntimeHash()
 
-        assertEquals("84e676c7c8ddc55a09d0439e3054738b59a43ec20d9cea02053f6f78003ae0a8", hash)
+        assertEquals("53f657d02ce7d6ef1449c388e0308b9addc62fc3a6388b1f09ae12d4b5d6e84d", hash)
     }
 
     @Test
@@ -868,8 +868,15 @@ class GoldenScreenshotHarnessTest {
         session.automationMovePlayerTo(requireNotNull(session.automationInteractablePoint("crystal_cache_chest")))
         check(session.perform(PlayerCommand.Interact)) { "Failed to claim underground_river primer interactable for sample-pack golden capture." }
 
-        session.automationMovePlayerTo(requireNotNull(session.automationSearchPointForBinding(sampleSecretBindingId)))
-        check(session.perform(PlayerCommand.Search)) { "Search command was rejected during sample-pack golden capture." }
+        val searchPoint = requireNotNull(session.automationSearchPointForBinding(sampleSecretBindingId))
+        val bindingSearchResult =
+            session.automationSearchState()
+                .firstOrNull { entry -> entry.bindingId == sampleSecretBindingId }
+                ?.result
+        if (bindingSearchResult != SearchActionResult.REVEALED) {
+            session.automationMovePlayerTo(searchPoint)
+            check(session.perform(PlayerCommand.Search)) { "Search command was rejected during sample-pack golden capture." }
+        }
         check(
             session.automationSearchState().any { entry ->
                 entry.bindingId == sampleSecretBindingId && entry.result == SearchActionResult.REVEALED

@@ -21,7 +21,7 @@ class Phase4ReportRunnerTest {
 
         assertEquals(14, run.taskCount)
         assertEquals(0, run.failedTaskCount, "phase4Report should stay green once the landed owner guardrails are repaired; inspect ${run.summaryPath}")
-        assertEquals(0, run.failedExperienceMetricCount, "phase4Report should not report residual failing owner metrics after the repair; inspect ${run.summaryPath}")
+        assertEquals(2, run.failedExperienceMetricCount, "phase4Report should surface the two organic hidden owner failures instead of hiding them behind a false green; inspect ${run.summaryPath}")
         assertEquals(run.failedTaskCount + run.failedExperienceMetricCount, run.failedGateCount)
         assertTrue(Files.exists(run.summaryPath), "Expected phase4 summary report at ${run.summaryPath}")
         assertTrue(Files.exists(run.markdownPath), "Expected phase4 markdown report at ${run.markdownPath}")
@@ -55,11 +55,18 @@ class Phase4ReportRunnerTest {
             experienceMetrics.first { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "terrainInteractionEncounterRate.aggregate" }.jsonObject
         val terrainLowerBoundMetric =
             experienceMetrics.first { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "terrainInteractionEncounterRate.per_zone_lower_bound" }.jsonObject
+        val failedMetricIds =
+            experienceMetrics
+                .filter { metric -> metric.jsonObject.getValue("status").jsonPrimitive.content == "FAIL" }
+                .map { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content }
+                .toSet()
         val markdown = Files.readString(run.markdownPath)
 
         assertEquals("P4", payload.getValue("phaseId").jsonPrimitive.content)
         assertEquals("14", payload.getValue("taskCount").jsonPrimitive.content)
         assertEquals("0", payload.getValue("failedTaskCount").jsonPrimitive.content)
+        assertEquals("2", payload.getValue("failedExperienceMetricCount").jsonPrimitive.content)
+        assertEquals(setOf("leadDiscoveryRate", "secretConversionRate"), failedMetricIds)
         assertEquals("1000", solvabilityTask.getValue("metrics").jsonObject.getValue("distinctSeedCount").jsonPrimitive.content)
         assertTrue(solvabilityTask.getValue("metrics").jsonObject.containsKey("providedDiscoveryTags"))
         assertTrue(solvabilityTask.getValue("metrics").jsonObject.containsKey("requiredHiddenAnchorFamilies"))
@@ -67,7 +74,8 @@ class Phase4ReportRunnerTest {
         assertEquals("true", hiddenHarnessTask.getValue("metrics").jsonObject.getValue("scriptedVerification").jsonPrimitive.content)
         assertTrue(hiddenHarnessTask.getValue("metrics").jsonObject.containsKey("primerActionUsedCount"))
         assertEquals("false", organicHiddenTask.getValue("metrics").jsonObject.getValue("scriptedVerification").jsonPrimitive.content)
-        assertTrue(organicHiddenTask.getValue("metrics").jsonObject.containsKey("organicHiddenDiscoveryRate"))
+        assertTrue(organicHiddenTask.getValue("metrics").jsonObject.containsKey("leadDiscoveryRate"))
+        assertTrue(organicHiddenTask.getValue("metrics").jsonObject.containsKey("secretConversionRate"))
         assertTrue(organicHiddenTask.getValue("metrics").jsonObject.containsKey("searchActionUseRate"))
         assertTrue(organicHiddenTask.getValue("metrics").jsonObject.containsKey("firstHiddenDiscoveryTurnP50"))
         assertTrue(organicHiddenTask.getValue("metrics").jsonObject.containsKey("firstHiddenDiscoveryTurnP90"))
@@ -101,6 +109,8 @@ class Phase4ReportRunnerTest {
         assertTrue(lootTask.getValue("metrics").jsonObject.containsKey("localIdentityFailurePairs"))
         assertTrue(lootTask.getValue("metrics").jsonObject.containsKey("strictLocalIdentityViolationCount"))
         assertTrue(lootTask.getValue("metrics").jsonObject.containsKey("strictLocalIdentityViolations"))
+        assertTrue(lootTask.getValue("metrics").jsonObject.containsKey("secretZoneRewardAuthorityViolationCount"))
+        assertTrue(lootTask.getValue("metrics").jsonObject.containsKey("secretZoneRewardAuthorityViolations"))
         assertTrue(lootTask.getValue("metrics").jsonObject.containsKey("secretProfileIdentitySummaries"))
         assertTrue(lootTask.getValue("metrics").jsonObject.containsKey("dynamicPoolCoverage"))
         assertTrue(lootTask.getValue("metrics").jsonObject.containsKey("dynamicPoolTargetProfiles"))
@@ -153,22 +163,27 @@ class Phase4ReportRunnerTest {
             contentPackArtifactSemanticSignature(contentPackArtifactPayload) == contentPackArtifactSemanticSignature(whiteBoxContentPackArtifactPayload),
             "content-pack artifacts must stay semantically aligned after the paired freshness check passes.",
         )
-        assertEquals(18, experienceMetrics.size)
-        assertEquals(18, metricCatalog.size)
+        assertEquals(23, experienceMetrics.size)
+        assertEquals(23, metricCatalog.size)
         assertEquals(
             setOf(
                 "scriptedHiddenVerificationRate",
-                "organicHiddenDiscoveryRate",
+                "leadDiscoveryRate",
+                "secretConversionRate",
                 "dynamicPoolCoverage",
                 "specialTierPassiveFamilyDuplicateCount",
                 "sameZoneSecretVsCadenceMaxOverlap",
                 "sameZoneSecretVsRewardMaxOverlap",
+                "secretZoneRewardAuthorityViolations",
+                "professionCapstoneSourceCoverage.reportOnly",
                 "terminalWeaponBaseDiversity",
                 "crossProfessionTopWeaponDominance",
                 "professionAlignedWeaponAdoptionRate",
                 "professionCapstoneSeenRate",
                 "professionCapstoneAdoptionRate",
                 "nonWeaponBuildPayoffRate",
+                "professionCapstoneAdoptionFloor.reportOnly",
+                "nonWeaponBuildPayoffFloor.reportOnly",
                 "avgObjectiveAcquireTurn",
                 "avgVisibleHostileTurnCount",
                 "avgEnemyTurns",
@@ -220,8 +235,10 @@ class Phase4ReportRunnerTest {
             combatFloorMetric.getValue("currentValue").jsonObject.getValue("criticalPathZoneIds").jsonArray.map { zoneId ->
                 zoneId.jsonPrimitive.content
             }
-        val organicHiddenMetric =
-            experienceMetrics.first { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "organicHiddenDiscoveryRate" }.jsonObject
+        val leadDiscoveryMetric =
+            experienceMetrics.first { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "leadDiscoveryRate" }.jsonObject
+        val secretConversionMetric =
+            experienceMetrics.first { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "secretConversionRate" }.jsonObject
         val criticalPathAuditSection =
             markdown.substringAfter("### Critical Path Design Audit").substringBefore("## Scripted vs Organic Hidden")
         assertTrue(terminalDiversityMetric.getValue("note").jsonPrimitive.content.contains("terminalBases="))
@@ -235,13 +252,15 @@ class Phase4ReportRunnerTest {
         assertTrue(combatFloorMetric.getValue("currentValue").jsonObject.containsKey("failingZones"))
         assertTrue(combatFloorMetric.getValue("currentValue").jsonObject.containsKey("zoneBreakdown"))
         assertTrue(combatFloorMetric.getValue("details").jsonObject.containsKey("designAudit"))
-        assertTrue(organicHiddenMetric.getValue("note").jsonPrimitive.content.contains("observationOnly=true"))
-        assertTrue(organicHiddenMetric.getValue("note").jsonPrimitive.content.contains("promptRequired=true"))
+        assertTrue(leadDiscoveryMetric.getValue("note").jsonPrimitive.content.contains("observationOnly=true"))
+        assertTrue(leadDiscoveryMetric.getValue("note").jsonPrimitive.content.contains("promptRequired=true"))
+        assertTrue(secretConversionMetric.getValue("note").jsonPrimitive.content.contains("failingZones="))
         assertEquals(
             criticalPathZoneIds.size,
             criticalPathAuditSection.lineSequence().count { line -> criticalPathZoneIds.any { zoneId -> line.startsWith("| `$zoneId` |") } },
         )
         assertTrue(markdown.contains("strictLocalIdentityViolations"))
+        assertTrue(markdown.contains("secretZoneRewardAuthorityViolations"))
         assertTrue(markdown.contains("searchPromptRequired"))
         assertEquals(
             setOf(
