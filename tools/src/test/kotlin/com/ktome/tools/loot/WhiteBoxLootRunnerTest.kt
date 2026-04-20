@@ -96,6 +96,8 @@ class WhiteBoxLootRunnerTest {
                     "localIdentityFailurePairs",
                     "strictLocalIdentityViolationCount",
                     "strictLocalIdentityViolations",
+                    "secretZoneRewardAuthorityViolationCount",
+                    "secretZoneRewardAuthorityViolations",
                     "secretProfileIdentitySummaries",
                     "preflightCulpritPairCount",
                     "preflightCulpritReasons",
@@ -115,6 +117,8 @@ class WhiteBoxLootRunnerTest {
             assertTrue(corpusMetrics.getValue("sameZoneSecretVsRewardPairs").jsonArray.isNotEmpty())
             assertEquals(0, corpusMetrics.getValue("strictLocalIdentityViolationCount").jsonPrimitive.content.toInt())
             assertTrue(corpusMetrics.getValue("strictLocalIdentityViolations").jsonArray.isEmpty())
+            assertEquals(0, corpusMetrics.getValue("secretZoneRewardAuthorityViolationCount").jsonPrimitive.content.toInt())
+            assertTrue(corpusMetrics.getValue("secretZoneRewardAuthorityViolations").jsonArray.isEmpty())
             assertTrue(corpusMetrics.getValue("specialTierPassiveFamilyDuplicateSummary").jsonObject.containsKey("duplicateFamilies"))
             val rewardRoutingCoverageSummary = corpusMetrics.getValue("rewardRoutingCoverageSummary").jsonObject
             assertEquals(
@@ -129,7 +133,7 @@ class WhiteBoxLootRunnerTest {
                 },
             )
             val secretProfileIdentitySummaries = corpusMetrics.getValue("secretProfileIdentitySummaries").jsonArray
-            assertEquals(5, secretProfileIdentitySummaries.size)
+            assertEquals(6, secretProfileIdentitySummaries.size)
             assertTrue(secretProfileIdentitySummaries.all { summary -> summary.jsonObject.containsKey("identityAxes") })
             assertTrue(secretProfileIdentitySummaries.all { summary -> summary.jsonObject.containsKey("canonicalZoneId") })
             assertTrue(secretProfileIdentitySummaries.none { summary -> summary.jsonObject.containsKey("zoneId") })
@@ -160,6 +164,7 @@ class WhiteBoxLootRunnerTest {
                     "loot.aggregate.same_zone_secret_cadence_guardrail",
                     "loot.aggregate.same_zone_secret_reward_guardrail",
                     "loot.aggregate.strict_pair_guardrail",
+                    "loot.aggregate.secret_zone_reward_authority",
                     "loot.aggregate.passive_coverage",
                     "loot.aggregate.preflight_culprit_alignment",
                 ).all(aggregateRuleIds::contains),

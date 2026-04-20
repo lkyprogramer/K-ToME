@@ -91,6 +91,7 @@ import com.ktome.core.world.solvability.ContentRef
 import com.ktome.core.world.solvability.NodeAnchorId
 import com.ktome.core.world.solvability.RegistryId
 import com.ktome.core.world.solvability.SearchActionResult
+import com.ktome.core.world.solvability.SearchBindingId
 import com.ktome.core.world.ObjectiveState
 import com.ktome.game.data.DataLoader
 import com.ktome.game.data.schema.LootPoolStrategy
@@ -786,16 +787,10 @@ class FoundationGameSessionTest {
         movePlayerTo(session, requireNotNull(session.automationInteractablePoint(RiverCrystalRuntimeKeys.River.CACHE_INTERACTABLE_ID)))
         assertTrue(session.perform(PlayerCommand.Interact))
         assertTrue(session.automationDiscoveryTags().contains("hidden.primer.underground_river.crystal_rift"))
-
-        movePlayerTo(session, hiddenEntranceSearchPoint(session, com.ktome.core.world.solvability.SearchBindingId("search.underground_river.crystal_rift")))
-        assertTrue(session.perform(PlayerCommand.Search))
+        val crystalRiftBindingId = SearchBindingId("search.underground_river.crystal_rift")
         assertEquals(
             SearchActionResult.REVEALED,
-            requireNotNull(
-                activeFloorState(session).searchState.firstOrNull { entry ->
-                    entry.bindingId.value == "search.underground_river.crystal_rift"
-                },
-            ).result,
+            requireNotNull(activeFloorState(session).searchStateFor(crystalRiftBindingId)).result,
         )
     }
 
@@ -814,16 +809,10 @@ class FoundationGameSessionTest {
             assertTrue(session.perform(PlayerCommand.CloseShop))
         }
         assertTrue(session.automationDiscoveryTags().contains("hidden.primer.abyssal_temple.warded_archive"))
-
-        movePlayerTo(session, hiddenEntranceSearchPoint(session, com.ktome.core.world.solvability.SearchBindingId("search.abyssal_temple.warded_archive")))
-        assertTrue(session.perform(PlayerCommand.Search))
+        val wardedArchiveBindingId = SearchBindingId("search.abyssal_temple.warded_archive")
         assertEquals(
             SearchActionResult.REVEALED,
-            requireNotNull(
-                activeFloorState(session).searchState.firstOrNull { entry ->
-                    entry.bindingId.value == "search.abyssal_temple.warded_archive"
-                },
-            ).result,
+            requireNotNull(activeFloorState(session).searchStateFor(wardedArchiveBindingId)).result,
         )
     }
 
@@ -952,31 +941,18 @@ class FoundationGameSessionTest {
                                                 specialTemplateTagPreference = emptyList(),
                                                 affixTagPreference = emptyList(),
                                             ),
-                                hiddenEvents =
-                                    content.schemaCatalog.hiddenEvents.map { event ->
-                                        if (event.id == "hidden.event.greenwood.hidden_cache.reward") {
-                                            event.copy(
-                                                rewards =
-                                                    event.rewards.map { reward ->
-                                                        if (reward.key == HiddenEventRewardKey.LOOT_PROFILE) {
-                                                            HiddenEventReward(
-                                                                key = HiddenEventRewardKey.LOOT_PROFILE,
-                                                                payload =
-                                                                    HiddenEventRewardPayload.LootProfile(
-                                                                        lootProfileRef =
-                                                                            ContentRef(
-                                                                                registry = RegistryId(LOOT_PROFILE_REGISTRY_ID),
-                                                                                id = deterministicRewardProfileId,
-                                                                            ),
-                                                                    ),
-                                                            )
-                                                        } else {
-                                                            reward
-                                                        }
-                                                    },
+                                secretZones =
+                                    content.schemaCatalog.secretZones.map { secretZone ->
+                                        if (secretZone.id.id == "greenwood_hidden_cache") {
+                                            secretZone.copy(
+                                                rewardProfileId =
+                                                    ContentRef(
+                                                        registry = RegistryId(LOOT_PROFILE_REGISTRY_ID),
+                                                        id = deterministicRewardProfileId,
+                                                    ),
                                             )
                                         } else {
-                                            event
+                                            secretZone
                                         }
                                     },
                             ),
@@ -3443,11 +3419,7 @@ class FoundationGameSessionTest {
         assertEquals(VoidPressurePhase.IDLE, state.phase)
         assertTrue(hasAbyssalWardProtection(world, session.playerId))
         assertTrue(session.renderSnapshot().logEvents.any { event -> event.message.key == AbyssalRuntimeKeys.Temple.STABILIZED_LOG_KEY })
-        assertTrue(
-            session.renderSnapshot().logEvents.any { event ->
-                event.message.key == "log.reward.capstone.anchor" || event.message.key == "log.reward.capstone.non_weapon_anchor"
-            },
-        )
+        assertTrue(session.renderSnapshot().uiState.recentRewards.any { entry -> entry.source == RewardPresentationSourceSnapshot.SUPPORT })
         assertTrue(
             world.entitiesWith(Position::class, Interactable::class).any { entityId ->
                 world.get<Interactable>(entityId)?.id == AbyssalRuntimeKeys.Temple.INTERACTABLE_ID

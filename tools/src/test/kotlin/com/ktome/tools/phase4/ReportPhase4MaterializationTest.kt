@@ -52,8 +52,8 @@ class ReportPhase4MaterializationTest {
         assertEquals("report-phase4-v2", payload.getValue("schemaVersion").jsonPrimitive.content)
         assertEquals("P4", payload.getValue("phaseId").jsonPrimitive.content)
         assertEquals("14", payload.getValue("inputCount").jsonPrimitive.content)
-        assertEquals("21", payload.getValue("ownerMetricCount").jsonPrimitive.content)
-        assertEquals(21, ownerMetrics.size)
+        assertEquals("23", payload.getValue("ownerMetricCount").jsonPrimitive.content)
+        assertEquals(23, ownerMetrics.size)
         assertTrue(sections.containsKey("criticalPathPacing"))
         assertTrue(ownerMetrics.any { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "avgObjectiveAcquireTurn" })
         assertTrue(ownerMetrics.any { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "avgVisibleHostileTurnCount" })
@@ -94,7 +94,7 @@ class ReportPhase4MaterializationTest {
             assertTrue(Files.exists(comparisonPath), "Expected canonical parity report at $comparisonPath")
             val comparison = Phase4ReportFixtureTestSupport.json.parseToJsonElement(Files.readString(comparisonPath)).jsonObject
             assertEquals("0", comparison.getValue("mismatchCount").jsonPrimitive.content)
-            assertEquals("21", comparison.getValue("metricCount").jsonPrimitive.content)
+            assertEquals("23", comparison.getValue("metricCount").jsonPrimitive.content)
         } else {
             assertNull(run.comparisonPath)
             assertFalse(Files.exists(staleComparisonPath), "Canonical report-only run should remove stale legacy comparison artifacts.")

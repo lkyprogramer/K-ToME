@@ -93,7 +93,7 @@
 
 完成标准：
 
-1. `organicHiddenDiscoveryRate` 不再靠 primer-only 假绿
+1. `leadDiscoveryRate` 不再靠 primer-only 假绿
 2. secret-zone reward authority 收成单一真源
 3. secret reward 在 same-zone 内有足够身份差异
 4. replay hook 能产出内容记忆点，不只是地图扰动

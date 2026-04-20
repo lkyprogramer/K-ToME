@@ -25,6 +25,7 @@ object Phase4StaticContentValidator {
         statuses: List<StatusSchemaV2>,
     ): HiddenContentStaticSnapshot {
         val hiddenEventIds = schemaCatalog.hiddenEvents.mapTo(linkedSetOf()) { hiddenEvent -> hiddenEvent.id }
+        val hiddenEventsById = schemaCatalog.hiddenEvents.associateBy { hiddenEvent -> hiddenEvent.id }
         val secretZoneIds = schemaCatalog.secretZones.mapTo(linkedSetOf()) { secretZone -> secretZone.id.id }
         val statusIds =
             statuses.flatMapTo(linkedSetOf()) { status ->
@@ -61,6 +62,19 @@ object Phase4StaticContentValidator {
                         require(contentRef.id in hiddenEventIds) {
                             "Secret zone '${secretZone.id.id}' guaranteed content references unknown hidden event '${contentRef.id}'."
                         }
+                            .also {
+                                val hiddenEvent = requireNotNull(hiddenEventsById[contentRef.id]) {
+                                    "Secret zone '${secretZone.id.id}' guaranteed content hidden event '${contentRef.id}' is missing."
+                                }
+                                require(hiddenEvent.rewards.none { reward -> reward.payload is HiddenEventRewardPayload.LootProfile }) {
+                                    "Secret zone '${secretZone.id.id}' hidden event '${hiddenEvent.id}' must not declare LOOT_PROFILE; reward authority belongs to SecretZoneDef.rewardProfileId."
+                                }
+                                val secretZoneRewardCount =
+                                    hiddenEvent.rewards.count { reward -> reward.payload is HiddenEventRewardPayload.SecretZoneReward }
+                                require(secretZoneRewardCount == 1) {
+                                    "Secret zone '${secretZone.id.id}' hidden event '${hiddenEvent.id}' must declare exactly one SECRET_ZONE_REWARD reward."
+                                }
+                            }
 
                     "monster" ->
                         require(monsterTemplatesById.containsKey(contentRef.id)) {
@@ -111,6 +125,8 @@ object Phase4StaticContentValidator {
                             "Hidden event '${hiddenEvent.id}' references unknown loot profile '${payload.lootProfileRef.id}'."
                         }
                     }
+
+                    is HiddenEventRewardPayload.SecretZoneReward -> Unit
 
                     is HiddenEventRewardPayload.TriggerEncounter -> {
                         require(payload.encounterRef.registry.value == MONSTER_REGISTRY_ID) {

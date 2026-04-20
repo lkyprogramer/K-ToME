@@ -45,6 +45,7 @@ data class HiddenEventCondition(
 enum class HiddenEventRewardKey {
     REVEAL_SECRET_ZONE,
     GRANT_BUFF,
+    SECRET_ZONE_REWARD,
     LOOT_PROFILE,
     TRIGGER_ENCOUNTER,
 }
@@ -68,6 +69,8 @@ sealed interface HiddenEventRewardPayload {
         val lootProfileRef: ContentRef,
     ) : HiddenEventRewardPayload
 
+    data object SecretZoneReward : HiddenEventRewardPayload
+
     data class TriggerEncounter(
         val encounterRef: ContentRef,
         val threatCost: Int = 0,
@@ -90,6 +93,10 @@ data class HiddenEventReward(
 
             HiddenEventRewardKey.GRANT_BUFF -> require(payload is HiddenEventRewardPayload.GrantBuff) {
                 "GRANT_BUFF rewards must use GrantBuff payload."
+            }
+
+            HiddenEventRewardKey.SECRET_ZONE_REWARD -> require(payload is HiddenEventRewardPayload.SecretZoneReward) {
+                "SECRET_ZONE_REWARD rewards must use SecretZoneReward payload."
             }
 
             HiddenEventRewardKey.LOOT_PROFILE -> require(payload is HiddenEventRewardPayload.LootProfile) {

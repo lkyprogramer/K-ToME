@@ -28,9 +28,9 @@ secretZones:
       id: greenwood_ambush_hideout
     nameKey: zone.secret.greenwood_ambush_hideout.name
     descKey: zone.secret.greenwood_ambush_hideout.desc
-    visualKey: zone.secret.greenwood_hidden_cache.visual
-    iconKey: zone.secret.greenwood_hidden_cache.icon
-    audioProfile: audio.secret_zone.greenwood_hidden_cache
+    visualKey: zone.secret.greenwood_ambush_hideout.visual
+    iconKey: zone.secret.greenwood_ambush_hideout.icon
+    audioProfile: audio.secret_zone.greenwood_ambush_hideout
     schemaVersion: 1
     tags: [secret_zone, greenwood, optional, mobility, stealth, ambush]
     entryRule:
@@ -41,7 +41,7 @@ secretZones:
     pathClass: SECRET
     rewardProfileId:
       registry: loot_profile
-      id: loot.greenwood_hidden_cache.secret
+      id: loot.greenwood_ambush_hideout.secret
     guaranteedContent:
       - registry: hidden_event
         id: hidden.event.greenwood.ambush_hideout.reward
@@ -69,7 +69,7 @@ secretZones:
     guaranteedContent:
       - registry: hidden_event
         id: hidden.event.deep_iron.slag_cache.reward
-    entranceBindingId: hidden.critical.adjacent
+    entranceBindingId: hidden.goal.adjacent
     returnBridgePolicy: NEAREST_OPTIONAL_ANCHOR
   - id:
       registry: secret_zone
@@ -87,7 +87,7 @@ secretZones:
         - type: REQUIRED_TAG
           requiredTag: hidden.primer.underground_river.crystal_rift
         - type: PERCEPTION_CHECK
-          difficulty: 10
+          difficulty: 8
     pathClass: SECRET
     rewardProfileId:
       registry: loot_profile
@@ -114,7 +114,7 @@ secretZones:
         - type: REQUIRED_TAG
           requiredTag: hidden.primer.abyssal_temple.warded_archive
         - type: PERCEPTION_CHECK
-          difficulty: 15
+          difficulty: 10
     pathClass: SECRET
     rewardProfileId:
       registry: loot_profile
@@ -122,7 +122,7 @@ secretZones:
     guaranteedContent:
       - registry: hidden_event
         id: hidden.event.abyssal_temple.warded_archive.reward
-    entranceBindingId: hidden.goal.adjacent
+    entranceBindingId: hidden.critical.adjacent
     returnBridgePolicy: NEAREST_OPTIONAL_ANCHOR
   - id:
       registry: secret_zone

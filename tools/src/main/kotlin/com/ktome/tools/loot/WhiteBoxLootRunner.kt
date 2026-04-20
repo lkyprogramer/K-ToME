@@ -28,6 +28,7 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
@@ -338,6 +339,20 @@ object WhiteBoxLootRunner {
                     },
             ),
             WhiteBoxAssertionResult(
+                ruleId = "loot.aggregate.secret_zone_reward_authority",
+                passed = profileOverlapSummary.secretZoneRewardAuthorityViolations.isEmpty(),
+                message = "Secret-zone reward authority stays pinned to SecretZoneDef.rewardProfileId without fallback LOOT_PROFILE paths.",
+                context =
+                    buildJsonObject {
+                        put("secretZoneRewardAuthorityViolationCount", profileOverlapSummary.secretZoneRewardAuthorityViolations.size)
+                        putJsonArray("secretZoneRewardAuthorityViolations") {
+                            profileOverlapSummary.secretZoneRewardAuthorityViolations.forEach { violation ->
+                                add(violation.toJson())
+                            }
+                        }
+                    },
+            ),
+            WhiteBoxAssertionResult(
                 ruleId = "loot.aggregate.passive_coverage",
                 passed = kernelRun.passiveCoverageSummary.coverageRatio >= 0.80,
                 message = "Affix passive coverage stays at or above the OPT PR-03 threshold.",
@@ -429,6 +444,12 @@ object WhiteBoxLootRunner {
             put("strictLocalIdentityViolationCount", profileOverlapSummary.strictLocalIdentityViolations.size)
             putJsonArray("strictLocalIdentityViolations") {
                 profileOverlapSummary.strictLocalIdentityViolations.forEach { violation ->
+                    add(violation.toJson())
+                }
+            }
+            put("secretZoneRewardAuthorityViolationCount", profileOverlapSummary.secretZoneRewardAuthorityViolations.size)
+            putJsonArray("secretZoneRewardAuthorityViolations") {
+                profileOverlapSummary.secretZoneRewardAuthorityViolations.forEach { violation ->
                     add(violation.toJson())
                 }
             }
@@ -595,6 +616,7 @@ object WhiteBoxLootRunner {
         val rewardMetricId = "sameZoneSecretVsRewardMaxOverlap"
         val dynamicPoolMetricId = "dynamicPoolCoverage"
         val specialTierDuplicateMetricId = "specialTierPassiveFamilyDuplicateCount"
+        val secretZoneRewardAuthorityMetricId = "secretZoneRewardAuthorityViolations"
         val sourceCoverageMetricId = "professionCapstoneSourceCoverage.reportOnly"
         val overlapSummaryJson = profileOverlapSummary.toJson()
         val strictViolationBreakdown =
@@ -668,6 +690,8 @@ object WhiteBoxLootRunner {
         val specialTierPassiveFamilyDuplicateSummary = corpusAggregateMetrics.getValue("specialTierPassiveFamilyDuplicateSummary")
         val specialTierPassiveFamilyDuplicateCount =
             corpusAggregateMetrics.getValue("specialTierPassiveFamilyDuplicateCount").jsonPrimitive.content.toInt()
+        val secretZoneRewardAuthorityViolationCount =
+            corpusAggregateMetrics.getValue("secretZoneRewardAuthorityViolationCount").jsonPrimitive.content.toInt()
         val rewardRoutingCoverageSummary = corpusAggregateMetrics.getValue("rewardRoutingCoverageSummary")
         val uniqueArtifactMeaningfulSwapRate = corpusAggregateMetrics.getValue("uniqueArtifactMeaningfulSwapRate").jsonPrimitive.content.toDouble()
         val dynamicPoolEntry =
@@ -714,6 +738,34 @@ object WhiteBoxLootRunner {
                         "meaningfulSwap=${formatPercent(uniqueArtifactMeaningfulSwapRate)}",
                 details = corpusAggregateMetrics,
             )
+        val secretZoneRewardAuthorityRange = baseline.requiredMetric(secretZoneRewardAuthorityMetricId)
+        val secretZoneRewardAuthorityEntry =
+            EvaluationEntry(
+                metricId = secretZoneRewardAuthorityMetricId,
+                status =
+                    if (Phase4OwnerMetricTargets.passes(secretZoneRewardAuthorityRange, secretZoneRewardAuthorityViolationCount.toDouble())) {
+                        EvaluationEntryStatus.PASS
+                    } else {
+                        EvaluationEntryStatus.UNEXPECTED_REGRESSION
+                    },
+                currentValue =
+                    buildJsonObject {
+                        put("count", secretZoneRewardAuthorityViolationCount)
+                        put("violations", corpusAggregateMetrics.getValue("secretZoneRewardAuthorityViolations"))
+                    },
+                currentValueText = secretZoneRewardAuthorityViolationCount.toString(),
+                targetText = Phase4OwnerMetricTargets.targetText(secretZoneRewardAuthorityMetricId, secretZoneRewardAuthorityRange),
+                note =
+                    if (secretZoneRewardAuthorityViolationCount == 0) {
+                        "secretZoneDef.rewardProfileId is the only secret reward authority"
+                    } else {
+                        "violations=" +
+                            corpusAggregateMetrics.getValue("secretZoneRewardAuthorityViolations").jsonArray.joinToString { violation ->
+                                violation.jsonObject.getValue("violationId").jsonPrimitive.content
+                            }
+                    },
+                details = corpusAggregateMetrics,
+            )
         val sourceCoverageSummary = preflightArtifacts.rewardRoutingCoverageSummary
         val missingSourceCoverage =
             sourceCoverageSummary.professionSourceCoverage.filterNot(ProfessionCapstoneSourceCoverage::covered)
@@ -735,7 +787,7 @@ object WhiteBoxLootRunner {
                     },
                 details = corpusAggregateMetrics,
             )
-        val entries = localRewardEvaluation.entries + dynamicPoolEntry + specialTierDuplicateEntry + sourceCoverageEntry
+        val entries = localRewardEvaluation.entries + dynamicPoolEntry + specialTierDuplicateEntry + secretZoneRewardAuthorityEntry + sourceCoverageEntry
         val unexpectedRegressionCount = entries.count { entry -> entry.status == EvaluationEntryStatus.UNEXPECTED_REGRESSION }
         return localRewardEvaluation.copy(
             verdict = if (unexpectedRegressionCount > 0) EvaluationVerdict.FAIL else EvaluationVerdict.PASS,

@@ -14,6 +14,7 @@ import com.ktome.core.loot.SpecialTier
 import com.ktome.core.phase.PackId
 import com.ktome.core.save.SaveManager
 import com.ktome.core.map.Point
+import com.ktome.core.world.solvability.SearchActionResult
 import com.ktome.core.world.solvability.SearchBindingId
 import com.ktome.game.FoundationGameConfig
 import com.ktome.game.FoundationGameSession
@@ -83,7 +84,7 @@ data class ContentPackCaseResult(
     val secretZoneVisualKey: String?,
     val secretZoneAudioProfile: String?,
     val hiddenEventPresent: Boolean,
-    val hiddenEventLootProfileId: String?,
+    val secretRewardProfileId: String?,
     val lootProfilePresent: Boolean,
     val lootProfileRewardBudget: Int?,
     val lootProfileItemIds: List<String>,
@@ -133,7 +134,7 @@ data class ContentPackCaseResult(
             put("secretZoneVisualKey", secretZoneVisualKey)
             put("secretZoneAudioProfile", secretZoneAudioProfile)
             put("hiddenEventPresent", hiddenEventPresent)
-            put("hiddenEventLootProfileId", hiddenEventLootProfileId)
+            put("secretRewardProfileId", secretRewardProfileId)
             put("lootProfilePresent", lootProfilePresent)
             put("lootProfileRewardBudget", lootProfileRewardBudget)
             putJsonArray("lootProfileItemIds") { lootProfileItemIds.forEach { itemId -> add(JsonPrimitive(itemId)) } }
@@ -337,7 +338,7 @@ object ContentPackHarnessRunner {
                     expectedSecretZoneNameKey = "sample_flooded_relics.zone.flooded_reliquary.name",
                     expectedSecretZoneVisualKey = "sample_flooded_relics.zone.flooded_reliquary.visual",
                     expectedSecretZoneAudioProfile = "sample_flooded_relics.audio.zone.flooded_reliquary",
-                    expectedHiddenEventLootProfileId = sampleLootProfileId,
+                    expectedSecretRewardProfileId = sampleLootProfileId,
                     expectedLootProfileId = sampleLootProfileId,
                     expectedLootProfileSpecialTemplateTagPreference = listOf("underground_river"),
                     expectedLootProfileAffixTagPreference = listOf("underground_river"),
@@ -365,7 +366,7 @@ object ContentPackHarnessRunner {
                     expectedSecretZoneNameKey = "zone.secret.underground_river_crystal_rift.name",
                     expectedSecretZoneVisualKey = "zone.secret.underground_river_crystal_rift.visual",
                     expectedSecretZoneAudioProfile = "audio.secret_zone.underground_river_crystal_rift",
-                    expectedHiddenEventLootProfileId = baseLootProfileId,
+                    expectedSecretRewardProfileId = baseLootProfileId,
                     expectedLootProfileId = baseLootProfileId,
                     localeKeys =
                         listOf(
@@ -399,7 +400,7 @@ object ContentPackHarnessRunner {
                     expectedSecretZoneNameKey = "fixture_sample_flooded_relics_override.zone.flooded_reliquary.name",
                     expectedSecretZoneVisualKey = "fixture_sample_flooded_relics_override.zone.flooded_reliquary.visual",
                     expectedSecretZoneAudioProfile = "fixture_sample_flooded_relics_override.audio.zone.flooded_reliquary",
-                    expectedHiddenEventLootProfileId = sampleLootProfileId,
+                    expectedSecretRewardProfileId = sampleLootProfileId,
                     expectedLootProfileId = sampleLootProfileId,
                     expectedLootProfileSpecialTemplateTagPreference = listOf("underground_river"),
                     expectedLootProfileAffixTagPreference = listOf("underground_river"),
@@ -435,7 +436,7 @@ object ContentPackHarnessRunner {
                     },
                     seedList = harnessSpec.harnessSeeds,
                     expectedResolvedOrder = listOf(ContentPackFixtureCatalog.samplePackId, ContentPackFixtureCatalog.sampleBiasSplitFixturePackId),
-                    expectedHiddenEventLootProfileId = sampleLootProfileId,
+                    expectedSecretRewardProfileId = sampleLootProfileId,
                     expectedLootProfileId = sampleLootProfileId,
                     expectedLootProfileSpecialTemplateTagPreference = listOf("underground_river"),
                     expectedLootProfileAffixTagPreference = listOf("water"),
@@ -613,7 +614,7 @@ object ContentPackHarnessRunner {
                 val fallbackToBaseVerified =
                     scenario.expectFallbackToBase &&
                         secretZone?.nameKey == "zone.secret.underground_river_crystal_rift.name" &&
-                        hiddenEventLootProfileId(hiddenEvent) == baseLootProfileId
+                        secretRewardProfileId(secretZone, hiddenEvent) == baseLootProfileId
                 val resourceContracts =
                     if (scenario.verifyResourceContracts) {
                         verifySamplePackResourceContracts()
@@ -659,13 +660,13 @@ object ContentPackHarnessRunner {
                         if (scenario.expectedSecretZoneAudioProfile != null && secretZone?.audioProfile != scenario.expectedSecretZoneAudioProfile) {
                             add("case.secret_zone_audio_profile_mismatch")
                         }
-                        if (hiddenEvent == null && scenario.expectedHiddenEventLootProfileId != null) {
+                        if (hiddenEvent == null && scenario.expectedSecretRewardProfileId != null) {
                             add("case.hidden_event_missing")
                         }
-                        if (scenario.expectedHiddenEventLootProfileId != null &&
-                            hiddenEventLootProfileId(hiddenEvent) != scenario.expectedHiddenEventLootProfileId
+                        if (scenario.expectedSecretRewardProfileId != null &&
+                            secretRewardProfileId(secretZone, hiddenEvent) != scenario.expectedSecretRewardProfileId
                         ) {
-                            add("case.hidden_event_loot_profile_mismatch")
+                            add("case.secret_reward_profile_mismatch")
                         }
                         if (scenario.expectedLootProfileId != null && lootProfile == null) {
                             add("case.loot_profile_missing")
@@ -720,7 +721,7 @@ object ContentPackHarnessRunner {
                     secretZoneVisualKey = secretZone?.visualKey,
                     secretZoneAudioProfile = secretZone?.audioProfile,
                     hiddenEventPresent = hiddenEvent != null,
-                    hiddenEventLootProfileId = hiddenEventLootProfileId(hiddenEvent),
+                    secretRewardProfileId = secretRewardProfileId(secretZone, hiddenEvent),
                     lootProfilePresent = lootProfile != null,
                     lootProfileRewardBudget = lootProfile?.rewardBudget,
                     lootProfileItemIds = lootProfile?.itemIds.orEmpty(),
@@ -792,7 +793,7 @@ object ContentPackHarnessRunner {
                 secretZoneVisualKey = null,
                 secretZoneAudioProfile = null,
                 hiddenEventPresent = false,
-                hiddenEventLootProfileId = null,
+                secretRewardProfileId = null,
                 lootProfilePresent = false,
                 lootProfileRewardBudget = null,
                 lootProfileItemIds = emptyList(),
@@ -882,8 +883,10 @@ object ContentPackHarnessRunner {
         val searchPoint = requireNotNull(session.automationSearchPointForBinding(bindingId)) {
             "Missing search point for sample content-pack harness binding '$secretBindingId'."
         }
-        session.automationMovePlayerTo(searchPoint)
-        check(session.perform(PlayerCommand.Search)) { "Failed to reveal sample content-pack entrance for harness verification." }
+        if (session.automationSearchState().single().result != SearchActionResult.REVEALED) {
+            session.automationMovePlayerTo(searchPoint)
+            check(session.perform(PlayerCommand.Search)) { "Failed to reveal sample content-pack entrance for harness verification." }
+        }
 
         val entrancePoint = requireNotNull(session.automationHiddenEntrancePointForBinding(bindingId)) {
             "Expected revealed hidden entrance for sample content-pack harness."
@@ -910,13 +913,13 @@ object ContentPackHarnessRunner {
         world.entitiesWith(MonsterTemplateId::class).forEach(world::destroyEntity)
     }
 
-    private fun hiddenEventLootProfileId(hiddenEvent: HiddenEventDef?): String? =
-        hiddenEvent
-            ?.rewards
-            ?.mapNotNull { reward -> reward.payload as? HiddenEventRewardPayload.LootProfile }
-            ?.firstOrNull()
-            ?.lootProfileRef
-            ?.id
+    private fun secretRewardProfileId(
+        secretZone: SecretZoneDef?,
+        hiddenEvent: HiddenEventDef?,
+    ): String? {
+        val reward = hiddenEvent?.rewards.orEmpty()
+        return if (reward.any { entry -> entry.payload is HiddenEventRewardPayload.SecretZoneReward }) secretZone?.rewardProfileId?.id else null
+    }
 
     private fun verifySamplePackResourceContracts(): ResourceContractCheck {
         val packRoot = ContentPackFixtureCatalog.samplePackRoot()
@@ -1264,7 +1267,7 @@ object ContentPackHarnessRunner {
         val expectedSecretZoneNameKey: String? = null,
         val expectedSecretZoneVisualKey: String? = null,
         val expectedSecretZoneAudioProfile: String? = null,
-        val expectedHiddenEventLootProfileId: String? = null,
+        val expectedSecretRewardProfileId: String? = null,
         val expectedLootProfileId: String? = null,
         val expectedLootProfileSpecialTemplateTagPreference: List<String> = emptyList(),
         val expectedLootProfileAffixTagPreference: List<String> = emptyList(),

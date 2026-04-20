@@ -6519,6 +6519,40 @@
       ]
     },
     {
+      "key": "zone.secret.greenwood_ambush_hideout.icon",
+      "category": "icon_quest",
+      "rawOutputPath": "phase4/v3_pr03/zone_secret_greenwood_ambush_hideout_icon.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "v3",
+        "pr03",
+        "zone",
+        "greenwood",
+        "secret",
+        "ambush"
+      ]
+    },
+    {
+      "key": "zone.secret.greenwood_ambush_hideout.visual",
+      "category": "portrait",
+      "rawOutputPath": "phase4/v3_pr03/zone_secret_greenwood_ambush_hideout_visual.png",
+      "footprint": "ui",
+      "pivotX": 0.5,
+      "pivotY": 0.5,
+      "tags": [
+        "phase4",
+        "v3",
+        "pr03",
+        "zone",
+        "greenwood",
+        "secret",
+        "ambush"
+      ]
+    },
+    {
       "key": "zone.secret.deep_iron_slag_cache.icon",
       "category": "icon_quest",
       "rawOutputPath": "phase4/pr07/zone_secret_deep_iron_slag_cache_icon.png",

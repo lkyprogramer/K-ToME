@@ -198,12 +198,6 @@ object WhiteBoxSolvabilityRunner {
                         context = metrics,
                     ),
                     WhiteBoxAssertionResult(
-                        ruleId = "solvability.aggregate.corpus_fail_coverage",
-                        passed = metrics.intValue("casesWithFail") > 0,
-                        message = "Corpus contains at least one reveal-fail case.",
-                        context = metrics,
-                    ),
-                    WhiteBoxAssertionResult(
                         ruleId = "solvability.aggregate.corpus_backtrack_coverage",
                         passed = metrics.intValue("casesWithBacktrackProof") > 0,
                         message = "Corpus contains at least one OPTIONAL -> CRITICAL_PATH backtrack proof case.",

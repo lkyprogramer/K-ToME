@@ -91,7 +91,7 @@
    - 不允许使用 `HiddenPrimerAction` 或直接 reveal API
    - `runtimeFailureCount = 0`
    - summary 必须显式标记 `scriptedVerification = false`
-   - summary 必须保留 `searchActionUseRate / organicHiddenDiscoveryRate / secretZoneEntryRate`
+   - summary 必须保留 `searchActionUseRate / leadDiscoveryRate / secretConversionRate / secretZoneEntryRate`
 8. `longRunLab`
    - `long-run-full.json` 必须保留 `terminalWeaponBaseDiversity`
    - `long-run-full.json` 必须保留 `crossProfessionTopWeaponDominance`
@@ -178,6 +178,7 @@
    - `sameZoneSecretVsCadencePairs / sameZoneSecretVsRewardPairs`
    - `dynamicPoolCoverage / dynamicPoolTargetProfiles`
    - `sameZoneSecretVsCadenceMaxOverlap / sameZoneSecretVsRewardMaxOverlap`
+   - `secretZoneRewardAuthorityViolationCount / secretZoneRewardAuthorityViolations`
    - `localIdentityFailurePairs`
    - `specialTierPassiveFamilyDuplicateCount`
    - `specialTierPassiveFamilyDuplicateSummary`
@@ -248,7 +249,8 @@
 1. 固定 `500` 个 seed 跑 `organicHiddenProbe`。
 2. 记录：
    - `searchAttemptCount / runsWithSearchActionCount / searchActionUseCount`
-   - `discoveryWithoutPrimerCount / organicHiddenDiscoveryRate`
+   - `leadDiscoveryCount / leadDiscoveryRate`
+   - `secretConversionCount / secretConversionRate`
    - `secretZoneEntryCount / secretZoneEntryRate`
    - `averageFirstHiddenDiscoveryTurn / averageFirstSecretZoneEntryTurn`
    - zone breakdown

@@ -274,6 +274,15 @@ def add_profile(samples: list[float], sample_rate: int, profile: str, rng: rando
         for start_s, midi in ((0.62, 76.0), (2.24, 81.0), (4.04, 79.0)):
             mix_chime(samples, sample_rate, start_s, 0.72, note(midi), 0.08)
         return
+    if profile == "secret_zone_greenwood_ambush_hideout":
+        mix_noise(samples, sample_rate, 0.0, 5.1, 0.04, rng, attack=0.2, release=0.5, smooth=0.52)
+        mix_tone(samples, sample_rate, 0.0, 5.1, 0.035, note(36.0), note(34.0), waveform="triangle", attack=0.4, release=0.8)
+        for start_s in (0.48, 1.46, 2.98, 4.12):
+            mix_click(samples, sample_rate, start_s, 0.055)
+            mix_impact(samples, sample_rate, start_s + 0.06, 0.08, rng, heavy=False)
+        mix_whoosh(samples, sample_rate, 1.72, 0.62, 0.08, rng, bright=False)
+        mix_chime(samples, sample_rate, 3.56, 0.82, note(64.0), 0.07)
+        return
     if profile == "secret_zone_deep_iron_slag_cache":
         mix_noise(samples, sample_rate, 0.0, 4.8, 0.035, rng, attack=0.2, release=0.5, smooth=0.18)
         mix_tone(samples, sample_rate, 0.0, 4.8, 0.05, note(31.0), waveform="triangle", attack=0.4, release=0.8)

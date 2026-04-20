@@ -470,59 +470,101 @@ internal object Phase4AggregationInputRunner {
         baseline: VerificationBaseline,
     ): EvaluationResult {
         val totalCases = task.metrics.intValue("totalCases")
-        val discoveryCount = task.metrics.intValue("discoveryWithoutPrimerCount")
-        val discoveryRate = task.metrics.doubleValue("organicHiddenDiscoveryRate")
+        val leadDiscoveryCount = task.metrics.intValue("leadDiscoveryCount")
+        val leadDiscoveryRate = task.metrics.doubleValue("leadDiscoveryRate")
+        val secretConversionCount = task.metrics.intValue("secretConversionCount")
+        val secretConversionRate = task.metrics.doubleValue("secretConversionRate")
         val searchActionUseRate = task.metrics.doubleValue("searchActionUseRate")
         val secretZoneEntryRate = task.metrics.doubleValue("secretZoneEntryRate")
-        val metricId = "organicHiddenDiscoveryRate"
-        val range = baseline.requiredMetric(metricId)
-        val result =
-            VerificationBaselineComparator.compareBudgetThreshold(
-                domainId = "organic-hidden",
-                evaluationId = "organic-hidden.owner",
-                baseline = baseline.copy(expectedMetricRanges = listOf(range)),
-                actualMetrics = mapOf(metricId to discoveryRate),
-                currentValueTexts =
-                    mapOf(
-                        metricId to
-                            "${formatPercent(discoveryRate)} ($discoveryCount/$totalCases), " +
-                                "searchUse=${formatPercent(searchActionUseRate)}, secretEntry=${formatPercent(secretZoneEntryRate)}",
-                    ),
-                currentValueElements =
-                    mapOf(
-                        metricId to
-                            buildJsonObject {
-                                put("rate", task.metrics.getValue("organicHiddenDiscoveryRate"))
-                                put("totalCases", task.metrics.getValue("totalCases"))
-                                put("discoveryWithoutPrimerCount", task.metrics.getValue("discoveryWithoutPrimerCount"))
-                                put("searchActionUseRate", task.metrics.getValue("searchActionUseRate"))
-                                put("secretZoneEntryRate", task.metrics.getValue("secretZoneEntryRate"))
-                                put("firstHiddenDiscoveryTurnP50", task.metrics.getValue("firstHiddenDiscoveryTurnP50"))
-                                put("firstHiddenDiscoveryTurnP90", task.metrics.getValue("firstHiddenDiscoveryTurnP90"))
-                                put("firstSecretZoneEntryTurnP50", task.metrics.getValue("firstSecretZoneEntryTurnP50"))
-                                put("firstSecretZoneEntryTurnP90", task.metrics.getValue("firstSecretZoneEntryTurnP90"))
-                                put("comboCount", task.metrics.getValue("comboCount"))
-                                put("seedsPerZoneCombo", task.metrics.getValue("seedsPerZoneCombo"))
-                                put("searchPromptRequired", task.metrics.getValue("searchPromptRequired"))
-                                put("reactiveSearchOnly", task.metrics.getValue("reactiveSearchOnly"))
-                                put("zones", task.metrics.getValue("zones"))
-                                put("combinations", task.metrics.getValue("combinations"))
-                                put("zoneDiscoveryDistribution", task.metrics.getValue("zoneDiscoveryDistribution"))
-                                put("secretZoneDiscoveryDistribution", task.metrics.getValue("secretZoneDiscoveryDistribution"))
-                            },
-                    ),
-                detailsByMetricId = mapOf(metricId to task.metrics),
+        val leadMetricId = "leadDiscoveryRate"
+        val secretConversionMetricId = "secretConversionRate"
+        val leadRange = baseline.requiredMetric(leadMetricId)
+        val secretConversionRange = baseline.requiredMetric(secretConversionMetricId)
+        val perZoneSecretEntryMinRate = task.metrics.doubleValue("perZoneSecretEntryMinRate")
+        val failingSecretEntryZoneIds = task.metrics.stringList("failingSecretEntryZoneIds")
+        val leadEntry =
+            EvaluationEntry(
+                metricId = leadMetricId,
+                status =
+                    if (Phase4OwnerMetricTargets.passes(leadRange, leadDiscoveryRate)) {
+                        EvaluationEntryStatus.PASS
+                    } else {
+                        EvaluationEntryStatus.UNEXPECTED_REGRESSION
+                    },
+                currentValue =
+                    buildJsonObject {
+                        put("rate", task.metrics.getValue("leadDiscoveryRate"))
+                        put("totalCases", task.metrics.getValue("totalCases"))
+                        put("leadDiscoveryCount", task.metrics.getValue("leadDiscoveryCount"))
+                        put("searchActionUseRate", task.metrics.getValue("searchActionUseRate"))
+                        put("secretZoneEntryRate", task.metrics.getValue("secretZoneEntryRate"))
+                        put("secretConversionRate", task.metrics.getValue("secretConversionRate"))
+                        put("firstHiddenDiscoveryTurnP50", task.metrics.getValue("firstHiddenDiscoveryTurnP50"))
+                        put("firstHiddenDiscoveryTurnP90", task.metrics.getValue("firstHiddenDiscoveryTurnP90"))
+                        put("firstSecretZoneEntryTurnP50", task.metrics.getValue("firstSecretZoneEntryTurnP50"))
+                        put("firstSecretZoneEntryTurnP90", task.metrics.getValue("firstSecretZoneEntryTurnP90"))
+                        put("comboCount", task.metrics.getValue("comboCount"))
+                        put("seedsPerZoneCombo", task.metrics.getValue("seedsPerZoneCombo"))
+                        put("searchPromptRequired", task.metrics.getValue("searchPromptRequired"))
+                        put("reactiveSearchOnly", task.metrics.getValue("reactiveSearchOnly"))
+                        put("zones", task.metrics.getValue("zones"))
+                        put("combinations", task.metrics.getValue("combinations"))
+                        put("zoneDiscoveryDistribution", task.metrics.getValue("zoneDiscoveryDistribution"))
+                        put("secretZoneDiscoveryDistribution", task.metrics.getValue("secretZoneDiscoveryDistribution"))
+                    },
+                currentValueText =
+                    "${formatPercent(leadDiscoveryRate)} ($leadDiscoveryCount/$totalCases), " +
+                        "searchUse=${formatPercent(searchActionUseRate)}, secretEntry=${formatPercent(secretZoneEntryRate)}",
+                targetText = Phase4OwnerMetricTargets.targetText(leadMetricId, leadRange),
+                note =
+                    "probeBot=${task.metrics.stringValue("probeBotId")}, scripted=false, observationOnly=true, " +
+                        "promptRequired=${task.metrics.booleanValue("searchPromptRequired")}, " +
+                        "combos=${task.metrics.intValue("comboCount")}, seedsPerCombo=${task.metrics.intValue("seedsPerZoneCombo")}",
+                details = task.metrics,
             )
-        return result.withEntryPresentation(
-            metricId = metricId,
-            presentation =
-                MetricPresentation(
-                    targetText = Phase4OwnerMetricTargets.targetText(metricId, range),
-                    note =
-                        "probeBot=${task.metrics.stringValue("probeBotId")}, scripted=false, observationOnly=true, " +
-                            "promptRequired=${task.metrics.booleanValue("searchPromptRequired")}, " +
-                            "combos=${task.metrics.intValue("comboCount")}, seedsPerCombo=${task.metrics.intValue("seedsPerZoneCombo")}",
-                ),
+        val secretConversionEntry =
+            EvaluationEntry(
+                metricId = secretConversionMetricId,
+                status =
+                    if (Phase4OwnerMetricTargets.passes(secretConversionRange, secretConversionRate) && failingSecretEntryZoneIds.isEmpty()) {
+                        EvaluationEntryStatus.PASS
+                    } else {
+                        EvaluationEntryStatus.UNEXPECTED_REGRESSION
+                    },
+                currentValue =
+                    buildJsonObject {
+                        put("rate", task.metrics.getValue("secretConversionRate"))
+                        put("leadDiscoveryCount", task.metrics.getValue("leadDiscoveryCount"))
+                        put("secretConversionCount", task.metrics.getValue("secretConversionCount"))
+                        put("secretZoneEntryRate", task.metrics.getValue("secretZoneEntryRate"))
+                        put("perZoneSecretEntryMinRate", task.metrics.getValue("perZoneSecretEntryMinRate"))
+                        put("failingSecretEntryZoneIds", task.metrics.getValue("failingSecretEntryZoneIds"))
+                        put("zones", task.metrics.getValue("zones"))
+                    },
+                currentValueText =
+                    "${formatPercent(secretConversionRate)} ($secretConversionCount/$leadDiscoveryCount), " +
+                        "secretEntry=${formatPercent(secretZoneEntryRate)}",
+                targetText = Phase4OwnerMetricTargets.targetText(secretConversionMetricId, secretConversionRange),
+                note =
+                    "perZoneSecretEntryMinRate=${formatPercent(perZoneSecretEntryMinRate)}, " +
+                        "failingZones=${failingSecretEntryZoneIds.joinToString().ifBlank { "none" }}",
+                details = task.metrics,
+            )
+        val entries = listOf(leadEntry, secretConversionEntry)
+        val unexpectedRegressionCount = entries.count { entry -> entry.status == EvaluationEntryStatus.UNEXPECTED_REGRESSION }
+        return EvaluationResult(
+            evaluationId = "organic-hidden.owner",
+            domainId = "organic-hidden",
+            mode = baseline.mode,
+            verdict = if (unexpectedRegressionCount == 0) EvaluationVerdict.PASS else EvaluationVerdict.FAIL,
+            baselineId = baseline.baselineId,
+            metricDefinitionVersion = baseline.metricDefinitionVersion,
+            passCount = entries.count { entry -> entry.status == EvaluationEntryStatus.PASS },
+            approvedDebtCount = 0,
+            expectedFailureCount = 0,
+            unexpectedRegressionCount = unexpectedRegressionCount,
+            improvedDebtCount = 0,
+            entries = entries,
         )
     }
 
@@ -534,6 +576,7 @@ internal object Phase4AggregationInputRunner {
         val rewardMetricId = "sameZoneSecretVsRewardMaxOverlap"
         val dynamicPoolMetricId = "dynamicPoolCoverage"
         val specialTierDuplicateMetricId = "specialTierPassiveFamilyDuplicateCount"
+        val secretZoneRewardAuthorityMetricId = "secretZoneRewardAuthorityViolations"
         val sourceCoverageMetricId = "professionCapstoneSourceCoverage.reportOnly"
         val cadenceOverlap = task.metrics.doubleValue(cadenceMetricId)
         val rewardOverlap = task.metrics.doubleValue(rewardMetricId)
@@ -592,6 +635,7 @@ internal object Phase4AggregationInputRunner {
         )
         val dynamicPoolRange = baseline.requiredMetric(dynamicPoolMetricId)
         val specialTierDuplicateRange = baseline.requiredMetric(specialTierDuplicateMetricId)
+        val secretZoneRewardAuthorityRange = baseline.requiredMetric(secretZoneRewardAuthorityMetricId)
         val dynamicPoolEntry =
             EvaluationEntry(
                 metricId = dynamicPoolMetricId,
@@ -637,6 +681,35 @@ internal object Phase4AggregationInputRunner {
                         "meaningfulSwap=${formatPercent(uniqueArtifactMeaningfulSwapRate)}",
                 details = task.metrics,
             )
+        val secretZoneRewardAuthorityViolationCount =
+            task.metrics.intValue("secretZoneRewardAuthorityViolationCount")
+        val secretZoneRewardAuthorityEntry =
+            EvaluationEntry(
+                metricId = secretZoneRewardAuthorityMetricId,
+                status =
+                    if (Phase4OwnerMetricTargets.passes(secretZoneRewardAuthorityRange, secretZoneRewardAuthorityViolationCount.toDouble())) {
+                        EvaluationEntryStatus.PASS
+                    } else {
+                        EvaluationEntryStatus.UNEXPECTED_REGRESSION
+                    },
+                currentValue =
+                    buildJsonObject {
+                        put("count", task.metrics.getValue("secretZoneRewardAuthorityViolationCount"))
+                        put("violations", task.metrics.getValue("secretZoneRewardAuthorityViolations"))
+                    },
+                currentValueText = secretZoneRewardAuthorityViolationCount.toString(),
+                targetText = Phase4OwnerMetricTargets.targetText(secretZoneRewardAuthorityMetricId, secretZoneRewardAuthorityRange),
+                note =
+                    if (secretZoneRewardAuthorityViolationCount == 0) {
+                        "secretZoneDef.rewardProfileId is the only authority"
+                    } else {
+                        "violations=" +
+                            task.metrics.getValue("secretZoneRewardAuthorityViolations").jsonArray.joinToString { violation ->
+                                violation.jsonObject.getValue("violationId").jsonPrimitive.content
+                            }
+                    },
+                details = task.metrics,
+            )
         val sourceCoveragePairs = rewardRoutingCoverageSummary.jsonObject.getValue("professionSourceCoverage").jsonArray
         val missingSourceCoverage =
             sourceCoveragePairs.filter { coverage ->
@@ -664,7 +737,7 @@ internal object Phase4AggregationInputRunner {
                     },
                 details = task.metrics,
             )
-        val entries = localRewardEvaluation.entries + dynamicPoolEntry + specialTierDuplicateEntry + sourceCoverageEntry
+        val entries = localRewardEvaluation.entries + dynamicPoolEntry + specialTierDuplicateEntry + secretZoneRewardAuthorityEntry + sourceCoverageEntry
         val unexpectedRegressionCount = entries.count { entry -> entry.status == EvaluationEntryStatus.UNEXPECTED_REGRESSION }
         return localRewardEvaluation.copy(
             verdict = if (unexpectedRegressionCount > 0) EvaluationVerdict.FAIL else EvaluationVerdict.PASS,

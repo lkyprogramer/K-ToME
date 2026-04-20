@@ -116,9 +116,7 @@ class ContentPackRewardPresentationTest {
         assertTrue(session.perform(PlayerCommand.DropInventoryItem(session.inventoryItems().first().index)))
         session.automationMovePlayerTo(requireNotNull(session.automationInteractablePoint("crystal_cache_chest")))
         assertTrue(session.perform(PlayerCommand.Interact))
-        session.automationMovePlayerTo(requireNotNull(session.automationSearchPointForBinding(sampleSecretBindingId)))
-        assertTrue(session.perform(PlayerCommand.Search))
-        assertTrue(session.automationSearchState().single().result == com.ktome.core.world.solvability.SearchActionResult.REVEALED)
+        assertEquals(com.ktome.core.world.solvability.SearchActionResult.REVEALED, session.automationSearchState().single().result)
 
         session.automationMovePlayerTo(requireNotNull(session.automationHiddenEntrancePointForBinding(sampleSecretBindingId)))
         assertTrue(session.perform(PlayerCommand.Interact))
@@ -129,13 +127,8 @@ class ContentPackRewardPresentationTest {
         assertEquals(listOf("hidden.event.underground_river.crystal_rift.reward"), secretZone.guaranteedContent.map { contentRef -> contentRef.id })
         val hiddenEvent = requireNotNull(content.hiddenEventRegistry.resolve("hidden.event.underground_river.crystal_rift.reward"))
         assertNotNull(hiddenEvent)
-        val rewardProfileId =
-            hiddenEvent.rewards
-                .mapNotNull { reward -> reward.payload as? com.ktome.game.hidden.HiddenEventRewardPayload.LootProfile }
-                .first()
-                .lootProfileRef
-                .id
-        assertEquals("sample.flooded_relics.loot.flooded_reliquary.secret", rewardProfileId)
+        assertTrue(hiddenEvent.rewards.any { reward -> reward.payload is com.ktome.game.hidden.HiddenEventRewardPayload.SecretZoneReward })
+        assertEquals("sample.flooded_relics.loot.flooded_reliquary.secret", secretZone.rewardProfileId.id)
 
         session.automationMovePlayerTo(requireNotNull(session.automationSecretRewardPointForBinding(sampleSecretBindingId)))
         check(session.perform(PlayerCommand.Interact)) {

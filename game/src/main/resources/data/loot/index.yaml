@@ -233,6 +233,18 @@ lootProfiles:
     slotBias: { OFF_HAND: 4, WEAPON: 3, ARMOR: 1 }
     specialTemplateTagPreference: [greenwood_fringe, rogue, capstone]
     affixTagPreference: [mobility, precision, crit]
+  - id: loot.greenwood_ambush_hideout.secret
+    schemaVersion: 3
+    tags: [loot, secret, greenwood, ambush]
+    canonicalZoneId: greenwood_fringe
+    poolStrategy: FIXED_LIST
+    rewardBudget: 6
+    itemIds: [unique_greenwood_watcher_blade, unique_warden_barkmail, unique_heartwood_talisman, sanctified_seal, basic_shield]
+    excludeIds: [unique_briarbound_bow, unique_thornpath_crook, artifact_briar_heart, artifact_heartroot_gambit]
+    typeWeights: { WEAPON: 2, ARMOR: 3, CONSUMABLE: 1 }
+    slotBias: { OFF_HAND: 4, ARMOR: 3, WEAPON: 2 }
+    specialTemplateTagPreference: [greenwood_fringe, vanguard, templar, non_weapon_capstone]
+    affixTagPreference: [holy, protection, precision]
   - id: loot.deep_iron_slag_cache.secret
     schemaVersion: 3
     tags: [loot, secret, deep_iron]

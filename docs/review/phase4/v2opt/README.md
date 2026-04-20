@@ -50,6 +50,7 @@ V2OPT-PR-05
 3. `organicHiddenProbe` 固定覆盖全部已发布组合：`4 profession × 3 released race(human/elf/dwarf)`，每个 `zone × combo` 固定 `11` seed，总量 `528` case；`orc/undead` 不参与。
 4. `organicHiddenProbe` 报告字段固定包含：
    - `professionIds / raceIds`
+   - `leadDiscoveryRate / secretConversionRate`
    - `firstHiddenDiscoveryTurnP50/P90`
    - `firstSecretZoneEntryTurnP50/P90`
    - `zoneDiscoveryDistribution`

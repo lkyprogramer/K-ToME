@@ -12,7 +12,7 @@ import org.junit.jupiter.api.Test
 
 class DataLoaderContentPackTest {
     @Test
-    fun `data loader merges official sample pack secret zone hidden event loot profile and special templates`() {
+    fun `data loader merges official sample pack secret zone reward authority and special templates`() {
         val loader =
             DataLoader(
                 locale = GameLocale.EN_US,
@@ -35,14 +35,8 @@ class DataLoaderContentPackTest {
         assertEquals("sample_flooded_relics.zone.flooded_reliquary.name", secretZone.nameKey)
         assertEquals("sample_flooded_relics.zone.flooded_reliquary.visual", secretZone.visualKey)
         assertEquals("sample_flooded_relics.audio.zone.flooded_reliquary", secretZone.audioProfile)
-        assertEquals(
-            "sample.flooded_relics.loot.flooded_reliquary.secret",
-            hiddenEvent.rewards
-                .mapNotNull { reward -> reward.payload as? HiddenEventRewardPayload.LootProfile }
-                .first()
-                .lootProfileRef
-                .id,
-        )
+        assertTrue(hiddenEvent.rewards.any { reward -> reward.payload is HiddenEventRewardPayload.SecretZoneReward })
+        assertEquals("sample.flooded_relics.loot.flooded_reliquary.secret", secretZone.rewardProfileId.id)
         assertEquals(7, lootProfile.rewardBudget)
         assertEquals(3, lootProfile.schemaVersion)
         assertEquals("underground_river", lootProfile.canonicalZoneId)

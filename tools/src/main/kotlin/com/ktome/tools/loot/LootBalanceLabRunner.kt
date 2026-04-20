@@ -313,6 +313,7 @@ internal data class LootProfileOverlapSummary(
     val sameZoneSecretVsRewardPairs: List<LootLocalOverlapPairSummary>,
     val localIdentityFailurePairs: List<String>,
     val strictLocalIdentityViolations: List<LootStrictLocalIdentityViolation>,
+    val secretZoneRewardAuthorityViolations: List<SecretZoneRewardAuthorityViolation>,
     val secretProfileIdentitySummaries: List<LootSecretProfileIdentitySummary>,
 ) {
     val sameZoneSecretVsCadenceMaxOverlap: Double
@@ -355,6 +356,12 @@ internal data class LootProfileOverlapSummary(
                     add(violation.toJson())
                 }
             }
+            put("secretZoneRewardAuthorityViolationCount", secretZoneRewardAuthorityViolations.size)
+            putJsonArray("secretZoneRewardAuthorityViolations") {
+                secretZoneRewardAuthorityViolations.sortedBy(SecretZoneRewardAuthorityViolation::violationId).forEach { violation ->
+                    add(violation.toJson())
+                }
+            }
             putJsonArray("secretProfileIdentitySummaries") {
                 secretProfileIdentitySummaries.sortedBy(LootSecretProfileIdentitySummary::profileId).forEach { summary ->
                     add(summary.toJson())
@@ -381,6 +388,27 @@ internal data class LootLocalOverlapPairSummary(
             put("secretProfileId", secretProfileId)
             put("comparedProfileId", comparedProfileId)
             put("overlap", overlap)
+        }
+}
+
+internal data class SecretZoneRewardAuthorityViolation(
+    val secretZoneId: String,
+    val hiddenEventId: String,
+    val rewardKeys: List<String>,
+    val reason: String,
+) {
+    val violationId: String
+        get() = "$secretZoneId:$hiddenEventId:$reason"
+
+    fun toJson(): JsonObject =
+        buildJsonObject {
+            put("violationId", violationId)
+            put("secretZoneId", secretZoneId)
+            put("hiddenEventId", hiddenEventId)
+            putJsonArray("rewardKeys") {
+                rewardKeys.forEach { rewardKey -> add(JsonPrimitive(rewardKey)) }
+            }
+            put("reason", reason)
         }
 }
 
@@ -1378,6 +1406,7 @@ internal object LootLabKernel {
                 profile.id to resolver.resolve(profile).allCandidateBaseIds
             }
         val rewardStructureKeysByProfileId = buildSecretRewardStructureKeysByProfileId(schemaCatalog)
+        val secretZoneRewardAuthorityViolations = buildSecretZoneRewardAuthorityViolations(schemaCatalog)
         val overlapMatrix =
             profiles.associate { profile ->
                 val leftItems = candidateBaseIdsByProfileId.getValue(profile.id)
@@ -1440,6 +1469,7 @@ internal object LootLabKernel {
                             .map(LootLocalOverlapPairSummary::pairId)
                 ).distinct(),
             strictLocalIdentityViolations = strictLocalIdentityViolations,
+            secretZoneRewardAuthorityViolations = secretZoneRewardAuthorityViolations,
             secretProfileIdentitySummaries =
                 buildSecretProfileIdentitySummaries(
                     profiles = profiles,
@@ -1528,33 +1558,66 @@ internal object LootLabKernel {
             if (slotBias.isNotEmpty()) add("slot_bias")
             if (specialTemplateTagPreference.isNotEmpty()) add("special_template_bias")
             if (affixTagPreference.isNotEmpty()) add("affix_bias")
-            if (rewardStructureKeys.any { rewardKey -> rewardKey != "LOOT_PROFILE" } || rewardStructureKeys.distinct().size > 1) {
+            if (rewardStructureKeys.any { rewardKey -> rewardKey != "SECRET_ZONE_REWARD" } || rewardStructureKeys.distinct().size > 1) {
                 add("reward_structure")
             }
         }
 
     private fun buildSecretRewardStructureKeysByProfileId(schemaCatalog: SchemaCatalog): Map<String, List<String>> {
-        val rewardKeysByProfileId =
-            schemaCatalog.hiddenEvents
-                .flatMap { hiddenEvent ->
-                    val rewardKeys = hiddenEvent.rewards.map { reward -> reward.key.name }
-                    hiddenEvent.rewards.mapNotNull { reward ->
-                        val lootProfilePayload = reward.payload as? HiddenEventRewardPayload.LootProfile ?: return@mapNotNull null
-                        lootProfilePayload.lootProfileRef.id to rewardKeys
-                    }
-                }.groupBy(
-                    keySelector = Pair<String, List<String>>::first,
-                    valueTransform = Pair<String, List<String>>::second,
-                ).mapValues { (_, rewardKeyGroups) ->
-                    rewardKeyGroups
-                        .flatten()
-                        .distinct()
-                        .sorted()
-                }
         return schemaCatalog.secretZones.associate { secretZone ->
-            secretZone.rewardProfileId.id to rewardKeysByProfileId[secretZone.rewardProfileId.id].orEmpty()
+            val rewardKeys =
+                secretZone.guaranteedContent
+                    .filter { contentRef -> contentRef.registry.value == "hidden_event" }
+                    .flatMap { contentRef ->
+                        schemaCatalog.hiddenEvents
+                            .firstOrNull { hiddenEvent -> hiddenEvent.id == contentRef.id }
+                            ?.rewards
+                            ?.map { reward -> reward.key.name }
+                            .orEmpty()
+                    }.distinct()
+                    .sorted()
+            secretZone.rewardProfileId.id to rewardKeys
         }
     }
+
+    private fun buildSecretZoneRewardAuthorityViolations(schemaCatalog: SchemaCatalog): List<SecretZoneRewardAuthorityViolation> =
+        schemaCatalog.secretZones
+            .flatMap { secretZone ->
+                secretZone.guaranteedContent
+                    .filter { contentRef -> contentRef.registry.value == "hidden_event" }
+                    .mapNotNull { contentRef ->
+                        val hiddenEvent =
+                            schemaCatalog.hiddenEvents.firstOrNull { event -> event.id == contentRef.id }
+                                ?: return@mapNotNull SecretZoneRewardAuthorityViolation(
+                                    secretZoneId = secretZone.id.id,
+                                    hiddenEventId = contentRef.id,
+                                    rewardKeys = emptyList(),
+                                    reason = "missing_hidden_event",
+                                )
+                        val rewardKeys = hiddenEvent.rewards.map { reward -> reward.key.name }.sorted()
+                        val secretZoneRewardCount =
+                            hiddenEvent.rewards.count { reward -> reward.payload is HiddenEventRewardPayload.SecretZoneReward }
+                        when {
+                            hiddenEvent.rewards.any { reward -> reward.payload is HiddenEventRewardPayload.LootProfile } ->
+                                SecretZoneRewardAuthorityViolation(
+                                    secretZoneId = secretZone.id.id,
+                                    hiddenEventId = hiddenEvent.id,
+                                    rewardKeys = rewardKeys,
+                                    reason = "loot_profile_present",
+                                )
+
+                            secretZoneRewardCount != 1 ->
+                                SecretZoneRewardAuthorityViolation(
+                                    secretZoneId = secretZone.id.id,
+                                    hiddenEventId = hiddenEvent.id,
+                                    rewardKeys = rewardKeys,
+                                    reason = "secret_zone_reward_count_$secretZoneRewardCount",
+                                )
+
+                            else -> null
+                        }
+                    }
+            }.sortedBy(SecretZoneRewardAuthorityViolation::violationId)
 
     private fun validateLocalIdentityPairCoverage(
         metadataByProfileId: Map<String, LootProfileLocalIdentityMetadata>,
@@ -2129,6 +2192,10 @@ private fun JsonObject.toLootProfileOverlapSummary(): LootProfileOverlapSummary 
             this["strictLocalIdentityViolations"]?.jsonArray?.map { violation ->
                 violation.jsonObject.toLootStrictLocalIdentityViolation()
             }.orEmpty(),
+        secretZoneRewardAuthorityViolations =
+            this["secretZoneRewardAuthorityViolations"]?.jsonArray?.map { violation ->
+                violation.jsonObject.toSecretZoneRewardAuthorityViolation()
+            }.orEmpty(),
         secretProfileIdentitySummaries =
             this["secretProfileIdentitySummaries"]?.jsonArray?.map { summary ->
                 summary.jsonObject.toLootSecretProfileIdentitySummary()
@@ -2142,6 +2209,14 @@ private fun JsonObject.toLootLocalOverlapPairSummary(): LootLocalOverlapPairSumm
         secretProfileId = stringValue("secretProfileId"),
         comparedProfileId = stringValue("comparedProfileId"),
         overlap = doubleValue("overlap"),
+    )
+
+private fun JsonObject.toSecretZoneRewardAuthorityViolation(): SecretZoneRewardAuthorityViolation =
+    SecretZoneRewardAuthorityViolation(
+        secretZoneId = stringValue("secretZoneId"),
+        hiddenEventId = stringValue("hiddenEventId"),
+        rewardKeys = getValue("rewardKeys").jsonArray.map { rewardKey -> rewardKey.jsonPrimitive.content },
+        reason = stringValue("reason"),
     )
 
 private fun JsonObject.toLootSecretProfileIdentitySummary(): LootSecretProfileIdentitySummary =

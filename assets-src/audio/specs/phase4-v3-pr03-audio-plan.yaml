@@ -1,0 +1,16 @@
+manifestVersion: 1
+fallbackKey: audio.fallback.silence
+packId: phase4-v3-pr03-audio-generation-v1
+sampleRate: 44100
+entries:
+  - key: audio.secret_zone.greenwood_ambush_hideout
+    cueFamily: zone
+    eventId: audio.secret_zone.greenwood_ambush_hideout
+    sourcePath: audio/phase4/v3_pr03/secret_zone_greenwood_ambush_hideout.ogg
+    tags: [phase4, v3, pr03, hidden, zone, greenwood, ambush]
+targets:
+  - id: phase4_v3_pr03_secret_zone_greenwood_ambush_hideout
+    key: audio.secret_zone.greenwood_ambush_hideout
+    sourcePath: audio/phase4/v3_pr03/secret_zone_greenwood_ambush_hideout.ogg
+    profile: secret_zone_greenwood_ambush_hideout
+    durationSeconds: 5.1
