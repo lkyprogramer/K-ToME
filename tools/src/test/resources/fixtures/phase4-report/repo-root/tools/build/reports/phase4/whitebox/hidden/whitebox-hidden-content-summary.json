@@ -724,6 +724,24 @@
                     "hidden.branch",
                     "hidden.critical.adjacent",
                     "hidden.goal.adjacent"
+                ],
+                "frontstageHighPriorityCueRetainedRate": 1.0,
+                "frontstageCueDedupAppliedCount": 1,
+                "frontstageCueExpiryParity": 1.0,
+                "frontstageSecretCueVisibilityRate": 1.0,
+                "frontstageHighPriorityCueRetainedCount": 625,
+                "frontstageHighPriorityExpectedCount": 625,
+                "frontstageSecretCueVisibleCount": 625,
+                "frontstageSecretCueExpectedCount": 625,
+                "frontstageDuplicateNoTargetLogCount": 2,
+                "frontstageRemainingNoTargetCueCount": 0,
+                "frontstageCueExpiryProbePassedCount": 4,
+                "frontstageCueExpiryProbeTotalCount": 4,
+                "frontstageCueExpiryProbePriorities": [
+                    "CRITICAL",
+                    "HIGH",
+                    "MEDIUM",
+                    "LOW"
                 ]
             },
             "assertions": [

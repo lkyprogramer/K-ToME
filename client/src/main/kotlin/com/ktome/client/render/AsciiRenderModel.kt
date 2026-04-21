@@ -721,7 +721,9 @@ internal object AsciiRenderModelBuilder {
                     when (entry.kind) {
                         FrontstagePresentationKind.MUTATION -> AsciiTextTone.WHITE
                         FrontstagePresentationKind.TERRAIN -> AsciiTextTone.CYAN
-                        FrontstagePresentationKind.ACTION -> AsciiTextTone.GREEN
+                        FrontstagePresentationKind.SEARCH -> AsciiTextTone.GREEN
+                        FrontstagePresentationKind.SECRET -> AsciiTextTone.GOLD
+                        FrontstagePresentationKind.PASSIVE -> AsciiTextTone.LIGHT_GRAY
                     },
             )
         }

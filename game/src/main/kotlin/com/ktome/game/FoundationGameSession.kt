@@ -173,6 +173,9 @@ import com.ktome.core.snapshot.CombatFeedbackTypeSnapshot
 import com.ktome.core.snapshot.DescriptionModelSnapshot
 import com.ktome.core.snapshot.DescriptionValueSnapshot
 import com.ktome.core.snapshot.EquipmentSlotSnapshot
+import com.ktome.core.snapshot.FrontstageActionCategorySnapshot
+import com.ktome.core.snapshot.FrontstageActionCueSnapshot
+import com.ktome.core.snapshot.FrontstageActionPrioritySnapshot
 import com.ktome.core.snapshot.FrontstageReadabilitySnapshot
 import com.ktome.core.snapshot.GridPointSnapshot
 import com.ktome.core.snapshot.InscriptionSlotSnapshot
@@ -306,8 +309,7 @@ private const val RECENT_REWARD_LIMIT: Int = 5
 private const val FRONTSTAGE_MUTATION_LIMIT: Int = 2
 private const val FRONTSTAGE_TERRAIN_LIMIT: Int = 2
 private const val FRONTSTAGE_RECENT_ACTION_LIMIT: Int = 2
-private const val FRONTSTAGE_RECENT_ACTION_CUE_CAP: Int = 8
-private const val FRONTSTAGE_RECENT_ACTION_TTL_TURNS: Int = 3
+private const val FRONTSTAGE_RECENT_ACTION_CUE_CAP: Int = 12
 private const val AI_TRACE_LIMIT: Int = 64
 private const val TERRAIN_COMBAT_OBSERVATION_LIMIT: Int = 512
 private const val ABYSSAL_WARD_PROTECTION_TURNS: Int = 4
@@ -473,8 +475,12 @@ class FoundationGameSession internal constructor(
     )
 
     private data class RecentFrontstageActionCue(
+        val category: FrontstageActionCategorySnapshot,
+        val priority: FrontstageActionPrioritySnapshot,
+        val stableKey: String,
         val message: RenderTextTokenSnapshot,
         val expiresAfterTurn: Int,
+        val sequence: Long,
     )
 
     private data class SecretZoneContext(
@@ -525,6 +531,7 @@ class FoundationGameSession internal constructor(
     private val recentSummaryEvents = ArrayDeque<RenderTextTokenSnapshot>()
     private val recentRewardEntries = ArrayDeque<RecentRewardPresentationEntry>()
     private val recentFrontstageActionCues = ArrayDeque<RecentFrontstageActionCue>()
+    private var frontstageActionCueSequence: Long = 0L
     private val pendingCombatFeedbackEvents = ArrayDeque<PendingCombatFeedback>()
     private val pendingActions = ArrayDeque<EntityId>()
     private var activeTurnActor: EntityId? = null
@@ -1158,6 +1165,20 @@ class FoundationGameSession internal constructor(
     ) {
         activeFloorState.setTerrainOverride(point, terrainOverride)
         invalidateRenderSnapshot()
+    }
+
+    fun automationRecordFrontstageActionCueForVerification(
+        category: FrontstageActionCategorySnapshot,
+        priority: FrontstageActionPrioritySnapshot,
+        stableKey: String,
+        messageKey: String,
+    ) {
+        recordFrontstageActionCue(
+            category = category,
+            priority = priority,
+            stableKey = stableKey,
+            message = RenderTextTokenSnapshot(messageKey),
+        )
     }
 
     private fun executeValidationAction(action: ValidationAction): CommandResolution {
@@ -3377,7 +3398,7 @@ class FoundationGameSession internal constructor(
         FrontstageReadabilitySnapshot(
             mutationHighlights = buildMutationHighlights(),
             terrainHighlights = buildTerrainHighlights(),
-            recentActionHighlights = buildRecentActionHighlights(),
+            recentActionCues = buildRecentActionCues(),
         )
 
     private fun buildRecentRewardSnapshots(): List<RewardPresentationEntrySnapshot> =
@@ -3472,12 +3493,22 @@ class FoundationGameSession internal constructor(
             else -> null
         }
 
-    private fun buildRecentActionHighlights(): List<RenderTextTokenSnapshot> {
+    private fun buildRecentActionCues(): List<FrontstageActionCueSnapshot> {
         pruneExpiredFrontstageActionCues()
         return recentFrontstageActionCues
-            .takeLast(FRONTSTAGE_RECENT_ACTION_LIMIT)
-            .asReversed()
-            .map(RecentFrontstageActionCue::message)
+            .sortedWith(
+                compareByDescending<RecentFrontstageActionCue> { cue -> frontstageActionPriorityRank(cue.priority) }
+                    .thenByDescending { cue -> cue.sequence },
+            )
+            .take(FRONTSTAGE_RECENT_ACTION_LIMIT)
+            .map { cue ->
+                FrontstageActionCueSnapshot(
+                    category = cue.category,
+                    priority = cue.priority,
+                    stableKey = cue.stableKey,
+                    message = cue.message,
+                )
+            }
     }
 
     private fun buildShopPanelSnapshot(): ShopPanelSnapshot? {
@@ -4956,7 +4987,7 @@ class FoundationGameSession internal constructor(
             } else {
                 "log.reward.capstone.anchor"
             }
-        addFrontstageMessage(
+        addMessage(
             messageKey,
             keyArg("profession", profession.nameKey),
             keyArg("item", rewardItemNameKey(reward, "capstone")),
@@ -8781,8 +8812,10 @@ class FoundationGameSession internal constructor(
                     health.current = (health.current + passive.amount).coerceAtMost(health.max)
                     val restored = health.current - before
                     if (restored > 0 && actorId == playerId) {
-                        addFrontstageMessage(
+                        recordFrontstagePassiveCue(
                             "log.passive.hp_regen",
+                            priority = FrontstageActionPrioritySnapshot.LOW,
+                            stableKey = "passive:hp_regen:${source.item.baseId}",
                             itemDisplayArgument("item", source.item),
                             literalArg("amount", restored),
                         )
@@ -9153,8 +9186,10 @@ class FoundationGameSession internal constructor(
             ),
         )
         if (attacker == playerId && source != null) {
-            addFrontstageMessage(
+            recordFrontstagePassiveCue(
                 "log.passive.on_hit_status",
+                priority = FrontstageActionPrioritySnapshot.MEDIUM,
+                stableKey = "passive:on_hit_status:${source.item.baseId}:$statusId",
                 itemDisplayArgument("item", source.item),
                 entityArg("target", target),
                 keyArg("status", statusNameKey(statusId)),
@@ -9173,8 +9208,10 @@ class FoundationGameSession internal constructor(
             pool.restore(trigger.amount)
             val restored = pool.current - before
             if (restored > 0 && attacker == playerId) {
-                addFrontstageMessage(
+                recordFrontstagePassiveCue(
                     "log.passive.on_kill_resource_restore",
+                    priority = FrontstageActionPrioritySnapshot.MEDIUM,
+                    stableKey = "passive:on_kill_resource_restore:${trigger.source.item.baseId}:${trigger.resourceType.name}",
                     itemDisplayArgument("item", trigger.source.item),
                     literalArg("amount", restored),
                     keyArg("resource", resourceLabelKey(trigger.resourceType.name)),
@@ -9207,24 +9244,30 @@ class FoundationGameSession internal constructor(
             val itemArgument = itemDisplayArgument("item", source.item)
             when (val passive = source.passive) {
                 is EquipmentPassive.DamageVsTag ->
-                    addFrontstageMessage(
+                    recordFrontstagePassiveCue(
                         "log.passive.damage_bonus_vs_tag",
+                        priority = FrontstageActionPrioritySnapshot.MEDIUM,
+                        stableKey = "passive:damage_bonus:${source.item.baseId}:vs_tag:${passive.tag}",
                         itemArgument,
                         monsterTagArg("tag", passive.tag),
                         literalArg("amount", (passive.bonusPercent * 100).toInt()),
                     )
 
                 is EquipmentPassive.DamageVsStatus ->
-                    addFrontstageMessage(
+                    recordFrontstagePassiveCue(
                         "log.passive.damage_bonus_vs_status",
+                        priority = FrontstageActionPrioritySnapshot.MEDIUM,
+                        stableKey = "passive:damage_bonus:${source.item.baseId}:vs_status:${passive.statusId}",
                         itemArgument,
                         keyArg("status", statusNameKey(passive.statusId)),
                         literalArg("amount", (passive.bonusPercent * 100).toInt()),
                     )
 
                 is EquipmentPassive.DamageTypeBonus ->
-                    addFrontstageMessage(
+                    recordFrontstagePassiveCue(
                         "log.passive.damage_bonus_type",
+                        priority = FrontstageActionPrioritySnapshot.MEDIUM,
+                        stableKey = "passive:damage_bonus:${source.item.baseId}:type:${passive.type.name}",
                         itemArgument,
                         keyArg("damageType", damageTypeLabelKey(passive.type)),
                         literalArg("amount", (passive.bonusPercent * 100).toInt()),
@@ -9539,7 +9582,11 @@ class FoundationGameSession internal constructor(
                     difficulty = null,
                 ),
             )
-            addFrontstageMessage("log.search.no_target")
+            recordFrontstageSearchCue(
+                "log.search.no_target",
+                priority = FrontstageActionPrioritySnapshot.MEDIUM,
+                stableKey = "search:no_target",
+            )
             return CommandResolution.rejected()
         }
 
@@ -9585,13 +9632,19 @@ class FoundationGameSession internal constructor(
         when (result) {
             SearchActionResult.REVEALED -> {
                 if (searchDifficulty != null) {
-                    addFrontstageMessage(
+                    recordFrontstageSearchCue(
                         "log.search.revealed",
+                        priority = FrontstageActionPrioritySnapshot.CRITICAL,
+                        stableKey = searchFrontstageStableKey(searchAction.bindingId.value, result),
                         literalArg("perception", perceptionScore.total),
                         literalArg("difficulty", searchDifficulty),
                     )
                 } else {
-                    addFrontstageMessage("log.search.revealed_tag")
+                    recordFrontstageSearchCue(
+                        "log.search.revealed_tag",
+                        priority = FrontstageActionPrioritySnapshot.CRITICAL,
+                        stableKey = searchFrontstageStableKey(searchAction.bindingId.value, result),
+                    )
                 }
                 executeHiddenEvents(
                     triggerType = HiddenTriggerType.PERCEPTION_REVEAL,
@@ -9602,13 +9655,19 @@ class FoundationGameSession internal constructor(
 
             SearchActionResult.FAILED_CHECK ->
                 if (searchDifficulty != null) {
-                    addFrontstageMessage(
+                    recordFrontstageSearchCue(
                         "log.search.failed_check",
+                        priority = FrontstageActionPrioritySnapshot.HIGH,
+                        stableKey = searchFrontstageStableKey(searchAction.bindingId.value, result),
                         literalArg("perception", perceptionScore.total),
                         literalArg("difficulty", searchDifficulty),
                     )
                 } else {
-                    addFrontstageMessage("log.search.failed_tag")
+                    recordFrontstageSearchCue(
+                        "log.search.failed_tag",
+                        priority = FrontstageActionPrioritySnapshot.HIGH,
+                        stableKey = searchFrontstageStableKey(searchAction.bindingId.value, result),
+                    )
                 }
 
             SearchActionResult.NO_TARGET,
@@ -9617,6 +9676,11 @@ class FoundationGameSession internal constructor(
         }
         return CommandResolution(accepted = true, consumesTurn = true)
     }
+
+    private fun searchFrontstageStableKey(
+        bindingId: String,
+        result: SearchActionResult,
+    ): String = "search:$bindingId:${result.name.lowercase()}"
 
     private fun executeHiddenEvents(
         triggerType: HiddenTriggerType,
@@ -9655,8 +9719,10 @@ class FoundationGameSession internal constructor(
             activeFloorState.markHiddenEventConsumed(hiddenEvent.id)
             activeFloorState.grantDiscoveryTags(hiddenEvent.grantedDiscoveryTags)
             if (newlyGrantedDiscoveryTags.isNotEmpty()) {
-                addFrontstageMessage(
+                recordFrontstageSecretCue(
                     "log.hidden.primer.acquired",
+                    priority = FrontstageActionPrioritySnapshot.HIGH,
+                    stableKey = "secret:primer:${zoneNameKey ?: "unknown"}",
                     keyArg("zone", zoneNameKey),
                 )
             }
@@ -9670,9 +9736,15 @@ class FoundationGameSession internal constructor(
                         if (activeFloorState.searchStateFor(payload.bindingId)?.result != SearchActionResult.REVEALED) {
                             activeFloorState.recordSearchResolution(payload.bindingId, SearchActionResult.REVEALED)
                         }
-                        addFrontstageMessage(
+                        val revealedSecretZoneId =
+                            requireNotNull(secretZoneIdForBinding(payload.bindingId)) {
+                                "Hidden event '${hiddenEvent.id}' reveal payload '${payload.bindingId.value}' must resolve to a secret zone."
+                            }
+                        recordFrontstageSecretCue(
                             "log.hidden.secret_zone.revealed",
-                            keyArg("zone", secretZoneNameKey(secretZoneIdForBinding(payload.bindingId))),
+                            priority = FrontstageActionPrioritySnapshot.CRITICAL,
+                            stableKey = "secret:reveal:${revealedSecretZoneId.id}",
+                            keyArg("zone", secretZoneNameKey(revealedSecretZoneId)),
                         )
                     }
 
@@ -9784,8 +9856,10 @@ class FoundationGameSession internal constructor(
                 ),
             )
             refreshActorDerivedStats(playerId)
-            addFrontstageMessage(
+            recordFrontstageSecretCue(
                 "log.hidden.reward.buff",
+                priority = FrontstageActionPrioritySnapshot.HIGH,
+                stableKey = "secret:buff:${secretZoneId?.id ?: hiddenEvent.id}:${payload.statusRef.id}",
                 keyArg("zone", secretZoneNameKey(secretZoneId)),
                 keyArg("buff", requireNotNull(content.statusSchemaFor(payload.statusRef.id)).nameKey),
             )
@@ -9813,8 +9887,10 @@ class FoundationGameSession internal constructor(
         )
         recordRecentRewardPresentation(source = rewardPresentationSource, reward = reward)
         announceCapstoneRewardIfNeeded(reward)
-        addFrontstageMessage(
+        recordFrontstageSecretCue(
             if (stored) "log.hidden.reward.claimed" else "log.hidden.reward.dropped",
+            priority = FrontstageActionPrioritySnapshot.CRITICAL,
+            stableKey = "secret:reward:${secretZoneId?.id ?: hiddenEvent.id}",
             keyArg("zone", secretZoneNameKey(secretZoneId)),
             keyArg("item", rewardItemNameKey(reward, "hidden")),
         )
@@ -9897,8 +9973,10 @@ class FoundationGameSession internal constructor(
             ),
         )
         refreshActorDerivedStats(monsterId)
-        addFrontstageMessage(
+        recordFrontstageSecretCue(
             "log.hidden.reward.encounter",
+            priority = FrontstageActionPrioritySnapshot.CRITICAL,
+            stableKey = "secret:encounter:${secretZoneId?.id ?: "hidden-event"}:$monsterTemplateId",
             keyArg("zone", secretZoneNameKey(secretZoneId)),
             entityArg("monster", monsterId),
         )
@@ -10140,7 +10218,12 @@ class FoundationGameSession internal constructor(
         val anchorPoints = secretZoneAnchorPoints(context.room)
         movePlayerTo(anchorPoints.entry)
         activeFloorState.visitedSecretZoneIds += context.secretZoneId
-        addFrontstageMessage("log.hidden.secret_zone.enter", keyArg("zone", secretZone.nameKey))
+        recordFrontstageSecretCue(
+            "log.hidden.secret_zone.enter",
+            priority = FrontstageActionPrioritySnapshot.CRITICAL,
+            stableKey = "secret:enter:${context.secretZoneId.id}",
+            keyArg("zone", secretZone.nameKey),
+        )
         return CommandResolution.accepted()
     }
 
@@ -10701,46 +10784,116 @@ class FoundationGameSession internal constructor(
         invalidateRenderSnapshot()
     }
 
-    private fun addFrontstageMessage(message: RenderLogEventSnapshot) {
-        recordMessage(message)
-        recordFrontstageActionCue(message.message)
+    private fun recordFrontstageSearchCue(
+        key: String,
+        priority: FrontstageActionPrioritySnapshot,
+        stableKey: String,
+        vararg arguments: RenderTextArgumentSnapshot,
+    ) {
+        recordFrontstageActionCue(
+            category = FrontstageActionCategorySnapshot.SEARCH,
+            priority = priority,
+            stableKey = stableKey,
+            message = RenderTextTokenSnapshot(key, arguments.toList()),
+        )
+    }
+
+    private fun recordFrontstageSecretCue(
+        key: String,
+        priority: FrontstageActionPrioritySnapshot,
+        stableKey: String,
+        vararg arguments: RenderTextArgumentSnapshot,
+    ) {
+        recordFrontstageActionCue(
+            category = FrontstageActionCategorySnapshot.SECRET,
+            priority = priority,
+            stableKey = stableKey,
+            message = RenderTextTokenSnapshot(key, arguments.toList()),
+        )
+    }
+
+    private fun recordFrontstagePassiveCue(
+        key: String,
+        priority: FrontstageActionPrioritySnapshot,
+        stableKey: String,
+        vararg arguments: RenderTextArgumentSnapshot,
+    ) {
+        recordFrontstageActionCue(
+            category = FrontstageActionCategorySnapshot.PASSIVE,
+            priority = priority,
+            stableKey = stableKey,
+            message = RenderTextTokenSnapshot(key, arguments.toList()),
+        )
+    }
+
+    private fun recordFrontstageActionCue(
+        category: FrontstageActionCategorySnapshot,
+        priority: FrontstageActionPrioritySnapshot,
+        stableKey: String,
+        message: RenderTextTokenSnapshot,
+    ) {
+        pruneExpiredFrontstageActionCues()
+        recentFrontstageActionCues.removeAll { cue -> cue.stableKey == stableKey }
+        frontstageActionCueSequence += 1L
+        recordMessage(RenderLogEventSnapshot(message))
+        recentFrontstageActionCues +=
+            RecentFrontstageActionCue(
+                category = category,
+                priority = priority,
+                stableKey = stableKey,
+                message = message,
+                expiresAfterTurn = turnCount + frontstageActionTtlTurns(priority),
+                sequence = frontstageActionCueSequence,
+            )
+        while (recentFrontstageActionCues.size > FRONTSTAGE_RECENT_ACTION_CUE_CAP) {
+            removeLowestPriorityFrontstageActionCue()
+        }
         invalidateRenderSnapshot()
     }
 
-    private fun recordFrontstageActionCue(message: RenderTextTokenSnapshot) {
-        pruneExpiredFrontstageActionCues()
-        recentFrontstageActionCues +=
-            RecentFrontstageActionCue(
-                message = message,
-                expiresAfterTurn = turnCount + FRONTSTAGE_RECENT_ACTION_TTL_TURNS,
-            )
-        while (recentFrontstageActionCues.size > FRONTSTAGE_RECENT_ACTION_CUE_CAP) {
-            recentFrontstageActionCues.removeFirst()
+    private fun pruneExpiredFrontstageActionCues() {
+        if (recentFrontstageActionCues.none { cue -> cue.expiresAfterTurn < turnCount }) {
+            return
         }
+        val retained = recentFrontstageActionCues.filterNot { cue -> cue.expiresAfterTurn < turnCount }
+        recentFrontstageActionCues.clear()
+        recentFrontstageActionCues.addAll(retained)
     }
 
-    private fun pruneExpiredFrontstageActionCues() {
-        while (recentFrontstageActionCues.firstOrNull()?.expiresAfterTurn?.let { expiry -> expiry < turnCount } == true) {
-            recentFrontstageActionCues.removeFirst()
-        }
+    private fun removeLowestPriorityFrontstageActionCue() {
+        val indexToRemove =
+            recentFrontstageActionCues
+                .withIndex()
+                .minWith(
+                    compareBy<IndexedValue<RecentFrontstageActionCue>> { indexed -> frontstageActionPriorityRank(indexed.value.priority) }
+                        .thenBy { indexed -> indexed.value.sequence },
+                ).index
+        recentFrontstageActionCues.removeAt(indexToRemove)
     }
+
+    private fun frontstageActionTtlTurns(priority: FrontstageActionPrioritySnapshot): Int =
+        when (priority) {
+            FrontstageActionPrioritySnapshot.CRITICAL,
+            FrontstageActionPrioritySnapshot.HIGH,
+            -> 3
+
+            FrontstageActionPrioritySnapshot.MEDIUM -> 2
+            FrontstageActionPrioritySnapshot.LOW -> 1
+        }
+
+    private fun frontstageActionPriorityRank(priority: FrontstageActionPrioritySnapshot): Int =
+        when (priority) {
+            FrontstageActionPrioritySnapshot.CRITICAL -> 4
+            FrontstageActionPrioritySnapshot.HIGH -> 3
+            FrontstageActionPrioritySnapshot.MEDIUM -> 2
+            FrontstageActionPrioritySnapshot.LOW -> 1
+        }
 
     private fun addMessage(
         key: String,
         vararg arguments: RenderTextArgumentSnapshot,
     ) {
         addMessage(
-            RenderLogEventSnapshot(
-                message = RenderTextTokenSnapshot(key, arguments.toList()),
-            ),
-        )
-    }
-
-    private fun addFrontstageMessage(
-        key: String,
-        vararg arguments: RenderTextArgumentSnapshot,
-    ) {
-        addFrontstageMessage(
             RenderLogEventSnapshot(
                 message = RenderTextTokenSnapshot(key, arguments.toList()),
             ),

@@ -6,10 +6,13 @@ import com.ktome.core.map.Point
 import com.ktome.core.mapgen.PathClass
 import com.ktome.core.mapgen.center
 import com.ktome.core.phase.PackId
+import com.ktome.core.snapshot.FrontstageActionCategorySnapshot
+import com.ktome.core.snapshot.FrontstageActionPrioritySnapshot
 import com.ktome.core.world.solvability.NodeAnchorId
 import com.ktome.core.world.solvability.SearchActionResult
 import com.ktome.core.world.solvability.SearchBindingId
 import com.ktome.game.FoundationGameConfig
+import com.ktome.game.FoundationGameSession
 import com.ktome.game.GameModule
 import com.ktome.game.PlayerCommand
 import com.ktome.game.data.DataLoader
@@ -51,6 +54,13 @@ data class HiddenContentCaseSpec(
     val primerActionId: String,
 )
 
+data class HiddenFrontstageActionCueEvidence(
+    val category: String,
+    val priority: String,
+    val stableKey: String,
+    val messageKey: String,
+)
+
 data class HiddenContentCaseResult(
     val zoneId: String,
     val floorIndex: Int,
@@ -86,8 +96,21 @@ data class HiddenContentCaseResult(
     val threatBudgetSources: List<String>,
     val expectedThreatBudgetSources: List<String>,
     val logKeys: List<String>,
+    val frontstageActionCues: List<HiddenFrontstageActionCueEvidence>,
     val failure: String? = null,
 ) {
+    val frontstageActionCueCategories: List<String>
+        get() = frontstageActionCues.map(HiddenFrontstageActionCueEvidence::category)
+
+    val frontstageActionCuePriorities: List<String>
+        get() = frontstageActionCues.map(HiddenFrontstageActionCueEvidence::priority)
+
+    val frontstageActionCueStableKeys: List<String>
+        get() = frontstageActionCues.map(HiddenFrontstageActionCueEvidence::stableKey)
+
+    val frontstageActionCueMessageKeys: List<String>
+        get() = frontstageActionCues.map(HiddenFrontstageActionCueEvidence::messageKey)
+
     val optionalOnlyTriggerPathClassesWithinOptionalOrSecret: Boolean
         get() =
             optionalOnlyTriggerPathClasses.all { pathClass ->
@@ -202,6 +225,18 @@ data class HiddenContentCaseResult(
             }
             putJsonArray("logKeys") {
                 logKeys.forEach { logKey -> add(JsonPrimitive(logKey)) }
+            }
+            putJsonArray("frontstageActionCueCategories") {
+                frontstageActionCueCategories.forEach { category -> add(JsonPrimitive(category)) }
+            }
+            putJsonArray("frontstageActionCuePriorities") {
+                frontstageActionCuePriorities.forEach { priority -> add(JsonPrimitive(priority)) }
+            }
+            putJsonArray("frontstageActionCueStableKeys") {
+                frontstageActionCueStableKeys.forEach { stableKey -> add(JsonPrimitive(stableKey)) }
+            }
+            putJsonArray("frontstageActionCueMessageKeys") {
+                frontstageActionCueMessageKeys.forEach { messageKey -> add(JsonPrimitive(messageKey)) }
             }
             putJsonArray("caseFailureReasons") {
                 gateFailureReasons().forEach { reason -> add(JsonPrimitive(reason)) }
@@ -469,6 +504,7 @@ internal object HiddenContentHarnessKernel {
             val proof = session.automationSolvabilityProof()
             val proofSearchActionResult = proof.searchStates.firstOrNull { entry -> entry.bindingId == entrance.bindingId }?.result?.name
             val finalSnapshot = session.renderSnapshot()
+            val frontstageActionCues = finalSnapshot.uiState.frontstageReadability.recentActionCues
             val actualPlayerPoint = session.playerPosition()
             val finalRoom = generatedFloor.roomAt(actualPlayerPoint)
             val secretZoneEntered = secretZoneId != null
@@ -531,6 +567,15 @@ internal object HiddenContentHarnessKernel {
                 threatBudgetSources = threatBudgetSources,
                 expectedThreatBudgetSources = expectedThreatBudgetSources,
                 logKeys = finalSnapshot.logEvents.map { event -> event.message.key },
+                frontstageActionCues =
+                    frontstageActionCues.map { cue ->
+                        HiddenFrontstageActionCueEvidence(
+                            category = cue.category.name,
+                            priority = cue.priority.name,
+                            stableKey = cue.stableKey,
+                            messageKey = cue.message.key,
+                        )
+                    },
             )
         } catch (exception: Exception) {
             HiddenContentCaseResult(
@@ -568,6 +613,7 @@ internal object HiddenContentHarnessKernel {
                 threatBudgetSources = emptyList(),
                 expectedThreatBudgetSources = emptyList(),
                 logKeys = emptyList(),
+                frontstageActionCues = emptyList(),
                 failure = exception.message ?: exception::class.simpleName.orEmpty(),
             )
         }
@@ -836,13 +882,14 @@ object HiddenContentHarnessRunner {
         val analysis = HiddenContentHarnessAnalysis.analyze(kernelRun.results)
         val outputDir = reportDir()
         Files.createDirectories(outputDir)
+        val frontstageMetrics = frontstageCueContractMetrics(results = kernelRun.results, outputDir = outputDir)
         val summaryPath = outputDir.resolve(SUMMARY_FILE)
         val eventsPath = outputDir.resolve(EVENTS_FILE)
         Files.writeString(
             summaryPath,
             json.encodeToString(
                 JsonElement.serializer(),
-                buildSummaryPayload(kernelRun = kernelRun, analysis = analysis),
+                buildSummaryPayload(kernelRun = kernelRun, analysis = analysis, frontstageMetrics = frontstageMetrics),
             ),
         )
         Files.writeString(
@@ -882,6 +929,7 @@ object HiddenContentHarnessRunner {
     private fun buildSummaryPayload(
         kernelRun: HiddenContentKernelRun,
         analysis: HiddenContentAnalysis,
+        frontstageMetrics: HiddenFrontstageCueContractMetrics,
     ): JsonObject {
         val summary = analysis.summary
         return buildJsonObject {
@@ -922,6 +970,21 @@ object HiddenContentHarnessRunner {
                 putJsonArray("secretEntranceBindingSet") {
                     summary.secretEntranceBindingSet.sorted().forEach { bindingId -> add(JsonPrimitive(bindingId)) }
                 }
+                put("frontstageHighPriorityCueRetainedRate", frontstageMetrics.highPriorityCueRetainedRate)
+                put("frontstageCueDedupAppliedCount", frontstageMetrics.dedupAppliedCount)
+                put("frontstageCueExpiryParity", frontstageMetrics.expiryParity)
+                put("frontstageSecretCueVisibilityRate", frontstageMetrics.secretCueVisibilityRate)
+                put("frontstageHighPriorityCueRetainedCount", frontstageMetrics.highPriorityCueRetainedCount)
+                put("frontstageHighPriorityExpectedCount", frontstageMetrics.highPriorityExpectedCount)
+                put("frontstageSecretCueVisibleCount", frontstageMetrics.secretCueVisibleCount)
+                put("frontstageSecretCueExpectedCount", frontstageMetrics.secretCueExpectedCount)
+                put("frontstageDuplicateNoTargetLogCount", frontstageMetrics.duplicateNoTargetLogCount)
+                put("frontstageRemainingNoTargetCueCount", frontstageMetrics.remainingNoTargetCueCount)
+                put("frontstageCueExpiryProbePassedCount", frontstageMetrics.expiryProbePassedCount)
+                put("frontstageCueExpiryProbeTotalCount", frontstageMetrics.expiryProbeTotalCount)
+                putJsonArray("frontstageCueExpiryProbePriorities") {
+                    frontstageMetrics.expiryProbePriorities.forEach { priority -> add(JsonPrimitive(priority)) }
+                }
             }
             putJsonArray("aggregateFailures") {
                 analysis.aggregateFailures.forEach { failure -> add(JsonPrimitive(failure)) }
@@ -949,6 +1012,327 @@ internal fun reportDir(): Path {
         Path.of(configured)
     }
 }
+
+internal data class HiddenFrontstageCueContractMetrics(
+    val highPriorityCueRetainedRate: Double,
+    val dedupAppliedCount: Int,
+    val expiryParity: Double,
+    val secretCueVisibilityRate: Double,
+    val highPriorityCueRetainedCount: Int,
+    val highPriorityExpectedCount: Int,
+    val secretCueVisibleCount: Int,
+    val secretCueExpectedCount: Int,
+    val duplicateNoTargetLogCount: Int,
+    val remainingNoTargetCueCount: Int,
+    val expiryProbePassedCount: Int,
+    val expiryProbeTotalCount: Int,
+    val expiryProbePriorities: List<String>,
+)
+
+internal fun frontstageCueContractMetrics(
+    results: List<HiddenContentCaseResult>,
+    outputDir: Path,
+): HiddenFrontstageCueContractMetrics {
+    var highPriorityExpectedCount = 0
+    var highPriorityRetainedCount = 0
+    var secretCueExpectedCount = 0
+    var secretCueVisibleCount = 0
+    results.forEach { result ->
+        val actualCues = result.observedFrontstageCues()
+        val secretExpectations = expectedSecretFrontstageCues(result)
+        val highPriorityExpectations = expectedHighPriorityFrontstageCues(result, secretExpectations)
+        if (highPriorityExpectations.isNotEmpty()) {
+            highPriorityExpectedCount += 1
+            if (highPriorityExpectations.any { expectation -> actualCues.any(expectation::matches) }) {
+                highPriorityRetainedCount += 1
+            }
+        }
+        if (secretExpectations.isNotEmpty()) {
+            secretCueExpectedCount += 1
+            if (secretExpectations.any { expectation -> actualCues.any(expectation::matches) }) {
+                secretCueVisibleCount += 1
+            }
+        }
+    }
+    val probe = runFrontstageCueContractProbe(outputDir)
+    return HiddenFrontstageCueContractMetrics(
+        highPriorityCueRetainedRate = hiddenRatio(highPriorityRetainedCount, highPriorityExpectedCount),
+        dedupAppliedCount = probe.dedupAppliedCount,
+        expiryParity = probe.expiryParity,
+        secretCueVisibilityRate = hiddenRatio(secretCueVisibleCount, secretCueExpectedCount),
+        highPriorityCueRetainedCount = highPriorityRetainedCount,
+        highPriorityExpectedCount = highPriorityExpectedCount,
+        secretCueVisibleCount = secretCueVisibleCount,
+        secretCueExpectedCount = secretCueExpectedCount,
+        duplicateNoTargetLogCount = probe.duplicateNoTargetLogCount,
+        remainingNoTargetCueCount = probe.remainingNoTargetCueCount,
+        expiryProbePassedCount = probe.expiryProbePassedCount,
+        expiryProbeTotalCount = probe.expiryProbeTotalCount,
+        expiryProbePriorities = probe.expiryProbePriorities,
+    )
+}
+
+private data class FrontstageCueContractProbeResult(
+    val dedupAppliedCount: Int,
+    val expiryParity: Double,
+    val duplicateNoTargetLogCount: Int,
+    val remainingNoTargetCueCount: Int,
+    val expiryProbePassedCount: Int,
+    val expiryProbeTotalCount: Int,
+    val expiryProbePriorities: List<String>,
+)
+
+private fun runFrontstageCueContractProbe(outputDir: Path): FrontstageCueContractProbeResult {
+    val session =
+        GameModule.newFoundationSession(
+            config = FoundationGameConfig(seed = 20260416L, zoneId = "greenwood_fringe", playerProfessionId = "rogue"),
+            saveManager = com.ktome.core.save.SaveManager(outputDir.resolve("tmp").resolve("frontstage-cue-probe")),
+            locale = GameLocale.EN_US,
+        )
+    session.automationRecordFrontstageActionCueForVerification(
+        category = FrontstageActionCategorySnapshot.SEARCH,
+        priority = FrontstageActionPrioritySnapshot.MEDIUM,
+        stableKey = "search:no_target",
+        messageKey = "log.search.no_target",
+    )
+    session.automationRecordFrontstageActionCueForVerification(
+        category = FrontstageActionCategorySnapshot.SEARCH,
+        priority = FrontstageActionPrioritySnapshot.MEDIUM,
+        stableKey = "search:no_target",
+        messageKey = "log.search.no_target",
+    )
+    val duplicateNoTargetLogCount = session.renderSnapshot().logEvents.count { event -> event.message.key == "log.search.no_target" }
+    val dedupedCueCount =
+        session.renderSnapshot().uiState.frontstageReadability.recentActionCues.count { cue ->
+            cue.stableKey == "search:no_target"
+        }
+    repeat(3) {
+        session.perform(PlayerCommand.Wait)
+    }
+    val remainingNoTargetCueCount =
+        session.renderSnapshot().uiState.frontstageReadability.recentActionCues.count { cue ->
+            cue.stableKey == "search:no_target"
+        }
+    val ttlProbeResults =
+        FrontstageActionPrioritySnapshot.entries.map { priority ->
+            runFrontstageTtlProbe(outputDir = outputDir, priority = priority)
+        }
+    val expiryProbePassedCount = ttlProbeResults.count(FrontstageTtlProbeResult::passed)
+    return FrontstageCueContractProbeResult(
+        dedupAppliedCount = if (duplicateNoTargetLogCount >= 2 && dedupedCueCount == 1) 1 else 0,
+        expiryParity = hiddenRatio(expiryProbePassedCount, ttlProbeResults.size),
+        duplicateNoTargetLogCount = duplicateNoTargetLogCount,
+        remainingNoTargetCueCount = remainingNoTargetCueCount,
+        expiryProbePassedCount = expiryProbePassedCount,
+        expiryProbeTotalCount = ttlProbeResults.size,
+        expiryProbePriorities = ttlProbeResults.map(FrontstageTtlProbeResult::priority),
+    )
+}
+
+private data class FrontstageTtlProbeResult(
+    val priority: String,
+    val passed: Boolean,
+)
+
+private fun runFrontstageTtlProbe(
+    outputDir: Path,
+    priority: FrontstageActionPrioritySnapshot,
+): FrontstageTtlProbeResult {
+    val session =
+        GameModule.newFoundationSession(
+            config = FoundationGameConfig(seed = 20260416L, zoneId = "greenwood_fringe", playerProfessionId = "rogue"),
+            saveManager = com.ktome.core.save.SaveManager(outputDir.resolve("tmp").resolve("frontstage-ttl-${priority.name.lowercase()}")),
+            locale = GameLocale.EN_US,
+        )
+    val stableKey = "ttl:${priority.name.lowercase()}"
+    session.automationRecordFrontstageActionCueForVerification(
+        category = frontstageProbeCategory(priority),
+        priority = priority,
+        stableKey = stableKey,
+        messageKey = frontstageProbeMessageKey(priority),
+    )
+    val visibleImmediately = session.hasFrontstageCue(stableKey)
+    repeat(frontstageProbeTtlTurns(priority)) {
+        session.perform(PlayerCommand.Wait)
+    }
+    val retainedThroughTtl = session.hasFrontstageCue(stableKey)
+    session.perform(PlayerCommand.Wait)
+    val expiredAfterBoundary = !session.hasFrontstageCue(stableKey)
+    return FrontstageTtlProbeResult(
+        priority = priority.name,
+        passed = visibleImmediately && retainedThroughTtl && expiredAfterBoundary,
+    )
+}
+
+private fun FoundationGameSession.hasFrontstageCue(stableKey: String): Boolean =
+    renderSnapshot().uiState.frontstageReadability.recentActionCues.any { cue -> cue.stableKey == stableKey }
+
+private fun frontstageProbeCategory(priority: FrontstageActionPrioritySnapshot): FrontstageActionCategorySnapshot =
+    when (priority) {
+        FrontstageActionPrioritySnapshot.CRITICAL -> FrontstageActionCategorySnapshot.SECRET
+        FrontstageActionPrioritySnapshot.HIGH -> FrontstageActionCategorySnapshot.SEARCH
+        FrontstageActionPrioritySnapshot.MEDIUM -> FrontstageActionCategorySnapshot.SEARCH
+        FrontstageActionPrioritySnapshot.LOW -> FrontstageActionCategorySnapshot.PASSIVE
+    }
+
+private fun frontstageProbeMessageKey(priority: FrontstageActionPrioritySnapshot): String =
+    when (priority) {
+        FrontstageActionPrioritySnapshot.CRITICAL -> "log.hidden.secret_zone.enter"
+        FrontstageActionPrioritySnapshot.HIGH -> "log.search.failed_tag"
+        FrontstageActionPrioritySnapshot.MEDIUM -> "log.search.no_target"
+        FrontstageActionPrioritySnapshot.LOW -> "log.passive.hp_regen"
+    }
+
+private fun frontstageProbeTtlTurns(priority: FrontstageActionPrioritySnapshot): Int =
+    when (priority) {
+        FrontstageActionPrioritySnapshot.CRITICAL,
+        FrontstageActionPrioritySnapshot.HIGH,
+        -> 3
+
+        FrontstageActionPrioritySnapshot.MEDIUM -> 2
+        FrontstageActionPrioritySnapshot.LOW -> 1
+    }
+
+private data class ObservedFrontstageCue(
+    val category: String,
+    val priority: String,
+    val stableKey: String,
+    val messageKey: String,
+)
+
+private data class ExpectedFrontstageCue(
+    val category: String,
+    val priority: String,
+    val stableKey: String? = null,
+    val stableKeyPrefix: String? = null,
+    val messageKeys: Set<String>,
+) {
+    fun matches(actual: ObservedFrontstageCue): Boolean {
+        val stableKeyMatches =
+            when {
+                stableKey != null -> actual.stableKey == stableKey
+                stableKeyPrefix != null -> actual.stableKey.startsWith(stableKeyPrefix)
+                else -> true
+            }
+        return actual.category == category &&
+            actual.priority == priority &&
+            actual.messageKey in messageKeys &&
+            stableKeyMatches
+    }
+}
+
+private fun HiddenContentCaseResult.observedFrontstageCues(): List<ObservedFrontstageCue> =
+    frontstageActionCues.map { cue ->
+        ObservedFrontstageCue(
+            category = cue.category,
+            priority = cue.priority,
+            stableKey = cue.stableKey,
+            messageKey = cue.messageKey,
+        )
+    }
+
+private fun expectedHighPriorityFrontstageCues(
+    result: HiddenContentCaseResult,
+    secretExpectations: List<ExpectedFrontstageCue> = expectedSecretFrontstageCues(result),
+): List<ExpectedFrontstageCue> =
+    buildList {
+        if (result.explicitSearchReveal && result.searchActionResult == SearchActionResult.REVEALED.name) {
+            add(
+                ExpectedFrontstageCue(
+                    category = FrontstageActionCategorySnapshot.SEARCH.name,
+                    priority = FrontstageActionPrioritySnapshot.CRITICAL.name,
+                    stableKey = "search:${result.searchBindingId}:revealed",
+                    messageKeys = setOf("log.search.revealed", "log.search.revealed_tag"),
+                ),
+            )
+        }
+        if (result.searchActionResult == SearchActionResult.FAILED_CHECK.name) {
+            add(
+                ExpectedFrontstageCue(
+                    category = FrontstageActionCategorySnapshot.SEARCH.name,
+                    priority = FrontstageActionPrioritySnapshot.HIGH.name,
+                    stableKey = "search:${result.searchBindingId}:failed_check",
+                    messageKeys = setOf("log.search.failed_check", "log.search.failed_tag"),
+                ),
+            )
+        }
+        addAll(secretExpectations)
+    }
+
+private fun expectedSecretFrontstageCues(result: HiddenContentCaseResult): List<ExpectedFrontstageCue> =
+    buildList {
+        val secretZoneId = result.secretZoneId
+        if (secretZoneId != null && "log.hidden.secret_zone.revealed" in result.logKeys) {
+            add(
+                ExpectedFrontstageCue(
+                    category = FrontstageActionCategorySnapshot.SECRET.name,
+                    priority = FrontstageActionPrioritySnapshot.CRITICAL.name,
+                    stableKey = "secret:reveal:$secretZoneId",
+                    messageKeys = setOf("log.hidden.secret_zone.revealed"),
+                ),
+            )
+        }
+        if (secretZoneId != null && result.secretZoneEntered) {
+            add(
+                ExpectedFrontstageCue(
+                    category = FrontstageActionCategorySnapshot.SECRET.name,
+                    priority = FrontstageActionPrioritySnapshot.CRITICAL.name,
+                    stableKey = "secret:enter:$secretZoneId",
+                    messageKeys = setOf("log.hidden.secret_zone.enter"),
+                ),
+            )
+        }
+        if (secretZoneId != null && result.logKeys.any { key -> key == "log.hidden.reward.claimed" || key == "log.hidden.reward.dropped" }) {
+            add(
+                ExpectedFrontstageCue(
+                    category = FrontstageActionCategorySnapshot.SECRET.name,
+                    priority = FrontstageActionPrioritySnapshot.CRITICAL.name,
+                    stableKey = "secret:reward:$secretZoneId",
+                    messageKeys = setOf("log.hidden.reward.claimed", "log.hidden.reward.dropped"),
+                ),
+            )
+        }
+        if ("log.hidden.reward.buff" in result.logKeys) {
+            add(
+                ExpectedFrontstageCue(
+                    category = FrontstageActionCategorySnapshot.SECRET.name,
+                    priority = FrontstageActionPrioritySnapshot.HIGH.name,
+                    stableKeyPrefix = "secret:buff:${secretZoneId ?: ""}",
+                    messageKeys = setOf("log.hidden.reward.buff"),
+                ),
+            )
+        }
+        if ("log.hidden.reward.encounter" in result.logKeys) {
+            add(
+                ExpectedFrontstageCue(
+                    category = FrontstageActionCategorySnapshot.SECRET.name,
+                    priority = FrontstageActionPrioritySnapshot.CRITICAL.name,
+                    stableKeyPrefix = "secret:encounter:${secretZoneId ?: "hidden-event"}:",
+                    messageKeys = setOf("log.hidden.reward.encounter"),
+                ),
+            )
+        }
+        if ("log.hidden.primer.acquired" in result.logKeys) {
+            add(
+                ExpectedFrontstageCue(
+                    category = FrontstageActionCategorySnapshot.SECRET.name,
+                    priority = FrontstageActionPrioritySnapshot.HIGH.name,
+                    stableKeyPrefix = "secret:primer:",
+                    messageKeys = setOf("log.hidden.primer.acquired"),
+                ),
+            )
+        }
+    }
+
+private fun hiddenRatio(
+    numerator: Int,
+    denominator: Int,
+): Double =
+    if (denominator == 0) {
+        0.0
+    } else {
+        numerator.toDouble() / denominator.toDouble()
+    }
 
 private fun JsonObject.toHarnessReportHeader(): HarnessReportHeader =
     HarnessReportHeader(
@@ -1009,10 +1393,34 @@ private fun JsonObject.toHiddenContentCaseResult(): HiddenContentCaseResult =
         threatBudgetSources = stringList("threatBudgetSources"),
         expectedThreatBudgetSources = stringList("expectedThreatBudgetSources"),
         logKeys = stringList("logKeys"),
+        frontstageActionCues = frontstageActionCueEvidence(),
         failure = nullableString("failure"),
     )
 
 private fun JsonObject.stringList(key: String): List<String> = getValue(key).jsonArray.map { element -> element.jsonPrimitive.content }
+
+private fun JsonObject.frontstageActionCueEvidence(): List<HiddenFrontstageActionCueEvidence> {
+    val categories = stringList("frontstageActionCueCategories")
+    val priorities = stringList("frontstageActionCuePriorities")
+    val stableKeys = stringList("frontstageActionCueStableKeys")
+    val messageKeys = stringList("frontstageActionCueMessageKeys")
+    require(
+        categories.size == priorities.size &&
+            categories.size == stableKeys.size &&
+            categories.size == messageKeys.size,
+    ) {
+        "Frontstage action cue evidence columns must be present and aligned: " +
+            "categories=${categories.size}, priorities=${priorities.size}, stableKeys=${stableKeys.size}, messageKeys=${messageKeys.size}."
+    }
+    return categories.indices.map { index ->
+        HiddenFrontstageActionCueEvidence(
+            category = categories[index],
+            priority = priorities[index],
+            stableKey = stableKeys[index],
+            messageKey = messageKeys[index],
+        )
+    }
+}
 
 private fun JsonObject.intValue(key: String): Int = getValue(key).jsonPrimitive.content.toInt()
 

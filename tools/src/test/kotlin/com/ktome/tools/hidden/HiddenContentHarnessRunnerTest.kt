@@ -2,11 +2,15 @@ package com.ktome.tools.hidden
 
 import java.nio.file.Files
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonArray
+import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
+import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
@@ -61,5 +65,27 @@ class HiddenContentHarnessRunnerTest {
         assertEquals(625, restoredKernelRun?.results?.size)
         assertEquals(625, restoredKernelRun?.header?.seedList?.size)
         assertEquals(625, Files.readAllLines(run.eventsPath).count { line -> line.isNotBlank() })
+
+        val malformedDir = run.summaryPath.parent.resolve("malformed-frontstage-evidence")
+        Files.createDirectories(malformedDir)
+        Files.copy(run.summaryPath, malformedDir.resolve("hidden-content-summary.json"), java.nio.file.StandardCopyOption.REPLACE_EXISTING)
+        val malformedEvent =
+            buildJsonObject {
+                firstEvent.forEach { (key, value) ->
+                    when (key) {
+                        "frontstageActionCueCategories" -> put(key, buildJsonArray { add(JsonPrimitive("SEARCH")) })
+                        "frontstageActionCuePriorities" -> put(key, buildJsonArray { add(JsonPrimitive("MEDIUM")) })
+                        "frontstageActionCueStableKeys" -> put(key, buildJsonArray { add(JsonPrimitive("search:no_target")) })
+                        "frontstageActionCueMessageKeys" -> put(key, buildJsonArray { })
+                        else -> put(key, value)
+                    }
+                }
+            }
+        Files.writeString(malformedDir.resolve("hidden-content-events.jsonl"), malformedEvent.toString() + "\n")
+        val error =
+            assertThrows(IllegalArgumentException::class.java) {
+                HiddenContentHarnessRunner.loadKernelRun(malformedDir)
+            }
+        assertTrue(error.message.orEmpty().contains("Frontstage action cue evidence columns"))
     }
 }

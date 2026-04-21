@@ -17,6 +17,9 @@ import com.ktome.core.snapshot.CombatFeedbackSnapshot
 import com.ktome.core.snapshot.CombatFeedbackTypeSnapshot
 import com.ktome.core.snapshot.DescriptionModelSnapshot
 import com.ktome.core.snapshot.DescriptionValueSnapshot
+import com.ktome.core.snapshot.FrontstageActionCategorySnapshot
+import com.ktome.core.snapshot.FrontstageActionCueSnapshot
+import com.ktome.core.snapshot.FrontstageActionPrioritySnapshot
 import com.ktome.core.snapshot.FrontstageReadabilitySnapshot
 import com.ktome.core.snapshot.GridPointSnapshot
 import com.ktome.core.snapshot.InventoryEntrySnapshot
@@ -284,7 +287,27 @@ class TileRendererCanvasTest {
                         frontstageReadability =
                             FrontstageReadabilitySnapshot(
                                 terrainHighlights = listOf(RenderTextTokenSnapshot("ui.hud.frontstage.terrain.water")),
-                                recentActionHighlights = listOf(RenderTextTokenSnapshot("log.search.no_target")),
+                                recentActionCues =
+                                    listOf(
+                                        FrontstageActionCueSnapshot(
+                                            category = FrontstageActionCategorySnapshot.SEARCH,
+                                            priority = FrontstageActionPrioritySnapshot.MEDIUM,
+                                            stableKey = "search:no_target",
+                                            message = RenderTextTokenSnapshot("log.search.no_target"),
+                                        ),
+                                        FrontstageActionCueSnapshot(
+                                            category = FrontstageActionCategorySnapshot.SECRET,
+                                            priority = FrontstageActionPrioritySnapshot.CRITICAL,
+                                            stableKey = "secret:enter:test",
+                                            message = RenderTextTokenSnapshot("ui.hud.frontstage.terrain.oil"),
+                                        ),
+                                        FrontstageActionCueSnapshot(
+                                            category = FrontstageActionCategorySnapshot.PASSIVE,
+                                            priority = FrontstageActionPrioritySnapshot.LOW,
+                                            stableKey = "passive:test",
+                                            message = RenderTextTokenSnapshot("ui.hud.frontstage.terrain.ice"),
+                                        ),
+                                    ),
                             ),
                     ),
             )
@@ -302,6 +325,26 @@ class TileRendererCanvasTest {
         assertTrue(canvas.textDraws.any { draw -> draw.text == localizer.text("ui.hud.frontstage.title") })
         assertTrue(canvas.textDraws.any { draw -> draw.text.contains("Water lane") })
         assertTrue(canvas.textDraws.any { draw -> draw.text.contains("Restore 2 HP") })
+
+        val model =
+            TileRenderer.buildRenderModel(
+                localizer = localizer,
+                visualResolver = sampleResolver(),
+                snapshot = snapshot,
+                overlayState = OverlayState(mode = UiMode.MAP),
+            )
+        assertEquals(
+            TileTextTone.GREEN,
+            model.sidebar.rows.first { row -> row.text.contains(localizer.text("log.search.no_target")) }.tone,
+        )
+        assertEquals(
+            TileTextTone.GOLD,
+            model.sidebar.rows.first { row -> row.text.contains(localizer.text("ui.hud.frontstage.terrain.oil")) }.tone,
+        )
+        assertEquals(
+            TileTextTone.LIGHT_GRAY,
+            model.sidebar.rows.first { row -> row.text.contains(localizer.text("ui.hud.frontstage.terrain.ice")) }.tone,
+        )
     }
 
     @Test

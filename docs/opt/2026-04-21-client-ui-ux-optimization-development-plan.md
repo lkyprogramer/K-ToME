@@ -11,7 +11,7 @@
 
 # K-ToME 客户端 UI/UX 优化执行计划
 
-**阶段**: `Phase 4 late-development / phase4-uiux-pr01 ~ phase4-uiux-pr08`
+**阶段**: `Phase 4 late-development / current phase4-uiux-pr01 ~ phase4-uiux-pr05`；本文保留旧 8 PR 设计语义，执行编号以 `docs/opt/ui-pr/` 为准。
 **优先级**: `P0`
 **工作量评估**: `L+`（`17.5~22.5` 人日，按 8 个串行 PR 估算）
 **前置条件**: `2026-04-20-client-ui-ux-reference-driven-optimization-design.md` 继续作为体验/原则真源；本文只负责执行级拆包、出口和验证
@@ -39,6 +39,7 @@
    - `qualityTierId`
    - `qualityNameKey`
    这意味着“地图掉落提示”和“品质展示”已经有正式输入面。
+   - 当前最终 PR 拆分选择在 `phase4-uiux-pr03` 显式扩 `ItemRenderSnapshot.specialTierId`，用于区分 `UNIQUE / ARTIFACT` special accent；client 不允许通过 `specialTemplateId` 反查 content template 推断 tier。
 5. 当前正式品质合同不是传统 ARPG 的全梯度，而是：
    - `RarityTier.NORMAL / MAGIC / RARE`
    - `SpecialTier.UNIQUE / ARTIFACT`
@@ -175,14 +176,14 @@
 
 ### 4.1 范围
 
-1. `phase4-uiux-pr01`：client-local token、信息面骨架、开发态 chrome 清理
-2. `phase4-uiux-pr02`：首页首屏与快速开始路径
-3. `phase4-uiux-pr03`：局内信息面、modal 栈、Look Mode 基础版、统一输入语义
-4. `phase4-uiux-pr04`：图标全链路、品质展示、地面掉落世界面提示
-5. `phase4-uiux-pr05`：内容扩张期的一致性 gate、卡片复用、错误/空态/加载态
-6. `phase4-uiux-pr06`：状态语义、视觉层级与 a11y 基线落地
-7. `phase4-uiux-pr07`：动态说明、关键词消费、解释型检视
-8. `phase4-uiux-pr08`：telegraph 与战斗三层决策面
+1. 旧 PR-01 + 旧 PR-02 -> 当前执行 `phase4-uiux-pr01`：client-local token、信息面骨架、开发态 chrome 清理、首页首屏与快速开始路径
+2. 旧 PR-03 -> 当前执行 `phase4-uiux-pr02`：局内信息面、modal 栈、Look Mode 基础版、统一输入语义
+3. 旧 PR-04 + 旧 PR-05 -> 当前执行 `phase4-uiux-pr03`：图标全链路、品质展示、地面掉落世界面提示、内容扩张一致性、卡片复用、错误/空态/加载态
+4. 旧 PR-06 + 旧 PR-07 -> 当前执行 `phase4-uiux-pr04`：状态语义、视觉层级、a11y 基线、动态说明、关键词消费、解释型检视
+5. 旧 PR-08 -> 当前执行 `phase4-uiux-pr05`：telegraph 与战斗三层决策面
+6. 旧 PR-06：状态语义、视觉层级与 a11y 基线落地，当前执行合并到 `phase4-uiux-pr04`
+7. 旧 PR-07：动态说明、关键词消费、解释型检视，当前执行合并到 `phase4-uiux-pr04`
+8. 旧 PR-08：telegraph 与战斗三层决策面，当前执行为 `phase4-uiux-pr05`
 
 ### 4.2 非目标
 
@@ -193,7 +194,7 @@
 5. 不把 telemetry / 用户行为统计 / 长周期观察口作为近期阻塞项。
 6. 不承诺当前阶段做 OS 级屏幕阅读器集成。
    - 当前只做键盘路径、焦点可见、高对比度、色盲回退、字号/动效可调这类实际可落地的 a11y 基线
-7. 不把普通敌人 intent 全量可见当成 `phase4-uiux-pr08` 的前置门槛。
+7. 不把普通敌人 intent 全量可见当成 `phase4-uiux-pr05` 的前置门槛。
    - 当前主线仍是既有 telegraph 的地图/目标卡/日志一致化
 
 ---
@@ -343,8 +344,8 @@
 固定要求：
 
 1. 这些模型都属于 `client` 表现层。
-2. 不能反向污染 `RenderSnapshot`。
-3. 所有“typed fact”都来自现有 snapshot / manifest / registry。
+2. 不能为了 UI 便利反向污染 `RenderSnapshot`；唯一例外是本轮已显式认领的 `phase4-uiux-pr03 ItemRenderSnapshot.specialTierId`，它必须作为正式 snapshot contract 变更同步 core/game/tests/文档，而不是 client-local 猜测。
+3. 所有“typed fact”都来自 snapshot / manifest / registry；若 PR 文档已显式扩 snapshot contract，必须先完成 owner 文档和验证入口同步。
 
 ### 5.4 错误态 / 空态 / 加载态基线
 
@@ -377,7 +378,8 @@
 4. `Copy Error Detail` 复制的 payload 固定为纯文本 `UiErrorPayload(heading, detail, contextKeyValuePairs)`；输出顺序固定为标题、详情正文、`key: value` 列表，末尾附 `[ktome/<build-hash>]`。
    - `heading: String` 与 `detail: String` 是玩家当前 locale 已解析的纯文本，不保留 i18n key。
    - `contextKeyValuePairs: List<Pair<String, String>>`；key 是英文 debug 标签，不做 locale；value 是已解析文本或稳定 ID。
-   - `<build-hash>` 由 `PR-05` 引入的 client-local `BuildInfo.shortHash` 提供，生成源固定为 `git rev-parse --short HEAD` 注入到 `processResources` 产物；注入失败时回退为 `unknown`。
+   - `<build-hash>` 由当前 PR 级拆分中的 `phase4-uiux-pr01` 引入的 client-local `BuildInfo.shortHash` 提供，生成源固定为 `git rev-parse --short HEAD` 注入到 `processResources` 产物；注入失败时回退为 `unknown`。
+   - 旧 PR 编号中的共享卡片/错误态章节只消费 `phase4-uiux-pr01` 的 `BuildInfo.shortHash`，不得再引入第二 hash reader。
 5. 被动态首次接管主动 frame 时，必须在日志区或 toast 区给出一条 `ui.message.force-switch.*` 提示，说明当前切换原因，而不是静默把玩家从原面板切走。
 
 ### 5.5 a11y、音效、性能与观测边界
@@ -472,6 +474,16 @@ Companion 资源切片规则：
 
 ## 6. PR 拆分总览
 
+本节保留最初 8 PR 设计语义；实际执行以 `docs/opt/ui-pr/` 的 5 PR 文档为准。资源 plan、processing report、golden label、manual record 和 `build.gradle.kts --extra-plan` 一律使用当前 5 PR 前缀：
+
+| 旧设计包 | 当前执行 PR | 执行前缀 |
+| --- | --- | --- |
+| 旧 `PR-01 + PR-02` | `phase4-uiux-pr01` | `phase4-uiux-pr01-*` |
+| 旧 `PR-03` | `phase4-uiux-pr02` | `phase4-uiux-pr02-*` |
+| 旧 `PR-04 + PR-05` | `phase4-uiux-pr03` | `phase4-uiux-pr03-*` |
+| 旧 `PR-06 + PR-07` | `phase4-uiux-pr04` | `phase4-uiux-pr04-*` |
+| 旧 `PR-08` | `phase4-uiux-pr05` | `phase4-uiux-pr05-*` |
+
 | PR | 对应包 | 主题 | 主要模块 | 资源计划 | 进入下一 PR 的门槛 |
 | --- | --- | --- | --- | --- | --- |
 | `PR-01` | `phase4-uiux-pr01` | token + 信息面骨架 | `client/render`, `client/ui` | 默认不新增图片/音频 | design token 与布局骨架冻结，开发态 chrome 清理完成 |
@@ -479,9 +491,9 @@ Companion 资源切片规则：
 | `PR-03` | `phase4-uiux-pr03` | 局内信息面 + 统一输入语义 + Look Mode 基础版 | `TileRenderer`, `InputHandler`, `FoundationGameScreen` | 默认不批量补图；仅允许极小 companion cue | modal 栈、键位语义、焦点恢复、信息面分层稳定 |
 | `PR-04` | `phase4-uiux-pr04` | 图标全链路 + 品质 + 地面掉落世界面提示 | `RenderSnapshot`, `TileRenderModel`, manifests, content | 必须补装备图标；音频按缺口窄补 | 装备 icon 完整、品质色冻结、地图掉落可见 |
 | `PR-05` | `phase4-uiux-pr05` | 内容扩张一致性、事件/商店卡片复用、错误/空态/加载态 | `client`, `game i18n`, `tools lint` | 仅在共享卡片缺 formal key 时窄补 | content-ui gate 与 shared modal card 成型 |
-| `PR-06` | `phase4-uiux-pr06` | 状态语义、badge 规则与高风险视觉层级 | `StatusHud*`, `TargetCard*`, `TelegraphRenderer` | 可能需要状态/telegraph 小批资源 | 状态分层和 telegraph 权重成立 |
-| `PR-07` | `phase4-uiux-pr07` | 动态说明、关键词消费与解释型检视 | `DescriptionPresenter`, `KeywordRegistry`, inspect panels | 默认不新增音频；图片仅在关键词 chip 不可复用时窄补 | 说明进入主要阅读路径，关键词 contract 不再只停在 tooltip |
-| `PR-08` | `phase4-uiux-pr08` | telegraph 三位一体与战斗三层决策面 | `telegraph`, `combat panel`, `InputHandler` | 可能需要战斗 affordance 图标和少量预警 cue | Boss telegraph + 战斗决策层完成当前阶段收口 |
+| `PR-06` | current `phase4-uiux-pr04` | 状态语义、badge 规则与高风险视觉层级 | `StatusHud*`, `TargetCard*`, `TelegraphRenderer` | 可能需要状态/telegraph 小批资源 | 状态分层和 telegraph 权重成立 |
+| `PR-07` | current `phase4-uiux-pr04` | 动态说明、关键词消费与解释型检视 | `DescriptionPresenter`, `KeywordRegistry`, inspect panels | 默认不新增音频；图片仅在关键词 chip 不可复用时窄补 | 说明进入主要阅读路径，关键词 contract 不再只停在 tooltip |
+| `PR-08` | current `phase4-uiux-pr05` | telegraph 三位一体与战斗三层决策面 | `telegraph`, `combat panel`, `InputHandler` | 可能需要战斗 affordance 图标和少量预警 cue | Boss telegraph + 战斗决策层完成当前阶段收口 |
 
 固定规则：
 
@@ -669,8 +681,8 @@ Companion 资源切片规则：
 
 1. 本 PR 默认复用既有标题、按钮、manifest key 与 `audio.ui.*` cue，不单开首页大图或背景氛围批次。
 2. 只有当首页的 `快速开始 / 继续游戏 / 帮助` 在当前视觉体系里仍然缺少稳定识别点时，才允许增加窄作用域资源 plan：
-   - 图片：`assets-src/image/specs/phase4-uiux-pr02-gemini-plan.yaml`
-   - 音频：`assets-src/audio/specs/phase4-uiux-pr02-audio-plan.yaml`
+   - 图片：`assets-src/image/specs/phase4-uiux-pr01-gemini-plan.yaml`
+   - 音频：`assets-src/audio/specs/phase4-uiux-pr01-audio-plan.yaml`
 3. 该 companion plan 的资源范围必须严格收敛到首页 affordance，例如按钮徽标、帮助徽标、状态徽标；禁止引入大背景插画或纯装饰资源。
 4. 若新增音频，只允许围绕 `confirm / cancel / help-open` 这类首页关键信号做最小补充；若现有 `audio.ui.confirm / cancel / hover` 足够，则不新增音频。
 
@@ -696,7 +708,7 @@ Companion 资源切片规则：
 2. 制造有存档状态后重启，确认首焦点切到 `继续游戏`，`快速开始 / 继续游戏 / 验证模式` 的视觉优先级清晰。
 3. 制造损坏或版本不兼容 save，确认 `继续游戏` 置灰、`ui.menu.continue.corrupted.detail` 可见，并能复用 `Copy Error Detail`。
 4. 切换 locale 或用双语 smoke 文案检查首页摘要，确认常驻帮助区、build 能力摘要和主要键位在首屏可读。
-5. 保留 `phase4-uiux-pr02-main-menu-first-run`、`phase4-uiux-pr02-main-menu-continue`、`phase4-uiux-pr02-main-menu-corrupted-save` 三张截图或对应 golden hash。
+5. 保留 `phase4-uiux-pr01-main-menu-first-run`、`phase4-uiux-pr01-main-menu-continue`、`phase4-uiux-pr01-main-menu-corrupted-save` 三张截图或对应 golden hash。
 
 ### 8.6 风险与最小切片
 
@@ -819,8 +831,8 @@ build 能力摘要可以延后精修，不阻塞 PR 完成。
 **资源计划**
 
 1. 本 PR 默认不启动批量图片生成；modal chrome、Look Mode 光标、焦点框、帮助提示优先由 token、shape 和现有 icon 组合完成。
-2. 只有当 `Inspect / Look Mode / Help Overlay` 的正式入口确实缺少稳定图标时，才允许补一个极小 image companion plan：`assets-src/image/specs/phase4-uiux-pr03-gemini-plan.yaml`。
-3. 音频默认复用现有 `audio.ui.*` 家族；只有当 modal 打开/关闭/报错在交互上必须和通用 confirm/cancel 区分时，才允许补 `assets-src/audio/specs/phase4-uiux-pr03-audio-plan.yaml`。
+2. 只有当 `Inspect / Look Mode / Help Overlay` 的正式入口确实缺少稳定图标时，才允许补一个极小 image companion plan：`assets-src/image/specs/phase4-uiux-pr02-gemini-plan.yaml`。
+3. 音频默认复用现有 `audio.ui.*` 家族；只有当 modal 打开/关闭/报错在交互上必须和通用 confirm/cancel 区分时，才允许补 `assets-src/audio/specs/phase4-uiux-pr02-audio-plan.yaml`。
 4. 禁止为了 panel 装饰、drawer 花边或 Look Mode 氛围，提前批量补一套新图或新音。
 
 ### 9.4 退出条件
@@ -854,7 +866,7 @@ build 能力摘要可以延后精修，不阻塞 PR 完成。
 2. 打开 `INVENTORY -> ITEM_DETAIL -> ITEM_COMPARE`，确认 stack 深度、`Backspace` pop、`ESC` 全退和焦点恢复都符合文档。
 3. 进入 Look Mode，移动检视光标到空地、敌人、掉落物、地形变化格，确认世界面、上下文面、目标/检视卡同步更新。
 4. 触发 `WORLD_MAP / SHOP / STAT_ASSIGN` 任一被动态接管，确认 active stack 被清空，并出现 `ui.message.force-switch.*` 提示。
-5. 保留一份按键脚本或手工记录，包含每个 mode 的输入序列、期望结果、实际结果和至少一张 `phase4-uiux-pr03-look-mode` 截图。
+5. 保留一份按键脚本或手工记录，包含每个 mode 的输入序列、期望结果、实际结果和至少一张 `phase4-uiux-pr02-look-mode` 截图。
 
 ### 9.6 风险与最小切片
 
@@ -901,7 +913,7 @@ build 能力摘要可以延后精修，不阻塞 PR 完成。
 1. 所有可装备物和 special template item 的 `iconKey` 完整覆盖。
 2. 建立 `QualityPresentation`：
    - 当前 snapshot 正式轴只直接承载 `qualityTierId = NORMAL / MAGIC / RARE`
-   - `specialTemplateId != null` 的 special item 允许叠加 client-local accent，但不在本 PR 发明新的 snapshot 字段
+   - 当前最终 PR 拆分选择扩 `ItemRenderSnapshot.specialTierId`，由 game snapshot builder 从 content authority 写入；`specialTemplateId != null` 只标识 special item 身份，client 不得反查 template 推断 `UNIQUE / ARTIFACT`
    - 建议在 `UiDesignTokens` 首发时同步提供以下最小映射；`RarityTier` 与 `SpecialTier` 是两维正交叠加，不是 5 档单轴 rarity。
 
 `RarityTier` 轴（主色与基础 corner glyph）：
@@ -919,7 +931,7 @@ build 能力摘要可以延后精修，不阻塞 PR 完成。
 | `UNIQUE` | `color.accent.special.unique` | 外描边或 corner badge halo |
 | `ARTIFACT` | `color.accent.special.artifact` | 外描边或 corner badge halo |
 
-表现合成规则固定为：rarity 主色始终渲染；若 `specialTemplateId != null`，再叠加对应 special accent；例如 `RARE + UNIQUE` = 稀有主色 `◆◆` + unique 外描边。
+表现合成规则固定为：rarity 主色始终渲染；若 `specialTemplateId != null` 且 `specialTierId != null`，再叠加对应 special accent；例如 `RARE + UNIQUE` = 稀有主色 `◆◆` + unique 外描边。`specialTemplateId != null` 但 `specialTierId == null` 属于 snapshot contract error，必须由 contract lint/test fail fast。
 3. 品质色只作用于：
    - 名称
    - corner glyph
@@ -943,18 +955,18 @@ build 能力摘要可以延后精修，不阻塞 PR 完成。
 
 **资源计划**
 
-1. 本 PR 是当前 8 个 PR 里第一个必须带正式 image plan 的 PR；建议命名为 `assets-src/image/specs/phase4-uiux-pr04-gemini-plan.yaml`。
+1. 本 PR 在当前 5 PR 执行文档中合并到 `phase4-uiux-pr03`；正式 image plan 命名为 `assets-src/image/specs/phase4-uiux-pr03-gemini-plan.yaml`。
 2. 必须进入 image plan 的资源只包含：
    - 当前正式可装备物仍缺失的 item icon
    - special template item 需要的正式 icon fallback
    - 地图地面掉落提示确实无法通过现有 icon + token 组合表达的 overlay/marker
 3. 品质色、corner glyph、数量 badge 优先用 `UiDesignTokens` 和程序化绘制完成；不要为 `NORMAL / MAGIC / RARE / UNIQUE / ARTIFACT` 分别批量生成装饰图片。
 4. 图片交付必须同时包含：
-   - generation report：`assets-src/image/manifests/phase4-uiux-pr04-generation-report.jsonl`
-   - processing report：`assets-src/image/manifests/phase4-uiux-pr04-processing-report.jsonl`
+   - generation report：`assets-src/image/manifests/phase4-uiux-pr03-generation-report.jsonl`
+   - processing report：`assets-src/image/manifests/phase4-uiux-pr03-processing-report.jsonl`
    - source manifest 与 runtime manifest 的同步更新
    - `build.gradle.kts` 中 `assetLint / styleLint / manifestLint` 的 `--extra-plan`
-5. 音频不是本 PR 的默认阻塞项；只有当拾取/掉落提示在当前 `audio.item.*` / `audio.ui.*` 家族里确实无法表达时，才允许补 `assets-src/audio/specs/phase4-uiux-pr04-audio-plan.yaml`，并把范围严格限制在 `pickup / drop / high-value pickup` 级别的最小 cue。
+5. 音频不是本 PR 的默认阻塞项；只有当拾取/掉落提示在当前 `audio.item.*` / `audio.ui.*` 家族里确实无法表达时，才允许补 `assets-src/audio/specs/phase4-uiux-pr03-audio-plan.yaml`，并把范围严格限制在 `pickup / drop / high-value pickup` 级别的最小 cue。
 
 ### 10.4 退出条件
 
@@ -964,7 +976,7 @@ build 能力摘要可以延后精修，不阻塞 PR 完成。
 4. 文档和实现都明确区分：
    - 同格多件掉落数量
    - 真正的 item stack quantity
-5. special item 的强调如果存在，也明确是 `specialTemplateId` 驱动的 client-local accent，不是假装已经有第二正式品质字段。
+5. special item 的强调由正式 snapshot fact `specialTierId` 驱动；`specialTemplateId` 只标识模板身份，不允许 client 反查 template 推断 tier，也不假装已经有第二套品质规则真源。
 
 ### 10.5 推荐验证
 
@@ -981,7 +993,7 @@ build 能力摘要可以延后精修，不阻塞 PR 完成。
 2. 在地图上逐格确认地面掉落无需打开 sidebar/inspect 也可见；玩家站在掉落格上时 corner glyph / corner badge 仍可见。
 3. 在背包、商店、地面检视三处确认同一物品的 icon、品质名色、corner glyph、special accent 一致。
 4. 人工检查至少一件高价值 special item 与一格多件掉落的 head icon 排序，确认 `specialTemplateId != null > qualityTierId > iconKey` 规则可观察。
-5. 保留 `phase4-uiux-pr04-ground-loot-single`、`phase4-uiux-pr04-ground-loot-stack`、`phase4-uiux-pr04-quality-variants` 截图或 golden hash。
+5. 保留 `phase4-uiux-pr03-ground-loot-single`、`phase4-uiux-pr03-ground-loot-stack`、`phase4-uiux-pr03-quality-variants` 截图或 golden hash。
 
 ### 10.6 风险与最小切片
 
@@ -1015,7 +1027,6 @@ build 能力摘要可以延后精修，不阻塞 PR 完成。
    - `client/src/main/kotlin/com/ktome/client/ui/card/ModalCardModel.kt`
    - `client/src/main/kotlin/com/ktome/client/ui/state/UiEmptyState.kt`
    - `client/src/main/kotlin/com/ktome/client/ui/state/UiErrorState.kt`
-   - `client/src/main/kotlin/com/ktome/client/build/BuildInfo.kt`
 5. 可能涉及：
    - `game/src/main/resources/i18n/*.json`
    - `tools` 侧新增 `contentUiLint`
@@ -1023,7 +1034,7 @@ build 能力摘要可以延后精修，不阻塞 PR 完成。
 ### 11.3 任务拆解
 
 1. 统一事件 / 商店 / 奖励房卡片结构。
-2. 补齐空态与错误态规范，并冻结 `UiErrorPayload(heading, detail, contextKeyValuePairs)` 的复制格式；同步生成 `BuildInfo.shortHash`，作为 `[ktome/<build-hash>]` 的唯一来源。
+2. 补齐空态与错误态规范，并冻结 `UiErrorPayload(heading, detail, contextKeyValuePairs)` 的复制格式；只消费 `phase4-uiux-pr01` 已生成的 `BuildInfo.shortHash`，作为 `[ktome/<build-hash>]` 的唯一来源。
 3. 冻结最小加载态：
    - 当前阶段只接受短时过渡
    - 以 `~200ms` 单次可见循环为参考
@@ -1038,9 +1049,9 @@ build 能力摘要可以延后精修，不阻塞 PR 完成。
 **资源计划**
 
 1. 本 PR 默认不做大批量素材扩张，先复用 `PR-04` 已经补齐的 icon 体系与现有 UI cue。
-2. 只有当共享卡片模型在 `事件 / 商店 / 奖励房 / 错误态 / 空态 / 加载态` 中缺少正式头图标或状态图标时，才允许增加窄作用域 image plan：`assets-src/image/specs/phase4-uiux-pr05-gemini-plan.yaml`。
+2. 只有当共享卡片模型在 `事件 / 商店 / 奖励房 / 错误态 / 空态 / 加载态` 中缺少正式头图标或状态图标时，才允许增加窄作用域 image plan：`assets-src/image/specs/phase4-uiux-pr03-gemini-plan.yaml`。
 3. 该 PR 的图片 scope 仅限共享卡片头部 icon、空态/错误态正式 fallback icon、必要的商店/奖励房标识；禁止引入大幅插画背景或每个事件单独做一张图。
-4. 音频同理：只有当前 `audio.ui.*` 不足以区分 `购买成功 / 购买失败 / 打开卡片 / 关键错误` 时，才允许补 `assets-src/audio/specs/phase4-uiux-pr05-audio-plan.yaml`。
+4. 音频同理：只有当前 `audio.ui.*` 不足以区分 `购买成功 / 购买失败 / 打开卡片 / 关键错误` 时，才允许补 `assets-src/audio/specs/phase4-uiux-pr03-audio-plan.yaml`。
 5. 若触发 companion 资源计划，必须和 `contentUiLint` / checklist 一起落地，保证“新增卡片类型 = 新 formal key 已接上 manifest/lint”，而不是事后再补。
 
 ### 11.4 退出条件
@@ -1066,7 +1077,7 @@ build 能力摘要可以延后精修，不阻塞 PR 完成。
 2. 制造空背包、空商店、无可检视目标、空日志场景，确认空态有下一步引导，不只显示 `Empty`。
 3. 手动触发或模拟 manifest 版本不匹配、save 恢复失败、snapshot 不完整错误态，确认 `Retry / Back To Menu / Copy Error Detail` 均可见，复制 payload 符合 `UiErrorPayload` 格式，并包含 `[ktome/<build-hash>]`。
 4. 在进入大 modal 或资源 bootstrap 场景观察加载态，确认不会形成长期遮罩，也不会吞掉玩家输入超过一次明显交互节拍。
-5. 保留 `phase4-uiux-pr05-card-shared`、`phase4-uiux-pr05-empty-state`、`phase4-uiux-pr05-error-copy-detail` 截图或记录。
+5. 保留 `phase4-uiux-pr03-card-shared`、`phase4-uiux-pr03-empty-state`、`phase4-uiux-pr03-error-copy-detail` 截图或记录。
 
 ### 11.6 风险与最小切片
 
@@ -1124,8 +1135,8 @@ build 能力摘要可以延后精修，不阻塞 PR 完成。
 **资源计划**
 
 1. 本 PR 很可能需要一批很小的状态/telegraph companion 资源；建议命名：
-   - 图片：`assets-src/image/specs/phase4-uiux-pr06-gemini-plan.yaml`
-   - 音频：`assets-src/audio/specs/phase4-uiux-pr06-audio-plan.yaml`
+   - 图片：`assets-src/image/specs/phase4-uiux-pr04-gemini-plan.yaml`
+   - 音频：`assets-src/audio/specs/phase4-uiux-pr04-audio-plan.yaml`
 2. 图片只服务于重复出现、需要正式 key 的状态/预警标识，例如：
    - 高风险 telegraph marker
    - zone hazard badge
@@ -1155,7 +1166,7 @@ build 能力摘要可以延后精修，不阻塞 PR 完成。
 2. 打开高对比度 / 色盲回退 / Reduce Motion 设置或等价开发开关，确认高风险 telegraph 与普通状态仍能靠形状、图标、描边或节奏区分。
 3. 在密集状态场景下观察是否出现 badge 重叠、文字截断、状态优先级错位或 telegraph 被普通状态淹没。
 4. 若本 PR 增加音效 cue，手动确认 warning cue 不与普通 confirm/cancel 混淆。
-5. 保留 `phase4-uiux-pr06-status-badges` 与 `phase4-uiux-pr06-telegraph-risk` 截图或 golden hash。
+5. 保留 `phase4-uiux-pr04-status-badges` 与 `phase4-uiux-pr04-telegraph-risk` 截图或 golden hash。
 
 ### 12.6 风险与最小切片
 
@@ -1201,7 +1212,7 @@ build 能力摘要可以延后精修，不阻塞 PR 完成。
 
 1. 本 PR 默认不新增音频 plan；关键词消费和解释型检视首先解决的是结构化信息可读性，不是音效丰富度。
 2. 图片也默认不批量扩张；优先复用已有 `iconKey`、状态 icon、资源轴 icon 和文本强调样式。
-3. 只有当关键词 chip / 构筑标签在多个主阅读面里都需要稳定的正式视觉锚点，且当前 manifest 中不存在可复用 key 时，才允许补 `assets-src/image/specs/phase4-uiux-pr07-gemini-plan.yaml`。
+3. 只有当关键词 chip / 构筑标签在多个主阅读面里都需要稳定的正式视觉锚点，且当前 manifest 中不存在可复用 key 时，才允许补 `assets-src/image/specs/phase4-uiux-pr04-gemini-plan.yaml`。
 4. 禁止为每个关键词或每条说明单独生成装饰图；本 PR 的目标是统一说明消费入口，而不是做一套新的装饰体系。
 
 ### 13.4 退出条件
@@ -1226,7 +1237,7 @@ build 能力摘要可以延后精修，不阻塞 PR 完成。
 2. 在 `INSPECT` frame 内打开 `ExplainPane`，确认它是 inspect 的 sub-view，不新增 `EXPLAIN` frame，也不改变 `ESC / Backspace` 语义。
 3. 检查至少 3 类关键词：伤害类型、资源轴、状态/效果，确认 icon、解释、动态数值和 locale fallback 一致。
 4. 人工确认说明文本没有重新变成大段文本墙：主要结论、数值来源、禁用原因和关键词解释可扫读。
-5. 保留 `phase4-uiux-pr07-explain-pane` 和 `phase4-uiux-pr07-keyword-dynamic-description` 截图或记录。
+5. 保留 `phase4-uiux-pr04-explain-pane` 和 `phase4-uiux-pr04-keyword-dynamic-description` 截图或记录。
 
 ### 13.6 风险与最小切片
 
@@ -1246,7 +1257,7 @@ build 能力摘要可以延后精修，不阻塞 PR 完成。
 
 ### 14.1 目标
 
-把 `phase4-uiux-pr08` 真正落成可执行的玩家面：
+把 current `phase4-uiux-pr05` 真正落成可执行的玩家面：
 
 1. 动作层
 2. 方式层
@@ -1344,8 +1355,8 @@ phase 内键位语义固定如下：
 **资源计划**
 
 1. 本 PR 允许补一批很小的战斗 affordance companion 资源；建议命名：
-   - 图片：`assets-src/image/specs/phase4-uiux-pr08-gemini-plan.yaml`
-   - 音频：`assets-src/audio/specs/phase4-uiux-pr08-audio-plan.yaml`
+   - 图片：`assets-src/image/specs/phase4-uiux-pr05-gemini-plan.yaml`
+   - 音频：`assets-src/audio/specs/phase4-uiux-pr05-audio-plan.yaml`
 2. 图片范围只覆盖多次复用、需要稳定 formal key 的战斗层 UI 锚点，例如：
    - 动作层 icon
    - 方式层区分 icon
@@ -1384,7 +1395,7 @@ phase 内键位语义固定如下：
 2. 从 `ACTION -> METHOD -> TARGET -> resolve` 完整走一次战斗三层决策，确认数字键、`Enter`、`Tab / Shift+Tab`、方向键均符合 phase 状态图。
 3. 在 `METHOD` 和 `TARGET` phase 分别按 `Backspace`，确认回上一 phase；在任意 phase 按 `ESC`，确认直接 pop frame 回 `MAP`。
 4. 选择禁用动作、无合法目标、非法目标、单一方式动作，确认禁用原因、`ui.message.combat.no-legal-target`、跳过 `METHOD`、非法提交音/提示均符合预期。
-5. 保留一份 `phase4-uiux-pr08-combat-decision-script` 输入记录，以及 `phase4-uiux-pr08-telegraph-triple-surface` 截图或 golden hash。
+5. 保留一份 `phase4-uiux-pr05-combat-decision-script` 输入记录，以及 `phase4-uiux-pr05-telegraph-triple-surface` 截图或 golden hash。
 
 ### 14.6 风险与最小切片
 

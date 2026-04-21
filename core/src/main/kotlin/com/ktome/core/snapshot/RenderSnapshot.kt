@@ -384,10 +384,33 @@ data class RewardPresentationEntrySnapshot(
 )
 
 @Serializable
+enum class FrontstageActionCategorySnapshot {
+    SEARCH,
+    SECRET,
+    PASSIVE,
+}
+
+@Serializable
+enum class FrontstageActionPrioritySnapshot {
+    CRITICAL,
+    HIGH,
+    MEDIUM,
+    LOW,
+}
+
+@Serializable
+data class FrontstageActionCueSnapshot(
+    val category: FrontstageActionCategorySnapshot,
+    val priority: FrontstageActionPrioritySnapshot,
+    val stableKey: String,
+    val message: RenderTextTokenSnapshot,
+)
+
+@Serializable
 data class FrontstageReadabilitySnapshot(
     val mutationHighlights: List<RenderTextTokenSnapshot> = emptyList(),
     val terrainHighlights: List<RenderTextTokenSnapshot> = emptyList(),
-    val recentActionHighlights: List<RenderTextTokenSnapshot> = emptyList(),
+    val recentActionCues: List<FrontstageActionCueSnapshot> = emptyList(),
 )
 
 @Serializable
