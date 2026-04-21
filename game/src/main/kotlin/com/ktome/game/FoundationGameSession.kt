@@ -10406,6 +10406,12 @@ class FoundationGameSession internal constructor(
 
     private fun secretZoneIdForBinding(bindingId: com.ktome.core.world.solvability.SearchBindingId): ContentRef? =
         activeFloorState.generatedFloor.entranceByBinding(bindingId)?.targetSecretZoneId
+            ?: content.schemaCatalog.zoneMapgenProfiles
+                .asSequence()
+                .filter { profile -> profile.zoneId == currentZoneSchema().id }
+                .flatMap { profile -> profile.hiddenEntrancePlans.asSequence() }
+                .firstOrNull { plan -> plan.bindingId == bindingId }
+                ?.targetSecretZoneId
 
     private fun currentSecretZoneId(): ContentRef? = currentSecretZoneContext()?.secretZoneId
 
