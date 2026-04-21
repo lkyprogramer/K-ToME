@@ -1,0 +1,355 @@
+{
+    "domainId": "mapgen",
+    "verdict": "PASS",
+    "failedCaseCount": 0,
+    "failedAggregateCount": 0,
+    "firstFailedJoinKey": null,
+    "header": {
+        "harnessId": "whiteBoxMapgen",
+        "phaseId": "P4",
+        "buildId": "phase4-opt-pr05-dev",
+        "locale": "zh-CN",
+        "corpusId": "P4_OPT_PR05_MAPGEN_WHITEBOX",
+        "timestamp": "2026-04-20T14:50:22.498704Z",
+        "activePackIds": [],
+        "activePackManifestVersions": {},
+        "contractVersions": [
+            {
+                "contractId": "contentSchema",
+                "version": "3"
+            },
+            {
+                "contractId": "topologyFingerprint",
+                "version": "2"
+            },
+            {
+                "contractId": "rewardLedger",
+                "version": "1"
+            },
+            {
+                "contractId": "lootFormula",
+                "version": "2"
+            },
+            {
+                "contractId": "specialTierEligibility",
+                "version": "2"
+            },
+            {
+                "contractId": "searchRule",
+                "version": "1"
+            },
+            {
+                "contractId": "secretRule",
+                "version": "2"
+            },
+            {
+                "contractId": "overlayContract",
+                "version": "1"
+            }
+        ],
+        "seedList": [
+            20260402011100,
+            20260402011101,
+            20260402011102,
+            20260402011103,
+            20260402011104,
+            20260402011200,
+            20260402011201,
+            20260402011202,
+            20260402011203,
+            20260402011204,
+            20260402014100,
+            20260402014101,
+            20260402014102,
+            20260402014103,
+            20260402014104,
+            20260402014200,
+            20260402014201,
+            20260402014202,
+            20260402014203,
+            20260402014204,
+            20260402016100,
+            20260402016101,
+            20260402016102,
+            20260402016103,
+            20260402016104,
+            20260402016200,
+            20260402016201,
+            20260402016202,
+            20260402016203,
+            20260402016204,
+            20260402020100,
+            20260402020101,
+            20260402020102,
+            20260402020103,
+            20260402020104,
+            20260402020200,
+            20260402020201,
+            20260402020202,
+            20260402020203,
+            20260402020204
+        ]
+    },
+    "corpus": {
+        "corpusId": "P4_OPT_PR05_MAPGEN_WHITEBOX",
+        "description": "First 5 deterministic mapgenSmoke seeds per floor for the 4 Phase 4 upgraded zones after OPT PR-05 hidden-anchor expansion.",
+        "sampleCount": 40
+    },
+    "summary": {
+        "caseCount": 40,
+        "aggregateCount": 5,
+        "totalAssertions": 326,
+        "passedAssertions": 326,
+        "failedAssertions": 0,
+        "caseFailureCount": 0,
+        "aggregateFailureCount": 0,
+        "artifactCount": 160,
+        "retentionPolicy": "ALL"
+    },
+    "aggregates": [
+        {
+            "groupId": "abyssal_temple",
+            "sampleCount": 10,
+            "metrics": {
+                "distinctTopologyCount": 10,
+                "distinctBiomeMixCount": 1,
+                "distinctVaultLayoutCount": 5,
+                "distinctTerrainDistributionCount": 10,
+                "distinctPatternRoomCount": 2,
+                "distinctEntranceLayoutCount": 1,
+                "differenceCategoryCount": 4,
+                "requiredHiddenAnchorFamilies": [
+                    "hidden.critical.adjacent"
+                ],
+                "observedHiddenAnchorFamilies": [
+                    "hidden.critical.adjacent"
+                ],
+                "requiredHiddenAnchorFamilyCoverage": 1
+            },
+            "assertions": [
+                {
+                    "ruleId": "mapgen.aggregate.difference_categories",
+                    "passed": true,
+                    "message": "Zone exposes at least 3 perceptible difference categories.",
+                    "context": {
+                        "distinctTopologyCount": 10,
+                        "distinctBiomeMixCount": 1,
+                        "distinctVaultLayoutCount": 5,
+                        "distinctTerrainDistributionCount": 10,
+                        "distinctPatternRoomCount": 2,
+                        "distinctEntranceLayoutCount": 1,
+                        "differenceCategoryCount": 4,
+                        "requiredHiddenAnchorFamilies": [
+                            "hidden.critical.adjacent"
+                        ],
+                        "observedHiddenAnchorFamilies": [
+                            "hidden.critical.adjacent"
+                        ],
+                        "requiredHiddenAnchorFamilyCoverage": 1
+                    }
+                }
+            ]
+        },
+        {
+            "groupId": "deep_iron_pit",
+            "sampleCount": 10,
+            "metrics": {
+                "distinctTopologyCount": 10,
+                "distinctBiomeMixCount": 1,
+                "distinctVaultLayoutCount": 4,
+                "distinctTerrainDistributionCount": 8,
+                "distinctPatternRoomCount": 2,
+                "distinctEntranceLayoutCount": 1,
+                "differenceCategoryCount": 4,
+                "requiredHiddenAnchorFamilies": [
+                    "hidden.branch",
+                    "hidden.goal.adjacent"
+                ],
+                "observedHiddenAnchorFamilies": [
+                    "hidden.branch",
+                    "hidden.goal.adjacent"
+                ],
+                "requiredHiddenAnchorFamilyCoverage": 2
+            },
+            "assertions": [
+                {
+                    "ruleId": "mapgen.aggregate.difference_categories",
+                    "passed": true,
+                    "message": "Zone exposes at least 3 perceptible difference categories.",
+                    "context": {
+                        "distinctTopologyCount": 10,
+                        "distinctBiomeMixCount": 1,
+                        "distinctVaultLayoutCount": 4,
+                        "distinctTerrainDistributionCount": 8,
+                        "distinctPatternRoomCount": 2,
+                        "distinctEntranceLayoutCount": 1,
+                        "differenceCategoryCount": 4,
+                        "requiredHiddenAnchorFamilies": [
+                            "hidden.branch",
+                            "hidden.goal.adjacent"
+                        ],
+                        "observedHiddenAnchorFamilies": [
+                            "hidden.branch",
+                            "hidden.goal.adjacent"
+                        ],
+                        "requiredHiddenAnchorFamilyCoverage": 2
+                    }
+                }
+            ]
+        },
+        {
+            "groupId": "greenwood_fringe",
+            "sampleCount": 10,
+            "metrics": {
+                "distinctTopologyCount": 10,
+                "distinctBiomeMixCount": 1,
+                "distinctVaultLayoutCount": 5,
+                "distinctTerrainDistributionCount": 10,
+                "distinctPatternRoomCount": 2,
+                "distinctEntranceLayoutCount": 2,
+                "differenceCategoryCount": 5,
+                "requiredHiddenAnchorFamilies": [
+                    "hidden.branch",
+                    "hidden.critical.adjacent"
+                ],
+                "observedHiddenAnchorFamilies": [
+                    "hidden.branch",
+                    "hidden.critical.adjacent"
+                ],
+                "requiredHiddenAnchorFamilyCoverage": 2
+            },
+            "assertions": [
+                {
+                    "ruleId": "mapgen.aggregate.difference_categories",
+                    "passed": true,
+                    "message": "Zone exposes at least 3 perceptible difference categories.",
+                    "context": {
+                        "distinctTopologyCount": 10,
+                        "distinctBiomeMixCount": 1,
+                        "distinctVaultLayoutCount": 5,
+                        "distinctTerrainDistributionCount": 10,
+                        "distinctPatternRoomCount": 2,
+                        "distinctEntranceLayoutCount": 2,
+                        "differenceCategoryCount": 5,
+                        "requiredHiddenAnchorFamilies": [
+                            "hidden.branch",
+                            "hidden.critical.adjacent"
+                        ],
+                        "observedHiddenAnchorFamilies": [
+                            "hidden.branch",
+                            "hidden.critical.adjacent"
+                        ],
+                        "requiredHiddenAnchorFamilyCoverage": 2
+                    }
+                }
+            ]
+        },
+        {
+            "groupId": "underground_river",
+            "sampleCount": 10,
+            "metrics": {
+                "distinctTopologyCount": 10,
+                "distinctBiomeMixCount": 1,
+                "distinctVaultLayoutCount": 4,
+                "distinctTerrainDistributionCount": 10,
+                "distinctPatternRoomCount": 1,
+                "distinctEntranceLayoutCount": 1,
+                "differenceCategoryCount": 3,
+                "requiredHiddenAnchorFamilies": [
+                    "hidden.branch"
+                ],
+                "observedHiddenAnchorFamilies": [
+                    "hidden.branch"
+                ],
+                "requiredHiddenAnchorFamilyCoverage": 1
+            },
+            "assertions": [
+                {
+                    "ruleId": "mapgen.aggregate.difference_categories",
+                    "passed": true,
+                    "message": "Zone exposes at least 3 perceptible difference categories.",
+                    "context": {
+                        "distinctTopologyCount": 10,
+                        "distinctBiomeMixCount": 1,
+                        "distinctVaultLayoutCount": 4,
+                        "distinctTerrainDistributionCount": 10,
+                        "distinctPatternRoomCount": 1,
+                        "distinctEntranceLayoutCount": 1,
+                        "differenceCategoryCount": 3,
+                        "requiredHiddenAnchorFamilies": [
+                            "hidden.branch"
+                        ],
+                        "observedHiddenAnchorFamilies": [
+                            "hidden.branch"
+                        ],
+                        "requiredHiddenAnchorFamilyCoverage": 1
+                    }
+                }
+            ]
+        },
+        {
+            "groupId": "corpus",
+            "sampleCount": 40,
+            "metrics": {
+                "casesWithVaults": 40,
+                "casesWithPatternRoom": 30,
+                "maxLoopEdgeRatio": 0.3333333333333333,
+                "maxRoomCount": 11,
+                "requiredHiddenAnchorFamilies": [
+                    "hidden.branch",
+                    "hidden.critical.adjacent",
+                    "hidden.goal.adjacent"
+                ],
+                "observedHiddenAnchorFamilies": [
+                    "hidden.branch",
+                    "hidden.critical.adjacent",
+                    "hidden.goal.adjacent"
+                ]
+            },
+            "assertions": [
+                {
+                    "ruleId": "mapgen.aggregate.vault_presence",
+                    "passed": true,
+                    "message": "Corpus includes at least one case with a vault placement.",
+                    "context": {
+                        "casesWithVaults": 40,
+                        "casesWithPatternRoom": 30,
+                        "maxLoopEdgeRatio": 0.3333333333333333,
+                        "maxRoomCount": 11,
+                        "requiredHiddenAnchorFamilies": [
+                            "hidden.branch",
+                            "hidden.critical.adjacent",
+                            "hidden.goal.adjacent"
+                        ],
+                        "observedHiddenAnchorFamilies": [
+                            "hidden.branch",
+                            "hidden.critical.adjacent",
+                            "hidden.goal.adjacent"
+                        ]
+                    }
+                },
+                {
+                    "ruleId": "mapgen.aggregate.pattern_room_presence",
+                    "passed": true,
+                    "message": "Corpus includes at least one case with a pattern room.",
+                    "context": {
+                        "casesWithVaults": 40,
+                        "casesWithPatternRoom": 30,
+                        "maxLoopEdgeRatio": 0.3333333333333333,
+                        "maxRoomCount": 11,
+                        "requiredHiddenAnchorFamilies": [
+                            "hidden.branch",
+                            "hidden.critical.adjacent",
+                            "hidden.goal.adjacent"
+                        ],
+                        "observedHiddenAnchorFamilies": [
+                            "hidden.branch",
+                            "hidden.critical.adjacent",
+                            "hidden.goal.adjacent"
+                        ]
+                    }
+                }
+            ]
+        }
+    ]
+}

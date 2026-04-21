@@ -1,0 +1,1064 @@
+{
+    "header": {
+        "harnessId": "contentPackHarness",
+        "phaseId": "P4",
+        "buildId": "phase4-opt-pr05-dev",
+        "locale": "en-US",
+        "contentSchemaVersion": 3,
+        "topologyFingerprintVersion": 2,
+        "rewardLedgerVersion": 1,
+        "lootFormulaVersion": 2,
+        "specialTierEligibilityVersion": 2,
+        "searchRuleVersion": 1,
+        "secretRuleVersion": 2,
+        "overlayContractVersion": 1,
+        "timestamp": "2026-04-20T14:51:31.010179Z",
+        "activePackIds": [
+            "sample.flooded_relics",
+            "fixture.sample_flooded_relics_override",
+            "fixture.sample_flooded_relics_bias_split",
+            "fixture.legacy_v2_loot_profile",
+            "fixture.append_loot_pool",
+            "fixture.deny_hidden_event",
+            "fixture.duplicate_base_monster"
+        ],
+        "activePackManifestVersions": {
+            "fixture.append_loot_pool": "1.0.0",
+            "fixture.deny_hidden_event": "1.0.0",
+            "fixture.duplicate_base_monster": "1.0.0",
+            "fixture.legacy_v2_loot_profile": "1.0.0",
+            "fixture.sample_flooded_relics_bias_split": "1.0.0",
+            "fixture.sample_flooded_relics_override": "1.0.0",
+            "sample.flooded_relics": "1.0.0"
+        },
+        "seedList": [
+            20260301,
+            20260304,
+            20260323,
+            20260302,
+            20260319
+        ]
+    },
+    "summary": {
+        "verdict": "PASS",
+        "totalCases": 13,
+        "failureCount": 0,
+        "caseFailureCount": 0,
+        "aggregateFailureCount": 0,
+        "successfulRuntimeCaseCount": 4,
+        "expectedFailureCaseCount": 9,
+        "diagnosticMismatchCount": 0,
+        "localeResolutionFailureCount": 0,
+        "visualResolutionFailureCount": 0,
+        "audioResolutionFailureCount": 0,
+        "headlessRunFailureCount": 0,
+        "fallbackFailureCount": 0,
+        "precedenceFailureCount": 0,
+        "resourceContractFailureCount": 0,
+        "generatedTemplateFailureCount": 0,
+        "legacyLootProfileSchemaRejectCount": 1,
+        "legacyLootProfileSchemaRejectSummaries": [
+            {
+                "fixtureId": "legacy_v2_loot_profile_rejected",
+                "packId": "fixture.legacy_v2_loot_profile",
+                "diagnosticCode": "content-pack.loot-profile.schema-version-mismatch",
+                "targetProfileId": "loot.foundation.common",
+                "actualSchemaVersion": "2",
+                "expectedSchemaVersion": "3"
+            }
+        ]
+    },
+    "aggregateFailures": [],
+    "cases": [
+        {
+            "buildId": "phase4-opt-pr05-dev",
+            "phaseId": "P4",
+            "locale": "en-US",
+            "overlayContractVersion": 1,
+            "fixtureId": "official_sample_pack",
+            "packId": "sample.flooded_relics",
+            "activePackIds": [
+                "sample.flooded_relics"
+            ],
+            "activePackManifestVersions": {
+                "sample.flooded_relics": "1.0.0"
+            },
+            "seedList": [
+                20260301,
+                20260304,
+                20260323
+            ],
+            "generatedTemplateSeedList": [
+                20260302,
+                20260319
+            ],
+            "resolvedOrder": [
+                "sample.flooded_relics"
+            ],
+            "overlayOps": [
+                "REPLACE",
+                "REPLACE",
+                "ADD",
+                "ADD",
+                "ADD"
+            ],
+            "expectedFailureCodes": [],
+            "diagnosticCodes": [],
+            "diagnostics": [],
+            "diagnosticDetails": [],
+            "localeKeysResolved": [
+                "sample_flooded_relics.zone.flooded_reliquary.name",
+                "sample_flooded_relics.zone.flooded_reliquary.desc",
+                "sample_flooded_relics.prop.reliquary_node.name",
+                "sample_flooded_relics.prop.reliquary_node.desc",
+                "sample_flooded_relics.prop.return_bridge.name",
+                "sample_flooded_relics.prop.return_bridge.desc",
+                "sample_flooded_relics.item.floodtide_lantern.name",
+                "sample_flooded_relics.item.floodtide_lantern.desc",
+                "sample_flooded_relics.item.tideglass_echo.name",
+                "sample_flooded_relics.item.tideglass_echo.desc"
+            ],
+            "visualKeysResolved": [
+                "sample_flooded_relics.zone.flooded_reliquary.visual",
+                "sample_flooded_relics.zone.flooded_reliquary.icon",
+                "sample_flooded_relics.prop.reliquary_node.visual",
+                "sample_flooded_relics.prop.return_bridge.visual",
+                "sample_flooded_relics.item.floodtide_lantern.visual",
+                "sample_flooded_relics.item.floodtide_lantern.icon",
+                "sample_flooded_relics.item.tideglass_echo.visual",
+                "sample_flooded_relics.item.tideglass_echo.icon"
+            ],
+            "audioKeysResolved": [
+                "sample_flooded_relics.audio.zone.flooded_reliquary",
+                "sample_flooded_relics.audio.interactable.reliquary_node",
+                "sample_flooded_relics.audio.interactable.return_bridge",
+                "sample_flooded_relics.audio.item.floodtide_lantern",
+                "sample_flooded_relics.audio.item.tideglass_echo"
+            ],
+            "localeResolutionFailureCount": 0,
+            "visualResolutionFailureCount": 0,
+            "audioResolutionFailureCount": 0,
+            "headlessRunSucceeded": true,
+            "fallbackToBaseVerified": false,
+            "secretZonePresent": true,
+            "secretZoneNameKey": "sample_flooded_relics.zone.flooded_reliquary.name",
+            "secretZoneVisualKey": "sample_flooded_relics.zone.flooded_reliquary.visual",
+            "secretZoneAudioProfile": "sample_flooded_relics.audio.zone.flooded_reliquary",
+            "hiddenEventPresent": true,
+            "secretRewardProfileId": "sample.flooded_relics.loot.flooded_reliquary.secret",
+            "lootProfilePresent": true,
+            "lootProfileRewardBudget": 7,
+            "lootProfileItemIds": [
+                "unique_ferrywarden_lantern",
+                "artifact_river_echo",
+                "seal_reliquary",
+                "mana_potion"
+            ],
+            "lootProfilePoolStrategy": "TAG_WEIGHTED",
+            "lootProfileItemTagFilter": [
+                "underground_river"
+            ],
+            "lootProfileExcludeIds": [],
+            "lootProfileTypeWeights": {
+                "WEAPON": 2,
+                "ARMOR": 2,
+                "CONSUMABLE": 1
+            },
+            "lootProfileSlotBias": {
+                "OFF_HAND": 3,
+                "WEAPON": 2,
+                "ARMOR": 1
+            },
+            "lootProfileSpecialTemplateTagPreference": [
+                "underground_river"
+            ],
+            "lootProfileAffixTagPreference": [
+                "underground_river"
+            ],
+            "specialTemplateIds": [
+                "sample.flooded_relics.artifact.tideglass_echo",
+                "sample.flooded_relics.unique.floodtide_lantern"
+            ],
+            "generatedSpecialTemplateIds": [
+                "sample.flooded_relics.unique.floodtide_lantern",
+                "sample.flooded_relics.artifact.tideglass_echo"
+            ],
+            "resourceContractVerified": true,
+            "resourceContractDetails": [],
+            "precedenceVerified": true,
+            "success": true,
+            "failureReasons": []
+        },
+        {
+            "buildId": "phase4-opt-pr05-dev",
+            "phaseId": "P4",
+            "locale": "en-US",
+            "overlayContractVersion": 1,
+            "fixtureId": "disabled_pack_fallback",
+            "packId": "sample.flooded_relics",
+            "activePackIds": [],
+            "activePackManifestVersions": {},
+            "seedList": [],
+            "generatedTemplateSeedList": [],
+            "resolvedOrder": [],
+            "overlayOps": [],
+            "expectedFailureCodes": [],
+            "diagnosticCodes": [],
+            "diagnostics": [],
+            "diagnosticDetails": [],
+            "localeKeysResolved": [
+                "zone.secret.underground_river_crystal_rift.name",
+                "zone.secret.underground_river_crystal_rift.desc"
+            ],
+            "visualKeysResolved": [
+                "zone.secret.underground_river_crystal_rift.visual",
+                "zone.secret.underground_river_crystal_rift.icon"
+            ],
+            "audioKeysResolved": [
+                "audio.secret_zone.underground_river_crystal_rift"
+            ],
+            "localeResolutionFailureCount": 0,
+            "visualResolutionFailureCount": 0,
+            "audioResolutionFailureCount": 0,
+            "headlessRunSucceeded": false,
+            "fallbackToBaseVerified": true,
+            "secretZonePresent": true,
+            "secretZoneNameKey": "zone.secret.underground_river_crystal_rift.name",
+            "secretZoneVisualKey": "zone.secret.underground_river_crystal_rift.visual",
+            "secretZoneAudioProfile": "audio.secret_zone.underground_river_crystal_rift",
+            "hiddenEventPresent": true,
+            "secretRewardProfileId": "loot.underground_river_crystal_rift.secret",
+            "lootProfilePresent": true,
+            "lootProfileRewardBudget": 6,
+            "lootProfileItemIds": [
+                "artifact_river_echo",
+                "artifact_deepcurrent_crown",
+                "unique_ferrywarden_lantern",
+                "arcane_staff",
+                "apprentice_robe"
+            ],
+            "lootProfilePoolStrategy": "FIXED_LIST",
+            "lootProfileItemTagFilter": [],
+            "lootProfileExcludeIds": [
+                "unique_floodglass_rapier",
+                "unique_currentstrider_cloak",
+                "unique_deepcurrent_lens",
+                "unique_tideglass_staff"
+            ],
+            "lootProfileTypeWeights": {
+                "WEAPON": 2,
+                "ARMOR": 2,
+                "CONSUMABLE": 1
+            },
+            "lootProfileSlotBias": {
+                "OFF_HAND": 4,
+                "WEAPON": 2,
+                "ARMOR": 1
+            },
+            "lootProfileSpecialTemplateTagPreference": [
+                "underground_river",
+                "arcanist",
+                "capstone"
+            ],
+            "lootProfileAffixTagPreference": [
+                "water",
+                "mana",
+                "lightning"
+            ],
+            "specialTemplateIds": [],
+            "generatedSpecialTemplateIds": [],
+            "resourceContractVerified": true,
+            "resourceContractDetails": [],
+            "precedenceVerified": true,
+            "success": true,
+            "failureReasons": []
+        },
+        {
+            "buildId": "phase4-opt-pr05-dev",
+            "phaseId": "P4",
+            "locale": "en-US",
+            "overlayContractVersion": 1,
+            "fixtureId": "precedence_fixture",
+            "packId": "fixture.sample_flooded_relics_override",
+            "activePackIds": [
+                "sample.flooded_relics",
+                "fixture.sample_flooded_relics_override"
+            ],
+            "activePackManifestVersions": {
+                "sample.flooded_relics": "1.0.0",
+                "fixture.sample_flooded_relics_override": "1.0.0"
+            },
+            "seedList": [
+                20260301,
+                20260304,
+                20260323
+            ],
+            "generatedTemplateSeedList": [
+                20260301,
+                20260304,
+                20260323
+            ],
+            "resolvedOrder": [
+                "sample.flooded_relics",
+                "fixture.sample_flooded_relics_override"
+            ],
+            "overlayOps": [
+                "REPLACE",
+                "REPLACE",
+                "ADD",
+                "ADD",
+                "ADD",
+                "REPLACE"
+            ],
+            "expectedFailureCodes": [],
+            "diagnosticCodes": [],
+            "diagnostics": [],
+            "diagnosticDetails": [],
+            "localeKeysResolved": [
+                "fixture_sample_flooded_relics_override.zone.flooded_reliquary.name",
+                "fixture_sample_flooded_relics_override.zone.flooded_reliquary.desc"
+            ],
+            "visualKeysResolved": [
+                "fixture_sample_flooded_relics_override.zone.flooded_reliquary.visual",
+                "fixture_sample_flooded_relics_override.zone.flooded_reliquary.icon"
+            ],
+            "audioKeysResolved": [
+                "fixture_sample_flooded_relics_override.audio.zone.flooded_reliquary"
+            ],
+            "localeResolutionFailureCount": 0,
+            "visualResolutionFailureCount": 0,
+            "audioResolutionFailureCount": 0,
+            "headlessRunSucceeded": true,
+            "fallbackToBaseVerified": false,
+            "secretZonePresent": true,
+            "secretZoneNameKey": "fixture_sample_flooded_relics_override.zone.flooded_reliquary.name",
+            "secretZoneVisualKey": "fixture_sample_flooded_relics_override.zone.flooded_reliquary.visual",
+            "secretZoneAudioProfile": "fixture_sample_flooded_relics_override.audio.zone.flooded_reliquary",
+            "hiddenEventPresent": true,
+            "secretRewardProfileId": "sample.flooded_relics.loot.flooded_reliquary.secret",
+            "lootProfilePresent": true,
+            "lootProfileRewardBudget": 7,
+            "lootProfileItemIds": [
+                "unique_ferrywarden_lantern",
+                "artifact_river_echo",
+                "seal_reliquary",
+                "mana_potion"
+            ],
+            "lootProfilePoolStrategy": "TAG_WEIGHTED",
+            "lootProfileItemTagFilter": [
+                "underground_river"
+            ],
+            "lootProfileExcludeIds": [],
+            "lootProfileTypeWeights": {
+                "WEAPON": 2,
+                "ARMOR": 2,
+                "CONSUMABLE": 1
+            },
+            "lootProfileSlotBias": {
+                "OFF_HAND": 3,
+                "WEAPON": 2,
+                "ARMOR": 1
+            },
+            "lootProfileSpecialTemplateTagPreference": [
+                "underground_river"
+            ],
+            "lootProfileAffixTagPreference": [
+                "underground_river"
+            ],
+            "specialTemplateIds": [
+                "sample.flooded_relics.artifact.tideglass_echo",
+                "sample.flooded_relics.unique.floodtide_lantern"
+            ],
+            "generatedSpecialTemplateIds": [],
+            "resourceContractVerified": true,
+            "resourceContractDetails": [],
+            "precedenceVerified": true,
+            "success": true,
+            "failureReasons": []
+        },
+        {
+            "buildId": "phase4-opt-pr05-dev",
+            "phaseId": "P4",
+            "locale": "en-US",
+            "overlayContractVersion": 1,
+            "fixtureId": "split_bias_fixture",
+            "packId": "fixture.sample_flooded_relics_bias_split",
+            "activePackIds": [
+                "sample.flooded_relics",
+                "fixture.sample_flooded_relics_bias_split"
+            ],
+            "activePackManifestVersions": {
+                "sample.flooded_relics": "1.0.0",
+                "fixture.sample_flooded_relics_bias_split": "1.0.0"
+            },
+            "seedList": [
+                20260301,
+                20260304,
+                20260323
+            ],
+            "generatedTemplateSeedList": [
+                20260302,
+                20260319
+            ],
+            "resolvedOrder": [
+                "sample.flooded_relics",
+                "fixture.sample_flooded_relics_bias_split"
+            ],
+            "overlayOps": [
+                "REPLACE",
+                "REPLACE",
+                "ADD",
+                "ADD",
+                "ADD",
+                "REPLACE"
+            ],
+            "expectedFailureCodes": [],
+            "diagnosticCodes": [],
+            "diagnostics": [],
+            "diagnosticDetails": [],
+            "localeKeysResolved": [
+                "sample_flooded_relics.zone.flooded_reliquary.name",
+                "sample_flooded_relics.zone.flooded_reliquary.desc",
+                "sample_flooded_relics.prop.reliquary_node.name",
+                "sample_flooded_relics.prop.reliquary_node.desc",
+                "sample_flooded_relics.prop.return_bridge.name",
+                "sample_flooded_relics.prop.return_bridge.desc",
+                "sample_flooded_relics.item.floodtide_lantern.name",
+                "sample_flooded_relics.item.floodtide_lantern.desc",
+                "sample_flooded_relics.item.tideglass_echo.name",
+                "sample_flooded_relics.item.tideglass_echo.desc"
+            ],
+            "visualKeysResolved": [
+                "sample_flooded_relics.zone.flooded_reliquary.visual",
+                "sample_flooded_relics.zone.flooded_reliquary.icon",
+                "sample_flooded_relics.prop.reliquary_node.visual",
+                "sample_flooded_relics.prop.return_bridge.visual",
+                "sample_flooded_relics.item.floodtide_lantern.visual",
+                "sample_flooded_relics.item.floodtide_lantern.icon",
+                "sample_flooded_relics.item.tideglass_echo.visual",
+                "sample_flooded_relics.item.tideglass_echo.icon"
+            ],
+            "audioKeysResolved": [
+                "sample_flooded_relics.audio.zone.flooded_reliquary",
+                "sample_flooded_relics.audio.interactable.reliquary_node",
+                "sample_flooded_relics.audio.interactable.return_bridge",
+                "sample_flooded_relics.audio.item.floodtide_lantern",
+                "sample_flooded_relics.audio.item.tideglass_echo"
+            ],
+            "localeResolutionFailureCount": 0,
+            "visualResolutionFailureCount": 0,
+            "audioResolutionFailureCount": 0,
+            "headlessRunSucceeded": true,
+            "fallbackToBaseVerified": false,
+            "secretZonePresent": true,
+            "secretZoneNameKey": "sample_flooded_relics.zone.flooded_reliquary.name",
+            "secretZoneVisualKey": "sample_flooded_relics.zone.flooded_reliquary.visual",
+            "secretZoneAudioProfile": "sample_flooded_relics.audio.zone.flooded_reliquary",
+            "hiddenEventPresent": true,
+            "secretRewardProfileId": "sample.flooded_relics.loot.flooded_reliquary.secret",
+            "lootProfilePresent": true,
+            "lootProfileRewardBudget": 7,
+            "lootProfileItemIds": [
+                "unique_ferrywarden_lantern",
+                "artifact_river_echo",
+                "seal_reliquary",
+                "mana_potion"
+            ],
+            "lootProfilePoolStrategy": "TAG_WEIGHTED",
+            "lootProfileItemTagFilter": [
+                "underground_river"
+            ],
+            "lootProfileExcludeIds": [],
+            "lootProfileTypeWeights": {
+                "WEAPON": 2,
+                "ARMOR": 2,
+                "CONSUMABLE": 1
+            },
+            "lootProfileSlotBias": {
+                "OFF_HAND": 3,
+                "WEAPON": 2,
+                "ARMOR": 1
+            },
+            "lootProfileSpecialTemplateTagPreference": [
+                "underground_river"
+            ],
+            "lootProfileAffixTagPreference": [
+                "water"
+            ],
+            "specialTemplateIds": [
+                "sample.flooded_relics.artifact.tideglass_echo",
+                "sample.flooded_relics.unique.floodtide_lantern"
+            ],
+            "generatedSpecialTemplateIds": [
+                "sample.flooded_relics.unique.floodtide_lantern",
+                "sample.flooded_relics.artifact.tideglass_echo"
+            ],
+            "resourceContractVerified": true,
+            "resourceContractDetails": [],
+            "precedenceVerified": true,
+            "success": true,
+            "failureReasons": []
+        },
+        {
+            "buildId": "phase4-opt-pr05-dev",
+            "phaseId": "P4",
+            "locale": "en-US",
+            "overlayContractVersion": 1,
+            "fixtureId": "legacy_v2_loot_profile_rejected",
+            "packId": "fixture.legacy_v2_loot_profile",
+            "activePackIds": [
+                "fixture.legacy_v2_loot_profile"
+            ],
+            "activePackManifestVersions": {
+                "fixture.legacy_v2_loot_profile": "1.0.0"
+            },
+            "seedList": [],
+            "generatedTemplateSeedList": [],
+            "resolvedOrder": [
+                "fixture.legacy_v2_loot_profile"
+            ],
+            "overlayOps": [
+                "REPLACE"
+            ],
+            "expectedFailureCodes": [
+                "content-pack.loot-profile.schema-version-mismatch"
+            ],
+            "diagnosticCodes": [
+                "content-pack.loot-profile.schema-version-mismatch"
+            ],
+            "diagnostics": [
+                "Loot profile overlay 'loot.foundation.common' must use schemaVersion=3; got 2."
+            ],
+            "diagnosticDetails": [
+                {
+                    "actualSchemaVersion": "2",
+                    "expectedSchemaVersion": "3",
+                    "packId": "fixture.legacy_v2_loot_profile",
+                    "targetProfileId": "loot.foundation.common"
+                }
+            ],
+            "localeKeysResolved": [],
+            "visualKeysResolved": [],
+            "audioKeysResolved": [],
+            "localeResolutionFailureCount": 0,
+            "visualResolutionFailureCount": 0,
+            "audioResolutionFailureCount": 0,
+            "headlessRunSucceeded": false,
+            "fallbackToBaseVerified": false,
+            "secretZonePresent": false,
+            "secretZoneNameKey": null,
+            "secretZoneVisualKey": null,
+            "secretZoneAudioProfile": null,
+            "hiddenEventPresent": false,
+            "secretRewardProfileId": null,
+            "lootProfilePresent": false,
+            "lootProfileRewardBudget": null,
+            "lootProfileItemIds": [],
+            "lootProfilePoolStrategy": null,
+            "lootProfileItemTagFilter": [],
+            "lootProfileExcludeIds": [],
+            "lootProfileTypeWeights": {},
+            "lootProfileSlotBias": {},
+            "lootProfileSpecialTemplateTagPreference": [],
+            "lootProfileAffixTagPreference": [],
+            "specialTemplateIds": [],
+            "generatedSpecialTemplateIds": [],
+            "resourceContractVerified": true,
+            "resourceContractDetails": [],
+            "precedenceVerified": true,
+            "success": true,
+            "failureReasons": []
+        },
+        {
+            "buildId": "phase4-opt-pr05-dev",
+            "phaseId": "P4",
+            "locale": "en-US",
+            "overlayContractVersion": 1,
+            "fixtureId": "append_runtime_rejected",
+            "packId": "fixture.append_loot_pool",
+            "activePackIds": [
+                "fixture.append_loot_pool"
+            ],
+            "activePackManifestVersions": {
+                "fixture.append_loot_pool": "1.0.0"
+            },
+            "seedList": [],
+            "generatedTemplateSeedList": [],
+            "resolvedOrder": [
+                "fixture.append_loot_pool"
+            ],
+            "overlayOps": [
+                "APPEND"
+            ],
+            "expectedFailureCodes": [
+                "content-pack.overlay.runtime-op-forbidden"
+            ],
+            "diagnosticCodes": [
+                "content-pack.overlay.runtime-op-forbidden"
+            ],
+            "diagnostics": [
+                "Runtime overlay path only supports ADD and REPLACE; got APPEND."
+            ],
+            "diagnosticDetails": [
+                {}
+            ],
+            "localeKeysResolved": [],
+            "visualKeysResolved": [],
+            "audioKeysResolved": [],
+            "localeResolutionFailureCount": 0,
+            "visualResolutionFailureCount": 0,
+            "audioResolutionFailureCount": 0,
+            "headlessRunSucceeded": false,
+            "fallbackToBaseVerified": false,
+            "secretZonePresent": false,
+            "secretZoneNameKey": null,
+            "secretZoneVisualKey": null,
+            "secretZoneAudioProfile": null,
+            "hiddenEventPresent": false,
+            "secretRewardProfileId": null,
+            "lootProfilePresent": false,
+            "lootProfileRewardBudget": null,
+            "lootProfileItemIds": [],
+            "lootProfilePoolStrategy": null,
+            "lootProfileItemTagFilter": [],
+            "lootProfileExcludeIds": [],
+            "lootProfileTypeWeights": {},
+            "lootProfileSlotBias": {},
+            "lootProfileSpecialTemplateTagPreference": [],
+            "lootProfileAffixTagPreference": [],
+            "specialTemplateIds": [],
+            "generatedSpecialTemplateIds": [],
+            "resourceContractVerified": true,
+            "resourceContractDetails": [],
+            "precedenceVerified": true,
+            "success": true,
+            "failureReasons": []
+        },
+        {
+            "buildId": "phase4-opt-pr05-dev",
+            "phaseId": "P4",
+            "locale": "en-US",
+            "overlayContractVersion": 1,
+            "fixtureId": "deny_runtime_rejected",
+            "packId": "fixture.deny_hidden_event",
+            "activePackIds": [
+                "fixture.deny_hidden_event"
+            ],
+            "activePackManifestVersions": {
+                "fixture.deny_hidden_event": "1.0.0"
+            },
+            "seedList": [],
+            "generatedTemplateSeedList": [],
+            "resolvedOrder": [
+                "fixture.deny_hidden_event"
+            ],
+            "overlayOps": [
+                "DENY"
+            ],
+            "expectedFailureCodes": [
+                "content-pack.overlay.runtime-op-forbidden"
+            ],
+            "diagnosticCodes": [
+                "content-pack.overlay.runtime-op-forbidden"
+            ],
+            "diagnostics": [
+                "Runtime overlay path only supports ADD and REPLACE; got DENY."
+            ],
+            "diagnosticDetails": [
+                {}
+            ],
+            "localeKeysResolved": [],
+            "visualKeysResolved": [],
+            "audioKeysResolved": [],
+            "localeResolutionFailureCount": 0,
+            "visualResolutionFailureCount": 0,
+            "audioResolutionFailureCount": 0,
+            "headlessRunSucceeded": false,
+            "fallbackToBaseVerified": false,
+            "secretZonePresent": false,
+            "secretZoneNameKey": null,
+            "secretZoneVisualKey": null,
+            "secretZoneAudioProfile": null,
+            "hiddenEventPresent": false,
+            "secretRewardProfileId": null,
+            "lootProfilePresent": false,
+            "lootProfileRewardBudget": null,
+            "lootProfileItemIds": [],
+            "lootProfilePoolStrategy": null,
+            "lootProfileItemTagFilter": [],
+            "lootProfileExcludeIds": [],
+            "lootProfileTypeWeights": {},
+            "lootProfileSlotBias": {},
+            "lootProfileSpecialTemplateTagPreference": [],
+            "lootProfileAffixTagPreference": [],
+            "specialTemplateIds": [],
+            "generatedSpecialTemplateIds": [],
+            "resourceContractVerified": true,
+            "resourceContractDetails": [],
+            "precedenceVerified": true,
+            "success": true,
+            "failureReasons": []
+        },
+        {
+            "buildId": "phase4-opt-pr05-dev",
+            "phaseId": "P4",
+            "locale": "en-US",
+            "overlayContractVersion": 1,
+            "fixtureId": "missing_dependency",
+            "packId": "fixture.missing_dependency",
+            "activePackIds": [],
+            "activePackManifestVersions": {},
+            "seedList": [],
+            "generatedTemplateSeedList": [],
+            "resolvedOrder": [],
+            "overlayOps": [],
+            "expectedFailureCodes": [
+                "content-pack.dependency.missing"
+            ],
+            "diagnosticCodes": [
+                "content-pack.dependency.missing"
+            ],
+            "diagnostics": [
+                "Missing dependency 'fixture.not_available'."
+            ],
+            "diagnosticDetails": [
+                {
+                    "missingDependency": "fixture.not_available",
+                    "requester": "fixture.missing_dependency"
+                }
+            ],
+            "localeKeysResolved": [],
+            "visualKeysResolved": [],
+            "audioKeysResolved": [],
+            "localeResolutionFailureCount": 0,
+            "visualResolutionFailureCount": 0,
+            "audioResolutionFailureCount": 0,
+            "headlessRunSucceeded": false,
+            "fallbackToBaseVerified": false,
+            "secretZonePresent": false,
+            "secretZoneNameKey": null,
+            "secretZoneVisualKey": null,
+            "secretZoneAudioProfile": null,
+            "hiddenEventPresent": false,
+            "secretRewardProfileId": null,
+            "lootProfilePresent": false,
+            "lootProfileRewardBudget": null,
+            "lootProfileItemIds": [],
+            "lootProfilePoolStrategy": null,
+            "lootProfileItemTagFilter": [],
+            "lootProfileExcludeIds": [],
+            "lootProfileTypeWeights": {},
+            "lootProfileSlotBias": {},
+            "lootProfileSpecialTemplateTagPreference": [],
+            "lootProfileAffixTagPreference": [],
+            "specialTemplateIds": [],
+            "generatedSpecialTemplateIds": [],
+            "resourceContractVerified": true,
+            "resourceContractDetails": [],
+            "precedenceVerified": true,
+            "success": true,
+            "failureReasons": []
+        },
+        {
+            "buildId": "phase4-opt-pr05-dev",
+            "phaseId": "P4",
+            "locale": "en-US",
+            "overlayContractVersion": 1,
+            "fixtureId": "dependency_cycle",
+            "packId": "fixture.cycle_a",
+            "activePackIds": [],
+            "activePackManifestVersions": {},
+            "seedList": [],
+            "generatedTemplateSeedList": [],
+            "resolvedOrder": [],
+            "overlayOps": [],
+            "expectedFailureCodes": [
+                "content-pack.dependency.cycle"
+            ],
+            "diagnosticCodes": [
+                "content-pack.dependency.cycle"
+            ],
+            "diagnostics": [
+                "Dependency cycle detected: fixture.cycle_a -> fixture.cycle_b -> fixture.cycle_a."
+            ],
+            "diagnosticDetails": [
+                {}
+            ],
+            "localeKeysResolved": [],
+            "visualKeysResolved": [],
+            "audioKeysResolved": [],
+            "localeResolutionFailureCount": 0,
+            "visualResolutionFailureCount": 0,
+            "audioResolutionFailureCount": 0,
+            "headlessRunSucceeded": false,
+            "fallbackToBaseVerified": false,
+            "secretZonePresent": false,
+            "secretZoneNameKey": null,
+            "secretZoneVisualKey": null,
+            "secretZoneAudioProfile": null,
+            "hiddenEventPresent": false,
+            "secretRewardProfileId": null,
+            "lootProfilePresent": false,
+            "lootProfileRewardBudget": null,
+            "lootProfileItemIds": [],
+            "lootProfilePoolStrategy": null,
+            "lootProfileItemTagFilter": [],
+            "lootProfileExcludeIds": [],
+            "lootProfileTypeWeights": {},
+            "lootProfileSlotBias": {},
+            "lootProfileSpecialTemplateTagPreference": [],
+            "lootProfileAffixTagPreference": [],
+            "specialTemplateIds": [],
+            "generatedSpecialTemplateIds": [],
+            "resourceContractVerified": true,
+            "resourceContractDetails": [],
+            "precedenceVerified": true,
+            "success": true,
+            "failureReasons": []
+        },
+        {
+            "buildId": "phase4-opt-pr05-dev",
+            "phaseId": "P4",
+            "locale": "en-US",
+            "overlayContractVersion": 1,
+            "fixtureId": "version_range_conflict",
+            "packId": "fixture.version_conflict",
+            "activePackIds": [],
+            "activePackManifestVersions": {},
+            "seedList": [],
+            "generatedTemplateSeedList": [],
+            "resolvedOrder": [],
+            "overlayOps": [],
+            "expectedFailureCodes": [
+                "content-pack.version-range.conflict"
+            ],
+            "diagnosticCodes": [
+                "content-pack.version-range.conflict"
+            ],
+            "diagnostics": [
+                "Pack 'fixture.version_conflict' requires dependency 'fixture.add_monster' to match '>=9.0.0 <10.0.0', but found version '1.0.0'."
+            ],
+            "diagnosticDetails": [
+                {
+                    "actualDependencyVersion": "1.0.0",
+                    "dependencyId": "fixture.add_monster",
+                    "requiredVersionRange": ">=9.0.0 <10.0.0"
+                }
+            ],
+            "localeKeysResolved": [],
+            "visualKeysResolved": [],
+            "audioKeysResolved": [],
+            "localeResolutionFailureCount": 0,
+            "visualResolutionFailureCount": 0,
+            "audioResolutionFailureCount": 0,
+            "headlessRunSucceeded": false,
+            "fallbackToBaseVerified": false,
+            "secretZonePresent": false,
+            "secretZoneNameKey": null,
+            "secretZoneVisualKey": null,
+            "secretZoneAudioProfile": null,
+            "hiddenEventPresent": false,
+            "secretRewardProfileId": null,
+            "lootProfilePresent": false,
+            "lootProfileRewardBudget": null,
+            "lootProfileItemIds": [],
+            "lootProfilePoolStrategy": null,
+            "lootProfileItemTagFilter": [],
+            "lootProfileExcludeIds": [],
+            "lootProfileTypeWeights": {},
+            "lootProfileSlotBias": {},
+            "lootProfileSpecialTemplateTagPreference": [],
+            "lootProfileAffixTagPreference": [],
+            "specialTemplateIds": [],
+            "generatedSpecialTemplateIds": [],
+            "resourceContractVerified": true,
+            "resourceContractDetails": [],
+            "precedenceVerified": true,
+            "success": true,
+            "failureReasons": []
+        },
+        {
+            "buildId": "phase4-opt-pr05-dev",
+            "phaseId": "P4",
+            "locale": "en-US",
+            "overlayContractVersion": 1,
+            "fixtureId": "namespace_collision",
+            "packId": "fixture.namespace-collision",
+            "activePackIds": [],
+            "activePackManifestVersions": {},
+            "seedList": [],
+            "generatedTemplateSeedList": [],
+            "resolvedOrder": [],
+            "overlayOps": [],
+            "expectedFailureCodes": [
+                "content-pack.namespace.collision"
+            ],
+            "diagnosticCodes": [
+                "content-pack.namespace.collision"
+            ],
+            "diagnostics": [
+                "Namespace 'fixture_namespace_collision' is claimed by multiple active packs.",
+                "Namespace 'fixture_namespace_collision' is claimed by multiple active packs."
+            ],
+            "diagnosticDetails": [
+                {},
+                {}
+            ],
+            "localeKeysResolved": [],
+            "visualKeysResolved": [],
+            "audioKeysResolved": [],
+            "localeResolutionFailureCount": 0,
+            "visualResolutionFailureCount": 0,
+            "audioResolutionFailureCount": 0,
+            "headlessRunSucceeded": false,
+            "fallbackToBaseVerified": false,
+            "secretZonePresent": false,
+            "secretZoneNameKey": null,
+            "secretZoneVisualKey": null,
+            "secretZoneAudioProfile": null,
+            "hiddenEventPresent": false,
+            "secretRewardProfileId": null,
+            "lootProfilePresent": false,
+            "lootProfileRewardBudget": null,
+            "lootProfileItemIds": [],
+            "lootProfilePoolStrategy": null,
+            "lootProfileItemTagFilter": [],
+            "lootProfileExcludeIds": [],
+            "lootProfileTypeWeights": {},
+            "lootProfileSlotBias": {},
+            "lootProfileSpecialTemplateTagPreference": [],
+            "lootProfileAffixTagPreference": [],
+            "specialTemplateIds": [],
+            "generatedSpecialTemplateIds": [],
+            "resourceContractVerified": true,
+            "resourceContractDetails": [],
+            "precedenceVerified": true,
+            "success": true,
+            "failureReasons": []
+        },
+        {
+            "buildId": "phase4-opt-pr05-dev",
+            "phaseId": "P4",
+            "locale": "en-US",
+            "overlayContractVersion": 1,
+            "fixtureId": "same_priority_duplicate_target",
+            "packId": "fixture.same_priority_left",
+            "activePackIds": [],
+            "activePackManifestVersions": {},
+            "seedList": [],
+            "generatedTemplateSeedList": [],
+            "resolvedOrder": [],
+            "overlayOps": [],
+            "expectedFailureCodes": [
+                "content-pack.overlay.same-priority-duplicate-target"
+            ],
+            "diagnosticCodes": [
+                "content-pack.overlay.same-priority-duplicate-target"
+            ],
+            "diagnostics": [
+                "Packs in precedence bucket 'ACTIVE_PACK' target 'monster:fixture.same_priority.shared_guard' at the same priority.",
+                "Packs in precedence bucket 'ACTIVE_PACK' target 'monster:fixture.same_priority.shared_guard' at the same priority."
+            ],
+            "diagnosticDetails": [
+                {},
+                {}
+            ],
+            "localeKeysResolved": [],
+            "visualKeysResolved": [],
+            "audioKeysResolved": [],
+            "localeResolutionFailureCount": 0,
+            "visualResolutionFailureCount": 0,
+            "audioResolutionFailureCount": 0,
+            "headlessRunSucceeded": false,
+            "fallbackToBaseVerified": false,
+            "secretZonePresent": false,
+            "secretZoneNameKey": null,
+            "secretZoneVisualKey": null,
+            "secretZoneAudioProfile": null,
+            "hiddenEventPresent": false,
+            "secretRewardProfileId": null,
+            "lootProfilePresent": false,
+            "lootProfileRewardBudget": null,
+            "lootProfileItemIds": [],
+            "lootProfilePoolStrategy": null,
+            "lootProfileItemTagFilter": [],
+            "lootProfileExcludeIds": [],
+            "lootProfileTypeWeights": {},
+            "lootProfileSlotBias": {},
+            "lootProfileSpecialTemplateTagPreference": [],
+            "lootProfileAffixTagPreference": [],
+            "specialTemplateIds": [],
+            "generatedSpecialTemplateIds": [],
+            "resourceContractVerified": true,
+            "resourceContractDetails": [],
+            "precedenceVerified": true,
+            "success": true,
+            "failureReasons": []
+        },
+        {
+            "buildId": "phase4-opt-pr05-dev",
+            "phaseId": "P4",
+            "locale": "en-US",
+            "overlayContractVersion": 1,
+            "fixtureId": "duplicate_without_replace",
+            "packId": "fixture.duplicate_base_monster",
+            "activePackIds": [
+                "fixture.duplicate_base_monster"
+            ],
+            "activePackManifestVersions": {
+                "fixture.duplicate_base_monster": "1.0.0"
+            },
+            "seedList": [],
+            "generatedTemplateSeedList": [],
+            "resolvedOrder": [
+                "fixture.duplicate_base_monster"
+            ],
+            "overlayOps": [
+                "ADD"
+            ],
+            "expectedFailureCodes": [
+                "content-pack.overlay.add-conflict"
+            ],
+            "diagnosticCodes": [
+                "content-pack.overlay.add-conflict"
+            ],
+            "diagnostics": [
+                "ADD overlay for 'monster:beast.rat' conflicts with an existing entry. Use REPLACE explicitly."
+            ],
+            "diagnosticDetails": [
+                {}
+            ],
+            "localeKeysResolved": [],
+            "visualKeysResolved": [],
+            "audioKeysResolved": [],
+            "localeResolutionFailureCount": 0,
+            "visualResolutionFailureCount": 0,
+            "audioResolutionFailureCount": 0,
+            "headlessRunSucceeded": false,
+            "fallbackToBaseVerified": false,
+            "secretZonePresent": false,
+            "secretZoneNameKey": null,
+            "secretZoneVisualKey": null,
+            "secretZoneAudioProfile": null,
+            "hiddenEventPresent": false,
+            "secretRewardProfileId": null,
+            "lootProfilePresent": false,
+            "lootProfileRewardBudget": null,
+            "lootProfileItemIds": [],
+            "lootProfilePoolStrategy": null,
+            "lootProfileItemTagFilter": [],
+            "lootProfileExcludeIds": [],
+            "lootProfileTypeWeights": {},
+            "lootProfileSlotBias": {},
+            "lootProfileSpecialTemplateTagPreference": [],
+            "lootProfileAffixTagPreference": [],
+            "specialTemplateIds": [],
+            "generatedSpecialTemplateIds": [],
+            "resourceContractVerified": true,
+            "resourceContractDetails": [],
+            "precedenceVerified": true,
+            "success": true,
+            "failureReasons": []
+        }
+    ]
+}
