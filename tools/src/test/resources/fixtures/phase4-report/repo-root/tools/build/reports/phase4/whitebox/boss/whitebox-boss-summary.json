@@ -1,0 +1,184 @@
+{
+    "domainId": "boss",
+    "verdict": "PASS",
+    "failedCaseCount": 0,
+    "failedAggregateCount": 0,
+    "firstFailedJoinKey": null,
+    "header": {
+        "harnessId": "bossHarness",
+        "phaseId": "P4",
+        "buildId": "phase4-opt-pr05-dev",
+        "locale": "en-US",
+        "corpusId": "P4_PR06_BOSS_WHITEBOX",
+        "timestamp": "2026-04-20T14:31:02.126491Z",
+        "activePackIds": [],
+        "activePackManifestVersions": {},
+        "contractVersions": [
+            {
+                "contractId": "bossVariantOverlay",
+                "version": "1"
+            },
+            {
+                "contractId": "eliteMutationRegistry",
+                "version": "1"
+            },
+            {
+                "contractId": "rewardLedger",
+                "version": "1"
+            },
+            {
+                "contractId": "bossEncounterPhaseGraph",
+                "version": "1"
+            },
+            {
+                "contractId": "visualManifest",
+                "version": "1"
+            },
+            {
+                "contractId": "audioManifest",
+                "version": "1"
+            }
+        ],
+        "seedList": [
+            20260325,
+            20260326,
+            20260327
+        ]
+    },
+    "corpus": {
+        "corpusId": "P4_PR06_BOSS_WHITEBOX",
+        "description": "Base-vs-variant PR-06 boss overlay corpus for the three formal boss encounters.",
+        "sampleCount": 3
+    },
+    "summary": {
+        "caseCount": 3,
+        "aggregateCount": 2,
+        "totalAssertions": 35,
+        "passedAssertions": 35,
+        "failedAssertions": 0,
+        "caseFailureCount": 0,
+        "aggregateFailureCount": 0,
+        "artifactCount": 18,
+        "retentionPolicy": "ALL"
+    },
+    "aggregates": [
+        {
+            "groupId": "per-encounter",
+            "sampleCount": 3,
+            "metrics": {
+                "pairCount": 3,
+                "phaseGraphStructuralDiffCount": 0,
+                "variantCount": 3,
+                "terrainPreferenceVariantCount": 2,
+                "terrainPreferenceAvailableVariantCount": 1,
+                "terrainPreferenceImplementedCount": 1
+            },
+            "assertions": [
+                {
+                    "ruleId": "boss.aggregate.base_variant_pairs_present",
+                    "passed": true,
+                    "message": "Each PR-06 boss variant has a base-vs-variant contrast sample."
+                },
+                {
+                    "ruleId": "boss.aggregate.phase_graph_diff_zero",
+                    "passed": true,
+                    "message": "All boss variants preserve the original phase graph structure."
+                },
+                {
+                    "ruleId": "boss.aggregate.preferred_terrain_applied",
+                    "passed": true,
+                    "message": "Every boss variant with explicit terrain affinity lands on preferred terrain or an adjacent tactical tile."
+                }
+            ]
+        },
+        {
+            "groupId": "corpus",
+            "sampleCount": 3,
+            "metrics": {
+                "pairCount": 3,
+                "threatLedgerMatchedCount": 3,
+                "rewardLedgerMatchedCount": 3,
+                "inspectReadableCount": 3,
+                "logReadableCount": 3,
+                "eliteMutationDistinctCount": 12,
+                "eliteMutationValidPairCount": 51,
+                "bossVariantCount": 3,
+                "bossVariantMutationPairwiseDistinct": true,
+                "terrainPreferenceVariantCount": 2,
+                "terrainPreferenceAvailableVariantCount": 1,
+                "terrainPreferenceImplementedCount": 1,
+                "terrainPreferenceImplementedRate": 1.0,
+                "mutationTierDistribution": {
+                    "MAJOR": 7,
+                    "MINOR": 3,
+                    "SIGNATURE": 2
+                },
+                "bossVariantMutationSets": {
+                    "boss.variant.abyssal_eclipse": [
+                        "elite.corrosion_cloud",
+                        "elite.void_mirror"
+                    ],
+                    "boss.variant.grey_crown": [
+                        "elite.dread_aura",
+                        "elite.war_caller"
+                    ],
+                    "boss.variant.molten_glass": [
+                        "elite.emberblood",
+                        "elite.ironhide"
+                    ]
+                },
+                "bossVariantPreferredTerrainTags": {
+                    "boss.variant.abyssal_eclipse": [
+                        "OIL"
+                    ],
+                    "boss.variant.grey_crown": [],
+                    "boss.variant.molten_glass": [
+                        "OIL"
+                    ]
+                }
+            },
+            "assertions": [
+                {
+                    "ruleId": "boss.aggregate.threat_cost_traceable",
+                    "passed": true,
+                    "message": "Every variant threatCost is traceable in the encounter ledger."
+                },
+                {
+                    "ruleId": "boss.aggregate.loot_override_traceable",
+                    "passed": true,
+                    "message": "Every variant lootProfileOverride is traceable in the floor reward ledger."
+                },
+                {
+                    "ruleId": "boss.aggregate.variant_readability",
+                    "passed": true,
+                    "message": "Every variant can be traced from inspect/log/visual cue metadata."
+                },
+                {
+                    "ruleId": "boss.aggregate.mutation_count",
+                    "passed": true,
+                    "message": "Elite mutation registry reaches the OPT PR-02 target count of at least 12."
+                },
+                {
+                    "ruleId": "boss.aggregate.valid_pair_count",
+                    "passed": true,
+                    "message": "Elite mutation registry exposes at least 40 valid non-forbidden pairs."
+                },
+                {
+                    "ruleId": "boss.aggregate.tier_balance",
+                    "passed": true,
+                    "message": "Mutation tier distribution satisfies MINOR >= 2, MAJOR >= 5, SIGNATURE >= 2."
+                },
+                {
+                    "ruleId": "boss.aggregate.variant_pairwise_distinct",
+                    "passed": true,
+                    "message": "All formal boss variants keep pairwise-distinct mutation combinations."
+                },
+                {
+                    "ruleId": "boss.aggregate.variant_preferred_terrain_applied",
+                    "passed": true,
+                    "message": "Boss variants with explicit terrain affinity are realized on preferred terrain or an adjacent tactical tile."
+                }
+            ]
+        }
+    ]
+}
