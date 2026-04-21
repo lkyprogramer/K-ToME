@@ -144,6 +144,19 @@ class VerificationTaskPluginFunctionalTest {
     }
 
     @Test
+    void verifyChangedPlanGateDoesNotSkipDependencyRequestedThroughProjectQualifiedAliasInMixedInvocation() throws IOException {
+        writeMultiProjectBuildWithVerifyChangedGate(":otherTask\n");
+
+        var result = runner().withArguments("verifyChanged", ":tools:whiteBoxContentPack", "-q").build();
+
+        assertEquals(TaskOutcome.SUCCESS, result.task(":prepareVerifyChangedPlan").getOutcome());
+        assertEquals(TaskOutcome.SUCCESS, result.task(":tools:contentPackHarness").getOutcome());
+        assertEquals(TaskOutcome.SUCCESS, result.task(":tools:whiteBoxContentPack").getOutcome());
+        assertTrue(Files.exists(tempDir.resolve("tools/build/content-pack.txt")));
+        assertTrue(Files.exists(tempDir.resolve("tools/build/whitebox-content-pack.txt")));
+    }
+
+    @Test
     void verifyChangedPreflightUsesDedicatedTaskPlanFile() throws IOException {
         writeBuildWithVerifyChangedGate(":otherTask\n", ":watched\n");
 
@@ -215,6 +228,65 @@ class VerificationTaskPluginFunctionalTest {
                 }
                 """
                         .formatted(groovyQuoted(plannedTaskPaths), groovyQuoted(plannedPreflightTaskPaths)));
+    }
+
+    private void writeMultiProjectBuildWithVerifyChangedGate(String plannedTaskPaths) throws IOException {
+        Files.writeString(
+                tempDir.resolve("settings.gradle"),
+                """
+                rootProject.name = 'verification-task-plugin-functional-test'
+                include 'tools'
+                """);
+        Files.createDirectories(tempDir.resolve("tools"));
+        Files.writeString(tempDir.resolve("tools/build.gradle"), "");
+        Files.writeString(
+                tempDir.resolve("build.gradle"),
+                """
+                import com.ktome.build.verification.VerifyChangedPlanGate
+
+                plugins {
+                    id 'com.ktome.build.verification'
+                }
+
+                def verifyChangedTaskPathsFile = layout.buildDirectory.file('verification/verify-changed/task-paths.txt')
+                def verifyChangedPreflightTaskPathsFile = layout.buildDirectory.file('verification/verify-changed/preflight-task-paths.txt')
+
+                tasks.register('prepareVerifyChangedPlan') {
+                    doLast {
+                        def taskPathsFile = verifyChangedTaskPathsFile.get().asFile
+                        def preflightTaskPathsFile = verifyChangedPreflightTaskPathsFile.get().asFile
+                        taskPathsFile.parentFile.mkdirs()
+                        taskPathsFile.text = %s
+                        preflightTaskPathsFile.text = %s
+                    }
+                }
+
+                project(':tools') {
+                    tasks.register('contentPackHarness') { task ->
+                        doLast {
+                            def marker = layout.buildDirectory.file('content-pack.txt').get().asFile
+                            marker.parentFile.mkdirs()
+                            marker.text = 'CONTENT_PACK'
+                        }
+                        VerifyChangedPlanGate.applyTo(task, verifyChangedTaskPathsFile, verifyChangedPreflightTaskPathsFile, ':prepareVerifyChangedPlan')
+                    }
+
+                    tasks.register('whiteBoxContentPack') {
+                        dependsOn(tasks.named('contentPackHarness'))
+                        doLast {
+                            def marker = layout.buildDirectory.file('whitebox-content-pack.txt').get().asFile
+                            marker.parentFile.mkdirs()
+                            marker.text = 'WHITEBOX_CONTENT_PACK'
+                        }
+                    }
+                }
+
+                tasks.register('verifyChanged') {
+                    dependsOn(tasks.named('prepareVerifyChangedPlan'))
+                    dependsOn(project(':tools').tasks.named('contentPackHarness'))
+                }
+                """
+                        .formatted(groovyQuoted(plannedTaskPaths), groovyQuoted(plannedTaskPaths)));
     }
 
     private static String groovyQuoted(String value) {

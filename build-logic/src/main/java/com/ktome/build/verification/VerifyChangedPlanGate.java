@@ -105,22 +105,28 @@ public final class VerifyChangedPlanGate {
         if (matchesTaskName(taskNameArg, "verifyChanged") || matchesTaskName(taskNameArg, "verifyChangedPreflight")) {
             return false;
         }
-        String requestedTaskName = rootTaskName(taskNameArg);
-        if (requestedTaskName == null) {
-            return false;
-        }
-        Task requestedTask = task.getProject().getRootProject().getTasks().findByName(requestedTaskName);
+        Task requestedTask = requestedTask(task, taskNameArg);
         return requestedTask != null && taskDependsOn(requestedTask, task, new HashSet<>());
     }
 
-    private static String rootTaskName(String taskNameArg) {
+    private static Task requestedTask(Task task, String taskNameArg) {
         if (!taskNameArg.contains(":")) {
-            return taskNameArg;
+            return task.getProject().getRootProject().getTasks().findByName(taskNameArg);
         }
         if (taskNameArg.startsWith(":") && taskNameArg.indexOf(':', 1) < 0) {
-            return taskNameArg.substring(1);
+            return task.getProject().getRootProject().getTasks().findByName(taskNameArg.substring(1));
         }
-        return null;
+        int taskNameSeparator = taskNameArg.lastIndexOf(':');
+        String projectPath = taskNameArg.substring(0, taskNameSeparator);
+        if (!projectPath.startsWith(":")) {
+            projectPath = ":" + projectPath;
+        }
+        String taskName = taskNameArg.substring(taskNameSeparator + 1);
+        if (taskName.isBlank()) {
+            return null;
+        }
+        org.gradle.api.Project requestedProject = task.getProject().getRootProject().findProject(projectPath);
+        return requestedProject == null ? null : requestedProject.getTasks().findByName(taskName);
     }
 
     private static boolean taskDependsOn(Task current, Task target, Set<String> visitedTaskPaths) {
