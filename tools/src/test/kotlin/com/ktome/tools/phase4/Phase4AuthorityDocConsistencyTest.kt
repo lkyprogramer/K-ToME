@@ -73,6 +73,8 @@ class Phase4AuthorityDocConsistencyTest {
         assertTrue(phase4Checklist.contains("professionCapstoneSourceCoverage.reportOnly"))
         assertTrue(phase4Checklist.contains("build-identity-debug.json"))
         assertTrue(phase4Checklist.contains("dynamicPoolTargetProfiles"))
+        assertTrue(phase4Checklist.contains("lane-aware artifact"))
+        assertTrue(phase4Checklist.contains("supporting evidence"))
         assertTrue(v2optPr01.contains("critical path pacing"))
         assertTrue(buildIdentityHardeningPlan.contains("data/build-identity/index.yaml"))
         assertTrue(buildIdentityHardeningPlan.contains("reportOnlyFloors"))

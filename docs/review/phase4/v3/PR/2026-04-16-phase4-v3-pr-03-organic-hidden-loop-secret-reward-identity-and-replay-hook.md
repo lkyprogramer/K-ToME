@@ -252,3 +252,15 @@
 1. hidden 的 green 不再是报告解释出来的，而是指标自己能说明的。
 2. secret-zone reward authority 已经收口成单一真源，而不是 schema/runtime 双路径并存。
 3. replay hook 不再只代表“布局变了”，而代表“内容也变了”。
+
+## 11. Post-Hardening Closure Note
+
+1. `organicHiddenProbe` 已明确分成 headline owner metric 与 supporting evidence：
+   - headline: `leadDiscoveryRate / secretConversionRate / searchActionUseRate / secretZoneEntryRate`
+   - supporting evidence: `firstHiddenDiscoveryTurn* / firstSecretZoneEntryTurn* / zoneDiscoveryDistribution / secretZoneDiscoveryDistribution / failingSecretEntryZoneIds`
+2. `whiteBoxSolvability` 最终保持单个 producer task，但 artifact/report 已切成 lane-aware 结构：
+   - `reveal-success` 保留主路径 / backtrack / hidden-anchor formal proof
+   - `reveal-fail` 保留 deterministic fail fixture、fail taxonomy 与 proof trace；当前冻结为 `abyssal_temple / deep_iron_pit / underground_river` 的 `6` 个 fail-capable fixtures，`greenwood_fringe` 继续只属于 reveal-success 正式面
+3. secret reward authority 的正式口径已经收敛到 shared helper：
+   - secret-zone reward 只认 `SecretZoneDef.rewardProfileId`
+   - 非 secret-zone hidden event 仍可合法使用通用 `LOOT_PROFILE`

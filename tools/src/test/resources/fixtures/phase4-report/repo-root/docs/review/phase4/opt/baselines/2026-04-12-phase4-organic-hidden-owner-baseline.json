@@ -1,0 +1,27 @@
+{
+    "schemaVersion": 1,
+    "baselineId": "phase4-organic-hidden-owner-v2",
+    "domainId": "organic-hidden",
+    "mode": "BUDGET_THRESHOLD",
+    "metricDefinitionVersion": "phase4-owner-metrics-v2",
+    "approvedDebtKeys": [],
+    "expectedFailureCodes": [],
+    "ceilings": [],
+    "expectedMetricRanges": [
+        {
+            "metricId": "leadDiscoveryRate",
+            "minValue": 0.3,
+            "notes": "Lead discovery remains observation-only and must not rely on primer actions or direct reveal APIs."
+        },
+        {
+            "metricId": "secretConversionRate",
+            "minValue": 0.2,
+            "notes": "Organic hidden must convert revealed leads into real secret-zone entry often enough to avoid fake-green discovery."
+        }
+    ],
+    "notes": [
+        "Externalized from ReportPhase4Runner so organic hidden owner evaluation can be rerun independently from phase aggregation.",
+        "perZoneSecretEntryMinRate is enforced in evaluation details to fail zones that stay at zero conversion behind aggregate success."
+    ],
+    "metadata": {}
+}

@@ -1,0 +1,71 @@
+{
+    "schemaVersion": 1,
+    "baselineId": "phase4-loot-local-reward-identity-v2",
+    "domainId": "loot",
+    "mode": "BUDGET_THRESHOLD",
+    "metricDefinitionVersion": "phase4-owner-metrics-v2",
+    "approvedDebtKeys": [],
+    "expectedFailureCodes": [],
+    "ceilings": [],
+    "expectedMetricRanges": [
+        {
+            "metricId": "sameZoneSecretVsCadenceMaxOverlap",
+            "maxValue": 0.50,
+            "maxInclusive": true,
+            "notes": "same-zone secret cadence overlap must stay below the local-identity guardrail."
+        },
+        {
+            "metricId": "sameZoneSecretVsRewardMaxOverlap",
+            "maxValue": 0.50,
+            "maxInclusive": true,
+            "notes": "same-zone secret reward overlap must stay below the local-identity guardrail."
+        },
+        {
+            "metricId": "dynamicPoolCoverage",
+            "minValue": 1.0,
+            "maxValue": 1.0,
+            "minInclusive": true,
+            "maxInclusive": true,
+            "notes": "All ten PR-02 target reward profiles must resolve to dynamic pools."
+        },
+        {
+            "metricId": "specialTierPassiveFamilyDuplicateCount",
+            "maxValue": 0.0,
+            "maxInclusive": true,
+            "notes": "Same-zone unique and artifact templates must not retain duplicate passive families once PR-02 identity cleanup lands."
+        },
+        {
+            "metricId": "secretZoneRewardAuthorityViolations",
+            "maxValue": 0.0,
+            "maxInclusive": true,
+            "notes": "Secret-zone reward authority must stay pinned to SecretZoneDef.rewardProfileId with exactly one SECRET_ZONE_REWARD on each guaranteed hidden event."
+        }
+    ],
+    "notes": [
+        "Externalized from ReportPhase4Runner so loot owner baselines live beside other Phase 4 review baselines.",
+        "strictPairCeilings in metadata are the source of truth for PR-03 strict same-zone secret identity ceilings.",
+        "secretZoneRewardAuthorityViolations=0 is the single-source-of-truth guardrail for secret reward routing."
+    ],
+    "metadata": {
+        "strictPairCeilings": [
+            {
+                "secretProfileId": "loot.abyssal_temple_warded_archive.secret",
+                "maxValue": 0.35,
+                "maxInclusive": true,
+                "notes": "Archive secret reward must stay materially distinct from abyssal cadence/reward channels."
+            },
+            {
+                "secretProfileId": "loot.deep_iron_slag_cache.secret",
+                "maxValue": 0.40,
+                "maxInclusive": true,
+                "notes": "Slag cache should not collapse back into the generic deep-iron reward channel."
+            },
+            {
+                "secretProfileId": "loot.deep_iron_smuggler_stash.secret",
+                "maxValue": 0.40,
+                "maxInclusive": true,
+                "notes": "Smuggler stash must retain a contraband identity distinct from mainline deep-iron rewards."
+            }
+        ]
+    }
+}

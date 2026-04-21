@@ -7,6 +7,7 @@ import com.ktome.game.hidden.HiddenConditionKey
 import com.ktome.game.hidden.HiddenEventRewardPayload
 import com.ktome.game.hidden.LOOT_PROFILE_REGISTRY_ID
 import com.ktome.game.hidden.MONSTER_REGISTRY_ID
+import com.ktome.game.hidden.SecretRewardAuthorityAssertions
 import com.ktome.game.hidden.STATUS_REGISTRY_ID
 import com.ktome.game.model.MonsterTemplate
 
@@ -25,7 +26,6 @@ object Phase4StaticContentValidator {
         statuses: List<StatusSchemaV2>,
     ): HiddenContentStaticSnapshot {
         val hiddenEventIds = schemaCatalog.hiddenEvents.mapTo(linkedSetOf()) { hiddenEvent -> hiddenEvent.id }
-        val hiddenEventsById = schemaCatalog.hiddenEvents.associateBy { hiddenEvent -> hiddenEvent.id }
         val secretZoneIds = schemaCatalog.secretZones.mapTo(linkedSetOf()) { secretZone -> secretZone.id.id }
         val statusIds =
             statuses.flatMapTo(linkedSetOf()) { status ->
@@ -58,23 +58,7 @@ object Phase4StaticContentValidator {
             }
             secretZone.guaranteedContent.forEach { contentRef ->
                 when (contentRef.registry.value) {
-                    "hidden_event" ->
-                        require(contentRef.id in hiddenEventIds) {
-                            "Secret zone '${secretZone.id.id}' guaranteed content references unknown hidden event '${contentRef.id}'."
-                        }
-                            .also {
-                                val hiddenEvent = requireNotNull(hiddenEventsById[contentRef.id]) {
-                                    "Secret zone '${secretZone.id.id}' guaranteed content hidden event '${contentRef.id}' is missing."
-                                }
-                                require(hiddenEvent.rewards.none { reward -> reward.payload is HiddenEventRewardPayload.LootProfile }) {
-                                    "Secret zone '${secretZone.id.id}' hidden event '${hiddenEvent.id}' must not declare LOOT_PROFILE; reward authority belongs to SecretZoneDef.rewardProfileId."
-                                }
-                                val secretZoneRewardCount =
-                                    hiddenEvent.rewards.count { reward -> reward.payload is HiddenEventRewardPayload.SecretZoneReward }
-                                require(secretZoneRewardCount == 1) {
-                                    "Secret zone '${secretZone.id.id}' hidden event '${hiddenEvent.id}' must declare exactly one SECRET_ZONE_REWARD reward."
-                                }
-                            }
+                    "hidden_event" -> Unit
 
                     "monster" ->
                         require(monsterTemplatesById.containsKey(contentRef.id)) {
@@ -84,6 +68,10 @@ object Phase4StaticContentValidator {
                     else -> error("Secret zone '${secretZone.id.id}' guaranteed content registry '${contentRef.registry.value}' is unsupported.")
                 }
             }
+        }
+        val secretRewardAuthorityViolations = SecretRewardAuthorityAssertions.scanCatalog(schemaCatalog)
+        require(secretRewardAuthorityViolations.isEmpty()) {
+            secretRewardAuthorityViolations.joinToString(separator = "; ") { violation -> violation.validationMessage() }
         }
         schemaCatalog.hiddenEvents.forEach { hiddenEvent ->
             hiddenEvent.conditions.forEach { condition ->

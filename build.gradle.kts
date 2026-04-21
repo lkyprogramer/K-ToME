@@ -363,8 +363,8 @@ tasks.register("hiddenContentHarness") {
 
 tasks.register("contentPackHarness") {
     group = LifecycleBasePlugin.VERIFICATION_GROUP
-    description = "Runs the Phase 4 content-pack harness and writes structured reports."
-    dependsOn(":tools:contentPackHarness")
+    description = "Runs the Phase 4 content-pack harness plus its paired white-box content-pack summary."
+    dependsOn(":tools:contentPackHarness", ":tools:whiteBoxContentPack")
 }
 
 tasks.register("organicHiddenProbe") {

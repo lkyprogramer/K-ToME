@@ -1,0 +1,49 @@
+{
+    "schemaVersion": 1,
+    "baselineId": "phase4-terminal-build-identity-v1",
+    "domainId": "longrun",
+    "mode": "BUDGET_THRESHOLD",
+    "metricDefinitionVersion": "phase4-owner-metrics-v1",
+    "approvedDebtKeys": [],
+    "expectedFailureCodes": [],
+    "ceilings": [],
+    "expectedMetricRanges": [
+        {
+            "metricId": "terminalWeaponBaseDiversity",
+            "minValue": 3.0,
+            "notes": "Terminal build diversity must not collapse below three distinct weapon bases."
+        },
+        {
+            "metricId": "crossProfessionTopWeaponDominance",
+            "maxValue": 0.5,
+            "notes": "Cross-profession terminal build dominance must stay at or below 50%."
+        },
+        {
+            "metricId": "professionAlignedWeaponAdoptionRate",
+            "minValue": 0.75,
+            "notes": "Profession-aligned weapon adoption must remain at or above 75%."
+        },
+        {
+            "metricId": "professionCapstoneSeenRate",
+            "minValue": 0.25,
+            "notes": "Profession capstone visibility is frozen to the refreshed PR-02 long-run artifact floor and each foundation profession must see at least one capstone.",
+            "metadata": {
+                "perProfessionSeenMinCount": 1
+            }
+        },
+        {
+            "metricId": "professionCapstoneAdoptionRate",
+            "minValue": 0.25,
+            "notes": "Profession capstone adoption must stay materially visible in terminal builds."
+        },
+        {
+            "metricId": "nonWeaponBuildPayoffRate",
+            "minValue": 0.25,
+            "notes": "Non-weapon build payoff must remain materially adopted in refreshed PR-02 full-route runs."
+        }
+    ],
+    "notes": [
+        "Externalized from ReportPhase4Runner so long-run owner evaluation can be rerun independently from phase aggregation."
+    ],
+    "metadata": {}
+}

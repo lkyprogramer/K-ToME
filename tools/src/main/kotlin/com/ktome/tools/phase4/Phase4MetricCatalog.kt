@@ -45,7 +45,7 @@ internal object Phase4MetricCatalog {
                 outputSection = "scripted-vs-organic-hidden",
                 formula = "leadDiscoveryCount / totalCases",
                 failSemantics = "FAIL is allowed in the first owner-metric pass; it exposes missing lead discovery rather than scripted correctness breakage.",
-                decisionNotes = "Lead discovery only counts revealed entrances or actual secret-zone entry; hidden-event primers alone are not valid success evidence.",
+                decisionNotes = "Lead discovery only counts revealed entrances or actual secret-zone entry; firstHiddenDiscoveryTurn and discovery distributions are supporting evidence, not substitute headline success signals.",
             ),
             Phase4MetricSpec(
                 id = "secretConversionRate",
@@ -53,7 +53,7 @@ internal object Phase4MetricCatalog {
                 outputSection = "scripted-vs-organic-hidden",
                 formula = "secretConversionCount / leadDiscoveryCount",
                 failSemantics = "FAIL means the organic probe can see hidden leads but still does not convert them into real secret-zone entry often enough.",
-                decisionNotes = "The report must also surface per-zone secret-entry failures so zones like abyssal_temple cannot hide behind aggregate discovery.",
+                decisionNotes = "The report must also surface per-zone secret-entry failures and supporting timing evidence so zones like abyssal_temple cannot hide behind aggregate discovery.",
             ),
             Phase4MetricSpec(
                 id = "sameZoneSecretVsCadenceMaxOverlap",
@@ -91,9 +91,9 @@ internal object Phase4MetricCatalog {
                 id = "secretZoneRewardAuthorityViolations",
                 ownerTaskId = "whiteBoxLoot",
                 outputSection = "local-reward-identity",
-                formula = "count(secret-zone hidden events still carrying LOOT_PROFILE or missing SECRET_ZONE_REWARD)",
-                failSemantics = "FAIL means secret reward authority is still split between SecretZoneDef.rewardProfileId and hidden-event reward payloads.",
-                decisionNotes = "This is the single-source-of-truth guardrail for PR-03; any non-zero count means secret reward authority drifted.",
+                formula = "count(shared secret reward authority scan violations for secret-zone bindings)",
+                failSemantics = "FAIL means the shared SecretRewardAuthority contract no longer resolves secret-zone rewards solely from SecretZoneDef.rewardProfileId.",
+                decisionNotes = "This is the single-source-of-truth guardrail for the landed authority helper; non-secret-zone LOOT_PROFILE remains legal, but secret-zone fallback drift must stay at zero.",
             ),
             Phase4MetricSpec(
                 id = "professionCapstoneSourceCoverage.reportOnly",

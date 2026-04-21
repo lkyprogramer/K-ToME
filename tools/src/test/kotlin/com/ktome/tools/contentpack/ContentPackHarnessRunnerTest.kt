@@ -65,6 +65,10 @@ class ContentPackHarnessRunnerTest {
         )
         assertEquals("true", officialCase.getValue("resourceContractVerified").jsonPrimitive.content)
         assertEquals(
+            "sample.flooded_relics.loot.flooded_reliquary.secret",
+            officialCase.getValue("secretRewardProfileId").jsonPrimitive.content,
+        )
+        assertEquals(
             harnessSpec.generatedTemplateSeeds.map(Long::toString),
             officialCase.getValue("generatedTemplateSeedList").jsonArray.map { value -> value.jsonPrimitive.content },
         )

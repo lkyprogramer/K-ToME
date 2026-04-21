@@ -257,6 +257,7 @@ import com.ktome.game.hidden.HiddenConditionKey
 import com.ktome.game.hidden.HiddenEventDef
 import com.ktome.game.hidden.HiddenEventRewardPayload
 import com.ktome.game.hidden.HiddenTriggerType
+import com.ktome.game.hidden.SecretRewardAuthority
 import com.ktome.game.hidden.SecretEncounterRuntime
 import com.ktome.game.i18n.GameLocale
 import com.ktome.game.data.schema.InteractableSchemaV2
@@ -4303,7 +4304,14 @@ class FoundationGameSession internal constructor(
                                     com.ktome.core.loot.RewardDelta(
                                         source = "secretZone:${secretZone.id.id}",
                                         amount =
-                                            requireNotNull(content.lootProfile(secretZone.rewardProfileId.id)) {
+                                            requireNotNull(
+                                                content.lootProfile(
+                                                    SecretRewardAuthority.resolve(
+                                                        secretZone = secretZone,
+                                                        hiddenEvent = null,
+                                                    ).rewardProfileId,
+                                                ),
+                                            ) {
                                                 "Secret zone '${secretZone.id.id}' loot profile '${secretZone.rewardProfileId.id}' is not registered."
                                             }.rewardBudget,
                                     )
@@ -9811,9 +9819,13 @@ class FoundationGameSession internal constructor(
         val secretZone = requireNotNull(content.secretZone(secretZoneId)) {
             "Hidden event '${hiddenEvent.id}' references unknown secret zone '${secretZoneId.id}'."
         }
+        val resolvedReward = SecretRewardAuthority.resolve(secretZone = secretZone, hiddenEvent = hiddenEvent)
+        check(resolvedReward.mismatchReason == null) {
+            "Hidden event '${hiddenEvent.id}' secret reward authority mismatch: ${resolvedReward.mismatchReason}."
+        }
         grantHiddenLootReward(
             hiddenEvent = hiddenEvent,
-            lootProfileId = secretZone.rewardProfileId.id,
+            lootProfileId = resolvedReward.rewardProfileId,
             rewardPresentationSource = rewardPresentationSource,
             secretZoneId = secretZoneId,
         )

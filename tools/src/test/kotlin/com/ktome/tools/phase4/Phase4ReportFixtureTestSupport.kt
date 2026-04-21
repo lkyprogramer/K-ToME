@@ -15,6 +15,8 @@ import kotlinx.serialization.json.jsonPrimitive
 
 internal object Phase4ReportFixtureTestSupport {
     val json: Json = Json { prettyPrint = true; explicitNulls = false }
+    private const val FIXTURE_SOURCE_ROOT: String = "tools/src/test/resources/fixtures/phase4-report/repo-root"
+    private const val FIXTURE_MARKER_FILE: String = ".phase4-report-fixture-id"
 
     fun preparePhase4RepoFixture(
         tempDir: Path,
@@ -22,17 +24,13 @@ internal object Phase4ReportFixtureTestSupport {
     ): Path {
         val sourceRepoRoot = VerificationCacheSupport.repoRoot()
         val fixtureRepoRoot = tempDir.resolve("repo-fixture")
+        val fixtureSourceRoot = sourceRepoRoot.resolve(FIXTURE_SOURCE_ROOT)
+        require(Files.exists(fixtureSourceRoot.resolve(FIXTURE_MARKER_FILE))) {
+            "Missing hermetic Phase 4 report fixture marker under $FIXTURE_SOURCE_ROOT."
+        }
         copyRecursively(
-            source = sourceRepoRoot.resolve("tools/build/reports/phase4"),
-            target = fixtureRepoRoot.resolve("tools/build/reports/phase4"),
-        )
-        copyRecursively(
-            source = sourceRepoRoot.resolve("build/reports/harness/long-run-full.json"),
-            target = fixtureRepoRoot.resolve("build/reports/harness/long-run-full.json"),
-        )
-        copyRecursively(
-            source = sourceRepoRoot.resolve("docs/review/phase4/opt/baselines"),
-            target = fixtureRepoRoot.resolve("docs/review/phase4/opt/baselines"),
+            source = fixtureSourceRoot,
+            target = fixtureRepoRoot,
         )
         alignContentPackArtifactFreshness(fixtureRepoRoot)
         if (includeLegacySummary) {
@@ -66,6 +64,36 @@ internal object Phase4ReportFixtureTestSupport {
                     } else {
                         add(aggregate)
                     }
+                }
+            }
+        Files.writeString(
+            summaryPath,
+            json.encodeToString(
+                JsonElement.serializer(),
+                buildJsonObject {
+                    payload.forEach { (key, value) ->
+                        if (key == "aggregates") {
+                            put(key, updatedAggregates)
+                        } else {
+                            put(key, value)
+                        }
+                    }
+                },
+            ),
+        )
+    }
+
+    fun mutateWhiteBoxSolvabilityAggregates(
+        repoRoot: Path,
+        transform: (List<JsonObject>) -> List<JsonObject>,
+    ) {
+        val summaryPath = repoRoot.resolve("tools/build/reports/phase4/whitebox/solvability/whitebox-solvability-summary.json")
+        val payload = json.parseToJsonElement(Files.readString(summaryPath)).jsonObject
+        val aggregates = payload.getValue("aggregates").jsonArray.map(JsonElement::jsonObject)
+        val updatedAggregates =
+            buildJsonArray {
+                transform(aggregates).forEach { aggregate ->
+                    add(aggregate)
                 }
             }
         Files.writeString(

@@ -21,7 +21,7 @@ class Phase4ReportRunnerTest {
 
         assertEquals(14, run.taskCount)
         assertEquals(0, run.failedTaskCount, "phase4Report should stay green once the landed owner guardrails are repaired; inspect ${run.summaryPath}")
-        assertEquals(2, run.failedExperienceMetricCount, "phase4Report should surface the two organic hidden owner failures instead of hiding them behind a false green; inspect ${run.summaryPath}")
+        assertEquals(0, run.failedExperienceMetricCount, "phase4Report should stay aligned with the current organic hidden owner baseline; inspect ${run.summaryPath}")
         assertEquals(run.failedTaskCount + run.failedExperienceMetricCount, run.failedGateCount)
         assertTrue(Files.exists(run.summaryPath), "Expected phase4 summary report at ${run.summaryPath}")
         assertTrue(Files.exists(run.markdownPath), "Expected phase4 markdown report at ${run.markdownPath}")
@@ -43,6 +43,8 @@ class Phase4ReportRunnerTest {
             tasks.first { element -> element.jsonObject.getValue("taskId").jsonPrimitive.content == "terrainInteractionBatch" }.jsonObject
         val lootTask =
             tasks.first { element -> element.jsonObject.getValue("taskId").jsonPrimitive.content == "whiteBoxLoot" }.jsonObject
+        val whiteBoxSolvabilityTask =
+            tasks.first { element -> element.jsonObject.getValue("taskId").jsonPrimitive.content == "whiteBoxSolvability" }.jsonObject
         val whiteBoxContentPackTask =
             tasks.first { element -> element.jsonObject.getValue("taskId").jsonPrimitive.content == "whiteBoxContentPack" }.jsonObject
         val contentPackTask =
@@ -65,8 +67,8 @@ class Phase4ReportRunnerTest {
         assertEquals("P4", payload.getValue("phaseId").jsonPrimitive.content)
         assertEquals("14", payload.getValue("taskCount").jsonPrimitive.content)
         assertEquals("0", payload.getValue("failedTaskCount").jsonPrimitive.content)
-        assertEquals("2", payload.getValue("failedExperienceMetricCount").jsonPrimitive.content)
-        assertEquals(setOf("leadDiscoveryRate", "secretConversionRate"), failedMetricIds)
+        assertEquals("0", payload.getValue("failedExperienceMetricCount").jsonPrimitive.content)
+        assertEquals(emptySet<String>(), failedMetricIds)
         assertEquals("1000", solvabilityTask.getValue("metrics").jsonObject.getValue("distinctSeedCount").jsonPrimitive.content)
         assertTrue(solvabilityTask.getValue("metrics").jsonObject.containsKey("providedDiscoveryTags"))
         assertTrue(solvabilityTask.getValue("metrics").jsonObject.containsKey("requiredHiddenAnchorFamilies"))
@@ -103,6 +105,10 @@ class Phase4ReportRunnerTest {
         assertTrue(terrainTask.getValue("metrics").jsonObject.containsKey("perZoneEncounterLowerBoundTarget"))
         assertTrue(terrainTask.getValue("metrics").jsonObject.containsKey("perZoneEncounterFailures"))
         assertTrue(tasks.first { element -> element.jsonObject.getValue("taskId").jsonPrimitive.content == "whiteBoxMapgen" }.jsonObject.getValue("metrics").jsonObject.containsKey("requiredHiddenAnchorFamilies"))
+        assertEquals("40", whiteBoxSolvabilityTask.getValue("metrics").jsonObject.getValue("revealSuccessCaseCount").jsonPrimitive.content)
+        assertEquals("6", whiteBoxSolvabilityTask.getValue("metrics").jsonObject.getValue("revealFailCaseCount").jsonPrimitive.content)
+        assertEquals("6", whiteBoxSolvabilityTask.getValue("metrics").jsonObject.getValue("revealFailCasesWithFail").jsonPrimitive.content)
+        assertTrue(whiteBoxSolvabilityTask.getValue("metrics").jsonObject.containsKey("revealFailTaxonomy"))
         assertTrue(lootTask.getValue("metrics").jsonObject.containsKey("lootProfileBaseItemOverlapMatrix"))
         assertTrue(lootTask.getValue("metrics").jsonObject.containsKey("sameZoneSecretVsCadenceMaxOverlap"))
         assertTrue(lootTask.getValue("metrics").jsonObject.containsKey("sameZoneSecretVsRewardMaxOverlap"))
@@ -196,10 +202,13 @@ class Phase4ReportRunnerTest {
         assertEquals(experienceMetricIds, metricCatalogIds)
         assertTrue(markdown.contains("## 指标 Owner 表"))
         assertTrue(markdown.contains("## Local Reward Identity"))
+        assertTrue(markdown.contains("## Solvability WhiteBox"))
         assertTrue(markdown.contains("## Terminal Build Identity"))
         assertTrue(markdown.contains("## Critical Path Pacing"))
         assertTrue(markdown.contains("### Critical Path Design Audit"))
         assertTrue(markdown.contains("## Scripted vs Organic Hidden"))
+        assertTrue(markdown.contains("headline owner metrics"))
+        assertTrue(markdown.contains("single-task lane-aware artifact"))
         assertTrue(markdown.contains("## Terrain Combat Sample Contract"))
         assertTrue(markdown.contains("dynamicPoolCoverage"))
         assertTrue(markdown.contains("specialTierPassiveFamilyDuplicateCount"))
@@ -254,7 +263,9 @@ class Phase4ReportRunnerTest {
         assertTrue(combatFloorMetric.getValue("details").jsonObject.containsKey("designAudit"))
         assertTrue(leadDiscoveryMetric.getValue("note").jsonPrimitive.content.contains("observationOnly=true"))
         assertTrue(leadDiscoveryMetric.getValue("note").jsonPrimitive.content.contains("promptRequired=true"))
+        assertEquals("PASS", leadDiscoveryMetric.getValue("status").jsonPrimitive.content)
         assertTrue(secretConversionMetric.getValue("note").jsonPrimitive.content.contains("failingZones="))
+        assertEquals("PASS", secretConversionMetric.getValue("status").jsonPrimitive.content)
         assertEquals(
             criticalPathZoneIds.size,
             criticalPathAuditSection.lineSequence().count { line -> criticalPathZoneIds.any { zoneId -> line.startsWith("| `$zoneId` |") } },

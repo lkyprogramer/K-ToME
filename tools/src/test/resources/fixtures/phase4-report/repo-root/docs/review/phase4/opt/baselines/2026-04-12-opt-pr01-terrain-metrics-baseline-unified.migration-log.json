@@ -1,0 +1,14 @@
+{
+    "migratedAt": "2026-04-12T15:57:21.493810Z",
+    "sourcePath": "docs/review/phase4/opt/baselines/2026-04-09-opt-pr01-terrain-metrics-baseline.json",
+    "targetPath": "docs/review/phase4/opt/baselines/2026-04-09-opt-pr01-terrain-metrics-baseline-unified.json",
+    "logVersion": 1,
+    "baselineId": "opt-pr01-terrain-baseline-v2",
+    "domainId": "terrain",
+    "mode": "RELATIVE_BASELINE",
+    "schemaVersion": 1,
+    "metricIds": [
+        "terrainTaggedCombatExposureRate",
+        "terrainInteractionEncounterRate.aggregate"
+    ]
+}

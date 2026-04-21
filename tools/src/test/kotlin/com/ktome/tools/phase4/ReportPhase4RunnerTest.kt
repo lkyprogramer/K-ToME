@@ -1,5 +1,6 @@
 package com.ktome.tools.phase4
 
+import com.ktome.tools.mapgen.WhiteBoxSolvabilityFailLane
 import java.nio.file.Files
 import java.nio.file.Path
 import kotlinx.serialization.json.JsonPrimitive
@@ -276,6 +277,23 @@ class ReportPhase4RunnerTest {
                     ReportPhase4Runner.run(compareLegacy = false)
                 }
             assertTrue(error.message.orEmpty().contains("whiteBoxLoot.rewardRoutingCoverageSummary"))
+        }
+    }
+
+    @Test
+    @Tag("reportPhase4Fixture")
+    fun `reportPhase4 fails fast when whitebox solvability lane aggregate is missing from artifact`() {
+        val fixtureRepoRoot = Phase4ReportFixtureTestSupport.preparePhase4RepoFixture(tempDir)
+        Phase4ReportFixtureTestSupport.mutateWhiteBoxSolvabilityAggregates(fixtureRepoRoot) { aggregates ->
+            aggregates.filterNot { aggregate -> aggregate.getValue("groupId").jsonPrimitive.content == "${WhiteBoxSolvabilityFailLane.LANE_ID}:corpus" }
+        }
+
+        Phase4ReportFixtureTestSupport.withFixtureProperties(repoRoot = fixtureRepoRoot, aggregateReportDir = tempDir.resolve("aggregate-missing-solvability-lane")) {
+            val error =
+                assertThrows(IllegalStateException::class.java) {
+                    ReportPhase4Runner.run(compareLegacy = false)
+                }
+            assertTrue(error.message.orEmpty().contains("${WhiteBoxSolvabilityFailLane.LANE_ID}:corpus"))
         }
     }
 
