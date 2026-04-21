@@ -8,6 +8,8 @@
 > `docs/opt/ui-pr/2026-04-21-phase4-uiux-pr01-client-foundation-and-main-menu.md`
 > `docs/opt/ui-pr/2026-04-21-phase4-uiux-pr02-ingame-info-input-modal-look.md`
 
+RenderSnapshot 字段、hash 与序列化变更必须同步核对 `docs/2026-03-13-core-systems-design-and-phase-supplements.md` 的 snapshot contract 段；owner gate 口径必须同步核对 `docs/phase4/2026-03-13-phase4-verification-checklist.md` 的 owner-gate 段。
+
 # Phase 4 UI/UX - PR-03 Item, Content Presentation, UI States
 
 **阶段**: `Phase 4 late-development / phase4-uiux-pr03`  
@@ -213,8 +215,15 @@ action 语义：
 | `Buy` | `Enter / Space` | shop offer | 执行购买；cost 不足时 disabled 并显示原因 |
 | `Sell` | `Enter / Space` | shop sell entry | 执行出售；不可出售时 disabled 并显示原因 |
 | `EnterRoute` | `Enter / Space` | route / reward preview | 确认进入路线；不同于普通 `Confirm`，必须写入 route 选择 |
-| `ReadMore` | `? / Enter` | event、reward、ExplainPane | 打开说明或 expand 内容；不得替代主确认 |
+| `ReadMore` | `?`；仅当 `primaryAction == ReadMore` 时允许 `Enter / Space` | event、reward、ExplainPane | 打开说明或 expand 内容；不得替代主确认 |
 | `Close` | `ESC / Backspace` | 只读卡片或错误态 | 关闭当前卡片；若无其他 action，必须保证仍有返回路径 |
+
+action 不变量：
+
+1. `Enter / Space` 优先触发 `primaryAction`；如果 `primaryAction != ReadMore`，`ReadMore` 只能由 `?` 触发。
+2. `Cancel` 与 `Close` 语义互斥：可取消 side effect / loading 用 `Cancel`，只读关闭用 `Close`；同一卡片不得同时出现二者。
+3. `title` 必须是非空 token，且能被 `localeLint` 解析；禁止空字符串、空 key 或只在测试里 mock 的 token。
+4. 有效返回路径定义为：`primaryAction !in {Close, Cancel}` 或 `secondaryAction !in {Close, Cancel}`；若两者都属于 `{Close, Cancel}`，该卡片只允许在明确可 pop 到上一可见 frame 的只读 owner 中出现，并必须由 `ModalCardModelTest` 覆盖。
 
 ### 4.4 `UiErrorPayload`
 
@@ -232,7 +241,7 @@ action 语义：
 
 1. `heading`: 当前 locale 已解析文本
 2. `detail`: 当前 locale 已解析文本
-3. `contextKeyValuePairs`: 英文 debug key + 稳定值，按 builder 插入顺序输出
+3. `contextKeyValuePairs`: `List<Pair<String, String>>`，英文 debug key + 稳定值，按 builder 插入顺序输出
 4. `build-hash`: `PR-01` 的 `BuildInfo.shortHash`
 
 测试必须用固定插入序断言 payload，禁止改成 map 字典序导致跨 JVM / 序列化实现漂移。
@@ -254,6 +263,7 @@ data class UiLoadingState(
     val message: RenderTextTokenSnapshot,
     val showsSpinner: Boolean,
     val allowsCancel: Boolean,
+    val cancelAction: ModalCardAction? = null,
 )
 
 data class UiErrorState(
@@ -270,9 +280,9 @@ data class UiErrorState(
 2. `ClientSmokeHarnessTest` 至少增加 `loading screen transitions within 500ms` 软断言。
 3. 超过预算时必须允许取消或显示明确状态，不允许长期遮罩吞输入。
 
-软断言定义：记录到 `build/reports/client-smoke/loading-timing.jsonl`，不直接 fail test；PR description 必须附本地测量值。若后续连续 3 次 CI 记录超过 `500ms`，再单独把该检查升级为 hard fail。
+软断言定义：owner 为 `ClientSmokeHarnessTest` 与 `build/reports/client-smoke/loading-timing.jsonl`；本 PR description 必须附本地测量值。若 PR-close 或 main CI 连续 3 次记录超过 `500ms`，必须在合入前写入 `docs/opt/ui-pr/follow-ups.md`，指定关闭 PR 与升级 hard fail 的验证命令，不能只在 CI comment 中留痕。
 
-`allowsCancel == true` 时必须配套 `ModalCardAction.Cancel` 与 locale key `ui.loading.cancel`。
+`allowsCancel == true` 当且仅当 `cancelAction == ModalCardAction.Cancel`，并必须配套 locale key `ui.loading.cancel`；`allowsCancel == false` 时 `cancelAction` 必须为 `null`。
 
 ### 4.6 lint / checklist
 
@@ -282,7 +292,7 @@ data class UiErrorState(
 
 1. 正式 item/special template 缺 `iconKey` 或 icon 不可解析。
 2. 新 UI 文案缺 locale。
-3. `ModalCardModel.title / primaryAction` 是 empty token，或只剩 `Close / Cancel` 且没有有效返回路径。
+3. `ModalCardModel.title` 是 empty token、不可解析 token，或 action 组合违反 `Cancel / Close` 互斥和有效返回路径定义。
 4. 错误/空态没有返回路径或下一步引导。
 5. 新资源 key 未被 smoke/golden 消费。
 6. `qualityTierId` 不属于 `NORMAL / MAGIC / RARE`，或 special 双字段不变量失效：`specialTemplateId != null` requires `specialTierId in UNIQUE/ARTIFACT`，`specialTierId != null` requires `specialTemplateId != null`。
@@ -349,6 +359,8 @@ data class UiErrorState(
 ### 6.2 自动化命令
 
 所有 Gradle 命令必须串行执行：
+
+`./gradlew :core:test` 是 PR-close/submission gate；紧随其后的 core selector 只用于快速定位 snapshot/hash contract，不能替代完整 `:core:test`。
 
 ```bash
 source "$HOME/.sdkman/bin/sdkman-init.sh"

@@ -71,6 +71,7 @@
    - `client/src/main/kotlin/com/ktome/client/telegraph/TelegraphRenderer.kt`
    - `client/src/main/kotlin/com/ktome/client/screen/MainMenuScreen.kt`
    - `client/src/main/kotlin/com/ktome/client/screen/MainMenuController.kt`
+   - `client/src/main/kotlin/com/ktome/client/GameApp.kt`，仅当运行时标题需要通过既有 `render()` / UI 主线程边界切换
    - `client/src/main/kotlin/com/ktome/client/ui/creation/PlayerCreationPanel.kt`
    - `client/src/main/kotlin/com/ktome/client/ui/status/StatusHudRenderer.kt`
    - `client/src/main/kotlin/com/ktome/client/DesktopLauncher.kt`
@@ -151,6 +152,7 @@ sealed interface InfoSurfaceLayout {
 3. 将 `sidebarGap / panelGap / bottomInset / cardHeight / focusWidth` 等核心数值改为 token 或 strategy 派生。
 4. 保证现有 `1280x800` 基线不爆版。
 5. 最小支持窗口尺寸为 `1024x768`；小于该尺寸时允许后续 PR 引入 `ModalOverlay` fallback 并输出 warn，本 PR 不实现小窗 fallback。
+6. `InfoSurfaceLayoutTest` 必须覆盖 `1024x768` 与 `1280x800` 两个断点；`TileRendererCanvasTest` 必须在 `1024x768` 断言 sidebar、bottom panel、focus ring 与主地图区域无重叠。
 
 ### 4.3 首页模型
 
@@ -246,6 +248,13 @@ payload 采用与 PR-03 `UiErrorPayload.contextKeyValuePairs` 一致的形态，
 4. `throwableClass`
 5. `throwableMessage`
 
+UNKNOWN payload 规则：
+
+1. `throwableClass` 使用异常 FQCN，例如 `java.io.EOFException`。
+2. `throwableMessage` 由纯 formatter 生成，最大 `200` chars；超长必须截断并追加省略标记。
+3. payload 禁止包含 stacktrace、线程名、绝对 JVM 内部路径或 nested cause dump。
+4. `DesktopLauncherTitleFormatterTest` 不覆盖该路径；必须在 `MainMenuControllerTest` 或独立 `ContinueUnavailablePayloadFormatterTest` 中断言 FQCN、截断和无 stacktrace。
+
 ### 4.6 窗口标题更新入口
 
 建议新增纯 formatter：
@@ -264,8 +273,9 @@ data class DesktopLauncherTitleContext(
 2. `saveSlot` 不存在：`K-ToME · <locale> · <seed>`
 3. `seed` 不存在：`K-ToME · <locale>`
 4. 全部不可得：`K-ToME`
-5. 更新调用点优先放在 session 加载完成后的 client screen 边界，例如 `FoundationGameScreen` 初始化或 `GameApp` 切屏回调；不要从规则层反向驱动窗口。
-6. `DesktopLauncherTitleFormatter` 只提供纯 formatter；LWJGL title 切换由 `GameApp` 在 `render()` 入口或既有 UI 主线程边界消费 formatter 结果，不从后台线程直接调用 title setter。
+5. 启动标题只归 `DesktopLauncher` 负责，格式为无会话信息的 `K-ToME` 或构建可得的静态标题；它不得拼接操作说明，也不得读取 run/session。
+6. 运行时标题更新归 `GameApp` 或既有 UI 主线程边界负责，触发点放在 session 加载完成、切屏或 save slot 变化后；如果当前 PR 不新增运行时 title hook，必须在实现说明中明确“只清理启动标题，不接入运行时切换”。
+7. `DesktopLauncherTitleFormatter` 只提供纯 formatter；LWJGL title 切换不得从后台线程直接调用 title setter。
 
 ### 4.7 新增 locale key 列表
 
@@ -278,8 +288,8 @@ data class DesktopLauncherTitleContext(
 | `ui.menu.continue.unavailable.version-mismatch` | continue disabled reason | `存档版本不兼容，需要新开局。` |
 | `ui.menu.continue.unavailable.io-error` | continue disabled reason | `读取存档失败。` |
 | `ui.menu.continue.unavailable.schema-mismatch` | continue disabled reason | `存档结构与当前版本不匹配。` |
-| `ui.menu.continue.unavailable.unknown` | continue disabled reason | `存档暂时不可用。` |
-| `ui.menu.help.primary-keys` | 首页帮助区 | `方向键移动，Enter 确认，? 查看帮助。` |
+| `ui.menu.continue.unavailable.unknown` | continue disabled reason | `无法识别的存档问题，请复制错误详情上报。` |
+| `ui.menu.help.primary-keys` | 首页帮助区 | `ESC 返回，Backspace 后退，I 背包，L 装备，? 帮助，Ctrl+S 保存。` |
 
 ## 5. 推荐改动面
 
@@ -330,7 +340,7 @@ data class DesktopLauncherTitleContext(
 4. validation mode 仍可达，但不是主行动。
 5. 窗口标题不包含键位说明。
 6. token 没有反向进入 `core/game`。
-7. `1024x768` 最小窗口下首页三态和局内 MapDominant 不重叠、不爆版。
+7. `1024x768` 最小窗口下首页三态和局内 MapDominant 不重叠、不爆版；该行为必须同时由 `InfoSurfaceLayoutTest` 断点用例和 `TileRendererCanvasTest` canvas smoke 证明。
 
 ### 6.2 自动化命令
 

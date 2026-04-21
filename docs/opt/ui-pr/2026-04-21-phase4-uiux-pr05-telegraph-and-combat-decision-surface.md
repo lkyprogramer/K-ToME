@@ -52,7 +52,7 @@
 3. `CombatDecisionFrame` 是单一 modal frame，内部 phase 机，不把三层拆成三个 stack frame。
 4. `Backspace` 回上一 phase；`ESC` 直接退出到 `MAP`。
 5. 单一 method action 可跳过 `METHOD` 进入 `TARGET`；这种路径下 `Backspace` 直接回 `ACTION`。
-6. `legalTargets.isEmpty()` 不自动降级、不自动退出；玩家必须手动 `Backspace` 或 `ESC`。
+6. TARGET phase 的 defensive `legalTargets.isEmpty()` 不自动降级、不自动退出；玩家必须手动 `Backspace` 或 `ESC`。已知 `legalTargetSummary.count == 0` 的 action 在 ACTION phase 提前禁用。
 7. 战斗决策期间 `Ctrl+S` 阻断并 toast `ui.message.save.blocked-in-combat-decision`。
 
 ## 3. 范围与非目标
@@ -115,13 +115,26 @@
 
 ### 4.2 `CombatDecisionFrame`
 
+frame state 必须显式记录 method 是否被跳过：
+
+```kotlin
+data class CombatDecisionFrameState(
+    val phase: CombatDecisionPhase,
+    val selectedActionId: String?,
+    val selectedMethodId: String?,
+    val skippedMethod: Boolean = false,
+)
+```
+
+`skippedMethod == true` 只允许由“action 只有一个 method option，直接进入 TARGET”产生；从 `METHOD` 正常进入 `TARGET` 时必须为 `false`。该字段是 `Backspace` 回退语义的唯一依据，不能靠 method list size 现场反推。
+
 状态图：
 
 ```text
 [enter frame] -> ACTION
 
 ACTION
-  数字键 N -> 选择并确认第 N 个 action
+  数字键 N -> 选择并确认第 N 个 action；0 固定 no-op，无 toast
   Enter -> 确认当前高亮 action
   Space -> 等价 Enter
   Tab / Shift+Tab -> action 高亮循环
@@ -130,14 +143,14 @@ ACTION
   若 action.legalTargetSummary.count == 0 && action.legalTargetSummary.missingReason == null -> action 显示 disabled；提交时保持 ACTION + toast ui.message.combat.no-legal-target
   若 action.legalTargetSummary.count == null -> 不显示 no-legal-target disabled；展示 missingFactReason / missingReason，并禁止 client 反推合法目标数
   若 action.methodOptions.size > 1 -> METHOD
-  若 action.methodOptions.size == 1 -> TARGET
+  若 action.methodOptions.size == 1 -> TARGET，并设置 skippedMethod=true
   若 action.methodOptions.size == 0 -> 拒绝选中并保持 ACTION
   Backspace -> pop frame 回 MAP
   ESC -> pop frame 回 MAP
 
 METHOD
-  数字键 N -> 选择并确认第 N 个 method -> TARGET
-  Enter -> 确认当前高亮 method -> TARGET
+  数字键 N -> 选择并确认第 N 个 method -> TARGET；0 固定 no-op，无 toast
+  Enter -> 确认当前高亮 method -> TARGET，并设置 skippedMethod=false
   Space -> 等价 Enter
   Tab / Shift+Tab -> method 高亮循环
   Ctrl+S -> 保持 METHOD + toast ui.message.save.blocked-in-combat-decision
@@ -146,17 +159,19 @@ METHOD
   ESC -> pop frame 回 MAP
 
 TARGET
-  数字键 N -> 选择并确认第 N 个合法 target -> resolve + pop frame
+  数字键 N -> 选择并确认第 N 个合法 target -> resolve + pop frame；0 固定 no-op，无 toast
   Enter / Space -> 确认当前高亮 target -> resolve + pop frame
   Tab / Shift+Tab -> 合法 target 高亮循环
   Ctrl+S -> 保持 TARGET + toast ui.message.save.blocked-in-combat-decision
   若 N > legal target list size 或 N > 9 -> no-op，无 toast
-  若 legalTargets.isEmpty() -> 拒绝提交 + toast ui.message.combat.no-legal-target
+  若 legalTargets.isEmpty() -> 仅作为 post-method snapshot drift / count unknown 后的防御路径；拒绝提交 + toast ui.message.combat.no-legal-target
   若尝试确认非法位置 -> 保持 TARGET + toast ui.message.combat.illegal-target
   cursor 悬停非法格 -> 显示 illegal 边框，不 toast；确认时才 toast
-  Backspace -> 若来自单一方式跳过路径则 ACTION，否则 METHOD
+  Backspace -> 若 skippedMethod=true 则 ACTION，否则 METHOD
   ESC -> pop frame 回 MAP
 ```
+
+已知 `legalTargetSummary.count == 0` 的 action 必须在 ACTION phase 禁用并短路；TARGET phase 的 `legalTargets.isEmpty()` 只处理选择 method 后目标集合被刷新、snapshot 漂移或合法目标数未知但列表为空的防御场景。
 
 phase 内键位：
 
@@ -206,6 +221,12 @@ data class LegalTargetSummary(
 
 builder 签名建议为 `ActionHintModelBuilder.build(snapshot, frameState, actionId)`。若现有 snapshot 无法提供某字段，字段保持 `null`、空集合或 `LegalTargetSummary(count = null, missingReason = ...)`，并通过 `missingFactReason` 显示“规则层暂未暴露该信息”；不得把未知渲染成“没有成本/没有冷却/没有风险/没有合法目标”，也不得从 client 反推规则状态。
 
+缺失原因展示优先级：
+
+1. 字段级缺失使用对应 inline `missingFactReason`，例如 resource cost / cooldown / `rangeSummary` / telegraph linkage。
+2. 合法目标摘要缺失使用 `legalTargetSummary.missingReason`。
+3. 两者同时存在时可以都保留，但 renderer 必须按 token key 去重，避免同一句“规则层暂未暴露该信息”重复显示。
+
 `TelegraphLinkageHint` 最小 shape：
 
 ```kotlin
@@ -237,6 +258,7 @@ data class TelegraphLinkageHint(
 5. `Backspace` 在 phase 内回退，不直接 pop stack，除非在 `ACTION`。
 6. `ESC` 从任意 phase pop frame 回 `MAP`。
 7. `Ctrl+S` 在 frame 内阻断并 toast。
+8. `CombatDecisionFrame` push 后必须暂停 PR-02 `PaneFocusController` 的跨面板焦点循环；frame pop 后恢复原焦点锚点。`Tab / Shift+Tab` 在 frame 内只循环当前 phase 的候选项，不切到世界面/上下文面/角色动作面。
 
 新增 locale key：
 
@@ -254,6 +276,7 @@ data class TelegraphLinkageHint(
 1. 扩展 PR-04 已冻结的最小 `TelegraphPresentationModel`，只 append 三位一体所需字段。
 2. `TelegraphRenderer` 不再只服务地图 overlay，也能输出目标卡/日志前缀所需字段。
 3. 统一 fallback icon/color/text。
+4. `TelegraphPresentationModelTest` 必须覆盖 PR-04 compact 投影仍不变，以及 PR-05 append 字段不会产生第二 builder。
 
 ### 5.2 `client/ui/combat`
 
@@ -273,9 +296,9 @@ data class TelegraphLinkageHint(
 2. `TileRendererCanvasTest` 增加 triple telegraph and combat decision panel tests。
 3. `ClientSmokeHarnessTest` 增加 boss/scripted telegraph + action decision smoke。
 4. `GoldenScreenshotHarnessTest` 增加 `phase4-uiux-pr05-*` label。
-5. `CombatDecisionFrameTest` 覆盖 ACTION/METHOD/TARGET phase state machine，至少覆盖 §4.2 中 `Enter / Space / Tab / Ctrl+S / Backspace / ESC / 数字越界 / disabled action`。
+5. `CombatDecisionFrameTest` 覆盖 ACTION/METHOD/TARGET phase state machine，至少覆盖 §4.2 中 `Enter / Space / Tab / Ctrl+S / Backspace / ESC / 数字越界 / 0 no-op / disabled action / skippedMethod Backspace`。
 6. `CombatDecisionPanelTest` 覆盖 `ActionHintModel` 的 resource/cooldown/range/legal target/disabled reason 可见性。
-7. `ActionHintModelBuilderTest` 覆盖从 snapshot 到 model 的纯构建，不允许读取未进 snapshot 的规则状态；必须包含 `null fact -> missingFactReason`、`missing legal target count -> missingFactReason`、`known zero legal targets -> no-legal-target feedback`、`real zero cost -> 不显示 missingFactReason` 四组差异。
+7. `ActionHintModelBuilderTest` 覆盖从 snapshot 到 model 的纯构建，不允许读取未进 snapshot 的规则状态；必须包含 `null fact -> missingFactReason`、`missing rangeSummary -> missingFactReason`、`missing legal target count -> missingFactReason`、`known zero legal targets -> no-legal-target feedback`、`real zero cost -> 不显示 missingFactReason` 五组差异。
 8. `AiIntentLeakRuleTest` 或等价 lint/test 扫描普通敌人 intent 泄漏：locale 中 `下一步 / 预测 / 即将 / next action / predicted` 只允许 boss/scripted telegraph allow-list；`aiTypeId` 消费点只能作为 type label。
 
 golden label 清单：
@@ -297,8 +320,8 @@ golden label 清单：
 4. 无合法目标不自动退出，有 toast。
 5. 禁用动作不提交，有原因。
 6. `ESC / Backspace / Tab / Shift+Tab / Enter / Space / 数字键 / 方向键 / Ctrl+S` 行为符合文档。
-7. 普通敌人 intent 没有被伪造。
-8. 缺失 resource cost、cooldown、legal target count、telegraph linkage 四类 typed fact 时，`missingFactReason` 可见，且不会显示 `0 cost / ready / no target / no risk`。
+7. 普通敌人 intent 没有被伪造，并由 `AiIntentLeakRuleTest` 或等价 lint/test 覆盖。
+8. 缺失 resource cost、cooldown、rangeSummary、legal target count、telegraph linkage 五类 typed fact 时，`missingFactReason` 可见，且不会显示 `0 cost / ready / no range / no target / no risk`。
 
 ### 6.2 自动化命令
 
@@ -309,6 +332,7 @@ source "$HOME/.sdkman/bin/sdkman-init.sh"
 sdk env
 ./gradlew :client:test --tests "com.ktome.client.input.InputHandlerTest" --tests "com.ktome.client.render.TileRendererCanvasTest" --tests "com.ktome.client.ClientSmokeHarnessTest"
 ./gradlew :client:test --tests "com.ktome.client.ui.combat.CombatDecisionFrameTest" --tests "com.ktome.client.ui.combat.CombatDecisionPanelTest" --tests "com.ktome.client.ui.combat.ActionHintModelBuilderTest"
+./gradlew :client:test --tests "com.ktome.client.telegraph.TelegraphPresentationModelTest"
 ./gradlew :tools:test --tests "com.ktome.tools.lint.AiIntentLeakRuleTest"
 ./gradlew :client:test --tests "com.ktome.client.golden.GoldenScreenshotHarnessTest"
 ./gradlew localeLint contractLint maintainabilityLint
@@ -439,7 +463,7 @@ assets-src/audio/manifests/phase4-uiux-pr05-processing-report.jsonl
 
 1. 新 key 必须同步 plan、manifest、`build.gradle.kts --extra-plan`。
 2. 新 key 必须被 smoke/golden 消费。
-3. 未生成正式资源时，必须保留 [Resource Fallback Audit](resource-fallback-audit-template.md)，不开放依赖新 key 的 UI 路径。
+3. 未生成正式资源时，必须保留 [Resource Fallback Audit](resource-fallback-audit-template.md)；`失效风险等级=high` 且 UI 路径依赖新 key 时，不开放正式玩家路径，不能用 fallback 证据代替资源落地。
 
 ## 8. 出口门禁
 
@@ -450,6 +474,6 @@ assets-src/audio/manifests/phase4-uiux-pr05-processing-report.jsonl
 5. smoke/golden/locale/contract/maintainability 已执行或明确说明无法执行原因。
 6. 新增 locale key `ui.message.combat.no-legal-target / ui.message.combat.illegal-target / ui.message.combat.no-available-action / ui.message.save.blocked-in-combat-decision` 已进入 `zh-CN` 与 `en-US`。
 7. 停止任何 `PR-02` 遗留的 `combat-decision-stub` golden label，并重录为 `phase4-uiux-pr05-*`。
-8. PR-02 truth table 第 5 行 `TARGETING` 已由 `CombatDecisionFrameTest` 中 TARGET phase tests 接管；旧 `InputHandlerTest.TARGETING` 用例保留但 re-target 到 frame phase 断言。
+8. README “跨 PR Deferred 与收口”中的 `COMBAT_DECISION` stub 条目已在本 PR 关闭；PR-02 truth table 的 `TARGETING` 行已由 `CombatDecisionFrameTest` 中 TARGET phase tests 接管，旧 `InputHandlerTest.TARGETING` 用例保留但 re-target 到 frame phase 断言。
 9. 人工白盒记录包含 telegraph 三位一体、三层决策、回退、禁用/非法/无目标、非目标核查证据。
 10. 没有新增普通敌人 intent、AI plan snapshot、第四层解释页或第二 combat rule authority。

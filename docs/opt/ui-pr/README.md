@@ -36,8 +36,8 @@
 | 阶段 | 命令/动作 | 说明 |
 | --- | --- | --- |
 | 开发内循环 | 各 PR §6.2 的 focused test selector 与 lint | 用于快速定位当前 PR 直接行为 |
-| UI root gate | `./gradlew clientSmoke goldenScreenshot` | 使用 root alias，保证 smoke/golden report 与 CI 路由一致 |
-| PR-close gate | `./gradlew verifyChanged` | 使用 impact routing 兜底变更面，不得被 focused tests 替代 |
+| UI root gate | `./gradlew clientSmoke goldenScreenshot` | 开发收口前可先单独运行，保证 smoke/golden report 与 CI 路由一致 |
+| PR-close gate | `./gradlew clientSmoke goldenScreenshot verifyChanged` | 提交或开 PR 前至少完整运行一次该 root gate；不得只用 focused tests 或单独 `verifyChanged` 替代 |
 | 资源条件 gate | `./gradlew assetLint styleLint manifestLint audioLint` | 只要 PR 触发 image/audio/manifest plan 或 `--extra-plan` 接线就必须跑 |
 | 构建接线 gate | `./scripts/verify-bootstrap.sh` | 只要修改 Gradle、processResources、bootstrap 或依赖版本就必须跑 |
 | review gate | `ktome-diff-doc-review`、`ktome-code-review` | 每个 PR 完成后执行；全部 PR 完成后追加 `simplify-code-review-cleanup` |
@@ -48,7 +48,7 @@
 | --- | --- | --- | --- | --- | --- |
 | `ITEM_COMPARE` frame | `PR-02` | `PR-03` | 占用 `ModalStack` 深度的 no-op frame；render 返回空视图；除 `ESC / Backspace` 外不消费命令 | `ModalStackTest` 断言 push、深度、pop；`InputHandlerTest` 断言业务键 no-op | 若曾录 golden，只允许 `phase4-uiux-pr02-item-compare-stub-*` 前缀；`PR-03` 收口时删除或重录 |
 | `COMBAT_DECISION` frame | `PR-02` | `PR-05` | 占用 `ModalStack` 深度的 no-op frame；`Ctrl+S` 先保留 blocked stub；不暴露玩家可见三层面 | `InputHandlerTest` 覆盖栈深度和 `Ctrl+S` blocked stub；`PR-05` 补真实 phase 机与 toast 文案 | 若曾录 golden，只允许 `phase4-uiux-pr02-combat-decision-stub-*` 前缀；`PR-05` 收口时删除或重录 |
-| `ExplainPane` sub-view | `PR-02` | `PR-04` | `INSPECT + ?` 只预留 sub-view 入口；未打开时 `Backspace` 仍按 `PR-02` 回退 | `PR-04` 补 `ExplainPane` 后同步更新 `InputHandlerTest`：ExplainPane 打开时 `Backspace` 先关闭 sub-view | 不新增 `UiMode.EXPLAIN`，不留下 standalone explain frame |
+| `ExplainPane` sub-view | `PR-02` | `PR-04` | `INSPECT + ?` 只预留 sub-view 入口；输出 `DEBUG inspect.explain-stub.invoked`，未打开时 `Backspace` 仍按 `PR-02` 回退 | `PR-04` 补 `ExplainPane` 后同步更新 `InputHandlerTest`：ExplainPane 打开时 `Backspace` 先关闭 sub-view | 不新增 `UiMode.EXPLAIN`，不留下 standalone explain frame |
 | `BuildInfo.shortHash` | `PR-01` | `PR-01` | 不允许跨 PR 占位；PR-01 直接落 `BuildInfo.shortHash` 与 formatter，注入失败回退 `unknown` 并 warn | `BuildInfoTest` / smoke 断言 hash 字段存在；失败回退路径不写死为唯一期望 | 后续 PR 只能消费，不得新增第二 hash reader |
 | `UiEmptyState` 统一模型 | `PR-02` | `PR-03` | `PR-02` 可临时用 `RenderTextTokenSnapshot("ui.inspect.empty.tile")` 表达 Look Mode 空地 | `PR-03` 迁移到 `UiEmptyState`，并在 empty-state smoke/golden 中覆盖 | `PR-03` 合入时删除 `ui.inspect.empty.tile` 的 `zh-CN/en-US` 条目，并把它列入 locale deprecated-key 断言 |
 

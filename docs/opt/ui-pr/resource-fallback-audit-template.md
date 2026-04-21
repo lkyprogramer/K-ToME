@@ -14,4 +14,5 @@
 4. 如果 fallback 会长期存在，必须在对应 PR 的出口门禁中说明原因。
 5. `失效风险等级=high` 且 UI 路径依赖新 key 时，不得开放正式玩家路径；smoke/golden/人工白盒只能作为 fallback 可见性证据，不能替代正式资源落地。
 6. 只有 fallback 复用既有 key，且不依赖新 key 启用新 UI 路径时，才允许在同 PR 证据齐全后临时开放。
-7. 若无 fallback，PR description 必须写“全部真实资源已落地”。
+7. “既有 key” 只指 PR 启动 commit 之前已在对应 registry 中存在并被正式路径消费过的 key：visual/audio 以 manifest registry 为准，locale 以 `zh-CN/en-US` bundle 与 `localeLint` 为准，keyword 以 `KeywordRegistry.CORE` 为准；测试 fixture、注释或未消费的临时 key 不算既有 key。
+8. 若无 fallback，PR description 必须写“全部真实资源已落地”。

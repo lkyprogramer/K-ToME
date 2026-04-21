@@ -117,10 +117,11 @@ enum class ModalFrameKind {
 规则：
 
 1. `push` 超过深度 `3` 时 fail fast，抛出 `IllegalStateException`；client 入口必须保证合法 push，不做自动压平或静默丢弃。
-2. `Backspace` 深度 `> 1` 时 pop；深度 `== 1` 时 close 到 `MAP`。
-3. `ESC` 清空 stack 到 `MAP`。
-4. `ITEM_COMPARE / COMBAT_DECISION` 可先 no-op，但必须由 `ModalStackTest` 覆盖深度和 pop，由 `InputHandlerTest` 覆盖业务键 no-op 与 `Ctrl+S` blocked stub。
-5. stack 不保存 `WORLD_MAP / SHOP / STAT_ASSIGN / VALIDATION`。
+2. 所有 client 入口在调用 `push` 前必须做 depth preflight；如果下一层会超过深度，保持当前 frame，不抛到 render loop，并输出 `ui.message.modal.stack-overflow` toast 或 `DEBUG modal.stack-overflow` 日志。
+3. `Backspace` 深度 `> 1` 时 pop；深度 `== 1` 时 close 到 `MAP`。
+4. `ESC` 清空 stack 到 `MAP`。
+5. `ITEM_COMPARE / COMBAT_DECISION` 可先 no-op，但必须由 `ModalStackTest` 覆盖深度和 pop，由 `InputHandlerTest` 覆盖业务键 no-op、depth preflight 和 `Ctrl+S` blocked stub。
+6. stack 不保存 `WORLD_MAP / SHOP / STAT_ASSIGN / VALIDATION`。
 
 deferred frame 的临时行为固定为：
 
@@ -171,16 +172,21 @@ deferred frame 的临时行为固定为：
 | `MAP` | `. / Numpad5 / Space` | yes | no | none | wait turn | none | N/A |
 | `INVENTORY / LOADOUT_EDIT / TALENT_ASSIGN / INSPECT` | `ESC` | no | `MAP` | clear stack | close all | none | N/A |
 | `INVENTORY / LOADOUT_EDIT / TALENT_ASSIGN / INSPECT` | `Backspace` | depends on depth | previous frame or `MAP` | pop one frame | close current | none | N/A |
-| `SHOP / WORLD_MAP / STAT_ASSIGN` | owner keys | yes until owner resolves | delegated passive owner | no active stack mutation | delegated owner command | delegated owner feedback only | follows `Ctrl+S` rules |
+| `SHOP` | `I` | no | `MAP` or previous passive owner state | no active stack mutation | client-local close shop | none | N/A |
+| `SHOP` | shop owner keys | yes until owner resolves | delegated shop owner | no active stack mutation | delegated shop command | delegated owner feedback only | follows `Ctrl+S` rules |
+| `WORLD_MAP` | owner keys | yes until owner resolves | delegated world-map owner | no active stack mutation | delegated world-map command | delegated owner feedback only | follows `Ctrl+S` rules |
+| `STAT_ASSIGN` | `1-4` | yes until owner resolves | delegated stat owner | no active stack mutation | stat assign command | delegated owner feedback only | follows `Ctrl+S` rules |
+| `STAT_ASSIGN` | other non-system keys | yes | no | none | no-op or owner-swallowed no-op | none unless owner already emits feedback | follows `Ctrl+S` rules |
 | `VALIDATION` | `WASD / arrows / Enter / Space / E / F9` | delegated validation owner | delegated validation owner | no active stack mutation | validation command | validation-owned; cannot open player inspect | no |
-| `VALIDATION` | `I / J / K / L` | yes | no | none | no-op | debug log optional | no |
+| `VALIDATION` | `I / J / K / L` | yes | no | none | no-op | `DEBUG validation.inspect-key.noop` allowed; no toast | no |
 | `TARGETING` | target confirm keys | delegated targeting owner | delegated targeting owner | target cursor only; no modal stack mutation | target command | targeting-owned; cannot save | no |
 
 delegation contract：
 
-1. `SHOP / WORLD_MAP / STAT_ASSIGN` 不创建 active stack，不允许 client-local close all，`Ctrl+S` 必须遵循本节统一 save gate。
-2. `VALIDATION` 不打开玩家 Look/Inspect，不保存正式 run，不吞掉 `ESC / F9` 关闭语义。
-3. `TARGETING` 只修改 target cursor / target command，不保存半确认目标，不绕过 `ESC / Backspace / Ctrl+S` 的全局语义。
+1. `SHOP / WORLD_MAP / STAT_ASSIGN` 不创建 active stack；除 `SHOP + I` 这个既有 client-local close 外，不允许 client-local close all，`Ctrl+S` 必须遵循本节统一 save gate。
+2. `STAT_ASSIGN` 的 action owner 只消费 `1-4` 与系统级 `Ctrl+S`；其他非系统业务键必须 no-op 或由 stat owner 明确吞掉并可测试。
+3. `VALIDATION` 不打开玩家 Look/Inspect，不保存正式 run，不吞掉 `ESC / F9` 关闭语义；`I/J/K/L` 的 debug log 只允许 `DEBUG validation.inspect-key.noop`，不得显示玩家 toast。
+4. `TARGETING` 只修改 target cursor / target command，不保存半确认目标，不绕过 `ESC / Backspace / Ctrl+S` 的全局语义。
 
 `Ctrl+S` 规则：
 
@@ -191,7 +197,7 @@ delegation contract：
 
 Forward-compatible note：PR-04 落地 `ExplainPane` 后，`INSPECT + Backspace` 的优先级修订为：若 `ExplainPane` 已打开，先关闭 `ExplainPane`；否则按本 PR 冻结行为回 `MAP`。
 
-`TARGETING` 临时状态：PR-05 落地 `CombatDecisionFrame` 后，本表 `TARGETING` 行只保留为兼容壳；正式断言迁移到 `CombatDecisionFrame.TARGET`，删除条件是旧直接 targeting 入口完全消失并由 PR-05 的 `CombatDecisionFrameTest` 覆盖。
+`TARGETING` 临时状态：PR-05 落地 `CombatDecisionFrame` 后，`UiMode.TARGETING` 仍可作为内部 cursor 兼容壳保留，本表 `TARGETING` 行不直接删除；正式断言迁移到 `CombatDecisionFrame.TARGET`，删除条件是旧直接 targeting 入口完全消失并由 PR-05 的 `CombatDecisionFrameTest` 覆盖。
 
 ### 4.4 Look Mode 基础版
 
@@ -201,7 +207,7 @@ Forward-compatible note：PR-04 落地 `ExplainPane` 后，`INSPECT + Backspace`
 2. 光标可用 `WASD / arrows / numpad` 在地图内移动。
 3. 当前格 actor、terrain、prop、items、telegraph、status 同步到上下文面/目标卡/inspect 面。
 4. 空地显示空态，不显示 `null` 或裸 key；PR-02 阶段允许临时用 `RenderTextTokenSnapshot("ui.inspect.empty.tile")`，PR-03 必须迁移到 `UiEmptyState`。
-5. `?` 在 inspect frame 内预留 `ExplainPane` sub-view；PR-02 阶段为 no-op + debug log，不产生 renderer 可见变化，PR-04 再补完整说明与 Backspace 优先级。
+5. `?` 在 inspect frame 内预留 `ExplainPane` sub-view；PR-02 阶段为 no-op + `DEBUG inspect.explain-stub.invoked`，不产生 renderer 可见变化，PR-04 再补完整说明与 Backspace 优先级。`InputHandlerTest` 必须通过 `TestLogCollector` 或等价测试收集器断言该 debug message。
 6. PR-03 迁移到 `UiEmptyState` 时，最小 shape 固定为：`title = ui.empty.inspect.title`，`detail = ui.empty.inspect.detail`，`primaryCta = null`。
 
 ### 4.5 被动态强制接管

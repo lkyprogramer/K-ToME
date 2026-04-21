@@ -4,6 +4,8 @@
 **记录人**:  
 **复核人**: `N/A`  
 **日期**:  
+**记录时间**:
+**复核时间**: `N/A`
 **结论**: `PASS / FAIL / BLOCKED`
 
 ## 1. 环境
@@ -66,5 +68,5 @@
 
 | 角色 | 姓名 / ID | 结论 | 备注 |
 | --- | --- | --- | --- |
-| 记录人 | | `PASS / FAIL / BLOCKED` | |
-| 复核人 | | `PASS / FAIL / BLOCKED / N/A` | |
+| 记录人 | | `PASS / FAIL / BLOCKED` | 填写签收时间 |
+| 复核人 | | `PASS / FAIL / BLOCKED / N/A` | 填写复核时间；无复核时写 `N/A` |

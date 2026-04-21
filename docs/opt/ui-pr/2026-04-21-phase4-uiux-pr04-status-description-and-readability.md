@@ -149,15 +149,24 @@ priority 计算矩阵：
 公式定义：
 
 1. `dangerLevel`: `LOW=1 / MODERATE=2 / HIGH=3 / LETHAL=4`。
-2. `previewTurnsInverse = max(0, 5 - previewTurnsRemaining)`；`previewTurnsRemaining` 缺失时取 `0`。
+2. `previewTurnsInverse = previewTurnsRemaining?.let { max(0, 5 - it) } ?: 0`；`previewTurnsRemaining` 缺失时取 `0`，不能被公式误算成 `5`。
 3. `dangerWeight = dangerLevel * 10`。
 4. `remainingTurnsWeight = max(0, 20 - remainingTurns.coerceIn(0, 20))`。
 5. `stackWeight = stackCount.coerceIn(0, 10)`。
 6. 同 priority 的稳定 tiebreaker 为 `typeId` 字典序。
 
+`TELEGRAPH` 使用 `dangerLevel * 20` 是为了让临近高危 telegraph 稳定压过普通 debuff；`ZONE_EFFECT` 使用 `dangerWeight = dangerLevel * 10` 是因为 zone effect 持续存在，不应抢占所有短时状态。该系数差异必须由 `StatusPresentationModelTest` 覆盖。
+
 实现应提供 pure builder，例如 `StatusPresentationBuilder.build(...)`，并用 `StatusPresentationModelTest` 覆盖排序。
 
-`TelegraphPresentationModel` 在本 PR 只冻结 compact 所需最小 shape：`typeId / nameKey / iconKey / dangerLevel / previewTurnsRemaining / badge`。`StatusPresentationGroup.TELEGRAPH` 必须由 `TelegraphPresentationModel.toStatusPresentation()` 投影得到；地图 overlay、日志前缀、cells、shape 等完整字段由 PR-05 append 到同一模型，禁止 PR-04 另建 compact telegraph source。
+`TelegraphPresentationModel` 在本 PR 只冻结 compact 所需最小 shape：`typeId / nameKey / iconKey / dangerLevel / previewTurnsRemaining / badge`。`StatusPresentationGroup.TELEGRAPH` 必须由 `TelegraphPresentationModel.toStatusPresentation()` 投影得到，投影规则固定为：
+
+1. `group = StatusPresentationGroup.TELEGRAPH`
+2. `category = StatusEffectCategorySnapshot.NEUTRAL`，除非后续正式新增 telegraph-only category
+3. `priority` 必须复用本节公式，不能在 `TelegraphRenderer` 内另算
+4. `badge` 由同一 pure builder 生成，缺 `previewTurnsRemaining` 时仍按 `previewTurnsInverse = 0`
+
+地图 overlay、日志前缀、cells、shape 等完整字段由 PR-05 append 到同一模型，禁止 PR-04 另建 compact telegraph source。
 
 ### 4.2 高风险视觉层级
 
@@ -224,7 +233,7 @@ lint 名固定为 `keywordRegistryLint`，owner 归 `tools/lint/`。
 规则：
 
 1. `DescriptionPresenter` 实际消费的 keyword id 必须存在于 `KeywordRegistry`。
-2. `KeywordRegistry` 定义的核心 keyword 至少被一个 `DescriptionModel` 或正式说明引用。
+2. `KeywordRegistry` 定义的核心 keyword 至少被一个 formal description surface 引用。formal surface 只包括 `DescriptionModel`、`ExplainPaneModel`、`StatusPresentationModel.nameKey` 和 `KeywordRegistry.CORE.aliases`；测试 fixture、注释和 dead locale key 不算引用。
 3. 未知 keyword id error。
 
 只要 `DescriptionPresenter` 在本 PR 后继续消费 keyword id，`keywordRegistryLint` 就是本 PR 必选 gate；不得仅靠人工 review 维持唯一 authority。
@@ -249,6 +258,8 @@ lint 实现策略：
 
 实现可先使用启动参数、环境变量或 debug settings 面，不要求正式设置页。三项开关必须能被 renderer 读取并进入人工白盒验证；不能只写文档。
 
+本 PR 不要求运行期 hotkey 或正式设置页切换；如果实现没有 runtime toggle，验证只走启动参数/环境变量。后续若新增 hotkey，必须另开 PR 同步输入语义表和人工白盒步骤。
+
 最小行为：
 
 1. 默认值全部为 `off`。
@@ -271,7 +282,7 @@ lint 实现策略：
 | `ui.accessibility.color-blind-safe` | accessibility toggle | `色盲安全` |
 | `ui.accessibility.reduce-motion` | accessibility toggle | `减少动态效果` |
 
-这些 key 是最小清单；新增 keyword 文案仍归 `KeywordRegistry` 与 `localeLint` 共同约束。
+本 PR 必须复用 PR-03 已冻结的共享状态 key：`ui.empty.inspect.title`、`ui.empty.inspect.detail`、`ui.loading.cancel`、`ui.error.action.*`。这些 key 是最小清单；新增 keyword 文案仍归 `KeywordRegistry` 与 `localeLint` 共同约束。
 
 ## 5. 推荐改动面
 
@@ -304,7 +315,7 @@ lint 实现策略：
 1. `BUFF / DEBUFF / NEUTRAL` badge 一致。
 2. zone effect 与 telegraph 不伪装成 status contract。
 3. high/lethal telegraph 不被普通状态淹没。
-4. `DescriptionPresenter` 服务 talent、item、shop、inspect；combat action 分支由 `DescriptionPresenterTest` pure unit case 覆盖，端到端由 PR-05 补。
+4. `DescriptionPresenter` 服务 talent、item、shop、inspect；combat action 分支由 `DescriptionPresenterTest` 或独立 `CombatActionDescriptionPresenterTest` pure unit case 覆盖，端到端由 PR-05 补。
 5. 未知 keyword id fail fast。
 6. `ExplainPane` 不新增 `UiMode`，不占 stack。
 
