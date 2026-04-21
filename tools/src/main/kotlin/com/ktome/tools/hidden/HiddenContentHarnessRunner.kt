@@ -23,6 +23,10 @@ import com.ktome.game.hidden.HiddenEventRewardPayload
 import com.ktome.game.hidden.HiddenTriggerType
 import com.ktome.game.hidden.SecretZoneDef
 import com.ktome.game.i18n.GameLocale
+import com.ktome.game.validation.ValidationAction
+import com.ktome.game.validation.ValidationPreset
+import com.ktome.game.validation.ValidationSessionOptions
+import com.ktome.game.validation.ValidationSessionRequest
 import com.ktome.tools.mapgen.phase4HarnessHeader
 import java.nio.file.Files
 import java.nio.file.Path
@@ -320,6 +324,8 @@ internal const val MIN_SECRET_ZONE_DISCOVERY_RATE: Double = 0.10
 internal const val MIN_HIDDEN_EVENT_REGISTRY_COUNT: Int = 12
 internal const val MIN_HIDDEN_TRIGGER_TYPE_COVERAGE: Double = 4.0 / 6.0
 internal const val MIN_SECRET_ENTRANCE_BINDING_COVERAGE: Int = 3
+private const val FRONTSTAGE_PROBE_HOSTILE_CLEAR_ATTEMPT_LIMIT: Int = 64
+private const val FRONTSTAGE_PROBE_CUE_DRAIN_TURNS: Int = 4
 
 internal object HiddenContentRegistrySnapshot {
     fun load(): HiddenContentRegistryMetrics {
@@ -1047,7 +1053,7 @@ internal fun frontstageCueContractMetrics(
                 highPriorityRetainedCount += 1
             }
         }
-        if (secretExpectations.isNotEmpty()) {
+        if (result.secretZoneEntered) {
             secretCueExpectedCount += 1
             if (secretExpectations.any { expectation -> actualCues.any(expectation::matches) }) {
                 secretCueVisibleCount += 1
@@ -1083,12 +1089,7 @@ private data class FrontstageCueContractProbeResult(
 )
 
 private fun runFrontstageCueContractProbe(outputDir: Path): FrontstageCueContractProbeResult {
-    val session =
-        GameModule.newFoundationSession(
-            config = FoundationGameConfig(seed = 20260416L, zoneId = "greenwood_fringe", playerProfessionId = "rogue"),
-            saveManager = com.ktome.core.save.SaveManager(outputDir.resolve("tmp").resolve("frontstage-cue-probe")),
-            locale = GameLocale.EN_US,
-        )
+    val session = newIsolatedFrontstageProbeSession(outputDir = outputDir, probeId = "frontstage-cue-probe")
     session.automationRecordFrontstageActionCueForVerification(
         category = FrontstageActionCategorySnapshot.SEARCH,
         priority = FrontstageActionPrioritySnapshot.MEDIUM,
@@ -1139,10 +1140,9 @@ private fun runFrontstageTtlProbe(
     priority: FrontstageActionPrioritySnapshot,
 ): FrontstageTtlProbeResult {
     val session =
-        GameModule.newFoundationSession(
-            config = FoundationGameConfig(seed = 20260416L, zoneId = "greenwood_fringe", playerProfessionId = "rogue"),
-            saveManager = com.ktome.core.save.SaveManager(outputDir.resolve("tmp").resolve("frontstage-ttl-${priority.name.lowercase()}")),
-            locale = GameLocale.EN_US,
+        newIsolatedFrontstageProbeSession(
+            outputDir = outputDir,
+            probeId = "frontstage-ttl-${priority.name.lowercase()}",
         )
     val stableKey = "ttl:${priority.name.lowercase()}"
     session.automationRecordFrontstageActionCueForVerification(
@@ -1162,6 +1162,40 @@ private fun runFrontstageTtlProbe(
         priority = priority.name,
         passed = visibleImmediately && retainedThroughTtl && expiredAfterBoundary,
     )
+}
+
+private fun newIsolatedFrontstageProbeSession(
+    outputDir: Path,
+    probeId: String,
+): FoundationGameSession {
+    val config = FoundationGameConfig(seed = 20260416L, zoneId = "greenwood_fringe", playerProfessionId = "rogue")
+    val session =
+        GameModule.newValidationSession(
+            ValidationSessionRequest(
+                saveManager = com.ktome.core.save.SaveManager(outputDir.resolve("tmp").resolve(probeId)),
+                locale = GameLocale.EN_US,
+                options =
+                    ValidationSessionOptions(
+                        preset = ValidationPreset.CUSTOM,
+                        foundationConfig = config,
+                        seedCorpus = listOf(config.seed),
+                    ),
+            ),
+        )
+    clearFrontstageProbeHostiles(session)
+    repeat(FRONTSTAGE_PROBE_CUE_DRAIN_TURNS) {
+        session.perform(PlayerCommand.Wait)
+    }
+    return session
+}
+
+private fun clearFrontstageProbeHostiles(session: FoundationGameSession) {
+    repeat(FRONTSTAGE_PROBE_HOSTILE_CLEAR_ATTEMPT_LIMIT) {
+        if (!session.perform(PlayerCommand.Validation(ValidationAction.KillNearestHostile))) {
+            return
+        }
+    }
+    error("Frontstage cue probe session still had hostiles after $FRONTSTAGE_PROBE_HOSTILE_CLEAR_ATTEMPT_LIMIT validation kills.")
 }
 
 private fun FoundationGameSession.hasFrontstageCue(stableKey: String): Boolean =

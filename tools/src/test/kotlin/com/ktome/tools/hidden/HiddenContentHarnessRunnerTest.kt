@@ -48,6 +48,17 @@ class HiddenContentHarnessRunnerTest {
         assertTrue(summary.getValue("explicitSearchRevealCount").jsonPrimitive.content.toInt() > 0)
         assertTrue(summary.getValue("primerActionUsedCount").jsonPrimitive.content.toInt() > 0)
         assertTrue(summary.getValue("primerFreeCaseCount").jsonPrimitive.content.toInt() > 0)
+        assertEquals(
+            summary.getValue("secretZoneDiscoveryCount").jsonPrimitive.content,
+            summary.getValue("frontstageSecretCueExpectedCount").jsonPrimitive.content,
+        )
+        assertEquals("1.0", summary.getValue("frontstageCueExpiryParity").jsonPrimitive.content)
+        assertEquals("4", summary.getValue("frontstageCueExpiryProbePassedCount").jsonPrimitive.content)
+        assertEquals("4", summary.getValue("frontstageCueExpiryProbeTotalCount").jsonPrimitive.content)
+        assertEquals(
+            setOf("CRITICAL", "HIGH", "MEDIUM", "LOW"),
+            summary.getValue("frontstageCueExpiryProbePriorities").jsonArray.map { priority -> priority.jsonPrimitive.content }.toSet(),
+        )
         assertEquals("0", summary.getValue("zeroHiddenEventZoneCount").jsonPrimitive.content)
         assertEquals("0", summary.getValue("zeroSecretZoneZoneCount").jsonPrimitive.content)
         assertEquals(setOf("greenwood_fringe", "deep_iron_pit", "underground_river", "abyssal_temple"), zones.keys)
@@ -88,4 +99,86 @@ class HiddenContentHarnessRunnerTest {
             }
         assertTrue(error.message.orEmpty().contains("Frontstage action cue evidence columns"))
     }
+
+    @Test
+    fun `frontstage secret visibility denominator only counts entered secret zones`() {
+        val outputDir = Files.createTempDirectory("frontstage-secret-visibility-rate")
+        val revealOnly =
+            hiddenContentCaseResult(
+                secretZoneEntered = false,
+                logKeys = listOf("log.hidden.secret_zone.revealed"),
+                frontstageActionCues =
+                    listOf(
+                        HiddenFrontstageActionCueEvidence(
+                            category = "SECRET",
+                            priority = "CRITICAL",
+                            stableKey = "secret:reveal:greenwood_hidden_cache",
+                            messageKey = "log.hidden.secret_zone.revealed",
+                        ),
+                    ),
+            )
+        val enteredSecret =
+            hiddenContentCaseResult(
+                secretZoneEntered = true,
+                logKeys = listOf("log.hidden.secret_zone.enter"),
+                frontstageActionCues =
+                    listOf(
+                        HiddenFrontstageActionCueEvidence(
+                            category = "SECRET",
+                            priority = "CRITICAL",
+                            stableKey = "secret:enter:greenwood_hidden_cache",
+                            messageKey = "log.hidden.secret_zone.enter",
+                        ),
+                    ),
+            )
+
+        val metrics = frontstageCueContractMetrics(results = listOf(revealOnly, enteredSecret), outputDir = outputDir)
+
+        assertEquals(1, metrics.secretCueExpectedCount)
+        assertEquals(1, metrics.secretCueVisibleCount)
+        assertEquals(1.0, metrics.secretCueVisibilityRate)
+    }
+
+    private fun hiddenContentCaseResult(
+        secretZoneEntered: Boolean,
+        logKeys: List<String>,
+        frontstageActionCues: List<HiddenFrontstageActionCueEvidence>,
+    ): HiddenContentCaseResult =
+        HiddenContentCaseResult(
+            zoneId = "greenwood_fringe",
+            floorIndex = 1,
+            seed = 20260416L,
+            searchBindingId = "search.greenwood.hidden_cache",
+            primerActionId = "primer.greenwood.hidden_cache",
+            primerActionUsed = true,
+            entranceBindingId = "hidden.greenwood.hidden_cache",
+            resolvedReturnBridgeNodeId = "main.0",
+            searchActionResult = "REVEALED",
+            explicitSearchReveal = true,
+            triggerType = "SEARCH_ACTION",
+            hiddenEventIds = emptyList(),
+            triggerTypes = emptyList(),
+            triggerPathClasses = emptyList(),
+            optionalOnlyTriggerPathClasses = emptyList(),
+            secretZoneId = "greenwood_hidden_cache",
+            secretZoneEntered = secretZoneEntered,
+            secretRewardNodePresent = secretZoneEntered,
+            criticalPathReachable = true,
+            searchFailureKeepsMainlineReachable = true,
+            returnedToMainline = true,
+            returnedRoomNodeId = "main.0",
+            returnedPoint = "0,0",
+            expectedReturnPoint = "0,0",
+            returnBridgeMatchesResolvedNodeId = true,
+            proofSearchActionResult = "REVEALED",
+            solvabilityProofMatchesSearchAction = true,
+            solvabilityProofCoversReturnBridge = true,
+            rewardSources = emptyList(),
+            rewardBudgetSources = emptyList(),
+            expectedRewardBudgetSources = emptyList(),
+            threatBudgetSources = emptyList(),
+            expectedThreatBudgetSources = emptyList(),
+            logKeys = logKeys,
+            frontstageActionCues = frontstageActionCues,
+        )
 }
