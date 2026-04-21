@@ -52,6 +52,10 @@ class SolvabilityGoldenContractTest {
             setOf("hidden.critical.adjacent"),
             requiredHiddenAnchorFamiliesForZoneFloor(schemaCatalog, zoneId = "greenwood_fringe", floorIndex = 2),
         )
+        assertEquals(
+            setOf("hidden.critical.adjacent"),
+            requiredHiddenAnchorFamiliesForZoneFloor(schemaCatalog, zoneId = "abyssal_temple", floorIndex = 1),
+        )
     }
 
     private fun assertGolden(resourcePath: String) {

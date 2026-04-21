@@ -9,8 +9,9 @@
         "primary-2",
         "primary-3",
         "optional-1",
-        "optional-0",
         "hidden-source-0",
+        "optional-0",
+        "secret-0",
         "primary-4"
     ],
     "acquiredKeys": [
@@ -18,9 +19,9 @@
     ],
     "unresolvedRequirements": [],
     "optionalPathCount": 3,
-    "secretPathCount": 0,
-    "totalReachableNodes": 8,
-    "reachabilityRatio": 0.889,
+    "secretPathCount": 1,
+    "totalReachableNodes": 9,
+    "reachabilityRatio": 1.0,
     "topologySummary": {
         "nodeCount": 9,
         "edgeCount": 10,
@@ -29,7 +30,7 @@
         "loopEdgeCount": 3,
         "loopEdgeRatio": 0.3,
         "roomCount": 9,
-        "patternRoomCount": 0,
+        "patternRoomCount": 1,
         "vaultPlacementCount": 3,
         "pathClassCounts": {
             "CRITICAL_PATH": 5,
@@ -38,34 +39,34 @@
         }
     },
     "searchActionCount": 1,
-    "searchRevealCount": 0,
-    "searchFailCount": 1,
+    "searchRevealCount": 1,
+    "searchFailCount": 0,
     "providedDiscoveryTags": [
         "hidden.primer.abyssal_temple.warded_archive"
     ],
     "hiddenAnchorFamiliesSatisfied": true,
     "requiredHiddenAnchorFamilies": [
-        "hidden.goal.adjacent"
+        "hidden.critical.adjacent"
     ],
     "observedHiddenAnchorFamilies": [
-        "hidden.goal.adjacent"
+        "hidden.critical.adjacent"
     ],
     "searchStates": {
-        "search.abyssal_temple.warded_archive": "FAILED_CHECK"
+        "search.abyssal_temple.warded_archive": "REVEALED"
     },
     "secretProofs": [
         {
             "bindingId": "search.abyssal_temple.warded_archive",
-            "entranceAnchorId": "hidden.goal.adjacent",
+            "entranceAnchorId": "hidden.critical.adjacent",
             "targetNodeId": "secret-0",
-            "resolved": false,
-            "result": "FAILED_CHECK"
+            "resolved": true,
+            "result": "REVEALED"
         }
     ],
     "resolvedEntranceBindings": [
         {
             "bindingId": "search.abyssal_temple.warded_archive",
-            "entranceAnchorId": "hidden.goal.adjacent",
+            "entranceAnchorId": "hidden.critical.adjacent",
             "targetNodeId": "secret-0"
         }
     ]

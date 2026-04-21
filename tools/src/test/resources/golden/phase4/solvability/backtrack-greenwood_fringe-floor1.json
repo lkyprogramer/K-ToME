@@ -28,7 +28,7 @@
         "loopEdgeCount": 2,
         "loopEdgeRatio": 0.2857142857142857,
         "roomCount": 7,
-        "patternRoomCount": 0,
+        "patternRoomCount": 1,
         "vaultPlacementCount": 2,
         "pathClassCounts": {
             "CRITICAL_PATH": 4,
