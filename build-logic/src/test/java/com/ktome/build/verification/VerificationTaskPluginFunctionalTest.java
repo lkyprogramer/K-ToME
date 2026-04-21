@@ -122,6 +122,28 @@ class VerificationTaskPluginFunctionalTest {
     }
 
     @Test
+    void verifyChangedPlanGateDoesNotSkipTaskRequestedThroughAliasInMixedInvocation() throws IOException {
+        writeBuildWithVerifyChangedGate(":otherTask\n");
+
+        var result = runner().withArguments("verifyChanged", "aliasGate", "-q").build();
+
+        assertEquals(TaskOutcome.SUCCESS, result.task(":prepareVerifyChangedPlan").getOutcome());
+        assertEquals(TaskOutcome.SUCCESS, result.task(":watched").getOutcome());
+        assertTrue(Files.exists(tempDir.resolve("build/watched.txt")));
+    }
+
+    @Test
+    void verifyChangedPlanGateDoesNotSkipTaskRequestedThroughRootQualifiedAliasInMixedInvocation() throws IOException {
+        writeBuildWithVerifyChangedGate(":otherTask\n");
+
+        var result = runner().withArguments("verifyChanged", ":aliasGate", "-q").build();
+
+        assertEquals(TaskOutcome.SUCCESS, result.task(":prepareVerifyChangedPlan").getOutcome());
+        assertEquals(TaskOutcome.SUCCESS, result.task(":watched").getOutcome());
+        assertTrue(Files.exists(tempDir.resolve("build/watched.txt")));
+    }
+
+    @Test
     void verifyChangedPreflightUsesDedicatedTaskPlanFile() throws IOException {
         writeBuildWithVerifyChangedGate(":otherTask\n", ":watched\n");
 
@@ -185,6 +207,10 @@ class VerificationTaskPluginFunctionalTest {
 
                 tasks.register('verifyChangedPreflight') {
                     dependsOn(tasks.named('prepareVerifyChangedPlan'))
+                    dependsOn(tasks.named('watched'))
+                }
+
+                tasks.register('aliasGate') {
                     dependsOn(tasks.named('watched'))
                 }
                 """

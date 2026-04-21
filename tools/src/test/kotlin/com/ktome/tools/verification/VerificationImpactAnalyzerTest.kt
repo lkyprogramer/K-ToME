@@ -136,6 +136,16 @@ class VerificationImpactAnalyzerTest {
     }
 
     @Test
+    fun `boss owner baseline change routes to report only aggregation rebuild`() {
+        val plan = VerificationImpactAnalyzer.analyze(listOf(Phase4OwnerBaselineRegistry.BOSS_PHASE_IDENTITY_BASELINE_RELATIVE_PATH))
+
+        assertEquals(setOf("boss"), plan.impactedDomains.map(VerificationDomainImpact::domainId).toSet())
+        assertTrue(plan.requestedTaskPaths.contains(":tools:reportPhase4Only"))
+        assertFalse(plan.requestedTaskPaths.contains(":tools:bossHarness"))
+        assertEquals(listOf(":tools:scopeCoverageLint"), plan.requestedPreflightTaskPaths)
+    }
+
+    @Test
     fun `organic hidden runtime change routes to organic hidden owner task`() {
         val plan = VerificationImpactAnalyzer.analyze(listOf("tools/src/main/kotlin/com/ktome/tools/hidden/OrganicHiddenProbeRunner.kt"))
 
@@ -188,7 +198,7 @@ class VerificationImpactAnalyzerTest {
     fun `phase4 aggregation code change routes to report only rebuild for migrated owner domains`() {
         val plan = VerificationImpactAnalyzer.analyze(listOf("tools/src/main/kotlin/com/ktome/tools/phase4/Phase4AggregationInputRunner.kt"))
 
-        assertEquals(setOf("hidden", "longrun", "loot", "maintainability", "organic-hidden", "terrain"), plan.impactedDomains.map(VerificationDomainImpact::domainId).toSet())
+        assertEquals(setOf("boss", "hidden", "longrun", "loot", "maintainability", "organic-hidden", "terrain"), plan.impactedDomains.map(VerificationDomainImpact::domainId).toSet())
         assertEquals(setOf(":tools:scopeCoverageLint", ":tools:maintainabilityLint", ":tools:reportPhase4Only"), plan.requestedTaskPaths.toSet())
         assertEquals(setOf(":tools:scopeCoverageLint", ":tools:maintainabilityLint"), plan.requestedPreflightTaskPaths.toSet())
         assertFalse(plan.requestedTaskPaths.contains(":tools:phase4LegacyReport"))
@@ -199,7 +209,7 @@ class VerificationImpactAnalyzerTest {
     fun `phase4 shared report helper change routes to report only rebuild for migrated owner domains`() {
         val plan = VerificationImpactAnalyzer.analyze(listOf("tools/src/main/kotlin/com/ktome/tools/phase4/Phase4CriticalPathPacing.kt"))
 
-        assertEquals(setOf("hidden", "longrun", "loot", "maintainability", "organic-hidden", "terrain"), plan.impactedDomains.map(VerificationDomainImpact::domainId).toSet())
+        assertEquals(setOf("boss", "hidden", "longrun", "loot", "maintainability", "organic-hidden", "terrain"), plan.impactedDomains.map(VerificationDomainImpact::domainId).toSet())
         assertEquals(setOf(":tools:scopeCoverageLint", ":tools:maintainabilityLint", ":tools:reportPhase4Only"), plan.requestedTaskPaths.toSet())
         assertEquals(setOf(":tools:scopeCoverageLint", ":tools:maintainabilityLint"), plan.requestedPreflightTaskPaths.toSet())
     }

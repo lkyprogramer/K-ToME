@@ -1,17 +1,24 @@
 actionWeightProfiles:
   - id: boss.variant.weight.molten_glass
     actionWeights:
-      earthshaker: 50.0
-      linebreaker: 46.0
+      earthshaker: 4.0
+      linebreaker: 92.0
+      strike: 2.0
+      advance: 2.0
   - id: boss.variant.weight.grey_crown
     actionWeights:
-      battlefield_command: 42.0
-      arcane_shield: 44.0
-      ritual_break: 48.0
+      battlefield_command: 72.0
+      shadow_bind: 10.0
+      ritual_break: 58.0
+      arcane_shield: 70.0
+      close_quarters: 4.0
+      press_forward: 3.0
   - id: boss.variant.weight.abyssal_eclipse
     actionWeights:
-      abyssal_consecration: 42.0
-      press_abyss: 36.0
+      void_breach: 2.0
+      abyssal_consecration: 6.0
+      linebreaker: 88.0
+      relentless_strike: 4.0
 
 bossVariants:
   - id: boss.variant.molten_glass
@@ -32,7 +39,7 @@ bossVariants:
 
   - id: boss.variant.abyssal_eclipse
     baseEncounterId: abyssal_guardian_encounter
-    grantedMutations: [elite.void_mirror, elite.corrosion_cloud]
+    grantedMutations: [elite.void_mirror, elite.phase_runner]
     threatCost: 8
     lootProfileOverride: loot.abyssal_heart.reward
     visualTintKey: vfx.boss.variant.abyssal_eclipse

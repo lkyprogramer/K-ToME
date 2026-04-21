@@ -694,11 +694,36 @@ tasks.register<Test>("whiteBoxContentPack") {
     useJUnitPlatform {
         includeTags("whiteBoxContentPack")
     }
+    dependsOn("contentPackHarness")
+    mustRunAfter("contentPackHarness")
     val reportDir = layout.buildDirectory.dir("reports/phase4/whitebox/content-pack")
+    val pairedHarnessSummary = layout.buildDirectory.file("reports/phase4/content-pack/content-pack-summary.json")
     systemProperty("ktome.phase4.whitebox.contentPack.reportDir", reportDir.get().asFile.absolutePath)
     systemProperty("ktome.phase4.contentPack.reportDir", layout.buildDirectory.dir("reports/phase4/content-pack").get().asFile.absolutePath)
+    inputs.file(pairedHarnessSummary)
+        .withPathSensitivity(PathSensitivity.RELATIVE)
     outputs.dir(reportDir)
+    doNotTrackState("whiteBoxContentPack consumes a freshly produced contentPackHarness summary.")
+    outputs.upToDateWhen { false }
+    outputs.cacheIf { false }
     TestPerfPlainTestOptIn.monitor(this, TestPerfPlainTestBand.HEAVY_EVALUATION)
+}
+
+listOf(
+    "contractLint",
+    "hiddenContentHarness",
+    "lootBalanceLab",
+    "maintainabilityLint",
+    "organicHiddenProbe",
+    "terrainInteractionBatch",
+    "verifyLootPreflight",
+    "whiteBoxLoot",
+    "whiteBoxMapgen",
+    "whiteBoxSolvability",
+).forEach { taskName ->
+    tasks.named(taskName) {
+        mustRunAfter("whiteBoxContentPack")
+    }
 }
 
 val legacyPhase4ReportDir = layout.buildDirectory.dir("reports/phase4")
@@ -725,6 +750,7 @@ val phase4OwnerBaselineInputs =
         "docs/review/phase4/opt/baselines/2026-04-12-phase4-loot-local-reward-identity-baseline.json",
         "docs/review/phase4/opt/baselines/2026-04-12-phase4-terminal-build-identity-baseline.json",
         "docs/review/phase4/opt/baselines/2026-04-16-phase4-critical-path-pacing-owner-baseline.json",
+        "docs/review/phase4/opt/baselines/2026-04-16-phase4-boss-phase-identity-owner-baseline.json",
         "docs/review/phase4/opt/baselines/2026-04-09-opt-pr01-terrain-metrics-baseline-unified.json",
         "docs/review/phase4/opt/baselines/2026-04-12-phase4-terrain-per-zone-lower-bound-baseline.json",
     )
@@ -744,6 +770,11 @@ val phase4AggregateProducerInputs =
 val phase4AggregateProducerTasks: List<TaskProvider<out Task>> =
     phase4AggregateProducerTaskPaths.map { taskPath -> Phase4TaskPathResolver.resolve(rootProject, taskPath) }
 val soloClearLabProducerTask: TaskProvider<out Task> = project(":game").tasks.named("soloClearLab")
+val gameBossHarnessProducerTask: TaskProvider<out Task> = project(":game").tasks.named("bossHarness")
+val gameTerrainInteractionProducerTask: TaskProvider<out Task> = project(":game").tasks.named("terrainInteractionBatch")
+val clientSmokeProducerTask: TaskProvider<out Task> = project(":client").tasks.named("clientSmoke")
+val phase4AggregateGameAliasProducers = listOf(gameBossHarnessProducerTask, gameTerrainInteractionProducerTask)
+val phase4AggregateClientAliasProducers = listOf(clientSmokeProducerTask)
 val legacyPhase4SummaryInput = layout.buildDirectory.file("reports/phase4/phase4-summary.json")
 val testSourceSet = sourceSets.test.get()
 
@@ -804,7 +835,7 @@ registerPhase4AggregateTask(
     outputArtifacts = legacyPhase4ReportOutputs,
     producerInputs = phase4AggregateProducerInputs,
     producerTasks = phase4AggregateProducerTasks,
-    additionalMustRunAfter = listOf(soloClearLabProducerTask),
+    additionalMustRunAfter = listOf(soloClearLabProducerTask) + phase4AggregateGameAliasProducers + phase4AggregateClientAliasProducers,
     legacyReportDir = legacyPhase4ReportDir,
 )
 
@@ -816,7 +847,7 @@ registerPhase4AggregateTask(
     outputArtifacts = legacyPhase4ReportOutputs,
     producerInputs = phase4AggregateProducerInputs,
     producerTasks = phase4AggregateProducerTasks,
-    additionalMustRunAfter = listOf(soloClearLabProducerTask),
+    additionalMustRunAfter = listOf(soloClearLabProducerTask) + phase4AggregateGameAliasProducers + phase4AggregateClientAliasProducers,
     legacyReportDir = legacyPhase4ReportDir,
 )
 
@@ -828,7 +859,7 @@ registerPhase4AggregateTask(
     outputArtifacts = unifiedPhase4ReportOutputs,
     producerInputs = phase4AggregateProducerInputs,
     producerTasks = phase4AggregateProducerTasks,
-    additionalMustRunAfter = listOf(soloClearLabProducerTask),
+    additionalMustRunAfter = listOf(soloClearLabProducerTask) + phase4AggregateGameAliasProducers + phase4AggregateClientAliasProducers,
     aggregateReportDir = unifiedPhase4ReportDir,
     compareLegacy = false,
 )
@@ -841,7 +872,7 @@ registerPhase4AggregateTask(
     outputArtifacts = unifiedPhase4ReportOutputs,
     producerInputs = phase4AggregateProducerInputs,
     producerTasks = phase4AggregateProducerTasks,
-    additionalMustRunAfter = listOf(soloClearLabProducerTask),
+    additionalMustRunAfter = listOf(soloClearLabProducerTask) + phase4AggregateGameAliasProducers + phase4AggregateClientAliasProducers,
     aggregateReportDir = unifiedPhase4ReportDir,
     compareLegacy = false,
 )
@@ -855,7 +886,10 @@ registerPhase4AggregateTask(
     producerInputs = phase4AggregateProducerInputs,
     producerTasks = phase4AggregateProducerTasks,
     additionalDependsOn = listOf(tasks.named("phase4LegacyReport")),
-    additionalMustRunAfter = listOf(tasks.named("phase4LegacyReportOnly"), soloClearLabProducerTask),
+    additionalMustRunAfter = listOf(
+        tasks.named("phase4LegacyReportOnly"),
+        soloClearLabProducerTask,
+    ) + phase4AggregateGameAliasProducers + phase4AggregateClientAliasProducers,
     additionalInputs = files(legacyPhase4SummaryInput),
     aggregateReportDir = unifiedPhase4ReportDir,
     legacyReportDir = legacyPhase4ReportDir,
@@ -870,7 +904,7 @@ registerPhase4AggregateTask(
     outputArtifacts = unifiedPhase4ReportOutputs,
     producerInputs = phase4AggregateProducerInputs,
     producerTasks = phase4AggregateProducerTasks,
-    additionalMustRunAfter = listOf(soloClearLabProducerTask),
+    additionalMustRunAfter = listOf(soloClearLabProducerTask) + phase4AggregateGameAliasProducers + phase4AggregateClientAliasProducers,
     aggregateReportDir = unifiedPhase4ReportDir,
     compareLegacy = false,
 )

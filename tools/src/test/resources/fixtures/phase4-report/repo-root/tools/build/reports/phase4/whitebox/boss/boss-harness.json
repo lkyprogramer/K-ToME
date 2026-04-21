@@ -1,5 +1,5 @@
 {
-    "scriptVersion": "boss-harness-v4",
+    "scriptVersion": "boss-harness-v5",
     "reports": [
         {
             "seed": 20260325,
@@ -17,6 +17,7 @@
             "phaseTransitionTriggers": [
                 "START->phase_enraged:hp_threshold"
             ],
+            "phaseTransitionObserved": true,
             "expectedSelectedActions": [
                 "earthshaker"
             ],
@@ -25,6 +26,12 @@
                 "earthshaker",
                 "linebreaker",
                 "strike"
+            ],
+            "selectedActionSequence": [
+                "strike",
+                "linebreaker",
+                "advance",
+                "earthshaker"
             ],
             "requiredAiTraceCount": 1,
             "observedAiTraceCount": 4,
@@ -289,20 +296,21 @@
             "phaseTransitionTriggers": [
                 "START->phase_enraged:hp_threshold"
             ],
+            "phaseTransitionObserved": true,
             "expectedSelectedActions": [
-                "earthshaker"
+                "linebreaker"
             ],
             "selectedActionIds": [
-                "advance",
-                "earthshaker",
-                "linebreaker",
-                "strike"
+                "linebreaker"
+            ],
+            "selectedActionSequence": [
+                "linebreaker"
             ],
             "requiredAiTraceCount": 1,
-            "observedAiTraceCount": 4,
-            "aiTraceCount": 4,
+            "observedAiTraceCount": 1,
+            "aiTraceCount": 1,
             "bossTraceCount": 1,
-            "aiTraceHash": "18027edcb5d3a2db1b7da6413b62aebc25d9a719c547b98e361691a24ad76b8f",
+            "aiTraceHash": "d0adcfb771d9e5ba766c078b1671e3bb39bd270b35bd6718b67a2744694aa225",
             "bossTraceHash": "49a8f792bf9fe6f3259f76cac11eff0793cc54eb42f1051c55e8bf00ba7fba2e",
             "threatCost": 5,
             "lootProfileOverride": "loot.deep_iron_pit.reward",
@@ -364,7 +372,7 @@
                             "actionId": "earthshaker",
                             "actionType": "USE_ABILITY",
                             "orderKey": 10,
-                            "weight": 42.0,
+                            "weight": 4.0,
                             "abilityId": "earthshaker",
                             "conditionMatched": true
                         },
@@ -372,7 +380,7 @@
                             "actionId": "linebreaker",
                             "actionType": "USE_ABILITY",
                             "orderKey": 20,
-                            "weight": 38.0,
+                            "weight": 92.0,
                             "abilityId": "linebreaker",
                             "conditionMatched": true
                         },
@@ -380,61 +388,14 @@
                             "actionId": "strike",
                             "actionType": "ATTACK_TARGET",
                             "orderKey": 30,
-                            "weight": 15.0,
+                            "weight": 2.0,
                             "conditionMatched": true
                         },
                         {
                             "actionId": "advance",
                             "actionType": "MOVE_TOWARD_TARGET",
                             "orderKey": 40,
-                            "weight": 5.0,
-                            "conditionMatched": true
-                        }
-                    ],
-                    "orderedCandidateActionIds": [
-                        "earthshaker",
-                        "linebreaker",
-                        "strike",
-                        "advance"
-                    ],
-                    "selectedActionId": "strike",
-                    "rngRoll": 0.90892713980559,
-                    "reason": "weighted_random"
-                },
-                {
-                    "actorId": 12002,
-                    "profileId": "ai.boss.molten_giant.phase_enraged",
-                    "turnId": 7,
-                    "selectionPolicy": "WEIGHTED_RANDOM",
-                    "evaluatedActions": [
-                        {
-                            "actionId": "earthshaker",
-                            "actionType": "USE_ABILITY",
-                            "orderKey": 10,
-                            "weight": 42.0,
-                            "abilityId": "earthshaker",
-                            "conditionMatched": true
-                        },
-                        {
-                            "actionId": "linebreaker",
-                            "actionType": "USE_ABILITY",
-                            "orderKey": 20,
-                            "weight": 38.0,
-                            "abilityId": "linebreaker",
-                            "conditionMatched": true
-                        },
-                        {
-                            "actionId": "strike",
-                            "actionType": "ATTACK_TARGET",
-                            "orderKey": 30,
-                            "weight": 15.0,
-                            "conditionMatched": true
-                        },
-                        {
-                            "actionId": "advance",
-                            "actionType": "MOVE_TOWARD_TARGET",
-                            "orderKey": 40,
-                            "weight": 5.0,
+                            "weight": 2.0,
                             "conditionMatched": true
                         }
                     ],
@@ -445,97 +406,7 @@
                         "advance"
                     ],
                     "selectedActionId": "linebreaker",
-                    "rngRoll": 0.6119391120389218,
-                    "reason": "weighted_random"
-                },
-                {
-                    "actorId": 12002,
-                    "profileId": "ai.boss.molten_giant.phase_enraged",
-                    "turnId": 11,
-                    "selectionPolicy": "WEIGHTED_RANDOM",
-                    "evaluatedActions": [
-                        {
-                            "actionId": "earthshaker",
-                            "actionType": "USE_ABILITY",
-                            "orderKey": 10,
-                            "weight": 42.0,
-                            "abilityId": "earthshaker",
-                            "conditionMatched": false
-                        },
-                        {
-                            "actionId": "linebreaker",
-                            "actionType": "USE_ABILITY",
-                            "orderKey": 20,
-                            "weight": 38.0,
-                            "abilityId": "linebreaker",
-                            "conditionMatched": false
-                        },
-                        {
-                            "actionId": "strike",
-                            "actionType": "ATTACK_TARGET",
-                            "orderKey": 30,
-                            "weight": 15.0,
-                            "conditionMatched": false
-                        },
-                        {
-                            "actionId": "advance",
-                            "actionType": "MOVE_TOWARD_TARGET",
-                            "orderKey": 40,
-                            "weight": 5.0,
-                            "conditionMatched": true
-                        }
-                    ],
-                    "orderedCandidateActionIds": [
-                        "advance"
-                    ],
-                    "selectedActionId": "advance",
-                    "rngRoll": 0.7066787634520163,
-                    "reason": "weighted_random"
-                },
-                {
-                    "actorId": 12002,
-                    "profileId": "ai.boss.molten_giant.phase_enraged",
-                    "turnId": 12,
-                    "selectionPolicy": "WEIGHTED_RANDOM",
-                    "evaluatedActions": [
-                        {
-                            "actionId": "earthshaker",
-                            "actionType": "USE_ABILITY",
-                            "orderKey": 10,
-                            "weight": 42.0,
-                            "abilityId": "earthshaker",
-                            "conditionMatched": true
-                        },
-                        {
-                            "actionId": "linebreaker",
-                            "actionType": "USE_ABILITY",
-                            "orderKey": 20,
-                            "weight": 38.0,
-                            "abilityId": "linebreaker",
-                            "conditionMatched": false
-                        },
-                        {
-                            "actionId": "strike",
-                            "actionType": "ATTACK_TARGET",
-                            "orderKey": 30,
-                            "weight": 15.0,
-                            "conditionMatched": true
-                        },
-                        {
-                            "actionId": "advance",
-                            "actionType": "MOVE_TOWARD_TARGET",
-                            "orderKey": 40,
-                            "weight": 5.0,
-                            "conditionMatched": true
-                        }
-                    ],
-                    "orderedCandidateActionIds": [
-                        "earthshaker",
-                        "strike",
-                        "advance"
-                    ],
-                    "selectedActionId": "earthshaker",
-                    "rngRoll": 0.02648494799888812,
+                    "rngRoll": 0.90892713980559,
                     "reason": "weighted_random"
                 }
             ],
@@ -583,10 +454,14 @@
             "phaseTransitionTriggers": [
                 "START->phase_desperate:hp_threshold"
             ],
+            "phaseTransitionObserved": true,
             "expectedSelectedActions": [
                 "arcane_shield"
             ],
             "selectedActionIds": [
+                "arcane_shield"
+            ],
+            "selectedActionSequence": [
                 "arcane_shield"
             ],
             "requiredAiTraceCount": 1,
@@ -711,18 +586,23 @@
             "phaseTransitionTriggers": [
                 "START->phase_desperate:hp_threshold"
             ],
+            "phaseTransitionObserved": true,
             "expectedSelectedActions": [
-                "arcane_shield"
+                "arcane_shield",
+                "battlefield_command",
+                "war_call"
             ],
             "selectedActionIds": [
-                "arcane_shield",
+                "war_call"
+            ],
+            "selectedActionSequence": [
                 "war_call"
             ],
             "requiredAiTraceCount": 1,
-            "observedAiTraceCount": 2,
-            "aiTraceCount": 2,
+            "observedAiTraceCount": 1,
+            "aiTraceCount": 1,
             "bossTraceCount": 1,
-            "aiTraceHash": "1b1da28d07ec64d39f4f2ab9398610b026b4f119490f53f485056beba948bc77",
+            "aiTraceHash": "4c0227bcaf440c7a3272921be0a258ab743a99205c67ed0ee6b755101af0fdd8",
             "bossTraceHash": "f95fb22d440506ec672b32a3e49b4197e1b058241590610f6bc9c855ddcd2898",
             "threatCost": 6,
             "lootProfileOverride": "loot.grey_gate_depths.reward",
@@ -787,51 +667,6 @@
                     ],
                     "selectedActionId": "war_call",
                     "reason": "deterministic_priority"
-                },
-                {
-                    "actorId": 12002,
-                    "profileId": "ai.boss.dungeon_lord.phase_enraged",
-                    "turnId": 7,
-                    "selectionPolicy": "WEIGHTED_RANDOM",
-                    "evaluatedActions": [
-                        {
-                            "actionId": "ritual_break",
-                            "actionType": "USE_ABILITY",
-                            "orderKey": 10,
-                            "weight": 40.0,
-                            "abilityId": "ritual_break",
-                            "conditionMatched": false
-                        },
-                        {
-                            "actionId": "arcane_shield",
-                            "actionType": "USE_ABILITY",
-                            "orderKey": 20,
-                            "weight": 28.0,
-                            "abilityId": "arcane_shield",
-                            "conditionMatched": true
-                        },
-                        {
-                            "actionId": "close_quarters",
-                            "actionType": "ATTACK_TARGET",
-                            "orderKey": 25,
-                            "weight": 35.0,
-                            "conditionMatched": false
-                        },
-                        {
-                            "actionId": "press_forward",
-                            "actionType": "MOVE_TOWARD_TARGET",
-                            "orderKey": 30,
-                            "weight": 20.0,
-                            "conditionMatched": true
-                        }
-                    ],
-                    "orderedCandidateActionIds": [
-                        "arcane_shield",
-                        "press_forward"
-                    ],
-                    "selectedActionId": "arcane_shield",
-                    "rngRoll": 0.25489093121479733,
-                    "reason": "weighted_random"
                 }
             ],
             "bossTraces": [
@@ -880,6 +715,7 @@
                 "START->phase_full:initial_phase",
                 "phase_full->phase_abyssal:hp_threshold"
             ],
+            "phaseTransitionObserved": true,
             "expectedSelectedActions": [
                 "abyssal_consecration",
                 "press_abyss"
@@ -887,6 +723,10 @@
             "selectedActionIds": [
                 "abyssal_consecration",
                 "relentless_strike"
+            ],
+            "selectedActionSequence": [
+                "relentless_strike",
+                "abyssal_consecration"
             ],
             "requiredAiTraceCount": 1,
             "observedAiTraceCount": 2,
@@ -1073,7 +913,7 @@
             "phaseId": "phase_abyssal",
             "telegraphKey": "abyssal_guardian_phase_warning",
             "grantedMutations": [
-                "elite.corrosion_cloud",
+                "elite.phase_runner",
                 "elite.void_mirror"
             ],
             "phaseSequence": [
@@ -1084,40 +924,40 @@
                 "START->phase_full:initial_phase",
                 "phase_full->phase_abyssal:hp_threshold"
             ],
+            "phaseTransitionObserved": true,
             "expectedSelectedActions": [
-                "abyssal_consecration",
-                "press_abyss"
+                "linebreaker"
             ],
             "selectedActionIds": [
-                "abyssal_consecration",
-                "relentless_strike"
+                "linebreaker"
+            ],
+            "selectedActionSequence": [
+                "linebreaker"
             ],
             "requiredAiTraceCount": 1,
-            "observedAiTraceCount": 2,
-            "aiTraceCount": 2,
+            "observedAiTraceCount": 1,
+            "aiTraceCount": 1,
             "bossTraceCount": 2,
-            "aiTraceHash": "fe5e55d9c9a08f0320b5b7dbbdb35b18f18cbd8226e615a5903bed992f2c32ce",
+            "aiTraceHash": "d91270aa3ba3154d282bc6b3bcf1656d72beb9a70b5550b37264b5a2ba8e3f66",
             "bossTraceHash": "57f9fbe189562a1f01ff7a177b9a74c4167ada81db823b735ae9c141c5a8142a",
             "threatCost": 8,
             "lootProfileOverride": "loot.abyssal_heart.reward",
             "lootProfileRewardBudget": 1,
             "actionWeightProfileId": "boss.variant.weight.abyssal_eclipse",
             "visualTintKey": "vfx.boss.variant.abyssal_eclipse",
-            "preferredTerrainTags": [
-                "OIL"
-            ],
+            "preferredTerrainTags": [],
             "bossTerrainTags": [],
             "adjacentBossTerrainTags": [],
             "terrainPreferenceAvailable": false,
-            "terrainPreferenceImplemented": false,
+            "terrainPreferenceImplemented": true,
             "encounterThreatBudget": {
                 "encounterId": "abyssal_guardian_encounter",
                 "baseBudget": 0,
-                "totalBudget": 17,
+                "totalBudget": 15,
                 "threatDeltas": [
                     {
-                        "source": "eliteMutation:elite.corrosion_cloud",
-                        "amount": 4
+                        "source": "eliteMutation:elite.phase_runner",
+                        "amount": 2
                     },
                     {
                         "source": "eliteMutation:elite.void_mirror",
@@ -1154,7 +994,7 @@
                             "actionId": "void_breach",
                             "actionType": "USE_ABILITY",
                             "orderKey": 10,
-                            "weight": 44.0,
+                            "weight": 2.0,
                             "abilityId": "void_breach",
                             "conditionMatched": false
                         },
@@ -1162,7 +1002,7 @@
                             "actionId": "abyssal_consecration",
                             "actionType": "USE_ABILITY",
                             "orderKey": 20,
-                            "weight": 34.0,
+                            "weight": 6.0,
                             "abilityId": "consecration",
                             "conditionMatched": true
                         },
@@ -1170,7 +1010,7 @@
                             "actionId": "linebreaker",
                             "actionType": "USE_ABILITY",
                             "orderKey": 25,
-                            "weight": 22.0,
+                            "weight": 88.0,
                             "abilityId": "linebreaker",
                             "conditionMatched": true
                         },
@@ -1178,7 +1018,7 @@
                             "actionId": "relentless_strike",
                             "actionType": "ATTACK_TARGET",
                             "orderKey": 30,
-                            "weight": 28.0,
+                            "weight": 4.0,
                             "conditionMatched": true
                         },
                         {
@@ -1194,62 +1034,8 @@
                         "linebreaker",
                         "relentless_strike"
                     ],
-                    "selectedActionId": "relentless_strike",
+                    "selectedActionId": "linebreaker",
                     "rngRoll": 0.8619319268787655,
-                    "reason": "weighted_random"
-                },
-                {
-                    "actorId": 11001,
-                    "profileId": "ai.boss.abyssal_guardian.phase_abyssal",
-                    "turnId": 7,
-                    "selectionPolicy": "WEIGHTED_RANDOM",
-                    "evaluatedActions": [
-                        {
-                            "actionId": "void_breach",
-                            "actionType": "USE_ABILITY",
-                            "orderKey": 10,
-                            "weight": 44.0,
-                            "abilityId": "void_breach",
-                            "conditionMatched": false
-                        },
-                        {
-                            "actionId": "abyssal_consecration",
-                            "actionType": "USE_ABILITY",
-                            "orderKey": 20,
-                            "weight": 34.0,
-                            "abilityId": "consecration",
-                            "conditionMatched": true
-                        },
-                        {
-                            "actionId": "linebreaker",
-                            "actionType": "USE_ABILITY",
-                            "orderKey": 25,
-                            "weight": 22.0,
-                            "abilityId": "linebreaker",
-                            "conditionMatched": true
-                        },
-                        {
-                            "actionId": "relentless_strike",
-                            "actionType": "ATTACK_TARGET",
-                            "orderKey": 30,
-                            "weight": 28.0,
-                            "conditionMatched": true
-                        },
-                        {
-                            "actionId": "press_abyss",
-                            "actionType": "MOVE_TOWARD_TARGET",
-                            "orderKey": 35,
-                            "weight": 20.0,
-                            "conditionMatched": false
-                        }
-                    ],
-                    "orderedCandidateActionIds": [
-                        "abyssal_consecration",
-                        "linebreaker",
-                        "relentless_strike"
-                    ],
-                    "selectedActionId": "abyssal_consecration",
-                    "rngRoll": 0.39973281908496916,
                     "reason": "weighted_random"
                 }
             ],
@@ -1312,6 +1098,7 @@
                 "phaseTransitionTriggers": [
                     "START->phase_enraged:hp_threshold"
                 ],
+                "phaseTransitionObserved": true,
                 "expectedSelectedActions": [
                     "earthshaker"
                 ],
@@ -1320,6 +1107,12 @@
                     "earthshaker",
                     "linebreaker",
                     "strike"
+                ],
+                "selectedActionSequence": [
+                    "strike",
+                    "linebreaker",
+                    "advance",
+                    "earthshaker"
                 ],
                 "requiredAiTraceCount": 1,
                 "observedAiTraceCount": 4,
@@ -1584,20 +1377,21 @@
                 "phaseTransitionTriggers": [
                     "START->phase_enraged:hp_threshold"
                 ],
+                "phaseTransitionObserved": true,
                 "expectedSelectedActions": [
-                    "earthshaker"
+                    "linebreaker"
                 ],
                 "selectedActionIds": [
-                    "advance",
-                    "earthshaker",
-                    "linebreaker",
-                    "strike"
+                    "linebreaker"
+                ],
+                "selectedActionSequence": [
+                    "linebreaker"
                 ],
                 "requiredAiTraceCount": 1,
-                "observedAiTraceCount": 4,
-                "aiTraceCount": 4,
+                "observedAiTraceCount": 1,
+                "aiTraceCount": 1,
                 "bossTraceCount": 1,
-                "aiTraceHash": "18027edcb5d3a2db1b7da6413b62aebc25d9a719c547b98e361691a24ad76b8f",
+                "aiTraceHash": "d0adcfb771d9e5ba766c078b1671e3bb39bd270b35bd6718b67a2744694aa225",
                 "bossTraceHash": "49a8f792bf9fe6f3259f76cac11eff0793cc54eb42f1051c55e8bf00ba7fba2e",
                 "threatCost": 5,
                 "lootProfileOverride": "loot.deep_iron_pit.reward",
@@ -1659,7 +1453,7 @@
                                 "actionId": "earthshaker",
                                 "actionType": "USE_ABILITY",
                                 "orderKey": 10,
-                                "weight": 42.0,
+                                "weight": 4.0,
                                 "abilityId": "earthshaker",
                                 "conditionMatched": true
                             },
@@ -1667,7 +1461,7 @@
                                 "actionId": "linebreaker",
                                 "actionType": "USE_ABILITY",
                                 "orderKey": 20,
-                                "weight": 38.0,
+                                "weight": 92.0,
                                 "abilityId": "linebreaker",
                                 "conditionMatched": true
                             },
@@ -1675,61 +1469,14 @@
                                 "actionId": "strike",
                                 "actionType": "ATTACK_TARGET",
                                 "orderKey": 30,
-                                "weight": 15.0,
+                                "weight": 2.0,
                                 "conditionMatched": true
                             },
                             {
                                 "actionId": "advance",
                                 "actionType": "MOVE_TOWARD_TARGET",
                                 "orderKey": 40,
-                                "weight": 5.0,
-                                "conditionMatched": true
-                            }
-                        ],
-                        "orderedCandidateActionIds": [
-                            "earthshaker",
-                            "linebreaker",
-                            "strike",
-                            "advance"
-                        ],
-                        "selectedActionId": "strike",
-                        "rngRoll": 0.90892713980559,
-                        "reason": "weighted_random"
-                    },
-                    {
-                        "actorId": 12002,
-                        "profileId": "ai.boss.molten_giant.phase_enraged",
-                        "turnId": 7,
-                        "selectionPolicy": "WEIGHTED_RANDOM",
-                        "evaluatedActions": [
-                            {
-                                "actionId": "earthshaker",
-                                "actionType": "USE_ABILITY",
-                                "orderKey": 10,
-                                "weight": 42.0,
-                                "abilityId": "earthshaker",
-                                "conditionMatched": true
-                            },
-                            {
-                                "actionId": "linebreaker",
-                                "actionType": "USE_ABILITY",
-                                "orderKey": 20,
-                                "weight": 38.0,
-                                "abilityId": "linebreaker",
-                                "conditionMatched": true
-                            },
-                            {
-                                "actionId": "strike",
-                                "actionType": "ATTACK_TARGET",
-                                "orderKey": 30,
-                                "weight": 15.0,
-                                "conditionMatched": true
-                            },
-                            {
-                                "actionId": "advance",
-                                "actionType": "MOVE_TOWARD_TARGET",
-                                "orderKey": 40,
-                                "weight": 5.0,
+                                "weight": 2.0,
                                 "conditionMatched": true
                             }
                         ],
@@ -1740,97 +1487,7 @@
                             "advance"
                         ],
                         "selectedActionId": "linebreaker",
-                        "rngRoll": 0.6119391120389218,
-                        "reason": "weighted_random"
-                    },
-                    {
-                        "actorId": 12002,
-                        "profileId": "ai.boss.molten_giant.phase_enraged",
-                        "turnId": 11,
-                        "selectionPolicy": "WEIGHTED_RANDOM",
-                        "evaluatedActions": [
-                            {
-                                "actionId": "earthshaker",
-                                "actionType": "USE_ABILITY",
-                                "orderKey": 10,
-                                "weight": 42.0,
-                                "abilityId": "earthshaker",
-                                "conditionMatched": false
-                            },
-                            {
-                                "actionId": "linebreaker",
-                                "actionType": "USE_ABILITY",
-                                "orderKey": 20,
-                                "weight": 38.0,
-                                "abilityId": "linebreaker",
-                                "conditionMatched": false
-                            },
-                            {
-                                "actionId": "strike",
-                                "actionType": "ATTACK_TARGET",
-                                "orderKey": 30,
-                                "weight": 15.0,
-                                "conditionMatched": false
-                            },
-                            {
-                                "actionId": "advance",
-                                "actionType": "MOVE_TOWARD_TARGET",
-                                "orderKey": 40,
-                                "weight": 5.0,
-                                "conditionMatched": true
-                            }
-                        ],
-                        "orderedCandidateActionIds": [
-                            "advance"
-                        ],
-                        "selectedActionId": "advance",
-                        "rngRoll": 0.7066787634520163,
-                        "reason": "weighted_random"
-                    },
-                    {
-                        "actorId": 12002,
-                        "profileId": "ai.boss.molten_giant.phase_enraged",
-                        "turnId": 12,
-                        "selectionPolicy": "WEIGHTED_RANDOM",
-                        "evaluatedActions": [
-                            {
-                                "actionId": "earthshaker",
-                                "actionType": "USE_ABILITY",
-                                "orderKey": 10,
-                                "weight": 42.0,
-                                "abilityId": "earthshaker",
-                                "conditionMatched": true
-                            },
-                            {
-                                "actionId": "linebreaker",
-                                "actionType": "USE_ABILITY",
-                                "orderKey": 20,
-                                "weight": 38.0,
-                                "abilityId": "linebreaker",
-                                "conditionMatched": false
-                            },
-                            {
-                                "actionId": "strike",
-                                "actionType": "ATTACK_TARGET",
-                                "orderKey": 30,
-                                "weight": 15.0,
-                                "conditionMatched": true
-                            },
-                            {
-                                "actionId": "advance",
-                                "actionType": "MOVE_TOWARD_TARGET",
-                                "orderKey": 40,
-                                "weight": 5.0,
-                                "conditionMatched": true
-                            }
-                        ],
-                        "orderedCandidateActionIds": [
-                            "earthshaker",
-                            "strike",
-                            "advance"
-                        ],
-                        "selectedActionId": "earthshaker",
-                        "rngRoll": 0.02648494799888812,
+                        "rngRoll": 0.90892713980559,
                         "reason": "weighted_random"
                     }
                 ],
@@ -1864,6 +1521,9 @@
             },
             "phaseGraphUnchanged": true,
             "phaseGraphStructuralDiffCount": 0,
+            "traceDiverged": true,
+            "selectedActionSequenceDiverged": true,
+            "actionTraceDivergenceScore": 1.0,
             "threatLedgerMatched": true,
             "rewardLedgerMatched": true,
             "inspectReadable": true,
@@ -1890,10 +1550,14 @@
                 "phaseTransitionTriggers": [
                     "START->phase_desperate:hp_threshold"
                 ],
+                "phaseTransitionObserved": true,
                 "expectedSelectedActions": [
                     "arcane_shield"
                 ],
                 "selectedActionIds": [
+                    "arcane_shield"
+                ],
+                "selectedActionSequence": [
                     "arcane_shield"
                 ],
                 "requiredAiTraceCount": 1,
@@ -2018,18 +1682,23 @@
                 "phaseTransitionTriggers": [
                     "START->phase_desperate:hp_threshold"
                 ],
+                "phaseTransitionObserved": true,
                 "expectedSelectedActions": [
-                    "arcane_shield"
+                    "arcane_shield",
+                    "battlefield_command",
+                    "war_call"
                 ],
                 "selectedActionIds": [
-                    "arcane_shield",
+                    "war_call"
+                ],
+                "selectedActionSequence": [
                     "war_call"
                 ],
                 "requiredAiTraceCount": 1,
-                "observedAiTraceCount": 2,
-                "aiTraceCount": 2,
+                "observedAiTraceCount": 1,
+                "aiTraceCount": 1,
                 "bossTraceCount": 1,
-                "aiTraceHash": "1b1da28d07ec64d39f4f2ab9398610b026b4f119490f53f485056beba948bc77",
+                "aiTraceHash": "4c0227bcaf440c7a3272921be0a258ab743a99205c67ed0ee6b755101af0fdd8",
                 "bossTraceHash": "f95fb22d440506ec672b32a3e49b4197e1b058241590610f6bc9c855ddcd2898",
                 "threatCost": 6,
                 "lootProfileOverride": "loot.grey_gate_depths.reward",
@@ -2094,51 +1763,6 @@
                         ],
                         "selectedActionId": "war_call",
                         "reason": "deterministic_priority"
-                    },
-                    {
-                        "actorId": 12002,
-                        "profileId": "ai.boss.dungeon_lord.phase_enraged",
-                        "turnId": 7,
-                        "selectionPolicy": "WEIGHTED_RANDOM",
-                        "evaluatedActions": [
-                            {
-                                "actionId": "ritual_break",
-                                "actionType": "USE_ABILITY",
-                                "orderKey": 10,
-                                "weight": 40.0,
-                                "abilityId": "ritual_break",
-                                "conditionMatched": false
-                            },
-                            {
-                                "actionId": "arcane_shield",
-                                "actionType": "USE_ABILITY",
-                                "orderKey": 20,
-                                "weight": 28.0,
-                                "abilityId": "arcane_shield",
-                                "conditionMatched": true
-                            },
-                            {
-                                "actionId": "close_quarters",
-                                "actionType": "ATTACK_TARGET",
-                                "orderKey": 25,
-                                "weight": 35.0,
-                                "conditionMatched": false
-                            },
-                            {
-                                "actionId": "press_forward",
-                                "actionType": "MOVE_TOWARD_TARGET",
-                                "orderKey": 30,
-                                "weight": 20.0,
-                                "conditionMatched": true
-                            }
-                        ],
-                        "orderedCandidateActionIds": [
-                            "arcane_shield",
-                            "press_forward"
-                        ],
-                        "selectedActionId": "arcane_shield",
-                        "rngRoll": 0.25489093121479733,
-                        "reason": "weighted_random"
                     }
                 ],
                 "bossTraces": [
@@ -2171,6 +1795,9 @@
             },
             "phaseGraphUnchanged": true,
             "phaseGraphStructuralDiffCount": 0,
+            "traceDiverged": true,
+            "selectedActionSequenceDiverged": true,
+            "actionTraceDivergenceScore": 1.0,
             "threatLedgerMatched": true,
             "rewardLedgerMatched": true,
             "inspectReadable": true,
@@ -2199,6 +1826,7 @@
                     "START->phase_full:initial_phase",
                     "phase_full->phase_abyssal:hp_threshold"
                 ],
+                "phaseTransitionObserved": true,
                 "expectedSelectedActions": [
                     "abyssal_consecration",
                     "press_abyss"
@@ -2206,6 +1834,10 @@
                 "selectedActionIds": [
                     "abyssal_consecration",
                     "relentless_strike"
+                ],
+                "selectedActionSequence": [
+                    "relentless_strike",
+                    "abyssal_consecration"
                 ],
                 "requiredAiTraceCount": 1,
                 "observedAiTraceCount": 2,
@@ -2392,7 +2024,7 @@
                 "phaseId": "phase_abyssal",
                 "telegraphKey": "abyssal_guardian_phase_warning",
                 "grantedMutations": [
-                    "elite.corrosion_cloud",
+                    "elite.phase_runner",
                     "elite.void_mirror"
                 ],
                 "phaseSequence": [
@@ -2403,40 +2035,40 @@
                     "START->phase_full:initial_phase",
                     "phase_full->phase_abyssal:hp_threshold"
                 ],
+                "phaseTransitionObserved": true,
                 "expectedSelectedActions": [
-                    "abyssal_consecration",
-                    "press_abyss"
+                    "linebreaker"
                 ],
                 "selectedActionIds": [
-                    "abyssal_consecration",
-                    "relentless_strike"
+                    "linebreaker"
+                ],
+                "selectedActionSequence": [
+                    "linebreaker"
                 ],
                 "requiredAiTraceCount": 1,
-                "observedAiTraceCount": 2,
-                "aiTraceCount": 2,
+                "observedAiTraceCount": 1,
+                "aiTraceCount": 1,
                 "bossTraceCount": 2,
-                "aiTraceHash": "fe5e55d9c9a08f0320b5b7dbbdb35b18f18cbd8226e615a5903bed992f2c32ce",
+                "aiTraceHash": "d91270aa3ba3154d282bc6b3bcf1656d72beb9a70b5550b37264b5a2ba8e3f66",
                 "bossTraceHash": "57f9fbe189562a1f01ff7a177b9a74c4167ada81db823b735ae9c141c5a8142a",
                 "threatCost": 8,
                 "lootProfileOverride": "loot.abyssal_heart.reward",
                 "lootProfileRewardBudget": 1,
                 "actionWeightProfileId": "boss.variant.weight.abyssal_eclipse",
                 "visualTintKey": "vfx.boss.variant.abyssal_eclipse",
-                "preferredTerrainTags": [
-                    "OIL"
-                ],
+                "preferredTerrainTags": [],
                 "bossTerrainTags": [],
                 "adjacentBossTerrainTags": [],
                 "terrainPreferenceAvailable": false,
-                "terrainPreferenceImplemented": false,
+                "terrainPreferenceImplemented": true,
                 "encounterThreatBudget": {
                     "encounterId": "abyssal_guardian_encounter",
                     "baseBudget": 0,
-                    "totalBudget": 17,
+                    "totalBudget": 15,
                     "threatDeltas": [
                         {
-                            "source": "eliteMutation:elite.corrosion_cloud",
-                            "amount": 4
+                            "source": "eliteMutation:elite.phase_runner",
+                            "amount": 2
                         },
                         {
                             "source": "eliteMutation:elite.void_mirror",
@@ -2473,7 +2105,7 @@
                                 "actionId": "void_breach",
                                 "actionType": "USE_ABILITY",
                                 "orderKey": 10,
-                                "weight": 44.0,
+                                "weight": 2.0,
                                 "abilityId": "void_breach",
                                 "conditionMatched": false
                             },
@@ -2481,7 +2113,7 @@
                                 "actionId": "abyssal_consecration",
                                 "actionType": "USE_ABILITY",
                                 "orderKey": 20,
-                                "weight": 34.0,
+                                "weight": 6.0,
                                 "abilityId": "consecration",
                                 "conditionMatched": true
                             },
@@ -2489,7 +2121,7 @@
                                 "actionId": "linebreaker",
                                 "actionType": "USE_ABILITY",
                                 "orderKey": 25,
-                                "weight": 22.0,
+                                "weight": 88.0,
                                 "abilityId": "linebreaker",
                                 "conditionMatched": true
                             },
@@ -2497,7 +2129,7 @@
                                 "actionId": "relentless_strike",
                                 "actionType": "ATTACK_TARGET",
                                 "orderKey": 30,
-                                "weight": 28.0,
+                                "weight": 4.0,
                                 "conditionMatched": true
                             },
                             {
@@ -2513,62 +2145,8 @@
                             "linebreaker",
                             "relentless_strike"
                         ],
-                        "selectedActionId": "relentless_strike",
+                        "selectedActionId": "linebreaker",
                         "rngRoll": 0.8619319268787655,
-                        "reason": "weighted_random"
-                    },
-                    {
-                        "actorId": 11001,
-                        "profileId": "ai.boss.abyssal_guardian.phase_abyssal",
-                        "turnId": 7,
-                        "selectionPolicy": "WEIGHTED_RANDOM",
-                        "evaluatedActions": [
-                            {
-                                "actionId": "void_breach",
-                                "actionType": "USE_ABILITY",
-                                "orderKey": 10,
-                                "weight": 44.0,
-                                "abilityId": "void_breach",
-                                "conditionMatched": false
-                            },
-                            {
-                                "actionId": "abyssal_consecration",
-                                "actionType": "USE_ABILITY",
-                                "orderKey": 20,
-                                "weight": 34.0,
-                                "abilityId": "consecration",
-                                "conditionMatched": true
-                            },
-                            {
-                                "actionId": "linebreaker",
-                                "actionType": "USE_ABILITY",
-                                "orderKey": 25,
-                                "weight": 22.0,
-                                "abilityId": "linebreaker",
-                                "conditionMatched": true
-                            },
-                            {
-                                "actionId": "relentless_strike",
-                                "actionType": "ATTACK_TARGET",
-                                "orderKey": 30,
-                                "weight": 28.0,
-                                "conditionMatched": true
-                            },
-                            {
-                                "actionId": "press_abyss",
-                                "actionType": "MOVE_TOWARD_TARGET",
-                                "orderKey": 35,
-                                "weight": 20.0,
-                                "conditionMatched": false
-                            }
-                        ],
-                        "orderedCandidateActionIds": [
-                            "abyssal_consecration",
-                            "linebreaker",
-                            "relentless_strike"
-                        ],
-                        "selectedActionId": "abyssal_consecration",
-                        "rngRoll": 0.39973281908496916,
                         "reason": "weighted_random"
                     }
                 ],
@@ -2611,6 +2189,9 @@
             },
             "phaseGraphUnchanged": true,
             "phaseGraphStructuralDiffCount": 0,
+            "traceDiverged": true,
+            "selectedActionSequenceDiverged": true,
+            "actionTraceDivergenceScore": 1.0,
             "threatLedgerMatched": true,
             "rewardLedgerMatched": true,
             "inspectReadable": true,

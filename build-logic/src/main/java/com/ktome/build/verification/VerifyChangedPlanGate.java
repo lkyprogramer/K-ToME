@@ -6,6 +6,7 @@ import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -96,6 +97,44 @@ public final class VerifyChangedPlanGate {
                 .anyMatch(taskNameArg ->
                         taskNameArg.equals(taskPath)
                                 || taskNameArg.equals(relativeTaskPath)
-                                || taskNameArg.equals(taskName));
+                                || taskNameArg.equals(taskName)
+                                || requestedAliasDependsOn(task, taskNameArg));
+    }
+
+    private static boolean requestedAliasDependsOn(Task task, String taskNameArg) {
+        if (matchesTaskName(taskNameArg, "verifyChanged") || matchesTaskName(taskNameArg, "verifyChangedPreflight")) {
+            return false;
+        }
+        String requestedTaskName = rootTaskName(taskNameArg);
+        if (requestedTaskName == null) {
+            return false;
+        }
+        Task requestedTask = task.getProject().getRootProject().getTasks().findByName(requestedTaskName);
+        return requestedTask != null && taskDependsOn(requestedTask, task, new HashSet<>());
+    }
+
+    private static String rootTaskName(String taskNameArg) {
+        if (!taskNameArg.contains(":")) {
+            return taskNameArg;
+        }
+        if (taskNameArg.startsWith(":") && taskNameArg.indexOf(':', 1) < 0) {
+            return taskNameArg.substring(1);
+        }
+        return null;
+    }
+
+    private static boolean taskDependsOn(Task current, Task target, Set<String> visitedTaskPaths) {
+        if (!visitedTaskPaths.add(current.getPath())) {
+            return false;
+        }
+        for (Task dependency : current.getTaskDependencies().getDependencies(current)) {
+            if (dependency.getPath().equals(target.getPath())) {
+                return true;
+            }
+            if (taskDependsOn(dependency, target, visitedTaskPaths)) {
+                return true;
+            }
+        }
+        return false;
     }
 }
