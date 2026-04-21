@@ -67,9 +67,9 @@
   2. `Travel to Boss`
   3. 观察 boss phase 切换或关键技能触发后的前台 cue
 - 必看证据：
-  - 高优先级 boss/secret cue 仍能保留在前台
-  - 不会被低价值 passive/action 噪声覆盖
-  - boss cue 的 tone/readability 对 `Computer Use` 读屏足够稳定
+  - boss warning / telegraph overlay 仍能稳定暴露 phase 切换或关键技能风险
+  - typed `SEARCH / SECRET / PASSIVE` action cue 不会被 boss 手工验证路径扩展出未冻结的 `BOSS` category
+  - boss cue 的 tone/readability 对 `Computer Use` 读屏足够稳定，但本 PR 不把 boss warning 纳入 `FrontstageActionCategorySnapshot`
 
 #### 模块 C：`CONTENT_PACK` pack-specific cue
 
@@ -178,9 +178,10 @@ search、secret、passive 这几类信息都在竞争有限 action 槽位，但�
 3. `SEARCH_NO_TARGET -> SEARCH + MEDIUM`
 4. `SECRET_ZONE_REVEALED / SECRET_ZONE_ENTER / HIDDEN_REWARD_CLAIMED / HIDDEN_REWARD_DROPPED / HIDDEN_REWARD_ENCOUNTER -> SECRET + CRITICAL`
 5. `HIDDEN_REWARD_BUFF -> SECRET + HIGH`
-6. `PASSIVE_DAMAGE_BONUS_* / PASSIVE_ON_HIT_STATUS / PASSIVE_ON_KILL_RESOURCE_RESTORE -> PASSIVE + MEDIUM`
-7. `PASSIVE_HP_REGEN -> PASSIVE + LOW`
-8. `search.already_resolved / hidden.reward.already_claimed / hidden.secret_zone.return -> log-only`，永不进入 frontstage
+6. `HIDDEN_PRIMER_ACQUIRED -> SECRET + HIGH`
+7. `PASSIVE_DAMAGE_BONUS_* / PASSIVE_ON_HIT_STATUS / PASSIVE_ON_KILL_RESOURCE_RESTORE -> PASSIVE + MEDIUM`
+8. `PASSIVE_HP_REGEN -> PASSIVE + LOW`
+9. `search.already_resolved / hidden.reward.already_claimed / hidden.secret_zone.return / reward.capstone.* -> log-only`，永不进入 frontstage
 
 ### 6.4 stableKey 与 client 消费规则
 
@@ -193,10 +194,11 @@ search、secret、passive 这几类信息都在竞争有限 action 槽位，但�
 5. `secret:reward:<secretZoneId>`
 6. `secret:encounter:<secretZoneId>:<monsterTemplateId>`
 7. `secret:buff:<secretZoneId>:<statusId>`
-8. `passive:hp_regen:<itemBaseId>`
-9. `passive:on_hit_status:<sourceItemBaseId>:<statusId>`
-10. `passive:on_kill_resource_restore:<sourceItemBaseId>:<resourceType>`
-11. `passive:damage_bonus:<sourceItemBaseId>:<kind>`
+8. `secret:primer:<zoneNameKey>`
+9. `passive:hp_regen:<itemBaseId>`
+10. `passive:on_hit_status:<sourceItemBaseId>:<statusId>`
+11. `passive:on_kill_resource_restore:<sourceItemBaseId>:<resourceType>`
+12. `passive:damage_bonus:<sourceItemBaseId>:<kind>`
 
 `client` 消费规则：
 

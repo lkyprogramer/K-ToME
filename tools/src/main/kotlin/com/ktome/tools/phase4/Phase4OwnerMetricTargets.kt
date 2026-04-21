@@ -20,6 +20,9 @@ internal object Phase4OwnerMetricTargets {
             "nonWeaponBuildPayoffRate",
             "phaseTransitionObservedRatio",
             "variantTraceDivergenceRatio",
+            "frontstageHighPriorityCueRetainedRate",
+            "frontstageCueExpiryParity",
+            "frontstageSecretCueVisibilityRate",
             ->
                 renderBoundTarget(
                     range = range,

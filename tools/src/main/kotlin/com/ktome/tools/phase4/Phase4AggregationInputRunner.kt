@@ -425,7 +425,7 @@ internal object Phase4AggregationInputRunner {
             details = task.metrics,
         )
 
-    private fun scriptedHiddenEvaluation(
+    internal fun scriptedHiddenEvaluation(
         task: Phase4TaskAggregate,
         baseline: VerificationBaseline,
     ): EvaluationResult {
@@ -433,14 +433,56 @@ internal object Phase4AggregationInputRunner {
         val failureCount = task.metrics.intValue("failureCount")
         val verificationRate = if (totalCases == 0) 0.0 else (totalCases - failureCount).toDouble() / totalCases.toDouble()
         val metricId = "scriptedHiddenVerificationRate"
-        val range = baseline.requiredMetric(metricId)
+        val frontstageMetricIds =
+            Phase4MetricCatalog.metricIds(
+                ownerTaskId = "hiddenContentHarness",
+                outputSection = "frontstage-action-cue",
+            )
+        require(frontstageMetricIds.size == 4) {
+            "Expected four hidden frontstage owner metrics, found ${frontstageMetricIds.size}: $frontstageMetricIds."
+        }
+        val frontstageHighPriorityMetricId = frontstageMetricIds[0]
+        val frontstageDedupMetricId = frontstageMetricIds[1]
+        val frontstageExpiryMetricId = frontstageMetricIds[2]
+        val frontstageSecretMetricId = frontstageMetricIds[3]
+        val metricIds =
+            Phase4MetricCatalog.metricIds(
+                ownerTaskId = "hiddenContentHarness",
+                outputSection = "scripted-vs-organic-hidden",
+            ) + frontstageMetricIds
+        val ranges = metricIds.associateWith(baseline::requiredMetric)
+        val frontstageHighPriorityRate = task.metrics.doubleValue(frontstageHighPriorityMetricId)
+        val frontstageDedupCount = task.metrics.intValue(frontstageDedupMetricId)
+        val frontstageExpiryParity = task.metrics.doubleValue(frontstageExpiryMetricId)
+        val frontstageSecretVisibilityRate = task.metrics.doubleValue(frontstageSecretMetricId)
+        val frontstageHighPriorityExpectedCount = task.metrics.intValue("frontstageHighPriorityExpectedCount")
+        val frontstageHighPriorityRetainedCount = task.metrics.intValue("frontstageHighPriorityCueRetainedCount")
+        val frontstageSecretExpectedCount = task.metrics.intValue("frontstageSecretCueExpectedCount")
+        val frontstageSecretVisibleCount = task.metrics.intValue("frontstageSecretCueVisibleCount")
+        val frontstageExpiryProbePassedCount = task.metrics.intValue("frontstageCueExpiryProbePassedCount")
+        val frontstageExpiryProbeTotalCount = task.metrics.intValue("frontstageCueExpiryProbeTotalCount")
         val result =
             VerificationBaselineComparator.compareBudgetThreshold(
                 domainId = "hidden",
                 evaluationId = "hidden.scriptedOwner",
-                baseline = baseline.copy(expectedMetricRanges = listOf(range)),
-                actualMetrics = mapOf(metricId to verificationRate),
-                currentValueTexts = mapOf(metricId to "${formatPercent(verificationRate)} (${totalCases - failureCount}/$totalCases)"),
+                baseline = baseline.copy(expectedMetricRanges = metricIds.map { id -> ranges.getValue(id) }),
+                actualMetrics =
+                    mapOf(
+                        metricId to verificationRate,
+                        frontstageHighPriorityMetricId to frontstageHighPriorityRate,
+                        frontstageDedupMetricId to frontstageDedupCount.toDouble(),
+                        frontstageExpiryMetricId to frontstageExpiryParity,
+                        frontstageSecretMetricId to frontstageSecretVisibilityRate,
+                    ),
+                currentValueTexts =
+                    mapOf(
+                        metricId to "${formatPercent(verificationRate)} (${totalCases - failureCount}/$totalCases)",
+                        frontstageHighPriorityMetricId to
+                            "${formatPercent(frontstageHighPriorityRate)} ($frontstageHighPriorityRetainedCount/$frontstageHighPriorityExpectedCount)",
+                        frontstageDedupMetricId to frontstageDedupCount.toString(),
+                        frontstageExpiryMetricId to formatPercent(frontstageExpiryParity),
+                        frontstageSecretMetricId to "${formatPercent(frontstageSecretVisibilityRate)} ($frontstageSecretVisibleCount/$frontstageSecretExpectedCount)",
+                    ),
                 currentValueElements =
                     mapOf(
                         metricId to
@@ -452,18 +494,56 @@ internal object Phase4AggregationInputRunner {
                                 put("primerFreeCaseCount", task.metrics.getValue("primerFreeCaseCount"))
                                 put("secretZoneDiscoveryRate", task.metrics.getValue("secretZoneDiscoveryRate"))
                             },
+                        frontstageHighPriorityMetricId to
+                            buildJsonObject {
+                                put("rate", task.metrics.getValue(frontstageHighPriorityMetricId))
+                                put("retainedCount", task.metrics.getValue("frontstageHighPriorityCueRetainedCount"))
+                                put("expectedCount", task.metrics.getValue("frontstageHighPriorityExpectedCount"))
+                            },
+                        frontstageDedupMetricId to
+                            buildJsonObject {
+                                put("count", task.metrics.getValue(frontstageDedupMetricId))
+                                put("duplicateNoTargetLogCount", task.metrics.getValue("frontstageDuplicateNoTargetLogCount"))
+                                put("remainingNoTargetCueCount", task.metrics.getValue("frontstageRemainingNoTargetCueCount"))
+                            },
+                        frontstageExpiryMetricId to
+                            buildJsonObject {
+                                put("parity", task.metrics.getValue(frontstageExpiryMetricId))
+                                put("remainingNoTargetCueCount", task.metrics.getValue("frontstageRemainingNoTargetCueCount"))
+                                put("probePassedCount", task.metrics.getValue("frontstageCueExpiryProbePassedCount"))
+                                put("probeTotalCount", task.metrics.getValue("frontstageCueExpiryProbeTotalCount"))
+                                put("probePriorities", task.metrics.getValue("frontstageCueExpiryProbePriorities"))
+                            },
+                        frontstageSecretMetricId to
+                            buildJsonObject {
+                                put("rate", task.metrics.getValue(frontstageSecretMetricId))
+                                put("visibleCount", task.metrics.getValue("frontstageSecretCueVisibleCount"))
+                                put("expectedCount", task.metrics.getValue("frontstageSecretCueExpectedCount"))
+                            },
                     ),
-                detailsByMetricId = mapOf(metricId to task.metrics),
+                detailsByMetricId = metricIds.associateWith { task.metrics },
             )
-        return result.withEntryPresentation(
-            metricId = metricId,
-            presentation =
+        return result.withEntryPresentations(
+            metricIds.associateWith { id ->
                 MetricPresentation(
-                    targetText = Phase4OwnerMetricTargets.targetText(metricId, range),
+                    targetText = Phase4OwnerMetricTargets.targetText(id, ranges.getValue(id)),
                     note =
-                        "primerCases=${task.metrics.intValue("primerActionUsedCount")}, " +
-                            "primerFreeCases=${task.metrics.intValue("primerFreeCaseCount")}",
-                ),
+                        when (id) {
+                            metricId ->
+                                "primerCases=${task.metrics.intValue("primerActionUsedCount")}, " +
+                                    "primerFreeCases=${task.metrics.intValue("primerFreeCaseCount")}"
+                            frontstageHighPriorityMetricId ->
+                                "retained=$frontstageHighPriorityRetainedCount/$frontstageHighPriorityExpectedCount via typed priority"
+                            frontstageDedupMetricId ->
+                                "duplicateNoTargetLogs=${task.metrics.intValue("frontstageDuplicateNoTargetLogCount")}"
+                            frontstageExpiryMetricId ->
+                                "ttlProbes=$frontstageExpiryProbePassedCount/$frontstageExpiryProbeTotalCount across priorities"
+                            frontstageSecretMetricId ->
+                                "secretVisible=$frontstageSecretVisibleCount/$frontstageSecretExpectedCount via typed category"
+                            else -> null
+                        },
+                )
+            },
         )
     }
 

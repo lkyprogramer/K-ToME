@@ -160,7 +160,6 @@ object Phase4ReportRunner {
         val terrainUnifiedBaseline = VerificationBaseline.read(repoRoot.resolve(Phase4OwnerBaselineRegistry.terrainUnifiedBaselinePath()))
         val terrainPerZoneBaseline = VerificationBaseline.read(repoRoot.resolve(Phase4OwnerBaselineRegistry.terrainPerZoneBaselinePath()))
         val terrainBaseline = readTerrainBaseline(repoRoot)
-        val scriptedHiddenRange = scriptedHiddenBaseline.requiredMetric("scriptedHiddenVerificationRate")
         val leadDiscoveryRange = organicHiddenBaseline.requiredMetric("leadDiscoveryRate")
         val secretConversionRange = organicHiddenBaseline.requiredMetric("secretConversionRate")
         val cadenceOverlapRange = lootBaseline.requiredMetric("sameZoneSecretVsCadenceMaxOverlap")
@@ -171,14 +170,6 @@ object Phase4ReportRunner {
         val terrainAggregateRange = terrainUnifiedBaseline.requiredMetric("terrainInteractionEncounterRate.aggregate")
         val terrainPerZoneRange = terrainPerZoneBaseline.requiredMetric("terrainInteractionEncounterRate.per_zone_lower_bound")
 
-        val scriptedTotalCases = scriptedHidden.metrics.intValue("totalCases")
-        val scriptedFailureCount = scriptedHidden.metrics.intValue("failureCount")
-        val scriptedHiddenVerificationRate =
-            if (scriptedTotalCases == 0) {
-                0.0
-            } else {
-                (scriptedTotalCases - scriptedFailureCount).toDouble() / scriptedTotalCases.toDouble()
-            }
         val organicTotalCases = organicHidden.metrics.intValue("totalCases")
         val organicDiscoveryCount = organicHidden.metrics.intValue("leadDiscoveryCount")
         val leadDiscoveryRate = organicHidden.metrics.doubleValue("leadDiscoveryRate")
@@ -225,6 +216,10 @@ object Phase4ReportRunner {
             Phase4AggregationInputRunner.localRewardIdentityEvaluation(task = loot, baseline = lootBaseline)
                 .entries
                 .associateBy(EvaluationEntry::metricId)
+        val scriptedHiddenEntriesByMetricId =
+            Phase4AggregationInputRunner.scriptedHiddenEvaluation(task = scriptedHidden, baseline = scriptedHiddenBaseline)
+                .entries
+                .associateBy(EvaluationEntry::metricId)
         val terminalBuildEntriesByMetricId =
             Phase4AggregationInputRunner.terminalBuildIdentityEvaluation(task = longRun, baseline = terminalBuildBaseline)
                 .entries
@@ -250,28 +245,13 @@ object Phase4ReportRunner {
         val terrainEncounterBaseline = terrainBaseline.metric("terrainInteractionEncounterRate")
         val terrainEncounterRelativeIncrease = relativeIncrease(terrainEncounterRate, terrainEncounterBaseline.baselineRate)
         return buildList {
-            add(
-                Phase4ExperienceMetric(
-                    metricId = "scriptedHiddenVerificationRate",
-                    sourceTaskId = scriptedHidden.taskId,
-                    currentValue =
-                        buildJsonObject {
-                            put("rate", scriptedHiddenVerificationRate)
-                            put("totalCases", scriptedHidden.metrics.getValue("totalCases"))
-                            put("failureCount", scriptedHidden.metrics.getValue("failureCount"))
-                            put("primerActionUsedCount", scriptedHidden.metrics.getValue("primerActionUsedCount"))
-                            put("primerFreeCaseCount", scriptedHidden.metrics.getValue("primerFreeCaseCount"))
-                            put("secretZoneDiscoveryRate", scriptedHidden.metrics.getValue("secretZoneDiscoveryRate"))
-                        },
-                    currentValueText =
-                        "${formatPercent(scriptedHiddenVerificationRate)} (${scriptedTotalCases - scriptedFailureCount}/$scriptedTotalCases)",
-                    target = Phase4OwnerMetricTargets.targetText("scriptedHiddenVerificationRate", scriptedHiddenRange),
-                    status = verdictOf(Phase4OwnerMetricTargets.passes(scriptedHiddenRange, scriptedHiddenVerificationRate)),
-                    note =
-                        "primerCases=${scriptedHidden.metrics.intValue("primerActionUsedCount")}, " +
-                            "primerFreeCases=${scriptedHidden.metrics.intValue("primerFreeCaseCount")}",
-                ),
-            )
+            hiddenContentHarnessMetricIds().forEach { metricId ->
+                add(
+                    requireNotNull(scriptedHiddenEntriesByMetricId[metricId]) {
+                        "Missing scripted hidden evaluation entry '$metricId'."
+                    }.toLegacyExperienceMetric(scriptedHidden.taskId),
+                )
+            }
             add(
                 Phase4ExperienceMetric(
                     metricId = "leadDiscoveryRate",
@@ -835,6 +815,15 @@ private fun EvaluationEntry.toLegacyExperienceMetric(sourceTaskId: String): Phas
         status = if (status == EvaluationEntryStatus.UNEXPECTED_REGRESSION) "FAIL" else "PASS",
         note = note,
         details = details,
+    )
+
+private fun hiddenContentHarnessMetricIds(): List<String> =
+    Phase4MetricCatalog.metricIds(
+        ownerTaskId = "hiddenContentHarness",
+        outputSection = "scripted-vs-organic-hidden",
+    ) + Phase4MetricCatalog.metricIds(
+        ownerTaskId = "hiddenContentHarness",
+        outputSection = "frontstage-action-cue",
     )
 
 private fun readTerrainBaseline(repoRoot: Path): TerrainMetricBaseline {

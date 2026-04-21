@@ -63,6 +63,36 @@ class RenderSnapshotSerializationTest {
                         equipment = emptyList(),
                         talents = emptyList(),
                         inventory = emptyList(),
+                        frontstageReadability =
+                            FrontstageReadabilitySnapshot(
+                                recentActionCues =
+                                    listOf(
+                                        FrontstageActionCueSnapshot(
+                                            category = FrontstageActionCategorySnapshot.SEARCH,
+                                            priority = FrontstageActionPrioritySnapshot.CRITICAL,
+                                            stableKey = "search:deep_iron:revealed",
+                                            message = RenderTextTokenSnapshot("log.search.revealed"),
+                                        ),
+                                        FrontstageActionCueSnapshot(
+                                            category = FrontstageActionCategorySnapshot.SECRET,
+                                            priority = FrontstageActionPrioritySnapshot.HIGH,
+                                            stableKey = "secret:primer:deep_iron",
+                                            message = RenderTextTokenSnapshot("log.hidden.primer.acquired"),
+                                        ),
+                                        FrontstageActionCueSnapshot(
+                                            category = FrontstageActionCategorySnapshot.PASSIVE,
+                                            priority = FrontstageActionPrioritySnapshot.MEDIUM,
+                                            stableKey = "passive:on_hit_status:item",
+                                            message = RenderTextTokenSnapshot("log.passive.on_hit_status"),
+                                        ),
+                                        FrontstageActionCueSnapshot(
+                                            category = FrontstageActionCategorySnapshot.PASSIVE,
+                                            priority = FrontstageActionPrioritySnapshot.LOW,
+                                            stableKey = "passive:hp_regen:item",
+                                            message = RenderTextTokenSnapshot("log.passive.hp_regen"),
+                                        ),
+                                    ),
+                            ),
                         targetablePositions = emptyList(),
                     ),
                 combatFeedbackEvents =
@@ -92,6 +122,9 @@ class RenderSnapshotSerializationTest {
 
         assertTrue(encoded.contains("\"combatFeedbackEvents\""))
         assertTrue(encoded.contains("\"critical\": true"))
+        assertTrue(encoded.contains("\"recentActionCues\""))
+        assertTrue(encoded.contains("\"stableKey\": \"search:deep_iron:revealed\""))
+        assertTrue(encoded.contains("\"priority\": \"CRITICAL\""))
         assertEquals(snapshot, decoded)
     }
 }

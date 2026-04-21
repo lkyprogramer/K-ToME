@@ -41,6 +41,31 @@ class RenderSnapshotHasherTest {
         assertNotEquals(RenderSnapshotHasher.sha256(before), RenderSnapshotHasher.sha256(after))
     }
 
+    @Test
+    fun `frontstage action cues participate in canonical hash`() {
+        val before = sampleSnapshot(revision = 3L)
+        val after =
+            before.copy(
+                uiState =
+                    before.uiState.copy(
+                        frontstageReadability =
+                            FrontstageReadabilitySnapshot(
+                                recentActionCues =
+                                    listOf(
+                                        FrontstageActionCueSnapshot(
+                                            category = FrontstageActionCategorySnapshot.SEARCH,
+                                            priority = FrontstageActionPrioritySnapshot.HIGH,
+                                            stableKey = "search:deep_iron:failed_check",
+                                            message = RenderTextTokenSnapshot("log.search.failed_check"),
+                                        ),
+                                    ),
+                            ),
+                    ),
+            )
+
+        assertNotEquals(RenderSnapshotHasher.sha256(before), RenderSnapshotHasher.sha256(after))
+    }
+
     private fun sampleSnapshot(revision: Long): RenderSnapshot =
         RenderSnapshot(
             metadata =

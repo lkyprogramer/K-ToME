@@ -43,6 +43,7 @@ object WhiteBoxHiddenContentRunner {
         val registryMetrics = HiddenContentRegistrySnapshot.load()
         val outputDir = reportDir().resolveSibling("whitebox").resolve("hidden")
         Files.createDirectories(outputDir)
+        val frontstageMetrics = frontstageCueContractMetrics(results = kernelRun.results, outputDir = outputDir)
         val caseReports =
             kernelRun.results.map { result ->
                 val joinKey =
@@ -78,7 +79,11 @@ object WhiteBoxHiddenContentRunner {
                             sampleCount = kernelRun.results.size,
                         ),
                     cases = caseReports,
-                    aggregates = aggregateReports(kernelRun = kernelRun, analysis = analysis),
+                    aggregates = aggregateReports(
+                        kernelRun = kernelRun,
+                        analysis = analysis,
+                        frontstageMetrics = frontstageMetrics,
+                    ),
                     retentionPolicy = ArtifactRetentionPolicy.ALL,
                 ),
             )
@@ -160,6 +165,7 @@ object WhiteBoxHiddenContentRunner {
     private fun aggregateReports(
         kernelRun: HiddenContentKernelRun,
         analysis: HiddenContentAnalysis,
+        frontstageMetrics: HiddenFrontstageCueContractMetrics,
     ): List<WhiteBoxAggregateReport> {
         val summary = analysis.summary
         return listOf(
@@ -190,6 +196,21 @@ object WhiteBoxHiddenContentRunner {
                         put("secretEntranceBindingCoverage", summary.secretEntranceBindingCoverage)
                         putJsonArray("secretEntranceBindingSet") {
                             summary.secretEntranceBindingSet.sorted().forEach { bindingId -> add(JsonPrimitive(bindingId)) }
+                        }
+                        put("frontstageHighPriorityCueRetainedRate", frontstageMetrics.highPriorityCueRetainedRate)
+                        put("frontstageCueDedupAppliedCount", frontstageMetrics.dedupAppliedCount)
+                        put("frontstageCueExpiryParity", frontstageMetrics.expiryParity)
+                        put("frontstageSecretCueVisibilityRate", frontstageMetrics.secretCueVisibilityRate)
+                        put("frontstageHighPriorityCueRetainedCount", frontstageMetrics.highPriorityCueRetainedCount)
+                        put("frontstageHighPriorityExpectedCount", frontstageMetrics.highPriorityExpectedCount)
+                        put("frontstageSecretCueVisibleCount", frontstageMetrics.secretCueVisibleCount)
+                        put("frontstageSecretCueExpectedCount", frontstageMetrics.secretCueExpectedCount)
+                        put("frontstageDuplicateNoTargetLogCount", frontstageMetrics.duplicateNoTargetLogCount)
+                        put("frontstageRemainingNoTargetCueCount", frontstageMetrics.remainingNoTargetCueCount)
+                        put("frontstageCueExpiryProbePassedCount", frontstageMetrics.expiryProbePassedCount)
+                        put("frontstageCueExpiryProbeTotalCount", frontstageMetrics.expiryProbeTotalCount)
+                        putJsonArray("frontstageCueExpiryProbePriorities") {
+                            frontstageMetrics.expiryProbePriorities.forEach { priority -> add(JsonPrimitive(priority)) }
                         }
                     },
                 assertions =
@@ -269,6 +290,26 @@ object WhiteBoxHiddenContentRunner {
                             passed = summary.secretEntranceBindingCoverage >= MIN_SECRET_ENTRANCE_BINDING_COVERAGE,
                             message = "Secret-zone registry covers the OPT PR-05 entrance-binding diversity floor.",
                         ),
+                        WhiteBoxAssertionResult(
+                            ruleId = "hidden-content.aggregate.frontstage_high_priority_retained",
+                            passed = frontstageMetrics.highPriorityCueRetainedRate >= 1.0,
+                            message = "High-priority search/secret frontstage cues remain visible in the typed action cue contract.",
+                        ),
+                        WhiteBoxAssertionResult(
+                            ruleId = "hidden-content.aggregate.frontstage_dedup_applied",
+                            passed = frontstageMetrics.dedupAppliedCount >= 1,
+                            message = "Repeated stable frontstage cues replace prior entries instead of growing the display queue.",
+                        ),
+                        WhiteBoxAssertionResult(
+                            ruleId = "hidden-content.aggregate.frontstage_ttl_parity",
+                            passed = frontstageMetrics.expiryParity >= 1.0,
+                            message = "Frontstage action cue TTL expiry matches the typed priority contract.",
+                        ),
+                        WhiteBoxAssertionResult(
+                            ruleId = "hidden-content.aggregate.frontstage_secret_cue_visible",
+                            passed = frontstageMetrics.secretCueVisibilityRate >= 1.0,
+                            message = "Entered secret-zone cases retain a SECRET frontstage action cue.",
+                        ),
                     ),
             ),
         )
@@ -337,6 +378,10 @@ object WhiteBoxHiddenContentRunner {
             appendLine("- hiddenEventIds: ${result.hiddenEventIds.joinToString().ifBlank { "none" }}")
             appendLine("- secretZoneId: ${result.secretZoneId ?: "none"}")
             appendLine("- logKeys: ${result.logKeys.joinToString().ifBlank { "none" }}")
+            appendLine("- frontstageActionCueCategories: ${result.frontstageActionCueCategories.joinToString().ifBlank { "none" }}")
+            appendLine("- frontstageActionCuePriorities: ${result.frontstageActionCuePriorities.joinToString().ifBlank { "none" }}")
+            appendLine("- frontstageActionCueStableKeys: ${result.frontstageActionCueStableKeys.joinToString().ifBlank { "none" }}")
+            appendLine("- frontstageActionCueMessageKeys: ${result.frontstageActionCueMessageKeys.joinToString().ifBlank { "none" }}")
             appendLine("- caseFailureReasons: ${result.gateFailureReasons().joinToString().ifBlank { "none" }}")
         }
 
@@ -445,6 +490,18 @@ object WhiteBoxHiddenContentRunner {
             put("secretZoneRegistryCount", registryMetrics.secretZoneRegistryCount)
             putJsonArray("rewardSources") {
                 result.rewardSources.forEach { rewardSource -> add(JsonPrimitive(rewardSource)) }
+            }
+            putJsonArray("frontstageActionCueCategories") {
+                result.frontstageActionCueCategories.forEach { category -> add(JsonPrimitive(category)) }
+            }
+            putJsonArray("frontstageActionCuePriorities") {
+                result.frontstageActionCuePriorities.forEach { priority -> add(JsonPrimitive(priority)) }
+            }
+            putJsonArray("frontstageActionCueStableKeys") {
+                result.frontstageActionCueStableKeys.forEach { stableKey -> add(JsonPrimitive(stableKey)) }
+            }
+            putJsonArray("frontstageActionCueMessageKeys") {
+                result.frontstageActionCueMessageKeys.forEach { messageKey -> add(JsonPrimitive(messageKey)) }
             }
             putJsonArray("rewardBudgetSources") {
                 result.rewardBudgetSources.forEach { rewardSource -> add(JsonPrimitive(rewardSource)) }

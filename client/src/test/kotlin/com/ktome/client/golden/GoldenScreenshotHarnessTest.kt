@@ -141,7 +141,7 @@ class GoldenScreenshotHarnessTest {
 
         val snapshot = session.renderSnapshot()
         assertTrue(snapshot.uiState.frontstageReadability.terrainHighlights.size <= 2)
-        assertTrue(snapshot.uiState.frontstageReadability.recentActionHighlights.any { token -> token.key == "log.search.no_target" })
+        assertTrue(snapshot.uiState.frontstageReadability.recentActionCues.any { cue -> cue.message.key == "log.search.no_target" })
     }
 
     @Test

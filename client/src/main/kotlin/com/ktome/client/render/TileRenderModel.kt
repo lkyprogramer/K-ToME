@@ -935,7 +935,9 @@ internal object TileRenderModelBuilder {
                     when (entry.kind) {
                         FrontstagePresentationKind.MUTATION -> TileTextTone.WHITE
                         FrontstagePresentationKind.TERRAIN -> TileTextTone.CYAN
-                        FrontstagePresentationKind.ACTION -> TileTextTone.GREEN
+                        FrontstagePresentationKind.SEARCH -> TileTextTone.GREEN
+                        FrontstagePresentationKind.SECRET -> TileTextTone.GOLD
+                        FrontstagePresentationKind.PASSIVE -> TileTextTone.LIGHT_GRAY
                     },
             )
         }

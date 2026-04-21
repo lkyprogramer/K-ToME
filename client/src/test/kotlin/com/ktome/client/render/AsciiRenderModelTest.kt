@@ -13,6 +13,9 @@ import com.ktome.core.snapshot.BossVariantRenderSnapshot
 import com.ktome.core.snapshot.CellVisibilitySnapshot
 import com.ktome.core.snapshot.CombatFeedbackSnapshot
 import com.ktome.core.snapshot.CombatFeedbackTypeSnapshot
+import com.ktome.core.snapshot.FrontstageActionCategorySnapshot
+import com.ktome.core.snapshot.FrontstageActionCueSnapshot
+import com.ktome.core.snapshot.FrontstageActionPrioritySnapshot
 import com.ktome.core.snapshot.FrontstageReadabilitySnapshot
 import com.ktome.core.snapshot.GridPointSnapshot
 import com.ktome.core.snapshot.MapCellSnapshot
@@ -174,7 +177,27 @@ class AsciiRenderModelTest {
                                 frontstageReadability =
                                     FrontstageReadabilitySnapshot(
                                         terrainHighlights = listOf(RenderTextTokenSnapshot("ui.hud.frontstage.terrain.water")),
-                                        recentActionHighlights = listOf(RenderTextTokenSnapshot("log.search.no_target")),
+                                        recentActionCues =
+                                            listOf(
+                                                FrontstageActionCueSnapshot(
+                                                    category = FrontstageActionCategorySnapshot.SEARCH,
+                                                    priority = FrontstageActionPrioritySnapshot.MEDIUM,
+                                                    stableKey = "search:no_target",
+                                                    message = RenderTextTokenSnapshot("log.search.no_target"),
+                                                ),
+                                                FrontstageActionCueSnapshot(
+                                                    category = FrontstageActionCategorySnapshot.SECRET,
+                                                    priority = FrontstageActionPrioritySnapshot.CRITICAL,
+                                                    stableKey = "secret:enter:test",
+                                                    message = RenderTextTokenSnapshot("ui.hud.frontstage.terrain.oil"),
+                                                ),
+                                                FrontstageActionCueSnapshot(
+                                                    category = FrontstageActionCategorySnapshot.PASSIVE,
+                                                    priority = FrontstageActionPrioritySnapshot.LOW,
+                                                    stableKey = "passive:test",
+                                                    message = RenderTextTokenSnapshot("ui.hud.frontstage.terrain.ice"),
+                                                ),
+                                            ),
                                     ),
                             ),
                     ),
@@ -185,6 +208,18 @@ class AsciiRenderModelTest {
         assertTrue(sidebarTexts.contains(localizer.text("ui.sidebar.frontstage")))
         assertTrue(sidebarTexts.any { text -> text.contains(localizer.text("ui.hud.frontstage.terrain.water")) })
         assertTrue(sidebarTexts.any { text -> text.contains(localizer.text("ui.inspect.passive.hp_regen_turn", "amount" to 2)) })
+        assertEquals(
+            AsciiTextTone.GREEN,
+            model.sidebarLines.first { line -> line.text.contains(localizer.text("log.search.no_target")) }.tone,
+        )
+        assertEquals(
+            AsciiTextTone.GOLD,
+            model.sidebarLines.first { line -> line.text.contains(localizer.text("ui.hud.frontstage.terrain.oil")) }.tone,
+        )
+        assertEquals(
+            AsciiTextTone.LIGHT_GRAY,
+            model.sidebarLines.first { line -> line.text.contains(localizer.text("ui.hud.frontstage.terrain.ice")) }.tone,
+        )
     }
 
     private fun sampleResolver(): VisualManifestResolver =

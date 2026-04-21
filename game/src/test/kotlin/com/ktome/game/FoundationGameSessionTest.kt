@@ -71,6 +71,8 @@ import com.ktome.core.resource.StaminaPools
 import com.ktome.core.save.SaveManager
 import com.ktome.core.save.SaveRestoreException
 import com.ktome.core.snapshot.CombatFeedbackTypeSnapshot
+import com.ktome.core.snapshot.FrontstageActionCategorySnapshot
+import com.ktome.core.snapshot.FrontstageActionPrioritySnapshot
 import com.ktome.core.snapshot.RewardPresentationSourceSnapshot
 import com.ktome.core.stats.StatsCalculator
 import com.ktome.core.talent.ActiveEffect
@@ -567,12 +569,16 @@ class FoundationGameSessionTest {
             listOf("ui.inspect.terrain.rule", "ui.inspect.terrain.tick_damage"),
             snapshot.uiState.frontstageReadability.terrainHighlights.map { token -> token.key },
         )
-        assertEquals(listOf("log.search.no_target"), snapshot.uiState.frontstageReadability.recentActionHighlights.map { token -> token.key })
+        val actionCue = snapshot.uiState.frontstageReadability.recentActionCues.single()
+        assertEquals("SEARCH", actionCue.category.name)
+        assertEquals("MEDIUM", actionCue.priority.name)
+        assertEquals("search:no_target", actionCue.stableKey)
+        assertEquals("log.search.no_target", actionCue.message.key)
 
-        repeat(4) {
+        repeat(3) {
             assertTrue(session.perform(PlayerCommand.Wait))
         }
-        assertTrue(session.renderSnapshot().uiState.frontstageReadability.recentActionHighlights.isEmpty())
+        assertTrue(session.renderSnapshot().uiState.frontstageReadability.recentActionCues.isEmpty())
     }
 
     @Test
@@ -591,8 +597,88 @@ class FoundationGameSessionTest {
 
         movePlayerTo(session, hiddenEntranceSearchPoint(session, entrance.bindingId))
         assertFalse(session.perform(PlayerCommand.Search))
-        assertEquals(emptyList<String>(), session.renderSnapshot().uiState.frontstageReadability.recentActionHighlights.map { token -> token.key })
+        assertEquals(emptyList<String>(), session.renderSnapshot().uiState.frontstageReadability.recentActionCues.map { cue -> cue.message.key })
         assertNotNull(logEventByKey(session, "log.search.already_resolved"))
+    }
+
+    @Test
+    fun `frontstage action cues dedup sort and expire by typed priority`() {
+        val session =
+            GameModule.newFoundationSession(
+                config = FoundationGameConfig(seed = 20260416L, zoneId = "greenwood_fringe", playerProfessionId = "rogue"),
+                saveManager = SaveManager(tempDir.resolve("frontstage-action-cue-contract-save")),
+            )
+        clearMonsters(session)
+
+        session.automationRecordFrontstageActionCueForVerification(
+            category = FrontstageActionCategorySnapshot.SEARCH,
+            priority = FrontstageActionPrioritySnapshot.MEDIUM,
+            stableKey = "probe:medium",
+            messageKey = "log.search.no_target",
+        )
+        session.automationRecordFrontstageActionCueForVerification(
+            category = FrontstageActionCategorySnapshot.PASSIVE,
+            priority = FrontstageActionPrioritySnapshot.LOW,
+            stableKey = "probe:low",
+            messageKey = "log.passive.hp_regen",
+        )
+        session.automationRecordFrontstageActionCueForVerification(
+            category = FrontstageActionCategorySnapshot.SECRET,
+            priority = FrontstageActionPrioritySnapshot.CRITICAL,
+            stableKey = "probe:critical",
+            messageKey = "log.hidden.secret_zone.enter",
+        )
+        session.automationRecordFrontstageActionCueForVerification(
+            category = FrontstageActionCategorySnapshot.SEARCH,
+            priority = FrontstageActionPrioritySnapshot.HIGH,
+            stableKey = "probe:high",
+            messageKey = "log.search.failed_tag",
+        )
+        session.automationRecordFrontstageActionCueForVerification(
+            category = FrontstageActionCategorySnapshot.SEARCH,
+            priority = FrontstageActionPrioritySnapshot.HIGH,
+            stableKey = "probe:high",
+            messageKey = "log.search.failed_tag",
+        )
+
+        val visibleKeys = session.renderSnapshot().uiState.frontstageReadability.recentActionCues.map { cue -> cue.stableKey }
+        assertEquals(listOf("probe:critical", "probe:high"), visibleKeys)
+        assertEquals(1, visibleKeys.count { stableKey -> stableKey == "probe:high" })
+
+        listOf(
+            FrontstageActionPrioritySnapshot.CRITICAL to 3,
+            FrontstageActionPrioritySnapshot.HIGH to 3,
+            FrontstageActionPrioritySnapshot.MEDIUM to 2,
+            FrontstageActionPrioritySnapshot.LOW to 1,
+        ).forEach { (priority, ttlTurns) ->
+            val ttlSession =
+                GameModule.newFoundationSession(
+                    config = FoundationGameConfig(seed = 20260416L, zoneId = "greenwood_fringe", playerProfessionId = "rogue"),
+                    saveManager = SaveManager(tempDir.resolve("frontstage-action-cue-ttl-${priority.name.lowercase()}")),
+                )
+            clearMonsters(ttlSession)
+            val stableKey = "ttl:${priority.name.lowercase()}"
+            ttlSession.automationRecordFrontstageActionCueForVerification(
+                category =
+                    when (priority) {
+                        FrontstageActionPrioritySnapshot.CRITICAL -> FrontstageActionCategorySnapshot.SECRET
+                        FrontstageActionPrioritySnapshot.HIGH -> FrontstageActionCategorySnapshot.SEARCH
+                        FrontstageActionPrioritySnapshot.MEDIUM -> FrontstageActionCategorySnapshot.SEARCH
+                        FrontstageActionPrioritySnapshot.LOW -> FrontstageActionCategorySnapshot.PASSIVE
+                    },
+                priority = priority,
+                stableKey = stableKey,
+                messageKey = "log.search.no_target",
+            )
+
+            assertTrue(ttlSession.hasVisibleFrontstageCue(stableKey))
+            repeat(ttlTurns) {
+                assertTrue(ttlSession.perform(PlayerCommand.Wait))
+            }
+            assertTrue(ttlSession.hasVisibleFrontstageCue(stableKey), "Expected $priority cue to survive its TTL boundary.")
+            assertTrue(ttlSession.perform(PlayerCommand.Wait))
+            assertFalse(ttlSession.hasVisibleFrontstageCue(stableKey), "Expected $priority cue to expire after its TTL boundary.")
+        }
     }
 
     @Test
@@ -2852,7 +2938,7 @@ class FoundationGameSessionTest {
     }
 
     @Test
-    fun `cache reward routing authority can emit the same capstone cue as support rewards`() {
+    fun `cache reward routing authority can emit the same capstone log as support rewards`() {
         val session =
             GameModule.newFoundationSession(
                 FoundationGameConfig(seed = 20260318L, zoneId = "underground_river", playerProfessionId = "arcanist"),
@@ -2939,9 +3025,14 @@ class FoundationGameSessionTest {
                             cachePoint,
                         )
                 },
-            )
+        )
         assertEquals(deterministicCapstoneBaseId, rewardSummary.baseItemId)
         assertNotNull(logEventByKey(session, "log.reward.capstone.non_weapon_anchor"))
+        assertTrue(
+            session.renderSnapshot().uiState.frontstageReadability.recentActionCues.none { cue ->
+                cue.stableKey.startsWith("passive:capstone_reward") || cue.message.key.startsWith("log.reward.capstone")
+            },
+        )
     }
 
     @Test
@@ -4225,7 +4316,7 @@ class FoundationGameSessionTest {
     }
 
     @Test
-    fun `elite capstone monster drops also emit profession anchor cue`() {
+    fun `elite capstone monster drops also emit profession anchor log`() {
         val session =
             GameModule.newFoundationSession(
                 FoundationGameConfig(seed = 20260318L, zoneId = "deep_iron_pit", playerProfessionId = "vanguard"),
@@ -4311,6 +4402,11 @@ class FoundationGameSessionTest {
         assertEquals(listOf(customCapstoneBaseId), groundItemBaseIdsAt(session, monsterPoint))
         assertNotNull(logEventByKey(session, "log.loot.monster_drop_quality"))
         assertNotNull(logEventByKey(session, "log.reward.capstone.anchor"))
+        assertTrue(
+            session.renderSnapshot().uiState.frontstageReadability.recentActionCues.none { cue ->
+                cue.stableKey.startsWith("passive:capstone_reward") || cue.message.key.startsWith("log.reward.capstone")
+            },
+        )
     }
 
     @Test
@@ -6964,6 +7060,9 @@ class FoundationGameSessionTest {
         key: String,
     ): com.ktome.core.snapshot.RenderLogEventSnapshot? =
         session.renderSnapshot().logEvents.firstOrNull { event -> event.message.key == key }
+
+    private fun FoundationGameSession.hasVisibleFrontstageCue(stableKey: String): Boolean =
+        renderSnapshot().uiState.frontstageReadability.recentActionCues.any { cue -> cue.stableKey == stableKey }
 
     private fun renderLogMessage(
         session: FoundationGameSession,

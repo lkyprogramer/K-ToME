@@ -3,7 +3,7 @@
     "baselineId": "phase4-scripted-hidden-owner-v1",
     "domainId": "hidden",
     "mode": "BUDGET_THRESHOLD",
-    "metricDefinitionVersion": "phase4-owner-metrics-v1",
+    "metricDefinitionVersion": "phase4-owner-metrics-v2",
     "approvedDebtKeys": [],
     "expectedFailureCodes": [],
     "ceilings": [],
@@ -12,10 +12,31 @@
             "metricId": "scriptedHiddenVerificationRate",
             "minValue": 1.0,
             "notes": "Scripted hidden verification is a correctness owner metric and must remain fully passing."
+        },
+        {
+            "metricId": "frontstageHighPriorityCueRetainedRate",
+            "minValue": 1.0,
+            "notes": "Every hidden-content case that should surface a high-priority search or secret cue must retain a CRITICAL/HIGH typed frontstage action cue."
+        },
+        {
+            "metricId": "frontstageCueDedupAppliedCount",
+            "minValue": 1.0,
+            "notes": "Focused duplicate stableKey probes must prove frontstage action cue replacement is active."
+        },
+        {
+            "metricId": "frontstageCueExpiryParity",
+            "minValue": 1.0,
+            "notes": "Focused TTL probes must prove typed priority expiry removes stale action cues on schedule."
+        },
+        {
+            "metricId": "frontstageSecretCueVisibilityRate",
+            "minValue": 1.0,
+            "notes": "Every entered secret-zone case must retain a SECRET typed frontstage action cue in the player-facing snapshot."
         }
     ],
     "notes": [
-        "Externalized from ReportPhase4Runner so Phase 4 owner evaluation no longer hard-codes hidden thresholds inside the phase aggregator."
+        "Externalized from ReportPhase4Runner so Phase 4 owner evaluation no longer hard-codes hidden thresholds inside the phase aggregator.",
+        "V2 adds V3-PR-05 frontstage typed action cue contract evidence to the hidden owner baseline."
     ],
     "metadata": {}
 }

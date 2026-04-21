@@ -20,6 +20,9 @@ import com.ktome.core.map.Point
 import com.ktome.core.resource.ResourceType
 import com.ktome.core.save.SaveManager
 import com.ktome.core.snapshot.CellVisibilitySnapshot
+import com.ktome.core.snapshot.FrontstageActionCategorySnapshot
+import com.ktome.core.snapshot.FrontstageActionCueSnapshot
+import com.ktome.core.snapshot.FrontstageActionPrioritySnapshot
 import com.ktome.core.snapshot.FrontstageReadabilitySnapshot
 import com.ktome.core.snapshot.OverlayShapeSnapshot
 import com.ktome.core.snapshot.RewardPresentationEntrySnapshot
@@ -110,7 +113,15 @@ class RenderSnapshotContractTest {
                                         ),
                                     ),
                                 terrainHighlights = listOf(RenderTextTokenSnapshot("ui.hud.frontstage.terrain.water")),
-                                recentActionHighlights = listOf(RenderTextTokenSnapshot("log.search.no_target")),
+                                recentActionCues =
+                                    listOf(
+                                        FrontstageActionCueSnapshot(
+                                            category = FrontstageActionCategorySnapshot.SEARCH,
+                                            priority = FrontstageActionPrioritySnapshot.MEDIUM,
+                                            stableKey = "search:no_target",
+                                            message = RenderTextTokenSnapshot("log.search.no_target"),
+                                        ),
+                                    ),
                             ),
                     ),
             )
@@ -120,7 +131,11 @@ class RenderSnapshotContractTest {
 
         assertEquals("ui.hud.frontstage.mutation_line", decoded.uiState.frontstageReadability.mutationHighlights.single().key)
         assertEquals("ui.inspect.passive.hp_regen_turn", decoded.uiState.recentRewards.single().detailText?.key)
-        assertEquals("log.search.no_target", decoded.uiState.frontstageReadability.recentActionHighlights.single().key)
+        val actionCue = decoded.uiState.frontstageReadability.recentActionCues.single()
+        assertEquals(FrontstageActionCategorySnapshot.SEARCH, actionCue.category)
+        assertEquals(FrontstageActionPrioritySnapshot.MEDIUM, actionCue.priority)
+        assertEquals("search:no_target", actionCue.stableKey)
+        assertEquals("log.search.no_target", actionCue.message.key)
     }
 
     @Test
