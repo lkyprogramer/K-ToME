@@ -2,12 +2,10 @@ package com.ktome.tools.mapgen
 
 import com.ktome.core.harness.whitebox.ArtifactRetentionPolicy
 import com.ktome.core.harness.whitebox.WhiteBoxAggregateReport
-import com.ktome.core.harness.whitebox.WhiteBoxAggregateRule
 import com.ktome.core.harness.whitebox.WhiteBoxAssertionResult
 import com.ktome.core.harness.whitebox.WhiteBoxCaseReport
 import com.ktome.core.harness.whitebox.WhiteBoxCaseRule
 import com.ktome.core.harness.whitebox.WhiteBoxCorpusSpec
-import com.ktome.core.harness.whitebox.WhiteBoxJoinKey
 import com.ktome.core.world.solvability.SearchActionResult
 import com.ktome.core.world.solvability.SolvabilityGraph
 import com.ktome.game.data.schema.ZoneSchemaV2
@@ -37,7 +35,6 @@ object WhiteBoxSolvabilityRunner {
     private const val DOMAIN_ID: String = "solvability"
     private const val SEEDS_PER_FLOOR: Int = 5
     private const val CORPUS_ID: String = "P4_OPT_PR05_SOLVABILITY_WHITEBOX"
-    private const val FAIL_COVERAGE_CASE_INDEX: Int = 0
     private val caseRules: List<WhiteBoxCaseRule<WhiteBoxSolvabilityCaseData>> =
         listOf(
             WhiteBoxCaseRule { caseData ->
@@ -155,76 +152,6 @@ object WhiteBoxSolvabilityRunner {
                 )
             },
         )
-    private val zoneFloorAggregateRules: List<WhiteBoxAggregateRule<WhiteBoxSolvabilityCaseData>> =
-        listOf(
-            WhiteBoxAggregateRule { groupedCases ->
-                val metrics = zoneFloorMetrics(groupedCases)
-                listOf(
-                    WhiteBoxAssertionResult(
-                        ruleId = "solvability.aggregate.zone_floor_case_count",
-                        passed = groupedCases.size == SEEDS_PER_FLOOR,
-                        message = "Each zone/floor corpus should contain $SEEDS_PER_FLOOR deterministic cases.",
-                        context = metrics,
-                    ),
-                    WhiteBoxAssertionResult(
-                        ruleId = "solvability.aggregate.zone_floor_critical_path_zero_failures",
-                        passed = metrics.intValue("criticalPathFailureCount") == 0,
-                        message = "Each zone/floor corpus keeps critical path failures at 0.",
-                        context = metrics,
-                    ),
-                    WhiteBoxAssertionResult(
-                        ruleId = "solvability.aggregate.zone_floor_explainable_proofs",
-                        passed = metrics.intValue("casesWithProofTrace") == groupedCases.size,
-                        message = "Each zone/floor corpus keeps a readable proof trace for every sampled case.",
-                        context = metrics,
-                    ),
-                    WhiteBoxAssertionResult(
-                        ruleId = "solvability.aggregate.zone_floor_hidden_anchor_families_resolved",
-                        passed = metrics.intValue("hiddenAnchorFamilyFailureCount") == 0,
-                        message = "Each zone/floor corpus resolves the formal hidden-anchor families required by the upgraded topology contract.",
-                        context = metrics,
-                    ),
-                )
-            },
-        )
-    private val corpusAggregateRules: List<WhiteBoxAggregateRule<WhiteBoxSolvabilityCaseData>> =
-        listOf(
-            WhiteBoxAggregateRule { caseData ->
-                val metrics = corpusMetrics(caseData)
-                listOf(
-                    WhiteBoxAssertionResult(
-                        ruleId = "solvability.aggregate.corpus_reveal_coverage",
-                        passed = metrics.intValue("casesWithReveal") > 0,
-                        message = "Corpus contains at least one reveal-success case.",
-                        context = metrics,
-                    ),
-                    WhiteBoxAssertionResult(
-                        ruleId = "solvability.aggregate.corpus_fail_coverage",
-                        passed = metrics.intValue("casesWithFail") > 0,
-                        message = "Corpus contains at least one failed-search case.",
-                        context = metrics,
-                    ),
-                    WhiteBoxAssertionResult(
-                        ruleId = "solvability.aggregate.corpus_backtrack_coverage",
-                        passed = metrics.intValue("casesWithBacktrackProof") > 0,
-                        message = "Corpus contains at least one OPTIONAL -> CRITICAL_PATH backtrack proof case.",
-                        context = metrics,
-                    ),
-                    WhiteBoxAssertionResult(
-                        ruleId = "solvability.aggregate.corpus_critical_path_zero_failures",
-                        passed = metrics.intValue("criticalPathFailureCount") == 0,
-                        message = "Corpus keeps critical path failures at 0.",
-                        context = metrics,
-                    ),
-                    WhiteBoxAssertionResult(
-                        ruleId = "solvability.aggregate.corpus_hidden_anchor_families_resolved",
-                        passed = metrics.intValue("hiddenAnchorFamilyFailureCount") == 0,
-                        message = "Corpus resolves the formal hidden-anchor families required by OPT PR-05 across all sampled cases.",
-                        context = metrics,
-                    ),
-                )
-            },
-        )
 
     fun run(): WhiteBoxSolvabilityRun {
         val outputDir = reportDir()
@@ -232,77 +159,107 @@ object WhiteBoxSolvabilityRunner {
 
         val executionContext = MapgenSmokeRunner.loadExecutionContext()
         val upgradedZones = executionContext.schemaCatalog.zones.filter(ZoneSchemaV2::isPhase4Upgraded).sortedBy(ZoneSchemaV2::id)
-        val cases =
-            SolvabilityHarnessRunner
-                .buildCases(
-                    upgradedZones = upgradedZones,
-                    primerDiscoveryTagsByZoneAndFloor = primerDiscoveryTagsByZoneAndFloor(executionContext.schemaCatalog, upgradedZones),
-                    requiredHiddenAnchorFamiliesByZoneAndFloor =
-                        requiredHiddenAnchorFamiliesByZoneAndFloor(executionContext.schemaCatalog, upgradedZones),
-                    seedsPerFloor = SEEDS_PER_FLOOR,
-                ).groupBy { testCase -> testCase.request.zoneId to testCase.request.floorIndex }
-                .toSortedMap(compareBy<Pair<String, Int>>({ key -> key.first }, { key -> key.second }))
-                .values
-                .flatMap { groupedCases ->
-                    groupedCases.mapIndexed { caseIndex, testCase ->
-                        if (caseIndex == FAIL_COVERAGE_CASE_INDEX) {
-                            testCase.copy(providedDiscoveryTags = emptySet())
-                        } else {
-                            testCase
-                        }
-                    }
-                }
-        val distinctSeedList = cases.map { case -> case.request.seed }.distinct()
-        require(distinctSeedList.size == cases.size) {
-            "whiteBoxSolvability corpus must keep a one-to-one seed corpus; got ${distinctSeedList.size} distinct seeds for ${cases.size} cases."
+        val requiredHiddenAnchorFamilies =
+            requiredHiddenAnchorFamiliesByZoneAndFloor(executionContext.schemaCatalog, upgradedZones)
+        val laneSpecs =
+            listOf(
+                WhiteBoxSolvabilitySuccessLane.buildSpec(
+                    cases =
+                        SolvabilityHarnessRunner.buildCases(
+                            upgradedZones = upgradedZones,
+                            primerDiscoveryTagsByZoneAndFloor = primerDiscoveryTagsByZoneAndFloor(executionContext.schemaCatalog, upgradedZones),
+                            requiredHiddenAnchorFamiliesByZoneAndFloor = requiredHiddenAnchorFamilies,
+                            seedsPerFloor = SEEDS_PER_FLOOR,
+                        ),
+                    expectedCaseCount = SEEDS_PER_FLOOR,
+                ),
+                WhiteBoxSolvabilityFailLane.buildSpec(
+                    cases =
+                        SolvabilityHarnessRunner.buildRevealFailCases(
+                            upgradedZones = upgradedZones,
+                            requiredHiddenAnchorFamiliesByZoneAndFloor = requiredHiddenAnchorFamilies,
+                            fixtureZoneFloors = WhiteBoxSolvabilityFailLane.fixtureZoneFloors(),
+                            seedsPerFloor = 1,
+                        ),
+                    expectedCaseCount = 1,
+                ),
+            )
+        laneSpecs.forEach { laneSpec ->
+            val distinctLaneSeeds = laneSpec.cases.map { case -> case.request.seed }.distinct()
+            require(distinctLaneSeeds.size == laneSpec.cases.size) {
+                "whiteBoxSolvability ${laneSpec.laneId} lane must keep a one-to-one seed corpus; got ${distinctLaneSeeds.size} distinct seeds for ${laneSpec.cases.size} cases."
+            }
         }
+        val distinctSeedList = laneSpecs.flatMap { lane -> lane.cases.map { case -> case.request.seed } }.distinct()
         val header =
             phase4HarnessHeader(harnessId = HARNESS_ID, seedList = distinctSeedList)
                 .toVerificationReportHeader(corpusId = CORPUS_ID)
         val corpus =
             WhiteBoxCorpusSpec(
                 corpusId = CORPUS_ID,
-                description = "First 5 deterministic solvability seeds per floor for the 4 Phase 4 upgraded zones after OPT PR-05 hidden primer and anchor alignment.",
-                sampleCount = cases.size,
+                description = "Dual-lane solvability corpus with full reveal-success coverage plus deterministic reveal-fail fixtures for fail-capable zone/floor pairs.",
+                sampleCount = laneSpecs.sumOf { lane -> lane.cases.size },
             )
-
-        val caseData =
-            cases.map { testCase ->
-                val executedCase = SolvabilityHarnessRunner.executeCase(executionContext, testCase)
-                val result = executedCase.toCaseResult()
-                WhiteBoxSolvabilityCaseData(
-                    executedCase = executedCase,
-                    result = result,
-                )
-            }
-        val caseReports =
-            caseData.map { caseDataEntry ->
-                val assertions = caseAssertions(caseDataEntry)
-                val artifacts =
-                    if (
-                        caseDataEntry.executedCase.generatedFloor != null &&
-                        WhiteBoxReportWriter.shouldWriteArtifacts(
-                            retentionPolicy = ArtifactRetentionPolicy.ALL,
-                            joinKey = caseDataEntry.joinKey,
-                            assertions = assertions,
+        val laneResults =
+            laneSpecs.map { laneSpec ->
+                val laneCaseData =
+                    laneSpec.cases.map { testCase ->
+                        val executedCase = SolvabilityHarnessRunner.executeCase(executionContext, testCase)
+                        val result = executedCase.toCaseResult()
+                        WhiteBoxSolvabilityCaseData(
+                            laneId = laneSpec.laneId,
+                            executedCase = executedCase,
+                            result = result,
                         )
-                    ) {
-                        writeArtifacts(
-                            outputDir = outputDir,
-                            caseData = caseDataEntry,
-                        )
-                    } else {
-                        emptyList()
                     }
-                WhiteBoxCaseReport(
-                    joinKey = caseDataEntry.joinKey,
-                    facts = caseFacts(caseDataEntry),
-                    fingerprints = fingerprints(caseDataEntry),
-                    assertions = assertions,
-                    artifacts = artifacts,
+                val laneCaseReports =
+                    laneCaseData.map { caseDataEntry ->
+                        val assertions = caseAssertions(caseDataEntry)
+                        val artifacts =
+                            if (
+                                caseDataEntry.executedCase.generatedFloor != null &&
+                                WhiteBoxReportWriter.shouldWriteArtifacts(
+                                    retentionPolicy = ArtifactRetentionPolicy.ALL,
+                                    joinKey = caseDataEntry.joinKey,
+                                    assertions = assertions,
+                                )
+                            ) {
+                                writeArtifacts(
+                                    outputDir = outputDir.resolve(laneSpec.laneId),
+                                    caseData = caseDataEntry,
+                                )
+                            } else {
+                                emptyList()
+                            }
+                        WhiteBoxCaseReport(
+                            joinKey = caseDataEntry.joinKey,
+                            facts = caseFacts(caseDataEntry),
+                            fingerprints = fingerprints(caseDataEntry),
+                            assertions = assertions,
+                            artifacts = artifacts,
+                        )
+                    }
+                val laneAggregates = buildAggregates(laneSpec, laneCaseData)
+                WhiteBoxReportWriter.write(
+                    WhiteBoxDomainWriteRequest(
+                        domainId = DOMAIN_ID,
+                        outputDir = outputDir.resolve(laneSpec.laneId),
+                        header = header.copy(corpusId = "$CORPUS_ID:${laneSpec.laneId}"),
+                        corpus =
+                            WhiteBoxCorpusSpec(
+                                corpusId = "$CORPUS_ID:${laneSpec.laneId}",
+                                description = laneSpec.description,
+                                sampleCount = laneCaseReports.size,
+                            ),
+                        cases = laneCaseReports,
+                        aggregates = laneAggregates,
+                        retentionPolicy = ArtifactRetentionPolicy.ALL,
+                    ),
                 )
+                laneCaseReports to laneAggregates
             }
-        val aggregates = buildAggregates(caseData)
+        val caseReports = laneResults.flatMap { (laneCaseReports, _) -> laneCaseReports.map { report -> report.copy(artifacts = emptyList()) } }
+        val aggregates = laneResults.flatMap { (_, laneAggregates) -> laneAggregates }
         val writeResult =
             WhiteBoxReportWriter.write(
                 WhiteBoxDomainWriteRequest(
@@ -312,7 +269,7 @@ object WhiteBoxSolvabilityRunner {
                     corpus = corpus,
                     cases = caseReports,
                     aggregates = aggregates,
-                    retentionPolicy = ArtifactRetentionPolicy.ALL,
+                    retentionPolicy = ArtifactRetentionPolicy.SUMMARY_ONLY,
                 ),
             )
         return WhiteBoxSolvabilityRun(
@@ -327,64 +284,35 @@ object WhiteBoxSolvabilityRunner {
     private fun caseAssertions(caseData: WhiteBoxSolvabilityCaseData): List<WhiteBoxAssertionResult> =
         WhiteBoxRuleEvaluator.evaluateCaseRules(caseData, caseRules)
 
-    private fun buildAggregates(caseData: List<WhiteBoxSolvabilityCaseData>): List<WhiteBoxAggregateReport> {
+    private fun buildAggregates(
+        laneSpec: WhiteBoxSolvabilityLaneSpec,
+        caseData: List<WhiteBoxSolvabilityCaseData>,
+    ): List<WhiteBoxAggregateReport> {
         val byZoneFloor = caseData.groupBy { data -> data.result.zoneId to data.result.floorIndex }
         val zoneFloorAggregates =
             byZoneFloor.toSortedMap(compareBy<Pair<String, Int>> { pair -> pair.first }.thenBy { pair -> pair.second })
                 .map { (zoneFloor, groupedCases) ->
                     WhiteBoxAggregateReport(
-                        groupId = "${zoneFloor.first}:floor-${zoneFloor.second}",
+                        groupId = "${laneSpec.laneId}:${zoneFloor.first}:floor-${zoneFloor.second}",
                         sampleCount = groupedCases.size,
-                        metrics = zoneFloorMetrics(groupedCases),
-                        assertions = WhiteBoxRuleEvaluator.evaluateAggregateRules(groupedCases, zoneFloorAggregateRules),
+                        metrics = whiteBoxSolvabilityZoneFloorMetrics(groupedCases),
+                        assertions = WhiteBoxRuleEvaluator.evaluateAggregateRules(groupedCases, laneSpec.zoneFloorAggregateRules),
                     )
                 }
         val corpusAggregate =
             WhiteBoxAggregateReport(
-                groupId = "corpus",
+                groupId = "${laneSpec.laneId}:corpus",
                 sampleCount = caseData.size,
-                metrics = corpusMetrics(caseData),
-                assertions = WhiteBoxRuleEvaluator.evaluateAggregateRules(caseData, corpusAggregateRules),
+                metrics = whiteBoxSolvabilityCorpusMetrics(caseData),
+                assertions = WhiteBoxRuleEvaluator.evaluateAggregateRules(caseData, laneSpec.corpusAggregateRules),
             )
         return zoneFloorAggregates + corpusAggregate
     }
 
-    private fun zoneFloorMetrics(caseData: List<WhiteBoxSolvabilityCaseData>): JsonObject =
-        buildJsonObject {
-            put("criticalPathFailureCount", caseData.count { data -> !data.result.criticalPathReachable })
-            put("backtrackProofCount", caseData.count { data -> data.result.backtrackSatisfied })
-            put(
-                "casesWithProofTrace",
-                caseData.count { data -> data.result.visitedNodes.isNotEmpty() },
-            )
-            put("casesWithReveal", caseData.count { data -> data.result.searchRevealCount > 0 })
-            put("casesWithFail", caseData.count { data -> data.result.searchFailCount > 0 })
-            put("hiddenAnchorFamilyFailureCount", caseData.count { data -> !data.result.hiddenAnchorFamiliesSatisfied })
-            put("maxReachabilityRatio", caseData.maxOfOrNull { data -> data.result.reachabilityRatio } ?: 0f)
-        }
-
-    private fun corpusMetrics(caseData: List<WhiteBoxSolvabilityCaseData>): JsonObject =
-        buildJsonObject {
-            put("criticalPathFailureCount", caseData.count { data -> !data.result.criticalPathReachable })
-            put("casesWithReveal", caseData.count { data -> data.result.searchRevealCount > 0 })
-            put("casesWithFail", caseData.count { data -> data.result.searchFailCount > 0 })
-            put("casesWithBacktrackProof", caseData.count { data -> data.result.backtrackSatisfied })
-            put("casesWithProofTrace", caseData.count { data -> data.result.visitedNodes.isNotEmpty() })
-            put("hiddenAnchorFamilyFailureCount", caseData.count { data -> !data.result.hiddenAnchorFamiliesSatisfied })
-            putJsonArray("providedDiscoveryTags") {
-                caseData.flatMapTo(linkedSetOf(), { data -> data.result.providedDiscoveryTags }).sorted().forEach { tag -> add(JsonPrimitive(tag)) }
-            }
-            putJsonArray("requiredHiddenAnchorFamilies") {
-                caseData.flatMapTo(linkedSetOf(), { data -> data.result.requiredHiddenAnchorFamilies }).sorted().forEach { family -> add(JsonPrimitive(family)) }
-            }
-            putJsonArray("observedHiddenAnchorFamilies") {
-                caseData.flatMapTo(linkedSetOf(), { data -> data.result.observedHiddenAnchorFamilies }).sorted().forEach { family -> add(JsonPrimitive(family)) }
-            }
-        }
-
     private fun caseFacts(caseData: WhiteBoxSolvabilityCaseData): JsonObject {
         val result = caseData.result
         return buildJsonObject {
+            put("laneId", caseData.laneId)
             put("seed", result.seed)
             put("zoneId", result.zoneId)
             put("floorIndex", result.floorIndex)
@@ -621,18 +549,3 @@ object WhiteBoxSolvabilityRunner {
         }
     }
 }
-
-private data class WhiteBoxSolvabilityCaseData(
-    val executedCase: SolvabilityExecutedCase,
-    val result: SolvabilityCaseResult,
-) {
-    val joinKey: WhiteBoxJoinKey
-        get() =
-            WhiteBoxJoinKey(
-                seed = result.seed,
-                zoneId = result.zoneId,
-                floorIndex = result.floorIndex,
-            )
-}
-
-private fun JsonObject.intValue(key: String): Int = (getValue(key) as JsonPrimitive).content.toInt()

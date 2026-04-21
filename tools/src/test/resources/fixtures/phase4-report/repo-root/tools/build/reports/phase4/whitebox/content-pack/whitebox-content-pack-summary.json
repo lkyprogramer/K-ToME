@@ -1,0 +1,172 @@
+{
+    "domainId": "content-pack",
+    "verdict": "PASS",
+    "failedCaseCount": 0,
+    "failedAggregateCount": 0,
+    "firstFailedJoinKey": null,
+    "header": {
+        "harnessId": "whiteBoxContentPack",
+        "phaseId": "P4",
+        "buildId": "phase4-opt-pr05-dev",
+        "locale": "en-US",
+        "corpusId": "P4_PR09_SAMPLE_CONTENT_PACK_WHITEBOX",
+        "timestamp": "2026-04-20T14:51:43.988916Z",
+        "activePackIds": [
+            "sample.flooded_relics",
+            "fixture.sample_flooded_relics_override",
+            "fixture.sample_flooded_relics_bias_split",
+            "fixture.legacy_v2_loot_profile",
+            "fixture.append_loot_pool",
+            "fixture.deny_hidden_event",
+            "fixture.duplicate_base_monster"
+        ],
+        "activePackManifestVersions": {
+            "sample.flooded_relics": "1.0.0",
+            "fixture.sample_flooded_relics_override": "1.0.0",
+            "fixture.sample_flooded_relics_bias_split": "1.0.0",
+            "fixture.legacy_v2_loot_profile": "1.0.0",
+            "fixture.append_loot_pool": "1.0.0",
+            "fixture.deny_hidden_event": "1.0.0",
+            "fixture.duplicate_base_monster": "1.0.0"
+        },
+        "contractVersions": [
+            {
+                "contractId": "contentSchema",
+                "version": "3"
+            },
+            {
+                "contractId": "topologyFingerprint",
+                "version": "2"
+            },
+            {
+                "contractId": "rewardLedger",
+                "version": "1"
+            },
+            {
+                "contractId": "lootFormula",
+                "version": "2"
+            },
+            {
+                "contractId": "specialTierEligibility",
+                "version": "2"
+            },
+            {
+                "contractId": "searchRule",
+                "version": "1"
+            },
+            {
+                "contractId": "secretRule",
+                "version": "2"
+            },
+            {
+                "contractId": "overlayContract",
+                "version": "1"
+            }
+        ],
+        "seedList": [
+            20260301,
+            20260304,
+            20260323,
+            20260302,
+            20260319
+        ]
+    },
+    "corpus": {
+        "corpusId": "P4_PR09_SAMPLE_CONTENT_PACK_WHITEBOX",
+        "description": "PR-09 content-pack white-box corpus covering the official sample pack, disabled fallback, precedence fixture, structured failure fixtures, merged asset keys, resource contract checks, and fixed-seed sample reward traces.",
+        "sampleCount": 13
+    },
+    "summary": {
+        "caseCount": 13,
+        "aggregateCount": 1,
+        "totalAssertions": 114,
+        "passedAssertions": 114,
+        "failedAssertions": 0,
+        "caseFailureCount": 0,
+        "aggregateFailureCount": 0,
+        "artifactCount": 65,
+        "retentionPolicy": "ALL"
+    },
+    "aggregates": [
+        {
+            "groupId": "corpus",
+            "sampleCount": 13,
+            "metrics": {
+                "successfulRuntimeCaseCount": 4,
+                "expectedFailureCaseCount": 9,
+                "diagnosticMismatchCount": 0,
+                "localeResolutionFailureCount": 0,
+                "visualResolutionFailureCount": 0,
+                "audioResolutionFailureCount": 0,
+                "headlessRunFailureCount": 0,
+                "fallbackFailureCount": 0,
+                "precedenceFailureCount": 0,
+                "resourceContractFailureCount": 0,
+                "generatedTemplateFailureCount": 0,
+                "legacyLootProfileSchemaRejectCount": 1,
+                "legacyLootProfileSchemaRejectSummaries": [
+                    {
+                        "fixtureId": "legacy_v2_loot_profile_rejected",
+                        "packId": "fixture.legacy_v2_loot_profile",
+                        "diagnosticCode": "content-pack.loot-profile.schema-version-mismatch",
+                        "targetProfileId": "loot.foundation.common",
+                        "actualSchemaVersion": "2",
+                        "expectedSchemaVersion": "3"
+                    }
+                ]
+            },
+            "assertions": [
+                {
+                    "ruleId": "content-pack.aggregate.expected_failures_accounted_for",
+                    "passed": true,
+                    "message": "All PR-09 failure fixtures emit the exact structured diagnostics documented by the content-pack contract."
+                },
+                {
+                    "ruleId": "content-pack.aggregate.runtime_sample_pack_path",
+                    "passed": true,
+                    "message": "Official sample pack, disabled fallback, precedence fixture, and split-bias fixture all execute through the formal loader path."
+                },
+                {
+                    "ruleId": "content-pack.aggregate.key_resolution_exact",
+                    "passed": true,
+                    "message": "Merged pack-local i18n / visual / audio keys resolve exactly without fallback or prefix rescue."
+                },
+                {
+                    "ruleId": "content-pack.aggregate.resource_contract_verified",
+                    "passed": true,
+                    "message": "PR-09 sample-pack plans, manifests, reports, and pack-root files stay aligned."
+                },
+                {
+                    "ruleId": "content-pack.aggregate.generated_template_present",
+                    "passed": true,
+                    "message": "Fixed-seed sample reward traces still reach sample_flooded_relics special templates."
+                },
+                {
+                    "ruleId": "content-pack.aggregate.precedence_verified",
+                    "passed": true,
+                    "message": "Dual-pack precedence and expected non-ADD overlay ops remain explainable."
+                },
+                {
+                    "ruleId": "content-pack.aggregate.legacy_loot_profile_schema_rejected",
+                    "passed": true,
+                    "message": "Legacy V2 loot profiles are rejected by the runtime loader with the dedicated schema mismatch diagnostic."
+                },
+                {
+                    "ruleId": "content-pack.aggregate.headless_run_stable",
+                    "passed": true,
+                    "message": "Fixed-seed headless start/save/reload passes for runtime-success fixtures."
+                },
+                {
+                    "ruleId": "content-pack.aggregate.base_fallback_verified",
+                    "passed": true,
+                    "message": "Disabling the official sample pack falls back to the base underground river secret zone."
+                },
+                {
+                    "ruleId": "content-pack.aggregate.no_unexpected_failures",
+                    "passed": true,
+                    "message": "No aggregate regressions remain after the PR-09 content-pack sweep."
+                }
+            ]
+        }
+    ]
+}

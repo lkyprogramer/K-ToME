@@ -1,0 +1,44 @@
+{
+    "schemaVersion": 1,
+    "baselineId": "opt-pr01-terrain-baseline-v2",
+    "domainId": "terrain",
+    "mode": "RELATIVE_BASELINE",
+    "metricDefinitionVersion": "phase4-terrain-v2",
+    "approvedDebtKeys": [],
+    "expectedFailureCodes": [],
+    "ceilings": [],
+    "expectedMetricRanges": [
+        {
+            "metricId": "terrainTaggedCombatExposureRate",
+            "baselineValue": 0.2259083728278041,
+            "targetRelativeIncrease": 0.5,
+            "numerator": 143,
+            "denominator": 633,
+            "numeratorLabel": "taggedCombatCount",
+            "denominatorLabel": "combatCount",
+            "sourceValueText": "22.6% (143/633)",
+            "normalizedFormula": "taggedCombatCount / combatCount"
+        },
+        {
+            "metricId": "terrainInteractionEncounterRate.aggregate",
+            "baselineValue": 0.1258741258741259,
+            "targetRelativeIncrease": 0.3,
+            "numerator": 18,
+            "denominator": 143,
+            "numeratorLabel": "triggeredInteractionCombatCount",
+            "denominatorLabel": "taggedCombatCount",
+            "sourceValueText": "2.8% (18/633) in source artifact; normalized to 18/143 for phase4-terrain-v2",
+            "normalizedFormula": "triggeredInteractionCombatCount / taggedCombatCount"
+        }
+    ],
+    "sourceArtifactPath": "tools/build/reports/phase4/phase4-summary.json",
+    "sourceBuildId": "phase4-opt-pr05-dev",
+    "sourceGeneratedAt": "2026-04-10T15:12:58.461342Z",
+    "notes": [
+        "This baseline freezes the OPT PR-01 terrain metrics provenance for PR-06 follow-up gates.",
+        "terrainTaggedCombatExposureRate is read directly from the source artifact as taggedCombatCount / combatCount.",
+        "terrainInteractionEncounterRate is normalized to triggeredInteractionCombatCount / taggedCombatCount so the baseline matches phase4-terrain-v2.",
+        "Migrated from docs/review/phase4/opt/baselines/2026-04-09-opt-pr01-terrain-metrics-baseline.json by scripts/migrate_verification_baseline.py."
+    ],
+    "metadata": {}
+}

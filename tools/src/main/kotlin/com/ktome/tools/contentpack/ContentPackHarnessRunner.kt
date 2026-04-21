@@ -32,6 +32,7 @@ import com.ktome.game.data.schema.SchemaCatalog
 import com.ktome.game.data.schema.SpecialItemTemplateSchemaV2
 import com.ktome.game.hidden.HiddenEventDef
 import com.ktome.game.hidden.HiddenEventRewardPayload
+import com.ktome.game.hidden.SecretRewardAuthority
 import com.ktome.game.hidden.SecretZoneDef
 import com.ktome.game.i18n.GameLocale
 import com.ktome.tools.mapgen.phase4HarnessHeader
@@ -922,7 +923,11 @@ object ContentPackHarnessRunner {
         hiddenEvent: HiddenEventDef?,
     ): String? {
         val reward = hiddenEvent?.rewards.orEmpty()
-        return if (reward.any { entry -> entry.payload is HiddenEventRewardPayload.SecretZoneReward }) secretZone?.rewardProfileId?.id else null
+        if (reward.none { entry -> entry.payload is HiddenEventRewardPayload.SecretZoneReward } || secretZone == null) {
+            return null
+        }
+        val resolvedReward = SecretRewardAuthority.resolve(secretZone = secretZone, hiddenEvent = hiddenEvent)
+        return resolvedReward.rewardProfileId.takeIf { resolvedReward.mismatchReason == null }
     }
 
     private fun verifySamplePackResourceContracts(): ResourceContractCheck {

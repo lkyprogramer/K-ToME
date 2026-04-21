@@ -1,0 +1,25 @@
+{
+    "schemaVersion": 1,
+    "baselineId": "phase4-terrain-per-zone-lower-bound-v1",
+    "domainId": "terrain",
+    "mode": "BUDGET_THRESHOLD",
+    "metricDefinitionVersion": "phase4-terrain-v2",
+    "approvedDebtKeys": [],
+    "expectedFailureCodes": [],
+    "ceilings": [],
+    "expectedMetricRanges": [
+        {
+            "metricId": "terrainInteractionEncounterRate.per_zone_lower_bound",
+            "maxValue": 0.0,
+            "notes": "Any failing combat-sampled zone is a regression for the per-zone lower-bound guardrail.",
+            "metadata": {
+                "perZoneEncounterLowerBoundTarget": 0.11
+            }
+        }
+    ],
+    "notes": [
+        "Externalized from ReportPhase4Runner so terrain per-zone guardrails are versioned review artifacts instead of inline Kotlin thresholds.",
+        "perZoneEncounterLowerBoundTarget is part of the baseline contract and must change together with this file when the owner gate is intentionally retuned."
+    ],
+    "metadata": {}
+}

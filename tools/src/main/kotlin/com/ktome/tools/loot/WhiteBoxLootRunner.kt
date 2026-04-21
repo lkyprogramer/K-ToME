@@ -7,6 +7,7 @@ import com.ktome.core.harness.whitebox.WhiteBoxCaseReport
 import com.ktome.core.harness.whitebox.WhiteBoxCorpusSpec
 import com.ktome.core.harness.whitebox.WhiteBoxJoinKey
 import com.ktome.game.data.DataLoader
+import com.ktome.game.hidden.SecretRewardAuthorityViolation
 import com.ktome.tools.phase4.Phase4OwnerBaselineRegistry
 import com.ktome.tools.phase4.Phase4OwnerMetricTargets
 import com.ktome.tools.phase4.requiredMetric

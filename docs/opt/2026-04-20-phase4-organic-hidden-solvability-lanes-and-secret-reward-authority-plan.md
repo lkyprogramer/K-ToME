@@ -577,9 +577,10 @@ SecretRewardAuthorityAssertions.scanCatalog(schemaCatalog): List<SecretRewardAut
 固定 contract：
 
 1. 由显式 fail fixtures / fail seeds 组成
-2. `casesWithFail > 0`
+2. lane 内全部 fixture 都必须保持 `casesWithFail == sampleCount`
 3. fail taxonomy / proof trace 可解释
 4. 不再要求 reveal-success coverage
+5. `greenwood_fringe` 若继续在无 primer 的正式 search 语义下稳定 reveal，则留在 success lane，不强行塞进 fail fixture corpus
 
 正式选型必须二选一并写入实现文档：
 
@@ -609,7 +610,7 @@ SecretRewardAuthorityAssertions.scanCatalog(schemaCatalog): List<SecretRewardAut
 1. success lane 与 fail lane 各有独立 aggregate assertion。
 2. success lane 不再保留 reveal-fail 的伪 requirement。
 3. fail lane 有稳定的 deterministic corpus，不依赖“主 corpus 自然碰巧出现 fail case”。
-4. fail lane seed / fixture 来源已冻结，并写进实现说明或对应 test fixture 说明。
+4. fail lane seed / fixture 来源已冻结，并写进实现说明或对应 test fixture 说明；当前冻结为 `abyssal_temple / deep_iron_pit / underground_river` 三个 fail-capable zone 的 `2 floor × 1 seed = 6` fixtures。
 
 ### 9.5 推荐验证
 
@@ -661,13 +662,16 @@ SecretRewardAuthorityAssertions.scanCatalog(schemaCatalog): List<SecretRewardAut
 5. `phase4Report` 只消费新的 organic hidden summary / payload contract。
 6. secret reward authority debug evidence 只消费 shared authority helper 的产物。
 7. 明确决策 canonical summary schema 是继续兼容 `report-phase4-v2` 还是 bump 到新 schema；不得隐式漂移。
-8. 若 schema / field set / baseline input 发生变化，同批次同步更新：
+9. 当前落地决策：
+   - `whiteBoxSolvability` 保持单个 producer task，root summary 与 report 改为消费 lane-aware artifact
+   - canonical summary schema 继续保持 `report-phase4-v2`；本 PR 只做 consumer wording / markdown / checklist cutover，不做 schema bump
+10. 若 schema / field set / baseline input 发生变化，同批次同步更新：
    - `Phase4AggregationManifest*`
    - `Phase4RegistryConsistencyTest`
    - `ReportPhase4BuildContractTest`
    - `Phase4MetricCatalog`
    - 必要的 baseline / materialization contract tests
-9. 若 baseline 需要重刷，必须同批次提交到 `docs/review/phase4/opt/baselines/` 对应文件，不允许跨 PR 残留“代码新结构、baseline 旧结构”的过渡态。
+11. 若 baseline 需要重刷，必须同批次提交到 `docs/review/phase4/opt/baselines/` 对应文件，不允许跨 PR 残留“代码新结构、baseline 旧结构”的过渡态。
 
 #### Task 2：compat cleanup
 

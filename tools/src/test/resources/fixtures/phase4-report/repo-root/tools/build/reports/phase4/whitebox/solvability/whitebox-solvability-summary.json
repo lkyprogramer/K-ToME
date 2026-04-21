@@ -1,0 +1,1283 @@
+{
+    "domainId": "solvability",
+    "verdict": "PASS",
+    "failedCaseCount": 0,
+    "failedAggregateCount": 0,
+    "firstFailedJoinKey": null,
+    "header": {
+        "harnessId": "whiteBoxSolvability",
+        "phaseId": "P4",
+        "buildId": "phase4-opt-pr05-dev",
+        "locale": "zh-CN",
+        "corpusId": "P4_OPT_PR05_SOLVABILITY_WHITEBOX",
+        "timestamp": "2026-04-20T14:50:23.425920Z",
+        "activePackIds": [],
+        "activePackManifestVersions": {},
+        "contractVersions": [
+            {
+                "contractId": "contentSchema",
+                "version": "3"
+            },
+            {
+                "contractId": "topologyFingerprint",
+                "version": "2"
+            },
+            {
+                "contractId": "rewardLedger",
+                "version": "1"
+            },
+            {
+                "contractId": "lootFormula",
+                "version": "2"
+            },
+            {
+                "contractId": "specialTierEligibility",
+                "version": "2"
+            },
+            {
+                "contractId": "searchRule",
+                "version": "1"
+            },
+            {
+                "contractId": "secretRule",
+                "version": "2"
+            },
+            {
+                "contractId": "overlayContract",
+                "version": "1"
+            }
+        ],
+        "seedList": [
+            20260404020000,
+            20260404020001,
+            20260404020002,
+            20260404020003,
+            20260404020004,
+            20260404030000,
+            20260404030001,
+            20260404030002,
+            20260404030003,
+            20260404030004,
+            20260405020000,
+            20260405020001,
+            20260405020002,
+            20260405020003,
+            20260405020004,
+            20260405030000,
+            20260405030001,
+            20260405030002,
+            20260405030003,
+            20260405030004,
+            20260406020000,
+            20260406020001,
+            20260406020002,
+            20260406020003,
+            20260406020004,
+            20260406030000,
+            20260406030001,
+            20260406030002,
+            20260406030003,
+            20260406030004,
+            20260407020000,
+            20260407020001,
+            20260407020002,
+            20260407020003,
+            20260407020004,
+            20260407030000,
+            20260407030001,
+            20260407030002,
+            20260407030003,
+            20260407030004
+        ]
+    },
+    "corpus": {
+        "corpusId": "P4_OPT_PR05_SOLVABILITY_WHITEBOX",
+        "description": "Dual-lane solvability corpus for the 4 Phase 4 upgraded zones with separate reveal-success and reveal-fail evidence.",
+        "sampleCount": 48
+    },
+    "summary": {
+        "caseCount": 48,
+        "aggregateCount": 18,
+        "totalAssertions": 439,
+        "passedAssertions": 439,
+        "failedAssertions": 0,
+        "caseFailureCount": 0,
+        "aggregateFailureCount": 0,
+        "artifactCount": 0,
+        "retentionPolicy": "SUMMARY_ONLY"
+    },
+    "aggregates": [
+        {
+            "groupId": "reveal-success:abyssal_temple:floor-1",
+            "sampleCount": 5,
+            "metrics": {
+                "criticalPathFailureCount": 0,
+                "backtrackProofCount": 5,
+                "casesWithProofTrace": 5,
+                "casesWithReveal": 5,
+                "casesWithFail": 0,
+                "hiddenAnchorFamilyFailureCount": 0,
+                "maxReachabilityRatio": 1.0
+            },
+            "assertions": [
+                {
+                    "ruleId": "solvability.aggregate.reveal_success.zone_floor_case_count",
+                    "passed": true,
+                    "message": "Each reveal-success zone/floor corpus should contain 5 deterministic cases.",
+                    "context": {
+                        "criticalPathFailureCount": 0,
+                        "backtrackProofCount": 5,
+                        "casesWithProofTrace": 5,
+                        "casesWithReveal": 5,
+                        "casesWithFail": 0,
+                        "hiddenAnchorFamilyFailureCount": 0,
+                        "maxReachabilityRatio": 1.0
+                    }
+                },
+                {
+                    "ruleId": "solvability.aggregate.reveal_success.zone_floor_critical_path_zero_failures",
+                    "passed": true,
+                    "message": "Reveal-success zone/floor corpus keeps critical path failures at 0.",
+                    "context": {
+                        "criticalPathFailureCount": 0,
+                        "backtrackProofCount": 5,
+                        "casesWithProofTrace": 5,
+                        "casesWithReveal": 5,
+                        "casesWithFail": 0,
+                        "hiddenAnchorFamilyFailureCount": 0,
+                        "maxReachabilityRatio": 1.0
+                    }
+                },
+                {
+                    "ruleId": "solvability.aggregate.reveal_success.zone_floor_explainable_proofs",
+                    "passed": true,
+                    "message": "Reveal-success zone/floor corpus keeps a readable proof trace for every sampled case.",
+                    "context": {
+                        "criticalPathFailureCount": 0,
+                        "backtrackProofCount": 5,
+                        "casesWithProofTrace": 5,
+                        "casesWithReveal": 5,
+                        "casesWithFail": 0,
+                        "hiddenAnchorFamilyFailureCount": 0,
+                        "maxReachabilityRatio": 1.0
+                    }
+                },
+                {
+                    "ruleId": "solvability.aggregate.reveal_success.zone_floor_hidden_anchor_families_resolved",
+                    "passed": true,
+                    "message": "Reveal-success zone/floor corpus resolves the formal hidden-anchor families required by the upgraded topology contract.",
+                    "context": {
+                        "criticalPathFailureCount": 0,
+                        "backtrackProofCount": 5,
+                        "casesWithProofTrace": 5,
+                        "casesWithReveal": 5,
+                        "casesWithFail": 0,
+                        "hiddenAnchorFamilyFailureCount": 0,
+                        "maxReachabilityRatio": 1.0
+                    }
+                }
+            ]
+        },
+        {
+            "groupId": "reveal-success:abyssal_temple:floor-2",
+            "sampleCount": 5,
+            "metrics": {
+                "criticalPathFailureCount": 0,
+                "backtrackProofCount": 5,
+                "casesWithProofTrace": 5,
+                "casesWithReveal": 5,
+                "casesWithFail": 0,
+                "hiddenAnchorFamilyFailureCount": 0,
+                "maxReachabilityRatio": 1.0
+            },
+            "assertions": [
+                {
+                    "ruleId": "solvability.aggregate.reveal_success.zone_floor_case_count",
+                    "passed": true,
+                    "message": "Each reveal-success zone/floor corpus should contain 5 deterministic cases.",
+                    "context": {
+                        "criticalPathFailureCount": 0,
+                        "backtrackProofCount": 5,
+                        "casesWithProofTrace": 5,
+                        "casesWithReveal": 5,
+                        "casesWithFail": 0,
+                        "hiddenAnchorFamilyFailureCount": 0,
+                        "maxReachabilityRatio": 1.0
+                    }
+                },
+                {
+                    "ruleId": "solvability.aggregate.reveal_success.zone_floor_critical_path_zero_failures",
+                    "passed": true,
+                    "message": "Reveal-success zone/floor corpus keeps critical path failures at 0.",
+                    "context": {
+                        "criticalPathFailureCount": 0,
+                        "backtrackProofCount": 5,
+                        "casesWithProofTrace": 5,
+                        "casesWithReveal": 5,
+                        "casesWithFail": 0,
+                        "hiddenAnchorFamilyFailureCount": 0,
+                        "maxReachabilityRatio": 1.0
+                    }
+                },
+                {
+                    "ruleId": "solvability.aggregate.reveal_success.zone_floor_explainable_proofs",
+                    "passed": true,
+                    "message": "Reveal-success zone/floor corpus keeps a readable proof trace for every sampled case.",
+                    "context": {
+                        "criticalPathFailureCount": 0,
+                        "backtrackProofCount": 5,
+                        "casesWithProofTrace": 5,
+                        "casesWithReveal": 5,
+                        "casesWithFail": 0,
+                        "hiddenAnchorFamilyFailureCount": 0,
+                        "maxReachabilityRatio": 1.0
+                    }
+                },
+                {
+                    "ruleId": "solvability.aggregate.reveal_success.zone_floor_hidden_anchor_families_resolved",
+                    "passed": true,
+                    "message": "Reveal-success zone/floor corpus resolves the formal hidden-anchor families required by the upgraded topology contract.",
+                    "context": {
+                        "criticalPathFailureCount": 0,
+                        "backtrackProofCount": 5,
+                        "casesWithProofTrace": 5,
+                        "casesWithReveal": 5,
+                        "casesWithFail": 0,
+                        "hiddenAnchorFamilyFailureCount": 0,
+                        "maxReachabilityRatio": 1.0
+                    }
+                }
+            ]
+        },
+        {
+            "groupId": "reveal-success:deep_iron_pit:floor-1",
+            "sampleCount": 5,
+            "metrics": {
+                "criticalPathFailureCount": 0,
+                "backtrackProofCount": 5,
+                "casesWithProofTrace": 5,
+                "casesWithReveal": 5,
+                "casesWithFail": 0,
+                "hiddenAnchorFamilyFailureCount": 0,
+                "maxReachabilityRatio": 1.0
+            },
+            "assertions": [
+                {
+                    "ruleId": "solvability.aggregate.reveal_success.zone_floor_case_count",
+                    "passed": true,
+                    "message": "Each reveal-success zone/floor corpus should contain 5 deterministic cases.",
+                    "context": {
+                        "criticalPathFailureCount": 0,
+                        "backtrackProofCount": 5,
+                        "casesWithProofTrace": 5,
+                        "casesWithReveal": 5,
+                        "casesWithFail": 0,
+                        "hiddenAnchorFamilyFailureCount": 0,
+                        "maxReachabilityRatio": 1.0
+                    }
+                },
+                {
+                    "ruleId": "solvability.aggregate.reveal_success.zone_floor_critical_path_zero_failures",
+                    "passed": true,
+                    "message": "Reveal-success zone/floor corpus keeps critical path failures at 0.",
+                    "context": {
+                        "criticalPathFailureCount": 0,
+                        "backtrackProofCount": 5,
+                        "casesWithProofTrace": 5,
+                        "casesWithReveal": 5,
+                        "casesWithFail": 0,
+                        "hiddenAnchorFamilyFailureCount": 0,
+                        "maxReachabilityRatio": 1.0
+                    }
+                },
+                {
+                    "ruleId": "solvability.aggregate.reveal_success.zone_floor_explainable_proofs",
+                    "passed": true,
+                    "message": "Reveal-success zone/floor corpus keeps a readable proof trace for every sampled case.",
+                    "context": {
+                        "criticalPathFailureCount": 0,
+                        "backtrackProofCount": 5,
+                        "casesWithProofTrace": 5,
+                        "casesWithReveal": 5,
+                        "casesWithFail": 0,
+                        "hiddenAnchorFamilyFailureCount": 0,
+                        "maxReachabilityRatio": 1.0
+                    }
+                },
+                {
+                    "ruleId": "solvability.aggregate.reveal_success.zone_floor_hidden_anchor_families_resolved",
+                    "passed": true,
+                    "message": "Reveal-success zone/floor corpus resolves the formal hidden-anchor families required by the upgraded topology contract.",
+                    "context": {
+                        "criticalPathFailureCount": 0,
+                        "backtrackProofCount": 5,
+                        "casesWithProofTrace": 5,
+                        "casesWithReveal": 5,
+                        "casesWithFail": 0,
+                        "hiddenAnchorFamilyFailureCount": 0,
+                        "maxReachabilityRatio": 1.0
+                    }
+                }
+            ]
+        },
+        {
+            "groupId": "reveal-success:deep_iron_pit:floor-2",
+            "sampleCount": 5,
+            "metrics": {
+                "criticalPathFailureCount": 0,
+                "backtrackProofCount": 5,
+                "casesWithProofTrace": 5,
+                "casesWithReveal": 5,
+                "casesWithFail": 0,
+                "hiddenAnchorFamilyFailureCount": 0,
+                "maxReachabilityRatio": 1.0
+            },
+            "assertions": [
+                {
+                    "ruleId": "solvability.aggregate.reveal_success.zone_floor_case_count",
+                    "passed": true,
+                    "message": "Each reveal-success zone/floor corpus should contain 5 deterministic cases.",
+                    "context": {
+                        "criticalPathFailureCount": 0,
+                        "backtrackProofCount": 5,
+                        "casesWithProofTrace": 5,
+                        "casesWithReveal": 5,
+                        "casesWithFail": 0,
+                        "hiddenAnchorFamilyFailureCount": 0,
+                        "maxReachabilityRatio": 1.0
+                    }
+                },
+                {
+                    "ruleId": "solvability.aggregate.reveal_success.zone_floor_critical_path_zero_failures",
+                    "passed": true,
+                    "message": "Reveal-success zone/floor corpus keeps critical path failures at 0.",
+                    "context": {
+                        "criticalPathFailureCount": 0,
+                        "backtrackProofCount": 5,
+                        "casesWithProofTrace": 5,
+                        "casesWithReveal": 5,
+                        "casesWithFail": 0,
+                        "hiddenAnchorFamilyFailureCount": 0,
+                        "maxReachabilityRatio": 1.0
+                    }
+                },
+                {
+                    "ruleId": "solvability.aggregate.reveal_success.zone_floor_explainable_proofs",
+                    "passed": true,
+                    "message": "Reveal-success zone/floor corpus keeps a readable proof trace for every sampled case.",
+                    "context": {
+                        "criticalPathFailureCount": 0,
+                        "backtrackProofCount": 5,
+                        "casesWithProofTrace": 5,
+                        "casesWithReveal": 5,
+                        "casesWithFail": 0,
+                        "hiddenAnchorFamilyFailureCount": 0,
+                        "maxReachabilityRatio": 1.0
+                    }
+                },
+                {
+                    "ruleId": "solvability.aggregate.reveal_success.zone_floor_hidden_anchor_families_resolved",
+                    "passed": true,
+                    "message": "Reveal-success zone/floor corpus resolves the formal hidden-anchor families required by the upgraded topology contract.",
+                    "context": {
+                        "criticalPathFailureCount": 0,
+                        "backtrackProofCount": 5,
+                        "casesWithProofTrace": 5,
+                        "casesWithReveal": 5,
+                        "casesWithFail": 0,
+                        "hiddenAnchorFamilyFailureCount": 0,
+                        "maxReachabilityRatio": 1.0
+                    }
+                }
+            ]
+        },
+        {
+            "groupId": "reveal-success:greenwood_fringe:floor-1",
+            "sampleCount": 5,
+            "metrics": {
+                "criticalPathFailureCount": 0,
+                "backtrackProofCount": 5,
+                "casesWithProofTrace": 5,
+                "casesWithReveal": 5,
+                "casesWithFail": 0,
+                "hiddenAnchorFamilyFailureCount": 0,
+                "maxReachabilityRatio": 1.0
+            },
+            "assertions": [
+                {
+                    "ruleId": "solvability.aggregate.reveal_success.zone_floor_case_count",
+                    "passed": true,
+                    "message": "Each reveal-success zone/floor corpus should contain 5 deterministic cases.",
+                    "context": {
+                        "criticalPathFailureCount": 0,
+                        "backtrackProofCount": 5,
+                        "casesWithProofTrace": 5,
+                        "casesWithReveal": 5,
+                        "casesWithFail": 0,
+                        "hiddenAnchorFamilyFailureCount": 0,
+                        "maxReachabilityRatio": 1.0
+                    }
+                },
+                {
+                    "ruleId": "solvability.aggregate.reveal_success.zone_floor_critical_path_zero_failures",
+                    "passed": true,
+                    "message": "Reveal-success zone/floor corpus keeps critical path failures at 0.",
+                    "context": {
+                        "criticalPathFailureCount": 0,
+                        "backtrackProofCount": 5,
+                        "casesWithProofTrace": 5,
+                        "casesWithReveal": 5,
+                        "casesWithFail": 0,
+                        "hiddenAnchorFamilyFailureCount": 0,
+                        "maxReachabilityRatio": 1.0
+                    }
+                },
+                {
+                    "ruleId": "solvability.aggregate.reveal_success.zone_floor_explainable_proofs",
+                    "passed": true,
+                    "message": "Reveal-success zone/floor corpus keeps a readable proof trace for every sampled case.",
+                    "context": {
+                        "criticalPathFailureCount": 0,
+                        "backtrackProofCount": 5,
+                        "casesWithProofTrace": 5,
+                        "casesWithReveal": 5,
+                        "casesWithFail": 0,
+                        "hiddenAnchorFamilyFailureCount": 0,
+                        "maxReachabilityRatio": 1.0
+                    }
+                },
+                {
+                    "ruleId": "solvability.aggregate.reveal_success.zone_floor_hidden_anchor_families_resolved",
+                    "passed": true,
+                    "message": "Reveal-success zone/floor corpus resolves the formal hidden-anchor families required by the upgraded topology contract.",
+                    "context": {
+                        "criticalPathFailureCount": 0,
+                        "backtrackProofCount": 5,
+                        "casesWithProofTrace": 5,
+                        "casesWithReveal": 5,
+                        "casesWithFail": 0,
+                        "hiddenAnchorFamilyFailureCount": 0,
+                        "maxReachabilityRatio": 1.0
+                    }
+                }
+            ]
+        },
+        {
+            "groupId": "reveal-success:greenwood_fringe:floor-2",
+            "sampleCount": 5,
+            "metrics": {
+                "criticalPathFailureCount": 0,
+                "backtrackProofCount": 5,
+                "casesWithProofTrace": 5,
+                "casesWithReveal": 5,
+                "casesWithFail": 0,
+                "hiddenAnchorFamilyFailureCount": 0,
+                "maxReachabilityRatio": 1.0
+            },
+            "assertions": [
+                {
+                    "ruleId": "solvability.aggregate.reveal_success.zone_floor_case_count",
+                    "passed": true,
+                    "message": "Each reveal-success zone/floor corpus should contain 5 deterministic cases.",
+                    "context": {
+                        "criticalPathFailureCount": 0,
+                        "backtrackProofCount": 5,
+                        "casesWithProofTrace": 5,
+                        "casesWithReveal": 5,
+                        "casesWithFail": 0,
+                        "hiddenAnchorFamilyFailureCount": 0,
+                        "maxReachabilityRatio": 1.0
+                    }
+                },
+                {
+                    "ruleId": "solvability.aggregate.reveal_success.zone_floor_critical_path_zero_failures",
+                    "passed": true,
+                    "message": "Reveal-success zone/floor corpus keeps critical path failures at 0.",
+                    "context": {
+                        "criticalPathFailureCount": 0,
+                        "backtrackProofCount": 5,
+                        "casesWithProofTrace": 5,
+                        "casesWithReveal": 5,
+                        "casesWithFail": 0,
+                        "hiddenAnchorFamilyFailureCount": 0,
+                        "maxReachabilityRatio": 1.0
+                    }
+                },
+                {
+                    "ruleId": "solvability.aggregate.reveal_success.zone_floor_explainable_proofs",
+                    "passed": true,
+                    "message": "Reveal-success zone/floor corpus keeps a readable proof trace for every sampled case.",
+                    "context": {
+                        "criticalPathFailureCount": 0,
+                        "backtrackProofCount": 5,
+                        "casesWithProofTrace": 5,
+                        "casesWithReveal": 5,
+                        "casesWithFail": 0,
+                        "hiddenAnchorFamilyFailureCount": 0,
+                        "maxReachabilityRatio": 1.0
+                    }
+                },
+                {
+                    "ruleId": "solvability.aggregate.reveal_success.zone_floor_hidden_anchor_families_resolved",
+                    "passed": true,
+                    "message": "Reveal-success zone/floor corpus resolves the formal hidden-anchor families required by the upgraded topology contract.",
+                    "context": {
+                        "criticalPathFailureCount": 0,
+                        "backtrackProofCount": 5,
+                        "casesWithProofTrace": 5,
+                        "casesWithReveal": 5,
+                        "casesWithFail": 0,
+                        "hiddenAnchorFamilyFailureCount": 0,
+                        "maxReachabilityRatio": 1.0
+                    }
+                }
+            ]
+        },
+        {
+            "groupId": "reveal-success:underground_river:floor-1",
+            "sampleCount": 5,
+            "metrics": {
+                "criticalPathFailureCount": 0,
+                "backtrackProofCount": 5,
+                "casesWithProofTrace": 5,
+                "casesWithReveal": 5,
+                "casesWithFail": 0,
+                "hiddenAnchorFamilyFailureCount": 0,
+                "maxReachabilityRatio": 1.0
+            },
+            "assertions": [
+                {
+                    "ruleId": "solvability.aggregate.reveal_success.zone_floor_case_count",
+                    "passed": true,
+                    "message": "Each reveal-success zone/floor corpus should contain 5 deterministic cases.",
+                    "context": {
+                        "criticalPathFailureCount": 0,
+                        "backtrackProofCount": 5,
+                        "casesWithProofTrace": 5,
+                        "casesWithReveal": 5,
+                        "casesWithFail": 0,
+                        "hiddenAnchorFamilyFailureCount": 0,
+                        "maxReachabilityRatio": 1.0
+                    }
+                },
+                {
+                    "ruleId": "solvability.aggregate.reveal_success.zone_floor_critical_path_zero_failures",
+                    "passed": true,
+                    "message": "Reveal-success zone/floor corpus keeps critical path failures at 0.",
+                    "context": {
+                        "criticalPathFailureCount": 0,
+                        "backtrackProofCount": 5,
+                        "casesWithProofTrace": 5,
+                        "casesWithReveal": 5,
+                        "casesWithFail": 0,
+                        "hiddenAnchorFamilyFailureCount": 0,
+                        "maxReachabilityRatio": 1.0
+                    }
+                },
+                {
+                    "ruleId": "solvability.aggregate.reveal_success.zone_floor_explainable_proofs",
+                    "passed": true,
+                    "message": "Reveal-success zone/floor corpus keeps a readable proof trace for every sampled case.",
+                    "context": {
+                        "criticalPathFailureCount": 0,
+                        "backtrackProofCount": 5,
+                        "casesWithProofTrace": 5,
+                        "casesWithReveal": 5,
+                        "casesWithFail": 0,
+                        "hiddenAnchorFamilyFailureCount": 0,
+                        "maxReachabilityRatio": 1.0
+                    }
+                },
+                {
+                    "ruleId": "solvability.aggregate.reveal_success.zone_floor_hidden_anchor_families_resolved",
+                    "passed": true,
+                    "message": "Reveal-success zone/floor corpus resolves the formal hidden-anchor families required by the upgraded topology contract.",
+                    "context": {
+                        "criticalPathFailureCount": 0,
+                        "backtrackProofCount": 5,
+                        "casesWithProofTrace": 5,
+                        "casesWithReveal": 5,
+                        "casesWithFail": 0,
+                        "hiddenAnchorFamilyFailureCount": 0,
+                        "maxReachabilityRatio": 1.0
+                    }
+                }
+            ]
+        },
+        {
+            "groupId": "reveal-success:underground_river:floor-2",
+            "sampleCount": 5,
+            "metrics": {
+                "criticalPathFailureCount": 0,
+                "backtrackProofCount": 5,
+                "casesWithProofTrace": 5,
+                "casesWithReveal": 5,
+                "casesWithFail": 0,
+                "hiddenAnchorFamilyFailureCount": 0,
+                "maxReachabilityRatio": 1.0
+            },
+            "assertions": [
+                {
+                    "ruleId": "solvability.aggregate.reveal_success.zone_floor_case_count",
+                    "passed": true,
+                    "message": "Each reveal-success zone/floor corpus should contain 5 deterministic cases.",
+                    "context": {
+                        "criticalPathFailureCount": 0,
+                        "backtrackProofCount": 5,
+                        "casesWithProofTrace": 5,
+                        "casesWithReveal": 5,
+                        "casesWithFail": 0,
+                        "hiddenAnchorFamilyFailureCount": 0,
+                        "maxReachabilityRatio": 1.0
+                    }
+                },
+                {
+                    "ruleId": "solvability.aggregate.reveal_success.zone_floor_critical_path_zero_failures",
+                    "passed": true,
+                    "message": "Reveal-success zone/floor corpus keeps critical path failures at 0.",
+                    "context": {
+                        "criticalPathFailureCount": 0,
+                        "backtrackProofCount": 5,
+                        "casesWithProofTrace": 5,
+                        "casesWithReveal": 5,
+                        "casesWithFail": 0,
+                        "hiddenAnchorFamilyFailureCount": 0,
+                        "maxReachabilityRatio": 1.0
+                    }
+                },
+                {
+                    "ruleId": "solvability.aggregate.reveal_success.zone_floor_explainable_proofs",
+                    "passed": true,
+                    "message": "Reveal-success zone/floor corpus keeps a readable proof trace for every sampled case.",
+                    "context": {
+                        "criticalPathFailureCount": 0,
+                        "backtrackProofCount": 5,
+                        "casesWithProofTrace": 5,
+                        "casesWithReveal": 5,
+                        "casesWithFail": 0,
+                        "hiddenAnchorFamilyFailureCount": 0,
+                        "maxReachabilityRatio": 1.0
+                    }
+                },
+                {
+                    "ruleId": "solvability.aggregate.reveal_success.zone_floor_hidden_anchor_families_resolved",
+                    "passed": true,
+                    "message": "Reveal-success zone/floor corpus resolves the formal hidden-anchor families required by the upgraded topology contract.",
+                    "context": {
+                        "criticalPathFailureCount": 0,
+                        "backtrackProofCount": 5,
+                        "casesWithProofTrace": 5,
+                        "casesWithReveal": 5,
+                        "casesWithFail": 0,
+                        "hiddenAnchorFamilyFailureCount": 0,
+                        "maxReachabilityRatio": 1.0
+                    }
+                }
+            ]
+        },
+        {
+            "groupId": "reveal-success:corpus",
+            "sampleCount": 40,
+            "metrics": {
+                "criticalPathFailureCount": 0,
+                "casesWithReveal": 40,
+                "casesWithFail": 0,
+                "casesWithBacktrackProof": 40,
+                "casesWithProofTrace": 40,
+                "hiddenAnchorFamilyFailureCount": 0,
+                "providedDiscoveryTags": [
+                    "hidden.primer.abyssal_temple.warded_archive",
+                    "hidden.primer.deep_iron.slag_cache",
+                    "hidden.primer.deep_iron.smuggler_stash",
+                    "hidden.primer.underground_river.crystal_rift"
+                ],
+                "requiredHiddenAnchorFamilies": [
+                    "hidden.branch",
+                    "hidden.critical.adjacent",
+                    "hidden.goal.adjacent"
+                ],
+                "observedHiddenAnchorFamilies": [
+                    "hidden.branch",
+                    "hidden.critical.adjacent",
+                    "hidden.goal.adjacent"
+                ],
+                "failStateTaxonomy": []
+            },
+            "assertions": [
+                {
+                    "ruleId": "solvability.aggregate.reveal_success.corpus_reveal_coverage",
+                    "passed": true,
+                    "message": "Reveal-success corpus contains at least one reveal-success case.",
+                    "context": {
+                        "criticalPathFailureCount": 0,
+                        "casesWithReveal": 40,
+                        "casesWithFail": 0,
+                        "casesWithBacktrackProof": 40,
+                        "casesWithProofTrace": 40,
+                        "hiddenAnchorFamilyFailureCount": 0,
+                        "providedDiscoveryTags": [
+                            "hidden.primer.abyssal_temple.warded_archive",
+                            "hidden.primer.deep_iron.slag_cache",
+                            "hidden.primer.deep_iron.smuggler_stash",
+                            "hidden.primer.underground_river.crystal_rift"
+                        ],
+                        "requiredHiddenAnchorFamilies": [
+                            "hidden.branch",
+                            "hidden.critical.adjacent",
+                            "hidden.goal.adjacent"
+                        ],
+                        "observedHiddenAnchorFamilies": [
+                            "hidden.branch",
+                            "hidden.critical.adjacent",
+                            "hidden.goal.adjacent"
+                        ],
+                        "failStateTaxonomy": []
+                    }
+                },
+                {
+                    "ruleId": "solvability.aggregate.reveal_success.corpus_backtrack_coverage",
+                    "passed": true,
+                    "message": "Reveal-success corpus contains at least one OPTIONAL -> CRITICAL_PATH backtrack proof case.",
+                    "context": {
+                        "criticalPathFailureCount": 0,
+                        "casesWithReveal": 40,
+                        "casesWithFail": 0,
+                        "casesWithBacktrackProof": 40,
+                        "casesWithProofTrace": 40,
+                        "hiddenAnchorFamilyFailureCount": 0,
+                        "providedDiscoveryTags": [
+                            "hidden.primer.abyssal_temple.warded_archive",
+                            "hidden.primer.deep_iron.slag_cache",
+                            "hidden.primer.deep_iron.smuggler_stash",
+                            "hidden.primer.underground_river.crystal_rift"
+                        ],
+                        "requiredHiddenAnchorFamilies": [
+                            "hidden.branch",
+                            "hidden.critical.adjacent",
+                            "hidden.goal.adjacent"
+                        ],
+                        "observedHiddenAnchorFamilies": [
+                            "hidden.branch",
+                            "hidden.critical.adjacent",
+                            "hidden.goal.adjacent"
+                        ],
+                        "failStateTaxonomy": []
+                    }
+                },
+                {
+                    "ruleId": "solvability.aggregate.reveal_success.corpus_critical_path_zero_failures",
+                    "passed": true,
+                    "message": "Reveal-success corpus keeps critical path failures at 0.",
+                    "context": {
+                        "criticalPathFailureCount": 0,
+                        "casesWithReveal": 40,
+                        "casesWithFail": 0,
+                        "casesWithBacktrackProof": 40,
+                        "casesWithProofTrace": 40,
+                        "hiddenAnchorFamilyFailureCount": 0,
+                        "providedDiscoveryTags": [
+                            "hidden.primer.abyssal_temple.warded_archive",
+                            "hidden.primer.deep_iron.slag_cache",
+                            "hidden.primer.deep_iron.smuggler_stash",
+                            "hidden.primer.underground_river.crystal_rift"
+                        ],
+                        "requiredHiddenAnchorFamilies": [
+                            "hidden.branch",
+                            "hidden.critical.adjacent",
+                            "hidden.goal.adjacent"
+                        ],
+                        "observedHiddenAnchorFamilies": [
+                            "hidden.branch",
+                            "hidden.critical.adjacent",
+                            "hidden.goal.adjacent"
+                        ],
+                        "failStateTaxonomy": []
+                    }
+                },
+                {
+                    "ruleId": "solvability.aggregate.reveal_success.corpus_hidden_anchor_families_resolved",
+                    "passed": true,
+                    "message": "Reveal-success corpus resolves the formal hidden-anchor families across all sampled cases.",
+                    "context": {
+                        "criticalPathFailureCount": 0,
+                        "casesWithReveal": 40,
+                        "casesWithFail": 0,
+                        "casesWithBacktrackProof": 40,
+                        "casesWithProofTrace": 40,
+                        "hiddenAnchorFamilyFailureCount": 0,
+                        "providedDiscoveryTags": [
+                            "hidden.primer.abyssal_temple.warded_archive",
+                            "hidden.primer.deep_iron.slag_cache",
+                            "hidden.primer.deep_iron.smuggler_stash",
+                            "hidden.primer.underground_river.crystal_rift"
+                        ],
+                        "requiredHiddenAnchorFamilies": [
+                            "hidden.branch",
+                            "hidden.critical.adjacent",
+                            "hidden.goal.adjacent"
+                        ],
+                        "observedHiddenAnchorFamilies": [
+                            "hidden.branch",
+                            "hidden.critical.adjacent",
+                            "hidden.goal.adjacent"
+                        ],
+                        "failStateTaxonomy": []
+                    }
+                }
+            ]
+        },
+        {
+            "groupId": "reveal-fail:abyssal_temple:floor-1",
+            "sampleCount": 1,
+            "metrics": {
+                "criticalPathFailureCount": 0,
+                "backtrackProofCount": 1,
+                "casesWithProofTrace": 1,
+                "casesWithReveal": 0,
+                "casesWithFail": 1,
+                "hiddenAnchorFamilyFailureCount": 0,
+                "maxReachabilityRatio": 0.875
+            },
+            "assertions": [
+                {
+                    "ruleId": "solvability.aggregate.reveal_fail.zone_floor_case_count",
+                    "passed": true,
+                    "message": "Each reveal-fail zone/floor corpus should contain 1 deterministic fixture case.",
+                    "context": {
+                        "criticalPathFailureCount": 0,
+                        "backtrackProofCount": 1,
+                        "casesWithProofTrace": 1,
+                        "casesWithReveal": 0,
+                        "casesWithFail": 1,
+                        "hiddenAnchorFamilyFailureCount": 0,
+                        "maxReachabilityRatio": 0.875
+                    }
+                },
+                {
+                    "ruleId": "solvability.aggregate.reveal_fail.zone_floor_proof_trace_present",
+                    "passed": true,
+                    "message": "Reveal-fail fixtures still retain a readable proof trace for every sampled case.",
+                    "context": {
+                        "criticalPathFailureCount": 0,
+                        "backtrackProofCount": 1,
+                        "casesWithProofTrace": 1,
+                        "casesWithReveal": 0,
+                        "casesWithFail": 1,
+                        "hiddenAnchorFamilyFailureCount": 0,
+                        "maxReachabilityRatio": 0.875
+                    }
+                }
+            ]
+        },
+        {
+            "groupId": "reveal-fail:abyssal_temple:floor-2",
+            "sampleCount": 1,
+            "metrics": {
+                "criticalPathFailureCount": 0,
+                "backtrackProofCount": 1,
+                "casesWithProofTrace": 1,
+                "casesWithReveal": 0,
+                "casesWithFail": 1,
+                "hiddenAnchorFamilyFailureCount": 0,
+                "maxReachabilityRatio": 0.875
+            },
+            "assertions": [
+                {
+                    "ruleId": "solvability.aggregate.reveal_fail.zone_floor_case_count",
+                    "passed": true,
+                    "message": "Each reveal-fail zone/floor corpus should contain 1 deterministic fixture case.",
+                    "context": {
+                        "criticalPathFailureCount": 0,
+                        "backtrackProofCount": 1,
+                        "casesWithProofTrace": 1,
+                        "casesWithReveal": 0,
+                        "casesWithFail": 1,
+                        "hiddenAnchorFamilyFailureCount": 0,
+                        "maxReachabilityRatio": 0.875
+                    }
+                },
+                {
+                    "ruleId": "solvability.aggregate.reveal_fail.zone_floor_proof_trace_present",
+                    "passed": true,
+                    "message": "Reveal-fail fixtures still retain a readable proof trace for every sampled case.",
+                    "context": {
+                        "criticalPathFailureCount": 0,
+                        "backtrackProofCount": 1,
+                        "casesWithProofTrace": 1,
+                        "casesWithReveal": 0,
+                        "casesWithFail": 1,
+                        "hiddenAnchorFamilyFailureCount": 0,
+                        "maxReachabilityRatio": 0.875
+                    }
+                }
+            ]
+        },
+        {
+            "groupId": "reveal-fail:deep_iron_pit:floor-1",
+            "sampleCount": 1,
+            "metrics": {
+                "criticalPathFailureCount": 0,
+                "backtrackProofCount": 1,
+                "casesWithProofTrace": 1,
+                "casesWithReveal": 0,
+                "casesWithFail": 1,
+                "hiddenAnchorFamilyFailureCount": 0,
+                "maxReachabilityRatio": 0.8
+            },
+            "assertions": [
+                {
+                    "ruleId": "solvability.aggregate.reveal_fail.zone_floor_case_count",
+                    "passed": true,
+                    "message": "Each reveal-fail zone/floor corpus should contain 1 deterministic fixture case.",
+                    "context": {
+                        "criticalPathFailureCount": 0,
+                        "backtrackProofCount": 1,
+                        "casesWithProofTrace": 1,
+                        "casesWithReveal": 0,
+                        "casesWithFail": 1,
+                        "hiddenAnchorFamilyFailureCount": 0,
+                        "maxReachabilityRatio": 0.8
+                    }
+                },
+                {
+                    "ruleId": "solvability.aggregate.reveal_fail.zone_floor_proof_trace_present",
+                    "passed": true,
+                    "message": "Reveal-fail fixtures still retain a readable proof trace for every sampled case.",
+                    "context": {
+                        "criticalPathFailureCount": 0,
+                        "backtrackProofCount": 1,
+                        "casesWithProofTrace": 1,
+                        "casesWithReveal": 0,
+                        "casesWithFail": 1,
+                        "hiddenAnchorFamilyFailureCount": 0,
+                        "maxReachabilityRatio": 0.8
+                    }
+                }
+            ]
+        },
+        {
+            "groupId": "reveal-fail:deep_iron_pit:floor-2",
+            "sampleCount": 1,
+            "metrics": {
+                "criticalPathFailureCount": 0,
+                "backtrackProofCount": 1,
+                "casesWithProofTrace": 1,
+                "casesWithReveal": 0,
+                "casesWithFail": 1,
+                "hiddenAnchorFamilyFailureCount": 0,
+                "maxReachabilityRatio": 0.8
+            },
+            "assertions": [
+                {
+                    "ruleId": "solvability.aggregate.reveal_fail.zone_floor_case_count",
+                    "passed": true,
+                    "message": "Each reveal-fail zone/floor corpus should contain 1 deterministic fixture case.",
+                    "context": {
+                        "criticalPathFailureCount": 0,
+                        "backtrackProofCount": 1,
+                        "casesWithProofTrace": 1,
+                        "casesWithReveal": 0,
+                        "casesWithFail": 1,
+                        "hiddenAnchorFamilyFailureCount": 0,
+                        "maxReachabilityRatio": 0.8
+                    }
+                },
+                {
+                    "ruleId": "solvability.aggregate.reveal_fail.zone_floor_proof_trace_present",
+                    "passed": true,
+                    "message": "Reveal-fail fixtures still retain a readable proof trace for every sampled case.",
+                    "context": {
+                        "criticalPathFailureCount": 0,
+                        "backtrackProofCount": 1,
+                        "casesWithProofTrace": 1,
+                        "casesWithReveal": 0,
+                        "casesWithFail": 1,
+                        "hiddenAnchorFamilyFailureCount": 0,
+                        "maxReachabilityRatio": 0.8
+                    }
+                }
+            ]
+        },
+        {
+            "groupId": "reveal-fail:greenwood_fringe:floor-1",
+            "sampleCount": 1,
+            "metrics": {
+                "criticalPathFailureCount": 0,
+                "backtrackProofCount": 1,
+                "casesWithProofTrace": 1,
+                "casesWithReveal": 1,
+                "casesWithFail": 0,
+                "hiddenAnchorFamilyFailureCount": 0,
+                "maxReachabilityRatio": 1.0
+            },
+            "assertions": [
+                {
+                    "ruleId": "solvability.aggregate.reveal_fail.zone_floor_case_count",
+                    "passed": true,
+                    "message": "Each reveal-fail zone/floor corpus should contain 1 deterministic fixture case.",
+                    "context": {
+                        "criticalPathFailureCount": 0,
+                        "backtrackProofCount": 1,
+                        "casesWithProofTrace": 1,
+                        "casesWithReveal": 1,
+                        "casesWithFail": 0,
+                        "hiddenAnchorFamilyFailureCount": 0,
+                        "maxReachabilityRatio": 1.0
+                    }
+                },
+                {
+                    "ruleId": "solvability.aggregate.reveal_fail.zone_floor_proof_trace_present",
+                    "passed": true,
+                    "message": "Reveal-fail fixtures still retain a readable proof trace for every sampled case.",
+                    "context": {
+                        "criticalPathFailureCount": 0,
+                        "backtrackProofCount": 1,
+                        "casesWithProofTrace": 1,
+                        "casesWithReveal": 1,
+                        "casesWithFail": 0,
+                        "hiddenAnchorFamilyFailureCount": 0,
+                        "maxReachabilityRatio": 1.0
+                    }
+                }
+            ]
+        },
+        {
+            "groupId": "reveal-fail:greenwood_fringe:floor-2",
+            "sampleCount": 1,
+            "metrics": {
+                "criticalPathFailureCount": 0,
+                "backtrackProofCount": 1,
+                "casesWithProofTrace": 1,
+                "casesWithReveal": 1,
+                "casesWithFail": 0,
+                "hiddenAnchorFamilyFailureCount": 0,
+                "maxReachabilityRatio": 1.0
+            },
+            "assertions": [
+                {
+                    "ruleId": "solvability.aggregate.reveal_fail.zone_floor_case_count",
+                    "passed": true,
+                    "message": "Each reveal-fail zone/floor corpus should contain 1 deterministic fixture case.",
+                    "context": {
+                        "criticalPathFailureCount": 0,
+                        "backtrackProofCount": 1,
+                        "casesWithProofTrace": 1,
+                        "casesWithReveal": 1,
+                        "casesWithFail": 0,
+                        "hiddenAnchorFamilyFailureCount": 0,
+                        "maxReachabilityRatio": 1.0
+                    }
+                },
+                {
+                    "ruleId": "solvability.aggregate.reveal_fail.zone_floor_proof_trace_present",
+                    "passed": true,
+                    "message": "Reveal-fail fixtures still retain a readable proof trace for every sampled case.",
+                    "context": {
+                        "criticalPathFailureCount": 0,
+                        "backtrackProofCount": 1,
+                        "casesWithProofTrace": 1,
+                        "casesWithReveal": 1,
+                        "casesWithFail": 0,
+                        "hiddenAnchorFamilyFailureCount": 0,
+                        "maxReachabilityRatio": 1.0
+                    }
+                }
+            ]
+        },
+        {
+            "groupId": "reveal-fail:underground_river:floor-1",
+            "sampleCount": 1,
+            "metrics": {
+                "criticalPathFailureCount": 0,
+                "backtrackProofCount": 1,
+                "casesWithProofTrace": 1,
+                "casesWithReveal": 0,
+                "casesWithFail": 1,
+                "hiddenAnchorFamilyFailureCount": 0,
+                "maxReachabilityRatio": 0.889
+            },
+            "assertions": [
+                {
+                    "ruleId": "solvability.aggregate.reveal_fail.zone_floor_case_count",
+                    "passed": true,
+                    "message": "Each reveal-fail zone/floor corpus should contain 1 deterministic fixture case.",
+                    "context": {
+                        "criticalPathFailureCount": 0,
+                        "backtrackProofCount": 1,
+                        "casesWithProofTrace": 1,
+                        "casesWithReveal": 0,
+                        "casesWithFail": 1,
+                        "hiddenAnchorFamilyFailureCount": 0,
+                        "maxReachabilityRatio": 0.889
+                    }
+                },
+                {
+                    "ruleId": "solvability.aggregate.reveal_fail.zone_floor_proof_trace_present",
+                    "passed": true,
+                    "message": "Reveal-fail fixtures still retain a readable proof trace for every sampled case.",
+                    "context": {
+                        "criticalPathFailureCount": 0,
+                        "backtrackProofCount": 1,
+                        "casesWithProofTrace": 1,
+                        "casesWithReveal": 0,
+                        "casesWithFail": 1,
+                        "hiddenAnchorFamilyFailureCount": 0,
+                        "maxReachabilityRatio": 0.889
+                    }
+                }
+            ]
+        },
+        {
+            "groupId": "reveal-fail:underground_river:floor-2",
+            "sampleCount": 1,
+            "metrics": {
+                "criticalPathFailureCount": 0,
+                "backtrackProofCount": 1,
+                "casesWithProofTrace": 1,
+                "casesWithReveal": 0,
+                "casesWithFail": 1,
+                "hiddenAnchorFamilyFailureCount": 0,
+                "maxReachabilityRatio": 0.889
+            },
+            "assertions": [
+                {
+                    "ruleId": "solvability.aggregate.reveal_fail.zone_floor_case_count",
+                    "passed": true,
+                    "message": "Each reveal-fail zone/floor corpus should contain 1 deterministic fixture case.",
+                    "context": {
+                        "criticalPathFailureCount": 0,
+                        "backtrackProofCount": 1,
+                        "casesWithProofTrace": 1,
+                        "casesWithReveal": 0,
+                        "casesWithFail": 1,
+                        "hiddenAnchorFamilyFailureCount": 0,
+                        "maxReachabilityRatio": 0.889
+                    }
+                },
+                {
+                    "ruleId": "solvability.aggregate.reveal_fail.zone_floor_proof_trace_present",
+                    "passed": true,
+                    "message": "Reveal-fail fixtures still retain a readable proof trace for every sampled case.",
+                    "context": {
+                        "criticalPathFailureCount": 0,
+                        "backtrackProofCount": 1,
+                        "casesWithProofTrace": 1,
+                        "casesWithReveal": 0,
+                        "casesWithFail": 1,
+                        "hiddenAnchorFamilyFailureCount": 0,
+                        "maxReachabilityRatio": 0.889
+                    }
+                }
+            ]
+        },
+        {
+            "groupId": "reveal-fail:corpus",
+            "sampleCount": 8,
+            "metrics": {
+                "criticalPathFailureCount": 0,
+                "casesWithReveal": 2,
+                "casesWithFail": 6,
+                "casesWithBacktrackProof": 8,
+                "casesWithProofTrace": 8,
+                "hiddenAnchorFamilyFailureCount": 0,
+                "providedDiscoveryTags": [],
+                "requiredHiddenAnchorFamilies": [
+                    "hidden.branch",
+                    "hidden.critical.adjacent",
+                    "hidden.goal.adjacent"
+                ],
+                "observedHiddenAnchorFamilies": [
+                    "hidden.branch",
+                    "hidden.critical.adjacent",
+                    "hidden.goal.adjacent"
+                ],
+                "failStateTaxonomy": [
+                    "FAILED_CHECK"
+                ]
+            },
+            "assertions": [
+                {
+                    "ruleId": "solvability.aggregate.reveal_fail.corpus_fail_coverage",
+                    "passed": true,
+                    "message": "Reveal-fail corpus contains deterministic failed-search fixtures.",
+                    "context": {
+                        "criticalPathFailureCount": 0,
+                        "casesWithReveal": 2,
+                        "casesWithFail": 6,
+                        "casesWithBacktrackProof": 8,
+                        "casesWithProofTrace": 8,
+                        "hiddenAnchorFamilyFailureCount": 0,
+                        "providedDiscoveryTags": [],
+                        "requiredHiddenAnchorFamilies": [
+                            "hidden.branch",
+                            "hidden.critical.adjacent",
+                            "hidden.goal.adjacent"
+                        ],
+                        "observedHiddenAnchorFamilies": [
+                            "hidden.branch",
+                            "hidden.critical.adjacent",
+                            "hidden.goal.adjacent"
+                        ],
+                        "failStateTaxonomy": [
+                            "FAILED_CHECK"
+                        ]
+                    }
+                },
+                {
+                    "ruleId": "solvability.aggregate.reveal_fail.corpus_fail_taxonomy",
+                    "passed": true,
+                    "message": "Reveal-fail corpus preserves a readable fail-state taxonomy.",
+                    "context": {
+                        "criticalPathFailureCount": 0,
+                        "casesWithReveal": 2,
+                        "casesWithFail": 6,
+                        "casesWithBacktrackProof": 8,
+                        "casesWithProofTrace": 8,
+                        "hiddenAnchorFamilyFailureCount": 0,
+                        "providedDiscoveryTags": [],
+                        "requiredHiddenAnchorFamilies": [
+                            "hidden.branch",
+                            "hidden.critical.adjacent",
+                            "hidden.goal.adjacent"
+                        ],
+                        "observedHiddenAnchorFamilies": [
+                            "hidden.branch",
+                            "hidden.critical.adjacent",
+                            "hidden.goal.adjacent"
+                        ],
+                        "failStateTaxonomy": [
+                            "FAILED_CHECK"
+                        ]
+                    }
+                },
+                {
+                    "ruleId": "solvability.aggregate.reveal_fail.corpus_proof_trace_present",
+                    "passed": true,
+                    "message": "Reveal-fail corpus preserves proof traces for every fixture case.",
+                    "context": {
+                        "criticalPathFailureCount": 0,
+                        "casesWithReveal": 2,
+                        "casesWithFail": 6,
+                        "casesWithBacktrackProof": 8,
+                        "casesWithProofTrace": 8,
+                        "hiddenAnchorFamilyFailureCount": 0,
+                        "providedDiscoveryTags": [],
+                        "requiredHiddenAnchorFamilies": [
+                            "hidden.branch",
+                            "hidden.critical.adjacent",
+                            "hidden.goal.adjacent"
+                        ],
+                        "observedHiddenAnchorFamilies": [
+                            "hidden.branch",
+                            "hidden.critical.adjacent",
+                            "hidden.goal.adjacent"
+                        ],
+                        "failStateTaxonomy": [
+                            "FAILED_CHECK"
+                        ]
+                    }
+                }
+            ]
+        }
+    ]
+}

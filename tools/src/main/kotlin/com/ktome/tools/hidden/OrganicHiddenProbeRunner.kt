@@ -2,14 +2,12 @@ package com.ktome.tools.hidden
 
 import com.ktome.core.harness.HarnessReportHeader
 import com.ktome.core.harness.toJson
-import com.ktome.core.map.Point
 import com.ktome.core.profile.ClassPlayabilityState
 import com.ktome.core.save.SaveManager
 import com.ktome.core.world.solvability.SearchActionResult
 import com.ktome.game.FoundationGameConfig
 import com.ktome.game.GameModule
 import com.ktome.game.PlayerCommand
-import com.ktome.game.harness.RunBot
 import com.ktome.game.harness.RunObservation
 import com.ktome.game.harness.RunObservationCapture
 import com.ktome.game.harness.SmokeBot
@@ -21,213 +19,18 @@ import com.ktome.tools.verification.VerificationCacheSupport
 import java.nio.file.Files
 import java.nio.file.Path
 import java.util.ArrayDeque
-import java.util.Locale
-import kotlin.math.ceil
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
-import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.contentOrNull
-import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
-import kotlinx.serialization.json.putJsonObject
-
-data class OrganicHiddenProbeRun(
-    val totalCases: Int,
-    val runtimeFailureCount: Int,
-    val summaryPath: Path,
-    val eventsPath: Path,
-    val markdownPath: Path,
-)
-
-private data class OrganicHiddenProbeCaseSpec(
-    val zoneId: String,
-    val floorIndex: Int,
-    val professionId: String,
-    val raceId: String,
-    val seed: Long,
-)
-
-private data class OrganicHiddenProbeCaseResult(
-    val zoneId: String,
-    val floorIndex: Int,
-    val professionId: String,
-    val raceId: String,
-    val seed: Long,
-    val turnCount: Int,
-    val searchAttemptCount: Int,
-    val searchActionUseCount: Int,
-    val searchRevealCount: Int,
-    val hiddenEventIds: List<String>,
-    val secretZoneIds: List<String>,
-    val firstHiddenDiscoveryTurn: Int?,
-    val firstSecretZoneEntryTurn: Int?,
-    val lastCommands: List<String>,
-    val finalZoneId: String,
-    val finalFloor: Int,
-    val runtimeFailure: String? = null,
-) {
-    val discoveredWithoutPrimer: Boolean
-        get() = leadDiscovered
-
-    val leadDiscovered: Boolean
-        get() = searchRevealCount > 0 || secretZoneIds.isNotEmpty()
-
-    val secretConverted: Boolean
-        get() = searchRevealCount > 0 && secretZoneIds.isNotEmpty()
-
-    val secretZoneEntered: Boolean
-        get() = secretZoneIds.isNotEmpty()
-
-    fun toJson(header: HarnessReportHeader): JsonObject =
-        buildJsonObject {
-            put("buildId", header.buildId)
-            put("phaseId", header.phaseId)
-            put("locale", header.locale)
-            put("contentSchemaVersion", header.contentSchemaVersion)
-            put("searchRuleVersion", header.searchRuleVersion)
-            put("secretRuleVersion", header.secretRuleVersion)
-            put("zoneId", zoneId)
-            put("floorIndex", floorIndex)
-            put("professionId", professionId)
-            put("raceId", raceId)
-            put("seed", seed)
-            put("turnCount", turnCount)
-            put("searchAttemptCount", searchAttemptCount)
-            put("searchActionUseCount", searchActionUseCount)
-            put("searchRevealCount", searchRevealCount)
-            put("discoveredWithoutPrimer", discoveredWithoutPrimer)
-            put("secretZoneEntered", secretZoneEntered)
-            put("firstHiddenDiscoveryTurn", firstHiddenDiscoveryTurn)
-            put("firstSecretZoneEntryTurn", firstSecretZoneEntryTurn)
-            put("finalZoneId", finalZoneId)
-            put("finalFloor", finalFloor)
-            putJsonArray("hiddenEventIds") {
-                hiddenEventIds.forEach { hiddenEventId -> add(JsonPrimitive(hiddenEventId)) }
-            }
-            putJsonArray("secretZoneIds") {
-                secretZoneIds.forEach { secretZoneId -> add(JsonPrimitive(secretZoneId)) }
-            }
-            putJsonArray("lastCommands") {
-                lastCommands.forEach { command -> add(JsonPrimitive(command)) }
-            }
-            runtimeFailure?.let { failure -> put("runtimeFailure", failure) }
-        }
-}
-
-private data class OrganicHiddenProbeShardSpec(
-    val zoneId: String,
-    val floorIndex: Int,
-    val professionId: String,
-    val raceId: String,
-    val cases: List<OrganicHiddenProbeCaseSpec>,
-) {
-    val shardId: String
-        get() = "$zoneId:$floorIndex:$professionId:$raceId"
-}
-
-private data class OrganicHiddenProbeZoneMetrics(
-    val caseCount: Int,
-    val runsWithSearchActionCount: Int,
-    val searchActionUseCount: Int,
-    val discoveryWithoutPrimerCount: Int,
-    val secretZoneEntryCount: Int,
-    val averageFirstHiddenDiscoveryTurn: Double?,
-    val averageFirstSecretZoneEntryTurn: Double?,
-    val firstHiddenDiscoveryTurnP50: Int?,
-    val firstHiddenDiscoveryTurnP90: Int?,
-    val firstSecretZoneEntryTurnP50: Int?,
-    val firstSecretZoneEntryTurnP90: Int?,
-) {
-    val searchActionUseRate: Double
-        get() = if (caseCount == 0) 0.0 else runsWithSearchActionCount.toDouble() / caseCount.toDouble()
-
-    val leadDiscoveryRate: Double
-        get() = if (caseCount == 0) 0.0 else discoveryWithoutPrimerCount.toDouble() / caseCount.toDouble()
-
-    val secretZoneEntryRate: Double
-        get() = if (caseCount == 0) 0.0 else secretZoneEntryCount.toDouble() / caseCount.toDouble()
-
-    val secretConversionRate: Double
-        get() = if (discoveryWithoutPrimerCount == 0) 0.0 else secretZoneEntryCount.toDouble() / discoveryWithoutPrimerCount.toDouble()
-}
-
-private data class OrganicHiddenProbeCombinationMetrics(
-    val professionId: String,
-    val raceId: String,
-    val caseCount: Int,
-    val runsWithSearchActionCount: Int,
-    val searchActionUseCount: Int,
-    val discoveryWithoutPrimerCount: Int,
-    val secretZoneEntryCount: Int,
-    val averageFirstHiddenDiscoveryTurn: Double?,
-    val averageFirstSecretZoneEntryTurn: Double?,
-    val firstHiddenDiscoveryTurnP50: Int?,
-    val firstHiddenDiscoveryTurnP90: Int?,
-    val firstSecretZoneEntryTurnP50: Int?,
-    val firstSecretZoneEntryTurnP90: Int?,
-) {
-    val searchActionUseRate: Double
-        get() = if (caseCount == 0) 0.0 else runsWithSearchActionCount.toDouble() / caseCount.toDouble()
-
-    val leadDiscoveryRate: Double
-        get() = if (caseCount == 0) 0.0 else discoveryWithoutPrimerCount.toDouble() / caseCount.toDouble()
-
-    val secretZoneEntryRate: Double
-        get() = if (caseCount == 0) 0.0 else secretZoneEntryCount.toDouble() / caseCount.toDouble()
-
-    val secretConversionRate: Double
-        get() = if (discoveryWithoutPrimerCount == 0) 0.0 else secretZoneEntryCount.toDouble() / discoveryWithoutPrimerCount.toDouble()
-}
-
-private data class OrganicHiddenProbeSummary(
-    val totalCases: Int,
-    val distinctSeedCount: Int,
-    val runtimeFailureCount: Int,
-    val searchAttemptCount: Int,
-    val runsWithSearchActionCount: Int,
-    val searchActionUseCount: Int,
-    val discoveryWithoutPrimerCount: Int,
-    val secretZoneEntryCount: Int,
-    val averageFirstHiddenDiscoveryTurn: Double?,
-    val averageFirstSecretZoneEntryTurn: Double?,
-    val firstHiddenDiscoveryTurnP50: Int?,
-    val firstHiddenDiscoveryTurnP90: Int?,
-    val firstSecretZoneEntryTurnP50: Int?,
-    val firstSecretZoneEntryTurnP90: Int?,
-    val professionIds: List<String>,
-    val raceIds: List<String>,
-    val seedsPerZoneCombo: Int,
-    val zoneBreakdown: Map<String, OrganicHiddenProbeZoneMetrics>,
-    val combinations: List<OrganicHiddenProbeCombinationMetrics>,
-    val zoneDiscoveryDistribution: Map<String, Double>,
-    val secretZoneDiscoveryDistribution: Map<String, Double>,
-    val perZoneSecretEntryMinRate: Double,
-    val failingSecretEntryZoneIds: List<String>,
-) {
-    val searchActionUseRate: Double
-        get() = if (totalCases == 0) 0.0 else runsWithSearchActionCount.toDouble() / totalCases.toDouble()
-
-    val leadDiscoveryRate: Double
-        get() = if (totalCases == 0) 0.0 else discoveryWithoutPrimerCount.toDouble() / totalCases.toDouble()
-
-    val secretZoneEntryRate: Double
-        get() = if (totalCases == 0) 0.0 else secretZoneEntryCount.toDouble() / totalCases.toDouble()
-
-    val secretConversionRate: Double
-        get() = if (discoveryWithoutPrimerCount == 0) 0.0 else secretZoneEntryCount.toDouble() / discoveryWithoutPrimerCount.toDouble()
-}
 
 object OrganicHiddenProbeRunner {
     const val HARNESS_ID: String = "organicHiddenProbe"
 
-    private const val SUMMARY_FILE: String = "organic-hidden-probe-summary.json"
-    private const val EVENTS_FILE: String = "organic-hidden-probe-events.jsonl"
-    private const val MARKDOWN_FILE: String = "organic-hidden-probe-summary.md"
+    private const val PROBE_BOT_ID: String = "organic-hidden-probe-bot-v5"
     private const val ORGANIC_HIDDEN_KERNEL_CACHE_VERSION: String = "uvr-pr05-organic-hidden-kernel-v3"
     private const val FLOOR_INDEX: Int = 1
     private const val SEED_BASE: Long = 20260411010000L
@@ -248,6 +51,10 @@ object OrganicHiddenProbeRunner {
     private val releasedPlayerCreationState by lazy { GameModule.playerCreationState(locale = GameLocale.EN_US) }
     private val releasedProfessionIds: List<String> by lazy { playableProfessionIds() }
     private val releasedRaceIds: List<String> by lazy { playableRaceIds() }
+
+    internal fun turnBudget(): Int = TURN_BUDGET
+
+    internal fun maxFloor(): Int = MAX_FLOOR
 
     fun run(): OrganicHiddenProbeRun {
         val repoRoot = VerificationCacheSupport.repoRoot()
@@ -303,14 +110,20 @@ object OrganicHiddenProbeRunner {
                         OrganicHiddenProbeCaseResult::seed,
                     ),
                 )
-        val summary = summarize(results)
-        val summaryPath = outputDir.resolve(SUMMARY_FILE)
-        val eventsPath = outputDir.resolve(EVENTS_FILE)
-        Files.writeString(
-            summaryPath,
-            json.encodeToString(
-                JsonElement.serializer(),
-                buildSummaryPayload(
+        val summary =
+            OrganicHiddenProbeSummaryAggregator.summarize(
+                OrganicHiddenProbeSummaryRequest(
+                    results = results,
+                    professionIds = releasedProfessionIds,
+                    raceIds = releasedRaceIds,
+                    seedsPerZoneCombo = SEEDS_PER_ZONE_COMBO,
+                    perZoneSecretEntryMinRate = PER_ZONE_SECRET_ENTRY_MIN_RATE,
+                ),
+            )
+        val artifactPaths =
+            OrganicHiddenProbeArtifactWriter.writeSummaryArtifacts(
+                OrganicHiddenProbeArtifactWriteRequest(
+                    outputDir = outputDir,
                     header = header,
                     summary = summary,
                     kernelCacheMetadata =
@@ -326,18 +139,19 @@ object OrganicHiddenProbeRunner {
                                 }
                             }
                         },
+                    shardEventPaths = shardEventPaths,
+                    probeBotId = PROBE_BOT_ID,
+                    probeTurnBudget = TURN_BUDGET,
+                    probeMaxFloor = MAX_FLOOR,
+                    json = json,
                 ),
-            ),
-        )
-        VerificationCacheSupport.mergeJsonlFiles(targetPath = eventsPath, sourcePaths = shardEventPaths)
-        val markdownPath = outputDir.resolve(MARKDOWN_FILE)
-        Files.writeString(markdownPath, renderMarkdown(summary = summary, header = header))
+            )
         return OrganicHiddenProbeRun(
             totalCases = results.size,
             runtimeFailureCount = summary.runtimeFailureCount,
-            summaryPath = summaryPath,
-            eventsPath = eventsPath,
-            markdownPath = markdownPath,
+            summaryPath = artifactPaths.summaryPath,
+            eventsPath = artifactPaths.eventsPath,
+            markdownPath = artifactPaths.markdownPath,
         )
     }
 
@@ -345,7 +159,7 @@ object OrganicHiddenProbeRunner {
         caseSpec: OrganicHiddenProbeCaseSpec,
         tempSaveRoot: Path,
     ): OrganicHiddenProbeCaseResult {
-        val bot = OrganicHiddenProbeBot(delegate = SmokeBot())
+        val bot = OrganicHiddenProbeBotPolicy(delegate = SmokeBot())
         val commandTail = ArrayDeque<String>()
         return try {
             val session =
@@ -470,199 +284,6 @@ object OrganicHiddenProbeRunner {
         }
     }
 
-    private fun summarize(results: List<OrganicHiddenProbeCaseResult>): OrganicHiddenProbeSummary {
-        val zoneBreakdown =
-            results.groupBy(OrganicHiddenProbeCaseResult::zoneId)
-                .mapValues { (_, zoneResults) -> aggregateZoneMetrics(zoneResults) }
-                .toSortedMap()
-        val combinations =
-            results
-                .groupBy { result -> result.professionId to result.raceId }
-                .toSortedMap(compareBy<Pair<String, String>>({ it.first }, { it.second }))
-                .map { (combo, comboResults) ->
-                    val metrics = aggregateZoneMetrics(comboResults)
-                    OrganicHiddenProbeCombinationMetrics(
-                        professionId = combo.first,
-                        raceId = combo.second,
-                        caseCount = metrics.caseCount,
-                        runsWithSearchActionCount = metrics.runsWithSearchActionCount,
-                        searchActionUseCount = metrics.searchActionUseCount,
-                        discoveryWithoutPrimerCount = metrics.discoveryWithoutPrimerCount,
-                        secretZoneEntryCount = metrics.secretZoneEntryCount,
-                        averageFirstHiddenDiscoveryTurn = metrics.averageFirstHiddenDiscoveryTurn,
-                        averageFirstSecretZoneEntryTurn = metrics.averageFirstSecretZoneEntryTurn,
-                        firstHiddenDiscoveryTurnP50 = metrics.firstHiddenDiscoveryTurnP50,
-                        firstHiddenDiscoveryTurnP90 = metrics.firstHiddenDiscoveryTurnP90,
-                        firstSecretZoneEntryTurnP50 = metrics.firstSecretZoneEntryTurnP50,
-                        firstSecretZoneEntryTurnP90 = metrics.firstSecretZoneEntryTurnP90,
-                    )
-                }
-        val totalDiscoveryCount = results.count(OrganicHiddenProbeCaseResult::leadDiscovered)
-        val totalSecretZoneEntryCount = results.count(OrganicHiddenProbeCaseResult::secretZoneEntered)
-        val failingSecretEntryZoneIds =
-            zoneBreakdown
-                .filterValues { metrics -> metrics.secretZoneEntryRate < PER_ZONE_SECRET_ENTRY_MIN_RATE }
-                .keys
-                .toList()
-                .sorted()
-        val secretZoneDiscoveryDistribution =
-            results
-                .flatMap { result -> result.secretZoneIds.distinct() }
-                .groupingBy { secretZoneId -> secretZoneId }
-                .eachCount()
-                .toSortedMap()
-                .mapValues { (_, count) ->
-                    if (totalSecretZoneEntryCount == 0) {
-                        0.0
-                    } else {
-                        count.toDouble() / totalSecretZoneEntryCount.toDouble()
-                    }
-                }
-        return OrganicHiddenProbeSummary(
-            totalCases = results.size,
-            distinctSeedCount = results.map(OrganicHiddenProbeCaseResult::seed).distinct().size,
-            runtimeFailureCount = results.count { result -> result.runtimeFailure != null },
-            searchAttemptCount = results.sumOf(OrganicHiddenProbeCaseResult::searchAttemptCount),
-            runsWithSearchActionCount = results.count { result -> result.searchActionUseCount > 0 },
-            searchActionUseCount = results.sumOf(OrganicHiddenProbeCaseResult::searchActionUseCount),
-            discoveryWithoutPrimerCount = totalDiscoveryCount,
-            secretZoneEntryCount = results.count(OrganicHiddenProbeCaseResult::secretZoneEntered),
-            averageFirstHiddenDiscoveryTurn = averageOfNullable(results.map(OrganicHiddenProbeCaseResult::firstHiddenDiscoveryTurn)),
-            averageFirstSecretZoneEntryTurn = averageOfNullable(results.map(OrganicHiddenProbeCaseResult::firstSecretZoneEntryTurn)),
-            firstHiddenDiscoveryTurnP50 = percentileOfNullable(results.map(OrganicHiddenProbeCaseResult::firstHiddenDiscoveryTurn), 50),
-            firstHiddenDiscoveryTurnP90 = percentileOfNullable(results.map(OrganicHiddenProbeCaseResult::firstHiddenDiscoveryTurn), 90),
-            firstSecretZoneEntryTurnP50 = percentileOfNullable(results.map(OrganicHiddenProbeCaseResult::firstSecretZoneEntryTurn), 50),
-            firstSecretZoneEntryTurnP90 = percentileOfNullable(results.map(OrganicHiddenProbeCaseResult::firstSecretZoneEntryTurn), 90),
-            professionIds = releasedProfessionIds,
-            raceIds = releasedRaceIds,
-            seedsPerZoneCombo = SEEDS_PER_ZONE_COMBO,
-            zoneBreakdown = zoneBreakdown,
-            combinations = combinations,
-            zoneDiscoveryDistribution =
-                zoneBreakdown.mapValues { (_, metrics) ->
-                    if (totalDiscoveryCount == 0) {
-                        0.0
-                    } else {
-                        metrics.discoveryWithoutPrimerCount.toDouble() / totalDiscoveryCount.toDouble()
-                    }
-                },
-            secretZoneDiscoveryDistribution = secretZoneDiscoveryDistribution,
-            perZoneSecretEntryMinRate = PER_ZONE_SECRET_ENTRY_MIN_RATE,
-            failingSecretEntryZoneIds = failingSecretEntryZoneIds,
-        )
-    }
-
-    private fun buildSummaryPayload(
-        header: HarnessReportHeader,
-        summary: OrganicHiddenProbeSummary,
-        kernelCacheMetadata: JsonObject,
-    ): JsonObject =
-        buildJsonObject {
-            put("header", header.toJson())
-            put("kernelCache", kernelCacheMetadata)
-            putJsonObject("summary") {
-                put("scriptedVerification", false)
-                put("primerActionUsedCount", 0)
-                put("totalCases", summary.totalCases)
-                put("distinctSeedCount", summary.distinctSeedCount)
-                put("runtimeFailureCount", summary.runtimeFailureCount)
-                put("searchAttemptCount", summary.searchAttemptCount)
-                put("runsWithSearchActionCount", summary.runsWithSearchActionCount)
-                put("searchActionUseCount", summary.searchActionUseCount)
-                put("searchActionUseRate", summary.searchActionUseRate)
-                put("discoveryWithoutPrimerCount", summary.discoveryWithoutPrimerCount)
-                put("leadDiscoveryCount", summary.discoveryWithoutPrimerCount)
-                put("leadDiscoveryRate", summary.leadDiscoveryRate)
-                put("secretConversionCount", summary.secretZoneEntryCount)
-                put("secretConversionRate", summary.secretConversionRate)
-                put("secretZoneEntryCount", summary.secretZoneEntryCount)
-                put("secretZoneEntryRate", summary.secretZoneEntryRate)
-                put("averageFirstHiddenDiscoveryTurn", summary.averageFirstHiddenDiscoveryTurn)
-                put("averageFirstSecretZoneEntryTurn", summary.averageFirstSecretZoneEntryTurn)
-                put("firstHiddenDiscoveryTurnP50", summary.firstHiddenDiscoveryTurnP50)
-                put("firstHiddenDiscoveryTurnP90", summary.firstHiddenDiscoveryTurnP90)
-                put("firstSecretZoneEntryTurnP50", summary.firstSecretZoneEntryTurnP50)
-                put("firstSecretZoneEntryTurnP90", summary.firstSecretZoneEntryTurnP90)
-                putJsonArray("professionIds") {
-                    summary.professionIds.forEach { professionId -> add(JsonPrimitive(professionId)) }
-                }
-                putJsonArray("raceIds") {
-                    summary.raceIds.forEach { raceId -> add(JsonPrimitive(raceId)) }
-                }
-                put("comboCount", summary.combinations.size)
-                put("seedsPerZoneCombo", summary.seedsPerZoneCombo)
-                put("searchPromptRequired", true)
-                put("reactiveSearchOnly", true)
-                put("perZoneSecretEntryMinRate", summary.perZoneSecretEntryMinRate)
-                putJsonArray("failingSecretEntryZoneIds") {
-                    summary.failingSecretEntryZoneIds.forEach { zoneId -> add(JsonPrimitive(zoneId)) }
-                }
-                put("probeBotId", "organic-hidden-probe-bot-v5")
-                put("probeTurnBudget", TURN_BUDGET)
-                put("probeMaxFloor", MAX_FLOOR)
-            }
-            putJsonObject("zones") {
-                summary.zoneBreakdown.forEach { (zoneId, metrics) ->
-                    putJsonObject(zoneId) {
-                        put("caseCount", metrics.caseCount)
-                        put("runsWithSearchActionCount", metrics.runsWithSearchActionCount)
-                        put("searchActionUseCount", metrics.searchActionUseCount)
-                        put("searchActionUseRate", metrics.searchActionUseRate)
-                        put("discoveryWithoutPrimerCount", metrics.discoveryWithoutPrimerCount)
-                        put("leadDiscoveryRate", metrics.leadDiscoveryRate)
-                        put("secretZoneEntryCount", metrics.secretZoneEntryCount)
-                        put("secretZoneEntryRate", metrics.secretZoneEntryRate)
-                        put("secretConversionRate", metrics.secretConversionRate)
-                        put("averageFirstHiddenDiscoveryTurn", metrics.averageFirstHiddenDiscoveryTurn)
-                        put("averageFirstSecretZoneEntryTurn", metrics.averageFirstSecretZoneEntryTurn)
-                        put("firstHiddenDiscoveryTurnP50", metrics.firstHiddenDiscoveryTurnP50)
-                        put("firstHiddenDiscoveryTurnP90", metrics.firstHiddenDiscoveryTurnP90)
-                        put("firstSecretZoneEntryTurnP50", metrics.firstSecretZoneEntryTurnP50)
-                        put("firstSecretZoneEntryTurnP90", metrics.firstSecretZoneEntryTurnP90)
-                    }
-                }
-            }
-            putJsonArray("combinations") {
-                summary.combinations.forEach { combination ->
-                    add(
-                        buildJsonObject {
-                            put("professionId", combination.professionId)
-                            put("raceId", combination.raceId)
-                            put("caseCount", combination.caseCount)
-                            put("runsWithSearchActionCount", combination.runsWithSearchActionCount)
-                            put("searchActionUseCount", combination.searchActionUseCount)
-                            put("searchActionUseRate", combination.searchActionUseRate)
-                            put("discoveryWithoutPrimerCount", combination.discoveryWithoutPrimerCount)
-                            put("leadDiscoveryRate", combination.leadDiscoveryRate)
-                            put("secretZoneEntryCount", combination.secretZoneEntryCount)
-                            put("secretZoneEntryRate", combination.secretZoneEntryRate)
-                            put("secretConversionRate", combination.secretConversionRate)
-                            put("averageFirstHiddenDiscoveryTurn", combination.averageFirstHiddenDiscoveryTurn)
-                            put("averageFirstSecretZoneEntryTurn", combination.averageFirstSecretZoneEntryTurn)
-                            put("firstHiddenDiscoveryTurnP50", combination.firstHiddenDiscoveryTurnP50)
-                            put("firstHiddenDiscoveryTurnP90", combination.firstHiddenDiscoveryTurnP90)
-                            put("firstSecretZoneEntryTurnP50", combination.firstSecretZoneEntryTurnP50)
-                            put("firstSecretZoneEntryTurnP90", combination.firstSecretZoneEntryTurnP90)
-                        },
-                    )
-                }
-            }
-            putJsonObject("zoneDiscoveryDistribution") {
-                summary.zoneDiscoveryDistribution.forEach { (zoneId, rate) -> put(zoneId, rate) }
-            }
-            putJsonObject("secretZoneDiscoveryDistribution") {
-                summary.secretZoneDiscoveryDistribution.forEach { (secretZoneId, rate) -> put(secretZoneId, rate) }
-            }
-            putJsonArray("notes") {
-                add(JsonPrimitive("organicHiddenProbe samples the released 4 profession x 3 race matrix only."))
-                add(JsonPrimitive("organicHiddenProbe uses 11 fixed seeds per zone x profession x race combination."))
-                add(JsonPrimitive("organicHiddenProbe never uses primer actions or direct reveal APIs."))
-                add(JsonPrimitive("organicHiddenProbe uses only RunObservation-visible prompts, interactables, and exploration state for navigation decisions."))
-                add(JsonPrimitive("organicHiddenProbe treats a visible search prompt as the highest-priority clue and searches even when nearby hostiles remain visible."))
-                add(JsonPrimitive("organicHiddenProbe measures real session/bot discovery and is allowed to fail during the initial owner-metric hardening pass."))
-            }
-        }
-
     private fun seedFor(
         zoneOrdinal: Int,
         comboOrdinal: Int,
@@ -678,33 +299,6 @@ object OrganicHiddenProbeRunner {
         releasedPlayerCreationState.raceOptions
             .filter { option -> option.playabilityState == ClassPlayabilityState.PLAYABLE }
             .map { option -> option.id }
-
-    private fun aggregateZoneMetrics(results: List<OrganicHiddenProbeCaseResult>): OrganicHiddenProbeZoneMetrics =
-        OrganicHiddenProbeZoneMetrics(
-            caseCount = results.size,
-            runsWithSearchActionCount = results.count { result -> result.searchActionUseCount > 0 },
-            searchActionUseCount = results.sumOf(OrganicHiddenProbeCaseResult::searchActionUseCount),
-            discoveryWithoutPrimerCount = results.count(OrganicHiddenProbeCaseResult::discoveredWithoutPrimer),
-            secretZoneEntryCount = results.count(OrganicHiddenProbeCaseResult::secretZoneEntered),
-            averageFirstHiddenDiscoveryTurn = averageOfNullable(results.map(OrganicHiddenProbeCaseResult::firstHiddenDiscoveryTurn)),
-            averageFirstSecretZoneEntryTurn = averageOfNullable(results.map(OrganicHiddenProbeCaseResult::firstSecretZoneEntryTurn)),
-            firstHiddenDiscoveryTurnP50 = percentileOfNullable(results.map(OrganicHiddenProbeCaseResult::firstHiddenDiscoveryTurn), 50),
-            firstHiddenDiscoveryTurnP90 = percentileOfNullable(results.map(OrganicHiddenProbeCaseResult::firstHiddenDiscoveryTurn), 90),
-            firstSecretZoneEntryTurnP50 = percentileOfNullable(results.map(OrganicHiddenProbeCaseResult::firstSecretZoneEntryTurn), 50),
-            firstSecretZoneEntryTurnP90 = percentileOfNullable(results.map(OrganicHiddenProbeCaseResult::firstSecretZoneEntryTurn), 90),
-        )
-
-    private fun percentileOfNullable(
-        values: List<Int?>,
-        percentile: Int,
-    ): Int? {
-        val sorted = values.filterNotNull().sorted()
-        if (sorted.isEmpty()) {
-            return null
-        }
-        val rank = ceil(percentile / 100.0 * sorted.size.toDouble()).toInt().coerceAtLeast(1) - 1
-        return sorted[rank]
-    }
 
     private fun buildShardSpecs(cases: List<OrganicHiddenProbeCaseSpec>): List<OrganicHiddenProbeShardSpec> =
         cases.groupBy { case -> Triple(case.zoneId, case.professionId, case.raceId) }
@@ -765,102 +359,7 @@ object OrganicHiddenProbeRunner {
         Files.readAllLines(shardEventsPath)
             .filter(String::isNotBlank)
             .map { line -> json.parseToJsonElement(line).jsonObject.toOrganicHiddenProbeCaseResult() }
-
-    private fun renderMarkdown(
-        summary: OrganicHiddenProbeSummary,
-        header: HarnessReportHeader,
-    ): String =
-        buildString {
-            appendLine("# organicHiddenProbe")
-            appendLine()
-            appendLine("- buildId: `${header.buildId}`")
-            appendLine("- phaseId: `${header.phaseId}`")
-            appendLine("- locale: `${header.locale}`")
-            appendLine("- totalCases: `${summary.totalCases}`")
-            appendLine("- distinctSeedCount: `${summary.distinctSeedCount}`")
-            appendLine("- scriptedVerification: `false`")
-            appendLine("- primerActionUsedCount: `0`")
-            appendLine("- runtimeFailureCount: `${summary.runtimeFailureCount}`")
-            appendLine("- searchActionUseRate: `${formatPercent(summary.searchActionUseRate)}`")
-            appendLine("- leadDiscoveryRate: `${formatPercent(summary.leadDiscoveryRate)}`")
-            appendLine("- secretConversionRate: `${formatPercent(summary.secretConversionRate)}`")
-            appendLine("- secretZoneEntryRate: `${formatPercent(summary.secretZoneEntryRate)}`")
-            appendLine("- perZoneSecretEntryMinRate: `${formatPercent(summary.perZoneSecretEntryMinRate)}`")
-            appendLine("- failingSecretEntryZoneIds: `${summary.failingSecretEntryZoneIds.joinToString().ifBlank { "none" }}`")
-            appendLine("- firstHiddenDiscoveryTurnP50/P90: `${formatNullableTurn(summary.firstHiddenDiscoveryTurnP50)} / ${formatNullableTurn(summary.firstHiddenDiscoveryTurnP90)}`")
-            appendLine("- firstSecretZoneEntryTurnP50/P90: `${formatNullableTurn(summary.firstSecretZoneEntryTurnP50)} / ${formatNullableTurn(summary.firstSecretZoneEntryTurnP90)}`")
-            appendLine("- releasedProfessionIds: `${summary.professionIds.joinToString()}`")
-            appendLine("- releasedRaceIds: `${summary.raceIds.joinToString()}`")
-            appendLine("- comboCount: `${summary.combinations.size}`")
-            appendLine("- seedsPerZoneCombo: `${summary.seedsPerZoneCombo}`")
-            appendLine("- searchPromptRequired: `true`")
-            appendLine("- reactiveSearchOnly: `true`")
-            appendLine()
-            appendLine("## Zone Discovery Distribution")
-            appendLine("| zoneId | discoveryShare | leadDiscoveryRate | searchUseRate | secretEntryRate | secretConversionRate | firstHidden P50/P90 |")
-            appendLine("| --- | --- | --- | --- | --- | --- | --- |")
-            summary.zoneBreakdown.forEach { (zoneId, metrics) ->
-                appendLine(
-                    "| `$zoneId` | ${formatPercent(summary.zoneDiscoveryDistribution.getValue(zoneId))} | " +
-                        "${formatPercent(metrics.leadDiscoveryRate)} | ${formatPercent(metrics.searchActionUseRate)} | " +
-                        "${formatPercent(metrics.secretZoneEntryRate)} | ${formatPercent(metrics.secretConversionRate)} | " +
-                        "${formatNullableTurn(metrics.firstHiddenDiscoveryTurnP50)} / ${formatNullableTurn(metrics.firstHiddenDiscoveryTurnP90)} |",
-                )
-            }
-            appendLine()
-            appendLine("## Secret-Zone Discovery Distribution")
-            appendLine("| secretZoneId | entryShare |")
-            appendLine("| --- | --- |")
-            summary.secretZoneDiscoveryDistribution.forEach { (secretZoneId, share) ->
-                appendLine("| `$secretZoneId` | ${formatPercent(share)} |")
-            }
-            appendLine()
-            appendLine("## Combination Breakdown")
-            appendLine("| profession | race | cases | leadDiscoveryRate | searchUseRate | secretEntryRate | secretConversionRate | firstHidden P50/P90 | firstSecret P50/P90 |")
-            appendLine("| --- | --- | --- | --- | --- | --- | --- | --- | --- |")
-            summary.combinations.forEach { combination ->
-                appendLine(
-                    "| `${combination.professionId}` | `${combination.raceId}` | `${combination.caseCount}` | " +
-                        "${formatPercent(combination.leadDiscoveryRate)} | ${formatPercent(combination.searchActionUseRate)} | " +
-                        "${formatPercent(combination.secretZoneEntryRate)} | ${formatPercent(combination.secretConversionRate)} | " +
-                        "${formatNullableTurn(combination.firstHiddenDiscoveryTurnP50)} / ${formatNullableTurn(combination.firstHiddenDiscoveryTurnP90)} | " +
-                        "${formatNullableTurn(combination.firstSecretZoneEntryTurnP50)} / ${formatNullableTurn(combination.firstSecretZoneEntryTurnP90)} |",
-                )
-            }
-            appendLine()
-            appendLine("## Notes")
-            appendLine("- organicHiddenProbe never uses primer actions or direct reveal APIs.")
-            appendLine("- organicHiddenProbe uses only RunObservation-visible prompts, interactables, and exploration state for navigation decisions.")
-            appendLine("- organicHiddenProbe only issues `Search` when `searchPromptAvailable=true` and now prioritizes that prompt even if nearby hostiles remain visible.")
-            appendLine("- organicHiddenProbe is a standalone owner artifact; this Markdown is intended for direct review without requiring the phase aggregate.")
-        }
-
 }
-
-private fun JsonObject.toOrganicHiddenProbeCaseResult(): OrganicHiddenProbeCaseResult =
-    OrganicHiddenProbeCaseResult(
-        zoneId = getValue("zoneId").jsonPrimitive.content,
-        floorIndex = getValue("floorIndex").jsonPrimitive.content.toInt(),
-        professionId = getValue("professionId").jsonPrimitive.content,
-        raceId = getValue("raceId").jsonPrimitive.content,
-        seed = getValue("seed").jsonPrimitive.content.toLong(),
-        turnCount = getValue("turnCount").jsonPrimitive.content.toInt(),
-        searchAttemptCount = getValue("searchAttemptCount").jsonPrimitive.content.toInt(),
-        searchActionUseCount = getValue("searchActionUseCount").jsonPrimitive.content.toInt(),
-        searchRevealCount = getValue("searchRevealCount").jsonPrimitive.content.toInt(),
-        hiddenEventIds = getValue("hiddenEventIds").jsonArray.map { hiddenEventId -> hiddenEventId.jsonPrimitive.content },
-        secretZoneIds = getValue("secretZoneIds").jsonArray.map { secretZoneId -> secretZoneId.jsonPrimitive.content },
-        firstHiddenDiscoveryTurn = this["firstHiddenDiscoveryTurn"]?.jsonPrimitive?.contentOrNull?.toIntOrNull(),
-        firstSecretZoneEntryTurn = this["firstSecretZoneEntryTurn"]?.jsonPrimitive?.contentOrNull?.toIntOrNull(),
-        lastCommands = getValue("lastCommands").jsonArray.map { command -> command.jsonPrimitive.content },
-        finalZoneId = getValue("finalZoneId").jsonPrimitive.content,
-        finalFloor = getValue("finalFloor").jsonPrimitive.content.toInt(),
-        runtimeFailure = this["runtimeFailure"]?.jsonPrimitive?.contentOrNull,
-    )
-
-private fun formatPercent(value: Double): String = String.format(Locale.US, "%.1f%%", value * 100.0)
-
-private fun formatNullableTurn(value: Int?): String = value?.toString() ?: "n/a"
 
 private data class OrganicProbeState(
     val revealedBindingIds: Set<String>,
@@ -933,77 +432,3 @@ private fun RunObservation.searchableInteractableSignature(): String =
     visibleInteractables
         .sortedWith(compareBy({ it.position.y }, { it.position.x }, { it.id }))
         .joinToString(separator = ";") { interactable -> "${interactable.id}@${interactable.position.x},${interactable.position.y}" }
-
-internal class OrganicHiddenProbeBot(
-    private val delegate: RunBot,
-) : RunBot {
-    private val searchedPositionsByFloor = mutableMapOf<Int, MutableSet<Point>>()
-    private val searchCountByFloor = mutableMapOf<Int, Int>()
-    private var lastAcceptedSearchTurn: Int? = null
-    private var lastRejectedSearchKey: RejectedSearchKey? = null
-
-    override fun decide(observation: RunObservation): PlayerCommand? = searchCommand(observation) ?: delegate.decide(observation)
-
-    internal fun searchCommand(observation: RunObservation): PlayerCommand? = if (shouldSearch(observation)) PlayerCommand.Search else null
-
-    internal fun recordAcceptedSearch(observation: RunObservation) {
-        searchedPositionsByFloor.getOrPut(observation.floor) { linkedSetOf() } += observation.playerPosition
-        searchCountByFloor[observation.floor] = (searchCountByFloor[observation.floor] ?: 0) + 1
-        lastAcceptedSearchTurn = observation.turnIndex
-        lastRejectedSearchKey = null
-    }
-
-    internal fun recordRejectedSearch(observation: RunObservation) {
-        lastRejectedSearchKey =
-            RejectedSearchKey(
-                floor = observation.floor,
-                position = observation.playerPosition,
-                turnIndex = observation.turnIndex,
-            )
-    }
-
-    private fun shouldSearch(observation: RunObservation): Boolean {
-        if (!observation.searchPromptAvailable) {
-            return false
-        }
-        if (
-            lastRejectedSearchKey ==
-                RejectedSearchKey(
-                    floor = observation.floor,
-                    position = observation.playerPosition,
-                    turnIndex = observation.turnIndex,
-                )
-        ) {
-            return false
-        }
-        if (observation.activeRouteSelection != null || observation.activeShopId != null) {
-            return false
-        }
-        val acceptedSearchTurn = lastAcceptedSearchTurn
-        if (acceptedSearchTurn != null && observation.turnIndex - acceptedSearchTurn < 4) {
-            return false
-        }
-        if ((searchCountByFloor[observation.floor] ?: 0) >= 6) {
-            return false
-        }
-        if (observation.playerPosition in searchedPositionsByFloor.getOrPut(observation.floor) { linkedSetOf() }) {
-            return false
-        }
-        return true
-    }
-
-    private data class RejectedSearchKey(
-        val floor: Int,
-        val position: Point,
-        val turnIndex: Int,
-    )
-}
-
-private fun averageOfNullable(values: List<Int?>): Double? {
-    val present = values.filterNotNull()
-    return if (present.isEmpty()) {
-        null
-    } else {
-        present.average()
-    }
-}

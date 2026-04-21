@@ -64,12 +64,16 @@
    - 每个 upgraded zone 的差异类别数至少为 `3`
    - 必须产出 `summary.json / cases.jsonl / report.md / artifacts/`
 4. `whiteBoxSolvability`
-   - 当前 pilot corpus 固定为 `4 zone × 2 floor × 5 seed = 40` case
+   - 当前 producer 继续保持单个 `whiteBoxSolvability` task；lane-aware artifact 不等于双 producer task
+   - `reveal-success` lane 固定为 `4 zone × 2 floor × 5 seed = 40` case
+   - `reveal-fail` lane 固定为 `3 fail-capable zone × 2 floor × 1 seed = 6` deterministic fixture case
    - `0` failed assertion
-   - corpus 必须同时包含 reveal-success 与 reveal-fail case
-   - corpus 至少保留 `1` 个 backtrack proof case；不要求每个 sampled seed 都发生回溯
-   - 每个 `zone/floor` 都必须保留可解释 proof，且 `criticalPathFailureCount = 0`
+   - `reveal-success` lane 至少保留 `1` 个 backtrack proof case；不要求每个 sampled seed 都发生回溯
+   - `reveal-success` lane 的每个 `zone/floor` 都必须保留可解释 proof，且 `criticalPathFailureCount = 0`
+   - `reveal-fail` lane 必须保留独立 `fail taxonomy / proof trace`，且 lane 内全部 case 都必须继续产出 failed-search 结果，不再作为 success corpus 的伪 requirement
+   - `greenwood_fringe` 当前仍属于 reveal-success 正式面；它在无 primer 的 formal search 语义下稳定 reveal，不计入 fail fixture corpus
    - `PR-03` 的 white-box 自动签收以该任务为主入口
+   - `phase4Report` 与 root summary 现在消费 lane-aware aggregate；`reveal-fail` 不再作为 success corpus 的伪 requirement，而是保留独立 aggregate/assertion 与 `reveal-success/`、`reveal-fail/` 分目录 artifact
 5. `lootBalanceLab`
    - 每组上下文至少 `10000` 次 roll
    - `MAGIC / RARE` 分布偏离公式预期不超过 `±5%`
@@ -91,7 +95,9 @@
    - 不允许使用 `HiddenPrimerAction` 或直接 reveal API
    - `runtimeFailureCount = 0`
    - summary 必须显式标记 `scriptedVerification = false`
-   - summary 必须保留 `searchActionUseRate / leadDiscoveryRate / secretConversionRate / secretZoneEntryRate`
+   - headline owner metric 固定为 `searchActionUseRate / leadDiscoveryRate / secretConversionRate / secretZoneEntryRate`
+   - supporting evidence 固定为 `firstHiddenDiscoveryTurn* / firstSecretZoneEntryTurn* / zoneDiscoveryDistribution / secretZoneDiscoveryDistribution / failingSecretEntryZoneIds`
+   - `firstHiddenDiscoveryTurn` 不允许被 primer-only signal 提前污染
 8. `longRunLab`
    - `long-run-full.json` 必须保留 `terminalWeaponBaseDiversity`
    - `long-run-full.json` 必须保留 `crossProfessionTopWeaponDominance`

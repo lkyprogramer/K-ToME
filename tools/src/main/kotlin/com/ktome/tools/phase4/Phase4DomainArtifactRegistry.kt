@@ -1,6 +1,8 @@
 package com.ktome.tools.phase4
 
 import com.ktome.game.data.DataLoader
+import com.ktome.tools.mapgen.WhiteBoxSolvabilityFailLane
+import com.ktome.tools.mapgen.WhiteBoxSolvabilitySuccessLane
 import java.nio.file.Path
 import java.time.Duration
 import java.time.Instant
@@ -33,6 +35,8 @@ private val longRunItemSemanticTagsById: Map<String, List<String>> by lazy {
 }
 
 private val contentPackArtifactFreshnessTolerance: Duration = Duration.ofMinutes(1)
+private const val WHITEBOX_SOLVABILITY_SUCCESS_CORPUS_GROUP_ID: String = "${WhiteBoxSolvabilitySuccessLane.LANE_ID}:corpus"
+private const val WHITEBOX_SOLVABILITY_FAIL_CORPUS_GROUP_ID: String = "${WhiteBoxSolvabilityFailLane.LANE_ID}:corpus"
 
 internal object Phase4DomainArtifactRegistry {
     private val taskReadersById: Map<String, (repoRoot: Path, sourcePath: Path, payload: JsonObject) -> Phase4TaskAggregate> =
@@ -443,7 +447,16 @@ internal object Phase4DomainArtifactRegistry {
     ): Phase4TaskAggregate {
         val header = payload.getValue("header").jsonObject
         val summary = payload.getValue("summary").jsonObject
+        val aggregates = payload.getValue("aggregates").jsonArray.map { aggregate -> aggregate.jsonObject }
         val failedAssertions = summary.intValue("failedAssertions")
+        val successLane =
+            checkNotNull(aggregates.firstOrNull { aggregate -> aggregate.getValue("groupId").jsonPrimitive.content == WHITEBOX_SOLVABILITY_SUCCESS_CORPUS_GROUP_ID }) {
+                "whiteBoxSolvability summary must include $WHITEBOX_SOLVABILITY_SUCCESS_CORPUS_GROUP_ID aggregate."
+            }
+        val failLane =
+            checkNotNull(aggregates.firstOrNull { aggregate -> aggregate.getValue("groupId").jsonPrimitive.content == WHITEBOX_SOLVABILITY_FAIL_CORPUS_GROUP_ID }) {
+                "whiteBoxSolvability summary must include $WHITEBOX_SOLVABILITY_FAIL_CORPUS_GROUP_ID aggregate."
+            }
         return Phase4TaskAggregate(
             taskId = "whiteBoxSolvability",
             status = if (failedAssertions == 0) "PASS" else "FAIL",
@@ -456,6 +469,14 @@ internal object Phase4DomainArtifactRegistry {
                     put("aggregateCount", summary.intValue("aggregateCount"))
                     put("failedAssertions", failedAssertions)
                     put("artifactCount", summary.intValue("artifactCount"))
+                    val successMetrics = successLane.getValue("metrics").jsonObject
+                    put("revealSuccessCaseCount", successLane.intValue("sampleCount"))
+                    put("revealSuccessCasesWithReveal", successMetrics.intValue("casesWithReveal"))
+                    put("revealSuccessCasesWithBacktrackProof", successMetrics.intValue("casesWithBacktrackProof"))
+                    val failMetrics = failLane.getValue("metrics").jsonObject
+                    put("revealFailCaseCount", failLane.intValue("sampleCount"))
+                    put("revealFailCasesWithFail", failMetrics.intValue("casesWithFail"))
+                    put("revealFailTaxonomy", failMetrics.getValue("failStateTaxonomy"))
                 },
         )
     }

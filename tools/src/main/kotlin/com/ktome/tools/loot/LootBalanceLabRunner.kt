@@ -23,8 +23,9 @@ import com.ktome.core.random.SplitMix64RandomSource
 import com.ktome.game.data.DataLoader
 import com.ktome.game.data.schema.LootProfileLocalIdentityCategory
 import com.ktome.game.data.schema.LootProfileSchemaV3
+import com.ktome.game.hidden.SecretRewardAuthorityViolation
 import com.ktome.game.data.schema.SchemaCatalog
-import com.ktome.game.hidden.HiddenEventRewardPayload
+import com.ktome.game.hidden.SecretRewardAuthorityAssertions
 import com.ktome.game.i18n.GameLocale
 import com.ktome.game.loot.LootProfileCandidatePoolResolver
 import com.ktome.game.mapgen.SchemaZoneRewardProfileResolver
@@ -313,7 +314,7 @@ internal data class LootProfileOverlapSummary(
     val sameZoneSecretVsRewardPairs: List<LootLocalOverlapPairSummary>,
     val localIdentityFailurePairs: List<String>,
     val strictLocalIdentityViolations: List<LootStrictLocalIdentityViolation>,
-    val secretZoneRewardAuthorityViolations: List<SecretZoneRewardAuthorityViolation>,
+    val secretZoneRewardAuthorityViolations: List<SecretRewardAuthorityViolation>,
     val secretProfileIdentitySummaries: List<LootSecretProfileIdentitySummary>,
 ) {
     val sameZoneSecretVsCadenceMaxOverlap: Double
@@ -358,7 +359,7 @@ internal data class LootProfileOverlapSummary(
             }
             put("secretZoneRewardAuthorityViolationCount", secretZoneRewardAuthorityViolations.size)
             putJsonArray("secretZoneRewardAuthorityViolations") {
-                secretZoneRewardAuthorityViolations.sortedBy(SecretZoneRewardAuthorityViolation::violationId).forEach { violation ->
+                secretZoneRewardAuthorityViolations.sortedBy(SecretRewardAuthorityViolation::violationId).forEach { violation ->
                     add(violation.toJson())
                 }
             }
@@ -388,27 +389,6 @@ internal data class LootLocalOverlapPairSummary(
             put("secretProfileId", secretProfileId)
             put("comparedProfileId", comparedProfileId)
             put("overlap", overlap)
-        }
-}
-
-internal data class SecretZoneRewardAuthorityViolation(
-    val secretZoneId: String,
-    val hiddenEventId: String,
-    val rewardKeys: List<String>,
-    val reason: String,
-) {
-    val violationId: String
-        get() = "$secretZoneId:$hiddenEventId:$reason"
-
-    fun toJson(): JsonObject =
-        buildJsonObject {
-            put("violationId", violationId)
-            put("secretZoneId", secretZoneId)
-            put("hiddenEventId", hiddenEventId)
-            putJsonArray("rewardKeys") {
-                rewardKeys.forEach { rewardKey -> add(JsonPrimitive(rewardKey)) }
-            }
-            put("reason", reason)
         }
 }
 
@@ -1405,8 +1385,8 @@ internal object LootLabKernel {
             profiles.associate { profile ->
                 profile.id to resolver.resolve(profile).allCandidateBaseIds
             }
-        val rewardStructureKeysByProfileId = buildSecretRewardStructureKeysByProfileId(schemaCatalog)
-        val secretZoneRewardAuthorityViolations = buildSecretZoneRewardAuthorityViolations(schemaCatalog)
+        val rewardStructureKeysByProfileId = SecretRewardAuthorityAssertions.rewardStructureKeysByProfileId(schemaCatalog)
+        val secretZoneRewardAuthorityViolations = SecretRewardAuthorityAssertions.scanCatalog(schemaCatalog)
         val overlapMatrix =
             profiles.associate { profile ->
                 val leftItems = candidateBaseIdsByProfileId.getValue(profile.id)
@@ -1562,62 +1542,6 @@ internal object LootLabKernel {
                 add("reward_structure")
             }
         }
-
-    private fun buildSecretRewardStructureKeysByProfileId(schemaCatalog: SchemaCatalog): Map<String, List<String>> {
-        return schemaCatalog.secretZones.associate { secretZone ->
-            val rewardKeys =
-                secretZone.guaranteedContent
-                    .filter { contentRef -> contentRef.registry.value == "hidden_event" }
-                    .flatMap { contentRef ->
-                        schemaCatalog.hiddenEvents
-                            .firstOrNull { hiddenEvent -> hiddenEvent.id == contentRef.id }
-                            ?.rewards
-                            ?.map { reward -> reward.key.name }
-                            .orEmpty()
-                    }.distinct()
-                    .sorted()
-            secretZone.rewardProfileId.id to rewardKeys
-        }
-    }
-
-    private fun buildSecretZoneRewardAuthorityViolations(schemaCatalog: SchemaCatalog): List<SecretZoneRewardAuthorityViolation> =
-        schemaCatalog.secretZones
-            .flatMap { secretZone ->
-                secretZone.guaranteedContent
-                    .filter { contentRef -> contentRef.registry.value == "hidden_event" }
-                    .mapNotNull { contentRef ->
-                        val hiddenEvent =
-                            schemaCatalog.hiddenEvents.firstOrNull { event -> event.id == contentRef.id }
-                                ?: return@mapNotNull SecretZoneRewardAuthorityViolation(
-                                    secretZoneId = secretZone.id.id,
-                                    hiddenEventId = contentRef.id,
-                                    rewardKeys = emptyList(),
-                                    reason = "missing_hidden_event",
-                                )
-                        val rewardKeys = hiddenEvent.rewards.map { reward -> reward.key.name }.sorted()
-                        val secretZoneRewardCount =
-                            hiddenEvent.rewards.count { reward -> reward.payload is HiddenEventRewardPayload.SecretZoneReward }
-                        when {
-                            hiddenEvent.rewards.any { reward -> reward.payload is HiddenEventRewardPayload.LootProfile } ->
-                                SecretZoneRewardAuthorityViolation(
-                                    secretZoneId = secretZone.id.id,
-                                    hiddenEventId = hiddenEvent.id,
-                                    rewardKeys = rewardKeys,
-                                    reason = "loot_profile_present",
-                                )
-
-                            secretZoneRewardCount != 1 ->
-                                SecretZoneRewardAuthorityViolation(
-                                    secretZoneId = secretZone.id.id,
-                                    hiddenEventId = hiddenEvent.id,
-                                    rewardKeys = rewardKeys,
-                                    reason = "secret_zone_reward_count_$secretZoneRewardCount",
-                                )
-
-                            else -> null
-                        }
-                    }
-            }.sortedBy(SecretZoneRewardAuthorityViolation::violationId)
 
     private fun validateLocalIdentityPairCoverage(
         metadataByProfileId: Map<String, LootProfileLocalIdentityMetadata>,
@@ -2211,13 +2135,25 @@ private fun JsonObject.toLootLocalOverlapPairSummary(): LootLocalOverlapPairSumm
         overlap = doubleValue("overlap"),
     )
 
-private fun JsonObject.toSecretZoneRewardAuthorityViolation(): SecretZoneRewardAuthorityViolation =
-    SecretZoneRewardAuthorityViolation(
+internal fun JsonObject.toSecretZoneRewardAuthorityViolation(): SecretRewardAuthorityViolation =
+    SecretRewardAuthorityViolation(
         secretZoneId = stringValue("secretZoneId"),
         hiddenEventId = stringValue("hiddenEventId"),
         rewardKeys = getValue("rewardKeys").jsonArray.map { rewardKey -> rewardKey.jsonPrimitive.content },
         reason = stringValue("reason"),
     )
+
+internal fun SecretRewardAuthorityViolation.toJson(): JsonObject =
+    buildJsonObject {
+        put("violationId", violationId)
+        put("culpritId", culpritId)
+        put("secretZoneId", secretZoneId)
+        put("hiddenEventId", hiddenEventId)
+        putJsonArray("rewardKeys") {
+            rewardKeys.forEach { rewardKey -> add(JsonPrimitive(rewardKey)) }
+        }
+        put("reason", reason)
+    }
 
 private fun JsonObject.toLootSecretProfileIdentitySummary(): LootSecretProfileIdentitySummary =
     LootSecretProfileIdentitySummary(

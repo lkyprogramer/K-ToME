@@ -42,6 +42,11 @@ object SolvabilityHarnessRunner {
     private const val FLOOR_SEED_BLOCK: Long = 10_000L
     private val harnessPerceptionScore: PerceptionScore = PerceptionScore(baseMentalPower = 12)
 
+    internal data class SolvabilityZoneFloorKey(
+        val zoneId: String,
+        val floorIndex: Int,
+    )
+
     fun run(): SolvabilityHarnessRun {
         val reportDir = reportDir()
         Files.createDirectories(reportDir)
@@ -126,6 +131,30 @@ object SolvabilityHarnessRunner {
                     }
                 }
             }
+        }
+
+    /**
+     * Freeze the reveal-fail lane against the same deterministic zone/floor seed schedule while
+     * intentionally withholding primer discovery tags. This keeps fail coverage explicit and
+     * independent from whether the reveal-success lane happens to surface a failed-search case.
+     */
+    internal fun buildRevealFailCases(
+        upgradedZones: List<ZoneSchemaV2>,
+        requiredHiddenAnchorFamiliesByZoneAndFloor: Map<Pair<String, Int>, Set<String>> = emptyMap(),
+        fixtureZoneFloors: Set<SolvabilityZoneFloorKey> = emptySet(),
+        seedsPerFloor: Int = 1,
+    ): List<SolvabilityCase> =
+        buildCases(
+            upgradedZones = upgradedZones,
+            primerDiscoveryTagsByZoneAndFloor = emptyMap(),
+            requiredHiddenAnchorFamiliesByZoneAndFloor = requiredHiddenAnchorFamiliesByZoneAndFloor,
+            seedsPerFloor = seedsPerFloor,
+        ).filter { testCase ->
+            fixtureZoneFloors.isEmpty() ||
+                SolvabilityZoneFloorKey(
+                    zoneId = testCase.request.zoneId,
+                    floorIndex = testCase.request.floorIndex,
+                ) in fixtureZoneFloors
         }
 
     internal fun executeCase(
