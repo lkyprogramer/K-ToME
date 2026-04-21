@@ -6,6 +6,7 @@ import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -96,6 +97,50 @@ public final class VerifyChangedPlanGate {
                 .anyMatch(taskNameArg ->
                         taskNameArg.equals(taskPath)
                                 || taskNameArg.equals(relativeTaskPath)
-                                || taskNameArg.equals(taskName));
+                                || taskNameArg.equals(taskName)
+                                || requestedAliasDependsOn(task, taskNameArg));
+    }
+
+    private static boolean requestedAliasDependsOn(Task task, String taskNameArg) {
+        if (matchesTaskName(taskNameArg, "verifyChanged") || matchesTaskName(taskNameArg, "verifyChangedPreflight")) {
+            return false;
+        }
+        Task requestedTask = requestedTask(task, taskNameArg);
+        return requestedTask != null && taskDependsOn(requestedTask, task, new HashSet<>());
+    }
+
+    private static Task requestedTask(Task task, String taskNameArg) {
+        if (!taskNameArg.contains(":")) {
+            return task.getProject().getRootProject().getTasks().findByName(taskNameArg);
+        }
+        if (taskNameArg.startsWith(":") && taskNameArg.indexOf(':', 1) < 0) {
+            return task.getProject().getRootProject().getTasks().findByName(taskNameArg.substring(1));
+        }
+        int taskNameSeparator = taskNameArg.lastIndexOf(':');
+        String projectPath = taskNameArg.substring(0, taskNameSeparator);
+        if (!projectPath.startsWith(":")) {
+            projectPath = ":" + projectPath;
+        }
+        String taskName = taskNameArg.substring(taskNameSeparator + 1);
+        if (taskName.isBlank()) {
+            return null;
+        }
+        org.gradle.api.Project requestedProject = task.getProject().getRootProject().findProject(projectPath);
+        return requestedProject == null ? null : requestedProject.getTasks().findByName(taskName);
+    }
+
+    private static boolean taskDependsOn(Task current, Task target, Set<String> visitedTaskPaths) {
+        if (!visitedTaskPaths.add(current.getPath())) {
+            return false;
+        }
+        for (Task dependency : current.getTaskDependencies().getDependencies(current)) {
+            if (dependency.getPath().equals(target.getPath())) {
+                return true;
+            }
+            if (taskDependsOn(dependency, target, visitedTaskPaths)) {
+                return true;
+            }
+        }
+        return false;
     }
 }

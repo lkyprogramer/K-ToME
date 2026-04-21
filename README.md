@@ -107,8 +107,10 @@ sdk env
 
 Phase 4 报告会输出到：
 
-1. `tools/build/reports/phase4/phase4-summary.json`
-2. `tools/build/reports/phase4/phase4-summary.md`
+1. `tools/build/reports/verification/phase4/report-phase4-summary.json`
+2. `tools/build/reports/verification/phase4/report-phase4-summary.md`
+
+旧的 `tools/build/reports/phase4/phase4-summary.{json,md}` 只属于 `phase4LegacyReport*` 手工 fallback，不作为默认验收证据。
 
 启动客户端：
 
@@ -129,7 +131,7 @@ sdk env
 
 区别：
 
-1. `:client:releaseDesktopDist` 产出跨平台 zip 分发包：`client/build/release/ktome-v0.1.0-desktop.zip`
+1. `:client:releaseDesktopDist` 产出跨平台 zip 分发包：`client/build/release/ktome-v0.4.0-desktop.zip`
 2. `:client:packageMacApp` 产出 macOS 本地 `.app`：`client/build/release/K-ToME.app`
 3. 当前 `.app` 仅用于本地 macOS 打包与启动验证，不包含签名或 notarization
 4. app icon 来自离线美术管线生成的 packaging asset：`client/src/packaging/macos/K-ToME-app-icon.png`
@@ -138,7 +140,7 @@ sdk env
 
 1. `:client:releaseDesktopDist`
    - 适用于需要一个不依赖 Gradle 的桌面分发包时。
-   - 产物固定落在 `client/build/release/ktome-v0.1.0-desktop.zip`。
+   - 产物固定落在 `client/build/release/ktome-v0.4.0-desktop.zip`。
    - 解压后可直接使用生成的启动脚本运行桌面版。
 2. `:client:packageMacApp`
    - 仅支持 macOS。

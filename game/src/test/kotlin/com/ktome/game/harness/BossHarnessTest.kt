@@ -33,6 +33,7 @@ import com.ktome.game.elites.BossVariantSelectionMode
 import com.ktome.game.interactablePoint
 import java.nio.file.Path
 import java.security.MessageDigest
+import kotlin.math.max
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
@@ -49,6 +50,10 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
+
+private const val MIN_PHASE_TRANSITION_OBSERVED_RATIO = 1.0
+private const val MIN_VARIANT_TRACE_DIVERGENCE_RATIO = 1.0
+private const val MIN_VARIANT_ACTION_TRACE_DIVERGENCE_SCORE = 0.25
 
 class BossHarnessTest {
     @TempDir
@@ -73,14 +78,14 @@ class BossHarnessTest {
             fileStem = "boss-harness",
             payload =
                 buildJsonObject {
-                    put("scriptVersion", "boss-harness-v4")
+                    put("scriptVersion", "boss-harness-v5")
                     putJsonArray("reports") { reports.forEach { report -> add(report.toJson()) } }
                     putJsonArray("pairReports") { pairReports.forEach { report -> add(report.toJson()) } }
                 },
             markdown =
                 buildString {
                     appendLine("# Boss Harness")
-                    appendLine("- scriptVersion: boss-harness-v4")
+                    appendLine("- scriptVersion: boss-harness-v5")
                     reports.forEach { report ->
                         appendLine(
                             "- encounter=${report.encounterId}, template=${report.templateId}, variant=${report.variantId ?: "base"}, " +
@@ -230,7 +235,7 @@ class BossHarnessTest {
             session = session,
             bossActorId = bossId.value,
             expectedPhaseId = "phase_enraged",
-            expectedActionIds = setOf("earthshaker"),
+            expectedActionIds = if (preferredVariantId == null) setOf("earthshaker") else setOf("linebreaker"),
         )
 
         return buildReport(
@@ -245,7 +250,7 @@ class BossHarnessTest {
             phaseState = world.get<BossEncounterState>(bossId),
             expectedTelegraphKey = "molten_giant_phase_warning",
             expectedPhaseId = "phase_enraged",
-            expectedSelectedActionIds = setOf("earthshaker"),
+            expectedSelectedActionIds = if (preferredVariantId == null) setOf("earthshaker") else setOf("linebreaker"),
             expectedBossTracePhaseId = "phase_enraged",
             expectedBossTraceSideEffect = "TELEGRAPH:molten_giant_phase_warning",
             expectedVariantId = preferredVariantId,
@@ -288,7 +293,7 @@ class BossHarnessTest {
             session = session,
             bossActorId = bossId.value,
             expectedPhaseId = "phase_desperate",
-            expectedActionIds = setOf("arcane_shield"),
+            expectedActionIds = if (preferredVariantId == null) setOf("arcane_shield") else setOf("war_call", "battlefield_command", "arcane_shield"),
         )
 
         return buildReport(
@@ -303,7 +308,7 @@ class BossHarnessTest {
             phaseState = world.get<BossEncounterState>(bossId),
             expectedTelegraphKey = "dungeon_lord_phase_warning",
             expectedPhaseId = "phase_desperate",
-            expectedSelectedActionIds = setOf("arcane_shield"),
+            expectedSelectedActionIds = if (preferredVariantId == null) setOf("arcane_shield") else setOf("war_call", "battlefield_command", "arcane_shield"),
             expectedBossTracePhaseId = "phase_desperate",
             expectedBossTraceSideEffect = "TELEGRAPH:dungeon_lord_phase_warning",
             expectedVariantId = preferredVariantId,
@@ -347,7 +352,7 @@ class BossHarnessTest {
             session = session,
             bossActorId = bossId.value,
             expectedPhaseId = "phase_abyssal",
-            expectedActionIds = setOf("abyssal_consecration", "press_abyss"),
+            expectedActionIds = if (preferredVariantId == null) setOf("abyssal_consecration", "press_abyss") else setOf("linebreaker"),
         )
 
         return buildReport(
@@ -362,7 +367,7 @@ class BossHarnessTest {
             phaseState = world.get<BossEncounterState>(bossId),
             expectedTelegraphKey = "abyssal_guardian_phase_warning",
             expectedPhaseId = "phase_abyssal",
-            expectedSelectedActionIds = setOf("abyssal_consecration", "press_abyss"),
+            expectedSelectedActionIds = if (preferredVariantId == null) setOf("abyssal_consecration", "press_abyss") else setOf("linebreaker"),
             expectedBossTracePhaseId = "phase_abyssal",
             expectedBossTraceSideEffect = "TELEGRAPH:abyssal_guardian_phase_warning",
             expectedVariantId = preferredVariantId,
@@ -405,6 +410,7 @@ class BossHarnessTest {
             Json.decodeFromString<List<AIDecisionTrace>>(aiJson) == phaseScopedAi &&
                 decodedBoss == bossTraces
         val selectedActionIds = phaseScopedAi.mapNotNull(AIDecisionTrace::selectedActionId).distinct().sorted()
+        val selectedActionSequence = phaseScopedAi.mapNotNull(AIDecisionTrace::selectedActionId)
         val telegraphMatches =
             telegraph != null &&
                 (telegraph.sourceAbilityId == expectedTelegraphKey || telegraph.telegraphSpecId == expectedTelegraphKey)
@@ -457,6 +463,7 @@ class BossHarnessTest {
             }
         val phaseSequence = phaseSequence(decodedBoss, phaseState)
         val phaseTransitionTriggers = decodedBoss.map { trace -> "${trace.fromPhase ?: "START"}->${trace.toPhase}:${trace.trigger}" }.distinct()
+        val phaseTransitionObserved = decodedBoss.any { trace -> trace.toPhase == expectedPhaseId }
         val encounterThreatBudget = session.automationEncounterThreatBudget(bossId)
         val floorRewardBudget = session.automationFloorRewardBudget()
         val variantMatches =
@@ -474,6 +481,7 @@ class BossHarnessTest {
                 expectedBossPhaseTracePresent &&
                 expectedBossSideEffectPresent &&
                 variantMatches &&
+                phaseTransitionObserved &&
                 (!terrainPreferenceAvailable || terrainPreferenceImplemented) &&
                 inspectReadable &&
                 logReadable
@@ -489,6 +497,7 @@ class BossHarnessTest {
                 !expectedBossPhaseTracePresent -> "Missing boss phase trace '$expectedBossTracePhaseId'."
                 !expectedBossSideEffectPresent -> "Missing boss trace side effect '$expectedBossTraceSideEffect'."
                 !variantMatches -> "Expected variant ${expectedVariantId ?: "base"} but got ${variantRuntime?.variantId ?: "base"}."
+                !phaseTransitionObserved -> "Boss phase transition was not observed in the trace payload."
                 terrainPreferenceAvailable && !terrainPreferenceImplemented ->
                     "Boss spawn did not land on preferred terrain or an adjacent tactical tile."
                 !inspectReadable -> "Inspect view did not expose the expected variant/mutation metadata."
@@ -519,8 +528,10 @@ class BossHarnessTest {
             telegraphKey = telegraph?.sourceAbilityId ?: telegraph?.telegraphSpecId,
             phaseSequence = phaseSequence,
             phaseTransitionTriggers = phaseTransitionTriggers,
+            phaseTransitionObserved = phaseTransitionObserved,
             expectedSelectedActions = expectedSelectedActionIds.sorted(),
             selectedActionIds = selectedActionIds,
+            selectedActionSequence = selectedActionSequence,
             requiredAiTraceCount = if (aiTraceRequired) 1 else 0,
             observedAiTraceCount = phaseScopedAi.size,
             aiTraceCount = phaseScopedAi.size,
@@ -566,10 +577,22 @@ class BossHarnessTest {
                         rewardLedgerEntry.getValue("amount").jsonPrimitive.content.toInt() == variantReport.lootProfileRewardBudget
                 )
         val grantedMutationsRegistered = variantReport.grantedMutations.all { mutationId -> mutationId.startsWith("elite.") }
+        val traceDiverged = baseReport.aiTraceHash != variantReport.aiTraceHash
+        val selectedActionSequenceDiverged = baseReport.selectedActionSequence != variantReport.selectedActionSequence
+        val actionTraceDivergenceScore =
+            actionTraceDivergenceScore(
+                baseReport.selectedActionSequence,
+                variantReport.selectedActionSequence,
+            )
         val success =
             baseReport.success &&
                 variantReport.success &&
                 phaseGraphUnchanged &&
+                baseReport.phaseTransitionObserved &&
+                variantReport.phaseTransitionObserved &&
+                traceDiverged &&
+                selectedActionSequenceDiverged &&
+                actionTraceDivergenceScore >= MIN_VARIANT_ACTION_TRACE_DIVERGENCE_SCORE &&
                 grantedMutationsRegistered &&
                 threatLedgerMatched &&
                 rewardLedgerMatched &&
@@ -580,6 +603,11 @@ class BossHarnessTest {
                 !baseReport.success -> "Base report failed: ${baseReport.failureReason}"
                 !variantReport.success -> "Variant report failed: ${variantReport.failureReason}"
                 !phaseGraphUnchanged -> "Boss variant changed the phase graph structure."
+                !baseReport.phaseTransitionObserved || !variantReport.phaseTransitionObserved -> "Base and variant reports must both observe a boss phase transition."
+                !traceDiverged -> "Variant AI trace did not diverge from the base trace."
+                !selectedActionSequenceDiverged -> "Variant selected action sequence did not diverge from the base sequence."
+                actionTraceDivergenceScore < MIN_VARIANT_ACTION_TRACE_DIVERGENCE_SCORE ->
+                    "Variant selected action sequence divergence score $actionTraceDivergenceScore is below $MIN_VARIANT_ACTION_TRACE_DIVERGENCE_SCORE."
                 !grantedMutationsRegistered -> "Variant references a non-registry mutation id."
                 !threatLedgerMatched -> "Variant threatCost is missing from the encounter ledger."
                 !rewardLedgerMatched -> "Variant lootProfileOverride is missing from the reward ledger or uses the wrong rewardBudget amount."
@@ -593,6 +621,9 @@ class BossHarnessTest {
             variantReport = variantReport,
             phaseGraphUnchanged = phaseGraphUnchanged,
             phaseGraphStructuralDiffCount = phaseGraphStructuralDiffCount.coerceAtLeast(0),
+            traceDiverged = traceDiverged,
+            selectedActionSequenceDiverged = selectedActionSequenceDiverged,
+            actionTraceDivergenceScore = actionTraceDivergenceScore,
             threatLedgerMatched = threatLedgerMatched,
             rewardLedgerMatched = rewardLedgerMatched,
             inspectReadable = variantReport.inspectReadable,
@@ -602,8 +633,11 @@ class BossHarnessTest {
         )
     }
 
-    private fun bossAggregates(pairReports: List<BossHarnessPairReport>): List<WhiteBoxAggregateReport> =
-        listOf(
+    private fun bossAggregates(pairReports: List<BossHarnessPairReport>): List<WhiteBoxAggregateReport> {
+        val phaseTransitionObservedRatio = phaseTransitionObservedRatio(pairReports)
+        val variantTraceDivergenceRatio = variantTraceDivergenceRatio(pairReports)
+        val minVariantActionTraceDivergenceScore = pairReports.minOf(BossHarnessPairReport::actionTraceDivergenceScore)
+        return listOf(
             WhiteBoxAggregateReport(
                 groupId = "per-encounter",
                 sampleCount = pairReports.size,
@@ -611,6 +645,9 @@ class BossHarnessTest {
                     buildJsonObject {
                         put("pairCount", pairReports.size)
                         put("phaseGraphStructuralDiffCount", pairReports.sumOf(BossHarnessPairReport::phaseGraphStructuralDiffCount))
+                        put("phaseTransitionObservedRatio", phaseTransitionObservedRatio)
+                        put("variantTraceDivergenceRatio", variantTraceDivergenceRatio)
+                        put("minVariantActionTraceDivergenceScore", minVariantActionTraceDivergenceScore)
                         put("variantCount", pairReports.count { pair -> pair.variantReport.variantId != null })
                         put("terrainPreferenceVariantCount", pairReports.count { pair -> pair.variantReport.preferredTerrainTags.isNotEmpty() })
                         put("terrainPreferenceAvailableVariantCount", pairReports.count { pair -> pair.variantReport.terrainPreferenceAvailable })
@@ -632,6 +669,16 @@ class BossHarnessTest {
                             ruleId = "boss.aggregate.phase_graph_diff_zero",
                             passed = pairReports.sumOf(BossHarnessPairReport::phaseGraphStructuralDiffCount) == 0,
                             message = "All boss variants preserve the original phase graph structure.",
+                        ),
+                        WhiteBoxAssertionResult(
+                            ruleId = "boss.aggregate.phase_transition_observed_ratio",
+                            passed = phaseTransitionObservedRatio >= MIN_PHASE_TRANSITION_OBSERVED_RATIO,
+                            message = "All base-vs-variant samples observe a formal boss phase transition.",
+                        ),
+                        WhiteBoxAssertionResult(
+                            ruleId = "boss.aggregate.variant_trace_divergence",
+                            passed = variantTraceDivergenceRatio >= MIN_VARIANT_TRACE_DIVERGENCE_RATIO,
+                            message = "Every boss variant diverges from its base AI trace and selected action sequence.",
                         ),
                         WhiteBoxAssertionResult(
                             ruleId = "boss.aggregate.preferred_terrain_applied",
@@ -657,6 +704,10 @@ class BossHarnessTest {
                         put("eliteMutationValidPairCount", bossRegistryMetrics.eliteMutationValidPairCount)
                         put("bossVariantCount", bossRegistryMetrics.bossVariantCount)
                         put("bossVariantMutationPairwiseDistinct", bossRegistryMetrics.bossVariantMutationPairwiseDistinct)
+                        put("bossVariantBasePhaseCountMin", bossRegistryMetrics.bossVariantBasePhaseCounts.values.minOrNull() ?: 0)
+                        put("phaseTransitionObservedRatio", phaseTransitionObservedRatio)
+                        put("variantTraceDivergenceRatio", variantTraceDivergenceRatio)
+                        put("minVariantActionTraceDivergenceScore", minVariantActionTraceDivergenceScore)
                         put("terrainPreferenceVariantCount", pairReports.count { pair -> pair.variantReport.preferredTerrainTags.isNotEmpty() })
                         put("terrainPreferenceAvailableVariantCount", pairReports.count { pair -> pair.variantReport.terrainPreferenceAvailable })
                         put(
@@ -695,6 +746,11 @@ class BossHarnessTest {
                                 putJsonArray(variantId) {
                                     terrainTags.forEach { terrainTag -> add(JsonPrimitive(terrainTag)) }
                                 }
+                            }
+                        }
+                        putJsonObject("bossVariantBasePhaseCounts") {
+                            bossRegistryMetrics.bossVariantBasePhaseCounts.forEach { (variantId, phaseCount) ->
+                                put(variantId, phaseCount)
                             }
                         }
                     },
@@ -739,6 +795,21 @@ class BossHarnessTest {
                             message = "All formal boss variants keep pairwise-distinct mutation combinations.",
                         ),
                         WhiteBoxAssertionResult(
+                            ruleId = "boss.aggregate.variant_base_has_two_phases",
+                            passed = bossRegistryMetrics.bossVariantBasePhaseCounts.values.all { phaseCount -> phaseCount >= 2 },
+                            message = "Every formal boss variant targets a base encounter with at least two phases.",
+                        ),
+                        WhiteBoxAssertionResult(
+                            ruleId = "boss.aggregate.phase_transition_observed_ratio",
+                            passed = phaseTransitionObservedRatio >= MIN_PHASE_TRANSITION_OBSERVED_RATIO,
+                            message = "phaseTransitionObservedRatio reaches the V3 PR-04 owner threshold.",
+                        ),
+                        WhiteBoxAssertionResult(
+                            ruleId = "boss.aggregate.variant_trace_divergence_threshold",
+                            passed = variantTraceDivergenceRatio >= MIN_VARIANT_TRACE_DIVERGENCE_RATIO,
+                            message = "variant/base trace divergence reaches the V3 PR-04 owner threshold.",
+                        ),
+                        WhiteBoxAssertionResult(
                             ruleId = "boss.aggregate.variant_preferred_terrain_applied",
                             passed =
                                 pairReports.all { pair ->
@@ -749,6 +820,24 @@ class BossHarnessTest {
                     ),
             ),
         )
+    }
+
+    private fun phaseTransitionObservedRatio(pairReports: List<BossHarnessPairReport>): Double {
+        val reports = pairReports.flatMap { pair -> listOf(pair.baseReport, pair.variantReport) }
+        if (reports.isEmpty()) {
+            return 0.0
+        }
+        return reports.count(BossHarnessReport::phaseTransitionObserved).toDouble() / reports.size.toDouble()
+    }
+
+    private fun variantTraceDivergenceRatio(pairReports: List<BossHarnessPairReport>): Double {
+        if (pairReports.isEmpty()) {
+            return 0.0
+        }
+        return pairReports
+            .count(BossHarnessPairReport::variantTraceDivergencePassed)
+            .toDouble() / pairReports.size.toDouble()
+    }
 
     private fun descendToBossFloor(session: FoundationGameSession) {
         val stairsDown = requireNotNull(session.automationStairPoint(com.ktome.core.dungeon.StairDirection.DOWN))
@@ -852,6 +941,21 @@ class BossHarnessTest {
             }
         }
 
+    private fun actionTraceDivergenceScore(
+        baseSequence: List<String>,
+        variantSequence: List<String>,
+    ): Double {
+        val denominator = max(baseSequence.size, variantSequence.size)
+        if (denominator == 0) {
+            return 0.0
+        }
+        val differenceCount =
+            (0 until denominator).count { index ->
+                baseSequence.getOrNull(index) != variantSequence.getOrNull(index)
+            }
+        return differenceCount.toDouble() / denominator.toDouble()
+    }
+
     private fun encounterThreatBudgetToJson(budget: EncounterThreatBudget): JsonElement =
         buildJsonObject {
             put("encounterId", budget.encounterId)
@@ -908,8 +1012,10 @@ private data class BossHarnessReport(
     val telegraphKey: String?,
     val phaseSequence: List<String>,
     val phaseTransitionTriggers: List<String>,
+    val phaseTransitionObserved: Boolean,
     val expectedSelectedActions: List<String>,
     val selectedActionIds: List<String>,
+    val selectedActionSequence: List<String>,
     val requiredAiTraceCount: Int,
     val observedAiTraceCount: Int,
     val aiTraceCount: Int,
@@ -938,8 +1044,10 @@ private data class BossHarnessReport(
             putJsonArray("grantedMutations") { grantedMutations.forEach { mutationId -> add(JsonPrimitive(mutationId)) } }
             putJsonArray("phaseSequence") { phaseSequence.forEach { phase -> add(JsonPrimitive(phase)) } }
             putJsonArray("phaseTransitionTriggers") { phaseTransitionTriggers.forEach { trigger -> add(JsonPrimitive(trigger)) } }
+            put("phaseTransitionObserved", phaseTransitionObserved)
             putJsonArray("expectedSelectedActions") { expectedSelectedActions.forEach { actionId -> add(JsonPrimitive(actionId)) } }
             putJsonArray("selectedActionIds") { selectedActionIds.forEach { actionId -> add(JsonPrimitive(actionId)) } }
+            putJsonArray("selectedActionSequence") { selectedActionSequence.forEach { actionId -> add(JsonPrimitive(actionId)) } }
             put("requiredAiTraceCount", requiredAiTraceCount)
             put("observedAiTraceCount", observedAiTraceCount)
             put("aiTraceCount", aiTraceCount)
@@ -984,6 +1092,9 @@ private data class BossHarnessPairReport(
     val variantReport: BossHarnessReport,
     val phaseGraphUnchanged: Boolean,
     val phaseGraphStructuralDiffCount: Int,
+    val traceDiverged: Boolean,
+    val selectedActionSequenceDiverged: Boolean,
+    val actionTraceDivergenceScore: Double,
     val threatLedgerMatched: Boolean,
     val rewardLedgerMatched: Boolean,
     val inspectReadable: Boolean,
@@ -991,6 +1102,11 @@ private data class BossHarnessPairReport(
     val success: Boolean,
     val failureReason: String?,
 ) {
+    fun variantTraceDivergencePassed(): Boolean =
+        traceDiverged &&
+            selectedActionSequenceDiverged &&
+            actionTraceDivergenceScore >= MIN_VARIANT_ACTION_TRACE_DIVERGENCE_SCORE
+
     fun toJson() =
         buildJsonObject {
             put("joinKey", Json.encodeToJsonElement(WhiteBoxJoinKey.serializer(), joinKey))
@@ -998,6 +1114,9 @@ private data class BossHarnessPairReport(
             put("variant", variantReport.toJson())
             put("phaseGraphUnchanged", phaseGraphUnchanged)
             put("phaseGraphStructuralDiffCount", phaseGraphStructuralDiffCount)
+            put("traceDiverged", traceDiverged)
+            put("selectedActionSequenceDiverged", selectedActionSequenceDiverged)
+            put("actionTraceDivergenceScore", actionTraceDivergenceScore)
             put("threatLedgerMatched", threatLedgerMatched)
             put("rewardLedgerMatched", rewardLedgerMatched)
             put("inspectReadable", inspectReadable)
@@ -1026,9 +1145,19 @@ private data class BossHarnessPairReport(
                     message = "Variant preserves the base phase graph structure.",
                 ),
                 WhiteBoxAssertionResult(
+                    ruleId = "boss.case.phase_transition_observed",
+                    passed = baseReport.phaseTransitionObserved && variantReport.phaseTransitionObserved,
+                    message = "Base and variant samples both observe the formal boss phase transition.",
+                ),
+                WhiteBoxAssertionResult(
                     ruleId = "boss.case.action_weight_overlay_only",
                     passed = variantReport.actionWeightProfileId != null && phaseGraphUnchanged,
                     message = "actionWeightProfileId only shifts weights and does not alter phase structure.",
+                ),
+                WhiteBoxAssertionResult(
+                    ruleId = "boss.case.variant_trace_divergence",
+                    passed = variantTraceDivergencePassed(),
+                    message = "Variant sample diverges from the base AI trace and selected action sequence.",
                 ),
                 WhiteBoxAssertionResult(
                     ruleId = "boss.case.threat_cost_in_ledger",
@@ -1064,7 +1193,12 @@ private data class BossHarnessPairReport(
                     variantReport.actionWeightProfileId?.let { put("actionWeightProfileId", it) }
                     putJsonArray("phaseSequence") { variantReport.phaseSequence.forEach { phase -> add(JsonPrimitive(phase)) } }
                     putJsonArray("phaseTransitionTriggers") { variantReport.phaseTransitionTriggers.forEach { trigger -> add(JsonPrimitive(trigger)) } }
+                    put("phaseTransitionObserved", variantReport.phaseTransitionObserved)
                     putJsonArray("selectedActions") { variantReport.selectedActionIds.forEach { actionId -> add(JsonPrimitive(actionId)) } }
+                    putJsonArray("selectedActionSequence") { variantReport.selectedActionSequence.forEach { actionId -> add(JsonPrimitive(actionId)) } }
+                    put("traceDiverged", traceDiverged)
+                    put("selectedActionSequenceDiverged", selectedActionSequenceDiverged)
+                    put("actionTraceDivergenceScore", actionTraceDivergenceScore)
                     putJsonArray("preferredTerrainTags") { variantReport.preferredTerrainTags.forEach { terrainTag -> add(JsonPrimitive(terrainTag)) } }
                     putJsonArray("bossTerrainTags") { variantReport.bossTerrainTags.forEach { terrainTag -> add(JsonPrimitive(terrainTag)) } }
                     putJsonArray("adjacentBossTerrainTags") { variantReport.adjacentBossTerrainTags.forEach { terrainTag -> add(JsonPrimitive(terrainTag)) } }
@@ -1117,8 +1251,9 @@ private data class BossHarnessPairReport(
                     buildString {
                         appendLine("| side | selectedActions | aiTraceHash |")
                         appendLine("| --- | --- | --- |")
-                        appendLine("| base | ${baseReport.selectedActionIds.joinToString()} | ${baseReport.aiTraceHash} |")
-                        appendLine("| variant | ${variantReport.selectedActionIds.joinToString()} | ${variantReport.aiTraceHash} |")
+                        appendLine("| base | ${baseReport.selectedActionSequence.joinToString()} | ${baseReport.aiTraceHash} |")
+                        appendLine("| variant | ${variantReport.selectedActionSequence.joinToString()} | ${variantReport.aiTraceHash} |")
+                        appendLine("| divergenceScore | $actionTraceDivergenceScore | traceDiverged=$traceDiverged |")
                     },
                 tags = listOf("ai", "actions"),
             ),
@@ -1204,6 +1339,7 @@ private data class BossRegistryMetrics(
     val bossVariantMutationPairwiseDistinct: Boolean,
     val bossVariantMutationSets: Map<String, List<String>>,
     val bossVariantPreferredTerrainTags: Map<String, List<String>>,
+    val bossVariantBasePhaseCounts: Map<String, Int>,
 ) {
     companion object {
         fun load(): BossRegistryMetrics {
@@ -1229,6 +1365,16 @@ private data class BossRegistryMetrics(
                                 .sorted()
                                 .toList()
                     }.toSortedMap()
+            val bossVariantBasePhaseCounts =
+                schemaCatalog.bossVariants
+                    .associate { variant ->
+                        variant.id to
+                            schemaCatalog.bossEncounters
+                                .firstOrNull { encounter -> encounter.id == variant.baseEncounterId }
+                                ?.phases
+                                .orEmpty()
+                                .size
+                    }.toSortedMap()
             val validPairCount =
                 mutations.indices.sumOf { leftIndex ->
                     val left = mutations[leftIndex]
@@ -1249,6 +1395,7 @@ private data class BossRegistryMetrics(
                     bossVariantMutationSets.values.distinct().size == bossVariantMutationSets.size,
                 bossVariantMutationSets = bossVariantMutationSets,
                 bossVariantPreferredTerrainTags = bossVariantPreferredTerrainTags,
+                bossVariantBasePhaseCounts = bossVariantBasePhaseCounts,
             )
         }
 

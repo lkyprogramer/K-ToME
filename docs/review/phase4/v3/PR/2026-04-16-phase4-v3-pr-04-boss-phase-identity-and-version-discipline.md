@@ -199,3 +199,21 @@
 
 1. boss 不再是“只有血量和掉落”的终盘验收
 2. 版本纪律和 sample pack 口径已经收口，不再让 Phase4 的 pack boundary 自己漂移
+
+## 11. Post-Hardening Closure Note
+
+1. `bossHarness` 的 owner metric 已从 contract parity 扩展为 boss phase identity：
+   - `phaseTransitionObservedRatio` 必须达到 `1.0`
+   - `variantTraceDivergenceRatio` 必须达到 `1.0`
+   - `minVariantActionTraceDivergenceScore` 必须 `>= 0.25`
+   - `bossVariantBasePhaseCountMin` 必须 `>= 2`
+2. boss variant 继续保持 PR-06 冻结边界：
+   - 不改 base encounter phase graph
+   - 不新增 tactical AI planner
+   - action identity 通过已有 phase profile + `actionWeightProfileId` 的 typed overlay 拉开
+3. `abyssal_eclipse` 不再引用当前 `abyssal_heart` 不可落地的 OIL terrain preference；该 variant 改走 `void_mirror + phase_runner` 的 abyssal source-level identity。
+4. 版本纪律已统一到 Phase4 `0.4.x` 口径：
+   - project `version`
+   - client window title
+   - generated `ktome-build.properties`
+   - sample pack 与 fixture `gameVersionRange`

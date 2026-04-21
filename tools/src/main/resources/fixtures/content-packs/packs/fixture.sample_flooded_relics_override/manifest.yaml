@@ -1,7 +1,7 @@
 id: fixture.sample_flooded_relics_override
 version: 1.0.0
 schemaVersion: 1
-gameVersionRange: ">=0.1.0 <0.2.0"
+gameVersionRange: ">=0.4.0 <0.5.0"
 namespace: fixture_sample_flooded_relics_override
 dependencies:
   - id: sample.flooded_relics

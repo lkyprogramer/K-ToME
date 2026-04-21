@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "baselineId": "phase4-boss-phase-identity-v1",
+  "domainId": "boss",
+  "mode": "BUDGET_THRESHOLD",
+  "metricDefinitionVersion": "phase4-boss-phase-identity-v1",
+  "approvedDebtKeys": [],
+  "expectedFailureCodes": [],
+  "ceilings": [],
+  "expectedMetricRanges": [
+    {
+      "metricId": "phaseTransitionObservedRatio",
+      "minValue": 1.0,
+      "notes": "Every base and variant sample must observe the formal boss phase transition path."
+    },
+    {
+      "metricId": "variantTraceDivergenceRatio",
+      "minValue": 1.0,
+      "notes": "Every boss variant/base pair must diverge in AI trace and selected action sequence."
+    },
+    {
+      "metricId": "minVariantActionTraceDivergenceScore",
+      "minValue": 0.25,
+      "notes": "The weakest boss variant/base pair must keep a material selected-action divergence score."
+    },
+    {
+      "metricId": "bossVariantBasePhaseCountMin",
+      "minValue": 2.0,
+      "notes": "Every formal boss variant must bind to a base encounter with at least two phases."
+    }
+  ],
+  "sourceArtifactPath": "tools/build/reports/phase4/whitebox/boss/whitebox-boss-summary.json",
+  "notes": [
+    "Externalizes V3 PR-04 boss phase identity owner thresholds for reportPhase4.",
+    "These thresholds mirror bossHarness white-box assertions and keep the canonical aggregate owner table explicit."
+  ],
+  "metadata": {}
+}

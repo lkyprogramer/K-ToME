@@ -66,7 +66,7 @@ class ContentPackRuntimeResolverTest {
             id: fixture.schema_mismatch
             version: 1.0.0
             schemaVersion: 2
-            gameVersionRange: ">=0.1.0 <0.2.0"
+            gameVersionRange: ">=0.4.0 <0.5.0"
             namespace: fixture_schema_mismatch
             dependencies: []
             overlays: []
@@ -91,7 +91,7 @@ class ContentPackRuntimeResolverTest {
             id: fixture.append_invalid
             version: 1.0.0
             schemaVersion: 1
-            gameVersionRange: ">=0.1.0 <0.2.0"
+            gameVersionRange: ">=0.4.0 <0.5.0"
             namespace: fixture_append_invalid
             dependencies: []
             overlays:
@@ -153,7 +153,7 @@ class ContentPackRuntimeResolverTest {
             id: fixture.append_loot_profile_bias
             version: 1.0.0
             schemaVersion: 1
-            gameVersionRange: ">=0.1.0 <0.2.0"
+            gameVersionRange: ">=0.4.0 <0.5.0"
             namespace: fixture_append_loot_profile_bias
             dependencies: []
             overlays:
@@ -194,7 +194,7 @@ class ContentPackRuntimeResolverTest {
             id: fixture.deny_non_optional
             version: 1.0.0
             schemaVersion: 1
-            gameVersionRange: ">=0.1.0 <0.2.0"
+            gameVersionRange: ">=0.4.0 <0.5.0"
             namespace: fixture_deny_non_optional
             dependencies: []
             overlays:
@@ -224,7 +224,7 @@ class ContentPackRuntimeResolverTest {
             id: fixture.replace_missing_target
             version: 1.0.0
             schemaVersion: 1
-            gameVersionRange: ">=0.1.0 <0.2.0"
+            gameVersionRange: ">=0.4.0 <0.5.0"
             namespace: fixture_replace_missing_target
             dependencies: []
             overlays:
@@ -285,7 +285,7 @@ class ContentPackRuntimeResolverTest {
             id: fixture.path_escape
             version: 1.0.0
             schemaVersion: 1
-            gameVersionRange: ">=0.1.0 <0.2.0"
+            gameVersionRange: ">=0.4.0 <0.5.0"
             namespace: fixture_path_escape
             dependencies: []
             overlays: []
@@ -304,12 +304,12 @@ class ContentPackRuntimeResolverTest {
 
     @Test
     fun `version range parser supports bounded ranges and exact matches`() {
-        val bounded = VersionRangeParser.parse(">=0.1.0 <0.2.0")
+        val bounded = VersionRangeParser.parse(">=0.4.0 <0.5.0")
         val exact = VersionRangeParser.parse("=1.0.0")
 
-        assertTrue(bounded.matches(VersionRangeParser.parseVersion("0.1.0")))
-        assertTrue(bounded.matches(VersionRangeParser.parseVersion("0.1.9")))
-        assertTrue(!bounded.matches(VersionRangeParser.parseVersion("0.2.0")))
+        assertTrue(bounded.matches(VersionRangeParser.parseVersion("0.4.0")))
+        assertTrue(bounded.matches(VersionRangeParser.parseVersion("0.4.9")))
+        assertTrue(!bounded.matches(VersionRangeParser.parseVersion("0.5.0")))
         assertTrue(exact.matches(VersionRangeParser.parseVersion("1.0.0")))
         assertTrue(!exact.matches(VersionRangeParser.parseVersion("1.0.1")))
         assertThrows<IllegalArgumentException> { VersionRangeParser.parseVersion(">=1.0.0") }

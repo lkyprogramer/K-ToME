@@ -175,10 +175,16 @@ class GameContentTest {
                 actionWeightProfile.id == requireNotNull(variant.actionWeightProfileId)
             }
 
-        assertEquals(42.0, profile.actionWeights["battlefield_command"])
-        assertEquals(44.0, profile.actionWeights["arcane_shield"])
-        assertEquals(48.0, profile.actionWeights["ritual_break"])
-        assertEquals(setOf("battlefield_command", "arcane_shield", "ritual_break"), profile.actionWeights.keys)
+        assertEquals(72.0, profile.actionWeights["battlefield_command"])
+        assertEquals(70.0, profile.actionWeights["arcane_shield"])
+        assertEquals(58.0, profile.actionWeights["ritual_break"])
+        assertEquals(10.0, profile.actionWeights["shadow_bind"])
+        assertEquals(4.0, profile.actionWeights["close_quarters"])
+        assertEquals(3.0, profile.actionWeights["press_forward"])
+        assertEquals(
+            setOf("battlefield_command", "shadow_bind", "ritual_break", "arcane_shield", "close_quarters", "press_forward"),
+            profile.actionWeights.keys,
+        )
     }
 
     @Test

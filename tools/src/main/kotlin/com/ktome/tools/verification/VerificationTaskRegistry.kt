@@ -587,6 +587,13 @@ object VerificationTaskRegistry {
                             ),
                         ownerRequired = true,
                     ),
+                    InputScope(
+                        scopeId = "boss.owner-evaluation",
+                        pathPrefixes =
+                            listOf(Phase4OwnerBaselineRegistry.BOSS_PHASE_IDENTITY_BASELINE_RELATIVE_PATH) +
+                                phase4CanonicalReportSharedPaths,
+                        requestedTaskPaths = listOf(":tools:reportPhase4Only"),
+                    ),
                 ),
             ownerTaskPaths = listOf(":tools:bossHarness"),
             cachePolicy =

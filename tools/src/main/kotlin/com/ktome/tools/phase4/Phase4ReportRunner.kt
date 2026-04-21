@@ -149,12 +149,14 @@ object Phase4ReportRunner {
         val scriptedHidden = requireTask(tasksById, "hiddenContentHarness")
         val organicHidden = requireTask(tasksById, "organicHiddenProbe")
         val longRun = requireTask(tasksById, "longRunLab")
+        val boss = requireTask(tasksById, "bossHarness")
         val terrain = requireTask(tasksById, "terrainInteractionBatch")
         val scriptedHiddenBaseline = VerificationBaseline.read(repoRoot.resolve(Phase4OwnerBaselineRegistry.scriptedHiddenBaselinePath()))
         val organicHiddenBaseline = VerificationBaseline.read(repoRoot.resolve(Phase4OwnerBaselineRegistry.organicHiddenBaselinePath()))
         val lootBaseline = VerificationBaseline.read(repoRoot.resolve(Phase4OwnerBaselineRegistry.lootBaselinePath()))
         val terminalBuildBaseline = VerificationBaseline.read(repoRoot.resolve(Phase4OwnerBaselineRegistry.terminalBuildBaselinePath()))
         val criticalPathPacingBaseline = VerificationBaseline.read(repoRoot.resolve(Phase4OwnerBaselineRegistry.criticalPathPacingBaselinePath()))
+        val bossPhaseIdentityBaseline = VerificationBaseline.read(repoRoot.resolve(Phase4OwnerBaselineRegistry.bossPhaseIdentityBaselinePath()))
         val terrainUnifiedBaseline = VerificationBaseline.read(repoRoot.resolve(Phase4OwnerBaselineRegistry.terrainUnifiedBaselinePath()))
         val terrainPerZoneBaseline = VerificationBaseline.read(repoRoot.resolve(Phase4OwnerBaselineRegistry.terrainPerZoneBaselinePath()))
         val terrainBaseline = readTerrainBaseline(repoRoot)
@@ -232,6 +234,10 @@ object Phase4ReportRunner {
                 longRun.metrics,
                 thresholds = CriticalPathPacingThresholds.fromBaseline(criticalPathPacingBaseline),
             )
+        val bossPhaseIdentityEntriesByMetricId =
+            Phase4AggregationInputRunner.bossPhaseIdentityEvaluation(task = boss, baseline = bossPhaseIdentityBaseline)
+                .entries
+                .associateBy(EvaluationEntry::metricId)
         val terrainEncounterRate = terrain.metrics.doubleValue("terrainInteractionEncounterRate")
         val taggedCombatCount = terrain.metrics.intValue("taggedCombatCount")
         val triggeredInteractionCombatCount = terrain.metrics.intValue("triggeredInteractionCombatCount")
@@ -464,6 +470,9 @@ object Phase4ReportRunner {
                     metric.toLegacyExperienceMetric()
                 },
             )
+            Phase4MetricCatalog.bossPhaseIdentityMetricIds().forEach { metricId ->
+                add(bossPhaseIdentityEntriesByMetricId.getValue(metricId).toLegacyExperienceMetric(boss.taskId))
+            }
             add(
                 Phase4ExperienceMetric(
                     metricId = "terrainInteractionEncounterRate.aggregate",
@@ -548,6 +557,7 @@ object Phase4ReportRunner {
             val scriptedHiddenTask = requireTask(tasksById, "hiddenContentHarness")
             val organicHiddenTask = requireTask(tasksById, "organicHiddenProbe")
             val solvabilityWhiteBoxTask = requireTask(tasksById, "whiteBoxSolvability")
+            val bossTask = requireTask(tasksById, "bossHarness")
             val terrainTask = requireTask(tasksById, "terrainInteractionBatch")
 
             appendLine("# Phase 4 Report")
@@ -683,6 +693,15 @@ object Phase4ReportRunner {
                     "| `${audit.zoneId}` | `${audit.floorCount}` | `${audit.mapSize}` | `${audit.worldRole}` | `${audit.objectiveSetId}` | `${audit.objectiveCompletionRule}` | `${audit.mechanicsWithoutDedicatedRuntimeHook.joinToString().ifBlank { "none" }}` |",
                 )
             }
+            appendLine()
+            appendLine("## Boss Phase Identity")
+            appendLine("- sourceTask: `${bossTask.taskId}`")
+            appendLine("- `phaseTransitionObservedRatio`: ${metricsById.getValue("phaseTransitionObservedRatio").currentValueText} / ${metricsById.getValue("phaseTransitionObservedRatio").status}")
+            appendLine("- `variantTraceDivergenceRatio`: ${metricsById.getValue("variantTraceDivergenceRatio").currentValueText} / ${metricsById.getValue("variantTraceDivergenceRatio").status}")
+            appendLine("- `minVariantActionTraceDivergenceScore`: ${metricsById.getValue("minVariantActionTraceDivergenceScore").currentValueText} / ${metricsById.getValue("minVariantActionTraceDivergenceScore").status}")
+            appendLine("- `bossVariantBasePhaseCountMin`: ${metricsById.getValue("bossVariantBasePhaseCountMin").currentValueText} / ${metricsById.getValue("bossVariantBasePhaseCountMin").status}")
+            appendLine("- `bossVariantBasePhaseCounts`: `${bossTask.metrics.getValue("bossVariantBasePhaseCounts").jsonObject.entries.joinToString { (variantId, phaseCount) -> "$variantId=${phaseCount.jsonPrimitive.content}" }}`")
+            appendLine("- `terrainPreferenceImplementedRate`: `${formatPercent(bossTask.metrics.doubleValue("terrainPreferenceImplementedRate"))}`")
             appendLine()
             appendLine("## Scripted vs Organic Hidden")
             appendLine("- sourceTask.scripted: `${scriptedHiddenTask.taskId}`")

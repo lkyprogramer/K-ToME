@@ -39,6 +39,8 @@ class Phase4ReportRunnerTest {
             tasks.first { element -> element.jsonObject.getValue("taskId").jsonPrimitive.content == "organicHiddenProbe" }.jsonObject
         val longRunTask =
             tasks.first { element -> element.jsonObject.getValue("taskId").jsonPrimitive.content == "longRunLab" }.jsonObject
+        val bossTask =
+            tasks.first { element -> element.jsonObject.getValue("taskId").jsonPrimitive.content == "bossHarness" }.jsonObject
         val terrainTask =
             tasks.first { element -> element.jsonObject.getValue("taskId").jsonPrimitive.content == "terrainInteractionBatch" }.jsonObject
         val lootTask =
@@ -99,6 +101,12 @@ class Phase4ReportRunnerTest {
         assertTrue(longRunTask.getValue("metrics").jsonObject.containsKey("fullRouteZoneTraversalDiagnostics"))
         assertTrue(longRunTask.getValue("metrics").jsonObject.containsKey("criticalPathZoneIds"))
         assertTrue(longRunTask.getValue("metrics").jsonObject.containsKey("criticalPathZoneDesignAudit"))
+        assertTrue(bossTask.getValue("metrics").jsonObject.containsKey("phaseTransitionObservedRatio"))
+        assertTrue(bossTask.getValue("metrics").jsonObject.containsKey("variantTraceDivergenceRatio"))
+        assertTrue(bossTask.getValue("metrics").jsonObject.containsKey("minVariantActionTraceDivergenceScore"))
+        assertTrue(bossTask.getValue("metrics").jsonObject.containsKey("bossVariantBasePhaseCountMin"))
+        assertTrue(bossTask.getValue("metrics").jsonObject.containsKey("bossVariantBasePhaseCounts"))
+        assertTrue(bossTask.getValue("metrics").jsonObject.containsKey("corpusAggregateMetrics"))
         assertTrue(terrainTask.getValue("sourcePath").jsonPrimitive.content.contains("whitebox/terrain"))
         assertTrue(terrainTask.getValue("metrics").jsonObject.containsKey("combatSampledZoneIds"))
         assertTrue(terrainTask.getValue("metrics").jsonObject.containsKey("combatSampledZoneExclusionNotes"))
@@ -169,8 +177,8 @@ class Phase4ReportRunnerTest {
             contentPackArtifactSemanticSignature(contentPackArtifactPayload) == contentPackArtifactSemanticSignature(whiteBoxContentPackArtifactPayload),
             "content-pack artifacts must stay semantically aligned after the paired freshness check passes.",
         )
-        assertEquals(23, experienceMetrics.size)
-        assertEquals(23, metricCatalog.size)
+        assertEquals(27, experienceMetrics.size)
+        assertEquals(27, metricCatalog.size)
         assertEquals(
             setOf(
                 "scriptedHiddenVerificationRate",
@@ -194,6 +202,10 @@ class Phase4ReportRunnerTest {
                 "avgVisibleHostileTurnCount",
                 "avgEnemyTurns",
                 "criticalPathCombatFloorSatisfied",
+                "phaseTransitionObservedRatio",
+                "variantTraceDivergenceRatio",
+                "minVariantActionTraceDivergenceScore",
+                "bossVariantBasePhaseCountMin",
                 "terrainInteractionEncounterRate.aggregate",
                 "terrainInteractionEncounterRate.per_zone_lower_bound",
             ),
@@ -206,6 +218,7 @@ class Phase4ReportRunnerTest {
         assertTrue(markdown.contains("## Terminal Build Identity"))
         assertTrue(markdown.contains("## Critical Path Pacing"))
         assertTrue(markdown.contains("### Critical Path Design Audit"))
+        assertTrue(markdown.contains("## Boss Phase Identity"))
         assertTrue(markdown.contains("## Scripted vs Organic Hidden"))
         assertTrue(markdown.contains("headline owner metrics"))
         assertTrue(markdown.contains("single-task lane-aware artifact"))
@@ -217,6 +230,7 @@ class Phase4ReportRunnerTest {
         assertTrue(markdown.contains("nonWeaponBuildPayoffRate"))
         assertTrue(markdown.contains("- sourceTask: `whiteBoxLoot`"))
         assertTrue(markdown.contains("- sourceTask: `longRunLab`"))
+        assertTrue(markdown.contains("- sourceTask: `bossHarness`"))
         assertTrue(markdown.contains("- sourceTask.scripted: `hiddenContentHarness`"))
         assertTrue(markdown.contains("- sourceTask.organic: `organicHiddenProbe`"))
         assertTrue(markdown.contains("- sourceTask: `terrainInteractionBatch`"))
@@ -240,6 +254,14 @@ class Phase4ReportRunnerTest {
             experienceMetrics.first { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "avgObjectiveAcquireTurn" }.jsonObject
         val combatFloorMetric =
             experienceMetrics.first { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "criticalPathCombatFloorSatisfied" }.jsonObject
+        val phaseTransitionMetric =
+            experienceMetrics.first { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "phaseTransitionObservedRatio" }.jsonObject
+        val traceDivergenceMetric =
+            experienceMetrics.first { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "variantTraceDivergenceRatio" }.jsonObject
+        val minActionTraceMetric =
+            experienceMetrics.first { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "minVariantActionTraceDivergenceScore" }.jsonObject
+        val bossBasePhaseMetric =
+            experienceMetrics.first { metric -> metric.jsonObject.getValue("metricId").jsonPrimitive.content == "bossVariantBasePhaseCountMin" }.jsonObject
         val criticalPathZoneIds =
             combatFloorMetric.getValue("currentValue").jsonObject.getValue("criticalPathZoneIds").jsonArray.map { zoneId ->
                 zoneId.jsonPrimitive.content
@@ -261,6 +283,18 @@ class Phase4ReportRunnerTest {
         assertTrue(combatFloorMetric.getValue("currentValue").jsonObject.containsKey("failingZones"))
         assertTrue(combatFloorMetric.getValue("currentValue").jsonObject.containsKey("zoneBreakdown"))
         assertTrue(combatFloorMetric.getValue("details").jsonObject.containsKey("designAudit"))
+        assertEquals("bossHarness", phaseTransitionMetric.getValue("sourceTaskId").jsonPrimitive.content)
+        assertEquals("bossHarness", traceDivergenceMetric.getValue("sourceTaskId").jsonPrimitive.content)
+        assertEquals("bossHarness", minActionTraceMetric.getValue("sourceTaskId").jsonPrimitive.content)
+        assertEquals("bossHarness", bossBasePhaseMetric.getValue("sourceTaskId").jsonPrimitive.content)
+        assertEquals("PASS", phaseTransitionMetric.getValue("status").jsonPrimitive.content)
+        assertEquals("PASS", traceDivergenceMetric.getValue("status").jsonPrimitive.content)
+        assertEquals("PASS", minActionTraceMetric.getValue("status").jsonPrimitive.content)
+        assertEquals("PASS", bossBasePhaseMetric.getValue("status").jsonPrimitive.content)
+        assertTrue(phaseTransitionMetric.getValue("currentValue").jsonObject.containsKey("corpusAggregateMetrics"))
+        assertTrue(traceDivergenceMetric.getValue("currentValue").jsonObject.containsKey("phaseGraphStructuralDiffCount"))
+        assertTrue(minActionTraceMetric.getValue("currentValue").jsonObject.containsKey("pairCount"))
+        assertTrue(bossBasePhaseMetric.getValue("currentValue").jsonObject.containsKey("bossVariantBasePhaseCounts"))
         assertTrue(leadDiscoveryMetric.getValue("note").jsonPrimitive.content.contains("observationOnly=true"))
         assertTrue(leadDiscoveryMetric.getValue("note").jsonPrimitive.content.contains("promptRequired=true"))
         assertEquals("PASS", leadDiscoveryMetric.getValue("status").jsonPrimitive.content)

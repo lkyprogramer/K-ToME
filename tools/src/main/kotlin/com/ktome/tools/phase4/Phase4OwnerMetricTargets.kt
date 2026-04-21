@@ -18,6 +18,8 @@ internal object Phase4OwnerMetricTargets {
             "professionAlignedWeaponAdoptionRate",
             "professionCapstoneAdoptionRate",
             "nonWeaponBuildPayoffRate",
+            "phaseTransitionObservedRatio",
+            "variantTraceDivergenceRatio",
             ->
                 renderBoundTarget(
                     range = range,
@@ -28,6 +30,7 @@ internal object Phase4OwnerMetricTargets {
 
             "sameZoneSecretVsCadenceMaxOverlap",
             "sameZoneSecretVsRewardMaxOverlap",
+            "minVariantActionTraceDivergenceScore",
             ->
                 renderBoundTarget(
                     range = range,
@@ -41,6 +44,12 @@ internal object Phase4OwnerMetricTargets {
                 )
 
             "terminalWeaponBaseDiversity" ->
+                renderBoundTarget(
+                    range = range,
+                    formatter = ::formatNumber,
+                )
+
+            "bossVariantBasePhaseCountMin" ->
                 renderBoundTarget(
                     range = range,
                     formatter = ::formatNumber,

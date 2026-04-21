@@ -8,6 +8,7 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
@@ -29,6 +30,10 @@ class Phase4AuthorityDocConsistencyTest {
         val phase4Checklist =
             Files.readString(
                 repoRoot().resolve("docs/phase4/2026-03-13-phase4-verification-checklist.md"),
+            )
+        val readme =
+            Files.readString(
+                repoRoot().resolve("README.md"),
             )
         val v2optPr01 =
             Files.readString(
@@ -63,6 +68,11 @@ class Phase4AuthorityDocConsistencyTest {
         assertTrue(whiteBoxFramework.contains("phase4LegacyReport"))
         assertTrue(phase4Guide.contains("tools/build/reports/verification/phase4/report-phase4-summary.{json,md}"))
         assertTrue(phase4Guide.contains("phase4LegacyReport"))
+        assertTrue(readme.contains("tools/build/reports/verification/phase4/report-phase4-summary.json"))
+        assertTrue(readme.contains("tools/build/reports/verification/phase4/report-phase4-summary.md"))
+        assertTrue(readme.contains("phase4LegacyReport*"))
+        assertFalse(readme.phase4ReportOutputSection().contains("tools/build/reports/phase4/phase4-summary.json"))
+        assertFalse(readme.phase4ReportOutputSection().contains("tools/build/reports/phase4/phase4-summary.md"))
         assertTrue(phase4Roadmap.contains("critical-path pacing"))
         assertTrue(phase4Roadmap.contains("profession capstone"))
         assertTrue(phase4Checklist.contains("critical-path pacing"))
@@ -101,3 +111,7 @@ class Phase4AuthorityDocConsistencyTest {
             ?.let(Path::of)
             ?: Path.of("").toAbsolutePath().normalize()
 }
+
+private fun String.phase4ReportOutputSection(): String =
+    substringAfter("Phase 4 报告会输出到：")
+        .substringBefore("启动客户端：")

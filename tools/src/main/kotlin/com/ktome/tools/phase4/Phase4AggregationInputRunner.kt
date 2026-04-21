@@ -268,6 +268,8 @@ internal object Phase4AggregationInputRunner {
                 evaluations += terminalBuildIdentityEvaluation(task = task, baseline = baselinesByPath.getValue(Phase4OwnerBaselineRegistry.terminalBuildBaselinePath()))
                 evaluations += criticalPathPacingEvaluation(task = task, baseline = baselinesByPath.getValue(Phase4OwnerBaselineRegistry.criticalPathPacingBaselinePath()))
             }
+            "bossHarness" ->
+                evaluations += bossPhaseIdentityEvaluation(task = task, baseline = baselinesByPath.getValue(Phase4OwnerBaselineRegistry.bossPhaseIdentityBaselinePath()))
             "terrainInteractionBatch" -> {
                 evaluations += terrainAggregateEvaluation(task = task, baseline = baselinesByPath.getValue(Phase4OwnerBaselineRegistry.terrainUnifiedBaselinePath()))
                 evaluations += terrainPerZoneLowerBoundEvaluation(task = task, baseline = baselinesByPath.getValue(Phase4OwnerBaselineRegistry.terrainPerZoneBaselinePath()))
@@ -1035,6 +1037,86 @@ internal object Phase4AggregationInputRunner {
         )
     }
 
+    internal fun bossPhaseIdentityEvaluation(
+        task: Phase4TaskAggregate,
+        baseline: VerificationBaseline,
+    ): EvaluationResult {
+        val phaseTransitionMetricId = "phaseTransitionObservedRatio"
+        val traceDivergenceMetricId = "variantTraceDivergenceRatio"
+        val minActionTraceMetricId = "minVariantActionTraceDivergenceScore"
+        val basePhaseCountMetricId = "bossVariantBasePhaseCountMin"
+        val phaseTransitionRatio = task.metrics.doubleValue(phaseTransitionMetricId)
+        val traceDivergenceRatio = task.metrics.doubleValue(traceDivergenceMetricId)
+        val minActionTraceDivergenceScore = task.metrics.doubleValue(minActionTraceMetricId)
+        val bossVariantBasePhaseCountMin = task.metrics.doubleValue(basePhaseCountMetricId)
+        val reportCount = task.metrics.intValue("reportCount")
+        val pairCount = task.metrics.intValue("pairCount")
+        val variantCount = task.metrics.intValue("variantCount")
+        val metricIds = Phase4MetricCatalog.bossPhaseIdentityMetricIds()
+        val ranges = metricIds.associateWith { metricId -> baseline.requiredMetric(metricId) }
+        val result =
+            VerificationBaselineComparator.compareBudgetThreshold(
+                domainId = "boss",
+                evaluationId = "boss.phaseIdentity",
+                baseline = baseline.copy(expectedMetricRanges = metricIds.map { metricId -> ranges.getValue(metricId) }),
+                actualMetrics =
+                    mapOf(
+                        phaseTransitionMetricId to phaseTransitionRatio,
+                        traceDivergenceMetricId to traceDivergenceRatio,
+                        minActionTraceMetricId to minActionTraceDivergenceScore,
+                        basePhaseCountMetricId to bossVariantBasePhaseCountMin,
+                    ),
+                currentValueTexts =
+                    mapOf(
+                        phaseTransitionMetricId to "${formatPercent(phaseTransitionRatio)} (${formatCompactNumber(phaseTransitionRatio * reportCount.toDouble())}/$reportCount)",
+                        traceDivergenceMetricId to "${formatPercent(traceDivergenceRatio)} (${formatCompactNumber(traceDivergenceRatio * pairCount.toDouble())}/$pairCount)",
+                        minActionTraceMetricId to formatRatio(minActionTraceDivergenceScore),
+                        basePhaseCountMetricId to formatCompactNumber(bossVariantBasePhaseCountMin),
+                    ),
+                currentValueElements =
+                    mapOf(
+                        phaseTransitionMetricId to
+                            buildJsonObject {
+                                put("rate", task.metrics.getValue(phaseTransitionMetricId))
+                                put("reportCount", task.metrics.getValue("reportCount"))
+                                put("perEncounterAggregateMetrics", task.metrics.getValue("perEncounterAggregateMetrics"))
+                                put("corpusAggregateMetrics", task.metrics.getValue("corpusAggregateMetrics"))
+                            },
+                        traceDivergenceMetricId to
+                            buildJsonObject {
+                                put("rate", task.metrics.getValue(traceDivergenceMetricId))
+                                put("pairCount", task.metrics.getValue("pairCount"))
+                                put("phaseGraphStructuralDiffCount", task.metrics.getValue("phaseGraphStructuralDiffCount"))
+                                put("corpusAggregateMetrics", task.metrics.getValue("corpusAggregateMetrics"))
+                            },
+                        minActionTraceMetricId to
+                            buildJsonObject {
+                                put("score", task.metrics.getValue(minActionTraceMetricId))
+                                put("pairCount", task.metrics.getValue("pairCount"))
+                                put("corpusAggregateMetrics", task.metrics.getValue("corpusAggregateMetrics"))
+                            },
+                        basePhaseCountMetricId to
+                            buildJsonObject {
+                                put("min", task.metrics.getValue(basePhaseCountMetricId))
+                                put("bossVariantBasePhaseCounts", task.metrics.getValue("bossVariantBasePhaseCounts"))
+                                put("bossVariantCount", task.metrics.getValue("bossVariantCount"))
+                                put("variantCount", task.metrics.getValue("variantCount"))
+                            },
+                    ),
+                detailsByMetricId = metricIds.associateWith { task.metrics },
+            )
+        return result.withEntryPresentations(
+            metricIds.associateWith { metricId ->
+                MetricPresentation(
+                    targetText = Phase4OwnerMetricTargets.targetText(metricId, ranges.getValue(metricId)),
+                    note =
+                        "bossHarness pairCount=$pairCount, variantCount=$variantCount, " +
+                            "whiteBoxFailedAssertions=${task.metrics.intValue("whiteBoxFailedAssertions")}",
+                )
+            },
+        )
+    }
+
     private fun terrainAggregateEvaluation(
         task: Phase4TaskAggregate,
         baseline: VerificationBaseline,
@@ -1482,6 +1564,15 @@ private fun relativeIncrease(
     }
 
 private fun formatPercent(value: Double): String = String.format(Locale.US, "%.1f%%", value * 100.0)
+
+private fun formatRatio(value: Double): String = String.format(Locale.US, "%.3f", value)
+
+private fun formatCompactNumber(value: Double): String =
+    if (value == value.toInt().toDouble()) {
+        value.toInt().toString()
+    } else {
+        String.format(Locale.US, "%.3f", value)
+    }
 
 private fun formatPercentPrecise(value: Double): String = String.format(Locale.US, "%.2f%%", value * 100.0)
 

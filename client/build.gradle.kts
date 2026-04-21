@@ -99,10 +99,10 @@ distributions {
             from(rootProject.file("docs/phase1/2026-03-12-phase1-5.0-regression-checklist.md")) {
                 into("docs")
             }
-            from(rootProject.file("docs/releases/v0.1.0-pre-release-acceptance.md")) {
+            from(rootProject.file("docs/releases/v0.4.0-pre-release-acceptance.md")) {
                 into("docs")
             }
-            from(rootProject.file("docs/releases/v0.1.0-known-limitations.md")) {
+            from(rootProject.file("docs/releases/v0.4.0-known-limitations.md")) {
                 into("docs")
             }
         }

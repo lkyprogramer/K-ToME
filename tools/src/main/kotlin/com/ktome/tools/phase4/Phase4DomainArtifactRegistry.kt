@@ -287,6 +287,9 @@ internal object Phase4DomainArtifactRegistry {
                     put("aiTraceCountTotal", aiTraceCountTotal)
                     put("bossTraceCountTotal", bossTraceCountTotal)
                     put("phaseGraphStructuralDiffCount", phaseGraphStructuralDiffCount)
+                    put("phaseTransitionObservedRatio", corpusMetrics.getValue("phaseTransitionObservedRatio"))
+                    put("variantTraceDivergenceRatio", corpusMetrics.getValue("variantTraceDivergenceRatio"))
+                    put("minVariantActionTraceDivergenceScore", corpusMetrics.getValue("minVariantActionTraceDivergenceScore"))
                     put("whiteBoxFailedAssertions", whiteBoxFailedAssertions)
                     put("whiteBoxFailedCaseCount", whiteBoxPayload.intValue("failedCaseCount"))
                     put("whiteBoxFailedAggregateCount", whiteBoxPayload.intValue("failedAggregateCount"))
@@ -300,6 +303,7 @@ internal object Phase4DomainArtifactRegistry {
                     put("eliteMutationValidPairCount", corpusMetrics.getValue("eliteMutationValidPairCount"))
                     put("bossVariantCount", corpusMetrics.getValue("bossVariantCount"))
                     put("bossVariantMutationPairwiseDistinct", corpusMetrics.getValue("bossVariantMutationPairwiseDistinct"))
+                    put("bossVariantBasePhaseCountMin", corpusMetrics.getValue("bossVariantBasePhaseCountMin"))
                     put("terrainPreferenceVariantCount", corpusMetrics.getValue("terrainPreferenceVariantCount"))
                     put("terrainPreferenceAvailableVariantCount", corpusMetrics.getValue("terrainPreferenceAvailableVariantCount"))
                     put("terrainPreferenceImplementedCount", corpusMetrics.getValue("terrainPreferenceImplementedCount"))
@@ -307,6 +311,7 @@ internal object Phase4DomainArtifactRegistry {
                     put("mutationTierDistribution", corpusMetrics.getValue("mutationTierDistribution"))
                     put("bossVariantMutationSets", corpusMetrics.getValue("bossVariantMutationSets"))
                     put("bossVariantPreferredTerrainTags", corpusMetrics.getValue("bossVariantPreferredTerrainTags"))
+                    put("bossVariantBasePhaseCounts", corpusMetrics.getValue("bossVariantBasePhaseCounts"))
                     whiteBoxFirstFailedJoinKey?.let { joinKey -> put("whiteBoxFirstFailedJoinKey", joinKey.toString()) }
                 },
         )

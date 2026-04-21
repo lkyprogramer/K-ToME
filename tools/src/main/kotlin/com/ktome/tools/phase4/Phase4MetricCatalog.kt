@@ -200,6 +200,38 @@ internal object Phase4MetricCatalog {
                 decisionNotes = "The floor is derived from build-identity reportOnlyFloors and should only become blocking in a later gate-cutover PR.",
             ),
             Phase4MetricSpec(
+                id = "phaseTransitionObservedRatio",
+                ownerTaskId = "bossHarness",
+                outputSection = "boss-phase-identity",
+                formula = "boss samples with observed formal phase transition / boss sample count",
+                failSemantics = "FAIL means at least one boss sample no longer exercises the formal phase transition path required by PR-04.",
+                decisionNotes = "This is bossHarness owner evidence, not a supporting input metric; it must remain visible in reportPhase4 owner metrics.",
+            ),
+            Phase4MetricSpec(
+                id = "variantTraceDivergenceRatio",
+                ownerTaskId = "bossHarness",
+                outputSection = "boss-phase-identity",
+                formula = "variant/base boss pairs with divergent AI/action trace / variant/base boss pair count",
+                failSemantics = "FAIL means at least one boss variant still behaves like its base encounter despite distinct variant identity data.",
+                decisionNotes = "Trace divergence is the headline variant identity metric; pair-level trace evidence remains supporting detail.",
+            ),
+            Phase4MetricSpec(
+                id = "minVariantActionTraceDivergenceScore",
+                ownerTaskId = "bossHarness",
+                outputSection = "boss-phase-identity",
+                formula = "min(selected-action divergence score across variant/base boss pairs)",
+                failSemantics = "FAIL means the weakest boss variant/base pair falls below the frozen action-divergence floor.",
+                decisionNotes = "The minimum owns the verdict so aggregate trace diversity cannot hide a near-identical variant.",
+            ),
+            Phase4MetricSpec(
+                id = "bossVariantBasePhaseCountMin",
+                ownerTaskId = "bossHarness",
+                outputSection = "boss-phase-identity",
+                formula = "min(base encounter phase count across formal boss variants)",
+                failSemantics = "FAIL means a formal boss variant is bound to a base encounter without enough phase structure.",
+                decisionNotes = "This keeps variant identity tied to BossEncounter phase contract rather than generic mutation metadata.",
+            ),
+            Phase4MetricSpec(
                 id = "terrainInteractionEncounterRate.aggregate",
                 ownerTaskId = "terrainInteractionBatch",
                 outputSection = "terrain-combat-sample-contract",
@@ -218,6 +250,20 @@ internal object Phase4MetricCatalog {
         )
 
     fun ownerTaskIds(): Set<String> = specs.mapTo(linkedSetOf(), Phase4MetricSpec::ownerTaskId)
+
+    fun metricIds(
+        ownerTaskId: String,
+        outputSection: String,
+    ): List<String> =
+        specs
+            .filter { spec -> spec.ownerTaskId == ownerTaskId && spec.outputSection == outputSection }
+            .map(Phase4MetricSpec::id)
+
+    fun bossPhaseIdentityMetricIds(): List<String> =
+        metricIds(
+            ownerTaskId = "bossHarness",
+            outputSection = "boss-phase-identity",
+        )
 
     fun entryFor(
         metricId: String,

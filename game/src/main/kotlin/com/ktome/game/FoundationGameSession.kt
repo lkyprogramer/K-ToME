@@ -7053,17 +7053,26 @@ class FoundationGameSession internal constructor(
         if (bossState.currentPhaseId != nextPhase.id) {
             applyBossPhaseEnter(monsterId, bossState, encounter, resolution)
             return BossPhaseTurnUpdate(
-                profile = content.aiProfile(nextPhase.aiProfileId),
+                profile = bossPhaseAiProfile(monsterId = monsterId, aiProfileId = nextPhase.aiProfileId),
                 phaseChanged = true,
             )
         } else {
             bossState.phaseTurnCount += 1
         }
         return BossPhaseTurnUpdate(
-            profile = content.aiProfile(nextPhase.aiProfileId),
+            profile = bossPhaseAiProfile(monsterId = monsterId, aiProfileId = nextPhase.aiProfileId),
             phaseChanged = false,
         )
     }
+
+    private fun bossPhaseAiProfile(
+        monsterId: EntityId,
+        aiProfileId: String?,
+    ): com.ktome.core.ai.AIProfile? =
+        applyActionWeightProfile(
+            profile = content.aiProfile(aiProfileId),
+            actionWeightProfileId = world.get<BossVariantRuntime>(monsterId)?.actionWeightProfileId,
+        )
 
     private fun applyBossPhaseEnter(
         monsterId: EntityId,

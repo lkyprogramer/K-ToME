@@ -10,7 +10,7 @@
         "buildId": "phase4-opt-pr05-dev",
         "locale": "en-US",
         "corpusId": "P4_PR06_BOSS_WHITEBOX",
-        "timestamp": "2026-04-20T14:31:02.126491Z",
+        "timestamp": "2026-04-21T06:34:05.702070Z",
         "activePackIds": [],
         "activePackManifestVersions": {},
         "contractVersions": [
@@ -53,8 +53,8 @@
     "summary": {
         "caseCount": 3,
         "aggregateCount": 2,
-        "totalAssertions": 35,
-        "passedAssertions": 35,
+        "totalAssertions": 46,
+        "passedAssertions": 46,
         "failedAssertions": 0,
         "caseFailureCount": 0,
         "aggregateFailureCount": 0,
@@ -68,8 +68,11 @@
             "metrics": {
                 "pairCount": 3,
                 "phaseGraphStructuralDiffCount": 0,
+                "phaseTransitionObservedRatio": 1.0,
+                "variantTraceDivergenceRatio": 1.0,
+                "minVariantActionTraceDivergenceScore": 1.0,
                 "variantCount": 3,
-                "terrainPreferenceVariantCount": 2,
+                "terrainPreferenceVariantCount": 1,
                 "terrainPreferenceAvailableVariantCount": 1,
                 "terrainPreferenceImplementedCount": 1
             },
@@ -83,6 +86,16 @@
                     "ruleId": "boss.aggregate.phase_graph_diff_zero",
                     "passed": true,
                     "message": "All boss variants preserve the original phase graph structure."
+                },
+                {
+                    "ruleId": "boss.aggregate.phase_transition_observed_ratio",
+                    "passed": true,
+                    "message": "All base-vs-variant samples observe a formal boss phase transition."
+                },
+                {
+                    "ruleId": "boss.aggregate.variant_trace_divergence",
+                    "passed": true,
+                    "message": "Every boss variant diverges from its base AI trace and selected action sequence."
                 },
                 {
                     "ruleId": "boss.aggregate.preferred_terrain_applied",
@@ -104,7 +117,11 @@
                 "eliteMutationValidPairCount": 51,
                 "bossVariantCount": 3,
                 "bossVariantMutationPairwiseDistinct": true,
-                "terrainPreferenceVariantCount": 2,
+                "bossVariantBasePhaseCountMin": 2,
+                "phaseTransitionObservedRatio": 1.0,
+                "variantTraceDivergenceRatio": 1.0,
+                "minVariantActionTraceDivergenceScore": 1.0,
+                "terrainPreferenceVariantCount": 1,
                 "terrainPreferenceAvailableVariantCount": 1,
                 "terrainPreferenceImplementedCount": 1,
                 "terrainPreferenceImplementedRate": 1.0,
@@ -115,7 +132,7 @@
                 },
                 "bossVariantMutationSets": {
                     "boss.variant.abyssal_eclipse": [
-                        "elite.corrosion_cloud",
+                        "elite.phase_runner",
                         "elite.void_mirror"
                     ],
                     "boss.variant.grey_crown": [
@@ -128,13 +145,16 @@
                     ]
                 },
                 "bossVariantPreferredTerrainTags": {
-                    "boss.variant.abyssal_eclipse": [
-                        "OIL"
-                    ],
+                    "boss.variant.abyssal_eclipse": [],
                     "boss.variant.grey_crown": [],
                     "boss.variant.molten_glass": [
                         "OIL"
                     ]
+                },
+                "bossVariantBasePhaseCounts": {
+                    "boss.variant.abyssal_eclipse": 2,
+                    "boss.variant.grey_crown": 2,
+                    "boss.variant.molten_glass": 2
                 }
             },
             "assertions": [
@@ -172,6 +192,21 @@
                     "ruleId": "boss.aggregate.variant_pairwise_distinct",
                     "passed": true,
                     "message": "All formal boss variants keep pairwise-distinct mutation combinations."
+                },
+                {
+                    "ruleId": "boss.aggregate.variant_base_has_two_phases",
+                    "passed": true,
+                    "message": "Every formal boss variant targets a base encounter with at least two phases."
+                },
+                {
+                    "ruleId": "boss.aggregate.phase_transition_observed_ratio",
+                    "passed": true,
+                    "message": "phaseTransitionObservedRatio reaches the V3 PR-04 owner threshold."
+                },
+                {
+                    "ruleId": "boss.aggregate.variant_trace_divergence_threshold",
+                    "passed": true,
+                    "message": "variant/base trace divergence reaches the V3 PR-04 owner threshold."
                 },
                 {
                     "ruleId": "boss.aggregate.variant_preferred_terrain_applied",
