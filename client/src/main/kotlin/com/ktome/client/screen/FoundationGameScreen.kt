@@ -98,7 +98,7 @@ class FoundationGameScreen(
         try {
             app.warmSessionAssets(snapshot)
         } catch (exception: RuntimeException) {
-            activeErrorState = runtimeErrorState(snapshot, exception)
+            recordRuntimeError(snapshot, exception)
             return
         }
         if (loadingState != null) {
@@ -116,7 +116,7 @@ class FoundationGameScreen(
                 auditSnapshot(snapshot)
                 TileRenderer.renderHeadless(session.localizer(), assets.visualResolver, snapshot, overlayState, cellWidth = cellWidth, cellHeight = cellHeight)
             } catch (exception: RuntimeException) {
-                activeErrorState = runtimeErrorState(snapshot, exception)
+                recordRuntimeError(snapshot, exception)
             }
             return
         }
@@ -125,7 +125,7 @@ class FoundationGameScreen(
         try {
             auditSnapshot(snapshot)
         } catch (exception: RuntimeException) {
-            activeErrorState = runtimeErrorState(snapshot, exception)
+            recordRuntimeError(snapshot, exception)
             renderErrorState(requireNotNull(activeErrorState))
             return
         }
@@ -139,7 +139,7 @@ class FoundationGameScreen(
             batch.begin()
             renderer.render(batch, snapshot, overlayState)
         } catch (exception: RuntimeException) {
-            activeErrorState = runtimeErrorState(snapshot, exception)
+            recordRuntimeError(snapshot, exception)
         } finally {
             if (batch.isDrawing) {
                 batch.end()
@@ -251,6 +251,16 @@ class FoundationGameScreen(
 
             else -> false
         }
+    }
+
+    private fun recordRuntimeError(
+        snapshot: RenderSnapshot,
+        exception: RuntimeException,
+    ) {
+        if (!renderEnabled) {
+            throw exception
+        }
+        activeErrorState = runtimeErrorState(snapshot, exception)
     }
 
     private fun runtimeErrorState(

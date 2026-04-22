@@ -16,15 +16,23 @@ import com.ktome.core.save.SaveSnapshot
 import com.ktome.core.save.StairSnapshot
 import com.ktome.client.assets.AudioManifest
 import com.ktome.client.assets.AudioManifestEntry
+import com.ktome.client.assets.AudioManifestResolver
 import com.ktome.client.assets.AudioManifestResourceLoader
 import com.ktome.client.assets.ClientFontCatalog
+import com.ktome.client.assets.ClientAssetBundle
+import com.ktome.client.assets.ClientTextureRepository
 import com.ktome.client.assets.ManifestPrefixRule
 import com.ktome.client.assets.VisualManifestEntry
 import com.ktome.client.assets.VisualManifest
+import com.ktome.client.assets.VisualManifestResolver
 import com.ktome.client.assets.VisualManifestResourceLoader
+import com.ktome.client.input.CommandSource
 import com.ktome.client.input.InputSource
+import com.ktome.client.input.OverlayState
+import com.ktome.client.input.UiMode
 import com.ktome.client.screen.ContinueAvailability
 import com.ktome.client.screen.ContinueUnavailableReasonCode
+import com.ktome.client.screen.FoundationGameScreen
 import com.ktome.client.screen.MainMenuScreen
 import com.ktome.client.screen.ValidationSetupScreen
 import com.ktome.client.screen.selectionLabel
@@ -805,6 +813,41 @@ class GameAppLifecycleTest {
             }
         }
     }
+
+    @Test
+    fun `headless foundation render rethrows asset audit failure`() {
+        withHeadlessGdx {
+            val app =
+                GameApp(
+                    saveManager = SaveManager(tempDir.resolve("headless-audit/save")),
+                    renderEnabled = false,
+                )
+
+            try {
+                app.create()
+                app.startNewGame()
+                val session = requireNotNull(app.activeSessionOrNull())
+                val screen =
+                    FoundationGameScreen(
+                        app = app,
+                        session = session,
+                        assets = incompleteClientAssets(),
+                        commandSource = NoOpCommandSource,
+                        renderEnabled = false,
+                    )
+
+                val exception =
+                    assertThrows(RuntimeException::class.java) {
+                        screen.render(0f)
+                    }
+
+                assertTrue(exception.message.orEmpty().contains("unknown visual key"))
+                screen.dispose()
+            } finally {
+                app.dispose()
+            }
+        }
+    }
 }
 
 private fun playerCreationState(selection: PlayerCreationSelection): PlayerCreationState =
@@ -1022,6 +1065,24 @@ private fun sampleAudioManifest(): AudioManifest =
 private fun phase2VisualManifest(): VisualManifest = VisualManifestResourceLoader.load()
 
 private fun phase2AudioManifest(): AudioManifest = AudioManifestResourceLoader.load()
+
+private fun incompleteClientAssets(): ClientAssetBundle {
+    val visualManifest = sampleVisualManifest()
+    val audioManifest = sampleAudioManifest()
+    return ClientAssetBundle(
+        visualManifest = visualManifest,
+        audioManifest = audioManifest,
+        visualResolver = VisualManifestResolver(visualManifest),
+        audioResolver = AudioManifestResolver(audioManifest),
+        textureRepository = ClientTextureRepository(),
+    )
+}
+
+private object NoOpCommandSource : CommandSource {
+    override fun overlayState(): OverlayState = OverlayState(mode = UiMode.MAP)
+
+    override fun isMapMode(): Boolean = true
+}
 
 private fun sampleRenderSnapshot(): RenderSnapshot =
     RenderSnapshot(
