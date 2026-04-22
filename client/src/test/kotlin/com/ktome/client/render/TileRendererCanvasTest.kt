@@ -365,6 +365,39 @@ class TileRendererCanvasTest {
     }
 
     @Test
+    fun `render canvas keeps map dominant regions separate at 1024 by 768 breakpoint`() {
+        val canvas = RecordingTileCanvas()
+        val metrics = TileRenderer.layoutMetrics(mapWidth = 18, mapHeight = 17, cellWidth = 32f, cellHeight = 32f)
+
+        TileRenderer.renderToCanvas(
+            localizer = LocalizationBundle.load().translator(GameLocale.EN_US),
+            visualResolver = sampleResolver(),
+            snapshot = sampleSnapshot(width = 18, height = 17),
+            overlayState = OverlayState(mode = UiMode.INSPECT, inspectCursor = com.ktome.core.map.Point(0, 0)),
+            canvas = canvas,
+            cellWidth = 32f,
+            cellHeight = 32f,
+        )
+
+        assertTrue(metrics.worldWidth <= 1024f)
+        assertTrue(metrics.worldHeight <= 768f)
+        assertTrue(metrics.cardY + metrics.cardHeight <= metrics.mapOffsetY)
+        assertTrue(metrics.infoX + metrics.infoWidth <= metrics.logX)
+        assertTrue(metrics.logX + metrics.logWidth + metrics.panelGap <= metrics.focusX)
+        assertTrue(metrics.sidebarX >= 18 * 32f + metrics.panelGap)
+        val mapWidthPx = 18 * 32f
+        val focusRingRects =
+            canvas.rectDraws.filter { draw ->
+                draw.x >= 0f &&
+                    draw.y >= metrics.mapOffsetY &&
+                    draw.x + draw.width <= mapWidthPx &&
+                    draw.y + draw.height <= metrics.worldHeight &&
+                    ((draw.width == 32f && draw.height == 2f) || (draw.width == 2f && draw.height == 32f))
+            }
+        assertEquals(4, focusRingRects.size)
+    }
+
+    @Test
     fun `responsive layout leaves spacer between info and log on wide maps`() {
         val metrics = TileRenderer.layoutMetrics(mapWidth = 24, mapHeight = 10, cellWidth = 32f, cellHeight = 32f)
 

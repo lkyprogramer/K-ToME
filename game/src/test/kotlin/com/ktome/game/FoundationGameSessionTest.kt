@@ -255,6 +255,26 @@ class FoundationGameSessionTest {
     }
 
     @Test
+    fun `validation boss telegraph action materializes an active runtime overlay`() {
+        val session =
+            GameModule.newValidationSession(
+                ValidationSessionRequest(
+                    saveManager = SaveManager(tempDir.resolve("validation-runtime-boss-telegraph")),
+                    options = validationSessionOptionsForPreset(ValidationPreset.BOSS_VARIANT),
+                ),
+            )
+
+        assertTrue(session.perform(PlayerCommand.Validation(ValidationAction.TriggerBossTelegraph)))
+
+        val snapshot = session.renderSnapshot()
+        val overlay = requireNotNull(snapshot.overlays.singleOrNull { candidate -> candidate.id.startsWith("telegraph:") })
+        assertEquals(session.maxFloor(), session.currentFloor())
+        assertEquals("log.warning.telegraph", overlay.warningMessage?.key)
+        assertTrue(overlay.cells.isNotEmpty())
+        assertNotNull(logEventByKey(session, "log.validation.encounter.trigger_boss_telegraph"))
+    }
+
+    @Test
     fun `validation action failures surface explicit feedback`() {
         val session = newValidationSessionForTest(tempDir.resolve("validation-runtime-failure"))
         clearMonsters(session)

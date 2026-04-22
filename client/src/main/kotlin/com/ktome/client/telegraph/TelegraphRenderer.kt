@@ -4,6 +4,7 @@ import com.ktome.client.render.AsciiTextLine
 import com.ktome.client.render.AsciiTextTone
 import com.ktome.client.render.TileTextRow
 import com.ktome.client.render.TileTextTone
+import com.ktome.client.ui.token.UiDesignTokens
 import com.ktome.core.snapshot.OverlayRenderSnapshot
 import com.ktome.core.snapshot.RenderTextArgumentSnapshot
 import com.ktome.core.snapshot.RenderTextTokenSnapshot
@@ -45,13 +46,7 @@ internal object TelegraphRenderer {
             else -> 0.50f
         }
 
-    fun fallbackColorHex(dangerLevel: Int): String =
-        when {
-            dangerLevel >= 4 -> "#7B1FA2"
-            dangerLevel == 3 -> "#E53935"
-            dangerLevel == 2 -> "#F6C445"
-            else -> "#3A86FF"
-        }
+    fun fallbackColorHex(dangerLevel: Int): String = UiDesignTokens.color.telegraph.forDangerLevel(dangerLevel).hexString()
 
     private fun warningText(
         localizer: Localizer,

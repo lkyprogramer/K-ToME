@@ -6,13 +6,17 @@ import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.Callable;
 import java.util.stream.Stream;
 import org.gradle.api.Action;
 import org.gradle.api.Task;
+import org.gradle.api.tasks.TaskProvider;
 import org.gradle.api.tasks.StopExecutionException;
 import org.gradle.api.file.RegularFile;
 import org.gradle.api.provider.Provider;
@@ -133,7 +137,17 @@ public final class VerifyChangedPlanGate {
         if (!visitedTaskPaths.add(current.getPath())) {
             return false;
         }
-        for (Task dependency : current.getTaskDependencies().getDependencies(current)) {
+        for (Object dependencyObject : current.getDependsOn()) {
+            if (dependencyObjectDependsOn(current, dependencyObject, target, visitedTaskPaths)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean dependencyObjectDependsOn(
+            Task current, Object dependencyObject, Task target, Set<String> visitedTaskPaths) {
+        for (Task dependency : declaredDependencyTasks(current, dependencyObject, target)) {
             if (dependency.getPath().equals(target.getPath())) {
                 return true;
             }
@@ -142,5 +156,100 @@ public final class VerifyChangedPlanGate {
             }
         }
         return false;
+    }
+
+    private static List<Task> declaredDependencyTasks(Task current, Object dependencyObject, Task target) {
+        if (dependencyObject instanceof Task dependency) {
+            return shouldTraverseDependency(current, dependency, target)
+                    ? Collections.singletonList(dependency)
+                    : Collections.emptyList();
+        }
+        if (dependencyObject instanceof TaskProvider<?> dependencyProvider) {
+            if (!shouldResolveDependencyProvider(current, dependencyProvider, target)) {
+                return Collections.emptyList();
+            }
+            Task dependency = dependencyProvider.get();
+            return shouldTraverseDependency(current, dependency, target)
+                    ? Collections.singletonList(dependency)
+                    : Collections.emptyList();
+        }
+        if (dependencyObject instanceof CharSequence dependencyPath) {
+            String normalizedPath = normalizeTaskPath(current, dependencyPath.toString());
+            if (!shouldResolveTaskPath(current, normalizedPath, target)) {
+                return Collections.emptyList();
+            }
+            Task dependency = taskByPath(current, normalizedPath);
+            return dependency != null && shouldTraverseDependency(current, dependency, target)
+                    ? Collections.singletonList(dependency)
+                    : Collections.emptyList();
+        }
+        if (dependencyObject instanceof Iterable<?> dependencyObjects) {
+            List<Task> dependencies = new ArrayList<>();
+            for (Object nestedDependencyObject : dependencyObjects) {
+                dependencies.addAll(declaredDependencyTasks(current, nestedDependencyObject, target));
+            }
+            return dependencies;
+        }
+        if (dependencyObject instanceof Map<?, ?> dependencyMap) {
+            return declaredDependencyTasks(current, dependencyMap.values(), target);
+        }
+        if (dependencyObject instanceof Callable<?> callableDependency) {
+            try {
+                return declaredDependencyTasks(current, callableDependency.call(), target);
+            } catch (Exception exception) {
+                throw new IllegalStateException(
+                        "Failed to resolve task dependency notation for " + current.getPath(),
+                        exception);
+            }
+        }
+        return Collections.emptyList();
+    }
+
+    private static boolean shouldResolveDependencyProvider(
+            Task current, TaskProvider<?> dependencyProvider, Task target) {
+        return current.getProject().getPath().equals(target.getProject().getPath())
+                || current.getProject().equals(current.getProject().getRootProject())
+                || dependencyProvider.getName().equals(target.getName());
+    }
+
+    private static boolean shouldResolveTaskPath(Task current, String taskPath, Task target) {
+        String dependencyProjectPath = projectPathForTask(taskPath);
+        return dependencyProjectPath.equals(target.getProject().getPath())
+                || dependencyProjectPath.equals(current.getProject().getPath());
+    }
+
+    private static boolean shouldTraverseDependency(Task current, Task dependency, Task target) {
+        return dependency.getPath().equals(target.getPath())
+                || dependency.getProject().getPath().equals(target.getProject().getPath())
+                || dependency.getProject().getPath().equals(current.getProject().getPath());
+    }
+
+    private static String normalizeTaskPath(Task current, String dependencyPath) {
+        if (dependencyPath.startsWith(":")) {
+            return dependencyPath;
+        }
+        String projectPath = current.getProject().getPath();
+        return ":".equals(projectPath) ? ":" + dependencyPath : projectPath + ":" + dependencyPath;
+    }
+
+    private static String projectPathForTask(String taskPath) {
+        int separatorIndex = taskPath.lastIndexOf(':');
+        if (separatorIndex <= 0) {
+            return ":";
+        }
+        return taskPath.substring(0, separatorIndex);
+    }
+
+    private static Task taskByPath(Task current, String taskPath) {
+        String projectPath = projectPathForTask(taskPath);
+        String taskName = taskPath.substring(taskPath.lastIndexOf(':') + 1);
+        if (taskName.isBlank()) {
+            return null;
+        }
+        org.gradle.api.Project project =
+                ":".equals(projectPath)
+                        ? current.getProject().getRootProject()
+                        : current.getProject().getRootProject().findProject(projectPath);
+        return project == null ? null : project.getTasks().findByName(taskName);
     }
 }

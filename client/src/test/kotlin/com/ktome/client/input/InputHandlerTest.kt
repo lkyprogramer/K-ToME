@@ -91,6 +91,17 @@ class InputHandlerTest {
         assertEquals(UiMode.MAP, handler.overlayState().mode)
         input.clear()
 
+        input.frame(justPressed = setOf(Keys.F9))
+        assertNull(handler.pollCommand(session.renderSnapshot()))
+        assertEquals(UiMode.VALIDATION, handler.overlayState().mode)
+        assertEquals(ValidationOverlaySection.RESTART, handler.overlayState().validationCursor?.selectedSection)
+        input.clear()
+
+        input.frame(justPressed = setOf(Keys.F9))
+        assertNull(handler.pollCommand(session.renderSnapshot()))
+        assertEquals(UiMode.MAP, handler.overlayState().mode)
+        input.clear()
+
         input.frame(justPressed = setOf(Keys.S))
         assertEquals(PlayerCommand.Move(Point(0, 1)), handler.pollCommand(session.renderSnapshot()))
     }

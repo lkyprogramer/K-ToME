@@ -39,6 +39,7 @@ jobs:
           name: nightly-harness-${{ github.run_id }}
           path: |
             build/verification/verify-changed/**
+            **/build/reports/phase4/**
             **/build/reports/verification/**
             **/build/reports/harness/**
             **/build/reports/tests/**

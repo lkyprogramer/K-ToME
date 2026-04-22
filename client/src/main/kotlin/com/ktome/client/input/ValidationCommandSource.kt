@@ -269,6 +269,10 @@ internal fun validationOverlayActionDescriptors(
                     buildAction = { ValidationAction.SpawnEliteNearPlayer },
                 ),
                 ValidationOverlayActionDescriptor(
+                    labelKey = "ui.validation.action.encounter.trigger_boss_telegraph",
+                    buildAction = { ValidationAction.TriggerBossTelegraph },
+                ),
+                ValidationOverlayActionDescriptor(
                     labelKey = "ui.validation.action.encounter.kill_hostile",
                     buildAction = { ValidationAction.KillNearestHostile },
                 ),

@@ -20,10 +20,10 @@ class MainMenuControllerTest {
             MainMenuController(
                 input = input,
                 playerCreationState = playableState(),
-            )
+        )
 
         input.push(Keys.RIGHT)
-        val changed = controller.pollAction(hasSave = false)
+        val changed = controller.pollAction(ContinueAvailability.Absent)
         assertEquals("arcanist", changed.selection.professionId)
         assertTrue(changed.professionChanged)
         assertTrue(changed.selectionChanged)
@@ -31,8 +31,8 @@ class MainMenuControllerTest {
         assertEquals(null, changed.action)
 
         input.push(Keys.ENTER)
-        val started = controller.pollAction(hasSave = false)
-        assertEquals(MainMenuAction.StartNewGame, started.action)
+        val started = controller.pollAction(ContinueAvailability.Absent)
+        assertEquals(MainMenuAction.QuickStart, started.action)
         assertEquals("arcanist", started.selection.professionId)
         assertEquals("human", started.selection.raceId)
     }
@@ -46,7 +46,7 @@ class MainMenuControllerTest {
                 playerCreationState = playableState(),
             )
 
-        val changed = controller.pollAction(hasSave = true)
+        val changed = controller.pollAction(ContinueAvailability.Available)
         assertEquals("templar", changed.selection.professionId)
         assertTrue(changed.professionChanged)
         assertFalse(changed.rejected)
@@ -65,7 +65,7 @@ class MainMenuControllerTest {
             )
 
         input.push(Keys.E)
-        val changed = controller.pollAction(hasSave = false)
+        val changed = controller.pollAction(ContinueAvailability.Absent)
         assertEquals("elf", changed.selection.raceId)
         assertTrue(changed.raceChanged)
         assertTrue(changed.selectionChanged)
@@ -73,8 +73,8 @@ class MainMenuControllerTest {
         assertEquals(null, changed.action)
 
         input.push(Keys.ENTER)
-        val started = controller.pollAction(hasSave = false)
-        assertEquals(MainMenuAction.StartNewGame, started.action)
+        val started = controller.pollAction(ContinueAvailability.Absent)
+        assertEquals(MainMenuAction.QuickStart, started.action)
         assertEquals("elf", started.selection.raceId)
     }
 
@@ -93,7 +93,7 @@ class MainMenuControllerTest {
             )
 
         assertEquals("vanguard", professionController.currentSelection().professionId)
-        val professionResult = professionController.pollAction(hasSave = false)
+        val professionResult = professionController.pollAction(ContinueAvailability.Absent)
         assertEquals("templar", professionResult.selection.professionId)
         assertTrue(professionResult.professionChanged)
         assertFalse(professionResult.rejected)
@@ -111,7 +111,7 @@ class MainMenuControllerTest {
             )
 
         assertEquals("human", raceController.currentSelection().raceId)
-        val raceResult = raceController.pollAction(hasSave = false)
+        val raceResult = raceController.pollAction(ContinueAvailability.Absent)
         assertEquals("dwarf", raceResult.selection.raceId)
         assertTrue(raceResult.raceChanged)
         assertFalse(raceResult.rejected)
@@ -126,16 +126,73 @@ class MainMenuControllerTest {
                 playerCreationState = playableState(),
             )
 
-        assertEquals(4, controller.entries(hasSave = true).size)
+        assertEquals(4, controller.entries(ContinueAvailability.Available).size)
         input.push(Keys.DOWN)
-        controller.pollAction(hasSave = true)
+        controller.pollAction(ContinueAvailability.Available)
         input.push(Keys.DOWN)
-        controller.pollAction(hasSave = true)
+        controller.pollAction(ContinueAvailability.Available)
         input.push(Keys.ENTER)
-
-        val result = controller.pollAction(hasSave = true)
+        val result = controller.pollAction(ContinueAvailability.Available)
 
         assertEquals(MainMenuAction.ValidationMode, result.action)
+    }
+
+    @Test
+    fun `available save makes continue the initial focus`() {
+        val input = QueueInputSource(Keys.ENTER)
+        val controller =
+            MainMenuController(
+                input = input,
+                playerCreationState = playableState(),
+                initialContinueAvailability = ContinueAvailability.Available,
+            )
+
+        val result = controller.pollAction(ContinueAvailability.Available)
+
+        assertEquals(MainMenuAction.Continue, result.action)
+    }
+
+    @Test
+    fun `unavailable save keeps quick start as initial focus and disables continue`() {
+        val unavailable =
+            ContinueAvailability.Unavailable(
+                reasonCode = ContinueUnavailableReasonCode.SCHEMA_MISMATCH,
+                savePath = "/tmp/run-save.json",
+            )
+        val input = QueueInputSource()
+        val controller =
+            MainMenuController(
+                input = input,
+                playerCreationState = playableState(),
+                initialContinueAvailability = unavailable,
+            )
+
+        val entries = controller.entries(unavailable)
+
+        assertEquals(0, controller.selectedIndex())
+        assertFalse(entries.single { entry -> entry.action == MainMenuAction.Continue }.enabled)
+        assertTrue(entries.single { entry -> entry.action == MainMenuAction.Continue }.focusable)
+    }
+
+    @Test
+    fun `unavailable save exposes copy error detail shortcut`() {
+        val unavailable =
+            ContinueAvailability.Unavailable(
+                reasonCode = ContinueUnavailableReasonCode.CORRUPTED,
+                savePath = "/tmp/run-save.json",
+            )
+        val input = QueueInputSource(Keys.C)
+        val controller =
+            MainMenuController(
+                input = input,
+                playerCreationState = playableState(),
+                initialContinueAvailability = unavailable,
+            )
+
+        val result = controller.pollAction(unavailable)
+
+        assertEquals(MainMenuAction.CopyContinueErrorDetail, result.action)
+        assertFalse(result.rejected)
     }
 
     private fun playableState(): PlayerCreationState =

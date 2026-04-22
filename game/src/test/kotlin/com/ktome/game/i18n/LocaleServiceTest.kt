@@ -10,8 +10,8 @@ class LocaleServiceTest {
     fun `bundle resolves translated text and placeholders`() {
         val bundle = LocalizationBundle.load()
 
-        assertEquals("New Game", bundle.translator(GameLocale.EN_US).text("ui.menu.new_game"))
-        assertEquals("新游戏", bundle.translator(GameLocale.ZH_CN).text("ui.menu.new_game"))
+        assertEquals("Quick Start", bundle.translator(GameLocale.EN_US).text("ui.menu.action.quick-start"))
+        assertEquals("快速开始", bundle.translator(GameLocale.ZH_CN).text("ui.menu.action.quick-start"))
         assertEquals("语言：简体中文", bundle.translator(GameLocale.ZH_CN).text("ui.menu.language", "value" to "简体中文"))
     }
 
@@ -26,7 +26,7 @@ class LocaleServiceTest {
         repeat(128) {
             val bundle = LocalizationBundle.load()
 
-            assertEquals("新游戏", bundle.translator(GameLocale.ZH_CN).text("ui.menu.new_game"))
+            assertEquals("快速开始", bundle.translator(GameLocale.ZH_CN).text("ui.menu.action.quick-start"))
         }
     }
 

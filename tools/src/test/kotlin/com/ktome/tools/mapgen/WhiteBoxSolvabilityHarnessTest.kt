@@ -22,9 +22,12 @@ class WhiteBoxSolvabilityHarnessTest {
         assertTrue(Files.exists(run.summaryPath), "Expected summary report at ${run.summaryPath}")
         assertTrue(Files.exists(run.casesPath), "Expected case report at ${run.casesPath}")
         assertTrue(Files.exists(run.reportPath), "Expected markdown report at ${run.reportPath}")
-        assertTrue(Files.isDirectory(run.summaryPath.parent.resolve("artifacts")), "Expected artifacts directory beside ${run.summaryPath}")
-        assertTrue(Files.exists(run.summaryPath.parent.resolve(WhiteBoxSolvabilitySuccessLane.LANE_ID).resolve("whitebox-solvability-summary.json")))
-        assertTrue(Files.exists(run.summaryPath.parent.resolve(WhiteBoxSolvabilityFailLane.LANE_ID).resolve("whitebox-solvability-summary.json")))
+        val successLaneDir = run.summaryPath.parent.resolve(WhiteBoxSolvabilitySuccessLane.LANE_ID)
+        val failLaneDir = run.summaryPath.parent.resolve(WhiteBoxSolvabilityFailLane.LANE_ID)
+        assertTrue(Files.exists(successLaneDir.resolve("whitebox-solvability-summary.json")))
+        assertTrue(Files.exists(failLaneDir.resolve("whitebox-solvability-summary.json")))
+        assertTrue(Files.isDirectory(successLaneDir.resolve("artifacts")), "Expected reveal-success artifacts under $successLaneDir")
+        assertTrue(Files.isDirectory(failLaneDir.resolve("artifacts")), "Expected reveal-fail artifacts under $failLaneDir")
 
         val payload = Json.parseToJsonElement(Files.readString(run.summaryPath)).jsonObject
         val summary = payload.getValue("summary").jsonObject

@@ -1,6 +1,9 @@
 package com.ktome.client.ui.status
 
+import com.badlogic.gdx.graphics.Color
+import com.ktome.client.ui.token.UiDesignTokens
 import com.ktome.game.i18n.Localizer
+import com.ktome.core.snapshot.StatusEffectCategorySnapshot
 import com.ktome.core.snapshot.StatusEffectRenderSnapshot
 
 internal object StatusHudRenderer {
@@ -29,6 +32,20 @@ internal object StatusHudRenderer {
                 append(" ")
             }
             append("${effect.remainingTurns}t")
+        }
+
+    fun accentColor(category: StatusEffectCategorySnapshot): Color =
+        when (category) {
+            StatusEffectCategorySnapshot.BUFF -> UiDesignTokens.color.status.buffAccent.color()
+            StatusEffectCategorySnapshot.DEBUFF -> UiDesignTokens.color.status.debuffAccent.color()
+            StatusEffectCategorySnapshot.NEUTRAL -> UiDesignTokens.color.status.neutralAccent.color()
+        }
+
+    fun badgeColor(category: StatusEffectCategorySnapshot): Color =
+        when (category) {
+            StatusEffectCategorySnapshot.BUFF -> UiDesignTokens.color.status.badge.stack.color()
+            StatusEffectCategorySnapshot.DEBUFF -> UiDesignTokens.color.status.badge.turns.color()
+            StatusEffectCategorySnapshot.NEUTRAL -> UiDesignTokens.color.status.badge.cap.color()
         }
 
     private fun stackSuffix(effect: StatusEffectRenderSnapshot): String =

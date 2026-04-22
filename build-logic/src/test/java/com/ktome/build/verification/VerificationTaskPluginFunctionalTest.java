@@ -133,6 +133,39 @@ class VerificationTaskPluginFunctionalTest {
     }
 
     @Test
+    void verifyChangedPlanGateDoesNotSkipTaskRequestedThroughIterableAliasDependency() throws IOException {
+        writeBuildWithVerifyChangedGateAliasDependency("[tasks.named('watched')]");
+
+        var result = runner().withArguments("verifyChanged", "aliasGate", "-q").build();
+
+        assertEquals(TaskOutcome.SUCCESS, result.task(":prepareVerifyChangedPlan").getOutcome());
+        assertEquals(TaskOutcome.SUCCESS, result.task(":watched").getOutcome());
+        assertTrue(Files.exists(tempDir.resolve("build/watched.txt")));
+    }
+
+    @Test
+    void verifyChangedPlanGateDoesNotSkipTaskRequestedThroughMapAliasDependency() throws IOException {
+        writeBuildWithVerifyChangedGateAliasDependency("[watchedTask: tasks.named('watched')]");
+
+        var result = runner().withArguments("verifyChanged", "aliasGate", "-q").build();
+
+        assertEquals(TaskOutcome.SUCCESS, result.task(":prepareVerifyChangedPlan").getOutcome());
+        assertEquals(TaskOutcome.SUCCESS, result.task(":watched").getOutcome());
+        assertTrue(Files.exists(tempDir.resolve("build/watched.txt")));
+    }
+
+    @Test
+    void verifyChangedPlanGateDoesNotSkipTaskRequestedThroughCallableAliasDependency() throws IOException {
+        writeBuildWithVerifyChangedGateAliasDependency("{ tasks.named('watched').get() } as Callable");
+
+        var result = runner().withArguments("verifyChanged", "aliasGate", "-q").build();
+
+        assertEquals(TaskOutcome.SUCCESS, result.task(":prepareVerifyChangedPlan").getOutcome());
+        assertEquals(TaskOutcome.SUCCESS, result.task(":watched").getOutcome());
+        assertTrue(Files.exists(tempDir.resolve("build/watched.txt")));
+    }
+
+    @Test
     void verifyChangedPlanGateDoesNotSkipTaskRequestedThroughRootQualifiedAliasInMixedInvocation() throws IOException {
         writeBuildWithVerifyChangedGate(":otherTask\n");
 
@@ -154,6 +187,31 @@ class VerificationTaskPluginFunctionalTest {
         assertEquals(TaskOutcome.SUCCESS, result.task(":tools:whiteBoxContentPack").getOutcome());
         assertTrue(Files.exists(tempDir.resolve("tools/build/content-pack.txt")));
         assertTrue(Files.exists(tempDir.resolve("tools/build/whitebox-content-pack.txt")));
+    }
+
+    @Test
+    void verifyChangedPlanGateIgnoresUnrelatedCrossProjectAliasInMixedInvocation() throws IOException {
+        writeMultiProjectBuildWithUnrelatedClientAlias(":otherTask\n");
+
+        var result = runner().withArguments("verifyChanged", "clientSmoke", "-q").build();
+
+        assertEquals(TaskOutcome.SUCCESS, result.task(":prepareVerifyChangedPlan").getOutcome());
+        assertEquals(TaskOutcome.SUCCESS, result.task(":client:clientSmoke").getOutcome());
+        assertTrue(Files.exists(tempDir.resolve("client/build/client-smoke.txt")));
+        assertTrue(Files.notExists(tempDir.resolve("tools/build/content-pack.txt")));
+    }
+
+    @Test
+    void verifyChangedPlanGateDoesNotSkipTargetBehindRootAggregateAliasInMixedInvocation() throws IOException {
+        writeMultiProjectBuildWithRootAggregateAlias(":otherTask\n");
+
+        var result = runner().withArguments("verifyChanged", "preReleaseAcceptance", "-q").build();
+
+        assertEquals(TaskOutcome.SUCCESS, result.task(":prepareVerifyChangedPlan").getOutcome());
+        assertEquals(TaskOutcome.SUCCESS, result.task(":tools:contractLint").getOutcome());
+        assertEquals(TaskOutcome.SUCCESS, result.task(":contractLint").getOutcome());
+        assertEquals(TaskOutcome.SUCCESS, result.task(":preReleaseAcceptance").getOutcome());
+        assertTrue(Files.exists(tempDir.resolve("tools/build/contract-lint.txt")));
     }
 
     @Test
@@ -230,6 +288,50 @@ class VerificationTaskPluginFunctionalTest {
                         .formatted(groovyQuoted(plannedTaskPaths), groovyQuoted(plannedPreflightTaskPaths)));
     }
 
+    private void writeBuildWithVerifyChangedGateAliasDependency(String aliasDependencyExpression) throws IOException {
+        writeBuild(
+                """
+                import com.ktome.build.verification.VerifyChangedPlanGate
+                import java.util.concurrent.Callable
+
+                plugins {
+                    id 'com.ktome.build.verification'
+                }
+
+                def verifyChangedTaskPathsFile = layout.buildDirectory.file('verification/verify-changed/task-paths.txt')
+                def verifyChangedPreflightTaskPathsFile = layout.buildDirectory.file('verification/verify-changed/preflight-task-paths.txt')
+
+                tasks.register('prepareVerifyChangedPlan') {
+                    doLast {
+                        def taskPathsFile = verifyChangedTaskPathsFile.get().asFile
+                        def preflightTaskPathsFile = verifyChangedPreflightTaskPathsFile.get().asFile
+                        taskPathsFile.parentFile.mkdirs()
+                        taskPathsFile.text = ":otherTask\\n"
+                        preflightTaskPathsFile.text = ":otherTask\\n"
+                    }
+                }
+
+                tasks.register('watched') { task ->
+                    doLast {
+                        def marker = layout.buildDirectory.file('watched.txt').get().asFile
+                        marker.parentFile.mkdirs()
+                        marker.text = 'WATCHED'
+                    }
+                    VerifyChangedPlanGate.applyTo(task, verifyChangedTaskPathsFile, verifyChangedPreflightTaskPathsFile, 'prepareVerifyChangedPlan')
+                }
+
+                tasks.register('verifyChanged') {
+                    dependsOn(tasks.named('prepareVerifyChangedPlan'))
+                    dependsOn(tasks.named('watched'))
+                }
+
+                tasks.register('aliasGate') {
+                    dependsOn(%s)
+                }
+                """
+                        .formatted(aliasDependencyExpression));
+    }
+
     private void writeMultiProjectBuildWithVerifyChangedGate(String plannedTaskPaths) throws IOException {
         Files.writeString(
                 tempDir.resolve("settings.gradle"),
@@ -284,6 +386,131 @@ class VerificationTaskPluginFunctionalTest {
                 tasks.register('verifyChanged') {
                     dependsOn(tasks.named('prepareVerifyChangedPlan'))
                     dependsOn(project(':tools').tasks.named('contentPackHarness'))
+                }
+                """
+                        .formatted(groovyQuoted(plannedTaskPaths), groovyQuoted(plannedTaskPaths)));
+    }
+
+    private void writeMultiProjectBuildWithUnrelatedClientAlias(String plannedTaskPaths) throws IOException {
+        Files.writeString(
+                tempDir.resolve("settings.gradle"),
+                """
+                rootProject.name = 'verification-task-plugin-functional-test'
+                include 'tools'
+                include 'client'
+                """);
+        Files.createDirectories(tempDir.resolve("tools"));
+        Files.createDirectories(tempDir.resolve("client"));
+        Files.writeString(tempDir.resolve("tools/build.gradle"), "");
+        Files.writeString(tempDir.resolve("client/build.gradle"), "");
+        Files.writeString(
+                tempDir.resolve("build.gradle"),
+                """
+                import com.ktome.build.verification.VerifyChangedPlanGate
+
+                plugins {
+                    id 'com.ktome.build.verification'
+                }
+
+                def verifyChangedTaskPathsFile = layout.buildDirectory.file('verification/verify-changed/task-paths.txt')
+                def verifyChangedPreflightTaskPathsFile = layout.buildDirectory.file('verification/verify-changed/preflight-task-paths.txt')
+
+                tasks.register('prepareVerifyChangedPlan') {
+                    doLast {
+                        def taskPathsFile = verifyChangedTaskPathsFile.get().asFile
+                        def preflightTaskPathsFile = verifyChangedPreflightTaskPathsFile.get().asFile
+                        taskPathsFile.parentFile.mkdirs()
+                        taskPathsFile.text = %s
+                        preflightTaskPathsFile.text = %s
+                    }
+                }
+
+                project(':tools') {
+                    tasks.register('contentPackHarness') { task ->
+                        doLast {
+                            def marker = layout.buildDirectory.file('content-pack.txt').get().asFile
+                            marker.parentFile.mkdirs()
+                            marker.text = 'CONTENT_PACK'
+                        }
+                        VerifyChangedPlanGate.applyTo(task, verifyChangedTaskPathsFile, verifyChangedPreflightTaskPathsFile, ':prepareVerifyChangedPlan')
+                    }
+                }
+
+                project(':client') {
+                    tasks.register('clientSmoke') {
+                        doLast {
+                            def marker = layout.buildDirectory.file('client-smoke.txt').get().asFile
+                            marker.parentFile.mkdirs()
+                            marker.text = 'CLIENT_SMOKE'
+                        }
+                    }
+                }
+
+                tasks.register('clientSmoke') {
+                    dependsOn(':client:clientSmoke')
+                }
+
+                tasks.register('verifyChanged') {
+                    dependsOn(tasks.named('prepareVerifyChangedPlan'))
+                    dependsOn(project(':tools').tasks.named('contentPackHarness'))
+                }
+                """
+                        .formatted(groovyQuoted(plannedTaskPaths), groovyQuoted(plannedTaskPaths)));
+    }
+
+    private void writeMultiProjectBuildWithRootAggregateAlias(String plannedTaskPaths) throws IOException {
+        Files.writeString(
+                tempDir.resolve("settings.gradle"),
+                """
+                rootProject.name = 'verification-task-plugin-functional-test'
+                include 'tools'
+                """);
+        Files.createDirectories(tempDir.resolve("tools"));
+        Files.writeString(tempDir.resolve("tools/build.gradle"), "");
+        Files.writeString(
+                tempDir.resolve("build.gradle"),
+                """
+                import com.ktome.build.verification.VerifyChangedPlanGate
+
+                plugins {
+                    id 'com.ktome.build.verification'
+                }
+
+                def verifyChangedTaskPathsFile = layout.buildDirectory.file('verification/verify-changed/task-paths.txt')
+                def verifyChangedPreflightTaskPathsFile = layout.buildDirectory.file('verification/verify-changed/preflight-task-paths.txt')
+
+                tasks.register('prepareVerifyChangedPlan') {
+                    doLast {
+                        def taskPathsFile = verifyChangedTaskPathsFile.get().asFile
+                        def preflightTaskPathsFile = verifyChangedPreflightTaskPathsFile.get().asFile
+                        taskPathsFile.parentFile.mkdirs()
+                        taskPathsFile.text = %s
+                        preflightTaskPathsFile.text = %s
+                    }
+                }
+
+                project(':tools') {
+                    tasks.register('contractLint') { task ->
+                        doLast {
+                            def marker = layout.buildDirectory.file('contract-lint.txt').get().asFile
+                            marker.parentFile.mkdirs()
+                            marker.text = 'CONTRACT_LINT'
+                        }
+                        VerifyChangedPlanGate.applyTo(task, verifyChangedTaskPathsFile, verifyChangedPreflightTaskPathsFile, ':prepareVerifyChangedPlan')
+                    }
+                }
+
+                tasks.register('contractLint') {
+                    dependsOn(project(':tools').tasks.named('contractLint'))
+                }
+
+                tasks.register('preReleaseAcceptance') {
+                    dependsOn(tasks.named('contractLint'))
+                }
+
+                tasks.register('verifyChanged') {
+                    dependsOn(tasks.named('prepareVerifyChangedPlan'))
+                    dependsOn(project(':tools').tasks.named('contractLint'))
                 }
                 """
                         .formatted(groovyQuoted(plannedTaskPaths), groovyQuoted(plannedTaskPaths)));

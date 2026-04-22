@@ -449,6 +449,11 @@ class FoundationGameSession internal constructor(
         val phaseChanged: Boolean,
     )
 
+    private data class ValidationBossTelegraphAbility(
+        val abilityId: String,
+        val schema: TalentSchemaV2,
+    )
+
     private data class RouteAdvanceOption(
         val connection: ZoneConnection,
         val destinationZoneId: String,
@@ -1319,6 +1324,8 @@ class FoundationGameSession internal constructor(
                 }
             }
 
+            ValidationAction.TriggerBossTelegraph -> triggerBossTelegraphForValidation()
+
             ValidationAction.KillNearestHostile -> {
                 val target = nearestLivingHostileMonsterId()
                 if (target == null) {
@@ -1381,6 +1388,95 @@ class FoundationGameSession internal constructor(
 
             is ValidationAction.RevealBinding -> revealValidationBinding(action.bindingId)
         }
+    }
+
+    private fun triggerBossTelegraphForValidation(): CommandResolution {
+        val bossId =
+            ensureValidationBossFloor()
+                ?: return rejectValidationAction("log.validation.target_missing", literalArg("target", "boss"))
+        val bossPoint = requireNotNull(world.get<Position>(bossId)).toPoint()
+        val stagingPoint =
+            validationBossTelegraphStagingPoint(bossPoint)
+                ?: return rejectValidationAction("log.validation.target_missing", literalArg("target", "boss_telegraph_position"))
+        automationMovePlayerTo(stagingPoint)
+        val ability =
+            validationBossTelegraphAbility(bossId)
+                ?: return rejectValidationAction("log.validation.target_missing", literalArg("target", "boss_telegraph_ability"))
+        val talentDef =
+            talentRegistry.get(ability.abilityId)
+                ?: return rejectValidationAction("log.validation.target_missing", literalArg("target", ability.abilityId))
+        val targetPoint =
+            abilityTargetPoint(
+                definition = talentDef,
+                targetVisible = true,
+                targetPosition = playerPosition(),
+            ) ?: bossPoint
+        world.get<CooldownState>(bossId)?.remainingByTalentId?.remove(ability.abilityId)
+        scheduleTelegraphedAbility(
+            monsterId = bossId,
+            abilityId = ability.abilityId,
+            targetPoint = targetPoint,
+            talentSchema = ability.schema,
+        )
+        if (world.get<PendingTelegraphState>(bossId) == null) {
+            return rejectValidationAction("log.validation.target_missing", literalArg("target", "boss_telegraph"))
+        }
+        return acceptValidationAction(
+            "log.validation.encounter.trigger_boss_telegraph",
+            talentArg("talent", ability.abilityId, fallbackName = ability.abilityId),
+            literalArg("x", bossPoint.x),
+            literalArg("y", bossPoint.y),
+        )
+    }
+
+    private fun ensureValidationBossFloor(): EntityId? {
+        activeBossEntityId()?.let { bossId -> return bossId }
+        while (currentFloor() < config.maxFloor) {
+            val stairPoint = automationStairPoint(StairDirection.DOWN) ?: return null
+            automationMovePlayerTo(stairPoint)
+            if (transitionFloor(StairDirection.DOWN) != TransitionOutcome.TRANSITIONED) {
+                return null
+            }
+            activeBossEntityId()?.let { bossId -> return bossId }
+        }
+        return activeBossEntityId()
+    }
+
+    private fun validationBossTelegraphStagingPoint(bossPoint: Point): Point? =
+        Point.ALL_DIRECTIONS
+            .asSequence()
+            .map { delta -> bossPoint + delta }
+            .firstOrNull { point ->
+                map.isInBounds(point.x, point.y) &&
+                    !map[point].blocksMovement &&
+                    actorAt(point) == null
+            }
+
+    private fun validationBossTelegraphAbility(monsterId: EntityId): ValidationBossTelegraphAbility? {
+        val loadout = world.get<TalentLoadout>(monsterId) ?: return null
+        val orderedCandidateIds =
+            buildList {
+                activeAiProfileFor(monsterId)
+                    ?.actions
+                    .orEmpty()
+                    .filter { action -> action.type == AIActionType.USE_ABILITY }
+                    .sortedWith(compareBy<com.ktome.core.ai.AIAction> { action -> action.orderKey ?: Int.MAX_VALUE }.thenBy { action -> action.id })
+                    .mapNotNullTo(this) { action -> action.abilityId }
+                loadout.talentLevels.keys.sorted().forEach(::add)
+            }.distinct()
+        val abilities =
+            orderedCandidateIds.mapNotNull { abilityId ->
+                if (abilityId !in loadout.talentLevels) {
+                    return@mapNotNull null
+                }
+                val schema = talentSchemaFor(abilityId) ?: return@mapNotNull null
+                if (schema.telegraphRef == null) {
+                    return@mapNotNull null
+                }
+                ValidationBossTelegraphAbility(abilityId = abilityId, schema = schema)
+            }
+        return abilities.firstOrNull { ability -> talentRegistry.get(ability.abilityId)?.range == 0 }
+            ?: abilities.firstOrNull()
     }
 
     private fun queueValidationRestart(
