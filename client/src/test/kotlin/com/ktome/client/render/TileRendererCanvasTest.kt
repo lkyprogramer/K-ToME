@@ -9,6 +9,10 @@ import com.ktome.client.assets.VisualManifestEntry
 import com.ktome.client.assets.VisualManifestResolver
 import com.ktome.client.input.OverlayState
 import com.ktome.client.input.UiMode
+import com.ktome.client.ui.layout.ModalFrame
+import com.ktome.client.ui.layout.ModalFrameKind
+import com.ktome.client.ui.layout.PaneFocusAnchor
+import com.ktome.client.ui.token.UiDesignTokens
 import com.ktome.core.snapshot.ActorRenderSnapshot
 import com.ktome.core.snapshot.ActorRoleKindSnapshot
 import com.ktome.core.snapshot.BossVariantRenderSnapshot
@@ -85,6 +89,160 @@ class TileRendererCanvasTest {
 
         val titleDraw = canvas.textDraws.first { draw -> draw.text == "Ground" }
         assertTrue(titleDraw.y > TileRenderer.uiRows * 32f)
+    }
+
+    @Test
+    fun `render canvas draws focus ring around selected map pane`() {
+        val canvas = RecordingTileCanvas()
+        val snapshot = sampleSnapshot(height = 6)
+        val layout = TileRenderer.layoutMetrics(snapshot.metadata.width, snapshot.metadata.height, 32f, 32f)
+
+        TileRenderer.renderToCanvas(
+            localizer = LocalizationBundle.load().translator(GameLocale.EN_US),
+            visualResolver = sampleResolver(),
+            snapshot = snapshot,
+            overlayState = OverlayState(mode = UiMode.MAP, paneFocusAnchor = PaneFocusAnchor.CONTEXT),
+            canvas = canvas,
+            cellWidth = 32f,
+            cellHeight = 32f,
+        )
+
+        val focusColor = UiDesignTokens.color.focus.ring.color()
+        assertTrue(
+            canvas.rectDraws.any { rect ->
+                rect.x == layout.logX &&
+                    rect.y == layout.cardY &&
+                    rect.color == focusColor
+            },
+        )
+    }
+
+    @Test
+    fun `render model exposes ui message and presentation cards`() {
+        val localizer = LocalizationBundle.load().translator(GameLocale.EN_US)
+        val model =
+            TileRenderer.buildRenderModel(
+                localizer = localizer,
+                visualResolver = sampleResolver(),
+                snapshot = sampleSnapshot(),
+                overlayState = OverlayState(mode = UiMode.MAP, uiMessageKey = "ui.message.force-switch.shop"),
+            )
+
+        assertTrue(model.messageLines.any { line -> line.text == "Shop took over the current view." })
+        assertEquals("Log unavailable.", model.logPresentation.fallbackText)
+        assertFalse(model.playerCard.name.isBlank())
+        assertEquals("No available actions.", model.actionPanel.emptyStateText)
+        assertTrue(model.targetCard.emptyStateText.isNotBlank())
+    }
+
+    @Test
+    fun `render model localizes validation save block feedback`() {
+        val model =
+            TileRenderer.buildRenderModel(
+                localizer = LocalizationBundle.load().translator(GameLocale.EN_US),
+                visualResolver = sampleResolver(),
+                snapshot = sampleSnapshot(),
+                overlayState = OverlayState(mode = UiMode.MAP, uiMessageKey = "ui.message.save.blocked-in-validation"),
+            )
+
+        assertTrue(model.messageLines.any { line -> line.text == "Cannot save while validation mode is active." })
+    }
+
+    @Test
+    fun `render model shows item detail as a distinct inventory frame`() {
+        val item =
+            ItemRenderSnapshot(
+                baseItemId = "long_sword",
+                nameKey = "item.long_sword.name",
+                typeId = "WEAPON",
+                descKey = "item.long_sword.desc",
+            )
+        val model =
+            TileRenderer.buildRenderModel(
+                localizer = LocalizationBundle.load().translator(GameLocale.EN_US),
+                visualResolver = sampleResolver(),
+                snapshot =
+                    sampleSnapshot(
+                        inventory =
+                            listOf(
+                                InventoryEntrySnapshot(
+                                    index = 0,
+                                    item = item,
+                                ),
+                            ),
+                    ),
+                overlayState =
+                    OverlayState(
+                        mode = UiMode.INVENTORY,
+                        modalFrames = listOf(ModalFrame(ModalFrameKind.INVENTORY), ModalFrame(ModalFrameKind.ITEM_DETAIL)),
+                        inventorySelection = 0,
+                    ),
+            )
+
+        assertEquals("Item Detail", model.sidebar.title)
+        assertTrue(model.sidebar.rows.any { row -> row.text.contains("Long Sword") })
+        assertTrue(model.sidebar.rows.any { row -> row.text == "E use, X/C compare stub, Backspace back, Esc close all." })
+    }
+
+    @Test
+    fun `inspect sidebar includes telegraph warnings for the cursor cell`() {
+        val model =
+            TileRenderer.buildRenderModel(
+                localizer = LocalizationBundle.load().translator(GameLocale.EN_US),
+                visualResolver = sampleResolver(),
+                snapshot =
+                    sampleSnapshot(
+                        overlays =
+                            listOf(
+                                OverlayRenderSnapshot(
+                                    id = "telegraph:test",
+                                    visualKey = "missing_visual",
+                                    previewTurns = 1,
+                                    dangerLevel = 3,
+                                    shape = OverlayShapeSnapshot.SINGLE_TILE,
+                                    sourceAbilityId = "telegraph.test",
+                                    cells = listOf(GridPointSnapshot(0, 0)),
+                                ),
+                            ),
+                    ),
+                overlayState = OverlayState(mode = UiMode.INSPECT, inspectCursor = com.ktome.core.map.Point(0, 0)),
+            )
+
+        assertTrue(model.sidebar.rows.any { row -> row.text.contains("T-1 High telegraph.test") })
+    }
+
+    @Test
+    fun `inspect target card falls back to terrain and empty tile copy`() {
+        val model =
+            TileRenderer.buildRenderModel(
+                localizer = LocalizationBundle.load().translator(GameLocale.EN_US),
+                visualResolver = sampleResolver(),
+                snapshot =
+                    sampleSnapshot(
+                        height = 2,
+                        cells =
+                            listOf(
+                                MapCellSnapshot(
+                                    x = 0,
+                                    y = 0,
+                                    visibility = CellVisibilitySnapshot.VISIBLE,
+                                    terrainTypeId = "floor",
+                                    terrainVisualKey = "tileset.test.ground_01",
+                                ),
+                                MapCellSnapshot(
+                                    x = 0,
+                                    y = 1,
+                                    visibility = CellVisibilitySnapshot.VISIBLE,
+                                    terrainTypeId = "floor",
+                                    terrainVisualKey = "tileset.test.ground_01",
+                                ),
+                            ),
+                    ),
+                overlayState = OverlayState(mode = UiMode.INSPECT, inspectCursor = com.ktome.core.map.Point(0, 1)),
+            )
+
+        assertFalse(model.targetCard.isEmpty)
+        assertTrue(model.targetCard.lines.any { line -> line == "There is nothing here to inspect." })
     }
 
     @Test

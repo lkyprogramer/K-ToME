@@ -15,9 +15,13 @@ internal object TelegraphRenderer {
     fun tileRows(
         localizer: Localizer,
         snapshot: RenderSnapshot,
+    ): List<TileTextRow> = tileRows(localizer, snapshot.overlays)
+
+    fun tileRows(
+        localizer: Localizer,
+        overlays: List<OverlayRenderSnapshot>,
     ): List<TileTextRow> =
-        snapshot.overlays
-            .sortedWith(compareByDescending<OverlayRenderSnapshot> { it.dangerLevel }.thenBy(OverlayRenderSnapshot::id))
+        sortedOverlays(overlays)
             .map { overlay ->
                 TileTextRow(
                     text = "T-${overlay.previewTurns} ${dangerLabel(localizer, overlay.dangerLevel)} ${warningText(localizer, overlay)}",
@@ -29,8 +33,7 @@ internal object TelegraphRenderer {
         localizer: Localizer,
         snapshot: RenderSnapshot,
     ): List<AsciiTextLine> =
-        snapshot.overlays
-            .sortedWith(compareByDescending<OverlayRenderSnapshot> { it.dangerLevel }.thenBy(OverlayRenderSnapshot::id))
+        sortedOverlays(snapshot.overlays)
             .map { overlay ->
                 AsciiTextLine(
                     text = "T-${overlay.previewTurns} ${dangerLabel(localizer, overlay.dangerLevel)} ${warningText(localizer, overlay)}",
@@ -47,6 +50,9 @@ internal object TelegraphRenderer {
         }
 
     fun fallbackColorHex(dangerLevel: Int): String = UiDesignTokens.color.telegraph.forDangerLevel(dangerLevel).hexString()
+
+    private fun sortedOverlays(overlays: List<OverlayRenderSnapshot>): List<OverlayRenderSnapshot> =
+        overlays.sortedWith(compareByDescending<OverlayRenderSnapshot> { it.dangerLevel }.thenBy(OverlayRenderSnapshot::id))
 
     private fun warningText(
         localizer: Localizer,

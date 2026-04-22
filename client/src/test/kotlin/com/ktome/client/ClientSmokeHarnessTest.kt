@@ -1525,7 +1525,6 @@ private class SmokeCommandSource(
     private val uiSource =
         InputHandlerCommandSource(
             inputHandler = InputHandler(overlayInput, validationOverlayAvailability, validationPreset),
-            inputSource = overlayInput,
         )
     private val enteredModes = linkedSetOf(UiMode.MAP)
     private var lastUiCommand: Boolean = false

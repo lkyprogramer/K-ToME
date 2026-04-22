@@ -142,7 +142,36 @@ Evidence:
 Known limitations:
 ```
 
-截图和录屏优先使用 Computer Use 自身能力或当前任务规定的方式保存。不要默认依赖 macOS `screencapture` 作为 CUA 画面证据；它可能抓到真实桌面前台窗口，而不是 Computer Use 视图。
+截图和录屏优先使用 Computer Use 自身能力或当前任务规定的方式保存。禁止把裸 macOS `screencapture -x <file>` 当作 CUA 画面证据；它可能抓到真实桌面前台窗口，而不是目标 app 窗口。
+
+如果 Computer Use 当前不能直接持久化截图文件，使用仓库脚本捕获目标 app 的真实 macOS 窗口。该脚本先用 CoreGraphics 枚举可见窗口并解析 window id，再只对该 window id 执行截图，同时生成 metadata 与 SHA-256 sidecar。
+
+```bash
+scripts/capture-macos-app-window.sh \
+  --bundle-id com.ktome.client \
+  --app-name K-ToME \
+  --out <whitebox-root>/evidence/<scenario-step>.png
+```
+
+默认截图会按证据阅读用途压缩：输出 PNG 最宽 `1600px`、最高 `1200px`，并使用 PNG8 palette + strip 非必要 metadata。若某个细节必须保留 Retina 原始像素，显式加 `--raw`；若需要保留完整色彩但仍缩放压缩，使用 `--truecolor`；若需要更小的沟通用图，可以调低上限。
+
+```bash
+scripts/capture-macos-app-window.sh \
+  --bundle-id com.ktome.client \
+  --app-name K-ToME \
+  --max-width 1280 \
+  --max-height 900 \
+  --out <whitebox-root>/evidence/<scenario-step>.png
+```
+
+每张截图证据必须同时记录：
+
+1. PNG 文件路径
+2. `<png>.metadata.txt`
+3. `<png>.sha256`
+4. 对应 CUA step / scenario
+
+只有 `capture_mode=macos-window-id` 且 metadata 中的 `window_owner` / `window_pid` / `window_bounds` 对应目标 packaged app 时，才可作为 target-window screenshot evidence。
 
 ## 8. 更新人工记录
 

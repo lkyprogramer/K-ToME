@@ -60,8 +60,10 @@ class MainMenuScreenTextTest {
         val zhLocalizer = LocalizationBundle.load().translator(GameLocale.ZH_CN)
 
         val helpKeys = listOf("ui.menu.help.primary-keys", "ui.menu.help.safe-start")
-        assertTrue(helpKeys.all { key -> enLocalizer.text(key).length <= 64 })
-        assertTrue(helpKeys.all { key -> zhLocalizer.text(key).length <= 24 })
+        assertTrue(helpKeys.all { key -> enLocalizer.text(key).length <= 82 })
+        assertTrue(helpKeys.all { key -> zhLocalizer.text(key).length <= 48 })
+        assertTrue(enLocalizer.text("ui.menu.help.primary-keys").contains("Backspace back"))
+        assertTrue(zhLocalizer.text("ui.menu.help.primary-keys").contains("Backspace 后退"))
     }
 
     @Test
